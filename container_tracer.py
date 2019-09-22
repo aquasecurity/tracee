@@ -1,5 +1,9 @@
 #!/usr/bin/python
 
+# Authors:
+#       Yaniv Agman <yaniv@aquasec.com>
+
+
 # todo: add syscalls: "getdirents", "uname"
 # todo: add full sockaddr struct to: "connect", "accept", "bind", "getsockname"
 # todo: move python helpers (e.g. flags) to different file
