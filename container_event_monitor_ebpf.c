@@ -1,3 +1,9 @@
+/*
+ * Authors:
+ * 	Yaniv Agman <yaniv@aquasec.com>
+ *
+ */
+
 // todo: add missing syscalls
 // todo: macro of function which includes entry and exit
 // todo: fix problem with execveat - can't see pathname

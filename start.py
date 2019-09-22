@@ -1,5 +1,8 @@
 #!/usr/bin/python
 
+# Authors:
+#       Yaniv Agman <yaniv@aquasec.com>
+
 # arguments
 import argparse
 from container_tracer import EventMonitor
