@@ -76,6 +76,8 @@ enum event_id {
     SYS_INIT_MODULE,
     SYS_FINIT_MODULE,
     SYS_DELETE_MODULE,
+    SYS_SYMLINK,
+    SYS_SYMLINKAT,
     DO_EXIT,
     CAP_CAPABLE,
 };
@@ -554,6 +556,10 @@ TRACE_ENT_FUNC(sys_finit_module);
 TRACE_RET_FUNC(sys_finit_module, SYS_FINIT_MODULE, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T));
 TRACE_ENT_FUNC(sys_delete_module);
 TRACE_RET_FUNC(sys_delete_module, SYS_DELETE_MODULE, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
+TRACE_ENT_FUNC(sys_symlink);
+TRACE_RET_FUNC(sys_symlink, SYS_SYMLINK, ARG_TYPE0(STR_T)|ARG_TYPE1(STR_T));
+TRACE_ENT_FUNC(sys_symlinkat);
+TRACE_RET_FUNC(sys_symlinkat, SYS_SYMLINKAT, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(STR_T));
 
 
 // Note: race condition may occur if a malicious user changes the arguments concurrently
