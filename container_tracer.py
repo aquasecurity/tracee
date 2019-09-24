@@ -141,7 +141,8 @@ sock_type = {
 syscalls = ["execve", "execveat", "mmap", "mprotect", "clone", "fork", "vfork", "newstat",
             "newfstat", "newlstat", "mknod", "mknodat", "dup", "dup2", "dup3",
             "memfd_create", "socket", "close", "ioctl", "access", "faccessat", "kill", "listen",
-            "connect", "accept", "accept4", "bind", "getsockname"]
+            "connect", "accept", "accept4", "bind", "getsockname", "prctl", "ptrace",
+            "process_vm_writev", "process_vm_readv", "init_module", "finit_module", "delete_module"]
 
 class EventType(object):
     EVENT_ARG = 0
@@ -178,8 +179,15 @@ class EventId(object):
     SYS_ACCEPT4 = 26
     SYS_BIND = 27
     SYS_GETSOCKNAME = 28
-    DO_EXIT = 29
-    CAP_CAPABLE = 30
+    SYS_PRCTL = 29
+    SYS_PTRACE = 30
+    SYS_PROCESS_VM_WRITEV = 31
+    SYS_PROCESS_VM_READV = 32
+    SYS_INIT_MODULE = 33
+    SYS_FINIT_MODULE = 34
+    SYS_DELETE_MODULE = 35
+    DO_EXIT = 36
+    CAP_CAPABLE = 37
 
 class context_t(ctypes.Structure): # match layout of eBPF C's context_t struct
     _fields_ = [("ts", ctypes.c_uint64),
@@ -333,6 +341,63 @@ class fstat_info_t(ctypes.Structure):
     _pack_ = 1
     _fields_ = [("context", context_t),
                 ("fd", ctypes.c_uint),]
+
+class prctl_info_t(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [("context", context_t),
+                ("option", ctypes.c_uint),
+                ("arg2", ctypes.c_ulong),
+                ("arg3", ctypes.c_ulong),
+                ("arg4", ctypes.c_ulong),
+                ("arg5", ctypes.c_ulong),]
+
+class ptrace_info_t(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [("context", context_t),
+                ("request", ctypes.c_uint),
+                ("pid", ctypes.c_int),
+                ("addr", ctypes.c_void_p),
+                ("data", ctypes.c_void_p),]
+
+class process_vm_writev_info_t(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [("context", context_t),
+                ("pid", ctypes.c_int),
+                ("local_iov", ctypes.c_void_p),
+                ("liovcnt", ctypes.c_ulong),
+                ("remote_iov", ctypes.c_void_p),
+                ("riovcnt", ctypes.c_ulong),
+                ("flags", ctypes.c_ulong),]
+
+class process_vm_readv_info_t(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [("context", context_t),
+                ("pid", ctypes.c_int),
+                ("local_iov", ctypes.c_void_p),
+                ("liovcnt", ctypes.c_ulong),
+                ("remote_iov", ctypes.c_void_p),
+                ("riovcnt", ctypes.c_ulong),
+                ("flags", ctypes.c_ulong),]
+
+class init_module_info_t(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [("context", context_t),
+                ("module_image", ctypes.c_void_p),
+                ("len", ctypes.c_ulong),
+                ("param_values_loc", ctypes.c_uint),]
+
+class finit_module_info_t(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [("context", context_t),
+                ("fd", ctypes.c_int),
+                ("param_values_loc", ctypes.c_uint),
+                ("flags", ctypes.c_int),]
+
+class delete_module_info_t(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [("context", context_t),
+                ("name_loc", ctypes.c_uint),
+                ("flags", ctypes.c_int),]
 
 class cap_info_t(ctypes.Structure):
     _fields_ = [("context", context_t),
@@ -806,6 +871,56 @@ class EventMonitor():
             eventname = "lstat"
             event = ctypes.cast(data, ctypes.POINTER(stat_info_t)).contents
             args.append(self.get_string_from_buf(cpu, int(event.path_loc)))
+        elif context.eventid == EventId.SYS_PRCTL:
+            eventname = "prctl"
+            event = ctypes.cast(data, ctypes.POINTER(prctl_info_t)).contents
+            args.append(str(event.option))
+            args.append(str(event.arg2))
+            args.append(str(event.arg3))
+            args.append(str(event.arg4))
+            args.append(str(event.arg5))
+        elif context.eventid == EventId.SYS_PTRACE:
+            eventname = "ptrace"
+            event = ctypes.cast(data, ctypes.POINTER(ptrace_info_t)).contents
+            args.append(str(event.request))
+            args.append(str(event.pid))
+            args.append(str(hex(0 if event.addr is None else event.addr)))
+            args.append(str(hex(0 if event.data is None else event.data)))
+        elif context.eventid == EventId.SYS_PROCESS_VM_WRITEV:
+            eventname = "process_vm_writev"
+            event = ctypes.cast(data, ctypes.POINTER(process_vm_writev_info_t)).contents
+            args.append(str(event.pid))
+            args.append(str(hex(0 if event.local_iov is None else event.local_iov)))
+            args.append(str(event.liovcnt))
+            args.append(str(hex(0 if event.remote_iov is None else event.remote_iov)))
+            args.append(str(event.riovcnt))
+            args.append(str(event.flags))
+        elif context.eventid == EventId.SYS_PROCESS_VM_READV:
+            eventname = "process_vm_readv"
+            event = ctypes.cast(data, ctypes.POINTER(process_vm_readv_info_t)).contents
+            args.append(str(event.pid))
+            args.append(str(hex(0 if event.local_iov is None else event.local_iov)))
+            args.append(str(event.liovcnt))
+            args.append(str(hex(0 if event.remote_iov is None else event.remote_iov)))
+            args.append(str(event.riovcnt))
+            args.append(str(event.flags))
+        elif context.eventid == EventId.SYS_INIT_MODULE:
+            eventname = "init_module"
+            event = ctypes.cast(data, ctypes.POINTER(init_module_info_t)).contents
+            args.append(str(hex(0 if event.module_image is None else event.module_image)))
+            args.append(str(event.len))
+            args.append(self.get_string_from_buf(cpu, int(event.param_values_loc)))
+        elif context.eventid == EventId.SYS_FINIT_MODULE:
+            eventname = "finit_module"
+            event = ctypes.cast(data, ctypes.POINTER(finit_module_info_t)).contents
+            args.append(str(event.fd))
+            args.append(self.get_string_from_buf(cpu, int(event.param_values_loc)))
+            args.append(str(event.flags))
+        elif context.eventid == EventId.SYS_DELETE_MODULE:
+            eventname = "delete_module"
+            event = ctypes.cast(data, ctypes.POINTER(delete_module_info_t)).contents
+            args.append(self.get_string_from_buf(cpu, int(event.name_loc)))
+            args.append(str(event.flags))
         elif context.eventid == EventId.SYS_CLONE:
             eventname = "clone"
         elif context.eventid == EventId.SYS_FORK:
