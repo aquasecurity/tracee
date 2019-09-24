@@ -143,7 +143,7 @@ syscalls = ["execve", "execveat", "mmap", "mprotect", "clone", "fork", "vfork", 
             "memfd_create", "socket", "close", "ioctl", "access", "faccessat", "kill", "listen",
             "connect", "accept", "accept4", "bind", "getsockname", "prctl", "ptrace",
             "process_vm_writev", "process_vm_readv", "init_module", "finit_module", "delete_module",
-            "symlink", "symlinkat"]
+            "symlink", "symlinkat", "getdents", "getdents64"]
 
 class EventType(object):
     EVENT_ARG = 0
@@ -189,8 +189,10 @@ class EventId(object):
     SYS_DELETE_MODULE = 35
     SYS_SYMLINK = 36
     SYS_SYMLINKAT = 37
-    DO_EXIT = 38
-    CAP_CAPABLE = 39
+    SYS_GETDENTS = 38
+    SYS_GETDENTS64 = 39
+    DO_EXIT = 40
+    CAP_CAPABLE = 41
 
 class context_t(ctypes.Structure): # match layout of eBPF C's context_t struct
     _fields_ = [("ts", ctypes.c_uint64),
@@ -414,6 +416,11 @@ class symlinkat_info_t(ctypes.Structure):
                 ("target_loc", ctypes.c_uint),
                 ("newdirfd", ctypes.c_int),
                 ("linkpath_loc", ctypes.c_uint),]
+
+class getdents_info_t(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [("context", context_t),
+                ("fd", ctypes.c_uint),]
 
 class cap_info_t(ctypes.Structure):
     _fields_ = [("context", context_t),
@@ -948,6 +955,14 @@ class EventMonitor():
             args.append(self.get_string_from_buf(cpu, int(event.target_loc)))
             args.append(str(event.newdirfd))
             args.append(self.get_string_from_buf(cpu, int(event.linkpath_loc)))
+        elif context.eventid == EventId.SYS_GETDENTS:
+            eventname = "getdents"
+            event = ctypes.cast(data, ctypes.POINTER(getdents_info_t)).contents
+            args.append(str(event.fd))
+        elif context.eventid == EventId.SYS_GETDENTS64:
+            eventname = "getdents64"
+            event = ctypes.cast(data, ctypes.POINTER(getdents_info_t)).contents
+            args.append(str(event.fd))
         elif context.eventid == EventId.SYS_CLONE:
             eventname = "clone"
         elif context.eventid == EventId.SYS_FORK:
