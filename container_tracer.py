@@ -142,7 +142,8 @@ syscalls = ["execve", "execveat", "mmap", "mprotect", "clone", "fork", "vfork", 
             "newfstat", "newlstat", "mknod", "mknodat", "dup", "dup2", "dup3",
             "memfd_create", "socket", "close", "ioctl", "access", "faccessat", "kill", "listen",
             "connect", "accept", "accept4", "bind", "getsockname", "prctl", "ptrace",
-            "process_vm_writev", "process_vm_readv", "init_module", "finit_module", "delete_module"]
+            "process_vm_writev", "process_vm_readv", "init_module", "finit_module", "delete_module",
+            "symlink", "symlinkat"]
 
 class EventType(object):
     EVENT_ARG = 0
@@ -186,8 +187,10 @@ class EventId(object):
     SYS_INIT_MODULE = 33
     SYS_FINIT_MODULE = 34
     SYS_DELETE_MODULE = 35
-    DO_EXIT = 36
-    CAP_CAPABLE = 37
+    SYS_SYMLINK = 36
+    SYS_SYMLINKAT = 37
+    DO_EXIT = 38
+    CAP_CAPABLE = 39
 
 class context_t(ctypes.Structure): # match layout of eBPF C's context_t struct
     _fields_ = [("ts", ctypes.c_uint64),
@@ -398,6 +401,19 @@ class delete_module_info_t(ctypes.Structure):
     _fields_ = [("context", context_t),
                 ("name_loc", ctypes.c_uint),
                 ("flags", ctypes.c_int),]
+
+class symlink_info_t(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [("context", context_t),
+                ("target_loc", ctypes.c_uint),
+                ("linkpath_loc", ctypes.c_uint),]
+
+class symlinkat_info_t(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [("context", context_t),
+                ("target_loc", ctypes.c_uint),
+                ("newdirfd", ctypes.c_int),
+                ("linkpath_loc", ctypes.c_uint),]
 
 class cap_info_t(ctypes.Structure):
     _fields_ = [("context", context_t),
@@ -921,6 +937,17 @@ class EventMonitor():
             event = ctypes.cast(data, ctypes.POINTER(delete_module_info_t)).contents
             args.append(self.get_string_from_buf(cpu, int(event.name_loc)))
             args.append(str(event.flags))
+        elif context.eventid == EventId.SYS_SYMLINK:
+            eventname = "symlink"
+            event = ctypes.cast(data, ctypes.POINTER(symlink_info_t)).contents
+            args.append(self.get_string_from_buf(cpu, int(event.target_loc)))
+            args.append(self.get_string_from_buf(cpu, int(event.linkpath_loc)))
+        elif context.eventid == EventId.SYS_SYMLINKAT:
+            eventname = "symlinkat"
+            event = ctypes.cast(data, ctypes.POINTER(symlinkat_info_t)).contents
+            args.append(self.get_string_from_buf(cpu, int(event.target_loc)))
+            args.append(str(event.newdirfd))
+            args.append(self.get_string_from_buf(cpu, int(event.linkpath_loc)))
         elif context.eventid == EventId.SYS_CLONE:
             eventname = "clone"
         elif context.eventid == EventId.SYS_FORK:
