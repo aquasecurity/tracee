@@ -21,6 +21,7 @@ import sys
 import json
 import logging
 import ctypes
+import array
 from collections import defaultdict
 
 log = logging.getLogger()
@@ -591,7 +592,7 @@ class EventMonitor():
         str_size = str_loc & 0xffff
         str_off = (str_loc & 0xffff0000) >> 16
         str_buf = self.bpf["str_buf"][cpu].buf[str_off:str_off + str_size]
-        return str(bytes(str_buf).decode("utf-8"))
+        return str(array.array('B', str_buf).tostring().decode("utf-8"))
 
     # process event
     def print_event(self, cpu, data, size):

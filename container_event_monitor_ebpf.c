@@ -1,15 +1,18 @@
 /*
  * Authors:
- * 	Yaniv Agman <yaniv@aquasec.com>
+ *     Yaniv Agman <yaniv@aquasec.com>
  *
  */
 
-// todo: add missing syscalls
+// todo: execve: handle envp, put argv and envp in a list instead being different param for each arg
+// todo: when a new file is written - copy it offline
+// todo: add syscalls: "getdirents", "uname", "symlink", "symlinkat"
+// todo: add full sockaddr struct to: "connect", "accept", "bind", "getsockname"
+// todo: add commit_creds tracing to detect kernel exploits
 // todo: macro of function which includes entry and exit
 // todo: fix problem with execveat - can't see pathname
 // todo: save argv_loc array in a map instead of submitting it (to avoid race condition). we can't remove entrance as after execve memory is wiped
 // todo: add check for head and tail to avoid overflow!
-// todo: execve: handle envp, put argv and envp in a list instead being different param for each arg
 // todo: have modification of a new syscall happen in one consolidated struct, that will be used in relevant macro (to avoid updating in several places in file)
 // todo: add a "do extra" function inside the macro, so we can also include special cases (e.g. is_capable)
 // todo: add support for kernel versions 4.19 onward (see kernel version dependant section below)
