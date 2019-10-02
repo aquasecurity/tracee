@@ -143,7 +143,7 @@ syscalls = ["execve", "execveat", "mmap", "mprotect", "clone", "fork", "vfork", 
             "memfd_create", "socket", "close", "ioctl", "access", "faccessat", "kill", "listen",
             "connect", "accept", "accept4", "bind", "getsockname", "prctl", "ptrace",
             "process_vm_writev", "process_vm_readv", "init_module", "finit_module", "delete_module",
-            "symlink", "symlinkat", "getdents", "getdents64"]
+            "symlink", "symlinkat", "getdents", "getdents64", "creat", "open", "openat"]
 
 class EventType(object):
     EVENT_ARG = 0
@@ -517,9 +517,21 @@ class execveat_info_t(ctypes.Structure):
 class open_info_t(ctypes.Structure):
     _pack_ = 1 # for all events passed with buffer (in eBPF code), we use packed structs
     _fields_ = [("context", context_t),
+                ("filename_loc", ctypes.c_uint),
+                ("flags", ctypes.c_int),]
+
+class openat_info_t(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [("context", context_t),
                 ("dirfd", ctypes.c_int),
                 ("filename_loc", ctypes.c_uint),
                 ("flags", ctypes.c_int),]
+
+class creat_info_t(ctypes.Structure):
+    #_pack_ = 1
+    _fields_ = [("context", context_t),
+                ("pathname_loc", ctypes.c_uint),
+                ("mode", ctypes.c_uint),]
 
 class memfd_create_info_t(ctypes.Structure):
     _pack_ = 1
@@ -750,10 +762,8 @@ class EventMonitor():
             self.bpf.attach_kprobe(event=syscall_fnname, fn_name="trace_sys_" + syscall)
             self.bpf.attach_kretprobe(event=syscall_fnname, fn_name="trace_ret_sys_" + syscall)
 
-        self.bpf.attach_kprobe(event="do_sys_open", fn_name="trace_open")
-        self.bpf.attach_kretprobe(event="do_sys_open", fn_name="trace_ret_open")
         self.bpf.attach_kprobe(event="do_exit", fn_name="trace_do_exit")
-        #self.bpf.attach_kprobe(event="cap_capable", fn_name="trace_cap_capable")
+        self.bpf.attach_kprobe(event="cap_capable", fn_name="trace_cap_capable")
 
         if self.verbose:
             log.info("%-14s %-12s %-12s %-6s %-16s %-16s %-6s %-6s %-6s %-16s %s" % ("TIME(s)", "MNT_NS", "PID_NS", "UID", "EVENT", "COMM", "PID", "TID", "PPID", "RET", "ARGS"))
@@ -914,60 +924,60 @@ class EventMonitor():
     def open_flags_to_str(self, flags):
         f_str = ""
 
-        if flags&0x1:
+        if flags&0o1:
             f_str += "O_WRONLY"
-        elif flags&0x2:
+        elif flags&0o2:
             f_str += "O_RDWR"
         else:
             f_str += "O_RDONLY"
 
 
-        if flags&0x100:
+        if flags&0o100:
             f_str += "|O_CREAT"
 
-        if flags&0x200:
+        if flags&0o200:
             f_str += "|O_EXCL"
 
-        if flags&0x400:
+        if flags&0o400:
             f_str += "|O_NOCTTY"
 
-        if flags&0x1000:
+        if flags&0o1000:
             f_str += "|O_TRUNC"
 
-        if flags&0x2000:
+        if flags&0o2000:
             f_str += "|O_APPEND"
 
-        if flags&0x4000:
+        if flags&0o4000:
             f_str += "|O_NONBLOCK"
 
-        if flags&0x4010000:
+        if flags&0o4010000:
             f_str += "|O_SYNC"
 
-        if flags&0x20000:
+        if flags&0o20000:
             f_str += "|O_ASYNC"
 
-        if flags&0x100000:
+        if flags&0o100000:
             f_str += "|O_LARGEFILE"
 
-        if flags&0x200000:
+        if flags&0o200000:
             f_str += "|O_DIRECTORY"
 
-        if flags&0x400000:
+        if flags&0o400000:
             f_str += "|O_NOFOLLOW"
 
-        if flags&0x2000000:
+        if flags&0o2000000:
             f_str += "|O_CLOEXEC"
 
-        if flags&0x40000:
+        if flags&0o40000:
             f_str += "|O_DIRECT"
 
-        if flags&0x1000000:
+        if flags&0o1000000:
             f_str += "|O_NOATIME"
 
-        if flags&0x10000000:
+        if flags&0o10000000:
             f_str += "|O_PATH"
 
-        if flags&0x20000000:
+        if flags&0o20000000:
             f_str += "|O_TMPFILE"
 
         return f_str
@@ -1033,6 +1043,17 @@ class EventMonitor():
             event = ctypes.cast(data, ctypes.POINTER(open_info_t)).contents
             args.append(self.get_string_from_buf(cpu, int(event.filename_loc)))
             args.append(self.open_flags_to_str(event.flags))
+        elif context.eventid == EventId.SYS_OPENAT:
+            eventname = "openat"
+            event = ctypes.cast(data, ctypes.POINTER(openat_info_t)).contents
+            args.append(str(event.dirfd))
+            args.append(self.get_string_from_buf(cpu, int(event.filename_loc)))
+            args.append(self.open_flags_to_str(event.flags))
+        elif context.eventid == EventId.SYS_CREAT:
+            eventname = "creat"
+            event = ctypes.cast(data, ctypes.POINTER(creat_info_t)).contents
+            args.append(self.get_string_from_buf(cpu, int(event.pathname_loc)))
+            args.append(str(event.mode))
         elif context.eventid == EventId.SYS_MEMFD_CREATE:
             eventname = "memfd_create"
             event = ctypes.cast(data, ctypes.POINTER(memfd_create_info_t)).contents
