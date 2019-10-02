@@ -6,14 +6,13 @@
 
 // todo: execve: handle envp, put argv and envp in a list instead being different param for each arg
 // todo: when a new file is written - copy it offline
-// todo: add syscalls: "getdirents", "uname", "symlink", "symlinkat"
+// todo: add syscalls: "getdirents", "uname"
 // todo: add full sockaddr struct to: "connect", "accept", "bind", "getsockname"
 // todo: add commit_creds tracing to detect kernel exploits
 // todo: macro of function which includes entry and exit
 // todo: fix problem with execveat - can't see pathname
 // todo: save argv_loc array in a map instead of submitting it (to avoid race condition). we can't remove entrance as after execve memory is wiped
 // todo: add check for head and tail to avoid overflow!
-// todo: have modification of a new syscall happen in one consolidated struct, that will be used in relevant macro (to avoid updating in several places in file)
 // todo: add a "do extra" function inside the macro, so we can also include special cases (e.g. is_capable)
 // todo: add support for kernel versions 4.19 onward (see kernel version dependant section below)
 
@@ -400,6 +399,12 @@ typedef struct execve_info {
     int argv_loc[MAXARG+1];     // argv location in str_buf
 } execve_info_t;
 
+typedef struct creat_info {
+    context_t context;
+    int pathname_loc;
+    int flags;
+} creat_info_t;
+
 typedef struct execveat_info {
     context_t context;
     enum event_type type;
@@ -648,6 +653,8 @@ static __always_inline int is_container()
     return lookup_pid_ns(task);
 }
 
+// Note: this function is not nested!
+// if inner kernel functions are called in syscall this may be a problem! - fix
 static __always_inline int save_args(struct pt_regs *ctx)
 {
     u64 id;
@@ -669,6 +676,8 @@ static __always_inline int save_args(struct pt_regs *ctx)
     return 0;
 }
 
+// Note: this function is not nested!
+// if inner kernel functions are called in syscall this may be a problem! - fix
 static __always_inline int load_args(args_t *args)
 {
     args_t *saved_args;
@@ -785,8 +794,12 @@ int trace_ret_##name(struct pt_regs *ctx)                               \
 
 // Note: race condition may occur if a malicious user changes the arguments concurrently
 // consider using security_file_open instead
-TRACE_ENT_FUNC(open);
-TRACE_RET_FUNC(open, SYS_OPEN, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T));
+TRACE_ENT_FUNC(sys_open);
+TRACE_RET_FUNC(sys_open, SYS_OPEN, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
+TRACE_ENT_FUNC(sys_openat);
+TRACE_RET_FUNC(sys_openat, SYS_OPENAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T));
+TRACE_ENT_FUNC(sys_creat);
+TRACE_RET_FUNC(sys_creat, SYS_CREAT, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
 TRACE_ENT_FUNC(sys_mmap);
 TRACE_RET_FUNC(sys_mmap, SYS_MMAP, ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(INT_T)|ARG_TYPE3(INT_T)|ARG_TYPE4(INT_T)|ARG_TYPE5(OFF_T_T));
 TRACE_ENT_FUNC(sys_mprotect);
@@ -992,7 +1005,7 @@ int trace_do_exit(struct pt_regs *ctx, long code)
     return 0;
 }
 
-int kprobe__cap_capable(struct pt_regs *ctx, const struct cred *cred,
+int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
     struct user_namespace *targ_ns, int cap, int cap_opt)
 {
     int audit;
