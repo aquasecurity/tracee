@@ -11,10 +11,10 @@
 // todo: add commit_creds tracing to detect kernel exploits
 // todo: macro of function which includes entry and exit
 // todo: fix problem with execveat - can't see pathname
-// todo: save argv_loc array in a map instead of submitting it (to avoid race condition). we can't remove entrance as after execve memory is wiped
 // todo: add check for head and tail to avoid overflow!
 // todo: add a "do extra" function inside the macro, so we can also include special cases (e.g. is_capable)
 // todo: add support for kernel versions 4.19 onward (see kernel version dependant section below)
+// todo: change submission_buf size from 32 to num_of_cpu which can be determined by userspace and set and compiled accordingly
 
 #include <uapi/linux/ptrace.h>
 #include <linux/sched.h>
@@ -25,11 +25,9 @@
 #include <linux/security.h>
 
 #define MAX_STRING_SIZE 4096                                // Choosing this value to be the same as PATH_MAX
-#define MAX_STRINGS_IN_BUF 32                               // Each cpu can hold up to MAX_STRINGS_IN_BUF strings
-#define STR_BUFSIZE  MAX_STRING_SIZE*MAX_STRINGS_IN_BUF     // Need to be power of 2
-#define STR_BUFSIZE_HALF   ((STR_BUFSIZE-1) >> 1)           // Bitmask for ebpf validator - this is why we need STR_BUFSIZE to be power of 2
-#define SUBMIT_BUFSIZE  4096                                // Percpu buffer size. Need to be power of 2. Max size possible is (2^17)/log(num_of_cpus)
-#define SUBMIT_BUFSIZE_HALF   ((SUBMIT_BUFSIZE-1) >> 1)     // Bitmask for ebpf validator - this is why we need PER_CPU_BUFSIZE to be power of 2
+#define SUBMIT_BUFSIZE  524288                              // Need to be power of 2
+#define SUBMIT_BUFSIZE_HALF   ((SUBMIT_BUFSIZE-1) >> 1)     // Bitmask for ebpf validator - this is why we need STR_BUFSIZE to be power of 2
+// Percpu buffer max possible size is (2^17)/log(num_of_cpus)
 
 /*==================================== ENUMS =================================*/
 
@@ -399,12 +397,6 @@ typedef struct execve_info {
     int argv_loc[MAXARG+1];     // argv location in str_buf
 } execve_info_t;
 
-typedef struct creat_info {
-    context_t context;
-    int pathname_loc;
-    int flags;
-} creat_info_t;
-
 typedef struct execveat_info {
     context_t context;
     enum event_type type;
@@ -413,22 +405,19 @@ typedef struct execveat_info {
     int flags;
 } execveat_info_t;
 
-typedef struct cap_info {
-    context_t context;
-    int capability;
-} cap_info_t;
-
 typedef struct args {
     unsigned long args[6];
 } args_t;
 
-typedef struct string_buf {
-    int head, tail;
-    u8 buf[STR_BUFSIZE];
-} string_buf_t;
+// This will be submitted with perf_submit - keep as small as possible
+typedef struct event {
+    u32 start_off;              // event start offset in submit ring buffer
+    u32 max_off;                // lets user space know when buffer is wrapped, without assuming any buffer size
+    u32 end_off;                // event end offset in submit ring buffer
+} event_t;
 
 typedef struct submit_buf {
-    u32 off;
+    int head, tail;
     u8 buf[SUBMIT_BUFSIZE];
 } submit_buf_t;
 
@@ -444,8 +433,8 @@ struct mnt_namespace {
 
 BPF_HASH(cont_pidns, u32, u32);                     // Save container pid namespaces
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
-BPF_ARRAY(str_buf, string_buf_t, 32);               // buffer to read strings into. Not using percpu array as it caused insufficient memory with large buffer size.
-BPF_PERCPU_ARRAY(submission_buf, submit_buf_t, 1);  // Buffer used for perf_submit
+BPF_PERCPU_ARRAY(event_submit, event_t, 1);         // Event to perf_submit
+BPF_ARRAY(submission_buf, submit_buf_t, 32);        // Buffer for events. Not using percpu array as it caused insufficient memory with large buffer size.
 
 /*================================== EVENTS ====================================*/
 
@@ -566,81 +555,113 @@ static __always_inline int init_context(context_t *context)
     return 0;
 }
 
-static __always_inline submit_buf_t * init_submit_buf()
+static __always_inline event_t * get_event()
 {
     int idx = 0;
     // get per-cpu buffer
-    submit_buf_t *submit_p = submission_buf.lookup(&idx);
-    if (submit_p) {
-        submit_p->off = 0;
-        return submit_p;
-    }
+    event_t *event = event_submit.lookup(&idx);
+    if (event == NULL)
+        return NULL;
 
-    return NULL;
+    return event;
+}
+
+static __always_inline submit_buf_t * get_submit_buf()
+{
+    int key = bpf_get_smp_processor_id();
+    submit_buf_t *submit_p = submission_buf.lookup(&key);
+    if (submit_p == NULL)
+        return NULL;
+
+    if (submit_p->head > SUBMIT_BUFSIZE_HALF) {
+        event_t *event_p = get_event();
+        if (event_p == NULL)
+            return NULL;
+
+        // save the max offset so user space can know until where to read
+        event_p->max_off = submit_p->head;
+        // not enough space - return to ring buffer start (ebpf validator forces bounds check)
+        submit_p->head = 0;
+    }
+    return submit_p;
 }
 
 static __always_inline int save_to_submit_buf(void *ptr, int size)
 {
-    int idx = 0;
-    // get per-cpu buffer
-    submit_buf_t *submit_p = submission_buf.lookup(&idx);
-    if (submit_p) {
-        if (submit_p->off > SUBMIT_BUFSIZE_HALF)
-            // not enough space - return
-            return 0;
+    submit_buf_t *submit_p = get_submit_buf();
 
-        // read into buffer
-        int rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->off & SUBMIT_BUFSIZE_HALF]), size, ptr);
-        if (rc == 0) {
-            submit_p->off += size;
-            return 1;
-        }
+    if (submit_p == NULL)
+        return 0;
+
+    // todo: add tail < head check + new event if not enough space
+    // read into buffer
+    int rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->head & SUBMIT_BUFSIZE_HALF]), size, ptr);
+    if (rc == 0) {
+        submit_p->head += size;
+        return size;
     }
 
     return 0;
 }
 
-static __always_inline int save_str_to_buf(void *ptr, int *arg)
+static __always_inline int save_str_to_buf(void *ptr)
 {
+    submit_buf_t *submit_p = get_submit_buf();
+
+    if (submit_p == NULL)
+        return 0;
+
+    // todo: add tail < head check + new event if not enough space
+    // read into buffer
+    int sz = bpf_probe_read_str((void **)&(submit_p->buf[(submit_p->head + sizeof(int)) & SUBMIT_BUFSIZE_HALF]), MAX_STRING_SIZE, ptr);
+    if (sz > 0) {
+        bpf_probe_read((void **)&(submit_p->buf[submit_p->head & SUBMIT_BUFSIZE_HALF]), sizeof(int), &sz);
+        submit_p->head += sz + sizeof(int);
+        return sz + sizeof(int);
+    }
+
+    return 0;
+}
+
+static __always_inline int init_event()
+{
+    event_t *event_p = get_event();
+    if (event_p == NULL)
+        return -1;
+
+    submit_buf_t *submit_p = get_submit_buf();
+    if (submit_p == NULL)
+        return -1;
+
+    event_p->start_off = submit_p->head;
+    event_p->max_off = SUBMIT_BUFSIZE;
+
+    return 0;
+}
+
+static __always_inline int events_perf_submit(struct pt_regs *ctx)
+{
+    event_t *event_p = get_event();
+    if (event_p == NULL)
+        return -1;
+
     int key = bpf_get_smp_processor_id();
-    string_buf_t *str_p = str_buf.lookup(&key);
-    if (str_p) {
-        if (str_p->tail > STR_BUFSIZE_HALF)
-            // not enough space - return to ring buffer start (ebpf validator forces bounds check)
-            str_p->tail = 0;
+    submit_buf_t *submit_p = submission_buf.lookup(&key);
+    if (submit_p != NULL)
+        event_p->end_off = submit_p->head;
+    // write max_off and end_off to map (at start_off) so we can send only start_off as the event
 
-        // read into buffer
-        int sz = bpf_probe_read_str((void **)&(str_p->buf[str_p->tail & STR_BUFSIZE_HALF]), MAX_STRING_SIZE, ptr);
-        if (sz > 0) {
-            // save offset and size so userspace will know how many bytes to read
-            int str_loc = (str_p->tail << 16) + sz;
-            if (arg)
-                // save str_loc to given arg
-                *arg = str_loc;
-            else
-                // submit str_loc to the submit buffer
-                save_to_submit_buf((void*)&str_loc, sizeof(int));
-            str_p->tail += sz;
-            return 1;
-        }
-    }
-
-    return 0;
-}
-
-static __always_inline int events_perf_submit(struct pt_regs *ctx, void *data, u32 data_size)
-{
     /* satisfy validator by setting buffer bounds */
-    int size = ((data_size - 1) & SUBMIT_BUFSIZE_HALF) + 1;
-    return events.perf_submit(ctx, data, size);
+    //int size = ((data_size - 1) & SUBMIT_BUFSIZE_HALF) + 1;
+    return events.perf_submit(ctx, event_p, sizeof(event_t));
 }
 
-static __always_inline int save_argv(struct pt_regs *ctx, void *ptr, int *argv_loc)
+static __always_inline int save_argv(struct pt_regs *ctx, void *ptr)
 {
     const char *argp = NULL;
     bpf_probe_read(&argp, sizeof(argp), ptr);
     if (argp) {
-        return save_str_to_buf((void *)(argp), argv_loc);
+        return save_str_to_buf((void *)(argp));
     }
     return 0;
 }
@@ -723,7 +744,7 @@ static __always_inline int load_args(args_t *args)
 #define ARG_TYPE5(type) ENC_ARG_TYPE(5, type)
 #define DEC_ARG_TYPE(n, enc_type) ((enc_type>>(4*n))&0xF)
 
-static __always_inline int prepare_data(int types)
+static __always_inline int save_args_to_submit_buf(int types)
 {
     unsigned int i;
     args_t args = {};
@@ -751,7 +772,7 @@ static __always_inline int prepare_data(int types)
         else if (DEC_ARG_TYPE(i, types) == POINTER_T)
             save_to_submit_buf((void*)&(args.args[i]), sizeof(void*));
         else if (DEC_ARG_TYPE(i, types) == STR_T)
-            save_str_to_buf((void *)args.args[i], NULL);
+            save_str_to_buf((void *)args.args[i]);
         else if (DEC_ARG_TYPE(i, types) == SOCKADDR_T) {
             short family = 0;
             if (args.args[i])
@@ -774,19 +795,15 @@ int trace_ret_##name(struct pt_regs *ctx)                               \
 {                                                                       \
     context_t context = {};                                             \
                                                                         \
-    submit_buf_t *submit_p = init_submit_buf();                         \
-    if (!submit_p)                                                      \
-        return -1;                                                      \
-                                                                        \
-    if (init_context(&context))                                         \
+    if (init_context(&context) || init_event())                         \
         return 0;                                                       \
                                                                         \
     context.eventid = id;                                               \
     context.retval = PT_REGS_RC(ctx);                                   \
     save_to_submit_buf((void*)&context, sizeof(context_t));             \
-    prepare_data(types);                                                \
+    save_args_to_submit_buf(types);                                     \
                                                                         \
-    events_perf_submit(ctx, submit_p->buf, submit_p->off);              \
+    events_perf_submit(ctx);                                            \
     return 0;                                                           \
 }
 
@@ -883,48 +900,56 @@ int trace_sys_execve(struct pt_regs *ctx,
     const char __user *const __user *__argv,
     const char __user *const __user *__envp)
 {
-    // create data here and pass to submit_arg to save stack space (#555)
-    execve_info_t exec_info = {};
+    context_t context = {};
 
     if (add_pid_ns_if_needed() == 0)
         return 0;
 
-    if (init_context(&exec_info.context))
+    if (init_context(&context) || init_event())
         return 0;
 
-    exec_info.context.eventid = SYS_EXECVE;
-    exec_info.type = EVENT_ARG;
+    context.eventid = SYS_EXECVE;
+    context.retval = 0;     // assume execve succeeded. if not, a ret event will be sent too
+    save_to_submit_buf((void*)&context, sizeof(context_t));
+    int type = EVENT_ARG;
+    save_to_submit_buf((void*)&type, sizeof(int));
 
-    save_str_to_buf((void *)filename, &exec_info.argv_loc[0]);
+    save_str_to_buf((void *)filename);
 
     // skip first arg, as we submitted filename
     #pragma unroll
     for (int i = 1; i < MAXARG; i++) {
-        if (save_argv(ctx, (void *)&__argv[i], &exec_info.argv_loc[i]) == 0)
+        if (save_argv(ctx, (void *)&__argv[i]) == 0)
              goto out;
     }
 
     // handle truncated argument list
     char ellipsis[] = "...";
-    save_str_to_buf((void *)ellipsis, &exec_info.argv_loc[MAXARG]);
+    save_str_to_buf((void *)ellipsis);
 out:
-    events.perf_submit(ctx, &exec_info, sizeof(execve_info_t));
+    events_perf_submit(ctx);
     return 0;
 }
 
 int trace_ret_sys_execve(struct pt_regs *ctx)
 {
-    execve_info_t info = {};
+    // we can't load string args here as after execve memory is wiped
+    context_t context = {};
 
-    if (init_context(&info.context))
+    if (init_context(&context) || init_event())
         return 0;
 
-    info.context.eventid = SYS_EXECVE;
-    info.context.retval = PT_REGS_RC(ctx);
-    info.type = EVENT_RET;
+    context.eventid = SYS_EXECVE;
+    context.retval = PT_REGS_RC(ctx);
 
-    events.perf_submit(ctx, &info, sizeof(execve_info_t));
+    if (context.retval == 0)
+        return 0;   // we are only interested in failed execs
 
+    int type = EVENT_RET;
+
+    save_to_submit_buf((void*)&context, sizeof(context_t));
+    save_to_submit_buf((void*)&type, sizeof(int));
+    events_perf_submit(ctx);
     return 0;
 }
 
@@ -935,55 +960,58 @@ int trace_sys_execveat(struct pt_regs *ctx,
     const char __user *const __user *__envp,
     const int flags)
 {
-    // create data here and pass to submit_arg to save stack space (#555)
-    execveat_info_t exec_info = {};
+    context_t context = {};
 
     if (add_pid_ns_if_needed() == 0)
         return 0;
 
-    if (init_context(&exec_info.context))
+    if (init_context(&context) || init_event())
         return 0;
 
-    exec_info.context.eventid = SYS_EXECVEAT;
-    exec_info.type = EVENT_ARG;
+    context.eventid = SYS_EXECVEAT;
+    context.retval = 0;     // assume execve succeeded. if not, a ret event will be sent too
+    save_to_submit_buf((void*)&context, sizeof(context_t));
+    int type = EVENT_ARG;
+    save_to_submit_buf((void*)&type, sizeof(int));
+    save_to_submit_buf((void*)&dirfd, sizeof(int));
 
-    save_args(ctx);
-
-    save_str_to_buf((void *)pathname, &exec_info.argv_loc[0]);
+    save_str_to_buf((void *)pathname);
 
     // skip first arg, as we submitted filename
     #pragma unroll
     for (int i = 1; i < MAXARG; i++) {
-        if (save_argv(ctx, (void *)&__argv[i], &exec_info.argv_loc[i]) == 0)
+        if (save_argv(ctx, (void *)&__argv[i]) == 0)
              goto out;
     }
 
     // handle truncated argument list
     char ellipsis[] = "...";
-    save_str_to_buf((void *)ellipsis, &exec_info.argv_loc[MAXARG]);
+    save_str_to_buf((void *)ellipsis);
 out:
-    events.perf_submit(ctx, &exec_info, sizeof(execveat_info_t));
+    save_to_submit_buf((void*)&flags, sizeof(int));
+    events_perf_submit(ctx);
     return 0;
 }
 
 int trace_ret_sys_execveat(struct pt_regs *ctx)
 {
-    execveat_info_t exec_info = {};
-    args_t args = {};
+    // we can't load string args here as after execve memory is wiped
+    context_t context = {};
 
-    if (init_context(&exec_info.context))
+    if (init_context(&context) || init_event())
         return 0;
 
-    if (load_args(&args) != 0)
-        return 0;
+    context.eventid = SYS_EXECVEAT;
+    context.retval = PT_REGS_RC(ctx);
 
-    exec_info.context.eventid = SYS_EXECVEAT;
-    exec_info.context.retval = PT_REGS_RC(ctx);
-    exec_info.type = EVENT_RET;
-    exec_info.dirfd = (int)args.args[0];
-    exec_info.flags = (int)args.args[4];
+    if (context.retval == 0)
+        return 0;   // we are only interested in failed execs
 
-    events.perf_submit(ctx, &exec_info, sizeof(execveat_info_t));
+    int type = EVENT_RET;
+
+    save_to_submit_buf((void*)&context, sizeof(context_t));
+    save_to_submit_buf((void*)&type, sizeof(int));
+    events_perf_submit(ctx);
     return 0;
 }
 
@@ -993,7 +1021,7 @@ int trace_do_exit(struct pt_regs *ctx, long code)
 {
     context_t context = {};
 
-    if (init_context(&context))
+    if (init_context(&context) || init_event())
         return 0;
 
     context.eventid = DO_EXIT;
@@ -1001,7 +1029,8 @@ int trace_do_exit(struct pt_regs *ctx, long code)
 
     remove_pid_ns_if_needed();
 
-    events.perf_submit(ctx, &context, sizeof(context_t));
+    save_to_submit_buf((void*)&context, sizeof(context_t));
+    events_perf_submit(ctx);
     return 0;
 }
 
@@ -1009,13 +1038,12 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
     struct user_namespace *targ_ns, int cap, int cap_opt)
 {
     int audit;
-    cap_info_t cap_info = {};
+    context_t context = {};
 
-    if (init_context(&cap_info.context))
+    if (init_context(&context) || init_event())
         return 0;
 
-    cap_info.context.eventid = CAP_CAPABLE;
-    cap_info.capability = cap;
+    context.eventid = CAP_CAPABLE;
 
   #ifdef CAP_OPT_NONE
     audit = (cap_opt & 0b10) == 0;
@@ -1026,6 +1054,8 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
     if (audit == 0)
         return 0;
 
-    events.perf_submit(ctx, &cap_info, sizeof(cap_info_t));
+    save_to_submit_buf((void*)&context, sizeof(context_t));
+    save_to_submit_buf((void*)&cap, sizeof(int));
+    events_perf_submit(ctx);
     return 0;
 };

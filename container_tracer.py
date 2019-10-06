@@ -514,237 +514,14 @@ class execveat_info_t(ctypes.Structure):
                 ("dirfd", ctypes.c_int),
                 ("flags", ctypes.c_int),]
 
-class open_info_t(ctypes.Structure):
-    _pack_ = 1 # for all events passed with buffer (in eBPF code), we use packed structs
-    _fields_ = [("context", context_t),
-                ("filename_loc", ctypes.c_uint),
-                ("flags", ctypes.c_int),]
-
-class openat_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("dirfd", ctypes.c_int),
-                ("filename_loc", ctypes.c_uint),
-                ("flags", ctypes.c_int),]
-
-class creat_info_t(ctypes.Structure):
-    #_pack_ = 1
-    _fields_ = [("context", context_t),
-                ("pathname_loc", ctypes.c_uint),
-                ("mode", ctypes.c_uint),]
-
-class memfd_create_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("name_loc", ctypes.c_uint),
-                ("flags", ctypes.c_uint),]
-
-class mknod_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("pathname_loc", ctypes.c_uint),
-                ("mode", ctypes.c_uint),
-                ("dev", ctypes.c_uint),]
-
-class mknodat_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("dirfd", ctypes.c_int),
-                ("pathname_loc", ctypes.c_uint),
-                ("mode", ctypes.c_uint),
-                ("dev", ctypes.c_uint),]
-
-class dup_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("oldfd", ctypes.c_int),
-                ("newfd", ctypes.c_int),
-                ("flags", ctypes.c_int),]
-
-class close_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("fd", ctypes.c_uint),]
-
-class ioctl_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("fd", ctypes.c_uint),
-                ("request", ctypes.c_ulong),]
-
-class access_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("pathname_loc", ctypes.c_uint),
-                ("mode", ctypes.c_int),]
-
-class faccessat_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("dirfd", ctypes.c_int),
-                ("pathname_loc", ctypes.c_uint),
-                ("mode", ctypes.c_int),
-                ("flags", ctypes.c_int),]
-
-class kill_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("pid", ctypes.c_int),
-                ("sig", ctypes.c_int),]
-
-class listen_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("sockfd", ctypes.c_int),
-                ("backlog", ctypes.c_int),]
-
-class connect_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("sockfd", ctypes.c_int),
-                ("sockaddr", ctypes.c_short),]
-
-class accept_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("sockfd", ctypes.c_int),
-                ("sockaddr", ctypes.c_short),]
-
-class accept4_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("sockfd", ctypes.c_int),
-                ("sockaddr", ctypes.c_short),]
-
-class bind_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("sockfd", ctypes.c_int),
-                ("sockaddr", ctypes.c_short),]
-
-class getsockname_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("sockfd", ctypes.c_int),
-                ("sockaddr", ctypes.c_short),]
-
-class socket_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("domain", ctypes.c_int),
-                ("type", ctypes.c_int),
-                ("protocol", ctypes.c_int),]
-
-class mmap_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("addr", ctypes.c_void_p),
-                ("length", ctypes.c_ulong),
-                ("prot", ctypes.c_int),
-                ("flags", ctypes.c_int),
-                ("fd", ctypes.c_int),
-                ("offset", ctypes.c_ulong),]
-
-class stat_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("path_loc", ctypes.c_uint),]
-
-class fstat_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("fd", ctypes.c_uint),]
-
-class prctl_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("option", ctypes.c_uint),
-                ("arg2", ctypes.c_ulong),
-                ("arg3", ctypes.c_ulong),
-                ("arg4", ctypes.c_ulong),
-                ("arg5", ctypes.c_ulong),]
-
-class ptrace_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("request", ctypes.c_uint),
-                ("pid", ctypes.c_int),
-                ("addr", ctypes.c_void_p),
-                ("data", ctypes.c_void_p),]
-
-class process_vm_writev_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("pid", ctypes.c_int),
-                ("local_iov", ctypes.c_void_p),
-                ("liovcnt", ctypes.c_ulong),
-                ("remote_iov", ctypes.c_void_p),
-                ("riovcnt", ctypes.c_ulong),
-                ("flags", ctypes.c_ulong),]
-
-class process_vm_readv_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("pid", ctypes.c_int),
-                ("local_iov", ctypes.c_void_p),
-                ("liovcnt", ctypes.c_ulong),
-                ("remote_iov", ctypes.c_void_p),
-                ("riovcnt", ctypes.c_ulong),
-                ("flags", ctypes.c_ulong),]
-
-class init_module_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("module_image", ctypes.c_void_p),
-                ("len", ctypes.c_ulong),
-                ("param_values_loc", ctypes.c_uint),]
-
-class finit_module_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("fd", ctypes.c_int),
-                ("param_values_loc", ctypes.c_uint),
-                ("flags", ctypes.c_int),]
-
-class delete_module_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("name_loc", ctypes.c_uint),
-                ("flags", ctypes.c_int),]
-
-class symlink_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("target_loc", ctypes.c_uint),
-                ("linkpath_loc", ctypes.c_uint),]
-
-class symlinkat_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("target_loc", ctypes.c_uint),
-                ("newdirfd", ctypes.c_int),
-                ("linkpath_loc", ctypes.c_uint),]
-
-class getdents_info_t(ctypes.Structure):
-    _pack_ = 1
-    _fields_ = [("context", context_t),
-                ("fd", ctypes.c_uint),]
-
-class cap_info_t(ctypes.Structure):
-    _fields_ = [("context", context_t),
-                ("capability", ctypes.c_int),]
-
 class EventMonitor():
 
     def __init__(self, args):
         self.events = list()
         self.do_trace = True
         self.bpf = None
-        self.argv = defaultdict(list)
         self.verbose = args.verbose
         self.ebpf = args.ebpf
-        self.max_buf_size = 8191   # this size should be the same as the ebpf c code. todo: pass config in map
-
 
     def init_bpf(self):
         bpf_text = self.load_bpf_program().replace("MAXARG", str(MAX_ARGS))
@@ -982,17 +759,86 @@ class EventMonitor():
 
         return f_str
 
-    def get_string_from_buf(self, cpu, str_loc):
-        str_size = str_loc & 0xffff
-        str_off = (str_loc & 0xffff0000) >> 16
-        str_buf = self.bpf["str_buf"][cpu].buf[str_off:str_off + str_size]
-        return str(array.array('B', str_buf).tostring().decode("utf-8"))
+    def get_sockaddr_from_buf(self, buf):
+        # handle buffer wrap
+        # todo: parse all fields
+        if self.cur_off >= self.max_off:
+            self.cur_off = 0
+        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_short)).contents
+        self.cur_off = self.cur_off + 2
+        domain = c_val.value
+        if domain in sock_domain:
+            return sock_domain[domain]
+        else:
+            return str(domain)
+
+    def get_int_from_buf(self, buf):
+        # handle buffer wrap
+        if self.cur_off >= self.max_off:
+            self.cur_off = 0
+        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_int)).contents
+        self.cur_off = self.cur_off + 4
+        return c_val.value
+
+    def get_uint_from_buf(self, buf):
+        # handle buffer wrap
+        if self.cur_off >= self.max_off:
+            self.cur_off = 0
+        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_uint)).contents
+        self.cur_off = self.cur_off + 4
+        return c_val.value
+
+    def get_ulong_from_buf(self, buf):
+        # handle buffer wrap
+        if self.cur_off >= self.max_off:
+            self.cur_off = 0
+        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_ulong)).contents
+        self.cur_off = self.cur_off + 8
+        return c_val.value
+
+    def get_pointer_from_buf(self, buf):
+        # handle buffer wrap
+        if self.cur_off >= self.max_off:
+            self.cur_off = 0
+        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_void_p)).contents
+        self.cur_off = self.cur_off + 8
+        return hex(0 if c_val.value is None else c_val.value)
+
+    def get_string_from_buf(self, buf):
+        # handle buffer wrap
+        if self.cur_off >= self.max_off:
+            self.cur_off = 0
+        str_size = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_uint)).contents.value
+        str_off = self.cur_off + 4
+        str_buf = buf[str_off:str_off + str_size]
+        self.cur_off = self.cur_off + str_size + 4
+        try:
+            ret_str = str(array.array('B', str_buf).tostring().decode("utf-8"))
+            return ret_str
+        except:
+            return ""
+
+    def get_argv_from_buf(self, buf, args):
+        while True:
+            # first, check if there are more args to parse
+            if self.cur_off >= self.end_off:
+                if self.end_off > self.start_off:
+                    return                                                  # reached args end
+                elif self.cur_off < self.start_off:                         # wrapped buffer
+                    return                                                  # reached args end (wrapped buffer)
+            args.append(self.get_string_from_buf(buf))
 
     # process event
     def print_event(self, cpu, data, size):
-        #event = self.bpf["events"].event(data)
-        context = ctypes.cast(data, ctypes.POINTER(context_t)).contents
+        event = self.bpf["events"].event(data)
+        self.start_off = event.start_off
+        self.cur_off = event.start_off
+        self.max_off = event.max_off
+        self.end_off = event.end_off
+        event_buf = self.bpf["submission_buf"][cpu].buf
 
+        context = ctypes.cast(ctypes.byref(event_buf, self.cur_off), ctypes.POINTER(context_t)).contents
+        self.cur_off += ctypes.sizeof(context_t)
         #ppid = context.ppid if context.ppid > 0 else get_ppid(context.pid)
         #ppid = b"%d" % ppid if ppid > 0 else b"?"
         pid = context.pid
@@ -1006,280 +852,211 @@ class EventMonitor():
 
         if context.eventid == EventId.SYS_EXECVE:
             eventname = "execve"
-            event = ctypes.cast(data, ctypes.POINTER(execve_info_t)).contents
-            if event.type == EventType.EVENT_ARG:
-                for i in range(MAX_ARGS+1):
-                    argv_loc = int(event.argv_loc[i])
-                    if argv_loc == 0:
-                        break
-                    self.argv[pid].append(self.get_string_from_buf(cpu, argv_loc))
-                return
-            elif event.type == EventType.EVENT_RET:
-                args = self.argv[pid]
-                try:
-                    del(self.argv[pid])
-                except Exception:
-                    pass
+            event_type = self.get_int_from_buf(event_buf)
+            if event_type == EventType.EVENT_ARG:
+                self.get_argv_from_buf(event_buf, args)                             # argv
+            # EVENT_RET will happen only when exec failed - print context below
         elif context.eventid == EventId.SYS_EXECVEAT:
             eventname = "execveat"
-            event = ctypes.cast(data, ctypes.POINTER(execveat_info_t)).contents
-            if event.type == EventType.EVENT_ARG:
-                for i in range(MAX_ARGS+1):
-                    argv_loc = int(event.argv_loc[i])
-                    if argv_loc == 0:
-                        break
-                    self.argv[pid].append(self.get_string_from_buf(cpu, argv_loc))
-                return
-            elif event.type == EventType.EVENT_RET:
-                args.append(str(event.dirfd))
-                args = args + self.argv[pid]
-                args.append(self.execveat_flags_to_str(event.flags))
-                try:
-                    del(self.argv[pid])
-                except Exception:
-                    pass
+            event_type = self.get_int_from_buf(event_buf)
+            if event_type == EventType.EVENT_ARG:
+                args.append(str(self.get_int_from_buf(event_buf)))                  # dirfd
+                self.get_argv_from_buf(event_buf, args)                             # argv
+                flags = self.get_int_from_buf(event_buf)
+                args.append(self.execveat_flags_to_str(flags))                      # flags
+            # EVENT_RET will happen only when exec failed - print context below
         elif context.eventid == EventId.SYS_OPEN:
             eventname = "open"
-            event = ctypes.cast(data, ctypes.POINTER(open_info_t)).contents
-            args.append(self.get_string_from_buf(cpu, int(event.filename_loc)))
-            args.append(self.open_flags_to_str(event.flags))
+            args.append(self.get_string_from_buf(event_buf))                        # filename
+            args.append(self.open_flags_to_str(self.get_int_from_buf(event_buf)))   # flags
         elif context.eventid == EventId.SYS_OPENAT:
             eventname = "openat"
-            event = ctypes.cast(data, ctypes.POINTER(openat_info_t)).contents
-            args.append(str(event.dirfd))
-            args.append(self.get_string_from_buf(cpu, int(event.filename_loc)))
-            args.append(self.open_flags_to_str(event.flags))
+            args.append(str(self.get_int_from_buf(event_buf)))                      # dirfd
+            args.append(self.get_string_from_buf(event_buf))                        # filename
+            args.append(self.open_flags_to_str(self.get_int_from_buf(event_buf)))   # flags
         elif context.eventid == EventId.SYS_CREAT:
             eventname = "creat"
-            event = ctypes.cast(data, ctypes.POINTER(creat_info_t)).contents
-            args.append(self.get_string_from_buf(cpu, int(event.pathname_loc)))
-            args.append(str(event.mode))
+            args.append(self.get_string_from_buf(event_buf))                        # pathname
+            args.append(str(self.get_uint_from_buf(event_buf)))                     # mode
         elif context.eventid == EventId.SYS_MEMFD_CREATE:
             eventname = "memfd_create"
-            event = ctypes.cast(data, ctypes.POINTER(memfd_create_info_t)).contents
-            args.append(self.get_string_from_buf(cpu, int(event.name_loc)))
-            args.append(str(event.flags))
+            args.append(self.get_string_from_buf(event_buf))                        # name
+            args.append(str(self.get_uint_from_buf(event_buf)))                     # flags
         elif context.eventid == EventId.CAP_CAPABLE:
             eventname = "cap_capable"
-            event = ctypes.cast(data, ctypes.POINTER(cap_info_t)).contents
-            if event.capability in capabilities:
-                args.append(capabilities[event.capability])
+            capability = self.get_int_from_buf(event_buf)
+            if capability in capabilities:
+                args.append(capabilities[capability])
             else:
-                args.append(str(event.capability))
+                args.append(str(capability))
         elif context.eventid == EventId.SYS_MMAP:
             eventname = "mmap"
-            event = ctypes.cast(data, ctypes.POINTER(mmap_info_t)).contents
-            args.append(str(hex(0 if event.addr is None else event.addr)))
-            args.append(str(event.length))
-            args.append(self.prot_to_str(event.prot))
-            args.append(str(event.flags))
-            args.append(str(event.fd))
-            args.append(str(event.offset))
+            args.append(str(self.get_pointer_from_buf(event_buf)))                  # addr
+            args.append(str(self.get_ulong_from_buf(event_buf)))                    # length
+            args.append(str(self.get_int_from_buf(event_buf)))                      # prot
+            args.append(str(self.get_int_from_buf(event_buf)))                      # flags
+            args.append(str(self.get_int_from_buf(event_buf)))                      # fd
+            args.append(str(self.get_ulong_from_buf(event_buf)))                    # offset
         elif context.eventid == EventId.SYS_MKNOD:
             eventname = "mknod"
-            event = ctypes.cast(data, ctypes.POINTER(mknod_info_t)).contents
-            args.append(self.get_string_from_buf(cpu, int(event.pathname_loc)))
-            args.append(self.mknod_mode_to_str(event.mode))
-            args.append(str(event.dev))
+            args.append(self.get_string_from_buf(event_buf))                        # pathname
+            args.append(str(self.get_uint_from_buf(event_buf)))                     # mode
+            args.append(str(self.get_uint_from_buf(event_buf)))                     # dev
         elif context.eventid == EventId.SYS_MKNOD:
             eventname = "mknodat"
-            event = ctypes.cast(data, ctypes.POINTER(mknodat_info_t)).contents
-            args.append(str(event.dirfd))
-            args.append(self.get_string_from_buf(cpu, int(event.pathname_loc)))
-            args.append(self.mknod_mode_to_str(event.mode))
-            args.append(str(event.dev))
+            args.append(str(self.get_int_from_buf(event_buf)))                      # dirfd
+            args.append(self.get_string_from_buf(event_buf))                        # pathname
+            args.append(str(self.get_uint_from_buf(event_buf)))                     # mode
+            args.append(str(self.get_uint_from_buf(event_buf)))                     # dev
         elif context.eventid == EventId.SYS_DUP:
             eventname = "dup"
-            event = ctypes.cast(data, ctypes.POINTER(dup_info_t)).contents
-            args.append(str(event.oldfd))
+            args.append(str(self.get_int_from_buf(event_buf)))                      # oldfd
         elif context.eventid == EventId.SYS_DUP2:
             eventname = "dup2"
-            event = ctypes.cast(data, ctypes.POINTER(dup_info_t)).contents
-            args.append(str(event.oldfd))
-            args.append(str(event.newfd))
+            args.append(str(self.get_int_from_buf(event_buf)))                      # oldfd
+            args.append(str(self.get_int_from_buf(event_buf)))                      # newfd
         elif context.eventid == EventId.SYS_DUP3:
             eventname = "dup3"
-            event = ctypes.cast(data, ctypes.POINTER(dup_info_t)).contents
-            args.append(str(event.oldfd))
-            args.append(str(event.newfd))
-            args.append(str(event.flags))
+            args.append(str(self.get_int_from_buf(event_buf)))                      # oldfd
+            args.append(str(self.get_int_from_buf(event_buf)))                      # newfd
+            args.append(str(self.get_int_from_buf(event_buf)))                      # flags
         elif context.eventid == EventId.SYS_CLOSE:
             eventname = "close"
-            event = ctypes.cast(data, ctypes.POINTER(close_info_t)).contents
-            args.append(str(event.fd))
+            args.append(str(self.get_uint_from_buf(event_buf)))                     # fd
         elif context.eventid == EventId.SYS_IOCTL:
             eventname = "ioctl"
-            event = ctypes.cast(data, ctypes.POINTER(ioctl_info_t)).contents
-            args.append(str(event.fd))
-            args.append(str(event.request))
+            args.append(str(self.get_uint_from_buf(event_buf)))                     # fd
+            args.append(str(self.get_ulong_from_buf(event_buf)))                    # request
         elif context.eventid == EventId.SYS_KILL:
             eventname = "kill"
-            event = ctypes.cast(data, ctypes.POINTER(kill_info_t)).contents
-            args.append(str(event.pid))
-            args.append(str(event.sig))
+            args.append(str(self.get_int_from_buf(event_buf)))                      # pid
+            args.append(str(self.get_int_from_buf(event_buf)))                      # sig
         elif context.eventid == EventId.SYS_LISTEN:
             eventname = "listen"
-            event = ctypes.cast(data, ctypes.POINTER(listen_info_t)).contents
-            args.append(str(event.sockfd))
-            args.append(str(event.backlog))
+            args.append(str(self.get_int_from_buf(event_buf)))                      # sockfd
+            args.append(str(self.get_int_from_buf(event_buf)))                      # backlog
         elif context.eventid == EventId.SYS_CONNECT:
             eventname = "connect"
-            event = ctypes.cast(data, ctypes.POINTER(connect_info_t)).contents
-            args.append(str(event.sockfd))
-            if event.sockaddr in sock_domain:
-                args.append(sock_domain[event.sockaddr])
-            else:
-                args.append(str(event.sockaddr))
+            args.append(str(self.get_int_from_buf(event_buf)))                      # sockfd
+            args.append(self.get_sockaddr_from_buf(event_buf))                      # sockaddr (partialy parsed to family)
         elif context.eventid == EventId.SYS_ACCEPT:
             eventname = "accept"
-            event = ctypes.cast(data, ctypes.POINTER(accept_info_t)).contents
-            args.append(str(event.sockfd))
-            if event.sockaddr in sock_domain:
-                args.append(sock_domain[event.sockaddr])
-            else:
-                args.append(str(event.sockaddr))
+            args.append(str(self.get_int_from_buf(event_buf)))                      # sockfd
+            args.append(self.get_sockaddr_from_buf(event_buf))                      # sockaddr (partialy parsed to family)
         elif context.eventid == EventId.SYS_ACCEPT4:
             eventname = "accept4"
-            event = ctypes.cast(data, ctypes.POINTER(accept4_info_t)).contents
-            args.append(str(event.sockfd))
-            if event.sockaddr in sock_domain:
-                args.append(sock_domain[event.sockaddr])
-            else:
-                args.append(str(event.sockaddr))
+            args.append(str(self.get_int_from_buf(event_buf)))                      # sockfd
+            args.append(self.get_sockaddr_from_buf(event_buf))                      # sockaddr (partialy parsed to family)
         elif context.eventid == EventId.SYS_BIND:
             eventname = "bind"
-            event = ctypes.cast(data, ctypes.POINTER(bind_info_t)).contents
-            args.append(str(event.sockfd))
-            if event.sockaddr in sock_domain:
-                args.append(sock_domain[event.sockaddr])
-            else:
-                args.append(str(event.sockaddr))
+            args.append(str(self.get_int_from_buf(event_buf)))                      # sockfd
+            args.append(self.get_sockaddr_from_buf(event_buf))                      # sockaddr (partialy parsed to family)
         elif context.eventid == EventId.SYS_GETSOCKNAME:
             eventname = "getsockname"
-            event = ctypes.cast(data, ctypes.POINTER(getsockname_info_t)).contents
-            args.append(str(event.sockfd))
-            if event.sockaddr in sock_domain:
-                args.append(sock_domain[event.sockaddr])
-            else:
-                args.append(str(event.sockaddr))
+            args.append(str(self.get_int_from_buf(event_buf)))                      # sockfd
+            args.append(self.get_sockaddr_from_buf(event_buf))                      # sockaddr (partialy parsed to family)
         elif context.eventid == EventId.SYS_ACCESS:
             eventname = "access"
-            event = ctypes.cast(data, ctypes.POINTER(access_info_t)).contents
-            args.append(self.get_string_from_buf(cpu, int(event.pathname_loc)))
-            args.append(self.access_mode_to_str(event.mode))
+            args.append(self.get_string_from_buf(event_buf))                        # pathname
+            args.append(str(self.get_int_from_buf(event_buf)))                      # mode
         elif context.eventid == EventId.SYS_FACCESSAT:
             eventname = "faccessat"
-            event = ctypes.cast(data, ctypes.POINTER(faccessat_info_t)).contents
-            args.append(str(event.dirfd))
-            args.append(self.get_string_from_buf(cpu, int(event.pathname_loc)))
-            args.append(self.access_mode_to_str(event.mode))
-            args.append(str(event.flags))
+            args.append(str(self.get_int_from_buf(event_buf)))                      # dirfd
+            args.append(self.get_string_from_buf(event_buf))                        # pathname
+            args.append(str(self.get_int_from_buf(event_buf)))                      # mode
+            args.append(str(self.get_int_from_buf(event_buf)))                      # flags
         elif context.eventid == EventId.SYS_SOCKET:
             eventname = "socket"
-            event = ctypes.cast(data, ctypes.POINTER(socket_info_t)).contents
-            if event.domain in sock_domain:
-                args.append(sock_domain[event.domain])
+            domain = self.get_int_from_buf(event_buf)                               # domain
+            if domain in sock_domain:
+                args.append(sock_domain[domain])
             else:
-                args.append(str(event.domain))
+                args.append(str(domain))
+            _type = self.get_int_from_buf(event_buf)                                # type
             type_str = ""
-            s_type = event.type&0x111
+            s_type = _type&0xf
             if s_type in sock_type:
                 type_str = sock_type[s_type]
             else:
                 type_str = str(s_type)
-            if event.type&0o00004000:
+            if _type&0o00004000:
                 type_str += "|SOCK_NONBLOCK"
-            if event.type&0o02000000:
+            if _type&0o02000000:
                 type_str += "|SOCK_CLOEXEC"
             args.append(type_str)
-            args.append(str(event.protocol))
+            args.append(str(self.get_int_from_buf(event_buf)))                      # protocol
         elif context.eventid == EventId.SYS_MPROTECT:
             eventname = "mprotect"
-            event = ctypes.cast(data, ctypes.POINTER(mmap_info_t)).contents
-            args.append(str(hex(0 if event.addr is None else event.addr)))
-            args.append(str(event.length))
-            args.append(self.prot_to_str(event.prot))
+            args.append(str(self.get_pointer_from_buf(event_buf)))                  # addr
+            args.append(str(self.get_ulong_from_buf(event_buf)))                    # length
+            args.append(str(self.get_int_from_buf(event_buf)))                      # prot
         elif context.eventid == EventId.SYS_STAT:
             eventname = "stat"
-            event = ctypes.cast(data, ctypes.POINTER(stat_info_t)).contents
-            args.append(self.get_string_from_buf(cpu, int(event.path_loc)))
+            args.append(self.get_string_from_buf(event_buf))                        # path
         elif context.eventid == EventId.SYS_FSTAT:
             eventname = "fstat"
-            event = ctypes.cast(data, ctypes.POINTER(fstat_info_t)).contents
-            args.append(str(event.fd))
+            args.append(str(self.get_uint_from_buf(event_buf)))                     # fd
         elif context.eventid == EventId.SYS_LSTAT:
             eventname = "lstat"
-            event = ctypes.cast(data, ctypes.POINTER(stat_info_t)).contents
-            args.append(self.get_string_from_buf(cpu, int(event.path_loc)))
+            args.append(self.get_string_from_buf(event_buf))                        # path
         elif context.eventid == EventId.SYS_PRCTL:
             eventname = "prctl"
-            event = ctypes.cast(data, ctypes.POINTER(prctl_info_t)).contents
-            args.append(str(event.option))
-            args.append(str(event.arg2))
-            args.append(str(event.arg3))
-            args.append(str(event.arg4))
-            args.append(str(event.arg5))
+            args.append(str(self.get_uint_from_buf(event_buf)))                     # option
+            args.append(str(self.get_ulong_from_buf(event_buf)))                    # arg2
+            args.append(str(self.get_ulong_from_buf(event_buf)))                    # arg3
+            args.append(str(self.get_ulong_from_buf(event_buf)))                    # arg4
+            args.append(str(self.get_ulong_from_buf(event_buf)))                    # arg5
         elif context.eventid == EventId.SYS_PTRACE:
             eventname = "ptrace"
-            event = ctypes.cast(data, ctypes.POINTER(ptrace_info_t)).contents
-            args.append(str(event.request))
-            args.append(str(event.pid))
-            args.append(str(hex(0 if event.addr is None else event.addr)))
-            args.append(str(hex(0 if event.data is None else event.data)))
+            args.append(str(self.get_uint_from_buf(event_buf)))                     # request
+            args.append(str(self.get_int_from_buf(event_buf)))                      # pid
+            args.append(str(self.get_pointer_from_buf(event_buf)))                  # addr
+            args.append(str(self.get_pointer_from_buf(event_buf)))                  # data
         elif context.eventid == EventId.SYS_PROCESS_VM_WRITEV:
             eventname = "process_vm_writev"
-            event = ctypes.cast(data, ctypes.POINTER(process_vm_writev_info_t)).contents
-            args.append(str(event.pid))
-            args.append(str(hex(0 if event.local_iov is None else event.local_iov)))
-            args.append(str(event.liovcnt))
-            args.append(str(hex(0 if event.remote_iov is None else event.remote_iov)))
-            args.append(str(event.riovcnt))
-            args.append(str(event.flags))
+            args.append(str(self.get_int_from_buf(event_buf)))                      # pid
+            args.append(str(self.get_pointer_from_buf(event_buf)))                  # local_iov
+            args.append(str(self.get_ulong_from_buf(event_buf)))                    # liovcnt
+            args.append(str(self.get_pointer_from_buf(event_buf)))                  # remote_iov
+            args.append(str(self.get_ulong_from_buf(event_buf)))                    # riovcnt
+            args.append(str(self.get_ulong_from_buf(event_buf)))                    # flags
         elif context.eventid == EventId.SYS_PROCESS_VM_READV:
             eventname = "process_vm_readv"
-            event = ctypes.cast(data, ctypes.POINTER(process_vm_readv_info_t)).contents
-            args.append(str(event.pid))
-            args.append(str(hex(0 if event.local_iov is None else event.local_iov)))
-            args.append(str(event.liovcnt))
-            args.append(str(hex(0 if event.remote_iov is None else event.remote_iov)))
-            args.append(str(event.riovcnt))
-            args.append(str(event.flags))
+            args.append(str(self.get_int_from_buf(event_buf)))                      # pid
+            args.append(str(self.get_pointer_from_buf(event_buf)))                  # local_iov
+            args.append(str(self.get_ulong_from_buf(event_buf)))                    # liovcnt
+            args.append(str(self.get_pointer_from_buf(event_buf)))                  # remote_iov
+            args.append(str(self.get_ulong_from_buf(event_buf)))                    # riovcnt
+            args.append(str(self.get_ulong_from_buf(event_buf)))                    # flags
         elif context.eventid == EventId.SYS_INIT_MODULE:
             eventname = "init_module"
-            event = ctypes.cast(data, ctypes.POINTER(init_module_info_t)).contents
-            args.append(str(hex(0 if event.module_image is None else event.module_image)))
-            args.append(str(event.len))
-            args.append(self.get_string_from_buf(cpu, int(event.param_values_loc)))
+            args.append(str(self.get_pointer_from_buf(event_buf)))                  # module_image
+            args.append(str(self.get_ulong_from_buf(event_buf)))                    # len
+            args.append(self.get_string_from_buf(event_buf))                        # param_values
         elif context.eventid == EventId.SYS_FINIT_MODULE:
             eventname = "finit_module"
-            event = ctypes.cast(data, ctypes.POINTER(finit_module_info_t)).contents
-            args.append(str(event.fd))
-            args.append(self.get_string_from_buf(cpu, int(event.param_values_loc)))
-            args.append(str(event.flags))
+            args.append(str(self.get_int_from_buf(event_buf)))                      # fd
+            args.append(self.get_string_from_buf(event_buf))                        # param_values
+            args.append(str(self.get_int_from_buf(event_buf)))                      # flags
         elif context.eventid == EventId.SYS_DELETE_MODULE:
             eventname = "delete_module"
-            event = ctypes.cast(data, ctypes.POINTER(delete_module_info_t)).contents
-            args.append(self.get_string_from_buf(cpu, int(event.name_loc)))
-            args.append(str(event.flags))
+            args.append(self.get_string_from_buf(event_buf))                        # name
+            args.append(str(self.get_int_from_buf(event_buf)))                      # flags
         elif context.eventid == EventId.SYS_SYMLINK:
             eventname = "symlink"
-            event = ctypes.cast(data, ctypes.POINTER(symlink_info_t)).contents
-            args.append(self.get_string_from_buf(cpu, int(event.target_loc)))
-            args.append(self.get_string_from_buf(cpu, int(event.linkpath_loc)))
+            args.append(self.get_string_from_buf(event_buf))                        # target
+            args.append(self.get_string_from_buf(event_buf))                        # linkpath
         elif context.eventid == EventId.SYS_SYMLINKAT:
             eventname = "symlinkat"
-            event = ctypes.cast(data, ctypes.POINTER(symlinkat_info_t)).contents
-            args.append(self.get_string_from_buf(cpu, int(event.target_loc)))
-            args.append(str(event.newdirfd))
-            args.append(self.get_string_from_buf(cpu, int(event.linkpath_loc)))
+            args.append(self.get_string_from_buf(event_buf))                        # target
+            args.append(str(self.get_int_from_buf(event_buf)))                      # newdirfd
+            args.append(self.get_string_from_buf(event_buf))                        # linkpath
         elif context.eventid == EventId.SYS_GETDENTS:
             eventname = "getdents"
-            event = ctypes.cast(data, ctypes.POINTER(getdents_info_t)).contents
-            args.append(str(event.fd))
+            args.append(str(self.get_uint_from_buf(event_buf)))                     # fd
         elif context.eventid == EventId.SYS_GETDENTS64:
             eventname = "getdents64"
-            event = ctypes.cast(data, ctypes.POINTER(getdents_info_t)).contents
-            args.append(str(event.fd))
+            args.append(str(self.get_uint_from_buf(event_buf)))                     # fd
         elif context.eventid == EventId.SYS_CLONE:
             eventname = "clone"
         elif context.eventid == EventId.SYS_FORK:
@@ -1291,9 +1068,14 @@ class EventMonitor():
         else:
             return
 
+        try:
+            comm = context.comm.decode("utf-8")
+        except:
+            return
+
         if self.verbose:
             log.info("%-14f %-12d %-12d %-6d %-16s %-16s %-6d %-6d %-6d %-16d %s" % (context.ts/1000000.0, context.mnt_id, context.pid_id, context.uid,
-                    eventname, context.comm.decode("utf-8"), pid, tid, ppid, context.retval, " ".join(args)))
+                    eventname, comm, pid, tid, ppid, context.retval, " ".join(args)))
         else: #prepare data to be consumed by ultrabox
             data = dict()
             data["status"] = [0]
@@ -1304,7 +1086,7 @@ class EventMonitor():
             data["pid_ns"] = context.pid_id
             data["uid"] = context.uid
             data["api"] = eventname
-            data["process_name"] = context.comm.decode("utf-8")
+            data["process_name"] = comm
             data["pid"] = pid
             data["tid"] = tid
             data["ppid"] = ppid
