@@ -391,20 +391,6 @@ typedef struct context {
     s64 retval;
 } context_t;
 
-typedef struct execve_info {
-    context_t context;
-    enum event_type type;
-    int argv_loc[MAXARG+1];     // argv location in str_buf
-} execve_info_t;
-
-typedef struct execveat_info {
-    context_t context;
-    enum event_type type;
-    int argv_loc[MAXARG+1];     // argv location in str_buf
-    int dirfd;
-    int flags;
-} execveat_info_t;
-
 typedef struct args {
     unsigned long args[6];
 } args_t;
