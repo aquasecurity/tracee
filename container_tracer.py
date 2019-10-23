@@ -3,12 +3,6 @@
 # Authors:
 #       Yaniv Agman <yaniv@aquasec.com>
 
-
-# todo: add syscalls: "getdirents", "uname"
-# todo: add full sockaddr struct to: "connect", "accept", "bind", "getsockname"
-# todo: move python helpers (e.g. flags) to different file
-# todo: write code in c/c++ with libbpf for performance reasons (avoid missed samples when we have many events)
-
 from __future__ import print_function
 from bcc import BPF
 from bcc.utils import printb
@@ -36,9 +30,7 @@ log.addHandler(handler)
 BPF_PROGRAM = "container_event_monitor_ebpf.c"
 MAX_ARGS = 20
 
-# capabilities to names, generated from (and will need updating):
-# awk '/^#define.CAP_.*[0-9]$/ { print "    " $3 ": \"" $2 "\"," }' \
-#     include/uapi/linux/capability.h
+# include/uapi/linux/capability.h
 capabilities = {
     0: "CAP_CHOWN",
     1: "CAP_DAC_OVERRIDE",
@@ -540,32 +532,6 @@ class EventMonitor():
             bpf = f.read()
         return bpf
 
-    # This is best-effort PPID matching. Short-lived processes may exit
-    # before we get a chance to read the PPID.
-    # This is a fallback for when fetching the PPID from task->real_parent->tgid
-    # returns 0, which happens in some kernel versions (e.g. Ubuntu 4.13.0-generic).
-    def get_ppid(self, pid):
-        try:
-            with open("/proc/%d/status" % pid) as status:
-                for line in status:
-                    if line.startswith("PPid:"):
-                        return int(line.split()[1])
-        except IOError:
-            pass
-        return 0
-
-
-    def get_ns_pid(self, pid):
-        try:
-            with open("/proc/%s/status" % pid) as status:
-                for line in status:
-                    if line.startswith("NSpid:"):
-                        return int(line.split()[2])
-        except IOError:
-            pass
-        return 0
-
-
     def prot_to_str(self, prot):
         p_str = ""
         has_prot = False
@@ -827,14 +793,10 @@ class EventMonitor():
 
         context = ctypes.cast(ctypes.byref(event_buf, self.cur_off), ctypes.POINTER(context_t)).contents
         self.cur_off += ctypes.sizeof(context_t)
-        #ppid = context.ppid if context.ppid > 0 else get_ppid(context.pid)
-        #ppid = b"%d" % ppid if ppid > 0 else b"?"
+
         pid = context.pid
         tid = context.tid
         ppid = context.ppid
-        #pid = get_ns_pid(str(context.pid))
-        #ppid = get_ns_pid(str(context.ppid))
-        #ppid = 0
 
         args = list()
 

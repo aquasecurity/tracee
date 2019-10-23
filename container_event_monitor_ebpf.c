@@ -4,18 +4,6 @@
  *
  */
 
-// todo: execve: handle envp, put argv and envp in a list instead being different param for each arg
-// todo: when a new file is written - copy it offline
-// todo: add syscalls: "getdirents", "uname"
-// todo: add full sockaddr struct to: "connect", "accept", "bind", "getsockname"
-// todo: add commit_creds tracing to detect kernel exploits
-// todo: macro of function which includes entry and exit
-// todo: fix problem with execveat - can't see pathname
-// todo: add check for head and tail to avoid overflow!
-// todo: add a "do extra" function inside the macro, so we can also include special cases (e.g. is_capable)
-// todo: add support for kernel versions 4.19 onward (see kernel version dependant section below)
-// todo: change submission_buf size from 32 to num_of_cpu which can be determined by userspace and set and compiled accordingly
-
 #include <uapi/linux/ptrace.h>
 #include <linux/sched.h>
 #include <linux/fs.h>
@@ -27,7 +15,6 @@
 #define MAX_STRING_SIZE 4096                                // Choosing this value to be the same as PATH_MAX
 #define SUBMIT_BUFSIZE  524288                              // Need to be power of 2
 #define SUBMIT_BUFSIZE_HALF   ((SUBMIT_BUFSIZE-1) >> 1)     // Bitmask for ebpf validator - this is why we need STR_BUFSIZE to be power of 2
-// Percpu buffer max possible size is (2^17)/log(num_of_cpus)
 
 /*==================================== ENUMS =================================*/
 
@@ -397,9 +384,9 @@ typedef struct args {
 
 // This will be submitted with perf_submit - keep as small as possible
 typedef struct event {
-    u32 start_off;              // event start offset in submit ring buffer
-    u32 max_off;                // lets user space know when buffer is wrapped, without assuming any buffer size
-    u32 end_off;                // event end offset in submit ring buffer
+    u32 start_off;              // Event start offset in submit ring buffer
+    u32 max_off;                // Lets user space know when buffer is wrapped, without assuming any buffer size
+    u32 end_off;                // Event end offset in submit ring buffer
 } event_t;
 
 typedef struct submit_buf {
@@ -420,7 +407,9 @@ struct mnt_namespace {
 BPF_HASH(cont_pidns, u32, u32);                     // Save container pid namespaces
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
 BPF_PERCPU_ARRAY(event_submit, event_t, 1);         // Event to perf_submit
-BPF_ARRAY(submission_buf, submit_buf_t, 32);        // Buffer for events. Not using percpu array as it caused insufficient memory with large buffer size.
+BPF_ARRAY(submission_buf, submit_buf_t, 32);        // Buffer for events
+// Not using percpu array for submission_buf as it caused insufficient memory with large buffer size.
+// Percpu buffer max possible size is (2^17)/log(num_of_cpus)
 
 /*================================== EVENTS ====================================*/
 
@@ -522,7 +511,7 @@ static __always_inline int init_context(context_t *context)
     struct task_struct *task;
     task = (struct task_struct *)bpf_get_current_task();
 
-    // check if we should trace this pid namespace
+    // Check if we should trace this pid namespace
     u32 pid_ns = lookup_pid_ns(task);
     if (pid_ns == 0)
         return -1;
@@ -544,7 +533,7 @@ static __always_inline int init_context(context_t *context)
 static __always_inline event_t * get_event()
 {
     int idx = 0;
-    // get per-cpu buffer
+    // Get per-cpu buffer
     event_t *event = event_submit.lookup(&idx);
     if (event == NULL)
         return NULL;
@@ -564,9 +553,9 @@ static __always_inline submit_buf_t * get_submit_buf()
         if (event_p == NULL)
             return NULL;
 
-        // save the max offset so user space can know until where to read
+        // Save the max offset so user space can know until where to read
         event_p->max_off = submit_p->head;
-        // not enough space - return to ring buffer start (ebpf validator forces bounds check)
+        // Not enough space - return to ring buffer start (ebpf validator forces bounds check)
         submit_p->head = 0;
     }
     return submit_p;
@@ -579,8 +568,7 @@ static __always_inline int save_to_submit_buf(void *ptr, int size)
     if (submit_p == NULL)
         return 0;
 
-    // todo: add tail < head check + new event if not enough space
-    // read into buffer
+    // Read into buffer
     int rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->head & SUBMIT_BUFSIZE_HALF]), size, ptr);
     if (rc == 0) {
         submit_p->head += size;
@@ -597,8 +585,7 @@ static __always_inline int save_str_to_buf(void *ptr)
     if (submit_p == NULL)
         return 0;
 
-    // todo: add tail < head check + new event if not enough space
-    // read into buffer
+    // Read into buffer
     int sz = bpf_probe_read_str((void **)&(submit_p->buf[(submit_p->head + sizeof(int)) & SUBMIT_BUFSIZE_HALF]), MAX_STRING_SIZE, ptr);
     if (sz > 0) {
         bpf_probe_read((void **)&(submit_p->buf[submit_p->head & SUBMIT_BUFSIZE_HALF]), sizeof(int), &sz);
@@ -635,10 +622,7 @@ static __always_inline int events_perf_submit(struct pt_regs *ctx)
     submit_buf_t *submit_p = submission_buf.lookup(&key);
     if (submit_p != NULL)
         event_p->end_off = submit_p->head;
-    // write max_off and end_off to map (at start_off) so we can send only start_off as the event
 
-    /* satisfy validator by setting buffer bounds */
-    //int size = ((data_size - 1) & SUBMIT_BUFSIZE_HALF) + 1;
     return events.perf_submit(ctx, event_p, sizeof(event_t));
 }
 
@@ -660,7 +644,7 @@ static __always_inline int is_container()
     return lookup_pid_ns(task);
 }
 
-// Note: this function is not nested!
+// Note: this function can't be nested!
 // if inner kernel functions are called in syscall this may be a problem! - fix
 static __always_inline int save_args(struct pt_regs *ctx)
 {
@@ -683,7 +667,7 @@ static __always_inline int save_args(struct pt_regs *ctx)
     return 0;
 }
 
-// Note: this function is not nested!
+// Note: this function can't be nested!
 // if inner kernel functions are called in syscall this may be a problem! - fix
 static __always_inline int load_args(args_t *args)
 {
@@ -795,8 +779,8 @@ int trace_ret_##name(struct pt_regs *ctx)                               \
 
 /*============================== SYSCALL HOOKS ==============================*/
 
-// Note: race condition may occur if a malicious user changes the arguments concurrently
-// consider using security_file_open instead
+// Note: race condition may occur if a malicious user changes memory content pointed by syscall arguments by concurrent threads!
+// Consider using inner kernel functions (e.g. security_file_open) to avoid this
 TRACE_ENT_FUNC(sys_open);
 TRACE_RET_FUNC(sys_open, SYS_OPEN, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
 TRACE_ENT_FUNC(sys_openat);
@@ -879,8 +863,6 @@ TRACE_ENT_FUNC(sys_getdents64);
 TRACE_RET_FUNC(sys_getdents64, SYS_GETDENTS64, ARG_TYPE0(INT_T));
 
 
-// Note: race condition may occur if a malicious user changes the arguments concurrently
-// consider using security_bprm_set_creds instead
 int trace_sys_execve(struct pt_regs *ctx,
     const char __user *filename,
     const char __user *const __user *__argv,
