@@ -502,18 +502,6 @@ class context_t(ctypes.Structure): # match layout of eBPF C's context_t struct
                 ("eventid", ctypes.c_uint),
                 ("retval", ctypes.c_int64),]
 
-class execve_info_t(ctypes.Structure):
-    _fields_ = [("context", context_t),
-                ("type", ctypes.c_uint),
-                ("argv_loc", ctypes.c_uint*(MAX_ARGS+1)),]
-
-class execveat_info_t(ctypes.Structure):
-    _fields_ = [("context", context_t),
-                ("type", ctypes.c_uint),
-                ("argv_loc", ctypes.c_uint*(MAX_ARGS+1)),
-                ("dirfd", ctypes.c_int),
-                ("flags", ctypes.c_int),]
-
 class EventMonitor():
 
     def __init__(self, args):
