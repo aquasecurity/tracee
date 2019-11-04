@@ -2,13 +2,14 @@
 Container tracing using eBPF
 
 **Tracee** is a lightweight, easy to use container tracing tool.
-Right after launching the tool, it will start collecting traces of newly created containers.
+After launching the tool, it will start collecting traces of newly created containers.
 The collected traces are mostly system calls performed by the processes running inside the containers,
 but other events, such as capabilities required to perform the actions requested by the container, are also supported.
 
 ## Requirements
-Currently requires kernel version 4.14-4.18
-BCC
+Currently requires 
+* kernel version 4.14-4.18
+* BCC
 
 ## Quick Start Instructions
 
@@ -110,9 +111,9 @@ Executing `ls` in the alpine container shell will trigger the following events:
 6663.283587    4026532726   4026532729   0      do_exit          ls               6      6      1      0                
 ```
 
-As can be seen in the above output, each event line has a context which allows us to know the following information about the event:
+As can be seen in the above output, each event line shows the following information about the event:
 
-* TIME - shows the event relative time to system boot time in seconds
+* TIME - shows the event time relative to system boot time in seconds
 * MNT_NS - mount namespace inode number. As there is no container id object in the kernel, and every container is in a different mount namespace, we use this field to distinguish between containers
 * PID_NS - pid namespace inode number. In order to know if there are different containers in the same pid namespace (e.g. in a k8s pod), it is possible to check this value
 * UID - real user id (in host user namespace) of the calling process
@@ -177,7 +178,7 @@ Other supported events are (functions called in kernel space):
 * do_exit - indicates exited processes
 
 
-Adding new events (especially system calls) to Tracee is straightforward, but one should keep in mind that tracing too many events may cause system performance degradation. Other than that, as perf event buffer is limited in size (2^17), having too many events will cause samples to be lost (an error message will then be shown as part of the output)
+Adding new events (especially system calls) to Tracee is straightforward, but one should keep in mind that tracing too many events may cause system performance degradation. Other than that, as perf event buffer is limited in size (2^17), having too many events can cause samples to be lost (an error message will then be shown as part of the output). For this reason, *read* and *write* syscalls are deliberately excluded from Tracee.
 
 
 ## TODO
