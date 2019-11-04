@@ -27,7 +27,7 @@ handler.setLevel(logging.DEBUG)
 #handler.setFormatter(formatter)
 log.addHandler(handler)
 
-BPF_PROGRAM = "container_event_monitor_ebpf.c"
+BPF_PROGRAM = "tracee/container_event_monitor_ebpf.c"
 MAX_ARGS = 20
 
 # include/uapi/linux/capability.h
@@ -494,6 +494,13 @@ class context_t(ctypes.Structure): # match layout of eBPF C's context_t struct
                 ("eventid", ctypes.c_uint),
                 ("retval", ctypes.c_int64),]
 
+
+def load_bpf_program():
+    with open(BPF_PROGRAM, "r") as f:
+        bpf = f.read()
+    return bpf
+
+
 class EventMonitor():
 
     def __init__(self, args):
@@ -504,7 +511,7 @@ class EventMonitor():
         self.ebpf = args.ebpf
 
     def init_bpf(self):
-        bpf_text = self.load_bpf_program().replace("MAXARG", str(MAX_ARGS))
+        bpf_text = load_bpf_program().replace("MAXARG", str(MAX_ARGS))
 
         if self.ebpf:
             log.debug(bpf_text)
@@ -526,11 +533,6 @@ class EventMonitor():
             log.info("%-14s %-12s %-12s %-6s %-16s %-16s %-6s %-6s %-6s %-16s %s" % ("TIME(s)", "MNT_NS", "PID_NS", "UID", "EVENT", "COMM", "PID", "TID", "PPID", "RET", "ARGS"))
 
     # define BPF program
-    def load_bpf_program(self):
-        bpf = None
-        with open(BPF_PROGRAM, "r") as f:
-            bpf = f.read()
-        return bpf
 
     def prot_to_str(self, prot):
         p_str = ""
