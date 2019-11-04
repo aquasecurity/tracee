@@ -501,6 +501,191 @@ def load_bpf_program():
     return bpf
 
 
+def prot_to_str(prot):
+    p_str = ""
+    has_prot = False
+
+    if not prot|0x0:
+        return "PROT_NONE"
+
+    if prot&0x1:
+        p_str += "PROT_READ"
+        has_prot = True
+
+    if prot&0x2:
+        if has_prot:
+            p_str += "|PROT_WRITE"
+        else:
+            p_str += "PROT_WRITE"
+            has_prot = True
+
+    if prot&0x4:
+        if has_prot:
+            p_str += "|PROT_EXEC"
+        else:
+            p_str += "PROT_EXEC"
+            has_prot = True
+
+    return p_str
+
+
+def mknod_mode_to_str(flags):
+    f_str = ""
+
+    if flags&0o140000:
+        f_str += "S_IFSOCK"
+    elif flags&0o100000:
+        f_str += "S_IFREG"
+    elif flags&0o060000:
+        f_str += "S_IFBLK"
+    elif flags&0o020000:
+        f_str += "S_IFCHR"
+    elif flags&0o010000:
+        f_str += "S_IFIFO"
+    else:
+        return "invalid"
+
+    if flags&0o0700 == 0o0700:
+        f_str += "|S_IRWXU"
+    else:
+        if flags&0o0400:
+            f_str += "|S_IRUSR"
+
+        if flags&0o0200:
+            f_str += "|S_IWUSR"
+
+        if flags&0o0100:
+            f_str += "|S_IXUSR"
+
+
+    if flags&0o0070 == 0o0070:
+        f_str += "|S_IRWXG"
+    else:
+        if flags&0o0040:
+            f_str += "|S_IRGRP"
+
+        if flags&0o0020:
+            f_str += "|S_IWGRP"
+
+        if flags&0o0010:
+            f_str += "|S_IXGRP"
+
+
+    if flags&0o0007 == 0o0007:
+        f_str += "|S_IRWXO"
+    else:
+        if flags&0o0004:
+            f_str += "|S_IROTH"
+
+        if flags&0o0002:
+            f_str += "|S_IWOTH"
+
+        if flags&0o0001:
+            f_str += "|S_IXOTH"
+
+    return f_str
+
+
+def execveat_flags_to_str(flags):
+    f_str = ""
+
+    if flags & 0x1000:
+        f_str += "AT_EMPTY_PATH"
+
+    if flags & 0x100:
+        if f_str == "":
+            f_str += "AT_SYMLINK_NOFOLLOW"
+        else:
+            f_str += "|AT_SYMLINK_NOFOLLOW"
+
+    return f_str
+
+
+def access_mode_to_str(flags):
+    f_str = ""
+
+    if not flags | 0x0:
+        return "F_OK"
+
+    if flags & 0x04:
+        f_str += "R_OK"
+
+    if flags & 0x02:
+        if f_str == "":
+            f_str += "W_OK"
+        else:
+            f_str += "|W_OK"
+
+    if flags & 0x01:
+        if f_str == "":
+            f_str += "X_OK"
+        else:
+            f_str += "|X_OK"
+
+    return f_str
+
+
+def open_flags_to_str(flags):
+    f_str = ""
+
+    if flags & 0o1:
+        f_str += "O_WRONLY"
+    elif flags & 0o2:
+        f_str += "O_RDWR"
+    else:
+        f_str += "O_RDONLY"
+
+    if flags & 0o100:
+        f_str += "|O_CREAT"
+
+    if flags & 0o200:
+        f_str += "|O_EXCL"
+
+    if flags & 0o400:
+        f_str += "|O_NOCTTY"
+
+    if flags & 0o1000:
+        f_str += "|O_TRUNC"
+
+    if flags & 0o2000:
+        f_str += "|O_APPEND"
+
+    if flags & 0o4000:
+        f_str += "|O_NONBLOCK"
+
+    if flags & 0o4010000:
+        f_str += "|O_SYNC"
+
+    if flags & 0o20000:
+        f_str += "|O_ASYNC"
+
+    if flags & 0o100000:
+        f_str += "|O_LARGEFILE"
+
+    if flags & 0o200000:
+        f_str += "|O_DIRECTORY"
+
+    if flags & 0o400000:
+        f_str += "|O_NOFOLLOW"
+
+    if flags & 0o2000000:
+        f_str += "|O_CLOEXEC"
+
+    if flags & 0o40000:
+        f_str += "|O_DIRECT"
+
+    if flags & 0o1000000:
+        f_str += "|O_NOATIME"
+
+    if flags & 0o10000000:
+        f_str += "|O_PATH"
+
+    if flags & 0o20000000:
+        f_str += "|O_TMPFILE"
+
+    return f_str
+
+
 class EventMonitor():
 
     def __init__(self, args):
@@ -531,189 +716,6 @@ class EventMonitor():
 
         if self.verbose:
             log.info("%-14s %-12s %-12s %-6s %-16s %-16s %-6s %-6s %-6s %-16s %s" % ("TIME(s)", "MNT_NS", "PID_NS", "UID", "EVENT", "COMM", "PID", "TID", "PPID", "RET", "ARGS"))
-
-    # define BPF program
-
-    def prot_to_str(self, prot):
-        p_str = ""
-        has_prot = False
-
-        if not prot|0x0:
-            return "PROT_NONE"
-
-        if prot&0x1:
-            p_str += "PROT_READ"
-            has_prot = True
-
-        if prot&0x2:
-            if has_prot:
-                p_str += "|PROT_WRITE"
-            else:
-                p_str += "PROT_WRITE"
-                has_prot = True
-
-        if prot&0x4:
-            if has_prot:
-                p_str += "|PROT_EXEC"
-            else:
-                p_str += "PROT_EXEC"
-                has_prot = True
-
-        return p_str
-
-    def mknod_mode_to_str(self, flags):
-        f_str = ""
-
-        if flags&0o140000:
-            f_str += "S_IFSOCK"
-        elif flags&0o100000:
-            f_str += "S_IFREG"
-        elif flags&0o060000:
-            f_str += "S_IFBLK"
-        elif flags&0o020000:
-            f_str += "S_IFCHR"
-        elif flags&0o010000:
-            f_str += "S_IFIFO"
-        else:
-            return "invalid"
-
-        if flags&0o0700 == 0o0700:
-            f_str += "|S_IRWXU"
-        else:
-            if flags&0o0400:
-                f_str += "|S_IRUSR"
-
-            if flags&0o0200:
-                f_str += "|S_IWUSR"
-
-            if flags&0o0100:
-                f_str += "|S_IXUSR"
-
-
-        if flags&0o0070 == 0o0070:
-            f_str += "|S_IRWXG"
-        else:
-            if flags&0o0040:
-                f_str += "|S_IRGRP"
-
-            if flags&0o0020:
-                f_str += "|S_IWGRP"
-
-            if flags&0o0010:
-                f_str += "|S_IXGRP"
-
-
-        if flags&0o0007 == 0o0007:
-            f_str += "|S_IRWXO"
-        else:
-            if flags&0o0004:
-                f_str += "|S_IROTH"
-
-            if flags&0o0002:
-                f_str += "|S_IWOTH"
-
-            if flags&0o0001:
-                f_str += "|S_IXOTH"
-
-        return f_str
-
-    def execveat_flags_to_str(self, flags):
-        f_str = ""
-
-        if flags&0x1000:
-            f_str += "AT_EMPTY_PATH"
-
-        if flags&0x100:
-            if f_str == "":
-                f_str += "AT_SYMLINK_NOFOLLOW"
-            else:
-                f_str += "|AT_SYMLINK_NOFOLLOW"
-
-        return f_str
-
-    def access_mode_to_str(self, flags):
-        f_str = ""
-
-        if not flags|0x0:
-            return "F_OK"
-
-        if flags&0x04:
-            f_str += "R_OK"
-
-        if flags&0x02:
-            if f_str == "":
-                f_str += "W_OK"
-            else:
-                f_str += "|W_OK"
-
-        if flags&0x01:
-            if f_str == "":
-                f_str += "X_OK"
-            else:
-                f_str += "|X_OK"
-
-        return f_str
-
-    def open_flags_to_str(self, flags):
-        f_str = ""
-
-        if flags&0o1:
-            f_str += "O_WRONLY"
-        elif flags&0o2:
-            f_str += "O_RDWR"
-        else:
-            f_str += "O_RDONLY"
-
-
-        if flags&0o100:
-            f_str += "|O_CREAT"
-
-        if flags&0o200:
-            f_str += "|O_EXCL"
-
-        if flags&0o400:
-            f_str += "|O_NOCTTY"
-
-        if flags&0o1000:
-            f_str += "|O_TRUNC"
-
-        if flags&0o2000:
-            f_str += "|O_APPEND"
-
-        if flags&0o4000:
-            f_str += "|O_NONBLOCK"
-
-        if flags&0o4010000:
-            f_str += "|O_SYNC"
-
-        if flags&0o20000:
-            f_str += "|O_ASYNC"
-
-        if flags&0o100000:
-            f_str += "|O_LARGEFILE"
-
-        if flags&0o200000:
-            f_str += "|O_DIRECTORY"
-
-        if flags&0o400000:
-            f_str += "|O_NOFOLLOW"
-
-        if flags&0o2000000:
-            f_str += "|O_CLOEXEC"
-
-        if flags&0o40000:
-            f_str += "|O_DIRECT"
-
-        if flags&0o1000000:
-            f_str += "|O_NOATIME"
-
-        if flags&0o10000000:
-            f_str += "|O_PATH"
-
-        if flags&0o20000000:
-            f_str += "|O_TMPFILE"
-
-        return f_str
 
     def get_sockaddr_from_buf(self, buf):
         # handle buffer wrap
@@ -815,17 +817,17 @@ class EventMonitor():
                 args.append(str(self.get_int_from_buf(event_buf)))                  # dirfd
                 self.get_argv_from_buf(event_buf, args)                             # argv
                 flags = self.get_int_from_buf(event_buf)
-                args.append(self.execveat_flags_to_str(flags))                      # flags
+                args.append(execveat_flags_to_str(flags))                      # flags
             # EVENT_RET will happen only when exec failed - print context below
         elif context.eventid == EventId.SYS_OPEN:
             eventname = "open"
             args.append(self.get_string_from_buf(event_buf))                        # filename
-            args.append(self.open_flags_to_str(self.get_int_from_buf(event_buf)))   # flags
+            args.append(open_flags_to_str(self.get_int_from_buf(event_buf)))   # flags
         elif context.eventid == EventId.SYS_OPENAT:
             eventname = "openat"
             args.append(str(self.get_int_from_buf(event_buf)))                      # dirfd
             args.append(self.get_string_from_buf(event_buf))                        # filename
-            args.append(self.open_flags_to_str(self.get_int_from_buf(event_buf)))   # flags
+            args.append(open_flags_to_str(self.get_int_from_buf(event_buf)))   # flags
         elif context.eventid == EventId.SYS_CREAT:
             eventname = "creat"
             args.append(self.get_string_from_buf(event_buf))                        # pathname
