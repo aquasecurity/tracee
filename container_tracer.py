@@ -4,19 +4,14 @@
 #       Yaniv Agman <yaniv@aquasec.com>
 
 from __future__ import print_function
-from bcc import BPF
-from bcc.utils import printb
-import bcc.utils as utils
-import argparse
-import re
-import time
-import os
-import sys
+
+import array
+import ctypes
 import json
 import logging
-import ctypes
-import array
-from collections import defaultdict
+import sys
+
+from bcc import BPF
 
 log = logging.getLogger()
 log.setLevel(logging.DEBUG)
