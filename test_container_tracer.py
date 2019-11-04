@@ -43,6 +43,7 @@ class TestEventMonitor(unittest.TestCase):
             self.assertEqual(test_case["expected"], tracee.container_tracer.execveat_flags_to_str(test_case["input"]),
                              test_case["name"])
 
+    # TODO: Add additional test cases for file modes
     def test_open_flags_to_str(self):
         self.longMessage = True
 
