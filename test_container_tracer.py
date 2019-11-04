@@ -43,6 +43,76 @@ class TestEventMonitor(unittest.TestCase):
             self.assertEqual(test_case["expected"], tracee.container_tracer.execveat_flags_to_str(test_case["input"]),
                              test_case["name"])
 
+    def test_open_flags_to_str(self):
+        self.longMessage = True
+
+        test_cases = [
+            {
+                "name": "open for write only",
+                "input": 0o1,
+                "expected": "O_WRONLY",
+            },
+            {
+                "name": "open for read and write",
+                "input": 0o2,
+                "expected": "O_RDWR",
+            },
+            {
+                "name": "open for read only",
+                "input": 0o4,
+                "expected": "O_RDONLY",
+            },
+            {
+                "name": "open for create with read only",
+                "input": 0o100,
+                "expected": "O_RDONLY|O_CREAT",
+            },
+            {
+                "name": "open for create with write only",
+                "input": 0o101,
+                "expected": "O_WRONLY|O_CREAT",
+            },
+            {
+                "name": "open for create with read and write",
+                "input": 0o102,
+                "expected": "O_RDWR|O_CREAT",
+            },
+            {
+                "name": "open for exclusive with read only",
+                "input": 0o200,
+                "expected": "O_RDONLY|O_EXCL",
+            },
+            {
+                "name": "open for exclusive with write only",
+                "input": 0o201,
+                "expected": "O_WRONLY|O_EXCL",
+            },
+            {
+                "name": "open for exclusive with read and write",
+                "input": 0o202,
+                "expected": "O_RDWR|O_EXCL",
+            },
+            {
+                "name": "open for no ctty with read only",
+                "input": 0o400,
+                "expected": "O_RDONLY|O_NOCTTY",
+            },
+            {
+                "name": "open for no ctty with write only",
+                "input": 0o401,
+                "expected": "O_WRONLY|O_NOCTTY",
+            },
+            {
+                "name": "open for no ctty with read and write",
+                "input": 0o402,
+                "expected": "O_RDWR|O_NOCTTY",
+            },
+        ]
+
+        for test_case in test_cases:
+            self.assertEqual(test_case["expected"], tracee.container_tracer.open_flags_to_str(test_case["input"]),
+                             test_case["name"])
+
 
 if __name__ == '__main__':
     unittest.main()
