@@ -683,6 +683,10 @@ def open_flags_to_str(flags):
 class EventMonitor:
 
     def __init__(self, args):
+        self.start_off = 0
+        self.cur_off = 0
+        self.max_off = 0
+        self.end_off = 0
         self.events = list()
         self.do_trace = True
         self.bpf = None
