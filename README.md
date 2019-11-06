@@ -13,7 +13,8 @@ Currently requires
 
 ## Quick Start Instructions
 
-As root: `./start.py -v`
+As root: `./start.py`
+or `./start.py -j` to get the output in json format
 
 Following is an output example of Tracee after running
 `docker run -it --rm alpine sh`
