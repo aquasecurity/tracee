@@ -690,7 +690,7 @@ class EventMonitor:
         self.events = list()
         self.do_trace = True
         self.bpf = None
-        self.verbose = args.verbose
+        self.json = args.json
         self.ebpf = args.ebpf
 
     def init_bpf(self):
@@ -712,7 +712,7 @@ class EventMonitor:
         self.bpf.attach_kprobe(event="do_exit", fn_name="trace_do_exit")
         self.bpf.attach_kprobe(event="cap_capable", fn_name="trace_cap_capable")
 
-        if self.verbose:
+        if not self.json:
             log.info("%-14s %-12s %-12s %-6s %-16s %-16s %-6s %-6s %-6s %-16s %s" % (
                 "TIME(s)", "MNT_NS", "PID_NS", "UID", "EVENT", "COMM", "PID", "TID", "PPID", "RET", "ARGS"))
 
@@ -1026,7 +1026,7 @@ class EventMonitor:
         except:
             return
 
-        if self.verbose:
+        if not self.json:
             log.info("%-14f %-12d %-12d %-6d %-16s %-16s %-6d %-6d %-6d %-16d %s" % (
                 context.ts / 1000000.0, context.mnt_id, context.pid_id, context.uid,
                 eventname, comm, pid, tid, ppid, context.retval, " ".join(args)))
