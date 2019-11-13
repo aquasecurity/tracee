@@ -1,10 +1,10 @@
 # Tracee
-Container tracing using eBPF
+Container and system tracing using eBPF
 
-**Tracee** is a lightweight, easy to use container tracing tool.
-After launching the tool, it will start collecting traces of newly created containers.
-The collected traces are mostly system calls performed by the processes running inside the containers,
-but other events, such as capabilities required to perform the actions requested by the container, are also supported.
+**Tracee** is a lightweight, easy to use container and system tracing tool.
+After launching the tool, it will start collecting traces of newly created containers (container mode) or processes (system mode).
+The collected traces are mostly system calls performed by the processes,
+but other events, such as capabilities required to perform the actions requested by the process, are also supported.
 
 ## Requirements
 Currently requires 
@@ -13,109 +13,121 @@ Currently requires
 
 ## Quick Start Instructions
 
-As root: `./start.py`
-or `./start.py -j` to get the output in json format
+As root: `start.py [-h] [-c] [--max-args MAX_ARGS] [-j] [-e EVENTS_TO_TRACE]`
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -c, --container       only trace newly created containers
+  --max-args MAX_ARGS   maximum number of arguments parsed and displayed, defaults to 20
+  -j, --json            save events in json format
+  -e EVENTS_TO_TRACE, --events-to-trace EVENTS_TO_TRACE
+                        trace only the specified events and syscalls (default: trace all)
+
+examples:
+    ./start.py -c
 
 Following is an output example of Tracee after running
 `docker run -it --rm alpine sh`
 
 ```
-TIME(s)        MNT_NS       PID_NS       UID    EVENT            COMM             PID    TID    PPID   RET              ARGS
-1831.335358    4026532726   4026532729   0      execve           runc:[2:INIT]    1      1      4982   0                /bin/sh
-1831.342042    4026532726   4026532729   0      cap_capable      runc:[2:INIT]    1      1      4982   0                CAP_SYS_ADMIN
-1831.345894    4026532726   4026532729   0      do_exit          runc:[2:INIT]    1      3      4982   0                
-1831.345867    4026532726   4026532729   0      do_exit          runc:[2:INIT]    1      2      4982   0                
-1831.345891    4026532726   4026532729   0      do_exit          runc:[2:INIT]    1      4      4982   0                
-1831.345894    4026532726   4026532729   0      do_exit          runc:[2:INIT]    1      5      4982   0                
-1831.397760    4026532726   4026532729   0      mprotect         sh               1      1      4982   0                0x7faed75ae000 4096 1
-1831.424309    4026532726   4026532729   0      mprotect         sh               1      1      4982   0                0x5614f9c38000 16384 1
-1831.464215    4026532726   4026532729   0      ioctl            sh               1      1      4982   0                0 21523
-1831.464289    4026532726   4026532729   0      ioctl            sh               1      1      4982   0                1 21523
-1831.464434    4026532726   4026532729   0      open             sh               1      1      4982   3                /dev/tty O_RDWR
-1831.464516    4026532726   4026532729   0      close            sh               1      1      4982   0                3
-1831.464578    4026532726   4026532729   0      ioctl            sh               1      1      4982   0                10 21519
-1831.464682    4026532726   4026532729   0      ioctl            sh               1      1      4982   0                10 21520
-1831.464874    4026532726   4026532729   0      stat             sh               1      1      4982   -2               MAILPATH
-1831.464983    4026532726   4026532729   0      ioctl            sh               1      1      4982   0                0 21505
-1831.465119    4026532726   4026532729   0      cap_capable      sh               1      1      4982   0                CAP_SYS_ADMIN
-1831.465985    4026532726   4026532729   0      open             sh               1      1      4982   -2               /root/.ash_history O_RDONLY
-1831.466178    4026532726   4026532729   0      ioctl            sh               1      1      4982   0                0 21506
-1831.466621    4026532726   4026532729   0      open             sh               1      1      4982   3                /etc/passwd O_RDONLY|O_CLOEXEC
-1831.466808    4026532726   4026532729   0      close            sh               1      1      4982   0                3
-1831.466897    4026532726   4026532729   0      ioctl            sh               1      1      4982   0                0 21523
-1831.467013    4026532726   4026532729   0      ioctl            sh               1      1      4982   0                1 21523
+61193.235110   e89fcd33936c     4026532402   4026532405   0      execve           runc:[2:INIT]    1      1      13670  0            /bin/sh
+61193.235178   e89fcd33936c     4026532402   4026532405   0      cap_capable      runc:[2:INIT]    1      1      13670  0            CAP_SYS_ADMIN
+61193.235207   e89fcd33936c     4026532402   4026532405   0      do_exit          runc:[2:INIT]    1      4      13670  0            
+61193.235206   e89fcd33936c     4026532402   4026532405   0      do_exit          runc:[2:INIT]    1      2      13670  0            
+61193.235207   e89fcd33936c     4026532402   4026532405   0      do_exit          runc:[2:INIT]    1      5      13670  0            
+61193.235206   e89fcd33936c     4026532402   4026532405   0      do_exit          runc:[2:INIT]    1      3      13670  0            
+61193.235873   e89fcd33936c     4026532402   4026532405   0      mprotect         sh               1      1      13670  0            0x7f9e08f39000 4096 1
+61193.235951   e89fcd33936c     4026532402   4026532405   0      mprotect         sh               1      1      13670  0            0x555e7ad57000 16384 1
+61193.236050   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            0 21523
+61193.236062   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            1 21523
+61193.236088   e89fcd33936c     4026532402   4026532405   0      open             sh               1      1      13670  3            /dev/tty O_RDWR
+61193.236105   e89fcd33936c     4026532402   4026532405   0      close            sh               1      1      13670  0            3
+61193.236121   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            10 21519
+61193.236142   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            10 21520
+61193.236172   e89fcd33936c     4026532402   4026532405   0      stat             sh               1      1      13670  -2           MAILPATH
+61193.236191   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            0 21505
+61193.236214   e89fcd33936c     4026532402   4026532405   0      cap_capable      sh               1      1      13670  0            CAP_SYS_ADMIN
+61193.236228   e89fcd33936c     4026532402   4026532405   0      open             sh               1      1      13670  -2           /root/.ash_history O_RDONLY
+61193.236258   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            0 21506
+61193.236277   e89fcd33936c     4026532402   4026532405   0      open             sh               1      1      13670  3            /etc/passwd O_RDONLY|O_CLOEXEC
+61193.236300   e89fcd33936c     4026532402   4026532405   0      close            sh               1      1      13670  0            3
+61193.236313   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            0 21523
+61193.236334   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            1 21523
+61193.256423   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            0 21523
+
 ```
 
 Executing `ls` in the alpine container shell will trigger the following events:
 
 ```
-6663.261031    4026532726   4026532729   0      cap_capable      sh               1      1      4982   0                CAP_SYS_ADMIN
-6663.261136    4026532726   4026532729   0      cap_capable      sh               1      1      4982   0                CAP_DAC_READ_SEARCH
-6663.261197    4026532726   4026532729   0      cap_capable      sh               1      1      4982   0                CAP_DAC_OVERRIDE
-6663.261417    4026532726   4026532729   0      cap_capable      sh               1      1      4982   0                CAP_SYS_ADMIN
-6663.261476    4026532726   4026532729   0      cap_capable      sh               1      1      4982   0                CAP_DAC_OVERRIDE
-6663.261639    4026532726   4026532729   0      open             sh               1      1      4982   3                /root/.ash_history O_WRONLY|O_CREAT|O_APPEND
-6663.261767    4026532726   4026532729   0      close            sh               1      1      4982   0                3
-6663.261842    4026532726   4026532729   0      ioctl            sh               1      1      4982   0                0 21506
-6663.261952    4026532726   4026532729   0      stat             sh               1      1      4982   -2               /usr/local/sbin/ls
-6663.262038    4026532726   4026532729   0      stat             sh               1      1      4982   -2               /usr/local/bin/ls
-6663.262111    4026532726   4026532729   0      stat             sh               1      1      4982   -2               /usr/sbin/ls
-6663.262182    4026532726   4026532729   0      stat             sh               1      1      4982   -2               /usr/bin/ls
-6663.262251    4026532726   4026532729   0      stat             sh               1      1      4982   -2               /sbin/ls
-6663.262352    4026532726   4026532729   0      stat             sh               1      1      4982   0                /bin/ls
-6663.262841    4026532726   4026532729   0      fork             sh               1      1      4982   6                
-6663.263061    4026532726   4026532729   0      ioctl            sh               6      6      1      0                10 21520
-6663.263186    4026532726   4026532729   0      execve           sh               6      6      1      0                /bin/ls
-6663.264062    4026532726   4026532729   0      mprotect         ls               6      6      1      0                0x7fbf4fda0000 4096 1
-6663.264359    4026532726   4026532729   0      mprotect         ls               6      6      1      0                0x55c241339000 16384 1
-6663.277057    4026532726   4026532729   0      ioctl            ls               6      6      1      0                0 21523
-6663.277102    4026532726   4026532729   0      ioctl            ls               6      6      1      0                1 21523
-6663.277124    4026532726   4026532729   0      ioctl            ls               6      6      1      0                1 21523
-6663.277171    4026532726   4026532729   0      stat             ls               6      6      1      0                .
-6663.277206    4026532726   4026532729   0      open             ls               6      6      1      3                . O_RDONLY|O_DIRECTORY|O_CLOEXEC
-6663.277310    4026532726   4026532729   0      getdents64       ls               6      6      1      496              3
-6663.277349    4026532726   4026532729   0      lstat            ls               6      6      1      0                ./sys
-6663.277371    4026532726   4026532729   0      lstat            ls               6      6      1      0                ./usr
-6663.277392    4026532726   4026532729   0      lstat            ls               6      6      1      0                ./sbin
-6663.277457    4026532726   4026532729   0      cap_capable      ls               6      6      1      0                CAP_SYS_ADMIN
-6663.277480    4026532726   4026532729   0      lstat            ls               6      6      1      0                ./home
-6663.277507    4026532726   4026532729   0      lstat            ls               6      6      1      0                ./lib
-6663.277532    4026532726   4026532729   0      lstat            ls               6      6      1      0                ./root
-6663.277559    4026532726   4026532729   0      lstat            ls               6      6      1      0                ./bin
-6663.277589    4026532726   4026532729   0      lstat            ls               6      6      1      0                ./etc
-6663.277624    4026532726   4026532729   0      cap_capable      ls               6      6      1      0                CAP_SYS_ADMIN
-6663.277642    4026532726   4026532729   0      lstat            ls               6      6      1      0                ./run
-6663.277676    4026532726   4026532729   0      cap_capable      ls               6      6      1      0                CAP_SYS_ADMIN
-6663.277697    4026532726   4026532729   0      lstat            ls               6      6      1      0                ./srv
-6663.277731    4026532726   4026532729   0      lstat            ls               6      6      1      0                ./proc
-6663.277776    4026532726   4026532729   0      cap_capable      ls               6      6      1      0                CAP_SYS_ADMIN
-6663.277803    4026532726   4026532729   0      lstat            ls               6      6      1      0                ./opt
-6663.277841    4026532726   4026532729   0      lstat            ls               6      6      1      0                ./dev
-6663.283841    4026532726   4026532729   0      ioctl            sh               1      1      4982   0                10 21520
-6663.283903    4026532726   4026532729   0      stat             sh               1      1      4982   -2               MAILPATH
-6663.283970    4026532726   4026532729   0      ioctl            sh               1      1      4982   0                0 21505
-6663.284003    4026532726   4026532729   0      ioctl            sh               1      1      4982   0                0 21506
-6663.284045    4026532726   4026532729   0      open             sh               1      1      4982   3                /etc/passwd O_RDONLY|O_CLOEXEC
-6663.284091    4026532726   4026532729   0      close            sh               1      1      4982   0                3
-6663.284119    4026532726   4026532729   0      ioctl            sh               1      1      4982   0                0 21523
-6663.283112    4026532726   4026532729   0      cap_capable      ls               6      6      1      0                CAP_SYS_ADMIN
-6663.283166    4026532726   4026532729   0      lstat            ls               6      6      1      0                ./var
-6663.283243    4026532726   4026532729   0      cap_capable      ls               6      6      1      0                CAP_SYS_ADMIN
-6663.283263    4026532726   4026532729   0      lstat            ls               6      6      1      0                ./mnt
-6663.283303    4026532726   4026532729   0      cap_capable      ls               6      6      1      0                CAP_SYS_ADMIN
-6663.283322    4026532726   4026532729   0      lstat            ls               6      6      1      0                ./tmp
-6663.283354    4026532726   4026532729   0      cap_capable      ls               6      6      1      0                CAP_SYS_ADMIN
-6663.283371    4026532726   4026532729   0      lstat            ls               6      6      1      0                ./media
-6663.283403    4026532726   4026532729   0      getdents64       ls               6      6      1      0                3
-6663.283434    4026532726   4026532729   0      close            ls               6      6      1      0                3
-6663.283534    4026532726   4026532729   0      ioctl            ls               6      6      1      0                1 21523
-6663.283587    4026532726   4026532729   0      do_exit          ls               6      6      1      0                
+61405.843786   e89fcd33936c     4026532402   4026532405   0      cap_capable      sh               1      1      13670  0            CAP_SYS_ADMIN
+61405.843977   e89fcd33936c     4026532402   4026532405   0      cap_capable      sh               1      1      13670  0            CAP_DAC_READ_SEARCH
+61405.844080   e89fcd33936c     4026532402   4026532405   0      cap_capable      sh               1      1      13670  0            CAP_DAC_OVERRIDE
+61405.844284   e89fcd33936c     4026532402   4026532405   0      cap_capable      sh               1      1      13670  0            CAP_SYS_ADMIN
+61405.844352   e89fcd33936c     4026532402   4026532405   0      cap_capable      sh               1      1      13670  0            CAP_DAC_OVERRIDE
+61405.844520   e89fcd33936c     4026532402   4026532405   0      open             sh               1      1      13670  3            /root/.ash_history O_WRONLY|O_CREAT|O_APPEND
+61405.844638   e89fcd33936c     4026532402   4026532405   0      close            sh               1      1      13670  0            3
+61405.844709   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            0 21506
+61405.844819   e89fcd33936c     4026532402   4026532405   0      stat             sh               1      1      13670  -2           /usr/local/sbin/ls
+61405.844891   e89fcd33936c     4026532402   4026532405   0      stat             sh               1      1      13670  -2           /usr/local/bin/ls
+61405.844951   e89fcd33936c     4026532402   4026532405   0      stat             sh               1      1      13670  -2           /usr/sbin/ls
+61405.845009   e89fcd33936c     4026532402   4026532405   0      stat             sh               1      1      13670  -2           /usr/bin/ls
+61405.845067   e89fcd33936c     4026532402   4026532405   0      stat             sh               1      1      13670  -2           /sbin/ls
+61405.845141   e89fcd33936c     4026532402   4026532405   0      stat             sh               1      1      13670  0            /bin/ls
+61405.845621   e89fcd33936c     4026532402   4026532405   0      fork             sh               1      1      13670  6            
+61405.849460   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            10 21520
+61405.849500   e89fcd33936c     4026532402   4026532405   0      stat             sh               1      1      13670  -2           MAILPATH
+61405.849539   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            0 21505
+61405.849562   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            0 21506
+61405.849592   e89fcd33936c     4026532402   4026532405   0      open             sh               1      1      13670  3            /etc/passwd O_RDONLY|O_CLOEXEC
+61405.849626   e89fcd33936c     4026532402   4026532405   0      close            sh               1      1      13670  0            3
+61405.849646   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            0 21523
+61405.845834   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               6      6      1      0            10 21520
+61405.845966   e89fcd33936c     4026532402   4026532405   0      execve           sh               6      6      1      0            /bin/ls
+61405.846806   e89fcd33936c     4026532402   4026532405   0      mprotect         ls               6      6      1      0            0x7f45e179d000 4096 1
+61405.847096   e89fcd33936c     4026532402   4026532405   0      mprotect         ls               6      6      1      0            0x555601b06000 16384 1
+61405.847319   e89fcd33936c     4026532402   4026532405   0      ioctl            ls               6      6      1      0            0 21523
+61405.847398   e89fcd33936c     4026532402   4026532405   0      ioctl            ls               6      6      1      0            1 21523
+61405.847451   e89fcd33936c     4026532402   4026532405   0      ioctl            ls               6      6      1      0            1 21523
+61405.847517   e89fcd33936c     4026532402   4026532405   0      stat             ls               6      6      1      0            .
+61405.847595   e89fcd33936c     4026532402   4026532405   0      open             ls               6      6      1      3            . O_RDONLY|O_DIRECTORY|O_CLOEXEC
+61405.847789   e89fcd33936c     4026532402   4026532405   0      getdents64       ls               6      6      1      496          3
+61405.847891   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./sys
+61405.847956   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./usr
+61405.848015   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./sbin
+61405.848097   e89fcd33936c     4026532402   4026532405   0      cap_capable      ls               6      6      1      0            CAP_SYS_ADMIN
+61405.848167   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./home
+61405.848231   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./lib
+61405.848290   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./root
+61405.848348   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./bin
+61405.848408   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./etc
+61405.848476   e89fcd33936c     4026532402   4026532405   0      cap_capable      ls               6      6      1      0            CAP_SYS_ADMIN
+61405.848523   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./run
+61405.848599   e89fcd33936c     4026532402   4026532405   0      cap_capable      ls               6      6      1      0            CAP_SYS_ADMIN
+61405.848643   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./srv
+61405.848707   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./proc
+61405.848774   e89fcd33936c     4026532402   4026532405   0      cap_capable      ls               6      6      1      0            CAP_SYS_ADMIN
+61405.848817   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./opt
+61405.848879   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./dev
+61405.848946   e89fcd33936c     4026532402   4026532405   0      cap_capable      ls               6      6      1      0            CAP_SYS_ADMIN
+61405.848989   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./var
+61405.849061   e89fcd33936c     4026532402   4026532405   0      cap_capable      ls               6      6      1      0            CAP_SYS_ADMIN
+61405.849097   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./mnt
+61405.849123   e89fcd33936c     4026532402   4026532405   0      cap_capable      ls               6      6      1      0            CAP_SYS_ADMIN
+61405.849139   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./tmp
+61405.849163   e89fcd33936c     4026532402   4026532405   0      cap_capable      ls               6      6      1      0            CAP_SYS_ADMIN
+61405.849178   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./media
+61405.849201   e89fcd33936c     4026532402   4026532405   0      getdents64       ls               6      6      1      0            3
+61405.849220   e89fcd33936c     4026532402   4026532405   0      close            ls               6      6      1      0            3
+61405.849280   e89fcd33936c     4026532402   4026532405   0      ioctl            ls               6      6      1      0            1 21523
+61405.849318   e89fcd33936c     4026532402   4026532405   0      do_exit          ls               6      6      1      0
 ```
 
 As can be seen in the above output, each event line shows the following information about the event:
 
 * TIME - shows the event time relative to system boot time in seconds
-* MNT_NS - mount namespace inode number. As there is no container id object in the kernel, and every container is in a different mount namespace, we use this field to distinguish between containers
+* UTS_NAME - uts namespace name. As there is no container id object in the kernel, and docker/k8s will usually set this to the container id, we use this field to distinguish between containers.
+* MNT_NS - mount namespace inode number.
 * PID_NS - pid namespace inode number. In order to know if there are different containers in the same pid namespace (e.g. in a k8s pod), it is possible to check this value
 * UID - real user id (in host user namespace) of the calling process
 * EVENT - identifies the event (e.g. syscall name)
