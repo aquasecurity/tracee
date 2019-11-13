@@ -5,6 +5,7 @@
  */
 
 #include <uapi/linux/ptrace.h>
+#include <uapi/linux/utsname.h>
 #include <linux/sched.h>
 #include <linux/fs.h>
 #include <linux/nsproxy.h>
@@ -374,6 +375,7 @@ typedef struct context {
     u32 mnt_id;
     u32 pid_id;
     char comm[TASK_COMM_LEN];
+    char uts_name[TASK_COMM_LEN];
     enum event_id eventid;
     s64 retval;
 } context_t;
@@ -399,6 +401,12 @@ typedef struct submit_buf {
 struct mnt_namespace {
     atomic_t        count;
     struct ns_common    ns;
+    // ...
+};
+
+struct uts_namespace {
+    struct kref kref;
+    struct new_utsname name;
     // ...
 };
 
@@ -456,6 +464,11 @@ static __always_inline u32 get_task_ns_ppid(struct task_struct *task)
 
     // kernel 4.14-4.18:
     return task->real_parent->pids[PIDTYPE_PID].pid->numbers[task->real_parent->nsproxy->pid_ns_for_children->level].nr;
+}
+
+static __always_inline char * get_task_uts_name(struct task_struct *task)
+{
+    return task->nsproxy->uts_ns->name.nodename;
 }
 
 /*============================== HELPER FUNCTIONS ==============================*/
@@ -523,6 +536,9 @@ static __always_inline int init_context(context_t *context)
     context->pid_id = get_task_pid_ns_id(task);
     context->uid = bpf_get_current_uid_gid();
     bpf_get_current_comm(&context->comm, sizeof(context->comm));
+    char * uts_name = get_task_uts_name(task);
+    if (uts_name)
+        bpf_probe_read_str(&context->uts_name, TASK_COMM_LEN, uts_name);
 
     // Save timestamp in microsecond resolution
     context->ts = bpf_ktime_get_ns()/1000;
