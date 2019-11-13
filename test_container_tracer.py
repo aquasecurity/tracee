@@ -1,9 +1,10 @@
+#!/usr/bin/python
 import ctypes
 import unittest
 import tracee
 import start
 
-from tracee.container_tracer import EventMonitor
+from tracee.container_tracer import EventMonitor, syscalls, sysevents
 
 
 class TestEventMonitor(unittest.TestCase):
@@ -140,6 +141,30 @@ class TestEventMonitor(unittest.TestCase):
             sockaddr_str = em.get_sockaddr_from_buf(ctypes.c_short(test_case["input"]))
             self.assertEqual(test_case["expected_sock_type"], sockaddr_str, "returned sock_type should be equal")
             self.assertEqual(test_case["expected_cur_off"], em.cur_off, "current offset should be 2")
+
+    def test_event_filter(self):
+
+        test_cases = [
+            {
+                "name": "default to all events",
+                "args": [],
+                "expected_events": syscalls + sysevents
+            },
+            {
+                "name": "include all events",
+                "args": ["-e", "all"],
+                "expected_events": syscalls + sysevents
+            },
+            {
+                "name": "specify one",
+                "args": ["-e", "open"],
+                "expected_events": ["open"]
+            }
+        ]
+
+        for test_case in test_cases:
+            em = tracee.container_tracer.EventMonitor(start.parse_args(test_case["args"]))
+            self.assertEqual(len(em.events_to_trace), len(test_case["expected_events"]), test_case["name"])
 
 
 if __name__ == '__main__':
