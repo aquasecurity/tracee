@@ -412,7 +412,7 @@ struct uts_namespace {
 
 /*=================================== MAPS =====================================*/
 
-BPF_HASH(cont_pidns, u32, u32);                     // Save container pid namespaces
+BPF_HASH(pids_map, u32, u32);                       // Save container pid namespaces
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
 BPF_PERCPU_ARRAY(event_submit, event_t, 1);         // Event to perf_submit
 BPF_ARRAY(submission_buf, submit_buf_t, 32);        // Buffer for events
@@ -471,17 +471,45 @@ static __always_inline char * get_task_uts_name(struct task_struct *task)
     return task->nsproxy->uts_ns->name.nodename;
 }
 
+static __always_inline u32 get_task_ppid(struct task_struct *task)
+{
+    return task->real_parent->pid;
+}
+
 /*============================== HELPER FUNCTIONS ==============================*/
+
+static __always_inline u32 lookup_pid()
+{
+    u32 pid = bpf_get_current_pid_tgid();
+    if (pids_map.lookup(&pid) == 0)
+        return 0;
+
+    return pid;
+}
 
 static __always_inline u32 lookup_pid_ns(struct task_struct *task)
 {
     u32 task_pid_ns = get_task_pid_ns_id(task);
 
-    u32 *pid_ns = cont_pidns.lookup(&task_pid_ns);
+    u32 *pid_ns = pids_map.lookup(&task_pid_ns);
     if (pid_ns == 0)
         return 0;
 
     return *pid_ns;
+}
+
+static __always_inline void add_pid_fork(u32 pid)
+{
+    pids_map.update(&pid, &pid);
+}
+
+static __always_inline u32 add_pid()
+{
+    u32 pid = bpf_get_current_pid_tgid();
+    if (pids_map.lookup(&pid) == 0)
+        pids_map.update(&pid, &pid);
+
+    return pid;
 }
 
 static __always_inline u32 add_pid_ns_if_needed()
@@ -490,19 +518,26 @@ static __always_inline u32 add_pid_ns_if_needed()
     task = (struct task_struct *)bpf_get_current_task();
 
     u32 pid_ns = get_task_pid_ns_id(task);
-    if (cont_pidns.lookup(&pid_ns) != 0)
+    if (pids_map.lookup(&pid_ns) != 0)
         // Container pidns was already added to map
         return pid_ns;
 
     // If pid equals 1 - start tracing the container
     if (get_task_ns_pid(task) == 1) {
         // A new container/pod was started - add pid namespace to map
-        cont_pidns.update(&pid_ns, &pid_ns);
+        pids_map.update(&pid_ns, &pid_ns);
         return pid_ns;
     }
 
     // Not a container/pod
     return 0;
+}
+
+static __always_inline void remove_pid()
+{
+    u32 pid = bpf_get_current_pid_tgid();
+    if (pids_map.lookup(&pid) != 0)
+        pids_map.delete(&pid);
 }
 
 static __always_inline void remove_pid_ns_if_needed()
@@ -511,10 +546,10 @@ static __always_inline void remove_pid_ns_if_needed()
     task = (struct task_struct *)bpf_get_current_task();
 
     u32 pid_ns = get_task_pid_ns_id(task);
-    if (cont_pidns.lookup(&pid_ns) != 0) {
+    if (pids_map.lookup(&pid_ns) != 0) {
         // If pid equals 1 - stop tracing this pid namespace
         if (get_task_ns_pid(task) == 1) {
-            cont_pidns.delete(&pid_ns);
+            pids_map.delete(&pid_ns);
         }
     }
 }
@@ -524,14 +559,26 @@ static __always_inline int init_context(context_t *context)
     struct task_struct *task;
     task = (struct task_struct *)bpf_get_current_task();
 
-    // Check if we should trace this pid namespace
-    u32 pid_ns = lookup_pid_ns(task);
-    if (pid_ns == 0)
+    u32 should_trace = 0;
+    if (CONTAINER_MODE)
+        should_trace = lookup_pid_ns(task);
+    else
+        should_trace = lookup_pid();
+
+    // Check if we should trace this pid val
+    if (should_trace == 0)
         return -1;
 
-    context->tid = get_task_ns_pid(task);
-    context->pid = get_task_ns_tgid(task);
-    context->ppid = get_task_ns_ppid(task);
+    if (CONTAINER_MODE) {
+        context->tid = get_task_ns_pid(task);
+        context->pid = get_task_ns_tgid(task);
+        context->ppid = get_task_ns_ppid(task);
+    } else {
+        u64 id = bpf_get_current_pid_tgid();
+        context->tid = id;
+        context->pid = id >> 32;
+        context->ppid = get_task_ppid(task);
+    }
     context->mnt_id = get_task_mnt_ns_id(task);
     context->pid_id = get_task_pid_ns_id(task);
     context->uid = bpf_get_current_uid_gid();
@@ -667,7 +714,13 @@ static __always_inline int save_args(struct pt_regs *ctx)
     u64 id;
     args_t args = {};
 
-    if (!is_container())
+    u32 should_trace = 0;
+    if (CONTAINER_MODE)
+        should_trace = is_container();
+    else
+        should_trace = lookup_pid();
+
+    if (!should_trace)
         return 0;
 
     args.args[0] = PT_REGS_PARM1(ctx);
@@ -793,6 +846,26 @@ int trace_ret_##name(struct pt_regs *ctx)                               \
     return 0;                                                           \
 }
 
+#define TRACE_RET_FORK_FUNC(name, id, types)                            \
+int trace_ret_##name(struct pt_regs *ctx)                               \
+{                                                                       \
+    context_t context = {};                                             \
+                                                                        \
+    if (init_context(&context) || init_event())                         \
+        return 0;                                                       \
+                                                                        \
+    u32 pid = PT_REGS_RC(ctx);                                          \
+    add_pid_fork(pid);                                                  \
+                                                                        \
+    context.eventid = id;                                               \
+    context.retval = PT_REGS_RC(ctx);                                   \
+    save_to_submit_buf((void*)&context, sizeof(context_t));             \
+    save_args_to_submit_buf(types);                                     \
+                                                                        \
+    events_perf_submit(ctx);                                            \
+    return 0;                                                           \
+}
+
 /*============================== SYSCALL HOOKS ==============================*/
 
 // Note: race condition may occur if a malicious user changes memory content pointed by syscall arguments by concurrent threads!
@@ -819,12 +892,6 @@ TRACE_ENT_FUNC(sys_dup2);
 TRACE_RET_FUNC(sys_dup2, SYS_DUP2, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T));
 TRACE_ENT_FUNC(sys_dup3);
 TRACE_RET_FUNC(sys_dup3, SYS_DUP3, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(INT_T));
-TRACE_ENT_FUNC(sys_fork);
-TRACE_RET_FUNC(sys_fork, SYS_FORK, 0);
-TRACE_ENT_FUNC(sys_vfork);
-TRACE_RET_FUNC(sys_vfork, SYS_VFORK, 0);
-TRACE_ENT_FUNC(sys_clone);
-TRACE_RET_FUNC(sys_clone, SYS_CLONE, 0);
 TRACE_ENT_FUNC(sys_newstat);
 TRACE_RET_FUNC(sys_newstat, SYS_STAT, ARG_TYPE0(STR_T));
 TRACE_ENT_FUNC(sys_newlstat);
@@ -878,6 +945,18 @@ TRACE_RET_FUNC(sys_getdents, SYS_GETDENTS, ARG_TYPE0(INT_T));
 TRACE_ENT_FUNC(sys_getdents64);
 TRACE_RET_FUNC(sys_getdents64, SYS_GETDENTS64, ARG_TYPE0(INT_T));
 
+TRACE_ENT_FUNC(sys_fork);
+TRACE_ENT_FUNC(sys_vfork);
+TRACE_ENT_FUNC(sys_clone);
+#if CONTAINER_MODE
+TRACE_RET_FUNC(sys_fork, SYS_FORK, 0);
+TRACE_RET_FUNC(sys_vfork, SYS_VFORK, 0);
+TRACE_RET_FUNC(sys_clone, SYS_CLONE, 0);
+#else
+TRACE_RET_FORK_FUNC(sys_fork, SYS_FORK, 0);
+TRACE_RET_FORK_FUNC(sys_vfork, SYS_VFORK, 0);
+TRACE_RET_FORK_FUNC(sys_clone, SYS_CLONE, 0);
+#endif
 
 int trace_sys_execve(struct pt_regs *ctx,
     const char __user *filename,
@@ -886,7 +965,13 @@ int trace_sys_execve(struct pt_regs *ctx,
 {
     context_t context = {};
 
-    if (add_pid_ns_if_needed() == 0)
+    u32 ret = 0;
+    if (CONTAINER_MODE)
+        ret = add_pid_ns_if_needed();
+    else
+        ret = add_pid();
+
+    if (ret == 0)
         return 0;
 
     if (init_context(&context) || init_event())
@@ -946,7 +1031,13 @@ int trace_sys_execveat(struct pt_regs *ctx,
 {
     context_t context = {};
 
-    if (add_pid_ns_if_needed() == 0)
+    u32 ret = 0;
+    if (CONTAINER_MODE)
+        ret = add_pid_ns_if_needed();
+    else
+        ret = add_pid();
+
+    if (ret == 0)
         return 0;
 
     if (init_context(&context) || init_event())
@@ -1011,7 +1102,10 @@ int trace_do_exit(struct pt_regs *ctx, long code)
     context.eventid = DO_EXIT;
     context.retval = code;
 
-    remove_pid_ns_if_needed();
+    if (CONTAINER_MODE)
+        remove_pid_ns_if_needed();
+    else
+        remove_pid();
 
     save_to_submit_buf((void*)&context, sizeof(context_t));
     events_perf_submit(ctx);

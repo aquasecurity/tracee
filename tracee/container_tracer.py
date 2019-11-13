@@ -717,12 +717,17 @@ class EventMonitor:
         self.events = list()
         self.do_trace = True
         self.bpf = None
+        self.cont_mode = args.container
         self.json = args.json
         self.ebpf = args.ebpf
         self.events_to_trace = args.events_to_trace
 
     def init_bpf(self):
         bpf_text = load_bpf_program().replace("MAXARG", str(MAX_ARGS))
+        if self.cont_mode:
+            bpf_text = bpf_text.replace("CONTAINER_MODE", "1")
+        else:
+            bpf_text = bpf_text.replace("CONTAINER_MODE", "0")
 
         if self.ebpf:
             log.debug(bpf_text)
@@ -743,7 +748,7 @@ class EventMonitor:
             self.bpf.attach_kprobe(event=sysevent, fn_name="trace_" + sysevent)
 
         if not self.json:
-            log.info("%-14s %-16s %-12s %-12s %-6s %-16s %-16s %-6s %-6s %-6s %-16s %s" % (
+            log.info("%-14s %-16s %-12s %-12s %-6s %-16s %-16s %-6s %-6s %-6s %-12s %s" % (
                 "TIME(s)", "UTS_NAME", "MNT_NS", "PID_NS", "UID", "EVENT", "COMM", "PID", "TID", "PPID", "RET", "ARGS"))
 
     def get_sockaddr_from_buf(self, buf):
@@ -1059,7 +1064,7 @@ class EventMonitor:
 
         if eventname in self.events_to_trace:
             if not self.json:
-                log.info("%-14f %-16s %-12d %-12d %-6d %-16s %-16s %-6d %-6d %-6d %-16d %s" % (
+                log.info("%-14f %-16s %-12d %-12d %-6d %-16s %-16s %-6d %-6d %-6d %-12d %s" % (
                     context.ts / 1000000.0, uts_name, context.mnt_id, context.pid_id, context.uid,
                     eventname, comm, pid, tid, ppid, context.retval, " ".join(args)))
             else:  # prepare data to be consumed by ultrabox
