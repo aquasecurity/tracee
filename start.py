@@ -11,7 +11,7 @@ import re
 from tracee.container_tracer import EventMonitor, syscalls, sysevents
 
 examples = """examples:
-    ./start.py -v
+    ./start.py -c
 """
 
 class EventsToTraceAction(argparse.Action):
@@ -32,6 +32,8 @@ def parse_args(input_args):
         description="Trace container syscalls and events",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=examples)
+    parser.add_argument("-c", "--container", action="store_true",
+                        help="only trace newly created containers")
     parser.add_argument("--max-args", default="20",
                         help="maximum number of arguments parsed and displayed, defaults to 20")
     parser.add_argument("--ebpf", action="store_true",
