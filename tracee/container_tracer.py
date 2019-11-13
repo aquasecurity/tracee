@@ -129,11 +129,12 @@ syscalls = ["execve", "execveat", "mmap", "mprotect", "clone", "fork", "vfork", 
             "connect", "accept", "accept4", "bind", "getsockname", "prctl", "ptrace",
             "process_vm_writev", "process_vm_readv", "init_module", "finit_module", "delete_module",
             "symlink", "symlinkat", "getdents", "getdents64", "creat", "open", "openat"]
-
-# We always need kprobes for execve[at] so that we capture the new PID namespace 
-essential_syscalls = ["execve", "execveat"]
-
 sysevents = ["cap_capable", "do_exit"]
+
+# We always need kprobes for execve[at] so that we capture the new PID namespace, 
+# and do_exit so we clean up  
+essential_syscalls = ["execve", "execveat"]
+essential_sysevents = ["do_exit"]
 
 class EventType(object):
     EVENT_ARG = 0
@@ -684,23 +685,25 @@ def open_flags_to_str(flags):
     return f_str
 
 # Given the list of event names the user wants to trace, get_kprobes() returns the 
-# - syscalls we want kprobes for (including the essential ones needed for racee to work)
-# - events we want kprobes for
+# - syscalls we want kprobes for 
+# - events we want kprobes for 
+# Includes the essential kprobes needed for Tracee to work
 def get_kprobes(events):
-    sk = essential_syscalls
-    se = []
+    sc = essential_syscalls
+    se = essential_sysevents
     for e in events:
         if e in syscalls:
-            sk.append(e)
+            sc.append(e)
         elif e in sysevents:
             se.append(e)
         # Argument parsing should have already checked that the event names are good
         else:
             raise ValueError("Bad event name {0}".format(e))
 
-    # Dedupe the list in case the essential syscalls were specified
-    sk = list(set(sk))
-    return sk, se
+    # Dedupe the lists in case the essential syscalls / sysevents were specified
+    sc = list(set(sc))
+    se = list(set(se))
+    return sc, se
 
 
 class EventMonitor:
