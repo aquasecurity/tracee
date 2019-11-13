@@ -130,6 +130,10 @@ syscalls = ["execve", "execveat", "mmap", "mprotect", "clone", "fork", "vfork", 
             "process_vm_writev", "process_vm_readv", "init_module", "finit_module", "delete_module",
             "symlink", "symlinkat", "getdents", "getdents64", "creat", "open", "openat"]
 
+# We always need kprobes for execve[at] so that we capture the new PID namespace 
+essential_syscalls = ["execve", "execveat"]
+
+sysevents = ["cap_capable", "do_exit"]
 
 class EventType(object):
     EVENT_ARG = 0
@@ -679,6 +683,25 @@ def open_flags_to_str(flags):
 
     return f_str
 
+# Given the list of event names the user wants to trace, get_kprobes() returns the 
+# - syscalls we want kprobes for (including the essential ones needed for racee to work)
+# - events we want kprobes for
+def get_kprobes(events):
+    sk = essential_syscalls
+    se = []
+    for e in events:
+        if e in syscalls:
+            sk.append(e)
+        elif e in sysevents:
+            se.append(e)
+        # Argument parsing should have already checked that the event names are good
+        else:
+            raise ValueError("Bad event name {0}".format(e))
+
+    # Dedupe the list in case the essential syscalls were specified
+    sk = list(set(sk))
+    return sk, se
+
 
 class EventMonitor:
 
@@ -692,6 +715,7 @@ class EventMonitor:
         self.bpf = None
         self.json = args.json
         self.ebpf = args.ebpf
+        self.events_to_trace = args.events_to_trace
 
     def init_bpf(self):
         bpf_text = load_bpf_program().replace("MAXARG", str(MAX_ARGS))
@@ -704,13 +728,15 @@ class EventMonitor:
         self.bpf = BPF(text=bpf_text)
 
         # attaching kprobes
-        for syscall in syscalls:
+        sk, se = get_kprobes(self.events_to_trace)
+
+        for syscall in sk:
             syscall_fnname = self.bpf.get_syscall_fnname(syscall)
             self.bpf.attach_kprobe(event=syscall_fnname, fn_name="trace_sys_" + syscall)
             self.bpf.attach_kretprobe(event=syscall_fnname, fn_name="trace_ret_sys_" + syscall)
 
-        self.bpf.attach_kprobe(event="do_exit", fn_name="trace_do_exit")
-        self.bpf.attach_kprobe(event="cap_capable", fn_name="trace_cap_capable")
+        for sysevent in se:
+            self.bpf.attach_kprobe(event=sysevent, fn_name="trace_" + sysevent)
 
         if not self.json:
             log.info("%-14s %-12s %-12s %-6s %-16s %-16s %-6s %-6s %-6s %-16s %s" % (
@@ -1026,33 +1052,34 @@ class EventMonitor:
         except:
             return
 
-        if not self.json:
-            log.info("%-14f %-12d %-12d %-6d %-16s %-16s %-6d %-6d %-6d %-16d %s" % (
-                context.ts / 1000000.0, context.mnt_id, context.pid_id, context.uid,
-                eventname, comm, pid, tid, ppid, context.retval, " ".join(args)))
-        else:  # prepare data to be consumed by ultrabox
-            data = dict()
-            data["status"] = [0]
-            data["raw"] = ""
-            data["type"] = ["apicall"]
-            data["time"] = context.ts / 1000000.0
-            data["mnt_ns"] = context.mnt_id
-            data["pid_ns"] = context.pid_id
-            data["uid"] = context.uid
-            data["api"] = eventname
-            data["process_name"] = comm
-            data["pid"] = pid
-            data["tid"] = tid
-            data["ppid"] = ppid
-            data["return_value"] = context.retval
-            dict_args = dict()
-            args_len = len(args)
-            for i in range(args_len):
-                dict_args["p" + str(i)] = args[i].rstrip('\0')
-            data["arguments"] = dict_args
+        if eventname in self.events_to_trace:
+            if not self.json:
+                log.info("%-14f %-12d %-12d %-6d %-16s %-16s %-6d %-6d %-6d %-16d %s" % (
+                    context.ts / 1000000.0, context.mnt_id, context.pid_id, context.uid,
+                    eventname, comm, pid, tid, ppid, context.retval, " ".join(args)))
+            else:  # prepare data to be consumed by ultrabox
+                data = dict()
+                data["status"] = [0]
+                data["raw"] = ""
+                data["type"] = ["apicall"]
+                data["time"] = context.ts / 1000000.0
+                data["mnt_ns"] = context.mnt_id
+                data["pid_ns"] = context.pid_id
+                data["uid"] = context.uid
+                data["api"] = eventname
+                data["process_name"] = comm
+                data["pid"] = pid
+                data["tid"] = tid
+                data["ppid"] = ppid
+                data["return_value"] = context.retval
+                dict_args = dict()
+                args_len = len(args)
+                for i in range(args_len):
+                    dict_args["p" + str(i)] = args[i].rstrip('\0')
+                data["arguments"] = dict_args
 
-            log.info(json.dumps(data))
-            self.events.append(data)
+                log.info(json.dumps(data))
+                self.events.append(data)
 
         # if eventname == "do_exit" and pid == 1:
         # log.info(json.dumps(events, indent=4))

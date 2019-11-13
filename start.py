@@ -6,12 +6,25 @@
 # arguments
 import argparse
 import sys
+import re
 
-from tracee.container_tracer import EventMonitor
+from tracee.container_tracer import EventMonitor, syscalls, sysevents
 
 examples = """examples:
     ./start.py -v
 """
+
+class EventsToTraceAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        events = re.split('\W+', values)
+        for e in events:
+            if e not in syscalls and e not in sysevents and e != "all":
+                parser.error("Invalid event {0}".format(e))
+
+        if "all" in events:
+            events = syscalls + sysevents
+
+        setattr(namespace, self.dest, events)
 
 
 def parse_args(input_args):
@@ -25,7 +38,8 @@ def parse_args(input_args):
                         help=argparse.SUPPRESS)
     parser.add_argument("-j", "--json", action="store_true",
                         help="save events in json format")
-    # args = parser.parse_args()
+    parser.add_argument("-e", "--events-to-trace", default = syscalls + sysevents, action=EventsToTraceAction,
+                        help="trace only the specified events and syscalls (default: trace all)")
     return parser.parse_args(input_args)
 
 
