@@ -492,6 +492,7 @@ class context_t(ctypes.Structure):  # match layout of eBPF C's context_t struct
                 ("mnt_id", ctypes.c_uint32),
                 ("pid_id", ctypes.c_uint32),
                 ("comm", ctypes.c_char * 16),
+                ("uts_name", ctypes.c_char * 16),
                 ("eventid", ctypes.c_uint),
                 ("retval", ctypes.c_int64), ]
 
@@ -742,8 +743,8 @@ class EventMonitor:
             self.bpf.attach_kprobe(event=sysevent, fn_name="trace_" + sysevent)
 
         if not self.json:
-            log.info("%-14s %-12s %-12s %-6s %-16s %-16s %-6s %-6s %-6s %-16s %s" % (
-                "TIME(s)", "MNT_NS", "PID_NS", "UID", "EVENT", "COMM", "PID", "TID", "PPID", "RET", "ARGS"))
+            log.info("%-14s %-16s %-12s %-12s %-6s %-16s %-16s %-6s %-6s %-6s %-16s %s" % (
+                "TIME(s)", "UTS_NAME", "MNT_NS", "PID_NS", "UID", "EVENT", "COMM", "PID", "TID", "PPID", "RET", "ARGS"))
 
     def get_sockaddr_from_buf(self, buf):
         # handle buffer wrap
@@ -1052,13 +1053,14 @@ class EventMonitor:
 
         try:
             comm = context.comm.decode("utf-8")
+            uts_name = context.uts_name.decode("utf-8")
         except:
             return
 
         if eventname in self.events_to_trace:
             if not self.json:
-                log.info("%-14f %-12d %-12d %-6d %-16s %-16s %-6d %-6d %-6d %-16d %s" % (
-                    context.ts / 1000000.0, context.mnt_id, context.pid_id, context.uid,
+                log.info("%-14f %-16s %-12d %-12d %-6d %-16s %-16s %-6d %-6d %-6d %-16d %s" % (
+                    context.ts / 1000000.0, uts_name, context.mnt_id, context.pid_id, context.uid,
                     eventname, comm, pid, tid, ppid, context.retval, " ".join(args)))
             else:  # prepare data to be consumed by ultrabox
                 data = dict()
@@ -1070,6 +1072,7 @@ class EventMonitor:
                 data["pid_ns"] = context.pid_id
                 data["uid"] = context.uid
                 data["api"] = eventname
+                data["uts_name"] = uts_name
                 data["process_name"] = comm
                 data["pid"] = pid
                 data["tid"] = tid
