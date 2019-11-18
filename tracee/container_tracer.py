@@ -833,6 +833,8 @@ class EventMonitor:
 
         args = list()
 
+        eventfunc = "dummy"
+
         if context.eventid == EventId.SYS_EXECVE:
             eventname = "execve"
             event_type = self.get_int_from_buf(event_buf)
@@ -975,12 +977,15 @@ class EventMonitor:
             args.append(str(self.get_int_from_buf(event_buf)))  # prot
         elif context.eventid == EventId.SYS_STAT:
             eventname = "stat"
+            eventfunc = "newstat"
             args.append(self.get_string_from_buf(event_buf))  # path
         elif context.eventid == EventId.SYS_FSTAT:
             eventname = "fstat"
+            eventfunc = "newfstat"
             args.append(str(self.get_uint_from_buf(event_buf)))  # fd
         elif context.eventid == EventId.SYS_LSTAT:
             eventname = "lstat"
+            eventfunc = "newlstat"
             args.append(self.get_string_from_buf(event_buf))  # path
         elif context.eventid == EventId.SYS_PRCTL:
             eventname = "prctl"
@@ -1057,7 +1062,7 @@ class EventMonitor:
         except:
             return
 
-        if eventname in self.events_to_trace:
+        if eventname in self.events_to_trace or eventfunc in self.events_to_trace:
             if not self.json:
                 log.info("%-14f %-16s %-12d %-12d %-6d %-16s %-16s %-6d %-6d %-6d %-16d %s" % (
                     context.ts / 1000000.0, uts_name, context.mnt_id, context.pid_id, context.uid,
