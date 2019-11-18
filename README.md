@@ -30,6 +30,7 @@ Following is an output example of Tracee after running
 `docker run -it --rm alpine sh`
 
 ```
+TIME(s)        UTS_NAME         MNT_NS       PID_NS       UID    EVENT            COMM             PID    TID    PPID   RET          ARGS
 61193.235110   e89fcd33936c     4026532402   4026532405   0      execve           runc:[2:INIT]    1      1      13670  0            /bin/sh
 61193.235178   e89fcd33936c     4026532402   4026532405   0      cap_capable      runc:[2:INIT]    1      1      13670  0            CAP_SYS_ADMIN
 61193.235207   e89fcd33936c     4026532402   4026532405   0      do_exit          runc:[2:INIT]    1      4      13670  0            
