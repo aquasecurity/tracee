@@ -440,6 +440,9 @@ static __always_inline u32 get_task_ns_pid(struct task_struct *task)
     // We don't use bpf_get_current_pid_tgid() as it is not pid namespace aware
     // return bpf_get_current_pid_tgid() >> 32;
 
+    // kernel 5.3
+    // return task->thread_pid->numbers[task->nsproxy->pid_ns_for_children->level].nr;
+
     // kernel 4.19:
     // return task->thread_pid->numbers[task->nsproxy->pid_ns_for_children->level].nr;
 
@@ -451,14 +454,16 @@ static __always_inline u32 get_task_ns_tgid(struct task_struct *task)
 {
     // We don't use bpf_get_current_pid_tgid() as it is not pid namespace aware
     // return bpf_get_current_pid_tgid();
-
+    // kernel 5.3:
+    // return task->group_leader->thread_pid->numbers[task->nsproxy->pid_ns_for_children->level].nr;
+    
     // kernel 4.14-4.18:
     return task->group_leader->pids[PIDTYPE_PID].pid->numbers[task->nsproxy->pid_ns_for_children->level].nr;
 }
 
 static __always_inline u32 get_task_ns_ppid(struct task_struct *task)
 {
-    // kernel 4.19:
+    // kernel 4.19 / 5.3:
     // return task->real_parent->tgid;
     // return task->real_parent->thread_pid->numbers[task->real_parent->nsproxy->pid_ns_for_children->level].nr;
 
