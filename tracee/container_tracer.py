@@ -128,7 +128,8 @@ syscalls = ["execve", "execveat", "mmap", "mprotect", "clone", "fork", "vfork", 
             "memfd_create", "socket", "close", "ioctl", "access", "faccessat", "kill", "listen",
             "connect", "accept", "accept4", "bind", "getsockname", "prctl", "ptrace",
             "process_vm_writev", "process_vm_readv", "init_module", "finit_module", "delete_module",
-            "symlink", "symlinkat", "getdents", "getdents64", "creat", "open", "openat"]
+            "symlink", "symlinkat", "getdents", "getdents64", "creat", "open", "openat",
+            "mount", "umount", "unlink", "unlinkat"]
 sysevents = ["cap_capable", "do_exit"]
 
 # We always need kprobes for execve[at] so that we capture the new PID namespace, 
@@ -1050,6 +1051,23 @@ class EventMonitor:
         elif context.eventid == EventId.SYS_GETDENTS64:
             eventname = "getdents64"
             args.append(str(self.get_uint_from_buf(event_buf)))  # fd
+        elif context.eventid == EventId.SYS_MOUNT:
+            eventname = "mount"
+            args.append(self.get_string_from_buf(event_buf))  # source
+            args.append(self.get_string_from_buf(event_buf))  # target
+            args.append(self.get_string_from_buf(event_buf))  # filesystemtype
+            args.append(str(self.get_ulong_from_buf(event_buf)))  # mountflags
+        elif context.eventid == EventId.SYS_UMOUNT:
+            eventname = "umount"
+            args.append(self.get_string_from_buf(event_buf))  # target
+        elif context.eventid == EventId.SYS_UNLINK:
+            eventname = "unlink"
+            args.append(self.get_string_from_buf(event_buf))  # pathname
+        elif context.eventid == EventId.SYS_UNLINKAT:
+            eventname = "unlinkat"
+            args.append(str(self.get_int_from_buf(event_buf)))  # dirfd
+            args.append(self.get_string_from_buf(event_buf))  # pathname
+            args.append(str(self.get_int_from_buf(event_buf)))  # flags
         elif context.eventid == EventId.SYS_CLONE:
             eventname = "clone"
         elif context.eventid == EventId.SYS_FORK:
