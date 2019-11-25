@@ -40,6 +40,8 @@ def parse_args(input_args):
                         help=argparse.SUPPRESS)
     parser.add_argument("-j", "--json", action="store_true",
                         help="save events in json format")
+    parser.add_argument("-l", "--list", action="store_true",
+                        help="list events")
     parser.add_argument("-e", "--events-to-trace", default = syscalls + sysevents, action=EventsToTraceAction,
                         help="trace only the specified events and syscalls (default: trace all)")
     return parser.parse_args(input_args)
