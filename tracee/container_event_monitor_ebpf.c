@@ -12,10 +12,15 @@
 #include <linux/ns_common.h>
 #include <linux/pid_namespace.h>
 #include <linux/security.h>
+#include <linux/version.h>
 
 #define MAX_STRING_SIZE 4096                                // Choosing this value to be the same as PATH_MAX
 #define SUBMIT_BUFSIZE  524288                              // Need to be power of 2
 #define SUBMIT_BUFSIZE_HALF   ((SUBMIT_BUFSIZE-1) >> 1)     // Bitmask for ebpf validator - this is why we need STR_BUFSIZE to be power of 2
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
+#error Minimal required kernel version is 4.14
+#endif
 
 /*==================================== ENUMS =================================*/
 
@@ -437,33 +442,35 @@ static __always_inline u32 get_task_pid_ns_id(struct task_struct *task)
 
 static __always_inline u32 get_task_ns_pid(struct task_struct *task)
 {
-    // We don't use bpf_get_current_pid_tgid() as it is not pid namespace aware
-    // return bpf_get_current_pid_tgid() >> 32;
-
-    // kernel 4.19:
-    // return task->thread_pid->numbers[task->nsproxy->pid_ns_for_children->level].nr;
-
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0)
     // kernel 4.14-4.18:
     return task->pids[PIDTYPE_PID].pid->numbers[task->nsproxy->pid_ns_for_children->level].nr;
+#else
+    // kernel 4.19 onwards:
+    return task->thread_pid->numbers[task->nsproxy->pid_ns_for_children->level].nr;
+#endif
 }
 
 static __always_inline u32 get_task_ns_tgid(struct task_struct *task)
 {
-    // We don't use bpf_get_current_pid_tgid() as it is not pid namespace aware
-    // return bpf_get_current_pid_tgid();
-
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0)
     // kernel 4.14-4.18:
     return task->group_leader->pids[PIDTYPE_PID].pid->numbers[task->nsproxy->pid_ns_for_children->level].nr;
+#else
+    // kernel 4.19 onwards:
+    return task->group_leader->thread_pid->numbers[task->nsproxy->pid_ns_for_children->level].nr;
+#endif
 }
 
 static __always_inline u32 get_task_ns_ppid(struct task_struct *task)
 {
-    // kernel 4.19:
-    // return task->real_parent->tgid;
-    // return task->real_parent->thread_pid->numbers[task->real_parent->nsproxy->pid_ns_for_children->level].nr;
-
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0)
     // kernel 4.14-4.18:
     return task->real_parent->pids[PIDTYPE_PID].pid->numbers[task->real_parent->nsproxy->pid_ns_for_children->level].nr;
+#else
+    // kernel 4.19 onwards:
+    return task->real_parent->thread_pid->numbers[task->real_parent->nsproxy->pid_ns_for_children->level].nr;
+#endif
 }
 
 static __always_inline char * get_task_uts_name(struct task_struct *task)
