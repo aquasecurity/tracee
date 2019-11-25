@@ -16,17 +16,26 @@ Currently requires
 As root: `start.py [-h] [-c] [--max-args MAX_ARGS] [-j] [-e EVENTS_TO_TRACE]`
 
 optional arguments:
-  -h, --help            show this help message and exit
-  -c, --container       only trace newly created containers
-  --max-args MAX_ARGS   maximum number of arguments parsed and displayed, defaults to 20
-  -j, --json            save events in json format
-  -e EVENTS_TO_TRACE, --events-to-trace EVENTS_TO_TRACE
-                        trace only the specified events and syscalls (default: trace all)
+
+-h, --help            show this help message and exit
+
+-c, --container       only trace newly created containers
+
+--max-args MAX_ARGS   maximum number of arguments parsed and displayed, defaults to 20
+
+-j, --json            save events in json format
+
+-l, --list            list events
+
+-e EVENTS_TO_TRACE, --events-to-trace EVENTS_TO_TRACE
+trace only the specified events and syscalls (default: trace all)
 
 examples:
-    ./start.py -c
+
+`./start.py -c`
 
 Following is an output example of Tracee after running
+
 `docker run -it --rm alpine sh`
 
 ```
@@ -141,50 +150,9 @@ As can be seen in the above output, each event line shows the following informat
 
 Note about string arguments and userspace pointers: as pointers are being dereferenced from userspace memory, a malicious program may change the content being read before it actually gets executed in the kernel. Take this into account when doing security related stuff.
 
-Tracee currently supports the following system calls:
+Tracee currently supports a subset of system calls events, which can be listed with:
 
-* execve
-* execveat
-* mmap
-* mprotect
-* clone
-* fork
-* vfork
-* newstat
-* newfstat
-* newlstat
-* mknod
-* mknodat
-* dup
-* dup2
-* dup3
-* memfd_create
-* socket
-* close
-* ioctl
-* access
-* faccessat
-* kill
-* listen
-* connect
-* accept
-* accept4
-* bind
-* getsockname
-* prctl
-* ptrace
-* process_vm_writev
-* process_vm_readv
-* init_module
-* finit_module
-* delete_module
-* symlink
-* symlinkat
-* getdents
-* getdents64
-* creat
-* open
-* openat
+`./start.py -l`
 
 Other supported events are (functions called in kernel space):
 
@@ -204,7 +172,6 @@ Adding new events (especially system calls) to Tracee is straightforward, but on
 * Add check for head and tail to avoid overflow in the submission buffer
 * Change submission_buf size from 32 to num_of_cpu which can be determined by userspace and set accordingly
 * Consider re-writing userspace side (python) in golang
-* Allow user to enable/disable events from cmd line
 * Reduce number of missing events by optimizing event_t to use 4 bytes (sent by perf_submit)
 
 ## Known Issues
