@@ -197,7 +197,6 @@ Adding new events (especially system calls) to Tracee is straightforward, but on
 
 ## TODO
 
-* Add support for kernel versions 4.19 onwards
 * Add envp to execve(at) syscalls. Put argv and envp in a list instead being different param for each arg
 * Add full sockaddr struct fields to: "connect", "accept", "bind", "getsockname"
 * Consider tracing commit_creds to detect potential kernel exploits
