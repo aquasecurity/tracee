@@ -721,6 +721,7 @@ class EventMonitor:
         self.cont_mode = args.container
         self.json = args.json
         self.ebpf = args.ebpf
+        self.list_events = args.list
         self.events_to_trace = args.events_to_trace
 
     def init_bpf(self):
@@ -729,6 +730,15 @@ class EventMonitor:
             bpf_text = bpf_text.replace("CONTAINER_MODE", "1")
         else:
             bpf_text = bpf_text.replace("CONTAINER_MODE", "0")
+
+        if self.list_events:
+            log.info("Syscalls:")
+            for e in syscalls:
+                log.info("  %s" % e)
+            log.info("\nOther events:")
+            for e in sysevents:
+                log.info("  %s" % e)
+            exit()
 
         if self.ebpf:
             log.debug(bpf_text)
