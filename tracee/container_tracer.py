@@ -742,8 +742,8 @@ class EventMonitor:
 
         for syscall in sk:
             syscall_fnname = self.bpf.get_syscall_fnname(syscall)
-            self.bpf.attach_kprobe(event=syscall_fnname, fn_name="trace_sys_" + syscall)
-            self.bpf.attach_kretprobe(event=syscall_fnname, fn_name="trace_ret_sys_" + syscall)
+            self.bpf.attach_kprobe(event=syscall_fnname, fn_name="syscall__" + syscall)
+            self.bpf.attach_kretprobe(event=syscall_fnname, fn_name="trace_ret_" + syscall)
 
         for sysevent in se:
             self.bpf.attach_kprobe(event=sysevent, fn_name="trace_" + sysevent)

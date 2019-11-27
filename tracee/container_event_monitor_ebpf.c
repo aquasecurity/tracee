@@ -483,6 +483,26 @@ static __always_inline u32 get_task_ppid(struct task_struct *task)
     return task->real_parent->pid;
 }
 
+static __always_inline void get_syscall_args(struct pt_regs *ctx, args_t *args)
+{
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
+    args->args[0] = PT_REGS_PARM1(ctx);
+    args->args[1] = PT_REGS_PARM2(ctx);
+    args->args[2] = PT_REGS_PARM3(ctx);
+    args->args[3] = PT_REGS_PARM4(ctx);
+    args->args[4] = PT_REGS_PARM5(ctx);
+    args->args[5] = PT_REGS_PARM6(ctx);
+#else
+    struct pt_regs * ctx2 = (struct pt_regs *)ctx->di;
+    bpf_probe_read(&args->args[0], sizeof(args->args[0]), &ctx2->di);
+    bpf_probe_read(&args->args[1], sizeof(args->args[1]), &ctx2->si);
+    bpf_probe_read(&args->args[2], sizeof(args->args[2]), &ctx2->dx);
+    bpf_probe_read(&args->args[3], sizeof(args->args[3]), &ctx2->r10);
+    bpf_probe_read(&args->args[4], sizeof(args->args[4]), &ctx2->r8);
+    bpf_probe_read(&args->args[5], sizeof(args->args[5]), &ctx2->r9);
+#endif
+}
+
 /*============================== HELPER FUNCTIONS ==============================*/
 
 static __always_inline u32 lookup_pid()
@@ -716,7 +736,7 @@ static __always_inline int is_container()
 
 // Note: this function can't be nested!
 // if inner kernel functions are called in syscall this may be a problem! - fix
-static __always_inline int save_args(struct pt_regs *ctx)
+static __always_inline int save_args(struct pt_regs *ctx, bool is_syscall)
 {
     u64 id;
     args_t args = {};
@@ -730,12 +750,16 @@ static __always_inline int save_args(struct pt_regs *ctx)
     if (!should_trace)
         return 0;
 
-    args.args[0] = PT_REGS_PARM1(ctx);
-    args.args[1] = PT_REGS_PARM2(ctx);
-    args.args[2] = PT_REGS_PARM3(ctx);
-    args.args[3] = PT_REGS_PARM4(ctx);
-    args.args[4] = PT_REGS_PARM5(ctx);
-    args.args[5] = PT_REGS_PARM6(ctx);
+    if (!is_syscall) {
+        args.args[0] = PT_REGS_PARM1(ctx);
+        args.args[1] = PT_REGS_PARM2(ctx);
+        args.args[2] = PT_REGS_PARM3(ctx);
+        args.args[3] = PT_REGS_PARM4(ctx);
+        args.args[4] = PT_REGS_PARM5(ctx);
+        args.args[5] = PT_REGS_PARM6(ctx);
+    } else {
+        get_syscall_args(ctx, &args);
+    }
 
     id = bpf_get_current_pid_tgid();
     args_map.update(&id, &args);
@@ -830,10 +854,16 @@ static __always_inline int save_args_to_submit_buf(int types)
     return 0;
 }
 
-#define TRACE_ENT_FUNC(name)               \
-int trace_##name(struct pt_regs *ctx)      \
-{                                          \
-    return save_args(ctx);                 \
+#define TRACE_ENT_SYSCALL(name)                                         \
+int syscall__##name(struct pt_regs *ctx)                                \
+{                                                                       \
+    return save_args(ctx, true);                                        \
+}
+
+#define TRACE_ENT_FUNC(name)                                            \
+int syscall__##name(struct pt_regs *ctx)                                \
+{                                                                       \
+    return save_args(ctx, false);                                       \
 }
 
 #define TRACE_RET_FUNC(name, id, types)                                 \
@@ -853,7 +883,9 @@ int trace_ret_##name(struct pt_regs *ctx)                               \
     return 0;                                                           \
 }
 
-#define TRACE_RET_FORK_FUNC(name, id, types)                            \
+#define TRACE_RET_SYSCALL TRACE_RET_FUNC
+
+#define TRACE_RET_FORK_SYSCALL(name, id, types)                         \
 int trace_ret_##name(struct pt_regs *ctx)                               \
 {                                                                       \
     context_t context = {};                                             \
@@ -877,103 +909,103 @@ int trace_ret_##name(struct pt_regs *ctx)                               \
 
 // Note: race condition may occur if a malicious user changes memory content pointed by syscall arguments by concurrent threads!
 // Consider using inner kernel functions (e.g. security_file_open) to avoid this
-TRACE_ENT_FUNC(sys_open);
-TRACE_RET_FUNC(sys_open, SYS_OPEN, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
-TRACE_ENT_FUNC(sys_openat);
-TRACE_RET_FUNC(sys_openat, SYS_OPENAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T));
-TRACE_ENT_FUNC(sys_creat);
-TRACE_RET_FUNC(sys_creat, SYS_CREAT, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
-TRACE_ENT_FUNC(sys_mmap);
-TRACE_RET_FUNC(sys_mmap, SYS_MMAP, ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(INT_T)|ARG_TYPE3(INT_T)|ARG_TYPE4(INT_T)|ARG_TYPE5(OFF_T_T));
-TRACE_ENT_FUNC(sys_mprotect);
-TRACE_RET_FUNC(sys_mprotect, SYS_MPROTECT, ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(INT_T));
-TRACE_ENT_FUNC(sys_mknod);
-TRACE_RET_FUNC(sys_mknod, SYS_MKNOD, ARG_TYPE0(STR_T)|ARG_TYPE1(MODE_T_T)|ARG_TYPE2(DEV_T_T));
-TRACE_ENT_FUNC(sys_mknodat);
-TRACE_RET_FUNC(sys_mknodat, SYS_MKNODAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(MODE_T_T)|ARG_TYPE3(DEV_T_T));
-TRACE_ENT_FUNC(sys_memfd_create);
-TRACE_RET_FUNC(sys_memfd_create, SYS_MEMFD_CREATE, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
-TRACE_ENT_FUNC(sys_dup);
-TRACE_RET_FUNC(sys_dup, SYS_DUP, ARG_TYPE0(INT_T));
-TRACE_ENT_FUNC(sys_dup2);
-TRACE_RET_FUNC(sys_dup2, SYS_DUP2, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T));
-TRACE_ENT_FUNC(sys_dup3);
-TRACE_RET_FUNC(sys_dup3, SYS_DUP3, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(INT_T));
-TRACE_ENT_FUNC(sys_newstat);
-TRACE_RET_FUNC(sys_newstat, SYS_STAT, ARG_TYPE0(STR_T));
-TRACE_ENT_FUNC(sys_newlstat);
-TRACE_RET_FUNC(sys_newlstat, SYS_LSTAT, ARG_TYPE0(STR_T));
-TRACE_ENT_FUNC(sys_newfstat);
-TRACE_RET_FUNC(sys_newfstat, SYS_FSTAT, ARG_TYPE0(INT_T));
-TRACE_ENT_FUNC(sys_socket);
-TRACE_RET_FUNC(sys_socket, SYS_SOCKET, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(INT_T));
-TRACE_ENT_FUNC(sys_close);
-TRACE_RET_FUNC(sys_close, SYS_CLOSE, ARG_TYPE0(INT_T));
-TRACE_ENT_FUNC(sys_ioctl);
-TRACE_RET_FUNC(sys_ioctl, SYS_IOCTL, ARG_TYPE0(INT_T)|ARG_TYPE1(LONG_T));
-TRACE_ENT_FUNC(sys_access);
-TRACE_RET_FUNC(sys_access, SYS_ACCESS, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
-TRACE_ENT_FUNC(sys_faccessat);
-TRACE_RET_FUNC(sys_faccessat, SYS_FACCESSAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T)|ARG_TYPE3(INT_T));
-TRACE_ENT_FUNC(sys_kill);
-TRACE_RET_FUNC(sys_kill, SYS_KILL, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T));
-TRACE_ENT_FUNC(sys_listen);
-TRACE_RET_FUNC(sys_listen, SYS_LISTEN, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T));
-TRACE_ENT_FUNC(sys_connect);
-TRACE_RET_FUNC(sys_connect, SYS_CONNECT, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
-TRACE_ENT_FUNC(sys_accept);
-TRACE_RET_FUNC(sys_accept, SYS_ACCEPT, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
-TRACE_ENT_FUNC(sys_accept4);
-TRACE_RET_FUNC(sys_accept4, SYS_ACCEPT4, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
-TRACE_ENT_FUNC(sys_bind);
-TRACE_RET_FUNC(sys_bind, SYS_BIND, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
-TRACE_ENT_FUNC(sys_getsockname);
-TRACE_RET_FUNC(sys_getsockname, SYS_GETSOCKNAME, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
-TRACE_ENT_FUNC(sys_prctl);
-TRACE_RET_FUNC(sys_prctl, SYS_PRCTL, ARG_TYPE0(INT_T)|ARG_TYPE1(LONG_T)|ARG_TYPE2(LONG_T)|ARG_TYPE3(LONG_T)|ARG_TYPE4(LONG_T));
-TRACE_ENT_FUNC(sys_ptrace);
-TRACE_RET_FUNC(sys_ptrace, SYS_PTRACE, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(POINTER_T)|ARG_TYPE3(POINTER_T));
-TRACE_ENT_FUNC(sys_process_vm_writev);
-TRACE_RET_FUNC(sys_process_vm_writev, SYS_PROCESS_VM_WRITEV, ARG_TYPE0(INT_T)|ARG_TYPE1(POINTER_T)|ARG_TYPE2(LONG_T)|ARG_TYPE3(POINTER_T)|ARG_TYPE4(LONG_T)|ARG_TYPE5(LONG_T));
-TRACE_ENT_FUNC(sys_process_vm_readv);
-TRACE_RET_FUNC(sys_process_vm_readv, SYS_PROCESS_VM_READV, ARG_TYPE0(INT_T)|ARG_TYPE1(POINTER_T)|ARG_TYPE2(LONG_T)|ARG_TYPE3(POINTER_T)|ARG_TYPE4(LONG_T)|ARG_TYPE5(LONG_T));
-TRACE_ENT_FUNC(sys_init_module);
-TRACE_RET_FUNC(sys_init_module, SYS_INIT_MODULE, ARG_TYPE0(POINTER_T)|ARG_TYPE1(LONG_T)|ARG_TYPE2(STR_T));
-TRACE_ENT_FUNC(sys_finit_module);
-TRACE_RET_FUNC(sys_finit_module, SYS_FINIT_MODULE, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T));
-TRACE_ENT_FUNC(sys_delete_module);
-TRACE_RET_FUNC(sys_delete_module, SYS_DELETE_MODULE, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
-TRACE_ENT_FUNC(sys_symlink);
-TRACE_RET_FUNC(sys_symlink, SYS_SYMLINK, ARG_TYPE0(STR_T)|ARG_TYPE1(STR_T));
-TRACE_ENT_FUNC(sys_symlinkat);
-TRACE_RET_FUNC(sys_symlinkat, SYS_SYMLINKAT, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(STR_T));
-TRACE_ENT_FUNC(sys_getdents);
-TRACE_RET_FUNC(sys_getdents, SYS_GETDENTS, ARG_TYPE0(INT_T));
-TRACE_ENT_FUNC(sys_getdents64);
-TRACE_RET_FUNC(sys_getdents64, SYS_GETDENTS64, ARG_TYPE0(INT_T));
-TRACE_ENT_FUNC(sys_mount);
-TRACE_RET_FUNC(sys_mount, SYS_MOUNT, ARG_TYPE0(STR_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(STR_T)|ARG_TYPE3(LONG_T));
-TRACE_ENT_FUNC(sys_umount);
-TRACE_RET_FUNC(sys_umount, SYS_UMOUNT, ARG_TYPE0(STR_T));
-TRACE_ENT_FUNC(sys_unlink);
-TRACE_RET_FUNC(sys_unlink, SYS_UNLINK, ARG_TYPE0(STR_T));
-TRACE_ENT_FUNC(sys_unlinkat);
-TRACE_RET_FUNC(sys_unlinkat, SYS_UNLINKAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T));
+TRACE_ENT_SYSCALL(open);
+TRACE_RET_SYSCALL(open, SYS_OPEN, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
+TRACE_ENT_SYSCALL(openat);
+TRACE_RET_SYSCALL(openat, SYS_OPENAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T));
+TRACE_ENT_SYSCALL(creat);
+TRACE_RET_SYSCALL(creat, SYS_CREAT, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
+TRACE_ENT_SYSCALL(mmap);
+TRACE_RET_SYSCALL(mmap, SYS_MMAP, ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(INT_T)|ARG_TYPE3(INT_T)|ARG_TYPE4(INT_T)|ARG_TYPE5(OFF_T_T));
+TRACE_ENT_SYSCALL(mprotect);
+TRACE_RET_SYSCALL(mprotect, SYS_MPROTECT, ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(INT_T));
+TRACE_ENT_SYSCALL(mknod);
+TRACE_RET_SYSCALL(mknod, SYS_MKNOD, ARG_TYPE0(STR_T)|ARG_TYPE1(MODE_T_T)|ARG_TYPE2(DEV_T_T));
+TRACE_ENT_SYSCALL(mknodat);
+TRACE_RET_SYSCALL(mknodat, SYS_MKNODAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(MODE_T_T)|ARG_TYPE3(DEV_T_T));
+TRACE_ENT_SYSCALL(memfd_create);
+TRACE_RET_SYSCALL(memfd_create, SYS_MEMFD_CREATE, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
+TRACE_ENT_SYSCALL(dup);
+TRACE_RET_SYSCALL(dup, SYS_DUP, ARG_TYPE0(INT_T));
+TRACE_ENT_SYSCALL(dup2);
+TRACE_RET_SYSCALL(dup2, SYS_DUP2, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T));
+TRACE_ENT_SYSCALL(dup3);
+TRACE_RET_SYSCALL(dup3, SYS_DUP3, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(INT_T));
+TRACE_ENT_SYSCALL(newstat);
+TRACE_RET_SYSCALL(newstat, SYS_STAT, ARG_TYPE0(STR_T));
+TRACE_ENT_SYSCALL(newlstat);
+TRACE_RET_SYSCALL(newlstat, SYS_LSTAT, ARG_TYPE0(STR_T));
+TRACE_ENT_SYSCALL(newfstat);
+TRACE_RET_SYSCALL(newfstat, SYS_FSTAT, ARG_TYPE0(INT_T));
+TRACE_ENT_SYSCALL(socket);
+TRACE_RET_SYSCALL(socket, SYS_SOCKET, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(INT_T));
+TRACE_ENT_SYSCALL(close);
+TRACE_RET_SYSCALL(close, SYS_CLOSE, ARG_TYPE0(INT_T));
+TRACE_ENT_SYSCALL(ioctl);
+TRACE_RET_SYSCALL(ioctl, SYS_IOCTL, ARG_TYPE0(INT_T)|ARG_TYPE1(LONG_T));
+TRACE_ENT_SYSCALL(access);
+TRACE_RET_SYSCALL(access, SYS_ACCESS, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
+TRACE_ENT_SYSCALL(faccessat);
+TRACE_RET_SYSCALL(faccessat, SYS_FACCESSAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T)|ARG_TYPE3(INT_T));
+TRACE_ENT_SYSCALL(kill);
+TRACE_RET_SYSCALL(kill, SYS_KILL, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T));
+TRACE_ENT_SYSCALL(listen);
+TRACE_RET_SYSCALL(listen, SYS_LISTEN, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T));
+TRACE_ENT_SYSCALL(connect);
+TRACE_RET_SYSCALL(connect, SYS_CONNECT, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
+TRACE_ENT_SYSCALL(accept);
+TRACE_RET_SYSCALL(accept, SYS_ACCEPT, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
+TRACE_ENT_SYSCALL(accept4);
+TRACE_RET_SYSCALL(accept4, SYS_ACCEPT4, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
+TRACE_ENT_SYSCALL(bind);
+TRACE_RET_SYSCALL(bind, SYS_BIND, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
+TRACE_ENT_SYSCALL(getsockname);
+TRACE_RET_SYSCALL(getsockname, SYS_GETSOCKNAME, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
+TRACE_ENT_SYSCALL(prctl);
+TRACE_RET_SYSCALL(prctl, SYS_PRCTL, ARG_TYPE0(INT_T)|ARG_TYPE1(LONG_T)|ARG_TYPE2(LONG_T)|ARG_TYPE3(LONG_T)|ARG_TYPE4(LONG_T));
+TRACE_ENT_SYSCALL(ptrace);
+TRACE_RET_SYSCALL(ptrace, SYS_PTRACE, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(POINTER_T)|ARG_TYPE3(POINTER_T));
+TRACE_ENT_SYSCALL(process_vm_writev);
+TRACE_RET_SYSCALL(process_vm_writev, SYS_PROCESS_VM_WRITEV, ARG_TYPE0(INT_T)|ARG_TYPE1(POINTER_T)|ARG_TYPE2(LONG_T)|ARG_TYPE3(POINTER_T)|ARG_TYPE4(LONG_T)|ARG_TYPE5(LONG_T));
+TRACE_ENT_SYSCALL(process_vm_readv);
+TRACE_RET_SYSCALL(process_vm_readv, SYS_PROCESS_VM_READV, ARG_TYPE0(INT_T)|ARG_TYPE1(POINTER_T)|ARG_TYPE2(LONG_T)|ARG_TYPE3(POINTER_T)|ARG_TYPE4(LONG_T)|ARG_TYPE5(LONG_T));
+TRACE_ENT_SYSCALL(init_module);
+TRACE_RET_SYSCALL(init_module, SYS_INIT_MODULE, ARG_TYPE0(POINTER_T)|ARG_TYPE1(LONG_T)|ARG_TYPE2(STR_T));
+TRACE_ENT_SYSCALL(finit_module);
+TRACE_RET_SYSCALL(finit_module, SYS_FINIT_MODULE, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T));
+TRACE_ENT_SYSCALL(delete_module);
+TRACE_RET_SYSCALL(delete_module, SYS_DELETE_MODULE, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
+TRACE_ENT_SYSCALL(symlink);
+TRACE_RET_SYSCALL(symlink, SYS_SYMLINK, ARG_TYPE0(STR_T)|ARG_TYPE1(STR_T));
+TRACE_ENT_SYSCALL(symlinkat);
+TRACE_RET_SYSCALL(symlinkat, SYS_SYMLINKAT, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(STR_T));
+TRACE_ENT_SYSCALL(getdents);
+TRACE_RET_SYSCALL(getdents, SYS_GETDENTS, ARG_TYPE0(INT_T));
+TRACE_ENT_SYSCALL(getdents64);
+TRACE_RET_SYSCALL(getdents64, SYS_GETDENTS64, ARG_TYPE0(INT_T));
+TRACE_ENT_SYSCALL(mount);
+TRACE_RET_SYSCALL(mount, SYS_MOUNT, ARG_TYPE0(STR_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(STR_T)|ARG_TYPE3(LONG_T));
+TRACE_ENT_SYSCALL(umount);
+TRACE_RET_SYSCALL(umount, SYS_UMOUNT, ARG_TYPE0(STR_T));
+TRACE_ENT_SYSCALL(unlink);
+TRACE_RET_SYSCALL(unlink, SYS_UNLINK, ARG_TYPE0(STR_T));
+TRACE_ENT_SYSCALL(unlinkat);
+TRACE_RET_SYSCALL(unlinkat, SYS_UNLINKAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T));
 
-TRACE_ENT_FUNC(sys_fork);
-TRACE_ENT_FUNC(sys_vfork);
-TRACE_ENT_FUNC(sys_clone);
+TRACE_ENT_SYSCALL(fork);
+TRACE_ENT_SYSCALL(vfork);
+TRACE_ENT_SYSCALL(clone);
 #if CONTAINER_MODE
-TRACE_RET_FUNC(sys_fork, SYS_FORK, 0);
-TRACE_RET_FUNC(sys_vfork, SYS_VFORK, 0);
-TRACE_RET_FUNC(sys_clone, SYS_CLONE, 0);
+TRACE_RET_SYSCALL(fork, SYS_FORK, 0);
+TRACE_RET_SYSCALL(vfork, SYS_VFORK, 0);
+TRACE_RET_SYSCALL(clone, SYS_CLONE, 0);
 #else
-TRACE_RET_FORK_FUNC(sys_fork, SYS_FORK, 0);
-TRACE_RET_FORK_FUNC(sys_vfork, SYS_VFORK, 0);
-TRACE_RET_FORK_FUNC(sys_clone, SYS_CLONE, 0);
+TRACE_RET_FORK_SYSCALL(fork, SYS_FORK, 0);
+TRACE_RET_FORK_SYSCALL(vfork, SYS_VFORK, 0);
+TRACE_RET_FORK_SYSCALL(clone, SYS_CLONE, 0);
 #endif
 
-int trace_sys_execve(struct pt_regs *ctx,
+int syscall__execve(struct pt_regs *ctx,
     const char __user *filename,
     const char __user *const __user *__argv,
     const char __user *const __user *__envp)
@@ -1015,7 +1047,7 @@ out:
     return 0;
 }
 
-int trace_ret_sys_execve(struct pt_regs *ctx)
+int trace_ret_execve(struct pt_regs *ctx)
 {
     // we can't load string args here as after execve memory is wiped
     context_t context = {};
@@ -1037,7 +1069,7 @@ int trace_ret_sys_execve(struct pt_regs *ctx)
     return 0;
 }
 
-int trace_sys_execveat(struct pt_regs *ctx,
+int syscall__execveat(struct pt_regs *ctx,
     const int dirfd,
     const char __user *pathname,
     const char __user *const __user *__argv,
@@ -1083,7 +1115,7 @@ out:
     return 0;
 }
 
-int trace_ret_sys_execveat(struct pt_regs *ctx)
+int trace_ret_execveat(struct pt_regs *ctx)
 {
     // we can't load string args here as after execve memory is wiped
     context_t context = {};
