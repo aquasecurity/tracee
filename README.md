@@ -16,18 +16,26 @@ Currently requires
 As root: `tracee.py [-h] [-c] [--max-args MAX_ARGS] [-j] [-e EVENTS_TO_TRACE]`
 
 optional arguments:
-&nbsp;&nbsp;-h, --help            show this help message and exit<br>
-&nbsp;&nbsp;-c, --container       only trace newly created containers<br>
-&nbsp;&nbsp;--max-args MAX_ARGS   maximum number of arguments parsed and displayed, defaults to 20<br>
-&nbsp;&nbsp;-j, --json            save events in json format<br>
-&nbsp;&nbsp;-l, --list            list events<br>
-&nbsp;&nbsp;-e EVENTS_TO_TRACE, --events-to-trace EVENTS_TO_TRACE<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;trace only the specified events and syscalls (default: trace all)
 
-examples:<br>
+-h, --help            show this help message and exit
+
+-c, --container       only trace newly created containers
+
+--max-args MAX_ARGS   maximum number of arguments parsed and displayed, defaults to 20
+
+-j, --json            save events in json format
+
+-l, --list            list events
+
+-e EVENTS_TO_TRACE, --events-to-trace EVENTS_TO_TRACE
+trace only the specified events and syscalls (default: trace all)
+
+examples:
+
 `./tracee.py -c`
 
-Following is an output example of Tracee after running<br>
+Following is an output example of Tracee after running
+
 `docker run -it --rm alpine sh`
 
 ```
@@ -142,7 +150,8 @@ As can be seen in the above output, each event line shows the following informat
 
 Note about string arguments and userspace pointers: as pointers are being dereferenced from userspace memory, a malicious program may change the content being read before it actually gets executed in the kernel. Take this into account when doing security related stuff.
 
-Tracee currently supports a subset of system calls events, which can be listed with:<br>
+Tracee currently supports a subset of system calls events, which can be listed with:
+
 `./tracee.py -l`
 
 Other supported events are (functions called in kernel space):
