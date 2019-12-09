@@ -1,5 +1,5 @@
-# must run privileged and with linux headers and debugfs mounted 
-# docker run --name tracee --rm --privileged -v /lib/modules/:/lib/modules/ -v /usr/src:/usr/src -v /sys/kernel/debug:/sys/kernel/debug tracee:t2
+# must run privileged and with linux headers 
+# docker run --name tracee --rm --privileged -v /lib/modules/:/lib/modules/ -v /usr/src:/usr/src tracee
 FROM ubuntu:bionic
 
 RUN echo "deb [trusted=yes] http://repo.iovisor.org/apt/bionic bionic main" > /etc/apt/sources.list.d/iovisor.list && \
@@ -8,4 +8,4 @@ RUN echo "deb [trusted=yes] http://repo.iovisor.org/apt/bionic bionic main" > /e
 
 WORKDIR /tracee
 COPY . /tracee
-ENTRYPOINT ["python", "start.py"]
+ENTRYPOINT ["./entrypoint.sh", "python", "start.py"]
