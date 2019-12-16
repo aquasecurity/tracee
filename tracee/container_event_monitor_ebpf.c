@@ -15,8 +15,8 @@
 #include <linux/version.h>
 
 #define MAX_STRING_SIZE 4096                                // Choosing this value to be the same as PATH_MAX
-#define SUBMIT_BUFSIZE  524288                              // Need to be power of 2
-#define SUBMIT_BUFSIZE_HALF   ((SUBMIT_BUFSIZE-1) >> 1)     // Bitmask for ebpf validator - this is why we need STR_BUFSIZE to be power of 2
+#define SUBMIT_BUFSIZE  (2 << 13)                           // Need to be power of 2
+#define SUBMIT_BUFSIZE_HALF   ((SUBMIT_BUFSIZE-1) >> 1)     // Bitmask for ebpf validator - this is why we need SUBMIT_BUFSIZE to be power of 2
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
 #error Minimal required kernel version is 4.14
@@ -389,15 +389,8 @@ typedef struct args {
     unsigned long args[6];
 } args_t;
 
-// This will be submitted with perf_submit - keep as small as possible
-typedef struct event {
-    u32 start_off;              // Event start offset in submit ring buffer
-    u32 max_off;                // Lets user space know when buffer is wrapped, without assuming any buffer size
-    u32 end_off;                // Event end offset in submit ring buffer
-} event_t;
-
 typedef struct submit_buf {
-    int head, tail;
+    u32 off;
     u8 buf[SUBMIT_BUFSIZE];
 } submit_buf_t;
 
@@ -419,10 +412,7 @@ struct uts_namespace {
 
 BPF_HASH(pids_map, u32, u32);                       // Save container pid namespaces
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
-BPF_PERCPU_ARRAY(event_submit, event_t, 1);         // Event to perf_submit
-BPF_ARRAY(submission_buf, submit_buf_t, CPU_NUM);   // Buffer for events
-// Not using percpu array for submission_buf as it caused insufficient memory with large buffer size.
-// Percpu buffer max possible size is (2^17)/log(num_of_cpus)
+BPF_PERCPU_ARRAY(submission_buf, submit_buf_t, 1);  // Buffer used to prepare event for perf_submit
 
 /*================================== EVENTS ====================================*/
 
@@ -620,35 +610,26 @@ static __always_inline int init_context(context_t *context)
     return 0;
 }
 
-static __always_inline event_t * get_event()
+static __always_inline submit_buf_t * get_submit_buf()
 {
     int idx = 0;
     // Get per-cpu buffer
-    event_t *event = event_submit.lookup(&idx);
-    if (event == NULL)
-        return NULL;
-
-    return event;
-}
-
-static __always_inline submit_buf_t * get_submit_buf()
-{
-    int key = bpf_get_smp_processor_id();
-    submit_buf_t *submit_p = submission_buf.lookup(&key);
+    submit_buf_t *submit_p = submission_buf.lookup(&idx);
     if (submit_p == NULL)
         return NULL;
 
-    if (submit_p->head > SUBMIT_BUFSIZE_HALF) {
-        event_t *event_p = get_event();
-        if (event_p == NULL)
-            return NULL;
-
-        // Save the max offset so user space can know until where to read
-        event_p->max_off = submit_p->head;
-        // Not enough space - return to ring buffer start (ebpf validator forces bounds check)
-        submit_p->head = 0;
-    }
     return submit_p;
+}
+
+static __always_inline int init_submit_buf()
+{
+    submit_buf_t *submit_p = get_submit_buf();
+    if (submit_p == NULL)
+        return -1;
+
+    submit_p->off = 0;
+
+    return 0;
 }
 
 static __always_inline int save_to_submit_buf(void *ptr, int size)
@@ -658,10 +639,14 @@ static __always_inline int save_to_submit_buf(void *ptr, int size)
     if (submit_p == NULL)
         return 0;
 
+    if (submit_p->off > SUBMIT_BUFSIZE_HALF)
+        // not enough space - return
+        return 0;
+
     // Read into buffer
-    int rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->head & SUBMIT_BUFSIZE_HALF]), size, ptr);
+    int rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->off & SUBMIT_BUFSIZE_HALF]), size, ptr);
     if (rc == 0) {
-        submit_p->head += size;
+        submit_p->off += size;
         return size;
     }
 
@@ -675,45 +660,31 @@ static __always_inline int save_str_to_buf(void *ptr)
     if (submit_p == NULL)
         return 0;
 
+    if (submit_p->off > SUBMIT_BUFSIZE_HALF)
+        // not enough space - return
+        return 0;
+
     // Read into buffer
-    int sz = bpf_probe_read_str((void **)&(submit_p->buf[(submit_p->head + sizeof(int)) & SUBMIT_BUFSIZE_HALF]), MAX_STRING_SIZE, ptr);
+    int sz = bpf_probe_read_str((void **)&(submit_p->buf[(submit_p->off + sizeof(int)) & SUBMIT_BUFSIZE_HALF]), MAX_STRING_SIZE, ptr);
     if (sz > 0) {
-        bpf_probe_read((void **)&(submit_p->buf[submit_p->head & SUBMIT_BUFSIZE_HALF]), sizeof(int), &sz);
-        submit_p->head += sz + sizeof(int);
+        bpf_probe_read((void **)&(submit_p->buf[submit_p->off & SUBMIT_BUFSIZE_HALF]), sizeof(int), &sz);
+        submit_p->off += sz + sizeof(int);
         return sz + sizeof(int);
     }
 
     return 0;
 }
 
-static __always_inline int init_event()
+static __always_inline int events_perf_submit(struct pt_regs *ctx)
 {
-    event_t *event_p = get_event();
-    if (event_p == NULL)
-        return -1;
-
     submit_buf_t *submit_p = get_submit_buf();
     if (submit_p == NULL)
         return -1;
 
-    event_p->start_off = submit_p->head;
-    event_p->max_off = SUBMIT_BUFSIZE;
-
-    return 0;
-}
-
-static __always_inline int events_perf_submit(struct pt_regs *ctx)
-{
-    event_t *event_p = get_event();
-    if (event_p == NULL)
-        return -1;
-
-    int key = bpf_get_smp_processor_id();
-    submit_buf_t *submit_p = submission_buf.lookup(&key);
-    if (submit_p != NULL)
-        event_p->end_off = submit_p->head;
-
-    return events.perf_submit(ctx, event_p, sizeof(event_t));
+    /* satisfy validator by setting buffer bounds */
+    int size = ((submit_p->off - 1) & SUBMIT_BUFSIZE_HALF) + 1;
+    void * data = submit_p->buf;
+    return events.perf_submit(ctx, data, size);
 }
 
 static __always_inline int save_argv(struct pt_regs *ctx, void *ptr)
@@ -871,7 +842,7 @@ int trace_ret_##name(struct pt_regs *ctx)                               \
 {                                                                       \
     context_t context = {};                                             \
                                                                         \
-    if (init_context(&context) || init_event())                         \
+    if (init_context(&context) || init_submit_buf())                    \
         return 0;                                                       \
                                                                         \
     context.eventid = id;                                               \
@@ -890,7 +861,7 @@ int trace_ret_##name(struct pt_regs *ctx)                               \
 {                                                                       \
     context_t context = {};                                             \
                                                                         \
-    if (init_context(&context) || init_event())                         \
+    if (init_context(&context) || init_submit_buf())                    \
         return 0;                                                       \
                                                                         \
     u32 pid = PT_REGS_RC(ctx);                                          \
@@ -1021,7 +992,7 @@ int syscall__execve(struct pt_regs *ctx,
     if (ret == 0)
         return 0;
 
-    if (init_context(&context) || init_event())
+    if (init_context(&context) || init_submit_buf())
         return 0;
 
     context.eventid = SYS_EXECVE;
@@ -1052,7 +1023,7 @@ int trace_ret_execve(struct pt_regs *ctx)
     // we can't load string args here as after execve memory is wiped
     context_t context = {};
 
-    if (init_context(&context) || init_event())
+    if (init_context(&context) || init_submit_buf())
         return 0;
 
     context.eventid = SYS_EXECVE;
@@ -1087,7 +1058,7 @@ int syscall__execveat(struct pt_regs *ctx,
     if (ret == 0)
         return 0;
 
-    if (init_context(&context) || init_event())
+    if (init_context(&context) || init_submit_buf())
         return 0;
 
     context.eventid = SYS_EXECVEAT;
@@ -1120,7 +1091,7 @@ int trace_ret_execveat(struct pt_regs *ctx)
     // we can't load string args here as after execve memory is wiped
     context_t context = {};
 
-    if (init_context(&context) || init_event())
+    if (init_context(&context) || init_submit_buf())
         return 0;
 
     context.eventid = SYS_EXECVEAT;
@@ -1143,7 +1114,7 @@ int trace_do_exit(struct pt_regs *ctx, long code)
 {
     context_t context = {};
 
-    if (init_context(&context) || init_event())
+    if (init_context(&context) || init_submit_buf())
         return 0;
 
     context.eventid = DO_EXIT;
@@ -1165,7 +1136,7 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
     int audit;
     context_t context = {};
 
-    if (init_context(&context) || init_event())
+    if (init_context(&context) || init_submit_buf())
         return 0;
 
     context.eventid = CAP_CAPABLE;

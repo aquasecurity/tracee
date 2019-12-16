@@ -10,7 +10,6 @@ import ctypes
 import json
 import logging
 import sys
-import multiprocessing
 
 from bcc import BPF
 
@@ -712,18 +711,20 @@ def get_kprobes(events):
 class EventMonitor:
 
     def __init__(self, args):
-        self.start_off = 0
         self.cur_off = 0
-        self.max_off = 0
-        self.end_off = 0
         self.events = list()
         self.do_trace = True
         self.bpf = None
+        self.event_bufs = list()
+        self.total_lost = 0
+
+        # input arguments
         self.cont_mode = args.container
         self.json = args.json
         self.ebpf = args.ebpf
         self.list_events = args.list
         self.events_to_trace = args.events_to_trace
+        self.buf_pages = args.buf_pages
 
     def init_bpf(self):
         bpf_text = load_bpf_program().replace("MAXARG", str(MAX_ARGS))
@@ -732,7 +733,11 @@ class EventMonitor:
         else:
             bpf_text = bpf_text.replace("CONTAINER_MODE", "0")
 
-        bpf_text = bpf_text.replace("CPU_NUM", str(multiprocessing.cpu_count()))
+        try:
+            self.buf_pages = int(self.buf_pages)
+        except ValueError:
+            print("Invalid buffer size")
+            exit()
 
         if self.list_events:
             log.info("Syscalls:")
@@ -766,10 +771,9 @@ class EventMonitor:
                 "TIME(s)", "UTS_NAME", "MNT_NS", "PID_NS", "UID", "EVENT", "COMM", "PID", "TID", "PPID", "RET", "ARGS"))
 
     def get_sockaddr_from_buf(self, buf):
-        # handle buffer wrap
         # todo: parse all fields
-        if self.cur_off >= self.max_off:
-            self.cur_off = 0
+        if self.cur_off >= ctypes.sizeof(buf):
+            return ""
         c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_short)).contents
         self.cur_off = self.cur_off + 2
         domain = c_val.value
@@ -779,41 +783,36 @@ class EventMonitor:
             return str(domain)
 
     def get_int_from_buf(self, buf):
-        # handle buffer wrap
-        if self.cur_off >= self.max_off:
-            self.cur_off = 0
+        if self.cur_off >= ctypes.sizeof(buf):
+            return 0
         c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_int)).contents
         self.cur_off = self.cur_off + 4
         return c_val.value
 
     def get_uint_from_buf(self, buf):
-        # handle buffer wrap
-        if self.cur_off >= self.max_off:
-            self.cur_off = 0
+        if self.cur_off >= ctypes.sizeof(buf):
+            return 0
         c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_uint)).contents
         self.cur_off = self.cur_off + 4
         return c_val.value
 
     def get_ulong_from_buf(self, buf):
-        # handle buffer wrap
-        if self.cur_off >= self.max_off:
-            self.cur_off = 0
+        if self.cur_off >= ctypes.sizeof(buf):
+            return 0
         c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_ulong)).contents
         self.cur_off = self.cur_off + 8
         return c_val.value
 
     def get_pointer_from_buf(self, buf):
-        # handle buffer wrap
-        if self.cur_off >= self.max_off:
-            self.cur_off = 0
+        if self.cur_off >= ctypes.sizeof(buf):
+            return hex(0)
         c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_void_p)).contents
         self.cur_off = self.cur_off + 8
         return hex(0 if c_val.value is None else c_val.value)
 
     def get_string_from_buf(self, buf):
-        # handle buffer wrap
-        if self.cur_off >= self.max_off:
-            self.cur_off = 0
+        if self.cur_off >= ctypes.sizeof(buf):
+            return ""
         str_size = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_uint)).contents.value
         str_off = self.cur_off + 4
         str_buf = buf[str_off:str_off + str_size]
@@ -825,26 +824,12 @@ class EventMonitor:
             return ""
 
     def get_argv_from_buf(self, buf, args):
-        while True:
-            # first, check if there are more args to parse
-            if self.cur_off >= self.end_off:
-                if self.end_off > self.start_off:
-                    return  # reached args end
-                elif self.cur_off < self.start_off:  # wrapped buffer
-                    return  # reached args end (wrapped buffer)
+        while self.cur_off < ctypes.sizeof(buf):
             args.append(self.get_string_from_buf(buf))
 
-    # process event
-    def print_event(self, cpu, data, size):
-        event = self.bpf["events"].event(data)
-        self.start_off = event.start_off
-        self.cur_off = event.start_off
-        self.max_off = event.max_off
-        self.end_off = event.end_off
-        event_buf = self.bpf["submission_buf"][cpu].buf
-
-        context = ctypes.cast(ctypes.byref(event_buf, self.cur_off), ctypes.POINTER(context_t)).contents
-        self.cur_off += ctypes.sizeof(context_t)
+    def print_event(self, event_buf):
+        context = ctypes.cast(ctypes.byref(event_buf), ctypes.POINTER(context_t)).contents
+        self.cur_off = ctypes.sizeof(context_t)
 
         pid = context.pid
         tid = context.tid
@@ -1132,6 +1117,16 @@ class EventMonitor:
         # log.info(json.dumps(events, indent=4))
         # exit()
 
+    # process event
+    def handle_event(self, cpu, data, size):
+        buf = ctypes.cast(data, ctypes.POINTER(ctypes.c_char*size)).contents
+        event_buf = (ctypes.c_char * size).from_buffer_copy(buf)
+        self.event_bufs.append(event_buf)
+
+    def lost_event(self, lost):
+        self.total_lost += lost
+        log.info("Possibly lost %d events (%d in total), consider using a bigger buffer" % (lost, self.total_lost))
+
     def stop_trace(self):
         self.do_trace = False
 
@@ -1139,9 +1134,14 @@ class EventMonitor:
         return self.events
 
     def monitor_events(self):
-        # loop with callback to print_event
-        self.bpf["events"].open_perf_buffer(self.print_event)
+        # loop with callback to handle_event
+        self.bpf["events"].open_perf_buffer(self.handle_event, page_cnt=self.buf_pages, lost_cb=self.lost_event)
         while self.do_trace:
+            # It would have been better to parse the events in a "consumer" thread
+            # As python threading is not efficient - parse here
+            for event in self.event_bufs:
+                self.print_event(event)
+            self.event_bufs = list()
             try:
                 self.bpf.perf_buffer_poll(1000)
             except KeyboardInterrupt:
