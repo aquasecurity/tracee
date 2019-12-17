@@ -719,11 +719,13 @@ class EventMonitor:
         self.event_bufs = list()
         self.prev_time = 0
 
+        # input arguments
         self.cont_mode = args.container
         self.json = args.json
         self.ebpf = args.ebpf
         self.list_events = args.list
         self.events_to_trace = args.events_to_trace
+        self.buf_size = args.buf_size
 
     def init_bpf(self):
         bpf_text = load_bpf_program().replace("MAXARG", str(MAX_ARGS))
@@ -731,6 +733,19 @@ class EventMonitor:
             bpf_text = bpf_text.replace("CONTAINER_MODE", "1")
         else:
             bpf_text = bpf_text.replace("CONTAINER_MODE", "0")
+
+        try:
+            self.buf_size = int(self.buf_size)
+        except ValueError:
+            print("Invalid buffer size")
+            exit()
+        if self.buf_size < 13:
+            print("Submission buffer size too small, setting buffer size to 2^%d" % 13)
+            self.buf_size = 13
+        if self.buf_size > 20:
+            print("Submission buffer size too big, setting buffer size to 2^%d" % 20)
+            self.buf_size = 20
+        bpf_text = bpf_text.replace("BUF_SZ_EXPO", str(self.buf_size))
 
         if self.list_events:
             log.info("Syscalls:")
@@ -1115,6 +1130,9 @@ class EventMonitor:
         self.prev_time = time.time()
         event = self.bpf["events"].event(data)
         events_buf = self.bpf["submission_buf"][cpu].buf
+        events_buf_head = self.bpf["submission_buf"][cpu].head
+        if (events_buf_head - event.start_off) > (2**(self.buf_size-1)):
+            print("Possibly lost event data! Consider using bigger submission buffer size")
         if (event.end_off > event.start_off):
             event_size = event.end_off - event.start_off
             event_buf = (ctypes.c_char * event_size).from_buffer_copy(events_buf, event.start_off)

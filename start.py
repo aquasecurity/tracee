@@ -36,6 +36,8 @@ def parse_args(input_args):
                         help="only trace newly created containers")
     parser.add_argument("--max-args", default="20",
                         help="maximum number of arguments parsed and displayed, defaults to 20")
+    parser.add_argument("-b", "--buf-size", default="20",
+                        help="per-cpu submission buffer size exponent in the range 13-20, defaults to 20 (2^20 bytes)")
     parser.add_argument("--ebpf", action="store_true",
                         help=argparse.SUPPRESS)
     parser.add_argument("-j", "--json", action="store_true",

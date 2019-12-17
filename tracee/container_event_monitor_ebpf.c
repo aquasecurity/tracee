@@ -15,7 +15,7 @@
 #include <linux/version.h>
 
 #define MAX_STRING_SIZE 4096                                // Choosing this value to be the same as PATH_MAX
-#define SUBMIT_BUFSIZE  524288                              // Need to be power of 2
+#define SUBMIT_BUFSIZE  (2 << BUF_SZ_EXPO)                  // Need to be power of 2
 #define SUBMIT_BUFSIZE_HALF   ((SUBMIT_BUFSIZE-1) >> 1)     // Bitmask for ebpf validator - this is why we need STR_BUFSIZE to be power of 2
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
@@ -397,7 +397,7 @@ typedef struct event {
 } event_t;
 
 typedef struct submit_buf {
-    int head, tail;
+    int head;
     u8 buf[SUBMIT_BUFSIZE];
 } submit_buf_t;
 
