@@ -168,7 +168,6 @@ Adding new events (especially system calls) to Tracee is straightforward, but on
 * Add envp to execve(at) syscalls. Put argv and envp in a list instead being different param for each arg
 * Add full sockaddr struct fields to: "connect", "accept", "bind", "getsockname"
 * Consider tracing commit_creds to detect potential kernel exploits
-* Fix missing pathname in execveat syscall
 * Add check for head and tail to avoid overflow in the submission buffer
 * Change submission_buf size from 32 to num_of_cpu which can be determined by userspace and set accordingly
 * Consider re-writing userspace side (python) in golang
@@ -176,5 +175,5 @@ Adding new events (especially system calls) to Tracee is straightforward, but on
 
 ## Known Issues
 
-* Pathname is missing in execveat syscall
+* Pathname is missing in execve(at) syscalls - Issue #2627 in BCC project
 * Lost events when event rate is high
