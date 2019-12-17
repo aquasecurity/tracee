@@ -170,7 +170,6 @@ Adding new events (especially system calls) to Tracee is straightforward, but on
 * Consider tracing commit_creds to detect potential kernel exploits
 * Fix missing pathname in execveat syscall
 * Add check for head and tail to avoid overflow in the submission buffer
-* Change submission_buf size from 32 to num_of_cpu which can be determined by userspace and set accordingly
 * Consider re-writing userspace side (python) in golang
 * Reduce number of missing events by optimizing event_t to use 4 bytes (sent by perf_submit)
 

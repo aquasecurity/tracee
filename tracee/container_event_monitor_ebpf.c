@@ -420,7 +420,7 @@ struct uts_namespace {
 BPF_HASH(pids_map, u32, u32);                       // Save container pid namespaces
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
 BPF_PERCPU_ARRAY(event_submit, event_t, 1);         // Event to perf_submit
-BPF_ARRAY(submission_buf, submit_buf_t, 32);        // Buffer for events
+BPF_ARRAY(submission_buf, submit_buf_t, CPU_NUM);   // Buffer for events
 // Not using percpu array for submission_buf as it caused insufficient memory with large buffer size.
 // Percpu buffer max possible size is (2^17)/log(num_of_cpus)
 
