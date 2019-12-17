@@ -10,6 +10,7 @@ import ctypes
 import json
 import logging
 import sys
+import multiprocessing
 
 from bcc import BPF
 
@@ -730,6 +731,8 @@ class EventMonitor:
             bpf_text = bpf_text.replace("CONTAINER_MODE", "1")
         else:
             bpf_text = bpf_text.replace("CONTAINER_MODE", "0")
+
+        bpf_text = bpf_text.replace("CPU_NUM", str(multiprocessing.cpu_count()))
 
         if self.list_events:
             log.info("Syscalls:")
