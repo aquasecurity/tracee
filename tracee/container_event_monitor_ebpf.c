@@ -18,16 +18,31 @@
 #define SUBMIT_BUFSIZE  (2 << 13)                           // Need to be power of 2
 #define SUBMIT_BUFSIZE_HALF   ((SUBMIT_BUFSIZE-1) >> 1)     // Bitmask for ebpf validator - this is why we need SUBMIT_BUFSIZE to be power of 2
 
+#define NONE_T      0UL
+#define INT_T       1UL
+#define UINT_T      2UL
+#define LONG_T      3UL
+#define ULONG_T     4UL
+#define OFF_T_T     5UL
+#define MODE_T_T    6UL
+#define DEV_T_T     7UL
+#define SIZE_T_T    8UL
+#define POINTER_T   9UL
+#define STR_T       10UL
+#define STR_ARR_T   11UL
+#define SOCKADDR_T  12UL
+#define OPENFLAGS_T 13UL
+#define EXEC_FLAG_T 14UL
+#define SOCK_DOM_T  15UL
+#define SOCK_TYPE_T 16UL
+#define CAP_T       17UL
+#define TYPE_MAX    255UL
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
 #error Minimal required kernel version is 4.14
 #endif
 
 /*==================================== ENUMS =================================*/
-
-enum event_type {
-    EVENT_ARG,
-    EVENT_RET,
-};
 
 enum event_id {
     SYS_READ,
@@ -382,6 +397,7 @@ typedef struct context {
     char comm[TASK_COMM_LEN];
     char uts_name[TASK_COMM_LEN];
     enum event_id eventid;
+    u8 argnum;
     s64 retval;
 } context_t;
 
@@ -632,7 +648,7 @@ static __always_inline int init_submit_buf()
     return 0;
 }
 
-static __always_inline int save_to_submit_buf(void *ptr, int size)
+static __always_inline int save_to_submit_buf(void *ptr, int size, u8 type)
 {
     submit_buf_t *submit_p = get_submit_buf();
 
@@ -642,6 +658,18 @@ static __always_inline int save_to_submit_buf(void *ptr, int size)
     if (submit_p->off > SUBMIT_BUFSIZE_HALF)
         // not enough space - return
         return 0;
+
+    // Save argument type
+    if (type != 0) {
+        int rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->off & SUBMIT_BUFSIZE_HALF]), 1, &type);
+        if (rc != 0)
+            return 0;
+
+        submit_p->off += 1;
+
+        if (type == STR_ARR_T)
+            return 0;
+    }
 
     // Read into buffer
     int rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->off & SUBMIT_BUFSIZE_HALF]), size, ptr);
@@ -664,12 +692,25 @@ static __always_inline int save_str_to_buf(void *ptr)
         // not enough space - return
         return 0;
 
+    int type = STR_T;
+    // Save argument type
+    int rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->off & SUBMIT_BUFSIZE_HALF]), 1, &type);
+    if (rc != 0)
+        return 0;
+
+    submit_p->off += 1;
+
     // Read into buffer
     int sz = bpf_probe_read_str((void **)&(submit_p->buf[(submit_p->off + sizeof(int)) & SUBMIT_BUFSIZE_HALF]), MAX_STRING_SIZE, ptr);
     if (sz > 0) {
         bpf_probe_read((void **)&(submit_p->buf[submit_p->off & SUBMIT_BUFSIZE_HALF]), sizeof(int), &sz);
         submit_p->off += sz + sizeof(int);
         return sz + sizeof(int);
+    } else {
+        sz = 0;
+        bpf_probe_read((void **)&(submit_p->buf[submit_p->off & SUBMIT_BUFSIZE_HALF]), sizeof(int), &sz);
+        submit_p->off += sizeof(int);
+        return sizeof(int);
     }
 
     return 0;
@@ -763,31 +804,31 @@ static __always_inline int load_args(args_t *args)
     return 0;
 }
 
-#define NONE        0
-#define INT_T       1
-#define LONG_T      2
-#define POINTER_T   3
-#define STR_T       4
-#define OFF_T_T     5
-#define MODE_T_T    6
-#define DEV_T_T     7
-#define SIZE_T_T    8
-#define UINT_T      9
-#define SOCKADDR_T  10
-#define TYPE_MAX    16
-
-#define ENC_ARG_TYPE(n, type) type<<(4*n)
+#define ENC_ARG_TYPE(n, type) type<<(8*n)
 #define ARG_TYPE0(type) ENC_ARG_TYPE(0, type)
 #define ARG_TYPE1(type) ENC_ARG_TYPE(1, type)
 #define ARG_TYPE2(type) ENC_ARG_TYPE(2, type)
 #define ARG_TYPE3(type) ENC_ARG_TYPE(3, type)
 #define ARG_TYPE4(type) ENC_ARG_TYPE(4, type)
 #define ARG_TYPE5(type) ENC_ARG_TYPE(5, type)
-#define DEC_ARG_TYPE(n, enc_type) ((enc_type>>(4*n))&0xF)
+#define DEC_ARG_TYPE(n, enc_type) ((enc_type>>(8*n))&0xFF)
 
-static __always_inline int save_args_to_submit_buf(int types)
+static __always_inline int get_encoded_arg_num(u64 types)
+{
+    unsigned int i, argnum = 0;
+    #pragma unroll
+    for(i=0; i<6; i++)
+    {
+        if (DEC_ARG_TYPE(i, types) != NONE_T)
+            argnum++;
+    }
+    return argnum;
+}
+
+static __always_inline int save_args_to_submit_buf(u64 types)
 {
     unsigned int i;
+    short family = 0;
     args_t args = {};
 
     if ((types == 0) || (load_args(&args) != 0))
@@ -796,29 +837,54 @@ static __always_inline int save_args_to_submit_buf(int types)
     #pragma unroll
     for(i=0; i<6; i++)
     {
-        if (DEC_ARG_TYPE(i, types) == INT_T)
-            save_to_submit_buf((void*)&(args.args[i]), sizeof(int));
-        else if (DEC_ARG_TYPE(i, types) == UINT_T)
-            save_to_submit_buf((void*)&(args.args[i]), sizeof(unsigned int));
-        else if (DEC_ARG_TYPE(i, types) == OFF_T_T)
-            save_to_submit_buf((void*)&(args.args[i]), sizeof(off_t));
-        else if (DEC_ARG_TYPE(i, types) == DEV_T_T)
-            save_to_submit_buf((void*)&(args.args[i]), sizeof(dev_t));
-        else if (DEC_ARG_TYPE(i, types) == MODE_T_T)
-            save_to_submit_buf((void*)&(args.args[i]), sizeof(mode_t));
-        else if (DEC_ARG_TYPE(i, types) == LONG_T)
-            save_to_submit_buf((void*)&(args.args[i]), sizeof(unsigned long));
-        else if (DEC_ARG_TYPE(i, types) == SIZE_T_T)
-            save_to_submit_buf((void*)&(args.args[i]), sizeof(size_t));
-        else if (DEC_ARG_TYPE(i, types) == POINTER_T)
-            save_to_submit_buf((void*)&(args.args[i]), sizeof(void*));
-        else if (DEC_ARG_TYPE(i, types) == STR_T)
-            save_str_to_buf((void *)args.args[i]);
-        else if (DEC_ARG_TYPE(i, types) == SOCKADDR_T) {
-            short family = 0;
-            if (args.args[i])
-                bpf_probe_read(&family, sizeof(short), (void*)args.args[i]);
-            save_to_submit_buf((void*)&family, sizeof(short));
+        switch (DEC_ARG_TYPE(i, types))
+        {
+            case NONE_T:
+                break;
+            case INT_T:
+                save_to_submit_buf((void*)&(args.args[i]), sizeof(int), INT_T);
+                break;
+            case OPENFLAGS_T:
+                save_to_submit_buf((void*)&(args.args[i]), sizeof(int), OPENFLAGS_T);
+                break;
+            case UINT_T:
+                save_to_submit_buf((void*)&(args.args[i]), sizeof(unsigned int), UINT_T);
+                break;
+            case OFF_T_T:
+                save_to_submit_buf((void*)&(args.args[i]), sizeof(off_t), OFF_T_T);
+                break;
+            case DEV_T_T:
+                save_to_submit_buf((void*)&(args.args[i]), sizeof(dev_t), DEV_T_T);
+                break;
+            case MODE_T_T:
+                save_to_submit_buf((void*)&(args.args[i]), sizeof(mode_t), MODE_T_T);
+                break;
+            case LONG_T:
+                save_to_submit_buf((void*)&(args.args[i]), sizeof(long), LONG_T);
+                break;
+            case ULONG_T:
+                save_to_submit_buf((void*)&(args.args[i]), sizeof(unsigned long), ULONG_T);
+                break;
+            case SIZE_T_T:
+                save_to_submit_buf((void*)&(args.args[i]), sizeof(size_t), SIZE_T_T);
+                break;
+            case POINTER_T:
+                save_to_submit_buf((void*)&(args.args[i]), sizeof(void*), POINTER_T);
+                break;
+            case STR_T:
+                save_str_to_buf((void *)args.args[i]);
+                break;
+            case SOCK_DOM_T:
+                save_to_submit_buf((void*)&(args.args[i]), sizeof(int), SOCK_DOM_T);
+                break;
+            case SOCK_TYPE_T:
+                save_to_submit_buf((void*)&(args.args[i]), sizeof(int), SOCK_TYPE_T);
+                break;
+            case SOCKADDR_T:
+                if (args.args[i])
+                    bpf_probe_read(&family, sizeof(short), (void*)args.args[i]);
+                save_to_submit_buf((void*)&family, sizeof(short), SOCKADDR_T);
+                break;
         }
     }
 
@@ -846,8 +912,9 @@ int trace_ret_##name(struct pt_regs *ctx)                               \
         return 0;                                                       \
                                                                         \
     context.eventid = id;                                               \
+    context.argnum = get_encoded_arg_num(types);                        \
     context.retval = PT_REGS_RC(ctx);                                   \
-    save_to_submit_buf((void*)&context, sizeof(context_t));             \
+    save_to_submit_buf((void*)&context, sizeof(context_t), NONE_T);     \
     save_args_to_submit_buf(types);                                     \
                                                                         \
     events_perf_submit(ctx);                                            \
@@ -868,8 +935,9 @@ int trace_ret_##name(struct pt_regs *ctx)                               \
     add_pid_fork(pid);                                                  \
                                                                         \
     context.eventid = id;                                               \
+    context.argnum = get_encoded_arg_num(types);                        \
     context.retval = PT_REGS_RC(ctx);                                   \
-    save_to_submit_buf((void*)&context, sizeof(context_t));             \
+    save_to_submit_buf((void*)&context, sizeof(context_t), NONE_T);     \
     save_args_to_submit_buf(types);                                     \
                                                                         \
     events_perf_submit(ctx);                                            \
@@ -881,9 +949,9 @@ int trace_ret_##name(struct pt_regs *ctx)                               \
 // Note: race condition may occur if a malicious user changes memory content pointed by syscall arguments by concurrent threads!
 // Consider using inner kernel functions (e.g. security_file_open) to avoid this
 TRACE_ENT_SYSCALL(open);
-TRACE_RET_SYSCALL(open, SYS_OPEN, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
+TRACE_RET_SYSCALL(open, SYS_OPEN, ARG_TYPE0(STR_T)|ARG_TYPE1(OPENFLAGS_T));
 TRACE_ENT_SYSCALL(openat);
-TRACE_RET_SYSCALL(openat, SYS_OPENAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T));
+TRACE_RET_SYSCALL(openat, SYS_OPENAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(OPENFLAGS_T));
 TRACE_ENT_SYSCALL(creat);
 TRACE_RET_SYSCALL(creat, SYS_CREAT, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
 TRACE_ENT_SYSCALL(mmap);
@@ -909,11 +977,11 @@ TRACE_RET_SYSCALL(newlstat, SYS_LSTAT, ARG_TYPE0(STR_T));
 TRACE_ENT_SYSCALL(newfstat);
 TRACE_RET_SYSCALL(newfstat, SYS_FSTAT, ARG_TYPE0(INT_T));
 TRACE_ENT_SYSCALL(socket);
-TRACE_RET_SYSCALL(socket, SYS_SOCKET, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(INT_T));
+TRACE_RET_SYSCALL(socket, SYS_SOCKET, ARG_TYPE0(SOCK_DOM_T)|ARG_TYPE1(SOCK_TYPE_T)|ARG_TYPE2(INT_T));
 TRACE_ENT_SYSCALL(close);
 TRACE_RET_SYSCALL(close, SYS_CLOSE, ARG_TYPE0(INT_T));
 TRACE_ENT_SYSCALL(ioctl);
-TRACE_RET_SYSCALL(ioctl, SYS_IOCTL, ARG_TYPE0(INT_T)|ARG_TYPE1(LONG_T));
+TRACE_RET_SYSCALL(ioctl, SYS_IOCTL, ARG_TYPE0(INT_T)|ARG_TYPE1(ULONG_T));
 TRACE_ENT_SYSCALL(access);
 TRACE_RET_SYSCALL(access, SYS_ACCESS, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
 TRACE_ENT_SYSCALL(faccessat);
@@ -933,15 +1001,15 @@ TRACE_RET_SYSCALL(bind, SYS_BIND, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
 TRACE_ENT_SYSCALL(getsockname);
 TRACE_RET_SYSCALL(getsockname, SYS_GETSOCKNAME, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
 TRACE_ENT_SYSCALL(prctl);
-TRACE_RET_SYSCALL(prctl, SYS_PRCTL, ARG_TYPE0(INT_T)|ARG_TYPE1(LONG_T)|ARG_TYPE2(LONG_T)|ARG_TYPE3(LONG_T)|ARG_TYPE4(LONG_T));
+TRACE_RET_SYSCALL(prctl, SYS_PRCTL, ARG_TYPE0(INT_T)|ARG_TYPE1(ULONG_T)|ARG_TYPE2(ULONG_T)|ARG_TYPE3(ULONG_T)|ARG_TYPE4(ULONG_T));
 TRACE_ENT_SYSCALL(ptrace);
 TRACE_RET_SYSCALL(ptrace, SYS_PTRACE, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(POINTER_T)|ARG_TYPE3(POINTER_T));
 TRACE_ENT_SYSCALL(process_vm_writev);
-TRACE_RET_SYSCALL(process_vm_writev, SYS_PROCESS_VM_WRITEV, ARG_TYPE0(INT_T)|ARG_TYPE1(POINTER_T)|ARG_TYPE2(LONG_T)|ARG_TYPE3(POINTER_T)|ARG_TYPE4(LONG_T)|ARG_TYPE5(LONG_T));
+TRACE_RET_SYSCALL(process_vm_writev, SYS_PROCESS_VM_WRITEV, ARG_TYPE0(INT_T)|ARG_TYPE1(POINTER_T)|ARG_TYPE2(ULONG_T)|ARG_TYPE3(POINTER_T)|ARG_TYPE4(ULONG_T)|ARG_TYPE5(ULONG_T));
 TRACE_ENT_SYSCALL(process_vm_readv);
-TRACE_RET_SYSCALL(process_vm_readv, SYS_PROCESS_VM_READV, ARG_TYPE0(INT_T)|ARG_TYPE1(POINTER_T)|ARG_TYPE2(LONG_T)|ARG_TYPE3(POINTER_T)|ARG_TYPE4(LONG_T)|ARG_TYPE5(LONG_T));
+TRACE_RET_SYSCALL(process_vm_readv, SYS_PROCESS_VM_READV, ARG_TYPE0(INT_T)|ARG_TYPE1(POINTER_T)|ARG_TYPE2(ULONG_T)|ARG_TYPE3(POINTER_T)|ARG_TYPE4(ULONG_T)|ARG_TYPE5(ULONG_T));
 TRACE_ENT_SYSCALL(init_module);
-TRACE_RET_SYSCALL(init_module, SYS_INIT_MODULE, ARG_TYPE0(POINTER_T)|ARG_TYPE1(LONG_T)|ARG_TYPE2(STR_T));
+TRACE_RET_SYSCALL(init_module, SYS_INIT_MODULE, ARG_TYPE0(POINTER_T)|ARG_TYPE1(ULONG_T)|ARG_TYPE2(STR_T));
 TRACE_ENT_SYSCALL(finit_module);
 TRACE_RET_SYSCALL(finit_module, SYS_FINIT_MODULE, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T));
 TRACE_ENT_SYSCALL(delete_module);
@@ -955,7 +1023,7 @@ TRACE_RET_SYSCALL(getdents, SYS_GETDENTS, ARG_TYPE0(INT_T));
 TRACE_ENT_SYSCALL(getdents64);
 TRACE_RET_SYSCALL(getdents64, SYS_GETDENTS64, ARG_TYPE0(INT_T));
 TRACE_ENT_SYSCALL(mount);
-TRACE_RET_SYSCALL(mount, SYS_MOUNT, ARG_TYPE0(STR_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(STR_T)|ARG_TYPE3(LONG_T));
+TRACE_RET_SYSCALL(mount, SYS_MOUNT, ARG_TYPE0(STR_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(STR_T)|ARG_TYPE3(ULONG_T));
 TRACE_ENT_SYSCALL(umount);
 TRACE_RET_SYSCALL(umount, SYS_UMOUNT, ARG_TYPE0(STR_T));
 TRACE_ENT_SYSCALL(unlink);
@@ -996,13 +1064,13 @@ int syscall__execve(struct pt_regs *ctx,
         return 0;
 
     context.eventid = SYS_EXECVE;
+    context.argnum = 2;
     context.retval = 0;     // assume execve succeeded. if not, a ret event will be sent too
-    save_to_submit_buf((void*)&context, sizeof(context_t));
-    int type = EVENT_ARG;
-    save_to_submit_buf((void*)&type, sizeof(int));
-
+    save_to_submit_buf((void*)&context, sizeof(context_t), NONE_T);
     save_str_to_buf((void *)filename);
 
+    // mark string array start
+    save_to_submit_buf(NULL, 0, STR_ARR_T);
     // skip first arg, as we submitted filename
     #pragma unroll
     for (int i = 1; i < MAXARG; i++) {
@@ -1014,6 +1082,8 @@ int syscall__execve(struct pt_regs *ctx,
     char ellipsis[] = "...";
     save_str_to_buf((void *)ellipsis);
 out:
+    // mark string array end
+    save_to_submit_buf(NULL, 0, STR_ARR_T);
     events_perf_submit(ctx);
     return 0;
 }
@@ -1027,15 +1097,13 @@ int trace_ret_execve(struct pt_regs *ctx)
         return 0;
 
     context.eventid = SYS_EXECVE;
+    context.argnum = 0;
     context.retval = PT_REGS_RC(ctx);
 
     if (context.retval == 0)
         return 0;   // we are only interested in failed execs
 
-    int type = EVENT_RET;
-
-    save_to_submit_buf((void*)&context, sizeof(context_t));
-    save_to_submit_buf((void*)&type, sizeof(int));
+    save_to_submit_buf((void*)&context, sizeof(context_t), NONE_T);
     events_perf_submit(ctx);
     return 0;
 }
@@ -1062,14 +1130,15 @@ int syscall__execveat(struct pt_regs *ctx,
         return 0;
 
     context.eventid = SYS_EXECVEAT;
+    context.argnum = 4;
     context.retval = 0;     // assume execve succeeded. if not, a ret event will be sent too
-    save_to_submit_buf((void*)&context, sizeof(context_t));
-    int type = EVENT_ARG;
-    save_to_submit_buf((void*)&type, sizeof(int));
-    save_to_submit_buf((void*)&dirfd, sizeof(int));
+    save_to_submit_buf((void*)&context, sizeof(context_t), NONE_T);
+    save_to_submit_buf((void*)&dirfd, sizeof(int), INT_T);
 
     save_str_to_buf((void *)pathname);
 
+    // mark string array start
+    save_to_submit_buf(NULL, 0, STR_ARR_T);
     // skip first arg, as we submitted filename
     #pragma unroll
     for (int i = 1; i < MAXARG; i++) {
@@ -1081,7 +1150,9 @@ int syscall__execveat(struct pt_regs *ctx,
     char ellipsis[] = "...";
     save_str_to_buf((void *)ellipsis);
 out:
-    save_to_submit_buf((void*)&flags, sizeof(int));
+    // mark string array end
+    save_to_submit_buf(NULL, 0, STR_ARR_T);
+    save_to_submit_buf((void*)&flags, sizeof(int), EXEC_FLAG_T);
     events_perf_submit(ctx);
     return 0;
 }
@@ -1095,15 +1166,13 @@ int trace_ret_execveat(struct pt_regs *ctx)
         return 0;
 
     context.eventid = SYS_EXECVEAT;
+    context.argnum = 0;
     context.retval = PT_REGS_RC(ctx);
 
     if (context.retval == 0)
         return 0;   // we are only interested in failed execs
 
-    int type = EVENT_RET;
-
-    save_to_submit_buf((void*)&context, sizeof(context_t));
-    save_to_submit_buf((void*)&type, sizeof(int));
+    save_to_submit_buf((void*)&context, sizeof(context_t), NONE_T);
     events_perf_submit(ctx);
     return 0;
 }
@@ -1118,6 +1187,7 @@ int trace_do_exit(struct pt_regs *ctx, long code)
         return 0;
 
     context.eventid = DO_EXIT;
+    context.argnum = 0;
     context.retval = code;
 
     if (CONTAINER_MODE)
@@ -1125,7 +1195,7 @@ int trace_do_exit(struct pt_regs *ctx, long code)
     else
         remove_pid();
 
-    save_to_submit_buf((void*)&context, sizeof(context_t));
+    save_to_submit_buf((void*)&context, sizeof(context_t), NONE_T);
     events_perf_submit(ctx);
     return 0;
 }
@@ -1140,6 +1210,7 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
         return 0;
 
     context.eventid = CAP_CAPABLE;
+    context.argnum = 1;
 
   #ifdef CAP_OPT_NONE
     audit = (cap_opt & 0b10) == 0;
@@ -1150,8 +1221,8 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
     if (audit == 0)
         return 0;
 
-    save_to_submit_buf((void*)&context, sizeof(context_t));
-    save_to_submit_buf((void*)&cap, sizeof(int));
+    save_to_submit_buf((void*)&context, sizeof(context_t), NONE_T);
+    save_to_submit_buf((void*)&cap, sizeof(int), CAP_T);
     events_perf_submit(ctx);
     return 0;
 };
