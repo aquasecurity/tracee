@@ -128,7 +128,8 @@ syscalls = ["execve", "execveat", "mmap", "mprotect", "clone", "fork", "vfork", 
             "connect", "accept", "accept4", "bind", "getsockname", "prctl", "ptrace",
             "process_vm_writev", "process_vm_readv", "init_module", "finit_module", "delete_module",
             "symlink", "symlinkat", "getdents", "getdents64", "creat", "open", "openat",
-            "mount", "umount", "unlink", "unlinkat"]
+            "mount", "umount", "unlink", "unlinkat", "setuid", "setgid", "setreuid", "setregid",
+            "setresuid", "setresgid", "setfsuid", "setfsgid"]
 sysevents = ["cap_capable", "do_exit"]
 
 # We always need kprobes for execve[at] so that we capture the new PID namespace, 
