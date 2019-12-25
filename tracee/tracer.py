@@ -21,7 +21,6 @@ handler.setLevel(logging.DEBUG)
 log.addHandler(handler)
 
 BPF_PROGRAM = "tracee/event_monitor_ebpf.c"
-MAX_ARGS = 20
 
 # include/uapi/linux/capability.h
 capabilities = {
@@ -501,6 +500,9 @@ class ArgType(object):
     CAP_T           = 17
     TYPE_MAX        = 255
 
+class shared_config(object):
+    CONFIG_CONT_MODE    = 0
+
 class context_t(ctypes.Structure):  # match layout of eBPF C's context_t struct
     _fields_ = [("ts", ctypes.c_uint64),
                 ("pid", ctypes.c_uint32),
@@ -758,17 +760,7 @@ class EventMonitor:
         self.buf_pages = args.buf_pages
 
     def init_bpf(self):
-        bpf_text = load_bpf_program().replace("MAXARG", str(MAX_ARGS))
-        if self.cont_mode:
-            bpf_text = bpf_text.replace("CONTAINER_MODE", "1")
-        else:
-            bpf_text = bpf_text.replace("CONTAINER_MODE", "0")
-
-        try:
-            self.buf_pages = int(self.buf_pages)
-        except ValueError:
-            print("Invalid buffer size")
-            exit()
+        bpf_text = load_bpf_program()
 
         if self.list_events:
             log.info("Syscalls:")
@@ -785,6 +777,10 @@ class EventMonitor:
 
         # initialize BPF
         self.bpf = BPF(text=bpf_text)
+
+        # set shared config
+        key = ctypes.c_uint32(shared_config.CONFIG_CONT_MODE)
+        self.bpf["config_map"][key] = ctypes.c_uint32(self.cont_mode)
 
         # attaching kprobes
         sk, se = get_kprobes(self.events_to_trace)

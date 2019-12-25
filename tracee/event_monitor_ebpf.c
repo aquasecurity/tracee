@@ -14,6 +14,7 @@
 #include <linux/security.h>
 #include <linux/version.h>
 
+#define MAXARG 20
 #define MAX_STRING_SIZE 4096                                // Choosing this value to be the same as PATH_MAX
 #define SUBMIT_BUFSIZE  (2 << 13)                           // Need to be power of 2
 #define SUBMIT_BUFSIZE_HALF   ((SUBMIT_BUFSIZE-1) >> 1)     // Bitmask for ebpf validator - this is why we need SUBMIT_BUFSIZE to be power of 2
@@ -37,6 +38,8 @@
 #define SOCK_TYPE_T 16UL
 #define CAP_T       17UL
 #define TYPE_MAX    255UL
+
+#define CONFIG_CONT_MODE    0
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
 #error Minimal required kernel version is 4.14
@@ -426,6 +429,7 @@ struct uts_namespace {
 
 /*=================================== MAPS =====================================*/
 
+BPF_HASH(config_map, u32, u32);                     // Various configurations
 BPF_HASH(pids_map, u32, u32);                       // Save container pid namespaces
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
 BPF_PERCPU_ARRAY(submission_buf, submit_buf_t, 1);  // Buffer used to prepare event for perf_submit
@@ -587,13 +591,24 @@ static __always_inline void remove_pid_ns_if_needed()
     }
 }
 
+static __always_inline int container_mode()
+{
+    u32 key = CONFIG_CONT_MODE;
+    u32 *mode = config_map.lookup(&key);
+
+    if (mode == NULL)
+        return 0;
+
+    return *mode;
+}
+
 static __always_inline int init_context(context_t *context)
 {
     struct task_struct *task;
     task = (struct task_struct *)bpf_get_current_task();
 
     u32 should_trace = 0;
-    if (CONTAINER_MODE)
+    if (container_mode())
         should_trace = lookup_pid_ns(task);
     else
         should_trace = lookup_pid();
@@ -602,7 +617,7 @@ static __always_inline int init_context(context_t *context)
     if (should_trace == 0)
         return -1;
 
-    if (CONTAINER_MODE) {
+    if (container_mode()) {
         context->tid = get_task_ns_pid(task);
         context->pid = get_task_ns_tgid(task);
         context->ppid = get_task_ns_ppid(task);
@@ -754,7 +769,7 @@ static __always_inline int save_args(struct pt_regs *ctx, bool is_syscall)
     args_t args = {};
 
     u32 should_trace = 0;
-    if (CONTAINER_MODE)
+    if (container_mode())
         should_trace = is_container();
     else
         should_trace = lookup_pid();
@@ -891,6 +906,45 @@ static __always_inline int save_args_to_submit_buf(u64 types)
     return 0;
 }
 
+static __always_inline int trace_ret_generic(struct pt_regs *ctx, u32 id, u64 types)
+{
+    context_t context = {};
+
+    if (init_context(&context) || init_submit_buf())
+        return 0;
+
+    context.eventid = id;
+    context.argnum = get_encoded_arg_num(types);
+    context.retval = PT_REGS_RC(ctx);
+    save_to_submit_buf((void*)&context, sizeof(context_t), NONE_T);
+    save_args_to_submit_buf(types);
+
+    events_perf_submit(ctx);
+    return 0;
+}
+
+static __always_inline int trace_ret_generic_fork(struct pt_regs *ctx, u32 id, u64 types)
+{
+    context_t context = {};
+
+    if (init_context(&context) || init_submit_buf())
+        return 0;
+
+    if (!container_mode()) {
+        u32 pid = PT_REGS_RC(ctx);
+        add_pid_fork(pid);
+    }
+
+    context.eventid = id;
+    context.argnum = get_encoded_arg_num(types);
+    context.retval = PT_REGS_RC(ctx);
+    save_to_submit_buf((void*)&context, sizeof(context_t), NONE_T);
+    save_args_to_submit_buf(types);
+
+    events_perf_submit(ctx);
+    return 0;
+}
+
 #define TRACE_ENT_SYSCALL(name)                                         \
 int syscall__##name(struct pt_regs *ctx)                                \
 {                                                                       \
@@ -898,7 +952,7 @@ int syscall__##name(struct pt_regs *ctx)                                \
 }
 
 #define TRACE_ENT_FUNC(name)                                            \
-int syscall__##name(struct pt_regs *ctx)                                \
+int func__##name(struct pt_regs *ctx)                                   \
 {                                                                       \
     return save_args(ctx, false);                                       \
 }
@@ -906,19 +960,7 @@ int syscall__##name(struct pt_regs *ctx)                                \
 #define TRACE_RET_FUNC(name, id, types)                                 \
 int trace_ret_##name(struct pt_regs *ctx)                               \
 {                                                                       \
-    context_t context = {};                                             \
-                                                                        \
-    if (init_context(&context) || init_submit_buf())                    \
-        return 0;                                                       \
-                                                                        \
-    context.eventid = id;                                               \
-    context.argnum = get_encoded_arg_num(types);                        \
-    context.retval = PT_REGS_RC(ctx);                                   \
-    save_to_submit_buf((void*)&context, sizeof(context_t), NONE_T);     \
-    save_args_to_submit_buf(types);                                     \
-                                                                        \
-    events_perf_submit(ctx);                                            \
-    return 0;                                                           \
+    return trace_ret_generic(ctx, id, types);                           \
 }
 
 #define TRACE_RET_SYSCALL TRACE_RET_FUNC
@@ -926,22 +968,7 @@ int trace_ret_##name(struct pt_regs *ctx)                               \
 #define TRACE_RET_FORK_SYSCALL(name, id, types)                         \
 int trace_ret_##name(struct pt_regs *ctx)                               \
 {                                                                       \
-    context_t context = {};                                             \
-                                                                        \
-    if (init_context(&context) || init_submit_buf())                    \
-        return 0;                                                       \
-                                                                        \
-    u32 pid = PT_REGS_RC(ctx);                                          \
-    add_pid_fork(pid);                                                  \
-                                                                        \
-    context.eventid = id;                                               \
-    context.argnum = get_encoded_arg_num(types);                        \
-    context.retval = PT_REGS_RC(ctx);                                   \
-    save_to_submit_buf((void*)&context, sizeof(context_t), NONE_T);     \
-    save_args_to_submit_buf(types);                                     \
-                                                                        \
-    events_perf_submit(ctx);                                            \
-    return 0;                                                           \
+    return trace_ret_generic_fork(ctx, id, types);                      \
 }
 
 /*============================== SYSCALL HOOKS ==============================*/
@@ -1032,17 +1059,11 @@ TRACE_ENT_SYSCALL(unlinkat);
 TRACE_RET_SYSCALL(unlinkat, SYS_UNLINKAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T));
 
 TRACE_ENT_SYSCALL(fork);
-TRACE_ENT_SYSCALL(vfork);
-TRACE_ENT_SYSCALL(clone);
-#if CONTAINER_MODE
-TRACE_RET_SYSCALL(fork, SYS_FORK, 0);
-TRACE_RET_SYSCALL(vfork, SYS_VFORK, 0);
-TRACE_RET_SYSCALL(clone, SYS_CLONE, 0);
-#else
 TRACE_RET_FORK_SYSCALL(fork, SYS_FORK, 0);
+TRACE_ENT_SYSCALL(vfork);
 TRACE_RET_FORK_SYSCALL(vfork, SYS_VFORK, 0);
+TRACE_ENT_SYSCALL(clone);
 TRACE_RET_FORK_SYSCALL(clone, SYS_CLONE, 0);
-#endif
 
 int syscall__execve(struct pt_regs *ctx,
     const char __user *filename,
@@ -1052,7 +1073,7 @@ int syscall__execve(struct pt_regs *ctx,
     context_t context = {};
 
     u32 ret = 0;
-    if (CONTAINER_MODE)
+    if (container_mode())
         ret = add_pid_ns_if_needed();
     else
         ret = add_pid();
@@ -1118,7 +1139,7 @@ int syscall__execveat(struct pt_regs *ctx,
     context_t context = {};
 
     u32 ret = 0;
-    if (CONTAINER_MODE)
+    if (container_mode())
         ret = add_pid_ns_if_needed();
     else
         ret = add_pid();
@@ -1190,7 +1211,7 @@ int trace_do_exit(struct pt_regs *ctx, long code)
     context.argnum = 0;
     context.retval = code;
 
-    if (CONTAINER_MODE)
+    if (container_mode())
         remove_pid_ns_if_needed();
     else
         remove_pid();
