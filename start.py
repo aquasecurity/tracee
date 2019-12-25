@@ -47,6 +47,8 @@ def parse_args(input_args):
                         help="trace only the specified events and syscalls (default: trace all)")
     parser.add_argument("--show-syscall", action="store_true",
                         help="show syscall name in kprobes")
+    parser.add_argument("--exec-env", action="store_true",
+                        help="show execve(at) environment variables in output")
     return parser.parse_args(input_args)
 
 

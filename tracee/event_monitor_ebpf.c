@@ -44,6 +44,7 @@
 
 #define CONFIG_CONT_MODE    0
 #define CONFIG_SHOW_SYSCALL 1
+#define CONFIG_EXEC_ENV     2
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
 #error Minimal required kernel version is 4.14
@@ -623,6 +624,11 @@ static __always_inline int show_syscall()
     return get_config(CONFIG_SHOW_SYSCALL);
 }
 
+static __always_inline int show_exec_env()
+{
+    return get_config(CONFIG_EXEC_ENV);
+}
+
 static __always_inline int init_context(context_t *context)
 {
     struct task_struct *task;
@@ -748,13 +754,33 @@ static __always_inline int events_perf_submit(struct pt_regs *ctx)
     return events.perf_submit(ctx, data, size);
 }
 
-static __always_inline int save_argv(submit_buf_t *submit_p, struct pt_regs *ctx, void *ptr)
+static __always_inline int save_argv(submit_buf_t *submit_p, void *ptr)
 {
     const char *argp = NULL;
     bpf_probe_read(&argp, sizeof(argp), ptr);
     if (argp) {
         return save_str_to_buf(submit_p, (void *)(argp));
     }
+    return 0;
+}
+
+static __always_inline int save_str_arr_to_buf(submit_buf_t *submit_p, const char __user *const __user *ptr)
+{
+    // mark string array start
+    save_to_submit_buf(submit_p, NULL, 0, STR_ARR_T);
+
+    #pragma unroll
+    for (int i = 0; i < MAXARG; i++) {
+        if (save_argv(submit_p, (void *)&ptr[i]) == 0)
+             goto out;
+    }
+    // handle truncated argument list
+    char ellipsis[] = "...";
+    save_str_to_buf(submit_p, (void *)ellipsis);
+out:
+    // mark string array end
+    save_to_submit_buf(submit_p, NULL, 0, STR_ARR_T);
+
     return 0;
 }
 
@@ -1113,27 +1139,21 @@ int syscall__execve(struct pt_regs *ctx,
     if (submit_p == NULL)
         return 0;
 
+    int show_env = show_exec_env();
+
     context.eventid = SYS_EXECVE;
-    context.argnum = 2;
+    if (show_env)
+        context.argnum = 3;
+    else
+        context.argnum = 2;
     context.retval = 0;     // assume execve succeeded. if not, a ret event will be sent too
     save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
+
     save_str_to_buf(submit_p, (void *)filename);
+    save_str_arr_to_buf(submit_p, __argv);
+    if (show_env)
+        save_str_arr_to_buf(submit_p, __envp);
 
-    // mark string array start
-    save_to_submit_buf(submit_p, NULL, 0, STR_ARR_T);
-    // skip first arg, as we submitted filename
-    #pragma unroll
-    for (int i = 1; i < MAXARG; i++) {
-        if (save_argv(submit_p, ctx, (void *)&__argv[i]) == 0)
-             goto out;
-    }
-
-    // handle truncated argument list
-    char ellipsis[] = "...";
-    save_str_to_buf(submit_p, (void *)ellipsis);
-out:
-    // mark string array end
-    save_to_submit_buf(submit_p, NULL, 0, STR_ARR_T);
     events_perf_submit(ctx);
     return 0;
 }
@@ -1187,30 +1207,23 @@ int syscall__execveat(struct pt_regs *ctx,
     if (submit_p == NULL)
         return 0;
 
+    int show_env = show_exec_env();
+
     context.eventid = SYS_EXECVEAT;
-    context.argnum = 4;
+    if (show_env)
+        context.argnum = 5;
+    else
+        context.argnum = 4;
     context.retval = 0;     // assume execve succeeded. if not, a ret event will be sent too
     save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
+
     save_to_submit_buf(submit_p, (void*)&dirfd, sizeof(int), INT_T);
-
     save_str_to_buf(submit_p, (void *)pathname);
-
-    // mark string array start
-    save_to_submit_buf(submit_p, NULL, 0, STR_ARR_T);
-    // skip first arg, as we submitted filename
-    #pragma unroll
-    for (int i = 1; i < MAXARG; i++) {
-        if (save_argv(submit_p, ctx, (void *)&__argv[i]) == 0)
-             goto out;
-    }
-
-    // handle truncated argument list
-    char ellipsis[] = "...";
-    save_str_to_buf(submit_p, (void *)ellipsis);
-out:
-    // mark string array end
-    save_to_submit_buf(submit_p, NULL, 0, STR_ARR_T);
+    save_str_arr_to_buf(submit_p, __argv);
+    if (show_env)
+        save_str_arr_to_buf(submit_p, __envp);
     save_to_submit_buf(submit_p, (void*)&flags, sizeof(int), EXEC_FLAGS_T);
+
     events_perf_submit(ctx);
     return 0;
 }
