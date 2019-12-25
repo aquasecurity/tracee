@@ -31,6 +31,11 @@ optional arguments:
 -e EVENTS_TO_TRACE, --events-to-trace EVENTS_TO_TRACE
 trace only the specified events and syscalls (default: trace all)
 
+--show-syscall        show syscall name in kprobes
+
+--exec-env            show execve(at) environment variables in output
+
+
 examples:
 
 `./start.py -c`
@@ -166,7 +171,6 @@ Adding new events (especially system calls) to Tracee is straightforward, but on
 
 ## TODO
 
-* Add envp to execve(at) syscalls
 * Add full sockaddr struct fields to: "connect", "accept", "bind", "getsockname"
 * Consider tracing commit_creds to detect potential kernel exploits
 * Consider re-writing userspace side (python) in golang
