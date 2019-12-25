@@ -34,10 +34,9 @@ def parse_args(input_args):
         epilog=examples)
     parser.add_argument("-c", "--container", action="store_true",
                         help="only trace newly created containers")
-    parser.add_argument("--max-args", default="20",
-                        help="maximum number of arguments parsed and displayed, defaults to 20")
-    parser.add_argument("-b", "--buf-pages", default="32",
-                        help="number of pages for perf buffer, defaults to 32")
+    parser.add_argument("-b", "--buf-pages", type=int, default=64,
+                        choices=[1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024],
+                        help="number of pages for perf buffer, defaults to %(default)s")
     parser.add_argument("--ebpf", action="store_true",
                         help=argparse.SUPPRESS)
     parser.add_argument("-j", "--json", action="store_true",
