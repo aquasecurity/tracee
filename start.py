@@ -8,7 +8,7 @@ import argparse
 import sys
 import re
 
-from tracee.container_tracer import EventMonitor, syscalls, sysevents
+from tracee.tracer import EventMonitor, syscalls, sysevents
 
 examples = """examples:
     ./start.py -c
