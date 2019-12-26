@@ -4,17 +4,17 @@ import unittest
 import tracee
 import start
 
-from tracee.container_tracer import EventMonitor, syscalls, sysevents
+from tracee.tracer import EventMonitor, syscalls, sysevents
 
 
 class TestEventMonitor(unittest.TestCase):
     def test_load_bpf_program(self):
         self.longMessage = True
 
-        with open(tracee.container_tracer.BPF_PROGRAM, "r") as f:
+        with open(tracee.tracer.BPF_PROGRAM, "r") as f:
             expectedbpf = f.read()
 
-        actualbpf = tracee.container_tracer.load_bpf_program()
+        actualbpf = tracee.tracer.load_bpf_program()
         self.assertEqual(expectedbpf, actualbpf, "should be a valid bpf program")
 
     def test_execveat_flags_to_str(self):
@@ -43,7 +43,7 @@ class TestEventMonitor(unittest.TestCase):
             },
         ]
         for test_case in test_cases:
-            self.assertEqual(test_case["expected"], tracee.container_tracer.execveat_flags_to_str(test_case["input"]),
+            self.assertEqual(test_case["expected"], tracee.tracer.execveat_flags_to_str(test_case["input"]),
                              test_case["name"])
 
     # TODO: Add additional test cases for file modes
@@ -114,13 +114,13 @@ class TestEventMonitor(unittest.TestCase):
         ]
 
         for test_case in test_cases:
-            self.assertEqual(test_case["expected"], tracee.container_tracer.open_flags_to_str(test_case["input"]),
+            self.assertEqual(test_case["expected"], tracee.tracer.open_flags_to_str(test_case["input"]),
                              test_case["name"])
 
     def test_get_sockaddr_from_buf(self):
         self.longMessage = True
 
-        em = tracee.container_tracer.EventMonitor(start.parse_args([]))
+        em = tracee.tracer.EventMonitor(start.parse_args([]))
 
         test_cases = [
             {
@@ -163,7 +163,7 @@ class TestEventMonitor(unittest.TestCase):
         ]
 
         for test_case in test_cases:
-            em = tracee.container_tracer.EventMonitor(start.parse_args(test_case["args"]))
+            em = tracee.tracer.EventMonitor(start.parse_args(test_case["args"]))
             self.assertEqual(len(em.events_to_trace), len(test_case["expected_events"]), test_case["name"])
 
 

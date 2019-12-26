@@ -20,7 +20,7 @@ handler = logging.StreamHandler(sys.stdout)
 handler.setLevel(logging.DEBUG)
 log.addHandler(handler)
 
-BPF_PROGRAM = "tracee/container_event_monitor_ebpf.c"
+BPF_PROGRAM = "tracee/event_monitor_ebpf.c"
 MAX_ARGS = 20
 
 # include/uapi/linux/capability.h
