@@ -608,7 +608,8 @@ static __always_inline int init_context(context_t *context)
     task = (struct task_struct *)bpf_get_current_task();
 
     u32 should_trace = 0;
-    if (container_mode())
+    u32 cont_mode = container_mode();
+    if (cont_mode)
         should_trace = lookup_pid_ns(task);
     else
         should_trace = lookup_pid();
@@ -617,7 +618,7 @@ static __always_inline int init_context(context_t *context)
     if (should_trace == 0)
         return -1;
 
-    if (container_mode()) {
+    if (cont_mode) {
         context->tid = get_task_ns_pid(task);
         context->pid = get_task_ns_tgid(task);
         context->ppid = get_task_ns_ppid(task);
