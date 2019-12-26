@@ -37,9 +37,11 @@
 #define SOCK_DOM_T  15UL
 #define SOCK_TYPE_T 16UL
 #define CAP_T       17UL
+#define SYSCALL_T   18UL
 #define TYPE_MAX    255UL
 
 #define CONFIG_CONT_MODE    0
+#define CONFIG_SHOW_SYSCALL 1
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
 #error Minimal required kernel version is 4.14
@@ -513,6 +515,14 @@ static __always_inline void get_syscall_args(struct pt_regs *ctx, args_t *args)
 #endif
 }
 
+static __always_inline struct pt_regs* get_task_pt_regs()
+{
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    void* task_stack_page = task->stack;
+    void* __ptr = task_stack_page + THREAD_SIZE - TOP_OF_KERNEL_STACK_PADDING;
+    return ((struct pt_regs *)__ptr) - 1;
+}
+
 /*============================== HELPER FUNCTIONS ==============================*/
 
 static __always_inline u32 lookup_pid()
@@ -591,15 +601,24 @@ static __always_inline void remove_pid_ns_if_needed()
     }
 }
 
-static __always_inline int container_mode()
+static __always_inline int get_config(u32 key)
 {
-    u32 key = CONFIG_CONT_MODE;
-    u32 *mode = config_map.lookup(&key);
+    u32 *config = config_map.lookup(&key);
 
-    if (mode == NULL)
+    if (config == NULL)
         return 0;
 
-    return *mode;
+    return *config;
+}
+
+static __always_inline int container_mode()
+{
+    return get_config(CONFIG_CONT_MODE);
+}
+
+static __always_inline int show_syscall()
+{
+    return get_config(CONFIG_SHOW_SYSCALL);
 }
 
 static __always_inline int init_context(context_t *context)
@@ -1248,7 +1267,10 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
         return 0;
 
     context.eventid = CAP_CAPABLE;
-    context.argnum = 1;
+    if (show_syscall())
+        context.argnum = 2;
+    else
+        context.argnum = 1;
 
   #ifdef CAP_OPT_NONE
     audit = (cap_opt & 0b10) == 0;
@@ -1261,6 +1283,10 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
 
     save_to_submit_buf((void*)&context, sizeof(context_t), NONE_T);
     save_to_submit_buf((void*)&cap, sizeof(int), CAP_T);
+    if (show_syscall()) {
+        struct pt_regs *real_ctx = get_task_pt_regs();
+        save_to_submit_buf((void*)&(real_ctx->orig_ax), sizeof(int), SYSCALL_T);
+    }
     events_perf_submit(ctx);
     return 0;
 };

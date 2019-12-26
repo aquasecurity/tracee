@@ -499,10 +499,12 @@ class ArgType(object):
     SOCK_DOM_T      = 15
     SOCK_TYPE_T     = 16
     CAP_T           = 17
+    SYSCALL_T       = 18
     TYPE_MAX        = 255
 
 class shared_config(object):
     CONFIG_CONT_MODE    = 0
+    CONFIG_SHOW_SYSCALL = 1
 
 class context_t(ctypes.Structure):  # match layout of eBPF C's context_t struct
     _fields_ = [("ts", ctypes.c_uint64),
@@ -759,6 +761,7 @@ class EventMonitor:
         self.list_events = args.list
         self.events_to_trace = args.events_to_trace
         self.buf_pages = args.buf_pages
+        self.show_syscall = args.show_syscall
 
     def init_bpf(self):
         bpf_text = load_bpf_program()
@@ -782,6 +785,8 @@ class EventMonitor:
         # set shared config
         key = ctypes.c_uint32(shared_config.CONFIG_CONT_MODE)
         self.bpf["config_map"][key] = ctypes.c_uint32(self.cont_mode)
+        key = ctypes.c_uint32(shared_config.CONFIG_SHOW_SYSCALL)
+        self.bpf["config_map"][key] = ctypes.c_uint32(self.show_syscall)
 
         # attaching kprobes
         sk, se = get_kprobes(self.events_to_trace)
@@ -963,6 +968,12 @@ class EventMonitor:
                         args.append(capabilities[capability])
                     else:
                         args.append(str(capability))
+                elif argtype == ArgType.SYSCALL_T:
+                    syscall = self.get_int_from_buf(event_buf)
+                    if syscall in event_id:
+                        args.append('(%s)' % event_id[syscall])
+                    else:
+                        args.append('(%s)' % str(syscall))
         else:
             return
 
