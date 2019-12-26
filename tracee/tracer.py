@@ -991,12 +991,12 @@ class EventMonitor:
         # loop with callback to handle_event
         self.bpf["events"].open_perf_buffer(self.handle_event, page_cnt=self.buf_pages, lost_cb=self.lost_event)
         while self.do_trace:
-            # It would have been better to parse the events in a "consumer" thread
-            # As python threading is not efficient - parse here
-            for event in self.event_bufs:
-                self.parse_event(event)
-            self.event_bufs = list()
             try:
+                # It would have been better to parse the events in a "consumer" thread
+                # As python threading is not efficient - parse here
+                for event in self.event_bufs:
+                    self.parse_event(event)
+                self.event_bufs = list()
                 self.bpf.perf_buffer_poll(1000)
             except KeyboardInterrupt:
                 exit()
