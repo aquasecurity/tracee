@@ -911,7 +911,7 @@ static __always_inline int trace_ret_generic(struct pt_regs *ctx, u32 id, u64 ty
     context_t context = {};
 
     if (init_context(&context) || init_submit_buf())
-        return 0;
+        return -1;
 
     context.eventid = id;
     context.argnum = get_encoded_arg_num(types);
@@ -925,23 +925,13 @@ static __always_inline int trace_ret_generic(struct pt_regs *ctx, u32 id, u64 ty
 
 static __always_inline int trace_ret_generic_fork(struct pt_regs *ctx, u32 id, u64 types)
 {
-    context_t context = {};
+    int rc = trace_ret_generic(ctx, id, types);
 
-    if (init_context(&context) || init_submit_buf())
-        return 0;
-
-    if (!container_mode()) {
+    if (!rc && !container_mode()) {
         u32 pid = PT_REGS_RC(ctx);
         add_pid_fork(pid);
     }
 
-    context.eventid = id;
-    context.argnum = get_encoded_arg_num(types);
-    context.retval = PT_REGS_RC(ctx);
-    save_to_submit_buf((void*)&context, sizeof(context_t), NONE_T);
-    save_args_to_submit_buf(types);
-
-    events_perf_submit(ctx);
     return 0;
 }
 
