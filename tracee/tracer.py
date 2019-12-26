@@ -612,7 +612,7 @@ def execveat_flags_to_str(flags):
         f_str = "AT_EMPTY_PATH"
 
     if flags & 0x100:
-        if f_str == "":
+        if f_str == "0":
             f_str = "AT_SYMLINK_NOFOLLOW"
         else:
             f_str += "|AT_SYMLINK_NOFOLLOW"
