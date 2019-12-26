@@ -24,7 +24,7 @@ class TestEventMonitor(unittest.TestCase):
             {
                 "name": "invalid flags",
                 "input": 0x666,
-                "expected": "",
+                "expected": "0",
             },
             {
                 "name": "empty path",
@@ -141,6 +141,7 @@ class TestEventMonitor(unittest.TestCase):
             sockaddr_str = em.get_sockaddr_from_buf(ctypes.c_short(test_case["input"]))
             self.assertEqual(test_case["expected_sock_type"], sockaddr_str, "returned sock_type should be equal")
             self.assertEqual(test_case["expected_cur_off"], em.cur_off, "current offset should be 2")
+            em.cur_off = 0
 
     def test_event_filter(self):
 
