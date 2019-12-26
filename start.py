@@ -45,6 +45,8 @@ def parse_args(input_args):
                         help="list events")
     parser.add_argument("-e", "--events-to-trace", default = syscalls + sysevents, action=EventsToTraceAction,
                         help="trace only the specified events and syscalls (default: trace all)")
+    parser.add_argument("--show-syscall", action="store_true",
+                        help="show syscall name in kprobes")
     return parser.parse_args(input_args)
 
 
