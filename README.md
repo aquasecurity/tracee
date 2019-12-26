@@ -21,7 +21,8 @@ optional arguments:
 
 -c, --container       only trace newly created containers
 
---max-args MAX_ARGS   maximum number of arguments parsed and displayed, defaults to 20
+-b {1,2,4,8,16,32,64,128,256,512,1024}, --buf-pages {1,2,4,8,16,32,64,128,256,512,1024}
+                      number of pages for perf buffer, defaults to 64
 
 -j, --json            save events in json format
 
