@@ -8,12 +8,12 @@ but other events, such as capabilities required to perform the actions requested
 
 ## Requirements
 Currently requires 
-* kernel version 4.14-4.18
+* kernel version > 4.14
 * BCC
 
 ## Quick Start Instructions
 
-As root: `start.py [-h] [-c] [--max-args MAX_ARGS] [-j] [-e EVENTS_TO_TRACE]`
+As root: `start.py [-h] [-c] [-b PAGE_NR] [-j] [-l] [-e EVENTS_TO_TRACE]`
 
 optional arguments:
 
@@ -161,12 +161,12 @@ Other supported events are (functions called in kernel space):
 * do_exit - indicates exited processes
 
 
-Adding new events (especially system calls) to Tracee is straightforward, but one should keep in mind that tracing too many events may cause system performance degradation. Other than that, as perf event buffer is limited in size (2^17), having too many events can cause samples to be lost (an error message will then be shown as part of the output). For this reason, *read* and *write* syscalls are deliberately excluded from Tracee.
+Adding new events (especially system calls) to Tracee is straightforward, but one should keep in mind that tracing too many events may cause system performance degradation. Other than that, high event rate can cause samples to be lost (an error message will then be shown as part of the output). For this reason, *read* and *write* syscalls are deliberately excluded from Tracee.
 
 
 ## TODO
 
-* Add envp to execve(at) syscalls. Put argv and envp in a list instead being different param for each arg
+* Add envp to execve(at) syscalls
 * Add full sockaddr struct fields to: "connect", "accept", "bind", "getsockname"
 * Consider tracing commit_creds to detect potential kernel exploits
 * Consider re-writing userspace side (python) in golang
