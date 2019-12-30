@@ -19,26 +19,28 @@
 #define SUBMIT_BUFSIZE  (2 << 13)                           // Need to be power of 2
 #define SUBMIT_BUFSIZE_HALF   ((SUBMIT_BUFSIZE-1) >> 1)     // Bitmask for ebpf validator - this is why we need SUBMIT_BUFSIZE to be power of 2
 
-#define NONE_T      0UL
-#define INT_T       1UL
-#define UINT_T      2UL
-#define LONG_T      3UL
-#define ULONG_T     4UL
-#define OFF_T_T     5UL
-#define MODE_T_T    6UL
-#define DEV_T_T     7UL
-#define SIZE_T_T    8UL
-#define POINTER_T   9UL
-#define STR_T       10UL
-#define STR_ARR_T   11UL
-#define SOCKADDR_T  12UL
-#define OPENFLAGS_T 13UL
-#define EXEC_FLAG_T 14UL
-#define SOCK_DOM_T  15UL
-#define SOCK_TYPE_T 16UL
-#define CAP_T       17UL
-#define SYSCALL_T   18UL
-#define TYPE_MAX    255UL
+#define NONE_T        0UL
+#define INT_T         1UL
+#define UINT_T        2UL
+#define LONG_T        3UL
+#define ULONG_T       4UL
+#define OFF_T_T       5UL
+#define MODE_T_T      6UL
+#define DEV_T_T       7UL
+#define SIZE_T_T      8UL
+#define POINTER_T     9UL
+#define STR_T         10UL
+#define STR_ARR_T     11UL
+#define SOCKADDR_T    12UL
+#define OPEN_FLAGS_T  13UL
+#define EXEC_FLAGS_T  14UL
+#define SOCK_DOM_T    15UL
+#define SOCK_TYPE_T   16UL
+#define CAP_T         17UL
+#define SYSCALL_T     18UL
+#define PROT_FLAGS_T  19UL
+#define ACCESS_MODE_T 20UL
+#define TYPE_MAX      255UL
 
 #define CONFIG_CONT_MODE    0
 #define CONFIG_SHOW_SYSCALL 1
@@ -879,8 +881,8 @@ static __always_inline int save_args_to_submit_buf(u64 types)
             case INT_T:
                 save_to_submit_buf((void*)&(args.args[i]), sizeof(int), INT_T);
                 break;
-            case OPENFLAGS_T:
-                save_to_submit_buf((void*)&(args.args[i]), sizeof(int), OPENFLAGS_T);
+            case OPEN_FLAGS_T:
+                save_to_submit_buf((void*)&(args.args[i]), sizeof(int), OPEN_FLAGS_T);
                 break;
             case UINT_T:
                 save_to_submit_buf((void*)&(args.args[i]), sizeof(unsigned int), UINT_T);
@@ -914,6 +916,12 @@ static __always_inline int save_args_to_submit_buf(u64 types)
                 break;
             case SOCK_TYPE_T:
                 save_to_submit_buf((void*)&(args.args[i]), sizeof(int), SOCK_TYPE_T);
+                break;
+            case PROT_FLAGS_T:
+                save_to_submit_buf((void*)&(args.args[i]), sizeof(int), PROT_FLAGS_T);
+                break;
+            case ACCESS_MODE_T:
+                save_to_submit_buf((void*)&(args.args[i]), sizeof(int), ACCESS_MODE_T);
                 break;
             case SOCKADDR_T:
                 if (args.args[i])
@@ -986,15 +994,15 @@ int trace_ret_##name(struct pt_regs *ctx)                               \
 // Note: race condition may occur if a malicious user changes memory content pointed by syscall arguments by concurrent threads!
 // Consider using inner kernel functions (e.g. security_file_open) to avoid this
 TRACE_ENT_SYSCALL(open);
-TRACE_RET_SYSCALL(open, SYS_OPEN, ARG_TYPE0(STR_T)|ARG_TYPE1(OPENFLAGS_T));
+TRACE_RET_SYSCALL(open, SYS_OPEN, ARG_TYPE0(STR_T)|ARG_TYPE1(OPEN_FLAGS_T));
 TRACE_ENT_SYSCALL(openat);
-TRACE_RET_SYSCALL(openat, SYS_OPENAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(OPENFLAGS_T));
+TRACE_RET_SYSCALL(openat, SYS_OPENAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(OPEN_FLAGS_T));
 TRACE_ENT_SYSCALL(creat);
 TRACE_RET_SYSCALL(creat, SYS_CREAT, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
 TRACE_ENT_SYSCALL(mmap);
-TRACE_RET_SYSCALL(mmap, SYS_MMAP, ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(INT_T)|ARG_TYPE3(INT_T)|ARG_TYPE4(INT_T)|ARG_TYPE5(OFF_T_T));
+TRACE_RET_SYSCALL(mmap, SYS_MMAP, ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(PROT_FLAGS_T)|ARG_TYPE3(INT_T)|ARG_TYPE4(INT_T)|ARG_TYPE5(OFF_T_T));
 TRACE_ENT_SYSCALL(mprotect);
-TRACE_RET_SYSCALL(mprotect, SYS_MPROTECT, ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(INT_T));
+TRACE_RET_SYSCALL(mprotect, SYS_MPROTECT, ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(PROT_FLAGS_T));
 TRACE_ENT_SYSCALL(mknod);
 TRACE_RET_SYSCALL(mknod, SYS_MKNOD, ARG_TYPE0(STR_T)|ARG_TYPE1(MODE_T_T)|ARG_TYPE2(DEV_T_T));
 TRACE_ENT_SYSCALL(mknodat);
@@ -1020,9 +1028,9 @@ TRACE_RET_SYSCALL(close, SYS_CLOSE, ARG_TYPE0(INT_T));
 TRACE_ENT_SYSCALL(ioctl);
 TRACE_RET_SYSCALL(ioctl, SYS_IOCTL, ARG_TYPE0(INT_T)|ARG_TYPE1(ULONG_T));
 TRACE_ENT_SYSCALL(access);
-TRACE_RET_SYSCALL(access, SYS_ACCESS, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
+TRACE_RET_SYSCALL(access, SYS_ACCESS, ARG_TYPE0(STR_T)|ARG_TYPE1(ACCESS_MODE_T));
 TRACE_ENT_SYSCALL(faccessat);
-TRACE_RET_SYSCALL(faccessat, SYS_FACCESSAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T)|ARG_TYPE3(INT_T));
+TRACE_RET_SYSCALL(faccessat, SYS_FACCESSAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(ACCESS_MODE_T)|ARG_TYPE3(INT_T));
 TRACE_ENT_SYSCALL(kill);
 TRACE_RET_SYSCALL(kill, SYS_KILL, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T));
 TRACE_ENT_SYSCALL(listen);
@@ -1199,7 +1207,7 @@ int syscall__execveat(struct pt_regs *ctx,
 out:
     // mark string array end
     save_to_submit_buf(NULL, 0, STR_ARR_T);
-    save_to_submit_buf((void*)&flags, sizeof(int), EXEC_FLAG_T);
+    save_to_submit_buf((void*)&flags, sizeof(int), EXEC_FLAGS_T);
     events_perf_submit(ctx);
     return 0;
 }
