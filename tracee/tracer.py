@@ -494,12 +494,14 @@ class ArgType(object):
     STR_T           = 10
     STR_ARR_T       = 11
     SOCKADDR_T      = 12
-    OPENFLAGS_T     = 13
-    EXEC_FLAG_T     = 14
+    OPEN_FLAGS_T    = 13
+    EXEC_FLAGS_T    = 14
     SOCK_DOM_T      = 15
     SOCK_TYPE_T     = 16
     CAP_T           = 17
     SYSCALL_T       = 18
+    PROT_FLAGS_T    = 19
+    ACCESS_MODE_T   = 20
     TYPE_MAX        = 255
 
 class shared_config(object):
@@ -555,7 +557,7 @@ def prot_to_str(prot):
     return p_str
 
 
-def mknod_mode_to_str(flags):
+def mode_to_str(flags):
     f_str = ""
 
     if flags & 0o140000:
@@ -934,7 +936,7 @@ class EventMonitor:
                 elif argtype == ArgType.OFF_T_T:
                     args.append(str(self.get_ulong_from_buf(event_buf)))
                 elif argtype == ArgType.MODE_T_T:
-                    args.append(str(self.get_uint_from_buf(event_buf)))
+                    args.append(mode_to_str(self.get_uint_from_buf(event_buf)))
                 elif argtype == ArgType.DEV_T_T:
                     args.append(str(self.get_uint_from_buf(event_buf)))
                 elif argtype == ArgType.SIZE_T_T:
@@ -948,9 +950,13 @@ class EventMonitor:
                 elif argtype == ArgType.SOCKADDR_T:
                     # sockaddr (partialy parsed to family)
                     args.append(self.get_sockaddr_from_buf(event_buf))
-                elif argtype == ArgType.OPENFLAGS_T:
+                elif argtype == ArgType.OPEN_FLAGS_T:
                     args.append(open_flags_to_str(self.get_int_from_buf(event_buf)))
-                elif argtype == ArgType.EXEC_FLAG_T:
+                elif argtype == ArgType.PROT_FLAGS_T:
+                    args.append(prot_to_str(self.get_int_from_buf(event_buf)))
+                elif argtype == ArgType.ACCESS_MODE_T:
+                    args.append(access_mode_to_str(self.get_int_from_buf(event_buf)))
+                elif argtype == ArgType.EXEC_FLAGS_T:
                     flags = self.get_int_from_buf(event_buf)
                     args.append(execveat_flags_to_str(flags))
                 elif argtype == ArgType.SOCK_DOM_T:
