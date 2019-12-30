@@ -667,11 +667,7 @@ static __always_inline submit_buf_t * get_submit_buf()
 {
     int idx = 0;
     // Get per-cpu buffer
-    submit_buf_t *submit_p = submission_buf.lookup(&idx);
-    if (submit_p == NULL)
-        return NULL;
-
-    return submit_p;
+    return submission_buf.lookup(&idx);
 }
 
 static __always_inline int init_submit_buf()
@@ -685,13 +681,8 @@ static __always_inline int init_submit_buf()
     return 0;
 }
 
-static __always_inline int save_to_submit_buf(void *ptr, int size, u8 type)
+static __always_inline int save_to_submit_buf(submit_buf_t *submit_p, void *ptr, int size, u8 type)
 {
-    submit_buf_t *submit_p = get_submit_buf();
-
-    if (submit_p == NULL)
-        return 0;
-
     if (submit_p->off > SUBMIT_BUFSIZE_HALF)
         // not enough space - return
         return 0;
@@ -703,9 +694,6 @@ static __always_inline int save_to_submit_buf(void *ptr, int size, u8 type)
             return 0;
 
         submit_p->off += 1;
-
-        if (type == STR_ARR_T)
-            return 0;
     }
 
     // Read into buffer
@@ -718,13 +706,8 @@ static __always_inline int save_to_submit_buf(void *ptr, int size, u8 type)
     return 0;
 }
 
-static __always_inline int save_str_to_buf(void *ptr)
+static __always_inline int save_str_to_buf(submit_buf_t *submit_p, void *ptr)
 {
-    submit_buf_t *submit_p = get_submit_buf();
-
-    if (submit_p == NULL)
-        return 0;
-
     if (submit_p->off > SUBMIT_BUFSIZE_HALF)
         // not enough space - return
         return 0;
@@ -765,12 +748,12 @@ static __always_inline int events_perf_submit(struct pt_regs *ctx)
     return events.perf_submit(ctx, data, size);
 }
 
-static __always_inline int save_argv(struct pt_regs *ctx, void *ptr)
+static __always_inline int save_argv(submit_buf_t *submit_p, struct pt_regs *ctx, void *ptr)
 {
     const char *argp = NULL;
     bpf_probe_read(&argp, sizeof(argp), ptr);
     if (argp) {
-        return save_str_to_buf((void *)(argp));
+        return save_str_to_buf(submit_p, (void *)(argp));
     }
     return 0;
 }
@@ -871,6 +854,10 @@ static __always_inline int save_args_to_submit_buf(u64 types)
     if ((types == 0) || (load_args(&args) != 0))
         return 0;
 
+    submit_buf_t *submit_p = get_submit_buf();
+    if (submit_p == NULL)
+        return 0;
+
     #pragma unroll
     for(i=0; i<6; i++)
     {
@@ -879,54 +866,54 @@ static __always_inline int save_args_to_submit_buf(u64 types)
             case NONE_T:
                 break;
             case INT_T:
-                save_to_submit_buf((void*)&(args.args[i]), sizeof(int), INT_T);
+                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(int), INT_T);
                 break;
             case OPEN_FLAGS_T:
-                save_to_submit_buf((void*)&(args.args[i]), sizeof(int), OPEN_FLAGS_T);
+                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(int), OPEN_FLAGS_T);
                 break;
             case UINT_T:
-                save_to_submit_buf((void*)&(args.args[i]), sizeof(unsigned int), UINT_T);
+                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(unsigned int), UINT_T);
                 break;
             case OFF_T_T:
-                save_to_submit_buf((void*)&(args.args[i]), sizeof(off_t), OFF_T_T);
+                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(off_t), OFF_T_T);
                 break;
             case DEV_T_T:
-                save_to_submit_buf((void*)&(args.args[i]), sizeof(dev_t), DEV_T_T);
+                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(dev_t), DEV_T_T);
                 break;
             case MODE_T_T:
-                save_to_submit_buf((void*)&(args.args[i]), sizeof(mode_t), MODE_T_T);
+                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(mode_t), MODE_T_T);
                 break;
             case LONG_T:
-                save_to_submit_buf((void*)&(args.args[i]), sizeof(long), LONG_T);
+                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(long), LONG_T);
                 break;
             case ULONG_T:
-                save_to_submit_buf((void*)&(args.args[i]), sizeof(unsigned long), ULONG_T);
+                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(unsigned long), ULONG_T);
                 break;
             case SIZE_T_T:
-                save_to_submit_buf((void*)&(args.args[i]), sizeof(size_t), SIZE_T_T);
+                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(size_t), SIZE_T_T);
                 break;
             case POINTER_T:
-                save_to_submit_buf((void*)&(args.args[i]), sizeof(void*), POINTER_T);
+                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(void*), POINTER_T);
                 break;
             case STR_T:
-                save_str_to_buf((void *)args.args[i]);
+                save_str_to_buf(submit_p, (void *)args.args[i]);
                 break;
             case SOCK_DOM_T:
-                save_to_submit_buf((void*)&(args.args[i]), sizeof(int), SOCK_DOM_T);
+                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(int), SOCK_DOM_T);
                 break;
             case SOCK_TYPE_T:
-                save_to_submit_buf((void*)&(args.args[i]), sizeof(int), SOCK_TYPE_T);
+                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(int), SOCK_TYPE_T);
                 break;
             case PROT_FLAGS_T:
-                save_to_submit_buf((void*)&(args.args[i]), sizeof(int), PROT_FLAGS_T);
+                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(int), PROT_FLAGS_T);
                 break;
             case ACCESS_MODE_T:
-                save_to_submit_buf((void*)&(args.args[i]), sizeof(int), ACCESS_MODE_T);
+                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(int), ACCESS_MODE_T);
                 break;
             case SOCKADDR_T:
                 if (args.args[i])
                     bpf_probe_read(&family, sizeof(short), (void*)args.args[i]);
-                save_to_submit_buf((void*)&family, sizeof(short), SOCKADDR_T);
+                save_to_submit_buf(submit_p, (void*)&family, sizeof(short), SOCKADDR_T);
                 break;
         }
     }
@@ -941,10 +928,14 @@ static __always_inline int trace_ret_generic(struct pt_regs *ctx, u32 id, u64 ty
     if (init_context(&context) || init_submit_buf())
         return -1;
 
+    submit_buf_t *submit_p = get_submit_buf();
+    if (submit_p == NULL)
+        return 0;
+
     context.eventid = id;
     context.argnum = get_encoded_arg_num(types);
     context.retval = PT_REGS_RC(ctx);
-    save_to_submit_buf((void*)&context, sizeof(context_t), NONE_T);
+    save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
     save_args_to_submit_buf(types);
 
     events_perf_submit(ctx);
@@ -1118,27 +1109,31 @@ int syscall__execve(struct pt_regs *ctx,
     if (init_context(&context) || init_submit_buf())
         return 0;
 
+    submit_buf_t *submit_p = get_submit_buf();
+    if (submit_p == NULL)
+        return 0;
+
     context.eventid = SYS_EXECVE;
     context.argnum = 2;
     context.retval = 0;     // assume execve succeeded. if not, a ret event will be sent too
-    save_to_submit_buf((void*)&context, sizeof(context_t), NONE_T);
-    save_str_to_buf((void *)filename);
+    save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
+    save_str_to_buf(submit_p, (void *)filename);
 
     // mark string array start
-    save_to_submit_buf(NULL, 0, STR_ARR_T);
+    save_to_submit_buf(submit_p, NULL, 0, STR_ARR_T);
     // skip first arg, as we submitted filename
     #pragma unroll
     for (int i = 1; i < MAXARG; i++) {
-        if (save_argv(ctx, (void *)&__argv[i]) == 0)
+        if (save_argv(submit_p, ctx, (void *)&__argv[i]) == 0)
              goto out;
     }
 
     // handle truncated argument list
     char ellipsis[] = "...";
-    save_str_to_buf((void *)ellipsis);
+    save_str_to_buf(submit_p, (void *)ellipsis);
 out:
     // mark string array end
-    save_to_submit_buf(NULL, 0, STR_ARR_T);
+    save_to_submit_buf(submit_p, NULL, 0, STR_ARR_T);
     events_perf_submit(ctx);
     return 0;
 }
@@ -1151,6 +1146,10 @@ int trace_ret_execve(struct pt_regs *ctx)
     if (init_context(&context) || init_submit_buf())
         return 0;
 
+    submit_buf_t *submit_p = get_submit_buf();
+    if (submit_p == NULL)
+        return 0;
+
     context.eventid = SYS_EXECVE;
     context.argnum = 0;
     context.retval = PT_REGS_RC(ctx);
@@ -1158,7 +1157,7 @@ int trace_ret_execve(struct pt_regs *ctx)
     if (context.retval == 0)
         return 0;   // we are only interested in failed execs
 
-    save_to_submit_buf((void*)&context, sizeof(context_t), NONE_T);
+    save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
     events_perf_submit(ctx);
     return 0;
 }
@@ -1184,30 +1183,34 @@ int syscall__execveat(struct pt_regs *ctx,
     if (init_context(&context) || init_submit_buf())
         return 0;
 
+    submit_buf_t *submit_p = get_submit_buf();
+    if (submit_p == NULL)
+        return 0;
+
     context.eventid = SYS_EXECVEAT;
     context.argnum = 4;
     context.retval = 0;     // assume execve succeeded. if not, a ret event will be sent too
-    save_to_submit_buf((void*)&context, sizeof(context_t), NONE_T);
-    save_to_submit_buf((void*)&dirfd, sizeof(int), INT_T);
+    save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
+    save_to_submit_buf(submit_p, (void*)&dirfd, sizeof(int), INT_T);
 
-    save_str_to_buf((void *)pathname);
+    save_str_to_buf(submit_p, (void *)pathname);
 
     // mark string array start
-    save_to_submit_buf(NULL, 0, STR_ARR_T);
+    save_to_submit_buf(submit_p, NULL, 0, STR_ARR_T);
     // skip first arg, as we submitted filename
     #pragma unroll
     for (int i = 1; i < MAXARG; i++) {
-        if (save_argv(ctx, (void *)&__argv[i]) == 0)
+        if (save_argv(submit_p, ctx, (void *)&__argv[i]) == 0)
              goto out;
     }
 
     // handle truncated argument list
     char ellipsis[] = "...";
-    save_str_to_buf((void *)ellipsis);
+    save_str_to_buf(submit_p, (void *)ellipsis);
 out:
     // mark string array end
-    save_to_submit_buf(NULL, 0, STR_ARR_T);
-    save_to_submit_buf((void*)&flags, sizeof(int), EXEC_FLAGS_T);
+    save_to_submit_buf(submit_p, NULL, 0, STR_ARR_T);
+    save_to_submit_buf(submit_p, (void*)&flags, sizeof(int), EXEC_FLAGS_T);
     events_perf_submit(ctx);
     return 0;
 }
@@ -1220,6 +1223,10 @@ int trace_ret_execveat(struct pt_regs *ctx)
     if (init_context(&context) || init_submit_buf())
         return 0;
 
+    submit_buf_t *submit_p = get_submit_buf();
+    if (submit_p == NULL)
+        return 0;
+
     context.eventid = SYS_EXECVEAT;
     context.argnum = 0;
     context.retval = PT_REGS_RC(ctx);
@@ -1227,7 +1234,7 @@ int trace_ret_execveat(struct pt_regs *ctx)
     if (context.retval == 0)
         return 0;   // we are only interested in failed execs
 
-    save_to_submit_buf((void*)&context, sizeof(context_t), NONE_T);
+    save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
     events_perf_submit(ctx);
     return 0;
 }
@@ -1241,6 +1248,10 @@ int trace_do_exit(struct pt_regs *ctx, long code)
     if (init_context(&context) || init_submit_buf())
         return 0;
 
+    submit_buf_t *submit_p = get_submit_buf();
+    if (submit_p == NULL)
+        return 0;
+
     context.eventid = DO_EXIT;
     context.argnum = 0;
     context.retval = code;
@@ -1250,7 +1261,7 @@ int trace_do_exit(struct pt_regs *ctx, long code)
     else
         remove_pid();
 
-    save_to_submit_buf((void*)&context, sizeof(context_t), NONE_T);
+    save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
     events_perf_submit(ctx);
     return 0;
 }
@@ -1262,6 +1273,10 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
     context_t context = {};
 
     if (init_context(&context) || init_submit_buf())
+        return 0;
+
+    submit_buf_t *submit_p = get_submit_buf();
+    if (submit_p == NULL)
         return 0;
 
     context.eventid = CAP_CAPABLE;
@@ -1279,11 +1294,11 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
     if (audit == 0)
         return 0;
 
-    save_to_submit_buf((void*)&context, sizeof(context_t), NONE_T);
-    save_to_submit_buf((void*)&cap, sizeof(int), CAP_T);
+    save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
+    save_to_submit_buf(submit_p, (void*)&cap, sizeof(int), CAP_T);
     if (show_syscall()) {
         struct pt_regs *real_ctx = get_task_pt_regs();
-        save_to_submit_buf((void*)&(real_ctx->orig_ax), sizeof(int), SYSCALL_T);
+        save_to_submit_buf(submit_p, (void*)&(real_ctx->orig_ax), sizeof(int), SYSCALL_T);
     }
     events_perf_submit(ctx);
     return 0;
