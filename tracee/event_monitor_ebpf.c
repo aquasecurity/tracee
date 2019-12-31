@@ -709,6 +709,8 @@ static __always_inline int save_to_submit_buf(submit_buf_t *submit_p, void *ptr,
         return size;
     }
 
+    // Remove argument type if read failed
+    submit_p->off -= 1;
     return 0;
 }
 
@@ -732,13 +734,10 @@ static __always_inline int save_str_to_buf(submit_buf_t *submit_p, void *ptr)
         bpf_probe_read((void **)&(submit_p->buf[submit_p->off & SUBMIT_BUFSIZE_HALF]), sizeof(int), &sz);
         submit_p->off += sz + sizeof(int);
         return sz + sizeof(int);
-    } else {
-        sz = 0;
-        bpf_probe_read((void **)&(submit_p->buf[submit_p->off & SUBMIT_BUFSIZE_HALF]), sizeof(int), &sz);
-        submit_p->off += sizeof(int);
-        return sizeof(int);
     }
 
+    // Remove argument type if read failed
+    submit_p->off -= 1;
     return 0;
 }
 
