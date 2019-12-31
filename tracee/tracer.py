@@ -112,6 +112,11 @@ sock_domain = {
     44: "AF_XDP",
 }
 
+class SupportedAF(object):
+    AF_UNIX         = 1
+    AF_INET         = 2
+    AF_INET6        = 10
+
 sock_type = {
     1: "SOCK_STREAM",
     2: "SOCK_DGRAM",
@@ -809,19 +814,101 @@ class EventMonitor:
             log.info("%-14s %-16s %-12s %-12s %-6s %-16s %-16s %-6s %-6s %-6s %-12s %s" % (
                 "TIME(s)", "UTS_NAME", "MNT_NS", "PID_NS", "UID", "EVENT", "COMM", "PID", "TID", "PPID", "RET", "ARGS"))
 
+    def swap_4_bytes(self, num):
+        return (((num <<  24) & 0xFF000000) |
+               ((num  <<   8) & 0x00FF0000) |
+               ((num  >>   8) & 0x0000FF00) |
+               ((num  >>  24) & 0x000000FF))
+
     def get_sockaddr_from_buf(self, buf):
-        # todo: parse all fields
-        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_short)).contents
-        self.cur_off = self.cur_off + 2
-        domain = c_val.value
+        sockaddr = dict()
+        domain = self.get_uint16_from_buf(buf)
         if domain in sock_domain:
-            return sock_domain[domain]
+            sockaddr["sa_family"] = sock_domain[domain]
+            if domain == SupportedAF.AF_UNIX:
+                """
+                struct sockaddr_un {
+                    sa_family_t sun_family;               /* AF_UNIX */
+                    char        sun_path[108];            /* Pathname */
+                };
+                """
+                sun_path = buf[self.cur_off:self.cur_off + 108]
+                self.cur_off += 108
+                try:
+                    sun_path_str = str(array.array('B', sun_path).tostring().decode("utf-8"))
+                    sockaddr["sun_path"] = sun_path_str.strip('\x00')
+                except:
+                    sockaddr["sun_path"] = ""
+            if domain == SupportedAF.AF_INET:
+                """
+                struct sockaddr_in {
+                    sa_family_t    sin_family; /* address family: AF_INET */
+                    in_port_t      sin_port;   /* port in network byte order */
+                    struct in_addr sin_addr;   /* internet address */
+                };
+                struct in_addr {
+                    uint32_t       s_addr;     /* address in network byte order */
+                };
+                """
+                sin_port = self.get_uint16_from_buf(buf)
+                # convert big endian (network byte order) to little endian (x86)
+                sin_port = ((sin_port <<  8) & 0xFF00) | ((sin_port >>  8) & 0x00FF)
+                sockaddr["sin_port"] = str(sin_port)
+
+                sin_addr = str(self.get_uint8_from_buf(buf))
+                for i in range(3):
+                    sin_addr = sin_addr + "." + str(self.get_uint8_from_buf(buf))
+                sockaddr["sin_addr"] = sin_addr
+            if domain == SupportedAF.AF_INET6:
+                """
+                struct sockaddr_in6 {
+                    sa_family_t     sin6_family;   /* AF_INET6 */
+                    in_port_t       sin6_port;     /* port number */
+                    uint32_t        sin6_flowinfo; /* IPv6 flow information */
+                    struct in6_addr sin6_addr;     /* IPv6 address */
+                    uint32_t        sin6_scope_id; /* Scope ID (new in 2.4) */
+                };
+
+                struct in6_addr {
+                    unsigned char   s6_addr[16];   /* IPv6 address */
+                };
+                """
+                sin6_port = self.get_uint16_from_buf(buf)
+                # convert big endian (network byte order) to little endian (x86)
+                sin6_port = ((sin6_port <<  8) & 0xFF00) | ((sin6_port >>  8) & 0x00FF)
+                sockaddr["sin6_port"] = str(sin6_port)
+                sin6_flowinfo = self.get_uint_from_buf(buf)
+                # convert big endian (network byte order) to little endian (x86)
+                sin6_flowinfo = self.swap_4_bytes(sin6_flowinfo)
+                sockaddr["sin6_flowinfo"] = str(sin6_flowinfo)
+                sin6_addr = str("%0.2X" % self.get_uint8_from_buf(buf))
+                sin6_addr = sin6_addr + str("%0.2X" % self.get_uint8_from_buf(buf))
+                for i in range(7):
+                    sin6_addr = sin6_addr + ":" + str("%0.2X" % self.get_uint8_from_buf(buf))
+                    sin6_addr = sin6_addr + str("%0.2X" % self.get_uint8_from_buf(buf))
+                sockaddr["sin6_addr"] = sin6_addr
+                sin6_scope_id = self.get_uint_from_buf(buf)
+                # convert big endian (network byte order) to little endian (x86)
+                sin6_scope_id = self.swap_4_bytes(sin6_scope_id)
+                sockaddr["sin6_scope_id"] = str(sin6_scope_id)
         else:
-            return str(domain)
+            sockaddr["sa_family"] = str(domain)
+
+        return sockaddr
 
     def get_type_from_buf(self, buf):
         c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_byte)).contents
         self.cur_off = self.cur_off + 1
+        return c_val.value
+
+    def get_uint8_from_buf(self, buf):
+        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_uint8)).contents
+        self.cur_off = self.cur_off + 1
+        return c_val.value
+
+    def get_uint16_from_buf(self, buf):
+        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(ctypes.c_uint16)).contents
+        self.cur_off = self.cur_off + 2
         return c_val.value
 
     def get_int_from_buf(self, buf):
@@ -860,15 +947,14 @@ class EventMonitor:
         except:
             return ""
 
-    def get_str_arr_from_buf(self, buf, args):
+    def get_str_arr_from_buf(self, buf):
         str_list = list()
         while self.cur_off < ctypes.sizeof(buf):
             argtype = self.get_type_from_buf(buf)
             if argtype == ArgType.STR_T:
                 str_list.append(self.get_string_from_buf(buf).rstrip('\x00'))
             else:
-                args.append('[%s]' % ', '.join(map(str, str_list)))
-                return
+                return '[%s]' % ', '.join(map(str, str_list))
 
     def print_event(self, eventname, context, args):
         # There are some syscalls which doesn't have the same name as their function
@@ -950,10 +1036,9 @@ class EventMonitor:
                 elif argtype == ArgType.STR_T:
                     args.append(self.get_string_from_buf(event_buf))
                 elif argtype == ArgType.STR_ARR_T:
-                    self.get_str_arr_from_buf(event_buf, args)
+                    args.append(self.get_str_arr_from_buf(event_buf))
                 elif argtype == ArgType.SOCKADDR_T:
-                    # sockaddr (partialy parsed to family)
-                    args.append(self.get_sockaddr_from_buf(event_buf))
+                    args.append(str(self.get_sockaddr_from_buf(event_buf)))
                 elif argtype == ArgType.OPEN_FLAGS_T:
                     args.append(open_flags_to_str(self.get_int_from_buf(event_buf)))
                 elif argtype == ArgType.PROT_FLAGS_T:
