@@ -171,7 +171,6 @@ Adding new events (especially system calls) to Tracee is straightforward, but on
 
 ## TODO
 
-* Add full sockaddr struct fields to: "connect", "accept", "bind", "getsockname"
 * Consider tracing commit_creds to detect potential kernel exploits
 * Consider re-writing userspace side (python) in golang
 

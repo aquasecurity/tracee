@@ -5,6 +5,9 @@
  */
 
 #include <uapi/linux/ptrace.h>
+#include <uapi/linux/in.h>
+#include <uapi/linux/in6.h>
+#include <uapi/linux/un.h>
 #include <uapi/linux/utsname.h>
 #include <linux/sched.h>
 #include <linux/fs.h>
@@ -12,6 +15,7 @@
 #include <linux/ns_common.h>
 #include <linux/pid_namespace.h>
 #include <linux/security.h>
+#include <linux/socket.h>
 #include <linux/version.h>
 
 #define MAXARG 20
@@ -937,9 +941,23 @@ static __always_inline int save_args_to_submit_buf(u64 types)
                 save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(int), ACCESS_MODE_T);
                 break;
             case SOCKADDR_T:
-                if (args.args[i])
+                if (args.args[i]) {
                     bpf_probe_read(&family, sizeof(short), (void*)args.args[i]);
-                save_to_submit_buf(submit_p, (void*)&family, sizeof(short), SOCKADDR_T);
+                    switch (family)
+                    {
+                        case AF_UNIX:
+                            save_to_submit_buf(submit_p, (void*)(args.args[i]), sizeof(struct sockaddr_un), SOCKADDR_T);
+                            break;
+                        case AF_INET:
+                            save_to_submit_buf(submit_p, (void*)(args.args[i]), sizeof(struct sockaddr_in), SOCKADDR_T);
+                            break;
+                        case AF_INET6:
+                            save_to_submit_buf(submit_p, (void*)(args.args[i]), sizeof(struct sockaddr_in6), SOCKADDR_T);
+                            break;
+                        default:
+                            save_to_submit_buf(submit_p, (void*)&family, sizeof(short), SOCKADDR_T);
+                    }
+                }
                 break;
         }
     }
