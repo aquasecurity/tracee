@@ -44,6 +44,8 @@
 #define SYSCALL_T     18UL
 #define PROT_FLAGS_T  19UL
 #define ACCESS_MODE_T 20UL
+#define PTRACE_REQ_T  21UL
+#define PRCTL_OPT_T   22UL
 #define TYPE_MAX      255UL
 
 #define CONFIG_CONT_MODE    0
@@ -958,6 +960,12 @@ static __always_inline int save_args_to_submit_buf(u64 types)
                     }
                 }
                 break;
+            case PTRACE_REQ_T:
+                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(int), PTRACE_REQ_T);
+                break;
+            case PRCTL_OPT_T:
+                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(int), PRCTL_OPT_T);
+                break;
         }
     }
 
@@ -1080,9 +1088,9 @@ TRACE_RET_SYSCALL(bind, SYS_BIND, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
 TRACE_ENT_SYSCALL(getsockname);
 TRACE_RET_SYSCALL(getsockname, SYS_GETSOCKNAME, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
 TRACE_ENT_SYSCALL(prctl);
-TRACE_RET_SYSCALL(prctl, SYS_PRCTL, ARG_TYPE0(INT_T)|ARG_TYPE1(ULONG_T)|ARG_TYPE2(ULONG_T)|ARG_TYPE3(ULONG_T)|ARG_TYPE4(ULONG_T));
+TRACE_RET_SYSCALL(prctl, SYS_PRCTL, ARG_TYPE0(PRCTL_OPT_T)|ARG_TYPE1(ULONG_T)|ARG_TYPE2(ULONG_T)|ARG_TYPE3(ULONG_T)|ARG_TYPE4(ULONG_T));
 TRACE_ENT_SYSCALL(ptrace);
-TRACE_RET_SYSCALL(ptrace, SYS_PTRACE, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(POINTER_T)|ARG_TYPE3(POINTER_T));
+TRACE_RET_SYSCALL(ptrace, SYS_PTRACE, ARG_TYPE0(PTRACE_REQ_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(POINTER_T)|ARG_TYPE3(POINTER_T));
 TRACE_ENT_SYSCALL(process_vm_writev);
 TRACE_RET_SYSCALL(process_vm_writev, SYS_PROCESS_VM_WRITEV, ARG_TYPE0(INT_T)|ARG_TYPE1(POINTER_T)|ARG_TYPE2(ULONG_T)|ARG_TYPE3(POINTER_T)|ARG_TYPE4(ULONG_T)|ARG_TYPE5(ULONG_T));
 TRACE_ENT_SYSCALL(process_vm_readv);
