@@ -1,7 +1,7 @@
 package tracee
 
-// syscalls is a list of system calls that tracee can trace
-var syscalls = []string{"execve", "execveat", "mmap", "mprotect", "clone", 
+// Syscalls is a list of system calls that tracee can trace
+var Syscalls = []string{"execve", "execveat", "mmap", "mprotect", "clone", 
 "fork", "vfork", "newstat", 	"newfstat", "newlstat", "mknod", "mknodat", 
 "dup", "dup2", "dup3", 	"memfd_create", "socket", "close", "ioctl", "access", 
 "faccessat", "kill", "listen", 	"connect", "accept", "accept4", "bind", 
@@ -10,8 +10,8 @@ var syscalls = []string{"execve", "execveat", "mmap", "mprotect", "clone",
 "getdents64", "creat", "open", "openat", 	"mount", "umount", "unlink", "unlinkat", 
 "setuid", "setgid", "setreuid", "setregid", 	"setresuid", "setresgid", "setfsuid", 
 "setfsgid"}
-// sysevents is a list of system events that tracee can trace
-var sysevents = []string{"cap_capable", "do_exit"}
+// Sysevents is a list of system events that tracee can trace
+var Sysevents = []string{"cap_capable", "do_exit"}
 // essentialSyscalls is a list of system calls that are essential to the operation of tracee and therefore must be traced
 var essentialSyscalls = []string{"execve", "execveat"}
 // essentialSysevents is a list of system events that are essential to the operation of tracee and therefore must be traced
