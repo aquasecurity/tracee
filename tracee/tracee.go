@@ -61,6 +61,24 @@ type TraceConfig struct {
 	OutputFormat string
 }
 
+// Validate does static validation of the configuration
+// TODO: if error in golang is same as exception then this is abusing error
+func (tc TraceConfig) Validate() error {
+	for sc, wanted := range tc.Syscalls {
+		_, valid := Syscalls[sc]
+		if wanted && !valid {
+			return fmt.Errorf("invalid syscall to trace: %s", sc)
+		}
+	}
+	for se, wanted := range tc.Sysevents {
+		_, valid := Syscalls[se]
+		if wanted && !valid {
+			return fmt.Errorf("invalid syscall to trace: %s", se)
+		}
+	}
+	return nil
+}
+
 // Tracee traces system calls and events using eBPF
 type Tracee struct {
 	config TraceConfig
@@ -75,7 +93,11 @@ type Tracee struct {
 func New(cfg TraceConfig) (*Tracee, error) {
 	var err error
 
-	// ensure bpf file exists
+	// validation
+	err = cfg.Validate()
+	if err != nil {
+		return nil, fmt.Errorf("validation error: %v", err)
+	}
 	bpfFile := "./tracee/event_monitor_ebpf.c"
 	_, err = os.Stat(bpfFile)
 	if os.IsNotExist(err) {

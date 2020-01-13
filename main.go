@@ -15,15 +15,13 @@ func main() {
 		Usage: "Trace OS events and syscalls using eBPF",
 		Action: func(c *cli.Context) error {
 			if c.Bool("list") {
-				fmt.Printf("System calls:\n%s\n", strings.Join(tracee.Syscalls, ", "))
-				fmt.Println()
-				fmt.Printf("System events:\n%s\n", strings.Join(tracee.Sysevents, ", "))
+				printList()
 				return nil
 			}
-
-			t, err := tracee.New(tracee.TraceConfig{ 
+			cfg := tracee.TraceConfig{ 
 				OutputFormat: c.String("output"),
-			})
+			}
+			t, err := tracee.New(cfg)
 			if err != nil{
 				// t is being closed internally
 				return fmt.Errorf("error creating Tracee: %v", err)
@@ -50,4 +48,21 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func printList() {
+	const sep = ", "
+	var b strings.Builder
+	for sc := range tracee.Syscalls {
+		fmt.Fprintf(&b, "%s%s", sc, sep)
+	}
+	fmt.Println("System calls:")
+	fmt.Println(strings.TrimSuffix(b.String(), sep))
+	b.Reset()
+	fmt.Println()
+	for se := range tracee.Sysevents {
+		fmt.Fprintf(&b, "%s%s", se, sep)
+	}
+	fmt.Println("System events:")
+	fmt.Println(strings.TrimSuffix(b.String(), sep))
 }
