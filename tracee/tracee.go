@@ -71,9 +71,9 @@ func (tc TraceConfig) Validate() error {
 		}
 	}
 	for se, wanted := range tc.Sysevents {
-		_, valid := Syscalls[se]
+		_, valid := Sysevents[se]
 		if wanted && !valid {
-			return fmt.Errorf("invalid syscall to trace: %s", se)
+			return fmt.Errorf("invalid sysevent to trace: %s", se)
 		}
 	}
 	return nil
