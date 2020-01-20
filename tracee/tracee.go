@@ -56,8 +56,8 @@ type context struct {
 type TraceConfig struct {
 	Syscalls map[string]bool
 	Sysevents map[string]bool
-	ContinerMode bool
-	ShowSyscall bool
+	ContainerMode bool
+	DetectOriginalSyscall bool
 	OutputFormat string
 }
 
@@ -199,6 +199,16 @@ func (t *Tracee) initBPF() error {
 		}
 	}
 
+	bpfConfig := bpf.NewTable(t.bpfModule.TableId("config_map"), t.bpfModule)
+	key := make([]byte, 4)
+	leaf := make([]byte, 4)
+	binary.LittleEndian.PutUint32(key, uint32(CONFIG_CONT_MODE))
+	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.ContainerMode))
+	bpfConfig.Set(key, leaf)
+	binary.LittleEndian.PutUint32(key, uint32(CONFIG_DETECT_ORIG_SYSCALL))
+	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.DetectOriginalSyscall))
+	bpfConfig.Set(key, leaf)
+	
 	eventsBPFTable := bpf.NewTable(t.bpfModule.TableId("events"), t.bpfModule)
 	t.eventsChannel = make(chan []byte, 1000)
 	t.bpfPerfMap, err = bpf.InitPerfMap(eventsBPFTable, t.eventsChannel)
@@ -207,6 +217,13 @@ func (t *Tracee) initBPF() error {
 	}
 
 	return nil
+}
+
+func boolToUInt32(b bool) uint32{
+	if b {
+		return uint32(1)
+	}
+	return uint32(0)
 }
 
 func (t Tracee) processEvents() error {

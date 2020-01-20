@@ -20,6 +20,8 @@ func main() {
 			}
 			cfg := tracee.TraceConfig{ 
 				OutputFormat: c.String("output"),
+				ContainerMode: c.Bool("container"),
+				DetectOriginalSyscall: c.Bool("detect-original-syscall"),
 			}
 			t, err := tracee.New(cfg)
 			if err != nil{
@@ -40,6 +42,17 @@ func main() {
 				Aliases: []string{"l"},
 				Value: false,
         Usage: "just list tracable events",
+			},
+			&cli.BoolFlag{
+				Name: "container",
+				Aliases: []string{"c"},
+				Value: false,
+        Usage: "trace only containers",
+			},
+			&cli.BoolFlag{
+				Name: "detect-original-syscall",
+				Value: false,
+        Usage: "when tracing kernel functions which are not syscalls (such as cap_capable), detect and show the original syscall that called that function",
 			},
 		},
 	}

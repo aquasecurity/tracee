@@ -161,8 +161,8 @@ var eventNames = []string{
 	"do_exit", "cap_capable", 
 }
 
-type bpfConfig int
+type bpfConfig uint32
 const (
 	CONFIG_CONT_MODE    bpfConfig = 0
-	CONFIG_SHOW_SYSCALL bpfConfig = 1
+	CONFIG_DETECT_ORIG_SYSCALL bpfConfig = 1
 )
