@@ -157,7 +157,7 @@ var eventNames = []string{
 	"memfd_create", "kexec_file_load", "bpf", "execveat", "userfaultfd", 
 	"membarrier", "mlock2", "copy_file_range", "preadv2", "pwritev2", 
 	"pkey_mprotect", "pkey_alloc", "pkey_free", "statx", "io_pgetevents", "rseq",
-	// syscall events start here
+	// Non syscall events start here
 	"do_exit", "cap_capable", 
 }
 
