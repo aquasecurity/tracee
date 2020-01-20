@@ -335,6 +335,31 @@ func readArgFromBuff(dataBuff io.Reader, arg *interface{}) error {
 				}
 			}
 			*arg = tmparg
+		case CAP_T:
+			var tmparg uint32
+			err = binary.Read(dataBuff, binary.LittleEndian, &tmparg)
+			if err != nil {
+				return fmt.Errorf("error reading capability arg: %v", err)
+			}
+			if int(tmparg)<len(capabilities) {
+				*arg = capabilities[tmparg]
+			} else {
+				*arg = string(tmparg)
+			}
+		case SYSCALL_T:
+			var tmparg uint32
+			err = binary.Read(dataBuff, binary.LittleEndian, &tmparg)
+			if err != nil {
+				return fmt.Errorf("error reading syscall arg: %v", err)
+			}
+			if int(tmparg)<len(eventNames) {
+				*arg = eventNames[tmparg]
+			} else {
+				*arg = string(tmparg)
+			}
+		default:
+			//if we don't recognize the arg type, we can't parse the rest of the buffer
+			return fmt.Errorf("error unknown arg type %v", at)
 	}
 	return nil
 }
