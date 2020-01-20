@@ -170,7 +170,7 @@ func (t *Tracee) initBPF() error {
 	}
 	t.bpfModule = bpf.NewModule(string(bpfText), []string{})
 
-	for _, sc := range essentialSyscalls {
+	for sc := range t.config.Syscalls {
 		kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("syscall__%s", sc))
 		if err != nil {
 			return fmt.Errorf("error loading kprobe %s: %v", sc, err)
@@ -188,7 +188,7 @@ func (t *Tracee) initBPF() error {
 			return fmt.Errorf("error attaching kretprobe %s: %v", sc, err)
 		}
 	}
-	for _, se := range essentialSysevents {
+	for se := range t.config.Sysevents {
 		kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("trace_%s", se))
 		if err != nil {
 			return fmt.Errorf("error loading kprobe %s: %v", se, err)
