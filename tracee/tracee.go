@@ -255,7 +255,7 @@ func boolToUInt32(b bool) uint32{
 	return uint32(0)
 }
 
-func (t Tracee) processEvents() error {
+func (t Tracee) processEvents() {
 	for {
 		var err error
 		var ctx context
@@ -263,15 +263,19 @@ func (t Tracee) processEvents() error {
 		dataBuff := bytes.NewBuffer(dataRaw)
 		err = readContextFromBuff(dataBuff, &ctx)
 		if err != nil {
-			return fmt.Errorf("error reading context for event: %v", err)
+			// TODO: handle error
+			continue
 		}
 		args := make([]interface{}, ctx.Argnum)
 		for i:=0; i<int(ctx.Argnum); i++ {
-			readArgFromBuff(dataBuff, &args[i])
+			err = readArgFromBuff(dataBuff, &args[i])
+			if err != nil {
+				// TODO: handle error
+				continue
+			}
 		}
 		t.printer.Print(ctx,args)
 	}
-	return nil
 }
 
 func readContextFromBuff(buff io.Reader, ctx *context) error {
