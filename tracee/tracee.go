@@ -64,6 +64,12 @@ type TraceConfig struct {
 // Validate does static validation of the configuration
 // TODO: if error in golang is same as exception then this is abusing error
 func (tc TraceConfig) Validate() error {
+	if tc.Syscalls == nil || tc.Sysevents == nil {
+		return fmt.Errorf("trace config validation failed: sysevents or syscalls is nil")
+	}
+	if tc.OutputFormat != "table" && tc.OutputFormat != "json" {
+		return fmt.Errorf("trace config validation failed: unrecognized output format: %s", tc.OutputFormat)
+	}
 	for sc, wanted := range tc.Syscalls {
 		_, valid := Syscalls[sc]
 		if wanted && !valid {
@@ -79,6 +85,35 @@ func (tc TraceConfig) Validate() error {
 	return nil
 }
 
+// NewConfig creates a new TraceConfig instance based on the given configuration
+func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall bool, outputFormat string) (*TraceConfig, error) {
+	//separate eventsToTrace into syscalls and sysevents
+	syscalls := make(map[string]bool)
+	sysevents := make(map[string]bool)
+	for _, e := range eventsToTrace {
+		if enabled, ok := Syscalls[e]; ok{
+			syscalls[e] = enabled
+		}
+		if enabled, ok := Sysevents[e]; ok {
+			sysevents[e] = enabled
+		}
+	}
+
+	tc := TraceConfig{
+		Syscalls: syscalls,
+		Sysevents: sysevents,
+		ContainerMode: containerMode,
+		DetectOriginalSyscall: detectOriginalSyscall,
+		OutputFormat:outputFormat,
+	}
+
+	err := tc.Validate()
+	if err != nil {
+		return nil, err
+	}
+	return &tc, nil
+}
+
 // Tracee traces system calls and events using eBPF
 type Tracee struct {
 	config TraceConfig
@@ -89,7 +124,7 @@ type Tracee struct {
 	printer eventPrinter
 }
 
-// New creates a new Tracee instance based on the given TraceConfig
+// New creates a new Tracee instance based on a given valid TraceConfig
 func New(cfg TraceConfig) (*Tracee, error) {
 	var err error
 
@@ -105,14 +140,8 @@ func New(cfg TraceConfig) (*Tracee, error) {
 	}
 
 	// ensure essential syscalls and events are being traced
-	if cfg.Syscalls == nil {
-		cfg.Syscalls = make(map[string]bool)
-	}
 	for _, sc := range essentialSyscalls {
 		cfg.Syscalls[sc] = true
-	}
-	if cfg.Sysevents == nil {
-		cfg.Sysevents = make(map[string]bool)
 	}
 	for _, se := range essentialSysevents {
 		cfg.Sysevents[se] = true

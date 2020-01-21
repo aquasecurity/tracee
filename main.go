@@ -18,12 +18,16 @@ func main() {
 				printList()
 				return nil
 			}
-			cfg := tracee.TraceConfig{ 
-				OutputFormat: c.String("output"),
-				ContainerMode: c.Bool("container"),
-				DetectOriginalSyscall: c.Bool("detect-original-syscall"),
+			cfg, err := tracee.NewConfig(
+				c.StringSlice("events-to-trace"),
+				c.Bool("container"),
+				c.Bool("detect-original-syscall"),
+				c.String("output"),
+			)
+			if err != nil{
+				return fmt.Errorf("error creating Tracee config: %v", err)
 			}
-			t, err := tracee.New(cfg)
+			t, err := tracee.New(*cfg)
 			if err != nil{
 				// t is being closed internally
 				return fmt.Errorf("error creating Tracee: %v", err)
@@ -36,6 +40,12 @@ func main() {
 				Aliases: []string{"o"},
 				Value: "table",
         Usage: "output format: table (default)/json",
+			},
+			&cli.StringSliceFlag{
+				Name: "events-to-trace",
+				Aliases: []string{"e"},
+				Value: nil,
+        Usage: "trace only the specified events and syscalls",
 			},
 			&cli.BoolFlag{
 				Name: "list",
