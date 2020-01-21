@@ -257,18 +257,16 @@ func boolToUInt32(b bool) uint32{
 
 func (t Tracee) processEvents() {
 	for {
-		var err error
-		var ctx context
 		dataRaw := <-t.eventsChannel
 		dataBuff := bytes.NewBuffer(dataRaw)
-		err = readContextFromBuff(dataBuff, &ctx)
+		ctx, err := readContextFromBuff(dataBuff)
 		if err != nil {
 			// TODO: handle error
 			continue
 		}
 		args := make([]interface{}, ctx.Argnum)
 		for i:=0; i<int(ctx.Argnum); i++ {
-			err = readArgFromBuff(dataBuff, &args[i])
+			args[i], err = readArgFromBuff(dataBuff)
 			if err != nil {
 				// TODO: handle error
 				continue
@@ -278,121 +276,147 @@ func (t Tracee) processEvents() {
 	}
 }
 
-func readContextFromBuff(buff io.Reader, ctx *context) error {
-	err := binary.Read(buff, binary.LittleEndian, ctx)
-	return err
+func readContextFromBuff(buff io.Reader) (context, error) {
+	var res context
+	err := binary.Read(buff, binary.LittleEndian, &res)
+	return res, err
 }
 
-func readArgTypeFromBuff(dataBuff io.Reader, at *ArgType) error {
-	err := binary.Read(dataBuff, binary.LittleEndian, at)
-	return err
+func readArgTypeFromBuff(buff io.Reader) (ArgType, error) {
+	var res ArgType
+	err := binary.Read(buff, binary.LittleEndian, &res)
+	return res, err
 }
 
-func readStringFromBuff(dataBuff io.Reader, s *string) error {
+func readStringFromBuff(buff io.Reader) (string, error) {
 	var err error
-	var size int32
-	err = binary.Read(dataBuff, binary.LittleEndian, &size)
+	size, err := readInt32FromBuff(buff)
 	if err != nil {
-		return fmt.Errorf("error reading string string size: %v", err)
+		return "", fmt.Errorf("error reading string size: %v", err)
 	}
-	tmparg := make([]byte, size-1) //last byte is string terminator null
-	err = binary.Read(dataBuff, binary.LittleEndian, tmparg)
+	res := make([]byte, size-1) //last byte is string terminator null
+	defer func() { 
+		_, _ = readInt8FromBuff(buff) //discard last byte which is string terminator null
+	}()
+	err = binary.Read(buff, binary.LittleEndian, res)
 	if err != nil {
-		return fmt.Errorf("error reading string arg: %v", err)
+		return "", fmt.Errorf("error reading string arg: %v", err)
 	}
-	*s = string(tmparg)
-	var junk [1]byte
-	_, _ = dataBuff.Read(junk[:]) //discard last byte which is string terminator null
-	return nil
+	return string(res), nil
 }
-		
-func readArgFromBuff(dataBuff io.Reader, arg *interface{}) error {
+
+func readInt8FromBuff(buff io.Reader) (int8, error) {
+	var res int8
+	err := binary.Read(buff, binary.LittleEndian, &res)
+	return res, err
+}
+
+func readUInt8FromBuff(buff io.Reader) (uint8, error) {
+	var res uint8
+	err := binary.Read(buff, binary.LittleEndian, &res)
+	return res, err
+}
+
+func readInt32FromBuff(buff io.Reader) (int32, error) {
+	var res int32
+	err := binary.Read(buff, binary.LittleEndian, &res)
+	return res, err
+}
+
+func readUInt32FromBuff(buff io.Reader) (uint32, error) {
+	var res uint32
+	err := binary.Read(buff, binary.LittleEndian, &res)
+	return res, err
+}
+
+func readInt64FromBuff(buff io.Reader) (int64, error) {
+	var res int64
+	err := binary.Read(buff, binary.LittleEndian, &res)
+	return res, err
+}
+
+func readUInt64FromBuff(buff io.Reader) (uint64, error) {
+	var res uint64
+	err := binary.Read(buff, binary.LittleEndian, &res)
+	return res, err
+}
+
+func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 	var err error
-	var at ArgType
-	err = readArgTypeFromBuff(dataBuff, &at)
+	var res interface{}
+	at, err := readArgTypeFromBuff(dataBuff)
 	if err != nil {
-		return fmt.Errorf("error reading arg type: %v", err)
+		return res, fmt.Errorf("error reading arg type: %v", err)
 	}
 	switch at {
 		case INT_T:
-			var tmparg int32
-			err = binary.Read(dataBuff, binary.LittleEndian, &tmparg)
+			res, err = readInt32FromBuff(dataBuff)
 			if err != nil {
-				return fmt.Errorf("error reading int arg: %v", err)
+				return nil, err
 			}
-			*arg = tmparg
 		case UINT_T:
-			var tmparg uint32
-			err = binary.Read(dataBuff, binary.LittleEndian, &tmparg)
+			res, err = readUInt32FromBuff(dataBuff)
 			if err != nil {
-				return fmt.Errorf("error reading uint arg: %v", err)
+				return nil, err
 			}
-			*arg = tmparg
 		case LONG_T:
-			var tmparg int64
-			err = binary.Read(dataBuff, binary.LittleEndian, &tmparg)
+			res, err = readInt64FromBuff(dataBuff)
 			if err != nil {
-				return fmt.Errorf("error reading long arg: %v", err)
+				return nil, err
 			}
-			*arg = tmparg
 		case ULONG_T:
-			var tmparg int64
-			err = binary.Read(dataBuff, binary.LittleEndian, &tmparg)
+			res, err = readUInt64FromBuff(dataBuff)
 			if err != nil {
-				return fmt.Errorf("error reading ulong arg: %v", err)
+				return nil, err
 			}
-			*arg = tmparg
 		case STR_T:
-			var s string
-			readStringFromBuff(dataBuff, &s)
-			*arg = s
-		case STR_ARR_T:
-			var tmparg []string
-			// assuming there's at least one element in the array
-			var et ArgType
-			err = readArgTypeFromBuff(dataBuff, &et)
+			res, err = readStringFromBuff(dataBuff)
 			if err != nil {
-				return fmt.Errorf("error reading string array element type: %v", err)
+				return nil, err
+			}
+		case STR_ARR_T:
+			var ss []string
+			// assuming there's at least one element in the array
+			et, err := readArgTypeFromBuff(dataBuff)
+			if err != nil {
+				return nil, fmt.Errorf("error reading string array element type: %v", err)
 			}
 			for et != STR_ARR_T {
-				var s string
-				err = readStringFromBuff(dataBuff, &s)
+				s, err := readStringFromBuff(dataBuff)
 				if err != nil {
-					return fmt.Errorf("error reading string element: %v", err)
+					return nil, fmt.Errorf("error reading string element: %v", err)
 				}
-				tmparg = append(tmparg, s)
+				ss = append(ss, s)
 
-				err = readArgTypeFromBuff(dataBuff, &et)
+				et, err = readArgTypeFromBuff(dataBuff)
 				if err != nil {
-					return fmt.Errorf("error reading string array element type: %v", err)
+					return res, fmt.Errorf("error reading string array element type: %v", err)
 				}
 			}
-			*arg = tmparg
+			res = ss
 		case CAP_T:
-			var tmparg uint32
-			err = binary.Read(dataBuff, binary.LittleEndian, &tmparg)
+			cap, err := readInt32FromBuff(dataBuff)
 			if err != nil {
-				return fmt.Errorf("error reading capability arg: %v", err)
+				return nil, fmt.Errorf("error reading capability arg: %v", err)
 			}
-			if int(tmparg)<len(capabilities) {
-				*arg = capabilities[tmparg]
+			if int(cap)<len(capabilities) {
+				res = capabilities[cap]
 			} else {
-				*arg = string(tmparg)
+				res = string(cap)
 			}
 		case SYSCALL_T:
-			var tmparg uint32
-			err = binary.Read(dataBuff, binary.LittleEndian, &tmparg)
+			sc, err := readInt32FromBuff(dataBuff)
 			if err != nil {
-				return fmt.Errorf("error reading syscall arg: %v", err)
+				return res, fmt.Errorf("error reading syscall arg: %v", err)
 			}
-			if int(tmparg)<len(eventNames) {
-				*arg = eventNames[tmparg]
+			if int(sc)<len(eventNames) {
+				res = eventNames[sc]
 			} else {
-				*arg = string(tmparg)
+				res = string(sc)
 			}
 		default:
 			//if we don't recognize the arg type, we can't parse the rest of the buffer
-			return fmt.Errorf("error unknown arg type %v", at)
+			return nil, fmt.Errorf("error unknown arg type %v", at)
 	}
-	return nil
+	return res, nil
 }
