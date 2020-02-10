@@ -9,8 +9,10 @@
 #include <uapi/linux/in6.h>
 #include <uapi/linux/un.h>
 #include <uapi/linux/utsname.h>
+#include <linux/binfmts.h>
 #include <linux/sched.h>
 #include <linux/fs.h>
+#include <linux/mount.h>
 #include <linux/nsproxy.h>
 #include <linux/ns_common.h>
 #include <linux/pid_namespace.h>
@@ -46,6 +48,7 @@
 #define ACCESS_MODE_T 20UL
 #define PTRACE_REQ_T  21UL
 #define PRCTL_OPT_T   22UL
+#define R_PATH_T      23UL
 #define TYPE_MAX      255UL
 
 #define CONFIG_CONT_MODE    0
@@ -396,6 +399,7 @@ enum event_id {
     SYS_RSEQ,
     DO_EXIT,
     CAP_CAPABLE,
+    SECURITY_BPRM_CHECK,
 };
 
 /*=============================== INTERNAL STRUCTS ===========================*/
@@ -438,12 +442,21 @@ struct uts_namespace {
     // ...
 };
 
+struct mount {
+    struct hlist_node mnt_hash;
+    struct mount *mnt_parent;
+    struct dentry *mnt_mountpoint;
+    struct vfsmount mnt;
+    // ...
+};
+
 /*=================================== MAPS =====================================*/
 
 BPF_HASH(config_map, u32, u32);                     // Various configurations
 BPF_HASH(pids_map, u32, u32);                       // Save container pid namespaces
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
 BPF_PERCPU_ARRAY(submission_buf, submit_buf_t, 1);  // Buffer used to prepare event for perf_submit
+BPF_PERCPU_ARRAY(string_buf, submit_buf_t, 1);      // Buffer used to prepare event for perf_submit
 
 /*================================== EVENTS ====================================*/
 
@@ -533,6 +546,16 @@ static __always_inline struct pt_regs* get_task_pt_regs()
 }
 
 /*============================== HELPER FUNCTIONS ==============================*/
+
+// re-define container_of as bcc complains
+#define my_container_of(ptr, type, member) ({          \
+    const typeof(((type *)0)->member) * __mptr = (ptr); \
+    (type *)((char *)__mptr - offsetof(type, member)); })
+
+static inline struct mount *real_mount(struct vfsmount *mnt)
+{
+    return my_container_of(mnt, struct mount, mnt);
+}
 
 static __always_inline u32 lookup_pid()
 {
@@ -720,13 +743,12 @@ static __always_inline int save_to_submit_buf(submit_buf_t *submit_p, void *ptr,
     return 0;
 }
 
-static __always_inline int save_str_to_buf(submit_buf_t *submit_p, void *ptr)
+static __always_inline int save_str_to_buf(submit_buf_t *submit_p, void *ptr, int type)
 {
     if (submit_p->off > SUBMIT_BUFSIZE_HALF)
         // not enough space - return
         return 0;
 
-    int type = STR_T;
     // Save argument type
     int rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->off & SUBMIT_BUFSIZE_HALF]), 1, &type);
     if (rc != 0)
@@ -747,6 +769,67 @@ static __always_inline int save_str_to_buf(submit_buf_t *submit_p, void *ptr)
     return 0;
 }
 
+static __always_inline int save_path_to_buf(submit_buf_t *submit_p, struct path *path)
+{
+    char slash = '/';
+    int zero = 0;
+    struct dentry *dentry = path->dentry;;
+    struct vfsmount *vfsmnt = path->mnt;
+    struct mount mnt;
+    struct mount *mnt_p = real_mount(vfsmnt);
+    bpf_probe_read(&mnt, sizeof(struct mount), mnt_p);
+
+    int idx = 0;
+    // Get per-cpu string buffer
+    submit_buf_t *string_p = string_buf.lookup(&idx);
+    if (string_p == NULL)
+        return -1;
+
+    string_p->off = 0;
+
+    #pragma unroll
+    // As bpf loops are not allowed and max instructions number is 4096, path components is limited to 30
+    for (int i = 0; i < 30; i++) {
+        if (dentry == vfsmnt->mnt_root || dentry == dentry->d_parent) {
+            if (dentry != vfsmnt->mnt_root) {
+                // We reached root, but not mount root - escaped?
+                break;
+            }
+            if (mnt_p != mnt.mnt_parent) {
+                // We reached root, but not global root - continue with mount point path
+                dentry = mnt.mnt_mountpoint;
+                bpf_probe_read(&mnt, sizeof(struct mount), mnt.mnt_parent);
+                vfsmnt = &mnt.mnt;
+                continue;
+            }
+            // Global root - path fully parsed
+            break;
+        }
+        // Add this dentry name to (reversed) path
+        int sz = bpf_probe_read_str((void **)&(string_p->buf[string_p->off & SUBMIT_BUFSIZE_HALF]), MAX_STRING_SIZE, (void *)dentry->d_name.name);
+        if (sz > 1) {
+            // Is string buffer big enough for path?
+            if (string_p->off + sz > SUBMIT_BUFSIZE_HALF - 2) {
+                string_p->off = SUBMIT_BUFSIZE_HALF - 1;
+                break;
+            }
+            string_p->off += sz - 1; // remove null byte termination for concatenation
+            bpf_probe_read((void **)&(string_p->buf[string_p->off & SUBMIT_BUFSIZE_HALF]), 1, (void *)&slash);
+            string_p->off += 1;
+        } else {
+            // If sz is 0 or 1 we have an error (path can't be null nor an empty string)
+            break;
+        }
+        dentry = dentry->d_parent;
+    }
+
+    // Null terminate the path string
+    bpf_probe_read((void **)&(string_p->buf[string_p->off & SUBMIT_BUFSIZE_HALF]), 1, (void *)&zero);
+    save_str_to_buf(submit_p, (void *)string_p->buf, R_PATH_T);
+
+    return 0;
+}
+
 static __always_inline int events_perf_submit(struct pt_regs *ctx)
 {
     submit_buf_t *submit_p = get_submit_buf();
@@ -764,7 +847,7 @@ static __always_inline int save_argv(submit_buf_t *submit_p, void *ptr)
     const char *argp = NULL;
     bpf_probe_read(&argp, sizeof(argp), ptr);
     if (argp) {
-        return save_str_to_buf(submit_p, (void *)(argp));
+        return save_str_to_buf(submit_p, (void *)(argp), STR_T);
     }
     return 0;
 }
@@ -781,7 +864,7 @@ static __always_inline int save_str_arr_to_buf(submit_buf_t *submit_p, const cha
     }
     // handle truncated argument list
     char ellipsis[] = "...";
-    save_str_to_buf(submit_p, (void *)ellipsis);
+    save_str_to_buf(submit_p, (void *)ellipsis, STR_T);
 out:
     // mark string array end
     save_to_submit_buf(submit_p, NULL, 0, STR_ARR_T);
@@ -927,7 +1010,7 @@ static __always_inline int save_args_to_submit_buf(u64 types)
                 save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(void*), POINTER_T);
                 break;
             case STR_T:
-                save_str_to_buf(submit_p, (void *)args.args[i]);
+                save_str_to_buf(submit_p, (void *)args.args[i], STR_T);
                 break;
             case SOCK_DOM_T:
                 save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(int), SOCK_DOM_T);
@@ -1174,7 +1257,7 @@ int syscall__execve(struct pt_regs *ctx,
     context.retval = 0;     // assume execve succeeded. if not, a ret event will be sent too
     save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
 
-    save_str_to_buf(submit_p, (void *)filename);
+    save_str_to_buf(submit_p, (void *)filename, STR_T);
     save_str_arr_to_buf(submit_p, __argv);
     if (show_env)
         save_str_arr_to_buf(submit_p, __envp);
@@ -1243,7 +1326,7 @@ int syscall__execveat(struct pt_regs *ctx,
     save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
 
     save_to_submit_buf(submit_p, (void*)&dirfd, sizeof(int), INT_T);
-    save_str_to_buf(submit_p, (void *)pathname);
+    save_str_to_buf(submit_p, (void *)pathname, STR_T);
     save_str_arr_to_buf(submit_p, __argv);
     if (show_env)
         save_str_arr_to_buf(submit_p, __envp);
@@ -1300,6 +1383,28 @@ int trace_do_exit(struct pt_regs *ctx, long code)
         remove_pid();
 
     save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
+    events_perf_submit(ctx);
+    return 0;
+}
+
+int trace_security_bprm_check(struct pt_regs *ctx, struct linux_binprm *bprm)
+{
+    context_t context = {};
+
+    if (init_context(&context) || init_submit_buf())
+        return 0;
+
+    submit_buf_t *submit_p = get_submit_buf();
+    if (submit_p == NULL)
+        return 0;
+
+    context.eventid = SECURITY_BPRM_CHECK;
+    context.argnum = 1;
+    context.retval = 0;
+
+    save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
+    save_path_to_buf(submit_p, &bprm->file->f_path);
+
     events_perf_submit(ctx);
     return 0;
 }
