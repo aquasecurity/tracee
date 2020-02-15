@@ -90,6 +90,14 @@ func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall
 	//separate eventsToTrace into syscalls and sysevents
 	syscalls := make(map[string]bool)
 	sysevents := make(map[string]bool)
+	if eventsToTrace == nil {
+		for sc := range Syscalls {
+			eventsToTrace = append(eventsToTrace, sc)
+		}
+		for se := range Sysevents {
+			eventsToTrace = append(eventsToTrace, se)
+		}
+	}
 	for _, e := range eventsToTrace {
 		if enabled, ok := Syscalls[e]; ok {
 			syscalls[e] = enabled
