@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"strings"
+	"github.com/aquasecurity/tracee/tracee"
+	"github.com/urfave/cli/v2"
 	"log"
 	"os"
-	"github.com/urfave/cli/v2"
-	"github.com/aquasecurity/tracee/tracee"
+	"strings"
 )
 
 func main() {
@@ -24,45 +24,45 @@ func main() {
 				c.Bool("detect-original-syscall"),
 				c.String("output"),
 			)
-			if err != nil{
+			if err != nil {
 				return fmt.Errorf("error creating Tracee config: %v", err)
 			}
 			t, err := tracee.New(*cfg)
-			if err != nil{
+			if err != nil {
 				// t is being closed internally
 				return fmt.Errorf("error creating Tracee: %v", err)
 			}
 			return t.Run()
 		},
-		Flags: []cli.Flag {
-      &cli.StringFlag{
-				Name: "output",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "output",
 				Aliases: []string{"o"},
-				Value: "table",
-        Usage: "output format: table (default)/json",
+				Value:   "table",
+				Usage:   "output format: table (default)/json",
 			},
 			&cli.StringSliceFlag{
-				Name: "events-to-trace",
+				Name:    "events-to-trace",
 				Aliases: []string{"e"},
-				Value: nil,
-        Usage: "trace only the specified events and syscalls",
+				Value:   nil,
+				Usage:   "trace only the specified events and syscalls",
 			},
 			&cli.BoolFlag{
-				Name: "list",
+				Name:    "list",
 				Aliases: []string{"l"},
-				Value: false,
-        Usage: "just list tracable events",
+				Value:   false,
+				Usage:   "just list tracable events",
 			},
 			&cli.BoolFlag{
-				Name: "container",
+				Name:    "container",
 				Aliases: []string{"c"},
-				Value: false,
-        Usage: "trace only containers",
+				Value:   false,
+				Usage:   "trace only containers",
 			},
 			&cli.BoolFlag{
-				Name: "detect-original-syscall",
+				Name:  "detect-original-syscall",
 				Value: false,
-        Usage: "when tracing kernel functions which are not syscalls (such as cap_capable), detect and show the original syscall that called that function",
+				Usage: "when tracing kernel functions which are not syscalls (such as cap_capable), detect and show the original syscall that called that function",
 			},
 		},
 	}

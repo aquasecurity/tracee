@@ -20,7 +20,7 @@ type taskComm [16]byte
 func (tc taskComm) String() string {
 	len := 0
 	for i, b := range tc {
-		if (b==0) {
+		if b == 0 {
 			len = i
 			break
 		}
@@ -37,28 +37,28 @@ func (tc taskComm) MarshalText() ([]byte, error) {
 // original size is 77 bytes but with padding it's 80 bytes
 // TODO: review naming conventions for the fields here
 type context struct {
-	Ts uint64 `json:"ts"`
-  Pid uint32 `json:"pid"`
-  Tid uint32 `json:"tid"`
-  Ppid uint32 `json:"ppid"`
-  Uid uint32 `json:"uid"`
-  MntId uint32 `json:"mnt_id"`
-  PidId uint32 `json:"ppid_id"`
-  Comm taskComm `json:"comm"`
-  UtsName taskComm `json:"uts_name"`
-  Eventid uint32 `json:"eventid"`
-  Argnum uint32 `json:"argnum"` //originally u8 but with padding it's uint32
-	Retval int64 `json:"retval"`
+	Ts      uint64   `json:"ts"`
+	Pid     uint32   `json:"pid"`
+	Tid     uint32   `json:"tid"`
+	Ppid    uint32   `json:"ppid"`
+	Uid     uint32   `json:"uid"`
+	MntId   uint32   `json:"mnt_id"`
+	PidId   uint32   `json:"ppid_id"`
+	Comm    taskComm `json:"comm"`
+	UtsName taskComm `json:"uts_name"`
+	Eventid uint32   `json:"eventid"`
+	Argnum  uint32   `json:"argnum"` //originally u8 but with padding it's uint32
+	Retval  int64    `json:"retval"`
 }
 
 // TraceConfig is a struct containing user defined configuration of tracee
 // TODO: TraceConfig or TraceeConfig?
 type TraceConfig struct {
-	Syscalls map[string]bool
-	Sysevents map[string]bool
-	ContainerMode bool
+	Syscalls              map[string]bool
+	Sysevents             map[string]bool
+	ContainerMode         bool
 	DetectOriginalSyscall bool
-	OutputFormat string
+	OutputFormat          string
 }
 
 // Validate does static validation of the configuration
@@ -91,7 +91,7 @@ func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall
 	syscalls := make(map[string]bool)
 	sysevents := make(map[string]bool)
 	for _, e := range eventsToTrace {
-		if enabled, ok := Syscalls[e]; ok{
+		if enabled, ok := Syscalls[e]; ok {
 			syscalls[e] = enabled
 		}
 		if enabled, ok := Sysevents[e]; ok {
@@ -100,11 +100,11 @@ func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall
 	}
 
 	tc := TraceConfig{
-		Syscalls: syscalls,
-		Sysevents: sysevents,
-		ContainerMode: containerMode,
+		Syscalls:              syscalls,
+		Sysevents:             sysevents,
+		ContainerMode:         containerMode,
 		DetectOriginalSyscall: detectOriginalSyscall,
-		OutputFormat:outputFormat,
+		OutputFormat:          outputFormat,
 	}
 
 	err := tc.Validate()
@@ -116,12 +116,12 @@ func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall
 
 // Tracee traces system calls and events using eBPF
 type Tracee struct {
-	config TraceConfig
+	config         TraceConfig
 	bpfProgramPath string
-	bpfModule *bpf.Module
-	bpfPerfMap *bpf.PerfMap
-	eventsChannel chan []byte
-	printer eventPrinter
+	bpfModule      *bpf.Module
+	bpfPerfMap     *bpf.PerfMap
+	eventsChannel  chan []byte
+	printer        eventPrinter
 }
 
 // New creates a new Tracee instance based on a given valid TraceConfig
@@ -136,7 +136,7 @@ func New(cfg TraceConfig) (*Tracee, error) {
 	bpfFile := "./tracee/event_monitor_ebpf.c"
 	_, err = os.Stat(bpfFile)
 	if os.IsNotExist(err) {
-			return nil, fmt.Errorf("error finding bpf C file at: %s", bpfFile)
+		return nil, fmt.Errorf("error finding bpf C file at: %s", bpfFile)
 	}
 
 	// ensure essential syscalls and events are being traced
@@ -149,7 +149,7 @@ func New(cfg TraceConfig) (*Tracee, error) {
 
 	// create tracee
 	t := &Tracee{
-		config: cfg,
+		config:         cfg,
 		bpfProgramPath: bpfFile,
 	}
 	switch t.config.OutputFormat {
@@ -169,12 +169,12 @@ func New(cfg TraceConfig) (*Tracee, error) {
 }
 
 // Run starts the trace. it will run until interrupted
-func (t Tracee) Run() error {	
+func (t Tracee) Run() error {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
 	t.printer.Preamble()
 	t.bpfPerfMap.Start()
-	go t.processEvents() 
+	go t.processEvents()
 	<-sig
 	t.bpfPerfMap.Stop() //TODO: should this be in Tracee.Close()?
 	t.printer.Epilogue()
@@ -237,7 +237,7 @@ func (t *Tracee) initBPF() error {
 	binary.LittleEndian.PutUint32(key, uint32(CONFIG_DETECT_ORIG_SYSCALL))
 	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.DetectOriginalSyscall))
 	bpfConfig.Set(key, leaf)
-	
+
 	eventsBPFTable := bpf.NewTable(t.bpfModule.TableId("events"), t.bpfModule)
 	t.eventsChannel = make(chan []byte, 1000)
 	t.bpfPerfMap, err = bpf.InitPerfMap(eventsBPFTable, t.eventsChannel)
@@ -248,7 +248,7 @@ func (t *Tracee) initBPF() error {
 	return nil
 }
 
-func boolToUInt32(b bool) uint32{
+func boolToUInt32(b bool) uint32 {
 	if b {
 		return uint32(1)
 	}
@@ -265,14 +265,14 @@ func (t Tracee) processEvents() {
 			continue
 		}
 		args := make([]interface{}, ctx.Argnum)
-		for i:=0; i<int(ctx.Argnum); i++ {
+		for i := 0; i < int(ctx.Argnum); i++ {
 			args[i], err = readArgFromBuff(dataBuff)
 			if err != nil {
 				// TODO: handle error
 				continue
 			}
 		}
-		t.printer.Print(ctx,args)
+		t.printer.Print(ctx, args)
 	}
 }
 
@@ -295,7 +295,7 @@ func readStringFromBuff(buff io.Reader) (string, error) {
 		return "", fmt.Errorf("error reading string size: %v", err)
 	}
 	res := make([]byte, size-1) //last byte is string terminator null
-	defer func() { 
+	defer func() {
 		_, _ = readInt8FromBuff(buff) //discard last byte which is string terminator null
 	}()
 	err = binary.Read(buff, binary.LittleEndian, res)
@@ -361,125 +361,125 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 		return res, fmt.Errorf("error reading arg type: %v", err)
 	}
 	switch at {
-		case INT_T:
-			res, err = readInt32FromBuff(dataBuff)
+	case INT_T:
+		res, err = readInt32FromBuff(dataBuff)
+		if err != nil {
+			return nil, err
+		}
+	case UINT_T, DEV_T_T:
+		res, err = readUInt32FromBuff(dataBuff)
+		if err != nil {
+			return nil, err
+		}
+	case LONG_T:
+		res, err = readInt64FromBuff(dataBuff)
+		if err != nil {
+			return nil, err
+		}
+	case ULONG_T, OFF_T_T, SIZE_T_T:
+		res, err = readUInt64FromBuff(dataBuff)
+		if err != nil {
+			return nil, err
+		}
+	case STR_T:
+		res, err = readStringFromBuff(dataBuff)
+		if err != nil {
+			return nil, err
+		}
+	case STR_ARR_T:
+		var ss []string
+		// assuming there's at least one element in the array
+		et, err := readArgTypeFromBuff(dataBuff)
+		if err != nil {
+			return nil, fmt.Errorf("error reading string array element type: %v", err)
+		}
+		for et != STR_ARR_T {
+			s, err := readStringFromBuff(dataBuff)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error reading string element: %v", err)
 			}
-		case UINT_T, DEV_T_T:
-			res, err = readUInt32FromBuff(dataBuff)
-			if err != nil {
-				return nil, err
-			}
-		case LONG_T:
-			res, err = readInt64FromBuff(dataBuff)
-			if err != nil {
-				return nil, err
-			}
-		case ULONG_T, OFF_T_T, SIZE_T_T:
-			res, err = readUInt64FromBuff(dataBuff)
-			if err != nil {
-				return nil, err
-			}
-		case STR_T:
-			res, err = readStringFromBuff(dataBuff)
-			if err != nil {
-				return nil, err
-			}
-		case STR_ARR_T:
-			var ss []string
-			// assuming there's at least one element in the array
-			et, err := readArgTypeFromBuff(dataBuff)
-			if err != nil {
-				return nil, fmt.Errorf("error reading string array element type: %v", err)
-			}
-			for et != STR_ARR_T {
-				s, err := readStringFromBuff(dataBuff)
-				if err != nil {
-					return nil, fmt.Errorf("error reading string element: %v", err)
-				}
-				ss = append(ss, s)
+			ss = append(ss, s)
 
-				et, err = readArgTypeFromBuff(dataBuff)
-				if err != nil {
-					return res, fmt.Errorf("error reading string array element type: %v", err)
-				}
-			}
-			res = ss
-		case CAP_T:
-			cap, err := readInt32FromBuff(dataBuff)
+			et, err = readArgTypeFromBuff(dataBuff)
 			if err != nil {
-				return nil, fmt.Errorf("error reading capability arg: %v", err)
+				return res, fmt.Errorf("error reading string array element type: %v", err)
 			}
-			res = PrintCapability(cap)
-		case SYSCALL_T:
-			sc, err := readInt32FromBuff(dataBuff)
-			if err != nil {
-				return res, fmt.Errorf("error reading syscall arg: %v", err)
-			}
-			if int(sc)<len(eventNames) {
-				res = eventNames[sc]
-			} else {
-				res = string(sc)
-			}
-		case MODE_T_T:
-			mode, err := readUInt32FromBuff(dataBuff)
-			if err != nil {
-				return nil, err
-			}
-			res = PrintMknodMode(mode)
-		case PROT_FLAGS_T:
-			prot, err := readUInt32FromBuff(dataBuff)
-			if err != nil {
-				return nil, err
-			}
-			res = PrintMmapProt(prot)
-		case POINTER_T:
-			ptr, err := readInt64FromBuff(dataBuff)
-			if err != nil {
-				return nil, err
-			}
-			res = fmt.Sprintf("%X", ptr)
-		case SOCKADDR_T:
-			// this is not really the sockaddr struct, but just the `sockaddr.sa_family`
-			family, err := readInt16FromBuff(dataBuff)
-			if err != nil {
-				return nil, err
-			}
-			res = PrintSocketDomain(uint32(family))
-		case OPEN_FLAGS_T:
-			flags, err := readUInt32FromBuff(dataBuff)
-			if err != nil {
-				return nil, err
-			}
-			res = PrintOpenFlags(flags)	
-		case ACCESS_MODE_T:
-			mode, err := readUInt32FromBuff(dataBuff)
-			if err != nil {
-				return nil, err
-			}
-			res = PrintAccessMode(mode)	
-		case EXEC_FLAGS_T:
-			flags, err := readUInt32FromBuff(dataBuff)
-			if err != nil {
-				return nil, err
-			}
-			res = PrintExecFlags(flags)
-		case SOCK_DOM_T:
-			dom, err := readUInt32FromBuff(dataBuff)
-			if err != nil {
-				return nil, err
-			}
-			res = PrintSocketDomain(dom)
-		case SOCK_TYPE_T:
-			t, err := readUInt32FromBuff(dataBuff)
-			if err != nil {
-				return nil, err
-			}
-			res = PrintSocketType(t)
-		default:
-			//if we don't recognize the arg type, we can't parse the rest of the buffer
-			return nil, fmt.Errorf("error unknown arg type %v", at)
+		}
+		res = ss
+	case CAP_T:
+		cap, err := readInt32FromBuff(dataBuff)
+		if err != nil {
+			return nil, fmt.Errorf("error reading capability arg: %v", err)
+		}
+		res = PrintCapability(cap)
+	case SYSCALL_T:
+		sc, err := readInt32FromBuff(dataBuff)
+		if err != nil {
+			return res, fmt.Errorf("error reading syscall arg: %v", err)
+		}
+		if int(sc) < len(eventNames) {
+			res = eventNames[sc]
+		} else {
+			res = string(sc)
+		}
+	case MODE_T_T:
+		mode, err := readUInt32FromBuff(dataBuff)
+		if err != nil {
+			return nil, err
+		}
+		res = PrintMknodMode(mode)
+	case PROT_FLAGS_T:
+		prot, err := readUInt32FromBuff(dataBuff)
+		if err != nil {
+			return nil, err
+		}
+		res = PrintMmapProt(prot)
+	case POINTER_T:
+		ptr, err := readInt64FromBuff(dataBuff)
+		if err != nil {
+			return nil, err
+		}
+		res = fmt.Sprintf("%X", ptr)
+	case SOCKADDR_T:
+		// this is not really the sockaddr struct, but just the `sockaddr.sa_family`
+		family, err := readInt16FromBuff(dataBuff)
+		if err != nil {
+			return nil, err
+		}
+		res = PrintSocketDomain(uint32(family))
+	case OPEN_FLAGS_T:
+		flags, err := readUInt32FromBuff(dataBuff)
+		if err != nil {
+			return nil, err
+		}
+		res = PrintOpenFlags(flags)
+	case ACCESS_MODE_T:
+		mode, err := readUInt32FromBuff(dataBuff)
+		if err != nil {
+			return nil, err
+		}
+		res = PrintAccessMode(mode)
+	case EXEC_FLAGS_T:
+		flags, err := readUInt32FromBuff(dataBuff)
+		if err != nil {
+			return nil, err
+		}
+		res = PrintExecFlags(flags)
+	case SOCK_DOM_T:
+		dom, err := readUInt32FromBuff(dataBuff)
+		if err != nil {
+			return nil, err
+		}
+		res = PrintSocketDomain(dom)
+	case SOCK_TYPE_T:
+		t, err := readUInt32FromBuff(dataBuff)
+		if err != nil {
+			return nil, err
+		}
+		res = PrintSocketType(t)
+	default:
+		//if we don't recognize the arg type, we can't parse the rest of the buffer
+		return nil, fmt.Errorf("error unknown arg type %v", at)
 	}
 	return res, nil
 }
