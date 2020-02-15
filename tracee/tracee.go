@@ -1,14 +1,14 @@
 package tracee
 
 import (
+	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io"
-	"bytes"
 	"io/ioutil"
 	"os"
 	"os/signal"
-	"encoding/binary"
-	//"encoding/hex"
+
 	bpf "github.com/iovisor/gobpf/bcc"
 )
 
@@ -317,6 +317,18 @@ func readUInt8FromBuff(buff io.Reader) (uint8, error) {
 	return res, err
 }
 
+func readInt16FromBuff(buff io.Reader) (int16, error) {
+	var res int16
+	err := binary.Read(buff, binary.LittleEndian, &res)
+	return res, err
+}
+
+func readUInt16FromBuff(buff io.Reader) (uint16, error) {
+	var res uint16
+	err := binary.Read(buff, binary.LittleEndian, &res)
+	return res, err
+}
+
 func readInt32FromBuff(buff io.Reader) (int32, error) {
 	var res int32
 	err := binary.Read(buff, binary.LittleEndian, &res)
@@ -354,7 +366,7 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 			if err != nil {
 				return nil, err
 			}
-		case UINT_T:
+		case UINT_T, DEV_T_T:
 			res, err = readUInt32FromBuff(dataBuff)
 			if err != nil {
 				return nil, err
@@ -364,7 +376,7 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 			if err != nil {
 				return nil, err
 			}
-		case ULONG_T:
+		case ULONG_T, OFF_T_T, SIZE_T_T:
 			res, err = readUInt64FromBuff(dataBuff)
 			if err != nil {
 				return nil, err
@@ -399,11 +411,7 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 			if err != nil {
 				return nil, fmt.Errorf("error reading capability arg: %v", err)
 			}
-			if int(cap)<len(capabilities) {
-				res = capabilities[cap]
-			} else {
-				res = string(cap)
-			}
+			res = PrintCapability(cap)
 		case SYSCALL_T:
 			sc, err := readInt32FromBuff(dataBuff)
 			if err != nil {
@@ -414,6 +422,61 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 			} else {
 				res = string(sc)
 			}
+		case MODE_T_T:
+			mode, err := readUInt32FromBuff(dataBuff)
+			if err != nil {
+				return nil, err
+			}
+			res = PrintMknodMode(mode)
+		case PROT_FLAGS_T:
+			prot, err := readUInt32FromBuff(dataBuff)
+			if err != nil {
+				return nil, err
+			}
+			res = PrintMmapProt(prot)
+		case POINTER_T:
+			ptr, err := readInt64FromBuff(dataBuff)
+			if err != nil {
+				return nil, err
+			}
+			res = fmt.Sprintf("%X", ptr)
+		case SOCKADDR_T:
+			// this is not really the sockaddr struct, but just the `sockaddr.sa_family`
+			family, err := readInt16FromBuff(dataBuff)
+			if err != nil {
+				return nil, err
+			}
+			res = PrintSocketDomain(uint32(family))
+		case OPEN_FLAGS_T:
+			flags, err := readUInt32FromBuff(dataBuff)
+			if err != nil {
+				return nil, err
+			}
+			res = PrintOpenFlags(flags)	
+		case ACCESS_MODE_T:
+			mode, err := readUInt32FromBuff(dataBuff)
+			if err != nil {
+				return nil, err
+			}
+			res = PrintAccessMode(mode)	
+		case EXEC_FLAGS_T:
+			flags, err := readUInt32FromBuff(dataBuff)
+			if err != nil {
+				return nil, err
+			}
+			res = PrintExecFlags(flags)
+		case SOCK_DOM_T:
+			dom, err := readUInt32FromBuff(dataBuff)
+			if err != nil {
+				return nil, err
+			}
+			res = PrintSocketDomain(dom)
+		case SOCK_TYPE_T:
+			t, err := readUInt32FromBuff(dataBuff)
+			if err != nil {
+				return nil, err
+			}
+			res = PrintSocketType(t)
 		default:
 			//if we don't recognize the arg type, we can't parse the rest of the buffer
 			return nil, fmt.Errorf("error unknown arg type %v", at)
