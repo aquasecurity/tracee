@@ -298,7 +298,7 @@ func readStringFromBuff(buff io.Reader) (string, error) {
 	defer func() {
 		_, _ = readInt8FromBuff(buff) //discard last byte which is string terminator null
 	}()
-	err = binary.Read(buff, binary.LittleEndian, res)
+	err = binary.Read(buff, binary.LittleEndian, &res)
 	if err != nil {
 		return "", fmt.Errorf("error reading string arg: %v", err)
 	}
