@@ -34,7 +34,6 @@ func (tc taskComm) MarshalText() ([]byte, error) {
 }
 
 // contex struct contains common metadata that is collected for all types of events
-// TODO: review naming conventions for the fields based on https://github.com/golang/go/wiki/CodeReviewComments#initialisms
 type context struct {
 	Ts      uint64   `json:"ts"`
 	Pid     uint32   `json:"pid"`
@@ -51,9 +50,8 @@ type context struct {
 	Retval  int64    `json:"retval"`
 }
 
-// TraceConfig is a struct containing user defined configuration of tracee
-// TODO: TraceConfig or TraceeConfig?
-type TraceConfig struct {
+// TraceeConfig is a struct containing user defined configuration of tracee
+type TraceeConfig struct {
 	Syscalls              map[string]bool
 	Sysevents             map[string]bool
 	ContainerMode         bool
@@ -62,8 +60,7 @@ type TraceConfig struct {
 }
 
 // Validate does static validation of the configuration
-// TODO: if error in golang is same as exception then this is abusing error
-func (tc TraceConfig) Validate() error {
+func (tc TraceeConfig) Validate() error {
 	if tc.Syscalls == nil || tc.Sysevents == nil {
 		return fmt.Errorf("trace config validation failed: sysevents or syscalls is nil")
 	}
@@ -85,8 +82,8 @@ func (tc TraceConfig) Validate() error {
 	return nil
 }
 
-// NewConfig creates a new TraceConfig instance based on the given configuration
-func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall bool, outputFormat string) (*TraceConfig, error) {
+// NewConfig creates a new TraceeConfig instance based on the given configuration
+func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall bool, outputFormat string) (*TraceeConfig, error) {
 	//separate eventsToTrace into syscalls and sysevents
 	syscalls := make(map[string]bool)
 	sysevents := make(map[string]bool)
@@ -107,7 +104,7 @@ func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall
 		}
 	}
 
-	tc := TraceConfig{
+	tc := TraceeConfig{
 		Syscalls:              syscalls,
 		Sysevents:             sysevents,
 		ContainerMode:         containerMode,
@@ -124,7 +121,7 @@ func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall
 
 // Tracee traces system calls and events using eBPF
 type Tracee struct {
-	config         TraceConfig
+	config         TraceeConfig
 	bpfProgramPath string
 	bpfModule      *bpf.Module
 	bpfPerfMap     *bpf.PerfMap
@@ -132,8 +129,8 @@ type Tracee struct {
 	printer        eventPrinter
 }
 
-// New creates a new Tracee instance based on a given valid TraceConfig
-func New(cfg TraceConfig) (*Tracee, error) {
+// New creates a new Tracee instance based on a given valid TraceeConfig
+func New(cfg TraceeConfig) (*Tracee, error) {
 	var err error
 
 	// validation
@@ -197,7 +194,6 @@ func (t Tracee) Close() {
 	}
 }
 
-// TODO: Think where is the best place to call initBPF: from main.go / from tracee.New / from tracee.Run. currently from tracee.New
 func (t *Tracee) initBPF() error {
 	var err error
 
@@ -269,14 +265,12 @@ func (t Tracee) processEvents() {
 		dataBuff := bytes.NewBuffer(dataRaw)
 		ctx, err := readContextFromBuff(dataBuff)
 		if err != nil {
-			// TODO: handle error
 			continue
 		}
 		args := make([]interface{}, ctx.Argnum)
 		for i := 0; i < int(ctx.Argnum); i++ {
 			args[i], err = readArgFromBuff(dataBuff)
 			if err != nil {
-				// TODO: handle error
 				continue
 			}
 		}

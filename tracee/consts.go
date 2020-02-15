@@ -100,7 +100,6 @@ const (
 
 // This array maps event IDs communicated by the BPF program (e.g `context.event_id`) their display name
 // The id is the index in the array (ids are serial)
-// TODO: make this a map? because index is semantic
 var eventNames = []string{
 	"read", "write", "open", "close", "stat", "fstat", "lstat", "poll", "lseek",
 	"mmap", "mprotect", "munmap", "brk", "rt_sigaction", "rt_sigprocmask",

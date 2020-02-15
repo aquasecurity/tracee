@@ -55,7 +55,7 @@ func (p jsonEventPrinter) Epilogue() {}
 // getEventName returns a the name of the event for printing, specified by it's id
 func getEventName(eid uint32) string {
 	name := "undefined"
-	if int(eid) < len(eventNames) { // TODO: off by one? cast error?
+	if int(eid) < len(eventNames) {
 		name = eventNames[eid]
 	}
 	return name
