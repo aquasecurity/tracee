@@ -34,8 +34,7 @@ func (tc taskComm) MarshalText() ([]byte, error) {
 }
 
 // contex struct contains common metadata that is collected for all types of events
-// original size is 77 bytes but with padding it's 80 bytes
-// TODO: review naming conventions for the fields here
+// TODO: review naming conventions for the fields based on https://github.com/golang/go/wiki/CodeReviewComments#initialisms
 type context struct {
 	Ts      uint64   `json:"ts"`
 	Pid     uint32   `json:"pid"`
@@ -47,7 +46,8 @@ type context struct {
 	Comm    taskComm `json:"comm"`
 	UtsName taskComm `json:"uts_name"`
 	Eventid uint32   `json:"eventid"`
-	Argnum  uint32   `json:"argnum"` //originally u8 but with padding it's uint32
+	Argnum  uint8    `json:"argnum"`
+	_       [3]byte  // padding for Argnum
 	Retval  int64    `json:"retval"`
 }
 
