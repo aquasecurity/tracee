@@ -10,3 +10,6 @@ tracee_%: $(SRC)
 .PHONY: clean
 clean:
 	rm tracee_*
+
+python-test:
+	python -m unittest -v test_container_tracer
