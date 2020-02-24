@@ -34,14 +34,15 @@ type jsonEventPrinter struct{}
 // printableEvent holds all event data relevent for printing
 type printableEvent struct {
 	context
-	EventName string        `json:"eventName"`
-	Args      []interface{} `json:"args"`
+	EventName string        `json:"api"`
+	Args      []interface{} `json:"arguments"`
 }
 
 func (p jsonEventPrinter) Preamble() {}
 
 func (p jsonEventPrinter) Print(ctx context, args []interface{}) {
 	e := printableEvent{context: ctx, EventName: getEventName(ctx.Eventid), Args: args}
+	e.context.Ts = e.context.Ts / 1000000
 	eBytes, err := json.Marshal(e)
 	if err != nil {
 		fmt.Printf("error printing event: %v\n", err)
@@ -53,10 +54,10 @@ func (p jsonEventPrinter) Print(ctx context, args []interface{}) {
 func (p jsonEventPrinter) Epilogue() {}
 
 // getEventName returns a the name of the event for printing, specified by it's id
-func getEventName(eid uint32) string {
+func getEventName(eid int32) string {
 	name := "undefined"
-	if int(eid) < len(eventNames) {
-		name = eventNames[eid]
+	if eid, ok := eventNames[eid]; ok {
+		name = eid
 	}
 	return name
 }

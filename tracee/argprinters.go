@@ -5,9 +5,9 @@ import (
 	"strings"
 )
 
-// PrintMknodMode prints the `mode` bitmask argument of the `mknod` syscall
+// PrintInodeMode prints the `mode` bitmask argument of the `mknod` syscall
 // http://man7.org/linux/man-pages/man7/inode.7.html
-func PrintMknodMode(mode uint32) string {
+func PrintInodeMode(mode uint32) string {
 	var f []string
 
 	// File Type
@@ -77,10 +77,10 @@ func PrintMknodMode(mode uint32) string {
 	return strings.Join(f, "|")
 }
 
-// PrintMmapProt prints the `prot` bitmask argument of the `mmap` syscall
+// PrintMemProt prints the `prot` bitmask argument of the `mmap` syscall
 // http://man7.org/linux/man-pages/man2/mmap.2.html
 // https://elixir.bootlin.com/linux/v5.5.3/source/include/uapi/asm-generic/mman-common.h#L10
-func PrintMmapProt(prot uint32) string {
+func PrintMemProt(prot uint32) string {
 	var f []string
 	if prot == 0x0 {
 		f = append(f, "PROT_NONE")
@@ -110,7 +110,7 @@ func PrintOpenFlags(flags uint32) string {
 		f = append(f, "O_RDONLY")
 	case flags&01 == 01:
 		f = append(f, "O_WRONLY")
-	case flags&04 == 0x02:
+	case flags&02 == 0x02:
 		f = append(f, "O_RDWR")
 	}
 
@@ -174,14 +174,14 @@ func PrintAccessMode(mode uint32) string {
 	if mode == 0x0 {
 		f = append(f, "F_OK")
 	} else {
-		if mode&0x01 == 0x01 {
-			f = append(f, "X_OK")
+		if mode&0x04 == 0x04 {
+			f = append(f, "R_OK")
 		}
 		if mode&0x02 == 0x02 {
 			f = append(f, "W_OK")
 		}
-		if mode&0x04 == 0x04 {
-			f = append(f, "R_OK")
+		if mode&0x01 == 0x01 {
+			f = append(f, "X_OK")
 		}
 	}
 	return strings.Join(f, "|")
@@ -198,24 +198,27 @@ func PrintExecFlags(flags uint32) string {
 	if flags&0x1000 == 0x1000 {
 		f = append(f, "AT_SYMLINK_NOFOLLOW")
 	}
+	if len(f) == 0 {
+		f = append(f, "0")
+	}
 	return strings.Join(f, "|")
 }
 
 // PrintSocketType prints the `type` bitmask argument of the `socket` syscall
 // http://man7.org/linux/man-pages/man2/socket.2.html
 func PrintSocketType(st uint32) string {
-	var socketTypes = []string{
-		"SOCK_STREAM",
-		"SOCK_DGRAM",
-		"SOCK_RAW",
-		"SOCK_RDM",
-		"SOCK_SEQPACKET",
-		"SOCK_DCCP",
-		"SOCK_PACKET",
+	var socketTypes = map[uint32]string{
+		1:  "SOCK_STREAM",
+		2:  "SOCK_DGRAM",
+		3:  "SOCK_RAW",
+		4:  "SOCK_RDM",
+		5:  "SOCK_SEQPACKET",
+		6:  "SOCK_DCCP",
+		10: "SOCK_PACKET",
 	}
 	var f []string
-	if int(st) < len(socketTypes) {
-		f = append(f, socketTypes[st])
+	if stName, ok := socketTypes[st]; ok {
+		f = append(f, stName)
 	} else {
 		f = append(f, strconv.Itoa(int(st)))
 	}
@@ -231,56 +234,56 @@ func PrintSocketType(st uint32) string {
 // PrintSocketDomain prints the `domain` bitmask argument of the `socket` syscall
 // http://man7.org/linux/man-pages/man2/socket.2.html
 func PrintSocketDomain(sd uint32) string {
-	var socketDomains = []string{
-		"AF_UNSPEC",
-		"AF_UNIX",
-		"AF_INET",
-		"AF_AX25",
-		"AF_IPX",
-		"AF_APPLETALK",
-		"AF_NETROM",
-		"AF_BRIDGE",
-		"AF_ATMPVC",
-		"AF_X25",
-		"AF_INET6",
-		"AF_ROSE",
-		"AF_DECnet",
-		"AF_NETBEUI",
-		"AF_SECURITY",
-		"AF_KEY",
-		"AF_NETLINK",
-		"AF_PACKET",
-		"AF_ASH",
-		"AF_ECONET",
-		"AF_ATMSVC",
-		"AF_RDS",
-		"AF_SNA",
-		"AF_IRDA",
-		"AF_PPPOX",
-		"AF_WANPIPE",
-		"AF_LLC",
-		"AF_IB",
-		"AF_MPLS",
-		"AF_CAN",
-		"AF_TIPC",
-		"AF_BLUETOOTH",
-		"AF_IUCV",
-		"AF_RXRPC",
-		"AF_ISDN",
-		"AF_PHONET",
-		"AF_IEEE802154",
-		"AF_CAIF",
-		"AF_ALG",
-		"AF_NFC",
-		"AF_VSOCK",
-		"AF_KCM",
-		"AF_QIPCRTR",
-		"AF_SMC",
-		"AF_XDP",
+	var socketDomains = map[uint32]string{
+		0:  "AF_UNSPEC",
+		1:  "AF_UNIX",
+		2:  "AF_INET",
+		3:  "AF_AX25",
+		4:  "AF_IPX",
+		5:  "AF_APPLETALK",
+		6:  "AF_NETROM",
+		7:  "AF_BRIDGE",
+		8:  "AF_ATMPVC",
+		9:  "AF_X25",
+		10: "AF_INET6",
+		11: "AF_ROSE",
+		12: "AF_DECnet",
+		13: "AF_NETBEUI",
+		14: "AF_SECURITY",
+		15: "AF_KEY",
+		16: "AF_NETLINK",
+		17: "AF_PACKET",
+		18: "AF_ASH",
+		19: "AF_ECONET",
+		20: "AF_ATMSVC",
+		21: "AF_RDS",
+		22: "AF_SNA",
+		23: "AF_IRDA",
+		24: "AF_PPPOX",
+		25: "AF_WANPIPE",
+		26: "AF_LLC",
+		27: "AF_IB",
+		28: "AF_MPLS",
+		29: "AF_CAN",
+		30: "AF_TIPC",
+		31: "AF_BLUETOOTH",
+		32: "AF_IUCV",
+		33: "AF_RXRPC",
+		34: "AF_ISDN",
+		35: "AF_PHONET",
+		36: "AF_IEEE802154",
+		37: "AF_CAIF",
+		38: "AF_ALG",
+		39: "AF_NFC",
+		40: "AF_VSOCK",
+		41: "AF_KCM",
+		42: "AF_QIPCRTR",
+		43: "AF_SMC",
+		44: "AF_XDP",
 	}
 	var res string
-	if int(sd) < len(socketDomains) {
-		res = socketDomains[sd]
+	if sdName, ok := socketDomains[sd]; ok {
+		res = sdName
 	} else {
 		res = strconv.Itoa(int(sd))
 	}
@@ -290,49 +293,49 @@ func PrintSocketDomain(sd uint32) string {
 // PrintCapability prints the `capability` bitmask argument of the `cap_capable` function
 // include/uapi/linux/capability.h
 func PrintCapability(cap int32) string {
-	var capabilities = []string{
-		"CAP_CHOWN",
-		"CAP_DAC_OVERRIDE",
-		"CAP_DAC_READ_SEARCH",
-		"CAP_FOWNER",
-		"CAP_FSETID",
-		"CAP_KILL",
-		"CAP_SETGID",
-		"CAP_SETUID",
-		"CAP_SETPCAP",
-		"CAP_LINUX_IMMUTABLE",
-		"CAP_NET_BIND_SERVICE",
-		"CAP_NET_BROADCAST",
-		"CAP_NET_ADMIN",
-		"CAP_NET_RAW",
-		"CAP_IPC_LOCK",
-		"CAP_IPC_OWNER",
-		"CAP_SYS_MODULE",
-		"CAP_SYS_RAWIO",
-		"CAP_SYS_CHROOT",
-		"CAP_SYS_PTRACE",
-		"CAP_SYS_PACCT",
-		"CAP_SYS_ADMIN",
-		"CAP_SYS_BOOT",
-		"CAP_SYS_NICE",
-		"CAP_SYS_RESOURCE",
-		"CAP_SYS_TIME",
-		"CAP_SYS_TTY_CONFIG",
-		"CAP_MKNOD",
-		"CAP_LEASE",
-		"CAP_AUDIT_WRITE",
-		"CAP_AUDIT_CONTROL",
-		"CAP_SETFCAP",
-		"CAP_MAC_OVERRIDE",
-		"CAP_MAC_ADMIN",
-		"CAP_SYSLOG",
-		"CAP_WAKE_ALARM",
-		"CAP_BLOCK_SUSPEND",
-		"CAP_AUDIT_READ",
+	var capabilities = map[int32]string{
+		0:  "CAP_CHOWN",
+		1:  "CAP_DAC_OVERRIDE",
+		2:  "CAP_DAC_READ_SEARCH",
+		3:  "CAP_FOWNER",
+		4:  "CAP_FSETID",
+		5:  "CAP_KILL",
+		6:  "CAP_SETGID",
+		7:  "CAP_SETUID",
+		8:  "CAP_SETPCAP",
+		9:  "CAP_LINUX_IMMUTABLE",
+		10: "CAP_NET_BIND_SERVICE",
+		11: "CAP_NET_BROADCAST",
+		12: "CAP_NET_ADMIN",
+		13: "CAP_NET_RAW",
+		14: "CAP_IPC_LOCK",
+		15: "CAP_IPC_OWNER",
+		16: "CAP_SYS_MODULE",
+		17: "CAP_SYS_RAWIO",
+		18: "CAP_SYS_CHROOT",
+		19: "CAP_SYS_PTRACE",
+		20: "CAP_SYS_PACCT",
+		21: "CAP_SYS_ADMIN",
+		22: "CAP_SYS_BOOT",
+		23: "CAP_SYS_NICE",
+		24: "CAP_SYS_RESOURCE",
+		25: "CAP_SYS_TIME",
+		26: "CAP_SYS_TTY_CONFIG",
+		27: "CAP_MKNOD",
+		28: "CAP_LEASE",
+		29: "CAP_AUDIT_WRITE",
+		30: "CAP_AUDIT_CONTROL",
+		31: "CAP_SETFCAP",
+		32: "CAP_MAC_OVERRIDE",
+		33: "CAP_MAC_ADMIN",
+		34: "CAP_SYSLOG",
+		35: "CAP_WAKE_ALARM",
+		36: "CAP_BLOCK_SUSPEND",
+		37: "CAP_AUDIT_READ",
 	}
 	var res string
-	if int(cap) < len(capabilities) {
-		res = capabilities[cap]
+	if capName, ok := capabilities[cap]; ok {
+		res = capName
 	} else {
 		res = strconv.Itoa(int(cap))
 	}

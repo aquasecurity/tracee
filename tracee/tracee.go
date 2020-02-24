@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"strconv"
 
 	bpf "github.com/iovisor/gobpf/bcc"
 )
@@ -34,20 +35,21 @@ func (tc taskComm) MarshalText() ([]byte, error) {
 }
 
 // contex struct contains common metadata that is collected for all types of events
+// it is used to unmarshal binary data and therefore should match (bit by bit) to the `context_t` struct in the ebpf code.
 type context struct {
-	Ts      uint64   `json:"ts"`
+	Ts      uint64   `json:"time"`
 	Pid     uint32   `json:"pid"`
 	Tid     uint32   `json:"tid"`
 	Ppid    uint32   `json:"ppid"`
 	Uid     uint32   `json:"uid"`
-	MntId   uint32   `json:"mnt_id"`
-	PidId   uint32   `json:"ppid_id"`
-	Comm    taskComm `json:"comm"`
+	MntId   uint32   `json:"mnt_ns"`
+	PidId   uint32   `json:"pid_ns"`
+	Comm    taskComm `json:"process_name"`
 	UtsName taskComm `json:"uts_name"`
-	Eventid uint32   `json:"eventid"`
-	Argnum  uint8    `json:"argnum"`
+	Eventid int32    `json:"api"`
+	Argnum  uint8    `json:"arguments_count"`
 	_       [3]byte  // padding for Argnum
-	Retval  int64    `json:"retval"`
+	Retval  int64    `json:"return_value"`
 }
 
 // TraceeConfig is a struct containing user defined configuration of tracee
@@ -404,7 +406,7 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 
 			et, err = readArgTypeFromBuff(dataBuff)
 			if err != nil {
-				return res, fmt.Errorf("error reading string array element type: %v", err)
+				return nil, fmt.Errorf("error reading string array element type: %v", err)
 			}
 		}
 		res = ss
@@ -417,25 +419,25 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 	case SYSCALL_T:
 		sc, err := readInt32FromBuff(dataBuff)
 		if err != nil {
-			return res, fmt.Errorf("error reading syscall arg: %v", err)
+			return nil, fmt.Errorf("error reading syscall arg: %v", err)
 		}
-		if int(sc) < len(eventNames) {
-			res = eventNames[sc]
+		if e, ok := eventNames[sc]; ok {
+			res = e
 		} else {
-			res = string(sc)
+			res = strconv.Itoa(int(sc))
 		}
 	case MODE_T_T:
 		mode, err := readUInt32FromBuff(dataBuff)
 		if err != nil {
 			return nil, err
 		}
-		res = PrintMknodMode(mode)
+		res = PrintInodeMode(mode)
 	case PROT_FLAGS_T:
 		prot, err := readUInt32FromBuff(dataBuff)
 		if err != nil {
 			return nil, err
 		}
-		res = PrintMmapProt(prot)
+		res = PrintMemProt(prot)
 	case POINTER_T:
 		ptr, err := readInt64FromBuff(dataBuff)
 		if err != nil {
