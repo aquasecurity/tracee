@@ -34,7 +34,7 @@ func (tc taskComm) MarshalText() ([]byte, error) {
 	return []byte(tc.String()), nil
 }
 
-// contex struct contains common metadata that is collected for all types of events
+// context struct contains common metadata that is collected for all types of events
 // it is used to unmarshal binary data and therefore should match (bit by bit) to the `context_t` struct in the ebpf code.
 type context struct {
 	Ts      uint64   `json:"time"`
@@ -64,10 +64,10 @@ type TraceeConfig struct {
 // Validate does static validation of the configuration
 func (tc TraceeConfig) Validate() error {
 	if tc.Syscalls == nil || tc.Sysevents == nil {
-		return fmt.Errorf("trace config validation failed: sysevents or syscalls is nil")
+		return fmt.Errorf("tracee config validation failed: sysevents or syscalls is nil")
 	}
 	if tc.OutputFormat != "table" && tc.OutputFormat != "json" {
-		return fmt.Errorf("trace config validation failed: unrecognized output format: %s", tc.OutputFormat)
+		return fmt.Errorf("tracee config validation failed: unrecognized output format: %s", tc.OutputFormat)
 	}
 	for sc, wanted := range tc.Syscalls {
 		_, valid := Syscalls[sc]
@@ -121,7 +121,7 @@ func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall
 	return &tc, nil
 }
 
-// Tracee traces system calls and events using eBPF
+// Tracee traces system calls and system events using eBPF
 type Tracee struct {
 	config         TraceeConfig
 	bpfProgramPath string
@@ -298,9 +298,9 @@ func readStringFromBuff(buff io.Reader) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error reading string size: %v", err)
 	}
-	res := make([]byte, size-1) //last byte is string terminator null
+	res := make([]byte, size-1) //last byte is string terminated null
 	defer func() {
-		_, _ = readInt8FromBuff(buff) //discard last byte which is string terminator null
+		_, _ = readInt8FromBuff(buff) //discard last byte which is string terminated null
 	}()
 	err = binary.Read(buff, binary.LittleEndian, &res)
 	if err != nil {
@@ -482,7 +482,7 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 		}
 		res = PrintSocketType(t)
 	default:
-		//if we don't recognize the arg type, we can't parse the rest of the buffer
+		// if we don't recognize the arg type, we can't parse the rest of the buffer
 		return nil, fmt.Errorf("error unknown arg type %v", at)
 	}
 	return res, nil
