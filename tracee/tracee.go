@@ -54,8 +54,7 @@ type context struct {
 
 // TraceeConfig is a struct containing user defined configuration of tracee
 type TraceeConfig struct {
-	Syscalls              map[string]bool
-	Sysevents             map[string]bool
+	EventsToTrace         []string
 	ContainerMode         bool
 	DetectOriginalSyscall bool
 	OutputFormat          string
@@ -63,52 +62,36 @@ type TraceeConfig struct {
 
 // Validate does static validation of the configuration
 func (tc TraceeConfig) Validate() error {
-	if tc.Syscalls == nil || tc.Sysevents == nil {
-		return fmt.Errorf("tracee config validation failed: sysevents or syscalls is nil")
+	if tc.EventsToTrace == nil {
+		return fmt.Errorf("tracee config validation failed: eventsToTrace is nil")
 	}
 	if tc.OutputFormat != "table" && tc.OutputFormat != "json" {
 		return fmt.Errorf("tracee config validation failed: unrecognized output format: %s", tc.OutputFormat)
 	}
-	for sc, wanted := range tc.Syscalls {
-		_, valid := Syscalls[sc]
-		if wanted && !valid {
-			return fmt.Errorf("invalid syscall to trace: %s", sc)
-		}
-	}
-	for se, wanted := range tc.Sysevents {
-		_, valid := Sysevents[se]
-		if wanted && !valid {
-			return fmt.Errorf("invalid sysevent to trace: %s", se)
+	for _, e := range tc.EventsToTrace {
+		if _, ok := EventsNameToID[e]; !ok {
+			return fmt.Errorf("invalid event to trace: %s", e)
 		}
 	}
 	return nil
 }
 
-// NewConfig creates a new TraceeConfig instance based on the given configuration
+// NewConfig creates a new TraceeConfig instance based on the given configuration, or based on default values if missing
+// default values:
+//   eventsToTrace: all events
+//   outputFormat: table
 func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall bool, outputFormat string) (*TraceeConfig, error) {
-	//separate eventsToTrace into syscalls and sysevents
-	syscalls := make(map[string]bool)
-	sysevents := make(map[string]bool)
 	if eventsToTrace == nil {
-		for sc := range Syscalls {
-			eventsToTrace = append(eventsToTrace, sc)
-		}
-		for se := range Sysevents {
-			eventsToTrace = append(eventsToTrace, se)
+		eventsToTrace = make([]string, 0, len(EventsNameToID))
+		for e := range EventsNameToID {
+			eventsToTrace = append(eventsToTrace, e)
 		}
 	}
-	for _, e := range eventsToTrace {
-		if enabled, ok := Syscalls[e]; ok {
-			syscalls[e] = enabled
-		}
-		if enabled, ok := Sysevents[e]; ok {
-			sysevents[e] = enabled
-		}
+	if outputFormat == "" {
+		outputFormat = "table"
 	}
-
 	tc := TraceeConfig{
-		Syscalls:              syscalls,
-		Sysevents:             sysevents,
+		EventsToTrace:         eventsToTrace,
 		ContainerMode:         containerMode,
 		DetectOriginalSyscall: detectOriginalSyscall,
 		OutputFormat:          outputFormat,
@@ -146,14 +129,6 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 		return nil, fmt.Errorf("error finding bpf C file at: %s", bpfFile)
 	}
 
-	// ensure essential syscalls and events are being traced
-	for _, sc := range essentialSyscalls {
-		cfg.Syscalls[sc] = true
-	}
-	for _, se := range essentialSysevents {
-		cfg.Sysevents[se] = true
-	}
-
 	// create tracee
 	t := &Tracee{
 		config:         cfg,
@@ -175,27 +150,6 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	return t, nil
 }
 
-// Run starts the trace. it will run until interrupted
-func (t Tracee) Run() error {
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, os.Interrupt)
-	t.printer.Preamble()
-	t.bpfPerfMap.Start()
-	go t.processEvents()
-	<-sig
-	t.bpfPerfMap.Stop() //TODO: should this be in Tracee.Close()?
-	t.printer.Epilogue()
-	t.Close()
-	return nil
-}
-
-// Close cleans up created resources
-func (t Tracee) Close() {
-	if t.bpfModule != nil {
-		t.bpfModule.Close()
-	}
-}
-
 func (t *Tracee) initBPF() error {
 	var err error
 
@@ -205,32 +159,37 @@ func (t *Tracee) initBPF() error {
 	}
 	t.bpfModule = bpf.NewModule(string(bpfText), []string{})
 
-	for sc := range t.config.Syscalls {
-		kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("syscall__%s", sc))
-		if err != nil {
-			return fmt.Errorf("error loading kprobe %s: %v", sc, err)
-		}
-		err = t.bpfModule.AttachKprobe(bpf.GetSyscallFnName(sc), kp, -1)
-		if err != nil {
-			return fmt.Errorf("error attaching kprobe %s: %v", sc, err)
-		}
-		kp, err = t.bpfModule.LoadKprobe(fmt.Sprintf("trace_ret_%s", sc))
-		if err != nil {
-			return fmt.Errorf("error loading kprobe %s: %v", sc, err)
-		}
-		err = t.bpfModule.AttachKretprobe(bpf.GetSyscallFnName(sc), kp, -1)
-		if err != nil {
-			return fmt.Errorf("error attaching kretprobe %s: %v", sc, err)
-		}
-	}
-	for se := range t.config.Sysevents {
-		kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("trace_%s", se))
-		if err != nil {
-			return fmt.Errorf("error loading kprobe %s: %v", se, err)
-		}
-		err = t.bpfModule.AttachKprobe(se, kp, -1)
-		if err != nil {
-			return fmt.Errorf("error attaching kprobe %s: %v", se, err)
+	// ensure essential events are traced
+	eventsToTraceInternal := append(t.config.EventsToTrace, essentialEvents...)
+	eventsToTraceInternal = DedupStringSlice(eventsToTraceInternal)
+
+	for _, e := range eventsToTraceInternal {
+		if isEventSyscall(EventsNameToID[e]) {
+			kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("syscall__%s", e))
+			if err != nil {
+				return fmt.Errorf("error loading kprobe %s: %v", e, err)
+			}
+			err = t.bpfModule.AttachKprobe(bpf.GetSyscallFnName(e), kp, -1)
+			if err != nil {
+				return fmt.Errorf("error attaching kprobe %s: %v", e, err)
+			}
+			kp, err = t.bpfModule.LoadKprobe(fmt.Sprintf("trace_ret_%s", e))
+			if err != nil {
+				return fmt.Errorf("error loading kprobe %s: %v", e, err)
+			}
+			err = t.bpfModule.AttachKretprobe(bpf.GetSyscallFnName(e), kp, -1)
+			if err != nil {
+				return fmt.Errorf("error attaching kretprobe %s: %v", e, err)
+			}
+		} else {
+			kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("trace_%s", e))
+			if err != nil {
+				return fmt.Errorf("error loading kprobe %s: %v", e, err)
+			}
+			err = t.bpfModule.AttachKprobe(e, kp, -1)
+			if err != nil {
+				return fmt.Errorf("error attaching kprobe %s: %v", e, err)
+			}
 		}
 	}
 
@@ -254,11 +213,58 @@ func (t *Tracee) initBPF() error {
 	return nil
 }
 
+// Run starts the trace. it will run until interrupted
+func (t Tracee) Run() error {
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt)
+	t.printer.Preamble()
+	t.bpfPerfMap.Start()
+	go t.processEvents()
+	<-sig
+	t.bpfPerfMap.Stop() //TODO: should this be in Tracee.Close()?
+	t.printer.Epilogue()
+	t.Close()
+	return nil
+}
+
+// Close cleans up created resources
+func (t Tracee) Close() {
+	if t.bpfModule != nil {
+		t.bpfModule.Close()
+	}
+}
+
 func boolToUInt32(b bool) uint32 {
 	if b {
 		return uint32(1)
 	}
 	return uint32(0)
+}
+
+// shouldPrintEvent whether or not the given event id should be printed to the output
+func (t Tracee) shouldPrintEvent(e int32) bool {
+	eName := EventsIDToName[e]
+	// first, alsways print non-essential events
+	// if we got a trace for a non-essential event, it means the user explicitly requested it (using `-e`), or the user doesn't care (trace all by default). In both cases it's ok to print.
+	// for essential events we need to check if the user actually wanted this event
+	isEssential := false
+	for _, essentialEvent := range essentialEvents {
+		if eName == essentialEvent {
+			isEssential = true
+			break
+		}
+	}
+	if !isEssential {
+		return true
+	}
+
+	for _, tracedEvent := range t.config.EventsToTrace {
+		if eName == tracedEvent {
+			return true
+		}
+	}
+	return false
+
 }
 
 func (t Tracee) processEvents() {
@@ -276,7 +282,9 @@ func (t Tracee) processEvents() {
 				continue
 			}
 		}
-		t.printer.Print(ctx, args)
+		if t.shouldPrintEvent(ctx.Eventid) {
+			t.printer.Print(ctx, args)
+		}
 	}
 }
 
@@ -421,7 +429,7 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error reading syscall arg: %v", err)
 		}
-		if e, ok := eventNames[sc]; ok {
+		if e, ok := EventsIDToName[sc]; ok {
 			res = e
 		} else {
 			res = strconv.Itoa(int(sc))
@@ -486,4 +494,17 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 		return nil, fmt.Errorf("error unknown arg type %v", at)
 	}
 	return res, nil
+}
+
+// DedupStringSlice removes any duplicate items in the incoming slice array as a new slice array
+func DedupStringSlice(in []string) []string {
+	tmpset := make(map[string]bool, len(in))
+	for _, e := range in {
+		tmpset[e] = true
+	}
+	out := make([]string, 0, len(in))
+	for k := range tmpset {
+		out = append(out, k)
+	}
+	return out
 }

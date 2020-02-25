@@ -22,7 +22,7 @@ func (p tableEventPrinter) Preamble() {
 }
 
 func (p tableEventPrinter) Print(ctx context, args []interface{}) {
-	fmt.Printf("%-14d %-16s %-12d %-12d %-6d %-16s %-16s %-6d %-6d %-6d %-12d", ctx.Ts/1000000, ctx.UtsName, ctx.MntId, ctx.PidId, ctx.Uid, getEventName(ctx.Eventid), ctx.Comm, ctx.Pid, ctx.Tid, ctx.Ppid, ctx.Retval)
+	fmt.Printf("%-14d %-16s %-12d %-12d %-6d %-16s %-16s %-6d %-6d %-6d %-12d", ctx.Ts/1000000, ctx.UtsName, ctx.MntId, ctx.PidId, ctx.Uid, EventsIDToName[ctx.Eventid], ctx.Comm, ctx.Pid, ctx.Tid, ctx.Ppid, ctx.Retval)
 	fmt.Printf("%v", args)
 	fmt.Println()
 }
@@ -41,7 +41,7 @@ type printableEvent struct {
 func (p jsonEventPrinter) Preamble() {}
 
 func (p jsonEventPrinter) Print(ctx context, args []interface{}) {
-	e := printableEvent{context: ctx, EventName: getEventName(ctx.Eventid), Args: args}
+	e := printableEvent{context: ctx, EventName: EventsIDToName[ctx.Eventid], Args: args}
 	e.context.Ts = e.context.Ts / 1000000
 	eBytes, err := json.Marshal(e)
 	if err != nil {
@@ -52,12 +52,3 @@ func (p jsonEventPrinter) Print(ctx context, args []interface{}) {
 }
 
 func (p jsonEventPrinter) Epilogue() {}
-
-// getEventName returns a the name of the event for printing, specified by it's id
-func getEventName(eid int32) string {
-	name := "undefined"
-	if eid, ok := eventNames[eid]; ok {
-		name = eid
-	}
-	return name
-}

@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/aquasecurity/tracee/tracee"
-	"github.com/urfave/cli/v2"
 	"log"
 	"os"
-	"strings"
+
+	"github.com/aquasecurity/tracee/tracee"
+	"github.com/urfave/cli/v2"
 )
 
 func main() {
@@ -15,7 +15,7 @@ func main() {
 		Usage: "Trace OS events and syscalls using eBPF",
 		Action: func(c *cli.Context) error {
 			if c.Bool("list") {
-				printList()
+				fmt.Println(tracee.EventsIDToName)
 				return nil
 			}
 			cfg, err := tracee.NewConfig(
@@ -71,21 +71,4 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-}
-
-func printList() {
-	const sep = ", "
-	var b strings.Builder
-	for sc := range tracee.Syscalls {
-		fmt.Fprintf(&b, "%s%s", sc, sep)
-	}
-	fmt.Println("System calls:")
-	fmt.Println(strings.TrimSuffix(b.String(), sep))
-	b.Reset()
-	fmt.Println()
-	for se := range tracee.Sysevents {
-		fmt.Fprintf(&b, "%s%s", se, sep)
-	}
-	fmt.Println("System events:")
-	fmt.Println(strings.TrimSuffix(b.String(), sep))
 }
