@@ -393,10 +393,10 @@ func init() {
 }
 
 // essentialEvents is a list of event ids (in EventsIDToName map) that are essential to the operation of tracee and therefore must be traced
-var essentialEvents = []string{
-	"do_exit",
-	"execve",
-	"execveat",
+var essentialEvents = []int32{
+	335, // do_exit
+	59,  // execve
+	322, // execveat
 }
 
 type bpfConfig uint32

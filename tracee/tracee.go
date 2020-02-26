@@ -54,7 +54,7 @@ type context struct {
 
 // TraceeConfig is a struct containing user defined configuration of tracee
 type TraceeConfig struct {
-	EventsToTrace         []string
+	EventsToTrace         []int32
 	ContainerMode         bool
 	DetectOriginalSyscall bool
 	OutputFormat          string
@@ -69,29 +69,35 @@ func (tc TraceeConfig) Validate() error {
 		return fmt.Errorf("tracee config validation failed: unrecognized output format: %s", tc.OutputFormat)
 	}
 	for _, e := range tc.EventsToTrace {
-		if _, ok := EventsNameToID[e]; !ok {
+		if _, ok := EventsIDToName[e]; !ok {
 			return fmt.Errorf("invalid event to trace: %s", e)
 		}
 	}
 	return nil
 }
 
-// NewConfig creates a new TraceeConfig instance based on the given configuration, or based on default values if missing
+// NewConfig creates a new TraceeConfig instance based on the given configuration, or default values if missing
 // default values:
 //   eventsToTrace: all events
 //   outputFormat: table
 func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall bool, outputFormat string) (*TraceeConfig, error) {
+	var eventsToTraceInternal []int32
 	if eventsToTrace == nil {
-		eventsToTrace = make([]string, 0, len(EventsNameToID))
-		for e := range EventsNameToID {
-			eventsToTrace = append(eventsToTrace, e)
+		eventsToTraceInternal = make([]int32, 0, len(EventsIDToName))
+		for id := range EventsIDToName {
+			eventsToTraceInternal = append(eventsToTraceInternal, id)
+		}
+	} else {
+		eventsToTraceInternal = make([]int32, 0, len(eventsToTrace))
+		for _, name := range eventsToTrace {
+			eventsToTraceInternal = append(eventsToTraceInternal, EventsNameToID[name])
 		}
 	}
 	if outputFormat == "" {
 		outputFormat = "table"
 	}
 	tc := TraceeConfig{
-		EventsToTrace:         eventsToTrace,
+		EventsToTrace:         eventsToTraceInternal,
 		ContainerMode:         containerMode,
 		DetectOriginalSyscall: detectOriginalSyscall,
 		OutputFormat:          outputFormat,
@@ -118,7 +124,6 @@ type Tracee struct {
 func New(cfg TraceeConfig) (*Tracee, error) {
 	var err error
 
-	// validation
 	err = cfg.Validate()
 	if err != nil {
 		return nil, fmt.Errorf("validation error: %v", err)
@@ -161,34 +166,35 @@ func (t *Tracee) initBPF() error {
 
 	// ensure essential events are traced
 	eventsToTraceInternal := append(t.config.EventsToTrace, essentialEvents...)
-	eventsToTraceInternal = DedupStringSlice(eventsToTraceInternal)
+	eventsToTraceInternal = DedupInt32Slice(eventsToTraceInternal)
 
 	for _, e := range eventsToTraceInternal {
-		if isEventSyscall(EventsNameToID[e]) {
-			kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("syscall__%s", e))
+		eName := EventsIDToName[e]
+		if isEventSyscall(e) {
+			kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("syscall__%s", eName))
 			if err != nil {
-				return fmt.Errorf("error loading kprobe %s: %v", e, err)
+				return fmt.Errorf("error loading kprobe %s: %v", eName, err)
 			}
-			err = t.bpfModule.AttachKprobe(bpf.GetSyscallFnName(e), kp, -1)
+			err = t.bpfModule.AttachKprobe(bpf.GetSyscallFnName(eName), kp, -1)
 			if err != nil {
-				return fmt.Errorf("error attaching kprobe %s: %v", e, err)
+				return fmt.Errorf("error attaching kprobe %s: %v", eName, err)
 			}
-			kp, err = t.bpfModule.LoadKprobe(fmt.Sprintf("trace_ret_%s", e))
+			kp, err = t.bpfModule.LoadKprobe(fmt.Sprintf("trace_ret_%s", eName))
 			if err != nil {
-				return fmt.Errorf("error loading kprobe %s: %v", e, err)
+				return fmt.Errorf("error loading kprobe %s: %v", eName, err)
 			}
-			err = t.bpfModule.AttachKretprobe(bpf.GetSyscallFnName(e), kp, -1)
+			err = t.bpfModule.AttachKretprobe(bpf.GetSyscallFnName(eName), kp, -1)
 			if err != nil {
-				return fmt.Errorf("error attaching kretprobe %s: %v", e, err)
+				return fmt.Errorf("error attaching kretprobe %s: %v", eName, err)
 			}
 		} else {
-			kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("trace_%s", e))
+			kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("trace_%s", eName))
 			if err != nil {
-				return fmt.Errorf("error loading kprobe %s: %v", e, err)
+				return fmt.Errorf("error loading kprobe %s: %v", eName, err)
 			}
-			err = t.bpfModule.AttachKprobe(e, kp, -1)
+			err = t.bpfModule.AttachKprobe(eName, kp, -1)
 			if err != nil {
-				return fmt.Errorf("error attaching kprobe %s: %v", e, err)
+				return fmt.Errorf("error attaching kprobe %s: %v", eName, err)
 			}
 		}
 	}
@@ -243,13 +249,12 @@ func boolToUInt32(b bool) uint32 {
 
 // shouldPrintEvent whether or not the given event id should be printed to the output
 func (t Tracee) shouldPrintEvent(e int32) bool {
-	eName := EventsIDToName[e]
 	// first, alsways print non-essential events
 	// if we got a trace for a non-essential event, it means the user explicitly requested it (using `-e`), or the user doesn't care (trace all by default). In both cases it's ok to print.
 	// for essential events we need to check if the user actually wanted this event
 	isEssential := false
 	for _, essentialEvent := range essentialEvents {
-		if eName == essentialEvent {
+		if e == essentialEvent {
 			isEssential = true
 			break
 		}
@@ -259,7 +264,7 @@ func (t Tracee) shouldPrintEvent(e int32) bool {
 	}
 
 	for _, tracedEvent := range t.config.EventsToTrace {
-		if eName == tracedEvent {
+		if e == tracedEvent {
 			return true
 		}
 	}
@@ -496,13 +501,13 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 	return res, nil
 }
 
-// DedupStringSlice removes any duplicate items in the incoming slice array as a new slice array
-func DedupStringSlice(in []string) []string {
-	tmpset := make(map[string]bool, len(in))
+// DedupInt32Slice removes any duplicate items in the incoming slice array as a new slice array
+func DedupInt32Slice(in []int32) []int32 {
+	tmpset := make(map[int32]bool, len(in))
 	for _, e := range in {
 		tmpset[e] = true
 	}
-	out := make([]string, 0, len(in))
+	out := make([]int32, 0, len(in))
 	for k := range tmpset {
 		out = append(out, k)
 	}
