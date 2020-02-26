@@ -164,11 +164,24 @@ func (t *Tracee) initBPF() error {
 	}
 	t.bpfModule = bpf.NewModule(string(bpfText), []string{})
 
-	// ensure essential events are traced
-	eventsToTraceInternal := append(t.config.EventsToTrace, essentialEvents...)
-	eventsToTraceInternal = DedupInt32Slice(eventsToTraceInternal)
+	// compile final list of events to trace including essential events while at the same time record which essentials were requested by the user
+	eventsToTraceFinal := make([]int32, 0, len(t.config.EventsToTrace))
+	tmpset := make(map[int32]bool, len(t.config.EventsToTrace))
+	for e := range essentialEvents {
+		eventsToTraceFinal = append(eventsToTraceFinal, e)
+		tmpset[e] = true
+	}
+	for _, e := range t.config.EventsToTrace {
+		_, essential := tmpset[e]
+		if essential {
+			essentialEvents[e] = true // mark that this essential event was requested by the user
+		} else {
+			eventsToTraceFinal = append(eventsToTraceFinal, e)
+		}
+		tmpset[e] = true
+	}
 
-	for _, e := range eventsToTraceInternal {
+	for _, e := range eventsToTraceFinal {
 		eName := EventsIDToName[e]
 		if isEventSyscall(e) {
 			kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("syscall__%s", eName))
@@ -249,27 +262,12 @@ func boolToUInt32(b bool) uint32 {
 
 // shouldPrintEvent whether or not the given event id should be printed to the output
 func (t Tracee) shouldPrintEvent(e int32) bool {
-	// first, alsways print non-essential events
 	// if we got a trace for a non-essential event, it means the user explicitly requested it (using `-e`), or the user doesn't care (trace all by default). In both cases it's ok to print.
 	// for essential events we need to check if the user actually wanted this event
-	isEssential := false
-	for _, essentialEvent := range essentialEvents {
-		if e == essentialEvent {
-			isEssential = true
-			break
-		}
+	if print, isEssential := essentialEvents[e]; isEssential {
+		return print
 	}
-	if !isEssential {
-		return true
-	}
-
-	for _, tracedEvent := range t.config.EventsToTrace {
-		if e == tracedEvent {
-			return true
-		}
-	}
-	return false
-
+	return true
 }
 
 func (t Tracee) processEvents() {
@@ -499,17 +497,4 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 		return nil, fmt.Errorf("error unknown arg type %v", at)
 	}
 	return res, nil
-}
-
-// DedupInt32Slice removes any duplicate items in the incoming slice array as a new slice array
-func DedupInt32Slice(in []int32) []int32 {
-	tmpset := make(map[int32]bool, len(in))
-	out := make([]int32, 0, len(in))
-	for _, e := range in {
-		if _, ok := tmpset[e]; !ok {
-			out = append(out, e)
-		}
-		tmpset[e] = true
-	}
-	return out
 }
