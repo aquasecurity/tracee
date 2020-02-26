@@ -183,7 +183,7 @@ func (t *Tracee) initBPF() error {
 
 	for _, e := range eventsToTraceFinal {
 		eName := EventsIDToName[e]
-		if isEventSyscall(e) {
+		if IsEventSyscall(e) {
 			kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("syscall__%s", eName))
 			if err != nil {
 				return fmt.Errorf("error loading kprobe %s: %v", eName, err)

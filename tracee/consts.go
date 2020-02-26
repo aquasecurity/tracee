@@ -376,9 +376,15 @@ var EventsIDToName = map[int32]string{
 	336: "cap_capable",
 }
 
-// isEventSyscall determines if the given event ID is a syscall or other event based on the EventsIDToName map
-func isEventSyscall(e int32) bool {
-	return e < 335
+// EventIDMax marks the highest event ID in the EventsIDToName map
+const EventIDMax = 336
+
+// EventIDSyscallMax marks the highest event ID for system call. Beyond this ID events are non-syscalls
+const EventIDSyscallMax = 334
+
+// IsEventSyscall determines if the given event ID is a syscall or other event based on the EventsIDToName map
+func IsEventSyscall(e int32) bool {
+	return e <= EventIDSyscallMax
 }
 
 // EventsNameToID is the reverse mapping of EventsIDToName
