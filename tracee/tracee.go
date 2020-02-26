@@ -165,6 +165,9 @@ func (t *Tracee) initBPF() error {
 	t.bpfModule = bpf.NewModule(string(bpfText), []string{})
 
 	// compile final list of events to trace including essential events while at the same time record which essentials were requested by the user
+	// to build this list efficiently we use the `tmpset` variable as follows:
+	// 1. the presence of an entry says we have already seen this event (key)
+	// 2. the value says if this event is essential
 	eventsToTraceFinal := make([]int32, 0, len(t.config.EventsToTrace))
 	tmpset := make(map[int32]bool, len(t.config.EventsToTrace))
 	for e := range essentialEvents {
@@ -172,13 +175,19 @@ func (t *Tracee) initBPF() error {
 		tmpset[e] = true
 	}
 	for _, e := range t.config.EventsToTrace {
-		_, essential := tmpset[e]
-		if essential {
-			essentialEvents[e] = true // mark that this essential event was requested by the user
+		essential, exists := tmpset[e]
+		// exists && essential = user requested essential
+		// exists && !essential = dup event
+		// !exists && essential = should never happen
+		// !exists && !essential = user requested event
+		if exists {
+			if essential {
+				essentialEvents[e] = true
+			}
 		} else {
 			eventsToTraceFinal = append(eventsToTraceFinal, e)
+			tmpset[e] = false
 		}
-		tmpset[e] = true
 	}
 
 	for _, e := range eventsToTraceFinal {
@@ -260,7 +269,7 @@ func boolToUInt32(b bool) uint32 {
 	return uint32(0)
 }
 
-// shouldPrintEvent whether or not the given event id should be printed to the output
+// shouldPrintEvent decides whether or not the given event id should be printed to the output
 func (t Tracee) shouldPrintEvent(e int32) bool {
 	// if we got a trace for a non-essential event, it means the user explicitly requested it (using `-e`), or the user doesn't care (trace all by default). In both cases it's ok to print.
 	// for essential events we need to check if the user actually wanted this event
