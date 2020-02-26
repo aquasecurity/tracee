@@ -504,12 +504,12 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 // DedupInt32Slice removes any duplicate items in the incoming slice array as a new slice array
 func DedupInt32Slice(in []int32) []int32 {
 	tmpset := make(map[int32]bool, len(in))
-	for _, e := range in {
-		tmpset[e] = true
-	}
 	out := make([]int32, 0, len(in))
-	for k := range tmpset {
-		out = append(out, k)
+	for _, e := range in {
+		if _, ok := tmpset[e]; !ok {
+			out = append(out, e)
+		}
+		tmpset[e] = true
 	}
 	return out
 }
