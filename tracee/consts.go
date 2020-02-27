@@ -297,7 +297,7 @@ var EventsIDToName = map[int32]string{
 	259: "mknodat",
 	//	260: "fchownat",
 	//	261: "futimesat",
-	//  262: "newfstatat",
+	//	262: "newfstatat",
 	263: "unlinkat",
 	//	264: "renameat",
 	//	265: "linkat",

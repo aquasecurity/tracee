@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
-	"strconv"
 
 	bpf "github.com/iovisor/gobpf/bcc"
 )
@@ -441,11 +440,7 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error reading syscall arg: %v", err)
 		}
-		if e, ok := EventsIDToName[sc]; ok {
-			res = e
-		} else {
-			res = strconv.Itoa(int(sc))
-		}
+		res = PrintSyscall(sc)
 	case MODE_T_T:
 		mode, err := readUInt32FromBuff(dataBuff)
 		if err != nil {
