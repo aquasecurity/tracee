@@ -226,7 +226,7 @@ syscalls = ["execve", "execveat", "mmap", "mprotect", "clone", "fork", "vfork", 
             "symlink", "symlinkat", "getdents", "getdents64", "creat", "open", "openat",
             "mount", "umount", "unlink", "unlinkat", "setuid", "setgid", "setreuid", "setregid",
             "setresuid", "setresgid", "setfsuid", "setfsgid"]
-sysevents = ["cap_capable", "do_exit", "security_bprm_check"]
+sysevents = ["cap_capable", "do_exit", "security_bprm_check", "security_file_open"]
 
 # We always need kprobes for execve[at] so that we capture the new PID namespace, 
 # and do_exit so we clean up  
@@ -573,7 +573,8 @@ event_id = {
     # Non syscall events start here
     335: "do_exit",
     336: "cap_capable",
-    337: "security_bprm_check"
+    337: "security_bprm_check",
+    338: "security_file_open"
 }
 
 # argument types should match defined values in ebpf file code
