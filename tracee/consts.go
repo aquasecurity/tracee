@@ -378,6 +378,7 @@ var EventsIDToName = map[int32]string{
 	335: "do_exit",
 	336: "cap_capable",
 	337: "security_bprm_check",
+	338: "security_file_open",
 }
 
 // EventIDMax marks the highest event ID in the EventsIDToName map
