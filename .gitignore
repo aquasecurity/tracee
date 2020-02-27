@@ -1,4 +1,6 @@
-*__pycache__*
+.vscode
 .idea
+tracee_*
+*__pycache__*
 venv
 *.pyc
