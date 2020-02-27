@@ -397,6 +397,7 @@ enum event_id {
     DO_EXIT,
     CAP_CAPABLE,
     SECURITY_BPRM_CHECK,
+    SECURITY_FILE_OPEN,
 };
 
 /*=============================== INTERNAL STRUCTS ===========================*/
@@ -1401,6 +1402,34 @@ int trace_security_bprm_check(struct pt_regs *ctx, struct linux_binprm *bprm)
 
     save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
     save_path_to_buf(submit_p, &bprm->file->f_path);
+
+    events_perf_submit(ctx);
+    return 0;
+}
+
+int trace_security_file_open(struct pt_regs *ctx, struct file *file)
+{
+    context_t context = {};
+
+    if (init_context(&context) || init_submit_buf())
+        return 0;
+
+    submit_buf_t *submit_p = get_submit_buf();
+    if (submit_p == NULL)
+        return 0;
+
+    context.eventid = SECURITY_FILE_OPEN;
+    context.argnum = 2;
+    context.retval = 0;
+
+    struct pt_regs *real_ctx = get_task_pt_regs();
+    int syscall_nr = real_ctx->orig_ax;
+    if (syscall_nr != 2 && syscall_nr != 257) // only monitor open and openat syscalls
+        return 0;
+
+    save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
+    save_path_to_buf(submit_p, &file->f_path);
+    save_to_submit_buf(submit_p, (void*)&file->f_flags, sizeof(int), OPEN_FLAGS_T);
 
     events_perf_submit(ctx);
     return 0;
