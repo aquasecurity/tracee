@@ -56,6 +56,7 @@ type TraceeConfig struct {
 	EventsToTrace         []int32
 	ContainerMode         bool
 	DetectOriginalSyscall bool
+	ShowExecEnv           bool
 	OutputFormat          string
 }
 
@@ -79,7 +80,7 @@ func (tc TraceeConfig) Validate() error {
 // default values:
 //   eventsToTrace: all events
 //   outputFormat: table
-func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall bool, outputFormat string) (*TraceeConfig, error) {
+func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall bool, showExecEnv bool, outputFormat string) (*TraceeConfig, error) {
 	var eventsToTraceInternal []int32
 	if eventsToTrace == nil {
 		eventsToTraceInternal = make([]int32, 0, len(EventsIDToName))
@@ -103,6 +104,7 @@ func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall
 		EventsToTrace:         eventsToTraceInternal,
 		ContainerMode:         containerMode,
 		DetectOriginalSyscall: detectOriginalSyscall,
+		ShowExecEnv:           showExecEnv,
 		OutputFormat:          outputFormat,
 	}
 
@@ -232,6 +234,9 @@ func (t *Tracee) initBPF() error {
 	bpfConfig.Set(key, leaf)
 	binary.LittleEndian.PutUint32(key, uint32(CONFIG_DETECT_ORIG_SYSCALL))
 	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.DetectOriginalSyscall))
+	bpfConfig.Set(key, leaf)
+	binary.LittleEndian.PutUint32(key, uint32(CONFIG_EXEC_ENV))
+	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.ShowExecEnv))
 	bpfConfig.Set(key, leaf)
 
 	eventsBPFTable := bpf.NewTable(t.bpfModule.TableId("events"), t.bpfModule)
