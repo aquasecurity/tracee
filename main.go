@@ -23,6 +23,7 @@ func main() {
 				c.StringSlice("events-to-trace"),
 				c.Bool("container"),
 				c.Bool("detect-original-syscall"),
+				c.Bool("show-exec-env"),
 				c.String("output"),
 			)
 			if err != nil {
@@ -64,6 +65,11 @@ func main() {
 				Name:  "detect-original-syscall",
 				Value: false,
 				Usage: "when tracing kernel functions which are not syscalls (such as cap_capable), detect and show the original syscall that called that function",
+			},
+			&cli.BoolFlag{
+				Name:  "show-exec-env",
+				Value: false,
+				Usage: "when tracing execve/execveat, show environment variables",
 			},
 		},
 	}
