@@ -69,7 +69,7 @@ func (tc TraceeConfig) Validate() error {
 	}
 	for _, e := range tc.EventsToTrace {
 		if _, ok := EventsIDToName[e]; !ok {
-			return fmt.Errorf("invalid event to trace: %s", e)
+			return fmt.Errorf("invalid event to trace: %d", e)
 		}
 	}
 	return nil
@@ -89,7 +89,11 @@ func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall
 	} else {
 		eventsToTraceInternal = make([]int32, 0, len(eventsToTrace))
 		for _, name := range eventsToTrace {
-			eventsToTraceInternal = append(eventsToTraceInternal, EventsNameToID[name])
+			id, ok := EventsNameToID[name]
+			if !ok {
+				return nil, fmt.Errorf("invalid event to trace: %s", name)
+			}
+			eventsToTraceInternal = append(eventsToTraceInternal, id)
 		}
 	}
 	if outputFormat == "" {
