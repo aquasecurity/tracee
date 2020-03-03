@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"strings"
 
 	bpf "github.com/iovisor/gobpf/bcc"
 )
@@ -505,9 +506,23 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 			return nil, err
 		}
 		res = PrintSocketType(t)
+	case R_PATH_T:
+		rp, err := readStringFromBuff(dataBuff)
+		if err != nil {
+			return nil, err
+		}
+		rpParts := strings.Split(rp, "/")
+		reverseStringSlice(rpParts)
+		res = strings.Join(rpParts, "/")
 	default:
 		// if we don't recognize the arg type, we can't parse the rest of the buffer
 		return nil, fmt.Errorf("error unknown arg type %v", at)
 	}
 	return res, nil
+}
+
+func reverseStringSlice(in []string) {
+	for i, j := 0, len(in)-1; i < j; i, j = i+1, j-1 {
+		in[i], in[j] = in[j], in[i]
+	}
 }

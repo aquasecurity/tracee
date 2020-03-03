@@ -26,6 +26,7 @@ const (
 	SYSCALL_T     ArgType = 18
 	PROT_FLAGS_T  ArgType = 19
 	ACCESS_MODE_T ArgType = 20
+	R_PATH_T      ArgType = 23
 	TYPE_MAX      ArgType = 255
 )
 
@@ -374,6 +375,7 @@ var EventsIDToName = map[int32]string{
 	// Non syscall events start here
 	335: "do_exit",
 	336: "cap_capable",
+	337: "security_bprm_check",
 }
 
 // EventIDMax marks the highest event ID in the EventsIDToName map
