@@ -6,10 +6,13 @@ After launching the tool, it will start collecting traces of newly created conta
 The collected traces are mostly system calls performed by the processes,
 but other events, such as capabilities required to perform the actions requested by the process, are also supported.
 
+Tracee CLI was originally written in Python, but is now being ported to Go. Currently both versions are available in the repo. Python is considered more stable and tested, but future development will be in Go. This readme is referring to the Python version as it's recommended for newcomers but all of the features are similarly supported in the Go version, give or take minor CLI differences.
+
 ## Requirements
 Currently requires 
 * kernel version > 4.14
 * BCC
+* Python if using the Python version
 
 ## Quick Start Instructions
 
@@ -172,7 +175,6 @@ Adding new events (especially system calls) to Tracee is straightforward, but on
 ## TODO
 
 * Consider tracing commit_creds to detect potential kernel exploits
-* Consider re-writing userspace side (python) in golang
 
 ## Known Issues
 
