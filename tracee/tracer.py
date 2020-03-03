@@ -226,7 +226,7 @@ syscalls = ["execve", "execveat", "mmap", "mprotect", "clone", "fork", "vfork", 
             "symlink", "symlinkat", "getdents", "getdents64", "creat", "open", "openat",
             "mount", "umount", "unlink", "unlinkat", "setuid", "setgid", "setreuid", "setregid",
             "setresuid", "setresgid", "setfsuid", "setfsgid"]
-sysevents = ["cap_capable", "do_exit"]
+sysevents = ["cap_capable", "do_exit", "security_bprm_check"]
 
 # We always need kprobes for execve[at] so that we capture the new PID namespace, 
 # and do_exit so we clean up  
@@ -573,6 +573,7 @@ event_id = {
     # Non syscall events start here
     335: "do_exit",
     336: "cap_capable",
+    337: "security_bprm_check"
 }
 
 # argument types should match defined values in ebpf file code
@@ -600,6 +601,7 @@ class ArgType(object):
     ACCESS_MODE_T   = 20
     PTRACE_REQ_T    = 21
     PRCTL_OPT_T     = 22
+    R_PATH_T        = 23
     TYPE_MAX        = 255
 
 class shared_config(object):
@@ -1128,6 +1130,10 @@ class EventMonitor:
                     args.append(str(self.get_pointer_from_buf(event_buf)))
                 elif argtype == ArgType.STR_T:
                     args.append(self.get_string_from_buf(event_buf))
+                elif argtype == ArgType.R_PATH_T:
+                    rpath = self.get_string_from_buf(event_buf).split("/")
+                    rpath.reverse()
+                    args.append('/'.join(rpath))
                 elif argtype == ArgType.STR_ARR_T:
                     args.append(self.get_str_arr_from_buf(event_buf))
                 elif argtype == ArgType.SOCKADDR_T:
