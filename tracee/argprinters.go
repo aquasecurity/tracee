@@ -689,3 +689,120 @@ func PrintSyscall(sc int32) string {
 	}
 	return res
 }
+
+// PrintPrctlOption prints the `option` argument of the `prctl` syscall
+// http://man7.org/linux/man-pages/man2/prctl.2.html
+// https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/prctl.h
+func PrintPrctlOption(op int32) string {
+	var prctlOptions = map[int32]string{
+		1:  "PR_SET_PDEATHSIG",
+		2:  "PR_GET_PDEATHSIG",
+		3:  "PR_GET_DUMPABLE",
+		4:  "PR_SET_DUMPABLE",
+		5:  "PR_GET_UNALIGN",
+		6:  "PR_SET_UNALIGN",
+		7:  "PR_GET_KEEPCAPS",
+		8:  "PR_SET_KEEPCAPS",
+		9:  "PR_GET_FPEMU",
+		10: "PR_SET_FPEMU",
+		11: "PR_GET_FPEXC",
+		12: "PR_SET_FPEXC",
+		13: "PR_GET_TIMING",
+		14: "PR_SET_TIMING",
+		15: "PR_SET_NAME",
+		16: "PR_GET_NAME",
+		19: "PR_GET_ENDIAN",
+		20: "PR_SET_ENDIAN",
+		21: "PR_GET_SECCOMP",
+		22: "PR_SET_SECCOMP",
+		23: "PR_CAPBSET_READ",
+		24: "PR_CAPBSET_DROP",
+		25: "PR_GET_TSC",
+		26: "PR_SET_TSC",
+		27: "PR_GET_SECUREBITS",
+		28: "PR_SET_SECUREBITS",
+		29: "PR_SET_TIMERSLACK",
+		30: "PR_GET_TIMERSLACK",
+		31: "PR_TASK_PERF_EVENTS_DISABLE",
+		32: "PR_TASK_PERF_EVENTS_ENABLE",
+		33: "PR_MCE_KILL",
+		34: "PR_MCE_KILL_GET",
+		35: "PR_SET_MM",
+		36: "PR_SET_CHILD_SUBREAPER",
+		37: "PR_GET_CHILD_SUBREAPER",
+		38: "PR_SET_NO_NEW_PRIVS",
+		39: "PR_GET_NO_NEW_PRIVS",
+		40: "PR_GET_TID_ADDRESS",
+		41: "PR_SET_THP_DISABLE",
+		42: "PR_GET_THP_DISABLE",
+		43: "PR_MPX_ENABLE_MANAGEMENT",
+		44: "PR_MPX_DISABLE_MANAGEMENT",
+		45: "PR_SET_FP_MODE",
+		46: "PR_GET_FP_MODE",
+		47: "PR_CAP_AMBIENT",
+		50: "PR_SVE_SET_VL",
+		51: "PR_SVE_GET_VL",
+		52: "PR_GET_SPECULATION_CTRL",
+		53: "PR_SET_SPECULATION_CTRL",
+		54: "PR_PAC_RESET_KEYS",
+		55: "PR_SET_TAGGED_ADDR_CTRL",
+		56: "PR_GET_TAGGED_ADDR_CTRL",
+	}
+
+	var res string
+	if opName, ok := prctlOptions[op]; ok {
+		res = opName
+	} else {
+		res = strconv.Itoa(int(op))
+	}
+	return res
+}
+
+// PrintPtraceRequest prints the `request` argument of the `ptrace` syscall
+// http://man7.org/linux/man-pages/man2/ptrace.2.html
+// https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/ptrace.h
+func PrintPtraceRequest(req int32) string {
+	var ptraceRequest = map[int32]string{
+		0:      "PTRACE_TRACEME",
+		1:      "PTRACE_PEEKTEXT",
+		2:      "PTRACE_PEEKDATA",
+		3:      "PTRACE_PEEKUSER",
+		4:      "PTRACE_POKETEXT",
+		5:      "PTRACE_POKEDATA",
+		6:      "PTRACE_POKEUSER",
+		7:      "PTRACE_CONT",
+		8:      "PTRACE_KILL",
+		9:      "PTRACE_SINGLESTEP",
+		12:     "PTRACE_GETREGS",
+		13:     "PTRACE_SETREGS",
+		14:     "PTRACE_GETFPREGS",
+		15:     "PTRACE_SETFPREGS",
+		16:     "PTRACE_ATTACH",
+		17:     "PTRACE_DETACH",
+		18:     "PTRACE_GETFPXREGS",
+		19:     "PTRACE_SETFPXREGS",
+		24:     "PTRACE_SYSCALL",
+		0x4200: "PTRACE_SETOPTIONS",
+		0x4201: "PTRACE_GETEVENTMSG",
+		0x4202: "PTRACE_GETSIGINFO",
+		0x4203: "PTRACE_SETSIGINFO",
+		0x4204: "PTRACE_GETREGSET",
+		0x4205: "PTRACE_SETREGSET",
+		0x4206: "PTRACE_SEIZE",
+		0x4207: "PTRACE_INTERRUPT",
+		0x4208: "PTRACE_LISTEN",
+		0x4209: "PTRACE_PEEKSIGINFO",
+		0x420a: "PTRACE_GETSIGMASK",
+		0x420b: "PTRACE_SETSIGMASK",
+		0x420c: "PTRACE_SECCOMP_GET_FILTER",
+		0x420d: "PTRACE_SECCOMP_GET_METADATA",
+	}
+
+	var res string
+	if reqName, ok := ptraceRequest[req]; ok {
+		res = reqName
+	} else {
+		res = strconv.Itoa(int(req))
+	}
+	return res
+}
