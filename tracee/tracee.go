@@ -627,6 +627,18 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 			return nil, err
 		}
 		res = PrintSocketType(t)
+	case PRCTL_OPT_T:
+		op, err := readInt32FromBuff(dataBuff)
+		if err != nil {
+			return nil, err
+		}
+		res = PrintPrctlOption(op)
+	case PTRACE_REQ_T:
+		req, err := readInt32FromBuff(dataBuff)
+		if err != nil {
+			return nil, err
+		}
+		res = PrintPrctlOption(req)
 	default:
 		// if we don't recognize the arg type, we can't parse the rest of the buffer
 		return nil, fmt.Errorf("error unknown arg type %v", at)
