@@ -26,7 +26,9 @@ const (
 	SYSCALL_T     ArgType = 18
 	PROT_FLAGS_T  ArgType = 19
 	ACCESS_MODE_T ArgType = 20
-	R_PATH_T      ArgType = 23
+	PTRACE_REQ_T  ArgType = 21
+	PRCTL_OPT_T   ArgType = 22
+  R_PATH_T      ArgType = 23
 	TYPE_MAX      ArgType = 255
 )
 

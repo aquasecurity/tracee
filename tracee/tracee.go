@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	"strconv"
 
 	bpf "github.com/iovisor/gobpf/bcc"
 )
@@ -327,15 +328,43 @@ func readStringFromBuff(buff io.Reader) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error reading string size: %v", err)
 	}
-	res := make([]byte, size-1) //last byte is string terminated null
+	res, err := readByteSliceFromBuff(buff, int(size-1)) //last byte is string terminating null
 	defer func() {
-		_, _ = readInt8FromBuff(buff) //discard last byte which is string terminated null
+		_, _ = readInt8FromBuff(buff) //discard last byte which is string terminating null
 	}()
-	err = binary.Read(buff, binary.LittleEndian, &res)
 	if err != nil {
 		return "", fmt.Errorf("error reading string arg: %v", err)
 	}
 	return string(res), nil
+}
+
+// readStringVarFromBuff reads a null-terminated string from `buff`
+// max length can be passed as `max` to optimize memory allocation, otherwise pass 0
+func readStringVarFromBuff(buff io.Reader, max int) (string, error) {
+	var err error
+	res := make([]byte, max)
+	char, err := readInt8FromBuff(buff)
+	if err != nil {
+		return "", fmt.Errorf("error reading null terminated string: %v", err)
+	}
+	for char != 0 {
+		res = append(res, byte(char))
+		char, err = readInt8FromBuff(buff)
+		if err != nil {
+			return "", fmt.Errorf("error reading null terminated string: %v", err)
+		}
+	}
+	return string(res), nil
+}
+
+func readByteSliceFromBuff(buff io.Reader, len int) ([]byte, error) {
+	var err error
+	res := make([]byte, len)
+	err = binary.Read(buff, binary.LittleEndian, &res)
+	if err != nil {
+		return nil, fmt.Errorf("error reading byte array: %v", err)
+	}
+	return res, nil
 }
 
 func readInt8FromBuff(buff io.Reader) (int8, error) {
@@ -362,6 +391,12 @@ func readUInt16FromBuff(buff io.Reader) (uint16, error) {
 	return res, err
 }
 
+func readUInt16BigendFromBuff(buff io.Reader) (uint16, error) {
+	var res uint16
+	err := binary.Read(buff, binary.BigEndian, &res)
+	return res, err
+}
+
 func readInt32FromBuff(buff io.Reader) (int32, error) {
 	var res int32
 	err := binary.Read(buff, binary.LittleEndian, &res)
@@ -371,6 +406,12 @@ func readInt32FromBuff(buff io.Reader) (int32, error) {
 func readUInt32FromBuff(buff io.Reader) (uint32, error) {
 	var res uint32
 	err := binary.Read(buff, binary.LittleEndian, &res)
+	return res, err
+}
+
+func readUInt32BigendFromBuff(buff io.Reader) (uint32, error) {
+	var res uint32
+	err := binary.Read(buff, binary.BigEndian, &res)
 	return res, err
 }
 
@@ -384,6 +425,88 @@ func readUInt64FromBuff(buff io.Reader) (uint64, error) {
 	var res uint64
 	err := binary.Read(buff, binary.LittleEndian, &res)
 	return res, err
+}
+
+func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
+	res := make(map[string]string, 3)
+	family, err := readInt16FromBuff(buff)
+	if err != nil {
+		return nil, err
+	}
+	res["sa_family"] = PrintSocketDomain(uint32(family))
+	switch family {
+	case 1: // AF_UNIX
+		/*
+			http://man7.org/linux/man-pages/man7/unix.7.html
+			struct sockaddr_un {
+					sa_family_t sun_family;     // AF_UNIX
+					char        sun_path[108];  // Pathname
+			};
+		*/
+		sunPath, err := readStringVarFromBuff(buff, 108)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing sockaddr_un: %v", err)
+		}
+		res["sun_path"] = sunPath
+	case 2: // AF_INET
+		/*
+			http://man7.org/linux/man-pages/man7/ip.7.html
+			struct sockaddr_in {
+				sa_family_t    sin_family; // address family: AF_INET
+				in_port_t      sin_port;   // port in network byte order
+				struct in_addr sin_addr;   // internet address
+			};
+			struct in_addr {
+				uint32_t       s_addr;     // address in network byte order
+			};
+		*/
+		port, err := readUInt16BigendFromBuff(buff)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing sockaddr_in: %v", err)
+		}
+		res["sin_port"] = strconv.Itoa(int(port))
+		addr, err := readUInt32BigendFromBuff(buff)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing sockaddr_in: %v", err)
+		}
+		res["sin_addr"] = PrintUint32IP(addr)
+	case 10: // AF_INET6
+		/*
+			struct sockaddr_in6 {
+				sa_family_t     sin6_family;   // AF_INET6
+				in_port_t       sin6_port;     // port number
+				uint32_t        sin6_flowinfo; // IPv6 flow information
+				struct in6_addr sin6_addr;     // IPv6 address
+				uint32_t        sin6_scope_id; // Scope ID (new in 2.4)
+			};
+
+			struct in6_addr {
+				unsigned char   s6_addr[16];   // IPv6 address
+			};
+		*/
+		port, err := readUInt16BigendFromBuff(buff)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing sockaddr_in6: %v", err)
+		}
+		res["sin6_port"] = strconv.Itoa(int(port))
+
+		flowinfo, err := readUInt32BigendFromBuff(buff)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing sockaddr_in6: %v", err)
+		}
+		res["sin6_flowinfo"] = strconv.Itoa(int(flowinfo))
+		addr, err := readByteSliceFromBuff(buff, 16)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing sockaddr_in6: %v", err)
+		}
+		res["sin6_addr"] = Print16BytesSliceIP(addr)
+		scopeid, err := readUInt32BigendFromBuff(buff)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing sockaddr_in6: %v", err)
+		}
+		res["sin6_scopeid"] = strconv.Itoa(int(scopeid))
+	}
+	return res, nil
 }
 
 func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
@@ -470,12 +593,11 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 		}
 		res = fmt.Sprintf("%X", ptr)
 	case SOCKADDR_T:
-		// this is not really the sockaddr struct, but just the `sockaddr.sa_family`
-		family, err := readInt16FromBuff(dataBuff)
+		sockaddr, err := readSockaddrFromBuff(dataBuff)
 		if err != nil {
 			return nil, err
 		}
-		res = PrintSocketDomain(uint32(family))
+		res = fmt.Sprintf("%v", sockaddr)[3:] // remove the leading "map" string
 	case OPEN_FLAGS_T:
 		flags, err := readUInt32FromBuff(dataBuff)
 		if err != nil {
@@ -514,6 +636,18 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 		rpParts := strings.Split(rp, "/")
 		reverseStringSlice(rpParts)
 		res = strings.Join(rpParts, "/")
+	case PRCTL_OPT_T:
+		op, err := readInt32FromBuff(dataBuff)
+		if err != nil {
+			return nil, err
+		}
+		res = PrintPrctlOption(op)
+	case PTRACE_REQ_T:
+		req, err := readInt32FromBuff(dataBuff)
+		if err != nil {
+			return nil, err
+		}
+		res = PrintPrctlOption(req)
 	default:
 		// if we don't recognize the arg type, we can't parse the rest of the buffer
 		return nil, fmt.Errorf("error unknown arg type %v", at)
