@@ -1,6 +1,8 @@
 package tracee
 
 import (
+	"encoding/binary"
+	"net"
 	"strconv"
 	"strings"
 )
@@ -288,6 +290,20 @@ func PrintSocketDomain(sd uint32) string {
 		res = strconv.Itoa(int(sd))
 	}
 	return res
+}
+
+// PrintUint32IP prints the IP address encoded as a uint32
+func PrintUint32IP(in uint32) string {
+	ip := make(net.IP, net.IPv4len)
+	binary.BigEndian.PutUint32(ip, in)
+	return ip.String()
+}
+
+// Print16BytesSliceIP prints the IP address encoded as 16 bytes long PrintBytesSliceIP
+// It would be more correct to accept a [16]byte instead of variable lenth slice, but that would case unnecessary memory copying and type conversions
+func Print16BytesSliceIP(in []byte) string {
+	ip := net.IP(in)
+	return ip.String()
 }
 
 // PrintCapability prints the `capability` bitmask argument of the `cap_capable` function
