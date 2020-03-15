@@ -14,7 +14,9 @@ type eventPrinter interface {
 	Print(ctx context, args []interface{})
 }
 
-type tableEventPrinter struct{}
+type tableEventPrinter struct {
+	tracee *Tracee
+}
 
 func (p tableEventPrinter) Preamble() {
 	fmt.Printf("%-14s %-16s %-12s %-12s %-6s %-16s %-16s %-6s %-6s %-6s %-12s %s", "TIME(s)", "UTS_NAME", "MNT_NS", "PID_NS", "UID", "EVENT", "COMM", "PID", "TID", "PPID", "RET", "ARGS")
@@ -27,7 +29,10 @@ func (p tableEventPrinter) Print(ctx context, args []interface{}) {
 	fmt.Println()
 }
 
-func (p tableEventPrinter) Epilogue() {}
+func (p tableEventPrinter) Epilogue() {
+	fmt.Printf("\nEnd of events stream\n")
+	fmt.Printf("Total events: %d, Total errors: %d", p.tracee.eventCounter, p.tracee.errorCounter)
+}
 
 type jsonEventPrinter struct{}
 
