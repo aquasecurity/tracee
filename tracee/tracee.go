@@ -8,8 +8,8 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
-	"strings"
 	"strconv"
+	"strings"
 
 	bpf "github.com/iovisor/gobpf/bcc"
 )
@@ -125,6 +125,8 @@ type Tracee struct {
 	bpfPerfMap     *bpf.PerfMap
 	eventsChannel  chan []byte
 	printer        eventPrinter
+	eventCounter   int
+	errorCounter   int
 }
 
 // New creates a new Tracee instance based on a given valid TraceeConfig
@@ -148,7 +150,9 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	}
 	switch t.config.OutputFormat {
 	case "table":
-		t.printer = tableEventPrinter{}
+		t.printer = tableEventPrinter{
+			tracee: t,
+		}
 	case "json":
 		t.printer = jsonEventPrinter{}
 	}
@@ -252,7 +256,7 @@ func (t *Tracee) initBPF() error {
 }
 
 // Run starts the trace. it will run until interrupted
-func (t Tracee) Run() error {
+func (t *Tracee) Run() error {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
 	t.printer.Preamble()
@@ -289,22 +293,26 @@ func (t Tracee) shouldPrintEvent(e int32) bool {
 	return true
 }
 
-func (t Tracee) processEvents() {
+func (t *Tracee) processEvents() {
 	for {
+		var err error
 		dataRaw := <-t.eventsChannel
 		dataBuff := bytes.NewBuffer(dataRaw)
 		ctx, err := readContextFromBuff(dataBuff)
 		if err != nil {
+			t.errorCounter = t.errorCounter + 1
 			continue
 		}
 		args := make([]interface{}, ctx.Argnum)
 		for i := 0; i < int(ctx.Argnum); i++ {
 			args[i], err = readArgFromBuff(dataBuff)
 			if err != nil {
+				t.errorCounter = t.errorCounter + 1
 				continue
 			}
 		}
 		if t.shouldPrintEvent(ctx.Eventid) {
+			t.eventCounter = t.eventCounter + 1
 			t.printer.Print(ctx, args)
 		}
 	}
