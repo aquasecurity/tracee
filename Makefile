@@ -9,7 +9,7 @@ tracee_%: $(SRC)
 
 .PHONY: test
 test: $(SRC)
-	go test -v .
+	go test -v ./...
 
 .PHONY: clean
 clean:
