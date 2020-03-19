@@ -208,6 +208,7 @@ func PrintExecFlags(flags uint32) string {
 
 // PrintSocketType prints the `type` bitmask argument of the `socket` syscall
 // http://man7.org/linux/man-pages/man2/socket.2.html
+// https://elixir.bootlin.com/linux/v5.5.3/source/arch/mips/include/asm/socket.h
 func PrintSocketType(st uint32) string {
 	var socketTypes = map[uint32]string{
 		1:  "SOCK_STREAM",
@@ -219,7 +220,7 @@ func PrintSocketType(st uint32) string {
 		10: "SOCK_PACKET",
 	}
 	var f []string
-	if stName, ok := socketTypes[st]; ok {
+	if stName, ok := socketTypes[st&0xf]; ok {
 		f = append(f, stName)
 	} else {
 		f = append(f, strconv.Itoa(int(st)))
