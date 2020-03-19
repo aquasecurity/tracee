@@ -595,11 +595,11 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 		}
 		res = PrintMemProt(prot)
 	case POINTER_T:
-		ptr, err := readInt64FromBuff(dataBuff)
+		ptr, err := readUInt64FromBuff(dataBuff)
 		if err != nil {
 			return nil, err
 		}
-		res = fmt.Sprintf("%X", ptr)
+		res = fmt.Sprintf("0x%X", ptr)
 	case SOCKADDR_T:
 		sockaddr, err := readSockaddrFromBuff(dataBuff)
 		if err != nil {
