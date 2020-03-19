@@ -108,12 +108,12 @@ func PrintOpenFlags(flags uint32) string {
 
 	//access mode
 	switch {
-	case flags&00 == 00:
-		f = append(f, "O_RDONLY")
 	case flags&01 == 01:
 		f = append(f, "O_WRONLY")
-	case flags&02 == 0x02:
+	case flags&02 == 02:
 		f = append(f, "O_RDWR")
+	default:
+		f = append(f, "O_RDONLY")
 	}
 
 	// file creation and status flags
