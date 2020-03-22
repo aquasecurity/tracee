@@ -66,7 +66,7 @@ func TestReadArgFromBuff(t *testing.T) {
 		},
 		{
 			name: "OFF_T_T",
-			input: []byte{8, //SIZE_T_T
+			input: []byte{8, //OFF_T_T
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, //18446744073709551615
 			},
 			expectedArg: uint64(18446744073709551615),
