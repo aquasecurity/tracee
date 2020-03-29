@@ -1194,7 +1194,6 @@ class EventMonitor:
 
     def lost_event(self, lost):
         self.total_lost += lost
-        log.info("Possibly lost %d events (%d in total), consider using a bigger buffer" % (lost, self.total_lost))
 
     def stop_trace(self):
         self.do_trace = False
@@ -1214,4 +1213,5 @@ class EventMonitor:
                 self.event_bufs = list()
                 self.bpf.perf_buffer_poll(1000)
             except KeyboardInterrupt:
+                log.info("Possibly lost %d events. consider using a bigger buffer" % (self.total_lost))
                 exit()
