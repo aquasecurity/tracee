@@ -407,6 +407,9 @@ func init() {
 // the boolean value is used to indicate if the event were also requested to be traced by the user
 var essentialEvents = map[int32]bool{
 	335: false, // do_exit
+	56:  false, // clone
+	57:  false, // fork
+	58:  false, // vfork
 	59:  false, // execve
 	322: false, // execveat
 }
