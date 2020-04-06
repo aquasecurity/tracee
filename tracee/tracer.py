@@ -230,7 +230,8 @@ sysevents = ["cap_capable", "do_exit", "security_bprm_check", "security_file_ope
 
 # We always need kprobes for execve[at] so that we capture the new PID namespace, 
 # and do_exit so we clean up  
-essential_syscalls = ["execve", "execveat"]
+# In system mode, we also need fork syscall so we can trace new threads
+essential_syscalls = ["execve", "execveat", "fork", "vfork", "clone"]
 essential_sysevents = ["do_exit"]
 
 # event_id numbers should match event_id enum in ebpf file code
