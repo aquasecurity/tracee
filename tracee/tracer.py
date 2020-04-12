@@ -218,8 +218,9 @@ prctl_option = {
     56: "PR_GET_TAGGED_ADDR_CTRL",
 }
 
-syscalls = ["execve", "execveat", "mmap", "mprotect", "clone", "fork", "vfork", "newstat",
-            "newfstat", "newlstat", "mknod", "mknodat", "dup", "dup2", "dup3",
+syscalls = ["execve", "execveat", "mmap", "mprotect", "pkey_mprotect", "clone", "fork", "vfork",
+            "newstat", "newfstat", "newlstat", "mknod", "mknodat", "dup", "dup2", "dup3",
+            "chown", "fchown", "fchownat", "lchown", "chmod", "fchmod", "fchmodat",
             "memfd_create", "socket", "close", "ioctl", "access", "faccessat", "kill", "listen",
             "connect", "accept", "accept4", "bind", "getsockname", "prctl", "ptrace",
             "process_vm_writev", "process_vm_readv", "init_module", "finit_module", "delete_module",
