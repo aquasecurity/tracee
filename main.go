@@ -25,6 +25,7 @@ func main() {
 				c.Bool("detect-original-syscall"),
 				c.Bool("show-exec-env"),
 				c.String("output"),
+				c.Int("perf-buffer-size"),
 			)
 			if err != nil {
 				return fmt.Errorf("error creating Tracee config: %v", err)
@@ -70,6 +71,12 @@ func main() {
 				Name:  "show-exec-env",
 				Value: false,
 				Usage: "when tracing execve/execveat, show environment variables",
+			},
+			&cli.IntFlag{
+				Name:    "perf-buffer-size",
+				Aliases: []string{"b"},
+				Value:   64,
+				Usage:   "size, in pages, of the internal perf ring buffer used to submit events from the kernel",
 			},
 		},
 	}

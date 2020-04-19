@@ -60,20 +60,24 @@ type TraceeConfig struct {
 	DetectOriginalSyscall bool
 	ShowExecEnv           bool
 	OutputFormat          string
+	PerfBufferSize        int
 }
 
 // Validate does static validation of the configuration
 func (tc TraceeConfig) Validate() error {
 	if tc.EventsToTrace == nil {
-		return fmt.Errorf("tracee config validation failed: eventsToTrace is nil")
+		return fmt.Errorf("eventsToTrace is nil")
 	}
 	if tc.OutputFormat != "table" && tc.OutputFormat != "json" {
-		return fmt.Errorf("tracee config validation failed: unrecognized output format: %s", tc.OutputFormat)
+		return fmt.Errorf("unrecognized output format: %s", tc.OutputFormat)
 	}
 	for _, e := range tc.EventsToTrace {
 		if _, ok := EventsIDToName[e]; !ok {
 			return fmt.Errorf("invalid event to trace: %d", e)
 		}
+	}
+	if (tc.PerfBufferSize & (tc.PerfBufferSize - 1)) != 0 {
+		return fmt.Errorf("invalid perf buffer size - must be a power of 2")
 	}
 	return nil
 }
@@ -82,7 +86,7 @@ func (tc TraceeConfig) Validate() error {
 // default values:
 //   eventsToTrace: all events
 //   outputFormat: table
-func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall bool, showExecEnv bool, outputFormat string) (*TraceeConfig, error) {
+func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall bool, showExecEnv bool, outputFormat string, perfBufferSize int) (*TraceeConfig, error) {
 	var eventsToTraceInternal []int32
 	if eventsToTrace == nil {
 		eventsToTraceInternal = make([]int32, 0, len(EventsIDToName))
@@ -108,11 +112,12 @@ func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall
 		DetectOriginalSyscall: detectOriginalSyscall,
 		ShowExecEnv:           showExecEnv,
 		OutputFormat:          outputFormat,
+		PerfBufferSize:        perfBufferSize,
 	}
 
 	err := tc.Validate()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("validation error: %v", err)
 	}
 	return &tc, nil
 }
@@ -124,9 +129,11 @@ type Tracee struct {
 	bpfModule      *bpf.Module
 	bpfPerfMap     *bpf.PerfMap
 	eventsChannel  chan []byte
+	lostChannel    chan uint64
 	printer        eventPrinter
 	eventCounter   int
 	errorCounter   int
+	lostCounter    int
 }
 
 // New creates a new Tracee instance based on a given valid TraceeConfig
@@ -247,7 +254,8 @@ func (t *Tracee) initBPF() error {
 
 	eventsBPFTable := bpf.NewTable(t.bpfModule.TableId("events"), t.bpfModule)
 	t.eventsChannel = make(chan []byte, 1000)
-	t.bpfPerfMap, err = bpf.InitPerfMap(eventsBPFTable, t.eventsChannel)
+	t.lostChannel = make(chan uint64)
+	t.bpfPerfMap, err = bpf.InitPerfMapWithPageCnt(eventsBPFTable, t.eventsChannel, t.lostChannel, t.config.PerfBufferSize)
 	if err != nil {
 		return fmt.Errorf("error initializing events perf map: %v", err)
 	}
@@ -295,25 +303,28 @@ func (t Tracee) shouldPrintEvent(e int32) bool {
 
 func (t *Tracee) processEvents() {
 	for {
-		var err error
-		dataRaw := <-t.eventsChannel
-		dataBuff := bytes.NewBuffer(dataRaw)
-		ctx, err := readContextFromBuff(dataBuff)
-		if err != nil {
-			t.errorCounter = t.errorCounter + 1
-			continue
-		}
-		args := make([]interface{}, ctx.Argnum)
-		for i := 0; i < int(ctx.Argnum); i++ {
-			args[i], err = readArgFromBuff(dataBuff)
+		select {
+		case dataRaw := <-t.eventsChannel:
+			dataBuff := bytes.NewBuffer(dataRaw)
+			ctx, err := readContextFromBuff(dataBuff)
 			if err != nil {
 				t.errorCounter = t.errorCounter + 1
 				continue
 			}
-		}
-		if t.shouldPrintEvent(ctx.Eventid) {
-			t.eventCounter = t.eventCounter + 1
-			t.printer.Print(ctx, args)
+			args := make([]interface{}, ctx.Argnum)
+			for i := 0; i < int(ctx.Argnum); i++ {
+				args[i], err = readArgFromBuff(dataBuff)
+				if err != nil {
+					t.errorCounter = t.errorCounter + 1
+					continue
+				}
+			}
+			if t.shouldPrintEvent(ctx.Eventid) {
+				t.eventCounter = t.eventCounter + 1
+				t.printer.Print(ctx, args)
+			}
+		case lost := <-t.lostChannel:
+			t.lostCounter = t.lostCounter + int(lost)
 		}
 	}
 }
