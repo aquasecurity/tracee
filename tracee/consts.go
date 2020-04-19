@@ -28,7 +28,7 @@ const (
 	ACCESS_MODE_T ArgType = 20
 	PTRACE_REQ_T  ArgType = 21
 	PRCTL_OPT_T   ArgType = 22
-  R_PATH_T      ArgType = 23
+	R_PATH_T      ArgType = 23
 	TYPE_MAX      ArgType = 255
 )
 
@@ -128,11 +128,11 @@ var EventsIDToName = map[int32]string{
 	87: "unlink",
 	88: "symlink",
 	//	89:  "readlink",
-	90:  "chmod",
-	91:  "fchmod",
-	92:  "chown",
-	93:  "fchown",
-	94:  "lchown",
+	90: "chmod",
+	91: "fchmod",
+	92: "chown",
+	93: "fchown",
+	94: "lchown",
 	//	95:  "umask",
 	//	96:  "gettimeofday",
 	//	97:  "getrlimit",
@@ -382,7 +382,7 @@ var EventsIDToName = map[int32]string{
 }
 
 // EventIDMax marks the highest event ID in the EventsIDToName map
-const EventIDMax = 336
+const EventIDMax = 338
 
 // EventIDSyscallMax marks the highest event ID for system call. Beyond this ID events are non-syscalls
 const EventIDSyscallMax = 334
