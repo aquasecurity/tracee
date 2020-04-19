@@ -31,7 +31,7 @@ func (p tableEventPrinter) Print(ctx context, args []interface{}) {
 
 func (p tableEventPrinter) Epilogue() {
 	fmt.Printf("\nEnd of events stream\n")
-	fmt.Printf("Total events: %d, Total errors: %d", p.tracee.eventCounter, p.tracee.errorCounter)
+	fmt.Printf("Total events: %d, Lost events: %d, Unexpected errors: %d", p.tracee.eventCounter, p.tracee.lostCounter, p.tracee.errorCounter)
 }
 
 type jsonEventPrinter struct{}
