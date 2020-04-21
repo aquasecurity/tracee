@@ -1,11 +1,31 @@
-# must run privileged and with linux headers 
-# docker run --name tracee --rm --privileged -v /lib/modules/:/lib/modules/ -v /usr/src:/usr/src tracee
-FROM ubuntu:bionic
+FROM golang:1.13-buster as builder
 
-RUN echo "deb [trusted=yes] http://repo.iovisor.org/apt/bionic bionic main" > /etc/apt/sources.list.d/iovisor.list && \
-    apt-get -y update && \
-    apt-get -y install python bcc-tools
+RUN DEBIAN_FRONTEND=noninteractive apt-get update -y && apt-get install -y --no-install-recommends libtinfo5
+
+WORKDIR /bcc
+# aquasec/bcc-builder is built from the upstream bcc dockerfile using:
+# docker build --target=builder -t aquasec/bcc-builder:latest --file Dockerfile.ubuntu .
+COPY --from=aquasec/bcc-builder:latest /root/bcc/libbcc_*.deb /bcc/
+RUN DEBIAN_FRONTEND=noninteractive dpkg -i libbcc_*.deb && rm -rf /bcc
 
 WORKDIR /tracee
 COPY . /tracee
-ENTRYPOINT ["./entrypoint.sh", "python", "start.py"]
+RUN make build
+
+
+# must run privileged and with linux headers mounted
+# docker run --name tracee --rm --privileged -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro aquasec/tracee
+FROM ubuntu:eoan
+
+RUN DEBIAN_FRONTEND=noninteractive apt-get update -y && apt-get install -y --no-install-recommends libelf1 libtinfo5
+
+WORKDIR /bcc
+# aquasec/bcc-builder is built from the upstream bcc dockerfile using:
+# docker build --target=builder -t aquasec/bcc-builder:latest --file Dockerfile.ubuntu .
+COPY --from=aquasec/bcc-builder:latest /root/bcc/libbcc_*.deb /bcc/
+RUN DEBIAN_FRONTEND=noninteractive dpkg -i libbcc_*.deb && rm -rf /bcc
+
+WORKDIR /tracee
+COPY --from=builder /tracee/tracee_linux /tracee/entrypoint.sh ./
+COPY --from=builder /tracee/tracee/event_monitor_ebpf.c ./tracee/
+ENTRYPOINT ["./entrypoint.sh", "./tracee_linux"]
