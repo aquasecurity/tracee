@@ -1,6 +1,6 @@
-# Tracee - System tracing using eBPF
+# Tracee - Container and system tracing using eBPF
 
-Tracee is a lightweight and easy to use system tracing tool. It allows you to observe system calls and other system events in real time.
+Tracee is a lightweight and easy to use container and system tracing tool. It allows you to observe system calls and other system events in real time.
 
 Tracee CLI was originally written in Python, but was since ported to Go. Currently both versions are still available in the repo, but future development will be in Go and the Python version will eventually be deprecated and removed.
 
