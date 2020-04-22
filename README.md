@@ -48,7 +48,6 @@ Each line is a single event collected by Tracee, with the following information:
 
 Use `--help` to see a full description of all options.
 
-## Notes
-As pointers are being dereferenced from userspace memory, a malicious program may change the content being read before it actually gets executed in the kernel. Please consider this when doing security related work with Tracee.
+## Secure tracing
 
-Adding new events (especially system calls) to Tracee is straightforward, but one should keep in mind that tracing too many events may cause system performance degradation, and lost samples. For this reason, `read` and `write` syscalls are deliberately not traced.
+When Tracee reads information from user programs it is subject to a rare condition where the user program might be able to change the arguments after Tracee has read them. For example, a program invoked `execve("/bin/ls", NULL, 0)`, Tracee picked that up and will report that, then the program changed the first argument from `/bin/ls` to `/bin/bash`, and this is what the kernel will execute. To mitigate this, Tracee also provide "LSM" (Linux Security Module) based events, for example the `bprm_check` event which can reported by tracee and cross-referenced with the reported regular syscall event.
