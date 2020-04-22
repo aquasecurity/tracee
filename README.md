@@ -18,7 +18,7 @@ Currently we don't yet have a release process for Tracee. You can build Tracee f
 
 ### Quickstart
 Following is a quick start tutorial on Ubuntu VM with Docker.
-Ubuntu is used here as it conveniently includes all of the host requirements (kernel, headers, glibc). The BCC requirement is bundled into the tracee container image.
+Ubuntu is used here as it conveniently includes all of the host requirements (kernel, headers, glibc), but any other Linux distribution will work as well. The BCC requirement is bundled into the tracee container image.
 To run Tracee using docker:
 
 ```bash
