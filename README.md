@@ -13,8 +13,10 @@ To run, Tracee requires the following:
 * C standard library (currently tested with glibc)
 * [BCC](https://github.com/iovisor/bcc)
 
-### Released artifacts
+### Getting Tracee
 Currently we don't yet have a release process for Tracee. You can build Tracee from source using `make build` or use the Docker image: `aquasec/tracee:latest` from Docker Hub.
+
+If you build Tracee from source code, you can run it directly as an executable on the host. You'll need to run with root permissions in order to run eBPF code. Similarly, if you use the Docker container, you should run it with the `--privileged` flag.
 
 ### Quickstart
 Following is a quick start tutorial on Ubuntu VM with Docker.
@@ -47,6 +49,15 @@ Each line is a single event collected by Tracee, with the following information:
 ### Configuration flags
 
 Use `--help` to see a full description of all options.
+Here are a few commonly useful flags:
+
+`-c` traces only newly created containers, ignoring processes running directly on the host. This only shows processes created in a different mount namespace from the host.
+
+`-e` allows you to specify a specific event to trace. You can use this flag multiple times, for example `-e execve -e openat`
+
+`-l` lists the events available for tracing, which you can provide to the `-e` flag.
+
+`-o` let's you control the output format, for example `-o json` will output as JSON lines instead of table.
 
 ## Secure tracing
 
