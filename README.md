@@ -29,6 +29,19 @@ docker run --name tracee --rm --privileged -v /lib/modules/:/lib/modules/:ro -v 
 
 This will run Tracee with no arguments which will collect all events from all newly created processes and print them as a table to the standard output.
 
+Here is how the output looks like:
+
+```
+TIME(s)        UTS_NAME         MNT_NS       PID_NS       UID    EVENT            COMM             PID    TID    PPID   RET          ARGS
+133            ubuntu           4026531840   4026531836   1000   execve           zsh              2944   2944   2571   0           [/usr/bin/ls [ls]]
+133            ubuntu           4026531840   4026531836   1000   security_bprm_check zsh              2944   2944   2571   0           [/usr/bin/ls]
+133            ubuntu           4026531840   4026531836   1000   access           ls               2944   2944   2571   -2          [/etc/ld.so.preload R_OK]
+133            ubuntu           4026531840   4026531836   1000   security_file_open ls               2944   2944   2571   0           [/etc/ld.so.cache O_RDONLY|O_LARGEFILE]
+133            ubuntu           4026531840   4026531836   1000   openat           ls               2944   2944   2571   3           [-100 /etc/ld.so.cache O_RDONLY|O_CLOEXEC]
+133            ubuntu           4026531840   4026531836   1000   mmap             ls               
+...
+```
+
 ### Understanding the output
 
 Each line is a single event collected by Tracee, with the following information:
