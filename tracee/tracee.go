@@ -2,12 +2,14 @@ package tracee
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/binary"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -122,18 +124,44 @@ func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall
 	return &tc, nil
 }
 
+// This var is supposed to be injected *at build time* with the contents of the ebpf c program
+var ebpfProgramBase64Injected string
+
+func getEBPFProgram() (string, error) {
+	// if there's a local file, use it
+	exePath, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	ebpfFilePath := filepath.Join(filepath.Dir(exePath), "./event_monitor_ebpf.c")
+	_, err = os.Stat(ebpfFilePath)
+	if !os.IsNotExist(err) {
+		p, err := ioutil.ReadFile(ebpfFilePath)
+		return string(p), err
+	}
+	// if there's no local file, try injected variable
+	if ebpfProgramBase64Injected != "" {
+		p, err := base64.StdEncoding.DecodeString(ebpfProgramBase64Injected)
+		if err != nil {
+			return "", err
+		}
+		return string(p), nil
+	}
+
+	return "", fmt.Errorf("could not find ebpf program")
+}
+
 // Tracee traces system calls and system events using eBPF
 type Tracee struct {
-	config         TraceeConfig
-	bpfProgramPath string
-	bpfModule      *bpf.Module
-	bpfPerfMap     *bpf.PerfMap
-	eventsChannel  chan []byte
-	lostChannel    chan uint64
-	printer        eventPrinter
-	eventCounter   int
-	errorCounter   int
-	lostCounter    int
+	config        TraceeConfig
+	bpfModule     *bpf.Module
+	bpfPerfMap    *bpf.PerfMap
+	eventsChannel chan []byte
+	lostChannel   chan uint64
+	printer       eventPrinter
+	eventCounter  int
+	errorCounter  int
+	lostCounter   int
 }
 
 // New creates a new Tracee instance based on a given valid TraceeConfig
@@ -144,16 +172,10 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	if err != nil {
 		return nil, fmt.Errorf("validation error: %v", err)
 	}
-	bpfFile := "./tracee/event_monitor_ebpf.c"
-	_, err = os.Stat(bpfFile)
-	if os.IsNotExist(err) {
-		return nil, fmt.Errorf("error finding bpf C file at: %s", bpfFile)
-	}
 
 	// create tracee
 	t := &Tracee{
-		config:         cfg,
-		bpfProgramPath: bpfFile,
+		config: cfg,
 	}
 	switch t.config.OutputFormat {
 	case "table":
@@ -164,7 +186,11 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 		t.printer = jsonEventPrinter{}
 	}
 
-	err = t.initBPF()
+	p, err := getEBPFProgram()
+	if err != nil {
+		return nil, err
+	}
+	err = t.initBPF(p)
 	if err != nil {
 		t.Close()
 		return nil, err
@@ -173,14 +199,10 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	return t, nil
 }
 
-func (t *Tracee) initBPF() error {
+func (t *Tracee) initBPF(ebpfProgram string) error {
 	var err error
 
-	bpfText, err := ioutil.ReadFile(t.bpfProgramPath)
-	if err != nil {
-		return fmt.Errorf("error reading ebpf program file: %v", err)
-	}
-	t.bpfModule = bpf.NewModule(string(bpfText), []string{})
+	t.bpfModule = bpf.NewModule(ebpfProgram, []string{})
 
 	// compile final list of events to trace including essential events while at the same time record which essentials were requested by the user
 	// to build this list efficiently we use the `tmpset` variable as follows:
