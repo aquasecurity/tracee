@@ -13,15 +13,16 @@ To run, Tracee requires the following:
 * C standard library (currently tested with glibc)
 * [BCC](https://github.com/iovisor/bcc)
 
+For convenience we provide a Docker container of Tracee that includes glibc and bcc (in addition to Tracee itself) that should run on any kernel > 4.14. You can find in Docker Hub under `aquasec/tracee`.
+
 ### Getting Tracee
-Currently we don't yet have a release process for Tracee. You can build Tracee from source using `make build` or use the Docker image: `aquasec/tracee:latest` from Docker Hub.
+Currently we don't yet have a release process for Tracee. You can build Tracee from source using `make build` or use the Docker image: `aquasec/tracee` from Docker Hub.
 
 If you build Tracee from source code, you can run it directly as an executable on the host. It will look for the file `./tracee/event_monitor_ebpf.c` so make sure it's available, and you'll need to run it with root permissions in order to load the eBPF code. 
 If you use the Docker container, you should run it with the `--privileged` flag.
 
 ### Quickstart
-Following is a quick start tutorial on Ubuntu VM with Docker.
-Ubuntu is used here as it conveniently includes all of the host requirements (kernel, headers, glibc), but any other Linux distribution will work as well. The BCC requirement is bundled into the tracee container image.
+We will use the Tracee Docker image, which includes glibc and BCC. The host that Docker is running on needs to satisfy the other requirements, kernel version and kernel headers. If you use a recent version of Ubuntu, you are good to go as it satisfies those requirements, but any other Linux distribution will work as well.
 To run Tracee using docker:
 
 ```bash
