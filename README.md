@@ -31,7 +31,7 @@ docker run --name tracee --rm --privileged -v /lib/modules/:/lib/modules/:ro -v 
 
 This will run Tracee with no arguments which will collect all events from all newly created processes and print them as a table to the standard output.
 
-Here is how the output looks like:
+Here is how the output looks:
 
 ```
 TIME(s)        UTS_NAME         MNT_NS       PID_NS       UID    EVENT            COMM             PID    TID    PPID   RET          ARGS
