@@ -1,181 +1,79 @@
-# Tracee
-Container and system tracing using eBPF
+# Tracee - Container and system tracing using eBPF
 
-**Tracee** is a lightweight, easy to use container and system tracing tool.
-After launching the tool, it will start collecting traces of newly created containers (container mode) or processes (system mode).
-The collected traces are mostly system calls performed by the processes,
-but other events, such as capabilities required to perform the actions requested by the process, are also supported.
+Tracee is a lightweight and easy to use container and system tracing tool. It allows you to observe system calls and other system events in real time. A unique feature of Tracee is that it will only trace newly created processes and containers (that were started after Tracee has started), in order to help the user focus on relevant events instead of every single thing that happens on the system (which can be overwhelming).
 
-Tracee CLI was originally written in Python, but is now being ported to Go. Currently both versions are available in the repo. Python is considered more stable and tested, but future development will be in Go. This readme is referring to the Python version as it's recommended for newcomers but all of the features are similarly supported in the Go version, give or take minor CLI differences.
+Tracee CLI was originally written in Python, but was since ported to Go. Currently both versions are still available in the repo, but future development will be in Go and the Python version will eventually be deprecated and removed.
 
-## Requirements
-Currently requires 
-* kernel version > 4.14
-* BCC
-* Python if using the Python version
+## Getting started
 
-## Quick Start Instructions
+### Prerequisites
+To run, Tracee requires the following:
+* Linux kernel version > 4.14
+* Kernel headers
+* C standard library (currently tested with glibc)
+* [BCC](https://github.com/iovisor/bcc)
 
-As root: `start.py [-h] [-c] [-b PAGE_NR] [-j] [-l] [-e EVENTS_TO_TRACE]`
+For convenience we provide a Docker container of Tracee that includes glibc and bcc (in addition to Tracee itself) that should run on any kernel > 4.14. You can find in Docker Hub under `aquasec/tracee`.
 
-optional arguments:
+### Getting Tracee
+Currently we don't yet have a release process for Tracee. You can build Tracee from source using `make build` or use the Docker image: `aquasec/tracee` from Docker Hub.
 
--h, --help            show this help message and exit
+If you build Tracee from source code, you can run it directly as an executable on the host. It will look for the file `./tracee/event_monitor_ebpf.c` so make sure it's available, and you'll need to run it with root permissions in order to load the eBPF code. 
+If you use the Docker container, you should run it with the `--privileged` flag.
 
--c, --container       only trace newly created containers
+### Quickstart
+We will use the Tracee Docker image, which includes glibc and BCC. The host that Docker is running on needs to satisfy the other requirements, kernel version and kernel headers. If you use a recent version of Ubuntu, you are good to go as it satisfies those requirements, but any other Linux distribution will work as well.
+To run Tracee using docker:
 
--b {1,2,4,8,16,32,64,128,256,512,1024}, --buf-pages {1,2,4,8,16,32,64,128,256,512,1024}
-                      number of pages for perf buffer, defaults to 64
+```bash
+docker run --name tracee --rm --privileged -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro aquasec/tracee:latest
+```
 
--j, --json            save events in json format
+This will run Tracee with no arguments which will collect all events from all newly created processes and print them as a table to the standard output.
 
--l, --list            list events
-
--e EVENTS_TO_TRACE, --events-to-trace EVENTS_TO_TRACE
-trace only the specified events and syscalls (default: trace all)
-
---show-syscall        show syscall name in kprobes
-
---exec-env            show execve(at) environment variables in output
-
-
-examples:
-
-`./start.py -c`
-
-Following is an output example of Tracee after running
-
-`docker run -it --rm alpine sh`
+Here is how the output looks:
 
 ```
 TIME(s)        UTS_NAME         MNT_NS       PID_NS       UID    EVENT            COMM             PID    TID    PPID   RET          ARGS
-61193.235110   e89fcd33936c     4026532402   4026532405   0      execve           runc:[2:INIT]    1      1      13670  0            /bin/sh
-61193.235178   e89fcd33936c     4026532402   4026532405   0      cap_capable      runc:[2:INIT]    1      1      13670  0            CAP_SYS_ADMIN
-61193.235207   e89fcd33936c     4026532402   4026532405   0      do_exit          runc:[2:INIT]    1      4      13670  0            
-61193.235206   e89fcd33936c     4026532402   4026532405   0      do_exit          runc:[2:INIT]    1      2      13670  0            
-61193.235207   e89fcd33936c     4026532402   4026532405   0      do_exit          runc:[2:INIT]    1      5      13670  0            
-61193.235206   e89fcd33936c     4026532402   4026532405   0      do_exit          runc:[2:INIT]    1      3      13670  0            
-61193.235873   e89fcd33936c     4026532402   4026532405   0      mprotect         sh               1      1      13670  0            0x7f9e08f39000 4096 1
-61193.235951   e89fcd33936c     4026532402   4026532405   0      mprotect         sh               1      1      13670  0            0x555e7ad57000 16384 1
-61193.236050   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            0 21523
-61193.236062   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            1 21523
-61193.236088   e89fcd33936c     4026532402   4026532405   0      open             sh               1      1      13670  3            /dev/tty O_RDWR
-61193.236105   e89fcd33936c     4026532402   4026532405   0      close            sh               1      1      13670  0            3
-61193.236121   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            10 21519
-61193.236142   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            10 21520
-61193.236172   e89fcd33936c     4026532402   4026532405   0      stat             sh               1      1      13670  -2           MAILPATH
-61193.236191   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            0 21505
-61193.236214   e89fcd33936c     4026532402   4026532405   0      cap_capable      sh               1      1      13670  0            CAP_SYS_ADMIN
-61193.236228   e89fcd33936c     4026532402   4026532405   0      open             sh               1      1      13670  -2           /root/.ash_history O_RDONLY
-61193.236258   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            0 21506
-61193.236277   e89fcd33936c     4026532402   4026532405   0      open             sh               1      1      13670  3            /etc/passwd O_RDONLY|O_CLOEXEC
-61193.236300   e89fcd33936c     4026532402   4026532405   0      close            sh               1      1      13670  0            3
-61193.236313   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            0 21523
-61193.236334   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            1 21523
-61193.256423   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            0 21523
-
+133            ubuntu           4026531840   4026531836   1000   execve           zsh              2944   2944   2571   0           [/usr/bin/ls [ls]]
+133            ubuntu           4026531840   4026531836   1000   security_bprm_check zsh              2944   2944   2571   0           [/usr/bin/ls]
+133            ubuntu           4026531840   4026531836   1000   access           ls               2944   2944   2571   -2          [/etc/ld.so.preload R_OK]
+133            ubuntu           4026531840   4026531836   1000   security_file_open ls               2944   2944   2571   0           [/etc/ld.so.cache O_RDONLY|O_LARGEFILE]
+133            ubuntu           4026531840   4026531836   1000   openat           ls               2944   2944   2571   3           [-100 /etc/ld.so.cache O_RDONLY|O_CLOEXEC]
+133            ubuntu           4026531840   4026531836   1000   mmap             ls               
+...
 ```
 
-Executing `ls` in the alpine container shell will trigger the following events:
+### Understanding the output
 
-```
-61405.843786   e89fcd33936c     4026532402   4026532405   0      cap_capable      sh               1      1      13670  0            CAP_SYS_ADMIN
-61405.843977   e89fcd33936c     4026532402   4026532405   0      cap_capable      sh               1      1      13670  0            CAP_DAC_READ_SEARCH
-61405.844080   e89fcd33936c     4026532402   4026532405   0      cap_capable      sh               1      1      13670  0            CAP_DAC_OVERRIDE
-61405.844284   e89fcd33936c     4026532402   4026532405   0      cap_capable      sh               1      1      13670  0            CAP_SYS_ADMIN
-61405.844352   e89fcd33936c     4026532402   4026532405   0      cap_capable      sh               1      1      13670  0            CAP_DAC_OVERRIDE
-61405.844520   e89fcd33936c     4026532402   4026532405   0      open             sh               1      1      13670  3            /root/.ash_history O_WRONLY|O_CREAT|O_APPEND
-61405.844638   e89fcd33936c     4026532402   4026532405   0      close            sh               1      1      13670  0            3
-61405.844709   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            0 21506
-61405.844819   e89fcd33936c     4026532402   4026532405   0      stat             sh               1      1      13670  -2           /usr/local/sbin/ls
-61405.844891   e89fcd33936c     4026532402   4026532405   0      stat             sh               1      1      13670  -2           /usr/local/bin/ls
-61405.844951   e89fcd33936c     4026532402   4026532405   0      stat             sh               1      1      13670  -2           /usr/sbin/ls
-61405.845009   e89fcd33936c     4026532402   4026532405   0      stat             sh               1      1      13670  -2           /usr/bin/ls
-61405.845067   e89fcd33936c     4026532402   4026532405   0      stat             sh               1      1      13670  -2           /sbin/ls
-61405.845141   e89fcd33936c     4026532402   4026532405   0      stat             sh               1      1      13670  0            /bin/ls
-61405.845621   e89fcd33936c     4026532402   4026532405   0      fork             sh               1      1      13670  6            
-61405.849460   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            10 21520
-61405.849500   e89fcd33936c     4026532402   4026532405   0      stat             sh               1      1      13670  -2           MAILPATH
-61405.849539   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            0 21505
-61405.849562   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            0 21506
-61405.849592   e89fcd33936c     4026532402   4026532405   0      open             sh               1      1      13670  3            /etc/passwd O_RDONLY|O_CLOEXEC
-61405.849626   e89fcd33936c     4026532402   4026532405   0      close            sh               1      1      13670  0            3
-61405.849646   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               1      1      13670  0            0 21523
-61405.845834   e89fcd33936c     4026532402   4026532405   0      ioctl            sh               6      6      1      0            10 21520
-61405.845966   e89fcd33936c     4026532402   4026532405   0      execve           sh               6      6      1      0            /bin/ls
-61405.846806   e89fcd33936c     4026532402   4026532405   0      mprotect         ls               6      6      1      0            0x7f45e179d000 4096 1
-61405.847096   e89fcd33936c     4026532402   4026532405   0      mprotect         ls               6      6      1      0            0x555601b06000 16384 1
-61405.847319   e89fcd33936c     4026532402   4026532405   0      ioctl            ls               6      6      1      0            0 21523
-61405.847398   e89fcd33936c     4026532402   4026532405   0      ioctl            ls               6      6      1      0            1 21523
-61405.847451   e89fcd33936c     4026532402   4026532405   0      ioctl            ls               6      6      1      0            1 21523
-61405.847517   e89fcd33936c     4026532402   4026532405   0      stat             ls               6      6      1      0            .
-61405.847595   e89fcd33936c     4026532402   4026532405   0      open             ls               6      6      1      3            . O_RDONLY|O_DIRECTORY|O_CLOEXEC
-61405.847789   e89fcd33936c     4026532402   4026532405   0      getdents64       ls               6      6      1      496          3
-61405.847891   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./sys
-61405.847956   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./usr
-61405.848015   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./sbin
-61405.848097   e89fcd33936c     4026532402   4026532405   0      cap_capable      ls               6      6      1      0            CAP_SYS_ADMIN
-61405.848167   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./home
-61405.848231   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./lib
-61405.848290   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./root
-61405.848348   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./bin
-61405.848408   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./etc
-61405.848476   e89fcd33936c     4026532402   4026532405   0      cap_capable      ls               6      6      1      0            CAP_SYS_ADMIN
-61405.848523   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./run
-61405.848599   e89fcd33936c     4026532402   4026532405   0      cap_capable      ls               6      6      1      0            CAP_SYS_ADMIN
-61405.848643   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./srv
-61405.848707   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./proc
-61405.848774   e89fcd33936c     4026532402   4026532405   0      cap_capable      ls               6      6      1      0            CAP_SYS_ADMIN
-61405.848817   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./opt
-61405.848879   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./dev
-61405.848946   e89fcd33936c     4026532402   4026532405   0      cap_capable      ls               6      6      1      0            CAP_SYS_ADMIN
-61405.848989   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./var
-61405.849061   e89fcd33936c     4026532402   4026532405   0      cap_capable      ls               6      6      1      0            CAP_SYS_ADMIN
-61405.849097   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./mnt
-61405.849123   e89fcd33936c     4026532402   4026532405   0      cap_capable      ls               6      6      1      0            CAP_SYS_ADMIN
-61405.849139   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./tmp
-61405.849163   e89fcd33936c     4026532402   4026532405   0      cap_capable      ls               6      6      1      0            CAP_SYS_ADMIN
-61405.849178   e89fcd33936c     4026532402   4026532405   0      lstat            ls               6      6      1      0            ./media
-61405.849201   e89fcd33936c     4026532402   4026532405   0      getdents64       ls               6      6      1      0            3
-61405.849220   e89fcd33936c     4026532402   4026532405   0      close            ls               6      6      1      0            3
-61405.849280   e89fcd33936c     4026532402   4026532405   0      ioctl            ls               6      6      1      0            1 21523
-61405.849318   e89fcd33936c     4026532402   4026532405   0      do_exit          ls               6      6      1      0
-```
+Each line is a single event collected by Tracee, with the following information:
 
-As can be seen in the above output, each event line shows the following information about the event:
+1. TIME - shows the event time relative to system boot time in seconds
+2. UTS_NAME - uts namespace name. As there is no container id object in the kernel, and docker/k8s will usually set this to the container id, we use this field to distinguish between containers.
+3. MNT_NS - mount namespace inode number.
+4. PID_NS - pid namespace inode number. In order to know if there are different containers in the same pid namespace (e.g. in a k8s pod), it is possible to check this value
+5. UID - real user id (in host user namespace) of the calling process
+6. EVENT - identifies the event (e.g. syscall name)
+7. COMM - name of the calling process
+8. PID - pid of the calling process
+9. TID - tid of the calling thread
+10. PPID - parent pid of the calling process
+11. RET - value returned by the function
+12. ARGS - list of arguments given to the function
 
-* TIME - shows the event time relative to system boot time in seconds
-* UTS_NAME - uts namespace name. As there is no container id object in the kernel, and docker/k8s will usually set this to the container id, we use this field to distinguish between containers.
-* MNT_NS - mount namespace inode number.
-* PID_NS - pid namespace inode number. In order to know if there are different containers in the same pid namespace (e.g. in a k8s pod), it is possible to check this value
-* UID - real user id (in host user namespace) of the calling process
-* EVENT - identifies the event (e.g. syscall name)
-* COMM - name of the calling process
-* PID - pid of the calling process
-* TID - tid of the calling thread
-* PPID - parent pid of the calling process
-* RET - value returned by the function
-* ARGS - list of arguments given
+### Configuration flags
 
-Note about string arguments and userspace pointers: as pointers are being dereferenced from userspace memory, a malicious program may change the content being read before it actually gets executed in the kernel. Take this into account when doing security related stuff.
+Use `--help` to see a full description of all options.
+Here are a few commonly useful flags:
 
-Tracee currently supports a subset of system calls events, which can be listed with:
+`-c` traces only newly created containers, ignoring processes running directly on the host. This only shows processes created in a different mount namespace from the host.
 
-`./start.py -l`
+`-e` allows you to specify a specific event to trace. You can use this flag multiple times, for example `-e execve -e openat`
 
-Other supported events are (functions called in kernel space):
+`-l` lists the events available for tracing, which you can provide to the `-e` flag.
 
-* cap_capable - indicates which capabilities were requested
-* do_exit - indicates exited processes
+`-o` lets you control the output format, for example `-o json` will output as JSON lines instead of table.
 
+## Secure tracing
 
-Adding new events (especially system calls) to Tracee is straightforward, but one should keep in mind that tracing too many events may cause system performance degradation. Other than that, high event rate can cause samples to be lost (an error message will then be shown as part of the output). For this reason, *read* and *write* syscalls are deliberately excluded from Tracee.
-
-
-## TODO
-
-* Consider tracing commit_creds to detect potential kernel exploits
-
-## Known Issues
-
-* Pathname is missing in execve(at) syscalls - Issue #2627 in BCC project
+When Tracee reads information from user programs it is subject to a race condition where the user program might be able to change the arguments after Tracee has read them. For example, a program invoked `execve("/bin/ls", NULL, 0)`, Tracee picked that up and will report that, then the program changed the first argument from `/bin/ls` to `/bin/bash`, and this is what the kernel will execute. To mitigate this, Tracee also provide "LSM" (Linux Security Module) based events, for example the `bprm_check` event which can reported by tracee and cross-referenced with the reported regular syscall event.
