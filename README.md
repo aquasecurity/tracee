@@ -72,7 +72,7 @@ Here are a few commonly useful flags:
 
 `-l` lists the events available for tracing, which you can provide to the `-e` flag.
 
-`-o` let's you control the output format, for example `-o json` will output as JSON lines instead of table.
+`-o` lets you control the output format, for example `-o json` will output as JSON lines instead of table.
 
 ## Secure tracing
 
