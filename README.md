@@ -61,18 +61,14 @@ Each line is a single event collected by Tracee, with the following information:
 11. RET - value returned by the function
 12. ARGS - list of arguments given to the function
 
-### Configuration flags
+## Configuration flags
 
-Use `--help` to see a full description of all options.
+- Use `--help` to see a full description of all options.
 Here are a few commonly useful flags:
-
-`-c` traces only newly created containers, ignoring processes running directly on the host. This only shows processes created in a different mount namespace from the host.
-
-`-e` allows you to specify a specific event to trace. You can use this flag multiple times, for example `-e execve -e openat`
-
-`-l` lists the events available for tracing, which you can provide to the `-e` flag.
-
-`-o` lets you control the output format, for example `-o json` will output as JSON lines instead of table.
+- `--container` traces only newly created containers, ignoring processes running directly on the host. This only shows processes created in a different mount namespace from the host.
+- `--event` allows you to specify a specific event to trace. You can use this flag multiple times, for example `--event execve --event openat`.
+- `--list` lists the events available for tracing, which you can provide to the `--event` flag.
+- `--output` lets you control the output format, for example `--output json` will output as JSON lines instead of table.
 
 ## Secure tracing
 
