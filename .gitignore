@@ -1,6 +1,6 @@
 .vscode
 .idea
-/tracee_*
+/dist
 *__pycache__*
 venv
 *.pyc

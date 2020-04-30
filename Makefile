@@ -1,11 +1,10 @@
-os ?= $(shell uname -s | tr '[:upper:]' '[:lower:]')
-
 .PHONY: build
-build: tracee_$(os)
+build: dist/tracee tracee/event_monitor_ebpf.c
 
 SRC = $(shell find . -type f -name '*.go' ! -name '*_test.go' )
-tracee_%: $(SRC)
-	GOOS=$* go build -o $(@F)
+ebpfProgramBase64 = $(shell base64 -w 0 tracee/event_monitor_ebpf.c)
+dist/tracee: $(SRC)
+	GOOS=linux go build -v -o dist/tracee -ldflags "-X github.com/aquasecurity/tracee/tracee.ebpfProgramBase64Injected=$(ebpfProgramBase64)"
 
 .PHONY: test
 test:
@@ -13,7 +12,7 @@ test:
 
 .PHONY: clean
 clean:
-	rm tracee_*
+	rm -rf dist || true
 
 python-test:
 	python -m unittest -v test_container_tracer
