@@ -20,7 +20,7 @@ func main() {
 				return nil
 			}
 			cfg, err := tracee.NewConfig(
-				c.StringSlice("events-to-trace"),
+				c.StringSlice("event"),
 				c.Bool("container"),
 				c.Bool("detect-original-syscall"),
 				c.Bool("show-exec-env"),
@@ -45,10 +45,10 @@ func main() {
 				Usage:   "output format: table (default)/json",
 			},
 			&cli.StringSliceFlag{
-				Name:    "events-to-trace",
+				Name:    "event",
 				Aliases: []string{"e"},
 				Value:   nil,
-				Usage:   "trace only the specified events and syscalls",
+				Usage:   "trace only the specified event or syscall. use this flag multiple times to choose multiple events",
 			},
 			&cli.BoolFlag{
 				Name:    "list",

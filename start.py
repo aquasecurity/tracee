@@ -43,7 +43,7 @@ def parse_args(input_args):
                         help="save events in json format")
     parser.add_argument("-l", "--list", action="store_true",
                         help="list events")
-    parser.add_argument("-e", "--events-to-trace", default = syscalls + sysevents, action=EventsToTraceAction,
+    parser.add_argument("-e", "--event", default = syscalls + sysevents, action=EventsToTraceAction,
                         help="trace only the specified events and syscalls (default: trace all)")
     parser.add_argument("--show-syscall", action="store_true",
                         help="show syscall name in kprobes")
