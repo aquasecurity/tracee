@@ -18,7 +18,7 @@ For convenience we provide a Docker container of Tracee that includes glibc and 
 ### Getting Tracee
 Currently we don't yet have a release process for Tracee. You can build Tracee from source using `make build` or use the Docker image: `aquasec/tracee` from Docker Hub.
 
-If you build Tracee from source code, you can run it directly as an executable on the host. It will look for the file `./tracee/event_monitor_ebpf.c` so make sure it's available, and you'll need to run it with root permissions in order to load the eBPF code. 
+If run Tracee binary, you'll need to run it with root permissions in order to load the eBPF code. 
 If you use the Docker container, you should run it with the `--privileged` flag.
 
 ### Quickstart
