@@ -27,5 +27,4 @@ RUN DEBIAN_FRONTEND=noninteractive dpkg -i libbcc_*.deb && rm -rf /bcc
 
 WORKDIR /tracee
 COPY --from=builder /tracee/tracee /tracee/entrypoint.sh ./
-COPY --from=builder ./tracee/
 ENTRYPOINT ["./entrypoint.sh", "./tracee"]
