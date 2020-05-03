@@ -20,7 +20,6 @@ goreleaserFlags = --skip-publish --snapshot
 ifdef publish
 	goreleaserFlags =
 endif
-# relase always re-builds (no dependencies on purpose)
 release:
 	EBPFPROGRAM_BASE64=$(ebpfProgramBase64) goreleaser release --rm-dist $(goreleaserFlags)
 

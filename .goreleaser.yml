@@ -32,6 +32,6 @@ dockers:
       - "--label=org.label-schema.build-date={{ .Date }}"
       - "--label=org.label-schema.vcs=https://github.com/aquasecurity/tracee"
       - "--label=org.label-schema.vcs-ref={{ .FullCommit }}"
-    dockerfile: Dockerfile.release
+    dockerfile: release.Dockerfile
     extra_files:
       - entrypoint.sh
