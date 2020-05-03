@@ -35,3 +35,4 @@ dockers:
     dockerfile: release.Dockerfile
     extra_files:
       - entrypoint.sh
+      
