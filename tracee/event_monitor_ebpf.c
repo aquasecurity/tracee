@@ -709,7 +709,18 @@ static __always_inline int init_submit_buf()
     if (submit_p == NULL)
         return -1;
 
-    submit_p->off = 0;
+    submit_p->off = sizeof(context_t);
+
+    return 0;
+}
+
+// Context will always be at the start of the submission buffer
+// It may be needed to resave the context if the arguments number changed by logic
+static __always_inline int save_context_to_buf(submit_buf_t *submit_p, void *ptr)
+{
+    int rc = bpf_probe_read((void **)&(submit_p->buf[0]), sizeof(context_t), ptr);
+    if (rc == 0)
+        return sizeof(context_t);
 
     return 0;
 }
@@ -720,17 +731,18 @@ static __always_inline int save_to_submit_buf(submit_buf_t *submit_p, void *ptr,
         // not enough space - return
         return 0;
 
-    // Save argument type
-    if (type != 0) {
-        int rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->off & SUBMIT_BUFSIZE_HALF]), 1, &type);
-        if (rc != 0)
-            return 0;
+    if (type == 0)
+        return 0;
 
-        submit_p->off += 1;
-    }
+    // Save argument type
+    int rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->off & SUBMIT_BUFSIZE_HALF]), 1, &type);
+    if (rc != 0)
+        return 0;
+
+    submit_p->off += 1;
 
     // Read into buffer
-    int rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->off & SUBMIT_BUFSIZE_HALF]), size, ptr);
+    rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->off & SUBMIT_BUFSIZE_HALF]), size, ptr);
     if (rc == 0) {
         submit_p->off += size;
         return size;
@@ -1067,7 +1079,7 @@ static __always_inline int trace_ret_generic(struct pt_regs *ctx, u32 id, u64 ty
     context.eventid = id;
     context.argnum = get_encoded_arg_num(types);
     context.retval = PT_REGS_RC(ctx);
-    save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
+    save_context_to_buf(submit_p, (void*)&context);
     save_args_to_submit_buf(types);
 
     events_perf_submit(ctx);
@@ -1269,7 +1281,7 @@ int syscall__execve(struct pt_regs *ctx,
     else
         context.argnum = 2;
     context.retval = 0;     // assume execve succeeded. if not, a ret event will be sent too
-    save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
+    save_context_to_buf(submit_p, (void*)&context);
 
     save_str_to_buf(submit_p, (void *)filename, STR_T);
     save_str_arr_to_buf(submit_p, __argv);
@@ -1299,7 +1311,7 @@ int trace_ret_execve(struct pt_regs *ctx)
     if (context.retval == 0)
         return 0;   // we are only interested in failed execs
 
-    save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
+    save_context_to_buf(submit_p, (void*)&context);
     events_perf_submit(ctx);
     return 0;
 }
@@ -1337,7 +1349,7 @@ int syscall__execveat(struct pt_regs *ctx,
     else
         context.argnum = 4;
     context.retval = 0;     // assume execve succeeded. if not, a ret event will be sent too
-    save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
+    save_context_to_buf(submit_p, (void*)&context);
 
     save_to_submit_buf(submit_p, (void*)&dirfd, sizeof(int), INT_T);
     save_str_to_buf(submit_p, (void *)pathname, STR_T);
@@ -1369,7 +1381,7 @@ int trace_ret_execveat(struct pt_regs *ctx)
     if (context.retval == 0)
         return 0;   // we are only interested in failed execs
 
-    save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
+    save_context_to_buf(submit_p, (void*)&context);
     events_perf_submit(ctx);
     return 0;
 }
@@ -1396,7 +1408,7 @@ int trace_do_exit(struct pt_regs *ctx, long code)
     else
         remove_pid();
 
-    save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
+    save_context_to_buf(submit_p, (void*)&context);
     events_perf_submit(ctx);
     return 0;
 }
@@ -1416,7 +1428,7 @@ int trace_security_bprm_check(struct pt_regs *ctx, struct linux_binprm *bprm)
     context.argnum = 1;
     context.retval = 0;
 
-    save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
+    save_context_to_buf(submit_p, (void*)&context);
     save_path_to_buf(submit_p, &bprm->file->f_path);
 
     events_perf_submit(ctx);
@@ -1443,7 +1455,7 @@ int trace_security_file_open(struct pt_regs *ctx, struct file *file)
     if (syscall_nr != 2 && syscall_nr != 257) // only monitor open and openat syscalls
         return 0;
 
-    save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
+    save_context_to_buf(submit_p, (void*)&context);
     save_path_to_buf(submit_p, &file->f_path);
     save_to_submit_buf(submit_p, (void*)&file->f_flags, sizeof(int), OPEN_FLAGS_T);
 
@@ -1479,7 +1491,7 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
     if (audit == 0)
         return 0;
 
-    save_to_submit_buf(submit_p, (void*)&context, sizeof(context_t), NONE_T);
+    save_context_to_buf(submit_p, (void*)&context);
     save_to_submit_buf(submit_p, (void*)&cap, sizeof(int), CAP_T);
     if (show_syscall()) {
         struct pt_regs *real_ctx = get_task_pt_regs();
