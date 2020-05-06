@@ -14,5 +14,14 @@ test:
 clean:
 	rm -rf dist || true
 
+.PHONY: release
+# release by default will not publish. run with `publish=1` to publish
+goreleaserFlags = --skip-publish --snapshot
+ifdef publish
+	goreleaserFlags =
+endif
+release:
+	EBPFPROGRAM_BASE64=$(ebpfProgramBase64) goreleaser release --rm-dist $(goreleaserFlags)
+
 python-test:
 	python -m unittest -v test_container_tracer
