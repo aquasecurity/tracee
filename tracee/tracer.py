@@ -865,7 +865,7 @@ class EventMonitor:
         self.json = args.json
         self.ebpf = args.ebpf
         self.list_events = args.list
-        self.events_to_trace = args.events_to_trace
+        self.events_to_trace = args.events
         self.buf_pages = args.buf_pages
         self.show_syscall = args.show_syscall
         self.exec_env = args.exec_env
