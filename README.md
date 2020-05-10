@@ -7,21 +7,27 @@ Tracee CLI was originally written in Python, but was since ported to Go. Current
 ## Getting started
 
 ### Prerequisites
-To run, Tracee requires the following:
-* Linux kernel version > 4.14
-* Kernel headers
-* C standard library (currently tested with glibc)
-* [BCC](https://github.com/iovisor/bcc)
 
-For convenience we provide a Docker container of Tracee that includes glibc and bcc (in addition to Tracee itself) that should run on any kernel > 4.14. You can find in Docker Hub under `aquasec/tracee`.
+To run, Tracee requires the following:
+- Linux kernel version > 4.14
+- Kernel headers
+- C standard library (currently tested with glibc)
+- [BCC](https://github.com/iovisor/bcc)
 
 ### Getting Tracee
-Currently we don't yet have a release process for Tracee. You can build Tracee from source using `make build` or use the Docker image: `aquasec/tracee` from Docker Hub.
+
+You can get Tracee in any of the following ways:
+1. Download the binary from the GitHub Releases tab (`tracee.tar.gz`).
+2. Use the docker image from Docker Hub: `aquasec/tracee`. The image already includes libc and bcc but you will need to mount the kernel headers in (see below for example).
+3. Build from source, using `make build`.
+
+### Permissions
 
 If run Tracee binary, you'll need to run it with root permissions in order to load the eBPF code. 
 If you use the Docker container, you should run it with the `--privileged` flag.
 
-### Quickstart
+### Quickstart with Docker
+
 We will use the Tracee Docker image, which includes glibc and BCC. The host that Docker is running on needs to satisfy the other requirements, kernel version and kernel headers. If you use a recent version of Ubuntu, you are good to go as it satisfies those requirements, but any other Linux distribution will work as well.
 To run Tracee using docker:
 
