@@ -26,5 +26,5 @@ COPY --from=aquasec/bcc-builder:latest /root/bcc/libbcc_*.deb /bcc/
 RUN DEBIAN_FRONTEND=noninteractive dpkg -i libbcc_*.deb && rm -rf /bcc
 
 WORKDIR /tracee
-COPY --from=builder /tracee/tracee /tracee/entrypoint.sh ./
+COPY --from=builder /tracee/dist/tracee /tracee/entrypoint.sh ./
 ENTRYPOINT ["./entrypoint.sh", "./tracee"]
