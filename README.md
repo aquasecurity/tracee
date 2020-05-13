@@ -19,7 +19,7 @@ To run, Tracee requires the following:
 You can get Tracee in any of the following ways:
 1. Download the binary from the GitHub Releases tab (`tracee.tar.gz`).
 2. Use the docker image from Docker Hub: `aquasec/tracee`. The image already includes libc and bcc but you will need to mount the kernel headers in (see below for example).
-3. Build from source, using `make build`.
+3. Build from source, using `make build` (or via Docker using `make build-docker`).
 
 ### Permissions
 
