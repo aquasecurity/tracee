@@ -22,6 +22,11 @@ test:
 clean:
 	rm -rf dist || true
 
+imageName ?= tracee
+.PHONY: docker
+docker:
+	docker build -t $(imageName) .
+
 .PHONY: release
 # release by default will not publish. run with `publish=1` to publish
 goreleaserFlags = --skip-publish --snapshot
