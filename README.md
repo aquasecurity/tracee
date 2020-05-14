@@ -32,7 +32,7 @@ We will use the Tracee Docker image, which includes glibc and BCC. The host that
 To run Tracee using docker:
 
 ```bash
-docker run --name tracee --rm --privileged -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro aquasec/tracee:latest
+docker run --name tracee --rm --privileged -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /sys/kernel/debug:/sys/kernel/debug:rw aquasec/tracee:latest
 ```
 
 This will run Tracee with no arguments which will collect all events from all newly created processes and print them as a table to the standard output.
