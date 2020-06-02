@@ -4,6 +4,8 @@ Tracee is a lightweight and easy to use container and system tracing tool. It al
 
 Tracee CLI was originally written in Python, but was since ported to Go. Currently both versions are still available in the repo, but future development will be in Go and the Python version will eventually be deprecated and removed.
 
+[Check out this quick demo of tracee:<br /> ![youtube thumbnail](yt-thumbnail.jpg)](https://youtu.be/1lI875HPtdU)
+
 ## Getting started
 
 ### Prerequisites
