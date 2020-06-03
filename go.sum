@@ -9,6 +9,8 @@ github.com/iovisor/gobpf v0.0.0-20191219090757-e72091e3c5e6 h1:iFG10/KLpx/+XAWkO
 github.com/iovisor/gobpf v0.0.0-20191219090757-e72091e3c5e6/go.mod h1:+5U5qu5UOu8YJ5oHVLvWKH7/Dr5QNHU7mZ2RfPEeXg8=
 github.com/iovisor/gobpf v0.0.0-20200417061255-f0a208deaea5 h1:LuRmSIyYmbTLffmCAzvR1GcGJYQ2slcDexwiwq6fTjQ=
 github.com/iovisor/gobpf v0.0.0-20200417061255-f0a208deaea5/go.mod h1:+5U5qu5UOu8YJ5oHVLvWKH7/Dr5QNHU7mZ2RfPEeXg8=
+github.com/iovisor/gobpf v0.0.0-20200529092446-49b58e11a4b5 h1:fXXfg4Tra7tLI4raPGgNxZzlTdjCSvk2EoUCDHDGKb4=
+github.com/iovisor/gobpf v0.0.0-20200529092446-49b58e11a4b5/go.mod h1:+5U5qu5UOu8YJ5oHVLvWKH7/Dr5QNHU7mZ2RfPEeXg8=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/russross/blackfriday/v2 v2.0.1 h1:lPqVAte+HuHNfhJ/0LC98ESWRz8afy9tM/0RK8m9o+Q=
