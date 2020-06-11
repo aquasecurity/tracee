@@ -28,6 +28,7 @@ const (
 	ACCESS_MODE_T ArgType = 20
 	PTRACE_REQ_T  ArgType = 21
 	PRCTL_OPT_T   ArgType = 22
+	ALERT_T       ArgType = 23
 	TYPE_MAX      ArgType = 255
 )
 
@@ -39,11 +40,17 @@ const (
 	CONFIG_DETECT_ORIG_SYSCALL bpfConfig = 1
 	CONFIG_EXEC_ENV            bpfConfig = 2
 	CONFIG_CAPTURE_FILES       bpfConfig = 3
+	CONFIG_EXTRACT_DYN_CODE    bpfConfig = 4
 )
 
 const (
 	TAIL_VFS_WRITE uint32 = 0
 	TAIL_SEND_BIN  uint32 = 1
+)
+
+const (
+	SEND_VFS_WRITE uint8 = 1
+	SEND_MPROTECT  uint8 = 2
 )
 
 // ProbeType is an enum that describes the mechanism used to attach the event
@@ -428,6 +435,8 @@ var EventsIDToEvent = map[int32]EventConfig{
 	353: EventConfig{ID: 353, Name: "security_bprm_check", AttachMechanism: KPROBE, EnabledByDefault: true, EssentialEvent: false, ProbeName: "security_bprm_check"},
 	354: EventConfig{ID: 354, Name: "security_file_open", AttachMechanism: KPROBE, EnabledByDefault: true, EssentialEvent: false, ProbeName: "security_file_open"},
 	355: EventConfig{ID: 355, Name: "vfs_write", AttachMechanism: KPROBE_KRETPROBE, EnabledByDefault: true, EssentialEvent: false, ProbeName: "vfs_write"},
+	356: EventConfig{ID: 356, Name: "mmap_alert", AttachMechanism: KPROBE, EnabledByDefault: false, EssentialEvent: false, ProbeName: "security_mmap_addr"},
+	357: EventConfig{ID: 357, Name: "mprotect_alert", AttachMechanism: KPROBE, EnabledByDefault: false, EssentialEvent: false, ProbeName: "security_file_mprotect"},
 }
 
 // EventsNameToID holds all the events that tracee can trace, indexed by their Name

@@ -9,6 +9,7 @@
 #include <linux/binfmts.h>
 #include <linux/sched.h>
 #include <linux/fs.h>
+#include <linux/mm_types.h>
 #include <linux/mount.h>
 #include <linux/nsproxy.h>
 #include <linux/ns_common.h>
@@ -28,7 +29,13 @@
 #define MAX_BUFFERS         3
 
 #define SEND_VFS_WRITE      1
+#define SEND_MPROTECT       2
 #define SEND_META_SIZE      20
+
+#define ALERT_MMAP_W_X      1
+#define ALERT_MPROT_X_ADD   2
+#define ALERT_MPROT_W_ADD   3
+#define ALERT_MPROT_W_REM   4
 
 #define TAIL_VFS_WRITE      0
 #define TAIL_SEND_BIN       1
@@ -57,12 +64,14 @@
 #define ACCESS_MODE_T 20UL
 #define PTRACE_REQ_T  21UL
 #define PRCTL_OPT_T   22UL
+#define ALERT_T       23UL
 #define TYPE_MAX      255UL
 
-#define CONFIG_CONT_MODE       0
-#define CONFIG_SHOW_SYSCALL    1
-#define CONFIG_EXEC_ENV        2
-#define CONFIG_CAPTURE_FILES   3
+#define CONFIG_CONT_MODE        0
+#define CONFIG_SHOW_SYSCALL     1
+#define CONFIG_EXEC_ENV         2
+#define CONFIG_CAPTURE_FILES    3
+#define CONFIG_EXTRACT_DYN_CODE 4
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
 #error Minimal required kernel version is 4.14
@@ -427,6 +436,8 @@ enum event_id {
     SECURITY_BPRM_CHECK,
     SECURITY_FILE_OPEN,
     VFS_WRITE,
+    MMAP_ALERT,
+    MPROTECT_ALERT,
 };
 
 /*=============================== INTERNAL STRUCTS ===========================*/
@@ -1158,9 +1169,6 @@ static __always_inline int trace_ret_generic(struct pt_regs *ctx, u32 id, u64 ty
     if (!should_trace())
         return -1;
 
-    // Workaround to a bug in gobpf, where a kprobe event (e.g. mmap syscall) can't be attached to two different functions.
-    // As we need to use save_args in kprobe entry, but one of the events (functions) might be chosen and the other not,
-    // We need a mechanism that can tell if an event was chosen by the user, so we can save the args without enabling both events.
     if (!event_chosen(id))
         return 0;
 
@@ -1914,3 +1922,118 @@ int do_trace_ret_vfs_write(struct pt_regs *ctx)
     return 0;
 }
 
+int trace_mmap_alert(struct pt_regs *ctx)
+{
+    context_t context = {};
+    args_t args = {};
+
+    // Workaround to a bug in gobpf, where a kprobe event (e.g. mmap syscall) can't be attached to two different functions.
+    // As we need to use save_args in kprobe entry, but one of the events (functions) might be chosen and the other not,
+    // We need a mechanism that can tell if an event was chosen by the user, so we can save the args without enabling both events.
+    // Don't delete args if mmap event is selected, as it will be used in mmap kretprobe
+    bool delete_args = true;
+    if (event_chosen(SYS_MMAP))
+        delete_args = false;
+
+    if (load_args(&args, delete_args, SYS_MMAP) != 0)
+        return 0;
+
+    init_context(&context);
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
+    if (submit_p == NULL)
+        return 0;
+
+    context.eventid = MMAP_ALERT;
+    context.argnum = 1;
+    context.retval = 0;
+    save_context_to_buf(submit_p, (void*)&context);
+
+    if ((args.args[2] & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC)) {
+        u64 alert = ALERT_MMAP_W_X;
+        save_to_submit_buf(submit_p, &alert, sizeof(unsigned long), ALERT_T);
+        events_perf_submit(ctx);
+    }
+
+    return 0;
+}
+
+int trace_mprotect_alert(struct pt_regs *ctx, struct vm_area_struct *vma, unsigned long reqprot, unsigned long prot)
+{
+    context_t context = {};
+    args_t args = {};
+    bin_args_t bin_args = {};
+
+    // Workaround to a bug in gobpf, where a kprobe event (e.g. mmap syscall) can't be attached to two different functions.
+    // As we need to use save_args in kprobe entry, but one of the events (functions) might be chosen and the other not,
+    // We need a mechanism that can tell if an event was chosen by the user, so we can save the args without enabling both events.
+    // Don't delete args if mprotect event is selected, as it will be used in mprotect kretprobe
+    bool delete_args = true;
+    if (event_chosen(SYS_MPROTECT))
+        delete_args = false;
+
+    if (load_args(&args, delete_args, SYS_MPROTECT) != 0)
+        return 0;
+
+    void *addr = (void*)args.args[0];
+    size_t len = args.args[1];
+    unsigned long prev_prot = vma->vm_flags;
+
+    if (addr <= 0)
+        return 0;
+
+    // If length is 0, the current page permissions are changed
+    if (len == 0)
+        len = PAGE_SIZE;
+
+    init_context(&context);
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
+    if (submit_p == NULL)
+        return 0;
+
+    context.eventid = MPROTECT_ALERT;
+    context.argnum = 1;
+    context.retval = 0;
+    save_context_to_buf(submit_p, (void*)&context);
+
+    if ((!(prev_prot & VM_EXEC)) && (reqprot & VM_EXEC)) {
+        u64 alert = ALERT_MPROT_X_ADD;
+        save_to_submit_buf(submit_p, &alert, sizeof(unsigned long), ALERT_T);
+        events_perf_submit(ctx);
+        return 0;
+    }
+
+    if ((prev_prot & VM_EXEC) && !(prev_prot & VM_WRITE)
+        && ((reqprot & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC))) {
+        u64 alert = ALERT_MPROT_W_ADD;
+        save_to_submit_buf(submit_p, &alert, sizeof(unsigned long), ALERT_T);
+        events_perf_submit(ctx);
+        return 0;
+    }
+
+    if (((prev_prot & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC))
+        && (reqprot & VM_EXEC) && !(reqprot & VM_WRITE)) {
+        u32 random_nr = bpf_get_prandom_u32();
+        u64 alert = random_nr;
+        alert = alert << 32 | ALERT_MPROT_W_REM;
+        if (!get_config(CONFIG_EXTRACT_DYN_CODE))
+            alert = ALERT_MPROT_W_REM;
+        save_to_submit_buf(submit_p, &alert, sizeof(unsigned long), ALERT_T);
+        events_perf_submit(ctx);
+
+        if (get_config(CONFIG_EXTRACT_DYN_CODE)) {
+            bin_args.type = SEND_MPROTECT;
+            bpf_probe_read(bin_args.metadata, sizeof(u32), &random_nr);
+            bin_args.ptr = (char *)addr;
+            bin_args.start_off = 0;
+            bin_args.full_size = len;
+
+            u64 id = bpf_get_current_pid_tgid();
+            bin_args_map.update(&id, &bin_args);
+            prog_array.call(ctx, TAIL_SEND_BIN);
+        }
+    }
+
+    return 0;
+}

@@ -31,26 +31,36 @@ func main() {
 				ShowExecEnv:           c.Bool("show-exec-env"),
 				OutputFormat:          c.String("output"),
 				PerfBufferSize:        c.Int("perf-buffer-size"),
+				BlobPerfBufferSize:    c.Int("blob-perf-buffer-size"),
 				OutputPath:            c.String("output-path"),
 				FilterFileWrite:       c.StringSlice("filter-file-write"),
+				SecurityAlerts:        c.Bool("security-alerts"),
 				EventsFile:            os.Stdout,
 				ErrorsFile:            os.Stderr,
 			}
-			captureFiles := c.StringSlice("capture-files")
-			for _, cf := range captureFiles {
-				if cf == "write" {
-					cfg.CaptureFilesWrite = true
+			capture := c.StringSlice("capture")
+			for _, cap := range capture {
+				if cap == "write" {
+					cfg.CaptureWrite = true
 				}
-				if cf == "exec" {
-					cfg.CaptureFilesExec = true
+				if cap == "exec" {
+					cfg.CaptureExec = true
 				}
-				if cf == "all" {
-					cfg.CaptureFilesWrite = true
-					cfg.CaptureFilesExec = true
+				if cap == "mem" {
+					cfg.CaptureMem = true
+				}
+				if cap == "all" {
+					cfg.CaptureWrite = true
+					cfg.CaptureExec = true
+					cfg.CaptureMem = true
 				}
 			}
 			if c.Bool("show-all-syscalls") {
 				cfg.EventsToTrace = append(cfg.EventsToTrace, tracee.EventsNameToID["raw_syscalls"])
+			}
+			if c.Bool("security-alerts") {
+				cfg.EventsToTrace = append(cfg.EventsToTrace, tracee.EventsNameToID["mmap_alert"])
+				cfg.EventsToTrace = append(cfg.EventsToTrace, tracee.EventsNameToID["mprotect_alert"])
 			}
 			t, err := tracee.New(cfg)
 			if err != nil {
@@ -100,6 +110,11 @@ func main() {
 				Value:   64,
 				Usage:   "size, in pages, of the internal perf ring buffer used to submit events from the kernel",
 			},
+			&cli.IntFlag{
+				Name:  "blob-perf-buffer-size",
+				Value: 256,
+				Usage: "size, in pages, of the internal perf ring buffer used to send blobs from the kernel",
+			},
 			&cli.BoolFlag{
 				Name:    "show-all-syscalls",
 				Aliases: []string{"a"},
@@ -112,14 +127,19 @@ func main() {
 				Usage: "set output path",
 			},
 			&cli.StringSliceFlag{
-				Name:  "capture-files",
+				Name:  "capture",
 				Value: nil,
-				Usage: "capture files that were written or that were executed. captured files will apear in the 'output-path' directory. possible values: 'write'/'exec'/'all'. use this flag multiple times to choose multiple file types",
+				Usage: "capture artifacts that were written, executed or found to be suspicious. captured artifacts will appear in the 'output-path' directory. possible values: 'write'/'exec'/'mem'/'all'. use this flag multiple times to choose multiple capture options",
 			},
 			&cli.StringSliceFlag{
 				Name:  "filter-file-write",
 				Value: nil,
 				Usage: "only output file writes whose path starts with the given path prefix (up to 64 characters)",
+			},
+			&cli.BoolFlag{
+				Name:  "security-alerts",
+				Value: false,
+				Usage: "alert on security related events",
 			},
 		},
 	}

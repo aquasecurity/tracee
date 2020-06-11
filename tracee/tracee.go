@@ -25,10 +25,13 @@ type TraceeConfig struct {
 	ShowExecEnv           bool
 	OutputFormat          string
 	PerfBufferSize        int
+	BlobPerfBufferSize    int
 	OutputPath            string
-	CaptureFilesWrite     bool
-	CaptureFilesExec      bool
+	CaptureWrite          bool
+	CaptureExec           bool
+	CaptureMem            bool
 	FilterFileWrite       []string
+	SecurityAlerts        bool
 	EventsFile            *os.File
 	ErrorsFile            *os.File
 }
@@ -52,6 +55,9 @@ func (tc TraceeConfig) Validate() error {
 
 	}
 	if (tc.PerfBufferSize & (tc.PerfBufferSize - 1)) != 0 {
+		return fmt.Errorf("invalid perf buffer size - must be a power of 2")
+	}
+	if (tc.BlobPerfBufferSize & (tc.BlobPerfBufferSize - 1)) != 0 {
 		return fmt.Errorf("invalid perf buffer size - must be a power of 2")
 	}
 	if len(tc.FilterFileWrite) > 3 {
@@ -135,13 +141,20 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 		return nil, fmt.Errorf("validation error: %v", err)
 	}
 
-	if cfg.CaptureFilesExec {
+	if cfg.CaptureExec {
 		essentialEvents[EventsNameToID["security_bprm_check"]] = false
 	}
-	if cfg.CaptureFilesWrite {
+	if cfg.CaptureWrite {
 		essentialEvents[EventsNameToID["vfs_write"]] = false
 	}
-
+	if cfg.SecurityAlerts || cfg.CaptureMem {
+		essentialEvents[EventsNameToID["mmap"]] = false
+		essentialEvents[EventsNameToID["mprotect"]] = false
+	}
+	if cfg.CaptureMem {
+		essentialEvents[EventsNameToID["mmap_alert"]] = false
+		essentialEvents[EventsNameToID["mprotect_alert"]] = false
+	}
 	// create tracee
 	t := &Tracee{
 		config: cfg,
@@ -270,7 +283,10 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.ShowExecEnv))
 	bpfConfig.Set(key, leaf)
 	binary.LittleEndian.PutUint32(key, uint32(CONFIG_CAPTURE_FILES))
-	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.CaptureFilesWrite))
+	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.CaptureWrite))
+	bpfConfig.Set(key, leaf)
+	binary.LittleEndian.PutUint32(key, uint32(CONFIG_EXTRACT_DYN_CODE))
+	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.CaptureMem))
 	bpfConfig.Set(key, leaf)
 
 	// Load send_bin function to prog_array to be used as tail call
@@ -310,7 +326,7 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 	fileWritesBPFTable := bpf.NewTable(t.bpfModule.TableId("file_writes"), t.bpfModule)
 	t.fileWrChannel = make(chan []byte, 1000)
 	t.lostWrChannel = make(chan uint64)
-	t.fileWrPerfMap, err = bpf.InitPerfMapWithPageCnt(fileWritesBPFTable, t.fileWrChannel, t.lostWrChannel, t.config.PerfBufferSize)
+	t.fileWrPerfMap, err = bpf.InitPerfMapWithPageCnt(fileWritesBPFTable, t.fileWrChannel, t.lostWrChannel, t.config.BlobPerfBufferSize)
 	if err != nil {
 		return fmt.Errorf("error initializing file_writes perf map: %v", err)
 	}
@@ -372,7 +388,7 @@ func (t *Tracee) processEvent(ctx *context, args []interface{}) error {
 	}
 
 	//capture executed files
-	if t.config.CaptureFilesExec && (eventName == "security_bprm_check") {
+	if t.config.CaptureExec && (eventName == "security_bprm_check") {
 		var err error
 
 		destinationDirPath := filepath.Join(t.config.OutputPath, strconv.Itoa(int(ctx.Mnt_id)))
@@ -475,6 +491,10 @@ func (t *Tracee) processFileWrites() {
 		Inode uint64
 	}
 
+	type mprotectWriteMeta struct {
+		RandomNr uint32
+	}
+
 	for {
 		select {
 		case dataRaw := <-t.fileWrChannel:
@@ -487,11 +507,11 @@ func (t *Tracee) processFileWrites() {
 			}
 
 			if meta.Size <= 0 {
-				t.handleError(fmt.Errorf("error in vfs writer: invalid chunk size: %d", meta.Size))
+				t.handleError(fmt.Errorf("error in file writer: invalid chunk size: %d", meta.Size))
 				continue
 			}
 			if dataBuff.Len() < int(meta.Size) {
-				t.handleError(fmt.Errorf("error in vfs writer: chunk too large: %d", meta.Size))
+				t.handleError(fmt.Errorf("error in file writer: chunk too large: %d", meta.Size))
 				continue
 			}
 
@@ -501,8 +521,8 @@ func (t *Tracee) processFileWrites() {
 				continue
 			}
 			filename := ""
-			if meta.BinType == 1 {
-				metaBuff := bytes.NewBuffer(meta.Metadata[:])
+			metaBuff := bytes.NewBuffer(meta.Metadata[:])
+			if meta.BinType == SEND_VFS_WRITE {
 				var vfsMeta vfsWriteMeta
 				err = binary.Read(metaBuff, binary.LittleEndian, &vfsMeta)
 				if err != nil {
@@ -510,8 +530,17 @@ func (t *Tracee) processFileWrites() {
 					continue
 				}
 				filename = fmt.Sprintf("write.dev-%d.inode-%d", vfsMeta.DevID, vfsMeta.Inode)
+			} else if meta.BinType == SEND_MPROTECT {
+				var mprotectMeta mprotectWriteMeta
+				err = binary.Read(metaBuff, binary.LittleEndian, &mprotectMeta)
+				if err != nil {
+					t.handleError(err)
+					continue
+				}
+				// note: size of buffer will determine maximum extracted file size! (as writes from kernel are immediate)
+				filename = fmt.Sprintf("bin.%d", mprotectMeta.RandomNr)
 			} else {
-				t.handleError(fmt.Errorf("error in vfs writer: unknown binary type: %d", meta.BinType))
+				t.handleError(fmt.Errorf("error in file writer: unknown binary type: %d", meta.BinType))
 				continue
 			}
 
@@ -897,6 +926,12 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 			return nil, err
 		}
 		res = PrintPtraceRequest(req)
+	case ALERT_T:
+		alert, err := readUInt64FromBuff(dataBuff)
+		if err != nil {
+			return nil, err
+		}
+		res = PrintAlert(alert)
 	default:
 		// if we don't recognize the arg type, we can't parse the rest of the buffer
 		return nil, fmt.Errorf("error unknown arg type %v", at)
