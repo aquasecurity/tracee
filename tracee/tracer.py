@@ -10,6 +10,7 @@ import ctypes
 import json
 import logging
 import sys
+import os
 
 from bcc import BPF
 
@@ -592,7 +593,8 @@ event_id = {
     351: "do_exit",
     352: "cap_capable",
     353: "security_bprm_check",
-    354: "security_file_open"
+    354: "security_file_open",
+    355: "vfs_write"
 }
 
 # argument types should match defined values in ebpf file code
@@ -874,6 +876,7 @@ class EventMonitor:
         self.bpf = None
         self.event_bufs = list()
         self.total_lost = 0
+        self.write_count = 0
 
         # input arguments
         self.cont_mode = args.container
@@ -926,6 +929,10 @@ class EventMonitor:
 
         if self.raw_syscalls:
             self.events_to_trace.append("raw_syscalls")
+
+        self.bpf.attach_kprobe(event="vfs_write", fn_name="trace_vfs_write")
+        self.bpf.attach_kretprobe(event="vfs_write", fn_name="trace_ret_vfs_write")
+        self.events_to_trace.append("vfs_write")
 
         if not self.json:
             log.info("%-14s %-16s %-12s %-12s %-6s %-16s %-16s %-6s %-6s %-6s %-12s %s" % (
@@ -1209,6 +1216,36 @@ class EventMonitor:
         event_buf = (ctypes.c_char * size).from_buffer_copy(buf)
         self.event_bufs.append(event_buf)
 
+    # process event
+    def handle_file_write_event(self, cpu, data, size):
+        buf = ctypes.cast(data, ctypes.POINTER(ctypes.c_char*size)).contents
+        event_buf = (ctypes.c_char * size).from_buffer_copy(buf)
+
+        dev_id = ctypes.cast(ctypes.byref(event_buf, 0), ctypes.POINTER(ctypes.c_uint)).contents.value
+        inode = ctypes.cast(ctypes.byref(event_buf, 4), ctypes.POINTER(ctypes.c_ulong)).contents.value
+        count = ctypes.cast(ctypes.byref(event_buf, 12), ctypes.POINTER(ctypes.c_int)).contents.value
+        pos = ctypes.cast(ctypes.byref(event_buf, 16), ctypes.POINTER(ctypes.c_ulong)).contents.value
+        cur_off = 24
+
+        # Sanity checks
+        if (count <= 0) or (ctypes.sizeof(event_buf) < cur_off + count):
+            return
+
+        filename = "/tmp/output/write." + "dev-" + str(dev_id) + ".inode-" + str(inode)
+        if not os.path.exists(os.path.dirname(filename)):
+            try:
+                os.makedirs(os.path.dirname(filename))
+            except OSError as exc: # Guard against race condition
+                if exc.errno != errno.EEXIST:
+                    raise
+
+        file_buf = event_buf[cur_off:cur_off+count]
+        page_bytes = array.array('B', file_buf)
+
+        with open(filename,"a+b") as f:
+            f.seek(pos)
+            f.write(page_bytes)
+
     def lost_event(self, lost):
         self.total_lost += lost
         log.info("Possibly lost %d events (%d in total), consider using a bigger buffer" % (lost, self.total_lost))
@@ -1222,6 +1259,8 @@ class EventMonitor:
     def monitor_events(self):
         # loop with callback to handle_event
         self.bpf["events"].open_perf_buffer(self.handle_event, page_cnt=self.buf_pages, lost_cb=self.lost_event)
+        self.bpf["file_events"].open_perf_buffer(self.handle_file_write_event, page_cnt=self.buf_pages, lost_cb=self.lost_event)
+
         while self.do_trace:
             try:
                 # It would have been better to parse the events in a "consumer" thread
