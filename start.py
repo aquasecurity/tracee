@@ -39,6 +39,9 @@ def parse_args(input_args):
     parser.add_argument("-b", "--buf-pages", type=int, default=64,
                         choices=[1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024],
                         help="number of pages for perf buffer, defaults to %(default)s")
+    parser.add_argument("--bin-buf-pages", type=int, default=256,
+                        choices=[64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384],
+                        help="number of pages for data perf buffer, defaults to %(default)s")
     parser.add_argument("--ebpf", action="store_true",
                         help=argparse.SUPPRESS)
     parser.add_argument("-j", "--json", action="store_true",
@@ -57,6 +60,10 @@ def parse_args(input_args):
                         help="capture file writes to output path")
     parser.add_argument("--filter-file-write", action="append",
                         help="only output file writes whose path starts with the given path prefix (up to 64 characters)")
+    parser.add_argument("--security-alerts", action="store_true",
+                        help="alert on security related events")
+    parser.add_argument("--extract-dynamic-code", action="store_true",
+                        help="attempt to extract dynamically loaded code (e.g. using packers)")
     return parser.parse_args(input_args)
 
 
