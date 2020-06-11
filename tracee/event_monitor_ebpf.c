@@ -19,6 +19,7 @@
 
 #define MAXARG 20
 #define MAX_STRING_SIZE     (1 << 12)     // Choosing this value to be the same as PATH_MAX (4096)
+#define MAX_PERCPU_BUFSIZE  (1 << 15)     // This value is actually set by the kernel as an upper bound
 #define SUBMIT_BUFSIZE      (1 << 14)     // Need to be power of 2
 
 #define NONE_T        0UL
@@ -412,6 +413,7 @@ enum event_id {
     CAP_CAPABLE,
     SECURITY_BPRM_CHECK,
     SECURITY_FILE_OPEN,
+    VFS_WRITE,
 };
 
 /*=============================== INTERNAL STRUCTS ===========================*/
@@ -434,6 +436,10 @@ typedef struct context {
 typedef struct args {
     unsigned long args[6];
 } args_t;
+
+typedef struct simple_buf {
+    u8 buf[MAX_PERCPU_BUFSIZE];
+} simple_buf_t;
 
 typedef struct submit_buf {
     u32 off;
@@ -467,12 +473,15 @@ struct mount {
 BPF_HASH(config_map, u32, u32);                     // Various configurations
 BPF_HASH(pids_map, u32, u32);                       // Save container pid namespaces
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
+BPF_HASH(vfs_args_map, u64, args_t);                // Persist args info between function entry and return
 BPF_PERCPU_ARRAY(submission_buf, submit_buf_t, 1);  // Buffer used to prepare event for perf_submit
 BPF_PERCPU_ARRAY(string_buf, submit_buf_t, 1);      // Buffer used to prepare event for perf_submit
+BPF_PERCPU_ARRAY(file_buf, simple_buf_t, 1);        // Buffer used to copy written files
 
 /*================================== EVENTS ====================================*/
 
 BPF_PERF_OUTPUT(events);                            // Events submission
+BPF_PERF_OUTPUT(file_events);                       // File writes events submission
 
 /*================== KERNEL VERSION DEPENDANT HELPER FUNCTIONS =================*/
 
@@ -567,6 +576,22 @@ static __always_inline struct pt_regs* get_task_pt_regs()
 static inline struct mount *real_mount(struct vfsmount *mnt)
 {
     return my_container_of(mnt, struct mount, mnt);
+}
+
+static __inline int is_prefix(char *prefix, char *str)
+{
+    int i;
+    #pragma unroll
+    for (i = 0; i < 10; prefix++, str++, i++) {
+        if (!*prefix)
+            return 1;
+        if (*prefix != *str) {
+            return 0;
+        }
+    }
+
+    // prefix is too long
+    return 0;
 }
 
 static __always_inline u32 lookup_pid()
@@ -1567,4 +1592,170 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
     events_perf_submit(ctx);
     return 0;
 };
+
+static __always_inline int send_file(struct pt_regs *ctx, void *ptr, dev_t s_dev, unsigned long inode_nr, loff_t start_pos)
+{
+    // Note: sending the data to the userspace have the following constraints:
+    // 1. We need a buffer that we know it's exact size (so we can send chunks of known sizes in BPF)
+    // 2. We can have multiple cpus - need percpu array
+    // 3. We have to use perf submit and not maps as data can be overriden if userspace doesn't consume it fast enough
+
+    int idx = 0;
+    int rc = 0;
+    unsigned int off = 0;
+    unsigned int write_size = PT_REGS_RC(ctx);
+
+    simple_buf_t *file_buf_p = file_buf.lookup(&idx);
+    if (file_buf_p == NULL)
+        return 0;
+
+    // Save number of written bytes
+    rc |= bpf_probe_read((void **)&(file_buf_p->buf[off & (MAX_PERCPU_BUFSIZE-1)]), sizeof(unsigned int), &write_size);
+    off += sizeof(unsigned int);
+
+    // Save device id to be used in filename
+    rc |= bpf_probe_read((void **)&(file_buf_p->buf[off & (MAX_PERCPU_BUFSIZE-1)]), sizeof(dev_t), &s_dev);
+    off += sizeof(dev_t);
+
+    // Save inode number to be used in filename
+    rc |= bpf_probe_read((void **)&(file_buf_p->buf[off & (MAX_PERCPU_BUFSIZE-1)]), sizeof(unsigned long), &inode_nr);
+    off += sizeof(unsigned long);
+
+    // Save file position after write
+    rc |= bpf_probe_read((void **)&(file_buf_p->buf[off & (MAX_PERCPU_BUFSIZE-1)]), sizeof(off_t), &start_pos);
+    off += sizeof(off_t);
+
+#define BUF_OFF (sizeof(unsigned int) + sizeof(dev_t) + sizeof(unsigned long) + sizeof(off_t))
+
+    // Satisfy validator by checking buffer bounds
+    if (write_size > (MAX_PERCPU_BUFSIZE - BUF_OFF))
+        return 0;
+
+    // Save binary chunk to percpu buffer so we can submit it
+    rc |= bpf_probe_read((void **)&(file_buf_p->buf[BUF_OFF]), write_size, ptr);
+    off += write_size;
+
+    if (rc != 0)
+        return 0;
+
+    void *data = file_buf_p->buf;
+    // Satisfy validator by setting buffer bounds
+    int size = off & (MAX_PERCPU_BUFSIZE - 1);
+    rc = file_events.perf_submit(ctx, data, size);
+    if (rc != 0)
+        return 0;
+
+    return 0;
+}
+
+int trace_vfs_write(struct pt_regs *ctx, struct file *file, const char __user *buf, size_t count, loff_t *pos)
+{
+    // We can't use save_args here as this is an inner kernel function, which will overwrite previously saved arguments
+    // Use another map (vfs_args_map) instead
+
+    u64 id;
+    args_t args = {};
+
+    u32 should_trace = 0;
+    if (container_mode())
+        should_trace = is_container();
+    else
+        should_trace = lookup_pid();
+
+    if (!should_trace)
+        return 0;
+
+    args.args[0] = (unsigned long)file;
+    args.args[1] = (unsigned long)buf;
+    args.args[2] = (unsigned long)count;
+    args.args[3] = (unsigned long)pos;
+
+    id = bpf_get_current_pid_tgid();
+    vfs_args_map.update(&id, &args);
+
+    return 0;
+}
+
+int trace_ret_vfs_write(struct pt_regs *ctx)
+{
+    context_t context = {};
+    struct path path;
+    args_t *saved_args;
+    struct inode *inode;
+    struct super_block *superblock;
+    dev_t s_dev;
+    unsigned long inode_nr;
+    loff_t start_pos;
+
+    if (init_context(&context) || init_submit_buf())
+        return -1;
+
+    submit_buf_t *submit_p = get_submit_buf();
+    if (submit_p == NULL)
+        return 0;
+
+    u64 id = bpf_get_current_pid_tgid();
+
+    saved_args = vfs_args_map.lookup(&id);
+    if (saved_args == 0) {
+        // missed entry or not traced
+        return 0;
+    }
+
+    struct file *file      = (struct file *) saved_args->args[0];
+    void *ptr              = (void*)         saved_args->args[1];
+    size_t count           = (size_t)        saved_args->args[2];
+    loff_t *pos            = (loff_t*)       saved_args->args[3];
+
+    vfs_args_map.delete(&id);
+
+    // Extract path of written file
+    bpf_probe_read(&path, sizeof(struct path), &file->f_path);
+    int idx = 0;
+    // Get per-cpu string buffer
+    submit_buf_t *string_p = string_buf.lookup(&idx);
+    if (string_p == NULL)
+        return -1;
+    get_path_string(string_p, &path);
+
+    // Filter requested paths
+    if (string_p->off <= SUBMIT_BUFSIZE - MAX_STRING_SIZE) {
+        if (is_prefix("/dev/shm", &string_p->buf[string_p->off]))
+            goto VFS_W_CONT;
+
+        if (is_prefix("memfd:", &string_p->buf[string_p->off]))
+            goto VFS_W_CONT;
+    }
+
+    return 0;
+
+VFS_W_CONT:
+    // Extract device id, inode number and pos (offset)
+    bpf_probe_read(&inode, sizeof(struct inode *), &file->f_inode);
+    bpf_probe_read(&superblock, sizeof(struct super_block *), &inode->i_sb);
+    bpf_probe_read(&s_dev, sizeof(dev_t), &superblock->s_dev);
+    bpf_probe_read(&inode_nr, sizeof(unsigned long), &inode->i_ino);
+    bpf_probe_read(&start_pos, sizeof(off_t), pos);
+
+    // Calculate write start offset
+    if (start_pos != 0)
+        start_pos -= PT_REGS_RC(ctx);
+
+    context.eventid = VFS_WRITE;
+    context.argnum = 5;
+    context.retval = PT_REGS_RC(ctx);
+    save_context_to_buf(submit_p, &context);
+
+    save_str_to_buf(submit_p, (void *)&string_p->buf[string_p->off]);
+    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T);
+    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T);
+    save_to_submit_buf(submit_p, &count, sizeof(size_t), SIZE_T_T);
+    save_to_submit_buf(submit_p, &start_pos, sizeof(off_t), OFF_T_T);
+
+    // Submit vfs_write event
+    events_perf_submit(ctx);
+
+    // Send file data
+    return send_file(ctx, ptr, s_dev, inode_nr, start_pos);
+}
 
