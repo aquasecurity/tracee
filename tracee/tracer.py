@@ -26,6 +26,16 @@ BPF_PROGRAM = "tracee/event_monitor_ebpf.c"
 TAIL_VFS_WRITE   = 0
 TAIL_SEND_BIN    = 1
 
+SEND_VFS_WRITE   = 1
+SEND_MPROTECT    = 2
+
+security_alerts = {
+    1: "Mmaped region with W+E permissions!",
+    2: "Protection changed to Executable!",
+    3: "Protection changed from E to W+E!",
+    4: "Protection changed from W+E to E!",
+}
+
 # include/uapi/linux/capability.h
 capabilities = {
     0: "CAP_CHOWN",
@@ -597,7 +607,9 @@ event_id = {
     352: "cap_capable",
     353: "security_bprm_check",
     354: "security_file_open",
-    355: "vfs_write"
+    355: "vfs_write",
+    356: "mmap_alert",
+    357: "mprotect_alert",
 }
 
 # argument types should match defined values in ebpf file code
@@ -625,13 +637,15 @@ class ArgType(object):
     ACCESS_MODE_T   = 20
     PTRACE_REQ_T    = 21
     PRCTL_OPT_T     = 22
+    ALERT_T         = 23
     TYPE_MAX        = 255
 
 class shared_config(object):
-    CONFIG_CONT_MODE       = 0
-    CONFIG_SHOW_SYSCALL    = 1
-    CONFIG_EXEC_ENV        = 2
-    CONFIG_CAPTURE_FILES   = 3
+    CONFIG_CONT_MODE        = 0
+    CONFIG_SHOW_SYSCALL     = 1
+    CONFIG_EXEC_ENV         = 2
+    CONFIG_CAPTURE_FILES    = 3
+    CONFIG_EXTRACT_DYN_CODE = 4
 
 class context_t(ctypes.Structure):  # match layout of eBPF C's context_t struct
     _fields_ = [("ts", ctypes.c_uint64),
@@ -849,6 +863,20 @@ def open_flags_to_str(flags):
 
     return f_str
 
+def alert_to_str(alert):
+    alert_str = ""
+    alert_nr = alert & 0xFF
+    alert_rand = alert >> 32
+
+    if alert_nr in security_alerts:
+        alert_str = security_alerts[alert_nr]
+    else:
+        alert_str = str(alert_nr)
+    if alert_rand != 0:
+        alert_str += " Saving data to bin." + str(alert_rand)
+
+    return alert_str
+
 # Given the list of event names the user wants to trace, get_kprobes() returns the 
 # - syscalls we want kprobes for 
 # - events we want kprobes for 
@@ -889,11 +917,14 @@ class EventMonitor:
         self.list_events = args.list
         self.events_to_trace = args.events
         self.buf_pages = args.buf_pages
+        self.bin_buf_pages = args.bin_buf_pages
         self.show_syscall = args.show_syscall
         self.exec_env = args.exec_env
         self.capture_files = args.capture_files
         self.output_path = args.output_path
         self.filter_file_write = args.filter_file_write
+        self.security_alerts = args.security_alerts
+        self.extract_dynamic_code = args.extract_dynamic_code
 
     def init_bpf(self):
         bpf_text = load_bpf_program()
@@ -921,6 +952,15 @@ class EventMonitor:
                     print("The length of a path filter is limited to 64 characters: " + filter)
                     exit()
 
+        if self.extract_dynamic_code and not self.security_alerts:
+            print("extract-dynamic-code was chosen, implicitly enabling alert events ")
+            self.security_alerts = True
+
+        if self.security_alerts and "mmap" not in self.events_to_trace:
+            self.events_to_trace.append("mmap")
+        if self.security_alerts and "mprotect" not in self.events_to_trace:
+            self.events_to_trace.append("mprotect")
+
         # initialize BPF
         self.bpf = BPF(text=bpf_text)
 
@@ -933,6 +973,8 @@ class EventMonitor:
         self.bpf["config_map"][key] = ctypes.c_uint32(self.exec_env)
         key = ctypes.c_uint32(shared_config.CONFIG_CAPTURE_FILES)
         self.bpf["config_map"][key] = ctypes.c_uint32(self.capture_files)
+        key = ctypes.c_uint32(shared_config.CONFIG_EXTRACT_DYN_CODE)
+        self.bpf["config_map"][key] = ctypes.c_uint32(self.extract_dynamic_code)
 
         if self.filter_file_write is not None:
             for i, path in enumerate(self.filter_file_write):
@@ -963,6 +1005,12 @@ class EventMonitor:
         self.bpf.attach_kprobe(event="vfs_write", fn_name="trace_vfs_write")
         self.bpf.attach_kretprobe(event="vfs_write", fn_name="trace_ret_vfs_write")
         self.events_to_trace.append("vfs_write")
+
+        if self.security_alerts:
+            self.bpf.attach_kretprobe(event="security_mmap_addr", fn_name="trace_mmap_alert")
+            self.events_to_trace.append("mmap_alert")
+            self.bpf.attach_kprobe(event="security_file_mprotect", fn_name="trace_mprotect_alert")
+            self.events_to_trace.append("mprotect_alert")
 
         # Set prog_array for tail calls
         prog_array = self.bpf.get_table("prog_array")
@@ -1242,6 +1290,8 @@ class EventMonitor:
                         args.append(prctl_option[option])
                     else:
                         args.append(str(option))
+                elif argtype == ArgType.ALERT_T:
+                    args.append(alert_to_str(self.get_ulong_from_buf(event_buf)))
         else:
             return
 
@@ -1260,10 +1310,14 @@ class EventMonitor:
 
         meta_type = ctypes.cast(ctypes.byref(event_buf, 0), ctypes.POINTER(ctypes.c_byte)).contents.value
         mnt_id = ctypes.cast(ctypes.byref(event_buf, 1), ctypes.POINTER(ctypes.c_uint)).contents.value
-        if (meta_type == 1):
+        if (meta_type == SEND_VFS_WRITE):
             dev_id = ctypes.cast(ctypes.byref(event_buf, 5), ctypes.POINTER(ctypes.c_uint)).contents.value
             inode = ctypes.cast(ctypes.byref(event_buf, 9), ctypes.POINTER(ctypes.c_ulong)).contents.value
             filename = self.output_path + "/" + str(mnt_id) + "/write.dev-" + str(dev_id) + ".inode-" + str(inode)
+        if (meta_type == SEND_MPROTECT):
+            random_nr = ctypes.cast(ctypes.byref(event_buf, 5), ctypes.POINTER(ctypes.c_uint)).contents.value
+            # note: size of buffer will determine maximum extracted file size! (as writes from kernel are immediate)
+            filename = self.output_path + "/" + str(mnt_id) + "/bin." + str(random_nr)
         count = ctypes.cast(ctypes.byref(event_buf, 25), ctypes.POINTER(ctypes.c_int)).contents.value
         pos = ctypes.cast(ctypes.byref(event_buf, 29), ctypes.POINTER(ctypes.c_ulong)).contents.value
         cur_off = 37
@@ -1299,7 +1353,7 @@ class EventMonitor:
     def monitor_events(self):
         # loop with callback to handle_event
         self.bpf["events"].open_perf_buffer(self.handle_event, page_cnt=self.buf_pages, lost_cb=self.lost_event)
-        self.bpf["file_writes"].open_perf_buffer(self.handle_file_write_event, page_cnt=self.buf_pages, lost_cb=self.lost_event)
+        self.bpf["file_writes"].open_perf_buffer(self.handle_file_write_event, page_cnt=self.bin_buf_pages, lost_cb=self.lost_event)
 
         while self.do_trace:
             try:
