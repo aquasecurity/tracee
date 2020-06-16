@@ -2,7 +2,7 @@ SRC = $(shell find . -type f -name '*.go' ! -name '*_test.go' )
 ebpfProgramBase64 = $(shell base64 -w 0 tracee/event_monitor_ebpf.c)
 
 .PHONY: build
-build: dist/tracee tracee/event_monitor_ebpf.c
+build: dist/tracee
 
 .PHONY: build-docker
 build-docker: clean
@@ -11,7 +11,7 @@ build-docker: clean
 	docker cp $$cnt:/tracee/dist - | tar -xf - ; \
 	docker rm $$cnt ; docker rmi $$img
 
-dist/tracee: $(SRC)
+dist/tracee: $(SRC) tracee/event_monitor_ebpf.c
 	GOOS=linux go build -v -o dist/tracee -ldflags "-X github.com/aquasecurity/tracee/tracee.ebpfProgramBase64Injected=$(ebpfProgramBase64)"
 
 .PHONY: test
