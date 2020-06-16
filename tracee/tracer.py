@@ -572,11 +572,26 @@ event_id = {
     332: "statx",
     333: "io_pgetevents",
     334: "rseq",
+    #335: reserved
+    #336: reserved
+    #337: reserved
+    #338: reserved
+    #339: reserved
+    #340: reserved
+    #341: reserved
+    #342: reserved
+    #343: reserved
+    #344: reserved
+    #345: reserved
+    #346: reserved
+    #347: reserved
+    #348: reserved
+    #349: reserved
     # Non syscall events start here
-    335: "do_exit",
-    336: "cap_capable",
-    337: "security_bprm_check",
-    338: "security_file_open"
+    350: "do_exit",
+    351: "cap_capable",
+    352: "security_bprm_check",
+    353: "security_file_open",
 }
 
 # argument types should match defined values in ebpf file code
