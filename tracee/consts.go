@@ -32,12 +32,9 @@ const (
 	TYPE_MAX      ArgType = 255
 )
 
-// EventsIDToName holds all the events that tracee can trace. this includes system calls, and other kernel functions
-// it also maps event IDs to event names
-// syscall IDs range from 0-335 and are based on Linux internal ordering of syscalls. this ordering is not important but kept as a convention
-// therefore, unused events are still listed here as comments to reserve the event number.
-// other (non-syscall) event IDs range from 335-MAXINT32
-var EventsIDToName = map[int32]string{
+// EventsSyscalls is list of supported syscall events, indexed by their ID
+// syscall tracepoints are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#8-system-call-tracepoints
+var EventsSyscalls = map[int32]string{
 	//	0: "read",
 	//	1: "write",
 	2: "open",
@@ -373,32 +370,48 @@ var EventsIDToName = map[int32]string{
 	//	332: "statx",
 	//	333: "io_pgetevents",
 	//	334: "rseq",
-
-	// Non syscall events start here
-	335: "do_exit",
-	336: "cap_capable",
-	337: "security_bprm_check",
-	338: "security_file_open",
+	//	335: reserved
+	//	336: reserved
+	//	337: reserved
+	//	338: reserved
+	//	339: reserved
+	//	340: reserved
+	//	341: reserved
+	//	342: reserved
+	//	343: reserved
+	//	344: reserved
+	//	345: reserved
+	//	346: reserved
+	//	347: reserved
+	//	348: reserved
+	//	349: reserved
 }
 
-// EventIDMax marks the highest event ID in the EventsIDToName map
-const EventIDMax = 338
-
-// EventIDSyscallMax marks the highest event ID for system call. Beyond this ID events are non-syscalls
-const EventIDSyscallMax = 334
-
-// IsEventSyscall determines if the given event ID is a syscall or other event based on the EventsIDToName map
-func IsEventSyscall(e int32) bool {
-	return e <= EventIDSyscallMax
+// EventsKprobes is list of supported kprobes events, indexed by their ID
+// Kprobes are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#1-kprobes
+var EventsKprobes = map[int32]string{
+	350: "do_exit",
+	351: "cap_capable",
+	352: "security_bprm_check",
+	353: "security_file_open",
 }
 
-// EventsNameToID is the reverse mapping of EventsIDToName
-// it is automatically generated in runtime
+// EventsIDToName holds all the events that tracee can trace, indexed by their ID
+var EventsIDToName map[int32]string
+
+// EventsNameToID holds all the events that tracee can trace, indexed by their Name
 var EventsNameToID map[string]int32
 
 func init() {
-	EventsNameToID = make(map[string]int32, len(EventsIDToName))
-	for id, name := range EventsIDToName {
+	len := len(EventsSyscalls) + len(EventsKprobes)
+	EventsIDToName = make(map[int32]string, len)
+	EventsNameToID = make(map[string]int32, len)
+	for id, name := range EventsSyscalls {
+		EventsIDToName[id] = name
+		EventsNameToID[name] = id
+	}
+	for id, name := range EventsKprobes {
+		EventsIDToName[id] = name
 		EventsNameToID[name] = id
 	}
 }

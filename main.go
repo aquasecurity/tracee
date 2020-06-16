@@ -90,12 +90,9 @@ func main() {
 func printList() {
 	const sep = ", "
 	var b strings.Builder
-	var i int32
-	for i = 0; i <= tracee.EventIDSyscallMax; i++ {
-		if name, ok := tracee.EventsIDToName[i]; ok {
-			b.WriteString(name)
-			b.WriteString(sep)
-		}
+	for _, name := range tracee.EventsSyscalls {
+		b.WriteString(name)
+		b.WriteString(sep)
 	}
 	fmt.Println("System calls:")
 	fmt.Println(strings.TrimSuffix(b.String(), sep))
@@ -103,11 +100,9 @@ func printList() {
 	b.Reset()
 	fmt.Println()
 
-	for i = tracee.EventIDSyscallMax + 1; i <= tracee.EventIDMax; i++ {
-		if name, ok := tracee.EventsIDToName[i]; ok {
-			b.WriteString(name)
-			b.WriteString(sep)
-		}
+	for _, name := range tracee.EventsKprobes {
+		b.WriteString(name)
+		b.WriteString(sep)
 	}
 	fmt.Println("System events:")
 	fmt.Println(strings.TrimSuffix(b.String(), sep))

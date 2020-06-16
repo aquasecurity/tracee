@@ -232,8 +232,7 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 
 	sysPrefix := bpf.GetSyscallPrefix()
 	for _, e := range eventsToTraceFinal {
-		eName := EventsIDToName[e]
-		if IsEventSyscall(e) {
+		if eName, isSyscall := EventsSyscalls[e]; isSyscall {
 			kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("syscall__%s", eName))
 			if err != nil {
 				return fmt.Errorf("error loading kprobe %s: %v", eName, err)
@@ -250,7 +249,7 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 			if err != nil {
 				return fmt.Errorf("error attaching kretprobe %s: %v", eName, err)
 			}
-		} else {
+		} else if eName, isKprobe := EventsKprobes[e]; isKprobe {
 			kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("trace_%s", eName))
 			if err != nil {
 				return fmt.Errorf("error loading kprobe %s: %v", eName, err)
