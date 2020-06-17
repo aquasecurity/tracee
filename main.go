@@ -27,6 +27,9 @@ func main() {
 				c.String("output"),
 				c.Int("perf-buffer-size"),
 			)
+			if c.Bool("show-all-syscalls") {
+				cfg.EventsToTrace = append(cfg.EventsToTrace, tracee.EventsNameToID["raw_syscalls"])
+			}
 			if err != nil {
 				return fmt.Errorf("error creating Tracee config: %v", err)
 			}
@@ -78,6 +81,12 @@ func main() {
 				Value:   64,
 				Usage:   "size, in pages, of the internal perf ring buffer used to submit events from the kernel",
 			},
+			&cli.BoolFlag{
+				Name:    "show-all-syscalls",
+				Aliases: []string{"a"},
+				Value:   false,
+				Usage:   "log all syscalls invocations, including syscalls which were not fully traced by tracee (shortcut to -e raw_syscalls)",
+			},
 		},
 	}
 
@@ -96,7 +105,15 @@ func printList() {
 	}
 	fmt.Println("System calls:")
 	fmt.Println(strings.TrimSuffix(b.String(), sep))
+	b.Reset()
+	fmt.Println()
 
+	for _, name := range tracee.EventsTracepoints {
+		b.WriteString(name)
+		b.WriteString(sep)
+	}
+	fmt.Println("Tracepoints:")
+	fmt.Println(strings.TrimSuffix(b.String(), sep))
 	b.Reset()
 	fmt.Println()
 

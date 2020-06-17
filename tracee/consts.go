@@ -387,13 +387,21 @@ var EventsSyscalls = map[int32]string{
 	//	349: reserved
 }
 
+// EventsTracepoints is list of supported tracepoints events, indexed by their ID
+// Currently the item name is the tracepoint category and the actuall tracepoint is always sys_enter
+// Tracepoints are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#3-tracepoints
+var EventsTracepoints = map[int32]string{
+	// Trace all syscalls
+	350: "raw_syscalls",
+}
+
 // EventsKprobes is list of supported kprobes events, indexed by their ID
 // Kprobes are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#1-kprobes
 var EventsKprobes = map[int32]string{
-	350: "do_exit",
-	351: "cap_capable",
-	352: "security_bprm_check",
-	353: "security_file_open",
+	351: "do_exit",
+	352: "cap_capable",
+	353: "security_bprm_check",
+	354: "security_file_open",
 }
 
 // EventsIDToName holds all the events that tracee can trace, indexed by their ID
@@ -407,6 +415,10 @@ func init() {
 	EventsIDToName = make(map[int32]string, len)
 	EventsNameToID = make(map[string]int32, len)
 	for id, name := range EventsSyscalls {
+		EventsIDToName[id] = name
+		EventsNameToID[name] = id
+	}
+	for id, name := range EventsTracepoints {
 		EventsIDToName[id] = name
 		EventsNameToID[name] = id
 	}
