@@ -588,7 +588,7 @@ event_id = {
     #348: reserved
     #349: reserved
     # Non syscall events start here
-    350: "raw_syscall",
+    350: "raw_syscalls",
     351: "do_exit",
     352: "cap_capable",
     353: "security_bprm_check",
@@ -926,7 +926,7 @@ class EventMonitor:
             self.bpf.attach_kprobe(event=sysevent, fn_name="trace_" + sysevent)
 
         if self.raw_syscalls:
-            self.events_to_trace.append("raw_syscall")
+            self.events_to_trace.append("raw_syscalls")
 
         if not self.json:
             log.info("%-14s %-16s %-12s %-12s %-6s %-16s %-16s %-6s %-6s %-6s %-12s %s" % (
