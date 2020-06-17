@@ -34,6 +34,8 @@ def parse_args(input_args):
         epilog=examples)
     parser.add_argument("-c", "--container", action="store_true",
                         help="only trace newly created containers")
+    parser.add_argument("-r", "--raw-syscalls", action="store_true",
+                        help="trace raw syscalls")
     parser.add_argument("-b", "--buf-pages", type=int, default=64,
                         choices=[1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024],
                         help="number of pages for perf buffer, defaults to %(default)s")

@@ -258,7 +258,17 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 			if err != nil {
 				return fmt.Errorf("error attaching kprobe %s: %v", eName, err)
 			}
+		} else if eName, isTracepoint := EventsTracepoints[e]; isTracepoint {
+			tp, err := t.bpfModule.LoadTracepoint(fmt.Sprintf("tracepoint__%s__sys_enter", eName))
+			if err != nil {
+				return fmt.Errorf("error loading tracepoint %s: %v", eName, err)
+			}
+			err = t.bpfModule.AttachTracepoint(fmt.Sprintf("%s:sys_enter", eName), tp)
+			if err != nil {
+				return fmt.Errorf("error attaching tracepoint %s: %v", eName, err)
+			}
 		}
+
 	}
 
 	bpfConfig := bpf.NewTable(t.bpfModule.TableId("config_map"), t.bpfModule)
