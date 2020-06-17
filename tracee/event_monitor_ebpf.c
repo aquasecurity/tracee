@@ -409,6 +409,7 @@ enum event_id {
     RESERVED347,
     RESERVED348,
     RESERVED349,
+    RAW_SYSCALLS,
     DO_EXIT,
     CAP_CAPABLE,
     SECURITY_BPRM_CHECK,
@@ -1264,6 +1265,28 @@ TRACE_ENT_SYSCALL(vfork);
 TRACE_RET_FORK_SYSCALL(vfork, SYS_VFORK, 0);
 TRACE_ENT_SYSCALL(clone);
 TRACE_RET_FORK_SYSCALL(clone, SYS_CLONE, 0);
+
+TRACEPOINT_PROBE(raw_syscalls, sys_enter) {
+    context_t context = {};
+
+    if (init_context(&context) || init_submit_buf())
+        return 0;
+
+    submit_buf_t *submit_p = get_submit_buf();
+    if (submit_p == NULL)
+        return 0;
+
+    context.eventid = RAW_SYSCALLS;
+    context.argnum = 1;
+    context.retval = 0;
+
+    save_context_to_buf(submit_p, (void*)&context);
+
+    save_to_submit_buf(submit_p, (void*)&(args->id), sizeof(int), INT_T);
+    events_perf_submit((struct pt_regs *)args);
+    
+    return 0;
+}
 
 int syscall__execve(struct pt_regs *ctx,
     const char __user *filename,

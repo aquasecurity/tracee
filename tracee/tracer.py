@@ -588,10 +588,11 @@ event_id = {
     #348: reserved
     #349: reserved
     # Non syscall events start here
-    350: "do_exit",
-    351: "cap_capable",
-    352: "security_bprm_check",
-    353: "security_file_open",
+    350: "raw_syscall",
+    351: "do_exit",
+    352: "cap_capable",
+    353: "security_bprm_check",
+    354: "security_file_open"
 }
 
 # argument types should match defined values in ebpf file code
@@ -877,6 +878,7 @@ class EventMonitor:
 
         # input arguments
         self.cont_mode = args.container
+        self.raw_syscalls = args.raw_syscalls
         self.json = args.json
         self.ebpf = args.ebpf
         self.list_events = args.list
@@ -922,6 +924,9 @@ class EventMonitor:
 
         for sysevent in se:
             self.bpf.attach_kprobe(event=sysevent, fn_name="trace_" + sysevent)
+
+        if self.raw_syscalls:
+            self.events_to_trace.append("raw_syscall")
 
         if not self.json:
             log.info("%-14s %-16s %-12s %-12s %-6s %-16s %-16s %-6s %-6s %-6s %-12s %s" % (
