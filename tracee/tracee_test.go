@@ -179,14 +179,6 @@ func TestReadArgFromBuff(t *testing.T) {
 			expectedArg: "PR_GET_TSC",
 		},
 		{
-			name: "R_PATH_T",
-			input: []byte{23, //R_PATH_T
-				16, 0, 0, 0, //len=16
-				47, 117, 115, 114, 47, 98, 105, 110, 47, 100, 111, 99, 107, 101, 114, 0, // /usr/bin/docker
-			},
-			expectedArg: "docker/bin/usr/",
-		},
-		{
 			name:          "unknown",
 			input:         []byte{0xDE, 0xAD, 0xBE, 0xEF},
 			expectedError: errors.New("error unknown arg type 222"),

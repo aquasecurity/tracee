@@ -18,8 +18,8 @@
 #include <linux/version.h>
 
 #define MAXARG 20
-#define MAX_STRING_SIZE 4096                                // Choosing this value to be the same as PATH_MAX
-#define SUBMIT_BUFSIZE  (2 << 13)                           // Need to be power of 2
+#define MAX_STRING_SIZE (1 << 12)                           // Choosing this value to be the same as PATH_MAX (4096)
+#define SUBMIT_BUFSIZE  (1 << 14)                           // Need to be power of 2
 #define SUBMIT_BUFSIZE_HALF   ((SUBMIT_BUFSIZE-1) >> 1)     // Bitmask for ebpf validator - this is why we need SUBMIT_BUFSIZE to be power of 2
 
 #define NONE_T        0UL
@@ -45,7 +45,6 @@
 #define ACCESS_MODE_T 20UL
 #define PTRACE_REQ_T  21UL
 #define PRCTL_OPT_T   22UL
-#define R_PATH_T      23UL
 #define TYPE_MAX      255UL
 
 #define CONFIG_CONT_MODE    0
@@ -811,7 +810,7 @@ static __always_inline int save_path_to_buf(submit_buf_t *submit_p, struct path 
     if (string_p == NULL)
         return -1;
 
-    string_p->off = 0;
+    string_p->off = SUBMIT_BUFSIZE - MAX_STRING_SIZE;
 
     #pragma unroll
     // As bpf loops are not allowed and max instructions number is 4096, path components is limited to 30
@@ -831,17 +830,17 @@ static __always_inline int save_path_to_buf(submit_buf_t *submit_p, struct path 
             // Global root - path fully parsed
             break;
         }
-        // Add this dentry name to (reversed) path
-        int sz = bpf_probe_read_str((void **)&(string_p->buf[string_p->off & SUBMIT_BUFSIZE_HALF]), MAX_STRING_SIZE, (void *)dentry->d_name.name);
+        // Add this dentry name to path
+        unsigned int len = (dentry->d_name.len+1) & (MAX_STRING_SIZE-1);
+        unsigned int off = string_p->off - len;
+        // Is string buffer big enough for dentry name?
+        if (off > SUBMIT_BUFSIZE - MAX_STRING_SIZE)
+            break;
+        int sz = bpf_probe_read_str((void **)&(string_p->buf[off]), len, (void *)dentry->d_name.name);
         if (sz > 1) {
-            // Is string buffer big enough for path?
-            if (string_p->off + sz > SUBMIT_BUFSIZE_HALF - 2) {
-                string_p->off = SUBMIT_BUFSIZE_HALF - 1;
-                break;
-            }
-            string_p->off += sz - 1; // remove null byte termination for concatenation
-            bpf_probe_read((void **)&(string_p->buf[string_p->off & SUBMIT_BUFSIZE_HALF]), 1, (void *)&slash);
-            string_p->off += 1;
+            string_p->off -= 1; // remove null byte termination with slash sign
+            bpf_probe_read((void **)&(string_p->buf[string_p->off & (SUBMIT_BUFSIZE-1)]), 1, (void *)&slash);
+            string_p->off -= sz - 1;
         } else {
             // If sz is 0 or 1 we have an error (path can't be null nor an empty string)
             break;
@@ -849,9 +848,19 @@ static __always_inline int save_path_to_buf(submit_buf_t *submit_p, struct path 
         dentry = dentry->d_parent;
     }
 
-    // Null terminate the path string
-    bpf_probe_read((void **)&(string_p->buf[string_p->off & SUBMIT_BUFSIZE_HALF]), 1, (void *)&zero);
-    save_str_to_buf(submit_p, (void *)string_p->buf, R_PATH_T);
+    if (string_p->off == SUBMIT_BUFSIZE - MAX_STRING_SIZE) {
+	// memfd files have no path in the filesystem -> extract their name
+        string_p->off = 0;
+        int sz = bpf_probe_read_str((void **)&(string_p->buf[0]), MAX_STRING_SIZE, (void *)dentry->d_name.name);
+    } else {
+        // Add leading slash
+        string_p->off -= 1;
+        bpf_probe_read((void **)&(string_p->buf[string_p->off & (SUBMIT_BUFSIZE-1)]), 1, (void *)&slash);
+        // Null terminate the path string
+        bpf_probe_read((void **)&(string_p->buf[SUBMIT_BUFSIZE - MAX_STRING_SIZE-1]), 1, (void *)&zero);
+    }
+
+    save_str_to_buf(submit_p, (void *)&string_p->buf[string_p->off], STR_T);
 
     return 0;
 }
@@ -1538,3 +1547,4 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
     events_perf_submit(ctx);
     return 0;
 };
+

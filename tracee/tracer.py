@@ -620,7 +620,6 @@ class ArgType(object):
     ACCESS_MODE_T   = 20
     PTRACE_REQ_T    = 21
     PRCTL_OPT_T     = 22
-    R_PATH_T        = 23
     TYPE_MAX        = 255
 
 class shared_config(object):
@@ -1153,10 +1152,6 @@ class EventMonitor:
                     args.append(str(self.get_pointer_from_buf(event_buf)))
                 elif argtype == ArgType.STR_T:
                     args.append(self.get_string_from_buf(event_buf))
-                elif argtype == ArgType.R_PATH_T:
-                    rpath = self.get_string_from_buf(event_buf).split("/")
-                    rpath.reverse()
-                    args.append('/'.join(rpath))
                 elif argtype == ArgType.STR_ARR_T:
                     args.append(self.get_str_arr_from_buf(event_buf))
                 elif argtype == ArgType.SOCKADDR_T:
