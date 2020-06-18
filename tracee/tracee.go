@@ -11,7 +11,6 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	bpf "github.com/iovisor/gobpf/bcc"
 )
@@ -679,14 +678,6 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 			return nil, err
 		}
 		res = PrintSocketType(t)
-	case R_PATH_T:
-		rp, err := readStringFromBuff(dataBuff)
-		if err != nil {
-			return nil, err
-		}
-		rpParts := strings.Split(rp, "/")
-		reverseStringSlice(rpParts)
-		res = strings.Join(rpParts, "/")
 	case PRCTL_OPT_T:
 		op, err := readInt32FromBuff(dataBuff)
 		if err != nil {
