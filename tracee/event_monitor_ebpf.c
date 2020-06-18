@@ -18,9 +18,8 @@
 #include <linux/version.h>
 
 #define MAXARG 20
-#define MAX_STRING_SIZE (1 << 12)                           // Choosing this value to be the same as PATH_MAX (4096)
-#define SUBMIT_BUFSIZE  (1 << 14)                           // Need to be power of 2
-#define SUBMIT_BUFSIZE_HALF   ((SUBMIT_BUFSIZE-1) >> 1)     // Bitmask for ebpf validator - this is why we need SUBMIT_BUFSIZE to be power of 2
+#define MAX_STRING_SIZE     (1 << 12)     // Choosing this value to be the same as PATH_MAX (4096)
+#define SUBMIT_BUFSIZE      (1 << 14)     // Need to be power of 2
 
 #define NONE_T        0UL
 #define INT_T         1UL
@@ -742,22 +741,29 @@ static __always_inline int save_context_to_buf(submit_buf_t *submit_p, void *ptr
 
 static __always_inline int save_to_submit_buf(submit_buf_t *submit_p, void *ptr, int size, u8 type)
 {
-    if (submit_p->off > SUBMIT_BUFSIZE_HALF)
-        // not enough space - return
-        return 0;
+// The biggest element that can be saved with this function should be defined here
+#define MAX_ELEMENT_SIZE sizeof(struct sockaddr_un)
 
     if (type == 0)
         return 0;
 
+    if (submit_p->off > SUBMIT_BUFSIZE - MAX_ELEMENT_SIZE)
+        // Satisfy validator for probe read
+        return 0;
+
     // Save argument type
-    int rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->off & SUBMIT_BUFSIZE_HALF]), 1, &type);
+    int rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->off]), 1, &type);
     if (rc != 0)
         return 0;
 
     submit_p->off += 1;
 
+    if (submit_p->off > SUBMIT_BUFSIZE - MAX_ELEMENT_SIZE)
+        // Satisfy validator for probe read
+        return 0;
+
     // Read into buffer
-    rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->off & SUBMIT_BUFSIZE_HALF]), size, ptr);
+    rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->off]), size, ptr);
     if (rc == 0) {
         submit_p->off += size;
         return size;
@@ -770,22 +776,29 @@ static __always_inline int save_to_submit_buf(submit_buf_t *submit_p, void *ptr,
 
 static __always_inline int save_str_to_buf(submit_buf_t *submit_p, void *ptr)
 {
-    if (submit_p->off > SUBMIT_BUFSIZE_HALF)
+    if (submit_p->off > SUBMIT_BUFSIZE - MAX_STRING_SIZE - sizeof(int))
         // not enough space - return
         return 0;
 
     // Save argument type
     u8 type = STR_T;
-    int rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->off & SUBMIT_BUFSIZE_HALF]), 1, &type);
+    int rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->off & (SUBMIT_BUFSIZE-1)]), 1, &type);
     if (rc != 0)
         return 0;
 
     submit_p->off += 1;
 
+    if (submit_p->off > SUBMIT_BUFSIZE - MAX_STRING_SIZE - sizeof(int))
+        // Satisfy validator for probe read
+        return 0;
+
     // Read into buffer
-    int sz = bpf_probe_read_str((void **)&(submit_p->buf[(submit_p->off + sizeof(int)) & SUBMIT_BUFSIZE_HALF]), MAX_STRING_SIZE, ptr);
+    int sz = bpf_probe_read_str((void **)&(submit_p->buf[submit_p->off + sizeof(int)]), MAX_STRING_SIZE, ptr);
     if (sz > 0) {
-        bpf_probe_read((void **)&(submit_p->buf[submit_p->off & SUBMIT_BUFSIZE_HALF]), sizeof(int), &sz);
+        if (submit_p->off > SUBMIT_BUFSIZE - sizeof(int))
+            // Satisfy validator for probe read
+            return 0;
+        bpf_probe_read((void **)&(submit_p->buf[submit_p->off]), sizeof(int), &sz);
         submit_p->off += sz + sizeof(int);
         return sz + sizeof(int);
     }
@@ -865,7 +878,7 @@ static __always_inline int events_perf_submit(struct pt_regs *ctx)
         return -1;
 
     /* satisfy validator by setting buffer bounds */
-    int size = ((submit_p->off - 1) & SUBMIT_BUFSIZE_HALF) + 1;
+    int size = submit_p->off & (SUBMIT_BUFSIZE-1);
     void * data = submit_p->buf;
     return events.perf_submit(ctx, data, size);
 }
