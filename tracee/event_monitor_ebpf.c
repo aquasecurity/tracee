@@ -732,7 +732,7 @@ static __always_inline int init_submit_buf()
 // It may be needed to resave the context if the arguments number changed by logic
 static __always_inline int save_context_to_buf(submit_buf_t *submit_p, void *ptr)
 {
-    int rc = bpf_probe_read((void **)&(submit_p->buf[0]), sizeof(context_t), ptr);
+    int rc = bpf_probe_read(&(submit_p->buf[0]), sizeof(context_t), ptr);
     if (rc == 0)
         return sizeof(context_t);
 
@@ -752,7 +752,7 @@ static __always_inline int save_to_submit_buf(submit_buf_t *submit_p, void *ptr,
         return 0;
 
     // Save argument type
-    int rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->off]), 1, &type);
+    int rc = bpf_probe_read(&(submit_p->buf[submit_p->off]), 1, &type);
     if (rc != 0)
         return 0;
 
@@ -763,7 +763,7 @@ static __always_inline int save_to_submit_buf(submit_buf_t *submit_p, void *ptr,
         return 0;
 
     // Read into buffer
-    rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->off]), size, ptr);
+    rc = bpf_probe_read(&(submit_p->buf[submit_p->off]), size, ptr);
     if (rc == 0) {
         submit_p->off += size;
         return size;
@@ -782,7 +782,7 @@ static __always_inline int save_str_to_buf(submit_buf_t *submit_p, void *ptr)
 
     // Save argument type
     u8 type = STR_T;
-    int rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->off & (SUBMIT_BUFSIZE-1)]), 1, &type);
+    int rc = bpf_probe_read(&(submit_p->buf[submit_p->off & (SUBMIT_BUFSIZE-1)]), 1, &type);
     if (rc != 0)
         return 0;
 
@@ -793,12 +793,12 @@ static __always_inline int save_str_to_buf(submit_buf_t *submit_p, void *ptr)
         return 0;
 
     // Read into buffer
-    int sz = bpf_probe_read_str((void **)&(submit_p->buf[submit_p->off + sizeof(int)]), MAX_STRING_SIZE, ptr);
+    int sz = bpf_probe_read_str(&(submit_p->buf[submit_p->off + sizeof(int)]), MAX_STRING_SIZE, ptr);
     if (sz > 0) {
         if (submit_p->off > SUBMIT_BUFSIZE - sizeof(int))
             // Satisfy validator for probe read
             return 0;
-        bpf_probe_read((void **)&(submit_p->buf[submit_p->off]), sizeof(int), &sz);
+        bpf_probe_read(&(submit_p->buf[submit_p->off]), sizeof(int), &sz);
         submit_p->off += sz + sizeof(int);
         return sz + sizeof(int);
     }
@@ -844,10 +844,10 @@ static __always_inline int get_path_string(submit_buf_t *string_p, struct path *
         // Is string buffer big enough for dentry name?
         if (off > SUBMIT_BUFSIZE - MAX_STRING_SIZE)
             break;
-        int sz = bpf_probe_read_str((void **)&(string_p->buf[off]), len, (void *)dentry->d_name.name);
+        int sz = bpf_probe_read_str(&(string_p->buf[off]), len, (void *)dentry->d_name.name);
         if (sz > 1) {
             string_p->off -= 1; // remove null byte termination with slash sign
-            bpf_probe_read((void **)&(string_p->buf[string_p->off & (SUBMIT_BUFSIZE-1)]), 1, (void *)&slash);
+            bpf_probe_read(&(string_p->buf[string_p->off & (SUBMIT_BUFSIZE-1)]), 1, &slash);
             string_p->off -= sz - 1;
         } else {
             // If sz is 0 or 1 we have an error (path can't be null nor an empty string)
@@ -859,13 +859,13 @@ static __always_inline int get_path_string(submit_buf_t *string_p, struct path *
     if (string_p->off == SUBMIT_BUFSIZE - MAX_STRING_SIZE) {
 	// memfd files have no path in the filesystem -> extract their name
         string_p->off = 0;
-        int sz = bpf_probe_read_str((void **)&(string_p->buf[0]), MAX_STRING_SIZE, (void *)dentry->d_name.name);
+        int sz = bpf_probe_read_str(&(string_p->buf[0]), MAX_STRING_SIZE, (void *)dentry->d_name.name);
     } else {
         // Add leading slash
         string_p->off -= 1;
-        bpf_probe_read((void **)&(string_p->buf[string_p->off & (SUBMIT_BUFSIZE-1)]), 1, (void *)&slash);
+        bpf_probe_read(&(string_p->buf[string_p->off & (SUBMIT_BUFSIZE-1)]), 1, &slash);
         // Null terminate the path string
-        bpf_probe_read((void **)&(string_p->buf[SUBMIT_BUFSIZE - MAX_STRING_SIZE-1]), 1, (void *)&zero);
+        bpf_probe_read(&(string_p->buf[SUBMIT_BUFSIZE - MAX_STRING_SIZE-1]), 1, &zero);
     }
 
     return string_p->off;
