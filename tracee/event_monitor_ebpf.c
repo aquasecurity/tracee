@@ -794,7 +794,7 @@ static __always_inline int save_str_to_buf(submit_buf_t *submit_p, void *ptr, in
     return 0;
 }
 
-static __always_inline int save_path_to_buf(submit_buf_t *submit_p, struct path *path)
+static __always_inline int get_path_string(submit_buf_t *string_p, struct path *path)
 {
     char slash = '/';
     int zero = 0;
@@ -803,12 +803,6 @@ static __always_inline int save_path_to_buf(submit_buf_t *submit_p, struct path 
     struct mount mnt;
     struct mount *mnt_p = real_mount(vfsmnt);
     bpf_probe_read(&mnt, sizeof(struct mount), mnt_p);
-
-    int idx = 0;
-    // Get per-cpu string buffer
-    submit_buf_t *string_p = string_buf.lookup(&idx);
-    if (string_p == NULL)
-        return -1;
 
     string_p->off = SUBMIT_BUFSIZE - MAX_STRING_SIZE;
 
@@ -860,9 +854,7 @@ static __always_inline int save_path_to_buf(submit_buf_t *submit_p, struct path 
         bpf_probe_read((void **)&(string_p->buf[SUBMIT_BUFSIZE - MAX_STRING_SIZE-1]), 1, (void *)&zero);
     }
 
-    save_str_to_buf(submit_p, (void *)&string_p->buf[string_p->off], STR_T);
-
-    return 0;
+    return string_p->off;
 }
 
 static __always_inline int events_perf_submit(struct pt_regs *ctx)
@@ -1475,8 +1467,15 @@ int trace_security_bprm_check(struct pt_regs *ctx, struct linux_binprm *bprm)
     context.argnum = 1;
     context.retval = 0;
 
+    int idx = 0;
+    // Get per-cpu string buffer
+    submit_buf_t *string_p = string_buf.lookup(&idx);
+    if (string_p == NULL)
+        return -1;
+    get_path_string(string_p, &bprm->file->f_path);
+
     save_context_to_buf(submit_p, (void*)&context);
-    save_path_to_buf(submit_p, &bprm->file->f_path);
+    save_str_to_buf(submit_p, (void *)&string_p->buf[string_p->off], STR_T);
 
     events_perf_submit(ctx);
     return 0;
@@ -1502,8 +1501,15 @@ int trace_security_file_open(struct pt_regs *ctx, struct file *file)
     if (syscall_nr != 2 && syscall_nr != 257) // only monitor open and openat syscalls
         return 0;
 
+    int idx = 0;
+    // Get per-cpu string buffer
+    submit_buf_t *string_p = string_buf.lookup(&idx);
+    if (string_p == NULL)
+        return -1;
+    get_path_string(string_p, &file->f_path);
+
     save_context_to_buf(submit_p, (void*)&context);
-    save_path_to_buf(submit_p, &file->f_path);
+    save_str_to_buf(submit_p, (void *)&string_p->buf[string_p->off], STR_T);
     save_to_submit_buf(submit_p, (void*)&file->f_flags, sizeof(int), OPEN_FLAGS_T);
 
     events_perf_submit(ctx);
