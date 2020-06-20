@@ -1602,48 +1602,69 @@ static __always_inline int send_file(struct pt_regs *ctx, void *ptr, dev_t s_dev
 
     int idx = 0;
     int rc = 0;
-    unsigned int off = 0;
     unsigned int write_size = PT_REGS_RC(ctx);
+    unsigned int chunk_size;
+
+#define F_DEV_ID_OFF  0
+#define F_INODE_OFF   (F_DEV_ID_OFF + sizeof(dev_t))
+#define F_SZ_OFF      (F_INODE_OFF + sizeof(unsigned long))
+#define F_POS_OFF     (F_SZ_OFF + sizeof(unsigned int))
+#define F_CHUNK_OFF   (F_POS_OFF + sizeof(off_t))
+#define F_CHUNK_SIZE  (MAX_PERCPU_BUFSIZE - F_CHUNK_OFF - 4)
+
+    if (write_size <= 0)
+        return 0;
 
     simple_buf_t *file_buf_p = file_buf.lookup(&idx);
     if (file_buf_p == NULL)
         return 0;
 
-    // Save number of written bytes
-    rc |= bpf_probe_read((void **)&(file_buf_p->buf[off & (MAX_PERCPU_BUFSIZE-1)]), sizeof(unsigned int), &write_size);
-    off += sizeof(unsigned int);
+    // Save device id and inode to be used in filename
+    rc |= bpf_probe_read((void **)&(file_buf_p->buf[F_DEV_ID_OFF]), sizeof(dev_t), &s_dev);
+    rc |= bpf_probe_read((void **)&(file_buf_p->buf[F_INODE_OFF]), sizeof(unsigned long), &inode_nr);
 
-    // Save device id to be used in filename
-    rc |= bpf_probe_read((void **)&(file_buf_p->buf[off & (MAX_PERCPU_BUFSIZE-1)]), sizeof(dev_t), &s_dev);
-    off += sizeof(dev_t);
+    // Save number of written bytes. Set this to CHUNK_SIZE for full chunks
+    chunk_size = F_CHUNK_SIZE;
+    rc |= bpf_probe_read((void **)&(file_buf_p->buf[F_SZ_OFF]), sizeof(unsigned int), &chunk_size);
 
-    // Save inode number to be used in filename
-    rc |= bpf_probe_read((void **)&(file_buf_p->buf[off & (MAX_PERCPU_BUFSIZE-1)]), sizeof(unsigned long), &inode_nr);
-    off += sizeof(unsigned long);
+    unsigned int full_chunk_num = write_size/F_CHUNK_SIZE;
 
-    // Save file position after write
-    rc |= bpf_probe_read((void **)&(file_buf_p->buf[off & (MAX_PERCPU_BUFSIZE-1)]), sizeof(off_t), &start_pos);
-    off += sizeof(off_t);
+    // Handle full chunks in the loop
+    #pragma unroll
+    for (int i = 0; i < 3; i++) {
+        if (i == full_chunk_num) {
+            chunk_size = write_size - full_chunk_num*F_CHUNK_SIZE;
+            break;
+        }
 
-#define BUF_OFF (sizeof(unsigned int) + sizeof(dev_t) + sizeof(unsigned long) + sizeof(off_t))
+        // Save binary chunk and file position of write
+        rc |= bpf_probe_read((void **)&(file_buf_p->buf[F_POS_OFF]), sizeof(off_t), &start_pos);
+        rc |= bpf_probe_read((void **)&(file_buf_p->buf[F_CHUNK_OFF]), F_CHUNK_SIZE, ptr + i*F_CHUNK_SIZE);
+        start_pos += F_CHUNK_SIZE;
 
-    // Satisfy validator by checking buffer bounds
-    if (write_size > (MAX_PERCPU_BUFSIZE - BUF_OFF))
+        // Verify all writes to buffer succeeded before submiting chunk
+        if (rc != 0)
+            return 0;
+
+        void *data = file_buf_p->buf;
+        rc |= file_events.perf_submit(ctx, data, F_CHUNK_OFF+F_CHUNK_SIZE);
+    }
+
+    if (chunk_size > F_CHUNK_SIZE)
         return 0;
 
-    // Save binary chunk to percpu buffer so we can submit it
-    rc |= bpf_probe_read((void **)&(file_buf_p->buf[BUF_OFF]), write_size, ptr);
-    off += write_size;
+    // Save last chunk
+    rc |= bpf_probe_read((void **)&(file_buf_p->buf[F_CHUNK_OFF]), chunk_size, ptr + full_chunk_num*F_CHUNK_SIZE);
+    rc |= bpf_probe_read((void **)&(file_buf_p->buf[F_SZ_OFF]), sizeof(unsigned int), &chunk_size);
+    rc |= bpf_probe_read((void **)&(file_buf_p->buf[F_POS_OFF]), sizeof(off_t), &start_pos);
 
     if (rc != 0)
         return 0;
 
     void *data = file_buf_p->buf;
     // Satisfy validator by setting buffer bounds
-    int size = off & (MAX_PERCPU_BUFSIZE - 1);
-    rc = file_events.perf_submit(ctx, data, size);
-    if (rc != 0)
-        return 0;
+    int size = (F_CHUNK_OFF+chunk_size) & (MAX_PERCPU_BUFSIZE - 1);
+    file_events.perf_submit(ctx, data, size);
 
     return 0;
 }
