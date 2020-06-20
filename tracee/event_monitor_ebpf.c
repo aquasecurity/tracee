@@ -477,6 +477,7 @@ BPF_HASH(vfs_args_map, u64, args_t);                // Persist args info between
 BPF_PERCPU_ARRAY(submission_buf, submit_buf_t, 1);  // Buffer used to prepare event for perf_submit
 BPF_PERCPU_ARRAY(string_buf, submit_buf_t, 1);      // Buffer used to prepare event for perf_submit
 BPF_PERCPU_ARRAY(file_buf, simple_buf_t, 1);        // Buffer used to copy written files
+BPF_PROG_ARRAY(prog_array, 10);                     // Used to store programs for tail calls
 
 /*================================== EVENTS ====================================*/
 
@@ -1593,7 +1594,7 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
     return 0;
 };
 
-static __always_inline int send_file(struct pt_regs *ctx, void *ptr, dev_t s_dev, unsigned long inode_nr, loff_t start_pos)
+int send_file(struct pt_regs *ctx)
 {
     // Note: sending the data to the userspace have the following constraints:
     // 1. We need a buffer that we know it's exact size (so we can send chunks of known sizes in BPF)
@@ -1601,16 +1602,24 @@ static __always_inline int send_file(struct pt_regs *ctx, void *ptr, dev_t s_dev
     // 3. We have to use perf submit and not maps as data can be overriden if userspace doesn't consume it fast enough
 
     int idx = 0;
-    int rc = 0;
-    unsigned int write_size = PT_REGS_RC(ctx);
+    int i = 0;
     unsigned int chunk_size;
 
-#define F_DEV_ID_OFF  0
-#define F_INODE_OFF   (F_DEV_ID_OFF + sizeof(dev_t))
-#define F_SZ_OFF      (F_INODE_OFF + sizeof(unsigned long))
-#define F_POS_OFF     (F_SZ_OFF + sizeof(unsigned int))
-#define F_CHUNK_OFF   (F_POS_OFF + sizeof(off_t))
-#define F_CHUNK_SIZE  (MAX_PERCPU_BUFSIZE - F_CHUNK_OFF - 4)
+    u64 id = bpf_get_current_pid_tgid();
+
+    args_t *saved_args = vfs_args_map.lookup(&id);
+    if (saved_args == 0) {
+        // missed entry or not traced
+        return 0;
+    }
+
+    char *ptr               = (char*)         saved_args->args[0];
+    dev_t s_dev             = (dev_t)         saved_args->args[1];
+    unsigned long inode_nr  = (unsigned long) saved_args->args[2];
+    loff_t start_pos        = (loff_t)        saved_args->args[3];
+    unsigned int write_size = (unsigned int)  saved_args->args[4];
+
+    vfs_args_map.delete(&id);
 
     if (write_size <= 0)
         return 0;
@@ -1619,49 +1628,63 @@ static __always_inline int send_file(struct pt_regs *ctx, void *ptr, dev_t s_dev
     if (file_buf_p == NULL)
         return 0;
 
+#define F_DEV_ID_OFF  0
+#define F_INODE_OFF   (F_DEV_ID_OFF + sizeof(dev_t))
+#define F_SZ_OFF      (F_INODE_OFF + sizeof(unsigned long))
+#define F_POS_OFF     (F_SZ_OFF + sizeof(unsigned int))
+#define F_CHUNK_OFF   (F_POS_OFF + sizeof(off_t))
+#define F_CHUNK_SIZE  (MAX_PERCPU_BUFSIZE - F_CHUNK_OFF - 4)
+
     // Save device id and inode to be used in filename
-    rc |= bpf_probe_read((void **)&(file_buf_p->buf[F_DEV_ID_OFF]), sizeof(dev_t), &s_dev);
-    rc |= bpf_probe_read((void **)&(file_buf_p->buf[F_INODE_OFF]), sizeof(unsigned long), &inode_nr);
+    bpf_probe_read((void **)&(file_buf_p->buf[F_DEV_ID_OFF]), sizeof(dev_t), &s_dev);
+    bpf_probe_read((void **)&(file_buf_p->buf[F_INODE_OFF]), sizeof(unsigned long), &inode_nr);
 
     // Save number of written bytes. Set this to CHUNK_SIZE for full chunks
     chunk_size = F_CHUNK_SIZE;
-    rc |= bpf_probe_read((void **)&(file_buf_p->buf[F_SZ_OFF]), sizeof(unsigned int), &chunk_size);
+    bpf_probe_read((void **)&(file_buf_p->buf[F_SZ_OFF]), sizeof(unsigned int), &chunk_size);
 
     unsigned int full_chunk_num = write_size/F_CHUNK_SIZE;
+    void *data = file_buf_p->buf;
 
-    // Handle full chunks in the loop
+    // Handle full chunks in loop
     #pragma unroll
-    for (int i = 0; i < 3; i++) {
-        if (i == full_chunk_num) {
-            chunk_size = write_size - full_chunk_num*F_CHUNK_SIZE;
+    for (i = 0; i < 110; i++) {
+        // Dummy instruction, as break instruction can't be first with unroll optimization
+        chunk_size = F_CHUNK_SIZE;
+
+        if (i == full_chunk_num)
             break;
-        }
 
         // Save binary chunk and file position of write
-        rc |= bpf_probe_read((void **)&(file_buf_p->buf[F_POS_OFF]), sizeof(off_t), &start_pos);
-        rc |= bpf_probe_read((void **)&(file_buf_p->buf[F_CHUNK_OFF]), F_CHUNK_SIZE, ptr + i*F_CHUNK_SIZE);
+        bpf_probe_read((void **)&(file_buf_p->buf[F_POS_OFF]), sizeof(off_t), &start_pos);
+        bpf_probe_read((void **)&(file_buf_p->buf[F_CHUNK_OFF]), F_CHUNK_SIZE, ptr);
+        ptr += F_CHUNK_SIZE;
         start_pos += F_CHUNK_SIZE;
 
-        // Verify all writes to buffer succeeded before submiting chunk
-        if (rc != 0)
-            return 0;
-
-        void *data = file_buf_p->buf;
-        rc |= file_events.perf_submit(ctx, data, F_CHUNK_OFF+F_CHUNK_SIZE);
+        file_events.perf_submit(ctx, data, F_CHUNK_OFF+F_CHUNK_SIZE);
     }
 
-    if (chunk_size > F_CHUNK_SIZE)
+    chunk_size = write_size - i*F_CHUNK_SIZE;
+
+    if (chunk_size > F_CHUNK_SIZE) {
+        args_t args = {};
+        args.args[0] = (unsigned long)ptr;
+        args.args[1] = (unsigned long)s_dev;
+        args.args[2] = (unsigned long)inode_nr;
+        args.args[3] = (unsigned long)start_pos;
+        args.args[4] = (unsigned long)chunk_size;
+        vfs_args_map.update(&id, &args);
+
+        // Handle the rest of the write recursively
+        prog_array.call(ctx, 0);
         return 0;
+    }
 
     // Save last chunk
-    rc |= bpf_probe_read((void **)&(file_buf_p->buf[F_CHUNK_OFF]), chunk_size, ptr + full_chunk_num*F_CHUNK_SIZE);
-    rc |= bpf_probe_read((void **)&(file_buf_p->buf[F_SZ_OFF]), sizeof(unsigned int), &chunk_size);
-    rc |= bpf_probe_read((void **)&(file_buf_p->buf[F_POS_OFF]), sizeof(off_t), &start_pos);
+    bpf_probe_read((void **)&(file_buf_p->buf[F_CHUNK_OFF]), chunk_size, ptr);
+    bpf_probe_read((void **)&(file_buf_p->buf[F_SZ_OFF]), sizeof(unsigned int), &chunk_size);
+    bpf_probe_read((void **)&(file_buf_p->buf[F_POS_OFF]), sizeof(off_t), &start_pos);
 
-    if (rc != 0)
-        return 0;
-
-    void *data = file_buf_p->buf;
     // Satisfy validator by setting buffer bounds
     int size = (F_CHUNK_OFF+chunk_size) & (MAX_PERCPU_BUFSIZE - 1);
     file_events.perf_submit(ctx, data, size);
@@ -1702,6 +1725,7 @@ int trace_ret_vfs_write(struct pt_regs *ctx)
     context_t context = {};
     struct path path;
     args_t *saved_args;
+    args_t args = {};
     struct inode *inode;
     struct super_block *superblock;
     dev_t s_dev;
@@ -1776,7 +1800,15 @@ VFS_W_CONT:
     // Submit vfs_write event
     events_perf_submit(ctx);
 
+    args.args[0] = (unsigned long)ptr;
+    args.args[1] = (unsigned long)s_dev;
+    args.args[2] = (unsigned long)inode_nr;
+    args.args[3] = (unsigned long)start_pos;
+    args.args[4] = PT_REGS_RC(ctx);
+    vfs_args_map.update(&id, &args);
+
     // Send file data
-    return send_file(ctx, ptr, s_dev, inode_nr, start_pos);
+    prog_array.call(ctx, 0);
+    return 0;
 }
 
