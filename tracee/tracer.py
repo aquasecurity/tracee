@@ -1225,17 +1225,18 @@ class EventMonitor:
         buf = ctypes.cast(data, ctypes.POINTER(ctypes.c_char*size)).contents
         event_buf = (ctypes.c_char * size).from_buffer_copy(buf)
 
-        dev_id = ctypes.cast(ctypes.byref(event_buf, 0), ctypes.POINTER(ctypes.c_uint)).contents.value
-        inode = ctypes.cast(ctypes.byref(event_buf, 4), ctypes.POINTER(ctypes.c_ulong)).contents.value
-        count = ctypes.cast(ctypes.byref(event_buf, 12), ctypes.POINTER(ctypes.c_int)).contents.value
-        pos = ctypes.cast(ctypes.byref(event_buf, 16), ctypes.POINTER(ctypes.c_ulong)).contents.value
-        cur_off = 24
+        mnt_id = ctypes.cast(ctypes.byref(event_buf, 0), ctypes.POINTER(ctypes.c_uint)).contents.value
+        dev_id = ctypes.cast(ctypes.byref(event_buf, 4), ctypes.POINTER(ctypes.c_uint)).contents.value
+        inode = ctypes.cast(ctypes.byref(event_buf, 8), ctypes.POINTER(ctypes.c_ulong)).contents.value
+        count = ctypes.cast(ctypes.byref(event_buf, 16), ctypes.POINTER(ctypes.c_int)).contents.value
+        pos = ctypes.cast(ctypes.byref(event_buf, 20), ctypes.POINTER(ctypes.c_ulong)).contents.value
+        cur_off = 28
 
         # Sanity checks
         if (count <= 0) or (ctypes.sizeof(event_buf) < cur_off + count):
             return
 
-        filename = "/tmp/output/write." + "dev-" + str(dev_id) + ".inode-" + str(inode)
+        filename = "/tmp/tracee/" + str(mnt_id) + "/write." + "dev-" + str(dev_id) + ".inode-" + str(inode)
         if not os.path.exists(os.path.dirname(filename)):
             try:
                 os.makedirs(os.path.dirname(filename))

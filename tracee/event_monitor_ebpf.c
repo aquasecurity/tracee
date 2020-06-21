@@ -1628,12 +1628,16 @@ int send_file(struct pt_regs *ctx)
     if (file_buf_p == NULL)
         return 0;
 
-#define F_DEV_ID_OFF  0
+#define F_MNT_NS      0
+#define F_DEV_ID_OFF  (F_MNT_NS + sizeof(u32))
 #define F_INODE_OFF   (F_DEV_ID_OFF + sizeof(dev_t))
 #define F_SZ_OFF      (F_INODE_OFF + sizeof(unsigned long))
 #define F_POS_OFF     (F_SZ_OFF + sizeof(unsigned int))
 #define F_CHUNK_OFF   (F_POS_OFF + sizeof(off_t))
 #define F_CHUNK_SIZE  (MAX_PERCPU_BUFSIZE - F_CHUNK_OFF - 4)
+
+    u32 mnt_id = get_task_mnt_ns_id((struct task_struct *)bpf_get_current_task());
+    bpf_probe_read((void **)&(file_buf_p->buf[F_MNT_NS]), sizeof(u32), &mnt_id);
 
     // Save device id and inode to be used in filename
     bpf_probe_read((void **)&(file_buf_p->buf[F_DEV_ID_OFF]), sizeof(dev_t), &s_dev);
