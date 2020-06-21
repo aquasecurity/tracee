@@ -21,6 +21,7 @@
 #define MAX_STRING_SIZE     (1 << 12)     // Choosing this value to be the same as PATH_MAX (4096)
 #define MAX_PERCPU_BUFSIZE  (1 << 15)     // This value is actually set by the kernel as an upper bound
 #define SUBMIT_BUFSIZE      (1 << 14)     // Need to be power of 2
+#define PATH_PREFIX_SIZE    16
 
 #define NONE_T        0UL
 #define INT_T         1UL
@@ -441,6 +442,10 @@ typedef struct simple_buf {
     u8 buf[MAX_PERCPU_BUFSIZE];
 } simple_buf_t;
 
+typedef struct path_filter {
+    char path[PATH_PREFIX_SIZE];
+} path_filter_t;
+
 typedef struct submit_buf {
     u32 off;
     u8 buf[SUBMIT_BUFSIZE];
@@ -474,6 +479,7 @@ BPF_HASH(config_map, u32, u32);                     // Various configurations
 BPF_HASH(pids_map, u32, u32);                       // Save container pid namespaces
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
 BPF_HASH(vfs_args_map, u64, args_t);                // Persist args info between function entry and return
+BPF_ARRAY(vfs_filter, path_filter_t, 3);            // Used to filter vfs_write events
 BPF_PERCPU_ARRAY(submission_buf, submit_buf_t, 1);  // Buffer used to prepare event for perf_submit
 BPF_PERCPU_ARRAY(string_buf, submit_buf_t, 1);      // Buffer used to prepare event for perf_submit
 BPF_PERCPU_ARRAY(file_buf, simple_buf_t, 1);        // Buffer used to copy written files
@@ -583,7 +589,7 @@ static __inline int is_prefix(char *prefix, char *str)
 {
     int i;
     #pragma unroll
-    for (i = 0; i < 10; prefix++, str++, i++) {
+    for (i = 0; i < PATH_PREFIX_SIZE; prefix++, str++, i++) {
         if (!*prefix)
             return 1;
         if (*prefix != *str) {
@@ -1767,12 +1773,30 @@ int trace_ret_vfs_write(struct pt_regs *ctx)
         return -1;
     get_path_string(string_p, &path);
 
+    idx = 0;
+    path_filter_t *filter1_p = vfs_filter.lookup(&idx);
+    if (filter1_p == NULL)
+        return -1;
+
+    idx = 1;
+    path_filter_t *filter2_p = vfs_filter.lookup(&idx);
+    if (filter2_p == NULL)
+        return -1;
+
+    idx = 2;
+    path_filter_t *filter3_p = vfs_filter.lookup(&idx);
+    if (filter3_p == NULL)
+        return -1;
+
     // Filter requested paths
     if (string_p->off <= SUBMIT_BUFSIZE - MAX_STRING_SIZE) {
-        if (is_prefix("/dev/shm", &string_p->buf[string_p->off]))
+        if (filter1_p->path[0] && is_prefix(filter1_p->path, &string_p->buf[string_p->off]))
             goto VFS_W_CONT;
 
-        if (is_prefix("memfd:", &string_p->buf[string_p->off]))
+        if (filter2_p->path[0] && is_prefix(filter2_p->path, &string_p->buf[string_p->off]))
+            goto VFS_W_CONT;
+
+        if (filter3_p->path[0] && is_prefix(filter3_p->path, &string_p->buf[string_p->off]))
             goto VFS_W_CONT;
     }
 
