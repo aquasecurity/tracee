@@ -768,13 +768,14 @@ static __always_inline int save_to_submit_buf(submit_buf_t *submit_p, void *ptr,
     return 0;
 }
 
-static __always_inline int save_str_to_buf(submit_buf_t *submit_p, void *ptr, int type)
+static __always_inline int save_str_to_buf(submit_buf_t *submit_p, void *ptr)
 {
     if (submit_p->off > SUBMIT_BUFSIZE_HALF)
         // not enough space - return
         return 0;
 
     // Save argument type
+    u8 type = STR_T;
     int rc = bpf_probe_read((void **)&(submit_p->buf[submit_p->off & SUBMIT_BUFSIZE_HALF]), 1, &type);
     if (rc != 0)
         return 0;
@@ -874,7 +875,7 @@ static __always_inline int save_argv(submit_buf_t *submit_p, void *ptr)
     const char *argp = NULL;
     bpf_probe_read(&argp, sizeof(argp), ptr);
     if (argp) {
-        return save_str_to_buf(submit_p, (void *)(argp), STR_T);
+        return save_str_to_buf(submit_p, (void *)(argp));
     }
     return 0;
 }
@@ -891,7 +892,7 @@ static __always_inline int save_str_arr_to_buf(submit_buf_t *submit_p, const cha
     }
     // handle truncated argument list
     char ellipsis[] = "...";
-    save_str_to_buf(submit_p, (void *)ellipsis, STR_T);
+    save_str_to_buf(submit_p, (void *)ellipsis);
 out:
     // mark string array end
     save_to_submit_buf(submit_p, NULL, 0, STR_ARR_T);
@@ -1037,7 +1038,7 @@ static __always_inline int save_args_to_submit_buf(u64 types)
                 save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(void*), POINTER_T);
                 break;
             case STR_T:
-                save_str_to_buf(submit_p, (void *)args.args[i], STR_T);
+                save_str_to_buf(submit_p, (void *)args.args[i]);
                 break;
             case SOCK_DOM_T:
                 save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(int), SOCK_DOM_T);
@@ -1322,7 +1323,7 @@ int syscall__execve(struct pt_regs *ctx,
     context.retval = 0;     // assume execve succeeded. if not, a ret event will be sent too
     save_context_to_buf(submit_p, (void*)&context);
 
-    save_str_to_buf(submit_p, (void *)filename, STR_T);
+    save_str_to_buf(submit_p, (void *)filename);
     save_str_arr_to_buf(submit_p, __argv);
     if (show_env)
         save_str_arr_to_buf(submit_p, __envp);
@@ -1391,7 +1392,7 @@ int syscall__execveat(struct pt_regs *ctx,
     save_context_to_buf(submit_p, (void*)&context);
 
     save_to_submit_buf(submit_p, (void*)&dirfd, sizeof(int), INT_T);
-    save_str_to_buf(submit_p, (void *)pathname, STR_T);
+    save_str_to_buf(submit_p, (void *)pathname);
     save_str_arr_to_buf(submit_p, __argv);
     if (show_env)
         save_str_arr_to_buf(submit_p, __envp);
@@ -1475,7 +1476,7 @@ int trace_security_bprm_check(struct pt_regs *ctx, struct linux_binprm *bprm)
     get_path_string(string_p, &bprm->file->f_path);
 
     save_context_to_buf(submit_p, (void*)&context);
-    save_str_to_buf(submit_p, (void *)&string_p->buf[string_p->off], STR_T);
+    save_str_to_buf(submit_p, (void *)&string_p->buf[string_p->off]);
 
     events_perf_submit(ctx);
     return 0;
@@ -1509,7 +1510,7 @@ int trace_security_file_open(struct pt_regs *ctx, struct file *file)
     get_path_string(string_p, &file->f_path);
 
     save_context_to_buf(submit_p, (void*)&context);
-    save_str_to_buf(submit_p, (void *)&string_p->buf[string_p->off], STR_T);
+    save_str_to_buf(submit_p, (void *)&string_p->buf[string_p->off]);
     save_to_submit_buf(submit_p, (void*)&file->f_flags, sizeof(int), OPEN_FLAGS_T);
 
     events_perf_submit(ctx);
