@@ -916,6 +916,18 @@ class EventMonitor:
         key = ctypes.c_uint32(shared_config.CONFIG_EXEC_ENV)
         self.bpf["config_map"][key] = ctypes.c_uint32(self.exec_env)
 
+        # set vfs_write filters
+        path_filter = self.bpf["vfs_filter"][0]
+        path_filter.path = "/dev/shm".encode("utf-8")
+        self.bpf["vfs_filter"][0] = path_filter
+        path_filter = self.bpf["vfs_filter"][1]
+        path_filter.path = "memfd:".encode("utf-8")
+        self.bpf["vfs_filter"][1] = path_filter
+        path_filter = self.bpf["vfs_filter"][2]
+        path_filter.path = "/dev/pts".encode("utf-8")
+        self.bpf["vfs_filter"][2] = path_filter
+
+
         # attaching kprobes
         sk, se = get_kprobes(self.events_to_trace)
 
