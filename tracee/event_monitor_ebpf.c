@@ -1510,8 +1510,11 @@ int trace_security_bprm_check(struct pt_regs *ctx, struct linux_binprm *bprm)
         return 0;
 
     context.eventid = SECURITY_BPRM_CHECK;
-    context.argnum = 1;
+    context.argnum = 3;
     context.retval = 0;
+
+    dev_t s_dev = bprm->file->f_inode->i_sb->s_dev;
+    unsigned long inode_nr = (unsigned long)bprm->file->f_inode->i_ino;
 
     int idx = 0;
     // Get per-cpu string buffer
@@ -1522,6 +1525,8 @@ int trace_security_bprm_check(struct pt_regs *ctx, struct linux_binprm *bprm)
 
     save_context_to_buf(submit_p, (void*)&context);
     save_str_to_buf(submit_p, (void *)&string_p->buf[string_p->off]);
+    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T);
+    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T);
 
     events_perf_submit(ctx);
     return 0;
@@ -1539,8 +1544,11 @@ int trace_security_file_open(struct pt_regs *ctx, struct file *file)
         return 0;
 
     context.eventid = SECURITY_FILE_OPEN;
-    context.argnum = 2;
+    context.argnum = 4;
     context.retval = 0;
+
+    dev_t s_dev = file->f_inode->i_sb->s_dev;
+    unsigned long inode_nr = (unsigned long)file->f_inode->i_ino;
 
     struct pt_regs *real_ctx = get_task_pt_regs();
     int syscall_nr = real_ctx->orig_ax;
@@ -1557,6 +1565,8 @@ int trace_security_file_open(struct pt_regs *ctx, struct file *file)
     save_context_to_buf(submit_p, (void*)&context);
     save_str_to_buf(submit_p, (void *)&string_p->buf[string_p->off]);
     save_to_submit_buf(submit_p, (void*)&file->f_flags, sizeof(int), OPEN_FLAGS_T);
+    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T);
+    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T);
 
     events_perf_submit(ctx);
     return 0;
