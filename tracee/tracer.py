@@ -628,6 +628,7 @@ class shared_config(object):
     CONFIG_CONT_MODE    = 0
     CONFIG_SHOW_SYSCALL = 1
     CONFIG_EXEC_ENV     = 2
+    CONFIG_SAVE_FILES   = 3
 
 class context_t(ctypes.Structure):  # match layout of eBPF C's context_t struct
     _fields_ = [("ts", ctypes.c_uint64),
@@ -876,7 +877,6 @@ class EventMonitor:
         self.bpf = None
         self.event_bufs = list()
         self.total_lost = 0
-        self.write_count = 0
 
         # input arguments
         self.cont_mode = args.container
@@ -888,6 +888,9 @@ class EventMonitor:
         self.buf_pages = args.buf_pages
         self.show_syscall = args.show_syscall
         self.exec_env = args.exec_env
+        self.extract_files = args.extract_files
+        self.output_path = args.output_path
+        self.filter_file_write = args.filter_file_write
 
     def init_bpf(self):
         bpf_text = load_bpf_program()
@@ -905,6 +908,16 @@ class EventMonitor:
             log.debug(bpf_text)
             exit()
 
+        if self.filter_file_write is not None:
+            if len(self.filter_file_write) > 3:
+                print("Too many file-write filters given")
+                exit()
+
+            for filter in self.filter_file_write:
+                if len(filter) > 16:
+                    print("The length of a path filter is limited to 16 characters: " + filter)
+                    exit()
+
         # initialize BPF
         self.bpf = BPF(text=bpf_text)
 
@@ -915,18 +928,15 @@ class EventMonitor:
         self.bpf["config_map"][key] = ctypes.c_uint32(self.show_syscall)
         key = ctypes.c_uint32(shared_config.CONFIG_EXEC_ENV)
         self.bpf["config_map"][key] = ctypes.c_uint32(self.exec_env)
+        key = ctypes.c_uint32(shared_config.CONFIG_SAVE_FILES)
+        self.bpf["config_map"][key] = ctypes.c_uint32(self.extract_files)
 
-        # set vfs_write filters
-        path_filter = self.bpf["vfs_filter"][0]
-        path_filter.path = "/dev/shm".encode("utf-8")
-        self.bpf["vfs_filter"][0] = path_filter
-        path_filter = self.bpf["vfs_filter"][1]
-        path_filter.path = "memfd:".encode("utf-8")
-        self.bpf["vfs_filter"][1] = path_filter
-        path_filter = self.bpf["vfs_filter"][2]
-        path_filter.path = "/dev/pts".encode("utf-8")
-        self.bpf["vfs_filter"][2] = path_filter
-
+        if self.filter_file_write is not None:
+            for i, path in enumerate(self.filter_file_write):
+                # set file_write filters
+                path_filter = self.bpf["file_filter"][i]
+                path_filter.path = path.encode("utf-8")
+                self.bpf["file_filter"][i] = path_filter
 
         # attaching kprobes
         sk, se = get_kprobes(self.events_to_trace)
@@ -1248,7 +1258,7 @@ class EventMonitor:
         if (count <= 0) or (ctypes.sizeof(event_buf) < cur_off + count):
             return
 
-        filename = "/tmp/tracee/" + str(mnt_id) + "/write." + "dev-" + str(dev_id) + ".inode-" + str(inode)
+        filename = self.output_path + "/" + str(mnt_id) + "/write.dev-" + str(dev_id) + ".inode-" + str(inode)
         if not os.path.exists(os.path.dirname(filename)):
             try:
                 os.makedirs(os.path.dirname(filename))
@@ -1276,7 +1286,7 @@ class EventMonitor:
     def monitor_events(self):
         # loop with callback to handle_event
         self.bpf["events"].open_perf_buffer(self.handle_event, page_cnt=self.buf_pages, lost_cb=self.lost_event)
-        self.bpf["file_events"].open_perf_buffer(self.handle_file_write_event, page_cnt=self.buf_pages, lost_cb=self.lost_event)
+        self.bpf["file_writes"].open_perf_buffer(self.handle_file_write_event, page_cnt=self.buf_pages, lost_cb=self.lost_event)
 
         while self.do_trace:
             try:
