@@ -51,6 +51,7 @@
 #define CONFIG_CONT_MODE    0
 #define CONFIG_SHOW_SYSCALL 1
 #define CONFIG_EXEC_ENV     2
+#define CONFIG_SAVE_FILES   3
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
 #error Minimal required kernel version is 4.14
@@ -479,7 +480,7 @@ BPF_HASH(config_map, u32, u32);                     // Various configurations
 BPF_HASH(pids_map, u32, u32);                       // Save container pid namespaces
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
 BPF_HASH(vfs_args_map, u64, args_t);                // Persist args info between function entry and return
-BPF_ARRAY(vfs_filter, path_filter_t, 3);            // Used to filter vfs_write events
+BPF_ARRAY(file_filter, path_filter_t, 3);           // Used to filter vfs_write events
 BPF_PERCPU_ARRAY(submission_buf, submit_buf_t, 1);  // Buffer used to prepare event for perf_submit
 BPF_PERCPU_ARRAY(string_buf, submit_buf_t, 1);      // Buffer used to prepare event for perf_submit
 BPF_PERCPU_ARRAY(file_buf, simple_buf_t, 1);        // Buffer used to copy written files
@@ -488,7 +489,7 @@ BPF_PROG_ARRAY(prog_array, 10);                     // Used to store programs fo
 /*================================== EVENTS ====================================*/
 
 BPF_PERF_OUTPUT(events);                            // Events submission
-BPF_PERF_OUTPUT(file_events);                       // File writes events submission
+BPF_PERF_OUTPUT(file_writes);                       // File writes events submission
 
 /*================== KERNEL VERSION DEPENDANT HELPER FUNCTIONS =================*/
 
@@ -700,6 +701,11 @@ static __always_inline int show_syscall()
 static __always_inline int show_exec_env()
 {
     return get_config(CONFIG_EXEC_ENV);
+}
+
+static __always_inline int save_files()
+{
+    return get_config(CONFIG_SAVE_FILES);
 }
 
 static __always_inline int init_context(context_t *context)
@@ -1681,7 +1687,7 @@ int send_file(struct pt_regs *ctx)
         ptr += F_CHUNK_SIZE;
         start_pos += F_CHUNK_SIZE;
 
-        file_events.perf_submit(ctx, data, F_CHUNK_OFF+F_CHUNK_SIZE);
+        file_writes.perf_submit(ctx, data, F_CHUNK_OFF+F_CHUNK_SIZE);
     }
 
     chunk_size = write_size - i*F_CHUNK_SIZE;
@@ -1707,7 +1713,7 @@ int send_file(struct pt_regs *ctx)
 
     // Satisfy validator by setting buffer bounds
     int size = (F_CHUNK_OFF+chunk_size) & (MAX_PERCPU_BUFSIZE - 1);
-    file_events.perf_submit(ctx, data, size);
+    file_writes.perf_submit(ctx, data, size);
 
     return 0;
 }
@@ -1784,18 +1790,12 @@ int trace_ret_vfs_write(struct pt_regs *ctx)
     get_path_string(string_p, &path);
 
     idx = 0;
-    path_filter_t *filter1_p = vfs_filter.lookup(&idx);
-    if (filter1_p == NULL)
-        return -1;
-
+    path_filter_t *filter1_p = file_filter.lookup(&idx);
     idx = 1;
-    path_filter_t *filter2_p = vfs_filter.lookup(&idx);
-    if (filter2_p == NULL)
-        return -1;
-
+    path_filter_t *filter2_p = file_filter.lookup(&idx);
     idx = 2;
-    path_filter_t *filter3_p = vfs_filter.lookup(&idx);
-    if (filter3_p == NULL)
+    path_filter_t *filter3_p = file_filter.lookup(&idx);
+    if ((filter1_p == NULL) || (filter2_p == NULL) || (filter3_p == NULL))
         return -1;
 
     // Filter requested paths
@@ -1845,8 +1845,10 @@ VFS_W_CONT:
     args.args[4] = PT_REGS_RC(ctx);
     vfs_args_map.update(&id, &args);
 
-    // Send file data
-    prog_array.call(ctx, 0);
+    int extract_files = save_files();
+    if (extract_files)
+        // Send file data
+        prog_array.call(ctx, 0);
     return 0;
 }
 
