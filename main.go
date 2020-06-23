@@ -26,6 +26,9 @@ func main() {
 				c.Bool("show-exec-env"),
 				c.String("output"),
 				c.Int("perf-buffer-size"),
+				c.Bool("extract-files"),
+				c.String("output-path"),
+				c.StringSlice("filter-file-write"),
 			)
 			if c.Bool("show-all-syscalls") {
 				cfg.EventsToTrace = append(cfg.EventsToTrace, tracee.EventsNameToID["raw_syscalls"])
@@ -86,6 +89,21 @@ func main() {
 				Aliases: []string{"a"},
 				Value:   false,
 				Usage:   "log all syscalls invocations, including syscalls which were not fully traced by tracee (shortcut to -e raw_syscalls)",
+			},
+			&cli.BoolFlag{
+				Name:  "extract-files",
+				Value: false,
+				Usage: "extract file writes to output path. \"filter-file-write\" must be specified",
+			},
+			&cli.StringFlag{
+				Name:  "output-path",
+				Value: "/tmp/tracee",
+				Usage: "output path for extracted files, i.e. when \"extract-files\" is used",
+			},
+			&cli.StringSliceFlag{
+				Name:  "filter-file-write",
+				Value: nil,
+				Usage: "filter path of file writes. Up to 3 filters can be specified, 16 characters each",
 			},
 		},
 	}

@@ -62,6 +62,9 @@ type TraceeConfig struct {
 	ShowExecEnv           bool
 	OutputFormat          string
 	PerfBufferSize        int
+	ExtractFiles          bool
+	OutputPath            string
+	FilterFileWrite       []string
 }
 
 // Validate does static validation of the configuration
@@ -80,6 +83,14 @@ func (tc TraceeConfig) Validate() error {
 	if (tc.PerfBufferSize & (tc.PerfBufferSize - 1)) != 0 {
 		return fmt.Errorf("invalid perf buffer size - must be a power of 2")
 	}
+	if len(tc.FilterFileWrite) > 3 {
+		return fmt.Errorf("too many file-write filters given")
+	}
+	for _, filter := range tc.FilterFileWrite {
+		if len(filter) > 16 {
+			return fmt.Errorf("The length of a path filter is limited to 16 characters: %s", filter)
+		}
+	}
 	return nil
 }
 
@@ -87,7 +98,8 @@ func (tc TraceeConfig) Validate() error {
 // default values:
 //   eventsToTrace: all events
 //   outputFormat: table
-func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall bool, showExecEnv bool, outputFormat string, perfBufferSize int) (*TraceeConfig, error) {
+func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall bool, showExecEnv bool, outputFormat string,
+	perfBufferSize int, extractFiles bool, outputPath string, filterFileWrite []string) (*TraceeConfig, error) {
 	var eventsToTraceInternal []int32
 	if eventsToTrace == nil {
 		eventsToTraceInternal = make([]int32, 0, len(EventsIDToName))
@@ -114,6 +126,9 @@ func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall
 		ShowExecEnv:           showExecEnv,
 		OutputFormat:          outputFormat,
 		PerfBufferSize:        perfBufferSize,
+		ExtractFiles:          extractFiles,
+		OutputPath:            outputPath,
+		FilterFileWrite:       filterFileWrite,
 	}
 
 	err := tc.Validate()
@@ -154,13 +169,17 @@ func getEBPFProgram() (string, error) {
 type Tracee struct {
 	config        TraceeConfig
 	bpfModule     *bpf.Module
-	bpfPerfMap    *bpf.PerfMap
+	eventsPerfMap *bpf.PerfMap
+	fileWrPerfMap *bpf.PerfMap
 	eventsChannel chan []byte
-	lostChannel   chan uint64
+	fileWrChannel chan []byte
+	lostEvChannel chan uint64
+	lostWrChannel chan uint64
 	printer       eventPrinter
 	eventCounter  int
 	errorCounter  int
-	lostCounter   int
+	lostEvCounter int
+	lostWrCounter int
 }
 
 // New creates a new Tracee instance based on a given valid TraceeConfig
@@ -257,6 +276,16 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 			if err != nil {
 				return fmt.Errorf("error attaching kprobe %s: %v", eName, err)
 			}
+			if eName, isKretprobe := EventsKretprobes[e]; isKretprobe {
+				kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("trace_ret_%s", eName))
+				if err != nil {
+					return fmt.Errorf("error loading kprobe %s: %v", eName, err)
+				}
+				err = t.bpfModule.AttachKretprobe(eName, kp, -1)
+				if err != nil {
+					return fmt.Errorf("error attaching kretprobe %s: %v", eName, err)
+				}
+			}
 		} else if eName, isTracepoint := EventsTracepoints[e]; isTracepoint {
 			tp, err := t.bpfModule.LoadTracepoint(fmt.Sprintf("tracepoint__%s__sys_enter", eName))
 			if err != nil {
@@ -282,13 +311,42 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 	binary.LittleEndian.PutUint32(key, uint32(CONFIG_EXEC_ENV))
 	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.ShowExecEnv))
 	bpfConfig.Set(key, leaf)
+	binary.LittleEndian.PutUint32(key, uint32(CONFIG_SAVE_FILES))
+	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.ExtractFiles))
+	bpfConfig.Set(key, leaf)
+
+	// Load send_file function to prog_array to be used as tail call
+	progArrayBPFTable := bpf.NewTable(t.bpfModule.TableId("prog_array"), t.bpfModule)
+	binary.LittleEndian.PutUint32(key, uint32(0))
+	kp, err := t.bpfModule.LoadKprobe("send_file")
+	if err != nil {
+		return fmt.Errorf("error loading function send_file: %v", err)
+	}
+	binary.LittleEndian.PutUint32(leaf, uint32(kp))
+	progArrayBPFTable.Set(key, leaf)
+
+	// Set filters given by the user to filter file write events
+	fileFilterTable := bpf.NewTable(t.bpfModule.TableId("file_filter"), t.bpfModule)
+	for i := 0; i < len(t.config.FilterFileWrite); i++ {
+		binary.LittleEndian.PutUint32(key, uint32(i))
+		leaf = []byte(t.config.FilterFileWrite[i])
+		fileFilterTable.Set(key, leaf)
+	}
 
 	eventsBPFTable := bpf.NewTable(t.bpfModule.TableId("events"), t.bpfModule)
 	t.eventsChannel = make(chan []byte, 1000)
-	t.lostChannel = make(chan uint64)
-	t.bpfPerfMap, err = bpf.InitPerfMapWithPageCnt(eventsBPFTable, t.eventsChannel, t.lostChannel, t.config.PerfBufferSize)
+	t.lostEvChannel = make(chan uint64)
+	t.eventsPerfMap, err = bpf.InitPerfMapWithPageCnt(eventsBPFTable, t.eventsChannel, t.lostEvChannel, t.config.PerfBufferSize)
 	if err != nil {
 		return fmt.Errorf("error initializing events perf map: %v", err)
+	}
+
+	fileWritesBPFTable := bpf.NewTable(t.bpfModule.TableId("file_writes"), t.bpfModule)
+	t.fileWrChannel = make(chan []byte, 1000)
+	t.lostWrChannel = make(chan uint64)
+	t.fileWrPerfMap, err = bpf.InitPerfMapWithPageCnt(fileWritesBPFTable, t.fileWrChannel, t.lostWrChannel, t.config.PerfBufferSize)
+	if err != nil {
+		return fmt.Errorf("error initializing file_writes perf map: %v", err)
 	}
 
 	return nil
@@ -299,10 +357,13 @@ func (t *Tracee) Run() error {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
 	t.printer.Preamble()
-	t.bpfPerfMap.Start()
+	t.eventsPerfMap.Start()
+	t.fileWrPerfMap.Start()
 	go t.processEvents()
+	go t.processFileWrites()
 	<-sig
-	t.bpfPerfMap.Stop() //TODO: should this be in Tracee.Close()?
+	t.eventsPerfMap.Stop() //TODO: should this be in Tracee.Close()?
+	t.fileWrPerfMap.Stop() //TODO: should this be in Tracee.Close()?
 	t.printer.Epilogue()
 	t.Close()
 	return nil
@@ -354,8 +415,87 @@ func (t *Tracee) processEvents() {
 				t.eventCounter = t.eventCounter + 1
 				t.printer.Print(ctx, args)
 			}
-		case lost := <-t.lostChannel:
-			t.lostCounter = t.lostCounter + int(lost)
+		case lost := <-t.lostEvChannel:
+			t.lostEvCounter = t.lostEvCounter + int(lost)
+		}
+	}
+}
+
+func (t *Tracee) processFileWrites() {
+	for {
+		select {
+		case dataRaw := <-t.fileWrChannel:
+			dataBuff := bytes.NewBuffer(dataRaw)
+			mnt_id, err := readUInt32FromBuff(dataBuff)
+			if err != nil {
+				t.errorCounter = t.errorCounter + 1
+				continue
+			}
+			dev_id, err := readUInt32FromBuff(dataBuff)
+			if err != nil {
+				t.errorCounter = t.errorCounter + 1
+				continue
+			}
+			inode, err := readUInt64FromBuff(dataBuff)
+			if err != nil {
+				t.errorCounter = t.errorCounter + 1
+				continue
+			}
+			count, err := readInt32FromBuff(dataBuff)
+			if err != nil {
+				t.errorCounter = t.errorCounter + 1
+				continue
+			}
+			off, err := readUInt64FromBuff(dataBuff)
+			if err != nil {
+				t.errorCounter = t.errorCounter + 1
+				continue
+			}
+
+			// Sanity checks
+			if count <= 0 {
+				continue
+			}
+			if dataBuff.Len() != int(count) {
+				t.errorCounter = t.errorCounter + 1
+				continue
+			}
+
+			pathname := t.config.OutputPath + "/" + strconv.Itoa(int(mnt_id))
+			if err := os.MkdirAll(pathname, 0755); err != nil {
+				t.errorCounter = t.errorCounter + 1
+				continue
+			}
+
+			filename := pathname + "/write.dev-" + strconv.Itoa(int(dev_id)) + ".inode-" + strconv.Itoa(int(inode))
+
+			f, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				t.errorCounter = t.errorCounter + 1
+				continue
+			}
+			if _, err := f.Seek(int64(off), os.SEEK_SET); err != nil {
+				f.Close()
+				t.errorCounter = t.errorCounter + 1
+				continue
+			}
+			dataBytes, err := readByteSliceFromBuff(dataBuff, int(count))
+			if err != nil {
+				f.Close()
+				t.errorCounter = t.errorCounter + 1
+				continue
+			}
+			if _, err := f.Write(dataBytes); err != nil {
+				f.Close()
+				t.errorCounter = t.errorCounter + 1
+				continue
+			}
+			if err := f.Close(); err != nil {
+				t.errorCounter = t.errorCounter + 1
+				continue
+			}
+		case lost := <-t.lostWrChannel:
+			t.lostWrCounter = t.lostWrCounter + int(lost)
 		}
 	}
 }
@@ -695,10 +835,4 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 		return nil, fmt.Errorf("error unknown arg type %v", at)
 	}
 	return res, nil
-}
-
-func reverseStringSlice(in []string) {
-	for i, j := 0, len(in)-1; i < j; i, j = i+1, j-1 {
-		in[i], in[j] = in[j], in[i]
-	}
 }

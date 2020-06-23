@@ -401,6 +401,12 @@ var EventsKprobes = map[int32]string{
 	352: "cap_capable",
 	353: "security_bprm_check",
 	354: "security_file_open",
+	355: "vfs_write",
+}
+
+// EventsKretprobes is list of supported kretprobes events, indexed by their ID
+var EventsKretprobes = map[int32]string{
+	355: "vfs_write",
 }
 
 // EventsIDToName holds all the events that tracee can trace, indexed by their ID
@@ -425,6 +431,10 @@ func init() {
 		EventsIDToName[id] = name
 		EventsNameToID[name] = id
 	}
+	for id, name := range EventsKretprobes {
+		EventsIDToName[id] = name
+		EventsNameToID[name] = id
+	}
 }
 
 // essentialEvents is a list of event ids (in EventsIDToName map) that are essential to the operation of tracee and therefore must be traced
@@ -444,4 +454,5 @@ const (
 	CONFIG_CONT_MODE           bpfConfig = 0
 	CONFIG_DETECT_ORIG_SYSCALL bpfConfig = 1
 	CONFIG_EXEC_ENV            bpfConfig = 2
+	CONFIG_SAVE_FILES          bpfConfig = 3
 )
