@@ -62,8 +62,8 @@ type TraceeConfig struct {
 	ShowExecEnv           bool
 	OutputFormat          string
 	PerfBufferSize        int
-	ExtractFiles          bool
 	OutputPath            string
+	CaptureFiles          bool
 	FilterFileWrite       []string
 }
 
@@ -99,7 +99,7 @@ func (tc TraceeConfig) Validate() error {
 //   eventsToTrace: all events
 //   outputFormat: table
 func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall bool, showExecEnv bool, outputFormat string,
-	perfBufferSize int, extractFiles bool, outputPath string, filterFileWrite []string) (*TraceeConfig, error) {
+	perfBufferSize int, outputPath string, captureFiles bool, filterFileWrite []string) (*TraceeConfig, error) {
 	var eventsToTraceInternal []int32
 	if eventsToTrace == nil {
 		eventsToTraceInternal = make([]int32, 0, len(EventsIDToName))
@@ -126,8 +126,8 @@ func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall
 		ShowExecEnv:           showExecEnv,
 		OutputFormat:          outputFormat,
 		PerfBufferSize:        perfBufferSize,
-		ExtractFiles:          extractFiles,
 		OutputPath:            outputPath,
+		CaptureFiles:          captureFiles,
 		FilterFileWrite:       filterFileWrite,
 	}
 
@@ -311,8 +311,8 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 	binary.LittleEndian.PutUint32(key, uint32(CONFIG_EXEC_ENV))
 	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.ShowExecEnv))
 	bpfConfig.Set(key, leaf)
-	binary.LittleEndian.PutUint32(key, uint32(CONFIG_SAVE_FILES))
-	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.ExtractFiles))
+	binary.LittleEndian.PutUint32(key, uint32(CONFIG_CAPTURE_FILES))
+	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.CaptureFiles))
 	bpfConfig.Set(key, leaf)
 
 	// Load send_file function to prog_array to be used as tail call

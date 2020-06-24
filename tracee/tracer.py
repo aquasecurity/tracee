@@ -625,10 +625,10 @@ class ArgType(object):
     TYPE_MAX        = 255
 
 class shared_config(object):
-    CONFIG_CONT_MODE    = 0
-    CONFIG_SHOW_SYSCALL = 1
-    CONFIG_EXEC_ENV     = 2
-    CONFIG_SAVE_FILES   = 3
+    CONFIG_CONT_MODE       = 0
+    CONFIG_SHOW_SYSCALL    = 1
+    CONFIG_EXEC_ENV        = 2
+    CONFIG_CAPTURE_FILES   = 3
 
 class context_t(ctypes.Structure):  # match layout of eBPF C's context_t struct
     _fields_ = [("ts", ctypes.c_uint64),
@@ -888,7 +888,7 @@ class EventMonitor:
         self.buf_pages = args.buf_pages
         self.show_syscall = args.show_syscall
         self.exec_env = args.exec_env
-        self.extract_files = args.extract_files
+        self.capture_files = args.capture_files
         self.output_path = args.output_path
         self.filter_file_write = args.filter_file_write
 
@@ -928,8 +928,8 @@ class EventMonitor:
         self.bpf["config_map"][key] = ctypes.c_uint32(self.show_syscall)
         key = ctypes.c_uint32(shared_config.CONFIG_EXEC_ENV)
         self.bpf["config_map"][key] = ctypes.c_uint32(self.exec_env)
-        key = ctypes.c_uint32(shared_config.CONFIG_SAVE_FILES)
-        self.bpf["config_map"][key] = ctypes.c_uint32(self.extract_files)
+        key = ctypes.c_uint32(shared_config.CONFIG_CAPTURE_FILES)
+        self.bpf["config_map"][key] = ctypes.c_uint32(self.capture_files)
 
         if self.filter_file_write is not None:
             for i, path in enumerate(self.filter_file_write):

@@ -454,5 +454,5 @@ const (
 	CONFIG_CONT_MODE           bpfConfig = 0
 	CONFIG_DETECT_ORIG_SYSCALL bpfConfig = 1
 	CONFIG_EXEC_ENV            bpfConfig = 2
-	CONFIG_SAVE_FILES          bpfConfig = 3
+	CONFIG_CAPTURE_FILES       bpfConfig = 3
 )
