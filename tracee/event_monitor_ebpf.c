@@ -688,33 +688,13 @@ static __always_inline int get_config(u32 key)
     return *config;
 }
 
-static __always_inline int container_mode()
-{
-    return get_config(CONFIG_CONT_MODE);
-}
-
-static __always_inline int show_syscall()
-{
-    return get_config(CONFIG_SHOW_SYSCALL);
-}
-
-static __always_inline int show_exec_env()
-{
-    return get_config(CONFIG_EXEC_ENV);
-}
-
-static __always_inline int save_files()
-{
-    return get_config(CONFIG_CAPTURE_FILES);
-}
-
 static __always_inline int init_context(context_t *context)
 {
     struct task_struct *task;
     task = (struct task_struct *)bpf_get_current_task();
 
     u32 should_trace = 0;
-    u32 cont_mode = container_mode();
+    u32 cont_mode = get_config(CONFIG_CONT_MODE);
     if (cont_mode)
         should_trace = lookup_pid_ns(task);
     else
@@ -967,7 +947,7 @@ static __always_inline int save_args(struct pt_regs *ctx, bool is_syscall)
     args_t args = {};
 
     u32 should_trace = 0;
-    if (container_mode())
+    if (get_config(CONFIG_CONT_MODE))
         should_trace = is_container();
     else
         should_trace = lookup_pid();
@@ -1159,7 +1139,7 @@ static __always_inline int trace_ret_generic_fork(struct pt_regs *ctx, u32 id, u
 {
     int rc = trace_ret_generic(ctx, id, types);
 
-    if (!rc && !container_mode()) {
+    if (!rc && !get_config(CONFIG_CONT_MODE)) {
         u32 pid = PT_REGS_RC(ctx);
         add_pid_fork(pid);
     }
@@ -1349,7 +1329,7 @@ int syscall__execve(struct pt_regs *ctx,
     context_t context = {};
 
     u32 ret = 0;
-    if (container_mode())
+    if (get_config(CONFIG_CONT_MODE))
         ret = add_pid_ns_if_needed();
     else
         ret = add_pid();
@@ -1364,7 +1344,7 @@ int syscall__execve(struct pt_regs *ctx,
     if (submit_p == NULL)
         return 0;
 
-    int show_env = show_exec_env();
+    int show_env = get_config(CONFIG_EXEC_ENV);
 
     context.eventid = SYS_EXECVE;
     if (show_env)
@@ -1417,7 +1397,7 @@ int syscall__execveat(struct pt_regs *ctx,
     context_t context = {};
 
     u32 ret = 0;
-    if (container_mode())
+    if (get_config(CONFIG_CONT_MODE))
         ret = add_pid_ns_if_needed();
     else
         ret = add_pid();
@@ -1432,7 +1412,7 @@ int syscall__execveat(struct pt_regs *ctx,
     if (submit_p == NULL)
         return 0;
 
-    int show_env = show_exec_env();
+    int show_env = get_config(CONFIG_EXEC_ENV);
 
     context.eventid = SYS_EXECVEAT;
     if (show_env)
@@ -1494,7 +1474,7 @@ int trace_do_exit(struct pt_regs *ctx, long code)
     context.argnum = 0;
     context.retval = code;
 
-    if (container_mode())
+    if (get_config(CONFIG_CONT_MODE))
         remove_pid_ns_if_needed();
     else
         remove_pid();
@@ -1592,7 +1572,7 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
         return 0;
 
     context.eventid = CAP_CAPABLE;
-    if (show_syscall())
+    if (get_config(CONFIG_SHOW_SYSCALL))
         context.argnum = 2;
     else
         context.argnum = 1;
@@ -1608,7 +1588,7 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
 
     save_context_to_buf(submit_p, (void*)&context);
     save_to_submit_buf(submit_p, (void*)&cap, sizeof(int), CAP_T);
-    if (show_syscall()) {
+    if (get_config(CONFIG_SHOW_SYSCALL)) {
         struct pt_regs *real_ctx = get_task_pt_regs();
         save_to_submit_buf(submit_p, (void*)&(real_ctx->orig_ax), sizeof(int), SYSCALL_T);
     }
@@ -1727,7 +1707,7 @@ int trace_vfs_write(struct pt_regs *ctx, struct file *file, const char __user *b
     args_t args = {};
 
     u32 should_trace = 0;
-    if (container_mode())
+    if (get_config(CONFIG_CONT_MODE))
         should_trace = is_container();
     else
         should_trace = lookup_pid();
@@ -1846,8 +1826,7 @@ VFS_W_CONT:
     args.args[4] = PT_REGS_RC(ctx);
     vfs_args_map.update(&id, &args);
 
-    int extract_files = save_files();
-    if (extract_files)
+    if (get_config(CONFIG_CAPTURE_FILES))
         // Send file data
         prog_array.call(ctx, 0);
     return 0;
