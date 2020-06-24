@@ -24,7 +24,7 @@ func (p tableEventPrinter) Preamble() {
 }
 
 func (p tableEventPrinter) Print(ctx context, args []interface{}) {
-	fmt.Printf("%-14d %-16s %-12d %-12d %-6d %-16s %-16s %-6d %-6d %-6d %-12d", ctx.Ts/1000000, ctx.UtsName, ctx.MntId, ctx.PidId, ctx.Uid, EventsIDToName[ctx.Eventid], ctx.Comm, ctx.Pid, ctx.Tid, ctx.Ppid, ctx.Retval)
+	fmt.Printf("%-14f %-16s %-12d %-12d %-6d %-16s %-16s %-6d %-6d %-6d %-12d", float64(ctx.Ts)/1000000, ctx.UtsName, ctx.MntId, ctx.PidId, ctx.Uid, EventsIDToName[ctx.Eventid], ctx.Comm, ctx.Pid, ctx.Tid, ctx.Ppid, ctx.Retval)
 	fmt.Printf("%v", args)
 	fmt.Println()
 }
@@ -39,7 +39,8 @@ type jsonEventPrinter struct{}
 
 // printableEvent holds all event data relevent for printing
 type printableEvent struct {
-	context
+	Ts float64                  `json:"time"`
+	contextNoTs
 	EventName string            `json:"api"`
 	Args      map[string]string `json:"arguments"`
 }
@@ -51,8 +52,8 @@ func (p jsonEventPrinter) Print(ctx context, args []interface{}) {
 	for i, a := range args {
 		argmap[fmt.Sprintf("p%d", i)] = fmt.Sprintf("%v", a)
 	}
-	e := printableEvent{context: ctx, EventName: EventsIDToName[ctx.Eventid], Args: argmap}
-	e.context.Ts = e.context.Ts / 1000000
+	e := printableEvent{Ts: float64(ctx.Ts), contextNoTs: ctx.contextNoTs, EventName: EventsIDToName[ctx.Eventid], Args: argmap}
+	e.Ts = e.Ts / 1000000
 	eBytes, err := json.Marshal(e)
 	if err != nil {
 		fmt.Printf("error printing event: %v\n", err)

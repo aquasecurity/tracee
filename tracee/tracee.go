@@ -38,8 +38,7 @@ func (tc taskComm) MarshalText() ([]byte, error) {
 
 // context struct contains common metadata that is collected for all types of events
 // it is used to unmarshal binary data and therefore should match (bit by bit) to the `context_t` struct in the ebpf code.
-type context struct {
-	Ts      uint64   `json:"time"`
+type contextNoTs struct {
 	Pid     uint32   `json:"pid"`
 	Tid     uint32   `json:"tid"`
 	Ppid    uint32   `json:"ppid"`
@@ -52,6 +51,11 @@ type context struct {
 	Argnum  uint8    `json:"arguments_count"`
 	_       [3]byte  // padding for Argnum
 	Retval  int64    `json:"return_value"`
+}
+
+type context struct {
+	Ts uint64 `json:"time"`
+	contextNoTs
 }
 
 // TraceeConfig is a struct containing user defined configuration of tracee
