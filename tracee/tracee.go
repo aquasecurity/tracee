@@ -54,6 +54,14 @@ type context struct {
 	Retval  int64    `json:"return_value"`
 }
 
+type fileMeta struct {
+	MntId uint32
+	DevId uint32
+	Inode uint64
+	Count int32
+	Off   uint64
+}
+
 // TraceeConfig is a struct containing user defined configuration of tracee
 type TraceeConfig struct {
 	EventsToTrace         []int32
@@ -426,60 +434,41 @@ func (t *Tracee) processFileWrites() {
 		select {
 		case dataRaw := <-t.fileWrChannel:
 			dataBuff := bytes.NewBuffer(dataRaw)
-			mnt_id, err := readUInt32FromBuff(dataBuff)
-			if err != nil {
-				t.errorCounter = t.errorCounter + 1
-				continue
-			}
-			dev_id, err := readUInt32FromBuff(dataBuff)
-			if err != nil {
-				t.errorCounter = t.errorCounter + 1
-				continue
-			}
-			inode, err := readUInt64FromBuff(dataBuff)
-			if err != nil {
-				t.errorCounter = t.errorCounter + 1
-				continue
-			}
-			count, err := readInt32FromBuff(dataBuff)
-			if err != nil {
-				t.errorCounter = t.errorCounter + 1
-				continue
-			}
-			off, err := readUInt64FromBuff(dataBuff)
+			var meta fileMeta
+			err := binary.Read(dataBuff, binary.LittleEndian, &meta)
 			if err != nil {
 				t.errorCounter = t.errorCounter + 1
 				continue
 			}
 
 			// Sanity checks
-			if count <= 0 {
+			if meta.Count <= 0 {
 				continue
 			}
-			if dataBuff.Len() != int(count) {
+			if dataBuff.Len() != int(meta.Count) {
 				t.errorCounter = t.errorCounter + 1
 				continue
 			}
 
-			pathname := t.config.OutputPath + "/" + strconv.Itoa(int(mnt_id))
+			pathname := t.config.OutputPath + "/" + strconv.Itoa(int(meta.MntId))
 			if err := os.MkdirAll(pathname, 0755); err != nil {
 				t.errorCounter = t.errorCounter + 1
 				continue
 			}
 
-			filename := pathname + "/write.dev-" + strconv.Itoa(int(dev_id)) + ".inode-" + strconv.Itoa(int(inode))
+			filename := pathname + "/write.dev-" + strconv.Itoa(int(meta.DevId)) + ".inode-" + strconv.Itoa(int(meta.Inode))
 
 			f, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0644)
 			if err != nil {
 				t.errorCounter = t.errorCounter + 1
 				continue
 			}
-			if _, err := f.Seek(int64(off), os.SEEK_SET); err != nil {
+			if _, err := f.Seek(int64(meta.Off), os.SEEK_SET); err != nil {
 				f.Close()
 				t.errorCounter = t.errorCounter + 1
 				continue
 			}
-			dataBytes, err := readByteSliceFromBuff(dataBuff, int(count))
+			dataBytes, err := readByteSliceFromBuff(dataBuff, int(meta.Count))
 			if err != nil {
 				f.Close()
 				t.errorCounter = t.errorCounter + 1
