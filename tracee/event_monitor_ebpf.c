@@ -688,23 +688,28 @@ static __always_inline int get_config(u32 key)
     return *config;
 }
 
+static __always_inline int should_trace()
+{
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+
+    u32 rc = 0;
+    if (get_config(CONFIG_CONT_MODE))
+        rc = lookup_pid_ns(task);
+    else
+        rc = lookup_pid();
+
+    return rc;
+}
+
 static __always_inline int init_context(context_t *context)
 {
     struct task_struct *task;
     task = (struct task_struct *)bpf_get_current_task();
 
-    u32 should_trace = 0;
-    u32 cont_mode = get_config(CONFIG_CONT_MODE);
-    if (cont_mode)
-        should_trace = lookup_pid_ns(task);
-    else
-        should_trace = lookup_pid();
-
-    // Check if we should trace this pid val
-    if (should_trace == 0)
+    if (!should_trace())
         return -1;
 
-    if (cont_mode) {
+    if (get_config(CONFIG_CONT_MODE)) {
         context->tid = get_task_ns_pid(task);
         context->pid = get_task_ns_tgid(task);
         context->ppid = get_task_ns_ppid(task);
@@ -946,13 +951,7 @@ static __always_inline int save_args(struct pt_regs *ctx, bool is_syscall)
     u64 id;
     args_t args = {};
 
-    u32 should_trace = 0;
-    if (get_config(CONFIG_CONT_MODE))
-        should_trace = is_container();
-    else
-        should_trace = lookup_pid();
-
-    if (!should_trace)
+    if (!should_trace())
         return 0;
 
     if (!is_syscall) {
@@ -1706,13 +1705,7 @@ int trace_vfs_write(struct pt_regs *ctx, struct file *file, const char __user *b
     u64 id;
     args_t args = {};
 
-    u32 should_trace = 0;
-    if (get_config(CONFIG_CONT_MODE))
-        should_trace = is_container();
-    else
-        should_trace = lookup_pid();
-
-    if (!should_trace)
+    if (!should_trace())
         return 0;
 
     args.args[0] = (unsigned long)file;
