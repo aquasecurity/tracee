@@ -111,8 +111,11 @@ func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall
 	var eventsToTraceInternal []int32
 	if eventsToTrace == nil {
 		eventsToTraceInternal = make([]int32, 0, len(EventsIDToName))
+		rawSyscallsId := EventsNameToID["raw_syscalls"]
 		for id := range EventsIDToName {
-			eventsToTraceInternal = append(eventsToTraceInternal, id)
+			if id != rawSyscallsId {
+				eventsToTraceInternal = append(eventsToTraceInternal, id)
+			}
 		}
 	} else {
 		eventsToTraceInternal = make([]int32, 0, len(eventsToTrace))
