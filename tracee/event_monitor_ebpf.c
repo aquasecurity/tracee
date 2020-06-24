@@ -48,10 +48,10 @@
 #define PRCTL_OPT_T   22UL
 #define TYPE_MAX      255UL
 
-#define CONFIG_CONT_MODE    0
-#define CONFIG_SHOW_SYSCALL 1
-#define CONFIG_EXEC_ENV     2
-#define CONFIG_SAVE_FILES   3
+#define CONFIG_CONT_MODE       0
+#define CONFIG_SHOW_SYSCALL    1
+#define CONFIG_EXEC_ENV        2
+#define CONFIG_CAPTURE_FILES   3
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
 #error Minimal required kernel version is 4.14
@@ -705,7 +705,7 @@ static __always_inline int show_exec_env()
 
 static __always_inline int save_files()
 {
-    return get_config(CONFIG_SAVE_FILES);
+    return get_config(CONFIG_CAPTURE_FILES);
 }
 
 static __always_inline int init_context(context_t *context)
@@ -1799,18 +1799,19 @@ int trace_ret_vfs_write(struct pt_regs *ctx)
         return -1;
 
     // Filter requested paths
-    if (string_p->off <= SUBMIT_BUFSIZE - MAX_STRING_SIZE) {
-        if (filter1_p->path[0] && is_prefix(filter1_p->path, &string_p->buf[string_p->off]))
-            goto VFS_W_CONT;
+    if (filter1_p->path[0]) {
+        if (string_p->off <= SUBMIT_BUFSIZE - MAX_STRING_SIZE) {
+            if (filter1_p->path[0] && is_prefix(filter1_p->path, &string_p->buf[string_p->off]))
+                goto VFS_W_CONT;
 
-        if (filter2_p->path[0] && is_prefix(filter2_p->path, &string_p->buf[string_p->off]))
-            goto VFS_W_CONT;
+            if (filter2_p->path[0] && is_prefix(filter2_p->path, &string_p->buf[string_p->off]))
+                goto VFS_W_CONT;
 
-        if (filter3_p->path[0] && is_prefix(filter3_p->path, &string_p->buf[string_p->off]))
-            goto VFS_W_CONT;
+            if (filter3_p->path[0] && is_prefix(filter3_p->path, &string_p->buf[string_p->off]))
+                goto VFS_W_CONT;
+        }
+        return 0;
     }
-
-    return 0;
 
 VFS_W_CONT:
     // Extract device id, inode number and pos (offset)
