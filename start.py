@@ -51,12 +51,12 @@ def parse_args(input_args):
                         help="show syscall name in kprobes")
     parser.add_argument("--exec-env", action="store_true",
                         help="show execve(at) environment variables in output")
-    parser.add_argument("--extract-files", action="store_true",
-                        help="extract file writes to output path")
     parser.add_argument("--output-path", default="/tmp/tracee",
-                        help="output path for extracted files, i.e. when \"extract-files\" is used")
+                        help="set output path")
+    parser.add_argument("--capture-files", action="store_true",
+                        help="capture file writes to output path")
     parser.add_argument("--filter-file-write", action="append",
-                        help="filter path of file writes. Up to 3 filters can be specified, 16 characters each")
+                        help="only output file writes whose path starts with the given path prefix (up to 16 characters)")
     return parser.parse_args(input_args)
 
 
