@@ -25,7 +25,9 @@ func (p tableEventPrinter) Preamble() {
 
 func (p tableEventPrinter) Print(ctx context, args []interface{}) {
 	fmt.Printf("%-14f %-16s %-12d %-12d %-6d %-16s %-16s %-6d %-6d %-6d %-12d", float64(ctx.Ts)/1000000.0, ctx.UtsName, ctx.MntId, ctx.PidId, ctx.Uid, EventsIDToName[ctx.Eventid], ctx.Comm, ctx.Pid, ctx.Tid, ctx.Ppid, ctx.Retval)
-	fmt.Printf("%v", args)
+	for _, value:= range args {
+		fmt.Printf("%v ", value)
+	}
 	fmt.Println()
 }
 
