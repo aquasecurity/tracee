@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/tracee"
-	"github.com/urfave/cli/v2"
 	"github.com/syndtr/gocapability/capability"
+	"github.com/urfave/cli/v2"
 )
 
 func main() {
@@ -20,24 +20,25 @@ func main() {
 				printList()
 				return nil
 			}
-			cfg, err := tracee.NewConfig(
-				c.StringSlice("event"),
-				c.Bool("container"),
-				c.Bool("detect-original-syscall"),
-				c.Bool("show-exec-env"),
-				c.String("output"),
-				c.Int("perf-buffer-size"),
-				c.String("output-path"),
-				c.Bool("capture-files"),
-				c.StringSlice("filter-file-write"),
-			)
+			events, err := prepareEventsToTrace(c.StringSlice("event"))
+			if err != nil {
+				return err
+			}
+			cfg := tracee.TraceeConfig{
+				EventsToTrace:         events,
+				ContainerMode:         c.Bool("container"),
+				DetectOriginalSyscall: c.Bool("detect-original-syscall"),
+				ShowExecEnv:           c.Bool("show-exec-env"),
+				OutputFormat:          c.String("output"),
+				PerfBufferSize:        c.Int("perf-buffer-size"),
+				OutputPath:            c.String("output-path"),
+				CaptureFiles:          c.Bool("capture-files"),
+				FilterFileWrite:       c.StringSlice("filter-file-write"),
+			}
 			if c.Bool("show-all-syscalls") {
 				cfg.EventsToTrace = append(cfg.EventsToTrace, tracee.EventsNameToID["raw_syscalls"])
 			}
-			if err != nil {
-				return fmt.Errorf("error creating Tracee config: %v", err)
-			}
-			t, err := tracee.New(*cfg)
+			t, err := tracee.New(cfg)
 			if err != nil {
 				// t is being closed internally
 				return fmt.Errorf("error creating Tracee: %v", err)
@@ -109,13 +110,36 @@ func main() {
 		},
 	}
 
-	if (!isCapable()) {
+	if !isCapable() {
 		log.Fatal("Not enough privileges to run this program")
 	}
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func prepareEventsToTrace(eventsToTrace []string) ([]int32, error) {
+	var res []int32
+	if eventsToTrace == nil {
+		res = make([]int32, 0, len(tracee.EventsIDToName))
+		rawSyscallsID := tracee.EventsNameToID["raw_syscalls"]
+		for id := range tracee.EventsIDToName {
+			if id != rawSyscallsID {
+				res = append(res, id)
+			}
+		}
+	} else {
+		res = make([]int32, 0, len(eventsToTrace))
+		for _, name := range eventsToTrace {
+			id, ok := tracee.EventsNameToID[name]
+			if !ok {
+				return nil, fmt.Errorf("invalid event to trace: %s", name)
+			}
+			res = append(res, id)
+		}
+	}
+	return res, nil
 }
 
 func isCapable() bool {
