@@ -17,11 +17,15 @@
 #include <linux/socket.h>
 #include <linux/version.h>
 
-#define MAXARG 20
-#define MAX_STRING_SIZE     (1 << 12)     // Choosing this value to be the same as PATH_MAX (4096)
 #define MAX_PERCPU_BUFSIZE  (1 << 15)     // This value is actually set by the kernel as an upper bound
-#define SUBMIT_BUFSIZE      (1 << 14)     // Need to be power of 2
-#define PATH_PREFIX_SIZE    16
+#define MAX_STRING_SIZE     4096          // Choosing this value to be the same as PATH_MAX
+#define MAX_STR_ARR_ELEM    20            // String array elements number should be bounded due to instructions limit
+#define MAX_PATH_PREF_SIZE  16            // Max path prefix should be bounded due to instructions limit
+
+#define SUBMIT_BUF_IDX      0
+#define STRING_BUF_IDX      1
+#define FILE_BUF_IDX        2
+#define MAX_BUFFERS         3
 
 #define NONE_T        0UL
 #define INT_T         1UL
@@ -441,16 +445,11 @@ typedef struct args {
 
 typedef struct simple_buf {
     u8 buf[MAX_PERCPU_BUFSIZE];
-} simple_buf_t;
+} buf_t;
 
 typedef struct path_filter {
-    char path[PATH_PREFIX_SIZE];
+    char path[MAX_PATH_PREF_SIZE];
 } path_filter_t;
-
-typedef struct submit_buf {
-    u32 off;
-    u8 buf[SUBMIT_BUFSIZE];
-} submit_buf_t;
 
 /*================================ KERNEL STRUCTS =============================*/
 
@@ -481,9 +480,8 @@ BPF_HASH(pids_map, u32, u32);                       // Save container pid namesp
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
 BPF_HASH(vfs_args_map, u64, args_t);                // Persist args info between function entry and return
 BPF_ARRAY(file_filter, path_filter_t, 3);           // Used to filter vfs_write events
-BPF_PERCPU_ARRAY(submission_buf, submit_buf_t, 1);  // Buffer used to prepare event for perf_submit
-BPF_PERCPU_ARRAY(string_buf, submit_buf_t, 1);      // Buffer used to prepare event for perf_submit
-BPF_PERCPU_ARRAY(file_buf, simple_buf_t, 1);        // Buffer used to copy written files
+BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);         // Percpu global buffer variables
+BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS);       // Holds offsets to bufs respectively
 BPF_PROG_ARRAY(prog_array, 10);                     // Used to store programs for tail calls
 
 /*================================== EVENTS ====================================*/
@@ -590,7 +588,7 @@ static __inline int is_prefix(char *prefix, char *str)
 {
     int i;
     #pragma unroll
-    for (i = 0; i < PATH_PREFIX_SIZE; prefix++, str++, i++) {
+    for (i = 0; i < MAX_PATH_PREF_SIZE; prefix++, str++, i++) {
         if (!*prefix)
             return 1;
         if (*prefix != *str) {
@@ -733,27 +731,24 @@ static __always_inline int init_context(context_t *context)
     return 0;
 }
 
-static __always_inline submit_buf_t * get_submit_buf()
+static __always_inline buf_t* get_buf(int idx)
 {
-    int idx = 0;
-    // Get per-cpu buffer
-    return submission_buf.lookup(&idx);
+    return bufs.lookup(&idx);
 }
 
-static __always_inline int init_submit_buf()
+static __always_inline void set_buf_off(int buf_idx, u32 new_off)
 {
-    submit_buf_t *submit_p = get_submit_buf();
-    if (submit_p == NULL)
-        return -1;
+    bufs_off.update(&buf_idx, &new_off);
+}
 
-    submit_p->off = sizeof(context_t);
-
-    return 0;
+static __always_inline u32* get_buf_off(int buf_idx)
+{
+    return bufs_off.lookup(&buf_idx);
 }
 
 // Context will always be at the start of the submission buffer
 // It may be needed to resave the context if the arguments number changed by logic
-static __always_inline int save_context_to_buf(submit_buf_t *submit_p, void *ptr)
+static __always_inline int save_context_to_buf(buf_t *submit_p, void *ptr)
 {
     int rc = bpf_probe_read(&(submit_p->buf[0]), sizeof(context_t), ptr);
     if (rc == 0)
@@ -762,7 +757,7 @@ static __always_inline int save_context_to_buf(submit_buf_t *submit_p, void *ptr
     return 0;
 }
 
-static __always_inline int save_to_submit_buf(submit_buf_t *submit_p, void *ptr, int size, u8 type)
+static __always_inline int save_to_submit_buf(buf_t *submit_p, void *ptr, int size, u8 type)
 {
 // The biggest element that can be saved with this function should be defined here
 #define MAX_ELEMENT_SIZE sizeof(struct sockaddr_un)
@@ -770,68 +765,70 @@ static __always_inline int save_to_submit_buf(submit_buf_t *submit_p, void *ptr,
     if (type == 0)
         return 0;
 
-    if (submit_p->off > SUBMIT_BUFSIZE - MAX_ELEMENT_SIZE)
+    u32* off = get_buf_off(SUBMIT_BUF_IDX);
+    if (off == NULL)
+        return -1;
+    if (*off > MAX_PERCPU_BUFSIZE - MAX_ELEMENT_SIZE)
         // Satisfy validator for probe read
         return 0;
 
     // Save argument type
-    int rc = bpf_probe_read(&(submit_p->buf[submit_p->off]), 1, &type);
+    int rc = bpf_probe_read(&(submit_p->buf[*off]), 1, &type);
     if (rc != 0)
         return 0;
 
-    submit_p->off += 1;
+    *off += 1;
 
-    if (submit_p->off > SUBMIT_BUFSIZE - MAX_ELEMENT_SIZE)
+    if (*off > MAX_PERCPU_BUFSIZE - MAX_ELEMENT_SIZE)
         // Satisfy validator for probe read
         return 0;
 
     // Read into buffer
-    rc = bpf_probe_read(&(submit_p->buf[submit_p->off]), size, ptr);
+    rc = bpf_probe_read(&(submit_p->buf[*off]), size, ptr);
     if (rc == 0) {
-        submit_p->off += size;
+        *off += size;
+        set_buf_off(SUBMIT_BUF_IDX, *off);
         return size;
     }
 
-    // Remove argument type if read failed
-    submit_p->off -= 1;
     return 0;
 }
 
-static __always_inline int save_str_to_buf(submit_buf_t *submit_p, void *ptr)
+static __always_inline int save_str_to_buf(buf_t *submit_p, void *ptr)
 {
-    if (submit_p->off > SUBMIT_BUFSIZE - MAX_STRING_SIZE - sizeof(int))
+    u32* off = get_buf_off(SUBMIT_BUF_IDX);
+    if (off == NULL)
+        return -1;
+    if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int))
         // not enough space - return
         return 0;
 
     // Save argument type
     u8 type = STR_T;
-    int rc = bpf_probe_read(&(submit_p->buf[submit_p->off & (SUBMIT_BUFSIZE-1)]), 1, &type);
-    if (rc != 0)
-        return 0;
+    bpf_probe_read(&(submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)]), 1, &type);
 
-    submit_p->off += 1;
+    *off += 1;
 
-    if (submit_p->off > SUBMIT_BUFSIZE - MAX_STRING_SIZE - sizeof(int))
+    if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int))
         // Satisfy validator for probe read
         return 0;
 
     // Read into buffer
-    int sz = bpf_probe_read_str(&(submit_p->buf[submit_p->off + sizeof(int)]), MAX_STRING_SIZE, ptr);
+    int sz = bpf_probe_read_str(&(submit_p->buf[*off + sizeof(int)]), MAX_STRING_SIZE, ptr);
     if (sz > 0) {
-        if (submit_p->off > SUBMIT_BUFSIZE - sizeof(int))
+        if (*off > MAX_PERCPU_BUFSIZE - sizeof(int))
             // Satisfy validator for probe read
             return 0;
-        bpf_probe_read(&(submit_p->buf[submit_p->off]), sizeof(int), &sz);
-        submit_p->off += sz + sizeof(int);
+        bpf_probe_read(&(submit_p->buf[*off]), sizeof(int), &sz);
+        *off += sz + sizeof(int);
+        set_buf_off(SUBMIT_BUF_IDX, *off);
         return sz + sizeof(int);
     }
 
-    // Remove argument type if read failed
-    submit_p->off -= 1;
     return 0;
 }
 
-static __always_inline int get_path_string(submit_buf_t *string_p, struct path *path)
+static __always_inline int get_path_string(buf_t *string_p, struct path *path)
 {
     char slash = '/';
     int zero = 0;
@@ -841,7 +838,7 @@ static __always_inline int get_path_string(submit_buf_t *string_p, struct path *
     struct mount *mnt_p = real_mount(vfsmnt);
     bpf_probe_read(&mnt, sizeof(struct mount), mnt_p);
 
-    string_p->off = SUBMIT_BUFSIZE - MAX_STRING_SIZE;
+    u32 buf_off = MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE;
 
     #pragma unroll
     // As bpf loops are not allowed and max instructions number is 4096, path components is limited to 30
@@ -863,15 +860,17 @@ static __always_inline int get_path_string(submit_buf_t *string_p, struct path *
         }
         // Add this dentry name to path
         unsigned int len = (dentry->d_name.len+1) & (MAX_STRING_SIZE-1);
-        unsigned int off = string_p->off - len;
+        unsigned int off = buf_off - len;
         // Is string buffer big enough for dentry name?
-        if (off > SUBMIT_BUFSIZE - MAX_STRING_SIZE)
+        int sz = 0;
+        if (off <= MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
+            sz = bpf_probe_read_str(&(string_p->buf[off]), len, (void *)dentry->d_name.name);
+        else
             break;
-        int sz = bpf_probe_read_str(&(string_p->buf[off]), len, (void *)dentry->d_name.name);
         if (sz > 1) {
-            string_p->off -= 1; // remove null byte termination with slash sign
-            bpf_probe_read(&(string_p->buf[string_p->off & (SUBMIT_BUFSIZE-1)]), 1, &slash);
-            string_p->off -= sz - 1;
+            buf_off -= 1; // remove null byte termination with slash sign
+            bpf_probe_read(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE-1)]), 1, &slash);
+            buf_off -= sz - 1;
         } else {
             // If sz is 0 or 1 we have an error (path can't be null nor an empty string)
             break;
@@ -879,34 +878,38 @@ static __always_inline int get_path_string(submit_buf_t *string_p, struct path *
         dentry = dentry->d_parent;
     }
 
-    if (string_p->off == SUBMIT_BUFSIZE - MAX_STRING_SIZE) {
+    if (buf_off == MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE) {
 	// memfd files have no path in the filesystem -> extract their name
-        string_p->off = 0;
+        buf_off = 0;
         int sz = bpf_probe_read_str(&(string_p->buf[0]), MAX_STRING_SIZE, (void *)dentry->d_name.name);
     } else {
         // Add leading slash
-        string_p->off -= 1;
-        bpf_probe_read(&(string_p->buf[string_p->off & (SUBMIT_BUFSIZE-1)]), 1, &slash);
+        buf_off -= 1;
+        bpf_probe_read(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE-1)]), 1, &slash);
         // Null terminate the path string
-        bpf_probe_read(&(string_p->buf[SUBMIT_BUFSIZE - MAX_STRING_SIZE-1]), 1, &zero);
+        bpf_probe_read(&(string_p->buf[MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE-1]), 1, &zero);
     }
 
-    return string_p->off;
+    set_buf_off(STRING_BUF_IDX, buf_off);
+    return buf_off;
 }
 
 static __always_inline int events_perf_submit(struct pt_regs *ctx)
 {
-    submit_buf_t *submit_p = get_submit_buf();
+    u32* off = get_buf_off(SUBMIT_BUF_IDX);
+    if (off == NULL)
+        return -1;
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return -1;
 
     /* satisfy validator by setting buffer bounds */
-    int size = submit_p->off & (SUBMIT_BUFSIZE-1);
+    int size = *off & (MAX_PERCPU_BUFSIZE-1);
     void * data = submit_p->buf;
     return events.perf_submit(ctx, data, size);
 }
 
-static __always_inline int save_argv(submit_buf_t *submit_p, void *ptr)
+static __always_inline int save_argv(buf_t *submit_p, void *ptr)
 {
     const char *argp = NULL;
     bpf_probe_read(&argp, sizeof(argp), ptr);
@@ -916,13 +919,13 @@ static __always_inline int save_argv(submit_buf_t *submit_p, void *ptr)
     return 0;
 }
 
-static __always_inline int save_str_arr_to_buf(submit_buf_t *submit_p, const char __user *const __user *ptr)
+static __always_inline int save_str_arr_to_buf(buf_t *submit_p, const char __user *const __user *ptr)
 {
     // mark string array start
     save_to_submit_buf(submit_p, NULL, 0, STR_ARR_T);
 
     #pragma unroll
-    for (int i = 0; i < MAXARG; i++) {
+    for (int i = 0; i < MAX_STR_ARR_ELEM; i++) {
         if (save_argv(submit_p, (void *)&ptr[i]) == 0)
              goto out;
     }
@@ -1026,7 +1029,7 @@ static __always_inline int save_args_to_submit_buf(u64 types)
     if ((types == 0) || (load_args(&args) != 0))
         return 0;
 
-    submit_buf_t *submit_p = get_submit_buf();
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
@@ -1117,10 +1120,11 @@ static __always_inline int trace_ret_generic(struct pt_regs *ctx, u32 id, u64 ty
 {
     context_t context = {};
 
-    if (init_context(&context) || init_submit_buf())
+    if (init_context(&context))
         return -1;
 
-    submit_buf_t *submit_p = get_submit_buf();
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
@@ -1301,10 +1305,11 @@ TRACE_RET_FORK_SYSCALL(clone, SYS_CLONE, 0);
 TRACEPOINT_PROBE(raw_syscalls, sys_enter) {
     context_t context = {};
 
-    if (init_context(&context) || init_submit_buf())
+    if (init_context(&context))
         return 0;
 
-    submit_buf_t *submit_p = get_submit_buf();
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
@@ -1336,10 +1341,11 @@ int syscall__execve(struct pt_regs *ctx,
     if (ret == 0)
         return 0;
 
-    if (init_context(&context) || init_submit_buf())
+    if (init_context(&context))
         return 0;
 
-    submit_buf_t *submit_p = get_submit_buf();
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
@@ -1367,10 +1373,11 @@ int trace_ret_execve(struct pt_regs *ctx)
     // we can't load string args here as after execve memory is wiped
     context_t context = {};
 
-    if (init_context(&context) || init_submit_buf())
+    if (init_context(&context))
         return 0;
 
-    submit_buf_t *submit_p = get_submit_buf();
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
@@ -1404,10 +1411,11 @@ int syscall__execveat(struct pt_regs *ctx,
     if (ret == 0)
         return 0;
 
-    if (init_context(&context) || init_submit_buf())
+    if (init_context(&context))
         return 0;
 
-    submit_buf_t *submit_p = get_submit_buf();
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
@@ -1437,10 +1445,11 @@ int trace_ret_execveat(struct pt_regs *ctx)
     // we can't load string args here as after execve memory is wiped
     context_t context = {};
 
-    if (init_context(&context) || init_submit_buf())
+    if (init_context(&context))
         return 0;
 
-    submit_buf_t *submit_p = get_submit_buf();
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
@@ -1462,10 +1471,11 @@ int trace_do_exit(struct pt_regs *ctx, long code)
 {
     context_t context = {};
 
-    if (init_context(&context) || init_submit_buf())
+    if (init_context(&context))
         return 0;
 
-    submit_buf_t *submit_p = get_submit_buf();
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
@@ -1487,10 +1497,11 @@ int trace_security_bprm_check(struct pt_regs *ctx, struct linux_binprm *bprm)
 {
     context_t context = {};
 
-    if (init_context(&context) || init_submit_buf())
+    if (init_context(&context))
         return 0;
 
-    submit_buf_t *submit_p = get_submit_buf();
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
@@ -1501,15 +1512,17 @@ int trace_security_bprm_check(struct pt_regs *ctx, struct linux_binprm *bprm)
     dev_t s_dev = bprm->file->f_inode->i_sb->s_dev;
     unsigned long inode_nr = (unsigned long)bprm->file->f_inode->i_ino;
 
-    int idx = 0;
     // Get per-cpu string buffer
-    submit_buf_t *string_p = string_buf.lookup(&idx);
+    buf_t *string_p = get_buf(STRING_BUF_IDX);
     if (string_p == NULL)
         return -1;
     get_path_string(string_p, &bprm->file->f_path);
 
     save_context_to_buf(submit_p, (void*)&context);
-    save_str_to_buf(submit_p, (void *)&string_p->buf[string_p->off]);
+    u32 *off = get_buf_off(STRING_BUF_IDX);
+    if (off == NULL)
+        return -1;
+    save_str_to_buf(submit_p, (void *)&string_p->buf[*off]);
     save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T);
     save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T);
 
@@ -1521,10 +1534,11 @@ int trace_security_file_open(struct pt_regs *ctx, struct file *file)
 {
     context_t context = {};
 
-    if (init_context(&context) || init_submit_buf())
+    if (init_context(&context))
         return 0;
 
-    submit_buf_t *submit_p = get_submit_buf();
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
@@ -1540,15 +1554,17 @@ int trace_security_file_open(struct pt_regs *ctx, struct file *file)
     if (syscall_nr != 2 && syscall_nr != 257) // only monitor open and openat syscalls
         return 0;
 
-    int idx = 0;
     // Get per-cpu string buffer
-    submit_buf_t *string_p = string_buf.lookup(&idx);
+    buf_t *string_p = get_buf(STRING_BUF_IDX);
     if (string_p == NULL)
         return -1;
     get_path_string(string_p, &file->f_path);
 
     save_context_to_buf(submit_p, (void*)&context);
-    save_str_to_buf(submit_p, (void *)&string_p->buf[string_p->off]);
+    u32 *off = get_buf_off(STRING_BUF_IDX);
+    if (off == NULL)
+        return -1;
+    save_str_to_buf(submit_p, (void *)&string_p->buf[*off]);
     save_to_submit_buf(submit_p, (void*)&file->f_flags, sizeof(int), OPEN_FLAGS_T);
     save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T);
     save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T);
@@ -1563,10 +1579,11 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
     int audit;
     context_t context = {};
 
-    if (init_context(&context) || init_submit_buf())
+    if (init_context(&context))
         return 0;
 
-    submit_buf_t *submit_p = get_submit_buf();
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
@@ -1602,7 +1619,6 @@ int send_file(struct pt_regs *ctx)
     // 2. We can have multiple cpus - need percpu array
     // 3. We have to use perf submit and not maps as data can be overriden if userspace doesn't consume it fast enough
 
-    int idx = 0;
     int i = 0;
     unsigned int chunk_size;
 
@@ -1625,7 +1641,7 @@ int send_file(struct pt_regs *ctx)
     if (write_size <= 0)
         return 0;
 
-    simple_buf_t *file_buf_p = file_buf.lookup(&idx);
+    buf_t *file_buf_p = get_buf(FILE_BUF_IDX);
     if (file_buf_p == NULL)
         return 0;
 
@@ -1731,10 +1747,11 @@ int trace_ret_vfs_write(struct pt_regs *ctx)
     unsigned long inode_nr;
     loff_t start_pos;
 
-    if (init_context(&context) || init_submit_buf())
+    if (init_context(&context))
         return -1;
 
-    submit_buf_t *submit_p = get_submit_buf();
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
@@ -1755,14 +1772,16 @@ int trace_ret_vfs_write(struct pt_regs *ctx)
 
     // Extract path of written file
     bpf_probe_read(&path, sizeof(struct path), &file->f_path);
-    int idx = 0;
     // Get per-cpu string buffer
-    submit_buf_t *string_p = string_buf.lookup(&idx);
+    buf_t *string_p = get_buf(STRING_BUF_IDX);
     if (string_p == NULL)
         return -1;
     get_path_string(string_p, &path);
+    u32 *off = get_buf_off(STRING_BUF_IDX);
+    if (off == NULL)
+        return -1;
 
-    idx = 0;
+    int idx = 0;
     path_filter_t *filter1_p = file_filter.lookup(&idx);
     idx = 1;
     path_filter_t *filter2_p = file_filter.lookup(&idx);
@@ -1773,14 +1792,14 @@ int trace_ret_vfs_write(struct pt_regs *ctx)
 
     // Filter requested paths
     if (filter1_p->path[0]) {
-        if (string_p->off <= SUBMIT_BUFSIZE - MAX_STRING_SIZE) {
-            if (filter1_p->path[0] && is_prefix(filter1_p->path, &string_p->buf[string_p->off]))
+        if (*off <= MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE) {
+            if (filter1_p->path[0] && is_prefix(filter1_p->path, &string_p->buf[*off]))
                 goto VFS_W_CONT;
 
-            if (filter2_p->path[0] && is_prefix(filter2_p->path, &string_p->buf[string_p->off]))
+            if (filter2_p->path[0] && is_prefix(filter2_p->path, &string_p->buf[*off]))
                 goto VFS_W_CONT;
 
-            if (filter3_p->path[0] && is_prefix(filter3_p->path, &string_p->buf[string_p->off]))
+            if (filter3_p->path[0] && is_prefix(filter3_p->path, &string_p->buf[*off]))
                 goto VFS_W_CONT;
         }
         return 0;
@@ -1803,7 +1822,7 @@ VFS_W_CONT:
     context.retval = PT_REGS_RC(ctx);
     save_context_to_buf(submit_p, &context);
 
-    save_str_to_buf(submit_p, (void *)&string_p->buf[string_p->off]);
+    save_str_to_buf(submit_p, (void *)&string_p->buf[*off]);
     save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T);
     save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T);
     save_to_submit_buf(submit_p, &count, sizeof(size_t), SIZE_T_T);
