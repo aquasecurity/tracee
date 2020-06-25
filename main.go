@@ -34,6 +34,7 @@ func main() {
 				OutputPath:            c.String("output-path"),
 				CaptureFiles:          c.Bool("capture-files"),
 				FilterFileWrite:       c.StringSlice("filter-file-write"),
+				EventsFile:            os.Stdout,
 			}
 			if c.Bool("show-all-syscalls") {
 				cfg.EventsToTrace = append(cfg.EventsToTrace, tracee.EventsNameToID["raw_syscalls"])

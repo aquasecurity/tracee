@@ -73,6 +73,7 @@ type TraceeConfig struct {
 	OutputPath            string
 	CaptureFiles          bool
 	FilterFileWrite       []string
+	EventsFile            *os.File
 }
 
 // Validate does static validation of the configuration
@@ -162,10 +163,13 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	switch t.config.OutputFormat {
 	case "table":
 		t.printer = tableEventPrinter{
+			out:    cfg.EventsFile,
 			tracee: t,
 		}
 	case "json":
-		t.printer = jsonEventPrinter{}
+		t.printer = jsonEventPrinter{
+			out: cfg.EventsFile,
+		}
 	}
 
 	p, err := getEBPFProgram()
