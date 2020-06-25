@@ -102,53 +102,6 @@ func (tc TraceeConfig) Validate() error {
 	return nil
 }
 
-// NewConfig creates a new TraceeConfig instance based on the given configuration, or default values if missing
-// default values:
-//   eventsToTrace: all events
-//   outputFormat: table
-func NewConfig(eventsToTrace []string, containerMode bool, detectOriginalSyscall bool, showExecEnv bool, outputFormat string,
-	perfBufferSize int, outputPath string, captureFiles bool, filterFileWrite []string) (*TraceeConfig, error) {
-	var eventsToTraceInternal []int32
-	if eventsToTrace == nil {
-		eventsToTraceInternal = make([]int32, 0, len(EventsIDToName))
-		rawSyscallsId := EventsNameToID["raw_syscalls"]
-		for id := range EventsIDToName {
-			if id != rawSyscallsId {
-				eventsToTraceInternal = append(eventsToTraceInternal, id)
-			}
-		}
-	} else {
-		eventsToTraceInternal = make([]int32, 0, len(eventsToTrace))
-		for _, name := range eventsToTrace {
-			id, ok := EventsNameToID[name]
-			if !ok {
-				return nil, fmt.Errorf("invalid event to trace: %s", name)
-			}
-			eventsToTraceInternal = append(eventsToTraceInternal, id)
-		}
-	}
-	if outputFormat == "" {
-		outputFormat = "table"
-	}
-	tc := TraceeConfig{
-		EventsToTrace:         eventsToTraceInternal,
-		ContainerMode:         containerMode,
-		DetectOriginalSyscall: detectOriginalSyscall,
-		ShowExecEnv:           showExecEnv,
-		OutputFormat:          outputFormat,
-		PerfBufferSize:        perfBufferSize,
-		OutputPath:            outputPath,
-		CaptureFiles:          captureFiles,
-		FilterFileWrite:       filterFileWrite,
-	}
-
-	err := tc.Validate()
-	if err != nil {
-		return nil, fmt.Errorf("validation error: %v", err)
-	}
-	return &tc, nil
-}
-
 // This var is supposed to be injected *at build time* with the contents of the ebpf c program
 var ebpfProgramBase64Injected string
 
