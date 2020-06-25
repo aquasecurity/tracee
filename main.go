@@ -8,6 +8,7 @@ import (
 
 	"github.com/aquasecurity/tracee/tracee"
 	"github.com/urfave/cli/v2"
+	"github.com/syndtr/gocapability/capability"
 )
 
 func main() {
@@ -108,10 +109,28 @@ func main() {
 		},
 	}
 
+	if (!isCapable()) {
+		log.Fatal("Not enough privileges to run this program")
+	}
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func isCapable() bool {
+	c, err := capability.NewPid2(0)
+	if err != nil {
+		fmt.Println("Current user capabilities could not be retrieved. Assure running with enough privileges")
+		return true
+	}
+	err = c.Load()
+	if err != nil {
+		fmt.Println("Current user capabilities could not be retrieved. Assure running with enough privileges")
+		return true
+	}
+
+	return c.Get(capability.EFFECTIVE, capability.CAP_SYS_ADMIN)
 }
 
 func printList() {
