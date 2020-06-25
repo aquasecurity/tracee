@@ -3,6 +3,7 @@ package tracee
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 )
 
 type eventPrinter interface {
@@ -16,28 +17,31 @@ type eventPrinter interface {
 
 type tableEventPrinter struct {
 	tracee *Tracee
+	out    io.Writer
 }
 
 func (p tableEventPrinter) Preamble() {
-	fmt.Printf("%-14s %-16s %-12s %-12s %-6s %-16s %-16s %-6s %-6s %-6s %-12s %s", "TIME(s)", "UTS_NAME", "MNT_NS", "PID_NS", "UID", "EVENT", "COMM", "PID", "TID", "PPID", "RET", "ARGS")
-	fmt.Println()
+	fmt.Fprintf(p.out, "%-14s %-16s %-12s %-12s %-6s %-16s %-16s %-6s %-6s %-6s %-12s %s", "TIME(s)", "UTS_NAME", "MNT_NS", "PID_NS", "UID", "EVENT", "COMM", "PID", "TID", "PPID", "RET", "ARGS")
+	fmt.Fprintln(p.out)
 }
 
 func (p tableEventPrinter) Print(ctx context, args []interface{}) {
-	fmt.Printf("%-14f %-16s %-12d %-12d %-6d %-16s %-16s %-6d %-6d %-6d %-12d", float64(ctx.Ts)/1000000.0, ctx.UtsName, ctx.MntId, ctx.PidId, ctx.Uid, EventsIDToName[ctx.Eventid], ctx.Comm, ctx.Pid, ctx.Tid, ctx.Ppid, ctx.Retval)
-	for _, value:= range args {
-		fmt.Printf("%v ", value)
+	fmt.Fprintf(p.out, "%-14f %-16s %-12d %-12d %-6d %-16s %-16s %-6d %-6d %-6d %-12d", float64(ctx.Ts)/1000000.0, ctx.UtsName, ctx.MntId, ctx.PidId, ctx.Uid, EventsIDToName[ctx.Eventid], ctx.Comm, ctx.Pid, ctx.Tid, ctx.Ppid, ctx.Retval)
+	for _, value := range args {
+		fmt.Fprintf(p.out, "%v ", value)
 	}
-	fmt.Println()
+	fmt.Fprintln(p.out)
 }
 
 func (p tableEventPrinter) Epilogue() {
-	fmt.Printf("\nEnd of events stream\n")
-	fmt.Printf("Total events: %d, Lost events: %d, Lost file writes: %d, Unexpected errors: %d", p.tracee.eventCounter, p.tracee.lostEvCounter, p.tracee.lostWrCounter, p.tracee.errorCounter)
-	fmt.Printf("\nReleasing resources...\n")
+	fmt.Fprintf(p.out, "\nEnd of events stream\n")
+	fmt.Fprintf(p.out, "Total events: %d, Lost events: %d, Lost file writes: %d, Unexpected errors: %d", p.tracee.eventCounter, p.tracee.lostEvCounter, p.tracee.lostWrCounter, p.tracee.errorCounter)
+	fmt.Fprintf(p.out, "\nReleasing resources...\n")
 }
 
-type jsonEventPrinter struct{}
+type jsonEventPrinter struct {
+	out io.Writer
+}
 
 // printableEvent holds all event data relevent for printing
 type printableEvent struct {
@@ -58,10 +62,10 @@ func (p jsonEventPrinter) Print(ctx context, args []interface{}) {
 	e.Ts = float64(e.context.Ts) / 1000000.0
 	eBytes, err := json.Marshal(e)
 	if err != nil {
-		fmt.Printf("error printing event: %v\n", err)
+		fmt.Fprintf(p.out, "error printing event: %v\n", err)
 	}
-	fmt.Printf("%s", string(eBytes))
-	fmt.Println()
+	fmt.Fprintf(p.out, "%s", string(eBytes))
+	fmt.Fprintln(p.out)
 }
 
 func (p jsonEventPrinter) Epilogue() {}
