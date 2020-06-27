@@ -704,9 +704,6 @@ static __always_inline int init_context(context_t *context)
     struct task_struct *task;
     task = (struct task_struct *)bpf_get_current_task();
 
-    if (!should_trace())
-        return -1;
-
     if (get_config(CONFIG_CONT_MODE)) {
         context->tid = get_task_ns_pid(task);
         context->pid = get_task_ns_tgid(task);
@@ -954,9 +951,6 @@ static __always_inline int save_args(struct pt_regs *ctx, bool is_syscall)
     u64 id;
     args_t args = {};
 
-    if (!should_trace())
-        return 0;
-
     if (!is_syscall) {
         args.args[0] = PT_REGS_PARM1(ctx);
         args.args[1] = PT_REGS_PARM2(ctx);
@@ -1120,9 +1114,10 @@ static __always_inline int trace_ret_generic(struct pt_regs *ctx, u32 id, u64 ty
 {
     context_t context = {};
 
-    if (init_context(&context))
+    if (!should_trace())
         return -1;
 
+    init_context(&context);
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
@@ -1153,12 +1148,16 @@ static __always_inline int trace_ret_generic_fork(struct pt_regs *ctx, u32 id, u
 #define TRACE_ENT_SYSCALL(name)                                         \
 int syscall__##name(struct pt_regs *ctx)                                \
 {                                                                       \
+    if (!should_trace())                                                \
+        return 0;                                                       \
     return save_args(ctx, true);                                        \
 }
 
 #define TRACE_ENT_FUNC(name)                                            \
 int func__##name(struct pt_regs *ctx)                                   \
 {                                                                       \
+    if (!should_trace())                                                \
+        return 0;                                                       \
     return save_args(ctx, false);                                       \
 }
 
@@ -1305,9 +1304,10 @@ TRACE_RET_FORK_SYSCALL(clone, SYS_CLONE, 0);
 TRACEPOINT_PROBE(raw_syscalls, sys_enter) {
     context_t context = {};
 
-    if (init_context(&context))
+    if (!should_trace())
         return 0;
 
+    init_context(&context);
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
@@ -1341,9 +1341,7 @@ int syscall__execve(struct pt_regs *ctx,
     if (ret == 0)
         return 0;
 
-    if (init_context(&context))
-        return 0;
-
+    init_context(&context);
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
@@ -1373,9 +1371,10 @@ int trace_ret_execve(struct pt_regs *ctx)
     // we can't load string args here as after execve memory is wiped
     context_t context = {};
 
-    if (init_context(&context))
+    if (!should_trace())
         return 0;
 
+    init_context(&context);
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
@@ -1411,9 +1410,7 @@ int syscall__execveat(struct pt_regs *ctx,
     if (ret == 0)
         return 0;
 
-    if (init_context(&context))
-        return 0;
-
+    init_context(&context);
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
@@ -1445,9 +1442,10 @@ int trace_ret_execveat(struct pt_regs *ctx)
     // we can't load string args here as after execve memory is wiped
     context_t context = {};
 
-    if (init_context(&context))
+    if (!should_trace())
         return 0;
 
+    init_context(&context);
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
@@ -1471,9 +1469,10 @@ int trace_do_exit(struct pt_regs *ctx, long code)
 {
     context_t context = {};
 
-    if (init_context(&context))
+    if (!should_trace())
         return 0;
 
+    init_context(&context);
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
@@ -1497,9 +1496,10 @@ int trace_security_bprm_check(struct pt_regs *ctx, struct linux_binprm *bprm)
 {
     context_t context = {};
 
-    if (init_context(&context))
+    if (!should_trace())
         return 0;
 
+    init_context(&context);
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
@@ -1534,9 +1534,10 @@ int trace_security_file_open(struct pt_regs *ctx, struct file *file)
 {
     context_t context = {};
 
-    if (init_context(&context))
+    if (!should_trace())
         return 0;
 
+    init_context(&context);
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
@@ -1579,9 +1580,10 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
     int audit;
     context_t context = {};
 
-    if (init_context(&context))
+    if (!should_trace())
         return 0;
 
+    init_context(&context);
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
@@ -1747,9 +1749,10 @@ int trace_ret_vfs_write(struct pt_regs *ctx)
     unsigned long inode_nr;
     loff_t start_pos;
 
-    if (init_context(&context))
-        return -1;
+    if (!should_trace())
+        return 0;
 
+    init_context(&context);
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
