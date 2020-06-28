@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"path"
 	"path/filepath"
 	"strconv"
 
@@ -52,14 +53,6 @@ type context struct {
 	Argnum  uint8    `json:"arguments_count"`
 	_       [3]byte  // padding for Argnum
 	Retval  int64    `json:"return_value"`
-}
-
-type fileMeta struct {
-	MntId uint32
-	DevId uint32
-	Inode uint64
-	Count int32
-	Off   uint64
 }
 
 // TraceeConfig is a struct containing user defined configuration of tracee
@@ -390,35 +383,43 @@ func (t *Tracee) processEvents() {
 }
 
 func (t *Tracee) processFileWrites() {
+	type chunkMeta struct {
+		MntID uint32
+		DevID uint32
+		Inode uint64
+		Size  int32
+		Off   uint64
+	}
+
 	for {
 		select {
 		case dataRaw := <-t.fileWrChannel:
 			dataBuff := bytes.NewBuffer(dataRaw)
-			var meta fileMeta
+			var meta chunkMeta
 			err := binary.Read(dataBuff, binary.LittleEndian, &meta)
 			if err != nil {
 				t.errorCounter = t.errorCounter + 1
 				continue
 			}
 
-			// Sanity checks
-			if meta.Count <= 0 {
+			if meta.Size <= 0 {
+				t.errorCounter = t.errorCounter + 1
 				continue
 			}
-			if dataBuff.Len() != int(meta.Count) {
+			if dataBuff.Len() <= int(meta.Size) {
 				t.errorCounter = t.errorCounter + 1
 				continue
 			}
 
-			pathname := t.config.OutputPath + "/" + strconv.Itoa(int(meta.MntId))
+			pathname := path.Join(t.config.OutputPath, strconv.Itoa(int(meta.MntID)))
 			if err := os.MkdirAll(pathname, 0755); err != nil {
 				t.errorCounter = t.errorCounter + 1
 				continue
 			}
+			filename := fmt.Sprintf("write.dev-%d.inode-%d", meta.DevID, meta.Inode)
+			fullname := path.Join(pathname, filename)
 
-			filename := pathname + "/write.dev-" + strconv.Itoa(int(meta.DevId)) + ".inode-" + strconv.Itoa(int(meta.Inode))
-
-			f, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0644)
+			f, err := os.OpenFile(fullname, os.O_CREATE|os.O_WRONLY, 0640)
 			if err != nil {
 				t.errorCounter = t.errorCounter + 1
 				continue
@@ -428,7 +429,8 @@ func (t *Tracee) processFileWrites() {
 				t.errorCounter = t.errorCounter + 1
 				continue
 			}
-			dataBytes, err := readByteSliceFromBuff(dataBuff, int(meta.Count))
+
+			dataBytes, err := readByteSliceFromBuff(dataBuff, int(meta.Size))
 			if err != nil {
 				f.Close()
 				t.errorCounter = t.errorCounter + 1
