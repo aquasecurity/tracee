@@ -20,7 +20,7 @@
 #define MAX_PERCPU_BUFSIZE  (1 << 15)     // This value is actually set by the kernel as an upper bound
 #define MAX_STRING_SIZE     4096          // Choosing this value to be the same as PATH_MAX
 #define MAX_STR_ARR_ELEM    20            // String array elements number should be bounded due to instructions limit
-#define MAX_PATH_PREF_SIZE  16            // Max path prefix should be bounded due to instructions limit
+#define MAX_PATH_PREF_SIZE  64            // Max path prefix should be bounded due to instructions limit
 
 #define SUBMIT_BUF_IDX      0
 #define STRING_BUF_IDX      1
@@ -1699,7 +1699,7 @@ int send_file(struct pt_regs *ctx)
         vfs_args_map.update(&id, &args);
 
         // Handle the rest of the write recursively
-        prog_array.call(ctx, 0);
+        prog_array.call(ctx, 1);
         return 0;
     }
 
@@ -1739,8 +1739,67 @@ int trace_vfs_write(struct pt_regs *ctx, struct file *file, const char __user *b
 
 int trace_ret_vfs_write(struct pt_regs *ctx)
 {
-    context_t context = {};
     struct path path;
+    args_t *saved_args;
+    bool has_filter = false;
+
+    if (!should_trace())
+        return 0;
+
+    u64 id = bpf_get_current_pid_tgid();
+
+    saved_args = vfs_args_map.lookup(&id);
+    if (saved_args == 0) {
+        // missed entry or not traced
+        return 0;
+    }
+
+    struct file *file      = (struct file *) saved_args->args[0];
+
+    // Extract path of written file
+    bpf_probe_read(&path, sizeof(struct path), &file->f_path);
+    // Get per-cpu string buffer
+    buf_t *string_p = get_buf(STRING_BUF_IDX);
+    if (string_p == NULL)
+        return -1;
+    get_path_string(string_p, &path);
+    u32 *off = get_buf_off(STRING_BUF_IDX);
+    if (off == NULL)
+        return -1;
+
+    #pragma unroll
+    for (int i = 0; i < 3; i++) {
+        int idx = i;
+        path_filter_t *filter_p = file_filter.lookup(&idx);
+        if (filter_p == NULL)
+            return -1;
+
+        if (!filter_p->path[0])
+            break;
+
+        has_filter = true;
+
+        if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
+            break;
+
+        if (filter_p->path[0] && is_prefix(filter_p->path, &string_p->buf[*off]))
+            prog_array.call(ctx, 0);
+    }
+
+    if (has_filter) {
+        // There is a filter, but no match
+        vfs_args_map.delete(&id);
+        return 0;
+    }
+
+    // No filter was given - continue
+    prog_array.call(ctx, 0);
+    return 0;
+}
+
+int do_trace_ret_vfs_write(struct pt_regs *ctx)
+{
+    context_t context = {};
     args_t *saved_args;
     args_t args = {};
     struct inode *inode;
@@ -1748,9 +1807,6 @@ int trace_ret_vfs_write(struct pt_regs *ctx)
     dev_t s_dev;
     unsigned long inode_nr;
     loff_t start_pos;
-
-    if (!should_trace())
-        return 0;
 
     init_context(&context);
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
@@ -1773,42 +1829,14 @@ int trace_ret_vfs_write(struct pt_regs *ctx)
 
     vfs_args_map.delete(&id);
 
-    // Extract path of written file
-    bpf_probe_read(&path, sizeof(struct path), &file->f_path);
-    // Get per-cpu string buffer
+    // Get path
     buf_t *string_p = get_buf(STRING_BUF_IDX);
     if (string_p == NULL)
         return -1;
-    get_path_string(string_p, &path);
     u32 *off = get_buf_off(STRING_BUF_IDX);
     if (off == NULL)
         return -1;
 
-    int idx = 0;
-    path_filter_t *filter1_p = file_filter.lookup(&idx);
-    idx = 1;
-    path_filter_t *filter2_p = file_filter.lookup(&idx);
-    idx = 2;
-    path_filter_t *filter3_p = file_filter.lookup(&idx);
-    if ((filter1_p == NULL) || (filter2_p == NULL) || (filter3_p == NULL))
-        return -1;
-
-    // Filter requested paths
-    if (filter1_p->path[0]) {
-        if (*off <= MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE) {
-            if (filter1_p->path[0] && is_prefix(filter1_p->path, &string_p->buf[*off]))
-                goto VFS_W_CONT;
-
-            if (filter2_p->path[0] && is_prefix(filter2_p->path, &string_p->buf[*off]))
-                goto VFS_W_CONT;
-
-            if (filter3_p->path[0] && is_prefix(filter3_p->path, &string_p->buf[*off]))
-                goto VFS_W_CONT;
-        }
-        return 0;
-    }
-
-VFS_W_CONT:
     // Extract device id, inode number and pos (offset)
     bpf_probe_read(&inode, sizeof(struct inode *), &file->f_inode);
     bpf_probe_read(&superblock, sizeof(struct super_block *), &inode->i_sb);
@@ -1843,7 +1871,7 @@ VFS_W_CONT:
 
     if (get_config(CONFIG_CAPTURE_FILES))
         // Send file data
-        prog_array.call(ctx, 0);
+        prog_array.call(ctx, 1);
     return 0;
 }
 

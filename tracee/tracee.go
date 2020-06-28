@@ -89,8 +89,8 @@ func (tc TraceeConfig) Validate() error {
 		return fmt.Errorf("too many file-write filters given")
 	}
 	for _, filter := range tc.FilterFileWrite {
-		if len(filter) > 16 {
-			return fmt.Errorf("The length of a path filter is limited to 16 characters: %s", filter)
+		if len(filter) > 64 {
+			return fmt.Errorf("The length of a path filter is limited to 64 characters: %s", filter)
 		}
 	}
 	return nil
@@ -279,7 +279,15 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 	// Load send_file function to prog_array to be used as tail call
 	progArrayBPFTable := bpf.NewTable(t.bpfModule.TableId("prog_array"), t.bpfModule)
 	binary.LittleEndian.PutUint32(key, uint32(0))
-	kp, err := t.bpfModule.LoadKprobe("send_file")
+	kp, err := t.bpfModule.LoadKprobe("do_trace_ret_vfs_write")
+	if err != nil {
+		return fmt.Errorf("error loading function do_trace_ret_vfs_write: %v", err)
+	}
+	binary.LittleEndian.PutUint32(leaf, uint32(kp))
+	progArrayBPFTable.Set(key, leaf)
+
+	binary.LittleEndian.PutUint32(key, uint32(1))
+	kp, err = t.bpfModule.LoadKprobe("send_file")
 	if err != nil {
 		return fmt.Errorf("error loading function send_file: %v", err)
 	}
