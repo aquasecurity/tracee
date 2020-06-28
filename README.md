@@ -3,6 +3,8 @@
 
 Tracee is a lightweight and easy to use container and system tracing tool. It allows you to observe system calls and other system events in real time. A unique feature of Tracee is that it will only trace newly created processes and containers (that were started after Tracee has started), in order to help the user focus on relevant events instead of every single thing that happens on the system (which can be overwhelming). Adding new events to Tracee (especially system calls) is straightforward, and will usually require no more than adding few lines of code.
 
+Other than tracing, Tracee is capable of capturing files written to disk or memory ("fileless"), and extracting binaries that are dynamically loaded to an application's memory (e.g. when an application uses packer). With these features, it is possible to quickly gain insights about the running processes that previously required the use of dynamic analysis tools and special knowledge.
+
 Tracee CLI was originally written in Python, but was since ported to Go. Currently both versions are still available in the repo, but future development will be in Go and the Python version will eventually be deprecated and removed.
 
 [Check out this quick demo of tracee:<br /> ![youtube thumbnail](images/yt-thumbnail.jpg)](https://youtu.be/1lI875HPtdU)
@@ -78,6 +80,7 @@ Here are a few commonly useful flags:
 - `--event` allows you to specify a specific event to trace. You can use this flag multiple times, for example `--event execve --event openat`.
 - `--list` lists the events available for tracing, which you can provide to the `--event` flag.
 - `--output` lets you control the output format, for example `--output json` will output as JSON lines instead of table.
+- `--capture-files` captures file writes to output path
 
 ## Secure tracing
 
