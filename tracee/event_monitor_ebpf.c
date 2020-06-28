@@ -27,6 +27,9 @@
 #define FILE_BUF_IDX        2
 #define MAX_BUFFERS         3
 
+#define SEND_VFS_WRITE      1
+#define SEND_META_SIZE      20
+
 #define NONE_T        0UL
 #define INT_T         1UL
 #define UINT_T        2UL
@@ -443,6 +446,14 @@ typedef struct args {
     unsigned long args[6];
 } args_t;
 
+typedef struct bin_args {
+    u8 type;
+    u8 metadata[SEND_META_SIZE];
+    char *ptr;
+    loff_t start_off;
+    unsigned int full_size;
+} bin_args_t;
+
 typedef struct simple_buf {
     u8 buf[MAX_PERCPU_BUFSIZE];
 } buf_t;
@@ -479,6 +490,7 @@ BPF_HASH(config_map, u32, u32);                     // Various configurations
 BPF_HASH(pids_map, u32, u32);                       // Save container pid namespaces
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
 BPF_HASH(vfs_args_map, u64, args_t);                // Persist args info between function entry and return
+BPF_HASH(bin_args_map, u64, bin_args_t);            // Persist args for send_bin funtion
 BPF_ARRAY(file_filter, path_filter_t, 3);           // Used to filter vfs_write events
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);         // Percpu global buffer variables
 BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS);       // Holds offsets to bufs respectively
@@ -1614,7 +1626,7 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
     return 0;
 };
 
-int send_file(struct pt_regs *ctx)
+int send_bin(struct pt_regs *ctx)
 {
     // Note: sending the data to the userspace have the following constraints:
     // 1. We need a buffer that we know it's exact size (so we can send chunks of known sizes in BPF)
@@ -1626,47 +1638,44 @@ int send_file(struct pt_regs *ctx)
 
     u64 id = bpf_get_current_pid_tgid();
 
-    args_t *saved_args = vfs_args_map.lookup(&id);
-    if (saved_args == 0) {
+    bin_args_t *bin_args = bin_args_map.lookup(&id);
+    if (bin_args == 0) {
         // missed entry or not traced
         return 0;
     }
 
-    char *ptr               = (char*)         saved_args->args[0];
-    dev_t s_dev             = (dev_t)         saved_args->args[1];
-    unsigned long inode_nr  = (unsigned long) saved_args->args[2];
-    loff_t start_pos        = (loff_t)        saved_args->args[3];
-    unsigned int write_size = (unsigned int)  saved_args->args[4];
-
-    vfs_args_map.delete(&id);
-
-    if (write_size <= 0)
+    if (bin_args->full_size <= 0) {
+        bin_args_map.delete(&id);
         return 0;
+    }
 
     buf_t *file_buf_p = get_buf(FILE_BUF_IDX);
-    if (file_buf_p == NULL)
+    if (file_buf_p == NULL) {
+        bin_args_map.delete(&id);
         return 0;
+    }
 
-#define F_MNT_NS      0
-#define F_DEV_ID_OFF  (F_MNT_NS + sizeof(u32))
-#define F_INODE_OFF   (F_DEV_ID_OFF + sizeof(dev_t))
-#define F_SZ_OFF      (F_INODE_OFF + sizeof(unsigned long))
+#define F_SEND_TYPE   0
+#define F_MNT_NS      (F_SEND_TYPE + sizeof(u8))
+#define F_META_OFF    (F_MNT_NS + sizeof(u32))
+#define F_SZ_OFF      (F_META_OFF + SEND_META_SIZE)
 #define F_POS_OFF     (F_SZ_OFF + sizeof(unsigned int))
 #define F_CHUNK_OFF   (F_POS_OFF + sizeof(off_t))
 #define F_CHUNK_SIZE  (MAX_PERCPU_BUFSIZE - F_CHUNK_OFF - 4)
 
+    bpf_probe_read((void **)&(file_buf_p->buf[F_SEND_TYPE]), sizeof(u8), &bin_args->type);
+
     u32 mnt_id = get_task_mnt_ns_id((struct task_struct *)bpf_get_current_task());
     bpf_probe_read((void **)&(file_buf_p->buf[F_MNT_NS]), sizeof(u32), &mnt_id);
 
-    // Save device id and inode to be used in filename
-    bpf_probe_read((void **)&(file_buf_p->buf[F_DEV_ID_OFF]), sizeof(dev_t), &s_dev);
-    bpf_probe_read((void **)&(file_buf_p->buf[F_INODE_OFF]), sizeof(unsigned long), &inode_nr);
+    // Save metadata to be used in filename
+    bpf_probe_read((void **)&(file_buf_p->buf[F_META_OFF]), SEND_META_SIZE, bin_args->metadata);
 
     // Save number of written bytes. Set this to CHUNK_SIZE for full chunks
     chunk_size = F_CHUNK_SIZE;
     bpf_probe_read((void **)&(file_buf_p->buf[F_SZ_OFF]), sizeof(unsigned int), &chunk_size);
 
-    unsigned int full_chunk_num = write_size/F_CHUNK_SIZE;
+    unsigned int full_chunk_num = bin_args->full_size/F_CHUNK_SIZE;
     void *data = file_buf_p->buf;
 
     // Handle full chunks in loop
@@ -1679,24 +1688,19 @@ int send_file(struct pt_regs *ctx)
             break;
 
         // Save binary chunk and file position of write
-        bpf_probe_read((void **)&(file_buf_p->buf[F_POS_OFF]), sizeof(off_t), &start_pos);
-        bpf_probe_read((void **)&(file_buf_p->buf[F_CHUNK_OFF]), F_CHUNK_SIZE, ptr);
-        ptr += F_CHUNK_SIZE;
-        start_pos += F_CHUNK_SIZE;
+        bpf_probe_read((void **)&(file_buf_p->buf[F_POS_OFF]), sizeof(off_t), &bin_args->start_off);
+        bpf_probe_read((void **)&(file_buf_p->buf[F_CHUNK_OFF]), F_CHUNK_SIZE, bin_args->ptr);
+        bin_args->ptr += F_CHUNK_SIZE;
+        bin_args->start_off += F_CHUNK_SIZE;
 
         file_writes.perf_submit(ctx, data, F_CHUNK_OFF+F_CHUNK_SIZE);
     }
 
-    chunk_size = write_size - i*F_CHUNK_SIZE;
+    chunk_size = bin_args->full_size - i*F_CHUNK_SIZE;
 
     if (chunk_size > F_CHUNK_SIZE) {
-        args_t args = {};
-        args.args[0] = (unsigned long)ptr;
-        args.args[1] = (unsigned long)s_dev;
-        args.args[2] = (unsigned long)inode_nr;
-        args.args[3] = (unsigned long)start_pos;
-        args.args[4] = (unsigned long)chunk_size;
-        vfs_args_map.update(&id, &args);
+        bin_args->full_size = chunk_size;
+        bin_args_map.update(&id, bin_args);
 
         // Handle the rest of the write recursively
         prog_array.call(ctx, 1);
@@ -1704,14 +1708,15 @@ int send_file(struct pt_regs *ctx)
     }
 
     // Save last chunk
-    bpf_probe_read((void **)&(file_buf_p->buf[F_CHUNK_OFF]), chunk_size, ptr);
+    bpf_probe_read((void **)&(file_buf_p->buf[F_CHUNK_OFF]), chunk_size, bin_args->ptr);
     bpf_probe_read((void **)&(file_buf_p->buf[F_SZ_OFF]), sizeof(unsigned int), &chunk_size);
-    bpf_probe_read((void **)&(file_buf_p->buf[F_POS_OFF]), sizeof(off_t), &start_pos);
+    bpf_probe_read((void **)&(file_buf_p->buf[F_POS_OFF]), sizeof(off_t), &bin_args->start_off);
 
     // Satisfy validator by setting buffer bounds
     int size = (F_CHUNK_OFF+chunk_size) & (MAX_PERCPU_BUFSIZE - 1);
     file_writes.perf_submit(ctx, data, size);
 
+    bin_args_map.delete(&id);
     return 0;
 }
 
@@ -1801,7 +1806,7 @@ int do_trace_ret_vfs_write(struct pt_regs *ctx)
 {
     context_t context = {};
     args_t *saved_args;
-    args_t args = {};
+    bin_args_t bin_args = {};
     struct inode *inode;
     struct super_block *superblock;
     dev_t s_dev;
@@ -1862,12 +1867,13 @@ int do_trace_ret_vfs_write(struct pt_regs *ctx)
     // Submit vfs_write event
     events_perf_submit(ctx);
 
-    args.args[0] = (unsigned long)ptr;
-    args.args[1] = (unsigned long)s_dev;
-    args.args[2] = (unsigned long)inode_nr;
-    args.args[3] = (unsigned long)start_pos;
-    args.args[4] = PT_REGS_RC(ctx);
-    vfs_args_map.update(&id, &args);
+    bin_args.type = SEND_VFS_WRITE;
+    bpf_probe_read(bin_args.metadata, 4, &s_dev);
+    bpf_probe_read(&bin_args.metadata[4], 8, &inode_nr);
+    bin_args.ptr = ptr;
+    bin_args.start_off = start_pos;
+    bin_args.full_size = PT_REGS_RC(ctx);
+    bin_args_map.update(&id, &bin_args);
 
     if (get_config(CONFIG_CAPTURE_FILES))
         // Send file data
