@@ -959,7 +959,7 @@ class EventMonitor:
         prog_array = self.bpf.get_table("prog_array")
         tail_fn = self.bpf.load_func("do_trace_ret_vfs_write", BPF.KPROBE)
         prog_array[ctypes.c_int(0)] = ctypes.c_int(tail_fn.fd)
-        tail_fn = self.bpf.load_func("send_file", BPF.KPROBE)
+        tail_fn = self.bpf.load_func("send_bin", BPF.KPROBE)
         prog_array[ctypes.c_int(1)] = ctypes.c_int(tail_fn.fd)
 
         if not self.json:
@@ -1249,18 +1249,20 @@ class EventMonitor:
         buf = ctypes.cast(data, ctypes.POINTER(ctypes.c_char*size)).contents
         event_buf = (ctypes.c_char * size).from_buffer_copy(buf)
 
-        mnt_id = ctypes.cast(ctypes.byref(event_buf, 0), ctypes.POINTER(ctypes.c_uint)).contents.value
-        dev_id = ctypes.cast(ctypes.byref(event_buf, 4), ctypes.POINTER(ctypes.c_uint)).contents.value
-        inode = ctypes.cast(ctypes.byref(event_buf, 8), ctypes.POINTER(ctypes.c_ulong)).contents.value
-        count = ctypes.cast(ctypes.byref(event_buf, 16), ctypes.POINTER(ctypes.c_int)).contents.value
-        pos = ctypes.cast(ctypes.byref(event_buf, 20), ctypes.POINTER(ctypes.c_ulong)).contents.value
-        cur_off = 28
+        meta_type = ctypes.cast(ctypes.byref(event_buf, 0), ctypes.POINTER(ctypes.c_byte)).contents.value
+        mnt_id = ctypes.cast(ctypes.byref(event_buf, 1), ctypes.POINTER(ctypes.c_uint)).contents.value
+        if (meta_type == 1):
+            dev_id = ctypes.cast(ctypes.byref(event_buf, 5), ctypes.POINTER(ctypes.c_uint)).contents.value
+            inode = ctypes.cast(ctypes.byref(event_buf, 9), ctypes.POINTER(ctypes.c_ulong)).contents.value
+            filename = self.output_path + "/" + str(mnt_id) + "/write.dev-" + str(dev_id) + ".inode-" + str(inode)
+        count = ctypes.cast(ctypes.byref(event_buf, 25), ctypes.POINTER(ctypes.c_int)).contents.value
+        pos = ctypes.cast(ctypes.byref(event_buf, 29), ctypes.POINTER(ctypes.c_ulong)).contents.value
+        cur_off = 37
 
         # Sanity checks
         if (count <= 0) or (ctypes.sizeof(event_buf) < cur_off + count):
             return
 
-        filename = self.output_path + "/" + str(mnt_id) + "/write.dev-" + str(dev_id) + ".inode-" + str(inode)
         if not os.path.exists(os.path.dirname(filename)):
             try:
                 os.makedirs(os.path.dirname(filename))

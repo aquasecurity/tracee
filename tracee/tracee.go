@@ -281,7 +281,7 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.CaptureFiles))
 	bpfConfig.Set(key, leaf)
 
-	// Load send_file function to prog_array to be used as tail call
+	// Load send_bin function to prog_array to be used as tail call
 	progArrayBPFTable := bpf.NewTable(t.bpfModule.TableId("prog_array"), t.bpfModule)
 	binary.LittleEndian.PutUint32(key, uint32(0))
 	kp, err := t.bpfModule.LoadKprobe("do_trace_ret_vfs_write")
@@ -292,9 +292,9 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 	progArrayBPFTable.Set(key, leaf)
 
 	binary.LittleEndian.PutUint32(key, uint32(1))
-	kp, err = t.bpfModule.LoadKprobe("send_file")
+	kp, err = t.bpfModule.LoadKprobe("send_bin")
 	if err != nil {
-		return fmt.Errorf("error loading function send_file: %v", err)
+		return fmt.Errorf("error loading function send_bin: %v", err)
 	}
 	binary.LittleEndian.PutUint32(leaf, uint32(kp))
 	progArrayBPFTable.Set(key, leaf)
@@ -397,11 +397,16 @@ func (t *Tracee) processEvents() {
 
 func (t *Tracee) processFileWrites() {
 	type chunkMeta struct {
-		MntID uint32
+		BinType  uint8
+		MntID    uint32
+		Metadata [20]byte
+		Size     int32
+		Off      uint64
+	}
+
+	type vfsWriteMeta struct {
 		DevID uint32
 		Inode uint64
-		Size  int32
-		Off   uint64
 	}
 
 	for {
@@ -429,7 +434,21 @@ func (t *Tracee) processFileWrites() {
 				t.errorCounter = t.errorCounter + 1
 				continue
 			}
-			filename := fmt.Sprintf("write.dev-%d.inode-%d", meta.DevID, meta.Inode)
+			filename := ""
+			if meta.BinType == 1 {
+				metaBuff := bytes.NewBuffer(meta.Metadata[:])
+				var vfsMeta vfsWriteMeta
+				err = binary.Read(metaBuff, binary.LittleEndian, &vfsMeta)
+				if err != nil {
+					t.errorCounter = t.errorCounter + 1
+					continue
+				}
+				filename = fmt.Sprintf("write.dev-%d.inode-%d", vfsMeta.DevID, vfsMeta.Inode)
+			} else {
+				t.errorCounter = t.errorCounter + 1
+				continue
+			}
+
 			fullname := path.Join(pathname, filename)
 
 			f, err := os.OpenFile(fullname, os.O_CREATE|os.O_WRONLY, 0640)
