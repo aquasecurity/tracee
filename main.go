@@ -106,7 +106,7 @@ func main() {
 			&cli.StringSliceFlag{
 				Name:  "filter-file-write",
 				Value: nil,
-				Usage: "only output file writes whose path starts with the given path prefix (up to 16 characters)",
+				Usage: "only output file writes whose path starts with the given path prefix (up to 64 characters)",
 			},
 		},
 	}

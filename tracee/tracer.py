@@ -914,8 +914,8 @@ class EventMonitor:
                 exit()
 
             for filter in self.filter_file_write:
-                if len(filter) > 16:
-                    print("The length of a path filter is limited to 16 characters: " + filter)
+                if len(filter) > 64:
+                    print("The length of a path filter is limited to 64 characters: " + filter)
                     exit()
 
         # initialize BPF
@@ -956,9 +956,11 @@ class EventMonitor:
         self.bpf.attach_kretprobe(event="vfs_write", fn_name="trace_ret_vfs_write")
         self.events_to_trace.append("vfs_write")
 
-        tail_fn = self.bpf.load_func("send_file", BPF.KPROBE)
         prog_array = self.bpf.get_table("prog_array")
+        tail_fn = self.bpf.load_func("do_trace_ret_vfs_write", BPF.KPROBE)
         prog_array[ctypes.c_int(0)] = ctypes.c_int(tail_fn.fd)
+        tail_fn = self.bpf.load_func("send_file", BPF.KPROBE)
+        prog_array[ctypes.c_int(1)] = ctypes.c_int(tail_fn.fd)
 
         if not self.json:
             log.info("%-14s %-16s %-12s %-12s %-6s %-16s %-16s %-6s %-6s %-6s %-12s %s" % (

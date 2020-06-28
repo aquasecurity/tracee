@@ -56,7 +56,7 @@ def parse_args(input_args):
     parser.add_argument("--capture-files", action="store_true",
                         help="capture file writes to output path")
     parser.add_argument("--filter-file-write", action="append",
-                        help="only output file writes whose path starts with the given path prefix (up to 16 characters)")
+                        help="only output file writes whose path starts with the given path prefix (up to 64 characters)")
     return parser.parse_args(input_args)
 
 
