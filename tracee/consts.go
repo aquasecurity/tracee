@@ -456,3 +456,8 @@ const (
 	CONFIG_EXEC_ENV            bpfConfig = 2
 	CONFIG_CAPTURE_FILES       bpfConfig = 3
 )
+
+const (
+	TAIL_VFS_WRITE             uint32 = 0
+	TAIL_SEND_BIN              uint32 = 1
+)
