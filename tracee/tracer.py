@@ -23,6 +23,9 @@ log.addHandler(handler)
 
 BPF_PROGRAM = "tracee/event_monitor_ebpf.c"
 
+TAIL_VFS_WRITE   = 0
+TAIL_SEND_BIN    = 1
+
 # include/uapi/linux/capability.h
 capabilities = {
     0: "CAP_CHOWN",
@@ -956,11 +959,12 @@ class EventMonitor:
         self.bpf.attach_kretprobe(event="vfs_write", fn_name="trace_ret_vfs_write")
         self.events_to_trace.append("vfs_write")
 
+        # Set prog_array for tail calls
         prog_array = self.bpf.get_table("prog_array")
         tail_fn = self.bpf.load_func("do_trace_ret_vfs_write", BPF.KPROBE)
-        prog_array[ctypes.c_int(0)] = ctypes.c_int(tail_fn.fd)
+        prog_array[ctypes.c_int(TAIL_VFS_WRITE)] = ctypes.c_int(tail_fn.fd)
         tail_fn = self.bpf.load_func("send_bin", BPF.KPROBE)
-        prog_array[ctypes.c_int(1)] = ctypes.c_int(tail_fn.fd)
+        prog_array[ctypes.c_int(TAIL_SEND_BIN)] = ctypes.c_int(tail_fn.fd)
 
         if not self.json:
             log.info("%-14s %-16s %-12s %-12s %-6s %-16s %-16s %-6s %-6s %-6s %-12s %s" % (
