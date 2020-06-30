@@ -30,6 +30,10 @@
 #define SEND_VFS_WRITE      1
 #define SEND_META_SIZE      20
 
+#define TAIL_VFS_WRITE      0
+#define TAIL_SEND_BIN       1
+#define MAX_TAIL_CALL       2
+
 #define NONE_T        0UL
 #define INT_T         1UL
 #define UINT_T        2UL
@@ -494,7 +498,7 @@ BPF_HASH(bin_args_map, u64, bin_args_t);            // Persist args for send_bin
 BPF_ARRAY(file_filter, path_filter_t, 3);           // Used to filter vfs_write events
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);         // Percpu global buffer variables
 BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS);       // Holds offsets to bufs respectively
-BPF_PROG_ARRAY(prog_array, 10);                     // Used to store programs for tail calls
+BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);          // Used to store programs for tail calls
 
 /*================================== EVENTS ====================================*/
 
@@ -982,7 +986,7 @@ static __always_inline int save_args(struct pt_regs *ctx, bool is_syscall)
 
 // Note: this function can't be nested!
 // if inner kernel functions are called in syscall this may be a problem! - fix
-static __always_inline int load_args(args_t *args)
+static __always_inline int load_args(args_t *args, bool delete)
 {
     args_t *saved_args;
     u64 id = bpf_get_current_pid_tgid();
@@ -1000,7 +1004,8 @@ static __always_inline int load_args(args_t *args)
     args->args[4] = saved_args->args[4];
     args->args[5] = saved_args->args[5];
 
-    args_map.delete(&id);
+    if (delete)
+        args_map.delete(&id);
 
     return 0;
 }
@@ -1026,13 +1031,13 @@ static __always_inline int get_encoded_arg_num(u64 types)
     return argnum;
 }
 
-static __always_inline int save_args_to_submit_buf(u64 types)
+static __always_inline int save_args_to_submit_buf(u64 types, bool delete_args)
 {
     unsigned int i;
     short family = 0;
     args_t args = {};
 
-    if ((types == 0) || (load_args(&args) != 0))
+    if ((types == 0) || (load_args(&args, delete_args) != 0))
         return 0;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
@@ -1122,7 +1127,7 @@ static __always_inline int save_args_to_submit_buf(u64 types)
     return 0;
 }
 
-static __always_inline int trace_ret_generic(struct pt_regs *ctx, u32 id, u64 types)
+static __always_inline int trace_ret_generic(struct pt_regs *ctx, u32 id, u64 types, bool delete_args)
 {
     context_t context = {};
 
@@ -1139,15 +1144,27 @@ static __always_inline int trace_ret_generic(struct pt_regs *ctx, u32 id, u64 ty
     context.argnum = get_encoded_arg_num(types);
     context.retval = PT_REGS_RC(ctx);
     save_context_to_buf(submit_p, (void*)&context);
-    save_args_to_submit_buf(types);
+    save_args_to_submit_buf(types, delete_args);
 
     events_perf_submit(ctx);
     return 0;
 }
 
+static __always_inline int trace_ret_generic_tail(struct pt_regs *ctx, u32 id, u64 types, u32 tail)
+{
+    bool delete_args = false;
+    trace_ret_generic(ctx, id, types, delete_args);
+    prog_array.call(ctx, tail);
+    // If we got here, tail call failed - delete args
+    u64 cur_id = bpf_get_current_pid_tgid();
+    args_map.delete(&cur_id);
+    return 0;
+}
+
 static __always_inline int trace_ret_generic_fork(struct pt_regs *ctx, u32 id, u64 types)
 {
-    int rc = trace_ret_generic(ctx, id, types);
+    bool delete_args = true;
+    int rc = trace_ret_generic(ctx, id, types, delete_args);
 
     if (!rc && !get_config(CONFIG_CONT_MODE)) {
         u32 pid = PT_REGS_RC(ctx);
@@ -1176,10 +1193,18 @@ int func__##name(struct pt_regs *ctx)                                   \
 #define TRACE_RET_FUNC(name, id, types)                                 \
 int trace_ret_##name(struct pt_regs *ctx)                               \
 {                                                                       \
-    return trace_ret_generic(ctx, id, types);                           \
+    bool delete_args = true;                                            \
+    return trace_ret_generic(ctx, id, types, delete_args);              \
+}
+
+#define TRACE_RET_FUNC_WITH_TAIL(name, id, types, tail)                 \
+int trace_ret_##name(struct pt_regs *ctx)                               \
+{                                                                       \
+    return trace_ret_generic_tail(ctx, id, types, tail);                \
 }
 
 #define TRACE_RET_SYSCALL TRACE_RET_FUNC
+#define TRACE_RET_SYSCALL_WITH_TAIL TRACE_RET_FUNC_WITH_TAIL
 
 #define TRACE_RET_FORK_SYSCALL(name, id, types)                         \
 int trace_ret_##name(struct pt_regs *ctx)                               \
@@ -1703,7 +1728,7 @@ int send_bin(struct pt_regs *ctx)
         bin_args_map.update(&id, bin_args);
 
         // Handle the rest of the write recursively
-        prog_array.call(ctx, 1);
+        prog_array.call(ctx, TAIL_SEND_BIN);
         return 0;
     }
 
@@ -1788,7 +1813,7 @@ int trace_ret_vfs_write(struct pt_regs *ctx)
             break;
 
         if (filter_p->path[0] && is_prefix(filter_p->path, &string_p->buf[*off]))
-            prog_array.call(ctx, 0);
+            prog_array.call(ctx, TAIL_VFS_WRITE);
     }
 
     if (has_filter) {
@@ -1798,7 +1823,7 @@ int trace_ret_vfs_write(struct pt_regs *ctx)
     }
 
     // No filter was given - continue
-    prog_array.call(ctx, 0);
+    prog_array.call(ctx, TAIL_VFS_WRITE);
     return 0;
 }
 
@@ -1877,7 +1902,7 @@ int do_trace_ret_vfs_write(struct pt_regs *ctx)
 
     if (get_config(CONFIG_CAPTURE_FILES))
         // Send file data
-        prog_array.call(ctx, 1);
+        prog_array.call(ctx, TAIL_SEND_BIN);
     return 0;
 }
 
