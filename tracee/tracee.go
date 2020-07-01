@@ -74,7 +74,7 @@ func (tc TraceeConfig) Validate() error {
 	if tc.EventsToTrace == nil {
 		return fmt.Errorf("eventsToTrace is nil")
 	}
-	if tc.OutputFormat != "table" && tc.OutputFormat != "json" {
+	if tc.OutputFormat != "table" && tc.OutputFormat != "json" && tc.OutputFormat != "gob" {
 		return fmt.Errorf("unrecognized output format: %s", tc.OutputFormat)
 	}
 	for _, e := range tc.EventsToTrace {
@@ -155,15 +155,20 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	}
 	switch t.config.OutputFormat {
 	case "table":
-		t.printer = tableEventPrinter{
+		t.printer = &tableEventPrinter{
 			out:    cfg.EventsFile,
 			tracee: t,
 		}
 	case "json":
-		t.printer = jsonEventPrinter{
+		t.printer = &jsonEventPrinter{
+			out: cfg.EventsFile,
+		}
+	case "gob":
+		t.printer = &gobEventPrinter{
 			out: cfg.EventsFile,
 		}
 	}
+	t.printer.Init()
 
 	p, err := getEBPFProgram()
 	if err != nil {
