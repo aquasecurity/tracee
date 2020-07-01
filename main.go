@@ -51,7 +51,7 @@ func main() {
 				Name:    "output",
 				Aliases: []string{"o"},
 				Value:   "table",
-				Usage:   "output format: table (default)/json",
+				Usage:   "output format: table/json/gob",
 			},
 			&cli.StringSliceFlag{
 				Name:    "event",

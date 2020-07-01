@@ -1,6 +1,7 @@
 package tracee
 
 import (
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,12 +14,16 @@ type eventPrinter interface {
 	Epilogue()
 	// Print prints a single event
 	Print(ctx context, args []interface{})
+	// Initialize the printer
+	Init()
 }
 
 type tableEventPrinter struct {
 	tracee *Tracee
 	out    io.Writer
 }
+
+func (p tableEventPrinter) Init() {}
 
 func (p tableEventPrinter) Preamble() {
 	fmt.Fprintf(p.out, "%-14s %-16s %-12s %-12s %-6s %-16s %-16s %-6s %-6s %-6s %-12s %s", "TIME(s)", "UTS_NAME", "MNT_NS", "PID_NS", "UID", "EVENT", "COMM", "PID", "TID", "PPID", "RET", "ARGS")
@@ -42,6 +47,8 @@ func (p tableEventPrinter) Epilogue() {
 type jsonEventPrinter struct {
 	out io.Writer
 }
+
+func (p jsonEventPrinter) Init() {}
 
 // printableEvent holds all event data relevent for printing
 type printableEvent struct {
@@ -69,3 +76,25 @@ func (p jsonEventPrinter) Print(ctx context, args []interface{}) {
 }
 
 func (p jsonEventPrinter) Epilogue() {}
+
+type gobEventPrinter struct {
+	out io.Writer
+	enc *gob.Encoder
+}
+
+func (p *gobEventPrinter) Init() {
+	p.enc = gob.NewEncoder(p.out)
+}
+
+func (p *gobEventPrinter) Preamble() {}
+
+func (p *gobEventPrinter) Print(ctx context, args []interface{}) {
+	err := p.enc.Encode(ctx)
+	if err != nil {
+	}
+	err = p.enc.Encode(args)
+	if err != nil {
+	}
+}
+
+func (p *gobEventPrinter) Epilogue() {}
