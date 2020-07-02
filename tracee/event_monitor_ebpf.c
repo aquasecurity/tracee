@@ -493,7 +493,6 @@ struct mount {
 BPF_HASH(config_map, u32, u32);                     // Various configurations
 BPF_HASH(pids_map, u32, u32);                       // Save container pid namespaces
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
-BPF_HASH(vfs_args_map, u64, args_t);                // Persist args info between function entry and return
 BPF_HASH(bin_args_map, u64, bin_args_t);            // Persist args for send_bin funtion
 BPF_ARRAY(file_filter, path_filter_t, 3);           // Used to filter vfs_write events
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);         // Percpu global buffer variables
@@ -960,11 +959,10 @@ static __always_inline int is_container()
     return lookup_pid_ns(task);
 }
 
-// Note: this function can't be nested!
-// if inner kernel functions are called in syscall this may be a problem! - fix
-static __always_inline int save_args(struct pt_regs *ctx, bool is_syscall)
+static __always_inline int save_args(struct pt_regs *ctx, u32 event_id, bool is_syscall)
 {
     u64 id;
+    u32 tid;
     args_t args = {};
 
     if (!is_syscall) {
@@ -978,18 +976,20 @@ static __always_inline int save_args(struct pt_regs *ctx, bool is_syscall)
         get_syscall_args(ctx, &args);
     }
 
-    id = bpf_get_current_pid_tgid();
+    id = event_id;
+    tid = bpf_get_current_pid_tgid();
+    id = id << 32 | tid;
     args_map.update(&id, &args);
 
     return 0;
 }
 
-// Note: this function can't be nested!
-// if inner kernel functions are called in syscall this may be a problem! - fix
-static __always_inline int load_args(args_t *args, bool delete)
+static __always_inline int load_args(args_t *args, bool delete, u32 event_id)
 {
     args_t *saved_args;
-    u64 id = bpf_get_current_pid_tgid();
+    u32 tid = bpf_get_current_pid_tgid();
+    u64 id = event_id;
+    id = id << 32 | tid;
 
     saved_args = args_map.lookup(&id);
     if (saved_args == 0) {
@@ -1006,6 +1006,17 @@ static __always_inline int load_args(args_t *args, bool delete)
 
     if (delete)
         args_map.delete(&id);
+
+    return 0;
+}
+
+static __always_inline int del_args(u32 event_id)
+{
+    u32 tid = bpf_get_current_pid_tgid();
+    u64 id = event_id;
+    id = id << 32 | tid;
+
+    args_map.delete(&id);
 
     return 0;
 }
@@ -1031,13 +1042,13 @@ static __always_inline int get_encoded_arg_num(u64 types)
     return argnum;
 }
 
-static __always_inline int save_args_to_submit_buf(u64 types, bool delete_args)
+static __always_inline int save_args_to_submit_buf(u64 types, bool delete_args, u32 event_id)
 {
     unsigned int i;
     short family = 0;
     args_t args = {};
 
-    if ((types == 0) || (load_args(&args, delete_args) != 0))
+    if ((types == 0) || (load_args(&args, delete_args, event_id) != 0))
         return 0;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
@@ -1144,7 +1155,7 @@ static __always_inline int trace_ret_generic(struct pt_regs *ctx, u32 id, u64 ty
     context.argnum = get_encoded_arg_num(types);
     context.retval = PT_REGS_RC(ctx);
     save_context_to_buf(submit_p, (void*)&context);
-    save_args_to_submit_buf(types, delete_args);
+    save_args_to_submit_buf(types, delete_args, id);
 
     events_perf_submit(ctx);
     return 0;
@@ -1156,8 +1167,7 @@ static __always_inline int trace_ret_generic_tail(struct pt_regs *ctx, u32 id, u
     trace_ret_generic(ctx, id, types, delete_args);
     prog_array.call(ctx, tail);
     // If we got here, tail call failed - delete args
-    u64 cur_id = bpf_get_current_pid_tgid();
-    args_map.delete(&cur_id);
+    del_args(id);
     return 0;
 }
 
@@ -1174,20 +1184,20 @@ static __always_inline int trace_ret_generic_fork(struct pt_regs *ctx, u32 id, u
     return 0;
 }
 
-#define TRACE_ENT_SYSCALL(name)                                         \
+#define TRACE_ENT_SYSCALL(name, id)                                     \
 int syscall__##name(struct pt_regs *ctx)                                \
 {                                                                       \
     if (!should_trace())                                                \
         return 0;                                                       \
-    return save_args(ctx, true);                                        \
+    return save_args(ctx, id, true);                                    \
 }
 
-#define TRACE_ENT_FUNC(name)                                            \
-int func__##name(struct pt_regs *ctx)                                   \
+#define TRACE_ENT_FUNC(name, id)                                        \
+int trace_##name(struct pt_regs *ctx)                                   \
 {                                                                       \
     if (!should_trace())                                                \
         return 0;                                                       \
-    return save_args(ctx, false);                                       \
+    return save_args(ctx, id, false);                                   \
 }
 
 #define TRACE_RET_FUNC(name, id, types)                                 \
@@ -1216,126 +1226,126 @@ int trace_ret_##name(struct pt_regs *ctx)                               \
 
 // Note: race condition may occur if a malicious user changes memory content pointed by syscall arguments by concurrent threads!
 // Consider using inner kernel functions (e.g. security_file_open) to avoid this
-TRACE_ENT_SYSCALL(open);
+TRACE_ENT_SYSCALL(open, SYS_OPEN);
 TRACE_RET_SYSCALL(open, SYS_OPEN, ARG_TYPE0(STR_T)|ARG_TYPE1(OPEN_FLAGS_T));
-TRACE_ENT_SYSCALL(openat);
+TRACE_ENT_SYSCALL(openat, SYS_OPENAT);
 TRACE_RET_SYSCALL(openat, SYS_OPENAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(OPEN_FLAGS_T));
-TRACE_ENT_SYSCALL(creat);
+TRACE_ENT_SYSCALL(creat, SYS_CREAT);
 TRACE_RET_SYSCALL(creat, SYS_CREAT, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
-TRACE_ENT_SYSCALL(mmap);
+TRACE_ENT_SYSCALL(mmap, SYS_MMAP);
 TRACE_RET_SYSCALL(mmap, SYS_MMAP, ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(PROT_FLAGS_T)|ARG_TYPE3(INT_T)|ARG_TYPE4(INT_T)|ARG_TYPE5(OFF_T_T));
-TRACE_ENT_SYSCALL(mprotect);
+TRACE_ENT_SYSCALL(mprotect, SYS_MPROTECT);
 TRACE_RET_SYSCALL(mprotect, SYS_MPROTECT, ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(PROT_FLAGS_T));
-TRACE_ENT_SYSCALL(pkey_mprotect);
+TRACE_ENT_SYSCALL(pkey_mprotect, SYS_PKEY_MPROTECT);
 TRACE_RET_SYSCALL(pkey_mprotect, SYS_PKEY_MPROTECT, ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(PROT_FLAGS_T)|ARG_TYPE3(INT_T));
-TRACE_ENT_SYSCALL(mknod);
+TRACE_ENT_SYSCALL(mknod, SYS_MKNOD);
 TRACE_RET_SYSCALL(mknod, SYS_MKNOD, ARG_TYPE0(STR_T)|ARG_TYPE1(MODE_T_T)|ARG_TYPE2(DEV_T_T));
-TRACE_ENT_SYSCALL(mknodat);
+TRACE_ENT_SYSCALL(mknodat, SYS_MKNODAT);
 TRACE_RET_SYSCALL(mknodat, SYS_MKNODAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(MODE_T_T)|ARG_TYPE3(DEV_T_T));
-TRACE_ENT_SYSCALL(memfd_create);
+TRACE_ENT_SYSCALL(memfd_create, SYS_MEMFD_CREATE);
 TRACE_RET_SYSCALL(memfd_create, SYS_MEMFD_CREATE, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
-TRACE_ENT_SYSCALL(dup);
+TRACE_ENT_SYSCALL(dup, SYS_DUP);
 TRACE_RET_SYSCALL(dup, SYS_DUP, ARG_TYPE0(INT_T));
-TRACE_ENT_SYSCALL(dup2);
+TRACE_ENT_SYSCALL(dup2, SYS_DUP2);
 TRACE_RET_SYSCALL(dup2, SYS_DUP2, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T));
-TRACE_ENT_SYSCALL(dup3);
+TRACE_ENT_SYSCALL(dup3, SYS_DUP3);
 TRACE_RET_SYSCALL(dup3, SYS_DUP3, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(INT_T));
-TRACE_ENT_SYSCALL(newstat);
+TRACE_ENT_SYSCALL(newstat, SYS_STAT);
 TRACE_RET_SYSCALL(newstat, SYS_STAT, ARG_TYPE0(STR_T));
-TRACE_ENT_SYSCALL(newlstat);
+TRACE_ENT_SYSCALL(newlstat, SYS_LSTAT);
 TRACE_RET_SYSCALL(newlstat, SYS_LSTAT, ARG_TYPE0(STR_T));
-TRACE_ENT_SYSCALL(newfstat);
+TRACE_ENT_SYSCALL(newfstat, SYS_FSTAT);
 TRACE_RET_SYSCALL(newfstat, SYS_FSTAT, ARG_TYPE0(INT_T));
-TRACE_ENT_SYSCALL(socket);
+TRACE_ENT_SYSCALL(socket, SYS_SOCKET);
 TRACE_RET_SYSCALL(socket, SYS_SOCKET, ARG_TYPE0(SOCK_DOM_T)|ARG_TYPE1(SOCK_TYPE_T)|ARG_TYPE2(INT_T));
-TRACE_ENT_SYSCALL(close);
+TRACE_ENT_SYSCALL(close, SYS_CLOSE);
 TRACE_RET_SYSCALL(close, SYS_CLOSE, ARG_TYPE0(INT_T));
-TRACE_ENT_SYSCALL(ioctl);
+TRACE_ENT_SYSCALL(ioctl, SYS_IOCTL);
 TRACE_RET_SYSCALL(ioctl, SYS_IOCTL, ARG_TYPE0(INT_T)|ARG_TYPE1(ULONG_T));
-TRACE_ENT_SYSCALL(access);
+TRACE_ENT_SYSCALL(access, SYS_ACCESS);
 TRACE_RET_SYSCALL(access, SYS_ACCESS, ARG_TYPE0(STR_T)|ARG_TYPE1(ACCESS_MODE_T));
-TRACE_ENT_SYSCALL(faccessat);
+TRACE_ENT_SYSCALL(faccessat, SYS_FACCESSAT);
 TRACE_RET_SYSCALL(faccessat, SYS_FACCESSAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(ACCESS_MODE_T)|ARG_TYPE3(INT_T));
-TRACE_ENT_SYSCALL(kill);
+TRACE_ENT_SYSCALL(kill, SYS_KILL);
 TRACE_RET_SYSCALL(kill, SYS_KILL, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T));
-TRACE_ENT_SYSCALL(listen);
+TRACE_ENT_SYSCALL(listen, SYS_LISTEN);
 TRACE_RET_SYSCALL(listen, SYS_LISTEN, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T));
-TRACE_ENT_SYSCALL(connect);
+TRACE_ENT_SYSCALL(connect, SYS_CONNECT);
 TRACE_RET_SYSCALL(connect, SYS_CONNECT, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
-TRACE_ENT_SYSCALL(accept);
+TRACE_ENT_SYSCALL(accept, SYS_ACCEPT);
 TRACE_RET_SYSCALL(accept, SYS_ACCEPT, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
-TRACE_ENT_SYSCALL(accept4);
+TRACE_ENT_SYSCALL(accept4, SYS_ACCEPT4);
 TRACE_RET_SYSCALL(accept4, SYS_ACCEPT4, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
-TRACE_ENT_SYSCALL(bind);
+TRACE_ENT_SYSCALL(bind, SYS_BIND);
 TRACE_RET_SYSCALL(bind, SYS_BIND, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
-TRACE_ENT_SYSCALL(getsockname);
+TRACE_ENT_SYSCALL(getsockname, SYS_GETSOCKNAME);
 TRACE_RET_SYSCALL(getsockname, SYS_GETSOCKNAME, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
-TRACE_ENT_SYSCALL(prctl);
+TRACE_ENT_SYSCALL(prctl, SYS_PRCTL);
 TRACE_RET_SYSCALL(prctl, SYS_PRCTL, ARG_TYPE0(PRCTL_OPT_T)|ARG_TYPE1(ULONG_T)|ARG_TYPE2(ULONG_T)|ARG_TYPE3(ULONG_T)|ARG_TYPE4(ULONG_T));
-TRACE_ENT_SYSCALL(ptrace);
+TRACE_ENT_SYSCALL(ptrace, SYS_PTRACE);
 TRACE_RET_SYSCALL(ptrace, SYS_PTRACE, ARG_TYPE0(PTRACE_REQ_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(POINTER_T)|ARG_TYPE3(POINTER_T));
-TRACE_ENT_SYSCALL(process_vm_writev);
+TRACE_ENT_SYSCALL(process_vm_writev, SYS_PROCESS_VM_WRITEV);
 TRACE_RET_SYSCALL(process_vm_writev, SYS_PROCESS_VM_WRITEV, ARG_TYPE0(INT_T)|ARG_TYPE1(POINTER_T)|ARG_TYPE2(ULONG_T)|ARG_TYPE3(POINTER_T)|ARG_TYPE4(ULONG_T)|ARG_TYPE5(ULONG_T));
-TRACE_ENT_SYSCALL(process_vm_readv);
+TRACE_ENT_SYSCALL(process_vm_readv, SYS_PROCESS_VM_READV);
 TRACE_RET_SYSCALL(process_vm_readv, SYS_PROCESS_VM_READV, ARG_TYPE0(INT_T)|ARG_TYPE1(POINTER_T)|ARG_TYPE2(ULONG_T)|ARG_TYPE3(POINTER_T)|ARG_TYPE4(ULONG_T)|ARG_TYPE5(ULONG_T));
-TRACE_ENT_SYSCALL(init_module);
+TRACE_ENT_SYSCALL(init_module, SYS_INIT_MODULE);
 TRACE_RET_SYSCALL(init_module, SYS_INIT_MODULE, ARG_TYPE0(POINTER_T)|ARG_TYPE1(ULONG_T)|ARG_TYPE2(STR_T));
-TRACE_ENT_SYSCALL(finit_module);
+TRACE_ENT_SYSCALL(finit_module, SYS_FINIT_MODULE);
 TRACE_RET_SYSCALL(finit_module, SYS_FINIT_MODULE, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T));
-TRACE_ENT_SYSCALL(delete_module);
+TRACE_ENT_SYSCALL(delete_module, SYS_DELETE_MODULE);
 TRACE_RET_SYSCALL(delete_module, SYS_DELETE_MODULE, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
-TRACE_ENT_SYSCALL(symlink);
+TRACE_ENT_SYSCALL(symlink, SYS_SYMLINK);
 TRACE_RET_SYSCALL(symlink, SYS_SYMLINK, ARG_TYPE0(STR_T)|ARG_TYPE1(STR_T));
-TRACE_ENT_SYSCALL(symlinkat);
+TRACE_ENT_SYSCALL(symlinkat, SYS_SYMLINKAT);
 TRACE_RET_SYSCALL(symlinkat, SYS_SYMLINKAT, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(STR_T));
-TRACE_ENT_SYSCALL(getdents);
+TRACE_ENT_SYSCALL(getdents, SYS_GETDENTS);
 TRACE_RET_SYSCALL(getdents, SYS_GETDENTS, ARG_TYPE0(INT_T));
-TRACE_ENT_SYSCALL(getdents64);
+TRACE_ENT_SYSCALL(getdents64, SYS_GETDENTS64);
 TRACE_RET_SYSCALL(getdents64, SYS_GETDENTS64, ARG_TYPE0(INT_T));
-TRACE_ENT_SYSCALL(mount);
+TRACE_ENT_SYSCALL(mount, SYS_MOUNT);
 TRACE_RET_SYSCALL(mount, SYS_MOUNT, ARG_TYPE0(STR_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(STR_T)|ARG_TYPE3(ULONG_T));
-TRACE_ENT_SYSCALL(umount);
+TRACE_ENT_SYSCALL(umount, SYS_UMOUNT);
 TRACE_RET_SYSCALL(umount, SYS_UMOUNT, ARG_TYPE0(STR_T));
-TRACE_ENT_SYSCALL(unlink);
+TRACE_ENT_SYSCALL(unlink, SYS_UNLINK);
 TRACE_RET_SYSCALL(unlink, SYS_UNLINK, ARG_TYPE0(STR_T));
-TRACE_ENT_SYSCALL(unlinkat);
+TRACE_ENT_SYSCALL(unlinkat, SYS_UNLINKAT);
 TRACE_RET_SYSCALL(unlinkat, SYS_UNLINKAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T));
-TRACE_ENT_SYSCALL(setuid);
+TRACE_ENT_SYSCALL(setuid, SYS_SETUID);
 TRACE_RET_SYSCALL(setuid, SYS_SETUID, ARG_TYPE0(INT_T));
-TRACE_ENT_SYSCALL(setgid);
+TRACE_ENT_SYSCALL(setgid, SYS_SETGID);
 TRACE_RET_SYSCALL(setgid, SYS_SETGID, ARG_TYPE0(INT_T));
-TRACE_ENT_SYSCALL(setfsuid);
+TRACE_ENT_SYSCALL(setfsuid, SYS_SETFSUID);
 TRACE_RET_SYSCALL(setfsuid, SYS_SETFSUID, ARG_TYPE0(INT_T));
-TRACE_ENT_SYSCALL(setfsgid);
+TRACE_ENT_SYSCALL(setfsgid, SYS_SETFSGID);
 TRACE_RET_SYSCALL(setfsgid, SYS_SETFSGID, ARG_TYPE0(INT_T));
-TRACE_ENT_SYSCALL(setreuid);
+TRACE_ENT_SYSCALL(setreuid, SYS_SETREUID);
 TRACE_RET_SYSCALL(setreuid, SYS_SETREUID, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T));
-TRACE_ENT_SYSCALL(setregid);
+TRACE_ENT_SYSCALL(setregid, SYS_SETREGID);
 TRACE_RET_SYSCALL(setregid, SYS_SETREGID, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T));
-TRACE_ENT_SYSCALL(setresuid);
+TRACE_ENT_SYSCALL(setresuid, SYS_SETRESUID);
 TRACE_RET_SYSCALL(setresuid, SYS_SETRESUID, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(INT_T));
-TRACE_ENT_SYSCALL(setresgid);
+TRACE_ENT_SYSCALL(setresgid, SYS_SETRESGID);
 TRACE_RET_SYSCALL(setresgid, SYS_SETRESGID, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(INT_T));
-TRACE_ENT_SYSCALL(chown);
+TRACE_ENT_SYSCALL(chown, SYS_CHOWN);
 TRACE_RET_SYSCALL(chown, SYS_CHOWN, ARG_TYPE0(STR_T)|ARG_TYPE1(UINT_T)|ARG_TYPE2(UINT_T));
-TRACE_ENT_SYSCALL(fchown);
+TRACE_ENT_SYSCALL(fchown, SYS_FCHOWN);
 TRACE_RET_SYSCALL(fchown, SYS_FCHOWN, ARG_TYPE0(INT_T)|ARG_TYPE1(UINT_T)|ARG_TYPE2(UINT_T));
-TRACE_ENT_SYSCALL(lchown);
+TRACE_ENT_SYSCALL(lchown, SYS_LCHOWN);
 TRACE_RET_SYSCALL(lchown, SYS_LCHOWN, ARG_TYPE0(STR_T)|ARG_TYPE1(UINT_T)|ARG_TYPE2(UINT_T));
-TRACE_ENT_SYSCALL(fchownat);
+TRACE_ENT_SYSCALL(fchownat, SYS_FCHOWNAT);
 TRACE_RET_SYSCALL(fchownat, SYS_FCHOWNAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(UINT_T)|ARG_TYPE3(UINT_T)|ARG_TYPE4(INT_T));
-TRACE_ENT_SYSCALL(chmod);
+TRACE_ENT_SYSCALL(chmod, SYS_CHMOD);
 TRACE_RET_SYSCALL(chmod, SYS_CHMOD, ARG_TYPE0(STR_T)|ARG_TYPE1(MODE_T_T));
-TRACE_ENT_SYSCALL(fchmod);
+TRACE_ENT_SYSCALL(fchmod, SYS_FCHMOD);
 TRACE_RET_SYSCALL(fchmod, SYS_FCHMOD, ARG_TYPE0(INT_T)|ARG_TYPE1(MODE_T_T));
-TRACE_ENT_SYSCALL(fchmodat);
+TRACE_ENT_SYSCALL(fchmodat, SYS_FCHMODAT);
 TRACE_RET_SYSCALL(fchmodat, SYS_FCHMODAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(MODE_T_T)|ARG_TYPE3(INT_T));
 
-TRACE_ENT_SYSCALL(fork);
+TRACE_ENT_SYSCALL(fork, SYS_FORK);
 TRACE_RET_FORK_SYSCALL(fork, SYS_FORK, 0);
-TRACE_ENT_SYSCALL(vfork);
+TRACE_ENT_SYSCALL(vfork, SYS_VFORK);
 TRACE_RET_FORK_SYSCALL(vfork, SYS_VFORK, 0);
-TRACE_ENT_SYSCALL(clone);
+TRACE_ENT_SYSCALL(clone, SYS_CLONE);
 TRACE_RET_FORK_SYSCALL(clone, SYS_CLONE, 0);
 
 TRACEPOINT_PROBE(raw_syscalls, sys_enter) {
@@ -1745,46 +1755,21 @@ int send_bin(struct pt_regs *ctx)
     return 0;
 }
 
-int trace_vfs_write(struct pt_regs *ctx, struct file *file, const char __user *buf, size_t count, loff_t *pos)
-{
-    // We can't use save_args here as this is an inner kernel function, which will overwrite previously saved arguments
-    // Use another map (vfs_args_map) instead
-
-    u64 id;
-    args_t args = {};
-
-    if (!should_trace())
-        return 0;
-
-    args.args[0] = (unsigned long)file;
-    args.args[1] = (unsigned long)buf;
-    args.args[2] = (unsigned long)count;
-    args.args[3] = (unsigned long)pos;
-
-    id = bpf_get_current_pid_tgid();
-    vfs_args_map.update(&id, &args);
-
-    return 0;
-}
+TRACE_ENT_FUNC(vfs_write, VFS_WRITE);
 
 int trace_ret_vfs_write(struct pt_regs *ctx)
 {
     struct path path;
-    args_t *saved_args;
+    args_t saved_args;
     bool has_filter = false;
 
-    if (!should_trace())
-        return 0;
-
-    u64 id = bpf_get_current_pid_tgid();
-
-    saved_args = vfs_args_map.lookup(&id);
-    if (saved_args == 0) {
+    bool delete_args = false;
+    if (load_args(&saved_args, delete_args, VFS_WRITE) != 0) {
         // missed entry or not traced
         return 0;
     }
 
-    struct file *file      = (struct file *) saved_args->args[0];
+    struct file *file      = (struct file *) saved_args.args[0];
 
     // Extract path of written file
     bpf_probe_read(&path, sizeof(struct path), &file->f_path);
@@ -1818,7 +1803,7 @@ int trace_ret_vfs_write(struct pt_regs *ctx)
 
     if (has_filter) {
         // There is a filter, but no match
-        vfs_args_map.delete(&id);
+        del_args(VFS_WRITE);
         return 0;
     }
 
@@ -1830,7 +1815,7 @@ int trace_ret_vfs_write(struct pt_regs *ctx)
 int do_trace_ret_vfs_write(struct pt_regs *ctx)
 {
     context_t context = {};
-    args_t *saved_args;
+    args_t saved_args;
     bin_args_t bin_args = {};
     struct inode *inode;
     struct super_block *superblock;
@@ -1844,20 +1829,16 @@ int do_trace_ret_vfs_write(struct pt_regs *ctx)
     if (submit_p == NULL)
         return 0;
 
-    u64 id = bpf_get_current_pid_tgid();
-
-    saved_args = vfs_args_map.lookup(&id);
-    if (saved_args == 0) {
+    bool delete_args = true;
+    if (load_args(&saved_args, delete_args, VFS_WRITE) != 0) {
         // missed entry or not traced
         return 0;
     }
 
-    struct file *file      = (struct file *) saved_args->args[0];
-    void *ptr              = (void*)         saved_args->args[1];
-    size_t count           = (size_t)        saved_args->args[2];
-    loff_t *pos            = (loff_t*)       saved_args->args[3];
-
-    vfs_args_map.delete(&id);
+    struct file *file      = (struct file *) saved_args.args[0];
+    void *ptr              = (void*)         saved_args.args[1];
+    size_t count           = (size_t)        saved_args.args[2];
+    loff_t *pos            = (loff_t*)       saved_args.args[3];
 
     // Get path
     buf_t *string_p = get_buf(STRING_BUF_IDX);
@@ -1891,6 +1872,8 @@ int do_trace_ret_vfs_write(struct pt_regs *ctx)
 
     // Submit vfs_write event
     events_perf_submit(ctx);
+
+    u64 id = bpf_get_current_pid_tgid();
 
     bin_args.type = SEND_VFS_WRITE;
     bpf_probe_read(bin_args.metadata, 4, &s_dev);
