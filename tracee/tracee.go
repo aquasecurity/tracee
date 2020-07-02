@@ -16,45 +16,6 @@ import (
 	bpf "github.com/iovisor/gobpf/bcc"
 )
 
-// taskComm is a `TASK_COMM_LEN` long string.
-// `TASK_COMM_LEN` is defined in the linux header linux/sched.h
-type taskComm [16]byte
-
-// String implemets the Stringer interface
-func (tc taskComm) String() string {
-	len := 0
-	for i, b := range tc {
-		if b == 0 {
-			len = i
-			break
-		}
-	}
-	return string(tc[:len])
-}
-
-// MarshalText implements the TextMarshaler interface, which is used by JSONMarshaler and others
-func (tc taskComm) MarshalText() ([]byte, error) {
-	return []byte(tc.String()), nil
-}
-
-// context struct contains common metadata that is collected for all types of events
-// it is used to unmarshal binary data and therefore should match (bit by bit) to the `context_t` struct in the ebpf code.
-type context struct {
-	Ts      uint64   `json:"time"`
-	Pid     uint32   `json:"pid"`
-	Tid     uint32   `json:"tid"`
-	Ppid    uint32   `json:"ppid"`
-	Uid     uint32   `json:"uid"`
-	MntId   uint32   `json:"mnt_ns"`
-	PidId   uint32   `json:"pid_ns"`
-	Comm    taskComm `json:"process_name"`
-	UtsName taskComm `json:"uts_name"`
-	Eventid int32    `json:"api"`
-	Argnum  uint8    `json:"arguments_count"`
-	_       [3]byte  // padding for Argnum
-	Retval  int64    `json:"return_value"`
-}
-
 // TraceeConfig is a struct containing user defined configuration of tracee
 type TraceeConfig struct {
 	EventsToTrace         []int32
@@ -385,9 +346,14 @@ func (t *Tracee) processEvents() {
 					continue
 				}
 			}
-			if t.shouldPrintEvent(ctx.Eventid) {
+			if t.shouldPrintEvent(ctx.Event_id) {
 				t.eventCounter = t.eventCounter + 1
-				t.printer.Print(ctx, args)
+				evt, err := newEvent(ctx, args)
+				if err != nil {
+					t.errorCounter = t.errorCounter + 1
+					continue
+				}
+				t.printer.Print(evt)
 			}
 		case lost := <-t.lostEvChannel:
 			t.lostEvCounter = t.lostEvCounter + int(lost)
@@ -462,6 +428,24 @@ func (t *Tracee) processFileWrites() {
 			t.lostWrCounter = t.lostWrCounter + int(lost)
 		}
 	}
+}
+
+// context struct contains common metadata that is collected for all types of events
+// it is used to unmarshal binary data and therefore should match (bit by bit) to the `context_t` struct in the ebpf code.
+type context struct {
+	Ts       uint64
+	Pid      uint32
+	Tid      uint32
+	Ppid     uint32
+	Uid      uint32
+	Mnt_id   uint32
+	Pid_id   uint32
+	Comm     [16]byte
+	Uts_name [16]byte
+	Event_id int32
+	Argnum   uint8
+	_        [3]byte
+	Retval   int64
 }
 
 func readContextFromBuff(buff io.Reader) (context, error) {
