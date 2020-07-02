@@ -1734,8 +1734,13 @@ int send_bin(struct pt_regs *ctx)
     chunk_size = bin_args->full_size - i*F_CHUNK_SIZE;
 
     if (chunk_size > F_CHUNK_SIZE) {
-        bin_args->full_size = chunk_size;
-        bin_args_map.update(&id, bin_args);
+        bin_args_t bin_args_new = {};
+        bin_args_new.type = bin_args->type;
+        bin_args_new.ptr = bin_args->ptr;
+        bin_args_new.start_off = bin_args->start_off;
+        bin_args_new.full_size = chunk_size;
+        bpf_probe_read((void *)(bin_args_new.metadata), SEND_META_SIZE, bin_args->metadata);
+        bin_args_map.update(&id, &bin_args_new);
 
         // Handle the rest of the write recursively
         prog_array.call(ctx, TAIL_SEND_BIN);
