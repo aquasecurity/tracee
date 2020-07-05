@@ -12,6 +12,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"sync/atomic"
 
 	bpf "github.com/iovisor/gobpf/bcc"
 )
@@ -95,10 +96,27 @@ type Tracee struct {
 	lostEvChannel chan uint64
 	lostWrChannel chan uint64
 	printer       eventPrinter
-	eventCounter  int
-	errorCounter  int
-	lostEvCounter int
-	lostWrCounter int
+	stats         statsStore
+}
+
+type counter int32
+
+func (c *counter) Increment(amount ...int) {
+	sum := 1
+	if len(amount) > 0 {
+		sum = 0
+		for _, a := range amount {
+			sum = sum + a
+		}
+	}
+	atomic.AddInt32((*int32)(c), int32(sum))
+}
+
+type statsStore struct {
+	eventCounter  counter
+	errorCounter  counter
+	lostEvCounter counter
+	lostWrCounter counter
 }
 
 // New creates a new Tracee instance based on a given valid TraceeConfig
@@ -114,22 +132,7 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	t := &Tracee{
 		config: cfg,
 	}
-	switch t.config.OutputFormat {
-	case "table":
-		t.printer = &tableEventPrinter{
-			out:    cfg.EventsFile,
-			tracee: t,
-		}
-	case "json":
-		t.printer = &jsonEventPrinter{
-			out: cfg.EventsFile,
-		}
-	case "gob":
-		t.printer = &gobEventPrinter{
-			out: cfg.EventsFile,
-		}
-	}
-	t.printer.Init()
+	t.printer = newEventPrinter(t.config.OutputFormat, t.config.EventsFile)
 
 	p, err := getEBPFProgram()
 	if err != nil {
@@ -299,7 +302,7 @@ func (t *Tracee) Run() error {
 	<-sig
 	t.eventsPerfMap.Stop() //TODO: should this be in Tracee.Close()?
 	t.fileWrPerfMap.Stop() //TODO: should this be in Tracee.Close()?
-	t.printer.Epilogue()
+	t.printer.Epilogue(t.stats)
 	t.Close()
 	return nil
 }
@@ -335,28 +338,28 @@ func (t *Tracee) processEvents() {
 			dataBuff := bytes.NewBuffer(dataRaw)
 			ctx, err := readContextFromBuff(dataBuff)
 			if err != nil {
-				t.errorCounter = t.errorCounter + 1
+				t.stats.errorCounter.Increment()
 				continue
 			}
 			args := make([]interface{}, ctx.Argnum)
 			for i := 0; i < int(ctx.Argnum); i++ {
 				args[i], err = readArgFromBuff(dataBuff)
 				if err != nil {
-					t.errorCounter = t.errorCounter + 1
+					t.stats.errorCounter.Increment()
 					continue
 				}
 			}
 			if t.shouldPrintEvent(ctx.Event_id) {
-				t.eventCounter = t.eventCounter + 1
+				t.stats.eventCounter.Increment()
 				evt, err := newEvent(ctx, args)
 				if err != nil {
-					t.errorCounter = t.errorCounter + 1
+					t.stats.errorCounter.Increment()
 					continue
 				}
 				t.printer.Print(evt)
 			}
 		case lost := <-t.lostEvChannel:
-			t.lostEvCounter = t.lostEvCounter + int(lost)
+			t.stats.errorCounter.Increment(int(lost))
 		}
 	}
 }
@@ -382,22 +385,22 @@ func (t *Tracee) processFileWrites() {
 			var meta chunkMeta
 			err := binary.Read(dataBuff, binary.LittleEndian, &meta)
 			if err != nil {
-				t.errorCounter = t.errorCounter + 1
+				t.stats.errorCounter.Increment()
 				continue
 			}
 
 			if meta.Size <= 0 {
-				t.errorCounter = t.errorCounter + 1
+				t.stats.errorCounter.Increment()
 				continue
 			}
 			if dataBuff.Len() <= int(meta.Size) {
-				t.errorCounter = t.errorCounter + 1
+				t.stats.errorCounter.Increment()
 				continue
 			}
 
 			pathname := path.Join(t.config.OutputPath, strconv.Itoa(int(meta.MntID)))
 			if err := os.MkdirAll(pathname, 0755); err != nil {
-				t.errorCounter = t.errorCounter + 1
+				t.stats.errorCounter.Increment()
 				continue
 			}
 			filename := ""
@@ -406,12 +409,12 @@ func (t *Tracee) processFileWrites() {
 				var vfsMeta vfsWriteMeta
 				err = binary.Read(metaBuff, binary.LittleEndian, &vfsMeta)
 				if err != nil {
-					t.errorCounter = t.errorCounter + 1
+					t.stats.errorCounter.Increment()
 					continue
 				}
 				filename = fmt.Sprintf("write.dev-%d.inode-%d", vfsMeta.DevID, vfsMeta.Inode)
 			} else {
-				t.errorCounter = t.errorCounter + 1
+				t.stats.errorCounter.Increment()
 				continue
 			}
 
@@ -419,32 +422,32 @@ func (t *Tracee) processFileWrites() {
 
 			f, err := os.OpenFile(fullname, os.O_CREATE|os.O_WRONLY, 0640)
 			if err != nil {
-				t.errorCounter = t.errorCounter + 1
+				t.stats.errorCounter.Increment()
 				continue
 			}
 			if _, err := f.Seek(int64(meta.Off), os.SEEK_SET); err != nil {
 				f.Close()
-				t.errorCounter = t.errorCounter + 1
+				t.stats.errorCounter.Increment()
 				continue
 			}
 
 			dataBytes, err := readByteSliceFromBuff(dataBuff, int(meta.Size))
 			if err != nil {
 				f.Close()
-				t.errorCounter = t.errorCounter + 1
+				t.stats.errorCounter.Increment()
 				continue
 			}
 			if _, err := f.Write(dataBytes); err != nil {
 				f.Close()
-				t.errorCounter = t.errorCounter + 1
+				t.stats.errorCounter.Increment()
 				continue
 			}
 			if err := f.Close(); err != nil {
-				t.errorCounter = t.errorCounter + 1
+				t.stats.errorCounter.Increment()
 				continue
 			}
 		case lost := <-t.lostWrChannel:
-			t.lostWrCounter = t.lostWrCounter + int(lost)
+			t.stats.lostWrCounter.Increment(int(lost))
 		}
 	}
 }
