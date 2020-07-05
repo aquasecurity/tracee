@@ -331,6 +331,14 @@ func (t Tracee) shouldPrintEvent(e int32) bool {
 	return true
 }
 
+func processEvent(ctx *context, args []interface{}) {
+	if EventsIDToName[ctx.Event_id] == "raw_syscalls" {
+		if id, ok := args[0].(int32); ok {
+			args[0] = EventsIDToName[id]
+		}
+	}
+}
+
 func (t *Tracee) processEvents() {
 	for {
 		select {
@@ -349,6 +357,7 @@ func (t *Tracee) processEvents() {
 					continue
 				}
 			}
+			processEvent(&ctx, args)
 			if t.shouldPrintEvent(ctx.Event_id) {
 				t.stats.eventCounter.Increment()
 				evt, err := newEvent(ctx, args)
