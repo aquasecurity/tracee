@@ -3,6 +3,10 @@ package tracee
 import (
 	"bytes"
 	"errors"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -190,4 +194,58 @@ func TestReadArgFromBuff(t *testing.T) {
 		assert.Equal(t, tc.expectedError, err, tc.name)
 		assert.Equal(t, tc.expectedArg, actual, tc.name)
 	}
+}
+
+func TestEnsureOutputDir(t *testing.T) {
+	tmp, err := ioutil.TempDir("", "TestEnsureOutputDir")
+	if err != nil {
+		t.Fatalf("can't create temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmp)
+
+	tests := []struct {
+		path      string
+		create    bool
+		perm      os.FileMode
+		assertErr func(err error) bool
+	}{
+
+		{
+			path:      filepath.Join(tmp, "usable"),
+			create:    true,
+			perm:      0755,
+			assertErr: assertErrNil,
+		},
+		{
+			path:      filepath.Join(tmp, "create"),
+			create:    false,
+			perm:      0755,
+			assertErr: assertErrNil,
+		},
+		{
+			path:   filepath.Join(tmp, "badperm"),
+			create: true,
+			perm:   0555,
+			assertErr: func(err error) bool {
+				return strings.HasPrefix(err.Error(), "output directory exists with wrong permissions")
+			},
+		},
+	}
+
+	for _, test := range tests {
+		if test.create {
+			err := os.Mkdir(test.path, test.perm)
+			if err != nil {
+				t.Fatalf("can't create dir %s: %v", test.path, err)
+			}
+		}
+		err := ensureOutputDir(test.path)
+		if !test.assertErr(err) {
+			t.Errorf("err assertion failed: have %v\n%v\n", test, err)
+		}
+	}
+}
+
+func assertErrNil(err error) bool {
+	return err == nil
 }

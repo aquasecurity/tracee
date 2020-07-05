@@ -331,10 +331,40 @@ func (t Tracee) shouldPrintEvent(e int32) bool {
 	return true
 }
 
-func processEvent(ctx *context, args []interface{}) {
-	if EventsIDToName[ctx.Event_id] == "raw_syscalls" {
+func (t *Tracee) processEvent(ctx *context, args []interface{}) error {
+	eventName := EventsIDToName[ctx.Event_id]
+
+	//show event name for raw_syscalls
+	if eventName == "raw_syscalls" {
 		if id, ok := args[0].(int32); ok {
 			args[0] = EventsIDToName[id]
+		}
+	}
+
+	return nil
+}
+
+func ensureOutputDir(path string) error {
+	f, err := os.Stat(path)
+	if err == nil { //path exists
+		if !f.IsDir() {
+			return fmt.Errorf("output exists and is not a directory: %s", path)
+		} else { //path exists and is a dir
+			if f.Mode().Perm() != 0755 {
+				return fmt.Errorf("output directory exists with wrong permissions: %s %#o", path, f.Mode().Perm())
+			} else { //existing dir is usable
+				return nil
+			}
+		}
+	} else { // error in Stat
+		if !os.IsNotExist(err) { // arbitrary error in Stat
+			return err
+		} else { // path didn't exist (which is good)
+			err2 := os.MkdirAll(path, 0755)
+			if err2 != nil {
+				return err2
+			}
+			return nil
 		}
 	}
 }
@@ -357,7 +387,11 @@ func (t *Tracee) processEvents() {
 					continue
 				}
 			}
-			processEvent(&ctx, args)
+			err = t.processEvent(&ctx, args)
+			if err != nil {
+				t.stats.errorCounter.Increment()
+				continue
+			}
 			if t.shouldPrintEvent(ctx.Event_id) {
 				t.stats.eventCounter.Increment()
 				evt, err := newEvent(ctx, args)
@@ -407,8 +441,9 @@ func (t *Tracee) processFileWrites() {
 				continue
 			}
 
-			pathname := path.Join(t.config.OutputPath, strconv.Itoa(int(meta.MntID)))
-			if err := os.MkdirAll(pathname, 0755); err != nil {
+			pathname := path.Join(t.config.OutputPath, strconv.Itoa(int(meta.MntID)), "written-files")
+			ensureOutputDir(pathname)
+			if err != nil {
 				t.stats.errorCounter.Increment()
 				continue
 			}
