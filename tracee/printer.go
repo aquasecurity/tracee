@@ -12,11 +12,29 @@ type eventPrinter interface {
 	// Preamble prints something before event printing begins (one time)
 	Preamble()
 	// Epilogue prints something after event printing ends (one time)
-	Epilogue()
+	Epilogue(stats statsStore)
 	// Print prints a single event
 	Print(event Event)
-	// Initialize the printer
-	Init()
+}
+
+func newEventPrinter(kind string, out io.Writer) eventPrinter {
+	var res eventPrinter
+	switch kind {
+	case "table":
+		res = &tableEventPrinter{
+			out: out,
+		}
+	case "json":
+		res = &jsonEventPrinter{
+			out: out,
+		}
+	case "gob":
+		res = &gobEventPrinter{
+			out: out,
+			enc: gob.NewEncoder(out),
+		}
+	}
+	return res
 }
 
 // Event is a user facing data structure representing a single event
@@ -77,10 +95,10 @@ func (p tableEventPrinter) Print(event Event) {
 	fmt.Fprintln(p.out)
 }
 
-func (p tableEventPrinter) Epilogue() {
+func (p tableEventPrinter) Epilogue(stats statsStore) {
 	fmt.Println()
 	fmt.Fprintf(p.out, "End of events stream\n")
-	fmt.Fprintf(p.out, "Total events: %d, Lost events: %d, Lost file writes: %d, Unexpected errors: %d\n", p.tracee.eventCounter, p.tracee.lostEvCounter, p.tracee.lostWrCounter, p.tracee.errorCounter)
+	fmt.Fprintf(p.out, "Stats: %+v\n", stats)
 	fmt.Fprintf(p.out, "Tracee is closing...\n")
 }
 
@@ -101,7 +119,7 @@ func (p jsonEventPrinter) Print(event Event) {
 	fmt.Fprintln(p.out)
 }
 
-func (p jsonEventPrinter) Epilogue() {}
+func (p jsonEventPrinter) Epilogue(stats statsStore) {}
 
 type gobEventPrinter struct {
 	out io.Writer
@@ -109,7 +127,6 @@ type gobEventPrinter struct {
 }
 
 func (p *gobEventPrinter) Init() {
-	p.enc = gob.NewEncoder(p.out)
 }
 
 func (p *gobEventPrinter) Preamble() {}
@@ -120,4 +137,4 @@ func (p *gobEventPrinter) Print(event Event) {
 	}
 }
 
-func (p *gobEventPrinter) Epilogue() {}
+func (p *gobEventPrinter) Epilogue(stats statsStore) {}
