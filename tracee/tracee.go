@@ -341,6 +341,50 @@ func (t *Tracee) processEvent(ctx *context, args []interface{}) error {
 		}
 	}
 
+	//capture executed files
+	if t.config.CaptureFiles && (eventName == "security_bprm_check") {
+		var err error
+
+		destinationDirPath := filepath.Join(t.config.OutputPath, strconv.Itoa(int(ctx.Mnt_id)))
+		if err := os.MkdirAll(destinationDirPath, 0755); err != nil {
+			return err
+		}
+		sourceFilePath, ok := args[0].(string)
+		if !ok {
+			return fmt.Errorf("error parsing security_bprm_check args")
+		}
+		destinationFilePath := filepath.Join(destinationDirPath, fmt.Sprintf("exec.%d.%s", ctx.Ts, filepath.Base(sourceFilePath)))
+		err = copyFileByPath(sourceFilePath, destinationFilePath)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func copyFileByPath(src, dst string) error {
+	sourceFileStat, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+	if !sourceFileStat.Mode().IsRegular() {
+		return fmt.Errorf("%s is not a regular file", src)
+	}
+	source, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer source.Close()
+	destination, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer destination.Close()
+	_, err = io.Copy(destination, source)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
