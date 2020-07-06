@@ -161,6 +161,9 @@ func isCapable() bool {
 func printList() {
 	var b strings.Builder
 	for _, event := range tracee.EventsIDToEvent {
+		if event.Name == "reserved" {
+			continue
+		}
 		b.WriteString(event.Name)
 		if event.AttachMechanism == tracee.SYSCALL {
 			b.WriteString(" (System call)\n")

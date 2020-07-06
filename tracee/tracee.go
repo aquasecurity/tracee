@@ -41,9 +41,14 @@ func (tc TraceeConfig) Validate() error {
 		return fmt.Errorf("unrecognized output format: %s", tc.OutputFormat)
 	}
 	for _, e := range tc.EventsToTrace {
-		if _, ok := EventsIDToName[e]; !ok {
+		event, ok := EventsIDToEvent[e]
+		if !ok {
 			return fmt.Errorf("invalid event to trace: %d", e)
 		}
+		if event.Name == "reserved" {
+			return fmt.Errorf("event is not implemented: %s", event.Name)
+		}
+
 	}
 	if (tc.PerfBufferSize & (tc.PerfBufferSize - 1)) != 0 {
 		return fmt.Errorf("invalid perf buffer size - must be a power of 2")
@@ -344,8 +349,8 @@ func (t *Tracee) processEvent(ctx *context, args []interface{}) error {
 	//show event name for raw_syscalls
 	if eventName == "raw_syscalls" {
 		if id, isInt32 := args[0].(int32); isInt32 {
-			if syscallName, isKnown := EventsIDToName[id]; isKnown {
-				args[0] = syscallName
+			if event, isKnown := EventsIDToEvent[id]; isKnown {
+				args[0] = event.ProbeName
 			}
 		}
 	}
