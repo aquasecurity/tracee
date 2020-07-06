@@ -336,8 +336,10 @@ func (t *Tracee) processEvent(ctx *context, args []interface{}) error {
 
 	//show event name for raw_syscalls
 	if eventName == "raw_syscalls" {
-		if id, ok := args[0].(int32); ok {
-			args[0] = EventsIDToName[id]
+		if id, isInt32 := args[0].(int32); isInt32 {
+			if syscallName, isKnown := EventsIDToName[id]; isKnown {
+				args[0] = syscallName
+			}
 		}
 	}
 
