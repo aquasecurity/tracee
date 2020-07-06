@@ -429,7 +429,7 @@ func (t *Tracee) processEvents() {
 				t.printer.Print(evt)
 			}
 		case lost := <-t.lostEvChannel:
-			t.stats.errorCounter.Increment(int(lost))
+			t.stats.lostEvCounter.Increment(int(lost))
 		}
 	}
 }
