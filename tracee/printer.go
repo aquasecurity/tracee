@@ -15,23 +15,27 @@ type eventPrinter interface {
 	Epilogue(stats statsStore)
 	// Print prints a single event
 	Print(event Event)
+	// Error prints a single error
+	Error(err error)
 }
 
-func newEventPrinter(kind string, out io.Writer) eventPrinter {
+func newEventPrinter(kind string, out io.Writer, err io.Writer) eventPrinter {
 	var res eventPrinter
 	switch kind {
 	case "table":
 		res = &tableEventPrinter{
 			out: out,
+			err: err,
 		}
 	case "json":
 		res = &jsonEventPrinter{
 			out: out,
+			err: err,
 		}
 	case "gob":
 		res = &gobEventPrinter{
-			out: out,
-			enc: gob.NewEncoder(out),
+			out: gob.NewEncoder(out),
+			err: gob.NewEncoder(err),
 		}
 	}
 	return res
@@ -78,6 +82,7 @@ func newEvent(ctx context, args []interface{}) (Event, error) {
 type tableEventPrinter struct {
 	tracee *Tracee
 	out    io.Writer
+	err    io.Writer
 }
 
 func (p tableEventPrinter) Init() {}
@@ -95,6 +100,10 @@ func (p tableEventPrinter) Print(event Event) {
 	fmt.Fprintln(p.out)
 }
 
+func (p tableEventPrinter) Error(err error) {
+	fmt.Fprintf(p.err, "%v", err)
+}
+
 func (p tableEventPrinter) Epilogue(stats statsStore) {
 	fmt.Println()
 	fmt.Fprintf(p.out, "End of events stream\n")
@@ -104,6 +113,7 @@ func (p tableEventPrinter) Epilogue(stats statsStore) {
 
 type jsonEventPrinter struct {
 	out io.Writer
+	err io.Writer
 }
 
 func (p jsonEventPrinter) Init() {}
@@ -113,17 +123,24 @@ func (p jsonEventPrinter) Preamble() {}
 func (p jsonEventPrinter) Print(event Event) {
 	eBytes, err := json.Marshal(event)
 	if err != nil {
-		fmt.Fprintf(p.out, "error marshaling to json: %v\n\tevent: %v\n", err, event)
+		p.Error(err)
 	}
-	fmt.Fprintf(p.out, "%s", string(eBytes))
-	fmt.Fprintln(p.out)
+	fmt.Fprintln(p.out, string(eBytes))
+}
+
+func (p jsonEventPrinter) Error(e error) {
+	eBytes, err := json.Marshal(e)
+	if err != nil {
+		return
+	}
+	fmt.Fprintln(p.err, string(eBytes))
 }
 
 func (p jsonEventPrinter) Epilogue(stats statsStore) {}
 
 type gobEventPrinter struct {
-	out io.Writer
-	enc *gob.Encoder
+	out *gob.Encoder
+	err *gob.Encoder
 }
 
 func (p *gobEventPrinter) Init() {
@@ -132,9 +149,14 @@ func (p *gobEventPrinter) Init() {
 func (p *gobEventPrinter) Preamble() {}
 
 func (p *gobEventPrinter) Print(event Event) {
-	err := p.enc.Encode(event)
+	err := p.out.Encode(event)
 	if err != nil {
+		p.Error(err)
 	}
+}
+
+func (p *gobEventPrinter) Error(e error) {
+	_ = p.err.Encode(e)
 }
 
 func (p *gobEventPrinter) Epilogue(stats statsStore) {}
