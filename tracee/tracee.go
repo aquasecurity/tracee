@@ -181,50 +181,56 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 
 	sysPrefix := bpf.GetSyscallPrefix()
 	for _, e := range eventsToTraceFinal {
-		if eName, isSyscall := EventsSyscalls[e]; isSyscall {
-			kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("syscall__%s", eName))
+		event, ok := EventsIDToEvent[e]
+		if !ok {
+			continue
+		}
+		if event.AttachMechanism == SYSCALL {
+			kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("syscall__%s", event.Name))
 			if err != nil {
-				return fmt.Errorf("error loading kprobe %s: %v", eName, err)
+				return fmt.Errorf("error loading kprobe %s: %v", event.Name, err)
 			}
-			err = t.bpfModule.AttachKprobe(sysPrefix+eName, kp, -1)
+			err = t.bpfModule.AttachKprobe(sysPrefix+event.ProbeName, kp, -1)
 			if err != nil {
-				return fmt.Errorf("error attaching kprobe %s: %v", eName, err)
+				return fmt.Errorf("error attaching kprobe %s: %v", event.ProbeName, err)
 			}
-			kp, err = t.bpfModule.LoadKprobe(fmt.Sprintf("trace_ret_%s", eName))
+			kp, err = t.bpfModule.LoadKprobe(fmt.Sprintf("trace_ret_%s", event.Name))
 			if err != nil {
-				return fmt.Errorf("error loading kprobe %s: %v", eName, err)
+				return fmt.Errorf("error loading kprobe %s: %v", event.Name, err)
 			}
-			err = t.bpfModule.AttachKretprobe(sysPrefix+eName, kp, -1)
+			err = t.bpfModule.AttachKretprobe(sysPrefix+event.ProbeName, kp, -1)
 			if err != nil {
-				return fmt.Errorf("error attaching kretprobe %s: %v", eName, err)
+				return fmt.Errorf("error attaching kretprobe %s: %v", event.ProbeName, err)
 			}
-		} else if eName, isKprobe := EventsKprobes[e]; isKprobe {
-			kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("trace_%s", eName))
+		}
+		if event.AttachMechanism == KPROBE || event.AttachMechanism == KPROBE_KRETPROBE {
+			kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("trace_%s", event.Name))
 			if err != nil {
-				return fmt.Errorf("error loading kprobe %s: %v", eName, err)
+				return fmt.Errorf("error loading kprobe %s: %v", event.Name, err)
 			}
-			err = t.bpfModule.AttachKprobe(eName, kp, -1)
+			err = t.bpfModule.AttachKprobe(event.ProbeName, kp, -1)
 			if err != nil {
-				return fmt.Errorf("error attaching kprobe %s: %v", eName, err)
+				return fmt.Errorf("error attaching kprobe %s: %v", event.ProbeName, err)
 			}
-			if eName, isKretprobe := EventsKretprobes[e]; isKretprobe {
-				kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("trace_ret_%s", eName))
-				if err != nil {
-					return fmt.Errorf("error loading kprobe %s: %v", eName, err)
-				}
-				err = t.bpfModule.AttachKretprobe(eName, kp, -1)
-				if err != nil {
-					return fmt.Errorf("error attaching kretprobe %s: %v", eName, err)
-				}
-			}
-		} else if eName, isTracepoint := EventsTracepoints[e]; isTracepoint {
-			tp, err := t.bpfModule.LoadTracepoint(fmt.Sprintf("tracepoint__%s__sys_enter", eName))
+		}
+		if event.AttachMechanism == KRETPROBE || event.AttachMechanism == KPROBE_KRETPROBE {
+			kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("trace_ret_%s", event.Name))
 			if err != nil {
-				return fmt.Errorf("error loading tracepoint %s: %v", eName, err)
+				return fmt.Errorf("error loading kprobe %s: %v", event.Name, err)
 			}
-			err = t.bpfModule.AttachTracepoint(fmt.Sprintf("%s:sys_enter", eName), tp)
+			err = t.bpfModule.AttachKretprobe(event.ProbeName, kp, -1)
 			if err != nil {
-				return fmt.Errorf("error attaching tracepoint %s: %v", eName, err)
+				return fmt.Errorf("error attaching kretprobe %s: %v", event.ProbeName, err)
+			}
+		}
+		if event.AttachMechanism == TRACEPOINT {
+			tp, err := t.bpfModule.LoadTracepoint(fmt.Sprintf("tracepoint__%s__%s", event.Name, event.ProbeName))
+			if err != nil {
+				return fmt.Errorf("error loading tracepoint %s:%s: %v", event.Name, event.ProbeName, err)
+			}
+			err = t.bpfModule.AttachTracepoint(fmt.Sprintf("%s:%s", event.Name, event.ProbeName), tp)
+			if err != nil {
+				return fmt.Errorf("error attaching tracepoint %s:%s: %v", event.Name, event.ProbeName, err)
 			}
 		}
 

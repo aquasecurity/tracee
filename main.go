@@ -124,11 +124,10 @@ func main() {
 func prepareEventsToTrace(eventsToTrace []string) ([]int32, error) {
 	var res []int32
 	if eventsToTrace == nil {
-		res = make([]int32, 0, len(tracee.EventsIDToName))
-		rawSyscallsID := tracee.EventsNameToID["raw_syscalls"]
-		for id := range tracee.EventsIDToName {
-			if id != rawSyscallsID {
-				res = append(res, id)
+		res = make([]int32, 0, len(tracee.EventsIDToEvent))
+		for _, event := range tracee.EventsIDToEvent {
+			if event.EnabledByDefault {
+				res = append(res, event.ID)
 			}
 		}
 	} else {
@@ -160,30 +159,16 @@ func isCapable() bool {
 }
 
 func printList() {
-	const sep = ", "
 	var b strings.Builder
-	for _, name := range tracee.EventsSyscalls {
-		b.WriteString(name)
-		b.WriteString(sep)
+	for _, event := range tracee.EventsIDToEvent {
+		b.WriteString(event.Name)
+		if event.AttachMechanism == tracee.SYSCALL {
+			b.WriteString(" (System call)\n")
+		} else if event.AttachMechanism == tracee.TRACEPOINT {
+			b.WriteString(" (Tracepoint)\n")
+		} else {
+			b.WriteString(" (System event)\n")
+		}
 	}
-	fmt.Println("System calls:")
-	fmt.Println(strings.TrimSuffix(b.String(), sep))
-	b.Reset()
-	fmt.Println()
-
-	for _, name := range tracee.EventsTracepoints {
-		b.WriteString(name)
-		b.WriteString(sep)
-	}
-	fmt.Println("Tracepoints:")
-	fmt.Println(strings.TrimSuffix(b.String(), sep))
-	b.Reset()
-	fmt.Println()
-
-	for _, name := range tracee.EventsKprobes {
-		b.WriteString(name)
-		b.WriteString(sep)
-	}
-	fmt.Println("System events:")
-	fmt.Println(strings.TrimSuffix(b.String(), sep))
+	fmt.Println(b.String())
 }
