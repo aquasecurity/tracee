@@ -29,6 +29,7 @@ type TraceeConfig struct {
 	CaptureFiles          bool
 	FilterFileWrite       []string
 	EventsFile            *os.File
+	ErrorsFile            *os.File
 }
 
 // Validate does static validation of the configuration
@@ -132,7 +133,7 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	t := &Tracee{
 		config: cfg,
 	}
-	t.printer = newEventPrinter(t.config.OutputFormat, t.config.EventsFile)
+	t.printer = newEventPrinter(t.config.OutputFormat, t.config.EventsFile, t.config.ErrorsFile)
 
 	p, err := getEBPFProgram()
 	if err != nil {
@@ -390,6 +391,11 @@ func copyFileByPath(src, dst string) error {
 	return nil
 }
 
+func (t Tracee) handleError(err error) {
+	t.stats.errorCounter.Increment()
+	t.printer.Error(err)
+}
+
 func (t *Tracee) processEvents() {
 	for {
 		select {
@@ -397,27 +403,27 @@ func (t *Tracee) processEvents() {
 			dataBuff := bytes.NewBuffer(dataRaw)
 			ctx, err := readContextFromBuff(dataBuff)
 			if err != nil {
-				t.stats.errorCounter.Increment()
+				t.handleError(err)
 				continue
 			}
 			args := make([]interface{}, ctx.Argnum)
 			for i := 0; i < int(ctx.Argnum); i++ {
 				args[i], err = readArgFromBuff(dataBuff)
 				if err != nil {
-					t.stats.errorCounter.Increment()
+					t.handleError(err)
 					continue
 				}
 			}
 			err = t.processEvent(&ctx, args)
 			if err != nil {
-				t.stats.errorCounter.Increment()
+				t.handleError(err)
 				continue
 			}
 			if t.shouldPrintEvent(ctx.Event_id) {
 				t.stats.eventCounter.Increment()
 				evt, err := newEvent(ctx, args)
 				if err != nil {
-					t.stats.errorCounter.Increment()
+					t.handleError(err)
 					continue
 				}
 				t.printer.Print(evt)
@@ -449,22 +455,22 @@ func (t *Tracee) processFileWrites() {
 			var meta chunkMeta
 			err := binary.Read(dataBuff, binary.LittleEndian, &meta)
 			if err != nil {
-				t.stats.errorCounter.Increment()
+				t.handleError(err)
 				continue
 			}
 
 			if meta.Size <= 0 {
-				t.stats.errorCounter.Increment()
+				t.handleError(fmt.Errorf("error in vfs writer: invalid chunk size: %d", meta.Size))
 				continue
 			}
 			if dataBuff.Len() <= int(meta.Size) {
-				t.stats.errorCounter.Increment()
+				t.handleError(fmt.Errorf("error in vfs writer: chunk too large: %d", meta.Size))
 				continue
 			}
 
 			pathname := path.Join(t.config.OutputPath, strconv.Itoa(int(meta.MntID)))
 			if err := os.MkdirAll(pathname, 0755); err != nil {
-				t.stats.errorCounter.Increment()
+				t.handleError(err)
 				continue
 			}
 			filename := ""
@@ -473,12 +479,12 @@ func (t *Tracee) processFileWrites() {
 				var vfsMeta vfsWriteMeta
 				err = binary.Read(metaBuff, binary.LittleEndian, &vfsMeta)
 				if err != nil {
-					t.stats.errorCounter.Increment()
+					t.handleError(err)
 					continue
 				}
 				filename = fmt.Sprintf("write.dev-%d.inode-%d", vfsMeta.DevID, vfsMeta.Inode)
 			} else {
-				t.stats.errorCounter.Increment()
+				t.handleError(fmt.Errorf("error in vfs writer: unknown binary type: %d", meta.BinType))
 				continue
 			}
 
@@ -486,28 +492,28 @@ func (t *Tracee) processFileWrites() {
 
 			f, err := os.OpenFile(fullname, os.O_CREATE|os.O_WRONLY, 0640)
 			if err != nil {
-				t.stats.errorCounter.Increment()
+				t.handleError(err)
 				continue
 			}
 			if _, err := f.Seek(int64(meta.Off), os.SEEK_SET); err != nil {
 				f.Close()
-				t.stats.errorCounter.Increment()
+				t.handleError(err)
 				continue
 			}
 
 			dataBytes, err := readByteSliceFromBuff(dataBuff, int(meta.Size))
 			if err != nil {
 				f.Close()
-				t.stats.errorCounter.Increment()
+				t.handleError(err)
 				continue
 			}
 			if _, err := f.Write(dataBytes); err != nil {
 				f.Close()
-				t.stats.errorCounter.Increment()
+				t.handleError(err)
 				continue
 			}
 			if err := f.Close(); err != nil {
-				t.stats.errorCounter.Increment()
+				t.handleError(err)
 				continue
 			}
 		case lost := <-t.lostWrChannel:
