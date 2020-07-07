@@ -135,6 +135,13 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 		return nil, fmt.Errorf("validation error: %v", err)
 	}
 
+	if cfg.CaptureFilesExec {
+		essentialEvents[EventsNameToID["security_bprm_check"]] = false
+	}
+	if cfg.CaptureFilesWrite {
+		essentialEvents[EventsNameToID["vfs_write"]] = false
+	}
+
 	// create tracee
 	t := &Tracee{
 		config: cfg,
