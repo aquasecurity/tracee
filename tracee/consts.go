@@ -31,6 +31,21 @@ const (
 	TYPE_MAX      ArgType = 255
 )
 
+// bpfConfig is an enum that include various configurations that can be passed to bpf code
+type bpfConfig uint32
+
+const (
+	CONFIG_CONT_MODE           bpfConfig = 0
+	CONFIG_DETECT_ORIG_SYSCALL bpfConfig = 1
+	CONFIG_EXEC_ENV            bpfConfig = 2
+	CONFIG_CAPTURE_FILES       bpfConfig = 3
+)
+
+const (
+	TAIL_VFS_WRITE uint32 = 0
+	TAIL_SEND_BIN  uint32 = 1
+)
+
 // ProbeType is an enum that describes the mechanism used to attach the event
 type ProbeType uint8
 
@@ -421,37 +436,20 @@ var EventsIDToName map[int32]string
 // EventsNameToID holds all the events that tracee can trace, indexed by their Name
 var EventsNameToID map[string]int32
 
+// essentialEvents is a list of event ids (in EventsIDToEvent map) that are essential to the operation of tracee and therefore must be traced
+// the boolean value is used to indicate if the event were also requested to be traced by the user
+var essentialEvents map[int32]bool
+
 func init() {
 	len := len(EventsIDToEvent)
 	EventsIDToName = make(map[int32]string, len)
 	EventsNameToID = make(map[string]int32, len)
+	essentialEvents = make(map[int32]bool, len)
 	for id, event := range EventsIDToEvent {
 		EventsIDToName[id] = event.Name
 		EventsNameToID[event.Name] = event.ID
+		if event.EssentialEvent {
+			essentialEvents[id] = false
+		}
 	}
 }
-
-// essentialEvents is a list of event ids (in EventsIDToName map) that are essential to the operation of tracee and therefore must be traced
-// the boolean value is used to indicate if the event were also requested to be traced by the user
-var essentialEvents = map[int32]bool{
-	351: false, // do_exit
-	56:  false, // clone
-	57:  false, // fork
-	58:  false, // vfork
-	59:  false, // execve
-	322: false, // execveat
-}
-
-type bpfConfig uint32
-
-const (
-	CONFIG_CONT_MODE           bpfConfig = 0
-	CONFIG_DETECT_ORIG_SYSCALL bpfConfig = 1
-	CONFIG_EXEC_ENV            bpfConfig = 2
-	CONFIG_CAPTURE_FILES       bpfConfig = 3
-)
-
-const (
-	TAIL_VFS_WRITE uint32 = 0
-	TAIL_SEND_BIN  uint32 = 1
-)
