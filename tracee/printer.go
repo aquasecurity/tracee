@@ -71,7 +71,7 @@ func newEvent(ctx context, args []interface{}) (Event, error) {
 		ProcessName:     string(bytes.TrimRight(ctx.Comm[:], string(0))),
 		HostName:        string(bytes.TrimRight(ctx.Uts_name[:], string(0))),
 		EventID:         int(ctx.Event_id),
-		EventName:       EventsIDToName[int32(ctx.Event_id)],
+		EventName:       EventsIDToEvent[int32(ctx.Event_id)].Name,
 		ArgsNum:         int(ctx.Argnum),
 		ReturnValue:     int(ctx.Retval),
 		Args:            args,

@@ -344,7 +344,7 @@ func (t Tracee) shouldPrintEvent(e int32) bool {
 }
 
 func (t *Tracee) processEvent(ctx *context, args []interface{}) error {
-	eventName := EventsIDToName[ctx.Event_id]
+	eventName := EventsIDToEvent[ctx.Event_id].Name
 
 	//show event name for raw_syscalls
 	if eventName == "raw_syscalls" {
