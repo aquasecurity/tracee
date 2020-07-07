@@ -430,9 +430,6 @@ var EventsIDToEvent = map[int32]EventConfig{
 	355: EventConfig{ID: 355, Name: "vfs_write", AttachMechanism: KPROBE_KRETPROBE, EnabledByDefault: true, EssentialEvent: false, ProbeName: "vfs_write"},
 }
 
-// EventsIDToName holds all the events that tracee can trace, indexed by their ID
-var EventsIDToName map[int32]string
-
 // EventsNameToID holds all the events that tracee can trace, indexed by their Name
 var EventsNameToID map[string]int32
 
@@ -442,11 +439,9 @@ var essentialEvents map[int32]bool
 
 func init() {
 	len := len(EventsIDToEvent)
-	EventsIDToName = make(map[int32]string, len)
 	EventsNameToID = make(map[string]int32, len)
 	essentialEvents = make(map[int32]bool, len)
 	for id, event := range EventsIDToEvent {
-		EventsIDToName[id] = event.Name
 		EventsNameToID[event.Name] = event.ID
 		if event.EssentialEvent {
 			essentialEvents[id] = false
