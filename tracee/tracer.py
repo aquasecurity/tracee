@@ -944,6 +944,11 @@ class EventMonitor:
         # attaching kprobes
         sk, se = get_kprobes(self.events_to_trace)
 
+        # chosen_events_map is just a workaround for gobpf - fill with true for all events
+        for id in event_id:
+            key = ctypes.c_uint32(id)
+            self.bpf["chosen_events_map"][key] = ctypes.c_uint32(True)
+
         for syscall in sk:
             syscall_fnname = self.bpf.get_syscall_fnname(syscall)
             self.bpf.attach_kprobe(event=syscall_fnname, fn_name="syscall__" + syscall)
