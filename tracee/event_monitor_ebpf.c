@@ -491,6 +491,7 @@ struct mount {
 /*=================================== MAPS =====================================*/
 
 BPF_HASH(config_map, u32, u32);                     // Various configurations
+BPF_HASH(chosen_events_map, u32, u32);              // Various configurations
 BPF_HASH(pids_map, u32, u32);                       // Save container pid namespaces
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
 BPF_HASH(bin_args_map, u64, bin_args_t);            // Persist args for send_bin funtion
@@ -712,6 +713,15 @@ static __always_inline int should_trace()
         rc = lookup_pid();
 
     return rc;
+}
+
+static __always_inline int event_chosen(u32 key)
+{
+    u32 *config = chosen_events_map.lookup(&key);
+    if (config == NULL)
+        return 0;
+
+    return *config;
 }
 
 static __always_inline int init_context(context_t *context)
@@ -1147,6 +1157,12 @@ static __always_inline int trace_ret_generic(struct pt_regs *ctx, u32 id, u64 ty
 
     if (!should_trace())
         return -1;
+
+    // Workaround to a bug in gobpf, where a kprobe event (e.g. mmap syscall) can't be attached to two different functions.
+    // As we need to use save_args in kprobe entry, but one of the events (functions) might be chosen and the other not,
+    // We need a mechanism that can tell if an event was chosen by the user, so we can save the args without enabling both events.
+    if (!event_chosen(id))
+        return 0;
 
     init_context(&context);
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));

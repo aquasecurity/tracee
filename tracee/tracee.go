@@ -166,6 +166,10 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 
 	t.bpfModule = bpf.NewModule(ebpfProgram, []string{})
 
+	chosenEvents := bpf.NewTable(t.bpfModule.TableId("chosen_events_map"), t.bpfModule)
+	key := make([]byte, 4)
+	leaf := make([]byte, 4)
+
 	// compile final list of events to trace including essential events while at the same time record which essentials were requested by the user
 	// to build this list efficiently we use the `tmpset` variable as follows:
 	// 1. the presence of an entry says we have already seen this event (key)
@@ -177,6 +181,11 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 		tmpset[e] = true
 	}
 	for _, e := range t.config.EventsToTrace {
+		// Set chosen events map according to events chosen by the user
+		binary.LittleEndian.PutUint32(key, uint32(e))
+		binary.LittleEndian.PutUint32(leaf, boolToUInt32(true))
+		chosenEvents.Set(key, leaf)
+
 		essential, exists := tmpset[e]
 		// exists && essential = user requested essential
 		// exists && !essential = dup event
@@ -250,8 +259,7 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 	}
 
 	bpfConfig := bpf.NewTable(t.bpfModule.TableId("config_map"), t.bpfModule)
-	key := make([]byte, 4)
-	leaf := make([]byte, 4)
+
 	binary.LittleEndian.PutUint32(key, uint32(CONFIG_CONT_MODE))
 	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.ContainerMode))
 	bpfConfig.Set(key, leaf)
