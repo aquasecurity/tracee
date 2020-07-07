@@ -26,7 +26,8 @@ type TraceeConfig struct {
 	OutputFormat          string
 	PerfBufferSize        int
 	OutputPath            string
-	CaptureFiles          bool
+	CaptureFilesWrite     bool
+	CaptureFilesExec      bool
 	FilterFileWrite       []string
 	EventsFile            *os.File
 	ErrorsFile            *os.File
@@ -254,7 +255,7 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.ShowExecEnv))
 	bpfConfig.Set(key, leaf)
 	binary.LittleEndian.PutUint32(key, uint32(CONFIG_CAPTURE_FILES))
-	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.CaptureFiles))
+	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.CaptureFilesWrite))
 	bpfConfig.Set(key, leaf)
 
 	// Load send_bin function to prog_array to be used as tail call
@@ -356,7 +357,7 @@ func (t *Tracee) processEvent(ctx *context, args []interface{}) error {
 	}
 
 	//capture executed files
-	if t.config.CaptureFiles && (eventName == "security_bprm_check") {
+	if t.config.CaptureFilesExec && (eventName == "security_bprm_check") {
 		var err error
 
 		destinationDirPath := filepath.Join(t.config.OutputPath, strconv.Itoa(int(ctx.Mnt_id)))

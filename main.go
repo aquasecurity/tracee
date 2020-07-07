@@ -32,10 +32,22 @@ func main() {
 				OutputFormat:          c.String("output"),
 				PerfBufferSize:        c.Int("perf-buffer-size"),
 				OutputPath:            c.String("output-path"),
-				CaptureFiles:          c.Bool("capture-files"),
 				FilterFileWrite:       c.StringSlice("filter-file-write"),
 				EventsFile:            os.Stdout,
 				ErrorsFile:            os.Stderr,
+			}
+			captureFiles := c.StringSlice("capture-files")
+			for _, cf := range captureFiles {
+				if cf == "write" {
+					cfg.CaptureFilesWrite = true
+				}
+				if cf == "exec" {
+					cfg.CaptureFilesExec = true
+				}
+				if cf == "all" {
+					cfg.CaptureFilesWrite = true
+					cfg.CaptureFilesExec = true
+				}
 			}
 			if c.Bool("show-all-syscalls") {
 				cfg.EventsToTrace = append(cfg.EventsToTrace, tracee.EventsNameToID["raw_syscalls"])
@@ -99,10 +111,10 @@ func main() {
 				Value: "/tmp/tracee",
 				Usage: "set output path",
 			},
-			&cli.BoolFlag{
+			&cli.StringSliceFlag{
 				Name:  "capture-files",
-				Value: false,
-				Usage: "capture file writes to output path",
+				Value: nil,
+				Usage: "capture files that were written or that were executed. captured files will apear in the 'output-path' directory. possible values: 'write'/'exec'/'all'. use this flag multiple times to choose multiple file types",
 			},
 			&cli.StringSliceFlag{
 				Name:  "filter-file-write",
