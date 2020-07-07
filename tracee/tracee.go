@@ -475,7 +475,7 @@ func (t *Tracee) processFileWrites() {
 				t.handleError(fmt.Errorf("error in vfs writer: invalid chunk size: %d", meta.Size))
 				continue
 			}
-			if dataBuff.Len() <= int(meta.Size) {
+			if dataBuff.Len() < int(meta.Size) {
 				t.handleError(fmt.Errorf("error in vfs writer: chunk too large: %d", meta.Size))
 				continue
 			}
