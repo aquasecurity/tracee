@@ -167,9 +167,9 @@ func TestReadArgFromBuff(t *testing.T) {
 		{
 			name: "PTRACE_REQ_T",
 			input: []byte{21, //PTRACE_REQ_T
-				0x19, 0x0, 0x0, 0x0, //PR_GET_TSC
+				0x10, 0x0, 0x0, 0x0, //PTRACE_ATTACH
 			},
-			expectedArg: "PR_GET_TSC",
+			expectedArg: "PTRACE_ATTACH",
 		},
 		{
 			name: "PRCTL_OPT_T",
