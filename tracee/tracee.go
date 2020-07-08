@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -351,6 +352,8 @@ func (t Tracee) shouldPrintEvent(e int32) bool {
 	return true
 }
 
+var syscallTraced = errors.New("already traced")
+
 func (t *Tracee) processEvent(ctx *context, args []interface{}) error {
 	eventName := EventsIDToEvent[ctx.Event_id].Name
 
@@ -358,6 +361,9 @@ func (t *Tracee) processEvent(ctx *context, args []interface{}) error {
 	if eventName == "raw_syscalls" {
 		if id, isInt32 := args[0].(int32); isInt32 {
 			if event, isKnown := EventsIDToEvent[id]; isKnown {
+				if event.Name != "reserved" {
+					return syscallTraced
+				}
 				args[0] = event.ProbeName
 			}
 		}
@@ -434,6 +440,9 @@ func (t *Tracee) processEvents() {
 				}
 			}
 			err = t.processEvent(&ctx, args)
+			if err == syscallTraced {
+				continue
+			}
 			if err != nil {
 				t.handleError(err)
 				continue
