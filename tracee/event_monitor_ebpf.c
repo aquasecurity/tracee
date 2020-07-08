@@ -1042,13 +1042,12 @@ static __always_inline int get_encoded_arg_num(u64 types)
     return argnum;
 }
 
-static __always_inline int save_args_to_submit_buf(u64 types, bool delete_args, u32 event_id)
+static __always_inline int save_args_to_submit_buf(u64 types, args_t *args)
 {
     unsigned int i;
     short family = 0;
-    args_t args = {};
 
-    if ((types == 0) || (load_args(&args, delete_args, event_id) != 0))
+    if (types == 0)
         return 0;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
@@ -1063,63 +1062,63 @@ static __always_inline int save_args_to_submit_buf(u64 types, bool delete_args, 
             case NONE_T:
                 break;
             case INT_T:
-                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(int), INT_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), INT_T);
                 break;
             case OPEN_FLAGS_T:
-                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(int), OPEN_FLAGS_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), OPEN_FLAGS_T);
                 break;
             case UINT_T:
-                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(unsigned int), UINT_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(unsigned int), UINT_T);
                 break;
             case OFF_T_T:
-                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(off_t), OFF_T_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(off_t), OFF_T_T);
                 break;
             case DEV_T_T:
-                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(dev_t), DEV_T_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(dev_t), DEV_T_T);
                 break;
             case MODE_T_T:
-                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(mode_t), MODE_T_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(mode_t), MODE_T_T);
                 break;
             case LONG_T:
-                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(long), LONG_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(long), LONG_T);
                 break;
             case ULONG_T:
-                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(unsigned long), ULONG_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(unsigned long), ULONG_T);
                 break;
             case SIZE_T_T:
-                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(size_t), SIZE_T_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(size_t), SIZE_T_T);
                 break;
             case POINTER_T:
-                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(void*), POINTER_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(void*), POINTER_T);
                 break;
             case STR_T:
-                save_str_to_buf(submit_p, (void *)args.args[i]);
+                save_str_to_buf(submit_p, (void *)args->args[i]);
                 break;
             case SOCK_DOM_T:
-                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(int), SOCK_DOM_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), SOCK_DOM_T);
                 break;
             case SOCK_TYPE_T:
-                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(int), SOCK_TYPE_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), SOCK_TYPE_T);
                 break;
             case PROT_FLAGS_T:
-                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(int), PROT_FLAGS_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), PROT_FLAGS_T);
                 break;
             case ACCESS_MODE_T:
-                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(int), ACCESS_MODE_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), ACCESS_MODE_T);
                 break;
             case SOCKADDR_T:
-                if (args.args[i]) {
-                    bpf_probe_read(&family, sizeof(short), (void*)args.args[i]);
+                if (args->args[i]) {
+                    bpf_probe_read(&family, sizeof(short), (void*)args->args[i]);
                     switch (family)
                     {
                         case AF_UNIX:
-                            save_to_submit_buf(submit_p, (void*)(args.args[i]), sizeof(struct sockaddr_un), SOCKADDR_T);
+                            save_to_submit_buf(submit_p, (void*)(args->args[i]), sizeof(struct sockaddr_un), SOCKADDR_T);
                             break;
                         case AF_INET:
-                            save_to_submit_buf(submit_p, (void*)(args.args[i]), sizeof(struct sockaddr_in), SOCKADDR_T);
+                            save_to_submit_buf(submit_p, (void*)(args->args[i]), sizeof(struct sockaddr_in), SOCKADDR_T);
                             break;
                         case AF_INET6:
-                            save_to_submit_buf(submit_p, (void*)(args.args[i]), sizeof(struct sockaddr_in6), SOCKADDR_T);
+                            save_to_submit_buf(submit_p, (void*)(args->args[i]), sizeof(struct sockaddr_in6), SOCKADDR_T);
                             break;
                         default:
                             save_to_submit_buf(submit_p, (void*)&family, sizeof(short), SOCKADDR_T);
@@ -1127,10 +1126,10 @@ static __always_inline int save_args_to_submit_buf(u64 types, bool delete_args, 
                 }
                 break;
             case PTRACE_REQ_T:
-                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(int), PTRACE_REQ_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), PTRACE_REQ_T);
                 break;
             case PRCTL_OPT_T:
-                save_to_submit_buf(submit_p, (void*)&(args.args[i]), sizeof(int), PRCTL_OPT_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), PRCTL_OPT_T);
                 break;
         }
     }
@@ -1141,6 +1140,10 @@ static __always_inline int save_args_to_submit_buf(u64 types, bool delete_args, 
 static __always_inline int trace_ret_generic(struct pt_regs *ctx, u32 id, u64 types, bool delete_args)
 {
     context_t context = {};
+    args_t args = {};
+
+    if (load_args(&args, delete_args, id) != 0)
+        return -1;
 
     if (!should_trace())
         return -1;
@@ -1155,7 +1158,7 @@ static __always_inline int trace_ret_generic(struct pt_regs *ctx, u32 id, u64 ty
     context.argnum = get_encoded_arg_num(types);
     context.retval = PT_REGS_RC(ctx);
     save_context_to_buf(submit_p, (void*)&context);
-    save_args_to_submit_buf(types, delete_args, id);
+    save_args_to_submit_buf(types, &args);
 
     events_perf_submit(ctx);
     return 0;
@@ -1880,17 +1883,18 @@ int do_trace_ret_vfs_write(struct pt_regs *ctx)
 
     u64 id = bpf_get_current_pid_tgid();
 
-    bin_args.type = SEND_VFS_WRITE;
-    bpf_probe_read(bin_args.metadata, 4, &s_dev);
-    bpf_probe_read(&bin_args.metadata[4], 8, &inode_nr);
-    bin_args.ptr = ptr;
-    bin_args.start_off = start_pos;
-    bin_args.full_size = PT_REGS_RC(ctx);
-    bin_args_map.update(&id, &bin_args);
+    if (get_config(CONFIG_CAPTURE_FILES)) {
+        bin_args.type = SEND_VFS_WRITE;
+        bpf_probe_read(bin_args.metadata, 4, &s_dev);
+        bpf_probe_read(&bin_args.metadata[4], 8, &inode_nr);
+        bin_args.ptr = ptr;
+        bin_args.start_off = start_pos;
+        bin_args.full_size = PT_REGS_RC(ctx);
+        bin_args_map.update(&id, &bin_args);
 
-    if (get_config(CONFIG_CAPTURE_FILES))
         // Send file data
         prog_array.call(ctx, TAIL_SEND_BIN);
+    }
     return 0;
 }
 
