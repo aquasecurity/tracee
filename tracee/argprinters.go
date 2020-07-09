@@ -825,26 +825,24 @@ func PrintPtraceRequest(req int32) string {
 }
 
 // PrintAlert prints the encoded alert message and output file path if required
-func PrintAlert(alert uint64) string {
+func PrintAlert(alert alert) string {
 	var res string
-	alertNr := alert & 0xFF
-	alertRand := alert >> 32
 
-	var securityAlerts = map[int32]string{
+	var securityAlerts = map[uint32]string{
 		1: "Mmaped region with W+E permissions!",
 		2: "Protection changed to Executable!",
 		3: "Protection changed from E to W+E!",
 		4: "Protection changed from W+E to E!",
 	}
 
-	if msg, ok := securityAlerts[int32(alertNr)]; ok {
+	if msg, ok := securityAlerts[alert.Msg]; ok {
 		res = msg
 	} else {
-		res = strconv.Itoa(int(alertNr))
+		res = strconv.Itoa(int(alert.Msg))
 	}
 
-	if alertRand != 0 {
-		res += " Saving data to bin." + strconv.Itoa(int(alertRand))
+	if alert.Payload != 0 {
+		res += " Saving data to bin." + strconv.Itoa(int(alert.Ts))
 	}
 
 	return res

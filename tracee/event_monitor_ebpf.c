@@ -477,6 +477,12 @@ typedef struct path_filter {
     char path[MAX_PATH_PREF_SIZE];
 } path_filter_t;
 
+typedef struct alert {
+    u64 ts;     // Timestamp
+    u32 msg;    // Encoded message
+    u8 payload; // Non zero if payload is sent to userspace
+} alert_t;
+
 /*================================ KERNEL STRUCTS =============================*/
 
 struct mnt_namespace {
@@ -1950,8 +1956,8 @@ int trace_mmap_alert(struct pt_regs *ctx)
     save_context_to_buf(submit_p, (void*)&context);
 
     if ((args.args[2] & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC)) {
-        u64 alert = ALERT_MMAP_W_X;
-        save_to_submit_buf(submit_p, &alert, sizeof(unsigned long), ALERT_T);
+        alert_t alert = {.ts = context.ts, .msg = ALERT_MMAP_W_X, .payload = 0};
+        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T);
         events_perf_submit(ctx);
     }
 
@@ -1998,33 +2004,29 @@ int trace_mprotect_alert(struct pt_regs *ctx, struct vm_area_struct *vma, unsign
     save_context_to_buf(submit_p, (void*)&context);
 
     if ((!(prev_prot & VM_EXEC)) && (reqprot & VM_EXEC)) {
-        u64 alert = ALERT_MPROT_X_ADD;
-        save_to_submit_buf(submit_p, &alert, sizeof(unsigned long), ALERT_T);
+        alert_t alert = {.ts = context.ts, .msg = ALERT_MPROT_X_ADD, .payload = 0};
+        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T);
         events_perf_submit(ctx);
         return 0;
     }
 
     if ((prev_prot & VM_EXEC) && !(prev_prot & VM_WRITE)
         && ((reqprot & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC))) {
-        u64 alert = ALERT_MPROT_W_ADD;
-        save_to_submit_buf(submit_p, &alert, sizeof(unsigned long), ALERT_T);
+        alert_t alert = {.ts = context.ts, .msg = ALERT_MPROT_W_ADD, .payload = 0};
+        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T);
         events_perf_submit(ctx);
         return 0;
     }
 
     if (((prev_prot & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC))
         && (reqprot & VM_EXEC) && !(reqprot & VM_WRITE)) {
-        u32 random_nr = bpf_get_prandom_u32();
-        u64 alert = random_nr;
-        alert = alert << 32 | ALERT_MPROT_W_REM;
-        if (!get_config(CONFIG_EXTRACT_DYN_CODE))
-            alert = ALERT_MPROT_W_REM;
-        save_to_submit_buf(submit_p, &alert, sizeof(unsigned long), ALERT_T);
+        alert_t alert = {.ts = context.ts, .msg = ALERT_MPROT_W_REM, .payload = 1};
+        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T);
         events_perf_submit(ctx);
 
         if (get_config(CONFIG_EXTRACT_DYN_CODE)) {
             bin_args.type = SEND_MPROTECT;
-            bpf_probe_read(bin_args.metadata, sizeof(u32), &random_nr);
+            bpf_probe_read(bin_args.metadata, sizeof(u64), &context.ts);
             bin_args.ptr = (char *)addr;
             bin_args.start_off = 0;
             bin_args.full_size = len;
