@@ -42,17 +42,16 @@ func main() {
 			for _, cap := range capture {
 				if cap == "write" {
 					cfg.CaptureWrite = true
-				}
-				if cap == "exec" {
+				} else if cap == "exec" {
 					cfg.CaptureExec = true
-				}
-				if cap == "mem" {
+				} else if cap == "mem" {
 					cfg.CaptureMem = true
-				}
-				if cap == "all" {
+				} else if cap == "all" {
 					cfg.CaptureWrite = true
 					cfg.CaptureExec = true
 					cfg.CaptureMem = true
+				} else {
+					return fmt.Errorf("invalid capture option: %s", cap)
 				}
 			}
 			if c.Bool("show-all-syscalls") {
