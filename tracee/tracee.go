@@ -492,7 +492,7 @@ func (t *Tracee) processFileWrites() {
 	}
 
 	type mprotectWriteMeta struct {
-		RandomNr uint32
+		Ts uint64
 	}
 
 	for {
@@ -538,7 +538,7 @@ func (t *Tracee) processFileWrites() {
 					continue
 				}
 				// note: size of buffer will determine maximum extracted file size! (as writes from kernel are immediate)
-				filename = fmt.Sprintf("bin.%d", mprotectMeta.RandomNr)
+				filename = fmt.Sprintf("bin.%d", mprotectMeta.Ts)
 			} else {
 				t.handleError(fmt.Errorf("error in file writer: unknown binary type: %d", meta.BinType))
 				continue
@@ -795,6 +795,20 @@ func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
 	return res, nil
 }
 
+// alert struct encodes a security alert message with a timestamp
+// it is used to unmarshal binary data and therefore should match (bit by bit) to the `alert_t` struct in the ebpf code.
+type alert struct {
+	Ts       uint64
+	Msg      uint32
+	Payload  uint8
+}
+
+func readAlertFromBuff(buff io.Reader) (alert, error) {
+	var res alert
+	err := binary.Read(buff, binary.LittleEndian, &res)
+	return res, err
+}
+
 func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 	var err error
 	var res interface{}
@@ -927,7 +941,7 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 		}
 		res = PrintPtraceRequest(req)
 	case ALERT_T:
-		alert, err := readUInt64FromBuff(dataBuff)
+		alert, err := readAlertFromBuff(dataBuff)
 		if err != nil {
 			return nil, err
 		}

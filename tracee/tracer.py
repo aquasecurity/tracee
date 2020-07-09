@@ -661,6 +661,10 @@ class context_t(ctypes.Structure):  # match layout of eBPF C's context_t struct
                 ("argnum", ctypes.c_uint8),
                 ("retval", ctypes.c_int64), ]
 
+class alert_t(ctypes.Structure):  # match layout of eBPF C's context_t struct
+    _fields_ = [("ts", ctypes.c_uint64),
+                ("msg", ctypes.c_uint32),
+                ("payload", ctypes.c_uint8), ]
 
 def load_bpf_program():
     with open(BPF_PROGRAM, "r") as f:
@@ -865,15 +869,13 @@ def open_flags_to_str(flags):
 
 def alert_to_str(alert):
     alert_str = ""
-    alert_nr = alert & 0xFF
-    alert_rand = alert >> 32
 
-    if alert_nr in security_alerts:
-        alert_str = security_alerts[alert_nr]
+    if alert.msg in security_alerts:
+        alert_str = security_alerts[alert.msg]
     else:
-        alert_str = str(alert_nr)
-    if alert_rand != 0:
-        alert_str += " Saving data to bin." + str(alert_rand)
+        alert_str = str(alert.msg)
+    if alert.payload != 0:
+        alert_str += " Saving data to bin." + str(alert.ts)
 
     return alert_str
 
@@ -1165,6 +1167,11 @@ class EventMonitor:
             else:
                 return '[%s]' % ', '.join(map(str, str_list))
 
+    def get_alert_from_buf(self, buf):
+        c_val = ctypes.cast(ctypes.byref(buf, self.cur_off), ctypes.POINTER(alert_t)).contents
+        self.cur_off = self.cur_off + ctypes.sizeof(alert_t)
+        return c_val
+
     def print_event(self, eventname, context, args):
         # There are some syscalls which doesn't have the same name as their function
         eventfunc = "dummy"
@@ -1291,7 +1298,7 @@ class EventMonitor:
                     else:
                         args.append(str(option))
                 elif argtype == ArgType.ALERT_T:
-                    args.append(alert_to_str(self.get_ulong_from_buf(event_buf)))
+                    args.append(alert_to_str(self.get_alert_from_buf(event_buf)))
         else:
             return
 
@@ -1315,9 +1322,9 @@ class EventMonitor:
             inode = ctypes.cast(ctypes.byref(event_buf, 9), ctypes.POINTER(ctypes.c_ulong)).contents.value
             filename = self.output_path + "/" + str(mnt_id) + "/write.dev-" + str(dev_id) + ".inode-" + str(inode)
         if (meta_type == SEND_MPROTECT):
-            random_nr = ctypes.cast(ctypes.byref(event_buf, 5), ctypes.POINTER(ctypes.c_uint)).contents.value
+            ts = ctypes.cast(ctypes.byref(event_buf, 5), ctypes.POINTER(ctypes.c_ulong)).contents.value
             # note: size of buffer will determine maximum extracted file size! (as writes from kernel are immediate)
-            filename = self.output_path + "/" + str(mnt_id) + "/bin." + str(random_nr)
+            filename = self.output_path + "/" + str(mnt_id) + "/bin." + str(ts)
         count = ctypes.cast(ctypes.byref(event_buf, 25), ctypes.POINTER(ctypes.c_int)).contents.value
         pos = ctypes.cast(ctypes.byref(event_buf, 29), ctypes.POINTER(ctypes.c_ulong)).contents.value
         cur_off = 37
