@@ -195,14 +195,7 @@ func printList() {
 		if event.Name == "reserved" {
 			continue
 		}
-		b.WriteString(event.Name)
-		if event.AttachMechanism == tracee.SYSCALL {
-			b.WriteString(" (System call)\n")
-		} else if event.AttachMechanism == tracee.TRACEPOINT {
-			b.WriteString(" (Tracepoint)\n")
-		} else {
-			b.WriteString(" (System event)\n")
-		}
+		b.WriteString(event.Name + "\n")
 	}
 	fmt.Println(b.String())
 }

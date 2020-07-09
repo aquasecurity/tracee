@@ -223,55 +223,60 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 		if !ok {
 			continue
 		}
-		if event.AttachMechanism == SYSCALL {
-			kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("syscall__%s", event.Name))
-			if err != nil {
-				return fmt.Errorf("error loading kprobe %s: %v", event.Name, err)
+		for _, probe := range event.Probes {
+			if probe.Attach == SYSCALL {
+				kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("syscall__%s", probe.Fn))
+				if err != nil {
+					return fmt.Errorf("error loading kprobe %s: %v", probe.Fn, err)
+				}
+				err = t.bpfModule.AttachKprobe(sysPrefix+probe.Event, kp, -1)
+				if err != nil {
+					return fmt.Errorf("error attaching kprobe %s: %v", probe.Event, err)
+				}
+				kp, err = t.bpfModule.LoadKprobe(fmt.Sprintf("trace_ret_%s", probe.Fn))
+				if err != nil {
+					return fmt.Errorf("error loading kprobe %s: %v", probe.Fn, err)
+				}
+				err = t.bpfModule.AttachKretprobe(sysPrefix+probe.Event, kp, -1)
+				if err != nil {
+					return fmt.Errorf("error attaching kretprobe %s: %v", probe.Event, err)
+				}
+				continue
 			}
-			err = t.bpfModule.AttachKprobe(sysPrefix+event.ProbeName, kp, -1)
-			if err != nil {
-				return fmt.Errorf("error attaching kprobe %s: %v", event.ProbeName, err)
+			if probe.Attach == KPROBE {
+				kp, err := t.bpfModule.LoadKprobe(probe.Fn)
+				if err != nil {
+					return fmt.Errorf("error loading kprobe %s: %v", probe.Fn, err)
+				}
+				err = t.bpfModule.AttachKprobe(probe.Event, kp, -1)
+				if err != nil {
+					return fmt.Errorf("error attaching kprobe %s: %v", probe.Event, err)
+				}
+				continue
 			}
-			kp, err = t.bpfModule.LoadKprobe(fmt.Sprintf("trace_ret_%s", event.Name))
-			if err != nil {
-				return fmt.Errorf("error loading kprobe %s: %v", event.Name, err)
+			if probe.Attach == KRETPROBE {
+				kp, err := t.bpfModule.LoadKprobe(probe.Fn)
+				if err != nil {
+					return fmt.Errorf("error loading kprobe %s: %v", probe.Fn, err)
+				}
+				err = t.bpfModule.AttachKretprobe(probe.Event, kp, -1)
+				if err != nil {
+					return fmt.Errorf("error attaching kretprobe %s: %v", probe.Event, err)
+				}
+				continue
 			}
-			err = t.bpfModule.AttachKretprobe(sysPrefix+event.ProbeName, kp, -1)
-			if err != nil {
-				return fmt.Errorf("error attaching kretprobe %s: %v", event.ProbeName, err)
+			if probe.Attach == TRACEPOINT {
+				tp, err := t.bpfModule.LoadTracepoint(probe.Fn)
+				if err != nil {
+					return fmt.Errorf("error loading tracepoint %s: %v", probe.Fn, err)
+				}
+				err = t.bpfModule.AttachTracepoint(probe.Event, tp)
+				if err != nil {
+					return fmt.Errorf("error attaching tracepoint %s: %v", probe.Event, err)
+				}
+				continue
 			}
 		}
-		if event.AttachMechanism == KPROBE || event.AttachMechanism == KPROBE_KRETPROBE {
-			kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("trace_%s", event.Name))
-			if err != nil {
-				return fmt.Errorf("error loading kprobe %s: %v", event.Name, err)
-			}
-			err = t.bpfModule.AttachKprobe(event.ProbeName, kp, -1)
-			if err != nil {
-				return fmt.Errorf("error attaching kprobe %s: %v", event.ProbeName, err)
-			}
-		}
-		if event.AttachMechanism == KRETPROBE || event.AttachMechanism == KPROBE_KRETPROBE {
-			kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("trace_ret_%s", event.Name))
-			if err != nil {
-				return fmt.Errorf("error loading kprobe %s: %v", event.Name, err)
-			}
-			err = t.bpfModule.AttachKretprobe(event.ProbeName, kp, -1)
-			if err != nil {
-				return fmt.Errorf("error attaching kretprobe %s: %v", event.ProbeName, err)
-			}
-		}
-		if event.AttachMechanism == TRACEPOINT {
-			tp, err := t.bpfModule.LoadTracepoint(fmt.Sprintf("tracepoint__%s__%s", event.Name, event.ProbeName))
-			if err != nil {
-				return fmt.Errorf("error loading tracepoint %s:%s: %v", event.Name, event.ProbeName, err)
-			}
-			err = t.bpfModule.AttachTracepoint(fmt.Sprintf("%s:%s", event.Name, event.ProbeName), tp)
-			if err != nil {
-				return fmt.Errorf("error attaching tracepoint %s:%s: %v", event.Name, event.ProbeName, err)
-			}
-		}
-
 	}
 
 	bpfConfig := bpf.NewTable(t.bpfModule.TableId("config_map"), t.bpfModule)
@@ -385,7 +390,7 @@ func (t *Tracee) processEvent(ctx *context, args []interface{}) error {
 	if eventName == "raw_syscalls" {
 		if id, isInt32 := args[0].(int32); isInt32 {
 			if event, isKnown := EventsIDToEvent[id]; isKnown {
-				args[0] = event.ProbeName
+				args[0] = event.Probes[0].Event
 			}
 		}
 	}
