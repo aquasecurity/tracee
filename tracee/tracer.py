@@ -608,8 +608,7 @@ event_id = {
     353: "security_bprm_check",
     354: "security_file_open",
     355: "vfs_write",
-    356: "mmap_alert",
-    357: "mprotect_alert",
+    356: "mem_prot_alert",
 }
 
 # argument types should match defined values in ebpf file code
@@ -1010,9 +1009,8 @@ class EventMonitor:
 
         if self.security_alerts:
             self.bpf.attach_kretprobe(event="security_mmap_addr", fn_name="trace_mmap_alert")
-            self.events_to_trace.append("mmap_alert")
             self.bpf.attach_kprobe(event="security_file_mprotect", fn_name="trace_mprotect_alert")
-            self.events_to_trace.append("mprotect_alert")
+            self.events_to_trace.append("mem_prot_alert")
 
         # Set prog_array for tail calls
         prog_array = self.bpf.get_table("prog_array")

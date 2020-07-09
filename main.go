@@ -58,8 +58,7 @@ func main() {
 				cfg.EventsToTrace = append(cfg.EventsToTrace, tracee.EventsNameToID["raw_syscalls"])
 			}
 			if c.Bool("security-alerts") {
-				cfg.EventsToTrace = append(cfg.EventsToTrace, tracee.EventsNameToID["mmap_alert"])
-				cfg.EventsToTrace = append(cfg.EventsToTrace, tracee.EventsNameToID["mprotect_alert"])
+				cfg.EventsToTrace = append(cfg.EventsToTrace, tracee.EventsNameToID["mem_prot_alert"])
 			}
 			t, err := tracee.New(cfg)
 			if err != nil {

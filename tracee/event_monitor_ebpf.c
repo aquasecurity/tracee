@@ -436,8 +436,7 @@ enum event_id {
     SECURITY_BPRM_CHECK,
     SECURITY_FILE_OPEN,
     VFS_WRITE,
-    MMAP_ALERT,
-    MPROTECT_ALERT,
+    MEM_PROT_ALERT,
 };
 
 /*=============================== INTERNAL STRUCTS ===========================*/
@@ -1950,7 +1949,7 @@ int trace_mmap_alert(struct pt_regs *ctx)
     if (submit_p == NULL)
         return 0;
 
-    context.eventid = MMAP_ALERT;
+    context.eventid = MEM_PROT_ALERT;
     context.argnum = 1;
     context.retval = 0;
     save_context_to_buf(submit_p, (void*)&context);
@@ -1998,7 +1997,7 @@ int trace_mprotect_alert(struct pt_regs *ctx, struct vm_area_struct *vma, unsign
     if (submit_p == NULL)
         return 0;
 
-    context.eventid = MPROTECT_ALERT;
+    context.eventid = MEM_PROT_ALERT;
     context.argnum = 1;
     context.retval = 0;
     save_context_to_buf(submit_p, (void*)&context);
