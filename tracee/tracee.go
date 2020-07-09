@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync/atomic"
+	"syscall"
 
 	bpf "github.com/iovisor/gobpf/bcc"
 )
@@ -104,6 +105,7 @@ type Tracee struct {
 	lostWrChannel chan uint64
 	printer       eventPrinter
 	stats         statsStore
+	capturedFiles map[string]int64
 }
 
 type counter int32
@@ -158,6 +160,7 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 		return nil, err
 	}
 
+	t.capturedFiles = make(map[string]int64)
 	return t, nil
 }
 
@@ -367,15 +370,27 @@ func (t *Tracee) processEvent(ctx *context, args []interface{}) error {
 	if t.config.CaptureFilesExec && (eventName == "security_bprm_check") {
 		var err error
 
-		destinationDirPath := filepath.Join(t.config.OutputPath, strconv.Itoa(int(ctx.Mnt_id)))
-		if err := os.MkdirAll(destinationDirPath, 0755); err != nil {
-			return err
-		}
 		sourceFilePath, ok := args[0].(string)
 		if !ok {
 			return fmt.Errorf("error parsing security_bprm_check args")
 		}
+		sourceFileStat, err := os.Stat(sourceFilePath)
+		if err != nil {
+			return err
+		}
+		sourceCtime := sourceFileStat.Sys().(*syscall.Stat_t).Ctim.Nano()
+		lastCtime, ok := t.capturedFiles[sourceFilePath]
+		if ok && lastCtime == sourceCtime {
+			return nil
+		}
+		t.capturedFiles[sourceFilePath] = sourceCtime
+
+		destinationDirPath := filepath.Join(t.config.OutputPath, strconv.Itoa(int(ctx.Mnt_id)))
+		if err := os.MkdirAll(destinationDirPath, 0755); err != nil {
+			return err
+		}
 		destinationFilePath := filepath.Join(destinationDirPath, fmt.Sprintf("exec.%d.%s", ctx.Ts, filepath.Base(sourceFilePath)))
+
 		err = copyFileByPath(sourceFilePath, destinationFilePath)
 		if err != nil {
 			return err
