@@ -439,8 +439,7 @@ var EventsIDToEvent = map[int32]EventConfig{
 	353: EventConfig{ID: 353, Name: "security_bprm_check", Probes: []probe{probe{Event: "security_bprm_check", Attach: KPROBE, Fn: "trace_security_bprm_check"}} , EnabledByDefault: true, EssentialEvent: false},
 	354: EventConfig{ID: 354, Name: "security_file_open", Probes: []probe{probe{Event: "security_file_open", Attach: KPROBE, Fn: "trace_security_file_open"}} , EnabledByDefault: true, EssentialEvent: false},
 	355: EventConfig{ID: 355, Name: "vfs_write", Probes: []probe{probe{Event: "vfs_write", Attach: KPROBE, Fn: "trace_vfs_write"}, probe{Event: "vfs_write", Attach: KRETPROBE, Fn: "trace_ret_vfs_write"}} , EnabledByDefault: true, EssentialEvent: false},
-	356: EventConfig{ID: 356, Name: "mmap_alert", Probes: []probe{probe{Event: "security_mmap_addr", Attach: KPROBE, Fn: "trace_mmap_alert"}} , EnabledByDefault: false, EssentialEvent: false},
-	357: EventConfig{ID: 357, Name: "mprotect_alert", Probes: []probe{probe{Event: "security_file_mprotect", Attach: KPROBE, Fn: "trace_mprotect_alert"}} , EnabledByDefault: false, EssentialEvent: false},
+	356: EventConfig{ID: 356, Name: "mem_prot_alert", Probes: []probe{probe{Event: "security_mmap_addr", Attach: KPROBE, Fn: "trace_mmap_alert"}, probe{Event: "security_file_mprotect", Attach: KPROBE, Fn: "trace_mprotect_alert"}} , EnabledByDefault: false, EssentialEvent: false},
 }
 
 // EventsNameToID holds all the events that tracee can trace, indexed by their Name

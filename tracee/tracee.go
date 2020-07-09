@@ -154,8 +154,7 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 		essentialEvents[EventsNameToID["mprotect"]] = false
 	}
 	if cfg.CaptureMem {
-		essentialEvents[EventsNameToID["mmap_alert"]] = false
-		essentialEvents[EventsNameToID["mprotect_alert"]] = false
+		essentialEvents[EventsNameToID["mem_prot_alert"]] = false
 	}
 	// create tracee
 	t := &Tracee{
