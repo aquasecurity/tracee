@@ -223,55 +223,55 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 			continue
 		}
 		for _, probe := range event.Probes {
-			if probe.Attach == SYSCALL {
-				kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("syscall__%s", probe.Fn))
+			if probe.attach == sysCall {
+				kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("syscall__%s", probe.fn))
 				if err != nil {
-					return fmt.Errorf("error loading kprobe %s: %v", probe.Fn, err)
+					return fmt.Errorf("error loading kprobe %s: %v", probe.fn, err)
 				}
-				err = t.bpfModule.AttachKprobe(sysPrefix+probe.Event, kp, -1)
+				err = t.bpfModule.AttachKprobe(sysPrefix+probe.event, kp, -1)
 				if err != nil {
-					return fmt.Errorf("error attaching kprobe %s: %v", probe.Event, err)
+					return fmt.Errorf("error attaching kprobe %s: %v", probe.event, err)
 				}
-				kp, err = t.bpfModule.LoadKprobe(fmt.Sprintf("trace_ret_%s", probe.Fn))
+				kp, err = t.bpfModule.LoadKprobe(fmt.Sprintf("trace_ret_%s", probe.fn))
 				if err != nil {
-					return fmt.Errorf("error loading kprobe %s: %v", probe.Fn, err)
+					return fmt.Errorf("error loading kprobe %s: %v", probe.fn, err)
 				}
-				err = t.bpfModule.AttachKretprobe(sysPrefix+probe.Event, kp, -1)
+				err = t.bpfModule.AttachKretprobe(sysPrefix+probe.event, kp, -1)
 				if err != nil {
-					return fmt.Errorf("error attaching kretprobe %s: %v", probe.Event, err)
-				}
-				continue
-			}
-			if probe.Attach == KPROBE {
-				kp, err := t.bpfModule.LoadKprobe(probe.Fn)
-				if err != nil {
-					return fmt.Errorf("error loading kprobe %s: %v", probe.Fn, err)
-				}
-				err = t.bpfModule.AttachKprobe(probe.Event, kp, -1)
-				if err != nil {
-					return fmt.Errorf("error attaching kprobe %s: %v", probe.Event, err)
+					return fmt.Errorf("error attaching kretprobe %s: %v", probe.event, err)
 				}
 				continue
 			}
-			if probe.Attach == KRETPROBE {
-				kp, err := t.bpfModule.LoadKprobe(probe.Fn)
+			if probe.attach == kprobe {
+				kp, err := t.bpfModule.LoadKprobe(probe.fn)
 				if err != nil {
-					return fmt.Errorf("error loading kprobe %s: %v", probe.Fn, err)
+					return fmt.Errorf("error loading kprobe %s: %v", probe.fn, err)
 				}
-				err = t.bpfModule.AttachKretprobe(probe.Event, kp, -1)
+				err = t.bpfModule.AttachKprobe(probe.event, kp, -1)
 				if err != nil {
-					return fmt.Errorf("error attaching kretprobe %s: %v", probe.Event, err)
+					return fmt.Errorf("error attaching kprobe %s: %v", probe.event, err)
 				}
 				continue
 			}
-			if probe.Attach == TRACEPOINT {
-				tp, err := t.bpfModule.LoadTracepoint(probe.Fn)
+			if probe.attach == kretprobe {
+				kp, err := t.bpfModule.LoadKprobe(probe.fn)
 				if err != nil {
-					return fmt.Errorf("error loading tracepoint %s: %v", probe.Fn, err)
+					return fmt.Errorf("error loading kprobe %s: %v", probe.fn, err)
 				}
-				err = t.bpfModule.AttachTracepoint(probe.Event, tp)
+				err = t.bpfModule.AttachKretprobe(probe.event, kp, -1)
 				if err != nil {
-					return fmt.Errorf("error attaching tracepoint %s: %v", probe.Event, err)
+					return fmt.Errorf("error attaching kretprobe %s: %v", probe.event, err)
+				}
+				continue
+			}
+			if probe.attach == tracepoint {
+				tp, err := t.bpfModule.LoadTracepoint(probe.fn)
+				if err != nil {
+					return fmt.Errorf("error loading tracepoint %s: %v", probe.fn, err)
+				}
+				err = t.bpfModule.AttachTracepoint(probe.event, tp)
+				if err != nil {
+					return fmt.Errorf("error attaching tracepoint %s: %v", probe.event, err)
 				}
 				continue
 			}
@@ -280,25 +280,25 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 
 	bpfConfig := bpf.NewTable(t.bpfModule.TableId("config_map"), t.bpfModule)
 
-	binary.LittleEndian.PutUint32(key, uint32(CONFIG_CONT_MODE))
+	binary.LittleEndian.PutUint32(key, uint32(configContMode))
 	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.ContainerMode))
 	bpfConfig.Set(key, leaf)
-	binary.LittleEndian.PutUint32(key, uint32(CONFIG_DETECT_ORIG_SYSCALL))
+	binary.LittleEndian.PutUint32(key, uint32(configDetectOrigSyscall))
 	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.DetectOriginalSyscall))
 	bpfConfig.Set(key, leaf)
-	binary.LittleEndian.PutUint32(key, uint32(CONFIG_EXEC_ENV))
+	binary.LittleEndian.PutUint32(key, uint32(configExecEnv))
 	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.ShowExecEnv))
 	bpfConfig.Set(key, leaf)
-	binary.LittleEndian.PutUint32(key, uint32(CONFIG_CAPTURE_FILES))
+	binary.LittleEndian.PutUint32(key, uint32(configCaptureFiles))
 	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.CaptureWrite))
 	bpfConfig.Set(key, leaf)
-	binary.LittleEndian.PutUint32(key, uint32(CONFIG_EXTRACT_DYN_CODE))
+	binary.LittleEndian.PutUint32(key, uint32(configExtractDynCode))
 	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.CaptureMem))
 	bpfConfig.Set(key, leaf)
 
 	// Load send_bin function to prog_array to be used as tail call
 	progArrayBPFTable := bpf.NewTable(t.bpfModule.TableId("prog_array"), t.bpfModule)
-	binary.LittleEndian.PutUint32(key, TAIL_VFS_WRITE)
+	binary.LittleEndian.PutUint32(key, tailVfsWrite)
 	kp, err := t.bpfModule.LoadKprobe("do_trace_ret_vfs_write")
 	if err != nil {
 		return fmt.Errorf("error loading function do_trace_ret_vfs_write: %v", err)
@@ -306,7 +306,7 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 	binary.LittleEndian.PutUint32(leaf, uint32(kp))
 	progArrayBPFTable.Set(key, leaf)
 
-	binary.LittleEndian.PutUint32(key, TAIL_SEND_BIN)
+	binary.LittleEndian.PutUint32(key, tailSendBin)
 	kp, err = t.bpfModule.LoadKprobe("send_bin")
 	if err != nil {
 		return fmt.Errorf("error loading function send_bin: %v", err)
@@ -389,7 +389,7 @@ func (t *Tracee) processEvent(ctx *context, args []interface{}) error {
 	if eventName == "raw_syscalls" {
 		if id, isInt32 := args[0].(int32); isInt32 {
 			if event, isKnown := EventsIDToEvent[id]; isKnown {
-				args[0] = event.Probes[0].Event
+				args[0] = event.Probes[0].event
 			}
 		}
 	}
@@ -541,7 +541,7 @@ func (t *Tracee) processFileWrites() {
 			}
 			filename := ""
 			metaBuff := bytes.NewBuffer(meta.Metadata[:])
-			if meta.BinType == SEND_VFS_WRITE {
+			if meta.BinType == sendVfsWrite {
 				var vfsMeta vfsWriteMeta
 				err = binary.Read(metaBuff, binary.LittleEndian, &vfsMeta)
 				if err != nil {
@@ -549,7 +549,7 @@ func (t *Tracee) processFileWrites() {
 					continue
 				}
 				filename = fmt.Sprintf("write.dev-%d.inode-%d", vfsMeta.DevID, vfsMeta.Inode)
-			} else if meta.BinType == SEND_MPROTECT {
+			} else if meta.BinType == sendMprotect {
 				var mprotectMeta mprotectWriteMeta
 				err = binary.Read(metaBuff, binary.LittleEndian, &mprotectMeta)
 				if err != nil {
@@ -621,8 +621,8 @@ func readContextFromBuff(buff io.Reader) (context, error) {
 	return res, err
 }
 
-func readArgTypeFromBuff(buff io.Reader) (ArgType, error) {
-	var res ArgType
+func readArgTypeFromBuff(buff io.Reader) (argType, error) {
+	var res argType
 	err := binary.Read(buff, binary.LittleEndian, &res)
 	return res, err
 }
@@ -817,9 +817,9 @@ func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
 // alert struct encodes a security alert message with a timestamp
 // it is used to unmarshal binary data and therefore should match (bit by bit) to the `alert_t` struct in the ebpf code.
 type alert struct {
-	Ts       uint64
-	Msg      uint32
-	Payload  uint8
+	Ts      uint64
+	Msg     uint32
+	Payload uint8
 }
 
 func readAlertFromBuff(buff io.Reader) (alert, error) {
@@ -836,39 +836,39 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 		return res, fmt.Errorf("error reading arg type: %v", err)
 	}
 	switch at {
-	case INT_T:
+	case intT:
 		res, err = readInt32FromBuff(dataBuff)
 		if err != nil {
 			return nil, err
 		}
-	case UINT_T, DEV_T_T:
+	case uintT, devT:
 		res, err = readUInt32FromBuff(dataBuff)
 		if err != nil {
 			return nil, err
 		}
-	case LONG_T:
+	case longT:
 		res, err = readInt64FromBuff(dataBuff)
 		if err != nil {
 			return nil, err
 		}
-	case ULONG_T, OFF_T_T, SIZE_T_T:
+	case ulongT, offT, sizeT:
 		res, err = readUInt64FromBuff(dataBuff)
 		if err != nil {
 			return nil, err
 		}
-	case STR_T:
+	case strT:
 		res, err = readStringFromBuff(dataBuff)
 		if err != nil {
 			return nil, err
 		}
-	case STR_ARR_T:
+	case strArrT:
 		var ss []string
 		// assuming there's at least one element in the array
 		et, err := readArgTypeFromBuff(dataBuff)
 		if err != nil {
 			return nil, fmt.Errorf("error reading string array element type: %v", err)
 		}
-		for et != STR_ARR_T {
+		for et != strArrT {
 			s, err := readStringFromBuff(dataBuff)
 			if err != nil {
 				return nil, fmt.Errorf("error reading string element: %v", err)
@@ -881,85 +881,85 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 			}
 		}
 		res = ss
-	case CAP_T:
+	case capT:
 		cap, err := readInt32FromBuff(dataBuff)
 		if err != nil {
 			return nil, fmt.Errorf("error reading capability arg: %v", err)
 		}
 		res = PrintCapability(cap)
-	case SYSCALL_T:
+	case syscallT:
 		sc, err := readInt32FromBuff(dataBuff)
 		if err != nil {
 			return nil, fmt.Errorf("error reading syscall arg: %v", err)
 		}
 		res = PrintSyscall(sc)
-	case MODE_T_T:
+	case modeT:
 		mode, err := readUInt32FromBuff(dataBuff)
 		if err != nil {
 			return nil, err
 		}
 		res = PrintInodeMode(mode)
-	case PROT_FLAGS_T:
+	case protFlagsT:
 		prot, err := readUInt32FromBuff(dataBuff)
 		if err != nil {
 			return nil, err
 		}
 		res = PrintMemProt(prot)
-	case POINTER_T:
+	case pointerT:
 		ptr, err := readUInt64FromBuff(dataBuff)
 		if err != nil {
 			return nil, err
 		}
 		res = fmt.Sprintf("0x%X", ptr)
-	case SOCKADDR_T:
+	case sockAddrT:
 		sockaddr, err := readSockaddrFromBuff(dataBuff)
 		if err != nil {
 			return nil, err
 		}
 		res = fmt.Sprintf("%v", sockaddr)[3:] // remove the leading "map" string
-	case OPEN_FLAGS_T:
+	case openFlagsT:
 		flags, err := readUInt32FromBuff(dataBuff)
 		if err != nil {
 			return nil, err
 		}
 		res = PrintOpenFlags(flags)
-	case ACCESS_MODE_T:
+	case accessModeT:
 		mode, err := readUInt32FromBuff(dataBuff)
 		if err != nil {
 			return nil, err
 		}
 		res = PrintAccessMode(mode)
-	case EXEC_FLAGS_T:
+	case execFlagsT:
 		flags, err := readUInt32FromBuff(dataBuff)
 		if err != nil {
 			return nil, err
 		}
 		res = PrintExecFlags(flags)
-	case SOCK_DOM_T:
+	case sockDomT:
 		dom, err := readUInt32FromBuff(dataBuff)
 		if err != nil {
 			return nil, err
 		}
 		res = PrintSocketDomain(dom)
-	case SOCK_TYPE_T:
+	case sockTypeT:
 		t, err := readUInt32FromBuff(dataBuff)
 		if err != nil {
 			return nil, err
 		}
 		res = PrintSocketType(t)
-	case PRCTL_OPT_T:
+	case prctlOptT:
 		op, err := readInt32FromBuff(dataBuff)
 		if err != nil {
 			return nil, err
 		}
 		res = PrintPrctlOption(op)
-	case PTRACE_REQ_T:
+	case ptraceReqT:
 		req, err := readInt32FromBuff(dataBuff)
 		if err != nil {
 			return nil, err
 		}
 		res = PrintPtraceRequest(req)
-	case ALERT_T:
+	case alertT:
 		alert, err := readAlertFromBuff(dataBuff)
 		if err != nil {
 			return nil, err
