@@ -46,10 +46,10 @@ type Event struct {
 	Timestamp       float64       `json:"timestamp"`
 	ProcessID       int           `json:"processId"`
 	ThreadID        int           `json:"threadId"`
-	ParentProcessID int           `json:"parentProcessid"`
+	ParentProcessID int           `json:"parentProcessId"`
 	UserID          int           `json:"userId"`
-	MountNS         int           `json:"mountNS"`
-	PIDNS           int           `json:"pidNS"`
+	MountNS         int           `json:"mountNamespace"`
+	PIDNS           int           `json:"pidNamespace"`
 	ProcessName     string        `json:"processName"`
 	HostName        string        `json:"hostName"`
 	EventID         int           `json:"eventId,string"`
