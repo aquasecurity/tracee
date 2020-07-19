@@ -652,7 +652,7 @@ func readStringVarFromBuff(buff io.Reader, max int) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error reading null terminated string: %v", err)
 	}
-	for char != 0 {
+	for count :=1; char != 0 && count < max; count++ {
 		res = append(res, byte(char))
 		char, err = readInt8FromBuff(buff)
 		if err != nil {
@@ -748,7 +748,12 @@ func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
 					char        sun_path[108];  // Pathname
 			};
 		*/
-		sunPath, err := readStringVarFromBuff(buff, 108)
+		var sunPathBuf [108]byte
+		err := binary.Read(buff, binary.LittleEndian, &sunPathBuf)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing sockaddr_un: %v", err)
+		}
+		sunPath, err := readStringVarFromBuff(bytes.NewBuffer(bytes.TrimLeft(sunPathBuf[:], "\000")), 108)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_un: %v", err)
 		}
