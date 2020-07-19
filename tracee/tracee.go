@@ -659,6 +659,7 @@ func readStringVarFromBuff(buff io.Reader, max int) (string, error) {
 			return "", fmt.Errorf("error reading null terminated string: %v", err)
 		}
 	}
+	res = bytes.TrimLeft(res[:], "\000")
 	return string(res), nil
 }
 
