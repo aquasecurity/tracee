@@ -106,7 +106,7 @@ func TestReadArgFromBuff(t *testing.T) {
 				0xFF, 0xFF, //sin_port=65535
 				0xFF, 0xFF, 0xFF, 0xFF, //sin_addr=255.255.255.255
 			},
-			expectedArg: "[sa_family:AF_INET sin_addr:255.255.255.255 sin_port:65535]",
+			expectedArg: "{'sa_family': 'AF_INET','sin_port': '65535','sin_addr': '255.255.255.255'}",
 		},
 		{
 			name: "openFlagsT",
