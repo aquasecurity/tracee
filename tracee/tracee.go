@@ -12,6 +12,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"syscall"
 
@@ -652,7 +653,7 @@ func readStringVarFromBuff(buff io.Reader, max int) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error reading null terminated string: %v", err)
 	}
-	for count :=1; char != 0 && count < max; count++ {
+	for count := 1; char != 0 && count < max; count++ {
 		res = append(res, byte(char))
 		char, err = readInt8FromBuff(buff)
 		if err != nil {
@@ -922,7 +923,13 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		res = fmt.Sprintf("%v", sockaddr)[3:] // remove the leading "map" string
+		var s string
+		for key, val := range sockaddr {
+			s += fmt.Sprintf("'%s': '%s',", key, val)
+		}
+		s = strings.TrimSuffix(s, ",")
+		s = fmt.Sprintf("{%s}", s)
+		res = s
 	case openFlagsT:
 		flags, err := readUInt32FromBuff(dataBuff)
 		if err != nil {
