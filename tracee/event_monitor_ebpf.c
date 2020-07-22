@@ -1858,6 +1858,7 @@ int do_trace_ret_vfs_write(struct pt_regs *ctx)
     struct super_block *superblock;
     dev_t s_dev;
     unsigned long inode_nr;
+    unsigned int i_mode;
     loff_t start_pos;
 
     init_context(&context);
@@ -1885,11 +1886,12 @@ int do_trace_ret_vfs_write(struct pt_regs *ctx)
     if (off == NULL)
         return -1;
 
-    // Extract device id, inode number and pos (offset)
+    // Extract device id, inode number, mode, and pos (offset)
     bpf_probe_read(&inode, sizeof(struct inode *), &file->f_inode);
     bpf_probe_read(&superblock, sizeof(struct super_block *), &inode->i_sb);
     bpf_probe_read(&s_dev, sizeof(dev_t), &superblock->s_dev);
     bpf_probe_read(&inode_nr, sizeof(unsigned long), &inode->i_ino);
+    bpf_probe_read(&i_mode, sizeof(unsigned short), &inode->i_mode);
     bpf_probe_read(&start_pos, sizeof(off_t), pos);
 
     // Calculate write start offset
@@ -1916,6 +1918,7 @@ int do_trace_ret_vfs_write(struct pt_regs *ctx)
         bin_args.type = SEND_VFS_WRITE;
         bpf_probe_read(bin_args.metadata, 4, &s_dev);
         bpf_probe_read(&bin_args.metadata[4], 8, &inode_nr);
+        bpf_probe_read(&bin_args.metadata[12], 4, &i_mode);
         bin_args.ptr = ptr;
         bin_args.start_off = start_pos;
         bin_args.full_size = PT_REGS_RC(ctx);
