@@ -509,17 +509,31 @@ func (t *Tracee) processFileWrites() {
 	type vfsWriteMeta struct {
 		DevID uint32
 		Inode uint64
+		Mode  uint32
 	}
 
 	type mprotectWriteMeta struct {
 		Ts uint64
 	}
 
+	const (
+		S_IFMT uint32 = 0170000 // bit mask for the file type bit field
+
+		S_IFSOCK uint32 = 0140000 // socket
+		S_IFLNK  uint32 = 0120000 // symbolic link
+		S_IFREG  uint32 = 0100000 // regular file
+		S_IFBLK  uint32 = 0060000 // block device
+		S_IFDIR  uint32 = 0040000 // directory
+		S_IFCHR  uint32 = 0020000 // character device
+		S_IFIFO  uint32 = 0010000 // FIFO
+	)
+
 	for {
 		select {
 		case dataRaw := <-t.fileWrChannel:
 			dataBuff := bytes.NewBuffer(dataRaw)
 			var meta chunkMeta
+			appendFile := false
 			err := binary.Read(dataBuff, binary.LittleEndian, &meta)
 			if err != nil {
 				t.handleError(err)
@@ -549,6 +563,9 @@ func (t *Tracee) processFileWrites() {
 					t.handleError(err)
 					continue
 				}
+				if vfsMeta.Mode&S_IFSOCK == S_IFSOCK || vfsMeta.Mode&S_IFCHR == S_IFCHR || vfsMeta.Mode&S_IFIFO == S_IFIFO {
+					appendFile = true
+				}
 				filename = fmt.Sprintf("write.dev-%d.inode-%d", vfsMeta.DevID, vfsMeta.Inode)
 			} else if meta.BinType == sendMprotect {
 				var mprotectMeta mprotectWriteMeta
@@ -571,10 +588,18 @@ func (t *Tracee) processFileWrites() {
 				t.handleError(err)
 				continue
 			}
-			if _, err := f.Seek(int64(meta.Off), os.SEEK_SET); err != nil {
-				f.Close()
-				t.handleError(err)
-				continue
+			if appendFile {
+				if _, err := f.Seek(0, os.SEEK_END); err != nil {
+					f.Close()
+					t.handleError(err)
+					continue
+				}
+			} else {
+				if _, err := f.Seek(int64(meta.Off), os.SEEK_SET); err != nil {
+					f.Close()
+					t.handleError(err)
+					continue
+				}
 			}
 
 			dataBytes, err := readByteSliceFromBuff(dataBuff, int(meta.Size))
