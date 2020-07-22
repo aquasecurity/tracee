@@ -28,8 +28,6 @@ func PrintInodeMode(mode uint32) string {
 		f = append(f, "S_IFCHR")
 	case mode&010000 == 010000:
 		f = append(f, "S_IFIFO")
-	default:
-		f = append(f, "invalid file type")
 	}
 
 	// File Mode
