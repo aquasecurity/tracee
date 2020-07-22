@@ -307,6 +307,14 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 	binary.LittleEndian.PutUint32(leaf, uint32(kp))
 	progArrayBPFTable.Set(key, leaf)
 
+	binary.LittleEndian.PutUint32(key, tailVfsRead)
+	kp, err = t.bpfModule.LoadKprobe("do_trace_ret_vfs_read")
+	if err != nil {
+		return fmt.Errorf("error loading function do_trace_ret_vfs_read: %v", err)
+	}
+	binary.LittleEndian.PutUint32(leaf, uint32(kp))
+	progArrayBPFTable.Set(key, leaf)
+
 	binary.LittleEndian.PutUint32(key, tailSendBin)
 	kp, err = t.bpfModule.LoadKprobe("send_bin")
 	if err != nil {

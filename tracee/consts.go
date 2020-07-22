@@ -46,6 +46,7 @@ const (
 const (
 	tailVfsWrite uint32 = 0
 	tailSendBin  uint32 = 1
+	tailVfsRead  uint32 = 2
 )
 
 const (
@@ -439,7 +440,8 @@ var EventsIDToEvent = map[int32]EventConfig{
 	353: EventConfig{ID: 353, Name: "security_bprm_check", Probes: []probe{probe{event: "security_bprm_check", attach: kprobe, fn: "trace_security_bprm_check"}}, EnabledByDefault: true, EssentialEvent: false},
 	354: EventConfig{ID: 354, Name: "security_file_open", Probes: []probe{probe{event: "security_file_open", attach: kprobe, fn: "trace_security_file_open"}}, EnabledByDefault: true, EssentialEvent: false},
 	355: EventConfig{ID: 355, Name: "vfs_write", Probes: []probe{probe{event: "vfs_write", attach: kprobe, fn: "trace_vfs_write"}, probe{event: "vfs_write", attach: kretprobe, fn: "trace_ret_vfs_write"}}, EnabledByDefault: true, EssentialEvent: false},
-	356: EventConfig{ID: 356, Name: "mem_prot_alert", Probes: []probe{probe{event: "security_mmap_addr", attach: kprobe, fn: "trace_mmap_alert"}, probe{event: "security_file_mprotect", attach: kprobe, fn: "trace_mprotect_alert"}}, EnabledByDefault: false, EssentialEvent: false},
+	356: EventConfig{ID: 356, Name: "vfs_read", Probes: []probe{probe{event: "vfs_read", attach: kprobe, fn: "trace_vfs_read"}, probe{event: "vfs_read", attach: kretprobe, fn: "trace_ret_vfs_read"}}, EnabledByDefault: true, EssentialEvent: false},
+	357: EventConfig{ID: 357, Name: "mem_prot_alert", Probes: []probe{probe{event: "security_mmap_addr", attach: kprobe, fn: "trace_mmap_alert"}, probe{event: "security_file_mprotect", attach: kprobe, fn: "trace_mprotect_alert"}}, EnabledByDefault: false, EssentialEvent: false},
 }
 
 // EventsNameToID holds all the events that tracee can trace, indexed by their Name

@@ -39,7 +39,8 @@
 
 #define TAIL_VFS_WRITE      0
 #define TAIL_SEND_BIN       1
-#define MAX_TAIL_CALL       2
+#define TAIL_VFS_READ       2
+#define MAX_TAIL_CALL       3
 
 #define NONE_T        0UL
 #define INT_T         1UL
@@ -436,6 +437,7 @@ enum event_id {
     SECURITY_BPRM_CHECK,
     SECURITY_FILE_OPEN,
     VFS_WRITE,
+    VFS_READ,
     MEM_PROT_ALERT,
 };
 
@@ -1927,6 +1929,127 @@ int do_trace_ret_vfs_write(struct pt_regs *ctx)
         // Send file data
         prog_array.call(ctx, TAIL_SEND_BIN);
     }
+    return 0;
+}
+
+TRACE_ENT_FUNC(vfs_read, VFS_READ);
+
+int trace_ret_vfs_read(struct pt_regs *ctx)
+{
+    struct path path;
+    args_t saved_args;
+    bool has_filter = false;
+
+    bool delete_args = false;
+    if (load_args(&saved_args, delete_args, VFS_READ) != 0) {
+        // missed entry or not traced
+        return 0;
+    }
+
+    struct file *file      = (struct file *) saved_args.args[0];
+
+    // Extract path of written file
+    bpf_probe_read(&path, sizeof(struct path), &file->f_path);
+    // Get per-cpu string buffer
+    buf_t *string_p = get_buf(STRING_BUF_IDX);
+    if (string_p == NULL)
+        return -1;
+    get_path_string(string_p, &path);
+    u32 *off = get_buf_off(STRING_BUF_IDX);
+    if (off == NULL)
+        return -1;
+
+    #pragma unroll
+    for (int i = 0; i < 3; i++) {
+        int idx = i;
+        path_filter_t *filter_p = file_filter.lookup(&idx);
+        if (filter_p == NULL)
+            return -1;
+
+        if (!filter_p->path[0])
+            break;
+
+        has_filter = true;
+
+        if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
+            break;
+
+        if (filter_p->path[0] && is_prefix(filter_p->path, &string_p->buf[*off]))
+            prog_array.call(ctx, TAIL_VFS_READ);
+    }
+
+    if (has_filter) {
+        // There is a filter, but no match
+        del_args(VFS_READ);
+        return 0;
+    }
+
+    // No filter was given - continue
+    prog_array.call(ctx, TAIL_VFS_READ);
+    return 0;
+}
+
+int do_trace_ret_vfs_read(struct pt_regs *ctx)
+{
+    context_t context = {};
+    args_t saved_args;
+    bin_args_t bin_args = {};
+    struct inode *inode;
+    struct super_block *superblock;
+    dev_t s_dev;
+    unsigned long inode_nr;
+    loff_t start_pos;
+
+    init_context(&context);
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
+    if (submit_p == NULL)
+        return 0;
+
+    bool delete_args = true;
+    if (load_args(&saved_args, delete_args, VFS_READ) != 0) {
+        // missed entry or not traced
+        return 0;
+    }
+
+    struct file *file      = (struct file *) saved_args.args[0];
+    void *ptr              = (void*)         saved_args.args[1];
+    size_t count           = (size_t)        saved_args.args[2];
+    loff_t *pos            = (loff_t*)       saved_args.args[3];
+
+    // Get path
+    buf_t *string_p = get_buf(STRING_BUF_IDX);
+    if (string_p == NULL)
+        return -1;
+    u32 *off = get_buf_off(STRING_BUF_IDX);
+    if (off == NULL)
+        return -1;
+
+    // Extract device id, inode number and pos (offset)
+    bpf_probe_read(&inode, sizeof(struct inode *), &file->f_inode);
+    bpf_probe_read(&superblock, sizeof(struct super_block *), &inode->i_sb);
+    bpf_probe_read(&s_dev, sizeof(dev_t), &superblock->s_dev);
+    bpf_probe_read(&inode_nr, sizeof(unsigned long), &inode->i_ino);
+    bpf_probe_read(&start_pos, sizeof(off_t), pos);
+
+    // Calculate write start offset
+    if (start_pos != 0)
+        start_pos -= PT_REGS_RC(ctx);
+
+    context.eventid = VFS_READ;
+    context.argnum = 5;
+    context.retval = PT_REGS_RC(ctx);
+    save_context_to_buf(submit_p, &context);
+
+    save_str_to_buf(submit_p, (void *)&string_p->buf[*off]);
+    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T);
+    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T);
+    save_to_submit_buf(submit_p, &count, sizeof(size_t), SIZE_T_T);
+    save_to_submit_buf(submit_p, &start_pos, sizeof(off_t), OFF_T_T);
+
+    // Submit vfs_read event
+    events_perf_submit(ctx);
+
     return 0;
 }
 
