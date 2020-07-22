@@ -924,7 +924,12 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error reading syscall arg: %v", err)
 		}
-		res = PrintSyscall(sc)
+		res = strconv.Itoa(int(sc))
+		if event, ok := EventsIDToEvent[sc]; ok {
+			if event.Probes[0].attach == sysCall {
+				res = event.Probes[0].event
+			}
+		}
 	case modeT:
 		mode, err := readUInt32FromBuff(dataBuff)
 		if err != nil {
