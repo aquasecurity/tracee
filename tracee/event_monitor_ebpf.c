@@ -2022,7 +2022,9 @@ int trace_mprotect_alert(struct pt_regs *ctx, struct vm_area_struct *vma, unsign
 
     if (((prev_prot & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC))
         && (reqprot & VM_EXEC) && !(reqprot & VM_WRITE)) {
-        alert_t alert = {.ts = context.ts, .msg = ALERT_MPROT_W_REM, .payload = 1};
+        alert_t alert = {.ts = context.ts, .msg = ALERT_MPROT_W_REM, .payload = 0 };
+        if (get_config(CONFIG_EXTRACT_DYN_CODE)) 
+            alert.payload = 1;
         save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T);
         events_perf_submit(ctx);
 
