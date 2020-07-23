@@ -1,6 +1,3 @@
 .vscode
 .idea
 /dist
-*__pycache__*
-venv
-*.pyc
