@@ -35,6 +35,3 @@ ifdef publish
 endif
 release:
 	EBPFPROGRAM_BASE64=$(ebpfProgramBase64) goreleaser release --rm-dist $(goreleaserFlags)
-
-python-test:
-	python -m unittest -v test_container_tracer

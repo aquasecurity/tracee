@@ -5,8 +5,6 @@ Tracee is a lightweight and easy to use container and system tracing tool. It al
 
 Other than tracing, Tracee is also capable of capturing files written to disk or memory ("fileless"), and extracting binaries that are dynamically loaded to an application's memory (e.g. when an application uses a packer). With these features, it is possible to quickly gain insights about the running processes that previously required the use of dynamic analysis tools and special knowledge.
 
-Tracee CLI was originally written in Python, but was since ported to Go. Currently both versions are still available in the repo, but future development will be in Go and the Python version will eventually be deprecated and removed.
-
 [Check out this quick demo of tracee:<br /> ![youtube thumbnail](images/yt-thumbnail.jpg)](https://youtu.be/1lI875HPtdU)
 
 ## Getting started
