@@ -20,7 +20,10 @@ func main() {
 				printList()
 				return nil
 			}
-			events, err := prepareEventsToTrace(c.StringSlice("event"))
+			if c.IsSet("event") && c.IsSet("exclude-event") {
+				return fmt.Errorf("'event' and 'exclude-event' can't be used in parallel")
+			}
+			events, err := prepareEventsToTrace(c.StringSlice("event"), c.StringSlice("exclude-event"))
 			if err != nil {
 				return err
 			}
@@ -79,6 +82,11 @@ func main() {
 				Aliases: []string{"e"},
 				Value:   nil,
 				Usage:   "trace only the specified event or syscall. use this flag multiple times to choose multiple events",
+			},
+			&cli.StringSliceFlag{
+				Name:    "exclude-event",
+				Value:   nil,
+				Usage:   "exclude an event from being traced. use this flag multiple times to choose multiple events to exclude",
 			},
 			&cli.BoolFlag{
 				Name:    "list",
@@ -151,9 +159,18 @@ func main() {
 	}
 }
 
-func prepareEventsToTrace(eventsToTrace []string) ([]int32, error) {
+func prepareEventsToTrace(eventsToTrace []string, excludeEvents []string) ([]int32, error) {
 	var res []int32
 	if eventsToTrace == nil {
+		for _, name := range excludeEvents {
+			id, ok := tracee.EventsNameToID[name]
+			if !ok {
+				return nil, fmt.Errorf("invalid event to exclude: %s", name)
+			}
+			event := tracee.EventsIDToEvent[id]
+			event.EnabledByDefault = false
+			tracee.EventsIDToEvent[id] = event
+		}
 		res = make([]int32, 0, len(tracee.EventsIDToEvent))
 		for _, event := range tracee.EventsIDToEvent {
 			if event.EnabledByDefault {
