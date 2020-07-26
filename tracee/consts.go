@@ -53,6 +53,139 @@ const (
 	sendMprotect uint8 = 2
 )
 
+// Arg tags should match defined values in ebpf code
+const (
+	TagNone uint8 = iota
+	TagFd
+	TagFilename
+	TagPathname
+	TagArgv
+	TagEnvp
+	TagDev
+	TagInode
+	TagDirfd
+	TagFlags
+	TagCap
+	TagSyscall
+	TagCount
+	TagPos
+	TagAlert
+	TagMode
+	TagAddr
+	TagLength
+	TagProt
+	TagOffset
+	TagPkey
+	TagName
+	TagOldfd
+	TagNewfd
+	TagDomain
+	TagType
+	TagProtocol
+	TagRequest
+	TagPid
+	TagSig
+	TagSockfd
+	TagBacklog
+	TagOption
+	TagArg2
+	TagArg3
+	TagArg4
+	TagArg5
+	TagData
+	TagLocalIov
+	TagLiovcnt
+	TagRemoteIov
+	TagRiovcnt
+	TagModuleImage
+	TagLen
+	TagParamValues
+	TagTarget
+	TagNewdirfd
+	TagLinkpath
+	TagSource
+	TagFilesystemtype
+	TagMountflags
+	TagUid
+	TagGid
+	TagFsuid
+	TagFsgid
+	TagRuid
+	TagEuid
+	TagRgid
+	TagEgid
+	TagSuid
+	TagSgid
+	TagOwner
+	TagGroup
+)
+
+var argNames = map[uint8]string{
+	TagNone:           "",
+	TagFd:             "fd",
+	TagFilename:       "filename",
+	TagPathname:       "pathname",
+	TagArgv:           "argv",
+	TagEnvp:           "envp",
+	TagDev:            "dev",
+	TagInode:          "inode",
+	TagDirfd:          "dirfd",
+	TagFlags:          "flags",
+	TagCap:            "cap",
+	TagSyscall:        "syscall",
+	TagCount:          "count",
+	TagPos:            "pos",
+	TagAlert:          "alert",
+	TagMode:           "mode",
+	TagAddr:           "addr",
+	TagLength:         "length",
+	TagProt:           "prot",
+	TagOffset:         "offset",
+	TagPkey:           "pkey",
+	TagName:           "name",
+	TagOldfd:          "oldfd",
+	TagNewfd:          "newfd",
+	TagDomain:         "domain",
+	TagType:           "type",
+	TagProtocol:       "protocol",
+	TagRequest:        "request",
+	TagPid:            "pid",
+	TagSig:            "sig",
+	TagSockfd:         "sockfd",
+	TagBacklog:        "backlog",
+	TagOption:         "option",
+	TagArg2:           "arg2",
+	TagArg3:           "arg3",
+	TagArg4:           "arg4",
+	TagArg5:           "arg5",
+	TagData:           "data",
+	TagLocalIov:       "local_iov",
+	TagLiovcnt:        "liovcnt",
+	TagRemoteIov:      "remote_iov",
+	TagRiovcnt:        "riovcnt",
+	TagModuleImage:    "module_image",
+	TagLen:            "len",
+	TagParamValues:    "param_values",
+	TagTarget:         "target",
+	TagNewdirfd:       "newdirfd",
+	TagLinkpath:       "linkpath",
+	TagSource:         "source",
+	TagFilesystemtype: "filesystemtype",
+	TagMountflags:     "mountflags",
+	TagUid:            "uid",
+	TagGid:            "gid",
+	TagFsuid:          "fsuid",
+	TagFsgid:          "fsgid",
+	TagRuid:           "ruid",
+	TagEuid:           "euid",
+	TagRgid:           "rgid",
+	TagEgid:           "egid",
+	TagSuid:           "suid",
+	TagSgid:           "sgid",
+	TagOwner:          "owner",
+	TagGroup:          "group",
+}
+
 // ProbeType is an enum that describes the mechanism used to attach the event
 type probeType uint8
 
