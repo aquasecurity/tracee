@@ -784,7 +784,11 @@ func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_un: %v", err)
 		}
-		sunPath, err := readStringVarFromBuff(bytes.NewBuffer(bytes.TrimLeft(sunPathBuf[:], "\000")), 108)
+		trimmedPath := bytes.TrimLeft(sunPathBuf[:], "\000")
+		sunPath := ""
+		if len(trimmedPath) != 0 {
+			sunPath, err = readStringVarFromBuff(bytes.NewBuffer(trimmedPath), 108)
+		}
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_un: %v", err)
 		}
