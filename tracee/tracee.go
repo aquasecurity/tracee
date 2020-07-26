@@ -43,7 +43,7 @@ func (tc TraceeConfig) Validate() error {
 	if tc.EventsToTrace == nil {
 		return fmt.Errorf("eventsToTrace is nil")
 	}
-	if tc.OutputFormat != "table" && tc.OutputFormat != "json" && tc.OutputFormat != "gob" {
+	if tc.OutputFormat != "table" && tc.OutputFormat != "table-verbose" && tc.OutputFormat != "json" && tc.OutputFormat != "gob" {
 		return fmt.Errorf("unrecognized output format: %s", tc.OutputFormat)
 	}
 	for _, e := range tc.EventsToTrace {
