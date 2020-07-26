@@ -75,7 +75,7 @@ func main() {
 				Name:    "output",
 				Aliases: []string{"o"},
 				Value:   "table",
-				Usage:   "output format: table/json/gob",
+				Usage:   "output format: table/table-verbose/json/gob",
 			},
 			&cli.StringSliceFlag{
 				Name:    "event",
@@ -84,9 +84,9 @@ func main() {
 				Usage:   "trace only the specified event or syscall. use this flag multiple times to choose multiple events",
 			},
 			&cli.StringSliceFlag{
-				Name:    "exclude-event",
-				Value:   nil,
-				Usage:   "exclude an event from being traced. use this flag multiple times to choose multiple events to exclude",
+				Name:  "exclude-event",
+				Value: nil,
+				Usage: "exclude an event from being traced. use this flag multiple times to choose multiple events to exclude",
 			},
 			&cli.BoolFlag{
 				Name:    "list",
