@@ -24,8 +24,15 @@ func newEventPrinter(kind string, out io.Writer, err io.Writer) eventPrinter {
 	switch kind {
 	case "table":
 		res = &tableEventPrinter{
-			out: out,
-			err: err,
+			out:     out,
+			err:     err,
+			verbose: false,
+		}
+	case "table-verbose":
+		res = &tableEventPrinter{
+			out:     out,
+			err:     err,
+			verbose: true,
 		}
 	case "json":
 		res = &jsonEventPrinter{
@@ -80,20 +87,29 @@ func newEvent(ctx context, args []interface{}) (Event, error) {
 }
 
 type tableEventPrinter struct {
-	tracee *Tracee
-	out    io.Writer
-	err    io.Writer
+	tracee  *Tracee
+	out     io.Writer
+	err     io.Writer
+	verbose bool
 }
 
 func (p tableEventPrinter) Init() {}
 
 func (p tableEventPrinter) Preamble() {
-	fmt.Fprintf(p.out, "%-14s %-16s %-12s %-12s %-6s %-16s %-16s %-6s %-6s %-6s %-12s %s", "TIME(s)", "UTS_NAME", "MNT_NS", "PID_NS", "UID", "EVENT", "COMM", "PID", "TID", "PPID", "RET", "ARGS")
+	if p.verbose {
+		fmt.Fprintf(p.out, "%-14s %-16s %-12s %-12s %-6s %-20s %-16s %-6s %-6s %-6s %-16s %s", "TIME(s)", "UTS_NAME", "MNT_NS", "PID_NS", "UID", "EVENT", "COMM", "PID", "TID", "PPID", "RET", "ARGS")
+	} else {
+		fmt.Fprintf(p.out, "%-14s %-16s %-6s %-20s %-16s %-6s %-6s %-6s %-16s %s", "TIME(s)", "UTS_NAME", "UID", "EVENT", "COMM", "PID", "TID", "PPID", "RET", "ARGS")
+	}
 	fmt.Fprintln(p.out)
 }
 
 func (p tableEventPrinter) Print(event Event) {
-	fmt.Fprintf(p.out, "%-14f %-16s %-12d %-12d %-6d %-16s %-16s %-6d %-6d %-6d %-12d", event.Timestamp, event.HostName, event.MountNS, event.PIDNS, event.UserID, event.EventName, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue)
+	if p.verbose {
+		fmt.Fprintf(p.out, "%-14f %-16s %-12d %-12d %-6d %-20s %-16s %-6d %-6d %-6d %-16d", event.Timestamp, event.HostName, event.MountNS, event.PIDNS, event.UserID, event.EventName, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue)
+	} else {
+		fmt.Fprintf(p.out, "%-14f %-16s %-6d %-20s %-16s %-6d %-6d %-6d %-16d", event.Timestamp, event.HostName, event.UserID, event.EventName, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue)
+	}
 	for _, value := range event.Args {
 		fmt.Fprintf(p.out, "%v ", value)
 	}
