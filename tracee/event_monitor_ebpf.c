@@ -67,6 +67,70 @@
 #define ALERT_T       23UL
 #define TYPE_MAX      255UL
 
+#define TAG_NONE           0UL
+#define TAG_FD             1UL
+#define TAG_FILENAME       2UL
+#define TAG_PATHNAME       3UL
+#define TAG_ARGV           4UL
+#define TAG_ENVP           5UL
+#define TAG_DEV            6UL
+#define TAG_INODE          7UL
+#define TAG_DIRFD          8UL
+#define TAG_FLAGS          9UL
+#define TAG_CAP            10UL
+#define TAG_SYSCALL        11UL
+#define TAG_COUNT          12UL
+#define TAG_POS            13UL
+#define TAG_ALERT          14UL
+#define TAG_MODE           15UL
+#define TAG_ADDR           16UL
+#define TAG_LENGTH         17UL
+#define TAG_PROT           18UL
+#define TAG_OFFSET         19UL
+#define TAG_PKEY           20UL
+#define TAG_NAME           21UL
+#define TAG_OLDFD          22UL
+#define TAG_NEWFD          23UL
+#define TAG_DOMAIN         24UL
+#define TAG_TYPE           25UL
+#define TAG_PROTOCOL       26UL
+#define TAG_REQUEST        27UL
+#define TAG_PID            28UL
+#define TAG_SIG            29UL
+#define TAG_SOCKFD         30UL
+#define TAG_BACKLOG        31UL
+#define TAG_OPTION         32UL
+#define TAG_ARG2           33UL
+#define TAG_ARG3           34UL
+#define TAG_ARG4           35UL
+#define TAG_ARG5           36UL
+#define TAG_DATA           37UL
+#define TAG_LOCAL_IOV      38UL
+#define TAG_LIOVCNT        39UL
+#define TAG_REMOTE_IOV     40UL
+#define TAG_RIOVCNT        41UL
+#define TAG_MODULE_IMAGE   42UL
+#define TAG_LEN            43UL
+#define TAG_PARAM_VALUES   44UL
+#define TAG_TARGET         45UL
+#define TAG_NEWDIRFD       46UL
+#define TAG_LINKPATH       47UL
+#define TAG_SOURCE         48UL
+#define TAG_FILESYSTEMTYPE 49UL
+#define TAG_MOUNTFLAGS     50UL
+#define TAG_UID            51UL
+#define TAG_GID            52UL
+#define TAG_FSUID          53UL
+#define TAG_FSGID          54UL
+#define TAG_RUID           55UL
+#define TAG_EUID           56UL
+#define TAG_RGID           57UL
+#define TAG_EGID           58UL
+#define TAG_SUID           59UL
+#define TAG_SGID           60UL
+#define TAG_OWNER          61UL
+#define TAG_GROUP          62UL
+
 #define CONFIG_CONT_MODE        0
 #define CONFIG_SHOW_SYSCALL     1
 #define CONFIG_EXEC_ENV         2
@@ -795,7 +859,7 @@ static __always_inline int save_context_to_buf(buf_t *submit_p, void *ptr)
     return 0;
 }
 
-static __always_inline int save_to_submit_buf(buf_t *submit_p, void *ptr, int size, u8 type)
+static __always_inline int save_to_submit_buf(buf_t *submit_p, void *ptr, int size, u8 type, u8 tag)
 {
 // The biggest element that can be saved with this function should be defined here
 #define MAX_ELEMENT_SIZE sizeof(struct sockaddr_un)
@@ -817,6 +881,15 @@ static __always_inline int save_to_submit_buf(buf_t *submit_p, void *ptr, int si
 
     *off += 1;
 
+    // Save argument tag
+    if (tag != TAG_NONE) {
+        rc = bpf_probe_read(&(submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)]), 1, &tag);
+        if (rc != 0)
+            return 0;
+
+        *off += 1;
+    }
+
     if (*off > MAX_PERCPU_BUFSIZE - MAX_ELEMENT_SIZE)
         // Satisfy validator for probe read
         return 0;
@@ -832,7 +905,7 @@ static __always_inline int save_to_submit_buf(buf_t *submit_p, void *ptr, int si
     return 0;
 }
 
-static __always_inline int save_str_to_buf(buf_t *submit_p, void *ptr)
+static __always_inline int save_str_to_buf(buf_t *submit_p, void *ptr, u8 tag)
 {
     u32* off = get_buf_off(SUBMIT_BUF_IDX);
     if (off == NULL)
@@ -846,6 +919,15 @@ static __always_inline int save_str_to_buf(buf_t *submit_p, void *ptr)
     bpf_probe_read(&(submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)]), 1, &type);
 
     *off += 1;
+
+    // Save argument tag
+    if (tag != TAG_NONE) {
+        int rc = bpf_probe_read(&(submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)]), 1, &tag);
+        if (rc != 0)
+            return 0;
+
+        *off += 1;
+    }
 
     if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int))
         // Satisfy validator for probe read
@@ -862,6 +944,36 @@ static __always_inline int save_str_to_buf(buf_t *submit_p, void *ptr)
         set_buf_off(SUBMIT_BUF_IDX, *off);
         return sz + sizeof(int);
     }
+
+    return 0;
+}
+
+static __always_inline int save_str_arg(buf_t *submit_p, void *ptr)
+{
+    const char *argp = NULL;
+    bpf_probe_read(&argp, sizeof(argp), ptr);
+    if (argp) {
+        return save_str_to_buf(submit_p, (void *)(argp), TAG_NONE);
+    }
+    return 0;
+}
+
+static __always_inline int save_str_arr_to_buf(buf_t *submit_p, const char __user *const __user *ptr, u8 tag)
+{
+    // mark string array start
+    save_to_submit_buf(submit_p, NULL, 0, STR_ARR_T, tag);
+
+    #pragma unroll
+    for (int i = 0; i < MAX_STR_ARR_ELEM; i++) {
+        if (save_str_arg(submit_p, (void *)&ptr[i]) == 0)
+             goto out;
+    }
+    // handle truncated argument list
+    char ellipsis[] = "...";
+    save_str_to_buf(submit_p, (void *)ellipsis, TAG_NONE);
+out:
+    // mark string array end
+    save_to_submit_buf(submit_p, NULL, 0, STR_ARR_T, TAG_NONE);
 
     return 0;
 }
@@ -947,36 +1059,6 @@ static __always_inline int events_perf_submit(struct pt_regs *ctx)
     return events.perf_submit(ctx, data, size);
 }
 
-static __always_inline int save_argv(buf_t *submit_p, void *ptr)
-{
-    const char *argp = NULL;
-    bpf_probe_read(&argp, sizeof(argp), ptr);
-    if (argp) {
-        return save_str_to_buf(submit_p, (void *)(argp));
-    }
-    return 0;
-}
-
-static __always_inline int save_str_arr_to_buf(buf_t *submit_p, const char __user *const __user *ptr)
-{
-    // mark string array start
-    save_to_submit_buf(submit_p, NULL, 0, STR_ARR_T);
-
-    #pragma unroll
-    for (int i = 0; i < MAX_STR_ARR_ELEM; i++) {
-        if (save_argv(submit_p, (void *)&ptr[i]) == 0)
-             goto out;
-    }
-    // handle truncated argument list
-    char ellipsis[] = "...";
-    save_str_to_buf(submit_p, (void *)ellipsis);
-out:
-    // mark string array end
-    save_to_submit_buf(submit_p, NULL, 0, STR_ARR_T);
-
-    return 0;
-}
-
 static __always_inline int is_container()
 {
     struct task_struct *task;
@@ -1056,6 +1138,15 @@ static __always_inline int del_args(u32 event_id)
 #define ARG_TYPE5(type) ENC_ARG_TYPE(5, type)
 #define DEC_ARG_TYPE(n, enc_type) ((enc_type>>(8*n))&0xFF)
 
+#define ENC_ARG_TAG(n, tag) tag<<(8*n)
+#define ARG_TAG0(tag) ENC_ARG_TYPE(0, tag)
+#define ARG_TAG1(tag) ENC_ARG_TYPE(1, tag)
+#define ARG_TAG2(tag) ENC_ARG_TYPE(2, tag)
+#define ARG_TAG3(tag) ENC_ARG_TYPE(3, tag)
+#define ARG_TAG4(tag) ENC_ARG_TYPE(4, tag)
+#define ARG_TAG5(tag) ENC_ARG_TYPE(5, tag)
+#define DEC_ARG_TAG(n, enc_tag) ((enc_tag>>(8*n))&0xFF)
+
 static __always_inline int get_encoded_arg_num(u64 types)
 {
     unsigned int i, argnum = 0;
@@ -1068,7 +1159,7 @@ static __always_inline int get_encoded_arg_num(u64 types)
     return argnum;
 }
 
-static __always_inline int save_args_to_submit_buf(u64 types, args_t *args)
+static __always_inline int save_args_to_submit_buf(u64 types, u64 tags, args_t *args)
 {
     unsigned int i;
     short family = 0;
@@ -1083,54 +1174,55 @@ static __always_inline int save_args_to_submit_buf(u64 types, args_t *args)
     #pragma unroll
     for(i=0; i<6; i++)
     {
+        u8 tag = DEC_ARG_TAG(i, tags);
         switch (DEC_ARG_TYPE(i, types))
         {
             case NONE_T:
                 break;
             case INT_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), INT_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), INT_T, tag);
                 break;
             case OPEN_FLAGS_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), OPEN_FLAGS_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), OPEN_FLAGS_T, tag);
                 break;
             case UINT_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(unsigned int), UINT_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(unsigned int), UINT_T, tag);
                 break;
             case OFF_T_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(off_t), OFF_T_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(off_t), OFF_T_T, tag);
                 break;
             case DEV_T_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(dev_t), DEV_T_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(dev_t), DEV_T_T, tag);
                 break;
             case MODE_T_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(mode_t), MODE_T_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(mode_t), MODE_T_T, tag);
                 break;
             case LONG_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(long), LONG_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(long), LONG_T, tag);
                 break;
             case ULONG_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(unsigned long), ULONG_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(unsigned long), ULONG_T, tag);
                 break;
             case SIZE_T_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(size_t), SIZE_T_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(size_t), SIZE_T_T, tag);
                 break;
             case POINTER_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(void*), POINTER_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(void*), POINTER_T, tag);
                 break;
             case STR_T:
-                save_str_to_buf(submit_p, (void *)args->args[i]);
+                save_str_to_buf(submit_p, (void *)args->args[i], tag);
                 break;
             case SOCK_DOM_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), SOCK_DOM_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), SOCK_DOM_T, tag);
                 break;
             case SOCK_TYPE_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), SOCK_TYPE_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), SOCK_TYPE_T, tag);
                 break;
             case PROT_FLAGS_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), PROT_FLAGS_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), PROT_FLAGS_T, tag);
                 break;
             case ACCESS_MODE_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), ACCESS_MODE_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), ACCESS_MODE_T, tag);
                 break;
             case SOCKADDR_T:
                 if (args->args[i]) {
@@ -1138,24 +1230,24 @@ static __always_inline int save_args_to_submit_buf(u64 types, args_t *args)
                     switch (family)
                     {
                         case AF_UNIX:
-                            save_to_submit_buf(submit_p, (void*)(args->args[i]), sizeof(struct sockaddr_un), SOCKADDR_T);
+                            save_to_submit_buf(submit_p, (void*)(args->args[i]), sizeof(struct sockaddr_un), SOCKADDR_T, tag);
                             break;
                         case AF_INET:
-                            save_to_submit_buf(submit_p, (void*)(args->args[i]), sizeof(struct sockaddr_in), SOCKADDR_T);
+                            save_to_submit_buf(submit_p, (void*)(args->args[i]), sizeof(struct sockaddr_in), SOCKADDR_T, tag);
                             break;
                         case AF_INET6:
-                            save_to_submit_buf(submit_p, (void*)(args->args[i]), sizeof(struct sockaddr_in6), SOCKADDR_T);
+                            save_to_submit_buf(submit_p, (void*)(args->args[i]), sizeof(struct sockaddr_in6), SOCKADDR_T, tag);
                             break;
                         default:
-                            save_to_submit_buf(submit_p, (void*)&family, sizeof(short), SOCKADDR_T);
+                            save_to_submit_buf(submit_p, (void*)&family, sizeof(short), SOCKADDR_T, tag);
                     }
                 }
                 break;
             case PTRACE_REQ_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), PTRACE_REQ_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), PTRACE_REQ_T, tag);
                 break;
             case PRCTL_OPT_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), PRCTL_OPT_T);
+                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), PRCTL_OPT_T, tag);
                 break;
         }
     }
@@ -1163,7 +1255,7 @@ static __always_inline int save_args_to_submit_buf(u64 types, args_t *args)
     return 0;
 }
 
-static __always_inline int trace_ret_generic(struct pt_regs *ctx, u32 id, u64 types, bool delete_args)
+static __always_inline int trace_ret_generic(struct pt_regs *ctx, u32 id, u64 types, u64 tags, bool delete_args)
 {
     context_t context = {};
     args_t args = {};
@@ -1187,26 +1279,26 @@ static __always_inline int trace_ret_generic(struct pt_regs *ctx, u32 id, u64 ty
     context.argnum = get_encoded_arg_num(types);
     context.retval = PT_REGS_RC(ctx);
     save_context_to_buf(submit_p, (void*)&context);
-    save_args_to_submit_buf(types, &args);
+    save_args_to_submit_buf(types, tags, &args);
 
     events_perf_submit(ctx);
     return 0;
 }
 
-static __always_inline int trace_ret_generic_tail(struct pt_regs *ctx, u32 id, u64 types, u32 tail)
+static __always_inline int trace_ret_generic_tail(struct pt_regs *ctx, u32 id, u64 types, u64 tags, u32 tail)
 {
     bool delete_args = false;
-    trace_ret_generic(ctx, id, types, delete_args);
+    trace_ret_generic(ctx, id, types, tags, delete_args);
     prog_array.call(ctx, tail);
     // If we got here, tail call failed - delete args
     del_args(id);
     return 0;
 }
 
-static __always_inline int trace_ret_generic_fork(struct pt_regs *ctx, u32 id, u64 types)
+static __always_inline int trace_ret_generic_fork(struct pt_regs *ctx, u32 id, u64 types, u64 tags)
 {
     bool delete_args = true;
-    int rc = trace_ret_generic(ctx, id, types, delete_args);
+    int rc = trace_ret_generic(ctx, id, types, tags, delete_args);
 
     if (!rc && !get_config(CONFIG_CONT_MODE)) {
         u32 pid = PT_REGS_RC(ctx);
@@ -1232,26 +1324,26 @@ int trace_##name(struct pt_regs *ctx)                                   \
     return save_args(ctx, id, false);                                   \
 }
 
-#define TRACE_RET_FUNC(name, id, types)                                 \
+#define TRACE_RET_FUNC(name, id, types, tags)                           \
 int trace_ret_##name(struct pt_regs *ctx)                               \
 {                                                                       \
     bool delete_args = true;                                            \
-    return trace_ret_generic(ctx, id, types, delete_args);              \
+    return trace_ret_generic(ctx, id, types, tags, delete_args);        \
 }
 
-#define TRACE_RET_FUNC_WITH_TAIL(name, id, types, tail)                 \
+#define TRACE_RET_FUNC_WITH_TAIL(name, id, types, tags, tail)           \
 int trace_ret_##name(struct pt_regs *ctx)                               \
 {                                                                       \
-    return trace_ret_generic_tail(ctx, id, types, tail);                \
+    return trace_ret_generic_tail(ctx, id, types, tags, tail);          \
 }
 
 #define TRACE_RET_SYSCALL TRACE_RET_FUNC
 #define TRACE_RET_SYSCALL_WITH_TAIL TRACE_RET_FUNC_WITH_TAIL
 
-#define TRACE_RET_FORK_SYSCALL(name, id, types)                         \
+#define TRACE_RET_FORK_SYSCALL(name, id, types, tags)                   \
 int trace_ret_##name(struct pt_regs *ctx)                               \
 {                                                                       \
-    return trace_ret_generic_fork(ctx, id, types);                      \
+    return trace_ret_generic_fork(ctx, id, types, tags);                \
 }
 
 /*============================== SYSCALL HOOKS ==============================*/
@@ -1259,126 +1351,240 @@ int trace_ret_##name(struct pt_regs *ctx)                               \
 // Note: race condition may occur if a malicious user changes memory content pointed by syscall arguments by concurrent threads!
 // Consider using inner kernel functions (e.g. security_file_open) to avoid this
 TRACE_ENT_SYSCALL(open, SYS_OPEN);
-TRACE_RET_SYSCALL(open, SYS_OPEN, ARG_TYPE0(STR_T)|ARG_TYPE1(OPEN_FLAGS_T));
+TRACE_RET_SYSCALL(open, SYS_OPEN,
+                  ARG_TYPE0(STR_T)|ARG_TYPE1(OPEN_FLAGS_T),
+                  ARG_TAG0(TAG_PATHNAME)|ARG_TAG1(TAG_FLAGS));
 TRACE_ENT_SYSCALL(openat, SYS_OPENAT);
-TRACE_RET_SYSCALL(openat, SYS_OPENAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(OPEN_FLAGS_T));
+TRACE_RET_SYSCALL(openat, SYS_OPENAT,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(OPEN_FLAGS_T),
+                  ARG_TAG0(TAG_DIRFD)|ARG_TAG1(TAG_PATHNAME)|ARG_TAG2(TAG_FLAGS));
 TRACE_ENT_SYSCALL(creat, SYS_CREAT);
-TRACE_RET_SYSCALL(creat, SYS_CREAT, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
+TRACE_RET_SYSCALL(creat, SYS_CREAT,
+                  ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T),
+                  ARG_TAG0(TAG_PATHNAME)|ARG_TAG1(TAG_MODE));
 TRACE_ENT_SYSCALL(mmap, SYS_MMAP);
-TRACE_RET_SYSCALL(mmap, SYS_MMAP, ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(PROT_FLAGS_T)|ARG_TYPE3(INT_T)|ARG_TYPE4(INT_T)|ARG_TYPE5(OFF_T_T));
+TRACE_RET_SYSCALL(mmap, SYS_MMAP,
+                  ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(PROT_FLAGS_T)|ARG_TYPE3(INT_T)|ARG_TYPE4(INT_T)|ARG_TYPE5(OFF_T_T),
+                  ARG_TAG0(TAG_ADDR)|ARG_TAG1(TAG_LENGTH)|ARG_TAG2(TAG_PROT)|ARG_TAG3(TAG_FLAGS)|ARG_TAG4(TAG_FD)|ARG_TAG5(TAG_OFFSET));
 TRACE_ENT_SYSCALL(mprotect, SYS_MPROTECT);
-TRACE_RET_SYSCALL(mprotect, SYS_MPROTECT, ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(PROT_FLAGS_T));
+TRACE_RET_SYSCALL(mprotect, SYS_MPROTECT,
+                  ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(PROT_FLAGS_T),
+                  ARG_TAG0(TAG_ADDR)|ARG_TAG1(TAG_LENGTH)|ARG_TAG2(TAG_PROT));
 TRACE_ENT_SYSCALL(pkey_mprotect, SYS_PKEY_MPROTECT);
-TRACE_RET_SYSCALL(pkey_mprotect, SYS_PKEY_MPROTECT, ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(PROT_FLAGS_T)|ARG_TYPE3(INT_T));
+TRACE_RET_SYSCALL(pkey_mprotect, SYS_PKEY_MPROTECT,
+                  ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(PROT_FLAGS_T)|ARG_TYPE3(INT_T),
+                  ARG_TAG0(TAG_ADDR)|ARG_TAG1(TAG_LENGTH)|ARG_TAG2(TAG_PROT)|ARG_TAG3(TAG_PKEY));
 TRACE_ENT_SYSCALL(mknod, SYS_MKNOD);
-TRACE_RET_SYSCALL(mknod, SYS_MKNOD, ARG_TYPE0(STR_T)|ARG_TYPE1(MODE_T_T)|ARG_TYPE2(DEV_T_T));
+TRACE_RET_SYSCALL(mknod, SYS_MKNOD,
+                  ARG_TYPE0(STR_T)|ARG_TYPE1(MODE_T_T)|ARG_TYPE2(DEV_T_T),
+                  ARG_TAG0(TAG_PATHNAME)|ARG_TAG1(TAG_MODE)|ARG_TAG2(TAG_DEV));
 TRACE_ENT_SYSCALL(mknodat, SYS_MKNODAT);
-TRACE_RET_SYSCALL(mknodat, SYS_MKNODAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(MODE_T_T)|ARG_TYPE3(DEV_T_T));
+TRACE_RET_SYSCALL(mknodat, SYS_MKNODAT,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(MODE_T_T)|ARG_TYPE3(DEV_T_T),
+                  ARG_TAG0(TAG_DIRFD)|ARG_TAG1(TAG_PATHNAME)|ARG_TAG2(TAG_MODE)|ARG_TAG3(TAG_DEV));
 TRACE_ENT_SYSCALL(memfd_create, SYS_MEMFD_CREATE);
-TRACE_RET_SYSCALL(memfd_create, SYS_MEMFD_CREATE, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
+TRACE_RET_SYSCALL(memfd_create, SYS_MEMFD_CREATE,
+                  ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T),
+                  ARG_TAG0(TAG_NAME)|ARG_TAG1(TAG_FLAGS));
 TRACE_ENT_SYSCALL(dup, SYS_DUP);
-TRACE_RET_SYSCALL(dup, SYS_DUP, ARG_TYPE0(INT_T));
+TRACE_RET_SYSCALL(dup, SYS_DUP,
+                  ARG_TYPE0(INT_T),
+                  ARG_TAG0(TAG_OLDFD));
 TRACE_ENT_SYSCALL(dup2, SYS_DUP2);
-TRACE_RET_SYSCALL(dup2, SYS_DUP2, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T));
+TRACE_RET_SYSCALL(dup2, SYS_DUP2,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T),
+                  ARG_TAG0(TAG_OLDFD)|ARG_TAG1(TAG_NEWFD));
 TRACE_ENT_SYSCALL(dup3, SYS_DUP3);
-TRACE_RET_SYSCALL(dup3, SYS_DUP3, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(INT_T));
+TRACE_RET_SYSCALL(dup3, SYS_DUP3,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(INT_T),
+                  ARG_TAG0(TAG_OLDFD)|ARG_TAG1(TAG_NEWFD)|ARG_TAG2(TAG_FLAGS));
 TRACE_ENT_SYSCALL(newstat, SYS_STAT);
-TRACE_RET_SYSCALL(newstat, SYS_STAT, ARG_TYPE0(STR_T));
+TRACE_RET_SYSCALL(newstat, SYS_STAT,
+                  ARG_TYPE0(STR_T),
+                  ARG_TAG0(TAG_PATHNAME));
 TRACE_ENT_SYSCALL(newlstat, SYS_LSTAT);
-TRACE_RET_SYSCALL(newlstat, SYS_LSTAT, ARG_TYPE0(STR_T));
+TRACE_RET_SYSCALL(newlstat, SYS_LSTAT,
+                  ARG_TYPE0(STR_T),
+                  ARG_TAG0(TAG_PATHNAME));
 TRACE_ENT_SYSCALL(newfstat, SYS_FSTAT);
-TRACE_RET_SYSCALL(newfstat, SYS_FSTAT, ARG_TYPE0(INT_T));
+TRACE_RET_SYSCALL(newfstat, SYS_FSTAT,
+                  ARG_TYPE0(INT_T),
+                  ARG_TAG0(TAG_FD));
 TRACE_ENT_SYSCALL(socket, SYS_SOCKET);
-TRACE_RET_SYSCALL(socket, SYS_SOCKET, ARG_TYPE0(SOCK_DOM_T)|ARG_TYPE1(SOCK_TYPE_T)|ARG_TYPE2(INT_T));
+TRACE_RET_SYSCALL(socket, SYS_SOCKET,
+                  ARG_TYPE0(SOCK_DOM_T)|ARG_TYPE1(SOCK_TYPE_T)|ARG_TYPE2(INT_T),
+                  ARG_TAG0(TAG_DOMAIN)|ARG_TAG1(TAG_TYPE)|ARG_TAG2(TAG_PROTOCOL));
 TRACE_ENT_SYSCALL(close, SYS_CLOSE);
-TRACE_RET_SYSCALL(close, SYS_CLOSE, ARG_TYPE0(INT_T));
+TRACE_RET_SYSCALL(close, SYS_CLOSE,
+                  ARG_TYPE0(INT_T),
+                  ARG_TAG0(TAG_FD));
 TRACE_ENT_SYSCALL(ioctl, SYS_IOCTL);
-TRACE_RET_SYSCALL(ioctl, SYS_IOCTL, ARG_TYPE0(INT_T)|ARG_TYPE1(ULONG_T));
+TRACE_RET_SYSCALL(ioctl, SYS_IOCTL,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(ULONG_T),
+                  ARG_TAG0(TAG_FD)|ARG_TAG1(TAG_REQUEST));
 TRACE_ENT_SYSCALL(access, SYS_ACCESS);
-TRACE_RET_SYSCALL(access, SYS_ACCESS, ARG_TYPE0(STR_T)|ARG_TYPE1(ACCESS_MODE_T));
+TRACE_RET_SYSCALL(access, SYS_ACCESS,
+                  ARG_TYPE0(STR_T)|ARG_TYPE1(ACCESS_MODE_T),
+                  ARG_TAG0(TAG_PATHNAME)|ARG_TAG1(TAG_MODE));
 TRACE_ENT_SYSCALL(faccessat, SYS_FACCESSAT);
-TRACE_RET_SYSCALL(faccessat, SYS_FACCESSAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(ACCESS_MODE_T)|ARG_TYPE3(INT_T));
+TRACE_RET_SYSCALL(faccessat, SYS_FACCESSAT,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(ACCESS_MODE_T)|ARG_TYPE3(INT_T),
+                  ARG_TAG0(TAG_DIRFD)|ARG_TAG1(TAG_PATHNAME)|ARG_TAG2(TAG_MODE)|ARG_TAG3(TAG_FLAGS));
 TRACE_ENT_SYSCALL(kill, SYS_KILL);
-TRACE_RET_SYSCALL(kill, SYS_KILL, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T));
+TRACE_RET_SYSCALL(kill, SYS_KILL,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T),
+                  ARG_TAG0(TAG_PID)|ARG_TAG1(TAG_SIG));
 TRACE_ENT_SYSCALL(listen, SYS_LISTEN);
-TRACE_RET_SYSCALL(listen, SYS_LISTEN, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T));
+TRACE_RET_SYSCALL(listen, SYS_LISTEN,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T),
+                  ARG_TAG0(TAG_SOCKFD)|ARG_TAG1(TAG_BACKLOG));
 TRACE_ENT_SYSCALL(connect, SYS_CONNECT);
-TRACE_RET_SYSCALL(connect, SYS_CONNECT, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
+TRACE_RET_SYSCALL(connect, SYS_CONNECT,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T),
+                  ARG_TAG0(TAG_SOCKFD)|ARG_TAG1(TAG_ADDR));
 TRACE_ENT_SYSCALL(accept, SYS_ACCEPT);
-TRACE_RET_SYSCALL(accept, SYS_ACCEPT, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
+TRACE_RET_SYSCALL(accept, SYS_ACCEPT,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T),
+                  ARG_TAG0(TAG_SOCKFD)|ARG_TAG1(TAG_ADDR));
 TRACE_ENT_SYSCALL(accept4, SYS_ACCEPT4);
-TRACE_RET_SYSCALL(accept4, SYS_ACCEPT4, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
+TRACE_RET_SYSCALL(accept4, SYS_ACCEPT4,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T),
+                  ARG_TAG0(TAG_SOCKFD)|ARG_TAG1(TAG_ADDR));
 TRACE_ENT_SYSCALL(bind, SYS_BIND);
-TRACE_RET_SYSCALL(bind, SYS_BIND, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
+TRACE_RET_SYSCALL(bind, SYS_BIND,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T),
+                  ARG_TAG0(TAG_SOCKFD)|ARG_TAG1(TAG_ADDR));
 TRACE_ENT_SYSCALL(getsockname, SYS_GETSOCKNAME);
-TRACE_RET_SYSCALL(getsockname, SYS_GETSOCKNAME, ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T));
+TRACE_RET_SYSCALL(getsockname, SYS_GETSOCKNAME,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(SOCKADDR_T),
+                  ARG_TAG0(TAG_SOCKFD)|ARG_TAG1(TAG_ADDR));
 TRACE_ENT_SYSCALL(prctl, SYS_PRCTL);
-TRACE_RET_SYSCALL(prctl, SYS_PRCTL, ARG_TYPE0(PRCTL_OPT_T)|ARG_TYPE1(ULONG_T)|ARG_TYPE2(ULONG_T)|ARG_TYPE3(ULONG_T)|ARG_TYPE4(ULONG_T));
+TRACE_RET_SYSCALL(prctl, SYS_PRCTL,
+                  ARG_TYPE0(PRCTL_OPT_T)|ARG_TYPE1(ULONG_T)|ARG_TYPE2(ULONG_T)|ARG_TYPE3(ULONG_T)|ARG_TYPE4(ULONG_T),
+                  ARG_TAG0(TAG_OPTION)|ARG_TAG1(TAG_ARG2)|ARG_TAG2(TAG_ARG3)|ARG_TAG3(TAG_ARG4)|ARG_TAG4(TAG_ARG5));
 TRACE_ENT_SYSCALL(ptrace, SYS_PTRACE);
-TRACE_RET_SYSCALL(ptrace, SYS_PTRACE, ARG_TYPE0(PTRACE_REQ_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(POINTER_T)|ARG_TYPE3(POINTER_T));
+TRACE_RET_SYSCALL(ptrace, SYS_PTRACE,
+                  ARG_TYPE0(PTRACE_REQ_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(POINTER_T)|ARG_TYPE3(POINTER_T),
+                  ARG_TAG0(TAG_REQUEST)|ARG_TAG1(TAG_PID)|ARG_TAG2(TAG_ADDR)|ARG_TAG3(TAG_DATA));
 TRACE_ENT_SYSCALL(process_vm_writev, SYS_PROCESS_VM_WRITEV);
-TRACE_RET_SYSCALL(process_vm_writev, SYS_PROCESS_VM_WRITEV, ARG_TYPE0(INT_T)|ARG_TYPE1(POINTER_T)|ARG_TYPE2(ULONG_T)|ARG_TYPE3(POINTER_T)|ARG_TYPE4(ULONG_T)|ARG_TYPE5(ULONG_T));
+TRACE_RET_SYSCALL(process_vm_writev, SYS_PROCESS_VM_WRITEV,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(POINTER_T)|ARG_TYPE2(ULONG_T)|ARG_TYPE3(POINTER_T)|ARG_TYPE4(ULONG_T)|ARG_TYPE5(ULONG_T),
+                  ARG_TAG0(TAG_PID)|ARG_TAG1(TAG_LOCAL_IOV)|ARG_TAG2(TAG_LIOVCNT)|ARG_TAG3(TAG_REMOTE_IOV)|ARG_TAG4(TAG_RIOVCNT)|ARG_TAG5(TAG_FLAGS));
 TRACE_ENT_SYSCALL(process_vm_readv, SYS_PROCESS_VM_READV);
-TRACE_RET_SYSCALL(process_vm_readv, SYS_PROCESS_VM_READV, ARG_TYPE0(INT_T)|ARG_TYPE1(POINTER_T)|ARG_TYPE2(ULONG_T)|ARG_TYPE3(POINTER_T)|ARG_TYPE4(ULONG_T)|ARG_TYPE5(ULONG_T));
+TRACE_RET_SYSCALL(process_vm_readv, SYS_PROCESS_VM_READV,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(POINTER_T)|ARG_TYPE2(ULONG_T)|ARG_TYPE3(POINTER_T)|ARG_TYPE4(ULONG_T)|ARG_TYPE5(ULONG_T),
+                  ARG_TAG0(TAG_PID)|ARG_TAG1(TAG_LOCAL_IOV)|ARG_TAG2(TAG_LIOVCNT)|ARG_TAG3(TAG_REMOTE_IOV)|ARG_TAG4(TAG_RIOVCNT)|ARG_TAG5(TAG_FLAGS));
 TRACE_ENT_SYSCALL(init_module, SYS_INIT_MODULE);
-TRACE_RET_SYSCALL(init_module, SYS_INIT_MODULE, ARG_TYPE0(POINTER_T)|ARG_TYPE1(ULONG_T)|ARG_TYPE2(STR_T));
+TRACE_RET_SYSCALL(init_module, SYS_INIT_MODULE,
+                  ARG_TYPE0(POINTER_T)|ARG_TYPE1(ULONG_T)|ARG_TYPE2(STR_T),
+                  ARG_TAG0(TAG_MODULE_IMAGE)|ARG_TAG1(TAG_LEN)|ARG_TAG2(TAG_PARAM_VALUES));
 TRACE_ENT_SYSCALL(finit_module, SYS_FINIT_MODULE);
-TRACE_RET_SYSCALL(finit_module, SYS_FINIT_MODULE, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T));
+TRACE_RET_SYSCALL(finit_module, SYS_FINIT_MODULE,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T),
+                  ARG_TAG0(TAG_FD)|ARG_TAG1(TAG_PARAM_VALUES)|ARG_TAG2(TAG_FLAGS));
 TRACE_ENT_SYSCALL(delete_module, SYS_DELETE_MODULE);
-TRACE_RET_SYSCALL(delete_module, SYS_DELETE_MODULE, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T));
+TRACE_RET_SYSCALL(delete_module, SYS_DELETE_MODULE,
+                  ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T),
+                  ARG_TAG0(TAG_NAME)|ARG_TAG1(TAG_FLAGS));
 TRACE_ENT_SYSCALL(symlink, SYS_SYMLINK);
-TRACE_RET_SYSCALL(symlink, SYS_SYMLINK, ARG_TYPE0(STR_T)|ARG_TYPE1(STR_T));
+TRACE_RET_SYSCALL(symlink, SYS_SYMLINK,
+                  ARG_TYPE0(STR_T)|ARG_TYPE1(STR_T),
+                  ARG_TAG0(TAG_TARGET)|ARG_TAG1(TAG_LINKPATH));
 TRACE_ENT_SYSCALL(symlinkat, SYS_SYMLINKAT);
-TRACE_RET_SYSCALL(symlinkat, SYS_SYMLINKAT, ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(STR_T));
+TRACE_RET_SYSCALL(symlinkat, SYS_SYMLINKAT,
+                  ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(STR_T),
+                  ARG_TAG0(TAG_TARGET)|ARG_TAG1(TAG_NEWDIRFD)|ARG_TAG2(TAG_LINKPATH));
 TRACE_ENT_SYSCALL(getdents, SYS_GETDENTS);
-TRACE_RET_SYSCALL(getdents, SYS_GETDENTS, ARG_TYPE0(INT_T));
+TRACE_RET_SYSCALL(getdents, SYS_GETDENTS,
+                  ARG_TYPE0(INT_T),
+                  ARG_TAG0(TAG_FD));
 TRACE_ENT_SYSCALL(getdents64, SYS_GETDENTS64);
-TRACE_RET_SYSCALL(getdents64, SYS_GETDENTS64, ARG_TYPE0(INT_T));
+TRACE_RET_SYSCALL(getdents64, SYS_GETDENTS64,
+                  ARG_TYPE0(INT_T),
+                  ARG_TAG0(TAG_FD));
 TRACE_ENT_SYSCALL(mount, SYS_MOUNT);
-TRACE_RET_SYSCALL(mount, SYS_MOUNT, ARG_TYPE0(STR_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(STR_T)|ARG_TYPE3(ULONG_T));
+TRACE_RET_SYSCALL(mount, SYS_MOUNT,
+                  ARG_TYPE0(STR_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(STR_T)|ARG_TYPE3(ULONG_T),
+                  ARG_TAG0(TAG_SOURCE)|ARG_TAG1(TAG_TARGET)|ARG_TAG2(TAG_FILESYSTEMTYPE)|ARG_TAG3(TAG_MOUNTFLAGS));
 TRACE_ENT_SYSCALL(umount, SYS_UMOUNT);
-TRACE_RET_SYSCALL(umount, SYS_UMOUNT, ARG_TYPE0(STR_T));
+TRACE_RET_SYSCALL(umount, SYS_UMOUNT,
+                  ARG_TYPE0(STR_T),
+                  ARG_TAG0(TAG_TARGET));
 TRACE_ENT_SYSCALL(unlink, SYS_UNLINK);
-TRACE_RET_SYSCALL(unlink, SYS_UNLINK, ARG_TYPE0(STR_T));
+TRACE_RET_SYSCALL(unlink, SYS_UNLINK,
+                  ARG_TYPE0(STR_T),
+                  ARG_TAG0(TAG_PATHNAME));
 TRACE_ENT_SYSCALL(unlinkat, SYS_UNLINKAT);
-TRACE_RET_SYSCALL(unlinkat, SYS_UNLINKAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T));
+TRACE_RET_SYSCALL(unlinkat, SYS_UNLINKAT,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T),
+                  ARG_TAG0(TAG_DIRFD)|ARG_TAG1(TAG_PATHNAME)|ARG_TAG2(TAG_FLAGS));
 TRACE_ENT_SYSCALL(setuid, SYS_SETUID);
-TRACE_RET_SYSCALL(setuid, SYS_SETUID, ARG_TYPE0(INT_T));
+TRACE_RET_SYSCALL(setuid, SYS_SETUID,
+                  ARG_TYPE0(INT_T),
+                  ARG_TAG0(TAG_UID));
 TRACE_ENT_SYSCALL(setgid, SYS_SETGID);
-TRACE_RET_SYSCALL(setgid, SYS_SETGID, ARG_TYPE0(INT_T));
+TRACE_RET_SYSCALL(setgid, SYS_SETGID,
+                  ARG_TYPE0(INT_T),
+                  ARG_TAG0(TAG_GID));
 TRACE_ENT_SYSCALL(setfsuid, SYS_SETFSUID);
-TRACE_RET_SYSCALL(setfsuid, SYS_SETFSUID, ARG_TYPE0(INT_T));
+TRACE_RET_SYSCALL(setfsuid, SYS_SETFSUID,
+                  ARG_TYPE0(INT_T),
+                  ARG_TAG0(TAG_FSUID));
 TRACE_ENT_SYSCALL(setfsgid, SYS_SETFSGID);
-TRACE_RET_SYSCALL(setfsgid, SYS_SETFSGID, ARG_TYPE0(INT_T));
+TRACE_RET_SYSCALL(setfsgid, SYS_SETFSGID,
+                  ARG_TYPE0(INT_T),
+                  ARG_TAG0(TAG_FSGID));
 TRACE_ENT_SYSCALL(setreuid, SYS_SETREUID);
-TRACE_RET_SYSCALL(setreuid, SYS_SETREUID, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T));
+TRACE_RET_SYSCALL(setreuid, SYS_SETREUID,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T),
+                  ARG_TAG0(TAG_RUID)|ARG_TAG1(TAG_EUID));
 TRACE_ENT_SYSCALL(setregid, SYS_SETREGID);
-TRACE_RET_SYSCALL(setregid, SYS_SETREGID, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T));
+TRACE_RET_SYSCALL(setregid, SYS_SETREGID,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T),
+                  ARG_TAG0(TAG_RGID)|ARG_TAG1(TAG_EGID));
 TRACE_ENT_SYSCALL(setresuid, SYS_SETRESUID);
-TRACE_RET_SYSCALL(setresuid, SYS_SETRESUID, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(INT_T));
+TRACE_RET_SYSCALL(setresuid, SYS_SETRESUID,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(INT_T),
+                  ARG_TAG0(TAG_RUID)|ARG_TAG1(TAG_EUID)|ARG_TAG2(TAG_SUID));
 TRACE_ENT_SYSCALL(setresgid, SYS_SETRESGID);
-TRACE_RET_SYSCALL(setresgid, SYS_SETRESGID, ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(INT_T));
+TRACE_RET_SYSCALL(setresgid, SYS_SETRESGID,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(INT_T),
+                  ARG_TAG0(TAG_RGID)|ARG_TAG1(TAG_EGID)|ARG_TAG2(TAG_SGID));
 TRACE_ENT_SYSCALL(chown, SYS_CHOWN);
-TRACE_RET_SYSCALL(chown, SYS_CHOWN, ARG_TYPE0(STR_T)|ARG_TYPE1(UINT_T)|ARG_TYPE2(UINT_T));
+TRACE_RET_SYSCALL(chown, SYS_CHOWN,
+                  ARG_TYPE0(STR_T)|ARG_TYPE1(UINT_T)|ARG_TYPE2(UINT_T),
+                  ARG_TAG0(TAG_PATHNAME)|ARG_TAG1(TAG_OWNER)|ARG_TAG2(TAG_GROUP));
 TRACE_ENT_SYSCALL(fchown, SYS_FCHOWN);
-TRACE_RET_SYSCALL(fchown, SYS_FCHOWN, ARG_TYPE0(INT_T)|ARG_TYPE1(UINT_T)|ARG_TYPE2(UINT_T));
+TRACE_RET_SYSCALL(fchown, SYS_FCHOWN,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(UINT_T)|ARG_TYPE2(UINT_T),
+                  ARG_TAG0(TAG_FD)|ARG_TAG1(TAG_OWNER)|ARG_TAG2(TAG_GROUP));
 TRACE_ENT_SYSCALL(lchown, SYS_LCHOWN);
-TRACE_RET_SYSCALL(lchown, SYS_LCHOWN, ARG_TYPE0(STR_T)|ARG_TYPE1(UINT_T)|ARG_TYPE2(UINT_T));
+TRACE_RET_SYSCALL(lchown, SYS_LCHOWN,
+                  ARG_TYPE0(STR_T)|ARG_TYPE1(UINT_T)|ARG_TYPE2(UINT_T),
+                  ARG_TAG0(TAG_PATHNAME)|ARG_TAG1(TAG_OWNER)|ARG_TAG2(TAG_GROUP));
 TRACE_ENT_SYSCALL(fchownat, SYS_FCHOWNAT);
-TRACE_RET_SYSCALL(fchownat, SYS_FCHOWNAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(UINT_T)|ARG_TYPE3(UINT_T)|ARG_TYPE4(INT_T));
+TRACE_RET_SYSCALL(fchownat, SYS_FCHOWNAT,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(UINT_T)|ARG_TYPE3(UINT_T)|ARG_TYPE4(INT_T),
+                  ARG_TAG0(TAG_DIRFD)|ARG_TAG1(TAG_PATHNAME)|ARG_TAG2(TAG_OWNER)|ARG_TAG3(TAG_GROUP)|ARG_TAG4(TAG_FLAGS));
 TRACE_ENT_SYSCALL(chmod, SYS_CHMOD);
-TRACE_RET_SYSCALL(chmod, SYS_CHMOD, ARG_TYPE0(STR_T)|ARG_TYPE1(MODE_T_T));
+TRACE_RET_SYSCALL(chmod, SYS_CHMOD,
+                  ARG_TYPE0(STR_T)|ARG_TYPE1(MODE_T_T),
+                  ARG_TAG0(TAG_PATHNAME)|ARG_TAG1(TAG_MODE));
 TRACE_ENT_SYSCALL(fchmod, SYS_FCHMOD);
-TRACE_RET_SYSCALL(fchmod, SYS_FCHMOD, ARG_TYPE0(INT_T)|ARG_TYPE1(MODE_T_T));
+TRACE_RET_SYSCALL(fchmod, SYS_FCHMOD,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(MODE_T_T),
+                  ARG_TAG0(TAG_FD)|ARG_TAG1(TAG_MODE));
 TRACE_ENT_SYSCALL(fchmodat, SYS_FCHMODAT);
-TRACE_RET_SYSCALL(fchmodat, SYS_FCHMODAT, ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(MODE_T_T)|ARG_TYPE3(INT_T));
+TRACE_RET_SYSCALL(fchmodat, SYS_FCHMODAT,
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(MODE_T_T)|ARG_TYPE3(INT_T),
+                  ARG_TAG0(TAG_DIRFD)|ARG_TAG1(TAG_PATHNAME)|ARG_TAG2(TAG_MODE)|ARG_TAG3(TAG_FLAGS));
 
 TRACE_ENT_SYSCALL(fork, SYS_FORK);
-TRACE_RET_FORK_SYSCALL(fork, SYS_FORK, 0);
+TRACE_RET_FORK_SYSCALL(fork, SYS_FORK, 0, 0);
 TRACE_ENT_SYSCALL(vfork, SYS_VFORK);
-TRACE_RET_FORK_SYSCALL(vfork, SYS_VFORK, 0);
+TRACE_RET_FORK_SYSCALL(vfork, SYS_VFORK, 0, 0);
 TRACE_ENT_SYSCALL(clone, SYS_CLONE);
-TRACE_RET_FORK_SYSCALL(clone, SYS_CLONE, 0);
+TRACE_RET_FORK_SYSCALL(clone, SYS_CLONE, 0, 0);
 
 TRACEPOINT_PROBE(raw_syscalls, sys_enter) {
     context_t context = {};
@@ -1398,7 +1604,7 @@ TRACEPOINT_PROBE(raw_syscalls, sys_enter) {
 
     save_context_to_buf(submit_p, (void*)&context);
 
-    save_to_submit_buf(submit_p, (void*)&(args->id), sizeof(int), INT_T);
+    save_to_submit_buf(submit_p, (void*)&(args->id), sizeof(int), INT_T, TAG_SYSCALL);
     events_perf_submit((struct pt_regs *)args);
     
     return 0;
@@ -1436,10 +1642,10 @@ int syscall__execve(struct pt_regs *ctx,
     context.retval = 0;     // assume execve succeeded. if not, a ret event will be sent too
     save_context_to_buf(submit_p, (void*)&context);
 
-    save_str_to_buf(submit_p, (void *)filename);
-    save_str_arr_to_buf(submit_p, __argv);
+    save_str_to_buf(submit_p, (void *)filename, TAG_PATHNAME);
+    save_str_arr_to_buf(submit_p, __argv, TAG_ARGV);
     if (show_env)
-        save_str_arr_to_buf(submit_p, __envp);
+        save_str_arr_to_buf(submit_p, __envp, TAG_ENVP);
 
     events_perf_submit(ctx);
     return 0;
@@ -1505,12 +1711,12 @@ int syscall__execveat(struct pt_regs *ctx,
     context.retval = 0;     // assume execve succeeded. if not, a ret event will be sent too
     save_context_to_buf(submit_p, (void*)&context);
 
-    save_to_submit_buf(submit_p, (void*)&dirfd, sizeof(int), INT_T);
-    save_str_to_buf(submit_p, (void *)pathname);
-    save_str_arr_to_buf(submit_p, __argv);
+    save_to_submit_buf(submit_p, (void*)&dirfd, sizeof(int), INT_T, TAG_DIRFD);
+    save_str_to_buf(submit_p, (void *)pathname, TAG_PATHNAME);
+    save_str_arr_to_buf(submit_p, __argv, TAG_ARGV);
     if (show_env)
-        save_str_arr_to_buf(submit_p, __envp);
-    save_to_submit_buf(submit_p, (void*)&flags, sizeof(int), EXEC_FLAGS_T);
+        save_str_arr_to_buf(submit_p, __envp, TAG_ENVP);
+    save_to_submit_buf(submit_p, (void*)&flags, sizeof(int), EXEC_FLAGS_T, TAG_FLAGS);
 
     events_perf_submit(ctx);
     return 0;
@@ -1601,9 +1807,9 @@ int trace_security_bprm_check(struct pt_regs *ctx, struct linux_binprm *bprm)
     u32 *off = get_buf_off(STRING_BUF_IDX);
     if (off == NULL)
         return -1;
-    save_str_to_buf(submit_p, (void *)&string_p->buf[*off]);
-    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T);
-    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T);
+    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], TAG_PATHNAME);
+    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, TAG_DEV);
+    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, TAG_INODE);
 
     events_perf_submit(ctx);
     return 0;
@@ -1644,10 +1850,10 @@ int trace_security_file_open(struct pt_regs *ctx, struct file *file)
     u32 *off = get_buf_off(STRING_BUF_IDX);
     if (off == NULL)
         return -1;
-    save_str_to_buf(submit_p, (void *)&string_p->buf[*off]);
-    save_to_submit_buf(submit_p, (void*)&file->f_flags, sizeof(int), OPEN_FLAGS_T);
-    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T);
-    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T);
+    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], TAG_PATHNAME);
+    save_to_submit_buf(submit_p, (void*)&file->f_flags, sizeof(int), OPEN_FLAGS_T, TAG_FLAGS);
+    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, TAG_DEV);
+    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, TAG_INODE);
 
     events_perf_submit(ctx);
     return 0;
@@ -1684,10 +1890,10 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
         return 0;
 
     save_context_to_buf(submit_p, (void*)&context);
-    save_to_submit_buf(submit_p, (void*)&cap, sizeof(int), CAP_T);
+    save_to_submit_buf(submit_p, (void*)&cap, sizeof(int), CAP_T, TAG_CAP);
     if (get_config(CONFIG_SHOW_SYSCALL)) {
         struct pt_regs *real_ctx = get_task_pt_regs();
-        save_to_submit_buf(submit_p, (void*)&(real_ctx->orig_ax), sizeof(int), SYSCALL_T);
+        save_to_submit_buf(submit_p, (void*)&(real_ctx->orig_ax), sizeof(int), SYSCALL_T, TAG_SYSCALL);
     }
     events_perf_submit(ctx);
     return 0;
@@ -1903,11 +2109,11 @@ int do_trace_ret_vfs_write(struct pt_regs *ctx)
     context.retval = PT_REGS_RC(ctx);
     save_context_to_buf(submit_p, &context);
 
-    save_str_to_buf(submit_p, (void *)&string_p->buf[*off]);
-    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T);
-    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T);
-    save_to_submit_buf(submit_p, &count, sizeof(size_t), SIZE_T_T);
-    save_to_submit_buf(submit_p, &start_pos, sizeof(off_t), OFF_T_T);
+    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], TAG_PATHNAME);
+    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, TAG_DEV);
+    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, TAG_INODE);
+    save_to_submit_buf(submit_p, &count, sizeof(size_t), SIZE_T_T, TAG_COUNT);
+    save_to_submit_buf(submit_p, &start_pos, sizeof(off_t), OFF_T_T, TAG_POS);
 
     // Submit vfs_write event
     events_perf_submit(ctx);
@@ -1959,7 +2165,7 @@ int trace_mmap_alert(struct pt_regs *ctx)
 
     if ((args.args[2] & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC)) {
         alert_t alert = {.ts = context.ts, .msg = ALERT_MMAP_W_X, .payload = 0};
-        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T);
+        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T, TAG_ALERT);
         events_perf_submit(ctx);
     }
 
@@ -2007,7 +2213,7 @@ int trace_mprotect_alert(struct pt_regs *ctx, struct vm_area_struct *vma, unsign
 
     if ((!(prev_prot & VM_EXEC)) && (reqprot & VM_EXEC)) {
         alert_t alert = {.ts = context.ts, .msg = ALERT_MPROT_X_ADD, .payload = 0};
-        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T);
+        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T, TAG_ALERT);
         events_perf_submit(ctx);
         return 0;
     }
@@ -2015,7 +2221,7 @@ int trace_mprotect_alert(struct pt_regs *ctx, struct vm_area_struct *vma, unsign
     if ((prev_prot & VM_EXEC) && !(prev_prot & VM_WRITE)
         && ((reqprot & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC))) {
         alert_t alert = {.ts = context.ts, .msg = ALERT_MPROT_W_ADD, .payload = 0};
-        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T);
+        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T, TAG_ALERT);
         events_perf_submit(ctx);
         return 0;
     }
@@ -2025,7 +2231,7 @@ int trace_mprotect_alert(struct pt_regs *ctx, struct vm_area_struct *vma, unsign
         alert_t alert = {.ts = context.ts, .msg = ALERT_MPROT_W_REM, .payload = 0 };
         if (get_config(CONFIG_EXTRACT_DYN_CODE)) 
             alert.payload = 1;
-        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T);
+        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T, TAG_ALERT);
         events_perf_submit(ctx);
 
         if (get_config(CONFIG_EXTRACT_DYN_CODE)) {
