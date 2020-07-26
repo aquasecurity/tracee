@@ -383,7 +383,7 @@ func (t Tracee) shouldPrintEvent(e int32) bool {
 	return true
 }
 
-func (t *Tracee) processEvent(ctx *context, args []interface{}) error {
+func (t *Tracee) processEvent(ctx *context, argsTags []uint8, args []interface{}) error {
 	eventName := EventsIDToEvent[ctx.Event_id].Name
 
 	//show event name for raw_syscalls
@@ -473,22 +473,33 @@ func (t *Tracee) processEvents() {
 				t.handleError(err)
 				continue
 			}
+			argsNames := make([]string, ctx.Argnum)
+			argsTags := make([]uint8, ctx.Argnum)
 			args := make([]interface{}, ctx.Argnum)
 			for i := 0; i < int(ctx.Argnum); i++ {
-				args[i], err = readArgFromBuff(dataBuff)
+				argTag, argVal, err := readArgFromBuff(dataBuff)
 				if err != nil {
 					t.handleError(err)
 					continue
 				}
+				argsTags[i] = argTag
+				args[i] = argVal
+				argName, ok := argNames[argTag]
+				if ok {
+				       argsNames[i] = argName
+				} else {
+				       t.handleError(err)
+				       continue
+				}
 			}
-			err = t.processEvent(&ctx, args)
+			err = t.processEvent(&ctx, argsTags, args)
 			if err != nil {
 				t.handleError(err)
 				continue
 			}
 			if t.shouldPrintEvent(ctx.Event_id) {
 				t.stats.eventCounter.Increment()
-				evt, err := newEvent(ctx, args)
+				evt, err := newEvent(ctx, argsNames, args)
 				if err != nil {
 					t.handleError(err)
 					continue
@@ -868,69 +879,74 @@ func readAlertFromBuff(buff io.Reader) (alert, error) {
 	return res, err
 }
 
-func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
+func readArgFromBuff(dataBuff io.Reader) (uint8, interface{}, error) {
 	var err error
 	var res interface{}
+	var argTag uint8
 	at, err := readArgTypeFromBuff(dataBuff)
 	if err != nil {
-		return res, fmt.Errorf("error reading arg type: %v", err)
+		return argTag, res, fmt.Errorf("error reading arg type: %v", err)
+	}
+	argTag, err = readUInt8FromBuff(dataBuff)
+	if err != nil {
+		return argTag, res, fmt.Errorf("error reading arg tag: %v", err)
 	}
 	switch at {
 	case intT:
 		res, err = readInt32FromBuff(dataBuff)
 		if err != nil {
-			return nil, err
+			return argTag, nil, err
 		}
 	case uintT, devT:
 		res, err = readUInt32FromBuff(dataBuff)
 		if err != nil {
-			return nil, err
+			return argTag, nil, err
 		}
 	case longT:
 		res, err = readInt64FromBuff(dataBuff)
 		if err != nil {
-			return nil, err
+			return argTag, nil, err
 		}
 	case ulongT, offT, sizeT:
 		res, err = readUInt64FromBuff(dataBuff)
 		if err != nil {
-			return nil, err
+			return argTag, nil, err
 		}
 	case strT:
 		res, err = readStringFromBuff(dataBuff)
 		if err != nil {
-			return nil, err
+			return argTag, nil, err
 		}
 	case strArrT:
 		var ss []string
 		// assuming there's at least one element in the array
 		et, err := readArgTypeFromBuff(dataBuff)
 		if err != nil {
-			return nil, fmt.Errorf("error reading string array element type: %v", err)
+			return argTag, nil, fmt.Errorf("error reading string array element type: %v", err)
 		}
 		for et != strArrT {
 			s, err := readStringFromBuff(dataBuff)
 			if err != nil {
-				return nil, fmt.Errorf("error reading string element: %v", err)
+				return argTag, nil, fmt.Errorf("error reading string element: %v", err)
 			}
 			ss = append(ss, s)
 
 			et, err = readArgTypeFromBuff(dataBuff)
 			if err != nil {
-				return nil, fmt.Errorf("error reading string array element type: %v", err)
+				return argTag, nil, fmt.Errorf("error reading string array element type: %v", err)
 			}
 		}
 		res = ss
 	case capT:
 		cap, err := readInt32FromBuff(dataBuff)
 		if err != nil {
-			return nil, fmt.Errorf("error reading capability arg: %v", err)
+			return argTag, nil, fmt.Errorf("error reading capability arg: %v", err)
 		}
 		res = PrintCapability(cap)
 	case syscallT:
 		sc, err := readInt32FromBuff(dataBuff)
 		if err != nil {
-			return nil, fmt.Errorf("error reading syscall arg: %v", err)
+			return argTag, nil, fmt.Errorf("error reading syscall arg: %v", err)
 		}
 		res = strconv.Itoa(int(sc))
 		if event, ok := EventsIDToEvent[sc]; ok {
@@ -941,25 +957,25 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 	case modeT:
 		mode, err := readUInt32FromBuff(dataBuff)
 		if err != nil {
-			return nil, err
+			return argTag, nil, err
 		}
 		res = PrintInodeMode(mode)
 	case protFlagsT:
 		prot, err := readUInt32FromBuff(dataBuff)
 		if err != nil {
-			return nil, err
+			return argTag, nil, err
 		}
 		res = PrintMemProt(prot)
 	case pointerT:
 		ptr, err := readUInt64FromBuff(dataBuff)
 		if err != nil {
-			return nil, err
+			return argTag, nil, err
 		}
 		res = fmt.Sprintf("0x%X", ptr)
 	case sockAddrT:
 		sockaddr, err := readSockaddrFromBuff(dataBuff)
 		if err != nil {
-			return nil, err
+			return argTag, nil, err
 		}
 		var s string
 		for key, val := range sockaddr {
@@ -971,54 +987,54 @@ func readArgFromBuff(dataBuff io.Reader) (interface{}, error) {
 	case openFlagsT:
 		flags, err := readUInt32FromBuff(dataBuff)
 		if err != nil {
-			return nil, err
+			return argTag, nil, err
 		}
 		res = PrintOpenFlags(flags)
 	case accessModeT:
 		mode, err := readUInt32FromBuff(dataBuff)
 		if err != nil {
-			return nil, err
+			return argTag, nil, err
 		}
 		res = PrintAccessMode(mode)
 	case execFlagsT:
 		flags, err := readUInt32FromBuff(dataBuff)
 		if err != nil {
-			return nil, err
+			return argTag, nil, err
 		}
 		res = PrintExecFlags(flags)
 	case sockDomT:
 		dom, err := readUInt32FromBuff(dataBuff)
 		if err != nil {
-			return nil, err
+			return argTag, nil, err
 		}
 		res = PrintSocketDomain(dom)
 	case sockTypeT:
 		t, err := readUInt32FromBuff(dataBuff)
 		if err != nil {
-			return nil, err
+			return argTag, nil, err
 		}
 		res = PrintSocketType(t)
 	case prctlOptT:
 		op, err := readInt32FromBuff(dataBuff)
 		if err != nil {
-			return nil, err
+			return argTag, nil, err
 		}
 		res = PrintPrctlOption(op)
 	case ptraceReqT:
 		req, err := readInt32FromBuff(dataBuff)
 		if err != nil {
-			return nil, err
+			return argTag, nil, err
 		}
 		res = PrintPtraceRequest(req)
 	case alertT:
 		alert, err := readAlertFromBuff(dataBuff)
 		if err != nil {
-			return nil, err
+			return argTag, nil, err
 		}
 		res = PrintAlert(alert)
 	default:
 		// if we don't recognize the arg type, we can't parse the rest of the buffer
-		return nil, fmt.Errorf("error unknown arg type %v", at)
+		return argTag, nil, fmt.Errorf("error unknown arg type %v", at)
 	}
-	return res, nil
+	return argTag, res, nil
 }
