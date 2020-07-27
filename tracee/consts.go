@@ -433,7 +433,7 @@ var EventsIDToEvent = map[int32]EventConfig{
 	347: EventConfig{ID: 347, Name: "reserved", Probes: []probe{probe{event: "reserved", attach: sysCall, fn: "reserved"}}, EnabledByDefault: false, EssentialEvent: false},
 	348: EventConfig{ID: 348, Name: "reserved", Probes: []probe{probe{event: "reserved", attach: sysCall, fn: "reserved"}}, EnabledByDefault: false, EssentialEvent: false},
 	349: EventConfig{ID: 349, Name: "reserved", Probes: []probe{probe{event: "reserved", attach: sysCall, fn: "reserved"}}, EnabledByDefault: false, EssentialEvent: false},
-	350: EventConfig{ID: 350, Name: "raw_sysCalls", Probes: []probe{probe{event: "raw_sysCalls:sys_enter", attach: tracepoint, fn: "tracepoint__raw_sysCalls__sys_enter"}}, EnabledByDefault: false, EssentialEvent: false},
+	350: EventConfig{ID: 350, Name: "raw_syscalls", Probes: []probe{probe{event: "raw_syscalls:sys_enter", attach: tracepoint, fn: "tracepoint__raw_syscalls__sys_enter"}}, EnabledByDefault: false, EssentialEvent: false},
 	351: EventConfig{ID: 351, Name: "do_exit", Probes: []probe{probe{event: "do_exit", attach: kprobe, fn: "trace_do_exit"}}, EnabledByDefault: true, EssentialEvent: true},
 	352: EventConfig{ID: 352, Name: "cap_capable", Probes: []probe{probe{event: "cap_capable", attach: kprobe, fn: "trace_cap_capable"}}, EnabledByDefault: true, EssentialEvent: false},
 	353: EventConfig{ID: 353, Name: "security_bprm_check", Probes: []probe{probe{event: "security_bprm_check", attach: kprobe, fn: "trace_security_bprm_check"}}, EnabledByDefault: true, EssentialEvent: false},
