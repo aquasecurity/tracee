@@ -384,10 +384,8 @@ func (t *Tracee) shouldPrintEvent(e int32) bool {
 }
 
 func (t *Tracee) processEvent(ctx *context, argsTags []uint8, args []interface{}) error {
-	eventName := EventsIDToEvent[ctx.Event_id].Name
-
 	//show event name for raw_syscalls
-	if eventName == "raw_syscalls" {
+	if ctx.Event_id == RawSyscallsEventID {
 		if id, isInt32 := args[0].(int32); isInt32 {
 			if event, isKnown := EventsIDToEvent[id]; isKnown {
 				args[0] = event.Probes[0].event
@@ -396,7 +394,7 @@ func (t *Tracee) processEvent(ctx *context, argsTags []uint8, args []interface{}
 	}
 
 	//capture executed files
-	if t.config.CaptureExec && (eventName == "security_bprm_check") {
+	if t.config.CaptureExec && (ctx.Event_id == SecurityBprmCheckEventID) {
 		var err error
 
 		sourceFilePath, ok := args[0].(string)
