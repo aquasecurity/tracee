@@ -383,54 +383,6 @@ func (t *Tracee) shouldPrintEvent(e int32) bool {
 	return true
 }
 
-func (t *Tracee) processEvent(ctx *context, argsTags []uint8, args []interface{}) error {
-	//show event name for raw_syscalls
-	if ctx.Event_id == RawSyscallsEventID {
-		if id, isInt32 := args[0].(int32); isInt32 {
-			if event, isKnown := EventsIDToEvent[id]; isKnown {
-				args[0] = event.Probes[0].event
-			}
-		}
-	}
-
-	//capture executed files
-	if t.config.CaptureExec && (ctx.Event_id == SecurityBprmCheckEventID) {
-		var err error
-
-		sourceFilePath, ok := args[0].(string)
-		if !ok {
-			return fmt.Errorf("error parsing security_bprm_check args")
-		}
-		// path should be absolute, except for e.g memfd_create files
-		if sourceFilePath[0] != '/' {
-			return nil
-		}
-		sourceFileStat, err := os.Stat(sourceFilePath)
-		if err != nil {
-			return err
-		}
-		sourceCtime := sourceFileStat.Sys().(*syscall.Stat_t).Ctim.Nano()
-		lastCtime, ok := t.capturedFiles[sourceFilePath]
-		if ok && lastCtime == sourceCtime {
-			return nil
-		}
-		t.capturedFiles[sourceFilePath] = sourceCtime
-
-		destinationDirPath := filepath.Join(t.config.OutputPath, strconv.Itoa(int(ctx.Mnt_id)))
-		if err := os.MkdirAll(destinationDirPath, 0755); err != nil {
-			return err
-		}
-		destinationFilePath := filepath.Join(destinationDirPath, fmt.Sprintf("exec.%d.%s", ctx.Ts, filepath.Base(sourceFilePath)))
-
-		err = copyFileByPath(sourceFilePath, destinationFilePath)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func copyFileByPath(src, dst string) error {
 	sourceFileStat, err := os.Stat(src)
 	if err != nil {
@@ -461,6 +413,130 @@ func (t *Tracee) handleError(err error) {
 	t.printer.Error(err)
 }
 
+func (t *Tracee) processEvent(ctx *context, args map[uint8]interface{}) error {
+	switch ctx.Event_id {
+	case RawSyscallsEventID, CapCapableEventID:
+		//show syscall name instead of id
+		if id, isInt32 := args[TagSyscall].(int32); isInt32 {
+			if event, isKnown := EventsIDToEvent[id]; isKnown {
+				if event.Probes[0].attach == sysCall {
+					args[TagSyscall] = event.Probes[0].event
+				}
+			}
+		}
+		if ctx.Event_id == CapCapableEventID {
+			if cap, isInt32 := args[TagCap].(int32); isInt32 {
+				args[TagCap] = PrintCapability(cap)
+			}
+		}
+	case MmapEventID, MprotectEventID, PkeyMprotectEventID:
+		if prot, isInt32 := args[TagProt].(int32); isInt32 {
+			args[TagProt] = PrintMemProt(uint32(prot))
+		}
+		if addr, isUint64 := args[TagAddr].(uint64); isUint64 {
+			args[TagAddr] = fmt.Sprintf("0x%X", addr)
+		}
+	case PtraceEventID:
+		if req, isInt32 := args[TagRequest].(int32); isInt32 {
+			args[TagRequest] = PrintPtraceRequest(req)
+		}
+		if addr, isUint64 := args[TagAddr].(uint64); isUint64 {
+			args[TagAddr] = fmt.Sprintf("0x%X", addr)
+		}
+		if addr, isUint64 := args[TagData].(uint64); isUint64 {
+			args[TagData] = fmt.Sprintf("0x%X", addr)
+		}
+	case ProcessVmReadvEventID, ProcessVmWritevEventID:
+		if addr, isUint64 := args[TagLocalIov].(uint64); isUint64 {
+			args[TagLocalIov] = fmt.Sprintf("0x%X", addr)
+		}
+		if addr, isUint64 := args[TagRemoteIov].(uint64); isUint64 {
+			args[TagRemoteIov] = fmt.Sprintf("0x%X", addr)
+		}
+	case InitModuleEventID:
+		if addr, isUint64 := args[TagModuleImage].(uint64); isUint64 {
+			args[TagModuleImage] = fmt.Sprintf("0x%X", addr)
+		}
+	case PrctlEventID:
+		if opt, isInt32 := args[TagOption].(int32); isInt32 {
+			args[TagOption] = PrintPrctlOption(opt)
+		}
+	case SocketEventID:
+		if dom, isInt32 := args[TagDomain].(int32); isInt32 {
+			args[TagDomain] = PrintSocketDomain(uint32(dom))
+		}
+		if typ, isInt32 := args[TagType].(int32); isInt32 {
+			args[TagType] = PrintSocketType(uint32(typ))
+		}
+	case ConnectEventID, AcceptEventID, Accept4EventID, BindEventID, GetsocknameEventID:
+		if sockAddr, isStrMap := args[TagAddr].(map[string]string); isStrMap {
+			var s string
+			for key, val := range sockAddr {
+				s += fmt.Sprintf("'%s': '%s',", key, val)
+			}
+			s = strings.TrimSuffix(s, ",")
+			s = fmt.Sprintf("{%s}", s)
+			args[TagAddr] = s
+		}
+	case AccessEventID, FaccessatEventID:
+		if mode, isInt32 := args[TagMode].(int32); isInt32 {
+			args[TagMode] = PrintAccessMode(uint32(mode))
+		}
+	case ExecveatEventID:
+		if flags, isInt32 := args[TagFlags].(int32); isInt32 {
+			args[TagFlags] = PrintExecFlags(uint32(flags))
+		}
+	case OpenEventID, OpenatEventID, SecurityFileOpenEventID:
+		if flags, isInt32 := args[TagFlags].(int32); isInt32 {
+			args[TagFlags] = PrintOpenFlags(uint32(flags))
+		}
+	case MknodEventID, MknodatEventID, ChmodEventID, FchmodEventID, FchmodatEventID:
+		if mode, isUint32 := args[TagMode].(uint32); isUint32 {
+			args[TagMode] = PrintInodeMode(mode)
+		}
+	case MemProtAlertEventID:
+		if alert, isAlert := args[TagAlert].(alert); isAlert {
+			args[TagAlert] = PrintAlert(alert)
+		}
+	case SecurityBprmCheckEventID:
+		//capture executed files
+		if t.config.CaptureExec {
+			var err error
+			sourceFilePath, ok := args[TagPathname].(string)
+			if !ok {
+				return fmt.Errorf("error parsing security_bprm_check args")
+			}
+			// path should be absolute, except for e.g memfd_create files
+			if sourceFilePath[0] != '/' {
+				return nil
+			}
+			sourceFileStat, err := os.Stat(sourceFilePath)
+			if err != nil {
+				return err
+			}
+			sourceCtime := sourceFileStat.Sys().(*syscall.Stat_t).Ctim.Nano()
+			lastCtime, ok := t.capturedFiles[sourceFilePath]
+			if ok && lastCtime == sourceCtime {
+				return nil
+			}
+			t.capturedFiles[sourceFilePath] = sourceCtime
+
+			destinationDirPath := filepath.Join(t.config.OutputPath, strconv.Itoa(int(ctx.Mnt_id)))
+			if err := os.MkdirAll(destinationDirPath, 0755); err != nil {
+				return err
+			}
+			destinationFilePath := filepath.Join(destinationDirPath, fmt.Sprintf("exec.%d.%s", ctx.Ts, filepath.Base(sourceFilePath)))
+
+			err = copyFileByPath(sourceFilePath, destinationFilePath)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 func (t *Tracee) processEvents() {
 	for {
 		select {
@@ -471,9 +547,9 @@ func (t *Tracee) processEvents() {
 				t.handleError(err)
 				continue
 			}
-			argsNames := make([]string, ctx.Argnum)
+
+			rawArgs := make(map[uint8]interface{})
 			argsTags := make([]uint8, ctx.Argnum)
-			args := make([]interface{}, ctx.Argnum)
 			for i := 0; i < int(ctx.Argnum); i++ {
 				argTag, argVal, err := readArgFromBuff(dataBuff)
 				if err != nil {
@@ -481,21 +557,26 @@ func (t *Tracee) processEvents() {
 					continue
 				}
 				argsTags[i] = argTag
-				args[i] = argVal
-				argName, ok := argNames[argTag]
-				if ok {
-				       argsNames[i] = argName
-				} else {
-				       t.handleError(err)
-				       continue
-				}
+				rawArgs[argTag] = argVal
 			}
-			err = t.processEvent(&ctx, argsTags, args)
+			err = t.processEvent(&ctx, rawArgs)
 			if err != nil {
 				t.handleError(err)
 				continue
 			}
 			if t.shouldPrintEvent(ctx.Event_id) {
+				args := make([]interface{}, ctx.Argnum)
+				argsNames := make([]string, ctx.Argnum)
+				for i, argTag := range argsTags {
+					args[i] = rawArgs[argTag]
+					argName, ok := argNames[argTag]
+					if ok {
+						argsNames[i] = argName
+					} else {
+						t.handleError(err)
+						continue
+					}
+				}
 				t.stats.eventCounter.Increment()
 				evt, err := newEvent(ctx, argsNames, args)
 				if err != nil {
@@ -883,38 +964,27 @@ func readArgFromBuff(dataBuff io.Reader) (uint8, interface{}, error) {
 	var argTag uint8
 	at, err := readArgTypeFromBuff(dataBuff)
 	if err != nil {
-		return argTag, res, fmt.Errorf("error reading arg type: %v", err)
+		return argTag, nil, fmt.Errorf("error reading arg type: %v", err)
 	}
 	argTag, err = readUInt8FromBuff(dataBuff)
 	if err != nil {
-		return argTag, res, fmt.Errorf("error reading arg tag: %v", err)
+		return argTag, nil, fmt.Errorf("error reading arg tag: %v", err)
 	}
 	switch at {
 	case intT:
 		res, err = readInt32FromBuff(dataBuff)
-		if err != nil {
-			return argTag, nil, err
-		}
-	case uintT, devT:
+	case uintT, devT, modeT:
 		res, err = readUInt32FromBuff(dataBuff)
-		if err != nil {
-			return argTag, nil, err
-		}
 	case longT:
 		res, err = readInt64FromBuff(dataBuff)
-		if err != nil {
-			return argTag, nil, err
-		}
-	case ulongT, offT, sizeT:
+	case ulongT, offT, sizeT, pointerT:
 		res, err = readUInt64FromBuff(dataBuff)
-		if err != nil {
-			return argTag, nil, err
-		}
 	case strT:
 		res, err = readStringFromBuff(dataBuff)
-		if err != nil {
-			return argTag, nil, err
-		}
+	case sockAddrT:
+		res, err = readSockaddrFromBuff(dataBuff)
+	case alertT:
+		res, err = readAlertFromBuff(dataBuff)
 	case strArrT:
 		var ss []string
 		// assuming there's at least one element in the array
@@ -935,104 +1005,12 @@ func readArgFromBuff(dataBuff io.Reader) (uint8, interface{}, error) {
 			}
 		}
 		res = ss
-	case capT:
-		cap, err := readInt32FromBuff(dataBuff)
-		if err != nil {
-			return argTag, nil, fmt.Errorf("error reading capability arg: %v", err)
-		}
-		res = PrintCapability(cap)
-	case syscallT:
-		sc, err := readInt32FromBuff(dataBuff)
-		if err != nil {
-			return argTag, nil, fmt.Errorf("error reading syscall arg: %v", err)
-		}
-		res = strconv.Itoa(int(sc))
-		if event, ok := EventsIDToEvent[sc]; ok {
-			if event.Probes[0].attach == sysCall {
-				res = event.Probes[0].event
-			}
-		}
-	case modeT:
-		mode, err := readUInt32FromBuff(dataBuff)
-		if err != nil {
-			return argTag, nil, err
-		}
-		res = PrintInodeMode(mode)
-	case protFlagsT:
-		prot, err := readUInt32FromBuff(dataBuff)
-		if err != nil {
-			return argTag, nil, err
-		}
-		res = PrintMemProt(prot)
-	case pointerT:
-		ptr, err := readUInt64FromBuff(dataBuff)
-		if err != nil {
-			return argTag, nil, err
-		}
-		res = fmt.Sprintf("0x%X", ptr)
-	case sockAddrT:
-		sockaddr, err := readSockaddrFromBuff(dataBuff)
-		if err != nil {
-			return argTag, nil, err
-		}
-		var s string
-		for key, val := range sockaddr {
-			s += fmt.Sprintf("'%s': '%s',", key, val)
-		}
-		s = strings.TrimSuffix(s, ",")
-		s = fmt.Sprintf("{%s}", s)
-		res = s
-	case openFlagsT:
-		flags, err := readUInt32FromBuff(dataBuff)
-		if err != nil {
-			return argTag, nil, err
-		}
-		res = PrintOpenFlags(flags)
-	case accessModeT:
-		mode, err := readUInt32FromBuff(dataBuff)
-		if err != nil {
-			return argTag, nil, err
-		}
-		res = PrintAccessMode(mode)
-	case execFlagsT:
-		flags, err := readUInt32FromBuff(dataBuff)
-		if err != nil {
-			return argTag, nil, err
-		}
-		res = PrintExecFlags(flags)
-	case sockDomT:
-		dom, err := readUInt32FromBuff(dataBuff)
-		if err != nil {
-			return argTag, nil, err
-		}
-		res = PrintSocketDomain(dom)
-	case sockTypeT:
-		t, err := readUInt32FromBuff(dataBuff)
-		if err != nil {
-			return argTag, nil, err
-		}
-		res = PrintSocketType(t)
-	case prctlOptT:
-		op, err := readInt32FromBuff(dataBuff)
-		if err != nil {
-			return argTag, nil, err
-		}
-		res = PrintPrctlOption(op)
-	case ptraceReqT:
-		req, err := readInt32FromBuff(dataBuff)
-		if err != nil {
-			return argTag, nil, err
-		}
-		res = PrintPtraceRequest(req)
-	case alertT:
-		alert, err := readAlertFromBuff(dataBuff)
-		if err != nil {
-			return argTag, nil, err
-		}
-		res = PrintAlert(alert)
 	default:
 		// if we don't recognize the arg type, we can't parse the rest of the buffer
 		return argTag, nil, fmt.Errorf("error unknown arg type %v", at)
+	}
+	if err != nil {
+		return argTag, nil, err
 	}
 	return argTag, res, nil
 }

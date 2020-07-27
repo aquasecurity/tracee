@@ -54,17 +54,7 @@
 #define STR_T         10UL
 #define STR_ARR_T     11UL
 #define SOCKADDR_T    12UL
-#define OPEN_FLAGS_T  13UL
-#define EXEC_FLAGS_T  14UL
-#define SOCK_DOM_T    15UL
-#define SOCK_TYPE_T   16UL
-#define CAP_T         17UL
-#define SYSCALL_T     18UL
-#define PROT_FLAGS_T  19UL
-#define ACCESS_MODE_T 20UL
-#define PTRACE_REQ_T  21UL
-#define PRCTL_OPT_T   22UL
-#define ALERT_T       23UL
+#define ALERT_T       13UL
 #define TYPE_MAX      255UL
 
 #define TAG_NONE           0UL
@@ -1182,9 +1172,6 @@ static __always_inline int save_args_to_submit_buf(u64 types, u64 tags, args_t *
             case INT_T:
                 save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), INT_T, tag);
                 break;
-            case OPEN_FLAGS_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), OPEN_FLAGS_T, tag);
-                break;
             case UINT_T:
                 save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(unsigned int), UINT_T, tag);
                 break;
@@ -1212,18 +1199,6 @@ static __always_inline int save_args_to_submit_buf(u64 types, u64 tags, args_t *
             case STR_T:
                 save_str_to_buf(submit_p, (void *)args->args[i], tag);
                 break;
-            case SOCK_DOM_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), SOCK_DOM_T, tag);
-                break;
-            case SOCK_TYPE_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), SOCK_TYPE_T, tag);
-                break;
-            case PROT_FLAGS_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), PROT_FLAGS_T, tag);
-                break;
-            case ACCESS_MODE_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), ACCESS_MODE_T, tag);
-                break;
             case SOCKADDR_T:
                 if (args->args[i]) {
                     bpf_probe_read(&family, sizeof(short), (void*)args->args[i]);
@@ -1242,12 +1217,6 @@ static __always_inline int save_args_to_submit_buf(u64 types, u64 tags, args_t *
                             save_to_submit_buf(submit_p, (void*)&family, sizeof(short), SOCKADDR_T, tag);
                     }
                 }
-                break;
-            case PTRACE_REQ_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), PTRACE_REQ_T, tag);
-                break;
-            case PRCTL_OPT_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), PRCTL_OPT_T, tag);
                 break;
         }
     }
@@ -1352,11 +1321,11 @@ int trace_ret_##name(struct pt_regs *ctx)                               \
 // Consider using inner kernel functions (e.g. security_file_open) to avoid this
 TRACE_ENT_SYSCALL(open, SYS_OPEN);
 TRACE_RET_SYSCALL(open, SYS_OPEN,
-                  ARG_TYPE0(STR_T)|ARG_TYPE1(OPEN_FLAGS_T),
+                  ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T),
                   ARG_TAG0(TAG_PATHNAME)|ARG_TAG1(TAG_FLAGS));
 TRACE_ENT_SYSCALL(openat, SYS_OPENAT);
 TRACE_RET_SYSCALL(openat, SYS_OPENAT,
-                  ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(OPEN_FLAGS_T),
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T),
                   ARG_TAG0(TAG_DIRFD)|ARG_TAG1(TAG_PATHNAME)|ARG_TAG2(TAG_FLAGS));
 TRACE_ENT_SYSCALL(creat, SYS_CREAT);
 TRACE_RET_SYSCALL(creat, SYS_CREAT,
@@ -1364,15 +1333,15 @@ TRACE_RET_SYSCALL(creat, SYS_CREAT,
                   ARG_TAG0(TAG_PATHNAME)|ARG_TAG1(TAG_MODE));
 TRACE_ENT_SYSCALL(mmap, SYS_MMAP);
 TRACE_RET_SYSCALL(mmap, SYS_MMAP,
-                  ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(PROT_FLAGS_T)|ARG_TYPE3(INT_T)|ARG_TYPE4(INT_T)|ARG_TYPE5(OFF_T_T),
+                  ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(INT_T)|ARG_TYPE3(INT_T)|ARG_TYPE4(INT_T)|ARG_TYPE5(OFF_T_T),
                   ARG_TAG0(TAG_ADDR)|ARG_TAG1(TAG_LENGTH)|ARG_TAG2(TAG_PROT)|ARG_TAG3(TAG_FLAGS)|ARG_TAG4(TAG_FD)|ARG_TAG5(TAG_OFFSET));
 TRACE_ENT_SYSCALL(mprotect, SYS_MPROTECT);
 TRACE_RET_SYSCALL(mprotect, SYS_MPROTECT,
-                  ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(PROT_FLAGS_T),
+                  ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(INT_T),
                   ARG_TAG0(TAG_ADDR)|ARG_TAG1(TAG_LENGTH)|ARG_TAG2(TAG_PROT));
 TRACE_ENT_SYSCALL(pkey_mprotect, SYS_PKEY_MPROTECT);
 TRACE_RET_SYSCALL(pkey_mprotect, SYS_PKEY_MPROTECT,
-                  ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(PROT_FLAGS_T)|ARG_TYPE3(INT_T),
+                  ARG_TYPE0(POINTER_T)|ARG_TYPE1(SIZE_T_T)|ARG_TYPE2(INT_T)|ARG_TYPE3(INT_T),
                   ARG_TAG0(TAG_ADDR)|ARG_TAG1(TAG_LENGTH)|ARG_TAG2(TAG_PROT)|ARG_TAG3(TAG_PKEY));
 TRACE_ENT_SYSCALL(mknod, SYS_MKNOD);
 TRACE_RET_SYSCALL(mknod, SYS_MKNOD,
@@ -1412,7 +1381,7 @@ TRACE_RET_SYSCALL(newfstat, SYS_FSTAT,
                   ARG_TAG0(TAG_FD));
 TRACE_ENT_SYSCALL(socket, SYS_SOCKET);
 TRACE_RET_SYSCALL(socket, SYS_SOCKET,
-                  ARG_TYPE0(SOCK_DOM_T)|ARG_TYPE1(SOCK_TYPE_T)|ARG_TYPE2(INT_T),
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(INT_T),
                   ARG_TAG0(TAG_DOMAIN)|ARG_TAG1(TAG_TYPE)|ARG_TAG2(TAG_PROTOCOL));
 TRACE_ENT_SYSCALL(close, SYS_CLOSE);
 TRACE_RET_SYSCALL(close, SYS_CLOSE,
@@ -1424,11 +1393,11 @@ TRACE_RET_SYSCALL(ioctl, SYS_IOCTL,
                   ARG_TAG0(TAG_FD)|ARG_TAG1(TAG_REQUEST));
 TRACE_ENT_SYSCALL(access, SYS_ACCESS);
 TRACE_RET_SYSCALL(access, SYS_ACCESS,
-                  ARG_TYPE0(STR_T)|ARG_TYPE1(ACCESS_MODE_T),
+                  ARG_TYPE0(STR_T)|ARG_TYPE1(INT_T),
                   ARG_TAG0(TAG_PATHNAME)|ARG_TAG1(TAG_MODE));
 TRACE_ENT_SYSCALL(faccessat, SYS_FACCESSAT);
 TRACE_RET_SYSCALL(faccessat, SYS_FACCESSAT,
-                  ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(ACCESS_MODE_T)|ARG_TYPE3(INT_T),
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(STR_T)|ARG_TYPE2(INT_T)|ARG_TYPE3(INT_T),
                   ARG_TAG0(TAG_DIRFD)|ARG_TAG1(TAG_PATHNAME)|ARG_TAG2(TAG_MODE)|ARG_TAG3(TAG_FLAGS));
 TRACE_ENT_SYSCALL(kill, SYS_KILL);
 TRACE_RET_SYSCALL(kill, SYS_KILL,
@@ -1460,11 +1429,11 @@ TRACE_RET_SYSCALL(getsockname, SYS_GETSOCKNAME,
                   ARG_TAG0(TAG_SOCKFD)|ARG_TAG1(TAG_ADDR));
 TRACE_ENT_SYSCALL(prctl, SYS_PRCTL);
 TRACE_RET_SYSCALL(prctl, SYS_PRCTL,
-                  ARG_TYPE0(PRCTL_OPT_T)|ARG_TYPE1(ULONG_T)|ARG_TYPE2(ULONG_T)|ARG_TYPE3(ULONG_T)|ARG_TYPE4(ULONG_T),
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(ULONG_T)|ARG_TYPE2(ULONG_T)|ARG_TYPE3(ULONG_T)|ARG_TYPE4(ULONG_T),
                   ARG_TAG0(TAG_OPTION)|ARG_TAG1(TAG_ARG2)|ARG_TAG2(TAG_ARG3)|ARG_TAG3(TAG_ARG4)|ARG_TAG4(TAG_ARG5));
 TRACE_ENT_SYSCALL(ptrace, SYS_PTRACE);
 TRACE_RET_SYSCALL(ptrace, SYS_PTRACE,
-                  ARG_TYPE0(PTRACE_REQ_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(POINTER_T)|ARG_TYPE3(POINTER_T),
+                  ARG_TYPE0(INT_T)|ARG_TYPE1(INT_T)|ARG_TYPE2(POINTER_T)|ARG_TYPE3(POINTER_T),
                   ARG_TAG0(TAG_REQUEST)|ARG_TAG1(TAG_PID)|ARG_TAG2(TAG_ADDR)|ARG_TAG3(TAG_DATA));
 TRACE_ENT_SYSCALL(process_vm_writev, SYS_PROCESS_VM_WRITEV);
 TRACE_RET_SYSCALL(process_vm_writev, SYS_PROCESS_VM_WRITEV,
@@ -1716,7 +1685,7 @@ int syscall__execveat(struct pt_regs *ctx,
     save_str_arr_to_buf(submit_p, __argv, TAG_ARGV);
     if (show_env)
         save_str_arr_to_buf(submit_p, __envp, TAG_ENVP);
-    save_to_submit_buf(submit_p, (void*)&flags, sizeof(int), EXEC_FLAGS_T, TAG_FLAGS);
+    save_to_submit_buf(submit_p, (void*)&flags, sizeof(int), INT_T, TAG_FLAGS);
 
     events_perf_submit(ctx);
     return 0;
@@ -1851,7 +1820,7 @@ int trace_security_file_open(struct pt_regs *ctx, struct file *file)
     if (off == NULL)
         return -1;
     save_str_to_buf(submit_p, (void *)&string_p->buf[*off], TAG_PATHNAME);
-    save_to_submit_buf(submit_p, (void*)&file->f_flags, sizeof(int), OPEN_FLAGS_T, TAG_FLAGS);
+    save_to_submit_buf(submit_p, (void*)&file->f_flags, sizeof(int), INT_T, TAG_FLAGS);
     save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, TAG_DEV);
     save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, TAG_INODE);
 
@@ -1890,10 +1859,10 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
         return 0;
 
     save_context_to_buf(submit_p, (void*)&context);
-    save_to_submit_buf(submit_p, (void*)&cap, sizeof(int), CAP_T, TAG_CAP);
+    save_to_submit_buf(submit_p, (void*)&cap, sizeof(int), INT_T, TAG_CAP);
     if (get_config(CONFIG_SHOW_SYSCALL)) {
         struct pt_regs *real_ctx = get_task_pt_regs();
-        save_to_submit_buf(submit_p, (void*)&(real_ctx->orig_ax), sizeof(int), SYSCALL_T, TAG_SYSCALL);
+        save_to_submit_buf(submit_p, (void*)&(real_ctx->orig_ax), sizeof(int), INT_T, TAG_SYSCALL);
     }
     events_perf_submit(ctx);
     return 0;

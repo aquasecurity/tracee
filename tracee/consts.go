@@ -5,31 +5,21 @@ type argType uint8
 
 // argument types should match defined values in ebpf code
 const (
-	noneT       argType = 0
-	intT        argType = 1
-	uintT       argType = 2
-	longT       argType = 3
-	ulongT      argType = 4
-	offT        argType = 5
-	modeT       argType = 6
-	devT        argType = 7
-	sizeT       argType = 8
-	pointerT    argType = 9
-	strT        argType = 10
-	strArrT     argType = 11
-	sockAddrT   argType = 12
-	openFlagsT  argType = 13
-	execFlagsT  argType = 14
-	sockDomT    argType = 15
-	sockTypeT   argType = 16
-	capT        argType = 17
-	syscallT    argType = 18
-	protFlagsT  argType = 19
-	accessModeT argType = 20
-	ptraceReqT  argType = 21
-	prctlOptT   argType = 22
-	alertT      argType = 23
-	typeMax     argType = 255
+	noneT     argType = 0
+	intT      argType = 1
+	uintT     argType = 2
+	longT     argType = 3
+	ulongT    argType = 4
+	offT      argType = 5
+	modeT     argType = 6
+	devT      argType = 7
+	sizeT     argType = 8
+	pointerT  argType = 9
+	strT      argType = 10
+	strArrT   argType = 11
+	sockAddrT argType = 12
+	alertT    argType = 13
+	typeMax   argType = 255
 )
 
 // bpfConfig is an enum that include various configurations that can be passed to bpf code
