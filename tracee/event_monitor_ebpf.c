@@ -121,11 +121,15 @@
 #define TAG_OWNER          61UL
 #define TAG_GROUP          62UL
 
-#define CONFIG_CONT_MODE        0
+#define CONFIG_MODE             0
 #define CONFIG_SHOW_SYSCALL     1
 #define CONFIG_EXEC_ENV         2
 #define CONFIG_CAPTURE_FILES    3
 #define CONFIG_EXTRACT_DYN_CODE 4
+
+#define MODE_SYSTEM     0
+#define MODE_PID        1
+#define MODE_CONTAINER  2
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
 #error Minimal required kernel version is 4.14
@@ -777,7 +781,7 @@ static __always_inline int should_trace()
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
 
     u32 rc = 0;
-    if (get_config(CONFIG_CONT_MODE))
+    if (get_config(CONFIG_MODE) == MODE_CONTAINER)
         rc = lookup_pid_ns(task);
     else
         rc = lookup_pid();
@@ -799,7 +803,7 @@ static __always_inline int init_context(context_t *context)
     struct task_struct *task;
     task = (struct task_struct *)bpf_get_current_task();
 
-    if (get_config(CONFIG_CONT_MODE)) {
+    if (get_config(CONFIG_MODE) == MODE_CONTAINER) {
         context->tid = get_task_ns_pid(task);
         context->pid = get_task_ns_tgid(task);
         context->ppid = get_task_ns_ppid(task);
@@ -1269,7 +1273,7 @@ static __always_inline int trace_ret_generic_fork(struct pt_regs *ctx, u32 id, u
     bool delete_args = true;
     int rc = trace_ret_generic(ctx, id, types, tags, delete_args);
 
-    if (!rc && !get_config(CONFIG_CONT_MODE)) {
+    if (!rc && (get_config(CONFIG_MODE) != MODE_CONTAINER)) {
         u32 pid = PT_REGS_RC(ctx);
         add_pid_fork(pid);
     }
@@ -1586,13 +1590,12 @@ int syscall__execve(struct pt_regs *ctx,
 {
     context_t context = {};
 
-    u32 ret = 0;
-    if (get_config(CONFIG_CONT_MODE))
-        ret = add_pid_ns_if_needed();
-    else
-        ret = add_pid();
+    if (get_config(CONFIG_MODE) == MODE_CONTAINER)
+        add_pid_ns_if_needed();
+    else if (get_config(CONFIG_MODE) == MODE_SYSTEM)
+        add_pid();
 
-    if (ret == 0)
+    if (!should_trace())
         return 0;
 
     init_context(&context);
@@ -1655,13 +1658,12 @@ int syscall__execveat(struct pt_regs *ctx,
 {
     context_t context = {};
 
-    u32 ret = 0;
-    if (get_config(CONFIG_CONT_MODE))
-        ret = add_pid_ns_if_needed();
-    else
-        ret = add_pid();
+    if (get_config(CONFIG_MODE) == MODE_CONTAINER)
+        add_pid_ns_if_needed();
+    else if (get_config(CONFIG_MODE) == MODE_SYSTEM)
+        add_pid();
 
-    if (ret == 0)
+    if (!should_trace())
         return 0;
 
     init_context(&context);
@@ -1736,7 +1738,7 @@ int trace_do_exit(struct pt_regs *ctx, long code)
     context.argnum = 0;
     context.retval = code;
 
-    if (get_config(CONFIG_CONT_MODE))
+    if (get_config(CONFIG_MODE) == MODE_CONTAINER)
         remove_pid_ns_if_needed();
     else
         remove_pid();
