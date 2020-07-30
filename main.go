@@ -23,6 +23,9 @@ func main() {
 			if c.IsSet("event") && c.IsSet("exclude-event") {
 				return fmt.Errorf("'event' and 'exclude-event' can't be used in parallel")
 			}
+			if c.IsSet("container") && c.IsSet("pid") {
+				return fmt.Errorf("'container' and 'pid' can't be used in parallel")
+			}
 			events, err := prepareEventsToTrace(c.StringSlice("event"), c.StringSlice("exclude-event"))
 			if err != nil {
 				return err
@@ -34,6 +37,7 @@ func main() {
 				ShowExecEnv:           c.Bool("show-exec-env"),
 				OutputFormat:          c.String("output"),
 				PerfBufferSize:        c.Int("perf-buffer-size"),
+				PidsToTrace:           c.IntSlice("pid"),
 				BlobPerfBufferSize:    c.Int("blob-perf-buffer-size"),
 				OutputPath:            c.String("output-path"),
 				FilterFileWrite:       c.StringSlice("filter-file-write"),
@@ -99,6 +103,12 @@ func main() {
 				Aliases: []string{"c"},
 				Value:   false,
 				Usage:   "trace only containers",
+			},
+			&cli.IntSliceFlag{
+				Name:  "pid",
+				Aliases: []string{"p"},
+				Value: nil,
+				Usage: "trace only the specified pid. use this flag multiple times to choose multiple pids",
 			},
 			&cli.BoolFlag{
 				Name:  "detect-original-syscall",
