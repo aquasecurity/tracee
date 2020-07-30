@@ -994,30 +994,24 @@ func readArgFromBuff(dataBuff io.Reader) (uint8, interface{}, error) {
 		res, err = readInt64FromBuff(dataBuff)
 	case ulongT, offT, sizeT, pointerT:
 		res, err = readUInt64FromBuff(dataBuff)
-	case strT:
-		res, err = readStringFromBuff(dataBuff)
 	case sockAddrT:
 		res, err = readSockaddrFromBuff(dataBuff)
 	case alertT:
 		res, err = readAlertFromBuff(dataBuff)
+	case strT:
+		res, err = readStringFromBuff(dataBuff)
 	case strArrT:
 		var ss []string
-		// assuming there's at least one element in the array
-		et, err := readArgTypeFromBuff(dataBuff)
+		num, err := readUInt8FromBuff(dataBuff)
 		if err != nil {
-			return argTag, nil, fmt.Errorf("error reading string array element type: %v", err)
+			return argTag, nil, fmt.Errorf("error reading string array number of elements: %v", err)
 		}
-		for et != strArrT {
+		for i := 0; i < int(num); i++ {
 			s, err := readStringFromBuff(dataBuff)
 			if err != nil {
 				return argTag, nil, fmt.Errorf("error reading string element: %v", err)
 			}
 			ss = append(ss, s)
-
-			et, err = readArgTypeFromBuff(dataBuff)
-			if err != nil {
-				return argTag, nil, fmt.Errorf("error reading string array element type: %v", err)
-			}
 		}
 		res = ss
 	default:

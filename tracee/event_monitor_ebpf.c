@@ -20,7 +20,7 @@
 
 #define MAX_PERCPU_BUFSIZE  (1 << 15)     // This value is actually set by the kernel as an upper bound
 #define MAX_STRING_SIZE     4096          // Choosing this value to be the same as PATH_MAX
-#define MAX_STR_ARR_ELEM    20            // String array elements number should be bounded due to instructions limit
+#define MAX_STR_ARR_ELEM    40            // String array elements number should be bounded due to instructions limit
 #define MAX_PATH_PREF_SIZE  64            // Max path prefix should be bounded due to instructions limit
 
 #define SUBMIT_BUF_IDX      0
@@ -942,33 +942,65 @@ static __always_inline int save_str_to_buf(buf_t *submit_p, void *ptr, u8 tag)
     return 0;
 }
 
-static __always_inline int save_str_arg(buf_t *submit_p, void *ptr)
-{
-    const char *argp = NULL;
-    bpf_probe_read(&argp, sizeof(argp), ptr);
-    if (argp) {
-        return save_str_to_buf(submit_p, (void *)(argp), TAG_NONE);
-    }
-    return 0;
-}
-
 static __always_inline int save_str_arr_to_buf(buf_t *submit_p, const char __user *const __user *ptr, u8 tag)
 {
+    u8 elem_num = 0;
+
     // mark string array start
     save_to_submit_buf(submit_p, NULL, 0, STR_ARR_T, tag);
 
+    u32* off = get_buf_off(SUBMIT_BUF_IDX);
+    if (off == NULL)
+        return -1;
+    // Save space for number of elements
+    u32 orig_off = *off;
+    *off += 1;
+
     #pragma unroll
     for (int i = 0; i < MAX_STR_ARR_ELEM; i++) {
-        if (save_str_arg(submit_p, (void *)&ptr[i]) == 0)
-             goto out;
+        const char *argp = NULL;
+        bpf_probe_read(&argp, sizeof(argp), &ptr[i]);
+        if (!argp)
+            goto out;
+
+        if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int))
+            // not enough space - return
+            goto out;
+
+        // Read into buffer
+        int sz = bpf_probe_read_str(&(submit_p->buf[*off + sizeof(int)]), MAX_STRING_SIZE, argp);
+        if (sz > 0) {
+            if (*off > MAX_PERCPU_BUFSIZE - sizeof(int))
+                // Satisfy validator for probe read
+                goto out;
+            bpf_probe_read(&(submit_p->buf[*off]), sizeof(int), &sz);
+            *off += sz + sizeof(int);
+            elem_num++;
+            continue;
+        } else {
+            goto out;
+        }
     }
     // handle truncated argument list
     char ellipsis[] = "...";
-    save_str_to_buf(submit_p, (void *)ellipsis, TAG_NONE);
-out:
-    // mark string array end
-    save_to_submit_buf(submit_p, NULL, 0, STR_ARR_T, TAG_NONE);
+    if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int))
+        // not enough space - return
+        goto out;
 
+    // Read into buffer
+    int sz = bpf_probe_read_str(&(submit_p->buf[*off + sizeof(int)]), MAX_STRING_SIZE, ellipsis);
+    if (sz > 0) {
+        if (*off > MAX_PERCPU_BUFSIZE - sizeof(int))
+            // Satisfy validator for probe read
+            goto out;
+        bpf_probe_read(&(submit_p->buf[*off]), sizeof(int), &sz);
+        *off += sz + sizeof(int);
+        elem_num++;
+    }
+out:
+    set_buf_off(SUBMIT_BUF_IDX, *off);
+    // save number of elements in the array
+    bpf_probe_read(&(submit_p->buf[orig_off & (MAX_PERCPU_BUFSIZE-1)]), 1, &elem_num);
     return 0;
 }
 
