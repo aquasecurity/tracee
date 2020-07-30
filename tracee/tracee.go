@@ -428,8 +428,8 @@ func (t *Tracee) handleError(err error) {
 	t.printer.Error(err)
 }
 
-func (t *Tracee) processEvent(ctx *context, args map[uint8]interface{}) error {
-	switch ctx.Event_id {
+func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
+	switch ctx.EventID {
 	case RawSyscallsEventID, CapCapableEventID:
 		//show syscall name instead of id
 		if id, isInt32 := args[TagSyscall].(int32); isInt32 {
@@ -439,7 +439,7 @@ func (t *Tracee) processEvent(ctx *context, args map[uint8]interface{}) error {
 				}
 			}
 		}
-		if ctx.Event_id == CapCapableEventID {
+		if ctx.EventID == CapCapableEventID {
 			if cap, isInt32 := args[TagCap].(int32); isInt32 {
 				args[TagCap] = PrintCapability(cap)
 			}
@@ -536,7 +536,7 @@ func (t *Tracee) processEvent(ctx *context, args map[uint8]interface{}) error {
 			}
 			t.capturedFiles[sourceFilePath] = sourceCtime
 
-			destinationDirPath := filepath.Join(t.config.OutputPath, strconv.Itoa(int(ctx.Mnt_id)))
+			destinationDirPath := filepath.Join(t.config.OutputPath, strconv.Itoa(int(ctx.MntID)))
 			if err := os.MkdirAll(destinationDirPath, 0755); err != nil {
 				return err
 			}
@@ -552,39 +552,58 @@ func (t *Tracee) processEvent(ctx *context, args map[uint8]interface{}) error {
 	return nil
 }
 
+// context struct contains common metadata that is collected for all types of events
+// it is used to unmarshal binary data and therefore should match (bit by bit) to the `context_t` struct in the ebpf code.
+type context struct {
+	Ts      uint64
+	Pid     uint32
+	Tid     uint32
+	Ppid    uint32
+	Uid     uint32
+	MntID   uint32
+	PidID   uint32
+	Comm    [16]byte
+	UtsName [16]byte
+	EventID int32
+	Argnum  uint8
+	_       [3]byte
+	Retval  int64
+}
+
 func (t *Tracee) processEvents() {
 	for {
 		select {
 		case dataRaw := <-t.eventsChannel:
 			dataBuff := bytes.NewBuffer(dataRaw)
-			ctx, err := readContextFromBuff(dataBuff)
+			var ctx context
+			err := binary.Read(dataBuff, binary.LittleEndian, &ctx)
 			if err != nil {
 				t.handleError(err)
 				continue
 			}
 
-			rawArgs := make(map[uint8]interface{})
-			argsTags := make([]uint8, ctx.Argnum)
+			rawArgs := make(map[argTag]interface{})
+			argsTags := make([]argTag, ctx.Argnum)
 			for i := 0; i < int(ctx.Argnum); i++ {
-				argTag, argVal, err := readArgFromBuff(dataBuff)
+				tag, val, err := readArgFromBuff(dataBuff)
 				if err != nil {
 					t.handleError(err)
 					continue
 				}
-				argsTags[i] = argTag
-				rawArgs[argTag] = argVal
+				argsTags[i] = tag
+				rawArgs[tag] = val
 			}
 			err = t.processEvent(&ctx, rawArgs)
 			if err != nil {
 				t.handleError(err)
 				continue
 			}
-			if t.shouldPrintEvent(ctx.Event_id) {
+			if t.shouldPrintEvent(ctx.EventID) {
 				args := make([]interface{}, ctx.Argnum)
 				argsNames := make([]string, ctx.Argnum)
-				for i, argTag := range argsTags {
-					args[i] = rawArgs[argTag]
-					argName, ok := argNames[argTag]
+				for i, tag := range argsTags {
+					args[i] = rawArgs[tag]
+					argName, ok := argNames[tag]
 					if ok {
 						argsNames[i] = argName
 					} else {
@@ -608,7 +627,7 @@ func (t *Tracee) processEvents() {
 
 func (t *Tracee) processFileWrites() {
 	type chunkMeta struct {
-		BinType  uint8
+		BinType  binType
 		MntID    uint32
 		Metadata [20]byte
 		Size     int32
@@ -732,45 +751,17 @@ func (t *Tracee) processFileWrites() {
 	}
 }
 
-// context struct contains common metadata that is collected for all types of events
-// it is used to unmarshal binary data and therefore should match (bit by bit) to the `context_t` struct in the ebpf code.
-type context struct {
-	Ts       uint64
-	Pid      uint32
-	Tid      uint32
-	Ppid     uint32
-	Uid      uint32
-	Mnt_id   uint32
-	Pid_id   uint32
-	Comm     [16]byte
-	Uts_name [16]byte
-	Event_id int32
-	Argnum   uint8
-	_        [3]byte
-	Retval   int64
-}
-
-func readContextFromBuff(buff io.Reader) (context, error) {
-	var res context
-	err := binary.Read(buff, binary.LittleEndian, &res)
-	return res, err
-}
-
-func readArgTypeFromBuff(buff io.Reader) (argType, error) {
-	var res argType
-	err := binary.Read(buff, binary.LittleEndian, &res)
-	return res, err
-}
-
 func readStringFromBuff(buff io.Reader) (string, error) {
 	var err error
-	size, err := readInt32FromBuff(buff)
+	var size int32
+	err = binary.Read(buff, binary.LittleEndian, &size)
 	if err != nil {
 		return "", fmt.Errorf("error reading string size: %v", err)
 	}
 	res, err := readByteSliceFromBuff(buff, int(size-1)) //last byte is string terminating null
 	defer func() {
-		_, _ = readInt8FromBuff(buff) //discard last byte which is string terminating null
+		var dummy int8
+		binary.Read(buff, binary.LittleEndian, &dummy) //discard last byte which is string terminating null
 	}()
 	if err != nil {
 		return "", fmt.Errorf("error reading string arg: %v", err)
@@ -782,14 +773,15 @@ func readStringFromBuff(buff io.Reader) (string, error) {
 // max length can be passed as `max` to optimize memory allocation, otherwise pass 0
 func readStringVarFromBuff(buff io.Reader, max int) (string, error) {
 	var err error
+	var char int8
 	res := make([]byte, max)
-	char, err := readInt8FromBuff(buff)
+	err = binary.Read(buff, binary.LittleEndian, &char)
 	if err != nil {
 		return "", fmt.Errorf("error reading null terminated string: %v", err)
 	}
 	for count := 1; char != 0 && count < max; count++ {
 		res = append(res, byte(char))
-		char, err = readInt8FromBuff(buff)
+		err = binary.Read(buff, binary.LittleEndian, &char)
 		if err != nil {
 			return "", fmt.Errorf("error reading null terminated string: %v", err)
 		}
@@ -808,69 +800,10 @@ func readByteSliceFromBuff(buff io.Reader, len int) ([]byte, error) {
 	return res, nil
 }
 
-func readInt8FromBuff(buff io.Reader) (int8, error) {
-	var res int8
-	err := binary.Read(buff, binary.LittleEndian, &res)
-	return res, err
-}
-
-func readUInt8FromBuff(buff io.Reader) (uint8, error) {
-	var res uint8
-	err := binary.Read(buff, binary.LittleEndian, &res)
-	return res, err
-}
-
-func readInt16FromBuff(buff io.Reader) (int16, error) {
-	var res int16
-	err := binary.Read(buff, binary.LittleEndian, &res)
-	return res, err
-}
-
-func readUInt16FromBuff(buff io.Reader) (uint16, error) {
-	var res uint16
-	err := binary.Read(buff, binary.LittleEndian, &res)
-	return res, err
-}
-
-func readUInt16BigendFromBuff(buff io.Reader) (uint16, error) {
-	var res uint16
-	err := binary.Read(buff, binary.BigEndian, &res)
-	return res, err
-}
-
-func readInt32FromBuff(buff io.Reader) (int32, error) {
-	var res int32
-	err := binary.Read(buff, binary.LittleEndian, &res)
-	return res, err
-}
-
-func readUInt32FromBuff(buff io.Reader) (uint32, error) {
-	var res uint32
-	err := binary.Read(buff, binary.LittleEndian, &res)
-	return res, err
-}
-
-func readUInt32BigendFromBuff(buff io.Reader) (uint32, error) {
-	var res uint32
-	err := binary.Read(buff, binary.BigEndian, &res)
-	return res, err
-}
-
-func readInt64FromBuff(buff io.Reader) (int64, error) {
-	var res int64
-	err := binary.Read(buff, binary.LittleEndian, &res)
-	return res, err
-}
-
-func readUInt64FromBuff(buff io.Reader) (uint64, error) {
-	var res uint64
-	err := binary.Read(buff, binary.LittleEndian, &res)
-	return res, err
-}
-
 func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
 	res := make(map[string]string, 3)
-	family, err := readInt16FromBuff(buff)
+	var family int16
+	err := binary.Read(buff, binary.LittleEndian, &family)
 	if err != nil {
 		return nil, err
 	}
@@ -910,12 +843,14 @@ func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
 				uint32_t       s_addr;     // address in network byte order
 			};
 		*/
-		port, err := readUInt16BigendFromBuff(buff)
+		var port uint16
+		err = binary.Read(buff, binary.BigEndian, &port)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_in: %v", err)
 		}
 		res["sin_port"] = strconv.Itoa(int(port))
-		addr, err := readUInt32BigendFromBuff(buff)
+		var addr uint32
+		err = binary.Read(buff, binary.BigEndian, &addr)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_in: %v", err)
 		}
@@ -934,13 +869,15 @@ func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
 				unsigned char   s6_addr[16];   // IPv6 address
 			};
 		*/
-		port, err := readUInt16BigendFromBuff(buff)
+		var port uint16
+		err = binary.Read(buff, binary.BigEndian, &port)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_in6: %v", err)
 		}
 		res["sin6_port"] = strconv.Itoa(int(port))
 
-		flowinfo, err := readUInt32BigendFromBuff(buff)
+		var flowinfo uint32
+		err = binary.Read(buff, binary.BigEndian, &flowinfo)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_in6: %v", err)
 		}
@@ -950,7 +887,8 @@ func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
 			return nil, fmt.Errorf("error parsing sockaddr_in6: %v", err)
 		}
 		res["sin6_addr"] = Print16BytesSliceIP(addr)
-		scopeid, err := readUInt32BigendFromBuff(buff)
+		var scopeid uint32
+		err = binary.Read(buff, binary.BigEndian, &scopeid)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_in6: %v", err)
 		}
@@ -967,46 +905,52 @@ type alert struct {
 	Payload uint8
 }
 
-func readAlertFromBuff(buff io.Reader) (alert, error) {
-	var res alert
-	err := binary.Read(buff, binary.LittleEndian, &res)
-	return res, err
-}
-
-func readArgFromBuff(dataBuff io.Reader) (uint8, interface{}, error) {
+func readArgFromBuff(dataBuff io.Reader) (argTag, interface{}, error) {
 	var err error
 	var res interface{}
-	var argTag uint8
-	at, err := readArgTypeFromBuff(dataBuff)
+	var argTag argTag
+	var argType argType
+	err = binary.Read(dataBuff, binary.LittleEndian, &argType)
 	if err != nil {
 		return argTag, nil, fmt.Errorf("error reading arg type: %v", err)
 	}
-	argTag, err = readUInt8FromBuff(dataBuff)
+	err = binary.Read(dataBuff, binary.LittleEndian, &argTag)
 	if err != nil {
 		return argTag, nil, fmt.Errorf("error reading arg tag: %v", err)
 	}
-	switch at {
+	switch argType {
 	case intT:
-		res, err = readInt32FromBuff(dataBuff)
+		var data int32
+		err = binary.Read(dataBuff, binary.LittleEndian, &data)
+		res = data
 	case uintT, devT, modeT:
-		res, err = readUInt32FromBuff(dataBuff)
+		var data uint32
+		err = binary.Read(dataBuff, binary.LittleEndian, &data)
+		res = data
 	case longT:
-		res, err = readInt64FromBuff(dataBuff)
+		var data int64
+		err = binary.Read(dataBuff, binary.LittleEndian, &data)
+		res = data
 	case ulongT, offT, sizeT, pointerT:
-		res, err = readUInt64FromBuff(dataBuff)
+		var data uint64
+		err = binary.Read(dataBuff, binary.LittleEndian, &data)
+		res = data
 	case sockAddrT:
 		res, err = readSockaddrFromBuff(dataBuff)
 	case alertT:
-		res, err = readAlertFromBuff(dataBuff)
+		var data alert
+		err = binary.Read(dataBuff, binary.LittleEndian, &data)
+		res = data
 	case strT:
 		res, err = readStringFromBuff(dataBuff)
 	case strArrT:
 		var ss []string
-		num, err := readUInt8FromBuff(dataBuff)
+		var arrLen uint8
+		err = binary.Read(dataBuff, binary.LittleEndian, &arrLen)
 		if err != nil {
 			return argTag, nil, fmt.Errorf("error reading string array number of elements: %v", err)
 		}
-		for i := 0; i < int(num); i++ {
+		for i := 0; i < int(arrLen); i++ {
 			s, err := readStringFromBuff(dataBuff)
 			if err != nil {
 				return argTag, nil, fmt.Errorf("error reading string element: %v", err)
@@ -1016,7 +960,7 @@ func readArgFromBuff(dataBuff io.Reader) (uint8, interface{}, error) {
 		res = ss
 	default:
 		// if we don't recognize the arg type, we can't parse the rest of the buffer
-		return argTag, nil, fmt.Errorf("error unknown arg type %v", at)
+		return argTag, nil, fmt.Errorf("error unknown arg type %v", argType)
 	}
 	if err != nil {
 		return argTag, nil, err

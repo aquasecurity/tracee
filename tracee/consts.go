@@ -1,57 +1,66 @@
 package tracee
 
-// argType is an enum that encodes the argument types that the BPF program may write to the shared buffer
-type argType uint8
-
-// argument types should match defined values in ebpf code
-const (
-	noneT     argType = 0
-	intT      argType = 1
-	uintT     argType = 2
-	longT     argType = 3
-	ulongT    argType = 4
-	offT      argType = 5
-	modeT     argType = 6
-	devT      argType = 7
-	sizeT     argType = 8
-	pointerT  argType = 9
-	strT      argType = 10
-	strArrT   argType = 11
-	sockAddrT argType = 12
-	alertT    argType = 13
-	typeMax   argType = 255
-)
-
 // bpfConfig is an enum that include various configurations that can be passed to bpf code
+// config should match defined values in ebpf code
 type bpfConfig uint32
 
 const (
-	configMode              bpfConfig = 0
-	configDetectOrigSyscall bpfConfig = 1
-	configExecEnv           bpfConfig = 2
-	configCaptureFiles      bpfConfig = 3
-	configExtractDynCode    bpfConfig = 4
+	configMode bpfConfig = iota
+	configDetectOrigSyscall
+	configExecEnv
+	configCaptureFiles
+	configExtractDynCode
+)
+
+// an enum that specifies the index of a function to be used in a bpf tail call
+// tail function indexes should match defined values in ebpf code
+const (
+	tailVfsWrite uint32 = iota
+	tailSendBin
+)
+
+// binType is an enum that specifies the type of binary data sent in the file perf map
+// binary types should match defined values in ebpf code
+type binType uint8
+
+const (
+	modeSystem uint32 = iota
+	modePid
+	modeContainer
 )
 
 const (
-	modeSystem    uint32 = 0
-	modePid       uint32 = 1
-	modeContainer uint32 = 2
+	sendVfsWrite binType = iota + 1
+	sendMprotect
 )
 
-const (
-	tailVfsWrite uint32 = 0
-	tailSendBin  uint32 = 1
-)
+// argType is an enum that encodes the argument types that the BPF program may write to the shared buffer
+// argument types should match defined values in ebpf code
+type argType uint8
 
 const (
-	sendVfsWrite uint8 = 1
-	sendMprotect uint8 = 2
+	noneT argType = iota
+	intT
+	uintT
+	longT
+	ulongT
+	offT
+	modeT
+	devT
+	sizeT
+	pointerT
+	strT
+	strArrT
+	sockAddrT
+	alertT
 )
 
-// Arg tags should match defined values in ebpf code
+// argTag is an enum that encodes the argument types that the BPF program may write to the shared buffer
+// argument tags should match defined values in ebpf code
+type argTag uint8
+
 const (
-	TagNone uint8 = iota
+	TagNone argTag = iota
 	TagFd
 	TagFilename
 	TagPathname
@@ -116,7 +125,7 @@ const (
 	TagGroup
 )
 
-var argNames = map[uint8]string{
+var argNames = map[argTag]string{
 	TagNone:           "",
 	TagFd:             "fd",
 	TagFilename:       "filename",
@@ -183,16 +192,16 @@ var argNames = map[uint8]string{
 }
 
 // ProbeType is an enum that describes the mechanism used to attach the event
-type probeType uint8
-
 // Syscall tracepoints are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#8-system-call-tracepoints
 // Kprobes are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#1-kprobes
 // Tracepoints are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#3-tracepoints
+type probeType uint8
+
 const (
-	sysCall    probeType = 0
-	kprobe     probeType = 1
-	kretprobe  probeType = 2
-	tracepoint probeType = 3
+	sysCall probeType = iota
+	kprobe
+	kretprobe
+	tracepoint
 )
 
 type probe struct {
