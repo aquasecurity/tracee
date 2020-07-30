@@ -360,7 +360,7 @@ func (t *Tracee) Run() error {
 }
 
 // Close cleans up created resources
-func (t Tracee) Close() {
+func (t *Tracee) Close() {
 	if t.bpfModule != nil {
 		t.bpfModule.Close()
 	}
@@ -374,7 +374,7 @@ func boolToUInt32(b bool) uint32 {
 }
 
 // shouldPrintEvent decides whether or not the given event id should be printed to the output
-func (t Tracee) shouldPrintEvent(e int32) bool {
+func (t *Tracee) shouldPrintEvent(e int32) bool {
 	// if we got a trace for a non-essential event, it means the user explicitly requested it (using `-e`), or the user doesn't care (trace all by default). In both cases it's ok to print.
 	// for essential events we need to check if the user actually wanted this event
 	if print, isEssential := essentialEvents[e]; isEssential {
@@ -458,7 +458,7 @@ func copyFileByPath(src, dst string) error {
 	return nil
 }
 
-func (t Tracee) handleError(err error) {
+func (t *Tracee) handleError(err error) {
 	t.stats.errorCounter.Increment()
 	t.printer.Error(err)
 }
