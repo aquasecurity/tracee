@@ -23,6 +23,7 @@ import (
 type TraceeConfig struct {
 	EventsToTrace         []int32
 	ContainerMode         bool
+	PidsToTrace           []int
 	DetectOriginalSyscall bool
 	ShowExecEnv           bool
 	OutputFormat          string
@@ -281,8 +282,15 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 
 	bpfConfig := bpf.NewTable(t.bpfModule.TableId("config_map"), t.bpfModule)
 
-	binary.LittleEndian.PutUint32(key, uint32(configContMode))
-	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.ContainerMode))
+	mode := modeSystem
+	if t.config.ContainerMode {
+		mode = modeContainer
+	} else if len(t.config.PidsToTrace) > 0 {
+		mode = modePid
+	}
+
+	binary.LittleEndian.PutUint32(key, uint32(configMode))
+	binary.LittleEndian.PutUint32(leaf, mode)
 	bpfConfig.Set(key, leaf)
 	binary.LittleEndian.PutUint32(key, uint32(configDetectOrigSyscall))
 	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.DetectOriginalSyscall))
@@ -296,6 +304,13 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 	binary.LittleEndian.PutUint32(key, uint32(configExtractDynCode))
 	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.CaptureMem))
 	bpfConfig.Set(key, leaf)
+
+	pidsMap := bpf.NewTable(t.bpfModule.TableId("pids_map"), t.bpfModule)
+	for _, pid := range t.config.PidsToTrace {
+		binary.LittleEndian.PutUint32(key, uint32(pid))
+		binary.LittleEndian.PutUint32(leaf, uint32(pid))
+		pidsMap.Set(key, leaf)
+	}
 
 	// Load send_bin function to prog_array to be used as tail call
 	progArrayBPFTable := bpf.NewTable(t.bpfModule.TableId("prog_array"), t.bpfModule)

@@ -26,11 +26,17 @@ const (
 type bpfConfig uint32
 
 const (
-	configContMode          bpfConfig = 0
+	configMode              bpfConfig = 0
 	configDetectOrigSyscall bpfConfig = 1
 	configExecEnv           bpfConfig = 2
 	configCaptureFiles      bpfConfig = 3
 	configExtractDynCode    bpfConfig = 4
+)
+
+const (
+	modeSystem    uint32 = 0
+	modePid       uint32 = 1
+	modeContainer uint32 = 2
 )
 
 const (
