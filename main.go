@@ -105,10 +105,10 @@ func main() {
 				Usage:   "trace only containers",
 			},
 			&cli.IntSliceFlag{
-				Name:  "pid",
+				Name:    "pid",
 				Aliases: []string{"p"},
-				Value: nil,
-				Usage: "trace only the specified pid. use this flag multiple times to choose multiple pids",
+				Value:   nil,
+				Usage:   "trace only the specified pid. use this flag multiple times to choose multiple pids",
 			},
 			&cli.BoolFlag{
 				Name:  "detect-original-syscall",
