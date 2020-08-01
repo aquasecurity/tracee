@@ -361,15 +361,19 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 func (t *Tracee) Run() error {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
+	done := make(chan struct{})
 	t.printer.Preamble()
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
-	go t.processEvents()
+	go t.processLostEvents()
+	go t.runEventPipeline(done)
 	go t.processFileWrites()
 	<-sig
 	t.eventsPerfMap.Stop() //TODO: should this be in Tracee.Close()?
 	t.fileWrPerfMap.Stop() //TODO: should this be in Tracee.Close()?
 	t.printer.Epilogue(t.stats)
+	// Signal pipeline that Tracee exits by closing the done channel
+	close(done)
 	t.Close()
 	return nil
 }
@@ -429,6 +433,47 @@ func (t *Tracee) handleError(err error) {
 }
 
 func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
+	switch ctx.EventID {
+	case SecurityBprmCheckEventID:
+		//capture executed files
+		if t.config.CaptureExec {
+			var err error
+			sourceFilePath, ok := args[TagPathname].(string)
+			if !ok {
+				return fmt.Errorf("error parsing security_bprm_check args")
+			}
+			// path should be absolute, except for e.g memfd_create files
+			if sourceFilePath[0] != '/' {
+				return nil
+			}
+			sourceFileStat, err := os.Stat(sourceFilePath)
+			if err != nil {
+				return err
+			}
+			sourceCtime := sourceFileStat.Sys().(*syscall.Stat_t).Ctim.Nano()
+			lastCtime, ok := t.capturedFiles[sourceFilePath]
+			if ok && lastCtime == sourceCtime {
+				return nil
+			}
+			t.capturedFiles[sourceFilePath] = sourceCtime
+
+			destinationDirPath := filepath.Join(t.config.OutputPath, strconv.Itoa(int(ctx.MntID)))
+			if err := os.MkdirAll(destinationDirPath, 0755); err != nil {
+				return err
+			}
+			destinationFilePath := filepath.Join(destinationDirPath, fmt.Sprintf("exec.%d.%s", ctx.Ts, filepath.Base(sourceFilePath)))
+
+			err = copyFileByPath(sourceFilePath, destinationFilePath)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) error {
 	switch ctx.EventID {
 	case RawSyscallsEventID, CapCapableEventID:
 		//show syscall name instead of id
@@ -513,40 +558,6 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 		if alert, isAlert := args[TagAlert].(alert); isAlert {
 			args[TagAlert] = PrintAlert(alert)
 		}
-	case SecurityBprmCheckEventID:
-		//capture executed files
-		if t.config.CaptureExec {
-			var err error
-			sourceFilePath, ok := args[TagPathname].(string)
-			if !ok {
-				return fmt.Errorf("error parsing security_bprm_check args")
-			}
-			// path should be absolute, except for e.g memfd_create files
-			if sourceFilePath[0] != '/' {
-				return nil
-			}
-			sourceFileStat, err := os.Stat(sourceFilePath)
-			if err != nil {
-				return err
-			}
-			sourceCtime := sourceFileStat.Sys().(*syscall.Stat_t).Ctim.Nano()
-			lastCtime, ok := t.capturedFiles[sourceFilePath]
-			if ok && lastCtime == sourceCtime {
-				return nil
-			}
-			t.capturedFiles[sourceFilePath] = sourceCtime
-
-			destinationDirPath := filepath.Join(t.config.OutputPath, strconv.Itoa(int(ctx.MntID)))
-			if err := os.MkdirAll(destinationDirPath, 0755); err != nil {
-				return err
-			}
-			destinationFilePath := filepath.Join(destinationDirPath, fmt.Sprintf("exec.%d.%s", ctx.Ts, filepath.Base(sourceFilePath)))
-
-			err = copyFileByPath(sourceFilePath, destinationFilePath)
-			if err != nil {
-				return err
-			}
-		}
 	}
 
 	return nil
@@ -570,58 +581,10 @@ type context struct {
 	Retval  int64
 }
 
-func (t *Tracee) processEvents() {
+func (t *Tracee) processLostEvents() {
 	for {
-		select {
-		case dataRaw := <-t.eventsChannel:
-			dataBuff := bytes.NewBuffer(dataRaw)
-			var ctx context
-			err := binary.Read(dataBuff, binary.LittleEndian, &ctx)
-			if err != nil {
-				t.handleError(err)
-				continue
-			}
-
-			rawArgs := make(map[argTag]interface{})
-			argsTags := make([]argTag, ctx.Argnum)
-			for i := 0; i < int(ctx.Argnum); i++ {
-				tag, val, err := readArgFromBuff(dataBuff)
-				if err != nil {
-					t.handleError(err)
-					continue
-				}
-				argsTags[i] = tag
-				rawArgs[tag] = val
-			}
-			err = t.processEvent(&ctx, rawArgs)
-			if err != nil {
-				t.handleError(err)
-				continue
-			}
-			if t.shouldPrintEvent(ctx.EventID) {
-				args := make([]interface{}, ctx.Argnum)
-				argsNames := make([]string, ctx.Argnum)
-				for i, tag := range argsTags {
-					args[i] = rawArgs[tag]
-					argName, ok := argNames[tag]
-					if ok {
-						argsNames[i] = argName
-					} else {
-						t.handleError(err)
-						continue
-					}
-				}
-				t.stats.eventCounter.Increment()
-				evt, err := newEvent(ctx, argsNames, args)
-				if err != nil {
-					t.handleError(err)
-					continue
-				}
-				t.printer.Print(evt)
-			}
-		case lost := <-t.lostEvChannel:
-			t.stats.lostEvCounter.Increment(int(lost))
-		}
+		lost := <-t.lostEvChannel
+		t.stats.lostEvCounter.Increment(int(lost))
 	}
 }
 
