@@ -941,19 +941,13 @@ var EventsIDToEvent = map[int32]EventConfig{
 	MemProtAlertEventID:        EventConfig{ID: MemProtAlertEventID, Name: "mem_prot_alert", Probes: []probe{probe{event: "security_mmap_addr", attach: kprobe, fn: "trace_mmap_alert"}, probe{event: "security_file_mprotect", attach: kprobe, fn: "trace_mprotect_alert"}}, EnabledByDefault: false, EssentialEvent: false},
 }
 
-// EventsNameToID holds all the events that tracee can trace, indexed by their Name
-var EventsNameToID map[string]int32
-
 // essentialEvents is a list of event ids (in EventsIDToEvent map) that are essential to the operation of tracee and therefore must be traced
 // the boolean value is used to indicate if the event were also requested to be traced by the user
 var essentialEvents map[int32]bool
 
 func init() {
-	len := len(EventsIDToEvent)
-	EventsNameToID = make(map[string]int32, len)
-	essentialEvents = make(map[int32]bool, len)
+	essentialEvents = make(map[int32]bool, len(EventsIDToEvent))
 	for id, event := range EventsIDToEvent {
-		EventsNameToID[event.Name] = event.ID
 		if event.EssentialEvent {
 			essentialEvents[id] = false
 		}
