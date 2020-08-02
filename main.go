@@ -62,10 +62,10 @@ func main() {
 				}
 			}
 			if c.Bool("show-all-syscalls") {
-				cfg.EventsToTrace = append(cfg.EventsToTrace, tracee.EventsNameToID["raw_syscalls"])
+				cfg.EventsToTrace = append(cfg.EventsToTrace, tracee.RawSyscallsEventID)
 			}
 			if c.Bool("security-alerts") {
-				cfg.EventsToTrace = append(cfg.EventsToTrace, tracee.EventsNameToID["mem_prot_alert"])
+				cfg.EventsToTrace = append(cfg.EventsToTrace, tracee.MemProtAlertEventID)
 			}
 			t, err := tracee.New(cfg)
 			if err != nil {
@@ -171,9 +171,13 @@ func main() {
 
 func prepareEventsToTrace(eventsToTrace []string, excludeEvents []string) ([]int32, error) {
 	var res []int32
+	eventsNameToID := make(map[string]int32, len(tracee.EventsIDToEvent))
+	for _, event := range tracee.EventsIDToEvent {
+		eventsNameToID[event.Name] = event.ID
+	}
 	if eventsToTrace == nil {
 		for _, name := range excludeEvents {
-			id, ok := tracee.EventsNameToID[name]
+			id, ok := eventsNameToID[name]
 			if !ok {
 				return nil, fmt.Errorf("invalid event to exclude: %s", name)
 			}
@@ -190,7 +194,7 @@ func prepareEventsToTrace(eventsToTrace []string, excludeEvents []string) ([]int
 	} else {
 		res = make([]int32, 0, len(eventsToTrace))
 		for _, name := range eventsToTrace {
-			id, ok := tracee.EventsNameToID[name]
+			id, ok := eventsNameToID[name]
 			if !ok {
 				return nil, fmt.Errorf("invalid event to trace: %s", name)
 			}

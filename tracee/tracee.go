@@ -146,17 +146,17 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	}
 
 	if cfg.CaptureExec {
-		essentialEvents[EventsNameToID["security_bprm_check"]] = false
+		essentialEvents[SecurityBprmCheckEventID] = false
 	}
 	if cfg.CaptureWrite {
-		essentialEvents[EventsNameToID["vfs_write"]] = false
+		essentialEvents[VfsWriteEventID] = false
 	}
 	if cfg.SecurityAlerts || cfg.CaptureMem {
-		essentialEvents[EventsNameToID["mmap"]] = false
-		essentialEvents[EventsNameToID["mprotect"]] = false
+		essentialEvents[MmapEventID] = false
+		essentialEvents[MprotectEventID] = false
 	}
 	if cfg.CaptureMem {
-		essentialEvents[EventsNameToID["mem_prot_alert"]] = false
+		essentialEvents[MemProtAlertEventID] = false
 	}
 	// create tracee
 	t := &Tracee{
