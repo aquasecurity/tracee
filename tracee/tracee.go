@@ -104,6 +104,7 @@ func getEBPFProgram() (string, error) {
 // Tracee traces system calls and system events using eBPF
 type Tracee struct {
 	config        TraceeConfig
+	eventsToTrace map[int32]bool
 	bpfModule     *bpf.Module
 	eventsPerfMap *bpf.PerfMap
 	fileWrPerfMap *bpf.PerfMap
@@ -145,24 +146,34 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 		return nil, fmt.Errorf("validation error: %v", err)
 	}
 
+	setEssential := func(id int32) {
+		event := EventsIDToEvent[id]
+		event.EssentialEvent = true
+		EventsIDToEvent[id] = event
+	}
 	if cfg.CaptureExec {
-		essentialEvents[SecurityBprmCheckEventID] = false
+		setEssential(SecurityBprmCheckEventID)
 	}
 	if cfg.CaptureWrite {
-		essentialEvents[VfsWriteEventID] = false
+		setEssential(VfsWriteEventID)
 	}
 	if cfg.SecurityAlerts || cfg.CaptureMem {
-		essentialEvents[MmapEventID] = false
-		essentialEvents[MprotectEventID] = false
+		setEssential(MmapEventID)
+		setEssential(MprotectEventID)
 	}
 	if cfg.CaptureMem {
-		essentialEvents[MemProtAlertEventID] = false
+		setEssential(MemProtAlertEventID)
 	}
 	// create tracee
 	t := &Tracee{
 		config: cfg,
 	}
 	t.printer = newEventPrinter(t.config.OutputFormat, t.config.EventsFile, t.config.ErrorsFile)
+	t.eventsToTrace = make(map[int32]bool, len(t.config.EventsToTrace))
+	for _, e := range t.config.EventsToTrace {
+		// Map value is true iff events requested by the user
+		t.eventsToTrace[e] = true
+	}
 
 	p, err := getEBPFProgram()
 	if err != nil {
@@ -186,40 +197,25 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 	chosenEvents := bpf.NewTable(t.bpfModule.TableId("chosen_events_map"), t.bpfModule)
 	key := make([]byte, 4)
 	leaf := make([]byte, 4)
-
-	// compile final list of events to trace including essential events while at the same time record which essentials were requested by the user
-	// to build this list efficiently we use the `tmpset` variable as follows:
-	// 1. the presence of an entry says we have already seen this event (key)
-	// 2. the value says if this event is essential
-	eventsToTraceFinal := make([]int32, 0, len(t.config.EventsToTrace))
-	tmpset := make(map[int32]bool, len(t.config.EventsToTrace))
-	for e := range essentialEvents {
-		eventsToTraceFinal = append(eventsToTraceFinal, e)
-		tmpset[e] = true
-	}
-	for _, e := range t.config.EventsToTrace {
+	for e, _ := range t.eventsToTrace {
 		// Set chosen events map according to events chosen by the user
 		binary.LittleEndian.PutUint32(key, uint32(e))
 		binary.LittleEndian.PutUint32(leaf, boolToUInt32(true))
 		chosenEvents.Set(key, leaf)
+	}
 
-		essential, exists := tmpset[e]
-		// exists && essential = user requested essential
-		// exists && !essential = dup event
-		// !exists && essential = should never happen
-		// !exists && !essential = user requested event
-		if exists {
-			if essential {
-				essentialEvents[e] = true
-			}
-		} else {
-			eventsToTraceFinal = append(eventsToTraceFinal, e)
-			tmpset[e] = false
+	// compile final list of events to trace including essential events
+	// if an essential event was not requested by the user, set its map value to false
+	for id, event := range EventsIDToEvent {
+		if event.EssentialEvent && !t.eventsToTrace[id] {
+			// Essential event was not requested by the user - add it to map
+			// Map value is false iff an essential event was not requested by the user
+			t.eventsToTrace[id] = false
 		}
 	}
 
 	sysPrefix := bpf.GetSyscallPrefix()
-	for _, e := range eventsToTraceFinal {
+	for e, _ := range t.eventsToTrace {
 		event, ok := EventsIDToEvent[e]
 		if !ok {
 			continue
@@ -394,12 +390,8 @@ func boolToUInt32(b bool) uint32 {
 
 // shouldPrintEvent decides whether or not the given event id should be printed to the output
 func (t *Tracee) shouldPrintEvent(e int32) bool {
-	// if we got a trace for a non-essential event, it means the user explicitly requested it (using `-e`), or the user doesn't care (trace all by default). In both cases it's ok to print.
-	// for essential events we need to check if the user actually wanted this event
-	if print, isEssential := essentialEvents[e]; isEssential {
-		return print
-	}
-	return true
+	// Only print events requested by the user
+	return t.eventsToTrace[e]
 }
 
 func copyFileByPath(src, dst string) error {

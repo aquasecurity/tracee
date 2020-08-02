@@ -940,16 +940,3 @@ var EventsIDToEvent = map[int32]EventConfig{
 	VfsWriteEventID:            EventConfig{ID: VfsWriteEventID, Name: "vfs_write", Probes: []probe{probe{event: "vfs_write", attach: kprobe, fn: "trace_vfs_write"}, probe{event: "vfs_write", attach: kretprobe, fn: "trace_ret_vfs_write"}}, EnabledByDefault: true, EssentialEvent: false},
 	MemProtAlertEventID:        EventConfig{ID: MemProtAlertEventID, Name: "mem_prot_alert", Probes: []probe{probe{event: "security_mmap_addr", attach: kprobe, fn: "trace_mmap_alert"}, probe{event: "security_file_mprotect", attach: kprobe, fn: "trace_mprotect_alert"}}, EnabledByDefault: false, EssentialEvent: false},
 }
-
-// essentialEvents is a list of event ids (in EventsIDToEvent map) that are essential to the operation of tracee and therefore must be traced
-// the boolean value is used to indicate if the event were also requested to be traced by the user
-var essentialEvents map[int32]bool
-
-func init() {
-	essentialEvents = make(map[int32]bool, len(EventsIDToEvent))
-	for id, event := range EventsIDToEvent {
-		if event.EssentialEvent {
-			essentialEvents[id] = false
-		}
-	}
-}
