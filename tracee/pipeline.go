@@ -88,6 +88,9 @@ func (t *Tracee) processRawEvent(done <-chan struct{}, in <-chan RawEvent) (<-ch
 		defer close(out)
 		defer close(errc)
 		for rawEvent := range in {
+			if !t.shouldProcessEvent(rawEvent) {
+				continue
+			}
 			err := t.processEvent(&rawEvent.Ctx, rawEvent.RawArgs)
 			if err != nil {
 				errc <- err
@@ -110,7 +113,7 @@ func (t *Tracee) prepareEventForPrint(done <-chan struct{}, in <-chan RawEvent) 
 		defer close(out)
 		defer close(errc)
 		for rawEvent := range in {
-			if !t.shouldPrintEvent(rawEvent.Ctx.EventID) {
+			if !t.shouldPrintEvent(rawEvent) {
 				continue
 			}
 			err := t.prepareArgsForPrint(&rawEvent.Ctx, rawEvent.RawArgs)
