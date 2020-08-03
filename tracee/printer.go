@@ -99,18 +99,18 @@ func (p tableEventPrinter) Init() {}
 
 func (p tableEventPrinter) Preamble() {
 	if p.verbose {
-		fmt.Fprintf(p.out, "%-14s %-16s %-12s %-12s %-6s %-20s %-16s %-6s %-6s %-6s %-16s %s", "TIME(s)", "UTS_NAME", "MNT_NS", "PID_NS", "UID", "EVENT", "COMM", "PID", "TID", "PPID", "RET", "ARGS")
+		fmt.Fprintf(p.out, "%-14s %-16s %-12s %-12s %-6s %-16s %-6s %-6s %-6s %-16s %-20s %s", "TIME(s)", "UTS_NAME", "MNT_NS", "PID_NS", "UID", "COMM", "PID", "TID", "PPID", "RET", "EVENT", "ARGS")
 	} else {
-		fmt.Fprintf(p.out, "%-14s %-16s %-6s %-20s %-16s %-6s %-6s %-6s %-16s %s", "TIME(s)", "UTS_NAME", "UID", "EVENT", "COMM", "PID", "TID", "PPID", "RET", "ARGS")
+		fmt.Fprintf(p.out, "%-14s %-16s %-6s %-16s %-6s %-6s %-6s %-16s %-20s %s", "TIME(s)", "UTS_NAME", "UID", "COMM", "PID", "TID", "PPID", "RET", "EVENT", "ARGS")
 	}
 	fmt.Fprintln(p.out)
 }
 
 func (p tableEventPrinter) Print(event Event) {
 	if p.verbose {
-		fmt.Fprintf(p.out, "%-14f %-16s %-12d %-12d %-6d %-20s %-16s %-6d %-6d %-6d %-16d", event.Timestamp, event.HostName, event.MountNS, event.PIDNS, event.UserID, event.EventName, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue)
+		fmt.Fprintf(p.out, "%-14f %-16s %-12d %-12d %-6d %-16s %-6d %-6d %-6d %-16d %-20s ", event.Timestamp, event.HostName, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue, event.EventName)
 	} else {
-		fmt.Fprintf(p.out, "%-14f %-16s %-6d %-20s %-16s %-6d %-6d %-6d %-16d", event.Timestamp, event.HostName, event.UserID, event.EventName, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue)
+		fmt.Fprintf(p.out, "%-14f %-16s %-6d %-16s %-6d %-6d %-6d %-16d %-20s ", event.Timestamp, event.HostName, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue, event.EventName)
 	}
 	for i, value := range event.Args {
 		fmt.Fprintf(p.out, "%s: %v ", event.ArgsNames[i], value)
