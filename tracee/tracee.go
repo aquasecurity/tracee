@@ -388,12 +388,6 @@ func boolToUInt32(b bool) uint32 {
 	return uint32(0)
 }
 
-// shouldPrintEvent decides whether or not the given event id should be printed to the output
-func (t *Tracee) shouldPrintEvent(e int32) bool {
-	// Only print events requested by the user
-	return t.eventsToTrace[e]
-}
-
 func copyFileByPath(src, dst string) error {
 	sourceFileStat, err := os.Stat(src)
 	if err != nil {
@@ -422,6 +416,11 @@ func copyFileByPath(src, dst string) error {
 func (t *Tracee) handleError(err error) {
 	t.stats.errorCounter.Increment()
 	t.printer.Error(err)
+}
+
+// shouldProcessEvent decides whether or not to drop an event before further processing it
+func (t *Tracee) shouldProcessEvent(e RawEvent) bool {
+	return true
 }
 
 func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
@@ -463,6 +462,33 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 	}
 
 	return nil
+}
+
+// shouldPrintEvent decides whether or not the given event id should be printed to the output
+func (t *Tracee) shouldPrintEvent(e RawEvent) bool {
+	// Only print events requested by the user
+	if !t.eventsToTrace[e.Ctx.EventID] {
+		return false
+	}
+	switch e.Ctx.EventID {
+	case RawSyscallsEventID:
+		if id, isInt32 := e.RawArgs[TagSyscall].(int32); isInt32 {
+			event, isKnown := EventsIDToEvent[id]
+			if !isKnown {
+				t.handleError(fmt.Errorf("raw_syscalls: unknown syscall id: %d", id))
+				return false
+			}
+			if event.Probes[0].attach != sysCall {
+				t.handleError(fmt.Errorf("raw_syscalls: unknown syscall id: %d", id))
+				return false
+			}
+			if event.Name != "reserved" {
+				// We already monitor this system call by another event
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) error {
