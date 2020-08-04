@@ -2122,12 +2122,18 @@ int do_trace_ret_vfs_write(struct pt_regs *ctx)
     events_perf_submit(ctx);
 
     u64 id = bpf_get_current_pid_tgid();
+    u32 pid = context.pid;
+    if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
+        return -1;
+    if (!is_prefix("/dev/null", &string_p->buf[*off]))
+        pid = 0;
 
     if (get_config(CONFIG_CAPTURE_FILES)) {
         bin_args.type = SEND_VFS_WRITE;
         bpf_probe_read(bin_args.metadata, 4, &s_dev);
         bpf_probe_read(&bin_args.metadata[4], 8, &inode_nr);
         bpf_probe_read(&bin_args.metadata[12], 4, &i_mode);
+        bpf_probe_read(&bin_args.metadata[16], 4, &pid);
         bin_args.ptr = ptr;
         bin_args.start_off = start_pos;
         bin_args.full_size = PT_REGS_RC(ctx);
