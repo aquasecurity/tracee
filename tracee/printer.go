@@ -50,21 +50,26 @@ func newEventPrinter(kind string, out io.Writer, err io.Writer) eventPrinter {
 
 // Event is a user facing data structure representing a single event
 type Event struct {
-	Timestamp       float64       `json:"timestamp"`
-	ProcessID       int           `json:"processId"`
-	ThreadID        int           `json:"threadId"`
-	ParentProcessID int           `json:"parentProcessId"`
-	UserID          int           `json:"userId"`
-	MountNS         int           `json:"mountNamespace"`
-	PIDNS           int           `json:"pidNamespace"`
-	ProcessName     string        `json:"processName"`
-	HostName        string        `json:"hostName"`
-	EventID         int           `json:"eventId,string"`
-	EventName       string        `json:"eventName"`
-	ArgsNum         int           `json:"argsNum"`
-	ReturnValue     int           `json:"returnValue"`
-	ArgsNames       []string      `json:"argsNames"`
-	Args            []interface{} `json:"args"`
+	Timestamp       float64    `json:"timestamp"`
+	ProcessID       int        `json:"processId"`
+	ThreadID        int        `json:"threadId"`
+	ParentProcessID int        `json:"parentProcessId"`
+	UserID          int        `json:"userId"`
+	MountNS         int        `json:"mountNamespace"`
+	PIDNS           int        `json:"pidNamespace"`
+	ProcessName     string     `json:"processName"`
+	HostName        string     `json:"hostName"`
+	EventID         int        `json:"eventId,string"`
+	EventName       string     `json:"eventName"`
+	ArgsNum         int        `json:"argsNum"`
+	ReturnValue     int        `json:"returnValue"`
+	Args            []Argument `json:"args"` //Arguments are ordered according their appearance in the original event
+}
+
+// Argument holds the information for one argument
+type Argument struct {
+	Name  string      `json:"name"`
+	Value interface{} `json:"value"`
 }
 
 func newEvent(ctx context, argsNames []string, args []interface{}) (Event, error) {
@@ -82,8 +87,13 @@ func newEvent(ctx context, argsNames []string, args []interface{}) (Event, error
 		EventName:       EventsIDToEvent[int32(ctx.EventID)].Name,
 		ArgsNum:         int(ctx.Argnum),
 		ReturnValue:     int(ctx.Retval),
-		ArgsNames:       argsNames,
-		Args:            args,
+		Args:            make([]Argument, 0, len(args)),
+	}
+	for i, arg := range args {
+		e.Args = append(e.Args, Argument{
+			Name:  argsNames[i],
+			Value: arg,
+		})
 	}
 	return e, nil
 }
@@ -112,8 +122,8 @@ func (p tableEventPrinter) Print(event Event) {
 	} else {
 		fmt.Fprintf(p.out, "%-14f %-16s %-6d %-16s %-6d %-6d %-6d %-16d %-20s ", event.Timestamp, event.HostName, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue, event.EventName)
 	}
-	for i, value := range event.Args {
-		fmt.Fprintf(p.out, "%s: %v ", event.ArgsNames[i], value)
+	for _, arg := range event.Args {
+		fmt.Fprintf(p.out, "%s: %v ", arg.Name, arg.Value)
 	}
 	fmt.Fprintln(p.out)
 }
