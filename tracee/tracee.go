@@ -619,6 +619,7 @@ func (t *Tracee) processFileWrites() {
 		DevID uint32
 		Inode uint64
 		Mode  uint32
+		Pid   uint32
 	}
 
 	type mprotectWriteMeta struct {
@@ -675,7 +676,11 @@ func (t *Tracee) processFileWrites() {
 				if vfsMeta.Mode&S_IFSOCK == S_IFSOCK || vfsMeta.Mode&S_IFCHR == S_IFCHR || vfsMeta.Mode&S_IFIFO == S_IFIFO {
 					appendFile = true
 				}
-				filename = fmt.Sprintf("write.dev-%d.inode-%d", vfsMeta.DevID, vfsMeta.Inode)
+				if vfsMeta.Pid == 0 {
+					filename = fmt.Sprintf("write.dev-%d.inode-%d", vfsMeta.DevID, vfsMeta.Inode)
+				} else {
+					filename = fmt.Sprintf("write.dev-%d.inode-%d.pid-%d", vfsMeta.DevID, vfsMeta.Inode, vfsMeta.Pid)
+				}
 			} else if meta.BinType == sendMprotect {
 				var mprotectMeta mprotectWriteMeta
 				err = binary.Read(metaBuff, binary.LittleEndian, &mprotectMeta)
