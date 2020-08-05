@@ -44,10 +44,10 @@ Here is how the output looks:
 
 ```
 TIME(s)        UID    COMM             PID     TID     RET             EVENT                ARGS
-176751.746515  1000   zsh              14726   14726   0               execve               pathname: /usr/bin/ls, pathname: /usr/bin/ls, argv: [ls]
-176751.746772  1000   zsh              14726   14726   0               security_bprm_check  pathname: /usr/bin/ls, pathname: /usr/bin/ls, dev: 8388610, inode: 777
-176751.747044  1000   ls               14726   14726  -2               access               pathname: /etc/ld.so.preload, pathname: /etc/ld.so.preload, mode: R_OK
-176751.747077  1000   ls               14726   14726   0               security_file_open   pathname: /etc/ld.so.cache, pathname: /etc/ld.so.cache, flags: O_RDONLY|O_LARGEFILE, dev: 8388610, inode: 533737
+176751.746515  1000   zsh              14726   14726   0               execve               pathname: /usr/bin/ls, argv: [ls]
+176751.746772  1000   zsh              14726   14726   0               security_bprm_check  pathname: /usr/bin/ls, dev: 8388610, inode: 777
+176751.747044  1000   ls               14726   14726  -2               access               pathname: /etc/ld.so.preload, mode: R_OK
+176751.747077  1000   ls               14726   14726   0               security_file_open   pathname: /etc/ld.so.cache, flags: O_RDONLY|O_LARGEFILE, dev: 8388610, inode: 533737
 ...
 ```
 
