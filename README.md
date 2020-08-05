@@ -43,13 +43,11 @@ This will run Tracee with no arguments which will collect all events from all ne
 Here is how the output looks:
 
 ```
-TIME(s)        UTS_NAME         MNT_NS       PID_NS       UID    EVENT            COMM             PID    TID    PPID   RET          ARGS
-133            ubuntu           4026531840   4026531836   1000   execve           zsh              2944   2944   2571   0           [/usr/bin/ls [ls]]
-133            ubuntu           4026531840   4026531836   1000   security_bprm_check zsh              2944   2944   2571   0           [/usr/bin/ls]
-133            ubuntu           4026531840   4026531836   1000   access           ls               2944   2944   2571   -2          [/etc/ld.so.preload R_OK]
-133            ubuntu           4026531840   4026531836   1000   security_file_open ls               2944   2944   2571   0           [/etc/ld.so.cache O_RDONLY|O_LARGEFILE]
-133            ubuntu           4026531840   4026531836   1000   openat           ls               2944   2944   2571   3           [-100 /etc/ld.so.cache O_RDONLY|O_CLOEXEC]
-133            ubuntu           4026531840   4026531836   1000   mmap             ls               
+TIME(s)        UID    COMM             PID     TID     RET              EVENT                ARGS
+174011.036880  1000   zsh              11540   11540   0               execve               pathname: /usr/bin/ls ,pathname: /usr/bin/ls ,argv: [ls]
+174011.037189  1000   zsh              11540   11540   0               security_bprm_check  pathname: /usr/bin/ls ,pathname: /usr/bin/ls ,dev: 8388610 ,inode: 777
+174011.037436  1000   ls               11540   11540  -8589934592      access               pathname: /etc/ld.so.preload ,pathname: /etc/ld.so.preload ,mode: R_OK
+174011.037465  1000   ls               11540   11540   0               security_file_open   pathname: /etc/ld.so.cache ,pathname: /etc/ld.so.cache ,flags: O_RDONLY|O_LARGEFILE ,dev: 8388610 ,inode: 533737
 ...
 ```
 
