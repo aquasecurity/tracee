@@ -623,10 +623,9 @@ type context struct {
 	Comm     [16]byte
 	UtsName  [16]byte
 	EventID  int32
-	Argnum   uint8
-	_        [3]byte //padding for Argnum (start address should be devisible by size of member)
 	Retval   int64
-	_        [4]byte //padding for the struct (size of struct should be devisible by size of largest member)
+	Argnum   uint8
+	_        [7]byte //padding
 }
 
 func (t *Tracee) processLostEvents() {
