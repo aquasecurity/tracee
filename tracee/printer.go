@@ -147,8 +147,11 @@ func (p tableEventPrinter) Print(event Event) {
 			fmt.Fprintf(p.out, "%-14f %-6d %-16s %-7d %-7d% -16d %-20s ", event.Timestamp, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ReturnValue, event.EventName)
 		}
 	}
-	for _, arg := range event.Args {
-		fmt.Fprintf(p.out, "%s: %v ", arg.Name, arg.Value)
+	for i, arg := range event.Args {
+		if i == 0 {
+			fmt.Fprintf(p.out, "%s: %v", arg.Name, arg.Value)
+		}
+		fmt.Fprintf(p.out, ", %s: %v", arg.Name, arg.Value)
 	}
 	fmt.Fprintln(p.out)
 }
