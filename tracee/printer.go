@@ -50,20 +50,23 @@ func newEventPrinter(kind string, out io.Writer, err io.Writer) eventPrinter {
 
 // Event is a user facing data structure representing a single event
 type Event struct {
-	Timestamp       float64    `json:"timestamp"`
-	ProcessID       int        `json:"processId"`
-	ThreadID        int        `json:"threadId"`
-	ParentProcessID int        `json:"parentProcessId"`
-	UserID          int        `json:"userId"`
-	MountNS         int        `json:"mountNamespace"`
-	PIDNS           int        `json:"pidNamespace"`
-	ProcessName     string     `json:"processName"`
-	HostName        string     `json:"hostName"`
-	EventID         int        `json:"eventId,string"`
-	EventName       string     `json:"eventName"`
-	ArgsNum         int        `json:"argsNum"`
-	ReturnValue     int        `json:"returnValue"`
-	Args            []Argument `json:"args"` //Arguments are ordered according their appearance in the original event
+	Timestamp           float64    `json:"timestamp"`
+	ProcessID           int        `json:"processId"`
+	ThreadID            int        `json:"threadId"`
+	ParentProcessID     int        `json:"parentProcessId"`
+	HostProcessID       int        `json:"hostProcessId"`
+	HostThreadID        int        `json:"hostThreadId"`
+	HostParentProcessID int        `json:"hostParentProcessId"`
+	UserID              int        `json:"userId"`
+	MountNS             int        `json:"mountNamespace"`
+	PIDNS               int        `json:"pidNamespace"`
+	ProcessName         string     `json:"processName"`
+	HostName            string     `json:"hostName"`
+	EventID             int        `json:"eventId,string"`
+	EventName           string     `json:"eventName"`
+	ArgsNum             int        `json:"argsNum"`
+	ReturnValue         int        `json:"returnValue"`
+	Args                []Argument `json:"args"` //Arguments are ordered according their appearance in the original event
 }
 
 // Argument holds the information for one argument
@@ -74,20 +77,23 @@ type Argument struct {
 
 func newEvent(ctx context, argsNames []string, args []interface{}) (Event, error) {
 	e := Event{
-		Timestamp:       float64(ctx.Ts) / 1000000.0,
-		ProcessID:       int(ctx.Pid),
-		ThreadID:        int(ctx.Tid),
-		ParentProcessID: int(ctx.Ppid),
-		UserID:          int(ctx.Uid),
-		MountNS:         int(ctx.MntID),
-		PIDNS:           int(ctx.PidID),
-		ProcessName:     string(bytes.TrimRight(ctx.Comm[:], string(0))),
-		HostName:        string(bytes.TrimRight(ctx.UtsName[:], string(0))),
-		EventID:         int(ctx.EventID),
-		EventName:       EventsIDToEvent[int32(ctx.EventID)].Name,
-		ArgsNum:         int(ctx.Argnum),
-		ReturnValue:     int(ctx.Retval),
-		Args:            make([]Argument, 0, len(args)),
+		Timestamp:           float64(ctx.Ts) / 1000000.0,
+		ProcessID:           int(ctx.Pid),
+		ThreadID:            int(ctx.Tid),
+		ParentProcessID:     int(ctx.Ppid),
+		HostProcessID:       int(ctx.HostPid),
+		HostThreadID:        int(ctx.HostTid),
+		HostParentProcessID: int(ctx.HostPpid),
+		UserID:              int(ctx.Uid),
+		MountNS:             int(ctx.MntID),
+		PIDNS:               int(ctx.PidID),
+		ProcessName:         string(bytes.TrimRight(ctx.Comm[:], string(0))),
+		HostName:            string(bytes.TrimRight(ctx.UtsName[:], string(0))),
+		EventID:             int(ctx.EventID),
+		EventName:           EventsIDToEvent[int32(ctx.EventID)].Name,
+		ArgsNum:             int(ctx.Argnum),
+		ReturnValue:         int(ctx.Retval),
+		Args:                make([]Argument, 0, len(args)),
 	}
 	for i, arg := range args {
 		e.Args = append(e.Args, Argument{
