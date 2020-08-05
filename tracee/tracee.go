@@ -168,7 +168,7 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	t := &Tracee{
 		config: cfg,
 	}
-	t.printer = newEventPrinter(t.config.OutputFormat, t.config.EventsFile, t.config.ErrorsFile)
+	t.printer = newEventPrinter(t.config.OutputFormat, t.config.ContainerMode, t.config.EventsFile, t.config.ErrorsFile)
 	t.eventsToTrace = make(map[int32]bool, len(t.config.EventsToTrace))
 	for _, e := range t.config.EventsToTrace {
 		// Map value is true iff events requested by the user
