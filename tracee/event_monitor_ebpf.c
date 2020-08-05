@@ -513,8 +513,8 @@ typedef struct context {
     char comm[TASK_COMM_LEN];
     char uts_name[TASK_COMM_LEN];
     enum event_id eventid;
-    u8 argnum;
     s64 retval;
+    u8 argnum;
 } context_t;
 
 typedef struct args {
