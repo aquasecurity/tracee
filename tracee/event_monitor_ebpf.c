@@ -810,16 +810,9 @@ static __always_inline int init_context(context_t *context)
     context->host_tid = id;
     context->host_pid = id >> 32;
     context->host_ppid = get_task_ppid(task);
-
-    if (get_config(CONFIG_MODE) == MODE_CONTAINER) {
-        context->tid = get_task_ns_pid(task);
-        context->pid = get_task_ns_tgid(task);
-        context->ppid = get_task_ns_ppid(task);
-    } else {
-        context->tid = context->host_tid;
-        context->pid = context->host_pid;
-        context->ppid = context->host_ppid;
-    }
+    context->tid = get_task_ns_pid(task);
+    context->pid = get_task_ns_tgid(task);
+    context->ppid = get_task_ns_ppid(task);
     context->mnt_id = get_task_mnt_ns_id(task);
     context->pid_id = get_task_pid_ns_id(task);
     context->uid = bpf_get_current_uid_gid();
