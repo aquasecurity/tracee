@@ -115,6 +115,7 @@ type Tracee struct {
 	printer       eventPrinter
 	stats         statsStore
 	capturedFiles map[string]int64
+	mntNsFirstPid map[uint32]uint32
 }
 
 type counter int32
@@ -186,6 +187,17 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	}
 
 	t.capturedFiles = make(map[string]int64)
+	t.mntNsFirstPid = make(map[uint32]uint32)
+	// Save host mount namespace init pid (1)
+	mnt_ns_link, err := os.Readlink("/proc/1/ns/mnt")
+	if err == nil {
+		mnt_ns_str := strings.TrimPrefix(mnt_ns_link, "mnt:[")
+		mnt_ns_str = strings.TrimSuffix(mnt_ns_str, "]")
+		mnt_ns, err := strconv.Atoi(mnt_ns_str)
+		if err == nil {
+			t.mntNsFirstPid[uint32(mnt_ns)] = 1
+		}
+	}
 	return t, nil
 }
 
@@ -437,16 +449,26 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 			if sourceFilePath[0] != '/' {
 				return nil
 			}
-			sourceFileStat, err := os.Stat(sourceFilePath)
+			if ctx.Pid == 1 {
+				t.mntNsFirstPid[ctx.MntID] = ctx.HostPid
+			}
+			pid := ctx.HostPid
+			if firstPid, ok := t.mntNsFirstPid[ctx.MntID]; ok {
+				pid = firstPid
+			}
+			procSourceFilePath := filepath.Join(fmt.Sprintf("/proc/%s/root", strconv.Itoa(int(pid))), sourceFilePath)
+			sourceFileStat, err := os.Stat(procSourceFilePath)
 			if err != nil {
 				return err
 			}
 			sourceCtime := sourceFileStat.Sys().(*syscall.Stat_t).Ctim.Nano()
-			lastCtime, ok := t.capturedFiles[sourceFilePath]
+			// Add mnt ns to path to uniquely identify it
+			uniqueSourceFilePath := filepath.Join(strconv.Itoa(int(ctx.MntID)), sourceFilePath)
+			lastCtime, ok := t.capturedFiles[uniqueSourceFilePath]
 			if ok && lastCtime == sourceCtime {
 				return nil
 			}
-			t.capturedFiles[sourceFilePath] = sourceCtime
+			t.capturedFiles[uniqueSourceFilePath] = sourceCtime
 
 			destinationDirPath := filepath.Join(t.config.OutputPath, strconv.Itoa(int(ctx.MntID)))
 			if err := os.MkdirAll(destinationDirPath, 0755); err != nil {
@@ -454,7 +476,7 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 			}
 			destinationFilePath := filepath.Join(destinationDirPath, fmt.Sprintf("exec.%d.%s", ctx.Ts, filepath.Base(sourceFilePath)))
 
-			err = copyFileByPath(sourceFilePath, destinationFilePath)
+			err = copyFileByPath(procSourceFilePath, destinationFilePath)
 			if err != nil {
 				return err
 			}
