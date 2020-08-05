@@ -584,19 +584,23 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 // context struct contains common metadata that is collected for all types of events
 // it is used to unmarshal binary data and therefore should match (bit by bit) to the `context_t` struct in the ebpf code.
 type context struct {
-	Ts      uint64
-	Pid     uint32
-	Tid     uint32
-	Ppid    uint32
-	Uid     uint32
-	MntID   uint32
-	PidID   uint32
-	Comm    [16]byte
-	UtsName [16]byte
-	EventID int32
-	Argnum  uint8
-	_       [3]byte
-	Retval  int64
+	Ts       uint64
+	Pid      uint32
+	Tid      uint32
+	Ppid     uint32
+	HostPid  uint32
+	HostTid  uint32
+	HostPpid uint32
+	Uid      uint32
+	MntID    uint32
+	PidID    uint32
+	Comm     [16]byte
+	UtsName  [16]byte
+	EventID  int32
+	Argnum   uint8
+	_        [3]byte //padding for Argnum (start address should be devisible by size of member)
+	Retval   int64
+	_        [4]byte //padding for the struct (size of struct should be devisible by size of largest member)
 }
 
 func (t *Tracee) processLostEvents() {

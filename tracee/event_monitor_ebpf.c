@@ -504,6 +504,9 @@ typedef struct context {
     u32 pid;                    // PID as in the userspace term
     u32 tid;                    // TID as in the userspace term
     u32 ppid;                   // Parent PID as in the userspace term
+    u32 host_pid;               // PID in host pid namespace
+    u32 host_tid;               // TID in host pid namespace
+    u32 host_ppid;              // Parent PID in host pid namespace
     u32 uid;
     u32 mnt_id;
     u32 pid_id;
@@ -803,15 +806,19 @@ static __always_inline int init_context(context_t *context)
     struct task_struct *task;
     task = (struct task_struct *)bpf_get_current_task();
 
+    u64 id = bpf_get_current_pid_tgid();
+    context->host_tid = id;
+    context->host_pid = id >> 32;
+    context->host_ppid = get_task_ppid(task);
+
     if (get_config(CONFIG_MODE) == MODE_CONTAINER) {
         context->tid = get_task_ns_pid(task);
         context->pid = get_task_ns_tgid(task);
         context->ppid = get_task_ns_ppid(task);
     } else {
-        u64 id = bpf_get_current_pid_tgid();
-        context->tid = id;
-        context->pid = id >> 32;
-        context->ppid = get_task_ppid(task);
+        context->tid = context->host_tid;
+        context->pid = context->host_pid;
+        context->ppid = context->host_ppid;
     }
     context->mnt_id = get_task_mnt_ns_id(task);
     context->pid_id = get_task_pid_ns_id(task);
