@@ -43,11 +43,11 @@ This will run Tracee with no arguments which will collect all events from all ne
 Here is how the output looks:
 
 ```
-TIME(s)        UID    COMM             PID     TID     RET              EVENT                ARGS
-174011.036880  1000   zsh              11540   11540   0               execve               pathname: /usr/bin/ls ,pathname: /usr/bin/ls ,argv: [ls]
-174011.037189  1000   zsh              11540   11540   0               security_bprm_check  pathname: /usr/bin/ls ,pathname: /usr/bin/ls ,dev: 8388610 ,inode: 777
-174011.037436  1000   ls               11540   11540  -8589934592      access               pathname: /etc/ld.so.preload ,pathname: /etc/ld.so.preload ,mode: R_OK
-174011.037465  1000   ls               11540   11540   0               security_file_open   pathname: /etc/ld.so.cache ,pathname: /etc/ld.so.cache ,flags: O_RDONLY|O_LARGEFILE ,dev: 8388610 ,inode: 533737
+TIME(s)        UID    COMM             PID     TID     RET             EVENT                ARGS
+174591.669240  1000   zsh              12276   12276   0               execve               pathname: /usr/bin/ls, pathname: /usr/bin/ls, argv: [ls]
+174591.669479  1000   zsh              12276   12276   0               security_bprm_check  pathname: /usr/bin/ls, pathname: /usr/bin/ls, dev: 8388610, inode: 777
+174591.669710  1000   ls               12276   12276  -8589934592      access               pathname: /etc/ld.so.preload, pathname: /etc/ld.so.preload, mode: R_OK
+174591.669738  1000   ls               12276   12276   0               security_file_open   pathname: /etc/ld.so.cache, pathname: /etc/ld.so.cache, flags: O_RDONLY|O_LARGEFILE, dev: 8388610, inode: 533737
 ...
 ```
 
