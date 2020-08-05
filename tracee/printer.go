@@ -19,20 +19,22 @@ type eventPrinter interface {
 	Error(err error)
 }
 
-func newEventPrinter(kind string, out io.Writer, err io.Writer) eventPrinter {
+func newEventPrinter(kind string, containerMode bool, out io.Writer, err io.Writer) eventPrinter {
 	var res eventPrinter
 	switch kind {
 	case "table":
 		res = &tableEventPrinter{
-			out:     out,
-			err:     err,
-			verbose: false,
+			out:           out,
+			err:           err,
+			verbose:       false,
+			containerMode: containerMode,
 		}
 	case "table-verbose":
 		res = &tableEventPrinter{
-			out:     out,
-			err:     err,
-			verbose: true,
+			out:           out,
+			err:           err,
+			verbose:       true,
+			containerMode: containerMode,
 		}
 	case "json":
 		res = &jsonEventPrinter{
@@ -105,28 +107,45 @@ func newEvent(ctx context, argsNames []string, args []interface{}) (Event, error
 }
 
 type tableEventPrinter struct {
-	tracee  *Tracee
-	out     io.Writer
-	err     io.Writer
-	verbose bool
+	tracee        *Tracee
+	out           io.Writer
+	err           io.Writer
+	verbose       bool
+	containerMode bool
 }
 
 func (p tableEventPrinter) Init() {}
 
 func (p tableEventPrinter) Preamble() {
 	if p.verbose {
-		fmt.Fprintf(p.out, "%-14s %-16s %-12s %-12s %-6s %-16s %-6s %-6s %-6s %-16s %-20s %s", "TIME(s)", "UTS_NAME", "MNT_NS", "PID_NS", "UID", "COMM", "PID", "TID", "PPID", "RET", "EVENT", "ARGS")
+		if p.containerMode {
+			fmt.Fprintf(p.out, "%-14s %-16s %-12s %-12s %-6s %-16s %-11s %-11s %-11s %-16s %-20s %s", "TIME(s)", "UTS_NAME", "MNT_NS", "PID_NS", "UID", "COMM", "PID/host", "TID/host", "PPID/host", "RET", "EVENT", "ARGS")
+		} else {
+			fmt.Fprintf(p.out, "%-14s %-16s %-12s %-12s %-6s %-16s %-5s %-5s %-5s %-16s %-20s %s", "TIME(s)", "UTS_NAME", "MNT_NS", "PID_NS", "UID", "COMM", "PID", "TID", "PPID", "RET", "EVENT", "ARGS")
+		}
 	} else {
-		fmt.Fprintf(p.out, "%-14s %-16s %-6s %-16s %-6s %-6s %-6s %-16s %-20s %s", "TIME(s)", "UTS_NAME", "UID", "COMM", "PID", "TID", "PPID", "RET", "EVENT", "ARGS")
+		if p.containerMode {
+			fmt.Fprintf(p.out, "%-14s %-6s %-16s %-11s %-16s %-20s %s", "TIME(s)", "UID", "COMM", "PID/host", "RET", "EVENT", "ARGS")
+		} else {
+			fmt.Fprintf(p.out, "%-14s %-6s %-16s %-5s %-16s %-20s %s", "TIME(s)", "UID", "COMM", "PID", "RET", "EVENT", "ARGS")
+		}
 	}
 	fmt.Fprintln(p.out)
 }
 
 func (p tableEventPrinter) Print(event Event) {
 	if p.verbose {
-		fmt.Fprintf(p.out, "%-14f %-16s %-12d %-12d %-6d %-16s %-6d %-6d %-6d %-16d %-20s ", event.Timestamp, event.HostName, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue, event.EventName)
+		if p.containerMode {
+			fmt.Fprintf(p.out, "%-14f %-16s %-12d %-12d %-6d %-16s %-5d/%-5d %-5d/%-5d %-5d/%-5d %-16d %-20s ", event.Timestamp, event.HostName, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ParentProcessID, event.ParentProcessID, event.ReturnValue, event.EventName)
+		} else {
+			fmt.Fprintf(p.out, "%-14f %-16s %-12d %-12d %-6d %-16s %-5d %-5d %-5d %-16d %-20s ", event.Timestamp, event.HostName, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue, event.EventName)
+		}
 	} else {
-		fmt.Fprintf(p.out, "%-14f %-16s %-6d %-16s %-6d %-6d %-6d %-16d %-20s ", event.Timestamp, event.HostName, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue, event.EventName)
+		if p.containerMode {
+			fmt.Fprintf(p.out, "%-14f %-6d %-16s %-5d/%-5d %-16d %-20s ", event.Timestamp, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ReturnValue, event.EventName)
+		} else {
+			fmt.Fprintf(p.out, "%-14f %-6d %-16s %-5d %-16d %-20s ", event.Timestamp, event.UserID, event.ProcessName, event.ProcessID, event.ReturnValue, event.EventName)
+		}
 	}
 	for _, arg := range event.Args {
 		fmt.Fprintf(p.out, "%s: %v ", arg.Name, arg.Value)
