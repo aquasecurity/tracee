@@ -204,6 +204,89 @@ func PrintExecFlags(flags uint32) string {
 	return strings.Join(f, "|")
 }
 
+// PrintCloneFlags prints the `flags` bitmask argument of the `clone` syscall
+// https://man7.org/linux/man-pages/man2/clone.2.html
+// https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/sched.h
+func PrintCloneFlags(flags uint64) string {
+	var f []string
+	if flags&0x00000100 == 0x00000100 {
+		f = append(f, "CLONE_VM")
+	}
+	if flags&0x00000200 == 0x00000200 {
+		f = append(f, "CLONE_FS")
+	}
+	if flags&0x00000400 == 0x00000400 {
+		f = append(f, "CLONE_FILES")
+	}
+	if flags&0x00000800 == 0x00000800 {
+		f = append(f, "CLONE_SIGHAND")
+	}
+	if flags&0x00001000 == 0x00001000 {
+		f = append(f, "CLONE_PIDFD")
+	}
+	if flags&0x00002000 == 0x00002000 {
+		f = append(f, "CLONE_PTRACE")
+	}
+	if flags&0x00004000 == 0x00004000 {
+		f = append(f, "CLONE_VFORK")
+	}
+	if flags&0x00008000 == 0x00008000 {
+		f = append(f, "CLONE_PARENT")
+	}
+	if flags&0x00010000 == 0x00010000 {
+		f = append(f, "CLONE_THREAD")
+	}
+	if flags&0x00020000 == 0x00020000 {
+		f = append(f, "CLONE_NEWNS")
+	}
+	if flags&0x00040000 == 0x00040000 {
+		f = append(f, "CLONE_SYSVSEM")
+	}
+	if flags&0x00080000 == 0x00080000 {
+		f = append(f, "CLONE_SETTLS")
+	}
+	if flags&0x00100000 == 0x00100000 {
+		f = append(f, "CLONE_PARENT_SETTID")
+	}
+	if flags&0x00200000 == 0x00200000 {
+		f = append(f, "CLONE_CHILD_CLEARTID")
+	}
+	if flags&0x00400000 == 0x00400000 {
+		f = append(f, "CLONE_DETACHED")
+	}
+	if flags&0x00800000 == 0x00800000 {
+		f = append(f, "CLONE_UNTRACED")
+	}
+	if flags&0x01000000 == 0x01000000 {
+		f = append(f, "CLONE_CHILD_SETTID")
+	}
+	if flags&0x02000000 == 0x02000000 {
+		f = append(f, "CLONE_NEWCGROUP")
+	}
+	if flags&0x04000000 == 0x04000000 {
+		f = append(f, "CLONE_NEWUTS")
+	}
+	if flags&0x08000000 == 0x08000000 {
+		f = append(f, "CLONE_NEWIPC")
+	}
+	if flags&0x10000000 == 0x10000000 {
+		f = append(f, "CLONE_NEWUSER")
+	}
+	if flags&0x20000000 == 0x20000000 {
+		f = append(f, "CLONE_NEWPID")
+	}
+	if flags&0x40000000 == 0x40000000 {
+		f = append(f, "CLONE_NEWNET")
+	}
+	if flags&0x80000000 == 0x80000000 {
+		f = append(f, "CLONE_IO")
+	}
+	if len(f) == 0 {
+		f = append(f, "0")
+	}
+	return strings.Join(f, "|")
+}
+
 // PrintSocketType prints the `type` bitmask argument of the `socket` syscall
 // http://man7.org/linux/man-pages/man2/socket.2.html
 // https://elixir.bootlin.com/linux/v5.5.3/source/arch/mips/include/asm/socket.h

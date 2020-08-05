@@ -576,6 +576,10 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 		if alert, isAlert := args[TagAlert].(alert); isAlert {
 			args[TagAlert] = PrintAlert(alert)
 		}
+	case CloneEventID:
+		if flags, isUint64 := args[TagFlags].(uint64); isUint64 {
+			args[TagFlags] = PrintCloneFlags(flags)
+		}
 	}
 
 	return nil
