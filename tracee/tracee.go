@@ -504,8 +504,8 @@ func (t *Tracee) shouldPrintEvent(e RawEvent) bool {
 				t.handleError(fmt.Errorf("raw_syscalls: unknown syscall id: %d", id))
 				return false
 			}
-			if event.Name != "reserved" {
-				// We already monitor this system call by another event
+			if t.eventsToTrace[id] {
+				// We already print this system call by another event requested by the user
 				return false
 			}
 		}
