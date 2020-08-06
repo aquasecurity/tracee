@@ -56,17 +56,21 @@ TIME(s)        UID    COMM             PID     TID     RET             EVENT    
 Each line is a single event collected by Tracee, with the following information:
 
 1. TIME - shows the event time relative to system boot time in seconds
-2. UTS_NAME - uts namespace name. As there is no container id object in the kernel, and docker/k8s will usually set this to the container id, we use this field to distinguish between containers.
-3. MNT_NS - mount namespace inode number.
-4. PID_NS - pid namespace inode number. In order to know if there are different containers in the same pid namespace (e.g. in a k8s pod), it is possible to check this value
-5. UID - real user id (in host user namespace) of the calling process
-6. EVENT - identifies the event (e.g. syscall name)
-7. COMM - name of the calling process
-8. PID - pid of the calling process
-9. TID - tid of the calling thread
-10. PPID - parent pid of the calling process
-11. RET - value returned by the function
-12. ARGS - list of arguments given to the function
+2. UID - real user id (in host user namespace) of the calling process
+3. COMM - name of the calling process
+4. PID - pid of the calling process
+5. TID - tid of the calling thread
+6. RET - value returned by the function
+7. EVENT - identifies the event (e.g. syscall name)
+8. ARGS - list of arguments given to the function
+
+When using table-verbose output, the following information is added:
+
+1. UTS_NAME - uts namespace name. As there is no container id object in the kernel, and docker/k8s will usually set this to the container id, we use this field to distinguish between containers.
+2. MNT_NS - mount namespace inode number.
+3. PID_NS - pid namespace inode number. In order to know if there are different containers in the same pid namespace (e.g. in a k8s pod), it is possible to check this value
+4. PPID - parent pid of the calling process
+
 
 ## Configuration flags
 
