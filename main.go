@@ -221,11 +221,18 @@ func isCapable() bool {
 
 func printList() {
 	var b strings.Builder
-	for _, event := range tracee.EventsIDToEvent {
+	b.WriteString("System Calls:\n")
+	for i := 0; i < int(tracee.RawSyscallsEventID); i++ {
+		event := tracee.EventsIDToEvent[int32(i)]
 		if event.Name == "reserved" {
 			continue
 		}
-		b.WriteString(event.Name + "\n")
+		b.WriteString("  " + event.Name + "\n")
+	}
+	b.WriteString("\nOther Events:\n")
+	for i := int(tracee.RawSyscallsEventID); i < len(tracee.EventsIDToEvent); i++ {
+		event := tracee.EventsIDToEvent[int32(i)]
+		b.WriteString("  " + event.Name + "\n")
 	}
 	fmt.Println(b.String())
 }
