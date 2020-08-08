@@ -536,6 +536,10 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 		if addr, isUint64 := args[TagAddr].(uint64); isUint64 {
 			args[TagAddr] = fmt.Sprintf("0x%X", addr)
 		}
+	case MunmapEventID, BrkEventID, MsyncEventID, MadviseEventID:
+		if addr, isUint64 := args[TagAddr].(uint64); isUint64 {
+			args[TagAddr] = fmt.Sprintf("0x%X", addr)
+		}
 	case PtraceEventID:
 		if req, isInt32 := args[TagRequest].(int32); isInt32 {
 			args[TagRequest] = PrintPtraceRequest(req)
@@ -601,6 +605,27 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 	case CloneEventID:
 		if flags, isUint64 := args[TagFlags].(uint64); isUint64 {
 			args[TagFlags] = PrintCloneFlags(flags)
+		}
+	case ReadEventID, WriteEventID, Pread64EventID, Pwrite64EventID:
+		if addr, isUint64 := args[TagBuf].(uint64); isUint64 {
+			args[TagBuf] = fmt.Sprintf("0x%X", addr)
+		}
+	case SendtoEventID, RecvfromEventID:
+		if addr, isUint64 := args[TagBuf].(uint64); isUint64 {
+			args[TagBuf] = fmt.Sprintf("0x%X", addr)
+		}
+		addrTag := TagDestAddr
+		if ctx.EventID == RecvfromEventID {
+			addrTag = TagSrcAddr
+		}
+		if sockAddr, isStrMap := args[addrTag].(map[string]string); isStrMap {
+			var s string
+			for key, val := range sockAddr {
+				s += fmt.Sprintf("'%s': '%s',", key, val)
+			}
+			s = strings.TrimSuffix(s, ",")
+			s = fmt.Sprintf("{%s}", s)
+			args[addrTag] = s
 		}
 	}
 
