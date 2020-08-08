@@ -26,7 +26,7 @@ func main() {
 			if c.IsSet("container") && c.IsSet("pid") {
 				return fmt.Errorf("'container' and 'pid' can't be used in parallel")
 			}
-			events, err := prepareEventsToTrace(c.StringSlice("event"), c.StringSlice("exclude-event"))
+			events, err := prepareEventsToTrace(c.StringSlice("event"), c.StringSlice("events-set"), c.StringSlice("exclude-event"))
 			if err != nil {
 				return err
 			}
@@ -86,6 +86,12 @@ func main() {
 				Aliases: []string{"e"},
 				Value:   nil,
 				Usage:   "trace only the specified event or syscall. use this flag multiple times to choose multiple events",
+			},
+			&cli.StringSliceFlag{
+				Name:    "events-set",
+				Aliases: []string{"s"},
+				Value:   nil,
+				Usage:   "trace all the events which belong to this set. use this flag multiple times to choose multiple sets",
 			},
 			&cli.StringSliceFlag{
 				Name:  "exclude-event",
@@ -169,36 +175,45 @@ func main() {
 	}
 }
 
-func prepareEventsToTrace(eventsToTrace []string, excludeEvents []string) ([]int32, error) {
+func prepareEventsToTrace(eventsToTrace []string, setsToTrace []string, excludeEvents []string) ([]int32, error) {
 	var res []int32
 	eventsNameToID := make(map[string]int32, len(tracee.EventsIDToEvent))
-	for _, event := range tracee.EventsIDToEvent {
+	setsToEvents := make(map[string][]int32)
+	isExcluded := make(map[int32]bool)
+	for id, event := range tracee.EventsIDToEvent {
 		eventsNameToID[event.Name] = event.ID
+		for _, set := range event.Sets {
+			setsToEvents[set] = append(setsToEvents[set], id)
+		}
 	}
-	if eventsToTrace == nil {
-		for _, name := range excludeEvents {
-			id, ok := eventsNameToID[name]
-			if !ok {
-				return nil, fmt.Errorf("invalid event to exclude: %s", name)
-			}
-			event := tracee.EventsIDToEvent[id]
-			event.EnabledByDefault = false
-			tracee.EventsIDToEvent[id] = event
+	for _, name := range excludeEvents {
+		id, ok := eventsNameToID[name]
+		if !ok {
+			return nil, fmt.Errorf("invalid event to exclude: %s", name)
 		}
-		res = make([]int32, 0, len(tracee.EventsIDToEvent))
-		for _, event := range tracee.EventsIDToEvent {
-			if event.EnabledByDefault {
-				res = append(res, event.ID)
-			}
+		isExcluded[id] = true
+	}
+	if eventsToTrace == nil && setsToTrace == nil {
+		setsToTrace = append(setsToTrace, "default")
+	}
+
+	res = make([]int32, 0, len(tracee.EventsIDToEvent))
+	for _, name := range eventsToTrace {
+		id, ok := eventsNameToID[name]
+		if !ok {
+			return nil, fmt.Errorf("invalid event to trace: %s", name)
 		}
-	} else {
-		res = make([]int32, 0, len(eventsToTrace))
-		for _, name := range eventsToTrace {
-			id, ok := eventsNameToID[name]
-			if !ok {
-				return nil, fmt.Errorf("invalid event to trace: %s", name)
+		res = append(res, id)
+	}
+	for _, set := range setsToTrace {
+		setEvents, ok := setsToEvents[set]
+		if !ok {
+			return nil, fmt.Errorf("invalid set to trace: %s", set)
+		}
+		for _, id := range setEvents {
+			if !isExcluded[id] {
+				res = append(res, id)
 			}
-			res = append(res, id)
 		}
 	}
 	return res, nil
@@ -221,18 +236,30 @@ func isCapable() bool {
 
 func printList() {
 	var b strings.Builder
-	b.WriteString("System Calls:\n")
+	b.WriteString("System Calls:           Sets:\n")
+	b.WriteString("____________            ____\n\n")
 	for i := 0; i < int(tracee.RawSyscallsEventID); i++ {
 		event := tracee.EventsIDToEvent[int32(i)]
 		if event.Name == "reserved" {
 			continue
 		}
-		b.WriteString("  " + event.Name + "\n")
+		if event.Sets != nil {
+			eventSets := fmt.Sprintf("%-20s    %v\n", event.Name, event.Sets)
+			b.WriteString(eventSets)
+		} else {
+			b.WriteString(event.Name + "\n")
+		}
 	}
-	b.WriteString("\nOther Events:\n")
+	b.WriteString("\n\nOther Events:           Sets:\n")
+	b.WriteString("____________            ____\n\n")
 	for i := int(tracee.RawSyscallsEventID); i < len(tracee.EventsIDToEvent); i++ {
 		event := tracee.EventsIDToEvent[int32(i)]
-		b.WriteString("  " + event.Name + "\n")
+		if event.Sets != nil {
+			eventSets := fmt.Sprintf("%-20s    %v\n", event.Name, event.Sets)
+			b.WriteString(eventSets)
+		} else {
+			b.WriteString(event.Name + "\n")
+		}
 	}
 	fmt.Println(b.String())
 }
