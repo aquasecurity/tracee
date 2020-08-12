@@ -5,7 +5,7 @@ Tracee is a lightweight and easy to use container and system tracing tool. It al
 
 Other than tracing, Tracee is also capable of capturing files written to disk or memory ("fileless"), and extracting binaries that are dynamically loaded to an application's memory (e.g. when an application uses a packer). With these features, it is possible to quickly gain insights about the running processes that previously required the use of dynamic analysis tools and special knowledge.
 
-[Check out this quick demo of tracee:<br /> ![youtube thumbnail](images/yt-thumbnail.jpg)](https://youtu.be/1lI875HPtdU)
+[Check out this quick demo of tracee](https://youtu.be/WTqE2ae257o)
 
 ## Getting started
 
