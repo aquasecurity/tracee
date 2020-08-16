@@ -798,6 +798,9 @@ func readStringFromBuff(buff io.Reader) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error reading string size: %v", err)
 	}
+	if size > 4096 {
+		return "", fmt.Errorf("string size too big: %d", size)
+	}
 	res, err := readByteSliceFromBuff(buff, int(size-1)) //last byte is string terminating null
 	defer func() {
 		var dummy int8
