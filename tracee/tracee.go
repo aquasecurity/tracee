@@ -201,6 +201,37 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	return t, nil
 }
 
+func supportRawTP() (bool, error) {
+	var uname syscall.Utsname
+	if err := syscall.Uname(&uname); err != nil {
+		return false, err
+	}
+	var buf [65]byte
+	for i, b := range uname.Release {
+		buf[i] = byte(b)
+	}
+	ver := string(buf[:])
+	if i := strings.Index(ver, "\x00"); i != -1 {
+		ver = ver[:i]
+	}
+	ver_split := strings.Split(ver, ".")
+	if len(ver_split) < 2 {
+		return false, fmt.Errorf("invalid version returned by uname")
+	}
+	major, err := strconv.Atoi(ver_split[0])
+	if err != nil {
+		return false, fmt.Errorf("invalid major number: %s", ver_split[0])
+	}
+	minor, err := strconv.Atoi(ver_split[1])
+	if err != nil {
+		return false, fmt.Errorf("invalid minor number: %s", ver_split[1])
+	}
+	if ((major == 4) && (minor >= 17)) || (major > 4) {
+		return true, nil
+	}
+	return false, nil
+}
+
 func (t *Tracee) initBPF(ebpfProgram string) error {
 	var err error
 
@@ -226,7 +257,12 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 		}
 	}
 
-	sysPrefix := bpf.GetSyscallPrefix()
+	supportRawTracepoints, err := supportRawTP()
+	if err != nil {
+		return fmt.Errorf("Failed to find kernel version: %v", err)
+	}
+	sysEnterTailsBPFTable := bpf.NewTable(t.bpfModule.TableId("sys_enter_tails"), t.bpfModule)
+	sysExitTailsBPFTable := bpf.NewTable(t.bpfModule.TableId("sys_exit_tails"), t.bpfModule)
 	for e, _ := range t.eventsToTrace {
 		event, ok := EventsIDToEvent[e]
 		if !ok {
@@ -234,22 +270,34 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 		}
 		for _, probe := range event.Probes {
 			if probe.attach == sysCall {
-				kp, err := t.bpfModule.LoadKprobe(fmt.Sprintf("syscall__%s", probe.fn))
+				var kp int
+				if e == ExecveEventID || e == ExecveatEventID {
+					// execve functions require tail call on syscall enter as they perform extra work
+					if supportRawTracepoints {
+						kp, err = t.bpfModule.LoadRawTracepoint(fmt.Sprintf("syscall__%s", probe.fn))
+					} else {
+						kp, err = t.bpfModule.LoadTracepoint(fmt.Sprintf("syscall__%s", probe.fn))
+					}
+					if err != nil {
+						return fmt.Errorf("error loading kprobe %s: %v", probe.fn, err)
+					}
+					binary.LittleEndian.PutUint32(key, uint32(e))
+					binary.LittleEndian.PutUint32(leaf, uint32(kp))
+					sysEnterTailsBPFTable.Set(key, leaf)
+				}
+
+				// set syscall exit tail calls
+				if supportRawTracepoints {
+					kp, err = t.bpfModule.LoadRawTracepoint(fmt.Sprintf("trace_ret_%s", probe.fn))
+				} else {
+					kp, err = t.bpfModule.LoadTracepoint(fmt.Sprintf("trace_ret_%s", probe.fn))
+				}
 				if err != nil {
 					return fmt.Errorf("error loading kprobe %s: %v", probe.fn, err)
 				}
-				err = t.bpfModule.AttachKprobe(sysPrefix+probe.event, kp, -1)
-				if err != nil {
-					return fmt.Errorf("error attaching kprobe %s: %v", probe.event, err)
-				}
-				kp, err = t.bpfModule.LoadKprobe(fmt.Sprintf("trace_ret_%s", probe.fn))
-				if err != nil {
-					return fmt.Errorf("error loading kprobe %s: %v", probe.fn, err)
-				}
-				err = t.bpfModule.AttachKretprobe(sysPrefix+probe.event, kp, -1)
-				if err != nil {
-					return fmt.Errorf("error attaching kretprobe %s: %v", probe.event, err)
-				}
+				binary.LittleEndian.PutUint32(key, uint32(e))
+				binary.LittleEndian.PutUint32(leaf, uint32(kp))
+				sysExitTailsBPFTable.Set(key, leaf)
 				continue
 			}
 			if probe.attach == kprobe {
@@ -282,6 +330,31 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 				err = t.bpfModule.AttachTracepoint(probe.event, tp)
 				if err != nil {
 					return fmt.Errorf("error attaching tracepoint %s: %v", probe.event, err)
+				}
+				continue
+			}
+			if probe.attach == rawTracepoint {
+				// We fallback to regular tracepoint in case kernel doesn't support raw tracepoints (< 4.17)
+				tp_split := strings.Split(probe.event, ":")
+				category := tp_split[0]
+				tp_event := tp_split[1]
+				var tp int
+
+				if supportRawTracepoints {
+					tp, err = t.bpfModule.LoadRawTracepoint(probe.fn)
+				} else {
+					tp, err = t.bpfModule.LoadTracepoint(fmt.Sprintf("tracepoint__%s__%s", category, tp_event))
+				}
+				if err != nil {
+					return fmt.Errorf("error loading raw tracepoint %s: %v", probe.fn, err)
+				}
+				if supportRawTracepoints {
+					err = t.bpfModule.AttachRawTracepoint(tp_event, tp)
+				} else {
+					err = t.bpfModule.AttachTracepoint(probe.event, tp)
+				}
+				if err != nil {
+					return fmt.Errorf("error attaching raw tracepoint %s: %v", tp_event, err)
 				}
 				continue
 			}
@@ -493,7 +566,7 @@ func (t *Tracee) shouldPrintEvent(e RawEvent) bool {
 		return false
 	}
 	switch e.Ctx.EventID {
-	case RawSyscallsEventID:
+	case SysEnterEventID, SysExitEventID:
 		if id, isInt32 := e.RawArgs[TagSyscall].(int32); isInt32 {
 			event, isKnown := EventsIDToEvent[id]
 			if !isKnown {
@@ -515,7 +588,7 @@ func (t *Tracee) shouldPrintEvent(e RawEvent) bool {
 
 func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) error {
 	switch ctx.EventID {
-	case RawSyscallsEventID, CapCapableEventID:
+	case SysEnterEventID, SysExitEventID, CapCapableEventID:
 		//show syscall name instead of id
 		if id, isInt32 := args[TagSyscall].(int32); isInt32 {
 			if event, isKnown := EventsIDToEvent[id]; isKnown {
