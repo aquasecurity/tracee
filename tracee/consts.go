@@ -202,9 +202,9 @@ var argNames = map[argTag]string{
 }
 
 // ProbeType is an enum that describes the mechanism used to attach the event
-// Syscall tracepoints are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#8-system-call-tracepoints
 // Kprobes are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#1-kprobes
 // Tracepoints are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#3-tracepoints
+// Raw tracepoints are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#7-raw-tracepoints
 type probeType uint8
 
 const (
@@ -212,6 +212,7 @@ const (
 	kprobe
 	kretprobe
 	tracepoint
+	rawTracepoint
 )
 
 type probe struct {
@@ -581,7 +582,8 @@ const (
 	Reserved347EventID
 	Reserved348EventID
 	Reserved349EventID
-	RawSyscallsEventID
+	SysEnterEventID
+	SysExitEventID
 	DoExitEventID
 	CapCapableEventID
 	SecurityBprmCheckEventID
@@ -942,7 +944,8 @@ var EventsIDToEvent = map[int32]EventConfig{
 	Reserved347EventID:         EventConfig{ID: Reserved347EventID, Name: "reserved", Probes: []probe{probe{event: "reserved", attach: sysCall, fn: "reserved"}}, EssentialEvent: false, Sets: []string{}},
 	Reserved348EventID:         EventConfig{ID: Reserved348EventID, Name: "reserved", Probes: []probe{probe{event: "reserved", attach: sysCall, fn: "reserved"}}, EssentialEvent: false, Sets: []string{}},
 	Reserved349EventID:         EventConfig{ID: Reserved349EventID, Name: "reserved", Probes: []probe{probe{event: "reserved", attach: sysCall, fn: "reserved"}}, EssentialEvent: false, Sets: []string{}},
-	RawSyscallsEventID:         EventConfig{ID: RawSyscallsEventID, Name: "raw_syscalls", Probes: []probe{probe{event: "raw_syscalls:sys_enter", attach: tracepoint, fn: "tracepoint__raw_syscalls__sys_enter"}}, EssentialEvent: false, Sets: []string{}},
+	SysEnterEventID:            EventConfig{ID: SysEnterEventID, Name: "sys_enter", Probes: []probe{probe{event: "raw_syscalls:sys_enter", attach: rawTracepoint, fn: "raw_tracepoint__sys_enter"}}, EssentialEvent: true, Sets: []string{}},
+	SysExitEventID:             EventConfig{ID: SysExitEventID, Name: "sys_exit", Probes: []probe{probe{event: "raw_syscalls:sys_exit", attach: rawTracepoint, fn: "raw_tracepoint__sys_exit"}}, EssentialEvent: true, Sets: []string{}},
 	DoExitEventID:              EventConfig{ID: DoExitEventID, Name: "do_exit", Probes: []probe{probe{event: "do_exit", attach: kprobe, fn: "trace_do_exit"}}, EssentialEvent: true, Sets: []string{"default"}},
 	CapCapableEventID:          EventConfig{ID: CapCapableEventID, Name: "cap_capable", Probes: []probe{probe{event: "cap_capable", attach: kprobe, fn: "trace_cap_capable"}}, EssentialEvent: false, Sets: []string{"default"}},
 	SecurityBprmCheckEventID:   EventConfig{ID: SecurityBprmCheckEventID, Name: "security_bprm_check", Probes: []probe{probe{event: "security_bprm_check", attach: kprobe, fn: "trace_security_bprm_check"}}, EssentialEvent: false, Sets: []string{"default"}},

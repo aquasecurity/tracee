@@ -165,7 +165,6 @@ func (p tableEventPrinter) Epilogue(stats statsStore) {
 	fmt.Println()
 	fmt.Fprintf(p.out, "End of events stream\n")
 	fmt.Fprintf(p.out, "Stats: %+v\n", stats)
-	fmt.Fprintf(p.out, "Tracee is closing...\n")
 }
 
 type jsonEventPrinter struct {
