@@ -493,13 +493,15 @@ enum event_id {
     RESERVED347,
     RESERVED348,
     RESERVED349,
-    RAW_SYSCALLS,
+    RAW_SYS_ENTER,
+    RAW_SYS_EXIT,
     DO_EXIT,
     CAP_CAPABLE,
     SECURITY_BPRM_CHECK,
     SECURITY_FILE_OPEN,
     VFS_WRITE,
     MEM_PROT_ALERT,
+    MAX_EVENT_ID,
 };
 
 /*=============================== INTERNAL STRUCTS ===========================*/
@@ -576,11 +578,14 @@ BPF_HASH(config_map, u32, u32);                     // Various configurations
 BPF_HASH(chosen_events_map, u32, u32);              // Various configurations
 BPF_HASH(pids_map, u32, u32);                       // Save container pid namespaces
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
+BPF_HASH(ret_map, u64, u64);                        // Persist return value to be used in tail calls
 BPF_HASH(bin_args_map, u64, bin_args_t);            // Persist args for send_bin funtion
 BPF_ARRAY(file_filter, path_filter_t, 3);           // Used to filter vfs_write events
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);         // Percpu global buffer variables
 BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS);       // Holds offsets to bufs respectively
 BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);          // Used to store programs for tail calls
+BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);      // Used to store programs for tail calls
+BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID);       // Used to store programs for tail calls
 
 /*================================== EVENTS ====================================*/
 
@@ -640,26 +645,6 @@ static __always_inline char * get_task_uts_name(struct task_struct *task)
 static __always_inline u32 get_task_ppid(struct task_struct *task)
 {
     return task->real_parent->pid;
-}
-
-static __always_inline void get_syscall_args(struct pt_regs *ctx, args_t *args)
-{
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
-    args->args[0] = PT_REGS_PARM1(ctx);
-    args->args[1] = PT_REGS_PARM2(ctx);
-    args->args[2] = PT_REGS_PARM3(ctx);
-    args->args[3] = PT_REGS_PARM4(ctx);
-    args->args[4] = PT_REGS_PARM5(ctx);
-    args->args[5] = PT_REGS_PARM6(ctx);
-#else
-    struct pt_regs * ctx2 = (struct pt_regs *)ctx->di;
-    bpf_probe_read(&args->args[0], sizeof(args->args[0]), &ctx2->di);
-    bpf_probe_read(&args->args[1], sizeof(args->args[1]), &ctx2->si);
-    bpf_probe_read(&args->args[2], sizeof(args->args[2]), &ctx2->dx);
-    bpf_probe_read(&args->args[3], sizeof(args->args[3]), &ctx2->r10);
-    bpf_probe_read(&args->args[4], sizeof(args->args[4]), &ctx2->r8);
-    bpf_probe_read(&args->args[5], sizeof(args->args[5]), &ctx2->r9);
-#endif
 }
 
 static __always_inline struct pt_regs* get_task_pt_regs()
@@ -1075,7 +1060,7 @@ static __always_inline int get_path_string(buf_t *string_p, struct path *path)
     return buf_off;
 }
 
-static __always_inline int events_perf_submit(struct pt_regs *ctx)
+static __always_inline int events_perf_submit(void *ctx)
 {
     u32* off = get_buf_off(SUBMIT_BUF_IDX);
     if (off == NULL)
@@ -1098,22 +1083,18 @@ static __always_inline int is_container()
     return lookup_pid_ns(task);
 }
 
-static __always_inline int save_args(struct pt_regs *ctx, u32 event_id, bool is_syscall)
+static __always_inline int save_args(struct pt_regs *ctx, u32 event_id)
 {
     u64 id;
     u32 tid;
     args_t args = {};
 
-    if (!is_syscall) {
-        args.args[0] = PT_REGS_PARM1(ctx);
-        args.args[1] = PT_REGS_PARM2(ctx);
-        args.args[2] = PT_REGS_PARM3(ctx);
-        args.args[3] = PT_REGS_PARM4(ctx);
-        args.args[4] = PT_REGS_PARM5(ctx);
-        args.args[5] = PT_REGS_PARM6(ctx);
-    } else {
-        get_syscall_args(ctx, &args);
-    }
+    args.args[0] = PT_REGS_PARM1(ctx);
+    args.args[1] = PT_REGS_PARM2(ctx);
+    args.args[2] = PT_REGS_PARM3(ctx);
+    args.args[3] = PT_REGS_PARM4(ctx);
+    args.args[4] = PT_REGS_PARM5(ctx);
+    args.args[5] = PT_REGS_PARM6(ctx);
 
     id = event_id;
     tid = bpf_get_current_pid_tgid();
@@ -1156,6 +1137,46 @@ static __always_inline int del_args(u32 event_id)
     id = id << 32 | tid;
 
     args_map.delete(&id);
+
+    return 0;
+}
+
+static __always_inline int save_retval(u64 retval, u32 event_id)
+{
+    u64 id = event_id;
+    u32 tid = bpf_get_current_pid_tgid();
+    id = id << 32 | tid;
+
+    ret_map.update(&id, &retval);
+
+    return 0;
+}
+
+static __always_inline int load_retval(u64 *retval, u32 event_id)
+{
+    u64 id = event_id;
+    u32 tid = bpf_get_current_pid_tgid();
+    id = id << 32 | tid;
+
+    u64 *saved_retval = ret_map.lookup(&id);
+    if (saved_retval == 0) {
+        // missed entry or not traced
+        return -1;
+    }
+
+    *retval = *saved_retval;
+    ret_map.delete(&id);
+
+    return 0;
+}
+
+static __always_inline int del_retval(u32 event_id)
+{
+    u64 id = event_id;
+    u32 tid = bpf_get_current_pid_tgid();
+    id = id << 32 | tid;
+
+    ret_map.delete(&id);
 
     return 0;
 }
@@ -1265,7 +1286,7 @@ static __always_inline int save_args_to_submit_buf(u64 types, u64 tags, args_t *
     return 0;
 }
 
-static __always_inline int trace_ret_generic(struct pt_regs *ctx, u32 id, u64 types, u64 tags, bool delete_args)
+static __always_inline int trace_ret_generic(void *ctx, u32 id, u64 types, u64 tags, bool delete_args)
 {
     context_t context = {};
     args_t args = {};
@@ -1287,7 +1308,7 @@ static __always_inline int trace_ret_generic(struct pt_regs *ctx, u32 id, u64 ty
 
     context.eventid = id;
     context.argnum = get_encoded_arg_num(types);
-    context.retval = PT_REGS_RC(ctx);
+    load_retval(&context.retval, id);
     save_context_to_buf(submit_p, (void*)&context);
     save_args_to_submit_buf(types, tags, &args);
 
@@ -1295,7 +1316,7 @@ static __always_inline int trace_ret_generic(struct pt_regs *ctx, u32 id, u64 ty
     return 0;
 }
 
-static __always_inline int trace_ret_generic_tail(struct pt_regs *ctx, u32 id, u64 types, u64 tags, u32 tail)
+static __always_inline int trace_ret_generic_tail(void *ctx, u32 id, u64 types, u64 tags, u32 tail)
 {
     bool delete_args = false;
     trace_ret_generic(ctx, id, types, tags, delete_args);
@@ -1305,44 +1326,42 @@ static __always_inline int trace_ret_generic_tail(struct pt_regs *ctx, u32 id, u
     return 0;
 }
 
-static __always_inline int trace_ret_generic_fork(struct pt_regs *ctx, u32 id, u64 types, u64 tags)
+static __always_inline int trace_ret_generic_fork(void *ctx, u32 id, u64 types, u64 tags)
 {
+    u64 retval = 0;
+
+    // load retval that contains the child pid
+    load_retval(&retval, id);
+    save_retval(retval, id);
+
     bool delete_args = true;
     int rc = trace_ret_generic(ctx, id, types, tags, delete_args);
 
     if (!rc && (get_config(CONFIG_MODE) != MODE_CONTAINER)) {
-        u32 pid = PT_REGS_RC(ctx);
+        u32 pid = retval;
         add_pid_fork(pid);
     }
 
     return 0;
 }
 
-#define TRACE_ENT_SYSCALL(name, id)                                     \
-int syscall__##name(struct pt_regs *ctx)                                \
-{                                                                       \
-    if (!should_trace())                                                \
-        return 0;                                                       \
-    return save_args(ctx, id, true);                                    \
-}
-
 #define TRACE_ENT_FUNC(name, id)                                        \
-int trace_##name(struct pt_regs *ctx)                                   \
+int trace_##name(void *ctx)                                             \
 {                                                                       \
     if (!should_trace())                                                \
         return 0;                                                       \
-    return save_args(ctx, id, false);                                   \
+    return save_args(ctx, id);                                          \
 }
 
 #define TRACE_RET_FUNC(name, id, types, tags)                           \
-int trace_ret_##name(struct pt_regs *ctx)                               \
+int trace_ret_##name(void *ctx)                                         \
 {                                                                       \
     bool delete_args = true;                                            \
     return trace_ret_generic(ctx, id, types, tags, delete_args);        \
 }
 
 #define TRACE_RET_FUNC_WITH_TAIL(name, id, types, tags, tail)           \
-int trace_ret_##name(struct pt_regs *ctx)                               \
+int trace_ret_##name(void *ctx)                                         \
 {                                                                       \
     return trace_ret_generic_tail(ctx, id, types, tags, tail);          \
 }
@@ -1351,7 +1370,7 @@ int trace_ret_##name(struct pt_regs *ctx)                               \
 #define TRACE_RET_SYSCALL_WITH_TAIL TRACE_RET_FUNC_WITH_TAIL
 
 #define TRACE_RET_FORK_SYSCALL(name, id, types, tags)                   \
-int trace_ret_##name(struct pt_regs *ctx)                               \
+int trace_ret_##name(void *ctx)                                         \
 {                                                                       \
     return trace_ret_generic_fork(ctx, id, types, tags);                \
 }
@@ -1360,188 +1379,222 @@ int trace_ret_##name(struct pt_regs *ctx)                               \
 
 // Note: race condition may occur if a malicious user changes memory content pointed by syscall arguments by concurrent threads!
 // Consider using inner kernel functions (e.g. security_file_open) to avoid this
-TRACE_ENT_SYSCALL(open, SYS_OPEN);
 TRACE_RET_SYSCALL(open, SYS_OPEN, ENC_ARGS2(STR_T, INT_T), ENC_ARGS2(TAG_PATHNAME, TAG_FLAGS));
-TRACE_ENT_SYSCALL(openat, SYS_OPENAT);
 TRACE_RET_SYSCALL(openat, SYS_OPENAT, ENC_ARGS3(INT_T, STR_T, INT_T), ENC_ARGS3(TAG_DIRFD, TAG_PATHNAME, TAG_FLAGS));
-TRACE_ENT_SYSCALL(creat, SYS_CREAT);
 TRACE_RET_SYSCALL(creat, SYS_CREAT, ENC_ARGS2(STR_T, INT_T), ENC_ARGS2(TAG_PATHNAME, TAG_MODE));
-TRACE_ENT_SYSCALL(mmap, SYS_MMAP);
 TRACE_RET_SYSCALL(mmap, SYS_MMAP, ENC_ARGS6(POINTER_T, SIZE_T_T, INT_T, INT_T, INT_T, OFF_T_T), ENC_ARGS6(TAG_ADDR, TAG_LENGTH, TAG_PROT, TAG_FLAGS, TAG_FD, TAG_OFFSET));
-TRACE_ENT_SYSCALL(munmap, SYS_MUNMAP);
 TRACE_RET_SYSCALL(munmap, SYS_MUNMAP, ENC_ARGS2(POINTER_T, SIZE_T_T), ENC_ARGS2(TAG_ADDR, TAG_LENGTH));
-TRACE_ENT_SYSCALL(mprotect, SYS_MPROTECT);
 TRACE_RET_SYSCALL(mprotect, SYS_MPROTECT, ENC_ARGS3(POINTER_T, SIZE_T_T, INT_T), ENC_ARGS3(TAG_ADDR, TAG_LENGTH, TAG_PROT));
-TRACE_ENT_SYSCALL(brk, SYS_BRK);
 TRACE_RET_SYSCALL(brk, SYS_BRK, ENC_ARGS1(POINTER_T), ENC_ARGS1(TAG_ADDR));
-TRACE_ENT_SYSCALL(pkey_mprotect, SYS_PKEY_MPROTECT);
 TRACE_RET_SYSCALL(pkey_mprotect, SYS_PKEY_MPROTECT, ENC_ARGS4(POINTER_T, SIZE_T_T, INT_T, INT_T), ENC_ARGS4(TAG_ADDR, TAG_LENGTH, TAG_PROT, TAG_PKEY));
-TRACE_ENT_SYSCALL(mknod, SYS_MKNOD);
 TRACE_RET_SYSCALL(mknod, SYS_MKNOD, ENC_ARGS3(STR_T, MODE_T_T, DEV_T_T), ENC_ARGS3(TAG_PATHNAME, TAG_MODE, TAG_DEV));
-TRACE_ENT_SYSCALL(mknodat, SYS_MKNODAT);
 TRACE_RET_SYSCALL(mknodat, SYS_MKNODAT, ENC_ARGS4(INT_T, STR_T, MODE_T_T, DEV_T_T), ENC_ARGS4(TAG_DIRFD, TAG_PATHNAME, TAG_MODE, TAG_DEV));
-TRACE_ENT_SYSCALL(memfd_create, SYS_MEMFD_CREATE);
 TRACE_RET_SYSCALL(memfd_create, SYS_MEMFD_CREATE, ENC_ARGS2(STR_T, INT_T), ENC_ARGS2(TAG_NAME, TAG_FLAGS));
-TRACE_ENT_SYSCALL(dup, SYS_DUP);
 TRACE_RET_SYSCALL(dup, SYS_DUP, ENC_ARGS1(INT_T), ENC_ARGS1(TAG_OLDFD));
-TRACE_ENT_SYSCALL(dup2, SYS_DUP2);
 TRACE_RET_SYSCALL(dup2, SYS_DUP2, ENC_ARGS2(INT_T, INT_T), ENC_ARGS2(TAG_OLDFD, TAG_NEWFD));
-TRACE_ENT_SYSCALL(dup3, SYS_DUP3);
 TRACE_RET_SYSCALL(dup3, SYS_DUP3, ENC_ARGS3(INT_T, INT_T, INT_T), ENC_ARGS3(TAG_OLDFD, TAG_NEWFD, TAG_FLAGS));
-TRACE_ENT_SYSCALL(newstat, SYS_STAT);
 TRACE_RET_SYSCALL(newstat, SYS_STAT, ENC_ARGS1(STR_T), ENC_ARGS1(TAG_PATHNAME));
-TRACE_ENT_SYSCALL(newlstat, SYS_LSTAT);
 TRACE_RET_SYSCALL(newlstat, SYS_LSTAT, ENC_ARGS1(STR_T), ENC_ARGS1(TAG_PATHNAME));
-TRACE_ENT_SYSCALL(newfstat, SYS_FSTAT);
 TRACE_RET_SYSCALL(newfstat, SYS_FSTAT, ENC_ARGS1(INT_T), ENC_ARGS1(TAG_FD));
-TRACE_ENT_SYSCALL(socket, SYS_SOCKET);
 TRACE_RET_SYSCALL(socket, SYS_SOCKET, ENC_ARGS3(INT_T, INT_T, INT_T), ENC_ARGS3(TAG_DOMAIN, TAG_TYPE, TAG_PROTOCOL));
-TRACE_ENT_SYSCALL(close, SYS_CLOSE);
 TRACE_RET_SYSCALL(close, SYS_CLOSE, ENC_ARGS1(INT_T), ENC_ARGS1(TAG_FD));
-TRACE_ENT_SYSCALL(ioctl, SYS_IOCTL);
 TRACE_RET_SYSCALL(ioctl, SYS_IOCTL, ENC_ARGS2(INT_T, ULONG_T), ENC_ARGS2(TAG_FD, TAG_REQUEST));
-TRACE_ENT_SYSCALL(access, SYS_ACCESS);
 TRACE_RET_SYSCALL(access, SYS_ACCESS, ENC_ARGS2(STR_T, INT_T), ENC_ARGS2(TAG_PATHNAME, TAG_MODE));
-TRACE_ENT_SYSCALL(faccessat, SYS_FACCESSAT);
 TRACE_RET_SYSCALL(faccessat, SYS_FACCESSAT, ENC_ARGS4(INT_T, STR_T, INT_T, INT_T), ENC_ARGS4(TAG_DIRFD, TAG_PATHNAME, TAG_MODE, TAG_FLAGS));
-TRACE_ENT_SYSCALL(kill, SYS_KILL);
 TRACE_RET_SYSCALL(kill, SYS_KILL, ENC_ARGS2(INT_T, INT_T), ENC_ARGS2(TAG_PID, TAG_SIG));
-TRACE_ENT_SYSCALL(listen, SYS_LISTEN);
 TRACE_RET_SYSCALL(listen, SYS_LISTEN, ENC_ARGS2(INT_T, INT_T), ENC_ARGS2(TAG_SOCKFD, TAG_BACKLOG));
-TRACE_ENT_SYSCALL(connect, SYS_CONNECT);
 TRACE_RET_SYSCALL(connect, SYS_CONNECT, ENC_ARGS2(INT_T, SOCKADDR_T), ENC_ARGS2(TAG_SOCKFD, TAG_ADDR));
-TRACE_ENT_SYSCALL(accept, SYS_ACCEPT);
 TRACE_RET_SYSCALL(accept, SYS_ACCEPT, ENC_ARGS2(INT_T, SOCKADDR_T), ENC_ARGS2(TAG_SOCKFD, TAG_ADDR));
-TRACE_ENT_SYSCALL(accept4, SYS_ACCEPT4);
 TRACE_RET_SYSCALL(accept4, SYS_ACCEPT4, ENC_ARGS2(INT_T, SOCKADDR_T), ENC_ARGS2(TAG_SOCKFD, TAG_ADDR));
-TRACE_ENT_SYSCALL(bind, SYS_BIND);
 TRACE_RET_SYSCALL(bind, SYS_BIND, ENC_ARGS2(INT_T, SOCKADDR_T), ENC_ARGS2(TAG_SOCKFD, TAG_ADDR));
-TRACE_ENT_SYSCALL(sendto, SYS_SENDTO);
 TRACE_RET_SYSCALL(sendto, SYS_SENDTO, ENC_ARGS5(INT_T, POINTER_T, SIZE_T_T, INT_T, SOCKADDR_T), ENC_ARGS5(TAG_SOCKFD, TAG_BUF, TAG_LEN, TAG_FLAGS, TAG_DEST_ADDR));
-TRACE_ENT_SYSCALL(recvfrom, SYS_RECVFROM);
 TRACE_RET_SYSCALL(recvfrom, SYS_RECVFROM, ENC_ARGS5(INT_T, POINTER_T, SIZE_T_T, INT_T, SOCKADDR_T), ENC_ARGS5(TAG_SOCKFD, TAG_BUF, TAG_LEN, TAG_FLAGS, TAG_SRC_ADDR));
-TRACE_ENT_SYSCALL(getsockname, SYS_GETSOCKNAME);
 TRACE_RET_SYSCALL(getsockname, SYS_GETSOCKNAME, ENC_ARGS2(INT_T, SOCKADDR_T), ENC_ARGS2(TAG_SOCKFD, TAG_ADDR));
-TRACE_ENT_SYSCALL(prctl, SYS_PRCTL);
 TRACE_RET_SYSCALL(prctl, SYS_PRCTL, ENC_ARGS5(INT_T, ULONG_T, ULONG_T, ULONG_T, ULONG_T), ENC_ARGS5(TAG_OPTION, TAG_ARG2, TAG_ARG3, TAG_ARG4, TAG_ARG5));
-TRACE_ENT_SYSCALL(ptrace, SYS_PTRACE);
 TRACE_RET_SYSCALL(ptrace, SYS_PTRACE, ENC_ARGS4(INT_T, INT_T, POINTER_T, POINTER_T), ENC_ARGS4(TAG_REQUEST, TAG_PID, TAG_ADDR, TAG_DATA));
-TRACE_ENT_SYSCALL(process_vm_writev, SYS_PROCESS_VM_WRITEV);
 TRACE_RET_SYSCALL(process_vm_writev, SYS_PROCESS_VM_WRITEV, ENC_ARGS6(INT_T, POINTER_T, ULONG_T, POINTER_T, ULONG_T, ULONG_T), ENC_ARGS6(TAG_PID, TAG_LOCAL_IOV, TAG_LIOVCNT, TAG_REMOTE_IOV, TAG_RIOVCNT, TAG_FLAGS));
-TRACE_ENT_SYSCALL(process_vm_readv, SYS_PROCESS_VM_READV);
 TRACE_RET_SYSCALL(process_vm_readv, SYS_PROCESS_VM_READV, ENC_ARGS6(INT_T, POINTER_T, ULONG_T, POINTER_T, ULONG_T, ULONG_T), ENC_ARGS6(TAG_PID, TAG_LOCAL_IOV, TAG_LIOVCNT, TAG_REMOTE_IOV, TAG_RIOVCNT, TAG_FLAGS));
-TRACE_ENT_SYSCALL(init_module, SYS_INIT_MODULE);
 TRACE_RET_SYSCALL(init_module, SYS_INIT_MODULE, ENC_ARGS3(POINTER_T, ULONG_T, STR_T), ENC_ARGS3(TAG_MODULE_IMAGE, TAG_LEN, TAG_PARAM_VALUES));
-TRACE_ENT_SYSCALL(finit_module, SYS_FINIT_MODULE);
 TRACE_RET_SYSCALL(finit_module, SYS_FINIT_MODULE, ENC_ARGS3(INT_T, STR_T, INT_T), ENC_ARGS3(TAG_FD, TAG_PARAM_VALUES, TAG_FLAGS));
-TRACE_ENT_SYSCALL(delete_module, SYS_DELETE_MODULE);
 TRACE_RET_SYSCALL(delete_module, SYS_DELETE_MODULE, ENC_ARGS2(STR_T, INT_T), ENC_ARGS2(TAG_NAME, TAG_FLAGS));
-TRACE_ENT_SYSCALL(symlink, SYS_SYMLINK);
 TRACE_RET_SYSCALL(symlink, SYS_SYMLINK, ENC_ARGS2(STR_T, STR_T), ENC_ARGS2(TAG_TARGET, TAG_LINKPATH));
-TRACE_ENT_SYSCALL(symlinkat, SYS_SYMLINKAT);
 TRACE_RET_SYSCALL(symlinkat, SYS_SYMLINKAT, ENC_ARGS3(STR_T, INT_T, STR_T), ENC_ARGS3(TAG_TARGET, TAG_NEWDIRFD, TAG_LINKPATH));
-TRACE_ENT_SYSCALL(getdents, SYS_GETDENTS);
 TRACE_RET_SYSCALL(getdents, SYS_GETDENTS, ENC_ARGS1(INT_T), ENC_ARGS1(TAG_FD));
-TRACE_ENT_SYSCALL(getdents64, SYS_GETDENTS64);
 TRACE_RET_SYSCALL(getdents64, SYS_GETDENTS64, ENC_ARGS1(INT_T), ENC_ARGS1(TAG_FD));
-TRACE_ENT_SYSCALL(mount, SYS_MOUNT);
 TRACE_RET_SYSCALL(mount, SYS_MOUNT, ENC_ARGS4(STR_T, STR_T, STR_T, ULONG_T), ENC_ARGS4(TAG_SOURCE, TAG_TARGET, TAG_FILESYSTEMTYPE, TAG_MOUNTFLAGS));
-TRACE_ENT_SYSCALL(umount, SYS_UMOUNT);
 TRACE_RET_SYSCALL(umount, SYS_UMOUNT, ENC_ARGS1(STR_T), ENC_ARGS1(TAG_TARGET));
-TRACE_ENT_SYSCALL(unlink, SYS_UNLINK);
 TRACE_RET_SYSCALL(unlink, SYS_UNLINK, ENC_ARGS1(STR_T), ENC_ARGS1(TAG_PATHNAME));
-TRACE_ENT_SYSCALL(unlinkat, SYS_UNLINKAT);
 TRACE_RET_SYSCALL(unlinkat, SYS_UNLINKAT, ENC_ARGS3(INT_T, STR_T, INT_T), ENC_ARGS3(TAG_DIRFD, TAG_PATHNAME, TAG_FLAGS));
-TRACE_ENT_SYSCALL(setuid, SYS_SETUID);
 TRACE_RET_SYSCALL(setuid, SYS_SETUID, ENC_ARGS1(INT_T), ENC_ARGS1(TAG_UID));
-TRACE_ENT_SYSCALL(setgid, SYS_SETGID);
 TRACE_RET_SYSCALL(setgid, SYS_SETGID, ENC_ARGS1(INT_T), ENC_ARGS1(TAG_GID));
-TRACE_ENT_SYSCALL(setfsuid, SYS_SETFSUID);
 TRACE_RET_SYSCALL(setfsuid, SYS_SETFSUID, ENC_ARGS1(INT_T), ENC_ARGS1(TAG_FSUID));
-TRACE_ENT_SYSCALL(setfsgid, SYS_SETFSGID);
 TRACE_RET_SYSCALL(setfsgid, SYS_SETFSGID, ENC_ARGS1(INT_T), ENC_ARGS1(TAG_FSGID));
-TRACE_ENT_SYSCALL(setreuid, SYS_SETREUID);
 TRACE_RET_SYSCALL(setreuid, SYS_SETREUID, ENC_ARGS2(INT_T, INT_T), ENC_ARGS2(TAG_RUID, TAG_EUID));
-TRACE_ENT_SYSCALL(setregid, SYS_SETREGID);
 TRACE_RET_SYSCALL(setregid, SYS_SETREGID, ENC_ARGS2(INT_T, INT_T), ENC_ARGS2(TAG_RGID, TAG_EGID));
-TRACE_ENT_SYSCALL(setresuid, SYS_SETRESUID);
 TRACE_RET_SYSCALL(setresuid, SYS_SETRESUID, ENC_ARGS3(INT_T, INT_T, INT_T), ENC_ARGS3(TAG_RUID, TAG_EUID, TAG_SUID));
-TRACE_ENT_SYSCALL(setresgid, SYS_SETRESGID);
 TRACE_RET_SYSCALL(setresgid, SYS_SETRESGID, ENC_ARGS3(INT_T, INT_T, INT_T), ENC_ARGS3(TAG_RGID, TAG_EGID, TAG_SGID));
-TRACE_ENT_SYSCALL(chown, SYS_CHOWN);
 TRACE_RET_SYSCALL(chown, SYS_CHOWN, ENC_ARGS3(STR_T, UINT_T, UINT_T), ENC_ARGS3(TAG_PATHNAME, TAG_OWNER, TAG_GROUP));
-TRACE_ENT_SYSCALL(fchown, SYS_FCHOWN);
 TRACE_RET_SYSCALL(fchown, SYS_FCHOWN, ENC_ARGS3(INT_T, UINT_T, UINT_T), ENC_ARGS3(TAG_FD, TAG_OWNER, TAG_GROUP));
-TRACE_ENT_SYSCALL(lchown, SYS_LCHOWN);
 TRACE_RET_SYSCALL(lchown, SYS_LCHOWN, ENC_ARGS3(STR_T, UINT_T, UINT_T), ENC_ARGS3(TAG_PATHNAME, TAG_OWNER, TAG_GROUP));
-TRACE_ENT_SYSCALL(fchownat, SYS_FCHOWNAT);
 TRACE_RET_SYSCALL(fchownat, SYS_FCHOWNAT, ENC_ARGS5(INT_T, STR_T, UINT_T, UINT_T, INT_T), ENC_ARGS5(TAG_DIRFD, TAG_PATHNAME, TAG_OWNER, TAG_GROUP, TAG_FLAGS));
-TRACE_ENT_SYSCALL(chmod, SYS_CHMOD);
 TRACE_RET_SYSCALL(chmod, SYS_CHMOD, ENC_ARGS2(STR_T, MODE_T_T), ENC_ARGS2(TAG_PATHNAME, TAG_MODE));
-TRACE_ENT_SYSCALL(fchmod, SYS_FCHMOD);
 TRACE_RET_SYSCALL(fchmod, SYS_FCHMOD, ENC_ARGS2(INT_T, MODE_T_T), ENC_ARGS2(TAG_FD, TAG_MODE));
-TRACE_ENT_SYSCALL(fchmodat, SYS_FCHMODAT);
 TRACE_RET_SYSCALL(fchmodat, SYS_FCHMODAT, ENC_ARGS4(INT_T, STR_T, MODE_T_T, INT_T), ENC_ARGS4(TAG_DIRFD, TAG_PATHNAME, TAG_MODE, TAG_FLAGS));
-TRACE_ENT_SYSCALL(read, SYS_READ);
 TRACE_RET_SYSCALL(read, SYS_READ, ENC_ARGS3(INT_T, POINTER_T, SIZE_T_T), ENC_ARGS3(TAG_FD, TAG_BUF, TAG_COUNT));
-TRACE_ENT_SYSCALL(write, SYS_WRITE);
 TRACE_RET_SYSCALL(write, SYS_WRITE, ENC_ARGS3(INT_T, POINTER_T, SIZE_T_T), ENC_ARGS3(TAG_FD, TAG_BUF, TAG_COUNT));
-TRACE_ENT_SYSCALL(pread64, SYS_PREAD64);
 TRACE_RET_SYSCALL(pread64, SYS_PREAD64, ENC_ARGS4(INT_T, POINTER_T, SIZE_T_T, OFF_T_T), ENC_ARGS4(TAG_FD, TAG_BUF, TAG_COUNT, TAG_OFFSET));
-TRACE_ENT_SYSCALL(pwrite64, SYS_PWRITE64);
 TRACE_RET_SYSCALL(pwrite64, SYS_PWRITE64, ENC_ARGS4(INT_T, POINTER_T, SIZE_T_T, OFF_T_T), ENC_ARGS4(TAG_FD, TAG_BUF, TAG_COUNT, TAG_OFFSET));
-TRACE_ENT_SYSCALL(lseek, SYS_LSEEK);
 TRACE_RET_SYSCALL(lseek, SYS_LSEEK, ENC_ARGS3(INT_T, OFF_T_T, INT_T), ENC_ARGS3(TAG_FD, TAG_OFFSET, TAG_WHENCE));
-TRACE_ENT_SYSCALL(sched_yield, SYS_SCHED_YIELD);
 TRACE_RET_SYSCALL(sched_yield, SYS_SCHED_YIELD, ENC_ARGS0(), ENC_ARGS0());
-TRACE_ENT_SYSCALL(msync, SYS_MSYNC);
 TRACE_RET_SYSCALL(msync, SYS_MSYNC, ENC_ARGS3(POINTER_T, SIZE_T_T, INT_T), ENC_ARGS3(TAG_ADDR, TAG_LENGTH, TAG_FLAGS));
-TRACE_ENT_SYSCALL(madvise, SYS_MADVISE);
 TRACE_RET_SYSCALL(madvise, SYS_MADVISE, ENC_ARGS3(POINTER_T, SIZE_T_T, INT_T), ENC_ARGS3(TAG_ADDR, TAG_LENGTH, TAG_ADVICE));
-TRACE_ENT_SYSCALL(getpid, SYS_GETPID);
 TRACE_RET_SYSCALL(getpid, SYS_GETPID, ENC_ARGS0(), ENC_ARGS0());
-TRACE_ENT_SYSCALL(getppid, SYS_GETPPID);
 TRACE_RET_SYSCALL(getppid, SYS_GETPPID, ENC_ARGS0(), ENC_ARGS0());
-TRACE_ENT_SYSCALL(gettid, SYS_GETTID);
 TRACE_RET_SYSCALL(gettid, SYS_GETTID, ENC_ARGS0(), ENC_ARGS0());
 
-TRACE_ENT_SYSCALL(fork, SYS_FORK);
 TRACE_RET_FORK_SYSCALL(fork, SYS_FORK, ENC_ARGS0(), ENC_ARGS0());
-TRACE_ENT_SYSCALL(vfork, SYS_VFORK);
 TRACE_RET_FORK_SYSCALL(vfork, SYS_VFORK, ENC_ARGS0(), ENC_ARGS0());
-TRACE_ENT_SYSCALL(clone, SYS_CLONE);
 TRACE_RET_FORK_SYSCALL(clone, SYS_CLONE, ENC_ARGS1(ULONG_T), ENC_ARGS1(TAG_FLAGS));
 
-TRACEPOINT_PROBE(raw_syscalls, sys_enter) {
-    context_t context = {};
+// include/trace/events/syscalls.h:
+// TP_PROTO(struct pt_regs *regs, long id)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
+TRACEPOINT_PROBE(raw_syscalls, sys_enter)
+#else
+RAW_TRACEPOINT_PROBE(sys_enter)
+#endif
+{
+    struct pt_regs regs = {};
+    int id;
 
-    if (!should_trace())
+    // we don't support ia32 syscalls at this point
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    if (task->thread_info.status & TS_COMPAT)
         return 0;
 
-    init_context(&context);
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
-    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
-    if (submit_p == NULL)
-        return 0;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
+    void *ctx = args;
+    regs.di = args->args[0];
+    regs.si = args->args[1];
+    regs.dx = args->args[2];
+    regs.r10 = args->args[3];
+    regs.r8 = args->args[4];
+    regs.r9 = args->args[5];
+    id = args->id;
+#else
+    bpf_probe_read(&regs, sizeof(struct pt_regs), (void*)ctx->args[0]);
+    id = ctx->args[1];
+#endif
 
-    context.eventid = RAW_SYSCALLS;
-    context.argnum = 1;
-    context.retval = 0;
+    // essential events should always be traced
+    if (id != SYS_CLONE && id != SYS_FORK && id != SYS_VFORK && id != SYS_EXECVE && id != SYS_EXECVEAT) {
+        if (!should_trace())
+            return 0;
+    }
 
-    save_context_to_buf(submit_p, (void*)&context);
+    // We save args here (and not before the tail call function below) as other functions may use it
+    // See mprotect_alert and mmap_alert functions below for comments
+    // If no other function needs the saved args, we can move this to just before the tail call
+    save_args(&regs, id);
 
-    save_to_submit_buf(submit_p, (void*)&(args->id), sizeof(int), INT_T, TAG_SYSCALL);
-    events_perf_submit((struct pt_regs *)args);
-    
+    // essential events should always be traced
+    if (id != SYS_CLONE && id != SYS_FORK && id != SYS_VFORK && id != SYS_EXECVE && id != SYS_EXECVEAT) {
+        if (!event_chosen(id) && !event_chosen(RAW_SYS_ENTER))
+            return 0;
+    }
+
+    if (event_chosen(RAW_SYS_ENTER)) {
+        context_t context = {};
+        init_context(&context);
+        set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+        buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
+        if (submit_p == NULL)
+            return 0;
+
+        context.eventid = RAW_SYS_ENTER;
+        context.argnum = 1;
+        context.retval = 0;
+
+        save_context_to_buf(submit_p, (void*)&context);
+
+        save_to_submit_buf(submit_p, (void*)&id, sizeof(int), INT_T, TAG_SYSCALL);
+        events_perf_submit(ctx);
+    }
+
+    // call syscall handler, if exists
+    sys_enter_tails.call(ctx, id);
     return 0;
 }
 
-int syscall__execve(struct pt_regs *ctx,
-    const char __user *filename,
-    const char __user *const __user *__argv,
-    const char __user *const __user *__envp)
+// include/trace/events/syscalls.h:
+// TP_PROTO(struct pt_regs *regs, long ret)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
+TRACEPOINT_PROBE(raw_syscalls, sys_exit)
+#else
+RAW_TRACEPOINT_PROBE(sys_exit)
+#endif
+{
+    int id;
+    long ret;
+
+    // we don't support ia32 syscalls at this point
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    if (task->thread_info.status & TS_COMPAT)
+        return 0;
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
+    void *ctx = args;
+    id = args->id;
+    ret = args->ret;
+#else
+    struct pt_regs *regs = (struct pt_regs*)ctx->args[0];
+    id = regs->orig_ax;
+    ret = ctx->args[1];
+#endif
+
+    // essential events should always be traced
+    if (id != SYS_CLONE && id != SYS_FORK && id != SYS_VFORK && id != SYS_EXECVE && id != SYS_EXECVEAT) {
+        if (!should_trace())
+            return 0;
+
+        if (!event_chosen(id) && !event_chosen(RAW_SYS_EXIT))
+            return 0;
+    }
+
+    if (event_chosen(RAW_SYS_EXIT)) {
+        context_t context = {};
+        init_context(&context);
+        set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+        buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
+        if (submit_p == NULL)
+            return 0;
+
+        context.eventid = RAW_SYS_EXIT;
+        context.argnum = 1;
+        context.retval = ret;
+
+        save_context_to_buf(submit_p, (void*)&context);
+
+        save_to_submit_buf(submit_p, (void*)&id, sizeof(int), INT_T, TAG_SYSCALL);
+        events_perf_submit(ctx);
+    }
+
+    // call syscall handler, if exists
+    save_retval(ret, id);
+    sys_exit_tails.call(ctx, id);
+    del_retval(id);
+    del_args(id);
+    return 0;
+}
+
+int syscall__execve(void *ctx)
 {
     context_t context = {};
+    args_t args = {};
+
+    bool delete_args = true;
+    if (load_args(&args, delete_args, SYS_EXECVE) != 0)
+        return -1;
 
     if (get_config(CONFIG_MODE) == MODE_CONTAINER)
         add_pid_ns_if_needed();
@@ -1556,6 +1609,10 @@ int syscall__execve(struct pt_regs *ctx,
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
+
+    const char __user *filename = (char *)args.args[0];
+    const char __user *const __user *__argv = (const char *const *)args.args[1];
+    const char __user *const __user *__envp = (const char *const *)args.args[2];
 
     int show_env = get_config(CONFIG_EXEC_ENV);
 
@@ -1576,7 +1633,7 @@ int syscall__execve(struct pt_regs *ctx,
     return 0;
 }
 
-int trace_ret_execve(struct pt_regs *ctx)
+int trace_ret_execve(void *ctx)
 {
     // we can't load string args here as after execve memory is wiped
     context_t context = {};
@@ -1592,7 +1649,7 @@ int trace_ret_execve(struct pt_regs *ctx)
 
     context.eventid = SYS_EXECVE;
     context.argnum = 0;
-    context.retval = PT_REGS_RC(ctx);
+    load_retval(&context.retval, SYS_EXECVE);
 
     if (context.retval == 0)
         return 0;   // we are only interested in failed execs
@@ -1602,14 +1659,15 @@ int trace_ret_execve(struct pt_regs *ctx)
     return 0;
 }
 
-int syscall__execveat(struct pt_regs *ctx,
-    const int dirfd,
-    const char __user *pathname,
-    const char __user *const __user *__argv,
-    const char __user *const __user *__envp,
-    const int flags)
+int syscall__execveat(void *ctx)
 {
     context_t context = {};
+
+    args_t args = {};
+
+    bool delete_args = true;
+    if (load_args(&args, delete_args, SYS_EXECVE) != 0)
+        return -1;
 
     if (get_config(CONFIG_MODE) == MODE_CONTAINER)
         add_pid_ns_if_needed();
@@ -1624,6 +1682,12 @@ int syscall__execveat(struct pt_regs *ctx,
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
+
+    const int dirfd = args.args[0];
+    const char __user *pathname = (char *)args.args[1];
+    const char __user *const __user *__argv = (const char *const *)args.args[2];
+    const char __user *const __user *__envp = (const char *const *)args.args[3];
+    const int flags = args.args[4];
 
     int show_env = get_config(CONFIG_EXEC_ENV);
 
@@ -1646,7 +1710,7 @@ int syscall__execveat(struct pt_regs *ctx,
     return 0;
 }
 
-int trace_ret_execveat(struct pt_regs *ctx)
+int trace_ret_execveat(void *ctx)
 {
     // we can't load string args here as after execve memory is wiped
     context_t context = {};
@@ -1662,7 +1726,7 @@ int trace_ret_execveat(struct pt_regs *ctx)
 
     context.eventid = SYS_EXECVEAT;
     context.argnum = 0;
-    context.retval = PT_REGS_RC(ctx);
+    load_retval(&context.retval, SYS_EXECVEAT);
 
     if (context.retval == 0)
         return 0;   // we are only interested in failed execs
@@ -2071,6 +2135,7 @@ int trace_mmap_alert(struct pt_regs *ctx)
     context_t context = {};
     args_t args = {};
 
+    // Todo: the following workaround can be removed by attaching sys_enter_mmap tracepoint and save args
     // Workaround to a bug in gobpf, where a kprobe event (e.g. mmap syscall) can't be attached to two different functions.
     // As we need to use save_args in kprobe entry, but one of the events (functions) might be chosen and the other not,
     // We need a mechanism that can tell if an event was chosen by the user, so we can save the args without enabling both events.
@@ -2108,6 +2173,7 @@ int trace_mprotect_alert(struct pt_regs *ctx, struct vm_area_struct *vma, unsign
     args_t args = {};
     bin_args_t bin_args = {};
 
+    // Todo: the following workaround can be removed by attaching sys_enter_mprotect tracepoint and save args
     // Workaround to a bug in gobpf, where a kprobe event (e.g. mmap syscall) can't be attached to two different functions.
     // As we need to use save_args in kprobe entry, but one of the events (functions) might be chosen and the other not,
     // We need a mechanism that can tell if an event was chosen by the user, so we can save the args without enabling both events.
