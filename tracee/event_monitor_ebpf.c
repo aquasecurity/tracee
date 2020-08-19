@@ -580,6 +580,7 @@ BPF_HASH(pids_map, u32, u32);                       // Save container pid namesp
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
 BPF_HASH(ret_map, u64, u64);                        // Persist return value to be used in tail calls
 BPF_HASH(bin_args_map, u64, bin_args_t);            // Persist args for send_bin funtion
+BPF_HASH(sys_32_to_64_map, u32, u32);               // Map 32bit syscalls numbers to 64bit syscalls numbers
 BPF_ARRAY(file_filter, path_filter_t, 3);           // Used to filter vfs_write events
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);         // Percpu global buffer variables
 BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS);       // Holds offsets to bufs respectively
@@ -1083,18 +1084,28 @@ static __always_inline int is_container()
     return lookup_pid_ns(task);
 }
 
-static __always_inline int save_args(struct pt_regs *ctx, u32 event_id)
+static __always_inline int save_args(struct pt_regs *ctx, u32 event_id, bool is_syscall)
 {
     u64 id;
     u32 tid;
     args_t args = {};
 
-    args.args[0] = PT_REGS_PARM1(ctx);
-    args.args[1] = PT_REGS_PARM2(ctx);
-    args.args[2] = PT_REGS_PARM3(ctx);
-    args.args[3] = PT_REGS_PARM4(ctx);
-    args.args[4] = PT_REGS_PARM5(ctx);
-    args.args[5] = PT_REGS_PARM6(ctx);
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    if (task->thread_info.status & TS_COMPAT && is_syscall) {
+        args.args[0] = ctx->bx;
+        args.args[1] = ctx->cx;
+        args.args[2] = ctx->dx;
+        args.args[3] = ctx->si;
+        args.args[4] = ctx->di;
+        args.args[5] = ctx->bp;
+    } else {
+        args.args[0] = PT_REGS_PARM1(ctx);
+        args.args[1] = PT_REGS_PARM2(ctx);
+        args.args[2] = PT_REGS_PARM3(ctx);
+        args.args[3] = PT_REGS_PARM4(ctx);
+        args.args[4] = PT_REGS_PARM5(ctx);
+        args.args[5] = PT_REGS_PARM6(ctx);
+    }
 
     id = event_id;
     tid = bpf_get_current_pid_tgid();
@@ -1350,7 +1361,7 @@ int trace_##name(void *ctx)                                             \
 {                                                                       \
     if (!should_trace())                                                \
         return 0;                                                       \
-    return save_args(ctx, id);                                          \
+    return save_args(ctx, id, false);                                   \
 }
 
 #define TRACE_RET_FUNC(name, id, types, tags)                           \
@@ -1467,10 +1478,10 @@ RAW_TRACEPOINT_PROBE(sys_enter)
     struct pt_regs regs = {};
     int id;
 
-    // we don't support ia32 syscalls at this point
+    bool isIA32 = false;
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
     if (task->thread_info.status & TS_COMPAT)
-        return 0;
+        isIA32 = true;
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
     void *ctx = args;
@@ -1486,6 +1497,15 @@ RAW_TRACEPOINT_PROBE(sys_enter)
     id = ctx->args[1];
 #endif
 
+    if (isIA32) {
+        // Translate 32bit syscalls to 64bit syscalls so we can send to the correct handler
+        u32 *id_64 = sys_32_to_64_map.lookup(&id);
+        if (id_64 == 0)
+            return 0;
+
+        id = *id_64;
+    }
+
     // essential events should always be traced
     if (id != SYS_CLONE && id != SYS_FORK && id != SYS_VFORK && id != SYS_EXECVE && id != SYS_EXECVEAT) {
         if (!should_trace())
@@ -1495,7 +1515,7 @@ RAW_TRACEPOINT_PROBE(sys_enter)
     // We save args here (and not before the tail call function below) as other functions may use it
     // See mprotect_alert and mmap_alert functions below for comments
     // If no other function needs the saved args, we can move this to just before the tail call
-    save_args(&regs, id);
+    save_args(&regs, id, true);
 
     // essential events should always be traced
     if (id != SYS_CLONE && id != SYS_FORK && id != SYS_VFORK && id != SYS_EXECVE && id != SYS_EXECVEAT) {
@@ -1537,10 +1557,10 @@ RAW_TRACEPOINT_PROBE(sys_exit)
     int id;
     long ret;
 
-    // we don't support ia32 syscalls at this point
+    bool isIA32 = false;
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
     if (task->thread_info.status & TS_COMPAT)
-        return 0;
+        isIA32 = true;
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
     void *ctx = args;
@@ -1551,6 +1571,15 @@ RAW_TRACEPOINT_PROBE(sys_exit)
     id = regs->orig_ax;
     ret = ctx->args[1];
 #endif
+
+    if (isIA32) {
+        // Translate 32bit syscalls to 64bit syscalls so we can send to the correct handler
+        u32 *id_64 = sys_32_to_64_map.lookup(&id);
+        if (id_64 == 0)
+            return 0;
+
+        id = *id_64;
+    }
 
     // essential events should always be traced
     if (id != SYS_CLONE && id != SYS_FORK && id != SYS_VFORK && id != SYS_EXECVE && id != SYS_EXECVEAT) {
