@@ -247,12 +247,16 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 		chosenEvents.Set(key, leaf)
 	}
 
-	// compile final list of events to trace including essential events
-	// if an essential event was not requested by the user, set its map value to false
+	sys32to64BPFTable := bpf.NewTable(t.bpfModule.TableId("sys_32_to_64_map"), t.bpfModule)
 	for id, event := range EventsIDToEvent {
+		// Prepare 32bit to 64bit syscall number mapping
+		binary.LittleEndian.PutUint32(key, uint32(event.ID32Bit))
+		binary.LittleEndian.PutUint32(leaf, uint32(event.ID))
+		sys32to64BPFTable.Set(key, leaf)
+
+		// Compile final list of events to trace including essential events
+		// If an essential event was not requested by the user, set its map value to false
 		if event.EssentialEvent && !t.eventsToTrace[id] {
-			// Essential event was not requested by the user - add it to map
-			// Map value is false iff an essential event was not requested by the user
 			t.eventsToTrace[id] = false
 		}
 	}
