@@ -1224,37 +1224,39 @@ static __always_inline int save_args_to_submit_buf(u64 types, u64 tags, args_t *
     #pragma unroll
     for(i=0; i<6; i++)
     {
+        int size = 0;
+        u8 type = DEC_ARG(i, types);
         u8 tag = DEC_ARG(i, tags);
-        switch (DEC_ARG(i, types))
+        switch (type)
         {
             case NONE_T:
                 break;
             case INT_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(int), INT_T, tag);
+                size = sizeof(int);
                 break;
             case UINT_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(unsigned int), UINT_T, tag);
+                size = sizeof(unsigned int);
                 break;
             case OFF_T_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(off_t), OFF_T_T, tag);
+                size = sizeof(off_t);
                 break;
             case DEV_T_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(dev_t), DEV_T_T, tag);
+                size = sizeof(dev_t);
                 break;
             case MODE_T_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(mode_t), MODE_T_T, tag);
+                size = sizeof(mode_t);
                 break;
             case LONG_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(long), LONG_T, tag);
+                size = sizeof(long);
                 break;
             case ULONG_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(unsigned long), ULONG_T, tag);
+                size = sizeof(unsigned long);
                 break;
             case SIZE_T_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(size_t), SIZE_T_T, tag);
+                size = sizeof(size_t);
                 break;
             case POINTER_T:
-                save_to_submit_buf(submit_p, (void*)&(args->args[i]), sizeof(void*), POINTER_T, tag);
+                size = sizeof(void*);
                 break;
             case STR_T:
                 save_str_to_buf(submit_p, (void *)args->args[i], tag);
@@ -1265,22 +1267,23 @@ static __always_inline int save_args_to_submit_buf(u64 types, u64 tags, args_t *
                     switch (family)
                     {
                         case AF_UNIX:
-                            save_to_submit_buf(submit_p, (void*)(args->args[i]), sizeof(struct sockaddr_un), SOCKADDR_T, tag);
+                            size = sizeof(struct sockaddr_un);
                             break;
                         case AF_INET:
-                            save_to_submit_buf(submit_p, (void*)(args->args[i]), sizeof(struct sockaddr_in), SOCKADDR_T, tag);
+                            size = sizeof(struct sockaddr_in);
                             break;
                         case AF_INET6:
-                            save_to_submit_buf(submit_p, (void*)(args->args[i]), sizeof(struct sockaddr_in6), SOCKADDR_T, tag);
+                            size = sizeof(struct sockaddr_in6);
                             break;
                         default:
-                            save_to_submit_buf(submit_p, (void*)&family, sizeof(short), SOCKADDR_T, tag);
+                            size = sizeof(short);
                     }
-                } else {
-                    save_to_submit_buf(submit_p, (void*)(args->args[i]), 0, SOCKADDR_T, tag);
                 }
+                save_to_submit_buf(submit_p, (void*)(args->args[i]), size, type, tag);
                 break;
         }
+        if ((type != NONE_T) && (type != STR_T) && (type != SOCKADDR_T))
+            save_to_submit_buf(submit_p, (void*)&(args->args[i]), size, type, tag);
     }
 
     return 0;
