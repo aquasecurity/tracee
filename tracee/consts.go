@@ -59,148 +59,6 @@ const (
 // argument tags should match defined values in ebpf code
 type argTag uint8
 
-const (
-	TagNone argTag = iota
-	TagFd
-	TagFilename
-	TagPathname
-	TagArgv
-	TagEnvp
-	TagDev
-	TagInode
-	TagDirfd
-	TagFlags
-	TagCap
-	TagSyscall
-	TagCount
-	TagPos
-	TagAlert
-	TagMode
-	TagAddr
-	TagLength
-	TagProt
-	TagOffset
-	TagPkey
-	TagName
-	TagOldfd
-	TagNewfd
-	TagDomain
-	TagType
-	TagProtocol
-	TagRequest
-	TagPid
-	TagSig
-	TagSockfd
-	TagBacklog
-	TagOption
-	TagArg2
-	TagArg3
-	TagArg4
-	TagArg5
-	TagData
-	TagLocalIov
-	TagLiovcnt
-	TagRemoteIov
-	TagRiovcnt
-	TagModuleImage
-	TagLen
-	TagParamValues
-	TagTarget
-	TagNewdirfd
-	TagLinkpath
-	TagSource
-	TagFilesystemtype
-	TagMountflags
-	TagUid
-	TagGid
-	TagFsuid
-	TagFsgid
-	TagRuid
-	TagEuid
-	TagRgid
-	TagEgid
-	TagSuid
-	TagSgid
-	TagOwner
-	TagGroup
-	TagBuf
-	TagWhence
-	TagAdvice
-	TagDestAddr
-	TagSrcAddr
-)
-
-var argNames = map[argTag]string{
-	TagNone:           "",
-	TagFd:             "fd",
-	TagFilename:       "filename",
-	TagPathname:       "pathname",
-	TagArgv:           "argv",
-	TagEnvp:           "envp",
-	TagDev:            "dev",
-	TagInode:          "inode",
-	TagDirfd:          "dirfd",
-	TagFlags:          "flags",
-	TagCap:            "cap",
-	TagSyscall:        "syscall",
-	TagCount:          "count",
-	TagPos:            "pos",
-	TagAlert:          "alert",
-	TagMode:           "mode",
-	TagAddr:           "addr",
-	TagLength:         "length",
-	TagProt:           "prot",
-	TagOffset:         "offset",
-	TagPkey:           "pkey",
-	TagName:           "name",
-	TagOldfd:          "oldfd",
-	TagNewfd:          "newfd",
-	TagDomain:         "domain",
-	TagType:           "type",
-	TagProtocol:       "protocol",
-	TagRequest:        "request",
-	TagPid:            "pid",
-	TagSig:            "sig",
-	TagSockfd:         "sockfd",
-	TagBacklog:        "backlog",
-	TagOption:         "option",
-	TagArg2:           "arg2",
-	TagArg3:           "arg3",
-	TagArg4:           "arg4",
-	TagArg5:           "arg5",
-	TagData:           "data",
-	TagLocalIov:       "local_iov",
-	TagLiovcnt:        "liovcnt",
-	TagRemoteIov:      "remote_iov",
-	TagRiovcnt:        "riovcnt",
-	TagModuleImage:    "module_image",
-	TagLen:            "len",
-	TagParamValues:    "param_values",
-	TagTarget:         "target",
-	TagNewdirfd:       "newdirfd",
-	TagLinkpath:       "linkpath",
-	TagSource:         "source",
-	TagFilesystemtype: "filesystemtype",
-	TagMountflags:     "mountflags",
-	TagUid:            "uid",
-	TagGid:            "gid",
-	TagFsuid:          "fsuid",
-	TagFsgid:          "fsgid",
-	TagRuid:           "ruid",
-	TagEuid:           "euid",
-	TagRgid:           "rgid",
-	TagEgid:           "egid",
-	TagSuid:           "suid",
-	TagSgid:           "sgid",
-	TagOwner:          "owner",
-	TagGroup:          "group",
-	TagBuf:            "buf",
-	TagWhence:         "whence",
-	TagAdvice:         "advice",
-	TagDestAddr:       "dest_addr",
-	TagSrcAddr:        "src_addr",
-}
-
 // ProbeType is an enum that describes the mechanism used to attach the event
 // Kprobes are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#1-kprobes
 // Tracepoints are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#3-tracepoints
@@ -568,21 +426,6 @@ const (
 	StatxEventID
 	IoPgeteventsEventID
 	RseqEventID
-	Reserved335EventID
-	Reserved336EventID
-	Reserved337EventID
-	Reserved338EventID
-	Reserved339EventID
-	Reserved340EventID
-	Reserved341EventID
-	Reserved342EventID
-	Reserved343EventID
-	Reserved344EventID
-	Reserved345EventID
-	Reserved346EventID
-	Reserved347EventID
-	Reserved348EventID
-	Reserved349EventID
 	SysEnterEventID
 	SysExitEventID
 	DoExitEventID
@@ -1362,21 +1205,6 @@ var EventsIDToEvent = map[int32]EventConfig{
 	StatxEventID:               EventConfig{ID: StatxEventID, ID32Bit: sys32statx, Name: "reserved", Probes: []probe{probe{event: "statx", attach: sysCall, fn: "statx"}}, EssentialEvent: false, Sets: []string{ /*"syscalls", "fs", "fs_file_attr"*/ }},
 	IoPgeteventsEventID:        EventConfig{ID: IoPgeteventsEventID, ID32Bit: sys32io_pgetevents, Name: "reserved", Probes: []probe{probe{event: "io_pgetevents", attach: sysCall, fn: "io_pgetevents"}}, EssentialEvent: false, Sets: []string{ /*"syscalls", "fs", "fs_async_io"*/ }},
 	RseqEventID:                EventConfig{ID: RseqEventID, ID32Bit: sys32rseq, Name: "reserved", Probes: []probe{probe{event: "rseq", attach: sysCall, fn: "rseq"}}, EssentialEvent: false, Sets: []string{ /*"syscalls"*/ }},
-	Reserved335EventID:         EventConfig{ID: Reserved335EventID, ID32Bit: sys32undefined, Name: "reserved", Probes: []probe{probe{event: "reserved", attach: sysCall, fn: "reserved"}}, EssentialEvent: false, Sets: []string{}},
-	Reserved336EventID:         EventConfig{ID: Reserved336EventID, ID32Bit: sys32undefined, Name: "reserved", Probes: []probe{probe{event: "reserved", attach: sysCall, fn: "reserved"}}, EssentialEvent: false, Sets: []string{}},
-	Reserved337EventID:         EventConfig{ID: Reserved337EventID, ID32Bit: sys32undefined, Name: "reserved", Probes: []probe{probe{event: "reserved", attach: sysCall, fn: "reserved"}}, EssentialEvent: false, Sets: []string{}},
-	Reserved338EventID:         EventConfig{ID: Reserved338EventID, ID32Bit: sys32undefined, Name: "reserved", Probes: []probe{probe{event: "reserved", attach: sysCall, fn: "reserved"}}, EssentialEvent: false, Sets: []string{}},
-	Reserved339EventID:         EventConfig{ID: Reserved339EventID, ID32Bit: sys32undefined, Name: "reserved", Probes: []probe{probe{event: "reserved", attach: sysCall, fn: "reserved"}}, EssentialEvent: false, Sets: []string{}},
-	Reserved340EventID:         EventConfig{ID: Reserved340EventID, ID32Bit: sys32undefined, Name: "reserved", Probes: []probe{probe{event: "reserved", attach: sysCall, fn: "reserved"}}, EssentialEvent: false, Sets: []string{}},
-	Reserved341EventID:         EventConfig{ID: Reserved341EventID, ID32Bit: sys32undefined, Name: "reserved", Probes: []probe{probe{event: "reserved", attach: sysCall, fn: "reserved"}}, EssentialEvent: false, Sets: []string{}},
-	Reserved342EventID:         EventConfig{ID: Reserved342EventID, ID32Bit: sys32undefined, Name: "reserved", Probes: []probe{probe{event: "reserved", attach: sysCall, fn: "reserved"}}, EssentialEvent: false, Sets: []string{}},
-	Reserved343EventID:         EventConfig{ID: Reserved343EventID, ID32Bit: sys32undefined, Name: "reserved", Probes: []probe{probe{event: "reserved", attach: sysCall, fn: "reserved"}}, EssentialEvent: false, Sets: []string{}},
-	Reserved344EventID:         EventConfig{ID: Reserved344EventID, ID32Bit: sys32undefined, Name: "reserved", Probes: []probe{probe{event: "reserved", attach: sysCall, fn: "reserved"}}, EssentialEvent: false, Sets: []string{}},
-	Reserved345EventID:         EventConfig{ID: Reserved345EventID, ID32Bit: sys32undefined, Name: "reserved", Probes: []probe{probe{event: "reserved", attach: sysCall, fn: "reserved"}}, EssentialEvent: false, Sets: []string{}},
-	Reserved346EventID:         EventConfig{ID: Reserved346EventID, ID32Bit: sys32undefined, Name: "reserved", Probes: []probe{probe{event: "reserved", attach: sysCall, fn: "reserved"}}, EssentialEvent: false, Sets: []string{}},
-	Reserved347EventID:         EventConfig{ID: Reserved347EventID, ID32Bit: sys32undefined, Name: "reserved", Probes: []probe{probe{event: "reserved", attach: sysCall, fn: "reserved"}}, EssentialEvent: false, Sets: []string{}},
-	Reserved348EventID:         EventConfig{ID: Reserved348EventID, ID32Bit: sys32undefined, Name: "reserved", Probes: []probe{probe{event: "reserved", attach: sysCall, fn: "reserved"}}, EssentialEvent: false, Sets: []string{}},
-	Reserved349EventID:         EventConfig{ID: Reserved349EventID, ID32Bit: sys32undefined, Name: "reserved", Probes: []probe{probe{event: "reserved", attach: sysCall, fn: "reserved"}}, EssentialEvent: false, Sets: []string{}},
 	SysEnterEventID:            EventConfig{ID: SysEnterEventID, ID32Bit: sys32undefined, Name: "sys_enter", Probes: []probe{probe{event: "raw_syscalls:sys_enter", attach: rawTracepoint, fn: "raw_tracepoint__sys_enter"}}, EssentialEvent: true, Sets: []string{}},
 	SysExitEventID:             EventConfig{ID: SysExitEventID, ID32Bit: sys32undefined, Name: "sys_exit", Probes: []probe{probe{event: "raw_syscalls:sys_exit", attach: rawTracepoint, fn: "raw_tracepoint__sys_exit"}}, EssentialEvent: true, Sets: []string{}},
 	DoExitEventID:              EventConfig{ID: DoExitEventID, ID32Bit: sys32undefined, Name: "do_exit", Probes: []probe{probe{event: "do_exit", attach: kprobe, fn: "trace_do_exit"}}, EssentialEvent: true, Sets: []string{"default"}},

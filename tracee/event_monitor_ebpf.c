@@ -58,73 +58,26 @@
 #define TYPE_MAX      255UL
 
 #define TAG_NONE           0UL
-#define TAG_FD             1UL
-#define TAG_FILENAME       2UL
-#define TAG_PATHNAME       3UL
-#define TAG_ARGV           4UL
-#define TAG_ENVP           5UL
-#define TAG_DEV            6UL
-#define TAG_INODE          7UL
-#define TAG_DIRFD          8UL
-#define TAG_FLAGS          9UL
-#define TAG_CAP            10UL
-#define TAG_SYSCALL        11UL
-#define TAG_COUNT          12UL
-#define TAG_POS            13UL
-#define TAG_ALERT          14UL
-#define TAG_MODE           15UL
-#define TAG_ADDR           16UL
-#define TAG_LENGTH         17UL
-#define TAG_PROT           18UL
-#define TAG_OFFSET         19UL
-#define TAG_PKEY           20UL
-#define TAG_NAME           21UL
-#define TAG_OLDFD          22UL
-#define TAG_NEWFD          23UL
-#define TAG_DOMAIN         24UL
-#define TAG_TYPE           25UL
-#define TAG_PROTOCOL       26UL
-#define TAG_REQUEST        27UL
-#define TAG_PID            28UL
-#define TAG_SIG            29UL
-#define TAG_SOCKFD         30UL
-#define TAG_BACKLOG        31UL
-#define TAG_OPTION         32UL
-#define TAG_ARG2           33UL
-#define TAG_ARG3           34UL
-#define TAG_ARG4           35UL
-#define TAG_ARG5           36UL
-#define TAG_DATA           37UL
-#define TAG_LOCAL_IOV      38UL
-#define TAG_LIOVCNT        39UL
-#define TAG_REMOTE_IOV     40UL
-#define TAG_RIOVCNT        41UL
-#define TAG_MODULE_IMAGE   42UL
-#define TAG_LEN            43UL
-#define TAG_PARAM_VALUES   44UL
-#define TAG_TARGET         45UL
-#define TAG_NEWDIRFD       46UL
-#define TAG_LINKPATH       47UL
-#define TAG_SOURCE         48UL
-#define TAG_FILESYSTEMTYPE 49UL
-#define TAG_MOUNTFLAGS     50UL
-#define TAG_UID            51UL
-#define TAG_GID            52UL
-#define TAG_FSUID          53UL
-#define TAG_FSGID          54UL
-#define TAG_RUID           55UL
-#define TAG_EUID           56UL
-#define TAG_RGID           57UL
-#define TAG_EGID           58UL
-#define TAG_SUID           59UL
-#define TAG_SGID           60UL
-#define TAG_OWNER          61UL
-#define TAG_GROUP          62UL
-#define TAG_BUF            63UL
-#define TAG_WHENCE         64UL
-#define TAG_ADVICE         65UL
-#define TAG_DEST_ADDR      66UL
-#define TAG_SRC_ADDR       67UL
+
+#define SYS_MMAP            9
+#define SYS_MPROTECT        10
+#define SYS_RT_SIGRETURN    15
+#define SYS_CLONE           56
+#define SYS_FORK            57
+#define SYS_VFORK           58
+#define SYS_EXECVE          59
+#define SYS_EXIT            60
+#define SYS_EXIT_GROUP      231
+#define SYS_EXECVEAT        322
+#define RAW_SYS_ENTER       335
+#define RAW_SYS_EXIT        336
+#define DO_EXIT             337
+#define CAP_CAPABLE         338
+#define SECURITY_BPRM_CHECK 339
+#define SECURITY_FILE_OPEN  340
+#define VFS_WRITE           341
+#define MEM_PROT_ALERT      342
+#define MAX_EVENT_ID        343
 
 #define CONFIG_MODE             0
 #define CONFIG_SHOW_SYSCALL     1
@@ -139,370 +92,6 @@
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
 #error Minimal required kernel version is 4.14
 #endif
-
-/*==================================== ENUMS =================================*/
-
-enum event_id {
-    SYS_READ,
-    SYS_WRITE,
-    SYS_OPEN,
-    SYS_CLOSE,
-    SYS_STAT,
-    SYS_FSTAT,
-    SYS_LSTAT,
-    SYS_POLL,
-    SYS_LSEEK,
-    SYS_MMAP,
-    SYS_MPROTECT,
-    SYS_MUNMAP,
-    SYS_BRK,
-    SYS_RT_SIGACTION,
-    SYS_RT_SIGPROCMASK,
-    SYS_RT_SIGRETURN,
-    SYS_IOCTL,
-    SYS_PREAD64,
-    SYS_PWRITE64,
-    SYS_READV,
-    SYS_WRITEV,
-    SYS_ACCESS,
-    SYS_PIPE,
-    SYS_SELECT,
-    SYS_SCHED_YIELD,
-    SYS_MREMAP,
-    SYS_MSYNC,
-    SYS_MINCORE,
-    SYS_MADVISE,
-    SYS_SHMGET,
-    SYS_SHMAT,
-    SYS_SHMCTL,
-    SYS_DUP,
-    SYS_DUP2,
-    SYS_PAUSE,
-    SYS_NANOSLEEP,
-    SYS_GETITIMER,
-    SYS_ALARM,
-    SYS_SETITIMER,
-    SYS_GETPID,
-    SYS_SENDFILE,
-    SYS_SOCKET,
-    SYS_CONNECT,
-    SYS_ACCEPT,
-    SYS_SENDTO,
-    SYS_RECVFROM,
-    SYS_SENDMSG,
-    SYS_RECVMSG,
-    SYS_SHUTDOWN,
-    SYS_BIND,
-    SYS_LISTEN,
-    SYS_GETSOCKNAME,
-    SYS_GETPEERNAME,
-    SYS_SOCKETPAIR,
-    SYS_SETSOCKOPT,
-    SYS_GETSOCKOPT,
-    SYS_CLONE,
-    SYS_FORK,
-    SYS_VFORK,
-    SYS_EXECVE,
-    SYS_EXIT,
-    SYS_WAIT4,
-    SYS_KILL,
-    SYS_UNAME,
-    SYS_SEMGET,
-    SYS_SEMOP,
-    SYS_SEMCTL,
-    SYS_SHMDT,
-    SYS_MSGGET,
-    SYS_MSGSND,
-    SYS_MSGRCV,
-    SYS_MSGCTL,
-    SYS_FCNTL,
-    SYS_FLOCK,
-    SYS_FSYNC,
-    SYS_FDATASYNC,
-    SYS_TRUNCATE,
-    SYS_FTRUNCATE,
-    SYS_GETDENTS,
-    SYS_GETCWD,
-    SYS_CHDIR,
-    SYS_FCHDIR,
-    SYS_RENAME,
-    SYS_MKDIR,
-    SYS_RMDIR,
-    SYS_CREAT,
-    SYS_LINK,
-    SYS_UNLINK,
-    SYS_SYMLINK,
-    SYS_READLINK,
-    SYS_CHMOD,
-    SYS_FCHMOD,
-    SYS_CHOWN,
-    SYS_FCHOWN,
-    SYS_LCHOWN,
-    SYS_UMASK,
-    SYS_GETTIMEOFDAY,
-    SYS_GETRLIMIT,
-    SYS_GETRUSAGE,
-    SYS_SYSINFO,
-    SYS_TIMES,
-    SYS_PTRACE,
-    SYS_GETUID,
-    SYS_SYSLOG,
-    SYS_GETGID,
-    SYS_SETUID,
-    SYS_SETGID,
-    SYS_GETEUID,
-    SYS_GETEGID,
-    SYS_SETPGID,
-    SYS_GETPPID,
-    SYS_GETPGRP,
-    SYS_SETSID,
-    SYS_SETREUID,
-    SYS_SETREGID,
-    SYS_GETGROUPS,
-    SYS_SETGROUPS,
-    SYS_SETRESUID,
-    SYS_GETRESUID,
-    SYS_SETRESGID,
-    SYS_GETRESGID,
-    SYS_GETPGID,
-    SYS_SETFSUID,
-    SYS_SETFSGID,
-    SYS_GETSID,
-    SYS_CAPGET,
-    SYS_CAPSET,
-    SYS_RT_SIGPENDING,
-    SYS_RT_SIGTIMEDWAIT,
-    SYS_RT_SIGQUEUEINFO,
-    SYS_RT_SIGSUSPEND,
-    SYS_SIGALTSTACK,
-    SYS_UTIME,
-    SYS_MKNOD,
-    SYS_USELIB,
-    SYS_PERSONALITY,
-    SYS_USTAT,
-    SYS_STATFS,
-    SYS_FSTATFS,
-    SYS_SYSFS,
-    SYS_GETPRIORITY,
-    SYS_SETPRIORITY,
-    SYS_SCHED_SETPARAM,
-    SYS_SCHED_GETPARAM,
-    SYS_SCHED_SETSCHEDULER,
-    SYS_SCHED_GETSCHEDULER,
-    SYS_SCHED_GET_PRIORITY_MAX,
-    SYS_SCHED_GET_PRIORITY_MIN,
-    SYS_SCHED_RR_GET_INTERVAL,
-    SYS_MLOCK,
-    SYS_MUNLOCK,
-    SYS_MLOCKALL,
-    SYS_MUNLOCKALL,
-    SYS_VHANGUP,
-    SYS_MODIFY_LDT,
-    SYS_PIVOT_ROOT,
-    SYS_SYSCTL,
-    SYS_PRCTL,
-    SYS_ARCH_PRCTL,
-    SYS_ADJTIMEX,
-    SYS_SETRLIMIT,
-    SYS_CHROOT,
-    SYS_SYNC,
-    SYS_ACCT,
-    SYS_SETTIMEOFDAY,
-    SYS_MOUNT,
-    SYS_UMOUNT,
-    SYS_SWAPON,
-    SYS_SWAPOFF,
-    SYS_REBOOT,
-    SYS_SETHOSTNAME,
-    SYS_SETDOMAINNAME,
-    SYS_IOPL,
-    SYS_IOPERM,
-    SYS_CREATE_MODULE,
-    SYS_INIT_MODULE,
-    SYS_DELETE_MODULE,
-    SYS_GET_KERNEL_SYMS,
-    SYS_QUERY_MODULE,
-    SYS_QUOTACTL,
-    SYS_NFSSERVCTL,
-    SYS_GETPMSG,
-    SYS_PUTPMSG,
-    SYS_AFS,
-    SYS_TUXCALL,
-    SYS_SECURITY,
-    SYS_GETTID,
-    SYS_READAHEAD,
-    SYS_SETXATTR,
-    SYS_LSETXATTR,
-    SYS_FSETXATTR,
-    SYS_GETXATTR,
-    SYS_LGETXATTR,
-    SYS_FGETXATTR,
-    SYS_LISTXATTR,
-    SYS_LLISTXATTR,
-    SYS_FLISTXATTR,
-    SYS_REMOVEXATTR,
-    SYS_LREMOVEXATTR,
-    SYS_FREMOVEXATTR,
-    SYS_TKILL,
-    SYS_TIME,
-    SYS_FUTEX,
-    SYS_SCHED_SETAFFINITY,
-    SYS_SCHED_GETAFFINITY,
-    SYS_SET_THREAD_AREA,
-    SYS_IO_SETUP,
-    SYS_IO_DESTROY,
-    SYS_IO_GETEVENTS,
-    SYS_IO_SUBMIT,
-    SYS_IO_CANCEL,
-    SYS_GET_THREAD_AREA,
-    SYS_LOOOKUP_DCOOKIE,
-    SYS_EPOLL_CREATE,
-    SYS_EPOLL_CTL_OLD,
-    SYS_EPOLL_WAIT_OLD,
-    SYS_REMAP_FILE_PAGES,
-    SYS_GETDENTS64,
-    SYS_SET_TID_ADDRESS,
-    SYS_RESTART_SYSCALL,
-    SYS_SEMTIMEDOP,
-    SYS_FADVISE64,
-    SYS_TIMER_CREATE,
-    SYS_TIMER_SETTIME,
-    SYS_TIMER_GETTIME,
-    SYS_TIMER_GETOVERRUN,
-    SYS_TIMER_DELETE,
-    SYS_CLOCK_SETTIME,
-    SYS_CLOCK_GETTIME,
-    SYS_CLOCK_GETRES,
-    SYS_CLOCK_NANOSLEEP,
-    SYS_EXIT_GROUP,
-    SYS_EPOLL_WAIT,
-    SYS_EPOLL_CTL,
-    SYS_TGKILL,
-    SYS_UTIMES,
-    SYS_VSERVER,
-    SYS_MBIND,
-    SYS_SET_MEMPOLICY,
-    SYS_GET_MEMPOLICY,
-    SYS_MQ_OPEN,
-    SYS_MQ_UNLINK,
-    SYS_MQ_TIMEDSEND,
-    SYS_MQ_TIMEDRECEIVE,
-    SYS_MQ_NOTIFY,
-    SYS_MQ_GETSETATTR,
-    SYS_KEXEC_LOAD,
-    SYS_WAITID,
-    SYS_ADD_KEY,
-    SYS_REQUEST_KEY,
-    SYS_KEYCTL,
-    SYS_IOPRIO_SET,
-    SYS_IOPRIO_GET,
-    SYS_INOTIFY_INIT,
-    SYS_INOTIFY_ADD_WATCH,
-    SYS_INOTIFY_RM_WATCH,
-    SYS_MIGRATE_PAGES,
-    SYS_OPENAT,
-    SYS_MKDIRAT,
-    SYS_MKNODAT,
-    SYS_FCHOWNAT,
-    SYS_FUTIMESAT,
-    SYS_NEWFSTATAT,
-    SYS_UNLINKAT,
-    SYS_RENAMEAT,
-    SYS_LINKAT,
-    SYS_SYMLINKAT,
-    SYS_READLINKAT,
-    SYS_FCHMODAT,
-    SYS_FACCESSAT,
-    SYS_PSELECT6,
-    SYS_PPOLL,
-    SYS_UNSHARE,
-    SYS_SET_ROBUST_LIST,
-    SYS_GET_ROBUST_LIST,
-    SYS_SPLICE,
-    SYS_TEE,
-    SYS_SYNC_FILE_RANGE,
-    SYS_VMSPLICE,
-    SYS_MOVE_PAGES,
-    SYS_UTIMENSAT,
-    SYS_EPOLL_PWAIT,
-    SYS_SIGNALFD,
-    SYS_TIMERFD_CREATE,
-    SYS_EVENTFD,
-    SYS_FALLOCATE,
-    SYS_TIMERFD_SETTIME,
-    SYS_TIMERFD_GETTIME,
-    SYS_ACCEPT4,
-    SYS_SIGNALFD4,
-    SYS_EVENTFD2,
-    SYS_EPOLL_CREATE1,
-    SYS_DUP3,
-    SYS_PIPE2,
-    SYS_INOTIFY_INIT1,
-    SYS_PREADV,
-    SYS_PWRITEV,
-    SYS_RT_TGSIGQUEUEINFO,
-    SYS_PERF_EVENT_OPEN,
-    SYS_RECVMMSG,
-    SYS_FANOTIFY_INIT,
-    SYS_FANOTIFY_MARK,
-    SYS_PRLIMIT64,
-    SYS_NAME_TO_HANDLE_AT,
-    SYS_OPEN_BY_HANDLE_AT,
-    SYS_CLOCK_ADJTIME,
-    SYS_SYNCFS,
-    SYS_SENDMMSG,
-    SYS_SETNS,
-    SYS_GETCPU,
-    SYS_PROCESS_VM_READV,
-    SYS_PROCESS_VM_WRITEV,
-    SYS_KCMP,
-    SYS_FINIT_MODULE,
-    SYS_SCHED_SETATTR,
-    SYS_SCHED_GETATTR,
-    SYS_RENAMEAT2,
-    SYS_SECCOMPP,
-    SYS_GETRANDOM,
-    SYS_MEMFD_CREATE,
-    SYS_KEXEC_FILE_LOAD,
-    SYS_BPF,
-    SYS_EXECVEAT,
-    SYS_USERFAULTFD,
-    SYS_MEMBARRIER,
-    SYS_MLOCK2,
-    SYS_COPY_FILE_RANGE,
-    SYS_PREADV2,
-    SYS_PWRITEV2,
-    SYS_PKEY_MPROTECT,
-    SYS_PKEY_ALLOC,
-    SYS_PKRY_FREE,
-    SYS_STATX,
-    SYS_IO_PGETEVENTS,
-    SYS_RSEQ,
-    RESERVED335,
-    RESERVED336,
-    RESERVED337,
-    RESERVED338,
-    RESERVED339,
-    RESERVED340,
-    RESERVED341,
-    RESERVED342,
-    RESERVED343,
-    RESERVED344,
-    RESERVED345,
-    RESERVED346,
-    RESERVED347,
-    RESERVED348,
-    RESERVED349,
-    RAW_SYS_ENTER,
-    RAW_SYS_EXIT,
-    DO_EXIT,
-    CAP_CAPABLE,
-    SECURITY_BPRM_CHECK,
-    SECURITY_FILE_OPEN,
-    VFS_WRITE,
-    MEM_PROT_ALERT,
-    MAX_EVENT_ID,
-};
 
 /*=============================== INTERNAL STRUCTS ===========================*/
 
@@ -519,7 +108,7 @@ typedef struct context {
     u32 pid_id;
     char comm[TASK_COMM_LEN];
     char uts_name[TASK_COMM_LEN];
-    enum event_id eventid;
+    u32 eventid;
     s64 retval;
     u8 argnum;
 } context_t;
@@ -581,6 +170,8 @@ BPF_HASH(args_map, u64, args_t);                    // Persist args info between
 BPF_HASH(ret_map, u64, u64);                        // Persist return value to be used in tail calls
 BPF_HASH(bin_args_map, u64, bin_args_t);            // Persist args for send_bin funtion
 BPF_HASH(sys_32_to_64_map, u32, u32);               // Map 32bit syscalls numbers to 64bit syscalls numbers
+BPF_HASH(params_types_map, u32, u64);               // Encoded parameters types for event
+BPF_HASH(params_names_map, u32, u64);               // Encoded parameters names for event
 BPF_ARRAY(file_filter, path_filter_t, 3);           // Used to filter vfs_write events
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);         // Percpu global buffer variables
 BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS);       // Holds offsets to bufs respectively
@@ -874,7 +465,6 @@ static __always_inline int save_to_submit_buf(buf_t *submit_p, void *ptr, int si
 
         *off += 1;
     }
-
     if (*off > MAX_PERCPU_BUFSIZE - MAX_ELEMENT_SIZE)
         // Satisfy validator for probe read
         return 0;
@@ -1084,10 +674,18 @@ static __always_inline int is_container()
     return lookup_pid_ns(task);
 }
 
-static __always_inline int save_args(struct pt_regs *ctx, u32 event_id, bool is_syscall)
+static __always_inline int save_args(args_t *args, u32 event_id)
 {
-    u64 id;
-    u32 tid;
+    u64 id = event_id;
+    u32 tid = bpf_get_current_pid_tgid();
+    id = id << 32 | tid;
+    args_map.update(&id, args);
+
+    return 0;
+}
+
+static __always_inline int save_args_from_regs(struct pt_regs *ctx, u32 event_id, bool is_syscall)
+{
     args_t args = {};
 
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
@@ -1107,12 +705,7 @@ static __always_inline int save_args(struct pt_regs *ctx, u32 event_id, bool is_
         args.args[5] = PT_REGS_PARM6(ctx);
     }
 
-    id = event_id;
-    tid = bpf_get_current_pid_tgid();
-    id = id << 32 | tid;
-    args_map.update(&id, &args);
-
-    return 0;
+    return save_args(&args, event_id);
 }
 
 static __always_inline int load_args(args_t *args, bool delete, u32 event_id)
@@ -1192,20 +785,6 @@ static __always_inline int del_retval(u32 event_id)
     return 0;
 }
 
-#define ENC_ARG(n, arg) arg<<(8*n)
-#define ENC_ARG0(arg) ENC_ARG(0, arg)
-#define ENC_ARG1(arg) ENC_ARG(1, arg)
-#define ENC_ARG2(arg) ENC_ARG(2, arg)
-#define ENC_ARG3(arg) ENC_ARG(3, arg)
-#define ENC_ARG4(arg) ENC_ARG(4, arg)
-#define ENC_ARG5(arg) ENC_ARG(5, arg)
-#define ENC_ARGS0()                                   0
-#define ENC_ARGS1(arg0)                               ENC_ARG0(arg0)
-#define ENC_ARGS2(arg0, arg1)                         ENC_ARG0(arg0)|ENC_ARG1(arg1)
-#define ENC_ARGS3(arg0, arg1, arg2)                   ENC_ARG0(arg0)|ENC_ARG1(arg1)|ENC_ARG2(arg2)
-#define ENC_ARGS4(arg0, arg1, arg2, arg3)             ENC_ARG0(arg0)|ENC_ARG1(arg1)|ENC_ARG2(arg2)|ENC_ARG3(arg3)
-#define ENC_ARGS5(arg0, arg1, arg2, arg3, arg4)       ENC_ARG0(arg0)|ENC_ARG1(arg1)|ENC_ARG2(arg2)|ENC_ARG3(arg3)|ENC_ARG4(arg4)
-#define ENC_ARGS6(arg0, arg1, arg2, arg3, arg4, arg5) ENC_ARG0(arg0)|ENC_ARG1(arg1)|ENC_ARG2(arg2)|ENC_ARG3(arg3)|ENC_ARG4(arg4)|ENC_ARG5(arg5)
 #define DEC_ARG(n, enc_arg) ((enc_arg>>(8*n))&0xFF)
 
 static __always_inline int get_encoded_arg_num(u64 types)
@@ -1289,8 +868,10 @@ static __always_inline int save_args_to_submit_buf(u64 types, u64 tags, args_t *
                         default:
                             size = sizeof(short);
                     }
+                    save_to_submit_buf(submit_p, (void*)(args->args[i]), size, type, tag);
+                } else {
+                    save_to_submit_buf(submit_p, &family, sizeof(short), type, tag);
                 }
-                save_to_submit_buf(submit_p, (void*)(args->args[i]), size, type, tag);
                 break;
         }
         if ((type != NONE_T) && (type != STR_T) && (type != SOCKADDR_T))
@@ -1300,62 +881,22 @@ static __always_inline int save_args_to_submit_buf(u64 types, u64 tags, args_t *
     return 0;
 }
 
-static __always_inline int trace_ret_generic(void *ctx, u32 id, u64 types, u64 tags, bool delete_args)
+static __always_inline int trace_ret_generic(void *ctx, u32 id, u64 types, u64 tags, args_t *args, long ret)
 {
-    context_t context = {};
-    args_t args = {};
-
-    if (load_args(&args, delete_args, id) != 0)
-        return -1;
-
-    if (!should_trace())
-        return -1;
-
-    if (!event_chosen(id))
-        return 0;
-
-    init_context(&context);
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
+    context_t context = {};
+    init_context(&context);
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     context.eventid = id;
     context.argnum = get_encoded_arg_num(types);
-    load_retval(&context.retval, id);
+    context.retval = ret;
     save_context_to_buf(submit_p, (void*)&context);
-    save_args_to_submit_buf(types, tags, &args);
+    save_args_to_submit_buf(types, tags, args);
 
     events_perf_submit(ctx);
-    return 0;
-}
-
-static __always_inline int trace_ret_generic_tail(void *ctx, u32 id, u64 types, u64 tags, u32 tail)
-{
-    bool delete_args = false;
-    trace_ret_generic(ctx, id, types, tags, delete_args);
-    prog_array.call(ctx, tail);
-    // If we got here, tail call failed - delete args
-    del_args(id);
-    return 0;
-}
-
-static __always_inline int trace_ret_generic_fork(void *ctx, u32 id, u64 types, u64 tags)
-{
-    u64 retval = 0;
-
-    // load retval that contains the child pid
-    load_retval(&retval, id);
-    save_retval(retval, id);
-
-    bool delete_args = true;
-    int rc = trace_ret_generic(ctx, id, types, tags, delete_args);
-
-    if (!rc && (get_config(CONFIG_MODE) != MODE_CONTAINER)) {
-        u32 pid = retval;
-        add_pid_fork(pid);
-    }
-
     return 0;
 }
 
@@ -1364,111 +905,28 @@ int trace_##name(void *ctx)                                             \
 {                                                                       \
     if (!should_trace())                                                \
         return 0;                                                       \
-    return save_args(ctx, id, false);                                   \
+    return save_args_from_regs(ctx, id, false);                         \
 }
 
-#define TRACE_RET_FUNC(name, id, types, tags)                           \
+#define TRACE_RET_FUNC(name, id, types, tags, ret)                      \
 int trace_ret_##name(void *ctx)                                         \
 {                                                                       \
+    args_t args = {};                                                   \
+                                                                        \
     bool delete_args = true;                                            \
-    return trace_ret_generic(ctx, id, types, tags, delete_args);        \
-}
-
-#define TRACE_RET_FUNC_WITH_TAIL(name, id, types, tags, tail)           \
-int trace_ret_##name(void *ctx)                                         \
-{                                                                       \
-    return trace_ret_generic_tail(ctx, id, types, tags, tail);          \
-}
-
-#define TRACE_RET_SYSCALL TRACE_RET_FUNC
-#define TRACE_RET_SYSCALL_WITH_TAIL TRACE_RET_FUNC_WITH_TAIL
-
-#define TRACE_RET_FORK_SYSCALL(name, id, types, tags)                   \
-int trace_ret_##name(void *ctx)                                         \
-{                                                                       \
-    return trace_ret_generic_fork(ctx, id, types, tags);                \
+    if (load_args(&args, delete_args, id) != 0)                         \
+        return -1;                                                      \
+                                                                        \
+    if (!should_trace())                                                \
+        return -1;                                                      \
+                                                                        \
+    if (!event_chosen(id))                                              \
+        return 0;                                                       \
+                                                                        \
+    return trace_ret_generic(ctx, id, types, tags, &args, ret);         \
 }
 
 /*============================== SYSCALL HOOKS ==============================*/
-
-// Note: race condition may occur if a malicious user changes memory content pointed by syscall arguments by concurrent threads!
-// Consider using inner kernel functions (e.g. security_file_open) to avoid this
-TRACE_RET_SYSCALL(open, SYS_OPEN, ENC_ARGS2(STR_T, INT_T), ENC_ARGS2(TAG_PATHNAME, TAG_FLAGS));
-TRACE_RET_SYSCALL(openat, SYS_OPENAT, ENC_ARGS3(INT_T, STR_T, INT_T), ENC_ARGS3(TAG_DIRFD, TAG_PATHNAME, TAG_FLAGS));
-TRACE_RET_SYSCALL(creat, SYS_CREAT, ENC_ARGS2(STR_T, INT_T), ENC_ARGS2(TAG_PATHNAME, TAG_MODE));
-TRACE_RET_SYSCALL(mmap, SYS_MMAP, ENC_ARGS6(POINTER_T, SIZE_T_T, INT_T, INT_T, INT_T, OFF_T_T), ENC_ARGS6(TAG_ADDR, TAG_LENGTH, TAG_PROT, TAG_FLAGS, TAG_FD, TAG_OFFSET));
-TRACE_RET_SYSCALL(munmap, SYS_MUNMAP, ENC_ARGS2(POINTER_T, SIZE_T_T), ENC_ARGS2(TAG_ADDR, TAG_LENGTH));
-TRACE_RET_SYSCALL(mprotect, SYS_MPROTECT, ENC_ARGS3(POINTER_T, SIZE_T_T, INT_T), ENC_ARGS3(TAG_ADDR, TAG_LENGTH, TAG_PROT));
-TRACE_RET_SYSCALL(brk, SYS_BRK, ENC_ARGS1(POINTER_T), ENC_ARGS1(TAG_ADDR));
-TRACE_RET_SYSCALL(pkey_mprotect, SYS_PKEY_MPROTECT, ENC_ARGS4(POINTER_T, SIZE_T_T, INT_T, INT_T), ENC_ARGS4(TAG_ADDR, TAG_LENGTH, TAG_PROT, TAG_PKEY));
-TRACE_RET_SYSCALL(mknod, SYS_MKNOD, ENC_ARGS3(STR_T, MODE_T_T, DEV_T_T), ENC_ARGS3(TAG_PATHNAME, TAG_MODE, TAG_DEV));
-TRACE_RET_SYSCALL(mknodat, SYS_MKNODAT, ENC_ARGS4(INT_T, STR_T, MODE_T_T, DEV_T_T), ENC_ARGS4(TAG_DIRFD, TAG_PATHNAME, TAG_MODE, TAG_DEV));
-TRACE_RET_SYSCALL(memfd_create, SYS_MEMFD_CREATE, ENC_ARGS2(STR_T, INT_T), ENC_ARGS2(TAG_NAME, TAG_FLAGS));
-TRACE_RET_SYSCALL(dup, SYS_DUP, ENC_ARGS1(INT_T), ENC_ARGS1(TAG_OLDFD));
-TRACE_RET_SYSCALL(dup2, SYS_DUP2, ENC_ARGS2(INT_T, INT_T), ENC_ARGS2(TAG_OLDFD, TAG_NEWFD));
-TRACE_RET_SYSCALL(dup3, SYS_DUP3, ENC_ARGS3(INT_T, INT_T, INT_T), ENC_ARGS3(TAG_OLDFD, TAG_NEWFD, TAG_FLAGS));
-TRACE_RET_SYSCALL(newstat, SYS_STAT, ENC_ARGS1(STR_T), ENC_ARGS1(TAG_PATHNAME));
-TRACE_RET_SYSCALL(newlstat, SYS_LSTAT, ENC_ARGS1(STR_T), ENC_ARGS1(TAG_PATHNAME));
-TRACE_RET_SYSCALL(newfstat, SYS_FSTAT, ENC_ARGS1(INT_T), ENC_ARGS1(TAG_FD));
-TRACE_RET_SYSCALL(socket, SYS_SOCKET, ENC_ARGS3(INT_T, INT_T, INT_T), ENC_ARGS3(TAG_DOMAIN, TAG_TYPE, TAG_PROTOCOL));
-TRACE_RET_SYSCALL(close, SYS_CLOSE, ENC_ARGS1(INT_T), ENC_ARGS1(TAG_FD));
-TRACE_RET_SYSCALL(ioctl, SYS_IOCTL, ENC_ARGS2(INT_T, ULONG_T), ENC_ARGS2(TAG_FD, TAG_REQUEST));
-TRACE_RET_SYSCALL(access, SYS_ACCESS, ENC_ARGS2(STR_T, INT_T), ENC_ARGS2(TAG_PATHNAME, TAG_MODE));
-TRACE_RET_SYSCALL(faccessat, SYS_FACCESSAT, ENC_ARGS4(INT_T, STR_T, INT_T, INT_T), ENC_ARGS4(TAG_DIRFD, TAG_PATHNAME, TAG_MODE, TAG_FLAGS));
-TRACE_RET_SYSCALL(kill, SYS_KILL, ENC_ARGS2(INT_T, INT_T), ENC_ARGS2(TAG_PID, TAG_SIG));
-TRACE_RET_SYSCALL(listen, SYS_LISTEN, ENC_ARGS2(INT_T, INT_T), ENC_ARGS2(TAG_SOCKFD, TAG_BACKLOG));
-TRACE_RET_SYSCALL(connect, SYS_CONNECT, ENC_ARGS2(INT_T, SOCKADDR_T), ENC_ARGS2(TAG_SOCKFD, TAG_ADDR));
-TRACE_RET_SYSCALL(accept, SYS_ACCEPT, ENC_ARGS2(INT_T, SOCKADDR_T), ENC_ARGS2(TAG_SOCKFD, TAG_ADDR));
-TRACE_RET_SYSCALL(accept4, SYS_ACCEPT4, ENC_ARGS2(INT_T, SOCKADDR_T), ENC_ARGS2(TAG_SOCKFD, TAG_ADDR));
-TRACE_RET_SYSCALL(bind, SYS_BIND, ENC_ARGS2(INT_T, SOCKADDR_T), ENC_ARGS2(TAG_SOCKFD, TAG_ADDR));
-TRACE_RET_SYSCALL(sendto, SYS_SENDTO, ENC_ARGS5(INT_T, POINTER_T, SIZE_T_T, INT_T, SOCKADDR_T), ENC_ARGS5(TAG_SOCKFD, TAG_BUF, TAG_LEN, TAG_FLAGS, TAG_DEST_ADDR));
-TRACE_RET_SYSCALL(recvfrom, SYS_RECVFROM, ENC_ARGS5(INT_T, POINTER_T, SIZE_T_T, INT_T, SOCKADDR_T), ENC_ARGS5(TAG_SOCKFD, TAG_BUF, TAG_LEN, TAG_FLAGS, TAG_SRC_ADDR));
-TRACE_RET_SYSCALL(getsockname, SYS_GETSOCKNAME, ENC_ARGS2(INT_T, SOCKADDR_T), ENC_ARGS2(TAG_SOCKFD, TAG_ADDR));
-TRACE_RET_SYSCALL(prctl, SYS_PRCTL, ENC_ARGS5(INT_T, ULONG_T, ULONG_T, ULONG_T, ULONG_T), ENC_ARGS5(TAG_OPTION, TAG_ARG2, TAG_ARG3, TAG_ARG4, TAG_ARG5));
-TRACE_RET_SYSCALL(ptrace, SYS_PTRACE, ENC_ARGS4(INT_T, INT_T, POINTER_T, POINTER_T), ENC_ARGS4(TAG_REQUEST, TAG_PID, TAG_ADDR, TAG_DATA));
-TRACE_RET_SYSCALL(process_vm_writev, SYS_PROCESS_VM_WRITEV, ENC_ARGS6(INT_T, POINTER_T, ULONG_T, POINTER_T, ULONG_T, ULONG_T), ENC_ARGS6(TAG_PID, TAG_LOCAL_IOV, TAG_LIOVCNT, TAG_REMOTE_IOV, TAG_RIOVCNT, TAG_FLAGS));
-TRACE_RET_SYSCALL(process_vm_readv, SYS_PROCESS_VM_READV, ENC_ARGS6(INT_T, POINTER_T, ULONG_T, POINTER_T, ULONG_T, ULONG_T), ENC_ARGS6(TAG_PID, TAG_LOCAL_IOV, TAG_LIOVCNT, TAG_REMOTE_IOV, TAG_RIOVCNT, TAG_FLAGS));
-TRACE_RET_SYSCALL(init_module, SYS_INIT_MODULE, ENC_ARGS3(POINTER_T, ULONG_T, STR_T), ENC_ARGS3(TAG_MODULE_IMAGE, TAG_LEN, TAG_PARAM_VALUES));
-TRACE_RET_SYSCALL(finit_module, SYS_FINIT_MODULE, ENC_ARGS3(INT_T, STR_T, INT_T), ENC_ARGS3(TAG_FD, TAG_PARAM_VALUES, TAG_FLAGS));
-TRACE_RET_SYSCALL(delete_module, SYS_DELETE_MODULE, ENC_ARGS2(STR_T, INT_T), ENC_ARGS2(TAG_NAME, TAG_FLAGS));
-TRACE_RET_SYSCALL(symlink, SYS_SYMLINK, ENC_ARGS2(STR_T, STR_T), ENC_ARGS2(TAG_TARGET, TAG_LINKPATH));
-TRACE_RET_SYSCALL(symlinkat, SYS_SYMLINKAT, ENC_ARGS3(STR_T, INT_T, STR_T), ENC_ARGS3(TAG_TARGET, TAG_NEWDIRFD, TAG_LINKPATH));
-TRACE_RET_SYSCALL(getdents, SYS_GETDENTS, ENC_ARGS1(INT_T), ENC_ARGS1(TAG_FD));
-TRACE_RET_SYSCALL(getdents64, SYS_GETDENTS64, ENC_ARGS1(INT_T), ENC_ARGS1(TAG_FD));
-TRACE_RET_SYSCALL(mount, SYS_MOUNT, ENC_ARGS4(STR_T, STR_T, STR_T, ULONG_T), ENC_ARGS4(TAG_SOURCE, TAG_TARGET, TAG_FILESYSTEMTYPE, TAG_MOUNTFLAGS));
-TRACE_RET_SYSCALL(umount, SYS_UMOUNT, ENC_ARGS1(STR_T), ENC_ARGS1(TAG_TARGET));
-TRACE_RET_SYSCALL(unlink, SYS_UNLINK, ENC_ARGS1(STR_T), ENC_ARGS1(TAG_PATHNAME));
-TRACE_RET_SYSCALL(unlinkat, SYS_UNLINKAT, ENC_ARGS3(INT_T, STR_T, INT_T), ENC_ARGS3(TAG_DIRFD, TAG_PATHNAME, TAG_FLAGS));
-TRACE_RET_SYSCALL(setuid, SYS_SETUID, ENC_ARGS1(INT_T), ENC_ARGS1(TAG_UID));
-TRACE_RET_SYSCALL(setgid, SYS_SETGID, ENC_ARGS1(INT_T), ENC_ARGS1(TAG_GID));
-TRACE_RET_SYSCALL(setfsuid, SYS_SETFSUID, ENC_ARGS1(INT_T), ENC_ARGS1(TAG_FSUID));
-TRACE_RET_SYSCALL(setfsgid, SYS_SETFSGID, ENC_ARGS1(INT_T), ENC_ARGS1(TAG_FSGID));
-TRACE_RET_SYSCALL(setreuid, SYS_SETREUID, ENC_ARGS2(INT_T, INT_T), ENC_ARGS2(TAG_RUID, TAG_EUID));
-TRACE_RET_SYSCALL(setregid, SYS_SETREGID, ENC_ARGS2(INT_T, INT_T), ENC_ARGS2(TAG_RGID, TAG_EGID));
-TRACE_RET_SYSCALL(setresuid, SYS_SETRESUID, ENC_ARGS3(INT_T, INT_T, INT_T), ENC_ARGS3(TAG_RUID, TAG_EUID, TAG_SUID));
-TRACE_RET_SYSCALL(setresgid, SYS_SETRESGID, ENC_ARGS3(INT_T, INT_T, INT_T), ENC_ARGS3(TAG_RGID, TAG_EGID, TAG_SGID));
-TRACE_RET_SYSCALL(chown, SYS_CHOWN, ENC_ARGS3(STR_T, UINT_T, UINT_T), ENC_ARGS3(TAG_PATHNAME, TAG_OWNER, TAG_GROUP));
-TRACE_RET_SYSCALL(fchown, SYS_FCHOWN, ENC_ARGS3(INT_T, UINT_T, UINT_T), ENC_ARGS3(TAG_FD, TAG_OWNER, TAG_GROUP));
-TRACE_RET_SYSCALL(lchown, SYS_LCHOWN, ENC_ARGS3(STR_T, UINT_T, UINT_T), ENC_ARGS3(TAG_PATHNAME, TAG_OWNER, TAG_GROUP));
-TRACE_RET_SYSCALL(fchownat, SYS_FCHOWNAT, ENC_ARGS5(INT_T, STR_T, UINT_T, UINT_T, INT_T), ENC_ARGS5(TAG_DIRFD, TAG_PATHNAME, TAG_OWNER, TAG_GROUP, TAG_FLAGS));
-TRACE_RET_SYSCALL(chmod, SYS_CHMOD, ENC_ARGS2(STR_T, MODE_T_T), ENC_ARGS2(TAG_PATHNAME, TAG_MODE));
-TRACE_RET_SYSCALL(fchmod, SYS_FCHMOD, ENC_ARGS2(INT_T, MODE_T_T), ENC_ARGS2(TAG_FD, TAG_MODE));
-TRACE_RET_SYSCALL(fchmodat, SYS_FCHMODAT, ENC_ARGS4(INT_T, STR_T, MODE_T_T, INT_T), ENC_ARGS4(TAG_DIRFD, TAG_PATHNAME, TAG_MODE, TAG_FLAGS));
-TRACE_RET_SYSCALL(read, SYS_READ, ENC_ARGS3(INT_T, POINTER_T, SIZE_T_T), ENC_ARGS3(TAG_FD, TAG_BUF, TAG_COUNT));
-TRACE_RET_SYSCALL(write, SYS_WRITE, ENC_ARGS3(INT_T, POINTER_T, SIZE_T_T), ENC_ARGS3(TAG_FD, TAG_BUF, TAG_COUNT));
-TRACE_RET_SYSCALL(pread64, SYS_PREAD64, ENC_ARGS4(INT_T, POINTER_T, SIZE_T_T, OFF_T_T), ENC_ARGS4(TAG_FD, TAG_BUF, TAG_COUNT, TAG_OFFSET));
-TRACE_RET_SYSCALL(pwrite64, SYS_PWRITE64, ENC_ARGS4(INT_T, POINTER_T, SIZE_T_T, OFF_T_T), ENC_ARGS4(TAG_FD, TAG_BUF, TAG_COUNT, TAG_OFFSET));
-TRACE_RET_SYSCALL(lseek, SYS_LSEEK, ENC_ARGS3(INT_T, OFF_T_T, INT_T), ENC_ARGS3(TAG_FD, TAG_OFFSET, TAG_WHENCE));
-TRACE_RET_SYSCALL(sched_yield, SYS_SCHED_YIELD, ENC_ARGS0(), ENC_ARGS0());
-TRACE_RET_SYSCALL(msync, SYS_MSYNC, ENC_ARGS3(POINTER_T, SIZE_T_T, INT_T), ENC_ARGS3(TAG_ADDR, TAG_LENGTH, TAG_FLAGS));
-TRACE_RET_SYSCALL(madvise, SYS_MADVISE, ENC_ARGS3(POINTER_T, SIZE_T_T, INT_T), ENC_ARGS3(TAG_ADDR, TAG_LENGTH, TAG_ADVICE));
-TRACE_RET_SYSCALL(getpid, SYS_GETPID, ENC_ARGS0(), ENC_ARGS0());
-TRACE_RET_SYSCALL(getppid, SYS_GETPPID, ENC_ARGS0(), ENC_ARGS0());
-TRACE_RET_SYSCALL(gettid, SYS_GETTID, ENC_ARGS0(), ENC_ARGS0());
-
-TRACE_RET_FORK_SYSCALL(fork, SYS_FORK, ENC_ARGS0(), ENC_ARGS0());
-TRACE_RET_FORK_SYSCALL(vfork, SYS_VFORK, ENC_ARGS0(), ENC_ARGS0());
-TRACE_RET_FORK_SYSCALL(clone, SYS_CLONE, ENC_ARGS1(ULONG_T), ENC_ARGS1(TAG_FLAGS));
 
 // include/trace/events/syscalls.h:
 // TP_PROTO(struct pt_regs *regs, long id)
@@ -1509,8 +967,9 @@ RAW_TRACEPOINT_PROBE(sys_enter)
         id = *id_64;
     }
 
-    // essential events should always be traced
-    if (id != SYS_CLONE && id != SYS_FORK && id != SYS_VFORK && id != SYS_EXECVE && id != SYS_EXECVEAT) {
+    // execve events should always be traced, as it may add new pids to the traced pids set
+    // forked childs shuoldn't be traced if the parent is not traced
+    if (id != SYS_EXECVE && id != SYS_EXECVEAT) {
         if (!should_trace())
             return 0;
     }
@@ -1518,29 +977,36 @@ RAW_TRACEPOINT_PROBE(sys_enter)
     // We save args here (and not before the tail call function below) as other functions may use it
     // See mprotect_alert and mmap_alert functions below for comments
     // If no other function needs the saved args, we can move this to just before the tail call
-    save_args(&regs, id, true);
+    // exit, exit_group and rt_sigreturn syscalls don't return - don't save args for them
+    if (id != SYS_EXIT && id != SYS_EXIT_GROUP && id != SYS_RT_SIGRETURN) {
+        save_args_from_regs(&regs, id, true);
+    }
 
-    // essential events should always be traced
+    // essential events should be traced even if not chosen by the user, as they may add new pids to the traced pids set
     if (id != SYS_CLONE && id != SYS_FORK && id != SYS_VFORK && id != SYS_EXECVE && id != SYS_EXECVEAT) {
         if (!event_chosen(id) && !event_chosen(RAW_SYS_ENTER))
             return 0;
     }
 
     if (event_chosen(RAW_SYS_ENTER)) {
-        context_t context = {};
-        init_context(&context);
-        set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
         buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
         if (submit_p == NULL)
             return 0;
 
+        context_t context = {};
+        init_context(&context);
+        set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
         context.eventid = RAW_SYS_ENTER;
         context.argnum = 1;
         context.retval = 0;
-
         save_context_to_buf(submit_p, (void*)&context);
 
-        save_to_submit_buf(submit_p, (void*)&id, sizeof(int), INT_T, TAG_SYSCALL);
+        u64 *tags = params_names_map.lookup(&context.eventid);
+        if (!tags) {
+            return -1;
+        }
+
+        save_to_submit_buf(submit_p, (void*)&id, sizeof(int), INT_T, DEC_ARG(0, *tags));
         events_perf_submit(ctx);
     }
 
@@ -1584,34 +1050,56 @@ RAW_TRACEPOINT_PROBE(sys_exit)
         id = *id_64;
     }
 
-    // essential events should always be traced
-    if (id != SYS_CLONE && id != SYS_FORK && id != SYS_VFORK && id != SYS_EXECVE && id != SYS_EXECVEAT) {
-        if (!should_trace())
-            return 0;
+    args_t saved_args = {};
+    bool delete_args = true;
+    if (load_args(&saved_args, delete_args, id) != 0)
+        return 0;
 
-        if (!event_chosen(id) && !event_chosen(RAW_SYS_EXIT))
-            return 0;
-    }
+    if (!should_trace())
+        return 0;
+
+    if (!event_chosen(id) && !event_chosen(RAW_SYS_EXIT))
+        return 0;
 
     if (event_chosen(RAW_SYS_EXIT)) {
-        context_t context = {};
-        init_context(&context);
-        set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
         buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
         if (submit_p == NULL)
             return 0;
 
+        context_t context = {};
+        init_context(&context);
+        set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
         context.eventid = RAW_SYS_EXIT;
         context.argnum = 1;
         context.retval = ret;
-
         save_context_to_buf(submit_p, (void*)&context);
 
-        save_to_submit_buf(submit_p, (void*)&id, sizeof(int), INT_T, TAG_SYSCALL);
+        u64 *tags = params_names_map.lookup(&context.eventid);
+        if (!tags) {
+            return -1;
+        }
+
+        save_to_submit_buf(submit_p, (void*)&id, sizeof(int), INT_T, DEC_ARG(0, *tags));
         events_perf_submit(ctx);
     }
 
+    if (id != SYS_EXECVE && id != SYS_EXECVEAT) {
+        u64 *types = params_types_map.lookup(&id);
+        u64 *tags = params_names_map.lookup(&id);
+        if (!types || !tags) {
+            return -1;
+        }
+        int rc = trace_ret_generic(ctx, id, *types, *tags, &saved_args, ret);
+        if (id == SYS_CLONE || id == SYS_FORK || id == SYS_VFORK) {
+            if (get_config(CONFIG_MODE) != MODE_CONTAINER) {
+                u32 pid = ret;
+                add_pid_fork(pid);
+            }
+        }
+    }
+
     // call syscall handler, if exists
+    save_args(&saved_args, id);
     save_retval(ret, id);
     sys_exit_tails.call(ctx, id);
     del_retval(id);
@@ -1624,7 +1112,7 @@ int syscall__execve(void *ctx)
     context_t context = {};
     args_t args = {};
 
-    bool delete_args = true;
+    bool delete_args = false;
     if (load_args(&args, delete_args, SYS_EXECVE) != 0)
         return -1;
 
@@ -1656,10 +1144,15 @@ int syscall__execve(void *ctx)
     context.retval = 0;     // assume execve succeeded. if not, a ret event will be sent too
     save_context_to_buf(submit_p, (void*)&context);
 
-    save_str_to_buf(submit_p, (void *)filename, TAG_PATHNAME);
-    save_str_arr_to_buf(submit_p, __argv, TAG_ARGV);
+    u64 *tags = params_names_map.lookup(&context.eventid);
+    if (!tags) {
+        return -1;
+    }
+
+    save_str_to_buf(submit_p, (void *)filename, DEC_ARG(0, *tags));
+    save_str_arr_to_buf(submit_p, __argv, DEC_ARG(1, *tags));
     if (show_env)
-        save_str_arr_to_buf(submit_p, __envp, TAG_ENVP);
+        save_str_arr_to_buf(submit_p, __envp, DEC_ARG(2, *tags));
 
     events_perf_submit(ctx);
     return 0;
@@ -1667,8 +1160,10 @@ int syscall__execve(void *ctx)
 
 int trace_ret_execve(void *ctx)
 {
-    // we can't load string args here as after execve memory is wiped
     context_t context = {};
+
+    // we can't use saved args here - after execve syscall pointers are invalid
+    del_args(SYS_EXECVE);
 
     if (!should_trace())
         return 0;
@@ -1694,11 +1189,10 @@ int trace_ret_execve(void *ctx)
 int syscall__execveat(void *ctx)
 {
     context_t context = {};
-
     args_t args = {};
 
-    bool delete_args = true;
-    if (load_args(&args, delete_args, SYS_EXECVE) != 0)
+    bool delete_args = false;
+    if (load_args(&args, delete_args, SYS_EXECVEAT) != 0)
         return -1;
 
     if (get_config(CONFIG_MODE) == MODE_CONTAINER)
@@ -1731,12 +1225,17 @@ int syscall__execveat(void *ctx)
     context.retval = 0;     // assume execve succeeded. if not, a ret event will be sent too
     save_context_to_buf(submit_p, (void*)&context);
 
-    save_to_submit_buf(submit_p, (void*)&dirfd, sizeof(int), INT_T, TAG_DIRFD);
-    save_str_to_buf(submit_p, (void *)pathname, TAG_PATHNAME);
-    save_str_arr_to_buf(submit_p, __argv, TAG_ARGV);
+    u64 *tags = params_names_map.lookup(&context.eventid);
+    if (!tags) {
+        return -1;
+    }
+
+    save_to_submit_buf(submit_p, (void*)&dirfd, sizeof(int), INT_T, DEC_ARG(0, *tags));
+    save_str_to_buf(submit_p, (void *)pathname, DEC_ARG(1, *tags));
+    save_str_arr_to_buf(submit_p, __argv, DEC_ARG(2, *tags));
     if (show_env)
-        save_str_arr_to_buf(submit_p, __envp, TAG_ENVP);
-    save_to_submit_buf(submit_p, (void*)&flags, sizeof(int), INT_T, TAG_FLAGS);
+        save_str_arr_to_buf(submit_p, __envp, DEC_ARG(3, *tags));
+    save_to_submit_buf(submit_p, (void*)&flags, sizeof(int), INT_T, DEC_ARG(4, *tags));
 
     events_perf_submit(ctx);
     return 0;
@@ -1744,8 +1243,10 @@ int syscall__execveat(void *ctx)
 
 int trace_ret_execveat(void *ctx)
 {
-    // we can't load string args here as after execve memory is wiped
     context_t context = {};
+
+    // we can't use saved args here - after execve syscall pointers are invalid
+    del_args(SYS_EXECVEAT);
 
     if (!should_trace())
         return 0;
@@ -1827,9 +1328,15 @@ int trace_security_bprm_check(struct pt_regs *ctx, struct linux_binprm *bprm)
     u32 *off = get_buf_off(STRING_BUF_IDX);
     if (off == NULL)
         return -1;
-    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], TAG_PATHNAME);
-    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, TAG_DEV);
-    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, TAG_INODE);
+
+    u64 *tags = params_names_map.lookup(&context.eventid);
+    if (!tags) {
+        return -1;
+    }
+
+    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], DEC_ARG(0, *tags));
+    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, DEC_ARG(1, *tags));
+    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, DEC_ARG(2, *tags));
 
     events_perf_submit(ctx);
     return 0;
@@ -1870,10 +1377,16 @@ int trace_security_file_open(struct pt_regs *ctx, struct file *file)
     u32 *off = get_buf_off(STRING_BUF_IDX);
     if (off == NULL)
         return -1;
-    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], TAG_PATHNAME);
-    save_to_submit_buf(submit_p, (void*)&file->f_flags, sizeof(int), INT_T, TAG_FLAGS);
-    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, TAG_DEV);
-    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, TAG_INODE);
+
+    u64 *tags = params_names_map.lookup(&context.eventid);
+    if (!tags) {
+        return -1;
+    }
+
+    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], DEC_ARG(0, *tags));
+    save_to_submit_buf(submit_p, (void*)&file->f_flags, sizeof(int), INT_T, DEC_ARG(1, *tags));
+    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, DEC_ARG(2, *tags));
+    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, DEC_ARG(3, *tags));
 
     events_perf_submit(ctx);
     return 0;
@@ -1909,11 +1422,16 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
     if (audit == 0)
         return 0;
 
+    u64 *tags = params_names_map.lookup(&context.eventid);
+    if (!tags) {
+        return -1;
+    }
+
     save_context_to_buf(submit_p, (void*)&context);
-    save_to_submit_buf(submit_p, (void*)&cap, sizeof(int), INT_T, TAG_CAP);
+    save_to_submit_buf(submit_p, (void*)&cap, sizeof(int), INT_T, DEC_ARG(0, *tags));
     if (get_config(CONFIG_SHOW_SYSCALL)) {
         struct pt_regs *real_ctx = get_task_pt_regs();
-        save_to_submit_buf(submit_p, (void*)&(real_ctx->orig_ax), sizeof(int), INT_T, TAG_SYSCALL);
+        save_to_submit_buf(submit_p, (void*)&(real_ctx->orig_ax), sizeof(int), INT_T, DEC_ARG(1, *tags));
     }
     events_perf_submit(ctx);
     return 0;
@@ -2105,9 +1623,12 @@ int do_trace_ret_vfs_write(struct pt_regs *ctx)
     loff_t *pos            = (loff_t*)       saved_args.args[3];
 
     // Get path
+    struct path path;
+    bpf_probe_read(&path, sizeof(struct path), &file->f_path);
     buf_t *string_p = get_buf(STRING_BUF_IDX);
     if (string_p == NULL)
         return -1;
+    get_path_string(string_p, &path);
     u32 *off = get_buf_off(STRING_BUF_IDX);
     if (off == NULL)
         return -1;
@@ -2129,11 +1650,16 @@ int do_trace_ret_vfs_write(struct pt_regs *ctx)
     context.retval = PT_REGS_RC(ctx);
     save_context_to_buf(submit_p, &context);
 
-    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], TAG_PATHNAME);
-    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, TAG_DEV);
-    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, TAG_INODE);
-    save_to_submit_buf(submit_p, &count, sizeof(size_t), SIZE_T_T, TAG_COUNT);
-    save_to_submit_buf(submit_p, &start_pos, sizeof(off_t), OFF_T_T, TAG_POS);
+    u64 *tags = params_names_map.lookup(&context.eventid);
+    if (!tags) {
+        return -1;
+    }
+
+    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], DEC_ARG(0, *tags));
+    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, DEC_ARG(1, *tags));
+    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, DEC_ARG(2, *tags));
+    save_to_submit_buf(submit_p, &count, sizeof(size_t), SIZE_T_T, DEC_ARG(3, *tags));
+    save_to_submit_buf(submit_p, &start_pos, sizeof(off_t), OFF_T_T, DEC_ARG(4, *tags));
 
     // Submit vfs_write event
     events_perf_submit(ctx);
@@ -2190,9 +1716,14 @@ int trace_mmap_alert(struct pt_regs *ctx)
     context.retval = 0;
     save_context_to_buf(submit_p, (void*)&context);
 
+    u64 *tags = params_names_map.lookup(&context.eventid);
+    if (!tags) {
+        return -1;
+    }
+
     if ((args.args[2] & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC)) {
         alert_t alert = {.ts = context.ts, .msg = ALERT_MMAP_W_X, .payload = 0};
-        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T, TAG_ALERT);
+        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T, DEC_ARG(0, *tags));
         events_perf_submit(ctx);
     }
 
@@ -2239,9 +1770,14 @@ int trace_mprotect_alert(struct pt_regs *ctx, struct vm_area_struct *vma, unsign
     context.retval = 0;
     save_context_to_buf(submit_p, (void*)&context);
 
+    u64 *tags = params_names_map.lookup(&context.eventid);
+    if (!tags) {
+        return -1;
+    }
+
     if ((!(prev_prot & VM_EXEC)) && (reqprot & VM_EXEC)) {
         alert_t alert = {.ts = context.ts, .msg = ALERT_MPROT_X_ADD, .payload = 0};
-        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T, TAG_ALERT);
+        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T, DEC_ARG(0, *tags));
         events_perf_submit(ctx);
         return 0;
     }
@@ -2249,7 +1785,7 @@ int trace_mprotect_alert(struct pt_regs *ctx, struct vm_area_struct *vma, unsign
     if ((prev_prot & VM_EXEC) && !(prev_prot & VM_WRITE)
         && ((reqprot & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC))) {
         alert_t alert = {.ts = context.ts, .msg = ALERT_MPROT_W_ADD, .payload = 0};
-        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T, TAG_ALERT);
+        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T, DEC_ARG(0, *tags));
         events_perf_submit(ctx);
         return 0;
     }
@@ -2259,7 +1795,7 @@ int trace_mprotect_alert(struct pt_regs *ctx, struct vm_area_struct *vma, unsign
         alert_t alert = {.ts = context.ts, .msg = ALERT_MPROT_W_REM, .payload = 0 };
         if (get_config(CONFIG_EXTRACT_DYN_CODE)) 
             alert.payload = 1;
-        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T, TAG_ALERT);
+        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T, DEC_ARG(0, *tags));
         events_perf_submit(ctx);
 
         if (get_config(CONFIG_EXTRACT_DYN_CODE)) {
