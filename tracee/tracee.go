@@ -116,6 +116,8 @@ type Tracee struct {
 	stats         statsStore
 	capturedFiles map[string]int64
 	mntNsFirstPid map[uint32]uint32
+	DecParamName  [2]map[argTag]string
+	EncParamName  [2]map[string]argTag
 }
 
 type counter int32
@@ -176,6 +178,11 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 		t.eventsToTrace[e] = true
 	}
 
+	t.DecParamName[0] = make(map[argTag]string)
+	t.EncParamName[0] = make(map[string]argTag)
+	t.DecParamName[1] = make(map[argTag]string)
+	t.EncParamName[1] = make(map[string]argTag)
+
 	p, err := getEBPFProgram()
 	if err != nil {
 		return nil, err
@@ -232,6 +239,75 @@ func supportRawTP() (bool, error) {
 	return false, nil
 }
 
+type eventParam struct {
+	encType argType
+	encName argTag
+}
+
+func (t *Tracee) initEventsParams() map[int32][]eventParam {
+	eventsParams := make(map[int32][]eventParam)
+	var seenNames [2]map[string]bool
+	var ParamNameCounter [2]argTag
+	seenNames[0] = make(map[string]bool)
+	ParamNameCounter[0] = argTag(1)
+	seenNames[1] = make(map[string]bool)
+	ParamNameCounter[1] = argTag(1)
+	paramT := noneT
+	for id, params := range EventsIDToParams {
+		for _, param := range params {
+			switch param.pType {
+			case "int", "pid_t", "uid_t", "gid_t", "mqd_t", "clockid_t", "const clockid_t", "key_t", "key_serial_t", "timer_t":
+				paramT = intT
+			case "unsigned int", "u32":
+				paramT = uintT
+			case "long":
+				paramT = longT
+			case "unsigned long", "u64":
+				paramT = ulongT
+			case "off_t":
+				paramT = offT
+			case "mode_t":
+				paramT = modeT
+			case "dev_t":
+				paramT = devT
+			case "size_t":
+				paramT = sizeT
+			case "void*", "const void*":
+				paramT = pointerT
+			case "char*", "const char*":
+				paramT = strT
+			case "const char*const*", "const char**", "char**":
+				paramT = strArrT
+			case "const struct sockaddr*", "struct sockaddr*":
+				paramT = sockAddrT
+			default:
+				// Default to pointer (printed as hex) for unsupported types
+				paramT = pointerT
+			}
+
+			// As the encoded parameter name is u8, it can hold up to 256 different names
+			// To keep on low communication overhead, we don't change this to u16
+			// Instead, use an array of enc/dec maps, where the key is modulus of the event id
+			// This can easilly be expanded in the future if required
+			if !seenNames[id%2][param.pName] {
+				seenNames[id%2][param.pName] = true
+				t.EncParamName[id%2][param.pName] = ParamNameCounter[id%2]
+				t.DecParamName[id%2][ParamNameCounter[id%2]] = param.pName
+				eventsParams[id] = append(eventsParams[id], eventParam{encType: paramT, encName: ParamNameCounter[id%2]})
+				ParamNameCounter[id%2]++
+			} else {
+				eventsParams[id] = append(eventsParams[id], eventParam{encType: paramT, encName: t.EncParamName[id%2][param.pName]})
+			}
+		}
+	}
+
+	if len(seenNames[0]) > 255 || len(seenNames[1]) > 255 {
+		panic("Too many argument names given")
+	}
+
+	return eventsParams
+}
+
 func (t *Tracee) initBPF(ebpfProgram string) error {
 	var err error
 
@@ -261,47 +337,66 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 		}
 	}
 
+	eventsParams := t.initEventsParams()
+
 	supportRawTracepoints, err := supportRawTP()
 	if err != nil {
 		return fmt.Errorf("Failed to find kernel version: %v", err)
 	}
 	sysEnterTailsBPFTable := bpf.NewTable(t.bpfModule.TableId("sys_enter_tails"), t.bpfModule)
 	sysExitTailsBPFTable := bpf.NewTable(t.bpfModule.TableId("sys_exit_tails"), t.bpfModule)
+	paramsTypesBPFTable := bpf.NewTable(t.bpfModule.TableId("params_types_map"), t.bpfModule)
+	paramsNamesBPFTable := bpf.NewTable(t.bpfModule.TableId("params_names_map"), t.bpfModule)
 	for e, _ := range t.eventsToTrace {
+		params := eventsParams[e]
+		var paramsTypes uint64
+		var paramsNames uint64
+		for n, param := range params {
+			paramsTypes = paramsTypes | (uint64(param.encType) << (8 * n))
+			paramsNames = paramsNames | (uint64(param.encName) << (8 * n))
+		}
+		leaf := make([]byte, 8)
+		binary.LittleEndian.PutUint32(key, uint32(e))
+		binary.LittleEndian.PutUint64(leaf, paramsTypes)
+		paramsTypesBPFTable.Set(key, leaf)
+		binary.LittleEndian.PutUint32(key, uint32(e))
+		binary.LittleEndian.PutUint64(leaf, paramsNames)
+		paramsNamesBPFTable.Set(key, leaf)
+
 		event, ok := EventsIDToEvent[e]
 		if !ok {
 			continue
 		}
 		for _, probe := range event.Probes {
 			if probe.attach == sysCall {
-				var kp int
 				if e == ExecveEventID || e == ExecveatEventID {
+					var tp int
 					// execve functions require tail call on syscall enter as they perform extra work
 					if supportRawTracepoints {
-						kp, err = t.bpfModule.LoadRawTracepoint(fmt.Sprintf("syscall__%s", probe.fn))
+						tp, err = t.bpfModule.LoadRawTracepoint(fmt.Sprintf("syscall__%s", probe.fn))
 					} else {
-						kp, err = t.bpfModule.LoadTracepoint(fmt.Sprintf("syscall__%s", probe.fn))
+						tp, err = t.bpfModule.LoadTracepoint(fmt.Sprintf("syscall__%s", probe.fn))
 					}
 					if err != nil {
 						return fmt.Errorf("error loading kprobe %s: %v", probe.fn, err)
 					}
 					binary.LittleEndian.PutUint32(key, uint32(e))
-					binary.LittleEndian.PutUint32(leaf, uint32(kp))
+					binary.LittleEndian.PutUint32(leaf, uint32(tp))
 					sysEnterTailsBPFTable.Set(key, leaf)
-				}
 
-				// set syscall exit tail calls
-				if supportRawTracepoints {
-					kp, err = t.bpfModule.LoadRawTracepoint(fmt.Sprintf("trace_ret_%s", probe.fn))
-				} else {
-					kp, err = t.bpfModule.LoadTracepoint(fmt.Sprintf("trace_ret_%s", probe.fn))
+					// set syscall exit tail calls
+					if supportRawTracepoints {
+						tp, err = t.bpfModule.LoadRawTracepoint(fmt.Sprintf("trace_ret_%s", probe.fn))
+					} else {
+						tp, err = t.bpfModule.LoadTracepoint(fmt.Sprintf("trace_ret_%s", probe.fn))
+					}
+					if err != nil {
+						return fmt.Errorf("error loading kprobe %s: %v", probe.fn, err)
+					}
+					binary.LittleEndian.PutUint32(key, uint32(e))
+					binary.LittleEndian.PutUint32(leaf, uint32(tp))
+					sysExitTailsBPFTable.Set(key, leaf)
 				}
-				if err != nil {
-					return fmt.Errorf("error loading kprobe %s: %v", probe.fn, err)
-				}
-				binary.LittleEndian.PutUint32(key, uint32(e))
-				binary.LittleEndian.PutUint32(leaf, uint32(kp))
-				sysExitTailsBPFTable.Set(key, leaf)
 				continue
 			}
 			if probe.attach == kprobe {
@@ -339,26 +434,26 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 			}
 			if probe.attach == rawTracepoint {
 				// We fallback to regular tracepoint in case kernel doesn't support raw tracepoints (< 4.17)
-				tp_split := strings.Split(probe.event, ":")
-				category := tp_split[0]
-				tp_event := tp_split[1]
+				tpSplit := strings.Split(probe.event, ":")
+				category := tpSplit[0]
+				tpEvent := tpSplit[1]
 				var tp int
 
 				if supportRawTracepoints {
 					tp, err = t.bpfModule.LoadRawTracepoint(probe.fn)
 				} else {
-					tp, err = t.bpfModule.LoadTracepoint(fmt.Sprintf("tracepoint__%s__%s", category, tp_event))
+					tp, err = t.bpfModule.LoadTracepoint(fmt.Sprintf("tracepoint__%s__%s", category, tpEvent))
 				}
 				if err != nil {
 					return fmt.Errorf("error loading raw tracepoint %s: %v", probe.fn, err)
 				}
 				if supportRawTracepoints {
-					err = t.bpfModule.AttachRawTracepoint(tp_event, tp)
+					err = t.bpfModule.AttachRawTracepoint(tpEvent, tp)
 				} else {
 					err = t.bpfModule.AttachTracepoint(probe.event, tp)
 				}
 				if err != nil {
-					return fmt.Errorf("error attaching raw tracepoint %s: %v", tp_event, err)
+					return fmt.Errorf("error attaching raw tracepoint %s: %v", tpEvent, err)
 				}
 				continue
 			}
@@ -518,7 +613,7 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 		//capture executed files
 		if t.config.CaptureExec {
 			var err error
-			sourceFilePath, ok := args[TagPathname].(string)
+			sourceFilePath, ok := args[t.EncParamName[ctx.EventID%2]["pathname"]].(string)
 			if !ok {
 				return fmt.Errorf("error parsing security_bprm_check args")
 			}
@@ -569,131 +664,87 @@ func (t *Tracee) shouldPrintEvent(e RawEvent) bool {
 	if !t.eventsToTrace[e.Ctx.EventID] {
 		return false
 	}
-	switch e.Ctx.EventID {
-	case SysEnterEventID, SysExitEventID:
-		if id, isInt32 := e.RawArgs[TagSyscall].(int32); isInt32 {
-			event, isKnown := EventsIDToEvent[id]
-			if !isKnown {
-				t.handleError(fmt.Errorf("raw_syscalls: unknown syscall id: %d", id))
-				return false
-			}
-			if event.Probes[0].attach != sysCall {
-				t.handleError(fmt.Errorf("raw_syscalls: unknown syscall id: %d", id))
-				return false
-			}
-			if t.eventsToTrace[id] {
-				// We already print this system call by another event requested by the user
-				return false
-			}
-		}
-	}
 	return true
 }
 
 func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) error {
+	for key, arg := range args {
+		if ptr, isUintptr := arg.(uintptr); isUintptr {
+			args[key] = fmt.Sprintf("0x%X", ptr)
+		}
+	}
 	switch ctx.EventID {
 	case SysEnterEventID, SysExitEventID, CapCapableEventID:
 		//show syscall name instead of id
-		if id, isInt32 := args[TagSyscall].(int32); isInt32 {
+		if id, isInt32 := args[t.EncParamName[ctx.EventID%2]["syscall"]].(int32); isInt32 {
 			if event, isKnown := EventsIDToEvent[id]; isKnown {
 				if event.Probes[0].attach == sysCall {
-					args[TagSyscall] = event.Probes[0].event
+					args[t.EncParamName[ctx.EventID%2]["syscall"]] = event.Probes[0].event
 				}
 			}
 		}
 		if ctx.EventID == CapCapableEventID {
-			if cap, isInt32 := args[TagCap].(int32); isInt32 {
-				args[TagCap] = PrintCapability(cap)
+			if cap, isInt32 := args[t.EncParamName[ctx.EventID%2]["cap"]].(int32); isInt32 {
+				args[t.EncParamName[ctx.EventID%2]["cap"]] = PrintCapability(cap)
 			}
 		}
 	case MmapEventID, MprotectEventID, PkeyMprotectEventID:
-		if prot, isInt32 := args[TagProt].(int32); isInt32 {
-			args[TagProt] = PrintMemProt(uint32(prot))
-		}
-		if addr, isUint64 := args[TagAddr].(uint64); isUint64 {
-			args[TagAddr] = fmt.Sprintf("0x%X", addr)
-		}
-	case MunmapEventID, BrkEventID, MsyncEventID, MadviseEventID:
-		if addr, isUint64 := args[TagAddr].(uint64); isUint64 {
-			args[TagAddr] = fmt.Sprintf("0x%X", addr)
+		if prot, isInt32 := args[t.EncParamName[ctx.EventID%2]["prot"]].(int32); isInt32 {
+			args[t.EncParamName[ctx.EventID%2]["prot"]] = PrintMemProt(uint32(prot))
 		}
 	case PtraceEventID:
-		if req, isInt32 := args[TagRequest].(int32); isInt32 {
-			args[TagRequest] = PrintPtraceRequest(req)
-		}
-		if addr, isUint64 := args[TagAddr].(uint64); isUint64 {
-			args[TagAddr] = fmt.Sprintf("0x%X", addr)
-		}
-		if addr, isUint64 := args[TagData].(uint64); isUint64 {
-			args[TagData] = fmt.Sprintf("0x%X", addr)
-		}
-	case ProcessVmReadvEventID, ProcessVmWritevEventID:
-		if addr, isUint64 := args[TagLocalIov].(uint64); isUint64 {
-			args[TagLocalIov] = fmt.Sprintf("0x%X", addr)
-		}
-		if addr, isUint64 := args[TagRemoteIov].(uint64); isUint64 {
-			args[TagRemoteIov] = fmt.Sprintf("0x%X", addr)
-		}
-	case InitModuleEventID:
-		if addr, isUint64 := args[TagModuleImage].(uint64); isUint64 {
-			args[TagModuleImage] = fmt.Sprintf("0x%X", addr)
+		if req, isInt32 := args[t.EncParamName[ctx.EventID%2]["request"]].(int32); isInt32 {
+			args[t.EncParamName[ctx.EventID%2]["request"]] = PrintPtraceRequest(req)
 		}
 	case PrctlEventID:
-		if opt, isInt32 := args[TagOption].(int32); isInt32 {
-			args[TagOption] = PrintPrctlOption(opt)
+		if opt, isInt32 := args[t.EncParamName[ctx.EventID%2]["option"]].(int32); isInt32 {
+			args[t.EncParamName[ctx.EventID%2]["option"]] = PrintPrctlOption(opt)
 		}
 	case SocketEventID:
-		if dom, isInt32 := args[TagDomain].(int32); isInt32 {
-			args[TagDomain] = PrintSocketDomain(uint32(dom))
+		if dom, isInt32 := args[t.EncParamName[ctx.EventID%2]["domain"]].(int32); isInt32 {
+			args[t.EncParamName[ctx.EventID%2]["domain"]] = PrintSocketDomain(uint32(dom))
 		}
-		if typ, isInt32 := args[TagType].(int32); isInt32 {
-			args[TagType] = PrintSocketType(uint32(typ))
+		if typ, isInt32 := args[t.EncParamName[ctx.EventID%2]["type"]].(int32); isInt32 {
+			args[t.EncParamName[ctx.EventID%2]["type"]] = PrintSocketType(uint32(typ))
 		}
 	case ConnectEventID, AcceptEventID, Accept4EventID, BindEventID, GetsocknameEventID:
-		if sockAddr, isStrMap := args[TagAddr].(map[string]string); isStrMap {
+		if sockAddr, isStrMap := args[t.EncParamName[ctx.EventID%2]["addr"]].(map[string]string); isStrMap {
 			var s string
 			for key, val := range sockAddr {
 				s += fmt.Sprintf("'%s': '%s',", key, val)
 			}
 			s = strings.TrimSuffix(s, ",")
 			s = fmt.Sprintf("{%s}", s)
-			args[TagAddr] = s
+			args[t.EncParamName[ctx.EventID%2]["addr"]] = s
 		}
 	case AccessEventID, FaccessatEventID:
-		if mode, isInt32 := args[TagMode].(int32); isInt32 {
-			args[TagMode] = PrintAccessMode(uint32(mode))
+		if mode, isInt32 := args[t.EncParamName[ctx.EventID%2]["mode"]].(int32); isInt32 {
+			args[t.EncParamName[ctx.EventID%2]["mode"]] = PrintAccessMode(uint32(mode))
 		}
 	case ExecveatEventID:
-		if flags, isInt32 := args[TagFlags].(int32); isInt32 {
-			args[TagFlags] = PrintExecFlags(uint32(flags))
+		if flags, isInt32 := args[t.EncParamName[ctx.EventID%2]["flags"]].(int32); isInt32 {
+			args[t.EncParamName[ctx.EventID%2]["flags"]] = PrintExecFlags(uint32(flags))
 		}
 	case OpenEventID, OpenatEventID, SecurityFileOpenEventID:
-		if flags, isInt32 := args[TagFlags].(int32); isInt32 {
-			args[TagFlags] = PrintOpenFlags(uint32(flags))
+		if flags, isInt32 := args[t.EncParamName[ctx.EventID%2]["flags"]].(int32); isInt32 {
+			args[t.EncParamName[ctx.EventID%2]["flags"]] = PrintOpenFlags(uint32(flags))
 		}
 	case MknodEventID, MknodatEventID, ChmodEventID, FchmodEventID, FchmodatEventID:
-		if mode, isUint32 := args[TagMode].(uint32); isUint32 {
-			args[TagMode] = PrintInodeMode(mode)
+		if mode, isUint32 := args[t.EncParamName[ctx.EventID%2]["mode"]].(uint32); isUint32 {
+			args[t.EncParamName[ctx.EventID%2]["mode"]] = PrintInodeMode(mode)
 		}
 	case MemProtAlertEventID:
-		if alert, isAlert := args[TagAlert].(alert); isAlert {
-			args[TagAlert] = PrintAlert(alert)
+		if alert, isAlert := args[t.EncParamName[ctx.EventID%2]["alert"]].(alert); isAlert {
+			args[t.EncParamName[ctx.EventID%2]["alert"]] = PrintAlert(alert)
 		}
 	case CloneEventID:
-		if flags, isUint64 := args[TagFlags].(uint64); isUint64 {
-			args[TagFlags] = PrintCloneFlags(flags)
-		}
-	case ReadEventID, WriteEventID, Pread64EventID, Pwrite64EventID:
-		if addr, isUint64 := args[TagBuf].(uint64); isUint64 {
-			args[TagBuf] = fmt.Sprintf("0x%X", addr)
+		if flags, isUint64 := args[t.EncParamName[ctx.EventID%2]["flags"]].(uint64); isUint64 {
+			args[t.EncParamName[ctx.EventID%2]["flags"]] = PrintCloneFlags(flags)
 		}
 	case SendtoEventID, RecvfromEventID:
-		if addr, isUint64 := args[TagBuf].(uint64); isUint64 {
-			args[TagBuf] = fmt.Sprintf("0x%X", addr)
-		}
-		addrTag := TagDestAddr
+		addrTag := t.EncParamName[ctx.EventID%2]["dest_addr"]
 		if ctx.EventID == RecvfromEventID {
-			addrTag = TagSrcAddr
+			addrTag = t.EncParamName[ctx.EventID%2]["src_addr"]
 		}
 		if sockAddr, isStrMap := args[addrTag].(map[string]string); isStrMap {
 			var s string
@@ -1051,10 +1102,14 @@ func readArgFromBuff(dataBuff io.Reader) (argTag, interface{}, error) {
 		var data int64
 		err = binary.Read(dataBuff, binary.LittleEndian, &data)
 		res = data
-	case ulongT, offT, sizeT, pointerT:
+	case ulongT, offT, sizeT:
 		var data uint64
 		err = binary.Read(dataBuff, binary.LittleEndian, &data)
 		res = data
+	case pointerT:
+		var data uint64
+		err = binary.Read(dataBuff, binary.LittleEndian, &data)
+		res = uintptr(data)
 	case sockAddrT:
 		res, err = readSockaddrFromBuff(dataBuff)
 	case alertT:

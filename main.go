@@ -61,9 +61,6 @@ func main() {
 					return fmt.Errorf("invalid capture option: %s", cap)
 				}
 			}
-			if c.Bool("show-all-syscalls") {
-				cfg.EventsToTrace = append(cfg.EventsToTrace, tracee.SysEnterEventID)
-			}
 			if c.Bool("security-alerts") {
 				cfg.EventsToTrace = append(cfg.EventsToTrace, tracee.MemProtAlertEventID)
 			}
@@ -136,12 +133,6 @@ func main() {
 				Name:  "blob-perf-buffer-size",
 				Value: 1024,
 				Usage: "size, in pages, of the internal perf ring buffer used to send blobs from the kernel",
-			},
-			&cli.BoolFlag{
-				Name:    "show-all-syscalls",
-				Aliases: []string{"a"},
-				Value:   false,
-				Usage:   "log all syscalls invocations, including syscalls which were not fully traced by tracee (shortcut to -e raw_syscalls)",
 			},
 			&cli.StringFlag{
 				Name:  "output-path",
@@ -236,26 +227,26 @@ func isCapable() bool {
 
 func printList() {
 	var b strings.Builder
-	b.WriteString("System Calls:           Sets:\n")
-	b.WriteString("____________            ____\n\n")
+	b.WriteString("System Calls:              Sets:\n")
+	b.WriteString("____________               ____\n\n")
 	for i := 0; i < int(tracee.SysEnterEventID); i++ {
 		event := tracee.EventsIDToEvent[int32(i)]
 		if event.Name == "reserved" {
 			continue
 		}
 		if event.Sets != nil {
-			eventSets := fmt.Sprintf("%-20s    %v\n", event.Name, event.Sets)
+			eventSets := fmt.Sprintf("%-23s    %v\n", event.Name, event.Sets)
 			b.WriteString(eventSets)
 		} else {
 			b.WriteString(event.Name + "\n")
 		}
 	}
-	b.WriteString("\n\nOther Events:           Sets:\n")
-	b.WriteString("____________            ____\n\n")
+	b.WriteString("\n\nOther Events:              Sets:\n")
+	b.WriteString("____________               ____\n\n")
 	for i := int(tracee.SysEnterEventID); i < len(tracee.EventsIDToEvent); i++ {
 		event := tracee.EventsIDToEvent[int32(i)]
 		if event.Sets != nil {
-			eventSets := fmt.Sprintf("%-20s    %v\n", event.Name, event.Sets)
+			eventSets := fmt.Sprintf("%-23s    %v\n", event.Name, event.Sets)
 			b.WriteString(eventSets)
 		} else {
 			b.WriteString(event.Name + "\n")
