@@ -930,11 +930,13 @@ int trace_ret_##name(void *ctx)                                         \
 
 // include/trace/events/syscalls.h:
 // TP_PROTO(struct pt_regs *regs, long id)
+int tracepoint__raw_syscalls__sys_enter(
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
-TRACEPOINT_PROBE(raw_syscalls, sys_enter)
+struct tracepoint__raw_syscalls__sys_enter *args
 #else
-RAW_TRACEPOINT_PROBE(sys_enter)
+struct bpf_raw_tracepoint_args *ctx
 #endif
+)
 {
     struct pt_regs regs = {};
     int id;
@@ -1017,11 +1019,13 @@ RAW_TRACEPOINT_PROBE(sys_enter)
 
 // include/trace/events/syscalls.h:
 // TP_PROTO(struct pt_regs *regs, long ret)
+int tracepoint__raw_syscalls__sys_exit(
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
-TRACEPOINT_PROBE(raw_syscalls, sys_exit)
+struct tracepoint__raw_syscalls__sys_exit *args
 #else
-RAW_TRACEPOINT_PROBE(sys_exit)
+struct bpf_raw_tracepoint_args *ctx
 #endif
+)
 {
     int id;
     long ret;
