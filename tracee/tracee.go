@@ -368,6 +368,10 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 			continue
 		}
 		for _, probe := range event.Probes {
+			if probe.attach == rawTracepoint && !supportRawTracepoints {
+				// We fallback to regular tracepoint in case kernel doesn't support raw tracepoints (< 4.17)
+				probe.attach = tracepoint
+			}
 			if probe.attach == sysCall {
 				if e == ExecveEventID || e == ExecveatEventID {
 					var tp int
@@ -433,25 +437,12 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 				continue
 			}
 			if probe.attach == rawTracepoint {
-				// We fallback to regular tracepoint in case kernel doesn't support raw tracepoints (< 4.17)
-				tpSplit := strings.Split(probe.event, ":")
-				category := tpSplit[0]
-				tpEvent := tpSplit[1]
-				var tp int
-
-				if supportRawTracepoints {
-					tp, err = t.bpfModule.LoadRawTracepoint(probe.fn)
-				} else {
-					tp, err = t.bpfModule.LoadTracepoint(fmt.Sprintf("tracepoint__%s__%s", category, tpEvent))
-				}
+				tp, err := t.bpfModule.LoadRawTracepoint(probe.fn)
 				if err != nil {
 					return fmt.Errorf("error loading raw tracepoint %s: %v", probe.fn, err)
 				}
-				if supportRawTracepoints {
-					err = t.bpfModule.AttachRawTracepoint(tpEvent, tp)
-				} else {
-					err = t.bpfModule.AttachTracepoint(probe.event, tp)
-				}
+				tpEvent := strings.Split(probe.event, ":")[1]
+				err = t.bpfModule.AttachRawTracepoint(tpEvent, tp)
 				if err != nil {
 					return fmt.Errorf("error attaching raw tracepoint %s: %v", tpEvent, err)
 				}
