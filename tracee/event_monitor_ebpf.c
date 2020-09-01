@@ -435,11 +435,10 @@ static __always_inline int save_context_to_buf(buf_t *submit_p, void *ptr)
     return 0;
 }
 
-static __always_inline int save_to_submit_buf(buf_t *submit_p, void *ptr, int size, u8 type, u8 tag)
+static __always_inline int save_to_submit_buf(buf_t *submit_p, void *ptr, u32 size, u8 type, u8 tag)
 {
 // The biggest element that can be saved with this function should be defined here
 #define MAX_ELEMENT_SIZE sizeof(struct sockaddr_un)
-
     if (type == 0)
         return 0;
 
@@ -460,23 +459,27 @@ static __always_inline int save_to_submit_buf(buf_t *submit_p, void *ptr, int si
     // Save argument tag
     if (tag != TAG_NONE) {
         rc = bpf_probe_read(&(submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)]), 1, &tag);
-        if (rc != 0)
+        if (rc != 0) {
+            *off -= 1;
             return 0;
+        }
 
         *off += 1;
     }
-    if (*off > MAX_PERCPU_BUFSIZE - MAX_ELEMENT_SIZE)
+    if (*off > MAX_PERCPU_BUFSIZE - MAX_ELEMENT_SIZE) {
         // Satisfy validator for probe read
+        *off -= 2;
         return 0;
+    }
 
     // Read into buffer
     rc = bpf_probe_read(&(submit_p->buf[*off]), size, ptr);
     if (rc == 0) {
         *off += size;
-        set_buf_off(SUBMIT_BUF_IDX, *off);
-        return size;
+        return 1;
     }
 
+    *off -= 2;
     return 0;
 }
 
@@ -498,28 +501,34 @@ static __always_inline int save_str_to_buf(buf_t *submit_p, void *ptr, u8 tag)
     // Save argument tag
     if (tag != TAG_NONE) {
         int rc = bpf_probe_read(&(submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)]), 1, &tag);
-        if (rc != 0)
+        if (rc != 0) {
+            *off -= 1;
             return 0;
+        }
 
         *off += 1;
     }
 
-    if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int))
+    if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int)) {
         // Satisfy validator for probe read
+        *off -= 2;
         return 0;
+    }
 
     // Read into buffer
     int sz = bpf_probe_read_str(&(submit_p->buf[*off + sizeof(int)]), MAX_STRING_SIZE, ptr);
     if (sz > 0) {
-        if (*off > MAX_PERCPU_BUFSIZE - sizeof(int))
+        if (*off > MAX_PERCPU_BUFSIZE - sizeof(int)) {
             // Satisfy validator for probe read
+            *off -= 2;
             return 0;
+        }
         bpf_probe_read(&(submit_p->buf[*off]), sizeof(int), &sz);
         *off += sz + sizeof(int);
-        set_buf_off(SUBMIT_BUF_IDX, *off);
-        return sz + sizeof(int);
+        return 1;
     }
 
+    *off -= 2;
     return 0;
 }
 
@@ -579,10 +588,9 @@ static __always_inline int save_str_arr_to_buf(buf_t *submit_p, const char __use
         elem_num++;
     }
 out:
-    set_buf_off(SUBMIT_BUF_IDX, *off);
     // save number of elements in the array
     bpf_probe_read(&(submit_p->buf[orig_off & (MAX_PERCPU_BUFSIZE-1)]), 1, &elem_num);
-    return 0;
+    return 1;
 }
 
 static __always_inline int get_path_string(buf_t *string_p, struct path *path)
@@ -787,21 +795,11 @@ static __always_inline int del_retval(u32 event_id)
 
 #define DEC_ARG(n, enc_arg) ((enc_arg>>(8*n))&0xFF)
 
-static __always_inline int get_encoded_arg_num(u64 types)
-{
-    unsigned int i, argnum = 0;
-    #pragma unroll
-    for(i=0; i<6; i++)
-    {
-        if (DEC_ARG(i, types) != NONE_T)
-            argnum++;
-    }
-    return argnum;
-}
-
 static __always_inline int save_args_to_submit_buf(u64 types, u64 tags, args_t *args)
 {
     unsigned int i;
+    unsigned int rc = 0;
+    unsigned int arg_num = 0;
     short family = 0;
 
     if (types == 0)
@@ -849,7 +847,7 @@ static __always_inline int save_args_to_submit_buf(u64 types, u64 tags, args_t *
                 size = sizeof(void*);
                 break;
             case STR_T:
-                save_str_to_buf(submit_p, (void *)args->args[i], tag);
+                rc = save_str_to_buf(submit_p, (void *)args->args[i], tag);
                 break;
             case SOCKADDR_T:
                 if (args->args[i]) {
@@ -868,17 +866,22 @@ static __always_inline int save_args_to_submit_buf(u64 types, u64 tags, args_t *
                         default:
                             size = sizeof(short);
                     }
-                    save_to_submit_buf(submit_p, (void*)(args->args[i]), size, type, tag);
+                    rc = save_to_submit_buf(submit_p, (void*)(args->args[i]), size, type, tag);
                 } else {
-                    save_to_submit_buf(submit_p, &family, sizeof(short), type, tag);
+                    rc = save_to_submit_buf(submit_p, &family, sizeof(short), type, tag);
                 }
                 break;
         }
         if ((type != NONE_T) && (type != STR_T) && (type != SOCKADDR_T))
-            save_to_submit_buf(submit_p, (void*)&(args->args[i]), size, type, tag);
+            rc = save_to_submit_buf(submit_p, (void*)&(args->args[i]), size, type, tag);
+
+        if (rc > 0) {
+            arg_num++;
+            rc = 0;
+        }
     }
 
-    return 0;
+    return arg_num;
 }
 
 static __always_inline int trace_ret_generic(void *ctx, u32 id, u64 types, u64 tags, args_t *args, long ret)
@@ -891,10 +894,9 @@ static __always_inline int trace_ret_generic(void *ctx, u32 id, u64 types, u64 t
     init_context(&context);
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     context.eventid = id;
-    context.argnum = get_encoded_arg_num(types);
+    context.argnum = save_args_to_submit_buf(types, tags, args);
     context.retval = ret;
     save_context_to_buf(submit_p, (void*)&context);
-    save_args_to_submit_buf(types, tags, args);
 
     events_perf_submit(ctx);
     return 0;
