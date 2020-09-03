@@ -538,9 +538,17 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 	// Load send_bin function to prog_array to be used as tail call
 	progArrayBPFTable := bpf.NewTable(t.bpfModule.TableId("prog_array"), t.bpfModule)
 	binary.LittleEndian.PutUint32(key, tailVfsWrite)
-	kp, err := t.bpfModule.LoadKprobe("do_trace_ret_vfs_write")
+	kp, err := t.bpfModule.LoadKprobe("trace_ret_vfs_write_tail")
 	if err != nil {
-		return fmt.Errorf("error loading function do_trace_ret_vfs_write: %v", err)
+		return fmt.Errorf("error loading function trace_ret_vfs_write_tail: %v", err)
+	}
+	binary.LittleEndian.PutUint32(leaf, uint32(kp))
+	progArrayBPFTable.Set(key, leaf)
+
+	binary.LittleEndian.PutUint32(key, tailVfsWritev)
+	kp, err = t.bpfModule.LoadKprobe("trace_ret_vfs_writev_tail")
+	if err != nil {
+		return fmt.Errorf("error loading function trace_ret_vfs_writev_tail: %v", err)
 	}
 	binary.LittleEndian.PutUint32(leaf, uint32(kp))
 	progArrayBPFTable.Set(key, leaf)
