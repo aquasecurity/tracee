@@ -4,6 +4,7 @@
 #include <uapi/linux/ptrace.h>
 #include <uapi/linux/in.h>
 #include <uapi/linux/in6.h>
+#include <uapi/linux/uio.h>
 #include <uapi/linux/un.h>
 #include <uapi/linux/utsname.h>
 #include <linux/binfmts.h>
@@ -38,8 +39,9 @@
 #define ALERT_MPROT_W_REM   4
 
 #define TAIL_VFS_WRITE      0
-#define TAIL_SEND_BIN       1
-#define MAX_TAIL_CALL       2
+#define TAIL_VFS_WRITEV     1
+#define TAIL_SEND_BIN       2
+#define MAX_TAIL_CALL       3
 
 #define NONE_T        0UL
 #define INT_T         1UL
@@ -76,8 +78,9 @@
 #define SECURITY_BPRM_CHECK 339
 #define SECURITY_FILE_OPEN  340
 #define VFS_WRITE           341
-#define MEM_PROT_ALERT      342
-#define MAX_EVENT_ID        343
+#define VFS_WRITEV          342
+#define MEM_PROT_ALERT      343
+#define MAX_EVENT_ID        344
 
 #define CONFIG_MODE             0
 #define CONFIG_SHOW_SYSCALL     1
@@ -123,6 +126,9 @@ typedef struct bin_args {
     char *ptr;
     loff_t start_off;
     unsigned int full_size;
+    u8 iov_idx;
+    u8 iov_len;
+    struct iovec *vec;
 } bin_args_t;
 
 typedef struct simple_buf {
@@ -1376,6 +1382,16 @@ int send_bin(struct pt_regs *ctx)
     }
 
     if (bin_args->full_size <= 0) {
+        // If there are more vector elements, continue to the next one
+        bin_args->iov_idx++;
+        if (bin_args->iov_idx < bin_args->iov_len) {
+            // Handle the rest of the write recursively
+            struct iovec io_vec;
+            bpf_probe_read(&io_vec, sizeof(struct iovec), &bin_args->vec[bin_args->iov_idx]);
+            bin_args->ptr = io_vec.iov_base;
+            bin_args->full_size = io_vec.iov_len;
+            prog_array.call(ctx, TAIL_SEND_BIN);
+        }
         bin_args_map.delete(&id);
         return 0;
     }
@@ -1430,16 +1446,10 @@ int send_bin(struct pt_regs *ctx)
     chunk_size = bin_args->full_size - i*F_CHUNK_SIZE;
 
     if (chunk_size > F_CHUNK_SIZE) {
-        bin_args_t bin_args_new = {};
-        bin_args_new.type = bin_args->type;
-        bin_args_new.ptr = bin_args->ptr;
-        bin_args_new.start_off = bin_args->start_off;
-        bin_args_new.full_size = chunk_size;
-        bpf_probe_read((void *)(bin_args_new.metadata), SEND_META_SIZE, bin_args->metadata);
-        bin_args_map.update(&id, &bin_args_new);
-
         // Handle the rest of the write recursively
+        bin_args->full_size = chunk_size;
         prog_array.call(ctx, TAIL_SEND_BIN);
+        bin_args_map.delete(&id);
         return 0;
     }
 
@@ -1452,20 +1462,29 @@ int send_bin(struct pt_regs *ctx)
     int size = (F_CHUNK_OFF+chunk_size) & (MAX_PERCPU_BUFSIZE - 1);
     file_writes.perf_submit(ctx, data, size);
 
+    // We finished writing an element of the vector - continue to next element
+    bin_args->iov_idx++;
+    if (bin_args->iov_idx < bin_args->iov_len) {
+        // Handle the rest of the write recursively
+        struct iovec io_vec;
+        bpf_probe_read(&io_vec, sizeof(struct iovec), &bin_args->vec[bin_args->iov_idx]);
+        bin_args->ptr = io_vec.iov_base;
+        bin_args->full_size = io_vec.iov_len;
+        prog_array.call(ctx, TAIL_SEND_BIN);
+    }
+
     bin_args_map.delete(&id);
     return 0;
 }
 
-TRACE_ENT_FUNC(vfs_write, VFS_WRITE);
-
-int trace_ret_vfs_write(struct pt_regs *ctx)
+static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id, u32 tail_call_id)
 {
     struct path path;
     args_t saved_args;
     bool has_filter = false;
 
     bool delete_args = false;
-    if (load_args(&saved_args, delete_args, VFS_WRITE) != 0) {
+    if (load_args(&saved_args, delete_args, event_id) != 0) {
         // missed entry or not traced
         return 0;
     }
@@ -1499,21 +1518,21 @@ int trace_ret_vfs_write(struct pt_regs *ctx)
             break;
 
         if (filter_p->path[0] && is_prefix(filter_p->path, &string_p->buf[*off]))
-            prog_array.call(ctx, TAIL_VFS_WRITE);
+            prog_array.call(ctx, tail_call_id);
     }
 
     if (has_filter) {
         // There is a filter, but no match
-        del_args(VFS_WRITE);
+        del_args(event_id);
         return 0;
     }
 
     // No filter was given - continue
-    prog_array.call(ctx, TAIL_VFS_WRITE);
+    prog_array.call(ctx, tail_call_id);
     return 0;
 }
 
-int do_trace_ret_vfs_write(struct pt_regs *ctx)
+static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 event_id)
 {
     args_t saved_args;
     bin_args_t bin_args = {};
@@ -1524,22 +1543,32 @@ int do_trace_ret_vfs_write(struct pt_regs *ctx)
     unsigned int i_mode;
     loff_t start_pos;
 
+    void *ptr;
+    size_t count;
+    struct iovec *vec;
+    unsigned long vlen;
+
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    context_t context = init_and_save_context(submit_p, VFS_WRITE, 5, PT_REGS_RC(ctx));
+    context_t context = init_and_save_context(submit_p, event_id, 5, PT_REGS_RC(ctx));
 
     bool delete_args = true;
-    if (load_args(&saved_args, delete_args, VFS_WRITE) != 0) {
+    if (load_args(&saved_args, delete_args, event_id) != 0) {
         // missed entry or not traced
         return 0;
     }
 
     struct file *file      = (struct file *) saved_args.args[0];
-    void *ptr              = (void*)         saved_args.args[1];
-    size_t count           = (size_t)        saved_args.args[2];
+    if (event_id == VFS_WRITE) {
+        ptr                = (void*)         saved_args.args[1];
+        count              = (size_t)        saved_args.args[2];
+    } else {
+        vec                = (struct iovec*) saved_args.args[1];
+        vlen               =                 saved_args.args[2];
+    }
     loff_t *pos            = (loff_t*)       saved_args.args[3];
 
     // Get path
@@ -1573,10 +1602,13 @@ int do_trace_ret_vfs_write(struct pt_regs *ctx)
     save_str_to_buf(submit_p, (void *)&string_p->buf[*off], DEC_ARG(0, *tags));
     save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, DEC_ARG(1, *tags));
     save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, DEC_ARG(2, *tags));
-    save_to_submit_buf(submit_p, &count, sizeof(size_t), SIZE_T_T, DEC_ARG(3, *tags));
+    if (event_id == VFS_WRITE)
+        save_to_submit_buf(submit_p, &count, sizeof(size_t), SIZE_T_T, DEC_ARG(3, *tags));
+    else
+        save_to_submit_buf(submit_p, &vlen, sizeof(unsigned long), ULONG_T, DEC_ARG(3, *tags));
     save_to_submit_buf(submit_p, &start_pos, sizeof(off_t), OFF_T_T, DEC_ARG(4, *tags));
 
-    // Submit vfs_write event
+    // Submit vfs_write(v) event
     events_perf_submit(ctx);
 
     u64 id = bpf_get_current_pid_tgid();
@@ -1592,15 +1624,51 @@ int do_trace_ret_vfs_write(struct pt_regs *ctx)
         bpf_probe_read(&bin_args.metadata[4], 8, &inode_nr);
         bpf_probe_read(&bin_args.metadata[12], 4, &i_mode);
         bpf_probe_read(&bin_args.metadata[16], 4, &pid);
-        bin_args.ptr = ptr;
         bin_args.start_off = start_pos;
-        bin_args.full_size = PT_REGS_RC(ctx);
+        if (event_id == VFS_WRITE) {
+            bin_args.ptr = ptr;
+            bin_args.full_size = PT_REGS_RC(ctx);
+        } else {
+            bin_args.vec = vec;
+            bin_args.iov_idx = 0;
+            bin_args.iov_len = vlen;
+            if (vlen > 0) {
+                struct iovec io_vec;
+                bpf_probe_read(&io_vec, sizeof(struct iovec), &vec[0]);
+                bin_args.ptr = io_vec.iov_base;
+                bin_args.full_size = io_vec.iov_len;
+            }
+        }
         bin_args_map.update(&id, &bin_args);
 
         // Send file data
         prog_array.call(ctx, TAIL_SEND_BIN);
     }
     return 0;
+}
+
+TRACE_ENT_FUNC(vfs_write, VFS_WRITE);
+
+int trace_ret_vfs_write(struct pt_regs *ctx)
+{
+    return do_vfs_write_writev(ctx, VFS_WRITE, TAIL_VFS_WRITE);
+}
+
+int trace_ret_vfs_write_tail(struct pt_regs *ctx)
+{
+    return do_vfs_write_writev_tail(ctx, VFS_WRITE);
+}
+
+TRACE_ENT_FUNC(vfs_writev, VFS_WRITEV);
+
+int trace_ret_vfs_writev(struct pt_regs *ctx)
+{
+    return do_vfs_write_writev(ctx, VFS_WRITEV, TAIL_VFS_WRITEV);
+}
+
+int trace_ret_vfs_writev_tail(struct pt_regs *ctx)
+{
+    return do_vfs_write_writev_tail(ctx, VFS_WRITEV);
 }
 
 int trace_mmap_alert(struct pt_regs *ctx)

@@ -16,6 +16,7 @@ const (
 // tail function indexes should match defined values in ebpf code
 const (
 	tailVfsWrite uint32 = iota
+	tailVfsWritev
 	tailSendBin
 )
 
@@ -433,6 +434,7 @@ const (
 	SecurityBprmCheckEventID
 	SecurityFileOpenEventID
 	VfsWriteEventID
+	VfsWritevEventID
 	MemProtAlertEventID
 )
 
@@ -1212,6 +1214,7 @@ var EventsIDToEvent = map[int32]EventConfig{
 	SecurityBprmCheckEventID:   EventConfig{ID: SecurityBprmCheckEventID, ID32Bit: sys32undefined, Name: "security_bprm_check", Probes: []probe{probe{event: "security_bprm_check", attach: kprobe, fn: "trace_security_bprm_check"}}, Sets: []string{"default"}},
 	SecurityFileOpenEventID:    EventConfig{ID: SecurityFileOpenEventID, ID32Bit: sys32undefined, Name: "security_file_open", Probes: []probe{probe{event: "security_file_open", attach: kprobe, fn: "trace_security_file_open"}}, Sets: []string{"default"}},
 	VfsWriteEventID:            EventConfig{ID: VfsWriteEventID, ID32Bit: sys32undefined, Name: "vfs_write", Probes: []probe{probe{event: "vfs_write", attach: kprobe, fn: "trace_vfs_write"}, probe{event: "vfs_write", attach: kretprobe, fn: "trace_ret_vfs_write"}}, Sets: []string{"default"}},
+	VfsWritevEventID:           EventConfig{ID: VfsWritevEventID, ID32Bit: sys32undefined, Name: "vfs_writev", Probes: []probe{probe{event: "vfs_writev", attach: kprobe, fn: "trace_vfs_writev"}, probe{event: "vfs_writev", attach: kretprobe, fn: "trace_ret_vfs_writev"}}, Sets: []string{"default"}},
 	MemProtAlertEventID:        EventConfig{ID: MemProtAlertEventID, ID32Bit: sys32undefined, Name: "mem_prot_alert", Probes: []probe{probe{event: "security_mmap_addr", attach: kprobe, fn: "trace_mmap_alert"}, probe{event: "security_file_mprotect", attach: kprobe, fn: "trace_mprotect_alert"}}, Sets: []string{}},
 }
 
@@ -1552,5 +1555,6 @@ var EventsIDToParams = map[int32][]param{
 	SecurityBprmCheckEventID:   []param{param{pType: "const char*", pName: "pathname"}, param{pType: "dev_t", pName: "dev"}, param{pType: "unsigned long", pName: "inode"}},
 	SecurityFileOpenEventID:    []param{param{pType: "const char*", pName: "pathname"}, param{pType: "int", pName: "flags"}, param{pType: "dev_t", pName: "dev"}, param{pType: "unsigned long", pName: "inode"}},
 	VfsWriteEventID:            []param{param{pType: "const char*", pName: "pathname"}, param{pType: "dev_t", pName: "dev"}, param{pType: "unsigned long", pName: "inode"}, param{pType: "size_t", pName: "count"}, param{pType: "off_t", pName: "pos"}},
+	VfsWritevEventID:           []param{param{pType: "const char*", pName: "pathname"}, param{pType: "dev_t", pName: "dev"}, param{pType: "unsigned long", pName: "inode"}, param{pType: "unsigned long", pName: "vlen"}, param{pType: "off_t", pName: "pos"}},
 	MemProtAlertEventID:        []param{param{pType: "alert_t", pName: "alert"}},
 }
