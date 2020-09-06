@@ -29,7 +29,7 @@ type TraceeConfig struct {
 	OutputFormat          string
 	PerfBufferSize        int
 	BlobPerfBufferSize    int
-	OutputPath            string
+	OutputDir             string
 	CaptureWrite          bool
 	CaptureExec           bool
 	CaptureMem            bool
@@ -206,10 +206,10 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 		}
 	}
 
-	if err := os.MkdirAll(t.config.OutputPath, 0755); err != nil {
-		return nil, fmt.Errorf("error creating output path: %v", err)
+	if err := os.MkdirAll(t.config.OutputDir, 0755); err != nil {
+		return nil, fmt.Errorf("error creating output dir: %v", err)
 	}
-	err = ioutil.WriteFile(path.Join(t.config.OutputPath, fmt.Sprintf("tracee.%d", os.Getpid())), nil, 0640)
+	err = ioutil.WriteFile(path.Join(t.config.OutputDir, fmt.Sprintf("tracee.%d", os.Getpid())), nil, 0640)
 	if err != nil {
 		return nil, fmt.Errorf("error creating readiness file: %v", err)
 	}
@@ -641,7 +641,7 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 			}
 			t.capturedFiles[uniqueSourceFilePath] = sourceCtime
 
-			destinationDirPath := filepath.Join(t.config.OutputPath, strconv.Itoa(int(ctx.MntID)))
+			destinationDirPath := filepath.Join(t.config.OutputDir, strconv.Itoa(int(ctx.MntID)))
 			if err := os.MkdirAll(destinationDirPath, 0755); err != nil {
 				return err
 			}
@@ -840,7 +840,7 @@ func (t *Tracee) processFileWrites() {
 				continue
 			}
 
-			pathname := path.Join(t.config.OutputPath, strconv.Itoa(int(meta.MntID)))
+			pathname := path.Join(t.config.OutputDir, strconv.Itoa(int(meta.MntID)))
 			if err := os.MkdirAll(pathname, 0755); err != nil {
 				t.handleError(err)
 				continue

@@ -39,7 +39,7 @@ func main() {
 				PerfBufferSize:        c.Int("perf-buffer-size"),
 				PidsToTrace:           c.IntSlice("pid"),
 				BlobPerfBufferSize:    c.Int("blob-perf-buffer-size"),
-				OutputPath:            c.String("output-path"),
+				OutputDir:             c.String("output-dir"),
 				FilterFileWrite:       c.StringSlice("filter-file-write"),
 				SecurityAlerts:        c.Bool("security-alerts"),
 				EventsFile:            os.Stdout,
@@ -63,6 +63,9 @@ func main() {
 			}
 			if c.Bool("security-alerts") {
 				cfg.EventsToTrace = append(cfg.EventsToTrace, tracee.MemProtAlertEventID)
+			}
+			if c.Bool("clear-output-dir") {
+				os.RemoveAll(cfg.OutputDir)
 			}
 			t, err := tracee.New(cfg)
 			if err != nil {
@@ -135,14 +138,20 @@ func main() {
 				Usage: "size, in pages, of the internal perf ring buffer used to send blobs from the kernel",
 			},
 			&cli.StringFlag{
-				Name:  "output-path",
+				Name:  "output-dir",
 				Value: "/tmp/tracee",
-				Usage: "set output path",
+				Usage: "set output dir",
+			},
+			&cli.BoolFlag{
+				Name:    "clear-output-dir",
+				Aliases: []string{"rm"},
+				Value:   false,
+				Usage:   "clear the output dir before starting",
 			},
 			&cli.StringSliceFlag{
 				Name:  "capture",
 				Value: nil,
-				Usage: "capture artifacts that were written, executed or found to be suspicious. captured artifacts will appear in the 'output-path' directory. possible values: 'write'/'exec'/'mem'/'all'. use this flag multiple times to choose multiple capture options",
+				Usage: "capture artifacts that were written, executed or found to be suspicious. captured artifacts will appear in the 'output-dir' directory. possible values: 'write'/'exec'/'mem'/'all'. use this flag multiple times to choose multiple capture options",
 			},
 			&cli.StringSliceFlag{
 				Name:  "filter-file-write",
