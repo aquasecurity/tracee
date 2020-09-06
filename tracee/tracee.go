@@ -205,6 +205,14 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 			t.mntNsFirstPid[uint32(mnt_ns)] = 1
 		}
 	}
+
+	if err := os.MkdirAll(t.config.OutputPath, 0755); err != nil {
+		return nil, fmt.Errorf("error creating output path: %v", err)
+	}
+	err = ioutil.WriteFile(path.Join(t.config.OutputPath, fmt.Sprintf("tracee.%d", os.Getpid())), nil, 0640)
+	if err != nil {
+		return nil, fmt.Errorf("error creating readiness file: %v", err)
+	}
 	return t, nil
 }
 
