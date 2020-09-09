@@ -1064,8 +1064,11 @@ struct bpf_raw_tracepoint_args *ctx
     if (!should_trace())
         return 0;
 
-    if (!event_chosen(id) && !event_chosen(RAW_SYS_EXIT))
-        return 0;
+    // essential events should be traced even if not chosen by the user, as they may add new pids to the traced pids set
+    if (id != SYS_CLONE && id != SYS_FORK && id != SYS_VFORK) {
+        if (!event_chosen(id) && !event_chosen(RAW_SYS_EXIT))
+            return 0;
+    }
 
     if (event_chosen(RAW_SYS_EXIT)) {
         buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
@@ -1095,7 +1098,8 @@ struct bpf_raw_tracepoint_args *ctx
         if (!types || !tags) {
             return -1;
         }
-        int rc = trace_ret_generic(ctx, id, *types, *tags, &saved_args, ret);
+        if (event_chosen(id))
+            trace_ret_generic(ctx, id, *types, *tags, &saved_args, ret);
         if (id == SYS_CLONE || id == SYS_FORK || id == SYS_VFORK) {
             if (get_config(CONFIG_MODE) != MODE_CONTAINER) {
                 u32 pid = ret;
