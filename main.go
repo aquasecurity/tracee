@@ -64,6 +64,9 @@ func main() {
 			if c.Bool("security-alerts") {
 				cfg.EventsToTrace = append(cfg.EventsToTrace, tracee.MemProtAlertEventID)
 			}
+			if c.Bool("clear-output-path") {
+				os.RemoveAll(cfg.OutputPath)
+			}
 			t, err := tracee.New(cfg)
 			if err != nil {
 				// t is being closed internally
@@ -138,6 +141,12 @@ func main() {
 				Name:  "output-path",
 				Value: "/tmp/tracee",
 				Usage: "set output path",
+			},
+			&cli.BoolFlag{
+				Name:    "clear-output-path",
+				Aliases: []string{"clear"},
+				Value:   false,
+				Usage:   "clear the output path before starting",
 			},
 			&cli.StringSliceFlag{
 				Name:  "capture",
