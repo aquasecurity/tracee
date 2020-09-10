@@ -978,20 +978,6 @@ struct bpf_raw_tracepoint_args *ctx
             return 0;
     }
 
-    // We save args here (and not before the tail call function below) as other functions may use it
-    // See mprotect_alert and mmap_alert functions below for comments
-    // If no other function needs the saved args, we can move this to just before the tail call
-    // exit, exit_group and rt_sigreturn syscalls don't return - don't save args for them
-    if (id != SYS_EXIT && id != SYS_EXIT_GROUP && id != SYS_RT_SIGRETURN) {
-        save_args_from_regs(&regs, id, true);
-    }
-
-    // essential events should be traced even if not chosen by the user, as they may add new pids to the traced pids set
-    if (id != SYS_CLONE && id != SYS_FORK && id != SYS_VFORK && id != SYS_EXECVE && id != SYS_EXECVEAT) {
-        if (!event_chosen(id) && !event_chosen(RAW_SYS_ENTER))
-            return 0;
-    }
-
     if (event_chosen(RAW_SYS_ENTER)) {
         buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
         if (submit_p == NULL)
@@ -1012,6 +998,11 @@ struct bpf_raw_tracepoint_args *ctx
 
         save_to_submit_buf(submit_p, (void*)&id, sizeof(int), INT_T, DEC_ARG(0, *tags));
         events_perf_submit(ctx);
+    }
+
+    // exit, exit_group and rt_sigreturn syscalls don't return - don't save args for them
+    if (id != SYS_EXIT && id != SYS_EXIT_GROUP && id != SYS_RT_SIGRETURN) {
+        save_args_from_regs(&regs, id, true);
     }
 
     // call syscall handler, if exists
@@ -1064,12 +1055,6 @@ struct bpf_raw_tracepoint_args *ctx
     if (!should_trace())
         return 0;
 
-    // essential events should be traced even if not chosen by the user, as they may add new pids to the traced pids set
-    if (id != SYS_CLONE && id != SYS_FORK && id != SYS_VFORK) {
-        if (!event_chosen(id) && !event_chosen(RAW_SYS_EXIT))
-            return 0;
-    }
-
     if (event_chosen(RAW_SYS_EXIT)) {
         buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
         if (submit_p == NULL)
@@ -1092,20 +1077,20 @@ struct bpf_raw_tracepoint_args *ctx
         events_perf_submit(ctx);
     }
 
-    if (id != SYS_EXECVE && id != SYS_EXECVEAT) {
+    if (id == SYS_CLONE || id == SYS_FORK || id == SYS_VFORK) {
+        if (get_config(CONFIG_MODE) != MODE_CONTAINER) {
+            u32 pid = ret;
+            add_pid_fork(pid);
+        }
+    }
+
+    if (event_chosen(id) && id != SYS_EXECVE && id != SYS_EXECVEAT) {
         u64 *types = params_types_map.lookup(&id);
         u64 *tags = params_names_map.lookup(&id);
         if (!types || !tags) {
             return -1;
         }
-        if (event_chosen(id))
-            trace_ret_generic(ctx, id, *types, *tags, &saved_args, ret);
-        if (id == SYS_CLONE || id == SYS_FORK || id == SYS_VFORK) {
-            if (get_config(CONFIG_MODE) != MODE_CONTAINER) {
-                u32 pid = ret;
-                add_pid_fork(pid);
-            }
-        }
+        trace_ret_generic(ctx, id, *types, *tags, &saved_args, ret);
     }
 
     // call syscall handler, if exists
@@ -1131,7 +1116,7 @@ int syscall__execve(void *ctx)
     else if (get_config(CONFIG_MODE) == MODE_SYSTEM)
         add_pid();
 
-    if (!should_trace())
+    if (!should_trace() || !event_chosen(SYS_EXECVE))
         return 0;
 
     init_context(&context);
@@ -1173,9 +1158,10 @@ int trace_ret_execve(void *ctx)
     context_t context = {};
 
     // we can't use saved args here - after execve syscall pointers are invalid
+    // Yet we need to clean the saved args
     del_args(SYS_EXECVE);
 
-    if (!should_trace())
+    if (!should_trace() || !event_chosen(SYS_EXECVE))
         return 0;
 
     init_context(&context);
@@ -1210,7 +1196,7 @@ int syscall__execveat(void *ctx)
     else if (get_config(CONFIG_MODE) == MODE_SYSTEM)
         add_pid();
 
-    if (!should_trace())
+    if (!should_trace() || !event_chosen(SYS_EXECVEAT))
         return 0;
 
     init_context(&context);
@@ -1256,9 +1242,10 @@ int trace_ret_execveat(void *ctx)
     context_t context = {};
 
     // we can't use saved args here - after execve syscall pointers are invalid
+    // Yet we need to clean the saved args
     del_args(SYS_EXECVEAT);
 
-    if (!should_trace())
+    if (!should_trace() || !event_chosen(SYS_EXECVEAT))
         return 0;
 
     init_context(&context);
@@ -1703,15 +1690,8 @@ int trace_mmap_alert(struct pt_regs *ctx)
     context_t context = {};
     args_t args = {};
 
-    // Todo: the following workaround can be removed by attaching sys_enter_mmap tracepoint and save args
-    // Workaround to a bug in gobpf, where a kprobe event (e.g. mmap syscall) can't be attached to two different functions.
-    // As we need to use save_args in kprobe entry, but one of the events (functions) might be chosen and the other not,
-    // We need a mechanism that can tell if an event was chosen by the user, so we can save the args without enabling both events.
-    // Don't delete args if mmap event is selected, as it will be used in mmap kretprobe
-    bool delete_args = true;
-    if (event_chosen(SYS_MMAP))
-        delete_args = false;
-
+    // Arguments will be deleted on raw_syscalls_exit (with mmap syscall id)
+    bool delete_args = false;
     if (load_args(&args, delete_args, SYS_MMAP) != 0)
         return 0;
 
@@ -1746,15 +1726,8 @@ int trace_mprotect_alert(struct pt_regs *ctx, struct vm_area_struct *vma, unsign
     args_t args = {};
     bin_args_t bin_args = {};
 
-    // Todo: the following workaround can be removed by attaching sys_enter_mprotect tracepoint and save args
-    // Workaround to a bug in gobpf, where a kprobe event (e.g. mmap syscall) can't be attached to two different functions.
-    // As we need to use save_args in kprobe entry, but one of the events (functions) might be chosen and the other not,
-    // We need a mechanism that can tell if an event was chosen by the user, so we can save the args without enabling both events.
-    // Don't delete args if mprotect event is selected, as it will be used in mprotect kretprobe
-    bool delete_args = true;
-    if (event_chosen(SYS_MPROTECT))
-        delete_args = false;
-
+    // Arguments will be deleted on raw_syscalls_exit (with mprotect syscall id)
+    bool delete_args = false;
     if (load_args(&args, delete_args, SYS_MPROTECT) != 0)
         return 0;
 
