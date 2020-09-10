@@ -207,7 +207,7 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	}
 
 	if err := os.MkdirAll(t.config.OutputPath, 0755); err != nil {
-		return nil, fmt.Errorf("error creating output dir: %v", err)
+		return nil, fmt.Errorf("error creating output path: %v", err)
 	}
 	err = ioutil.WriteFile(path.Join(t.config.OutputPath, fmt.Sprintf("tracee.%d", os.Getpid())), nil, 0640)
 	if err != nil {
