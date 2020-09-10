@@ -37,6 +37,7 @@ type TraceeConfig struct {
 	SecurityAlerts        bool
 	EventsFile            *os.File
 	ErrorsFile            *os.File
+	maxPidsCache          int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
 }
 
 // Validate does static validation of the configuration
@@ -118,6 +119,7 @@ type Tracee struct {
 	mntNsFirstPid map[uint32]uint32
 	DecParamName  [2]map[argTag]string
 	EncParamName  [2]map[string]argTag
+	pidsInMntns   bucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 }
 
 type counter int32
@@ -194,15 +196,18 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	}
 
 	t.capturedFiles = make(map[string]int64)
-	t.mntNsFirstPid = make(map[uint32]uint32)
-	// Save host mount namespace init pid (1)
-	mnt_ns_link, err := os.Readlink("/proc/1/ns/mnt")
+	//set a default value for config.maxPidsCache
+	if t.config.maxPidsCache == 0 {
+		t.config.maxPidsCache = 5
+	}
+	t.pidsInMntns.Init(t.config.maxPidsCache)
+
+	hostMntnsLink, err := os.Readlink("/proc/1/ns/mnt")
 	if err == nil {
-		mnt_ns_str := strings.TrimPrefix(mnt_ns_link, "mnt:[")
-		mnt_ns_str = strings.TrimSuffix(mnt_ns_str, "]")
-		mnt_ns, err := strconv.Atoi(mnt_ns_str)
+		hostMntnsString := strings.TrimSuffix(strings.TrimPrefix(hostMntnsLink, "mnt:["), "]")
+		hostMntns, err := strconv.Atoi(hostMntnsString)
 		if err == nil {
-			t.mntNsFirstPid[uint32(mnt_ns)] = 1
+			t.pidsInMntns.AddBucketItem(uint32(hostMntns), 1)
 		}
 	}
 
@@ -214,6 +219,58 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 		return nil, fmt.Errorf("error creating readiness file: %v", err)
 	}
 	return t, nil
+}
+
+type bucketsCache struct {
+	buckets     map[uint32][]uint32
+	bucketLimit int
+	Null        uint32
+}
+
+func (c *bucketsCache) Init(bucketLimit int) {
+	c.bucketLimit = bucketLimit
+	c.buckets = make(map[uint32][]uint32)
+	c.Null = 0
+}
+
+func (c *bucketsCache) GetBucket(key uint32) []uint32 {
+	return c.buckets[key]
+}
+
+func (c *bucketsCache) GetBucketItem(key uint32, index int) uint32 {
+	b, exists := c.buckets[key]
+	if !exists {
+		return c.Null
+	}
+	if index >= len(b) {
+		return c.Null
+	}
+	return b[index]
+}
+
+func (c *bucketsCache) AddBucketItem(key uint32, value uint32) {
+	c.addBucketItem(key, value, false)
+}
+
+func (c *bucketsCache) ForceAddBucketItem(key uint32, value uint32) {
+	c.addBucketItem(key, value, true)
+}
+
+func (c *bucketsCache) addBucketItem(key uint32, value uint32, force bool) {
+	b, exists := c.buckets[key]
+	if !exists {
+		c.buckets[key] = make([]uint32, 0, c.bucketLimit)
+		b = c.buckets[key]
+	}
+	if len(b) >= c.bucketLimit {
+		if force {
+			b[0] = value
+		} else {
+			return
+		}
+	} else {
+		c.buckets[key] = append(b, value)
+	}
 }
 
 func supportRawTP() (bool, error) {
@@ -596,48 +653,60 @@ func (t *Tracee) shouldProcessEvent(e RawEvent) bool {
 func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 	switch ctx.EventID {
 	case SecurityBprmCheckEventID:
+
+		//cache this pid by it's mnt ns
+		if ctx.Pid == 1 {
+			t.pidsInMntns.ForceAddBucketItem(ctx.MntID, ctx.HostPid)
+		} else {
+			t.pidsInMntns.AddBucketItem(ctx.MntID, ctx.HostPid)
+		}
+
 		//capture executed files
 		if t.config.CaptureExec {
-			var err error
-			sourceFilePath, ok := args[t.EncParamName[ctx.EventID%2]["pathname"]].(string)
+			filePath, ok := args[t.EncParamName[ctx.EventID%2]["pathname"]].(string)
 			if !ok {
 				return fmt.Errorf("error parsing security_bprm_check args")
 			}
 			// path should be absolute, except for e.g memfd_create files
-			if sourceFilePath[0] != '/' {
+			if filePath[0] != '/' {
 				return nil
 			}
-			if ctx.Pid == 1 {
-				t.mntNsFirstPid[ctx.MntID] = ctx.HostPid
-			}
-			pid := ctx.HostPid
-			if firstPid, ok := t.mntNsFirstPid[ctx.MntID]; ok {
-				pid = firstPid
-			}
-			procSourceFilePath := filepath.Join(fmt.Sprintf("/proc/%s/root", strconv.Itoa(int(pid))), sourceFilePath)
-			sourceFileStat, err := os.Stat(procSourceFilePath)
-			if err != nil {
-				return err
-			}
-			sourceCtime := sourceFileStat.Sys().(*syscall.Stat_t).Ctim.Nano()
-			// Add mnt ns to path to uniquely identify it
-			uniqueSourceFilePath := filepath.Join(strconv.Itoa(int(ctx.MntID)), sourceFilePath)
-			lastCtime, ok := t.capturedFiles[uniqueSourceFilePath]
-			if ok && lastCtime == sourceCtime {
-				return nil
-			}
-			t.capturedFiles[uniqueSourceFilePath] = sourceCtime
 
 			destinationDirPath := filepath.Join(t.config.OutputPath, strconv.Itoa(int(ctx.MntID)))
 			if err := os.MkdirAll(destinationDirPath, 0755); err != nil {
 				return err
 			}
-			destinationFilePath := filepath.Join(destinationDirPath, fmt.Sprintf("exec.%d.%s", ctx.Ts, filepath.Base(sourceFilePath)))
+			destinationFilePath := filepath.Join(destinationDirPath, fmt.Sprintf("exec.%d.%s", ctx.Ts, filepath.Base(filePath)))
 
-			err = copyFileByPath(procSourceFilePath, destinationFilePath)
-			if err != nil {
-				return err
+			var err error
+			// try to access the root fs via another process in the same mount namespace (since the current process might have already died)
+			pids := t.pidsInMntns.GetBucket(ctx.MntID)
+			for _, pid := range pids { // will break on success
+				err = nil
+				sourceFilePath := fmt.Sprintf("/proc/%s/root%s", strconv.Itoa(int(pid)), filePath)
+				var sourceFileStat os.FileInfo
+				sourceFileStat, err = os.Stat(sourceFilePath)
+				if err != nil {
+					//TODO: remove dead pid from cache
+					continue
+				}
+				//don't capture same file twice unless it was modified
+				sourceFileCtime := sourceFileStat.Sys().(*syscall.Stat_t).Ctim.Nano()
+				capturedFileID := fmt.Sprintf("%d:%s", ctx.MntID, sourceFilePath)
+				lastCtime, ok := t.capturedFiles[capturedFileID]
+				if ok && lastCtime == sourceFileCtime {
+					return nil
+				}
+				//capture
+				err = copyFileByPath(sourceFilePath, destinationFilePath)
+				if err != nil {
+					return err
+				}
+				//mark this file as captured
+				t.capturedFiles[capturedFileID] = sourceFileCtime
+				break
 			}
+			return err
 		}
 	}
 
