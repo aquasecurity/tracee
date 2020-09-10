@@ -140,13 +140,13 @@ func main() {
 			&cli.StringFlag{
 				Name:  "output-path",
 				Value: "/tmp/tracee",
-				Usage: "set output dir",
+				Usage: "set output path",
 			},
 			&cli.BoolFlag{
 				Name:    "clear-output-path",
 				Aliases: []string{"clear"},
 				Value:   false,
-				Usage:   "clear the output dir before starting",
+				Usage:   "clear the output path before starting",
 			},
 			&cli.StringSliceFlag{
 				Name:  "capture",
