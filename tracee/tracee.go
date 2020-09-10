@@ -352,7 +352,7 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 		return fmt.Errorf("Failed to find kernel version: %v", err)
 	}
 	sysEnterTailsBPFTable := bpf.NewTable(t.bpfModule.TableId("sys_enter_tails"), t.bpfModule)
-	sysExitTailsBPFTable := bpf.NewTable(t.bpfModule.TableId("sys_exit_tails"), t.bpfModule)
+	//sysExitTailsBPFTable := bpf.NewTable(t.bpfModule.TableId("sys_exit_tails"), t.bpfModule)
 	paramsTypesBPFTable := bpf.NewTable(t.bpfModule.TableId("params_types_map"), t.bpfModule)
 	paramsNamesBPFTable := bpf.NewTable(t.bpfModule.TableId("params_names_map"), t.bpfModule)
 	for e, _ := range t.eventsToTrace {
@@ -395,19 +395,6 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 					binary.LittleEndian.PutUint32(key, uint32(e))
 					binary.LittleEndian.PutUint32(leaf, uint32(tp))
 					sysEnterTailsBPFTable.Set(key, leaf)
-
-					// set syscall exit tail calls
-					if supportRawTracepoints {
-						tp, err = t.bpfModule.LoadRawTracepoint(fmt.Sprintf("trace_ret_%s", probe.fn))
-					} else {
-						tp, err = t.bpfModule.LoadTracepoint(fmt.Sprintf("trace_ret_%s", probe.fn))
-					}
-					if err != nil {
-						return fmt.Errorf("error loading kprobe %s: %v", probe.fn, err)
-					}
-					binary.LittleEndian.PutUint32(key, uint32(e))
-					binary.LittleEndian.PutUint32(leaf, uint32(tp))
-					sysExitTailsBPFTable.Set(key, leaf)
 				}
 				continue
 			}
