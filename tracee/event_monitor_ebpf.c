@@ -1006,6 +1006,7 @@ struct bpf_raw_tracepoint_args *ctx
     }
 
     // call syscall handler, if exists
+    // enter tail calls should never delete saved args
     sys_enter_tails.call(ctx, id);
     return 0;
 }
@@ -1084,18 +1085,34 @@ struct bpf_raw_tracepoint_args *ctx
         }
     }
 
-    if (event_chosen(id) && id != SYS_EXECVE && id != SYS_EXECVEAT) {
-        u64 *types = params_types_map.lookup(&id);
-        u64 *tags = params_names_map.lookup(&id);
-        if (!types || !tags) {
-            return -1;
+    if (event_chosen(id)) {
+        u64 types = 0;
+        u64 tags = 0;
+        bool submit_event = true;
+        if (id != SYS_EXECVE && id != SYS_EXECVEAT) {
+            u64 *saved_types = params_types_map.lookup(&id);
+            u64 *saved_tags = params_names_map.lookup(&id);
+            if (!saved_types || !saved_tags) {
+                return -1;
+            }
+            types = *saved_types;
+            tags = *saved_tags;
+        } else {
+            // We can't use saved args after execve syscall, as pointers are invalid
+            // To avoid showing execve event both on entry and exit,
+            // we only output failed execs
+            if (ret == 0)
+                submit_event = false;
         }
-        trace_ret_generic(ctx, id, *types, *tags, &saved_args, ret);
+
+        if (submit_event)
+            trace_ret_generic(ctx, id, types, tags, &saved_args, ret);
     }
 
     // call syscall handler, if exists
     save_args(&saved_args, id);
     save_retval(ret, id);
+    // exit tail calls should always delete args and retval before return
     sys_exit_tails.call(ctx, id);
     del_retval(id);
     del_args(id);
@@ -1153,35 +1170,6 @@ int syscall__execve(void *ctx)
     return 0;
 }
 
-int trace_ret_execve(void *ctx)
-{
-    context_t context = {};
-
-    // we can't use saved args here - after execve syscall pointers are invalid
-    // Yet we need to clean the saved args
-    del_args(SYS_EXECVE);
-
-    if (!should_trace() || !event_chosen(SYS_EXECVE))
-        return 0;
-
-    init_context(&context);
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
-    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
-    if (submit_p == NULL)
-        return 0;
-
-    context.eventid = SYS_EXECVE;
-    context.argnum = 0;
-    load_retval(&context.retval, SYS_EXECVE);
-
-    if (context.retval == 0)
-        return 0;   // we are only interested in failed execs
-
-    save_context_to_buf(submit_p, (void*)&context);
-    events_perf_submit(ctx);
-    return 0;
-}
-
 int syscall__execveat(void *ctx)
 {
     context_t context = {};
@@ -1233,35 +1221,6 @@ int syscall__execveat(void *ctx)
         save_str_arr_to_buf(submit_p, __envp, DEC_ARG(3, *tags));
     save_to_submit_buf(submit_p, (void*)&flags, sizeof(int), INT_T, DEC_ARG(4, *tags));
 
-    events_perf_submit(ctx);
-    return 0;
-}
-
-int trace_ret_execveat(void *ctx)
-{
-    context_t context = {};
-
-    // we can't use saved args here - after execve syscall pointers are invalid
-    // Yet we need to clean the saved args
-    del_args(SYS_EXECVEAT);
-
-    if (!should_trace() || !event_chosen(SYS_EXECVEAT))
-        return 0;
-
-    init_context(&context);
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
-    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
-    if (submit_p == NULL)
-        return 0;
-
-    context.eventid = SYS_EXECVEAT;
-    context.argnum = 0;
-    load_retval(&context.retval, SYS_EXECVEAT);
-
-    if (context.retval == 0)
-        return 0;   // we are only interested in failed execs
-
-    save_context_to_buf(submit_p, (void*)&context);
     events_perf_submit(ctx);
     return 0;
 }
