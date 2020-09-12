@@ -979,12 +979,18 @@ struct bpf_raw_tracepoint_args *ctx
         id = *id_64;
     }
 
-    // execve events should always be traced, as it may add new pids to the traced pids set
-    // forked childs shuoldn't be traced if the parent is not traced
-    if (id != SYS_EXECVE && id != SYS_EXECVEAT) {
-        if (!should_trace())
-            return 0;
+    // execve events may add new pids to the traced pids set
+    // perform this check before should_trace() so newly executed binaries will be traced
+    if (id == SYS_EXECVE || id == SYS_EXECVEAT) {
+        int mode = get_config(CONFIG_MODE);
+        if (mode == MODE_CONTAINER)
+            add_pid_ns_if_needed();
+        else if (mode == MODE_SYSTEM)
+            add_pid();
     }
+
+    if (!should_trace())
+        return 0;
 
     if (event_chosen(RAW_SYS_ENTER)) {
         buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
@@ -1059,6 +1065,15 @@ struct bpf_raw_tracepoint_args *ctx
     if (!should_trace())
         return 0;
 
+    // fork events may add new pids to the traced pids set
+    // perform this check after should_trace() to only add forked childs of a traced parent
+    if (id == SYS_CLONE || id == SYS_FORK || id == SYS_VFORK) {
+        if (get_config(CONFIG_MODE) != MODE_CONTAINER) {
+            u32 pid = ret;
+            add_pid_fork(pid);
+        }
+    }
+
     if (event_chosen(RAW_SYS_EXIT)) {
         buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
         if (submit_p == NULL)
@@ -1074,13 +1089,6 @@ struct bpf_raw_tracepoint_args *ctx
 
         save_to_submit_buf(submit_p, (void*)&id, sizeof(int), INT_T, DEC_ARG(0, *tags));
         events_perf_submit(ctx);
-    }
-
-    if (id == SYS_CLONE || id == SYS_FORK || id == SYS_VFORK) {
-        if (get_config(CONFIG_MODE) != MODE_CONTAINER) {
-            u32 pid = ret;
-            add_pid_fork(pid);
-        }
     }
 
     if (event_chosen(id)) {
@@ -1125,12 +1133,7 @@ int syscall__execve(void *ctx)
     if (load_args(&args, delete_args, SYS_EXECVE) != 0)
         return -1;
 
-    if (get_config(CONFIG_MODE) == MODE_CONTAINER)
-        add_pid_ns_if_needed();
-    else if (get_config(CONFIG_MODE) == MODE_SYSTEM)
-        add_pid();
-
-    if (!should_trace() || !event_chosen(SYS_EXECVE))
+    if (!event_chosen(SYS_EXECVE))
         return 0;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
@@ -1171,12 +1174,7 @@ int syscall__execveat(void *ctx)
     if (load_args(&args, delete_args, SYS_EXECVEAT) != 0)
         return -1;
 
-    if (get_config(CONFIG_MODE) == MODE_CONTAINER)
-        add_pid_ns_if_needed();
-    else if (get_config(CONFIG_MODE) == MODE_SYSTEM)
-        add_pid();
-
-    if (!should_trace() || !event_chosen(SYS_EXECVEAT))
+    if (!event_chosen(SYS_EXECVEAT))
         return 0;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
