@@ -435,6 +435,18 @@ static __always_inline int save_context_to_buf(buf_t *submit_p, void *ptr)
     return 0;
 }
 
+static __always_inline context_t init_and_save_context(buf_t *submit_p, u32 id, u8 argnum, long ret)
+{
+    context_t context = {};
+    init_context(&context);
+    context.eventid = id;
+    context.argnum = argnum;
+    context.retval = ret;
+    save_context_to_buf(submit_p, (void*)&context);
+
+    return context;
+}
+
 static __always_inline int save_to_submit_buf(buf_t *submit_p, void *ptr, u32 size, u8 type, u8 tag)
 {
 // The biggest element that can be saved with this function should be defined here
@@ -889,14 +901,10 @@ static __always_inline int trace_ret_generic(void *ctx, u32 id, u64 types, u64 t
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-
-    context_t context = {};
-    init_context(&context);
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
-    context.eventid = id;
-    context.argnum = save_args_to_submit_buf(types, tags, args);
-    context.retval = ret;
-    save_context_to_buf(submit_p, (void*)&context);
+
+    u8 argnum = save_args_to_submit_buf(types, tags, args);
+    init_and_save_context(submit_p, id, argnum, ret);
 
     events_perf_submit(ctx);
     return 0;
@@ -982,14 +990,9 @@ struct bpf_raw_tracepoint_args *ctx
         buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
         if (submit_p == NULL)
             return 0;
-
-        context_t context = {};
-        init_context(&context);
         set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
-        context.eventid = RAW_SYS_ENTER;
-        context.argnum = 1;
-        context.retval = 0;
-        save_context_to_buf(submit_p, (void*)&context);
+
+        context_t context = init_and_save_context(submit_p, RAW_SYS_ENTER, 1, 0);
 
         u64 *tags = params_names_map.lookup(&context.eventid);
         if (!tags) {
@@ -1060,14 +1063,9 @@ struct bpf_raw_tracepoint_args *ctx
         buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
         if (submit_p == NULL)
             return 0;
-
-        context_t context = {};
-        init_context(&context);
         set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
-        context.eventid = RAW_SYS_EXIT;
-        context.argnum = 1;
-        context.retval = ret;
-        save_context_to_buf(submit_p, (void*)&context);
+
+        context_t context = init_and_save_context(submit_p, RAW_SYS_EXIT, 1, ret);
 
         u64 *tags = params_names_map.lookup(&context.eventid);
         if (!tags) {
@@ -1121,7 +1119,6 @@ struct bpf_raw_tracepoint_args *ctx
 
 int syscall__execve(void *ctx)
 {
-    context_t context = {};
     args_t args = {};
 
     bool delete_args = false;
@@ -1136,25 +1133,21 @@ int syscall__execve(void *ctx)
     if (!should_trace() || !event_chosen(SYS_EXECVE))
         return 0;
 
-    init_context(&context);
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+
+    int show_env = get_config(CONFIG_EXEC_ENV);
+
+    u8 argnum = 2;
+    if (show_env)
+        argnum = 3;
+    context_t context = init_and_save_context(submit_p, SYS_EXECVE, argnum, 0);
 
     const char __user *filename = (char *)args.args[0];
     const char __user *const __user *__argv = (const char *const *)args.args[1];
     const char __user *const __user *__envp = (const char *const *)args.args[2];
-
-    int show_env = get_config(CONFIG_EXEC_ENV);
-
-    context.eventid = SYS_EXECVE;
-    if (show_env)
-        context.argnum = 3;
-    else
-        context.argnum = 2;
-    context.retval = 0;     // assume execve succeeded. if not, a ret event will be sent too
-    save_context_to_buf(submit_p, (void*)&context);
 
     u64 *tags = params_names_map.lookup(&context.eventid);
     if (!tags) {
@@ -1172,7 +1165,6 @@ int syscall__execve(void *ctx)
 
 int syscall__execveat(void *ctx)
 {
-    context_t context = {};
     args_t args = {};
 
     bool delete_args = false;
@@ -1187,27 +1179,23 @@ int syscall__execveat(void *ctx)
     if (!should_trace() || !event_chosen(SYS_EXECVEAT))
         return 0;
 
-    init_context(&context);
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+
+    int show_env = get_config(CONFIG_EXEC_ENV);
+
+    u8 argnum = 4;
+    if (show_env)
+        argnum = 5;
+    context_t context = init_and_save_context(submit_p, SYS_EXECVEAT, argnum, 0);
 
     const int dirfd = args.args[0];
     const char __user *pathname = (char *)args.args[1];
     const char __user *const __user *__argv = (const char *const *)args.args[2];
     const char __user *const __user *__envp = (const char *const *)args.args[3];
     const int flags = args.args[4];
-
-    int show_env = get_config(CONFIG_EXEC_ENV);
-
-    context.eventid = SYS_EXECVEAT;
-    if (show_env)
-        context.argnum = 5;
-    else
-        context.argnum = 4;
-    context.retval = 0;     // assume execve succeeded. if not, a ret event will be sent too
-    save_context_to_buf(submit_p, (void*)&context);
 
     u64 *tags = params_names_map.lookup(&context.eventid);
     if (!tags) {
@@ -1229,47 +1217,36 @@ int syscall__execveat(void *ctx)
 
 int trace_do_exit(struct pt_regs *ctx, long code)
 {
-    context_t context = {};
-
     if (!should_trace())
         return 0;
 
-    init_context(&context);
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    context.eventid = DO_EXIT;
-    context.argnum = 0;
-    context.retval = code;
+    init_and_save_context(submit_p, DO_EXIT, 0, code);
 
     if (get_config(CONFIG_MODE) == MODE_CONTAINER)
         remove_pid_ns_if_needed();
     else
         remove_pid();
 
-    save_context_to_buf(submit_p, (void*)&context);
     events_perf_submit(ctx);
     return 0;
 }
 
 int trace_security_bprm_check(struct pt_regs *ctx, struct linux_binprm *bprm)
 {
-    context_t context = {};
-
     if (!should_trace())
         return 0;
 
-    init_context(&context);
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    context.eventid = SECURITY_BPRM_CHECK;
-    context.argnum = 3;
-    context.retval = 0;
+    context_t context = init_and_save_context(submit_p, SECURITY_BPRM_CHECK, 3, 0);
 
     dev_t s_dev = bprm->file->f_inode->i_sb->s_dev;
     unsigned long inode_nr = (unsigned long)bprm->file->f_inode->i_ino;
@@ -1280,7 +1257,6 @@ int trace_security_bprm_check(struct pt_regs *ctx, struct linux_binprm *bprm)
         return -1;
     get_path_string(string_p, &bprm->file->f_path);
 
-    save_context_to_buf(submit_p, (void*)&context);
     u32 *off = get_buf_off(STRING_BUF_IDX);
     if (off == NULL)
         return -1;
@@ -1300,20 +1276,15 @@ int trace_security_bprm_check(struct pt_regs *ctx, struct linux_binprm *bprm)
 
 int trace_security_file_open(struct pt_regs *ctx, struct file *file)
 {
-    context_t context = {};
-
     if (!should_trace())
         return 0;
 
-    init_context(&context);
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    context.eventid = SECURITY_FILE_OPEN;
-    context.argnum = 4;
-    context.retval = 0;
+    context_t context = init_and_save_context(submit_p, SECURITY_FILE_OPEN, 4, 0);
 
     dev_t s_dev = file->f_inode->i_sb->s_dev;
     unsigned long inode_nr = (unsigned long)file->f_inode->i_ino;
@@ -1329,7 +1300,6 @@ int trace_security_file_open(struct pt_regs *ctx, struct file *file)
         return -1;
     get_path_string(string_p, &file->f_path);
 
-    save_context_to_buf(submit_p, (void*)&context);
     u32 *off = get_buf_off(STRING_BUF_IDX);
     if (off == NULL)
         return -1;
@@ -1352,22 +1322,19 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
     struct user_namespace *targ_ns, int cap, int cap_opt)
 {
     int audit;
-    context_t context = {};
 
     if (!should_trace())
         return 0;
 
-    init_context(&context);
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    context.eventid = CAP_CAPABLE;
+    u8 argnum = 1;
     if (get_config(CONFIG_SHOW_SYSCALL))
-        context.argnum = 2;
-    else
-        context.argnum = 1;
+        argnum = 2;
+    context_t context = init_and_save_context(submit_p, CAP_CAPABLE, argnum, 0);
 
   #ifdef CAP_OPT_NONE
     audit = (cap_opt & 0b10) == 0;
@@ -1383,7 +1350,6 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
         return -1;
     }
 
-    save_context_to_buf(submit_p, (void*)&context);
     save_to_submit_buf(submit_p, (void*)&cap, sizeof(int), INT_T, DEC_ARG(0, *tags));
     if (get_config(CONFIG_SHOW_SYSCALL)) {
         struct pt_regs *real_ctx = get_task_pt_regs();
@@ -1551,7 +1517,6 @@ int trace_ret_vfs_write(struct pt_regs *ctx)
 
 int do_trace_ret_vfs_write(struct pt_regs *ctx)
 {
-    context_t context = {};
     args_t saved_args;
     bin_args_t bin_args = {};
     struct inode *inode;
@@ -1561,11 +1526,12 @@ int do_trace_ret_vfs_write(struct pt_regs *ctx)
     unsigned int i_mode;
     loff_t start_pos;
 
-    init_context(&context);
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+
+    context_t context = init_and_save_context(submit_p, VFS_WRITE, 5, PT_REGS_RC(ctx));
 
     bool delete_args = true;
     if (load_args(&saved_args, delete_args, VFS_WRITE) != 0) {
@@ -1600,11 +1566,6 @@ int do_trace_ret_vfs_write(struct pt_regs *ctx)
     // Calculate write start offset
     if (start_pos != 0)
         start_pos -= PT_REGS_RC(ctx);
-
-    context.eventid = VFS_WRITE;
-    context.argnum = 5;
-    context.retval = PT_REGS_RC(ctx);
-    save_context_to_buf(submit_p, &context);
 
     u64 *tags = params_names_map.lookup(&context.eventid);
     if (!tags) {
@@ -1646,7 +1607,6 @@ int do_trace_ret_vfs_write(struct pt_regs *ctx)
 
 int trace_mmap_alert(struct pt_regs *ctx)
 {
-    context_t context = {};
     args_t args = {};
 
     // Arguments will be deleted on raw_syscalls_exit (with mmap syscall id)
@@ -1654,16 +1614,12 @@ int trace_mmap_alert(struct pt_regs *ctx)
     if (load_args(&args, delete_args, SYS_MMAP) != 0)
         return 0;
 
-    init_context(&context);
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    context.eventid = MEM_PROT_ALERT;
-    context.argnum = 1;
-    context.retval = 0;
-    save_context_to_buf(submit_p, (void*)&context);
+    context_t context = init_and_save_context(submit_p, MEM_PROT_ALERT, 1, 0);
 
     u64 *tags = params_names_map.lookup(&context.eventid);
     if (!tags) {
@@ -1681,7 +1637,6 @@ int trace_mmap_alert(struct pt_regs *ctx)
 
 int trace_mprotect_alert(struct pt_regs *ctx, struct vm_area_struct *vma, unsigned long reqprot, unsigned long prot)
 {
-    context_t context = {};
     args_t args = {};
     bin_args_t bin_args = {};
 
@@ -1701,16 +1656,12 @@ int trace_mprotect_alert(struct pt_regs *ctx, struct vm_area_struct *vma, unsign
     if (len == 0)
         len = PAGE_SIZE;
 
-    init_context(&context);
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    context.eventid = MEM_PROT_ALERT;
-    context.argnum = 1;
-    context.retval = 0;
-    save_context_to_buf(submit_p, (void*)&context);
+    context_t context = init_and_save_context(submit_p, MEM_PROT_ALERT, 1, 0);
 
     u64 *tags = params_names_map.lookup(&context.eventid);
     if (!tags) {
