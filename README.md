@@ -12,7 +12,7 @@ Other than tracing, Tracee is also capable of capturing files written to disk or
 ### Prerequisites
 
 To run, Tracee requires the following:
-- Linux kernel version > 4.14
+- Linux kernel version > 4.18
 - Kernel headers
 - C standard library (currently tested with glibc)
 - [BCC](https://github.com/iovisor/bcc)

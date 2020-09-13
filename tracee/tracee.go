@@ -273,37 +273,6 @@ func (c *bucketsCache) addBucketItem(key uint32, value uint32, force bool) {
 	}
 }
 
-func supportRawTP() (bool, error) {
-	var uname syscall.Utsname
-	if err := syscall.Uname(&uname); err != nil {
-		return false, err
-	}
-	var buf [65]byte
-	for i, b := range uname.Release {
-		buf[i] = byte(b)
-	}
-	ver := string(buf[:])
-	if i := strings.Index(ver, "\x00"); i != -1 {
-		ver = ver[:i]
-	}
-	ver_split := strings.Split(ver, ".")
-	if len(ver_split) < 2 {
-		return false, fmt.Errorf("invalid version returned by uname")
-	}
-	major, err := strconv.Atoi(ver_split[0])
-	if err != nil {
-		return false, fmt.Errorf("invalid major number: %s", ver_split[0])
-	}
-	minor, err := strconv.Atoi(ver_split[1])
-	if err != nil {
-		return false, fmt.Errorf("invalid minor number: %s", ver_split[1])
-	}
-	if ((major == 4) && (minor >= 17)) || (major > 4) {
-		return true, nil
-	}
-	return false, nil
-}
-
 type eventParam struct {
 	encType argType
 	encName argTag
@@ -404,10 +373,6 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 
 	eventsParams := t.initEventsParams()
 
-	supportRawTracepoints, err := supportRawTP()
-	if err != nil {
-		return fmt.Errorf("Failed to find kernel version: %v", err)
-	}
 	sysEnterTailsBPFTable := bpf.NewTable(t.bpfModule.TableId("sys_enter_tails"), t.bpfModule)
 	//sysExitTailsBPFTable := bpf.NewTable(t.bpfModule.TableId("sys_exit_tails"), t.bpfModule)
 	paramsTypesBPFTable := bpf.NewTable(t.bpfModule.TableId("params_types_map"), t.bpfModule)
@@ -433,19 +398,10 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 			continue
 		}
 		for _, probe := range event.Probes {
-			if probe.attach == rawTracepoint && !supportRawTracepoints {
-				// We fallback to regular tracepoint in case kernel doesn't support raw tracepoints (< 4.17)
-				probe.attach = tracepoint
-			}
 			if probe.attach == sysCall {
 				if e == ExecveEventID || e == ExecveatEventID {
-					var tp int
 					// execve functions require tail call on syscall enter as they perform extra work
-					if supportRawTracepoints {
-						tp, err = t.bpfModule.LoadRawTracepoint(fmt.Sprintf("syscall__%s", probe.fn))
-					} else {
-						tp, err = t.bpfModule.LoadTracepoint(fmt.Sprintf("syscall__%s", probe.fn))
-					}
+					tp, err := t.bpfModule.LoadRawTracepoint(fmt.Sprintf("syscall__%s", probe.fn))
 					if err != nil {
 						return fmt.Errorf("error loading kprobe %s: %v", probe.fn, err)
 					}

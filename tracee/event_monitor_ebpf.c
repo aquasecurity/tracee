@@ -89,8 +89,8 @@
 #define MODE_PID        1
 #define MODE_CONTAINER  2
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
-#error Minimal required kernel version is 4.14
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 18, 0)
+#error Minimal required kernel version is 4.18
 #endif
 
 /*=============================== INTERNAL STRUCTS ===========================*/
@@ -932,13 +932,7 @@ int trace_ret_##name(void *ctx)                                         \
 
 // include/trace/events/syscalls.h:
 // TP_PROTO(struct pt_regs *regs, long id)
-int tracepoint__raw_syscalls__sys_enter(
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
-struct tracepoint__raw_syscalls__sys_enter *args
-#else
-struct bpf_raw_tracepoint_args *ctx
-#endif
-)
+int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
 {
     struct pt_regs regs = {};
     int id;
@@ -948,19 +942,8 @@ struct bpf_raw_tracepoint_args *ctx
     if (task->thread_info.status & TS_COMPAT)
         isIA32 = true;
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
-    void *ctx = args;
-    regs.di = args->args[0];
-    regs.si = args->args[1];
-    regs.dx = args->args[2];
-    regs.r10 = args->args[3];
-    regs.r8 = args->args[4];
-    regs.r9 = args->args[5];
-    id = args->id;
-#else
     bpf_probe_read(&regs, sizeof(struct pt_regs), (void*)ctx->args[0]);
     id = ctx->args[1];
-#endif
 
     if (isIA32) {
         // Translate 32bit syscalls to 64bit syscalls so we can send to the correct handler
@@ -1013,13 +996,7 @@ struct bpf_raw_tracepoint_args *ctx
 
 // include/trace/events/syscalls.h:
 // TP_PROTO(struct pt_regs *regs, long ret)
-int tracepoint__raw_syscalls__sys_exit(
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
-struct tracepoint__raw_syscalls__sys_exit *args
-#else
-struct bpf_raw_tracepoint_args *ctx
-#endif
-)
+int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
 {
     int id;
     long ret;
@@ -1029,15 +1006,9 @@ struct bpf_raw_tracepoint_args *ctx
     if (task->thread_info.status & TS_COMPAT)
         isIA32 = true;
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
-    void *ctx = args;
-    id = args->id;
-    ret = args->ret;
-#else
     struct pt_regs *regs = (struct pt_regs*)ctx->args[0];
     id = regs->orig_ax;
     ret = ctx->args[1];
-#endif
 
     if (isIA32) {
         // Translate 32bit syscalls to 64bit syscalls so we can send to the correct handler
