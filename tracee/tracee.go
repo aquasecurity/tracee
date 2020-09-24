@@ -527,6 +527,9 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 	binary.LittleEndian.PutUint32(key, uint32(configExtractDynCode))
 	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.CaptureMem))
 	bpfConfig.Set(key, leaf)
+	binary.LittleEndian.PutUint32(key, uint32(configTraceePid))
+	binary.LittleEndian.PutUint32(leaf, uint32(os.Getpid()))
+	bpfConfig.Set(key, leaf)
 
 	pidsMap := bpf.NewTable(t.bpfModule.TableId("pids_map"), t.bpfModule)
 	for _, pid := range t.config.PidsToTrace {
