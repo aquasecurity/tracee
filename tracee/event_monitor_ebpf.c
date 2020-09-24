@@ -87,6 +87,7 @@
 #define CONFIG_EXEC_ENV         2
 #define CONFIG_CAPTURE_FILES    3
 #define CONFIG_EXTRACT_DYN_CODE 4
+#define CONFIG_TRACEE_PID       5
 
 #define MODE_SYSTEM     0
 #define MODE_PID        1
@@ -370,6 +371,9 @@ static __always_inline int get_config(u32 key)
 static __always_inline int should_trace()
 {
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+
+    if (get_config(CONFIG_TRACEE_PID) == bpf_get_current_pid_tgid() >> 32)
+        return 0;
 
     u32 rc = 0;
     if (get_config(CONFIG_MODE) == MODE_CONTAINER)
