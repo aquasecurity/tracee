@@ -964,12 +964,21 @@ struct bpf_raw_tracepoint_args *ctx
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
     void *ctx = args;
-    regs.di = args->args[0];
-    regs.si = args->args[1];
-    regs.dx = args->args[2];
-    regs.r10 = args->args[3];
-    regs.r8 = args->args[4];
-    regs.r9 = args->args[5];
+    if (!isIA32) {
+        regs.di = args->args[0];
+        regs.si = args->args[1];
+        regs.dx = args->args[2];
+        regs.r10 = args->args[3];
+        regs.r8 = args->args[4];
+        regs.r9 = args->args[5];
+    } else {
+        regs.bx = args->args[0];
+        regs.cx = args->args[1];
+        regs.dx = args->args[2];
+        regs.si = args->args[3];
+        regs.di = args->args[4];
+        regs.bp = args->args[5];
+    }
     id = args->id;
 #else
     bpf_probe_read(&regs, sizeof(struct pt_regs), (void*)ctx->args[0]);
