@@ -61,6 +61,7 @@
 
 #define TAG_NONE           0UL
 
+#define SYS_OPEN            2
 #define SYS_MMAP            9
 #define SYS_MPROTECT        10
 #define SYS_RT_SIGRETURN    15
@@ -70,6 +71,7 @@
 #define SYS_EXECVE          59
 #define SYS_EXIT            60
 #define SYS_EXIT_GROUP      231
+#define SYS_OPENAT          257
 #define SYS_EXECVEAT        322
 #define RAW_SYS_ENTER       335
 #define RAW_SYS_EXIT        336
@@ -92,6 +94,11 @@
 #define MODE_SYSTEM     0
 #define MODE_PID        1
 #define MODE_CONTAINER  2
+
+// re-define container_of as bcc complains
+#define my_container_of(ptr, type, member) ({          \
+    const typeof(((type *)0)->member) * __mptr = (ptr); \
+    (type *)((char *)__mptr - offsetof(type, member)); })
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
 #error Minimal required kernel version is 4.14
@@ -246,25 +253,117 @@ static __always_inline u32 get_task_ppid(struct task_struct *task)
     return task->real_parent->pid;
 }
 
-static __always_inline struct pt_regs* get_task_pt_regs()
+static __always_inline bool is_x86_compat(struct task_struct *task)
 {
-    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    return task->thread_info.status & TS_COMPAT;
+}
+
+static __always_inline struct pt_regs* get_task_pt_regs(struct task_struct *task)
+{
     void* task_stack_page = task->stack;
     void* __ptr = task_stack_page + THREAD_SIZE - TOP_OF_KERNEL_STACK_PADDING;
     return ((struct pt_regs *)__ptr) - 1;
 }
 
-/*============================== HELPER FUNCTIONS ==============================*/
+static __always_inline int get_syscall_ev_id_from_regs()
+{
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    struct pt_regs *real_ctx = get_task_pt_regs(task);
+    int syscall_nr = real_ctx->orig_ax;
 
-// re-define container_of as bcc complains
-#define my_container_of(ptr, type, member) ({          \
-    const typeof(((type *)0)->member) * __mptr = (ptr); \
-    (type *)((char *)__mptr - offsetof(type, member)); })
+    if (is_x86_compat(task)) {
+        // Translate 32bit syscalls to 64bit syscalls (which also represent the event ids)
+        u32 *id_64 = sys_32_to_64_map.lookup(&syscall_nr);
+        if (id_64 == 0)
+            return -1;
+
+        syscall_nr = *id_64;
+    }
+
+    return syscall_nr;
+}
+
+static __always_inline struct dentry* get_mnt_root_ptr_from_vfsmnt(struct vfsmount *vfsmnt)
+{
+    struct dentry *mnt_root;
+    bpf_probe_read(&mnt_root, sizeof(struct dentry*), &vfsmnt->mnt_root);
+    return mnt_root;
+}
+
+static __always_inline struct dentry* get_d_parent_ptr_from_dentry(struct dentry *dentry)
+{
+    struct dentry *d_parent;
+    bpf_probe_read(&d_parent, sizeof(struct dentry*), &dentry->d_parent);
+    return d_parent;
+}
+
+static __always_inline struct qstr get_d_name_from_dentry(struct dentry *dentry)
+{
+    struct qstr d_name;
+    bpf_probe_read(&d_name, sizeof(struct qstr), &dentry->d_name);
+    return d_name;
+}
+
+static __always_inline struct file* get_file_ptr_from_bprm(struct linux_binprm *bprm)
+{
+    return bprm->file;
+}
+
+static __always_inline dev_t get_dev_from_file(struct file *file)
+{
+    struct inode *inode;
+    struct super_block *superblock;
+    dev_t s_dev;
+
+    bpf_probe_read(&inode, sizeof(struct inode *), &file->f_inode);
+    bpf_probe_read(&superblock, sizeof(struct super_block *), &inode->i_sb);
+    bpf_probe_read(&s_dev, sizeof(dev_t), &superblock->s_dev);
+
+    return s_dev;
+}
+
+static __always_inline unsigned long get_inode_nr_from_file(struct file *file)
+{
+    struct inode *inode;
+    unsigned long i_ino;
+
+    bpf_probe_read(&inode, sizeof(struct inode *), &file->f_inode);
+    bpf_probe_read(&i_ino, sizeof(unsigned long), &inode->i_ino);
+
+    return i_ino;
+}
+
+static __always_inline unsigned short get_inode_mode_from_file(struct file *file)
+{
+    struct inode *inode;
+    unsigned short i_mode;
+
+    bpf_probe_read(&inode, sizeof(struct inode *), &file->f_inode);
+    bpf_probe_read(&i_mode, sizeof(unsigned short), &inode->i_mode);
+
+    return i_mode;
+}
+
+static __always_inline struct path get_path_from_file(struct file *file)
+{
+    struct path f_path;
+
+    bpf_probe_read(&f_path, sizeof(struct path), &file->f_path);
+
+    return f_path;
+}
+
+static __always_inline unsigned long get_vma_flags(struct vm_area_struct *vma)
+{
+    return vma->vm_flags;
+}
 
 static inline struct mount *real_mount(struct vfsmount *mnt)
 {
     return my_container_of(mnt, struct mount, mnt);
 }
+
+/*============================== HELPER FUNCTIONS ==============================*/
 
 static __inline int is_prefix(char *prefix, char *str)
 {
@@ -464,9 +563,12 @@ static __always_inline int save_to_submit_buf(buf_t *submit_p, void *ptr, u32 si
     if (type == 0)
         return 0;
 
+    if (size == 0)
+        return 0;
+
     u32* off = get_buf_off(SUBMIT_BUF_IDX);
     if (off == NULL)
-        return -1;
+        return 0;
     if (*off > MAX_PERCPU_BUFSIZE - MAX_ELEMENT_SIZE)
         // Satisfy validator for probe read
         return 0;
@@ -509,7 +611,7 @@ static __always_inline int save_str_to_buf(buf_t *submit_p, void *ptr, u8 tag)
 {
     u32* off = get_buf_off(SUBMIT_BUF_IDX);
     if (off == NULL)
-        return -1;
+        return 0;
     if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int))
         // not enough space - return
         return 0;
@@ -558,12 +660,27 @@ static __always_inline int save_str_arr_to_buf(buf_t *submit_p, const char __use
 {
     u8 elem_num = 0;
 
-    // mark string array start
-    save_to_submit_buf(submit_p, NULL, 0, STR_ARR_T, tag);
-
     u32* off = get_buf_off(SUBMIT_BUF_IDX);
     if (off == NULL)
-        return -1;
+        return 0;
+
+    // mark string array start
+    u8 type = STR_ARR_T;
+    int rc = bpf_probe_read(&(submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)]), 1, &type);
+    if (rc != 0)
+        return 0;
+
+    *off += 1;
+
+    // Save argument tag
+    rc = bpf_probe_read(&(submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)]), 1, &tag);
+    if (rc != 0) {
+        *off -= 1;
+        return 0;
+    }
+
+    *off += 1;
+
     // Save space for number of elements
     u32 orig_off = *off;
     *off += 1;
@@ -615,23 +732,26 @@ out:
     return 1;
 }
 
-static __always_inline int get_path_string(buf_t *string_p, struct path *path)
+static __always_inline int save_file_path_to_str_buf(buf_t *string_p, struct file* file)
 {
+    struct path f_path = get_path_from_file(file);
     char slash = '/';
     int zero = 0;
-    struct dentry *dentry = path->dentry;;
-    struct vfsmount *vfsmnt = path->mnt;
-    struct mount mnt;
+    struct dentry *dentry = f_path.dentry;
+    struct vfsmount *vfsmnt = f_path.mnt;
     struct mount *mnt_p = real_mount(vfsmnt);
+    struct mount mnt;
     bpf_probe_read(&mnt, sizeof(struct mount), mnt_p);
 
-    u32 buf_off = MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE;
+    u32 buf_off = (MAX_PERCPU_BUFSIZE >> 1);
 
     #pragma unroll
     // As bpf loops are not allowed and max instructions number is 4096, path components is limited to 30
     for (int i = 0; i < 30; i++) {
-        if (dentry == vfsmnt->mnt_root || dentry == dentry->d_parent) {
-            if (dentry != vfsmnt->mnt_root) {
+        struct dentry *mnt_root = get_mnt_root_ptr_from_vfsmnt(vfsmnt);
+        struct dentry *d_parent = get_d_parent_ptr_from_dentry(dentry);
+        if (dentry == mnt_root || dentry == d_parent) {
+            if (dentry != mnt_root) {
                 // We reached root, but not mount root - escaped?
                 break;
             }
@@ -646,12 +766,13 @@ static __always_inline int get_path_string(buf_t *string_p, struct path *path)
             break;
         }
         // Add this dentry name to path
-        unsigned int len = (dentry->d_name.len+1) & (MAX_STRING_SIZE-1);
+        struct qstr d_name = get_d_name_from_dentry(dentry);
+        unsigned int len = (d_name.len+1) & (MAX_STRING_SIZE-1);
         unsigned int off = buf_off - len;
         // Is string buffer big enough for dentry name?
         int sz = 0;
         if (off <= MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
-            sz = bpf_probe_read_str(&(string_p->buf[off]), len, (void *)dentry->d_name.name);
+            sz = bpf_probe_read_str(&(string_p->buf[off]), len, (void *)d_name.name);
         else
             break;
         if (sz > 1) {
@@ -662,19 +783,20 @@ static __always_inline int get_path_string(buf_t *string_p, struct path *path)
             // If sz is 0 or 1 we have an error (path can't be null nor an empty string)
             break;
         }
-        dentry = dentry->d_parent;
+        dentry = d_parent;
     }
 
     if (buf_off == MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE) {
 	// memfd files have no path in the filesystem -> extract their name
         buf_off = 0;
-        int sz = bpf_probe_read_str(&(string_p->buf[0]), MAX_STRING_SIZE, (void *)dentry->d_name.name);
+        struct qstr d_name = get_d_name_from_dentry(dentry);
+        int sz = bpf_probe_read_str(&(string_p->buf[0]), MAX_STRING_SIZE, (void *)d_name.name);
     } else {
         // Add leading slash
         buf_off -= 1;
         bpf_probe_read(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE-1)]), 1, &slash);
         // Null terminate the path string
-        bpf_probe_read(&(string_p->buf[MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE-1]), 1, &zero);
+        bpf_probe_read(&(string_p->buf[(MAX_PERCPU_BUFSIZE >> 1)-1]), 1, &zero);
     }
 
     set_buf_off(STRING_BUF_IDX, buf_off);
@@ -719,7 +841,7 @@ static __always_inline int save_args_from_regs(struct pt_regs *ctx, u32 event_id
     args_t args = {};
 
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
-    if (task->thread_info.status & TS_COMPAT && is_syscall) {
+    if (is_x86_compat(task) && is_syscall) {
         args.args[0] = ctx->bx;
         args.args[1] = ctx->cx;
         args.args[2] = ctx->dx;
@@ -960,15 +1082,11 @@ struct bpf_raw_tracepoint_args *ctx
 {
     struct pt_regs regs = {};
     int id;
-
-    bool isIA32 = false;
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
-    if (task->thread_info.status & TS_COMPAT)
-        isIA32 = true;
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
     void *ctx = args;
-    if (!isIA32) {
+    if (!is_x86_compat(task)) {
         regs.di = args->args[0];
         regs.si = args->args[1];
         regs.dx = args->args[2];
@@ -989,7 +1107,7 @@ struct bpf_raw_tracepoint_args *ctx
     id = ctx->args[1];
 #endif
 
-    if (isIA32) {
+    if (is_x86_compat(task)) {
         // Translate 32bit syscalls to 64bit syscalls so we can send to the correct handler
         u32 *id_64 = sys_32_to_64_map.lookup(&id);
         if (id_64 == 0)
@@ -1017,7 +1135,7 @@ struct bpf_raw_tracepoint_args *ctx
             return 0;
         set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-        context_t context = init_and_save_context(submit_p, RAW_SYS_ENTER, 1, 0);
+        context_t context = init_and_save_context(submit_p, RAW_SYS_ENTER, 1 /*argnum*/, 0 /*ret*/);
 
         u64 *tags = params_names_map.lookup(&context.eventid);
         if (!tags) {
@@ -1051,11 +1169,7 @@ struct bpf_raw_tracepoint_args *ctx
 {
     int id;
     long ret;
-
-    bool isIA32 = false;
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
-    if (task->thread_info.status & TS_COMPAT)
-        isIA32 = true;
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
     void *ctx = args;
@@ -1067,7 +1181,7 @@ struct bpf_raw_tracepoint_args *ctx
     ret = ctx->args[1];
 #endif
 
-    if (isIA32) {
+    if (is_x86_compat(task)) {
         // Translate 32bit syscalls to 64bit syscalls so we can send to the correct handler
         u32 *id_64 = sys_32_to_64_map.lookup(&id);
         if (id_64 == 0)
@@ -1099,7 +1213,7 @@ struct bpf_raw_tracepoint_args *ctx
             return 0;
         set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-        context_t context = init_and_save_context(submit_p, RAW_SYS_EXIT, 1, ret);
+        context_t context = init_and_save_context(submit_p, RAW_SYS_EXIT, 1 /*argnum*/, ret);
 
         u64 *tags = params_names_map.lookup(&context.eventid);
         if (!tags) {
@@ -1160,26 +1274,20 @@ int syscall__execve(void *ctx)
         return 0;
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    int show_env = get_config(CONFIG_EXEC_ENV);
-
-    u8 argnum = 2;
-    if (show_env)
-        argnum = 3;
-    context_t context = init_and_save_context(submit_p, SYS_EXECVE, argnum, 0);
-
-    const char __user *filename = (char *)args.args[0];
-    const char __user *const __user *__argv = (const char *const *)args.args[1];
-    const char __user *const __user *__envp = (const char *const *)args.args[2];
+    context_t context = init_and_save_context(submit_p, SYS_EXECVE, 2 /*argnum*/, 0 /*ret*/);
 
     u64 *tags = params_names_map.lookup(&context.eventid);
     if (!tags) {
         return -1;
     }
 
-    save_str_to_buf(submit_p, (void *)filename, DEC_ARG(0, *tags));
-    save_str_arr_to_buf(submit_p, __argv, DEC_ARG(1, *tags));
-    if (show_env)
-        save_str_arr_to_buf(submit_p, __envp, DEC_ARG(2, *tags));
+    save_str_to_buf(submit_p, (void *)args.args[0] /*filename*/, DEC_ARG(0, *tags));
+    save_str_arr_to_buf(submit_p, (const char *const *)args.args[1] /*argv*/, DEC_ARG(1, *tags));
+    if (get_config(CONFIG_EXEC_ENV)) {
+        context.argnum++;
+        save_context_to_buf(submit_p, (void*)&context);
+        save_str_arr_to_buf(submit_p, (const char *const *)args.args[2] /*envp*/, DEC_ARG(2, *tags));
+    }
 
     events_perf_submit(ctx);
     return 0;
@@ -1201,30 +1309,22 @@ int syscall__execveat(void *ctx)
         return 0;
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    int show_env = get_config(CONFIG_EXEC_ENV);
-
-    u8 argnum = 4;
-    if (show_env)
-        argnum = 5;
-    context_t context = init_and_save_context(submit_p, SYS_EXECVEAT, argnum, 0);
-
-    const int dirfd = args.args[0];
-    const char __user *pathname = (char *)args.args[1];
-    const char __user *const __user *__argv = (const char *const *)args.args[2];
-    const char __user *const __user *__envp = (const char *const *)args.args[3];
-    const int flags = args.args[4];
+    context_t context = init_and_save_context(submit_p, SYS_EXECVEAT, 4 /*argnum*/, 0 /*ret*/);
 
     u64 *tags = params_names_map.lookup(&context.eventid);
     if (!tags) {
         return -1;
     }
 
-    save_to_submit_buf(submit_p, (void*)&dirfd, sizeof(int), INT_T, DEC_ARG(0, *tags));
-    save_str_to_buf(submit_p, (void *)pathname, DEC_ARG(1, *tags));
-    save_str_arr_to_buf(submit_p, __argv, DEC_ARG(2, *tags));
-    if (show_env)
-        save_str_arr_to_buf(submit_p, __envp, DEC_ARG(3, *tags));
-    save_to_submit_buf(submit_p, (void*)&flags, sizeof(int), INT_T, DEC_ARG(4, *tags));
+    save_to_submit_buf(submit_p, (void*)&args.args[0] /*dirfd*/, sizeof(int), INT_T, DEC_ARG(0, *tags));
+    save_str_to_buf(submit_p, (void *)args.args[1] /*pathname*/, DEC_ARG(1, *tags));
+    save_str_arr_to_buf(submit_p, (const char *const *)args.args[2] /*argv*/, DEC_ARG(2, *tags));
+    if (get_config(CONFIG_EXEC_ENV)) {
+        context.argnum++;
+        save_context_to_buf(submit_p, (void*)&context);
+        save_str_arr_to_buf(submit_p, (const char *const *)args.args[3] /*envp*/, DEC_ARG(3, *tags));
+    }
+    save_to_submit_buf(submit_p, (void*)&args.args[4] /*flags*/, sizeof(int), INT_T, DEC_ARG(4, *tags));
 
     events_perf_submit(ctx);
     return 0;
@@ -1263,17 +1363,17 @@ int trace_security_bprm_check(struct pt_regs *ctx, struct linux_binprm *bprm)
         return 0;
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    context_t context = init_and_save_context(submit_p, SECURITY_BPRM_CHECK, 3, 0);
+    context_t context = init_and_save_context(submit_p, SECURITY_BPRM_CHECK, 3 /*argnum*/, 0 /*ret*/);
 
-    dev_t s_dev = bprm->file->f_inode->i_sb->s_dev;
-    unsigned long inode_nr = (unsigned long)bprm->file->f_inode->i_ino;
+    struct file* file = get_file_ptr_from_bprm(bprm);
+    dev_t s_dev = get_dev_from_file(file);
+    unsigned long inode_nr = get_inode_nr_from_file(file);
 
     // Get per-cpu string buffer
     buf_t *string_p = get_buf(STRING_BUF_IDX);
     if (string_p == NULL)
         return -1;
-    get_path_string(string_p, &bprm->file->f_path);
-
+    save_file_path_to_str_buf(string_p, file);
     u32 *off = get_buf_off(STRING_BUF_IDX);
     if (off == NULL)
         return -1;
@@ -1301,22 +1401,21 @@ int trace_security_file_open(struct pt_regs *ctx, struct file *file)
         return 0;
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    context_t context = init_and_save_context(submit_p, SECURITY_FILE_OPEN, 4, 0);
+    context_t context = init_and_save_context(submit_p, SECURITY_FILE_OPEN, 4 /*argnum*/, 0 /*ret*/);
 
-    dev_t s_dev = file->f_inode->i_sb->s_dev;
-    unsigned long inode_nr = (unsigned long)file->f_inode->i_ino;
+    dev_t s_dev = get_dev_from_file(file);
+    unsigned long inode_nr = get_inode_nr_from_file(file);
 
-    struct pt_regs *real_ctx = get_task_pt_regs();
-    int syscall_nr = real_ctx->orig_ax;
-    if (syscall_nr != 2 && syscall_nr != 257) // only monitor open and openat syscalls
+    // only monitor open and openat syscalls
+    int syscall_nr = get_syscall_ev_id_from_regs();
+    if (syscall_nr != SYS_OPEN && syscall_nr != SYS_OPENAT)
         return 0;
 
     // Get per-cpu string buffer
     buf_t *string_p = get_buf(STRING_BUF_IDX);
     if (string_p == NULL)
         return -1;
-    get_path_string(string_p, &file->f_path);
-
+    save_file_path_to_str_buf(string_p, file);
     u32 *off = get_buf_off(STRING_BUF_IDX);
     if (off == NULL)
         return -1;
@@ -1348,10 +1447,7 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
         return 0;
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    u8 argnum = 1;
-    if (get_config(CONFIG_SHOW_SYSCALL))
-        argnum = 2;
-    context_t context = init_and_save_context(submit_p, CAP_CAPABLE, argnum, 0);
+    context_t context = init_and_save_context(submit_p, CAP_CAPABLE, 1 /*argnum*/, 0 /*ret*/);
 
   #ifdef CAP_OPT_NONE
     audit = (cap_opt & 0b10) == 0;
@@ -1369,8 +1465,12 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
 
     save_to_submit_buf(submit_p, (void*)&cap, sizeof(int), INT_T, DEC_ARG(0, *tags));
     if (get_config(CONFIG_SHOW_SYSCALL)) {
-        struct pt_regs *real_ctx = get_task_pt_regs();
-        save_to_submit_buf(submit_p, (void*)&(real_ctx->orig_ax), sizeof(int), INT_T, DEC_ARG(1, *tags));
+        int syscall_nr = get_syscall_ev_id_from_regs();
+        if (syscall_nr >= 0) {
+            context.argnum++;
+            save_context_to_buf(submit_p, (void*)&context);
+            save_to_submit_buf(submit_p, (void*)&syscall_nr, sizeof(int), INT_T, DEC_ARG(1, *tags));
+        }
     }
     events_perf_submit(ctx);
     return 0;
@@ -1492,7 +1592,6 @@ int send_bin(struct pt_regs *ctx)
 
 static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id, u32 tail_call_id)
 {
-    struct path path;
     args_t saved_args;
     bool has_filter = false;
 
@@ -1504,13 +1603,11 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
 
     struct file *file      = (struct file *) saved_args.args[0];
 
-    // Extract path of written file
-    bpf_probe_read(&path, sizeof(struct path), &file->f_path);
     // Get per-cpu string buffer
     buf_t *string_p = get_buf(STRING_BUF_IDX);
     if (string_p == NULL)
         return -1;
-    get_path_string(string_p, &path);
+    save_file_path_to_str_buf(string_p, file);
     u32 *off = get_buf_off(STRING_BUF_IDX);
     if (off == NULL)
         return -1;
@@ -1549,11 +1646,6 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
 {
     args_t saved_args;
     bin_args_t bin_args = {};
-    struct inode *inode;
-    struct super_block *superblock;
-    dev_t s_dev;
-    unsigned long inode_nr;
-    unsigned int i_mode;
     loff_t start_pos;
 
     void *ptr;
@@ -1566,7 +1658,7 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
         return 0;
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    context_t context = init_and_save_context(submit_p, event_id, 5, PT_REGS_RC(ctx));
+    context_t context = init_and_save_context(submit_p, event_id, 5 /*argnum*/, PT_REGS_RC(ctx));
 
     bool delete_args = true;
     if (load_args(&saved_args, delete_args, event_id) != 0) {
@@ -1584,23 +1676,19 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
     }
     loff_t *pos            = (loff_t*)       saved_args.args[3];
 
-    // Get path
-    struct path path;
-    bpf_probe_read(&path, sizeof(struct path), &file->f_path);
+    // Get per-cpu string buffer
     buf_t *string_p = get_buf(STRING_BUF_IDX);
     if (string_p == NULL)
         return -1;
-    get_path_string(string_p, &path);
+    save_file_path_to_str_buf(string_p, file);
     u32 *off = get_buf_off(STRING_BUF_IDX);
     if (off == NULL)
         return -1;
 
     // Extract device id, inode number, mode, and pos (offset)
-    bpf_probe_read(&inode, sizeof(struct inode *), &file->f_inode);
-    bpf_probe_read(&superblock, sizeof(struct super_block *), &inode->i_sb);
-    bpf_probe_read(&s_dev, sizeof(dev_t), &superblock->s_dev);
-    bpf_probe_read(&inode_nr, sizeof(unsigned long), &inode->i_ino);
-    bpf_probe_read(&i_mode, sizeof(unsigned short), &inode->i_mode);
+    dev_t s_dev = get_dev_from_file(file);
+    unsigned long inode_nr = get_inode_nr_from_file(file);
+    unsigned short i_mode = get_inode_mode_from_file(file);
     bpf_probe_read(&start_pos, sizeof(off_t), pos);
 
     // Calculate write start offset
@@ -1698,7 +1786,7 @@ int trace_mmap_alert(struct pt_regs *ctx)
         return 0;
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    context_t context = init_and_save_context(submit_p, MEM_PROT_ALERT, 1, 0);
+    context_t context = init_and_save_context(submit_p, MEM_PROT_ALERT, 1 /*argnum*/, 0 /*ret*/);
 
     u64 *tags = params_names_map.lookup(&context.eventid);
     if (!tags) {
@@ -1726,7 +1814,7 @@ int trace_mprotect_alert(struct pt_regs *ctx, struct vm_area_struct *vma, unsign
 
     void *addr = (void*)args.args[0];
     size_t len = args.args[1];
-    unsigned long prev_prot = vma->vm_flags;
+    unsigned long prev_prot = get_vma_flags(vma);
 
     if (addr <= 0)
         return 0;
@@ -1740,7 +1828,7 @@ int trace_mprotect_alert(struct pt_regs *ctx, struct vm_area_struct *vma, unsign
         return 0;
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    context_t context = init_and_save_context(submit_p, MEM_PROT_ALERT, 1, 0);
+    context_t context = init_and_save_context(submit_p, MEM_PROT_ALERT, 1 /*argnum*/, 0 /*ret*/);
 
     u64 *tags = params_names_map.lookup(&context.eventid);
     if (!tags) {
