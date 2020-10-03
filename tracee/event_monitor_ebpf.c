@@ -99,6 +99,12 @@
     const typeof(((type *)0)->member) * __mptr = (ptr); \
     (type *)((char *)__mptr - offsetof(type, member)); })
 
+#define READ_KERN(ptr) ({ typeof(ptr) _val;                             \
+                          __builtin_memset(&_val, 0, sizeof(_val));     \
+                          bpf_probe_read(&_val, sizeof(_val), &ptr);    \
+                          _val;                                         \
+                        })
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
 #error Minimal required kernel version is 4.14
 #endif
@@ -201,66 +207,73 @@ BPF_PERF_OUTPUT(file_writes);                       // File writes events submis
 
 static __always_inline u32 get_task_mnt_ns_id(struct task_struct *task)
 {
-    return task->nsproxy->mnt_ns->ns.inum;
+    return READ_KERN(READ_KERN(READ_KERN(task->nsproxy)->mnt_ns)->ns.inum);
 }
 
 static __always_inline u32 get_task_pid_ns_id(struct task_struct *task)
 {
-    return task->nsproxy->pid_ns_for_children->ns.inum;
+    return READ_KERN(READ_KERN(READ_KERN(task->nsproxy)->pid_ns_for_children)->ns.inum);
 }
 
 static __always_inline u32 get_task_ns_pid(struct task_struct *task)
 {
+    unsigned int level = READ_KERN(READ_KERN(READ_KERN(task->nsproxy)->pid_ns_for_children)->level);
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0)
     // kernel 4.14-4.18:
-    return task->pids[PIDTYPE_PID].pid->numbers[task->nsproxy->pid_ns_for_children->level].nr;
+    return READ_KERN(READ_KERN(task->pids[PIDTYPE_PID].pid)->numbers[level].nr);
 #else
     // kernel 4.19 onwards:
-    return task->thread_pid->numbers[task->nsproxy->pid_ns_for_children->level].nr;
+    return READ_KERN(READ_KERN(task->thread_pid)->numbers[level].nr);
 #endif
 }
 
 static __always_inline u32 get_task_ns_tgid(struct task_struct *task)
 {
+    unsigned int level = READ_KERN(READ_KERN(READ_KERN(task->nsproxy)->pid_ns_for_children)->level);
+    struct task_struct *group_leader = READ_KERN(task->group_leader);
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0)
     // kernel 4.14-4.18:
-    return task->group_leader->pids[PIDTYPE_PID].pid->numbers[task->nsproxy->pid_ns_for_children->level].nr;
+    return READ_KERN(READ_KERN(group_leader->pids[PIDTYPE_PID].pid)->numbers[level].nr);
 #else
     // kernel 4.19 onwards:
-    return task->group_leader->thread_pid->numbers[task->nsproxy->pid_ns_for_children->level].nr;
+    return READ_KERN(READ_KERN(group_leader->thread_pid)->numbers[level].nr);
 #endif
 }
 
 static __always_inline u32 get_task_ns_ppid(struct task_struct *task)
 {
+    struct task_struct *real_parent = READ_KERN(task->real_parent);
+    unsigned int level = READ_KERN(READ_KERN(READ_KERN(real_parent->nsproxy)->pid_ns_for_children)->level);
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0)
     // kernel 4.14-4.18:
-    return task->real_parent->pids[PIDTYPE_PID].pid->numbers[task->real_parent->nsproxy->pid_ns_for_children->level].nr;
+    return READ_KERN(READ_KERN(real_parent->pids[PIDTYPE_PID].pid)->numbers[level].nr);
 #else
     // kernel 4.19 onwards:
-    return task->real_parent->thread_pid->numbers[task->real_parent->nsproxy->pid_ns_for_children->level].nr;
+    return READ_KERN(READ_KERN(real_parent->thread_pid)->numbers[level].nr);
 #endif
 }
 
 static __always_inline char * get_task_uts_name(struct task_struct *task)
 {
-    return task->nsproxy->uts_ns->name.nodename;
+    return READ_KERN(READ_KERN(READ_KERN(task->nsproxy)->uts_ns)->name.nodename);
 }
 
 static __always_inline u32 get_task_ppid(struct task_struct *task)
 {
-    return task->real_parent->pid;
+    return READ_KERN(READ_KERN(task->real_parent)->pid);
 }
 
 static __always_inline bool is_x86_compat(struct task_struct *task)
 {
-    return task->thread_info.status & TS_COMPAT;
+    return READ_KERN(task->thread_info.status) & TS_COMPAT;
 }
 
 static __always_inline struct pt_regs* get_task_pt_regs(struct task_struct *task)
 {
-    void* task_stack_page = task->stack;
-    void* __ptr = task_stack_page + THREAD_SIZE - TOP_OF_KERNEL_STACK_PADDING;
+    void* __ptr = READ_KERN(task->stack) + THREAD_SIZE - TOP_OF_KERNEL_STACK_PADDING;
     return ((struct pt_regs *)__ptr) - 1;
 }
 
@@ -268,7 +281,7 @@ static __always_inline int get_syscall_ev_id_from_regs()
 {
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
     struct pt_regs *real_ctx = get_task_pt_regs(task);
-    int syscall_nr = real_ctx->orig_ax;
+    int syscall_nr = READ_KERN(real_ctx->orig_ax);
 
     if (is_x86_compat(task)) {
         // Translate 32bit syscalls to 64bit syscalls (which also represent the event ids)
@@ -284,77 +297,47 @@ static __always_inline int get_syscall_ev_id_from_regs()
 
 static __always_inline struct dentry* get_mnt_root_ptr_from_vfsmnt(struct vfsmount *vfsmnt)
 {
-    struct dentry *mnt_root;
-    bpf_probe_read(&mnt_root, sizeof(struct dentry*), &vfsmnt->mnt_root);
-    return mnt_root;
+    return READ_KERN(vfsmnt->mnt_root);
 }
 
 static __always_inline struct dentry* get_d_parent_ptr_from_dentry(struct dentry *dentry)
 {
-    struct dentry *d_parent;
-    bpf_probe_read(&d_parent, sizeof(struct dentry*), &dentry->d_parent);
-    return d_parent;
+    return READ_KERN(dentry->d_parent);
 }
 
 static __always_inline struct qstr get_d_name_from_dentry(struct dentry *dentry)
 {
-    struct qstr d_name;
-    bpf_probe_read(&d_name, sizeof(struct qstr), &dentry->d_name);
-    return d_name;
+    return READ_KERN(dentry->d_name);
 }
 
 static __always_inline struct file* get_file_ptr_from_bprm(struct linux_binprm *bprm)
 {
-    return bprm->file;
+    return READ_KERN(bprm->file);
 }
 
 static __always_inline dev_t get_dev_from_file(struct file *file)
 {
-    struct inode *inode;
-    struct super_block *superblock;
-    dev_t s_dev;
-
-    bpf_probe_read(&inode, sizeof(struct inode *), &file->f_inode);
-    bpf_probe_read(&superblock, sizeof(struct super_block *), &inode->i_sb);
-    bpf_probe_read(&s_dev, sizeof(dev_t), &superblock->s_dev);
-
-    return s_dev;
+    return READ_KERN(READ_KERN(READ_KERN(file->f_inode)->i_sb)->s_dev);
 }
 
 static __always_inline unsigned long get_inode_nr_from_file(struct file *file)
 {
-    struct inode *inode;
-    unsigned long i_ino;
-
-    bpf_probe_read(&inode, sizeof(struct inode *), &file->f_inode);
-    bpf_probe_read(&i_ino, sizeof(unsigned long), &inode->i_ino);
-
-    return i_ino;
+    return READ_KERN(READ_KERN(file->f_inode)->i_ino);
 }
 
 static __always_inline unsigned short get_inode_mode_from_file(struct file *file)
 {
-    struct inode *inode;
-    unsigned short i_mode;
-
-    bpf_probe_read(&inode, sizeof(struct inode *), &file->f_inode);
-    bpf_probe_read(&i_mode, sizeof(unsigned short), &inode->i_mode);
-
-    return i_mode;
+    return READ_KERN(READ_KERN(file->f_inode)->i_mode);
 }
 
 static __always_inline struct path get_path_from_file(struct file *file)
 {
-    struct path f_path;
-
-    bpf_probe_read(&f_path, sizeof(struct path), &file->f_path);
-
-    return f_path;
+    return READ_KERN(file->f_path);
 }
 
 static __always_inline unsigned long get_vma_flags(struct vm_area_struct *vma)
 {
-    return vma->vm_flags;
+    return READ_KERN(vma->vm_flags);
 }
 
 static inline struct mount *real_mount(struct vfsmount *mnt)
