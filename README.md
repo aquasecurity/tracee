@@ -1,4 +1,10 @@
 ![Tracee Logo](images/tracee.png)
+
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/aquasecurity/tracee)](https://github.com/aquasecurity/tracee/releases)
+[![Go Report Card](https://goreportcard.com/badge/github.com/aquasecurity/tracee)](https://goreportcard.com/report/github.com/aquasecurity/tracee)
+[![License](https://img.shields.io/github/license/aquasecurity/tracee)](https://github.com/aquasecurity/tracee/blob/master/LICENSE)
+[![docker](https://badgen.net/docker/pulls/aquasec/tracee)](https://hub.docker.com/r/aquasec/tracee)
+
 # Tracee - Container and system tracing using eBPF
 
 Tracee is a lightweight and easy to use container and system tracing tool. It allows you to observe system calls and other system events in real time. A unique feature of Tracee is that it will only trace newly created processes and containers (that were started after Tracee has started), in order to help the user focus on relevant events instead of every single thing that happens on the system (which can be overwhelming). Adding new events to Tracee (especially system calls) is straightforward, and will usually require no more than adding few lines of code.
