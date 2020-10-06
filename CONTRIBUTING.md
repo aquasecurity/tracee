@@ -2,7 +2,7 @@
 
 Thank you for taking interest in contributing to Tracee!  
 
-## Issues
+## Issues and Discussions
 
 - Feel free to open issues for any reason as long as you make it clear what this issue is about: bug/feature/proposal/comment.
 - For questions and general disscusions, please do not open an issue, and instead create a dicussion in the "Discussions" tab.
