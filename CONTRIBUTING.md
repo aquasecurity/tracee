@@ -9,7 +9,7 @@ Thank you for taking interest in contributing to Tracee!
 - Please spend a minimal amount of time giving due diligence to existing issues or discussions. Your topic might be a duplicate. If it is, please add your comment to the existing one.
 - Please give your issue or discussion a meaningful title that will be clear for future users.
 - The issue should clearly explain the reason for opening, the proposal if you have any, and any relevant technical information.
-- For technical questions, please explain in detail what you were trying to do, provide an error message if applicable, and versions of your environemnt and Tracee that you used.
+- For technical questions, please explain in detail what you were trying to do, provide an error message if applicable, and your versions of Tracee and your environment.
 
 ## Pull Requests
 
