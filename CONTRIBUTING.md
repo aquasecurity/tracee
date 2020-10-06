@@ -13,10 +13,10 @@ Thank you for taking interest in contributing to Tracee!
 
 ## Pull Requests
 
-1. Every Pull Request should have an associated Issue unless it is a trivial fix.
-1. Your PR is more likely to be accepted if it focuses on just one change.
-1. Describe what the PR does. There's no convention enforced, but please try to be concise and descriptive. Treat the PR description as a commit message. Titles that start with "fix"/"add"/"improve"/"remove" are good examples.
-1. There's no need to add or tag reviewers, if your PR is left unattended for too long, you can add a comment to bring it up to attention, optionally "@" mention one of the maintainers that was involved with the issue.
-1. If a reviewer commented on your code or asked for changes, please remember to mark the discussion as resolved after you address it and re-request a review.
-1. When addressing comments, try to fix each suggestion in a separate commit.
-1. Tests are not required at this point as Tracee is evolving fast, but if you can include tests that will be appreciated.
+- Every Pull Request should have an associated Issue unless it is a trivial fix.
+- Your PR is more likely to be accepted if it focuses on just one change.
+- Describe what the PR does. There's no convention enforced, but please try to be concise and descriptive. Treat the PR description as a commit message. Titles that start with "fix"/"add"/"improve"/"remove" are good examples.
+- There's no need to add or tag reviewers, if your PR is left unattended for too long, you can add a comment to bring it up to attention, optionally "@" mention one of the maintainers that was involved with the issue.
+- If a reviewer commented on your code or asked for changes, please remember to mark the discussion as resolved after you address it and re-request a review.
+- When addressing comments, try to fix each suggestion in a separate commit.
+- Tests are not required at this point as Tracee is evolving fast, but if you can include tests that will be appreciated.
