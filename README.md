@@ -13,6 +13,17 @@ Other than tracing, Tracee is also capable of capturing files written to disk or
 
 [Check out this quick demo of tracee](https://youtu.be/WTqE2ae257o)
 
+## Table of Contents
+
+- [Getting started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Getting Tracee](#getting-tracee)
+  - [Permissions](#permissions)
+  - [Quickstart with Docker](#quickstart-with-docker)
+  - [Understanding the output](#understanding-the-output)
+- [Configuration flags](#configuration-flags)
+- [Secure tracing](#secure-tracing)
+
 ## Getting started
 
 ### Prerequisites
