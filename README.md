@@ -7,7 +7,7 @@
 
 # Tracee - Container and system tracing using eBPF
 
-Tracee is a lightweight and easy to use container and system tracing tool. It allows you to observe system calls and other system events in real time. A unique feature of Tracee is that it will only trace newly created processes and containers (that were started after Tracee has started), in order to help the user focus on relevant events instead of every single thing that happens on the system (which can be overwhelming). Adding new events to Tracee (especially system calls) is straightforward, and will usually require no more than adding few lines of code.
+Tracee is a lightweight and easy to use container and system tracing tool. It allows you to observe system calls and other system events in real-time. A unique feature of Tracee is that it will only trace newly created processes and containers (that were started after Tracee has started), in order to help the user focus on relevant events instead of every single thing that happens on the system (which can be overwhelming). Adding new events to Tracee (especially system calls) is straightforward, and will usually require no more than adding few lines of code.
 
 Other than tracing, Tracee is also capable of capturing files written to disk or memory ("fileless"), and extracting binaries that are dynamically loaded to an application's memory (e.g. when an application uses a packer). With these features, it is possible to quickly gain insights about the running processes that previously required the use of dynamic analysis tools and special knowledge.
 
@@ -90,4 +90,4 @@ Here are a few commonly useful flags:
 
 ## Secure tracing
 
-When Tracee reads information from user programs it is subject to a race condition where the user program might be able to change the arguments after Tracee has read them. For example, a program invoked `execve("/bin/ls", NULL, 0)`, Tracee picked that up and will report that, then the program changed the first argument from `/bin/ls` to `/bin/bash`, and this is what the kernel will execute. To mitigate this, Tracee also provide "LSM" (Linux Security Module) based events, for example the `bprm_check` event which can reported by tracee and cross-referenced with the reported regular syscall event.
+When Tracee reads information from user programs it is subject to a race condition where the user program might be able to change the arguments after Tracee has read them. For example, a program invoked `execve("/bin/ls", NULL, 0)`, Tracee picked that up and will report that, then the program changed the first argument from `/bin/ls` to `/bin/bash`, and this is what the kernel will execute. To mitigate this, Tracee also provide "LSM" (Linux Security Module) based events, for example, the `bprm_check` event which can be reported by tracee and cross-referenced with the reported regular syscall event.
