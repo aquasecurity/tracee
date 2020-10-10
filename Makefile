@@ -1,6 +1,13 @@
 SRC = $(shell find . -type f -name '*.go' ! -name '*_test.go' )
 ebpfProgramBase64 = $(shell base64 -w 0 tracee/event_monitor_ebpf.c)
 
+VERSION := $(shell git describe --tags)
+LDFLAGS=-ldflags "-s -w -X=main.version=$(VERSION) -X github.com/aquasecurity/tracee/tracee.ebpfProgramBase64Injected=$(ebpfProgramBase64)"
+
+GOPATH=$(shell go env GOPATH)
+GOBIN=$(GOPATH)/bin
+GOSRC=$(GOPATH)/src
+
 .PHONY: build
 build: dist/tracee
 
@@ -12,11 +19,11 @@ build-docker: clean
 	docker rm $$cnt ; docker rmi $$img
 
 dist/tracee: $(SRC) tracee/event_monitor_ebpf.c
-	GOOS=linux go build -v -o dist/tracee -ldflags "-X github.com/aquasecurity/tracee/tracee.ebpfProgramBase64Injected=$(ebpfProgramBase64)"
+	GOOS=linux go build -v -o dist/tracee $(LDFLAGS) .
 
 .PHONY: test
 test:
-	go test -v ./...
+	go test -v -short -coverprofile=coverage.txt -covermode=atomic ./...
 
 .PHONY: clean
 clean:

@@ -1,0 +1,85 @@
+version: 2.1
+orbs:
+  codecov: codecov/codecov@1.1.0
+
+defaults: &defaults
+  docker:
+    - image: cimg/go:1.15
+      auth:
+        username: $DOCKER_USER
+        password: $DOCKER_PASS
+  environment:
+    CGO_ENABLED: "1"
+
+jobs:
+  build:
+    <<: *defaults
+    steps:
+      - checkout
+      - run:
+          name: Build Tracee
+          command: make build
+      - run:
+          name: Build Docker Image
+          command: make build-docker
+
+  unit-test:
+    <<: *defaults
+    steps:
+      - checkout
+      - run:
+          name: Install Libraries
+          command: |
+            sudo apt-get update
+            sudo apt install -y bison build-essential cmake flex git libedit-dev \
+                libllvm9 llvm-9-dev libclang-9-dev python zlib1g-dev libelf-dev
+            git clone https://github.com/iovisor/bcc.git
+            mkdir bcc/build; cd bcc/build
+            cmake ..
+            make
+            sudo make install
+            sudo apt-get install libtinfo5
+      - run:
+          name: Check if there's anything to fix with gofmt
+          command: |
+            if test -z "$(gofmt -l .)"; then
+              echo "Congrats! There is nothing to fix."
+            else
+              echo "The following lines should be fixed."
+              gofmt -s -d .
+              exit 1
+            fi
+      - run:
+          name: Test
+          command: make test
+      - codecov/upload:
+          file: ./coverage.txt
+
+  release:
+    <<: *defaults
+    steps:
+      - checkout
+      - run:
+          name: Make Docker Image
+          command: make docker
+      - run:
+          name: Release
+          command: make release
+
+workflows:
+  version: 2
+  test-build-deploy:
+    jobs:
+      - unit-test
+      - build:
+          requires:
+            - unit-test
+      - release:
+          requires:
+            - build
+          filters:
+            branches:
+              only:
+                - master
+            tags:
+              only: /.*/
