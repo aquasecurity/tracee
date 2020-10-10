@@ -1,4 +1,4 @@
-FROM golang:1.13-buster as builder
+FROM golang:1.15-buster as builder
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update -y && apt-get install -y --no-install-recommends libtinfo5
 
