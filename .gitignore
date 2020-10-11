@@ -1,3 +1,4 @@
 .vscode
 .idea
+.output
 /dist
