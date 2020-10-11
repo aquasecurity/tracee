@@ -38,6 +38,7 @@ func main() {
 				OutputFormat:          c.String("output"),
 				PerfBufferSize:        c.Int("perf-buffer-size"),
 				PidsToTrace:           c.IntSlice("pid"),
+				CtrIdsToTrace:         c.StringSlice("container-id"),
 				BlobPerfBufferSize:    c.Int("blob-perf-buffer-size"),
 				OutputPath:            c.String("output-path"),
 				FilterFileWrite:       c.StringSlice("filter-file-write"),
@@ -115,6 +116,12 @@ func main() {
 				Aliases: []string{"p"},
 				Value:   nil,
 				Usage:   "trace only the specified pid. use this flag multiple times to choose multiple pids",
+			},
+			&cli.StringSliceFlag{
+				Name:    "container-id",
+				Aliases: []string{"cid"},
+				Value:   nil,
+				Usage:   "trace only the specified container id. use this flag multiple times to choose multiple container ids",
 			},
 			&cli.BoolFlag{
 				Name:  "detect-original-syscall",

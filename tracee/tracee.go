@@ -16,6 +16,10 @@ import (
 	"sync/atomic"
 	"syscall"
 
+	"docker.io/go-docker"
+
+	prog_ctx "context"
+
 	bpf "github.com/iovisor/gobpf/bcc"
 )
 
@@ -24,6 +28,7 @@ type TraceeConfig struct {
 	EventsToTrace         []int32
 	ContainerMode         bool
 	PidsToTrace           []int
+	CtrIdsToTrace         []string
 	DetectOriginalSyscall bool
 	ShowExecEnv           bool
 	OutputFormat          string
@@ -508,7 +513,7 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 	mode := modeSystem
 	if t.config.ContainerMode {
 		mode = modeContainer
-	} else if len(t.config.PidsToTrace) > 0 {
+	} else if len(t.config.PidsToTrace) > 0 || len(t.config.CtrIdsToTrace) > 0 {
 		mode = modePid
 	}
 
@@ -536,6 +541,26 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 		binary.LittleEndian.PutUint32(key, uint32(pid))
 		binary.LittleEndian.PutUint32(leaf, uint32(pid))
 		pidsMap.Set(key, leaf)
+	}
+
+	procCtx := prog_ctx.Background()
+	dockerCli, err := docker.NewEnvClient()
+	if err != nil {
+		return fmt.Errorf("error with docker client init: %v", err)
+	}
+	for _, cid := range t.config.CtrIdsToTrace {
+		ctrInfo, err := dockerCli.ContainerInspect(procCtx, cid)
+		if err != nil {
+			return fmt.Errorf("error inspecting container %s: %v", cid, err)
+		}
+		if ctrInfo.State.Running {
+			ctrPid := ctrInfo.State.Pid
+			binary.LittleEndian.PutUint32(key, uint32(ctrPid))
+			binary.LittleEndian.PutUint32(leaf, uint32(ctrPid))
+			pidsMap.Set(key, leaf)
+		} else {
+			return fmt.Errorf("error inspecting container %s: ctr is in state %s", cid, ctrInfo.State.Status)
+		}
 	}
 
 	// Load send_bin function to prog_array to be used as tail call
