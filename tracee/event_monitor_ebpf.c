@@ -19,6 +19,18 @@
 #include <linux/socket.h>
 #include <linux/version.h>
 
+#include <uapi/linux/bpf.h>
+#include <linux/kconfig.h>
+#include <linux/types.h>
+#include <linux/version.h>
+
+#undef container_of
+//#include "bpf_core_read.h"
+#include <bpf/bpf_helpers.h>
+#include <bpf/bpf_tracing.h>
+
+#define PT_REGS_PARM6(ctx)  ((ctx)->r9)
+
 #define MAX_PERCPU_BUFSIZE  (1 << 15)     // This value is actually set by the kernel as an upper bound
 #define MAX_STRING_SIZE     4096          // Choosing this value to be the same as PATH_MAX
 #define MAX_STR_ARR_ELEM    40            // String array elements number should be bounded due to instructions limit
@@ -97,16 +109,36 @@
 #define MODE_CONTAINER_ALL      4
 #define MODE_CONTAINER_NEW      5
 
-// re-define container_of as bcc complains
-#define my_container_of(ptr, type, member) ({          \
-    const typeof(((type *)0)->member) * __mptr = (ptr); \
-    (type *)((char *)__mptr - offsetof(type, member)); })
+#define DEV_NULL_STR    0
 
 #define READ_KERN(ptr) ({ typeof(ptr) _val;                             \
                           __builtin_memset(&_val, 0, sizeof(_val));     \
                           bpf_probe_read(&_val, sizeof(_val), &ptr);    \
                           _val;                                         \
                         })
+
+#define BPF_MAP(_name, _type, _key_type, _value_type, _max_entries) \
+struct bpf_map_def SEC("maps") _name = { \
+  .type = _type, \
+  .key_size = sizeof(_key_type), \
+  .value_size = sizeof(_value_type), \
+  .max_entries = _max_entries, \
+};
+
+#define BPF_HASH(_name, _key_type, _value_type) \
+BPF_MAP(_name, BPF_MAP_TYPE_HASH, _key_type, _value_type, 10240);
+
+#define BPF_ARRAY(_name, _value_type, _max_entries) \
+BPF_MAP(_name, BPF_MAP_TYPE_ARRAY, u32, _value_type, _max_entries);
+
+#define BPF_PERCPU_ARRAY(_name, _value_type, _max_entries) \
+BPF_MAP(_name, BPF_MAP_TYPE_PERCPU_ARRAY, u32, _value_type, _max_entries);
+
+#define BPF_PROG_ARRAY(_name, _max_entries) \
+BPF_MAP(_name, BPF_MAP_TYPE_PROG_ARRAY, u32, u32, _max_entries);
+
+#define BPF_PERF_OUTPUT(_name) \
+BPF_MAP(_name, BPF_MAP_TYPE_PERF_EVENT_ARRAY, int, __u32, 1024);
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
 #error Minimal required kernel version is 4.14
@@ -186,7 +218,7 @@ struct mount {
 /*=================================== MAPS =====================================*/
 
 BPF_HASH(config_map, u32, u32);                     // Various configurations
-BPF_HASH(chosen_events_map, u32, u32);              // Various configurations
+BPF_HASH(chosen_events_map, u32, u32);              // Events chosen by the user
 BPF_HASH(pids_map, u32, u32);                       // Save container pid namespaces
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
 BPF_HASH(ret_map, u64, u64);                        // Persist return value to be used in tail calls
@@ -195,6 +227,7 @@ BPF_HASH(sys_32_to_64_map, u32, u32);               // Map 32bit syscalls number
 BPF_HASH(params_types_map, u32, u64);               // Encoded parameters types for event
 BPF_HASH(params_names_map, u32, u64);               // Encoded parameters names for event
 BPF_ARRAY(file_filter, path_filter_t, 3);           // Used to filter vfs_write events
+BPF_ARRAY(string_store, path_filter_t, 1);          // Store strings from userspace
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);         // Percpu global buffer variables
 BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS);       // Holds offsets to bufs respectively
 BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);          // Used to store programs for tail calls
@@ -288,7 +321,7 @@ static __always_inline int get_syscall_ev_id_from_regs()
 
     if (is_x86_compat(task)) {
         // Translate 32bit syscalls to 64bit syscalls (which also represent the event ids)
-        u32 *id_64 = sys_32_to_64_map.lookup(&syscall_nr);
+        u32 *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &syscall_nr);
         if (id_64 == 0)
             return -1;
 
@@ -345,16 +378,16 @@ static __always_inline unsigned long get_vma_flags(struct vm_area_struct *vma)
 
 static inline struct mount *real_mount(struct vfsmount *mnt)
 {
-    return my_container_of(mnt, struct mount, mnt);
+    return container_of(mnt, struct mount, mnt);
 }
 
 /*============================== HELPER FUNCTIONS ==============================*/
 
-static __inline int is_prefix(char *prefix, char *str)
+static __inline int has_prefix(char *prefix, char *str, int n)
 {
     int i;
     #pragma unroll
-    for (i = 0; i < MAX_PATH_PREF_SIZE; prefix++, str++, i++) {
+    for (i = 0; i < n; prefix++, str++, i++) {
         if (!*prefix)
             return 1;
         if (*prefix != *str) {
@@ -369,7 +402,7 @@ static __inline int is_prefix(char *prefix, char *str)
 static __always_inline u32 lookup_pid()
 {
     u32 pid = bpf_get_current_pid_tgid();
-    if (pids_map.lookup(&pid) == 0)
+    if (bpf_map_lookup_elem(&pids_map, &pid) == 0)
         return 0;
 
     return pid;
@@ -379,7 +412,7 @@ static __always_inline u32 lookup_pid_ns(struct task_struct *task)
 {
     u32 task_pid_ns = get_task_pid_ns_id(task);
 
-    u32 *pid_ns = pids_map.lookup(&task_pid_ns);
+    u32 *pid_ns = bpf_map_lookup_elem(&pids_map, &task_pid_ns);
     if (pid_ns == 0)
         return 0;
 
@@ -388,14 +421,14 @@ static __always_inline u32 lookup_pid_ns(struct task_struct *task)
 
 static __always_inline void add_pid_fork(u32 pid)
 {
-    pids_map.update(&pid, &pid);
+    bpf_map_update_elem(&pids_map, &pid, &pid, BPF_ANY);
 }
 
 static __always_inline u32 add_pid()
 {
     u32 pid = bpf_get_current_pid_tgid();
-    if (pids_map.lookup(&pid) == 0)
-        pids_map.update(&pid, &pid);
+    if (bpf_map_lookup_elem(&pids_map, &pid) == 0)
+        bpf_map_update_elem(&pids_map, &pid, &pid, BPF_ANY);
 
     return pid;
 }
@@ -406,14 +439,14 @@ static __always_inline u32 add_pid_ns_if_needed()
     task = (struct task_struct *)bpf_get_current_task();
 
     u32 pid_ns = get_task_pid_ns_id(task);
-    if (pids_map.lookup(&pid_ns) != 0)
+    if (bpf_map_lookup_elem(&pids_map, &pid_ns) != 0)
         // Container pidns was already added to map
         return pid_ns;
 
     // If pid equals 1 - start tracing the container
     if (get_task_ns_pid(task) == 1) {
         // A new container/pod was started - add pid namespace to map
-        pids_map.update(&pid_ns, &pid_ns);
+        bpf_map_update_elem(&pids_map, &pid_ns, &pid_ns, BPF_ANY);
         return pid_ns;
     }
 
@@ -424,8 +457,8 @@ static __always_inline u32 add_pid_ns_if_needed()
 static __always_inline void remove_pid()
 {
     u32 pid = bpf_get_current_pid_tgid();
-    if (pids_map.lookup(&pid) != 0)
-        pids_map.delete(&pid);
+    if (bpf_map_lookup_elem(&pids_map, &pid) != 0)
+        bpf_map_delete_elem(&pids_map, &pid);
 }
 
 static __always_inline void remove_pid_ns_if_needed()
@@ -434,17 +467,17 @@ static __always_inline void remove_pid_ns_if_needed()
     task = (struct task_struct *)bpf_get_current_task();
 
     u32 pid_ns = get_task_pid_ns_id(task);
-    if (pids_map.lookup(&pid_ns) != 0) {
+    if (bpf_map_lookup_elem(&pids_map, &pid_ns) != 0) {
         // If pid equals 1 - stop tracing this pid namespace
         if (get_task_ns_pid(task) == 1) {
-            pids_map.delete(&pid_ns);
+            bpf_map_delete_elem(&pids_map, &pid_ns);
         }
     }
 }
 
 static __always_inline int get_config(u32 key)
 {
-    u32 *config = config_map.lookup(&key);
+    u32 *config = bpf_map_lookup_elem(&config_map, &key);
 
     if (config == NULL)
         return 0;
@@ -483,7 +516,7 @@ static __always_inline int should_trace()
 
 static __always_inline int event_chosen(u32 key)
 {
-    u32 *config = chosen_events_map.lookup(&key);
+    u32 *config = bpf_map_lookup_elem(&chosen_events_map, &key);
     if (config == NULL)
         return 0;
 
@@ -518,17 +551,17 @@ static __always_inline int init_context(context_t *context)
 
 static __always_inline buf_t* get_buf(int idx)
 {
-    return bufs.lookup(&idx);
+    return bpf_map_lookup_elem(&bufs, &idx);
 }
 
 static __always_inline void set_buf_off(int buf_idx, u32 new_off)
 {
-    bufs_off.update(&buf_idx, &new_off);
+    bpf_map_update_elem(&bufs_off, &buf_idx, &new_off, BPF_ANY);
 }
 
 static __always_inline u32* get_buf_off(int buf_idx)
 {
-    return bufs_off.lookup(&buf_idx);
+    return bpf_map_lookup_elem(&bufs_off, &buf_idx);
 }
 
 // Context will always be at the start of the submission buffer
@@ -578,16 +611,18 @@ static __always_inline int save_to_submit_buf(buf_t *submit_p, void *ptr, u32 si
 
     *off += 1;
 
-    // Save argument tag
-    if (tag != TAG_NONE) {
-        rc = bpf_probe_read(&(submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)]), 1, &tag);
-        if (rc != 0) {
-            *off -= 1;
-            return 0;
-        }
+    if (*off > MAX_PERCPU_BUFSIZE - MAX_ELEMENT_SIZE)
+        // Satisfy validator for probe read
+        return 0;
 
-        *off += 1;
+    // Save argument tag
+    rc = bpf_probe_read(&(submit_p->buf[*off]), 1, &tag);
+    if (rc != 0) {
+        *off -= 1;
+        return 0;
     }
+    *off += 1;
+
     if (*off > MAX_PERCPU_BUFSIZE - MAX_ELEMENT_SIZE) {
         // Satisfy validator for probe read
         *off -= 2;
@@ -790,7 +825,7 @@ static __always_inline int save_file_path_to_str_buf(buf_t *string_p, struct fil
         // memfd files have no path in the filesystem -> extract their name
         buf_off = 0;
         struct qstr d_name = get_d_name_from_dentry(dentry);
-        int sz = bpf_probe_read_str(&(string_p->buf[0]), MAX_STRING_SIZE, (void *)d_name.name);
+        bpf_probe_read_str(&(string_p->buf[0]), MAX_STRING_SIZE, (void *)d_name.name);
     } else {
         // Add leading slash
         buf_off -= 1;
@@ -815,7 +850,7 @@ static __always_inline int events_perf_submit(void *ctx)
     /* satisfy validator by setting buffer bounds */
     int size = ((*off - 1) & (MAX_PERCPU_BUFSIZE-1)) + 1;
     void * data = submit_p->buf;
-    return events.perf_submit(ctx, data, size);
+    return bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, data, size);
 }
 
 static __always_inline int is_container()
@@ -831,7 +866,7 @@ static __always_inline int save_args(args_t *args, u32 event_id)
     u64 id = event_id;
     u32 tid = bpf_get_current_pid_tgid();
     id = id << 32 | tid;
-    args_map.update(&id, args);
+    bpf_map_update_elem(&args_map, &id, args, BPF_ANY);
 
     return 0;
 }
@@ -867,7 +902,7 @@ static __always_inline int load_args(args_t *args, bool delete, u32 event_id)
     u64 id = event_id;
     id = id << 32 | tid;
 
-    saved_args = args_map.lookup(&id);
+    saved_args = bpf_map_lookup_elem(&args_map, &id);
     if (saved_args == 0) {
         // missed entry or not a container
         return -1;
@@ -881,7 +916,7 @@ static __always_inline int load_args(args_t *args, bool delete, u32 event_id)
     args->args[5] = saved_args->args[5];
 
     if (delete)
-        args_map.delete(&id);
+        bpf_map_delete_elem(&args_map, &id);
 
     return 0;
 }
@@ -892,7 +927,7 @@ static __always_inline int del_args(u32 event_id)
     u64 id = event_id;
     id = id << 32 | tid;
 
-    args_map.delete(&id);
+    bpf_map_delete_elem(&args_map, &id);
 
     return 0;
 }
@@ -903,7 +938,7 @@ static __always_inline int save_retval(u64 retval, u32 event_id)
     u32 tid = bpf_get_current_pid_tgid();
     id = id << 32 | tid;
 
-    ret_map.update(&id, &retval);
+    bpf_map_update_elem(&ret_map, &id, &retval, BPF_ANY);
 
     return 0;
 }
@@ -914,14 +949,14 @@ static __always_inline int load_retval(u64 *retval, u32 event_id)
     u32 tid = bpf_get_current_pid_tgid();
     id = id << 32 | tid;
 
-    u64 *saved_retval = ret_map.lookup(&id);
+    u64 *saved_retval = bpf_map_lookup_elem(&ret_map, &id);
     if (saved_retval == 0) {
         // missed entry or not traced
         return -1;
     }
 
     *retval = *saved_retval;
-    ret_map.delete(&id);
+    bpf_map_delete_elem(&ret_map, &id);
 
     return 0;
 }
@@ -932,7 +967,7 @@ static __always_inline int del_retval(u32 event_id)
     u32 tid = bpf_get_current_pid_tgid();
     id = id << 32 | tid;
 
-    ret_map.delete(&id);
+    bpf_map_delete_elem(&ret_map, &id);
 
     return 0;
 }
@@ -1070,11 +1105,18 @@ int trace_ret_##name(void *ctx)                                         \
 
 /*============================== SYSCALL HOOKS ==============================*/
 
+struct trace_event_raw_sys_enter {
+  unsigned long long unused;
+  long int id;
+  long unsigned int args[6];
+};
+
 // include/trace/events/syscalls.h:
 // TP_PROTO(struct pt_regs *regs, long id)
+SEC("raw_tracepoint/sys_enter")
 int tracepoint__raw_syscalls__sys_enter(
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
-struct tracepoint__raw_syscalls__sys_enter *args
+struct trace_event_raw_sys_enter *args
 #else
 struct bpf_raw_tracepoint_args *ctx
 #endif
@@ -1109,7 +1151,7 @@ struct bpf_raw_tracepoint_args *ctx
 
     if (is_x86_compat(task)) {
         // Translate 32bit syscalls to 64bit syscalls so we can send to the correct handler
-        u32 *id_64 = sys_32_to_64_map.lookup(&id);
+        u32 *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &id);
         if (id_64 == 0)
             return 0;
 
@@ -1138,7 +1180,7 @@ struct bpf_raw_tracepoint_args *ctx
 
         context_t context = init_and_save_context(submit_p, RAW_SYS_ENTER, 1 /*argnum*/, 0 /*ret*/);
 
-        u64 *tags = params_names_map.lookup(&context.eventid);
+        u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
         if (!tags) {
             return -1;
         }
@@ -1154,15 +1196,22 @@ struct bpf_raw_tracepoint_args *ctx
 
     // call syscall handler, if exists
     // enter tail calls should never delete saved args
-    sys_enter_tails.call(ctx, id);
+    bpf_tail_call(ctx, &sys_enter_tails, id);
     return 0;
 }
 
+struct trace_event_raw_sys_exit {
+  unsigned long long unused;
+  long int id;
+  long int ret;
+};
+
 // include/trace/events/syscalls.h:
 // TP_PROTO(struct pt_regs *regs, long ret)
+SEC("raw_tracepoint/sys_exit")
 int tracepoint__raw_syscalls__sys_exit(
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
-struct tracepoint__raw_syscalls__sys_exit *args
+struct trace_event_raw_sys_exit *args
 #else
 struct bpf_raw_tracepoint_args *ctx
 #endif
@@ -1178,13 +1227,13 @@ struct bpf_raw_tracepoint_args *ctx
     ret = args->ret;
 #else
     struct pt_regs *regs = (struct pt_regs*)ctx->args[0];
-    id = regs->orig_ax;
+    id = READ_KERN(regs->orig_ax);
     ret = ctx->args[1];
 #endif
 
     if (is_x86_compat(task)) {
         // Translate 32bit syscalls to 64bit syscalls so we can send to the correct handler
-        u32 *id_64 = sys_32_to_64_map.lookup(&id);
+        u32 *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &id);
         if (id_64 == 0)
             return 0;
 
@@ -1216,7 +1265,7 @@ struct bpf_raw_tracepoint_args *ctx
 
         context_t context = init_and_save_context(submit_p, RAW_SYS_EXIT, 1 /*argnum*/, ret);
 
-        u64 *tags = params_names_map.lookup(&context.eventid);
+        u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
         if (!tags) {
             return -1;
         }
@@ -1230,8 +1279,8 @@ struct bpf_raw_tracepoint_args *ctx
         u64 tags = 0;
         bool submit_event = true;
         if (id != SYS_EXECVE && id != SYS_EXECVEAT) {
-            u64 *saved_types = params_types_map.lookup(&id);
-            u64 *saved_tags = params_names_map.lookup(&id);
+            u64 *saved_types = bpf_map_lookup_elem(&params_types_map, &id);
+            u64 *saved_tags = bpf_map_lookup_elem(&params_names_map, &id);
             if (!saved_types || !saved_tags) {
                 return -1;
             }
@@ -1253,12 +1302,13 @@ struct bpf_raw_tracepoint_args *ctx
     save_args(&saved_args, id);
     save_retval(ret, id);
     // exit tail calls should always delete args and retval before return
-    sys_exit_tails.call(ctx, id);
+    bpf_tail_call(ctx, &sys_exit_tails, id);
     del_retval(id);
     del_args(id);
     return 0;
 }
 
+SEC("raw_tracepoint/sys_execve")
 int syscall__execve(void *ctx)
 {
     args_t args = {};
@@ -1277,7 +1327,7 @@ int syscall__execve(void *ctx)
 
     context_t context = init_and_save_context(submit_p, SYS_EXECVE, 2 /*argnum*/, 0 /*ret*/);
 
-    u64 *tags = params_names_map.lookup(&context.eventid);
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
     if (!tags) {
         return -1;
     }
@@ -1294,6 +1344,7 @@ int syscall__execve(void *ctx)
     return 0;
 }
 
+SEC("raw_tracepoint/sys_execveat")
 int syscall__execveat(void *ctx)
 {
     args_t args = {};
@@ -1312,7 +1363,7 @@ int syscall__execveat(void *ctx)
 
     context_t context = init_and_save_context(submit_p, SYS_EXECVEAT, 4 /*argnum*/, 0 /*ret*/);
 
-    u64 *tags = params_names_map.lookup(&context.eventid);
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
     if (!tags) {
         return -1;
     }
@@ -1333,7 +1384,8 @@ int syscall__execveat(void *ctx)
 
 /*============================== OTHER HOOKS ==============================*/
 
-int trace_do_exit(struct pt_regs *ctx, long code)
+SEC("kprobe/do_exit")
+int BPF_KPROBE(trace_do_exit)
 {
     if (!should_trace())
         return 0;
@@ -1342,6 +1394,8 @@ int trace_do_exit(struct pt_regs *ctx, long code)
     if (submit_p == NULL)
         return 0;
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+
+    long code = PT_REGS_PARM1(ctx);
 
     init_and_save_context(submit_p, DO_EXIT, 0, code);
 
@@ -1354,7 +1408,8 @@ int trace_do_exit(struct pt_regs *ctx, long code)
     return 0;
 }
 
-int trace_security_bprm_check(struct pt_regs *ctx, struct linux_binprm *bprm)
+SEC("kprobe/security_bprm_check")
+int BPF_KPROBE(trace_security_bprm_check)
 {
     if (!should_trace())
         return 0;
@@ -1366,6 +1421,7 @@ int trace_security_bprm_check(struct pt_regs *ctx, struct linux_binprm *bprm)
 
     context_t context = init_and_save_context(submit_p, SECURITY_BPRM_CHECK, 3 /*argnum*/, 0 /*ret*/);
 
+    struct linux_binprm *bprm = (struct linux_binprm *)PT_REGS_PARM1(ctx);
     struct file* file = get_file_ptr_from_bprm(bprm);
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
@@ -1379,7 +1435,7 @@ int trace_security_bprm_check(struct pt_regs *ctx, struct linux_binprm *bprm)
     if (off == NULL)
         return -1;
 
-    u64 *tags = params_names_map.lookup(&context.eventid);
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
     if (!tags) {
         return -1;
     }
@@ -1392,7 +1448,8 @@ int trace_security_bprm_check(struct pt_regs *ctx, struct linux_binprm *bprm)
     return 0;
 }
 
-int trace_security_file_open(struct pt_regs *ctx, struct file *file)
+SEC("kprobe/security_file_open")
+int BPF_KPROBE(trace_security_file_open)
 {
     if (!should_trace())
         return 0;
@@ -1404,6 +1461,7 @@ int trace_security_file_open(struct pt_regs *ctx, struct file *file)
 
     context_t context = init_and_save_context(submit_p, SECURITY_FILE_OPEN, 4 /*argnum*/, 0 /*ret*/);
 
+    struct file *file = (struct file *)PT_REGS_PARM1(ctx);
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
 
@@ -1421,7 +1479,7 @@ int trace_security_file_open(struct pt_regs *ctx, struct file *file)
     if (off == NULL)
         return -1;
 
-    u64 *tags = params_names_map.lookup(&context.eventid);
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
     if (!tags) {
         return -1;
     }
@@ -1435,8 +1493,8 @@ int trace_security_file_open(struct pt_regs *ctx, struct file *file)
     return 0;
 }
 
-int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
-    struct user_namespace *targ_ns, int cap, int cap_opt)
+SEC("kprobe/cap_capable")
+int BPF_KPROBE(trace_cap_capable)
 {
     int audit;
 
@@ -1450,6 +1508,11 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
 
     context_t context = init_and_save_context(submit_p, CAP_CAPABLE, 1 /*argnum*/, 0 /*ret*/);
 
+    //const struct cred *cred = (const struct cred *)PT_REGS_PARM1(ctx);
+    //struct user_namespace *targ_ns = (struct user_namespace *)PT_REGS_PARM2(ctx);
+    int cap = PT_REGS_PARM3(ctx);
+    int cap_opt = PT_REGS_PARM4(ctx);
+
   #ifdef CAP_OPT_NONE
     audit = (cap_opt & 0b10) == 0;
   #else
@@ -1459,7 +1522,7 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
     if (audit == 0)
         return 0;
 
-    u64 *tags = params_names_map.lookup(&context.eventid);
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
     if (!tags) {
         return -1;
     }
@@ -1477,7 +1540,8 @@ int trace_cap_capable(struct pt_regs *ctx, const struct cred *cred,
     return 0;
 };
 
-int send_bin(struct pt_regs *ctx)
+SEC("kprobe/send_bin")
+int BPF_KPROBE(send_bin)
 {
     // Note: sending the data to the userspace have the following constraints:
     // 1. We need a buffer that we know it's exact size (so we can send chunks of known sizes in BPF)
@@ -1488,7 +1552,7 @@ int send_bin(struct pt_regs *ctx)
     unsigned int chunk_size;
     u64 id = bpf_get_current_pid_tgid();
 
-    bin_args_t *bin_args = bin_args_map.lookup(&id);
+    bin_args_t *bin_args = bpf_map_lookup_elem(&bin_args_map, &id);
     if (bin_args == 0) {
         // missed entry or not traced
         return 0;
@@ -1503,15 +1567,15 @@ int send_bin(struct pt_regs *ctx)
             bpf_probe_read(&io_vec, sizeof(struct iovec), &bin_args->vec[bin_args->iov_idx]);
             bin_args->ptr = io_vec.iov_base;
             bin_args->full_size = io_vec.iov_len;
-            prog_array.call(ctx, TAIL_SEND_BIN);
+            bpf_tail_call(ctx, &prog_array, TAIL_SEND_BIN);
         }
-        bin_args_map.delete(&id);
+        bpf_map_delete_elem(&bin_args_map, &id);
         return 0;
     }
 
     buf_t *file_buf_p = get_buf(FILE_BUF_IDX);
     if (file_buf_p == NULL) {
-        bin_args_map.delete(&id);
+        bpf_map_delete_elem(&bin_args_map, &id);
         return 0;
     }
 
@@ -1553,7 +1617,7 @@ int send_bin(struct pt_regs *ctx)
         bin_args->ptr += F_CHUNK_SIZE;
         bin_args->start_off += F_CHUNK_SIZE;
 
-        file_writes.perf_submit(ctx, data, F_CHUNK_OFF+F_CHUNK_SIZE);
+        bpf_perf_event_output(ctx, &file_writes, BPF_F_CURRENT_CPU, data, F_CHUNK_OFF+F_CHUNK_SIZE);
     }
 
     chunk_size = bin_args->full_size - i*F_CHUNK_SIZE;
@@ -1561,8 +1625,8 @@ int send_bin(struct pt_regs *ctx)
     if (chunk_size > F_CHUNK_SIZE) {
         // Handle the rest of the write recursively
         bin_args->full_size = chunk_size;
-        prog_array.call(ctx, TAIL_SEND_BIN);
-        bin_args_map.delete(&id);
+        bpf_tail_call(ctx, &prog_array, TAIL_SEND_BIN);
+        bpf_map_delete_elem(&bin_args_map, &id);
         return 0;
     }
 
@@ -1574,7 +1638,7 @@ int send_bin(struct pt_regs *ctx)
 
     // Satisfy validator by setting buffer bounds
     int size = ((F_CHUNK_OFF+chunk_size-1) & (MAX_PERCPU_BUFSIZE - 1)) + 1;
-    file_writes.perf_submit(ctx, data, size);
+    bpf_perf_event_output(ctx, &file_writes, BPF_F_CURRENT_CPU, data, size);
 
     // We finished writing an element of the vector - continue to next element
     bin_args->iov_idx++;
@@ -1584,10 +1648,10 @@ int send_bin(struct pt_regs *ctx)
         bpf_probe_read(&io_vec, sizeof(struct iovec), &bin_args->vec[bin_args->iov_idx]);
         bin_args->ptr = io_vec.iov_base;
         bin_args->full_size = io_vec.iov_len;
-        prog_array.call(ctx, TAIL_SEND_BIN);
+        bpf_tail_call(ctx, &prog_array, TAIL_SEND_BIN);
     }
 
-    bin_args_map.delete(&id);
+    bpf_map_delete_elem(&bin_args_map, &id);
     return 0;
 }
 
@@ -1616,7 +1680,7 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
     #pragma unroll
     for (int i = 0; i < 3; i++) {
         int idx = i;
-        path_filter_t *filter_p = file_filter.lookup(&idx);
+        path_filter_t *filter_p = bpf_map_lookup_elem(&file_filter, &idx);
         if (filter_p == NULL)
             return -1;
 
@@ -1628,8 +1692,8 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
         if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
             break;
 
-        if (filter_p->path[0] && is_prefix(filter_p->path, &string_p->buf[*off]))
-            prog_array.call(ctx, tail_call_id);
+        if (has_prefix(filter_p->path, &string_p->buf[*off], MAX_PATH_PREF_SIZE))
+            bpf_tail_call(ctx, &prog_array, tail_call_id);
     }
 
     if (has_filter) {
@@ -1639,7 +1703,7 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
     }
 
     // No filter was given - continue
-    prog_array.call(ctx, tail_call_id);
+    bpf_tail_call(ctx, &prog_array, tail_call_id);
     return 0;
 }
 
@@ -1696,7 +1760,7 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
     if (start_pos != 0)
         start_pos -= PT_REGS_RC(ctx);
 
-    u64 *tags = params_names_map.lookup(&context.eventid);
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
     if (!tags) {
         return -1;
     }
@@ -1715,9 +1779,17 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
 
     u64 id = bpf_get_current_pid_tgid();
     u32 pid = context.pid;
+
+    int idx = DEV_NULL_STR;
+    path_filter_t *stored_str_p = bpf_map_lookup_elem(&string_store, &idx);
+    if (stored_str_p == NULL)
+        return -1;
+
     if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
         return -1;
-    if (!is_prefix("/dev/null", &string_p->buf[*off]))
+
+    // check for /dev/null
+    if (!has_prefix(stored_str_p->path, &string_p->buf[*off], 10))
         pid = 0;
 
     if (get_config(CONFIG_CAPTURE_FILES)) {
@@ -1741,39 +1813,46 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
                 bin_args.full_size = io_vec.iov_len;
             }
         }
-        bin_args_map.update(&id, &bin_args);
+        bpf_map_update_elem(&bin_args_map, &id, &bin_args, BPF_ANY);
 
         // Send file data
-        prog_array.call(ctx, TAIL_SEND_BIN);
+        bpf_tail_call(ctx, &prog_array, TAIL_SEND_BIN);
     }
     return 0;
 }
 
+SEC("kprobe/vfs_write")
 TRACE_ENT_FUNC(vfs_write, VFS_WRITE);
 
-int trace_ret_vfs_write(struct pt_regs *ctx)
+SEC("kretprobe/vfs_write")
+int BPF_KPROBE(trace_ret_vfs_write)
 {
     return do_vfs_write_writev(ctx, VFS_WRITE, TAIL_VFS_WRITE);
 }
 
-int trace_ret_vfs_write_tail(struct pt_regs *ctx)
+SEC("kretprobe/vfs_write_tail")
+int BPF_KPROBE(trace_ret_vfs_write_tail)
 {
     return do_vfs_write_writev_tail(ctx, VFS_WRITE);
 }
 
+SEC("kprobe/vfs_writev")
 TRACE_ENT_FUNC(vfs_writev, VFS_WRITEV);
 
-int trace_ret_vfs_writev(struct pt_regs *ctx)
+SEC("kretprobe/vfs_writev")
+int BPF_KPROBE(trace_ret_vfs_writev)
 {
     return do_vfs_write_writev(ctx, VFS_WRITEV, TAIL_VFS_WRITEV);
 }
 
-int trace_ret_vfs_writev_tail(struct pt_regs *ctx)
+SEC("kretprobe/vfs_writev_tail")
+int BPF_KPROBE(trace_ret_vfs_writev_tail)
 {
     return do_vfs_write_writev_tail(ctx, VFS_WRITEV);
 }
 
-int trace_mmap_alert(struct pt_regs *ctx)
+SEC("kprobe/security_mmap_addr")
+int BPF_KPROBE(trace_mmap_alert)
 {
     args_t args = {};
 
@@ -1789,7 +1868,7 @@ int trace_mmap_alert(struct pt_regs *ctx)
 
     context_t context = init_and_save_context(submit_p, MEM_PROT_ALERT, 1 /*argnum*/, 0 /*ret*/);
 
-    u64 *tags = params_names_map.lookup(&context.eventid);
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
     if (!tags) {
         return -1;
     }
@@ -1803,7 +1882,8 @@ int trace_mmap_alert(struct pt_regs *ctx)
     return 0;
 }
 
-int trace_mprotect_alert(struct pt_regs *ctx, struct vm_area_struct *vma, unsigned long reqprot, unsigned long prot)
+SEC("kprobe/security_file_mprotect")
+int BPF_KPROBE(trace_mprotect_alert)
 {
     args_t args = {};
     bin_args_t bin_args = {};
@@ -1812,6 +1892,10 @@ int trace_mprotect_alert(struct pt_regs *ctx, struct vm_area_struct *vma, unsign
     bool delete_args = false;
     if (load_args(&args, delete_args, SYS_MPROTECT) != 0)
         return 0;
+
+    struct vm_area_struct *vma = (struct vm_area_struct *)PT_REGS_PARM1(ctx);
+    unsigned long reqprot = PT_REGS_PARM2(ctx);
+    //unsigned long prot = PT_REGS_PARM3(ctx);
 
     void *addr = (void*)args.args[0];
     size_t len = args.args[1];
@@ -1831,7 +1915,7 @@ int trace_mprotect_alert(struct pt_regs *ctx, struct vm_area_struct *vma, unsign
 
     context_t context = init_and_save_context(submit_p, MEM_PROT_ALERT, 1 /*argnum*/, 0 /*ret*/);
 
-    u64 *tags = params_names_map.lookup(&context.eventid);
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
     if (!tags) {
         return -1;
     }
@@ -1867,10 +1951,13 @@ int trace_mprotect_alert(struct pt_regs *ctx, struct vm_area_struct *vma, unsign
             bin_args.full_size = len;
 
             u64 id = bpf_get_current_pid_tgid();
-            bin_args_map.update(&id, &bin_args);
-            prog_array.call(ctx, TAIL_SEND_BIN);
+            bpf_map_update_elem(&bin_args_map, &id, &bin_args, BPF_ANY);
+            bpf_tail_call(ctx, &prog_array, TAIL_SEND_BIN);
         }
     }
 
     return 0;
 }
+
+char LICENSE[] SEC("license") = "GPL";
+int KERNEL_VERSION SEC("version") = LINUX_VERSION_CODE;

@@ -16,7 +16,7 @@ import (
 	"sync/atomic"
 	"syscall"
 
-	bpf "github.com/iovisor/gobpf/bcc"
+	bpf "github.com/aquasecurity/tracee/bpfwrap"
 )
 
 // TraceeConfig is a struct containing user defined configuration of tracee
@@ -107,8 +107,8 @@ type Tracee struct {
 	config        TraceeConfig
 	eventsToTrace map[int32]bool
 	bpfModule     *bpf.Module
-	eventsPerfMap *bpf.PerfMap
-	fileWrPerfMap *bpf.PerfMap
+	eventsPerfMap *bpf.PerfBuffer
+	fileWrPerfMap *bpf.PerfBuffer
 	eventsChannel chan []byte
 	fileWrChannel chan []byte
 	lostEvChannel chan uint64
@@ -377,24 +377,65 @@ func (t *Tracee) initEventsParams() map[int32][]eventParam {
 func (t *Tracee) initBPF(ebpfProgram string) error {
 	var err error
 
-	t.bpfModule = bpf.NewModule(ebpfProgram, []string{})
-
-	chosenEvents := bpf.NewTable(t.bpfModule.TableId("chosen_events_map"), t.bpfModule)
-	key := make([]byte, 4)
-	leaf := make([]byte, 4)
-	for e, _ := range t.eventsToTrace {
-		// Set chosen events map according to events chosen by the user
-		binary.LittleEndian.PutUint32(key, uint32(e))
-		binary.LittleEndian.PutUint32(leaf, boolToUInt32(true))
-		chosenEvents.Set(key, leaf)
+	// todo: update docker image to use new approach
+	// todo: search for object file in output path first
+	// todo: compile ebpfProgram with clang if object file wasn't found
+	// todo: add install target to makefile for installing bpf object file
+	// todo: don't load all programs during init - only requested ones
+	// todo: organize init as follows:
+	//       1. Open bpf object,
+	//       2. Get requested functions (including essential events),
+	//       3. Set program types and autoload,
+	//       4. Load bpf object,
+	//       5. Populate maps with values,
+	//       6. Attach probes,
+	//       7. Initialize perf buffers
+	t.bpfModule, err = bpf.NewModule(".output/event_monitor_ebpf.o")
+	if err != nil {
+		return err
 	}
 
-	sys32to64BPFTable := bpf.NewTable(t.bpfModule.TableId("sys_32_to_64_map"), t.bpfModule)
+	supportRawTracepoints, err := supportRawTP()
+	if err != nil {
+		return fmt.Errorf("Failed to find kernel version: %v", err)
+	}
+
+	// BpfLoadObject() will automatically load all bpf programs according to their section type
+	// As kernels < 4.17 don't support raw tracepoints, set these program types to "regular" tracepoint
+	if !supportRawTracepoints {
+		for _, event := range EventsIDToEvent {
+			for _, probe := range event.Probes {
+				var prog *bpf.BpfProg
+				if probe.attach == rawTracepoint {
+					prog, _ = t.bpfModule.GetProgram(probe.fn)
+				} else if probe.attach == sysCall {
+					prog, _ = t.bpfModule.GetProgram(fmt.Sprintf("syscall__%s", probe.fn))
+				}
+				if prog != nil {
+					err = prog.SetTracepoint()
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+
+	err = t.bpfModule.BpfLoadObject()
+	if err != nil {
+		return err
+	}
+
+	chosenEventsMap, _ := t.bpfModule.GetMap("chosen_events_map")
+	for e, _ := range t.eventsToTrace {
+		// Set chosen events map according to events chosen by the user
+		chosenEventsMap.Update(e, boolToUInt32(true))
+	}
+
+	sys32to64BPFMap, _ := t.bpfModule.GetMap("sys_32_to_64_map")
 	for id, event := range EventsIDToEvent {
 		// Prepare 32bit to 64bit syscall number mapping
-		binary.LittleEndian.PutUint32(key, uint32(event.ID32Bit))
-		binary.LittleEndian.PutUint32(leaf, uint32(event.ID))
-		sys32to64BPFTable.Set(key, leaf)
+		sys32to64BPFMap.Update(event.ID32Bit, event.ID)
 
 		// Compile final list of events to trace including essential events
 		// If an essential event was not requested by the user, set its map value to false
@@ -405,14 +446,10 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 
 	eventsParams := t.initEventsParams()
 
-	supportRawTracepoints, err := supportRawTP()
-	if err != nil {
-		return fmt.Errorf("Failed to find kernel version: %v", err)
-	}
-	sysEnterTailsBPFTable := bpf.NewTable(t.bpfModule.TableId("sys_enter_tails"), t.bpfModule)
-	//sysExitTailsBPFTable := bpf.NewTable(t.bpfModule.TableId("sys_exit_tails"), t.bpfModule)
-	paramsTypesBPFTable := bpf.NewTable(t.bpfModule.TableId("params_types_map"), t.bpfModule)
-	paramsNamesBPFTable := bpf.NewTable(t.bpfModule.TableId("params_names_map"), t.bpfModule)
+	sysEnterTailsBPFMap, _ := t.bpfModule.GetMap("sys_enter_tails")
+	//sysExitTailsBPFMap := t.bpfModule.GetMap("sys_exit_tails")
+	paramsTypesBPFMap, _ := t.bpfModule.GetMap("params_types_map")
+	paramsNamesBPFMap, _ := t.bpfModule.GetMap("params_names_map")
 	for e, _ := range t.eventsToTrace {
 		params := eventsParams[e]
 		var paramsTypes uint64
@@ -421,13 +458,8 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 			paramsTypes = paramsTypes | (uint64(param.encType) << (8 * n))
 			paramsNames = paramsNames | (uint64(param.encName) << (8 * n))
 		}
-		leaf := make([]byte, 8)
-		binary.LittleEndian.PutUint32(key, uint32(e))
-		binary.LittleEndian.PutUint64(leaf, paramsTypes)
-		paramsTypesBPFTable.Set(key, leaf)
-		binary.LittleEndian.PutUint32(key, uint32(e))
-		binary.LittleEndian.PutUint64(leaf, paramsNames)
-		paramsNamesBPFTable.Set(key, leaf)
+		paramsTypesBPFMap.Update(e, paramsTypes)
+		paramsNamesBPFMap.Update(e, paramsNames)
 
 		event, ok := EventsIDToEvent[e]
 		if !ok {
@@ -440,62 +472,57 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 			}
 			if probe.attach == sysCall {
 				if e == ExecveEventID || e == ExecveatEventID {
-					var tp int
 					// execve functions require tail call on syscall enter as they perform extra work
-					if supportRawTracepoints {
-						tp, err = t.bpfModule.LoadRawTracepoint(fmt.Sprintf("syscall__%s", probe.fn))
-					} else {
-						tp, err = t.bpfModule.LoadTracepoint(fmt.Sprintf("syscall__%s", probe.fn))
-					}
+					prog, err := t.bpfModule.GetProgram(fmt.Sprintf("syscall__%s", probe.fn))
 					if err != nil {
-						return fmt.Errorf("error loading kprobe %s: %v", probe.fn, err)
+						return fmt.Errorf("error loading BPF program %s: %v", probe.fn, err)
 					}
-					binary.LittleEndian.PutUint32(key, uint32(e))
-					binary.LittleEndian.PutUint32(leaf, uint32(tp))
-					sysEnterTailsBPFTable.Set(key, leaf)
+					sysEnterTailsBPFMap.Update(e, int32(prog.GetFd()))
 				}
 				continue
 			}
 			if probe.attach == kprobe {
-				kp, err := t.bpfModule.LoadKprobe(probe.fn)
+				prog, err := t.bpfModule.GetProgram(probe.fn)
 				if err != nil {
 					return fmt.Errorf("error loading kprobe %s: %v", probe.fn, err)
 				}
-				err = t.bpfModule.AttachKprobe(probe.event, kp, -1)
+				// todo: after updating minimal kernel version to 4.18, use without legacy
+				_, err = prog.AttachKprobeLegacy(probe.event)
 				if err != nil {
 					return fmt.Errorf("error attaching kprobe %s: %v", probe.event, err)
 				}
 				continue
 			}
 			if probe.attach == kretprobe {
-				kp, err := t.bpfModule.LoadKprobe(probe.fn)
+				prog, err := t.bpfModule.GetProgram(probe.fn)
 				if err != nil {
 					return fmt.Errorf("error loading kprobe %s: %v", probe.fn, err)
 				}
-				err = t.bpfModule.AttachKretprobe(probe.event, kp, -1)
+				// todo: after updating minimal kernel version to 4.18, use without legacy
+				_, err = prog.AttachKretprobeLegacy(probe.event)
 				if err != nil {
 					return fmt.Errorf("error attaching kretprobe %s: %v", probe.event, err)
 				}
 				continue
 			}
 			if probe.attach == tracepoint {
-				tp, err := t.bpfModule.LoadTracepoint(probe.fn)
+				prog, err := t.bpfModule.GetProgram(probe.fn)
 				if err != nil {
 					return fmt.Errorf("error loading tracepoint %s: %v", probe.fn, err)
 				}
-				err = t.bpfModule.AttachTracepoint(probe.event, tp)
+				_, err = prog.AttachTracepoint(probe.event)
 				if err != nil {
 					return fmt.Errorf("error attaching tracepoint %s: %v", probe.event, err)
 				}
 				continue
 			}
 			if probe.attach == rawTracepoint {
-				tp, err := t.bpfModule.LoadRawTracepoint(probe.fn)
+				prog, err := t.bpfModule.GetProgram(probe.fn)
 				if err != nil {
 					return fmt.Errorf("error loading raw tracepoint %s: %v", probe.fn, err)
 				}
 				tpEvent := strings.Split(probe.event, ":")[1]
-				err = t.bpfModule.AttachRawTracepoint(tpEvent, tp)
+				_, err = prog.AttachRawTracepoint(tpEvent)
 				if err != nil {
 					return fmt.Errorf("error attaching raw tracepoint %s: %v", tpEvent, err)
 				}
@@ -504,80 +531,60 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 		}
 	}
 
-	bpfConfig := bpf.NewTable(t.bpfModule.TableId("config_map"), t.bpfModule)
+	// Initialize config and pids maps
+	bpfConfigMap, _ := t.bpfModule.GetMap("config_map")
+	bpfConfigMap.Update(uint32(configMode), t.config.Mode)
+	bpfConfigMap.Update(uint32(configDetectOrigSyscall), boolToUInt32(t.config.DetectOriginalSyscall))
+	bpfConfigMap.Update(uint32(configExecEnv), boolToUInt32(t.config.ShowExecEnv))
+	bpfConfigMap.Update(uint32(configCaptureFiles), boolToUInt32(t.config.CaptureWrite))
+	bpfConfigMap.Update(uint32(configExtractDynCode), boolToUInt32(t.config.CaptureMem))
+	bpfConfigMap.Update(uint32(configTraceePid), uint32(os.Getpid()))
 
-	binary.LittleEndian.PutUint32(key, uint32(configMode))
-	binary.LittleEndian.PutUint32(leaf, t.config.Mode)
-	bpfConfig.Set(key, leaf)
-	binary.LittleEndian.PutUint32(key, uint32(configDetectOrigSyscall))
-	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.DetectOriginalSyscall))
-	bpfConfig.Set(key, leaf)
-	binary.LittleEndian.PutUint32(key, uint32(configExecEnv))
-	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.ShowExecEnv))
-	bpfConfig.Set(key, leaf)
-	binary.LittleEndian.PutUint32(key, uint32(configCaptureFiles))
-	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.CaptureWrite))
-	bpfConfig.Set(key, leaf)
-	binary.LittleEndian.PutUint32(key, uint32(configExtractDynCode))
-	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.CaptureMem))
-	bpfConfig.Set(key, leaf)
-	binary.LittleEndian.PutUint32(key, uint32(configTraceePid))
-	binary.LittleEndian.PutUint32(leaf, uint32(os.Getpid()))
-	bpfConfig.Set(key, leaf)
-
-	pidsMap := bpf.NewTable(t.bpfModule.TableId("pids_map"), t.bpfModule)
+	pidsMap, _ := t.bpfModule.GetMap("pids_map")
 	for _, pid := range t.config.PidsToTrace {
-		binary.LittleEndian.PutUint32(key, uint32(pid))
-		binary.LittleEndian.PutUint32(leaf, uint32(pid))
-		pidsMap.Set(key, leaf)
+		pidsMap.Update(uint32(pid), uint32(pid))
 	}
 
-	// Load send_bin function to prog_array to be used as tail call
-	progArrayBPFTable := bpf.NewTable(t.bpfModule.TableId("prog_array"), t.bpfModule)
-	binary.LittleEndian.PutUint32(key, tailVfsWrite)
-	kp, err := t.bpfModule.LoadKprobe("trace_ret_vfs_write_tail")
+	// Initialize tail calls program array
+	bpfProgArrayMap, _ := t.bpfModule.GetMap("prog_array")
+	prog, err := t.bpfModule.GetProgram("trace_ret_vfs_write_tail")
 	if err != nil {
-		return fmt.Errorf("error loading function trace_ret_vfs_write_tail: %v", err)
+		return fmt.Errorf("error getting BPF program trace_ret_vfs_write_tail: %v", err)
 	}
-	binary.LittleEndian.PutUint32(leaf, uint32(kp))
-	progArrayBPFTable.Set(key, leaf)
+	bpfProgArrayMap.Update(uint32(tailVfsWrite), uint32(prog.GetFd()))
 
-	binary.LittleEndian.PutUint32(key, tailVfsWritev)
-	kp, err = t.bpfModule.LoadKprobe("trace_ret_vfs_writev_tail")
+	prog, err = t.bpfModule.GetProgram("trace_ret_vfs_writev_tail")
 	if err != nil {
-		return fmt.Errorf("error loading function trace_ret_vfs_writev_tail: %v", err)
+		return fmt.Errorf("error getting BPF program trace_ret_vfs_writev_tail: %v", err)
 	}
-	binary.LittleEndian.PutUint32(leaf, uint32(kp))
-	progArrayBPFTable.Set(key, leaf)
+	bpfProgArrayMap.Update(uint32(tailVfsWritev), uint32(prog.GetFd()))
 
-	binary.LittleEndian.PutUint32(key, tailSendBin)
-	kp, err = t.bpfModule.LoadKprobe("send_bin")
+	prog, err = t.bpfModule.GetProgram("send_bin")
 	if err != nil {
-		return fmt.Errorf("error loading function send_bin: %v", err)
+		return fmt.Errorf("error getting BPF program send_bin: %v", err)
 	}
-	binary.LittleEndian.PutUint32(leaf, uint32(kp))
-	progArrayBPFTable.Set(key, leaf)
+	bpfProgArrayMap.Update(uint32(tailSendBin), uint32(prog.GetFd()))
 
 	// Set filters given by the user to filter file write events
-	fileFilterTable := bpf.NewTable(t.bpfModule.TableId("file_filter"), t.bpfModule)
+	fileFilterMap, _ := t.bpfModule.GetMap("file_filter")
 	for i := 0; i < len(t.config.FilterFileWrite); i++ {
-		binary.LittleEndian.PutUint32(key, uint32(i))
-		leaf = []byte(t.config.FilterFileWrite[i])
-		fileFilterTable.Set(key, leaf)
+		fileFilterMap.Update(uint32(i), []byte(t.config.FilterFileWrite[i]))
 	}
 
-	eventsBPFTable := bpf.NewTable(t.bpfModule.TableId("events"), t.bpfModule)
+	stringStoreMap, _ := t.bpfModule.GetMap("string_store")
+	stringStoreMap.Update(uint32(0), []byte("/dev/null"))
+
+	// Initialize perf buffers
 	t.eventsChannel = make(chan []byte, 1000)
 	t.lostEvChannel = make(chan uint64)
-	t.eventsPerfMap, err = bpf.InitPerfMapWithPageCnt(eventsBPFTable, t.eventsChannel, t.lostEvChannel, t.config.PerfBufferSize)
+	t.eventsPerfMap, err = t.bpfModule.InitPerfBuf("events", t.eventsChannel, t.lostEvChannel, t.config.PerfBufferSize)
 	if err != nil {
 		return fmt.Errorf("error initializing events perf map: %v", err)
 	}
 
-	fileWritesBPFTable := bpf.NewTable(t.bpfModule.TableId("file_writes"), t.bpfModule)
 	t.fileWrChannel = make(chan []byte, 1000)
 	t.lostWrChannel = make(chan uint64)
-	t.fileWrPerfMap, err = bpf.InitPerfMapWithPageCnt(fileWritesBPFTable, t.fileWrChannel, t.lostWrChannel, t.config.BlobPerfBufferSize)
+	t.fileWrPerfMap, err = t.bpfModule.InitPerfBuf("file_writes", t.fileWrChannel, t.lostWrChannel, t.config.BlobPerfBufferSize)
 	if err != nil {
 		return fmt.Errorf("error initializing file_writes perf map: %v", err)
 	}
@@ -597,8 +604,8 @@ func (t *Tracee) Run() error {
 	go t.runEventPipeline(done)
 	go t.processFileWrites()
 	<-sig
-	t.eventsPerfMap.Stop() //TODO: should this be in Tracee.Close()?
-	t.fileWrPerfMap.Stop() //TODO: should this be in Tracee.Close()?
+	t.eventsPerfMap.Stop()
+	t.fileWrPerfMap.Stop()
 	t.printer.Epilogue(t.stats)
 	// Signal pipeline that Tracee exits by closing the done channel
 	close(done)
