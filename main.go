@@ -79,7 +79,7 @@ func main() {
 				Name:    "output",
 				Aliases: []string{"o"},
 				Value:   "table",
-				Usage:   "output format: table/table-verbose/json/gob",
+				Usage:   "output format: table/table-verbose/json/gob/go-template=<path>",
 			},
 			&cli.StringSliceFlag{
 				Name:    "event",

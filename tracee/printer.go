@@ -4,11 +4,16 @@ import (
 	"bytes"
 	"encoding/gob"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"strings"
+	"text/template"
 )
 
 type eventPrinter interface {
+	// Init serves as the initializer method for every event Printer type
+	Init() error
 	// Preamble prints something before event printing begins (one time)
 	Preamble()
 	// Epilogue prints something after event printing ends (one time)
@@ -19,35 +24,47 @@ type eventPrinter interface {
 	Error(err error)
 }
 
-func newEventPrinter(kind string, containerMode bool, out io.Writer, err io.Writer) eventPrinter {
+func newEventPrinter(kind string, containerMode bool, out io.Writer, err io.Writer) (eventPrinter, error) {
 	var res eventPrinter
-	switch kind {
-	case "table":
+	var initError error
+	switch {
+	case kind == "table":
 		res = &tableEventPrinter{
 			out:           out,
 			err:           err,
 			verbose:       false,
 			containerMode: containerMode,
 		}
-	case "table-verbose":
+	case kind == "table-verbose":
 		res = &tableEventPrinter{
 			out:           out,
 			err:           err,
 			verbose:       true,
 			containerMode: containerMode,
 		}
-	case "json":
+	case kind == "json":
 		res = &jsonEventPrinter{
 			out: out,
 			err: err,
 		}
-	case "gob":
+	case kind == "gob":
 		res = &gobEventPrinter{
 			out: gob.NewEncoder(out),
 			err: gob.NewEncoder(err),
 		}
+	case strings.HasPrefix(kind, "go-template="):
+		res = &templateEventPrinter{
+			out:           out,
+			err:           err,
+			containerMode: containerMode,
+			templatePath: strings.Split(kind, "=")[1],
+		}
 	}
-	return res
+	initError = res.Init()
+	if initError != nil {
+		return nil, initError
+	}
+	return res, nil
 }
 
 // Event is a user facing data structure representing a single event
@@ -114,7 +131,8 @@ type tableEventPrinter struct {
 	containerMode bool
 }
 
-func (p tableEventPrinter) Init() {}
+
+func (p tableEventPrinter) Init() (error) { return nil }
 
 func (p tableEventPrinter) Preamble() {
 	if p.verbose {
@@ -167,12 +185,56 @@ func (p tableEventPrinter) Epilogue(stats statsStore) {
 	fmt.Fprintf(p.out, "Stats: %+v\n", stats)
 }
 
+
+type templateEventPrinter struct {
+	tracee        *Tracee
+	out           io.Writer
+	err           io.Writer
+	containerMode bool
+	templatePath  string
+	templateObj   **template.Template
+}
+
+func (p *templateEventPrinter) Init() (error) {
+	tmplPath := p.templatePath
+	if tmplPath != "" {
+		tmpl, err := template.ParseFiles(tmplPath)
+		if err != nil {
+			return err
+		}
+		p.templateObj = &tmpl
+	} else {
+		return errors.New("Please specify a go-template for event-based output")
+	}
+	return nil
+}
+
+func (p templateEventPrinter) Preamble() {}
+
+func (p templateEventPrinter) Error(err error) {
+	fmt.Fprintf(p.err, "%v", err)
+}
+
+
+func (p templateEventPrinter) Print(event Event) {
+	if p.templateObj != nil {
+		err := (*p.templateObj).Execute(p.out, event)
+		if err != nil {
+			p.Error(err)
+		}
+	} else {
+		fmt.Fprintf(p.out, "Template Obj is nil")
+	}	
+}
+
+func (p templateEventPrinter) Epilogue(stats statsStore) {}
+
 type jsonEventPrinter struct {
 	out io.Writer
 	err io.Writer
 }
 
-func (p jsonEventPrinter) Init() {}
+func (p jsonEventPrinter) Init() (error) { return nil }
 
 func (p jsonEventPrinter) Preamble() {}
 
@@ -199,8 +261,7 @@ type gobEventPrinter struct {
 	err *gob.Encoder
 }
 
-func (p *gobEventPrinter) Init() {
-}
+func (p *gobEventPrinter) Init() (error) { return nil }
 
 func (p *gobEventPrinter) Preamble() {}
 
