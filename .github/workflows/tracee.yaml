@@ -1,0 +1,116 @@
+name: tracee
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      CGO_ENABLED: "1"
+
+    steps:
+      - name: setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.15
+        id: go
+
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: install libraries
+        run: |
+          sudo apt-get update
+          sudo apt install -y bison build-essential cmake flex git libedit-dev \
+              libllvm9 llvm-9-dev libclang-9-dev python zlib1g-dev libelf-dev libtinfo5
+          git clone https://github.com/iovisor/bcc.git
+          mkdir bcc/build; cd bcc/build
+          cmake ..
+          make
+          sudo make install
+
+      - name: lint
+        run: |
+          if test -z "$(gofmt -l .)"; then
+            echo "Congrats! There is nothing to fix."
+          else
+            echo "The following lines should be fixed."
+            gofmt -s -d .
+            exit 1
+          fi
+
+      - name: build tracee
+        run: make build
+
+      - name: build docker image
+        run: make build-docker
+
+  test:
+    runs-on: ubuntu-latest
+
+    needs: build
+
+    env:
+      CGO_ENABLED: "1"
+
+    steps:
+      - name: setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.15
+        id: go
+
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: install libraries
+        run: |
+          sudo apt-get update
+          sudo apt install -y bison build-essential cmake flex git libedit-dev \
+              libllvm9 llvm-9-dev libclang-9-dev python zlib1g-dev libelf-dev libtinfo5
+          git clone https://github.com/iovisor/bcc.git
+          mkdir bcc/build; cd bcc/build
+          cmake ..
+          make
+          sudo make install
+
+      - name: run tests
+        run: make test
+
+  release:
+    runs-on: ubuntu-latest
+
+    if: github.ref == 'refs/heads/master'
+
+    needs: test
+
+    env:
+      CGO_ENABLED: "1"
+
+    steps:
+      - name: setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.15
+        id: go
+
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: install libraries
+        run: |
+          sudo apt-get update
+          sudo apt install -y bison build-essential cmake flex git libedit-dev \
+              libllvm9 llvm-9-dev libclang-9-dev python zlib1g-dev libelf-dev libtinfo5
+          git clone https://github.com/iovisor/bcc.git
+          mkdir bcc/build; cd bcc/build
+          cmake ..
+          make
+          sudo make install
+
+      - name: make docker release image
+        run: make docker
+
+      - name: make release
+        run: make release
