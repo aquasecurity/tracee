@@ -786,8 +786,8 @@ static __always_inline int save_file_path_to_str_buf(buf_t *string_p, struct fil
         dentry = d_parent;
     }
 
-    if (buf_off == MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE) {
-	// memfd files have no path in the filesystem -> extract their name
+    if (buf_off == (MAX_PERCPU_BUFSIZE >> 1)) {
+        // memfd files have no path in the filesystem -> extract their name
         buf_off = 0;
         struct qstr d_name = get_d_name_from_dentry(dentry);
         int sz = bpf_probe_read_str(&(string_p->buf[0]), MAX_STRING_SIZE, (void *)d_name.name);
