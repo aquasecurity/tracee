@@ -26,9 +26,11 @@ const (
 type binType uint8
 
 const (
-	modeSystem uint32 = iota
-	modePid
-	modeContainer
+	ModeProcessAll uint32 = iota + 1
+	ModeProcessNew
+	ModeProcessList
+	ModeContainerAll
+	ModeContainerNew
 )
 
 const (
