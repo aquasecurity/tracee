@@ -91,9 +91,11 @@
 #define CONFIG_EXTRACT_DYN_CODE 4
 #define CONFIG_TRACEE_PID       5
 
-#define MODE_SYSTEM     0
-#define MODE_PID        1
-#define MODE_CONTAINER  2
+#define MODE_PROCESS_ALL        1
+#define MODE_PROCESS_NEW        2
+#define MODE_PROCESS_LIST       3
+#define MODE_CONTAINER_ALL      4
+#define MODE_CONTAINER_NEW      5
 
 // re-define container_of as bcc complains
 #define my_container_of(ptr, type, member) ({          \
@@ -453,15 +455,28 @@ static __always_inline int get_config(u32 key)
 static __always_inline int should_trace()
 {
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    int config_mode = get_config(CONFIG_MODE);
+    u32 rc = 0;
+    u32 host_pid = bpf_get_current_pid_tgid() >> 32;
 
-    if (get_config(CONFIG_TRACEE_PID) == bpf_get_current_pid_tgid() >> 32)
+    if (get_config(CONFIG_TRACEE_PID) == host_pid)
         return 0;
 
-    u32 rc = 0;
-    if (get_config(CONFIG_MODE) == MODE_CONTAINER)
+    // All logs all processes except tracee itself
+    if (config_mode == MODE_PROCESS_ALL)
+        return 1;
+    else if (config_mode == MODE_CONTAINER_NEW)
         rc = lookup_pid_ns(task);
-    else
+    else if (config_mode == MODE_PROCESS_NEW || config_mode == MODE_PROCESS_LIST)
         rc = lookup_pid();
+    else if (config_mode == MODE_CONTAINER_ALL) {
+        // 'Container-All' means anything in a container
+        // We can check if we're in a namespace by checking
+        // our PID Vs 'real' PID on host
+        if (get_task_ns_tgid(task) != host_pid) {
+            return 1;
+        }
+    }
 
     return rc;
 }
@@ -1104,11 +1119,12 @@ struct bpf_raw_tracepoint_args *ctx
     // execve events may add new pids to the traced pids set
     // perform this check before should_trace() so newly executed binaries will be traced
     if (id == SYS_EXECVE || id == SYS_EXECVEAT) {
-        int mode = get_config(CONFIG_MODE);
-        if (mode == MODE_CONTAINER)
+        int config_mode = get_config(CONFIG_MODE);
+        if (config_mode == MODE_CONTAINER_NEW) {
             add_pid_ns_if_needed();
-        else if (mode == MODE_SYSTEM)
+        } else if (config_mode == MODE_PROCESS_NEW || config_mode == MODE_PROCESS_ALL) {
             add_pid();
+        }
     }
 
     if (!should_trace())
@@ -1186,7 +1202,7 @@ struct bpf_raw_tracepoint_args *ctx
     // fork events may add new pids to the traced pids set
     // perform this check after should_trace() to only add forked childs of a traced parent
     if (id == SYS_CLONE || id == SYS_FORK || id == SYS_VFORK) {
-        if (get_config(CONFIG_MODE) != MODE_CONTAINER) {
+        if (get_config(CONFIG_MODE) != MODE_CONTAINER_ALL && get_config(CONFIG_MODE) != MODE_CONTAINER_NEW) {
             u32 pid = ret;
             add_pid_fork(pid);
         }
@@ -1329,7 +1345,7 @@ int trace_do_exit(struct pt_regs *ctx, long code)
 
     init_and_save_context(submit_p, DO_EXIT, 0, code);
 
-    if (get_config(CONFIG_MODE) == MODE_CONTAINER)
+    if (get_config(CONFIG_MODE) == MODE_CONTAINER_NEW)
         remove_pid_ns_if_needed();
     else
         remove_pid();
