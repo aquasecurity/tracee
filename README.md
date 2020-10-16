@@ -11,6 +11,8 @@ Tracee is a lightweight and easy to use container and system tracing tool. It al
 
 Other than tracing, Tracee is also capable of capturing files written to disk or memory ("fileless"), and extracting binaries that are dynamically loaded to an application's memory (e.g. when an application uses a packer). With these features, it is possible to quickly gain insights about the running processes that previously required the use of dynamic analysis tools and special knowledge.
 
+Wanna try it out? Well, it's absolutely free.
+
 [Check out this quick demo of tracee](https://youtu.be/WTqE2ae257o)
 
 ## Getting started
@@ -23,7 +25,7 @@ To run, Tracee requires the following:
 - C standard library (currently tested with glibc)
 - [BCC](https://github.com/iovisor/bcc)
 
-### Getting Tracee
+### How to get Tracee?
 
 You can get Tracee in any of the following ways:
 1. Download the binary from the GitHub Releases tab (`tracee.tar.gz`).
