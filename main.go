@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/aquasecurity/tracee/tracee"
@@ -23,21 +24,62 @@ func main() {
 			if c.IsSet("event") && c.IsSet("exclude-event") {
 				return fmt.Errorf("'event' and 'exclude-event' can't be used in parallel")
 			}
-			if c.IsSet("container") && c.IsSet("pid") {
-				return fmt.Errorf("'container' and 'pid' can't be used in parallel")
-			}
 			events, err := prepareEventsToTrace(c.StringSlice("event"), c.StringSlice("events-set"), c.StringSlice("exclude-event"))
 			if err != nil {
 				return err
 			}
+
+			// Set Default mode
+			mode := tracee.ModeProcessNew
+			var pidsToTrace []int
+			if c.IsSet("container-filter") && c.IsSet("pid-filter") {
+				return fmt.Errorf("'container' and 'pid' can't be used in parallel")
+			} else if c.IsSet("container-filter") {
+				// Right now we only support 'new' or not set, but future we may want to
+				// support specific container IDs
+				if c.String("container-filter") != "new" {
+					return fmt.Errorf("Invalid container-filter: %s", c.String("container-filter"))
+				}
+				mode = tracee.ModeContainerNew
+			} else if c.IsSet("pid-filter") {
+				hasExlusiveOption := false
+				hasIDOption := false
+				for _, pidFilter := range c.StringSlice("pid-filter") {
+					if hasExlusiveOption {
+						return fmt.Errorf("pid-filter 'all', 'new', and 'id:<number> are all mutually exclusive")
+					}
+					if pidFilter == "new" || pidFilter == "all" {
+						hasExlusiveOption = true
+						if hasIDOption {
+							return fmt.Errorf("pid-filter 'all', 'new', and 'id:<number> are all mutually exclusive")
+						}
+						if pidFilter == "new" {
+							mode = tracee.ModeProcessNew
+						} else {
+							mode = tracee.ModeProcessAll
+						}
+					} else if pidFilter[:3] == "id:" {
+						hasIDOption = true
+						mode = tracee.ModeProcessList
+						pid, err := strconv.ParseInt(pidFilter[3:], 10, 32)
+						if err != nil {
+							return fmt.Errorf("Invalid pid-filter: 'id' must be a pid number e.g. 'id:123'")
+						}
+						pidsToTrace = append(pidsToTrace, int(pid))
+					} else {
+						return fmt.Errorf("Invalid pid-filter: %s", pidFilter)
+					}
+				}
+			}
+
 			cfg := tracee.TraceeConfig{
 				EventsToTrace:         events,
-				ContainerMode:         c.Bool("container"),
+				Mode:                  mode,
 				DetectOriginalSyscall: c.Bool("detect-original-syscall"),
 				ShowExecEnv:           c.Bool("show-exec-env"),
 				OutputFormat:          c.String("output"),
 				PerfBufferSize:        c.Int("perf-buffer-size"),
-				PidsToTrace:           c.IntSlice("pid"),
+				PidsToTrace:           pidsToTrace,
 				BlobPerfBufferSize:    c.Int("blob-perf-buffer-size"),
 				OutputPath:            c.String("output-path"),
 				FilterFileWrite:       c.StringSlice("filter-file-write"),
@@ -104,17 +146,17 @@ func main() {
 				Value:   false,
 				Usage:   "just list tracable events",
 			},
-			&cli.BoolFlag{
-				Name:    "container",
+			&cli.StringFlag{
+				Name:    "container-filter",
 				Aliases: []string{"c"},
-				Value:   false,
-				Usage:   "trace only containers",
+				Value:   "",
+				Usage:   "container filtering setting. Options are 'new' to trace only new containers. Using this flag will trace only processes inside of containers",
 			},
-			&cli.IntSliceFlag{
-				Name:    "pid",
+			&cli.StringSliceFlag{
+				Name:    "pid-filter",
 				Aliases: []string{"p"},
 				Value:   nil,
-				Usage:   "trace only the specified pid. use this flag multiple times to choose multiple pids",
+				Usage:   "pid filtering setting. Options are: 'new' to trace only new pids (default); 'all' to trace all pids; 'id:<number>' to trace only the specified pid. Use 'id' flag multiple times to choose multiple pids",
 			},
 			&cli.BoolFlag{
 				Name:  "detect-original-syscall",

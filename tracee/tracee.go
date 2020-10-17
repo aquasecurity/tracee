@@ -22,7 +22,7 @@ import (
 // TraceeConfig is a struct containing user defined configuration of tracee
 type TraceeConfig struct {
 	EventsToTrace         []int32
-	ContainerMode         bool
+	Mode                  uint32
 	PidsToTrace           []int
 	DetectOriginalSyscall bool
 	ShowExecEnv           bool
@@ -173,7 +173,8 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	t := &Tracee{
 		config: cfg,
 	}
-	t.printer = newEventPrinter(t.config.OutputFormat, t.config.ContainerMode, t.config.EventsFile, t.config.ErrorsFile)
+	ContainerMode := (t.config.Mode == ModeContainerNew)
+	t.printer = newEventPrinter(t.config.OutputFormat, ContainerMode, t.config.EventsFile, t.config.ErrorsFile)
 	t.eventsToTrace = make(map[int32]bool, len(t.config.EventsToTrace))
 	for _, e := range t.config.EventsToTrace {
 		// Map value is true iff events requested by the user
@@ -505,15 +506,8 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 
 	bpfConfig := bpf.NewTable(t.bpfModule.TableId("config_map"), t.bpfModule)
 
-	mode := modeSystem
-	if t.config.ContainerMode {
-		mode = modeContainer
-	} else if len(t.config.PidsToTrace) > 0 {
-		mode = modePid
-	}
-
 	binary.LittleEndian.PutUint32(key, uint32(configMode))
-	binary.LittleEndian.PutUint32(leaf, mode)
+	binary.LittleEndian.PutUint32(leaf, t.config.Mode)
 	bpfConfig.Set(key, leaf)
 	binary.LittleEndian.PutUint32(key, uint32(configDetectOrigSyscall))
 	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.DetectOriginalSyscall))
