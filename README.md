@@ -21,13 +21,13 @@ To run, Tracee requires the following:
 - Linux kernel version > 4.14
 - Kernel headers
 - C standard library (currently tested with glibc)
-- [BCC](https://github.com/iovisor/bcc)
+- clang (currently tested with version > 10)
 
 ### Getting Tracee
 
 You can get Tracee in any of the following ways:
 1. Download the binary from the GitHub Releases tab (`tracee.tar.gz`).
-2. Use the docker image from Docker Hub: `aquasec/tracee`. The image already includes libc and bcc but you will need to mount the kernel headers in (see below for example).
+2. Use the docker image from Docker Hub: `aquasec/tracee`. The image already includes the required dependencies but you will need to mount the kernel headers in (see below for example).
 3. Build from source, using `make build` (or via Docker using `make build-docker`).
 
 ### Permissions
@@ -37,7 +37,7 @@ If you use the Docker container, you should run it with the `--privileged` flag.
 
 ### Quickstart with Docker
 
-We will use the Tracee Docker image, which includes glibc and BCC. The host that Docker is running on needs to satisfy the other requirements, kernel version and kernel headers. If you use a recent version of Ubuntu, you are good to go as it satisfies those requirements, but any other Linux distribution will work as well.
+We will use the Tracee Docker image, which includes the required dependencies. The host that Docker is running on needs to satisfy the other requirements, kernel version and kernel headers. If you use a recent version of Ubuntu, you are good to go as it satisfies those requirements, but any other Linux distribution will work as well.
 To run Tracee using docker:
 
 ```bash
