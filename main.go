@@ -35,12 +35,15 @@ func main() {
 			if c.IsSet("container-filter") && c.IsSet("pid-filter") {
 				return fmt.Errorf("'container' and 'pid' can't be used in parallel")
 			} else if c.IsSet("container-filter") {
-				// Right now we only support 'new' or not set, but future we may want to
+				// Right now we only support 'new', 'all', or not set, but future we may want to
 				// support specific container IDs
-				if c.String("container-filter") != "new" {
+				if c.String("container-filter") == "all" {
+					mode = tracee.ModeContainerAll
+				} else if c.String("container-filter") == "new" {
+					mode = tracee.ModeContainerNew
+				} else {
 					return fmt.Errorf("Invalid container-filter: %s", c.String("container-filter"))
 				}
-				mode = tracee.ModeContainerNew
 			} else if c.IsSet("pid-filter") {
 				hasExlusiveOption := false
 				hasIDOption := false
@@ -53,10 +56,10 @@ func main() {
 						if hasIDOption {
 							return fmt.Errorf("pid-filter 'all', 'new', and 'id:<number> are all mutually exclusive")
 						}
-						if pidFilter == "new" {
-							mode = tracee.ModeProcessNew
-						} else {
+						if pidFilter == "all" {
 							mode = tracee.ModeProcessAll
+						} else {
+							mode = tracee.ModeProcessNew
 						}
 					} else if pidFilter[:3] == "id:" {
 						hasIDOption = true
@@ -150,7 +153,7 @@ func main() {
 				Name:    "container-filter",
 				Aliases: []string{"c"},
 				Value:   "",
-				Usage:   "container filtering setting. Options are 'new' to trace only new containers. Using this flag will trace only processes inside of containers",
+				Usage:   "container filtering setting. Options are 'new' to trace only new containers; 'all' to trace all presesses inside containers.",
 			},
 			&cli.StringSliceFlag{
 				Name:    "pid-filter",

@@ -94,7 +94,8 @@
 #define MODE_PROCESS_ALL        0
 #define MODE_PROCESS_NEW        1
 #define MODE_PROCESS_LIST       2
-#define MODE_CONTAINER_NEW      3
+#define MODE_CONTAINER_ALL      3
+#define MODE_CONTAINER_NEW      4
 
 // re-define container_of as bcc complains
 #define my_container_of(ptr, type, member) ({          \
@@ -456,8 +457,9 @@ static __always_inline int should_trace()
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
     int config_mode = get_config(CONFIG_MODE);
     u32 rc = 0;
+    u32 host_pid = bpf_get_current_pid_tgid() >> 32;
 
-    if (get_config(CONFIG_TRACEE_PID) == bpf_get_current_pid_tgid() >> 32)
+    if (get_config(CONFIG_TRACEE_PID) == host_pid)
         return 0;
 
     // All logs all processes except tracee itself
@@ -467,6 +469,14 @@ static __always_inline int should_trace()
         rc = lookup_pid_ns(task);
     else if (config_mode == MODE_PROCESS_NEW || config_mode == MODE_PROCESS_LIST)
         rc = lookup_pid();
+    else if (config_mode == MODE_CONTAINER_ALL) {
+        // 'Container-All' means anything in a container
+        // We can check if we're in a namespace by checking
+        // our PID Vs 'real' PID on host
+        if (get_task_ns_tgid(task) != host_pid) {
+            return 1;
+        }
+    }
 
     return rc;
 }
@@ -1191,7 +1201,7 @@ struct bpf_raw_tracepoint_args *ctx
     // fork events may add new pids to the traced pids set
     // perform this check after should_trace() to only add forked childs of a traced parent
     if (id == SYS_CLONE || id == SYS_FORK || id == SYS_VFORK) {
-        if (get_config(CONFIG_MODE) != MODE_CONTAINER_NEW) {
+        if (get_config(CONFIG_MODE) != MODE_CONTAINER_ALL && get_config(CONFIG_MODE) != MODE_CONTAINER_NEW) {
             u32 pid = ret;
             add_pid_fork(pid);
         }

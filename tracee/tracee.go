@@ -173,7 +173,7 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	t := &Tracee{
 		config: cfg,
 	}
-	ContainerMode := (t.config.Mode == ModeContainerNew)
+	ContainerMode := (t.config.Mode == ModeContainerAll || t.config.Mode == ModeContainerNew)
 	t.printer = newEventPrinter(t.config.OutputFormat, ContainerMode, t.config.EventsFile, t.config.ErrorsFile)
 	t.eventsToTrace = make(map[int32]bool, len(t.config.EventsToTrace))
 	for _, e := range t.config.EventsToTrace {
