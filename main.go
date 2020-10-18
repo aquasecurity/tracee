@@ -49,28 +49,26 @@ func main() {
 				hasIDOption := false
 				for _, pidFilter := range c.StringSlice("pid") {
 					if hasExclusiveOption {
-						return fmt.Errorf("pid 'all', 'new', and 'id:<number> are all mutually exclusive")
+						return fmt.Errorf("pid 'all', 'new', and '<process_id>' are all mutually exclusive")
 					}
 					if pidFilter == "new" || pidFilter == "all" {
 						hasExclusiveOption = true
 						if hasIDOption {
-							return fmt.Errorf("pid 'all', 'new', and 'id:<number> are all mutually exclusive")
+							return fmt.Errorf("pid 'all', 'new', and '<process_id>' are all mutually exclusive")
 						}
 						if pidFilter == "all" {
 							mode = tracee.ModeProcessAll
 						} else {
 							mode = tracee.ModeProcessNew
 						}
-					} else if pidFilter[:3] == "id:" {
+					} else {
 						hasIDOption = true
 						mode = tracee.ModeProcessList
-						pid, err := strconv.ParseInt(pidFilter[3:], 10, 32)
+						pid, err := strconv.ParseInt(pidFilter, 10, 32)
 						if err != nil {
-							return fmt.Errorf("Invalid pid option: 'id' must be a pid number e.g. 'id:123'")
+							return fmt.Errorf("Invalid pid option: %s", pidFilter)
 						}
 						pidsToTrace = append(pidsToTrace, int(pid))
-					} else {
-						return fmt.Errorf("Invalid pid option: %s", pidFilter)
 					}
 				}
 			}
@@ -152,14 +150,14 @@ func main() {
 			&cli.StringFlag{
 				Name:    "container",
 				Aliases: []string{"c"},
-				Value:   "",
+				Value:   "new",
 				Usage:   "container filtering setting. Options are 'new' to trace only new containers; 'all' to trace all presesses inside containers.",
 			},
 			&cli.StringSliceFlag{
 				Name:    "pid",
 				Aliases: []string{"p"},
 				Value:   nil,
-				Usage:   "pid filtering setting. Options are: 'new' to trace only new pids (default); 'all' to trace all pids; 'id:<number>' to trace only the specified pid. Use 'id' flag multiple times to choose multiple pids",
+				Usage:   "pid filtering setting. Options are: 'new' to trace only new pids (default); 'all' to trace all pids; '<process_id>' to trace only the specified process id, e.g. '-p 123'. Use '<process_id>' flag multiple times to choose multiple pids",
 			},
 			&cli.BoolFlag{
 				Name:  "detect-original-syscall",
