@@ -32,7 +32,7 @@ You can get Tracee in any of the following ways:
 
 ### Permissions
 
-If running Tracee binary, you'll need to run it with root permissions in order to load the eBPF code. 
+If you use the Tracee binary, you'll need to run it with root permissions in order to load the eBPF code. 
 If you use the Docker container, you should run it with the `--privileged` flag.
 
 ### Quickstart with Docker
