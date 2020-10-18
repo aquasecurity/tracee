@@ -32,29 +32,29 @@ func main() {
 			// Set Default mode
 			mode := tracee.ModeProcessNew
 			var pidsToTrace []int
-			if c.IsSet("container-filter") && c.IsSet("pid-filter") {
+			if c.IsSet("container") && c.IsSet("pid") {
 				return fmt.Errorf("'container' and 'pid' can't be used in parallel")
-			} else if c.IsSet("container-filter") {
+			} else if c.IsSet("container") {
 				// Right now we only support 'new', 'all', or not set, but future we may want to
 				// support specific container IDs
-				if c.String("container-filter") == "all" {
+				if c.String("container") == "all" {
 					mode = tracee.ModeContainerAll
-				} else if c.String("container-filter") == "new" {
+				} else if c.String("container") == "new" {
 					mode = tracee.ModeContainerNew
 				} else {
-					return fmt.Errorf("Invalid container-filter: %s", c.String("container-filter"))
+					return fmt.Errorf("Invalid container: %s", c.String("container"))
 				}
-			} else if c.IsSet("pid-filter") {
+			} else if c.IsSet("pid") {
 				hasExclusiveOption := false
 				hasIDOption := false
-				for _, pidFilter := range c.StringSlice("pid-filter") {
+				for _, pidFilter := range c.StringSlice("pid") {
 					if hasExclusiveOption {
-						return fmt.Errorf("pid-filter 'all', 'new', and 'id:<number> are all mutually exclusive")
+						return fmt.Errorf("pid 'all', 'new', and 'id:<number> are all mutually exclusive")
 					}
 					if pidFilter == "new" || pidFilter == "all" {
 						hasExclusiveOption = true
 						if hasIDOption {
-							return fmt.Errorf("pid-filter 'all', 'new', and 'id:<number> are all mutually exclusive")
+							return fmt.Errorf("pid 'all', 'new', and 'id:<number> are all mutually exclusive")
 						}
 						if pidFilter == "all" {
 							mode = tracee.ModeProcessAll
@@ -66,11 +66,11 @@ func main() {
 						mode = tracee.ModeProcessList
 						pid, err := strconv.ParseInt(pidFilter[3:], 10, 32)
 						if err != nil {
-							return fmt.Errorf("Invalid pid-filter: 'id' must be a pid number e.g. 'id:123'")
+							return fmt.Errorf("Invalid pid option: 'id' must be a pid number e.g. 'id:123'")
 						}
 						pidsToTrace = append(pidsToTrace, int(pid))
 					} else {
-						return fmt.Errorf("Invalid pid-filter: %s", pidFilter)
+						return fmt.Errorf("Invalid pid option: %s", pidFilter)
 					}
 				}
 			}
@@ -150,13 +150,13 @@ func main() {
 				Usage:   "just list tracable events",
 			},
 			&cli.StringFlag{
-				Name:    "container-filter",
+				Name:    "container",
 				Aliases: []string{"c"},
 				Value:   "",
 				Usage:   "container filtering setting. Options are 'new' to trace only new containers; 'all' to trace all presesses inside containers.",
 			},
 			&cli.StringSliceFlag{
-				Name:    "pid-filter",
+				Name:    "pid",
 				Aliases: []string{"p"},
 				Value:   nil,
 				Usage:   "pid filtering setting. Options are: 'new' to trace only new pids (default); 'all' to trace all pids; 'id:<number>' to trace only the specified pid. Use 'id' flag multiple times to choose multiple pids",
