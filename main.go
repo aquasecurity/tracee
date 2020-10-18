@@ -45,14 +45,14 @@ func main() {
 					return fmt.Errorf("Invalid container-filter: %s", c.String("container-filter"))
 				}
 			} else if c.IsSet("pid-filter") {
-				hasExlusiveOption := false
+				hasExclusiveOption := false
 				hasIDOption := false
 				for _, pidFilter := range c.StringSlice("pid-filter") {
-					if hasExlusiveOption {
+					if hasExclusiveOption {
 						return fmt.Errorf("pid-filter 'all', 'new', and 'id:<number> are all mutually exclusive")
 					}
 					if pidFilter == "new" || pidFilter == "all" {
-						hasExlusiveOption = true
+						hasExclusiveOption = true
 						if hasIDOption {
 							return fmt.Errorf("pid-filter 'all', 'new', and 'id:<number> are all mutually exclusive")
 						}
