@@ -177,7 +177,7 @@ func prepareTraceMode(traceString string) (uint32, []int, error) {
 	mode := tracee.ModeProcessNew
 	var pidsToTrace []int
 	traceHelp := "--trace can be the following options:\n"
-	traceHelp += "<blank> or 'p' or 'process' or 'process:new' | Trace new processes\n"
+	traceHelp += "'p' or 'process' or 'process:new'            | Trace new processes\n"
 	traceHelp += "'process:all'                                | Trace all processes\n"
 	traceHelp += "'process:<pid>,<pid2>,...' or 'p:<pid>,...'  | Trace specific PIDs\n"
 	traceHelp += "'c' or 'container' or 'container:new'        | Trace new containers\n"
@@ -209,7 +209,7 @@ func prepareTraceMode(traceString string) (uint32, []int, error) {
 			mode = tracee.ModeProcessAll
 		} else if traceOption == "new" {
 			mode = tracee.ModeProcessNew
-		} else {
+		} else if len(traceOption) != 0 {
 			mode = tracee.ModeProcessList
 			// Attempt to split into PIDs
 			for _, pidString := range strings.Split(traceOption, ",") {
@@ -219,6 +219,9 @@ func prepareTraceMode(traceString string) (uint32, []int, error) {
 				}
 				pidsToTrace = append(pidsToTrace, int(pid))
 			}
+		} else {
+			// Can't have just 'process:'
+			return 0, nil, fmt.Errorf(traceHelp)
 		}
 	} else {
 		if traceOption == "all" {
