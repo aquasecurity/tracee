@@ -28,49 +28,9 @@ func main() {
 			if err != nil {
 				return err
 			}
-
-			// Set Default mode
-			mode := tracee.ModeProcessNew
-			var pidsToTrace []int
-			if c.IsSet("container") && c.IsSet("pid") {
-				return fmt.Errorf("'container' and 'pid' can't be used in parallel")
-			} else if c.IsSet("container") {
-				// Right now we only support 'new', 'all', or not set, but future we may want to
-				// support specific container IDs
-				if c.String("container") == "all" {
-					mode = tracee.ModeContainerAll
-				} else if c.String("container") == "new" {
-					mode = tracee.ModeContainerNew
-				} else {
-					return fmt.Errorf("Invalid container: %s", c.String("container"))
-				}
-			} else if c.IsSet("pid") {
-				hasExclusiveOption := false
-				hasIDOption := false
-				for _, pidFilter := range c.StringSlice("pid") {
-					if hasExclusiveOption {
-						return fmt.Errorf("pid 'all', 'new', and '<process_id>' are all mutually exclusive")
-					}
-					if pidFilter == "new" || pidFilter == "all" {
-						hasExclusiveOption = true
-						if hasIDOption {
-							return fmt.Errorf("pid 'all', 'new', and '<process_id>' are all mutually exclusive")
-						}
-						if pidFilter == "all" {
-							mode = tracee.ModeProcessAll
-						} else {
-							mode = tracee.ModeProcessNew
-						}
-					} else {
-						hasIDOption = true
-						mode = tracee.ModeProcessList
-						pid, err := strconv.ParseInt(pidFilter, 10, 32)
-						if err != nil {
-							return fmt.Errorf("Invalid pid option: %s", pidFilter)
-						}
-						pidsToTrace = append(pidsToTrace, int(pid))
-					}
-				}
+			mode, pidsToTrace, err := prepareTraceMode(c.String("trace"))
+			if err != nil {
+				return err
 			}
 
 			cfg := tracee.TraceeConfig{
@@ -148,16 +108,10 @@ func main() {
 				Usage:   "just list tracable events",
 			},
 			&cli.StringFlag{
-				Name:    "container",
-				Aliases: []string{"c"},
-				Value:   "new",
-				Usage:   "container filtering setting. Options are 'new' to trace only new containers; 'all' to trace all presesses inside containers.",
-			},
-			&cli.StringSliceFlag{
-				Name:    "pid",
-				Aliases: []string{"p"},
-				Value:   nil,
-				Usage:   "pid filtering setting. Options are: 'new' to trace only new pids (default); 'all' to trace all pids; '<process_id>' to trace only the specified process id, e.g. '-p 123'. Use '<process_id>' flag multiple times to choose multiple pids",
+				Name:    "trace",
+				Aliases: []string{"t"},
+				Value:   "process:new",
+				Usage:   "Set trace mode, whether to trace processes or containers, and if to trace new, all, or specific processes/container. run '--trace help' for more info",
 			},
 			&cli.BoolFlag{
 				Name:  "detect-original-syscall",
@@ -216,6 +170,67 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func prepareTraceMode(traceString string) (uint32, []int, error) {
+	// Set Default mode - all new Processes only
+	mode := tracee.ModeProcessNew
+	var pidsToTrace []int
+	traceHelp := "--trace can be the following options:\n"
+	traceHelp += "<blank> or 'p' or 'process' or 'process:new' | Trace new processes\n"
+	traceHelp += "'process:all'                                | Trace all processes\n"
+	traceHelp += "'process:<pid>,<pid2>,...' or 'p:<pid>,...'  | Trace specific PIDs\n"
+	traceHelp += "'c' or 'container' or 'container:new'        | Trace new containers\n"
+	traceHelp += "'container:all'                              | Trace all containers\n"
+	if traceString == "help" {
+		return 0, nil, fmt.Errorf(traceHelp)
+	}
+
+	traceSplit := strings.Split(traceString, ":")
+
+	// Get The trace type - process or  container
+	traceType := traceSplit[0]
+	if traceType != "process" && traceType != "container" && traceType != "p" && traceType != "c" {
+		return 0, nil, fmt.Errorf(traceHelp)
+	}
+	traceType = string(traceType[0])
+
+	// Get The trace option, default is 'new' for all trace types:
+	traceOption := "new"
+	if len(traceSplit) == 2 {
+		traceOption = traceSplit[1]
+	} else if len(traceSplit) > 2 {
+		return 0, nil, fmt.Errorf(traceHelp)
+	}
+
+	// Convert to Traceing Mode
+	if traceType == "p" {
+		if traceOption == "all" {
+			mode = tracee.ModeProcessAll
+		} else if traceOption == "new" {
+			mode = tracee.ModeProcessNew
+		} else {
+			mode = tracee.ModeProcessList
+			// Attempt to split into PIDs
+			for _, pidString := range strings.Split(traceOption, ",") {
+				pid, err := strconv.ParseInt(pidString, 10, 32)
+				if err != nil {
+					return 0, nil, fmt.Errorf(traceHelp)
+				}
+				pidsToTrace = append(pidsToTrace, int(pid))
+			}
+		}
+	} else {
+		if traceOption == "all" {
+			mode = tracee.ModeContainerAll
+		} else if traceOption == "new" {
+			mode = tracee.ModeContainerNew
+		} else {
+			// Containers currently only supports 'new' and 'all'
+			return 0, nil, fmt.Errorf(traceHelp)
+		}
+	}
+	return mode, pidsToTrace, nil
 }
 
 func prepareEventsToTrace(eventsToTrace []string, setsToTrace []string, excludeEvents []string) ([]int32, error) {
