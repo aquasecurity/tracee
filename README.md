@@ -82,7 +82,7 @@ When using table-verbose output, the following information is added:
 
 - Use `--help` to see a full description of all options.
 Here are a few commonly useful flags:
-- `--trace` Sets the trace mode. For more information see [Trace Mode Configuration](#Trace%20Mode%20Configuration) below
+- `--trace` Sets the trace mode. For more information see [Trace Mode Configuration](#Trace-Mode-Configuration) below
 - `--event` allows you to specify a specific event to trace. You can use this flag multiple times, for example `--event execve --event openat`.
 - `--list` lists the events available for tracing, which you can provide to the `--event` flag.
 - `--output` lets you control the output format, for example `--output json` will output as JSON lines instead of table.
