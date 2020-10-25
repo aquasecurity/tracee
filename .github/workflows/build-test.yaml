@@ -1,9 +1,9 @@
-name: test
+name: build-test
 
 on: push
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-20.04
 
     env:
@@ -19,18 +19,6 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v2
 
-      - name: Install Libraries
-        run: |
-          sudo apt-get update
-          sudo apt install -y bison build-essential cmake flex git libedit-dev \
-              libllvm8 llvm-8-dev libclang-8-dev libllvm9 llvm-9-dev libclang-9-dev \
-              python zlib1g-dev libelf-dev libtinfo5 libfl-dev
-          git clone https://github.com/iovisor/bcc.git
-          mkdir bcc/build; cd bcc/build
-          cmake ..
-          make
-          sudo make install
-
       - name: Lint
         run: |
           if test -z "$(gofmt -l .)"; then
@@ -43,3 +31,6 @@ jobs:
 
       - name: Run Tests
         run: make test
+
+      - name: Build Tracee
+        run: make build-docker
