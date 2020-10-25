@@ -1069,6 +1069,7 @@ func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
 				sa_family_t    sin_family; // address family: AF_INET
 				in_port_t      sin_port;   // port in network byte order
 				struct in_addr sin_addr;   // internet address
+				// byte        padding[8]; //https://elixir.bootlin.com/linux/v4.20.17/source/include/uapi/linux/in.h#L232
 			};
 			struct in_addr {
 				uint32_t       s_addr;     // address in network byte order
@@ -1086,6 +1087,10 @@ func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
 			return nil, fmt.Errorf("error parsing sockaddr_in: %v", err)
 		}
 		res["sin_addr"] = PrintUint32IP(addr)
+		_, err := readByteSliceFromBuff(buff, 8)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing sockaddr_in: %v", err)
+		}
 	case 10: // AF_INET6
 		/*
 			struct sockaddr_in6 {
