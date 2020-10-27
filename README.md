@@ -13,6 +13,9 @@ Other than tracing, Tracee is also capable of capturing files written to disk or
 
 [Check out this quick demo of tracee](https://youtu.be/WTqE2ae257o)
 
+Table of Contents
+=================
+
 - [Getting started](#getting-strated)
   -[Prerequisites](#prequisites)
   -[Getting Tracee](#getting-tracee)
