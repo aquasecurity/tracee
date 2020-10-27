@@ -1,96 +1,67 @@
-OUTPUT := .output
-TARGET := event_monitor_ebpf
-KERN_RELEASE := $(shell uname -r)
-KERN_SRC := /lib/modules/$(KERN_RELEASE)/build
-ARCH := $(shell uname -m | sed 's/x86_64/x86/')
+.PHONY: all
+all: build
+
+OUT_DIR := .output
+
+$(OUT_DIR):
+	mkdir -p $@
+
+ARCH := $(shell uname -m)
+bpf_src := tracee/event_monitor_ebpf.c 
+bpf_out := $(OUT_DIR)/event_monitor_ebpf.o
+go_src := $(shell find . -type f -name '*.go' ! -name '*_test.go')
+bin_out := $(OUT_DIR)/tracee
+
+.PHONY: build
+build: $(bin_out)
+
+$(bin_out): $(bpf_out) $(go_src) | $(OUT_DIR)
+	GOOS=linux GOARCH=$(ARCH:x86_64=amd64) go build -v -o $(bin_out)
+
+# .PHONY: build-docker
+# build-docker: clean
+# 	img=$$(docker build --target builder -q  .) && \
+# 	cnt=$$(docker create $$img) && \
+# 	docker cp $$cnt:/tracee/dist - | tar -xf - ; \
+# 	docker rm $$cnt ; docker rmi $$img
+
 LLC ?= llc
 CLANG ?= clang
 LLVM_STRIP ?= llvm-strip
-BPF_C = tracee/${TARGET:=.c}
-BPF_OBJ = ${OUTPUT}/${TARGET:=.o}
-LIBBPF_SRC = $(abspath 3rdparty/libbpf/src)
-LIBBPF_OBJ = $(abspath $(OUTPUT)/libbpf.a)
-CFLAGS ?= -I$(OUTPUT)/usr/include/
+bpf_compile_tools = $(LLC) $(CLANG) $(LLVM_STRIP)
 
-SRC = $(shell find . -type f -name '*.go' ! -name '*_test.go' )
-ebpfProgramBase64 = $(shell base64 -w 0 tracee/event_monitor_ebpf.c)
+.PHONY: $(bpf_compile_tools) 
+$(bpf_compile_tools): % : check_%
 
-.PHONY: build
-build: llvm-check $(BPF_OBJ) dist/tracee
+libbpf_src := 3rdparty/libbpf/src
+libbpf_out_headers_dir := $(OUT_DIR)/usr/include
 
-.PHONY: build-docker
-build-docker: clean
-	img=$$(docker build --target builder -q  .) && \
-	cnt=$$(docker create $$img) && \
-	docker cp $$cnt:/tracee/dist - | tar -xf - ; \
-	docker rm $$cnt ; docker rmi $$img
+$(libbpf_src):
+	test -d $(libbpf_src) || ( echo "missing libbpf source, try git submodule update --init" ; false )
 
-dist/tracee: $(SRC) tracee/event_monitor_ebpf.c
-	GOOS=linux go build -v -o dist/tracee -ldflags "-X github.com/aquasecurity/tracee/tracee.ebpfProgramBase64Injected=$(ebpfProgramBase64)"
+$(libbpf_out_headers_dir) : | $(OUT_DIR) $(bpf_compile_tools) $(libbpf_src)
+	cd $(libbpf_src) && $(MAKE) BUILD_STATIC_ONLY=1 && \
+	$(MAKE) install_headers DESTDIR=$(abspath $(OUT_DIR)) 
 
-.PHONY: test
-test:
-	go test -v ./...
+linux_arch := $(ARCH:x86_64=x86)
+extra_headers_dirs := 3rdparty/include #copy to out?
+KERN_RELEASE := $(shell uname -r)
+KERN_SRC := /lib/modules/$(KERN_RELEASE)/build
 
-.PHONY: clean
-clean:
-	rm -rf dist || true
-	cd $(LIBBPF_SRC) && $(MAKE) clean;
-	rm -f $(BPF_OBJ)
-	rm -f *.ll
-	rm -rf .output
-
-imageName ?= tracee
-.PHONY: docker
-docker:
-	docker build -t $(imageName) .
-
-.PHONY: release
-# release by default will not publish. run with `publish=1` to publish
-goreleaserFlags = --skip-publish --snapshot
-ifdef publish
-	goreleaserFlags =
-endif
-release:
-	EBPFPROGRAM_BASE64=$(ebpfProgramBase64) goreleaser release --rm-dist $(goreleaserFlags)
-
-.PHONY: $(CLANG) $(LLC)
-
-llvm-check: $(CLANG) $(LLC)
-	@for TOOL in $^ ; do \
-		if [ ! $$(command -v $${TOOL} 2>/dev/null) ]; then \
-			echo "*** ERROR: Cannot find tool $${TOOL}" ;\
-			exit 1; \
-		else true; fi; \
-	done
-
-$(OUTPUT):
-	mkdir -p $@
-
-$(LIBBPF_OBJ):
-	@if [ ! -d $(LIBBPF_SRC) ]; then \
-		echo "Error: Need libbpf submodule"; \
-		echo "May need to run git submodule update --init"; \
-		exit 1; \
-	else \
-		cd $(LIBBPF_SRC) && $(MAKE) BUILD_STATIC_ONLY=1; \
-		OBJDIR=$(dir $@)/libbpf DESTDIR=$(dir $@) $(MAKE) install_headers; \
-	fi
-
-$(BPF_OBJ): ${BPF_C} $(LIBBPF_OBJ) | ${OUTPUT}
+$(bpf_out): $(bpf_src) $(libbpf_out_headers_dir) | $(OUT_DIR) $(bpf_compile_tools)
 	$(CLANG) -S \
-		-D __BPF_TRACING__ -D __KERNEL__ -D__TARGET_ARCH_$(ARCH) \
-		$(CFLAGS) \
+		-D __BPF_TRACING__ -D __KERNEL__ -D__TARGET_ARCH_$(linux_arch) \
+		-I $(libbpf_out_headers_dir) \
 		-include $(KERN_SRC)/include/linux/kconfig.h \
-		-I $(KERN_SRC)/arch/$(ARCH)/include \
-		-I $(KERN_SRC)/arch/$(ARCH)/include/uapi \
-		-I $(KERN_SRC)/arch/$(ARCH)/include/generated \
-		-I $(KERN_SRC)/arch/$(ARCH)/include/generated/uapi \
+		-I $(KERN_SRC)/arch/$(linux_arch)/include \
+		-I $(KERN_SRC)/arch/$(linux_arch)/include/uapi \
+		-I $(KERN_SRC)/arch/$(linux_arch)/include/generated \
+		-I $(KERN_SRC)/arch/$(linux_arch)/include/generated/uapi \
 		-I $(KERN_SRC)/include \
 		-I $(KERN_SRC)/include/uapi \
 		-I $(KERN_SRC)/include/generated \
 		-I $(KERN_SRC)/include/generated/uapi \
-		-I 3rdparty/include \
+		-I $(extra_headers_dirs) \
 		-Wno-address-of-packed-member \
 		-Wno-compare-distinct-pointer-types \
 		-Wno-deprecated-declarations \
@@ -110,3 +81,29 @@ $(BPF_OBJ): ${BPF_C} $(LIBBPF_OBJ) | ${OUTPUT}
 		-O2 -emit-llvm -c -g $< -o ${@:.o=.ll}
 	$(LLC) -march=bpf -filetype=obj -o $@ ${@:.o=.ll}
 	$(LLVM_STRIP) -g $@
+
+# .PHONY: test
+# test:
+# 	go test -v ./...
+
+.PHONY: clean
+clean:
+	-rm -rf dist $(OUT_DIR)
+	-cd $(libbpf_src) && $(MAKE) clean;
+	
+check_%:
+	@command -v $* >/dev/null || (echo "missing required tool $*" ; false)
+
+# DOCKER_OUT ?= tracee
+# .PHONY: docker
+# docker:
+# 	docker build -t $(DOCKER_OUT) .
+
+# ifdef PUBLISH
+# 	goreleaser_publish_flags =
+# endif
+# goreleaser_publish_flags = --skip-publish --snapshot
+# # release by default will not publish. run with `PUBLISH=1` to publish
+# .PHONY: release
+# release:
+# 	goreleaser release --rm-dist $(goreleaser_publish_flags)

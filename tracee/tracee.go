@@ -186,11 +186,11 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	t.DecParamName[1] = make(map[argTag]string)
 	t.EncParamName[1] = make(map[string]argTag)
 
-	p, err := getEBPFProgram()
-	if err != nil {
-		return nil, err
-	}
-	err = t.initBPF(p)
+	// p, err := getEBPFProgram()
+	// if err != nil {
+	// 	return nil, err
+	// }
+	err = t.initBPF("")
 	if err != nil {
 		t.Close()
 		return nil, err
