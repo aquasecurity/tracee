@@ -13,6 +13,20 @@ Other than tracing, Tracee is also capable of capturing files written to disk or
 
 [Check out this quick demo of tracee](https://youtu.be/WTqE2ae257o)
 
+- [Getting started](#getting-strated)
+  -[Prerequisites](#prequisites)
+  -[Getting Tracee](#getting-tracee)
+  -[Permissions](#permissions)
+  -[Quickstart with Docker](#quickstart-with-docker)
+  -[Understanding the output](#understanding-the-output)
+- [Configuration flags](#configuration-flags)
+  -[Trace Mode Configuration](#trace-mode-configuration)
+- [Secure tracing](#secure-tracing)
+- [Contributing](#contributing)
+    - [Bugs](#bugs)
+    - [Features](#features)
+    - [Pull Requests](#pull-requests)
+
 ## Getting started
 
 ### Prerequisites
@@ -107,3 +121,32 @@ You can also use `-t` e.g. `-t p:all`
 ## Secure tracing
 
 When Tracee reads information from user programs it is subject to a race condition where the user program might be able to change the arguments after Tracee has read them. For example, a program invoked `execve("/bin/ls", NULL, 0)`, Tracee picked that up and will report that, then the program changed the first argument from `/bin/ls` to `/bin/bash`, and this is what the kernel will execute. To mitigate this, Tracee also provide "LSM" (Linux Security Module) based events, for example, the `bprm_check` event which can be reported by tracee and cross-referenced with the reported regular syscall event.
+
+## Contributing
+
+### Bugs
+
+If you think you have found a bug please follow the instructions below.
+
+- Please spend a small amount of time giving due diligence to the issue tracker. Your issue might be a duplicate.
+- Open a new issue if a duplicate doesn't already exist.
+- Remember users might be searching for your issue in the future, so please give it a meaningful title to help others.
+
+### Features
+
+We also use the GitHub issue tracker to track feature requests. If you have an idea to make kube-bench even more awesome follow the steps below.
+
+- Open a new issue.
+- Remember users might be searching for your issue in the future, so please give it a meaningful title to helps others.
+- Clearly define the use case, using concrete examples.
+- If you would like to include a technical design for your feature please feel free to do so.
+
+### Pull Requests
+
+We welcome pull requests!
+
+- Your PR is more likely to be accepted if it focuses on just one change.
+- Please include a comment with the results before and after your change.
+- Your PR is more likely to be accepted if it includes tests. (We have not historically been very strict about tests, but we would like to improve this!).
+- You're welcome to submit a draft PR if you would like early feedback on an idea or an approach.
+- Happy coding!
