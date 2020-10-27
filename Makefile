@@ -27,8 +27,6 @@ $(bin_out): $(bpf_out) $(go_src) | $(OUT_DIR)
 
 LLC ?= llc
 CLANG ?= clang
-LLVM_STRIP ?= llvm-strip
-bpf_compile_tools = $(LLC) $(CLANG) $(LLVM_STRIP)
 
 .PHONY: $(bpf_compile_tools) 
 $(bpf_compile_tools): % : check_%
@@ -78,9 +76,8 @@ $(bpf_out): $(bpf_src) $(libbpf_out_headers_dir) | $(OUT_DIR) $(bpf_compile_tool
 		-fno-asynchronous-unwind-tables \
 		-x c \
 		-nostdinc \
-		-O2 -emit-llvm -c -g $< -o ${@:.o=.ll}
+		-O2 -emit-llvm -c $< -o ${@:.o=.ll}
 	$(LLC) -march=bpf -filetype=obj -o $@ ${@:.o=.ll}
-	$(LLVM_STRIP) -g $@
 
 # .PHONY: test
 # test:
