@@ -226,7 +226,7 @@ func bumpMemlockRlimit() error {
 	return nil
 }
 
-func NewModule(bpfObjFile string) (*Module, error) {
+func NewModuleFromFile(bpfObjFile string) (*Module, error) {
 	C.set_print_fn()
 	bumpMemlockRlimit()
 	cs := C.CString(bpfObjFile)
@@ -234,6 +234,24 @@ func NewModule(bpfObjFile string) (*Module, error) {
 	C.free(unsafe.Pointer(cs))
 	if obj == nil {
 		return nil, fmt.Errorf("failed to open BPF object %s", bpfObjFile)
+	}
+
+	return &Module{
+		obj: obj,
+	}, nil
+}
+
+func NewModuleFromBuffer(bpfObjBuff []byte, bpfObjName string) (*Module, error) {
+	C.set_print_fn()
+	bumpMemlockRlimit()
+	name := C.CString(bpfObjName)
+	buffSize := C.size_t(len(bpfObjBuff))
+	buffPtr := unsafe.Pointer(C.CBytes(bpfObjBuff))
+	obj := C.bpf_object__open_buffer(buffPtr, buffSize, name)
+	C.free(unsafe.Pointer(name))
+	C.free(unsafe.Pointer(buffPtr))
+	if obj == nil {
+		return nil, fmt.Errorf("failed to open BPF object %s: %v...", name, bpfObjBuff[:20])
 	}
 
 	return &Module{

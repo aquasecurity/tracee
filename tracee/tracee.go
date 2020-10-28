@@ -394,7 +394,7 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 	//       5. Populate maps with values,
 	//       6. Attach probes,
 	//       7. Initialize perf buffers
-	t.bpfModule, err = bpf.NewModule(".output/event_monitor_ebpf.o")
+	t.bpfModule, err = bpf.NewModuleFromFile(".output/event_monitor_ebpf.o")
 	if err != nil {
 		return err
 	}
