@@ -2,7 +2,6 @@ package tracee
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -75,28 +74,15 @@ func (tc TraceeConfig) Validate() error {
 	return nil
 }
 
-// This var is supposed to be injected *at build time* with the contents of the ebpf c program
-var ebpfProgramBase64Injected string
-
-func getEBPFProgram() (string, error) {
-	// if there's a local file, use it
+func getEBPFObjectPath() (string, error) {
 	exePath, err := os.Executable()
 	if err != nil {
 		return "", err
 	}
-	ebpfFilePath := filepath.Join(filepath.Dir(exePath), "./event_monitor_ebpf.c")
+	ebpfFilePath := filepath.Join(filepath.Dir(exePath), "./event_monitor_ebpf.o")
 	_, err = os.Stat(ebpfFilePath)
 	if !os.IsNotExist(err) {
-		p, err := ioutil.ReadFile(ebpfFilePath)
-		return string(p), err
-	}
-	// if there's no local file, try injected variable
-	if ebpfProgramBase64Injected != "" {
-		p, err := base64.StdEncoding.DecodeString(ebpfProgramBase64Injected)
-		if err != nil {
-			return "", err
-		}
-		return string(p), nil
+		return ebpfFilePath, err
 	}
 
 	return "", fmt.Errorf("could not find ebpf program")
@@ -186,11 +172,11 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	t.DecParamName[1] = make(map[argTag]string)
 	t.EncParamName[1] = make(map[string]argTag)
 
-	// p, err := getEBPFProgram()
-	// if err != nil {
-	// 	return nil, err
-	// }
-	err = t.initBPF("")
+	p, err := getEBPFObjectPath()
+	if err != nil {
+		return nil, err
+	}
+	err = t.initBPF(p)
 	if err != nil {
 		t.Close()
 		return nil, err
@@ -374,7 +360,7 @@ func (t *Tracee) initEventsParams() map[int32][]eventParam {
 	return eventsParams
 }
 
-func (t *Tracee) initBPF(ebpfProgram string) error {
+func (t *Tracee) initBPF(ebpfObjPath string) error {
 	var err error
 
 	// todo: update docker image to use new approach
@@ -390,7 +376,7 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 	//       5. Populate maps with values,
 	//       6. Attach probes,
 	//       7. Initialize perf buffers
-	t.bpfModule, err = bpf.NewModule(".output/event_monitor_ebpf.o")
+	t.bpfModule, err = bpf.NewModule(ebpfObjPath)
 	if err != nil {
 		return err
 	}
