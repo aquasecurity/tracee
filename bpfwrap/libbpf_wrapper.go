@@ -1,8 +1,8 @@
 package bpfwrap
 
 /*
-#cgo CFLAGS: -I${SRCDIR}/../3rdparty/libbpf/src
-#cgo LDFLAGS: ${SRCDIR}/../3rdparty/libbpf/src/libbpf.a -lelf -lz
+#cgo CFLAGS: -I${SRCDIR}/../dist/libbpf/usr/include/bpf
+#cgo LDFLAGS: ${SRCDIR}/../dist/libbpf/libbpf.a -lelf -lz
 
 #include <bpf.h>
 #include <libbpf.h>
