@@ -7,8 +7,8 @@ KERN_RELEASE := $(shell uname -r)
 KERN_SRC := /lib/modules/$(KERN_RELEASE)/build
 # inputs and outputs:
 OUT_DIR := dist
-BPF_SRC := tracee/tracee_ebpf.c 
-BPF_OBJ := $(OUT_DIR)/tracee_ebpf.o
+BPF_SRC := tracee/tracee.bpf.c 
+BPF_OBJ := $(OUT_DIR)/tracee.bpf.o
 GO_SRC := $(shell find . -type f -name '*.go' ! -name '*_test.go')
 OUT_BIN := $(OUT_DIR)/tracee
 LIBBPF_SRC := 3rdparty/libbpf/src
@@ -28,7 +28,7 @@ $(OUT_DIR):
 .PHONY: build
 build: $(OUT_BIN) $(BPF_OBJ)
 
-$(OUT_BIN): $(LIBBPF_OBJ) $(GO_SRC) | $(OUT_DIR)
+$(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(GO_SRC) | $(OUT_DIR)
 	GOOS=linux GOARCH=$(ARCH:x86_64=amd64) \
 		CGO_CFLAGS="-I $(abspath $(LIBBPF_HEADERS))/bpf" \
 		CGO_LDFLAGS="$(abspath $(LIBBPF_OBJ))" \

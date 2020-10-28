@@ -83,7 +83,7 @@ func getEBPFObject() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	ebpfFilePath := filepath.Join(filepath.Dir(exePath), "./tracee_ebpf.o")
+	ebpfFilePath := filepath.Join(filepath.Dir(exePath), "./tracee.bpf.o")
 	_, err = os.Stat(ebpfFilePath)
 	if !os.IsNotExist(err) {
 		return ebpfFilePath, err
@@ -388,7 +388,7 @@ func (t *Tracee) initBPF(ebpfObjectPath string) error {
 	//       5. Populate maps with values,
 	//       6. Attach probes,
 	//       7. Initialize perf buffers
-	t.bpfModule, err = bpf.NewModuleFromFile(".output/event_monitor_ebpf.o")
+	t.bpfModule, err = bpf.NewModuleFromFile(ebpfObjectPath)
 	if err != nil {
 		return err
 	}
