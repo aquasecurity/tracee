@@ -7,8 +7,8 @@ $(OUT_DIR):
 	mkdir -p $@
 
 ARCH := $(shell uname -m)
-bpf_src := tracee/event_monitor_ebpf.c 
-bpf_out := $(OUT_DIR)/event_monitor_ebpf.o
+bpf_src := tracee/tracee_ebpf.c 
+bpf_out := $(OUT_DIR)/tracee_ebpf.o
 go_src := $(shell find . -type f -name '*.go' ! -name '*_test.go')
 bin_out := $(OUT_DIR)/tracee
 

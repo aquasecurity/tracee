@@ -85,7 +85,7 @@ func getEBPFProgram() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	ebpfFilePath := filepath.Join(filepath.Dir(exePath), "./event_monitor_ebpf.o")
+	ebpfFilePath := filepath.Join(filepath.Dir(exePath), "./tracee_ebpf.o")
 	_, err = os.Stat(ebpfFilePath)
 	if err == nil {
 		return ioutil.ReadFile(ebpfFilePath)
