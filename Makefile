@@ -26,7 +26,7 @@ $(OUT_DIR):
 	mkdir -p $@
 
 .PHONY: build
-build: $(OUT_BIN)
+build: $(OUT_BIN) $(BPF_OBJ)
 
 $(OUT_BIN): $(LIBBPF_OBJ) $(GO_SRC) | $(OUT_DIR)
 	GOOS=linux GOARCH=$(ARCH:x86_64=amd64) \
