@@ -2,7 +2,6 @@ package tracee
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -78,26 +77,25 @@ func (tc TraceeConfig) Validate() error {
 // This var is supposed to be injected *at build time* with the contents of the ebpf c program
 var ebpfProgramBase64Injected string
 
-func getEBPFProgram() (string, error) {
+func getEBPFObject() (string, error) {
 	// if there's a local file, use it
 	exePath, err := os.Executable()
 	if err != nil {
 		return "", err
 	}
-	ebpfFilePath := filepath.Join(filepath.Dir(exePath), "./event_monitor_ebpf.c")
+	ebpfFilePath := filepath.Join(filepath.Dir(exePath), "./tracee.bpf.o")
 	_, err = os.Stat(ebpfFilePath)
 	if !os.IsNotExist(err) {
-		p, err := ioutil.ReadFile(ebpfFilePath)
-		return string(p), err
+		return ebpfFilePath, err
 	}
 	// if there's no local file, try injected variable
-	if ebpfProgramBase64Injected != "" {
-		p, err := base64.StdEncoding.DecodeString(ebpfProgramBase64Injected)
-		if err != nil {
-			return "", err
-		}
-		return string(p), nil
-	}
+	// if ebpfProgramBase64Injected != "" {
+	// 	p, err := base64.StdEncoding.DecodeString(ebpfProgramBase64Injected)
+	// 	if err != nil {
+	// 		return "", err
+	// 	}
+	// 	return string(p), nil
+	// }
 
 	return "", fmt.Errorf("could not find ebpf program")
 }
@@ -186,11 +184,11 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	t.DecParamName[1] = make(map[argTag]string)
 	t.EncParamName[1] = make(map[string]argTag)
 
-	p, err := getEBPFProgram()
+	ebpfObjPath, err := getEBPFObject()
 	if err != nil {
 		return nil, err
 	}
-	err = t.initBPF(p)
+	err = t.initBPF(ebpfObjPath)
 	if err != nil {
 		t.Close()
 		return nil, err
@@ -374,7 +372,7 @@ func (t *Tracee) initEventsParams() map[int32][]eventParam {
 	return eventsParams
 }
 
-func (t *Tracee) initBPF(ebpfProgram string) error {
+func (t *Tracee) initBPF(ebpfObjectPath string) error {
 	var err error
 
 	// todo: update docker image to use new approach
@@ -390,7 +388,7 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 	//       5. Populate maps with values,
 	//       6. Attach probes,
 	//       7. Initialize perf buffers
-	t.bpfModule, err = bpf.NewModuleFromFile(".output/event_monitor_ebpf.o")
+	t.bpfModule, err = bpf.NewModuleFromFile(ebpfObjectPath)
 	if err != nil {
 		return err
 	}
