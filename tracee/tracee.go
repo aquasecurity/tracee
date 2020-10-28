@@ -22,7 +22,7 @@ import (
 // TraceeConfig is a struct containing user defined configuration of tracee
 type TraceeConfig struct {
 	EventsToTrace         []int32
-	ContainerMode         bool
+	Mode                  uint32
 	PidsToTrace           []int
 	DetectOriginalSyscall bool
 	ShowExecEnv           bool
@@ -173,7 +173,8 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	t := &Tracee{
 		config: cfg,
 	}
-	printObj, err := newEventPrinter(t.config.OutputFormat, t.config.ContainerMode, t.config.EventsFile, t.config.ErrorsFile)
+    ContainerMode := (t.config.Mode == ModeContainerAll || t.config.Mode == ModeContainerNew)
+	printObj, err := newEventPrinter(t.config.OutputFormat, ContainerMode, t.config.EventsFile, t.config.ErrorsFile)
 	if err != nil {
 		return nil, err
 	}
@@ -218,7 +219,7 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	if err := os.MkdirAll(t.config.OutputPath, 0755); err != nil {
 		return nil, fmt.Errorf("error creating output path: %v", err)
 	}
-	err = ioutil.WriteFile(path.Join(t.config.OutputPath, fmt.Sprintf("tracee.%d", os.Getpid())), nil, 0640)
+	err = ioutil.WriteFile(path.Join(t.config.OutputPath, "tracee.pid"), []byte(strconv.Itoa(os.Getpid())+"\n"), 0640)
 	if err != nil {
 		return nil, fmt.Errorf("error creating readiness file: %v", err)
 	}
@@ -509,15 +510,8 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 
 	bpfConfig := bpf.NewTable(t.bpfModule.TableId("config_map"), t.bpfModule)
 
-	mode := modeSystem
-	if t.config.ContainerMode {
-		mode = modeContainer
-	} else if len(t.config.PidsToTrace) > 0 {
-		mode = modePid
-	}
-
 	binary.LittleEndian.PutUint32(key, uint32(configMode))
-	binary.LittleEndian.PutUint32(leaf, mode)
+	binary.LittleEndian.PutUint32(leaf, t.config.Mode)
 	bpfConfig.Set(key, leaf)
 	binary.LittleEndian.PutUint32(key, uint32(configDetectOrigSyscall))
 	binary.LittleEndian.PutUint32(leaf, boolToUInt32(t.config.DetectOriginalSyscall))
@@ -1079,6 +1073,7 @@ func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
 				sa_family_t    sin_family; // address family: AF_INET
 				in_port_t      sin_port;   // port in network byte order
 				struct in_addr sin_addr;   // internet address
+				// byte        padding[8]; //https://elixir.bootlin.com/linux/v4.20.17/source/include/uapi/linux/in.h#L232
 			};
 			struct in_addr {
 				uint32_t       s_addr;     // address in network byte order
@@ -1096,6 +1091,10 @@ func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
 			return nil, fmt.Errorf("error parsing sockaddr_in: %v", err)
 		}
 		res["sin_addr"] = PrintUint32IP(addr)
+		_, err := readByteSliceFromBuff(buff, 8)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing sockaddr_in: %v", err)
+		}
 	case 10: // AF_INET6
 		/*
 			struct sockaddr_in6 {

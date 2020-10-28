@@ -91,9 +91,11 @@
 #define CONFIG_EXTRACT_DYN_CODE 4
 #define CONFIG_TRACEE_PID       5
 
-#define MODE_SYSTEM     0
-#define MODE_PID        1
-#define MODE_CONTAINER  2
+#define MODE_PROCESS_ALL        1
+#define MODE_PROCESS_NEW        2
+#define MODE_PROCESS_LIST       3
+#define MODE_CONTAINER_ALL      4
+#define MODE_CONTAINER_NEW      5
 
 // re-define container_of as bcc complains
 #define my_container_of(ptr, type, member) ({          \
@@ -453,15 +455,28 @@ static __always_inline int get_config(u32 key)
 static __always_inline int should_trace()
 {
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    int config_mode = get_config(CONFIG_MODE);
+    u32 rc = 0;
+    u32 host_pid = bpf_get_current_pid_tgid() >> 32;
 
-    if (get_config(CONFIG_TRACEE_PID) == bpf_get_current_pid_tgid() >> 32)
+    if (get_config(CONFIG_TRACEE_PID) == host_pid)
         return 0;
 
-    u32 rc = 0;
-    if (get_config(CONFIG_MODE) == MODE_CONTAINER)
+    // All logs all processes except tracee itself
+    if (config_mode == MODE_PROCESS_ALL)
+        return 1;
+    else if (config_mode == MODE_CONTAINER_NEW)
         rc = lookup_pid_ns(task);
-    else
+    else if (config_mode == MODE_PROCESS_NEW || config_mode == MODE_PROCESS_LIST)
         rc = lookup_pid();
+    else if (config_mode == MODE_CONTAINER_ALL) {
+        // 'Container-All' means anything in a container
+        // We can check if we're in a namespace by checking
+        // our PID Vs 'real' PID on host
+        if (get_task_ns_tgid(task) != host_pid) {
+            return 1;
+        }
+    }
 
     return rc;
 }
@@ -754,8 +769,10 @@ static __always_inline int save_file_path_to_str_buf(buf_t *string_p, struct fil
         unsigned int off = buf_off - len;
         // Is string buffer big enough for dentry name?
         int sz = 0;
-        if (off <= MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
-            sz = bpf_probe_read_str(&(string_p->buf[off]), len, (void *)d_name.name);
+        if (off <= buf_off) { // verify no wrap occured
+            len = ((len - 1) & ((MAX_PERCPU_BUFSIZE >> 1)-1)) + 1;
+            sz = bpf_probe_read_str(&(string_p->buf[off & ((MAX_PERCPU_BUFSIZE >> 1)-1)]), len, (void *)d_name.name);
+        }
         else
             break;
         if (sz > 1) {
@@ -769,8 +786,8 @@ static __always_inline int save_file_path_to_str_buf(buf_t *string_p, struct fil
         dentry = d_parent;
     }
 
-    if (buf_off == MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE) {
-	// memfd files have no path in the filesystem -> extract their name
+    if (buf_off == (MAX_PERCPU_BUFSIZE >> 1)) {
+        // memfd files have no path in the filesystem -> extract their name
         buf_off = 0;
         struct qstr d_name = get_d_name_from_dentry(dentry);
         int sz = bpf_probe_read_str(&(string_p->buf[0]), MAX_STRING_SIZE, (void *)d_name.name);
@@ -796,7 +813,7 @@ static __always_inline int events_perf_submit(void *ctx)
         return -1;
 
     /* satisfy validator by setting buffer bounds */
-    int size = *off & (MAX_PERCPU_BUFSIZE-1);
+    int size = ((*off - 1) & (MAX_PERCPU_BUFSIZE-1)) + 1;
     void * data = submit_p->buf;
     return events.perf_submit(ctx, data, size);
 }
@@ -1102,11 +1119,12 @@ struct bpf_raw_tracepoint_args *ctx
     // execve events may add new pids to the traced pids set
     // perform this check before should_trace() so newly executed binaries will be traced
     if (id == SYS_EXECVE || id == SYS_EXECVEAT) {
-        int mode = get_config(CONFIG_MODE);
-        if (mode == MODE_CONTAINER)
+        int config_mode = get_config(CONFIG_MODE);
+        if (config_mode == MODE_CONTAINER_NEW) {
             add_pid_ns_if_needed();
-        else if (mode == MODE_SYSTEM)
+        } else if (config_mode == MODE_PROCESS_NEW || config_mode == MODE_PROCESS_ALL) {
             add_pid();
+        }
     }
 
     if (!should_trace())
@@ -1184,7 +1202,7 @@ struct bpf_raw_tracepoint_args *ctx
     // fork events may add new pids to the traced pids set
     // perform this check after should_trace() to only add forked childs of a traced parent
     if (id == SYS_CLONE || id == SYS_FORK || id == SYS_VFORK) {
-        if (get_config(CONFIG_MODE) != MODE_CONTAINER) {
+        if (get_config(CONFIG_MODE) != MODE_CONTAINER_ALL && get_config(CONFIG_MODE) != MODE_CONTAINER_NEW) {
             u32 pid = ret;
             add_pid_fork(pid);
         }
@@ -1327,7 +1345,7 @@ int trace_do_exit(struct pt_regs *ctx, long code)
 
     init_and_save_context(submit_p, DO_EXIT, 0, code);
 
-    if (get_config(CONFIG_MODE) == MODE_CONTAINER)
+    if (get_config(CONFIG_MODE) == MODE_CONTAINER_NEW)
         remove_pid_ns_if_needed();
     else
         remove_pid();
@@ -1468,7 +1486,6 @@ int send_bin(struct pt_regs *ctx)
 
     int i = 0;
     unsigned int chunk_size;
-
     u64 id = bpf_get_current_pid_tgid();
 
     bin_args_t *bin_args = bin_args_map.lookup(&id);
@@ -1504,7 +1521,7 @@ int send_bin(struct pt_regs *ctx)
 #define F_SZ_OFF      (F_META_OFF + SEND_META_SIZE)
 #define F_POS_OFF     (F_SZ_OFF + sizeof(unsigned int))
 #define F_CHUNK_OFF   (F_POS_OFF + sizeof(off_t))
-#define F_CHUNK_SIZE  (MAX_PERCPU_BUFSIZE - F_CHUNK_OFF - 4)
+#define F_CHUNK_SIZE  (MAX_PERCPU_BUFSIZE >> 1)
 
     bpf_probe_read((void **)&(file_buf_p->buf[F_SEND_TYPE]), sizeof(u8), &bin_args->type);
 
@@ -1550,12 +1567,13 @@ int send_bin(struct pt_regs *ctx)
     }
 
     // Save last chunk
+    chunk_size = ((chunk_size - 1) & ((MAX_PERCPU_BUFSIZE >> 1) - 1)) + 1;
     bpf_probe_read((void **)&(file_buf_p->buf[F_CHUNK_OFF]), chunk_size, bin_args->ptr);
     bpf_probe_read((void **)&(file_buf_p->buf[F_SZ_OFF]), sizeof(unsigned int), &chunk_size);
     bpf_probe_read((void **)&(file_buf_p->buf[F_POS_OFF]), sizeof(off_t), &bin_args->start_off);
 
     // Satisfy validator by setting buffer bounds
-    int size = (F_CHUNK_OFF+chunk_size) & (MAX_PERCPU_BUFSIZE - 1);
+    int size = ((F_CHUNK_OFF+chunk_size-1) & (MAX_PERCPU_BUFSIZE - 1)) + 1;
     file_writes.perf_submit(ctx, data, size);
 
     // We finished writing an element of the vector - continue to next element

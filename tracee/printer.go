@@ -176,7 +176,7 @@ func (p tableEventPrinter) Print(event Event) {
 }
 
 func (p tableEventPrinter) Error(err error) {
-	fmt.Fprintf(p.err, "%v", err)
+	fmt.Fprintf(p.err, "%v\n", err)
 }
 
 func (p tableEventPrinter) Epilogue(stats statsStore) {

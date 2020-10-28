@@ -7,7 +7,7 @@
 
 # Tracee - Container and system tracing using eBPF
 
-Tracee is a lightweight and easy to use container and system tracing tool. It allows you to observe system calls and other system events in real time. A unique feature of Tracee is that it will only trace newly created processes and containers (that were started after Tracee has started), in order to help the user focus on relevant events instead of every single thing that happens on the system (which can be overwhelming). Adding new events to Tracee (especially system calls) is straightforward, and will usually require no more than adding few lines of code.
+Tracee is a lightweight and easy to use container and system tracing tool. It allows you to observe system calls and other system events in real-time. A unique feature of Tracee is that it will only trace newly created processes and containers (that were started after Tracee has started), in order to help the user focus on relevant events instead of every single thing that happens on the system (which can be overwhelming). Adding new events to Tracee (especially system calls) is straightforward, and will usually require no more than adding few lines of code.
 
 Other than tracing, Tracee is also capable of capturing files written to disk or memory ("fileless"), and extracting binaries that are dynamically loaded to an application's memory (e.g. when an application uses a packer). With these features, it is possible to quickly gain insights about the running processes that previously required the use of dynamic analysis tools and special knowledge.
 
@@ -32,7 +32,7 @@ You can get Tracee in any of the following ways:
 
 ### Permissions
 
-If run Tracee binary, you'll need to run it with root permissions in order to load the eBPF code. 
+If you use the Tracee binary, you'll need to run it with root permissions in order to load the eBPF code. 
 If you use the Docker container, you should run it with the `--privileged` flag.
 
 ### Quickstart with Docker
@@ -82,12 +82,28 @@ When using table-verbose output, the following information is added:
 
 - Use `--help` to see a full description of all options.
 Here are a few commonly useful flags:
-- `--container` traces only newly created containers, ignoring processes running directly on the host. This only shows processes created in a different mount namespace from the host.
+- `--trace` Sets the trace mode. For more information see [Trace Mode Configuration](#Trace-Mode-Configuration) below
 - `--event` allows you to specify a specific event to trace. You can use this flag multiple times, for example `--event execve --event openat`.
 - `--list` lists the events available for tracing, which you can provide to the `--event` flag.
 - `--output` lets you control the output format, for example `--output json` will output as JSON lines instead of table.
 - `--capture` capture artifacts that were written, executed or found suspicious, and save them to the output directory. Possible values are: 'write'/'exec'/'mem'/'all'
 
+### Trace Mode Configuration
+
+`--trace` and `-t` set whether to trace events based upon system-wide processes, or Containers. It also used to set whether to trace only new processes/containers (default), existing processes/containers, or specific processes.
+Tracing specific containers is currently not possible. The possible options are:
+
+Option | Flag(s):
+--- | --- |
+Trace new processes (default) | no `--trace` flag, `--trace p`, `--trace process` or `--trace process:new`
+Trace existing and new processes | `--trace process:all`
+Trace specific PIDs | `--trace process:<pid>,<pid2>,...` or `--trace p:<pid>,<pid2>,...`
+Trace new containers | `--trace c`, `--trace container` or `--trace container:new`
+Trace existing and new containers | `--trace container:all`
+
+You can also use `-t` e.g. `-t p:all`
+
+
 ## Secure tracing
 
-When Tracee reads information from user programs it is subject to a race condition where the user program might be able to change the arguments after Tracee has read them. For example, a program invoked `execve("/bin/ls", NULL, 0)`, Tracee picked that up and will report that, then the program changed the first argument from `/bin/ls` to `/bin/bash`, and this is what the kernel will execute. To mitigate this, Tracee also provide "LSM" (Linux Security Module) based events, for example the `bprm_check` event which can reported by tracee and cross-referenced with the reported regular syscall event.
+When Tracee reads information from user programs it is subject to a race condition where the user program might be able to change the arguments after Tracee has read them. For example, a program invoked `execve("/bin/ls", NULL, 0)`, Tracee picked that up and will report that, then the program changed the first argument from `/bin/ls` to `/bin/bash`, and this is what the kernel will execute. To mitigate this, Tracee also provide "LSM" (Linux Security Module) based events, for example, the `bprm_check` event which can be reported by tracee and cross-referenced with the reported regular syscall event.

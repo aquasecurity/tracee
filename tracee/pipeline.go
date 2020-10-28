@@ -129,7 +129,7 @@ func (t *Tracee) prepareEventForPrint(done <-chan struct{}, in <-chan RawEvent) 
 				if ok {
 					argsNames[i] = argName
 				} else {
-					errc <- fmt.Errorf("Invalid arg tag for event %d\n", rawEvent.Ctx.EventID)
+					errc <- fmt.Errorf("Invalid arg tag for event %d", rawEvent.Ctx.EventID)
 					continue
 				}
 			}
