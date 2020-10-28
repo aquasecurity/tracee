@@ -1,7 +1,7 @@
 .PHONY: all
 all: build
 
-OUT_DIR := .output
+OUT_DIR := dist
 
 $(OUT_DIR):
 	mkdir -p $@
