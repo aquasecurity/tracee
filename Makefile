@@ -28,7 +28,7 @@ $(OUT_DIR):
 .PHONY: build
 build: $(OUT_BIN)
 
-$(OUT_BIN): $(BPF_OBJ) $(LIBBPF_OBJ) $(GO_SRC) | $(OUT_DIR)
+$(OUT_BIN): $(LIBBPF_OBJ) $(GO_SRC) | $(OUT_DIR)
 	GOOS=linux GOARCH=$(ARCH:x86_64=amd64) \
 		CGO_CFLAGS="-I $(abspath $(LIBBPF_HEADERS))/bpf" \
 		CGO_LDFLAGS="$(abspath $(LIBBPF_OBJ))" \
