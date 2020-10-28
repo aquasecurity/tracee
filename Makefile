@@ -35,9 +35,6 @@ $(OUT_BIN): $(BPF_OBJ) $(LIBBPF_OBJ) $(GO_SRC) | $(OUT_DIR)
 		go build -v -o $(OUT_BIN) \
 		-ldflags "-X github.com/aquasecurity/tracee/tracee.ebpfProgramB64Injected=$$(base64 -w 0 $(BPF_SRC))"
 
-$(OUT_BIN)_slim: $(BPF_OBJ) $(LIBBPF_OBJ) $(GO_SRC) | $(OUT_DIR)
-	GOOS=linux GOARCH=$(ARCH:x86_64=amd64) go build -v -o $(OUT_BIN)
-
 # .PHONY: build-docker
 # build-docker: clean
 # 	img=$$(docker build --target builder -q  .) && \
