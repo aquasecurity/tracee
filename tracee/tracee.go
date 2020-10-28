@@ -2,6 +2,8 @@ package tracee
 
 import (
 	"bytes"
+	"compress/gzip"
+	"encoding/base64"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -74,18 +76,33 @@ func (tc TraceeConfig) Validate() error {
 	return nil
 }
 
-func getEBPFObjectPath() (string, error) {
+// This var is supposed to be injected *at build time* with the contents of the ebpf object
+var ebpfObjectInjected string
+
+func getEBPFProgram() ([]byte, error) {
+	// if there's a local file, use it
 	exePath, err := os.Executable()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	ebpfFilePath := filepath.Join(filepath.Dir(exePath), "./event_monitor_ebpf.o")
 	_, err = os.Stat(ebpfFilePath)
-	if !os.IsNotExist(err) {
-		return ebpfFilePath, err
+	if err == nil {
+		return ioutil.ReadFile(ebpfFilePath)
 	}
 
-	return "", fmt.Errorf("could not find ebpf program")
+	// if there's no local file, try injected variable
+	if ebpfObjectInjected != "" {
+		r, err := gzip.NewReader(base64.NewDecoder(base64.StdEncoding, strings.NewReader(ebpfObjectInjected)))
+		if err == nil {
+			b, err := ioutil.ReadAll(r)
+			if err == nil || err == io.ErrUnexpectedEOF {
+				return b, nil
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("could not find ebpf program: %v", err)
 }
 
 // Tracee traces system calls and system events using eBPF
@@ -172,7 +189,7 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	t.DecParamName[1] = make(map[argTag]string)
 	t.EncParamName[1] = make(map[string]argTag)
 
-	p, err := getEBPFObjectPath()
+	p, err := getEBPFProgram()
 	if err != nil {
 		return nil, err
 	}
@@ -360,7 +377,7 @@ func (t *Tracee) initEventsParams() map[int32][]eventParam {
 	return eventsParams
 }
 
-func (t *Tracee) initBPF(ebpfObjPath string) error {
+func (t *Tracee) initBPF(ebpfObj []byte) error {
 	var err error
 
 	// todo: update docker image to use new approach
@@ -376,7 +393,7 @@ func (t *Tracee) initBPF(ebpfObjPath string) error {
 	//       5. Populate maps with values,
 	//       6. Attach probes,
 	//       7. Initialize perf buffers
-	t.bpfModule, err = bpf.NewModule(ebpfObjPath)
+	t.bpfModule, err = bpf.NewModuleFromBuff(ebpfObj, "tracee_ebpf.o")
 	if err != nil {
 		return err
 	}

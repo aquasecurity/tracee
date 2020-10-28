@@ -15,8 +15,12 @@ bin_out := $(OUT_DIR)/tracee
 .PHONY: build
 build: $(bin_out)
 
-$(bin_out): $(bpf_out) $(go_src) | $(OUT_DIR)
+$(bin_out)_slim: $(bpf_out) $(go_src) | $(OUT_DIR)
 	GOOS=linux GOARCH=$(ARCH:x86_64=amd64) go build -v -o $(bin_out)
+
+$(bin_out): $(bpf_out) $(go_src) | $(OUT_DIR)
+	GOOS=linux GOARCH=$(ARCH:x86_64=amd64) go build -v -o $(bin_out) \
+		-ldflags "-X github.com/aquasecurity/tracee/tracee.ebpfObjectInjected=$$(gzip --stdout --keep --quiet $(bpf_out) | base64 -w 0))"
 
 # .PHONY: build-docker
 # build-docker: clean
