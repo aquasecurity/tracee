@@ -2,11 +2,11 @@
 all: build
 
 # environment:
-ARCH := $(shell uname -m)
-KERN_RELEASE := $(shell uname -r)
-KERN_SRC := /lib/modules/$(KERN_RELEASE)/build
+ARCH ?= $(shell uname -m)
+KERN_RELEASE ?= $(shell uname -r)
+KERN_SRC ?= /lib/modules/$(KERN_RELEASE)/build
 # inputs and outputs:
-OUT_DIR := dist
+OUT_DIR ?= dist
 BPF_SRC := tracee/tracee.bpf.c 
 BPF_OBJ := $(OUT_DIR)/tracee.bpf.o
 GO_SRC := $(shell find . -type f -name '*.go' ! -name '*_test.go')
@@ -14,13 +14,13 @@ OUT_BIN := $(OUT_DIR)/tracee
 LIBBPF_SRC := 3rdparty/libbpf/src
 LIBBPF_HEADERS := $(OUT_DIR)/libbpf/usr/include
 LIBBPF_OBJ := $(OUT_DIR)/libbpf/libbpf.a
-OUT_DOCKER := tracee
+OUT_DOCKER ?= tracee
 # tools:
-LLC := llc
-CLANG := clang
-LLVM_STRIP := llvm-strip
-# DOCKER := docker
-# GORELEASER := goreleaser
+LLC ?= llc
+CLANG ?= clang
+LLVM_STRIP ?= llvm-strip
+# DOCKER ?= docker
+# GORELEASER ?= goreleaser
 
 $(OUT_DIR):
 	mkdir -p $@
