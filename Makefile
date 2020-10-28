@@ -29,7 +29,10 @@ $(OUT_DIR):
 build: $(OUT_BIN)
 
 $(OUT_BIN): $(BPF_OBJ) $(LIBBPF_OBJ) $(GO_SRC) | $(OUT_DIR)
-	GOOS=linux GOARCH=$(ARCH:x86_64=amd64) go build -v -o $(OUT_BIN) \
+	GOOS=linux GOARCH=$(ARCH:x86_64=amd64) \
+		CGO_CFLAGS="-I $(abspath $(LIBBPF_HEADERS))/bpf" \
+		CGO_LDFLAGS="$(abspath $(LIBBPF_OBJ))" \
+		go build -v -o $(OUT_BIN) \
 		-ldflags "-X github.com/aquasecurity/tracee/tracee.ebpfProgramB64Injected=$$(base64 -w 0 $(BPF_SRC))"
 
 $(OUT_BIN)_slim: $(BPF_OBJ) $(LIBBPF_OBJ) $(GO_SRC) | $(OUT_DIR)
