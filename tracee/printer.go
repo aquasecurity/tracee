@@ -32,15 +32,8 @@ func newEventPrinter(kind string, containerMode bool, out io.Writer, err io.Writ
 		res = &tableEventPrinter{
 			out:           out,
 			err:           err,
-			verbose:       false,
 			containerMode: containerMode,
-		}
-	case kind == "table-verbose":
-		res = &tableEventPrinter{
-			out:           out,
-			err:           err,
-			verbose:       true,
-			containerMode: containerMode,
+			fields: nil,
 		}
 	case kind == "json":
 		res = &jsonEventPrinter{
@@ -51,6 +44,13 @@ func newEventPrinter(kind string, containerMode bool, out io.Writer, err io.Writ
 		res = &gobEventPrinter{
 			out: gob.NewEncoder(out),
 			err: gob.NewEncoder(err),
+		}
+	case strings.HasPrefix(kind, "table="):
+		res = &tableEventPrinter{
+			out:           out,
+			err:           err,
+			containerMode: containerMode,
+			fields: strings.Split(strings.Split(kind, "=")[1], ","),
 		}
 	case strings.HasPrefix(kind, "go-template="):
 		res = &templateEventPrinter{
@@ -127,20 +127,77 @@ type tableEventPrinter struct {
 	tracee        *Tracee
 	out           io.Writer
 	err           io.Writer
-	verbose       bool
+	fields        []string
+	fieldTemplate **template.Template
 	containerMode bool
 }
 
 
-func (p tableEventPrinter) Init() (error) { return nil }
+func (p *tableEventPrinter) Init() (error) { 
+	if p.fields != nil {
+		var buffer bytes.Buffer
+		for _, field := range p.fields {
+			switch strings.TrimSpace(field) {
+				case "ts": fallthrough
+			    case "timestamp": fallthrough
+				case "Timestamp":  buffer.WriteString(fmt.Sprintf("%-14s ","{{.Timestamp}}"))
+				case "pid": fallthrough
+				case "processId": fallthrough
+				case "ProcessID":  buffer.WriteString(fmt.Sprintf("%-15s ","{{.ProcessID}} "))
+				case "tid": fallthrough
+				case "threadId": fallthrough
+				case "ThreadID": buffer.WriteString(fmt.Sprintf("%-15s ","{{.ThreadID}} "))
+				case "ppid": fallthrough
+				case "parentProcessId": fallthrough
+				case "ParentProcessID": buffer.WriteString(fmt.Sprintf("%-15s ","{{.ParentProcessID}} "))
+				case "hostpid": fallthrough
+				case "hostProcessId": fallthrough
+				case "HostProcessID": buffer.WriteString(fmt.Sprintf("%-15s ","{{.HostProcessID}} "))
+				case "hosttid": fallthrough
+				case "hostThreadId": fallthrough
+				case "HostThreadID": buffer.WriteString(fmt.Sprintf("%-15s ","{{.HostThreadID}} "))
+				case "hostppid": fallthrough
+				case "hostParentProcessId": fallthrough
+				case "HostParentProcessID": buffer.WriteString(fmt.Sprintf("%-15s ","{{.HostParentProcessID}} "))
+				case "uid": fallthrough
+				case "userId": fallthrough
+				case "UserID": buffer.WriteString(fmt.Sprintf("%-6s ","{{.UserID}} "))
+				case "mountNamespace": fallthrough
+				case "mountns": fallthrough
+				case "MountNS": buffer.WriteString(fmt.Sprintf("%-14s ","{{.MountNS}} "))
+				case "pidns": fallthrough
+				case "pidNamespace": fallthrough
+				case "PIDNS": buffer.WriteString(fmt.Sprintf("%-14s ","{{.PIDNS}} "))
+				case "procname": fallthrough
+				case "processName": fallthrough
+				case "ProcessName": buffer.WriteString(fmt.Sprintf("%-14s ","{{.ProcessName}} "))
+				case "hostName": fallthrough
+				case "HostName": buffer.WriteString(fmt.Sprintf("%-14s ","{{.HostName}} "))
+				case "eventId": fallthrough
+				case "EventID": buffer.WriteString(fmt.Sprintf("%-6s ","{{.EventID}} "))
+				case "eventName": fallthrough
+				case "EventName": buffer.WriteString(fmt.Sprintf("%-20s ","{{.EventName}} "))
+				case "argsNum": fallthrough
+				case "ArgsNum": buffer.WriteString(fmt.Sprintf("%-20s ","{{.ArgsNum}} "))
+				case "returnValue": fallthrough
+				case "ReturnValue": buffer.WriteString(fmt.Sprintf("%-20s ","{{.ReturnValue}} "))
+				case "args": fallthrough
+				case "Args": buffer.WriteString(fmt.Sprintf("%s ","{{.Args}} "))
+			}
+		}
+		bufString := buffer.String()
+		tmpl, err := template.New("table").Parse(bufString)
+		if err != nil {
+			return err
+		}
+		p.fieldTemplate = &tmpl
+	}
+	return nil 
+}
 
 func (p tableEventPrinter) Preamble() {
-	if p.verbose {
-		if p.containerMode {
-			fmt.Fprintf(p.out, "%-14s %-16s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-20s %s", "TIME(s)", "UTS_NAME", "MNT_NS", "PID_NS", "UID", "COMM", "PID/host", "TID/host", "PPID/host", "RET", "EVENT", "ARGS")
-		} else {
-			fmt.Fprintf(p.out, "%-14s %-16s %-12s %-12s %-6s %-16s %-7s %-7s %-7s %-16s %-20s %s", "TIME(s)", "UTS_NAME", "MNT_NS", "PID_NS", "UID", "COMM", "PID", "TID", "PPID", "RET", "EVENT", "ARGS")
-		}
+	if p.fields != nil {
+		fmt.Fprintf(p.out, strings.Join(p.fields, "  "))
 	} else {
 		if p.containerMode {
 			fmt.Fprintf(p.out, "%-14s %-6s %-16s %-15s %-15s %-16s %-20s %s", "TIME(s)", "UID", "COMM", "PID/host", "TID/host", "RET", "EVENT", "ARGS")
@@ -152,11 +209,10 @@ func (p tableEventPrinter) Preamble() {
 }
 
 func (p tableEventPrinter) Print(event Event) {
-	if p.verbose {
-		if p.containerMode {
-			fmt.Fprintf(p.out, "%-14f %-16s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ", event.Timestamp, event.HostName, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ParentProcessID, event.ParentProcessID, event.ReturnValue, event.EventName)
-		} else {
-			fmt.Fprintf(p.out, "%-14f %-16s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-20s ", event.Timestamp, event.HostName, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue, event.EventName)
+	if p.fields != nil {
+		err := (*p.fieldTemplate).Execute(p.out, event)
+		if err != nil {
+			p.Error(err)
 		}
 	} else {
 		if p.containerMode {
