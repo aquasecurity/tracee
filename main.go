@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -70,6 +71,11 @@ func main() {
 			if c.Bool("clear-output-path") {
 				os.RemoveAll(cfg.OutputPath)
 			}
+			bpfFile, err := getBPFObject()
+			if err != nil {
+				return err
+			}
+			cfg.BPFObjPath = bpfFile
 			t, err := tracee.New(cfg)
 			if err != nil {
 				// t is being closed internally
@@ -323,4 +329,44 @@ func printList() {
 		}
 	}
 	fmt.Println(b.String())
+}
+
+// This var is supposed to be injected *at build time* with the contents of the ebpf c program
+var ebpfProgramB64Injected string
+
+// makeBPFObject builds the ebpf object from source and return the path to the resulting file
+func makeBPFObject() (string, error) {
+	// if ebpfProgramB64Injected == "" {
+	// 	return "", fmt.Errorf("no ebpf program found")
+	// }
+	// p, err := base64.StdEncoding.DecodeString(ebpfProgramB64Injected)
+	// if err != nil {
+	// 	return "", err
+	// }
+
+	return "", fmt.Errorf("makeBPFObject is not implemented")
+}
+
+// getBPFObject finds or builds ebpf object file and returns it's path
+func getBPFObject() (string, error) {
+	bpfObjFileName := "tracee.bpf.o"
+	exePath, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+	//locations to search for the bpf file, in the following order
+	searchPaths := []string{
+		os.Getenv("TRACEE_BPF_FILE"),
+		filepath.Join(filepath.Dir(exePath), bpfObjFileName),
+		filepath.Join("/opt/tracee", bpfObjFileName),
+	}
+
+	for _, p := range searchPaths {
+		_, err = os.Stat(p)
+		if err == nil {
+			return p, nil
+		}
+	}
+
+	return "", fmt.Errorf("could not find or make ebpf program")
 }
