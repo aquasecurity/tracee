@@ -45,7 +45,7 @@ func (tc TraceeConfig) Validate() error {
 	if tc.EventsToTrace == nil {
 		return fmt.Errorf("eventsToTrace is nil")
 	}
-	if tc.OutputFormat != "table" && tc.OutputFormat != "table-verbose" && tc.OutputFormat != "json" && tc.OutputFormat != "gob" {
+	if tc.OutputFormat != "table" && tc.OutputFormat != "table-verbose" && tc.OutputFormat != "json" && tc.OutputFormat != "gob" && !strings.HasPrefix(tc.OutputFormat, "go-template=") {
 		return fmt.Errorf("unrecognized output format: %s", tc.OutputFormat)
 	}
 	for _, e := range tc.EventsToTrace {
@@ -173,8 +173,12 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	t := &Tracee{
 		config: cfg,
 	}
-	ContainerMode := (t.config.Mode == ModeContainerAll || t.config.Mode == ModeContainerNew)
-	t.printer = newEventPrinter(t.config.OutputFormat, ContainerMode, t.config.EventsFile, t.config.ErrorsFile)
+    ContainerMode := (t.config.Mode == ModeContainerAll || t.config.Mode == ModeContainerNew)
+	printObj, err := newEventPrinter(t.config.OutputFormat, ContainerMode, t.config.EventsFile, t.config.ErrorsFile)
+	if err != nil {
+		return nil, err
+	}
+	t.printer = printObj
 	t.eventsToTrace = make(map[int32]bool, len(t.config.EventsToTrace))
 	for _, e := range t.config.EventsToTrace {
 		// Map value is true iff events requested by the user
