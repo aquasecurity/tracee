@@ -1,6 +1,6 @@
 module github.com/aquasecurity/tracee
 
-go 1.13
+go 1.15
 
 require (
 	github.com/iovisor/gobpf v0.0.0-20200529092446-49b58e11a4b5
