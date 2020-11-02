@@ -33,7 +33,7 @@ $(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(GO_SRC) | $(OUT_DIR)
 		CGO_CFLAGS="-I $(abspath $(LIBBPF_HEADERS))/bpf" \
 		CGO_LDFLAGS="$(abspath $(LIBBPF_OBJ))" \
 		go build -v -o $(OUT_BIN) \
-		-ldflags "-X github.com/aquasecurity/tracee/main.ebpfProgramB64Injected=$$(base64 -w 0 $(BPF_SRC))"
+		-ldflags "-X main.ebpfProgramB64Injected=$$(base64 -w 0 $(BPF_SRC))"
 
 # .PHONY: build-docker
 # build-docker: clean
