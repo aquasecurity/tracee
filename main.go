@@ -1,6 +1,8 @@
 package main
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -22,7 +24,7 @@ var debug bool
 var traceeInstallPath string
 
 // This var is supposed to be injected *at build time* with the contents of the ebpf c program
-var ebpfProgramB64Injected string
+var bpfBundleInjected string
 
 func main() {
 	app := &cli.App{
@@ -402,7 +404,7 @@ func getBPFObject() (string, error) {
 			return "", err
 		}
 		if debug {
-			fmt.Printf("succesfully built ebpf obj file into: %s\n", madeBPFObjFilePath)
+			fmt.Printf("successfully built ebpf obj file into: %s\n", madeBPFObjFilePath)
 		}
 		bpfObjFilePath = madeBPFObjFilePath
 	}
@@ -410,18 +412,42 @@ func getBPFObject() (string, error) {
 	return bpfObjFilePath, nil
 }
 
-// getBPFSource puts the ebpf source in a file under dir and returns the path to the file
-func getBPFSourceFile(dir string) string {
-	if ebpfProgramB64Injected == "" {
-		return ""
+// unpackBPFBundle unpacks the bundle (tar(gzip(b64))) into the provided directory
+func unpackBPFBundle(dir string) error {
+	if bpfBundleInjected == "" {
+		return fmt.Errorf("missing embedded data")
 	}
-	progReader := base64.NewDecoder(base64.RawStdEncoding, strings.NewReader(ebpfProgramB64Injected))
-	progFilePath := filepath.Join(dir, "tracee.bpf.c")
-	os.Remove(progFilePath)
-	progFile, _ := os.Create(progFilePath)
-	defer progFile.Close()
-	io.Copy(progFile, progReader)
-	return progFilePath
+	b64Reader := base64.NewDecoder(base64.RawStdEncoding, strings.NewReader(bpfBundleInjected))
+	gzReader, err := gzip.NewReader(b64Reader)
+	if err != nil {
+		return err
+	}
+	tarReader := tar.NewReader(gzReader)
+	for true {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		switch header.Typeflag {
+		case tar.TypeDir:
+			//skip directories
+		case tar.TypeReg:
+			outFile, err := os.Create(filepath.Join(dir, filepath.Base(header.Name)))
+			if err != nil {
+				return err
+			}
+			defer outFile.Close()
+			if _, err := io.Copy(outFile, tarReader); err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("unknown tar type: %v", header)
+		}
+	}
+	return nil
 }
 
 // makeBPFObject builds the ebpf object from source code into the provided path
@@ -436,9 +462,9 @@ func makeBPFObject(outFile string) error {
 		defer os.RemoveAll(dir)
 	}
 	objFile := filepath.Join(dir, "tracee.bpf.o")
-	bpfSrc := getBPFSourceFile(dir)
-	if bpfSrc == "" {
-		return fmt.Errorf("could not get bpf source file")
+	err = unpackBPFBundle(dir)
+	if err != nil {
+		return err
 	}
 	clang := locateFile("clang", []string{os.Getenv("CLANG")})
 	if clang == "" {
@@ -460,15 +486,13 @@ func makeBPFObject(outFile string) error {
 	if linuxArch == "" {
 		linuxArch = strings.Replace(runtime.GOARCH, "amd64", "x86", 1)
 	}
-	libbpfHeaders := "dist/libbpf/usr/include" // TODO: embed
-	bpfExtraHeaders := "3rdparty/include"      // TODO: embed
 
 	// from the Makefile:
 	// $(CLANG) -S \
 	// 	-D__BPF_TRACING__ \
 	// 	-D__KERNEL__ \
 	// 	-D__TARGET_ARCH_$(linux_arch) \
-	// 	-I $(LIBBPF_HEADERS) \
+	// 	-I $(LIBBPF_HEADERS)/bpf \
 	// 	-include $(KERN_SRC)/include/linux/kconfig.h \
 	// 	-I $(KERN_SRC)/arch/$(linux_arch)/include \
 	// 	-I $(KERN_SRC)/arch/$(linux_arch)/include/uapi \
@@ -478,7 +502,7 @@ func makeBPFObject(outFile string) error {
 	// 	-I $(KERN_SRC)/include/uapi \
 	// 	-I $(KERN_SRC)/include/generated \
 	// 	-I $(KERN_SRC)/include/generated/uapi \
-	// 	-I $(bpf_extra_headers) \
+	// 	-I $(BPF_HEADERS) \
 	// 	-Wno-address-of-packed-member \
 	// 	-Wno-compare-distinct-pointer-types \
 	// 	-Wno-deprecated-declarations \
@@ -493,7 +517,7 @@ func makeBPFObject(outFile string) error {
 	// 	-fno-jump-tables \
 	// 	-fno-unwind-tables \
 	// 	-fno-asynchronous-unwind-tables \
-	// 	-x c \
+	// 	-xc \
 	// 	-nostdinc \
 	// 	-O2 -emit-llvm -c -g $< -o $(@:.o=.ll)
 	intermediateFile := strings.Replace(objFile, ".o", ".ll", 1)
@@ -503,7 +527,7 @@ func makeBPFObject(outFile string) error {
 		"-D__BPF_TRACING__",
 		"-D__KERNEL__",
 		fmt.Sprintf("-D__TARGET_ARCH_%s", linuxArch),
-		"-I", libbpfHeaders,
+		fmt.Sprintf("-I%s", dir),
 		fmt.Sprintf("-include%s/include/linux/kconfig.h", kernelSource),
 		fmt.Sprintf("-I%s/arch/%s/include", kernelSource, linuxArch),
 		fmt.Sprintf("-I%s/arch/%s/include/uapi", kernelSource, linuxArch),
@@ -513,7 +537,6 @@ func makeBPFObject(outFile string) error {
 		fmt.Sprintf("-I%s/include/uapi", kernelSource),
 		fmt.Sprintf("-I%s/include/generated", kernelSource),
 		fmt.Sprintf("-I%s/include/generated/uapi", kernelSource),
-		fmt.Sprintf("-I%s", bpfExtraHeaders),
 		"-Wno-address-of-packed-member",
 		"-Wno-compare-distinct-pointer-types",
 		"-Wno-deprecated-declarations",
@@ -529,7 +552,7 @@ func makeBPFObject(outFile string) error {
 		"-fno-unwind-tables",
 		"-fno-asynchronous-unwind-tables",
 		"-xc",
-		"-nostdinc", "-O2", "-emit-llvm", "-c", "-g", bpfSrc, fmt.Sprintf("-o%s", intermediateFile),
+		"-nostdinc", "-O2", "-emit-llvm", "-c", "-g", filepath.Join(dir, "tracee.bpf.c"), fmt.Sprintf("-o%s", intermediateFile),
 	)
 	cmd1.Dir = dir
 	if debug {
@@ -578,7 +601,7 @@ func makeBPFObject(outFile string) error {
 	}
 
 	if debug {
-		fmt.Printf("succesfully built ebpf obj file at: %s", objFile)
+		fmt.Printf("successfully built ebpf obj file at: %s\n", objFile)
 	}
 	os.MkdirAll(filepath.Dir(outFile), 0755)
 	err = tracee.CopyFileByPath(objFile, outFile)
