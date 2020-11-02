@@ -26,8 +26,8 @@
 
 #undef container_of
 //#include "bpf_core_read.h"
-#include <bpf/bpf_helpers.h>
-#include <bpf/bpf_tracing.h>
+#include <bpf_helpers.h>
+#include <bpf_tracing.h>
 
 #define PT_REGS_PARM6(ctx)  ((ctx)->r9)
 
