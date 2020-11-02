@@ -7,10 +7,13 @@ KERN_RELEASE ?= $(shell uname -r)
 KERN_SRC ?= /lib/modules/$(KERN_RELEASE)/build
 # inputs and outputs:
 OUT_DIR ?= dist
-BPF_SRC := tracee/tracee.bpf.c 
-BPF_OBJ := $(OUT_DIR)/tracee.bpf.o
 GO_SRC := $(shell find . -type f -name '*.go' ! -name '*_test.go')
 OUT_BIN := $(OUT_DIR)/tracee
+BPF_SRC := tracee/tracee.bpf.c 
+BPF_OBJ := $(OUT_DIR)/tracee.bpf.o
+BPF_HEADERS := 3rdparty/include
+BPF_BUNDLE_DIR := $(OUT_DIR)/tracee.bpf
+BPF_BUNDLE := $(BPF_BUNDLE_DIR).tar.gz
 LIBBPF_SRC := 3rdparty/libbpf/src
 LIBBPF_HEADERS := $(OUT_DIR)/libbpf/usr/include
 LIBBPF_OBJ := $(OUT_DIR)/libbpf/libbpf.a
@@ -26,14 +29,14 @@ $(OUT_DIR):
 	mkdir -p $@
 
 .PHONY: build
-build: $(OUT_BIN) $(BPF_OBJ)
+build: $(OUT_BIN)
 
-$(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(GO_SRC) | $(OUT_DIR)
+$(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(GO_SRC) $(BPF_BUNDLE) | $(OUT_DIR)
 	GOOS=linux GOARCH=$(ARCH:x86_64=amd64) \
 		CGO_CFLAGS="-I $(abspath $(LIBBPF_HEADERS))/bpf" \
 		CGO_LDFLAGS="$(abspath $(LIBBPF_OBJ))" \
 		go build -v -o $(OUT_BIN) \
-		-ldflags "-X main.ebpfProgramB64Injected=$$(base64 -w 0 $(BPF_SRC))"
+		-ldflags "-X main.bpfBundleInjected=$$(base64 -w 0 $(BPF_BUNDLE))"
 
 # .PHONY: build-docker
 # build-docker: clean
@@ -55,14 +58,20 @@ $(LIBBPF_HEADERS): | $(OUT_DIR) $(bpf_compile_tools) $(LIBBPF_SRC)
 $(LIBBPF_OBJ): | $(OUT_DIR) $(bpf_compile_tools) $(LIBBPF_SRC) 
 	cd $(LIBBPF_SRC) && $(MAKE) OBJDIR=$(abspath $(OUT_DIR))/libbpf BUILD_STATIC_ONLY=1 
 
+$(BPF_BUNDLE): $(BPF_BUNDLE_DIR)
+	tar -czf $@ $^
+
+$(BPF_BUNDLE_DIR): $(BPF_SRC) $(LIBBPF_HEADERS) $(BPF_HEADERS)
+	mkdir -p $(BPF_BUNDLE_DIR)
+	cp $$(find $^ -type f) $(BPF_BUNDLE_DIR)
+
 linux_arch := $(ARCH:x86_64=x86)
-bpf_extra_headers := 3rdparty/include #copy to out?
 $(BPF_OBJ): $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compile_tools)
 	$(CLANG) -S \
 		-D__BPF_TRACING__ \
 		-D__KERNEL__ \
 		-D__TARGET_ARCH_$(linux_arch) \
-		-I $(LIBBPF_HEADERS) \
+		-I $(LIBBPF_HEADERS)/bpf \
 		-include $(KERN_SRC)/include/linux/kconfig.h \
 		-I $(KERN_SRC)/arch/$(linux_arch)/include \
 		-I $(KERN_SRC)/arch/$(linux_arch)/include/uapi \
@@ -72,7 +81,7 @@ $(BPF_OBJ): $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compile_tools)
 		-I $(KERN_SRC)/include/uapi \
 		-I $(KERN_SRC)/include/generated \
 		-I $(KERN_SRC)/include/generated/uapi \
-		-I $(bpf_extra_headers) \
+		-I $(BPF_HEADERS) \
 		-Wno-address-of-packed-member \
 		-Wno-compare-distinct-pointer-types \
 		-Wno-deprecated-declarations \
@@ -92,6 +101,7 @@ $(BPF_OBJ): $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compile_tools)
 		-O2 -emit-llvm -c -g $< -o $(@:.o=.ll)
 	$(LLC) -march=bpf -filetype=obj -o $@ $(@:.o=.ll)
 	$(LLVM_STRIP) -g $@
+	rm $(@:.o=.ll) 
 
 # .PHONY: test
 # test:
