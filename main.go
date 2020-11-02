@@ -1,10 +1,15 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -12,6 +17,12 @@ import (
 	"github.com/syndtr/gocapability/capability"
 	"github.com/urfave/cli/v2"
 )
+
+var debug bool
+var traceeInstallPath string
+
+// This var is supposed to be injected *at build time* with the contents of the ebpf c program
+var ebpfProgramB64Injected string
 
 func main() {
 	app := &cli.App{
@@ -143,7 +154,7 @@ func main() {
 			&cli.StringFlag{
 				Name:  "output-path",
 				Value: "/tmp/tracee",
-				Usage: "set output path",
+				Usage: "path where tracee will save produced artifacts",
 			},
 			&cli.BoolFlag{
 				Name:    "clear-output-path",
@@ -165,6 +176,18 @@ func main() {
 				Name:  "security-alerts",
 				Value: false,
 				Usage: "alert on security related events",
+			},
+			&cli.BoolFlag{
+				Name:        "debug",
+				Value:       false,
+				Usage:       "write verbose debug messages to stdndard output and retain intermediate artifacts",
+				Destination: &debug,
+			},
+			&cli.StringFlag{
+				Name:        "install-path",
+				Value:       "/opt/tracee",
+				Usage:       "path where tracee will install permanent resources",
+				Destination: &traceeInstallPath,
 			},
 		},
 	}
@@ -331,20 +354,25 @@ func printList() {
 	fmt.Println(b.String())
 }
 
-// This var is supposed to be injected *at build time* with the contents of the ebpf c program
-var ebpfProgramB64Injected string
-
-// makeBPFObject builds the ebpf object from source and return the path to the resulting file
-func makeBPFObject() (string, error) {
-	// if ebpfProgramB64Injected == "" {
-	// 	return "", fmt.Errorf("no ebpf program found")
-	// }
-	// p, err := base64.StdEncoding.DecodeString(ebpfProgramB64Injected)
-	// if err != nil {
-	// 	return "", err
-	// }
-
-	return "", fmt.Errorf("makeBPFObject is not implemented")
+// locateFile locates a file named file, or a directory if name is empty, and returns it's full path
+// It first tries in the paths given by the dirs, and then a system lookup
+func locateFile(file string, dirs []string) string {
+	var res string
+	for _, dir := range dirs {
+		if dir != "" {
+			fi, err := os.Stat(filepath.Join(dir, file))
+			if err == nil && ((file == "" && fi.IsDir()) || (file != "" && fi.Mode().IsRegular())) {
+				return filepath.Join(dir, file)
+			}
+		}
+	}
+	if file != "" && res == "" {
+		p, _ := exec.LookPath(file)
+		if p != "" {
+			return p
+		}
+	}
+	return ""
 }
 
 // getBPFObject finds or builds ebpf object file and returns it's path
@@ -357,16 +385,206 @@ func getBPFObject() (string, error) {
 	//locations to search for the bpf file, in the following order
 	searchPaths := []string{
 		os.Getenv("TRACEE_BPF_FILE"),
-		filepath.Join(filepath.Dir(exePath), bpfObjFileName),
-		filepath.Join("/opt/tracee", bpfObjFileName),
+		filepath.Dir(exePath),
+		traceeInstallPath,
 	}
-
-	for _, p := range searchPaths {
-		_, err = os.Stat(p)
-		if err == nil {
-			return p, nil
+	bpfObjFilePath := locateFile(bpfObjFileName, searchPaths)
+	if bpfObjFilePath != "" && debug {
+		fmt.Printf("found bpf object file at: %s\n", bpfObjFilePath)
+	}
+	if bpfObjFilePath == "" {
+		if debug {
+			fmt.Printf("could not find tracee bpf object file in any of %v. attempting to build it\n", searchPaths)
 		}
+		madeBPFObjFilePath := filepath.Join(traceeInstallPath, bpfObjFileName)
+		err = makeBPFObject(madeBPFObjFilePath)
+		if err != nil {
+			return "", err
+		}
+		if debug {
+			fmt.Printf("succesfully built ebpf obj file into: %s\n", madeBPFObjFilePath)
+		}
+		bpfObjFilePath = madeBPFObjFilePath
 	}
 
-	return "", fmt.Errorf("could not find or make ebpf program")
+	return bpfObjFilePath, nil
+}
+
+// getBPFSource puts the ebpf source in a file under dir and returns the path to the file
+func getBPFSourceFile(dir string) string {
+	if ebpfProgramB64Injected == "" {
+		return ""
+	}
+	progReader := base64.NewDecoder(base64.RawStdEncoding, strings.NewReader(ebpfProgramB64Injected))
+	progFilePath := filepath.Join(dir, "tracee.bpf.c")
+	os.Remove(progFilePath)
+	progFile, _ := os.Create(progFilePath)
+	defer progFile.Close()
+	io.Copy(progFile, progReader)
+	return progFilePath
+}
+
+// makeBPFObject builds the ebpf object from source code into the provided path
+func makeBPFObject(outFile string) error {
+	dir, err := ioutil.TempDir("", "tracee-make")
+	if err != nil {
+		return err
+	}
+	if debug {
+		fmt.Printf("building bpf object in: %s\n", dir)
+	} else {
+		defer os.RemoveAll(dir)
+	}
+	objFile := filepath.Join(dir, "tracee.bpf.o")
+	bpfSrc := getBPFSourceFile(dir)
+	if bpfSrc == "" {
+		return fmt.Errorf("could not get bpf source file")
+	}
+	clang := locateFile("clang", []string{os.Getenv("CLANG")})
+	if clang == "" {
+		return fmt.Errorf("missing compilation dependency: clang")
+	}
+	llc := locateFile("llc", []string{os.Getenv("LLC")})
+	if clang == "" {
+		return fmt.Errorf("missing compilation dependency: llc")
+	}
+	llvmstrip := locateFile("llvm-strip", []string{os.Getenv("LLVM_STRIP")})
+	if clang == "" {
+		return fmt.Errorf("missing compilation dependency: llvm-strip")
+	}
+	kernelSource := locateFile("", []string{os.Getenv("KERN_SRC"), fmt.Sprintf("/lib/modules/%s/build", tracee.UnameRelease())})
+	if kernelSource == "" {
+		return fmt.Errorf("missing compilation dependency: kernelSource")
+	}
+	linuxArch := os.Getenv("ARCH")
+	if linuxArch == "" {
+		linuxArch = strings.Replace(runtime.GOARCH, "amd64", "x86", 1)
+	}
+	libbpfHeaders := "dist/libbpf/usr/include" // TODO: embed
+	bpfExtraHeaders := "3rdparty/include"      // TODO: embed
+
+	// from the Makefile:
+	// $(CLANG) -S \
+	// 	-D__BPF_TRACING__ \
+	// 	-D__KERNEL__ \
+	// 	-D__TARGET_ARCH_$(linux_arch) \
+	// 	-I $(LIBBPF_HEADERS) \
+	// 	-include $(KERN_SRC)/include/linux/kconfig.h \
+	// 	-I $(KERN_SRC)/arch/$(linux_arch)/include \
+	// 	-I $(KERN_SRC)/arch/$(linux_arch)/include/uapi \
+	// 	-I $(KERN_SRC)/arch/$(linux_arch)/include/generated \
+	// 	-I $(KERN_SRC)/arch/$(linux_arch)/include/generated/uapi \
+	// 	-I $(KERN_SRC)/include \
+	// 	-I $(KERN_SRC)/include/uapi \
+	// 	-I $(KERN_SRC)/include/generated \
+	// 	-I $(KERN_SRC)/include/generated/uapi \
+	// 	-I $(bpf_extra_headers) \
+	// 	-Wno-address-of-packed-member \
+	// 	-Wno-compare-distinct-pointer-types \
+	// 	-Wno-deprecated-declarations \
+	// 	-Wno-gnu-variable-sized-type-not-at-end \
+	// 	-Wno-pointer-sign \
+	// 	-Wno-pragma-once-outside-heade \
+	// 	-Wno-unknown-warning-option \
+	// 	-Wno-unused-value \
+	// 	-Wunused \
+	// 	-Wall \
+	// 	-fno-stack-protector \
+	// 	-fno-jump-tables \
+	// 	-fno-unwind-tables \
+	// 	-fno-asynchronous-unwind-tables \
+	// 	-x c \
+	// 	-nostdinc \
+	// 	-O2 -emit-llvm -c -g $< -o $(@:.o=.ll)
+	intermediateFile := strings.Replace(objFile, ".o", ".ll", 1)
+	// TODO: validate all files/directories. perhaps using locateFile
+	cmd1 := exec.Command(clang,
+		"-S",
+		"-D__BPF_TRACING__",
+		"-D__KERNEL__",
+		fmt.Sprintf("-D__TARGET_ARCH_%s", linuxArch),
+		"-I", libbpfHeaders,
+		fmt.Sprintf("-include%s/include/linux/kconfig.h", kernelSource),
+		fmt.Sprintf("-I%s/arch/%s/include", kernelSource, linuxArch),
+		fmt.Sprintf("-I%s/arch/%s/include/uapi", kernelSource, linuxArch),
+		fmt.Sprintf("-I%s/arch/%s/include/generated", kernelSource, linuxArch),
+		fmt.Sprintf("-I%s/arch/%s/include/generated/uapi", kernelSource, linuxArch),
+		fmt.Sprintf("-I%s/include", kernelSource),
+		fmt.Sprintf("-I%s/include/uapi", kernelSource),
+		fmt.Sprintf("-I%s/include/generated", kernelSource),
+		fmt.Sprintf("-I%s/include/generated/uapi", kernelSource),
+		fmt.Sprintf("-I%s", bpfExtraHeaders),
+		"-Wno-address-of-packed-member",
+		"-Wno-compare-distinct-pointer-types",
+		"-Wno-deprecated-declarations",
+		"-Wno-gnu-variable-sized-type-not-at-end",
+		"-Wno-pointer-sign",
+		"-Wno-pragma-once-outside-heade",
+		"-Wno-unknown-warning-option",
+		"-Wno-unused-value",
+		"-Wunused",
+		"-Wall",
+		"-fno-stack-protector",
+		"-fno-jump-tables",
+		"-fno-unwind-tables",
+		"-fno-asynchronous-unwind-tables",
+		"-xc",
+		"-nostdinc", "-O2", "-emit-llvm", "-c", "-g", bpfSrc, fmt.Sprintf("-o%s", intermediateFile),
+	)
+	cmd1.Dir = dir
+	if debug {
+		fmt.Println(cmd1)
+		cmd1.Stdout = os.Stdout
+		cmd1.Stderr = os.Stderr
+	}
+	err = cmd1.Run()
+	if err != nil {
+		return err
+	}
+
+	// from Makefile:
+	// $(LLC) -march=bpf -filetype=obj -o $@ $(@:.o=.ll)
+	cmd2 := exec.Command(llc,
+		"-march=bpf",
+		"-filetype=obj",
+		"-o", objFile,
+		intermediateFile,
+	)
+	cmd2.Dir = dir
+	if debug {
+		fmt.Println(cmd2)
+		cmd2.Stdout = os.Stdout
+		cmd2.Stderr = os.Stderr
+	}
+	err = cmd2.Run()
+	if err != nil {
+		return err
+	}
+
+	// from Makefile:
+	// $(LLVM_STRIP) -g $@
+	cmd3 := exec.Command(llvmstrip,
+		"-g", objFile,
+	)
+	cmd3.Dir = dir
+	if debug {
+		fmt.Println(cmd3)
+		cmd3.Stdout = os.Stdout
+		cmd3.Stderr = os.Stderr
+	}
+	err = cmd3.Run()
+	if err != nil {
+		return err
+	}
+
+	if debug {
+		fmt.Printf("succesfully built ebpf obj file at: %s", objFile)
+	}
+	os.MkdirAll(filepath.Dir(outFile), 0755)
+	err = tracee.CopyFileByPath(objFile, outFile)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

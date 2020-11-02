@@ -247,10 +247,11 @@ func (c *bucketsCache) addBucketItem(key uint32, value uint32, force bool) {
 	}
 }
 
-func supportRawTP() (bool, error) {
+// UnameRelease gets the version string of the current running kernel
+func UnameRelease() string {
 	var uname syscall.Utsname
 	if err := syscall.Uname(&uname); err != nil {
-		return false, err
+		return ""
 	}
 	var buf [65]byte
 	for i, b := range uname.Release {
@@ -259,6 +260,14 @@ func supportRawTP() (bool, error) {
 	ver := string(buf[:])
 	if i := strings.Index(ver, "\x00"); i != -1 {
 		ver = ver[:i]
+	}
+	return ver
+}
+
+func supportRawTP() (bool, error) {
+	ver := UnameRelease()
+	if ver == "" {
+		return false, fmt.Errorf("could not determine current release")
 	}
 	ver_split := strings.Split(ver, ".")
 	if len(ver_split) < 2 {
@@ -347,7 +356,7 @@ func (t *Tracee) initEventsParams() map[int32][]eventParam {
 	return eventsParams
 }
 
-func (t *Tracee) initBPF(ebpfObjectPath string) error {
+func (t *Tracee) initBPF(bpfObjectPath string) error {
 	var err error
 
 	// todo: update docker image to use new approach
@@ -363,7 +372,7 @@ func (t *Tracee) initBPF(ebpfObjectPath string) error {
 	//       5. Populate maps with values,
 	//       6. Attach probes,
 	//       7. Initialize perf buffers
-	t.bpfModule, err = bpf.NewModuleFromFile(ebpfObjectPath)
+	t.bpfModule, err = bpf.NewModuleFromFile(bpfObjectPath)
 	if err != nil {
 		return err
 	}
@@ -600,7 +609,8 @@ func boolToUInt32(b bool) uint32 {
 	return uint32(0)
 }
 
-func copyFileByPath(src, dst string) error {
+// CopyFileByPath copies a file from src to dst
+func CopyFileByPath(src, dst string) error {
 	sourceFileStat, err := os.Stat(src)
 	if err != nil {
 		return err
@@ -683,7 +693,7 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 					return nil
 				}
 				//capture
-				err = copyFileByPath(sourceFilePath, destinationFilePath)
+				err = CopyFileByPath(sourceFilePath, destinationFilePath)
 				if err != nil {
 					return err
 				}
