@@ -59,7 +59,9 @@ linux_arch := $(ARCH:x86_64=x86)
 bpf_extra_headers := 3rdparty/include #copy to out?
 $(BPF_OBJ): $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compile_tools)
 	$(CLANG) -S \
-		-D __BPF_TRACING__ -D __KERNEL__ -D__TARGET_ARCH_$(linux_arch) \
+		-D__BPF_TRACING__ \
+		-D__KERNEL__ \
+		-D__TARGET_ARCH_$(linux_arch) \
 		-I $(LIBBPF_HEADERS) \
 		-include $(KERN_SRC)/include/linux/kconfig.h \
 		-I $(KERN_SRC)/arch/$(linux_arch)/include \
@@ -85,10 +87,10 @@ $(BPF_OBJ): $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compile_tools)
 		-fno-jump-tables \
 		-fno-unwind-tables \
 		-fno-asynchronous-unwind-tables \
-		-x c \
+		-xc \
 		-nostdinc \
-		-O2 -emit-llvm -c -g $< -o ${@:.o=.ll}
-	$(LLC) -march=bpf -filetype=obj -o $@ ${@:.o=.ll}
+		-O2 -emit-llvm -c -g $< -o $(@:.o=.ll)
+	$(LLC) -march=bpf -filetype=obj -o $@ $(@:.o=.ll)
 	$(LLVM_STRIP) -g $@
 
 # .PHONY: test
