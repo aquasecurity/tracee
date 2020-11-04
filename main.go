@@ -22,6 +22,7 @@ import (
 
 var debug bool
 var traceeInstallPath string
+var buildPolicy string
 
 // This var is supposed to be injected *at build time* with the contents of the ebpf c program
 var bpfBundleInjected string
@@ -170,7 +171,7 @@ func main() {
 			&cli.StringSliceFlag{
 				Name:  "capture",
 				Value: nil,
-				Usage: "capture artifacts that were written, executed or found to be suspicious. captured artifacts will appear in the 'output-path' directory. possible values: 'write'/'exec'/'mem'/'all'. use this flag multiple times to choose multiple capture options",
+				Usage: "capture artifacts that were written, executed or found to be suspicious. captured artifacts will appear in the 'output-path' directory. possible options: 'write'/'exec'/'mem'/'all'. use this flag multiple times to choose multiple capture options",
 			},
 			&cli.StringSliceFlag{
 				Name:  "filter-file-write",
@@ -193,6 +194,12 @@ func main() {
 				Value:       "/tmp/tracee",
 				Usage:       "path where tracee will install or lookup it's resources",
 				Destination: &traceeInstallPath,
+			},
+			&cli.StringFlag{
+				Name:        "build-policy",
+				Value:       "if-needed",
+				Usage:       "when to build the bpf program. possible options: 'never'/'always'/'if-needed'",
+				Destination: &buildPolicy,
 			},
 		},
 	}
@@ -399,9 +406,10 @@ func getBPFObject() (string, error) {
 	if bpfObjFilePath != "" && debug {
 		fmt.Printf("found bpf object file at: %s\n", bpfObjFilePath)
 	}
-	if bpfObjFilePath == "" {
+
+	if (bpfObjFilePath == "" && buildPolicy != "never") || buildPolicy == "always" {
 		if debug {
-			fmt.Printf("could not find tracee bpf object file in any of %v. attempting to build it\n", searchPaths)
+			fmt.Printf("attempting to build the bpf object file\n")
 		}
 		bpfObjInstallPath := filepath.Join(traceeInstallPath, bpfObjFileName)
 		err = makeBPFObject(bpfObjInstallPath)
@@ -414,6 +422,9 @@ func getBPFObject() (string, error) {
 		bpfObjFilePath = bpfObjInstallPath
 	}
 
+	if bpfObjFilePath == "" {
+		return "", fmt.Errorf("could not find or build the bpf object file")
+	}
 	return bpfObjFilePath, nil
 }
 
