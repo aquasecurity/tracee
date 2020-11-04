@@ -158,7 +158,7 @@ func main() {
 			},
 			&cli.StringFlag{
 				Name:  "output-path",
-				Value: "/tmp/tracee",
+				Value: "/tmp/tracee/out",
 				Usage: "path where tracee will save produced artifacts",
 			},
 			&cli.BoolFlag{
