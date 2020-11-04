@@ -89,6 +89,9 @@ func main() {
 				return err
 			}
 			cfg.BPFObjPath = bpfFile
+			if !checkRequiredCapabilities() {
+				return fmt.Errorf("Insufficient privileges to run")
+			}
 			t, err := tracee.New(cfg)
 			if err != nil {
 				// t is being closed internally
@@ -194,9 +197,6 @@ func main() {
 		},
 	}
 
-	if !isCapable() {
-		log.Fatal("Not enough privileges to run this program")
-	}
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
@@ -311,19 +311,24 @@ func prepareEventsToTrace(eventsToTrace []string, setsToTrace []string, excludeE
 	return res, nil
 }
 
-func isCapable() bool {
-	c, err := capability.NewPid2(0)
+func checkRequiredCapabilities() bool {
+	caps, err := getSelfCapabilities()
 	if err != nil {
-		fmt.Println("Current user capabilities could not be retrieved. Assure running with enough privileges")
-		return true
+		return false
 	}
-	err = c.Load()
-	if err != nil {
-		fmt.Println("Current user capabilities could not be retrieved. Assure running with enough privileges")
-		return true
-	}
+	return caps.Get(capability.EFFECTIVE, capability.CAP_SYS_ADMIN)
+}
 
-	return c.Get(capability.EFFECTIVE, capability.CAP_SYS_ADMIN)
+func getSelfCapabilities() (capability.Capabilities, error) {
+	cap, err := capability.NewPid2(0)
+	if err != nil {
+		return nil, err
+	}
+	err = cap.Load()
+	if err != nil {
+		return nil, err
+	}
+	return cap, nil
 }
 
 func printList() {
@@ -452,6 +457,21 @@ func unpackBPFBundle(dir string) error {
 
 // makeBPFObject builds the ebpf object from source code into the provided path
 func makeBPFObject(outFile string) error {
+	// drop capabilities for the compilation process
+	cap, err := getSelfCapabilities()
+	if err != nil {
+		return err
+	}
+	capNew, err := capability.NewPid2(0)
+	if err != err {
+		return err
+	}
+	capNew.Clear(capability.BOUNDS)
+	err = capNew.Apply(capability.BOUNDS)
+	if err != err {
+		return err
+	}
+	defer cap.Apply(capability.BOUNDS)
 	dir, err := ioutil.TempDir("", "tracee-make")
 	if err != nil {
 		return err
