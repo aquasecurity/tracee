@@ -190,8 +190,8 @@ func main() {
 			},
 			&cli.StringFlag{
 				Name:        "install-path",
-				Value:       "/opt/tracee",
-				Usage:       "path where tracee will install permanent resources",
+				Value:       "/tmp/tracee",
+				Usage:       "path where tracee will install or lookup it's resources",
 				Destination: &traceeInstallPath,
 			},
 		},
@@ -403,15 +403,15 @@ func getBPFObject() (string, error) {
 		if debug {
 			fmt.Printf("could not find tracee bpf object file in any of %v. attempting to build it\n", searchPaths)
 		}
-		madeBPFObjFilePath := filepath.Join(traceeInstallPath, bpfObjFileName)
-		err = makeBPFObject(madeBPFObjFilePath)
+		bpfObjInstallPath := filepath.Join(traceeInstallPath, bpfObjFileName)
+		err = makeBPFObject(bpfObjInstallPath)
 		if err != nil {
 			return "", err
 		}
 		if debug {
-			fmt.Printf("successfully built ebpf obj file into: %s\n", madeBPFObjFilePath)
+			fmt.Printf("successfully built ebpf obj file into: %s\n", bpfObjInstallPath)
 		}
-		bpfObjFilePath = madeBPFObjFilePath
+		bpfObjFilePath = bpfObjInstallPath
 	}
 
 	return bpfObjFilePath, nil
