@@ -523,59 +523,33 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 			continue
 		}
 		for _, probe := range event.Probes {
+			if probe.attach == sysCall {
+				// Already handled by raw_syscalls tracepoints
+				continue
+			}
+			prog, err := t.bpfModule.GetProgram(probe.fn)
+			if err != nil {
+				return fmt.Errorf("error getting program %s: %v", probe.fn, err)
+			}
 			if probe.attach == rawTracepoint && !supportRawTracepoints {
 				// We fallback to regular tracepoint in case kernel doesn't support raw tracepoints (< 4.17)
 				probe.attach = tracepoint
 			}
-			if probe.attach == sysCall {
-				continue
-			}
-			if probe.attach == kprobe {
-				prog, err := t.bpfModule.GetProgram(probe.fn)
-				if err != nil {
-					return fmt.Errorf("error loading kprobe %s: %v", probe.fn, err)
-				}
+			switch probe.attach {
+			case kprobe:
 				// todo: after updating minimal kernel version to 4.18, use without legacy
 				_, err = prog.AttachKprobeLegacy(probe.event)
-				if err != nil {
-					return fmt.Errorf("error attaching kprobe %s: %v", probe.event, err)
-				}
-				continue
-			}
-			if probe.attach == kretprobe {
-				prog, err := t.bpfModule.GetProgram(probe.fn)
-				if err != nil {
-					return fmt.Errorf("error loading kprobe %s: %v", probe.fn, err)
-				}
+			case kretprobe:
 				// todo: after updating minimal kernel version to 4.18, use without legacy
 				_, err = prog.AttachKretprobeLegacy(probe.event)
-				if err != nil {
-					return fmt.Errorf("error attaching kretprobe %s: %v", probe.event, err)
-				}
-				continue
-			}
-			if probe.attach == tracepoint {
-				prog, err := t.bpfModule.GetProgram(probe.fn)
-				if err != nil {
-					return fmt.Errorf("error loading tracepoint %s: %v", probe.fn, err)
-				}
+			case tracepoint:
 				_, err = prog.AttachTracepoint(probe.event)
-				if err != nil {
-					return fmt.Errorf("error attaching tracepoint %s: %v", probe.event, err)
-				}
-				continue
-			}
-			if probe.attach == rawTracepoint {
-				prog, err := t.bpfModule.GetProgram(probe.fn)
-				if err != nil {
-					return fmt.Errorf("error loading raw tracepoint %s: %v", probe.fn, err)
-				}
+			case rawTracepoint:
 				tpEvent := strings.Split(probe.event, ":")[1]
 				_, err = prog.AttachRawTracepoint(tpEvent)
-				if err != nil {
-					return fmt.Errorf("error attaching raw tracepoint %s: %v", tpEvent, err)
-				}
-				continue
+			}
+			if err != nil {
+				return fmt.Errorf("error attaching event %s: %v", probe.event, err)
 			}
 		}
 	}
