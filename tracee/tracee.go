@@ -356,22 +356,108 @@ func (t *Tracee) initEventsParams() map[int32][]eventParam {
 	return eventsParams
 }
 
+func (t *Tracee) populateBPFMaps() error {
+	chosenEventsMap, _ := t.bpfModule.GetMap("chosen_events_map")
+	for e, _ := range t.eventsToTrace {
+		// Set chosen events map according to events chosen by the user
+		chosenEventsMap.Update(e, boolToUInt32(true))
+	}
+
+	sys32to64BPFMap, _ := t.bpfModule.GetMap("sys_32_to_64_map")
+	for id, event := range EventsIDToEvent {
+		// Prepare 32bit to 64bit syscall number mapping
+		sys32to64BPFMap.Update(event.ID32Bit, event.ID)
+
+		// Compile final list of events to trace including essential events
+		// If an essential event was not requested by the user, set its map value to false
+		if event.EssentialEvent && !t.eventsToTrace[id] {
+			t.eventsToTrace[id] = false
+		}
+	}
+
+	// Initialize config and pids maps
+	bpfConfigMap, _ := t.bpfModule.GetMap("config_map")
+	bpfConfigMap.Update(uint32(configMode), t.config.Mode)
+	bpfConfigMap.Update(uint32(configDetectOrigSyscall), boolToUInt32(t.config.DetectOriginalSyscall))
+	bpfConfigMap.Update(uint32(configExecEnv), boolToUInt32(t.config.ShowExecEnv))
+	bpfConfigMap.Update(uint32(configCaptureFiles), boolToUInt32(t.config.CaptureWrite))
+	bpfConfigMap.Update(uint32(configExtractDynCode), boolToUInt32(t.config.CaptureMem))
+	bpfConfigMap.Update(uint32(configTraceePid), uint32(os.Getpid()))
+
+	pidsMap, _ := t.bpfModule.GetMap("pids_map")
+	for _, pid := range t.config.PidsToTrace {
+		pidsMap.Update(uint32(pid), uint32(pid))
+	}
+
+	// Initialize tail calls program array
+	bpfProgArrayMap, _ := t.bpfModule.GetMap("prog_array")
+	prog, err := t.bpfModule.GetProgram("trace_ret_vfs_write_tail")
+	if err != nil {
+		return fmt.Errorf("error getting BPF program trace_ret_vfs_write_tail: %v", err)
+	}
+	bpfProgArrayMap.Update(uint32(tailVfsWrite), uint32(prog.GetFd()))
+
+	prog, err = t.bpfModule.GetProgram("trace_ret_vfs_writev_tail")
+	if err != nil {
+		return fmt.Errorf("error getting BPF program trace_ret_vfs_writev_tail: %v", err)
+	}
+	bpfProgArrayMap.Update(uint32(tailVfsWritev), uint32(prog.GetFd()))
+
+	prog, err = t.bpfModule.GetProgram("send_bin")
+	if err != nil {
+		return fmt.Errorf("error getting BPF program send_bin: %v", err)
+	}
+	bpfProgArrayMap.Update(uint32(tailSendBin), uint32(prog.GetFd()))
+
+	// Set filters given by the user to filter file write events
+	fileFilterMap, _ := t.bpfModule.GetMap("file_filter")
+	for i := 0; i < len(t.config.FilterFileWrite); i++ {
+		fileFilterMap.Update(uint32(i), []byte(t.config.FilterFileWrite[i]))
+	}
+
+	stringStoreMap, _ := t.bpfModule.GetMap("string_store")
+	stringStoreMap.Update(uint32(0), []byte("/dev/null"))
+
+	eventsParams := t.initEventsParams()
+
+	sysEnterTailsBPFMap, _ := t.bpfModule.GetMap("sys_enter_tails")
+	//sysExitTailsBPFMap := t.bpfModule.GetMap("sys_exit_tails")
+	paramsTypesBPFMap, _ := t.bpfModule.GetMap("params_types_map")
+	paramsNamesBPFMap, _ := t.bpfModule.GetMap("params_names_map")
+	for e, _ := range t.eventsToTrace {
+		params := eventsParams[e]
+		var paramsTypes uint64
+		var paramsNames uint64
+		for n, param := range params {
+			paramsTypes = paramsTypes | (uint64(param.encType) << (8 * n))
+			paramsNames = paramsNames | (uint64(param.encName) << (8 * n))
+		}
+		paramsTypesBPFMap.Update(e, paramsTypes)
+		paramsNamesBPFMap.Update(e, paramsNames)
+
+		if e == ExecveEventID || e == ExecveatEventID {
+			event, ok := EventsIDToEvent[e]
+			if !ok {
+				continue
+			}
+
+			probFnName := fmt.Sprintf("syscall__%s", event.Name)
+
+			// execve functions require tail call on syscall enter as they perform extra work
+			prog, err := t.bpfModule.GetProgram(probFnName)
+			if err != nil {
+				return fmt.Errorf("error loading BPF program %s: %v", probFnName, err)
+			}
+			sysEnterTailsBPFMap.Update(e, int32(prog.GetFd()))
+		}
+	}
+
+	return nil
+}
+
 func (t *Tracee) initBPF(bpfObjectPath string) error {
 	var err error
 
-	// todo: update docker image to use new approach
-	// todo: search for object file in output path first
-	// todo: compile ebpfProgram with clang if object file wasn't found
-	// todo: add install target to makefile for installing bpf object file
-	// todo: don't load all programs during init - only requested ones
-	// todo: organize init as follows:
-	//       1. Open bpf object,
-	//       2. Get requested functions (including essential events),
-	//       3. Set program types and autoload,
-	//       4. Load bpf object,
-	//       5. Populate maps with values,
-	//       6. Attach probes,
-	//       7. Initialize perf buffers
 	t.bpfModule, err = bpf.NewModuleFromFile(bpfObjectPath)
 	if err != nil {
 		return err
@@ -383,6 +469,8 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 	}
 
 	// BpfLoadObject() will automatically load all bpf programs according to their section type
+	// Todo: Get requested functions (including essential events),
+	// Todo: don't load all bpf programs - only requested ones (by setting program autoload to false)
 	// As kernels < 4.17 don't support raw tracepoints, set these program types to "regular" tracepoint
 	if !supportRawTracepoints {
 		for _, event := range EventsIDToEvent {
@@ -408,41 +496,12 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 		return err
 	}
 
-	chosenEventsMap, _ := t.bpfModule.GetMap("chosen_events_map")
-	for e, _ := range t.eventsToTrace {
-		// Set chosen events map according to events chosen by the user
-		chosenEventsMap.Update(e, boolToUInt32(true))
+	err = t.populateBPFMaps()
+	if err != nil {
+		return err
 	}
 
-	sys32to64BPFMap, _ := t.bpfModule.GetMap("sys_32_to_64_map")
-	for id, event := range EventsIDToEvent {
-		// Prepare 32bit to 64bit syscall number mapping
-		sys32to64BPFMap.Update(event.ID32Bit, event.ID)
-
-		// Compile final list of events to trace including essential events
-		// If an essential event was not requested by the user, set its map value to false
-		if event.EssentialEvent && !t.eventsToTrace[id] {
-			t.eventsToTrace[id] = false
-		}
-	}
-
-	eventsParams := t.initEventsParams()
-
-	sysEnterTailsBPFMap, _ := t.bpfModule.GetMap("sys_enter_tails")
-	//sysExitTailsBPFMap := t.bpfModule.GetMap("sys_exit_tails")
-	paramsTypesBPFMap, _ := t.bpfModule.GetMap("params_types_map")
-	paramsNamesBPFMap, _ := t.bpfModule.GetMap("params_names_map")
 	for e, _ := range t.eventsToTrace {
-		params := eventsParams[e]
-		var paramsTypes uint64
-		var paramsNames uint64
-		for n, param := range params {
-			paramsTypes = paramsTypes | (uint64(param.encType) << (8 * n))
-			paramsNames = paramsNames | (uint64(param.encName) << (8 * n))
-		}
-		paramsTypesBPFMap.Update(e, paramsTypes)
-		paramsNamesBPFMap.Update(e, paramsNames)
-
 		event, ok := EventsIDToEvent[e]
 		if !ok {
 			continue
@@ -453,14 +512,6 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 				probe.attach = tracepoint
 			}
 			if probe.attach == sysCall {
-				if e == ExecveEventID || e == ExecveatEventID {
-					// execve functions require tail call on syscall enter as they perform extra work
-					prog, err := t.bpfModule.GetProgram(fmt.Sprintf("syscall__%s", probe.fn))
-					if err != nil {
-						return fmt.Errorf("error loading BPF program %s: %v", probe.fn, err)
-					}
-					sysEnterTailsBPFMap.Update(e, int32(prog.GetFd()))
-				}
 				continue
 			}
 			if probe.attach == kprobe {
@@ -512,49 +563,6 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 			}
 		}
 	}
-
-	// Initialize config and pids maps
-	bpfConfigMap, _ := t.bpfModule.GetMap("config_map")
-	bpfConfigMap.Update(uint32(configMode), t.config.Mode)
-	bpfConfigMap.Update(uint32(configDetectOrigSyscall), boolToUInt32(t.config.DetectOriginalSyscall))
-	bpfConfigMap.Update(uint32(configExecEnv), boolToUInt32(t.config.ShowExecEnv))
-	bpfConfigMap.Update(uint32(configCaptureFiles), boolToUInt32(t.config.CaptureWrite))
-	bpfConfigMap.Update(uint32(configExtractDynCode), boolToUInt32(t.config.CaptureMem))
-	bpfConfigMap.Update(uint32(configTraceePid), uint32(os.Getpid()))
-
-	pidsMap, _ := t.bpfModule.GetMap("pids_map")
-	for _, pid := range t.config.PidsToTrace {
-		pidsMap.Update(uint32(pid), uint32(pid))
-	}
-
-	// Initialize tail calls program array
-	bpfProgArrayMap, _ := t.bpfModule.GetMap("prog_array")
-	prog, err := t.bpfModule.GetProgram("trace_ret_vfs_write_tail")
-	if err != nil {
-		return fmt.Errorf("error getting BPF program trace_ret_vfs_write_tail: %v", err)
-	}
-	bpfProgArrayMap.Update(uint32(tailVfsWrite), uint32(prog.GetFd()))
-
-	prog, err = t.bpfModule.GetProgram("trace_ret_vfs_writev_tail")
-	if err != nil {
-		return fmt.Errorf("error getting BPF program trace_ret_vfs_writev_tail: %v", err)
-	}
-	bpfProgArrayMap.Update(uint32(tailVfsWritev), uint32(prog.GetFd()))
-
-	prog, err = t.bpfModule.GetProgram("send_bin")
-	if err != nil {
-		return fmt.Errorf("error getting BPF program send_bin: %v", err)
-	}
-	bpfProgArrayMap.Update(uint32(tailSendBin), uint32(prog.GetFd()))
-
-	// Set filters given by the user to filter file write events
-	fileFilterMap, _ := t.bpfModule.GetMap("file_filter")
-	for i := 0; i < len(t.config.FilterFileWrite); i++ {
-		fileFilterMap.Update(uint32(i), []byte(t.config.FilterFileWrite[i]))
-	}
-
-	stringStoreMap, _ := t.bpfModule.GetMap("string_store")
-	stringStoreMap.Update(uint32(0), []byte("/dev/null"))
 
 	// Initialize perf buffers
 	t.eventsChannel = make(chan []byte, 1000)
