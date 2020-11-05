@@ -162,6 +162,14 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 		t.eventsToTrace[e] = true
 	}
 
+	// Compile final list of events to trace including essential events
+	for id, event := range EventsIDToEvent {
+		// If an essential event was not requested by the user, set its map value to false
+		if event.EssentialEvent && !t.eventsToTrace[id] {
+			t.eventsToTrace[id] = false
+		}
+	}
+
 	t.DecParamName[0] = make(map[argTag]string)
 	t.EncParamName[0] = make(map[string]argTag)
 	t.DecParamName[1] = make(map[argTag]string)
@@ -362,21 +370,17 @@ func (t *Tracee) initEventsParams() map[int32][]eventParam {
 
 func (t *Tracee) populateBPFMaps() error {
 	chosenEventsMap, _ := t.bpfModule.GetMap("chosen_events_map")
-	for e := range t.eventsToTrace {
+	for e, chosen := range t.eventsToTrace {
 		// Set chosen events map according to events chosen by the user
-		chosenEventsMap.Update(e, boolToUInt32(true))
+		if chosen {
+			chosenEventsMap.Update(e, boolToUInt32(true))
+		}
 	}
 
 	sys32to64BPFMap, _ := t.bpfModule.GetMap("sys_32_to_64_map")
-	for id, event := range EventsIDToEvent {
+	for _, event := range EventsIDToEvent {
 		// Prepare 32bit to 64bit syscall number mapping
 		sys32to64BPFMap.Update(event.ID32Bit, event.ID)
-
-		// Compile final list of events to trace including essential events
-		// If an essential event was not requested by the user, set its map value to false
-		if event.EssentialEvent && !t.eventsToTrace[id] {
-			t.eventsToTrace[id] = false
-		}
 	}
 
 	// Initialize config and pids maps
@@ -472,24 +476,32 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 		return fmt.Errorf("Failed to find kernel version: %v", err)
 	}
 
-	// BpfLoadObject() will automatically load all bpf programs according to their section type
-	// Todo: Get requested functions (including essential events),
-	// Todo: don't load all bpf programs - only requested ones (by setting program autoload to false)
-	// As kernels < 4.17 don't support raw tracepoints, set these program types to "regular" tracepoint
-	if !supportRawTracepoints {
-		for _, event := range EventsIDToEvent {
-			for _, probe := range event.Probes {
-				var prog *bpf.BpfProg
-				if probe.attach == rawTracepoint {
-					prog, _ = t.bpfModule.GetProgram(probe.fn)
-				} else if probe.attach == sysCall {
-					prog, _ = t.bpfModule.GetProgram(fmt.Sprintf("syscall__%s", probe.fn))
+	// BpfLoadObject() automatically loads ALL BPF programs according to their section type, unless set otherwise
+	// For every BPF program, we need to make sure that:
+	// 1. We disable autoload if the program is not required by any event and is not essential
+	// 2. The correct BPF program type is set
+	for _, event := range EventsIDToEvent {
+		for _, probe := range event.Probes {
+			prog, _ := t.bpfModule.GetProgram(probe.fn)
+			if prog == nil && probe.attach == sysCall {
+				prog, _ = t.bpfModule.GetProgram(fmt.Sprintf("syscall__%s", probe.fn))
+			}
+			if prog == nil {
+				continue
+			}
+			if _, ok := t.eventsToTrace[event.ID]; !ok {
+				// This event is not being traced - set its respective program(s) "autoload" to false
+				err = prog.SetAutoload(false)
+				if err != nil {
+					return err
 				}
-				if prog != nil {
-					err = prog.SetTracepoint()
-					if err != nil {
-						return err
-					}
+				continue
+			}
+			// As kernels < 4.17 don't support raw tracepoints, set these program types to "regular" tracepoint
+			if !supportRawTracepoints && (prog.GetType() == bpf.BpfProgTypeRawTracepoint) {
+				err = prog.SetTracepoint()
+				if err != nil {
+					return err
 				}
 			}
 		}

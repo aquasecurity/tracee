@@ -355,6 +355,56 @@ func (p *BpfProg) GetFd() C.int {
 	return C.bpf_program__fd(p.prog)
 }
 
+// BpfProgType is an enum as defined in https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/bpf.h
+type BpfProgType uint32
+
+const (
+	BpfProgTypeUnspec uint32 = iota
+	BpfProgTypeSocketFilter
+	BpfProgTypeKprobe
+	BpfProgTypeSchedCls
+	BpfProgTypeSchedAct
+	BpfProgTypeTracepoint
+	BpfProgTypeXdp
+	BpfProgTypePerfEvent
+	BpfProgTypeCgroupSkb
+	BpfProgTypeCgroupSock
+	BpfProgTypeLwtIn
+	BpfProgTypeLwtOut
+	BpfProgTypeLwtXmit
+	BpfProgTypeSockOps
+	BpfProgTypeSkSkb
+	BpfProgTypeCgroupDevice
+	BpfProgTypeSkMsg
+	BpfProgTypeRawTracepoint
+	BpfProgTypeCgroupSockAddr
+	BpfProgTypeLwtSeg6Local
+	BpfProgTypeLircMode2
+	BpfProgTypeSkReuseport
+	BpfProgTypeFlowDissector
+	BpfProgTypeCgroupSysctl
+	BpfProgTypeRawTracepointWritable
+	BpfProgTypeCgroupSockopt
+	BpfProgTypeTracing
+	BpfProgTypeStructOps
+	BpfProgTypeExt
+	BpfProgTypeLsm
+	BpfProgTypeSkLookup
+)
+
+func (p *BpfProg) GetType() uint32 {
+	return C.bpf_program__get_type(p.prog)
+}
+
+func (p *BpfProg) SetAutoload(autoload bool) error {
+	cbool := C.bool(autoload)
+	err := C.bpf_program__set_autoload(p.prog, cbool)
+	if err != 0 {
+		return fmt.Errorf("failed to set bpf program autoload")
+	}
+	return nil
+}
+
 func (p *BpfProg) SetTracepoint() error {
 	err := C.bpf_program__set_tracepoint(p.prog)
 	if err != 0 {
