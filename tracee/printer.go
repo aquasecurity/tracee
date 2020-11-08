@@ -57,7 +57,7 @@ func newEventPrinter(kind string, containerMode bool, out io.Writer, err io.Writ
 			out:           out,
 			err:           err,
 			containerMode: containerMode,
-			templatePath: strings.Split(kind, "=")[1],
+			templatePath:  strings.Split(kind, "=")[1],
 		}
 	}
 	initError = res.Init()
@@ -131,8 +131,7 @@ type tableEventPrinter struct {
 	containerMode bool
 }
 
-
-func (p tableEventPrinter) Init() (error) { return nil }
+func (p tableEventPrinter) Init() error { return nil }
 
 func (p tableEventPrinter) Preamble() {
 	if p.verbose {
@@ -185,7 +184,6 @@ func (p tableEventPrinter) Epilogue(stats statsStore) {
 	fmt.Fprintf(p.out, "Stats: %+v\n", stats)
 }
 
-
 type templateEventPrinter struct {
 	tracee        *Tracee
 	out           io.Writer
@@ -195,7 +193,7 @@ type templateEventPrinter struct {
 	templateObj   **template.Template
 }
 
-func (p *templateEventPrinter) Init() (error) {
+func (p *templateEventPrinter) Init() error {
 	tmplPath := p.templatePath
 	if tmplPath != "" {
 		tmpl, err := template.ParseFiles(tmplPath)
@@ -215,7 +213,6 @@ func (p templateEventPrinter) Error(err error) {
 	fmt.Fprintf(p.err, "%v", err)
 }
 
-
 func (p templateEventPrinter) Print(event Event) {
 	if p.templateObj != nil {
 		err := (*p.templateObj).Execute(p.out, event)
@@ -224,7 +221,7 @@ func (p templateEventPrinter) Print(event Event) {
 		}
 	} else {
 		fmt.Fprintf(p.out, "Template Obj is nil")
-	}	
+	}
 }
 
 func (p templateEventPrinter) Epilogue(stats statsStore) {}
@@ -234,7 +231,7 @@ type jsonEventPrinter struct {
 	err io.Writer
 }
 
-func (p jsonEventPrinter) Init() (error) { return nil }
+func (p jsonEventPrinter) Init() error { return nil }
 
 func (p jsonEventPrinter) Preamble() {}
 
@@ -261,7 +258,7 @@ type gobEventPrinter struct {
 	err *gob.Encoder
 }
 
-func (p *gobEventPrinter) Init() (error) { return nil }
+func (p *gobEventPrinter) Init() error { return nil }
 
 func (p *gobEventPrinter) Preamble() {}
 
