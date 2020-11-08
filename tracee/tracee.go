@@ -985,7 +985,7 @@ func (t *Tracee) processFileWrites() {
 
 func readStringFromBuff(buff io.Reader) (string, error) {
 	var err error
-	var size int32
+	var size uint32
 	err = binary.Read(buff, binary.LittleEndian, &size)
 	if err != nil {
 		return "", fmt.Errorf("error reading string size: %v", err)
