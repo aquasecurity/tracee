@@ -22,7 +22,7 @@ OUT_DOCKER ?= tracee
 LLC ?= llc
 CLANG ?= clang
 LLVM_STRIP ?= llvm-strip
-# DOCKER ?= docker
+DOCKER ?= docker
 # GORELEASER ?= goreleaser
 
 $(OUT_DIR):
@@ -38,12 +38,12 @@ $(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(GO_SRC) $(BPF_BUNDLE) | $(OUT_DIR)
 		go build -v -o $(OUT_BIN) \
 		-ldflags "-X main.bpfBundleInjected=$$(base64 -w 0 $(BPF_BUNDLE))"
 
-# .PHONY: build-docker
-# build-docker: clean
-# 	img=$$(docker build --target builder -q  .) && \
-# 	cnt=$$(docker create $$img) && \
-# 	docker cp $$cnt:/tracee/dist - | tar -xf - ; \
-# 	docker rm $$cnt ; docker rmi $$img
+.PHONY: build-docker
+build-docker: | $(OUT_DIR)
+	img=$$(docker build --target builder -q .) && \
+	cnt=$$(docker create $$img) && \
+	docker cp $$cnt:/tracee/$(OUT_BIN) $(OUT_BIN) ; \
+	docker rm $$cnt ; docker rmi $$img
 
 bpf_compile_tools = $(LLC) $(CLANG) $(LLVM_STRIP)
 .PHONY: $(bpf_compile_tools) 
@@ -115,9 +115,9 @@ clean:
 check_%:
 	@command -v $* >/dev/null || (echo "missing required tool $*" ; false)
 
-# .PHONY: docker
-# docker:
-# 	docker build -t $(DOCKER_OUT) .
+.PHONY: docker
+docker:
+	docker build -t $(OUT_DOCKER) .
 
 # ifdef PUBLISH
 # 	goreleaser_publish_flags =
