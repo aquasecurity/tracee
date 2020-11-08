@@ -173,7 +173,7 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	t := &Tracee{
 		config: cfg,
 	}
-    ContainerMode := (t.config.Mode == ModeContainerAll || t.config.Mode == ModeContainerNew)
+	ContainerMode := (t.config.Mode == ModeContainerAll || t.config.Mode == ModeContainerNew)
 	printObj, err := newEventPrinter(t.config.OutputFormat, ContainerMode, t.config.EventsFile, t.config.ErrorsFile)
 	if err != nil {
 		return nil, err
@@ -386,7 +386,7 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 	chosenEvents := bpf.NewTable(t.bpfModule.TableId("chosen_events_map"), t.bpfModule)
 	key := make([]byte, 4)
 	leaf := make([]byte, 4)
-	for e, _ := range t.eventsToTrace {
+	for e := range t.eventsToTrace {
 		// Set chosen events map according to events chosen by the user
 		binary.LittleEndian.PutUint32(key, uint32(e))
 		binary.LittleEndian.PutUint32(leaf, boolToUInt32(true))
@@ -417,7 +417,7 @@ func (t *Tracee) initBPF(ebpfProgram string) error {
 	//sysExitTailsBPFTable := bpf.NewTable(t.bpfModule.TableId("sys_exit_tails"), t.bpfModule)
 	paramsTypesBPFTable := bpf.NewTable(t.bpfModule.TableId("params_types_map"), t.bpfModule)
 	paramsNamesBPFTable := bpf.NewTable(t.bpfModule.TableId("params_names_map"), t.bpfModule)
-	for e, _ := range t.eventsToTrace {
+	for e := range t.eventsToTrace {
 		params := eventsParams[e]
 		var paramsTypes uint64
 		var paramsNames uint64
