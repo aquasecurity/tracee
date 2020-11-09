@@ -439,6 +439,7 @@ const (
 	VfsWriteEventID
 	VfsWritevEventID
 	MemProtAlertEventID
+	SchedProcessExitEventID
 )
 
 // 32bit syscall numbers
@@ -1212,13 +1213,14 @@ var EventsIDToEvent = map[int32]EventConfig{
 	RseqEventID:                {ID: RseqEventID, ID32Bit: sys32rseq, Name: "rseq", Probes: []probe{{event: "rseq", attach: sysCall, fn: "rseq"}}, Sets: []string{"syscalls"}},
 	SysEnterEventID:            {ID: SysEnterEventID, ID32Bit: sys32undefined, Name: "sys_enter", Probes: []probe{{event: "raw_syscalls:sys_enter", attach: rawTracepoint, fn: "tracepoint__raw_syscalls__sys_enter"}}, EssentialEvent: true, Sets: []string{}},
 	SysExitEventID:             {ID: SysExitEventID, ID32Bit: sys32undefined, Name: "sys_exit", Probes: []probe{{event: "raw_syscalls:sys_exit", attach: rawTracepoint, fn: "tracepoint__raw_syscalls__sys_exit"}}, EssentialEvent: true, Sets: []string{}},
-	DoExitEventID:              {ID: DoExitEventID, ID32Bit: sys32undefined, Name: "do_exit", Probes: []probe{{event: "do_exit", attach: kprobe, fn: "trace_do_exit"}}, EssentialEvent: true, Sets: []string{"default"}},
+	DoExitEventID:              {ID: DoExitEventID, ID32Bit: sys32undefined, Name: "do_exit", Probes: []probe{{event: "do_exit", attach: kprobe, fn: "trace_do_exit"}}, Sets: []string{"proc", "proc_life"}},
 	CapCapableEventID:          {ID: CapCapableEventID, ID32Bit: sys32undefined, Name: "cap_capable", Probes: []probe{{event: "cap_capable", attach: kprobe, fn: "trace_cap_capable"}}, Sets: []string{"default"}},
 	SecurityBprmCheckEventID:   {ID: SecurityBprmCheckEventID, ID32Bit: sys32undefined, Name: "security_bprm_check", Probes: []probe{{event: "security_bprm_check", attach: kprobe, fn: "trace_security_bprm_check"}}, Sets: []string{"default"}},
 	SecurityFileOpenEventID:    {ID: SecurityFileOpenEventID, ID32Bit: sys32undefined, Name: "security_file_open", Probes: []probe{{event: "security_file_open", attach: kprobe, fn: "trace_security_file_open"}}, Sets: []string{"default"}},
 	VfsWriteEventID:            {ID: VfsWriteEventID, ID32Bit: sys32undefined, Name: "vfs_write", Probes: []probe{{event: "vfs_write", attach: kprobe, fn: "trace_vfs_write"}, {event: "vfs_write", attach: kretprobe, fn: "trace_ret_vfs_write"}}, Sets: []string{"default"}},
 	VfsWritevEventID:           {ID: VfsWritevEventID, ID32Bit: sys32undefined, Name: "vfs_writev", Probes: []probe{{event: "vfs_writev", attach: kprobe, fn: "trace_vfs_writev"}, {event: "vfs_writev", attach: kretprobe, fn: "trace_ret_vfs_writev"}}, Sets: []string{"default"}},
 	MemProtAlertEventID:        {ID: MemProtAlertEventID, ID32Bit: sys32undefined, Name: "mem_prot_alert", Probes: []probe{{event: "security_mmap_addr", attach: kprobe, fn: "trace_mmap_alert"}, {event: "security_file_mprotect", attach: kprobe, fn: "trace_mprotect_alert"}}, Sets: []string{}},
+	SchedProcessExitEventID:    {ID: SchedProcessExitEventID, ID32Bit: sys32undefined, Name: "sched_process_exit", Probes: []probe{{event: "sched:sched_process_exit", attach: rawTracepoint, fn: "tracepoint__sched__sched_process_exit"}}, EssentialEvent: true, Sets: []string{"default", "proc", "proc_life"}},
 }
 
 type param struct {
@@ -1560,4 +1562,5 @@ var EventsIDToParams = map[int32][]param{
 	VfsWriteEventID:            {{pType: "const char*", pName: "pathname"}, {pType: "dev_t", pName: "dev"}, {pType: "unsigned long", pName: "inode"}, {pType: "size_t", pName: "count"}, {pType: "off_t", pName: "pos"}},
 	VfsWritevEventID:           {{pType: "const char*", pName: "pathname"}, {pType: "dev_t", pName: "dev"}, {pType: "unsigned long", pName: "inode"}, {pType: "unsigned long", pName: "vlen"}, {pType: "off_t", pName: "pos"}},
 	MemProtAlertEventID:        {{pType: "alert_t", pName: "alert"}},
+	SchedProcessExitEventID:    {},
 }
