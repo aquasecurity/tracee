@@ -1,4 +1,4 @@
-package bpfwrap
+package libbpfgo
 
 import (
 	"C"
