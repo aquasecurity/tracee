@@ -3,7 +3,7 @@ name: build-test
 on: pull_request
 
 jobs:
-  build-test:
+  build:
     runs-on: ubuntu-20.04
 
     env:
@@ -31,3 +31,14 @@ jobs:
 
       - name: Build Tracee
         run: make build-docker
+  
+  test:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Run Tests
+        run: make test-docker
+      
