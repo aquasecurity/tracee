@@ -1,4 +1,4 @@
-package bpfwrap
+package libbpfgo
 
 /*
 #cgo LDFLAGS: -lelf -lz

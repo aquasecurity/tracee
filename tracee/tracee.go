@@ -15,7 +15,7 @@ import (
 	"sync/atomic"
 	"syscall"
 
-	bpf "github.com/aquasecurity/tracee/bpfwrap"
+	bpf "github.com/aquasecurity/tracee/libbpfgo"
 )
 
 // TraceeConfig is a struct containing user defined configuration of tracee
