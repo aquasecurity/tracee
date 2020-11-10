@@ -6,7 +6,7 @@ WORKDIR /tracee
 
 COPY . /tracee
 
-RUN make build
+RUN git submodule update --init && make build
 
 # must run privileged and with linux headers mounted
 # docker run --name tracee --rm --privileged --pid=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro aquasec/tracee

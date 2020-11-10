@@ -18,7 +18,7 @@ func TestReadArgFromBuff(t *testing.T) {
 		{
 			name: "intT",
 			input: []byte{1, //intT
-				0, // Dummy tag
+				0,                      // Dummy tag
 				0xFF, 0xFF, 0xFF, 0xFF, //-1
 			},
 			expectedArg: int32(-1),
@@ -26,7 +26,7 @@ func TestReadArgFromBuff(t *testing.T) {
 		{
 			name: "uintT",
 			input: []byte{2, //uintT
-				0, // Dummy tag
+				0,                      // Dummy tag
 				0xFF, 0xFF, 0xFF, 0xFF, //4294967295
 			},
 			expectedArg: uint32(4294967295),
@@ -34,7 +34,7 @@ func TestReadArgFromBuff(t *testing.T) {
 		{
 			name: "longT",
 			input: []byte{3, //longT
-				0, // Dummy tag
+				0,                                              // Dummy tag
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, //-1
 			},
 			expectedArg: int64(-1),
@@ -42,7 +42,7 @@ func TestReadArgFromBuff(t *testing.T) {
 		{
 			name: "ulongT",
 			input: []byte{4, //ulongT
-				0, // Dummy tag
+				0,                                              // Dummy tag
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, //18446744073709551615
 			},
 			expectedArg: uint64(18446744073709551615),
@@ -50,7 +50,7 @@ func TestReadArgFromBuff(t *testing.T) {
 		{
 			name: "offT",
 			input: []byte{5, //offT
-				0, // Dummy tag
+				0,                                              // Dummy tag
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, //18446744073709551615
 			},
 			expectedArg: uint64(18446744073709551615),
@@ -58,7 +58,7 @@ func TestReadArgFromBuff(t *testing.T) {
 		{
 			name: "modeT",
 			input: []byte{6, //modeT
-				0, // Dummy tag
+				0,                    // Dummy tag
 				0xB6, 0x11, 0x0, 0x0, //0x000011B6 == 010666 == S_IFIFO|S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 			},
 			expectedArg: uint32(0x11b6),
@@ -66,7 +66,7 @@ func TestReadArgFromBuff(t *testing.T) {
 		{
 			name: "devT",
 			input: []byte{7, //devT
-				0, // Dummy tag
+				0,                      // Dummy tag
 				0xFF, 0xFF, 0xFF, 0xFF, //4294967295
 			},
 			expectedArg: uint32(4294967295),
@@ -74,7 +74,7 @@ func TestReadArgFromBuff(t *testing.T) {
 		{
 			name: "offT",
 			input: []byte{8, //offT
-				0, // Dummy tag
+				0,                                              // Dummy tag
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, //18446744073709551615
 			},
 			expectedArg: uint64(18446744073709551615),
@@ -90,7 +90,7 @@ func TestReadArgFromBuff(t *testing.T) {
 		{
 			name: "strT",
 			input: []byte{10, //strT
-				0, // Dummy tag
+				0,           // Dummy tag
 				16, 0, 0, 0, //len=16
 				47, 117, 115, 114, 47, 98, 105, 110, 47, 100, 111, 99, 107, 101, 114, 0, // /usr/bin/docker
 			},
@@ -99,8 +99,8 @@ func TestReadArgFromBuff(t *testing.T) {
 		{
 			name: "strArrT",
 			input: []byte{11, // strArrT
-				0, // Dummy tag
-				2,         //element number
+				0,          // Dummy tag
+				2,          //element number
 				9, 0, 0, 0, //len=9
 				47, 117, 115, 114, 47, 98, 105, 110, 0, // /usr/bin
 				7, 0, 0, 0, //len=7
@@ -112,13 +112,13 @@ func TestReadArgFromBuff(t *testing.T) {
 		{
 			name: "sockAddrT",
 			input: []byte{12, //sockAddrT
-				0, // Dummy tag
+				0,    // Dummy tag
 				2, 0, //sa_family=AF_INET
 				0xFF, 0xFF, //sin_port=65535
 				0xFF, 0xFF, 0xFF, 0xFF, //sin_addr=255.255.255.255
 				0, 0, 0, 0, 0, 0, 0, 0, //padding[8]
 			},
-			expectedArg: map[string]string(map[string]string{"sa_family":"AF_INET", "sin_addr":"255.255.255.255", "sin_port":"65535"}),
+			expectedArg: map[string]string(map[string]string{"sa_family": "AF_INET", "sin_addr": "255.255.255.255", "sin_port": "65535"}),
 		},
 		{
 			name:          "unknown",
