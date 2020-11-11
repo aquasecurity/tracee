@@ -44,7 +44,7 @@ build-docker: | $(OUT_DIR)
 	docker cp $$cnt:/tracee/$(OUT_BIN) $(OUT_BIN) ; \
 	docker rm $$cnt ; docker rmi $$img
 
-bpf_compile_tools = $(LLC) $(CLANG) $(LLVM_STRIP)
+bpf_compile_tools = $(LLC) $(CLANG)
 .PHONY: $(bpf_compile_tools) 
 $(bpf_compile_tools): % : check_%
 
@@ -100,7 +100,7 @@ $(BPF_OBJ): $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compile_tools)
 		-nostdinc \
 		-O2 -emit-llvm -c -g $< -o $(@:.o=.ll)
 	$(LLC) -march=bpf -filetype=obj -o $@ $(@:.o=.ll)
-	$(LLVM_STRIP) -g $@
+	-$(LLVM_STRIP) -g $@
 	rm $(@:.o=.ll) 
 
 # .PHONY: test
