@@ -12,7 +12,6 @@ OUT_BIN := $(OUT_DIR)/tracee
 BPF_SRC := tracee/tracee.bpf.c 
 BPF_OBJ := $(OUT_DIR)/tracee.bpf.o
 BPF_HEADERS := 3rdparty/include
-BPF_BUNDLE_DIR := $(OUT_DIR)/tracee.bpf
 BPF_BUNDLE := $(BPF_BUNDLE_DIR).tar.gz
 LIBBPF_SRC := 3rdparty/libbpf/src
 LIBBPF_HEADERS := $(OUT_DIR)/libbpf/usr/include
@@ -58,13 +57,14 @@ $(LIBBPF_HEADERS): | $(OUT_DIR) $(bpf_compile_tools) $(LIBBPF_SRC)
 $(LIBBPF_OBJ): | $(OUT_DIR) $(bpf_compile_tools) $(LIBBPF_SRC) 
 	cd $(LIBBPF_SRC) && $(MAKE) OBJDIR=$(abspath $(OUT_DIR))/libbpf BUILD_STATIC_ONLY=1 
 
-$(BPF_BUNDLE): $(BPF_BUNDLE_DIR)
-	tar -czf $@ $^
+bpf_bundle_dir := $(OUT_DIR)/tracee.bpf
+$(BPF_BUNDLE): $(BPF_SRC) $(LIBBPF_HEADERS) $(BPF_HEADERS)
+	mkdir -p $(bpf_bundle_dir)
+	cp $$(find $^ -type f) $(bpf_bundle_dir)
+	tar -czf $@ $(bpf_bundle_dir)
 
-$(BPF_BUNDLE_DIR): $(BPF_SRC) $(LIBBPF_HEADERS) $(BPF_HEADERS)
-	mkdir -p $(BPF_BUNDLE_DIR)
-	cp $$(find $^ -type f) $(BPF_BUNDLE_DIR)
-
+.PHONY: bpf
+bpf: $(BPF_OBJ)
 linux_arch := $(ARCH:x86_64=x86)
 $(BPF_OBJ): $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compile_tools)
 	$(CLANG) -S \
