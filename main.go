@@ -502,13 +502,11 @@ func makeBPFObject(outFile string) error {
 		return fmt.Errorf("missing compilation dependency: clang")
 	}
 	llc := locateFile("llc", []string{os.Getenv("LLC")})
-	if clang == "" {
+	if llc == "" {
 		return fmt.Errorf("missing compilation dependency: llc")
 	}
 	llvmstrip := locateFile("llvm-strip", []string{os.Getenv("LLVM_STRIP")})
-	if clang == "" {
-		return fmt.Errorf("missing compilation dependency: llvm-strip")
-	}
+
 	kernelSource := locateFile("", []string{os.Getenv("KERN_SRC"), fmt.Sprintf("/lib/modules/%s/build", tracee.UnameRelease())})
 	if kernelSource == "" {
 		return fmt.Errorf("missing compilation dependency: kernelSource")
@@ -616,19 +614,21 @@ func makeBPFObject(outFile string) error {
 	}
 
 	// from Makefile:
-	// $(LLVM_STRIP) -g $@
-	cmd3 := exec.Command(llvmstrip,
-		"-g", objFile,
-	)
-	cmd3.Dir = dir
-	if debug {
-		fmt.Println(cmd3)
-		cmd3.Stdout = os.Stdout
-		cmd3.Stderr = os.Stderr
-	}
-	err = cmd3.Run()
-	if err != nil {
-		return err
+	// -$(LLVM_STRIP) -g $@
+	if llvmstrip != "" {
+		cmd3 := exec.Command(llvmstrip,
+			"-g", objFile,
+		)
+		cmd3.Dir = dir
+		if debug {
+			fmt.Println(cmd3)
+			cmd3.Stdout = os.Stdout
+			cmd3.Stderr = os.Stderr
+		}
+		err = cmd3.Run()
+		if err != nil {
+			return err
+		}
 	}
 
 	if debug {
