@@ -21,14 +21,15 @@ To run, Tracee requires the following:
 - Linux kernel version > 4.14
 - Kernel headers
 - C standard library (currently tested with glibc)
-- clang (currently tested with version > 10)
+- clang > 7
 
 ### Getting Tracee
 
 You can get Tracee in any of the following ways:
 1. Download the binary from the GitHub Releases tab (`tracee.tar.gz`).
 2. Use the docker image from Docker Hub: `aquasec/tracee`. The image already includes the required dependencies but you will need to mount the kernel headers in (see below for example).
-3. Build from source, using `make build` (or via Docker using `make build-docker`).
+3. Build from source via docker, using `make build-docker`.
+4. Build from source, using `make build` (requires libelf-dev in addition to the above prerequisites).
 
 ### Permissions
 
