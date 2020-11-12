@@ -39,7 +39,7 @@ build: $(OUT_BIN)
 $(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(GO_SRC) $(BPF_BUNDLE) | $(OUT_DIR)
 	GOOS=linux GOARCH=$(ARCH:x86_64=amd64) \
 		CC=$(CLANG) \
-		CGO_CFLAGS="-I $(abspath $(LIBBPF_HEADERS))/bpf" \
+		CGO_CFLAGS="-I $(abspath $(LIBBPF_HEADERS))" \
 		CGO_LDFLAGS="$(abspath $(LIBBPF_OBJ))" \
 		go build -v -o $(OUT_BIN) \
 		-ldflags "-X main.bpfBundleInjected=$$(base64 -w 0 $(BPF_BUNDLE))"
@@ -59,13 +59,13 @@ $(LIBBPF_SRC):
 	test -d $(LIBBPF_SRC) || ( echo "missing libbpf source, try git submodule update --init" ; false )
 
 $(LIBBPF_HEADERS): | $(OUT_DIR) $(bpf_compile_tools) $(LIBBPF_SRC)
-	cd $(LIBBPF_SRC) && $(MAKE) install_headers DESTDIR=$(abspath $(OUT_DIR))/libbpf 
+	cd $(LIBBPF_SRC) && $(MAKE) install_headers install_uapi_headers DESTDIR=$(abspath $(OUT_DIR))/libbpf
 
 $(LIBBPF_OBJ): | $(OUT_DIR) $(bpf_compile_tools) $(LIBBPF_SRC) 
 	cd $(LIBBPF_SRC) && $(MAKE) OBJDIR=$(abspath $(OUT_DIR))/libbpf BUILD_STATIC_ONLY=1 
 
 bpf_bundle_dir := $(OUT_DIR)/tracee.bpf
-$(BPF_BUNDLE): $(BPF_SRC) $(LIBBPF_HEADERS) $(BPF_HEADERS)
+$(BPF_BUNDLE): $(BPF_SRC) $(LIBBPF_HEADERS)/bpf $(BPF_HEADERS)
 	mkdir -p $(bpf_bundle_dir)
 	cp $$(find $^ -type f) $(bpf_bundle_dir)
 	tar -czf $@ $(bpf_bundle_dir)
