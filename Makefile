@@ -38,6 +38,7 @@ build: $(OUT_BIN)
 
 $(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(GO_SRC) $(BPF_BUNDLE) | $(OUT_DIR)
 	GOOS=linux GOARCH=$(ARCH:x86_64=amd64) \
+		CC=$(CLANG) \
 		CGO_CFLAGS="-I $(abspath $(LIBBPF_HEADERS))/bpf" \
 		CGO_LDFLAGS="$(abspath $(LIBBPF_OBJ))" \
 		go build -v -o $(OUT_BIN) \
