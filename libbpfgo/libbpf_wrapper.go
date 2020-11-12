@@ -3,8 +3,8 @@ package libbpfgo
 /*
 #cgo LDFLAGS: -lelf -lz
 
-#include <bpf.h>
-#include <libbpf.h>
+#include <bpf/bpf.h>
+#include <bpf/libbpf.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/resource.h>
