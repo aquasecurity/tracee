@@ -17,12 +17,18 @@ LIBBPF_SRC := 3rdparty/libbpf/src
 LIBBPF_HEADERS := $(OUT_DIR)/libbpf/usr/include
 LIBBPF_OBJ := $(OUT_DIR)/libbpf/libbpf.a
 OUT_DOCKER ?= tracee
+RELEASE_ARCHIVE := $(OUT_DIR)/tracee.tar.gz
+RELEASE_CHECKSUMS := $(OUT_DIR)/checksums.txt
+RELEASE_DOCKER ?= aquasec/tracee
+RELEASE_DOCKER_TAG ?= $(RELEASE_TAG:v%=%)
 # tools:
 LLC ?= llc
 CLANG ?= clang
 LLVM_STRIP ?= llvm-strip
 DOCKER ?= docker
-# GORELEASER ?= goreleaser
+GIT ?= git
+CHECKSUM_TOOL ?= sha256sum
+GITHUB_CLI ?= gh
 
 $(OUT_DIR):
 	mkdir -p $@
@@ -39,10 +45,10 @@ $(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(GO_SRC) $(BPF_BUNDLE) | $(OUT_DIR)
 
 .PHONY: build-docker
 build-docker: | $(OUT_DIR)
-	img=$$(docker build --target builder -q .) && \
-	cnt=$$(docker create $$img) && \
-	docker cp $$cnt:/tracee/$(OUT_BIN) $(OUT_BIN) ; \
-	docker rm $$cnt ; docker rmi $$img
+	img=$$($(DOCKER) build --target builder -q .) && \
+	cnt=$$($(DOCKER) create $$img) && \
+	$(DOCKER) cp $$cnt:/tracee/$(OUT_BIN) $(OUT_BIN) ; \
+	$(DOCKER) rm $$cnt ; $(DOCKER) rmi $$img
 
 bpf_compile_tools = $(LLC) $(CLANG) $(LLVM_STRIP)
 .PHONY: $(bpf_compile_tools) 
@@ -117,13 +123,29 @@ check_%:
 
 .PHONY: docker
 docker:
-	docker build -t $(OUT_DOCKER) .
+	$(DOCKER) build -t $(OUT_DOCKER) .
 
-# ifdef PUBLISH
-# 	goreleaser_publish_flags =
-# endif
-# goreleaser_publish_flags = --skip-publish --snapshot
-# # release by default will not publish. run with `PUBLISH=1` to publish
-# .PHONY: release
-# release:
-# 	goreleaser release --rm-dist $(goreleaser_publish_flags)
+$(RELEASE_ARCHIVE) $(RELEASE_CHECKSUMS) &: $(OUT_BIN) LICENSE | $(OUT_DIR) check_$(CHECKSUM_TOOL)
+	tar -czf $(RELEASE_ARCHIVE) $(OUT_BIN) LICENSE
+	$(CHECKSUM_TOOL) $(RELEASE_ARCHIVE) > $(RELEASE_CHECKSUMS)
+
+release_notes:=$(OUT_DIR)/release-notes.txt
+.PHONY: release
+# before running this rule, need to authenticate git, gh, and docker tools.
+release: | check_$(GITHUB_CLI) $(RELEASE_ARCHIVE) $(RELEASE_CHECKSUMS) #docker
+	test -n '$(RELEASE_TAG)' || (echo "missing required variable RELEASE_TAG" ; false)
+	rm $(release_notes)
+	echo '## Changelog' > $(release_notes)
+	$(GIT) log --pretty=oneline --abbrev=commit --no-decorate --no-color tags/$(shell $(GIT) describe --tags --abbrev=0)..HEAD >> $(release_notes)
+	echo '' >> $(release_notes)
+	echo '## Docker images' >> $(release_notes) >> $(release_notes)
+	echo '- `docker pull docker.io/$(RELEASE_DOCKER):$(RELEASE_DOCKER_TAG)`' >> $(release_notes)
+	echo '- `docker pull docker.io/$(RELEASE_DOCKER):latest`' >> $(release_notes)
+	echo '' >>$(release_notes)
+	$(GIT) tag $(RELEASE_TAG)
+	$(GIT) push origin $(RELEASE_TAG)
+	$(GITHUB_CLI) release create $(RELEASE_TAG) $(RELEASE_ARCHIVE) $(RELEASE_CHECKSUMS) --title $(RELEASE_TAG) --notes-file $(release_notes)
+	$(DOCKER) tag $(OUT_DOCKER) $(RELEASE_DOCKER):latest
+	$(DOCKER) push $(RELEASE_DOCKER):latest
+	$(DOCKER) tag $(OUT_DOCKER) $(RELEASE_DOCKER):$(RELEASE_DOCKER_TAG)
+	$(DOCKER) push $(RELEASE_DOCKER):$(RELEASE_DOCKER_TAG)
