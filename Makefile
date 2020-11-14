@@ -110,9 +110,13 @@ $(BPF_OBJ): $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compile_tools)
 	-$(LLVM_STRIP) -g $@
 	rm $(@:.o=.ll) 
 
-# .PHONY: test
-# test:
-# 	go test -v ./...
+.PHONY: test
+test:
+	GOOS=linux GOARCH=$(ARCH:x86_64=amd64) \
+		CC=$(CLANG) \
+		CGO_CFLAGS="-I $(abspath $(LIBBPF_HEADERS))" \
+		CGO_LDFLAGS="$(abspath $(LIBBPF_OBJ))" \
+		go test -v ./...
 
 .PHONY: clean
 clean:
