@@ -250,7 +250,7 @@ func NewModuleFromBuffer(bpfObjBuff []byte, bpfObjName string) (*Module, error) 
 	C.free(unsafe.Pointer(name))
 	C.free(unsafe.Pointer(buffPtr))
 	if obj == nil {
-		return nil, fmt.Errorf("failed to open BPF object %s: %v...", name, bpfObjBuff[:20])
+		return nil, fmt.Errorf("failed to open BPF object %s: %v...", bpfObjName, bpfObjBuff[:20])
 	}
 
 	return &Module{
@@ -439,7 +439,7 @@ func (p *BpfProg) AttachRawTracepoint(tpEvent string) (*BpfLink, error) {
 	link := C.bpf_program__attach_raw_tracepoint(p.prog, cs)
 	C.free(unsafe.Pointer(cs))
 	if link == nil {
-		return nil, fmt.Errorf("failed to attach raw tracepoint %s to program", tpEvent, p.name)
+		return nil, fmt.Errorf("failed to attach raw tracepoint %s to program %s", tpEvent, p.name)
 	}
 
 	bpfLink := &BpfLink{
