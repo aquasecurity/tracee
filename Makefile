@@ -74,6 +74,7 @@ $(BPF_BUNDLE): $(BPF_SRC) $(LIBBPF_HEADERS)/bpf $(BPF_HEADERS)
 bpf: $(BPF_OBJ)
 linux_arch := $(ARCH:x86_64=x86)
 $(BPF_OBJ): $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compile_tools)
+	@test $$(echo  ${x#*version } | head -n1 | cut -d '.' -f1) -ge '7' || (echo 'required minimum clang version: 7' ; false)
 	$(CLANG) -S \
 		-D__BPF_TRACING__ \
 		-D__KERNEL__ \

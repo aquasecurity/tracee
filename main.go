@@ -501,6 +501,23 @@ func makeBPFObject(outFile string) error {
 	if clang == "" {
 		return fmt.Errorf("missing compilation dependency: clang")
 	}
+	cmdVer := exec.Command(clang, "--version")
+	verOut, err := cmdVer.CombinedOutput()
+	if err != nil {
+		return err
+	}
+	// we are looking for the "version x.y.z" part in the text output
+	start := strings.Index(string(verOut), "version") + 8
+	end := strings.Index(string(verOut), "\n")
+	verStr := string(verOut[start:end])
+	verMajor, err := strconv.Atoi(strings.SplitN(verStr, ".", 2)[0])
+	if err != nil {
+		if debug {
+			fmt.Printf("warning: could not detect clang version from: %s", string(verOut))
+		}
+	} else if verMajor < 7 {
+		return fmt.Errorf("detected clang version: %d is older than required minimum version: 7", verMajor)
+	}
 	llc := locateFile("llc", []string{os.Getenv("LLC")})
 	if llc == "" {
 		return fmt.Errorf("missing compilation dependency: llc")
