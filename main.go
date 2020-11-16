@@ -506,9 +506,10 @@ func makeBPFObject(outFile string) error {
 	if err != nil {
 		return err
 	}
-	// version output looks like: clang version 9.0.0-2 (tags/RELEASE_900/final)\n more lines...
-	eol := strings.Index(string(verOut), "\n")
-	verStr := string(verOut[14:eol])
+	// we are looking for the "version x.y.z" part in the text output
+	start := strings.Index(string(verOut), "version") + 8
+	end := strings.Index(string(verOut), "\n")
+	verStr := string(verOut[start:end])
 	verMajor, err := strconv.Atoi(strings.SplitN(verStr, ".", 2)[0])
 	if err != nil || verMajor < 7 {
 		return fmt.Errorf("detected clang version: %d is older than required minimum version: 7", verMajor)
