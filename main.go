@@ -511,7 +511,11 @@ func makeBPFObject(outFile string) error {
 	end := strings.Index(string(verOut), "\n")
 	verStr := string(verOut[start:end])
 	verMajor, err := strconv.Atoi(strings.SplitN(verStr, ".", 2)[0])
-	if err != nil || verMajor < 7 {
+	if err != nil {
+		if debug {
+			fmt.Printf("warning: could not detect clang version from: %s", string(verOut))
+		}
+	} else if verMajor < 7 {
 		return fmt.Errorf("detected clang version: %d is older than required minimum version: 7", verMajor)
 	}
 	llc := locateFile("llc", []string{os.Getenv("LLC")})
