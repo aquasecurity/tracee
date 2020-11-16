@@ -7,7 +7,7 @@ KERN_RELEASE ?= $(shell uname -r)
 KERN_SRC ?= /lib/modules/$(KERN_RELEASE)/build
 # inputs and outputs:
 OUT_DIR ?= dist
-GO_SRC := $(shell find . -type f -name '*.go' ! -name '*_test.go')
+GO_SRC := $(shell find . -type f -name '*.go')
 OUT_BIN := $(OUT_DIR)/tracee
 BPF_SRC := tracee/tracee.bpf.c 
 BPF_OBJ := $(OUT_DIR)/tracee.bpf.o
@@ -36,13 +36,10 @@ $(OUT_DIR):
 .PHONY: build
 build: $(OUT_BIN)
 
-$(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(GO_SRC) $(BPF_BUNDLE) | $(OUT_DIR)
-	GOOS=linux GOARCH=$(ARCH:x86_64=amd64) \
-		CC=$(CLANG) \
-		CGO_CFLAGS="-I $(abspath $(LIBBPF_HEADERS))" \
-		CGO_LDFLAGS="$(abspath $(LIBBPF_OBJ))" \
-		go build -v -o $(OUT_BIN) \
-		-ldflags "-X main.bpfBundleInjected=$$(base64 -w 0 $(BPF_BUNDLE))"
+go_env := GOOS=linux GOARCH=$(ARCH:x86_64=amd64) CC=$(CLANG) CGO_CFLAGS="-I $(abspath $(LIBBPF_HEADERS))" CGO_LDFLAGS="$(abspath $(LIBBPF_OBJ))"
+$(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(filter-out *_test.go,$(GO_SRC)) $(BPF_BUNDLE) | $(OUT_DIR)
+	$(go_env) go build -v -o $(OUT_BIN) \
+	-ldflags "-X main.bpfBundleInjected=$$(base64 -w 0 $(BPF_BUNDLE))"
 
 .PHONY: build-docker
 build-docker: | $(OUT_DIR)
@@ -111,13 +108,15 @@ $(BPF_OBJ): $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compile_tools)
 	-$(LLVM_STRIP) -g $@
 	rm $(@:.o=.ll) 
 
-.PHONY: test
-test:
-	GOOS=linux GOARCH=$(ARCH:x86_64=amd64) \
-		CC=$(CLANG) \
-		CGO_CFLAGS="-I $(abspath $(LIBBPF_HEADERS))" \
-		CGO_LDFLAGS="$(abspath $(LIBBPF_OBJ))" \
-		go test -v ./...
+.PHONY: test 
+go_src_test := $(shell find . -type f -name '*_test.go')
+test: $(GO_SRC) $(go_src_test) $(LIBBPF_OBJ)
+	$(go_env)	go test -v ./...
+
+.PHONY: test-docker
+test-docker:
+	img=$$($(DOCKER) build --target builder -q .) && \
+	$(DOCKER) run --rm --entrypoint make $$img test
 
 .PHONY: clean
 clean:
