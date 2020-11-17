@@ -661,7 +661,7 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 				return fmt.Errorf("error parsing security_bprm_check args")
 			}
 			// path should be absolute, except for e.g memfd_create files
-			if filePath[0] != '/' {
+			if filePath == "" || filePath[0] != '/' {
 				return nil
 			}
 
