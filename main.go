@@ -47,10 +47,14 @@ func main() {
 			if err != nil {
 				return err
 			}
-
+			filter, err := prepareFilter(c.StringSlice("filter"))
+			if err != nil {
+				return err
+			}
 			cfg := tracee.TraceeConfig{
 				EventsToTrace:         events,
 				Mode:                  mode,
+				Filter:                filter,
 				DetectOriginalSyscall: c.Bool("detect-original-syscall"),
 				ShowExecEnv:           c.Bool("show-exec-env"),
 				OutputFormat:          c.String("output"),
@@ -134,7 +138,13 @@ func main() {
 				Name:    "trace",
 				Aliases: []string{"t"},
 				Value:   "process:new",
-				Usage:   "Set trace mode, whether to trace processes or containers, and if to trace new, all, or specific processes/container. run '--trace help' for more info",
+				Usage:   "set trace mode, whether to trace processes or containers, and if to trace new, all, or specific processes/container. run '--trace help' for more info",
+			},
+			&cli.StringSliceFlag{
+				Name:    "filter",
+				Aliases: []string{"f"},
+				Value:   nil,
+				Usage:   "set tracing filters for specific fields (such as UID or GID). run '--filter help' for more info.",
 			},
 			&cli.BoolFlag{
 				Name:  "detect-original-syscall",
@@ -210,11 +220,58 @@ func main() {
 	}
 }
 
+func prepareFilter(filters []string) (tracee.Filter, error) {
+
+	uids := []uint32{}
+
+	filterHelp := "\n--filter allows you to specify values to match on for fields of traced events.\n"
+	filterHelp += "The following options are currently supported:\n"
+	filterHelp += "uid: only trace processes or containers with specified uid(s).\n"
+	filterHelp += "\t--filter uid=0                                                | only trace events from uid 0\n"
+	filterHelp += "\t--filter uid=0,1000                                           | only trace events from uid 0 or uid 1000\n"
+	filterHelp += "\t--filter uid=0 --filter uid=1000                              | only trace events from uid 0 or uid 1000 (same as above)\n"
+
+	if len(filters) == 1 && filters[0] == "help" {
+		return tracee.Filter{}, fmt.Errorf(filterHelp)
+	}
+
+	for _, f := range filters {
+		s := strings.Split(f, "=")
+		if len(s) != 2 {
+			return tracee.Filter{}, fmt.Errorf(filterHelp)
+		}
+		if !validFilterOption(s[0]) {
+			return tracee.Filter{}, fmt.Errorf("invalid filter: %s\n%s", s[0], filterHelp)
+		}
+
+		if s[0] == "uid" {
+			values := strings.Split(s[1], ",")
+			for _, v := range values {
+				uid, err := strconv.ParseUint(v, 10, 32)
+				if err != nil {
+					return tracee.Filter{}, fmt.Errorf("specified invalid uid: %s", v)
+				}
+				uids = append(uids, uint32(uid))
+			}
+		}
+	}
+	return tracee.Filter{
+		UIDs: uids,
+	}, nil
+}
+
+func validFilterOption(s string) bool {
+	validOptions := map[string]bool{
+		"uid": true,
+	}
+	return validOptions[s]
+}
+
 func prepareTraceMode(traceString string) (uint32, []int, error) {
 	// Set Default mode - all new Processes only
 	mode := tracee.ModeProcessNew
 	var pidsToTrace []int
-	traceHelp := "--trace can be the following options:\n"
+	traceHelp := "\n--trace can be the following options:\n"
 	traceHelp += "'p' or 'process' or 'process:new'            | Trace new processes\n"
 	traceHelp += "'process:all'                                | Trace all processes\n"
 	traceHelp += "'process:<pid>,<pid2>,...' or 'p:<pid>,...'  | Trace specific PIDs\n"
@@ -526,7 +583,7 @@ func makeBPFObject(outFile string) error {
 
 	kernelSource := locateFile("", []string{os.Getenv("KERN_SRC"), fmt.Sprintf("/lib/modules/%s/build", tracee.UnameRelease())})
 	if kernelSource == "" {
-		return fmt.Errorf("missing compilation dependency: kernelSource")
+		return fmt.Errorf("missing kernel source code compilation dependency")
 	}
 	linuxArch := os.Getenv("ARCH")
 	if linuxArch == "" {

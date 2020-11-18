@@ -11,6 +11,7 @@ const (
 	configCaptureFiles
 	configExtractDynCode
 	configTraceePid
+	configFilterByUid
 )
 
 // an enum that specifies the index of a function to be used in a bpf tail call
