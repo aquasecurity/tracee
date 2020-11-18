@@ -112,6 +112,7 @@
 #define CONFIG_CAPTURE_FILES    3
 #define CONFIG_EXTRACT_DYN_CODE 4
 #define CONFIG_TRACEE_PID       5
+#define CONFIG_FILTER_UID       6
 
 #define MODE_PROCESS_ALL        1
 #define MODE_PROCESS_NEW        2
@@ -232,6 +233,7 @@ BPF_HASH(chosen_events_map, u32, u32);              // Events chosen by the user
 BPF_HASH(pids_map, u32, u32);                       // Save container pid namespaces
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
 BPF_HASH(ret_map, u64, u64);                        // Persist return value to be used in tail calls
+BPF_HASH(uid_filter, u32, u32);                     // Used to filter events by UID
 BPF_HASH(bin_args_map, u64, bin_args_t);            // Persist args for send_bin funtion
 BPF_HASH(sys_32_to_64_map, u32, u32);               // Map 32bit syscalls numbers to 64bit syscalls numbers
 BPF_HASH(params_types_map, u32, u64);               // Encoded parameters types for event
@@ -495,6 +497,16 @@ static __always_inline int get_config(u32 key)
     return *config;
 }
 
+static __always_inline int uid_filter_matches()
+{
+    uid_t uid = (u32)bpf_get_current_uid_gid();
+    u32* isMatch = bpf_map_lookup_elem(&uid_filter, &uid);
+    if (isMatch == NULL) {
+        return 0;
+    }
+    return 1;
+}
+
 static __always_inline int should_trace()
 {
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
@@ -502,8 +514,17 @@ static __always_inline int should_trace()
     u32 rc = 0;
     u32 host_pid = bpf_get_current_pid_tgid() >> 32;
 
-    if (get_config(CONFIG_TRACEE_PID) == host_pid)
+    if (get_config(CONFIG_TRACEE_PID) == host_pid) {
         return 0;
+    }
+
+    if (get_config(CONFIG_FILTER_UID) > 0) {
+        if (!uid_filter_matches())
+        {
+            return 0; 
+        }
+    }
+
 
     // All logs all processes except tracee itself
     if (config_mode == MODE_PROCESS_ALL)

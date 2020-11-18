@@ -22,6 +22,7 @@ import (
 type TraceeConfig struct {
 	EventsToTrace         []int32
 	Mode                  uint32
+	Filter                Filter
 	PidsToTrace           []int
 	DetectOriginalSyscall bool
 	ShowExecEnv           bool
@@ -38,6 +39,10 @@ type TraceeConfig struct {
 	ErrorsFile            *os.File
 	maxPidsCache          int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
 	BPFObjPath            string
+}
+
+type Filter struct {
+	UIDs []uint32
 }
 
 // Validate does static validation of the configuration
@@ -391,6 +396,7 @@ func (t *Tracee) populateBPFMaps() error {
 	bpfConfigMap.Update(uint32(configCaptureFiles), boolToUInt32(t.config.CaptureWrite))
 	bpfConfigMap.Update(uint32(configExtractDynCode), boolToUInt32(t.config.CaptureMem))
 	bpfConfigMap.Update(uint32(configTraceePid), uint32(os.Getpid()))
+	bpfConfigMap.Update(uint32(configFilterByUid), uint32(len(t.config.Filter.UIDs)))
 
 	pidsMap, _ := t.bpfModule.GetMap("pids_map")
 	for _, pid := range t.config.PidsToTrace {
@@ -421,6 +427,11 @@ func (t *Tracee) populateBPFMaps() error {
 	fileFilterMap, _ := t.bpfModule.GetMap("file_filter")
 	for i := 0; i < len(t.config.FilterFileWrite); i++ {
 		fileFilterMap.Update(uint32(i), []byte(t.config.FilterFileWrite[i]))
+	}
+
+	uidHash, _ := t.bpfModule.GetMap("uid_filter")
+	for i := 0; i < len(t.config.Filter.UIDs); i++ {
+		uidHash.Update(uint32(t.config.Filter.UIDs[i]), uint32(1))
 	}
 
 	stringStoreMap, _ := t.bpfModule.GetMap("string_store")
