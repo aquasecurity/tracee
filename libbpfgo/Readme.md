@@ -15,9 +15,9 @@ In a high level, this is a typical workflow for working with the library:
 
 0. Compile your bpf program into an object file.
 1. Initialize a `Module` struct - that is a unit of BPF functionality around your compiled object file.
-2. Load bpf programs from the object file using the `BpfProg` struct.
-3. Attach `BpfProg` to system facilities, for example to "raw tracepoints" or "kprobes" using the `BpfProg`'s associated functions.
-4. Instantiate and manipulate BPF Maps via the `BpfMap` struct and it's associated methods.
+2. Load bpf programs from the object file using the `BPFProg` struct.
+3. Attach `BPFProg` to system facilities, for example to "raw tracepoints" or "kprobes" using the `BPFProg`'s associated functions.
+4. Instantiate and manipulate BPF Maps via the `BPFMap` struct and it's associated methods.
 5. Instantiate and manipulate Perf Buffer for communicating events from your BPF program to the driving userspace program, using the `PerfBuffer` struct and it's associated objects.
 
 ## Example
@@ -27,7 +27,7 @@ In a high level, this is a typical workflow for working with the library:
 import bpf "github.com/aquasecurity/tracee/libbpfgo"
 ...
 bpfModule := bpf.NewModuleFromFile(bpfObjectPath)
-bpfModule.BpfLoadObject()
+bpfModule.BPFLoadObject()
 
 // maps
 mymap, _ := bpfModule.GetMap("mymap")

@@ -172,17 +172,17 @@ import (
 
 type Module struct {
 	obj      *C.struct_bpf_object
-	links    []*BpfLink
+	links    []*BPFLink
 	perfBufs []*PerfBuffer
 }
 
-type BpfMap struct {
+type BPFMap struct {
 	name   string
 	fd     C.int
 	module *Module
 }
 
-type BpfProg struct {
+type BPFProg struct {
 	name   string
 	prog   *C.struct_bpf_program
 	module *Module
@@ -199,16 +199,16 @@ const (
 	KretprobeLegacy
 )
 
-type BpfLink struct {
+type BPFLink struct {
 	link      *C.struct_bpf_link
-	prog      *BpfProg
+	prog      *BPFProg
 	linkType  LinkType
 	eventName string
 }
 
 type PerfBuffer struct {
 	pb     *C.struct_perf_buffer
-	bpfMap *BpfMap
+	bpfMap *BPFMap
 	stop   chan bool
 }
 
@@ -278,7 +278,7 @@ func (m *Module) Close() {
 	C.bpf_object__close(m.obj)
 }
 
-func (m *Module) BpfLoadObject() error {
+func (m *Module) BPFLoadObject() error {
 	ret := C.bpf_object__load(m.obj)
 	if ret != 0 {
 		return fmt.Errorf("failed to load BPF object")
@@ -287,7 +287,7 @@ func (m *Module) BpfLoadObject() error {
 	return nil
 }
 
-func (m *Module) GetMap(mapName string) (*BpfMap, error) {
+func (m *Module) GetMap(mapName string) (*BPFMap, error) {
 	cs := C.CString(mapName)
 	bpfMap := C.bpf_object__find_map_by_name(m.obj, cs)
 	C.free(unsafe.Pointer(cs))
@@ -295,14 +295,14 @@ func (m *Module) GetMap(mapName string) (*BpfMap, error) {
 		return nil, fmt.Errorf("failed to find BPF map %s", mapName)
 	}
 
-	return &BpfMap{
+	return &BPFMap{
 		name:   mapName,
 		fd:     C.bpf_map__fd(bpfMap),
 		module: m,
 	}, nil
 }
 
-func (b *BpfMap) Update(key, value interface{}) error {
+func (b *BPFMap) Update(key, value interface{}) error {
 	var keyPtr, valuePtr unsafe.Pointer
 	if k, isType := key.(int32); isType {
 		keyPtr = unsafe.Pointer(&k)
@@ -336,7 +336,7 @@ func (b *BpfMap) Update(key, value interface{}) error {
 	return nil
 }
 
-func (m *Module) GetProgram(progName string) (*BpfProg, error) {
+func (m *Module) GetProgram(progName string) (*BPFProg, error) {
 	cs := C.CString(progName)
 	prog := C.bpf_object__find_program_by_name(m.obj, cs)
 	C.free(unsafe.Pointer(cs))
@@ -344,59 +344,59 @@ func (m *Module) GetProgram(progName string) (*BpfProg, error) {
 		return nil, fmt.Errorf("failed to find BPF program %s", progName)
 	}
 
-	return &BpfProg{
+	return &BPFProg{
 		name:   progName,
 		prog:   prog,
 		module: m,
 	}, nil
 }
 
-func (p *BpfProg) GetFd() C.int {
+func (p *BPFProg) GetFd() C.int {
 	return C.bpf_program__fd(p.prog)
 }
 
-// BpfProgType is an enum as defined in https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/bpf.h
-type BpfProgType uint32
+// BPFProgType is an enum as defined in https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/bpf.h
+type BPFProgType uint32
 
 const (
-	BpfProgTypeUnspec uint32 = iota
-	BpfProgTypeSocketFilter
-	BpfProgTypeKprobe
-	BpfProgTypeSchedCls
-	BpfProgTypeSchedAct
-	BpfProgTypeTracepoint
-	BpfProgTypeXdp
-	BpfProgTypePerfEvent
-	BpfProgTypeCgroupSkb
-	BpfProgTypeCgroupSock
-	BpfProgTypeLwtIn
-	BpfProgTypeLwtOut
-	BpfProgTypeLwtXmit
-	BpfProgTypeSockOps
-	BpfProgTypeSkSkb
-	BpfProgTypeCgroupDevice
-	BpfProgTypeSkMsg
-	BpfProgTypeRawTracepoint
-	BpfProgTypeCgroupSockAddr
-	BpfProgTypeLwtSeg6Local
-	BpfProgTypeLircMode2
-	BpfProgTypeSkReuseport
-	BpfProgTypeFlowDissector
-	BpfProgTypeCgroupSysctl
-	BpfProgTypeRawTracepointWritable
-	BpfProgTypeCgroupSockopt
-	BpfProgTypeTracing
-	BpfProgTypeStructOps
-	BpfProgTypeExt
-	BpfProgTypeLsm
-	BpfProgTypeSkLookup
+	BPFProgTypeUnspec uint32 = iota
+	BPFProgTypeSocketFilter
+	BPFProgTypeKprobe
+	BPFProgTypeSchedCls
+	BPFProgTypeSchedAct
+	BPFProgTypeTracepoint
+	BPFProgTypeXdp
+	BPFProgTypePerfEvent
+	BPFProgTypeCgroupSkb
+	BPFProgTypeCgroupSock
+	BPFProgTypeLwtIn
+	BPFProgTypeLwtOut
+	BPFProgTypeLwtXmit
+	BPFProgTypeSockOps
+	BPFProgTypeSkSkb
+	BPFProgTypeCgroupDevice
+	BPFProgTypeSkMsg
+	BPFProgTypeRawTracepoint
+	BPFProgTypeCgroupSockAddr
+	BPFProgTypeLwtSeg6Local
+	BPFProgTypeLircMode2
+	BPFProgTypeSkReuseport
+	BPFProgTypeFlowDissector
+	BPFProgTypeCgroupSysctl
+	BPFProgTypeRawTracepointWritable
+	BPFProgTypeCgroupSockopt
+	BPFProgTypeTracing
+	BPFProgTypeStructOps
+	BPFProgTypeExt
+	BPFProgTypeLsm
+	BPFProgTypeSkLookup
 )
 
-func (p *BpfProg) GetType() uint32 {
+func (p *BPFProg) GetType() uint32 {
 	return C.bpf_program__get_type(p.prog)
 }
 
-func (p *BpfProg) SetAutoload(autoload bool) error {
+func (p *BPFProg) SetAutoload(autoload bool) error {
 	cbool := C.bool(autoload)
 	err := C.bpf_program__set_autoload(p.prog, cbool)
 	if err != 0 {
@@ -405,7 +405,7 @@ func (p *BpfProg) SetAutoload(autoload bool) error {
 	return nil
 }
 
-func (p *BpfProg) SetTracepoint() error {
+func (p *BPFProg) SetTracepoint() error {
 	err := C.bpf_program__set_tracepoint(p.prog)
 	if err != 0 {
 		return fmt.Errorf("failed to set bpf program as tracepoint")
@@ -413,7 +413,7 @@ func (p *BpfProg) SetTracepoint() error {
 	return nil
 }
 
-func (p *BpfProg) AttachTracepoint(tp string) (*BpfLink, error) {
+func (p *BPFProg) AttachTracepoint(tp string) (*BPFLink, error) {
 	tpEvent := strings.Split(tp, ":")
 	tpCategory := C.CString(tpEvent[0])
 	tpName := C.CString(tpEvent[1])
@@ -424,7 +424,7 @@ func (p *BpfProg) AttachTracepoint(tp string) (*BpfLink, error) {
 		return nil, fmt.Errorf("failed to attach tracepoint %s to program %s", tp, p.name)
 	}
 
-	bpfLink := &BpfLink{
+	bpfLink := &BPFLink{
 		link:      link,
 		prog:      p,
 		linkType:  Tracepoint,
@@ -434,7 +434,7 @@ func (p *BpfProg) AttachTracepoint(tp string) (*BpfLink, error) {
 	return bpfLink, nil
 }
 
-func (p *BpfProg) AttachRawTracepoint(tpEvent string) (*BpfLink, error) {
+func (p *BPFProg) AttachRawTracepoint(tpEvent string) (*BPFLink, error) {
 	cs := C.CString(tpEvent)
 	link := C.bpf_program__attach_raw_tracepoint(p.prog, cs)
 	C.free(unsafe.Pointer(cs))
@@ -442,7 +442,7 @@ func (p *BpfProg) AttachRawTracepoint(tpEvent string) (*BpfLink, error) {
 		return nil, fmt.Errorf("failed to attach raw tracepoint %s to program %s", tpEvent, p.name)
 	}
 
-	bpfLink := &BpfLink{
+	bpfLink := &BPFLink{
 		link:      link,
 		prog:      p,
 		linkType:  RawTracepoint,
@@ -453,16 +453,16 @@ func (p *BpfProg) AttachRawTracepoint(tpEvent string) (*BpfLink, error) {
 }
 
 // this API should be used for kernels > 4.17
-func (p *BpfProg) AttachKprobe(kp string) (*BpfLink, error) {
+func (p *BPFProg) AttachKprobe(kp string) (*BPFLink, error) {
 	return doAttachKprobe(p, kp, false)
 }
 
 // this API should be used for kernels > 4.17
-func (p *BpfProg) AttachKretprobe(kp string) (*BpfLink, error) {
+func (p *BPFProg) AttachKretprobe(kp string) (*BPFLink, error) {
 	return doAttachKprobe(p, kp, true)
 }
 
-func doAttachKprobe(prog *BpfProg, kp string, isKretprobe bool) (*BpfLink, error) {
+func doAttachKprobe(prog *BPFProg, kp string, isKretprobe bool) (*BPFLink, error) {
 	cs := C.CString(kp)
 	cbool := C.bool(isKretprobe)
 	link := C.bpf_program__attach_kprobe(prog.prog, cbool, cs)
@@ -476,7 +476,7 @@ func doAttachKprobe(prog *BpfProg, kp string, isKretprobe bool) (*BpfLink, error
 		kpType = Kretprobe
 	}
 
-	bpfLink := &BpfLink{
+	bpfLink := &BPFLink{
 		link:      link,
 		prog:      prog,
 		linkType:  kpType,
@@ -486,15 +486,15 @@ func doAttachKprobe(prog *BpfProg, kp string, isKretprobe bool) (*BpfLink, error
 	return bpfLink, nil
 }
 
-func (p *BpfProg) AttachKprobeLegacy(kp string) (*BpfLink, error) {
+func (p *BPFProg) AttachKprobeLegacy(kp string) (*BPFLink, error) {
 	return doAttachKprobeLegacy(p, kp, false)
 }
 
-func (p *BpfProg) AttachKretprobeLegacy(kp string) (*BpfLink, error) {
+func (p *BPFProg) AttachKretprobeLegacy(kp string) (*BPFLink, error) {
 	return doAttachKprobeLegacy(p, kp, true)
 }
 
-func doAttachKprobeLegacy(prog *BpfProg, kp string, isKretprobe bool) (*BpfLink, error) {
+func doAttachKprobeLegacy(prog *BPFProg, kp string, isKretprobe bool) (*BPFLink, error) {
 	cs := C.CString(kp)
 	cbool := C.bool(isKretprobe)
 	link := C.attach_kprobe_legacy(prog.prog, cs, cbool)
@@ -508,7 +508,7 @@ func doAttachKprobeLegacy(prog *BpfProg, kp string, isKretprobe bool) (*BpfLink,
 		kpType = KretprobeLegacy
 	}
 
-	bpfLink := &BpfLink{
+	bpfLink := &BPFLink{
 		link:      link,
 		prog:      prog,
 		linkType:  kpType,
@@ -554,7 +554,7 @@ func (pb *PerfBuffer) Stop() {
 	pb.stop <- true
 }
 
-func (pb *PerfBuffer) Free() {
+func (pb *PerfBuffer) Close() {
 	C.perf_buffer__free(pb.pb)
 }
 
