@@ -476,7 +476,7 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 		return fmt.Errorf("Failed to find kernel version: %v", err)
 	}
 
-	// BpfLoadObject() automatically loads ALL BPF programs according to their section type, unless set otherwise
+	// BPFLoadObject() automatically loads ALL BPF programs according to their section type, unless set otherwise
 	// For every BPF program, we need to make sure that:
 	// 1. We disable autoload if the program is not required by any event and is not essential
 	// 2. The correct BPF program type is set
@@ -498,7 +498,7 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 				continue
 			}
 			// As kernels < 4.17 don't support raw tracepoints, set these program types to "regular" tracepoint
-			if !supportRawTracepoints && (prog.GetType() == bpf.BpfProgTypeRawTracepoint) {
+			if !supportRawTracepoints && (prog.GetType() == bpf.BPFProgTypeRawTracepoint) {
 				err = prog.SetTracepoint()
 				if err != nil {
 					return err
@@ -507,7 +507,7 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 		}
 	}
 
-	err = t.bpfModule.BpfLoadObject()
+	err = t.bpfModule.BPFLoadObject()
 	if err != nil {
 		return err
 	}
