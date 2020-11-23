@@ -8,7 +8,11 @@ WORKDIR /tracee
 
 COPY . /tracee
 
+
+FROM builder as build
+
 RUN git submodule update --init && make build
+
 
 # must run privileged and with linux headers mounted
 # docker run --name tracee --rm --privileged --pid=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro aquasec/tracee
@@ -18,6 +22,6 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update -y && apt-get install -y --no-
 
 WORKDIR /tracee
 
-COPY --from=builder /tracee/dist/tracee /tracee/entrypoint.sh ./
+COPY --from=build /tracee/dist/tracee /tracee/entrypoint.sh ./
 
 ENTRYPOINT ["./entrypoint.sh", "./tracee"]
