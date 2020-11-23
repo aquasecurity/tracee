@@ -113,7 +113,6 @@
 #define CONFIG_CAPTURE_FILES    3
 #define CONFIG_EXTRACT_DYN_CODE 4
 #define CONFIG_TRACEE_PID       5
-#define CONFIG_FILTER_UID       6
 
 #define MODE_PROCESS_ALL        1
 #define MODE_PROCESS_NEW        2
@@ -122,6 +121,9 @@
 #define MODE_CONTAINER_NEW      5
 #define MODE_HOST_ALL           6
 #define MODE_HOST_NEW           7
+
+#define GREATER 0
+#define LESS    1
 
 #define DEV_NULL_STR    0
 
@@ -236,7 +238,8 @@ BPF_HASH(chosen_events_map, u32, u32);              // Events chosen by the user
 BPF_HASH(pids_map, u32, u32);                       // Save container pid namespaces
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
 BPF_HASH(ret_map, u64, u64);                        // Persist return value to be used in tail calls
-BPF_HASH(uid_filter, u32, u32);                     // Used to filter events by UID
+BPF_HASH(uid_equal_filter, u32, s64);               // Used to filter events by UID, for specific UIDs either by == or !=
+BPF_HASH(uid_compare_filter, u32, s64);             // Used to filter events by UID, for ranges of UIDs by < or >
 BPF_HASH(bin_args_map, u64, bin_args_t);            // Persist args for send_bin funtion
 BPF_HASH(sys_32_to_64_map, u32, u32);               // Map 32bit syscalls numbers to 64bit syscalls numbers
 BPF_HASH(params_types_map, u32, u64);               // Encoded parameters types for event
@@ -500,13 +503,29 @@ static __always_inline int get_config(u32 key)
     return *config;
 }
 
+// returns 1 if you should trace based on uid, 0 if not
 static __always_inline int uid_filter_matches()
 {
     uid_t uid = (u32)bpf_get_current_uid_gid();
-    u32* isMatch = bpf_map_lookup_elem(&uid_filter, &uid);
-    if (isMatch == NULL) {
+    s64* equality = bpf_map_lookup_elem(&uid_equal_filter, &uid);
+    if (equality != NULL) {
+        return *equality;
+    }
+
+    u32 greater = GREATER;
+    u32 less = LESS;
+
+    s64* greaterThan = bpf_map_lookup_elem(&uid_compare_filter, &greater);
+    s64* lessThan = bpf_map_lookup_elem(&uid_compare_filter, &less);
+
+    if ((lessThan != NULL) && (uid >= *lessThan)) {
         return 0;
     }
+
+    if ((greaterThan != NULL) && (uid <= *greaterThan)) {
+        return 0;
+    }
+
     return 1;
 }
 
@@ -521,13 +540,10 @@ static __always_inline int should_trace()
         return 0;
     }
 
-    if (get_config(CONFIG_FILTER_UID) > 0) {
-        if (!uid_filter_matches())
-        {
-            return 0; 
-        }
+    if (!uid_filter_matches())
+    {
+        return 0; 
     }
-
 
     // All logs all processes except tracee itself
     if (config_mode == MODE_PROCESS_ALL)
