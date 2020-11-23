@@ -25,11 +25,14 @@ To run, Tracee requires the following:
 
 ### Getting Tracee
 
+Tracee is made of an executable that drives the eBPF code (`tracee`) and the eBPF code itself (`tracee.ebpf.o`). When the `tracee` executable is started, is will look for the eBPF code next to the executable, or in `/tmp/tracee`. If the eBPF is not found, the executable will attempt to build it (you can control this using the `--build-policy` flag).
+
 You can get Tracee in any of the following ways:
-1. Download the binary from the GitHub Releases tab (`tracee.tar.gz`).
-2. Use the docker image from Docker Hub: `aquasec/tracee`. The image already includes the required dependencies but you will need to mount the kernel headers in (see below for example).
-3. Build from source via docker, using `make build-docker`.
-4. Build from source, using `make build` (requires libelf-dev in addition to the above prerequisites).
+1. Download the executable from the [GitHub Releases](https://github.com/aquasecurity/tracee/releases) (`tracee.tar.gz`).
+2. Use the docker image from Docker Hub: `aquasec/tracee`.
+3. Build the executable from source using `make build`. For that you will need additional developement prerequisites such as golang and libelf.
+4. Build from executable from source in a Docker container which includes all the prerequisites, using `make build DOCKER=1`.
+5. Build the executable and the eBPF code from source, using `make all`, or in a Docker container using `make all DOCKER=1`.
 
 ### Permissions
 

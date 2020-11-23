@@ -30,7 +30,7 @@ jobs:
           fi
 
       - name: Build Tracee
-        run: make build-docker
+        run: make build DOCKER=1
   
   test:
     runs-on: ubuntu-20.04
@@ -40,5 +40,5 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Run Tests
-        run: make test-docker
+        run: make test DOCKER=1
       
