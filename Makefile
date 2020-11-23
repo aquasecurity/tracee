@@ -1,22 +1,26 @@
 .PHONY: all
-all: build
+all: build bpf
+
+.PHONY: all-docker
+all: build-docker bpf-docker
 
 # environment:
 ARCH ?= $(shell uname -m)
 KERN_RELEASE ?= $(shell uname -r)
-KERN_SRC ?= /lib/modules/$(KERN_RELEASE)/build
+KERN_SRC ?= $(shell readlink /lib/modules/$(KERN_RELEASE)/build)
 # inputs and outputs:
 OUT_DIR ?= dist
 GO_SRC := $(shell find . -type f -name '*.go')
 OUT_BIN := $(OUT_DIR)/tracee
 BPF_SRC := tracee/tracee.bpf.c 
-BPF_OBJ := $(OUT_DIR)/tracee.bpf.o
+OUT_BPF := $(OUT_DIR)/tracee.bpf.o
 BPF_HEADERS := 3rdparty/include
 BPF_BUNDLE := $(OUT_DIR)/tracee.bpf.tar.gz
 LIBBPF_SRC := 3rdparty/libbpf/src
 LIBBPF_HEADERS := $(OUT_DIR)/libbpf/usr/include
 LIBBPF_OBJ := $(OUT_DIR)/libbpf/libbpf.a
 OUT_DOCKER ?= tracee
+DOCKER_BUILDER ?= tracee-builder
 RELEASE_ARCHIVE := $(OUT_DIR)/tracee.tar.gz
 RELEASE_CHECKSUMS := $(OUT_DIR)/checksums.txt
 RELEASE_DOCKER ?= aquasec/tracee
@@ -41,13 +45,6 @@ $(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(filter-out *_test.go,$(GO_SRC)) $(
 	$(go_env) go build -v -o $(OUT_BIN) \
 	-ldflags "-X main.bpfBundleInjected=$$(base64 -w 0 $(BPF_BUNDLE))"
 
-.PHONY: build-docker
-build-docker: | $(OUT_DIR)
-	img=$$($(DOCKER) build --target builder -q .) && \
-	cnt=$$($(DOCKER) create $$img) && \
-	$(DOCKER) cp $$cnt:/tracee/$(OUT_BIN) $(OUT_BIN) ; \
-	$(DOCKER) rm $$cnt ; $(DOCKER) rmi $$img
-
 bpf_compile_tools = $(LLC) $(CLANG)
 .PHONY: $(bpf_compile_tools) 
 $(bpf_compile_tools): % : check_%
@@ -68,9 +65,10 @@ $(BPF_BUNDLE): $(BPF_SRC) $(LIBBPF_HEADERS)/bpf $(BPF_HEADERS)
 	tar -czf $@ $(bpf_bundle_dir)
 
 .PHONY: bpf
-bpf: $(BPF_OBJ)
+bpf: $(OUT_BPF)
+
 linux_arch := $(ARCH:x86_64=x86)
-$(BPF_OBJ): $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compile_tools)
+$(OUT_BPF): $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compile_tools)
 	@v=$$($(CLANG) --version); test $$(echo $${v#*version} | head -n1 | cut -d '.' -f1) -ge '9' || (echo 'required minimum clang version: 9' ; false)
 	$(CLANG) -S \
 		-D__BPF_TRACING__ \
@@ -110,18 +108,41 @@ $(BPF_OBJ): $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compile_tools)
 
 .PHONY: test 
 go_src_test := $(shell find . -type f -name '*_test.go')
-test: $(GO_SRC) $(go_src_test) $(LIBBPF_OBJ)
+test: $(GO_SRC) $(go_src_test) $(LIBBPF_HEADERS) $(LIBBPF_OBJ)
 	$(go_env)	go test -v ./...
 
+.PHONY: $(DOCKER_BUILDER)
+# use a dummy file to prevent unnecessary building
+$(DOCKER_BUILDER): $(OUT_DIR)/$(DOCKER_BUILDER)
+
+$(OUT_DIR)/$(DOCKER_BUILDER): $(GO_SRC) $(BPF_SRC) $(MAKEFILE_LIST) Dockerfile | $(OUT_DIR)
+	$(DOCKER) build -t $(DOCKER_BUILDER) --iidfile $(OUT_DIR)/$(DOCKER_BUILDER) --target builder .
+
+tracee_builder_state := $(OUT_DIR)/tracee-builder-cid
+tracee_builder_make := $(DOCKER) run --cidfile $(tracee_builder_state) -v $(dir $(KERN_SRC)):$(dir $(KERN_SRC)) --entrypoint make $(DOCKER_BUILDER) KERN_SRC=$(KERN_SRC)
+
+.PHONY: build-docker
+build-docker: $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(filter-out *_test.go,$(GO_SRC)) $(BPF_BUNDLE) $(DOCKER_BUILDER) | $(OUT_DIR)
+	$(tracee_builder_make) build
+	$(DOCKER) cp $$(cat $(tracee_builder_state)):/tracee/$(OUT_BIN) $(OUT_BIN)
+	$(DOCKER) rm $$(cat $(tracee_builder_state)) && rm $(tracee_builder_state)
+
+.PHONY: bpf-docker
+bpf-docker: $(BPF_SRC) $(LIBBPF_HEADERS) $(DOCKER_BUILDER) | $(OUT_DIR)
+	$(tracee_builder_make) bpf
+	$(DOCKER) cp $$(cat $(tracee_builder_state)):/tracee/$(OUT_BPF) $(OUT_BPF)
+	$(DOCKER) $$(cat $(tracee_builder_state) && rm $(tracee_builder_state))
+
 .PHONY: test-docker
-test-docker:
-	img=$$($(DOCKER) build --target builder -q .) && \
-	$(DOCKER) run --rm --entrypoint make $$img test
+test-docker: $(GO_SRC) $(go_src_test) $(LIBBPF_OBJ) $(DOCKER_BUILDER)
+	$(tracee_builder_make) test
+	$(DOCKER) rm $$(cat $(tracee_builder_state) && rm $(tracee_builder_state))
 
 .PHONY: clean
 clean:
 	-rm -rf dist $(OUT_DIR)
 	-cd $(LIBBPF_SRC) && $(MAKE) clean;
+	-$(DOCKER) rmi $(file < $(DOCKER_BUILDER))
 	
 check_%:
 	@command -v $* >/dev/null || (echo "missing required tool $*" ; false)
