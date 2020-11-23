@@ -71,7 +71,7 @@ $(BPF_BUNDLE): $(BPF_SRC) $(LIBBPF_HEADERS)/bpf $(BPF_HEADERS)
 bpf: $(BPF_OBJ)
 linux_arch := $(ARCH:x86_64=x86)
 $(BPF_OBJ): $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compile_tools)
-	@v=$$($(CLANG) --version); test $$(echo $${v#*version} | head -n1 | cut -d '.' -f1) -ge '7' || (echo 'required minimum clang version: 7' ; false)
+	@v=$$($(CLANG) --version); test $$(echo $${v#*version} | head -n1 | cut -d '.' -f1) -ge '9' || (echo 'required minimum clang version: 9' ; false)
 	$(CLANG) -S \
 		-D__BPF_TRACING__ \
 		-D__KERNEL__ \
@@ -106,7 +106,7 @@ $(BPF_OBJ): $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compile_tools)
 		-O2 -emit-llvm -c -g $< -o $(@:.o=.ll)
 	$(LLC) -march=bpf -filetype=obj -o $@ $(@:.o=.ll)
 	-$(LLVM_STRIP) -g $@
-	rm $(@:.o=.ll) 
+	rm $(@:.o=.ll)
 
 .PHONY: test 
 go_src_test := $(shell find . -type f -name '*_test.go')

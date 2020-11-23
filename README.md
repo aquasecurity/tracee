@@ -21,7 +21,7 @@ To run, Tracee requires the following:
 - Linux kernel version > 4.14
 - Kernel headers
 - C standard library (currently tested with glibc)
-- clang > 7
+- clang > 9
 
 ### Getting Tracee
 
