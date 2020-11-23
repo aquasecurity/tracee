@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -49,14 +50,10 @@ func main() {
 			if err != nil {
 				return err
 			}
-			filter, err := prepareFilter(c.StringSlice("filter"))
-			if err != nil {
-				return err
-			}
+
 			cfg := tracee.TraceeConfig{
 				EventsToTrace:         events,
 				Mode:                  mode,
-				Filter:                filter,
 				DetectOriginalSyscall: c.Bool("detect-original-syscall"),
 				ShowExecEnv:           c.Bool("show-exec-env"),
 				OutputFormat:          c.String("output"),
@@ -85,6 +82,12 @@ func main() {
 					return fmt.Errorf("invalid capture option: %s", cap)
 				}
 			}
+			filter, err := prepareFilter(c.StringSlice("filter"))
+			if err != nil {
+				return err
+			}
+			cfg.Filter = &filter
+
 			if c.Bool("security-alerts") {
 				cfg.EventsToTrace = append(cfg.EventsToTrace, tracee.MemProtAlertEventID)
 			}
@@ -224,49 +227,136 @@ func main() {
 
 func prepareFilter(filters []string) (tracee.Filter, error) {
 
-	uids := []uint32{}
-
 	filterHelp := "\n--filter allows you to specify values to match on for fields of traced events.\n"
 	filterHelp += "The following options are currently supported:\n"
 	filterHelp += "uid: only trace processes or containers with specified uid(s).\n"
 	filterHelp += "\t--filter uid=0                                                | only trace events from uid 0\n"
 	filterHelp += "\t--filter uid=0,1000                                           | only trace events from uid 0 or uid 1000\n"
 	filterHelp += "\t--filter uid=0 --filter uid=1000                              | only trace events from uid 0 or uid 1000 (same as above)\n"
+	filterHelp += "\t--filter 'uid>0'                                              | only trace events from uids greater than 0"
+	filterHelp += "\t--filter 'uid>0' --filter 'uid<1000'                          | only trace events from uids between 0 and 1000"
+	filterHelp += "\t--filter 'uid>0' --filter uid!=1000                           | only trace events from uids greater than 0 but not 1000"
 
 	if len(filters) == 1 && filters[0] == "help" {
 		return tracee.Filter{}, fmt.Errorf(filterHelp)
 	}
 
+	validFilterOptions := []string{"uid"}
+
+	filter := tracee.Filter{
+		UIDFilter: baseUIDFilter(),
+	}
+
 	for _, f := range filters {
-		s := strings.Split(f, "=")
-		if len(s) != 2 {
-			return tracee.Filter{}, fmt.Errorf(filterHelp)
+
+		// Parse the filter option (i.e. uid, ...)
+		isValid := false
+		filterSlice := []string{}
+		for i := range validFilterOptions {
+			if strings.HasPrefix(f, validFilterOptions[i]) {
+				filterSlice = strings.SplitAfter(f, validFilterOptions[i])
+				isValid = true
+				break
+			}
 		}
-		if !validFilterOption(s[0]) {
-			return tracee.Filter{}, fmt.Errorf("invalid filter: %s\n%s", s[0], filterHelp)
+		if !isValid {
+			return tracee.Filter{}, fmt.Errorf("invalid filter option specified, use '--filter help' for more info")
 		}
 
-		if s[0] == "uid" {
-			values := strings.Split(s[1], ",")
-			for _, v := range values {
-				uid, err := strconv.ParseUint(v, 10, 32)
-				if err != nil {
-					return tracee.Filter{}, fmt.Errorf("specified invalid uid: %s", v)
-				}
-				uids = append(uids, uint32(uid))
+		if filterSlice[0] == "uid" {
+			err := parseUIDFilter(filterSlice[1], filter.UIDFilter)
+			if err != nil {
+				return tracee.Filter{}, err
 			}
 		}
 	}
-	return tracee.Filter{
-		UIDs: uids,
-	}, nil
+
+	if len(filter.UIDFilter.Equal) > 0 &&
+		len(filter.UIDFilter.NotEqual) == 0 &&
+		filter.UIDFilter.Greater == -1 &&
+		filter.UIDFilter.Less == math.MaxUint32+1 {
+		filter.UIDFilter.Less = -1
+		filter.UIDFilter.Greater = math.MaxUint32 + 1
+	}
+
+	return filter, nil
 }
 
-func validFilterOption(s string) bool {
-	validOptions := map[string]bool{
-		"uid": true,
+// Operator represents a comparison operator such as '=', '!=', '>', or '<'
+type Operator uint8
+
+const (
+	opInvalid Operator = iota
+	opEqual
+	opNotEqual
+	opGreater
+	opLess
+)
+
+func parseUIDFilter(operatorAndValues string, uidFilter *tracee.UIDFilter) error {
+
+	valuesString := string(operatorAndValues[1:])
+	operatorString := string(operatorAndValues[0])
+
+	if operatorString == "!" {
+		operatorString = operatorAndValues[0:2]
+		valuesString = operatorAndValues[2:]
 	}
-	return validOptions[s]
+
+	operator := parseOperator(operatorString)
+	if operator == opInvalid {
+		return fmt.Errorf("invalid filter operator: %s", operatorString)
+	}
+
+	values := strings.Split(valuesString, ",")
+
+	for i := range values {
+		v, err := strconv.ParseUint(values[i], 10, 32)
+		if err != nil {
+			return fmt.Errorf("invalid UID value: %s", values[i])
+		}
+		if operator == opEqual {
+			uid := uint32(v)
+			uidFilter.Equal = append(uidFilter.Equal, uid)
+		}
+		if operator == opNotEqual {
+			uid := uint32(v)
+			uidFilter.NotEqual = append(uidFilter.NotEqual, uid)
+		}
+		uid := int64(v)
+		if operator == opGreater && uid > uidFilter.Greater {
+			uidFilter.Greater = uid
+		}
+		if operator == opLess && uid < uidFilter.Less {
+			uidFilter.Less = uid
+		}
+	}
+
+	return nil
+}
+
+func baseUIDFilter() *tracee.UIDFilter {
+	return &tracee.UIDFilter{
+		Equal:    []uint32{},
+		NotEqual: []uint32{},
+		Greater:  -1,
+		Less:     math.MaxUint32 + 1,
+	}
+}
+
+func parseOperator(operationString string) Operator {
+	switch operationString {
+	case "=":
+		return opEqual
+	case "!=":
+		return opNotEqual
+	case ">":
+		return opGreater
+	case "<":
+		return opLess
+	default:
+		return opInvalid
+	}
 }
 
 func prepareTraceMode(traceString string) (uint32, []int, error) {

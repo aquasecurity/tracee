@@ -22,7 +22,7 @@ import (
 type TraceeConfig struct {
 	EventsToTrace         []int32
 	Mode                  uint32
-	Filter                Filter
+	Filter                *Filter
 	PidsToTrace           []int
 	DetectOriginalSyscall bool
 	ShowExecEnv           bool
@@ -42,7 +42,14 @@ type TraceeConfig struct {
 }
 
 type Filter struct {
-	UIDs []uint32
+	UIDFilter *UIDFilter
+}
+
+type UIDFilter struct {
+	Equal    []uint32
+	NotEqual []uint32
+	Greater  int64
+	Less     int64
 }
 
 // Validate does static validation of the configuration
@@ -396,7 +403,6 @@ func (t *Tracee) populateBPFMaps() error {
 	bpfConfigMap.Update(uint32(configCaptureFiles), boolToUInt32(t.config.CaptureWrite))
 	bpfConfigMap.Update(uint32(configExtractDynCode), boolToUInt32(t.config.CaptureMem))
 	bpfConfigMap.Update(uint32(configTraceePid), uint32(os.Getpid()))
-	bpfConfigMap.Update(uint32(configFilterByUid), uint32(len(t.config.Filter.UIDs)))
 
 	pidsMap, _ := t.bpfModule.GetMap("pids_map")
 	for _, pid := range t.config.PidsToTrace {
@@ -429,9 +435,36 @@ func (t *Tracee) populateBPFMaps() error {
 		fileFilterMap.Update(uint32(i), []byte(t.config.FilterFileWrite[i]))
 	}
 
-	uidHash, _ := t.bpfModule.GetMap("uid_filter")
-	for i := 0; i < len(t.config.Filter.UIDs); i++ {
-		uidHash.Update(uint32(t.config.Filter.UIDs[i]), uint32(1))
+	// Set filter options
+	uidEqualityFilter, err := t.bpfModule.GetMap("uid_equal_filter")
+	if err != nil {
+		return fmt.Errorf("error getting BPF map uid_equal_filter: %v", err)
+	}
+	for i := 0; i < len(t.config.Filter.UIDFilter.Equal); i++ {
+		err = uidEqualityFilter.Update(uint32(t.config.Filter.UIDFilter.Equal[i]), filterEqual)
+		if err != nil {
+			return err
+		}
+	}
+	for i := 0; i < len(t.config.Filter.UIDFilter.NotEqual); i++ {
+		err = uidEqualityFilter.Update(uint32(t.config.Filter.UIDFilter.NotEqual[i]), filterNotEqual)
+		if err != nil {
+			return err
+		}
+	}
+
+	uidCompareFilter, err := t.bpfModule.GetMap("uid_compare_filter")
+	if err != nil {
+		return fmt.Errorf("error getting BPF map uid_compare_filter: %v", err)
+	}
+
+	err = uidCompareFilter.Update(uint32(0), int64(t.config.Filter.UIDFilter.Greater))
+	if err != nil {
+		return err
+	}
+	err = uidCompareFilter.Update(uint32(1), int64(t.config.Filter.UIDFilter.Less))
+	if err != nil {
+		return err
 	}
 
 	stringStoreMap, _ := t.bpfModule.GetMap("string_store")
