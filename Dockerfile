@@ -8,7 +8,7 @@ WORKDIR /tracee
 
 FROM tracee-builder as build
 COPY . /tracee
-RUN git submodule update --init && make build
+RUN make build
 
 # base image for tracee which includes all tools to build the bpf object at runtime
 FROM ubuntu:focal as fat
