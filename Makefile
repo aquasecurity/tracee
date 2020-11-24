@@ -38,11 +38,12 @@ $(OUT_DIR):
 build: $(OUT_BIN)
 
 go_env := GOOS=linux GOARCH=$(ARCH:x86_64=amd64) CC=$(CMD_CLANG) CGO_CFLAGS="-I $(abspath $(LIBBPF_HEADERS))" CGO_LDFLAGS="$(abspath $(LIBBPF_OBJ))"
-$(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(filter-out *_test.go,$(GO_SRC)) $(BPF_BUNDLE) $(if $(DOCKER),$(DOCKER_BUILDER)) | $(OUT_DIR)
 ifndef DOCKER
+$(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(filter-out *_test.go,$(GO_SRC)) $(BPF_BUNDLE) | $(OUT_DIR)
 	$(go_env) go build -v -o $(OUT_BIN) \
-	-ldflags "-X main.bpfBundleInjected=$$(base64 -w 0 $(BPF_BUNDLE))"
-else
+	-ldflags "-X main.bpfBundleInjected=$$(base64 -w 0 $(BPF_BUNDLE))"	
+else 
+$(OUT_BIN): $(DOCKER_BUILDER) | $(OUT_DIR)
 	$(call docker_builder_make,$($@))
 endif
 
@@ -69,8 +70,8 @@ $(BPF_BUNDLE): $(BPF_SRC) $(LIBBPF_HEADERS)/bpf $(BPF_HEADERS)
 bpf: $(OUT_BPF)
 
 linux_arch := $(ARCH:x86_64=x86)
-$(OUT_BPF): $(BPF_SRC) $(LIBBPF_HEADERS) $(if $(DOCKER),$(DOCKER_BUILDER)) | $(OUT_DIR) $(bpf_compile_tools)
 ifndef DOCKER
+$(OUT_BPF): $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compile_tools)
 	@v=$$($(CMD_CLANG) --version); test $$(echo $${v#*version} | head -n1 | cut -d '.' -f1) -ge '9' || (echo 'required minimum clang version: 9' ; false)
 	$(CMD_CLANG) -S \
 		-D__BPF_TRACING__ \
@@ -108,16 +109,18 @@ ifndef DOCKER
 	-$(CMD_LLVM_STRIP) -g $@
 	rm $(@:.o=.ll)
 else
+$(OUT_BPF): $(DOCKER_BUILDER) | $(OUT_DIR) 
 	$(call docker_builder_make,$($@))
 endif
 
 
 .PHONY: test 
 go_src_test := $(shell find . -type f -name '*_test.go')
-test: $(GO_SRC) $(go_src_test) $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(if $(DOCKER),$(DOCKER_BUILDER)) 
 ifndef DOCKER
+test: $(GO_SRC) $(go_src_test) $(LIBBPF_HEADERS) $(LIBBPF_OBJ)
 	$(go_env)	go test -v ./...
 else
+test: $(DOCKER_BUILDER)
 	$(call docker_builder_make,test)
 endif
 
