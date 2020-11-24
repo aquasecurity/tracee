@@ -153,31 +153,30 @@ docker:
 docker-slim:
 	$(CMD_DOCKER) build -t $(OUT_DOCKER):slim --build-arg BASE=slim .
 
-define docker_tag_push
-	$(CMD_DOCKER) tag $(1) $(2) && $(CMD_DOCKER) push $(2)
+# release_docker_image accepts a local docker image reference (first argument), pushes it under a new name  (second argument) to remote repository, and records it in the release notes
+define release_docker_image
+	$(CMD_DOCKER) tag $(1) $(2) && $(CMD_DOCKER) push $(2) &&	echo '- `docker pull docker.io/$(2)`' >> $(release_notes);
 endef
 
 $(RELEASE_ARCHIVE) $(RELEASE_CHECKSUMS) &: $(OUT_BIN) LICENSE | $(OUT_DIR) check_$(CMD_CHECKSUM)
 	tar -czf $(RELEASE_ARCHIVE) $(OUT_BIN) LICENSE
 	$(CMD_CHECKSUM) $(RELEASE_ARCHIVE) > $(RELEASE_CHECKSUMS)
 
-release_notes:=$(OUT_DIR)/release-notes.txt
+release_notes := $(OUT_DIR)/release-notes.txt
+release_images_fat := $(RELEASE_DOCKER):latest $(RELEASE_DOCKER):$(RELEASE_DOCKER_TAG)
+release_images_slim := $(RELEASE_DOCKER):slim $(RELEASE_DOCKER):slim-$(RELEASE_DOCKER_TAG)
 .PHONY: release
 # before running this rule, need to authenticate git, gh, and docker tools.
 release: | check_$(CMD_GITHUB) $(RELEASE_ARCHIVE) $(RELEASE_CHECKSUMS) docker docker-slim
 	test -n '$(RELEASE_TAG)' || (echo "missing required variable RELEASE_TAG" ; false)
-	rm $(release_notes)
+	-rm $(release_notes)
 	echo '## Changelog' > $(release_notes)
 	$(CMD_GIT) log --pretty=oneline --abbrev=commit --no-decorate --no-color tags/$(shell $(CMD_GIT) describe --tags --abbrev=0)..HEAD >> $(release_notes)
 	echo '' >> $(release_notes)
-	echo '## Docker images' >> $(release_notes) >> $(release_notes)
-	echo '- `docker pull docker.io/$(RELEASE_DOCKER):$(RELEASE_DOCKER_TAG)`' >> $(release_notes)
-	echo '- `docker pull docker.io/$(RELEASE_DOCKER):latest`' >> $(release_notes)
+	echo '## Docker images' >> $(release_notes)
+	$(foreach img,$(release_images_fat),$(call release_docker_image,$(OUT_DOCKER):latest,$(img)))
+	$(foreach img,$(release_images_slim),$(call release_docker_image,$(OUT_DOCKER):slim,$(img)))
 	echo '' >>$(release_notes)
 	$(CMD_GIT) tag $(RELEASE_TAG)
 	$(CMD_GIT) push origin $(RELEASE_TAG)
 	$(CMD_GITHUB) release create $(RELEASE_TAG) $(RELEASE_ARCHIVE) $(RELEASE_CHECKSUMS) --title $(RELEASE_TAG) --notes-file $(release_notes)
-	$(call docker_tag_push,$(OUT_DOCKER):latest,$(RELEASE_DOCKER):latest)
-	$(call docker_tag_push,$(OUT_DOCKER):latest,$(RELEASE_DOCKER):$(RELEASE_DOCKER_TAG))
-	$(call docker_tag_push,$(OUT_DOCKER):slim,$(RELEASE_DOCKER):slim)
-	$(call docker_tag_push,$(OUT_DOCKER):slim,$(RELEASE_DOCKER):slim-$(RELEASE_DOCKER_TAG))
