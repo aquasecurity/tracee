@@ -43,9 +43,7 @@ ifndef DOCKER
 	$(go_env) go build -v -o $(OUT_BIN) \
 	-ldflags "-X main.bpfBundleInjected=$$(base64 -w 0 $(BPF_BUNDLE))"
 else
-	$(tracee_builder_make) build
-	$(CMD_DOCKER) cp $$(cat $(tracee_builder_state)):/tracee/$(OUT_BIN) $(OUT_BIN)
-	$(CMD_DOCKER) rm $$(cat $(tracee_builder_state)) && rm $(tracee_builder_state)
+	$(call docker_builder_make,$($@))
 endif
 
 bpf_compile_tools = $(CMD_LLC) $(CMD_CLANG)
@@ -110,9 +108,7 @@ ifndef DOCKER
 	-$(CMD_LLVM_STRIP) -g $@
 	rm $(@:.o=.ll)
 else
-	$(tracee_builder_make) bpf
-	$(CMD_DOCKER) cp $$(cat $(tracee_builder_state)):/tracee/$(OUT_BPF) $(OUT_BPF)
-	$(CMD_DOCKER) rm $$(cat $(tracee_builder_state) && rm $(tracee_builder_state))
+	$(call docker_builder_make,$($@))
 endif
 
 
@@ -122,19 +118,20 @@ test: $(GO_SRC) $(go_src_test) $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(if $(DOCKER),$(
 ifndef DOCKER
 	$(go_env)	go test -v ./...
 else
-	$(tracee_builder_make) test
-	$(CMD_DOCKER) rm $$(cat $(tracee_builder_state) && rm $(tracee_builder_state))
+	$(call docker_builder_make,test)
 endif
 
 .PHONY: $(DOCKER_BUILDER)
-# use a dummy file to prevent unnecessary building
+# record built image id to prevent unnecessary building and for cleanup
 $(DOCKER_BUILDER): $(OUT_DIR)/$(DOCKER_BUILDER)
 
 $(OUT_DIR)/$(DOCKER_BUILDER): $(GO_SRC) $(BPF_SRC) $(MAKEFILE_LIST) Dockerfile | $(OUT_DIR)
 	$(CMD_DOCKER) build -t $(DOCKER_BUILDER) --iidfile $(OUT_DIR)/$(DOCKER_BUILDER) --target builder .
 
-tracee_builder_state := $(OUT_DIR)/tracee-builder-cid
-tracee_builder_make := $(CMD_DOCKER) run --cidfile $(tracee_builder_state) -v $(dir $(KERN_SRC)):$(dir $(KERN_SRC)) --entrypoint make $(DOCKER_BUILDER) KERN_SRC=$(KERN_SRC)
+# docker_builder_make runs a make command in the tracee-builder container
+define docker_builder_make
+	$(CMD_DOCKER) run --rm -v $(dir $(KERN_SRC)):$(dir $(KERN_SRC)) -v $(abspath .):/tracee --entrypoint make $(DOCKER_BUILDER) KERN_SRC=$(KERN_SRC) $(1)
+endef
 
 .PHONY: clean
 clean:
