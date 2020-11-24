@@ -17,40 +17,52 @@ Other than tracing, Tracee is also capable of capturing files written to disk or
 
 ### Prerequisites
 
-To run, Tracee requires the following:
-- Linux kernel version > 4.14
-- Kernel headers
-- C standard library (currently tested with glibc)
-- clang > 9
+- To run, Tracee requires Linux kernel version >= 4.14
 
-### Getting Tracee
+Not required if using the Docker image:
+- C standard library (tested with glibc)
+- `libelf` and `zlib` libraries
+- clang >= 9
 
-Tracee is made of an executable that drives the eBPF code (`tracee`) and the eBPF code itself (`tracee.ebpf.o`). When the `tracee` executable is started, is will look for the eBPF code next to the executable, or in `/tmp/tracee`. If the eBPF is not found, the executable will attempt to build it (you can control this using the `--build-policy` flag).
+Not required if pre-compiling the eBPF code (see [Installation options](#installation-options)):
+- clang >= 9
+- Kernel headers available under `/usr/src`, must be provided by user and match the running kernel version, not needed if building the eBPF program in advance
 
-You can get Tracee in any of the following ways:
-1. Download the executable from the [GitHub Releases](https://github.com/aquasecurity/tracee/releases) (`tracee.tar.gz`).
-2. Use the docker image from Docker Hub: `aquasec/tracee`.
-3. Build the executable from source using `make build`. For that you will need additional developement prerequisites such as golang and libelf.
-4. Build the executable from source in a Docker container which includes all the prerequisites, using `make build DOCKER=1`.
-5. Build the executable and the eBPF code from source, using `make all`, or in a Docker container using `make all DOCKER=1`.
+### Quickstart with Docker
+
+```bash
+docker run --name tracee --rm --privileged --pid=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro aquasec/tracee
+```
+
+This will run Tracee with no arguments, which defaults to collecting all events from all newly created processes and printing them in a table to standard output.
+
+### Installation options
+
+Tracee is made of an executable that drives the eBPF program (`tracee`), and the eBPF program itself (`tracee.bpf.o`). When the `tracee` executable is started, it will look for the eBPF program next to the executable, or in `/tmp/tracee`, or in a directory specified in `TRACEE_BPF_FILE` environment variable. If the eBPF program is not found, the executable will attempt to build it automatically before it starts (you can control this using the `--build-policy` flag).
+
+The easiest way to get started is to let the `tracee` executable build the eBPF program for you automatically. You can obtain the executable in any of the following ways:
+1. Download from the [GitHub Releases](https://github.com/aquasecurity/tracee/releases) (`tracee.tar.gz`).
+2. Use the docker image from Docker Hub: `aquasec/tracee` (includes all the required dependencies).
+3. Build the executable from source using `make build`. For that you will need additional development tooling.
+4. Build the executable from source in a Docker container which includes all development tooling, using `make build DOCKER=1`.
+
+Alternatively, you can pre-compile the eBPF program, and provide it to the `tracee` executable. There are some benefits to this approach since you will not need clang at runtime anymore, as well as reduced risk of invoking an external program at runtime. You can build the eBPF program in the following ways:
+1. `make bpf`
+2. `make bpf DOCKER=1` to build in a Docker container which includes all development tooling.
+3. There is also a handy `make all` (and the `make all DOCKER=1` variant) which builds both the executable and the eBPF program.
+
+Once you have the eBPF program artifact, you can provide it to Tracee in any of the locations mentioned above. In this case, the full Docker image can be replaced by the lighter-weight `aquasec/tracee:slim` image. This image cannot build the eBPF program on its own, and is meant to be used when you already compiled the eBPF program beforehand, for example by adding the following mount to the docker run command: `-v /path/to/tracee.bpf.o:/tmp/tracee/tracee.bpf.o`.
 
 ### Permissions
 
 If you use the Tracee binary, you'll need to run it with root permissions in order to load the eBPF code. 
 If you use the Docker container, you should run it with the `--privileged` flag.
 
-### Quickstart with Docker
+## Using Tracee
 
-We will use the Tracee Docker image, which includes the required dependencies. The host that Docker is running on needs to satisfy the other requirements, kernel version and kernel headers. If you use a recent version of Ubuntu, you are good to go as it satisfies those requirements, but any other Linux distribution will work as well.
-To run Tracee using docker:
+### Understanding the output
 
-```bash
-docker run --name tracee --rm --privileged --pid=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro aquasec/tracee:latest
-```
-
-This will run Tracee with no arguments which will collect all events from all newly created processes and print them as a table to the standard output.
-
-Here is how the output looks:
+Here's a sample output of running Tracee with no additional arguments (which defaults to tracing all events):
 
 ```
 TIME(s)        UID    COMM             PID     TID     RET             EVENT                ARGS
@@ -60,8 +72,6 @@ TIME(s)        UID    COMM             PID     TID     RET             EVENT    
 176751.747077  1000   ls               14726   14726   0               security_file_open   pathname: /etc/ld.so.cache, flags: O_RDONLY|O_LARGEFILE, dev: 8388610, inode: 533737
 ...
 ```
-
-### Understanding the output
 
 Each line is a single event collected by Tracee, with the following information:
 
@@ -106,7 +116,6 @@ Trace new containers | `--trace c`, `--trace container` or `--trace container:ne
 Trace existing and new containers | `--trace container:all`
 
 You can also use `-t` e.g. `-t p:all`
-
 
 ## Secure tracing
 
