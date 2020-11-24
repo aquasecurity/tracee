@@ -52,7 +52,7 @@ bpf_compile_tools = $(CMD_LLC) $(CMD_CLANG)
 $(bpf_compile_tools): % : check_%
 
 $(LIBBPF_SRC):
-	test -d $(LIBBPF_SRC) || ( echo "missing libbpf source, try git submodule update --init" ; false )
+	test -d $(LIBBPF_SRC) || git submodule update --init || (echo "missing libbpf source" ; false)
 
 $(LIBBPF_HEADERS): | $(OUT_DIR) $(bpf_compile_tools) $(LIBBPF_SRC)
 	cd $(LIBBPF_SRC) && $(MAKE) install_headers install_uapi_headers DESTDIR=$(abspath $(OUT_DIR))/libbpf
