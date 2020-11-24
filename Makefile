@@ -144,7 +144,15 @@ check_%:
 
 .PHONY: docker
 docker:
-	$(CMD_DOCKER) build -t $(OUT_DOCKER) .
+	$(CMD_DOCKER) build -t $(OUT_DOCKER):latest .
+
+.PHONY: docker-slim
+docker-slim:
+	$(CMD_DOCKER) build -t $(OUT_DOCKER):slim --build-arg BASE=slim .
+
+define docker_tag_push
+	$(CMD_DOCKER) tag $(1) $(2) && $(CMD_DOCKER) push $(2)
+endef
 
 $(RELEASE_ARCHIVE) $(RELEASE_CHECKSUMS) &: $(OUT_BIN) LICENSE | $(OUT_DIR) check_$(CMD_CHECKSUM)
 	tar -czf $(RELEASE_ARCHIVE) $(OUT_BIN) LICENSE
@@ -153,7 +161,7 @@ $(RELEASE_ARCHIVE) $(RELEASE_CHECKSUMS) &: $(OUT_BIN) LICENSE | $(OUT_DIR) check
 release_notes:=$(OUT_DIR)/release-notes.txt
 .PHONY: release
 # before running this rule, need to authenticate git, gh, and docker tools.
-release: | check_$(CMD_GITHUB) $(RELEASE_ARCHIVE) $(RELEASE_CHECKSUMS) #docker
+release: | check_$(CMD_GITHUB) $(RELEASE_ARCHIVE) $(RELEASE_CHECKSUMS) docker docker-slim
 	test -n '$(RELEASE_TAG)' || (echo "missing required variable RELEASE_TAG" ; false)
 	rm $(release_notes)
 	echo '## Changelog' > $(release_notes)
@@ -166,7 +174,7 @@ release: | check_$(CMD_GITHUB) $(RELEASE_ARCHIVE) $(RELEASE_CHECKSUMS) #docker
 	$(CMD_GIT) tag $(RELEASE_TAG)
 	$(CMD_GIT) push origin $(RELEASE_TAG)
 	$(CMD_GITHUB) release create $(RELEASE_TAG) $(RELEASE_ARCHIVE) $(RELEASE_CHECKSUMS) --title $(RELEASE_TAG) --notes-file $(release_notes)
-	$(CMD_DOCKER) tag $(OUT_DOCKER) $(RELEASE_DOCKER):latest
-	$(CMD_DOCKER) push $(RELEASE_DOCKER):latest
-	$(CMD_DOCKER) tag $(OUT_DOCKER) $(RELEASE_DOCKER):$(RELEASE_DOCKER_TAG)
-	$(CMD_DOCKER) push $(RELEASE_DOCKER):$(RELEASE_DOCKER_TAG)
+	$(call docker_tag_push,$(OUT_DOCKER):latest,$(RELEASE_DOCKER):latest)
+	$(call docker_tag_push,$(OUT_DOCKER):latest,$(RELEASE_DOCKER):$(RELEASE_DOCKER_TAG))
+	$(call docker_tag_push,$(OUT_DOCKER):slim,$(RELEASE_DOCKER):slim)
+	$(call docker_tag_push,$(OUT_DOCKER):slim,$(RELEASE_DOCKER):slim-$(RELEASE_DOCKER_TAG))
