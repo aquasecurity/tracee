@@ -46,12 +46,12 @@ The easiest way to get started is to let the `tracee` executable build the eBPF 
 3. Build the executable from source using `make build`. For that you will need additional development tooling.
 4. Build the executable from source in a Docker container which includes all development tooling, using `make build DOCKER=1`.
 
-Alternatively, you can pre-compile the eBPF program, and provide it to the `tracee` executable. There are some benefits to this approach since you will not need clang at runtime anymore, as well as reduced risk of invoking an external program at runtime. You can build the eBPF program in the following ways:
+Alternatively, you can pre-compile the eBPF program, and provide it to the `tracee` executable. There are some benefits to this approach since you will not need clang and kernel headers at runtime anymore, as well as reduced risk of invoking an external program at runtime. You can build the eBPF program in the following ways:
 1. `make bpf`
 2. `make bpf DOCKER=1` to build in a Docker container which includes all development tooling.
 3. There is also a handy `make all` (and the `make all DOCKER=1` variant) which builds both the executable and the eBPF program.
 
-Once you have the eBPF program artifact, you can provide it to Tracee in any of the locations mentioned above. In this case, the full Docker image can be replaced by the lighter-weight `aquasec/tracee:slim` image. This image cannot build the eBPF program on its own, and is meant to be used when you already compiled the eBPF program beforehand, for example by adding the following mount to the docker run command: `-v /path/to/tracee.bpf.o:/tmp/tracee/tracee.bpf.o`.
+Once you have the eBPF program artifact, you can provide it to Tracee in any of the locations mentioned above. In this case, the full Docker image can be replaced by the lighter-weight `aquasec/tracee:slim` image (this is unavilable at the moment and will be added to the next release). This image cannot build the eBPF program on its own, and is meant to be used when you already compiled the eBPF program beforehand, for example by adding the following mount to the docker run command: `-v /path/to/tracee.bpf.o:/tmp/tracee/tracee.bpf.o`.
 
 ### Permissions
 
