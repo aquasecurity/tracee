@@ -31,7 +31,7 @@ You can get Tracee in any of the following ways:
 1. Download the executable from the [GitHub Releases](https://github.com/aquasecurity/tracee/releases) (`tracee.tar.gz`).
 2. Use the docker image from Docker Hub: `aquasec/tracee`.
 3. Build the executable from source using `make build`. For that you will need additional developement prerequisites such as golang and libelf.
-4. Build from executable from source in a Docker container which includes all the prerequisites, using `make build DOCKER=1`.
+4. Build the executable from source in a Docker container which includes all the prerequisites, using `make build DOCKER=1`.
 5. Build the executable and the eBPF code from source, using `make all`, or in a Docker container using `make all DOCKER=1`.
 
 ### Permissions
