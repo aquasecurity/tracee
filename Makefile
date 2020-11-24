@@ -4,7 +4,11 @@ all: build bpf
 # environment:
 ARCH ?= $(shell uname -m)
 KERN_RELEASE ?= $(shell uname -r)
+ifndef DOCKER
+KERN_SRC ?= /lib/modules/$(KERN_RELEASE)/build
+else
 KERN_SRC ?= $(shell readlink /lib/modules/$(KERN_RELEASE)/build)
+endif
 # inputs and outputs:
 OUT_DIR ?= dist
 GO_SRC := $(shell find . -type f -name '*.go')
