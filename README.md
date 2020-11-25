@@ -31,12 +31,14 @@ Not required if pre-compiling the eBPF code (see [Installation options](#install
 ### Quickstart with Docker
 
 ```bash
-docker run --name tracee --rm --privileged --pid=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro aquasec/tracee
+docker run --name tracee --rm --privileged --pid=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee aquasec/tracee
 ```
+
+> Note: You may need to change the volume mounts for the kernel headers based on your setup.
 
 This will run Tracee with no arguments, which defaults to collecting all events from all newly created processes and printing them in a table to standard output.
 
-### Installation options
+### Setup options
 
 Tracee is made of an executable that drives the eBPF program (`tracee`), and the eBPF program itself (`tracee.bpf.$kernelversion.$traceeversion.o`). When the `tracee` executable is started, it will look for the eBPF program next to the executable, or in `/tmp/tracee`, or in a directory specified in `TRACEE_BPF_FILE` environment variable. If the eBPF program is not found, the executable will attempt to build it automatically before it starts (you can control this using the `--build-policy` flag).
 
@@ -51,12 +53,26 @@ Alternatively, you can pre-compile the eBPF program, and provide it to the `trac
 2. `make bpf DOCKER=1` to build in a Docker container which includes all development tooling.
 3. There is also a handy `make all` (and the `make all DOCKER=1` variant) which builds both the executable and the eBPF program.
 
-Once you have the eBPF program artifact, you can provide it to Tracee in any of the locations mentioned above. In this case, the full Docker image can be replaced by the lighter-weight `aquasec/tracee:slim` image (this is unavilable at the moment and will be added to the next release). This image cannot build the eBPF program on its own, and is meant to be used when you already compiled the eBPF program beforehand, for example by adding the following mount to the docker run command: `-v /path/to/tracee.bpf.1_2_3.4_5_6.o:/tmp/tracee/tracee.bpf.1_2_3.4_5_6.o`.
+Once you have the eBPF program artifact, you can provide it to Tracee in any of the locations mentioned above. In this case, the full Docker image can be replaced by the lighter-weight `aquasec/tracee:slim` image. This image cannot build the eBPF program on its own, and is meant to be used when you have already compiled the eBPF program beforehand.
 
-### Permissions
+#### Running in container
 
-If you use the Tracee binary, you'll need to run it with root permissions in order to load the eBPF code. 
-If you use the Docker container, you should run it with the `--privileged` flag.
+Tracee uses a filesystem directory, by default `/tmp/tracee` to capture runtime artifacts, internal components, and other miscellaneous. When running in a container, it's useful to mount this directory in, so that the artifacts are accessible after the container exits. For example, you can add this to the docker run command `-v /tmp/tracee:/tmp/tracee`.
+
+If running in a container, regardless if it's the full or slim image, it's advisable to reuse the eBPF program across runs by mounting it from the host to the container. This way if the container builds the eBPF program it will be persisted on the host, and if the eBPF program already exists on the host, the container will automatically discover it. If you've already mounted the `/tmp/tracee` directory from the host, you're good to go, since Tracee by default will use this location for the eBPF program. You can also mount the eBPF program file individually if it's stored elsewhere (e.g in a shared volume), for example: `-v /path/to/tracee.bpf.1_2_3.4_5_6.o:/some/path/tracee.bpf.1_2_3.4_5_6.o -e TRACEE_BPF_FILE=/some/path`. 
+
+When using the `--capture exec` option, Tracee needs access to the host PID namespace. For Docker, add `--pid=host` to the run command.
+
+If you are building the eBPF program in a container, you'll need to make the kernel headers available in the container. The quickstart example has wide mounts that works in a variety of cases, for demonstration purposes. If you want, you can narrow those mounts down to a directory that contains the headers on your setup, for example: `-v /path/to/headers:/myheaders -e KERN_SRC=/myheaders`. As mentioned before, a better practice for production is to pre-compile the eBPF program, in which case the kernel headers are not needed at runtime.
+
+#### Permissions
+
+If Tracee is not actually tracing, it doesn't need privileges. For example, just building the eBPF program, or listing the available options, can be done with a regular user.  
+For actually tracing, Tracee needs to run with sufficient capabilities: 
+- `CAP_SYS_RESOURCE` (to manage eBPF maps limits)
+- `CAP_BPF`+`CAP_TRACING` which are available on recent kernels (>=5.8), or `SYS_ADMIN` on older kernels (to load and attach the eBPF programs).
+
+Alternatively, running as `root` or with the `--privileged` flag of Docker, is an easy way to start.
 
 ## Using Tracee
 
@@ -92,7 +108,7 @@ When using table-verbose output, the following information is added:
 4. PPID - parent pid of the calling process
 
 
-## Configuration flags
+### Configuration flags
 
 - Use `--help` to see a full description of all options.
 Here are a few commonly useful flags:
