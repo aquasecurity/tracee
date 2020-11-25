@@ -12,7 +12,7 @@ CMD_GITHUB ?= gh
 # environment:
 ARCH ?= $(shell uname -m)
 KERN_RELEASE ?= $(shell uname -r)
-KERN_SRC ?= $(shell readlink /lib/modules/$(KERN_RELEASE)/build)
+KERN_SRC ?= /lib/modules/$(KERN_RELEASE)/build
 VERSION := $(shell $(CMD_GIT) describe --tags)
 # inputs and outputs:
 OUT_DIR ?= dist
@@ -27,6 +27,10 @@ LIBBPF_HEADERS := $(OUT_DIR)/libbpf/usr/include
 LIBBPF_OBJ := $(OUT_DIR)/libbpf/libbpf.a
 OUT_DOCKER ?= tracee
 DOCKER_BUILDER ?= tracee-builder
+# DOCKER_BUILDER_KERN_SRC is where the docker builder looks for kernel headers
+DOCKER_BUILDER_KERN_SRC ?= $(if $(shell readlink $(KERN_SRC)),$(shell readlink $(KERN_SRC)), $(KERN_SRC))
+# DOCKER_BUILDER_KERN_SRC_MNT is the kernel headers directory to mount into the docker builder container. DOCKER_BUILDER_KERN_SRC should usually be a decendent of this path.
+DOCKER_BUILDER_KERN_SRC_MNT ?= $(dir $(DOCKER_BUILDER_KERN_SRC))
 RELEASE_ARCHIVE := $(OUT_DIR)/tracee.tar.gz
 RELEASE_CHECKSUMS := $(OUT_DIR)/checksums.txt
 RELEASE_DOCKER ?= aquasec/tracee
@@ -134,7 +138,7 @@ $(OUT_DIR)/$(DOCKER_BUILDER): $(GO_SRC) $(BPF_SRC) $(MAKEFILE_LIST) Dockerfile |
 
 # docker_builder_make runs a make command in the tracee-builder container
 define docker_builder_make
-	$(CMD_DOCKER) run --rm -v $(dir $(KERN_SRC)):$(dir $(KERN_SRC)) -v $(abspath .):/tracee --entrypoint make $(DOCKER_BUILDER) KERN_SRC=$(KERN_SRC) $(1)
+	$(CMD_DOCKER) run --rm -v $(abspath $(DOCKER_BUILDER_KERN_SRC_MNT)):$(DOCKER_BUILDER_KERN_SRC_MNT) -v $(abspath .):/tracee --entrypoint make $(DOCKER_BUILDER) KERN_SRC=$(DOCKER_BUILDER_KERN_SRC) $(1)
 endef
 
 .PHONY: clean
