@@ -38,7 +38,7 @@ This will run Tracee with no arguments, which defaults to collecting all events 
 
 ### Installation options
 
-Tracee is made of an executable that drives the eBPF program (`tracee`), and the eBPF program itself (`tracee.bpf.o`). When the `tracee` executable is started, it will look for the eBPF program next to the executable, or in `/tmp/tracee`, or in a directory specified in `TRACEE_BPF_FILE` environment variable. If the eBPF program is not found, the executable will attempt to build it automatically before it starts (you can control this using the `--build-policy` flag).
+Tracee is made of an executable that drives the eBPF program (`tracee`), and the eBPF program itself (`tracee.bpf.$kernelversion.$traceeversion.o`). When the `tracee` executable is started, it will look for the eBPF program next to the executable, or in `/tmp/tracee`, or in a directory specified in `TRACEE_BPF_FILE` environment variable. If the eBPF program is not found, the executable will attempt to build it automatically before it starts (you can control this using the `--build-policy` flag).
 
 The easiest way to get started is to let the `tracee` executable build the eBPF program for you automatically. You can obtain the executable in any of the following ways:
 1. Download from the [GitHub Releases](https://github.com/aquasecurity/tracee/releases) (`tracee.tar.gz`).
@@ -51,7 +51,7 @@ Alternatively, you can pre-compile the eBPF program, and provide it to the `trac
 2. `make bpf DOCKER=1` to build in a Docker container which includes all development tooling.
 3. There is also a handy `make all` (and the `make all DOCKER=1` variant) which builds both the executable and the eBPF program.
 
-Once you have the eBPF program artifact, you can provide it to Tracee in any of the locations mentioned above. In this case, the full Docker image can be replaced by the lighter-weight `aquasec/tracee:slim` image (this is unavilable at the moment and will be added to the next release). This image cannot build the eBPF program on its own, and is meant to be used when you already compiled the eBPF program beforehand, for example by adding the following mount to the docker run command: `-v /path/to/tracee.bpf.o:/tmp/tracee/tracee.bpf.o`.
+Once you have the eBPF program artifact, you can provide it to Tracee in any of the locations mentioned above. In this case, the full Docker image can be replaced by the lighter-weight `aquasec/tracee:slim` image (this is unavilable at the moment and will be added to the next release). This image cannot build the eBPF program on its own, and is meant to be used when you already compiled the eBPF program beforehand, for example by adding the following mount to the docker run command: `-v /path/to/tracee.bpf.1_2_3.4_5_6.o:/tmp/tracee/tracee.bpf.1_2_3.4_5_6.o`.
 
 ### Permissions
 
