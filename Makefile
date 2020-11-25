@@ -1,16 +1,25 @@
 .PHONY: all
 all: build bpf
 
+# tools:
+CMD_LLC ?= llc
+CMD_CLANG ?= clang
+CMD_LLVM_STRIP ?= llvm-strip
+CMD_DOCKER ?= docker
+CMD_GIT ?= git
+CMD_CHECKSUM ?= sha256sum
+CMD_GITHUB ?= gh
 # environment:
 ARCH ?= $(shell uname -m)
 KERN_RELEASE ?= $(shell uname -r)
 KERN_SRC ?= $(shell readlink /lib/modules/$(KERN_RELEASE)/build)
+VERSION := $(shell $(CMD_GIT) describe --tags)
 # inputs and outputs:
 OUT_DIR ?= dist
 GO_SRC := $(shell find . -type f -name '*.go')
 OUT_BIN := $(OUT_DIR)/tracee
 BPF_SRC := tracee/tracee.bpf.c 
-OUT_BPF := $(OUT_DIR)/tracee.bpf.o
+OUT_BPF := $(OUT_DIR)/tracee.bpf.$(subst .,_,$(KERN_RELEASE)).$(subst .,_,$(VERSION)).o
 BPF_HEADERS := 3rdparty/include
 BPF_BUNDLE := $(OUT_DIR)/tracee.bpf.tar.gz
 LIBBPF_SRC := 3rdparty/libbpf/src
@@ -22,14 +31,6 @@ RELEASE_ARCHIVE := $(OUT_DIR)/tracee.tar.gz
 RELEASE_CHECKSUMS := $(OUT_DIR)/checksums.txt
 RELEASE_DOCKER ?= aquasec/tracee
 RELEASE_DOCKER_TAG ?= $(RELEASE_TAG:v%=%)
-# tools:
-CMD_LLC ?= llc
-CMD_CLANG ?= clang
-CMD_LLVM_STRIP ?= llvm-strip
-CMD_DOCKER ?= docker
-CMD_GIT ?= git
-CMD_CHECKSUM ?= sha256sum
-CMD_GITHUB ?= gh
 
 $(OUT_DIR):
 	mkdir -p $@
@@ -41,7 +42,7 @@ go_env := GOOS=linux GOARCH=$(ARCH:x86_64=amd64) CC=$(CMD_CLANG) CGO_CFLAGS="-I 
 ifndef DOCKER
 $(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(filter-out *_test.go,$(GO_SRC)) $(BPF_BUNDLE) | $(OUT_DIR)
 	$(go_env) go build -v -o $(OUT_BIN) \
-	-ldflags "-X main.bpfBundleInjected=$$(base64 -w 0 $(BPF_BUNDLE))"	
+	-ldflags "-X main.bpfBundleInjected=$$(base64 -w 0 $(BPF_BUNDLE)) -X main.version=$(VERSION)"	
 else 
 $(OUT_BIN): $(DOCKER_BUILDER) | $(OUT_DIR)
 	$(call docker_builder_make,$($@))

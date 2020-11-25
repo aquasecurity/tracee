@@ -24,13 +24,15 @@ var debug bool
 var traceeInstallPath string
 var buildPolicy string
 
-// This var is supposed to be injected *at build time* with the contents of the ebpf c program
+// These vars are supposed to be injected at build time
 var bpfBundleInjected string
+var version string
 
 func main() {
 	app := &cli.App{
-		Name:  "Tracee",
-		Usage: "Trace OS events and syscalls using eBPF",
+		Name:    "Tracee",
+		Usage:   "Trace OS events and syscalls using eBPF",
+		Version: version,
 		Action: func(c *cli.Context) error {
 			if c.Bool("list") {
 				printList()
@@ -448,7 +450,7 @@ func locateFile(file string, dirs []string) string {
 
 // getBPFObject finds or builds ebpf object file and returns it's path
 func getBPFObject() (string, error) {
-	bpfObjFileName := "tracee.bpf.o"
+	bpfObjFileName := fmt.Sprintf("tracee.bpf.%s.%s.o", strings.ReplaceAll(tracee.UnameRelease(), ".", "_"), strings.ReplaceAll(version, ".", "_"))
 	exePath, err := os.Executable()
 	if err != nil {
 		return "", err
