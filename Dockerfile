@@ -22,7 +22,7 @@ FROM ubuntu:focal as slim
 RUN DEBIAN_FRONTEND=noninteractive apt-get update -y && apt-get install -y libelf1
 
 # must run privileged and with linux headers mounted
-# docker run --name tracee --rm --privileged --pid=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro aquasec/tracee
+# docker run --name tracee --rm --privileged --pid=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee aquasec/tracee
 FROM $BASE
 WORKDIR /tracee
 COPY --from=build /tracee/dist/tracee /tracee/entrypoint.sh ./
