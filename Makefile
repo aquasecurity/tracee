@@ -152,11 +152,11 @@ check_%:
 
 .PHONY: docker
 docker:
-	$(CMD_DOCKER) build -t $(OUT_DOCKER):latest .
+	$(CMD_DOCKER) build --build-arg VERSION=$(VERSION) -t $(OUT_DOCKER):latest .
 
 .PHONY: docker-slim
 docker-slim:
-	$(CMD_DOCKER) build -t $(OUT_DOCKER):slim --build-arg BASE=slim .
+	$(CMD_DOCKER) build --build-arg VERSION=$(VERSION) -t $(OUT_DOCKER):slim --build-arg BASE=slim .
 
 # release_docker_image accepts a local docker image reference (first argument), pushes it under a new name  (second argument) to remote repository, and records it in the release notes
 define release_docker_image

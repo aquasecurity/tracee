@@ -6,7 +6,9 @@ RUN echo "deb http://apt.llvm.org/buster/ llvm-toolchain-buster-9 main" >> /etc/
     (for tool in "clang" "llc" "llvm-strip"; do path=$(which $tool-9) && ln -s $path ${path%-*}; done)
 WORKDIR /tracee
 
+ARG VERSION
 FROM tracee-builder as build
+ENV VERSION=$VERSION
 COPY . /tracee
 RUN make build
 
