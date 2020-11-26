@@ -13,7 +13,7 @@ CMD_GITHUB ?= gh
 ARCH ?= $(shell uname -m)
 KERN_RELEASE ?= $(shell uname -r)
 KERN_SRC ?= /lib/modules/$(KERN_RELEASE)/build
-VERSION := $(shell $(CMD_GIT) describe --tags)
+VERSION := $(if $(RELEASE_TAG), $(RELEASE_TAG), $(shell $(CMD_GIT) describe --tags))
 # inputs and outputs:
 OUT_DIR ?= dist
 GO_SRC := $(shell find . -type f -name '*.go')
