@@ -143,9 +143,9 @@ endef
 
 .PHONY: clean
 clean:
+	-$(CMD_DOCKER) rmi $(file < $(DOCKER_BUILDER))
 	-rm -rf dist $(OUT_DIR)
 	-cd $(LIBBPF_SRC) && $(MAKE) clean;
-	-$(CMD_DOCKER) rmi $(file < $(DOCKER_BUILDER))
 	
 check_%:
 	@command -v $* >/dev/null || (echo "missing required tool $*" ; false)
