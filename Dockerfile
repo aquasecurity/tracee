@@ -6,11 +6,10 @@ RUN echo "deb http://apt.llvm.org/buster/ llvm-toolchain-buster-9 main" >> /etc/
     (for tool in "clang" "llc" "llvm-strip"; do path=$(which $tool-9) && ln -s $path ${path%-*}; done)
 WORKDIR /tracee
 
+FROM builder as build
 ARG VERSION
-FROM tracee-builder as build
-ENV VERSION=$VERSION
 COPY . /tracee
-RUN make build
+RUN make build VERSION=$VERSION
 
 # base image for tracee which includes all tools to build the bpf object at runtime
 FROM ubuntu:focal as fat
