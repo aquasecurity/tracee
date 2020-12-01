@@ -1,9 +1,7 @@
 ARG BASE=fat
 
-FROM golang:1.15-buster as builder
-RUN echo "deb http://apt.llvm.org/buster/ llvm-toolchain-buster-9 main" >> /etc/apt/sources.list && apt-key adv --keyserver hkps://keyserver.ubuntu.com --recv-keys 15CF4D18AF4F7421 && \
-    DEBIAN_FRONTEND=noninteractive apt-get update -y && apt-get install -y --no-install-recommends libelf-dev llvm-9-dev clang-9 && \ 
-    (for tool in "clang" "llc" "llvm-strip"; do path=$(which $tool-9) && ln -s $path ${path%-*}; done)
+FROM golang:alpine as builder
+RUN apk --no-cache update && apk --no-cache add git clang llvm make gcc libc6-compat coreutils linux-headers musl-dev elfutils-dev libelf-static zlib-static
 WORKDIR /tracee
 
 FROM builder as build
@@ -12,15 +10,12 @@ COPY . /tracee
 RUN make build VERSION=$VERSION
 
 # base image for tracee which includes all tools to build the bpf object at runtime
-FROM ubuntu:focal as fat
-RUN DEBIAN_FRONTEND=noninteractive apt-get update -y && apt-get install -y ca-certificates gnupg && \
-    echo "deb http://apt.llvm.org/buster/ llvm-toolchain-buster-9 main" >> /etc/apt/sources.list && apt-key adv --keyserver hkps://keyserver.ubuntu.com --recv-keys 15CF4D18AF4F7421 && \
-    DEBIAN_FRONTEND=noninteractive apt-get update -y && apt-get install -y --no-install-recommends libelf-dev llvm-9-dev clang-9 && \ 
-    (for tool in "clang" "llc" "llvm-strip"; do path=$(which $tool-9) && ln -s $path ${path%-*}; done)
+FROM alpine as fat
+RUN apk --no-cache update && apk --no-cache add clang llvm make gcc libc6-compat coreutils linux-headers musl-dev elfutils-dev libelf-static zlib-static
 
 # base image for tracee which includes minimal dependencies and expects the bpf object to be provided at runtime
-FROM ubuntu:focal as slim
-RUN DEBIAN_FRONTEND=noninteractive apt-get update -y && apt-get install -y libelf1
+FROM alpine as slim
+RUN apk --no-cache update && apk --no-cache add libc6-compat elfutils-dev
 
 # must run privileged and with linux headers mounted
 # docker run --name tracee --rm --privileged --pid=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee aquasec/tracee
