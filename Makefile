@@ -134,7 +134,7 @@ endif
 $(DOCKER_BUILDER): $(OUT_DIR)/$(DOCKER_BUILDER)
 
 $(OUT_DIR)/$(DOCKER_BUILDER): $(GO_SRC) $(BPF_SRC) $(MAKEFILE_LIST) Dockerfile | $(OUT_DIR)
-	$(CMD_DOCKER) build -t $(DOCKER_BUILDER) --iidfile $(OUT_DIR)/$(DOCKER_BUILDER) --target builder .
+	$(CMD_DOCKER) build -f Dockerfile.builder -t $(DOCKER_BUILDER) --iidfile $(OUT_DIR)/$(DOCKER_BUILDER) --target builder .
 
 # docker_builder_make runs a make command in the tracee-builder container
 define docker_builder_make
