@@ -28,7 +28,7 @@ LIBBPF_OBJ := $(OUT_DIR)/libbpf/libbpf.a
 OUT_DOCKER ?= tracee
 DOCKER_BUILDER ?= tracee-builder
 # DOCKER_BUILDER_KERN_SRC is where the docker builder looks for kernel headers
-DOCKER_BUILDER_KERN_SRC ?= $(if $(shell readlink $(KERN_SRC)),$(shell readlink $(KERN_SRC)), $(KERN_SRC))
+DOCKER_BUILDER_KERN_SRC ?= $(if $(shell readlink $(KERN_SRC)),$(shell readlink $(KERN_SRC)),$(KERN_SRC))
 # DOCKER_BUILDER_KERN_SRC_MNT is the kernel headers directory to mount into the docker builder container. DOCKER_BUILDER_KERN_SRC should usually be a decendent of this path.
 DOCKER_BUILDER_KERN_SRC_MNT ?= $(dir $(DOCKER_BUILDER_KERN_SRC))
 RELEASE_ARCHIVE := $(OUT_DIR)/tracee.tar.gz
