@@ -12,7 +12,8 @@ CMD_GITHUB ?= gh
 # environment:
 ARCH ?= $(shell uname -m)
 KERN_RELEASE ?= $(shell uname -r)
-KERN_SRC ?= /lib/modules/$(KERN_RELEASE)/build
+KERN_BLD_PATH ?= $(if $(KERN_HEADERS),$(KERN_HEADERS),/lib/modules/$(KERN_RELEASE)/build)
+KERN_SRC_PATH ?= $(if $(KERN_HEADERS),$(KERN_HEADERS),$(if $(wildcard /lib/modules/$(KERN_RELEASE)/source),/lib/modules/$(KERN_RELEASE)/source,$(KERN_BLD_PATH)))
 VERSION ?= $(if $(RELEASE_TAG),$(RELEASE_TAG),$(shell $(CMD_GIT) describe --tags))
 # inputs and outputs:
 OUT_DIR ?= dist
@@ -27,8 +28,9 @@ LIBBPF_HEADERS := $(OUT_DIR)/libbpf/usr/include
 LIBBPF_OBJ := $(OUT_DIR)/libbpf/libbpf.a
 OUT_DOCKER ?= tracee
 DOCKER_BUILDER ?= tracee-builder
-# DOCKER_BUILDER_KERN_SRC is where the docker builder looks for kernel headers
-DOCKER_BUILDER_KERN_SRC ?= $(if $(shell readlink $(KERN_SRC)),$(shell readlink $(KERN_SRC)),$(KERN_SRC))
+# DOCKER_BUILDER_KERN_SRC(/BLD) is where the docker builder looks for kernel headers
+DOCKER_BUILDER_KERN_BLD ?= $(if $(shell readlink $(KERN_BLD_PATH)),$(shell readlink $(KERN_BLD_PATH)),$(KERN_BLD_PATH))
+DOCKER_BUILDER_KERN_SRC ?= $(if $(shell readlink $(KERN_SRC_PATH)),$(shell readlink $(KERN_SRC_PATH)),$(KERN_SRC_PATH))
 # DOCKER_BUILDER_KERN_SRC_MNT is the kernel headers directory to mount into the docker builder container. DOCKER_BUILDER_KERN_SRC should usually be a decendent of this path.
 DOCKER_BUILDER_KERN_SRC_MNT ?= $(dir $(DOCKER_BUILDER_KERN_SRC))
 RELEASE_ARCHIVE := $(OUT_DIR)/tracee.tar.gz
@@ -83,15 +85,16 @@ $(OUT_BPF): $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compile_tools)
 		-D__KERNEL__ \
 		-D__TARGET_ARCH_$(linux_arch) \
 		-I $(LIBBPF_HEADERS)/bpf \
-		-include $(KERN_SRC)/include/linux/kconfig.h \
-		-I $(KERN_SRC)/arch/$(linux_arch)/include \
-		-I $(KERN_SRC)/arch/$(linux_arch)/include/uapi \
-		-I $(KERN_SRC)/arch/$(linux_arch)/include/generated \
-		-I $(KERN_SRC)/arch/$(linux_arch)/include/generated/uapi \
-		-I $(KERN_SRC)/include \
-		-I $(KERN_SRC)/include/uapi \
-		-I $(KERN_SRC)/include/generated \
-		-I $(KERN_SRC)/include/generated/uapi \
+		-include $(KERN_SRC_PATH)/include/linux/kconfig.h \
+		-I $(KERN_SRC_PATH)/arch/$(linux_arch)/include \
+		-I $(KERN_SRC_PATH)/arch/$(linux_arch)/include/uapi \
+		-I $(KERN_BLD_PATH)/arch/$(linux_arch)/include/generated \
+		-I $(KERN_BLD_PATH)/arch/$(linux_arch)/include/generated/uapi \
+		-I $(KERN_SRC_PATH)/include \
+		-I $(KERN_BLD_PATH)/include \
+		-I $(KERN_SRC_PATH)/include/uapi \
+		-I $(KERN_BLD_PATH)/include/generated \
+		-I $(KERN_BLD_PATH)/include/generated/uapi \
 		-I $(BPF_HEADERS) \
 		-Wno-address-of-packed-member \
 		-Wno-compare-distinct-pointer-types \
@@ -138,7 +141,10 @@ $(OUT_DIR)/$(DOCKER_BUILDER): $(GO_SRC) $(BPF_SRC) $(MAKEFILE_LIST) Dockerfile |
 
 # docker_builder_make runs a make command in the tracee-builder container
 define docker_builder_make
-	$(CMD_DOCKER) run --rm -v $(abspath $(DOCKER_BUILDER_KERN_SRC_MNT)):$(DOCKER_BUILDER_KERN_SRC_MNT) -v $(abspath .):/tracee --entrypoint make $(DOCKER_BUILDER) KERN_SRC=$(DOCKER_BUILDER_KERN_SRC) $(1)
+	$(CMD_DOCKER) run --rm \
+	-v $(abspath $(DOCKER_BUILDER_KERN_SRC_MNT)):$(DOCKER_BUILDER_KERN_SRC_MNT) \
+	-v $(abspath .):/tracee \
+	--entrypoint make $(DOCKER_BUILDER) KERN_BLD_PATH=$(DOCKER_BUILDER_KERN_BLD) KERN_SRC_PATH=$(DOCKER_BUILDER_KERN_SRC) $(1)
 endef
 
 .PHONY: clean
