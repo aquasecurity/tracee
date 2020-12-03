@@ -583,9 +583,21 @@ func makeBPFObject(outFile string) error {
 	}
 	llvmstrip := locateFile("llvm-strip", []string{os.Getenv("LLVM_STRIP")})
 
-	kernelSource := locateFile("", []string{os.Getenv("KERN_SRC"), fmt.Sprintf("/lib/modules/%s/build", tracee.UnameRelease())})
-	if kernelSource == "" {
+	kernelHeaders := locateFile("", []string{os.Getenv("KERN_HEADERS")})
+	kernelBuildPath := locateFile("", []string{fmt.Sprintf("/lib/modules/%s/build", tracee.UnameRelease())})
+	kernelSourcePath := locateFile("", []string{fmt.Sprintf("/lib/modules/%s/source", tracee.UnameRelease())})
+	if kernelHeaders != "" {
+		// In case KERN_HEADERS is set, use it for both source/ and build/
+		kernelBuildPath = kernelHeaders
+		kernelSourcePath = kernelHeaders
+	}
+	if kernelBuildPath == "" {
 		return fmt.Errorf("missing kernel source code compilation dependency")
+	}
+	// In some distros (e.g. debian, suse), kernel headers are split to build/ and source/
+	// while in others (e.g. ubuntu, arch), all headers will be located under build/
+	if kernelSourcePath == "" {
+		kernelSourcePath = kernelBuildPath
 	}
 	linuxArch := os.Getenv("ARCH")
 	if linuxArch == "" {
@@ -598,15 +610,16 @@ func makeBPFObject(outFile string) error {
 	// 	-D__KERNEL__ \
 	// 	-D__TARGET_ARCH_$(linux_arch) \
 	// 	-I $(LIBBPF_HEADERS)/bpf \
-	// 	-include $(KERN_SRC)/include/linux/kconfig.h \
-	// 	-I $(KERN_SRC)/arch/$(linux_arch)/include \
-	// 	-I $(KERN_SRC)/arch/$(linux_arch)/include/uapi \
-	// 	-I $(KERN_SRC)/arch/$(linux_arch)/include/generated \
-	// 	-I $(KERN_SRC)/arch/$(linux_arch)/include/generated/uapi \
-	// 	-I $(KERN_SRC)/include \
-	// 	-I $(KERN_SRC)/include/uapi \
-	// 	-I $(KERN_SRC)/include/generated \
-	// 	-I $(KERN_SRC)/include/generated/uapi \
+	// 	-include $(KERN_SRC_PATH)/include/linux/kconfig.h \
+	// 	-I $(KERN_SRC_PATH)/arch/$(linux_arch)/include \
+	// 	-I $(KERN_SRC_PATH)/arch/$(linux_arch)/include/uapi \
+	// 	-I $(KERN_BLD_PATH)/arch/$(linux_arch)/include/generated \
+	// 	-I $(KERN_BLD_PATH)/arch/$(linux_arch)/include/generated/uapi \
+	// 	-I $(KERN_SRC_PATH)/include \
+	// 	-I $(KERN_BLD_PATH)/include \
+	// 	-I $(KERN_SRC_PATH)/include/uapi \
+	// 	-I $(KERN_BLD_PATH)/include/generated \
+	// 	-I $(KERN_BLD_PATH)/include/generated/uapi \
 	// 	-I $(BPF_HEADERS) \
 	// 	-Wno-address-of-packed-member \
 	// 	-Wno-compare-distinct-pointer-types \
@@ -633,15 +646,16 @@ func makeBPFObject(outFile string) error {
 		"-D__KERNEL__",
 		fmt.Sprintf("-D__TARGET_ARCH_%s", linuxArch),
 		fmt.Sprintf("-I%s", dir),
-		fmt.Sprintf("-include%s/include/linux/kconfig.h", kernelSource),
-		fmt.Sprintf("-I%s/arch/%s/include", kernelSource, linuxArch),
-		fmt.Sprintf("-I%s/arch/%s/include/uapi", kernelSource, linuxArch),
-		fmt.Sprintf("-I%s/arch/%s/include/generated", kernelSource, linuxArch),
-		fmt.Sprintf("-I%s/arch/%s/include/generated/uapi", kernelSource, linuxArch),
-		fmt.Sprintf("-I%s/include", kernelSource),
-		fmt.Sprintf("-I%s/include/uapi", kernelSource),
-		fmt.Sprintf("-I%s/include/generated", kernelSource),
-		fmt.Sprintf("-I%s/include/generated/uapi", kernelSource),
+		fmt.Sprintf("-include%s/include/linux/kconfig.h", kernelSourcePath),
+		fmt.Sprintf("-I%s/arch/%s/include", kernelSourcePath, linuxArch),
+		fmt.Sprintf("-I%s/arch/%s/include/uapi", kernelSourcePath, linuxArch),
+		fmt.Sprintf("-I%s/arch/%s/include/generated", kernelBuildPath, linuxArch),
+		fmt.Sprintf("-I%s/arch/%s/include/generated/uapi", kernelBuildPath, linuxArch),
+		fmt.Sprintf("-I%s/include", kernelSourcePath),
+		fmt.Sprintf("-I%s/include", kernelBuildPath),
+		fmt.Sprintf("-I%s/include/uapi", kernelSourcePath),
+		fmt.Sprintf("-I%s/include/generated", kernelBuildPath),
+		fmt.Sprintf("-I%s/include/generated/uapi", kernelBuildPath),
 		"-Wno-address-of-packed-member",
 		"-Wno-compare-distinct-pointer-types",
 		"-Wno-deprecated-declarations",

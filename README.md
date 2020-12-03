@@ -63,7 +63,7 @@ If running in a container, regardless if it's the full or slim image, it's advis
 
 When using the `--capture exec` option, Tracee needs access to the host PID namespace. For Docker, add `--pid=host` to the run command.
 
-If you are building the eBPF program in a container, you'll need to make the kernel headers available in the container. The quickstart example has wide mounts that works in a variety of cases, for demonstration purposes. If you want, you can narrow those mounts down to a directory that contains the headers on your setup, for example: `-v /path/to/headers:/myheaders -e KERN_SRC=/myheaders`. As mentioned before, a better practice for production is to pre-compile the eBPF program, in which case the kernel headers are not needed at runtime.
+If you are building the eBPF program in a container, you'll need to make the kernel headers available in the container. The quickstart example has wide mounts that works in a variety of cases, for demonstration purposes. If you want, you can narrow those mounts down to a directory that contains the headers on your setup, for example: `-v /path/to/headers:/myheaders -e KERN_HEADERS=/myheaders`. As mentioned before, a better practice for production is to pre-compile the eBPF program, in which case the kernel headers are not needed at runtime.
 
 #### Permissions
 
