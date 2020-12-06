@@ -119,6 +119,8 @@
 #define MODE_PROCESS_LIST       3
 #define MODE_CONTAINER_ALL      4
 #define MODE_CONTAINER_NEW      5
+#define MODE_HOST_ALL           6
+#define MODE_HOST_NEW           7
 
 #define DEV_NULL_STR    0
 
@@ -539,6 +541,16 @@ static __always_inline int should_trace()
         // our PID Vs 'real' PID on host
         if (get_task_ns_tgid(task) != host_pid) {
             return 1;
+        }
+    }
+    else if (config_mode == MODE_HOST_ALL) {
+        if (get_task_ns_tgid(task) == host_pid) {
+            return 1;
+        }
+    }
+    else if (config_mode == MODE_HOST_NEW) {
+        if (get_task_ns_tgid(task) == host_pid) {
+            rc = lookup_pid();
         }
     }
 
@@ -1195,7 +1207,7 @@ struct bpf_raw_tracepoint_args *ctx
         int config_mode = get_config(CONFIG_MODE);
         if (config_mode == MODE_CONTAINER_NEW) {
             add_pid_ns_if_needed();
-        } else if (config_mode == MODE_PROCESS_NEW || config_mode == MODE_PROCESS_ALL) {
+        } else if (config_mode == MODE_PROCESS_NEW || config_mode == MODE_PROCESS_ALL || config_mode == MODE_HOST_ALL || config_mode == MODE_HOST_NEW) {
             add_pid();
         }
     }

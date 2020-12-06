@@ -32,6 +32,8 @@ const (
 	ModeProcessList
 	ModeContainerAll
 	ModeContainerNew
+	ModeHostAll
+	ModeHostNew
 )
 
 const (
