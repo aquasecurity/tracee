@@ -1198,7 +1198,7 @@ var EventsIDToEvent = map[int32]EventConfig{
 	GetrandomEventID:           {ID: GetrandomEventID, ID32Bit: sys32getrandom, Name: "getrandom", Probes: []probe{{event: "getrandom", attach: sysCall, fn: "getrandom"}}, Sets: []string{"syscalls", "fs"}},
 	MemfdCreateEventID:         {ID: MemfdCreateEventID, ID32Bit: sys32memfd_create, Name: "memfd_create", Probes: []probe{{event: "memfd_create", attach: sysCall, fn: "memfd_create"}}, Sets: []string{"default", "syscalls", "fs", "fs_file_ops"}},
 	KexecFileLoadEventID:       {ID: KexecFileLoadEventID, ID32Bit: sys32undefined, Name: "kexec_file_load", Probes: []probe{{event: "kexec_file_load", attach: sysCall, fn: "kexec_file_load"}}, Sets: []string{"syscalls", "system"}},
-	BpfEventID:                 {ID: BpfEventID, ID32Bit: sys32bpf, Name: "bpf", Probes: []probe{{event: "bpf", attach: sysCall, fn: "bpf"}}, Sets: []string{"syscalls", "system"}},
+	BpfEventID:                 {ID: BpfEventID, ID32Bit: sys32bpf, Name: "bpf", Probes: []probe{{event: "bpf", attach: sysCall, fn: "bpf"}}, Sets: []string{"default", "syscalls", "system"}},
 	ExecveatEventID:            {ID: ExecveatEventID, ID32Bit: sys32execveat, Name: "execveat", Probes: []probe{{event: "execveat", attach: sysCall, fn: "execveat"}}, Sets: []string{"default", "syscalls", "proc", "proc_life"}},
 	UserfaultfdEventID:         {ID: UserfaultfdEventID, ID32Bit: sys32userfaultfd, Name: "userfaultfd", Probes: []probe{{event: "userfaultfd", attach: sysCall, fn: "userfaultfd"}}, Sets: []string{"syscalls", "system"}},
 	MembarrierEventID:          {ID: MembarrierEventID, ID32Bit: sys32membarrier, Name: "membarrier", Probes: []probe{{event: "membarrier", attach: sysCall, fn: "membarrier"}}, Sets: []string{"syscalls", "proc", "proc_mem"}},
