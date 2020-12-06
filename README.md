@@ -130,6 +130,8 @@ Trace existing and new processes | `--trace process:all`
 Trace specific PIDs | `--trace process:<pid>,<pid2>,...` or `--trace p:<pid>,<pid2>,...`
 Trace new containers | `--trace c`, `--trace container` or `--trace container:new`
 Trace existing and new containers | `--trace container:all`
+Trace new processes not in a container | `--trace h`, `--trace host` or `--trace host:new`
+Trace all processes not in a container | `--trace host:all`
 
 You can also use `-t` e.g. `-t p:all`
 

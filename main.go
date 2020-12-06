@@ -279,6 +279,8 @@ func prepareTraceMode(traceString string) (uint32, []int, error) {
 	traceHelp += "'process:<pid>,<pid2>,...' or 'p:<pid>,...'  | Trace specific PIDs\n"
 	traceHelp += "'c' or 'container' or 'container:new'        | Trace new containers\n"
 	traceHelp += "'container:all'                              | Trace all containers\n"
+	traceHelp += "''h' or 'host' or 'host:new'                 | Trace new processes not in a container\n"
+	traceHelp += "'host:all'                                   | Trace all processes not in a container\n"
 	if traceString == "help" {
 		return 0, nil, fmt.Errorf(traceHelp)
 	}
@@ -287,7 +289,7 @@ func prepareTraceMode(traceString string) (uint32, []int, error) {
 
 	// Get The trace type - process or  container
 	traceType := traceSplit[0]
-	if traceType != "process" && traceType != "container" && traceType != "p" && traceType != "c" {
+	if traceType != "process" && traceType != "container" && traceType != "host" && traceType != "p" && traceType != "c" && traceType != "h" {
 		return 0, nil, fmt.Errorf(traceHelp)
 	}
 	traceType = string(traceType[0])
@@ -320,13 +322,21 @@ func prepareTraceMode(traceString string) (uint32, []int, error) {
 			// Can't have just 'process:'
 			return 0, nil, fmt.Errorf(traceHelp)
 		}
-	} else {
+	} else if traceType == "c" {
 		if traceOption == "all" {
 			mode = tracee.ModeContainerAll
 		} else if traceOption == "new" {
 			mode = tracee.ModeContainerNew
 		} else {
 			// Containers currently only supports 'new' and 'all'
+			return 0, nil, fmt.Errorf(traceHelp)
+		}
+	} else {
+		if traceOption == "all" {
+			mode = tracee.ModeHostAll
+		} else if traceOption == "new" {
+			mode = tracee.ModeHostNew
+		} else {
 			return 0, nil, fmt.Errorf(traceHelp)
 		}
 	}
