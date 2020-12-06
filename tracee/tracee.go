@@ -814,6 +814,10 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 			s = fmt.Sprintf("{%s}", s)
 			args[addrTag] = s
 		}
+	case BpfEventID:
+		if cmd, isInt32 := args[t.EncParamName[ctx.EventID%2]["cmd"]].(int32); isInt32 {
+			args[t.EncParamName[ctx.EventID%2]["cmd"]] = PrintBPFCmd(cmd)
+		}
 	}
 
 	return nil

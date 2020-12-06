@@ -557,6 +557,57 @@ func PrintPtraceRequest(req int32) string {
 	return res
 }
 
+// PrintBPFCmd prints the `cmd` argument of the `bpf` syscall
+// https://man7.org/linux/man-pages/man2/bpf.2.html
+// https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/bpf.h
+func PrintBPFCmd(cmd int32) string {
+	var bpfCmd = map[int32]string{
+		0:  "BPF_MAP_CREATE",
+		1:  "BPF_MAP_LOOKUP_ELEM",
+		2:  "BPF_MAP_UPDATE_ELEM",
+		3:  "BPF_MAP_DELETE_ELEM",
+		4:  "BPF_MAP_GET_NEXT_KEY",
+		5:  "BPF_PROG_LOAD",
+		6:  "BPF_OBJ_PIN",
+		7:  "BPF_OBJ_GET",
+		8:  "BPF_PROG_ATTACH",
+		9:  "BPF_PROG_DETACH",
+		10: "BPF_PROG_TEST_RUN",
+		11: "BPF_PROG_GET_NEXT_ID",
+		12: "BPF_MAP_GET_NEXT_ID",
+		13: "BPF_PROG_GET_FD_BY_ID",
+		14: "BPF_MAP_GET_FD_BY_ID",
+		15: "BPF_OBJ_GET_INFO_BY_FD",
+		16: "BPF_PROG_QUERY",
+		17: "BPF_RAW_TRACEPOINT_OPEN",
+		18: "BPF_BTF_LOAD",
+		19: "BPF_BTF_GET_FD_BY_ID",
+		20: "BPF_TASK_FD_QUERY",
+		21: "BPF_MAP_LOOKUP_AND_DELETE_ELEM",
+		22: "BPF_MAP_FREEZE",
+		23: "BPF_BTF_GET_NEXT_ID",
+		24: "BPF_MAP_LOOKUP_BATCH",
+		25: "BPF_MAP_LOOKUP_AND_DELETE_BATCH",
+		26: "BPF_MAP_UPDATE_BATCH",
+		27: "BPF_MAP_DELETE_BATCH",
+		28: "BPF_LINK_CREATE",
+		29: "BPF_LINK_UPDATE",
+		30: "BPF_LINK_GET_FD_BY_ID",
+		31: "BPF_LINK_GET_NEXT_ID",
+		32: "BPF_ENABLE_STATS",
+		33: "BPF_ITER_CREATE",
+		34: "BPF_LINK_DETACH",
+	}
+
+	var res string
+	if cmdName, ok := bpfCmd[cmd]; ok {
+		res = cmdName
+	} else {
+		res = strconv.Itoa(int(cmd))
+	}
+	return res
+}
+
 // PrintAlert prints the encoded alert message and output file path if required
 func PrintAlert(alert alert) string {
 	var res string
