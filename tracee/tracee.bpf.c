@@ -82,29 +82,30 @@
 
 #define TAG_NONE           0UL
 
-#define SYS_OPEN            2
-#define SYS_MMAP            9
-#define SYS_MPROTECT        10
-#define SYS_RT_SIGRETURN    15
-#define SYS_CLONE           56
-#define SYS_FORK            57
-#define SYS_VFORK           58
-#define SYS_EXECVE          59
-#define SYS_EXIT            60
-#define SYS_EXIT_GROUP      231
-#define SYS_OPENAT          257
-#define SYS_EXECVEAT        322
-#define RAW_SYS_ENTER       335
-#define RAW_SYS_EXIT        336
-#define DO_EXIT             337
-#define CAP_CAPABLE         338
-#define SECURITY_BPRM_CHECK 339
-#define SECURITY_FILE_OPEN  340
-#define VFS_WRITE           341
-#define VFS_WRITEV          342
-#define MEM_PROT_ALERT      343
-#define SCHED_PROCESS_EXIT  344
-#define MAX_EVENT_ID        345
+#define SYS_OPEN              2
+#define SYS_MMAP              9
+#define SYS_MPROTECT          10
+#define SYS_RT_SIGRETURN      15
+#define SYS_CLONE             56
+#define SYS_FORK              57
+#define SYS_VFORK             58
+#define SYS_EXECVE            59
+#define SYS_EXIT              60
+#define SYS_EXIT_GROUP        231
+#define SYS_OPENAT            257
+#define SYS_EXECVEAT          322
+#define RAW_SYS_ENTER         335
+#define RAW_SYS_EXIT          336
+#define DO_EXIT               337
+#define CAP_CAPABLE           338
+#define SECURITY_BPRM_CHECK   339
+#define SECURITY_FILE_OPEN    340
+#define SECURITY_INODE_UNLINK 341
+#define VFS_WRITE             342
+#define VFS_WRITEV            343
+#define MEM_PROT_ALERT        344
+#define SCHED_PROCESS_EXIT    345
+#define MAX_EVENT_ID          346
 
 #define CONFIG_MODE             0
 #define CONFIG_SHOW_SYSCALL     1
@@ -881,6 +882,60 @@ static __always_inline int save_file_path_to_str_buf(buf_t *string_p, struct fil
     return buf_off;
 }
 
+static __always_inline int save_dentry_path_to_str_buf(buf_t *string_p, struct dentry* dentry)
+{
+    char slash = '/';
+    int zero = 0;
+
+    u32 buf_off = (MAX_PERCPU_BUFSIZE >> 1);
+
+    #pragma unroll
+    // As bpf loops are not allowed and max instructions number is 4096, path components is limited to 30
+    for (int i = 0; i < 30; i++) {
+        struct dentry *d_parent = get_d_parent_ptr_from_dentry(dentry);
+        if (dentry == d_parent) {
+            break;
+        }
+        // Add this dentry name to path
+        struct qstr d_name = get_d_name_from_dentry(dentry);
+        unsigned int len = (d_name.len+1) & (MAX_STRING_SIZE-1);
+        unsigned int off = buf_off - len;
+        // Is string buffer big enough for dentry name?
+        int sz = 0;
+        if (off <= buf_off) { // verify no wrap occured
+            len = ((len - 1) & ((MAX_PERCPU_BUFSIZE >> 1)-1)) + 1;
+            sz = bpf_probe_read_str(&(string_p->buf[off & ((MAX_PERCPU_BUFSIZE >> 1)-1)]), len, (void *)d_name.name);
+        }
+        else
+            break;
+        if (sz > 1) {
+            buf_off -= 1; // remove null byte termination with slash sign
+            bpf_probe_read(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE-1)]), 1, &slash);
+            buf_off -= sz - 1;
+        } else {
+            // If sz is 0 or 1 we have an error (path can't be null nor an empty string)
+            break;
+        }
+        dentry = d_parent;
+    }
+
+    if (buf_off == (MAX_PERCPU_BUFSIZE >> 1)) {
+        // memfd files have no path in the filesystem -> extract their name
+        buf_off = 0;
+        struct qstr d_name = get_d_name_from_dentry(dentry);
+        bpf_probe_read_str(&(string_p->buf[0]), MAX_STRING_SIZE, (void *)d_name.name);
+    } else {
+        // Add leading slash
+        buf_off -= 1;
+        bpf_probe_read(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE-1)]), 1, &slash);
+        // Null terminate the path string
+        bpf_probe_read(&(string_p->buf[(MAX_PERCPU_BUFSIZE >> 1)-1]), 1, &zero);
+    }
+
+    set_buf_off(STRING_BUF_IDX, buf_off);
+    return buf_off;
+}
+
 static __always_inline int events_perf_submit(void *ctx)
 {
     u32* off = get_buf_off(SUBMIT_BUF_IDX);
@@ -1554,6 +1609,42 @@ int BPF_KPROBE(trace_security_file_open)
     save_to_submit_buf(submit_p, (void*)&file->f_flags, sizeof(int), INT_T, DEC_ARG(1, *tags));
     save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, DEC_ARG(2, *tags));
     save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, DEC_ARG(3, *tags));
+
+    events_perf_submit(ctx);
+    return 0;
+}
+
+SEC("kprobe/security_inode_unlink")
+int BPF_KPROBE(trace_security_inode_unlink)
+{
+    if (!should_trace())
+        return 0;
+
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
+    if (submit_p == NULL)
+        return 0;
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+
+    context_t context = init_and_save_context(submit_p, SECURITY_INODE_UNLINK, 1 /*argnum*/, 0 /*ret*/);
+
+    //struct inode *dir = (struct inode *)PT_REGS_PARM1(ctx);
+    struct dentry *dentry = (struct dentry *)PT_REGS_PARM2(ctx);
+
+    // Get per-cpu string buffer
+    buf_t *string_p = get_buf(STRING_BUF_IDX);
+    if (string_p == NULL)
+        return -1;
+    save_dentry_path_to_str_buf(string_p, dentry);
+    u32 *off = get_buf_off(STRING_BUF_IDX);
+    if (off == NULL)
+        return -1;
+
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
+    if (!tags) {
+        return -1;
+    }
+
+    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], DEC_ARG(0, *tags));
 
     events_perf_submit(ctx);
     return 0;

@@ -439,6 +439,7 @@ const (
 	CapCapableEventID
 	SecurityBprmCheckEventID
 	SecurityFileOpenEventID
+	SecurityInodeUnlinkEventID
 	VfsWriteEventID
 	VfsWritevEventID
 	MemProtAlertEventID
@@ -1220,6 +1221,7 @@ var EventsIDToEvent = map[int32]EventConfig{
 	CapCapableEventID:          {ID: CapCapableEventID, ID32Bit: sys32undefined, Name: "cap_capable", Probes: []probe{{event: "cap_capable", attach: kprobe, fn: "trace_cap_capable"}}, Sets: []string{"default"}},
 	SecurityBprmCheckEventID:   {ID: SecurityBprmCheckEventID, ID32Bit: sys32undefined, Name: "security_bprm_check", Probes: []probe{{event: "security_bprm_check", attach: kprobe, fn: "trace_security_bprm_check"}}, Sets: []string{"default"}},
 	SecurityFileOpenEventID:    {ID: SecurityFileOpenEventID, ID32Bit: sys32undefined, Name: "security_file_open", Probes: []probe{{event: "security_file_open", attach: kprobe, fn: "trace_security_file_open"}}, Sets: []string{"default"}},
+	SecurityInodeUnlinkEventID: {ID: SecurityInodeUnlinkEventID, ID32Bit: sys32undefined, Name: "security_inode_unlink", Probes: []probe{{event: "security_inode_unlink", attach: kprobe, fn: "trace_security_inode_unlink"}}, Sets: []string{"default"}},
 	VfsWriteEventID:            {ID: VfsWriteEventID, ID32Bit: sys32undefined, Name: "vfs_write", Probes: []probe{{event: "vfs_write", attach: kprobe, fn: "trace_vfs_write"}, {event: "vfs_write", attach: kretprobe, fn: "trace_ret_vfs_write"}}, Sets: []string{"default"}},
 	VfsWritevEventID:           {ID: VfsWritevEventID, ID32Bit: sys32undefined, Name: "vfs_writev", Probes: []probe{{event: "vfs_writev", attach: kprobe, fn: "trace_vfs_writev"}, {event: "vfs_writev", attach: kretprobe, fn: "trace_ret_vfs_writev"}}, Sets: []string{"default"}},
 	MemProtAlertEventID:        {ID: MemProtAlertEventID, ID32Bit: sys32undefined, Name: "mem_prot_alert", Probes: []probe{{event: "security_mmap_addr", attach: kprobe, fn: "trace_mmap_alert"}, {event: "security_file_mprotect", attach: kprobe, fn: "trace_mprotect_alert"}}, Sets: []string{}},
@@ -1562,6 +1564,7 @@ var EventsIDToParams = map[int32][]param{
 	CapCapableEventID:          {{pType: "int", pName: "cap"}, {pType: "int", pName: "syscall"}},
 	SecurityBprmCheckEventID:   {{pType: "const char*", pName: "pathname"}, {pType: "dev_t", pName: "dev"}, {pType: "unsigned long", pName: "inode"}},
 	SecurityFileOpenEventID:    {{pType: "const char*", pName: "pathname"}, {pType: "int", pName: "flags"}, {pType: "dev_t", pName: "dev"}, {pType: "unsigned long", pName: "inode"}},
+	SecurityInodeUnlinkEventID: {{pType: "const char*", pName: "pathname"}},
 	VfsWriteEventID:            {{pType: "const char*", pName: "pathname"}, {pType: "dev_t", pName: "dev"}, {pType: "unsigned long", pName: "inode"}, {pType: "size_t", pName: "count"}, {pType: "off_t", pName: "pos"}},
 	VfsWritevEventID:           {{pType: "const char*", pName: "pathname"}, {pType: "dev_t", pName: "dev"}, {pType: "unsigned long", pName: "inode"}, {pType: "unsigned long", pName: "vlen"}, {pType: "off_t", pName: "pos"}},
 	MemProtAlertEventID:        {{pType: "alert_t", pName: "alert"}},
