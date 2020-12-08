@@ -691,7 +691,7 @@ func makeBPFObject(outFile string) error {
 	}
 	err = cmd1.Run()
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to make BPF object (clang): %v. Try using --debug for more info", err)
 	}
 
 	// from Makefile:
@@ -710,7 +710,7 @@ func makeBPFObject(outFile string) error {
 	}
 	err = cmd2.Run()
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to make BPF object (llc): %v. Try using --debug for more info", err)
 	}
 
 	// from Makefile:
@@ -727,7 +727,7 @@ func makeBPFObject(outFile string) error {
 		}
 		err = cmd3.Run()
 		if err != nil {
-			return err
+			return fmt.Errorf("Failed to make BPF object (llvm-strip): %v. Try using --debug for more info", err)
 		}
 	}
 
