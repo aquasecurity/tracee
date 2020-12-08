@@ -156,6 +156,12 @@ BPF_MAP(_name, BPF_MAP_TYPE_PROG_ARRAY, u32, u32, _max_entries);
 #define BPF_PERF_OUTPUT(_name) \
 BPF_MAP(_name, BPF_MAP_TYPE_PERF_EVENT_ARRAY, int, __u32, 1024);
 
+#ifdef RHEL_RELEASE_CODE
+#if (RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(8, 0))
+#define RHEL_RELEASE_GT_8_0
+#endif
+#endif
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
 #error Minimal required kernel version is 4.14
 #endif
@@ -273,7 +279,7 @@ static __always_inline u32 get_task_ns_pid(struct task_struct *task)
 {
     unsigned int level = READ_KERN(READ_KERN(READ_KERN(task->nsproxy)->pid_ns_for_children)->level);
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0)
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && !defined(RHEL_RELEASE_GT_8_0))
     // kernel 4.14-4.18:
     return READ_KERN(READ_KERN(task->pids[PIDTYPE_PID].pid)->numbers[level].nr);
 #else
@@ -287,7 +293,7 @@ static __always_inline u32 get_task_ns_tgid(struct task_struct *task)
     unsigned int level = READ_KERN(READ_KERN(READ_KERN(task->nsproxy)->pid_ns_for_children)->level);
     struct task_struct *group_leader = READ_KERN(task->group_leader);
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0)
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && !defined(RHEL_RELEASE_GT_8_0))
     // kernel 4.14-4.18:
     return READ_KERN(READ_KERN(group_leader->pids[PIDTYPE_PID].pid)->numbers[level].nr);
 #else
@@ -301,7 +307,7 @@ static __always_inline u32 get_task_ns_ppid(struct task_struct *task)
     struct task_struct *real_parent = READ_KERN(task->real_parent);
     unsigned int level = READ_KERN(READ_KERN(READ_KERN(real_parent->nsproxy)->pid_ns_for_children)->level);
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0)
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && !defined(RHEL_RELEASE_GT_8_0))
     // kernel 4.14-4.18:
     return READ_KERN(READ_KERN(real_parent->pids[PIDTYPE_PID].pid)->numbers[level].nr);
 #else
