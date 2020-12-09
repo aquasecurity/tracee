@@ -113,6 +113,8 @@
 #define CONFIG_CAPTURE_FILES    3
 #define CONFIG_EXTRACT_DYN_CODE 4
 #define CONFIG_TRACEE_PID       5
+#define CONFIG_FILTER_MNT_NS    6
+#define CONFIG_FILTER_PID_NS    7
 
 #define MODE_PROCESS_ALL        1
 #define MODE_PROCESS_NEW        2
@@ -124,6 +126,9 @@
 
 #define GREATER 0
 #define LESS    1
+
+#define FILTER_OUT 0
+#define FILTER_IN  1
 
 #define DEV_NULL_STR    0
 
@@ -244,8 +249,10 @@ BPF_HASH(chosen_events_map, u32, u32);              // Events chosen by the user
 BPF_HASH(pids_map, u32, u32);                       // Save container pid namespaces
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
 BPF_HASH(ret_map, u64, u64);                        // Persist return value to be used in tail calls
-BPF_HASH(uid_equal_filter, u32, s64);               // Used to filter events by UID, for specific UIDs either by == or !=
+BPF_HASH(uid_equal_filter, u32, u8);                // Used to filter events by UID, for specific UIDs either by == or !=
 BPF_HASH(uid_compare_filter, u32, s64);             // Used to filter events by UID, for ranges of UIDs by < or >
+BPF_HASH(mnt_ns_filter, u64, u8);                   // Used to filter events by mount namespace id
+BPF_HASH(pid_ns_filter, u64, u8);                   // Used to filter events by pid namespace id
 BPF_HASH(bin_args_map, u64, bin_args_t);            // Persist args for send_bin funtion
 BPF_HASH(sys_32_to_64_map, u32, u32);               // Map 32bit syscalls numbers to 64bit syscalls numbers
 BPF_HASH(params_types_map, u32, u64);               // Encoded parameters types for event
@@ -513,7 +520,7 @@ static __always_inline int get_config(u32 key)
 static __always_inline int uid_filter_matches()
 {
     uid_t uid = (u32)bpf_get_current_uid_gid();
-    s64* equality = bpf_map_lookup_elem(&uid_equal_filter, &uid);
+    u8* equality = bpf_map_lookup_elem(&uid_equal_filter, &uid);
     if (equality != NULL) {
         return *equality;
     }
@@ -535,6 +542,40 @@ static __always_inline int uid_filter_matches()
     return 1;
 }
 
+static __always_inline int mnt_ns_filter_matches()
+{
+    struct task_struct *task;
+    task = (struct task_struct *)bpf_get_current_task();
+
+    u64 mnt_id = get_task_mnt_ns_id(task);
+    u8* equality = bpf_map_lookup_elem(&mnt_ns_filter, &mnt_id);
+    if (equality != NULL) {
+        return *equality;
+    }
+
+    if (get_config(CONFIG_FILTER_MNT_NS) == FILTER_IN)
+        return 0;
+
+    return 1;
+}
+
+static __always_inline int pid_ns_filter_matches()
+{
+    struct task_struct *task;
+    task = (struct task_struct *)bpf_get_current_task();
+
+    u64 pid_id = get_task_pid_ns_id(task);
+    u8* equality = bpf_map_lookup_elem(&pid_ns_filter, &pid_id);
+    if (equality != NULL) {
+        return *equality;
+    }
+
+    if (get_config(CONFIG_FILTER_PID_NS) == FILTER_IN)
+        return 0;
+
+    return 1;
+}
+
 static __always_inline int should_trace()
 {
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
@@ -549,6 +590,16 @@ static __always_inline int should_trace()
     if (!uid_filter_matches())
     {
         return 0; 
+    }
+
+    if (!mnt_ns_filter_matches())
+    {
+        return 0;
+    }
+
+    if (!pid_ns_filter_matches())
+    {
+        return 0;
     }
 
     // All logs all processes except tracee itself

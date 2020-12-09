@@ -11,10 +11,12 @@ const (
 	configCaptureFiles
 	configExtractDynCode
 	configTraceePid
+	configFilterInMntNs
+	configFilterInPidNs
 )
 
 const (
-	filterNotEqual int64 = iota
+	filterNotEqual uint8 = iota
 	filterEqual
 )
 
