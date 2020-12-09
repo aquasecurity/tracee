@@ -304,7 +304,11 @@ func (m *Module) GetMap(mapName string) (*BPFMap, error) {
 
 func (b *BPFMap) Update(key, value interface{}) error {
 	var keyPtr, valuePtr unsafe.Pointer
-	if k, isType := key.(int32); isType {
+	if k, isType := key.(int8); isType {
+		keyPtr = unsafe.Pointer(&k)
+	} else if k, isType := key.(uint8); isType {
+		keyPtr = unsafe.Pointer(&k)
+	} else if k, isType := key.(int32); isType {
 		keyPtr = unsafe.Pointer(&k)
 	} else if k, isType := key.(uint32); isType {
 		keyPtr = unsafe.Pointer(&k)
@@ -315,7 +319,11 @@ func (b *BPFMap) Update(key, value interface{}) error {
 	} else {
 		return fmt.Errorf("failed to update map %s: unknown key type %T", b.name, key)
 	}
-	if v, isType := value.(int32); isType {
+	if v, isType := value.(int8); isType {
+		valuePtr = unsafe.Pointer(&v)
+	} else if v, isType := value.(uint8); isType {
+		valuePtr = unsafe.Pointer(&v)
+	} else if v, isType := value.(int32); isType {
 		valuePtr = unsafe.Pointer(&v)
 	} else if v, isType := value.(uint32); isType {
 		valuePtr = unsafe.Pointer(&v)

@@ -236,12 +236,18 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 	filterHelp += "\t--filter 'uid>0'                                              | only trace events from uids greater than 0"
 	filterHelp += "\t--filter 'uid>0' --filter 'uid<1000'                          | only trace events from uids between 0 and 1000"
 	filterHelp += "\t--filter 'uid>0' --filter uid!=1000                           | only trace events from uids greater than 0 but not 1000"
+	filterHelp += "\n"
+	filterHelp += "mntns: only trace processes or containers with specified mount namespace(s) ids.\n"
+	filterHelp += "\t--filter mntns=12345678                                       | only trace events from mntns 12345678\n"
+	filterHelp += "\t--filter mntns!=12345678                                      | don't trace events from mntns 12345678\n"
+	filterHelp += "\n"
+	filterHelp += "pidns: only trace processes or containers with specified pid namespace(s) ids.\n"
+	filterHelp += "\t--filter pidns=12345678                                       | only trace events from pidns 12345678\n"
+	filterHelp += "\t--filter pidns!=12345678                                      | don't trace events from pidns 12345678\n"
 
 	if len(filters) == 1 && filters[0] == "help" {
 		return tracee.Filter{}, fmt.Errorf(filterHelp)
 	}
-
-	validFilterOptions := []string{"uid"}
 
 	filter := tracee.Filter{
 		UIDFilter: &tracee.UIDFilter{
@@ -250,30 +256,44 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 			Greater:  -1,
 			Less:     math.MaxUint32 + 1,
 		},
+		MntNSFilter: &tracee.NSFilter{
+			Equal:    []uint64{},
+			NotEqual: []uint64{},
+			FilterIn: false,
+		},
+		PidNSFilter: &tracee.NSFilter{
+			Equal:    []uint64{},
+			NotEqual: []uint64{},
+			FilterIn: false,
+		},
 	}
 
 	for _, f := range filters {
-
-		// Parse the filter option (i.e. uid, ...)
-		isValid := false
-		filterSlice := []string{}
-		for i := range validFilterOptions {
-			if strings.HasPrefix(f, validFilterOptions[i]) {
-				filterSlice = strings.SplitAfter(f, validFilterOptions[i])
-				isValid = true
-				break
-			}
-		}
-		if !isValid {
-			return tracee.Filter{}, fmt.Errorf("invalid filter option specified, use '--filter help' for more info")
-		}
-
-		if filterSlice[0] == "uid" {
-			err := parseUIDFilter(filterSlice[1], filter.UIDFilter)
+		if strings.HasPrefix(f, "uid") {
+			err := parseUIDFilter(strings.TrimPrefix(f, "uid"), filter.UIDFilter)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
+			continue
 		}
+
+		if strings.HasPrefix(f, "mntns") {
+			err := parseNSFilter(strings.TrimPrefix(f, "mntns"), filter.MntNSFilter)
+			if err != nil {
+				return tracee.Filter{}, err
+			}
+			continue
+		}
+
+		if strings.HasPrefix(f, "pidns") {
+			err := parseNSFilter(strings.TrimPrefix(f, "pidns"), filter.PidNSFilter)
+			if err != nil {
+				return tracee.Filter{}, err
+			}
+			continue
+		}
+
+		return tracee.Filter{}, fmt.Errorf("invalid filter option specified, use '--filter help' for more info")
 	}
 
 	if len(filter.UIDFilter.Equal) > 0 &&
@@ -282,6 +302,14 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 		filter.UIDFilter.Less == math.MaxUint32+1 {
 		filter.UIDFilter.Less = -1
 		filter.UIDFilter.Greater = math.MaxUint32 + 1
+	}
+
+	if len(filter.MntNSFilter.Equal) > 0 && len(filter.MntNSFilter.NotEqual) == 0 {
+		filter.MntNSFilter.FilterIn = true
+	}
+
+	if len(filter.PidNSFilter.Equal) > 0 && len(filter.PidNSFilter.NotEqual) == 0 {
+		filter.PidNSFilter.FilterIn = true
 	}
 
 	return filter, nil
@@ -321,6 +349,35 @@ func parseUIDFilter(operatorAndValues string, uidFilter *tracee.UIDFilter) error
 			if uid < uidFilter.Less {
 				uidFilter.Less = uid
 			}
+		default:
+			return fmt.Errorf("invalid filter operator: %s", operatorString)
+		}
+	}
+
+	return nil
+}
+
+func parseNSFilter(operatorAndValues string, nsFilter *tracee.NSFilter) error {
+	valuesString := string(operatorAndValues[1:])
+	operatorString := string(operatorAndValues[0])
+
+	if operatorString == "!" {
+		operatorString = operatorAndValues[0:2]
+		valuesString = operatorAndValues[2:]
+	}
+
+	values := strings.Split(valuesString, ",")
+
+	for i := range values {
+		nsId, err := strconv.ParseUint(values[i], 10, 64)
+		if err != nil {
+			return fmt.Errorf("invalid NS value: %s", values[i])
+		}
+		switch operatorString {
+		case "=":
+			nsFilter.Equal = append(nsFilter.Equal, nsId)
+		case "!=":
+			nsFilter.NotEqual = append(nsFilter.NotEqual, nsId)
 		default:
 			return fmt.Errorf("invalid filter operator: %s", operatorString)
 		}
