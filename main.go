@@ -244,7 +244,12 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 	validFilterOptions := []string{"uid"}
 
 	filter := tracee.Filter{
-		UIDFilter: baseUIDFilter(),
+		UIDFilter: &tracee.UIDFilter{
+			Equal:    []uint32{},
+			NotEqual: []uint32{},
+			Greater:  -1,
+			Less:     math.MaxUint32 + 1,
+		},
 	}
 
 	for _, f := range filters {
@@ -282,17 +287,6 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 	return filter, nil
 }
 
-// Operator represents a comparison operator such as '=', '!=', '>', or '<'
-type Operator uint8
-
-const (
-	opInvalid Operator = iota
-	opEqual
-	opNotEqual
-	opGreater
-	opLess
-)
-
 func parseUIDFilter(operatorAndValues string, uidFilter *tracee.UIDFilter) error {
 
 	valuesString := string(operatorAndValues[1:])
@@ -303,11 +297,6 @@ func parseUIDFilter(operatorAndValues string, uidFilter *tracee.UIDFilter) error
 		valuesString = operatorAndValues[2:]
 	}
 
-	operator := parseOperator(operatorString)
-	if operator == opInvalid {
-		return fmt.Errorf("invalid filter operator: %s", operatorString)
-	}
-
 	values := strings.Split(valuesString, ",")
 
 	for i := range values {
@@ -315,48 +304,29 @@ func parseUIDFilter(operatorAndValues string, uidFilter *tracee.UIDFilter) error
 		if err != nil {
 			return fmt.Errorf("invalid UID value: %s", values[i])
 		}
-		if operator == opEqual {
+		switch operatorString {
+		case "=":
 			uid := uint32(v)
 			uidFilter.Equal = append(uidFilter.Equal, uid)
-		}
-		if operator == opNotEqual {
+		case "!=":
 			uid := uint32(v)
 			uidFilter.NotEqual = append(uidFilter.NotEqual, uid)
-		}
-		uid := int64(v)
-		if operator == opGreater && uid > uidFilter.Greater {
-			uidFilter.Greater = uid
-		}
-		if operator == opLess && uid < uidFilter.Less {
-			uidFilter.Less = uid
+		case ">":
+			uid := int64(v)
+			if uid > uidFilter.Greater {
+				uidFilter.Greater = uid
+			}
+		case "<":
+			uid := int64(v)
+			if uid < uidFilter.Less {
+				uidFilter.Less = uid
+			}
+		default:
+			return fmt.Errorf("invalid filter operator: %s", operatorString)
 		}
 	}
 
 	return nil
-}
-
-func baseUIDFilter() *tracee.UIDFilter {
-	return &tracee.UIDFilter{
-		Equal:    []uint32{},
-		NotEqual: []uint32{},
-		Greater:  -1,
-		Less:     math.MaxUint32 + 1,
-	}
-}
-
-func parseOperator(operationString string) Operator {
-	switch operationString {
-	case "=":
-		return opEqual
-	case "!=":
-		return opNotEqual
-	case ">":
-		return opGreater
-	case "<":
-		return opLess
-	default:
-		return opInvalid
-	}
 }
 
 func prepareTraceMode(traceString string) (uint32, []int, error) {
