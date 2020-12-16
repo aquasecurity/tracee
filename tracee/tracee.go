@@ -45,6 +45,8 @@ type Filter struct {
 	UIDFilter   *UIDFilter
 	MntNSFilter *NSFilter
 	PidNSFilter *NSFilter
+	UTSFilter   *StringFilter
+	CommFilter  *StringFilter
 }
 
 type UIDFilter struct {
@@ -52,12 +54,21 @@ type UIDFilter struct {
 	NotEqual []uint32
 	Greater  int64
 	Less     int64
+	Enabled  bool
 }
 
 type NSFilter struct {
 	Equal    []uint64
 	NotEqual []uint64
 	FilterIn bool
+	Enabled  bool
+}
+
+type StringFilter struct {
+	Equal    []string
+	NotEqual []string
+	FilterIn bool
+	Enabled  bool
 }
 
 // Validate does static validation of the configuration
@@ -443,73 +454,141 @@ func (t *Tracee) populateBPFMaps() error {
 		fileFilterMap.Update(uint32(i), []byte(t.config.FilterFileWrite[i]))
 	}
 
-	// Set filter options
-	uidEqualityFilter, err := t.bpfModule.GetMap("uid_equal_filter")
-	if err != nil {
-		return fmt.Errorf("error getting BPF map uid_equal_filter: %v", err)
-	}
-	for i := 0; i < len(t.config.Filter.UIDFilter.Equal); i++ {
-		err = uidEqualityFilter.Update(t.config.Filter.UIDFilter.Equal[i], filterEqual)
+	if t.config.Filter.UIDFilter.Enabled {
+		// Set filter options
+		uidEqualityFilter, err := t.bpfModule.GetMap("uid_equal_filter")
+		if err != nil {
+			return fmt.Errorf("error getting BPF map uid_equal_filter: %v", err)
+		}
+		for i := 0; i < len(t.config.Filter.UIDFilter.Equal); i++ {
+			err = uidEqualityFilter.Update(t.config.Filter.UIDFilter.Equal[i], filterEqual)
+			if err != nil {
+				return err
+			}
+		}
+		for i := 0; i < len(t.config.Filter.UIDFilter.NotEqual); i++ {
+			err = uidEqualityFilter.Update(t.config.Filter.UIDFilter.NotEqual[i], filterNotEqual)
+			if err != nil {
+				return err
+			}
+		}
+
+		uidCompareFilter, err := t.bpfModule.GetMap("uid_compare_filter")
+		if err != nil {
+			return fmt.Errorf("error getting BPF map uid_compare_filter: %v", err)
+		}
+
+		err = uidCompareFilter.Update(uint32(0), int64(t.config.Filter.UIDFilter.Greater))
 		if err != nil {
 			return err
 		}
-	}
-	for i := 0; i < len(t.config.Filter.UIDFilter.NotEqual); i++ {
-		err = uidEqualityFilter.Update(t.config.Filter.UIDFilter.NotEqual[i], filterNotEqual)
+		err = uidCompareFilter.Update(uint32(1), int64(t.config.Filter.UIDFilter.Less))
 		if err != nil {
 			return err
+		}
+
+		bpfConfigMap.Update(uint32(configUIDFilter), uint32(1))
+	}
+
+	if t.config.Filter.MntNSFilter.Enabled {
+		mntNSFilter, err := t.bpfModule.GetMap("mnt_ns_filter")
+		if err != nil {
+			return fmt.Errorf("error getting BPF map mnt_ns_filter: %v", err)
+		}
+		for i := 0; i < len(t.config.Filter.MntNSFilter.Equal); i++ {
+			err = mntNSFilter.Update(t.config.Filter.MntNSFilter.Equal[i], filterEqual)
+			if err != nil {
+				return err
+			}
+		}
+		for i := 0; i < len(t.config.Filter.MntNSFilter.NotEqual); i++ {
+			err = mntNSFilter.Update(t.config.Filter.MntNSFilter.NotEqual[i], filterNotEqual)
+			if err != nil {
+				return err
+			}
+		}
+
+		if t.config.Filter.MntNSFilter.FilterIn {
+			bpfConfigMap.Update(uint32(configMntNsFilter), filterIn)
+		} else {
+			bpfConfigMap.Update(uint32(configMntNsFilter), filterOut)
 		}
 	}
 
-	uidCompareFilter, err := t.bpfModule.GetMap("uid_compare_filter")
-	if err != nil {
-		return fmt.Errorf("error getting BPF map uid_compare_filter: %v", err)
+	if t.config.Filter.PidNSFilter.Enabled {
+		pidNSFilter, err := t.bpfModule.GetMap("pid_ns_filter")
+		if err != nil {
+			return fmt.Errorf("error getting BPF map pid_ns_filter: %v", err)
+		}
+		for i := 0; i < len(t.config.Filter.PidNSFilter.Equal); i++ {
+			err = pidNSFilter.Update(t.config.Filter.PidNSFilter.Equal[i], filterEqual)
+			if err != nil {
+				return err
+			}
+		}
+		for i := 0; i < len(t.config.Filter.PidNSFilter.NotEqual); i++ {
+			err = pidNSFilter.Update(t.config.Filter.PidNSFilter.NotEqual[i], filterNotEqual)
+			if err != nil {
+				return err
+			}
+		}
+
+		if t.config.Filter.PidNSFilter.FilterIn {
+			bpfConfigMap.Update(uint32(configPidNsFilter), filterIn)
+		} else {
+			bpfConfigMap.Update(uint32(configPidNsFilter), filterOut)
+		}
 	}
 
-	err = uidCompareFilter.Update(uint32(0), int64(t.config.Filter.UIDFilter.Greater))
-	if err != nil {
-		return err
-	}
-	err = uidCompareFilter.Update(uint32(1), int64(t.config.Filter.UIDFilter.Less))
-	if err != nil {
-		return err
+	if t.config.Filter.UTSFilter.Enabled {
+		utsNSFilter, err := t.bpfModule.GetMap("uts_ns_filter")
+		if err != nil {
+			return fmt.Errorf("error getting BPF map uts_ns_filter: %v", err)
+		}
+		for i := 0; i < len(t.config.Filter.UTSFilter.Equal); i++ {
+			err = utsNSFilter.Update([]byte(t.config.Filter.UTSFilter.Equal[i]), filterEqual)
+			if err != nil {
+				return err
+			}
+		}
+		for i := 0; i < len(t.config.Filter.UTSFilter.NotEqual); i++ {
+			err = utsNSFilter.Update([]byte(t.config.Filter.UTSFilter.NotEqual[i]), filterNotEqual)
+			if err != nil {
+				return err
+			}
+		}
+
+		if t.config.Filter.UTSFilter.FilterIn {
+			bpfConfigMap.Update(uint32(configUTSNsFilter), filterIn)
+		} else {
+			bpfConfigMap.Update(uint32(configUTSNsFilter), filterOut)
+		}
 	}
 
-	mntNSFilter, err := t.bpfModule.GetMap("mnt_ns_filter")
-	if err != nil {
-		return fmt.Errorf("error getting BPF map mnt_ns_filter: %v", err)
-	}
-	for i := 0; i < len(t.config.Filter.MntNSFilter.Equal); i++ {
-		err = mntNSFilter.Update(t.config.Filter.MntNSFilter.Equal[i], filterEqual)
+	if t.config.Filter.CommFilter.Enabled {
+		commFilter, err := t.bpfModule.GetMap("comm_filter")
 		if err != nil {
-			return err
+			return fmt.Errorf("error getting BPF map comm_filter: %v", err)
 		}
-	}
-	for i := 0; i < len(t.config.Filter.MntNSFilter.NotEqual); i++ {
-		err = mntNSFilter.Update(t.config.Filter.MntNSFilter.NotEqual[i], filterNotEqual)
-		if err != nil {
-			return err
+		for i := 0; i < len(t.config.Filter.CommFilter.Equal); i++ {
+			err = commFilter.Update([]byte(t.config.Filter.CommFilter.Equal[i]), filterEqual)
+			if err != nil {
+				return err
+			}
 		}
-	}
-	bpfConfigMap.Update(uint32(configFilterInMntNs), boolToUInt32(t.config.Filter.MntNSFilter.FilterIn))
+		for i := 0; i < len(t.config.Filter.CommFilter.NotEqual); i++ {
+			err = commFilter.Update([]byte(t.config.Filter.CommFilter.NotEqual[i]), filterNotEqual)
+			if err != nil {
+				return err
+			}
+		}
 
-	pidNSFilter, err := t.bpfModule.GetMap("pid_ns_filter")
-	if err != nil {
-		return fmt.Errorf("error getting BPF map pid_ns_filter: %v", err)
-	}
-	for i := 0; i < len(t.config.Filter.PidNSFilter.Equal); i++ {
-		err = pidNSFilter.Update(t.config.Filter.PidNSFilter.Equal[i], filterEqual)
-		if err != nil {
-			return err
+		if t.config.Filter.CommFilter.FilterIn {
+			bpfConfigMap.Update(uint32(configCommFilter), filterIn)
+		} else {
+			bpfConfigMap.Update(uint32(configCommFilter), filterOut)
 		}
 	}
-	for i := 0; i < len(t.config.Filter.PidNSFilter.NotEqual); i++ {
-		err = pidNSFilter.Update(t.config.Filter.PidNSFilter.NotEqual[i], filterNotEqual)
-		if err != nil {
-			return err
-		}
-	}
-	bpfConfigMap.Update(uint32(configFilterInPidNs), boolToUInt32(t.config.Filter.PidNSFilter.FilterIn))
 
 	stringStoreMap, _ := t.bpfModule.GetMap("string_store")
 	stringStoreMap.Update(uint32(0), []byte("/dev/null"))
