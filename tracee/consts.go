@@ -11,13 +11,21 @@ const (
 	configCaptureFiles
 	configExtractDynCode
 	configTraceePid
-	configFilterInMntNs
-	configFilterInPidNs
+	configUIDFilter
+	configMntNsFilter
+	configPidNsFilter
+	configUTSNsFilter
+	configCommFilter
 )
 
 const (
 	filterNotEqual uint8 = iota
 	filterEqual
+)
+
+const (
+	filterIn  uint8 = 1
+	filterOut uint8 = 2
 )
 
 // an enum that specifies the index of a function to be used in a bpf tail call

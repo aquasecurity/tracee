@@ -316,6 +316,8 @@ func (b *BPFMap) Update(key, value interface{}) error {
 		keyPtr = unsafe.Pointer(&k)
 	} else if k, isType := key.(uint64); isType {
 		keyPtr = unsafe.Pointer(&k)
+	} else if k, isType := key.([]byte); isType {
+		keyPtr = unsafe.Pointer(&k[0])
 	} else {
 		return fmt.Errorf("failed to update map %s: unknown key type %T", b.name, key)
 	}

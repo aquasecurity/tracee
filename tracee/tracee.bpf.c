@@ -44,6 +44,7 @@
 #define MAX_STRING_SIZE     4096          // Choosing this value to be the same as PATH_MAX
 #define MAX_STR_ARR_ELEM    40            // String array elements number should be bounded due to instructions limit
 #define MAX_PATH_PREF_SIZE  64            // Max path prefix should be bounded due to instructions limit
+#define MAX_STR_FILTER_SIZE 16            // Max string filter size should be bounded due to instructions limit
 
 #define SUBMIT_BUF_IDX      0
 #define STRING_BUF_IDX      1
@@ -113,8 +114,18 @@
 #define CONFIG_CAPTURE_FILES    3
 #define CONFIG_EXTRACT_DYN_CODE 4
 #define CONFIG_TRACEE_PID       5
-#define CONFIG_FILTER_MNT_NS    6
-#define CONFIG_FILTER_PID_NS    7
+#define CONFIG_UID_FILTER       6
+#define CONFIG_MNT_NS_FILTER    7
+#define CONFIG_PID_NS_FILTER    8
+#define CONFIG_UTS_NS_FILTER    9
+#define CONFIG_COMM_FILTER      10
+
+// get_config(CONFIG_XXX_FILTER) returns 0 if not enabled
+#define FILTER_IN  1
+#define FILTER_OUT 2
+
+#define GREATER 0
+#define LESS    1
 
 #define MODE_PROCESS_ALL        1
 #define MODE_PROCESS_NEW        2
@@ -123,12 +134,6 @@
 #define MODE_CONTAINER_NEW      5
 #define MODE_HOST_ALL           6
 #define MODE_HOST_NEW           7
-
-#define GREATER 0
-#define LESS    1
-
-#define FILTER_OUT 0
-#define FILTER_IN  1
 
 #define DEV_NULL_STR    0
 
@@ -214,6 +219,10 @@ typedef struct path_filter {
     char path[MAX_PATH_PREF_SIZE];
 } path_filter_t;
 
+typedef struct string_filter {
+    char str[MAX_STR_FILTER_SIZE];
+} string_filter_t;
+
 typedef struct alert {
     u64 ts;     // Timestamp
     u32 msg;    // Encoded message
@@ -253,6 +262,8 @@ BPF_HASH(uid_equal_filter, u32, u8);                // Used to filter events by 
 BPF_HASH(uid_compare_filter, u32, s64);             // Used to filter events by UID, for ranges of UIDs by < or >
 BPF_HASH(mnt_ns_filter, u64, u8);                   // Used to filter events by mount namespace id
 BPF_HASH(pid_ns_filter, u64, u8);                   // Used to filter events by pid namespace id
+BPF_HASH(uts_ns_filter, string_filter_t, u8);       // Used to filter events by uts namespace name
+BPF_HASH(comm_filter, string_filter_t, u8);         // Used to filter events by command name
 BPF_HASH(bin_args_map, u64, bin_args_t);            // Persist args for send_bin funtion
 BPF_HASH(sys_32_to_64_map, u32, u32);               // Map 32bit syscalls numbers to 64bit syscalls numbers
 BPF_HASH(params_types_map, u32, u64);               // Encoded parameters types for event
@@ -517,10 +528,16 @@ static __always_inline int get_config(u32 key)
 }
 
 // returns 1 if you should trace based on uid, 0 if not
-static __always_inline int uid_filter_matches()
+static __always_inline int uid_filter_matches(context_t *context)
 {
-    uid_t uid = (u32)bpf_get_current_uid_gid();
-    u8* equality = bpf_map_lookup_elem(&uid_equal_filter, &uid);
+    int config = get_config(CONFIG_UID_FILTER);
+
+    context->uid = (u32)bpf_get_current_uid_gid();
+
+    if (!config)
+        return 1;
+
+    u8* equality = bpf_map_lookup_elem(&uid_equal_filter, &context->uid);
     if (equality != NULL) {
         return *equality;
     }
@@ -531,46 +548,95 @@ static __always_inline int uid_filter_matches()
     s64* greaterThan = bpf_map_lookup_elem(&uid_compare_filter, &greater);
     s64* lessThan = bpf_map_lookup_elem(&uid_compare_filter, &less);
 
-    if ((lessThan != NULL) && (uid >= *lessThan)) {
+    if ((lessThan != NULL) && (context->uid >= *lessThan)) {
         return 0;
     }
 
-    if ((greaterThan != NULL) && (uid <= *greaterThan)) {
+    if ((greaterThan != NULL) && (context->uid <= *greaterThan)) {
         return 0;
     }
 
     return 1;
 }
 
-static __always_inline int mnt_ns_filter_matches()
+static __always_inline int mnt_ns_filter_matches(context_t *context, struct task_struct *task)
 {
-    struct task_struct *task;
-    task = (struct task_struct *)bpf_get_current_task();
+    int config = get_config(CONFIG_MNT_NS_FILTER);
 
-    u64 mnt_id = get_task_mnt_ns_id(task);
-    u8* equality = bpf_map_lookup_elem(&mnt_ns_filter, &mnt_id);
+    context->mnt_id = get_task_mnt_ns_id(task);
+
+    if (!config)
+        return 1;
+
+    u8* equality = bpf_map_lookup_elem(&mnt_ns_filter, &context->mnt_id);
     if (equality != NULL) {
         return *equality;
     }
 
-    if (get_config(CONFIG_FILTER_MNT_NS) == FILTER_IN)
+    if (config == FILTER_IN)
         return 0;
 
     return 1;
 }
 
-static __always_inline int pid_ns_filter_matches()
+static __always_inline int pid_ns_filter_matches(context_t *context, struct task_struct *task)
 {
-    struct task_struct *task;
-    task = (struct task_struct *)bpf_get_current_task();
+    int config = get_config(CONFIG_PID_NS_FILTER);
 
-    u64 pid_id = get_task_pid_ns_id(task);
-    u8* equality = bpf_map_lookup_elem(&pid_ns_filter, &pid_id);
+    context->pid_id = get_task_pid_ns_id(task);
+
+    if (!config)
+        return 1;
+
+    u8* equality = bpf_map_lookup_elem(&pid_ns_filter, &context->pid_id);
     if (equality != NULL) {
         return *equality;
     }
 
-    if (get_config(CONFIG_FILTER_PID_NS) == FILTER_IN)
+    if (config == FILTER_IN)
+        return 0;
+
+    return 1;
+}
+
+static __always_inline int uts_ns_filter_matches(context_t *context, struct task_struct *task)
+{
+    int config = get_config(CONFIG_UTS_NS_FILTER);
+
+    char *uts_name_p = get_task_uts_name(task);
+    if (uts_name_p) {
+        bpf_probe_read_str(&context->uts_name, MAX_STR_FILTER_SIZE, uts_name_p);
+    }
+
+    if (!config)
+        return 1;
+
+    u8* equality = bpf_map_lookup_elem(&uts_ns_filter, &context->uts_name);
+    if (equality != NULL) {
+        return *equality;
+    }
+
+    if (config == FILTER_IN)
+        return 0;
+
+    return 1;
+}
+
+static __always_inline int comm_filter_matches(context_t *context)
+{
+    int config = get_config(CONFIG_COMM_FILTER);
+
+    bpf_get_current_comm(&context->comm, sizeof(context->comm));
+
+    if (!config)
+        return 1;
+
+    u8* equality = bpf_map_lookup_elem(&comm_filter, &context->comm);
+    if (equality != NULL) {
+        return *equality;
+    }
+
+    if (config == FILTER_IN)
         return 0;
 
     return 1;
@@ -578,52 +644,65 @@ static __always_inline int pid_ns_filter_matches()
 
 static __always_inline int should_trace()
 {
+    context_t context = {};
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
     int config_mode = get_config(CONFIG_MODE);
     u32 rc = 0;
-    u32 host_pid = bpf_get_current_pid_tgid() >> 32;
+    u64 id = bpf_get_current_pid_tgid();
+    context.host_tid = id;
+    context.host_pid = id >> 32;
 
-    if (get_config(CONFIG_TRACEE_PID) == host_pid) {
+    if (get_config(CONFIG_TRACEE_PID) == context.host_pid) {
         return 0;
     }
 
-    if (!uid_filter_matches())
+    if (!uid_filter_matches(&context))
     {
         return 0; 
     }
 
-    if (!mnt_ns_filter_matches())
+    if (!mnt_ns_filter_matches(&context, task))
     {
         return 0;
     }
 
-    if (!pid_ns_filter_matches())
+    if (!pid_ns_filter_matches(&context, task))
     {
         return 0;
     }
 
+    if (!uts_ns_filter_matches(&context, task))
+    {
+        return 0;
+    }
+
+    if (!comm_filter_matches(&context))
+    {
+        return 0;
+    }
+
+    if (config_mode == MODE_PROCESS_NEW || config_mode == MODE_PROCESS_LIST)
+        rc = lookup_pid();
     // All logs all processes except tracee itself
-    if (config_mode == MODE_PROCESS_ALL)
+    else if (config_mode == MODE_PROCESS_ALL)
         return 1;
     else if (config_mode == MODE_CONTAINER_NEW)
         rc = lookup_pid_ns(task);
-    else if (config_mode == MODE_PROCESS_NEW || config_mode == MODE_PROCESS_LIST)
-        rc = lookup_pid();
     else if (config_mode == MODE_CONTAINER_ALL) {
         // 'Container-All' means anything in a container
         // We can check if we're in a namespace by checking
         // our PID Vs 'real' PID on host
-        if (get_task_ns_tgid(task) != host_pid) {
+        if (get_task_ns_tgid(task) != context.host_pid) {
             return 1;
         }
     }
     else if (config_mode == MODE_HOST_ALL) {
-        if (get_task_ns_tgid(task) == host_pid) {
+        if (get_task_ns_tgid(task) == context.host_pid) {
             return 1;
         }
     }
     else if (config_mode == MODE_HOST_NEW) {
-        if (get_task_ns_tgid(task) == host_pid) {
+        if (get_task_ns_tgid(task) == context.host_pid) {
             rc = lookup_pid();
         }
     }
