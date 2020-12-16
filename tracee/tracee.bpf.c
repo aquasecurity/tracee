@@ -441,80 +441,30 @@ static __inline int has_prefix(char *prefix, char *str, int n)
     return 0;
 }
 
-static __always_inline u32 lookup_pid()
-{
-    u32 pid = bpf_get_current_pid_tgid();
-    if (bpf_map_lookup_elem(&pids_map, &pid) == 0)
-        return 0;
-
-    return pid;
-}
-
-static __always_inline u32 lookup_pid_ns(struct task_struct *task)
-{
-    u32 task_pid_ns = get_task_pid_ns_id(task);
-
-    u32 *pid_ns = bpf_map_lookup_elem(&pids_map, &task_pid_ns);
-    if (pid_ns == 0)
-        return 0;
-
-    return *pid_ns;
-}
-
-static __always_inline void add_pid_fork(u32 pid)
-{
-    bpf_map_update_elem(&pids_map, &pid, &pid, BPF_ANY);
-}
-
-static __always_inline u32 add_pid()
-{
-    u32 pid = bpf_get_current_pid_tgid();
-    if (bpf_map_lookup_elem(&pids_map, &pid) == 0)
-        bpf_map_update_elem(&pids_map, &pid, &pid, BPF_ANY);
-
-    return pid;
-}
-
-static __always_inline u32 add_pid_ns_if_needed()
+static __always_inline int init_context(context_t *context)
 {
     struct task_struct *task;
     task = (struct task_struct *)bpf_get_current_task();
 
-    u32 pid_ns = get_task_pid_ns_id(task);
-    if (bpf_map_lookup_elem(&pids_map, &pid_ns) != 0)
-        // Container pidns was already added to map
-        return pid_ns;
+    u64 id = bpf_get_current_pid_tgid();
+    context->host_tid = id;
+    context->host_pid = id >> 32;
+    context->host_ppid = get_task_ppid(task);
+    context->tid = get_task_ns_pid(task);
+    context->pid = get_task_ns_tgid(task);
+    context->ppid = get_task_ns_ppid(task);
+    context->mnt_id = get_task_mnt_ns_id(task);
+    context->pid_id = get_task_pid_ns_id(task);
+    context->uid = bpf_get_current_uid_gid();
+    bpf_get_current_comm(&context->comm, sizeof(context->comm));
+    char * uts_name = get_task_uts_name(task);
+    if (uts_name)
+        bpf_probe_read_str(&context->uts_name, TASK_COMM_LEN, uts_name);
 
-    // If pid equals 1 - start tracing the container
-    if (get_task_ns_pid(task) == 1) {
-        // A new container/pod was started - add pid namespace to map
-        bpf_map_update_elem(&pids_map, &pid_ns, &pid_ns, BPF_ANY);
-        return pid_ns;
-    }
+    // Save timestamp in microsecond resolution
+    context->ts = bpf_ktime_get_ns()/1000;
 
-    // Not a container/pod
     return 0;
-}
-
-static __always_inline void remove_pid()
-{
-    u32 pid = bpf_get_current_pid_tgid();
-    if (bpf_map_lookup_elem(&pids_map, &pid) != 0)
-        bpf_map_delete_elem(&pids_map, &pid);
-}
-
-static __always_inline void remove_pid_ns_if_needed()
-{
-    struct task_struct *task;
-    task = (struct task_struct *)bpf_get_current_task();
-
-    u32 pid_ns = get_task_pid_ns_id(task);
-    if (bpf_map_lookup_elem(&pids_map, &pid_ns) != 0) {
-        // If pid equals 1 - stop tracing this pid namespace
-        if (get_task_ns_pid(task) == 1) {
-            bpf_map_delete_elem(&pids_map, &pid_ns);
-        }
-    }
 }
 
 static __always_inline int get_config(u32 key)
@@ -531,9 +481,6 @@ static __always_inline int get_config(u32 key)
 static __always_inline int uid_filter_matches(context_t *context)
 {
     int config = get_config(CONFIG_UID_FILTER);
-
-    context->uid = (u32)bpf_get_current_uid_gid();
-
     if (!config)
         return 1;
 
@@ -559,12 +506,9 @@ static __always_inline int uid_filter_matches(context_t *context)
     return 1;
 }
 
-static __always_inline int mnt_ns_filter_matches(context_t *context, struct task_struct *task)
+static __always_inline int mnt_ns_filter_matches(context_t *context)
 {
     int config = get_config(CONFIG_MNT_NS_FILTER);
-
-    context->mnt_id = get_task_mnt_ns_id(task);
-
     if (!config)
         return 1;
 
@@ -579,12 +523,9 @@ static __always_inline int mnt_ns_filter_matches(context_t *context, struct task
     return 1;
 }
 
-static __always_inline int pid_ns_filter_matches(context_t *context, struct task_struct *task)
+static __always_inline int pid_ns_filter_matches(context_t *context)
 {
     int config = get_config(CONFIG_PID_NS_FILTER);
-
-    context->pid_id = get_task_pid_ns_id(task);
-
     if (!config)
         return 1;
 
@@ -599,15 +540,9 @@ static __always_inline int pid_ns_filter_matches(context_t *context, struct task
     return 1;
 }
 
-static __always_inline int uts_ns_filter_matches(context_t *context, struct task_struct *task)
+static __always_inline int uts_ns_filter_matches(context_t *context)
 {
     int config = get_config(CONFIG_UTS_NS_FILTER);
-
-    char *uts_name_p = get_task_uts_name(task);
-    if (uts_name_p) {
-        bpf_probe_read_str(&context->uts_name, MAX_STR_FILTER_SIZE, uts_name_p);
-    }
-
     if (!config)
         return 1;
 
@@ -625,9 +560,6 @@ static __always_inline int uts_ns_filter_matches(context_t *context, struct task
 static __always_inline int comm_filter_matches(context_t *context)
 {
     int config = get_config(CONFIG_COMM_FILTER);
-
-    bpf_get_current_comm(&context->comm, sizeof(context->comm));
-
     if (!config)
         return 1;
 
@@ -645,13 +577,37 @@ static __always_inline int comm_filter_matches(context_t *context)
 static __always_inline int should_trace()
 {
     context_t context = {};
-    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
-    int config_mode = get_config(CONFIG_MODE);
-    u32 rc = 0;
-    u64 id = bpf_get_current_pid_tgid();
-    context.host_tid = id;
-    context.host_pid = id >> 32;
+    init_context(&context);
 
+    switch (get_config(CONFIG_MODE))
+    {
+        case MODE_PROCESS_NEW:
+        case MODE_PROCESS_LIST:
+            if (bpf_map_lookup_elem(&pids_map, &context.host_tid) == 0)
+                return 0;
+            break;
+        case MODE_CONTAINER_NEW:
+            if (bpf_map_lookup_elem(&pids_map, &context.pid_id) == 0)
+                return 0;
+            break;
+        case MODE_CONTAINER_ALL:
+            if (context.tid == context.host_tid) {
+                return 0;
+            }
+            break;
+        case MODE_HOST_ALL:
+            if (context.tid != context.host_tid) {
+                return 0;
+            }
+            break;
+        case MODE_HOST_NEW:
+            if ((context.tid != context.host_tid) || (bpf_map_lookup_elem(&pids_map, &context.host_tid) == 0)) {
+                return 0;
+            }
+            break;
+    }
+
+    // Don't monitor self
     if (get_config(CONFIG_TRACEE_PID) == context.host_pid) {
         return 0;
     }
@@ -661,17 +617,17 @@ static __always_inline int should_trace()
         return 0; 
     }
 
-    if (!mnt_ns_filter_matches(&context, task))
+    if (!mnt_ns_filter_matches(&context))
     {
         return 0;
     }
 
-    if (!pid_ns_filter_matches(&context, task))
+    if (!pid_ns_filter_matches(&context))
     {
         return 0;
     }
 
-    if (!uts_ns_filter_matches(&context, task))
+    if (!uts_ns_filter_matches(&context))
     {
         return 0;
     }
@@ -681,33 +637,8 @@ static __always_inline int should_trace()
         return 0;
     }
 
-    if (config_mode == MODE_PROCESS_NEW || config_mode == MODE_PROCESS_LIST)
-        rc = lookup_pid();
-    // All logs all processes except tracee itself
-    else if (config_mode == MODE_PROCESS_ALL)
-        return 1;
-    else if (config_mode == MODE_CONTAINER_NEW)
-        rc = lookup_pid_ns(task);
-    else if (config_mode == MODE_CONTAINER_ALL) {
-        // 'Container-All' means anything in a container
-        // We can check if we're in a namespace by checking
-        // our PID Vs 'real' PID on host
-        if (get_task_ns_tgid(task) != context.host_pid) {
-            return 1;
-        }
-    }
-    else if (config_mode == MODE_HOST_ALL) {
-        if (get_task_ns_tgid(task) == context.host_pid) {
-            return 1;
-        }
-    }
-    else if (config_mode == MODE_HOST_NEW) {
-        if (get_task_ns_tgid(task) == context.host_pid) {
-            rc = lookup_pid();
-        }
-    }
-
-    return rc;
+    // We passed all filters successfully
+    return 1;
 }
 
 static __always_inline int event_chosen(u32 key)
@@ -717,32 +648,6 @@ static __always_inline int event_chosen(u32 key)
         return 0;
 
     return *config;
-}
-
-static __always_inline int init_context(context_t *context)
-{
-    struct task_struct *task;
-    task = (struct task_struct *)bpf_get_current_task();
-
-    u64 id = bpf_get_current_pid_tgid();
-    context->host_tid = id;
-    context->host_pid = id >> 32;
-    context->host_ppid = get_task_ppid(task);
-    context->tid = get_task_ns_pid(task);
-    context->pid = get_task_ns_tgid(task);
-    context->ppid = get_task_ns_ppid(task);
-    context->mnt_id = get_task_mnt_ns_id(task);
-    context->pid_id = get_task_pid_ns_id(task);
-    context->uid = bpf_get_current_uid_gid();
-    bpf_get_current_comm(&context->comm, sizeof(context->comm));
-    char * uts_name = get_task_uts_name(task);
-    if (uts_name)
-        bpf_probe_read_str(&context->uts_name, TASK_COMM_LEN, uts_name);
-
-    // Save timestamp in microsecond resolution
-    context->ts = bpf_ktime_get_ns()/1000;
-
-    return 0;
 }
 
 static __always_inline buf_t* get_buf(int idx)
@@ -1103,14 +1008,6 @@ static __always_inline int events_perf_submit(void *ctx)
     return bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, data, size);
 }
 
-static __always_inline int is_container()
-{
-    struct task_struct *task;
-    task = (struct task_struct *)bpf_get_current_task();
-
-    return lookup_pid_ns(task);
-}
-
 static __always_inline int save_args(args_t *args, u32 event_id)
 {
     u64 id = event_id;
@@ -1413,9 +1310,15 @@ struct bpf_raw_tracepoint_args *ctx
     if (id == SYS_EXECVE || id == SYS_EXECVEAT) {
         int config_mode = get_config(CONFIG_MODE);
         if (config_mode == MODE_CONTAINER_NEW) {
-            add_pid_ns_if_needed();
+            u32 pid_ns = get_task_pid_ns_id(task);
+            if ((bpf_map_lookup_elem(&pids_map, &pid_ns) == 0) && (get_task_ns_pid(task) == 1)) {
+                // A new container/pod was started (pid 1 in namespace executed) - add pid namespace to map
+                bpf_map_update_elem(&pids_map, &pid_ns, &pid_ns, BPF_ANY);
+            }
         } else if (config_mode == MODE_PROCESS_NEW || config_mode == MODE_PROCESS_ALL || config_mode == MODE_HOST_ALL || config_mode == MODE_HOST_NEW) {
-            add_pid();
+            u32 pid = bpf_get_current_pid_tgid();
+            if (bpf_map_lookup_elem(&pids_map, &pid) == 0)
+                bpf_map_update_elem(&pids_map, &pid, &pid, BPF_ANY);
         }
     }
 
@@ -1503,7 +1406,7 @@ struct bpf_raw_tracepoint_args *ctx
     if (id == SYS_CLONE || id == SYS_FORK || id == SYS_VFORK) {
         if (get_config(CONFIG_MODE) != MODE_CONTAINER_ALL && get_config(CONFIG_MODE) != MODE_CONTAINER_NEW) {
             u32 pid = ret;
-            add_pid_fork(pid);
+            bpf_map_update_elem(&pids_map, &pid, &pid, BPF_ANY);
         }
     }
 
@@ -1646,10 +1549,22 @@ struct bpf_raw_tracepoint_args *ctx
     if (!should_trace())
         return 0;
 
-    if (get_config(CONFIG_MODE) == MODE_CONTAINER_NEW)
-        remove_pid_ns_if_needed();
-    else
-        remove_pid();
+    if (get_config(CONFIG_MODE) == MODE_CONTAINER_NEW) {
+        struct task_struct *task;
+        task = (struct task_struct *)bpf_get_current_task();
+
+        u32 pid_ns = get_task_pid_ns_id(task);
+        if ((bpf_map_lookup_elem(&pids_map, &pid_ns) != 0) && (get_task_ns_pid(task) == 1)) {
+            // If pid equals 1 - stop tracing this pid namespace
+            bpf_map_delete_elem(&pids_map, &pid_ns);
+        }
+    }
+    else {
+        // Remove pid from pids_map
+        u32 pid = bpf_get_current_pid_tgid();
+        if (bpf_map_lookup_elem(&pids_map, &pid) != 0)
+            bpf_map_delete_elem(&pids_map, &pid);
+    }
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
