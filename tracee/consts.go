@@ -19,7 +19,7 @@ const (
 )
 
 const (
-	filterNotEqual uint8 = iota
+	filterNotEqual uint32 = iota
 	filterEqual
 )
 
