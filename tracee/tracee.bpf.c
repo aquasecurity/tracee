@@ -258,12 +258,12 @@ BPF_HASH(chosen_events_map, u32, u32);              // Events chosen by the user
 BPF_HASH(pids_map, u32, u32);                       // Save container pid namespaces
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
 BPF_HASH(ret_map, u64, u64);                        // Persist return value to be used in tail calls
-BPF_HASH(uid_equal_filter, u32, u8);                // Used to filter events by UID, for specific UIDs either by == or !=
+BPF_HASH(uid_equal_filter, u32, u32);               // Used to filter events by UID, for specific UIDs either by == or !=
 BPF_HASH(uid_compare_filter, u32, s64);             // Used to filter events by UID, for ranges of UIDs by < or >
-BPF_HASH(mnt_ns_filter, u64, u8);                   // Used to filter events by mount namespace id
-BPF_HASH(pid_ns_filter, u64, u8);                   // Used to filter events by pid namespace id
-BPF_HASH(uts_ns_filter, string_filter_t, u8);       // Used to filter events by uts namespace name
-BPF_HASH(comm_filter, string_filter_t, u8);         // Used to filter events by command name
+BPF_HASH(mnt_ns_filter, u64, u32);                  // Used to filter events by mount namespace id
+BPF_HASH(pid_ns_filter, u64, u32);                  // Used to filter events by pid namespace id
+BPF_HASH(uts_ns_filter, string_filter_t, u32);      // Used to filter events by uts namespace name
+BPF_HASH(comm_filter, string_filter_t, u32);        // Used to filter events by command name
 BPF_HASH(bin_args_map, u64, bin_args_t);            // Persist args for send_bin funtion
 BPF_HASH(sys_32_to_64_map, u32, u32);               // Map 32bit syscalls numbers to 64bit syscalls numbers
 BPF_HASH(params_types_map, u32, u64);               // Encoded parameters types for event
@@ -506,64 +506,13 @@ static __always_inline int uid_filter_matches(context_t *context)
     return 1;
 }
 
-static __always_inline int mnt_ns_filter_matches(context_t *context)
+static __always_inline int equality_filter_matches(int filter_config, void *filter_map, void *key)
 {
-    int config = get_config(CONFIG_MNT_NS_FILTER);
+    int config = get_config(filter_config);
     if (!config)
         return 1;
 
-    u8* equality = bpf_map_lookup_elem(&mnt_ns_filter, &context->mnt_id);
-    if (equality != NULL) {
-        return *equality;
-    }
-
-    if (config == FILTER_IN)
-        return 0;
-
-    return 1;
-}
-
-static __always_inline int pid_ns_filter_matches(context_t *context)
-{
-    int config = get_config(CONFIG_PID_NS_FILTER);
-    if (!config)
-        return 1;
-
-    u8* equality = bpf_map_lookup_elem(&pid_ns_filter, &context->pid_id);
-    if (equality != NULL) {
-        return *equality;
-    }
-
-    if (config == FILTER_IN)
-        return 0;
-
-    return 1;
-}
-
-static __always_inline int uts_ns_filter_matches(context_t *context)
-{
-    int config = get_config(CONFIG_UTS_NS_FILTER);
-    if (!config)
-        return 1;
-
-    u8* equality = bpf_map_lookup_elem(&uts_ns_filter, &context->uts_name);
-    if (equality != NULL) {
-        return *equality;
-    }
-
-    if (config == FILTER_IN)
-        return 0;
-
-    return 1;
-}
-
-static __always_inline int comm_filter_matches(context_t *context)
-{
-    int config = get_config(CONFIG_COMM_FILTER);
-    if (!config)
-        return 1;
-
-    u8* equality = bpf_map_lookup_elem(&comm_filter, &context->comm);
+    u32* equality = bpf_map_lookup_elem(filter_map, key);
     if (equality != NULL) {
         return *equality;
     }
@@ -617,22 +566,24 @@ static __always_inline int should_trace()
         return 0; 
     }
 
-    if (!mnt_ns_filter_matches(&context))
+    u64 mnt_id = context.mnt_id;
+    if (!equality_filter_matches(CONFIG_MNT_NS_FILTER, &mnt_ns_filter, &mnt_id))
     {
         return 0;
     }
 
-    if (!pid_ns_filter_matches(&context))
+    u64 pid_id = context.mnt_id;
+    if (!equality_filter_matches(CONFIG_PID_NS_FILTER, &pid_ns_filter, &pid_id))
     {
         return 0;
     }
 
-    if (!uts_ns_filter_matches(&context))
+    if (!equality_filter_matches(CONFIG_UTS_NS_FILTER, &uts_ns_filter, &context.uts_name))
     {
         return 0;
     }
 
-    if (!comm_filter_matches(&context))
+    if (!equality_filter_matches(CONFIG_COMM_FILTER, &comm_filter, &context.comm))
     {
         return 0;
     }
