@@ -572,7 +572,7 @@ static __always_inline int should_trace()
         return 0;
     }
 
-    u64 pid_id = context.mnt_id;
+    u64 pid_id = context.pid_id;
     if (!equality_filter_matches(CONFIG_PID_NS_FILTER, &pid_ns_filter, &pid_id))
     {
         return 0;
