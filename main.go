@@ -469,6 +469,7 @@ func prepareTraceMode(traceString string) (uint32, []int, error) {
 	traceHelp += "'p' or 'process' or 'process:new'            | Trace new processes\n"
 	traceHelp += "'process:all'                                | Trace all processes\n"
 	traceHelp += "'process:<pid>,<pid2>,...' or 'p:<pid>,...'  | Trace specific PIDs\n"
+	traceHelp += "'process:follow'                             | Trace filtered process and all of its children\n"
 	traceHelp += "'c' or 'container' or 'container:new'        | Trace new containers\n"
 	traceHelp += "'container:all'                              | Trace all containers\n"
 	traceHelp += "''h' or 'host' or 'host:new'                 | Trace new processes not in a container\n"
@@ -500,6 +501,8 @@ func prepareTraceMode(traceString string) (uint32, []int, error) {
 			mode = tracee.ModeProcessAll
 		} else if traceOption == "new" {
 			mode = tracee.ModeProcessNew
+		} else if traceOption == "follow" {
+			mode = tracee.ModeProcessFollow
 		} else if len(traceOption) != 0 {
 			mode = tracee.ModeProcessList
 			// Attempt to split into PIDs

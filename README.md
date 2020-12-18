@@ -128,6 +128,7 @@ Option | Flag(s):
 Trace new processes (default) | no `--trace` flag, `--trace p`, `--trace process` or `--trace process:new`
 Trace existing and new processes | `--trace process:all`
 Trace specific PIDs | `--trace process:<pid>,<pid2>,...` or `--trace p:<pid>,<pid2>,...`
+Trace filtered process and all of its children | `--trace process:follow`
 Trace new containers | `--trace c`, `--trace container` or `--trace container:new`
 Trace existing and new containers | `--trace container:all`
 Trace new processes not in a container | `--trace h`, `--trace host` or `--trace host:new`

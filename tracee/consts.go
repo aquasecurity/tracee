@@ -44,6 +44,7 @@ const (
 	ModeProcessAll uint32 = iota + 1
 	ModeProcessNew
 	ModeProcessList
+	ModeProcessFollow
 	ModeContainerAll
 	ModeContainerNew
 	ModeHostAll
