@@ -130,10 +130,11 @@
 #define MODE_PROCESS_ALL        1
 #define MODE_PROCESS_NEW        2
 #define MODE_PROCESS_LIST       3
-#define MODE_CONTAINER_ALL      4
-#define MODE_CONTAINER_NEW      5
-#define MODE_HOST_ALL           6
-#define MODE_HOST_NEW           7
+#define MODE_PROCESS_FOLLOW     4
+#define MODE_CONTAINER_ALL      5
+#define MODE_CONTAINER_NEW      6
+#define MODE_HOST_ALL           7
+#define MODE_HOST_NEW           8
 
 #define DEV_NULL_STR    0
 
@@ -534,6 +535,11 @@ static __always_inline int should_trace()
         case MODE_PROCESS_LIST:
             if (bpf_map_lookup_elem(&pids_map, &context.host_tid) == 0)
                 return 0;
+            break;
+        case MODE_PROCESS_FOLLOW:
+            if (bpf_map_lookup_elem(&pids_map, &context.host_tid) != 0) {
+                return 1;
+            }
             break;
         case MODE_CONTAINER_NEW:
             if (bpf_map_lookup_elem(&pids_map, &context.pid_id) == 0)
@@ -1256,10 +1262,12 @@ struct bpf_raw_tracepoint_args *ctx
         id = *id_64;
     }
 
+    int config_mode = get_config(CONFIG_MODE);
+    u32 pid = bpf_get_current_pid_tgid();
+
     // execve events may add new pids to the traced pids set
     // perform this check before should_trace() so newly executed binaries will be traced
     if (id == SYS_EXECVE || id == SYS_EXECVEAT) {
-        int config_mode = get_config(CONFIG_MODE);
         if (config_mode == MODE_CONTAINER_NEW) {
             u32 pid_ns = get_task_pid_ns_id(task);
             if ((bpf_map_lookup_elem(&pids_map, &pid_ns) == 0) && (get_task_ns_pid(task) == 1)) {
@@ -1267,7 +1275,6 @@ struct bpf_raw_tracepoint_args *ctx
                 bpf_map_update_elem(&pids_map, &pid_ns, &pid_ns, BPF_ANY);
             }
         } else if (config_mode == MODE_PROCESS_NEW || config_mode == MODE_PROCESS_ALL || config_mode == MODE_HOST_ALL || config_mode == MODE_HOST_NEW) {
-            u32 pid = bpf_get_current_pid_tgid();
             if (bpf_map_lookup_elem(&pids_map, &pid) == 0)
                 bpf_map_update_elem(&pids_map, &pid, &pid, BPF_ANY);
         }
@@ -1275,6 +1282,12 @@ struct bpf_raw_tracepoint_args *ctx
 
     if (!should_trace())
         return 0;
+
+    if ((id == SYS_EXECVE || id == SYS_EXECVEAT) && (config_mode == MODE_PROCESS_FOLLOW))
+    {
+        // We passed all filters (in should_trace()) - add this pid to traced pids set
+        bpf_map_update_elem(&pids_map, &pid, &pid, BPF_ANY);
+    }
 
     if (event_chosen(RAW_SYS_ENTER)) {
         buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
