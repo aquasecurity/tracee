@@ -1,0 +1,17 @@
+name: release
+on: 
+  workflow_dispatch:
+    inputs:
+      tag:
+        required: true
+jobs:
+  release:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: authenticate
+        run: |
+          gh auth login --with-token <<<'${{ secrets.GITHUB_TOKEN }}'
+          docker login docker.io --username ${{ secrets.DOCKERHUB_USER }} --password-stdin <<<'${{ secrets.DOCKERHUB_TOKEN }}'
+      - name: release
+        run: make release DOCKER=1 RELEASE_TAG=${{ github.event.inputs.tag }}
