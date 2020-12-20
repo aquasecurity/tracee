@@ -1,24 +1,11 @@
 name: build-test
-
 on: pull_request
-
 jobs:
   build:
     runs-on: ubuntu-20.04
-
-    env:
-      CGO_ENABLED: "1"
-
     steps:
-      - name: Setup Go
-        uses: actions/setup-go@v2
-        with:
-          go-version: ^1.15
-        id: go
-
       - name: Checkout Code
         uses: actions/checkout@v2
-
       - name: Lint
         run: |
           if test -z "$(gofmt -l .)"; then
@@ -28,17 +15,12 @@ jobs:
             gofmt -s -d .
             exit 1
           fi
-
       - name: Build Tracee
         run: make all DOCKER=1
-  
   test:
     runs-on: ubuntu-20.04
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
-
       - name: Run Tests
         run: make test DOCKER=1
-      
