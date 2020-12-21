@@ -10,7 +10,8 @@ CMD_GIT ?= git
 CMD_CHECKSUM ?= sha256sum
 CMD_GITHUB ?= gh
 # environment:
-ARCH ?= $(shell uname -m)
+ARCH_UNAME := $(shell uname -m)
+ARCH ?= $(ARCH_UNAME:aarch64=arm64)
 KERN_RELEASE ?= $(shell uname -r)
 KERN_BLD_PATH ?= $(if $(KERN_HEADERS),$(KERN_HEADERS),/lib/modules/$(KERN_RELEASE)/build)
 KERN_SRC_PATH ?= $(if $(KERN_HEADERS),$(KERN_HEADERS),$(if $(wildcard /lib/modules/$(KERN_RELEASE)/source),/lib/modules/$(KERN_RELEASE)/source,$(KERN_BLD_PATH)))
