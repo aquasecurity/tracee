@@ -655,6 +655,13 @@ func locateFile(file string, dirs []string) string {
 
 // getBPFObject finds or builds ebpf object file and returns it's path
 func getBPFObject() (string, error) {
+	bpfPath, present := os.LookupEnv("TRACEE_BPF_FILE")
+	if present {
+		if _, err := os.Stat(bpfPath); os.IsNotExist(err) {
+			return "", fmt.Errorf("path given in TRACEE_BPF_FILE doesn't exist!")
+		}
+		return bpfPath, nil
+	}
 	bpfObjFileName := fmt.Sprintf("tracee.bpf.%s.%s.o", strings.ReplaceAll(tracee.UnameRelease(), ".", "_"), strings.ReplaceAll(version, ".", "_"))
 	exePath, err := os.Executable()
 	if err != nil {
@@ -662,7 +669,6 @@ func getBPFObject() (string, error) {
 	}
 	//locations to search for the bpf file, in the following order
 	searchPaths := []string{
-		os.Getenv("TRACEE_BPF_FILE"),
 		filepath.Dir(exePath),
 		traceeInstallPath,
 	}

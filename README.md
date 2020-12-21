@@ -40,7 +40,7 @@ This will run Tracee with no arguments, which defaults to collecting all events 
 
 ### Setup options
 
-Tracee is made of an executable that drives the eBPF program (`tracee`), and the eBPF program itself (`tracee.bpf.$kernelversion.$traceeversion.o`). When the `tracee` executable is started, it will look for the eBPF program next to the executable, or in `/tmp/tracee`, or in a directory specified in `TRACEE_BPF_FILE` environment variable. If the eBPF program is not found, the executable will attempt to build it automatically before it starts (you can control this using the `--build-policy` flag).
+Tracee is made of an executable that drives the eBPF program (`tracee`), and the eBPF program itself (`tracee.bpf.$kernelversion.$traceeversion.o`). When the `tracee` executable is started, it will look for the eBPF program next to the executable, or in `/tmp/tracee`, or in a path specified in `TRACEE_BPF_FILE` environment variable. If the eBPF program is not found, the executable will attempt to build it automatically before it starts (you can control this using the `--build-policy` flag).
 
 The easiest way to get started is to let the `tracee` executable build the eBPF program for you automatically. You can obtain the executable in any of the following ways:
 1. Download from the [GitHub Releases](https://github.com/aquasecurity/tracee/releases) (`tracee.tar.gz`).
