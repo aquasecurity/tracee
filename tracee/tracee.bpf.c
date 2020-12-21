@@ -38,7 +38,11 @@
 #include <bpf_helpers.h>
 #include <bpf_tracing.h>
 
+#if defined(bpf_target_x86)
 #define PT_REGS_PARM6(ctx)  ((ctx)->r9)
+#elif defined(bpf_target_arm64)
+#define PT_REGS_PARM6(x) (((PT_REGS_ARM64 *)(x))->regs[5])
+#endif
 
 #define MAX_PERCPU_BUFSIZE  (1 << 15)     // This value is actually set by the kernel as an upper bound
 #define MAX_STRING_SIZE     4096          // Choosing this value to be the same as PATH_MAX
@@ -83,6 +87,7 @@
 
 #define TAG_NONE           0UL
 
+#if defined(bpf_target_x86)
 #define SYS_OPEN              2
 #define SYS_MMAP              9
 #define SYS_MPROTECT          10
@@ -95,18 +100,33 @@
 #define SYS_EXIT_GROUP        231
 #define SYS_OPENAT            257
 #define SYS_EXECVEAT          322
-#define RAW_SYS_ENTER         335
-#define RAW_SYS_EXIT          336
-#define DO_EXIT               337
-#define CAP_CAPABLE           338
-#define SECURITY_BPRM_CHECK   339
-#define SECURITY_FILE_OPEN    340
-#define SECURITY_INODE_UNLINK 341
-#define VFS_WRITE             342
-#define VFS_WRITEV            343
-#define MEM_PROT_ALERT        344
-#define SCHED_PROCESS_EXIT    345
-#define MAX_EVENT_ID          346
+#elif defined(bpf_target_arm64)
+#define SYS_OPEN              1000 // undefined in arm64
+#define SYS_MMAP              222
+#define SYS_MPROTECT          226
+#define SYS_RT_SIGRETURN      139
+#define SYS_CLONE             220
+#define SYS_FORK              1000 // undefined in arm64
+#define SYS_VFORK             1000 // undefined in arm64
+#define SYS_EXECVE            221
+#define SYS_EXIT              93
+#define SYS_EXIT_GROUP        94
+#define SYS_OPENAT            56
+#define SYS_EXECVEAT          281
+#endif
+
+#define RAW_SYS_ENTER         1000
+#define RAW_SYS_EXIT          1001
+#define DO_EXIT               1002
+#define CAP_CAPABLE           1003
+#define SECURITY_BPRM_CHECK   1004
+#define SECURITY_FILE_OPEN    1005
+#define SECURITY_INODE_UNLINK 1006
+#define VFS_WRITE             1007
+#define VFS_WRITEV            1008
+#define MEM_PROT_ALERT        1009
+#define SCHED_PROCESS_EXIT    1010
+#define MAX_EVENT_ID          1011
 
 #define CONFIG_MODE             0
 #define CONFIG_SHOW_SYSCALL     1
@@ -347,17 +367,24 @@ static __always_inline u32 get_task_ppid(struct task_struct *task)
 
 static __always_inline bool is_x86_compat(struct task_struct *task)
 {
+#if defined(bpf_target_x86)
     return READ_KERN(task->thread_info.status) & TS_COMPAT;
+#else
+    return false;
+#endif
 }
 
+#if defined(bpf_target_x86)
 static __always_inline struct pt_regs* get_task_pt_regs(struct task_struct *task)
 {
     void* __ptr = READ_KERN(task->stack) + THREAD_SIZE - TOP_OF_KERNEL_STACK_PADDING;
     return ((struct pt_regs *)__ptr) - 1;
 }
+#endif
 
 static __always_inline int get_syscall_ev_id_from_regs()
 {
+#if defined(bpf_target_x86)
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
     struct pt_regs *real_ctx = get_task_pt_regs(task);
     int syscall_nr = READ_KERN(real_ctx->orig_ax);
@@ -372,6 +399,9 @@ static __always_inline int get_syscall_ev_id_from_regs()
     }
 
     return syscall_nr;
+#else
+    return 0;
+#endif
 }
 
 static __always_inline struct dentry* get_mnt_root_ptr_from_vfsmnt(struct vfsmount *vfsmnt)
@@ -981,12 +1011,14 @@ static __always_inline int save_args_from_regs(struct pt_regs *ctx, u32 event_id
 
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
     if (is_x86_compat(task) && is_syscall) {
+#if defined(bpf_target_x86)
         args.args[0] = ctx->bx;
         args.args[1] = ctx->cx;
         args.args[2] = ctx->dx;
         args.args[3] = ctx->si;
         args.args[4] = ctx->di;
         args.args[5] = ctx->bp;
+#endif
     } else {
         args.args[0] = PT_REGS_PARM1(ctx);
         args.args[1] = PT_REGS_PARM2(ctx);
@@ -1226,32 +1258,52 @@ struct bpf_raw_tracepoint_args *ctx
 #endif
 )
 {
-    struct pt_regs regs = {};
+    args_t args_tmp = {};
     int id;
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
     void *ctx = args;
-    if (!is_x86_compat(task)) {
-        regs.di = args->args[0];
-        regs.si = args->args[1];
-        regs.dx = args->args[2];
-        regs.r10 = args->args[3];
-        regs.r8 = args->args[4];
-        regs.r9 = args->args[5];
-    } else {
-        regs.bx = args->args[0];
-        regs.cx = args->args[1];
-        regs.dx = args->args[2];
-        regs.si = args->args[3];
-        regs.di = args->args[4];
-        regs.bp = args->args[5];
-    }
     id = args->id;
-#else
-    bpf_probe_read(&regs, sizeof(struct pt_regs), (void*)ctx->args[0]);
+
+    args_tmp.args[0] = args->args[0];
+    args_tmp.args[1] = args->args[1];
+    args_tmp.args[2] = args->args[2];
+    args_tmp.args[3] = args->args[3];
+    args_tmp.args[4] = args->args[4];
+    args_tmp.args[5] = args->args[5];
+#else // LINUX_VERSION_CODE
     id = ctx->args[1];
-#endif
+#if defined(CONFIG_ARCH_HAS_SYSCALL_WRAPPER)
+    struct pt_regs regs = {};
+    bpf_probe_read(&regs, sizeof(struct pt_regs), (void*)ctx->args[0]);
+
+    if (is_x86_compat(task)) {
+#if defined(bpf_target_x86)
+        args_tmp.args[0] = regs.bx;
+        args_tmp.args[1] = regs.cx;
+        args_tmp.args[2] = regs.dx;
+        args_tmp.args[3] = regs.si;
+        args_tmp.args[4] = regs.di;
+        args_tmp.args[5] = regs.bp;
+#endif // bpf_target_x86
+    } else {
+        args_tmp.args[0] = PT_REGS_PARM1(&regs);
+        args_tmp.args[1] = PT_REGS_PARM2(&regs);
+        args_tmp.args[2] = PT_REGS_PARM3(&regs);
+        args_tmp.args[3] = PT_REGS_PARM4(&regs);
+        args_tmp.args[4] = PT_REGS_PARM5(&regs);
+        args_tmp.args[5] = PT_REGS_PARM6(&regs);
+    }
+#else // CONFIG_ARCH_HAS_SYSCALL_WRAPPER
+    args_tmp.args[0] = ctx->args[0];
+    args_tmp.args[1] = ctx->args[1];
+    args_tmp.args[2] = ctx->args[2];
+    args_tmp.args[3] = ctx->args[3];
+    args_tmp.args[4] = ctx->args[4];
+    args_tmp.args[5] = ctx->args[5];
+#endif // CONFIG_ARCH_HAS_SYSCALL_WRAPPER
+#endif // LINUX_VERSION_CODE
 
     if (is_x86_compat(task)) {
         // Translate 32bit syscalls to 64bit syscalls so we can send to the correct handler
@@ -1308,7 +1360,7 @@ struct bpf_raw_tracepoint_args *ctx
 
     // exit, exit_group and rt_sigreturn syscalls don't return - don't save args for them
     if (id != SYS_EXIT && id != SYS_EXIT_GROUP && id != SYS_RT_SIGRETURN) {
-        save_args_from_regs(&regs, id, true);
+        save_args(&args_tmp, id);
     }
 
     // call syscall handler, if exists
