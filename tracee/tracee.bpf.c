@@ -1429,6 +1429,7 @@ SEC("raw_tracepoint/sys_execve")
 int syscall__execve(void *ctx)
 {
     args_t args = {};
+    u8 argnum = 0;
 
     bool delete_args = false;
     if (load_args(&args, delete_args, SYS_EXECVE) != 0)
@@ -1449,14 +1450,14 @@ int syscall__execve(void *ctx)
         return -1;
     }
 
-    save_str_to_buf(submit_p, (void *)args.args[0] /*filename*/, DEC_ARG(0, *tags));
-    save_str_arr_to_buf(submit_p, (const char *const *)args.args[1] /*argv*/, DEC_ARG(1, *tags));
+    argnum += save_str_to_buf(submit_p, (void *)args.args[0] /*filename*/, DEC_ARG(0, *tags));
+    argnum += save_str_arr_to_buf(submit_p, (const char *const *)args.args[1] /*argv*/, DEC_ARG(1, *tags));
     if (get_config(CONFIG_EXEC_ENV)) {
-        context.argnum++;
-        save_context_to_buf(submit_p, (void*)&context);
-        save_str_arr_to_buf(submit_p, (const char *const *)args.args[2] /*envp*/, DEC_ARG(2, *tags));
+        argnum += save_str_arr_to_buf(submit_p, (const char *const *)args.args[2] /*envp*/, DEC_ARG(2, *tags));
     }
 
+    context.argnum = argnum;
+    save_context_to_buf(submit_p, (void*)&context);
     events_perf_submit(ctx);
     return 0;
 }
@@ -1465,6 +1466,7 @@ SEC("raw_tracepoint/sys_execveat")
 int syscall__execveat(void *ctx)
 {
     args_t args = {};
+    u8 argnum = 0;
 
     bool delete_args = false;
     if (load_args(&args, delete_args, SYS_EXECVEAT) != 0)
@@ -1485,16 +1487,16 @@ int syscall__execveat(void *ctx)
         return -1;
     }
 
-    save_to_submit_buf(submit_p, (void*)&args.args[0] /*dirfd*/, sizeof(int), INT_T, DEC_ARG(0, *tags));
-    save_str_to_buf(submit_p, (void *)args.args[1] /*pathname*/, DEC_ARG(1, *tags));
-    save_str_arr_to_buf(submit_p, (const char *const *)args.args[2] /*argv*/, DEC_ARG(2, *tags));
+    argnum += save_to_submit_buf(submit_p, (void*)&args.args[0] /*dirfd*/, sizeof(int), INT_T, DEC_ARG(0, *tags));
+    argnum += save_str_to_buf(submit_p, (void *)args.args[1] /*pathname*/, DEC_ARG(1, *tags));
+    argnum += save_str_arr_to_buf(submit_p, (const char *const *)args.args[2] /*argv*/, DEC_ARG(2, *tags));
     if (get_config(CONFIG_EXEC_ENV)) {
-        context.argnum++;
-        save_context_to_buf(submit_p, (void*)&context);
-        save_str_arr_to_buf(submit_p, (const char *const *)args.args[3] /*envp*/, DEC_ARG(3, *tags));
+        argnum += save_str_arr_to_buf(submit_p, (const char *const *)args.args[3] /*envp*/, DEC_ARG(3, *tags));
     }
-    save_to_submit_buf(submit_p, (void*)&args.args[4] /*flags*/, sizeof(int), INT_T, DEC_ARG(4, *tags));
+    argnum += save_to_submit_buf(submit_p, (void*)&args.args[4] /*flags*/, sizeof(int), INT_T, DEC_ARG(4, *tags));
 
+    context.argnum = argnum;
+    save_context_to_buf(submit_p, (void*)&context);
     events_perf_submit(ctx);
     return 0;
 }
