@@ -119,6 +119,7 @@ type Tracee struct {
 	printer       eventPrinter
 	stats         statsStore
 	capturedFiles map[string]int64
+	writtenFiles  map[string]string
 	mntNsFirstPid map[uint32]uint32
 	DecParamName  [2]map[argTag]external.ArgMeta
 	EncParamName  [2]map[string]argTag
@@ -207,6 +208,7 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 		return nil, err
 	}
 
+	t.writtenFiles = make(map[string]string)
 	t.capturedFiles = make(map[string]int64)
 	//set a default value for config.maxPidsCache
 	if t.config.maxPidsCache == 0 {
@@ -759,6 +761,22 @@ func (t *Tracee) Run() error {
 	t.eventsPerfMap.Stop()
 	t.fileWrPerfMap.Stop()
 	t.printer.Epilogue(t.stats)
+
+	// record index of written files
+	if t.config.CaptureWrite {
+		destinationFilePath := filepath.Join(t.config.OutputPath, "written_files")
+		f, err := os.OpenFile(destinationFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			return fmt.Errorf("error logging written files")
+		}
+		defer f.Close()
+		for fileName, filePath := range t.writtenFiles {
+			if _, err := f.WriteString(fmt.Sprintf("%s %s\n", fileName, filePath)); err != nil {
+				return fmt.Errorf("error logging written files")
+			}
+		}
+	}
+
 	// Signal pipeline that Tracee exits by closing the done channel
 	close(done)
 	t.Close()
@@ -817,6 +835,38 @@ func (t *Tracee) shouldProcessEvent(e RawEvent) bool {
 
 func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 	switch ctx.EventID {
+
+	//capture written files
+	case VfsWriteEventID, VfsWritevEventID:
+		if t.config.CaptureWrite {
+			filePath, ok := args[t.EncParamName[ctx.EventID%2]["pathname"]].(string)
+			if !ok {
+				return fmt.Errorf("error parsing vfs_write args")
+			}
+			// path should be absolute, except for e.g memfd_create files
+			if filePath == "" || filePath[0] != '/' {
+				return nil
+			}
+			dev, ok := args[t.EncParamName[ctx.EventID%2]["dev"]].(uint32)
+			if !ok {
+				return fmt.Errorf("error parsing vfs_write args")
+			}
+			inode, ok := args[t.EncParamName[ctx.EventID%2]["inode"]].(uint64)
+			if !ok {
+				return fmt.Errorf("error parsing vfs_write args")
+			}
+
+			// stop processing if write was already indexed
+			fileName := fmt.Sprintf("write.dev-%d.inode-%d", dev, inode)
+			indexName, ok := t.writtenFiles[fileName]
+			if ok && indexName == filePath {
+				return nil
+			}
+
+			// index written file by original filepath
+			t.writtenFiles[fileName] = filePath
+		}
+
 	case SecurityBprmCheckEventID:
 
 		//cache this pid by it's mnt ns
