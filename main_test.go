@@ -27,7 +27,7 @@ func TestPrepareFilter(t *testing.T) {
 			testName:       "invalid operator",
 			filters:        []string{"mntns==0"},
 			expectedFilter: tracee.Filter{},
-			expectedError:  errors.New("invalid NS value: =0"),
+			expectedError:  errors.New("invalid value: =0"),
 		},
 		{
 			testName:       "invalid operator",
@@ -81,7 +81,7 @@ func TestPrepareFilter(t *testing.T) {
 			testName:       "invalid pidns",
 			filters:        []string{"pidns=a"},
 			expectedFilter: tracee.Filter{},
-			expectedError:  errors.New("invalid NS value: a"),
+			expectedError:  errors.New("invalid value: a"),
 		},
 		{
 			testName:       "invalid uid",
@@ -99,7 +99,7 @@ func TestPrepareFilter(t *testing.T) {
 			testName:       "invalid mntns",
 			filters:        []string{"mntns=-1"},
 			expectedFilter: tracee.Filter{},
-			expectedError:  errors.New("invalid NS value: -1"),
+			expectedError:  errors.New("invalid value: -1"),
 		},
 		{
 			testName:       "invalid uid",
@@ -117,7 +117,7 @@ func TestPrepareFilter(t *testing.T) {
 			testName:       "invalid mntns",
 			filters:        []string{"mntns="},
 			expectedFilter: tracee.Filter{},
-			expectedError:  errors.New("invalid NS value: "),
+			expectedError:  errors.New("invalid value: "),
 		},
 		{
 			testName: "invalid uid",
@@ -159,7 +159,7 @@ func TestPrepareFilter(t *testing.T) {
 			testName:       "invalid pidns",
 			filters:        []string{"pidns=0\t"},
 			expectedFilter: tracee.Filter{},
-			expectedError:  errors.New("invalid NS value: 0\t"),
+			expectedError:  errors.New("invalid value: 0\t"),
 		},
 		{
 			testName: "uid=0",
@@ -172,13 +172,19 @@ func TestPrepareFilter(t *testing.T) {
 					Less:     -1,
 					Enabled:  true,
 				},
-				MntNSFilter: &tracee.NSFilter{
+				PIDFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
 					FilterIn: false,
 					Enabled:  false,
 				},
-				PidNSFilter: &tracee.NSFilter{
+				MntNSFilter: &tracee.UintFilter{
+					Equal:    []uint64{},
+					NotEqual: []uint64{},
+					FilterIn: false,
+					Enabled:  false,
+				},
+				PidNSFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
 					FilterIn: false,
@@ -210,13 +216,19 @@ func TestPrepareFilter(t *testing.T) {
 					Less:     4294967296,
 					Enabled:  true,
 				},
-				MntNSFilter: &tracee.NSFilter{
+				PIDFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
 					FilterIn: false,
 					Enabled:  false,
 				},
-				PidNSFilter: &tracee.NSFilter{
+				MntNSFilter: &tracee.UintFilter{
+					Equal:    []uint64{},
+					NotEqual: []uint64{},
+					FilterIn: false,
+					Enabled:  false,
+				},
+				PidNSFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
 					FilterIn: false,
@@ -248,13 +260,19 @@ func TestPrepareFilter(t *testing.T) {
 					Less:     4294967296,
 					Enabled:  false,
 				},
-				MntNSFilter: &tracee.NSFilter{
+				PIDFilter: &tracee.UintFilter{
+					Equal:    []uint64{},
+					NotEqual: []uint64{},
+					FilterIn: false,
+					Enabled:  false,
+				},
+				MntNSFilter: &tracee.UintFilter{
 					Equal:    []uint64{0},
 					NotEqual: []uint64{},
 					FilterIn: true,
 					Enabled:  true,
 				},
-				PidNSFilter: &tracee.NSFilter{
+				PidNSFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
 					FilterIn: false,
@@ -286,13 +304,19 @@ func TestPrepareFilter(t *testing.T) {
 					Less:     4294967296,
 					Enabled:  false,
 				},
-				MntNSFilter: &tracee.NSFilter{
+				PIDFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
 					FilterIn: false,
 					Enabled:  false,
 				},
-				PidNSFilter: &tracee.NSFilter{
+				MntNSFilter: &tracee.UintFilter{
+					Equal:    []uint64{},
+					NotEqual: []uint64{},
+					FilterIn: false,
+					Enabled:  false,
+				},
+				PidNSFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{0},
 					FilterIn: false,
@@ -324,13 +348,19 @@ func TestPrepareFilter(t *testing.T) {
 					Less:     4294967296,
 					Enabled:  false,
 				},
-				MntNSFilter: &tracee.NSFilter{
+				PIDFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
 					FilterIn: false,
 					Enabled:  false,
 				},
-				PidNSFilter: &tracee.NSFilter{
+				MntNSFilter: &tracee.UintFilter{
+					Equal:    []uint64{},
+					NotEqual: []uint64{},
+					FilterIn: false,
+					Enabled:  false,
+				},
+				PidNSFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
 					FilterIn: false,
@@ -362,13 +392,19 @@ func TestPrepareFilter(t *testing.T) {
 					Less:     4294967296,
 					Enabled:  false,
 				},
-				MntNSFilter: &tracee.NSFilter{
+				PIDFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
 					FilterIn: false,
 					Enabled:  false,
 				},
-				PidNSFilter: &tracee.NSFilter{
+				MntNSFilter: &tracee.UintFilter{
+					Equal:    []uint64{},
+					NotEqual: []uint64{},
+					FilterIn: false,
+					Enabled:  false,
+				},
+				PidNSFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
 					FilterIn: false,
@@ -400,13 +436,19 @@ func TestPrepareFilter(t *testing.T) {
 					Less:     4294967296,
 					Enabled:  true,
 				},
-				MntNSFilter: &tracee.NSFilter{
+				PIDFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
 					FilterIn: false,
 					Enabled:  false,
 				},
-				PidNSFilter: &tracee.NSFilter{
+				MntNSFilter: &tracee.UintFilter{
+					Equal:    []uint64{},
+					NotEqual: []uint64{},
+					FilterIn: false,
+					Enabled:  false,
+				},
+				PidNSFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
 					FilterIn: false,
@@ -438,13 +480,19 @@ func TestPrepareFilter(t *testing.T) {
 					Less:     0,
 					Enabled:  true,
 				},
-				MntNSFilter: &tracee.NSFilter{
+				PIDFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
 					FilterIn: false,
 					Enabled:  false,
 				},
-				PidNSFilter: &tracee.NSFilter{
+				MntNSFilter: &tracee.UintFilter{
+					Equal:    []uint64{},
+					NotEqual: []uint64{},
+					FilterIn: false,
+					Enabled:  false,
+				},
+				PidNSFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
 					FilterIn: false,
@@ -467,7 +515,7 @@ func TestPrepareFilter(t *testing.T) {
 		},
 		{
 			testName: "multiple filters",
-			filters:  []string{"uid<0", "mntns=5", "pidns!=3", "comm=ps", "uts!=abc"},
+			filters:  []string{"uid<0", "mntns=5", "pidns!=3", "pid!=10", "comm=ps", "uts!=abc"},
 			expectedFilter: tracee.Filter{
 				UIDFilter: &tracee.UIDFilter{
 					Equal:    []uint32{},
@@ -476,13 +524,19 @@ func TestPrepareFilter(t *testing.T) {
 					Less:     0,
 					Enabled:  true,
 				},
-				MntNSFilter: &tracee.NSFilter{
+				PIDFilter: &tracee.UintFilter{
+					Equal:    []uint64{},
+					NotEqual: []uint64{10},
+					FilterIn: false,
+					Enabled:  true,
+				},
+				MntNSFilter: &tracee.UintFilter{
 					Equal:    []uint64{5},
 					NotEqual: []uint64{},
 					FilterIn: true,
 					Enabled:  true,
 				},
-				PidNSFilter: &tracee.NSFilter{
+				PidNSFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{3},
 					FilterIn: false,
@@ -508,6 +562,7 @@ func TestPrepareFilter(t *testing.T) {
 		t.Run(testcase.testName, func(t *testing.T) {
 			filter, err := prepareFilter(testcase.filters)
 			assert.Equal(t, testcase.expectedFilter.UIDFilter, filter.UIDFilter)
+			assert.Equal(t, testcase.expectedFilter.PIDFilter, filter.PIDFilter)
 			assert.Equal(t, testcase.expectedFilter.MntNSFilter, filter.MntNSFilter)
 			assert.Equal(t, testcase.expectedFilter.PidNSFilter, filter.PidNSFilter)
 			assert.Equal(t, testcase.expectedFilter.UTSFilter, filter.UTSFilter)

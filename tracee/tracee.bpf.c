@@ -139,6 +139,7 @@
 #define CONFIG_PID_NS_FILTER    8
 #define CONFIG_UTS_NS_FILTER    9
 #define CONFIG_COMM_FILTER      10
+#define CONFIG_PID_FILTER       11
 
 // get_config(CONFIG_XXX_FILTER) returns 0 if not enabled
 #define FILTER_IN  1
@@ -149,12 +150,11 @@
 
 #define MODE_PROCESS_ALL        1
 #define MODE_PROCESS_NEW        2
-#define MODE_PROCESS_LIST       3
-#define MODE_PROCESS_FOLLOW     4
-#define MODE_CONTAINER_ALL      5
-#define MODE_CONTAINER_NEW      6
-#define MODE_HOST_ALL           7
-#define MODE_HOST_NEW           8
+#define MODE_PROCESS_FOLLOW     3
+#define MODE_CONTAINER_ALL      4
+#define MODE_CONTAINER_NEW      5
+#define MODE_HOST_ALL           6
+#define MODE_HOST_NEW           7
 
 #define DEV_NULL_STR    0
 
@@ -276,9 +276,10 @@ struct mount {
 
 BPF_HASH(config_map, u32, u32);                     // Various configurations
 BPF_HASH(chosen_events_map, u32, u32);              // Events chosen by the user
-BPF_HASH(pids_map, u32, u32);                       // Save container pid namespaces
+BPF_HASH(pids_map, u32, u32);                       // Save traced pids or container pid namespaces ids
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
 BPF_HASH(ret_map, u64, u64);                        // Persist return value to be used in tail calls
+BPF_HASH(pid_filter, u32, u32);                     // Used to filter events by PID
 BPF_HASH(uid_equal_filter, u32, u32);               // Used to filter events by UID, for specific UIDs either by == or !=
 BPF_HASH(uid_compare_filter, u32, s64);             // Used to filter events by UID, for ranges of UIDs by < or >
 BPF_HASH(mnt_ns_filter, u64, u32);                  // Used to filter events by mount namespace id
@@ -562,7 +563,6 @@ static __always_inline int should_trace()
     switch (get_config(CONFIG_MODE))
     {
         case MODE_PROCESS_NEW:
-        case MODE_PROCESS_LIST:
             if (bpf_map_lookup_elem(&pids_map, &context.host_tid) == 0)
                 return 0;
             break;
@@ -610,6 +610,11 @@ static __always_inline int should_trace()
 
     u64 pid_id = context.pid_id;
     if (!equality_filter_matches(CONFIG_PID_NS_FILTER, &pid_ns_filter, &pid_id))
+    {
+        return 0;
+    }
+
+    if (!equality_filter_matches(CONFIG_PID_FILTER, &pid_filter, &context.host_tid))
     {
         return 0;
     }
