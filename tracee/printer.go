@@ -277,7 +277,7 @@ func (p *gobEventPrinter) Error(e error) {
 }
 
 func (p *gobEventPrinter) Epilogue(stats statsStore) {
-	err := p.out.Encode(Event{EventName: string(4)})
+	err := p.out.Encode(Event{EventName: string(rune(4))})
 	if err != nil {
 		p.Error(err)
 	}
