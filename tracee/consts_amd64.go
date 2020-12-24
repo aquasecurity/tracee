@@ -342,24 +342,24 @@ const (
 	IoPgeteventsEventID        int32 = 333
 	RseqEventID                int32 = 334
 	// 335 through 423 are unassigned to sync up with generic numbers
-	PidfdSendSignal int32 = 424
-	IoUringSetup    int32 = 425
-	IoUringEnter    int32 = 426
-	IoUringRegister int32 = 427
-	OpenTree        int32 = 428
-	MoveMount       int32 = 429
-	Fsopen          int32 = 430
-	Fsconfig        int32 = 431
-	Fsmount         int32 = 432
-	Fspick          int32 = 433
-	PidfdOpen       int32 = 434
-	Clone3          int32 = 435
-	CloseRange      int32 = 436
-	Openat2         int32 = 437
-	PidfdGetfd      int32 = 438
-	Faccessat2      int32 = 439
-	ProcessMadvise  int32 = 440
-	EpollPwait2     int32 = 441
+	PidfdSendSignalEventID int32 = 424
+	IoUringSetupEventID    int32 = 425
+	IoUringEnterEventID    int32 = 426
+	IoUringRegisterEventID int32 = 427
+	OpenTreeEventID        int32 = 428
+	MoveMountEventID       int32 = 429
+	FsopenEventID          int32 = 430
+	FsconfigEventID        int32 = 431
+	FsmountEventID         int32 = 432
+	FspickEventID          int32 = 433
+	PidfdOpenEventID       int32 = 434
+	Clone3EventID          int32 = 435
+	CloseRangeEventID      int32 = 436
+	Openat2EventID         int32 = 437
+	PidfdGetfdEventID      int32 = 438
+	Faccessat2EventID      int32 = 439
+	ProcessMadviseEventID  int32 = 440
+	EpollPwait2EventID     int32 = 441
 )
 
 // x86 32bit syscall numbers
