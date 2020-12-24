@@ -23,7 +23,6 @@ type TraceeConfig struct {
 	EventsToTrace         []int32
 	Mode                  uint32
 	Filter                *Filter
-	PidsToTrace           []int
 	DetectOriginalSyscall bool
 	ShowExecEnv           bool
 	OutputFormat          string
@@ -43,8 +42,9 @@ type TraceeConfig struct {
 
 type Filter struct {
 	UIDFilter   *UIDFilter
-	MntNSFilter *NSFilter
-	PidNSFilter *NSFilter
+	PIDFilter   *UintFilter
+	MntNSFilter *UintFilter
+	PidNSFilter *UintFilter
 	UTSFilter   *StringFilter
 	CommFilter  *StringFilter
 }
@@ -57,7 +57,7 @@ type UIDFilter struct {
 	Enabled  bool
 }
 
-type NSFilter struct {
+type UintFilter struct {
 	Equal    []uint64
 	NotEqual []uint64
 	FilterIn bool
@@ -423,11 +423,6 @@ func (t *Tracee) populateBPFMaps() error {
 	bpfConfigMap.Update(uint32(configExtractDynCode), boolToUInt32(t.config.CaptureMem))
 	bpfConfigMap.Update(uint32(configTraceePid), uint32(os.Getpid()))
 
-	pidsMap, _ := t.bpfModule.GetMap("pids_map")
-	for _, pid := range t.config.PidsToTrace {
-		pidsMap.Update(uint32(pid), uint32(pid))
-	}
-
 	// Initialize tail calls program array
 	bpfProgArrayMap, _ := t.bpfModule.GetMap("prog_array")
 	prog, err := t.bpfModule.GetProgram("trace_ret_vfs_write_tail")
@@ -488,6 +483,31 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 
 		bpfConfigMap.Update(uint32(configUIDFilter), uint32(1))
+	}
+
+	if t.config.Filter.PIDFilter.Enabled {
+		pidFilter, err := t.bpfModule.GetMap("pid_filter")
+		if err != nil {
+			return fmt.Errorf("error getting BPF map pid_filter: %v", err)
+		}
+		for i := 0; i < len(t.config.Filter.PIDFilter.Equal); i++ {
+			err = pidFilter.Update(uint32(t.config.Filter.PIDFilter.Equal[i]), filterEqual)
+			if err != nil {
+				return err
+			}
+		}
+		for i := 0; i < len(t.config.Filter.PIDFilter.NotEqual); i++ {
+			err = pidFilter.Update(uint32(t.config.Filter.PIDFilter.NotEqual[i]), filterNotEqual)
+			if err != nil {
+				return err
+			}
+		}
+
+		if t.config.Filter.PIDFilter.FilterIn {
+			bpfConfigMap.Update(uint32(configPidFilter), filterIn)
+		} else {
+			bpfConfigMap.Update(uint32(configPidFilter), filterOut)
+		}
 	}
 
 	if t.config.Filter.MntNSFilter.Enabled {

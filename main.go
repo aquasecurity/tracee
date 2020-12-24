@@ -46,7 +46,7 @@ func main() {
 			if err != nil {
 				return err
 			}
-			mode, pidsToTrace, err := prepareTraceMode(c.String("trace"))
+			mode, err := prepareTraceMode(c.String("trace"))
 			if err != nil {
 				return err
 			}
@@ -58,7 +58,6 @@ func main() {
 				ShowExecEnv:           c.Bool("show-exec-env"),
 				OutputFormat:          c.String("output"),
 				PerfBufferSize:        c.Int("perf-buffer-size"),
-				PidsToTrace:           pidsToTrace,
 				BlobPerfBufferSize:    c.Int("blob-perf-buffer-size"),
 				OutputPath:            c.String("output-path"),
 				FilterFileWrite:       c.StringSlice("filter-file-write"),
@@ -237,6 +236,10 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 	filterHelp += "\t--filter 'uid>0' --filter 'uid<1000'                          | only trace events from uids between 0 and 1000"
 	filterHelp += "\t--filter 'uid>0' --filter uid!=1000                           | only trace events from uids greater than 0 but not 1000"
 	filterHelp += "\n"
+	filterHelp += "pid: only trace processes with specified pids.\n"
+	filterHelp += "\t--filter pid=123                                              | only trace events from pid 123\n"
+	filterHelp += "\t--filter pid!=123                                             | don't trace events from pid 123\n"
+	filterHelp += "\n"
 	filterHelp += "mntns: only trace processes or containers with specified mount namespace(s) ids.\n"
 	filterHelp += "\t--filter mntns=12345678                                       | only trace events from mntns 12345678\n"
 	filterHelp += "\t--filter mntns!=12345678                                      | don't trace events from mntns 12345678\n"
@@ -263,13 +266,19 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 			Less:     math.MaxUint32 + 1,
 			Enabled:  false,
 		},
-		MntNSFilter: &tracee.NSFilter{
+		PIDFilter: &tracee.UintFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
 			FilterIn: false,
 			Enabled:  false,
 		},
-		PidNSFilter: &tracee.NSFilter{
+		MntNSFilter: &tracee.UintFilter{
+			Equal:    []uint64{},
+			NotEqual: []uint64{},
+			FilterIn: false,
+			Enabled:  false,
+		},
+		PidNSFilter: &tracee.UintFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
 			FilterIn: false,
@@ -299,7 +308,7 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 		}
 
 		if strings.HasPrefix(f, "mntns") {
-			err := parseNSFilter(strings.TrimPrefix(f, "mntns"), filter.MntNSFilter)
+			err := parseUintFilter(strings.TrimPrefix(f, "mntns"), filter.MntNSFilter)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
@@ -307,7 +316,15 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 		}
 
 		if strings.HasPrefix(f, "pidns") {
-			err := parseNSFilter(strings.TrimPrefix(f, "pidns"), filter.PidNSFilter)
+			err := parseUintFilter(strings.TrimPrefix(f, "pidns"), filter.PidNSFilter)
+			if err != nil {
+				return tracee.Filter{}, err
+			}
+			continue
+		}
+
+		if strings.HasPrefix(f, "pid") {
+			err := parseUintFilter(strings.TrimPrefix(f, "pid"), filter.PIDFilter)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
@@ -339,6 +356,10 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 		filter.UIDFilter.Less == math.MaxUint32+1 {
 		filter.UIDFilter.Less = -1
 		filter.UIDFilter.Greater = math.MaxUint32 + 1
+	}
+
+	if len(filter.PIDFilter.Equal) > 0 && len(filter.PIDFilter.NotEqual) == 0 {
+		filter.PIDFilter.FilterIn = true
 	}
 
 	if len(filter.MntNSFilter.Equal) > 0 && len(filter.MntNSFilter.NotEqual) == 0 {
@@ -402,8 +423,8 @@ func parseUIDFilter(operatorAndValues string, uidFilter *tracee.UIDFilter) error
 	return nil
 }
 
-func parseNSFilter(operatorAndValues string, nsFilter *tracee.NSFilter) error {
-	nsFilter.Enabled = true
+func parseUintFilter(operatorAndValues string, uintFilter *tracee.UintFilter) error {
+	uintFilter.Enabled = true
 	valuesString := string(operatorAndValues[1:])
 	operatorString := string(operatorAndValues[0])
 
@@ -415,15 +436,15 @@ func parseNSFilter(operatorAndValues string, nsFilter *tracee.NSFilter) error {
 	values := strings.Split(valuesString, ",")
 
 	for i := range values {
-		nsId, err := strconv.ParseUint(values[i], 10, 64)
+		val, err := strconv.ParseUint(values[i], 10, 64)
 		if err != nil {
-			return fmt.Errorf("invalid NS value: %s", values[i])
+			return fmt.Errorf("invalid value: %s", values[i])
 		}
 		switch operatorString {
 		case "=":
-			nsFilter.Equal = append(nsFilter.Equal, nsId)
+			uintFilter.Equal = append(uintFilter.Equal, val)
 		case "!=":
-			nsFilter.NotEqual = append(nsFilter.NotEqual, nsId)
+			uintFilter.NotEqual = append(uintFilter.NotEqual, val)
 		default:
 			return fmt.Errorf("invalid filter operator: %s", operatorString)
 		}
@@ -461,10 +482,9 @@ func parseStringFilter(operatorAndValues string, stringFilter *tracee.StringFilt
 	return nil
 }
 
-func prepareTraceMode(traceString string) (uint32, []int, error) {
+func prepareTraceMode(traceString string) (uint32, error) {
 	// Set Default mode - all new Processes only
 	mode := tracee.ModeProcessNew
-	var pidsToTrace []int
 	traceHelp := "\n--trace can be the following options:\n"
 	traceHelp += "'p' or 'process' or 'process:new'            | Trace new processes\n"
 	traceHelp += "'process:all'                                | Trace all processes\n"
@@ -475,7 +495,7 @@ func prepareTraceMode(traceString string) (uint32, []int, error) {
 	traceHelp += "''h' or 'host' or 'host:new'                 | Trace new processes not in a container\n"
 	traceHelp += "'host:all'                                   | Trace all processes not in a container\n"
 	if traceString == "help" {
-		return 0, nil, fmt.Errorf(traceHelp)
+		return 0, fmt.Errorf(traceHelp)
 	}
 
 	traceSplit := strings.Split(traceString, ":")
@@ -483,7 +503,7 @@ func prepareTraceMode(traceString string) (uint32, []int, error) {
 	// Get The trace type - process or  container
 	traceType := traceSplit[0]
 	if traceType != "process" && traceType != "container" && traceType != "host" && traceType != "p" && traceType != "c" && traceType != "h" {
-		return 0, nil, fmt.Errorf(traceHelp)
+		return 0, fmt.Errorf(traceHelp)
 	}
 	traceType = string(traceType[0])
 
@@ -492,7 +512,7 @@ func prepareTraceMode(traceString string) (uint32, []int, error) {
 	if len(traceSplit) == 2 {
 		traceOption = traceSplit[1]
 	} else if len(traceSplit) > 2 {
-		return 0, nil, fmt.Errorf(traceHelp)
+		return 0, fmt.Errorf(traceHelp)
 	}
 
 	// Convert to Traceing Mode
@@ -503,19 +523,9 @@ func prepareTraceMode(traceString string) (uint32, []int, error) {
 			mode = tracee.ModeProcessNew
 		} else if traceOption == "follow" {
 			mode = tracee.ModeProcessFollow
-		} else if len(traceOption) != 0 {
-			mode = tracee.ModeProcessList
-			// Attempt to split into PIDs
-			for _, pidString := range strings.Split(traceOption, ",") {
-				pid, err := strconv.ParseInt(pidString, 10, 32)
-				if err != nil {
-					return 0, nil, fmt.Errorf(traceHelp)
-				}
-				pidsToTrace = append(pidsToTrace, int(pid))
-			}
 		} else {
 			// Can't have just 'process:'
-			return 0, nil, fmt.Errorf(traceHelp)
+			return 0, fmt.Errorf(traceHelp)
 		}
 	} else if traceType == "c" {
 		if traceOption == "all" {
@@ -524,7 +534,7 @@ func prepareTraceMode(traceString string) (uint32, []int, error) {
 			mode = tracee.ModeContainerNew
 		} else {
 			// Containers currently only supports 'new' and 'all'
-			return 0, nil, fmt.Errorf(traceHelp)
+			return 0, fmt.Errorf(traceHelp)
 		}
 	} else {
 		if traceOption == "all" {
@@ -532,10 +542,10 @@ func prepareTraceMode(traceString string) (uint32, []int, error) {
 		} else if traceOption == "new" {
 			mode = tracee.ModeHostNew
 		} else {
-			return 0, nil, fmt.Errorf(traceHelp)
+			return 0, fmt.Errorf(traceHelp)
 		}
 	}
-	return mode, pidsToTrace, nil
+	return mode, nil
 }
 
 func prepareEventsToTrace(eventsToTrace []string, setsToTrace []string, excludeEvents []string) ([]int32, error) {
