@@ -1,5 +1,7 @@
 package tracee
 
+import "math"
+
 // bpfConfig is an enum that include various configurations that can be passed to bpf code
 // config should match defined values in ebpf code
 type bpfConfig uint32
@@ -27,6 +29,24 @@ const (
 const (
 	filterIn  uint8 = 1
 	filterOut uint8 = 2
+)
+
+const (
+	uidLess uint32 = iota
+	uidGreater
+	pidLess
+	pidGreater
+	mntNsLess
+	mntNsGreater
+	pidNsLess
+	pidNsGreater
+)
+
+// Set default inequality values
+// val<0 and val>math.MaxUint64 should never be used by the user as they give an empty set
+const (
+	LessNotSet    uint64 = 0
+	GreaterNotSet uint64 = math.MaxUint64
 )
 
 // an enum that specifies the index of a function to be used in a bpf tail call

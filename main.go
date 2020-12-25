@@ -259,48 +259,53 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 	}
 
 	filter := tracee.Filter{
-		UIDFilter: &tracee.UIDFilter{
-			Equal:    []uint32{},
-			NotEqual: []uint32{},
-			Greater:  -1,
-			Less:     math.MaxUint32 + 1,
+		UIDFilter: &tracee.UintFilter{
+			Equal:    []uint64{},
+			NotEqual: []uint64{},
+			Less:     tracee.LessNotSet,
+			Greater:  tracee.GreaterNotSet,
+			Is32Bit:  true,
 			Enabled:  false,
 		},
 		PIDFilter: &tracee.UintFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
-			FilterIn: false,
+			Less:     tracee.LessNotSet,
+			Greater:  tracee.GreaterNotSet,
+			Is32Bit:  true,
 			Enabled:  false,
 		},
 		MntNSFilter: &tracee.UintFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
-			FilterIn: false,
+			Less:     tracee.LessNotSet,
+			Greater:  tracee.GreaterNotSet,
+			Is32Bit:  false,
 			Enabled:  false,
 		},
 		PidNSFilter: &tracee.UintFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
-			FilterIn: false,
+			Less:     tracee.LessNotSet,
+			Greater:  tracee.GreaterNotSet,
+			Is32Bit:  false,
 			Enabled:  false,
 		},
 		UTSFilter: &tracee.StringFilter{
 			Equal:    []string{},
 			NotEqual: []string{},
-			FilterIn: false,
 			Enabled:  false,
 		},
 		CommFilter: &tracee.StringFilter{
 			Equal:    []string{},
 			NotEqual: []string{},
-			FilterIn: false,
 			Enabled:  false,
 		},
 	}
 
 	for _, f := range filters {
 		if strings.HasPrefix(f, "uid") {
-			err := parseUIDFilter(strings.TrimPrefix(f, "uid"), filter.UIDFilter)
+			err := parseUintFilter(strings.TrimPrefix(f, "uid"), filter.UIDFilter)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
@@ -350,85 +355,21 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 		return tracee.Filter{}, fmt.Errorf("invalid filter option specified, use '--filter help' for more info")
 	}
 
-	if len(filter.UIDFilter.Equal) > 0 &&
-		len(filter.UIDFilter.NotEqual) == 0 &&
-		filter.UIDFilter.Greater == -1 &&
-		filter.UIDFilter.Less == math.MaxUint32+1 {
-		filter.UIDFilter.Less = -1
-		filter.UIDFilter.Greater = math.MaxUint32 + 1
-	}
-
-	if len(filter.PIDFilter.Equal) > 0 && len(filter.PIDFilter.NotEqual) == 0 {
-		filter.PIDFilter.FilterIn = true
-	}
-
-	if len(filter.MntNSFilter.Equal) > 0 && len(filter.MntNSFilter.NotEqual) == 0 {
-		filter.MntNSFilter.FilterIn = true
-	}
-
-	if len(filter.PidNSFilter.Equal) > 0 && len(filter.PidNSFilter.NotEqual) == 0 {
-		filter.PidNSFilter.FilterIn = true
-	}
-
-	if len(filter.UTSFilter.Equal) > 0 && len(filter.UTSFilter.NotEqual) == 0 {
-		filter.UTSFilter.FilterIn = true
-	}
-
-	if len(filter.CommFilter.Equal) > 0 && len(filter.CommFilter.NotEqual) == 0 {
-		filter.CommFilter.FilterIn = true
-	}
-
 	return filter, nil
-}
-
-func parseUIDFilter(operatorAndValues string, uidFilter *tracee.UIDFilter) error {
-	uidFilter.Enabled = true
-	valuesString := string(operatorAndValues[1:])
-	operatorString := string(operatorAndValues[0])
-
-	if operatorString == "!" {
-		operatorString = operatorAndValues[0:2]
-		valuesString = operatorAndValues[2:]
-	}
-
-	values := strings.Split(valuesString, ",")
-
-	for i := range values {
-		v, err := strconv.ParseUint(values[i], 10, 32)
-		if err != nil {
-			return fmt.Errorf("invalid UID value: %s", values[i])
-		}
-		switch operatorString {
-		case "=":
-			uid := uint32(v)
-			uidFilter.Equal = append(uidFilter.Equal, uid)
-		case "!=":
-			uid := uint32(v)
-			uidFilter.NotEqual = append(uidFilter.NotEqual, uid)
-		case ">":
-			uid := int64(v)
-			if uid > uidFilter.Greater {
-				uidFilter.Greater = uid
-			}
-		case "<":
-			uid := int64(v)
-			if uid < uidFilter.Less {
-				uidFilter.Less = uid
-			}
-		default:
-			return fmt.Errorf("invalid filter operator: %s", operatorString)
-		}
-	}
-
-	return nil
 }
 
 func parseUintFilter(operatorAndValues string, uintFilter *tracee.UintFilter) error {
 	uintFilter.Enabled = true
+	if len(operatorAndValues) < 1 {
+		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
+	}
 	valuesString := string(operatorAndValues[1:])
 	operatorString := string(operatorAndValues[0])
 
 	if operatorString == "!" {
+		if len(operatorAndValues) < 2 {
+			return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
+		}
 		operatorString = operatorAndValues[0:2]
 		valuesString = operatorAndValues[2:]
 	}
@@ -438,13 +379,24 @@ func parseUintFilter(operatorAndValues string, uintFilter *tracee.UintFilter) er
 	for i := range values {
 		val, err := strconv.ParseUint(values[i], 10, 64)
 		if err != nil {
-			return fmt.Errorf("invalid value: %s", values[i])
+			return fmt.Errorf("invalid filter value: %s", values[i])
+		}
+		if uintFilter.Is32Bit && (val > math.MaxUint32) {
+			return fmt.Errorf("filter value is too big: %s", values[i])
 		}
 		switch operatorString {
 		case "=":
 			uintFilter.Equal = append(uintFilter.Equal, val)
 		case "!=":
 			uintFilter.NotEqual = append(uintFilter.NotEqual, val)
+		case ">":
+			if (uintFilter.Greater == tracee.GreaterNotSet) || (val > uintFilter.Greater) {
+				uintFilter.Greater = val
+			}
+		case "<":
+			if (uintFilter.Less == tracee.LessNotSet) || (val < uintFilter.Less) {
+				uintFilter.Less = val
+			}
 		default:
 			return fmt.Errorf("invalid filter operator: %s", operatorString)
 		}
@@ -455,10 +407,16 @@ func parseUintFilter(operatorAndValues string, uintFilter *tracee.UintFilter) er
 
 func parseStringFilter(operatorAndValues string, stringFilter *tracee.StringFilter) error {
 	stringFilter.Enabled = true
+	if len(operatorAndValues) < 1 {
+		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
+	}
 	valuesString := string(operatorAndValues[1:])
 	operatorString := string(operatorAndValues[0])
 
 	if operatorString == "!" {
+		if len(operatorAndValues) < 2 {
+			return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
+		}
 		operatorString = operatorAndValues[0:2]
 		valuesString = operatorAndValues[2:]
 	}
