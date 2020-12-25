@@ -145,8 +145,17 @@
 #define FILTER_IN  1
 #define FILTER_OUT 2
 
-#define GREATER 0
-#define LESS    1
+#define UID_LESS      0
+#define UID_GREATER   1
+#define PID_LESS      2
+#define PID_GREATER   3
+#define MNTNS_LESS    4
+#define MNTNS_GREATER 5
+#define PIDNS_LESS    6
+#define PIDNS_GREATER 7
+
+#define LESS_NOT_SET    0
+#define GREATER_NOT_SET ULLONG_MAX
 
 #define MODE_PROCESS_ALL        1
 #define MODE_PROCESS_NEW        2
@@ -279,9 +288,9 @@ BPF_HASH(chosen_events_map, u32, u32);              // Events chosen by the user
 BPF_HASH(pids_map, u32, u32);                       // Save traced pids or container pid namespaces ids
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
 BPF_HASH(ret_map, u64, u64);                        // Persist return value to be used in tail calls
+BPF_HASH(inequality_filter, u32, u64);              // Used to filter events by some uint field either by < or >
+BPF_HASH(uid_filter, u32, u32);                     // Used to filter events by UID, for specific UIDs either by == or !=
 BPF_HASH(pid_filter, u32, u32);                     // Used to filter events by PID
-BPF_HASH(uid_equal_filter, u32, u32);               // Used to filter events by UID, for specific UIDs either by == or !=
-BPF_HASH(uid_compare_filter, u32, s64);             // Used to filter events by UID, for ranges of UIDs by < or >
 BPF_HASH(mnt_ns_filter, u64, u32);                  // Used to filter events by mount namespace id
 BPF_HASH(pid_ns_filter, u64, u32);                  // Used to filter events by pid namespace id
 BPF_HASH(uts_ns_filter, string_filter_t, u32);      // Used to filter events by uts namespace name
@@ -510,28 +519,33 @@ static __always_inline int get_config(u32 key)
 }
 
 // returns 1 if you should trace based on uid, 0 if not
-static __always_inline int uid_filter_matches(context_t *context)
+static __always_inline int uint_filter_matches(int filter_config, void *filter_map, u64 key, u32 less_idx, u32 greater_idx)
 {
-    int config = get_config(CONFIG_UID_FILTER);
+    int config = get_config(filter_config);
     if (!config)
         return 1;
 
-    u8* equality = bpf_map_lookup_elem(&uid_equal_filter, &context->uid);
+    u8* equality = bpf_map_lookup_elem(filter_map, &key);
     if (equality != NULL) {
         return *equality;
     }
 
-    u32 greater = GREATER;
-    u32 less = LESS;
+    if (config == FILTER_IN)
+        return 0;
 
-    s64* greaterThan = bpf_map_lookup_elem(&uid_compare_filter, &greater);
-    s64* lessThan = bpf_map_lookup_elem(&uid_compare_filter, &less);
+    u64* lessThan = bpf_map_lookup_elem(&inequality_filter, &less_idx);
+    if (lessThan == NULL)
+        return 1;
 
-    if ((lessThan != NULL) && (context->uid >= *lessThan)) {
+    if ((*lessThan != LESS_NOT_SET) && (key >= *lessThan)) {
         return 0;
     }
 
-    if ((greaterThan != NULL) && (context->uid <= *greaterThan)) {
+    u64* greaterThan = bpf_map_lookup_elem(&inequality_filter, &greater_idx);
+    if (greaterThan == NULL)
+        return 1;
+
+    if ((*greaterThan != GREATER_NOT_SET) && (key <= *greaterThan)) {
         return 0;
     }
 
@@ -597,24 +611,22 @@ static __always_inline int should_trace()
         return 0;
     }
 
-    if (!uid_filter_matches(&context))
+    if (!uint_filter_matches(CONFIG_UID_FILTER, &uid_filter, context.uid, UID_LESS, UID_GREATER))
     {
         return 0; 
     }
 
-    u64 mnt_id = context.mnt_id;
-    if (!equality_filter_matches(CONFIG_MNT_NS_FILTER, &mnt_ns_filter, &mnt_id))
+    if (!uint_filter_matches(CONFIG_MNT_NS_FILTER, &mnt_ns_filter, context.mnt_id, MNTNS_LESS, MNTNS_GREATER))
     {
         return 0;
     }
 
-    u64 pid_id = context.pid_id;
-    if (!equality_filter_matches(CONFIG_PID_NS_FILTER, &pid_ns_filter, &pid_id))
+    if (!uint_filter_matches(CONFIG_PID_NS_FILTER, &pid_ns_filter, context.pid_id, PIDNS_LESS, PIDNS_GREATER))
     {
         return 0;
     }
 
-    if (!equality_filter_matches(CONFIG_PID_FILTER, &pid_filter, &context.host_tid))
+    if (!uint_filter_matches(CONFIG_PID_FILTER, &pid_filter, context.host_tid, PID_LESS, PID_GREATER))
     {
         return 0;
     }
