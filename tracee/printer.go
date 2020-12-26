@@ -253,6 +253,9 @@ func (p jsonEventPrinter) Error(e error) {
 
 func (p jsonEventPrinter) Epilogue(stats statsStore) {}
 
+// gobEventPrinter is printing events using golang's builtin Gob serializer
+// an additional event is added at the end to signal end of transmission
+// this event can be identified by it's "EventName" which will be the ASCII "End Of Transmission" character
 type gobEventPrinter struct {
 	out *gob.Encoder
 	err *gob.Encoder
@@ -273,4 +276,9 @@ func (p *gobEventPrinter) Error(e error) {
 	_ = p.err.Encode(e)
 }
 
-func (p *gobEventPrinter) Epilogue(stats statsStore) {}
+func (p *gobEventPrinter) Epilogue(stats statsStore) {
+	err := p.out.Encode(Event{EventName: string(rune(4))})
+	if err != nil {
+		p.Error(err)
+	}
+}
