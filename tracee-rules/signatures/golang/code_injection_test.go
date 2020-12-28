@@ -3,13 +3,14 @@ package main
 import (
 	"testing"
 
+	"github.com/aquasecurity/tracee/tracee-rules/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
 func TestCodeInjection(t *testing.T) {
-	sigTests := []sigTest{
+	SigTests := []signaturestest.SigTest{
 		{
-			events: []types.Event{
+			Events: []types.Event{
 				types.TraceeEvent{
 					EventName: "ptrace",
 					Args: []types.TraceeEventArgument{
@@ -20,10 +21,10 @@ func TestCodeInjection(t *testing.T) {
 					},
 				},
 			},
-			expect: true,
+			Expect: true,
 		},
 		{
-			events: []types.Event{
+			Events: []types.Event{
 				types.TraceeEvent{
 					EventName: "ptrace",
 					Args: []types.TraceeEventArgument{
@@ -34,10 +35,10 @@ func TestCodeInjection(t *testing.T) {
 					},
 				},
 			},
-			expect: false,
+			Expect: false,
 		},
 		{
-			events: []types.Event{
+			Events: []types.Event{
 				types.TraceeEvent{
 					EventName: "open",
 					Args: []types.TraceeEventArgument{
@@ -52,10 +53,10 @@ func TestCodeInjection(t *testing.T) {
 					},
 				},
 			},
-			expect: true,
+			Expect: true,
 		},
 		{
-			events: []types.Event{
+			Events: []types.Event{
 				types.TraceeEvent{
 					EventName: "open",
 					Args: []types.TraceeEventArgument{
@@ -70,10 +71,10 @@ func TestCodeInjection(t *testing.T) {
 					},
 				},
 			},
-			expect: false,
+			Expect: false,
 		},
 		{
-			events: []types.Event{
+			Events: []types.Event{
 				types.TraceeEvent{
 					EventName: "open",
 					Args: []types.TraceeEventArgument{
@@ -88,10 +89,10 @@ func TestCodeInjection(t *testing.T) {
 					},
 				},
 			},
-			expect: false,
+			Expect: false,
 		},
 		{
-			events: []types.Event{
+			Events: []types.Event{
 				types.TraceeEvent{
 					EventName: "execve",
 					Args: []types.TraceeEventArgument{
@@ -106,10 +107,10 @@ func TestCodeInjection(t *testing.T) {
 					},
 				},
 			},
-			expect: true,
+			Expect: true,
 		},
 		{
-			events: []types.Event{
+			Events: []types.Event{
 				types.TraceeEvent{
 					EventName: "execve",
 					Args: []types.TraceeEventArgument{
@@ -124,10 +125,10 @@ func TestCodeInjection(t *testing.T) {
 					},
 				},
 			},
-			expect: false,
+			Expect: false,
 		},
 		{
-			events: []types.Event{
+			Events: []types.Event{
 				types.TraceeEvent{
 					EventName: "execve",
 					Args: []types.TraceeEventArgument{
@@ -138,19 +139,19 @@ func TestCodeInjection(t *testing.T) {
 					},
 				},
 			},
-			expect: false,
+			Expect: false,
 		},
 	}
-	for _, st := range sigTests {
+	for _, st := range SigTests {
 		sig := codeInjection{}
-		st.init(&sig)
-		for _, e := range st.events {
+		st.Init(&sig)
+		for _, e := range st.Events {
 			err := sig.OnEvent(e)
 			if err != nil {
 				t.Error(err, st)
 			}
 		}
-		if st.expect != st.status {
+		if st.Expect != st.Status {
 			t.Error("unexpected result", st)
 		}
 	}
