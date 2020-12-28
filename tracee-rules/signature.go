@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"plugin"
 
+	"github.com/aquasecurity/tracee/tracee-rules/signatures/rego/regosig"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
@@ -23,13 +24,18 @@ func getSignatures(rulesDir string, rules []string) ([]types.Signature, error) {
 	if err != nil {
 		return nil, err
 	}
+	opasigs, err := findOPASigs(rulesDir)
+	if err != nil {
+		return nil, err
+	}
+	sigs := append(gosigs, opasigs...)
 	res := []types.Signature{}
 	if rules == nil {
-		res = gosigs
+		res = sigs
 	} else {
-		for _, s := range gosigs {
+		for _, s := range sigs {
 			for _, r := range rules {
-				if m, err := s.GetMetadata(); err != nil && m.Name == r {
+				if m, err := s.GetMetadata(); err == nil && m.Name == r {
 					res = append(res, s)
 				}
 			}
@@ -45,6 +51,9 @@ func findGoSigs(dir string) ([]types.Signature, error) {
 	}
 	var res []types.Signature
 	for _, file := range files {
+		if filepath.Ext(file.Name()) != ".so" {
+			continue
+		}
 		p, err := plugin.Open(filepath.Join(dir, file.Name()))
 		if err != nil {
 			log.Printf("error opening plugin %s: %v", file.Name(), err)
@@ -57,6 +66,31 @@ func findGoSigs(dir string) ([]types.Signature, error) {
 		}
 		sigs := *export.(*[]types.Signature)
 		res = append(res, sigs...)
+	}
+	return res, nil
+}
+
+func findOPASigs(dir string) ([]types.Signature, error) {
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return nil, fmt.Errorf("error reading plugins directory %s: %v", dir, err)
+	}
+	var res []types.Signature
+	for _, file := range files {
+		if filepath.Ext(file.Name()) != ".rego" {
+			continue
+		}
+		regoCode, err := ioutil.ReadFile(filepath.Join(dir, file.Name()))
+		if err != nil {
+			log.Printf("error reading file %s/%s: %v", dir, file, err)
+			continue
+		}
+		sig, err := regosig.NewRegoSignature(string(regoCode))
+		if err != nil {
+			log.Printf("error creating rego signature with: %s: %v ", regoCode[0:20], err)
+			continue
+		}
+		res = append(res, sig)
 	}
 	return res, nil
 }
