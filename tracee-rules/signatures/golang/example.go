@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
@@ -44,7 +44,7 @@ func (sig *counter) OnEvent(e types.Event) error {
 		return fmt.Errorf("invalid event")
 	}
 
-	if ee.ArgsNum > 0 && ee.Args[0].Name == "pathname" && filepath.Base(ee.Args[0].Value.(string)) == "yo" {
+	if ee.ArgsNum > 0 && ee.Args[0].Name == "pathname" && strings.HasPrefix(ee.Args[0].Value.(string), "yo") {
 		sig.count++
 	}
 	if sig.count == sig.target {
