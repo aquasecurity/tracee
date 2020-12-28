@@ -575,8 +575,8 @@ func printList() {
 	b.WriteString("System Calls:              Sets:\n")
 	b.WriteString("____________               ____\n\n")
 	for i := 0; i < int(tracee.SysEnterEventID); i++ {
-		event := tracee.EventsIDToEvent[int32(i)]
-		if event.Name == "reserved" {
+		event, ok := tracee.EventsIDToEvent[int32(i)]
+		if !ok {
 			continue
 		}
 		if event.Sets != nil {
@@ -588,7 +588,7 @@ func printList() {
 	}
 	b.WriteString("\n\nOther Events:              Sets:\n")
 	b.WriteString("____________               ____\n\n")
-	for i := int(tracee.SysEnterEventID); i < len(tracee.EventsIDToEvent); i++ {
+	for i := int(tracee.SysEnterEventID); i < int(tracee.MaxEventID); i++ {
 		event := tracee.EventsIDToEvent[int32(i)]
 		if event.Sets != nil {
 			eventSets := fmt.Sprintf("%-23s    %v\n", event.Name, event.Sets)

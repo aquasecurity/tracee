@@ -145,6 +145,7 @@ const (
 	VfsWritevEventID
 	MemProtAlertEventID
 	SchedProcessExitEventID
+	MaxEventID
 )
 
 // EventsIDToEvent is list of supported events, indexed by their ID
