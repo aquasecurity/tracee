@@ -73,14 +73,9 @@ func (tc TraceeConfig) Validate() error {
 		return fmt.Errorf("unrecognized output format: %s", tc.OutputFormat)
 	}
 	for _, e := range tc.EventsToTrace {
-		event, ok := EventsIDToEvent[e]
-		if !ok {
+		if _, ok := EventsIDToEvent[e]; !ok {
 			return fmt.Errorf("invalid event to trace: %d", e)
 		}
-		if event.Name == "reserved" {
-			return fmt.Errorf("event is not implemented: %s", event.Name)
-		}
-
 	}
 	if (tc.PerfBufferSize & (tc.PerfBufferSize - 1)) != 0 {
 		return fmt.Errorf("invalid perf buffer size - must be a power of 2")
