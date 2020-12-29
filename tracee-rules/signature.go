@@ -29,7 +29,7 @@ func getSignatures(rulesDir string, rules []string) ([]types.Signature, error) {
 	} else {
 		for _, s := range gosigs {
 			for _, r := range rules {
-				if s.GetMetadata().Name == r {
+				if m, err := s.GetMetadata(); err != nil && m.Name == r {
 					res = append(res, s)
 				}
 			}

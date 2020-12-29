@@ -23,7 +23,7 @@ type EventSources struct {
 
 // NewEngine creates a new rules-engine with the given arguments
 // inputs and outputs are given as channels created by the consumer
-func NewEngine(sigs []types.Signature, sources EventSources, output chan types.Finding, logWriter io.Writer) Engine {
+func NewEngine(sigs []types.Signature, sources EventSources, output chan types.Finding, logWriter io.Writer) *Engine {
 	engine := Engine{}
 	engine.logger = *log.New(logWriter, "", 0)
 	engine.inputs = sources
@@ -32,28 +32,40 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 	engine.signaturesIndex = make(map[types.SignatureEventSelector][]types.Signature)
 	for _, sig := range sigs {
 		engine.signatures[sig] = make(chan types.Event)
-		for _, es := range sig.GetSelectedEvents() {
-			if es.Source == "" {
-				log.Printf("signature %s doesn't declare an input source", sig.GetMetadata().Name)
-			}
+		meta, err := sig.GetMetadata()
+		if err != nil {
+			engine.logger.Printf("error getting metadata: %v", err)
+			continue
+		}
+		se, err := sig.GetSelectedEvents()
+		if err != nil {
+			engine.logger.Printf("error getting selected events for signature %s: %v", meta.Name, err)
+			continue
+		}
+		for _, es := range se {
 			if es.Name == "" {
 				es.Name = "*"
 			}
-			engine.signaturesIndex[es] = append(engine.signaturesIndex[es], sig)
+			if es.Source == "" {
+				log.Printf("signature %s doesn't declare an input source", meta.Name)
+			} else {
+				engine.signaturesIndex[es] = append(engine.signaturesIndex[es], sig)
+			}
 		}
-		err := sig.Init(engine.matchHandler)
+		err = sig.Init(engine.matchHandler)
 		if err != nil {
-			log.Printf("error initializing signature %s: %v", sig.GetMetadata().Name, err)
+			log.Printf("error initializing signature %s: %v", meta.Name, err)
+			continue
 		}
 	}
-	return engine
+	return &engine
 }
 
 // Start starts processing events and detecting signatures
 // it runs continuously until stopped by the done channel
 // once done, it cleans all internal resources, which means the engine is not reusable
 // note that the input and output channels are created by the consumer and therefore are not closed
-func (engine Engine) Start(done chan bool) {
+func (engine *Engine) Start(done chan bool) {
 	go engine.consumeSources(done)
 	for s, c := range engine.signatures {
 		defer close(c)
@@ -61,7 +73,8 @@ func (engine Engine) Start(done chan bool) {
 			for e := range c {
 				err := s.OnEvent(e)
 				if err != nil {
-					log.Printf("error handling event by signature %s: %v", s.GetMetadata().Name, err)
+					meta, _ := s.GetMetadata()
+					log.Printf("error handling event by signature %s: %v", meta.Name, err)
 				}
 			}
 		}(s, c)
@@ -70,19 +83,24 @@ func (engine Engine) Start(done chan bool) {
 }
 
 // matchHandler is a function that runs when a signature is matched
-func (engine Engine) matchHandler(res types.Finding) {
+func (engine *Engine) matchHandler(res types.Finding) {
 	engine.output <- res
 }
 
 // consumeSources starts consuming the input sources
 // it runs continuously until stopped by the done channel
-func (engine Engine) consumeSources(done <-chan bool) {
+func (engine *Engine) consumeSources(done <-chan bool) {
 	for {
 		select {
 		case event, ok := <-engine.inputs.Tracee:
 			if !ok {
 				for sig := range engine.signatures {
-					for _, sel := range sig.GetSelectedEvents() {
+					se, err := sig.GetSelectedEvents()
+					if err != nil {
+						engine.logger.Printf("%v", err)
+						continue
+					}
+					for _, sel := range se {
 						if sel.Source == "tracee" {
 							sig.OnSignal(types.SignalSourceComplete("tracee"))
 							break
