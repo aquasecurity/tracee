@@ -30,18 +30,18 @@ func (sig *counter) Init(cb types.SignatureHandler) error {
 }
 
 // GetMetadata implements the Signature interface by declaring information about the signature
-func (sig *counter) GetMetadata() types.SignatureMetadata {
+func (sig *counter) GetMetadata() (types.SignatureMetadata, error) {
 	return types.SignatureMetadata{
 		Name: "count to " + strconv.Itoa(sig.target),
-	}
+	}, nil
 }
 
 // GetSelectedEvents implements the Signature interface by declaring which events this signature subscribes to
-func (sig *counter) GetSelectedEvents() []types.SignatureEventSelector {
+func (sig *counter) GetSelectedEvents() ([]types.SignatureEventSelector, error) {
 	return []types.SignatureEventSelector{{
 		Source: "tracee",
 		//Name:   "execve",
-	}}
+	}}, nil
 }
 
 // OnEvent implements the Signature interface by handling each Event passed by the Engine. this is the business logic of the signature

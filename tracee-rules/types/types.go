@@ -4,9 +4,9 @@ package types
 // Signature is the basic unit of business logic for the rule-engine
 type Signature interface {
 	//GetMetadata allows the signature to declare information about itself
-	GetMetadata() SignatureMetadata
+	GetMetadata() (SignatureMetadata, error)
 	//GetSelectedEvents allows the signature to declare which events it subscribes to
-	GetSelectedEvents() []SignatureEventSelector
+	GetSelectedEvents() ([]SignatureEventSelector, error)
 	//Init allows the signature to initialize its internal state
 	Init(cb SignatureHandler) error
 	//OnEvent allows the signature to process events passed by the Engine. this is the business logic of the signature
