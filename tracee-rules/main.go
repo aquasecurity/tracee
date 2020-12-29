@@ -22,7 +22,10 @@ func main() {
 			}
 			if c.Bool("list") {
 				for _, sig := range sigs {
-					meta := sig.GetMetadata()
+					meta, err := sig.GetMetadata()
+					if err != nil {
+						continue
+					}
 					fmt.Printf("%s: %s\n", meta.Name, meta.Description)
 				}
 				return nil

@@ -43,7 +43,10 @@ func prepareJSONPayload(res types.Finding) (string, error) {
 		Time         time.Time              `json:"time"`
 		OutputFields map[string]interface{} `json:"output_fields"`
 	}
-	sigmeta := res.Signature.GetMetadata()
+	sigmeta, err := res.Signature.GetMetadata()
+	if err != nil {
+		return "", err
+	}
 	fields := make(map[string]interface{})
 	if te, ok := res.Context.(types.TraceeEvent); ok {
 		fields["value"] = te.ReturnValue
