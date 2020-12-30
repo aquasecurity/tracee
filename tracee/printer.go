@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aquasecurity/tracee/tracee/external"
 	"io"
 	"strings"
 	"text/template"
@@ -19,7 +20,7 @@ type eventPrinter interface {
 	// Epilogue prints something after event printing ends (one time)
 	Epilogue(stats statsStore)
 	// Print prints a single event
-	Print(event Event)
+	Print(event external.Event)
 	// Error prints a single error
 	Error(err error)
 }
@@ -67,35 +68,8 @@ func newEventPrinter(kind string, containerMode bool, out io.Writer, err io.Writ
 	return res, nil
 }
 
-// Event is a user facing data structure representing a single event
-type Event struct {
-	Timestamp           float64    `json:"timestamp"`
-	ProcessID           int        `json:"processId"`
-	ThreadID            int        `json:"threadId"`
-	ParentProcessID     int        `json:"parentProcessId"`
-	HostProcessID       int        `json:"hostProcessId"`
-	HostThreadID        int        `json:"hostThreadId"`
-	HostParentProcessID int        `json:"hostParentProcessId"`
-	UserID              int        `json:"userId"`
-	MountNS             int        `json:"mountNamespace"`
-	PIDNS               int        `json:"pidNamespace"`
-	ProcessName         string     `json:"processName"`
-	HostName            string     `json:"hostName"`
-	EventID             int        `json:"eventId,string"`
-	EventName           string     `json:"eventName"`
-	ArgsNum             int        `json:"argsNum"`
-	ReturnValue         int        `json:"returnValue"`
-	Args                []Argument `json:"args"` //Arguments are ordered according their appearance in the original event
-}
-
-// Argument holds the information for one argument
-type Argument struct {
-	Name  string      `json:"name"`
-	Value interface{} `json:"value"`
-}
-
-func newEvent(ctx context, argsNames []string, args []interface{}) (Event, error) {
-	e := Event{
+func newEvent(ctx context, args []interface{}) (external.Event, error) {
+	e := external.Event{
 		Timestamp:           float64(ctx.Ts) / 1000000.0,
 		ProcessID:           int(ctx.Pid),
 		ThreadID:            int(ctx.Tid),
@@ -112,11 +86,18 @@ func newEvent(ctx context, argsNames []string, args []interface{}) (Event, error
 		EventName:           EventsIDToEvent[int32(ctx.EventID)].Name,
 		ArgsNum:             int(ctx.Argnum),
 		ReturnValue:         int(ctx.Retval),
-		Args:                make([]Argument, 0, len(args)),
+		Args:                make([]external.Argument, 0, len(args)),
+	}
+	params, ok := EventsIDToParams[ctx.EventID]
+	if !ok {
+		return e, fmt.Errorf("event %s(%d) is missing from params registry", e.EventName, e.EventID)
 	}
 	for i, arg := range args {
-		e.Args = append(e.Args, Argument{
-			Name:  argsNames[i],
+		e.Args = append(e.Args, external.Argument{
+			ArgMeta: external.ArgMeta{
+				Name:         params[i].Name,
+				OriginalType: params[i].OriginalType,
+			},
 			Value: arg,
 		})
 	}
@@ -150,7 +131,7 @@ func (p tableEventPrinter) Preamble() {
 	fmt.Fprintln(p.out)
 }
 
-func (p tableEventPrinter) Print(event Event) {
+func (p tableEventPrinter) Print(event external.Event) {
 	if p.verbose {
 		if p.containerMode {
 			fmt.Fprintf(p.out, "%-14f %-16s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ", event.Timestamp, event.HostName, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ParentProcessID, event.ParentProcessID, event.ReturnValue, event.EventName)
@@ -213,7 +194,7 @@ func (p templateEventPrinter) Error(err error) {
 	fmt.Fprintf(p.err, "%v", err)
 }
 
-func (p templateEventPrinter) Print(event Event) {
+func (p templateEventPrinter) Print(event external.Event) {
 	if p.templateObj != nil {
 		err := (*p.templateObj).Execute(p.out, event)
 		if err != nil {
@@ -235,7 +216,7 @@ func (p jsonEventPrinter) Init() error { return nil }
 
 func (p jsonEventPrinter) Preamble() {}
 
-func (p jsonEventPrinter) Print(event Event) {
+func (p jsonEventPrinter) Print(event external.Event) {
 	eBytes, err := json.Marshal(event)
 	if err != nil {
 		p.Error(err)
@@ -265,7 +246,7 @@ func (p *gobEventPrinter) Init() error { return nil }
 
 func (p *gobEventPrinter) Preamble() {}
 
-func (p *gobEventPrinter) Print(event Event) {
+func (p *gobEventPrinter) Print(event external.Event) {
 	err := p.out.Encode(event)
 	if err != nil {
 		p.Error(err)
@@ -277,7 +258,7 @@ func (p *gobEventPrinter) Error(e error) {
 }
 
 func (p *gobEventPrinter) Epilogue(stats statsStore) {
-	err := p.out.Encode(Event{EventName: string(rune(4))})
+	err := p.out.Encode(external.Event{EventName: string(rune(4))})
 	if err != nil {
 		p.Error(err)
 	}
