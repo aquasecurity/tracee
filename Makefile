@@ -124,9 +124,8 @@ endif
 
 
 .PHONY: test 
-go_src_test := $(shell find . -type f -name '*_test.go')
 ifndef DOCKER
-test: $(GO_SRC) $(go_src_test) $(LIBBPF_HEADERS) $(LIBBPF_OBJ)
+test: $(GO_SRC) $(LIBBPF_HEADERS) $(LIBBPF_OBJ)
 	$(go_env)	go test -v ./...
 else
 test: $(DOCKER_BUILDER)
