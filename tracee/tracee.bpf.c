@@ -384,6 +384,26 @@ static __always_inline bool is_x86_compat(struct task_struct *task)
 #endif
 }
 
+static __always_inline bool is_arm64_compat(struct task_struct *task)
+{
+#if defined(bpf_target_arm64)
+    return READ_KERN(task->thread_info.flags) & _TIF_32BIT;
+#else
+    return false;
+#endif
+}
+
+static __always_inline bool is_compat(struct task_struct *task)
+{
+#if defined(bpf_target_x86)
+    return is_x86_compat(task);
+#elif defined(bpf_target_arm64)
+    return is_arm64_compat(task);
+#else
+    return false;
+#endif
+}
+
 #if defined(bpf_target_x86)
 static __always_inline struct pt_regs* get_task_pt_regs(struct task_struct *task)
 {
@@ -1322,7 +1342,7 @@ struct bpf_raw_tracepoint_args *ctx
 #endif // CONFIG_ARCH_HAS_SYSCALL_WRAPPER
 #endif // LINUX_VERSION_CODE
 
-    if (is_x86_compat(task)) {
+    if (is_compat(task)) {
         // Translate 32bit syscalls to 64bit syscalls so we can send to the correct handler
         u32 *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &id);
         if (id_64 == 0)
@@ -1417,7 +1437,7 @@ struct bpf_raw_tracepoint_args *ctx
     ret = ctx->args[1];
 #endif
 
-    if (is_x86_compat(task)) {
+    if (is_compat(task)) {
         // Translate 32bit syscalls to 64bit syscalls so we can send to the correct handler
         u32 *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &id);
         if (id_64 == 0)
