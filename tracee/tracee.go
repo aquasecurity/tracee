@@ -877,7 +877,7 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 			args[t.EncParamName[ctx.EventID%2]["prot"]] = PrintMemProt(uint32(prot))
 		}
 	case PtraceEventID:
-		if req, isInt32 := args[t.EncParamName[ctx.EventID%2]["request"]].(int32); isInt32 {
+		if req, isInt64 := args[t.EncParamName[ctx.EventID%2]["request"]].(int64); isInt64 {
 			args[t.EncParamName[ctx.EventID%2]["request"]] = PrintPtraceRequest(req)
 		}
 	case PrctlEventID:

@@ -511,8 +511,8 @@ func PrintPrctlOption(op int32) string {
 // PrintPtraceRequest prints the `request` argument of the `ptrace` syscall
 // http://man7.org/linux/man-pages/man2/ptrace.2.html
 // https://elixir.bootlin.com/linux/latest/source/include/uapi/linux/ptrace.h
-func PrintPtraceRequest(req int32) string {
-	var ptraceRequest = map[int32]string{
+func PrintPtraceRequest(req int64) string {
+	var ptraceRequest = map[int64]string{
 		0:      "PTRACE_TRACEME",
 		1:      "PTRACE_PEEKTEXT",
 		2:      "PTRACE_PEEKDATA",
