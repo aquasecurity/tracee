@@ -378,7 +378,11 @@ static __always_inline u32 get_task_ppid(struct task_struct *task)
 static __always_inline bool is_x86_compat(struct task_struct *task)
 {
 #if defined(bpf_target_x86)
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 18))
+    return READ_KERN(task->thread.status) & TS_COMPAT;
+#else
     return READ_KERN(task->thread_info.status) & TS_COMPAT;
+#endif
 #else
     return false;
 #endif
