@@ -7,7 +7,7 @@ import (
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
-func GetArgumentByName(event types.TraceeEvent, argName string) (types.TraceeEventArgument, error) {
+func GetTraceeArgumentByName(event types.TraceeEvent, argName string) (types.TraceeEventArgument, error) {
 	for _, arg := range event.Args {
 		if arg.Name == argName {
 			return arg, nil

@@ -56,12 +56,12 @@ func (sig *codeInjection) OnEvent(e types.Event) error {
 	}
 	switch ee.EventName {
 	case "open", "openat":
-		flags, err := GetArgumentByName(ee, "flags")
+		flags, err := GetTraceeArgumentByName(ee, "flags")
 		if err != nil {
 			return err
 		}
 		if IsFileWrite(flags.Value.(string)) {
-			pathname, err := GetArgumentByName(ee, "pathname")
+			pathname, err := GetTraceeArgumentByName(ee, "pathname")
 			if err != nil {
 				return err
 			}
@@ -80,7 +80,7 @@ func (sig *codeInjection) OnEvent(e types.Event) error {
 			}
 		}
 	case "ptrace":
-		request, err := GetArgumentByName(ee, "request")
+		request, err := GetTraceeArgumentByName(ee, "request")
 		if err != nil {
 			return err
 		}
@@ -98,14 +98,14 @@ func (sig *codeInjection) OnEvent(e types.Event) error {
 			})
 		}
 	case "execve":
-		envs, err := GetArgumentByName(ee, "envp")
+		envs, err := GetTraceeArgumentByName(ee, "envp")
 		if err != nil {
 			return err
 		}
 		envsSlice := envs.Value.([]string)
 		for _, env := range envsSlice {
 			if strings.HasPrefix(env, "LD_PRELOAD") || strings.HasPrefix(env, "LD_LIBRARY_PATH") {
-				cmd, err := GetArgumentByName(ee, "argv")
+				cmd, err := GetTraceeArgumentByName(ee, "argv")
 				if err != nil {
 					return err
 				}

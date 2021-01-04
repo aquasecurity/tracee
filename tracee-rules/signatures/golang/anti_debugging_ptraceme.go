@@ -44,7 +44,7 @@ func (sig *antiDebuggingPtraceme) OnEvent(e types.Event) error {
 	if ee.EventName != "ptrace" {
 		return fmt.Errorf("invalid event")
 	}
-	request, err := GetArgumentByName(ee, "request")
+	request, err := GetTraceeArgumentByName(ee, "request")
 	if err != nil {
 		return err
 	}
