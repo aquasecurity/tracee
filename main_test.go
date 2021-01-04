@@ -207,6 +207,10 @@ func TestPrepareFilter(t *testing.T) {
 					NotEqual: []string{},
 					Enabled:  false,
 				},
+				ContFilter: &tracee.BoolFilter{
+					Value:   false,
+					Enabled: false,
+				},
 			},
 			expectedError: nil,
 		},
@@ -255,6 +259,10 @@ func TestPrepareFilter(t *testing.T) {
 					Equal:    []string{},
 					NotEqual: []string{},
 					Enabled:  false,
+				},
+				ContFilter: &tracee.BoolFilter{
+					Value:   false,
+					Enabled: false,
 				},
 			},
 			expectedError: nil,
@@ -305,6 +313,10 @@ func TestPrepareFilter(t *testing.T) {
 					NotEqual: []string{},
 					Enabled:  false,
 				},
+				ContFilter: &tracee.BoolFilter{
+					Value:   false,
+					Enabled: false,
+				},
 			},
 			expectedError: nil,
 		},
@@ -353,6 +365,10 @@ func TestPrepareFilter(t *testing.T) {
 					Equal:    []string{},
 					NotEqual: []string{},
 					Enabled:  false,
+				},
+				ContFilter: &tracee.BoolFilter{
+					Value:   false,
+					Enabled: false,
 				},
 			},
 			expectedError: nil,
@@ -403,6 +419,10 @@ func TestPrepareFilter(t *testing.T) {
 					NotEqual: []string{},
 					Enabled:  false,
 				},
+				ContFilter: &tracee.BoolFilter{
+					Value:   false,
+					Enabled: false,
+				},
 			},
 			expectedError: nil,
 		},
@@ -451,6 +471,10 @@ func TestPrepareFilter(t *testing.T) {
 					Equal:    []string{},
 					NotEqual: []string{"deadbeaf"},
 					Enabled:  true,
+				},
+				ContFilter: &tracee.BoolFilter{
+					Value:   false,
+					Enabled: false,
 				},
 			},
 			expectedError: nil,
@@ -501,6 +525,10 @@ func TestPrepareFilter(t *testing.T) {
 					NotEqual: []string{},
 					Enabled:  false,
 				},
+				ContFilter: &tracee.BoolFilter{
+					Value:   false,
+					Enabled: false,
+				},
 			},
 			expectedError: nil,
 		},
@@ -550,12 +578,69 @@ func TestPrepareFilter(t *testing.T) {
 					NotEqual: []string{},
 					Enabled:  false,
 				},
+				ContFilter: &tracee.BoolFilter{
+					Value:   false,
+					Enabled: false,
+				},
+			},
+			expectedError: nil,
+		},
+		{
+			testName: "container",
+			filters:  []string{"container"},
+			expectedFilter: tracee.Filter{
+				UIDFilter: &tracee.UintFilter{
+					Equal:    []uint64{},
+					NotEqual: []uint64{},
+					Less:     tracee.LessNotSet,
+					Greater:  tracee.GreaterNotSet,
+					Is32Bit:  true,
+					Enabled:  false,
+				},
+				PIDFilter: &tracee.UintFilter{
+					Equal:    []uint64{},
+					NotEqual: []uint64{},
+					Less:     tracee.LessNotSet,
+					Greater:  tracee.GreaterNotSet,
+					Is32Bit:  true,
+					Enabled:  false,
+				},
+				MntNSFilter: &tracee.UintFilter{
+					Equal:    []uint64{},
+					NotEqual: []uint64{},
+					Less:     tracee.LessNotSet,
+					Greater:  tracee.GreaterNotSet,
+					Is32Bit:  false,
+					Enabled:  false,
+				},
+				PidNSFilter: &tracee.UintFilter{
+					Equal:    []uint64{},
+					NotEqual: []uint64{},
+					Less:     tracee.LessNotSet,
+					Greater:  tracee.GreaterNotSet,
+					Is32Bit:  false,
+					Enabled:  false,
+				},
+				CommFilter: &tracee.StringFilter{
+					Equal:    []string{},
+					NotEqual: []string{},
+					Enabled:  false,
+				},
+				UTSFilter: &tracee.StringFilter{
+					Equal:    []string{},
+					NotEqual: []string{},
+					Enabled:  false,
+				},
+				ContFilter: &tracee.BoolFilter{
+					Value:   true,
+					Enabled: true,
+				},
 			},
 			expectedError: nil,
 		},
 		{
 			testName: "multiple filters",
-			filters:  []string{"uid<1", "mntns=5", "pidns!=3", "pid!=10", "comm=ps", "uts!=abc"},
+			filters:  []string{"uid<1", "mntns=5", "pidns!=3", "pid!=10", "comm=ps", "uts!=abc", "!c"},
 			expectedFilter: tracee.Filter{
 				UIDFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
@@ -599,6 +684,10 @@ func TestPrepareFilter(t *testing.T) {
 					NotEqual: []string{"abc"},
 					Enabled:  true,
 				},
+				ContFilter: &tracee.BoolFilter{
+					Value:   false,
+					Enabled: true,
+				},
 			},
 			expectedError: nil,
 		},
@@ -612,6 +701,7 @@ func TestPrepareFilter(t *testing.T) {
 			assert.Equal(t, testcase.expectedFilter.PidNSFilter, filter.PidNSFilter)
 			assert.Equal(t, testcase.expectedFilter.UTSFilter, filter.UTSFilter)
 			assert.Equal(t, testcase.expectedFilter.CommFilter, filter.CommFilter)
+			assert.Equal(t, testcase.expectedFilter.ContFilter, filter.ContFilter)
 			assert.Equal(t, testcase.expectedError, err)
 		})
 	}

@@ -141,14 +141,14 @@ func main() {
 			&cli.StringFlag{
 				Name:    "trace",
 				Aliases: []string{"t"},
-				Value:   "process:new",
-				Usage:   "set trace mode, whether to trace processes or containers, and if to trace new, all, or specific processes/container. run '--trace help' for more info",
+				Value:   "new",
+				Usage:   "trace mode: new/pidns/follow/all. run '--trace help' for more info",
 			},
 			&cli.StringSliceFlag{
 				Name:    "filter",
 				Aliases: []string{"f"},
 				Value:   nil,
-				Usage:   "set tracing filters for specific fields (such as UID or GID). run '--filter help' for more info.",
+				Usage:   "set tracing filters for specific fields (such as UID or PID). run '--filter help' for more info.",
 			},
 			&cli.BoolFlag{
 				Name:  "detect-original-syscall",
@@ -226,33 +226,40 @@ func main() {
 
 func prepareFilter(filters []string) (tracee.Filter, error) {
 
-	filterHelp := "\n--filter allows you to specify values to match on for fields of traced events.\n"
-	filterHelp += "The following options are currently supported:\n"
-	filterHelp += "uid: only trace processes or containers with specified uid(s).\n"
-	filterHelp += "\t--filter uid=0                                                | only trace events from uid 0\n"
-	filterHelp += "\t--filter uid=0,1000                                           | only trace events from uid 0 or uid 1000\n"
-	filterHelp += "\t--filter uid=0 --filter uid=1000                              | only trace events from uid 0 or uid 1000 (same as above)\n"
-	filterHelp += "\t--filter 'uid>0'                                              | only trace events from uids greater than 0"
-	filterHelp += "\t--filter 'uid>0' --filter 'uid<1000'                          | only trace events from uids between 0 and 1000"
-	filterHelp += "\t--filter 'uid>0' --filter uid!=1000                           | only trace events from uids greater than 0 but not 1000"
-	filterHelp += "\n"
-	filterHelp += "pid: only trace processes with specified pids.\n"
-	filterHelp += "\t--filter pid=123                                              | only trace events from pid 123\n"
-	filterHelp += "\t--filter pid!=123                                             | don't trace events from pid 123\n"
-	filterHelp += "\n"
-	filterHelp += "mntns: only trace processes or containers with specified mount namespace(s) ids.\n"
-	filterHelp += "\t--filter mntns=12345678                                       | only trace events from mntns 12345678\n"
-	filterHelp += "\t--filter mntns!=12345678                                      | don't trace events from mntns 12345678\n"
-	filterHelp += "\n"
-	filterHelp += "pidns: only trace processes or containers with specified pid namespace(s) ids.\n"
-	filterHelp += "\t--filter pidns=12345678                                       | only trace events from pidns 12345678\n"
-	filterHelp += "\t--filter pidns!=12345678                                      | don't trace events from pidns 12345678\n"
-	filterHelp += "uts: only trace processes or containers with specified uts namespace(s) name.\n"
-	filterHelp += "\t--filter uts=8215606f23f4                                     | only trace events from uts 8215606f23f4\n"
-	filterHelp += "\t--filter uts!=ab356bc4dd554                                   | don't trace events from uts ab356bc4dd554\n"
-	filterHelp += "comm: only trace processes with specified command name.\n"
-	filterHelp += "\t--filter comm=ls                                              | only trace events from ls command\n"
-	filterHelp += "\t--filter comm!=ls                                             | don't trace events from ls command\n"
+	filterHelp := `
+--filter allows you to specify values to match on for fields of traced events.
+
+Numerical filters use the following operators: '=', '!=', '<', '>'
+available numerical filters: uid, pid, mntns, pidns
+
+String filters use the following operators: '=', '!='
+available string filters: uts, comm
+
+Boolean filters use the following operator: '!'
+available boolean filters: container
+
+Note: some of the above operators have special meanings in different shells.
+To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
+
+Examples:
+	--filter uid=0                                                | only trace events from uid 0
+	--filter mntns=4026531840                                     | only trace events from mntns id 4026531840
+	--filter pidns!=4026531836                                    | only trace events from pidns id not equal to 4026531840
+	--filter pid=510,1709                                         | only trace events from pid 510 or pid 1709
+	--filter pid=510 --filter pid=1709                            | only trace events from pid 510 or pid 1709 (same as above)
+	--filter 'uid>0'                                              | only trace events from uids greater than 0
+	--filter 'pid>0' --filter 'pid<1000'                          | only trace events from pids between 0 and 1000
+	--filter 'uid>0' --filter uid!=1000                           | only trace events from uids greater than 0 but not 1000
+	--filter uts=8215606f23f4                                     | only trace events from uts name 8215606f23f4
+	--filter uts!=ab356bc4dd554                                   | don't trace events from uts name ab356bc4dd554
+	--filter comm=ls                                              | only trace events from ls command
+	--filter comm!=ls                                             | don't trace events from ls command
+	--filter container                                            | only trace events from containers
+	--filter c                                                    | only trace events from containers (same as above)
+	--filter !container                                           | only trace events from the host
+	--filter '!c'                                                 | only trace events from the host (same as above)
+
+`
 
 	if len(filters) == 1 && filters[0] == "help" {
 		return tracee.Filter{}, fmt.Errorf(filterHelp)
@@ -301,6 +308,10 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 			NotEqual: []string{},
 			Enabled:  false,
 		},
+		ContFilter: &tracee.BoolFilter{
+			Value:   false,
+			Enabled: false,
+		},
 	}
 
 	for _, f := range filters {
@@ -346,6 +357,14 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 
 		if strings.HasPrefix(f, "comm") {
 			err := parseStringFilter(strings.TrimPrefix(f, "comm"), filter.CommFilter)
+			if err != nil {
+				return tracee.Filter{}, err
+			}
+			continue
+		}
+
+		if strings.HasPrefix("container", f) || (strings.HasPrefix("!container", f) && len(f) > 1) {
+			err := parseBoolFilter(f, filter.ContFilter)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
@@ -440,70 +459,43 @@ func parseStringFilter(operatorAndValues string, stringFilter *tracee.StringFilt
 	return nil
 }
 
+func parseBoolFilter(value string, boolFilter *tracee.BoolFilter) error {
+	boolFilter.Enabled = true
+	boolFilter.Value = false
+	if value[0] != '!' {
+		boolFilter.Value = true
+	}
+
+	return nil
+}
+
 func prepareTraceMode(traceString string) (uint32, error) {
-	// Set Default mode - all new Processes only
-	mode := tracee.ModeProcessNew
-	traceHelp := "\n--trace can be the following options:\n"
-	traceHelp += "'p' or 'process' or 'process:new'            | Trace new processes\n"
-	traceHelp += "'process:all'                                | Trace all processes\n"
-	traceHelp += "'process:<pid>,<pid2>,...' or 'p:<pid>,...'  | Trace specific PIDs\n"
-	traceHelp += "'process:follow'                             | Trace filtered process and all of its children\n"
-	traceHelp += "'c' or 'container' or 'container:new'        | Trace new containers\n"
-	traceHelp += "'container:all'                              | Trace all containers\n"
-	traceHelp += "''h' or 'host' or 'host:new'                 | Trace new processes not in a container\n"
-	traceHelp += "'host:all'                                   | Trace all processes not in a container\n"
+	traceHelp := "\n--trace can be the following options, or a prefix of those:\n"
+	traceHelp += "'new'            | Trace new processes\n"
+	traceHelp += "'pidns'          | Trace processes from newly created pid namespaces\n"
+	traceHelp += "'follow'         | Trace filtered process and all of its children\n"
+	traceHelp += "'all'            | Trace all processes\n"
 	if traceString == "help" {
 		return 0, fmt.Errorf(traceHelp)
 	}
 
-	traceSplit := strings.Split(traceString, ":")
-
-	// Get The trace type - process or  container
-	traceType := traceSplit[0]
-	if traceType != "process" && traceType != "container" && traceType != "host" && traceType != "p" && traceType != "c" && traceType != "h" {
-		return 0, fmt.Errorf(traceHelp)
-	}
-	traceType = string(traceType[0])
-
-	// Get The trace option, default is 'new' for all trace types:
-	traceOption := "new"
-	if len(traceSplit) == 2 {
-		traceOption = traceSplit[1]
-	} else if len(traceSplit) > 2 {
-		return 0, fmt.Errorf(traceHelp)
+	if strings.HasPrefix("new", traceString) {
+		return tracee.ModeNew, nil
 	}
 
-	// Convert to Traceing Mode
-	if traceType == "p" {
-		if traceOption == "all" {
-			mode = tracee.ModeProcessAll
-		} else if traceOption == "new" {
-			mode = tracee.ModeProcessNew
-		} else if traceOption == "follow" {
-			mode = tracee.ModeProcessFollow
-		} else {
-			// Can't have just 'process:'
-			return 0, fmt.Errorf(traceHelp)
-		}
-	} else if traceType == "c" {
-		if traceOption == "all" {
-			mode = tracee.ModeContainerAll
-		} else if traceOption == "new" {
-			mode = tracee.ModeContainerNew
-		} else {
-			// Containers currently only supports 'new' and 'all'
-			return 0, fmt.Errorf(traceHelp)
-		}
-	} else {
-		if traceOption == "all" {
-			mode = tracee.ModeHostAll
-		} else if traceOption == "new" {
-			mode = tracee.ModeHostNew
-		} else {
-			return 0, fmt.Errorf(traceHelp)
-		}
+	if strings.HasPrefix("pidns", traceString) {
+		return tracee.ModePidNs, nil
 	}
-	return mode, nil
+
+	if strings.HasPrefix("follow", traceString) {
+		return tracee.ModeFollow, nil
+	}
+
+	if strings.HasPrefix("all", traceString) {
+		return tracee.ModeAll, nil
+	}
+
+	return 0, fmt.Errorf("invalid trace option specified, use '--trace help' for more info")
 }
 
 func prepareEventsToTrace(eventsToTrace []string, setsToTrace []string, excludeEvents []string) ([]int32, error) {

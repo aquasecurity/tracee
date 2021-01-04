@@ -22,6 +22,7 @@ const (
 	configUTSNsFilter
 	configCommFilter
 	configPidFilter
+	configContFilter
 )
 
 const (
@@ -65,13 +66,10 @@ const (
 type binType uint8
 
 const (
-	ModeProcessAll uint32 = iota + 1
-	ModeProcessNew
-	ModeProcessFollow
-	ModeContainerAll
-	ModeContainerNew
-	ModeHostAll
-	ModeHostNew
+	ModeAll uint32 = iota + 1
+	ModeNew
+	ModePidNs
+	ModeFollow
 )
 
 const (
