@@ -35,6 +35,7 @@ func (sig *antiDebuggingPtraceme) GetSelectedEvents() ([]types.SignatureEventSel
 }
 
 func (sig *antiDebuggingPtraceme) OnEvent(e types.Event) error {
+	// event example:
 	// { "eventName": "ptrace", "argsNum": 1, "args": [{"name": "request", "value": "PTRACE_TRACEME" }]}
 	ee, ok := e.(types.TraceeEvent)
 	if !ok {
@@ -43,13 +44,12 @@ func (sig *antiDebuggingPtraceme) OnEvent(e types.Event) error {
 	if ee.EventName != "ptrace" {
 		return fmt.Errorf("invalid event")
 	}
-	if ee.ArgsNum > 0 && ee.Args[0].Name == "request" {
-		val, ok := ee.Args[0].Value.(string)
-		if !ok {
-			return fmt.Errorf("ptrace request arg must be string")
-		} else if val == "PTRACE_TRACEME" {
-			sig.cb(types.Finding{Context: e, Signature: sig})
-		}
+	request, err := GetTraceeArgumentByName(ee, "request")
+	if err != nil {
+		return err
+	}
+	if request.Value.(string) == "PTRACE_TRACEME" {
+		sig.cb(types.Finding{Context: e, Signature: sig})
 	}
 	return nil
 }
