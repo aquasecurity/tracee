@@ -140,6 +140,7 @@
 #define CONFIG_UTS_NS_FILTER    9
 #define CONFIG_COMM_FILTER      10
 #define CONFIG_PID_FILTER       11
+#define CONFIG_CONT_FILTER      12
 
 // get_config(CONFIG_XXX_FILTER) returns 0 if not enabled
 #define FILTER_IN  1
@@ -157,13 +158,10 @@
 #define LESS_NOT_SET    0
 #define GREATER_NOT_SET ULLONG_MAX
 
-#define MODE_PROCESS_ALL        1
-#define MODE_PROCESS_NEW        2
-#define MODE_PROCESS_FOLLOW     3
-#define MODE_CONTAINER_ALL      4
-#define MODE_CONTAINER_NEW      5
-#define MODE_HOST_ALL           6
-#define MODE_HOST_NEW           7
+#define MODE_ALL        1
+#define MODE_NEW        2
+#define MODE_PIDNS      3
+#define MODE_FOLLOW     4
 
 #define DEV_NULL_STR    0
 
@@ -295,6 +293,7 @@ BPF_HASH(mnt_ns_filter, u64, u32);                  // Used to filter events by 
 BPF_HASH(pid_ns_filter, u64, u32);                  // Used to filter events by pid namespace id
 BPF_HASH(uts_ns_filter, string_filter_t, u32);      // Used to filter events by uts namespace name
 BPF_HASH(comm_filter, string_filter_t, u32);        // Used to filter events by command name
+BPF_ARRAY(cont_filter, u8, 1);                      // Used to filter events running in a container
 BPF_HASH(bin_args_map, u64, bin_args_t);            // Persist args for send_bin funtion
 BPF_HASH(sys_32_to_64_map, u32, u32);               // Map 32bit syscalls numbers to 64bit syscalls numbers
 BPF_HASH(params_types_map, u32, u64);               // Encoded parameters types for event
@@ -593,6 +592,22 @@ static __always_inline int equality_filter_matches(int filter_config, void *filt
     return 1;
 }
 
+static __always_inline int bool_filter_matches(int filter_config, void *filter_map, bool val)
+{
+    int config = get_config(filter_config);
+    if (!config)
+        return 1;
+
+    int idx = 0;
+    u8* filter_val = bpf_map_lookup_elem(filter_map, &idx);
+    if (filter_val != NULL) {
+        return *filter_val == val;
+    }
+
+    // we should never get here because when the filter is enabled, it must have a value
+    return 1;
+}
+
 static __always_inline int should_trace()
 {
     context_t context = {};
@@ -600,34 +615,20 @@ static __always_inline int should_trace()
 
     switch (get_config(CONFIG_MODE))
     {
-        case MODE_PROCESS_NEW:
+        case MODE_NEW:
             if (bpf_map_lookup_elem(&pids_map, &context.host_tid) == 0)
                 return 0;
             break;
-        case MODE_PROCESS_FOLLOW:
+        case MODE_FOLLOW:
             if (bpf_map_lookup_elem(&pids_map, &context.host_tid) != 0) {
                 return 1;
             }
             break;
-        case MODE_CONTAINER_NEW:
+        case MODE_PIDNS:
             if (bpf_map_lookup_elem(&pids_map, &context.pid_id) == 0)
                 return 0;
             break;
-        case MODE_CONTAINER_ALL:
-            if (context.tid == context.host_tid) {
-                return 0;
-            }
-            break;
-        case MODE_HOST_ALL:
-            if (context.tid != context.host_tid) {
-                return 0;
-            }
-            break;
-        case MODE_HOST_NEW:
-            if ((context.tid != context.host_tid) || (bpf_map_lookup_elem(&pids_map, &context.host_tid) == 0)) {
-                return 0;
-            }
-            break;
+        // case MODE_ALL - continue with filter checks
     }
 
     // Don't monitor self
@@ -661,6 +662,12 @@ static __always_inline int should_trace()
     }
 
     if (!equality_filter_matches(CONFIG_COMM_FILTER, &comm_filter, &context.comm))
+    {
+        return 0;
+    }
+    // TODO: after we move to minimal kernel 4.18, we can check for container by cgroupid != host cgroupid
+    bool is_container = context.tid != context.host_tid;
+    if (!bool_filter_matches(CONFIG_CONT_FILTER, &cont_filter, is_container))
     {
         return 0;
     }
@@ -1361,13 +1368,13 @@ struct bpf_raw_tracepoint_args *ctx
     // execve events may add new pids to the traced pids set
     // perform this check before should_trace() so newly executed binaries will be traced
     if (id == SYS_EXECVE || id == SYS_EXECVEAT) {
-        if (config_mode == MODE_CONTAINER_NEW) {
+        if (config_mode == MODE_PIDNS) {
             u32 pid_ns = get_task_pid_ns_id(task);
             if ((bpf_map_lookup_elem(&pids_map, &pid_ns) == 0) && (get_task_ns_pid(task) == 1)) {
                 // A new container/pod was started (pid 1 in namespace executed) - add pid namespace to map
                 bpf_map_update_elem(&pids_map, &pid_ns, &pid_ns, BPF_ANY);
             }
-        } else if (config_mode == MODE_PROCESS_NEW || config_mode == MODE_PROCESS_ALL || config_mode == MODE_HOST_ALL || config_mode == MODE_HOST_NEW) {
+        } else if (config_mode == MODE_NEW) {
             if (bpf_map_lookup_elem(&pids_map, &pid) == 0)
                 bpf_map_update_elem(&pids_map, &pid, &pid, BPF_ANY);
         }
@@ -1376,7 +1383,7 @@ struct bpf_raw_tracepoint_args *ctx
     if (!should_trace())
         return 0;
 
-    if ((id == SYS_EXECVE || id == SYS_EXECVEAT) && (config_mode == MODE_PROCESS_FOLLOW))
+    if ((id == SYS_EXECVE || id == SYS_EXECVEAT) && (config_mode == MODE_FOLLOW))
     {
         // We passed all filters (in should_trace()) - add this pid to traced pids set
         bpf_map_update_elem(&pids_map, &pid, &pid, BPF_ANY);
@@ -1460,8 +1467,9 @@ struct bpf_raw_tracepoint_args *ctx
 
     // fork events may add new pids to the traced pids set
     // perform this check after should_trace() to only add forked childs of a traced parent
+    int config_mode = get_config(CONFIG_MODE);
     if (id == SYS_CLONE || id == SYS_FORK || id == SYS_VFORK) {
-        if (get_config(CONFIG_MODE) != MODE_CONTAINER_ALL && get_config(CONFIG_MODE) != MODE_CONTAINER_NEW) {
+        if (config_mode == MODE_NEW || config_mode == MODE_FOLLOW) {
             u32 pid = ret;
             bpf_map_update_elem(&pids_map, &pid, &pid, BPF_ANY);
         }
@@ -1608,7 +1616,8 @@ struct bpf_raw_tracepoint_args *ctx
     if (!should_trace())
         return 0;
 
-    if (get_config(CONFIG_MODE) == MODE_CONTAINER_NEW) {
+    int config_mode = get_config(CONFIG_MODE);
+    if (config_mode == MODE_PIDNS) {
         struct task_struct *task;
         task = (struct task_struct *)bpf_get_current_task();
 
@@ -1618,7 +1627,7 @@ struct bpf_raw_tracepoint_args *ctx
             bpf_map_delete_elem(&pids_map, &pid_ns);
         }
     }
-    else {
+    else if (config_mode == MODE_NEW || config_mode == MODE_FOLLOW) {
         // Remove pid from pids_map
         u32 pid = bpf_get_current_pid_tgid();
         if (bpf_map_lookup_elem(&pids_map, &pid) != 0)

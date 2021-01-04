@@ -47,6 +47,7 @@ type Filter struct {
 	PidNSFilter *UintFilter
 	UTSFilter   *StringFilter
 	CommFilter  *StringFilter
+	ContFilter  *BoolFilter
 }
 
 type UintFilter struct {
@@ -62,6 +63,11 @@ type StringFilter struct {
 	Equal    []string
 	NotEqual []string
 	Enabled  bool
+}
+
+type BoolFilter struct {
+	Value   bool
+	Enabled bool
 }
 
 // Validate does static validation of the configuration
@@ -169,7 +175,7 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	t := &Tracee{
 		config: cfg,
 	}
-	ContainerMode := (t.config.Mode == ModeContainerAll || t.config.Mode == ModeContainerNew)
+	ContainerMode := (t.config.Filter.ContFilter.Enabled && t.config.Filter.ContFilter.Value) || t.config.Mode == ModePidNs
 	printObj, err := newEventPrinter(t.config.OutputFormat, ContainerMode, t.config.EventsFile, t.config.ErrorsFile)
 	if err != nil {
 		return nil, err
@@ -479,6 +485,30 @@ func (t *Tracee) setStringFilter(filter *StringFilter, filterMapName string, con
 	return nil
 }
 
+func (t *Tracee) setBoolFilter(filter *BoolFilter, filterMapName string, configFilter bpfConfig) error {
+	if !filter.Enabled {
+		return nil
+	}
+
+	filterMap, err := t.bpfModule.GetMap(filterMapName)
+	if err != nil {
+		return err
+	}
+	err = filterMap.Update(uint8(0), boolToUInt32(filter.Value))
+	if err != nil {
+		return err
+	}
+
+	bpfConfigMap, err := t.bpfModule.GetMap("config_map")
+	if err != nil {
+		return err
+	}
+	// Set to a value != 0 to enable the filter
+	bpfConfigMap.Update(uint32(configFilter), filterIn)
+
+	return nil
+}
+
 func (t *Tracee) populateBPFMaps() error {
 	chosenEventsMap, _ := t.bpfModule.GetMap("chosen_events_map")
 	for e, chosen := range t.eventsToTrace {
@@ -557,6 +587,11 @@ func (t *Tracee) populateBPFMaps() error {
 	err = t.setStringFilter(t.config.Filter.CommFilter, "comm_filter", configCommFilter)
 	if err != nil {
 		return fmt.Errorf("error setting comm filter: %v", err)
+	}
+
+	err = t.setBoolFilter(t.config.Filter.ContFilter, "cont_filter", configContFilter)
+	if err != nil {
+		return fmt.Errorf("error setting cont filter: %v", err)
 	}
 
 	stringStoreMap, _ := t.bpfModule.GetMap("string_store")
