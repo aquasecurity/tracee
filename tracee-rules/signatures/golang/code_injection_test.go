@@ -25,6 +25,20 @@ func TestCodeInjection(t *testing.T) {
 		{
 			events: []types.Event{
 				types.TraceeEvent{
+					EventName: "ptrace",
+					Args: []types.TraceeEventArgument{
+						{
+							Name:  "request",
+							Value: "PTRACE_TRACEME",
+						},
+					},
+				},
+			},
+			expect: false,
+		},
+		{
+			events: []types.Event{
+				types.TraceeEvent{
 					EventName: "open",
 					Args: []types.TraceeEventArgument{
 						{
@@ -43,6 +57,42 @@ func TestCodeInjection(t *testing.T) {
 		{
 			events: []types.Event{
 				types.TraceeEvent{
+					EventName: "open",
+					Args: []types.TraceeEventArgument{
+						{
+							Name:  "pathname",
+							Value: "/proc/foo",
+						},
+						{
+							Name:  "flags",
+							Value: "o_wronly",
+						},
+					},
+				},
+			},
+			expect: false,
+		},
+		{
+			events: []types.Event{
+				types.TraceeEvent{
+					EventName: "open",
+					Args: []types.TraceeEventArgument{
+						{
+							Name:  "pathname",
+							Value: "/proc/self/mem",
+						},
+						{
+							Name:  "flags",
+							Value: "o_rdonly",
+						},
+					},
+				},
+			},
+			expect: false,
+		},
+		{
+			events: []types.Event{
+				types.TraceeEvent{
 					EventName: "execve",
 					Args: []types.TraceeEventArgument{
 						{
@@ -57,6 +107,38 @@ func TestCodeInjection(t *testing.T) {
 				},
 			},
 			expect: true,
+		},
+		{
+			events: []types.Event{
+				types.TraceeEvent{
+					EventName: "execve",
+					Args: []types.TraceeEventArgument{
+						{
+							Name:  "envp",
+							Value: []string{"FOO=BAR"},
+						},
+						{
+							Name:  "argv",
+							Value: []string{"ls"},
+						},
+					},
+				},
+			},
+			expect: false,
+		},
+		{
+			events: []types.Event{
+				types.TraceeEvent{
+					EventName: "execve",
+					Args: []types.TraceeEventArgument{
+						{
+							Name:  "argv",
+							Value: []string{"ls"},
+						},
+					},
+				},
+			},
+			expect: false,
 		},
 	}
 	for _, st := range sigTests {

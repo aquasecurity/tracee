@@ -100,7 +100,7 @@ func (sig *codeInjection) OnEvent(e types.Event) error {
 	case "execve":
 		envs, err := GetTraceeArgumentByName(ee, "envp")
 		if err != nil {
-			return err
+			break
 		}
 		envsSlice := envs.Value.([]string)
 		for _, env := range envsSlice {
