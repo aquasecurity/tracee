@@ -69,13 +69,10 @@ func (sig *codeInjection) OnEvent(e types.Event) error {
 				sig.cb(types.Finding{
 					Signature: sig,
 					Context:   ee,
-					Data: []types.FindingData{{
-						Type: "file",
-						Properties: map[string]interface{}{
-							"flags": flags,
-							"path":  pathname.Value.(string),
-						},
-					}},
+					Data: map[string]interface{}{
+						"file flags": flags,
+						"file path":  pathname.Value.(string),
+					},
 				})
 			}
 		}
@@ -89,12 +86,9 @@ func (sig *codeInjection) OnEvent(e types.Event) error {
 			sig.cb(types.Finding{
 				Signature: sig,
 				Context:   ee,
-				Data: []types.FindingData{{
-					Type: "ptrace",
-					Properties: map[string]interface{}{
-						"request": requestString,
-					},
-				}},
+				Data: map[string]interface{}{
+					"ptrace request": requestString,
+				},
 			})
 		}
 	case "execve":
@@ -112,13 +106,10 @@ func (sig *codeInjection) OnEvent(e types.Event) error {
 				sig.cb(types.Finding{
 					Signature: sig,
 					Context:   ee,
-					Data: []types.FindingData{{
-						Type: "command",
-						Properties: map[string]interface{}{
-							"command": cmd,
-							"envp":    env,
-						},
-					}},
+					Data: map[string]interface{}{
+						"command":     cmd,
+						"command env": env,
+					},
 				})
 			}
 		}
