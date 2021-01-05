@@ -39,20 +39,12 @@ func main() {
 				printList()
 				return nil
 			}
-			if c.IsSet("event") && c.IsSet("exclude-event") {
-				return fmt.Errorf("'event' and 'exclude-event' can't be used in parallel")
-			}
-			events, err := prepareEventsToTrace(c.StringSlice("event"), c.StringSlice("events-set"), c.StringSlice("exclude-event"))
-			if err != nil {
-				return err
-			}
 			mode, err := prepareTraceMode(c.String("trace"))
 			if err != nil {
 				return err
 			}
 
 			cfg := tracee.TraceeConfig{
-				EventsToTrace:         events,
 				Mode:                  mode,
 				DetectOriginalSyscall: c.Bool("detect-original-syscall"),
 				ShowExecEnv:           c.Bool("show-exec-env"),
@@ -88,7 +80,7 @@ func main() {
 			cfg.Filter = &filter
 
 			if c.Bool("security-alerts") {
-				cfg.EventsToTrace = append(cfg.EventsToTrace, tracee.MemProtAlertEventID)
+				cfg.Filter.EventsToTrace = append(cfg.Filter.EventsToTrace, tracee.MemProtAlertEventID)
 			}
 			if c.Bool("clear-output-path") {
 				os.RemoveAll(cfg.OutputPath)
@@ -109,29 +101,6 @@ func main() {
 			return t.Run()
 		},
 		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:    "output",
-				Aliases: []string{"o"},
-				Value:   "table",
-				Usage:   "output format: table/table-verbose/json/gob/go-template=<path>",
-			},
-			&cli.StringSliceFlag{
-				Name:    "event",
-				Aliases: []string{"e"},
-				Value:   nil,
-				Usage:   "trace only the specified event or syscall. use this flag multiple times to choose multiple events",
-			},
-			&cli.StringSliceFlag{
-				Name:    "events-set",
-				Aliases: []string{"s"},
-				Value:   nil,
-				Usage:   "trace all the events which belong to this set. use this flag multiple times to choose multiple sets",
-			},
-			&cli.StringSliceFlag{
-				Name:  "exclude-event",
-				Value: nil,
-				Usage: "exclude an event from being traced. use this flag multiple times to choose multiple events to exclude",
-			},
 			&cli.BoolFlag{
 				Name:    "list",
 				Aliases: []string{"l"},
@@ -170,6 +139,12 @@ func main() {
 				Name:  "blob-perf-buffer-size",
 				Value: 1024,
 				Usage: "size, in pages, of the internal perf ring buffer used to send blobs from the kernel",
+			},
+			&cli.StringFlag{
+				Name:    "output",
+				Aliases: []string{"o"},
+				Value:   "table",
+				Usage:   "output format: table/table-verbose/json/gob/go-template=<path>",
 			},
 			&cli.StringFlag{
 				Name:  "output-path",
@@ -225,7 +200,6 @@ func main() {
 }
 
 func prepareFilter(filters []string) (tracee.Filter, error) {
-
 	filterHelp := `
 --filter allows you to specify values to match on for fields of traced events.
 
@@ -233,7 +207,7 @@ Numerical filters use the following operators: '=', '!=', '<', '>'
 available numerical filters: uid, pid, mntns, pidns
 
 String filters use the following operators: '=', '!='
-available string filters: uts, comm
+available string filters: event, set, uts, comm
 
 Boolean filters use the following operator: '!'
 available boolean filters: container
@@ -250,10 +224,11 @@ Examples:
 	--filter 'uid>0'                                              | only trace events from uids greater than 0
 	--filter 'pid>0' --filter 'pid<1000'                          | only trace events from pids between 0 and 1000
 	--filter 'uid>0' --filter uid!=1000                           | only trace events from uids greater than 0 but not 1000
-	--filter uts=8215606f23f4                                     | only trace events from uts name 8215606f23f4
+	--filter event=execve,open                                    | only trace execve and open events
+	--filter set=fs                                               | trace all file-system related events
+	--filter set=fs --filter event!=open,openat                   | trace all file-system related events, but not open(at)
 	--filter uts!=ab356bc4dd554                                   | don't trace events from uts name ab356bc4dd554
 	--filter comm=ls                                              | only trace events from ls command
-	--filter comm!=ls                                             | don't trace events from ls command
 	--filter container                                            | only trace events from containers
 	--filter c                                                    | only trace events from containers (same as above)
 	--filter !container                                           | only trace events from the host
@@ -312,7 +287,11 @@ Examples:
 			Value:   false,
 			Enabled: false,
 		},
+		EventsToTrace: []int32{},
 	}
+
+	eventFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}, Enabled: false}
+	setFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}, Enabled: false}
 
 	for _, f := range filters {
 		if strings.HasPrefix(f, "uid") {
@@ -371,7 +350,29 @@ Examples:
 			continue
 		}
 
+		if strings.HasPrefix(f, "event") {
+			err := parseStringFilter(strings.TrimPrefix(f, "event"), eventFilter)
+			if err != nil {
+				return tracee.Filter{}, err
+			}
+			continue
+		}
+
+		if strings.HasPrefix(f, "set") {
+			err := parseStringFilter(strings.TrimPrefix(f, "set"), setFilter)
+			if err != nil {
+				return tracee.Filter{}, err
+			}
+			continue
+		}
+
 		return tracee.Filter{}, fmt.Errorf("invalid filter option specified, use '--filter help' for more info")
+	}
+
+	var err error
+	filter.EventsToTrace, err = prepareEventsToTrace(eventFilter, setFilter)
+	if err != nil {
+		return tracee.Filter{}, err
 	}
 
 	return filter, nil
@@ -443,8 +444,8 @@ func parseStringFilter(operatorAndValues string, stringFilter *tracee.StringFilt
 	values := strings.Split(valuesString, ",")
 
 	for i := range values {
-		if len(values[i]) > 16 {
-			return fmt.Errorf("Filtering strings of length bigger than 16 is not supported: %s", values[i])
+		if len(values[i]) > 32 {
+			return fmt.Errorf("Filtering strings of length bigger than 32 is not supported: %s", values[i])
 		}
 		switch operatorString {
 		case "=":
@@ -498,7 +499,12 @@ func prepareTraceMode(traceString string) (uint32, error) {
 	return 0, fmt.Errorf("invalid trace option specified, use '--trace help' for more info")
 }
 
-func prepareEventsToTrace(eventsToTrace []string, setsToTrace []string, excludeEvents []string) ([]int32, error) {
+func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.StringFilter) ([]int32, error) {
+	eventFilter.Enabled = true
+	eventsToTrace := eventFilter.Equal
+	excludeEvents := eventFilter.NotEqual
+	setsToTrace := setFilter.Equal
+
 	var res []int32
 	eventsNameToID := make(map[string]int32, len(tracee.EventsIDToEvent))
 	setsToEvents := make(map[string][]int32)
@@ -516,7 +522,7 @@ func prepareEventsToTrace(eventsToTrace []string, setsToTrace []string, excludeE
 		}
 		isExcluded[id] = true
 	}
-	if eventsToTrace == nil && setsToTrace == nil {
+	if len(eventsToTrace) == 0 && len(setsToTrace) == 0 {
 		setsToTrace = append(setsToTrace, "default")
 	}
 
