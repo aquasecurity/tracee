@@ -39,13 +39,13 @@ func TestPrepareFilter(t *testing.T) {
 			testName:       "invalid operator",
 			filters:        []string{"uid\t0"},
 			expectedFilter: tracee.Filter{},
-			expectedError:  errors.New("invalid filter operator: \t"),
+			expectedError:  errors.New("invalid filter option specified, use '--filter help' for more info"),
 		},
 		{
 			testName:       "invalid operator",
 			filters:        []string{"mntns\t0"},
 			expectedFilter: tracee.Filter{},
-			expectedError:  errors.New("invalid filter operator: \t"),
+			expectedError:  errors.New("invalid filter option specified, use '--filter help' for more info"),
 		},
 		{
 			testName:       "invalid filter type",
@@ -111,13 +111,13 @@ func TestPrepareFilter(t *testing.T) {
 			testName:       "invalid uid",
 			filters:        []string{"uid="},
 			expectedFilter: tracee.Filter{},
-			expectedError:  errors.New("invalid filter value: "),
+			expectedError:  errors.New("invalid operator and/or values given to filter: ="),
 		},
 		{
 			testName:       "invalid mntns",
 			filters:        []string{"mntns="},
 			expectedFilter: tracee.Filter{},
-			expectedError:  errors.New("invalid filter value: "),
+			expectedError:  errors.New("invalid operator and/or values given to filter: ="),
 		},
 		{
 			testName: "invalid uid",
