@@ -3,8 +3,10 @@ package tracee
 import (
 	"bytes"
 	"encoding/binary"
-	"github.com/aquasecurity/tracee/tracee/external"
+	"fmt"
 	"sync"
+
+	"github.com/aquasecurity/tracee/tracee/external"
 )
 
 func (t *Tracee) runEventPipeline(done <-chan struct{}) error {
@@ -122,10 +124,18 @@ func (t *Tracee) prepareEventForPrint(done <-chan struct{}, in <-chan RawEvent) 
 				continue
 			}
 			args := make([]interface{}, rawEvent.Ctx.Argnum)
+			argMetas := make([]external.ArgMeta, rawEvent.Ctx.Argnum)
 			for i, tag := range rawEvent.ArgsTags {
 				args[i] = rawEvent.RawArgs[tag]
+				argMeta, ok := t.DecParamName[rawEvent.Ctx.EventID%2][tag]
+				if ok {
+					argMetas[i] = argMeta
+				} else {
+					errc <- fmt.Errorf("Invalid arg tag for event %d", rawEvent.Ctx.EventID)
+					continue
+				}
 			}
-			evt, err := newEvent(rawEvent.Ctx, args)
+			evt, err := newEvent(rawEvent.Ctx, argMetas, args)
 			if err != nil {
 				errc <- err
 				continue

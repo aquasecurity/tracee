@@ -6,10 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/aquasecurity/tracee/tracee/external"
 	"io"
 	"strings"
 	"text/template"
+
+	"github.com/aquasecurity/tracee/tracee/external"
 )
 
 type eventPrinter interface {
@@ -68,7 +69,7 @@ func newEventPrinter(kind string, containerMode bool, out io.Writer, err io.Writ
 	return res, nil
 }
 
-func newEvent(ctx context, args []interface{}) (external.Event, error) {
+func newEvent(ctx context, argMetas []external.ArgMeta, args []interface{}) (external.Event, error) {
 	e := external.Event{
 		Timestamp:           float64(ctx.Ts) / 1000000.0,
 		ProcessID:           int(ctx.Pid),
@@ -88,17 +89,10 @@ func newEvent(ctx context, args []interface{}) (external.Event, error) {
 		ReturnValue:         int(ctx.Retval),
 		Args:                make([]external.Argument, 0, len(args)),
 	}
-	params, ok := EventsIDToParams[ctx.EventID]
-	if !ok {
-		return e, fmt.Errorf("event %s(%d) is missing from params registry", e.EventName, e.EventID)
-	}
 	for i, arg := range args {
 		e.Args = append(e.Args, external.Argument{
-			ArgMeta: external.ArgMeta{
-				Name: params[i].Name,
-				Type: params[i].Type,
-			},
-			Value: arg,
+			ArgMeta: argMetas[i],
+			Value:   arg,
 		})
 	}
 	return e, nil
