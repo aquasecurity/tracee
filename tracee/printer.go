@@ -95,7 +95,7 @@ func newEvent(ctx context, args []interface{}) (external.Event, error) {
 	for i, arg := range args {
 		e.Args = append(e.Args, external.Argument{
 			ArgMeta: external.ArgMeta{
-				Name:         params[i].Name,
+				Name: params[i].Name,
 				Type: params[i].Type,
 			},
 			Value: arg,

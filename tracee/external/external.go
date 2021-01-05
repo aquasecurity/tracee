@@ -36,7 +36,7 @@ type Argument struct {
 
 // ArgMeta describes an argument
 type ArgMeta struct {
-	Name         string `json:"name"`
+	Name string `json:"name"`
 	Type string `json:"type"`
 }
 
