@@ -334,7 +334,7 @@ func (t *Tracee) initEventsParams() map[int32][]eventParam {
 	paramT := noneT
 	for id, params := range EventsIDToParams {
 		for _, param := range params {
-			switch param.OriginalType {
+			switch param.Type {
 			case "int", "pid_t", "uid_t", "gid_t", "mqd_t", "clockid_t", "const clockid_t", "key_t", "key_serial_t", "timer_t":
 				paramT = intT
 			case "unsigned int", "u32":

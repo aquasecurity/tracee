@@ -37,7 +37,7 @@ type Argument struct {
 // ArgMeta describes an argument
 type ArgMeta struct {
 	Name         string `json:"name"`
-	OriginalType string `json:"originalType"`
+	Type string `json:"type"`
 }
 
 // UnmarshalJSON implements the encoding/json.Unmershaler interface
@@ -49,7 +49,7 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		return err
 	}
 	if num, isNum := arg.Value.(json.Number); isNum {
-		switch arg.OriginalType {
+		switch arg.Type {
 		case "int", "pid_t", "uid_t", "gid_t", "mqd_t", "clockid_t", "const clockid_t", "key_t", "key_serial_t", "timer_t":
 			tmp, err := strconv.ParseInt(num.String(), 10, 32)
 			if err != nil {
