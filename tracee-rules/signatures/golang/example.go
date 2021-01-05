@@ -49,12 +49,10 @@ func (sig *counter) OnEvent(e types.Event) error {
 	}
 	if sig.count == sig.target {
 		sig.cb(types.Finding{
-			Data: []types.FindingData{{
-				Type: "count",
-				Properties: map[string]interface{}{
-					"count":    sig.count,
-					"severity": "HIGH",
-				}}},
+			Data: map[string]interface{}{
+				"count":    sig.count,
+				"severity": "HIGH",
+			},
 			Context:   e,
 			Signature: sig,
 		})
@@ -68,12 +66,10 @@ func (sig *counter) OnSignal(signal types.Signal) error {
 	source, sigcomplete := signal.(types.SignalSourceComplete)
 	if sigcomplete && source == "tracee" {
 		sig.cb(types.Finding{
-			Data: []types.FindingData{{
-				Type: "message",
-				Properties: map[string]interface{}{
-					"message": "done",
-				},
-			}}})
+			Data: map[string]interface{}{
+				"message": "done",
+			},
+		})
 	}
 	return nil
 }

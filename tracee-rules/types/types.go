@@ -43,15 +43,9 @@ type SignalSourceComplete string
 
 //Finding is the main output of a signature. It represents a match result for the signature business logic
 type Finding struct {
-	Data      []FindingData
+	Data      map[string]interface{}
 	Context   Event
 	Signature Signature
-}
-
-//FindingData is a paticular piece if data that corresponds to a Finding
-type FindingData struct {
-	Type       string
-	Properties map[string]interface{}
 }
 
 //TraceeEvent represents a Traee Event and is used for Tracee input source
