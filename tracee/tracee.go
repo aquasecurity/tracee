@@ -20,7 +20,6 @@ import (
 
 // TraceeConfig is a struct containing user defined configuration of tracee
 type TraceeConfig struct {
-	EventsToTrace         []int32
 	Mode                  uint32
 	Filter                *Filter
 	DetectOriginalSyscall bool
@@ -41,13 +40,14 @@ type TraceeConfig struct {
 }
 
 type Filter struct {
-	UIDFilter   *UintFilter
-	PIDFilter   *UintFilter
-	MntNSFilter *UintFilter
-	PidNSFilter *UintFilter
-	UTSFilter   *StringFilter
-	CommFilter  *StringFilter
-	ContFilter  *BoolFilter
+	EventsToTrace []int32
+	UIDFilter     *UintFilter
+	PIDFilter     *UintFilter
+	MntNSFilter   *UintFilter
+	PidNSFilter   *UintFilter
+	UTSFilter     *StringFilter
+	CommFilter    *StringFilter
+	ContFilter    *BoolFilter
 }
 
 type UintFilter struct {
@@ -72,13 +72,13 @@ type BoolFilter struct {
 
 // Validate does static validation of the configuration
 func (tc TraceeConfig) Validate() error {
-	if tc.EventsToTrace == nil {
+	if tc.Filter.EventsToTrace == nil {
 		return fmt.Errorf("eventsToTrace is nil")
 	}
 	if tc.OutputFormat != "table" && tc.OutputFormat != "table-verbose" && tc.OutputFormat != "json" && tc.OutputFormat != "gob" && !strings.HasPrefix(tc.OutputFormat, "go-template=") {
 		return fmt.Errorf("unrecognized output format: %s", tc.OutputFormat)
 	}
-	for _, e := range tc.EventsToTrace {
+	for _, e := range tc.Filter.EventsToTrace {
 		if _, ok := EventsIDToEvent[e]; !ok {
 			return fmt.Errorf("invalid event to trace: %d", e)
 		}
@@ -181,8 +181,8 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 		return nil, err
 	}
 	t.printer = printObj
-	t.eventsToTrace = make(map[int32]bool, len(t.config.EventsToTrace))
-	for _, e := range t.config.EventsToTrace {
+	t.eventsToTrace = make(map[int32]bool, len(t.config.Filter.EventsToTrace))
+	for _, e := range t.config.Filter.EventsToTrace {
 		// Map value is true iff events requested by the user
 		t.eventsToTrace[e] = true
 	}
