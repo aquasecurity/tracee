@@ -220,13 +220,13 @@ Examples:
 	--filter mntns=4026531840                                     | only trace events from mntns id 4026531840
 	--filter pidns!=4026531836                                    | only trace events from pidns id not equal to 4026531840
 	--filter pid=510,1709                                         | only trace events from pid 510 or pid 1709
-	--filter pid=510 --filter pid=1709                            | only trace events from pid 510 or pid 1709 (same as above)
+	--filter p=510 --filter p=1709                                | only trace events from pid 510 or pid 1709 (same as above)
 	--filter 'uid>0'                                              | only trace events from uids greater than 0
 	--filter 'pid>0' --filter 'pid<1000'                          | only trace events from pids between 0 and 1000
-	--filter 'uid>0' --filter uid!=1000                           | only trace events from uids greater than 0 but not 1000
+	--filter 'u>0' --filter u!=1000                               | only trace events from uids greater than 0 but not 1000
 	--filter event=execve,open                                    | only trace execve and open events
 	--filter set=fs                                               | trace all file-system related events
-	--filter set=fs --filter event!=open,openat                   | trace all file-system related events, but not open(at)
+	--filter s=fs --filter e!=open,openat                         | trace all file-system related events, but not open(at)
 	--filter uts!=ab356bc4dd554                                   | don't trace events from uts name ab356bc4dd554
 	--filter comm=ls                                              | only trace events from ls command
 	--filter container                                            | only trace events from containers
@@ -294,48 +294,19 @@ Examples:
 	setFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}, Enabled: false}
 
 	for _, f := range filters {
-		if strings.HasPrefix(f, "uid") {
-			err := parseUintFilter(strings.TrimPrefix(f, "uid"), filter.UIDFilter)
-			if err != nil {
-				return tracee.Filter{}, err
-			}
-			continue
+		filterName := f
+		operatorAndValues := ""
+		operatorIndex := strings.IndexAny(f, "=!<>")
+		if operatorIndex > 0 {
+			filterName = f[0:operatorIndex]
+			operatorAndValues = f[operatorIndex:]
 		}
 
-		if strings.HasPrefix(f, "mntns") {
-			err := parseUintFilter(strings.TrimPrefix(f, "mntns"), filter.MntNSFilter)
-			if err != nil {
-				return tracee.Filter{}, err
-			}
-			continue
-		}
-
-		if strings.HasPrefix(f, "pidns") {
-			err := parseUintFilter(strings.TrimPrefix(f, "pidns"), filter.PidNSFilter)
-			if err != nil {
-				return tracee.Filter{}, err
-			}
-			continue
-		}
-
-		if strings.HasPrefix(f, "pid") {
-			err := parseUintFilter(strings.TrimPrefix(f, "pid"), filter.PIDFilter)
-			if err != nil {
-				return tracee.Filter{}, err
-			}
-			continue
-		}
-
-		if strings.HasPrefix(f, "uts") {
-			err := parseStringFilter(strings.TrimPrefix(f, "uts"), filter.UTSFilter)
-			if err != nil {
-				return tracee.Filter{}, err
-			}
-			continue
-		}
-
-		if strings.HasPrefix(f, "comm") {
-			err := parseStringFilter(strings.TrimPrefix(f, "comm"), filter.CommFilter)
+		// The filters which are more common (container, event, pid, set, uid) can be given using a prefix of them.
+		// Other filters should be given using their full name.
+		// To avoid collisions between filters that share the same prefix, put the filters which should have an exact match first!
+		if filterName == "comm" {
+			err := parseStringFilter(operatorAndValues, filter.CommFilter)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
@@ -350,16 +321,56 @@ Examples:
 			continue
 		}
 
-		if strings.HasPrefix(f, "event") {
-			err := parseStringFilter(strings.TrimPrefix(f, "event"), eventFilter)
+		if strings.HasPrefix("event", filterName) {
+			err := parseStringFilter(operatorAndValues, eventFilter)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
 			continue
 		}
 
-		if strings.HasPrefix(f, "set") {
-			err := parseStringFilter(strings.TrimPrefix(f, "set"), setFilter)
+		if filterName == "mntns" {
+			err := parseUintFilter(operatorAndValues, filter.MntNSFilter)
+			if err != nil {
+				return tracee.Filter{}, err
+			}
+			continue
+		}
+
+		if filterName == "pidns" {
+			err := parseUintFilter(operatorAndValues, filter.PidNSFilter)
+			if err != nil {
+				return tracee.Filter{}, err
+			}
+			continue
+		}
+
+		if strings.HasPrefix("pid", filterName) {
+			err := parseUintFilter(operatorAndValues, filter.PIDFilter)
+			if err != nil {
+				return tracee.Filter{}, err
+			}
+			continue
+		}
+
+		if strings.HasPrefix("set", filterName) {
+			err := parseStringFilter(operatorAndValues, setFilter)
+			if err != nil {
+				return tracee.Filter{}, err
+			}
+			continue
+		}
+
+		if filterName == "uts" {
+			err := parseStringFilter(operatorAndValues, filter.UTSFilter)
+			if err != nil {
+				return tracee.Filter{}, err
+			}
+			continue
+		}
+
+		if strings.HasPrefix("uid", filterName) {
+			err := parseUintFilter(operatorAndValues, filter.UIDFilter)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
@@ -380,14 +391,14 @@ Examples:
 
 func parseUintFilter(operatorAndValues string, uintFilter *tracee.UintFilter) error {
 	uintFilter.Enabled = true
-	if len(operatorAndValues) < 1 {
+	if len(operatorAndValues) < 2 {
 		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
 	}
 	valuesString := string(operatorAndValues[1:])
 	operatorString := string(operatorAndValues[0])
 
 	if operatorString == "!" {
-		if len(operatorAndValues) < 2 {
+		if len(operatorAndValues) < 3 {
 			return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
 		}
 		operatorString = operatorAndValues[0:2]
@@ -427,14 +438,14 @@ func parseUintFilter(operatorAndValues string, uintFilter *tracee.UintFilter) er
 
 func parseStringFilter(operatorAndValues string, stringFilter *tracee.StringFilter) error {
 	stringFilter.Enabled = true
-	if len(operatorAndValues) < 1 {
+	if len(operatorAndValues) < 2 {
 		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
 	}
 	valuesString := string(operatorAndValues[1:])
 	operatorString := string(operatorAndValues[0])
 
 	if operatorString == "!" {
-		if len(operatorAndValues) < 2 {
+		if len(operatorAndValues) < 3 {
 			return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
 		}
 		operatorString = operatorAndValues[0:2]
