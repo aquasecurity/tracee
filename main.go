@@ -212,6 +212,13 @@ available string filters: event, set, uts, comm
 Boolean filters use the following operator: '!'
 available boolean filters: container
 
+Event argument filters are used to filter a specific event by its arguments.
+The following format should be used: "event_name:event_arg=val" or "event_name.event_arg!=val"
+
+Non-boolean filters can get multiple values using "," as a separator.
+When used with the equality operator ("="), the values given to the filter are logical ORed.
+When given with any other operator, the values are logical ANDed.
+
 Note: some of the above operators have special meanings in different shells.
 To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 
@@ -233,6 +240,8 @@ Examples:
 	--filter c                                                    | only trace events from containers (same as above)
 	--filter !container                                           | only trace events from the host
 	--filter '!c'                                                 | only trace events from the host (same as above)
+	--filter close.fd=5                                           | only trace 'close' events that have 'fd' equals 5
+	--filter openat.pathname!=/tmp/1,/bin/ls                      | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
 
 `
 
@@ -247,7 +256,6 @@ Examples:
 			Less:     tracee.LessNotSet,
 			Greater:  tracee.GreaterNotSet,
 			Is32Bit:  true,
-			Enabled:  false,
 		},
 		PIDFilter: &tracee.UintFilter{
 			Equal:    []uint64{},
@@ -255,43 +263,41 @@ Examples:
 			Less:     tracee.LessNotSet,
 			Greater:  tracee.GreaterNotSet,
 			Is32Bit:  true,
-			Enabled:  false,
 		},
 		MntNSFilter: &tracee.UintFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
 			Less:     tracee.LessNotSet,
 			Greater:  tracee.GreaterNotSet,
-			Is32Bit:  false,
-			Enabled:  false,
 		},
 		PidNSFilter: &tracee.UintFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
 			Less:     tracee.LessNotSet,
 			Greater:  tracee.GreaterNotSet,
-			Is32Bit:  false,
-			Enabled:  false,
 		},
 		UTSFilter: &tracee.StringFilter{
 			Equal:    []string{},
 			NotEqual: []string{},
-			Enabled:  false,
 		},
 		CommFilter: &tracee.StringFilter{
 			Equal:    []string{},
 			NotEqual: []string{},
-			Enabled:  false,
 		},
-		ContFilter: &tracee.BoolFilter{
-			Value:   false,
-			Enabled: false,
+		ContFilter: &tracee.BoolFilter{},
+		ArgFilter: &tracee.ArgFilter{
+			Filters: make(map[int32]map[string]tracee.ArgFilterVal),
 		},
 		EventsToTrace: []int32{},
 	}
 
-	eventFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}, Enabled: false}
-	setFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}, Enabled: false}
+	eventFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}}
+	setFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}}
+
+	eventsNameToID := make(map[string]int32, len(tracee.EventsIDToEvent))
+	for _, event := range tracee.EventsIDToEvent {
+		eventsNameToID[event.Name] = event.ID
+	}
 
 	for _, f := range filters {
 		filterName := f
@@ -300,6 +306,14 @@ Examples:
 		if operatorIndex > 0 {
 			filterName = f[0:operatorIndex]
 			operatorAndValues = f[operatorIndex:]
+		}
+
+		if strings.Contains(f, ".") {
+			err := parseArgFilter(filterName, operatorAndValues, eventsNameToID, filter.ArgFilter)
+			if err != nil {
+				return tracee.Filter{}, err
+			}
+			continue
 		}
 
 		// The filters which are more common (container, event, pid, set, uid) can be given using a prefix of them.
@@ -381,7 +395,7 @@ Examples:
 	}
 
 	var err error
-	filter.EventsToTrace, err = prepareEventsToTrace(eventFilter, setFilter)
+	filter.EventsToTrace, err = prepareEventsToTrace(eventFilter, setFilter, eventsNameToID)
 	if err != nil {
 		return tracee.Filter{}, err
 	}
@@ -478,6 +492,69 @@ func parseBoolFilter(value string, boolFilter *tracee.BoolFilter) error {
 	return nil
 }
 
+func parseArgFilter(filterName string, operatorAndValues string, eventsNameToID map[string]int32, argFilter *tracee.ArgFilter) error {
+	argFilter.Enabled = true
+	// Event argument filter has the following format: "event.argname=argval"
+	// filterName have the format event:argname, and operatorAndValues have the format "=argval"
+	splitFilter := strings.Split(filterName, ".")
+	if len(splitFilter) != 2 {
+		return fmt.Errorf("invalid argument filter format %s%s", filterName, operatorAndValues)
+	}
+	eventName := splitFilter[0]
+	argName := splitFilter[1]
+
+	id, ok := eventsNameToID[eventName]
+	if !ok {
+		return fmt.Errorf("invalid argument filter event name: %s", eventName)
+	}
+
+	eventParams, ok := tracee.EventsIDToParams[id]
+	if !ok {
+		return fmt.Errorf("invalid argument filter event name: %s", eventName)
+	}
+
+	// check if argument name exists for this event
+	argFound := false
+	for i := range eventParams {
+		if eventParams[i].Name == argName {
+			argFound = true
+			break
+		}
+	}
+
+	if !argFound {
+		return fmt.Errorf("invalid argument filter argument name: %s", argName)
+	}
+
+	strFilter := &tracee.StringFilter{
+		Equal:    []string{},
+		NotEqual: []string{},
+	}
+
+	// Treat operatorAndValues as a string filter to avoid code duplication
+	err := parseStringFilter(operatorAndValues, strFilter)
+	if err != nil {
+		return err
+	}
+
+	if _, ok := argFilter.Filters[id]; !ok {
+		argFilter.Filters[id] = make(map[string]tracee.ArgFilterVal)
+	}
+
+	if _, ok := argFilter.Filters[id][argName]; !ok {
+		argFilter.Filters[id][argName] = tracee.ArgFilterVal{}
+	}
+
+	val := argFilter.Filters[id][argName]
+
+	val.Equal = append(val.Equal, strFilter.Equal...)
+	val.NotEqual = append(val.NotEqual, strFilter.NotEqual...)
+
+	argFilter.Filters[id][argName] = val
+
+	return nil
+}
+
 func prepareTraceMode(traceString string) (uint32, error) {
 	traceHelp := "\n--trace can be the following options, or a prefix of those:\n"
 	traceHelp += "'new'            | Trace new processes\n"
@@ -507,18 +584,16 @@ func prepareTraceMode(traceString string) (uint32, error) {
 	return 0, fmt.Errorf("invalid trace option specified, use '--trace help' for more info")
 }
 
-func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.StringFilter) ([]int32, error) {
+func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.StringFilter, eventsNameToID map[string]int32) ([]int32, error) {
 	eventFilter.Enabled = true
 	eventsToTrace := eventFilter.Equal
 	excludeEvents := eventFilter.NotEqual
 	setsToTrace := setFilter.Equal
 
 	var res []int32
-	eventsNameToID := make(map[string]int32, len(tracee.EventsIDToEvent))
 	setsToEvents := make(map[string][]int32)
 	isExcluded := make(map[int32]bool)
 	for id, event := range tracee.EventsIDToEvent {
-		eventsNameToID[event.Name] = event.ID
 		for _, set := range event.Sets {
 			setsToEvents[set] = append(setsToEvents[set], id)
 		}
