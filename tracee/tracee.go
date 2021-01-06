@@ -49,6 +49,7 @@ type Filter struct {
 	UTSFilter     *StringFilter
 	CommFilter    *StringFilter
 	ContFilter    *BoolFilter
+	ArgFilter     *ArgFilter
 }
 
 type UintFilter struct {
@@ -71,6 +72,17 @@ type BoolFilter struct {
 	Enabled bool
 }
 
+type ArgFilter struct {
+	Filters map[int32]map[string]ArgFilterVal // key to the first map is event id, and to the second map the argument name
+	Enabled bool
+}
+
+type ArgFilterVal struct {
+	argTag   argTag
+	Equal    []string
+	NotEqual []string
+}
+
 // Validate does static validation of the configuration
 func (tc TraceeConfig) Validate() error {
 	if tc.Filter.EventsToTrace == nil {
@@ -82,6 +94,25 @@ func (tc TraceeConfig) Validate() error {
 	for _, e := range tc.Filter.EventsToTrace {
 		if _, ok := EventsIDToEvent[e]; !ok {
 			return fmt.Errorf("invalid event to trace: %d", e)
+		}
+	}
+	for eventID, eventFilters := range tc.Filter.ArgFilter.Filters {
+		for argName, _ := range eventFilters {
+			eventParams, ok := EventsIDToParams[eventID]
+			if !ok {
+				return fmt.Errorf("invalid argument filter event id: %d", eventID)
+			}
+			// check if argument name exists for this event
+			argFound := false
+			for i := range eventParams {
+				if eventParams[i].Name == argName {
+					argFound = true
+					break
+				}
+			}
+			if !argFound {
+				return fmt.Errorf("invalid argument filter argument name: %s", argName)
+			}
 		}
 	}
 	if (tc.PerfBufferSize & (tc.PerfBufferSize - 1)) != 0 {
@@ -602,6 +633,18 @@ func (t *Tracee) populateBPFMaps() error {
 
 	eventsParams := t.initEventsParams()
 
+	// After initializing event params, we can also initialize argument filters argTags
+	for eventID, eventFilters := range t.config.Filter.ArgFilter.Filters {
+		for argName, filter := range eventFilters {
+			argTag, ok := t.EncParamName[eventID%2][argName]
+			if !ok {
+				return fmt.Errorf("event argument %s for event %d was not initialized correctly", argName, eventID)
+			}
+			filter.argTag = argTag
+			eventFilters[argName] = filter
+		}
+	}
+
 	sysEnterTailsBPFMap, _ := t.bpfModule.GetMap("sys_enter_tails")
 	//sysExitTailsBPFMap := t.bpfModule.GetMap("sys_exit_tails")
 	paramsTypesBPFMap, _ := t.bpfModule.GetMap("params_types_map")
@@ -830,6 +873,32 @@ func (t *Tracee) handleError(err error) {
 
 // shouldProcessEvent decides whether or not to drop an event before further processing it
 func (t *Tracee) shouldProcessEvent(e RawEvent) bool {
+	if t.config.Filter.ArgFilter.Enabled {
+		for _, filter := range t.config.Filter.ArgFilter.Filters[e.Ctx.EventID] {
+			argVal, ok := e.RawArgs[filter.argTag]
+			if !ok {
+				continue
+			}
+			// TODO: use type assertion instead of string convertion
+			argValStr := fmt.Sprint(argVal)
+			match := false
+			for i := range filter.Equal {
+				if argValStr == filter.Equal[i] {
+					match = true
+					break
+				}
+			}
+			if !match && len(filter.Equal) > 0 {
+				return false
+			}
+			for i := range filter.NotEqual {
+				if argValStr == filter.NotEqual[i] {
+					return false
+				}
+			}
+		}
+	}
+
 	return true
 }
 
