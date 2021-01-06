@@ -16,6 +16,7 @@ import (
 	"syscall"
 
 	bpf "github.com/aquasecurity/tracee/libbpfgo"
+	"github.com/aquasecurity/tracee/tracee/external"
 )
 
 // TraceeConfig is a struct containing user defined configuration of tracee
@@ -113,7 +114,7 @@ type Tracee struct {
 	stats         statsStore
 	capturedFiles map[string]int64
 	mntNsFirstPid map[uint32]uint32
-	DecParamName  [2]map[argTag]string
+	DecParamName  [2]map[argTag]external.ArgMeta
 	EncParamName  [2]map[string]argTag
 	pidsInMntns   bucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 }
@@ -189,9 +190,9 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 		}
 	}
 
-	t.DecParamName[0] = make(map[argTag]string)
+	t.DecParamName[0] = make(map[argTag]external.ArgMeta)
 	t.EncParamName[0] = make(map[string]argTag)
-	t.DecParamName[1] = make(map[argTag]string)
+	t.DecParamName[1] = make(map[argTag]external.ArgMeta)
 	t.EncParamName[1] = make(map[string]argTag)
 
 	err = t.initBPF(cfg.BPFObjPath)
@@ -334,7 +335,7 @@ func (t *Tracee) initEventsParams() map[int32][]eventParam {
 	paramT := noneT
 	for id, params := range EventsIDToParams {
 		for _, param := range params {
-			switch param.pType {
+			switch param.Type {
 			case "int", "pid_t", "uid_t", "gid_t", "mqd_t", "clockid_t", "const clockid_t", "key_t", "key_serial_t", "timer_t":
 				paramT = intT
 			case "unsigned int", "u32":
@@ -368,14 +369,14 @@ func (t *Tracee) initEventsParams() map[int32][]eventParam {
 			// To keep on low communication overhead, we don't change this to u16
 			// Instead, use an array of enc/dec maps, where the key is modulus of the event id
 			// This can easilly be expanded in the future if required
-			if !seenNames[id%2][param.pName] {
-				seenNames[id%2][param.pName] = true
-				t.EncParamName[id%2][param.pName] = ParamNameCounter[id%2]
-				t.DecParamName[id%2][ParamNameCounter[id%2]] = param.pName
+			if !seenNames[id%2][param.Name] {
+				seenNames[id%2][param.Name] = true
+				t.EncParamName[id%2][param.Name] = ParamNameCounter[id%2]
+				t.DecParamName[id%2][ParamNameCounter[id%2]] = param
 				eventsParams[id] = append(eventsParams[id], eventParam{encType: paramT, encName: ParamNameCounter[id%2]})
 				ParamNameCounter[id%2]++
 			} else {
-				eventsParams[id] = append(eventsParams[id], eventParam{encType: paramT, encName: t.EncParamName[id%2][param.pName]})
+				eventsParams[id] = append(eventsParams[id], eventParam{encType: paramT, encName: t.EncParamName[id%2][param.Name]})
 			}
 		}
 	}
