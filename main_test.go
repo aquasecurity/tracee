@@ -132,12 +132,6 @@ func TestPrepareFilter(t *testing.T) {
 			expectedError:  errors.New("invalid filter value: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
 		},
 		{
-			testName:       "invalid uts",
-			filters:        []string{"uts=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
-			expectedFilter: tracee.Filter{},
-			expectedError:  errors.New("Filtering strings of length bigger than 32 is not supported: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
-		},
-		{
 			testName:       "invalid uid",
 			filters:        []string{"uid=%s"},
 			expectedFilter: tracee.Filter{},

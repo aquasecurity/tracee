@@ -48,7 +48,7 @@
 #define MAX_STRING_SIZE     4096          // Choosing this value to be the same as PATH_MAX
 #define MAX_STR_ARR_ELEM    40            // String array elements number should be bounded due to instructions limit
 #define MAX_PATH_PREF_SIZE  64            // Max path prefix should be bounded due to instructions limit
-#define MAX_STR_FILTER_SIZE 32            // Max string filter size should be bounded due to instructions limit
+#define MAX_STR_FILTER_SIZE 16            // Max string filter size should be bounded to the size of the compared values (comm, uts)
 
 #define SUBMIT_BUF_IDX      0
 #define STRING_BUF_IDX      1
