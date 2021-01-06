@@ -24,6 +24,7 @@ const (
 	configCommFilter
 	configPidFilter
 	configContFilter
+	configFollowFilter
 )
 
 const (
@@ -70,7 +71,6 @@ const (
 	ModeAll uint32 = iota + 1
 	ModeNew
 	ModePidNs
-	ModeFollow
 )
 
 const (
