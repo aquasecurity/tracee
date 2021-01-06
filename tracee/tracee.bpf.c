@@ -141,6 +141,7 @@
 #define CONFIG_COMM_FILTER      10
 #define CONFIG_PID_FILTER       11
 #define CONFIG_CONT_FILTER      12
+#define CONFIG_FOLLOW_FILTER    13
 
 // get_config(CONFIG_XXX_FILTER) returns 0 if not enabled
 #define FILTER_IN  1
@@ -161,7 +162,6 @@
 #define MODE_ALL        1
 #define MODE_NEW        2
 #define MODE_PIDNS      3
-#define MODE_FOLLOW     4
 
 #define DEV_NULL_STR    0
 
@@ -613,22 +613,23 @@ static __always_inline int should_trace()
     context_t context = {};
     init_context(&context);
 
-    switch (get_config(CONFIG_MODE))
-    {
-        case MODE_NEW:
-            if (bpf_map_lookup_elem(&pids_map, &context.host_tid) == 0)
-                return 0;
-            break;
-        case MODE_FOLLOW:
-            if (bpf_map_lookup_elem(&pids_map, &context.host_tid) != 0) {
-                return 1;
-            }
-            break;
-        case MODE_PIDNS:
-            if (bpf_map_lookup_elem(&pids_map, &context.pid_id) == 0)
-                return 0;
-            break;
-        // case MODE_ALL - continue with filter checks
+    if (get_config(CONFIG_FOLLOW_FILTER)) {
+        if (bpf_map_lookup_elem(&pids_map, &context.host_tid) != 0)
+            // If the process is already in the pids_map and follow was chosen, don't check the other filters
+            return 1;
+    } else {
+        switch (get_config(CONFIG_MODE))
+        {
+            case MODE_NEW:
+                if (bpf_map_lookup_elem(&pids_map, &context.host_tid) == 0)
+                    return 0;
+                break;
+            case MODE_PIDNS:
+                if (bpf_map_lookup_elem(&pids_map, &context.pid_id) == 0)
+                    return 0;
+                break;
+            // case MODE_ALL - continue with filter checks
+        }
     }
 
     // Don't monitor self
@@ -1363,11 +1364,12 @@ struct bpf_raw_tracepoint_args *ctx
     }
 
     int config_mode = get_config(CONFIG_MODE);
+    int follow_filter = get_config(CONFIG_FOLLOW_FILTER);
     u32 pid = bpf_get_current_pid_tgid();
 
     // execve events may add new pids to the traced pids set
     // perform this check before should_trace() so newly executed binaries will be traced
-    if (id == SYS_EXECVE || id == SYS_EXECVEAT) {
+    if ((id == SYS_EXECVE || id == SYS_EXECVEAT) && !follow_filter) {
         if (config_mode == MODE_PIDNS) {
             u32 pid_ns = get_task_pid_ns_id(task);
             if ((bpf_map_lookup_elem(&pids_map, &pid_ns) == 0) && (get_task_ns_pid(task) == 1)) {
@@ -1383,8 +1385,7 @@ struct bpf_raw_tracepoint_args *ctx
     if (!should_trace())
         return 0;
 
-    if ((id == SYS_EXECVE || id == SYS_EXECVEAT) && (config_mode == MODE_FOLLOW))
-    {
+    if ((id == SYS_EXECVE || id == SYS_EXECVEAT) && follow_filter) {
         // We passed all filters (in should_trace()) - add this pid to traced pids set
         bpf_map_update_elem(&pids_map, &pid, &pid, BPF_ANY);
     }
@@ -1468,11 +1469,9 @@ struct bpf_raw_tracepoint_args *ctx
     // fork events may add new pids to the traced pids set
     // perform this check after should_trace() to only add forked childs of a traced parent
     int config_mode = get_config(CONFIG_MODE);
-    if (id == SYS_CLONE || id == SYS_FORK || id == SYS_VFORK) {
-        if (config_mode == MODE_NEW || config_mode == MODE_FOLLOW) {
-            u32 pid = ret;
-            bpf_map_update_elem(&pids_map, &pid, &pid, BPF_ANY);
-        }
+    if ((id == SYS_CLONE || id == SYS_FORK || id == SYS_VFORK) && (config_mode == MODE_NEW)) {
+        u32 pid = ret;
+        bpf_map_update_elem(&pids_map, &pid, &pid, BPF_ANY);
     }
 
     if (event_chosen(RAW_SYS_EXIT)) {
@@ -1627,7 +1626,7 @@ struct bpf_raw_tracepoint_args *ctx
             bpf_map_delete_elem(&pids_map, &pid_ns);
         }
     }
-    else if (config_mode == MODE_NEW || config_mode == MODE_FOLLOW) {
+    else if (config_mode == MODE_NEW) {
         // Remove pid from pids_map
         u32 pid = bpf_get_current_pid_tgid();
         if (bpf_map_lookup_elem(&pids_map, &pid) != 0)

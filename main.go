@@ -201,7 +201,7 @@ func main() {
 
 func prepareFilter(filters []string) (tracee.Filter, error) {
 	filterHelp := `
---filter allows you to specify values to match on for fields of traced events.
+--filter lets you preclude events that match a criteria from being traced. The following types of filter expressions are supported:
 
 Numerical filters use the following operators: '=', '!=', '<', '>'
 available numerical filters: uid, pid, mntns, pidns
@@ -219,8 +219,7 @@ Non-boolean filters can get multiple values using "," as a separator.
 When used with the equality operator ("="), the values given to the filter are logical ORed.
 When given with any other operator, the values are logical ANDed.
 
-Note: some of the above operators have special meanings in different shells.
-To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
+It is possible to include events that descended from filtered processes using the special 'follow' filter. Specifying this filter will trace events from any filtered process, or a child process of a filtered process.
 
 Examples:
 	--filter uid=0                                                | only trace events from uid 0
@@ -242,7 +241,11 @@ Examples:
 	--filter '!c'                                                 | only trace events from the host (same as above)
 	--filter close.fd=5                                           | only trace 'close' events that have 'fd' equals 5
 	--filter openat.pathname!=/tmp/1,/bin/ls                      | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
+	--filter comm=bash --filter follow                            | trace all events that originated from bash or from one of the processes spawned by bash
 
+
+Note: some of the above operators have special meanings in different shells.
+To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 `
 
 	if len(filters) == 1 && filters[0] == "help" {
@@ -388,6 +391,11 @@ Examples:
 			if err != nil {
 				return tracee.Filter{}, err
 			}
+			continue
+		}
+
+		if strings.HasPrefix("follow", f) {
+			filter.Follow = true
 			continue
 		}
 
@@ -559,7 +567,6 @@ func prepareTraceMode(traceString string) (uint32, error) {
 	traceHelp := "\n--trace can be the following options, or a prefix of those:\n"
 	traceHelp += "'new'            | Trace new processes\n"
 	traceHelp += "'pidns'          | Trace processes from newly created pid namespaces\n"
-	traceHelp += "'follow'         | Trace filtered process and all of its children\n"
 	traceHelp += "'all'            | Trace all processes\n"
 	if traceString == "help" {
 		return 0, fmt.Errorf(traceHelp)
@@ -571,10 +578,6 @@ func prepareTraceMode(traceString string) (uint32, error) {
 
 	if strings.HasPrefix("pidns", traceString) {
 		return tracee.ModePidNs, nil
-	}
-
-	if strings.HasPrefix("follow", traceString) {
-		return tracee.ModeFollow, nil
 	}
 
 	if strings.HasPrefix("all", traceString) {

@@ -50,6 +50,7 @@ type Filter struct {
 	CommFilter    *StringFilter
 	ContFilter    *BoolFilter
 	ArgFilter     *ArgFilter
+	Follow        bool
 }
 
 type UintFilter struct {
@@ -566,6 +567,7 @@ func (t *Tracee) populateBPFMaps() error {
 	bpfConfigMap.Update(uint32(configCaptureFiles), boolToUInt32(t.config.CaptureWrite))
 	bpfConfigMap.Update(uint32(configExtractDynCode), boolToUInt32(t.config.CaptureMem))
 	bpfConfigMap.Update(uint32(configTraceePid), uint32(os.Getpid()))
+	bpfConfigMap.Update(uint32(configFollowFilter), boolToUInt32(t.config.Filter.Follow))
 
 	// Initialize tail calls program array
 	bpfProgArrayMap, _ := t.bpfModule.GetMap("prog_array")
