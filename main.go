@@ -579,28 +579,58 @@ func getSelfCapabilities() (capability.Capabilities, error) {
 	return cap, nil
 }
 
+func fetchFormattedEventParams(eventID int32) string {
+	eventParams := tracee.EventsIDToParams[eventID]
+	var verboseEventParams string
+	verboseEventParams += "("
+	prefix := ""
+	for index, arg := range eventParams {
+		if index == 0 {
+			verboseEventParams += arg.Type + " " + arg.Name
+			prefix = ", "
+			continue
+		}
+		verboseEventParams += prefix + arg.Type + " " + arg.Name
+	}
+	verboseEventParams += ")"
+	return verboseEventParams
+}
+
+func getPad(padChar string, padLength int) (pad string) {
+	for i := 0; i < padLength; i++ {
+		pad += padChar
+	}
+	return
+}
+
 func printList() {
+	padChar, firstPadLen, secondPadLen := " ", 9, 36
+	titleHeaderPadFirst := getPad(padChar, firstPadLen)
+	titleHeaderPadSecond := getPad(padChar, secondPadLen)
+
 	var b strings.Builder
-	b.WriteString("System Calls:              Sets:\n")
-	b.WriteString("____________               ____\n\n")
+	b.WriteString("System Calls: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
+	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________" + "\n\n")
 	for i := 0; i < int(tracee.SysEnterEventID); i++ {
-		event, ok := tracee.EventsIDToEvent[int32(i)]
+		index := int32(i)
+		event, ok := tracee.EventsIDToEvent[index]
 		if !ok {
 			continue
 		}
 		if event.Sets != nil {
-			eventSets := fmt.Sprintf("%-23s    %v\n", event.Name, event.Sets)
+			eventSets := fmt.Sprintf("%-22s %-40s %s\n", event.Name, fmt.Sprintf("%v", event.Sets), fetchFormattedEventParams(index))
 			b.WriteString(eventSets)
 		} else {
 			b.WriteString(event.Name + "\n")
 		}
 	}
-	b.WriteString("\n\nOther Events:              Sets:\n")
-	b.WriteString("____________               ____\n\n")
+	b.WriteString("\n\nOther Events: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
+	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________\n\n")
 	for i := int(tracee.SysEnterEventID); i < int(tracee.MaxEventID); i++ {
-		event := tracee.EventsIDToEvent[int32(i)]
+		index := int32(i)
+		event := tracee.EventsIDToEvent[index]
 		if event.Sets != nil {
-			eventSets := fmt.Sprintf("%-23s    %v\n", event.Name, event.Sets)
+			eventSets := fmt.Sprintf("%-22s %-40s %s\n", event.Name, fmt.Sprintf("%v", event.Sets), fetchFormattedEventParams(index))
 			b.WriteString(eventSets)
 		} else {
 			b.WriteString(event.Name + "\n")
