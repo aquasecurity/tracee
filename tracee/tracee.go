@@ -38,6 +38,7 @@ type TraceeConfig struct {
 	ErrorsFile            *os.File
 	maxPidsCache          int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
 	BPFObjPath            string
+	NSMapPinning          string
 }
 
 type Filter struct {
@@ -679,6 +680,12 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 		}
 	}
 
+	if t.config.Mode == ModeMapPinned {
+		fmt.Println("\nChanging pinning to ")
+		fmt.Println(t.config.NSMapPinning)
+		t.bpfModule.ChangeMapPin("mntns_set", t.config.NSMapPinning)
+	}
+
 	err = t.bpfModule.BPFLoadObject()
 	if err != nil {
 		return err
@@ -710,10 +717,10 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 			switch probe.attach {
 			case kprobe:
 				// todo: after updating minimal kernel version to 4.18, use without legacy
-				_, err = prog.AttachKprobeLegacy(probe.event)
+				_, err = prog.AttachKprobe(probe.event)
 			case kretprobe:
 				// todo: after updating minimal kernel version to 4.18, use without legacy
-				_, err = prog.AttachKretprobeLegacy(probe.event)
+				_, err = prog.AttachKretprobe(probe.event)
 			case tracepoint:
 				_, err = prog.AttachTracepoint(probe.event)
 			case rawTracepoint:

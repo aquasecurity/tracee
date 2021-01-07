@@ -302,6 +302,14 @@ func (m *Module) GetMap(mapName string) (*BPFMap, error) {
 	}, nil
 }
 
+func (m *Module) ChangeMapPin(mapName string, pinning string) error {
+	cs := C.CString(mapName)
+	path := C.CString(pinning)
+	bpfMap := C.bpf_object__find_map_by_name(m.obj, cs)
+	C.bpf_map__set_pin_path(bpfMap, path)
+	return nil
+}
+
 func (b *BPFMap) Update(key, value interface{}) error {
 	var keyPtr, valuePtr unsafe.Pointer
 	if k, isType := key.(int8); isType {

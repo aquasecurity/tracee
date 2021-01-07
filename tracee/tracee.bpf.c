@@ -162,6 +162,7 @@
 #define MODE_NEW        2
 #define MODE_PIDNS      3
 #define MODE_FOLLOW     4
+#define MODE_MAP_PINNED 5
 
 #define DEV_NULL_STR    0
 
@@ -305,6 +306,15 @@ BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS);       // Holds offsets to bufs res
 BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);          // Used to store programs for tail calls
 BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);      // Used to store programs for tail calls
 BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID);       // Used to store programs for tail calls
+
+struct {
+	__uint(type, BPF_MAP_TYPE_HASH);
+	__uint(max_entries, 128);
+	__type(key, __u64);
+	__type(value, __u32);
+	__uint(pinning, LIBBPF_PIN_BY_NAME);
+} mntns_set SEC(".maps"); //map that is used in pinned map mode to filter by mount namespaces ids
+
 
 /*================================== EVENTS ====================================*/
 
@@ -608,6 +618,16 @@ static __always_inline int bool_filter_matches(int filter_config, void *filter_m
     return 1;
 }
 
+static __always_inline int mnt_id_filter_matches(u32 mnt_id)
+{
+    u64 mnt_id_curr = (u64)mnt_id;
+    uid_t* isMatch = bpf_map_lookup_elem(&mntns_set, &mnt_id_curr); 
+    if (isMatch == NULL) {      
+        return 0;    
+   }
+    return 1;
+}
+
 static __always_inline int should_trace()
 {
     context_t context = {};
@@ -615,6 +635,12 @@ static __always_inline int should_trace()
 
     switch (get_config(CONFIG_MODE))
     {
+        case MODE_MAP_PINNED:
+            if (mnt_id_filter_matches(context.mnt_id)) {
+                return 1;
+            } else {
+                return 0;
+            }
         case MODE_NEW:
             if (bpf_map_lookup_elem(&pids_map, &context.host_tid) == 0)
                 return 0;

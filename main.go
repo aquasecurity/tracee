@@ -43,7 +43,9 @@ func main() {
 			if err != nil {
 				return err
 			}
-
+			if mode == tracee.ModeMapPinned && c.String("mntns_pin") == "" {
+				return fmt.Errorf("Pinned map mode requires you to pass --mntns_pin parameter")
+			}
 			cfg := tracee.TraceeConfig{
 				Mode:                  mode,
 				DetectOriginalSyscall: c.Bool("detect-original-syscall"),
@@ -56,6 +58,7 @@ func main() {
 				SecurityAlerts:        c.Bool("security-alerts"),
 				EventsFile:            os.Stdout,
 				ErrorsFile:            os.Stderr,
+				NSMapPinning:          c.String("mntns_pin"),
 			}
 			capture := c.StringSlice("capture")
 			for _, cap := range capture {
@@ -189,6 +192,10 @@ func main() {
 				Value:       "if-needed",
 				Usage:       "when to build the bpf program. possible options: 'never'/'always'/'if-needed'",
 				Destination: &buildPolicy,
+			}, &cli.StringFlag{
+				Name:  "mntns_pin",
+				Value: "",
+				Usage: "A path to bpf map where the mnt_ns_namespace ids are stored as keys and values are ignored",
 			},
 		},
 	}
@@ -487,8 +494,14 @@ func prepareTraceMode(traceString string) (uint32, error) {
 	traceHelp += "'pidns'          | Trace processes from newly created pid namespaces\n"
 	traceHelp += "'follow'         | Trace filtered process and all of its children\n"
 	traceHelp += "'all'            | Trace all processes\n"
+	traceHelp += "'host:all'       | Trace all processes not in a container\n"
+	traceHelp += "'pinned_map'     | Trace processes in specific namespaces provided in map, requires valid map pinning passed via --mntns_pin parameter\n"
 	if traceString == "help" {
 		return 0, fmt.Errorf(traceHelp)
+	}
+
+	if traceString == "pinned_map" {
+		return tracee.ModeMapPinned, nil
 	}
 
 	if strings.HasPrefix("new", traceString) {
