@@ -44,11 +44,11 @@
 #define PT_REGS_PARM6(x) (((PT_REGS_ARM64 *)(x))->regs[5])
 #endif
 
-#define MAX_PERCPU_BUFSIZE  (1 << 15)     // This value is actually set by the kernel as an upper bound
-#define MAX_STRING_SIZE     4096          // Choosing this value to be the same as PATH_MAX
-#define MAX_STR_ARR_ELEM    40            // String array elements number should be bounded due to instructions limit
-#define MAX_PATH_PREF_SIZE  64            // Max path prefix should be bounded due to instructions limit
-#define MAX_STR_FILTER_SIZE 32            // Max string filter size should be bounded due to instructions limit
+#define MAX_PERCPU_BUFSIZE  (1 << 15)      // This value is actually set by the kernel as an upper bound
+#define MAX_STRING_SIZE     4096           // Choosing this value to be the same as PATH_MAX
+#define MAX_STR_ARR_ELEM    40             // String array elements number should be bounded due to instructions limit
+#define MAX_PATH_PREF_SIZE  64             // Max path prefix should be bounded due to instructions limit
+#define MAX_STR_FILTER_SIZE TASK_COMM_LEN  // Max string filter size should be bounded due to instructions limit
 
 #define SUBMIT_BUF_IDX      0
 #define STRING_BUF_IDX      1

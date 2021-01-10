@@ -455,8 +455,8 @@ func parseStringFilter(operatorAndValues string, stringFilter *tracee.StringFilt
 	values := strings.Split(valuesString, ",")
 
 	for i := range values {
-		if len(values[i]) > 32 {
-			return fmt.Errorf("Filtering strings of length bigger than 32 is not supported: %s", values[i])
+		if len(values[i]) > 16 {
+			return fmt.Errorf("Filtering strings of length bigger than 16 is not supported: %s", values[i])
 		}
 		switch operatorString {
 		case "=":
