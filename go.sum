@@ -1,16 +1,10 @@
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
+github.com/aquasecurity/tracee/libbpfgo v0.0.0-20210110080840-96ed00e0dd8d h1:zggREwmmm/tM4I/yPcUSGGPMrB4zeU8gwhGYdQJW4eg=
+github.com/aquasecurity/tracee/libbpfgo v0.0.0-20210110080840-96ed00e0dd8d/go.mod h1:Ldem7RTRbX6bdTDxU2eYYvo7pPWYQbbc6rdGv0Ilyts=
 github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d h1:U+s90UTSYgptZMwQh2aRr3LuazLJIa+Pg3Kc1ylSYVY=
 github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d/go.mod h1:maD7wRr/U5Z6m/iR4s+kqSMx2CaBsrgA7czyZG/E6dU=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/iovisor/gobpf v0.0.0-20191017091429-c3024dcc6881 h1:DRdqUzrTOOIlh9Fzmf59XZBLoTrUdiSN3Z0ThUkVfqM=
-github.com/iovisor/gobpf v0.0.0-20191017091429-c3024dcc6881/go.mod h1:+5U5qu5UOu8YJ5oHVLvWKH7/Dr5QNHU7mZ2RfPEeXg8=
-github.com/iovisor/gobpf v0.0.0-20191219090757-e72091e3c5e6 h1:iFG10/KLpx/+XAWkOp7cCg4cHC4ZJ1NfYyhy+ti6GMA=
-github.com/iovisor/gobpf v0.0.0-20191219090757-e72091e3c5e6/go.mod h1:+5U5qu5UOu8YJ5oHVLvWKH7/Dr5QNHU7mZ2RfPEeXg8=
-github.com/iovisor/gobpf v0.0.0-20200417061255-f0a208deaea5 h1:LuRmSIyYmbTLffmCAzvR1GcGJYQ2slcDexwiwq6fTjQ=
-github.com/iovisor/gobpf v0.0.0-20200417061255-f0a208deaea5/go.mod h1:+5U5qu5UOu8YJ5oHVLvWKH7/Dr5QNHU7mZ2RfPEeXg8=
-github.com/iovisor/gobpf v0.0.0-20200529092446-49b58e11a4b5 h1:fXXfg4Tra7tLI4raPGgNxZzlTdjCSvk2EoUCDHDGKb4=
-github.com/iovisor/gobpf v0.0.0-20200529092446-49b58e11a4b5/go.mod h1:+5U5qu5UOu8YJ5oHVLvWKH7/Dr5QNHU7mZ2RfPEeXg8=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/russross/blackfriday/v2 v2.0.1 h1:lPqVAte+HuHNfhJ/0LC98ESWRz8afy9tM/0RK8m9o+Q=
@@ -23,7 +17,6 @@ github.com/stretchr/testify v1.5.1 h1:nOGnQDM7FYENwehXlg/kFVnos3rEvtKTjRvOWSzb6H
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
 github.com/syndtr/gocapability v0.0.0-20180916011248-d98352740cb2 h1:b6uOv7YOFK0TYG7HtkIgExQo+2RdLuwRft63jn2HWj8=
 github.com/syndtr/gocapability v0.0.0-20180916011248-d98352740cb2/go.mod h1:hkRG7XYTFWNJGYcbNJQlaLq0fg1yr4J4t/NcTQtrfww=
-github.com/urfave/cli v1.22.2 h1:gsqYFH8bb9ekPA12kRo0hfjngWQjkJPlN9R0N78BoUo=
 github.com/urfave/cli/v2 v2.1.1 h1:Qt8FeAtxE/vfdrLmR3rxR6JRE0RoVmbXu8+6kZtYU4k=
 github.com/urfave/cli/v2 v2.1.1/go.mod h1:SE9GqnLQmjVa0iPEY0f1w3ygNIYcIJ0OKPMoW2caLfQ=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
