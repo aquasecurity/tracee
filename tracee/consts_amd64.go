@@ -791,6 +791,7 @@ const (
 	sys32fspick                       int32 = 433
 	sys32pidfd_open                   int32 = 434
 	sys32clone3                       int32 = 435
+	sys32close_range                  int32 = 436
 	sys32openat2                      int32 = 437
 	sys32pidfd_getfd                  int32 = 438
 	sys32faccessat2                   int32 = 439
