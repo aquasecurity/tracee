@@ -1,6 +1,7 @@
 package regosig
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -18,7 +19,7 @@ __rego_metadoc__ := {
 	"tags": [ "tag1", "tag2" ],
 	"properties": {
 		"p1": "test",
-		#"p2": 1,
+		"p2": 1,
 		"p3": true
 	}
 }
@@ -33,7 +34,7 @@ __rego_metadoc__ := {
 		Tags:        []string{"tag1", "tag2"},
 		Properties: map[string]interface{}{
 			"p1": "test",
-			//"p2": 1,
+			"p2": json.Number("1"),
 			"p3": true,
 		},
 	}
@@ -121,9 +122,10 @@ package main
 
 tracee_match = res {
 	endswith(input.args[0].value, "yo")
+	input.args[1].value == 1337
 	res := {
 		"p1": "test",
-		#"p2": 1,
+		"p2": 1,
 		"p3": true
 	}
 }
@@ -131,7 +133,7 @@ tracee_match = res {
 	assertFindingData := func(res types.Finding) {
 		expectedFindingData := map[string]interface{}{
 			"p1": "test",
-			//"p2": 1,
+			"p2": json.Number("1"),
 			"p3": true,
 		}
 		if !reflect.DeepEqual(res.Data, expectedFindingData) {
@@ -144,6 +146,18 @@ tracee_match = res {
 				types.TraceeEvent{
 					Args: []types.TraceeEventArgument{
 						{Name: "doesn't matter", Value: "ends with yo"},
+					},
+				},
+			},
+			Expect: false,
+			CB:     assertFindingData,
+		},
+		{
+			Events: []types.Event{
+				types.TraceeEvent{
+					Args: []types.TraceeEventArgument{
+						{Name: "doesn't matter", Value: "ends with yo"},
+						{Name: "doesn't matter", Value: 1337},
 					},
 				},
 			},
