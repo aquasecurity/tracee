@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
 )
 
@@ -16,9 +17,11 @@ import (
 // tracee_selected_events: a *set* rule that defines the event selectors (see GetSelectedEvent())
 // tracee_match: a *boolean*, or a *document* rule that defines the logic of the signature (see OnEvent())
 type RegoSignature struct {
-	cb       types.SignatureHandler
-	regoCode string
-	matchPQ  rego.PreparedEvalQuery
+	cb             types.SignatureHandler
+	compiledRego   *ast.Compiler
+	matchPQ        rego.PreparedEvalQuery
+	metadata       types.SignatureMetadata
+	selectedEvents []types.SignatureEventSelector
 }
 
 const queryMatch string = "data.main.tracee_match"
@@ -27,22 +30,33 @@ const queryMetadata string = "data.main.__rego_metadoc__"
 
 // NewRegoSignature creates a new RegoSignature with the provided rego code string
 func NewRegoSignature(regoCode string) (types.Signature, error) {
-	return &RegoSignature{
-		regoCode: regoCode,
-	}, nil
+	var err error
+	res := RegoSignature{}
+	res.compiledRego, err = ast.CompileModules(map[string]string{"sig": regoCode})
+	if err != nil {
+		return nil, err
+	}
+	res.matchPQ, err = rego.New(
+		rego.Compiler(res.compiledRego),
+		rego.Query(queryMatch),
+	).PrepareForEval(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	res.metadata, err = res.getMetadata()
+	if err != nil {
+		return nil, err
+	}
+	res.selectedEvents, err = res.getSelectedEvents()
+	if err != nil {
+		return nil, err
+	}
+	return &res, nil
 }
 
 // Init implements the Signature interface by resetting internal state
 func (sig *RegoSignature) Init(cb types.SignatureHandler) error {
-	var err error
 	sig.cb = cb
-	sig.matchPQ, err = rego.New(
-		rego.Module("sig", sig.regoCode),
-		rego.Query(queryMatch),
-	).PrepareForEval(context.TODO())
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -50,27 +64,22 @@ func (sig *RegoSignature) Init(cb types.SignatureHandler) error {
 // this is a *document* rule that defines the rule's metadata
 // based on WIP Rego convention for describing policy metadata: https://hackmd.io/@ZtQnh19kS26YiNlJLqKJnw/H1gAv5nBw
 func (sig *RegoSignature) GetMetadata() (types.SignatureMetadata, error) {
-	metadataPQ, err := rego.New(
-		rego.Module("sig", sig.regoCode),
-		rego.Query(queryMetadata),
-	).PrepareForEval(context.TODO())
+	return sig.metadata, nil
+}
+
+func (sig *RegoSignature) getMetadata() (types.SignatureMetadata, error) {
+	evalRes, err := sig.evalQuery(queryMetadata)
 	if err != nil {
 		return types.SignatureMetadata{}, err
 	}
-	results, err := metadataPQ.Eval(context.TODO())
+	resJSON, err := json.Marshal(evalRes)
 	if err != nil {
 		return types.SignatureMetadata{}, err
 	}
 	var res types.SignatureMetadata
-	if len(results) > 0 && len(results[0].Expressions) > 0 && results[0].Expressions[0].Value != nil {
-		resJSON, err := json.Marshal(results[0].Expressions[0].Value)
-		if err != nil {
-			return types.SignatureMetadata{}, err
-		}
-		err = json.Unmarshal(resJSON, &res)
-		if err != nil {
-			return types.SignatureMetadata{}, err
-		}
+	err = json.Unmarshal(resJSON, &res)
+	if err != nil {
+		return types.SignatureMetadata{}, err
 	}
 	return res, nil
 }
@@ -78,27 +87,22 @@ func (sig *RegoSignature) GetMetadata() (types.SignatureMetadata, error) {
 // GetSelectedEvents implements the Signature interface by evaluating the Rego policy's tracee_selected_events rule
 // this is a *set* rule that defines the rule's SelectedEvents
 func (sig *RegoSignature) GetSelectedEvents() ([]types.SignatureEventSelector, error) {
-	eventSelectorPQ, err := rego.New(
-		rego.Module("sig", sig.regoCode),
-		rego.Query(querySelectedEvents),
-	).PrepareForEval(context.TODO())
+	return sig.selectedEvents, nil
+}
+
+func (sig *RegoSignature) getSelectedEvents() ([]types.SignatureEventSelector, error) {
+	evalRes, err := sig.evalQuery(querySelectedEvents)
 	if err != nil {
 		return nil, err
 	}
-	results, err := eventSelectorPQ.Eval(context.TODO())
+	resJSON, err := json.Marshal(evalRes)
 	if err != nil {
 		return nil, err
 	}
 	var res []types.SignatureEventSelector
-	if len(results) > 0 && len(results[0].Expressions) > 0 && results[0].Expressions[0].Value != nil {
-		resJSON, err := json.Marshal(results[0].Expressions[0].Value)
-		if err != nil {
-			return nil, err
-		}
-		err = json.Unmarshal(resJSON, &res)
-		if err != nil {
-			return nil, err
-		}
+	err = json.Unmarshal(resJSON, &res)
+	if err != nil {
+		return nil, err
 	}
 	return res, nil
 }
@@ -141,4 +145,22 @@ func (sig *RegoSignature) OnEvent(e types.Event) error {
 // OnSignal implements the Signature interface by handling lifecycle events of the signature
 func (sig *RegoSignature) OnSignal(signal types.Signal) error {
 	return fmt.Errorf("OnSignal is not implemented")
+}
+
+func (sig *RegoSignature) evalQuery(query string) (interface{}, error) {
+	pq, err := rego.New(
+		rego.Compiler(sig.compiledRego),
+		rego.Query(query),
+	).PrepareForEval(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	evalRes, err := pq.Eval(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+	if len(evalRes) > 0 && len(evalRes[0].Expressions) > 0 && evalRes[0].Expressions[0].Value != nil {
+		return evalRes[0].Expressions[0].Value, nil
+	}
+	return nil, nil
 }
