@@ -1,6 +1,7 @@
 package regosig
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -76,8 +77,10 @@ func (sig *RegoSignature) getMetadata() (types.SignatureMetadata, error) {
 	if err != nil {
 		return types.SignatureMetadata{}, err
 	}
+	dec := json.NewDecoder(bytes.NewBuffer(resJSON))
+	dec.UseNumber()
 	var res types.SignatureMetadata
-	err = json.Unmarshal(resJSON, &res)
+	err = dec.Decode(&res)
 	if err != nil {
 		return types.SignatureMetadata{}, err
 	}
