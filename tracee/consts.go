@@ -11,8 +11,7 @@ import (
 type bpfConfig uint32
 
 const (
-	configMode bpfConfig = iota
-	configDetectOrigSyscall
+	configDetectOrigSyscall bpfConfig = iota + 1
 	configExecEnv
 	configCaptureFiles
 	configExtractDynCode
@@ -25,6 +24,8 @@ const (
 	configPidFilter
 	configContFilter
 	configFollowFilter
+	configNewPidFilter
+	configNewPidNsFilter
 )
 
 const (

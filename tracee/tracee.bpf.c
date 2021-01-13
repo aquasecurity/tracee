@@ -128,7 +128,6 @@
 #define SCHED_PROCESS_EXIT    1010
 #define MAX_EVENT_ID          1011
 
-#define CONFIG_MODE             0
 #define CONFIG_SHOW_SYSCALL     1
 #define CONFIG_EXEC_ENV         2
 #define CONFIG_CAPTURE_FILES    3
@@ -142,6 +141,8 @@
 #define CONFIG_PID_FILTER       11
 #define CONFIG_CONT_FILTER      12
 #define CONFIG_FOLLOW_FILTER    13
+#define CONFIG_NEW_PID_FILTER   14
+#define CONFIG_NEW_PIDNS_FILTER 15
 
 // get_config(CONFIG_XXX_FILTER) returns 0 if not enabled
 #define FILTER_IN  1
@@ -158,10 +159,6 @@
 
 #define LESS_NOT_SET    0
 #define GREATER_NOT_SET ULLONG_MAX
-
-#define MODE_ALL        1
-#define MODE_NEW        2
-#define MODE_PIDNS      3
 
 #define DEV_NULL_STR    0
 
@@ -283,7 +280,9 @@ struct mount {
 
 BPF_HASH(config_map, u32, u32);                     // Various configurations
 BPF_HASH(chosen_events_map, u32, u32);              // Events chosen by the user
-BPF_HASH(pids_map, u32, u32);                       // Save traced pids or container pid namespaces ids
+BPF_HASH(traced_pids_map, u32, u32);                // Keep track of traced pids
+BPF_HASH(new_pids_map, u32, u32);                   // Keep track of the processes of newly executed binaries
+BPF_HASH(new_pidns_map, u32, u32);                  // Keep track of new pid namespaces
 BPF_HASH(args_map, u64, args_t);                    // Persist args info between function entry and return
 BPF_HASH(ret_map, u64, u64);                        // Persist return value to be used in tail calls
 BPF_HASH(inequality_filter, u32, u64);              // Used to filter events by some uint field either by < or >
@@ -614,22 +613,19 @@ static __always_inline int should_trace()
     init_context(&context);
 
     if (get_config(CONFIG_FOLLOW_FILTER)) {
-        if (bpf_map_lookup_elem(&pids_map, &context.host_tid) != 0)
-            // If the process is already in the pids_map and follow was chosen, don't check the other filters
+        if (bpf_map_lookup_elem(&traced_pids_map, &context.host_tid) != 0)
+            // If the process is already in the traced_pids_map and follow was chosen, don't check the other filters
             return 1;
-    } else {
-        switch (get_config(CONFIG_MODE))
-        {
-            case MODE_NEW:
-                if (bpf_map_lookup_elem(&pids_map, &context.host_tid) == 0)
-                    return 0;
-                break;
-            case MODE_PIDNS:
-                if (bpf_map_lookup_elem(&pids_map, &context.pid_id) == 0)
-                    return 0;
-                break;
-            // case MODE_ALL - continue with filter checks
-        }
+    }
+
+    if (get_config(CONFIG_NEW_PID_FILTER)) {
+        if (bpf_map_lookup_elem(&new_pids_map, &context.host_tid) == 0)
+            return 0;
+    }
+
+    if (get_config(CONFIG_NEW_PIDNS_FILTER)) {
+        if (bpf_map_lookup_elem(&new_pidns_map, &context.pid_id) == 0)
+            return 0;
     }
 
     // Don't monitor self
@@ -1363,31 +1359,29 @@ struct bpf_raw_tracepoint_args *ctx
         id = *id_64;
     }
 
-    int config_mode = get_config(CONFIG_MODE);
-    int follow_filter = get_config(CONFIG_FOLLOW_FILTER);
     u32 pid = bpf_get_current_pid_tgid();
 
     // execve events may add new pids to the traced pids set
     // perform this check before should_trace() so newly executed binaries will be traced
-    if ((id == SYS_EXECVE || id == SYS_EXECVEAT) && !follow_filter) {
-        if (config_mode == MODE_PIDNS) {
+    if (id == SYS_EXECVE || id == SYS_EXECVEAT) {
+        if (get_config(CONFIG_NEW_PIDNS_FILTER)) {
             u32 pid_ns = get_task_pid_ns_id(task);
-            if ((bpf_map_lookup_elem(&pids_map, &pid_ns) == 0) && (get_task_ns_pid(task) == 1)) {
+            if (get_task_ns_pid(task) == 1) {
                 // A new container/pod was started (pid 1 in namespace executed) - add pid namespace to map
-                bpf_map_update_elem(&pids_map, &pid_ns, &pid_ns, BPF_ANY);
+                bpf_map_update_elem(&new_pidns_map, &pid_ns, &pid_ns, BPF_ANY);
             }
-        } else if (config_mode == MODE_NEW) {
-            if (bpf_map_lookup_elem(&pids_map, &pid) == 0)
-                bpf_map_update_elem(&pids_map, &pid, &pid, BPF_ANY);
+        }
+        if (get_config(CONFIG_NEW_PID_FILTER)) {
+            bpf_map_update_elem(&new_pids_map, &pid, &pid, BPF_ANY);
         }
     }
 
     if (!should_trace())
         return 0;
 
-    if ((id == SYS_EXECVE || id == SYS_EXECVEAT) && follow_filter) {
+    if (id == SYS_EXECVE || id == SYS_EXECVEAT) {
         // We passed all filters (in should_trace()) - add this pid to traced pids set
-        bpf_map_update_elem(&pids_map, &pid, &pid, BPF_ANY);
+        bpf_map_update_elem(&traced_pids_map, &pid, &pid, BPF_ANY);
     }
 
     if (event_chosen(RAW_SYS_ENTER)) {
@@ -1468,10 +1462,12 @@ struct bpf_raw_tracepoint_args *ctx
 
     // fork events may add new pids to the traced pids set
     // perform this check after should_trace() to only add forked childs of a traced parent
-    int config_mode = get_config(CONFIG_MODE);
-    if ((id == SYS_CLONE || id == SYS_FORK || id == SYS_VFORK) && (config_mode == MODE_NEW)) {
+    if (id == SYS_CLONE || id == SYS_FORK || id == SYS_VFORK) {
         u32 pid = ret;
-        bpf_map_update_elem(&pids_map, &pid, &pid, BPF_ANY);
+        bpf_map_update_elem(&traced_pids_map, &pid, &pid, BPF_ANY);
+        if (get_config(CONFIG_NEW_PID_FILTER)) {
+            bpf_map_update_elem(&new_pids_map, &pid, &pid, BPF_ANY);
+        }
     }
 
     if (event_chosen(RAW_SYS_EXIT)) {
@@ -1615,22 +1611,23 @@ struct bpf_raw_tracepoint_args *ctx
     if (!should_trace())
         return 0;
 
-    int config_mode = get_config(CONFIG_MODE);
-    if (config_mode == MODE_PIDNS) {
+    u32 pid = bpf_get_current_pid_tgid();
+    // Remove pid from traced_pids_map
+    bpf_map_delete_elem(&traced_pids_map, &pid);
+
+    if (get_config(CONFIG_NEW_PIDNS_FILTER)) {
         struct task_struct *task;
         task = (struct task_struct *)bpf_get_current_task();
 
         u32 pid_ns = get_task_pid_ns_id(task);
-        if ((bpf_map_lookup_elem(&pids_map, &pid_ns) != 0) && (get_task_ns_pid(task) == 1)) {
+        if (get_task_ns_pid(task) == 1) {
             // If pid equals 1 - stop tracing this pid namespace
-            bpf_map_delete_elem(&pids_map, &pid_ns);
+            bpf_map_delete_elem(&new_pidns_map, &pid_ns);
         }
     }
-    else if (config_mode == MODE_NEW) {
-        // Remove pid from pids_map
-        u32 pid = bpf_get_current_pid_tgid();
-        if (bpf_map_lookup_elem(&pids_map, &pid) != 0)
-            bpf_map_delete_elem(&pids_map, &pid);
+    if (get_config(CONFIG_NEW_PID_FILTER)) {
+        // Remove pid from new_pids_map
+        bpf_map_delete_elem(&new_pids_map, &pid);
     }
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
