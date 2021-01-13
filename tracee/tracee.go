@@ -561,7 +561,13 @@ func (t *Tracee) populateBPFMaps() error {
 
 	// Initialize config and pids maps
 	bpfConfigMap, _ := t.bpfModule.GetMap("config_map")
-	bpfConfigMap.Update(uint32(configMode), t.config.Mode)
+	// TODO: BPF code doesn't care anymore about modes, but filters - remove modes from userspace as well
+	switch t.config.Mode {
+	case ModeNew:
+		bpfConfigMap.Update(uint32(configNewPidFilter), t.config.Mode)
+	case ModePidNs:
+		bpfConfigMap.Update(uint32(configNewPidNsFilter), t.config.Mode)
+	}
 	bpfConfigMap.Update(uint32(configDetectOrigSyscall), boolToUInt32(t.config.DetectOriginalSyscall))
 	bpfConfigMap.Update(uint32(configExecEnv), boolToUInt32(t.config.ShowExecEnv))
 	bpfConfigMap.Update(uint32(configCaptureFiles), boolToUInt32(t.config.CaptureWrite))
