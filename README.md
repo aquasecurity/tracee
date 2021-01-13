@@ -17,16 +17,15 @@ Other than tracing, Tracee is also capable of capturing files written to disk or
 
 ### Prerequisites
 
-- To run, Tracee requires Linux kernel version >= 4.14
-
-Not required if using the Docker image:
-- C standard library (tested with glibc)
+- Linux kernel version >= 4.14
+- Relevant kernel headers available under `/usr/src`
+- C standard library (tested with `glibc` and `musl`)
 - `libelf` and `zlib` libraries
 - clang >= 9
 
-Not required if pre-compiling the eBPF code (see [Installation options](#installation-options)):
-- clang >= 9
-- Kernel headers available under `/usr/src`, must be provided by user and match the running kernel version, not needed if building the eBPF program in advance
+Exceptions:
+- Tracee supports loading a pre-compiled eBPF file, in which case the kernel headers are required only for the one-time compilation, and not at runtime. See [Setup Options](#setup-options) for more info.
+- When using Tracee's Docker image, all of the aforementioned requirements are built into the image. The only requirement left is the kernel headers or the pre-built eBPF. See [Setup Options](#setup-options) for more info.
 
 ### Quickstart with Docker
 
