@@ -39,13 +39,8 @@ func main() {
 				printList()
 				return nil
 			}
-			mode, err := prepareTraceMode(c.String("trace"))
-			if err != nil {
-				return err
-			}
 
 			cfg := tracee.TraceeConfig{
-				Mode:                  mode,
 				DetectOriginalSyscall: c.Bool("detect-original-syscall"),
 				ShowExecEnv:           c.Bool("show-exec-env"),
 				OutputFormat:          c.String("output"),
@@ -74,7 +69,7 @@ func main() {
 					return fmt.Errorf("invalid capture option: %s", cap)
 				}
 			}
-			filter, err := prepareFilter(c.StringSlice("filter"))
+			filter, err := prepareFilter(c.StringSlice("trace"))
 			if err != nil {
 				return err
 			}
@@ -108,17 +103,11 @@ func main() {
 				Value:   false,
 				Usage:   "just list tracable events",
 			},
-			&cli.StringFlag{
+			&cli.StringSliceFlag{
 				Name:    "trace",
 				Aliases: []string{"t"},
-				Value:   "new",
-				Usage:   "trace mode: new/all. run '--trace help' for more info",
-			},
-			&cli.StringSliceFlag{
-				Name:    "filter",
-				Aliases: []string{"f"},
 				Value:   nil,
-				Usage:   "set tracing filters. run '--filter help' for more info.",
+				Usage:   "select events to trace by defining trace expressions. run '--trace help' for more info.",
 			},
 			&cli.BoolFlag{
 				Name:  "detect-original-syscall",
@@ -207,48 +196,53 @@ func main() {
 
 func prepareFilter(filters []string) (tracee.Filter, error) {
 	filterHelp := `
---filter lets you preclude events that match a criteria from being traced. The following types of filter expressions are supported:
+--trace lets you select which events to trace by defining trace expressions which operates on events or process metadata.
+Only events that match all trace expressions will be traced (trace flags are ANDed).
+The following types of expressions are supported:
 
-Numerical filters use the following operators: '=', '!=', '<', '>'
-available numerical filters: uid, pid, mntns, pidns
+Numerical expressions which compare numbers and allow the following operators: '=', '!=', '<', '>'.
+Available numerical expressions: uid, pid, mntns, pidns.
 
-String filters use the following operators: '=', '!='
-available string filters: event, set, uts, comm
+String expressions which compares text and allow the following operators: '=', '!='.
+Available string expressions: event, set, uts, comm.
 
-Boolean filters use the following operator: '!'
-available boolean filters: container, newpidns
+Boolean expressions that check if a boolean is true and allow the following operator: '!'.
+Available boolean expressions: container.
 
-Event argument filters are used to filter a specific event by its arguments.
-The following format should be used: "event_name:event_arg=val" or "event_name.event_arg!=val"
+Event arguments can be accessed using 'event_name.event_arg' and provide a way to filter an event by its arguments.
+Event arguments allow the following operators: '=', '!='.
 
-Non-boolean filters can get multiple values using "," as a separator.
-When used with the equality operator ("="), the values given to the filter are logical ORed.
-When given with any other operator, the values are logical ANDed.
+Non-boolean expressions can compare a field to multiple values separated by ','.
+Multiple values are ORed if used with equals operator '=', but are ANDed if used with any other operator.
 
-It is possible to include events that descended from filtered processes using the special 'follow' filter. Specifying this filter will trace events from any filtered process, or a child process of a filtered process.
+The field 'container' and 'pid' also support the special value 'new' which selects new containers or pids, respectively.
+
+The field 'set' selects a set of events to trace according to predefined sets, which can be listed by using the 'list' flag.
+
+The special 'follow' expression declares that not only processes that match the criteria will be traced, but also their descendants.
 
 Examples:
-	--filter uid=0                                                | only trace events from uid 0
-	--filter mntns=4026531840                                     | only trace events from mntns id 4026531840
-	--filter pidns!=4026531836                                    | only trace events from pidns id not equal to 4026531840
-	--filter pid=510,1709                                         | only trace events from pid 510 or pid 1709
-	--filter p=510 --filter p=1709                                | only trace events from pid 510 or pid 1709 (same as above)
-	--filter 'uid>0'                                              | only trace events from uids greater than 0
-	--filter 'pid>0' --filter 'pid<1000'                          | only trace events from pids between 0 and 1000
-	--filter 'u>0' --filter u!=1000                               | only trace events from uids greater than 0 but not 1000
-	--filter event=execve,open                                    | only trace execve and open events
-	--filter set=fs                                               | trace all file-system related events
-	--filter s=fs --filter e!=open,openat                         | trace all file-system related events, but not open(at)
-	--filter uts!=ab356bc4dd554                                   | don't trace events from uts name ab356bc4dd554
-	--filter comm=ls                                              | only trace events from ls command
-	--filter container                                            | only trace events from containers
-	--filter c                                                    | only trace events from containers (same as above)
-	--filter !container                                           | only trace events from the host
-	--filter '!c'                                                 | only trace events from the host (same as above)
-	--filter newpidns                                             | only trace events from newly created pid namespaces
-	--filter close.fd=5                                           | only trace 'close' events that have 'fd' equals 5
-	--filter openat.pathname!=/tmp/1,/bin/ls                      | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
-	--filter comm=bash --filter follow                            | trace all events that originated from bash or from one of the processes spawned by bash
+	--trace pid=new                                              | only trace events from new processes
+	--trace pid=510,1709                                         | only trace events from pid 510 or pid 1709
+	--trace p=510 --trace p=1709                                 | only trace events from pid 510 or pid 1709 (same as above)
+	--trace container=new                                        | only trace events from newly created containers
+	--trace container                                            | only trace events from containers
+	--trace c                                                    | only trace events from containers (same as above)
+	--trace '!container'                                         | only trace events from the host
+	--trace uid=0                                                | only trace events from uid 0
+	--trace mntns=4026531840                                     | only trace events from mntns id 4026531840
+	--trace pidns!=4026531836                                    | only trace events from pidns id not equal to 4026531840
+	--trace 'uid>0'                                              | only trace events from uids greater than 0
+	--trace 'pid>0' --trace 'pid<1000'                           | only trace events from pids between 0 and 1000
+	--trace 'u>0' --trace u!=1000                                | only trace events from uids greater than 0 but not 1000
+	--trace event=execve,open                                    | only trace execve and open events
+	--trace set=fs                                               | trace all file-system related events
+	--trace s=fs --trace e!=open,openat                          | trace all file-system related events, but not open(at)
+	--trace uts!=ab356bc4dd554                                   | don't trace events from uts name ab356bc4dd554
+	--trace comm=ls                                              | only trace events from ls command
+	--trace close.fd=5                                           | only trace 'close' events that have 'fd' equals 5
+	--trace openat.pathname!=/tmp/1,/bin/ls                      | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
+	--trace comm=bash --trace follow                             | trace all events that originated from bash or from one of the processes spawned by bash
 
 
 Note: some of the above operators have special meanings in different shells.
@@ -274,6 +268,7 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 			Greater:  tracee.GreaterNotSet,
 			Is32Bit:  true,
 		},
+		NewPidFilter: &tracee.BoolFilter{},
 		MntNSFilter: &tracee.UintFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
@@ -294,8 +289,8 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 			Equal:    []string{},
 			NotEqual: []string{},
 		},
-		ContFilter:     &tracee.BoolFilter{},
-		NewPidNsFilter: &tracee.BoolFilter{},
+		ContFilter:    &tracee.BoolFilter{},
+		NewContFilter: &tracee.BoolFilter{},
 		ArgFilter: &tracee.ArgFilter{
 			Filters: make(map[int32]map[string]tracee.ArgFilterVal),
 		},
@@ -339,6 +334,8 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 		}
 
 		if strings.HasPrefix("container", f) || (strings.HasPrefix("!container", f) && len(f) > 1) {
+			filter.NewPidFilter.Enabled = true
+			filter.NewPidFilter.Value = true
 			err := parseBoolFilter(f, filter.ContFilter)
 			if err != nil {
 				return tracee.Filter{}, err
@@ -346,12 +343,23 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 			continue
 		}
 
-		if filterName == "newpidns" || filterName == "!newpidns" {
-			err := parseBoolFilter(f, filter.NewPidNsFilter)
-			if err != nil {
-				return tracee.Filter{}, err
+		if strings.HasPrefix("container", filterName) {
+			if operatorAndValues == "=new" {
+				filter.NewPidFilter.Enabled = true
+				filter.NewPidFilter.Value = true
+				filter.NewContFilter.Enabled = true
+				filter.NewContFilter.Value = true
+				continue
 			}
-			continue
+			if operatorAndValues == "!=new" {
+				filter.ContFilter.Enabled = true
+				filter.ContFilter.Value = true
+				filter.NewPidFilter.Enabled = true
+				filter.NewPidFilter.Value = true
+				filter.NewContFilter.Enabled = true
+				filter.NewContFilter.Value = false
+				continue
+			}
 		}
 
 		if strings.HasPrefix("event", filterName) {
@@ -379,6 +387,16 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 		}
 
 		if strings.HasPrefix("pid", filterName) {
+			if operatorAndValues == "=new" {
+				filter.NewPidFilter.Enabled = true
+				filter.NewPidFilter.Value = true
+				continue
+			}
+			if operatorAndValues == "!=new" {
+				filter.NewPidFilter.Enabled = true
+				filter.NewPidFilter.Value = false
+				continue
+			}
 			err := parseUintFilter(operatorAndValues, filter.PIDFilter)
 			if err != nil {
 				return tracee.Filter{}, err
@@ -577,25 +595,6 @@ func parseArgFilter(filterName string, operatorAndValues string, eventsNameToID 
 	argFilter.Filters[id][argName] = val
 
 	return nil
-}
-
-func prepareTraceMode(traceString string) (uint32, error) {
-	traceHelp := "\n--trace can be the following options, or a prefix of those:\n"
-	traceHelp += "'new'            | Trace new processes\n"
-	traceHelp += "'all'            | Trace all processes\n"
-	if traceString == "help" {
-		return 0, fmt.Errorf(traceHelp)
-	}
-
-	if strings.HasPrefix("new", traceString) {
-		return tracee.ModeNew, nil
-	}
-
-	if strings.HasPrefix("all", traceString) {
-		return tracee.ModeAll, nil
-	}
-
-	return 0, fmt.Errorf("invalid trace option specified, use '--trace help' for more info")
 }
 
 func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.StringFilter, eventsNameToID map[string]int32) ([]int32, error) {

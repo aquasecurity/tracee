@@ -30,7 +30,7 @@ const (
 	configContFilter
 	configFollowFilter
 	configNewPidFilter
-	configNewPidNsFilter
+	configNewContFilter
 )
 
 const (
@@ -72,11 +72,6 @@ const (
 // binType is an enum that specifies the type of binary data sent in the file perf map
 // binary types should match defined values in ebpf code
 type binType uint8
-
-const (
-	ModeAll uint32 = iota + 1
-	ModeNew
-)
 
 const (
 	sendVfsWrite binType = iota + 1
