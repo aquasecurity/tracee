@@ -292,7 +292,6 @@ BPF_HASH(mnt_ns_filter, u64, u32);                  // Used to filter events by 
 BPF_HASH(pid_ns_filter, u64, u32);                  // Used to filter events by pid namespace id
 BPF_HASH(uts_ns_filter, string_filter_t, u32);      // Used to filter events by uts namespace name
 BPF_HASH(comm_filter, string_filter_t, u32);        // Used to filter events by command name
-BPF_ARRAY(cont_filter, u8, 1);                      // Used to filter events running in a container
 BPF_HASH(bin_args_map, u64, bin_args_t);            // Persist args for send_bin funtion
 BPF_HASH(sys_32_to_64_map, u32, u32);               // Map 32bit syscalls numbers to 64bit syscalls numbers
 BPF_HASH(params_types_map, u32, u64);               // Encoded parameters types for event
@@ -591,20 +590,21 @@ static __always_inline int equality_filter_matches(int filter_config, void *filt
     return 1;
 }
 
-static __always_inline int bool_filter_matches(int filter_config, void *filter_map, bool val)
+static __always_inline int bool_filter_matches(int filter_config, bool val)
 {
     int config = get_config(filter_config);
     if (!config)
         return 1;
 
-    int idx = 0;
-    u8* filter_val = bpf_map_lookup_elem(filter_map, &idx);
-    if (filter_val != NULL) {
-        return *filter_val == val;
+    if ((config == FILTER_IN) && val){
+        return 1;
     }
 
-    // we should never get here because when the filter is enabled, it must have a value
-    return 1;
+    if ((config == FILTER_OUT) && !val) {
+        return 1;
+    }
+
+    return 0;
 }
 
 static __always_inline int should_trace()
@@ -618,14 +618,16 @@ static __always_inline int should_trace()
             return 1;
     }
 
-    if (get_config(CONFIG_NEW_PID_FILTER)) {
-        if (bpf_map_lookup_elem(&new_pids_map, &context.host_tid) == 0)
-            return 0;
+    bool is_new_pid = bpf_map_lookup_elem(&new_pids_map, &context.host_tid) != 0;
+    if (!bool_filter_matches(CONFIG_NEW_PID_FILTER, is_new_pid))
+    {
+        return 0;
     }
 
-    if (get_config(CONFIG_NEW_PIDNS_FILTER)) {
-        if (bpf_map_lookup_elem(&new_pidns_map, &context.pid_id) == 0)
-            return 0;
+    bool is_new_pidns = bpf_map_lookup_elem(&new_pidns_map, &context.pid_id) != 0;
+    if (!bool_filter_matches(CONFIG_NEW_PIDNS_FILTER, is_new_pidns))
+    {
+        return 0;
     }
 
     // Don't monitor self
@@ -664,7 +666,7 @@ static __always_inline int should_trace()
     }
     // TODO: after we move to minimal kernel 4.18, we can check for container by cgroupid != host cgroupid
     bool is_container = context.tid != context.host_tid;
-    if (!bool_filter_matches(CONFIG_CONT_FILTER, &cont_filter, is_container))
+    if (!bool_filter_matches(CONFIG_CONT_FILTER, is_container))
     {
         return 0;
     }

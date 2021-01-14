@@ -71,7 +71,6 @@ type binType uint8
 const (
 	ModeAll uint32 = iota + 1
 	ModeNew
-	ModePidNs
 )
 
 const (
