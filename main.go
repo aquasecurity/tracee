@@ -111,13 +111,13 @@ func main() {
 				Name:    "trace",
 				Aliases: []string{"t"},
 				Value:   "new",
-				Usage:   "trace mode: new/pidns/follow/all. run '--trace help' for more info",
+				Usage:   "trace mode: new/all. run '--trace help' for more info",
 			},
 			&cli.StringSliceFlag{
 				Name:    "filter",
 				Aliases: []string{"f"},
 				Value:   nil,
-				Usage:   "set tracing filters for specific fields (such as UID or PID). run '--filter help' for more info.",
+				Usage:   "set tracing filters. run '--filter help' for more info.",
 			},
 			&cli.BoolFlag{
 				Name:  "detect-original-syscall",
@@ -210,7 +210,7 @@ String filters use the following operators: '=', '!='
 available string filters: event, set, uts, comm
 
 Boolean filters use the following operator: '!'
-available boolean filters: container
+available boolean filters: container, newpidns
 
 Event argument filters are used to filter a specific event by its arguments.
 The following format should be used: "event_name:event_arg=val" or "event_name.event_arg!=val"
@@ -239,6 +239,7 @@ Examples:
 	--filter c                                                    | only trace events from containers (same as above)
 	--filter !container                                           | only trace events from the host
 	--filter '!c'                                                 | only trace events from the host (same as above)
+	--filter newpidns                                             | only trace events from newly created pid namespaces
 	--filter close.fd=5                                           | only trace 'close' events that have 'fd' equals 5
 	--filter openat.pathname!=/tmp/1,/bin/ls                      | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
 	--filter comm=bash --filter follow                            | trace all events that originated from bash or from one of the processes spawned by bash
@@ -287,7 +288,8 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 			Equal:    []string{},
 			NotEqual: []string{},
 		},
-		ContFilter: &tracee.BoolFilter{},
+		ContFilter:     &tracee.BoolFilter{},
+		NewPidNsFilter: &tracee.BoolFilter{},
 		ArgFilter: &tracee.ArgFilter{
 			Filters: make(map[int32]map[string]tracee.ArgFilterVal),
 		},
@@ -332,6 +334,14 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 
 		if strings.HasPrefix("container", f) || (strings.HasPrefix("!container", f) && len(f) > 1) {
 			err := parseBoolFilter(f, filter.ContFilter)
+			if err != nil {
+				return tracee.Filter{}, err
+			}
+			continue
+		}
+
+		if filterName == "newpidns" || filterName == "!newpidns" {
+			err := parseBoolFilter(f, filter.NewPidNsFilter)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
@@ -566,7 +576,6 @@ func parseArgFilter(filterName string, operatorAndValues string, eventsNameToID 
 func prepareTraceMode(traceString string) (uint32, error) {
 	traceHelp := "\n--trace can be the following options, or a prefix of those:\n"
 	traceHelp += "'new'            | Trace new processes\n"
-	traceHelp += "'pidns'          | Trace processes from newly created pid namespaces\n"
 	traceHelp += "'all'            | Trace all processes\n"
 	if traceString == "help" {
 		return 0, fmt.Errorf(traceHelp)
@@ -574,10 +583,6 @@ func prepareTraceMode(traceString string) (uint32, error) {
 
 	if strings.HasPrefix("new", traceString) {
 		return tracee.ModeNew, nil
-	}
-
-	if strings.HasPrefix("pidns", traceString) {
-		return tracee.ModePidNs, nil
 	}
 
 	if strings.HasPrefix("all", traceString) {

@@ -41,16 +41,17 @@ type TraceeConfig struct {
 }
 
 type Filter struct {
-	EventsToTrace []int32
-	UIDFilter     *UintFilter
-	PIDFilter     *UintFilter
-	MntNSFilter   *UintFilter
-	PidNSFilter   *UintFilter
-	UTSFilter     *StringFilter
-	CommFilter    *StringFilter
-	ContFilter    *BoolFilter
-	ArgFilter     *ArgFilter
-	Follow        bool
+	EventsToTrace  []int32
+	UIDFilter      *UintFilter
+	PIDFilter      *UintFilter
+	MntNSFilter    *UintFilter
+	PidNSFilter    *UintFilter
+	UTSFilter      *StringFilter
+	CommFilter     *StringFilter
+	ContFilter     *BoolFilter
+	NewPidNsFilter *BoolFilter
+	ArgFilter      *ArgFilter
+	Follow         bool
 }
 
 type UintFilter struct {
@@ -209,7 +210,8 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	t := &Tracee{
 		config: cfg,
 	}
-	ContainerMode := (t.config.Filter.ContFilter.Enabled && t.config.Filter.ContFilter.Value) || t.config.Mode == ModePidNs
+	ContainerMode := (t.config.Filter.ContFilter.Enabled && t.config.Filter.ContFilter.Value) ||
+		(t.config.Filter.NewPidNsFilter.Enabled && t.config.Filter.NewPidNsFilter.Value)
 	printObj, err := newEventPrinter(t.config.OutputFormat, ContainerMode, t.config.EventsFile, t.config.ErrorsFile)
 	if err != nil {
 		return nil, err
@@ -520,26 +522,20 @@ func (t *Tracee) setStringFilter(filter *StringFilter, filterMapName string, con
 	return nil
 }
 
-func (t *Tracee) setBoolFilter(filter *BoolFilter, filterMapName string, configFilter bpfConfig) error {
+func (t *Tracee) setBoolFilter(filter *BoolFilter, configFilter bpfConfig) error {
 	if !filter.Enabled {
 		return nil
-	}
-
-	filterMap, err := t.bpfModule.GetMap(filterMapName)
-	if err != nil {
-		return err
-	}
-	err = filterMap.Update(uint8(0), boolToUInt32(filter.Value))
-	if err != nil {
-		return err
 	}
 
 	bpfConfigMap, err := t.bpfModule.GetMap("config_map")
 	if err != nil {
 		return err
 	}
-	// Set to a value != 0 to enable the filter
-	bpfConfigMap.Update(uint32(configFilter), filterIn)
+	if filter.Value {
+		bpfConfigMap.Update(uint32(configFilter), filterIn)
+	} else {
+		bpfConfigMap.Update(uint32(configFilter), filterOut)
+	}
 
 	return nil
 }
@@ -562,11 +558,8 @@ func (t *Tracee) populateBPFMaps() error {
 	// Initialize config and pids maps
 	bpfConfigMap, _ := t.bpfModule.GetMap("config_map")
 	// TODO: BPF code doesn't care anymore about modes, but filters - remove modes from userspace as well
-	switch t.config.Mode {
-	case ModeNew:
-		bpfConfigMap.Update(uint32(configNewPidFilter), t.config.Mode)
-	case ModePidNs:
-		bpfConfigMap.Update(uint32(configNewPidNsFilter), t.config.Mode)
+	if t.config.Mode == ModeNew {
+		bpfConfigMap.Update(uint32(configNewPidFilter), filterIn)
 	}
 	bpfConfigMap.Update(uint32(configDetectOrigSyscall), boolToUInt32(t.config.DetectOriginalSyscall))
 	bpfConfigMap.Update(uint32(configExecEnv), boolToUInt32(t.config.ShowExecEnv))
@@ -631,9 +624,14 @@ func (t *Tracee) populateBPFMaps() error {
 		return fmt.Errorf("error setting comm filter: %v", err)
 	}
 
-	err = t.setBoolFilter(t.config.Filter.ContFilter, "cont_filter", configContFilter)
+	err = t.setBoolFilter(t.config.Filter.ContFilter, configContFilter)
 	if err != nil {
 		return fmt.Errorf("error setting cont filter: %v", err)
+	}
+
+	err = t.setBoolFilter(t.config.Filter.NewPidNsFilter, configNewPidNsFilter)
+	if err != nil {
+		return fmt.Errorf("error setting newpidns filter: %v", err)
 	}
 
 	stringStoreMap, _ := t.bpfModule.GetMap("string_store")
