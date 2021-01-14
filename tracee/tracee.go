@@ -21,7 +21,6 @@ import (
 
 // TraceeConfig is a struct containing user defined configuration of tracee
 type TraceeConfig struct {
-	Mode                  uint32
 	Filter                *Filter
 	DetectOriginalSyscall bool
 	ShowExecEnv           bool
@@ -42,17 +41,18 @@ type TraceeConfig struct {
 }
 
 type Filter struct {
-	EventsToTrace  []int32
-	UIDFilter      *UintFilter
-	PIDFilter      *UintFilter
-	MntNSFilter    *UintFilter
-	PidNSFilter    *UintFilter
-	UTSFilter      *StringFilter
-	CommFilter     *StringFilter
-	ContFilter     *BoolFilter
-	NewPidNsFilter *BoolFilter
-	ArgFilter      *ArgFilter
-	Follow         bool
+	EventsToTrace []int32
+	UIDFilter     *UintFilter
+	PIDFilter     *UintFilter
+	NewPidFilter  *BoolFilter
+	MntNSFilter   *UintFilter
+	PidNSFilter   *UintFilter
+	UTSFilter     *StringFilter
+	CommFilter    *StringFilter
+	ContFilter    *BoolFilter
+	NewContFilter *BoolFilter
+	ArgFilter     *ArgFilter
+	Follow        bool
 }
 
 type UintFilter struct {
@@ -213,7 +213,7 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 		config: cfg,
 	}
 	ContainerMode := (t.config.Filter.ContFilter.Enabled && t.config.Filter.ContFilter.Value) ||
-		(t.config.Filter.NewPidNsFilter.Enabled && t.config.Filter.NewPidNsFilter.Value)
+		(t.config.Filter.NewContFilter.Enabled && t.config.Filter.NewContFilter.Value)
 	printObj, err := newEventPrinter(t.config.OutputFormat, ContainerMode, t.config.EventsFile, t.config.ErrorsFile)
 	if err != nil {
 		return nil, err
@@ -567,10 +567,6 @@ func (t *Tracee) populateBPFMaps() error {
 
 	// Initialize config and pids maps
 	bpfConfigMap, _ := t.bpfModule.GetMap("config_map")
-	// TODO: BPF code doesn't care anymore about modes, but filters - remove modes from userspace as well
-	if t.config.Mode == ModeNew {
-		bpfConfigMap.Update(uint32(configNewPidFilter), filterIn)
-	}
 	bpfConfigMap.Update(uint32(configDetectOrigSyscall), boolToUInt32(t.config.DetectOriginalSyscall))
 	bpfConfigMap.Update(uint32(configExecEnv), boolToUInt32(t.config.ShowExecEnv))
 	bpfConfigMap.Update(uint32(configCaptureFiles), boolToUInt32(t.config.CaptureWrite))
@@ -615,6 +611,11 @@ func (t *Tracee) populateBPFMaps() error {
 		return fmt.Errorf("error setting pid filter: %v", err)
 	}
 
+	err = t.setBoolFilter(t.config.Filter.NewPidFilter, configNewPidFilter)
+	if err != nil {
+		return fmt.Errorf("error setting pid=new filter: %v", err)
+	}
+
 	err = t.setUintFilter(t.config.Filter.MntNSFilter, "mnt_ns_filter", configMntNsFilter, mntNsLess)
 	if err != nil {
 		return fmt.Errorf("error setting mntns filter: %v", err)
@@ -640,9 +641,9 @@ func (t *Tracee) populateBPFMaps() error {
 		return fmt.Errorf("error setting cont filter: %v", err)
 	}
 
-	err = t.setBoolFilter(t.config.Filter.NewPidNsFilter, configNewPidNsFilter)
+	err = t.setBoolFilter(t.config.Filter.NewContFilter, configNewContFilter)
 	if err != nil {
-		return fmt.Errorf("error setting newpidns filter: %v", err)
+		return fmt.Errorf("error setting container=new filter: %v", err)
 	}
 
 	stringStoreMap, _ := t.bpfModule.GetMap("string_store")

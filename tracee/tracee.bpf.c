@@ -145,7 +145,7 @@
 #define CONFIG_CONT_FILTER          13
 #define CONFIG_FOLLOW_FILTER        14
 #define CONFIG_NEW_PID_FILTER       15
-#define CONFIG_NEW_PIDNS_FILTER     16
+#define CONFIG_NEW_CONT_FILTER      16
 
 // get_config(CONFIG_XXX_FILTER) returns 0 if not enabled
 #define FILTER_IN  1
@@ -643,8 +643,8 @@ static __always_inline int should_trace()
         return 0;
     }
 
-    bool is_new_pidns = bpf_map_lookup_elem(&new_pidns_map, &context.pid_id) != 0;
-    if (!bool_filter_matches(CONFIG_NEW_PIDNS_FILTER, is_new_pidns))
+    bool is_new_container = bpf_map_lookup_elem(&new_pidns_map, &context.pid_id) != 0;
+    if (!bool_filter_matches(CONFIG_NEW_CONT_FILTER, is_new_container))
     {
         return 0;
     }
@@ -1393,7 +1393,7 @@ struct bpf_raw_tracepoint_args *ctx
     // execve events may add new pids to the traced pids set
     // perform this check before should_trace() so newly executed binaries will be traced
     if (id == SYS_EXECVE || id == SYS_EXECVEAT) {
-        if (get_config(CONFIG_NEW_PIDNS_FILTER)) {
+        if (get_config(CONFIG_NEW_CONT_FILTER)) {
             u32 pid_ns = get_task_pid_ns_id(task);
             if (get_task_ns_pid(task) == 1) {
                 // A new container/pod was started (pid 1 in namespace executed) - add pid namespace to map
@@ -1644,7 +1644,7 @@ struct bpf_raw_tracepoint_args *ctx
     // Remove pid from traced_pids_map
     bpf_map_delete_elem(&traced_pids_map, &pid);
 
-    if (get_config(CONFIG_NEW_PIDNS_FILTER)) {
+    if (get_config(CONFIG_NEW_CONT_FILTER)) {
         struct task_struct *task;
         task = (struct task_struct *)bpf_get_current_task();
 
