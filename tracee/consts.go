@@ -10,12 +10,17 @@ import (
 // config should match defined values in ebpf code
 type bpfConfig uint32
 
+// Max depth of each stack trace to track
+// Matches 'MAX_STACK_DEPTH' in eBPF code
+const maxStackDepth int = 20
+
 const (
 	configDetectOrigSyscall bpfConfig = iota + 1
 	configExecEnv
 	configCaptureFiles
 	configExtractDynCode
 	configTraceePid
+	configStackAddresses
 	configUIDFilter
 	configMntNsFilter
 	configPidNsFilter
