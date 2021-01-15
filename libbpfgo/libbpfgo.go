@@ -302,45 +302,74 @@ func (m *Module) GetMap(mapName string) (*BPFMap, error) {
 	}, nil
 }
 
-func (b *BPFMap) Update(key, value interface{}) error {
-	var keyPtr, valuePtr unsafe.Pointer
-	if k, isType := key.(int8); isType {
-		keyPtr = unsafe.Pointer(&k)
-	} else if k, isType := key.(uint8); isType {
-		keyPtr = unsafe.Pointer(&k)
-	} else if k, isType := key.(int32); isType {
-		keyPtr = unsafe.Pointer(&k)
-	} else if k, isType := key.(uint32); isType {
-		keyPtr = unsafe.Pointer(&k)
-	} else if k, isType := key.(int64); isType {
-		keyPtr = unsafe.Pointer(&k)
-	} else if k, isType := key.(uint64); isType {
-		keyPtr = unsafe.Pointer(&k)
-	} else if k, isType := key.([]byte); isType {
-		keyPtr = unsafe.Pointer(&k[0])
+func GetUnsafePointer(data interface{}) (unsafe.Pointer, error) {
+	var dataPtr unsafe.Pointer
+	if k, isType := data.(int8); isType {
+		dataPtr = unsafe.Pointer(&k)
+	} else if k, isType := data.(uint8); isType {
+		dataPtr = unsafe.Pointer(&k)
+	} else if k, isType := data.(int32); isType {
+		dataPtr = unsafe.Pointer(&k)
+	} else if k, isType := data.(uint32); isType {
+		dataPtr = unsafe.Pointer(&k)
+	} else if k, isType := data.(int64); isType {
+		dataPtr = unsafe.Pointer(&k)
+	} else if k, isType := data.(uint64); isType {
+		dataPtr = unsafe.Pointer(&k)
+	} else if k, isType := data.([]byte); isType {
+		dataPtr = unsafe.Pointer(&k[0])
 	} else {
-		return fmt.Errorf("failed to update map %s: unknown key type %T", b.name, key)
-	}
-	if v, isType := value.(int8); isType {
-		valuePtr = unsafe.Pointer(&v)
-	} else if v, isType := value.(uint8); isType {
-		valuePtr = unsafe.Pointer(&v)
-	} else if v, isType := value.(int32); isType {
-		valuePtr = unsafe.Pointer(&v)
-	} else if v, isType := value.(uint32); isType {
-		valuePtr = unsafe.Pointer(&v)
-	} else if v, isType := value.(int64); isType {
-		valuePtr = unsafe.Pointer(&v)
-	} else if v, isType := value.(uint64); isType {
-		valuePtr = unsafe.Pointer(&v)
-	} else if v, isType := value.([]byte); isType {
-		valuePtr = unsafe.Pointer(&v[0])
-	} else {
-		return fmt.Errorf("failed to update map %s: unknown value type %T", b.name, value)
+		return nil, fmt.Errorf("Unknown data type %T", data)
 	}
 
-	err := C.bpf_map_update_elem(b.fd, keyPtr, valuePtr, C.BPF_ANY)
-	if err != 0 {
+	return dataPtr, nil
+}
+
+func (b *BPFMap) GetValue(key interface{}, valueSize int) ([]byte, error) {
+	keyPtr, err := GetUnsafePointer(key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to lookup value in map %s: unknown key type %T", b.name, key)
+	}
+
+	// Create pointer to value byte array
+	if valueSize == 0 {
+		return nil, fmt.Errorf("valueSize must be > 0")
+	}
+	value := make([]byte, valueSize)
+	valuePtr := unsafe.Pointer(&value[0])
+
+	errC := C.bpf_map_lookup_elem(b.fd, keyPtr, valuePtr)
+	if errC != 0 {
+		return nil, fmt.Errorf("failed to lookup value %v in map %s", key, b.name)
+	}
+	return value, nil
+}
+
+func (b *BPFMap) DeleteKey(key interface{}) error {
+	keyPtr, err := GetUnsafePointer(key)
+	if err != nil {
+		return fmt.Errorf("failed to update map %s: unknown key type %T", b.name, key)
+	}
+
+	errC := C.bpf_map_delete_elem(b.fd, keyPtr)
+	if errC != 0 {
+		return fmt.Errorf("failed to get lookup key %d from map %s", key, b.name)
+	}
+	return nil
+}
+
+func (b *BPFMap) Update(key, value interface{}) error {
+	keyPtr, err := GetUnsafePointer(key)
+	if err != nil {
+		return fmt.Errorf("failed to update map %s: unknown key type %T", b.name, key)
+	}
+	valuePtr, err := GetUnsafePointer(value)
+	if err != nil {
+		return fmt.Errorf("failed to update map %s: unknown value type %T", b.name, key)
+	}
+
+	errC := C.bpf_map_update_elem(b.fd, keyPtr, valuePtr, C.BPF_ANY)
+	if errC != 0 {
 		return fmt.Errorf("failed to update map %s", b.name)
 	}
 	return nil
