@@ -69,7 +69,7 @@ func newEventPrinter(kind string, containerMode bool, out io.Writer, err io.Writ
 	return res, nil
 }
 
-func newEvent(ctx context, argMetas []external.ArgMeta, args []interface{}) (external.Event, error) {
+func newEvent(ctx context, argMetas []external.ArgMeta, args []interface{}, StackAddresses []uint64) (external.Event, error) {
 	e := external.Event{
 		Timestamp:           float64(ctx.Ts) / 1000000.0,
 		ProcessID:           int(ctx.Pid),
@@ -88,6 +88,7 @@ func newEvent(ctx context, argMetas []external.ArgMeta, args []interface{}) (ext
 		ArgsNum:             int(ctx.Argnum),
 		ReturnValue:         int(ctx.Retval),
 		Args:                make([]external.Argument, 0, len(args)),
+		StackAddresses:      StackAddresses,
 	}
 	for i, arg := range args {
 		e.Args = append(e.Args, external.Argument{

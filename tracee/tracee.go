@@ -38,6 +38,7 @@ type TraceeConfig struct {
 	ErrorsFile            *os.File
 	maxPidsCache          int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
 	BPFObjPath            string
+	StackAddresses        bool
 }
 
 type Filter struct {
@@ -140,23 +141,24 @@ func (tc TraceeConfig) Validate() error {
 
 // Tracee traces system calls and system events using eBPF
 type Tracee struct {
-	config        TraceeConfig
-	eventsToTrace map[int32]bool
-	bpfModule     *bpf.Module
-	eventsPerfMap *bpf.PerfBuffer
-	fileWrPerfMap *bpf.PerfBuffer
-	eventsChannel chan []byte
-	fileWrChannel chan []byte
-	lostEvChannel chan uint64
-	lostWrChannel chan uint64
-	printer       eventPrinter
-	stats         statsStore
-	capturedFiles map[string]int64
-	writtenFiles  map[string]string
-	mntNsFirstPid map[uint32]uint32
-	DecParamName  [2]map[argTag]external.ArgMeta
-	EncParamName  [2]map[string]argTag
-	pidsInMntns   bucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
+	config            TraceeConfig
+	eventsToTrace     map[int32]bool
+	bpfModule         *bpf.Module
+	eventsPerfMap     *bpf.PerfBuffer
+	fileWrPerfMap     *bpf.PerfBuffer
+	eventsChannel     chan []byte
+	fileWrChannel     chan []byte
+	lostEvChannel     chan uint64
+	lostWrChannel     chan uint64
+	printer           eventPrinter
+	stats             statsStore
+	capturedFiles     map[string]int64
+	writtenFiles      map[string]string
+	mntNsFirstPid     map[uint32]uint32
+	DecParamName      [2]map[argTag]external.ArgMeta
+	EncParamName      [2]map[string]argTag
+	pidsInMntns       bucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
+	StackAddressesMap *bpf.BPFMap
 }
 
 type counter int32
@@ -266,6 +268,14 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error creating readiness file: %v", err)
 	}
+
+	// Get refernce to stack trace addresses map
+	StackAddressesMap, err := t.bpfModule.GetMap("stack_addresses")
+	if err != nil {
+		return nil, fmt.Errorf("error getting acces to 'stack_addresses' eBPF Map %v", err)
+	}
+	t.StackAddressesMap = StackAddressesMap
+
 	return t, nil
 }
 
@@ -566,6 +576,7 @@ func (t *Tracee) populateBPFMaps() error {
 	bpfConfigMap.Update(uint32(configCaptureFiles), boolToUInt32(t.config.CaptureWrite))
 	bpfConfigMap.Update(uint32(configExtractDynCode), boolToUInt32(t.config.CaptureMem))
 	bpfConfigMap.Update(uint32(configTraceePid), uint32(os.Getpid()))
+	bpfConfigMap.Update(uint32(configStackAddresses), boolToUInt32(t.config.StackAddresses))
 	bpfConfigMap.Update(uint32(configFollowFilter), boolToUInt32(t.config.Filter.Follow))
 
 	// Initialize tail calls program array
@@ -1111,6 +1122,8 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 
 // context struct contains common metadata that is collected for all types of events
 // it is used to unmarshal binary data and therefore should match (bit by bit) to the `context_t` struct in the ebpf code.
+// NOTE: Integers want to be aligned in memory, so if changing the format of this struct
+// keep the 1-byte 'Argnum' as the final parameter before the padding (if padding is needed).
 type context struct {
 	Ts       uint64
 	Pid      uint32
@@ -1126,8 +1139,9 @@ type context struct {
 	UtsName  [16]byte
 	EventID  int32
 	Retval   int64
+	StackID  uint32
 	Argnum   uint8
-	_        [7]byte //padding
+	_        [3]byte //padding
 }
 
 func (t *Tracee) processLostEvents() {

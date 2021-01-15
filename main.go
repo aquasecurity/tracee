@@ -56,6 +56,7 @@ func main() {
 				SecurityAlerts:        c.Bool("security-alerts"),
 				EventsFile:            os.Stdout,
 				ErrorsFile:            os.Stderr,
+				StackAddresses:        c.Bool("stack-addresses"),
 			}
 			capture := c.StringSlice("capture")
 			for _, cap := range capture {
@@ -189,6 +190,11 @@ func main() {
 				Value:       "if-needed",
 				Usage:       "when to build the bpf program. possible options: 'never'/'always'/'if-needed'",
 				Destination: &buildPolicy,
+			},
+			&cli.BoolFlag{
+				Name:  "stack-addresses",
+				Value: false,
+				Usage: "Include stack memory addresses for each event",
 			},
 		},
 	}
