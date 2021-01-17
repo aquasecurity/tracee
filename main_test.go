@@ -795,3 +795,101 @@ func TestPrepareFilter(t *testing.T) {
 		})
 	}
 }
+
+func TestPrepareCapture(t *testing.T) {
+
+	testCases := []struct {
+		testName        string
+		captureSlice    []string
+		expectedCapture tracee.Capture
+		expectedError   error
+	}{
+		{
+			testName:        "invalid capture option",
+			captureSlice:    []string{"foo"},
+			expectedCapture: tracee.Capture{},
+			expectedError:   errors.New("invalid capture option specified, use '--capture help' for more info"),
+		},
+		{
+			testName:        "invalid capture write filter",
+			captureSlice:    []string{"write="},
+			expectedCapture: tracee.Capture{},
+			expectedError:   errors.New("invalid capture option specified, use '--capture help' for more info"),
+		},
+		{
+			testName:        "invalid capture write filter 2",
+			captureSlice:    []string{"write=/tmp"},
+			expectedCapture: tracee.Capture{},
+			expectedError:   errors.New("invalid capture option specified, use '--capture help' for more info"),
+		},
+		{
+			testName:        "empty capture write filter",
+			captureSlice:    []string{"write=*"},
+			expectedCapture: tracee.Capture{},
+			expectedError:   errors.New("capture write filter cannot be empty"),
+		},
+		{
+			testName:     "capture mem",
+			captureSlice: []string{"mem"},
+			expectedCapture: tracee.Capture{
+				Mem: true,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:     "capture exec",
+			captureSlice: []string{"exec"},
+			expectedCapture: tracee.Capture{
+				Exec: true,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:     "capture write",
+			captureSlice: []string{"write"},
+			expectedCapture: tracee.Capture{
+				FileWrite: true,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:     "capture write filtered",
+			captureSlice: []string{"write=/tmp*"},
+			expectedCapture: tracee.Capture{
+				FileWrite:       true,
+				FilterFileWrite: []string{"/tmp"},
+			},
+			expectedError: nil,
+		},
+		{
+			testName:     "capture all",
+			captureSlice: []string{"all"},
+			expectedCapture: tracee.Capture{
+				FileWrite: true,
+				Mem:       true,
+				Exec:      true,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:     "multiple capture options",
+			captureSlice: []string{"write", "exec", "mem"},
+			expectedCapture: tracee.Capture{
+				FileWrite: true,
+				Mem:       true,
+				Exec:      true,
+			},
+			expectedError: nil,
+		},
+	}
+	for _, testcase := range testCases {
+		t.Run(testcase.testName, func(t *testing.T) {
+			capture, err := prepareCapture(testcase.captureSlice)
+			assert.Equal(t, testcase.expectedCapture.FileWrite, capture.FileWrite)
+			assert.Equal(t, testcase.expectedCapture.FilterFileWrite, capture.FilterFileWrite)
+			assert.Equal(t, testcase.expectedCapture.Exec, capture.Exec)
+			assert.Equal(t, testcase.expectedCapture.Mem, capture.Mem)
+			assert.Equal(t, testcase.expectedError, err)
+		})
+	}
+}

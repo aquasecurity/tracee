@@ -22,16 +22,13 @@ import (
 // TraceeConfig is a struct containing user defined configuration of tracee
 type TraceeConfig struct {
 	Filter                *Filter
+	Capture               *Capture
 	DetectOriginalSyscall bool
 	ShowExecEnv           bool
 	OutputFormat          string
 	PerfBufferSize        int
 	BlobPerfBufferSize    int
 	OutputPath            string
-	CaptureWrite          bool
-	CaptureExec           bool
-	CaptureMem            bool
-	FilterFileWrite       []string
 	SecurityAlerts        bool
 	EventsFile            *os.File
 	ErrorsFile            *os.File
@@ -86,6 +83,13 @@ type ArgFilterVal struct {
 	NotEqual []string
 }
 
+type Capture struct {
+	FileWrite       bool
+	FilterFileWrite []string
+	Exec            bool
+	Mem             bool
+}
+
 // Validate does static validation of the configuration
 func (tc TraceeConfig) Validate() error {
 	if tc.Filter.EventsToTrace == nil {
@@ -124,12 +128,12 @@ func (tc TraceeConfig) Validate() error {
 	if (tc.BlobPerfBufferSize & (tc.BlobPerfBufferSize - 1)) != 0 {
 		return fmt.Errorf("invalid perf buffer size - must be a power of 2")
 	}
-	if len(tc.FilterFileWrite) > 3 {
+	if len(tc.Capture.FilterFileWrite) > 3 {
 		return fmt.Errorf("too many file-write filters given")
 	}
-	for _, filter := range tc.FilterFileWrite {
-		if len(filter) > 64 {
-			return fmt.Errorf("The length of a path filter is limited to 64 characters: %s", filter)
+	for _, filter := range tc.Capture.FilterFileWrite {
+		if len(filter) > 50 {
+			return fmt.Errorf("The length of a path filter is limited to 50 characters: %s", filter)
 		}
 	}
 	_, err := os.Stat(tc.BPFObjPath)
@@ -195,17 +199,18 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 		event.EssentialEvent = true
 		EventsIDToEvent[id] = event
 	}
-	if cfg.CaptureExec {
+	if cfg.Capture.Exec {
 		setEssential(SecurityBprmCheckEventID)
 	}
-	if cfg.CaptureWrite {
+	if cfg.Capture.FileWrite {
 		setEssential(VfsWriteEventID)
+		setEssential(VfsWritevEventID)
 	}
-	if cfg.SecurityAlerts || cfg.CaptureMem {
+	if cfg.SecurityAlerts || cfg.Capture.Mem {
 		setEssential(MmapEventID)
 		setEssential(MprotectEventID)
 	}
-	if cfg.CaptureMem {
+	if cfg.Capture.Mem {
 		setEssential(MemProtAlertEventID)
 	}
 	// create tracee
@@ -569,8 +574,8 @@ func (t *Tracee) populateBPFMaps() error {
 	bpfConfigMap, _ := t.bpfModule.GetMap("config_map")
 	bpfConfigMap.Update(uint32(configDetectOrigSyscall), boolToUInt32(t.config.DetectOriginalSyscall))
 	bpfConfigMap.Update(uint32(configExecEnv), boolToUInt32(t.config.ShowExecEnv))
-	bpfConfigMap.Update(uint32(configCaptureFiles), boolToUInt32(t.config.CaptureWrite))
-	bpfConfigMap.Update(uint32(configExtractDynCode), boolToUInt32(t.config.CaptureMem))
+	bpfConfigMap.Update(uint32(configCaptureFiles), boolToUInt32(t.config.Capture.FileWrite))
+	bpfConfigMap.Update(uint32(configExtractDynCode), boolToUInt32(t.config.Capture.Mem))
 	bpfConfigMap.Update(uint32(configTraceePid), uint32(os.Getpid()))
 	bpfConfigMap.Update(uint32(configStackAddresses), boolToUInt32(t.config.StackAddresses))
 	bpfConfigMap.Update(uint32(configFollowFilter), boolToUInt32(t.config.Filter.Follow))
@@ -597,8 +602,8 @@ func (t *Tracee) populateBPFMaps() error {
 
 	// Set filters given by the user to filter file write events
 	fileFilterMap, _ := t.bpfModule.GetMap("file_filter")
-	for i := 0; i < len(t.config.FilterFileWrite); i++ {
-		fileFilterMap.Update(uint32(i), []byte(t.config.FilterFileWrite[i]))
+	for i := 0; i < len(t.config.Capture.FilterFileWrite); i++ {
+		fileFilterMap.Update(uint32(i), []byte(t.config.Capture.FilterFileWrite[i]))
 	}
 
 	err = t.setUintFilter(t.config.Filter.UIDFilter, "uid_filter", configUIDFilter, uidLess)
@@ -824,7 +829,7 @@ func (t *Tracee) Run() error {
 	t.printer.Epilogue(t.stats)
 
 	// record index of written files
-	if t.config.CaptureWrite {
+	if t.config.Capture.FileWrite {
 		destinationFilePath := filepath.Join(t.config.OutputPath, "written_files")
 		f, err := os.OpenFile(destinationFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
@@ -832,6 +837,17 @@ func (t *Tracee) Run() error {
 		}
 		defer f.Close()
 		for fileName, filePath := range t.writtenFiles {
+			writeFiltered := false
+			for _, filterPrefix := range t.config.Capture.FilterFileWrite {
+				if !strings.HasPrefix(filePath, filterPrefix) {
+					writeFiltered = true
+					break
+				}
+			}
+			if writeFiltered {
+				// Don't write mapping of files that were not actually captured
+				continue
+			}
 			if _, err := f.WriteString(fmt.Sprintf("%s %s\n", fileName, filePath)); err != nil {
 				return fmt.Errorf("error logging written files")
 			}
@@ -925,7 +941,7 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 
 	//capture written files
 	case VfsWriteEventID, VfsWritevEventID:
-		if t.config.CaptureWrite {
+		if t.config.Capture.FileWrite {
 			filePath, ok := args[t.EncParamName[ctx.EventID%2]["pathname"]].(string)
 			if !ok {
 				return fmt.Errorf("error parsing vfs_write args")
@@ -964,7 +980,7 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 		}
 
 		//capture executed files
-		if t.config.CaptureExec {
+		if t.config.Capture.Exec {
 			filePath, ok := args[t.EncParamName[ctx.EventID%2]["pathname"]].(string)
 			if !ok {
 				return fmt.Errorf("error parsing security_bprm_check args")

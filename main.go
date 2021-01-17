@@ -47,28 +47,16 @@ func main() {
 				PerfBufferSize:        c.Int("perf-buffer-size"),
 				BlobPerfBufferSize:    c.Int("blob-perf-buffer-size"),
 				OutputPath:            c.String("output-path"),
-				FilterFileWrite:       c.StringSlice("filter-file-write"),
 				SecurityAlerts:        c.Bool("security-alerts"),
 				EventsFile:            os.Stdout,
 				ErrorsFile:            os.Stderr,
 				StackAddresses:        c.Bool("stack-addresses"),
 			}
-			capture := c.StringSlice("capture")
-			for _, cap := range capture {
-				if cap == "write" {
-					cfg.CaptureWrite = true
-				} else if cap == "exec" {
-					cfg.CaptureExec = true
-				} else if cap == "mem" {
-					cfg.CaptureMem = true
-				} else if cap == "all" {
-					cfg.CaptureWrite = true
-					cfg.CaptureExec = true
-					cfg.CaptureMem = true
-				} else {
-					return fmt.Errorf("invalid capture option: %s", cap)
-				}
+			capture, err := prepareCapture(c.StringSlice("capture"))
+			if err != nil {
+				return err
 			}
+			cfg.Capture = &capture
 			filter, err := prepareFilter(c.StringSlice("trace"))
 			if err != nil {
 				return err
@@ -109,6 +97,11 @@ func main() {
 				Value:   nil,
 				Usage:   "select events to trace by defining trace expressions. run '--trace help' for more info.",
 			},
+			&cli.StringSliceFlag{
+				Name:  "capture",
+				Value: nil,
+				Usage: "capture artifacts that were written, executed or found to be suspicious. run '--capture help' for more info.",
+			},
 			&cli.BoolFlag{
 				Name:  "detect-original-syscall",
 				Value: false,
@@ -147,16 +140,6 @@ func main() {
 				Value:   false,
 				Usage:   "clear the output path before starting",
 			},
-			&cli.StringSliceFlag{
-				Name:  "capture",
-				Value: nil,
-				Usage: "capture artifacts that were written, executed or found to be suspicious. captured artifacts will appear in the 'output-path' directory. possible options: 'write'/'exec'/'mem'/'all'. use this flag multiple times to choose multiple capture options",
-			},
-			&cli.StringSliceFlag{
-				Name:  "filter-file-write",
-				Value: nil,
-				Usage: "only output file writes whose path starts with the given path prefix (up to 64 characters)",
-			},
 			&cli.BoolFlag{
 				Name:  "security-alerts",
 				Value: false,
@@ -194,9 +177,57 @@ func main() {
 	}
 }
 
+func prepareCapture(captureSlice []string) (tracee.Capture, error) {
+	captureHelp := `
+Capture artifacts that were written, executed or found to be suspicious.
+Captured artifacts will appear in the 'output-path' directory.
+Possible options:
+
+write[=/path/prefix*]   capture written files. An additional filter can be given to only output file writes whose path starts with some prefix (up to 50 characters).
+exec                    capture executed files.
+mem                     capture memory regions that had write+execute (w+x) protection, and then changed to execute (x) only.
+all                     capture all of the above artifacts.
+
+Use this flag multiple times to choose multiple capture options
+`
+
+	if len(captureSlice) == 1 && captureSlice[0] == "help" {
+		return tracee.Capture{}, fmt.Errorf(captureHelp)
+	}
+
+	capture := tracee.Capture{}
+
+	var filterFileWrite []string
+	for _, cap := range captureSlice {
+		if cap == "write" {
+			capture.FileWrite = true
+		} else if strings.HasPrefix(cap, "write=") && strings.HasSuffix(cap, "*") {
+			capture.FileWrite = true
+			pathPrefix := strings.TrimSuffix(strings.TrimPrefix(cap, "write="), "*")
+			if len(pathPrefix) == 0 {
+				return tracee.Capture{}, fmt.Errorf("capture write filter cannot be empty")
+			}
+			filterFileWrite = append(filterFileWrite, pathPrefix)
+		} else if cap == "exec" {
+			capture.Exec = true
+		} else if cap == "mem" {
+			capture.Mem = true
+		} else if cap == "all" {
+			capture.FileWrite = true
+			capture.Exec = true
+			capture.Mem = true
+		} else {
+			return tracee.Capture{}, fmt.Errorf("invalid capture option specified, use '--capture help' for more info")
+		}
+	}
+	capture.FilterFileWrite = filterFileWrite
+
+	return capture, nil
+}
+
 func prepareFilter(filters []string) (tracee.Filter, error) {
 	filterHelp := `
---trace lets you select which events to trace by defining trace expressions which operates on events or process metadata.
+Select which events to trace by defining trace expressions that operate on events or process metadata.
 Only events that match all trace expressions will be traced (trace flags are ANDed).
 The following types of expressions are supported:
 
