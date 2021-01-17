@@ -47,7 +47,7 @@
 #define MAX_PERCPU_BUFSIZE  (1 << 15)     // This value is actually set by the kernel as an upper bound
 #define MAX_STRING_SIZE     4096          // Choosing this value to be the same as PATH_MAX
 #define MAX_STR_ARR_ELEM    40            // String array elements number should be bounded due to instructions limit
-#define MAX_PATH_PREF_SIZE  64            // Max path prefix should be bounded due to instructions limit
+#define MAX_PATH_PREF_SIZE  50            // Max path prefix should be bounded due to instructions limit
 #define MAX_STACK_ADDRESSES 1024          // Max amount of different stack trace addresses to buffer in the Map
 #define MAX_STACK_DEPTH     20            // Max depth of each stack trace to track
 #define MAX_STR_FILTER_SIZE 16            // Max string filter size should be bounded to the size of the compared values (comm, uts)
@@ -1976,6 +1976,7 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
 {
     args_t saved_args;
     bool has_filter = false;
+    bool filter_match = false;
 
     bool delete_args = false;
     if (load_args(&saved_args, delete_args, event_id) != 0) {
@@ -1994,6 +1995,7 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
     if (off == NULL)
         return -1;
 
+    // Check if capture write was requested for this path
     #pragma unroll
     for (int i = 0; i < 3; i++) {
         int idx = i;
@@ -2009,17 +2011,67 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
         if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
             break;
 
-        if (has_prefix(filter_p->path, &string_p->buf[*off], MAX_PATH_PREF_SIZE))
-            bpf_tail_call(ctx, &prog_array, tail_call_id);
+        if (has_prefix(filter_p->path, &string_p->buf[*off], MAX_PATH_PREF_SIZE)) {
+            filter_match = true;
+            break;
+        }
     }
 
-    if (has_filter) {
+    // Submit vfs_write(v) event if it was chosen, or in case of a filter match (so we can get written_files metadata)
+    if (event_chosen(VFS_WRITE) || event_chosen(VFS_WRITEV) || filter_match) {
+        loff_t start_pos;
+        size_t count;
+        unsigned long vlen;
+
+        buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
+        if (submit_p == NULL)
+            return 0;
+        set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+
+        init_and_save_context(ctx, submit_p, event_id, 5 /*argnum*/, PT_REGS_RC(ctx));
+
+        if (event_id == VFS_WRITE) {
+            count              = (size_t)        saved_args.args[2];
+        } else {
+            vlen               =                 saved_args.args[2];
+        }
+        loff_t *pos            = (loff_t*)       saved_args.args[3];
+
+        // Extract device id, inode number, and pos (offset)
+        dev_t s_dev = get_dev_from_file(file);
+        unsigned long inode_nr = get_inode_nr_from_file(file);
+        bpf_probe_read(&start_pos, sizeof(off_t), pos);
+
+        // Calculate write start offset
+        if (start_pos != 0)
+            start_pos -= PT_REGS_RC(ctx);
+
+        u64 *tags = bpf_map_lookup_elem(&params_names_map, &event_id);
+        if (!tags) {
+            return -1;
+        }
+
+        save_str_to_buf(submit_p, (void *)&string_p->buf[*off], DEC_ARG(0, *tags));
+        save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, DEC_ARG(1, *tags));
+        save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, DEC_ARG(2, *tags));
+
+        if (event_id == VFS_WRITE)
+            save_to_submit_buf(submit_p, &count, sizeof(size_t), SIZE_T_T, DEC_ARG(3, *tags));
+        else
+            save_to_submit_buf(submit_p, &vlen, sizeof(unsigned long), ULONG_T, DEC_ARG(3, *tags));
+        save_to_submit_buf(submit_p, &start_pos, sizeof(off_t), OFF_T_T, DEC_ARG(4, *tags));
+
+        // Submit vfs_write(v) event
+        events_perf_submit(ctx);
+    }
+
+    if (has_filter && !filter_match) {
         // There is a filter, but no match
         del_args(event_id);
         return 0;
     }
 
-    // No filter was given - continue
+    // No filter was given, or filter match - continue
     bpf_tail_call(ctx, &prog_array, tail_call_id);
     return 0;
 }
@@ -2076,23 +2128,6 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
     // Calculate write start offset
     if (start_pos != 0)
         start_pos -= PT_REGS_RC(ctx);
-
-    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
-    if (!tags) {
-        return -1;
-    }
-
-    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], DEC_ARG(0, *tags));
-    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, DEC_ARG(1, *tags));
-    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, DEC_ARG(2, *tags));
-    if (event_id == VFS_WRITE)
-        save_to_submit_buf(submit_p, &count, sizeof(size_t), SIZE_T_T, DEC_ARG(3, *tags));
-    else
-        save_to_submit_buf(submit_p, &vlen, sizeof(unsigned long), ULONG_T, DEC_ARG(3, *tags));
-    save_to_submit_buf(submit_p, &start_pos, sizeof(off_t), OFF_T_T, DEC_ARG(4, *tags));
-
-    // Submit vfs_write(v) event
-    events_perf_submit(ctx);
 
     u64 id = bpf_get_current_pid_tgid();
     u32 pid = context.pid;
