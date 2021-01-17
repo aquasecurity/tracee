@@ -900,8 +900,8 @@ func (t *Tracee) shouldProcessEvent(e RawEvent) bool {
 			// TODO: use type assertion instead of string convertion
 			argValStr := fmt.Sprint(argVal)
 			match := false
-			for i := range filter.Equal {
-				if argValStr == filter.Equal[i] {
+			for _, f := range filter.Equal {
+				if argValStr == f || (f[len(f)-1] == '*' && strings.HasPrefix(argValStr, f[0:len(f)-1])) {
 					match = true
 					break
 				}
@@ -909,8 +909,8 @@ func (t *Tracee) shouldProcessEvent(e RawEvent) bool {
 			if !match && len(filter.Equal) > 0 {
 				return false
 			}
-			for i := range filter.NotEqual {
-				if argValStr == filter.NotEqual[i] {
+			for _, f := range filter.NotEqual {
+				if argValStr == f || (f[len(f)-1] == '*' && strings.HasPrefix(argValStr, f[0:len(f)-1])) {
 					return false
 				}
 			}
