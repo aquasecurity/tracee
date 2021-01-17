@@ -211,6 +211,7 @@ Available boolean expressions: container.
 
 Event arguments can be accessed using 'event_name.event_arg' and provide a way to filter an event by its arguments.
 Event arguments allow the following operators: '=', '!='.
+Strings can be compared as a prefix if ending with '*'.
 
 Non-boolean expressions can compare a field to multiple values separated by ','.
 Multiple values are ORed if used with equals operator '=', but are ANDed if used with any other operator.
@@ -241,6 +242,7 @@ Examples:
 	--trace uts!=ab356bc4dd554                                   | don't trace events from uts name ab356bc4dd554
 	--trace comm=ls                                              | only trace events from ls command
 	--trace close.fd=5                                           | only trace 'close' events that have 'fd' equals 5
+	--trace openat.pathname=/tmp*                                | only trace 'openat' events that have 'pathname' prefixed by "/tmp"
 	--trace openat.pathname!=/tmp/1,/bin/ls                      | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
 	--trace comm=bash --trace follow                             | trace all events that originated from bash or from one of the processes spawned by bash
 
