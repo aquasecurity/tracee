@@ -801,61 +801,65 @@ func TestPrepareCapture(t *testing.T) {
 	testCases := []struct {
 		testName        string
 		captureSlice    []string
-		expectedCapture tracee.Capture
+		expectedCapture tracee.CaptureConfig
 		expectedError   error
 	}{
 		{
 			testName:        "invalid capture option",
 			captureSlice:    []string{"foo"},
-			expectedCapture: tracee.Capture{},
+			expectedCapture: tracee.CaptureConfig{},
 			expectedError:   errors.New("invalid capture option specified, use '--capture help' for more info"),
 		},
 		{
 			testName:        "invalid capture write filter",
 			captureSlice:    []string{"write="},
-			expectedCapture: tracee.Capture{},
+			expectedCapture: tracee.CaptureConfig{},
 			expectedError:   errors.New("invalid capture option specified, use '--capture help' for more info"),
 		},
 		{
 			testName:        "invalid capture write filter 2",
 			captureSlice:    []string{"write=/tmp"},
-			expectedCapture: tracee.Capture{},
+			expectedCapture: tracee.CaptureConfig{},
 			expectedError:   errors.New("invalid capture option specified, use '--capture help' for more info"),
 		},
 		{
 			testName:        "empty capture write filter",
 			captureSlice:    []string{"write=*"},
-			expectedCapture: tracee.Capture{},
+			expectedCapture: tracee.CaptureConfig{},
 			expectedError:   errors.New("capture write filter cannot be empty"),
 		},
 		{
 			testName:     "capture mem",
 			captureSlice: []string{"mem"},
-			expectedCapture: tracee.Capture{
-				Mem: true,
+			expectedCapture: tracee.CaptureConfig{
+				OutputPath: "/tmp/tracee/out",
+				Mem:        true,
 			},
 			expectedError: nil,
 		},
 		{
 			testName:     "capture exec",
 			captureSlice: []string{"exec"},
-			expectedCapture: tracee.Capture{
-				Exec: true,
+			expectedCapture: tracee.CaptureConfig{
+				OutputPath: "/tmp/tracee/out",
+				Exec:       true,
 			},
 			expectedError: nil,
 		},
 		{
 			testName:     "capture write",
 			captureSlice: []string{"write"},
-			expectedCapture: tracee.Capture{
-				FileWrite: true,
+			expectedCapture: tracee.CaptureConfig{
+				OutputPath: "/tmp/tracee/out",
+				FileWrite:  true,
 			},
 			expectedError: nil,
 		},
 		{
 			testName:     "capture write filtered",
 			captureSlice: []string{"write=/tmp*"},
-			expectedCapture: tracee.Capture{
+			expectedCapture: tracee.CaptureConfig{
+				OutputPath:      "/tmp/tracee/out",
 				FileWrite:       true,
 				FilterFileWrite: []string{"/tmp"},
 			},
@@ -864,20 +868,22 @@ func TestPrepareCapture(t *testing.T) {
 		{
 			testName:     "capture all",
 			captureSlice: []string{"all"},
-			expectedCapture: tracee.Capture{
-				FileWrite: true,
-				Mem:       true,
-				Exec:      true,
+			expectedCapture: tracee.CaptureConfig{
+				OutputPath: "/tmp/tracee/out",
+				FileWrite:  true,
+				Mem:        true,
+				Exec:       true,
 			},
 			expectedError: nil,
 		},
 		{
 			testName:     "multiple capture options",
 			captureSlice: []string{"write", "exec", "mem"},
-			expectedCapture: tracee.Capture{
-				FileWrite: true,
-				Mem:       true,
-				Exec:      true,
+			expectedCapture: tracee.CaptureConfig{
+				OutputPath: "/tmp/tracee/out",
+				FileWrite:  true,
+				Mem:        true,
+				Exec:       true,
 			},
 			expectedError: nil,
 		},
@@ -889,6 +895,7 @@ func TestPrepareCapture(t *testing.T) {
 			assert.Equal(t, testcase.expectedCapture.FilterFileWrite, capture.FilterFileWrite)
 			assert.Equal(t, testcase.expectedCapture.Exec, capture.Exec)
 			assert.Equal(t, testcase.expectedCapture.Mem, capture.Mem)
+			assert.Equal(t, testcase.expectedCapture.OutputPath, capture.OutputPath)
 			assert.Equal(t, testcase.expectedError, err)
 		})
 	}

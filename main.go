@@ -46,7 +46,6 @@ func main() {
 				OutputFormat:          c.String("output"),
 				PerfBufferSize:        c.Int("perf-buffer-size"),
 				BlobPerfBufferSize:    c.Int("blob-perf-buffer-size"),
-				OutputPath:            c.String("output-path"),
 				SecurityAlerts:        c.Bool("security-alerts"),
 				EventsFile:            os.Stdout,
 				ErrorsFile:            os.Stderr,
@@ -65,9 +64,6 @@ func main() {
 
 			if c.Bool("security-alerts") {
 				cfg.Filter.EventsToTrace = append(cfg.Filter.EventsToTrace, tracee.MemProtAlertEventID)
-			}
-			if c.Bool("clear-output-path") {
-				os.RemoveAll(cfg.OutputPath)
 			}
 			bpfFile, err := getBPFObject()
 			if err != nil {
@@ -98,9 +94,10 @@ func main() {
 				Usage:   "select events to trace by defining trace expressions. run '--trace help' for more info.",
 			},
 			&cli.StringSliceFlag{
-				Name:  "capture",
-				Value: nil,
-				Usage: "capture artifacts that were written, executed or found to be suspicious. run '--capture help' for more info.",
+				Name:    "capture",
+				Aliases: []string{"c"},
+				Value:   nil,
+				Usage:   "capture artifacts that were written, executed or found to be suspicious. run '--capture help' for more info.",
 			},
 			&cli.BoolFlag{
 				Name:  "detect-original-syscall",
@@ -128,17 +125,6 @@ func main() {
 				Aliases: []string{"o"},
 				Value:   "table",
 				Usage:   "output format: table/table-verbose/json/gob/go-template=<path>",
-			},
-			&cli.StringFlag{
-				Name:  "output-path",
-				Value: "/tmp/tracee/out",
-				Usage: "path where tracee will save produced artifacts",
-			},
-			&cli.BoolFlag{
-				Name:    "clear-output-path",
-				Aliases: []string{"clear"},
-				Value:   false,
-				Usage:   "clear the output path before starting",
 			},
 			&cli.BoolFlag{
 				Name:  "security-alerts",
@@ -177,35 +163,48 @@ func main() {
 	}
 }
 
-func prepareCapture(captureSlice []string) (tracee.Capture, error) {
+func prepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 	captureHelp := `
 Capture artifacts that were written, executed or found to be suspicious.
 Captured artifacts will appear in the 'output-path' directory.
 Possible options:
 
-write[=/path/prefix*]   capture written files. An additional filter can be given to only output file writes whose path starts with some prefix (up to 50 characters).
-exec                    capture executed files.
-mem                     capture memory regions that had write+execute (w+x) protection, and then changed to execute (x) only.
-all                     capture all of the above artifacts.
+[artifact:]write[=/path/prefix*]   capture written files. A filter can be given to only capture file writes whose path starts with some prefix (up to 50 characters).
+[artifact:]exec                    capture executed files.
+[artifact:]mem                     capture memory regions that had write+execute (w+x) protection, and then changed to execute (x) only.
+[artifact:]all                     capture all of the above artifacts.
+
+dir:/path/to/dir        path where tracee will save produced artifacts (default: /tmp/tracee/out).
+clear-dir               clear the captured artifacts output dir before starting (default: false).
 
 Use this flag multiple times to choose multiple capture options
 `
 
 	if len(captureSlice) == 1 && captureSlice[0] == "help" {
-		return tracee.Capture{}, fmt.Errorf(captureHelp)
+		return tracee.CaptureConfig{}, fmt.Errorf(captureHelp)
 	}
 
-	capture := tracee.Capture{}
+	capture := tracee.CaptureConfig{}
+
+	outDir := "/tmp/tracee/out"
+	clearDir := false
 
 	var filterFileWrite []string
-	for _, cap := range captureSlice {
+	for i := range captureSlice {
+		cap := captureSlice[i]
+		if strings.HasPrefix(cap, "artifact:write") ||
+			strings.HasPrefix(cap, "artifact:exec") ||
+			strings.HasPrefix(cap, "artifact:mem") ||
+			strings.HasPrefix(cap, "artifact:all") {
+			cap = strings.TrimPrefix(cap, "artifact:")
+		}
 		if cap == "write" {
 			capture.FileWrite = true
 		} else if strings.HasPrefix(cap, "write=") && strings.HasSuffix(cap, "*") {
 			capture.FileWrite = true
 			pathPrefix := strings.TrimSuffix(strings.TrimPrefix(cap, "write="), "*")
 			if len(pathPrefix) == 0 {
-				return tracee.Capture{}, fmt.Errorf("capture write filter cannot be empty")
+				return tracee.CaptureConfig{}, fmt.Errorf("capture write filter cannot be empty")
 			}
 			filterFileWrite = append(filterFileWrite, pathPrefix)
 		} else if cap == "exec" {
@@ -216,11 +215,23 @@ Use this flag multiple times to choose multiple capture options
 			capture.FileWrite = true
 			capture.Exec = true
 			capture.Mem = true
+		} else if cap == "clear-dir" {
+			clearDir = true
+		} else if strings.HasPrefix(cap, "dir:") {
+			outDir = strings.TrimPrefix(cap, "dir:")
+			if len(outDir) == 0 {
+				return tracee.CaptureConfig{}, fmt.Errorf("capture output dir cannot be empty")
+			}
 		} else {
-			return tracee.Capture{}, fmt.Errorf("invalid capture option specified, use '--capture help' for more info")
+			return tracee.CaptureConfig{}, fmt.Errorf("invalid capture option specified, use '--capture help' for more info")
 		}
 	}
 	capture.FilterFileWrite = filterFileWrite
+	capture.OutputPath = outDir
+
+	if clearDir {
+		os.RemoveAll(outDir)
+	}
 
 	return capture, nil
 }

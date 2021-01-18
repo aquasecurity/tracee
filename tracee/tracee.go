@@ -22,13 +22,12 @@ import (
 // TraceeConfig is a struct containing user defined configuration of tracee
 type TraceeConfig struct {
 	Filter                *Filter
-	Capture               *Capture
+	Capture               *CaptureConfig
 	DetectOriginalSyscall bool
 	ShowExecEnv           bool
 	OutputFormat          string
 	PerfBufferSize        int
 	BlobPerfBufferSize    int
-	OutputPath            string
 	SecurityAlerts        bool
 	EventsFile            *os.File
 	ErrorsFile            *os.File
@@ -83,7 +82,8 @@ type ArgFilterVal struct {
 	NotEqual []string
 }
 
-type Capture struct {
+type CaptureConfig struct {
+	OutputPath      string
 	FileWrite       bool
 	FilterFileWrite []string
 	Exec            bool
@@ -266,10 +266,11 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 		}
 	}
 
-	if err := os.MkdirAll(t.config.OutputPath, 0755); err != nil {
+	if err := os.MkdirAll(t.config.Capture.OutputPath, 0755); err != nil {
 		return nil, fmt.Errorf("error creating output path: %v", err)
 	}
-	err = ioutil.WriteFile(path.Join(t.config.OutputPath, "tracee.pid"), []byte(strconv.Itoa(os.Getpid())+"\n"), 0640)
+	// Todo: tracee.pid should be in a known constant location. /var/run is probably a better choice
+	err = ioutil.WriteFile(path.Join(t.config.Capture.OutputPath, "tracee.pid"), []byte(strconv.Itoa(os.Getpid())+"\n"), 0640)
 	if err != nil {
 		return nil, fmt.Errorf("error creating readiness file: %v", err)
 	}
@@ -830,7 +831,7 @@ func (t *Tracee) Run() error {
 
 	// record index of written files
 	if t.config.Capture.FileWrite {
-		destinationFilePath := filepath.Join(t.config.OutputPath, "written_files")
+		destinationFilePath := filepath.Join(t.config.Capture.OutputPath, "written_files")
 		f, err := os.OpenFile(destinationFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			return fmt.Errorf("error logging written files")
@@ -990,7 +991,7 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 				return nil
 			}
 
-			destinationDirPath := filepath.Join(t.config.OutputPath, strconv.Itoa(int(ctx.MntID)))
+			destinationDirPath := filepath.Join(t.config.Capture.OutputPath, strconv.Itoa(int(ctx.MntID)))
 			if err := os.MkdirAll(destinationDirPath, 0755); err != nil {
 				return err
 			}
@@ -1221,7 +1222,7 @@ func (t *Tracee) processFileWrites() {
 				continue
 			}
 
-			pathname := path.Join(t.config.OutputPath, strconv.Itoa(int(meta.MntID)))
+			pathname := path.Join(t.config.Capture.OutputPath, strconv.Itoa(int(meta.MntID)))
 			if err := os.MkdirAll(pathname, 0755); err != nil {
 				t.handleError(err)
 				continue
