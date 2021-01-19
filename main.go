@@ -255,6 +255,9 @@ Event arguments can be accessed using 'event_name.event_arg' and provide a way t
 Event arguments allow the following operators: '=', '!='.
 Strings can be compared as a prefix if ending with '*'.
 
+Event return value can be accessed using 'event_name.retval' and provide a way to filter an event by its return value.
+Event return value expression has the same syntax as a numerical expression.
+
 Non-boolean expressions can compare a field to multiple values separated by ','.
 Multiple values are ORed if used with equals operator '=', but are ANDed if used with any other operator.
 
@@ -301,29 +304,29 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 		UIDFilter: &tracee.UintFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
-			Less:     tracee.LessNotSet,
-			Greater:  tracee.GreaterNotSet,
+			Less:     tracee.LessNotSetUint,
+			Greater:  tracee.GreaterNotSetUint,
 			Is32Bit:  true,
 		},
 		PIDFilter: &tracee.UintFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
-			Less:     tracee.LessNotSet,
-			Greater:  tracee.GreaterNotSet,
+			Less:     tracee.LessNotSetUint,
+			Greater:  tracee.GreaterNotSetUint,
 			Is32Bit:  true,
 		},
 		NewPidFilter: &tracee.BoolFilter{},
 		MntNSFilter: &tracee.UintFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
-			Less:     tracee.LessNotSet,
-			Greater:  tracee.GreaterNotSet,
+			Less:     tracee.LessNotSetUint,
+			Greater:  tracee.GreaterNotSetUint,
 		},
 		PidNSFilter: &tracee.UintFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
-			Less:     tracee.LessNotSet,
-			Greater:  tracee.GreaterNotSet,
+			Less:     tracee.LessNotSetUint,
+			Greater:  tracee.GreaterNotSetUint,
 		},
 		UTSFilter: &tracee.StringFilter{
 			Equal:    []string{},
@@ -335,6 +338,9 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 		},
 		ContFilter:    &tracee.BoolFilter{},
 		NewContFilter: &tracee.BoolFilter{},
+		RetFilter: &tracee.RetFilter{
+			Filters: make(map[int32]tracee.IntFilter),
+		},
 		ArgFilter: &tracee.ArgFilter{
 			Filters: make(map[int32]map[string]tracee.ArgFilterVal),
 		},
@@ -356,6 +362,14 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 		if operatorIndex > 0 {
 			filterName = f[0:operatorIndex]
 			operatorAndValues = f[operatorIndex:]
+		}
+
+		if strings.Contains(f, ".retval") {
+			err := parseRetFilter(filterName, operatorAndValues, eventsNameToID, filter.RetFilter)
+			if err != nil {
+				return tracee.Filter{}, err
+			}
+			continue
 		}
 
 		if strings.Contains(f, ".") {
@@ -521,12 +535,59 @@ func parseUintFilter(operatorAndValues string, uintFilter *tracee.UintFilter) er
 		case "!=":
 			uintFilter.NotEqual = append(uintFilter.NotEqual, val)
 		case ">":
-			if (uintFilter.Greater == tracee.GreaterNotSet) || (val > uintFilter.Greater) {
+			if (uintFilter.Greater == tracee.GreaterNotSetUint) || (val > uintFilter.Greater) {
 				uintFilter.Greater = val
 			}
 		case "<":
-			if (uintFilter.Less == tracee.LessNotSet) || (val < uintFilter.Less) {
+			if (uintFilter.Less == tracee.LessNotSetUint) || (val < uintFilter.Less) {
 				uintFilter.Less = val
+			}
+		default:
+			return fmt.Errorf("invalid filter operator: %s", operatorString)
+		}
+	}
+
+	return nil
+}
+
+func parseIntFilter(operatorAndValues string, intFilter *tracee.IntFilter) error {
+	intFilter.Enabled = true
+	if len(operatorAndValues) < 2 {
+		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
+	}
+	valuesString := string(operatorAndValues[1:])
+	operatorString := string(operatorAndValues[0])
+
+	if operatorString == "!" {
+		if len(operatorAndValues) < 3 {
+			return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
+		}
+		operatorString = operatorAndValues[0:2]
+		valuesString = operatorAndValues[2:]
+	}
+
+	values := strings.Split(valuesString, ",")
+
+	for i := range values {
+		val, err := strconv.ParseInt(values[i], 10, 64)
+		if err != nil {
+			return fmt.Errorf("invalid filter value: %s", values[i])
+		}
+		if intFilter.Is32Bit && (val > math.MaxInt32) {
+			return fmt.Errorf("filter value is too big: %s", values[i])
+		}
+		switch operatorString {
+		case "=":
+			intFilter.Equal = append(intFilter.Equal, val)
+		case "!=":
+			intFilter.NotEqual = append(intFilter.NotEqual, val)
+		case ">":
+			if (intFilter.Greater == tracee.GreaterNotSetInt) || (val > intFilter.Greater) {
+				intFilter.Greater = val
+			}
+		case "<":
+			if (intFilter.Less == tracee.LessNotSetInt) || (val < intFilter.Less) {
+				intFilter.Less = val
 			}
 		default:
 			return fmt.Errorf("invalid filter operator: %s", operatorString)
@@ -581,7 +642,7 @@ func parseBoolFilter(value string, boolFilter *tracee.BoolFilter) error {
 func parseArgFilter(filterName string, operatorAndValues string, eventsNameToID map[string]int32, argFilter *tracee.ArgFilter) error {
 	argFilter.Enabled = true
 	// Event argument filter has the following format: "event.argname=argval"
-	// filterName have the format event:argname, and operatorAndValues have the format "=argval"
+	// filterName have the format event.argname, and operatorAndValues have the format "=argval"
 	splitFilter := strings.Split(filterName, ".")
 	if len(splitFilter) != 2 {
 		return fmt.Errorf("invalid argument filter format %s%s", filterName, operatorAndValues)
@@ -637,6 +698,43 @@ func parseArgFilter(filterName string, operatorAndValues string, eventsNameToID 
 	val.NotEqual = append(val.NotEqual, strFilter.NotEqual...)
 
 	argFilter.Filters[id][argName] = val
+
+	return nil
+}
+
+func parseRetFilter(filterName string, operatorAndValues string, eventsNameToID map[string]int32, retFilter *tracee.RetFilter) error {
+	retFilter.Enabled = true
+	// Ret filter has the following format: "event.ret=val"
+	// filterName have the format event.retval, and operatorAndValues have the format "=val"
+	splitFilter := strings.Split(filterName, ".")
+	if len(splitFilter) != 2 || splitFilter[1] != "retval" {
+		return fmt.Errorf("invalid retval filter format %s%s", filterName, operatorAndValues)
+	}
+	eventName := splitFilter[0]
+
+	id, ok := eventsNameToID[eventName]
+	if !ok {
+		return fmt.Errorf("invalid retval filter event name: %s", eventName)
+	}
+
+	if _, ok := retFilter.Filters[id]; !ok {
+		retFilter.Filters[id] = tracee.IntFilter{
+			Equal:    []int64{},
+			NotEqual: []int64{},
+			Less:     tracee.LessNotSetInt,
+			Greater:  tracee.GreaterNotSetInt,
+		}
+	}
+
+	intFilter := retFilter.Filters[id]
+
+	// Treat operatorAndValues as an int filter to avoid code duplication
+	err := parseIntFilter(operatorAndValues, &intFilter)
+	if err != nil {
+		return err
+	}
+
+	retFilter.Filters[id] = intFilter
 
 	return nil
 }
