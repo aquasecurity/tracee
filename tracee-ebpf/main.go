@@ -40,7 +40,7 @@ func main() {
 				return nil
 			}
 
-			cfg := tracee.TraceeConfig{
+			cfg := tracee.Config{
 				PerfBufferSize:     c.Int("perf-buffer-size"),
 				BlobPerfBufferSize: c.Int("blob-perf-buffer-size"),
 				SecurityAlerts:     c.Bool("security-alerts"),
