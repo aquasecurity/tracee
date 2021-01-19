@@ -125,11 +125,25 @@ func TestReadArgFromBuff(t *testing.T) {
 			input:         []byte{0xDE, 0xAD, 0xBE, 0xEF},
 			expectedError: errors.New("error unknown arg type 222"),
 		},
+		{
+			name: "strT too big",
+			input: []byte{10, //strT
+				0,          // Dummy tag
+				0, 0, 0, 1, //len=16777216
+			},
+			expectedError: errors.New("string size too big: 16777216"),
+		},
 	}
 
 	for _, tc := range testCases {
-		_, actual, err := readArgFromBuff(bytes.NewReader(tc.input))
+		b := bytes.NewReader(tc.input)
+		_, actual, err := readArgFromBuff(b)
 		assert.Equal(t, tc.expectedError, err, tc.name)
 		assert.Equal(t, tc.expectedArg, actual, tc.name)
+
+		// TODO: the following fails for:
+		// strArrT
+		// unknown
+		assert.Empty(t, b.Len(), tc.name) // passed in buffer should be emptied out
 	}
 }
