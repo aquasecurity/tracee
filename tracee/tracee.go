@@ -47,6 +47,7 @@ type Filter struct {
 	CommFilter    *StringFilter
 	ContFilter    *BoolFilter
 	NewContFilter *BoolFilter
+	RetFilter     *RetFilter
 	ArgFilter     *ArgFilter
 	Follow        bool
 }
@@ -60,6 +61,15 @@ type UintFilter struct {
 	Enabled  bool
 }
 
+type IntFilter struct {
+	Equal    []int64
+	NotEqual []int64
+	Greater  int64
+	Less     int64
+	Is32Bit  bool
+	Enabled  bool
+}
+
 type StringFilter struct {
 	Equal    []string
 	NotEqual []string
@@ -68,6 +78,11 @@ type StringFilter struct {
 
 type BoolFilter struct {
 	Value   bool
+	Enabled bool
+}
+
+type RetFilter struct {
+	Filters map[int32]IntFilter
 	Enabled bool
 }
 
@@ -494,7 +509,7 @@ func (t *Tracee) setUintFilter(filter *UintFilter, filterMapName string, configF
 	if err != nil {
 		return err
 	}
-	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 && filter.Greater == GreaterNotSet && filter.Less == LessNotSet {
+	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 && filter.Greater == GreaterNotSetUint && filter.Less == LessNotSetUint {
 		bpfConfigMap.Update(uint32(configFilter), filterIn)
 	} else {
 		bpfConfigMap.Update(uint32(configFilter), filterOut)
@@ -908,6 +923,33 @@ func (t *Tracee) handleError(err error) {
 
 // shouldProcessEvent decides whether or not to drop an event before further processing it
 func (t *Tracee) shouldProcessEvent(e RawEvent) bool {
+	if t.config.Filter.RetFilter.Enabled {
+		if filter, ok := t.config.Filter.RetFilter.Filters[e.Ctx.EventID]; ok {
+			retVal := e.Ctx.Retval
+			match := false
+			for _, f := range filter.Equal {
+				if retVal == f {
+					match = true
+					break
+				}
+			}
+			if !match && len(filter.Equal) > 0 {
+				return false
+			}
+			for _, f := range filter.NotEqual {
+				if retVal == f {
+					return false
+				}
+			}
+			if (filter.Greater != GreaterNotSetInt) && retVal <= filter.Greater {
+				return false
+			}
+			if (filter.Less != LessNotSetInt) && retVal >= filter.Less {
+				return false
+			}
+		}
+	}
+
 	if t.config.Filter.ArgFilter.Enabled {
 		for _, filter := range t.config.Filter.ArgFilter.Filters[e.Ctx.EventID] {
 			argVal, ok := e.RawArgs[filter.argTag]

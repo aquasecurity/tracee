@@ -57,8 +57,10 @@ const (
 // Set default inequality values
 // val<0 and val>math.MaxUint64 should never be used by the user as they give an empty set
 const (
-	LessNotSet    uint64 = 0
-	GreaterNotSet uint64 = math.MaxUint64
+	LessNotSetUint    uint64 = 0
+	GreaterNotSetUint uint64 = math.MaxUint64
+	LessNotSetInt     int64  = math.MinInt64
+	GreaterNotSetInt  int64  = math.MaxInt64
 )
 
 // an enum that specifies the index of a function to be used in a bpf tail call
