@@ -24,9 +24,13 @@ type eventPrinter interface {
 	Print(event external.Event)
 	// Error prints a single error
 	Error(err error)
+	// dispose of resources
+	Close()
 }
 
-func newEventPrinter(kind string, containerMode bool, out io.Writer, err io.Writer) (eventPrinter, error) {
+var eotEvent external.Event = external.Event{EventName: string(rune(4))}
+
+func newEventPrinter(kind string, containerMode bool, eot bool, out io.WriteCloser, err io.WriteCloser) (eventPrinter, error) {
 	var res eventPrinter
 	var initError error
 	switch {
@@ -46,16 +50,19 @@ func newEventPrinter(kind string, containerMode bool, out io.Writer, err io.Writ
 		}
 	case kind == "json":
 		res = &jsonEventPrinter{
+			eot: eot,
 			out: out,
 			err: err,
 		}
 	case kind == "gob":
 		res = &gobEventPrinter{
-			out: gob.NewEncoder(out),
-			err: gob.NewEncoder(err),
+			eot: eot,
+			out: out,
+			err: err,
 		}
-	case strings.HasPrefix(kind, "go-template="):
+	case strings.HasPrefix(kind, "gotemplate="):
 		res = &templateEventPrinter{
+			eot:           eot,
 			out:           out,
 			err:           err,
 			containerMode: containerMode,
@@ -101,8 +108,8 @@ func newEvent(ctx context, argMetas []external.ArgMeta, args []interface{}, Stac
 
 type tableEventPrinter struct {
 	tracee        *Tracee
-	out           io.Writer
-	err           io.Writer
+	out           io.WriteCloser
+	err           io.WriteCloser
 	verbose       bool
 	containerMode bool
 }
@@ -160,13 +167,19 @@ func (p tableEventPrinter) Epilogue(stats statsStore) {
 	fmt.Fprintf(p.out, "Stats: %+v\n", stats)
 }
 
+func (p tableEventPrinter) Close() {
+	p.out.Close()
+	p.err.Close()
+}
+
 type templateEventPrinter struct {
 	tracee        *Tracee
-	out           io.Writer
-	err           io.Writer
+	out           io.WriteCloser
+	err           io.WriteCloser
 	containerMode bool
 	templatePath  string
 	templateObj   **template.Template
+	eot           bool
 }
 
 func (p *templateEventPrinter) Init() error {
@@ -178,7 +191,7 @@ func (p *templateEventPrinter) Init() error {
 		}
 		p.templateObj = &tmpl
 	} else {
-		return errors.New("Please specify a go-template for event-based output")
+		return errors.New("Please specify a gotemplate for event-based output")
 	}
 	return nil
 }
@@ -200,11 +213,21 @@ func (p templateEventPrinter) Print(event external.Event) {
 	}
 }
 
-func (p templateEventPrinter) Epilogue(stats statsStore) {}
+func (p templateEventPrinter) Epilogue(stats statsStore) {
+	if p.eot {
+		p.Print(eotEvent)
+	}
+}
+
+func (p templateEventPrinter) Close() {
+	p.out.Close()
+	p.err.Close()
+}
 
 type jsonEventPrinter struct {
-	out io.Writer
-	err io.Writer
+	out io.WriteCloser
+	err io.WriteCloser
+	eot bool
 }
 
 func (p jsonEventPrinter) Init() error { return nil }
@@ -227,34 +250,54 @@ func (p jsonEventPrinter) Error(e error) {
 	fmt.Fprintln(p.err, string(eBytes))
 }
 
-func (p jsonEventPrinter) Epilogue(stats statsStore) {}
+func (p jsonEventPrinter) Epilogue(stats statsStore) {
+	if p.eot {
+		p.Print(eotEvent)
+	}
+}
+
+func (p jsonEventPrinter) Close() {
+	p.out.Close()
+	p.err.Close()
+}
 
 // gobEventPrinter is printing events using golang's builtin Gob serializer
 // an additional event is added at the end to signal end of transmission
 // this event can be identified by it's "EventName" which will be the ASCII "End Of Transmission" character
 type gobEventPrinter struct {
-	out *gob.Encoder
-	err *gob.Encoder
+	out    io.WriteCloser
+	err    io.WriteCloser
+	outEnc *gob.Encoder
+	errEnc *gob.Encoder
+	eot    bool
 }
 
-func (p *gobEventPrinter) Init() error { return nil }
+func (p *gobEventPrinter) Init() error {
+	p.outEnc = gob.NewEncoder(p.out)
+	p.errEnc = gob.NewEncoder(p.err)
+	return nil
+}
 
 func (p *gobEventPrinter) Preamble() {}
 
 func (p *gobEventPrinter) Print(event external.Event) {
-	err := p.out.Encode(event)
+	err := p.outEnc.Encode(event)
 	if err != nil {
 		p.Error(err)
 	}
 }
 
 func (p *gobEventPrinter) Error(e error) {
-	_ = p.err.Encode(e)
+	_ = p.errEnc.Encode(e)
 }
 
 func (p *gobEventPrinter) Epilogue(stats statsStore) {
-	err := p.out.Encode(external.Event{EventName: string(rune(4))})
-	if err != nil {
-		p.Error(err)
+	if p.eot {
+		p.Print(eotEvent)
 	}
+}
+
+func (p gobEventPrinter) Close() {
+	p.out.Close()
+	p.err.Close()
 }

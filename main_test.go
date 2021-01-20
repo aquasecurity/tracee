@@ -900,3 +900,148 @@ func TestPrepareCapture(t *testing.T) {
 		})
 	}
 }
+
+func TestPrepareOutput(t *testing.T) {
+
+	testCases := []struct {
+		testName       string
+		outputSlice    []string
+		expectedOutput tracee.OutputConfig
+		expectedError  error
+	}{
+		{
+			testName:    "invalid output option",
+			outputSlice: []string{"foo"},
+			// it's not the preparer job to validate input. in this case foo is considered an implicit output format.
+			expectedOutput: tracee.OutputConfig{
+				Format: "foo",
+			},
+			expectedError: nil,
+		},
+		{
+			testName:       "invalid output option",
+			outputSlice:    []string{"option:"},
+			expectedOutput: tracee.OutputConfig{},
+			expectedError:  errors.New("invalid output option: , use '--option help' for more info"),
+		},
+		{
+			testName:       "invalid output option 2",
+			outputSlice:    []string{"option:foo"},
+			expectedOutput: tracee.OutputConfig{},
+			expectedError:  errors.New("invalid output option: foo, use '--option help' for more info"),
+		},
+		{
+			testName:    "format explicit",
+			outputSlice: []string{"format:json"},
+			expectedOutput: tracee.OutputConfig{
+				Format: "json",
+			},
+			expectedError: nil,
+		},
+		{
+			testName:    "format implicit",
+			outputSlice: []string{"json"},
+			expectedOutput: tracee.OutputConfig{
+				Format: "json",
+			},
+			expectedError: nil,
+		},
+		{
+			testName:    "format gotemplate",
+			outputSlice: []string{"gotemplate=/path/to/tmpl"},
+			expectedOutput: tracee.OutputConfig{
+				Format: "gotemplate=/path/to/tmpl",
+			},
+			expectedError: nil,
+		},
+		{
+			testName:    "out",
+			outputSlice: []string{"out-file:/path/to/file"},
+			expectedOutput: tracee.OutputConfig{
+				OutPath: "/path/to/file",
+			},
+			expectedError: nil,
+		},
+		{
+			testName:    "empty val",
+			outputSlice: []string{"out-file"},
+			expectedOutput: tracee.OutputConfig{
+				Format: "out-file",
+			},
+			expectedError: nil,
+		},
+		{
+			testName:    "err",
+			outputSlice: []string{"err-file:/path/to/file"},
+			expectedOutput: tracee.OutputConfig{
+				ErrPath: "/path/to/file",
+			},
+			expectedError: nil,
+		},
+		{
+			testName:    "option eot",
+			outputSlice: []string{"option:eot"},
+			expectedOutput: tracee.OutputConfig{
+				EOT: true,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:    "option stack-addresses",
+			outputSlice: []string{"option:stack-addresses"},
+			expectedOutput: tracee.OutputConfig{
+				StackAddresses: true,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:    "option detect-syscall",
+			outputSlice: []string{"option:detect-syscall"},
+			expectedOutput: tracee.OutputConfig{
+				DetectSyscall: true,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:    "option exec-env",
+			outputSlice: []string{"option:exec-env"},
+			expectedOutput: tracee.OutputConfig{
+				ExecEnv: true,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:    "gob + eot",
+			outputSlice: []string{"format:gob", "option:eot"},
+			expectedOutput: tracee.OutputConfig{
+				Format: "gob",
+				EOT:    true,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:    "all",
+			outputSlice: []string{"gotemplate=/path/to/tmpl", "option:eot", "option:stack-addresses", "option:detect-syscall", "option:exec-env", "out-file:/path/to/file", "err-file:/path/to/file"},
+			expectedOutput: tracee.OutputConfig{
+				Format:         "gotemplate=/path/to/tmpl",
+				OutPath:        "/path/to/file",
+				ErrPath:        "/path/to/file",
+				EOT:            true,
+				StackAddresses: true,
+				DetectSyscall:  true,
+				ExecEnv:        true,
+			},
+			expectedError: nil,
+		},
+	}
+	for _, testcase := range testCases {
+		t.Run(testcase.testName, func(t *testing.T) {
+			output, err := prepareOutput(testcase.outputSlice)
+			if err != nil {
+				assert.Equal(t, testcase.expectedError, err)
+			} else {
+				assert.Equal(t, testcase.expectedOutput, output)
+			}
+		})
+	}
+}

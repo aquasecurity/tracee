@@ -169,7 +169,7 @@ func (t *Tracee) prepareEventForPrint(done <-chan struct{}, in <-chan RawEvent) 
 
 			// Add stack trace if needed
 			var StackAddresses []uint64
-			if t.config.StackAddresses {
+			if t.config.Output.StackAddresses {
 				StackAddresses, _ = t.getStackAddresses(rawEvent.Ctx.StackID)
 			}
 

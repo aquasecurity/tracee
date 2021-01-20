@@ -41,16 +41,15 @@ func main() {
 			}
 
 			cfg := tracee.TraceeConfig{
-				DetectOriginalSyscall: c.Bool("detect-original-syscall"),
-				ShowExecEnv:           c.Bool("show-exec-env"),
-				OutputFormat:          c.String("output"),
-				PerfBufferSize:        c.Int("perf-buffer-size"),
-				BlobPerfBufferSize:    c.Int("blob-perf-buffer-size"),
-				SecurityAlerts:        c.Bool("security-alerts"),
-				EventsFile:            os.Stdout,
-				ErrorsFile:            os.Stderr,
-				StackAddresses:        c.Bool("stack-addresses"),
+				PerfBufferSize:     c.Int("perf-buffer-size"),
+				BlobPerfBufferSize: c.Int("blob-perf-buffer-size"),
+				SecurityAlerts:     c.Bool("security-alerts"),
 			}
+			output, err := prepareOutput(c.StringSlice("output"))
+			if err != nil {
+				return err
+			}
+			cfg.Output = &output
 			capture, err := prepareCapture(c.StringSlice("capture"))
 			if err != nil {
 				return err
@@ -99,15 +98,16 @@ func main() {
 				Value:   nil,
 				Usage:   "capture artifacts that were written, executed or found to be suspicious. run '--capture help' for more info.",
 			},
-			&cli.BoolFlag{
-				Name:  "detect-original-syscall",
-				Value: false,
-				Usage: "when tracing kernel functions which are not syscalls (such as cap_capable), detect and show the original syscall that called that function",
+			&cli.StringSliceFlag{
+				Name:    "output",
+				Aliases: []string{"o"},
+				Value:   cli.NewStringSlice("format:table"),
+				Usage:   "Control how and where output is printed. run '--output help' for more info.",
 			},
 			&cli.BoolFlag{
-				Name:  "show-exec-env",
+				Name:  "security-alerts",
 				Value: false,
-				Usage: "when tracing execve/execveat, show environment variables",
+				Usage: "alert on security related events",
 			},
 			&cli.IntFlag{
 				Name:    "perf-buffer-size",
@@ -120,21 +120,10 @@ func main() {
 				Value: 1024,
 				Usage: "size, in pages, of the internal perf ring buffer used to send blobs from the kernel",
 			},
-			&cli.StringFlag{
-				Name:    "output",
-				Aliases: []string{"o"},
-				Value:   "table",
-				Usage:   "output format: table/table-verbose/json/gob/go-template=<path>",
-			},
-			&cli.BoolFlag{
-				Name:  "security-alerts",
-				Value: false,
-				Usage: "alert on security related events",
-			},
 			&cli.BoolFlag{
 				Name:        "debug",
 				Value:       false,
-				Usage:       "write verbose debug messages to stdndard output and retain intermediate artifacts",
+				Usage:       "write verbose debug messages to standard output and retain intermediate artifacts",
 				Destination: &debug,
 			},
 			&cli.StringFlag{
@@ -149,11 +138,6 @@ func main() {
 				Usage:       "when to build the bpf program. possible options: 'never'/'always'/'if-needed'",
 				Destination: &buildPolicy,
 			},
-			&cli.BoolFlag{
-				Name:  "stack-addresses",
-				Value: false,
-				Usage: "Include stack memory addresses for each event",
-			},
 		},
 	}
 
@@ -161,6 +145,63 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func prepareOutput(outputSlice []string) (tracee.OutputConfig, error) {
+	outputHelp := `
+Control how and where output is printed.
+Possible options:
+
+[format:]{table,table-verbose,json,gob,gotemplate=/path/to/template}   output events in the specified format. for gotemplate, specify the mandatory template file
+out-file:/path/to/file                                                 write the output to a specified file. the path to the file will be created if not existing and the file will be deleted if existing (deafult: stdout)
+err-file:/path/to/file                                                 write the errors to a specified file. the path to the file will be created if not existing and the file will be deleted if existing (deafult: stderr)
+option:{eot,stacktrace,detect-syscall,exec-env}                        augment output according to given options (default: none)
+  eot                                                                add a final event that signals the end of event stream. this is an empty event with "EventName" set to the ASCII code 4, which is "End Of Transmission"
+  stack-addresses                                                    include stack memory addresses for each event
+  detect-syscall                                                     when tracing kernel functions which are not syscalls, detect and show the original syscall that called that function
+  exec-env                                                           when tracing execve/execveat, show the environment variables that were used for execution
+Examples:
+  --output json --output option:eot                        | output as json and add an EOT event
+  --output gotemplate=/path/to/my.tmpl                     | output as the provided go template
+  --output out-file:/my/out err-file:/my/err               | output to /my/out and errors to /my/err
+
+Use this flag multiple times to choose multiple capture options	
+`
+
+	res := tracee.OutputConfig{}
+	if len(outputSlice) == 1 && outputSlice[0] == "help" {
+		return res, fmt.Errorf(outputHelp)
+	}
+
+	for _, o := range outputSlice {
+		outputParts := strings.SplitN(o, ":", 2)
+		numParts := len(outputParts)
+		if numParts == 1 {
+			outputParts = append(outputParts, outputParts[0])
+			outputParts[0] = "format"
+		}
+		if outputParts[0] == "format" {
+			res.Format = outputParts[1]
+		} else if outputParts[0] == "out-file" {
+			res.OutPath = outputParts[1]
+		} else if outputParts[0] == "err-file" {
+			res.ErrPath = outputParts[1]
+		} else if outputParts[0] == "option" {
+			switch outputParts[1] {
+			case "eot":
+				res.EOT = true
+			case "stack-addresses":
+				res.StackAddresses = true
+			case "detect-syscall":
+				res.DetectSyscall = true
+			case "exec-env":
+				res.ExecEnv = true
+			default:
+				return res, fmt.Errorf("invalid output option: %s, use '--option help' for more info", outputParts[1])
+			}
+		}
+	}
+	return res, nil
 }
 
 func prepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
@@ -178,9 +219,9 @@ dir:/path/to/dir        path where tracee will save produced artifacts. the arti
 clear-dir               clear the captured artifacts output dir before starting (default: false).
 
 Examples:
-	--capture exec                                           | capture executed files into the default output directory
-	--capture all --capture dir:/my/dir --capture clear-dir  | delete /my/dir/out and then capture all supported artifacts into it
-	--capture write=/usr/bin/* --capture write=/etc/*        | capture files that were written into anywhere under /usr/bin/ or /etc/
+  --capture exec                                           | capture executed files into the default output directory
+  --capture all --capture dir:/my/dir --capture clear-dir  | delete /my/dir/out and then capture all supported artifacts into it
+  --capture write=/usr/bin/* --capture write=/etc/*        | capture files that were written into anywhere under /usr/bin/ or /etc/
 
 Use this flag multiple times to choose multiple capture options
 `
@@ -270,28 +311,28 @@ The field 'set' selects a set of events to trace according to predefined sets, w
 The special 'follow' expression declares that not only processes that match the criteria will be traced, but also their descendants.
 
 Examples:
-	--trace pid=new                                              | only trace events from new processes
-	--trace pid=510,1709                                         | only trace events from pid 510 or pid 1709
-	--trace p=510 --trace p=1709                                 | only trace events from pid 510 or pid 1709 (same as above)
-	--trace container=new                                        | only trace events from newly created containers
-	--trace container                                            | only trace events from containers
-	--trace c                                                    | only trace events from containers (same as above)
-	--trace '!container'                                         | only trace events from the host
-	--trace uid=0                                                | only trace events from uid 0
-	--trace mntns=4026531840                                     | only trace events from mntns id 4026531840
-	--trace pidns!=4026531836                                    | only trace events from pidns id not equal to 4026531840
-	--trace 'uid>0'                                              | only trace events from uids greater than 0
-	--trace 'pid>0' --trace 'pid<1000'                           | only trace events from pids between 0 and 1000
-	--trace 'u>0' --trace u!=1000                                | only trace events from uids greater than 0 but not 1000
-	--trace event=execve,open                                    | only trace execve and open events
-	--trace set=fs                                               | trace all file-system related events
-	--trace s=fs --trace e!=open,openat                          | trace all file-system related events, but not open(at)
-	--trace uts!=ab356bc4dd554                                   | don't trace events from uts name ab356bc4dd554
-	--trace comm=ls                                              | only trace events from ls command
-	--trace close.fd=5                                           | only trace 'close' events that have 'fd' equals 5
-	--trace openat.pathname=/tmp*                                | only trace 'openat' events that have 'pathname' prefixed by "/tmp"
-	--trace openat.pathname!=/tmp/1,/bin/ls                      | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
-	--trace comm=bash --trace follow                             | trace all events that originated from bash or from one of the processes spawned by bash
+  --trace pid=new                                              | only trace events from new processes
+  --trace pid=510,1709                                         | only trace events from pid 510 or pid 1709
+  --trace p=510 --trace p=1709                                 | only trace events from pid 510 or pid 1709 (same as above)
+  --trace container=new                                        | only trace events from newly created containers
+  --trace container                                            | only trace events from containers
+  --trace c                                                    | only trace events from containers (same as above)
+  --trace '!container'                                         | only trace events from the host
+  --trace uid=0                                                | only trace events from uid 0
+  --trace mntns=4026531840                                     | only trace events from mntns id 4026531840
+  --trace pidns!=4026531836                                    | only trace events from pidns id not equal to 4026531840
+  --trace 'uid>0'                                              | only trace events from uids greater than 0
+  --trace 'pid>0' --trace 'pid<1000'                           | only trace events from pids between 0 and 1000
+  --trace 'u>0' --trace u!=1000                                | only trace events from uids greater than 0 but not 1000
+  --trace event=execve,open                                    | only trace execve and open events
+  --trace set=fs                                               | trace all file-system related events
+  --trace s=fs --trace e!=open,openat                          | trace all file-system related events, but not open(at)
+  --trace uts!=ab356bc4dd554                                   | don't trace events from uts name ab356bc4dd554
+  --trace comm=ls                                              | only trace events from ls command
+  --trace close.fd=5                                           | only trace 'close' events that have 'fd' equals 5
+  --trace openat.pathname=/tmp*                                | only trace 'openat' events that have 'pathname' prefixed by "/tmp"
+  --trace openat.pathname!=/tmp/1,/bin/ls                      | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
+  --trace comm=bash --trace follow                             | trace all events that originated from bash or from one of the processes spawned by bash
 
 
 Note: some of the above operators have special meanings in different shells.
