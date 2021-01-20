@@ -169,13 +169,18 @@ Capture artifacts that were written, executed or found to be suspicious.
 Captured artifacts will appear in the 'output-path' directory.
 Possible options:
 
-[artifact:]write[=/path/prefix*]   capture written files. A filter can be given to only capture file writes whose path starts with some prefix (up to 50 characters).
+[artifact:]write[=/path/prefix*]   capture written files. A filter can be given to only capture file writes whose path starts with some prefix (up to 50 characters). Up to 3 filters can be given.
 [artifact:]exec                    capture executed files.
 [artifact:]mem                     capture memory regions that had write+execute (w+x) protection, and then changed to execute (x) only.
 [artifact:]all                     capture all of the above artifacts.
 
-dir:/path/to/dir        path where tracee will save produced artifacts (default: /tmp/tracee).
+dir:/path/to/dir        path where tracee will save produced artifacts. the artifact will be saved into an 'out' subdirectory. (default: /tmp/tracee).
 clear-dir               clear the captured artifacts output dir before starting (default: false).
+
+Examples:
+	--capture exec                                           | capture executed files into the default output directory
+	--capture all --capture dir:/my/dir --capture clear-dir  | delete /my/dir/out and then capture all supported artifacts into it
+	--capture write=/usr/bin/* --capture write=/etc/*        | capture files that were written into anywhere under /usr/bin/ or /etc/
 
 Use this flag multiple times to choose multiple capture options
 `
