@@ -21,19 +21,14 @@ import (
 
 // TraceeConfig is a struct containing user defined configuration of tracee
 type TraceeConfig struct {
-	Filter                *Filter
-	Capture               *CaptureConfig
-	DetectOriginalSyscall bool
-	ShowExecEnv           bool
-	OutputFormat          string
-	PerfBufferSize        int
-	BlobPerfBufferSize    int
-	SecurityAlerts        bool
-	EventsFile            *os.File
-	ErrorsFile            *os.File
-	maxPidsCache          int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
-	BPFObjPath            string
-	StackAddresses        bool
+	Filter             *Filter
+	Capture            *CaptureConfig
+	Output             *OutputConfig
+	PerfBufferSize     int
+	BlobPerfBufferSize int
+	SecurityAlerts     bool
+	maxPidsCache       int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
+	BPFObjPath         string
 }
 
 type Filter struct {
@@ -105,21 +100,37 @@ type CaptureConfig struct {
 	Mem             bool
 }
 
+type OutputConfig struct {
+	Format         string
+	OutPath        string
+	ErrPath        string
+	EOT            bool
+	StackAddresses bool
+	DetectSyscall  bool
+	ExecEnv        bool
+}
+
+// Validate does static validation of the configuration
+func (cfg OutputConfig) Validate() error {
+	if cfg.Format != "table" && cfg.Format != "table-verbose" && cfg.Format != "json" && cfg.Format != "gob" && !strings.HasPrefix(cfg.Format, "gotemplate=") {
+		return fmt.Errorf("unrecognized output format: %s", cfg.Format)
+	}
+	return nil
+}
+
 // Validate does static validation of the configuration
 func (tc TraceeConfig) Validate() error {
 	if tc.Filter.EventsToTrace == nil {
 		return fmt.Errorf("eventsToTrace is nil")
 	}
-	if tc.OutputFormat != "table" && tc.OutputFormat != "table-verbose" && tc.OutputFormat != "json" && tc.OutputFormat != "gob" && !strings.HasPrefix(tc.OutputFormat, "go-template=") {
-		return fmt.Errorf("unrecognized output format: %s", tc.OutputFormat)
-	}
+
 	for _, e := range tc.Filter.EventsToTrace {
 		if _, ok := EventsIDToEvent[e]; !ok {
 			return fmt.Errorf("invalid event to trace: %d", e)
 		}
 	}
 	for eventID, eventFilters := range tc.Filter.ArgFilter.Filters {
-		for argName, _ := range eventFilters {
+		for argName := range eventFilters {
 			eventParams, ok := EventsIDToParams[eventID]
 			if !ok {
 				return fmt.Errorf("invalid argument filter event id: %d", eventID)
@@ -153,6 +164,11 @@ func (tc TraceeConfig) Validate() error {
 	}
 	_, err := os.Stat(tc.BPFObjPath)
 	if err == nil {
+		return err
+	}
+
+	err = tc.Output.Validate()
+	if err != nil {
 		return err
 	}
 	return nil
@@ -232,9 +248,29 @@ func New(cfg TraceeConfig) (*Tracee, error) {
 	t := &Tracee{
 		config: cfg,
 	}
+	outf := os.Stdout
+	if t.config.Output.OutPath != "" {
+		dir := filepath.Dir(t.config.Output.OutPath)
+		os.MkdirAll(dir, 0755)
+		os.Remove(t.config.Output.OutPath)
+		outf, err = os.Create(t.config.Output.OutPath)
+		if err != nil {
+			return nil, err
+		}
+	}
+	errf := os.Stderr
+	if t.config.Output.ErrPath != "" {
+		dir := filepath.Dir(t.config.Output.ErrPath)
+		os.MkdirAll(dir, 0755)
+		os.Remove(t.config.Output.ErrPath)
+		errf, err = os.Create(t.config.Output.ErrPath)
+		if err != nil {
+			return nil, err
+		}
+	}
 	ContainerMode := (t.config.Filter.ContFilter.Enabled && t.config.Filter.ContFilter.Value) ||
 		(t.config.Filter.NewContFilter.Enabled && t.config.Filter.NewContFilter.Value)
-	printObj, err := newEventPrinter(t.config.OutputFormat, ContainerMode, t.config.EventsFile, t.config.ErrorsFile)
+	printObj, err := newEventPrinter(t.config.Output.Format, ContainerMode, t.config.Output.EOT, outf, errf)
 	if err != nil {
 		return nil, err
 	}
@@ -588,12 +624,12 @@ func (t *Tracee) populateBPFMaps() error {
 
 	// Initialize config and pids maps
 	bpfConfigMap, _ := t.bpfModule.GetMap("config_map")
-	bpfConfigMap.Update(uint32(configDetectOrigSyscall), boolToUInt32(t.config.DetectOriginalSyscall))
-	bpfConfigMap.Update(uint32(configExecEnv), boolToUInt32(t.config.ShowExecEnv))
+	bpfConfigMap.Update(uint32(configDetectOrigSyscall), boolToUInt32(t.config.Output.DetectSyscall))
+	bpfConfigMap.Update(uint32(configExecEnv), boolToUInt32(t.config.Output.ExecEnv))
+	bpfConfigMap.Update(uint32(configStackAddresses), boolToUInt32(t.config.Output.StackAddresses))
 	bpfConfigMap.Update(uint32(configCaptureFiles), boolToUInt32(t.config.Capture.FileWrite))
 	bpfConfigMap.Update(uint32(configExtractDynCode), boolToUInt32(t.config.Capture.Mem))
 	bpfConfigMap.Update(uint32(configTraceePid), uint32(os.Getpid()))
-	bpfConfigMap.Update(uint32(configStackAddresses), boolToUInt32(t.config.StackAddresses))
 	bpfConfigMap.Update(uint32(configFollowFilter), boolToUInt32(t.config.Filter.Follow))
 
 	// Initialize tail calls program array
@@ -881,6 +917,7 @@ func (t *Tracee) Close() {
 	if t.bpfModule != nil {
 		t.bpfModule.Close()
 	}
+	t.printer.Close()
 }
 
 func boolToUInt32(b bool) uint32 {
