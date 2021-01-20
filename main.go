@@ -174,7 +174,7 @@ Possible options:
 [artifact:]mem                     capture memory regions that had write+execute (w+x) protection, and then changed to execute (x) only.
 [artifact:]all                     capture all of the above artifacts.
 
-dir:/path/to/dir        path where tracee will save produced artifacts (default: /tmp/tracee/out).
+dir:/path/to/dir        path where tracee will save produced artifacts (default: /tmp/tracee).
 clear-dir               clear the captured artifacts output dir before starting (default: false).
 
 Use this flag multiple times to choose multiple capture options
@@ -186,7 +186,7 @@ Use this flag multiple times to choose multiple capture options
 
 	capture := tracee.CaptureConfig{}
 
-	outDir := "/tmp/tracee/out"
+	outDir := "/tmp/tracee"
 	clearDir := false
 
 	var filterFileWrite []string
@@ -227,10 +227,10 @@ Use this flag multiple times to choose multiple capture options
 		}
 	}
 	capture.FilterFileWrite = filterFileWrite
-	capture.OutputPath = outDir
 
+	capture.OutputPath = filepath.Join(outDir, "out")
 	if clearDir {
-		os.RemoveAll(outDir)
+		os.RemoveAll(capture.OutputPath)
 	}
 
 	return capture, nil
