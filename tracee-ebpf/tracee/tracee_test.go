@@ -110,7 +110,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			expectedArg: []string{"/usr/bin", "docker"},
 		},
 		{
-			name: "sockAddrT",
+			name: "sockAddrT - AF_INET",
 			input: []byte{12, //sockAddrT
 				0,    // Dummy tag
 				2, 0, //sa_family=AF_INET
@@ -119,6 +119,15 @@ func TestReadArgFromBuff(t *testing.T) {
 				0, 0, 0, 0, 0, 0, 0, 0, //padding[8]
 			},
 			expectedArg: map[string]string(map[string]string{"sa_family": "AF_INET", "sin_addr": "255.255.255.255", "sin_port": "65535"}),
+		},
+		{
+			name: "sockAddrT - AF_UNIX",
+			input: []byte{12, //sockAddrT
+				0,    // Dummy tag
+				1, 0, //sa_family=AF_UNIX
+				47, 116, 109, 112, 47, 115, 111, 99, 107, 101, 116, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 101, 110, 0, 0, 0, // sun_path=/tmp/socket
+			},
+			expectedArg: map[string]string{"sa_family": "AF_UNIX", "sun_path": "/tmp/socket"},
 		},
 		{
 			name:          "unknown",
@@ -144,6 +153,7 @@ func TestReadArgFromBuff(t *testing.T) {
 		// TODO: the following fails for:
 		// strArrT
 		// unknown
+		// sockAddrT - AF_UNIX
 		assert.Empty(t, b.Len(), tc.name) // passed in buffer should be emptied out
 	}
 }
