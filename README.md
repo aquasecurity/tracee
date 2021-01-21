@@ -7,9 +7,7 @@
 
 # Tracee - Container and system tracing using eBPF
 
-Tracee is a lightweight and easy to use container and system tracing tool. It allows you to observe system calls and other system events in real-time. A unique feature of Tracee is that it will only trace newly created processes and containers (that were started after Tracee has started), in order to help the user focus on relevant events instead of every single thing that happens on the system (which can be overwhelming). Adding new events to Tracee (especially system calls) is straightforward, and will usually require no more than adding few lines of code.
-
-Other than tracing, Tracee is also capable of capturing files written to disk or memory ("fileless"), and extracting binaries that are dynamically loaded to an application's memory (e.g. when an application uses a packer). With these features, it is possible to quickly gain insights about the running processes that previously required the use of dynamic analysis tools and special knowledge.
+Tracee is a lightweight and easy to use tracing tool for Linux, which is focused on security and forensics. It allows you to observe system calls and other system events in real-time, with comprehensive filtering mechanism so you can focus on the events that are relevant to you. Unlike other tracing tools, Tracee is a security tool, which is demonstrated by features like capturing forensic artifacts from running applications, tracing non-syscall security events, and producing security insights.
 
 [Check out this quick demo of tracee](https://youtu.be/WTqE2ae257o)
 
@@ -17,38 +15,47 @@ Other than tracing, Tracee is also capable of capturing files written to disk or
 
 ### Prerequisites
 
-- To run, Tracee requires Linux kernel version >= 4.14
-
-Not required if using the Docker image:
-- C standard library (tested with glibc)
-- `libelf` and `zlib` libraries
+- Linux kernel version >= 4.14
+- Relevant kernel headers available under conventional location (see [Linux Headers](#Linux-Headers) section for info)
+- libc, and the libraries: libelf and zlib
 - clang >= 9
 
-Not required if pre-compiling the eBPF code (see [Installation options](#installation-options)):
-- clang >= 9
-- Kernel headers available under `/usr/src`, must be provided by user and match the running kernel version, not needed if building the eBPF program in advance
+Exceptions:
+
+- Tracee supports loading a pre-compiled eBPF file, in which case the kernel headers are required only for the one-time compilation, and not at runtime. See Setup Options for more info.
+- When using Tracee's Docker image, all of the aforementioned requirements are built into the image. The only requirement left is the kernel headers or the pre-built eBPF. See Setup Options for more info.
 
 ### Quickstart with Docker
 
 ```bash
-docker run --name tracee --rm --privileged --pid=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee aquasec/tracee
+docker run --name tracee --rm --privileged --pid=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee aquasec/tracee:latest
 ```
 
-> Note: You may need to change the volume mounts for the kernel headers based on your setup.
+> Note: You may need to change the volume mounts for the kernel headers based on your setup. See [Linux Headers](#Linux-Headers) section for info.
 
-This will run Tracee with no arguments, which defaults to collecting all events from all newly created processes and printing them in a table to standard output.
+This will run Tracee with no arguments, which defaults to collecting a useful default set of events from all processes and print them in a table to standard output.
 
-### Setup options
+### Getting Tracee
 
-Tracee is made of an executable that drives the eBPF program (`tracee`), and the eBPF program itself (`tracee.bpf.$kernelversion.$traceeversion.o`). When the `tracee` executable is started, it will look for the eBPF program next to the executable, or in `/tmp/tracee`, or in a path specified in `TRACEE_BPF_FILE` environment variable. If the eBPF program is not found, the executable will attempt to build it automatically before it starts (you can control this using the `--build-policy` flag).
-
-The easiest way to get started is to let the `tracee` executable build the eBPF program for you automatically. You can obtain the executable in any of the following ways:
+You can obtain Tracee in any of the following ways:
 1. Download from the [GitHub Releases](https://github.com/aquasecurity/tracee/releases) (`tracee.tar.gz`).
 2. Use the docker image from Docker Hub: `aquasec/tracee` (includes all the required dependencies).
 3. Build the executable from source using `make build`. For that you will need additional development tooling.
 4. Build the executable from source in a Docker container which includes all development tooling, using `make build DOCKER=1`.
 
-Alternatively, you can pre-compile the eBPF program, and provide it to the `tracee` executable. There are some benefits to this approach since you will not need clang and kernel headers at runtime anymore, as well as reduced risk of invoking an external program at runtime. You can build the eBPF program in the following ways:
+### Setup options
+
+Tracee is made of a userspace executable (`tracee`) that drives the eBPF program, and the eBPF program itself (`tracee.bpf.$kernelversion.$traceeversion.o`). When the `tracee` is started, it will look for the eBPF program in specific places and if not found, it will attempt to build the eBPF program automatically before it starts (you can control this using the `--build-policy` flag).
+
+The eBPF program is searched in the following places (in order):
+1. Path specified in `TRACEE_BPF_FILE` environment variable
+2. Next to the executable (same directory)
+3. `/tmp/tracee`
+
+The easiest way to get started is to just let tracee build the eBPF program for you automatically, as demonstrated in the previous section [Quickstart with Docker](#quickstart-with-docker).  
+Alternatively, you can pre-compile the eBPF program, and provide it to the `tracee` executable. There are some benefits to this approach as you will not need clang and kernel headers at runtime anymore, as well as reduced risk of invoking an external program at runtime.
+
+You can build the eBPF program in the following ways:
 1. `make bpf`
 2. `make bpf DOCKER=1` to build in a Docker container which includes all development tooling.
 3. There is also a handy `make all` (and the `make all DOCKER=1` variant) which builds both the executable and the eBPF program.
@@ -63,7 +70,7 @@ If running in a container, regardless if it's the full or slim image, it's advis
 
 When using the `--capture exec` option, Tracee needs access to the host PID namespace. For Docker, add `--pid=host` to the run command.
 
-If you are building the eBPF program in a container, you'll need to make the kernel headers available in the container. The quickstart example has wide mounts that works in a variety of cases, for demonstration purposes. If you want, you can narrow those mounts down to a directory that contains the headers on your setup, for example: `-v /path/to/headers:/myheaders -e KERN_HEADERS=/myheaders`. As mentioned before, a better practice for production is to pre-compile the eBPF program, in which case the kernel headers are not needed at runtime.
+If you are building the eBPF program in a container, you'll need to make the kernel headers available in the container. The quickstart example has broader mounts that works in a variety of cases, for demonstration purposes. If you want, you can narrow those mounts down to the specific directory that contains the headers on your setup, for example: `-v /path/to/headers:/myheaders -e KERN_HEADERS=/myheaders`. As mentioned before, a better practice for production is to pre-compile the eBPF program, in which case the kernel headers are not needed at runtime.
 
 #### Permissions
 
@@ -74,11 +81,27 @@ For actually tracing, Tracee needs to run with sufficient capabilities:
 
 Alternatively, running as `root` or with the `--privileged` flag of Docker, is an easy way to start.
 
+#### Linux Headers
+
+In order to compile the eBPF program, Tracee needs some of the Linux kernel headers. Depending on your Linux distribution, there may be different ways to obtain them.  
+
+- On Ubuntu/Debian/Arch/Manjaro install the `linux-headers` package.
+- On CentOS/Fedora install the `kernel-headers` and `kernel-devel` packages.
+
+Normally the files will be installed in `/lib/modules/${kernel_version}/build` which is where Tracee expects them. If you have the headers elsewhere, you can set the `KERN_HEADERS` environment variable with the correct location.
+
+> Note that it's important that the kernel headers match the exact version of kernel you are running. To check the current kernel version, run the command `uname -r`. To install a specific kernel headers version append the version to the package name: `linux-headers-$(uname -r)`.
+
+> Note that more often than not the kernel headers files contains filesystem links to other files in other directories. Therefore, when passing the kernel headers to Tracee docker container, make sure all the necessary directories are mounted. This is why the quickstart example mounts `/usr/src` in addition to `/lib/modules`.
+
 ## Using Tracee
+
+Use `tracee --help` to see a full description of available options. Some flags has specific help sections that can be accessed by passing `help` to the flag, for example `--output help`.
+This section covers some of the more common options.
 
 ### Understanding the output
 
-Here's a sample output of running Tracee with no additional arguments (which defaults to tracing all events):
+Here's a sample output of running Tracee with no additional arguments:
 
 ```
 TIME(s)        UID    COMM             PID     TID     RET             EVENT                ARGS
@@ -100,41 +123,50 @@ Each line is a single event collected by Tracee, with the following information:
 7. EVENT - identifies the event (e.g. syscall name)
 8. ARGS - list of arguments given to the function
 
-When using table-verbose output, the following information is added:
+### Customizing the output
 
-1. UTS_NAME - uts namespace name. As there is no container id object in the kernel, and docker/k8s will usually set this to the container id, we use this field to distinguish between containers.
-2. MNT_NS - mount namespace inode number.
-3. PID_NS - pid namespace inode number. In order to know if there are different containers in the same pid namespace (e.g. in a k8s pod), it is possible to check this value
-4. PPID - parent pid of the calling process
+Tracee supports different output formats. For example, to choose json output, use `--output json`.
 
+To tell tracee to write events to a file instead of stdout, use `--output out-file:/path/to/file`.
 
-### Configuration flags
+There are different ways you can augment the output to add useful information. For example: `--output eot` will add a terminating event to the stream which is useful if feeding Tracee's output to another program.
 
-- Use `--help` to see a full description of all options.
-Here are a few commonly useful flags:
-- `--trace` Sets the trace mode. For more information see [Trace Mode Configuration](#Trace-Mode-Configuration) below
-- `--event` allows you to specify a specific event to trace. You can use this flag multiple times, for example `--event execve --event openat`.
-- `--list` lists the events available for tracing, which you can provide to the `--event` flag.
-- `--output` lets you control the output format, for example `--output json` will output as JSON lines instead of table.
-- `--capture` capture artifacts that were written, executed or found suspicious, and save them to the output directory. Possible values are: 'write'/'exec'/'mem'/'all'
+For a full list of output options, run `--output help`.
 
-### Trace Mode Configuration
+### Selecting what to trace
 
-`--trace` and `-t` set whether to trace events based upon system-wide processes, or Containers. It also used to set whether to trace only new processes/containers (default), existing processes/containers, or specific processes.
-Tracing specific containers is currently not possible. The possible options are:
+Trace output can easily become unwieldy when tracing all of the events from all of the system. Luckily, Tracee has a powerful mechanism to accurately trace just the information that is relevant to you, using the `--trace` flag.
+Using the `--trace` you define expressions that tells Tracee what you are interested in by means of event metadata, and process metadata. Only events that match this criteria will be traced.
 
-Option | Flag(s):
---- | --- |
-Trace new processes (default) | no `--trace` flag, `--trace p`, `--trace process` or `--trace process:new`
-Trace existing and new processes | `--trace process:all`
-Trace specific PIDs | `--trace process:<pid>,<pid2>,...` or `--trace p:<pid>,<pid2>,...`
-Trace filtered process and all of its children | `--trace process:follow`
-Trace new containers | `--trace c`, `--trace container` or `--trace container:new`
-Trace existing and new containers | `--trace container:all`
-Trace new processes not in a container | `--trace h`, `--trace host` or `--trace host:new`
-Trace all processes not in a container | `--trace host:all`
+You can filter by most of the visible fields on a Tracee event. For example to trace only events related to user ID 1000, use `--trace uid=1000`.  
+You can combine trace expressions into more complex criteria. For example, to trace only events related to user ID 1000, which come from process ID 1234, use `--trace uid=1000 --trace pid=1234`.  
 
-You can also use `-t` e.g. `-t p:all`
+A special `pid` value is `new` which let's you trace all newly created processes (that were created after Tracee started tracing).  
+Tracee lets you easily trace events that originate in containers using `--trace container` or only new containers (that were created after Tracee started) using `--trace container=new`.
+
+Event metadata can be used in trace expression as well. For example, to trace only `openat` syscalls, use `--trace event:openat`. But you can also filter on a specific argument of the event, e.g `--trace openat.pathname=/bin/ls` which will show only `openat` syscalls that operate on the file `/bin/ls`.
+
+A useful trace mode is the `--trace follow` which, if specified, will trace not only processes that match the given trace expressions, but also their child processes.
+For example, the following will trace all the events that originate from zsh shell, including all of the processes that it will spawn: `--trace command=zsh --follow`.
+
+For a complete list of trace options, run `--trace help`.
+
+### Capturing artifacts
+
+Tracee has a unique feature that lets you capture interesting artifacts from running applications, using the `--capture` flag.
+
+All captured artifacts are saved in Tracee's "output directory" which can be configured using `--capture dir:/path/to/dir`.
+
+Tracee can capture the following types of artifacts:
+
+1. Written files: Anytime a file is being written to, the contents of the file will be captured. Written files can be filtered using an optional path prefix.
+2. Executed files: Anytime a binary is being executed, the binary file will be captured. If the same binary is executed multiple times, it will be captured just once.
+3. Memory files: Anytime a "memory unpacker" is detected, the suspicious memory region will be captured. This is triggered when memory protection changes from Write+Execute to Write.
+
+To use, `--capture exec`, `--capture mem`, and `--capture write` capture executed, memory, and written files respectively. 
+To filter written files, add a prefix expression like so: `--capture write=/etc/*`. This will capture anything written blow `/etc/`.
+
+For a complete list of capture options, run `--capture help`.
 
 ## Secure tracing
 
