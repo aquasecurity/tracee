@@ -29,9 +29,12 @@ jobs:
             exit 1
           fi
 
+      - name: yaml-lint
+        uses: ibiqlik/action-yamllint@v3
+
       - name: Build Tracee
         run: make all DOCKER=1
-  
+
   test:
     runs-on: ubuntu-20.04
 
@@ -41,4 +44,3 @@ jobs:
 
       - name: Run Tests
         run: make test DOCKER=1
-      
