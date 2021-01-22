@@ -321,7 +321,7 @@ func (b *BPFMap) Unpin(pinPath string) error {
 	errC := C.bpf_map__unpin(bpfMap, path)
 	C.free(unsafe.Pointer(cs))
 	if errC != 0 {
-		return fmt.Errorf("Failed unpin map %s from path %s", b.name, pinPath)
+		return fmt.Errorf("Failed to unpin map %s from path %s", b.name, pinPath)
 	}
 	return nil
 }
