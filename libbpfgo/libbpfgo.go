@@ -303,17 +303,21 @@ func (m *Module) GetMap(mapName string) (*BPFMap, error) {
 }
 
 func (b *BPFMap) Pin(pinning string) error {
+	cs := C.CString(b.name)
 	path := C.CString(pinning)
-	errC := C.bpf_map__pin(b.fd, path)
+	bpfMap := C.bpf_object__find_map_by_name(b.module.obj, cs)
+	errC := C.bpf_map__pin(bpfMap, path)
 	if errC != 0 {
 		return fmt.Errorf("Failed to pin map %s to path %s", b.name, pinning)
 	}
 	return nil
 }
 
-func (b *BPFMap) Unpin() error {
+func (b *BPFMap) Unpin(pinning string) error {
+	cs := C.CString(b.name)
 	path := C.CString(pinning)
-	errC := C.bpf_map__unpin(b.fd)
+	bpfMap := C.bpf_object__find_map_by_name(b.module.obj, cs)
+	errC := C.bpf_map__unpin(bpfMap, path)
 	if errC != 0 {
 		return fmt.Errorf("Failed unpin path for map %s", b.name)
 	}
@@ -321,8 +325,10 @@ func (b *BPFMap) Unpin() error {
 }
 
 func (b *BPFMap) SetPinPath(pinning string) error {
+	cs := C.CString(b.name)
 	path := C.CString(pinning)
-	errC := C.bpf_map__set_pin_path(b.fd, path)
+	bpfMap := C.bpf_object__find_map_by_name(b.module.obj, cs)
+	errC := C.bpf_map__unpin(bpfMap, path)
 	if errC != 0 {
 		return fmt.Errorf("Failed to set pin for map %s to path %s", b.name, pinning)
 	}
