@@ -302,6 +302,33 @@ func (m *Module) GetMap(mapName string) (*BPFMap, error) {
 	}, nil
 }
 
+func (b *BPFMap) Pin(pinning string) error {
+	path := C.CString(pinning)
+	errC := C.bpf_map__pin(b.fd, path)
+	if errC != 0 {
+		return fmt.Errorf("Failed to pin map %s to path %s", b.name, pinning)
+	}
+	return nil
+}
+
+func (b *BPFMap) Unpin() error {
+	path := C.CString(pinning)
+	errC := C.bpf_map__unpin(b.fd)
+	if errC != 0 {
+		return fmt.Errorf("Failed unpin path for map %s", b.name)
+	}
+	return nil
+}
+
+func (b *BPFMap) SetPinPath(pinning string) error {
+	path := C.CString(pinning)
+	errC := C.bpf_map__set_pin_path(b.fd, path)
+	if errC != 0 {
+		return fmt.Errorf("Failed to set pin for map %s to path %s", b.name, pinning)
+	}
+	return nil
+}
+
 func GetUnsafePointer(data interface{}) (unsafe.Pointer, error) {
 	var dataPtr unsafe.Pointer
 	if k, isType := data.(int8); isType {
