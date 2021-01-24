@@ -302,6 +302,42 @@ func (m *Module) GetMap(mapName string) (*BPFMap, error) {
 	}, nil
 }
 
+func (b *BPFMap) Pin(pinPath string) error {
+	cs := C.CString(b.name)
+	path := C.CString(pinPath)
+	bpfMap := C.bpf_object__find_map_by_name(b.module.obj, cs)
+	errC := C.bpf_map__pin(bpfMap, path)
+	C.free(unsafe.Pointer(cs))
+	if errC != 0 {
+		return fmt.Errorf("Failed to pin map %s to path %s", b.name, pinPath)
+	}
+	return nil
+}
+
+func (b *BPFMap) Unpin(pinPath string) error {
+	cs := C.CString(b.name)
+	path := C.CString(pinPath)
+	bpfMap := C.bpf_object__find_map_by_name(b.module.obj, cs)
+	errC := C.bpf_map__unpin(bpfMap, path)
+	C.free(unsafe.Pointer(cs))
+	if errC != 0 {
+		return fmt.Errorf("Failed to unpin map %s from path %s", b.name, pinPath)
+	}
+	return nil
+}
+
+func (b *BPFMap) SetPinPath(pinPath string) error {
+	cs := C.CString(b.name)
+	path := C.CString(pinPath)
+	bpfMap := C.bpf_object__find_map_by_name(b.module.obj, cs)
+	errC := C.bpf_map__set_pin_path(bpfMap, path)
+	C.free(unsafe.Pointer(cs))
+	if errC != 0 {
+		return fmt.Errorf("Failed to set pin for map %s to path %s", b.name, pinPath)
+	}
+	return nil
+}
+
 func GetUnsafePointer(data interface{}) (unsafe.Pointer, error) {
 	var dataPtr unsafe.Pointer
 	if k, isType := data.(int8); isType {
