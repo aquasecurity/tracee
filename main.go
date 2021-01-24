@@ -201,6 +201,9 @@ Use this flag multiple times to choose multiple capture options
 			}
 		}
 	}
+	if res.Format == "" {
+		res.Format = "table"
+	}
 	return res, nil
 }
 

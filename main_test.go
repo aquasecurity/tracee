@@ -1067,6 +1067,7 @@ func TestPrepareOutput(t *testing.T) {
 			outputSlice: []string{"out-file:/path/to/file"},
 			expectedOutput: tracee.OutputConfig{
 				OutPath: "/path/to/file",
+				Format:  "table",
 			},
 			expectedError: nil,
 		},
@@ -1083,6 +1084,7 @@ func TestPrepareOutput(t *testing.T) {
 			outputSlice: []string{"err-file:/path/to/file"},
 			expectedOutput: tracee.OutputConfig{
 				ErrPath: "/path/to/file",
+				Format:  "table",
 			},
 			expectedError: nil,
 		},
@@ -1090,7 +1092,8 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "option eot",
 			outputSlice: []string{"option:eot"},
 			expectedOutput: tracee.OutputConfig{
-				EOT: true,
+				EOT:    true,
+				Format: "table",
 			},
 			expectedError: nil,
 		},
@@ -1099,6 +1102,7 @@ func TestPrepareOutput(t *testing.T) {
 			outputSlice: []string{"option:stack-addresses"},
 			expectedOutput: tracee.OutputConfig{
 				StackAddresses: true,
+				Format:         "table",
 			},
 			expectedError: nil,
 		},
@@ -1107,6 +1111,7 @@ func TestPrepareOutput(t *testing.T) {
 			outputSlice: []string{"option:detect-syscall"},
 			expectedOutput: tracee.OutputConfig{
 				DetectSyscall: true,
+				Format:        "table",
 			},
 			expectedError: nil,
 		},
@@ -1115,6 +1120,7 @@ func TestPrepareOutput(t *testing.T) {
 			outputSlice: []string{"option:exec-env"},
 			expectedOutput: tracee.OutputConfig{
 				ExecEnv: true,
+				Format:  "table",
 			},
 			expectedError: nil,
 		},
