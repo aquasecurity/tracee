@@ -1040,7 +1040,7 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 			}
 
 			// stop processing if write was already indexed
-			fileName := fmt.Sprintf("write.dev-%d.inode-%d", dev, inode)
+			fileName := fmt.Sprintf("%d/write.dev-%d.inode-%d", ctx.MntID, dev, inode)
 			indexName, ok := t.writtenFiles[fileName]
 			if ok && indexName == filePath {
 				return nil
