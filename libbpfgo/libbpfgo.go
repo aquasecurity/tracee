@@ -164,7 +164,9 @@ err_out:
 import "C"
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"strings"
 	"syscall"
 	"unsafe"
@@ -650,4 +652,29 @@ func (pb *PerfBuffer) poll() error {
 		}
 	}
 	return nil
+}
+
+// TracePrint reads data from the trace pipe that bpf_trace_printk() writes to,
+// and writes it to stdout. The pipe is global, so this function is not
+// associated with any BPF program. It is recommended to use bpf_trace_printk()
+// and this function for debug purposes only.
+// This is a blocking function intended to be called from a goroutine, for example:
+//		go libbpfgo.TracePrint()
+func TracePrint() {
+	f, err := os.Open("/sys/kernel/debug/tracing/trace_pipe")
+	if err != nil {
+		fmt.Println("TracePrint failed to open trace pipe: %v", err)
+		return
+	}
+	r := bufio.NewReader(f)
+	b := make([]byte, 1000)
+	for {
+		len, err := r.Read(b)
+		if err != nil {
+			fmt.Println("TracePrint failed to read from trace pipe: %v", err)
+			return
+		}
+		s := string(b[:len])
+		fmt.Println(s)
+	}
 }
