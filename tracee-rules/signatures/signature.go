@@ -1,4 +1,4 @@
-package main
+package signatures
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
-func getSignatures(rulesDir string, rules []string) ([]types.Signature, error) {
+func GetSignatures(rulesDir string, rules []string) ([]types.Signature, error) {
 	if rulesDir == "" {
 		exePath, err := os.Executable()
 		if err != nil {
@@ -29,7 +29,7 @@ func getSignatures(rulesDir string, rules []string) ([]types.Signature, error) {
 		return nil, err
 	}
 	sigs := append(gosigs, opasigs...)
-	res := []types.Signature{}
+	var res []types.Signature
 	if rules == nil {
 		res = sigs
 	} else {
