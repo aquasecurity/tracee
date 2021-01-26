@@ -1,7 +1,7 @@
 #!/bin/bash
 
-GREEN='\033[0;32m'
-RED='\033[0;31m'
+GREEN='    \033[0;32m'
+RED='    \033[0;31m'
 NC='\033[0m' 
 
 VERSION_LIMIT=5.8
@@ -20,7 +20,7 @@ MINOR_VERSION_LIMIT=$(echo $VERSION_LIMIT | cut -d '.' -f2)
 MINOR_CURRENT_VERSION=$(echo $CURRENT_VERSION | cut -d '.' -f2)
 if (( $(echo "$MINOR_CURRENT_VERSION < $MINOR_VERSION_LIMIT") |bc -l)); then
     echo -e "${RED}[*] OUTDATED MINOR KERNEL VERSION${NC}"
-    exit 1
+    exit 0
 else
     echo -e "${GREEN}[*] SUFFICIENT KERNEL VERSION${NC}"
 fi
