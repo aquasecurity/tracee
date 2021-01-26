@@ -20,16 +20,29 @@ package libbpfgo
 extern void perfCallback(void *ctx, int cpu, void *data, __u32 size);
 extern void perfLostCallback(void *ctx, int cpu, __u64 cnt);
 
+extern int ringbufferCallback(void *ctx, void *data, size_t size);
+
 int libbpf_print_fn(enum libbpf_print_level level,
-			   const char *format, va_list args)
+               const char *format, va_list args)
 {
-	if (level != LIBBPF_WARN)
-		return 0;
-	return vfprintf(stderr, format, args);
+    if (level != LIBBPF_WARN)
+        return 0;
+    return vfprintf(stderr, format, args);
 }
 
 void set_print_fn() {
-	libbpf_set_print(libbpf_print_fn);
+    libbpf_set_print(libbpf_print_fn);
+}
+
+struct ring_buffer * init_ring_buf(int map_fd) {
+    struct ring_buffer *rb = NULL;
+    __u64 ctx = map_fd;
+    rb = ring_buffer__new(map_fd, ringbufferCallback, (void*)ctx, NULL);
+    if (!rb) {
+        fprintf(stderr, "Failed to initialize ring buffer\n");
+        return NULL;
+    }
+    return rb;
 }
 
 struct perf_buffer * init_perf_buf(int map_fd, int page_cnt) {
@@ -105,7 +118,7 @@ struct bpf_link* attach_kprobe_legacy(
         return NULL;
     }
 
-	pr = is_kretprobe ? 'r' : 'p';
+    pr = is_kretprobe ? 'r' : 'p';
 
     snprintf(
         fname,
@@ -176,6 +189,7 @@ type Module struct {
 	obj      *C.struct_bpf_object
 	links    []*BPFLink
 	perfBufs []*PerfBuffer
+	ringBufs []*RingBuffer
 }
 
 type BPFMap struct {
@@ -212,6 +226,14 @@ type PerfBuffer struct {
 	pb     *C.struct_perf_buffer
 	bpfMap *BPFMap
 	stop   chan bool
+}
+
+type RingBuffer struct {
+	rb      *C.struct_ring_buffer
+	bpfMap  *BPFMap
+	stop    chan bool
+	stopped bool
+	closed bool 
 }
 
 // BPF is using locked memory for BPF maps and various other things.
@@ -262,10 +284,13 @@ func NewModuleFromBuffer(bpfObjBuff []byte, bpfObjName string) (*Module, error) 
 
 func (m *Module) Close() {
 	for _, pb := range m.perfBufs {
-		C.perf_buffer__free(pb.pb)
+		pb.Close()
+	}
+	for _, rb := range m.ringBufs {
+		rb.Close()
 	}
 	for _, link := range m.links {
-		C.bpf_link__destroy(link.link)
+		C.bpf_link__destroy(link.link) // this call will remove non-legacy kprobes
 		if link.linkType == KprobeLegacy {
 			cs := C.CString(link.eventName)
 			C.remove_kprobe_event(cs, false)
@@ -598,6 +623,80 @@ func doAttachKprobeLegacy(prog *BPFProg, kp string, isKretprobe bool) (*BPFLink,
 var eventChannels = make(map[uintptr]chan []byte)
 var lostChannels = make(map[uintptr]chan uint64)
 
+func (m *Module) InitRingBuf(mapName string, eventsChan chan []byte) (*RingBuffer, error) {
+	bpfMap, err := m.GetMap(mapName)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx := uintptr(bpfMap.fd)
+	if eventsChan == nil {
+		return nil, fmt.Errorf("events channel can not be nil")
+	}
+	eventChannels[ctx] = eventsChan
+
+	rb := C.init_ring_buf(bpfMap.fd)
+	if rb == nil {
+		return nil, fmt.Errorf("")
+	}
+
+	ringBuf := &RingBuffer{
+		rb:     rb,
+		bpfMap: bpfMap,
+		stop:   make(chan bool),
+	}
+	m.ringBufs = append(m.ringBufs, ringBuf)
+	return ringBuf, nil
+}
+
+func (rb *RingBuffer) Start() {
+	go rb.poll()
+}
+
+func (rb *RingBuffer) Stop() {
+	if rb.stopped {
+		return
+	}
+	select {
+	case rb.stop <- true:
+	default:
+	}
+}
+
+func (rb *RingBuffer) Close() {
+	if rb.closed {
+		return
+	}
+	if !rb.stopped {
+		rb.Stop()
+	}
+	C.ring_buffer__free(rb.rb)
+	rb.closed = true
+}
+
+func (rb *RingBuffer) poll() error {
+
+	go func() {
+		<-rb.stop
+		rb.stopped = true
+	}()
+
+	for {
+		err := C.ring_buffer__poll(rb.rb, 0)
+		if err < 0 {
+			if syscall.Errno(-err) == syscall.EINTR {
+				continue
+			}
+			return fmt.Errorf("error polling ring buffer: %d", err)
+		}
+		
+		if rb.stopped {
+			break
+		}
+	}
+	return nil
+}
+
 func (m *Module) InitPerfBuf(mapName string, eventsChan chan []byte, lostChan chan uint64, pageCnt int) (*PerfBuffer, error) {
 	bpfMap, err := m.GetMap(mapName)
 	if err != nil {
@@ -605,7 +704,7 @@ func (m *Module) InitPerfBuf(mapName string, eventsChan chan []byte, lostChan ch
 	}
 	ctx := uintptr(bpfMap.fd)
 	if eventsChan == nil {
-		return nil, fmt.Errorf("failed to init perf buffer: events channel can not be nil!")
+		return nil, fmt.Errorf("failed to init perf buffer: events channel can not be nil")
 	}
 	eventChannels[ctx] = eventsChan
 	lostChannels[ctx] = lostChan
