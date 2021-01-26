@@ -29,6 +29,10 @@ type TraceeConfig struct {
 	SecurityAlerts     bool
 	maxPidsCache       int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
 	BPFObjPath         string
+	PinObjectType      string
+	PinObjectName      string
+	PinPath            string
+	Pin                bool
 }
 
 type Filter struct {
@@ -631,6 +635,11 @@ func (t *Tracee) populateBPFMaps() error {
 	bpfConfigMap.Update(uint32(configExtractDynCode), boolToUInt32(t.config.Capture.Mem))
 	bpfConfigMap.Update(uint32(configTraceePid), uint32(os.Getpid()))
 	bpfConfigMap.Update(uint32(configFollowFilter), boolToUInt32(t.config.Filter.Follow))
+	if t.config.PinObjectName != "" && t.config.PinObjectType != "" && t.config.PinPath != "" {
+		if t.config.PinObjectName == "mnt_ns_filter" {
+			bpfConfigMap.Update(uint32(configMntNsFilter), filterIn)
+		}
+	}
 
 	// Initialize tail calls program array
 	bpfProgArrayMap, _ := t.bpfModule.GetMap("prog_array")
@@ -796,6 +805,19 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 					return err
 				}
 			}
+		}
+	}
+
+	if t.config.PinObjectName != "" && t.config.PinObjectType != "" && t.config.PinPath != "" {
+		if t.config.PinObjectType == "map" {
+			mapToPin, err := t.bpfModule.GetMap(t.config.PinObjectName)
+			if err != nil {
+				return err
+			}
+			mapToPin.Pin(t.config.PinPath)
+			t.config.Pin = true
+		} else {
+			return fmt.Errorf("Currently it is only possible to pin map objects")
 		}
 	}
 

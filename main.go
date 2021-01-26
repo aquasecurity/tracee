@@ -45,6 +45,14 @@ func main() {
 				BlobPerfBufferSize: c.Int("blob-perf-buffer-size"),
 				SecurityAlerts:     c.Bool("security-alerts"),
 			}
+
+			pinObject, objectName, path, err := preparePinning(c.String("pin"))
+			if err != nil {
+				return err
+			}
+			cfg.PinObjectType = pinObject
+			cfg.PinPath = path
+			cfg.PinObjectName = objectName
 			output, err := prepareOutput(c.StringSlice("output"))
 			if err != nil {
 				return err
@@ -137,6 +145,11 @@ func main() {
 				Value:       "if-needed",
 				Usage:       "when to build the bpf program. possible options: 'never'/'always'/'if-needed'",
 				Destination: &buildPolicy,
+			},
+			&cli.StringFlag{
+				Name:  "pin",
+				Value: "",
+				Usage: "Provide pinning instruction in a format object_type:object_name:pin_path",
 			},
 		},
 	}
@@ -283,6 +296,25 @@ Use this flag multiple times to choose multiple capture options
 	}
 
 	return capture, nil
+}
+
+func preparePinning(pinning string) (string, string, string, error) {
+	if pinning == "" {
+		fmt.Println("Going away")
+		return "", "", "", nil
+	}
+	pinInfo := strings.Split(pinning, ":")
+	if len(pinInfo) != 3 {
+		return "", "", "", fmt.Errorf("In order to pin the object you should provide pin_object_type:pin_object_name:ping_object_path")
+	}
+	typeName := pinInfo[0]
+	objectName := pinInfo[1]
+	path := pinInfo[2]
+	if typeName != "map" {
+		return "", "", "", fmt.Errorf("Only map is allowed as pinning object")
+	}
+
+	return typeName, objectName, path, nil
 }
 
 func prepareFilter(filters []string) (tracee.Filter, error) {
