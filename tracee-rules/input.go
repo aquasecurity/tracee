@@ -36,7 +36,7 @@ func setupStdinSource(inputSource string) (chan types.Event, error) {
 
 func setupTraceeSource(traceeFilePath string) (chan types.Event, error) {
 	fi, err := os.Stat(traceeFilePath)
-	if err != nil || !fi.Mode().IsRegular() {
+	if err != nil {
 		return nil, fmt.Errorf("invalid Tracee input file: %s", traceeFilePath)
 	}
 	f, err := os.Open(traceeFilePath)
@@ -51,7 +51,7 @@ func setupTraceeSource(traceeFilePath string) (chan types.Event, error) {
 			err := dec.Decode(&event)
 			if err != nil {
 				if err == io.EOF {
-					// ignore EOF becasue we assume events can keep streaming into the file
+					// ignore EOF because we assume events can keep streaming into the file
 					// this might create a backlog of events and depending on the implementation of the input source might lead to lost events
 					// TODO: investigate impact of this and research alternatives
 					time.Sleep(time.Millisecond * 150)
