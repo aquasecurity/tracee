@@ -1,0 +1,5 @@
+/dist
+Dockerfile
+*.md
+/images
+/.github
