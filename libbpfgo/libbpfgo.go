@@ -663,17 +663,20 @@ func (pb *PerfBuffer) poll() error {
 func TracePrint() {
 	f, err := os.Open("/sys/kernel/debug/tracing/trace_pipe")
 	if err != nil {
-		fmt.Println("TracePrint failed to open trace pipe: %v", err)
+		fmt.Fprintln(os.Stderr, "TracePrint failed to open trace pipe: %v", err)
 		return
 	}
+	defer f.Close()
+
 	r := bufio.NewReader(f)
-	b := make([]byte, 1000)
+	b := make([]byte, 1024)
 	for {
 		len, err := r.Read(b)
 		if err != nil {
-			fmt.Println("TracePrint failed to read from trace pipe: %v", err)
+			fmt.Fprintln(os.Stderr, "TracePrint failed to read from trace pipe: %v", err)
 			return
 		}
+
 		s := string(b[:len])
 		fmt.Println(s)
 	}
