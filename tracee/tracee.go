@@ -32,7 +32,6 @@ type TraceeConfig struct {
 	PinObjectType      string
 	PinObjectName      string
 	PinPath            string
-	Pin                bool
 }
 
 type Filter struct {
@@ -814,8 +813,7 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 			if err != nil {
 				return err
 			}
-			mapToPin.Pin(t.config.PinPath)
-			t.config.Pin = true
+			mapToPin.SetPinPath(t.config.PinPath)
 		} else {
 			return fmt.Errorf("Currently it is only possible to pin map objects")
 		}
