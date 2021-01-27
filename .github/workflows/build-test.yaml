@@ -1,7 +1,13 @@
-name: build-test
-on: pull_request
+name: pr-ebpf
+on: 
+  pull_request:
+    paths: 
+      - "tracee-ebpf/**"
 jobs:
   build:
+    defaults:
+      run:
+        working-directory: tracee-ebpf
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Code
