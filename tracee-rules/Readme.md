@@ -1,4 +1,4 @@
-![Tracee Logo](images/tracee.png)
+![Tracee Logo](../images/tracee.png)
 
 # Tracee-Rules: Runtime Security Detection Engine
 

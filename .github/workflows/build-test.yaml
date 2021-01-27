@@ -4,7 +4,7 @@ on:
     paths: 
       - "tracee-ebpf/**"
 jobs:
-  build:
+  build-test:
     runs-on: ubuntu-20.04
     defaults:
       run:
