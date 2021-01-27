@@ -300,7 +300,6 @@ Use this flag multiple times to choose multiple capture options
 
 func preparePinning(pinning string) (string, string, string, error) {
 	if pinning == "" {
-		fmt.Println("Going away")
 		return "", "", "", nil
 	}
 	pinInfo := strings.Split(pinning, ":")
