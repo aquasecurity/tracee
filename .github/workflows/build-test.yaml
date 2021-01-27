@@ -1,11 +1,19 @@
-name: build-test
-on: pull_request
+name: pr-ebpf
+on: 
+  pull_request:
+    paths: 
+      - "tracee-ebpf/**"
 jobs:
-  build:
+  build-test:
     runs-on: ubuntu-20.04
+    defaults:
+      run:
+        working-directory: tracee-ebpf
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
+        with:
+          submodules: true
       - name: Lint
         run: |
           if test -z "$(gofmt -l .)"; then
@@ -17,10 +25,5 @@ jobs:
           fi
       - name: Build Tracee
         run: make all DOCKER=1
-  test:
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
       - name: Run Tests
         run: make test DOCKER=1
