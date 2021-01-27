@@ -96,19 +96,19 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 		case event, ok := <-engine.inputs.Tracee:
 			if !ok {
 				for sig := range engine.signatures {
-					se, err := sig.GetSelectedEvents()
+					se, err := sig.GetSelectedEvents() // TODO: Why this needs to return an error?
 					if err != nil {
 						engine.logger.Printf("%v", err)
 						continue
 					}
 					for _, sel := range se {
 						if sel.Source == "tracee" {
-							sig.OnSignal(types.SignalSourceComplete("tracee"))
+							sig.OnSignal(types.SignalSourceComplete("tracee")) // TODO: Handle error?
 							break
 						}
 					}
 				}
-				engine.inputs.Tracee = nil
+				engine.inputs.Tracee = nil // TODO: Setting the channel to nil would block any future writes https://play.golang.org/p/jWyYwjNK_NT
 			} else if event != nil {
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: event.(tracee.Event).EventName}] {
 					engine.signatures[s] <- event

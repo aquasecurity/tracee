@@ -4,56 +4,98 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/aquasecurity/tracee/tracee-rules/signatures"
-	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
 func TestEngine_consumeSource(t *testing.T) {
-	inputs := EventSources{}
-	inputs.Tracee = make(chan types.Event, 1)
-	outputChan := make(chan types.Finding, 1)
-	done := make(chan bool, 1)
-
-	// gather all sigs
-	sigs, err := signatures.GetSignatures(filepath.Join("../dist/rules"), nil)
-	require.NoError(t, err)
-	e := NewEngine(sigs, inputs, outputChan, nil)
-
-	go func() {
-		e.Start(done)
-	}()
-
-	// send a test event
-	e.inputs.Tracee <- types.TraceeEvent{
-		EventName:       "test_event",
-		ProcessID:       2,
-		ParentProcessID: 1,
-		Args: []types.TraceeEventArgument{{
-			Name: "test_yo",
-		}},
-	}
-
-	// assert
-	for _, s := range e.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: "*"}] {
-		gotEvent := (<-e.signatures[s]).(types.TraceeEvent)
-		if gotEvent.EventName == "test_event" {
-			assert.Equal(t, []types.TraceeEventArgument{
+	testCases := []struct {
+		name         string
+		inputEvent   types.TraceeEvent
+		expectedArgs []types.TraceeEventArgument
+	}{
+		{
+			name: "happy path - with no matching filter",
+			inputEvent: types.TraceeEvent{
+				EventName:       "test_event",
+				ProcessID:       2,
+				ParentProcessID: 1,
+				Args: []types.TraceeEventArgument{{
+					Name: "test_foo",
+				}},
+			},
+			expectedArgs: []types.TraceeEventArgument{
 				{
-					Name: "test_yo",
+					Name: "test_foo",
 				},
-			}, gotEvent.Args)
-			break
-		}
+			},
+		},
+		{
+			name: "happy path - with matching filter on EventName",
+			inputEvent: types.TraceeEvent{
+				EventName:       "execve",
+				ProcessID:       2,
+				ParentProcessID: 1,
+				Args: []types.TraceeEventArgument{{
+					Name: "foobarbaz",
+				}},
+			},
+			expectedArgs: []types.TraceeEventArgument{
+				{
+					Name: "foobarbaz",
+				},
+			},
+		},
 	}
 
-	// signal the end
-	done <- true
+	for _, tc := range testCases {
+		inputs := EventSources{}
+		inputs.Tracee = make(chan types.Event, 1)
+		outputChan := make(chan types.Finding, 1)
+		done := make(chan bool, 1)
+		t.Run(tc.name, func(t *testing.T) {
+			defer func() {
+				// signal the end
+				done <- true
 
-	// cleanup
-	close(done)
-	close(outputChan)
-	close(inputs.Tracee)
+				// cleanup
+				close(done)
+				close(outputChan)
+				close(inputs.Tracee)
+			}()
+
+			// gather all sigs
+			sigs, err := signatures.GetSignatures(filepath.Join("../dist/rules"), nil)
+			require.NoError(t, err, tc.name)
+			require.NotEmpty(t, sigs, tc.name)
+			e := NewEngine(sigs, inputs, outputChan, nil)
+
+			go func() {
+				e.Start(done)
+			}()
+
+			// send a test event
+			e.inputs.Tracee <- tc.inputEvent
+
+			// assert
+			for _, s := range e.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: "*"}] {
+				gotEvent := (<-e.signatures[s]).(types.TraceeEvent)
+				if gotEvent.EventName == tc.inputEvent.EventName {
+					assert.Equal(t, tc.expectedArgs, gotEvent.Args, tc.name)
+					return
+				}
+			}
+
+			for _, s := range e.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: tc.inputEvent.EventName}] {
+				gotEvent := (<-e.signatures[s]).(types.TraceeEvent)
+				if gotEvent.EventName == tc.inputEvent.EventName {
+					assert.Equal(t, tc.expectedArgs, gotEvent.Args, tc.name)
+					return
+				}
+			}
+		})
+	}
 }
