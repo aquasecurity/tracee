@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/github/license/aquasecurity/tracee)](https://github.com/aquasecurity/tracee/blob/main/LICENSE)
 [![docker](https://badgen.net/docker/pulls/aquasec/tracee)](https://hub.docker.com/r/aquasec/tracee)
 
-# Tracee-eBPF: Linux tracing and forensics using eBPF
+# Tracee-eBPF: Linux Tracing and Forensics using eBPF
 
 Tracee-eBPF is a lightweight and easy to use tracing tool for Linux, which is focused on security and forensics. It allows you to observe system calls and other system events in real-time, with comprehensive filtering mechanism so you can focus on the events that are relevant to you. Unlike other tracing tools, Tracee, and by extension Tracee-eBPF is a security tool, which is demonstrated by features like capturing forensic artifacts from running applications, tracing non-syscall security events, and producing security insights.
 

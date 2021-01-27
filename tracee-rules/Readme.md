@@ -1,6 +1,6 @@
 ![Tracee Logo](images/tracee.png)
 
-# Tracee-Rules: Runtime security detection engine
+# Tracee-Rules: Runtime Security Detection Engine
 
 > Note: This is a new component for Tracee that is still under development
 
