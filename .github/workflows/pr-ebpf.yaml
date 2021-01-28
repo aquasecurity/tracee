@@ -23,7 +23,7 @@ jobs:
             gofmt -s -d .
             exit 1
           fi
-      - name: Build Tracee
+      - name: Build
         run: make all DOCKER=1
-      - name: Run Tests
+      - name: Test
         run: make test DOCKER=1
