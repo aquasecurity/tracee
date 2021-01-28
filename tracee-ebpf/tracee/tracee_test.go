@@ -105,7 +105,6 @@ func TestReadArgFromBuff(t *testing.T) {
 				47, 117, 115, 114, 47, 98, 105, 110, 0, // /usr/bin
 				7, 0, 0, 0, //len=7
 				100, 111, 99, 107, 101, 114, 0, //docker
-				11, // end strArrT
 			},
 			expectedArg: []string{"/usr/bin", "docker"},
 		},
@@ -150,8 +149,6 @@ func TestReadArgFromBuff(t *testing.T) {
 		assert.Equal(t, tc.expectedError, err, tc.name)
 		assert.Equal(t, tc.expectedArg, actual, tc.name)
 
-		// TODO: the following fails for:
-		// strArrT
 		if tc.name == "unknown" {
 			continue
 		} else {
