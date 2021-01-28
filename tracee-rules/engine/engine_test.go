@@ -1,6 +1,8 @@
 package engine
 
 import (
+	"bytes"
+	"errors"
 	"testing"
 	"time"
 
@@ -61,6 +63,7 @@ func TestEngine_consumeSource(t *testing.T) {
 		inputEvent        types.TraceeEvent
 		inputSignature    fakeSignature
 		expectedNumEvents int
+		expectedError     string
 	}{
 		{
 			name: "happy path - with one matching selector",
@@ -127,14 +130,34 @@ func TestEngine_consumeSource(t *testing.T) {
 			},
 			expectedNumEvents: 1,
 		},
+		{
+			name: "sad path - getSelectedEvents returns an error",
+			inputSignature: fakeSignature{
+				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
+					return nil, errors.New("getSelectedEvents error")
+				},
+			},
+			expectedError: "error getting selected events for signature Fake Signature: getSelectedEvents error\n",
+		},
+		{
+			name: "sad path - getMetadata returns an error",
+			inputSignature: fakeSignature{
+				getMetadata: func() (types.SignatureMetadata, error) {
+					return types.SignatureMetadata{}, errors.New("getMetadata error")
+				},
+			},
+			expectedError: "error getting metadata: getMetadata error\n",
+		},
 	}
-	//TODO: Implement a sig which returns bad GetSelectedEvents()
 
 	for _, tc := range testCases {
 		inputs := EventSources{}
 		inputs.Tracee = make(chan types.Event, 1)
 		outputChan := make(chan types.Finding, 1)
 		done := make(chan bool, 1)
+		var logBuf []byte
+		logger := bytes.NewBuffer(logBuf)
+
 		t.Run(tc.name, func(t *testing.T) {
 			defer func() {
 				// signal the end
@@ -156,7 +179,7 @@ func TestEngine_consumeSource(t *testing.T) {
 				return nil
 			}
 
-			e := NewEngine(sigs, inputs, outputChan, nil)
+			e := NewEngine(sigs, inputs, outputChan, logger)
 			go func() {
 				e.Start(done)
 			}()
@@ -166,15 +189,17 @@ func TestEngine_consumeSource(t *testing.T) {
 
 			// assert
 			var gotEvent types.Event
-			time.Sleep(time.Second * 1) // wait for events to propagate
+			time.Sleep(time.Millisecond * 1) // wait for events to propagate
 
 			if tc.expectedNumEvents <= 0 {
 				assert.Nil(t, gotEvent, tc.name)
 				assert.Zero(t, gotNumEvents, tc.name)
-				return
 			} else {
 				assert.Equal(t, tc.expectedNumEvents, gotNumEvents, tc.name)
-				return
+			}
+
+			if tc.expectedError != "" {
+				assert.Equal(t, tc.expectedError, logger.String(), tc.name)
 			}
 		})
 	}
