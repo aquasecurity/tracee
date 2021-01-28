@@ -48,14 +48,14 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 				es.Name = "*"
 			}
 			if es.Source == "" {
-				log.Printf("signature %s doesn't declare an input source", meta.Name)
+				engine.logger.Printf("signature %s doesn't declare an input source", meta.Name)
 			} else {
 				engine.signaturesIndex[es] = append(engine.signaturesIndex[es], sig)
 			}
 		}
 		err = sig.Init(engine.matchHandler)
 		if err != nil {
-			log.Printf("error initializing signature %s: %v", meta.Name, err)
+			engine.logger.Printf("error initializing signature %s: %v", meta.Name, err)
 			continue
 		}
 	}
@@ -96,7 +96,7 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 		case event, ok := <-engine.inputs.Tracee:
 			if !ok {
 				for sig := range engine.signatures {
-					se, err := sig.GetSelectedEvents() // TODO: Why this needs to return an error?
+					se, err := sig.GetSelectedEvents()
 					if err != nil {
 						engine.logger.Printf("%v", err)
 						continue

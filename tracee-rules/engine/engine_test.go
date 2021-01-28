@@ -131,6 +131,50 @@ func TestEngine_consumeSource(t *testing.T) {
 			expectedNumEvents: 1,
 		},
 		{
+			name: "happy path - with all events selector, no name",
+			inputEvent: types.TraceeEvent{
+				EventName:       "execve",
+				ProcessID:       2,
+				ParentProcessID: 1,
+				Args: []types.TraceeEventArgument{{
+					Name: "foobarbaz",
+				}},
+			},
+			inputSignature: fakeSignature{
+				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
+					return []types.SignatureEventSelector{
+						{
+							Source: "tracee",
+						},
+					}, nil
+				},
+			},
+			expectedNumEvents: 1,
+		},
+		{
+			name: "sad path - with all events selector, no source",
+			inputSignature: fakeSignature{
+				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
+					return []types.SignatureEventSelector{
+						{
+							Name: "*",
+						},
+					}, nil
+				},
+			},
+			expectedError: "signature Fake Signature doesn't declare an input source\n",
+		},
+		{
+			name: "sad path - signature init fails",
+			inputSignature: fakeSignature{
+				init: func(handler types.SignatureHandler) error {
+					return errors.New("init failed")
+				},
+			},
+			expectedNumEvents: 0,
+			expectedError:     "error initializing signature Fake Signature: init failed\n",
+		},
+		{
 			name: "sad path - getSelectedEvents returns an error",
 			inputSignature: fakeSignature{
 				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
