@@ -12,7 +12,7 @@ import (
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
-func GetSignatures(rulesDir string, rules []string) ([]types.Signature, error) {
+func getSignatures(rulesDir string, rules []string) ([]types.Signature, error) {
 	if rulesDir == "" {
 		exePath, err := os.Executable()
 		if err != nil {

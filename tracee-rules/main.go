@@ -7,8 +7,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/aquasecurity/tracee/tracee-rules/signatures"
-
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
 	"github.com/urfave/cli/v2"
 )
@@ -18,7 +16,7 @@ func main() {
 		Name:  "tracee-rules",
 		Usage: "A rule engine for Runtime Security",
 		Action: func(c *cli.Context) error {
-			sigs, err := signatures.GetSignatures(c.String("rules-dir"), c.StringSlice("rules"))
+			sigs, err := getSignatures(c.String("rules-dir"), c.StringSlice("rules"))
 			if err != nil {
 				return err
 			}
