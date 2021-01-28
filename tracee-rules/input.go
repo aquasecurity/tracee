@@ -35,7 +35,7 @@ func setupStdinSource(inputSource string) (chan types.Event, error) {
 }
 
 func setupTraceeSource(traceeFilePath string) (chan types.Event, error) {
-	fi, err := os.Stat(traceeFilePath)
+	_, err := os.Stat(traceeFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("invalid Tracee input file: %s", traceeFilePath)
 	}
