@@ -159,7 +159,7 @@ func (tc Config) Validate() error {
 	}
 	for _, filter := range tc.Capture.FilterFileWrite {
 		if len(filter) > 50 {
-			return fmt.Errorf("The length of a path filter is limited to 50 characters: %s", filter)
+			return fmt.Errorf("the length of a path filter is limited to 50 characters: %s", filter)
 		}
 	}
 	_, err := os.Stat(tc.BPFObjPath)

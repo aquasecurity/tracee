@@ -250,7 +250,7 @@ func NewModuleFromBuffer(bpfObjBuff []byte, bpfObjName string) (*Module, error) 
 	C.free(unsafe.Pointer(name))
 	C.free(unsafe.Pointer(buffPtr))
 	if obj == nil {
-		return nil, fmt.Errorf("failed to open BPF object %s: %v...", bpfObjName, bpfObjBuff[:20])
+		return nil, fmt.Errorf("failed to open BPF object %s: %v", bpfObjName, bpfObjBuff[:20])
 	}
 
 	return &Module{
@@ -309,7 +309,7 @@ func (b *BPFMap) Pin(pinPath string) error {
 	errC := C.bpf_map__pin(bpfMap, path)
 	C.free(unsafe.Pointer(cs))
 	if errC != 0 {
-		return fmt.Errorf("Failed to pin map %s to path %s", b.name, pinPath)
+		return fmt.Errorf("failed to pin map %s to path %s", b.name, pinPath)
 	}
 	return nil
 }
@@ -321,7 +321,7 @@ func (b *BPFMap) Unpin(pinPath string) error {
 	errC := C.bpf_map__unpin(bpfMap, path)
 	C.free(unsafe.Pointer(cs))
 	if errC != 0 {
-		return fmt.Errorf("Failed to unpin map %s from path %s", b.name, pinPath)
+		return fmt.Errorf("failed to unpin map %s from path %s", b.name, pinPath)
 	}
 	return nil
 }
@@ -333,7 +333,7 @@ func (b *BPFMap) SetPinPath(pinPath string) error {
 	errC := C.bpf_map__set_pin_path(bpfMap, path)
 	C.free(unsafe.Pointer(cs))
 	if errC != 0 {
-		return fmt.Errorf("Failed to set pin for map %s to path %s", b.name, pinPath)
+		return fmt.Errorf("failed to set pin for map %s to path %s", b.name, pinPath)
 	}
 	return nil
 }
@@ -355,7 +355,7 @@ func GetUnsafePointer(data interface{}) (unsafe.Pointer, error) {
 	} else if k, isType := data.([]byte); isType {
 		dataPtr = unsafe.Pointer(&k[0])
 	} else {
-		return nil, fmt.Errorf("Unknown data type %T", data)
+		return nil, fmt.Errorf("unknown data type %T", data)
 	}
 
 	return dataPtr, nil
@@ -645,7 +645,7 @@ func (pb *PerfBuffer) poll() error {
 				if syscall.Errno(-err) == syscall.EINTR {
 					continue
 				}
-				return fmt.Errorf("Error polling perf buffer: %d", err)
+				return fmt.Errorf("error polling perf buffer: %d", err)
 			}
 		}
 	}
