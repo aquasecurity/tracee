@@ -147,7 +147,7 @@ func (sig *RegoSignature) OnEvent(e types.Event) error {
 
 // OnSignal implements the Signature interface by handling lifecycle events of the signature
 func (sig *RegoSignature) OnSignal(signal types.Signal) error {
-	return fmt.Errorf("OnSignal is not implemented")
+	return fmt.Errorf("function OnSignal is not implemented")
 }
 
 func (sig *RegoSignature) evalQuery(query string) (interface{}, error) {

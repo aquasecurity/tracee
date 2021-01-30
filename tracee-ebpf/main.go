@@ -40,7 +40,7 @@ func main() {
 				return nil
 			}
 
-			cfg := tracee.TraceeConfig{
+			cfg := tracee.Config{
 				PerfBufferSize:     c.Int("perf-buffer-size"),
 				BlobPerfBufferSize: c.Int("blob-perf-buffer-size"),
 				SecurityAlerts:     c.Bool("security-alerts"),
@@ -70,7 +70,7 @@ func main() {
 			}
 			cfg.BPFObjPath = bpfFile
 			if !checkRequiredCapabilities() {
-				return fmt.Errorf("Insufficient privileges to run")
+				return fmt.Errorf("insufficient privileges to run")
 			}
 			t, err := tracee.New(cfg)
 			if err != nil {
@@ -1175,7 +1175,7 @@ func makeBPFObject(outFile string) error {
 	}
 	err = cmd1.Run()
 	if err != nil {
-		return fmt.Errorf("Failed to make BPF object (clang): %v. Try using --debug for more info", err)
+		return fmt.Errorf("failed to make BPF object (clang): %v. Try using --debug for more info", err)
 	}
 
 	// from Makefile:
@@ -1194,7 +1194,7 @@ func makeBPFObject(outFile string) error {
 	}
 	err = cmd2.Run()
 	if err != nil {
-		return fmt.Errorf("Failed to make BPF object (llc): %v. Try using --debug for more info", err)
+		return fmt.Errorf("failed to make BPF object (llc): %v. Try using --debug for more info", err)
 	}
 
 	// from Makefile:
@@ -1211,7 +1211,7 @@ func makeBPFObject(outFile string) error {
 		}
 		err = cmd3.Run()
 		if err != nil {
-			return fmt.Errorf("Failed to make BPF object (llvm-strip): %v. Try using --debug for more info", err)
+			return fmt.Errorf("failed to make BPF object (llvm-strip): %v. Try using --debug for more info", err)
 		}
 	}
 

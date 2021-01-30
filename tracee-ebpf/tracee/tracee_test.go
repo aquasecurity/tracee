@@ -105,12 +105,11 @@ func TestReadArgFromBuff(t *testing.T) {
 				47, 117, 115, 114, 47, 98, 105, 110, 0, // /usr/bin
 				7, 0, 0, 0, //len=7
 				100, 111, 99, 107, 101, 114, 0, //docker
-				11, // end strArrT
 			},
 			expectedArg: []string{"/usr/bin", "docker"},
 		},
 		{
-			name: "sockAddrT",
+			name: "sockAddrT - AF_INET",
 			input: []byte{12, //sockAddrT
 				0,    // Dummy tag
 				2, 0, //sa_family=AF_INET
@@ -121,15 +120,39 @@ func TestReadArgFromBuff(t *testing.T) {
 			expectedArg: map[string]string(map[string]string{"sa_family": "AF_INET", "sin_addr": "255.255.255.255", "sin_port": "65535"}),
 		},
 		{
+			name: "sockAddrT - AF_UNIX",
+			input: []byte{12, //sockAddrT
+				0,    // Dummy tag
+				1, 0, //sa_family=AF_UNIX
+				47, 116, 109, 112, 47, 115, 111, 99, 107, 101, 116, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 101, 110, 0, 0, 0, // sun_path=/tmp/socket
+			},
+			expectedArg: map[string]string{"sa_family": "AF_UNIX", "sun_path": "/tmp/socket"},
+		},
+		{
 			name:          "unknown",
 			input:         []byte{0xDE, 0xAD, 0xBE, 0xEF},
 			expectedError: errors.New("error unknown arg type 222"),
 		},
+		{
+			name: "strT too big",
+			input: []byte{10, //strT
+				0,          // Dummy tag
+				0, 0, 0, 1, //len=16777216
+			},
+			expectedError: errors.New("string size too big: 16777216"),
+		},
 	}
 
 	for _, tc := range testCases {
-		_, actual, err := readArgFromBuff(bytes.NewReader(tc.input))
+		b := bytes.NewReader(tc.input)
+		_, actual, err := readArgFromBuff(b)
 		assert.Equal(t, tc.expectedError, err, tc.name)
 		assert.Equal(t, tc.expectedArg, actual, tc.name)
+
+		if tc.name == "unknown" {
+			continue
+		} else {
+			assert.Empty(t, b.Len(), tc.name) // passed in buffer should be emptied out
+		}
 	}
 }
