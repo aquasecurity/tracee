@@ -134,7 +134,10 @@ endif
 
 .PHONY: $(DOCKER_BUILDER)
 # record built image id to prevent unnecessary building and for cleanup
-$(DOCKER_BUILDER): $(OUT_DIR)/$(DOCKER_BUILDER)
+docker_builder_file := $(OUT_DIR)/$(DOCKER_BUILDER)
+.PHONY: $(DOCKER_BUILDER)
+$(DOCKER_BUILDER) $(docker_builder_file) &: Dockerfile.builder | $(OUT_DIR) check_$(CMD_DOCKER)
+	$(CMD_DOCKER) build -f Dockerfile.builder -t $(DOCKER_BUILDER) --iidfile $(docker_builder_file) .
 
 $(OUT_DIR)/$(DOCKER_BUILDER): $(GO_SRC) $(BPF_SRC) $(MAKEFILE_LIST) Dockerfile | $(OUT_DIR)
 	$(CMD_DOCKER) build -f Dockerfile.builder -t $(DOCKER_BUILDER) --iidfile $(OUT_DIR)/$(DOCKER_BUILDER) --target builder .
@@ -149,7 +152,9 @@ endef
 
 .PHONY: clean
 clean:
-	-$(CMD_DOCKER) rmi $(file < $(DOCKER_BUILDER))
+ifdef CLEAN_ALL
+	-$(CMD_DOCKER) rmi $(file < $(docker_builder_file))
+endif
 	-rm -rf dist $(OUT_DIR)
 	-cd $(LIBBPF_SRC) && $(MAKE) clean;
 	
