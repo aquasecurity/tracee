@@ -7,8 +7,6 @@ CMD_CLANG ?= clang
 CMD_LLVM_STRIP ?= llvm-strip
 CMD_DOCKER ?= docker
 CMD_GIT ?= git
-CMD_CHECKSUM ?= sha256sum
-CMD_GITHUB ?= gh
 # environment:
 ARCH_UNAME := $(shell uname -m)
 ARCH ?= $(ARCH_UNAME:aarch64=arm64)
@@ -34,10 +32,6 @@ DOCKER_BUILDER_KERN_BLD ?= $(if $(shell readlink $(KERN_BLD_PATH)),$(shell readl
 DOCKER_BUILDER_KERN_SRC ?= $(if $(shell readlink $(KERN_SRC_PATH)),$(shell readlink $(KERN_SRC_PATH)),$(KERN_SRC_PATH))
 # DOCKER_BUILDER_KERN_SRC_MNT is the kernel headers directory to mount into the docker builder container. DOCKER_BUILDER_KERN_SRC should usually be a decendent of this path.
 DOCKER_BUILDER_KERN_SRC_MNT ?= $(dir $(DOCKER_BUILDER_KERN_SRC))
-RELEASE_ARCHIVE := $(OUT_DIR)/tracee.tar.gz
-RELEASE_CHECKSUMS := $(OUT_DIR)/checksums.txt
-RELEASE_DOCKER ?= aquasec/tracee
-RELEASE_DOCKER_TAG ?= $(RELEASE_TAG:v%=%)
 
 $(OUT_DIR):
 	mkdir -p $@
@@ -122,7 +116,6 @@ $(OUT_BPF): $(DOCKER_BUILDER) | $(OUT_DIR)
 	$(call docker_builder_make,$@)
 endif
 
-
 .PHONY: test 
 ifndef DOCKER
 test: $(GO_SRC) $(LIBBPF_HEADERS) $(LIBBPF_OBJ)
@@ -132,15 +125,11 @@ test: $(DOCKER_BUILDER)
 	$(call docker_builder_make,$@)
 endif
 
-.PHONY: $(DOCKER_BUILDER)
 # record built image id to prevent unnecessary building and for cleanup
 docker_builder_file := $(OUT_DIR)/$(DOCKER_BUILDER)
 .PHONY: $(DOCKER_BUILDER)
 $(DOCKER_BUILDER) $(docker_builder_file) &: Dockerfile.builder | $(OUT_DIR) check_$(CMD_DOCKER)
 	$(CMD_DOCKER) build -t $(DOCKER_BUILDER) --iidfile $(docker_builder_file) - < $<
-
-$(OUT_DIR)/$(DOCKER_BUILDER): $(GO_SRC) $(BPF_SRC) $(MAKEFILE_LIST) Dockerfile | $(OUT_DIR)
-	$(CMD_DOCKER) build -f Dockerfile.builder -t $(DOCKER_BUILDER) --iidfile $(OUT_DIR)/$(DOCKER_BUILDER) --target builder .
 
 # docker_builder_make runs a make command in the tracee-builder container
 define docker_builder_make
@@ -170,31 +159,3 @@ docker:
 .PHONY: docker-slim
 docker-slim:
 	$(CMD_DOCKER) build --build-arg VERSION=$(VERSION) -t $(OUT_DOCKER):slim --build-arg BASE=slim .
-
-# release_docker_image accepts a local docker image reference (first argument), pushes it under a new name  (second argument) to remote repository, and records it in the release notes
-define release_docker_image
-	$(CMD_DOCKER) tag $(1) $(2) && $(CMD_DOCKER) push $(2) &&	echo '- `docker pull docker.io/$(2)`' >> $(release_notes);
-endef
-
-$(RELEASE_ARCHIVE) $(RELEASE_CHECKSUMS) &: $(OUT_BIN) LICENSE | $(OUT_DIR) check_$(CMD_CHECKSUM)
-	tar -czf $(RELEASE_ARCHIVE) $(OUT_BIN) LICENSE
-	$(CMD_CHECKSUM) $(RELEASE_ARCHIVE) > $(RELEASE_CHECKSUMS)
-
-release_notes := $(OUT_DIR)/release-notes.txt
-release_images_fat := $(RELEASE_DOCKER):latest $(RELEASE_DOCKER):$(RELEASE_DOCKER_TAG)
-release_images_slim := $(RELEASE_DOCKER):slim $(RELEASE_DOCKER):slim-$(RELEASE_DOCKER_TAG)
-.PHONY: release
-# before running this rule, need to authenticate git, gh, and docker tools.
-release: | check_$(CMD_GITHUB) $(RELEASE_ARCHIVE) $(RELEASE_CHECKSUMS) docker docker-slim
-	test -n '$(RELEASE_TAG)' || (echo "missing required variable RELEASE_TAG" ; false)
-	-rm $(release_notes)
-	echo '## Changelog' > $(release_notes)
-	$(CMD_GIT) log --pretty=oneline --abbrev=commit --no-decorate --no-color tags/$(shell $(CMD_GIT) describe --tags --abbrev=0)..HEAD >> $(release_notes)
-	echo '' >> $(release_notes)
-	echo '## Docker images' >> $(release_notes)
-	$(foreach img,$(release_images_fat),$(call release_docker_image,$(OUT_DOCKER):latest,$(img)))
-	$(foreach img,$(release_images_slim),$(call release_docker_image,$(OUT_DOCKER):slim,$(img)))
-	echo '' >>$(release_notes)
-	$(CMD_GIT) tag $(RELEASE_TAG)
-	$(CMD_GIT) push origin $(RELEASE_TAG)
-	$(CMD_GITHUB) release create $(RELEASE_TAG) $(RELEASE_ARCHIVE) $(RELEASE_CHECKSUMS) --title $(RELEASE_TAG) --notes-file $(release_notes)
