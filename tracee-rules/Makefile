@@ -11,15 +11,20 @@ OUT_GOSIGNATURES := $(OUT_RULES)/builtin.so
 REGO_SIGNATURES_DIR ?= signatures/rego
 REGO_SIGNATURES_SRC := $(shell find $(REGO_SIGNATURES_DIR) -type f -name '*.rego' ! -name '*_test.rego')
 
-$(OUT_RULES):
+$(OUT_DIR):
 	mkdir -p $@
 
 .PHONY: build
-build: $(filter-out *_test.go,$(GO_SRC))
+build: $(OUT_BIN)
+
+$(OUT_BIN): $(filter-out *_test.go,$(GO_SRC)) | $(OUT_DIR)
 	go build -o $(OUT_BIN)
 
 .PHONY: rules
-rules: $(GOSIGNATURES_DIR) $(REGO_SIGNATURES_SRC) | $(OUT_RULES)
+rules: $(OUT_RULES)
+
+$(OUT_RULES): $(GOSIGNATURES_DIR) $(REGO_SIGNATURES_SRC) | $(OUT_DIR)
+	mkdir -p $(OUT_RULES)
 	go build -buildmode=plugin -o $(OUT_GOSIGNATURES) $(GOSIGNATURES_SRC)
 	cp $(REGO_SIGNATURES_SRC) $(OUT_RULES)
 	
