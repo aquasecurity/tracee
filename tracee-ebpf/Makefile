@@ -137,7 +137,7 @@ endif
 docker_builder_file := $(OUT_DIR)/$(DOCKER_BUILDER)
 .PHONY: $(DOCKER_BUILDER)
 $(DOCKER_BUILDER) $(docker_builder_file) &: Dockerfile.builder | $(OUT_DIR) check_$(CMD_DOCKER)
-	$(CMD_DOCKER) build -f Dockerfile.builder -t $(DOCKER_BUILDER) --iidfile $(docker_builder_file) .
+	$(CMD_DOCKER) build -t $(DOCKER_BUILDER) --iidfile $(docker_builder_file) - < $<
 
 $(OUT_DIR)/$(DOCKER_BUILDER): $(GO_SRC) $(BPF_SRC) $(MAKEFILE_LIST) Dockerfile | $(OUT_DIR)
 	$(CMD_DOCKER) build -f Dockerfile.builder -t $(DOCKER_BUILDER) --iidfile $(OUT_DIR)/$(DOCKER_BUILDER) --target builder .
