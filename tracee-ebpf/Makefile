@@ -150,13 +150,15 @@ define docker_builder_make
 	--entrypoint make $(DOCKER_BUILDER) KERN_BLD_PATH=$(DOCKER_BUILDER_KERN_BLD) KERN_SRC_PATH=$(DOCKER_BUILDER_KERN_SRC) $(1)
 endef
 
+.PHONY: mostlyclean
+mostlyclean:
+	-rm -rf $(OUT_BIN) $(bpf_bundle_dir) $(OUT_BPF) $(BPF_BUNDLE)
+
 .PHONY: clean
 clean:
-ifdef CLEAN_ALL
 	-$(CMD_DOCKER) rmi $(file < $(docker_builder_file))
-endif
 	-rm -rf dist $(OUT_DIR)
-	-cd $(LIBBPF_SRC) && $(MAKE) clean;
+	$(MAKE) -C $(LIBBPF_SRC) clean
 	
 check_%:
 	@command -v $* >/dev/null || (echo "missing required tool $*" ; false)
