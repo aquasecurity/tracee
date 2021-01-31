@@ -52,7 +52,7 @@ $(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(filter-out *_test.go,$(GO_SRC)) $(
 	-ldflags "-X main.bpfBundleInjected=$$(base64 -w 0 $(BPF_BUNDLE)) -X main.version=$(VERSION)"	
 else 
 $(OUT_BIN): $(DOCKER_BUILDER) | $(OUT_DIR)
-	$(call docker_builder_make,$($@))
+	$(call docker_builder_make,$@)
 endif
 
 bpf_compile_tools = $(CMD_LLC) $(CMD_CLANG)
@@ -119,7 +119,7 @@ $(OUT_BPF): $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compile_tools)
 	rm $(@:.o=.ll)
 else
 $(OUT_BPF): $(DOCKER_BUILDER) | $(OUT_DIR) 
-	$(call docker_builder_make,$($@))
+	$(call docker_builder_make,$@)
 endif
 
 
@@ -129,7 +129,7 @@ test: $(GO_SRC) $(LIBBPF_HEADERS) $(LIBBPF_OBJ)
 	$(go_env)	go test -v ./...
 else
 test: $(DOCKER_BUILDER)
-	$(call docker_builder_make,test)
+	$(call docker_builder_make,$@)
 endif
 
 .PHONY: $(DOCKER_BUILDER)
