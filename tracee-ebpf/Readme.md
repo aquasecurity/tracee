@@ -34,13 +34,13 @@ This will run Tracee-eBPF with no arguments, which defaults to collecting a usef
 
 You can obtain Tracee-eBPF in any of the following ways:
 1. Download from the [GitHub Releases](https://github.com/aquasecurity/tracee/releases) (`tracee.tar.gz`).
-2. Use the docker image from Docker Hub: `aquasec/tracee` (includes all the required dependencies).
+2. Use the docker image from Docker Hub: `aquasec/tracee`.
 3. Build the executable from source using `make build`. For that you will need additional development tooling.
 4. Build the executable from source in a Docker container which includes all development tooling, using `make build DOCKER=1`.
 
 ### Setup options
 
-Tracee-eBPF is made of a userspace executable (`tracee`) that drives the eBPF program, and the eBPF program itself (`tracee.bpf.$kernelversion.$traceeversion.o`). When the `tracee` is started, it will look for the eBPF program in specific places and if not found, it will attempt to build the eBPF program automatically before it starts (you can control this using the `--build-policy` flag).
+Tracee-eBPF is made of a userspace executable (`tracee-ebpf`) that drives the eBPF program, and the eBPF program itself (`tracee.bpf.$kernelversion.$traceeversion.o`). When Tracee is started, it will look for the eBPF program in specific places and if not found, it will attempt to build the eBPF program automatically before it starts (you can control this using the `--build-policy` flag).
 
 The eBPF program is searched in the following places (in order):
 1. Path specified in `TRACEE_BPF_FILE` environment variable
@@ -48,7 +48,7 @@ The eBPF program is searched in the following places (in order):
 3. `/tmp/tracee`
 
 The easiest way to get started is to just let Tracee build the eBPF program for you automatically, as demonstrated in the previous section [Quickstart with Docker](#quickstart-with-docker).  
-Alternatively, you can pre-compile the eBPF program, and provide it to the `tracee` executable. There are some benefits to this approach as you will not need clang and kernel headers at runtime anymore, as well as reduced risk of invoking an external program at runtime.
+Alternatively, you can pre-compile the eBPF program, and provide it to Tracee. There are some benefits to this approach as you will not need clang and kernel headers at runtime anymore, as well as reduced risk of invoking an external program at runtime.
 
 You can build the eBPF program in the following ways:
 1. `make bpf`
@@ -91,7 +91,7 @@ Normally the files will be installed in `/lib/modules/${kernel_version}/build` w
 
 ## Using Tracee
 
-Use `tracee --help` to see a full description of available options. Some flags has specific help sections that can be accessed by passing `help` to the flag, for example `--output help`.
+Use `tracee-ebpf --help` to see a full description of available options. Some flags has specific help sections that can be accessed by passing `help` to the flag, for example `--output help`.
 This section covers some of the more common options.
 
 ### Understanding the output
@@ -165,4 +165,4 @@ For a complete list of capture options, run `--capture help`.
 
 ## Secure tracing
 
-When Tracee-eBPF reads information from user programs it is subject to a race condition where the user program might be able to change the arguments after Tracee has read them. For example, a program invoked `execve("/bin/ls", NULL, 0)`, Tracee picked that up and will report that, then the program changed the first argument from `/bin/ls` to `/bin/bash`, and this is what the kernel will execute. To mitigate this, Tracee also provide "LSM" (Linux Security Module) based events, for example, the `bprm_check` event which can be reported by tracee and cross-referenced with the reported regular syscall event.
+When Tracee-eBPF reads information from user programs it is subject to a race condition where the user program might be able to change the arguments after Tracee has read them. For example, a program invoked `execve("/bin/ls", NULL, 0)`, Tracee picked that up and will report that, then the program changed the first argument from `/bin/ls` to `/bin/bash`, and this is what the kernel will execute. To mitigate this, Tracee also provide "LSM" (Linux Security Module) based events, for example, the `bprm_check` event which can be reported by Tracee and cross-referenced with the reported regular syscall event.

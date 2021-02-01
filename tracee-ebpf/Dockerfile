@@ -21,5 +21,5 @@ RUN apk --no-cache update && apk --no-cache add libc6-compat elfutils-dev
 # docker run --name tracee --rm --privileged --pid=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee aquasec/tracee
 FROM $BASE
 WORKDIR /tracee
-COPY --from=build /tracee/dist/tracee /tracee/entrypoint.sh ./
-ENTRYPOINT ["./entrypoint.sh", "./tracee"]
+COPY --from=build /tracee/dist/tracee-ebpf /tracee/entrypoint.sh ./
+ENTRYPOINT ["./entrypoint.sh", "./tracee-ebpf"]
