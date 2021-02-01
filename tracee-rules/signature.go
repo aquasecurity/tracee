@@ -24,7 +24,7 @@ func getSignatures(rulesDir string, rules []string) ([]types.Signature, error) {
 	if err != nil {
 		return nil, err
 	}
-	opasigs, err := findOPASigs(rulesDir)
+	opasigs, err := findRegoSigs(rulesDir)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +70,7 @@ func findGoSigs(dir string) ([]types.Signature, error) {
 	return res, nil
 }
 
-func findOPASigs(dir string) ([]types.Signature, error) {
+func findRegoSigs(dir string) ([]types.Signature, error) {
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return nil, fmt.Errorf("error reading plugins directory %s: %v", dir, err)
