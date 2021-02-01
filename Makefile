@@ -28,7 +28,7 @@ define make_artifact
 	$(MAKE) -C $1 dist/$2 $3 OUT_DIR=dist && $(CMD_CP) -r $1/dist/$2 $(OUT_DIR)/$2
 endef
 
-$(OUT_DIR)/tracee: tracee-ebpf | $(OUT_DIR)
+$(OUT_DIR)/tracee-ebpf: tracee-ebpf | $(OUT_DIR)
 	$(call make_artifact,$<,$(notdir $@),DOCKER=1)
 
 $(OUT_DIR)/tracee-rules $(OUT_DIR)/rules: tracee-rules | $(OUT_DIR)

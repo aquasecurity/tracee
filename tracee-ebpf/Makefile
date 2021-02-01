@@ -17,7 +17,7 @@ VERSION ?= $(if $(RELEASE_TAG),$(RELEASE_TAG),$(shell $(CMD_GIT) describe --tags
 # inputs and outputs:
 OUT_DIR ?= dist
 GO_SRC := $(shell find . -type f -name '*.go')
-OUT_BIN := $(OUT_DIR)/tracee
+OUT_BIN := $(OUT_DIR)/tracee-ebpf
 BPF_SRC := tracee/tracee.bpf.c 
 OUT_BPF := $(OUT_DIR)/tracee.bpf.$(subst .,_,$(KERN_RELEASE)).$(subst .,_,$(VERSION)).o
 BPF_HEADERS := 3rdparty/include
