@@ -103,7 +103,7 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 					}
 					for _, sel := range se {
 						if sel.Source == "tracee" {
-							sig.OnSignal(types.SignalSourceComplete("tracee")) // TODO: Handle error?
+							_ = sig.OnSignal(types.SignalSourceComplete("tracee"))
 							break
 						}
 					}
