@@ -7,6 +7,7 @@ import (
 
 	"github.com/aquasecurity/tracee/tracee-rules/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
+	tracee "github.com/aquasecurity/tracee/tracee/external"
 )
 
 func TestGetMetadata(t *testing.T) {
@@ -79,9 +80,14 @@ tracee_match {
 	sts := []signaturestest.SigTest{
 		{
 			Events: []types.Event{
-				types.TraceeEvent{
-					Args: []types.TraceeEventArgument{
-						{Name: "doesn't matter", Value: "ends with yo"},
+				tracee.Event{
+					Args: []tracee.Argument{
+						{
+							ArgMeta: tracee.ArgMeta{
+								Name: "doesn't matter",
+							},
+							Value: "ends with yo",
+						},
 					},
 				},
 			},
@@ -89,9 +95,13 @@ tracee_match {
 		},
 		{
 			Events: []types.Event{
-				types.TraceeEvent{
-					Args: []types.TraceeEventArgument{
-						{Name: "doesn't matter", Value: "doesn't end with yo!"},
+				tracee.Event{
+					Args: []tracee.Argument{
+						{
+							ArgMeta: tracee.ArgMeta{
+								Name: "doesn't matter"},
+							Value: "doesn't end with yo!",
+						},
 					},
 				},
 			},
@@ -143,9 +153,14 @@ tracee_match = res {
 	sts := []signaturestest.SigTest{
 		{
 			Events: []types.Event{
-				types.TraceeEvent{
-					Args: []types.TraceeEventArgument{
-						{Name: "doesn't matter", Value: "ends with yo"},
+				tracee.Event{
+					Args: []tracee.Argument{
+						{
+							ArgMeta: tracee.ArgMeta{
+								Name: "doesn't matter",
+							},
+							Value: "ends with yo",
+						},
 					},
 				},
 			},
@@ -154,10 +169,20 @@ tracee_match = res {
 		},
 		{
 			Events: []types.Event{
-				types.TraceeEvent{
-					Args: []types.TraceeEventArgument{
-						{Name: "doesn't matter", Value: "ends with yo"},
-						{Name: "doesn't matter", Value: 1337},
+				tracee.Event{
+					Args: []tracee.Argument{
+						{
+							ArgMeta: tracee.ArgMeta{
+								Name: "doesn't matter",
+							},
+							Value: "ends with yo",
+						},
+						{
+							ArgMeta: tracee.ArgMeta{
+								Name: "doesn't matter",
+							},
+							Value: 1337,
+						},
 					},
 				},
 			},
@@ -166,9 +191,14 @@ tracee_match = res {
 		},
 		{
 			Events: []types.Event{
-				types.TraceeEvent{
-					Args: []types.TraceeEventArgument{
-						{Name: "doesn't matter", Value: "yo is not at end"},
+				tracee.Event{
+					Args: []tracee.Argument{
+						{
+							ArgMeta: tracee.ArgMeta{
+								Name: "doesn't matter",
+							},
+							Value: "yo is not at end",
+						},
 					},
 				},
 			},

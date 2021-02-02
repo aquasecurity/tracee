@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/aquasecurity/tracee/tracee-rules/types"
+	tracee "github.com/aquasecurity/tracee/tracee/external"
 )
 
-func GetTraceeArgumentByName(event types.TraceeEvent, argName string) (types.TraceeEventArgument, error) {
+func GetTraceeArgumentByName(event tracee.Event, argName string) (tracee.Argument, error) {
 	for _, arg := range event.Args {
 		if arg.Name == argName {
 			return arg, nil
 		}
 	}
-	return types.TraceeEventArgument{}, fmt.Errorf("argument %s not found", argName)
+	return tracee.Argument{}, fmt.Errorf("argument %s not found", argName)
 }
 
 func IsFileWrite(flags string) bool {

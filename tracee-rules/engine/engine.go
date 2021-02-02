@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/aquasecurity/tracee/tracee-rules/types"
+	tracee "github.com/aquasecurity/tracee/tracee/external"
 )
 
 // Engine is a rule-engine that can process events coming from a set of input sources against a set of loaded signatures, and report the signatures' findings
@@ -109,7 +110,7 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 				}
 				engine.inputs.Tracee = nil
 			} else if event != nil {
-				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: event.(types.TraceeEvent).EventName}] {
+				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: event.(tracee.Event).EventName}] {
 					engine.signatures[s] <- event
 				}
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: "*"}] {

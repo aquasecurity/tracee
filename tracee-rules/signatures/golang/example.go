@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/tracee-rules/types"
+	tracee "github.com/aquasecurity/tracee/tracee/external"
 )
 
 // counter is a simple demo signature that counts towards a target
@@ -39,7 +40,7 @@ func (sig *counter) GetSelectedEvents() ([]types.SignatureEventSelector, error) 
 
 // OnEvent implements the Signature interface by handling each Event passed by the Engine. this is the business logic of the signature
 func (sig *counter) OnEvent(e types.Event) error {
-	ee, ok := e.(types.TraceeEvent)
+	ee, ok := e.(tracee.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}
