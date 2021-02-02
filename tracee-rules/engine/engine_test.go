@@ -70,9 +70,6 @@ func TestEngine_consumeSource(t *testing.T) {
 			inputEvent: types.TraceeEvent{
 				EventName: "test_event",
 				ProcessID: 2, ParentProcessID: 1,
-				Args: []types.TraceeEventArgument{{
-					Name: "test_foo",
-				}},
 			},
 			inputSignature: fakeSignature{
 				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
@@ -92,9 +89,6 @@ func TestEngine_consumeSource(t *testing.T) {
 				EventName:       "execve",
 				ProcessID:       2,
 				ParentProcessID: 1,
-				Args: []types.TraceeEventArgument{{
-					Name: "foobarbaz",
-				}},
 			},
 			inputSignature: fakeSignature{
 				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
@@ -114,9 +108,6 @@ func TestEngine_consumeSource(t *testing.T) {
 				EventName:       "execve",
 				ProcessID:       2,
 				ParentProcessID: 1,
-				Args: []types.TraceeEventArgument{{
-					Name: "foobarbaz",
-				}},
 			},
 			inputSignature: fakeSignature{
 				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
@@ -136,9 +127,6 @@ func TestEngine_consumeSource(t *testing.T) {
 				EventName:       "execve",
 				ProcessID:       2,
 				ParentProcessID: 1,
-				Args: []types.TraceeEventArgument{{
-					Name: "foobarbaz",
-				}},
 			},
 			inputSignature: fakeSignature{
 				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
