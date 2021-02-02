@@ -69,8 +69,8 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 func (engine *Engine) Start(done chan bool) {
 	go engine.consumeSources(done)
 	for s, c := range engine.signatures {
+		defer close(c)
 		go func(s types.Signature, c chan types.Event) {
-			defer close(c)
 			for e := range c {
 				err := s.OnEvent(e)
 				if err != nil {
@@ -108,6 +108,7 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 						}
 					}
 				}
+				engine.inputs.Tracee = nil // TODO: Setting the channel to nil would block any future writes https://play.golang.org/p/jWyYwjNK_NT
 			} else if event != nil {
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: event.(tracee.Event).EventName}] {
 					engine.signatures[s] <- event
