@@ -47,31 +47,3 @@ type Finding struct {
 	Context   Event
 	Signature Signature
 }
-
-//TraceeEvent represents a Traee Event and is used for Tracee input source
-//It should match the Event struct declared in Tracee
-type TraceeEvent struct {
-	Timestamp           float64               `json:"timestamp"`
-	ProcessID           int                   `json:"processId"`
-	ThreadID            int                   `json:"threadId"`
-	ParentProcessID     int                   `json:"parentProcessId"`
-	HostProcessID       int                   `json:"hostProcessId"`
-	HostThreadID        int                   `json:"hostThreadId"`
-	HostParentProcessID int                   `json:"hostParentProcessId"`
-	UserID              int                   `json:"userId"`
-	MountNS             int                   `json:"mountNamespace"`
-	PIDNS               int                   `json:"pidNamespace"`
-	ProcessName         string                `json:"processName"`
-	HostName            string                `json:"hostName"`
-	EventID             int                   `json:"eventId,string"`
-	EventName           string                `json:"eventName"`
-	ArgsNum             int                   `json:"argsNum"`
-	ReturnValue         int                   `json:"returnValue"`
-	Args                []TraceeEventArgument `json:"args"`
-}
-
-//TraceeEventArgument is a key-value pair that represents an argument in a Tracee Event
-type TraceeEventArgument struct {
-	Name  string      `json:"name"`
-	Value interface{} `json:"value"`
-}

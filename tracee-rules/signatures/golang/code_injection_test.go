@@ -5,17 +5,20 @@ import (
 
 	"github.com/aquasecurity/tracee/tracee-rules/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
+	tracee "github.com/aquasecurity/tracee/tracee/external"
 )
 
 func TestCodeInjection(t *testing.T) {
 	SigTests := []signaturestest.SigTest{
 		{
 			Events: []types.Event{
-				types.TraceeEvent{
+				tracee.Event{
 					EventName: "ptrace",
-					Args: []types.TraceeEventArgument{
+					Args: []tracee.Argument{
 						{
-							Name:  "request",
+							ArgMeta: tracee.ArgMeta{
+								Name: "request",
+							},
 							Value: "PTRACE_POKETEXT",
 						},
 					},
@@ -25,11 +28,13 @@ func TestCodeInjection(t *testing.T) {
 		},
 		{
 			Events: []types.Event{
-				types.TraceeEvent{
+				tracee.Event{
 					EventName: "ptrace",
-					Args: []types.TraceeEventArgument{
+					Args: []tracee.Argument{
 						{
-							Name:  "request",
+							ArgMeta: tracee.ArgMeta{
+								Name: "request",
+							},
 							Value: "PTRACE_TRACEME",
 						},
 					},
@@ -39,15 +44,19 @@ func TestCodeInjection(t *testing.T) {
 		},
 		{
 			Events: []types.Event{
-				types.TraceeEvent{
+				tracee.Event{
 					EventName: "open",
-					Args: []types.TraceeEventArgument{
+					Args: []tracee.Argument{
 						{
-							Name:  "pathname",
+							ArgMeta: tracee.ArgMeta{
+								Name: "pathname",
+							},
 							Value: "/proc/self/mem",
 						},
 						{
-							Name:  "flags",
+							ArgMeta: tracee.ArgMeta{
+								Name: "flags",
+							},
 							Value: "o_wronly",
 						},
 					},
@@ -57,15 +66,19 @@ func TestCodeInjection(t *testing.T) {
 		},
 		{
 			Events: []types.Event{
-				types.TraceeEvent{
+				tracee.Event{
 					EventName: "open",
-					Args: []types.TraceeEventArgument{
+					Args: []tracee.Argument{
 						{
-							Name:  "pathname",
+							ArgMeta: tracee.ArgMeta{
+								Name: "pathname",
+							},
 							Value: "/proc/foo",
 						},
 						{
-							Name:  "flags",
+							ArgMeta: tracee.ArgMeta{
+								Name: "flags",
+							},
 							Value: "o_wronly",
 						},
 					},
@@ -75,15 +88,19 @@ func TestCodeInjection(t *testing.T) {
 		},
 		{
 			Events: []types.Event{
-				types.TraceeEvent{
+				tracee.Event{
 					EventName: "open",
-					Args: []types.TraceeEventArgument{
+					Args: []tracee.Argument{
 						{
-							Name:  "pathname",
+							ArgMeta: tracee.ArgMeta{
+								Name: "pathname",
+							},
 							Value: "/proc/self/mem",
 						},
 						{
-							Name:  "flags",
+							ArgMeta: tracee.ArgMeta{
+								Name: "flags",
+							},
 							Value: "o_rdonly",
 						},
 					},
@@ -93,15 +110,19 @@ func TestCodeInjection(t *testing.T) {
 		},
 		{
 			Events: []types.Event{
-				types.TraceeEvent{
+				tracee.Event{
 					EventName: "execve",
-					Args: []types.TraceeEventArgument{
+					Args: []tracee.Argument{
 						{
-							Name:  "envp",
+							ArgMeta: tracee.ArgMeta{
+								Name: "envp",
+							},
 							Value: []string{"FOO=BAR", "LD_PRELOAD=/something"},
 						},
 						{
-							Name:  "argv",
+							ArgMeta: tracee.ArgMeta{
+								Name: "argv",
+							},
 							Value: []string{"ls"},
 						},
 					},
@@ -111,15 +132,19 @@ func TestCodeInjection(t *testing.T) {
 		},
 		{
 			Events: []types.Event{
-				types.TraceeEvent{
+				tracee.Event{
 					EventName: "execve",
-					Args: []types.TraceeEventArgument{
+					Args: []tracee.Argument{
 						{
-							Name:  "envp",
+							ArgMeta: tracee.ArgMeta{
+								Name: "envp",
+							},
 							Value: []string{"FOO=BAR"},
 						},
 						{
-							Name:  "argv",
+							ArgMeta: tracee.ArgMeta{
+								Name: "argv",
+							},
 							Value: []string{"ls"},
 						},
 					},
@@ -129,11 +154,13 @@ func TestCodeInjection(t *testing.T) {
 		},
 		{
 			Events: []types.Event{
-				types.TraceeEvent{
+				tracee.Event{
 					EventName: "execve",
-					Args: []types.TraceeEventArgument{
+					Args: []tracee.Argument{
 						{
-							Name:  "argv",
+							ArgMeta: tracee.ArgMeta{
+								Name: "argv",
+							},
 							Value: []string{"ls"},
 						},
 					},

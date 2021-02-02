@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/tracee-rules/types"
+	tracee "github.com/aquasecurity/tracee/tracee/external"
 )
 
 type codeInjection struct {
@@ -50,7 +51,7 @@ func (sig *codeInjection) OnEvent(e types.Event) error {
 	// { "eventName": "ptrace", "args": [{"name": "request", "value": "PTRACE_POKETEXT" }]}
 	// { "eventName": "open", "args": [{"name": "flags", "value": "o_wronly" }, {"name": "pathname", "value": "/proc/self/mem" }]}
 	// { "eventName": "execve" args": [{"name": "envp", "value": ["FOO=BAR", "LD_PRELOAD=/something"] }, {"name": "argv", "value": ["ls"] }]}
-	ee, ok := e.(types.TraceeEvent)
+	ee, ok := e.(tracee.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}
@@ -58,7 +59,7 @@ func (sig *codeInjection) OnEvent(e types.Event) error {
 	case "open", "openat":
 		flags, err := GetTraceeArgumentByName(ee, "flags")
 		if err != nil {
-			return err
+			return fmt.Errorf("%v %#v", err, ee)
 		}
 		if IsFileWrite(flags.Value.(string)) {
 			pathname, err := GetTraceeArgumentByName(ee, "pathname")

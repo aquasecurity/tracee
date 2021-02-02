@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/aquasecurity/tracee/tracee-rules/types"
+	tracee "github.com/aquasecurity/tracee/tracee/external"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
 )
@@ -115,7 +116,7 @@ func (sig *RegoSignature) getSelectedEvents() ([]types.SignatureEventSelector, e
 // if bool is "returned", a true evaluation will generate a Finding with no data
 // if document is "returned", any non-empty evaluation will generate a Finding with the document as the Finding's "Data"
 func (sig *RegoSignature) OnEvent(e types.Event) error {
-	ee, ok := e.(types.TraceeEvent)
+	ee, ok := e.(tracee.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}

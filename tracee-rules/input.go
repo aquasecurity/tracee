@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/tracee-rules/types"
+	tracee "github.com/aquasecurity/tracee/tracee/external"
 )
 
 func setupStdinSource(inputSource string) (chan types.Event, error) {
@@ -21,7 +22,7 @@ func setupStdinSource(inputSource string) (chan types.Event, error) {
 			event := scanner.Bytes()
 			switch inputSource {
 			case "tracee":
-				var e types.TraceeEvent
+				var e tracee.Event
 				err := json.Unmarshal(event, &e)
 				if err != nil {
 					log.Printf("invalid json in %s: %v", string(event), err)
@@ -47,7 +48,7 @@ func setupTraceeSource(traceeFilePath string) (chan types.Event, error) {
 	res := make(chan types.Event)
 	go func() {
 		for {
-			var event types.TraceeEvent
+			var event tracee.Event
 			err := dec.Decode(&event)
 			if err != nil {
 				if err == io.EOF {
