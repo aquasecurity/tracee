@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -16,6 +17,9 @@ func main() {
 		Name:  "tracee-rules",
 		Usage: "A rule engine for Runtime Security",
 		Action: func(c *cli.Context) error {
+			if c.NArg() == 0 && c.NumFlags() == 0 {
+				return errors.New("tracee-rules requires arguments, please use `tracee-rules --help`")
+			}
 			sigs, err := getSignatures(c.String("rules-dir"), c.StringSlice("rules"))
 			if err != nil {
 				return err
@@ -31,13 +35,17 @@ func main() {
 				return nil
 			}
 			var inputs engine.EventSources
-			if c.IsSet("tracee-file") {
-				inputs.Tracee, err = setupTraceeSource(c.String("tracee-file"))
+			if c.IsSet("input-tracee") {
+				opts, err := parseTraceeInputOptions(c.StringSlice("input-tracee"))
+				if err != nil {
+					return err
+				}
+				inputs.Tracee, err = setupInputSource(opts)
+				if err != nil {
+					return err
+				}
 			}
-			if c.IsSet("stdin-as") {
-				inputs.Tracee, err = setupStdinSource(c.String("stdin-as"))
-			}
-			if err != nil || inputs == (engine.EventSources{}) {
+			if inputs == (engine.EventSources{}) {
 				return err
 			}
 			output, err := setupOutput(c.String("webhook"))
@@ -51,15 +59,23 @@ func main() {
 		Flags: []cli.Flag{
 			&cli.StringSliceFlag{
 				Name:  "rules",
-				Usage: "select which rules to load",
+				Usage: "select which rules to load as a comma seperated list, use --list for rules to select from",
 			},
 			&cli.StringFlag{
 				Name:  "rules-dir",
-				Usage: "directory where to search for rules",
+				Usage: "directory where to search for rules in OPA (.rego) or Go plugin (.so) formats",
+			},
+			&cli.BoolFlag{
+				Name:  "list",
+				Usage: "print all available rules",
 			},
 			&cli.StringFlag{
 				Name:  "webhook",
-				Usage: "call this HTTP endpoint for every match",
+				Usage: "HTTP endpoint to call for every match",
+			},
+			&cli.StringSliceFlag{
+				Name:  "input-tracee",
+				Usage: "specify various key:value pairs for input options from tracee-ebpf, use '--input-tracee help' for more info",
 			},
 			&cli.StringFlag{
 				Name:  "tracee-file",
@@ -68,10 +84,6 @@ func main() {
 			&cli.StringFlag{
 				Name:  "stdin-as",
 				Usage: "read events from stdin and treat them as JSON serialized events of the specified input source. this will override an already configured input source",
-			},
-			&cli.BoolFlag{
-				Name:  "list",
-				Usage: "print all available rules",
 			},
 		},
 	}
