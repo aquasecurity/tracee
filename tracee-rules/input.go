@@ -98,6 +98,10 @@ func parseTraceeInputOptions(inputOptions []string) (*traceeInputOptions, error)
 		err                error
 	)
 
+	if len(inputOptions) == 0 {
+		return nil, errors.New("no tracee input options specified")
+	}
+
 	for i := range inputOptions {
 		if inputOptions[i] == "help" {
 			printHelp()
@@ -107,6 +111,9 @@ func parseTraceeInputOptions(inputOptions []string) (*traceeInputOptions, error)
 		kv := strings.Split(inputOptions[i], ":")
 		if len(kv) != 2 {
 			return nil, fmt.Errorf("invalid input-tracee option: %s", inputOptions[i])
+		}
+		if kv[0] == "" || kv[1] == "" {
+			return nil, fmt.Errorf("empty key or value passed: key: >%s< value: >%s<", kv[0], kv[1])
 		}
 		if kv[0] == "file" {
 			err = parseTraceeInputFile(&inputSourceOptions, kv[1])
