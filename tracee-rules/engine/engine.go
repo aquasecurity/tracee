@@ -108,7 +108,7 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 						}
 					}
 				}
-				engine.inputs.Tracee = nil // TODO: Setting the channel to nil would block any future writes https://play.golang.org/p/jWyYwjNK_NT
+				engine.inputs.Tracee = nil
 			} else if event != nil {
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: event.(tracee.Event).EventName}] {
 					engine.signatures[s] <- event
