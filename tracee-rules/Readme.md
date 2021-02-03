@@ -21,7 +21,7 @@ Currently you need to build from source. `cd tracee-rules && make` will build th
 Running with Tracee-eBPF:
 
 ```bash
-sudo tracee-ebpf -o format:gob -o option:eot | tracee-rules --tracee-file /dev/stdin
+sudo tracee-ebpf -o format:gob | tracee-rules --tracee-file /dev/stdin
 ```
 
 This will:

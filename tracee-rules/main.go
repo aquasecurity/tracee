@@ -16,10 +16,6 @@ func main() {
 		Name:  "tracee-rules",
 		Usage: "A rule engine for Runtime Security",
 		Action: func(c *cli.Context) error {
-			if c.NumFlags() == 0 {
-				cli.ShowAppHelp(c)
-				return nil
-			}
 			sigs, err := getSignatures(c.String("rules-dir"), c.StringSlice("rules"))
 			if err != nil {
 				return err
@@ -34,21 +30,21 @@ func main() {
 				}
 				return nil
 			}
+
 			var inputs engine.EventSources
-			if c.IsSet("input-tracee") {
-				opts, err := parseTraceeInputOptions(c.StringSlice("input-tracee"))
-				if err == helpErr {
-					printHelp()
-					return nil
-				}
-				if err != nil {
-					return err
-				}
-				inputs.Tracee, err = setupInputSource(opts)
-				if err != nil {
-					return err
-				}
+			opts, err := parseTraceeInputOptions(c.StringSlice("input-tracee"))
+			if err == helpErr {
+				printHelp()
+				return nil
 			}
+			if err != nil {
+				return err
+			}
+			inputs.Tracee, err = setupInputSource(opts)
+			if err != nil {
+				return err
+			}
+
 			if inputs == (engine.EventSources{}) {
 				return err
 			}
@@ -79,7 +75,8 @@ func main() {
 			},
 			&cli.StringSliceFlag{
 				Name:  "input-tracee",
-				Usage: "specify various key:value pairs for input options from tracee-ebpf, use '--input-tracee help' for more info",
+				Usage: "configure tracee-ebpf as input source. see '--input-tracee help' for more info",
+				Value: cli.NewStringSlice("file:stdin", "format:gob"),
 			},
 		},
 	}

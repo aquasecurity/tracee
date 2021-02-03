@@ -170,7 +170,7 @@ Examples:
 
 'tracee-rules --input-tracee file:./events.json --input-tracee format:json'
 'tracee-rules --input-tracee file:./events.gob --input-tracee format:gob'
-'sudo tracee-ebpf -o format:gob -o option:eot | tracee-rules --input-tracee file:stdin --input-tracee format:gob'
+'sudo tracee-ebpf -o format:gob | tracee-rules --input-tracee file:stdin --input-tracee format:gob'
 `
 
 	fmt.Println(traceeInputHelp)
