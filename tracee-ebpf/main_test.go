@@ -1089,15 +1089,6 @@ func TestPrepareOutput(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			testName:    "option eot",
-			outputSlice: []string{"option:eot"},
-			expectedOutput: tracee.OutputConfig{
-				EOT:    true,
-				Format: "table",
-			},
-			expectedError: nil,
-		},
-		{
 			testName:    "option stack-addresses",
 			outputSlice: []string{"option:stack-addresses"},
 			expectedOutput: tracee.OutputConfig{
@@ -1125,22 +1116,12 @@ func TestPrepareOutput(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			testName:    "gob + eot",
-			outputSlice: []string{"format:gob", "option:eot"},
-			expectedOutput: tracee.OutputConfig{
-				Format: "gob",
-				EOT:    true,
-			},
-			expectedError: nil,
-		},
-		{
 			testName:    "all",
-			outputSlice: []string{"gotemplate=/path/to/tmpl", "option:eot", "option:stack-addresses", "option:detect-syscall", "option:exec-env", "out-file:/path/to/file", "err-file:/path/to/file"},
+			outputSlice: []string{"gotemplate=/path/to/tmpl", "option:stack-addresses", "option:detect-syscall", "option:exec-env", "out-file:/path/to/file", "err-file:/path/to/file"},
 			expectedOutput: tracee.OutputConfig{
 				Format:         "gotemplate=/path/to/tmpl",
 				OutPath:        "/path/to/file",
 				ErrPath:        "/path/to/file",
-				EOT:            true,
 				StackAddresses: true,
 				DetectSyscall:  true,
 				ExecEnv:        true,

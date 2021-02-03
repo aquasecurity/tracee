@@ -28,9 +28,7 @@ type eventPrinter interface {
 	Close()
 }
 
-var eotEvent external.Event = external.Event{EventName: string(rune(4))}
-
-func newEventPrinter(kind string, containerMode bool, eot bool, out io.WriteCloser, err io.WriteCloser) (eventPrinter, error) {
+func newEventPrinter(kind string, containerMode bool, out io.WriteCloser, err io.WriteCloser) (eventPrinter, error) {
 	var res eventPrinter
 	var initError error
 	switch {
@@ -50,19 +48,16 @@ func newEventPrinter(kind string, containerMode bool, eot bool, out io.WriteClos
 		}
 	case kind == "json":
 		res = &jsonEventPrinter{
-			eot: eot,
 			out: out,
 			err: err,
 		}
 	case kind == "gob":
 		res = &gobEventPrinter{
-			eot: eot,
 			out: out,
 			err: err,
 		}
 	case strings.HasPrefix(kind, "gotemplate="):
 		res = &templateEventPrinter{
-			eot:           eot,
 			out:           out,
 			err:           err,
 			containerMode: containerMode,
@@ -179,7 +174,6 @@ type templateEventPrinter struct {
 	containerMode bool
 	templatePath  string
 	templateObj   **template.Template
-	eot           bool
 }
 
 func (p *templateEventPrinter) Init() error {
@@ -213,11 +207,7 @@ func (p templateEventPrinter) Print(event external.Event) {
 	}
 }
 
-func (p templateEventPrinter) Epilogue(stats statsStore) {
-	if p.eot {
-		p.Print(eotEvent)
-	}
-}
+func (p templateEventPrinter) Epilogue(stats statsStore) {}
 
 func (p templateEventPrinter) Close() {
 	p.out.Close()
@@ -227,7 +217,6 @@ func (p templateEventPrinter) Close() {
 type jsonEventPrinter struct {
 	out io.WriteCloser
 	err io.WriteCloser
-	eot bool
 }
 
 func (p jsonEventPrinter) Init() error { return nil }
@@ -250,11 +239,7 @@ func (p jsonEventPrinter) Error(e error) {
 	fmt.Fprintln(p.err, string(eBytes))
 }
 
-func (p jsonEventPrinter) Epilogue(stats statsStore) {
-	if p.eot {
-		p.Print(eotEvent)
-	}
-}
+func (p jsonEventPrinter) Epilogue(stats statsStore) {}
 
 func (p jsonEventPrinter) Close() {
 	p.out.Close()
@@ -262,14 +247,11 @@ func (p jsonEventPrinter) Close() {
 }
 
 // gobEventPrinter is printing events using golang's builtin Gob serializer
-// an additional event is added at the end to signal end of transmission
-// this event can be identified by it's "EventName" which will be the ASCII "End Of Transmission" character
 type gobEventPrinter struct {
 	out    io.WriteCloser
 	err    io.WriteCloser
 	outEnc *gob.Encoder
 	errEnc *gob.Encoder
-	eot    bool
 }
 
 func (p *gobEventPrinter) Init() error {
@@ -291,11 +273,7 @@ func (p *gobEventPrinter) Error(e error) {
 	_ = p.errEnc.Encode(e)
 }
 
-func (p *gobEventPrinter) Epilogue(stats statsStore) {
-	if p.eot {
-		p.Print(eotEvent)
-	}
-}
+func (p *gobEventPrinter) Epilogue(stats statsStore) {}
 
 func (p gobEventPrinter) Close() {
 	p.out.Close()
