@@ -45,27 +45,28 @@ func getSignatures(rulesDir string, rules []string) ([]types.Signature, error) {
 }
 
 func findGoSigs(dir string) ([]types.Signature, error) {
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		return nil, fmt.Errorf("error reading plugins directory %s: %v", dir, err)
-	}
 	var res []types.Signature
-	for _, file := range files {
-		if filepath.Ext(file.Name()) != ".so" {
-			continue
-		}
-		p, err := plugin.Open(filepath.Join(dir, file.Name()))
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			log.Printf("error opening plugin %s: %v", file.Name(), err)
-			continue
+			return fmt.Errorf("error opening plugin %s: %v", info.Name(), err)
+		}
+		if filepath.Ext(info.Name()) != ".so" {
+			return filepath.SkipDir
+		}
+		p, err := plugin.Open(filepath.Join(path, info.Name()))
+		if err != nil {
+			return fmt.Errorf("error opening plugin %s: %v", info.Name(), err)
 		}
 		export, err := p.Lookup("ExportedSignatures")
 		if err != nil {
-			log.Printf("missing Export symbol in plugin %s", file.Name())
-			continue
+			return fmt.Errorf("missing Export symbol in plugin %s", info.Name())
 		}
 		sigs := *export.(*[]types.Signature)
 		res = append(res, sigs...)
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 	return res, nil
 }
