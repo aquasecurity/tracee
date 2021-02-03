@@ -77,14 +77,6 @@ func main() {
 				Name:  "input-tracee",
 				Usage: "specify various key:value pairs for input options from tracee-ebpf, use '--input-tracee help' for more info",
 			},
-			&cli.StringFlag{
-				Name:  "tracee-file",
-				Usage: "path to Tracee Gob output file",
-			},
-			&cli.StringFlag{
-				Name:  "stdin-as",
-				Usage: "read events from stdin and treat them as JSON serialized events of the specified input source. this will override an already configured input source",
-			},
 		},
 	}
 	err := app.Run(os.Args)
