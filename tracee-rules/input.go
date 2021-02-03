@@ -16,10 +16,12 @@ import (
 	tracee "github.com/aquasecurity/tracee/tracee/external"
 )
 
+var helpErr = errors.New("help me if you can im feeling down")
+
 type inputFormat uint8
 
 const (
-	invalidInputFormat inputFormat = iota + 1
+	invalidInputFormat inputFormat = iota
 	jsonInputFormat
 	gobInputFormat
 )
@@ -104,8 +106,7 @@ func parseTraceeInputOptions(inputOptions []string) (*traceeInputOptions, error)
 
 	for i := range inputOptions {
 		if inputOptions[i] == "help" {
-			printHelp()
-			os.Exit(0)
+			return nil, helpErr
 		}
 
 		kv := strings.Split(inputOptions[i], ":")

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -17,8 +16,9 @@ func main() {
 		Name:  "tracee-rules",
 		Usage: "A rule engine for Runtime Security",
 		Action: func(c *cli.Context) error {
-			if c.NArg() == 0 && c.NumFlags() == 0 {
-				return errors.New("tracee-rules requires arguments, please use `tracee-rules --help`")
+			if c.NumFlags() == 0 {
+				cli.ShowAppHelp(c)
+				return nil
 			}
 			sigs, err := getSignatures(c.String("rules-dir"), c.StringSlice("rules"))
 			if err != nil {
@@ -37,6 +37,10 @@ func main() {
 			var inputs engine.EventSources
 			if c.IsSet("input-tracee") {
 				opts, err := parseTraceeInputOptions(c.StringSlice("input-tracee"))
+				if err == helpErr {
+					printHelp()
+					return nil
+				}
 				if err != nil {
 					return err
 				}

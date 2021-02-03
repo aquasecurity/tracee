@@ -17,7 +17,6 @@ func setupOutput(webhook string) (chan types.Finding, error) {
 	go func() {
 		for res := range out {
 			fmt.Printf("%+v\n", res)
-			//FIXME: Don't do this check everytime there's a finding
 			if webhook != "" {
 				payload, err := prepareJSONPayload(res)
 				if err != nil {
