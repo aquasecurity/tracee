@@ -10,7 +10,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	tracee "github.com/aquasecurity/tracee/tracee/external"
@@ -53,16 +52,10 @@ func setupGobInputSource(opts *traceeInputOptions) (chan types.Event, error) {
 			err := dec.Decode(&event)
 			if err != nil {
 				if err == io.EOF {
-					// ignore EOF because we assume events can keep streaming into the file
-					// this might create a backlog of events and depending on the implementation of the input source might lead to lost events
-					// TODO: investigate impact of this and research alternatives
-					time.Sleep(time.Millisecond * 150)
-					continue
+					break
 				} else {
 					log.Printf("Error while decoding event: %v", err)
 				}
-			} else if event.EventName[0] == 4 { // Tracee EOT signal
-				break
 			} else {
 				res <- event
 			}
