@@ -16,7 +16,7 @@ import (
 	tracee "github.com/aquasecurity/tracee/tracee/external"
 )
 
-var helpErr = errors.New("help me if you can im feeling down")
+var helpErr = errors.New("user has requested help text")
 
 type inputFormat uint8
 
@@ -29,7 +29,6 @@ const (
 type traceeInputOptions struct {
 	inputFile   *os.File
 	inputFormat inputFormat
-	closeOnEOF  bool
 }
 
 func setupInputSource(opts *traceeInputOptions) (chan types.Event, error) {
@@ -121,11 +120,6 @@ func parseTraceeInputOptions(inputOptions []string) (*traceeInputOptions, error)
 			if err != nil {
 				return nil, err
 			}
-		} else if kv[0] == "option" {
-			err = parseTraceeInputOption(&inputSourceOptions, kv[1])
-			if err != nil {
-				return nil, err
-			}
 		} else if kv[0] == "format" {
 			err = parseTraceeInputFormat(&inputSourceOptions, kv[1])
 			if err != nil {
@@ -153,15 +147,6 @@ func parseTraceeInputFile(option *traceeInputOptions, fileOpt string) error {
 		return fmt.Errorf("invalid file: %s", fileOpt)
 	}
 	option.inputFile = f
-	return nil
-}
-
-func parseTraceeInputOption(option *traceeInputOptions, optionString string) error {
-	if strings.ToUpper(optionString) == "EOF" {
-		option.closeOnEOF = true
-	} else {
-		return fmt.Errorf("unkown tracee input option: %s", optionString)
-	}
 	return nil
 }
 
