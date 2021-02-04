@@ -15,7 +15,7 @@ import (
 	tracee "github.com/aquasecurity/tracee/tracee/external"
 )
 
-var helpErr = errors.New("user has requested help text")
+var errHelp = errors.New("user has requested help text")
 
 type inputFormat uint8
 
@@ -98,7 +98,7 @@ func parseTraceeInputOptions(inputOptions []string) (*traceeInputOptions, error)
 
 	for i := range inputOptions {
 		if inputOptions[i] == "help" {
-			return nil, helpErr
+			return nil, errHelp
 		}
 
 		kv := strings.Split(inputOptions[i], ":")

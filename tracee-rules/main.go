@@ -33,7 +33,7 @@ func main() {
 
 			var inputs engine.EventSources
 			opts, err := parseTraceeInputOptions(c.StringSlice("input-tracee"))
-			if err == helpErr {
+			if err == errHelp {
 				printHelp()
 				return nil
 			}
