@@ -1,4 +1,4 @@
-package signatures
+package main
 
 import (
 	"fmt"

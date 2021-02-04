@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/tracee-rules/types"
+	tracee "github.com/aquasecurity/tracee/tracee/external"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -60,21 +61,23 @@ func (fs fakeSignature) OnSignal(signal types.Signal) error {
 func TestConsumeSources(t *testing.T) {
 	testCases := []struct {
 		name              string
-		inputEvent        types.TraceeEvent
+		inputEvent        tracee.Event
 		inputSignature    fakeSignature
 		expectedNumEvents int
 		expectedError     string
 	}{
 		{
 			name: "happy path - with one matching selector",
-			inputEvent: types.TraceeEvent{
+			inputEvent: tracee.Event{
 				EventName:       "test_event",
 				ProcessID:       2,
 				ParentProcessID: 1,
-				Args: []types.TraceeEventArgument{
+				Args: []tracee.Argument{
 					{
-						Name:  "foo",
-						Value: "bar",
+						ArgMeta: tracee.ArgMeta{
+							Name: "pathname",
+						},
+						Value: "/proc/self/mem",
 					},
 				},
 			},
@@ -92,7 +95,7 @@ func TestConsumeSources(t *testing.T) {
 		},
 		{
 			name: "happy path - with no matching event selector",
-			inputEvent: types.TraceeEvent{
+			inputEvent: tracee.Event{
 				EventName: "execve",
 			},
 			inputSignature: fakeSignature{
@@ -109,7 +112,7 @@ func TestConsumeSources(t *testing.T) {
 		},
 		{
 			name: "happy path - with all events selector",
-			inputEvent: types.TraceeEvent{
+			inputEvent: tracee.Event{
 				EventName: "execve",
 			},
 			inputSignature: fakeSignature{
@@ -126,7 +129,7 @@ func TestConsumeSources(t *testing.T) {
 		},
 		{
 			name: "happy path - with all events selector, no name",
-			inputEvent: types.TraceeEvent{
+			inputEvent: tracee.Event{
 				EventName: "execve",
 			},
 			inputSignature: fakeSignature{
