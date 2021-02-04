@@ -40,7 +40,7 @@ func main() {
 			if err != nil {
 				return err
 			}
-			inputs.Tracee, err = setupInputSource(opts)
+			inputs.Tracee, err = setupTraceeInputSource(opts)
 			if err != nil {
 				return err
 			}

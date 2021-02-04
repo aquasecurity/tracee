@@ -30,20 +30,20 @@ type traceeInputOptions struct {
 	inputFormat inputFormat
 }
 
-func setupInputSource(opts *traceeInputOptions) (chan types.Event, error) {
+func setupTraceeInputSource(opts *traceeInputOptions) (chan types.Event, error) {
 
 	if opts.inputFormat == jsonInputFormat {
-		return setupJSONInputSource(opts)
+		return setupTraceeJSONInputSource(opts)
 	}
 
 	if opts.inputFormat == gobInputFormat {
-		return setupGobInputSource(opts)
+		return setupTraceeGobInputSource(opts)
 	}
 
 	return nil, errors.New("could not set up input source")
 }
 
-func setupGobInputSource(opts *traceeInputOptions) (chan types.Event, error) {
+func setupTraceeGobInputSource(opts *traceeInputOptions) (chan types.Event, error) {
 	dec := gob.NewDecoder(opts.inputFile)
 	res := make(chan types.Event)
 	go func() {
@@ -66,7 +66,7 @@ func setupGobInputSource(opts *traceeInputOptions) (chan types.Event, error) {
 	return res, nil
 }
 
-func setupJSONInputSource(opts *traceeInputOptions) (chan types.Event, error) {
+func setupTraceeJSONInputSource(opts *traceeInputOptions) (chan types.Event, error) {
 	res := make(chan types.Event)
 	scanner := bufio.NewScanner(opts.inputFile)
 	go func() {
