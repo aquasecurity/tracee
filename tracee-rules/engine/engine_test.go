@@ -57,7 +57,7 @@ func (fs fakeSignature) OnSignal(signal types.Signal) error {
 	return nil
 }
 
-func TestEngine_consumeSource(t *testing.T) {
+func TestConsumeSources(t *testing.T) {
 	testCases := []struct {
 		name              string
 		inputEvent        types.TraceeEvent
@@ -68,8 +68,15 @@ func TestEngine_consumeSource(t *testing.T) {
 		{
 			name: "happy path - with one matching selector",
 			inputEvent: types.TraceeEvent{
-				EventName: "test_event",
-				ProcessID: 2, ParentProcessID: 1,
+				EventName:       "test_event",
+				ProcessID:       2,
+				ParentProcessID: 1,
+				Args: []types.TraceeEventArgument{
+					{
+						Name:  "foo",
+						Value: "bar",
+					},
+				},
 			},
 			inputSignature: fakeSignature{
 				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
@@ -86,9 +93,7 @@ func TestEngine_consumeSource(t *testing.T) {
 		{
 			name: "happy path - with no matching event selector",
 			inputEvent: types.TraceeEvent{
-				EventName:       "execve",
-				ProcessID:       2,
-				ParentProcessID: 1,
+				EventName: "execve",
 			},
 			inputSignature: fakeSignature{
 				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
@@ -105,9 +110,7 @@ func TestEngine_consumeSource(t *testing.T) {
 		{
 			name: "happy path - with all events selector",
 			inputEvent: types.TraceeEvent{
-				EventName:       "execve",
-				ProcessID:       2,
-				ParentProcessID: 1,
+				EventName: "execve",
 			},
 			inputSignature: fakeSignature{
 				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
@@ -124,9 +127,7 @@ func TestEngine_consumeSource(t *testing.T) {
 		{
 			name: "happy path - with all events selector, no name",
 			inputEvent: types.TraceeEvent{
-				EventName:       "execve",
-				ProcessID:       2,
-				ParentProcessID: 1,
+				EventName: "execve",
 			},
 			inputSignature: fakeSignature{
 				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
