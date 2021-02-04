@@ -235,7 +235,7 @@ func TestConsumeSources(t *testing.T) {
 			}
 
 			if tc.expectedError != "" {
-				assert.Equal(t, tc.expectedError, logger.String(), tc.name)
+				assert.Contains(t, logger.String(), tc.expectedError, tc.name)
 			}
 		})
 	}
