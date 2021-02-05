@@ -26,6 +26,7 @@ func setupOuput(webhook string) (chan types.Finding, error) {
 				resp, err := http.Post(webhook, "application/json", strings.NewReader(payload))
 				if err != nil {
 					log.Printf("error calling webhook for %v: %v", res, err)
+					continue
 				}
 				resp.Body.Close()
 			}
