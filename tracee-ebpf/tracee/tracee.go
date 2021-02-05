@@ -104,7 +104,6 @@ type OutputConfig struct {
 	Format         string
 	OutPath        string
 	ErrPath        string
-	EOT            bool
 	StackAddresses bool
 	DetectSyscall  bool
 	ExecEnv        bool
@@ -270,7 +269,7 @@ func New(cfg Config) (*Tracee, error) {
 	}
 	ContainerMode := (t.config.Filter.ContFilter.Enabled && t.config.Filter.ContFilter.Value) ||
 		(t.config.Filter.NewContFilter.Enabled && t.config.Filter.NewContFilter.Value)
-	printObj, err := newEventPrinter(t.config.Output.Format, ContainerMode, t.config.Output.EOT, outf, errf)
+	printObj, err := newEventPrinter(t.config.Output.Format, ContainerMode, outf, errf)
 	if err != nil {
 		return nil, err
 	}
