@@ -22,19 +22,19 @@ func TestParseTraceeInputOptions(t *testing.T) {
 			expectedError:         errors.New("no tracee input options specified"),
 		},
 		{
-			testName:              "non-existant file specified",
+			testName:              "non-existent file specified",
 			optionStringSlice:     []string{"file:/iabxfdoabs22do2b"},
 			expectedResultOptions: nil,
 			expectedError:         errors.New("invalid Tracee input file: /iabxfdoabs22do2b"),
 		},
 		{
-			testName:              "non-existant file specified",
+			testName:              "non-existent file specified",
 			optionStringSlice:     []string{"file:/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"},
 			expectedResultOptions: nil,
 			expectedError:         errors.New("invalid Tracee input file: /AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
 		},
 		{
-			testName:              "non-existant file specified",
+			testName:              "non-existent file specified",
 			optionStringSlice:     []string{"file:"},
 			expectedResultOptions: nil,
 			expectedError:         errors.New("empty key or value passed: key: >file< value: ><"),
