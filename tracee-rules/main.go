@@ -40,7 +40,7 @@ func main() {
 			if err != nil || inputs == (engine.EventSources{}) {
 				return err
 			}
-			output, err := setupOuput(c.String("webhook"))
+			output, err := setupOutput(c.String("webhook"))
 			if err != nil {
 				return err
 			}

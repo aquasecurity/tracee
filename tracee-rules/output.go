@@ -12,7 +12,7 @@ import (
 	tracee "github.com/aquasecurity/tracee/tracee/external"
 )
 
-func setupOuput(webhook string) (chan types.Finding, error) {
+func setupOutput(webhook string) (chan types.Finding, error) {
 	out := make(chan types.Finding)
 	go func() {
 		for res := range out {

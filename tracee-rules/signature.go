@@ -29,7 +29,7 @@ func getSignatures(rulesDir string, rules []string) ([]types.Signature, error) {
 		return nil, err
 	}
 	sigs := append(gosigs, opasigs...)
-	res := []types.Signature{}
+	var res []types.Signature
 	if rules == nil {
 		res = sigs
 	} else {
