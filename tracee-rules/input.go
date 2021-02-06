@@ -77,7 +77,7 @@ func setupTraceeJSONInputSource(opts *traceeInputOptions) (chan types.Event, err
 			if err != nil {
 				log.Printf("invalid json in %s: %v", string(event), err)
 			}
-			res <- tracee.Event(e)
+			res <- e
 		}
 		opts.inputFile.Close()
 		close(res)
