@@ -50,7 +50,7 @@ func findGoSigs(dir string) ([]types.Signature, error) {
 		if err != nil {
 			return fmt.Errorf("error opening plugin %s: %v", info.Name(), err)
 		}
-		if filepath.Ext(info.Name()) != ".so" || info.isDir() == true {
+		if filepath.Ext(info.Name()) != ".so" || info.IsDir() == true {
 			return filepath.SkipDir
 		}
 		p, err := plugin.Open(filepath.Join(path, info.Name()))
@@ -76,12 +76,12 @@ func findGoSigs(dir string) ([]types.Signature, error) {
 func findRegoSigs(dir string) ([]types.Signature, error) {
 	var res []types.Signature
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if filepath.Ext(file.Name()) != ".rego" || info.isDir() == true {
+		if filepath.Ext(info.Name()) != ".rego" || info.IsDir() == true {
 			return filepath.SkipDir
 		}
 		regoCode, err := ioutil.ReadFile(filepath.Join(dir, info.Name()))
 		if err != nil {
-			log.Printf("error reading file %s/%s: %v", dir, file, err)
+			log.Printf("error reading file %s/%s: %v", dir, info.Name(), err)
 			return filepath.SkipDir
 		}
 		sig, err := regosig.NewRegoSignature(string(regoCode))
@@ -90,6 +90,10 @@ func findRegoSigs(dir string) ([]types.Signature, error) {
 			return filepath.SkipDir
 		}
 		res = append(res, sig)
+		return filepath.SkipDir
 	})
+	if err != nil {
+		return nil, err
+	}
 	return res, nil
 }
