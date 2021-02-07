@@ -50,20 +50,22 @@ func findGoSigs(dir string) ([]types.Signature, error) {
 		if err != nil {
 			return fmt.Errorf("error opening plugin %s: %v", info.Name(), err)
 		}
-		if filepath.Ext(info.Name()) != ".so" {
+		if filepath.Ext(info.Name()) != ".so" || info.isDir() == true {
 			return filepath.SkipDir
 		}
 		p, err := plugin.Open(filepath.Join(path, info.Name()))
 		if err != nil {
-			return fmt.Errorf("error opening plugin %s: %v", info.Name(), err)
+			log.Printf("error opening plugin %s: %v", info.Name(), err)
+			return filepath.SkipDir
 		}
 		export, err := p.Lookup("ExportedSignatures")
 		if err != nil {
-			return fmt.Errorf("missing Export symbol in plugin %s", info.Name())
+			log.Printf("missing Export symbol in plugin %s", info.Name())
+			return filepath.SkipDir
 		}
 		sigs := *export.(*[]types.Signature)
 		res = append(res, sigs...)
-		return nil
+		return filepath.SkipDir
 	})
 	if err != nil {
 		return nil, err
@@ -72,26 +74,22 @@ func findGoSigs(dir string) ([]types.Signature, error) {
 }
 
 func findRegoSigs(dir string) ([]types.Signature, error) {
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		return nil, fmt.Errorf("error reading plugins directory %s: %v", dir, err)
-	}
 	var res []types.Signature
-	for _, file := range files {
-		if filepath.Ext(file.Name()) != ".rego" {
-			continue
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if filepath.Ext(file.Name()) != ".rego" || info.isDir() == true {
+			return filepath.SkipDir
 		}
-		regoCode, err := ioutil.ReadFile(filepath.Join(dir, file.Name()))
+		regoCode, err := ioutil.ReadFile(filepath.Join(dir, info.Name()))
 		if err != nil {
 			log.Printf("error reading file %s/%s: %v", dir, file, err)
-			continue
+			return filepath.SkipDir
 		}
 		sig, err := regosig.NewRegoSignature(string(regoCode))
 		if err != nil {
 			log.Printf("error creating rego signature with: %s: %v ", regoCode[0:20], err)
-			continue
+			return filepath.SkipDir
 		}
 		res = append(res, sig)
-	}
+	})
 	return res, nil
 }
