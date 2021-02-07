@@ -34,7 +34,7 @@ This will:
 When a detection is made by any of the signatures, it will be printed to stdout. Using the `--webhook` flag you can post detections into an HTTP endpoint that can further relay the detection.
 
 # Rules
-Rules are discovered from the local `rules` directory (unless changed by the `--rules-dir` flag). By default, all discovered rules will be loaded unless specific rules are selected using the `--rules` flag.
+Rules are discovered from the local `rules` directory and all it's subfolders (unless changed by the `--rules-dir` flag). By default, all discovered rules will be loaded unless specific rules are selected using the `--rules` flag.
 
 ## Authoring Rules
 Tracee-Rules supports authoring rules in Golang or in Rego (the language of Open Policy Agent).
