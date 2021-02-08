@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+mock_mount() {
+    if [ $# -eq 0 ]; then
+      if [ "$MOCK_MOUNT_EXISTS" ]; then
+        echo 'debugfs on /sys/kernel/debug type debugfs (rw,nosuid,nodev,noexec,relatime)'
+      fi
+      exit
+    fi
+    if [ $1 = '-t' ]; then
+      echo "mounted"
+      exit
+    fi
+}
+
+mock_tracee_ebpf() {
+  echo 'event1'
+}
+
+mock_falco_sidekick() {
+  echo $cmd $@
+}
+
+
+mock_tracee_rules() {
+  if [ $1 = '--input-tracee=file:stdin' ]; then
+    read -r line
+    echo "processed: $line"
+  fi
+}
+
+cmd=$(basename $0)
+[ "$MOCK_LOG" ] && echo "$cmd $@" >> "$MOCK_LOG"
+case "$cmd" in 
+  'mount')
+    mock_mount $@
+    ;;
+  'tracee-ebpf')
+    mock_tracee_ebpf $@
+    ;;
+  'tracee-rules')
+    mock_tracee_rules $@
+    ;;
+  'falco-sidekick')
+    mock_falco_sidekick $@
+    ;;
+  *)
+    ;;
+esac

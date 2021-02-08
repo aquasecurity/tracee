@@ -14,6 +14,7 @@ CMD_CHECKSUM ?= sha256sum
 CMD_GITHUB ?= gh
 CMD_TAR ?= tar
 CMD_CP ?= cp
+CMD_BATS ?= bats
 
 release_tools := $(CMD_DOCKER) $(CMD_GIT) $(CMD_CHECKSUM) $(CMD_GITHUB) $(CMD_TAR) $(CMP_CP)
 
@@ -99,3 +100,8 @@ clean:
 	-$(CMD_DOCKER) rmi $(OUT_DOCKER) $(release_images_fat) $(release_images_slim)
 	-$(MAKE) -c tracee-ebpf clean
 	-$(MAKE) -c tracee-rules clean
+
+.PHONY: test-entrypoint
+test-entrypoint: entrypoint.sh entrypoint_test.bats test/mocks/* test/bats-helpers.bash
+	@command -v $$BATS >/dev/null || (echo "missing required tool $$BATS"; false)
+	bats ./entrypoint_test.bats

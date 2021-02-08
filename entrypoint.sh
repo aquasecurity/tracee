@@ -6,7 +6,6 @@ TRACEE_WEBHOOK_CONFIG=${TRACEE_WEBHOOK_CONFIG:="/tmp/tracee/integrations-config.
 TRACEE_WEBHOOK_EXE=${TRACEE_WEBHOOK_EXE:="/tracee/falcosidekick"}
 TRACEE_RULES_EXE=${TRACEE_RULES_EXE:="/tracee/tracee-rules"}
 
-$TRACEE_MOUNT_EXE | grep -q 'debugfs on /sys/kernel/debug'
 if ! $TRACEE_MOUNT_EXE | grep -q 'debugfs on /sys/kernel/debug'; then
   $TRACEE_MOUNT_EXE -t debugfs debugfs /sys/kernel/debug/
 fi
