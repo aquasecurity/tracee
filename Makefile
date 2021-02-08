@@ -25,7 +25,7 @@ $(OUT_DIR):
 
 # make_artifact invokes another make from $1 to make the artifact $2 using additional flags $3
 define make_artifact
-	$(MAKE) -C $1 dist/$2 $3 OUT_DIR=dist && $(CMD_CP) -r $1/dist/$2 $(OUT_DIR)/$2
+	$(MAKE) -C $1 mostlyclean dist/$2 $3 OUT_DIR=dist && $(CMD_CP) -r $1/dist/$2 $(OUT_DIR)
 endef
 
 $(OUT_DIR)/tracee-ebpf: tracee-ebpf | $(OUT_DIR)
