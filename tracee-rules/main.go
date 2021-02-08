@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -16,6 +17,12 @@ func main() {
 		Name:  "tracee-rules",
 		Usage: "A rule engine for Runtime Security",
 		Action: func(c *cli.Context) error {
+
+			if c.NumFlags() == 0 {
+				cli.ShowAppHelp(c)
+				return errors.New("no flags specified")
+			}
+
 			sigs, err := getSignatures(c.String("rules-dir"), c.StringSlice("rules"))
 			if err != nil {
 				return err
@@ -76,7 +83,6 @@ func main() {
 			&cli.StringSliceFlag{
 				Name:  "input-tracee",
 				Usage: "configure tracee-ebpf as input source. see '--input-tracee help' for more info",
-				Value: cli.NewStringSlice("file:stdin", "format:gob"),
 			},
 		},
 	}
