@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -16,6 +17,12 @@ func main() {
 		Name:  "tracee-rules",
 		Usage: "A rule engine for Runtime Security",
 		Action: func(c *cli.Context) error {
+
+			if c.NumFlags() == 0 {
+				cli.ShowAppHelp(c)
+				return errors.New("no flags specified")
+			}
+
 			sigs, err := getSignatures(c.String("rules-dir"), c.StringSlice("rules"))
 			if err != nil {
 				return err
@@ -30,14 +37,22 @@ func main() {
 				}
 				return nil
 			}
+
 			var inputs engine.EventSources
-			if c.IsSet("tracee-file") {
-				inputs.Tracee, err = setupTraceeSource(c.String("tracee-file"))
+			opts, err := parseTraceeInputOptions(c.StringSlice("input-tracee"))
+			if err == errHelp {
+				printHelp()
+				return nil
 			}
-			if c.IsSet("stdin-as") {
-				inputs.Tracee, err = setupStdinSource(c.String("stdin-as"))
+			if err != nil {
+				return err
 			}
-			if err != nil || inputs == (engine.EventSources{}) {
+			inputs.Tracee, err = setupTraceeInputSource(opts)
+			if err != nil {
+				return err
+			}
+
+			if inputs == (engine.EventSources{}) {
 				return err
 			}
 			output, err := setupOutput(c.String("webhook"))
@@ -51,27 +66,23 @@ func main() {
 		Flags: []cli.Flag{
 			&cli.StringSliceFlag{
 				Name:  "rules",
-				Usage: "select which rules to load",
+				Usage: "select which rules to load as a comma seperated list, use --list for rules to select from",
 			},
 			&cli.StringFlag{
 				Name:  "rules-dir",
-				Usage: "directory where to search for rules",
-			},
-			&cli.StringFlag{
-				Name:  "webhook",
-				Usage: "call this HTTP endpoint for every match",
-			},
-			&cli.StringFlag{
-				Name:  "tracee-file",
-				Usage: "path to Tracee Gob output file",
-			},
-			&cli.StringFlag{
-				Name:  "stdin-as",
-				Usage: "read events from stdin and treat them as JSON serialized events of the specified input source. this will override an already configured input source",
+				Usage: "directory where to search for rules in OPA (.rego) or Go plugin (.so) formats",
 			},
 			&cli.BoolFlag{
 				Name:  "list",
 				Usage: "print all available rules",
+			},
+			&cli.StringFlag{
+				Name:  "webhook",
+				Usage: "HTTP endpoint to call for every match",
+			},
+			&cli.StringSliceFlag{
+				Name:  "input-tracee",
+				Usage: "configure tracee-ebpf as input source. see '--input-tracee help' for more info",
 			},
 		},
 	}
