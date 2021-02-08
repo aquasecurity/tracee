@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -48,7 +47,8 @@ func findGoSigs(dir string) ([]types.Signature, error) {
 	var res []types.Signature
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return fmt.Errorf("error opening plugin %s: %v", info.Name(), err)
+			log.Printf("error opening plugin %s: %v", info.Name(), err)
+			return filepath.SkipDir
 		}
 		if filepath.Ext(info.Name()) != ".so" || info.IsDir() == true {
 			return filepath.SkipDir
@@ -65,7 +65,7 @@ func findGoSigs(dir string) ([]types.Signature, error) {
 		}
 		sigs := *export.(*[]types.Signature)
 		res = append(res, sigs...)
-		return filepath.SkipDir
+		return nil
 	})
 	if err != nil {
 		return nil, err
@@ -90,7 +90,7 @@ func findRegoSigs(dir string) ([]types.Signature, error) {
 			return filepath.SkipDir
 		}
 		res = append(res, sig)
-		return filepath.SkipDir
+		return nil
 	})
 	if err != nil {
 		return nil, err
