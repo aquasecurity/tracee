@@ -32,6 +32,6 @@ $(OUT_RULES): $(GOSIGNATURES_DIR) $(REGO_SIGNATURES_SRC) | $(OUT_DIR)
 test: $(GO_SRC)
 	go test -v ./...
 
-.PHONY: clean
-clean:
+.PHONY: clean mostlyclean
+clean mostlyclean:
 	-rm -rf $(OUT_DIR)
