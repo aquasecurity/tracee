@@ -96,7 +96,7 @@ $(OUT_DIR)/tracee.bpf.%.o: $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compi
 		-Wno-deprecated-declarations \
 		-Wno-gnu-variable-sized-type-not-at-end \
 		-Wno-pointer-sign \
-		-Wno-pragma-once-outside-heade \
+		-Wno-pragma-once-outside-header \
 		-Wno-unknown-warning-option \
 		-Wno-unused-value \
 		-Wunused \
