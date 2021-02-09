@@ -34,6 +34,12 @@ $(OUT_DIR)/tracee-ebpf: tracee-ebpf | $(OUT_DIR)
 $(OUT_DIR)/tracee-rules $(OUT_DIR)/rules: tracee-rules | $(OUT_DIR)
 	$(call make_artifact,$<,$(notdir $@))
 
+$(OUT_DIR)/tracee.bpf.%.o: bpf ;
+
+.PHONY: bpf
+bpf: tracee-ebpf | $(OUT_DIR)
+		$(MAKE) -C $< mostlyclean $@ OUT_DIR=dist && $(CMD_CP) $</dist/tracee.bpf.*.o $(OUT_DIR)
+
 release_archive_files := LICENSE $(OUT_DIR)/tracee $(OUT_DIR)/tracee-rules $(OUT_DIR)/rules
 $(OUT_ARCHIVE) $(OUT_CHECKSUMS) &: $(release_archive_files) | $(OUT_DIR)
 	$(CMD_TAR) -czf $(OUT_ARCHIVE) $(release_archive_files)
