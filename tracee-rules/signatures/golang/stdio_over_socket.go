@@ -90,34 +90,35 @@ func (sig *stdIoOverSocket) OnEvent(e types.Event) error {
 
 		_, pidExists := sig.processSocketIp[pid]
 
-		if pidExists {
+		if !pidExists {
+			return nil
+		}
 
-			oldFdArg, err := GetTraceeArgumentByName(eventObj, "oldfd")
-			if err != nil {
-				return err
-			}
+		oldFdArg, err := GetTraceeArgumentByName(eventObj, "oldfd")
+		if err != nil {
+			return err
+		}
 
-			srcFd := oldFdArg.Value.(int)
+		srcFd := oldFdArg.Value.(int)
 
-			newFdArg, err := GetTraceeArgumentByName(eventObj, "newfd")
-			if err != nil {
-				return err
-			}
+		newFdArg, err := GetTraceeArgumentByName(eventObj, "newfd")
+		if err != nil {
+			return err
+		}
 
-			dstFd := newFdArg.Value.(int)
+		dstFd := newFdArg.Value.(int)
 
-			ip, socketfdExists := sig.processSocketIp[pid][srcFd]
+		ip, socketfdExists := sig.processSocketIp[pid][srcFd]
 
-			// this means that a socket FD is duplicated into one of the standard FDs
-			if socketfdExists && intInSlice(dstFd, stdAll) && !intInSlice(srcFd, stdAll) {
-				sig.cb(types.Finding{
-					Signature: sig,
-					Context:   eventObj,
-					Data: map[string]interface{}{
-						"ip": ip,
-					},
-				})
-			}
+		// this means that a socket FD is duplicated into one of the standard FDs
+		if socketfdExists && intInSlice(dstFd, stdAll) && !intInSlice(srcFd, stdAll) {
+			sig.cb(types.Finding{
+				Signature: sig,
+				Context:   eventObj,
+				Data: map[string]interface{}{
+					"ip": ip,
+				},
+			})
 		}
 
 	case "close":
