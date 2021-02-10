@@ -42,6 +42,7 @@ func (sig *stdIoOverSocket) GetSelectedEvents() ([]types.SignatureEventSelector,
 	return []types.SignatureEventSelector{
 		{Source: "tracee", Name: "connect"},
 		{Source: "tracee", Name: "dup2"},
+		{Source: "tracee", Name: "dup3"},
 		{Source: "tracee", Name: "close"},
 	}, nil
 }
@@ -86,7 +87,7 @@ func (sig *stdIoOverSocket) OnEvent(e types.Event) error {
 			sig.processSocketIp[pid] = socketIpMap
 		}
 
-	case "dup2":
+	case "dup2", "dup3":
 
 		_, pidExists := sig.processSocketIp[pid]
 
