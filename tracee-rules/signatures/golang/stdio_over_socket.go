@@ -130,17 +130,7 @@ func (sig *stdIoOverSocket) OnEvent(e types.Event) error {
 
 		currentFd := currentFdArg.Value.(int)
 
-		deleteFd := false
-
-		for socketFd, _ := range sig.processSocketIp[pid] {
-			if socketFd == currentFd {
-				deleteFd = true
-			}
-		}
-
-		if deleteFd {
-			delete(sig.processSocketIp[pid], currentFd)
-		}
+		delete(sig.processSocketIp[pid], currentFd)
 
 	}
 	return nil
