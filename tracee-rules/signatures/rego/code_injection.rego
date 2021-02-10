@@ -19,11 +19,7 @@ eventSelectors := [
     },
     {
         "source": "tracee",
-        "name": "open"
-    },
-    {
-        "source": "tracee",
-        "name": "openat"
+        "name": "security_file_open"
     }
 ]
 
@@ -39,7 +35,7 @@ tracee_match {
 }
 
 tracee_match = res {
-    input.eventName == "open"
+    input.eventName == "security_file_open"
     flags = helpers.get_tracee_argument("flags")
 
     is_file_write(flags)
@@ -53,21 +49,3 @@ tracee_match = res {
         "file path": pathname,
     }
 }
-
-tracee_match {
-    input.eventName == "openat"
-    flags = helpers.get_tracee_argument("flags")
-
-    is_file_write(flags)
-
-    pathname := helpers.get_tracee_argument("pathname")
-
-    regex.match(`/proc/(?:\d.+|self)/mem`, pathname)
-
-    res := {
-        "file flags": flags,
-        "file path": pathname,
-    }
-}
-
-
