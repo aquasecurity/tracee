@@ -55,7 +55,6 @@ func (sig *stdIoOverSocket) OnEvent(e types.Event) error {
 	}
 
 	var connectData connectAddrData
-	socketIpMap := make(map[int]string)
 	stdAll := []int{0, 1, 2}
 
 	pid := eventObj.ProcessID
@@ -83,8 +82,14 @@ func (sig *stdIoOverSocket) OnEvent(e types.Event) error {
 		}
 
 		if connectData.SaFamily == "AF_INET" {
-			socketIpMap[sockfd] = connectData.SinAddr
-			sig.processSocketIp[pid] = socketIpMap
+
+			_, pidExists := sig.processSocketIp[pid]
+
+			if !pidExists {
+				sig.processSocketIp[pid] = make(map[int]string)
+			}
+
+			sig.processSocketIp[pid][sockfd] = connectData.SinAddr
 		}
 
 	case "dup2", "dup3":
