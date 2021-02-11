@@ -149,6 +149,7 @@ const (
 	VfsWritevEventID
 	MemProtAlertEventID
 	SchedProcessExitEventID
+	CommitCredsEventID
 	MaxEventID
 )
 
@@ -518,6 +519,7 @@ var EventsIDToEvent = map[int32]EventConfig{
 	VfsWritevEventID:           {ID: VfsWritevEventID, ID32Bit: sys32undefined, Name: "vfs_writev", Probes: []probe{{event: "vfs_writev", attach: kprobe, fn: "trace_vfs_writev"}, {event: "vfs_writev", attach: kretprobe, fn: "trace_ret_vfs_writev"}}, Sets: []string{}},
 	MemProtAlertEventID:        {ID: MemProtAlertEventID, ID32Bit: sys32undefined, Name: "mem_prot_alert", Probes: []probe{{event: "security_mmap_addr", attach: kprobe, fn: "trace_mmap_alert"}, {event: "security_file_mprotect", attach: kprobe, fn: "trace_mprotect_alert"}}, Sets: []string{}},
 	SchedProcessExitEventID:    {ID: SchedProcessExitEventID, ID32Bit: sys32undefined, Name: "sched_process_exit", Probes: []probe{{event: "sched:sched_process_exit", attach: rawTracepoint, fn: "tracepoint__sched__sched_process_exit"}}, EssentialEvent: true, Sets: []string{"default", "proc", "proc_life"}},
+	CommitCredsEventID:         {ID: CommitCredsEventID, ID32Bit: sys32undefined, Name: "commit_creds", Probes: []probe{{event: "commit_creds", attach: kprobe, fn: "trace_commit_creds"}}, Sets: []string{"default"}},
 }
 
 // EventsIDToParams is list of the parameters (name and type) used by the events
@@ -845,17 +847,6 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	StatxEventID:               {{Type: "int", Name: "dirfd"}, {Type: "const char*", Name: "pathname"}, {Type: "int", Name: "flags"}, {Type: "unsigned int", Name: "mask"}, {Type: "struct statx*", Name: "statxbuf"}},
 	IoPgeteventsEventID:        {{Type: "aio_context_t", Name: "ctx_id"}, {Type: "long", Name: "min_nr"}, {Type: "long", Name: "nr"}, {Type: "struct io_event*", Name: "events"}, {Type: "struct timespec*", Name: "timeout"}, {Type: "const struct __aio_sigset*", Name: "usig"}},
 	RseqEventID:                {{Type: "struct rseq*", Name: "rseq"}, {Type: "u32", Name: "rseq_len"}, {Type: "int", Name: "flags"}, {Type: "u32", Name: "sig"}},
-	SysEnterEventID:            {{Type: "int", Name: "syscall"}},
-	SysExitEventID:             {{Type: "int", Name: "syscall"}},
-	DoExitEventID:              {},
-	CapCapableEventID:          {{Type: "int", Name: "cap"}, {Type: "int", Name: "syscall"}},
-	SecurityBprmCheckEventID:   {{Type: "const char*", Name: "pathname"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}},
-	SecurityFileOpenEventID:    {{Type: "const char*", Name: "pathname"}, {Type: "int", Name: "flags"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}},
-	SecurityInodeUnlinkEventID: {{Type: "const char*", Name: "pathname"}},
-	VfsWriteEventID:            {{Type: "const char*", Name: "pathname"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}, {Type: "size_t", Name: "count"}, {Type: "off_t", Name: "pos"}},
-	VfsWritevEventID:           {{Type: "const char*", Name: "pathname"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}, {Type: "unsigned long", Name: "vlen"}, {Type: "off_t", Name: "pos"}},
-	MemProtAlertEventID:        {{Type: "alert_t", Name: "alert"}},
-	SchedProcessExitEventID:    {},
 	PidfdSendSignalEventID:     {{Type: "int", Name: "pidfd"}, {Type: "int", Name: "sig"}, {Type: "siginfo_t*", Name: "info"}, {Type: "unsigned int", Name: "flags"}},
 	IoUringSetupEventID:        {{Type: "unsigned int", Name: "entries"}, {Type: "struct io_uring_params*", Name: "p"}},
 	IoUringEnterEventID:        {{Type: "unsigned int", Name: "fd"}, {Type: "unsigned int", Name: "to_submit"}, {Type: "unsigned int", Name: "min_complete"}, {Type: "unsigned int", Name: "flags"}, {Type: "sigset_t*", Name: "sig"}},
@@ -874,4 +865,16 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	Faccessat2EventID:          {{Type: "int", Name: "fd"}, {Type: "const char*", Name: "path"}, {Type: "int", Name: "mode"}, {Type: "int", Name: "flag"}},
 	ProcessMadviseEventID:      {{Type: "int", Name: "pidfd"}, {Type: "void*", Name: "addr"}, {Type: "size_t", Name: "length"}, {Type: "int", Name: "advice"}, {Type: "unsigned long", Name: "flags"}},
 	EpollPwait2EventID:         {{Type: "int", Name: "fd"}, {Type: "struct epoll_event*", Name: "events"}, {Type: "int", Name: "maxevents"}, {Type: "const struct timespec*", Name: "timeout"}, {Type: "const sigset_t*", Name: "sigset"}},
+	SysEnterEventID:            {{Type: "int", Name: "syscall"}},
+	SysExitEventID:             {{Type: "int", Name: "syscall"}},
+	DoExitEventID:              {},
+	CapCapableEventID:          {{Type: "int", Name: "cap"}, {Type: "int", Name: "syscall"}},
+	SecurityBprmCheckEventID:   {{Type: "const char*", Name: "pathname"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}},
+	SecurityFileOpenEventID:    {{Type: "const char*", Name: "pathname"}, {Type: "int", Name: "flags"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}},
+	SecurityInodeUnlinkEventID: {{Type: "const char*", Name: "pathname"}},
+	VfsWriteEventID:            {{Type: "const char*", Name: "pathname"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}, {Type: "size_t", Name: "count"}, {Type: "off_t", Name: "pos"}},
+	VfsWritevEventID:           {{Type: "const char*", Name: "pathname"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}, {Type: "unsigned long", Name: "vlen"}, {Type: "off_t", Name: "pos"}},
+	MemProtAlertEventID:        {{Type: "alert_t", Name: "alert"}},
+	SchedProcessExitEventID:    {},
+	CommitCredsEventID:         {{Type: "int", Name: "old_euid"}, {Type: "int", Name: "new_euid"}, {Type: "int", Name: "old_egid"}, {Type: "int", Name: "new_egid"}, {Type: "int", Name: "old_fsuid"}, {Type: "int", Name: "new_fsuid"}, {Type: "u64", Name: "old_cap_eff"}, {Type: "u64", Name: "new_cap_eff"}},
 }
