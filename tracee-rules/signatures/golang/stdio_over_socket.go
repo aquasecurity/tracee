@@ -33,6 +33,7 @@ func (sig *stdioOverSocket) GetMetadata() (types.SignatureMetadata, error) {
 func (sig *stdioOverSocket) GetSelectedEvents() ([]types.SignatureEventSelector, error) {
 	return []types.SignatureEventSelector{
 		{Source: "tracee", Name: "connect"},
+		{Source: "tracee", Name: "dup"},
 		{Source: "tracee", Name: "dup2"},
 		{Source: "tracee", Name: "dup3"},
 		{Source: "tracee", Name: "close"},
@@ -48,7 +49,6 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 	}
 
 	var connectData connectAddrData
-	stdAll := []int{0, 1, 2}
 
 	pid := eventObj.ProcessID
 
@@ -84,6 +84,28 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 			sig.processSocketIp[pid][sockfd] = connectData.SinAddr
 		}
 
+	case "dup":
+
+		pidSocketMap, pidExists := sig.processSocketIp[pid]
+
+		if !pidExists {
+			return nil
+		}
+
+		oldFdArg, err := GetTraceeArgumentByName(eventObj, "oldfd")
+		if err != nil {
+			return err
+		}
+
+		srcFd := oldFdArg.Value.(int)
+
+		dstFd := eventObj.ReturnValue
+
+		err = isStdioOverSocket(sig, eventObj, pidSocketMap, srcFd, dstFd)
+		if err != nil {
+			return err
+		}
+
 	case "dup2", "dup3":
 
 		pidSocketMap, pidExists := sig.processSocketIp[pid]
@@ -106,17 +128,9 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 
 		dstFd := newFdArg.Value.(int)
 
-		ip, socketfdExists := pidSocketMap[srcFd]
-
-		// this means that a socket FD is duplicated into one of the standard FDs
-		if socketfdExists && intInSlice(dstFd, stdAll) && !intInSlice(srcFd, stdAll) {
-			sig.cb(types.Finding{
-				Signature: sig,
-				Context:   eventObj,
-				Data: map[string]interface{}{
-					"ip": ip,
-				},
-			})
+		err = isStdioOverSocket(sig, eventObj, pidSocketMap, srcFd, dstFd)
+		if err != nil {
+			return err
 		}
 
 	case "close":
@@ -140,6 +154,26 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 }
 
 func (sig *stdioOverSocket) OnSignal(s types.Signal) error {
+	return nil
+}
+
+func isStdioOverSocket(sig *stdioOverSocket, eventObj tracee.Event, pidSocketMap map[int]string, srcFd int, dstFd int) error {
+
+	stdAll := []int{0, 1, 2}
+
+	ip, socketfdExists := pidSocketMap[srcFd]
+
+	// this means that a socket FD is duplicated into one of the standard FDs
+	if socketfdExists && intInSlice(dstFd, stdAll) {
+		sig.cb(types.Finding{
+			Signature: sig,
+			Context:   eventObj,
+			Data: map[string]interface{}{
+				"ip": ip,
+			},
+		})
+	}
+
 	return nil
 }
 
