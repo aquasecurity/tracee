@@ -1,18 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	tracee "github.com/aquasecurity/tracee/tracee/external"
-	"strings"
 )
-
-type connectAddrData struct {
-	SaFamily string `json:"sa_family"`
-	SinPort  string `json:"sin_port"`
-	SinAddr  string `json:"sin_addr"`
-}
 
 type stdioOverSocket struct {
 	cb              types.SignatureHandler
@@ -75,10 +67,9 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 			return err
 		}
 
-		addrStr := strings.Replace(addrArg.Value.(string), "'", "\"", -1)
-		err = json.Unmarshal([]byte(addrStr), &connectData)
+		err = GetAddrStructFromArg(addrArg, &connectData)
 		if err != nil {
-			return fmt.Errorf(err.Error())
+			return err
 		}
 
 		if connectData.SaFamily == "AF_INET" {
