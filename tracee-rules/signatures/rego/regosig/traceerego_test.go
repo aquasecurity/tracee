@@ -25,7 +25,8 @@ __rego_metadoc__ := {
 	}
 }
 `
-	sig, err := NewRegoSignature(testRegoMeta)
+
+	sig, err := NewRegoSignature(testRegoMeta, "")
 	if err != nil {
 		t.Error(err)
 	}
@@ -56,7 +57,7 @@ tracee_selected_events[eventSelector] {
 	}
 }
 `
-	sig, err := NewRegoSignature(testRegoSelectedEvents)
+	sig, err := NewRegoSignature(testRegoSelectedEvents, "")
 	if err != nil {
 		t.Error(err)
 	}
@@ -109,7 +110,7 @@ tracee_match {
 		},
 	}
 	for _, st := range sts {
-		sig, err := NewRegoSignature(testRegoBool)
+		sig, err := NewRegoSignature(testRegoBool, "")
 		if err != nil {
 			t.Error(err)
 		}
@@ -207,7 +208,7 @@ tracee_match = res {
 		},
 	}
 	for _, st := range sts {
-		sig, err := NewRegoSignature(testRegoObj)
+		sig, err := NewRegoSignature(testRegoObj, "")
 		if err != nil {
 			t.Error(err)
 		}
