@@ -14,21 +14,21 @@ type connectAddrData struct {
 	SinAddr  string `json:"sin_addr"`
 }
 
-type stdIoOverSocket struct {
+type stdioOverSocket struct {
 	cb              types.SignatureHandler
 	processSocketIp map[int]map[int]string
 }
 
-func (sig *stdIoOverSocket) Init(cb types.SignatureHandler) error {
+func (sig *stdioOverSocket) Init(cb types.SignatureHandler) error {
 	sig.cb = cb
 	sig.processSocketIp = make(map[int]map[int]string)
 
 	return nil
 }
 
-func (sig *stdIoOverSocket) GetMetadata() (types.SignatureMetadata, error) {
+func (sig *stdioOverSocket) GetMetadata() (types.SignatureMetadata, error) {
 	return types.SignatureMetadata{
-		Name:        "STD I/O Over Socket",
+		Name:        "Standard Input/Output Over Socket",
 		Description: "Redirection of process's standard input/output to socket",
 		Tags:        []string{"linux", "container"},
 		Properties: map[string]interface{}{
@@ -38,7 +38,7 @@ func (sig *stdIoOverSocket) GetMetadata() (types.SignatureMetadata, error) {
 	}, nil
 }
 
-func (sig *stdIoOverSocket) GetSelectedEvents() ([]types.SignatureEventSelector, error) {
+func (sig *stdioOverSocket) GetSelectedEvents() ([]types.SignatureEventSelector, error) {
 	return []types.SignatureEventSelector{
 		{Source: "tracee", Name: "connect"},
 		{Source: "tracee", Name: "dup2"},
@@ -47,7 +47,7 @@ func (sig *stdIoOverSocket) GetSelectedEvents() ([]types.SignatureEventSelector,
 	}, nil
 }
 
-func (sig *stdIoOverSocket) OnEvent(e types.Event) error {
+func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 
 	eventObj, ok := e.(tracee.Event)
 	if !ok {
@@ -142,7 +142,7 @@ func (sig *stdIoOverSocket) OnEvent(e types.Event) error {
 	return nil
 }
 
-func (sig *stdIoOverSocket) OnSignal(s types.Signal) error {
+func (sig *stdioOverSocket) OnSignal(s types.Signal) error {
 	return nil
 }
 

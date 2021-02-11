@@ -218,7 +218,7 @@ func TestStdIoOverSocket(t *testing.T) {
 	}
 
 	for _, st := range SigTests {
-		sig := stdIoOverSocket{}
+		sig := stdioOverSocket{}
 		st.Init(&sig)
 		for _, e := range st.Events {
 			err := sig.OnEvent(e)
