@@ -5,6 +5,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/aquasecurity/tracee/tracee-rules/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	tracee "github.com/aquasecurity/tracee/tracee/external"
@@ -15,6 +18,7 @@ func TestGetMetadata(t *testing.T) {
 package main
 
 __rego_metadoc__ := {
+	"id": "TRC-12345",
 	"name": "test name",
 	"description": "test description",
 	"tags": [ "tag1", "tag2" ],
@@ -26,10 +30,10 @@ __rego_metadoc__ := {
 }
 `
 	sig, err := NewRegoSignature(testRegoMeta)
-	if err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
+
 	expect := types.SignatureMetadata{
+		ID:          "TRC-12345",
 		Name:        "test name",
 		Description: "test description",
 		Tags:        []string{"tag1", "tag2"},
@@ -40,9 +44,8 @@ __rego_metadoc__ := {
 		},
 	}
 	meta, err := sig.GetMetadata()
-	if !reflect.DeepEqual(meta, expect) || err != nil {
-		t.Error(meta, expect, err)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, expect, meta)
 }
 
 func TestGetSelectedEvents(t *testing.T) {
