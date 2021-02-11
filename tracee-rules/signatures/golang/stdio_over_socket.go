@@ -36,6 +36,7 @@ func (sig *stdioOverSocket) GetSelectedEvents() ([]types.SignatureEventSelector,
 		{Source: "tracee", Name: "dup2"},
 		{Source: "tracee", Name: "dup3"},
 		{Source: "tracee", Name: "close"},
+		{Source: "tracee", Name: "sched_process_exit"},
 	}, nil
 }
 
@@ -129,7 +130,12 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 
 		delete(sig.processSocketIp[pid], currentFd)
 
+	case "sched_process_exit":
+
+		delete(sig.processSocketIp, pid)
+
 	}
+
 	return nil
 }
 
