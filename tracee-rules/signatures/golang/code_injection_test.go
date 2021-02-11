@@ -3,12 +3,15 @@ package main
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/aquasecurity/tracee/tracee-rules/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	tracee "github.com/aquasecurity/tracee/tracee/external"
 )
 
-func TestCodeInjection(t *testing.T) {
+func TestCodeInjection_OnEvent(t *testing.T) {
 	SigTests := []signaturestest.SigTest{
 		{
 			Events: []types.Event{
@@ -182,4 +185,20 @@ func TestCodeInjection(t *testing.T) {
 			t.Error("unexpected result", st)
 		}
 	}
+}
+
+func TestCodeInjection_GetMetadata(t *testing.T) {
+	sig := codeInjection{}
+	got, err := sig.GetMetadata()
+	require.NoError(t, err)
+	assert.Equal(t, types.SignatureMetadata{
+		ID:          "TRC-1",
+		Name:        "Code injection",
+		Description: "Possible process injection detected during runtime",
+		Tags:        []string{"linux", "container"},
+		Properties: map[string]interface{}{
+			"Severity":     3,
+			"MITRE ATT&CK": "Defense Evasion: Process Injection",
+		},
+	}, got)
 }

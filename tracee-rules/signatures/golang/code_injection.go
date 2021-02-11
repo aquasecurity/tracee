@@ -27,6 +27,7 @@ func (sig *codeInjection) Init(cb types.SignatureHandler) error {
 
 func (sig *codeInjection) GetMetadata() (types.SignatureMetadata, error) {
 	return types.SignatureMetadata{
+		ID:          "TRC-1",
 		Name:        "Code injection",
 		Description: "Possible process injection detected during runtime",
 		Tags:        []string{"linux", "container"},
