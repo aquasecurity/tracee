@@ -38,6 +38,20 @@ test_match_2 {
     }
 }
 
+test_match_3 {
+    tracee_match with input as {
+        "eventName": "process_vm_writev",
+        "processId": 109,
+        "argsNum": 1,
+        "args": [
+            {
+                "name": "pid",
+                "value": 101
+            }
+        ]
+    }
+}
+
 test_match_wrong_request {
     not tracee_match with input as {
         "eventName": "ptrace", 
@@ -52,7 +66,7 @@ test_match_wrong_request {
 }
 
 test_match_wrong_pathname {
-    tracee_match with input as {
+    not tracee_match with input as {
         "eventName": "security_file_open",
         "argsNum": 4,
         "args": [
@@ -71,6 +85,20 @@ test_match_wrong_pathname {
             {
                 "name": "inode",
                 "value": 4026532486
+            }
+        ]
+    }
+}
+
+test_match_pid {
+    not tracee_match with input as {
+        "eventName": "process_vm_writev",
+        "processId": 101,
+        "argsNum": 1,
+        "args": [
+            {
+                "name": "pid",
+                "value": 101
             }
         ]
     }

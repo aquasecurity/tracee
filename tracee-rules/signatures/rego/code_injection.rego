@@ -20,6 +20,10 @@ eventSelectors := [
     {
         "source": "tracee",
         "name": "security_file_open"
+    },
+    {
+        "source": "tracee",
+        "name": "process_vm_writev"
     }
 ]
 
@@ -38,7 +42,7 @@ tracee_match = res {
     input.eventName == "security_file_open"
     flags = helpers.get_tracee_argument("flags")
 
-    is_file_write(flags)
+    helpers.is_file_write(flags)
 
     pathname := helpers.get_tracee_argument("pathname")
 
@@ -48,4 +52,10 @@ tracee_match = res {
         "file flags": flags,
         "file path": pathname,
     }
+}
+
+tracee_match {
+    input.eventName == "process_vm_writev"
+    dst_pid = helpers.get_tracee_argument("pid")
+    dst_pid != input.processId
 }
