@@ -27,10 +27,17 @@ $(OUT_RULES): $(GOSIGNATURES_DIR) $(REGO_SIGNATURES_SRC) | $(OUT_DIR)
 	mkdir -p $(OUT_RULES)
 	go build -buildmode=plugin -o $(OUT_GOSIGNATURES) $(GOSIGNATURES_SRC)
 	cp $(REGO_SIGNATURES_SRC) $(OUT_RULES)
-	
+
+.PHONY: setup-opa
+setup-opa:
+	curl -L -o ~/opa https://openpolicyagent.org/downloads/latest/opa_linux_amd64
+	chmod 755 ~/opa
+	~/opa version
+
 .PHONY: test
 test: $(GO_SRC)
 	go test -v ./...
+	~/opa test . --verbose --ignore="examples" --ignore="dist"
 
 .PHONY: clean mostlyclean
 clean mostlyclean:

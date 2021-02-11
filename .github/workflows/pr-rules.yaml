@@ -16,6 +16,8 @@ jobs:
         uses: actions/setup-go@v1
         with:
           go-version: 1.15
+      - name: Setup OPA
+        run: make setup-opa
       - name: Lint
         run: |
           if test -z "$(gofmt -l .)"; then
@@ -29,10 +31,5 @@ jobs:
         run: make build
       - name: Build signatures
         run: make rules
-      - name: Run Unit Tests
+      - name: Run Tests
         run: make test
-      - name: Run OPA Tests
-        uses: petroprotsakh/opa-test-action@v2.1
-        with:
-          tests: "tracee-rules/"
-          options: "--verbose --ignore='examples'"
