@@ -86,7 +86,7 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 
 	case "dup2", "dup3":
 
-		_, pidExists := sig.processSocketIp[pid]
+		pidSocketMap, pidExists := sig.processSocketIp[pid]
 
 		if !pidExists {
 			return nil
@@ -106,7 +106,7 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 
 		dstFd := newFdArg.Value.(int)
 
-		ip, socketfdExists := sig.processSocketIp[pid][srcFd]
+		ip, socketfdExists := pidSocketMap[srcFd]
 
 		// this means that a socket FD is duplicated into one of the standard FDs
 		if socketfdExists && intInSlice(dstFd, stdAll) && !intInSlice(srcFd, stdAll) {
