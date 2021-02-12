@@ -16,8 +16,6 @@ jobs:
         uses: actions/setup-go@v1
         with:
           go-version: 1.15
-      - name: Setup OPA
-        run: make setup-opa
       - name: Lint
         run: |
           if test -z "$(gofmt -l .)"; then

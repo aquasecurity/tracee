@@ -1,6 +1,8 @@
 .PHONY: all
 all: build rules
 
+CMD_GO ?= go
+CMD_OPA ?= opa
 OUT_DIR ?= dist
 OUT_BIN := $(OUT_DIR)/tracee-rules
 OUT_RULES := $(OUT_DIR)/rules
@@ -28,16 +30,17 @@ $(OUT_RULES): $(GOSIGNATURES_DIR) $(REGO_SIGNATURES_SRC) | $(OUT_DIR)
 	go build -buildmode=plugin -o $(OUT_GOSIGNATURES) $(GOSIGNATURES_SRC)
 	cp $(REGO_SIGNATURES_SRC) $(OUT_RULES)
 
-.PHONY: setup-opa
-setup-opa:
-	curl -L -o ~/opa https://openpolicyagent.org/downloads/latest/opa_linux_amd64
-	chmod 755 ~/opa
-	~/opa version
+check_%:
+	@command -v $* >/dev/null || (echo "missing required tool $*" ; false)
+
+tools = $(CMD_OPA) $(CMD_GO)
+.PHONY: $(tools)
+$(tools): % : check_%
 
 .PHONY: test
-test: $(GO_SRC)
+test: $(GO_SRC) $(tools)
 	go test -v ./...
-	~/opa test . --verbose --ignore="examples" --ignore="dist"
+	opa test . --verbose --ignore="examples" --ignore="dist"
 
 .PHONY: clean mostlyclean
 clean mostlyclean:
