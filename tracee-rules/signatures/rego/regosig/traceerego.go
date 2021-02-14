@@ -34,18 +34,18 @@ const queryMetadata string = "data.main.__rego_metadoc__"
 func NewRegoSignature(regoCodes ...string) (types.Signature, error) {
 	var err error
 	res := RegoSignature{}
+	regoMap := make(map[string]string)
 
-	if len(regoCodes) == 2 {
-		res.compiledRego, err = ast.CompileModules(map[string]string{"sig": regoCodes[0], "helpers": regoCodes[1]})
-	} else if len(regoCodes) == 1 {
-		res.compiledRego, err = ast.CompileModules(map[string]string{"sig": regoCodes[0]})
-	} else {
-		return nil, fmt.Errorf("invalid number of rego modules")
+	for index, regoCode := range regoCodes {
+		regoModuleName := fmt.Sprintf("rego_%d", index)
+		regoMap[regoModuleName] = regoCode
 	}
 
+	res.compiledRego, err = ast.CompileModules(regoMap)
 	if err != nil {
 		return nil, err
 	}
+
 	res.matchPQ, err = rego.New(
 		rego.Compiler(res.compiledRego),
 		rego.Query(queryMatch),
