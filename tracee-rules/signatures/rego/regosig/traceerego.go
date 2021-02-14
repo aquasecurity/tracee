@@ -31,10 +31,17 @@ const querySelectedEvents string = "data.main.tracee_selected_events"
 const queryMetadata string = "data.main.__rego_metadoc__"
 
 // NewRegoSignature creates a new RegoSignature with the provided rego code string
-func NewRegoSignature(regoCode string, regoHelpersCode string) (types.Signature, error) {
+func NewRegoSignature(regoCodes ...string) (types.Signature, error) {
 	var err error
 	res := RegoSignature{}
-	res.compiledRego, err = ast.CompileModules(map[string]string{"sig": regoCode, "helpers": regoHelpersCode})
+
+	if len(regoCodes) == 2 {
+		res.compiledRego, err = ast.CompileModules(map[string]string{"sig": regoCodes[0], "helpers": regoCodes[1]})
+	}
+	if len(regoCodes) == 1 {
+		res.compiledRego, err = ast.CompileModules(map[string]string{"sig": regoCodes[0]})
+	}
+
 	if err != nil {
 		return nil, err
 	}
