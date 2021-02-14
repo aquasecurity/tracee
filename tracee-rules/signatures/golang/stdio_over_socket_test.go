@@ -8,7 +8,7 @@ import (
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
-func TestStdIoOverSocket(t *testing.T) {
+func TestStdioOverSocket(t *testing.T) {
 	SigTests := []signaturestest.SigTest{
 		{
 			Events: []types.Event{
