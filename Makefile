@@ -66,7 +66,7 @@ release_images_fat := $(PUSH_DOCKER_REPO):latest $(PUSH_DOCKER_REPO):$(PUSH_DOCK
 release_images_slim := $(PUSH_DOCKER_REPO):slim $(PUSH_DOCKER_REPO):slim-$(PUSH_DOCKER_TAG)
 .PHONY: release
 # before running this rule, need to authenticate git, gh, and docker tools
-release: $(OUT_ARCHIVE) $(OUT_CHECKSUMS) | docker $(check_release_tools)
+release: $(OUT_ARCHIVE) $(OUT_CHECKSUMS) | docker docker-slim $(check_release_tools)
 	test -n '$(RELEASE_TAG)' || (echo "missing required variable RELEASE_TAG" ; false)
 	-rm $(release_notes)
 	echo '## Changelog' > $(release_notes)
