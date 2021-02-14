@@ -1,9 +1,14 @@
-![Tracee Logo](images/tracee.png)
 
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/aquasecurity/tracee)](https://github.com/aquasecurity/tracee/releases)
-[![Go Report Card](https://goreportcard.com/badge/github.com/aquasecurity/tracee)](https://goreportcard.com/report/github.com/aquasecurity/tracee)
-[![License](https://img.shields.io/github/license/aquasecurity/tracee)](https://github.com/aquasecurity/tracee/blob/main/LICENSE)
-[![docker](https://badgen.net/docker/pulls/aquasec/tracee)](https://hub.docker.com/r/aquasec/tracee)
+# The nature for this Fork of Tracee
+This fork of tracee has been created in order to enable tracee to pin bpf maps with mount namespace ids provided by inspector gadget gadget tracer manager, which allows it to trace only the events from specific mount namespaces. It is implemented and functional. In order to pin map you can call tracee with new type of argument. 
+
+```bash
+tracee --pin map:mnt_ns_filter:/path/to/map
+```
+
+This form of argument has been chosen in order leave possibility of updating tracee to pin other bpf maps which are used to store filtering options in tracee or even other bpf objects. Currently, however, only the option for map mnt_ns_filter is available.
+
+The fork is used as a part of updated inspector gadget container and is cloned and built during the compilation of the image.
 
 # Tracee - Container and system tracing using eBPF
 
