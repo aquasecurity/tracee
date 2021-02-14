@@ -37,9 +37,10 @@ func NewRegoSignature(regoCodes ...string) (types.Signature, error) {
 
 	if len(regoCodes) == 2 {
 		res.compiledRego, err = ast.CompileModules(map[string]string{"sig": regoCodes[0], "helpers": regoCodes[1]})
-	}
-	if len(regoCodes) == 1 {
+	} else if len(regoCodes) == 1 {
 		res.compiledRego, err = ast.CompileModules(map[string]string{"sig": regoCodes[0]})
+	} else {
+		return nil, fmt.Errorf("invalid number of rego modules")
 	}
 
 	if err != nil {
