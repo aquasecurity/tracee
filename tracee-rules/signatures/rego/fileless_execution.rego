@@ -29,3 +29,9 @@ tracee_match {
     pathname = helpers.get_tracee_argument("pathname")
     startswith(pathname, "memfd:")
 }
+
+tracee_match {
+    input.eventName == "security_bprm_check"
+    pathname = helpers.get_tracee_argument("pathname")
+    startswith(pathname, "/dev/shm")
+}
