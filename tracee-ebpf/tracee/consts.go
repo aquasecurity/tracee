@@ -3,7 +3,7 @@ package tracee
 import (
 	"math"
 
-	"github.com/aquasecurity/tracee/tracee/external"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
 )
 
 // bpfConfig is an enum that include various configurations that can be passed to bpf code
