@@ -4,7 +4,7 @@ import data.tracee.helpers
 
 __rego_metadoc__ := {
     "name": "Code injection",
-    "description": "Possible process injection detected during runtime",
+    "description": "Possible code injection into another process",
     "tags": ["linux", "container"],
     "properties": {
         "Severity": 3,
