@@ -150,6 +150,7 @@ const (
 	MemProtAlertEventID
 	SchedProcessExitEventID
 	CommitCredsEventID
+	SwitchTaskNSEventID
 	MaxEventID
 )
 
@@ -519,7 +520,8 @@ var EventsIDToEvent = map[int32]EventConfig{
 	VfsWritevEventID:           {ID: VfsWritevEventID, ID32Bit: sys32undefined, Name: "vfs_writev", Probes: []probe{{event: "vfs_writev", attach: kprobe, fn: "trace_vfs_writev"}, {event: "vfs_writev", attach: kretprobe, fn: "trace_ret_vfs_writev"}}, Sets: []string{}},
 	MemProtAlertEventID:        {ID: MemProtAlertEventID, ID32Bit: sys32undefined, Name: "mem_prot_alert", Probes: []probe{{event: "security_mmap_addr", attach: kprobe, fn: "trace_mmap_alert"}, {event: "security_file_mprotect", attach: kprobe, fn: "trace_mprotect_alert"}}, Sets: []string{}},
 	SchedProcessExitEventID:    {ID: SchedProcessExitEventID, ID32Bit: sys32undefined, Name: "sched_process_exit", Probes: []probe{{event: "sched:sched_process_exit", attach: rawTracepoint, fn: "tracepoint__sched__sched_process_exit"}}, EssentialEvent: true, Sets: []string{"default", "proc", "proc_life"}},
-	CommitCredsEventID:         {ID: CommitCredsEventID, ID32Bit: sys32undefined, Name: "commit_creds", Probes: []probe{{event: "commit_creds", attach: kprobe, fn: "trace_commit_creds"}}, Sets: []string{"default"}},
+	CommitCredsEventID:         {ID: CommitCredsEventID, ID32Bit: sys32undefined, Name: "commit_creds", Probes: []probe{{event: "commit_creds", attach: kprobe, fn: "trace_commit_creds"}}, Sets: []string{}},
+	SwitchTaskNSEventID:        {ID: SwitchTaskNSEventID, ID32Bit: sys32undefined, Name: "switch_task_ns", Probes: []probe{{event: "switch_task_namespaces", attach: kprobe, fn: "trace_switch_task_namespaces"}}, Sets: []string{}},
 }
 
 // EventsIDToParams is list of the parameters (name and type) used by the events
@@ -877,4 +879,5 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	MemProtAlertEventID:        {{Type: "alert_t", Name: "alert"}},
 	SchedProcessExitEventID:    {},
 	CommitCredsEventID:         {{Type: "int", Name: "old_euid"}, {Type: "int", Name: "new_euid"}, {Type: "int", Name: "old_egid"}, {Type: "int", Name: "new_egid"}, {Type: "int", Name: "old_fsuid"}, {Type: "int", Name: "new_fsuid"}, {Type: "u64", Name: "old_cap_eff"}, {Type: "u64", Name: "new_cap_eff"}},
+	SwitchTaskNSEventID:        {{Type: "pid_t", Name: "pid"}, {Type: "u32", Name: "new_mnt"}, {Type: "u32", Name: "new_pid"}, {Type: "u32", Name: "new_uts"}, {Type: "u32", Name: "new_ipc"}, {Type: "u32", Name: "new_net"}, {Type: "u32", Name: "new_cgroup"}},
 }
