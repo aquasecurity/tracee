@@ -35,4 +35,4 @@ if $TRACEE_WEBHOOK_EXE $flag_webhook_config& then
 	flag_webhook_url="--webhook=http://localhost:2801"
 fi
 
-$TRACEE_EBPF_EXE --output=format:gob | $TRACEE_RULES_EXE --input-tracee=file:stdin --input-tracee=format:gob $flag_webhook_url $flag_rules
+$TRACEE_EBPF_EXE --output=format:gob --security-alerts | $TRACEE_RULES_EXE --input-tracee=file:stdin --input-tracee=format:gob $flag_webhook_url $flag_rules
