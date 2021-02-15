@@ -251,6 +251,47 @@ func TestStdioOverSocket(t *testing.T) {
 			},
 			Expect: false,
 		},
+		{
+			Events: []types.Event{
+				tracee.Event{
+					ProcessID: 45,
+					EventName: "connect",
+					Args: []tracee.Argument{
+						{
+							ArgMeta: tracee.ArgMeta{
+								Name: "sockfd",
+							},
+							Value: 5,
+						},
+						{
+							ArgMeta: tracee.ArgMeta{
+								Name: "addr",
+							},
+							Value: "{'sin6_scopeid': '0','sa_family': 'AF_INET6','sin6_port': '443','sin6_flowinfo': '0','sin6_addr': '2001:67c:1360:8001::2f'}",
+						},
+					},
+				},
+				tracee.Event{
+					ProcessID: 45,
+					EventName: "dup2",
+					Args: []tracee.Argument{
+						{
+							ArgMeta: tracee.ArgMeta{
+								Name: "oldfd",
+							},
+							Value: 5,
+						},
+						{
+							ArgMeta: tracee.ArgMeta{
+								Name: "newfd",
+							},
+							Value: 0,
+						},
+					},
+				},
+			},
+			Expect: true,
+		},
 	}
 
 	for _, st := range SigTests {

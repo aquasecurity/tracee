@@ -12,6 +12,8 @@ type connectAddrData struct {
 	SaFamily string `json:"sa_family"`
 	SinPort  string `json:"sin_port"`
 	SinAddr  string `json:"sin_addr"`
+	SinPort6 string `json:"sin6_port"`
+	SinAddr6 string `json:"sin6_addr"`
 }
 
 func GetTraceeArgumentByName(event tracee.Event, argName string) (tracee.Argument, error) {
