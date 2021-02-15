@@ -36,16 +36,6 @@ When a detection is made by any of the signatures, it will be printed to stdout.
 # Rules
 Rules are discovered from the local `rules` directory (unless changed by the `--rules-dir` flag). By default, all discovered rules will be loaded unless specific rules are selected using the `--rules` flag.
 
-Name | Description | Tags
- --- | --- | --- |
-Standard Input/Output Over Socket | Redirection of process's standard input/output to socket | "linux", "container"
-Anti-Debugging | Process uses anti-debugging technique to block debugger | "linux", "container"
-Code injection | Possible code injection into another process | "linux", "container"
-Dynamic Code Loading | writing to executable allocated memory region | "linux", "container"
-Fileless Execution | Executing a precess from memory, without a file in the disk | "linux", "container"
-kernel module loading | Attempt to load a kernel module detection | "linux", "container"
-LD_PRELOAD | Usage of LD_PRELOAD to allow hooks on process | "linux", "container"
-
 ## Authoring Rules
 Tracee-Rules supports authoring rules in Golang or in Rego (the language of Open Policy Agent).
 
