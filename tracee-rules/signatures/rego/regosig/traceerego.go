@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
-	tracee "github.com/aquasecurity/tracee/tracee/external"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
 )

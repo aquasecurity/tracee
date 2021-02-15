@@ -16,7 +16,7 @@ import (
 	"syscall"
 
 	bpf "github.com/aquasecurity/tracee/libbpfgo"
-	"github.com/aquasecurity/tracee/tracee/external"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
 )
 
 // Config is a struct containing user defined configuration of tracee

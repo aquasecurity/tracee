@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
+	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
-	tracee "github.com/aquasecurity/tracee/tracee/external"
 )
 
 func setupOutput(webhook string) (chan types.Finding, error) {

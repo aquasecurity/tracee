@@ -1,3 +1,3 @@
-module github.com/aquasecurity/tracee/test/gob
+module github.com/aquasecurity/tracee/tracee-ebpf/test/gob
 
 go 1.15

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/aquasecurity/tracee/tracee"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
 	"github.com/stretchr/testify/assert"
 )
 

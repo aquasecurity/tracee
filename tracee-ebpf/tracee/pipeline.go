@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/aquasecurity/tracee/tracee/external"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
 )
 
 func (t *Tracee) runEventPipeline(done <-chan struct{}) error {
