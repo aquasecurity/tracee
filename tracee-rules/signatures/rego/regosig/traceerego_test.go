@@ -25,6 +25,7 @@ __rego_metadoc__ := {
 	}
 }
 `
+
 	sig, err := NewRegoSignature(testRegoMeta)
 	if err != nil {
 		t.Error(err)
