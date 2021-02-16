@@ -61,7 +61,7 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 			return err
 		}
 
-		sockfd := sockfdArg.Value.(int)
+		sockfd := int(sockfdArg.Value.(int32))
 
 		addrArg, err := GetTraceeArgumentByName(eventObj, "addr")
 		if err != nil {
@@ -105,7 +105,7 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 			return err
 		}
 
-		srcFd := oldFdArg.Value.(int)
+		srcFd := int(oldFdArg.Value.(int32))
 
 		dstFd := eventObj.ReturnValue
 
@@ -127,14 +127,14 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 			return err
 		}
 
-		srcFd := oldFdArg.Value.(int)
+		srcFd := int(oldFdArg.Value.(int32))
 
 		newFdArg, err := GetTraceeArgumentByName(eventObj, "newfd")
 		if err != nil {
 			return err
 		}
 
-		dstFd := newFdArg.Value.(int)
+		dstFd := int(newFdArg.Value.(int32))
 
 		err = isStdioOverSocket(sig, eventObj, pidSocketMap, srcFd, dstFd)
 		if err != nil {
@@ -148,7 +148,7 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 			return err
 		}
 
-		currentFd := currentFdArg.Value.(int)
+		currentFd := int(currentFdArg.Value.(int32))
 
 		delete(sig.processSocketIp[pid], currentFd)
 
