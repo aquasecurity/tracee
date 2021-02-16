@@ -20,7 +20,7 @@ Tracee is composed of the following sub-projects:
 
 ### Prerequisites
 
-- Linux kernel version >= 4.14
+- Linux kernel version >= 4.18
 - Relevant kernel headers available under conventional location (see [Linux Headers](#Linux-Headers) section for info)
 - libc, and the libraries: libelf and zlib
 - clang >= 9

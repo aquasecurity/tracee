@@ -213,8 +213,8 @@ struct bpf_map_def SEC("maps") _name = { \
 #endif
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0)
-#error Minimal required kernel version is 4.14
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 18, 0)
+#error Minimal required kernel version is 4.18
 #endif
 
 /*=============================== INTERNAL STRUCTS ===========================*/
@@ -393,11 +393,7 @@ static __always_inline u32 get_task_ppid(struct task_struct *task)
 static __always_inline bool is_x86_compat(struct task_struct *task)
 {
 #if defined(bpf_target_x86)
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 18))
-    return READ_KERN(task->thread.status) & TS_COMPAT;
-#else
     return READ_KERN(task->thread_info.status) & TS_COMPAT;
-#endif
 #else
     return false;
 #endif
@@ -1317,39 +1313,15 @@ int trace_ret_##name(void *ctx)                                         \
 
 /*============================== SYSCALL HOOKS ==============================*/
 
-struct trace_event_raw_sys_enter {
-  unsigned long long unused;
-  long int id;
-  long unsigned int args[6];
-};
-
 // include/trace/events/syscalls.h:
 // TP_PROTO(struct pt_regs *regs, long id)
 SEC("raw_tracepoint/sys_enter")
-int tracepoint__raw_syscalls__sys_enter(
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
-struct trace_event_raw_sys_enter *args
-#else
-struct bpf_raw_tracepoint_args *ctx
-#endif
-)
+int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
 {
     args_t args_tmp = {};
-    int id;
+    int id = ctx->args[1];
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
-    void *ctx = args;
-    id = args->id;
-
-    args_tmp.args[0] = args->args[0];
-    args_tmp.args[1] = args->args[1];
-    args_tmp.args[2] = args->args[2];
-    args_tmp.args[3] = args->args[3];
-    args_tmp.args[4] = args->args[4];
-    args_tmp.args[5] = args->args[5];
-#else // LINUX_VERSION_CODE
-    id = ctx->args[1];
 #if defined(CONFIG_ARCH_HAS_SYSCALL_WRAPPER)
     struct pt_regs regs = {};
     bpf_probe_read(&regs, sizeof(struct pt_regs), (void*)ctx->args[0]);
@@ -1379,7 +1351,6 @@ struct bpf_raw_tracepoint_args *ctx
     args_tmp.args[4] = ctx->args[4];
     args_tmp.args[5] = ctx->args[5];
 #endif // CONFIG_ARCH_HAS_SYSCALL_WRAPPER
-#endif // LINUX_VERSION_CODE
 
     if (is_compat(task)) {
         // Translate 32bit syscalls to 64bit syscalls so we can send to the correct handler
@@ -1443,36 +1414,15 @@ struct bpf_raw_tracepoint_args *ctx
     return 0;
 }
 
-struct trace_event_raw_sys_exit {
-  unsigned long long unused;
-  long int id;
-  long int ret;
-};
-
 // include/trace/events/syscalls.h:
 // TP_PROTO(struct pt_regs *regs, long ret)
 SEC("raw_tracepoint/sys_exit")
-int tracepoint__raw_syscalls__sys_exit(
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
-struct trace_event_raw_sys_exit *args
-#else
-struct bpf_raw_tracepoint_args *ctx
-#endif
-)
+int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
 {
-    int id;
-    long ret;
+    long ret = ctx->args[1];
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
-
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
-    void *ctx = args;
-    id = args->id;
-    ret = args->ret;
-#else
     struct pt_regs *regs = (struct pt_regs*)ctx->args[0];
-    id = READ_KERN(regs->orig_ax);
-    ret = ctx->args[1];
-#endif
+    int id = READ_KERN(regs->orig_ax);
 
     if (is_compat(task)) {
         // Translate 32bit syscalls to 64bit syscalls so we can send to the correct handler
