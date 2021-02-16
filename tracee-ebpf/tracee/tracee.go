@@ -404,7 +404,7 @@ func UnameRelease() string {
 	return ver
 }
 
-func supportRawTP() (bool, error) {
+func kernelIsAtLeast(verMajor, verMinor int) (bool, error) {
 	ver := UnameRelease()
 	if ver == "" {
 		return false, fmt.Errorf("could not determine current release")
@@ -421,7 +421,7 @@ func supportRawTP() (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("invalid minor number: %s", verSplit[1])
 	}
-	if ((major == 4) && (minor >= 17)) || (major > 4) {
+	if ((major == verMajor) && (minor >= verMinor)) || (major > verMajor) {
 		return true, nil
 	}
 	return false, nil
@@ -762,11 +762,6 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 		return err
 	}
 
-	supportRawTracepoints, err := supportRawTP()
-	if err != nil {
-		return fmt.Errorf("failed to find kernel version: %v", err)
-	}
-
 	// BPFLoadObject() automatically loads ALL BPF programs according to their section type, unless set otherwise
 	// For every BPF program, we need to make sure that:
 	// 1. We disable autoload if the program is not required by any event and is not essential
@@ -787,13 +782,6 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 					return err
 				}
 				continue
-			}
-			// As kernels < 4.17 don't support raw tracepoints, set these program types to "regular" tracepoint
-			if !supportRawTracepoints && (prog.GetType() == bpf.BPFProgTypeRawTracepoint) {
-				err = prog.SetTracepoint()
-				if err != nil {
-					return err
-				}
 			}
 		}
 	}
@@ -822,17 +810,11 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 			if err != nil {
 				return fmt.Errorf("error getting program %s: %v", probe.fn, err)
 			}
-			if probe.attach == rawTracepoint && !supportRawTracepoints {
-				// We fallback to regular tracepoint in case kernel doesn't support raw tracepoints (< 4.17)
-				probe.attach = tracepoint
-			}
 			switch probe.attach {
 			case kprobe:
-				// todo: after updating minimal kernel version to 4.18, use without legacy
-				_, err = prog.AttachKprobeLegacy(probe.event)
+				_, err = prog.AttachKprobe(probe.event)
 			case kretprobe:
-				// todo: after updating minimal kernel version to 4.18, use without legacy
-				_, err = prog.AttachKretprobeLegacy(probe.event)
+				_, err = prog.AttachKretprobe(probe.event)
 			case tracepoint:
 				_, err = prog.AttachTracepoint(probe.event)
 			case rawTracepoint:
