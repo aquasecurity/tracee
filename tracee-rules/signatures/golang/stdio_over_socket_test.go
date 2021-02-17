@@ -20,7 +20,7 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "sockfd",
 							},
-							Value: 5,
+							Value: int32(5),
 						},
 						{
 							ArgMeta: tracee.ArgMeta{
@@ -38,13 +38,13 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "oldfd",
 							},
-							Value: 5,
+							Value: int32(5),
 						},
 						{
 							ArgMeta: tracee.ArgMeta{
 								Name: "newfd",
 							},
-							Value: 0,
+							Value: int32(0),
 						},
 					},
 				},
@@ -61,7 +61,7 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "sockfd",
 							},
-							Value: 5,
+							Value: int32(5),
 						},
 						{
 							ArgMeta: tracee.ArgMeta{
@@ -80,7 +80,7 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "oldfd",
 							},
-							Value: 5,
+							Value: int32(5),
 						},
 					},
 				},
@@ -97,7 +97,7 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "sockfd",
 							},
-							Value: 5,
+							Value: int32(5),
 						},
 						{
 							ArgMeta: tracee.ArgMeta{
@@ -115,13 +115,13 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "oldfd",
 							},
-							Value: 5,
+							Value: int32(5),
 						},
 						{
 							ArgMeta: tracee.ArgMeta{
 								Name: "newfd",
 							},
-							Value: 0,
+							Value: int32(0),
 						},
 						{
 							ArgMeta: tracee.ArgMeta{
@@ -144,13 +144,13 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "oldfd",
 							},
-							Value: 5,
+							Value: int32(5),
 						},
 						{
 							ArgMeta: tracee.ArgMeta{
 								Name: "newfd",
 							},
-							Value: 0,
+							Value: int32(0),
 						},
 					},
 				},
@@ -167,7 +167,7 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "sockfd",
 							},
-							Value: 5,
+							Value: int32(5),
 						},
 						{
 							ArgMeta: tracee.ArgMeta{
@@ -185,7 +185,7 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "fd",
 							},
-							Value: 5,
+							Value: int32(5),
 						},
 					},
 				},
@@ -197,13 +197,13 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "oldfd",
 							},
-							Value: 5,
+							Value: int32(5),
 						},
 						{
 							ArgMeta: tracee.ArgMeta{
 								Name: "newfd",
 							},
-							Value: 0,
+							Value: int32(0),
 						},
 					},
 				},
@@ -220,7 +220,7 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "sockfd",
 							},
-							Value: 5,
+							Value: int32(5),
 						},
 						{
 							ArgMeta: tracee.ArgMeta{
@@ -238,13 +238,13 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "oldfd",
 							},
-							Value: 5,
+							Value: int32(5),
 						},
 						{
 							ArgMeta: tracee.ArgMeta{
 								Name: "newfd",
 							},
-							Value: 0,
+							Value: int32(0),
 						},
 					},
 				},
@@ -261,7 +261,7 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "sockfd",
 							},
-							Value: 5,
+							Value: int32(5),
 						},
 						{
 							ArgMeta: tracee.ArgMeta{
@@ -279,13 +279,13 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "oldfd",
 							},
-							Value: 5,
+							Value: int32(5),
 						},
 						{
 							ArgMeta: tracee.ArgMeta{
 								Name: "newfd",
 							},
-							Value: 0,
+							Value: int32(0),
 						},
 					},
 				},
