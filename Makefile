@@ -50,10 +50,12 @@ $(OUT_ARCHIVE) $(OUT_CHECKSUMS) &: $(RELEASE_FILES) | $(OUT_DIR)
 
 .PHONY: docker
 docker:
+	-rm -rf dist tracee-ebpf/dist tracee-rules/dist
 	$(CMD_DOCKER) build --build-arg VERSION=$(VERSION) -t $(OUT_DOCKER):latest .
 
 .PHONY: docker-slim
 docker-slim:
+	-rm -rf dist tracee-ebpf/dist tracee-rules/dist
 	$(CMD_DOCKER) build --build-arg VERSION=$(VERSION) -t $(OUT_DOCKER):slim --build-arg BASE=slim .
 
 # release_docker_image accepts a docker image $1, pushes it as $2 to remote repository, and records it in the release notes
