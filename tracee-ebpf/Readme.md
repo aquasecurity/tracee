@@ -124,8 +124,6 @@ Tracee-eBPF supports different output formats. For example, to choose json outpu
 
 To tell it to write events to a file instead of stdout, use `--output out-file:/path/to/file`.
 
-There are different ways you can augment the output to add useful information. For example: `--output eot` will add a terminating event to the stream which is useful if feeding the output to another program.
-
 For a full list of output options, run `--output help`.
 
 ### Selecting what to trace

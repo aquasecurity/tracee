@@ -28,7 +28,7 @@ func getSignatures(rulesDir string, rules []string) ([]types.Signature, error) {
 		return nil, err
 	}
 	sigs := append(gosigs, opasigs...)
-	res := []types.Signature{}
+	var res []types.Signature
 	if rules == nil {
 		res = sigs
 	} else {
@@ -74,9 +74,15 @@ func findGoSigs(dir string) ([]types.Signature, error) {
 }
 
 func findRegoSigs(dir string) ([]types.Signature, error) {
+	regoHelpersCode, err := ioutil.ReadFile(filepath.Join(dir, "helpers.rego"))
+	if err != nil {
+		log.Printf("error reading file %s/%s: %v", dir, "helpers.rego", err)
+		return nil, err
+	}
+
 	var res []types.Signature
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if filepath.Ext(info.Name()) != ".rego" || info.IsDir() == true {
+	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if filepath.Ext(info.Name()) != ".rego" || info.IsDir() == true || info.Name() == "helpers.rego" {
 			return filepath.SkipDir
 		}
 		regoCode, err := ioutil.ReadFile(filepath.Join(dir, info.Name()))
@@ -84,7 +90,7 @@ func findRegoSigs(dir string) ([]types.Signature, error) {
 			log.Printf("error reading file %s/%s: %v", dir, info.Name(), err)
 			return filepath.SkipDir
 		}
-		sig, err := regosig.NewRegoSignature(string(regoCode))
+		sig, err := regosig.NewRegoSignature(string(regoCode), string(regoHelpersCode))
 		if err != nil {
 			log.Printf("error creating rego signature with: %s: %v ", regoCode[0:20], err)
 			return filepath.SkipDir

@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"testing"
 
+	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
 	"github.com/aquasecurity/tracee/tracee-rules/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
-	tracee "github.com/aquasecurity/tracee/tracee/external"
 )
 
 func TestGetMetadata(t *testing.T) {
@@ -25,6 +25,7 @@ __rego_metadoc__ := {
 	}
 }
 `
+
 	sig, err := NewRegoSignature(testRegoMeta)
 	if err != nil {
 		t.Error(err)

@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
-	tracee "github.com/aquasecurity/tracee/tracee/external"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
 )
@@ -31,13 +31,21 @@ const querySelectedEvents string = "data.main.tracee_selected_events"
 const queryMetadata string = "data.main.__rego_metadoc__"
 
 // NewRegoSignature creates a new RegoSignature with the provided rego code string
-func NewRegoSignature(regoCode string) (types.Signature, error) {
+func NewRegoSignature(regoCodes ...string) (types.Signature, error) {
 	var err error
 	res := RegoSignature{}
-	res.compiledRego, err = ast.CompileModules(map[string]string{"sig": regoCode})
+	regoMap := make(map[string]string)
+
+	for index, regoCode := range regoCodes {
+		regoModuleName := fmt.Sprintf("rego_%d", index)
+		regoMap[regoModuleName] = regoCode
+	}
+
+	res.compiledRego, err = ast.CompileModules(regoMap)
 	if err != nil {
 		return nil, err
 	}
+
 	res.matchPQ, err = rego.New(
 		rego.Compiler(res.compiledRego),
 		rego.Query(queryMatch),

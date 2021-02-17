@@ -1,4 +1,4 @@
-module github.com/aquasecurity/tracee
+module github.com/aquasecurity/tracee/tracee-ebpf
 
 go 1.15
 

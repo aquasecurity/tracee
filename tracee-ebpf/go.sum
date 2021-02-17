@@ -1,8 +1,4 @@
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
-github.com/aquasecurity/tracee/libbpfgo v0.0.0-20210110080840-96ed00e0dd8d h1:zggREwmmm/tM4I/yPcUSGGPMrB4zeU8gwhGYdQJW4eg=
-github.com/aquasecurity/tracee/libbpfgo v0.0.0-20210110080840-96ed00e0dd8d/go.mod h1:Ldem7RTRbX6bdTDxU2eYYvo7pPWYQbbc6rdGv0Ilyts=
-github.com/aquasecurity/tracee/libbpfgo v0.0.0-20210114172620-409f21e80531 h1:U+B2QHE7+0UZIVLCnYeUdKkDEx1G3kNH/c5/FuxMTX8=
-github.com/aquasecurity/tracee/libbpfgo v0.0.0-20210114172620-409f21e80531/go.mod h1:Ldem7RTRbX6bdTDxU2eYYvo7pPWYQbbc6rdGv0Ilyts=
 github.com/aquasecurity/tracee/libbpfgo v0.0.0-20210115081842-487d1e44fcda h1:ghWH8XcpEasEd4dfAvhLBDD+ib/DK9uJTQ2rWWHHNRI=
 github.com/aquasecurity/tracee/libbpfgo v0.0.0-20210115081842-487d1e44fcda/go.mod h1:Ldem7RTRbX6bdTDxU2eYYvo7pPWYQbbc6rdGv0Ilyts=
 github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d h1:U+s90UTSYgptZMwQh2aRr3LuazLJIa+Pg3Kc1ylSYVY=

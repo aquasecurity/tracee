@@ -18,6 +18,7 @@
 #include <uapi/linux/un.h>
 #include <uapi/linux/utsname.h>
 #include <linux/binfmts.h>
+#include <linux/cred.h>
 #include <linux/sched.h>
 #include <linux/fs.h>
 #include <linux/mm_types.h>
@@ -25,6 +26,10 @@
 #include <linux/nsproxy.h>
 #include <linux/ns_common.h>
 #include <linux/pid_namespace.h>
+#include <linux/ipc_namespace.h>
+#include <net/net_namespace.h>
+#include <linux/utsname.h>
+#include <linux/cgroup.h>
 #include <linux/security.h>
 #include <linux/socket.h>
 #include <linux/version.h>
@@ -128,7 +133,9 @@
 #define VFS_WRITEV            1008
 #define MEM_PROT_ALERT        1009
 #define SCHED_PROCESS_EXIT    1010
-#define MAX_EVENT_ID          1011
+#define COMMIT_CREDS          1011
+#define SWITCH_TASK_NS        1012
+#define MAX_EVENT_ID          1013
 
 #define CONFIG_SHOW_SYSCALL         1
 #define CONFIG_EXEC_ENV             2
@@ -277,12 +284,6 @@ struct mnt_namespace {
     // ...
 };
 
-struct uts_namespace {
-    struct kref kref;
-    struct new_utsname name;
-    // ...
-};
-
 struct mount {
     struct hlist_node mnt_hash;
     struct mount *mnt_parent;
@@ -327,14 +328,64 @@ BPF_PERF_OUTPUT(file_writes);                       // File writes events submis
 
 /*================== KERNEL VERSION DEPENDANT HELPER FUNCTIONS =================*/
 
+static __always_inline u32 get_mnt_ns_id(struct nsproxy *ns)
+{
+    return READ_KERN(READ_KERN(ns->mnt_ns)->ns.inum);
+}
+
+static __always_inline u32 get_pid_ns_id(struct nsproxy *ns)
+{
+    return READ_KERN(READ_KERN(ns->pid_ns_for_children)->ns.inum);
+}
+
+static __always_inline u32 get_uts_ns_id(struct nsproxy *ns)
+{
+    return READ_KERN(READ_KERN(ns->uts_ns)->ns.inum);
+}
+
+static __always_inline u32 get_ipc_ns_id(struct nsproxy *ns)
+{
+    return READ_KERN(READ_KERN(ns->ipc_ns)->ns.inum);
+}
+
+static __always_inline u32 get_net_ns_id(struct nsproxy *ns)
+{
+    return READ_KERN(READ_KERN(ns->net_ns)->ns.inum);
+}
+
+static __always_inline u32 get_cgroup_ns_id(struct nsproxy *ns)
+{
+    return READ_KERN(READ_KERN(ns->cgroup_ns)->ns.inum);
+}
+
 static __always_inline u32 get_task_mnt_ns_id(struct task_struct *task)
 {
-    return READ_KERN(READ_KERN(READ_KERN(task->nsproxy)->mnt_ns)->ns.inum);
+    return get_mnt_ns_id(READ_KERN(task->nsproxy));
 }
 
 static __always_inline u32 get_task_pid_ns_id(struct task_struct *task)
 {
-    return READ_KERN(READ_KERN(READ_KERN(task->nsproxy)->pid_ns_for_children)->ns.inum);
+    return get_pid_ns_id(READ_KERN(task->nsproxy));
+}
+
+static __always_inline u32 get_task_uts_ns_id(struct task_struct *task)
+{
+    return get_uts_ns_id(READ_KERN(task->nsproxy));
+}
+
+static __always_inline u32 get_task_ipc_ns_id(struct task_struct *task)
+{
+    return get_ipc_ns_id(READ_KERN(task->nsproxy));
+}
+
+static __always_inline u32 get_task_net_ns_id(struct task_struct *task)
+{
+    return get_net_ns_id(READ_KERN(task->nsproxy));
+}
+
+static __always_inline u32 get_task_cgroup_ns_id(struct task_struct *task)
+{
+    return get_cgroup_ns_id(READ_KERN(task->nsproxy));
 }
 
 static __always_inline u32 get_task_ns_pid(struct task_struct *task)
@@ -1807,6 +1858,150 @@ int BPF_KPROBE(trace_security_inode_unlink)
     save_str_to_buf(submit_p, (void *)&string_p->buf[*off], DEC_ARG(0, *tags));
 
     events_perf_submit(ctx);
+    return 0;
+}
+
+SEC("kprobe/commit_creds")
+int BPF_KPROBE(trace_commit_creds)
+{
+    if (!should_trace())
+        return 0;
+
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
+    if (submit_p == NULL)
+        return 0;
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+
+    u8 argnum = 0;
+    context_t context = init_and_save_context(ctx, submit_p, COMMIT_CREDS, 2 /*argnum*/, 0 /*ret*/);
+
+    struct cred *new = (struct cred *)PT_REGS_PARM1(ctx);
+
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    struct cred *old = (struct cred *)READ_KERN(task->real_cred);
+
+    kuid_t old_euid = READ_KERN(old->euid);
+    kuid_t new_euid = READ_KERN(new->euid);
+    kgid_t old_egid = READ_KERN(old->egid);
+    kgid_t new_egid = READ_KERN(new->egid);
+    kuid_t old_fsuid = READ_KERN(old->fsuid);
+    kuid_t new_fsuid = READ_KERN(new->fsuid);
+    kernel_cap_t old_cap_eff = READ_KERN(old->cap_effective);
+    kernel_cap_t new_cap_eff = READ_KERN(new->cap_effective);
+
+    // Currently (2021), there are ~40 capabilities in the Linux kernel which are stored in a u32 array of length 2.
+    // This might change in the (not so near) future as more capabilities will be added.
+    // For now, we use u64 to store this array in one piece
+    u64 old_cap_eff_arr = old_cap_eff.cap[1];
+    old_cap_eff_arr = (old_cap_eff_arr << 32) + old_cap_eff.cap[0];
+    u64 new_cap_eff_arr = new_cap_eff.cap[1];
+    new_cap_eff_arr = (new_cap_eff_arr << 32) + new_cap_eff.cap[0];
+
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
+    if (!tags) {
+        return -1;
+    }
+
+    if (old_euid.val != new_euid.val) {
+        argnum += save_to_submit_buf(submit_p, (void*)&old_euid.val, sizeof(int), INT_T, DEC_ARG(0, *tags));
+        argnum += save_to_submit_buf(submit_p, (void*)&new_euid.val, sizeof(int), INT_T, DEC_ARG(1, *tags));
+    }
+
+    if (old_egid.val != new_egid.val) {
+        argnum += save_to_submit_buf(submit_p, (void*)&old_egid.val, sizeof(int), INT_T, DEC_ARG(2, *tags));
+        argnum += save_to_submit_buf(submit_p, (void*)&new_egid.val, sizeof(int), INT_T, DEC_ARG(3, *tags));
+    }
+
+    if (old_fsuid.val != new_fsuid.val) {
+        argnum += save_to_submit_buf(submit_p, (void*)&old_fsuid.val, sizeof(int), INT_T, DEC_ARG(4, *tags));
+        argnum += save_to_submit_buf(submit_p, (void*)&new_fsuid.val, sizeof(int), INT_T, DEC_ARG(5, *tags));
+    }
+
+    if (old_cap_eff_arr != new_cap_eff_arr) {
+        argnum += save_to_submit_buf(submit_p, (void*)&old_cap_eff_arr, sizeof(unsigned long), ULONG_T, DEC_ARG(6, *tags));
+        argnum += save_to_submit_buf(submit_p, (void*)&new_cap_eff_arr, sizeof(unsigned long), ULONG_T, DEC_ARG(7, *tags));
+    }
+
+    if (argnum) {
+        context.argnum = argnum;
+        save_context_to_buf(submit_p, (void*)&context);
+        events_perf_submit(ctx);
+    }
+
+    return 0;
+}
+
+SEC("kprobe/switch_task_namespaces")
+int BPF_KPROBE(trace_switch_task_namespaces)
+{
+    if (!should_trace())
+        return 0;
+
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
+    if (submit_p == NULL)
+        return 0;
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+
+    u8 argnum = 0;
+    context_t context = init_and_save_context(ctx, submit_p, SWITCH_TASK_NS, 1 /*argnum*/, 0 /*ret*/);
+
+    struct task_struct *task = (struct task_struct *)PT_REGS_PARM1(ctx);
+    struct nsproxy *new = (struct nsproxy *)PT_REGS_PARM2(ctx);
+
+    if (!new)
+        return 0;
+
+    pid_t pid = READ_KERN(task->pid);
+    u32 old_mnt = get_task_mnt_ns_id(task);
+    u32 new_mnt = get_mnt_ns_id(new);
+    u32 old_pid = get_task_pid_ns_id(task);
+    u32 new_pid = get_pid_ns_id(new);
+    u32 old_uts = get_task_uts_ns_id(task);
+    u32 new_uts = get_uts_ns_id(new);
+    u32 old_ipc = get_task_ipc_ns_id(task);
+    u32 new_ipc = get_ipc_ns_id(new);
+    u32 old_net = get_task_net_ns_id(task);
+    u32 new_net = get_net_ns_id(new);
+    u32 old_cgroup = get_task_cgroup_ns_id(task);
+    u32 new_cgroup = get_cgroup_ns_id(new);
+
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
+    if (!tags) {
+        return -1;
+    }
+
+    argnum += save_to_submit_buf(submit_p, (void*)&pid, sizeof(int), INT_T, DEC_ARG(0, *tags));
+
+    if (old_mnt != new_mnt) {
+        argnum += save_to_submit_buf(submit_p, (void*)&new_mnt, sizeof(u32), UINT_T, DEC_ARG(1, *tags));
+    }
+
+    if (old_pid != new_pid) {
+        argnum += save_to_submit_buf(submit_p, (void*)&new_pid, sizeof(u32), UINT_T, DEC_ARG(2, *tags));
+    }
+
+    if (old_uts != new_uts) {
+        argnum += save_to_submit_buf(submit_p, (void*)&new_uts, sizeof(u32), UINT_T, DEC_ARG(3, *tags));
+    }
+
+    if (old_ipc != new_ipc) {
+        argnum += save_to_submit_buf(submit_p, (void*)&new_ipc, sizeof(u32), UINT_T, DEC_ARG(4, *tags));
+    }
+
+    if (old_net != new_net) {
+        argnum += save_to_submit_buf(submit_p, (void*)&new_net, sizeof(u32), UINT_T, DEC_ARG(5, *tags));
+    }
+
+    if (old_cgroup != new_cgroup) {
+        argnum += save_to_submit_buf(submit_p, (void*)&new_cgroup, sizeof(u32), UINT_T, DEC_ARG(6, *tags));
+    }
+
+    if (argnum > 1) {
+        context.argnum = argnum;
+        save_context_to_buf(submit_p, (void*)&context);
+        events_perf_submit(ctx);
+    }
+
     return 0;
 }
 

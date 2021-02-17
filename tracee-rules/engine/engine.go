@@ -4,8 +4,8 @@ import (
 	"io"
 	"log"
 
+	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
-	tracee "github.com/aquasecurity/tracee/tracee/external"
 )
 
 // Engine is a rule-engine that can process events coming from a set of input sources against a set of loaded signatures, and report the signatures' findings
@@ -48,14 +48,14 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 				es.Name = "*"
 			}
 			if es.Source == "" {
-				log.Printf("signature %s doesn't declare an input source", meta.Name)
+				engine.logger.Printf("signature %s doesn't declare an input source", meta.Name)
 			} else {
 				engine.signaturesIndex[es] = append(engine.signaturesIndex[es], sig)
 			}
 		}
 		err = sig.Init(engine.matchHandler)
 		if err != nil {
-			log.Printf("error initializing signature %s: %v", meta.Name, err)
+			engine.logger.Printf("error initializing signature %s: %v", meta.Name, err)
 			continue
 		}
 	}
@@ -103,7 +103,7 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 					}
 					for _, sel := range se {
 						if sel.Source == "tracee" {
-							sig.OnSignal(types.SignalSourceComplete("tracee"))
+							_ = sig.OnSignal(types.SignalSourceComplete("tracee"))
 							break
 						}
 					}
