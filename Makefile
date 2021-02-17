@@ -61,13 +61,19 @@ define release_docker_image
 	$(CMD_DOCKER) tag $(1) $(2) && $(CMD_DOCKER) push $(2) && echo '- `docker pull docker.io/$(2)`' >> $(release_notes);
 endef
 
+.PHONY: release
+# before running this rule ensure that git, gh, and docker are authorized to perform remote operations
+release:
+	test -n '$(RELEASE_TAG)' || (echo "missing required variable RELEASE_TAG" ; false)
+	$(CMD_GIT) tag $(RELEASE_TAG)
+	$(CMD_GIT) push origin $(RELEASE_TAG)
+	$(MAKE) release2
+
 release_notes := $(OUT_DIR)/release-notes.txt
 release_images_fat := $(PUSH_DOCKER_REPO):latest $(PUSH_DOCKER_REPO):$(PUSH_DOCKER_TAG)
 release_images_slim := $(PUSH_DOCKER_REPO):slim $(PUSH_DOCKER_REPO):slim-$(PUSH_DOCKER_TAG)
-.PHONY: release
-# before running this rule, need to authenticate git, gh, and docker tools
-release: $(OUT_ARCHIVE) $(OUT_CHECKSUMS) | docker docker-slim $(check_release_tools)
-	test -n '$(RELEASE_TAG)' || (echo "missing required variable RELEASE_TAG" ; false)
+.PHONY: release2
+release2: $(OUT_ARCHIVE) $(OUT_CHECKSUMS) docker docker-slim
 	-rm $(release_notes)
 	echo '## Changelog' > $(release_notes)
 	$(CMD_GIT) log --pretty=oneline --abbrev=commit --no-decorate --no-color tags/$(shell $(CMD_GIT) describe --tags --abbrev=0)..HEAD >> $(release_notes)
@@ -76,8 +82,6 @@ release: $(OUT_ARCHIVE) $(OUT_CHECKSUMS) | docker docker-slim $(check_release_to
 	$(foreach img,$(release_images_fat),$(call release_docker_image,$(OUT_DOCKER):latest,$(img)))
 	$(foreach img,$(release_images_slim),$(call release_docker_image,$(OUT_DOCKER):slim,$(img)))
 	echo '' >>$(release_notes)
-	$(CMD_GIT) tag $(RELEASE_TAG)
-	$(CMD_GIT) push origin $(RELEASE_TAG)
 	$(CMD_GITHUB) release create $(RELEASE_TAG) $(OUT_ARCHIVE) $(OUT_CHECKSUMS) --title $(RELEASE_TAG) --notes-file $(release_notes)
 
 .PHONY: mostlyclean
