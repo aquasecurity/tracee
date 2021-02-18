@@ -3,7 +3,26 @@ package main
 test_match_1 {
     tracee_match with input as {
         "eventName": "mem_prot_alert",
-        "argsNum": 0
+        "argsNum": 1,
+        "args": [
+            {
+                "name": "alert", 
+                "value": "Protection changed from W+E to E!"
+            }
+        ] 
+    }
+}
+
+test_match_wrong_message {
+    not tracee_match with input as {
+        "eventName": "mem_prot_alert",
+        "argsNum": 1,
+        "args": [
+            {
+                "name": "alert", 
+                "value": "Protection changed to Executable!"
+            }
+        ] 
     }
 }
 
