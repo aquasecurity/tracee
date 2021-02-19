@@ -2,8 +2,18 @@ package regosig
 
 import (
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"reflect"
+	"sort"
+	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/stretchr/testify/require"
 
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
 	"github.com/aquasecurity/tracee/tracee-rules/signatures/signaturestest"
@@ -222,5 +232,47 @@ tracee_match = res {
 		if st.Expect != st.Status {
 			t.Error("unexpected result", st)
 		}
+	}
+}
+
+func TestNewRegoSignature(t *testing.T) {
+	var testFiles []string
+	err := filepath.Walk("../examples", func(path string, info os.FileInfo, err error) error {
+		require.NoError(t, err)
+		if info.IsDir() || strings.Contains(info.Name(), "test") {
+			return nil
+		}
+		testFiles = append(testFiles, path)
+		return nil
+	})
+	require.NoError(t, err)
+	sort.Strings(testFiles) // for testability
+
+	var testRegoCodes []string
+	for _, f := range testFiles {
+		b, err := ioutil.ReadFile(f)
+		require.NoError(t, err)
+		testRegoCodes = append(testRegoCodes, string(b))
+	}
+
+	// assert basic attributes
+	for i, rc := range testRegoCodes {
+		gotSig, err := NewRegoSignature(rc)
+		require.NoError(t, err)
+
+		gotMetadata, err := gotSig.GetMetadata()
+		require.NoError(t, err)
+		assert.Equal(t, types.SignatureMetadata{
+			ID:   fmt.Sprintf("FOO-%d", i+1),
+			Name: fmt.Sprintf("example%d", i+1),
+		}, gotMetadata)
+
+		gotEvents, err := gotSig.GetSelectedEvents()
+		require.NoError(t, err)
+		assert.Equal(t, []types.SignatureEventSelector{
+			{
+				Source: "tracee",
+			},
+		}, gotEvents)
 	}
 }
