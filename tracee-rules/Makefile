@@ -1,6 +1,7 @@
 .PHONY: all
 all: build rules
 
+CMD_DOCKER ?= docker
 CMD_GO ?= go
 CMD_OPA ?= opa
 OUT_DIR ?= dist
@@ -12,6 +13,7 @@ GOSIGNATURES_SRC := $(shell find $(GOSIGNATURES_DIR) -type f -name '*.go' ! -nam
 OUT_GOSIGNATURES := $(OUT_RULES)/builtin.so
 REGO_SIGNATURES_DIR ?= signatures/rego
 REGO_SIGNATURES_SRC := $(shell find $(REGO_SIGNATURES_DIR) -type f -name '*.rego' ! -name '*_test.rego' ! -path '$(REGO_SIGNATURES_DIR)/examples/*')
+DOCKER_BUILDER ?= tracee-rules
 
 $(OUT_DIR):
 	mkdir -p $@
@@ -38,10 +40,29 @@ tools = $(CMD_OPA) $(CMD_GO)
 $(tools): % : check_%
 
 .PHONY: test
+ifndef DOCKER
 test: $(GO_SRC) $(tools)
 	go test -v ./...
 	opa test . --verbose --ignore="examples" --ignore="dist"
+else
+test: $(DOCKER_BUILDER)
+	$(call docker_builder_make,$@)
+endif
 
 .PHONY: clean mostlyclean
 clean mostlyclean:
 	-rm -rf $(OUT_DIR)
+
+# docker_builder_make runs a make command in the tracee-builder container
+define docker_builder_make
+	$(CMD_DOCKER) run --rm \
+	-v $(abspath .):/tracee/tracee-rules \
+	-w /tracee/tracee-rules \
+	--entrypoint make $(DOCKER_BUILDER) $(1)
+endef
+
+# record built image id to prevent unnecessary building and for cleanup
+docker_builder_file := $(OUT_DIR)/$(DOCKER_BUILDER)
+.PHONY: $(DOCKER_BUILDER)
+$(DOCKER_BUILDER) $(docker_builder_file) &: Dockerfile.builder | $(OUT_DIR) check_$(CMD_DOCKER)
+	$(CMD_DOCKER) build -t $(DOCKER_BUILDER) --iidfile $(docker_builder_file) - < $<

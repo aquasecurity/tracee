@@ -30,4 +30,4 @@ jobs:
       - name: Build signatures
         run: make rules
       - name: Run Tests
-        run: make test
+        run: make test DOCKER=1
