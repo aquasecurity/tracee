@@ -1,4 +1,4 @@
-package main
+package kernel_module_loading
 
 test_match_1 {
     tracee_match with input as {

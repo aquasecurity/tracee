@@ -1,4 +1,4 @@
-package main
+package anti_debugging_ptraceme
 
 test_match_1 {
     tracee_match with input as {

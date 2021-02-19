@@ -1,4 +1,4 @@
-package main
+package code_injection
 
 import data.tracee.helpers
 

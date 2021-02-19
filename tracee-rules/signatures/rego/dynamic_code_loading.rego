@@ -1,4 +1,4 @@
-package main
+package dynamic_code_loading
 
 import data.tracee.helpers
 

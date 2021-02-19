@@ -1,4 +1,4 @@
-package main
+package ld_preload
 
 test_match_1 {
     tracee_match with input as {

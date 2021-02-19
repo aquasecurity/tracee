@@ -1,4 +1,4 @@
-package main
+package kernel_module_loading
 
 __rego_metadoc__ := {
     "id": "TRC-6",

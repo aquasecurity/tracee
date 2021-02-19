@@ -1,4 +1,4 @@
-package main
+package anti_debugging_ptraceme
 
 __rego_metadoc__ := {
     "id": "TRC-2",
