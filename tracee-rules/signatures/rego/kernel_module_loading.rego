@@ -1,6 +1,7 @@
 package main
 
 __rego_metadoc__ := {
+    "id": "TRC-6",
     "name": "kernel module loading",
     "description": "Attempt to load a kernel module detection",
     "tags": ["linux", "container"],

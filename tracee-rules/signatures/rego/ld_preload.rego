@@ -3,6 +3,7 @@ package main
 import data.tracee.helpers
 
 __rego_metadoc__ := {
+    "id": "TRC-7",
     "name": "LD_PRELOAD",
     "description": "Usage of LD_PRELOAD to allow hooks on process",
     "tags": ["linux", "container"],
