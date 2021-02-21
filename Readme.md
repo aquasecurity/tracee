@@ -103,6 +103,7 @@ Alternatively, running as `root` or with the `--privileged` flag of Docker, is a
 
 In order to compile the eBPF program, Tracee needs some of the Linux kernel headers. Depending on your Linux distribution, there may be different ways to obtain them.  
 
+- On Docker for MAC follow the [following guidelines](docker-mac.md).
 - On Ubuntu/Debian/Arch/Manjaro install the `linux-headers` package.
 - On CentOS/Fedora install the `kernel-headers` and `kernel-devel` packages.
 
