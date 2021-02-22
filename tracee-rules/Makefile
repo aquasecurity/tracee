@@ -61,7 +61,6 @@ define docker_builder_make
 	--entrypoint make $(DOCKER_BUILDER) $(1)
 endef
 
-# record built image id to prevent unnecessary building and for cleanup
 docker_builder_file := $(OUT_DIR)/$(DOCKER_BUILDER)
 .PHONY: $(DOCKER_BUILDER)
 $(DOCKER_BUILDER) $(docker_builder_file) &: Dockerfile.builder | $(OUT_DIR) check_$(CMD_DOCKER)
