@@ -23,7 +23,7 @@ Exceptions:
 ### Quickstart with Docker
 
 ```bash
-docker run --name tracee --rm --privileged --pid=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee aquasec/tracee:latest
+docker run -it --name tracee --rm --privileged --pid=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee aquasec/tracee:latest trace
 ```
 
 > Note: You may need to change the volume mounts for the kernel headers based on your setup. See [Linux Headers](#Linux-Headers) section for info.
