@@ -1,4 +1,4 @@
-package example1
+package FOO_1
 
 test_match_1 {
     tracee_match with input as {

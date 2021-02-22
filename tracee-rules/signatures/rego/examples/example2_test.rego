@@ -1,4 +1,4 @@
-package example2
+package FOO_2
 
 test_match_1 {
     tracee_match == { "Severity": 1 } with input as {

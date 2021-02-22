@@ -1,4 +1,4 @@
-package kernel_module_loading
+package tracee.TRC_6
 
 __rego_metadoc__ := {
     "id": "TRC-6",

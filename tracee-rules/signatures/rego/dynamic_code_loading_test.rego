@@ -1,4 +1,4 @@
-package dynamic_code_loading
+package tracee.TRC_4
 
 test_match_1 {
     tracee_match with input as {

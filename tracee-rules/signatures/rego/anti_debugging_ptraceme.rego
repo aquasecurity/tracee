@@ -1,4 +1,4 @@
-package anti_debugging_ptraceme
+package tracee.TRC_2
 
 __rego_metadoc__ := {
     "id": "TRC-2",

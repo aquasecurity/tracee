@@ -1,4 +1,4 @@
-package example1
+package FOO_1
 
 __rego_metadoc__ := {
 	"id": "FOO-1",

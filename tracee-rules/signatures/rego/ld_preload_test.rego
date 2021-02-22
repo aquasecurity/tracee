@@ -1,4 +1,4 @@
-package ld_preload
+package tracee.TRC_7
 
 test_match_1 {
     tracee_match with input as {
