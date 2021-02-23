@@ -13,7 +13,7 @@ GOSIGNATURES_SRC := $(shell find $(GOSIGNATURES_DIR) -type f -name '*.go' ! -nam
 OUT_GOSIGNATURES := $(OUT_RULES)/builtin.so
 REGO_SIGNATURES_DIR ?= signatures/rego
 REGO_SIGNATURES_SRC := $(shell find $(REGO_SIGNATURES_DIR) -type f -name '*.rego' ! -name '*_test.rego' ! -path '$(REGO_SIGNATURES_DIR)/examples/*')
-DOCKER_BUILDER ?= tracee-rules
+DOCKER_BUILDER ?= tracee-rules-builder
 
 $(OUT_DIR):
 	mkdir -p $@
@@ -51,6 +51,7 @@ endif
 
 .PHONY: clean mostlyclean
 clean mostlyclean:
+	-$(CMD_DOCKER) rmi $(file < $(docker_builder_file))
 	-rm -rf $(OUT_DIR)
 
 # docker_builder_make runs a make command in the tracee-builder container
