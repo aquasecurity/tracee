@@ -44,6 +44,7 @@ func setupOutput(resultWriter io.Writer, clock Clock, webhook string) (chan type
 				fmt.Fprintf(resultWriter, DetectionOutput, clock.Now().UTC().Format(time.RFC3339), sigMetadata.Name, processName, processID, parentProcessID, hostName, eventName)
 			default:
 				log.Printf("unsupported event detected: %T\n", res.Context)
+				continue
 			}
 
 			if webhook != "" {
