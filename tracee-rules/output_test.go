@@ -59,7 +59,7 @@ func Test_setupOutput(t *testing.T) {
 	time.Sleep(time.Millisecond)
 	assert.Equal(t, `
 *** Detection ***
-Time: 1614045297
+Time: 2021-02-23T01:54:57Z
 Signature: foo bar signature
 ProcessName: foobar.exe
 ProcessID: 5678

@@ -15,7 +15,7 @@ import (
 
 const DetectionOutput string = `
 *** Detection ***
-Time: %d
+Time: %s
 Signature: %s
 ProcessName: %s
 ProcessID: %d
@@ -34,15 +34,18 @@ func setupOutput(resultWriter io.Writer, clock Clock, webhook string) (chan type
 				continue
 			}
 
-			// TODO: Why is types.Finding.Context an interface?
-			// Can it not be a concrete type like tracee.Event?
-			processName := res.Context.(tracee.Event).ProcessName
-			processID := res.Context.(tracee.Event).ProcessID
-			parentProcessID := res.Context.(tracee.Event).ParentProcessID
-			hostName := res.Context.(tracee.Event).HostName
-			eventName := res.Context.(tracee.Event).EventName
+			switch res.Context.(type) {
+			case tracee.Event:
+				processName := res.Context.(tracee.Event).ProcessName
+				processID := res.Context.(tracee.Event).ProcessID
+				parentProcessID := res.Context.(tracee.Event).ParentProcessID
+				hostName := res.Context.(tracee.Event).HostName
+				eventName := res.Context.(tracee.Event).EventName
+				fmt.Fprintf(resultWriter, DetectionOutput, clock.Now().UTC().Format(time.RFC3339), sigMetadata.Name, processName, processID, parentProcessID, hostName, eventName)
+			default:
+				log.Printf("unsupported event detected: %T\n", res.Context)
+			}
 
-			fmt.Fprintf(resultWriter, DetectionOutput, clock.Now().Unix(), sigMetadata.Name, processName, processID, parentProcessID, hostName, eventName)
 			if webhook != "" {
 				payload, err := prepareJSONPayload(res)
 				if err != nil {
