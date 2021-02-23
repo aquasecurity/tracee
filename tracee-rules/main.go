@@ -7,10 +7,22 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
 	"github.com/urfave/cli/v2"
 )
+
+type Clock interface {
+	Now() time.Time
+}
+
+type realClock struct {
+}
+
+func (realClock) Now() time.Time {
+	return time.Now()
+}
 
 func main() {
 	app := &cli.App{
@@ -56,7 +68,7 @@ func main() {
 			if inputs == (engine.EventSources{}) {
 				return err
 			}
-			output, err := setupOutput(c.String("webhook"))
+			output, err := setupOutput(os.Stdout, realClock{}, c.String("webhook"))
 			if err != nil {
 				return err
 			}
