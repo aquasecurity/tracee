@@ -1,8 +1,9 @@
-package main
+package tracee.TRC_5
 
 import data.tracee.helpers
 
 __rego_metadoc__ := {
+    "id": "TRC-5",
     "name": "Fileless Execution",
     "description": "Executing a precess from memory, without a file in the disk",
     "tags": ["linux", "container"],

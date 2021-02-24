@@ -1,6 +1,7 @@
-package main
+package tracee.TRC_6
 
 __rego_metadoc__ := {
+    "id": "TRC-6",
     "name": "kernel module loading",
     "description": "Attempt to load a kernel module detection",
     "tags": ["linux", "container"],

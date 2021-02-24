@@ -28,13 +28,13 @@ func main() {
 				return err
 			}
 			if c.Bool("list") {
-				fmt.Printf("%-30s %s\n", "RULE NAME", "DESCRIPTION")
+				fmt.Printf("%-10s %-35s %s\n", "ID", "NAME", "DESCRIPTION")
 				for _, sig := range sigs {
 					meta, err := sig.GetMetadata()
 					if err != nil {
 						continue
 					}
-					fmt.Printf("%-30s %s\n", meta.Name, meta.Description)
+					fmt.Printf("%-10s %-35s %s\n", meta.ID, meta.Name, meta.Description)
 				}
 				return nil
 			}

@@ -1,10 +1,11 @@
-package main
+package tracee.TRC_4
 
 import data.tracee.helpers
 
 __rego_metadoc__ := {
+    "id": "TRC-4",
     "name": "Dynamic Code Loading",
-    "description": "writing to executable allocated memory region",
+    "description": "Writing to executable allocated memory region",
     "tags": ["linux", "container"],
     "properties": {
         "Severity": 2,

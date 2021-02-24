@@ -1,8 +1,9 @@
-package main
+package tracee.TRC_3
 
 import data.tracee.helpers
 
 __rego_metadoc__ := {
+    "id": "TRC-3",
     "name": "Code injection",
     "description": "Possible code injection into another process",
     "tags": ["linux", "container"],

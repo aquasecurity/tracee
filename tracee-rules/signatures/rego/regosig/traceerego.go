@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strings"
 
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
@@ -26,9 +28,10 @@ type RegoSignature struct {
 	selectedEvents []types.SignatureEventSelector
 }
 
-const queryMatch string = "data.main.tracee_match"
-const querySelectedEvents string = "data.main.tracee_selected_events"
-const queryMetadata string = "data.main.__rego_metadoc__"
+const queryMatch string = "data.%s.tracee_match"
+const querySelectedEvents string = "data.%s.tracee_selected_events"
+const queryMetadata string = "data.%s.__rego_metadoc__"
+const packageNameRegex string = `package\s.*`
 
 // NewRegoSignature creates a new RegoSignature with the provided rego code string
 func NewRegoSignature(regoCodes ...string) (types.Signature, error) {
@@ -36,8 +39,14 @@ func NewRegoSignature(regoCodes ...string) (types.Signature, error) {
 	res := RegoSignature{}
 	regoMap := make(map[string]string)
 
-	for index, regoCode := range regoCodes {
-		regoModuleName := fmt.Sprintf("rego_%d", index)
+	re := regexp.MustCompile(packageNameRegex)
+
+	var pkgName string
+	for _, regoCode := range regoCodes {
+		regoModuleName := strings.Split(re.FindString(regoCode), " ")[1]
+		if !strings.Contains(regoCode, "package tracee.helpers") {
+			pkgName = regoModuleName
+		}
 		regoMap[regoModuleName] = regoCode
 	}
 
@@ -48,16 +57,16 @@ func NewRegoSignature(regoCodes ...string) (types.Signature, error) {
 
 	res.matchPQ, err = rego.New(
 		rego.Compiler(res.compiledRego),
-		rego.Query(queryMatch),
+		rego.Query(fmt.Sprintf(queryMatch, pkgName)),
 	).PrepareForEval(context.TODO())
 	if err != nil {
 		return nil, err
 	}
-	res.metadata, err = res.getMetadata()
+	res.metadata, err = res.getMetadata(pkgName)
 	if err != nil {
 		return nil, err
 	}
-	res.selectedEvents, err = res.getSelectedEvents()
+	res.selectedEvents, err = res.getSelectedEvents(pkgName)
 	if err != nil {
 		return nil, err
 	}
@@ -77,8 +86,8 @@ func (sig *RegoSignature) GetMetadata() (types.SignatureMetadata, error) {
 	return sig.metadata, nil
 }
 
-func (sig *RegoSignature) getMetadata() (types.SignatureMetadata, error) {
-	evalRes, err := sig.evalQuery(queryMetadata)
+func (sig *RegoSignature) getMetadata(pkgName string) (types.SignatureMetadata, error) {
+	evalRes, err := sig.evalQuery(fmt.Sprintf(queryMetadata, pkgName))
 	if err != nil {
 		return types.SignatureMetadata{}, err
 	}
@@ -102,8 +111,8 @@ func (sig *RegoSignature) GetSelectedEvents() ([]types.SignatureEventSelector, e
 	return sig.selectedEvents, nil
 }
 
-func (sig *RegoSignature) getSelectedEvents() ([]types.SignatureEventSelector, error) {
-	evalRes, err := sig.evalQuery(querySelectedEvents)
+func (sig *RegoSignature) getSelectedEvents(pkgName string) ([]types.SignatureEventSelector, error) {
+	evalRes, err := sig.evalQuery(fmt.Sprintf(querySelectedEvents, pkgName))
 	if err != nil {
 		return nil, err
 	}

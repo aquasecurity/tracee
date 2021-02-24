@@ -1,4 +1,4 @@
-package main
+package tracee.TRC_3
 
 test_match_1 {
     tracee_match with input as {

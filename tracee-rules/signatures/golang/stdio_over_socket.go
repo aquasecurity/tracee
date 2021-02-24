@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
@@ -20,6 +21,7 @@ func (sig *stdioOverSocket) Init(cb types.SignatureHandler) error {
 
 func (sig *stdioOverSocket) GetMetadata() (types.SignatureMetadata, error) {
 	return types.SignatureMetadata{
+		ID:          "TRC-1",
 		Name:        "Standard Input/Output Over Socket",
 		Description: "Redirection of process's standard input/output to socket",
 		Tags:        []string{"linux", "container"},
