@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -12,11 +13,36 @@ import (
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
-func setupOutput(webhook string) (chan types.Finding, error) {
+const DetectionOutput string = `
+*** Detection ***
+Time: %s
+Signature ID: %s
+Signature: %s
+Data: %s
+Command: %s
+Hostname: %s
+`
+
+func setupOutput(resultWriter io.Writer, clock Clock, webhook string) (chan types.Finding, error) {
 	out := make(chan types.Finding)
 	go func() {
 		for res := range out {
-			fmt.Printf("%+v\n", res)
+			sigMetadata, err := res.Signature.GetMetadata()
+			if err != nil {
+				log.Println("invalid signature metadata: ", err)
+				continue
+			}
+
+			switch res.Context.(type) {
+			case tracee.Event:
+				command := res.Context.(tracee.Event).ProcessName
+				hostName := res.Context.(tracee.Event).HostName
+				fmt.Fprintf(resultWriter, DetectionOutput, clock.Now().UTC().Format(time.RFC3339), sigMetadata.ID, sigMetadata.Name, res.Data, command, hostName)
+			default:
+				log.Printf("unsupported event detected: %T\n", res.Context)
+				continue
+			}
+
 			if webhook != "" {
 				payload, err := prepareJSONPayload(res)
 				if err != nil {
