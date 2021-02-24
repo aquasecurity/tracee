@@ -16,13 +16,11 @@ import (
 const DetectionOutput string = `
 *** Detection ***
 Time: %s
-SignatureID: %s
+Signature ID: %s
 Signature: %s
-ProcessName: %s
-ProcessID: %d
-ParentProcessID: %d
+Data: %s
+Command: %s
 Hostname: %s
-EventName: %s
 `
 
 func setupOutput(resultWriter io.Writer, clock Clock, webhook string) (chan types.Finding, error) {
@@ -37,12 +35,9 @@ func setupOutput(resultWriter io.Writer, clock Clock, webhook string) (chan type
 
 			switch res.Context.(type) {
 			case tracee.Event:
-				processName := res.Context.(tracee.Event).ProcessName
-				processID := res.Context.(tracee.Event).ProcessID
-				parentProcessID := res.Context.(tracee.Event).ParentProcessID
+				command := res.Context.(tracee.Event).ProcessName
 				hostName := res.Context.(tracee.Event).HostName
-				eventName := res.Context.(tracee.Event).EventName
-				fmt.Fprintf(resultWriter, DetectionOutput, clock.Now().UTC().Format(time.RFC3339), sigMetadata.ID, sigMetadata.Name, processName, processID, parentProcessID, hostName, eventName)
+				fmt.Fprintf(resultWriter, DetectionOutput, clock.Now().UTC().Format(time.RFC3339), sigMetadata.ID, sigMetadata.Name, res.Data, command, hostName)
 			default:
 				log.Printf("unsupported event detected: %T\n", res.Context)
 				continue

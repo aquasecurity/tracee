@@ -41,31 +41,18 @@ func Test_setupOutput(t *testing.T) {
 		{
 			name: "happy path with tracee event",
 			inputContext: external.Event{
-				Timestamp:       12345678,
-				ParentProcessID: 1234,
-				ProcessID:       5678,
-				ProcessName:     "foobar.exe",
-				HostName:        "foobar.local",
-				EventName:       "ptrace",
-				Args: []external.Argument{
-					{
-						ArgMeta: external.ArgMeta{
-							Name: "request",
-						},
-						Value: "PTRACE_TRACEME",
-					},
-				},
+				Timestamp:   12345678,
+				ProcessName: "foobar.exe",
+				HostName:    "foobar.local",
 			},
 			expectedOutput: `
 *** Detection ***
 Time: 2021-02-23T01:54:57Z
-SignatureID: FOO-666
+Signature ID: FOO-666
 Signature: foo bar signature
-ProcessName: foobar.exe
-ProcessID: 5678
-ParentProcessID: 1234
+Data: map[foo1:bar1, baz1 foo2:[bar2 baz2]]
+Command: foobar.exe
 Hostname: foobar.local
-EventName: ptrace
 `,
 		},
 		{
@@ -83,7 +70,10 @@ EventName: ptrace
 		require.NoError(t, err, tc.name)
 
 		findingCh <- types.Finding{
-			Data:      nil,
+			Data: map[string]interface{}{
+				"foo1": "bar1, baz1",
+				"foo2": []string{"bar2", "baz2"},
+			},
 			Context:   tc.inputContext,
 			Signature: fakeSignature{},
 		}
