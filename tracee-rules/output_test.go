@@ -26,6 +26,7 @@ type fakeSignature struct {
 
 func (f fakeSignature) GetMetadata() (types.SignatureMetadata, error) {
 	return types.SignatureMetadata{
+		ID:          "FOO-666",
 		Name:        "foo bar signature",
 		Description: "the most evil",
 	}, nil
@@ -58,6 +59,7 @@ func Test_setupOutput(t *testing.T) {
 			expectedOutput: `
 *** Detection ***
 Time: 2021-02-23T01:54:57Z
+SignatureID: FOO-666
 Signature: foo bar signature
 ProcessName: foobar.exe
 ProcessID: 5678

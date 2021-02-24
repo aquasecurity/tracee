@@ -16,6 +16,7 @@ import (
 const DetectionOutput string = `
 *** Detection ***
 Time: %s
+SignatureID: %s
 Signature: %s
 ProcessName: %s
 ProcessID: %d
@@ -41,7 +42,7 @@ func setupOutput(resultWriter io.Writer, clock Clock, webhook string) (chan type
 				parentProcessID := res.Context.(tracee.Event).ParentProcessID
 				hostName := res.Context.(tracee.Event).HostName
 				eventName := res.Context.(tracee.Event).EventName
-				fmt.Fprintf(resultWriter, DetectionOutput, clock.Now().UTC().Format(time.RFC3339), sigMetadata.Name, processName, processID, parentProcessID, hostName, eventName)
+				fmt.Fprintf(resultWriter, DetectionOutput, clock.Now().UTC().Format(time.RFC3339), sigMetadata.ID, sigMetadata.Name, processName, processID, parentProcessID, hostName, eventName)
 			default:
 				log.Printf("unsupported event detected: %T\n", res.Context)
 				continue
