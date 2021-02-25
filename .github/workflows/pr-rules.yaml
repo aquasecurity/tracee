@@ -29,5 +29,5 @@ jobs:
         run: make build
       - name: Build signatures
         run: make rules
-      - name: Test
-        run: make test
+      - name: Run Tests
+        run: make test DOCKER=1
