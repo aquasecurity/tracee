@@ -44,24 +44,29 @@ func setupOutput(resultWriter io.Writer, clock Clock, webhook string) (chan type
 			}
 
 			if webhook != "" {
-				payload, err := prepareJSONPayload(res)
-				if err != nil {
-					log.Printf("error preparing json payload for %v: %v", res, err)
-					continue
+				if err := sendToWebhook(res, webhook, realClock{}); err != nil {
+					log.Println(err)
 				}
-				resp, err := http.Post(webhook, "application/json", strings.NewReader(payload))
-				if err != nil {
-					log.Printf("error calling webhook for %v: %v", res, err)
-					continue
-				}
-				resp.Body.Close()
 			}
 		}
 	}()
 	return out, nil
 }
 
-func prepareJSONPayload(res types.Finding) (string, error) {
+func sendToWebhook(res types.Finding, webhook string, clock Clock) error {
+	payload, err := prepareJSONPayload(res, clock)
+	if err != nil {
+		return fmt.Errorf("error preparing json payload for %v: %v", res, err)
+	}
+	resp, err := http.Post(webhook, "application/json", strings.NewReader(payload))
+	if err != nil {
+		return fmt.Errorf("error calling webhook for %v: %v", res, err)
+	}
+	resp.Body.Close()
+	return nil
+}
+
+func prepareJSONPayload(res types.Finding, clock Clock) (string, error) {
 	// compatible with Falco webhook format, for easy integration with "falcosecurity/falcosidekick"
 	// https://github.com/falcosecurity/falcosidekick/blob/e6b893f612e92352ba700bed9a19f1ec2cd18260/types/types.go#L12
 	type Payload struct {
@@ -82,7 +87,7 @@ func prepareJSONPayload(res types.Finding) (string, error) {
 	payload := Payload{
 		Output:       fmt.Sprintf("Rule \"%s\" detection:\n %v", sigmeta.Name, res.Data),
 		Rule:         sigmeta.Name,
-		Time:         time.Now(),
+		Time:         clock.Now(),
 		OutputFields: fields,
 	}
 	payloadJSON, err := json.Marshal(payload)

@@ -2,6 +2,9 @@ package main
 
 import (
 	"bytes"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -81,4 +84,32 @@ Hostname: foobar.local
 		time.Sleep(time.Millisecond)
 		assert.Equal(t, tc.expectedOutput, actualOutput.String(), tc.name)
 	}
+}
+
+func Test_sendToWebhook(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		got, _ := ioutil.ReadAll(request.Body)
+		assert.JSONEq(t, `{
+	"output": "Rule \"foo bar signature\" detection:\n map[foo1:bar1, baz1 foo2:[bar2 baz2]]",
+	"rule": "foo bar signature",
+	"time": "2021-02-22T17:54:57-08:00",
+	"output_fields": {
+		"value": 0
+	}
+}`, string(got))
+	}))
+	defer ts.Close()
+
+	sendToWebhook(types.Finding{
+		Data: map[string]interface{}{
+			"foo1": "bar1, baz1",
+			"foo2": []string{"bar2", "baz2"},
+		},
+		Context: external.Event{
+			Timestamp:   12345678,
+			ProcessName: "foobar.exe",
+			HostName:    "foobar.local",
+		},
+		Signature: fakeSignature{},
+	}, ts.URL, fakeClock{})
 }
