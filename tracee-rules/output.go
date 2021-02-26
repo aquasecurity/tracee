@@ -1,12 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"path/filepath"
 	"strings"
+	"text/template"
 	"time"
 
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
@@ -23,7 +26,7 @@ Command: %s
 Hostname: %s
 `
 
-func setupOutput(resultWriter io.Writer, clock Clock, webhook string) (chan types.Finding, error) {
+func setupOutput(resultWriter io.Writer, clock Clock, webhook string, webhookTemplate string) (chan types.Finding, error) {
 	out := make(chan types.Finding)
 	go func() {
 		for res := range out {
@@ -44,7 +47,7 @@ func setupOutput(resultWriter io.Writer, clock Clock, webhook string) (chan type
 			}
 
 			if webhook != "" {
-				if err := sendToWebhook(res, webhook, realClock{}); err != nil {
+				if err := sendToWebhook(res, webhook, webhookTemplate, realClock{}); err != nil {
 					log.Println(err)
 				}
 			}
@@ -53,11 +56,35 @@ func setupOutput(resultWriter io.Writer, clock Clock, webhook string) (chan type
 	return out, nil
 }
 
-func sendToWebhook(res types.Finding, webhook string, clock Clock) error {
-	payload, err := prepareJSONPayload(res, clock)
-	if err != nil {
-		return fmt.Errorf("error preparing json payload for %v: %v", res, err)
+func sendToWebhook(res types.Finding, webhook string, webhookTemplate string, clock Clock) error {
+	var payload string
+
+	switch {
+	case webhookTemplate != "":
+		t, err := template.New(filepath.Base(webhookTemplate)).
+			Funcs(map[string]interface{}{
+				"unixToRFC3339": func(unixTs float64) string {
+					return time.Unix(int64(unixTs), 0).UTC().Format("2006-01-02T15:04:05Z")
+				},
+			}).ParseFiles(webhookTemplate)
+		if err != nil {
+			return fmt.Errorf("error preparing webhook template %v", err)
+		}
+
+		buf := bytes.Buffer{}
+		if err := t.Execute(&buf, res); err != nil {
+			return fmt.Errorf("error writing to the template: %v", err)
+		}
+		payload = buf.String()
+
+	default:
+		var err error
+		payload, err = prepareJSONPayload(res, clock)
+		if err != nil {
+			return fmt.Errorf("error preparing json payload for %v: %v", res, err)
+		}
 	}
+
 	resp, err := http.Post(webhook, "application/json", strings.NewReader(payload))
 	if err != nil {
 		return fmt.Errorf("error calling webhook for %v: %v", res, err)

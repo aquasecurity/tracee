@@ -69,7 +69,7 @@ Hostname: foobar.local
 
 	for _, tc := range testCases {
 		var actualOutput bytes.Buffer
-		findingCh, err := setupOutput(&actualOutput, fakeClock{}, "")
+		findingCh, err := setupOutput(&actualOutput, fakeClock{}, "", "")
 		require.NoError(t, err, tc.name)
 
 		findingCh <- types.Finding{
@@ -87,29 +87,46 @@ Hostname: foobar.local
 }
 
 func Test_sendToWebhook(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		got, _ := ioutil.ReadAll(request.Body)
-		assert.JSONEq(t, `{
-	"output": "Rule \"foo bar signature\" detection:\n map[foo1:bar1, baz1 foo2:[bar2 baz2]]",
-	"rule": "foo bar signature",
-	"time": "2021-02-22T17:54:57-08:00",
-	"output_fields": {
-		"value": 0
+	var testCases = []struct {
+		name           string
+		inputTemplate  string
+		expectedOutput string
+	}{
+		{
+			name:           "happy path, no template JSON output",
+			expectedOutput: `{"output":"Rule \"foo bar signature\" detection:\n map[foo1:bar1, baz1 foo2:[bar2 baz2]]","rule":"foo bar signature","time":"2021-02-22T17:54:57-08:00","output_fields":{"value":0}}`,
+		},
+		{
+			name: "happy path, with simple template",
+			expectedOutput: `*** Detection ***
+Timestamp: 2021-02-27T07:19:07Z
+ProcessName: foobar.exe
+HostName: foobar.local
+`,
+			inputTemplate: "templates/simple.tmpl",
+		},
 	}
-}`, string(got))
-	}))
-	defer ts.Close()
 
-	sendToWebhook(types.Finding{
-		Data: map[string]interface{}{
-			"foo1": "bar1, baz1",
-			"foo2": []string{"bar2", "baz2"},
-		},
-		Context: external.Event{
-			Timestamp:   12345678,
-			ProcessName: "foobar.exe",
-			HostName:    "foobar.local",
-		},
-		Signature: fakeSignature{},
-	}, ts.URL, fakeClock{})
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+				got, _ := ioutil.ReadAll(request.Body)
+				assert.Equal(t, tc.expectedOutput, string(got), tc.name)
+			}))
+			defer ts.Close()
+
+			assert.NoError(t, sendToWebhook(types.Finding{
+				Data: map[string]interface{}{
+					"foo1": "bar1, baz1",
+					"foo2": []string{"bar2", "baz2"},
+				},
+				Context: external.Event{
+					Timestamp:   1614410347,
+					ProcessName: "foobar.exe",
+					HostName:    "foobar.local",
+				},
+				Signature: fakeSignature{},
+			}, ts.URL, tc.inputTemplate, fakeClock{}), tc.name)
+		})
+	}
 }
