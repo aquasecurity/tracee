@@ -120,6 +120,15 @@ HostName: foobar.local
 			inputTemplateFile: "templates/csv.tmpl",
 		},
 		{
+			name: "happy path, with XML template",
+			expectedOutput: `<?xml version="1.0" encoding="UTF-8" ?>
+ <detection timestamp="2021-02-27T07:19:07Z">
+    <processname>foobar.exe</processname>
+    <hostname>foobar.local</hostname>
+ </detection>`,
+			inputTemplateFile: "templates/xml.tmpl",
+		},
+		{
 			name: "sad path, with failing GetMetadata func for sig",
 			inputSignature: fakeSignature{
 				getMetadata: func() (types.SignatureMetadata, error) {
