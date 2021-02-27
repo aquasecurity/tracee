@@ -115,6 +115,11 @@ HostName: foobar.local
 			inputTemplateFile: "templates/simple.tmpl",
 		},
 		{
+			name:              "happy path, with CSV template",
+			expectedOutput:    `2021-02-27T07:19:07Z,foobar.exe,foobar.local`,
+			inputTemplateFile: "templates/csv.tmpl",
+		},
+		{
 			name: "sad path, with failing GetMetadata func for sig",
 			inputSignature: fakeSignature{
 				getMetadata: func() (types.SignatureMetadata, error) {
