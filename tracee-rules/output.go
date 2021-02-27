@@ -68,7 +68,7 @@ func sendToWebhook(res types.Finding, webhook string, webhookTemplate string, cl
 				},
 			}).ParseFiles(webhookTemplate)
 		if err != nil {
-			return fmt.Errorf("error preparing webhook template %v", err)
+			return fmt.Errorf("error preparing webhook template: %v", err)
 		}
 
 		buf := bytes.Buffer{}
@@ -81,15 +81,15 @@ func sendToWebhook(res types.Finding, webhook string, webhookTemplate string, cl
 		var err error
 		payload, err = prepareJSONPayload(res, clock)
 		if err != nil {
-			return fmt.Errorf("error preparing json payload for %v: %v", res, err)
+			return fmt.Errorf("error preparing json payload: %v", err)
 		}
 	}
 
 	resp, err := http.Post(webhook, "application/json", strings.NewReader(payload))
 	if err != nil {
-		return fmt.Errorf("error calling webhook for %v: %v", res, err)
+		return fmt.Errorf("error calling webhook %v", err)
 	}
-	resp.Body.Close()
+	_ = resp.Body.Close()
 	return nil
 }
 
