@@ -33,6 +33,8 @@ This will:
 
 When a detection is made by any of the signatures, it will be printed to stdout. Using the `--webhook` flag you can post detections into an HTTP endpoint that can further relay the detection.
 
+You can also use a custom template (or use a pre-supplied one) to further tune your webhook detection output. This can be passed in via the `--webhook-template` flag.
+
 # Rules
 Rules are discovered from the local `rules` directory (unless changed by the `--rules-dir` flag). By default, all discovered rules will be loaded unless specific rules are selected using the `--rules` flag.
 
