@@ -103,7 +103,7 @@ func Test_sendToWebhook(t *testing.T) {
 	}{
 		{
 			name:           "happy path, no template JSON output",
-			expectedOutput: `{"output":"Rule \"foo bar signature\" detection:\n map[foo1:bar1, baz1 foo2:[bar2 baz2]]","rule":"foo bar signature","time":"2021-02-22T17:54:57-08:00","output_fields":{"value":0}}`,
+			expectedOutput: `{"output":"Rule \"foo bar signature\" detection:\n map[foo1:bar1, baz1 foo2:[bar2 baz2]]","rule":"foo bar signature","time":"2021-02-23T01:54:57Z","output_fields":{"value":0}}`,
 		},
 		{
 			name: "happy path, with simple template",

@@ -114,7 +114,7 @@ func prepareJSONPayload(res types.Finding, clock Clock) (string, error) {
 	payload := Payload{
 		Output:       fmt.Sprintf("Rule \"%s\" detection:\n %v", sigmeta.Name, res.Data),
 		Rule:         sigmeta.Name,
-		Time:         clock.Now(),
+		Time:         clock.Now().UTC(),
 		OutputFields: fields,
 	}
 	payloadJSON, err := json.Marshal(payload)
