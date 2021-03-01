@@ -280,6 +280,11 @@ func New(cfg Config) (*Tracee, error) {
 		t.eventsToTrace[e] = true
 	}
 
+	if t.eventsToTrace[MagicWriteEventID] {
+		setEssential(VfsWriteEventID)
+		setEssential(VfsWritevEventID)
+	}
+
 	// Compile final list of events to trace including essential events
 	for id, event := range EventsIDToEvent {
 		// If an essential event was not requested by the user, set its map value to false
