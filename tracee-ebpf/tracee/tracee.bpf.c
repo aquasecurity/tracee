@@ -53,7 +53,7 @@
 #define MAX_STRING_SIZE     4096          // Choosing this value to be the same as PATH_MAX
 #define MAX_BYTES_ARR_SIZE  4096          // Max size of bytes array, arbitrarily chosen
 #define MAX_STR_ARR_ELEM    40            // String array elements number should be bounded due to instructions limit
-#define MAX_PATH_PREF_SIZE  50            // Max path prefix should be bounded due to instructions limit
+#define MAX_PATH_PREF_SIZE  64            // Max path prefix should be bounded due to instructions limit
 #define MAX_STACK_ADDRESSES 1024          // Max amount of different stack trace addresses to buffer in the Map
 #define MAX_STACK_DEPTH     20            // Max depth of each stack trace to track
 #define MAX_STR_FILTER_SIZE 16            // Max string filter size should be bounded to the size of the compared values (comm, uts)
@@ -2179,8 +2179,6 @@ int BPF_KPROBE(send_bin)
 static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id, u32 tail_call_id)
 {
     args_t saved_args;
-    bool has_filter = false;
-    bool filter_match = false;
 
     bool delete_args = false;
     if (load_args(&saved_args, delete_args, event_id) != 0) {
@@ -2199,30 +2197,7 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
     if (off == NULL)
         return -1;
 
-    // Check if capture write was requested for this path
-    #pragma unroll
-    for (int i = 0; i < 3; i++) {
-        int idx = i;
-        path_filter_t *filter_p = bpf_map_lookup_elem(&file_filter, &idx);
-        if (filter_p == NULL)
-            return -1;
-
-        if (!filter_p->path[0])
-            break;
-
-        has_filter = true;
-
-        if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
-            break;
-
-        if (has_prefix(filter_p->path, &string_p->buf[*off], MAX_PATH_PREF_SIZE)) {
-            filter_match = true;
-            break;
-        }
-    }
-
-    // Submit vfs_write(v) event if it was chosen, or in case of a filter match (so we can get written_files metadata)
-    if (event_chosen(VFS_WRITE) || event_chosen(VFS_WRITEV) || filter_match) {
+    if (event_chosen(VFS_WRITE) || event_chosen(VFS_WRITEV)) {
         loff_t start_pos;
         size_t count;
         unsigned long vlen;
@@ -2231,7 +2206,6 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
         if (submit_p == NULL)
             return 0;
         set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
-
         init_and_save_context(ctx, submit_p, event_id, 5 /*argnum*/, PT_REGS_RC(ctx));
 
         if (event_id == VFS_WRITE) {
@@ -2269,13 +2243,6 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
         events_perf_submit(ctx);
     }
 
-    if (has_filter && !filter_match) {
-        // There is a filter, but no match
-        del_args(event_id);
-        return 0;
-    }
-
-    // No filter was given, or filter match - continue
     bpf_tail_call(ctx, &prog_array, tail_call_id);
     return 0;
 }
@@ -2290,6 +2257,8 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
     size_t count;
     struct iovec *vec;
     unsigned long vlen;
+    bool has_filter = false;
+    bool filter_match = false;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
@@ -2322,6 +2291,35 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
     u32 *off = get_buf_off(STRING_BUF_IDX);
     if (off == NULL)
         return -1;
+
+    // Check if capture write was requested for this path
+    #pragma unroll
+    for (int i = 0; i < 3; i++) {
+        int idx = i;
+        path_filter_t *filter_p = bpf_map_lookup_elem(&file_filter, &idx);
+        if (filter_p == NULL)
+            return -1;
+
+        if (!filter_p->path[0])
+            break;
+
+        has_filter = true;
+
+        if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
+            break;
+
+        if (has_prefix(filter_p->path, &string_p->buf[*off], MAX_PATH_PREF_SIZE)) {
+            filter_match = true;
+            break;
+        }
+    }
+
+    if (has_filter && !filter_match) {
+        // There is a filter, but no match
+        del_args(event_id);
+        return 0;
+    }
+    // No filter was given, or filter match - continue
 
     // Extract device id, inode number, mode, and pos (offset)
     dev_t s_dev = get_dev_from_file(file);
