@@ -51,6 +51,7 @@
 
 #define MAX_PERCPU_BUFSIZE  (1 << 15)     // This value is actually set by the kernel as an upper bound
 #define MAX_STRING_SIZE     4096          // Choosing this value to be the same as PATH_MAX
+#define MAX_BYTES_ARR_SIZE  4096          // Max size of bytes array, arbitrarily chosen
 #define MAX_STR_ARR_ELEM    40            // String array elements number should be bounded due to instructions limit
 #define MAX_PATH_PREF_SIZE  50            // Max path prefix should be bounded due to instructions limit
 #define MAX_STACK_ADDRESSES 1024          // Max amount of different stack trace addresses to buffer in the Map
@@ -90,6 +91,7 @@
 #define STR_ARR_T     11UL
 #define SOCKADDR_T    12UL
 #define ALERT_T       13UL
+#define BYTES_T       14UL
 #define TYPE_MAX      255UL
 
 #define TAG_NONE           0UL
@@ -846,6 +848,63 @@ static __always_inline int save_to_submit_buf(buf_t *submit_p, void *ptr, u32 si
     }
 
     *off -= 2;
+    return 0;
+}
+
+static __always_inline int save_bytes_to_buf(buf_t *submit_p, void *ptr, u32 size, u8 tag)
+{
+    if (size == 0)
+        return 0;
+
+    u32* off = get_buf_off(SUBMIT_BUF_IDX);
+    if (off == NULL)
+        return 0;
+    if (*off > MAX_PERCPU_BUFSIZE - MAX_BYTES_ARR_SIZE - sizeof(int))
+        // not enough space - return
+        return 0;
+
+    // Save argument type
+    u8 type = BYTES_T;
+    bpf_probe_read(&(submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)]), 1, &type);
+
+    *off += 1;
+
+    // Save argument tag
+    int rc = bpf_probe_read(&(submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)]), 1, &tag);
+    if (rc != 0) {
+        *off -= 1;
+        return 0;
+    }
+    *off += 1;
+
+    if (*off > MAX_PERCPU_BUFSIZE - MAX_BYTES_ARR_SIZE - sizeof(int)) {
+        // Satisfy validator for probe read
+        *off -= 2;
+        return 0;
+    }
+
+    // Save size to buffer
+    rc = bpf_probe_read(&(submit_p->buf[*off]), sizeof(int), &size);
+    if (rc != 0) {
+        *off -= 2;
+        return 0;
+    }
+    *off += sizeof(int);
+
+    if (*off > MAX_PERCPU_BUFSIZE - MAX_BYTES_ARR_SIZE - sizeof(int)) {
+        // Satisfy validator for probe read
+        *off -= (2 + sizeof(int));
+        return 0;
+    }
+
+    // Read bytes into buffer
+    rc = bpf_probe_read(&(submit_p->buf[*off]), size & (MAX_BYTES_ARR_SIZE-1), ptr);
+    if (rc == 0) {
+        *off += size;
+        return 1;
+    }
+
+    *off -= (2 + sizeof(int));
     return 0;
 }
 
