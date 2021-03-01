@@ -145,7 +145,7 @@ HostName: foobar.local
 		{
 			name:              "sad path, with missing template",
 			inputTemplateFile: "invalid/template",
-			expectedError:     `error preparing webhook template: open invalid/template: no such file or directory`,
+			expectedError:     `error writing to template: template not initialized`,
 		},
 		{
 			name:              "sad path, with an invalid template",
@@ -166,7 +166,9 @@ HostName: foobar.local
 				ts.URL = tc.inputTestServerURL
 			}
 
-			actualError := sendToWebhook(types.Finding{
+			inputTemplate, _ := setupTemplate(tc.inputTemplateFile)
+
+			actualError := sendToWebhook(inputTemplate, types.Finding{
 				Data: map[string]interface{}{
 					"foo1": "bar1, baz1",
 					"foo2": []string{"bar2", "baz2"},

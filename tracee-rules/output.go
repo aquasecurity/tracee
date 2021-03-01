@@ -28,7 +28,13 @@ Hostname: %s
 
 func setupOutput(resultWriter io.Writer, clock Clock, webhook string, webhookTemplate string) (chan types.Finding, error) {
 	out := make(chan types.Finding)
-	go func() {
+
+	t, err := setupTemplate(webhookTemplate)
+	if err != nil && webhookTemplate != "" {
+		return nil, fmt.Errorf("error preparing webhook template: %v", err)
+	}
+
+	go func(t *template.Template) {
 		for res := range out {
 			sigMetadata, err := res.Signature.GetMetadata()
 			if err != nil {
@@ -47,30 +53,32 @@ func setupOutput(resultWriter io.Writer, clock Clock, webhook string, webhookTem
 			}
 
 			if webhook != "" {
-				if err := sendToWebhook(res, webhook, webhookTemplate, realClock{}); err != nil {
+				if err := sendToWebhook(t, res, webhook, webhookTemplate, realClock{}); err != nil {
 					log.Println(err)
 				}
 			}
 		}
-	}()
+	}(t)
 	return out, nil
 }
 
-func sendToWebhook(res types.Finding, webhook string, webhookTemplate string, clock Clock) error {
+func setupTemplate(webhookTemplate string) (*template.Template, error) {
+	return template.New(filepath.Base(webhookTemplate)).
+		Funcs(map[string]interface{}{
+			"unixToRFC3339": func(unixTs float64) string {
+				return time.Unix(int64(unixTs), 0).UTC().Format("2006-01-02T15:04:05Z")
+			},
+		}).ParseFiles(webhookTemplate)
+}
+
+func sendToWebhook(t *template.Template, res types.Finding, webhook string, webhookTemplate string, clock Clock) error {
 	var payload string
 
 	switch {
 	case webhookTemplate != "":
-		t, err := template.New(filepath.Base(webhookTemplate)).
-			Funcs(map[string]interface{}{
-				"unixToRFC3339": func(unixTs float64) string {
-					return time.Unix(int64(unixTs), 0).UTC().Format("2006-01-02T15:04:05Z")
-				},
-			}).ParseFiles(webhookTemplate)
-		if err != nil {
-			return fmt.Errorf("error preparing webhook template: %v", err)
+		if t == nil {
+			return fmt.Errorf("error writing to template: template not initialized")
 		}
-
 		buf := bytes.Buffer{}
 		if err := t.Execute(&buf, res); err != nil {
 			return fmt.Errorf("error writing to the template: %v", err)
