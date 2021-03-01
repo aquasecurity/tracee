@@ -1014,7 +1014,7 @@ static __always_inline int save_file_path_to_str_buf(buf_t *string_p, struct fil
         // Is string buffer big enough for dentry name?
         int sz = 0;
         if (off <= buf_off) { // verify no wrap occured
-            len = ((len - 1) & ((MAX_PERCPU_BUFSIZE >> 1)-1)) + 1;
+            len = len & ((MAX_PERCPU_BUFSIZE >> 1)-1);
             sz = bpf_probe_read_str(&(string_p->buf[off & ((MAX_PERCPU_BUFSIZE >> 1)-1)]), len, (void *)d_name.name);
         }
         else
@@ -1068,7 +1068,7 @@ static __always_inline int save_dentry_path_to_str_buf(buf_t *string_p, struct d
         // Is string buffer big enough for dentry name?
         int sz = 0;
         if (off <= buf_off) { // verify no wrap occured
-            len = ((len - 1) & ((MAX_PERCPU_BUFSIZE >> 1)-1)) + 1;
+            len = len & ((MAX_PERCPU_BUFSIZE >> 1)-1);
             sz = bpf_probe_read_str(&(string_p->buf[off & ((MAX_PERCPU_BUFSIZE >> 1)-1)]), len, (void *)d_name.name);
         }
         else
@@ -1111,7 +1111,7 @@ static __always_inline int events_perf_submit(void *ctx)
         return -1;
 
     /* satisfy validator by setting buffer bounds */
-    int size = ((*off - 1) & (MAX_PERCPU_BUFSIZE-1)) + 1;
+    int size = *off & (MAX_PERCPU_BUFSIZE-1);
     void * data = submit_p->buf;
     return bpf_perf_event_output(ctx, &events, BPF_F_CURRENT_CPU, data, size);
 }
@@ -2093,13 +2093,13 @@ int BPF_KPROBE(send_bin)
     }
 
     // Save last chunk
-    chunk_size = ((chunk_size - 1) & ((MAX_PERCPU_BUFSIZE >> 1) - 1)) + 1;
+    chunk_size = chunk_size & ((MAX_PERCPU_BUFSIZE >> 1) - 1);
     bpf_probe_read((void **)&(file_buf_p->buf[F_CHUNK_OFF]), chunk_size, bin_args->ptr);
     bpf_probe_read((void **)&(file_buf_p->buf[F_SZ_OFF]), sizeof(unsigned int), &chunk_size);
     bpf_probe_read((void **)&(file_buf_p->buf[F_POS_OFF]), sizeof(off_t), &bin_args->start_off);
 
     // Satisfy validator by setting buffer bounds
-    int size = ((F_CHUNK_OFF+chunk_size-1) & (MAX_PERCPU_BUFSIZE - 1)) + 1;
+    int size = (F_CHUNK_OFF+chunk_size) & (MAX_PERCPU_BUFSIZE - 1);
     bpf_perf_event_output(ctx, &file_writes, BPF_F_CURRENT_CPU, data, size);
 
     // We finished writing an element of the vector - continue to next element
