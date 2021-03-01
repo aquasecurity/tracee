@@ -468,6 +468,8 @@ func (t *Tracee) initEventsParams() map[int32][]eventParam {
 				paramT = strArrT
 			case "const struct sockaddr*", "struct sockaddr*":
 				paramT = sockAddrT
+			case "bytes":
+				paramT = bytesT
 			default:
 				// Default to pointer (printed as hex) for unsupported types
 				paramT = pointerT
@@ -1579,6 +1581,16 @@ func readArgFromBuff(dataBuff io.Reader) (argTag, interface{}, error) {
 			ss = append(ss, s)
 		}
 		res = ss
+	case bytesT:
+		var size uint32
+		err = binary.Read(dataBuff, binary.LittleEndian, &size)
+		if err != nil {
+			return argTag, nil, fmt.Errorf("error reading byte array size: %v", err)
+		}
+		if size > 4096 {
+			return argTag, nil, fmt.Errorf("byte array size too big: %d", size)
+		}
+		res, err = readByteSliceFromBuff(dataBuff, int(size))
 	default:
 		// if we don't recognize the arg type, we can't parse the rest of the buffer
 		return argTag, nil, fmt.Errorf("error unknown arg type %v", argType)
