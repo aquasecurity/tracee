@@ -26,7 +26,7 @@ Command: %s
 Hostname: %s
 `
 
-func setupOutput(resultWriter io.Writer, clock Clock, webhook string, webhookTemplate string) (chan types.Finding, error) {
+func setupOutput(resultWriter io.Writer, clock Clock, webhook string, webhookTemplate string, contentType string) (chan types.Finding, error) {
 	out := make(chan types.Finding)
 
 	t, err := setupTemplate(webhookTemplate)
@@ -53,7 +53,7 @@ func setupOutput(resultWriter io.Writer, clock Clock, webhook string, webhookTem
 			}
 
 			if webhook != "" {
-				if err := sendToWebhook(t, res, webhook, webhookTemplate, realClock{}); err != nil {
+				if err := sendToWebhook(t, res, webhook, webhookTemplate, contentType, realClock{}); err != nil {
 					log.Println(err)
 				}
 			}
@@ -71,7 +71,7 @@ func setupTemplate(webhookTemplate string) (*template.Template, error) {
 		}).ParseFiles(webhookTemplate)
 }
 
-func sendToWebhook(t *template.Template, res types.Finding, webhook string, webhookTemplate string, clock Clock) error {
+func sendToWebhook(t *template.Template, res types.Finding, webhook string, webhookTemplate string, contentType string, clock Clock) error {
 	var payload string
 
 	switch {
@@ -79,13 +79,17 @@ func sendToWebhook(t *template.Template, res types.Finding, webhook string, webh
 		if t == nil {
 			return fmt.Errorf("error writing to template: template not initialized")
 		}
+		if contentType == "" {
+			return fmt.Errorf("--content-type flag needs to be defined for custom templates")
+		}
 		buf := bytes.Buffer{}
 		if err := t.Execute(&buf, res); err != nil {
 			return fmt.Errorf("error writing to the template: %v", err)
 		}
 		payload = buf.String()
 
-	default:
+	default: // if no input template is specified, we send JSON by default
+		contentType = "application/json"
 		var err error
 		payload, err = prepareJSONPayload(res, clock)
 		if err != nil {
@@ -93,7 +97,7 @@ func sendToWebhook(t *template.Template, res types.Finding, webhook string, webh
 		}
 	}
 
-	resp, err := http.Post(webhook, "application/json", strings.NewReader(payload))
+	resp, err := http.Post(webhook, contentType, strings.NewReader(payload))
 	if err != nil {
 		return fmt.Errorf("error calling webhook %v", err)
 	}

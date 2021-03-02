@@ -68,7 +68,7 @@ func main() {
 			if inputs == (engine.EventSources{}) {
 				return err
 			}
-			output, err := setupOutput(os.Stdout, realClock{}, c.String("webhook"), c.String("webhook-template"))
+			output, err := setupOutput(os.Stdout, realClock{}, c.String("webhook"), c.String("webhook-template"), c.String("content-type"))
 			if err != nil {
 				return err
 			}
@@ -96,6 +96,10 @@ func main() {
 			&cli.StringFlag{
 				Name:  "webhook-template",
 				Usage: "path to a gotemplate for formatting webhook output",
+			},
+			&cli.StringFlag{
+				Name:  "content-type",
+				Usage: "content type of the template in use. Required if using --webhook-template",
 			},
 			&cli.StringSliceFlag{
 				Name:  "input-tracee",
