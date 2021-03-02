@@ -20,3 +20,9 @@ func perfLostCallback(ctx unsafe.Pointer, cpu C.int, cnt C.ulonglong) {
 		lostChan <- uint64(cnt)
 	}
 }
+
+//export ringbufferCallback
+func ringbufferCallback(ctx unsafe.Pointer, data unsafe.Pointer, size C.int) C.int {
+	eventChannels[uintptr(ctx)] <- C.GoBytes(data, size)
+	return C.int(0)
+}
