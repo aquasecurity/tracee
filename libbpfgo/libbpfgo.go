@@ -231,7 +231,6 @@ type PerfBuffer struct {
 type RingBuffer struct {
 	rb      *C.struct_ring_buffer
 	bpfMap  *BPFMap
-	stop    chan bool
 	stopped bool
 	closed bool 
 }
@@ -643,7 +642,6 @@ func (m *Module) InitRingBuf(mapName string, eventsChan chan []byte) (*RingBuffe
 	ringBuf := &RingBuffer{
 		rb:     rb,
 		bpfMap: bpfMap,
-		stop:   make(chan bool),
 	}
 	m.ringBufs = append(m.ringBufs, ringBuf)
 	return ringBuf, nil
@@ -651,16 +649,11 @@ func (m *Module) InitRingBuf(mapName string, eventsChan chan []byte) (*RingBuffe
 
 func (rb *RingBuffer) Start() {
 	go rb.poll()
+	rb.stopped = false
 }
 
 func (rb *RingBuffer) Stop() {
-	if rb.stopped {
-		return
-	}
-	select {
-	case rb.stop <- true:
-	default:
-	}
+	rb.stopped = true
 }
 
 func (rb *RingBuffer) Close() {
@@ -675,11 +668,6 @@ func (rb *RingBuffer) Close() {
 }
 
 func (rb *RingBuffer) poll() error {
-
-	go func() {
-		<-rb.stop
-		rb.stopped = true
-	}()
 
 	for {
 		err := C.ring_buffer__poll(rb.rb, 0)
