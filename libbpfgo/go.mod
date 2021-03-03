@@ -1,3 +1,3 @@
 module github.com/aquasecurity/tracee/libbpfgo
 
-go 1.15
+go 1.16

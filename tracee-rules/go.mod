@@ -1,6 +1,6 @@
 module github.com/aquasecurity/tracee/tracee-rules
 
-go 1.15
+go 1.16
 
 require (
 	github.com/aquasecurity/tracee/tracee-ebpf v0.0.0-20210217124138-0575cb7b157d

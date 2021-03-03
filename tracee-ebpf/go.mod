@@ -1,6 +1,6 @@
 module github.com/aquasecurity/tracee/tracee-ebpf
 
-go 1.15
+go 1.16
 
 require (
 	github.com/aquasecurity/tracee/libbpfgo v0.0.0-20210115081842-487d1e44fcda

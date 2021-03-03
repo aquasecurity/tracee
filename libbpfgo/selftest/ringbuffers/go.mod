@@ -1,6 +1,6 @@
 module github.com/aquasecurity/tracee/libbpfgo/selftests/5.8.15
 
-go 1.15
+go 1.16
 
 replace github.com/aquasecurity/tracee/libbpfgo => ../../
 
