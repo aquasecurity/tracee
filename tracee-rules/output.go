@@ -29,7 +29,7 @@ Hostname: %s
 func setupOutput(resultWriter io.Writer, clock Clock, webhook string, webhookTemplate string, contentType string) (chan types.Finding, error) {
 	out := make(chan types.Finding)
 
-	t, err := setupTemplate(webhookTemplate)
+	t, err := setupTemplate(webhookTemplate, realClock{})
 	if err != nil && webhookTemplate != "" {
 		return nil, fmt.Errorf("error preparing webhook template: %v", err)
 	}
@@ -62,11 +62,11 @@ func setupOutput(resultWriter io.Writer, clock Clock, webhook string, webhookTem
 	return out, nil
 }
 
-func setupTemplate(webhookTemplate string) (*template.Template, error) {
+func setupTemplate(webhookTemplate string, clock Clock) (*template.Template, error) {
 	return template.New(filepath.Base(webhookTemplate)).
 		Funcs(map[string]interface{}{
-			"unixToRFC3339": func(unixTs float64) string {
-				return time.Unix(int64(unixTs), 0).UTC().Format("2006-01-02T15:04:05Z")
+			"timeNow": func(unixTs float64) string {
+				return clock.Now().UTC().Format("2006-01-02T15:04:05Z")
 			},
 		}).ParseFiles(webhookTemplate)
 }

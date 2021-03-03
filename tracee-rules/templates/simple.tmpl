@@ -1,4 +1,4 @@
 *** Detection ***
-Timestamp: {{ .Context.Timestamp | unixToRFC3339 }}
+Timestamp: {{ .Context.Timestamp | timeNow }}
 ProcessName: {{ .Context.ProcessName }}
 HostName: {{ .Context.HostName }}

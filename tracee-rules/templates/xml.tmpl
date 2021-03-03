@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
- <detection timestamp="{{.Context.Timestamp | unixToRFC3339 }}">
+ <detection timestamp="{{.Context.Timestamp | timeNow }}">
     <processname>{{ .Context.ProcessName }}</processname>
     <hostname>{{ .Context.HostName }}</hostname>
  </detection>

@@ -50,7 +50,6 @@ func Test_setupOutput(t *testing.T) {
 		{
 			name: "happy path with tracee event",
 			inputContext: external.Event{
-				Timestamp:   12345678,
 				ProcessName: "foobar.exe",
 				HostName:    "foobar.local",
 			},
@@ -111,7 +110,7 @@ func Test_sendToWebhook(t *testing.T) {
 			name:        "happy path, with simple template",
 			contentType: "text/plain",
 			expectedOutput: `*** Detection ***
-Timestamp: 2021-02-27T07:19:07Z
+Timestamp: 2021-02-23T01:54:57Z
 ProcessName: foobar.exe
 HostName: foobar.local
 `,
@@ -120,14 +119,14 @@ HostName: foobar.local
 		{
 			name:              "happy path, with CSV template",
 			contentType:       "text/csv",
-			expectedOutput:    `2021-02-27T07:19:07Z,foobar.exe,foobar.local`,
+			expectedOutput:    `2021-02-23T01:54:57Z,foobar.exe,foobar.local`,
 			inputTemplateFile: "templates/csv.tmpl",
 		},
 		{
 			name:        "happy path, with XML template",
 			contentType: "application/xml",
 			expectedOutput: `<?xml version="1.0" encoding="UTF-8" ?>
- <detection timestamp="2021-02-27T07:19:07Z">
+ <detection timestamp="2021-02-23T01:54:57Z">
     <processname>foobar.exe</processname>
     <hostname>foobar.local</hostname>
  </detection>`,
@@ -173,7 +172,7 @@ HostName: foobar.local
 				ts.URL = tc.inputTestServerURL
 			}
 
-			inputTemplate, _ := setupTemplate(tc.inputTemplateFile)
+			inputTemplate, _ := setupTemplate(tc.inputTemplateFile, fakeClock{})
 
 			actualError := sendToWebhook(inputTemplate, types.Finding{
 				Data: map[string]interface{}{
@@ -181,7 +180,6 @@ HostName: foobar.local
 					"foo2": []string{"bar2", "baz2"},
 				},
 				Context: external.Event{
-					Timestamp:   1614410347,
 					ProcessName: "foobar.exe",
 					HostName:    "foobar.local",
 				},
