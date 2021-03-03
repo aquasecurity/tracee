@@ -80,7 +80,7 @@ func sendToWebhook(t *template.Template, res types.Finding, webhook string, webh
 			return fmt.Errorf("error writing to template: template not initialized")
 		}
 		if contentType == "" {
-			return fmt.Errorf("--content-type flag needs to be defined for custom templates")
+			log.Println("content-type was not set for the custom template: ", webhookTemplate)
 		}
 		buf := bytes.Buffer{}
 		if err := t.Execute(&buf, res); err != nil {
