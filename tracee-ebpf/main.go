@@ -1,9 +1,10 @@
 package main
 
 import (
+	_ "embed"
+
 	"archive/tar"
 	"compress/gzip"
-	"encoding/base64"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -26,6 +27,7 @@ var traceeInstallPath string
 var buildPolicy string
 
 // These vars are supposed to be injected at build time
+//go:embed dist/tracee.bpf.tar.gz
 var bpfBundleInjected string
 var version string
 
@@ -978,13 +980,12 @@ func getBPFObject() (string, error) {
 	return bpfObjFilePath, nil
 }
 
-// unpackBPFBundle unpacks the bundle (tar(gzip(b64))) into the provided directory
+// unpackBPFBundle unpacks the bundle (tar(gzip)) into the provided directory
 func unpackBPFBundle(dir string) error {
 	if bpfBundleInjected == "" {
 		return fmt.Errorf("missing embedded data")
 	}
-	b64Reader := base64.NewDecoder(base64.RawStdEncoding, strings.NewReader(bpfBundleInjected))
-	gzReader, err := gzip.NewReader(b64Reader)
+	gzReader, err := gzip.NewReader(strings.NewReader(bpfBundleInjected))
 	if err != nil {
 		return err
 	}

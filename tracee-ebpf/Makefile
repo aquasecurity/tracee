@@ -43,7 +43,7 @@ go_env := GOOS=linux GOARCH=$(ARCH:x86_64=amd64) CC=$(CMD_CLANG) CGO_CFLAGS="-I 
 ifndef DOCKER
 $(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(filter-out *_test.go,$(GO_SRC)) $(BPF_BUNDLE) | $(OUT_DIR)
 	$(go_env) go build -v -o $(OUT_BIN) \
-	-ldflags "-X main.bpfBundleInjected=$$(base64 -w 0 $(BPF_BUNDLE)) -X main.version=$(VERSION)"	
+	-ldflags "-X main.version=$(VERSION)"
 else 
 $(OUT_BIN): $(DOCKER_BUILDER) | $(OUT_DIR)
 	$(call docker_builder_make,$@ VERSION=$(VERSION))
