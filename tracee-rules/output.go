@@ -1,12 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"path/filepath"
 	"strings"
+	"text/template"
 	"time"
 
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
@@ -23,9 +26,15 @@ Command: %s
 Hostname: %s
 `
 
-func setupOutput(resultWriter io.Writer, clock Clock, webhook string) (chan types.Finding, error) {
+func setupOutput(resultWriter io.Writer, clock Clock, webhook string, webhookTemplate string, contentType string) (chan types.Finding, error) {
 	out := make(chan types.Finding)
-	go func() {
+
+	t, err := setupTemplate(webhookTemplate, realClock{})
+	if err != nil && webhookTemplate != "" {
+		return nil, fmt.Errorf("error preparing webhook template: %v", err)
+	}
+
+	go func(t *template.Template) {
 		for res := range out {
 			sigMetadata, err := res.Signature.GetMetadata()
 			if err != nil {
@@ -44,24 +53,59 @@ func setupOutput(resultWriter io.Writer, clock Clock, webhook string) (chan type
 			}
 
 			if webhook != "" {
-				payload, err := prepareJSONPayload(res)
-				if err != nil {
-					log.Printf("error preparing json payload for %v: %v", res, err)
-					continue
+				if err := sendToWebhook(t, res, webhook, webhookTemplate, contentType, realClock{}); err != nil {
+					log.Println(err)
 				}
-				resp, err := http.Post(webhook, "application/json", strings.NewReader(payload))
-				if err != nil {
-					log.Printf("error calling webhook for %v: %v", res, err)
-					continue
-				}
-				resp.Body.Close()
 			}
 		}
-	}()
+	}(t)
 	return out, nil
 }
 
-func prepareJSONPayload(res types.Finding) (string, error) {
+func setupTemplate(webhookTemplate string, clock Clock) (*template.Template, error) {
+	return template.New(filepath.Base(webhookTemplate)).
+		Funcs(map[string]interface{}{
+			"timeNow": func(unixTs float64) string {
+				return clock.Now().UTC().Format("2006-01-02T15:04:05Z")
+			},
+		}).ParseFiles(webhookTemplate)
+}
+
+func sendToWebhook(t *template.Template, res types.Finding, webhook string, webhookTemplate string, contentType string, clock Clock) error {
+	var payload string
+
+	switch {
+	case webhookTemplate != "":
+		if t == nil {
+			return fmt.Errorf("error writing to template: template not initialized")
+		}
+		if contentType == "" {
+			log.Println("content-type was not set for the custom template: ", webhookTemplate)
+		}
+		buf := bytes.Buffer{}
+		if err := t.Execute(&buf, res); err != nil {
+			return fmt.Errorf("error writing to the template: %v", err)
+		}
+		payload = buf.String()
+
+	default: // if no input template is specified, we send JSON by default
+		contentType = "application/json"
+		var err error
+		payload, err = prepareJSONPayload(res, clock)
+		if err != nil {
+			return fmt.Errorf("error preparing json payload: %v", err)
+		}
+	}
+
+	resp, err := http.Post(webhook, contentType, strings.NewReader(payload))
+	if err != nil {
+		return fmt.Errorf("error calling webhook %v", err)
+	}
+	_ = resp.Body.Close()
+	return nil
+}
+
+func prepareJSONPayload(res types.Finding, clock Clock) (string, error) {
 	// compatible with Falco webhook format, for easy integration with "falcosecurity/falcosidekick"
 	// https://github.com/falcosecurity/falcosidekick/blob/e6b893f612e92352ba700bed9a19f1ec2cd18260/types/types.go#L12
 	type Payload struct {
@@ -82,7 +126,7 @@ func prepareJSONPayload(res types.Finding) (string, error) {
 	payload := Payload{
 		Output:       fmt.Sprintf("Rule \"%s\" detection:\n %v", sigmeta.Name, res.Data),
 		Rule:         sigmeta.Name,
-		Time:         time.Now(),
+		Time:         clock.Now().UTC(),
 		OutputFields: fields,
 	}
 	payloadJSON, err := json.Marshal(payload)
