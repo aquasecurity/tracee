@@ -17,6 +17,7 @@ func Test_getSignatures(t *testing.T) {
 	gotMetadata, err := sigs[0].GetMetadata()
 	assert.Equal(t, types.SignatureMetadata{
 		ID:          "TRC-2",
+		Version:     "0.1.0",
 		Name:        "Anti-Debugging",
 		Description: "Process uses anti-debugging technique to block debugger",
 		Tags:        []string{"linux", "container"},
