@@ -38,7 +38,8 @@ docker run --name tracee --rm --privileged -v /lib/modules/:/lib/modules/:ro -v 
 
 > Note: You may need to change the volume mounts for the kernel headers based on your setup. See [Linux Headers](#Linux-Headers) section for info.
 
-This will run Tracee with no arguments, which defaults to detecting all available rules and reporting them as raw messages on standard output of the container. These can be further customized as detailed below.
+This will run Tracee with no arguments, which defaults to loading the default set of rules (see below), and to report detections on standard output (can be customized).
+In order to simulate a suspicious behavior, you can run `strace ls` in another terminal, which will trigger the "Anti-Debugging" signature, which is loaded by default.
 
 ### Rules
 
