@@ -4,6 +4,7 @@ import data.tracee.helpers
 
 __rego_metadoc__ := {
     "id": "TRC-3",
+    "version": "0.1.0",
     "name": "Code injection",
     "description": "Possible code injection into another process",
     "tags": ["linux", "container"],

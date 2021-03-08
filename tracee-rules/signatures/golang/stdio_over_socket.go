@@ -22,6 +22,7 @@ func (sig *stdioOverSocket) Init(cb types.SignatureHandler) error {
 func (sig *stdioOverSocket) GetMetadata() (types.SignatureMetadata, error) {
 	return types.SignatureMetadata{
 		ID:          "TRC-1",
+		Version:     "0.1.0",
 		Name:        "Standard Input/Output Over Socket",
 		Description: "Redirection of process's standard input/output to socket",
 		Tags:        []string{"linux", "container"},
