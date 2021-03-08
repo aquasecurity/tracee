@@ -26,7 +26,8 @@ func (sig *counter) Init(cb types.SignatureHandler) error {
 // GetMetadata implements the Signature interface by declaring information about the signature
 func (sig *counter) GetMetadata() (types.SignatureMetadata, error) {
 	return types.SignatureMetadata{
-		Name: "count to " + strconv.Itoa(sig.target),
+		Version: "0.1.0",
+		Name:    "count to " + strconv.Itoa(sig.target),
 	}, nil
 }
 
