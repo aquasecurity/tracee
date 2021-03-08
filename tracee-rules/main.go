@@ -3,11 +3,14 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/aquasecurity/tracee/tracee-rules/types"
 
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
 	"github.com/urfave/cli/v2"
@@ -40,15 +43,7 @@ func main() {
 				return err
 			}
 			if c.Bool("list") {
-				fmt.Printf("%-10s %-35s %s\n", "ID", "NAME", "DESCRIPTION")
-				for _, sig := range sigs {
-					meta, err := sig.GetMetadata()
-					if err != nil {
-						continue
-					}
-					fmt.Printf("%-10s %-35s %s\n", meta.ID, meta.Name, meta.Description)
-				}
-				return nil
+				return listSigs(os.Stdout, sigs)
 			}
 
 			var inputs engine.EventSources
@@ -111,6 +106,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func listSigs(w io.Writer, sigs []types.Signature) error {
+	fmt.Fprintf(w, "%-10s %-35s %s\n", "ID", "NAME", "DESCRIPTION")
+	for _, sig := range sigs {
+		meta, err := sig.GetMetadata()
+		if err != nil {
+			continue
+		}
+		fmt.Fprintf(w, "%-10s %-35s %s\n", meta.ID, meta.Name, meta.Description)
+	}
+	return nil
 }
 
 func sigHandler() chan bool {
