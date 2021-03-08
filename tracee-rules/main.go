@@ -109,13 +109,13 @@ func main() {
 }
 
 func listSigs(w io.Writer, sigs []types.Signature) error {
-	fmt.Fprintf(w, "%-10s %-35s %s\n", "ID", "NAME", "DESCRIPTION")
+	fmt.Fprintf(w, "%-10s %-35s %s %s\n", "ID", "NAME", "VERSION", "DESCRIPTION")
 	for _, sig := range sigs {
 		meta, err := sig.GetMetadata()
 		if err != nil {
 			continue
 		}
-		fmt.Fprintf(w, "%-10s %-35s %s\n", meta.ID, meta.Name, meta.Description)
+		fmt.Fprintf(w, "%-10s %-35s %-7s %s\n", meta.ID, meta.Name, meta.Version, meta.Description)
 	}
 	return nil
 }
