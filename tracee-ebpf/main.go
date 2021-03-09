@@ -1,9 +1,7 @@
 package main
 
 import (
-	"archive/tar"
-	"compress/gzip"
-	"encoding/base64"
+	"embed"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -26,7 +24,8 @@ var traceeInstallPath string
 var buildPolicy string
 
 // These vars are supposed to be injected at build time
-var bpfBundleInjected string
+//go:embed "dist/tracee.bpf/*"
+var bpfBundleInjected embed.FS
 var version string
 
 func main() {
@@ -784,7 +783,6 @@ func parseRetFilter(filterName string, operatorAndValues string, eventsNameToID 
 
 	return nil
 }
-
 func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.StringFilter, eventsNameToID map[string]int32) ([]int32, error) {
 	eventFilter.Enabled = true
 	eventsToTrace := eventFilter.Equal
@@ -978,39 +976,28 @@ func getBPFObject() (string, error) {
 	return bpfObjFilePath, nil
 }
 
-// unpackBPFBundle unpacks the bundle (tar(gzip(b64))) into the provided directory
+// unpackBPFBundle unpacks the bundle into the provided directory
 func unpackBPFBundle(dir string) error {
-	if bpfBundleInjected == "" {
-		return fmt.Errorf("missing embedded data")
-	}
-	b64Reader := base64.NewDecoder(base64.RawStdEncoding, strings.NewReader(bpfBundleInjected))
-	gzReader, err := gzip.NewReader(b64Reader)
+	basePath := "dist/tracee.bpf"
+	files, err := bpfBundleInjected.ReadDir(basePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("error reading embedded bpf bundle: %s", err.Error())
 	}
-	tarReader := tar.NewReader(gzReader)
-	for true {
-		header, err := tarReader.Next()
-		if err == io.EOF {
-			break
-		}
+	for _, f := range files {
+		outFile, err := os.Create(filepath.Join(dir, filepath.Base(f.Name())))
 		if err != nil {
-			return err
+			return fmt.Errorf("error creating bpf file: %s", err.Error())
 		}
-		switch header.Typeflag {
-		case tar.TypeDir:
-			//skip directories
-		case tar.TypeReg:
-			outFile, err := os.Create(filepath.Join(dir, filepath.Base(header.Name)))
-			if err != nil {
-				return err
-			}
-			defer outFile.Close()
-			if _, err := io.Copy(outFile, tarReader); err != nil {
-				return err
-			}
-		default:
-			return fmt.Errorf("unknown tar type: %v", header)
+		defer outFile.Close()
+
+		f, err := bpfBundleInjected.Open(filepath.Join(basePath, f.Name()))
+		if err != nil {
+			return fmt.Errorf("error opening bpf bundle file: %s", err.Error())
+		}
+		defer f.Close()
+
+		if _, err := io.Copy(outFile, f); err != nil {
+			return fmt.Errorf("error copying bpf file: %s", err.Error())
 		}
 	}
 	return nil

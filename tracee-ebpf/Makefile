@@ -43,7 +43,7 @@ go_env := GOOS=linux GOARCH=$(ARCH:x86_64=amd64) CC=$(CMD_CLANG) CGO_CFLAGS="-I 
 ifndef DOCKER
 $(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(filter-out *_test.go,$(GO_SRC)) $(BPF_BUNDLE) | $(OUT_DIR)
 	$(go_env) go build -v -o $(OUT_BIN) \
-	-ldflags "-X main.bpfBundleInjected=$$(base64 -w 0 $(BPF_BUNDLE)) -X main.version=$(VERSION)"	
+	-ldflags "-X main.version=$(VERSION)"
 else 
 $(OUT_BIN): $(DOCKER_BUILDER) | $(OUT_DIR)
 	$(call docker_builder_make,$@ VERSION=$(VERSION))
@@ -66,7 +66,6 @@ bpf_bundle_dir := $(OUT_DIR)/tracee.bpf
 $(BPF_BUNDLE): $(BPF_SRC) $(LIBBPF_HEADERS)/bpf $(BPF_HEADERS)
 	mkdir -p $(bpf_bundle_dir)
 	cp $$(find $^ -type f) $(bpf_bundle_dir)
-	tar -czf $@ $(bpf_bundle_dir)
 
 .PHONY: bpf
 bpf: $(OUT_BPF)
