@@ -66,7 +66,6 @@ bpf_bundle_dir := $(OUT_DIR)/tracee.bpf
 $(BPF_BUNDLE): $(BPF_SRC) $(LIBBPF_HEADERS)/bpf $(BPF_HEADERS)
 	mkdir -p $(bpf_bundle_dir)
 	cp $$(find $^ -type f) $(bpf_bundle_dir)
-	tar -czf $@ $(bpf_bundle_dir)
 
 .PHONY: bpf
 bpf: $(OUT_BPF)
