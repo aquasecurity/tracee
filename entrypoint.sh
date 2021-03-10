@@ -1,14 +1,9 @@
 #!/bin/sh
 
 TRACEE_EBPF_EXE=${TRACEE_EBPF_EXE:="/tracee/tracee-ebpf"}
-TRACEE_MOUNT_EXE=${TRACEE_MOUNT_EXE:="mount"}
 TRACEE_WEBHOOK_CONFIG=${TRACEE_WEBHOOK_CONFIG:="/tmp/tracee/integrations-config.yaml"}
 TRACEE_WEBHOOK_EXE=${TRACEE_WEBHOOK_EXE:="/tracee/falcosidekick"}
 TRACEE_RULES_EXE=${TRACEE_RULES_EXE:="/tracee/tracee-rules"}
-
-if ! $TRACEE_MOUNT_EXE | grep -q 'debugfs on /sys/kernel/debug'; then
-  $TRACEE_MOUNT_EXE -t debugfs debugfs /sys/kernel/debug/
-fi
 
 if [ "$1" = "trace" ]; then
 	shift

@@ -10,24 +10,10 @@ setup() {
     export TRACEE_RULES_EXE="tracee-rules"
     export TRACEE_WEBHOOK_EXE="falco-sidekick"
     export TRACEE_WEBHOOK_CONFIG="$0" #some existing file
-    export TRACEE_MOUNT_EXE="mount"
 }
 
 teardown() {
     rm $log
-}
-
-@test "mount debugfs" {
-    run ./entrypoint.sh
-    assert_success
-    assert_contains 'mounted'
-}
-
-@test "don't mount debugfs" {
-    export MOCK_MOUNT_EXISTS=true
-    run ./entrypoint.sh
-    assert_success
-    assert_absent 'mounted'
 }
 
 @test "trace" {
