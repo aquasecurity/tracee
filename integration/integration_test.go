@@ -97,11 +97,29 @@ func checkPidnew(t *testing.T, gotOutput *bytes.Buffer, _ string) {
 func checkUidzero(t *testing.T, gotOutput *bytes.Buffer, _ string) {
 	_, _ = exec.Command("ls").CombinedOutput()
 
+	// check output length
+	require.NotEmpty(t, gotOutput.String())
+
 	// output should only have events with uids of 0
 	uids := strings.Split(strings.TrimSpace(gotOutput.String()), "\n")
 	for _, u := range uids {
 		uid, _ := strconv.Atoi(u)
 		require.Zero(t, uid)
+	}
+}
+
+// only capture pids of 1
+func checkPidOne(t *testing.T, gotOutput *bytes.Buffer, _ string) {
+	_, _ = exec.Command("init", "q").CombinedOutput()
+
+	// check output length
+	require.NotEmpty(t, gotOutput.String())
+
+	// output should only have events with pids of 1
+	pids := strings.Split(strings.TrimSpace(gotOutput.String()), "\n")
+	for _, p := range pids {
+		pid, _ := strconv.Atoi(p)
+		require.Equal(t, 1, pid)
 	}
 }
 
@@ -134,27 +152,30 @@ func Test_Events(t *testing.T) {
 			args:      []string{"--trace", "uid=0", "--trace", "comm=ls", "--output", "gotemplate=uid.tmpl"},
 			eventFunc: checkUidzero,
 		},
-		// TODO: Add pid=0
+		{
+			name:      "trace pid 1",
+			args:      []string{"--trace", "pid=1", "--output", "gotemplate=pid.tmpl"},
+			eventFunc: checkPidOne,
+		},
 		// TODO: Add pid=0,1
 		// TODO: Add pid=0 pid=1
 		// TODO: Add uid>0
 		// TODO: Add pid>0 pid<1000
 		// TODO: Add u>0 u!=1000
 		// TODO: Add event=execve,open
-
 	}
 
 	for _, tc := range testCases {
 		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
+		t.Run(tc.name, func(st *testing.T) {
+			st.Parallel()
 
 			var gotOutput bytes.Buffer
 			done := make(chan bool, 1)
-			go loadTracee(t, &gotOutput, done, tc.args...)
+			go loadTracee(st, &gotOutput, done, tc.args...)
 			time.Sleep(time.Second * 2) // wait for tracee init
 
-			tc.eventFunc(t, &gotOutput, tc.expectedOutput)
+			tc.eventFunc(st, &gotOutput, tc.expectedOutput)
 			done <- true
 		})
 	}
