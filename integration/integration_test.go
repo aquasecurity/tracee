@@ -92,6 +92,18 @@ func pidNew(t *testing.T, gotOutput *bytes.Buffer, _ string) {
 	}
 }
 
+// only capture uids of 0 that are run by comm ls
+func uidZero(t *testing.T, gotOutput *bytes.Buffer, _ string) {
+	_, _ = exec.Command("ls").CombinedOutput()
+
+	// output should only have events with uids of 0
+	uids := strings.Split(strings.TrimSpace(gotOutput.String()), "\n")
+	for _, u := range uids {
+		uid, _ := strconv.Atoi(u)
+		require.Zero(t, uid)
+	}
+}
+
 func Test_Events(t *testing.T) {
 	var testCases = []struct {
 		name           string
@@ -116,6 +128,19 @@ func Test_Events(t *testing.T) {
 			args:      []string{"--trace", "pid=new", "--output", "gotemplate=pid.tmpl"},
 			eventFunc: pidNew,
 		},
+		{
+			name:      "trace uid 0 with comm ls",
+			args:      []string{"--trace", "uid=0", "--trace", "comm=ls", "--output", "gotemplate=uid.tmpl"},
+			eventFunc: uidZero,
+		},
+		// TODO: Add pid=0
+		// TODO: Add pid=0,1
+		// TODO: Add pid=0 pid=1
+		// TODO: Add uid>0
+		// TODO: Add pid>0 pid<1000
+		// TODO: Add u>0 u!=1000
+		// TODO: Add event=execve,open
+
 	}
 
 	for _, tc := range testCases {
