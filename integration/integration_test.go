@@ -30,8 +30,21 @@ func loadTracee(t *testing.T, w io.Writer, done chan bool, args ...string) {
 	<-done
 }
 
+// get pid by process name
+func getPidByName(t *testing.T, name string) int {
+	processes, err := ps.Processes()
+	require.NoError(t, err)
+
+	for _, p := range processes {
+		if strings.Contains(p.Executable(), name) {
+			return p.Pid()
+		}
+	}
+	return -1
+}
+
 // small set of actions to trigger a magic write event
-func magicWrite(t *testing.T, gotOutput *bytes.Buffer, expectedOutput string) {
+func checkMagicwrite(t *testing.T, gotOutput *bytes.Buffer, expectedOutput string) {
 	// create a temp dir for testing
 	d, err := ioutil.TempDir("", "Test_MagicWrite-dir-*")
 	require.NoError(t, err)
@@ -56,7 +69,7 @@ func magicWrite(t *testing.T, gotOutput *bytes.Buffer, expectedOutput string) {
 }
 
 // execute a ls command
-func execCommand(t *testing.T, gotOutput *bytes.Buffer, expectedOutput string) {
+func checkExeccommand(t *testing.T, gotOutput *bytes.Buffer, expectedOutput string) {
 	execCmd := exec.Command("ls")
 	fmt.Println("executing: ", execCmd.String())
 	assert.NoError(t, execCmd.Run())
@@ -65,20 +78,8 @@ func execCommand(t *testing.T, gotOutput *bytes.Buffer, expectedOutput string) {
 	assert.Contains(t, gotOutput.String(), expectedOutput)
 }
 
-func getPidByName(t *testing.T, name string) int {
-	processes, err := ps.Processes()
-	require.NoError(t, err)
-
-	for _, p := range processes {
-		if strings.Contains(p.Executable(), name) {
-			return p.Pid()
-		}
-	}
-	return -1
-}
-
 // only capture new pids after tracee
-func pidNew(t *testing.T, gotOutput *bytes.Buffer, _ string) {
+func checkPidnew(t *testing.T, gotOutput *bytes.Buffer, _ string) {
 	traceePid := getPidByName(t, "tracee")
 
 	// run a command
@@ -93,7 +94,7 @@ func pidNew(t *testing.T, gotOutput *bytes.Buffer, _ string) {
 }
 
 // only capture uids of 0 that are run by comm ls
-func uidZero(t *testing.T, gotOutput *bytes.Buffer, _ string) {
+func checkUidzero(t *testing.T, gotOutput *bytes.Buffer, _ string) {
 	_, _ = exec.Command("ls").CombinedOutput()
 
 	// output should only have events with uids of 0
@@ -114,24 +115,24 @@ func Test_Events(t *testing.T) {
 		{
 			name:           "do a file write",
 			args:           []string{"--trace", "event=magic_write"},
-			eventFunc:      magicWrite,
+			eventFunc:      checkMagicwrite,
 			expectedOutput: "bytes: [102 111 111 46 98 97 114 46 98 97 122]",
 		},
 		{
 			name:           "execute a command",
 			args:           []string{"--trace", "comm=ls", "--output=json"},
-			eventFunc:      execCommand,
+			eventFunc:      checkExeccommand,
 			expectedOutput: `"processName":"ls"`,
 		},
 		{
 			name:      "trace new pids",
 			args:      []string{"--trace", "pid=new", "--output", "gotemplate=pid.tmpl"},
-			eventFunc: pidNew,
+			eventFunc: checkPidnew,
 		},
 		{
 			name:      "trace uid 0 with comm ls",
 			args:      []string{"--trace", "uid=0", "--trace", "comm=ls", "--output", "gotemplate=uid.tmpl"},
-			eventFunc: uidZero,
+			eventFunc: checkUidzero,
 		},
 		// TODO: Add pid=0
 		// TODO: Add pid=0,1
