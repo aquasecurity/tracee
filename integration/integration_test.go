@@ -31,7 +31,7 @@ func loadTracee(t *testing.T, w io.Writer, done chan bool, args ...string) {
 }
 
 // small set of actions to trigger a magic write event
-func magicWrite(t *testing.T, _ *bytes.Buffer) {
+func magicWrite(t *testing.T, gotOutput *bytes.Buffer, expectedOutput string) {
 	// create a temp dir for testing
 	d, err := ioutil.TempDir("", "Test_MagicWrite-dir-*")
 	require.NoError(t, err)
@@ -50,13 +50,19 @@ func magicWrite(t *testing.T, _ *bytes.Buffer) {
 	fmt.Println("executing: ", cpCmd.String())
 	cpCmd.Stdout = os.Stdout
 	assert.NoError(t, cpCmd.Run())
+
+	// check tracee output
+	assert.Contains(t, gotOutput.String(), expectedOutput)
 }
 
 // execute a ls command
-func execCommand(t *testing.T, _ *bytes.Buffer) {
+func execCommand(t *testing.T, gotOutput *bytes.Buffer, expectedOutput string) {
 	execCmd := exec.Command("ls")
 	fmt.Println("executing: ", execCmd.String())
 	assert.NoError(t, execCmd.Run())
+
+	// check tracee output
+	assert.Contains(t, gotOutput.String(), expectedOutput)
 }
 
 func getPidByName(t *testing.T, name string) int {
@@ -72,14 +78,14 @@ func getPidByName(t *testing.T, name string) int {
 }
 
 // only capture new pids after tracee
-func pidNew(t *testing.T, expectedOutput *bytes.Buffer) {
+func pidNew(t *testing.T, gotOutput *bytes.Buffer, _ string) {
 	traceePid := getPidByName(t, "tracee")
 
 	// run a command
 	_, _ = exec.Command("ls").CombinedOutput()
 
 	// output should only have events with pids greater (newer) than tracee
-	pids := strings.Split(strings.TrimSpace(expectedOutput.String()), "\n")
+	pids := strings.Split(strings.TrimSpace(gotOutput.String()), "\n")
 	for _, p := range pids {
 		pid, _ := strconv.Atoi(p)
 		assert.Greater(t, pid, traceePid)
@@ -90,7 +96,7 @@ func Test_Events(t *testing.T) {
 	var testCases = []struct {
 		name           string
 		args           []string
-		eventFunc      func(*testing.T, *bytes.Buffer)
+		eventFunc      func(*testing.T, *bytes.Buffer, string)
 		expectedOutput string
 	}{
 		{
@@ -117,15 +123,13 @@ func Test_Events(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			var expectedOutput bytes.Buffer
+			var gotOutput bytes.Buffer
 			done := make(chan bool, 1)
-			go loadTracee(t, &expectedOutput, done, tc.args...)
+			go loadTracee(t, &gotOutput, done, tc.args...)
 			time.Sleep(time.Second * 2) // wait for tracee init
 
-			tc.eventFunc(t, &expectedOutput)
-
+			tc.eventFunc(t, &gotOutput, tc.expectedOutput)
 			done <- true
-			assert.Contains(t, expectedOutput.String(), tc.expectedOutput, tc.name) // TODO: Cleanup
 		})
 	}
 }
