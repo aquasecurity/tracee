@@ -20,6 +20,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TODO: Add check to see if tracee built artifact exists
+// at "../tracee-ebpf/dist/tracee-ebpf", prior to running tests
+
 // load tracee into memory with args
 func loadTracee(t *testing.T, w io.Writer, done chan bool, args ...string) {
 	cmd := exec.Command("../tracee-ebpf/dist/tracee-ebpf", args...)
@@ -45,7 +48,7 @@ func getPidByName(t *testing.T, name string) int {
 }
 
 // small set of actions to trigger a magic write event
-func checkMagicwrite(t *testing.T, gotOutput *bytes.Buffer, expectedOutput string) {
+func checkMagicwrite(t *testing.T, gotOutput *bytes.Buffer) {
 	// create a temp dir for testing
 	d, err := ioutil.TempDir("", "Test_MagicWrite-dir-*")
 	require.NoError(t, err)
@@ -66,11 +69,11 @@ func checkMagicwrite(t *testing.T, gotOutput *bytes.Buffer, expectedOutput strin
 	assert.NoError(t, cpCmd.Run())
 
 	// check tracee output
-	assert.Contains(t, gotOutput.String(), expectedOutput)
+	assert.Contains(t, gotOutput.String(), `bytes: [102 111 111 46 98 97 114 46 98 97 122]`)
 }
 
 // execute a ls command
-func checkExeccommand(t *testing.T, gotOutput *bytes.Buffer, expectedOutput string) {
+func checkExeccommand(t *testing.T, gotOutput *bytes.Buffer) {
 	_, _ = exec.Command("ls").CombinedOutput()
 
 	// check tracee output
@@ -81,7 +84,7 @@ func checkExeccommand(t *testing.T, gotOutput *bytes.Buffer, expectedOutput stri
 }
 
 // only capture new pids after tracee
-func checkPidnew(t *testing.T, gotOutput *bytes.Buffer, _ string) {
+func checkPidnew(t *testing.T, gotOutput *bytes.Buffer) {
 	traceePid := getPidByName(t, "tracee")
 
 	// run a command
@@ -96,7 +99,7 @@ func checkPidnew(t *testing.T, gotOutput *bytes.Buffer, _ string) {
 }
 
 // only capture uids of 0 that are run by comm ls
-func checkUidzero(t *testing.T, gotOutput *bytes.Buffer, _ string) {
+func checkUidzero(t *testing.T, gotOutput *bytes.Buffer) {
 	_, _ = exec.Command("ls").CombinedOutput()
 
 	// check output length
@@ -111,7 +114,7 @@ func checkUidzero(t *testing.T, gotOutput *bytes.Buffer, _ string) {
 }
 
 // only capture pids of 1
-func checkPidOne(t *testing.T, gotOutput *bytes.Buffer, _ string) {
+func checkPidOne(t *testing.T, gotOutput *bytes.Buffer) {
 	_, _ = exec.Command("init", "q").CombinedOutput()
 
 	// check output length
@@ -125,7 +128,7 @@ func checkPidOne(t *testing.T, gotOutput *bytes.Buffer, _ string) {
 	}
 }
 
-func checkExecve(t *testing.T, gotOutput *bytes.Buffer, expectedOutput string) {
+func checkExecve(t *testing.T, gotOutput *bytes.Buffer) {
 	_, _ = exec.Command("ls").CombinedOutput()
 
 	// check output length
@@ -142,16 +145,14 @@ func checkExecve(t *testing.T, gotOutput *bytes.Buffer, expectedOutput string) {
 
 func Test_Events(t *testing.T) {
 	var testCases = []struct {
-		name           string
-		args           []string
-		eventFunc      func(*testing.T, *bytes.Buffer, string)
-		expectedOutput string
+		name      string
+		args      []string
+		eventFunc func(*testing.T, *bytes.Buffer)
 	}{
 		{
-			name:           "do a file write",
-			args:           []string{"--trace", "event=magic_write"},
-			eventFunc:      checkMagicwrite,
-			expectedOutput: "bytes: [102 111 111 46 98 97 114 46 98 97 122]",
+			name:      "do a file write",
+			args:      []string{"--trace", "event=magic_write"},
+			eventFunc: checkMagicwrite,
 		},
 		{
 			name:      "execute a command",
@@ -195,7 +196,7 @@ func Test_Events(t *testing.T) {
 			go loadTracee(st, &gotOutput, done, tc.args...)
 			time.Sleep(time.Second * 2) // wait for tracee init
 
-			tc.eventFunc(st, &gotOutput, tc.expectedOutput)
+			tc.eventFunc(st, &gotOutput)
 			done <- true
 		})
 	}
