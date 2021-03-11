@@ -5,6 +5,8 @@ import "C"
 import (
 	bpf "github.com/aquasecurity/tracee/libbpfgo"
 	"os"
+	"fmt"
+	"encoding/binary"
 )
 
 func main() {
@@ -37,14 +39,17 @@ func main() {
 	numberOfEventsReceived := 0
 
 recvLoop:
-	for {
-		_ = <-eventsChannel
+	for  {
+		b := <-eventsChannel
+		if binary.LittleEndian.Uint32(b) != 2021 {
+			fmt.Fprintf(os.Stderr, "invalid data retrieved\n")
+			os.Exit(-1)
+		}
 		numberOfEventsReceived++
 		if numberOfEventsReceived > 5 {
 			break recvLoop
 		}
 	}
-
 
 	// Test that it won't cause a panic or block if Stop or Close called multiple times
 	rb.Stop()
