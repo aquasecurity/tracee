@@ -70,12 +70,13 @@ func checkMagicwrite(t *testing.T, gotOutput *bytes.Buffer, expectedOutput strin
 
 // execute a ls command
 func checkExeccommand(t *testing.T, gotOutput *bytes.Buffer, expectedOutput string) {
-	execCmd := exec.Command("ls")
-	fmt.Println("executing: ", execCmd.String())
-	assert.NoError(t, execCmd.Run())
+	_, _ = exec.Command("ls").CombinedOutput()
 
 	// check tracee output
-	assert.Contains(t, gotOutput.String(), expectedOutput)
+	processNames := strings.Split(strings.TrimSpace(gotOutput.String()), "\n")
+	for _, pname := range processNames {
+		assert.Equal(t, "ls", pname)
+	}
 }
 
 // only capture new pids after tracee
@@ -123,6 +124,21 @@ func checkPidOne(t *testing.T, gotOutput *bytes.Buffer, _ string) {
 	}
 }
 
+func checkExecve(t *testing.T, gotOutput *bytes.Buffer, expectedOutput string) {
+	_, _ = exec.Command("ls").CombinedOutput()
+
+	// check output length
+	require.NotEmpty(t, gotOutput.String())
+
+	// output should only have events with process name of execve
+	eventNames := strings.Split(strings.TrimSpace(gotOutput.String()), "\n")
+	for _, en := range eventNames {
+		if len(en) > 0 {
+			require.Equal(t, "execve", en)
+		}
+	}
+}
+
 func Test_Events(t *testing.T) {
 	var testCases = []struct {
 		name           string
@@ -137,10 +153,9 @@ func Test_Events(t *testing.T) {
 			expectedOutput: "bytes: [102 111 111 46 98 97 114 46 98 97 122]",
 		},
 		{
-			name:           "execute a command",
-			args:           []string{"--trace", "comm=ls", "--output=json"},
-			eventFunc:      checkExeccommand,
-			expectedOutput: `"processName":"ls"`,
+			name:      "execute a command",
+			args:      []string{"--trace", "comm=ls", "--output", "gotemplate=processName.tmpl"},
+			eventFunc: checkExeccommand,
 		},
 		{
 			name:      "trace new pids",
@@ -152,23 +167,29 @@ func Test_Events(t *testing.T) {
 			args:      []string{"--trace", "uid=0", "--trace", "comm=ls", "--output", "gotemplate=uid.tmpl"},
 			eventFunc: checkUidzero,
 		},
-		{
-			name:      "trace pid 1",
-			args:      []string{"--trace", "pid=1", "--output", "gotemplate=pid.tmpl"},
-			eventFunc: checkPidOne,
-		},
+		//{
+		// TODO: Find a better way to reproduce
+		// as this causes side effects
+		//name:      "trace pid 1",
+		//args:      []string{"--trace", "pid=1", "--output", "gotemplate=pid.tmpl"},
+		//eventFunc: checkPidOne,
+		//},
 		// TODO: Add pid=0,1
 		// TODO: Add pid=0 pid=1
 		// TODO: Add uid>0
 		// TODO: Add pid>0 pid<1000
 		// TODO: Add u>0 u!=1000
-		// TODO: Add event=execve,open
+		{
+			name:      "trace only execve events from comm ls",
+			args:      []string{"--trace", "event=execve", "--output", "gotemplate=eventName.tmpl"},
+			eventFunc: checkExecve,
+		},
 	}
 
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.name, func(st *testing.T) {
-			st.Parallel()
+			//st.Parallel()
 
 			var gotOutput bytes.Buffer
 			done := make(chan bool, 1)
