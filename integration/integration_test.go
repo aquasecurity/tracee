@@ -49,6 +49,13 @@ func magicWrite(t *testing.T) {
 	assert.NoError(t, cpCmd.Run())
 }
 
+// execute a ls command
+func execCommand(t *testing.T) {
+	execCmd := exec.Command("ls")
+	fmt.Println("executing: ", execCmd.String())
+	assert.NoError(t, execCmd.Run())
+}
+
 func Test_Events(t *testing.T) {
 	var testCases = []struct {
 		name           string
@@ -57,10 +64,16 @@ func Test_Events(t *testing.T) {
 		expectedOutput string
 	}{
 		{
-			name:           "magic write",
+			name:           "event: magic write",
 			args:           []string{"--trace", "event=magic_write"},
 			eventFunc:      magicWrite,
 			expectedOutput: "bytes: [102 111 111 46 98 97 114 46 98 97 122]",
+		},
+		{
+			name:           "command: ls",
+			args:           []string{"--trace", "comm=ls", "--output=json"},
+			eventFunc:      execCommand,
+			expectedOutput: `"processName":"ls"`,
 		},
 	}
 
