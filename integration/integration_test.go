@@ -78,14 +78,19 @@ func Test_Events(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		var expectedOutput bytes.Buffer
-		done := make(chan bool, 1)
-		go loadTracee(t, &expectedOutput, done, tc.args...)
-		time.Sleep(time.Second * 2) // wait for tracee init
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-		tc.eventFunc(t)
+			var expectedOutput bytes.Buffer
+			done := make(chan bool, 1)
+			go loadTracee(t, &expectedOutput, done, tc.args...)
+			time.Sleep(time.Second * 2) // wait for tracee init
 
-		done <- true
-		assert.Contains(t, expectedOutput.String(), tc.expectedOutput, tc.name)
+			tc.eventFunc(t)
+
+			done <- true
+			assert.Contains(t, expectedOutput.String(), tc.expectedOutput, tc.name)
+		})
 	}
 }
