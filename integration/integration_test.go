@@ -14,6 +14,7 @@ import (
 	"time"
 
 	ps "github.com/mitchellh/go-ps"
+	"github.com/onsi/gomega/gexec"
 	"github.com/stretchr/testify/require"
 
 	"github.com/stretchr/testify/assert"
@@ -22,12 +23,12 @@ import (
 // load tracee into memory with args
 func loadTracee(t *testing.T, w io.Writer, done chan bool, args ...string) {
 	cmd := exec.Command("../tracee-ebpf/dist/tracee-ebpf", args...)
-	cmd.Stdout = w
-	cmd.Stderr = w
-
 	fmt.Println("running: ", cmd.String())
-	assert.NoError(t, cmd.Run())
+
+	session, err := gexec.Start(cmd, w, w)
+	require.NoError(t, err)
 	<-done
+	session.Interrupt()
 }
 
 // get pid by process name
@@ -167,13 +168,11 @@ func Test_Events(t *testing.T) {
 			args:      []string{"--trace", "uid=0", "--trace", "comm=ls", "--output", "gotemplate=uid.tmpl"},
 			eventFunc: checkUidzero,
 		},
-		//{
-		// TODO: Find a better way to reproduce
-		// as this causes side effects
-		//name:      "trace pid 1",
-		//args:      []string{"--trace", "pid=1", "--output", "gotemplate=pid.tmpl"},
-		//eventFunc: checkPidOne,
-		//},
+		{
+			name:      "trace pid 1",
+			args:      []string{"--trace", "pid=1", "--output", "gotemplate=pid.tmpl"},
+			eventFunc: checkPidOne,
+		},
 		// TODO: Add pid=0,1
 		// TODO: Add pid=0 pid=1
 		// TODO: Add uid>0
@@ -189,7 +188,7 @@ func Test_Events(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.name, func(st *testing.T) {
-			//st.Parallel()
+			st.Parallel()
 
 			var gotOutput bytes.Buffer
 			done := make(chan bool, 1)
