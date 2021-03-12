@@ -20,12 +20,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TODO: Add check to see if tracee built artifact exists
-// at "../tracee-ebpf/dist/tracee-ebpf", prior to running tests
+const TraceeBinaryPath = "../tracee-ebpf/dist/tracee-ebpf"
+
+func checkTraceeBinary(t *testing.T) {
+	if _, err := os.Stat(TraceeBinaryPath); os.IsNotExist(err) {
+		require.FailNow(t, "failed to find tracee binary", err)
+	}
+}
 
 // load tracee into memory with args
 func loadTracee(t *testing.T, w io.Writer, done chan bool, args ...string) {
-	cmd := exec.Command("../tracee-ebpf/dist/tracee-ebpf", args...)
+	cmd := exec.Command(TraceeBinaryPath, args...)
 	fmt.Println("running: ", cmd.String())
 
 	session, err := gexec.Start(cmd, w, w)
@@ -205,6 +210,8 @@ func Test_Events(t *testing.T) {
 			eventFunc: checkSetFs,
 		},
 	}
+
+	checkTraceeBinary(t)
 
 	for _, tc := range testCases {
 		tc := tc
