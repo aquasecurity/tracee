@@ -74,7 +74,7 @@ func checkMagicwrite(t *testing.T, gotOutput *bytes.Buffer) {
 	assert.NoError(t, cpCmd.Run())
 
 	// check tracee output
-	assert.Contains(t, gotOutput.String(), `bytes: [102 111 111 46 98 97 114 46 98 97 122]`)
+	assert.Contains(t, gotOutput.String(), `[102 111 111 46 98 97 114 46 98 97 122]`)
 }
 
 // execute a ls command
@@ -165,34 +165,40 @@ func checkSetFs(t *testing.T, gotOutput *bytes.Buffer) {
 
 func Test_Events(t *testing.T) {
 	var testCases = []struct {
-		name      string
-		args      []string
-		eventFunc func(*testing.T, *bytes.Buffer)
+		name       string
+		args       []string
+		eventFunc  func(*testing.T, *bytes.Buffer)
+		goTemplate string
 	}{
 		{
-			name:      "do a file write",
-			args:      []string{"--trace", "event=magic_write"},
-			eventFunc: checkMagicwrite,
+			name:       "do a file write",
+			args:       []string{"--trace", "event=magic_write"},
+			eventFunc:  checkMagicwrite,
+			goTemplate: "{{ .Args }}\n",
 		},
 		{
-			name:      "execute a command",
-			args:      []string{"--trace", "comm=ls", "--output", "gotemplate=processName.tmpl"},
-			eventFunc: checkExeccommand,
+			name:       "execute a command",
+			args:       []string{"--trace", "comm=ls"},
+			eventFunc:  checkExeccommand,
+			goTemplate: "{{ .ProcessName }}\n",
 		},
 		{
-			name:      "trace new pids",
-			args:      []string{"--trace", "pid=new", "--output", "gotemplate=pid.tmpl"},
-			eventFunc: checkPidnew,
+			name:       "trace new pids",
+			args:       []string{"--trace", "pid=new"},
+			eventFunc:  checkPidnew,
+			goTemplate: "{{ .ProcessID }}\n",
 		},
 		{
-			name:      "trace uid 0 with comm ls",
-			args:      []string{"--trace", "uid=0", "--trace", "comm=ls", "--output", "gotemplate=uid.tmpl"},
-			eventFunc: checkUidzero,
+			name:       "trace uid 0 with comm ls",
+			args:       []string{"--trace", "uid=0", "--trace", "comm=ls"},
+			eventFunc:  checkUidzero,
+			goTemplate: "{{ .UserID }}\n",
 		},
 		{
-			name:      "trace pid 1",
-			args:      []string{"--trace", "pid=1", "--output", "gotemplate=pid.tmpl"},
-			eventFunc: checkPidOne,
+			name:       "trace pid 1",
+			args:       []string{"--trace", "pid=1"},
+			eventFunc:  checkPidOne,
+			goTemplate: "{{ .ProcessID }}\n",
 		},
 		// TODO: Add pid=0,1
 		// TODO: Add pid=0 pid=1
@@ -200,14 +206,16 @@ func Test_Events(t *testing.T) {
 		// TODO: Add pid>0 pid<1000
 		// TODO: Add u>0 u!=1000
 		{
-			name:      "trace only execve events from comm ls",
-			args:      []string{"--trace", "event=execve", "--output", "gotemplate=eventName.tmpl"},
-			eventFunc: checkExecve,
+			name:       "trace only execve events from comm ls",
+			args:       []string{"--trace", "event=execve"},
+			eventFunc:  checkExecve,
+			goTemplate: "{{ .EventName }}\n",
 		},
 		{
-			name:      "trace filesystem events from comm ls",
-			args:      []string{"--trace", "s=fs", "--trace", "comm=ls", "--output", "gotemplate=eventName.tmpl"},
-			eventFunc: checkSetFs,
+			name:       "trace filesystem events from comm ls",
+			args:       []string{"--trace", "s=fs", "--trace", "comm=ls"},
+			eventFunc:  checkSetFs,
+			goTemplate: "{{ .EventName }}\n",
 		},
 	}
 
@@ -217,6 +225,16 @@ func Test_Events(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(st *testing.T) {
 			st.Parallel()
+
+			if tc.goTemplate != "" {
+				f, _ := ioutil.TempFile("", fmt.Sprintf("%s-*", tc.name))
+				_, _ = f.WriteString(tc.goTemplate)
+				defer func() {
+					_ = os.Remove(f.Name())
+				}()
+
+				tc.args = append(tc.args, "--output", fmt.Sprintf("gotemplate=%s", f.Name()))
+			}
 
 			var gotOutput bytes.Buffer
 			done := make(chan bool, 1)
