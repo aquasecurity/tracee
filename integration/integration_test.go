@@ -221,7 +221,7 @@ func Test_Events(t *testing.T) {
 			var gotOutput bytes.Buffer
 			done := make(chan bool, 1)
 			go loadTracee(st, &gotOutput, done, tc.args...)
-			time.Sleep(time.Second * 2) // wait for tracee init
+			time.Sleep(time.Second) // wait for tracee init
 
 			tc.eventFunc(st, &gotOutput)
 			done <- true
