@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
+	"github.com/aquasecurity/tracee/tracee-rules/signatures/helpers"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
@@ -51,7 +52,7 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 		return fmt.Errorf("invalid event")
 	}
 
-	var connectData connectAddrData
+	var connectData helpers.ConnectAddrData
 
 	pid := eventObj.ProcessID
 
@@ -59,19 +60,19 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 
 	case "connect":
 
-		sockfdArg, err := GetTraceeArgumentByName(eventObj, "sockfd")
+		sockfdArg, err := helpers.GetTraceeArgumentByName(eventObj, "sockfd")
 		if err != nil {
 			return err
 		}
 
 		sockfd := int(sockfdArg.Value.(int32))
 
-		addrArg, err := GetTraceeArgumentByName(eventObj, "addr")
+		addrArg, err := helpers.GetTraceeArgumentByName(eventObj, "addr")
 		if err != nil {
 			return err
 		}
 
-		err = GetAddrStructFromArg(addrArg, &connectData)
+		err = helpers.GetAddrStructFromArg(addrArg, &connectData)
 		if err != nil {
 			return err
 		}
@@ -103,7 +104,7 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 			return nil
 		}
 
-		oldFdArg, err := GetTraceeArgumentByName(eventObj, "oldfd")
+		oldFdArg, err := helpers.GetTraceeArgumentByName(eventObj, "oldfd")
 		if err != nil {
 			return err
 		}
@@ -125,14 +126,14 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 			return nil
 		}
 
-		oldFdArg, err := GetTraceeArgumentByName(eventObj, "oldfd")
+		oldFdArg, err := helpers.GetTraceeArgumentByName(eventObj, "oldfd")
 		if err != nil {
 			return err
 		}
 
 		srcFd := int(oldFdArg.Value.(int32))
 
-		newFdArg, err := GetTraceeArgumentByName(eventObj, "newfd")
+		newFdArg, err := helpers.GetTraceeArgumentByName(eventObj, "newfd")
 		if err != nil {
 			return err
 		}
@@ -146,7 +147,7 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 
 	case "close":
 
-		currentFdArg, err := GetTraceeArgumentByName(eventObj, "fd")
+		currentFdArg, err := helpers.GetTraceeArgumentByName(eventObj, "fd")
 		if err != nil {
 			return err
 		}

@@ -1,4 +1,4 @@
-package main
+package helpers
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
 )
 
-type connectAddrData struct {
+type ConnectAddrData struct {
 	SaFamily string `json:"sa_family"`
 	SinPort  string `json:"sin_port"`
 	SinAddr  string `json:"sin_addr"`
@@ -33,7 +33,7 @@ func IsFileWrite(flags string) bool {
 	return false
 }
 
-func GetAddrStructFromArg(addrArg tracee.Argument, connectData *connectAddrData) error {
+func GetAddrStructFromArg(addrArg tracee.Argument, connectData *ConnectAddrData) error {
 	addrStr := strings.Replace(addrArg.Value.(string), "'", "\"", -1)
 	err := json.Unmarshal([]byte(addrStr), &connectData)
 	if err != nil {
