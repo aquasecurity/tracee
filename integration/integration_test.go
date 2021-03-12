@@ -128,18 +128,33 @@ func checkPidOne(t *testing.T, gotOutput *bytes.Buffer) {
 	}
 }
 
+// check that execve event is called
 func checkExecve(t *testing.T, gotOutput *bytes.Buffer) {
 	_, _ = exec.Command("ls").CombinedOutput()
 
 	// check output length
 	require.NotEmpty(t, gotOutput.String())
 
-	// output should only have events with process name of execve
+	// output should only have events with event name of execve
 	eventNames := strings.Split(strings.TrimSpace(gotOutput.String()), "\n")
 	for _, en := range eventNames {
 		if len(en) > 0 {
 			require.Equal(t, "execve", en)
 		}
+	}
+}
+
+// check for filesystem set when ls is invoked
+func checkSetFs(t *testing.T, gotOutput *bytes.Buffer) {
+	_, _ = exec.Command("ls").CombinedOutput()
+
+	// check output length
+	require.NotEmpty(t, gotOutput.String())
+
+	// output should only have events with event name of execve
+	eventNames := strings.Split(strings.TrimSpace(gotOutput.String()), "\n")
+	for _, en := range eventNames {
+		require.Contains(t, []string{"access", "openat", "fstat", "close", "read", "pread64", "statfs", "ioctl", "statx", "getdents64", "write"}, en)
 	}
 }
 
@@ -183,6 +198,11 @@ func Test_Events(t *testing.T) {
 			name:      "trace only execve events from comm ls",
 			args:      []string{"--trace", "event=execve", "--output", "gotemplate=eventName.tmpl"},
 			eventFunc: checkExecve,
+		},
+		{
+			name:      "trace filesystem events from comm ls",
+			args:      []string{"--trace", "s=fs", "--trace", "comm=ls", "--output", "gotemplate=eventName.tmpl"},
+			eventFunc: checkSetFs,
 		},
 	}
 
