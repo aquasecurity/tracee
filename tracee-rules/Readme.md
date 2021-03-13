@@ -31,13 +31,14 @@ This will:
 
 # Integrations
 
-When a detection is made by any of the signatures, it will be printed to stdout. Using the `--webhook` flag you can post detections into an HTTP endpoint that can further relay the detection. By default, payloads are sent as JSON to the webhook.
+When a detection is made by any of the signatures, it will always be printed to stdout.  
+In addition, Tracee can notify a web service when a detection is made using a custom webhook. You can configure Tracee's webhook settings using the following flags:
 
-You can also use a custom template (or use a pre-supplied one) to further tune your webhook detection output. Templates are written in the Go templating language. 
-
-When supplying a custom template, fields of the `types.Finding` event type can be used as output fields. These are available [here](https://github.com/aquasecurity/tracee/blob/28fbc66be8c9f3efa53f617a654cafe7421e8c70/tracee-rules/types/types.go#L46-L50). Some examples of custom templates are documented [here](templates/).
- 
- Custom templates can be passed in via the `--webhook-template` flag. Payload Content-Type can be specified (and is recommended) when using a custom template with the `--webhook-content-type` flag.
+Flag name | Description | Example
+--- | --- | ---
+`--webhook-url` | The webhook URL | `--webhook-url http://my.webhook/endpoint`
+`--webhook-template` | Path to Go-template that formats the payload to send. Tracee's [Finding](https://github.com/aquasecurity/tracee/blob/28fbc66be8c9f3efa53f617a654cafe7421e8c70/tracee-rules/types/types.go#L46-L50) type is available to use within the template | `--webhook-template /path/to/my.tmpl` <br> See template examples [here](tracee-rules/templates/).
+`--webhook-content-type` | If present, will set the Content-Type HTTP header to match the provided template | `--webhook-content-type application/json`
 
 # Rules
 Rules are discovered from the local `rules` directory (unless changed by the `--rules-dir` flag). By default, all discovered rules will be loaded unless specific rules are selected using the `--rules` flag.

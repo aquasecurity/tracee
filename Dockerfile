@@ -21,7 +21,6 @@ RUN apk --no-cache update && apk --no-cache add libc6-compat elfutils-dev
 FROM $BASE
 WORKDIR /tracee
 
-COPY --from=falcosecurity/falcosidekick@sha256:a32d8850d51e9b096a09f4ae73ba6cde038c3fe1fd9c58baf76333dfda7e7bbd /app/falcosidekick ./
 COPY --from=build /tracee/dist/tracee-ebpf /tracee/dist/tracee-rules /tracee/entrypoint.sh ./
 COPY --from=build /tracee/dist/rules ./rules
 
