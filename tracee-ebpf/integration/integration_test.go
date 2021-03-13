@@ -17,20 +17,28 @@ import (
 	"github.com/onsi/gomega/gexec"
 	"github.com/stretchr/testify/require"
 
+	"github.com/kelseyhightower/envconfig"
 	"github.com/stretchr/testify/assert"
 )
 
-const TraceeBinaryPath = "../dist/tracee-ebpf"
+type Config struct {
+	TraceeBinaryPath string `required:"true" envconfig:"trc_bin"`
+}
 
-func checkTraceeBinary(t *testing.T) {
-	if _, err := os.Stat(TraceeBinaryPath); os.IsNotExist(err) {
+func getTraceeBinaryPath(t *testing.T) string {
+	var c Config
+	err := envconfig.Process("trc", &c)
+	require.NoError(t, err)
+
+	if _, err := os.Stat(c.TraceeBinaryPath); os.IsNotExist(err) {
 		require.FailNow(t, "failed to find tracee binary", err)
 	}
+	return c.TraceeBinaryPath
 }
 
 // load tracee into memory with args
-func loadTracee(t *testing.T, w io.Writer, done chan bool, args ...string) {
-	cmd := exec.Command(TraceeBinaryPath, args...)
+func loadTracee(t *testing.T, traceeBinPath string, w io.Writer, done chan bool, args ...string) {
+	cmd := exec.Command(traceeBinPath, args...)
 	fmt.Println("running: ", cmd.String())
 
 	session, err := gexec.Start(cmd, w, w)
@@ -220,8 +228,7 @@ func Test_Events(t *testing.T) {
 		// TODO: Add --capture tests
 	}
 
-	checkTraceeBinary(t)
-
+	bin := getTraceeBinaryPath(t)
 	for _, tc := range testCases {
 		tc := tc
 		t.Run(tc.name, func(st *testing.T) {
@@ -239,7 +246,7 @@ func Test_Events(t *testing.T) {
 
 			var gotOutput bytes.Buffer
 			done := make(chan bool, 1)
-			go loadTracee(st, &gotOutput, done, tc.args...)
+			go loadTracee(st, bin, &gotOutput, done, tc.args...)
 			time.Sleep(time.Second) // wait for tracee init
 
 			tc.eventFunc(st, &gotOutput)

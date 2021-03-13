@@ -126,7 +126,7 @@ endif
 
 .PHONY: test-integration
 test-integration:
-	$(go_env) go test -exec sudo -v integration/*_test.go
+	$(go_env) TRC_BIN=../$(OUT_BIN) go test -exec 'sudo -E' -v integration/*_test.go
 
 # record built image id to prevent unnecessary building and for cleanup
 docker_builder_file := $(OUT_DIR)/$(DOCKER_BUILDER)
