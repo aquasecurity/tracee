@@ -1,6 +1,6 @@
 ARG BASE=fat
 
-FROM golang:alpine as builder
+FROM golang:1.16-alpine as builder
 RUN apk --no-cache update && apk --no-cache add git clang llvm make gcc libc6-compat coreutils linux-headers musl-dev elfutils-dev libelf-static zlib-static
 WORKDIR /tracee
 
