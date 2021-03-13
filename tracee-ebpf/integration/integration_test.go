@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const TraceeBinaryPath = "../tracee-ebpf/dist/tracee-ebpf"
+const TraceeBinaryPath = "../dist/tracee-ebpf"
 
 func checkTraceeBinary(t *testing.T) {
 	if _, err := os.Stat(TraceeBinaryPath); os.IsNotExist(err) {
@@ -217,6 +217,7 @@ func Test_Events(t *testing.T) {
 			eventFunc:  checkSetFs,
 			goTemplate: "{{ .EventName }}\n",
 		},
+		// TODO: Add --capture tests
 	}
 
 	checkTraceeBinary(t)

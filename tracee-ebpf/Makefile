@@ -124,6 +124,10 @@ test: $(DOCKER_BUILDER)
 	$(call docker_builder_make,$@)
 endif
 
+.PHONY: test-integration
+test-integration:
+	$(go_env) go test -exec sudo -v integration/*_test.go
+
 # record built image id to prevent unnecessary building and for cleanup
 docker_builder_file := $(OUT_DIR)/$(DOCKER_BUILDER)
 .PHONY: $(DOCKER_BUILDER)
