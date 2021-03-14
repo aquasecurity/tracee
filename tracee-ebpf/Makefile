@@ -145,7 +145,10 @@ mostlyclean:
 
 .PHONY: clean
 clean:
-	-$(CMD_DOCKER) rmi $(file < $(docker_builder_file))
+	-FILE="$(docker_builder_file)" ; \
+	if [ -r "$$FILE" ] ; then \
+		$(CMD_DOCKER) rmi "$$(< $$FILE)" ; \
+	fi
 	-rm -rf dist $(OUT_DIR)
 	$(MAKE) -C $(LIBBPF_SRC) clean
 

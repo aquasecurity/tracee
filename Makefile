@@ -44,6 +44,8 @@ $(OUT_DIR)/tracee.bpf.%.o: bpf ;
 bpf: tracee-ebpf | $(OUT_DIR)
 		$(MAKE) -C $< mostlyclean $@ OUT_DIR=dist && $(CMD_CP) $</dist/tracee.bpf.*.o $(OUT_DIR)
 
+# Use Gnu Make 4.3 "grouped targets" to make both $(OUT_ARCHIVE)
+# and $(OUT_CHECKSUMS) with one command.
 $(OUT_ARCHIVE) $(OUT_CHECKSUMS) &: $(RELEASE_FILES) | $(OUT_DIR)
 	$(CMD_TAR) -czf $(OUT_ARCHIVE) $(RELEASE_FILES)
 	$(CMD_CHECKSUM) $(OUT_ARCHIVE) > $(OUT_CHECKSUMS)
@@ -98,8 +100,8 @@ mostlyclean:
 .PHONY: clean
 clean:
 	-$(CMD_DOCKER) rmi $(OUT_DOCKER) $(release_images_fat) $(release_images_slim)
-	-$(MAKE) -c tracee-ebpf clean
-	-$(MAKE) -c tracee-rules clean
+	-$(MAKE) -C tracee-ebpf clean
+	-$(MAKE) -C tracee-rules clean
 
 .PHONY: test-entrypoint
 test-entrypoint: entrypoint.sh entrypoint_test.bats test/mocks/* test/bats-helpers.bash
