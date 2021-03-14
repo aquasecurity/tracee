@@ -13,7 +13,9 @@ Tracee-eBPF is a lightweight and easy to use tracing tool for Linux, which is fo
 - Linux kernel version >= 4.18
 - Relevant kernel headers available under conventional location (see [Linux Headers](#Linux-Headers) section for info)
 - libc, and the libraries: libelf and zlib
+- Gnu Make >= 4.3, needed for "group targets" support.
 - clang >= 9
+- go >= 1.16, needed for embedded support.
 
 Exceptions:
 
