@@ -42,6 +42,17 @@ func main() {
 			if err != nil {
 				return err
 			}
+			var loadedSigIDs []string
+			for _, s := range sigs {
+				m, err := s.GetMetadata()
+				if err != nil {
+					fmt.Println("failed to load signature: ", err)
+					continue
+				}
+				loadedSigIDs = append(loadedSigIDs, m.ID)
+			}
+			fmt.Println("Loaded signature(s): ", loadedSigIDs)
+
 			if c.Bool("list") {
 				return listSigs(os.Stdout, sigs)
 			}
@@ -74,7 +85,7 @@ func main() {
 		Flags: []cli.Flag{
 			&cli.StringSliceFlag{
 				Name:  "rules",
-				Usage: "select which rules to load as a comma seperated list, use --list for rules to select from",
+				Usage: "select which rules to load. Specify multiple rules by repeating this flag. Use --list for rules to select from",
 			},
 			&cli.StringFlag{
 				Name:  "rules-dir",
