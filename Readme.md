@@ -73,7 +73,7 @@ The easiest way to get started is to just let Tracee build the eBPF program for 
 Alternatively, you can pre-compile the eBPF program, and provide it to Tracee. There are some benefits to this approach as you will not need clang and kernel headers at runtime anymore, as well as reduced risk of invoking an external program at runtime.
 
 You can build the eBPF program in the following ways:
-1. Clone the repo and `make bpf`.
+1. Clone the repo including submodules (`git clone --recursive https://github.com/aquasecurity/tracee.git`) and `make bpf`.
 2. `make bpf DOCKER=1` to build in a Docker container which includes all development tooling.
 
 Running this will produce a file called `tracee.bpf.$kernelversion.$traceeversion.o` under the `dist` directory.  
