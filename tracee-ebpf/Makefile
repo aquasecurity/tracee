@@ -125,7 +125,7 @@ test: $(DOCKER_BUILDER)
 endif
 
 .PHONY: test-integration
-test-integration:
+test-integration: $(OUT_BIN)
 	$(go_env) TRC_BIN=../$(OUT_BIN) go test -exec 'sudo -E' -v integration/*_test.go
 
 # record built image id to prevent unnecessary building and for cleanup
