@@ -13,12 +13,18 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
+
 	ps "github.com/mitchellh/go-ps"
 	"github.com/onsi/gomega/gexec"
 	"github.com/stretchr/testify/require"
 
 	"github.com/kelseyhightower/envconfig"
 	"github.com/stretchr/testify/assert"
+)
+
+const (
+	CheckTimeout = time.Second * 2
 )
 
 type Config struct {
@@ -60,6 +66,15 @@ func getPidByName(t *testing.T, name string) int {
 	return -1
 }
 
+// wait for tracee buffer to fill or timeout to occur, whichever comes first
+func waitForTraceeOutput(gotOutput *bytes.Buffer, now time.Time) {
+	for {
+		if len(gotOutput.String()) > 0 || (time.Since(now) > CheckTimeout) {
+			break
+		}
+	}
+}
+
 // small set of actions to trigger a magic write event
 func checkMagicwrite(t *testing.T, gotOutput *bytes.Buffer) {
 	// create a temp dir for testing
@@ -81,6 +96,8 @@ func checkMagicwrite(t *testing.T, gotOutput *bytes.Buffer) {
 	cpCmd.Stdout = os.Stdout
 	assert.NoError(t, cpCmd.Run())
 
+	waitForTraceeOutput(gotOutput, time.Now())
+
 	// check tracee output
 	assert.Contains(t, gotOutput.String(), `[102 111 111 46 98 97 114 46 98 97 122]`)
 }
@@ -88,6 +105,8 @@ func checkMagicwrite(t *testing.T, gotOutput *bytes.Buffer) {
 // execute a ls command
 func checkExeccommand(t *testing.T, gotOutput *bytes.Buffer) {
 	_, _ = exec.Command("ls").CombinedOutput()
+
+	waitForTraceeOutput(gotOutput, time.Now())
 
 	// check tracee output
 	processNames := strings.Split(strings.TrimSpace(gotOutput.String()), "\n")
@@ -103,6 +122,8 @@ func checkPidnew(t *testing.T, gotOutput *bytes.Buffer) {
 	// run a command
 	_, _ = exec.Command("ls").CombinedOutput()
 
+	waitForTraceeOutput(gotOutput, time.Now())
+
 	// output should only have events with pids greater (newer) than tracee
 	pids := strings.Split(strings.TrimSpace(gotOutput.String()), "\n")
 	for _, p := range pids {
@@ -114,6 +135,8 @@ func checkPidnew(t *testing.T, gotOutput *bytes.Buffer) {
 // only capture uids of 0 that are run by comm ls
 func checkUidzero(t *testing.T, gotOutput *bytes.Buffer) {
 	_, _ = exec.Command("ls").CombinedOutput()
+
+	waitForTraceeOutput(gotOutput, time.Now())
 
 	// check output length
 	require.NotEmpty(t, gotOutput.String())
@@ -130,6 +153,8 @@ func checkUidzero(t *testing.T, gotOutput *bytes.Buffer) {
 func checkPidOne(t *testing.T, gotOutput *bytes.Buffer) {
 	_, _ = exec.Command("init", "q").CombinedOutput()
 
+	waitForTraceeOutput(gotOutput, time.Now())
+
 	// check output length
 	require.NotEmpty(t, gotOutput.String())
 
@@ -144,6 +169,8 @@ func checkPidOne(t *testing.T, gotOutput *bytes.Buffer) {
 // check that execve event is called
 func checkExecve(t *testing.T, gotOutput *bytes.Buffer) {
 	_, _ = exec.Command("ls").CombinedOutput()
+
+	waitForTraceeOutput(gotOutput, time.Now())
 
 	// check output length
 	require.NotEmpty(t, gotOutput.String())
@@ -161,14 +188,30 @@ func checkExecve(t *testing.T, gotOutput *bytes.Buffer) {
 func checkSetFs(t *testing.T, gotOutput *bytes.Buffer) {
 	_, _ = exec.Command("ls").CombinedOutput()
 
+	waitForTraceeOutput(gotOutput, time.Now())
+
 	// check output length
 	require.NotEmpty(t, gotOutput.String())
 
-	// output should only have events with event name of execve
+	expectedSyscalls := getAllSyscallsInSet("fs")
+
+	// output should only have events with events in the set of filesystem syscalls
 	eventNames := strings.Split(strings.TrimSpace(gotOutput.String()), "\n")
 	for _, en := range eventNames {
-		require.Contains(t, []string{"access", "openat", "fstat", "close", "read", "pread64", "statfs", "ioctl", "statx", "getdents64", "write"}, en)
+		require.Contains(t, expectedSyscalls, en)
 	}
+}
+
+func getAllSyscallsInSet(set string) []string {
+	var syscallsInSet []string
+	for _, v := range tracee.EventsIDToEvent {
+		for _, c := range v.Sets {
+			if c == set {
+				syscallsInSet = append(syscallsInSet, v.Name)
+			}
+		}
+	}
+	return syscallsInSet
 }
 
 func Test_Events(t *testing.T) {
@@ -208,11 +251,11 @@ func Test_Events(t *testing.T) {
 			eventFunc:  checkPidOne,
 			goTemplate: "{{ .ProcessID }}\n",
 		},
-		// TODO: Add pid=0,1
-		// TODO: Add pid=0 pid=1
-		// TODO: Add uid>0
-		// TODO: Add pid>0 pid<1000
-		// TODO: Add u>0 u!=1000
+		//TODO: Add pid=0,1
+		//TODO: Add pid=0 pid=1
+		//TODO: Add uid>0
+		//TODO: Add pid>0 pid<1000
+		//TODO: Add u>0 u!=1000
 		{
 			name:       "trace only execve events from comm ls",
 			args:       []string{"--trace", "event=execve"},
