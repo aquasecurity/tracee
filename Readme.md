@@ -20,6 +20,7 @@ Tracee is composed of the following sub-projects:
 
 ### Prerequisites
 
+- Go version >= 1.16.2
 - Linux kernel version >= 4.18
 - Relevant kernel headers available under conventional location (see [Linux Headers](#Linux-Headers) section for info)
 - libc, and the libraries: libelf and zlib
@@ -73,7 +74,14 @@ The easiest way to get started is to just let Tracee build the eBPF program for 
 Alternatively, you can pre-compile the eBPF program, and provide it to Tracee. There are some benefits to this approach as you will not need clang and kernel headers at runtime anymore, as well as reduced risk of invoking an external program at runtime.
 
 You can build the eBPF program in the following ways:
-1. Clone the repo including submodules (`git clone --recursive https://github.com/aquasecurity/tracee.git`) and `make bpf`.
+
+1. From source: Clone the repo including submodules
+  ```
+  git clone --recursive https://github.com/aquasecurity/tracee.git
+  make bpf
+  ```
+> Note: To build the eBPF program You will need the libbpf git submodule. Download using `make install-libbpf`.
+
 2. `make bpf DOCKER=1` to build in a Docker container which includes all development tooling.
 
 Running this will produce a file called `tracee.bpf.$kernelversion.$traceeversion.o` under the `dist` directory.  
