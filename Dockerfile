@@ -19,10 +19,24 @@ RUN apk --no-cache update && apk --no-cache add libc6-compat elfutils-dev
 
 # final image
 FROM $BASE
+ARG VERSION
+ARG BUILD_DATE
+ARG VCS_BRANCH
+ARG VCS_REF
 WORKDIR /tracee
 
 COPY --from=falcosecurity/falcosidekick@sha256:a32d8850d51e9b096a09f4ae73ba6cde038c3fe1fd9c58baf76333dfda7e7bbd /app/falcosidekick ./
 COPY --from=build /tracee/dist/tracee-ebpf /tracee/dist/tracee-rules /tracee/entrypoint.sh ./
 COPY --from=build /tracee/dist/rules ./rules
+
+LABEL org.label-schema.build-date=$BUILD_DATE \
+    org.label-schema.description="Linux Runtime Security and Forensics using eBPF" \
+    org.label-schema.name="tracee" \
+    org.label-schema.schema-version="1.0" \
+    org.label-schema.vcs-branch=$VCS_BRANCH \
+    org.label-schema.vcs-ref=$VCS_REF \
+    org.label-schema.vcs-url="https://github.com/aquasecurity/tracee" \
+    org.label-schema.vendor="Aqua Security" \
+    org.label-schema.version=$VERSION
 
 ENTRYPOINT ["./entrypoint.sh"]
