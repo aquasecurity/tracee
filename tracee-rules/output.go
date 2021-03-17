@@ -55,10 +55,10 @@ func setupOutput(w io.Writer, clock Clock, webhook string, webhookTemplate strin
 			switch res.Context.(type) {
 			case tracee.Event:
 				if tOutput != nil {
-					if err := tOutput.Execute(w, res); err != nil {
+					if err := tOutput.Execute(w, types.FindingWithMetadata{Finding: res, SignatureMetadata: sigMetadata}); err != nil {
 						log.Println("error writing to output: ", err)
 					}
-				} else {
+				} else { // TODO: Remove this when it becomes default behavior
 					command := res.Context.(tracee.Event).ProcessName
 					hostName := res.Context.(tracee.Event).HostName
 					fmt.Fprintf(w, DetectionOutput, clock.Now().UTC().Format(time.RFC3339), sigMetadata.ID, sigMetadata.Name, res.Data, command, hostName)
