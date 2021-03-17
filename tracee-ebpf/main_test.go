@@ -1162,19 +1162,19 @@ func TestPrepareOutput(t *testing.T) {
 			expectedOutput: tracee.OutputConfig{
 				Format: "foo",
 			},
-			expectedError: nil,
+			expectedError: errors.New("invalid format value not match 'table', 'table-verbose', 'json', 'gob' or 'gotemplate=': foo. Use '--output help' for more info"),
 		},
 		{
 			testName:       "invalid output option",
 			outputSlice:    []string{"option:"},
 			expectedOutput: tracee.OutputConfig{},
-			expectedError:  errors.New("invalid output option: , use '--option help' for more info"),
+			expectedError:  errors.New("invalid output option: , use '--output help' for more info"),
 		},
 		{
 			testName:       "invalid output option 2",
 			outputSlice:    []string{"option:foo"},
 			expectedOutput: tracee.OutputConfig{},
-			expectedError:  errors.New("invalid output option: foo, use '--option help' for more info"),
+			expectedError:  errors.New("invalid output option: foo, use '--output help' for more info"),
 		},
 		{
 			testName:    "format explicit",
@@ -1215,7 +1215,7 @@ func TestPrepareOutput(t *testing.T) {
 			expectedOutput: tracee.OutputConfig{
 				Format: "out-file",
 			},
-			expectedError: nil,
+			expectedError: errors.New("invalid format value not match 'table', 'table-verbose', 'json', 'gob' or 'gotemplate=': out-file. Use '--output help' for more info"),
 		},
 		{
 			testName:    "err",
