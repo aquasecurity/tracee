@@ -52,7 +52,7 @@ Create a `.rego` file in the rules directory that has the following Rego Rules (
 2. `tracee_selected_events`: A *set* rule that defines the event selectors.
 3. `tracee_match`: A *boolean* or a *document* rule that defines the logic of the signature. If bool is "returned", a true evaluation will generate a Finding with no data if document is "returned", any non-empty evaluation will generate a Finding with the returned document as the Finding's "Data".
 
-See [example2.rego](/tracee-rules/signatures/rego/examples/example2.rego) and [example1.rego](/tracee-rules/signatures/rego/examples/example1.rego) for example Rego signatures.
+See [example2.rego](/tracee-rules/signatures/rego/examples/example2.rego) and [example1.rego](/tracee-rules/signatures/rego/examples/example1.rego) for example Rego signatures.  Helpers for writing rego rules are available in [tracee-rules/signatures/rego/helpers.rego](/tracee-rules/signatures/rego/helpers.rego).
 
 ### Go rules
 Tracee-Rules exports a `Signature` interface that you can implement. We use [Go Plugins](https://golang.org/pkg/plugin/) to load Go signatures.  
@@ -63,4 +63,4 @@ Tracee-Rules exports a `Signature` interface that you can implement. We use [Go 
 4. Compile using goplugins `go build -buildmode=plugin -o yourplugin.so yoursource.go`.
 5. Place the resulting compiled file in the rules directory and it will be automatically discovered by Tracee-Rules.
 
-See [example.go](/tracee-rules/signatures/golang/examples/example.go) for example Go signatures.
+See [example.go](/tracee-rules/signatures/golang/examples/example.go) for example Go signatures. Helpers for writing Go rules are available in [tracee-rules/signatures/helpers](/tracee-rules/signatures/helpers)
