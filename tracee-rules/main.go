@@ -74,7 +74,8 @@ func main() {
 			if inputs == (engine.EventSources{}) {
 				return err
 			}
-			output, err := setupOutput(os.Stdout, realClock{}, c.String("webhook"), c.String("webhook-template"), c.String("webhook-content-type"))
+
+			output, err := setupOutput(os.Stdout, realClock{}, c.String("webhook"), c.String("webhook-template"), c.String("webhook-content-type"), c.String("output"))
 			if err != nil {
 				return err
 			}
@@ -110,6 +111,10 @@ func main() {
 			&cli.StringSliceFlag{
 				Name:  "input-tracee",
 				Usage: "configure tracee-ebpf as input source. see '--input-tracee help' for more info",
+			},
+			&cli.StringFlag{
+				Name:  "output",
+				Usage: "configure output format via templates. Usage: --output=path/to/my.tmpl",
 			},
 		},
 	}

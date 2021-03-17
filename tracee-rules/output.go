@@ -26,15 +26,25 @@ Command: %s
 Hostname: %s
 `
 
-func setupOutput(resultWriter io.Writer, clock Clock, webhook string, webhookTemplate string, contentType string) (chan types.Finding, error) {
+func setupOutput(w io.Writer, clock Clock, webhook string, webhookTemplate string, contentType string, outputTemplate string) (chan types.Finding, error) {
 	out := make(chan types.Finding)
 
-	t, err := setupTemplate(webhookTemplate, realClock{})
+	tWebhook, err := setupTemplate(webhookTemplate, clock)
 	if err != nil && webhookTemplate != "" {
 		return nil, fmt.Errorf("error preparing webhook template: %v", err)
 	}
 
-	go func(t *template.Template) {
+	tOutput, err := template.New(filepath.Base(outputTemplate)).
+		Funcs(map[string]interface{}{
+			"timeNow": func(unixTs float64) string {
+				return clock.Now().UTC().Format("2006-01-02T15:04:05Z")
+			},
+		}).ParseFiles(outputTemplate)
+	if err != nil && outputTemplate != "" {
+		return nil, fmt.Errorf("error preparing output template: %v", err)
+	}
+
+	go func(w io.Writer, tWebhook, tOutput *template.Template) {
 		for res := range out {
 			sigMetadata, err := res.Signature.GetMetadata()
 			if err != nil {
@@ -44,21 +54,27 @@ func setupOutput(resultWriter io.Writer, clock Clock, webhook string, webhookTem
 
 			switch res.Context.(type) {
 			case tracee.Event:
-				command := res.Context.(tracee.Event).ProcessName
-				hostName := res.Context.(tracee.Event).HostName
-				fmt.Fprintf(resultWriter, DetectionOutput, clock.Now().UTC().Format(time.RFC3339), sigMetadata.ID, sigMetadata.Name, res.Data, command, hostName)
+				if tOutput != nil {
+					if err := tOutput.Execute(w, res); err != nil {
+						log.Println("error writing to output: ", err)
+					}
+				} else {
+					command := res.Context.(tracee.Event).ProcessName
+					hostName := res.Context.(tracee.Event).HostName
+					fmt.Fprintf(w, DetectionOutput, clock.Now().UTC().Format(time.RFC3339), sigMetadata.ID, sigMetadata.Name, res.Data, command, hostName)
+				}
 			default:
 				log.Printf("unsupported event detected: %T\n", res.Context)
 				continue
 			}
 
 			if webhook != "" {
-				if err := sendToWebhook(t, res, webhook, webhookTemplate, contentType, realClock{}); err != nil {
+				if err := sendToWebhook(tWebhook, res, webhook, webhookTemplate, contentType, realClock{}); err != nil {
 					log.Println(err)
 				}
 			}
 		}
-	}(t)
+	}(w, tWebhook, tOutput)
 	return out, nil
 }
 

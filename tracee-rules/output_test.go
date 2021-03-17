@@ -45,10 +45,11 @@ func Test_setupOutput(t *testing.T) {
 	var testCases = []struct {
 		name           string
 		inputContext   interface{}
+		outputFormat   string
 		expectedOutput string
 	}{
 		{
-			name: "happy path with tracee event",
+			name: "happy path with tracee event and default output",
 			inputContext: external.Event{
 				ProcessName: "foobar.exe",
 				HostName:    "foobar.local",
@@ -64,6 +65,19 @@ Hostname: foobar.local
 `,
 		},
 		{
+			name: "happy path with tracee event and custom output template",
+			inputContext: external.Event{
+				ProcessName: "foobar.exe",
+				HostName:    "foobar.local",
+			},
+			expectedOutput: `*** Detection ***
+Timestamp: 2021-02-23T01:54:57Z
+ProcessName: foobar.exe
+HostName: foobar.local
+`,
+			outputFormat: "templates/simple.tmpl",
+		},
+		{
 			name: "sad path with unknown context",
 			inputContext: struct {
 				foo string
@@ -74,7 +88,7 @@ Hostname: foobar.local
 
 	for _, tc := range testCases {
 		var actualOutput bytes.Buffer
-		findingCh, err := setupOutput(&actualOutput, fakeClock{}, "", "", "")
+		findingCh, err := setupOutput(&actualOutput, fakeClock{}, "", "", "", tc.outputFormat)
 		require.NoError(t, err, tc.name)
 
 		findingCh <- types.Finding{
