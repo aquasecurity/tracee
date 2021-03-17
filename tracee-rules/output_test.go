@@ -77,22 +77,6 @@ HostName: foobar.local
 `,
 			outputFormat: "templates/simple.tmpl",
 		},
-		{ // TODO: Make this the default output behaviour format
-			name: "happy path with tracee event and verbose custom output template",
-			inputContext: external.Event{
-				ProcessName: "foobar.exe",
-				HostName:    "foobar.local",
-			},
-			expectedOutput: `*** Detection ***
-Time: 2021-02-23T01:54:57Z
-Signature ID: FOO-666
-Signature: foo bar signature
-Data: map[foo1:bar1, baz1 foo2:[bar2 baz2]]
-Command: foobar.exe
-Hostname: foobar.local
-`,
-			outputFormat: "templates/verbose.tmpl",
-		},
 		{
 			name: "sad path with unknown context",
 			inputContext: struct {
@@ -100,7 +84,7 @@ Hostname: foobar.local
 			}{foo: "bad input context"},
 			expectedOutput: ``,
 		},
-		// TODO: Add invalid template test case
+		// TODO: Add invalid custom template test case
 	}
 
 	for _, tc := range testCases {
