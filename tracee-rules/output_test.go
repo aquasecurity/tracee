@@ -84,7 +84,14 @@ HostName: foobar.local
 			}{foo: "bad input context"},
 			expectedOutput: ``,
 		},
-		// TODO: Add invalid custom template test case
+		{
+			name: "sad path with invalid custom template",
+			inputContext: external.Event{
+				ProcessName: "foobar.exe",
+				HostName:    "foobar.local",
+			},
+			outputFormat: "goldens/broken.tmpl",
+		},
 	}
 
 	for _, tc := range testCases {
