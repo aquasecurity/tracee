@@ -26,32 +26,43 @@ Command: {{ .Finding.Context.ProcessName }}
 Hostname: {{ .Finding.Context.HostName }}
 `
 
+func setupTemplate(inputTemplateFile string, clock Clock) (*template.Template, error) {
+	funcMap := map[string]interface{}{
+		"timeNow": func(unixTs float64) string {
+			return clock.Now().UTC().Format("2006-01-02T15:04:05Z")
+		},
+	}
+
+	switch {
+	case inputTemplateFile != "":
+		return template.New(filepath.Base(inputTemplateFile)).
+			Funcs(funcMap).
+			ParseFiles(inputTemplateFile)
+	default:
+		return template.New("default").
+			Funcs(funcMap).
+			Parse(DefaultDetectionOutputTemplate)
+	}
+}
+
 func setupOutput(w io.Writer, clock Clock, webhook string, webhookTemplate string, contentType string, outputTemplate string) (chan types.Finding, error) {
 	out := make(chan types.Finding)
+	var err error
 
-	tWebhook, err := setupTemplate(webhookTemplate, clock)
+	var tWebhook *template.Template
+	tWebhook, err = setupTemplate(webhookTemplate, clock)
 	if err != nil && webhookTemplate != "" {
 		return nil, fmt.Errorf("error preparing webhook template: %v", err)
 	}
 
 	var tOutput *template.Template
 	if outputTemplate == "" {
-		tOutput, err = template.New("default").
-			Funcs(map[string]interface{}{
-				"timeNow": func(unixTs float64) string {
-					return clock.Now().UTC().Format("2006-01-02T15:04:05Z")
-				},
-			}).Parse(DefaultDetectionOutputTemplate)
+		tOutput, err = setupTemplate("", clock)
 		if err != nil {
 			return nil, fmt.Errorf("error preparing default output template: %v", err)
 		}
 	} else {
-		tOutput, err = template.New(filepath.Base(outputTemplate)).
-			Funcs(map[string]interface{}{
-				"timeNow": func(unixTs float64) string {
-					return clock.Now().UTC().Format("2006-01-02T15:04:05Z")
-				},
-			}).ParseFiles(outputTemplate)
+		tOutput, err = setupTemplate(outputTemplate, clock)
 		if err != nil && outputTemplate != "" {
 			return nil, fmt.Errorf("error preparing custom output template: %v", err)
 		}
@@ -83,15 +94,6 @@ func setupOutput(w io.Writer, clock Clock, webhook string, webhookTemplate strin
 		}
 	}(w, tWebhook, tOutput)
 	return out, nil
-}
-
-func setupTemplate(webhookTemplate string, clock Clock) (*template.Template, error) {
-	return template.New(filepath.Base(webhookTemplate)).
-		Funcs(map[string]interface{}{
-			"timeNow": func(unixTs float64) string {
-				return clock.Now().UTC().Format("2006-01-02T15:04:05Z")
-			},
-		}).ParseFiles(webhookTemplate)
 }
 
 func sendToWebhook(t *template.Template, res types.Finding, webhook string, webhookTemplate string, contentType string, clock Clock) error {
