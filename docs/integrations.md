@@ -1,0 +1,5 @@
+Tracee leverages [falco-sidekick](https://github.com/falcosecurity/falcosidekick) for sending it's detection events into other systems which are easier to consume. You can use any of falco-sidekick's supported "outputs", which includes: Slack, Mattermost, Teams, Datadog, Prometheus, StatsD, Email, Elasticsearch, Loki, PagerDuty, OpsGenie, and many more. The full list is available [here](https://github.com/falcosecurity/falcosidekick#outputs).
+
+To configure Tracee to integrate with another system, compose a falco-sidekick configuration file, and provide it to Tracee using the `TRACEE_WEBHOOK_CONFIG` environment variable. By default, Tracee will try to find this file at `/tmp/tracee/integrations-config.yaml`, so if you have followed the quickstart and started the container with `/tmp/tracee` mounted in, you can simply drop that file there.
+
+A complete reference of falco-sidekick's configuration format is available [here](https://github.com/falcosecurity/falcosidekick/blob/master/config_example.yaml).

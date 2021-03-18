@@ -1,0 +1,64 @@
+site_name: Tracee
+site_url: https://aquasecurity.github.io/tracee/
+site_description: Tracee is a runtime security and forensics tool for Linux, using Linux eBPF technology to trace your system and applications at runtime, and analyze collected events to detect suspicious behavioral patterns.
+docs_dir: docs/
+repo_name: GitHub
+repo_url: https://github.com/aquasecurity/tracee
+edit_uri: ""
+
+nav:
+  - Overview: index.md
+  - Getting Started:
+    - Overview: prerequisites.md
+    - Quickstart: quickstart.md
+    - Rules: rule.md
+    - Integrations: integrations.md
+    - Setup Options: options.md
+  - Tracee-eBPF:
+    - Overview: ebpf/index.md
+    - Getting started:
+      - Overview: ebpf/prerequisites.md
+      - Quickstart with Docker: ebpf/quickstart.md
+      - Getting Tracee-eBPF: ebpf/tracee-ebpf.md
+      - Setup Options: ebpf/options.md
+      - Docker for MAC: ebpf/docker-mac.md
+    - Using Tracee:
+      - Overview: ebpf/using.md
+      - Understanding the Output: ebpf/understanding.md
+      - Customizing the Output: ebpf/customizing.md
+      - Selecting What to Trace: ebpf/select.md
+      - Capturing Artifacts: ebpf/capture.md
+    - Secure Tracing: ebpf/secure-tracing.md
+  - Tracee Rules:
+    - Overview: rules/index.md
+    - Prerequisites: rules/prerequisites.md
+    - Integrations: rules/integrations.md
+    - Rules:
+      - Overview: rules/rules.md
+      - Rego Rules: rules/rego.md
+      - Go Rules: rules/go.md
+  - libbpfgo:
+    - Overview: libbpfgo/index.md
+    - Installation: libbpfgo/install.md
+    - Concepts: libbpfgo/concepts.md
+    - Examples: libbpfgo/examples.md
+
+theme:
+    name: material
+    language: 'en'
+    logo: images/tracee.png
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - admonition
+
+extra:
+  generator: false
+  version:
+    method: mike
+    provider: mike
+
+plugins:
+  - search
+  - macros
