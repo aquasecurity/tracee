@@ -38,6 +38,8 @@ You can also use a custom template (or use a pre-supplied one) to further tune y
 When supplying a custom template, fields of the `types.Finding` event type can be used as output fields. These are available [here](https://github.com/aquasecurity/tracee/blob/28fbc66be8c9f3efa53f617a654cafe7421e8c70/tracee-rules/types/types.go#L46-L50). Some examples of custom templates are documented [here](templates/).
  
  Custom templates can be passed in via the `--webhook-template` flag. Payload Content-Type can be specified (and is recommended) when using a custom template with the `--webhook-content-type` flag.
+ 
+ Custom templates can also be used to format stdio logging output. You can specify a custom template with the `--output` flag.
 
 # Rules
 Rules are discovered from the local `rules` directory (unless changed by the `--rules-dir` flag). By default, all discovered rules will be loaded unless specific rules are selected using the `--rules` flag.
