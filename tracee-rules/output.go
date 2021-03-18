@@ -18,7 +18,7 @@ import (
 
 const DefaultDetectionOutputTemplate string = `
 *** Detection ***
-Time: {{ .Finding.Context.Timestamp | timeNow }}
+Time: {{ timeNow }}
 Signature ID: {{ .ID }}
 Signature: {{ .Name }}
 Data: {{ .Finding.Data }}
@@ -28,7 +28,7 @@ Hostname: {{ .Finding.Context.HostName }}
 
 func setupTemplate(inputTemplateFile string, clock Clock) (*template.Template, error) {
 	funcMap := map[string]interface{}{
-		"timeNow": func(unixTs float64) string {
+		"timeNow": func() string {
 			return clock.Now().UTC().Format("2006-01-02T15:04:05Z")
 		},
 	}
