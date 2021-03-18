@@ -56,16 +56,9 @@ func setupOutput(w io.Writer, clock Clock, webhook string, webhookTemplate strin
 	}
 
 	var tOutput *template.Template
-	if outputTemplate == "" {
-		tOutput, err = setupTemplate("", clock)
-		if err != nil {
-			return nil, fmt.Errorf("error preparing default output template: %v", err)
-		}
-	} else {
-		tOutput, err = setupTemplate(outputTemplate, clock)
-		if err != nil && outputTemplate != "" {
-			return nil, fmt.Errorf("error preparing custom output template: %v", err)
-		}
+	tOutput, err = setupTemplate(outputTemplate, clock)
+	if err != nil && outputTemplate != "" {
+		return nil, fmt.Errorf("error preparing output template: %v", err)
 	}
 
 	go func(w io.Writer, tWebhook, tOutput *template.Template) {
