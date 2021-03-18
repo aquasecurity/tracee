@@ -228,11 +228,11 @@ type PerfBuffer struct {
 }
 
 type RingBuffer struct {
-	rb      *C.struct_ring_buffer
-	bpfMap  *BPFMap
-	stop    chan struct{}
-	closed  bool
-	wg      sync.WaitGroup
+	rb     *C.struct_ring_buffer
+	bpfMap *BPFMap
+	stop   chan struct{}
+	closed bool
+	wg     sync.WaitGroup
 }
 
 // BPF is using locked memory for BPF maps and various other things.
@@ -691,10 +691,10 @@ func (rb *RingBuffer) Close() {
 
 func (rb *RingBuffer) isStopped() bool {
 	select {
-		case _, _ = <-rb.stop:
-			return true
-		default:
-			return false
+	case _, _ = <-rb.stop:
+		return true
+	default:
+		return false
 	}
 }
 

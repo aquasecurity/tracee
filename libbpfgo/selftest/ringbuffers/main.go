@@ -3,10 +3,12 @@ package main
 import "C"
 
 import (
-	bpf "github.com/aquasecurity/tracee/libbpfgo"
 	"os"
-	"fmt"
+
 	"encoding/binary"
+	"fmt"
+
+	bpf "github.com/aquasecurity/tracee/libbpfgo"
 )
 
 func main() {
@@ -39,7 +41,7 @@ func main() {
 	numberOfEventsReceived := 0
 
 recvLoop:
-	for  {
+	for {
 		b := <-eventsChannel
 		if binary.LittleEndian.Uint32(b) != 2021 {
 			fmt.Fprintf(os.Stderr, "invalid data retrieved\n")
