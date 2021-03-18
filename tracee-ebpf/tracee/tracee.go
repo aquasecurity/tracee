@@ -16,6 +16,7 @@ import (
 	"syscall"
 
 	bpf "github.com/aquasecurity/tracee/libbpfgo"
+	"github.com/aquasecurity/tracee/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
 )
 
@@ -1126,27 +1127,27 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 		}
 		if ctx.EventID == CapCapableEventID {
 			if capability, isInt32 := args[t.EncParamName[ctx.EventID%2]["cap"]].(int32); isInt32 {
-				args[t.EncParamName[ctx.EventID%2]["cap"]] = PrintCapability(capability)
+				args[t.EncParamName[ctx.EventID%2]["cap"]] = helpers.ParseCapability(capability)
 			}
 		}
 	case MmapEventID, MprotectEventID, PkeyMprotectEventID:
 		if prot, isInt32 := args[t.EncParamName[ctx.EventID%2]["prot"]].(int32); isInt32 {
-			args[t.EncParamName[ctx.EventID%2]["prot"]] = PrintMemProt(uint32(prot))
+			args[t.EncParamName[ctx.EventID%2]["prot"]] = helpers.ParseMemProt(uint32(prot))
 		}
 	case PtraceEventID:
 		if req, isInt64 := args[t.EncParamName[ctx.EventID%2]["request"]].(int64); isInt64 {
-			args[t.EncParamName[ctx.EventID%2]["request"]] = PrintPtraceRequest(req)
+			args[t.EncParamName[ctx.EventID%2]["request"]] = helpers.ParsePtraceRequest(req)
 		}
 	case PrctlEventID:
 		if opt, isInt32 := args[t.EncParamName[ctx.EventID%2]["option"]].(int32); isInt32 {
-			args[t.EncParamName[ctx.EventID%2]["option"]] = PrintPrctlOption(opt)
+			args[t.EncParamName[ctx.EventID%2]["option"]] = helpers.ParsePrctlOption(opt)
 		}
 	case SocketEventID:
 		if dom, isInt32 := args[t.EncParamName[ctx.EventID%2]["domain"]].(int32); isInt32 {
-			args[t.EncParamName[ctx.EventID%2]["domain"]] = PrintSocketDomain(uint32(dom))
+			args[t.EncParamName[ctx.EventID%2]["domain"]] = helpers.ParseSocketDomain(uint32(dom))
 		}
 		if typ, isInt32 := args[t.EncParamName[ctx.EventID%2]["type"]].(int32); isInt32 {
-			args[t.EncParamName[ctx.EventID%2]["type"]] = PrintSocketType(uint32(typ))
+			args[t.EncParamName[ctx.EventID%2]["type"]] = helpers.ParseSocketType(uint32(typ))
 		}
 	case ConnectEventID, AcceptEventID, Accept4EventID, BindEventID, GetsocknameEventID:
 		if sockAddr, isStrMap := args[t.EncParamName[ctx.EventID%2]["addr"]].(map[string]string); isStrMap {
@@ -1160,19 +1161,19 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 		}
 	case AccessEventID, FaccessatEventID:
 		if mode, isInt32 := args[t.EncParamName[ctx.EventID%2]["mode"]].(int32); isInt32 {
-			args[t.EncParamName[ctx.EventID%2]["mode"]] = PrintAccessMode(uint32(mode))
+			args[t.EncParamName[ctx.EventID%2]["mode"]] = helpers.ParseAccessMode(uint32(mode))
 		}
 	case ExecveatEventID:
 		if flags, isInt32 := args[t.EncParamName[ctx.EventID%2]["flags"]].(int32); isInt32 {
-			args[t.EncParamName[ctx.EventID%2]["flags"]] = PrintExecFlags(uint32(flags))
+			args[t.EncParamName[ctx.EventID%2]["flags"]] = helpers.ParseExecFlags(uint32(flags))
 		}
 	case OpenEventID, OpenatEventID, SecurityFileOpenEventID:
 		if flags, isInt32 := args[t.EncParamName[ctx.EventID%2]["flags"]].(int32); isInt32 {
-			args[t.EncParamName[ctx.EventID%2]["flags"]] = PrintOpenFlags(uint32(flags))
+			args[t.EncParamName[ctx.EventID%2]["flags"]] = helpers.ParseOpenFlags(uint32(flags))
 		}
 	case MknodEventID, MknodatEventID, ChmodEventID, FchmodEventID, FchmodatEventID:
 		if mode, isUint32 := args[t.EncParamName[ctx.EventID%2]["mode"]].(uint32); isUint32 {
-			args[t.EncParamName[ctx.EventID%2]["mode"]] = PrintInodeMode(mode)
+			args[t.EncParamName[ctx.EventID%2]["mode"]] = helpers.ParseInodeMode(mode)
 		}
 	case MemProtAlertEventID:
 		if alert, isAlert := args[t.EncParamName[ctx.EventID%2]["alert"]].(alert); isAlert {
@@ -1180,7 +1181,7 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 		}
 	case CloneEventID:
 		if flags, isUint64 := args[t.EncParamName[ctx.EventID%2]["flags"]].(uint64); isUint64 {
-			args[t.EncParamName[ctx.EventID%2]["flags"]] = PrintCloneFlags(flags)
+			args[t.EncParamName[ctx.EventID%2]["flags"]] = helpers.ParseCloneFlags(flags)
 		}
 	case SendtoEventID, RecvfromEventID:
 		addrTag := t.EncParamName[ctx.EventID%2]["dest_addr"]
@@ -1198,7 +1199,7 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 		}
 	case BpfEventID:
 		if cmd, isInt32 := args[t.EncParamName[ctx.EventID%2]["cmd"]].(int32); isInt32 {
-			args[t.EncParamName[ctx.EventID%2]["cmd"]] = PrintBPFCmd(cmd)
+			args[t.EncParamName[ctx.EventID%2]["cmd"]] = helpers.ParseBPFCmd(cmd)
 		}
 	}
 
@@ -1426,7 +1427,7 @@ func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	res["sa_family"] = PrintSocketDomain(uint32(family))
+	res["sa_family"] = helpers.ParseSocketDomain(uint32(family))
 	switch family {
 	case 1: // AF_UNIX
 		/*

@@ -61,11 +61,15 @@ LD_PRELOAD | Usage of LD_PRELOAD to allow hooks on process | "linux", "container
 
 ### Integrations
 
-Tracee leverages [falco-sidekick](https://github.com/falcosecurity/falcosidekick) for sending it's detection events into other systems which are easier to consume. You can use any of falco-sidekick's supported "outputs", which includes: Slack, Mattermost, Teams, Datadog, Prometheus, StatsD, Email, Elasticsearch, Loki, PagerDuty, OpsGenie, and many more. The full list is available [here](https://github.com/falcosecurity/falcosidekick#outputs).
+Tracee can notify a web service when a detection is made using a custom webhook. You can configure Tracee's webhook settings using the following flags:
 
-To configure Tracee to integrate with another system, compose a falco-sidekick configuration file, and provide it to Tracee using the `TRACEE_WEBHOOK_CONFIG` environment variable. By default, Tracee will try to find this file at `/tmp/tracee/integrations-config.yaml`, so if you have followed the quickstart and started the container with `/tmp/tracee` mounted in, you can simply drop that file there.
+Flag name | Description | Example
+--- | --- | ---
+`--webhook-url` | The webhook URL | `--webhook-url http://my.webhook/endpoint`
+`--webhook-template` | Path to Go-template that formats the payload to send. Tracee's [Finding](https://github.com/aquasecurity/tracee/blob/28fbc66be8c9f3efa53f617a654cafe7421e8c70/tracee-rules/types/types.go#L46-L50) type is available to use within the template | `--webhook-template /path/to/my.tmpl` <br> See template examples [here](tracee-rules/templates/).
+`--webhook-content-type` | If present, will set the Content-Type HTTP header to match the provided template | `--webhook-content-type application/json`
 
-A complete reference of falco-sidekick's configuration format is available [here](https://github.com/falcosecurity/falcosidekick/blob/master/config_example.yaml).
+A popular webhook server that can be used with Tracee is [falcosidekick](https://github.com/falcosecurity/falcosidekick), which can send detection events into other systems of your choosing (for example Slack, Teams, Datadog, Prometheus, Email, Elasticsearch, PagerDuty, and many more). For more information on falcosidekick see [here](https://github.com/falcosecurity/falcosidekick/blob/master/config_example.yaml).
 
 ### Setup options
 

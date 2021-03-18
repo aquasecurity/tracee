@@ -1,4 +1,4 @@
-package main
+package helpers
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
 )
 
-type connectAddrData struct {
+type ConnectAddrData struct {
 	SaFamily string `json:"sa_family"`
 	SinPort  string `json:"sin_port"`
 	SinAddr  string `json:"sin_addr"`
@@ -16,6 +16,7 @@ type connectAddrData struct {
 	SinAddr6 string `json:"sin6_addr"`
 }
 
+// GetTraceeArgumentByName fetches the argument in event with `Name` that matches argName
 func GetTraceeArgumentByName(event tracee.Event, argName string) (tracee.Argument, error) {
 	for _, arg := range event.Args {
 		if arg.Name == argName {
@@ -25,6 +26,8 @@ func GetTraceeArgumentByName(event tracee.Event, argName string) (tracee.Argumen
 	return tracee.Argument{}, fmt.Errorf("argument %s not found", argName)
 }
 
+// IsFileWrite returns whether or not the passed file permissions string contains
+// o_wronly or o_rdwr
 func IsFileWrite(flags string) bool {
 	flagsLow := strings.ToLower(flags)
 	if strings.Contains(flagsLow, "o_wronly") || strings.Contains(flagsLow, "o_rdwr") {
@@ -33,7 +36,8 @@ func IsFileWrite(flags string) bool {
 	return false
 }
 
-func GetAddrStructFromArg(addrArg tracee.Argument, connectData *connectAddrData) error {
+// GetAddrStructFromArg populates connectData with the value of the addrArg
+func GetAddrStructFromArg(addrArg tracee.Argument, connectData *ConnectAddrData) error {
 	addrStr := strings.Replace(addrArg.Value.(string), "'", "\"", -1)
 	err := json.Unmarshal([]byte(addrStr), &connectData)
 	if err != nil {
