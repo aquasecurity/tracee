@@ -7,6 +7,10 @@ PUSH_DOCKER_TAG ?= $(RELEASE_TAG:v%=%)
 RELEASE_FILES := LICENSE $(OUT_DIR)/tracee-ebpf $(OUT_DIR)/tracee-rules $(OUT_DIR)/rules
 # RELEASE_TAG must be set for the release target
 VERSION ?= $(if $(RELEASE_TAG),$(RELEASE_TAG),$(shell $(CMD_GIT) describe --tags 2>/dev/null || echo '0'))
+BUILD_DATE = $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+VCS_REF="$(shell git rev-parse --short HEAD)"
+VCS_BRANCH="$(shell git rev-parse --abbrev-ref HEAD)"
+BUILD_ARG_DOCKER =--build-arg VERSION=$(VERSION) --build-arg BUILD_DATE=$(BUILD_DATE) --build-arg VCS_BRANCH=$(VCS_BRANCH) --build-arg VCS_REF=$(VCS_REF)
 
 CMD_DOCKER ?= docker
 CMD_GIT ?= git
@@ -52,11 +56,11 @@ $(OUT_ARCHIVE) $(OUT_CHECKSUMS) &: $(RELEASE_FILES) | $(OUT_DIR)
 
 .PHONY: docker
 docker:
-	$(CMD_DOCKER) build --build-arg VERSION=$(VERSION) -t $(OUT_DOCKER):latest .
+	$(CMD_DOCKER) build $(BUILD_ARG_DOCKER) -t $(OUT_DOCKER):latest .
 
 .PHONY: docker-slim
 docker-slim:
-	$(CMD_DOCKER) build --build-arg VERSION=$(VERSION) -t $(OUT_DOCKER):slim --build-arg BASE=slim .
+	$(CMD_DOCKER) build $(BUILD_ARG_DOCKER) -t $(OUT_DOCKER):slim --build-arg BASE=slim .
 
 # release_docker_image accepts a docker image $1, pushes it as $2 to remote repository, and records it in the release notes
 define release_docker_image
