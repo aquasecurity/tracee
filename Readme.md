@@ -75,7 +75,7 @@ A popular webhook server that can be used with Tracee is [falcosidekick](https:/
 
 Tracee is leveraging Linux's eBPF technology, which is kernel and version sensitive, and therefore needs to be specifically compiled for your hosts.
 
-The easiest way to get started is to just let Tracee build the eBPF program for you automatically when it starts, as demonstrated by the [Quickstart](#quickstart).  
+The easiest way to get started is to just let Tracee build the eBPF program for you automatically when it starts, as demonstrated by the [Quickstart](#quickstart-with-docker).  
 Alternatively, you can pre-compile the eBPF program, and provide it to Tracee. There are some benefits to this approach as you will not need clang and kernel headers at runtime anymore, as well as reduced risk of invoking an external program at runtime.
 
 You can build the eBPF program in the following ways:
@@ -93,7 +93,7 @@ In this case, the full Docker image can be replaced by the lighter-weight `aquas
 
 Tracee uses a filesystem directory, by default `/tmp/tracee` as a work space and for default search location for file based user input. When running in a container, it's useful to mount this directory in, so that the artifacts are accessible after the container exits. For example, you can add this to the docker run command `-v /tmp/tracee:/tmp/tracee`.
 
-If running in a container, regardless if it's the full or slim image, it's advisable to reuse the eBPF program across runs by mounting it from the host to the container. This way if the container builds the eBPF program it will be persisted on the host, and if the eBPF program already exists on the host, the container will automatically discover it. If you've already mounted the `/tmp/tracee` directory from the host (like suggested by the [quickstart](#quickstart), you're good to go, since Tracee by default will use this location for the eBPF program. You can also mount the eBPF program file individually if it's stored elsewhere (e.g in a shared volume), for example: `-v /path/to/tracee.bpf.1_2_3.4_5_6.o:/some/path/tracee.bpf.1_2_3.4_5_6.o -e TRACEE_BPF_FILE=/some/path`. 
+If running in a container, regardless if it's the full or slim image, it's advisable to reuse the eBPF program across runs by mounting it from the host to the container. This way if the container builds the eBPF program it will be persisted on the host, and if the eBPF program already exists on the host, the container will automatically discover it. If you've already mounted the `/tmp/tracee` directory from the host (like suggested by the [quickstart-with-docker](#quickstart), you're good to go, since Tracee by default will use this location for the eBPF program. You can also mount the eBPF program file individually if it's stored elsewhere (e.g in a shared volume), for example: `-v /path/to/tracee.bpf.1_2_3.4_5_6.o:/some/path/tracee.bpf.1_2_3.4_5_6.o -e TRACEE_BPF_FILE=/some/path`. 
 
 If you are building the eBPF program in a container, you'll need to make the kernel headers available in the container. The quickstart example has broader mounts that works in a variety of cases, for demonstration purposes. If you want, you can narrow those mounts down to the specific directory that contains the headers on your setup, for example: `-v /path/to/headers:/myheaders -e KERN_HEADERS=/myheaders`. As mentioned before, a better practice for production is to pre-compile the eBPF program, in which case the kernel headers are not needed at runtime.
 
