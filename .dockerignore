@@ -1,0 +1,3 @@
+./dist/*
+./tracee-ebpf/dist/*
+./tracee-rules/dist/*
