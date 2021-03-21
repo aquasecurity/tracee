@@ -327,6 +327,8 @@ Examples:
   --trace 'pid>0' --trace 'pid<1000'                           | only trace events from pids between 0 and 1000
   --trace 'u>0' --trace u!=1000                                | only trace events from uids greater than 0 but not 1000
   --trace event=execve,open                                    | only trace execve and open events
+  --trace event=open*                                          | only trace events prefixed by "open"
+  --trace event!=open*,dup*                                    | don't trace events prefixed by "open" or "dup"
   --trace set=fs                                               | trace all file-system related events
   --trace s=fs --trace e!=open,openat                          | trace all file-system related events, but not open(at)
   --trace uts!=ab356bc4dd554                                   | don't trace events from uts name ab356bc4dd554
@@ -798,11 +800,26 @@ func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.St
 		}
 	}
 	for _, name := range excludeEvents {
-		id, ok := eventsNameToID[name]
-		if !ok {
-			return nil, fmt.Errorf("invalid event to exclude: %s", name)
+		// Handle event prefixes with wildcards
+		if strings.HasSuffix(name, "*") {
+			found := false
+			prefix := name[:len(name)-1]
+			for event, id := range eventsNameToID {
+				if strings.HasPrefix(event, prefix) {
+					isExcluded[id] = true
+					found = true
+				}
+			}
+			if !found {
+				return nil, fmt.Errorf("invalid event to exclude: %s", name)
+			}
+		} else {
+			id, ok := eventsNameToID[name]
+			if !ok {
+				return nil, fmt.Errorf("invalid event to exclude: %s", name)
+			}
+			isExcluded[id] = true
 		}
-		isExcluded[id] = true
 	}
 	if len(eventsToTrace) == 0 && len(setsToTrace) == 0 {
 		setsToTrace = append(setsToTrace, "default")
@@ -810,11 +827,28 @@ func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.St
 
 	res = make([]int32, 0, len(tracee.EventsIDToEvent))
 	for _, name := range eventsToTrace {
-		id, ok := eventsNameToID[name]
-		if !ok {
-			return nil, fmt.Errorf("invalid event to trace: %s", name)
+		// Handle event prefixes with wildcards
+		if strings.HasSuffix(name, "*") {
+			var ids []int32
+			found := false
+			prefix := name[:len(name)-1]
+			for event, id := range eventsNameToID {
+				if strings.HasPrefix(event, prefix) {
+					ids = append(ids, id)
+					found = true
+				}
+			}
+			if !found {
+				return nil, fmt.Errorf("invalid event to trace: %s", name)
+			}
+			res = append(res, ids...)
+		} else {
+			id, ok := eventsNameToID[name]
+			if !ok {
+				return nil, fmt.Errorf("invalid event to trace: %s", name)
+			}
+			res = append(res, id)
 		}
-		res = append(res, id)
 	}
 	for _, set := range setsToTrace {
 		setEvents, ok := setsToEvents[set]
