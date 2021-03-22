@@ -1,7 +1,7 @@
 package libbpfgo
 
 /*
-#cgo LDFLAGS: -lelf -lz
+#cgo LDFLAGS: -lelf -lz -lbpf
 
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
@@ -243,7 +243,7 @@ func bumpMemlockRlimit() error {
 	rLimit.Cur = 512 << 20 /* 512 MBs */
 	err := syscall.Setrlimit(C.RLIMIT_MEMLOCK, &rLimit)
 	if err != nil {
-		fmt.Errorf("error setting rlimit: %v", err)
+		return fmt.Errorf("error setting rlimit: %v", err)
 	}
 	return nil
 }
@@ -664,7 +664,7 @@ func (rb *RingBuffer) Stop() {
 		// goroutine will block in the callback.
 		eventChan := eventChannels[uintptr(rb.bpfMap.fd)]
 		go func() {
-			for _ = range eventChan {
+			for range eventChan {
 			}
 		}()
 
@@ -691,7 +691,7 @@ func (rb *RingBuffer) Close() {
 
 func (rb *RingBuffer) isStopped() bool {
 	select {
-	case _, _ = <-rb.stop:
+	case <-rb.stop:
 		return true
 	default:
 		return false
@@ -770,5 +770,4 @@ func (pb *PerfBuffer) poll() error {
 			}
 		}
 	}
-	return nil
 }
