@@ -13,7 +13,7 @@ import (
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
-	"github.com/urfave/cli/v2"
+	cli "github.com/urfave/cli/v2"
 )
 
 type Clock interface {
