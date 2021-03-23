@@ -113,8 +113,8 @@ func main() {
 				Usage: "configure tracee-ebpf as input source. see '--input-tracee help' for more info",
 			},
 			&cli.StringFlag{
-				Name:  "output",
-				Usage: "configure output format via templates. Usage: --output=path/to/my.tmpl",
+				Name:  "output-template",
+				Usage: "configure output format via templates. Usage: --output-template=path/to/my.tmpl",
 			},
 		},
 	}

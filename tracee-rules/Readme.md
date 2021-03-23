@@ -39,7 +39,7 @@ Flag name | Description | Example
 `--webhook-url` | The webhook URL | `--webhook-url http://my.webhook/endpoint`
 `--webhook-template` | Path to Go-template that formats the payload to send. Tracee's [Finding](https://github.com/aquasecurity/tracee/blob/28fbc66be8c9f3efa53f617a654cafe7421e8c70/tracee-rules/types/types.go#L46-L50) type is available to use within the template | `--webhook-template /path/to/my.tmpl` <br> See template examples [here](tracee-rules/templates/).
 `--webhook-content-type` | If present, will set the Content-Type HTTP header to match the provided template | `--webhook-content-type application/json`
-`--output` | Path to a Go-template that will format the standard logging output to display | `--output /path/to/my.tmpl`
+`--output-template` | Path to a Go-template that will format the standard logging output to display | `--output-template /path/to/my.tmpl`
 
 
 # Rules
