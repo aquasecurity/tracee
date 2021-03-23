@@ -224,7 +224,9 @@ type BPFLink struct {
 type PerfBuffer struct {
 	pb     *C.struct_perf_buffer
 	bpfMap *BPFMap
-	stop   chan bool
+	stop   chan struct{}
+	closed bool
+	wg     sync.WaitGroup
 }
 
 type RingBuffer struct {
@@ -664,7 +666,7 @@ func (rb *RingBuffer) Stop() {
 		// goroutine will block in the callback.
 		eventChan := eventChannels[uintptr(rb.bpfMap.fd)]
 		go func() {
-			for _ = range eventChan {
+			for range eventChan {
 			}
 		}()
 
@@ -736,26 +738,65 @@ func (m *Module) InitPerfBuf(mapName string, eventsChan chan []byte, lostChan ch
 	perfBuf := &PerfBuffer{
 		pb:     pb,
 		bpfMap: bpfMap,
-		stop:   make(chan bool),
 	}
 	m.perfBufs = append(m.perfBufs, perfBuf)
 	return perfBuf, nil
 }
 
 func (pb *PerfBuffer) Start() {
+	pb.stop = make(chan struct{})
+	pb.wg.Add(1)
 	go pb.poll()
 }
 
 func (pb *PerfBuffer) Stop() {
-	pb.stop <- true
+	if pb.stop != nil {
+		// Tell the poll goroutine that it's time to exit
+		close(pb.stop)
+
+		eventsChan := eventChannels[uintptr(pb.bpfMap.fd)]
+		lostChan := lostChannels[uintptr(pb.bpfMap.fd)]
+
+		// The event and lost channels should be drained here since the consumer
+		// may have stopped at this point. Failure to drain it will
+		// result in a deadlock: the channel will fill up and the poll
+		// goroutine will block in the callback.
+		go func() {
+			for range eventsChan {
+			}
+
+			if lostChan != nil {
+				for range lostChan {
+				}
+			}
+		}()
+
+		// Wait for the poll goroutine to exit
+		pb.wg.Wait()
+
+		// Close the channel -- this is useful for the consumer but
+		// also to terminate the drain goroutine above.
+		close(eventsChan)
+		close(lostChan)
+
+		// This allows Stop() to be called multiple times safely
+		pb.stop = nil
+	}
 }
 
 func (pb *PerfBuffer) Close() {
+	if pb.closed {
+		return
+	}
+	pb.Stop()
 	C.perf_buffer__free(pb.pb)
+	pb.closed = true
 }
 
 // todo: consider writing the perf polling in go as c to go calls (callback) are expensive
 func (pb *PerfBuffer) poll() error {
+	defer pb.wg.Done()
+
 	for {
 		select {
 		case <-pb.stop:
