@@ -75,7 +75,7 @@ func main() {
 				return err
 			}
 
-			output, err := setupOutput(os.Stdout, realClock{}, c.String("webhook"), c.String("webhook-template"), c.String("webhook-content-type"), c.String("output"))
+			output, err := setupOutput(os.Stdout, c.String("webhook"), c.String("webhook-template"), c.String("webhook-content-type"), c.String("output-template"))
 			if err != nil {
 				return err
 			}

@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -96,7 +97,7 @@ HostName: foobar.local
 
 	for _, tc := range testCases {
 		var actualOutput bytes.Buffer
-		findingCh, err := setupOutput(&actualOutput, fakeClock{}, "", "", "", tc.outputFormat)
+		findingCh, err := setupOutput(&actualOutput, "", "", "", tc.outputFormat)
 		require.NoError(t, err, tc.name)
 
 		findingCh <- types.Finding{
@@ -109,7 +110,19 @@ HostName: foobar.local
 		}
 
 		time.Sleep(time.Millisecond)
-		assert.Equal(t, tc.expectedOutput, actualOutput.String(), tc.name)
+		checkOutput(t, tc.name, actualOutput, tc.expectedOutput)
+	}
+}
+
+func checkOutput(t *testing.T, testName string, actualOutput bytes.Buffer, expectedOutput string) {
+	got := strings.Split(actualOutput.String(), "\n")
+	for _, g := range got {
+		if strings.Contains(g, "Time") {
+			_, err := time.Parse("2006-01-02T15:04:05Z", strings.Split(g, " ")[1])
+			assert.NoError(t, err, testName) // check if time is parsable
+		} else {
+			assert.Contains(t, expectedOutput, g, testName)
+		}
 	}
 }
 
@@ -151,22 +164,6 @@ HostName: foobar.local
 			inputTemplateFile: "templates/sprig.tmpl",
 		},
 		{
-			name:              "happy path, with CSV template",
-			contentType:       "text/csv",
-			expectedOutput:    `2021-02-23T01:54:57Z,foobar.exe,foobar.local`,
-			inputTemplateFile: "templates/csv.tmpl",
-		},
-		{
-			name:        "happy path, with XML template",
-			contentType: "application/xml",
-			expectedOutput: `<?xml version="1.0" encoding="UTF-8" ?>
- <detection timestamp="2021-02-23T01:54:57Z">
-    <processname>foobar.exe</processname>
-    <hostname>foobar.local</hostname>
- </detection>`,
-			inputTemplateFile: "templates/xml.tmpl",
-		},
-		{
 			name: "sad path, with failing GetMetadata func for sig",
 			inputSignature: fakeSignature{
 				getMetadata: func() (types.SignatureMetadata, error) {
@@ -197,7 +194,7 @@ HostName: foobar.local
 		t.Run(tc.name, func(t *testing.T) {
 			ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 				got, _ := ioutil.ReadAll(request.Body)
-				assert.Equal(t, tc.expectedOutput, string(got), tc.name)
+				checkOutput(t, tc.name, *bytes.NewBuffer(got), tc.expectedOutput)
 				assert.Equal(t, tc.contentType, request.Header.Get("content-type"), tc.name)
 			}))
 			defer ts.Close()
@@ -206,7 +203,7 @@ HostName: foobar.local
 				ts.URL = tc.inputTestServerURL
 			}
 
-			inputTemplate, _ := setupTemplate(tc.inputTemplateFile, fakeClock{})
+			inputTemplate, _ := setupTemplate(tc.inputTemplateFile)
 
 			actualError := sendToWebhook(inputTemplate, types.Finding{
 				Data: map[string]interface{}{

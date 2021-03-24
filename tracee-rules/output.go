@@ -19,7 +19,7 @@ import (
 
 const DefaultDetectionOutputTemplate string = `
 *** Detection ***
-Time: {{ timeNow }}
+Time: {{ dateInZone "2006-01-02T15:04:05Z" (now) "UTC" }}
 Signature ID: {{ .ID }}
 Signature: {{ .Name }}
 Data: {{ .Finding.Data }}
@@ -27,38 +27,31 @@ Command: {{ .Finding.Context.ProcessName }}
 Hostname: {{ .Finding.Context.HostName }}
 `
 
-func setupTemplate(inputTemplateFile string, clock Clock) (*template.Template, error) {
-	funcMap := map[string]interface{}{
-		"timeNow": func() string {
-			return clock.Now().UTC().Format("2006-01-02T15:04:05Z")
-		},
-	}
-
+func setupTemplate(inputTemplateFile string) (*template.Template, error) {
 	switch {
 	case inputTemplateFile != "":
 		return template.New(filepath.Base(inputTemplateFile)).
-			Funcs(funcMap).
 			Funcs(sprig.TxtFuncMap()).
 			ParseFiles(inputTemplateFile)
 	default:
 		return template.New("default").
-			Funcs(funcMap).
+			Funcs(sprig.TxtFuncMap()).
 			Parse(DefaultDetectionOutputTemplate)
 	}
 }
 
-func setupOutput(w io.Writer, clock Clock, webhook string, webhookTemplate string, contentType string, outputTemplate string) (chan types.Finding, error) {
+func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentType string, outputTemplate string) (chan types.Finding, error) {
 	out := make(chan types.Finding)
 	var err error
 
 	var tWebhook *template.Template
-	tWebhook, err = setupTemplate(webhookTemplate, clock)
+	tWebhook, err = setupTemplate(webhookTemplate)
 	if err != nil && webhookTemplate != "" {
 		return nil, fmt.Errorf("error preparing webhook template: %v", err)
 	}
 
 	var tOutput *template.Template
-	tOutput, err = setupTemplate(outputTemplate, clock)
+	tOutput, err = setupTemplate(outputTemplate)
 	if err != nil && outputTemplate != "" {
 		return nil, fmt.Errorf("error preparing output template: %v", err)
 	}
