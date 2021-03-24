@@ -23,10 +23,6 @@ jobs:
           pip install mkdocs-macros-plugin
         env:
           GH_TOKEN: ${{ secrets.ORG_GITHUB_TOKEN }}
-      - name: Configure the git user
-        run: |
-          git config user.name "ronaudinho"
-          git config user.email "doelaudi@gmail.com"
       - name: Deploy the latest documents
         run: |
           VERSION=$(echo ${{ github.ref }} | sed -e "s#refs/tags/##g")

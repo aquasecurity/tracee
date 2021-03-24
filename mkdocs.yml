@@ -1,6 +1,6 @@
 site_name: Tracee
 site_url: https://aquasecurity.github.io/tracee/
-site_description: Tracee is a runtime security and forensics tool for Linux, using Linux eBPF technology to trace your system and applications at runtime, and analyze collected events to detect suspicious behavioral patterns.
+site_description: Runtime security and forensics using eBPF.
 docs_dir: docs/
 repo_name: GitHub
 repo_url: https://github.com/aquasecurity/tracee
