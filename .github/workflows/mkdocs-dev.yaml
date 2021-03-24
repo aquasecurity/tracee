@@ -26,5 +26,9 @@ jobs:
           pip install mkdocs-macros-plugin
         env:
           GH_TOKEN: ${{ secrets.ORG_GITHUB_TOKEN }}
+      - name: Setup Git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
       - name: Deploy the dev documents
         run: mike deploy --push dev
