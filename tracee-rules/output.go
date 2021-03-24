@@ -12,29 +12,51 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/Masterminds/sprig"
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
-const DetectionOutput string = `
+const DefaultDetectionOutputTemplate string = `
 *** Detection ***
-Time: %s
-Signature ID: %s
-Signature: %s
-Data: %s
-Command: %s
-Hostname: %s
+Time: {{ dateInZone "2006-01-02T15:04:05Z" (now) "UTC" }}
+Signature ID: {{ .ID }}
+Signature: {{ .Name }}
+Data: {{ .Finding.Data }}
+Command: {{ .Finding.Context.ProcessName }}
+Hostname: {{ .Finding.Context.HostName }}
 `
 
-func setupOutput(resultWriter io.Writer, clock Clock, webhook string, webhookTemplate string, contentType string) (chan types.Finding, error) {
-	out := make(chan types.Finding)
+func setupTemplate(inputTemplateFile string) (*template.Template, error) {
+	switch {
+	case inputTemplateFile != "":
+		return template.New(filepath.Base(inputTemplateFile)).
+			Funcs(sprig.TxtFuncMap()).
+			ParseFiles(inputTemplateFile)
+	default:
+		return template.New("default").
+			Funcs(sprig.TxtFuncMap()).
+			Parse(DefaultDetectionOutputTemplate)
+	}
+}
 
-	t, err := setupTemplate(webhookTemplate, realClock{})
+func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentType string, outputTemplate string) (chan types.Finding, error) {
+	out := make(chan types.Finding)
+	var err error
+
+	var tWebhook *template.Template
+	tWebhook, err = setupTemplate(webhookTemplate)
 	if err != nil && webhookTemplate != "" {
 		return nil, fmt.Errorf("error preparing webhook template: %v", err)
 	}
 
-	go func(t *template.Template) {
+	var tOutput *template.Template
+	tOutput, err = setupTemplate(outputTemplate)
+	if err != nil && outputTemplate != "" {
+		return nil, fmt.Errorf("error preparing output template: %v", err)
+	}
+
+	go func(w io.Writer, tWebhook, tOutput *template.Template) {
 		for res := range out {
 			sigMetadata, err := res.Signature.GetMetadata()
 			if err != nil {
@@ -44,31 +66,22 @@ func setupOutput(resultWriter io.Writer, clock Clock, webhook string, webhookTem
 
 			switch res.Context.(type) {
 			case tracee.Event:
-				command := res.Context.(tracee.Event).ProcessName
-				hostName := res.Context.(tracee.Event).HostName
-				fmt.Fprintf(resultWriter, DetectionOutput, clock.Now().UTC().Format(time.RFC3339), sigMetadata.ID, sigMetadata.Name, res.Data, command, hostName)
+				if err := tOutput.Execute(w, types.FindingWithMetadata{Finding: res, SignatureMetadata: sigMetadata}); err != nil {
+					log.Println("error writing to output: ", err)
+				}
 			default:
 				log.Printf("unsupported event detected: %T\n", res.Context)
 				continue
 			}
 
 			if webhook != "" {
-				if err := sendToWebhook(t, res, webhook, webhookTemplate, contentType, realClock{}); err != nil {
+				if err := sendToWebhook(tWebhook, res, webhook, webhookTemplate, contentType, realClock{}); err != nil {
 					log.Println(err)
 				}
 			}
 		}
-	}(t)
+	}(w, tWebhook, tOutput)
 	return out, nil
-}
-
-func setupTemplate(webhookTemplate string, clock Clock) (*template.Template, error) {
-	return template.New(filepath.Base(webhookTemplate)).
-		Funcs(map[string]interface{}{
-			"timeNow": func(unixTs float64) string {
-				return clock.Now().UTC().Format("2006-01-02T15:04:05Z")
-			},
-		}).ParseFiles(webhookTemplate)
 }
 
 func sendToWebhook(t *template.Template, res types.Finding, webhook string, webhookTemplate string, contentType string, clock Clock) error {

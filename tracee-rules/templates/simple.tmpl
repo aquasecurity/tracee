@@ -1,4 +1,4 @@
 *** Detection ***
-Timestamp: {{ .Context.Timestamp | timeNow }}
+Timestamp: {{ dateInZone "2006-01-02T15:04:05Z" (now) "UTC" }}
 ProcessName: {{ .Context.ProcessName }}
 HostName: {{ .Context.HostName }}

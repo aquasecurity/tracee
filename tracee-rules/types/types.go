@@ -49,3 +49,8 @@ type Finding struct {
 	Context   Event
 	Signature Signature
 }
+
+type FindingWithMetadata struct {
+	Finding
+	SignatureMetadata
+}

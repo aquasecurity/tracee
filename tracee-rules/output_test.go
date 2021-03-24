@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -45,10 +46,11 @@ func Test_setupOutput(t *testing.T) {
 	var testCases = []struct {
 		name           string
 		inputContext   interface{}
+		outputFormat   string
 		expectedOutput string
 	}{
 		{
-			name: "happy path with tracee event",
+			name: "happy path with tracee event and default output",
 			inputContext: external.Event{
 				ProcessName: "foobar.exe",
 				HostName:    "foobar.local",
@@ -64,17 +66,38 @@ Hostname: foobar.local
 `,
 		},
 		{
+			name: "happy path with tracee event and simple custom output template",
+			inputContext: external.Event{
+				ProcessName: "foobar.exe",
+				HostName:    "foobar.local",
+			},
+			expectedOutput: `*** Detection ***
+Timestamp: 2021-02-23T01:54:57Z
+ProcessName: foobar.exe
+HostName: foobar.local
+`,
+			outputFormat: "templates/simple.tmpl",
+		},
+		{
 			name: "sad path with unknown context",
 			inputContext: struct {
 				foo string
 			}{foo: "bad input context"},
 			expectedOutput: ``,
 		},
+		{
+			name: "sad path with invalid custom template",
+			inputContext: external.Event{
+				ProcessName: "foobar.exe",
+				HostName:    "foobar.local",
+			},
+			outputFormat: "goldens/broken.tmpl",
+		},
 	}
 
 	for _, tc := range testCases {
 		var actualOutput bytes.Buffer
-		findingCh, err := setupOutput(&actualOutput, fakeClock{}, "", "", "")
+		findingCh, err := setupOutput(&actualOutput, "", "", "", tc.outputFormat)
 		require.NoError(t, err, tc.name)
 
 		findingCh <- types.Finding{
@@ -87,7 +110,19 @@ Hostname: foobar.local
 		}
 
 		time.Sleep(time.Millisecond)
-		assert.Equal(t, tc.expectedOutput, actualOutput.String(), tc.name)
+		checkOutput(t, tc.name, actualOutput, tc.expectedOutput)
+	}
+}
+
+func checkOutput(t *testing.T, testName string, actualOutput bytes.Buffer, expectedOutput string) {
+	got := strings.Split(actualOutput.String(), "\n")
+	for _, g := range got {
+		if strings.Contains(g, "Time") {
+			_, err := time.Parse("2006-01-02T15:04:05Z", strings.Split(g, " ")[1])
+			assert.NoError(t, err, testName) // check if time is parsable
+		} else {
+			assert.Contains(t, expectedOutput, g, testName)
+		}
 	}
 }
 
@@ -117,20 +152,16 @@ HostName: foobar.local
 			inputTemplateFile: "templates/simple.tmpl",
 		},
 		{
-			name:              "happy path, with CSV template",
-			contentType:       "text/csv",
-			expectedOutput:    `2021-02-23T01:54:57Z,foobar.exe,foobar.local`,
-			inputTemplateFile: "templates/csv.tmpl",
-		},
-		{
-			name:        "happy path, with XML template",
-			contentType: "application/xml",
-			expectedOutput: `<?xml version="1.0" encoding="UTF-8" ?>
- <detection timestamp="2021-02-23T01:54:57Z">
-    <processname>foobar.exe</processname>
-    <hostname>foobar.local</hostname>
- </detection>`,
-			inputTemplateFile: "templates/xml.tmpl",
+			name:        "happy path with functions from sprig template",
+			contentType: "text/plain",
+			expectedOutput: `{
+  "foo1": "bar1, baz1",
+  "foo2": [
+    "bar2",
+    "baz2"
+  ]
+}`,
+			inputTemplateFile: "templates/sprig.tmpl",
 		},
 		{
 			name: "sad path, with failing GetMetadata func for sig",
@@ -163,7 +194,7 @@ HostName: foobar.local
 		t.Run(tc.name, func(t *testing.T) {
 			ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 				got, _ := ioutil.ReadAll(request.Body)
-				assert.Equal(t, tc.expectedOutput, string(got), tc.name)
+				checkOutput(t, tc.name, *bytes.NewBuffer(got), tc.expectedOutput)
 				assert.Equal(t, tc.contentType, request.Header.Get("content-type"), tc.name)
 			}))
 			defer ts.Close()
@@ -172,7 +203,7 @@ HostName: foobar.local
 				ts.URL = tc.inputTestServerURL
 			}
 
-			inputTemplate, _ := setupTemplate(tc.inputTemplateFile, fakeClock{})
+			inputTemplate, _ := setupTemplate(tc.inputTemplateFile)
 
 			actualError := sendToWebhook(inputTemplate, types.Finding{
 				Data: map[string]interface{}{
