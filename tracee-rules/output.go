@@ -12,6 +12,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/Masterminds/sprig"
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
@@ -37,6 +38,7 @@ func setupTemplate(inputTemplateFile string, clock Clock) (*template.Template, e
 	case inputTemplateFile != "":
 		return template.New(filepath.Base(inputTemplateFile)).
 			Funcs(funcMap).
+			Funcs(sprig.TxtFuncMap()).
 			ParseFiles(inputTemplateFile)
 	default:
 		return template.New("default").

@@ -139,6 +139,18 @@ HostName: foobar.local
 			inputTemplateFile: "templates/simple.tmpl",
 		},
 		{
+			name:        "happy path with functions from sprig template",
+			contentType: "text/plain",
+			expectedOutput: `{
+  "foo1": "bar1, baz1",
+  "foo2": [
+    "bar2",
+    "baz2"
+  ]
+}`,
+			inputTemplateFile: "templates/sprig.tmpl",
+		},
+		{
 			name:              "happy path, with CSV template",
 			contentType:       "text/csv",
 			expectedOutput:    `2021-02-23T01:54:57Z,foobar.exe,foobar.local`,
