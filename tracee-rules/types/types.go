@@ -47,6 +47,5 @@ type SignalSourceComplete string
 type Finding struct {
 	Data        map[string]interface{}
 	Context     Event
-	Signature   Signature
 	SigMetadata SignatureMetadata
 }

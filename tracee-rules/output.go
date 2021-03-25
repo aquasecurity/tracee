@@ -20,11 +20,11 @@ import (
 const DefaultDetectionOutputTemplate string = `
 *** Detection ***
 Time: {{ dateInZone "2006-01-02T15:04:05Z" (now) "UTC" }}
-Signature ID: {{ .ID }}
-Signature: {{ .Name }}
-Data: {{ .Finding.Data }}
-Command: {{ .Finding.Context.ProcessName }}
-Hostname: {{ .Finding.Context.HostName }}
+Signature ID: {{ .SigMetadata.ID }}
+Signature: {{ .SigMetadata.Name }}
+Data: {{ .Data }}
+Command: {{ .Context.ProcessName }}
+Hostname: {{ .Context.HostName }}
 `
 
 func setupTemplate(inputTemplateFile string) (*template.Template, error) {
@@ -58,15 +58,8 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 
 	go func(w io.Writer, tWebhook, tOutput *template.Template) {
 		for res := range out {
-			sigMetadata, err := res.Signature.GetMetadata()
-			if err != nil {
-				log.Println("invalid signature metadata: ", err)
-				continue
-			}
-
 			switch res.Context.(type) {
 			case tracee.Event:
-				res.SigMetadata = sigMetadata
 				if err := tOutput.Execute(w, res); err != nil {
 					log.Println("error writing to output: ", err)
 				}
@@ -129,17 +122,13 @@ func prepareJSONPayload(res types.Finding, clock Clock) (string, error) {
 		Time         time.Time              `json:"time"`
 		OutputFields map[string]interface{} `json:"output_fields"`
 	}
-	sigmeta, err := res.Signature.GetMetadata()
-	if err != nil {
-		return "", err
-	}
 	fields := make(map[string]interface{})
 	if te, ok := res.Context.(tracee.Event); ok {
 		fields["value"] = te.ReturnValue
 	}
 	payload := Payload{
-		Output:       fmt.Sprintf("Rule \"%s\" detection:\n %v", sigmeta.Name, res.Data),
-		Rule:         sigmeta.Name,
+		Output:       fmt.Sprintf("Rule \"%s\" detection:\n %v", res.SigMetadata.Name, res.Data),
+		Rule:         res.SigMetadata.Name,
 		Time:         clock.Now().UTC(),
 		OutputFields: fields,
 	}

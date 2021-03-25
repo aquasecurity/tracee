@@ -170,16 +170,15 @@ func (sig *stdioOverSocket) OnSignal(s types.Signal) error {
 }
 
 func isStdioOverSocket(sig *stdioOverSocket, eventObj tracee.Event, pidSocketMap map[int]string, srcFd int, dstFd int) error {
-
 	stdAll := []int{0, 1, 2}
-
 	ip, socketfdExists := pidSocketMap[srcFd]
 
 	// this means that a socket FD is duplicated into one of the standard FDs
 	if socketfdExists && intInSlice(dstFd, stdAll) {
+		m, _ := sig.GetMetadata()
 		sig.cb(types.Finding{
-			Signature: sig,
-			Context:   eventObj,
+			SigMetadata: m,
+			Context:     eventObj,
 			Data: map[string]interface{}{
 				"ip": ip,
 			},

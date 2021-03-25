@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -100,13 +99,14 @@ HostName: foobar.local
 		findingCh, err := setupOutput(&actualOutput, "", "", "", tc.outputFormat)
 		require.NoError(t, err, tc.name)
 
+		sm, _ := fakeSignature{}.GetMetadata()
 		findingCh <- types.Finding{
 			Data: map[string]interface{}{
 				"foo1": "bar1, baz1",
 				"foo2": []string{"bar2", "baz2"},
 			},
-			Context:   tc.inputContext,
-			Signature: fakeSignature{},
+			Context:     tc.inputContext,
+			SigMetadata: sm,
 		}
 
 		time.Sleep(time.Millisecond)
@@ -164,15 +164,6 @@ HostName: foobar.local
 			inputTemplateFile: "templates/sprig.tmpl",
 		},
 		{
-			name: "sad path, with failing GetMetadata func for sig",
-			inputSignature: fakeSignature{
-				getMetadata: func() (types.SignatureMetadata, error) {
-					return types.SignatureMetadata{}, errors.New("getMetadata failed")
-				},
-			},
-			expectedError: "error preparing json payload: getMetadata failed",
-		},
-		{
 			name:               "sad path, error reaching webhook",
 			inputTestServerURL: "foo://bad.host",
 			expectedError:      `error calling webhook Post "foo://bad.host": unsupported protocol scheme "foo"`,
@@ -205,6 +196,7 @@ HostName: foobar.local
 
 			inputTemplate, _ := setupTemplate(tc.inputTemplateFile)
 
+			m, _ := tc.inputSignature.GetMetadata()
 			actualError := sendToWebhook(inputTemplate, types.Finding{
 				Data: map[string]interface{}{
 					"foo1": "bar1, baz1",
@@ -214,7 +206,7 @@ HostName: foobar.local
 					ProcessName: "foobar.exe",
 					HostName:    "foobar.local",
 				},
-				Signature: tc.inputSignature,
+				SigMetadata: m,
 			}, ts.URL, tc.inputTemplateFile, tc.contentType, fakeClock{})
 
 			switch {
