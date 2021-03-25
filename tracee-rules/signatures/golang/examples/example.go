@@ -50,13 +50,14 @@ func (sig *counter) OnEvent(e types.Event) error {
 		sig.count++
 	}
 	if sig.count == sig.target {
+		m, _ := sig.GetMetadata()
 		sig.cb(types.Finding{
 			Data: map[string]interface{}{
 				"count":    sig.count,
 				"severity": "HIGH",
 			},
-			Context:   e,
-			Signature: sig,
+			Context:     e,
+			SigMetadata: m,
 		})
 		sig.count = 0
 	}

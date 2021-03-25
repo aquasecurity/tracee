@@ -147,16 +147,16 @@ func (sig *RegoSignature) OnEvent(e types.Event) error {
 		case bool:
 			if v {
 				sig.cb(types.Finding{
-					Data:      nil,
-					Context:   ee,
-					Signature: sig,
+					Data:        nil,
+					Context:     ee,
+					SigMetadata: sig.metadata,
 				})
 			}
 		case map[string]interface{}:
 			sig.cb(types.Finding{
-				Data:      v,
-				Context:   ee,
-				Signature: sig,
+				Data:        v,
+				Context:     ee,
+				SigMetadata: sig.metadata,
 			})
 		}
 	}
