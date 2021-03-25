@@ -1,3 +1,5 @@
+# Trace Options
+
 Trace output can easily become unwieldy when tracing all of the events from all of the system. Luckily, Tracee has a powerful mechanism to accurately trace just the information that is relevant to you, using the `--trace` flag.
 Using the `--trace` you define expressions that tells Tracee-eBPF what you are interested in by means of event metadata, and process metadata. Only events that match this criteria will be traced.
 

@@ -1,5 +1,30 @@
-Tracee leverages [falco-sidekick](https://github.com/falcosecurity/falcosidekick) for sending it's detection events into other systems which are easier to consume. You can use any of falco-sidekick's supported "outputs", which includes: Slack, Mattermost, Teams, Datadog, Prometheus, StatsD, Email, Elasticsearch, Loki, PagerDuty, OpsGenie, and many more. The full list is available [here](https://github.com/falcosecurity/falcosidekick#outputs).
+# Integrations
 
-To configure Tracee to integrate with another system, compose a falco-sidekick configuration file, and provide it to Tracee using the `TRACEE_WEBHOOK_CONFIG` environment variable. By default, Tracee will try to find this file at `/tmp/tracee/integrations-config.yaml`, so if you have followed the quickstart and started the container with `/tmp/tracee` mounted in, you can simply drop that file there.
+When a detection is made by any of the signatures, it will always be printed to stdout. You can customize the output format using gotemplate:
 
-A complete reference of falco-sidekick's configuration format is available [here](https://github.com/falcosecurity/falcosidekick/blob/master/config_example.yaml).
+```bash
+tracee-rules --output-template /path/to/my.tmpl
+```
+
+In addition, Tracee can notify a web service when a detection is made using a custom webhook:
+
+```bash
+tracee-rules --webhook http://my.webhook/endpoint --webhook-template /path/to/my.tmpl --webhook-content-type application/json
+```
+
+# Go Template Authoring
+
+When authoring a Go template for either stdout or webhook, you have Tracee's `types.Finding` struct as the data source:
+
+```go
+//Finding is the main output of a signature. It represents a match result for the signature business logic
+type Finding struct {
+	Data        map[string]interface{}
+	Context     Event
+	SigMetadata SignatureMetadata
+}
+```
+
+Additionally, the Go template can use utility functions from [Sprig ](http://masterminds.github.io/sprig/).
+
+For example templates, see [tracee/tracee-rules/templates](https://github.com/aquasecurity/tracee/tree/main/tracee-rules/templates).
