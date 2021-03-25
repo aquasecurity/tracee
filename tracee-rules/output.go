@@ -66,7 +66,8 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 
 			switch res.Context.(type) {
 			case tracee.Event:
-				if err := tOutput.Execute(w, types.FindingWithMetadata{Finding: res, SignatureMetadata: sigMetadata}); err != nil {
+				res.SigMetadata = sigMetadata
+				if err := tOutput.Execute(w, res); err != nil {
 					log.Println("error writing to output: ", err)
 				}
 			default:

@@ -45,12 +45,8 @@ type SignalSourceComplete string
 
 //Finding is the main output of a signature. It represents a match result for the signature business logic
 type Finding struct {
-	Data      map[string]interface{}
-	Context   Event
-	Signature Signature
-}
-
-type FindingWithMetadata struct {
-	Finding
-	SignatureMetadata
+	Data        map[string]interface{}
+	Context     Event
+	Signature   Signature
+	SigMetadata SignatureMetadata
 }
