@@ -1,3 +1,5 @@
+# Capturing Artifacts
+
 Tracee has a unique feature that lets you capture interesting artifacts from running applications, using the `--capture` flag.
 
 All captured artifacts are saved in Tracee's "output directory" which can be configured using `--capture dir:/path/to/dir`.

@@ -1,4 +1,4 @@
-# Tracee-eBPF: Linux Tracing and Forensics using eBPF
+# Tracing
 
 In some cases, you might want to leverage Tracee's eBPF event collection capabilities directly, without involving the detection engine. This might be useful for debugging/troubleshooting/analysis/research/education. In this case you can use Tracee's eBPF collector component, which will start dumping raw data directly into standard output.
 
@@ -6,7 +6,7 @@ In some cases, you might want to leverage Tracee's eBPF event collection capabil
 
 ## Getting Started
 
-Before you proceed, make sure you follow the [minimum requirements for running Tracee](https://aquasecurity.github.io/tracee/install/prerequisites.md).
+Before you proceed, make sure you follow the [minimum requirements for running Tracee](TODO).
 
 You can obtain Tracee-eBPF in any of the following ways:
 1. Download from the [GitHub Releases](https://github.com/aquasecurity/tracee/releases) (`tracee.tar.gz`).
