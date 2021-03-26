@@ -21,12 +21,20 @@ type KernelConfig map[string]string
 // /boot/config.gz
 func InitKernelConfig(k KernelConfig) (KernelConfig, error) {
 
-	err := k.getBootConfig()
+	x := unix.Utsname{}
+	err := unix.Uname(&x)
+	if err != nil {
+		return nil, fmt.Errorf("could not determine uname release: %v", err)
+	}
+
+	bootConfigPath := fmt.Sprintf("/boot/config-%s", bytes.Trim(x.Release[:], "\x00"))
+
+	err = k.getBootConfig(bootConfigPath)
 	if err == nil {
 		return k, nil
 	}
 
-	err2 := k.getProcGZConfig()
+	err2 := k.getProcGZConfig("/proc/config.gz")
 	if err != nil {
 		return nil, fmt.Errorf("%v %v", err, err2)
 	}
@@ -44,15 +52,7 @@ func (k KernelConfig) GetKernelConfigValue(key string) (string, error) {
 	return v, nil
 }
 
-func (k KernelConfig) getBootConfig() error {
-
-	x := unix.Utsname{}
-	err := unix.Uname(&x)
-	if err != nil {
-		return fmt.Errorf("could not determine uname release: %v", err)
-	}
-
-	bootConfigPath := fmt.Sprintf("/boot/config-%s", bytes.Trim(x.Release[:], "\x00"))
+func (k KernelConfig) getBootConfig(bootConfigPath string) error {
 
 	configFile, err := os.Open(bootConfigPath)
 	if err != nil {
@@ -66,9 +66,7 @@ func (k KernelConfig) getBootConfig() error {
 	return nil
 }
 
-func (k KernelConfig) getProcGZConfig() error {
-
-	procConfigPath := "/proc/config.gz"
+func (k KernelConfig) getProcGZConfig(procConfigPath string) error {
 
 	configFile, err := os.Open(procConfigPath)
 	if err != nil {
