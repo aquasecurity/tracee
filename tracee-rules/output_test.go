@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -16,13 +17,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 )
-
-type fakeClock struct {
-}
-
-func (fakeClock) Now() time.Time {
-	return time.Unix(1614045297, 0)
-}
 
 type fakeSignature struct {
 	types.Signature
@@ -117,10 +111,18 @@ HostName: foobar.local
 func checkOutput(t *testing.T, testName string, actualOutput bytes.Buffer, expectedOutput string) {
 	got := strings.Split(actualOutput.String(), "\n")
 	for _, g := range got {
-		if strings.Contains(g, "Time") {
+		switch {
+		case strings.Contains(g, "Time"):
 			_, err := time.Parse("2006-01-02T15:04:05Z", strings.Split(g, " ")[1])
 			assert.NoError(t, err, testName) // check if time is parsable
-		} else {
+		case strings.Contains(g, "time"):
+			var gotPayload struct {
+				Time time.Time `json:"time"`
+			}
+			err := json.Unmarshal([]byte(g), &gotPayload)
+			assert.NoError(t, err, testName)
+			assert.NotEmpty(t, gotPayload, testName) // check if time is parsable
+		default:
 			assert.Contains(t, expectedOutput, g, testName)
 		}
 	}
@@ -137,9 +139,10 @@ func Test_sendToWebhook(t *testing.T) {
 		expectedError      string
 	}{
 		{
-			name:           "happy path, no template JSON output",
-			contentType:    "application/json",
-			expectedOutput: `{"output":"Rule \"foo bar signature\" detection:\n map[foo1:bar1, baz1 foo2:[bar2 baz2]]","rule":"foo bar signature","time":"2021-02-23T01:54:57Z","output_fields":{"value":0}}`,
+			name:              "happy path with falcosidekick template",
+			contentType:       "application/json",
+			expectedOutput:    `{"output":"Rule \"foo bar signature\" detection:\n map[foo1:bar1, baz1 foo2:[bar2 baz2]]","rule":"foo bar signature","time":"2021-02-23T01:54:57Z","output_fields":{"value":0}}`,
+			inputTemplateFile: "templates/falcosidekick.tmpl",
 		},
 		{
 			name:        "happy path, with simple template",
@@ -167,6 +170,7 @@ HostName: foobar.local
 			name:               "sad path, error reaching webhook",
 			inputTestServerURL: "foo://bad.host",
 			expectedError:      `error calling webhook Post "foo://bad.host": unsupported protocol scheme "foo"`,
+			inputTemplateFile:  "templates/simple.tmpl",
 		},
 		{
 			name:              "sad path, with missing template",
@@ -178,6 +182,10 @@ HostName: foobar.local
 			contentType:       "application/foo",
 			inputTemplateFile: "goldens/broken.tmpl",
 			expectedError:     `error writing to the template: template: broken.tmpl:1:3: executing "broken.tmpl" at <.InvalidField>: can't evaluate field InvalidField in type types.Finding`,
+		},
+		{
+			name:          "sad path, no --webhook-template flag specified",
+			expectedError: `error sending to webhook: --webhook-template flag is required when using --webhook flag`,
 		},
 	}
 
@@ -207,7 +215,7 @@ HostName: foobar.local
 					HostName:    "foobar.local",
 				},
 				SigMetadata: m,
-			}, ts.URL, tc.inputTemplateFile, tc.contentType, fakeClock{})
+			}, ts.URL, tc.inputTemplateFile, tc.contentType)
 
 			switch {
 			case tc.expectedError != "":

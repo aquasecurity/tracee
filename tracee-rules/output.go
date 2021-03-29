@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
-	"time"
 
 	"github.com/Masterminds/sprig"
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
@@ -69,7 +68,7 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 			}
 
 			if webhook != "" {
-				if err := sendToWebhook(tWebhook, res, webhook, webhookTemplate, contentType, realClock{}); err != nil {
+				if err := sendToWebhook(tWebhook, res, webhook, webhookTemplate, contentType); err != nil {
 					log.Println(err)
 				}
 			}
@@ -78,7 +77,7 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 	return out, nil
 }
 
-func sendToWebhook(t *template.Template, res types.Finding, webhook string, webhookTemplate string, contentType string, clock Clock) error {
+func sendToWebhook(t *template.Template, res types.Finding, webhook string, webhookTemplate string, contentType string) error {
 	var payload string
 
 	switch {
@@ -94,14 +93,8 @@ func sendToWebhook(t *template.Template, res types.Finding, webhook string, webh
 			return fmt.Errorf("error writing to the template: %v", err)
 		}
 		payload = buf.String()
-
-	default: // if no input template is specified, we send JSON by default
-		contentType = "application/json"
-		var err error
-		payload, err = prepareJSONPayload(res, clock)
-		if err != nil {
-			return fmt.Errorf("error preparing json payload: %v", err)
-		}
+	default:
+		return errors.New("error sending to webhook: --webhook-template flag is required when using --webhook flag")
 	}
 
 	resp, err := http.Post(webhook, contentType, strings.NewReader(payload))
@@ -110,31 +103,4 @@ func sendToWebhook(t *template.Template, res types.Finding, webhook string, webh
 	}
 	_ = resp.Body.Close()
 	return nil
-}
-
-func prepareJSONPayload(res types.Finding, clock Clock) (string, error) {
-	// compatible with Falco webhook format, for easy integration with "falcosecurity/falcosidekick"
-	// https://github.com/falcosecurity/falcosidekick/blob/e6b893f612e92352ba700bed9a19f1ec2cd18260/types/types.go#L12
-	type Payload struct {
-		Output       string                 `json:"output"`
-		Priority     string                 `json:"priority,omitempty"`
-		Rule         string                 `json:"rule"`
-		Time         time.Time              `json:"time"`
-		OutputFields map[string]interface{} `json:"output_fields"`
-	}
-	fields := make(map[string]interface{})
-	if te, ok := res.Context.(tracee.Event); ok {
-		fields["value"] = te.ReturnValue
-	}
-	payload := Payload{
-		Output:       fmt.Sprintf("Rule \"%s\" detection:\n %v", res.SigMetadata.Name, res.Data),
-		Rule:         res.SigMetadata.Name,
-		Time:         clock.Now().UTC(),
-		OutputFields: fields,
-	}
-	payloadJSON, err := json.Marshal(payload)
-	if err != nil {
-		return "", err
-	}
-	return string(payloadJSON), nil
 }
