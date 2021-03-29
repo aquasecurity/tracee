@@ -366,6 +366,33 @@ func (b *BPFMap) SetPinPath(pinPath string) error {
 	return nil
 }
 
+// Resize changes the map's capacity to maxEntries.
+// It should be called after the module was initialized but
+// prior to it being loaded with BPFLoadObject.
+// Note: for ring buffer and perf buffer, maxEntries is the
+// capacity in bytes.
+func (b *BPFMap) Resize(maxEntries uint32) error {
+	cs := C.CString(b.name)
+	bpfMap := C.bpf_object__find_map_by_name(b.module.obj, cs)
+	errC := C.bpf_map__resize(bpfMap, C.uint(maxEntries))
+	C.free(unsafe.Pointer(cs))
+	if errC != 0 {
+		return fmt.Errorf("failed to resize map %s to %v", b.name, maxEntries)
+	}
+	return nil
+}
+
+// GetMaxEntries returns the map's capacity.
+// Note: for ring buffer and perf buffer, maxEntries is the
+// capacity in bytes.
+func (b *BPFMap) GetMaxEntries() uint32 {
+	cs := C.CString(b.name)
+	bpfMap := C.bpf_object__find_map_by_name(b.module.obj, cs)
+	maxEntries := C.bpf_map__max_entries(bpfMap)
+	C.free(unsafe.Pointer(cs))
+	return uint32(maxEntries)
+}
+
 func GetUnsafePointer(data interface{}) (unsafe.Pointer, error) {
 	var dataPtr unsafe.Pointer
 	if k, isType := data.(int8); isType {

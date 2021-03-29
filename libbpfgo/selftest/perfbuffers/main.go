@@ -11,6 +11,23 @@ import (
 	bpf "github.com/aquasecurity/tracee/libbpfgo"
 )
 
+func resizeMap(module *bpf.Module, name string, size uint32) error {
+	m, err := module.GetMap("events")
+	if err != nil {
+		return err
+	}
+
+	if err = m.Resize(size); err != nil {
+		return err
+	}
+
+	if actual := m.GetMaxEntries(); actual != size {
+		return fmt.Errorf("map resize failed, expected %v, actual %v", size, actual)
+	}
+
+	return nil
+}
+
 func main() {
 
 	bpfModule, err := bpf.NewModuleFromFile("self.bpf.o")
@@ -18,6 +35,10 @@ func main() {
 		os.Exit(-1)
 	}
 	defer bpfModule.Close()
+
+	if err = resizeMap(bpfModule, "events", 8192); err != nil {
+		os.Exit(-1)
+	}
 
 	bpfModule.BPFLoadObject()
 	prog, err := bpfModule.GetProgram("kprobe__sys_mmap")
