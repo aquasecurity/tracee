@@ -1162,7 +1162,7 @@ func TestPrepareOutput(t *testing.T) {
 			expectedOutput: tracee.OutputConfig{
 				Format: "foo",
 			},
-			expectedError: errors.New("invalid format value not match 'table', 'table-verbose', 'json', 'gob' or 'gotemplate=': foo. Use '--output help' for more info"),
+			expectedError: errors.New("unrecognized output format: foo. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info."),
 		},
 		{
 			testName:       "invalid output option",
@@ -1215,7 +1215,7 @@ func TestPrepareOutput(t *testing.T) {
 			expectedOutput: tracee.OutputConfig{
 				Format: "out-file",
 			},
-			expectedError: errors.New("invalid format value not match 'table', 'table-verbose', 'json', 'gob' or 'gotemplate=': out-file. Use '--output help' for more info"),
+			expectedError: errors.New("unrecognized output format: out-file. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info."),
 		},
 		{
 			testName:    "err",

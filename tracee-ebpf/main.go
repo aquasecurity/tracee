@@ -174,8 +174,10 @@ Use this flag multiple times to choose multiple capture options
 		outputParts := strings.SplitN(o, ":", 2)
 		numParts := len(outputParts)
 		if numParts == 1 {
-			if !validateOutputFormatValue(outputParts[0]) {
-				return res, fmt.Errorf("invalid format value not match 'table', 'table-verbose', 'json', 'gob' or 'gotemplate=': %s. Use '--output help' for more info", outputParts[0])
+			res.Format = outputParts[0]
+			err := res.Validate()
+			if err != nil {
+				return res, fmt.Errorf("%s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info.", err)
 			}
 			outputParts = append(outputParts, outputParts[0])
 			outputParts[0] = "format"
@@ -183,10 +185,11 @@ Use this flag multiple times to choose multiple capture options
 
 		switch outputParts[0] {
 		case "format":
-			if !validateOutputFormatValue(outputParts[1]) {
-				return res, fmt.Errorf("invalid format value not match 'table', 'table-verbose', 'json', 'gob' or 'gotemplate=': %s. Use '--output help' for more info", outputParts[0])
-			}
 			res.Format = outputParts[1]
+			err := res.Validate()
+			if err != nil {
+				return res, fmt.Errorf("%s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info.", err)
+			}
 		case "out-file":
 			res.OutPath = outputParts[1]
 		case "err-file":
@@ -211,19 +214,6 @@ Use this flag multiple times to choose multiple capture options
 		res.Format = "table"
 	}
 	return res, nil
-}
-
-func validateOutputFormatValue(option string) bool {
-	if strings.HasPrefix(option, "gotemplate=") {
-		return true
-	}
-	options := []string{"table", "table-verbose", "json", "gob"}
-	for _, item := range options {
-		if item == option {
-			return true
-		}
-	}
-	return false
 }
 
 func prepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
