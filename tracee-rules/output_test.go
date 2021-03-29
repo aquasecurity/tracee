@@ -185,7 +185,7 @@ HostName: foobar.local
 		},
 		{
 			name:          "sad path, no --webhook-template flag specified",
-			expectedError: `--webhook-template flag is required when using --webhook flag`,
+			expectedError: `error sending to webhook: --webhook-template flag is required when using --webhook flag`,
 		},
 	}
 
