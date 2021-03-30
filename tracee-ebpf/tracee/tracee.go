@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"os"
 	"os/signal"
 	"path"
@@ -17,10 +18,14 @@ import (
 	"strings"
 	"sync/atomic"
 	"syscall"
+	"time"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
+	"github.com/google/gopacket"
+	"github.com/google/gopacket/layers"
+	"github.com/google/gopacket/pcapgo"
 )
 
 // Config is a struct containing user defined configuration of tracee
@@ -104,6 +109,7 @@ type CaptureConfig struct {
 	Exec            bool
 	Mem             bool
 	Profile         bool
+	NetIfaces       []string
 }
 
 type OutputConfig struct {
@@ -113,6 +119,11 @@ type OutputConfig struct {
 	StackAddresses bool
 	DetectSyscall  bool
 	ExecEnv        bool
+}
+
+type netProbe struct {
+	ingressHook *bpf.TcHook
+	egressHook  *bpf.TcHook
 }
 
 // Validate does static validation of the configuration
@@ -192,10 +203,13 @@ type Tracee struct {
 	bpfModule         *bpf.Module
 	eventsPerfMap     *bpf.PerfBuffer
 	fileWrPerfMap     *bpf.PerfBuffer
+	netPerfMap        *bpf.PerfBuffer
 	eventsChannel     chan []byte
 	fileWrChannel     chan []byte
+	netChannel        chan []byte
 	lostEvChannel     chan uint64
 	lostWrChannel     chan uint64
+	lostNetChannel    chan uint64
 	printer           eventPrinter
 	stats             statsStore
 	capturedFiles     map[string]int64
@@ -207,6 +221,9 @@ type Tracee struct {
 	ParamTypes        map[int32]map[string]string
 	pidsInMntns       bucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
+	tcProbe           netProbe
+	pcapWriter        *pcapgo.NgWriter
+	pcapFile          *os.File
 }
 
 type counter int32
@@ -227,6 +244,7 @@ type statsStore struct {
 	errorCounter  counter
 	lostEvCounter counter
 	lostWrCounter counter
+	lostNtCounter counter
 }
 
 // New creates a new Tracee instance based on a given valid Config
@@ -257,6 +275,11 @@ func New(cfg Config) (*Tracee, error) {
 	if cfg.Capture.Mem {
 		setEssential(MemProtAlertEventID)
 	}
+
+	if cfg.Capture.NetIfaces != nil {
+		setEssential(SecuritySocketBindEventID)
+	}
+
 	// create tracee
 	t := &Tracee{
 		config: cfg,
@@ -353,6 +376,35 @@ func New(cfg Config) (*Tracee, error) {
 	if err != nil {
 		t.Close()
 		return nil, fmt.Errorf("error creating readiness file: %v", err)
+	}
+
+	if t.config.Capture.NetIfaces != nil {
+		pcapFile, err := os.Create(path.Join(t.config.Capture.OutputPath, "capture.pcap"))
+		if err != nil {
+			return nil, fmt.Errorf("error creating pcap file: %v", err)
+		}
+		t.pcapFile = pcapFile
+
+		// todo: handle multiple ifaces (like xdpdump: https://github.com/cloudflare/xdpcap/blob/master/cmd/xdpcap/main.go)
+		ngIface := pcapgo.NgInterface{
+			Name:       "tc iface",
+			Comment:    "tc iface",
+			Filter:     "",
+			LinkType:   layers.LinkTypeEthernet,
+			SnapLength: uint32(math.MaxUint16),
+		}
+
+		pcapWriter, err := pcapgo.NewNgWriterInterface(t.pcapFile, ngIface, pcapgo.NgWriterOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		// Flush the header
+		err = pcapWriter.Flush()
+		if err != nil {
+			return nil, err
+		}
+		t.pcapWriter = pcapWriter
 	}
 
 	// Get refernce to stack trace addresses map
@@ -753,7 +805,7 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	sysEnterTailsBPFMap, _ := t.bpfModule.GetMap("sys_enter_tails")
-	//sysExitTailsBPFMap := t.bpfModule.GetMap("sys_exit_tails")
+	//sysExitTailsBPFMap, _ := t.bpfModule.GetMap("sys_exit_tails")
 	paramsTypesBPFMap, _ := t.bpfModule.GetMap("params_types_map")
 	paramsNamesBPFMap, _ := t.bpfModule.GetMap("params_names_map")
 	for e := range t.eventsToTrace {
@@ -782,6 +834,80 @@ func (t *Tracee) populateBPFMaps() error {
 			}
 			sysEnterTailsBPFMap.Update(e, int32(prog.GetFd()))
 		}
+	}
+
+	return nil
+}
+
+func (t *Tracee) attachTcProg(ifaceName string, attachPoint bpf.TcAttachPoint, progName string) (*bpf.TcHook, error) {
+	hook := t.bpfModule.TcHookInit()
+	err := hook.SetInterfaceByName(ifaceName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to set tc hook interface: %v", err)
+	}
+	hook.SetAttachPoint(attachPoint)
+	err = hook.Create()
+	if err != nil {
+		return nil, fmt.Errorf("tc hook create: %v", err)
+	}
+	prog, _ := t.bpfModule.GetProgram(progName)
+	if prog == nil {
+		return nil, fmt.Errorf("couldn't find tc program %s", progName)
+	}
+	var tcOpts bpf.TcOpts
+	tcOpts.ProgFd = int(prog.GetFd())
+	err = hook.Attach(&tcOpts)
+	if err != nil {
+		return nil, fmt.Errorf("tc attach: %v", err)
+	}
+
+	return hook, nil
+}
+
+func (t *Tracee) attachNetProbes() error {
+	prog, _ := t.bpfModule.GetProgram("trace_udp_sendmsg")
+	if prog == nil {
+		return fmt.Errorf("couldn't find trace_udp_sendmsg program")
+	}
+	_, err := prog.AttachKprobe("udp_sendmsg")
+	if err != nil {
+		return fmt.Errorf("error attaching event udp_sendmsg: %v", err)
+	}
+
+	prog, _ = t.bpfModule.GetProgram("trace_udp_disconnect")
+	if prog == nil {
+		return fmt.Errorf("couldn't find trace_udp_disconnect program")
+	}
+	_, err = prog.AttachKprobe("__udp_disconnect")
+	if err != nil {
+		return fmt.Errorf("error attaching event __udp_disconnect: %v", err)
+	}
+
+	prog, _ = t.bpfModule.GetProgram("trace_udp_destroy_sock")
+	if prog == nil {
+		return fmt.Errorf("couldn't find trace_udp_destroy_sock program")
+	}
+	_, err = prog.AttachKprobe("udp_destroy_sock")
+	if err != nil {
+		return fmt.Errorf("error attaching event udp_destroy_sock: %v", err)
+	}
+
+	prog, _ = t.bpfModule.GetProgram("trace_udpv6_destroy_sock")
+	if prog == nil {
+		return fmt.Errorf("couldn't find trace_udpv6_destroy_sock program")
+	}
+	_, err = prog.AttachKprobe("udpv6_destroy_sock")
+	if err != nil {
+		return fmt.Errorf("error attaching event udpv6_destroy_sock: %v", err)
+	}
+
+	prog, _ = t.bpfModule.GetProgram("tracepoint__inet_sock_set_state")
+	if prog == nil {
+		return fmt.Errorf("couldn't find tracepoint__inet_sock_set_state program")
+	}
+	_, err = prog.AttachRawTracepoint("inet_sock_set_state")
+	if err != nil {
+		return fmt.Errorf("error attaching event sock:inet_sock_set_state: %v", err)
 	}
 
 	return nil
@@ -819,6 +945,21 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 		}
 	}
 
+	if t.config.Capture.NetIfaces == nil {
+		// SecuritySocketBindEventID is set as an essentialEvent if 'capture net' was chosen by the user.
+		networkProbes := []string{"tc_ingress", "tc_egress", "trace_udp_sendmsg", "trace_udp_disconnect", "trace_udp_destroy_sock", "trace_udpv6_destroy_sock", "tracepoint__inet_sock_set_state"}
+		for _, progName := range networkProbes {
+			prog, _ := t.bpfModule.GetProgram(progName)
+			if prog == nil {
+				return fmt.Errorf("couldn't find %s program", progName)
+			}
+			err = prog.SetAutoload(false)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	err = t.bpfModule.BPFLoadObject()
 	if err != nil {
 		return err
@@ -827,6 +968,23 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 	err = t.populateBPFMaps()
 	if err != nil {
 		return err
+	}
+
+	if t.config.Capture.NetIfaces != nil {
+		ifaceName := t.config.Capture.NetIfaces[0]
+		t.tcProbe.ingressHook, err = t.attachTcProg(ifaceName, bpf.BPFTcIngress, "tc_ingress")
+		if err != nil {
+			return err
+		}
+
+		t.tcProbe.egressHook, err = t.attachTcProg(ifaceName, bpf.BPFTcEgress, "tc_egress")
+		if err != nil {
+			return err
+		}
+
+		if err = t.attachNetProbes(); err != nil {
+			return err
+		}
 	}
 
 	for e := range t.eventsToTrace {
@@ -875,6 +1033,13 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 		return fmt.Errorf("error initializing file_writes perf map: %v", err)
 	}
 
+	t.netChannel = make(chan []byte, 1000)
+	t.lostNetChannel = make(chan uint64)
+	t.netPerfMap, err = t.bpfModule.InitPerfBuf("net_events", t.netChannel, t.lostNetChannel, t.config.BlobPerfBufferSize)
+	if err != nil {
+		return fmt.Errorf("error initializing net perf map: %v", err)
+	}
+
 	return nil
 }
 
@@ -900,12 +1065,15 @@ func (t *Tracee) Run() error {
 	}
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
+	t.netPerfMap.Start()
 	go t.processLostEvents()
 	go t.runEventPipeline(done)
 	go t.processFileWrites()
+	go t.processNetEvents()
 	<-sig
 	t.eventsPerfMap.Stop()
 	t.fileWrPerfMap.Stop()
+	t.netPerfMap.Stop()
 	if t.config.ChanEvents != nil {
 		t.printer.Epilogue(t.stats)
 	}
@@ -958,6 +1126,18 @@ func (t *Tracee) Run() error {
 
 // Close cleans up created resources
 func (t *Tracee) Close() {
+	if t.tcProbe.ingressHook != nil {
+		// First, delete filters we created
+		t.tcProbe.ingressHook.Destroy()
+		t.tcProbe.egressHook.Destroy()
+
+		// Todo: Delete the qdisc only if no other filters are installed on it.
+		// There is currently a bug with the libbpf tc API that doesn't allow us to perform this check:
+		// https://lore.kernel.org/bpf/CAMy7=ZULTCoSCcjxw=MdhaKmNM9DXKc=t7QScf9smKKUB+L_fQ@mail.gmail.com/T/#t
+		t.tcProbe.ingressHook.SetAttachPoint(bpf.BPFTcIngressEgress)
+		t.tcProbe.ingressHook.Destroy()
+	}
+
 	if t.bpfModule != nil {
 		t.bpfModule.Close()
 	}
@@ -1492,6 +1672,46 @@ func (t *Tracee) processFileWrites() {
 			}
 		case lost := <-t.lostWrChannel:
 			t.stats.lostWrCounter.Increment(int(lost))
+		}
+	}
+}
+
+func (t *Tracee) processNetEvents() {
+	// Todo: split pcap files by context (tid + comm)
+	// Todo: add stats for network packets (in epilog)
+	// Todo: support syn+syn-ack packets
+	for {
+		select {
+		case in := <-t.netChannel:
+			// Sanity check - timestamp, host tid, comm and packet length must exist in all net events
+			if len(in) < 32 {
+				continue
+			}
+
+			timeStamp := binary.LittleEndian.Uint64(in[0:8])
+			pktLen := binary.LittleEndian.Uint32(in[8:12])
+
+			info := gopacket.CaptureInfo{
+				Timestamp:      time.Unix(0, int64(timeStamp)),
+				CaptureLength:  int(pktLen),
+				Length:         int(pktLen),
+				InterfaceIndex: 0, // todo: accept array of interfaces?
+			}
+
+			err := t.pcapWriter.WritePacket(info, in[12:12+pktLen])
+			if err != nil {
+				t.handleError(err)
+				continue
+			}
+
+			// todo: maybe we should not flush every packet?
+			err = t.pcapWriter.Flush()
+			if err != nil {
+				t.handleError(err)
+				continue
+			}
+		case lost := <-t.lostNetChannel:
+			t.stats.lostNtCounter.Increment(int(lost))
 		}
 	}
 }
