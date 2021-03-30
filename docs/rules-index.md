@@ -1,3 +1,5 @@
+# Available Rules
+
 To view the list of available rules, run Tracee with the `--list` flag.
 
 We are currently working on creating a library of behavioral signature detections. Currently, the following are available:
