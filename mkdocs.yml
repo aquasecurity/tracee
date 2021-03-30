@@ -17,6 +17,7 @@ nav:
   - Rules Authoring: rules-authoring.md
   - Rules Index: rules-index.md
   - FAQ: faq.md
+  - Architecture: architecture.md
   - Tracing:
     - Getting Started: tracee-ebpf/index.md
     - Output Options: tracee-ebpf/output.md
@@ -26,7 +27,7 @@ nav:
 theme:
     name: material
     language: 'en'
-    logo: images/tracee.png
+    logo: images/tracee_logo_only.png
 
 markdown_extensions:
   - pymdownx.highlight

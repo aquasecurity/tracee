@@ -1,4 +1,4 @@
-![Tracee Logo](images/tracee.png)
+![Tracee Logo](docs/images/tracee.png)
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/aquasecurity/tracee)](https://github.com/aquasecurity/tracee/releases)
 [![Go Report Card](https://goreportcard.com/badge/github.com/aquasecurity/tracee)](https://goreportcard.com/report/github.com/aquasecurity/tracee)
