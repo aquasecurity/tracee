@@ -6,7 +6,7 @@ In some cases, you might want to leverage Tracee's eBPF event collection capabil
 
 ## Getting Started
 
-Before you proceed, make sure you follow the [minimum requirements for running Tracee](TODO).
+Before you proceed, make sure you follow the [minimum requirements for running Tracee](../../install/prerequisites).
 
 You can obtain Tracee-eBPF in any of the following ways:
 1. Download from the [GitHub Releases](https://github.com/aquasecurity/tracee/releases) (`tracee.tar.gz`).

@@ -1,15 +1,15 @@
 # Prerequisites
 
 - Linux kernel version >= 4.18
-- Linux kernel headers available under conventional location (see [Linux Headers](#TODO) section for more info)
+- Linux kernel headers available under conventional location (see [Linux Headers](../headers) section for more info)
 - libc, and the libraries: libelf, zlib, libbpf
 - GNU Make >= 4.3
 - clang >= 9
 
 Exceptions:
 
-- Tracee supports loading a pre-compiled eBPF file, in which case the kernel headers are not required at runtime, but only for the one-time compilation of the eBPF program. See [Setup Options](TODO) for more info.
-- When using Tracee's Docker image, all of the tooling is built into the image. The only requirement left is the kernel headers or the pre-built eBPF artifact. See [Setup Options](TODO) for more info.
+- Tracee supports loading a pre-compiled eBPF file, in which case the kernel headers are not required at runtime, but only for the one-time compilation of the eBPF program. See [Setup Options](../ebpf-compilation) for more info.
+- When using Tracee's Docker image, all of the tooling is built into the image. The only requirement left is the kernel headers or the pre-built eBPF artifact. See [Setup Options](../ebpf-compilation) for more info.
 
 # Permissions
 
