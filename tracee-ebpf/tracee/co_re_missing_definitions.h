@@ -127,6 +127,23 @@
 #define VM_EXEC      0x00000004
 #define VM_SHARED    0x00000008
 
+#define TC_ACT_UNSPEC    (-1)
+#define TC_ACT_OK           0
+#define TC_ACT_RECLASSIFY   1
+#define TC_ACT_SHOT         2
+#define TC_ACT_PIPE         3
+#define TC_ACT_STOLEN       4
+#define TC_ACT_QUEUED       5
+#define TC_ACT_REPEAT       6
+#define TC_ACT_REDIRECT     7
+
+#define ETH_P_IP    0x0800
+#define ETH_P_IPV6  0x86DD
+
+#define s6_addr         in6_u.u6_addr8
+#define s6_addr16       in6_u.u6_addr16
+#define s6_addr32       in6_u.u6_addr32
+
 #define __user
 
 static inline bool ipv6_addr_any(const struct in6_addr *a)
