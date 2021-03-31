@@ -50,3 +50,50 @@ func TestGetProcGZConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestGetKernelConfigValue(t *testing.T) {
+	testCases := []struct {
+		name          string
+		key           string
+		conf          KernelConfig
+		expectedError error
+		expectedValue string
+	}{
+		{
+			name:          "Value present",
+			key:           CONFIG_BPF,
+			conf:          KernelConfig{CONFIG_BPF: "y"},
+			expectedError: nil,
+			expectedValue: "y",
+		},
+		{
+			name:          "Value present",
+			key:           CONFIG_BPF,
+			conf:          KernelConfig{CONFIG_BPFILTER: "foo", CONFIG_BPF: "y"},
+			expectedError: nil,
+			expectedValue: "y",
+		},
+		{
+			name:          "nil conf",
+			key:           CONFIG_BPF,
+			conf:          nil,
+			expectedError: errors.New("kernel config value does not exist, it's possible this option is not present in your kernel version or the KernelConfig has not been initialized"),
+			expectedValue: "",
+		},
+		{
+			name:          "Value not present",
+			key:           CONFIG_BPF_JIT,
+			conf:          KernelConfig{CONFIG_BPF: "y"},
+			expectedError: errors.New("kernel config value does not exist, it's possible this option is not present in your kernel version or the KernelConfig has not been initialized"),
+			expectedValue: "",
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			v, err := tt.conf.GetKernelConfigValue(tt.key)
+			assert.Equal(t, tt.expectedError, err)
+			assert.Equal(t, tt.expectedValue, v)
+		})
+	}
+}

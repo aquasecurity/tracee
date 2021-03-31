@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -70,12 +71,12 @@ func InitKernelConfig(k KernelConfig) (KernelConfig, error) {
 
 	bootConfigPath := fmt.Sprintf("/boot/config-%s", bytes.Trim(x.Release[:], "\x00"))
 
-	err = k.getBootConfig(bootConfigPath)
+	err = k.getBootConfigByPath(bootConfigPath)
 	if err == nil {
 		return k, nil
 	}
 
-	err2 := k.getProcGZConfig("/proc/config.gz")
+	err2 := k.getProcGZConfigByPath("/proc/config.gz")
 	if err != nil {
 		return nil, fmt.Errorf("%v %v", err, err2)
 	}
@@ -88,45 +89,46 @@ func InitKernelConfig(k KernelConfig) (KernelConfig, error) {
 func (k KernelConfig) GetKernelConfigValue(key string) (string, error) {
 	v, exists := k[key]
 	if !exists {
-		return "", errors.New("kernel config value does not exist, it is could not be known by your kernel version")
+		return "", errors.New("kernel config value does not exist, it's possible this option is not present in your kernel version or the KernelConfig has not been initialized")
 	}
 	return v, nil
 }
 
-func (k KernelConfig) getBootConfig(bootConfigPath string) error {
+func (k KernelConfig) getBootConfigByPath(bootConfigPath string) error {
 
 	configFile, err := os.Open(bootConfigPath)
 	if err != nil {
 		return fmt.Errorf("could not open %s: %v", bootConfigPath, err)
 	}
 
-	scanner := bufio.NewScanner(configFile)
-	k.readConfigFromScanner(scanner)
-	configFile.Close()
+	k.readConfigFromScanner(configFile)
 
 	return nil
 }
 
-func (k KernelConfig) getProcGZConfig(procConfigPath string) error {
+func (k KernelConfig) getProcGZConfigByPath(procConfigPath string) error {
 
 	configFile, err := os.Open(procConfigPath)
 	if err != nil {
 		return fmt.Errorf("could not open %s: %v", procConfigPath, err)
 	}
 
-	zreader, err := gzip.NewReader(configFile)
+	return k.getProcGZConfig(configFile)
+}
+
+func (k KernelConfig) getProcGZConfig(reader io.Reader) error {
+	zreader, err := gzip.NewReader(reader)
 	if err != nil {
 		return err
 	}
 
-	scanner := bufio.NewScanner(zreader)
-	k.readConfigFromScanner(scanner)
-	configFile.Close()
-
+	k.readConfigFromScanner(zreader)
 	return nil
 }
 
-func (k KernelConfig) readConfigFromScanner(scanner *bufio.Scanner) {
+func (k KernelConfig) readConfigFromScanner(reader io.Reader) {
+	scanner := bufio.NewScanner(reader)
+
 	for scanner.Scan() {
 		kv := strings.Split(scanner.Text(), "=")
 		if len(kv) != 2 {
