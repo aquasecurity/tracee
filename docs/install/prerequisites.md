@@ -2,7 +2,7 @@
 
 - Linux kernel version >= 4.18
 - Linux kernel headers available under conventional location (see [Linux Headers](../headers) section for more info)
-- libc, and the libraries: libelf, zlib, libbpf
+- libc, and the libraries: libelf, zlib
 - GNU Make >= 4.3
 - clang >= 9
 
