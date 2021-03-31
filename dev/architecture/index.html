@@ -11,24 +11,24 @@
       
       
       
-        <link rel="canonical" href="https://aquasecurity.github.io/tracee/tracee-ebpf/trace/">
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/architecture/">
       
       
         
       
-      <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-7.0.6+insiders-2.4.0">
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-7.0.7+insiders-2.5.0">
     
     
       
-        <title>Trace Options - Tracee</title>
+        <title>Architecture - Tracee</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.e51cb2f0.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec3b3678.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.de2705de.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.de2705de.min.css">
         
       
       
@@ -59,6 +59,7 @@
     <body dir="ltr" data-md-color-scheme="" data-md-color-primary="none" data-md-color-accent="none">
   
     
+    <script>function __prefix(e){return new URL("..",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
@@ -66,7 +67,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#trace-options" class="md-skip">
+        <a href="#architecture" class="md-skip">
           Skip to content
         </a>
       
@@ -75,13 +76,20 @@
       
     </div>
     
+      <div data-md-component="outdated" hidden>
+        <aside class="md-banner md-banner--warning">
+          
+        </aside>
+      </div>
+    
+    
       
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
+    <a href=".." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
       
-  <img src="../../images/tracee.png" alt="logo">
+  <img src="../images/tracee_logo_only.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -97,7 +105,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Trace Options
+              Architecture
             
           </span>
         </div>
@@ -114,7 +122,7 @@
   <label class="md-search__overlay" for="__search"></label>
   <div class="md-search__inner" role="search">
     <form class="md-search__form" name="search">
-      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active" required>
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
       <label class="md-search__icon md-icon" for="__search">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
@@ -178,9 +186,9 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
+    <a href=".." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
       
-  <img src="../../images/tracee.png" alt="logo">
+  <img src="../images/tracee_logo_only.png" alt="logo">
 
     </a>
     Tracee
@@ -209,7 +217,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         Getting Started
       </a>
     </li>
@@ -250,7 +258,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/prerequisites/" class="md-nav__link">
+      <a href="../install/prerequisites/" class="md-nav__link">
         Prerequisites
       </a>
     </li>
@@ -264,7 +272,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/ebpf-compilation/" class="md-nav__link">
+      <a href="../install/ebpf-compilation/" class="md-nav__link">
         eBPF Compilation
       </a>
     </li>
@@ -278,7 +286,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/headers/" class="md-nav__link">
+      <a href="../install/headers/" class="md-nav__link">
         Linux Headers
       </a>
     </li>
@@ -300,7 +308,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../integrations/" class="md-nav__link">
+      <a href="../integrations/" class="md-nav__link">
         Integrations
       </a>
     </li>
@@ -315,7 +323,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/" class="md-nav__link">
+      <a href="../config/" class="md-nav__link">
         Configuration Options
       </a>
     </li>
@@ -330,8 +338,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rules-authoring/" class="md-nav__link">
-        Rules Authoring
+      <a href="../rules-authoring/" class="md-nav__link">
+        Authoring Rules
       </a>
     </li>
   
@@ -345,8 +353,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rules-index/" class="md-nav__link">
-        Rules Index
+      <a href="../rules-index/" class="md-nav__link">
+        Available Rules
       </a>
     </li>
   
@@ -360,7 +368,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../faq/" class="md-nav__link">
+      <a href="../faq/" class="md-nav__link">
         FAQ
       </a>
     </li>
@@ -376,22 +384,73 @@
     
   
   
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Architecture
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Architecture
+      </a>
+      
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#high-level-overview" class="md-nav__link">
+    High level overview
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_8" type="checkbox" id="__nav_8" checked>
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_9" type="checkbox" id="__nav_9" >
       
       
       
       
-        <label class="md-nav__link" for="__nav_8">
+        <label class="md-nav__link" for="__nav_9">
           Tracing
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="Tracing" data-md-level="1">
-        <label class="md-nav__title" for="__nav_8">
+        <label class="md-nav__title" for="__nav_9">
           <span class="md-nav__icon md-icon"></span>
           Tracing
         </label>
@@ -403,7 +462,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../" class="md-nav__link">
+      <a href="../tracee-ebpf/" class="md-nav__link">
         Getting Started
       </a>
     </li>
@@ -417,7 +476,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../output/" class="md-nav__link">
+      <a href="../tracee-ebpf/output/" class="md-nav__link">
         Output Options
       </a>
     </li>
@@ -429,20 +488,11 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../tracee-ebpf/trace-options/" class="md-nav__link">
         Trace Options
       </a>
-      
     </li>
   
 
@@ -454,7 +504,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../capture/" class="md-nav__link">
+      <a href="../tracee-ebpf/capture/" class="md-nav__link">
         Capturing Artifacts
       </a>
     </li>
@@ -486,6 +536,21 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#high-level-overview" class="md-nav__link">
+    High level overview
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -497,17 +562,9 @@
               
                 
                 
-                <h1 id="trace-options">Trace Options</h1>
-<p>Trace output can easily become unwieldy when tracing all of the events from all of the system. Luckily, Tracee has a powerful mechanism to accurately trace just the information that is relevant to you, using the <code>--trace</code> flag.
-Using the <code>--trace</code> you define expressions that tells Tracee-eBPF what you are interested in by means of event metadata, and process metadata. Only events that match this criteria will be traced.</p>
-<p>You can filter by most of the visible fields on a Tracee event. For example to trace only events related to user ID 1000, use <code>--trace uid=1000</code>.<br />
-You can combine trace expressions into more complex criteria. For example, to trace only events related to user ID 1000, which come from process ID 1234, use <code>--trace uid=1000 --trace pid=1234</code>.  </p>
-<p>A special <code>pid</code> value is <code>new</code> which let's you trace all newly created processes (that were created after Tracee started tracing).<br />
-Tracee-eBPF lets you easily trace events that originate in containers using <code>--trace container</code> or only new containers (that were created after Tracee started) using <code>--trace container=new</code>.</p>
-<p>Event metadata can be used in trace expression as well. For example, to trace only <code>openat</code> syscalls, use <code>--trace event:openat</code>. But you can also filter on a specific argument of the event, e.g <code>--trace openat.pathname=/bin/ls</code> which will show only <code>openat</code> syscalls that operate on the file <code>/bin/ls</code>.</p>
-<p>A useful trace mode is the <code>--trace follow</code> which, if specified, will trace not only processes that match the given trace expressions, but also their child processes.
-For example, the following will trace all the events that originate from zsh shell, including all of the processes that it will spawn: <code>--trace command=zsh --follow</code>.</p>
-<p>For a complete list of trace options, run <code>--trace help</code>.</p>
+                <h1 id="architecture">Architecture</h1>
+<h2 id="high-level-overview">High level overview</h2>
+<p><img alt="Architecture" src="../images/architecture.png" /></p>
                 
               
               
@@ -526,7 +583,7 @@ For example, the following will trace all the events that originate from zsh she
   
     <nav class="md-footer__inner md-grid" aria-label="Footer">
       
-        <a href="../output/" class="md-footer__link md-footer__link--prev" rel="prev">
+        <a href="../faq/" class="md-footer__link md-footer__link--prev" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
           </div>
@@ -535,19 +592,19 @@ For example, the following will trace all the events that originate from zsh she
               <span class="md-footer__direction">
                 Previous
               </span>
-              Output Options
+              FAQ
             </div>
           </div>
         </a>
       
       
-        <a href="../capture/" class="md-footer__link md-footer__link--next" rel="next">
+        <a href="../tracee-ebpf/" class="md-footer__link md-footer__link--next" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Capturing Artifacts
+              Getting Started
             </div>
           </div>
           <div class="md-footer__button md-icon">
@@ -573,10 +630,10 @@ For example, the following will trace all the events that originate from zsh she
     <div class="md-dialog" data-md-component="dialog">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
-    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}, "search": "../../assets/javascripts/workers/search.d10a1f1d.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}, "search": "../assets/javascripts/workers/search.d10a1f1d.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.37df6337.min.js"></script>
+      <script src="../assets/javascripts/bundle.9aafa2c6.min.js"></script>
       
     
   </body>

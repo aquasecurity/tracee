@@ -17,7 +17,7 @@
         
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-7.0.6+insiders-2.4.0">
+      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-7.0.7+insiders-2.5.0">
     
     
       
@@ -25,7 +25,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.e51cb2f0.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec3b3678.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.de2705de.min.css">
@@ -59,6 +59,7 @@
     <body dir="ltr" data-md-color-scheme="" data-md-color-primary="none" data-md-color-accent="none">
   
     
+    <script>function __prefix(e){return new URL("..",location).pathname+"."+e}function __get(e,t=localStorage){return JSON.parse(t.getItem(__prefix(e)))}</script>
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
@@ -75,13 +76,20 @@
       
     </div>
     
+      <div data-md-component="outdated" hidden>
+        <aside class="md-banner md-banner--warning">
+          
+        </aside>
+      </div>
+    
+    
       
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href=".." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
       
-  <img src="../images/tracee.png" alt="logo">
+  <img src="../images/tracee_logo_only.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -114,7 +122,7 @@
   <label class="md-search__overlay" for="__search"></label>
   <div class="md-search__inner" role="search">
     <form class="md-search__form" name="search">
-      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" data-md-state="active" required>
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
       <label class="md-search__icon md-icon" for="__search">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
@@ -180,7 +188,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href=".." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
       
-  <img src="../images/tracee.png" alt="logo">
+  <img src="../images/tracee_logo_only.png" alt="logo">
 
     </a>
     Tracee
@@ -331,7 +339,7 @@
   
     <li class="md-nav__item">
       <a href="../rules-authoring/" class="md-nav__link">
-        Rules Authoring
+        Authoring Rules
       </a>
     </li>
   
@@ -346,7 +354,7 @@
   
     <li class="md-nav__item">
       <a href="../rules-index/" class="md-nav__link">
-        Rules Index
+        Available Rules
       </a>
     </li>
   
@@ -412,22 +420,37 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        Architecture
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
     
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_8" type="checkbox" id="__nav_8" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_9" type="checkbox" id="__nav_9" >
       
       
       
       
-        <label class="md-nav__link" for="__nav_8">
+        <label class="md-nav__link" for="__nav_9">
           Tracing
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="Tracing" data-md-level="1">
-        <label class="md-nav__title" for="__nav_8">
+        <label class="md-nav__title" for="__nav_9">
           <span class="md-nav__icon md-icon"></span>
           Tracing
         </label>
@@ -467,7 +490,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../tracee-ebpf/trace/" class="md-nav__link">
+      <a href="../tracee-ebpf/trace-options/" class="md-nav__link">
         Trace Options
       </a>
     </li>
@@ -541,7 +564,7 @@
                 
                 <h1 id="faq-frequently-asked-questions">FAQ - Frequently Asked Questions</h1>
 <h2 id="secure-tracing">Secure tracing</h2>
-<p>When Tracee-eBPF reads information from user programs it is subject to a race condition where the user program might be able to change the arguments after Tracee has read them. For example, a program invoked <code>execve("/bin/ls", NULL, 0)</code>, Tracee picked that up and will report that, then the program changed the first argument from <code>/bin/ls</code> to <code>/bin/bash</code>, and this is what the kernel will execute. To mitigate this, Tracee also provide "LSM" (Linux Security Module) based events, for example, the <code>bprm_check</code> event which can be reported by Tracee and cross-referenced with the reported regular syscall event.</p>
+<p>When Tracee-eBPF reads information from user programs it is subject to a race condition where the user program might be able to change the arguments after Tracee has read them. For example, a program invoked <code>execve("/bin/ls", NULL, 0)</code>, Tracee picked that up and will report that, then the program changed the first argument from <code>/bin/ls</code> to <code>/bin/bash</code>, and this is what the kernel will execute. To mitigate this, Tracee also provides "LSM" (Linux Security Module) based events, for example, the <code>bprm_check</code> event which can be reported by Tracee and cross-referenced with the reported regular syscall event.</p>
                 
               
               
@@ -569,19 +592,19 @@
               <span class="md-footer__direction">
                 Previous
               </span>
-              Rules Index
+              Available Rules
             </div>
           </div>
         </a>
       
       
-        <a href="../tracee-ebpf/" class="md-footer__link md-footer__link--next" rel="next">
+        <a href="../architecture/" class="md-footer__link md-footer__link--next" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Getting Started
+              Architecture
             </div>
           </div>
           <div class="md-footer__button md-icon">
@@ -610,7 +633,7 @@
     <script id="__config" type="application/json">{"base": "..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}, "search": "../assets/javascripts/workers/search.d10a1f1d.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.37df6337.min.js"></script>
+      <script src="../assets/javascripts/bundle.9aafa2c6.min.js"></script>
       
     
   </body>
