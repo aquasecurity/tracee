@@ -9,6 +9,9 @@
 
 Tracee is a Runtime Security and forensics tool for Linux. It is using Linux eBPF technology to trace your system and applications at runtime, and analyze collected events to detect suspicious behavioral patterns. It is delivered as a Docker image that monitors the OS and detects suspicious behavior based on a pre-defined set of behavioral patterns.
 
+Watch a quick video demo of Tracee: <br>
+<a href="https://youtu.be/9qxaOYto_5"><img src="http://i3.ytimg.com/vi/9qxaOYto_5g/maxresdefault.jpg" width="200"></a>
+
 ## Documentation
 
 The full documentation of Tracee is available at [https://aquasecurity.github.io/tracee](https://aquasecurity.github.io/tracee).
