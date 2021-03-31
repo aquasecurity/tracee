@@ -1,6 +1,6 @@
 # Integrations
 
-When a detection is made by any of the signatures, it will always be printed to stdout. You can customize the output format using gotemplate:
+When a detection is made by any of the signatures, it will always be printed to stdout. You can customize the output format using a [go template](https://golang.org/pkg/text/template/):
 
 ```bash
 tracee-rules --output-template /path/to/my.tmpl
@@ -25,6 +25,6 @@ type Finding struct {
 }
 ```
 
-Additionally, the Go template can use utility functions from [Sprig ](http://masterminds.github.io/sprig/).
+Additionally, the Go template can use utility functions from [Sprig](http://masterminds.github.io/sprig/).
 
 For example templates, see [tracee/tracee-rules/templates](https://github.com/aquasecurity/tracee/tree/main/tracee-rules/templates).

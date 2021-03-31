@@ -1,4 +1,4 @@
-# eBPF Program
+# eBPF Compilation
 
 Tracee is leveraging Linux's eBPF technology, which is kernel and version sensitive. Therefore, Tracee's eBPF component needs to be specifically compiled for your hosts.
 

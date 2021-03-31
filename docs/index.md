@@ -7,11 +7,11 @@
 
 # Tracee: Runtime Security and Forensics using eBPF
 
-Tracee is a Runtime Security and forensics tool for Linux. It is using Linux eBPF technology to trace your system and applications at runtime, and analyze collected events to detect suspicious behavioral patterns. It is delivered as a Docker image that monitors the OS and detects suspicious behavior based on a pre-defined set of behavioral patterns.
+Tracee is a Runtime Security and forensics tool for Linux. It is using Linux eBPF technology to trace your system and applications at runtime, and analyze collected events to detect suspicious behavioral patterns. It is delivered as a Docker image that monitors the OS and detects suspicious behavior based on a predefined set of behavioral patterns.
 
 ## Quickstart
 
-Before you proceed, make sure you follow the [minimum requirements for running Tracee](https://aquasecurity.github.io/tracee/install/prerequisites.md).
+Before you proceed, make sure you follow the [minimum requirements for running Tracee](install/prerequisites.md).
 
 ```bash
 docker run --name tracee --rm --privileged -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee aquasec/tracee:latest
@@ -20,7 +20,7 @@ docker run --name tracee --rm --privileged -v /lib/modules/:/lib/modules/:ro -v 
 This will run Tracee with default settings and start reporting detections to standard output.  
 In order to simulate a suspicious behavior, you can run `strace ls` in another terminal, which will trigger the "Anti-Debugging" signature, which is loaded by default.
 
-> Note: You may need to change the volume mounts for the kernel headers based on your setup. See [Linux Headers](https://aquasecurity.github.io/tracee/install/headers.md) section for more info.
+> Note: You may need to change the volume mounts for the kernel headers based on your setup. See [Linux Headers](install/headers.md) section for more info.
 
 ## Trace
 

@@ -7,7 +7,7 @@ Create a `.rego` file in the rules directory that has the following Rego Rules (
 
 1. `__rego_metadoc__`: A *document* rule that defines the rule's metadata.
 2. `tracee_selected_events`: A *set* rule that defines the event selectors.
-3. `tracee_match`: A *boolean* or a *document* rule that defines the logic of the signature. If bool is "returned", a true evaluation will generate a Finding with no data if document is "returned", any non-empty evaluation will generate a Finding with the returned document as the Finding's "Data".
+3. `tracee_match`: A *boolean* or a *document* rule that defines the logic of the signature. If bool is "returned", a true evaluation will generate a Finding with no data. If a document is "returned", any non-empty evaluation will generate a Finding with the returned document as the Finding's "Data".
 
 See [tracee/tracee-rules/signatures/rego/examples](https://github.com/aquasecurity/tracee/tree/main/tracee-rules/signatures/rego/examples) for example Rego signatures.
 

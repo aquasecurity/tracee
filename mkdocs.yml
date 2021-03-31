@@ -14,19 +14,20 @@ nav:
     - Linux Headers: install/headers.md
   - Integrations: integrations.md
   - Configuration Options: config.md
-  - Rules Authoring: rules-authoring.md
-  - Rules Index: rules-index.md
+  - Authoring Rules: rules-authoring.md
+  - Available Rules: rules-index.md
   - FAQ: faq.md
+  - Architecture: architecture.md
   - Tracing:
     - Getting Started: tracee-ebpf/index.md
     - Output Options: tracee-ebpf/output.md
-    - Trace Options: tracee-ebpf/trace.md
+    - Trace Options: tracee-ebpf/trace-options.md
     - Capturing Artifacts: tracee-ebpf/capture.md
 
 theme:
     name: material
     language: 'en'
-    logo: images/tracee.png
+    logo: images/tracee_logo_only.png
 
 markdown_extensions:
   - pymdownx.highlight
