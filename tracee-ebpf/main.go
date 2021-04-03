@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aquasecurity/tracee/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
 	"github.com/syndtr/gocapability/capability"
 	cli "github.com/urfave/cli/v2"
@@ -70,6 +71,10 @@ func main() {
 			cfg.BPFObjPath = bpfFile
 			if !checkRequiredCapabilities() {
 				return fmt.Errorf("insufficient privileges to run")
+			}
+			missingKernelOptions := missingKernelConfigOptions()
+			if len(missingKernelOptions) != 0 {
+				return fmt.Errorf("kernel is not properly configured, missing: %v", missingKernelOptions)
 			}
 			t, err := tracee.New(cfg)
 			if err != nil {
@@ -883,6 +888,33 @@ func checkRequiredCapabilities() bool {
 		return false
 	}
 	return caps.Get(capability.EFFECTIVE, capability.CAP_SYS_ADMIN)
+}
+
+func missingKernelConfigOptions() []string {
+
+	requiredConfigOptions := map[uint32]string{
+		helpers.CONFIG_BPF:           "y",
+		helpers.CONFIG_BPF_SYSCALL:   "y",
+		helpers.CONFIG_KPROBE_EVENTS: "y",
+		helpers.CONFIG_BPF_EVENTS:    "y",
+	}
+
+	kConfig := helpers.KernelConfig{}
+	kConfig.InitKernelConfig()
+
+	missing := []string{}
+
+	for requiredOption, setting := range requiredConfigOptions {
+		opt, err := kConfig.GetKernelConfigValue(requiredOption)
+		if err != nil {
+			missing = append(missing, helpers.KernelConfigKeyIDToString[requiredOption])
+			continue
+		}
+		if opt != setting {
+			missing = append(missing, helpers.KernelConfigKeyIDToString[requiredOption])
+		}
+	}
+	return missing
 }
 
 func getSelfCapabilities() (capability.Capabilities, error) {
