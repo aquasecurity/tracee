@@ -177,6 +177,45 @@
 
 #define DEV_NULL_STR    0
 
+#define KERNEL_CONFIG_BPF                       1
+#define KERNEL_CONFIG_BPF_SYSCALL               2
+#define KERNEL_CONFIG_HAVE_EBPF_JIT             3
+#define KERNEL_CONFIG_BPF_JIT                   4
+#define KERNEL_CONFIG_BPF_JIT_ALWAYS_ON         5
+#define KERNEL_CONFIG_CGROUPS                   6
+#define KERNEL_CONFIG_CGROUP_BPF                7
+#define KERNEL_CONFIG_CGROUP_NET_CLASSID        8
+#define KERNEL_CONFIG_SOCK_CGROUP_DATA          9
+#define KERNEL_CONFIG_BPF_EVENTS                10
+#define KERNEL_CONFIG_KPROBE_EVENTS             11
+#define KERNEL_CONFIG_UPROBE_EVENTS             12
+#define KERNEL_CONFIG_TRACING                   13
+#define KERNEL_CONFIG_FTRACE_SYSCALLS           14
+#define KERNEL_CONFIG_FUNCTION_ERROR_INJECTION  15
+#define KERNEL_CONFIG_BPF_KPROBE_OVERRIDE       16
+#define KERNEL_CONFIG_NET                       17
+#define KERNEL_CONFIG_XDP_SOCKETS               18
+#define KERNEL_CONFIG_LWTUNNEL_BPF              19
+#define KERNEL_CONFIG_NET_ACT_BPF               20
+#define KERNEL_CONFIG_NET_CLS_BPF               21
+#define KERNEL_CONFIG_NET_CLS_ACT               22
+#define KERNEL_CONFIG_NET_SCH_INGRESS           23
+#define KERNEL_CONFIG_XFRM                      24
+#define KERNEL_CONFIG_IP_ROUTE_CLASSID          25
+#define KERNEL_CONFIG_IPV6_SEG6_BPF             26
+#define KERNEL_CONFIG_BPF_LIRC_MODE2            27
+#define KERNEL_CONFIG_BPF_STREAM_PARSER         28
+#define KERNEL_CONFIG_NETFILTER_XT_MATCH_BPF    29
+#define KERNEL_CONFIG_BPFILTER                  30
+#define KERNEL_CONFIG_BPFILTER_UMH              31
+#define KERNEL_CONFIG_TEST_BPF                  32
+#define KERNEL_CONFIG_HZ                        33
+#define KERNEL_CONFIG_DEBUG_INFO_BTF            34
+#define KERNEL_CONFIG_DEBUG_INFO_BTF_MODULES    35
+#define KERNEL_CONFIG_BPF_LSM                   36
+#define KERNEL_CONFIG_BPF_PRELOAD               37
+#define KERNEL_CONFIG_BPF_PRELOAD_UMD           38
+
 #define READ_KERN(ptr) ({ typeof(ptr) _val;                             \
                           __builtin_memset(&_val, 0, sizeof(_val));     \
                           bpf_probe_read(&_val, sizeof(_val), &ptr);    \
@@ -317,6 +356,7 @@ BPF_HASH(bin_args_map, u64, bin_args_t);                // Persist args for send
 BPF_HASH(sys_32_to_64_map, u32, u32);                   // Map 32bit syscalls numbers to 64bit syscalls numbers
 BPF_HASH(params_types_map, u32, u64);                   // Encoded parameters types for event
 BPF_HASH(params_names_map, u32, u64);                   // Encoded parameters names for event
+BPF_HASH(kernel_config_map, u32, u32);                  // Kernel configuration
 BPF_ARRAY(file_filter, path_filter_t, 3);               // Used to filter vfs_write events
 BPF_ARRAY(string_store, path_filter_t, 1);              // Store strings from userspace
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);             // Percpu global buffer variables
@@ -332,6 +372,14 @@ BPF_PERF_OUTPUT(events);                            // Events submission
 BPF_PERF_OUTPUT(file_writes);                       // File writes events submission
 
 /*================== KERNEL VERSION DEPENDANT HELPER FUNCTIONS =================*/
+
+static __always_inline u32 kernel_config_option_enabled(u32 key) {
+    u32 *set = bpf_map_lookup_elem(&kernel_config_map, &key);
+    if (set == NULL) {
+        return false;
+    }
+    return *set;
+}
 
 static __always_inline u32 get_mnt_ns_id(struct nsproxy *ns)
 {
