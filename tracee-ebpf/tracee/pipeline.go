@@ -158,11 +158,18 @@ func (t *Tracee) prepareEventForPrint(done <-chan struct{}, in <-chan RawEvent) 
 			argMetas := make([]external.ArgMeta, rawEvent.Ctx.Argnum)
 			for i, tag := range rawEvent.ArgsTags {
 				args[i] = rawEvent.RawArgs[tag]
-				argMeta, ok := t.DecParamName[rawEvent.Ctx.EventID%2][tag]
+				argName, ok := t.DecParamName[rawEvent.Ctx.EventID%2][tag]
 				if ok {
-					argMetas[i] = argMeta
+					argMetas[i].Name = argName
 				} else {
 					errc <- fmt.Errorf("invalid arg tag for event %d", rawEvent.Ctx.EventID)
+					continue
+				}
+				argType, ok := t.ParamTypes[rawEvent.Ctx.EventID][argName]
+				if ok {
+					argMetas[i].Type = argType
+				} else {
+					errc <- fmt.Errorf("invalid arg type for arg name %s of event %d", argName, rawEvent.Ctx.EventID)
 					continue
 				}
 			}
