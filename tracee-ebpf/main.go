@@ -73,7 +73,6 @@ func main() {
 			}
 			t, err := tracee.New(cfg)
 			if err != nil {
-				// t is being closed internally
 				return fmt.Errorf("error creating Tracee: %v", err)
 			}
 			return t.Run()

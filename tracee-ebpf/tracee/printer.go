@@ -163,8 +163,6 @@ func (p tableEventPrinter) Epilogue(stats statsStore) {
 }
 
 func (p tableEventPrinter) Close() {
-	p.out.Close()
-	p.err.Close()
 }
 
 type templateEventPrinter struct {
@@ -210,8 +208,6 @@ func (p templateEventPrinter) Print(event external.Event) {
 func (p templateEventPrinter) Epilogue(stats statsStore) {}
 
 func (p templateEventPrinter) Close() {
-	p.out.Close()
-	p.err.Close()
 }
 
 type jsonEventPrinter struct {
@@ -242,8 +238,6 @@ func (p jsonEventPrinter) Error(e error) {
 func (p jsonEventPrinter) Epilogue(stats statsStore) {}
 
 func (p jsonEventPrinter) Close() {
-	p.out.Close()
-	p.err.Close()
 }
 
 // gobEventPrinter is printing events using golang's builtin Gob serializer
@@ -276,6 +270,4 @@ func (p *gobEventPrinter) Error(e error) {
 func (p *gobEventPrinter) Epilogue(stats statsStore) {}
 
 func (p gobEventPrinter) Close() {
-	p.out.Close()
-	p.err.Close()
 }
