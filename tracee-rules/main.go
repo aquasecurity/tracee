@@ -51,7 +51,7 @@ func main() {
 				}
 				loadedSigIDs = append(loadedSigIDs, m.ID)
 			}
-			fmt.Println("Loaded signature(s): ", loadedSigIDs)
+			fmt.Fprintln(os.Stderr, "Loaded signature(s): ", loadedSigIDs)
 
 			if c.Bool("list") {
 				return listSigs(os.Stdout, sigs)

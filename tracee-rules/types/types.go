@@ -17,12 +17,12 @@ type Signature interface {
 
 //SignatureMetadata represents information about the signature
 type SignatureMetadata struct {
-	ID          string
-	Version     string
-	Name        string
-	Description string
-	Tags        []string
-	Properties  map[string]interface{}
+	ID          string                 `json:ID`
+	Version     string                 `json:Version`
+	Name        string                 `json:Name`
+	Description string                 `json:Description`
+	Tags        []string               `json:Tags`
+	Properties  map[string]interface{} `json:Properties`
 }
 
 //SignatureEventSelector represents events the signature is subscribed to
@@ -45,7 +45,7 @@ type SignalSourceComplete string
 
 //Finding is the main output of a signature. It represents a match result for the signature business logic
 type Finding struct {
-	Data        map[string]interface{}
-	Context     Event
-	SigMetadata SignatureMetadata
+	Data        map[string]interface{} `json:Data`
+	Context     Event                  `json:Context`
+	SigMetadata SignatureMetadata      `json:SigMetadata`
 }
