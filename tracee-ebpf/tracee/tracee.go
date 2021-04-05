@@ -17,7 +17,6 @@ import (
 
 	bpf "github.com/aquasecurity/tracee/libbpfgo"
 	"github.com/aquasecurity/tracee/libbpfgo/helpers"
-	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
 )
 
 // Config is a struct containing user defined configuration of tracee
@@ -190,8 +189,9 @@ type Tracee struct {
 	capturedFiles     map[string]int64
 	writtenFiles      map[string]string
 	mntNsFirstPid     map[uint32]uint32
-	DecParamName      [2]map[argTag]external.ArgMeta
+	DecParamName      [2]map[argTag]string
 	EncParamName      [2]map[string]argTag
+	ParamTypes        map[int32]map[string]string
 	pidsInMntns       bucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
 }
@@ -294,10 +294,18 @@ func New(cfg Config) (*Tracee, error) {
 		}
 	}
 
-	t.DecParamName[0] = make(map[argTag]external.ArgMeta)
+	t.DecParamName[0] = make(map[argTag]string)
 	t.EncParamName[0] = make(map[string]argTag)
-	t.DecParamName[1] = make(map[argTag]external.ArgMeta)
+	t.DecParamName[1] = make(map[argTag]string)
 	t.EncParamName[1] = make(map[string]argTag)
+	t.ParamTypes = make(map[int32]map[string]string)
+
+	for eventId, params := range EventsIDToParams {
+		t.ParamTypes[eventId] = make(map[string]string)
+		for _, param := range params {
+			t.ParamTypes[eventId][param.Name] = param.Type
+		}
+	}
 
 	err = t.initBPF(cfg.BPFObjPath)
 	if err != nil {
@@ -488,7 +496,7 @@ func (t *Tracee) initEventsParams() map[int32][]eventParam {
 			if !seenNames[id%2][param.Name] {
 				seenNames[id%2][param.Name] = true
 				t.EncParamName[id%2][param.Name] = ParamNameCounter[id%2]
-				t.DecParamName[id%2][ParamNameCounter[id%2]] = param
+				t.DecParamName[id%2][ParamNameCounter[id%2]] = param.Name
 				eventsParams[id] = append(eventsParams[id], eventParam{encType: paramT, encName: ParamNameCounter[id%2]})
 				ParamNameCounter[id%2]++
 			} else {
