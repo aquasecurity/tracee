@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -16,6 +18,10 @@ import (
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
+type exporter interface {
+	Execute(wr io.Writer, data interface{}) error
+}
+
 const DefaultDetectionOutputTemplate string = `
 *** Detection ***
 Time: {{ dateInZone "2006-01-02T15:04:05Z" (now) "UTC" }}
@@ -26,8 +32,10 @@ Command: {{ .Context.ProcessName }}
 Hostname: {{ .Context.HostName }}
 `
 
-func setupTemplate(inputTemplateFile string) (*template.Template, error) {
+func setupTemplate(inputTemplateFile string) (exporter, error) {
 	switch {
+	case inputTemplateFile == "json":
+		return &jsonExporter{}, nil
 	case inputTemplateFile != "":
 		return template.New(filepath.Base(inputTemplateFile)).
 			Funcs(sprig.TxtFuncMap()).
@@ -39,23 +47,45 @@ func setupTemplate(inputTemplateFile string) (*template.Template, error) {
 	}
 }
 
+type jsonExporter struct{}
+
+func (j *jsonExporter) Execute(wr io.Writer, data interface{}) error {
+	serializedObject, err := json.Marshal(data)
+	if err != nil {
+		log.Printf("Error when trying to parse tracee event: %v\n", err)
+		return nil
+	}
+
+	bs := make([]byte, 4)
+	binary.LittleEndian.PutUint32(bs, uint32(len(serializedObject)))
+
+	// ensure data is in the same buffer (instead of writing performing consecutive writes)
+	res := bytes.Join([][]byte{bs, serializedObject}, []byte(""))
+	err = binary.Write(wr, binary.LittleEndian, res)
+	if err != nil {
+		log.Printf("Error when trying to write event: %v\n", err)
+	}
+
+	return nil
+}
+
 func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentType string, outputTemplate string) (chan types.Finding, error) {
 	out := make(chan types.Finding)
 	var err error
 
-	var tWebhook *template.Template
+	var tWebhook exporter
 	tWebhook, err = setupTemplate(webhookTemplate)
 	if err != nil && webhookTemplate != "" {
 		return nil, fmt.Errorf("error preparing webhook template: %v", err)
 	}
 
-	var tOutput *template.Template
+	var tOutput exporter
 	tOutput, err = setupTemplate(outputTemplate)
 	if err != nil && outputTemplate != "" {
 		return nil, fmt.Errorf("error preparing output template: %v", err)
 	}
 
-	go func(w io.Writer, tWebhook, tOutput *template.Template) {
+	go func(w io.Writer, tWebhook, tOutput exporter) {
 		for res := range out {
 			switch res.Context.(type) {
 			case tracee.Event:
@@ -77,7 +107,7 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 	return out, nil
 }
 
-func sendToWebhook(t *template.Template, res types.Finding, webhook string, webhookTemplate string, contentType string) error {
+func sendToWebhook(t exporter, res types.Finding, webhook string, webhookTemplate string, contentType string) error {
 	var payload string
 
 	switch {
