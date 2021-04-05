@@ -476,9 +476,45 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Capturing Artifacts
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         Capturing Artifacts
       </a>
+      
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#cli-options" class="md-nav__link">
+    CLI Options
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -509,6 +545,28 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#cli-options" class="md-nav__link">
+    CLI Options
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -529,9 +587,52 @@
 <li>Executed files: Anytime a binary is being executed, the binary file will be captured. If the same binary is executed multiple times, it will be captured just once.</li>
 <li>Memory files: Anytime a "memory unpacker" is detected, the suspicious memory region will be captured. This is triggered when memory protection changes from Write+Execute to Write.</li>
 </ol>
-<p>To use, <code>--capture exec</code>, <code>--capture mem</code>, and <code>--capture write</code> capture executed, memory, and written files respectively. 
-To filter written files, add a prefix expression like so: <code>--capture write=/etc/*</code>. This will capture anything written blow <code>/etc/</code>.</p>
-<p>For a complete list of capture options, run <code>--capture help</code>.</p>
+<h2 id="cli-options">CLI Options</h2>
+<table>
+<thead>
+<tr>
+<th>CLI Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[artifact:]write[=/path/prefix*]</code></td>
+<td>capture written files. A filter can be given to only capture file writes whose path starts with some prefix (up to 50 characters). Up to 3 filters can be given.</td>
+</tr>
+<tr>
+<td><code>[artifact:]exec</code></td>
+<td>capture executed files.</td>
+</tr>
+<tr>
+<td><code>[artifact:]mem</code></td>
+<td>capture memory regions that had write+execute (w+x) protection, and then changed to execute (x) only.</td>
+</tr>
+<tr>
+<td><code>[artifact:]all</code></td>
+<td>capture all of the above artifacts.</td>
+</tr>
+<tr>
+<td><code>dir:/path/to/dir</code></td>
+<td>path where tracee will save produced artifacts. the artifact will be saved into an 'out' subdirectory. (default: /tmp/tracee).</td>
+</tr>
+<tr>
+<td><code>clear-dir</code></td>
+<td>clear the captured artifacts output dir before starting (default: false).</td>
+</tr>
+</tbody>
+</table>
+<p>(Use this flag multiple times to choose multiple capture options)</p>
+<h2 id="examples">Examples</h2>
+<p>Capture executed files into the default output directory</p>
+<div class="highlight"><pre><span></span><code>--capture exec
+</code></pre></div>
+<p>Delete /my/dir/out and then capture all supported artifacts into it</p>
+<div class="highlight"><pre><span></span><code>--capture all --capture dir:/my/dir --capture clear-dir
+</code></pre></div>
+<p>Capture files that were written into anywhere under <code>/usr/bin/</code> or <code>/etc/</code></p>
+<div class="highlight"><pre><span></span><code>--capture write=/usr/bin/* --capture write=/etc/* 
+</code></pre></div>
                 
               
               

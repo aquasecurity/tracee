@@ -462,9 +462,45 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Trace Options
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         Trace Options
       </a>
+      
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#cli-options" class="md-nav__link">
+    CLI Options
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -509,6 +545,28 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#cli-options" class="md-nav__link">
+    CLI Options
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    Examples
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -530,7 +588,99 @@ Tracee-eBPF lets you easily trace events that originate in containers using <cod
 <p>Event metadata can be used in trace expression as well. For example, to trace only <code>openat</code> syscalls, use <code>--trace event:openat</code>. But you can also filter on a specific argument of the event, e.g <code>--trace openat.pathname=/bin/ls</code> which will show only <code>openat</code> syscalls that operate on the file <code>/bin/ls</code>.</p>
 <p>A useful trace mode is the <code>--trace follow</code> which, if specified, will trace not only processes that match the given trace expressions, but also their child processes.
 For example, the following will trace all the events that originate from zsh shell, including all of the processes that it will spawn: <code>--trace command=zsh --follow</code>.</p>
-<p>For a complete list of trace options, run <code>--trace help</code>.</p>
+<h2 id="cli-options">CLI Options</h2>
+<p>Only events that match all trace expressions will be traced (trace flags are ANDed).
+The following types of expressions are supported:</p>
+<p>Numerical expressions which compare numbers and allow the following operators: '=', '!=', '&lt;', '&gt;'.
+Available numerical expressions: uid, pid, mntns, pidns.</p>
+<p>String expressions which compares text and allow the following operators: '=', '!='.
+Available string expressions: event, set, uts, comm.</p>
+<p>Boolean expressions that check if a boolean is true and allow the following operator: '!'.
+Available boolean expressions: container.</p>
+<p>Event arguments can be accessed using 'event_name.event_arg' and provide a way to filter an event by its arguments.
+Event arguments allow the following operators: '=', '!='.
+Strings can be compared as a prefix if ending with '*'.</p>
+<p>Event return value can be accessed using 'event_name.retval' and provide a way to filter an event by its return value.
+Event return value expression has the same syntax as a numerical expression.</p>
+<p>Non-boolean expressions can compare a field to multiple values separated by ','.
+Multiple values are ORed if used with equals operator '=', but are ANDed if used with any other operator.</p>
+<p>The field 'container' and 'pid' also support the special value 'new' which selects new containers or pids, respectively.</p>
+<p>The field 'set' selects a set of events to trace according to predefined sets, which can be listed by using the 'list' flag.</p>
+<p>The special 'follow' expression declares that not only processes that match the criteria will be traced, but also their descendants.</p>
+<p>Note: some of the above operators have special meanings in different shells. To 'escape' those operators, please use single quotes, e.g.: 'uid&gt;0'</p>
+<h2 id="examples">Examples</h2>
+<p>only trace events from new processes</p>
+<div class="highlight"><pre><span></span><code>--trace pid=new
+</code></pre></div>
+<p>only trace events from pid 510 or pid 1709</p>
+<div class="highlight"><pre><span></span><code>--trace pid=510,1709
+</code></pre></div>
+<p>only trace events from pid 510 or pid 1709 (same as above)</p>
+<div class="highlight"><pre><span></span><code>--trace p=510 --trace p=1709
+</code></pre></div>
+<p>only trace events from newly created containers</p>
+<div class="highlight"><pre><span></span><code>--trace container=new
+</code></pre></div>
+<p>only trace events from containers</p>
+<div class="highlight"><pre><span></span><code>--trace container
+</code></pre></div>
+<p>only trace events from containers (same as above)</p>
+<div class="highlight"><pre><span></span><code>--trace c
+</code></pre></div>
+<p>only trace events from the host</p>
+<div class="highlight"><pre><span></span><code>--trace &#39;!container&#39;
+</code></pre></div>
+<p>only trace events from uid 0</p>
+<div class="highlight"><pre><span></span><code>--trace uid=0
+</code></pre></div>
+<p>only trace events from mntns id 4026531840</p>
+<div class="highlight"><pre><span></span><code>--trace mntns=4026531840
+</code></pre></div>
+<p>only trace events from pidns id not equal to 4026531840</p>
+<div class="highlight"><pre><span></span><code>--trace pidns!=4026531836
+</code></pre></div>
+<p>only trace events from uids greater than 0</p>
+<div class="highlight"><pre><span></span><code>--trace &#39;uid&gt;0&#39;
+</code></pre></div>
+<p>only trace events from pids between 0 and 1000</p>
+<div class="highlight"><pre><span></span><code>--trace &#39;pid&gt;0&#39; --trace &#39;pid&lt;1000&#39;
+</code></pre></div>
+<p>only trace events from uids greater than 0 but not 1000</p>
+<div class="highlight"><pre><span></span><code>--trace &#39;u&gt;0&#39; --trace u!=1000
+</code></pre></div>
+<p>only trace execve and open events</p>
+<div class="highlight"><pre><span></span><code>--trace event=execve,open
+</code></pre></div>
+<p>only trace events prefixed by "open"</p>
+<div class="highlight"><pre><span></span><code>--trace event=open*
+</code></pre></div>
+<p>don't trace events prefixed by "open" or "dup"</p>
+<div class="highlight"><pre><span></span><code>--trace event!=open*,dup*
+</code></pre></div>
+<p>trace all file-system related events
+<div class="highlight"><pre><span></span><code>--trace set=fs
+</code></pre></div></p>
+<p>trace all file-system related events, but not open(at)</p>
+<div class="highlight"><pre><span></span><code>--trace s=fs --trace e!=open,openat
+</code></pre></div>
+<p>don't trace events from uts name ab356bc4dd554</p>
+<div class="highlight"><pre><span></span><code>--trace uts!=ab356bc4dd554
+</code></pre></div>
+<p>only trace events from ls command</p>
+<div class="highlight"><pre><span></span><code>--trace comm=ls
+</code></pre></div>
+<p>only trace 'close' events that have 'fd' equals 5</p>
+<div class="highlight"><pre><span></span><code>--trace close.fd=5
+</code></pre></div>
+<p>only trace 'openat' events that have 'pathname' prefixed by "/tmp"</p>
+<div class="highlight"><pre><span></span><code>--trace openat.pathname=/tmp*
+</code></pre></div>
+<p>don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls</p>
+<div class="highlight"><pre><span></span><code>--trace openat.pathname!=/tmp/1,/bin/ls
+</code></pre></div>
+<p>trace all events that originated from bash or from one of the processes spawned by bash</p>
+<div class="highlight"><pre><span></span><code>--trace comm=bash --trace follow
+</code></pre></div>
                 
               
               
