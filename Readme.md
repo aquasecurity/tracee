@@ -14,7 +14,7 @@ Watch a quick video demo of Tracee: <br>
 
 ## Documentation
 
-The full documentation of Tracee is available at [https://aquasecurity.github.io/tracee/dev](https://aquasecurity.github.io/tracee). You can use the version selector on top to view documentation for a specific version of Tracee.
+The full documentation of Tracee is available at [https://aquasecurity.github.io/tracee/dev](https://aquasecurity.github.io/tracee/dev). You can use the version selector on top to view documentation for a specific version of Tracee.
 
 ## Quickstart
 
