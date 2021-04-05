@@ -10,7 +10,36 @@ Tracee can capture the following types of artifacts:
 2. Executed files: Anytime a binary is being executed, the binary file will be captured. If the same binary is executed multiple times, it will be captured just once.
 3. Memory files: Anytime a "memory unpacker" is detected, the suspicious memory region will be captured. This is triggered when memory protection changes from Write+Execute to Write.
 
-To use, `--capture exec`, `--capture mem`, and `--capture write` capture executed, memory, and written files respectively. 
-To filter written files, add a prefix expression like so: `--capture write=/etc/*`. This will capture anything written blow `/etc/`.
+## CLI Options
 
-For a complete list of capture options, run `--capture help`.
+CLI Option | Description
+--- | ---
+`[artifact:]write[=/path/prefix*]` | capture written files. A filter can be given to only capture file writes whose path starts with some prefix (up to 50 characters). Up to 3 filters can be given.
+`[artifact:]exec` | capture executed files.
+`[artifact:]mem` | capture memory regions that had write+execute (w+x) protection, and then changed to execute (x) only.
+`[artifact:]all` | capture all of the above artifacts.
+`dir:/path/to/dir` | path where tracee will save produced artifacts. the artifact will be saved into an 'out' subdirectory. (default: /tmp/tracee).
+`clear-dir` | clear the captured artifacts output dir before starting (default: false).
+
+(Use this flag multiple times to choose multiple capture options)
+
+## Examples
+
+Capture executed files into the default output directory
+
+```
+--capture exec
+```
+
+Delete /my/dir/out and then capture all supported artifacts into it
+
+```
+--capture all --capture dir:/my/dir --capture clear-dir
+```
+
+Capture files that were written into anywhere under `/usr/bin/` or `/etc/`
+
+```
+--capture write=/usr/bin/* --capture write=/etc/* 
+```
+
