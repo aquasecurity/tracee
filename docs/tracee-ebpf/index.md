@@ -6,7 +6,7 @@ In some cases, you might want to leverage Tracee's eBPF event collection capabil
 
 ## Quickstart
 
-Before you proceed, make sure you follow the [minimum requirements for running Tracee](https://aquasecurity.github.io/tracee/install/prerequisites.md).
+Before you proceed, make sure you follow the [minimum requirements for running Tracee](install/prerequisites.md).
 
 ```bash
 docker run --name tracee --rm --privileged -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee -it aquasec/tracee:latest trace
@@ -33,9 +33,6 @@ Each line is a single event collected by Tracee-eBPF, with the following informa
 6. RET - value returned by the function
 7. EVENT - identifies the event (e.g. syscall name)
 8. ARGS - list of arguments given to the function
-
-Use the `--help` flag to see a full description of available options. Some flags has specific help sections that can be accessed by passing `help` to the flag, for example `--output help`.
-This section covers some of the more common options.
 
 ## Getting Tracee-eBPF
 

@@ -10,7 +10,7 @@ The full documentation of Tracee's eBPF tracing is available at [https://aquasec
 
 ## Quickstart
 
-Before you proceed, make sure you follow the [minimum requirements for running Tracee](https://aquasecurity.github.io/tracee/install/prerequisites.md).
+Before you proceed, make sure you follow the [minimum requirements for running Tracee](https://aquasecurity.github.io/tracee/dev/install/prerequisites.md).
 
 ```bash
 docker run --name tracee --rm --privileged -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee -it aquasec/tracee:latest trace
