@@ -5,6 +5,7 @@ package libbpfgo
 
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/resource.h>
@@ -34,9 +35,8 @@ void set_print_fn() {
     libbpf_set_print(libbpf_print_fn);
 }
 
-struct ring_buffer * init_ring_buf(int map_fd) {
+struct ring_buffer * init_ring_buf(int map_fd, uintptr_t ctx) {
     struct ring_buffer *rb = NULL;
-    __u64 ctx = map_fd;
     rb = ring_buffer__new(map_fd, ringbufferCallback, (void*)ctx, NULL);
     if (!rb) {
         fprintf(stderr, "Failed to initialize ring buffer\n");
@@ -45,12 +45,11 @@ struct ring_buffer * init_ring_buf(int map_fd) {
     return rb;
 }
 
-struct perf_buffer * init_perf_buf(int map_fd, int page_cnt) {
+struct perf_buffer * init_perf_buf(int map_fd, int page_cnt, uintptr_t ctx) {
     struct perf_buffer_opts pb_opts = {};
     struct perf_buffer *pb = NULL;
     pb_opts.sample_cb = perfCallback;
     pb_opts.lost_cb = perfLostCallback;
-    __u64 ctx = map_fd;
     pb_opts.ctx = (void*)ctx;
     pb = perf_buffer__new(map_fd, page_cnt, &pb_opts);
     if (pb < 0) {
@@ -182,6 +181,13 @@ import (
 	"sync"
 	"syscall"
 	"unsafe"
+
+	"github.com/aquasecurity/tracee/libbpfgo/helpers"
+)
+
+const (
+	// Maximum number of channels (RingBuffers + PerfBuffers) supported
+	maxEventChannels = 512
 )
 
 type Module struct {
@@ -222,16 +228,20 @@ type BPFLink struct {
 }
 
 type PerfBuffer struct {
-	pb     *C.struct_perf_buffer
-	bpfMap *BPFMap
-	stop   chan struct{}
-	closed bool
-	wg     sync.WaitGroup
+	pb         *C.struct_perf_buffer
+	bpfMap     *BPFMap
+	slot       uint
+	eventsChan chan []byte
+	lostChan   chan uint64
+	stop       chan struct{}
+	closed     bool
+	wg         sync.WaitGroup
 }
 
 type RingBuffer struct {
 	rb     *C.struct_ring_buffer
 	bpfMap *BPFMap
+	slot   uint
 	stop   chan struct{}
 	closed bool
 	wg     sync.WaitGroup
@@ -648,8 +658,7 @@ func doAttachKprobeLegacy(prog *BPFProg, kp string, isKretprobe bool) (*BPFLink,
 	return bpfLink, nil
 }
 
-var eventChannels = make(map[uintptr]chan []byte)
-var lostChannels = make(map[uintptr]chan uint64)
+var eventChannels = helpers.NewRWArray(maxEventChannels)
 
 func (m *Module) InitRingBuf(mapName string, eventsChan chan []byte) (*RingBuffer, error) {
 	bpfMap, err := m.GetMap(mapName)
@@ -657,20 +666,24 @@ func (m *Module) InitRingBuf(mapName string, eventsChan chan []byte) (*RingBuffe
 		return nil, err
 	}
 
-	ctx := uintptr(bpfMap.fd)
 	if eventsChan == nil {
 		return nil, fmt.Errorf("events channel can not be nil")
 	}
-	eventChannels[ctx] = eventsChan
 
-	rb := C.init_ring_buf(bpfMap.fd)
+	slot := eventChannels.Put(eventsChan)
+	if slot == -1 {
+		return nil, fmt.Errorf("max ring buffers reached")
+	}
+
+	rb := C.init_ring_buf(bpfMap.fd, C.uintptr_t(slot))
 	if rb == nil {
-		return nil, fmt.Errorf("")
+		return nil, fmt.Errorf("failed to initialize ring buffer")
 	}
 
 	ringBuf := &RingBuffer{
 		rb:     rb,
 		bpfMap: bpfMap,
+		slot:   uint(slot),
 	}
 	m.ringBufs = append(m.ringBufs, ringBuf)
 	return ringBuf, nil
@@ -691,7 +704,7 @@ func (rb *RingBuffer) Stop() {
 		// may have stopped at this point. Failure to drain it will
 		// result in a deadlock: the channel will fill up and the poll
 		// goroutine will block in the callback.
-		eventChan := eventChannels[uintptr(rb.bpfMap.fd)]
+		eventChan := eventChannels.Get(rb.slot).(chan []byte)
 		go func() {
 			for range eventChan {
 			}
@@ -715,6 +728,7 @@ func (rb *RingBuffer) Close() {
 	}
 	rb.Stop()
 	C.ring_buffer__free(rb.rb)
+	eventChannels.Remove(rb.slot)
 	rb.closed = true
 }
 
@@ -751,21 +765,30 @@ func (m *Module) InitPerfBuf(mapName string, eventsChan chan []byte, lostChan ch
 	if err != nil {
 		return nil, fmt.Errorf("failed to init perf buffer: %v", err)
 	}
-	ctx := uintptr(bpfMap.fd)
 	if eventsChan == nil {
 		return nil, fmt.Errorf("failed to init perf buffer: events channel can not be nil")
 	}
-	eventChannels[ctx] = eventsChan
-	lostChannels[ctx] = lostChan
-	pb := C.init_perf_buf(bpfMap.fd, C.int(pageCnt))
+
+	perfBuf := &PerfBuffer{
+		bpfMap:     bpfMap,
+		eventsChan: eventsChan,
+		lostChan:   lostChan,
+	}
+
+	slot := eventChannels.Put(perfBuf)
+	if slot == -1 {
+		return nil, fmt.Errorf("max number of ring/perf buffers reached")
+	}
+
+	pb := C.init_perf_buf(bpfMap.fd, C.int(pageCnt), C.uintptr_t(slot))
 	if pb == nil {
+		eventChannels.Remove(uint(slot))
 		return nil, fmt.Errorf("failed to initialize perf buffer")
 	}
 
-	perfBuf := &PerfBuffer{
-		pb:     pb,
-		bpfMap: bpfMap,
-	}
+	perfBuf.pb = pb
+	perfBuf.slot = uint(slot)
+
 	m.perfBufs = append(m.perfBufs, perfBuf)
 	return perfBuf, nil
 }
@@ -781,19 +804,16 @@ func (pb *PerfBuffer) Stop() {
 		// Tell the poll goroutine that it's time to exit
 		close(pb.stop)
 
-		eventsChan := eventChannels[uintptr(pb.bpfMap.fd)]
-		lostChan := lostChannels[uintptr(pb.bpfMap.fd)]
-
 		// The event and lost channels should be drained here since the consumer
 		// may have stopped at this point. Failure to drain it will
 		// result in a deadlock: the channel will fill up and the poll
 		// goroutine will block in the callback.
 		go func() {
-			for range eventsChan {
+			for range pb.eventsChan {
 			}
 
-			if lostChan != nil {
-				for range lostChan {
+			if pb.lostChan != nil {
+				for range pb.lostChan {
 				}
 			}
 		}()
@@ -803,8 +823,8 @@ func (pb *PerfBuffer) Stop() {
 
 		// Close the channel -- this is useful for the consumer but
 		// also to terminate the drain goroutine above.
-		close(eventsChan)
-		close(lostChan)
+		close(pb.eventsChan)
+		close(pb.lostChan)
 
 		// This allows Stop() to be called multiple times safely
 		pb.stop = nil
@@ -817,6 +837,7 @@ func (pb *PerfBuffer) Close() {
 	}
 	pb.Stop()
 	C.perf_buffer__free(pb.pb)
+	eventChannels.Remove(pb.slot)
 	pb.closed = true
 }
 
