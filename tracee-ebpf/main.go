@@ -177,7 +177,7 @@ Use this flag multiple times to choose multiple capture options
 			res.Format = outputParts[0]
 			err := res.Validate()
 			if err != nil {
-				return res, fmt.Errorf("%s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info.", err)
+				return res, err
 			}
 			outputParts = append(outputParts, outputParts[0])
 			outputParts[0] = "format"
@@ -188,7 +188,7 @@ Use this flag multiple times to choose multiple capture options
 			res.Format = outputParts[1]
 			err := res.Validate()
 			if err != nil {
-				return res, fmt.Errorf("%s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info.", err)
+				return res, err
 			}
 		case "out-file":
 			res.OutPath = outputParts[1]
