@@ -316,9 +316,72 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Integrations
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         Integrations
       </a>
+      
+        
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#included-go-templates" class="md-nav__link">
+    Included Go templates
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#go-template-authoring" class="md-nav__link">
+    Go Template Authoring
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    Examples
+  </a>
+  
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#raw-json-stdout" class="md-nav__link">
+    Raw JSON stdout
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#falcosidekick-webhook" class="md-nav__link">
+    falcosidekick webhook
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -507,6 +570,55 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#included-go-templates" class="md-nav__link">
+    Included Go templates
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#go-template-authoring" class="md-nav__link">
+    Go Template Authoring
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    Examples
+  </a>
+  
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#raw-json-stdout" class="md-nav__link">
+    Raw JSON stdout
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#falcosidekick-webhook" class="md-nav__link">
+    falcosidekick webhook
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -525,17 +637,73 @@
 <p>In addition, Tracee can notify a web service when a detection is made using a custom webhook:</p>
 <div class="highlight"><pre><span></span><code>tracee-rules --webhook http://my.webhook/endpoint --webhook-template /path/to/my.tmpl --webhook-content-type application/json
 </code></pre></div>
-<h1 id="go-template-authoring">Go Template Authoring</h1>
+<h2 id="included-go-templates">Included Go templates</h2>
+<p>The following go templates are included in the Tracee container image and are available for use under the <code>/tracee/templates/</code> directory in the container:</p>
+<table>
+<thead>
+<tr>
+<th>File name</th>
+<th>Description</th>
+<th>Content-Type</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>falcosidekick.tmpl</td>
+<td>For compatibility with <a href="https://github.com/falcosecurity/falcosidekick">falcosidekick</a></td>
+<td><code>application/json</code></td>
+<td><a href="https://github.com/aquasecurity/tracee/blob/main/tracee-rules/templates/falcosidekick.tmpl">source</a></td>
+</tr>
+<tr>
+<td>rawjson.tmpl</td>
+<td>Dumps the Finding object as raw JSON</td>
+<td><code>application/json</code></td>
+<td><a href="https://github.com/aquasecurity/tracee/blob/main/tracee-rules/templates/rawjson.tmpl">source</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="go-template-authoring">Go Template Authoring</h2>
 <p>When authoring a Go template for either stdout or webhook, you have Tracee's <code>types.Finding</code> struct as the data source:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">//Finding is the main output of a signature. It represents a match result for the signature business logic</span>
 <span class="kd">type</span> <span class="nx">Finding</span> <span class="kd">struct</span> <span class="p">{</span>
-    <span class="nx">Data</span>        <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{}</span>
-    <span class="nx">Context</span>     <span class="nx">Event</span>
-    <span class="nx">SigMetadata</span> <span class="nx">SignatureMetadata</span>
+    <span class="nx">SigMetadata</span> <span class="nx">SignatureMetadata</span> <span class="c1">//information about the signature that made the detection</span>
+    <span class="nx">Context</span>     <span class="nx">Event</span> <span class="c1">//the raw event that triggered the detection</span>
+    <span class="nx">Data</span>        <span class="kd">map</span><span class="p">[</span><span class="kt">string</span><span class="p">]</span><span class="kd">interface</span><span class="p">{}</span> <span class="c1">//detection specific information</span>
 <span class="p">}</span>
 </code></pre></div>
-<p>Additionally, the Go template can use utility functions from <a href="http://masterminds.github.io/sprig/">Sprig</a>.</p>
+<p>The Go template can utilize helper functions from <a href="http://masterminds.github.io/sprig/">Sprig</a>.</p>
 <p>For example templates, see <a href="https://github.com/aquasecurity/tracee/tree/main/tracee-rules/templates">tracee/tracee-rules/templates</a>.</p>
+<h2 id="examples">Examples</h2>
+<h3 id="raw-json-stdout">Raw JSON stdout</h3>
+<p>The following example configures Tracee to output detections to stdout as raw JSON:</p>
+<div class="highlight"><pre><span></span><code>docker run --rm --privileged --pid<span class="o">=</span>host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee -it aquasec/tracee --output-template /tracee/templates/rawjson.tmpl
+</code></pre></div>
+<h3 id="falcosidekick-webhook">falcosidekick webhook</h3>
+<p><a href="https://github.com/falcosecurity/falcosidekick">falcosidekick</a> is a useful webhook server that can be configured to connect to various "outputs" such as: Slack, Mattermost, Teams, Datadog, Prometheus, StatsD, Email, Elasticsearch, Loki, PagerDuty, OpsGenie, and many more.</p>
+<p>To use Tracee with falcosidekick:</p>
+<ol>
+<li>Obtain connection credentials to the system you want to integrate with.<ol>
+<li>Consult the system's documentation and look for how to configure an incoming webhook.</li>
+</ol>
+</li>
+<li>Start the falcosidekick container, configured with the obtained output credentials:<ol>
+<li>See the the <a href="https://github.com/falcosecurity/falcosidekick">falcosidekick Readme</a> for full documentation.</li>
+</ol>
+</li>
+<li>Start Tracee while configuring it to post detections to the falcosidekick endpoint.<ol>
+<li>If using Docker, you can use the simple <a href="https://docs.docker.com/network/links/">link</a> flag to allow the containers to communicate</li>
+<li>Use the webhook flag to point to the falcosidekick container's endpoint</li>
+<li>Tracee ships with a built-in template for falcosidekick</li>
+</ol>
+</li>
+</ol>
+<div class="highlight"><pre><span></span><code><span class="c1"># Start falcosidekick configured to post to Slack</span>
+docker run --name falcosidekick -p <span class="m">2801</span>:2801 -e <span class="nv">SLACK_WEBHOOKURL</span><span class="o">=</span>https://hooks.slack.com/services/XXX/YYY/ZZZ falcosecurity/falcosidekick
+
+<span class="c1"># Start Tracee, linking it to the falcosidekick container, and configuring it to call it on detections</span>
+docker run --rm --privileged --pid<span class="o">=</span>host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee -it --link falcosidekick aquasec/tracee --webhook-template /tracee/templates/falcosidekick.tmpl --webhook-content-type application/json --webhook http://FALCOSIDEKICK:2801
+</code></pre></div>
                 
               
               
