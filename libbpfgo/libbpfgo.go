@@ -1,7 +1,7 @@
 package libbpfgo
 
 /*
-#cgo LDFLAGS: -lelf -lz -lbpf
+#cgo LDFLAGS: -lelf -lz
 
 #include <bpf/bpf.h>
 #include <bpf/libbpf.h>
