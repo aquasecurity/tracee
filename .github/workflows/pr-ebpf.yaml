@@ -5,7 +5,10 @@ on:
       - "tracee-ebpf/**"
 jobs:
   build-test:
-    runs-on: ubuntu-20.04
+    runs-on: ${{ matrix.os }}
+    strategy:
+        matrix:
+            os: [ubuntu-20.04, centos-8.2-linux-4.18]
     defaults:
       run:
         working-directory: tracee-ebpf
