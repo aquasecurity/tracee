@@ -1162,19 +1162,19 @@ func TestPrepareOutput(t *testing.T) {
 			expectedOutput: tracee.OutputConfig{
 				Format: "foo",
 			},
-			expectedError: nil,
+			expectedError: errors.New("unrecognized output format: foo. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info."),
 		},
 		{
 			testName:       "invalid output option",
 			outputSlice:    []string{"option:"},
 			expectedOutput: tracee.OutputConfig{},
-			expectedError:  errors.New("invalid output option: , use '--option help' for more info"),
+			expectedError:  errors.New("invalid output option: , use '--output help' for more info"),
 		},
 		{
 			testName:       "invalid output option 2",
 			outputSlice:    []string{"option:foo"},
 			expectedOutput: tracee.OutputConfig{},
-			expectedError:  errors.New("invalid output option: foo, use '--option help' for more info"),
+			expectedError:  errors.New("invalid output option: foo, use '--output help' for more info"),
 		},
 		{
 			testName:    "format explicit",
@@ -1215,7 +1215,7 @@ func TestPrepareOutput(t *testing.T) {
 			expectedOutput: tracee.OutputConfig{
 				Format: "out-file",
 			},
-			expectedError: nil,
+			expectedError: errors.New("unrecognized output format: out-file. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info."),
 		},
 		{
 			testName:    "err",

@@ -151,8 +151,8 @@ Control how and where output is printed.
 Possible options:
 
 [format:]{table,table-verbose,json,gob,gotemplate=/path/to/template}   output events in the specified format. for gotemplate, specify the mandatory template file
-out-file:/path/to/file                                                 write the output to a specified file. the path to the file will be created if not existing and the file will be deleted if existing (deafult: stdout)
-err-file:/path/to/file                                                 write the errors to a specified file. the path to the file will be created if not existing and the file will be deleted if existing (deafult: stderr)
+out-file:/path/to/file                                                 write the output to a specified file. the path to the file will be created if not existing and the file will be deleted if existing (default: stdout)
+err-file:/path/to/file                                                 write the errors to a specified file. the path to the file will be created if not existing and the file will be deleted if existing (default: stderr)
 option:{stack-addresses,detect-syscall,exec-env}                       augment output according to given options (default: none)
   stack-addresses                                                    include stack memory addresses for each event
   detect-syscall                                                     when tracing kernel functions which are not syscalls, detect and show the original syscall that called that function
@@ -174,16 +174,27 @@ Use this flag multiple times to choose multiple capture options
 		outputParts := strings.SplitN(o, ":", 2)
 		numParts := len(outputParts)
 		if numParts == 1 {
+			res.Format = outputParts[0]
+			err := res.Validate()
+			if err != nil {
+				return res, err
+			}
 			outputParts = append(outputParts, outputParts[0])
 			outputParts[0] = "format"
 		}
-		if outputParts[0] == "format" {
+
+		switch outputParts[0] {
+		case "format":
 			res.Format = outputParts[1]
-		} else if outputParts[0] == "out-file" {
+			err := res.Validate()
+			if err != nil {
+				return res, err
+			}
+		case "out-file":
 			res.OutPath = outputParts[1]
-		} else if outputParts[0] == "err-file" {
+		case "err-file":
 			res.ErrPath = outputParts[1]
-		} else if outputParts[0] == "option" {
+		case "option":
 			switch outputParts[1] {
 			case "stack-addresses":
 				res.StackAddresses = true
@@ -192,10 +203,13 @@ Use this flag multiple times to choose multiple capture options
 			case "exec-env":
 				res.ExecEnv = true
 			default:
-				return res, fmt.Errorf("invalid output option: %s, use '--option help' for more info", outputParts[1])
+				return res, fmt.Errorf("invalid output option: %s, use '--output help' for more info", outputParts[1])
 			}
+		default:
+			return res, fmt.Errorf("invalid output value: %s, use '--output help' for more info", outputParts[1])
 		}
 	}
+
 	if res.Format == "" {
 		res.Format = "table"
 	}
