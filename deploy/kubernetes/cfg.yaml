@@ -1,3 +1,0 @@
-debug: true #
-slack:
-  webhookurl: "http:xxxx" # Slack WebhookURL

@@ -1,0 +1,11 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: tracee-webhook-config
+data:
+  cfg.yaml: |-
+    debug: true
+    slack:
+      webhookurl: "https://hooks.slack.com/xxxxxxxx" # Slack WebhookURL
+    teams:
+      webhookurl: "https://xxxxxxx"

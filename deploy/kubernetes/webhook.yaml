@@ -36,6 +36,8 @@ spec:
 ---
 apiVersion: v1
 kind: Service
+metadata:
+  name: tracee-webhook
   labels:
     app.kubernetes.io/name: tracee-webhook
     app.kubernetes.io/instance: tracee-webhook-v1
@@ -43,11 +45,10 @@ kind: Service
     app.kubernetes.io/component: tracee-webhook
     app.kubernetes.io/part-of: tracee
     app.kubernetes.io/managed-by: aquasecurity
-  name: tracee-webhook
 spec:
   ports:
-  - name: http
-    port: 2801
+    - name: http
+      port: 2801
   selector:
     app.kubernetes.io/name: tracee-webhook
 
