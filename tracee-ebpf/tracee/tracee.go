@@ -1280,6 +1280,9 @@ func (t *Tracee) processFileWrites() {
 	for {
 		select {
 		case dataRaw := <-t.fileWrChannel:
+			if len(dataRaw) == 0 {
+				continue
+			}
 			dataBuff := bytes.NewBuffer(dataRaw)
 			var meta chunkMeta
 			appendFile := false
