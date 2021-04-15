@@ -18,7 +18,7 @@ The full documentation of Tracee is available at [https://aquasecurity.github.io
 
 ## Quickstart
 
-Before you proceed, make sure you follow the [minimum requirements for running Tracee](https://aquasecurity.github.io/tracee/install/prerequisites.md).
+Before you proceed, make sure you follow the [minimum requirements for running Tracee](https://aquasecurity.github.io/tracee/dev/install/prerequisites/).
 
 ```bash
 docker run --name tracee --rm --privileged -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee -it aquasec/tracee:latest
