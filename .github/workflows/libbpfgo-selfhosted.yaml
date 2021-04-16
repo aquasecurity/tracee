@@ -1,4 +1,4 @@
-name: pr-libbpfgo
+name: libbpfgo-selfhosted
 on: 
   workflow_dispatch:
 jobs:

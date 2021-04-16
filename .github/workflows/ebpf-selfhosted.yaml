@@ -1,4 +1,4 @@
-name: pr-ebpf
+name: ebpf-selfhosted
 on: 
   workflow_dispatch:
 jobs:
