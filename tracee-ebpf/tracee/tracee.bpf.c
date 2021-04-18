@@ -1537,16 +1537,16 @@ static __always_inline int get_network_details_from_sock_v6(struct sock *sk, net
     if ( peer ) {
 
         bpf_probe_read(&net_details->local_address, sizeof(struct in6_addr), &sk->sk_v6_daddr);
-        bpf_probe_read(&net_details->local_port, sizeof(u16), &inet->inet_dport);
+        net_details->local_port = get_inet_dport(inet);
         net_details->remote_address = addr;
-        bpf_probe_read(&net_details->remote_port, sizeof(u16), &inet->inet_sport);
+        net_details->remote_port = get_inet_sport(inet);
     }
     else {
 
         net_details->local_address = addr;
-        bpf_probe_read(&net_details->local_port, sizeof(u16), &inet->inet_sport);
+        net_details->local_port = get_inet_sport(inet);
         bpf_probe_read(&net_details->remote_address, sizeof(struct in6_addr), &sk->sk_v6_daddr);
-        bpf_probe_read(&net_details->remote_port, sizeof(u16), &inet->inet_dport);
+        net_details->remote_port = get_inet_dport(inet);
     }
 
     return 0;
@@ -2275,9 +2275,7 @@ int BPF_KPROBE(trace_security_socket_listen)
         struct sockaddr_in local;
         local.sin_family = family;
         local.sin_port = net_details.local_port;
-        struct in_addr local_addr;
-        local_addr.s_addr = net_details.local_address;
-        local.sin_addr = local_addr;
+        local.sin_addr.s_addr = net_details.local_address;
 
         save_to_submit_buf(submit_p, (void *)&local, sizeof(struct sockaddr_in), SOCKADDR_T, DEC_ARG(0, *tags));
 
@@ -2411,9 +2409,7 @@ int BPF_KPROBE(trace_security_socket_accept)
         struct sockaddr_in local;
         local.sin_family = family;
         local.sin_port = net_details.local_port;
-        struct in_addr local_addr;
-        local_addr.s_addr = net_details.local_address;
-        local.sin_addr = local_addr;
+        local.sin_addr.s_addr = net_details.local_address;
 
         save_to_submit_buf(submit_p, (void *)&local, sizeof(struct sockaddr_in), SOCKADDR_T, DEC_ARG(0, *tags));
 
