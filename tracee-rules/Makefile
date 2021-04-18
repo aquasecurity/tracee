@@ -21,16 +21,26 @@ $(OUT_DIR):
 .PHONY: build
 build: $(OUT_BIN)
 
+ifndef DOCKER
 $(OUT_BIN): $(filter-out *_test.go,$(GO_SRC)) | $(OUT_DIR)
 	go build -o $(OUT_BIN)
+else
+$(OUT_BIN): $(DOCKER_BUILDER)
+	$(call docker_builder_make,$@)
+endif
 
 .PHONY: rules
 rules: $(OUT_RULES)
 
+ifndef DOCKER
 $(OUT_RULES): $(GOSIGNATURES_DIR) $(REGO_SIGNATURES_SRC) | $(OUT_DIR)
 	mkdir -p $(OUT_RULES)
 	go build -buildmode=plugin -o $(OUT_GOSIGNATURES) $(GOSIGNATURES_SRC)
 	cp $(REGO_SIGNATURES_SRC) $(OUT_RULES)
+else
+$(OUT_RULES): $(DOCKER_BUILDER)
+	$(call docker_builder_make,$@)
+endif
 
 check_%:
 	@command -v $* >/dev/null || (echo "missing required tool $*" ; false)
