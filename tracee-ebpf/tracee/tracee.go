@@ -914,7 +914,7 @@ func (t *Tracee) Close() {
 	if t.bpfModule != nil {
 		t.bpfModule.Close()
 	}
-	//t.printer.Close()
+	t.printer.Close()
 }
 
 func boolToUInt32(b bool) uint32 {
