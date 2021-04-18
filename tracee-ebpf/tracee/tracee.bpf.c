@@ -579,6 +579,31 @@ static inline struct mount *real_mount(struct vfsmount *mnt)
     return container_of(mnt, struct mount, mnt);
 }
 
+static __always_inline u32 get_inet_rcv_saddr(struct inet_sock *inet)
+{
+    return READ_KERN(inet->inet_rcv_saddr);
+}
+
+static __always_inline u32 get_inet_saddr(struct inet_sock *inet)
+{
+    return READ_KERN(inet->inet_saddr);
+}
+
+static __always_inline u32 get_inet_daddr(struct inet_sock *inet)
+{
+    return READ_KERN(inet->inet_daddr);
+}
+
+static __always_inline u16 get_inet_sport(struct inet_sock *inet)
+{
+    return READ_KERN(inet->inet_sport);
+}
+
+static __always_inline u16 get_inet_dport(struct inet_sock *inet)
+{
+    return READ_KERN(inet->inet_dport);
+}
+
 /*============================== HELPER FUNCTIONS ==============================*/
 
 static __inline int has_prefix(char *prefix, char *str, int n)
@@ -1461,25 +1486,25 @@ static __always_inline int get_network_details_from_sock_v4(struct sock *sk, net
     struct inet_sock *inet = inet_sk(sk);
 
     u32 addr = 0;
-    bpf_probe_read(&addr, sizeof(addr), &inet->inet_rcv_saddr);
+    addr = get_inet_rcv_saddr(inet);
     if ( !addr ) {
-        bpf_probe_read(&addr, sizeof(addr), &inet->inet_saddr);
+        addr = get_inet_saddr(inet);
     }
 
     if ( peer ) {
 
-        bpf_probe_read(&net_details->local_address, sizeof(net_details->local_address), &inet->inet_daddr);
-        bpf_probe_read(&net_details->local_port, sizeof(net_details->local_port), &inet->inet_dport);
+        net_details->local_address = get_inet_daddr(inet);
+        net_details->local_port = get_inet_dport(inet);
         net_details->remote_address = addr;
-        bpf_probe_read(&net_details->remote_port, sizeof(net_details->remote_port), &inet->inet_sport);
+        net_details->remote_port = get_inet_sport(inet);
 
     }
     else {
 
         net_details->local_address = addr;
-        bpf_probe_read(&net_details->local_port, sizeof(net_details->local_port), &inet->inet_sport);
-        bpf_probe_read(&net_details->remote_address, sizeof(net_details->remote_address), &inet->inet_daddr);
-        bpf_probe_read(&net_details->remote_port, sizeof(net_details->remote_port), &inet->inet_dport);
+        net_details->local_port = get_inet_sport(inet);
+        net_details->remote_address = get_inet_daddr(inet);
+        net_details->remote_port = get_inet_dport(inet);
 
     }
 
