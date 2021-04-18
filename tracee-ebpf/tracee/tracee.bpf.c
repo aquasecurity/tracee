@@ -2310,29 +2310,11 @@ int BPF_KPROBE(trace_security_socket_connect)
     if (!should_trace())
         return 0;
 
-    struct socket *sock = (struct socket *)PT_REGS_PARM1(ctx);
-
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
-
-    // getting source details
-
-    u16 family;
-    struct sock *sk;
-
-    // getting struct sock from socket
-    bpf_probe_read(&sk, sizeof(sk), &sock->sk);
-
-    // getting socket family
-    bpf_probe_read(&family, sizeof(family), &sk->sk_family);
-    if ( (family != AF_INET) && (family != AF_INET6) ) {
-        return 0;
-    }
-
-    // getting destination details
 
     struct sockaddr *address = (struct sockaddr *)PT_REGS_PARM2(ctx);
     sa_family_t sa_fam;
@@ -2442,25 +2424,11 @@ int BPF_KPROBE(trace_security_socket_bind)
     if (!should_trace())
         return 0;
 
-    struct socket *sock = (struct socket *)PT_REGS_PARM1(ctx);
-
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
-
-    u16 family;
-    struct sock *sk;
-
-    // getting struct sock from socket
-    bpf_probe_read(&sk, sizeof(sk), &sock->sk);
-
-    // getting socket family
-    bpf_probe_read(&family, sizeof(family), &sk->sk_family);
-    if ( (family != AF_INET) && (family != AF_INET6) ) {
-        return 0;
-    }
 
     struct sockaddr *address = (struct sockaddr *)PT_REGS_PARM2(ctx);
     sa_family_t sa_fam;
