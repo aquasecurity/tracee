@@ -2295,14 +2295,6 @@ int BPF_KPROBE(trace_security_socket_connect)
 
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    context_t context = init_and_save_context(ctx, submit_p, SECURITY_SOCKET_CONNECT, 1 /*argnum*/, 0 /*ret*/);
-
-    // getting event tags
-    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
-    if (!tags) {
-        return -1;
-    }
-
     // getting source details
 
     u16 family;
@@ -2324,6 +2316,18 @@ int BPF_KPROBE(trace_security_socket_connect)
 
     // read family from struct sockaddr*
     bpf_probe_read(&sa_fam, sizeof(sa_fam), &address->sa_family);
+    if ( (sa_fam != AF_INET) && (sa_fam != AF_INET6) ) {
+        return 0;
+    }
+
+    context_t context = init_and_save_context(ctx, submit_p, SECURITY_SOCKET_CONNECT, 1 /*argnum*/, 0 /*ret*/);
+
+    // getting event tags
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
+    if (!tags) {
+        return -1;
+    }
+
     if (sa_fam == AF_INET) {
         // saving to submit buffer
         save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in), SOCKADDR_T, DEC_ARG(0, *tags));
@@ -2332,10 +2336,6 @@ int BPF_KPROBE(trace_security_socket_connect)
     else if (sa_fam == AF_INET6) {
         // saving to submit buffer
         save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in6), SOCKADDR_T, DEC_ARG(0, *tags));
-    }
-    else {
-        // not AF_INET or AF_INET6
-        return 1;
     }
 
     events_perf_submit(ctx);
@@ -2429,8 +2429,6 @@ int BPF_KPROBE(trace_security_socket_bind)
 
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    // getting source details
-
     u16 family;
     struct sock *sk;
 
@@ -2443,6 +2441,15 @@ int BPF_KPROBE(trace_security_socket_bind)
         return 0;
     }
 
+    struct sockaddr *address = (struct sockaddr *)PT_REGS_PARM2(ctx);
+    sa_family_t sa_fam;
+
+    // read family from struct sockaddr*
+    bpf_probe_read(&sa_fam, sizeof(sa_fam), &address->sa_family);
+    if ( (sa_fam != AF_INET) && (sa_fam != AF_INET6) ) {
+        return 0;
+    }
+
     context_t context = init_and_save_context(ctx, submit_p, SECURITY_SOCKET_BIND, 1 /*argnum*/, 0 /*ret*/);
 
     // getting event tags
@@ -2451,13 +2458,6 @@ int BPF_KPROBE(trace_security_socket_bind)
         return -1;
     }
 
-    // getting destination details
-
-    struct sockaddr *address = (struct sockaddr *)PT_REGS_PARM2(ctx);
-    sa_family_t sa_fam;
-
-    // read family from struct sockaddr*
-    bpf_probe_read(&sa_fam, sizeof(sa_fam), &address->sa_family);
     if (sa_fam == AF_INET) {
         // saving to submit buffer
         save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in), SOCKADDR_T, DEC_ARG(0, *tags));
