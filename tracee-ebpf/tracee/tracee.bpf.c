@@ -604,6 +604,36 @@ static __always_inline u16 get_inet_dport(struct inet_sock *inet)
     return READ_KERN(inet->inet_dport);
 }
 
+static __always_inline struct sock* get_socket_sock(struct socket *socket)
+{
+    return READ_KERN(socket->sk);
+}
+
+static __always_inline u16 get_sock_family(struct sock *sock)
+{
+    return READ_KERN(sock->sk_family);
+}
+
+static __always_inline u16 get_sockaddr_family(struct sockaddr *address)
+{
+    return READ_KERN(address->sa_family);
+}
+
+static __always_inline struct in6_addr get_sock_v6_rcv_saddr(struct sock *sock)
+{
+    return READ_KERN(sock->sk_v6_rcv_saddr);
+}
+
+static __always_inline struct in6_addr get_ipv6_pinfo_saddr(struct ipv6_pinfo *np)
+{
+    return READ_KERN(np->saddr);
+}
+
+static __always_inline struct in6_addr get_sock_v6_daddr(struct sock *sock)
+{
+    return READ_KERN(sock->sk_v6_daddr);
+}
+
 /*============================== HELPER FUNCTIONS ==============================*/
 
 static __inline int has_prefix(char *prefix, char *str, int n)
@@ -1515,9 +1545,11 @@ static __always_inline struct ipv6_pinfo *inet6_sk_own_impl(const struct sock *_
 {
     volatile unsigned char sk_state_own_impl;
     bpf_probe_read((void *)&sk_state_own_impl, sizeof(sk_state_own_impl), (const void *)&__sk->sk_state);
+//    sk_state_own_impl = (void *)get_sock_state(__sk);
 
     struct ipv6_pinfo *pinet6_own_impl;
     bpf_probe_read(&pinet6_own_impl, sizeof(pinet6_own_impl), &inet->pinet6);
+//    pinet6_own_impl = get_inet_pinet6(inet);
 
     bool sk_fullsock = (1 << sk_state_own_impl) & ~(TCPF_TIME_WAIT | TCPF_NEW_SYN_RECV);
     return sk_fullsock ? pinet6_own_impl : NULL;
@@ -1529,14 +1561,17 @@ static __always_inline int get_network_details_from_sock_v6(struct sock *sk, net
     struct ipv6_pinfo *np = inet6_sk_own_impl(sk, inet);
 
     struct in6_addr addr = {};
-    bpf_probe_read(&addr, sizeof(addr), &sk->sk_v6_rcv_saddr);
+//    bpf_probe_read(&addr, sizeof(addr), &sk->sk_v6_rcv_saddr);
+    addr = get_sock_v6_rcv_saddr(sk);
     if (ipv6_addr_any(&addr)){
-        bpf_probe_read(&addr, sizeof(addr), &np->saddr);
+//        bpf_probe_read(&addr, sizeof(addr), &np->saddr);
+        addr = get_ipv6_pinfo_saddr(np);
     }
 
     if ( peer ) {
 
-        bpf_probe_read(&net_details->local_address, sizeof(struct in6_addr), &sk->sk_v6_daddr);
+//        bpf_probe_read(&net_details->local_address, sizeof(struct in6_addr), &sk->sk_v6_daddr);
+        net_details->local_address = get_sock_v6_daddr(sk);
         net_details->local_port = get_inet_dport(inet);
         net_details->remote_address = addr;
         net_details->remote_port = get_inet_sport(inet);
@@ -1545,7 +1580,8 @@ static __always_inline int get_network_details_from_sock_v6(struct sock *sk, net
 
         net_details->local_address = addr;
         net_details->local_port = get_inet_sport(inet);
-        bpf_probe_read(&net_details->remote_address, sizeof(struct in6_addr), &sk->sk_v6_daddr);
+//        bpf_probe_read(&net_details->remote_address, sizeof(struct in6_addr), &sk->sk_v6_daddr);
+        net_details->remote_address = get_sock_v6_daddr(sk);
         net_details->remote_port = get_inet_dport(inet);
     }
 
@@ -2241,19 +2277,12 @@ int BPF_KPROBE(trace_security_socket_listen)
         return 0;
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    // getting source details
-
-    u16 family;
-    struct sock *sk;
-
     struct socket *sock = (struct socket *)PT_REGS_PARM1(ctx);
     int backlog = (int)PT_REGS_PARM2(ctx);
 
-    // getting struct sock from socket
-    bpf_probe_read(&sk, sizeof(sk), &sock->sk);
+    struct sock *sk = get_socket_sock(sock);
 
-    // getting socket family
-    bpf_probe_read(&family, sizeof(family), &sk->sk_family);
+    u16 family = get_sock_family(sk);
     if ( (family != AF_INET) && (family != AF_INET6) ) {
         return 0;
     }
@@ -2317,10 +2346,8 @@ int BPF_KPROBE(trace_security_socket_connect)
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     struct sockaddr *address = (struct sockaddr *)PT_REGS_PARM2(ctx);
-    sa_family_t sa_fam;
 
-    // read family from struct sockaddr*
-    bpf_probe_read(&sa_fam, sizeof(sa_fam), &address->sa_family);
+    sa_family_t sa_fam = get_sockaddr_family(address);
     if ( (sa_fam != AF_INET) && (sa_fam != AF_INET6) ) {
         return 0;
     }
@@ -2358,18 +2385,10 @@ int BPF_KPROBE(trace_security_socket_accept)
         return 0;
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    // getting source details
-
-    u16 family;
-    struct sock *sk;
-
     struct socket *sock = (struct socket *)PT_REGS_PARM1(ctx);
+    struct sock *sk = get_socket_sock(sock);
 
-    // getting struct sock from socket
-    bpf_probe_read(&sk, sizeof(sk), &sock->sk);
-
-    // getting socket family
-    bpf_probe_read(&family, sizeof(family), &sk->sk_family);
+    u16 family = get_sock_family(sk);
     if ( (family != AF_INET) && (family != AF_INET6) ) {
         return 0;
     }
@@ -2431,10 +2450,8 @@ int BPF_KPROBE(trace_security_socket_bind)
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     struct sockaddr *address = (struct sockaddr *)PT_REGS_PARM2(ctx);
-    sa_family_t sa_fam;
 
-    // read family from struct sockaddr*
-    bpf_probe_read(&sa_fam, sizeof(sa_fam), &address->sa_family);
+    sa_family_t sa_fam = get_sockaddr_family(address);
     if ( (sa_fam != AF_INET) && (sa_fam != AF_INET6) ) {
         return 0;
     }
