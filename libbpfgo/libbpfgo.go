@@ -1,5 +1,16 @@
 package libbpfgo
 
+import "C"
+import (
+	"fmt"
+	"strings"
+	"sync"
+	"syscall"
+	"unsafe"
+
+	"github.com/aquasecurity/tracee/libbpfgo/helpers"
+)
+
 /*
 #cgo LDFLAGS: -lelf -lz
 
@@ -12,7 +23,6 @@ package libbpfgo
 
 #include <asm-generic/unistd.h>
 #include <errno.h>
-#include <err.h>
 #include <fcntl.h>
 #include <linux/perf_event.h>
 #include <linux/unistd.h>
@@ -23,6 +33,14 @@ extern void perfCallback(void *ctx, int cpu, void *data, __u32 size);
 extern void perfLostCallback(void *ctx, int cpu, __u64 cnt);
 
 extern int ringbufferCallback(void *ctx, void *data, size_t size);
+
+// Source: https://github.com/libbpf/libbpf/blob/master/include/linux/err.h
+#define MAX_ERRNO       4095
+#define IS_ERR_VALUE(x) ((x) >= (unsigned long)-MAX_ERRNO)
+static inline bool IS_ERR(const void *ptr)
+{
+	return IS_ERR_VALUE((unsigned long)ptr);
+}
 
 int libbpf_print_fn(enum libbpf_print_level level,
                const char *format, va_list args)
@@ -39,7 +57,7 @@ void set_print_fn() {
 struct ring_buffer * init_ring_buf(int map_fd, uintptr_t ctx) {
     struct ring_buffer *rb = NULL;
     rb = ring_buffer__new(map_fd, ringbufferCallback, (void*)ctx, NULL);
-    if IS_ERR(rb) {
+    if (IS_ERR(rb)) {
         fprintf(stderr, "Failed to initialize ring buffer\n");
         return NULL;
     }
@@ -53,7 +71,7 @@ struct perf_buffer * init_perf_buf(int map_fd, int page_cnt, uintptr_t ctx) {
     pb_opts.lost_cb = perfLostCallback;
     pb_opts.ctx = (void*)ctx;
     pb = perf_buffer__new(map_fd, page_cnt, &pb_opts);
-    if IS_ERR(pb) {
+    if (IS_ERR(pb)) {
         fprintf(stderr, "Failed to initialize perf buffer!\n");
         return NULL;
     }
@@ -175,16 +193,6 @@ err_out:
 }
 */
 import "C"
-
-import (
-	"fmt"
-	"strings"
-	"sync"
-	"syscall"
-	"unsafe"
-
-	"github.com/aquasecurity/tracee/libbpfgo/helpers"
-)
 
 const (
 	// Maximum number of channels (RingBuffers + PerfBuffers) supported
