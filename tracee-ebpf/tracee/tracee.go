@@ -1159,10 +1159,10 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 		}
 	case SecuritySocketCreateEventID:
 		if dom, isInt32 := args[t.EncParamName[ctx.EventID%2]["family"]].(int32); isInt32 {
-			args[t.EncParamName[ctx.EventID%2]["family"]] = PrintSocketDomain(uint32(dom))
+			args[t.EncParamName[ctx.EventID%2]["family"]] = helpers.ParseSocketDomain(uint32(dom))
 		}
 		if typ, isInt32 := args[t.EncParamName[ctx.EventID%2]["type"]].(int32); isInt32 {
-			args[t.EncParamName[ctx.EventID%2]["type"]] = PrintSocketType(uint32(typ))
+			args[t.EncParamName[ctx.EventID%2]["type"]] = helpers.ParseSocketType(uint32(typ))
 		}
 	case ConnectEventID, AcceptEventID, Accept4EventID, BindEventID, GetsocknameEventID:
 		if sockAddr, isStrMap := args[t.EncParamName[ctx.EventID%2]["addr"]].(map[string]string); isStrMap {
