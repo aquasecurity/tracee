@@ -38,7 +38,6 @@
 #include <net/inet_sock.h>
 #include <net/ipv6.h>
 #include <linux/ipv6.h>
-#include <bpf_endian.h>
 
 #include <uapi/linux/bpf.h>
 #include <linux/kconfig.h>
@@ -48,6 +47,7 @@
 //#include "bpf_core_read.h"
 #include <bpf_helpers.h>
 #include <bpf_tracing.h>
+#include <bpf_endian.h>
 
 #if defined(bpf_target_x86)
 #define PT_REGS_PARM6(ctx)  ((ctx)->r9)
@@ -1561,16 +1561,13 @@ static __always_inline int get_network_details_from_sock_v6(struct sock *sk, net
     struct ipv6_pinfo *np = inet6_sk_own_impl(sk, inet);
 
     struct in6_addr addr = {};
-//    bpf_probe_read(&addr, sizeof(addr), &sk->sk_v6_rcv_saddr);
     addr = get_sock_v6_rcv_saddr(sk);
     if (ipv6_addr_any(&addr)){
-//        bpf_probe_read(&addr, sizeof(addr), &np->saddr);
         addr = get_ipv6_pinfo_saddr(np);
     }
 
     if ( peer ) {
 
-//        bpf_probe_read(&net_details->local_address, sizeof(struct in6_addr), &sk->sk_v6_daddr);
         net_details->local_address = get_sock_v6_daddr(sk);
         net_details->local_port = get_inet_dport(inet);
         net_details->remote_address = addr;
@@ -1580,7 +1577,6 @@ static __always_inline int get_network_details_from_sock_v6(struct sock *sk, net
 
         net_details->local_address = addr;
         net_details->local_port = get_inet_sport(inet);
-//        bpf_probe_read(&net_details->remote_address, sizeof(struct in6_addr), &sk->sk_v6_daddr);
         net_details->remote_address = get_sock_v6_daddr(sk);
         net_details->remote_port = get_inet_dport(inet);
     }
