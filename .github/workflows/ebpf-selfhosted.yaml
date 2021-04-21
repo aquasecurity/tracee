@@ -1,14 +1,12 @@
-name: pr-ebpf
+name: ebpf-selfhosted
 on: 
-  pull_request:
-    paths: 
-      - "tracee-ebpf/**"
+  workflow_dispatch:
 jobs:
   build-test:
     runs-on: ${{ matrix.os }}
     strategy:
         matrix:
-            os: [ubuntu-20.04]
+            os: [centos-8.2-linux-4.18]
     defaults:
       run:
         working-directory: tracee-ebpf
