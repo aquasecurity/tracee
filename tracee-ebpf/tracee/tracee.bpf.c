@@ -634,6 +634,17 @@ static __always_inline struct in6_addr get_sock_v6_daddr(struct sock *sock)
     return READ_KERN(sock->sk_v6_daddr);
 }
 
+static __always_inline volatile unsigned char get_sock_state(struct sock *sock)
+{
+    // bpf_probe_read((void *)&sk_state_own_impl, sizeof(sk_state_own_impl), (const void *)&__sk->sk_state);
+    return READ_KERN(sock->sk_state);
+}
+
+static __always_inline struct ipv6_pinfo* get_inet_pinet6(struct inet_sock *inet)
+{
+    return READ_KERN(inet->pinet6);
+}
+
 /*============================== HELPER FUNCTIONS ==============================*/
 
 static __inline int has_prefix(char *prefix, char *str, int n)
@@ -1541,15 +1552,13 @@ static __always_inline int get_network_details_from_sock_v4(struct sock *sk, net
     return 0;
 }
 
-static __always_inline struct ipv6_pinfo *inet6_sk_own_impl(const struct sock *__sk, struct inet_sock *inet)
+static __always_inline struct ipv6_pinfo *inet6_sk_own_impl(struct sock *__sk, struct inet_sock *inet)
 {
     volatile unsigned char sk_state_own_impl;
-    bpf_probe_read((void *)&sk_state_own_impl, sizeof(sk_state_own_impl), (const void *)&__sk->sk_state);
-//    sk_state_own_impl = (void *)get_sock_state(__sk);
+    sk_state_own_impl = get_sock_state(__sk);
 
     struct ipv6_pinfo *pinet6_own_impl;
-    bpf_probe_read(&pinet6_own_impl, sizeof(pinet6_own_impl), &inet->pinet6);
-//    pinet6_own_impl = get_inet_pinet6(inet);
+    pinet6_own_impl = get_inet_pinet6(inet);
 
     bool sk_fullsock = (1 << sk_state_own_impl) & ~(TCPF_TIME_WAIT | TCPF_NEW_SYN_RECV);
     return sk_fullsock ? pinet6_own_impl : NULL;
