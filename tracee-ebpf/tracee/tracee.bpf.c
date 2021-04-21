@@ -636,8 +636,11 @@ static __always_inline struct in6_addr get_sock_v6_daddr(struct sock *sock)
 
 static __always_inline volatile unsigned char get_sock_state(struct sock *sock)
 {
-    // bpf_probe_read((void *)&sk_state_own_impl, sizeof(sk_state_own_impl), (const void *)&__sk->sk_state);
-    return READ_KERN(sock->sk_state);
+    // return READ_KERN(sock->sk_state);
+
+    volatile unsigned char sk_state_own_impl;
+    bpf_probe_read((void *)&sk_state_own_impl, sizeof(sk_state_own_impl), (const void *)&sock->sk_state);
+    return sk_state_own_impl;
 }
 
 static __always_inline struct ipv6_pinfo* get_inet_pinet6(struct inet_sock *inet)
