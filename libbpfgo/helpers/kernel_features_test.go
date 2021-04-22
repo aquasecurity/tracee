@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetProcGZConfig(t *testing.T) {
+func TestGetProcGZConfigByPath(t *testing.T) {
 	testCases := []struct {
 		name           string
 		goldenFilePath string
@@ -29,13 +29,13 @@ func TestGetProcGZConfig(t *testing.T) {
 		{
 			name:           "standard config",
 			goldenFilePath: "testdata/config_standard.gz",
-			expectedMap:    KernelConfig{"CONFIG_ARCH_WANT_DEFAULT_BPF_JIT": "y", "CONFIG_BPF": "y", "CONFIG_BPF_JIT_ALWAYS_ON": "y", "CONFIG_BPF_JIT_DEFAULT_ON": "y", "CONFIG_BPF_LSM": "y", "CONFIG_BPF_PRELOAD": "y", "CONFIG_BPF_PRELOAD_UMD": "m", "CONFIG_BPF_SYSCALL": "y", "CONFIG_IPV6_SEG6_BPF": "y", "CONFIG_NETFILTER_XT_MATCH_BPF": "m"},
+			expectedMap:    KernelConfig{CONFIG_BPF: "y", CONFIG_BPF_JIT_ALWAYS_ON: "y", CONFIG_BPF_LSM: "y", CONFIG_BPF_PRELOAD: "y", CONFIG_BPF_PRELOAD_UMD: "m", CONFIG_BPF_SYSCALL: "y", CONFIG_IPV6_SEG6_BPF: "y", CONFIG_NETFILTER_XT_MATCH_BPF: "m"},
 			expectedError:  nil,
 		},
 		{
 			name:           "config with comments in it",
 			goldenFilePath: "testdata/comments_config.gz",
-			expectedMap:    KernelConfig{"CONFIG_BPF": "y", "CONFIG_BPF_PRELOAD_UMD": "m", "CONFIG_BPF_SYSCALL": "y"},
+			expectedMap:    KernelConfig{CONFIG_BPF: "y", CONFIG_BPF_SYSCALL: "y", CONFIG_BPF_PRELOAD_UMD: "m"},
 			expectedError:  nil,
 		},
 	}
@@ -43,8 +43,8 @@ func TestGetProcGZConfig(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 
-			var kconfig KernelConfig = make(map[string]string)
-			err := kconfig.getProcGZConfig(tt.goldenFilePath)
+			var kconfig KernelConfig = make(map[uint32]string)
+			err := kconfig.getProcGZConfigByPath(tt.goldenFilePath)
 			assert.Equal(t, tt.expectedError, err)
 			assert.Equal(t, tt.expectedMap, kconfig)
 		})
@@ -54,7 +54,7 @@ func TestGetProcGZConfig(t *testing.T) {
 func TestGetKernelConfigValue(t *testing.T) {
 	testCases := []struct {
 		name          string
-		key           string
+		key           uint32
 		conf          KernelConfig
 		expectedError error
 		expectedValue string
