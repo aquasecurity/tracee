@@ -218,6 +218,7 @@ const (
 	Kretprobe
 	KprobeLegacy
 	KretprobeLegacy
+	LSM
 )
 
 type BPFLink struct {
@@ -600,6 +601,21 @@ func (p *BPFProg) AttachKprobe(kp string) (*BPFLink, error) {
 // this API should be used for kernels > 4.17
 func (p *BPFProg) AttachKretprobe(kp string) (*BPFLink, error) {
 	return doAttachKprobe(p, kp, true)
+}
+
+func (p *BPFProg) AttachLSM() (*BPFLink, error) {
+	link := C.bpf_program__attach_lsm(p.prog)
+	if link == nil {
+		return nil, fmt.Errorf("failed to attach lsm to program %s", p.name)
+	}
+
+	bpfLink := &BPFLink{
+		link:      link,
+		prog:      p,
+		linkType:  LSM,
+	}
+	p.module.links = append(p.module.links, bpfLink)
+	return bpfLink, nil
 }
 
 func doAttachKprobe(prog *BPFProg, kp string, isKretprobe bool) (*BPFLink, error) {
