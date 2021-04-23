@@ -32,22 +32,26 @@ func main() {
 
 	bpfModule, err := bpf.NewModuleFromFile("self.bpf.o")
 	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
 	}
 	defer bpfModule.Close()
 
 	if err = resizeMap(bpfModule, "events", 8192); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
 	}
 
 	bpfModule.BPFLoadObject()
 	prog, err := bpfModule.GetProgram("kprobe__sys_mmap")
 	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
 	}
 
 	_, err = prog.AttachKprobe("__x64_sys_mmap")
 	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
 	}
 
@@ -55,6 +59,7 @@ func main() {
 	lostChannel := make(chan uint64)
 	pb, err := bpfModule.InitPerfBuf("events", eventsChannel, lostChannel, 1)
 	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(-1)
 	}
 

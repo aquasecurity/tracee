@@ -18,6 +18,24 @@ package libbpfgo
 #include <string.h>
 #include <unistd.h>
 
+#ifndef MAX_ERRNO
+#define MAX_ERRNO       4095
+
+#define IS_ERR_VALUE(x) ((x) >= (unsigned long)-MAX_ERRNO)
+
+static inline bool IS_ERR(const void *ptr) {
+	return IS_ERR_VALUE((unsigned long)ptr);
+}
+
+static inline bool IS_ERR_OR_NULL(const void *ptr) {
+	return !ptr || IS_ERR_VALUE((unsigned long)ptr);
+}
+
+static inline long PTR_ERR(const void *ptr) {
+	return (long) ptr;
+}
+#endif
+
 extern void perfCallback(void *ctx, int cpu, void *data, __u32 size);
 extern void perfLostCallback(void *ctx, int cpu, __u64 cnt);
 
@@ -261,14 +279,25 @@ func bumpMemlockRlimit() error {
 	return nil
 }
 
+func errptrError(ptr unsafe.Pointer, format string, args... interface{}) error {
+	negErrno := C.PTR_ERR(ptr)
+	errno := syscall.Errno(-int64(negErrno))
+	if errno == 0 {
+		return fmt.Errorf(format, args...)
+	}
+
+	args = append(args, errno.Error())
+	return fmt.Errorf(format + ": %v", args...)
+}
+
 func NewModuleFromFile(bpfObjFile string) (*Module, error) {
 	C.set_print_fn()
 	bumpMemlockRlimit()
 	cs := C.CString(bpfObjFile)
 	obj := C.bpf_object__open(cs)
 	C.free(unsafe.Pointer(cs))
-	if obj == nil {
-		return nil, fmt.Errorf("failed to open BPF object %s", bpfObjFile)
+	if C.IS_ERR_OR_NULL(unsafe.Pointer(obj)) {
+		return nil, errptrError(unsafe.Pointer(obj), "failed to open BPF object %s", bpfObjFile)
 	}
 
 	return &Module{
@@ -285,8 +314,8 @@ func NewModuleFromBuffer(bpfObjBuff []byte, bpfObjName string) (*Module, error) 
 	obj := C.bpf_object__open_buffer(buffPtr, buffSize, name)
 	C.free(unsafe.Pointer(name))
 	C.free(unsafe.Pointer(buffPtr))
-	if obj == nil {
-		return nil, fmt.Errorf("failed to open BPF object %s: %v", bpfObjName, bpfObjBuff[:20])
+	if C.IS_ERR_OR_NULL(unsafe.Pointer(obj)) {
+		return nil, errptrError(unsafe.Pointer(obj), "failed to open BPF object %s: %v", bpfObjName, bpfObjBuff[:20])
 	}
 
 	return &Module{
@@ -556,13 +585,16 @@ func (p *BPFProg) SetTracepoint() error {
 
 func (p *BPFProg) AttachTracepoint(tp string) (*BPFLink, error) {
 	tpEvent := strings.Split(tp, ":")
+	if len(tpEvent) != 2 {
+		return nil, fmt.Errorf("tracepoint must be in 'category:name' format")
+	}
 	tpCategory := C.CString(tpEvent[0])
 	tpName := C.CString(tpEvent[1])
 	link := C.bpf_program__attach_tracepoint(p.prog, tpCategory, tpName)
 	C.free(unsafe.Pointer(tpCategory))
 	C.free(unsafe.Pointer(tpName))
-	if link == nil {
-		return nil, fmt.Errorf("failed to attach tracepoint %s to program %s", tp, p.name)
+	if C.IS_ERR_OR_NULL(unsafe.Pointer(link)) {
+		return nil, errptrError(unsafe.Pointer(link), "failed to attach tracepoint %s to program %s", tp, p.name)
 	}
 
 	bpfLink := &BPFLink{
@@ -579,8 +611,8 @@ func (p *BPFProg) AttachRawTracepoint(tpEvent string) (*BPFLink, error) {
 	cs := C.CString(tpEvent)
 	link := C.bpf_program__attach_raw_tracepoint(p.prog, cs)
 	C.free(unsafe.Pointer(cs))
-	if link == nil {
-		return nil, fmt.Errorf("failed to attach raw tracepoint %s to program %s", tpEvent, p.name)
+	if C.IS_ERR_OR_NULL(unsafe.Pointer(link)) {
+		return nil, errptrError(unsafe.Pointer(link), "failed to attach raw tracepoint %s to program %s", tpEvent, p.name)
 	}
 
 	bpfLink := &BPFLink{
@@ -605,8 +637,8 @@ func (p *BPFProg) AttachKretprobe(kp string) (*BPFLink, error) {
 
 func (p *BPFProg) AttachLSM() (*BPFLink, error) {
 	link := C.bpf_program__attach_lsm(p.prog)
-	if link == nil {
-		return nil, fmt.Errorf("failed to attach lsm to program %s", p.name)
+	if C.IS_ERR_OR_NULL(unsafe.Pointer(link)) {
+		return nil, errptrError(unsafe.Pointer(link), "failed to attach lsm to program %s", p.name)
 	}
 
 	bpfLink := &BPFLink{
@@ -623,8 +655,8 @@ func doAttachKprobe(prog *BPFProg, kp string, isKretprobe bool) (*BPFLink, error
 	cbool := C.bool(isKretprobe)
 	link := C.bpf_program__attach_kprobe(prog.prog, cbool, cs)
 	C.free(unsafe.Pointer(cs))
-	if link == nil {
-		return nil, fmt.Errorf("failed to attach %s k(ret)probe to program %s", kp, prog.name)
+	if C.IS_ERR_OR_NULL(unsafe.Pointer(link)) {
+		return nil, errptrError(unsafe.Pointer(link), "failed to attach %s k(ret)probe to program %s", kp, prog.name)
 	}
 
 	kpType := Kprobe
@@ -655,8 +687,8 @@ func doAttachKprobeLegacy(prog *BPFProg, kp string, isKretprobe bool) (*BPFLink,
 	cbool := C.bool(isKretprobe)
 	link := C.attach_kprobe_legacy(prog.prog, cs, cbool)
 	C.free(unsafe.Pointer(cs))
-	if link == nil {
-		return nil, fmt.Errorf("failed to attach %s k(ret)probe using legacy debugfs API", kp)
+	if C.IS_ERR_OR_NULL(unsafe.Pointer(link)) {
+		return nil, errptrError(unsafe.Pointer(link), "failed to attach %s k(ret)probe using legacy debugfs API", kp)
 	}
 
 	kpType := KprobeLegacy
