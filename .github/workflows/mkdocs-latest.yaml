@@ -4,6 +4,9 @@ on:
     tags:
       - "v*"
   workflow_dispatch:
+    inputs:
+      tag:
+        required: false
 jobs:
   deploy:
     name: Deploy the latest documentation
@@ -30,5 +33,8 @@ jobs:
           git config user.email "github-actions@github.com"
       - name: Deploy the latest documents
         run: |
-          VERSION=$(echo ${{ github.ref }} | sed -e "s#refs/tags/##g")
+          VERSION="${{ github.event.inputs.tag }}" 
+          if [ -z $VERSION ]; then
+            VERSION=$(echo ${{ github.ref }} | sed -e "s#refs/tags/##g")
+          fi
           mike deploy --push --update-aliases $VERSION latest
