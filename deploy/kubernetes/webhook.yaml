@@ -3,11 +3,8 @@ kind: Deployment
 metadata:
   labels:
     app.kubernetes.io/name: tracee-webhook
-    app.kubernetes.io/instance: tracee-webhook-v1
-    app.kubernetes.io/version: "v0.5.0"
     app.kubernetes.io/component: tracee-webhook
     app.kubernetes.io/part-of: tracee
-    app.kubernetes.io/managed-by: aquasecurity
   name: tracee-webhook
 spec:
   selector:
@@ -40,11 +37,8 @@ metadata:
   name: tracee-webhook
   labels:
     app.kubernetes.io/name: tracee-webhook
-    app.kubernetes.io/instance: tracee-webhook-v1
-    app.kubernetes.io/version: "v0.5.0"
     app.kubernetes.io/component: tracee-webhook
     app.kubernetes.io/part-of: tracee
-    app.kubernetes.io/managed-by: aquasecurity
 spec:
   ports:
     - name: http

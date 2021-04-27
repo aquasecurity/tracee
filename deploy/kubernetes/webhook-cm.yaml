@@ -5,7 +5,8 @@ metadata:
 data:
   cfg.yaml: |-
     debug: true
-    slack:
-      webhookurl: "https://hooks.slack.com/xxxxxxxx" # Slack WebhookURL
-    teams:
-      webhookurl: "https://xxxxxxx"
+    # Reference: https://github.com/falcosecurity/falcosidekick/blob/master/config_example.yaml
+    # slack:
+    #   webhookurl: "https://hooks.slack.com/xxxxxxxx"
+    # teams:
+    #   webhookurl: "https://xxxxxxx"
