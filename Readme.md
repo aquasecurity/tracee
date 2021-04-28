@@ -12,6 +12,8 @@ Tracee is a Runtime Security and forensics tool for Linux. It is using Linux eBP
 Watch a quick video demo of Tracee: <br>
 <a href="https://youtu.be/9qxaOYto_5g"><img src="http://i3.ytimg.com/vi/9qxaOYto_5g/maxresdefault.jpg" width="400"></a>
 
+Check out the [Tracee video hub](https://info.aquasec.com/ebpf-runtime-security) for more.
+
 ## Documentation
 
 The full documentation of Tracee is available at [https://aquasecurity.github.io/tracee/dev](https://aquasecurity.github.io/tracee/dev). You can use the version selector on top to view documentation for a specific version of Tracee.
