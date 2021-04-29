@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: tracee-webhook
+    app.kubernetes.io/component: tracee-webhook
+    app.kubernetes.io/part-of: tracee
+  name: tracee-webhook
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tracee-webhook
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tracee-webhook
+      name: tracee-webhook
+    spec:
+      containers:
+      - name: tracee-webhook
+        image: falcosecurity/falcosidekick
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 2801
+        args: ["-c","/app/config/cfg.yaml"]
+        volumeMounts:
+          - name: webhook-volume
+            mountPath: /app/config
+      volumes:
+        - configMap:
+            name: tracee-webhook-config
+          name: webhook-volume
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tracee-webhook
+  labels:
+    app.kubernetes.io/name: tracee-webhook
+    app.kubernetes.io/component: tracee-webhook
+    app.kubernetes.io/part-of: tracee
+spec:
+  ports:
+    - name: http
+      port: 2801
+  selector:
+    app.kubernetes.io/name: tracee-webhook
+

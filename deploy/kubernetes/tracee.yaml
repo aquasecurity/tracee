@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app.kubernetes.io/name: tracee
+    app.kubernetes.io/component: tracee
+    app.kubernetes.io/part-of: tracee
+  name: tracee
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tracee
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tracee
+      name: tracee
+    spec:
+      containers:
+      - image: aquasec/tracee:latest
+        imagePullPolicy: Always
+        args:
+          - --webhook http://tracee-webhook:2801 --webhook-template ./templates/falcosidekick.tmpl --webhook-content-type application/json
+        name: tracee
+        securityContext:
+          privileged: true
+        volumeMounts:
+        - name: tmp-tracee
+          mountPath: /tmp/tracee
+        - name: usr-src
+          mountPath: /usr/src
+          readOnly: true
+        - name: lib-modules
+          mountPath: /lib/modules/
+          readOnly: true
+      volumes:
+      - hostPath:
+          path: /tmp/tracee
+        name: tmp-tracee
+      - hostPath:
+          path: /usr/src
+        name: usr-src
+      - hostPath:
+          path: /lib/modules
+        name: lib-modules
+
