@@ -152,7 +152,8 @@
 #define SECURITY_SOCKET_CONNECT 1016
 #define SECURITY_SOCKET_ACCEPT  1017
 #define SECURITY_SOCKET_BIND    1018
-#define MAX_EVENT_ID            1019
+#define SECURITY_SB_MOUNT       1019
+#define MAX_EVENT_ID            1020
 
 #define CONFIG_SHOW_SYSCALL         1
 #define CONFIG_EXEC_ENV             2
@@ -1131,9 +1132,10 @@ out:
     return 1;
 }
 
-static __always_inline int save_file_path_to_str_buf(buf_t *string_p, struct file* file)
+static __always_inline int save_path_to_str_buf(buf_t *string_p, const struct path *path)
 {
-    struct path f_path = get_path_from_file(file);
+    struct path f_path;
+    bpf_probe_read(&f_path, sizeof(struct path), path);
     char slash = '/';
     int zero = 0;
     struct dentry *dentry = f_path.dentry;
@@ -1948,7 +1950,7 @@ int BPF_KPROBE(trace_security_bprm_check)
     buf_t *string_p = get_buf(STRING_BUF_IDX);
     if (string_p == NULL)
         return -1;
-    save_file_path_to_str_buf(string_p, file);
+    save_path_to_str_buf(string_p, &file->f_path);
     u32 *off = get_buf_off(STRING_BUF_IDX);
     if (off == NULL)
         return -1;
@@ -1992,7 +1994,7 @@ int BPF_KPROBE(trace_security_file_open)
     buf_t *string_p = get_buf(STRING_BUF_IDX);
     if (string_p == NULL)
         return -1;
-    save_file_path_to_str_buf(string_p, file);
+    save_path_to_str_buf(string_p, &file->f_path);
     u32 *off = get_buf_off(STRING_BUF_IDX);
     if (off == NULL)
         return -1;
@@ -2006,6 +2008,48 @@ int BPF_KPROBE(trace_security_file_open)
     save_to_submit_buf(submit_p, (void*)&file->f_flags, sizeof(int), INT_T, DEC_ARG(1, *tags));
     save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, DEC_ARG(2, *tags));
     save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, DEC_ARG(3, *tags));
+
+    events_perf_submit(ctx);
+    return 0;
+}
+
+SEC("kprobe/security_sb_mount")
+int BPF_KPROBE(trace_security_sb_mount)
+{
+    if (!should_trace())
+        return 0;
+
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
+    if (submit_p == NULL)
+        return 0;
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+
+    context_t context = init_and_save_context(ctx, submit_p, SECURITY_SB_MOUNT, 4 /*argnum*/, 0 /*ret*/);
+
+
+    const char *dev_name = (const char *)PT_REGS_PARM1(ctx);
+    const struct path *path = (const struct path *)PT_REGS_PARM2(ctx);
+    const char *type = (const char *)PT_REGS_PARM3(ctx);
+    unsigned long flags = (unsigned long)PT_REGS_PARM4(ctx);
+
+    // Get per-cpu string buffer
+    buf_t *string_p = get_buf(STRING_BUF_IDX);
+    if (string_p == NULL)
+        return -1;
+    save_path_to_str_buf(string_p, path);
+    u32 *off = get_buf_off(STRING_BUF_IDX);
+    if (off == NULL)
+        return -1;
+
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
+    if (!tags) {
+        return -1;
+    }
+
+    save_str_to_buf(submit_p, (void *)dev_name, DEC_ARG(0, *tags));
+    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], DEC_ARG(1, *tags));
+    save_str_to_buf(submit_p, (void *)type, DEC_ARG(2, *tags));
+    save_to_submit_buf(submit_p, &flags, sizeof(unsigned long), ULONG_T, DEC_ARG(3, *tags));
 
     events_perf_submit(ctx);
     return 0;
@@ -2628,7 +2672,7 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
     buf_t *string_p = get_buf(STRING_BUF_IDX);
     if (string_p == NULL)
         return -1;
-    save_file_path_to_str_buf(string_p, file);
+    save_path_to_str_buf(string_p, &file->f_path);
     u32 *off = get_buf_off(STRING_BUF_IDX);
     if (off == NULL)
         return -1;
@@ -2763,7 +2807,7 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
     buf_t *string_p = get_buf(STRING_BUF_IDX);
     if (string_p == NULL)
         return -1;
-    save_file_path_to_str_buf(string_p, file);
+    save_path_to_str_buf(string_p, &file->f_path);
     u32 *off = get_buf_off(STRING_BUF_IDX);
     if (off == NULL)
         return -1;
@@ -2991,3 +3035,4 @@ int BPF_KPROBE(trace_mprotect_alert)
 
 char LICENSE[] SEC("license") = "GPL";
 int KERNEL_VERSION SEC("version") = LINUX_VERSION_CODE;
+
