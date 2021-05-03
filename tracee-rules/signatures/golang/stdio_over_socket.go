@@ -10,11 +10,13 @@ import (
 
 type stdioOverSocket struct {
 	cb              types.SignatureHandler
+	pidAddressMap   map[int]string
 	processSocketIp map[int]map[int]string
 }
 
 func (sig *stdioOverSocket) Init(cb types.SignatureHandler) error {
 	sig.cb = cb
+	sig.pidAddressMap = make(map[int]string)
 	sig.processSocketIp = make(map[int]map[int]string)
 
 	return nil
@@ -37,6 +39,7 @@ func (sig *stdioOverSocket) GetMetadata() (types.SignatureMetadata, error) {
 func (sig *stdioOverSocket) GetSelectedEvents() ([]types.SignatureEventSelector, error) {
 	return []types.SignatureEventSelector{
 		{Source: "tracee", Name: "connect"},
+		{Source: "tracee", Name: "security_socket_connect"},
 		{Source: "tracee", Name: "dup"},
 		{Source: "tracee", Name: "dup2"},
 		{Source: "tracee", Name: "dup3"},
@@ -52,11 +55,26 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 		return fmt.Errorf("invalid event")
 	}
 
-	var connectData helpers.ConnectAddrData
-
 	pid := eventObj.ProcessID
 
 	switch eventObj.EventName {
+
+	case "security_socket_connect":
+
+		remoteAddrArg, err := helpers.GetTraceeArgumentByName(eventObj, "remote_addr")
+		if err != nil {
+			return err
+		}
+
+		var ip string
+		ip, err = getIPfromAddrArg(remoteAddrArg)
+		if err != nil {
+			return err
+		}
+
+		if ip != "" {
+			sig.pidAddressMap[pid] = ip
+		}
 
 	case "connect":
 
@@ -67,33 +85,37 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 
 		sockfd := int(sockfdArg.Value.(int32))
 
-		addrArg, err := helpers.GetTraceeArgumentByName(eventObj, "addr")
-		if err != nil {
-			return err
+		_, pidExists := sig.processSocketIp[pid]
+		if !pidExists {
+			sig.processSocketIp[pid] = make(map[int]string)
 		}
 
-		err = helpers.GetAddrStructFromArg(addrArg, &connectData)
-		if err != nil {
-			return err
+		_, pidExists = sig.pidAddressMap[pid]
+		if !pidExists {
+			// fall back to the case security_socket_connect is not available
+			addrArg, err := helpers.GetTraceeArgumentByName(eventObj, "addr")
+			if err != nil {
+				return err
+			}
+
+			var ip string
+			ip, err = getIPfromAddrArg(addrArg)
+			if err != nil {
+				return err
+			}
+
+			if ip != "" {
+				sig.pidAddressMap[pid] = ip
+			}
 		}
 
-		if connectData.SaFamily == "AF_INET" {
+		_, pidExists = sig.pidAddressMap[pid]
+		if pidExists {
+			sig.processSocketIp[pid][sockfd] = sig.pidAddressMap[pid]
 
-			_, pidExists := sig.processSocketIp[pid]
-			if !pidExists {
-				sig.processSocketIp[pid] = make(map[int]string)
-			}
-
-			sig.processSocketIp[pid][sockfd] = connectData.SinAddr
-
-		} else if connectData.SaFamily == "AF_INET6" {
-
-			_, pidExists := sig.processSocketIp[pid]
-			if !pidExists {
-				sig.processSocketIp[pid] = make(map[int]string)
-			}
-
-			sig.processSocketIp[pid][sockfd] = connectData.SinAddr6
+			// we have to delete this value as it is only used to store the IP from security_socket_connect to the
+			// corresponding connect event
+			delete(sig.pidAddressMap, pid)
 		}
 
 	case "dup":
@@ -195,4 +217,22 @@ func intInSlice(a int, list []int) bool {
 		}
 	}
 	return false
+}
+
+func getIPfromAddrArg(arg tracee.Argument) (string, error) {
+
+	var connectData helpers.ConnectAddrData
+
+	err := helpers.GetAddrStructFromArg(arg, &connectData)
+	if err != nil {
+		return "", err
+	}
+
+	if connectData.SaFamily == "AF_INET" {
+		return connectData.SinAddr, nil
+	} else if connectData.SaFamily == "AF_INET6" {
+		return connectData.SinAddr6, nil
+	}
+
+	return "", nil
 }

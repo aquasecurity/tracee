@@ -14,6 +14,59 @@ func TestStdioOverSocket(t *testing.T) {
 			Events: []types.Event{
 				tracee.Event{
 					ProcessID: 45,
+					EventName: "security_socket_connect",
+					Args: []tracee.Argument{
+						{
+							ArgMeta: tracee.ArgMeta{
+								Name: "remote_addr",
+							},
+							Value: "{'sa_family': 'AF_INET','sin_port': '53','sin_addr': '10.225.0.2'}",
+						},
+					},
+				},
+				tracee.Event{
+					ProcessID: 45,
+					EventName: "connect",
+					Args: []tracee.Argument{
+						{
+							ArgMeta: tracee.ArgMeta{
+								Name: "sockfd",
+							},
+							Value: int32(5),
+						},
+						{
+							ArgMeta: tracee.ArgMeta{
+								Name: "addr",
+							},
+							Value: "{'sa_family': 'AF_INET','sin_port': '53','sin_addr': '10.225.0.2'}",
+						},
+					},
+				},
+				tracee.Event{
+					ProcessID: 45,
+					EventName: "dup2",
+					Args: []tracee.Argument{
+						{
+							ArgMeta: tracee.ArgMeta{
+								Name: "oldfd",
+							},
+							Value: int32(5),
+						},
+						{
+							ArgMeta: tracee.ArgMeta{
+								Name: "newfd",
+							},
+							Value: int32(0),
+						},
+					},
+				},
+			},
+			Expect: true,
+		},
+		{
+			Events: []types.Event{
+				tracee.Event{
+					ProcessID: 45,
 					EventName: "connect",
 					Args: []tracee.Argument{
 						{
