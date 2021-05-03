@@ -14,7 +14,7 @@ func TestStdioOverSocket(t *testing.T) {
 			Events: []types.Event{
 				tracee.Event{
 					ProcessID: 45,
-					EventName: "connect",
+					EventName: "security_socket_connect",
 					Args: []tracee.Argument{
 						{
 							ArgMeta: tracee.ArgMeta{
@@ -24,7 +24,7 @@ func TestStdioOverSocket(t *testing.T) {
 						},
 						{
 							ArgMeta: tracee.ArgMeta{
-								Name: "addr",
+								Name: "remote_addr",
 							},
 							Value: "{'sa_family': 'AF_INET','sin_port': '53','sin_addr': '10.225.0.2'}",
 						},
@@ -55,7 +55,7 @@ func TestStdioOverSocket(t *testing.T) {
 			Events: []types.Event{
 				tracee.Event{
 					ProcessID: 45,
-					EventName: "connect",
+					EventName: "security_socket_connect",
 					Args: []tracee.Argument{
 						{
 							ArgMeta: tracee.ArgMeta{
@@ -65,7 +65,48 @@ func TestStdioOverSocket(t *testing.T) {
 						},
 						{
 							ArgMeta: tracee.ArgMeta{
-								Name: "addr",
+								Name: "remote_addr",
+							},
+							Value: "{'sa_family': 'AF_INET','sin_port': '53','sin_addr': '10.225.0.2'}",
+						},
+					},
+				},
+				tracee.Event{
+					ProcessID: 45,
+					EventName: "dup2",
+					Args: []tracee.Argument{
+						{
+							ArgMeta: tracee.ArgMeta{
+								Name: "oldfd",
+							},
+							Value: int32(5),
+						},
+						{
+							ArgMeta: tracee.ArgMeta{
+								Name: "newfd",
+							},
+							Value: int32(0),
+						},
+					},
+				},
+			},
+			Expect: true,
+		},
+		{
+			Events: []types.Event{
+				tracee.Event{
+					ProcessID: 45,
+					EventName: "security_socket_connect",
+					Args: []tracee.Argument{
+						{
+							ArgMeta: tracee.ArgMeta{
+								Name: "sockfd",
+							},
+							Value: int32(5),
+						},
+						{
+							ArgMeta: tracee.ArgMeta{
+								Name: "remote_addr",
 							},
 							Value: "{'sa_family': 'AF_INET','sin_port': '53','sin_addr': '10.225.0.2'}",
 						},
@@ -91,7 +132,7 @@ func TestStdioOverSocket(t *testing.T) {
 			Events: []types.Event{
 				tracee.Event{
 					ProcessID: 45,
-					EventName: "connect",
+					EventName: "security_socket_connect",
 					Args: []tracee.Argument{
 						{
 							ArgMeta: tracee.ArgMeta{
@@ -101,7 +142,7 @@ func TestStdioOverSocket(t *testing.T) {
 						},
 						{
 							ArgMeta: tracee.ArgMeta{
-								Name: "addr",
+								Name: "remote_addr",
 							},
 							Value: "{'sa_family': 'AF_INET','sin_port': '53','sin_addr': '10.225.0.2'}",
 						},
@@ -161,7 +202,7 @@ func TestStdioOverSocket(t *testing.T) {
 			Events: []types.Event{
 				tracee.Event{
 					ProcessID: 45,
-					EventName: "connect",
+					EventName: "security_socket_connect",
 					Args: []tracee.Argument{
 						{
 							ArgMeta: tracee.ArgMeta{
@@ -171,7 +212,7 @@ func TestStdioOverSocket(t *testing.T) {
 						},
 						{
 							ArgMeta: tracee.ArgMeta{
-								Name: "addr",
+								Name: "remote_addr",
 							},
 							Value: "{'sa_family': 'AF_INET','sin_port': '53','sin_addr': '10.225.0.2'}",
 						},
@@ -214,7 +255,7 @@ func TestStdioOverSocket(t *testing.T) {
 			Events: []types.Event{
 				tracee.Event{
 					ProcessID: 45,
-					EventName: "connect",
+					EventName: "security_socket_connect",
 					Args: []tracee.Argument{
 						{
 							ArgMeta: tracee.ArgMeta{
@@ -224,7 +265,7 @@ func TestStdioOverSocket(t *testing.T) {
 						},
 						{
 							ArgMeta: tracee.ArgMeta{
-								Name: "addr",
+								Name: "remote_addr",
 							},
 							Value: "{'sa_family': 'AF_INET','sin_port': '53','sin_addr': '10.225.0.2'}",
 						},
@@ -255,7 +296,7 @@ func TestStdioOverSocket(t *testing.T) {
 			Events: []types.Event{
 				tracee.Event{
 					ProcessID: 45,
-					EventName: "connect",
+					EventName: "security_socket_connect",
 					Args: []tracee.Argument{
 						{
 							ArgMeta: tracee.ArgMeta{
@@ -265,7 +306,7 @@ func TestStdioOverSocket(t *testing.T) {
 						},
 						{
 							ArgMeta: tracee.ArgMeta{
-								Name: "addr",
+								Name: "remote_addr",
 							},
 							Value: "{'sin6_scopeid': '0','sa_family': 'AF_INET6','sin6_port': '443','sin6_flowinfo': '0','sin6_addr': '2001:67c:1360:8001::2f'}",
 						},
