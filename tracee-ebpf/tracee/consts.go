@@ -896,8 +896,8 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	SwitchTaskNSEventID:          {{Type: "pid_t", Name: "pid"}, {Type: "u32", Name: "new_mnt"}, {Type: "u32", Name: "new_pid"}, {Type: "u32", Name: "new_uts"}, {Type: "u32", Name: "new_ipc"}, {Type: "u32", Name: "new_net"}, {Type: "u32", Name: "new_cgroup"}},
 	MagicWriteEventID:            {{Type: "const char*", Name: "pathname"}, {Type: "bytes", Name: "bytes"}},
 	SecuritySocketCreateEventID:  {{Type: "int", Name: "family"}, {Type: "int", Name: "type"}, {Type: "int", Name: "protocol"}, {Type: "int", Name: "kern"}},
-	SecuritySocketListenEventID:  {{Type: "struct sockaddr*", Name: "local_addr"}, {Type: "int", Name: "backlog"}},
-	SecuritySocketConnectEventID: {{Type: "struct sockaddr*", Name: "remote_addr"}},
-	SecuritySocketAcceptEventID:  {{Type: "struct sockaddr*", Name: "local_addr"}},
-	SecuritySocketBindEventID:    {{Type: "struct sockaddr*", Name: "local_addr"}},
+	SecuritySocketListenEventID:  {{Type: "int", Name: "sockfd"}, {Type: "struct sockaddr*", Name: "local_addr"}, {Type: "int", Name: "backlog"}},
+	SecuritySocketConnectEventID: {{Type: "int", Name: "sockfd"}, {Type: "struct sockaddr*", Name: "remote_addr"}},
+	SecuritySocketAcceptEventID:  {{Type: "int", Name: "sockfd"}, {Type: "struct sockaddr*", Name: "local_addr"}},
+	SecuritySocketBindEventID:    {{Type: "int", Name: "sockfd"}, {Type: "struct sockaddr*", Name: "local_addr"}},
 }
