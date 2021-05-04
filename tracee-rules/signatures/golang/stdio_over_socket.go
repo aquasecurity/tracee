@@ -15,14 +15,12 @@ type connectedAddress struct {
 
 type stdioOverSocket struct {
 	cb              types.SignatureHandler
-	pidAddressMap   map[int]connectedAddress
-	processSocketIp map[int]map[int]connectedAddress
+	pidFDAddressMap map[int]map[int]connectedAddress
 }
 
 func (sig *stdioOverSocket) Init(cb types.SignatureHandler) error {
 	sig.cb = cb
-	sig.pidAddressMap = make(map[int]connectedAddress)
-	sig.processSocketIp = make(map[int]map[int]connectedAddress)
+	sig.pidFDAddressMap = make(map[int]map[int]connectedAddress)
 
 	return nil
 }
@@ -43,7 +41,6 @@ func (sig *stdioOverSocket) GetMetadata() (types.SignatureMetadata, error) {
 
 func (sig *stdioOverSocket) GetSelectedEvents() ([]types.SignatureEventSelector, error) {
 	return []types.SignatureEventSelector{
-		{Source: "tracee", Name: "connect"},
 		{Source: "tracee", Name: "security_socket_connect"},
 		{Source: "tracee", Name: "dup"},
 		{Source: "tracee", Name: "dup2"},
@@ -78,12 +75,6 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 			return err
 		}
 
-		if ip != "" {
-			sig.pidAddressMap[pid] = connectedAddress{ip: ip, port: port}
-		}
-
-	case "connect":
-
 		sockfdArg, err := helpers.GetTraceeArgumentByName(eventObj, "sockfd")
 		if err != nil {
 			return err
@@ -91,43 +82,18 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 
 		sockfd := int(sockfdArg.Value.(int32))
 
-		_, pidExists := sig.processSocketIp[pid]
+		_, pidExists := sig.pidFDAddressMap[pid]
 		if !pidExists {
-			sig.processSocketIp[pid] = make(map[int]connectedAddress)
+			sig.pidFDAddressMap[pid] = make(map[int]connectedAddress)
 		}
 
-		_, pidExists = sig.pidAddressMap[pid]
-		if !pidExists {
-			// fall back to the case security_socket_connect is not available
-			addrArg, err := helpers.GetTraceeArgumentByName(eventObj, "addr")
-			if err != nil {
-				return err
-			}
-
-			var ip string
-			var port string
-			ip, port, err = getAddressfromAddrArg(addrArg)
-			if err != nil {
-				return err
-			}
-
-			if ip != "" {
-				sig.pidAddressMap[pid] = connectedAddress{ip: ip, port: port}
-			}
-		}
-
-		_, pidExists = sig.pidAddressMap[pid]
-		if pidExists {
-			sig.processSocketIp[pid][sockfd] = sig.pidAddressMap[pid]
-
-			// we have to delete this value as it is only used to store the IP from security_socket_connect to the
-			// corresponding connect event
-			delete(sig.pidAddressMap, pid)
+		if ip != "" && port != "" {
+			sig.pidFDAddressMap[pid][sockfd] = connectedAddress{ip: ip, port: port}
 		}
 
 	case "dup":
 
-		pidSocketMap, pidExists := sig.processSocketIp[pid]
+		pidSocketMap, pidExists := sig.pidFDAddressMap[pid]
 
 		if !pidExists {
 			return nil
@@ -149,7 +115,7 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 
 	case "dup2", "dup3":
 
-		pidSocketMap, pidExists := sig.processSocketIp[pid]
+		pidSocketMap, pidExists := sig.pidFDAddressMap[pid]
 
 		if !pidExists {
 			return nil
@@ -183,11 +149,11 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 
 		currentFd := int(currentFdArg.Value.(int32))
 
-		delete(sig.processSocketIp[pid], currentFd)
+		delete(sig.pidFDAddressMap[pid], currentFd)
 
 	case "sched_process_exit":
 
-		delete(sig.processSocketIp, pid)
+		delete(sig.pidFDAddressMap, pid)
 
 	}
 
