@@ -68,9 +68,8 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 			return err
 		}
 
-		var ip string
-		var port string
-		ip, port, err = getAddressfromAddrArg(remoteAddrArg)
+		var address connectedAddress
+		address, err = getAddressfromAddrArg(remoteAddrArg)
 		if err != nil {
 			return err
 		}
@@ -82,13 +81,18 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 
 		sockfd := int(sockfdArg.Value.(int32))
 
+		err = isSocketOverStdio(sig, eventObj, address, sockfd)
+		if err != nil {
+			return err
+		}
+
 		_, pidExists := sig.pidFDAddressMap[pid]
 		if !pidExists {
 			sig.pidFDAddressMap[pid] = make(map[int]connectedAddress)
 		}
 
-		if ip != "" && port != "" {
-			sig.pidFDAddressMap[pid][sockfd] = connectedAddress{ip: ip, port: port}
+		if address.ip != "" && address.port != "" {
+			sig.pidFDAddressMap[pid][sockfd] = address
 		}
 
 	case "dup":
@@ -108,7 +112,7 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 
 		dstFd := eventObj.ReturnValue
 
-		err = isStdioOverSocket(sig, eventObj, pidSocketMap, srcFd, dstFd)
+		err = isSocketDuplicatedIntoStdio(sig, eventObj, pidSocketMap, srcFd, dstFd)
 		if err != nil {
 			return err
 		}
@@ -135,7 +139,7 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 
 		dstFd := int(newFdArg.Value.(int32))
 
-		err = isStdioOverSocket(sig, eventObj, pidSocketMap, srcFd, dstFd)
+		err = isSocketDuplicatedIntoStdio(sig, eventObj, pidSocketMap, srcFd, dstFd)
 		if err != nil {
 			return err
 		}
@@ -164,12 +168,22 @@ func (sig *stdioOverSocket) OnSignal(s types.Signal) error {
 	return nil
 }
 
-func isStdioOverSocket(sig *stdioOverSocket, eventObj tracee.Event, pidSocketMap map[int]connectedAddress, srcFd int, dstFd int) error {
-	stdAll := []int{0, 1, 2}
+func isSocketDuplicatedIntoStdio(sig *stdioOverSocket, eventObj tracee.Event, pidSocketMap map[int]connectedAddress, srcFd int, dstFd int) error {
 	address, socketfdExists := pidSocketMap[srcFd]
 
 	// this means that a socket FD is duplicated into one of the standard FDs
-	if socketfdExists && intInSlice(dstFd, stdAll) {
+	if socketfdExists {
+		isSocketOverStdio(sig, eventObj, address, dstFd)
+	}
+
+	return nil
+}
+
+func isSocketOverStdio(sig *stdioOverSocket, eventObj tracee.Event, address connectedAddress, fd int) error {
+
+	stdAll := []int{0, 1, 2}
+
+	if intInSlice(fd, stdAll) {
 		m, _ := sig.GetMetadata()
 		sig.cb(types.Finding{
 			SigMetadata: m,
@@ -177,6 +191,7 @@ func isStdioOverSocket(sig *stdioOverSocket, eventObj tracee.Event, pidSocketMap
 			Data: map[string]interface{}{
 				"ip":   address.ip,
 				"port": address.port,
+				"fd":   fd,
 			},
 		})
 	}
@@ -193,20 +208,20 @@ func intInSlice(a int, list []int) bool {
 	return false
 }
 
-func getAddressfromAddrArg(arg tracee.Argument) (string, string, error) {
+func getAddressfromAddrArg(arg tracee.Argument) (connectedAddress, error) {
 
 	var connectData helpers.ConnectAddrData
 
 	err := helpers.GetAddrStructFromArg(arg, &connectData)
 	if err != nil {
-		return "", "", err
+		return connectedAddress{}, err
 	}
 
 	if connectData.SaFamily == "AF_INET" {
-		return connectData.SinAddr, connectData.SinPort, nil
+		return connectedAddress{ip: connectData.SinAddr, port: connectData.SinPort}, nil
 	} else if connectData.SaFamily == "AF_INET6" {
-		return connectData.SinAddr6, connectData.SinPort6, nil
+		return connectedAddress{ip: connectData.SinAddr6, port: connectData.SinPort6}, nil
 	}
 
-	return "", "", nil
+	return connectedAddress{}, nil
 }
