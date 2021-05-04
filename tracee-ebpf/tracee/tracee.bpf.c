@@ -118,11 +118,11 @@
 #define SYS_EXIT_GROUP        231
 #define SYS_OPENAT            257
 #define SYS_EXECVEAT          322
-#define CONNECT_SYSCALL       42
-#define ACCEPT_SYSCALL        43
-#define ACCEPT4_SYSCALL       288
-#define LISTEN_SYSCALL        50
-#define BIND_SYSCALL          49
+#define SYSCALL_CONNECT       42
+#define SYSCALL_ACCEPT        43
+#define SYSCALL_ACCEPT4       288
+#define SYSCALL_LISTEN        50
+#define SYSCALL_BIND          49
 #elif defined(bpf_target_arm64)
 #define SYS_OPEN              1000 // undefined in arm64
 #define SYS_MMAP              222
@@ -136,11 +136,11 @@
 #define SYS_EXIT_GROUP        94
 #define SYS_OPENAT            56
 #define SYS_EXECVEAT          281
-#define CONNECT_SYSCALL       203
-#define ACCEPT_SYSCALL        202
-#define ACCEPT4_SYSCALL       242
-#define LISTEN_SYSCALL        201
-#define BIND_SYSCALL          200
+#define SYSCALL_CONNECT       203
+#define SYSCALL_ACCEPT        202
+#define SYSCALL_ACCEPT4       242
+#define SYSCALL_LISTEN        201
+#define SYSCALL_BIND          200
 #endif
 
 #define RAW_SYS_ENTER           1000
@@ -353,7 +353,7 @@ BPF_HASH(bin_args_map, u64, bin_args_t);                // Persist args for send
 BPF_HASH(sys_32_to_64_map, u32, u32);                   // Map 32bit syscalls numbers to 64bit syscalls numbers
 BPF_HASH(params_types_map, u32, u64);                   // Encoded parameters types for event
 BPF_HASH(params_names_map, u32, u64);                   // Encoded parameters names for event
-BPF_HASH(sockfd_map, u64, u32);                         // Persist sockfd from syscalls to be used in the corresponding lsm hooks
+BPF_HASH(sockfd_map, u32, u32);                         // Persist sockfd from syscalls to be used in the corresponding lsm hooks
 BPF_ARRAY(file_filter, path_filter_t, 3);               // Used to filter vfs_write events
 BPF_ARRAY(string_store, path_filter_t, 1);              // Store strings from userspace
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);             // Percpu global buffer variables
@@ -1397,42 +1397,42 @@ static __always_inline int del_retval(u32 event_id)
     return 0;
 }
 
-static __always_inline int save_sockfd(u32 sockfd, u32 event_id)
+static __always_inline int save_sockfd(u32 sockfd)
 {
-    u64 id = event_id;
-    u32 tid = bpf_get_current_pid_tgid();
-    id = id << 32 | tid;
+    u64 pid_tgid = bpf_get_current_pid_tgid();
+    u32 tgid;
+    tgid = (u32)((pid_tgid & 0xFFFFFFFF00000000LL) >> 32);
 
-    bpf_map_update_elem(&sockfd_map, &id, &sockfd, BPF_ANY);
+    bpf_map_update_elem(&sockfd_map, &tgid, &sockfd, BPF_ANY);
 
     return 0;
 }
 
-static __always_inline int load_sockfd(u32 *sockfd, u32 event_id)
+static __always_inline int load_sockfd(u32 *sockfd)
 {
-    u64 id = event_id;
-    u32 tid = bpf_get_current_pid_tgid();
-    id = id << 32 | tid;
+    u64 pid_tgid = bpf_get_current_pid_tgid();
+    u32 tgid;
+    tgid = (u32)((pid_tgid & 0xFFFFFFFF00000000LL) >> 32);
 
-    u32 *saved_sockfd = bpf_map_lookup_elem(&sockfd_map, &id);
+    u32 *saved_sockfd = bpf_map_lookup_elem(&sockfd_map, &tgid);
     if (saved_sockfd == 0) {
         // missed entry or not traced
         return -1;
     }
 
     *sockfd = *saved_sockfd;
-    bpf_map_delete_elem(&sockfd_map, &id);
+    bpf_map_delete_elem(&sockfd_map, &tgid);
 
     return 0;
 }
 
-static __always_inline int del_sockfd(u32 event_id)
+static __always_inline int del_sockfd()
 {
-    u64 id = event_id;
-    u32 tid = bpf_get_current_pid_tgid();
-    id = id << 32 | tid;
+    u64 pid_tgid = bpf_get_current_pid_tgid();
+    u32 tgid;
+    tgid = (u32)((pid_tgid & 0xFFFFFFFF00000000LL) >> 32);
 
-    bpf_map_delete_elem(&sockfd_map, &id);
+    bpf_map_delete_elem(&sockfd_map, &tgid);
 
     return 0;
 }
@@ -1713,13 +1713,9 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
             bpf_map_update_elem(&new_pids_map, &pid, &pid, BPF_ANY);
         }
     }
-    else if (id == CONNECT_SYSCALL || id == BIND_SYSCALL || id == LISTEN_SYSCALL) {
+    else if (id == SYSCALL_CONNECT || id == SYSCALL_ACCEPT || id == SYSCALL_ACCEPT4 || id == SYSCALL_BIND || id == SYSCALL_LISTEN) {
         u32 sockfd = args_tmp.args[0];
-        save_sockfd(sockfd, id);
-    }
-    else if (id == ACCEPT_SYSCALL || id == ACCEPT4_SYSCALL) {
-        u32 sockfd = args_tmp.args[0];
-        save_sockfd(sockfd, ACCEPT_SYSCALL);
+        save_sockfd(sockfd);
     }
 
     if (!should_trace())
@@ -1782,11 +1778,8 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
     if (load_args(&saved_args, delete_args, id) != 0)
         return 0;
 
-    if (id == CONNECT_SYSCALL || id == ACCEPT_SYSCALL || id == ACCEPT4_SYSCALL || id == BIND_SYSCALL || id == LISTEN_SYSCALL) {
-        del_sockfd(id);
-    }
-    else if (id == ACCEPT_SYSCALL || id == ACCEPT4_SYSCALL) {
-        del_sockfd(ACCEPT_SYSCALL);
+    if (id == SYSCALL_CONNECT || id == SYSCALL_ACCEPT || id == SYSCALL_ACCEPT4 || id == SYSCALL_BIND || id == SYSCALL_LISTEN) {
+        del_sockfd();
     }
 
     if (!should_trace())
@@ -2362,7 +2355,7 @@ int BPF_KPROBE(trace_security_socket_listen)
     }
 
     u32 sockfd = 0;
-    load_sockfd(&sockfd, LISTEN_SYSCALL);
+    load_sockfd(&sockfd);
 
     context_t context = init_and_save_context(ctx, submit_p, SECURITY_SOCKET_LISTEN, 3 /*argnum*/, 0 /*ret*/);
 
@@ -2432,7 +2425,7 @@ int BPF_KPROBE(trace_security_socket_connect)
     }
 
     u32 sockfd;
-    load_sockfd(&sockfd, CONNECT_SYSCALL);
+    load_sockfd(&sockfd);
 
     context_t context = init_and_save_context(ctx, submit_p, SECURITY_SOCKET_CONNECT, 2 /*argnum*/, 0 /*ret*/);
 
@@ -2478,7 +2471,7 @@ int BPF_KPROBE(trace_security_socket_accept)
     }
 
     u32 sockfd;
-    load_sockfd(&sockfd, ACCEPT_SYSCALL);
+    load_sockfd(&sockfd);
 
     context_t context = init_and_save_context(ctx, submit_p, SECURITY_SOCKET_ACCEPT, 2 /*argnum*/, 0 /*ret*/);
 
@@ -2546,7 +2539,7 @@ int BPF_KPROBE(trace_security_socket_bind)
     }
 
     u32 sockfd;
-    load_sockfd(&sockfd, BIND_SYSCALL);
+    load_sockfd(&sockfd);
 
     context_t context = init_and_save_context(ctx, submit_p, SECURITY_SOCKET_BIND, 2 /*argnum*/, 0 /*ret*/);
 
