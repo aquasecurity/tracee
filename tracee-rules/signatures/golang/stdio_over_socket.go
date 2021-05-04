@@ -8,16 +8,21 @@ import (
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
+type connectedAddress struct {
+	ip   string
+	port string
+}
+
 type stdioOverSocket struct {
 	cb              types.SignatureHandler
-	pidAddressMap   map[int]string
-	processSocketIp map[int]map[int]string
+	pidAddressMap   map[int]connectedAddress
+	processSocketIp map[int]map[int]connectedAddress
 }
 
 func (sig *stdioOverSocket) Init(cb types.SignatureHandler) error {
 	sig.cb = cb
-	sig.pidAddressMap = make(map[int]string)
-	sig.processSocketIp = make(map[int]map[int]string)
+	sig.pidAddressMap = make(map[int]connectedAddress)
+	sig.processSocketIp = make(map[int]map[int]connectedAddress)
 
 	return nil
 }
@@ -67,13 +72,14 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 		}
 
 		var ip string
-		ip, err = getIPfromAddrArg(remoteAddrArg)
+		var port string
+		ip, port, err = getAddressfromAddrArg(remoteAddrArg)
 		if err != nil {
 			return err
 		}
 
 		if ip != "" {
-			sig.pidAddressMap[pid] = ip
+			sig.pidAddressMap[pid] = connectedAddress{ip: ip, port: port}
 		}
 
 	case "connect":
@@ -87,7 +93,7 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 
 		_, pidExists := sig.processSocketIp[pid]
 		if !pidExists {
-			sig.processSocketIp[pid] = make(map[int]string)
+			sig.processSocketIp[pid] = make(map[int]connectedAddress)
 		}
 
 		_, pidExists = sig.pidAddressMap[pid]
@@ -99,13 +105,14 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 			}
 
 			var ip string
-			ip, err = getIPfromAddrArg(addrArg)
+			var port string
+			ip, port, err = getAddressfromAddrArg(addrArg)
 			if err != nil {
 				return err
 			}
 
 			if ip != "" {
-				sig.pidAddressMap[pid] = ip
+				sig.pidAddressMap[pid] = connectedAddress{ip: ip, port: port}
 			}
 		}
 
@@ -191,9 +198,9 @@ func (sig *stdioOverSocket) OnSignal(s types.Signal) error {
 	return nil
 }
 
-func isStdioOverSocket(sig *stdioOverSocket, eventObj tracee.Event, pidSocketMap map[int]string, srcFd int, dstFd int) error {
+func isStdioOverSocket(sig *stdioOverSocket, eventObj tracee.Event, pidSocketMap map[int]connectedAddress, srcFd int, dstFd int) error {
 	stdAll := []int{0, 1, 2}
-	ip, socketfdExists := pidSocketMap[srcFd]
+	address, socketfdExists := pidSocketMap[srcFd]
 
 	// this means that a socket FD is duplicated into one of the standard FDs
 	if socketfdExists && intInSlice(dstFd, stdAll) {
@@ -202,7 +209,8 @@ func isStdioOverSocket(sig *stdioOverSocket, eventObj tracee.Event, pidSocketMap
 			SigMetadata: m,
 			Context:     eventObj,
 			Data: map[string]interface{}{
-				"ip": ip,
+				"ip":   address.ip,
+				"port": address.port,
 			},
 		})
 	}
@@ -219,20 +227,20 @@ func intInSlice(a int, list []int) bool {
 	return false
 }
 
-func getIPfromAddrArg(arg tracee.Argument) (string, error) {
+func getAddressfromAddrArg(arg tracee.Argument) (string, string, error) {
 
 	var connectData helpers.ConnectAddrData
 
 	err := helpers.GetAddrStructFromArg(arg, &connectData)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if connectData.SaFamily == "AF_INET" {
-		return connectData.SinAddr, nil
+		return connectData.SinAddr, connectData.SinPort, nil
 	} else if connectData.SaFamily == "AF_INET6" {
-		return connectData.SinAddr6, nil
+		return connectData.SinAddr6, connectData.SinPort6, nil
 	}
 
-	return "", nil
+	return "", "", nil
 }
