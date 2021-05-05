@@ -2398,7 +2398,7 @@ int BPF_KPROBE(trace_security_socket_listen)
         return 0;
     }
 
-    u32 sockfd = 0;
+    u32 sockfd = -1;
     load_sockfd(&sockfd);
 
     context_t context = init_and_save_context(ctx, submit_p, SECURITY_SOCKET_LISTEN, 3 /*argnum*/, 0 /*ret*/);
@@ -2468,7 +2468,7 @@ int BPF_KPROBE(trace_security_socket_connect)
         return 0;
     }
 
-    u32 sockfd;
+    u32 sockfd = -1;
     load_sockfd(&sockfd);
 
     context_t context = init_and_save_context(ctx, submit_p, SECURITY_SOCKET_CONNECT, 2 /*argnum*/, 0 /*ret*/);
@@ -2514,7 +2514,7 @@ int BPF_KPROBE(trace_security_socket_accept)
         return 0;
     }
 
-    u32 sockfd;
+    u32 sockfd = -1;
     load_sockfd(&sockfd);
 
     context_t context = init_and_save_context(ctx, submit_p, SECURITY_SOCKET_ACCEPT, 2 /*argnum*/, 0 /*ret*/);
@@ -2582,7 +2582,7 @@ int BPF_KPROBE(trace_security_socket_bind)
         return 0;
     }
 
-    u32 sockfd;
+    u32 sockfd = -1;
     load_sockfd(&sockfd);
 
     context_t context = init_and_save_context(ctx, submit_p, SECURITY_SOCKET_BIND, 2 /*argnum*/, 0 /*ret*/);
