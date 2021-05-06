@@ -1,6 +1,3 @@
-//go:generate /bin/sh -c "bpftool btf dump file /sys/kernel/btf/vmlinux format c > test/vmlinux.h"
-//go:generate clang -g -O2 -c -target bpf -o test/test.bpf.o test/test.bpf.c
-
 package libbpfgo
 
 import (
