@@ -98,6 +98,7 @@ type CaptureConfig struct {
 	FilterFileWrite []string
 	Exec            bool
 	Mem             bool
+	Profile         bool
 }
 
 type OutputConfig struct {
