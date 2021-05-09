@@ -1709,10 +1709,6 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
             bpf_map_update_elem(&new_pids_map, &pid, &pid, BPF_ANY);
         }
     }
-    else if (id == SYSCALL_CONNECT || id == SYSCALL_ACCEPT || id == SYSCALL_ACCEPT4 || id == SYSCALL_BIND || id == SYSCALL_LISTEN) {
-        u32 sockfd = args_tmp.args[0];
-        save_sockfd(sockfd);
-    }
 
     if (!should_trace())
         return 0;
@@ -1720,6 +1716,10 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
     if (id == SYS_EXECVE || id == SYS_EXECVEAT) {
         // We passed all filters (in should_trace()) - add this pid to traced pids set
         bpf_map_update_elem(&traced_pids_map, &pid, &pid, BPF_ANY);
+    }
+    else if (id == SYSCALL_CONNECT || id == SYSCALL_ACCEPT || id == SYSCALL_ACCEPT4 || id == SYSCALL_BIND || id == SYSCALL_LISTEN) {
+        u32 sockfd = args_tmp.args[0];
+        save_sockfd(sockfd);
     }
 
     if (event_chosen(RAW_SYS_ENTER)) {
@@ -1774,10 +1774,6 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
     if (load_args(&saved_args, delete_args, id) != 0)
         return 0;
 
-    if (id == SYSCALL_CONNECT || id == SYSCALL_ACCEPT || id == SYSCALL_ACCEPT4 || id == SYSCALL_BIND || id == SYSCALL_LISTEN) {
-        del_sockfd();
-    }
-
     if (!should_trace())
         return 0;
 
@@ -1789,6 +1785,9 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
         if (get_config(CONFIG_NEW_PID_FILTER)) {
             bpf_map_update_elem(&new_pids_map, &pid, &pid, BPF_ANY);
         }
+    }
+    else if (id == SYSCALL_CONNECT || id == SYSCALL_ACCEPT || id == SYSCALL_ACCEPT4 || id == SYSCALL_BIND || id == SYSCALL_LISTEN) {
+        del_sockfd();
     }
 
     if (event_chosen(RAW_SYS_EXIT)) {

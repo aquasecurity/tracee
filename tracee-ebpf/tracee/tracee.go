@@ -286,6 +286,23 @@ func New(cfg Config) (*Tracee, error) {
 		setEssential(VfsWritevEventID)
 	}
 
+	if t.eventsToTrace[SecuritySocketListenEventID] {
+		setEssential(ListenEventID)
+	}
+
+	if t.eventsToTrace[SecuritySocketConnectEventID] {
+		setEssential(ConnectEventID)
+	}
+
+	if t.eventsToTrace[SecuritySocketAcceptEventID] {
+		setEssential(AcceptEventID)
+		setEssential(Accept4EventID)
+	}
+
+	if t.eventsToTrace[SecuritySocketBindEventID] {
+		setEssential(BindEventID)
+	}
+
 	// Compile final list of events to trace including essential events
 	for id, event := range EventsIDToEvent {
 		// If an essential event was not requested by the user, set its map value to false
