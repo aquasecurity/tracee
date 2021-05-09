@@ -1401,40 +1401,34 @@ static __always_inline int del_retval(u32 event_id)
 
 static __always_inline int save_sockfd(u32 sockfd)
 {
-    u64 pid_tgid = bpf_get_current_pid_tgid();
-    u32 tgid;
-    tgid = (u32)((pid_tgid & 0xFFFFFFFF00000000LL) >> 32);
+    u32 pid = bpf_get_current_pid_tgid();
 
-    bpf_map_update_elem(&sockfd_map, &tgid, &sockfd, BPF_ANY);
+    bpf_map_update_elem(&sockfd_map, &pid, &sockfd, BPF_ANY);
 
     return 0;
 }
 
 static __always_inline int load_sockfd(u32 *sockfd)
 {
-    u64 pid_tgid = bpf_get_current_pid_tgid();
-    u32 tgid;
-    tgid = (u32)((pid_tgid & 0xFFFFFFFF00000000LL) >> 32);
+    u32 pid = bpf_get_current_pid_tgid();
 
-    u32 *saved_sockfd = bpf_map_lookup_elem(&sockfd_map, &tgid);
+    u32 *saved_sockfd = bpf_map_lookup_elem(&sockfd_map, &pid);
     if (saved_sockfd == 0) {
         // missed entry or not traced
         return -1;
     }
 
     *sockfd = *saved_sockfd;
-    bpf_map_delete_elem(&sockfd_map, &tgid);
+    bpf_map_delete_elem(&sockfd_map, &pid);
 
     return 0;
 }
 
 static __always_inline int del_sockfd()
 {
-    u64 pid_tgid = bpf_get_current_pid_tgid();
-    u32 tgid;
-    tgid = (u32)((pid_tgid & 0xFFFFFFFF00000000LL) >> 32);
+    u32 pid = bpf_get_current_pid_tgid();
 
-    bpf_map_delete_elem(&sockfd_map, &tgid);
+    bpf_map_delete_elem(&sockfd_map, &pid);
 
     return 0;
 }
