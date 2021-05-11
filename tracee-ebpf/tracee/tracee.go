@@ -2,7 +2,9 @@ package tracee
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -174,6 +176,13 @@ func (tc Config) Validate() error {
 	return nil
 }
 
+type profilerInfo struct {
+	mountNS   uint32
+	timeStamp int64
+	times     int64
+	sha       string
+}
+
 // Tracee traces system calls and system events using eBPF
 type Tracee struct {
 	config            Config
@@ -188,6 +197,7 @@ type Tracee struct {
 	printer           eventPrinter
 	stats             statsStore
 	capturedFiles     map[string]int64
+	profiledFiles     map[string]profilerInfo
 	writtenFiles      map[string]string
 	mntNsFirstPid     map[uint32]uint32
 	DecParamName      [2]map[argTag]string
@@ -316,6 +326,7 @@ func New(cfg Config) (*Tracee, error) {
 
 	t.writtenFiles = make(map[string]string)
 	t.capturedFiles = make(map[string]int64)
+	t.profiledFiles = make(map[string]profilerInfo)
 	//set a default value for config.maxPidsCache
 	if t.config.maxPidsCache == 0 {
 		t.config.maxPidsCache = 5
@@ -878,6 +889,11 @@ func (t *Tracee) Run() error {
 	t.fileWrPerfMap.Stop()
 	t.printer.Epilogue(t.stats)
 
+	// show profiler stats
+	if t.config.Capture.Profile && t.config.Capture.Exec {
+		// TODO
+	}
+
 	// record index of written files
 	if t.config.Capture.FileWrite {
 		destinationFilePath := filepath.Join(t.config.Capture.OutputPath, "written_files")
@@ -1086,9 +1102,16 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 					//TODO: remove dead pid from cache
 					continue
 				}
-				//don't capture same file twice unless it was modified
+
 				sourceFileCtime := sourceFileStat.Sys().(*syscall.Stat_t).Ctim.Nano()
 				capturedFileID := fmt.Sprintf("%d:%s", ctx.MntID, sourceFilePath)
+
+				// create an in-memory profile
+				if t.config.Capture.Profile {
+					t.updateProfile(ctx, sourceFilePath, sourceFileCtime)
+				}
+
+				//don't capture same file twice unless it was modified
 				lastCtime, ok := t.capturedFiles[capturedFileID]
 				if ok && lastCtime == sourceFileCtime {
 					return nil
@@ -1107,6 +1130,35 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 	}
 
 	return nil
+}
+
+func getFileHash(fileName string) string {
+	f, _ := os.Open(fileName)
+	if f != nil {
+		defer f.Close()
+		h := sha256.New()
+		_, _ = io.Copy(h, f)
+		return hex.EncodeToString(h.Sum(nil))
+	}
+	return ""
+}
+
+func (t *Tracee) updateProfile(ctx *context, sourceFilePath string, sourceFileCtime int64) {
+	sourceFileSHA := getFileHash(sourceFilePath)
+	if pf, ok := t.profiledFiles[sourceFilePath]; !ok {
+		t.profiledFiles[sourceFilePath] = profilerInfo{
+			mountNS:   ctx.MntID,
+			timeStamp: sourceFileCtime,
+			times:     1,
+			sha:       sourceFileSHA,
+		}
+	} else {
+		pf.timeStamp = sourceFileCtime // update ctime
+		pf.times = pf.times + 1        // bump execution count
+		pf.mountNS = ctx.MntID
+		pf.sha = sourceFileSHA
+		t.profiledFiles[sourceFilePath] = pf // update
+	}
 }
 
 // shouldPrintEvent decides whether or not the given event id should be printed to the output

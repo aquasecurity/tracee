@@ -3,7 +3,11 @@ package tracee
 import (
 	"bytes"
 	"errors"
+	"io/ioutil"
+	"os"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -155,4 +159,39 @@ func TestReadArgFromBuff(t *testing.T) {
 			assert.Empty(t, b.Len(), tc.name) // passed in buffer should be emptied out
 		}
 	}
+}
+
+func Test_updateProfile(t *testing.T) {
+	trc := Tracee{
+		profiledFiles: make(map[string]profilerInfo),
+	}
+
+	f, err := ioutil.TempFile("", "Test_updateProfile-*")
+	require.NoError(t, err)
+	defer os.RemoveAll(f.Name())
+
+	// first run
+	trc.updateProfile(&context{
+		MntID: 123,
+	}, f.Name(), 1234)
+
+	require.Equal(t, profilerInfo{
+		timeStamp: 1234,
+		times:     1,
+		sha:       getFileHash(f.Name()), mountNS: 123,
+	}, trc.profiledFiles[f.Name()])
+
+	// second update run
+	trc.updateProfile(&context{
+		MntID: 123,
+	}, f.Name(), 5678)
+
+	require.Equal(t, profilerInfo{
+		timeStamp: 5678, // ctime should be updated
+		times:     2,    // should be execute twice
+		sha:       getFileHash(f.Name()), mountNS: 123,
+	}, trc.profiledFiles[f.Name()])
+
+	// should only create one entry
+	require.Equal(t, 1, len(trc.profiledFiles))
 }
