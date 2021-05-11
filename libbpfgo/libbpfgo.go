@@ -219,6 +219,7 @@ const (
 	KprobeLegacy
 	KretprobeLegacy
 	LSM
+	PerfEvent
 )
 
 type BPFLink struct {
@@ -593,6 +594,21 @@ func (p *BPFProg) AttachRawTracepoint(tpEvent string) (*BPFLink, error) {
 	return bpfLink, nil
 }
 
+func (p *BPFProg) AttachPerfEvent(fd int) (*BPFLink, error) {
+	link := C.bpf_program__attach_perf_event(p.prog, C.int(fd))
+	if link == nil {
+		return nil, fmt.Errorf("failed to attach perf event to program %s", p.name)
+	}
+
+	bpfLink := &BPFLink{
+		link:     link,
+		prog:     p,
+		linkType: PerfEvent,
+	}
+	p.module.links = append(p.module.links, bpfLink)
+	return bpfLink, nil
+}
+
 // this API should be used for kernels > 4.17
 func (p *BPFProg) AttachKprobe(kp string) (*BPFLink, error) {
 	return doAttachKprobe(p, kp, false)
@@ -610,9 +626,9 @@ func (p *BPFProg) AttachLSM() (*BPFLink, error) {
 	}
 
 	bpfLink := &BPFLink{
-		link:      link,
-		prog:      p,
-		linkType:  LSM,
+		link:     link,
+		prog:     p,
+		linkType: LSM,
 	}
 	p.module.links = append(p.module.links, bpfLink)
 	return bpfLink, nil
