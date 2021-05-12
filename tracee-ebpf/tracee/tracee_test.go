@@ -255,16 +255,10 @@ func Test_compareProfilerStats(t *testing.T) {
 
 	err = os.WriteFile(filepath.Join(d, "tracee.profile"), []byte(`{
     "bar": {
-        "time_stamp": 456,
-        "times": 3,
-        "file_hash": "4567",
-        "mount_ns": 2
+        "times": 3
     },
     "baz": {
-        "mount_ns": 3,
-        "time_stamp": 789,
-        "times": 5,
-        "file_hash": "8901"
+        "times": 5
     }
 }
 `), 0644)
@@ -273,47 +267,29 @@ func Test_compareProfilerStats(t *testing.T) {
 	trc := Tracee{
 		profiledFiles: map[string]profilerInfo{
 			"bar": {
-				MountNS:   2,
-				TimeStamp: 456,
-				Times:     3,
-				FileHash:  "4567",
+				Times: 3,
 			},
 			"baz": {
-				MountNS:   3,
-				TimeStamp: 789,
-				Times:     5,
-				FileHash:  "8901",
+				Times: 5,
 			},
 			"foo": {
-				MountNS:   1,
-				TimeStamp: 123,
-				Times:     1,
-				FileHash:  "1234",
+				Times: 1,
 			},
 		},
 		config: Config{Capture: &CaptureConfig{OutputPath: d}},
 	}
 
 	var wr bytes.Buffer
-	require.NoError(t, trc.compareProfilerStats(&wr, jsondiff.DefaultJSONOptions()))
+	require.EqualError(t, trc.compareProfilerStats(&wr, jsondiff.DefaultJSONOptions()), "difference(s) found")
 	assert.Equal(t, `{
     "bar": {
-        "file_hash": "4567",
-        "mount_ns": 2,
-        "time_stamp": 456,
         "times": 3
     },
     "baz": {
-        "file_hash": "8901",
-        "mount_ns": 3,
-        "time_stamp": 789,
         "times": 5
     },
     "prop-added":{"foo": {}
-        "prop-added":{"mount_ns": 1,}
-        "prop-added":{"time_stamp": 123,}
-        "prop-added":{"times": 1,}
-        "prop-added":{"file_hash": "1234"}
+        "prop-added":{"times": 1}
     "prop-added":{}}
 }
 `, wr.String())

@@ -888,7 +888,7 @@ func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 }
 
 func (t *Tracee) compareProfilerStats(wr io.Writer, diffOpts jsondiff.Options) error {
-	old, err := ioutil.ReadFile(filepath.Join(os.TempDir(), "tracee", "tracee.profile"))
+	old, err := ioutil.ReadFile(filepath.Join(t.config.Capture.OutputPath, "tracee.profile"))
 	if err != nil {
 		return err
 	}
@@ -924,19 +924,20 @@ func (t *Tracee) Run() error {
 	t.printer.Epilogue(t.stats)
 
 	// show profiler stats
-	if t.config.Capture.Profile && t.config.Capture.Exec {
-		if _, err := os.Stat(filepath.Join(os.TempDir(), "tracee", "tracee.profile")); !os.IsNotExist(err) {
+	if t.config.Capture.Profile && t.config.Capture.Exec { // compare with existing
+		if _, err := os.Stat(filepath.Join(t.config.Capture.OutputPath, "tracee.profile")); !os.IsNotExist(err) {
 			if err := t.compareProfilerStats(os.Stdout, jsondiff.DefaultConsoleOptions()); err != nil {
 				return fmt.Errorf("comparing profiles returned an error: %s", err)
 			}
-		}
 
-		f, err := os.Create(filepath.Join(os.TempDir(), "tracee", "tracee.profile"))
-		if err != nil {
-			return fmt.Errorf("unable to open tracee.profile for writing: %s", err)
-		}
-		if err := t.writeProfilerStats(f); err != nil {
-			return fmt.Errorf("unable to write profiler output: %s", err)
+		} else { // write new profile
+			f, err := os.Create(filepath.Join(t.config.Capture.OutputPath, "tracee.profile"))
+			if err != nil {
+				return fmt.Errorf("unable to open tracee.profile for writing: %s", err)
+			}
+			if err := t.writeProfilerStats(f); err != nil {
+				return fmt.Errorf("unable to write profiler output: %s", err)
+			}
 		}
 	}
 
