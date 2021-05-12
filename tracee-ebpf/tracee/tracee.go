@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -19,6 +20,7 @@ import (
 
 	bpf "github.com/aquasecurity/tracee/libbpfgo"
 	"github.com/aquasecurity/tracee/libbpfgo/helpers"
+	"github.com/nsf/jsondiff"
 )
 
 // Config is a struct containing user defined configuration of tracee
@@ -177,10 +179,10 @@ func (tc Config) Validate() error {
 }
 
 type profilerInfo struct {
-	mountNS   uint32
-	timeStamp int64
-	times     int64
-	sha       string
+	MountNS   uint32 `json:"mount_ns,omitempty"`
+	TimeStamp int64  `json:"time_stamp,omitempty"`
+	Times     int64  `json:"times,omitempty"`
+	FileHash  string `json:"file_hash,omitempty"`
 }
 
 // Tracee traces system calls and system events using eBPF
@@ -873,6 +875,38 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 	return nil
 }
 
+func (t *Tracee) writeProfilerStats(wr io.Writer) error {
+	b, err := json.MarshalIndent(t.profiledFiles, "", "  ")
+	if err != nil {
+		return err
+	}
+	_, err = wr.Write(b)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (t *Tracee) compareProfilerStats(wr io.Writer, diffOpts jsondiff.Options) error {
+	old, err := ioutil.ReadFile(filepath.Join(os.TempDir(), "tracee", "tracee.profile"))
+	if err != nil {
+		return err
+	}
+
+	new, err := json.MarshalIndent(t.profiledFiles, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	diffType, diff := jsondiff.Compare(old, new, &diffOpts)
+	if diffType != jsondiff.FullMatch {
+		fmt.Fprintln(wr, diff)
+		return fmt.Errorf("difference(s) found")
+	}
+
+	return nil
+}
+
 // Run starts the trace. it will run until interrupted
 func (t *Tracee) Run() error {
 	sig := make(chan os.Signal, 1)
@@ -891,7 +925,19 @@ func (t *Tracee) Run() error {
 
 	// show profiler stats
 	if t.config.Capture.Profile && t.config.Capture.Exec {
-		// TODO
+		if _, err := os.Stat(filepath.Join(os.TempDir(), "tracee", "tracee.profile")); !os.IsNotExist(err) {
+			if err := t.compareProfilerStats(os.Stdout, jsondiff.DefaultConsoleOptions()); err != nil {
+				return fmt.Errorf("comparing profiles returned an error: %s", err)
+			}
+		}
+
+		f, err := os.Create(filepath.Join(os.TempDir(), "tracee", "tracee.profile"))
+		if err != nil {
+			return fmt.Errorf("unable to open tracee.profile for writing: %s", err)
+		}
+		if err := t.writeProfilerStats(f); err != nil {
+			return fmt.Errorf("unable to write profiler output: %s", err)
+		}
 	}
 
 	// record index of written files
@@ -1147,16 +1193,16 @@ func (t *Tracee) updateProfile(ctx *context, sourceFilePath string, sourceFileCt
 	sourceFileSHA := getFileHash(sourceFilePath)
 	if pf, ok := t.profiledFiles[sourceFilePath]; !ok {
 		t.profiledFiles[sourceFilePath] = profilerInfo{
-			mountNS:   ctx.MntID,
-			timeStamp: sourceFileCtime,
-			times:     1,
-			sha:       sourceFileSHA,
+			MountNS:   ctx.MntID,
+			TimeStamp: sourceFileCtime,
+			Times:     1,
+			FileHash:  sourceFileSHA,
 		}
 	} else {
-		pf.timeStamp = sourceFileCtime // update ctime
-		pf.times = pf.times + 1        // bump execution count
-		pf.mountNS = ctx.MntID
-		pf.sha = sourceFileSHA
+		pf.TimeStamp = sourceFileCtime // update ctime
+		pf.Times = pf.Times + 1        // bump execution count
+		pf.MountNS = ctx.MntID
+		pf.FileHash = sourceFileSHA
 		t.profiledFiles[sourceFilePath] = pf // update
 	}
 }

@@ -5,7 +5,10 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/nsf/jsondiff"
 
 	"github.com/stretchr/testify/require"
 
@@ -176,9 +179,9 @@ func Test_updateProfile(t *testing.T) {
 	}, f.Name(), 1234)
 
 	require.Equal(t, profilerInfo{
-		timeStamp: 1234,
-		times:     1,
-		sha:       getFileHash(f.Name()), mountNS: 123,
+		TimeStamp: 1234,
+		Times:     1,
+		FileHash:  getFileHash(f.Name()), MountNS: 123,
 	}, trc.profiledFiles[f.Name()])
 
 	// second update run
@@ -187,11 +190,131 @@ func Test_updateProfile(t *testing.T) {
 	}, f.Name(), 5678)
 
 	require.Equal(t, profilerInfo{
-		timeStamp: 5678, // ctime should be updated
-		times:     2,    // should be execute twice
-		sha:       getFileHash(f.Name()), mountNS: 123,
+		TimeStamp: 5678, // ctime should be updated
+		Times:     2,    // should be execute twice
+		FileHash:  getFileHash(f.Name()), MountNS: 123,
 	}, trc.profiledFiles[f.Name()])
 
 	// should only create one entry
 	require.Equal(t, 1, len(trc.profiledFiles))
+}
+
+func Test_writeProfilerStats(t *testing.T) {
+	trc := Tracee{
+		profiledFiles: map[string]profilerInfo{
+			"bar": {
+				MountNS:   2,
+				TimeStamp: 456,
+				Times:     3,
+				FileHash:  "4567",
+			},
+			"baz": {
+				MountNS:   3,
+				TimeStamp: 789,
+				Times:     5,
+				FileHash:  "8901",
+			},
+			"foo": {
+				MountNS:   1,
+				TimeStamp: 123,
+				Times:     1,
+				FileHash:  "1234",
+			},
+		},
+	}
+
+	var wr bytes.Buffer
+	trc.writeProfilerStats(&wr)
+	assert.JSONEq(t, `{
+  "bar": {
+    "mount_ns": 2,
+    "time_stamp": 456,
+    "times": 3,
+    "file_hash": "4567"
+  },
+  "baz": {
+    "mount_ns": 3,
+    "time_stamp": 789,
+    "times": 5,
+    "file_hash": "8901"
+  },
+  "foo": {
+    "mount_ns": 1,
+    "time_stamp": 123,
+    "times": 1,
+    "file_hash": "1234"
+  }
+}
+`, wr.String())
+}
+
+func Test_compareProfilerStats(t *testing.T) {
+	d, err := ioutil.TempDir("", "Test_compareProfilerStats")
+	require.NoError(t, err)
+	defer os.RemoveAll(d)
+
+	err = os.WriteFile(filepath.Join(d, "tracee.profile"), []byte(`{
+    "bar": {
+        "time_stamp": 456,
+        "times": 3,
+        "file_hash": "4567",
+        "mount_ns": 2
+    },
+    "baz": {
+        "mount_ns": 3,
+        "time_stamp": 789,
+        "times": 5,
+        "file_hash": "8901"
+    }
+}
+`), 0644)
+	require.NoError(t, err)
+
+	trc := Tracee{
+		profiledFiles: map[string]profilerInfo{
+			"bar": {
+				MountNS:   2,
+				TimeStamp: 456,
+				Times:     3,
+				FileHash:  "4567",
+			},
+			"baz": {
+				MountNS:   3,
+				TimeStamp: 789,
+				Times:     5,
+				FileHash:  "8901",
+			},
+			"foo": {
+				MountNS:   1,
+				TimeStamp: 123,
+				Times:     1,
+				FileHash:  "1234",
+			},
+		},
+		config: Config{Capture: &CaptureConfig{OutputPath: d}},
+	}
+
+	var wr bytes.Buffer
+	require.NoError(t, trc.compareProfilerStats(&wr, jsondiff.DefaultJSONOptions()))
+	assert.Equal(t, `{
+    "bar": {
+        "file_hash": "4567",
+        "mount_ns": 2,
+        "time_stamp": 456,
+        "times": 3
+    },
+    "baz": {
+        "file_hash": "8901",
+        "mount_ns": 3,
+        "time_stamp": 789,
+        "times": 5
+    },
+    "prop-added":{"foo": {}
+        "prop-added":{"mount_ns": 1,}
+        "prop-added":{"time_stamp": 123,}
+        "prop-added":{"times": 1,}
+        "prop-added":{"file_hash": "1234"}
+    "prop-added":{}}
+}
+`, wr.String())
 }
