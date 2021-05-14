@@ -331,17 +331,20 @@ func New(cfg Config) (*Tracee, error) {
 	}
 
 	if err := os.MkdirAll(t.config.Capture.OutputPath, 0755); err != nil {
+		t.Close()
 		return nil, fmt.Errorf("error creating output path: %v", err)
 	}
 	// Todo: tracee.pid should be in a known constant location. /var/run is probably a better choice
 	err = ioutil.WriteFile(path.Join(t.config.Capture.OutputPath, "tracee.pid"), []byte(strconv.Itoa(os.Getpid())+"\n"), 0640)
 	if err != nil {
+		t.Close()
 		return nil, fmt.Errorf("error creating readiness file: %v", err)
 	}
 
 	// Get refernce to stack trace addresses map
 	StackAddressesMap, err := t.bpfModule.GetMap("stack_addresses")
 	if err != nil {
+		t.Close()
 		return nil, fmt.Errorf("error getting acces to 'stack_addresses' eBPF Map %v", err)
 	}
 	t.StackAddressesMap = StackAddressesMap
