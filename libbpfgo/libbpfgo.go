@@ -507,6 +507,62 @@ func (b *BPFMap) Update(key, value interface{}) error {
 	return nil
 }
 
+type BPFMapIterator struct {
+	b       *BPFMap
+	err     error
+	keySize int
+	prev    []byte
+	next    []byte
+}
+
+func (b *BPFMap) Iterator(keySize int) *BPFMapIterator {
+	return &BPFMapIterator{
+		b:       b,
+		keySize: keySize,
+		prev:    nil,
+		next:    nil,
+	}
+}
+
+func (it *BPFMapIterator) Next() bool {
+	if it.err != nil {
+		return false
+	}
+
+	prevPtr := unsafe.Pointer(nil)
+	if it.next != nil {
+		prevPtr = unsafe.Pointer(&it.next[0])
+	}
+
+	next := make([]byte, it.keySize)
+	nextPtr := unsafe.Pointer(&next[0])
+
+	errC, err := C.bpf_map_get_next_key(it.b.fd, prevPtr, nextPtr)
+	if errno, ok := err.(syscall.Errno); errC == -1 && ok && errno == C.ENOENT {
+		return false
+	}
+	if err != nil {
+		it.err = err
+		return false
+	}
+
+	it.prev = it.next
+	it.next = next
+
+	return true
+}
+
+// Key returns the current key value of the iterator, if the most recent call to Next returned true.
+// The slice is valid only until the next call to Next.
+func (it *BPFMapIterator) Key() []byte {
+	return it.next
+}
+
+// Err returns the last error that ocurred while table.Iter or iter.Next
+func (it *BPFMapIterator) Err() error {
+	return it.err
+}
+
 func (m *Module) GetProgram(progName string) (*BPFProg, error) {
 	cs := C.CString(progName)
 	prog := C.bpf_object__find_program_by_name(m.obj, cs)
