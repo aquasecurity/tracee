@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aquasecurity/tracee/libbpfgo/helpers"
+	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
 	"github.com/syndtr/gocapability/capability"
 	cli "github.com/urfave/cli/v2"
