@@ -60,7 +60,7 @@ test_match_no_ld_preload {
 }
 
 test_match_wrong_path {
-    tracee_match with input as {
+    not tracee_match with input as {
         "eventName": "security_file_open",
         "argsNum": 4,
         "args": [
