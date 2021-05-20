@@ -20,7 +20,6 @@ import (
 
 	bpf "github.com/aquasecurity/tracee/libbpfgo"
 	"github.com/aquasecurity/tracee/libbpfgo/helpers"
-	"github.com/nsf/jsondiff"
 )
 
 // Config is a struct containing user defined configuration of tracee
@@ -887,26 +886,6 @@ func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 	return nil
 }
 
-func (t *Tracee) compareProfilerStats(wr io.Writer, diffOpts jsondiff.Options) error {
-	old, err := ioutil.ReadFile(filepath.Join(t.config.Capture.OutputPath, "tracee.profile"))
-	if err != nil {
-		return err
-	}
-
-	new, err := json.MarshalIndent(t.profiledFiles, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	diffType, diff := jsondiff.Compare(old, new, &diffOpts)
-	if diffType != jsondiff.FullMatch {
-		fmt.Fprintln(wr, diff)
-		return fmt.Errorf("difference(s) found")
-	}
-
-	return nil
-}
-
 // Run starts the trace. it will run until interrupted
 func (t *Tracee) Run() error {
 	sig := make(chan os.Signal, 1)
@@ -925,19 +904,12 @@ func (t *Tracee) Run() error {
 
 	// show profiler stats
 	if t.config.Capture.Profile && t.config.Capture.Exec { // compare with existing
-		if _, err := os.Stat(filepath.Join(t.config.Capture.OutputPath, "tracee.profile")); !os.IsNotExist(err) {
-			if err := t.compareProfilerStats(os.Stdout, jsondiff.DefaultConsoleOptions()); err != nil {
-				return fmt.Errorf("comparing profiles returned an error: %s", err)
-			}
-
-		} else { // write new profile
-			f, err := os.Create(filepath.Join(t.config.Capture.OutputPath, "tracee.profile"))
-			if err != nil {
-				return fmt.Errorf("unable to open tracee.profile for writing: %s", err)
-			}
-			if err := t.writeProfilerStats(f); err != nil {
-				return fmt.Errorf("unable to write profiler output: %s", err)
-			}
+		f, err := os.Create(filepath.Join(t.config.Capture.OutputPath, "tracee.profile"))
+		if err != nil {
+			return fmt.Errorf("unable to open tracee.profile for writing: %s", err)
+		}
+		if err := t.writeProfilerStats(f); err != nil {
+			return fmt.Errorf("unable to write profiler output: %s", err)
 		}
 	}
 

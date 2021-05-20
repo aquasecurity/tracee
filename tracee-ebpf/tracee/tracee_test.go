@@ -5,10 +5,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"testing"
-
-	"github.com/nsf/jsondiff"
 
 	"github.com/stretchr/testify/require"
 
@@ -244,53 +241,6 @@ func Test_writeProfilerStats(t *testing.T) {
     "times": 1,
     "file_hash": "1234"
   }
-}
-`, wr.String())
-}
-
-func Test_compareProfilerStats(t *testing.T) {
-	d, err := ioutil.TempDir("", "Test_compareProfilerStats")
-	require.NoError(t, err)
-	defer os.RemoveAll(d)
-
-	err = os.WriteFile(filepath.Join(d, "tracee.profile"), []byte(`{
-    "bar": {
-        "times": 3
-    },
-    "baz": {
-        "times": 5
-    }
-}
-`), 0644)
-	require.NoError(t, err)
-
-	trc := Tracee{
-		profiledFiles: map[string]profilerInfo{
-			"bar": {
-				Times: 3,
-			},
-			"baz": {
-				Times: 5,
-			},
-			"foo": {
-				Times: 1,
-			},
-		},
-		config: Config{Capture: &CaptureConfig{OutputPath: d}},
-	}
-
-	var wr bytes.Buffer
-	require.EqualError(t, trc.compareProfilerStats(&wr, jsondiff.DefaultJSONOptions()), "difference(s) found")
-	assert.Equal(t, `{
-    "bar": {
-        "times": 3
-    },
-    "baz": {
-        "times": 5
-    },
-    "prop-added":{"foo": {}
-        "prop-added":{"times": 1}
-    "prop-added":{}}
 }
 `, wr.String())
 }
