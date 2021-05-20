@@ -903,7 +903,7 @@ func (t *Tracee) Run() error {
 	t.printer.Epilogue(t.stats)
 
 	// show profiler stats
-	if t.config.Capture.Profile && t.config.Capture.Exec { // compare with existing
+	if t.config.Capture.Profile && t.config.Capture.Exec {
 		f, err := os.Create(filepath.Join(t.config.Capture.OutputPath, "tracee.profile"))
 		if err != nil {
 			return fmt.Errorf("unable to open tracee.profile for writing: %s", err)
