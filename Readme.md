@@ -40,4 +40,3 @@ In some cases, you might want to leverage Tracee's eBPF event collection capabil
 Tracee is composed of the following sub-projects, which are hosted in the aquasecurity/tracee repository:
 - [Tracee-eBPF](tracee-ebpf) - Linux Tracing and Forensics using eBPF
 - [Tracee-Rules](tracee-rules) - Runtime Security Detection Engine
-- [libbpgo](libbpfgo) - Go library for eBPF programming using Linux's [libbpf](https://github.com/libbpf/libbpf)

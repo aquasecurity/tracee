@@ -25,9 +25,8 @@ If you have a suggestion, question, or a general comment - please use Discussion
 1. Since we have different projects under the same monorepo, use labels to denote areas that the issue relates to:
   1. `tracee-ebpf`
   2. `tracee-rules`
-  3. `libbpfgo`
-  4. `signatures`
-  5.  If non of the labels is relevant don't add any (usually for top-level issues)
+  3. `signatures`
+  4.  If non of the labels is relevant don't add any (usually for top-level issues)
 1. We use the following labels to describe the type of issue:
   1. `bug`
   2. `good-first-issue`
@@ -44,7 +43,7 @@ If you have a suggestion, question, or a general comment - please use Discussion
 1. Optional commit body (separated by empty line from subject) may explain why the change was made (not how):
   1. Wrap at 72 chars.
 1. Code related information should be in commit message, review related information should be in PR description.
-1. For changes that span different areas (for example, change in libbpfgo which is used in tracee-ebpf), try to make each change self contained and independent.
+1. For changes that span different areas please try to make each change self contained and independent.
 
 
 ## Code
