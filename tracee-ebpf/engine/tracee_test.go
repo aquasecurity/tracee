@@ -1,4 +1,4 @@
-package tracee
+package tracee_engine
 
 import (
 	"bytes"

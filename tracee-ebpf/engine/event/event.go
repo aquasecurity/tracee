@@ -1,4 +1,4 @@
-package external
+package event
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-// Event is a user facing data structure representing a single event
+//Event is a user facing data structure representing a single event
 type Event struct {
 	Timestamp           float64    `json:"timestamp"`
 	ProcessID           int        `json:"processId"`
@@ -21,7 +21,6 @@ type Event struct {
 	PIDNS               int        `json:"pidNamespace"`
 	ProcessName         string     `json:"processName"`
 	HostName            string     `json:"hostName"`
-	ContainerID         string     `json:"containerId`
 	EventID             int        `json:"eventId,string"`
 	EventName           string     `json:"eventName"`
 	ArgsNum             int        `json:"argsNum"`
@@ -95,7 +94,6 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 
 	return nil
 }
-
 // SlimCred struct is a slim version of the kernel's cred struct
 // it is used to unmarshal binary data and therefore should match (bit by bit) to the `slim_cred_t` struct in the ebpf code.
 type SlimCred struct {

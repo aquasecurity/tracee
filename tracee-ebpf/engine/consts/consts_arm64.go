@@ -1,9 +1,9 @@
 // +build arm64
 
-package tracee
+package consts
 
 // ARM64 syscall numbers
-// Also used as event IDs
+// Also used as Event IDs
 // https://github.com/torvalds/linux/blob/master/include/uapi/asm-generic/unistd.h
 const (
 	IoSetupEventID             int32 = 0

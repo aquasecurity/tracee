@@ -6,10 +6,10 @@ test_match_1 {
         "argsNum": 1,
         "args": [
             {
-                "name": "alert", 
+                "name": "alert",
                 "value": "Protection changed from W+E to E!"
             }
-        ] 
+        ]
     }
 }
 
@@ -19,23 +19,22 @@ test_match_wrong_message {
         "argsNum": 1,
         "args": [
             {
-                "name": "alert", 
+                "name": "alert",
                 "value": "Protection changed to Executable!"
-            }
-        ] 
-    }
-}
-
-test_match_wrong_event {
-    not tracee_match with input as {
-        "eventName": "ptrace", 
-        "argsNum": 1, 
-        "args": [
-            {
-                "name": "request", 
-                "value": "PTRACE_PEEKDATA"
             }
         ]
     }
 }
 
+test_match_wrong_event {
+    not tracee_match with input as {
+        "eventName": "ptrace",
+        "argsNum": 1,
+        "args": [
+            {
+                "name": "request",
+                "value": "PTRACE_PEEKDATA"
+            }
+        ]
+    }
+}

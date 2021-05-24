@@ -38,4 +38,3 @@ test_match_wrong_pathname {
         ]
     }
 }
-

@@ -2,11 +2,11 @@ package tracee.TRC_3
 
 test_match_1 {
     tracee_match with input as {
-        "eventName": "ptrace", 
-        "argsNum": 1, 
+        "eventName": "ptrace",
+        "argsNum": 1,
         "args": [
             {
-                "name": "request", 
+                "name": "request",
                 "value": "PTRACE_POKETEXT"
             }
         ]
@@ -54,11 +54,11 @@ test_match_3 {
 
 test_match_wrong_request {
     not tracee_match with input as {
-        "eventName": "ptrace", 
-        "argsNum": 1, 
+        "eventName": "ptrace",
+        "argsNum": 1,
         "args": [
             {
-                "name": "request", 
+                "name": "request",
                 "value": "PTRACE_PEEKDATA"
             }
         ]

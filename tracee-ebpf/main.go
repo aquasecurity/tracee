@@ -3,6 +3,8 @@ package main
 import (
 	"embed"
 	"fmt"
+	"github.com/aquasecurity/tracee/tracee-ebpf/engine/broker"
+	cmap "github.com/orcaman/concurrent-map"
 	"io"
 	"io/ioutil"
 	"log"
@@ -14,8 +16,13 @@ import (
 	"strconv"
 	"strings"
 
+	tracee_engine "github.com/aquasecurity/tracee/tracee-ebpf/engine"
+	"github.com/aquasecurity/tracee/tracee-ebpf/engine/config"
+	"github.com/aquasecurity/tracee/tracee-ebpf/engine/consts"
+	"github.com/aquasecurity/tracee/tracee-ebpf/engine/filters"
+	"github.com/aquasecurity/tracee/tracee-ebpf/engine/streamers"
+
 	"github.com/aquasecurity/libbpfgo/helpers"
-	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
 	"github.com/syndtr/gocapability/capability"
 	cli "github.com/urfave/cli/v2"
 )
@@ -40,7 +47,7 @@ func main() {
 				return nil
 			}
 
-			cfg := tracee.Config{
+			cfg := config.Config{
 				PerfBufferSize:     c.Int("perf-buffer-size"),
 				BlobPerfBufferSize: c.Int("blob-perf-buffer-size"),
 				SecurityAlerts:     c.Bool("security-alerts"),
@@ -62,7 +69,7 @@ func main() {
 			cfg.Filter = &filter
 
 			if c.Bool("security-alerts") {
-				cfg.Filter.EventsToTrace = append(cfg.Filter.EventsToTrace, tracee.MemProtAlertEventID)
+				cfg.Filter.EventsToTrace = append(cfg.Filter.EventsToTrace, consts.MemProtAlertEventID)
 			}
 			bpfFile, err := getBPFObject()
 			if err != nil {
@@ -76,10 +83,29 @@ func main() {
 			if len(missingKernelOptions) != 0 {
 				return fmt.Errorf("kernel is not properly configured, missing: %v", missingKernelOptions)
 			}
-			t, err := tracee.New(cfg)
+
+			t, err := tracee_engine.NewTraceeEngineMgr(cfg)
 			if err != nil {
-				return fmt.Errorf("error creating Tracee: %v", err)
+				return fmt.Errorf("failed creating Tracee Engine Manager: %w", err)
 			}
+
+			ioExporter, err := streamers.NewIOStreamer(cfg)
+			if err != nil {
+				return fmt.Errorf("failed creating default exporter: %w", err)
+			}
+
+			b := broker.Broker{Streamers: cmap.New()}
+
+			if err := b.Register(ioExporter); err != nil {
+				return fmt.Errorf("failed to subscruber print streamer: %w", err)
+			}
+			b.ChanEvents, err = t.Consume()
+			if err != nil {
+				return fmt.Errorf("failed to consume event channels: %w", err)
+			}
+			b.Start(t.Stats())
+			defer b.Stop(t.Stats())
+
 			return t.Run()
 		},
 		Flags: []cli.Flag{
@@ -87,7 +113,7 @@ func main() {
 				Name:    "list",
 				Aliases: []string{"l"},
 				Value:   false,
-				Usage:   "just list tracable events",
+				Usage:   "just list traceable events",
 			},
 			&cli.StringSliceFlag{
 				Name:    "trace",
@@ -150,7 +176,7 @@ func main() {
 	}
 }
 
-func prepareOutput(outputSlice []string) (tracee.OutputConfig, error) {
+func prepareOutput(outputSlice []string) (config.OutputConfig, error) {
 	outputHelp := `
 Control how and where output is printed.
 Possible options:
@@ -170,7 +196,7 @@ Examples:
 Use this flag multiple times to choose multiple capture options	
 `
 
-	res := tracee.OutputConfig{}
+	res := config.OutputConfig{}
 	if len(outputSlice) == 1 && outputSlice[0] == "help" {
 		return res, fmt.Errorf(outputHelp)
 	}
@@ -221,7 +247,7 @@ Use this flag multiple times to choose multiple capture options
 	return res, nil
 }
 
-func prepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
+func prepareCapture(captureSlice []string) (config.CaptureConfig, error) {
 	captureHelp := `
 Capture artifacts that were written, executed or found to be suspicious.
 Captured artifacts will appear in the 'output-path' directory.
@@ -246,10 +272,10 @@ Use this flag multiple times to choose multiple capture options
 `
 
 	if len(captureSlice) == 1 && captureSlice[0] == "help" {
-		return tracee.CaptureConfig{}, fmt.Errorf(captureHelp)
+		return config.CaptureConfig{}, fmt.Errorf(captureHelp)
 	}
 
-	capture := tracee.CaptureConfig{}
+	capture := config.CaptureConfig{}
 
 	outDir := "/tmp/tracee"
 	clearDir := false
@@ -269,7 +295,7 @@ Use this flag multiple times to choose multiple capture options
 			capture.FileWrite = true
 			pathPrefix := strings.TrimSuffix(strings.TrimPrefix(cap, "write="), "*")
 			if len(pathPrefix) == 0 {
-				return tracee.CaptureConfig{}, fmt.Errorf("capture write filter cannot be empty")
+				return config.CaptureConfig{}, fmt.Errorf("capture write filter cannot be empty")
 			}
 			filterFileWrite = append(filterFileWrite, pathPrefix)
 		} else if cap == "exec" {
@@ -285,13 +311,13 @@ Use this flag multiple times to choose multiple capture options
 		} else if strings.HasPrefix(cap, "dir:") {
 			outDir = strings.TrimPrefix(cap, "dir:")
 			if len(outDir) == 0 {
-				return tracee.CaptureConfig{}, fmt.Errorf("capture output dir cannot be empty")
+				return config.CaptureConfig{}, fmt.Errorf("capture output dir cannot be empty")
 			}
 		} else if cap == "profile" {
 			capture.Exec = true
 			capture.Profile = true
 		} else {
-			return tracee.CaptureConfig{}, fmt.Errorf("invalid capture option specified, use '--capture help' for more info")
+			return config.CaptureConfig{}, fmt.Errorf("invalid capture option specified, use '--capture help' for more info")
 		}
 	}
 	capture.FilterFileWrite = filterFileWrite
@@ -304,7 +330,7 @@ Use this flag multiple times to choose multiple capture options
 	return capture, nil
 }
 
-func prepareFilter(filters []string) (tracee.Filter, error) {
+func prepareFilter(filters_ []string) (filters.Filter, error) {
 	filterHelp := `
 Select which events to trace by defining trace expressions that operate on events or process metadata.
 Only events that match all trace expressions will be traced (trace flags are ANDed).
@@ -366,66 +392,66 @@ Note: some of the above operators have special meanings in different shells.
 To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 `
 
-	if len(filters) == 1 && filters[0] == "help" {
-		return tracee.Filter{}, fmt.Errorf(filterHelp)
+	if len(filters_) == 1 && filters_[0] == "help" {
+		return filters.Filter{}, fmt.Errorf(filterHelp)
 	}
 
-	filter := tracee.Filter{
-		UIDFilter: &tracee.UintFilter{
+	filter := filters.Filter{
+		UIDFilter: &filters.UintFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
-			Less:     tracee.LessNotSetUint,
-			Greater:  tracee.GreaterNotSetUint,
+			Less:     consts.LessNotSetUint,
+			Greater:  consts.GreaterNotSetUint,
 			Is32Bit:  true,
 		},
-		PIDFilter: &tracee.UintFilter{
+		PIDFilter: &filters.UintFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
-			Less:     tracee.LessNotSetUint,
-			Greater:  tracee.GreaterNotSetUint,
+			Less:     consts.LessNotSetUint,
+			Greater:  consts.GreaterNotSetUint,
 			Is32Bit:  true,
 		},
-		NewPidFilter: &tracee.BoolFilter{},
-		MntNSFilter: &tracee.UintFilter{
+		NewPidFilter: &filters.BoolFilter{},
+		MntNSFilter: &filters.UintFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
-			Less:     tracee.LessNotSetUint,
-			Greater:  tracee.GreaterNotSetUint,
+			Less:     consts.LessNotSetUint,
+			Greater:  consts.GreaterNotSetUint,
 		},
-		PidNSFilter: &tracee.UintFilter{
+		PidNSFilter: &filters.UintFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
-			Less:     tracee.LessNotSetUint,
-			Greater:  tracee.GreaterNotSetUint,
+			Less:     consts.LessNotSetUint,
+			Greater:  consts.GreaterNotSetUint,
 		},
-		UTSFilter: &tracee.StringFilter{
+		UTSFilter: &filters.StringFilter{
 			Equal:    []string{},
 			NotEqual: []string{},
 		},
-		CommFilter: &tracee.StringFilter{
+		CommFilter: &filters.StringFilter{
 			Equal:    []string{},
 			NotEqual: []string{},
 		},
-		ContFilter:    &tracee.BoolFilter{},
-		NewContFilter: &tracee.BoolFilter{},
-		RetFilter: &tracee.RetFilter{
-			Filters: make(map[int32]tracee.IntFilter),
+		ContFilter:    &filters.BoolFilter{},
+		NewContFilter: &filters.BoolFilter{},
+		RetFilter: &filters.RetFilter{
+			Filters: make(map[int32]filters.IntFilter),
 		},
-		ArgFilter: &tracee.ArgFilter{
-			Filters: make(map[int32]map[string]tracee.ArgFilterVal),
+		ArgFilter: &filters.ArgFilter{
+			Filters: make(map[int32]map[string]filters.ArgFilterVal),
 		},
 		EventsToTrace: []int32{},
 	}
 
-	eventFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}}
-	setFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}}
+	eventFilter := &filters.StringFilter{Equal: []string{}, NotEqual: []string{}}
+	setFilter := &filters.StringFilter{Equal: []string{}, NotEqual: []string{}}
 
-	eventsNameToID := make(map[string]int32, len(tracee.EventsIDToEvent))
-	for _, event := range tracee.EventsIDToEvent {
+	eventsNameToID := make(map[string]int32, len(consts.EventsIDToEvent))
+	for _, event := range consts.EventsIDToEvent {
 		eventsNameToID[event.Name] = event.ID
 	}
 
-	for _, f := range filters {
+	for _, f := range filters_ {
 		filterName := f
 		operatorAndValues := ""
 		operatorIndex := strings.IndexAny(f, "=!<>")
@@ -437,7 +463,7 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 		if strings.Contains(f, ".retval") {
 			err := parseRetFilter(filterName, operatorAndValues, eventsNameToID, filter.RetFilter)
 			if err != nil {
-				return tracee.Filter{}, err
+				return filters.Filter{}, err
 			}
 			continue
 		}
@@ -445,7 +471,7 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 		if strings.Contains(f, ".") {
 			err := parseArgFilter(filterName, operatorAndValues, eventsNameToID, filter.ArgFilter)
 			if err != nil {
-				return tracee.Filter{}, err
+				return filters.Filter{}, err
 			}
 			continue
 		}
@@ -456,7 +482,7 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 		if filterName == "comm" {
 			err := parseStringFilter(operatorAndValues, filter.CommFilter)
 			if err != nil {
-				return tracee.Filter{}, err
+				return filters.Filter{}, err
 			}
 			continue
 		}
@@ -466,7 +492,7 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 			filter.NewPidFilter.Value = true
 			err := parseBoolFilter(f, filter.ContFilter)
 			if err != nil {
-				return tracee.Filter{}, err
+				return filters.Filter{}, err
 			}
 			continue
 		}
@@ -493,7 +519,7 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 		if strings.HasPrefix("event", filterName) {
 			err := parseStringFilter(operatorAndValues, eventFilter)
 			if err != nil {
-				return tracee.Filter{}, err
+				return filters.Filter{}, err
 			}
 			continue
 		}
@@ -501,7 +527,7 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 		if filterName == "mntns" {
 			err := parseUintFilter(operatorAndValues, filter.MntNSFilter)
 			if err != nil {
-				return tracee.Filter{}, err
+				return filters.Filter{}, err
 			}
 			continue
 		}
@@ -509,7 +535,7 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 		if filterName == "pidns" {
 			err := parseUintFilter(operatorAndValues, filter.PidNSFilter)
 			if err != nil {
-				return tracee.Filter{}, err
+				return filters.Filter{}, err
 			}
 			continue
 		}
@@ -527,7 +553,7 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 			}
 			err := parseUintFilter(operatorAndValues, filter.PIDFilter)
 			if err != nil {
-				return tracee.Filter{}, err
+				return filters.Filter{}, err
 			}
 			continue
 		}
@@ -535,7 +561,7 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 		if strings.HasPrefix("set", filterName) {
 			err := parseStringFilter(operatorAndValues, setFilter)
 			if err != nil {
-				return tracee.Filter{}, err
+				return filters.Filter{}, err
 			}
 			continue
 		}
@@ -543,7 +569,7 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 		if filterName == "uts" {
 			err := parseStringFilter(operatorAndValues, filter.UTSFilter)
 			if err != nil {
-				return tracee.Filter{}, err
+				return filters.Filter{}, err
 			}
 			continue
 		}
@@ -551,7 +577,7 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 		if strings.HasPrefix("uid", filterName) {
 			err := parseUintFilter(operatorAndValues, filter.UIDFilter)
 			if err != nil {
-				return tracee.Filter{}, err
+				return filters.Filter{}, err
 			}
 			continue
 		}
@@ -561,19 +587,19 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 			continue
 		}
 
-		return tracee.Filter{}, fmt.Errorf("invalid filter option specified, use '--filter help' for more info")
+		return filters.Filter{}, fmt.Errorf("invalid filter option specified, use '--filter help' for more info")
 	}
 
 	var err error
 	filter.EventsToTrace, err = prepareEventsToTrace(eventFilter, setFilter, eventsNameToID)
 	if err != nil {
-		return tracee.Filter{}, err
+		return filters.Filter{}, err
 	}
 
 	return filter, nil
 }
 
-func parseUintFilter(operatorAndValues string, uintFilter *tracee.UintFilter) error {
+func parseUintFilter(operatorAndValues string, uintFilter *filters.UintFilter) error {
 	uintFilter.Enabled = true
 	if len(operatorAndValues) < 2 {
 		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
@@ -605,11 +631,11 @@ func parseUintFilter(operatorAndValues string, uintFilter *tracee.UintFilter) er
 		case "!=":
 			uintFilter.NotEqual = append(uintFilter.NotEqual, val)
 		case ">":
-			if (uintFilter.Greater == tracee.GreaterNotSetUint) || (val > uintFilter.Greater) {
+			if (uintFilter.Greater == consts.GreaterNotSetUint) || (val > uintFilter.Greater) {
 				uintFilter.Greater = val
 			}
 		case "<":
-			if (uintFilter.Less == tracee.LessNotSetUint) || (val < uintFilter.Less) {
+			if (uintFilter.Less == consts.LessNotSetUint) || (val < uintFilter.Less) {
 				uintFilter.Less = val
 			}
 		default:
@@ -620,7 +646,7 @@ func parseUintFilter(operatorAndValues string, uintFilter *tracee.UintFilter) er
 	return nil
 }
 
-func parseIntFilter(operatorAndValues string, intFilter *tracee.IntFilter) error {
+func parseIntFilter(operatorAndValues string, intFilter *filters.IntFilter) error {
 	intFilter.Enabled = true
 	if len(operatorAndValues) < 2 {
 		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
@@ -652,11 +678,11 @@ func parseIntFilter(operatorAndValues string, intFilter *tracee.IntFilter) error
 		case "!=":
 			intFilter.NotEqual = append(intFilter.NotEqual, val)
 		case ">":
-			if (intFilter.Greater == tracee.GreaterNotSetInt) || (val > intFilter.Greater) {
+			if (intFilter.Greater == consts.GreaterNotSetInt) || (val > intFilter.Greater) {
 				intFilter.Greater = val
 			}
 		case "<":
-			if (intFilter.Less == tracee.LessNotSetInt) || (val < intFilter.Less) {
+			if (intFilter.Less == consts.LessNotSetInt) || (val < intFilter.Less) {
 				intFilter.Less = val
 			}
 		default:
@@ -667,7 +693,7 @@ func parseIntFilter(operatorAndValues string, intFilter *tracee.IntFilter) error
 	return nil
 }
 
-func parseStringFilter(operatorAndValues string, stringFilter *tracee.StringFilter) error {
+func parseStringFilter(operatorAndValues string, stringFilter *filters.StringFilter) error {
 	stringFilter.Enabled = true
 	if len(operatorAndValues) < 2 {
 		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
@@ -699,7 +725,7 @@ func parseStringFilter(operatorAndValues string, stringFilter *tracee.StringFilt
 	return nil
 }
 
-func parseBoolFilter(value string, boolFilter *tracee.BoolFilter) error {
+func parseBoolFilter(value string, boolFilter *filters.BoolFilter) error {
 	boolFilter.Enabled = true
 	boolFilter.Value = false
 	if value[0] != '!' {
@@ -709,7 +735,7 @@ func parseBoolFilter(value string, boolFilter *tracee.BoolFilter) error {
 	return nil
 }
 
-func parseArgFilter(filterName string, operatorAndValues string, eventsNameToID map[string]int32, argFilter *tracee.ArgFilter) error {
+func parseArgFilter(filterName string, operatorAndValues string, eventsNameToID map[string]int32, argFilter *filters.ArgFilter) error {
 	argFilter.Enabled = true
 	// Event argument filter has the following format: "event.argname=argval"
 	// filterName have the format event.argname, and operatorAndValues have the format "=argval"
@@ -725,7 +751,7 @@ func parseArgFilter(filterName string, operatorAndValues string, eventsNameToID 
 		return fmt.Errorf("invalid argument filter event name: %s", eventName)
 	}
 
-	eventParams, ok := tracee.EventsIDToParams[id]
+	eventParams, ok := consts.EventsIDToParams[id]
 	if !ok {
 		return fmt.Errorf("invalid argument filter event name: %s", eventName)
 	}
@@ -743,7 +769,7 @@ func parseArgFilter(filterName string, operatorAndValues string, eventsNameToID 
 		return fmt.Errorf("invalid argument filter argument name: %s", argName)
 	}
 
-	strFilter := &tracee.StringFilter{
+	strFilter := &filters.StringFilter{
 		Equal:    []string{},
 		NotEqual: []string{},
 	}
@@ -755,11 +781,11 @@ func parseArgFilter(filterName string, operatorAndValues string, eventsNameToID 
 	}
 
 	if _, ok := argFilter.Filters[id]; !ok {
-		argFilter.Filters[id] = make(map[string]tracee.ArgFilterVal)
+		argFilter.Filters[id] = make(map[string]filters.ArgFilterVal)
 	}
 
 	if _, ok := argFilter.Filters[id][argName]; !ok {
-		argFilter.Filters[id][argName] = tracee.ArgFilterVal{}
+		argFilter.Filters[id][argName] = filters.ArgFilterVal{}
 	}
 
 	val := argFilter.Filters[id][argName]
@@ -772,7 +798,7 @@ func parseArgFilter(filterName string, operatorAndValues string, eventsNameToID 
 	return nil
 }
 
-func parseRetFilter(filterName string, operatorAndValues string, eventsNameToID map[string]int32, retFilter *tracee.RetFilter) error {
+func parseRetFilter(filterName string, operatorAndValues string, eventsNameToID map[string]int32, retFilter *filters.RetFilter) error {
 	retFilter.Enabled = true
 	// Ret filter has the following format: "event.ret=val"
 	// filterName have the format event.retval, and operatorAndValues have the format "=val"
@@ -788,11 +814,11 @@ func parseRetFilter(filterName string, operatorAndValues string, eventsNameToID 
 	}
 
 	if _, ok := retFilter.Filters[id]; !ok {
-		retFilter.Filters[id] = tracee.IntFilter{
+		retFilter.Filters[id] = filters.IntFilter{
 			Equal:    []int64{},
 			NotEqual: []int64{},
-			Less:     tracee.LessNotSetInt,
-			Greater:  tracee.GreaterNotSetInt,
+			Less:     consts.LessNotSetInt,
+			Greater:  consts.GreaterNotSetInt,
 		}
 	}
 
@@ -808,7 +834,7 @@ func parseRetFilter(filterName string, operatorAndValues string, eventsNameToID 
 
 	return nil
 }
-func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.StringFilter, eventsNameToID map[string]int32) ([]int32, error) {
+func prepareEventsToTrace(eventFilter *filters.StringFilter, setFilter *filters.StringFilter, eventsNameToID map[string]int32) ([]int32, error) {
 	eventFilter.Enabled = true
 	eventsToTrace := eventFilter.Equal
 	excludeEvents := eventFilter.NotEqual
@@ -817,7 +843,7 @@ func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.St
 	var res []int32
 	setsToEvents := make(map[string][]int32)
 	isExcluded := make(map[int32]bool)
-	for id, event := range tracee.EventsIDToEvent {
+	for id, event := range consts.EventsIDToEvent {
 		for _, set := range event.Sets {
 			setsToEvents[set] = append(setsToEvents[set], id)
 		}
@@ -848,7 +874,7 @@ func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.St
 		setsToTrace = append(setsToTrace, "default")
 	}
 
-	res = make([]int32, 0, len(tracee.EventsIDToEvent))
+	res = make([]int32, 0, len(consts.EventsIDToEvent))
 	for _, name := range eventsToTrace {
 		// Handle event prefixes with wildcards
 		if strings.HasSuffix(name, "*") {
@@ -939,7 +965,7 @@ func getSelfCapabilities() (capability.Capabilities, error) {
 }
 
 func fetchFormattedEventParams(eventID int32) string {
-	eventParams := tracee.EventsIDToParams[eventID]
+	eventParams := consts.EventsIDToParams[eventID]
 	var verboseEventParams string
 	verboseEventParams += "("
 	prefix := ""
@@ -970,9 +996,9 @@ func printList() {
 	var b strings.Builder
 	b.WriteString("System Calls: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________" + "\n\n")
-	for i := 0; i < int(tracee.SysEnterEventID); i++ {
+	for i := 0; i < int(consts.SysEnterEventID); i++ {
 		index := int32(i)
-		event, ok := tracee.EventsIDToEvent[index]
+		event, ok := consts.EventsIDToEvent[index]
 		if !ok {
 			continue
 		}
@@ -985,9 +1011,9 @@ func printList() {
 	}
 	b.WriteString("\n\nOther Events: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________\n\n")
-	for i := int(tracee.SysEnterEventID); i < int(tracee.MaxEventID); i++ {
+	for i := int(consts.SysEnterEventID); i < int(consts.MaxEventID); i++ {
 		index := int32(i)
-		event := tracee.EventsIDToEvent[index]
+		event := consts.EventsIDToEvent[index]
 		if event.Sets != nil {
 			eventSets := fmt.Sprintf("%-22s %-40s %s\n", event.Name, fmt.Sprintf("%v", event.Sets), fetchFormattedEventParams(index))
 			b.WriteString(eventSets)
@@ -1028,7 +1054,7 @@ func getBPFObject() (string, error) {
 		}
 		return bpfPath, nil
 	}
-	bpfObjFileName := fmt.Sprintf("tracee.bpf.%s.%s.o", strings.ReplaceAll(tracee.UnameRelease(), ".", "_"), strings.ReplaceAll(version, ".", "_"))
+	bpfObjFileName := fmt.Sprintf("tracee.bpf.%s.%s.o", strings.ReplaceAll(tracee_engine.UnameRelease(), ".", "_"), strings.ReplaceAll(version, ".", "_"))
 	exePath, err := os.Executable()
 	if err != nil {
 		return "", err
@@ -1150,8 +1176,8 @@ func makeBPFObject(outFile string) error {
 	llvmstrip := locateFile("llvm-strip", []string{os.Getenv("LLVM_STRIP")})
 
 	kernelHeaders := locateFile("", []string{os.Getenv("KERN_HEADERS")})
-	kernelBuildPath := locateFile("", []string{fmt.Sprintf("/lib/modules/%s/build", tracee.UnameRelease())})
-	kernelSourcePath := locateFile("", []string{fmt.Sprintf("/lib/modules/%s/source", tracee.UnameRelease())})
+	kernelBuildPath := locateFile("", []string{fmt.Sprintf("/lib/modules/%s/build", tracee_engine.UnameRelease())})
+	kernelSourcePath := locateFile("", []string{fmt.Sprintf("/lib/modules/%s/source", tracee_engine.UnameRelease())})
 	if kernelHeaders != "" {
 		// In case KERN_HEADERS is set, use it for both source/ and build/
 		kernelBuildPath = kernelHeaders
@@ -1291,7 +1317,7 @@ func makeBPFObject(outFile string) error {
 		fmt.Printf("successfully built ebpf obj file at: %s\n", objFile)
 	}
 	os.MkdirAll(filepath.Dir(outFile), 0755)
-	err = tracee.CopyFileByPath(objFile, outFile)
+	err = tracee_engine.CopyFileByPath(objFile, outFile)
 	if err != nil {
 		return err
 	}

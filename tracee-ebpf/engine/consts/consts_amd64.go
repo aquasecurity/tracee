@@ -1,9 +1,9 @@
 // +build amd64
 
-package tracee
+package consts
 
 // x86 64bit syscall numbers
-// Also used as event IDs
+// Also used as Event IDs
 // https://github.com/torvalds/linux/blob/master/arch/x86/entry/syscalls/syscall_64.tbl
 const (
 	ReadEventID                int32 = 0

@@ -770,7 +770,7 @@ static __always_inline int init_context(context_t *context)
         bpf_probe_read_str(&context->uts_name, TASK_COMM_LEN, uts_name);
     container_id_t *container_id = bpf_map_lookup_elem(&pid_to_cont_id_map, &context->host_tid);
     if (container_id != NULL) {
-        memcpy(context->cont_id, container_id->id, CONT_ID_LEN);
+        __builtin_memcpy(context->cont_id, container_id->id, CONT_ID_LEN);
     }
     // Save timestamp in microsecond resolution
     context->ts = bpf_ktime_get_ns()/1000;
