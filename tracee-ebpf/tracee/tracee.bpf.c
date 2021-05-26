@@ -163,7 +163,9 @@
 #define SECURITY_SOCKET_ACCEPT  1017
 #define SECURITY_SOCKET_BIND    1018
 #define SECURITY_SB_MOUNT       1019
-#define MAX_EVENT_ID            1020
+#define SECURITY_BPF            1020
+#define SECURITY_BPF_MAP        1021
+#define MAX_EVENT_ID            1022
 
 #define CONFIG_SHOW_SYSCALL         1
 #define CONFIG_EXEC_ENV             2
@@ -3102,6 +3104,62 @@ int BPF_KPROBE(trace_mprotect_alert)
         }
     }
 
+    return 0;
+}
+
+SEC("kprobe/security_bpf")
+int BPF_KPROBE(trace_security_bpf)
+{
+    if (!should_trace())
+        return 0;
+
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
+    if (submit_p == NULL)
+        return 0;
+
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+
+    context_t context = init_and_save_context(ctx, submit_p, SECURITY_BPF, 1 /*argnum*/, 0 /*ret*/);
+
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
+    if (!tags)
+        return -1;
+
+    int cmd = (int)PT_REGS_PARM1(ctx);
+
+    /* 1st argument == cmd (int) */
+    save_to_submit_buf(submit_p, (void *)&cmd, sizeof(int), INT_T, DEC_ARG(0, *tags));
+
+    events_perf_submit(ctx);
+    return 0;
+};
+
+SEC("kprobe/security_bpf_map")
+int BPF_KPROBE(trace_security_bpf_map)
+{
+    if (!should_trace())
+        return 0;
+
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
+    if (submit_p == NULL)
+        return 0;
+
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+
+    context_t context = init_and_save_context(ctx, submit_p, SECURITY_BPF_MAP, 2 /*argnum*/, 0 /*ret*/);
+
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
+    if (!tags)
+        return -1;
+
+    struct bpf_map *map = (struct bpf_map *)PT_REGS_PARM1(ctx);
+
+    /* 1st argument == map_id (u32) */
+    save_to_submit_buf(submit_p, (void *)&map->id, sizeof(int), UINT_T, DEC_ARG(0, *tags));
+    /* 2nd argument == map_name (const char *) */
+    save_str_to_buf(submit_p, (void *)&map->name, DEC_ARG(1, *tags));
+
+    events_perf_submit(ctx);
     return 0;
 }
 
