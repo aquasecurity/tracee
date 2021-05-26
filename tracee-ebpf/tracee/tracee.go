@@ -1129,7 +1129,7 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 
 				// create an in-memory profile
 				if t.config.Capture.Profile {
-					t.updateProfile(capturedFileID)
+					t.updateProfile(fmt.Sprintf("%s:%d", capturedFileID, sourceFileCtime))
 				}
 
 				//don't capture same file twice unless it was modified

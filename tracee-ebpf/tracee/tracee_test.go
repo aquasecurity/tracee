@@ -170,7 +170,10 @@ func Test_updateProfile(t *testing.T) {
 	f, err := ioutil.TempFile("", "Test_updateProfile-*")
 	require.NoError(t, err)
 	defer os.RemoveAll(f.Name())
-	captureFileID := fmt.Sprintf("%d:%s", 123, f.Name())
+	mntID := 123
+	srcFileCtime := 456
+
+	captureFileID := fmt.Sprintf("%d:%s:%d", mntID, f.Name(), srcFileCtime)
 
 	// first run
 	trc.updateProfile(captureFileID)
