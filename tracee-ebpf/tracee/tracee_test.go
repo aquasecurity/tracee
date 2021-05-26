@@ -3,6 +3,7 @@ package tracee
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -169,28 +170,23 @@ func Test_updateProfile(t *testing.T) {
 	f, err := ioutil.TempFile("", "Test_updateProfile-*")
 	require.NoError(t, err)
 	defer os.RemoveAll(f.Name())
+	captureFileID := fmt.Sprintf("%d:%s", 123, f.Name())
 
 	// first run
-	trc.updateProfile(&context{
-		MntID: 123,
-	}, f.Name(), 1234)
+	trc.updateProfile(captureFileID)
 
 	require.Equal(t, profilerInfo{
-		TimeStamp: 1234,
-		Times:     1,
-		FileHash:  getFileHash(f.Name()), MountNS: 123,
-	}, trc.profiledFiles[f.Name()])
+		Times:    1,
+		FileHash: getFileHash(f.Name()),
+	}, trc.profiledFiles[captureFileID])
 
 	// second update run
-	trc.updateProfile(&context{
-		MntID: 123,
-	}, f.Name(), 5678)
+	trc.updateProfile(captureFileID)
 
 	require.Equal(t, profilerInfo{
-		TimeStamp: 5678, // ctime should be updated
-		Times:     2,    // should be execute twice
-		FileHash:  getFileHash(f.Name()), MountNS: 123,
-	}, trc.profiledFiles[f.Name()])
+		Times:    2, // should be execute twice
+		FileHash: getFileHash(f.Name()),
+	}, trc.profiledFiles[captureFileID])
 
 	// should only create one entry
 	require.Equal(t, 1, len(trc.profiledFiles))
@@ -200,22 +196,16 @@ func Test_writeProfilerStats(t *testing.T) {
 	trc := Tracee{
 		profiledFiles: map[string]profilerInfo{
 			"bar": {
-				MountNS:   2,
-				TimeStamp: 456,
-				Times:     3,
-				FileHash:  "4567",
+				Times:    3,
+				FileHash: "4567",
 			},
 			"baz": {
-				MountNS:   3,
-				TimeStamp: 789,
-				Times:     5,
-				FileHash:  "8901",
+				Times:    5,
+				FileHash: "8901",
 			},
 			"foo": {
-				MountNS:   1,
-				TimeStamp: 123,
-				Times:     1,
-				FileHash:  "1234",
+				Times:    1,
+				FileHash: "1234",
 			},
 		},
 	}
@@ -224,20 +214,14 @@ func Test_writeProfilerStats(t *testing.T) {
 	trc.writeProfilerStats(&wr)
 	assert.JSONEq(t, `{
   "bar": {
-    "mount_ns": 2,
-    "time_stamp": 456,
     "times": 3,
     "file_hash": "4567"
   },
   "baz": {
-    "mount_ns": 3,
-    "time_stamp": 789,
     "times": 5,
     "file_hash": "8901"
   },
   "foo": {
-    "mount_ns": 1,
-    "time_stamp": 123,
     "times": 1,
     "file_hash": "1234"
   }

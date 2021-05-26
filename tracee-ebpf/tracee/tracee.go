@@ -178,10 +178,8 @@ func (tc Config) Validate() error {
 }
 
 type profilerInfo struct {
-	MountNS   uint32 `json:"mount_ns,omitempty"`
-	TimeStamp int64  `json:"time_stamp,omitempty"`
-	Times     int64  `json:"times,omitempty"`
-	FileHash  string `json:"file_hash,omitempty"`
+	Times    int64  `json:"times,omitempty"`
+	FileHash string `json:"file_hash,omitempty"`
 }
 
 // Tracee traces system calls and system events using eBPF
@@ -1127,7 +1125,7 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 
 				// create an in-memory profile
 				if t.config.Capture.Profile {
-					t.updateProfile(ctx, sourceFilePath, sourceFileCtime)
+					t.updateProfile(capturedFileID)
 				}
 
 				//don't capture same file twice unless it was modified
@@ -1162,19 +1160,15 @@ func getFileHash(fileName string) string {
 	return ""
 }
 
-func (t *Tracee) updateProfile(ctx *context, sourceFilePath string, sourceFileCtime int64) {
-	sourceFileSHA := getFileHash(sourceFilePath)
+func (t *Tracee) updateProfile(sourceFilePath string) {
+	sourceFileSHA := getFileHash(strings.Split(sourceFilePath, ":")[1])
 	if pf, ok := t.profiledFiles[sourceFilePath]; !ok {
 		t.profiledFiles[sourceFilePath] = profilerInfo{
-			MountNS:   ctx.MntID,
-			TimeStamp: sourceFileCtime,
-			Times:     1,
-			FileHash:  sourceFileSHA,
+			Times:    1,
+			FileHash: sourceFileSHA,
 		}
 	} else {
-		pf.TimeStamp = sourceFileCtime // update ctime
-		pf.Times = pf.Times + 1        // bump execution count
-		pf.MountNS = ctx.MntID
+		pf.Times = pf.Times + 1 // bump execution count
 		pf.FileHash = sourceFileSHA
 		t.profiledFiles[sourceFilePath] = pf // update
 	}
