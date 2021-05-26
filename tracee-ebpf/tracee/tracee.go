@@ -178,7 +178,6 @@ func (tc Config) Validate() error {
 }
 
 type profilerInfo struct {
-	Times    int64  `json:"times,omitempty"`
 	FileHash string `json:"file_hash,omitempty"`
 }
 
@@ -1165,14 +1164,7 @@ func getFileHash(fileName string) string {
 }
 
 func (t *Tracee) updateProfile(sourceFilePath string) {
-	if pf, ok := t.profiledFiles[sourceFilePath]; !ok {
-		t.profiledFiles[sourceFilePath] = profilerInfo{
-			Times: 1,
-		}
-	} else {
-		pf.Times = pf.Times + 1              // bump execution count
-		t.profiledFiles[sourceFilePath] = pf // update
-	}
+	t.profiledFiles[sourceFilePath] = profilerInfo{}
 }
 
 func (t *Tracee) updateFileSHA() {

@@ -178,16 +178,7 @@ func Test_updateProfile(t *testing.T) {
 	// first run
 	trc.updateProfile(captureFileID)
 
-	require.Equal(t, profilerInfo{
-		Times: 1,
-	}, trc.profiledFiles[captureFileID])
-
-	// second update run
-	trc.updateProfile(captureFileID)
-
-	require.Equal(t, profilerInfo{
-		Times: 2, // should be execute twice
-	}, trc.profiledFiles[captureFileID])
+	require.Equal(t, profilerInfo{}, trc.profiledFiles[captureFileID])
 
 	// should only create one entry
 	require.Equal(t, 1, len(trc.profiledFiles))
@@ -197,15 +188,12 @@ func Test_writeProfilerStats(t *testing.T) {
 	trc := Tracee{
 		profiledFiles: map[string]profilerInfo{
 			"bar": {
-				Times:    3,
 				FileHash: "4567",
 			},
 			"baz": {
-				Times:    5,
 				FileHash: "8901",
 			},
 			"foo": {
-				Times:    1,
 				FileHash: "1234",
 			},
 		},
@@ -215,15 +203,12 @@ func Test_writeProfilerStats(t *testing.T) {
 	trc.writeProfilerStats(&wr)
 	assert.JSONEq(t, `{
   "bar": {
-    "times": 3,
     "file_hash": "4567"
   },
   "baz": {
-    "times": 5,
     "file_hash": "8901"
   },
   "foo": {
-    "times": 1,
     "file_hash": "1234"
   }
 }
@@ -240,7 +225,6 @@ func Test_updateFileSHA(t *testing.T) {
 	trc := Tracee{
 		profiledFiles: map[string]profilerInfo{
 			fmt.Sprintf("%d:%s", 123, f.Name()): {
-				Times: 123,
 				// no file sha
 			},
 		},
@@ -252,7 +236,6 @@ func Test_updateFileSHA(t *testing.T) {
 	// check
 	assert.Equal(t, map[string]profilerInfo{
 		fmt.Sprintf("%d:%s", 123, f.Name()): {
-			Times:    123,
 			FileHash: "dbd318c1c462aee872f41109a4dfd3048871a03dedd0fe0e757ced57dad6f2d7",
 		},
 	}, trc.profiledFiles)
