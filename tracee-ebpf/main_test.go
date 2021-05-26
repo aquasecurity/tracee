@@ -1145,6 +1145,16 @@ func TestPrepareCapture(t *testing.T) {
 			},
 			expectedError: nil,
 		},
+		{
+			testName:     "just enable profile",
+			captureSlice: []string{"profile"},
+			expectedCapture: tracee.CaptureConfig{
+				OutputPath: "/tmp/tracee/out",
+				Exec:       true,
+				Profile:    true,
+			},
+			expectedError: nil,
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {

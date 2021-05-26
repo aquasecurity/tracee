@@ -233,7 +233,7 @@ Possible options:
 [artifact:]all                     capture all of the above artifacts.
 
 dir:/path/to/dir        path where tracee will save produced artifacts. the artifact will be saved into an 'out' subdirectory. (default: /tmp/tracee).
-profile                 creates a runtime profile of captured artifacts and their metadata for forensics use. the profile will be saved into the 'out' directory. (default: /tmp/tracee/out/tracee.profile).
+profile                 creates a runtime profile of captured artifacts and their metadata for forensics use. the profile will be saved into the 'out' directory.
 clear-dir               clear the captured artifacts output dir before starting (default: false).
 
 Examples:
@@ -288,6 +288,7 @@ Use this flag multiple times to choose multiple capture options
 				return tracee.CaptureConfig{}, fmt.Errorf("capture output dir cannot be empty")
 			}
 		} else if cap == "profile" {
+			capture.Exec = true
 			capture.Profile = true
 		} else {
 			return tracee.CaptureConfig{}, fmt.Errorf("invalid capture option specified, use '--capture help' for more info")
