@@ -906,6 +906,10 @@ func (t *Tracee) Run() error {
 		if err != nil {
 			return fmt.Errorf("unable to open tracee.profile for writing: %s", err)
 		}
+
+		// update SHA for all captured files
+		t.updateFileSHA()
+
 		if err := t.writeProfilerStats(f); err != nil {
 			return fmt.Errorf("unable to write profiler output: %s", err)
 		}
@@ -1161,16 +1165,21 @@ func getFileHash(fileName string) string {
 }
 
 func (t *Tracee) updateProfile(sourceFilePath string) {
-	sourceFileSHA := getFileHash(strings.Split(sourceFilePath, ":")[1])
 	if pf, ok := t.profiledFiles[sourceFilePath]; !ok {
 		t.profiledFiles[sourceFilePath] = profilerInfo{
-			Times:    1,
-			FileHash: sourceFileSHA,
+			Times: 1,
 		}
 	} else {
-		pf.Times = pf.Times + 1 // bump execution count
-		pf.FileHash = sourceFileSHA
+		pf.Times = pf.Times + 1              // bump execution count
 		t.profiledFiles[sourceFilePath] = pf // update
+	}
+}
+
+func (t *Tracee) updateFileSHA() {
+	for k, v := range t.profiledFiles {
+		fileSHA := getFileHash(strings.Split(k, ":")[1])
+		v.FileHash = fileSHA
+		t.profiledFiles[k] = v
 	}
 }
 

@@ -176,16 +176,14 @@ func Test_updateProfile(t *testing.T) {
 	trc.updateProfile(captureFileID)
 
 	require.Equal(t, profilerInfo{
-		Times:    1,
-		FileHash: getFileHash(f.Name()),
+		Times: 1,
 	}, trc.profiledFiles[captureFileID])
 
 	// second update run
 	trc.updateProfile(captureFileID)
 
 	require.Equal(t, profilerInfo{
-		Times:    2, // should be execute twice
-		FileHash: getFileHash(f.Name()),
+		Times: 2, // should be execute twice
 	}, trc.profiledFiles[captureFileID])
 
 	// should only create one entry
@@ -227,4 +225,32 @@ func Test_writeProfilerStats(t *testing.T) {
   }
 }
 `, wr.String())
+}
+
+func Test_updateFileSHA(t *testing.T) {
+	f, _ := ioutil.TempFile("", "Test_updateFileSHA-*")
+	f.WriteString("foo bar baz")
+	defer func() {
+		os.Remove(f.Name())
+	}()
+
+	trc := Tracee{
+		profiledFiles: map[string]profilerInfo{
+			fmt.Sprintf("%d:%s", 123, f.Name()): {
+				Times: 123,
+				// no file sha
+			},
+		},
+	}
+
+	// file sha is updated
+	trc.updateFileSHA()
+
+	// check
+	assert.Equal(t, map[string]profilerInfo{
+		fmt.Sprintf("%d:%s", 123, f.Name()): {
+			Times:    123,
+			FileHash: "dbd318c1c462aee872f41109a4dfd3048871a03dedd0fe0e757ced57dad6f2d7",
+		},
+	}, trc.profiledFiles)
 }
