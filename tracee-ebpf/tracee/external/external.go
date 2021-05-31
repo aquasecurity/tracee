@@ -94,3 +94,21 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 
 	return nil
 }
+
+// SlimCred struct is a slim version of the kernel's cred struct
+// it is used to unmarshal binary data and therefore should match (bit by bit) to the `slim_cred_t` struct in the ebpf code.
+type SlimCred struct {
+	Uid            uint32 /* real UID of the task */
+	Gid            uint32 /* real GID of the task */
+	Suid           uint32 /* saved UID of the task */
+	Sgid           uint32 /* saved GID of the task */
+	Euid           uint32 /* effective UID of the task */
+	Egid           uint32 /* effective GID of the task */
+	Fsuid          uint32 /* UID for VFS ops */
+	Fsgid          uint32 /* GID for VFS ops */
+	CapInheritable uint64 /* caps our children can inherit */
+	CapPermitted   uint64 /* caps we're permitted */
+	CapEffective   uint64 /* caps we can actually use */
+	CapBounding    uint64 /* capability bounding set */
+	CapAmbient     uint64 /* Ambient capability set */
+}
