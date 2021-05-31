@@ -101,6 +101,7 @@ const (
 	alertT
 	bytesT
 	u16T
+	credT
 )
 
 // argTag is an enum that encodes the argument types that the BPF program may write to the shared buffer
@@ -894,7 +895,7 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	VfsWritevEventID:             {{Type: "const char*", Name: "pathname"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}, {Type: "unsigned long", Name: "vlen"}, {Type: "off_t", Name: "pos"}},
 	MemProtAlertEventID:          {{Type: "alert_t", Name: "alert"}},
 	SchedProcessExitEventID:      {},
-	CommitCredsEventID:           {{Type: "int", Name: "old_euid"}, {Type: "int", Name: "new_euid"}, {Type: "int", Name: "old_egid"}, {Type: "int", Name: "new_egid"}, {Type: "int", Name: "old_fsuid"}, {Type: "int", Name: "new_fsuid"}, {Type: "u64", Name: "old_cap_eff"}, {Type: "u64", Name: "new_cap_eff"}},
+	CommitCredsEventID:           {{Type: "slim_cred_t", Name: "old_cred"}, {Type: "slim_cred_t", Name: "new_cred"}, {Type: "int", Name: "syscall"}},
 	SwitchTaskNSEventID:          {{Type: "pid_t", Name: "pid"}, {Type: "u32", Name: "new_mnt"}, {Type: "u32", Name: "new_pid"}, {Type: "u32", Name: "new_uts"}, {Type: "u32", Name: "new_ipc"}, {Type: "u32", Name: "new_net"}, {Type: "u32", Name: "new_cgroup"}},
 	MagicWriteEventID:            {{Type: "const char*", Name: "pathname"}, {Type: "bytes", Name: "bytes"}},
 	SecuritySocketCreateEventID:  {{Type: "int", Name: "family"}, {Type: "int", Name: "type"}, {Type: "int", Name: "protocol"}, {Type: "int", Name: "kern"}},

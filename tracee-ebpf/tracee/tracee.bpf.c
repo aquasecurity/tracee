@@ -101,6 +101,7 @@
 #define ALERT_T       13UL
 #define BYTES_T       14UL
 #define U16_T         15UL
+#define CRED_T        16UL
 #define TYPE_MAX      255UL
 
 #define TAG_NONE           0UL
@@ -317,6 +318,23 @@ typedef struct network_connection_v6 {
     struct in6_addr remote_address;
     u16 remote_port;
 } net_conn_v6_t;
+
+// For a good summary about capabilities, see https://lwn.net/Articles/636533/
+typedef struct slim_cred {
+    uid_t  uid;             /* real UID of the task */
+    gid_t  gid;             /* real GID of the task */
+    uid_t  suid;            /* saved UID of the task */
+    gid_t  sgid;            /* saved GID of the task */
+    uid_t  euid;            /* effective UID of the task */
+    gid_t  egid;            /* effective GID of the task */
+    uid_t  fsuid;           /* UID for VFS ops */
+    gid_t  fsgid;           /* GID for VFS ops */
+    u64    cap_inheritable; /* caps our children can inherit */
+    u64    cap_permitted;   /* caps we're permitted */
+    u64    cap_effective;   /* caps we can actually use */
+    u64    cap_bset;        /* capability bounding set */
+    u64    cap_ambient;     /* Ambient capability set */
+} slim_cred_t;
 
 /*================================ KERNEL STRUCTS =============================*/
 
@@ -2154,7 +2172,6 @@ int BPF_KPROBE(trace_commit_creds)
         return 0;
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    u8 argnum = 0;
     context_t context = init_and_save_context(ctx, submit_p, COMMIT_CREDS, 2 /*argnum*/, 0 /*ret*/);
 
     struct cred *new = (struct cred *)PT_REGS_PARM1(ctx);
@@ -2162,51 +2179,85 @@ int BPF_KPROBE(trace_commit_creds)
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
     struct cred *old = (struct cred *)READ_KERN(task->real_cred);
 
-    kuid_t old_euid = READ_KERN(old->euid);
-    kuid_t new_euid = READ_KERN(new->euid);
-    kgid_t old_egid = READ_KERN(old->egid);
-    kgid_t new_egid = READ_KERN(new->egid);
-    kuid_t old_fsuid = READ_KERN(old->fsuid);
-    kuid_t new_fsuid = READ_KERN(new->fsuid);
-    kernel_cap_t old_cap_eff = READ_KERN(old->cap_effective);
-    kernel_cap_t new_cap_eff = READ_KERN(new->cap_effective);
+    slim_cred_t old_slim = {0};
+    slim_cred_t new_slim = {0};
+
+    old_slim.uid = READ_KERN(old->uid.val);
+    old_slim.gid = READ_KERN(old->gid.val);
+    old_slim.suid = READ_KERN(old->suid.val);
+    old_slim.sgid = READ_KERN(old->sgid.val);
+    old_slim.euid = READ_KERN(old->euid.val);
+    old_slim.egid = READ_KERN(old->egid.val);
+    old_slim.fsuid = READ_KERN(old->fsuid.val);
+    old_slim.fsgid = READ_KERN(old->fsgid.val);
+
+    new_slim.uid = READ_KERN(new->uid.val);
+    new_slim.gid = READ_KERN(new->gid.val);
+    new_slim.suid = READ_KERN(new->suid.val);
+    new_slim.sgid = READ_KERN(new->sgid.val);
+    new_slim.euid = READ_KERN(new->euid.val);
+    new_slim.egid = READ_KERN(new->egid.val);
+    new_slim.fsuid = READ_KERN(new->fsuid.val);
+    new_slim.fsgid = READ_KERN(new->fsgid.val);
 
     // Currently (2021), there are ~40 capabilities in the Linux kernel which are stored in a u32 array of length 2.
     // This might change in the (not so near) future as more capabilities will be added.
     // For now, we use u64 to store this array in one piece
-    u64 old_cap_eff_arr = old_cap_eff.cap[1];
-    old_cap_eff_arr = (old_cap_eff_arr << 32) + old_cap_eff.cap[0];
-    u64 new_cap_eff_arr = new_cap_eff.cap[1];
-    new_cap_eff_arr = (new_cap_eff_arr << 32) + new_cap_eff.cap[0];
+    kernel_cap_t caps;
+    caps = READ_KERN(old->cap_inheritable);
+    old_slim.cap_inheritable = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
+    caps = READ_KERN(old->cap_permitted);
+    old_slim.cap_permitted = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
+    caps = READ_KERN(old->cap_effective);
+    old_slim.cap_effective = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
+    caps = READ_KERN(old->cap_bset);
+    old_slim.cap_bset = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
+    caps = READ_KERN(old->cap_ambient);
+    old_slim.cap_ambient = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
+
+    caps = READ_KERN(new->cap_inheritable);
+    new_slim.cap_inheritable = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
+    caps = READ_KERN(new->cap_permitted);
+    new_slim.cap_permitted = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
+    caps = READ_KERN(new->cap_effective);
+    new_slim.cap_effective = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
+    caps = READ_KERN(new->cap_bset);
+    new_slim.cap_bset = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
+    caps = READ_KERN(new->cap_ambient);
+    new_slim.cap_ambient = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
 
     u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
     if (!tags) {
         return -1;
     }
 
-    if (old_euid.val != new_euid.val) {
-        argnum += save_to_submit_buf(submit_p, (void*)&old_euid.val, sizeof(int), INT_T, DEC_ARG(0, *tags));
-        argnum += save_to_submit_buf(submit_p, (void*)&new_euid.val, sizeof(int), INT_T, DEC_ARG(1, *tags));
-    }
+    save_to_submit_buf(submit_p, (void*)&old_slim, sizeof(slim_cred_t), CRED_T, DEC_ARG(0, *tags));
+    save_to_submit_buf(submit_p, (void*)&new_slim, sizeof(slim_cred_t), CRED_T, DEC_ARG(1, *tags));
 
-    if (old_egid.val != new_egid.val) {
-        argnum += save_to_submit_buf(submit_p, (void*)&old_egid.val, sizeof(int), INT_T, DEC_ARG(2, *tags));
-        argnum += save_to_submit_buf(submit_p, (void*)&new_egid.val, sizeof(int), INT_T, DEC_ARG(3, *tags));
-    }
 
-    if (old_fsuid.val != new_fsuid.val) {
-        argnum += save_to_submit_buf(submit_p, (void*)&old_fsuid.val, sizeof(int), INT_T, DEC_ARG(4, *tags));
-        argnum += save_to_submit_buf(submit_p, (void*)&new_fsuid.val, sizeof(int), INT_T, DEC_ARG(5, *tags));
-    }
+    if ((old_slim.uid != new_slim.uid) ||
+        (old_slim.gid != new_slim.gid) ||
+        (old_slim.suid != new_slim.suid) ||
+        (old_slim.sgid != new_slim.sgid) ||
+        (old_slim.euid != new_slim.euid) ||
+        (old_slim.egid != new_slim.egid) ||
+        (old_slim.fsuid != new_slim.fsuid) ||
+        (old_slim.fsgid != new_slim.fsgid) ||
+        (old_slim.cap_inheritable != new_slim.cap_inheritable) ||
+        (old_slim.cap_permitted != new_slim.cap_permitted) ||
+        (old_slim.cap_effective != new_slim.cap_effective) ||
+        (old_slim.cap_bset != new_slim.cap_bset) ||
+        (old_slim.cap_ambient != new_slim.cap_ambient)) {
 
-    if (old_cap_eff_arr != new_cap_eff_arr) {
-        argnum += save_to_submit_buf(submit_p, (void*)&old_cap_eff_arr, sizeof(unsigned long), ULONG_T, DEC_ARG(6, *tags));
-        argnum += save_to_submit_buf(submit_p, (void*)&new_cap_eff_arr, sizeof(unsigned long), ULONG_T, DEC_ARG(7, *tags));
-    }
+        if (get_config(CONFIG_SHOW_SYSCALL)) {
+            int syscall_nr = get_syscall_ev_id_from_regs();
+            if (syscall_nr >= 0) {
+                context.argnum++;
+                save_context_to_buf(submit_p, (void*)&context);
+                save_to_submit_buf(submit_p, (void*)&syscall_nr, sizeof(int), INT_T, DEC_ARG(2, *tags));
+            }
+        }
 
-    if (argnum) {
-        context.argnum = argnum;
-        save_context_to_buf(submit_p, (void*)&context);
         events_perf_submit(ctx);
     }
 

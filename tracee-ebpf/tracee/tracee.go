@@ -17,6 +17,7 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
 )
 
 // Config is a struct containing user defined configuration of tracee
@@ -1127,7 +1128,7 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 		}
 	}
 	switch ctx.EventID {
-	case SysEnterEventID, SysExitEventID, CapCapableEventID:
+	case SysEnterEventID, SysExitEventID, CapCapableEventID, CommitCredsEventID:
 		//show syscall name instead of id
 		if id, isInt32 := args[t.EncParamName[ctx.EventID%2]["syscall"]].(int32); isInt32 {
 			if event, isKnown := EventsIDToEvent[id]; isKnown {
@@ -1613,6 +1614,10 @@ func readArgFromBuff(dataBuff io.Reader) (argTag, interface{}, error) {
 		res, err = readSockaddrFromBuff(dataBuff)
 	case alertT:
 		var data alert
+		err = binary.Read(dataBuff, binary.LittleEndian, &data)
+		res = data
+	case credT:
+		var data external.SlimCred
 		err = binary.Read(dataBuff, binary.LittleEndian, &data)
 		res = data
 	case strT:
