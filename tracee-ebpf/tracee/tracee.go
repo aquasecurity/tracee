@@ -1127,16 +1127,17 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 				sourceFileCtime := sourceFileStat.Sys().(*syscall.Stat_t).Ctim.Nano()
 				capturedFileID := fmt.Sprintf("%d:%s", ctx.MntID, sourceFilePath)
 
-				// create an in-memory profile
-				if t.config.Capture.Profile {
-					t.updateProfile(fmt.Sprintf("%s:%d", capturedFileID, sourceFileCtime))
-				}
-
 				//don't capture same file twice unless it was modified
 				lastCtime, ok := t.capturedFiles[capturedFileID]
 				if ok && lastCtime == sourceFileCtime {
 					return nil
 				}
+
+				// create an in-memory profile
+				if t.config.Capture.Profile {
+					t.updateProfile(fmt.Sprintf("%s:%d", capturedFileID, sourceFileCtime))
+				}
+
 				//capture
 				err = CopyFileByPath(sourceFilePath, destinationFilePath)
 				if err != nil {
