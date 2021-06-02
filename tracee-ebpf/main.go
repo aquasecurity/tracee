@@ -233,7 +233,7 @@ Possible options:
 [artifact:]all                     capture all of the above artifacts.
 
 dir:/path/to/dir        path where tracee will save produced artifacts. the artifact will be saved into an 'out' subdirectory. (default: /tmp/tracee).
-profile                 creates a runtime profile of captured artifacts and their metadata for forensics use. the profile will be saved into the 'out' directory.
+profile                 creates a runtime profile of program executions and their metadata for forensics use. the profile will be saved into the 'out' directory.
 clear-dir               clear the captured artifacts output dir before starting (default: false).
 
 Examples:
