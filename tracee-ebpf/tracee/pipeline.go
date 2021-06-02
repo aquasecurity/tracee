@@ -116,7 +116,7 @@ func (t *Tracee) getStackAddresses(StackID uint32) ([]uint64, error) {
 	// Lookup the StackID in the map
 	// The ID could have aged out of the Map, as it only holds a finite number of
 	// Stack IDs in it's Map
-	stackBytes, err := t.StackAddressesMap.GetValue(StackID, stackFrameSize*maxStackDepth)
+	stackBytes, err := t.StackAddressesMap.GetValue(StackID)
 	if err != nil {
 		return StackAddresses[0:0], nil
 	}
