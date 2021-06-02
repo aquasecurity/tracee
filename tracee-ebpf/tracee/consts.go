@@ -161,6 +161,8 @@ const (
 	SecuritySocketAcceptEventID
 	SecuritySocketBindEventID
 	SecuritySbMountEventID
+	SecurityBPFEventID
+	SecurityBPFMapEventID
 	MaxEventID
 )
 
@@ -539,6 +541,8 @@ var EventsIDToEvent = map[int32]EventConfig{
 	SecuritySocketAcceptEventID:  {ID: SecuritySocketAcceptEventID, ID32Bit: sys32undefined, Name: "security_socket_accept", Probes: []probe{{event: "security_socket_accept", attach: kprobe, fn: "trace_security_socket_accept"}}, Sets: []string{"lsm_hooks"}},
 	SecuritySocketBindEventID:    {ID: SecuritySocketBindEventID, ID32Bit: sys32undefined, Name: "security_socket_bind", Probes: []probe{{event: "security_socket_bind", attach: kprobe, fn: "trace_security_socket_bind"}}, Sets: []string{"lsm_hooks"}},
 	SecuritySbMountEventID:       {ID: SecuritySbMountEventID, ID32Bit: sys32undefined, Name: "security_sb_mount", Probes: []probe{{event: "security_sb_mount", attach: kprobe, fn: "trace_security_sb_mount"}}, Sets: []string{"default", "lsm_hooks"}},
+	SecurityBPFEventID:           {ID: SecurityBPFEventID, ID32Bit: sys32undefined, Name: "security_bpf", Probes: []probe{{event: "security_bpf", attach: kprobe, fn: "trace_security_bpf"}}, Sets: []string{"lsm_hooks"}},
+	SecurityBPFMapEventID:        {ID: SecurityBPFMapEventID, ID32Bit: sys32undefined, Name: "security_bpf_map", Probes: []probe{{event: "security_bpf_map", attach: kprobe, fn: "trace_security_bpf_map"}}, Sets: []string{"lsm_hooks"}},
 }
 
 // EventsIDToParams is list of the parameters (name and type) used by the events
@@ -904,4 +908,6 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	SecuritySocketAcceptEventID:  {{Type: "int", Name: "sockfd"}, {Type: "struct sockaddr*", Name: "local_addr"}},
 	SecuritySocketBindEventID:    {{Type: "int", Name: "sockfd"}, {Type: "struct sockaddr*", Name: "local_addr"}},
 	SecuritySbMountEventID:       {{Type: "const char*", Name: "dev_name"}, {Type: "const char*", Name: "path"}, {Type: "const char*", Name: "type"}, {Type: "unsigned long", Name: "flags"}},
+	SecurityBPFEventID:           {{Type: "int", Name: "cmd"}},
+	SecurityBPFMapEventID:        {{Type: "unsigned int", Name: "map_id"}, {Type: "const char*", Name: "map_name"}},
 }
