@@ -178,8 +178,9 @@ func (tc Config) Validate() error {
 }
 
 type profilerInfo struct {
-	Times    int64  `json:"times,omitempty"`
-	FileHash string `json:"file_hash,omitempty"`
+	Times            int64  `json:"times,omitempty"`
+	FileHash         string `json:"file_hash,omitempty"`
+	FirstExecutionTs uint64 `json:"-"`
 }
 
 // Tracee traces system calls and system events using eBPF
@@ -1127,15 +1128,15 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 				sourceFileCtime := sourceFileStat.Sys().(*syscall.Stat_t).Ctim.Nano()
 				capturedFileID := fmt.Sprintf("%d:%s", ctx.MntID, sourceFilePath)
 
+				// create an in-memory profile
+				if t.config.Capture.Profile {
+					t.updateProfile(fmt.Sprintf("%s:%d", filepath.Join(destinationDirPath, fmt.Sprintf("exec.%s", filepath.Base(filePath))), sourceFileCtime), ctx.Ts)
+				}
+
 				//don't capture same file twice unless it was modified
 				lastCtime, ok := t.capturedFiles[capturedFileID]
 				if ok && lastCtime == sourceFileCtime {
 					return nil
-				}
-
-				// create an in-memory profile
-				if t.config.Capture.Profile {
-					t.updateProfile(fmt.Sprintf("%s:%d", capturedFileID, sourceFileCtime))
 				}
 
 				//capture
@@ -1165,10 +1166,11 @@ func getFileHash(fileName string) string {
 	return ""
 }
 
-func (t *Tracee) updateProfile(sourceFilePath string) {
+func (t *Tracee) updateProfile(sourceFilePath string, executionTs uint64) {
 	if pf, ok := t.profiledFiles[sourceFilePath]; !ok {
 		t.profiledFiles[sourceFilePath] = profilerInfo{
-			Times: 1,
+			Times:            1,
+			FirstExecutionTs: executionTs,
 		}
 	} else {
 		pf.Times = pf.Times + 1              // bump execution count
@@ -1178,7 +1180,10 @@ func (t *Tracee) updateProfile(sourceFilePath string) {
 
 func (t *Tracee) updateFileSHA() {
 	for k, v := range t.profiledFiles {
-		fileSHA := getFileHash(strings.Split(k, ":")[1])
+		pathPrefix := strings.Split(k, ".")[0]
+		exeName := strings.Split(strings.Split(k, ".")[1], ":")[0]
+		filePath := fmt.Sprintf("%s.%d.%s", pathPrefix, v.FirstExecutionTs, exeName)
+		fileSHA := getFileHash(filePath)
 		v.FileHash = fileSHA
 		t.profiledFiles[k] = v
 	}

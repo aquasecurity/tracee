@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -167,26 +169,29 @@ func Test_updateProfile(t *testing.T) {
 		profiledFiles: make(map[string]profilerInfo),
 	}
 
-	f, err := ioutil.TempFile("", "Test_updateProfile-*")
+	d, err := ioutil.TempDir("", "Test_updateProfile_dir-*")
+	require.NoError(t, err)
+
+	f, err := ioutil.TempFile(d, "Test_updateProfile-*")
 	require.NoError(t, err)
 	defer os.RemoveAll(f.Name())
-	mntID := 123
-	srcFileCtime := 456
 
-	captureFileID := fmt.Sprintf("%d:%s:%d", mntID, f.Name(), srcFileCtime)
+	captureFileID := fmt.Sprintf("%s.%s", d, filepath.Base(f.Name()))
 
 	// first run
-	trc.updateProfile(captureFileID)
+	trc.updateProfile(captureFileID, 123)
 
 	require.Equal(t, profilerInfo{
-		Times: 1,
+		Times:            1,
+		FirstExecutionTs: 123,
 	}, trc.profiledFiles[captureFileID])
 
 	// second update run
-	trc.updateProfile(captureFileID)
+	trc.updateProfile(captureFileID, 456)
 
 	require.Equal(t, profilerInfo{
-		Times: 2, // should be execute twice
+		Times:            2,   // should be execute twice
+		FirstExecutionTs: 123, // first execution should remain constant
 	}, trc.profiledFiles[captureFileID])
 
 	// should only create one entry
@@ -231,7 +236,11 @@ func Test_writeProfilerStats(t *testing.T) {
 }
 
 func Test_updateFileSHA(t *testing.T) {
-	f, _ := ioutil.TempFile("", "Test_updateFileSHA-*")
+	d, err := ioutil.TempDir("", "Test_updateFileSHA-dir-*")
+	require.NoError(t, err)
+
+	ts := 456
+	f, _ := ioutil.TempFile(d, fmt.Sprintf(".%d.Test_updateFileSHA-*", ts))
 	f.WriteString("foo bar baz")
 	defer func() {
 		os.Remove(f.Name())
@@ -239,8 +248,9 @@ func Test_updateFileSHA(t *testing.T) {
 
 	trc := Tracee{
 		profiledFiles: map[string]profilerInfo{
-			fmt.Sprintf("%d:%s", 123, f.Name()): {
-				Times: 123,
+			fmt.Sprintf("%s/.%s:%d", d, strings.TrimPrefix(filepath.Base(f.Name()), fmt.Sprintf(".%d.", ts)), 1234): {
+				Times:            123,
+				FirstExecutionTs: 456,
 				// no file sha
 			},
 		},
@@ -251,9 +261,10 @@ func Test_updateFileSHA(t *testing.T) {
 
 	// check
 	assert.Equal(t, map[string]profilerInfo{
-		fmt.Sprintf("%d:%s", 123, f.Name()): {
-			Times:    123,
-			FileHash: "dbd318c1c462aee872f41109a4dfd3048871a03dedd0fe0e757ced57dad6f2d7",
+		fmt.Sprintf("%s/.%s:1234", d, strings.TrimPrefix(filepath.Base(f.Name()), fmt.Sprintf(".%d.", ts))): {
+			Times:            123,
+			FirstExecutionTs: 456,
+			FileHash:         "dbd318c1c462aee872f41109a4dfd3048871a03dedd0fe0e757ced57dad6f2d7",
 		},
 	}, trc.profiledFiles)
 }
