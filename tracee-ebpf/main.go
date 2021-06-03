@@ -240,7 +240,7 @@ Examples:
   --capture exec                                           | capture executed files into the default output directory
   --capture all --capture dir:/my/dir --capture clear-dir  | delete /my/dir/out and then capture all supported artifacts into it
   --capture write=/usr/bin/* --capture write=/etc/*        | capture files that were written into anywhere under /usr/bin/ or /etc/
-  --capture exec --capture profile                         | captures files executed files and create a runtime profile in the output directory
+  --capture exec --capture profile                         | captures executed files and create a runtime profile in the output directory
 
 Use this flag multiple times to choose multiple capture options
 `
