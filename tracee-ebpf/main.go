@@ -900,7 +900,11 @@ func missingKernelConfigOptions() []string {
 	}
 
 	kConfig := helpers.KernelConfig{}
-	kConfig.InitKernelConfig()
+	err := kConfig.InitKernelConfig()
+	if err != nil {
+		// we were not able to get kernel config - ignore the check and try to continue
+		return []string{}
+	}
 
 	missing := []string{}
 
