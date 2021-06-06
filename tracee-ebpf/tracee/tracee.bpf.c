@@ -155,27 +155,29 @@ Copyright (C) Aqua Security inc.
 
 #define RAW_SYS_ENTER           1000
 #define RAW_SYS_EXIT            1001
-#define DO_EXIT                 1002
-#define CAP_CAPABLE             1003
-#define SECURITY_BPRM_CHECK     1004
-#define SECURITY_FILE_OPEN      1005
-#define SECURITY_INODE_UNLINK   1006
-#define VFS_WRITE               1007
-#define VFS_WRITEV              1008
-#define MEM_PROT_ALERT          1009
-#define SCHED_PROCESS_EXIT      1010
-#define COMMIT_CREDS            1011
-#define SWITCH_TASK_NS          1012
-#define MAGIC_WRITE             1013
-#define SECURITY_SOCKET_CREATE  1014
-#define SECURITY_SOCKET_LISTEN  1015
-#define SECURITY_SOCKET_CONNECT 1016
-#define SECURITY_SOCKET_ACCEPT  1017
-#define SECURITY_SOCKET_BIND    1018
-#define SECURITY_SB_MOUNT       1019
-#define SECURITY_BPF            1020
-#define SECURITY_BPF_MAP        1021
-#define MAX_EVENT_ID            1022
+#define SCHED_PROCESS_FORK      1002
+#define SCHED_PROCESS_EXIT      1003
+#define DO_EXIT                 1004
+#define CAP_CAPABLE             1005
+#define VFS_WRITE               1006
+#define VFS_WRITEV              1007
+#define MEM_PROT_ALERT          1008
+#define COMMIT_CREDS            1009
+#define SWITCH_TASK_NS          1010
+#define MAGIC_WRITE             1011
+#define CGROUP_ATTACH_TASK      1012
+#define SECURITY_BPRM_CHECK     1013
+#define SECURITY_FILE_OPEN      1014
+#define SECURITY_INODE_UNLINK   1015
+#define SECURITY_SOCKET_CREATE  1016
+#define SECURITY_SOCKET_LISTEN  1017
+#define SECURITY_SOCKET_CONNECT 1018
+#define SECURITY_SOCKET_ACCEPT  1019
+#define SECURITY_SOCKET_BIND    1020
+#define SECURITY_SB_MOUNT       1021
+#define SECURITY_BPF            1022
+#define SECURITY_BPF_MAP        1023
+#define MAX_EVENT_ID            1024
 
 #define CONFIG_SHOW_SYSCALL         1
 #define CONFIG_EXEC_ENV             2
@@ -211,6 +213,8 @@ Copyright (C) Aqua Security inc.
 #define GREATER_NOT_SET ULLONG_MAX
 
 #define DEV_NULL_STR    0
+
+#define CONT_ID_LEN 12
 
 #define READ_KERN(ptr) ({ typeof(ptr) _val;                             \
                           __builtin_memset(&_val, 0, sizeof(_val));     \
@@ -277,6 +281,7 @@ typedef struct context {
     u32 pid_id;
     char comm[TASK_COMM_LEN];
     char uts_name[TASK_COMM_LEN];
+    char cont_id[16];           // Container ID, padding to 16 to keep the context struct aligned
     u32 eventid;
     s64 retval;
     u32 stack_id;
@@ -309,6 +314,10 @@ typedef struct path_filter {
 typedef struct string_filter {
     char str[MAX_STR_FILTER_SIZE];
 } string_filter_t;
+
+typedef struct container_id {
+    char id[CONT_ID_LEN+1];
+} container_id_t;
 
 typedef struct alert {
     u64 ts;     // Timestamp
@@ -370,6 +379,7 @@ BPF_HASH(chosen_events_map, u32, u32);                  // Events chosen by the 
 BPF_HASH(traced_pids_map, u32, u32);                    // Keep track of traced pids
 BPF_HASH(new_pids_map, u32, u32);                       // Keep track of the processes of newly executed binaries
 BPF_HASH(new_pidns_map, u32, u32);                      // Keep track of new pid namespaces
+BPF_HASH(pid_to_cont_id_map, u32, container_id_t);      // Map pid to container id
 BPF_HASH(args_map, u64, args_t);                        // Persist args info between function entry and return
 BPF_HASH(ret_map, u64, u64);                            // Persist return value to be used in tail calls
 BPF_HASH(inequality_filter, u32, u64);                  // Used to filter events by some uint field either by < or >
@@ -509,6 +519,21 @@ static __always_inline char * get_task_uts_name(struct task_struct *task)
 static __always_inline u32 get_task_ppid(struct task_struct *task)
 {
     return READ_KERN(READ_KERN(task->real_parent)->pid);
+}
+
+static __always_inline u32 get_task_host_pid(struct task_struct *task)
+{
+    return READ_KERN(task->pid);
+}
+
+static __always_inline const char * get_cgroup_dirname(struct cgroup *cgrp)
+{
+    struct kernfs_node *kn = READ_KERN(cgrp->kn);
+
+    if (kn == NULL)
+        return NULL;
+
+    return READ_KERN(kn->name);
 }
 
 static __always_inline bool is_x86_compat(struct task_struct *task)
@@ -726,7 +751,10 @@ static __always_inline int init_context(context_t *context)
     char * uts_name = get_task_uts_name(task);
     if (uts_name)
         bpf_probe_read_str(&context->uts_name, TASK_COMM_LEN, uts_name);
-
+    container_id_t *container_id = bpf_map_lookup_elem(&pid_to_cont_id_map, &context->host_tid);
+    if (container_id != NULL) {
+        memcpy(context->cont_id, container_id->id, CONT_ID_LEN);
+    }
     // Save timestamp in microsecond resolution
     context->ts = bpf_ktime_get_ns()/1000;
 
@@ -1957,19 +1985,62 @@ int syscall__execveat(void *ctx)
 
 /*============================== OTHER HOOKS ==============================*/
 
-SEC("raw_tracepoint/sched_process_exit")
-int tracepoint__sched__sched_process_exit(
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 17, 0)
-void *ctx
-#else
-struct bpf_raw_tracepoint_args *ctx
-#endif
-)
+// include/trace/events/sched.h:
+// TP_PROTO(struct task_struct *parent, struct task_struct *child)
+SEC("raw_tracepoint/sched_process_fork")
+int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
 {
+    // Note: we don't place should_trace() here so we can keep track of the cgroups in the system
+    struct task_struct *parent = (struct task_struct*)ctx->args[0];
+    struct task_struct *child = (struct task_struct*)ctx->args[1];
+
+    int parent_pid = get_task_host_pid(parent);
+    int child_pid = get_task_host_pid(child);
+
+    container_id_t *container_id = bpf_map_lookup_elem(&pid_to_cont_id_map, &parent_pid);
+    if (container_id != NULL) {
+        // copy the container id of the parent process to the child process
+        bpf_map_update_elem(&pid_to_cont_id_map, &child_pid, &container_id->id, BPF_ANY);
+    }
+
+    if (event_chosen(SCHED_PROCESS_FORK) && should_trace()) {
+        buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
+        if (submit_p == NULL)
+            return 0;
+        set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+
+        context_t context = init_and_save_context(ctx, submit_p, SCHED_PROCESS_FORK, 4 /*argnum*/, 0 /*ret*/);
+        u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
+        if (!tags) {
+            return -1;
+        }
+
+        int parent_ns_pid = get_task_ns_pid(parent);
+        int child_ns_pid = get_task_ns_pid(child);
+
+        save_to_submit_buf(submit_p, (void*)&parent_pid, sizeof(int), INT_T, DEC_ARG(0, *tags));
+        save_to_submit_buf(submit_p, (void*)&parent_ns_pid, sizeof(int), INT_T, DEC_ARG(1, *tags));
+        save_to_submit_buf(submit_p, (void*)&child_pid, sizeof(int), INT_T, DEC_ARG(2, *tags));
+        save_to_submit_buf(submit_p, (void*)&child_ns_pid, sizeof(int), INT_T, DEC_ARG(3, *tags));
+
+        events_perf_submit(ctx);
+    }
+
+    return 0;
+}
+
+// include/trace/events/sched.h:
+// TP_PROTO(struct task_struct *p)
+SEC("raw_tracepoint/sched_process_exit")
+int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
+{
+    // Note: removing container id from pid_to_cont_id_map shoule be performed before should_trace()
+    u32 pid = bpf_get_current_pid_tgid();
+    bpf_map_delete_elem(&pid_to_cont_id_map, &pid);
+
     if (!should_trace())
         return 0;
 
-    u32 pid = bpf_get_current_pid_tgid();
     // Remove pid from traced_pids_map
     bpf_map_delete_elem(&traced_pids_map, &pid);
 
@@ -2015,6 +2086,44 @@ int BPF_KPROBE(trace_do_exit)
     init_and_save_context(ctx, submit_p, DO_EXIT, 0, code);
 
     events_perf_submit(ctx);
+    return 0;
+}
+
+// include/trace/events/sched.h:
+// TP_PROTO(struct cgroup *dst_cgrp, const char *path, struct task_struct *task, bool threadgroup)
+SEC("raw_tracepoint/cgroup_attach_task")
+int tracepoint__cgroup__cgroup_attach_task(struct bpf_raw_tracepoint_args *ctx)
+{
+    // Note: we don't place should_trace() here so we can keep track of the cgroups in the system
+    container_id_t container_id = {0};
+    struct cgroup *dst_cgrp = (struct cgroup*)ctx->args[0];
+    struct task_struct *task = (struct task_struct*)ctx->args[2];
+    const char *cgrp_dirname = get_cgroup_dirname(dst_cgrp);
+
+    bpf_probe_read_str(&container_id.id, CONT_ID_LEN+1, cgrp_dirname);
+
+    // Only update pid_to_cont_id_map for this pid if no element already exists.
+    // this way, we only keep track of the first level in the cgroup hierarchy
+    int pid = get_task_host_pid(task);
+    bpf_map_update_elem(&pid_to_cont_id_map, &pid, &container_id.id, BPF_NOEXIST);
+
+    if (event_chosen(CGROUP_ATTACH_TASK) && should_trace()) {
+        buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
+        if (submit_p == NULL)
+            return 0;
+        set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+
+        context_t context = init_and_save_context(ctx, submit_p, CGROUP_ATTACH_TASK, 1 /*argnum*/, 0 /*ret*/);
+
+        u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
+        if (!tags) {
+            return -1;
+        }
+
+        save_str_to_buf(submit_p, (void *)ctx->args[1], DEC_ARG(0, *tags));
+        events_perf_submit(ctx);
+    }
+
     return 0;
 }
 

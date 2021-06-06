@@ -143,18 +143,20 @@ type EventConfig struct {
 const (
 	SysEnterEventID int32 = iota + 1000
 	SysExitEventID
+	SchedProcessForkEventID
+	SchedProcessExitEventID
 	DoExitEventID
 	CapCapableEventID
-	SecurityBprmCheckEventID
-	SecurityFileOpenEventID
-	SecurityInodeUnlinkEventID
 	VfsWriteEventID
 	VfsWritevEventID
 	MemProtAlertEventID
-	SchedProcessExitEventID
 	CommitCredsEventID
 	SwitchTaskNSEventID
 	MagicWriteEventID
+	CgroupAttachTaskEventID
+	SecurityBprmCheckEventID
+	SecurityFileOpenEventID
+	SecurityInodeUnlinkEventID
 	SecuritySocketCreateEventID
 	SecuritySocketListenEventID
 	SecuritySocketConnectEventID
@@ -523,18 +525,20 @@ var EventsIDToEvent = map[int32]EventConfig{
 	EpollPwait2EventID:           {ID: EpollPwait2EventID, ID32Bit: sys32epoll_pwait2, Name: "epoll_pwait2", Probes: []probe{{event: "epoll_pwait2", attach: sysCall, fn: "epoll_pwait2"}}, Sets: []string{"syscalls", "fs", "fs_mux_io"}},
 	SysEnterEventID:              {ID: SysEnterEventID, ID32Bit: sys32undefined, Name: "sys_enter", Probes: []probe{{event: "raw_syscalls:sys_enter", attach: rawTracepoint, fn: "tracepoint__raw_syscalls__sys_enter"}}, EssentialEvent: true, Sets: []string{}},
 	SysExitEventID:               {ID: SysExitEventID, ID32Bit: sys32undefined, Name: "sys_exit", Probes: []probe{{event: "raw_syscalls:sys_exit", attach: rawTracepoint, fn: "tracepoint__raw_syscalls__sys_exit"}}, EssentialEvent: true, Sets: []string{}},
+	SchedProcessForkEventID:      {ID: SchedProcessForkEventID, ID32Bit: sys32undefined, Name: "sched_process_fork", Probes: []probe{{event: "sched:sched_process_fork", attach: rawTracepoint, fn: "tracepoint__sched__sched_process_fork"}}, EssentialEvent: true, Sets: []string{}},
+	SchedProcessExitEventID:      {ID: SchedProcessExitEventID, ID32Bit: sys32undefined, Name: "sched_process_exit", Probes: []probe{{event: "sched:sched_process_exit", attach: rawTracepoint, fn: "tracepoint__sched__sched_process_exit"}}, EssentialEvent: true, Sets: []string{"default", "proc", "proc_life"}},
 	DoExitEventID:                {ID: DoExitEventID, ID32Bit: sys32undefined, Name: "do_exit", Probes: []probe{{event: "do_exit", attach: kprobe, fn: "trace_do_exit"}}, Sets: []string{"proc", "proc_life"}},
 	CapCapableEventID:            {ID: CapCapableEventID, ID32Bit: sys32undefined, Name: "cap_capable", Probes: []probe{{event: "cap_capable", attach: kprobe, fn: "trace_cap_capable"}}, Sets: []string{"default"}},
-	SecurityBprmCheckEventID:     {ID: SecurityBprmCheckEventID, ID32Bit: sys32undefined, Name: "security_bprm_check", Probes: []probe{{event: "security_bprm_check", attach: kprobe, fn: "trace_security_bprm_check"}}, Sets: []string{"default", "lsm_hooks"}},
-	SecurityFileOpenEventID:      {ID: SecurityFileOpenEventID, ID32Bit: sys32undefined, Name: "security_file_open", Probes: []probe{{event: "security_file_open", attach: kprobe, fn: "trace_security_file_open"}}, Sets: []string{"default", "lsm_hooks"}},
-	SecurityInodeUnlinkEventID:   {ID: SecurityInodeUnlinkEventID, ID32Bit: sys32undefined, Name: "security_inode_unlink", Probes: []probe{{event: "security_inode_unlink", attach: kprobe, fn: "trace_security_inode_unlink"}}, Sets: []string{"default", "lsm_hooks"}},
 	VfsWriteEventID:              {ID: VfsWriteEventID, ID32Bit: sys32undefined, Name: "vfs_write", Probes: []probe{{event: "vfs_write", attach: kprobe, fn: "trace_vfs_write"}, {event: "vfs_write", attach: kretprobe, fn: "trace_ret_vfs_write"}}, Sets: []string{}},
 	VfsWritevEventID:             {ID: VfsWritevEventID, ID32Bit: sys32undefined, Name: "vfs_writev", Probes: []probe{{event: "vfs_writev", attach: kprobe, fn: "trace_vfs_writev"}, {event: "vfs_writev", attach: kretprobe, fn: "trace_ret_vfs_writev"}}, Sets: []string{}},
 	MemProtAlertEventID:          {ID: MemProtAlertEventID, ID32Bit: sys32undefined, Name: "mem_prot_alert", Probes: []probe{{event: "security_mmap_addr", attach: kprobe, fn: "trace_mmap_alert"}, {event: "security_file_mprotect", attach: kprobe, fn: "trace_mprotect_alert"}}, Sets: []string{}},
-	SchedProcessExitEventID:      {ID: SchedProcessExitEventID, ID32Bit: sys32undefined, Name: "sched_process_exit", Probes: []probe{{event: "sched:sched_process_exit", attach: rawTracepoint, fn: "tracepoint__sched__sched_process_exit"}}, EssentialEvent: true, Sets: []string{"default", "proc", "proc_life"}},
 	CommitCredsEventID:           {ID: CommitCredsEventID, ID32Bit: sys32undefined, Name: "commit_creds", Probes: []probe{{event: "commit_creds", attach: kprobe, fn: "trace_commit_creds"}}, Sets: []string{}},
 	SwitchTaskNSEventID:          {ID: SwitchTaskNSEventID, ID32Bit: sys32undefined, Name: "switch_task_ns", Probes: []probe{{event: "switch_task_namespaces", attach: kprobe, fn: "trace_switch_task_namespaces"}}, Sets: []string{}},
 	MagicWriteEventID:            {ID: MagicWriteEventID, ID32Bit: sys32undefined, Name: "magic_write", Probes: []probe{}, Sets: []string{}},
+	CgroupAttachTaskEventID:      {ID: CgroupAttachTaskEventID, ID32Bit: sys32undefined, Name: "cgroup_attach_task", Probes: []probe{{event: "cgroup:cgroup_attach_task", attach: rawTracepoint, fn: "tracepoint__cgroup__cgroup_attach_task"}}, EssentialEvent: true, Sets: []string{}},
+	SecurityBprmCheckEventID:     {ID: SecurityBprmCheckEventID, ID32Bit: sys32undefined, Name: "security_bprm_check", Probes: []probe{{event: "security_bprm_check", attach: kprobe, fn: "trace_security_bprm_check"}}, Sets: []string{"default", "lsm_hooks"}},
+	SecurityFileOpenEventID:      {ID: SecurityFileOpenEventID, ID32Bit: sys32undefined, Name: "security_file_open", Probes: []probe{{event: "security_file_open", attach: kprobe, fn: "trace_security_file_open"}}, Sets: []string{"default", "lsm_hooks"}},
+	SecurityInodeUnlinkEventID:   {ID: SecurityInodeUnlinkEventID, ID32Bit: sys32undefined, Name: "security_inode_unlink", Probes: []probe{{event: "security_inode_unlink", attach: kprobe, fn: "trace_security_inode_unlink"}}, Sets: []string{"default", "lsm_hooks"}},
 	SecuritySocketCreateEventID:  {ID: SecuritySocketCreateEventID, ID32Bit: sys32undefined, Name: "security_socket_create", Probes: []probe{{event: "security_socket_create", attach: kprobe, fn: "trace_security_socket_create"}}, Sets: []string{"lsm_hooks"}},
 	SecuritySocketListenEventID:  {ID: SecuritySocketListenEventID, ID32Bit: sys32undefined, Name: "security_socket_listen", Probes: []probe{{event: "security_socket_listen", attach: kprobe, fn: "trace_security_socket_listen"}}, Sets: []string{"lsm_hooks"}},
 	SecuritySocketConnectEventID: {ID: SecuritySocketConnectEventID, ID32Bit: sys32undefined, Name: "security_socket_connect", Probes: []probe{{event: "security_socket_connect", attach: kprobe, fn: "trace_security_socket_connect"}}, Sets: []string{"lsm_hooks"}},
@@ -890,18 +894,20 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	EpollPwait2EventID:           {{Type: "int", Name: "fd"}, {Type: "struct epoll_event*", Name: "events"}, {Type: "int", Name: "maxevents"}, {Type: "const struct timespec*", Name: "timeout"}, {Type: "const sigset_t*", Name: "sigset"}},
 	SysEnterEventID:              {{Type: "int", Name: "syscall"}},
 	SysExitEventID:               {{Type: "int", Name: "syscall"}},
+	SchedProcessForkEventID:      {{Type: "int", Name: "parent_pid"}, {Type: "int", Name: "parent_ns_pid"}, {Type: "int", Name: "child_pid"}, {Type: "int", Name: "child_ns_pid"}},
+	SchedProcessExitEventID:      {},
 	DoExitEventID:                {},
 	CapCapableEventID:            {{Type: "int", Name: "cap"}, {Type: "int", Name: "syscall"}},
-	SecurityBprmCheckEventID:     {{Type: "const char*", Name: "pathname"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}},
-	SecurityFileOpenEventID:      {{Type: "const char*", Name: "pathname"}, {Type: "int", Name: "flags"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}},
-	SecurityInodeUnlinkEventID:   {{Type: "const char*", Name: "pathname"}},
 	VfsWriteEventID:              {{Type: "const char*", Name: "pathname"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}, {Type: "size_t", Name: "count"}, {Type: "off_t", Name: "pos"}},
 	VfsWritevEventID:             {{Type: "const char*", Name: "pathname"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}, {Type: "unsigned long", Name: "vlen"}, {Type: "off_t", Name: "pos"}},
 	MemProtAlertEventID:          {{Type: "alert_t", Name: "alert"}},
-	SchedProcessExitEventID:      {},
 	CommitCredsEventID:           {{Type: "slim_cred_t", Name: "old_cred"}, {Type: "slim_cred_t", Name: "new_cred"}, {Type: "int", Name: "syscall"}},
 	SwitchTaskNSEventID:          {{Type: "pid_t", Name: "pid"}, {Type: "u32", Name: "new_mnt"}, {Type: "u32", Name: "new_pid"}, {Type: "u32", Name: "new_uts"}, {Type: "u32", Name: "new_ipc"}, {Type: "u32", Name: "new_net"}, {Type: "u32", Name: "new_cgroup"}},
 	MagicWriteEventID:            {{Type: "const char*", Name: "pathname"}, {Type: "bytes", Name: "bytes"}},
+	CgroupAttachTaskEventID:      {{Type: "const char*", Name: "cgroup_path"}},
+	SecurityBprmCheckEventID:     {{Type: "const char*", Name: "pathname"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}},
+	SecurityFileOpenEventID:      {{Type: "const char*", Name: "pathname"}, {Type: "int", Name: "flags"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}},
+	SecurityInodeUnlinkEventID:   {{Type: "const char*", Name: "pathname"}},
 	SecuritySocketCreateEventID:  {{Type: "int", Name: "family"}, {Type: "int", Name: "type"}, {Type: "int", Name: "protocol"}, {Type: "int", Name: "kern"}},
 	SecuritySocketListenEventID:  {{Type: "int", Name: "sockfd"}, {Type: "struct sockaddr*", Name: "local_addr"}, {Type: "int", Name: "backlog"}},
 	SecuritySocketConnectEventID: {{Type: "int", Name: "sockfd"}, {Type: "struct sockaddr*", Name: "remote_addr"}},

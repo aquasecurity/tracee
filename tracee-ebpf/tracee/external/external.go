@@ -21,6 +21,7 @@ type Event struct {
 	PIDNS               int        `json:"pidNamespace"`
 	ProcessName         string     `json:"processName"`
 	HostName            string     `json:"hostName"`
+	ContainerID         string     `json:"containerId`
 	EventID             int        `json:"eventId,string"`
 	EventName           string     `json:"eventName"`
 	ArgsNum             int        `json:"argsNum"`
