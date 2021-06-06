@@ -85,6 +85,7 @@ func newEvent(ctx context, argMetas []external.ArgMeta, args []interface{}, Stac
 		PIDNS:               int(ctx.PidID),
 		ProcessName:         string(bytes.TrimRight(ctx.Comm[:], "\x00")),
 		HostName:            string(bytes.TrimRight(ctx.UtsName[:], "\x00")),
+		ContainerID:         string(bytes.TrimRight(ctx.ContID[:], "\x00")),
 		EventID:             int(ctx.EventID),
 		EventName:           EventsIDToEvent[int32(ctx.EventID)].Name,
 		ArgsNum:             int(ctx.Argnum),
@@ -114,13 +115,13 @@ func (p tableEventPrinter) Init() error { return nil }
 func (p tableEventPrinter) Preamble() {
 	if p.verbose {
 		if p.containerMode {
-			fmt.Fprintf(p.out, "%-14s %-16s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-20s %s", "TIME(s)", "UTS_NAME", "MNT_NS", "PID_NS", "UID", "COMM", "PID/host", "TID/host", "PPID/host", "RET", "EVENT", "ARGS")
+			fmt.Fprintf(p.out, "%-14s %-16s %-16s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-20s %s", "TIME(s)", "UTS_NAME", "CONTAINER_ID", "MNT_NS", "PID_NS", "UID", "COMM", "PID/host", "TID/host", "PPID/host", "RET", "EVENT", "ARGS")
 		} else {
-			fmt.Fprintf(p.out, "%-14s %-16s %-12s %-12s %-6s %-16s %-7s %-7s %-7s %-16s %-20s %s", "TIME(s)", "UTS_NAME", "MNT_NS", "PID_NS", "UID", "COMM", "PID", "TID", "PPID", "RET", "EVENT", "ARGS")
+			fmt.Fprintf(p.out, "%-14s %-16s %-16s %-12s %-12s %-6s %-16s %-7s %-7s %-7s %-16s %-20s %s", "TIME(s)", "UTS_NAME", "CONTAINER_ID", "MNT_NS", "PID_NS", "UID", "COMM", "PID", "TID", "PPID", "RET", "EVENT", "ARGS")
 		}
 	} else {
 		if p.containerMode {
-			fmt.Fprintf(p.out, "%-14s %-16s %-6s %-16s %-15s %-15s %-16s %-20s %s", "TIME(s)", "UTS_NAME", "UID", "COMM", "PID/host", "TID/host", "RET", "EVENT", "ARGS")
+			fmt.Fprintf(p.out, "%-14s %-16s %-16s %-6s %-16s %-15s %-15s %-16s %-20s %s", "TIME(s)", "UTS_NAME", "CONTAINER_ID", "UID", "COMM", "PID/host", "TID/host", "RET", "EVENT", "ARGS")
 		} else {
 			fmt.Fprintf(p.out, "%-14s %-6s %-16s %-7s %-7s %-16s %-20s %s", "TIME(s)", "UID", "COMM", "PID", "TID", "RET", "EVENT", "ARGS")
 		}
@@ -131,13 +132,13 @@ func (p tableEventPrinter) Preamble() {
 func (p tableEventPrinter) Print(event external.Event) {
 	if p.verbose {
 		if p.containerMode {
-			fmt.Fprintf(p.out, "%-14f %-16s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ", event.Timestamp, event.HostName, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ParentProcessID, event.ParentProcessID, event.ReturnValue, event.EventName)
+			fmt.Fprintf(p.out, "%-14f %-16s %-16s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ", event.Timestamp, event.HostName, event.ContainerID, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ParentProcessID, event.ParentProcessID, event.ReturnValue, event.EventName)
 		} else {
-			fmt.Fprintf(p.out, "%-14f %-16s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-20s ", event.Timestamp, event.HostName, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue, event.EventName)
+			fmt.Fprintf(p.out, "%-14f %-16s %-16s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-20s ", event.Timestamp, event.HostName, event.ContainerID, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue, event.EventName)
 		}
 	} else {
 		if p.containerMode {
-			fmt.Fprintf(p.out, "%-14f %-16s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-20s ", event.Timestamp, event.HostName, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ReturnValue, event.EventName)
+			fmt.Fprintf(p.out, "%-14f %-16s %-16s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-20s ", event.Timestamp, event.HostName, event.ContainerID, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ReturnValue, event.EventName)
 		} else {
 			fmt.Fprintf(p.out, "%-14f %-6d %-16s %-7d %-7d %-16d %-20s ", event.Timestamp, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ReturnValue, event.EventName)
 		}
