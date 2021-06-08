@@ -40,6 +40,7 @@
 #include <linux/ipv6.h>
 
 #include <uapi/linux/bpf.h>
+#include <linux/bpf.h>
 #include <linux/kconfig.h>
 #include <linux/version.h>
 
