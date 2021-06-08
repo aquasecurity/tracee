@@ -3,6 +3,7 @@ package helpers
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
@@ -15,6 +16,7 @@ type ConnectAddrData struct {
 	SinPort6 string `json:"sin6_port"`
 	SinAddr6 string `json:"sin6_addr"`
 }
+
 
 // GetTraceeArgumentByName fetches the argument in event with `Name` that matches argName
 func GetTraceeArgumentByName(event tracee.Event, argName string) (tracee.Argument, error) {
@@ -44,4 +46,34 @@ func GetAddrStructFromArg(addrArg tracee.Argument, connectData *ConnectAddrData)
 		return fmt.Errorf(err.Error())
 	}
 	return nil
+}
+
+func CheckNewCaps(oldCap int, newCap int) bool{
+
+	convertedOldCap64 := int64(oldCap)
+	convertednewCap64 := int64(newCap)
+	//Convert to bit mask
+	convertedOldCap := strconv.FormatInt(convertedOldCap64, 2)
+
+	arrayOldCap := strings.Split(convertedOldCap, "")
+
+	iterationCount := 64 - len(arrayOldCap)
+	for i := 0; i < iterationCount; i++  {
+		arrayOldCap = append(arrayOldCap,"0")
+	}
+	//Convert to bit mask
+	convertedNewCap := strconv.FormatInt(convertednewCap64, 2)
+	arrayNewCap := strings.Split(convertedNewCap, "")
+
+	iterationCount = 64 - len(arrayNewCap)
+	for i := 0; i < iterationCount; i++  {
+		arrayNewCap = append(arrayNewCap,"0")
+	}
+
+	for i := 0; i < 64; i++  {
+		if arrayOldCap[i] == "0" && arrayNewCap[i] == "1"{
+			return true
+		}
+	}
+	return false
 }
