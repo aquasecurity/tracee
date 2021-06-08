@@ -18,8 +18,13 @@ VERSION ?= $(if $(RELEASE_TAG),$(RELEASE_TAG),$(shell $(CMD_GIT) describe --tags
 OUT_DIR ?= dist
 GO_SRC := $(shell find . -type f -name '*.go')
 OUT_BIN := $(OUT_DIR)/tracee-ebpf
-BPF_SRC := tracee/tracee.bpf.c 
+BPF_SRC := tracee/tracee.bpf.c
+
+ifndef CORE
 OUT_BPF := $(OUT_DIR)/tracee.bpf.$(subst .,_,$(KERN_RELEASE)).$(subst .,_,$(VERSION)).o
+else
+OUT_BPF := $(OUT_DIR)/tracee.bpf.core.$(subst .,_,$(VERSION)).o
+endif
 BPF_HEADERS := 3rdparty/include
 BPF_BUNDLE := $(OUT_DIR)/tracee.bpf.tar.gz
 LIBBPF_SRC := 3rdparty/libbpf/src
@@ -32,6 +37,7 @@ DOCKER_BUILDER_KERN_BLD ?= $(if $(shell readlink $(KERN_BLD_PATH)),$(shell readl
 DOCKER_BUILDER_KERN_SRC ?= $(if $(shell readlink $(KERN_SRC_PATH)),$(shell readlink $(KERN_SRC_PATH)),$(KERN_SRC_PATH))
 # DOCKER_BUILDER_KERN_SRC_MNT is the kernel headers directory to mount into the docker builder container. DOCKER_BUILDER_KERN_SRC should usually be a descendent of this path.
 DOCKER_BUILDER_KERN_SRC_MNT ?= $(dir $(DOCKER_BUILDER_KERN_SRC))
+LINUX_VERSION_CODE := $(shell uname -r | awk '{split($$0,a,"."); split(a[3], b, "-"); print lshift(a[1], 16) + lshift(a[2],8) + b[1];}')
 
 $(OUT_DIR):
 	mkdir -p $@
@@ -43,7 +49,7 @@ go_env := GOOS=linux GOARCH=$(ARCH:x86_64=amd64) CC=$(CMD_CLANG) CGO_CFLAGS="-I 
 ifndef DOCKER
 $(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(filter-out *_test.go,$(GO_SRC)) $(BPF_BUNDLE) | $(OUT_DIR)
 	$(go_env) go build -v -o $(OUT_BIN) \
-	-ldflags "-X main.version=$(VERSION)"
+	-ldflags "-X main.version=$(VERSION) -X main.bpf_core=$(CORE)"
 else 
 $(OUT_BIN): $(DOCKER_BUILDER) | $(OUT_DIR)
 	$(call docker_builder_make,$@ VERSION=$(VERSION))
@@ -72,6 +78,7 @@ bpf: $(OUT_BPF)
 
 linux_arch := $(ARCH:x86_64=x86)
 ifndef DOCKER
+ifndef CORE
 $(OUT_DIR)/tracee.bpf.%.o: $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compile_tools)
 	@v=$$($(CMD_CLANG) --version); test $$(echo $${v#*version} | head -n1 | cut -d '.' -f1) -ge '9' || (echo 'required minimum clang version: 9' ; false)
 	$(CMD_CLANG) -S \
@@ -111,6 +118,23 @@ $(OUT_DIR)/tracee.bpf.%.o: $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compi
 	-$(CMD_LLVM_STRIP) -g $@
 	rm $(@:.o=.ll)
 else
+#docker no, CO:RE yes
+$(OUT_DIR)/tracee.bpf.core.%.o: $(BPF_SRC) $(LIBBPF_HEADERS) $(CMD_CLANG)
+	$(CMD_CLANG) \
+		-I $(LIBBPF_HEADERS)/bpf \
+		-I $(BPF_HEADERS) \
+		-I tracee/$(ARCH) \
+		-DCORE \
+		-D__TARGET_ARCH_$(linux_arch) \
+		-D__BPF_TRACING__ \
+		-D__VM_LINUX_H__ \
+		-D__KERNEL__ \
+		-DLINUX_VERSION_CODE=$(LINUX_VERSION_CODE) \
+		-target bpf \
+		-O2 -c -g -o $@ $<
+endif
+else
+#docker yes
 $(OUT_BPF): $(DOCKER_BUILDER) | $(OUT_DIR) 
 	$(call docker_builder_make,$@)
 endif
@@ -140,7 +164,7 @@ define docker_builder_make
 	-v $(abspath $(DOCKER_BUILDER_KERN_SRC_MNT)):$(DOCKER_BUILDER_KERN_SRC_MNT) \
 	-v $(abspath .):/tracee/tracee-ebpf \
 	-w /tracee/tracee-ebpf \
-	--entrypoint make $(DOCKER_BUILDER) KERN_BLD_PATH=$(DOCKER_BUILDER_KERN_BLD) KERN_SRC_PATH=$(DOCKER_BUILDER_KERN_SRC) $(1)
+	--entrypoint make $(DOCKER_BUILDER) KERN_BLD_PATH=$(DOCKER_BUILDER_KERN_BLD) CORE="$(CORE)" KERN_SRC_PATH=$(DOCKER_BUILDER_KERN_SRC) $(1)
 endef
 
 .PHONY: mostlyclean
