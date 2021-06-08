@@ -22,7 +22,6 @@ is_file_read(flags) {
     contains(lower(flags), "o_rdwr")
 }
 
-
 default is_elf_file(string) = false
 is_elf_file(string){
     decoded_string := base64.decode(string)
@@ -30,13 +29,11 @@ is_elf_file(string){
     lower(sub_string) == "elf"
 }
 
-
 k8s_api_server_ip(array) = res {
     environment_vars := array[_]
     contains(environment_vars, "KUBERNETES_SERVICE_HOST")
     res := { "ip_address": environment_vars[i] }
 }
-
 
 default elevate_to_root(eventName) = false
 elevate_to_root(eventName) {

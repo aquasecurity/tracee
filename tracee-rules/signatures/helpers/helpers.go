@@ -17,7 +17,6 @@ type ConnectAddrData struct {
 	SinAddr6 string `json:"sin6_addr"`
 }
 
-
 // GetTraceeArgumentByName fetches the argument in event with `Name` that matches argName
 func GetTraceeArgumentByName(event tracee.Event, argName string) (tracee.Argument, error) {
 	for _, arg := range event.Args {
