@@ -1172,38 +1172,47 @@ static __always_inline int save_path_to_str_buf(buf_t *string_p, const struct pa
     int zero = 0;
     struct dentry *dentry = f_path.dentry;
     struct vfsmount *vfsmnt = f_path.mnt;
+    struct mount *mnt_parent_p;
+
     struct mount *mnt_p = real_mount(vfsmnt);
-    struct mount mnt;
-    bpf_probe_read(&mnt, sizeof(struct mount), mnt_p);
+    bpf_probe_read(&mnt_parent_p, sizeof(struct mount*), &mnt_p->mnt_parent);
 
     u32 buf_off = (MAX_PERCPU_BUFSIZE >> 1);
+    struct dentry *mnt_root;
+    struct dentry *d_parent;
+    struct qstr d_name;
+    unsigned int len;
+    unsigned int off;
+    int sz;
 
     #pragma unroll
     // As bpf loops are not allowed and max instructions number is 4096, path components is limited to 30
     for (int i = 0; i < 30; i++) {
-        struct dentry *mnt_root = get_mnt_root_ptr_from_vfsmnt(vfsmnt);
-        struct dentry *d_parent = get_d_parent_ptr_from_dentry(dentry);
+        mnt_root = get_mnt_root_ptr_from_vfsmnt(vfsmnt);
+        d_parent = get_d_parent_ptr_from_dentry(dentry);
         if (dentry == mnt_root || dentry == d_parent) {
             if (dentry != mnt_root) {
                 // We reached root, but not mount root - escaped?
                 break;
             }
-            if (mnt_p != mnt.mnt_parent) {
+            if (mnt_p != mnt_parent_p) {
                 // We reached root, but not global root - continue with mount point path
-                dentry = mnt.mnt_mountpoint;
-                bpf_probe_read(&mnt, sizeof(struct mount), mnt.mnt_parent);
-                vfsmnt = &mnt.mnt;
+                bpf_probe_read(&dentry, sizeof(struct dentry*), &mnt_p->mnt_mountpoint);
+                bpf_probe_read(&mnt_p, sizeof(struct mount*), &mnt_p->mnt_parent);
+                bpf_probe_read(&mnt_parent_p, sizeof(struct mount*), &mnt_p->mnt_parent);
+                bpf_probe_read(&vfsmnt, sizeof(struct vfsmount*), (const void*)&mnt_p->mnt);
                 continue;
             }
             // Global root - path fully parsed
             break;
         }
         // Add this dentry name to path
-        struct qstr d_name = get_d_name_from_dentry(dentry);
-        unsigned int len = (d_name.len+1) & (MAX_STRING_SIZE-1);
-        unsigned int off = buf_off - len;
+        d_name = get_d_name_from_dentry(dentry);
+        len = (d_name.len+1) & (MAX_STRING_SIZE-1);
+        off = buf_off - len;
+
         // Is string buffer big enough for dentry name?
-        int sz = 0;
+        sz = 0;
         if (off <= buf_off) { // verify no wrap occured
             len = len & ((MAX_PERCPU_BUFSIZE >> 1)-1);
             sz = bpf_probe_read_str(&(string_p->buf[off & ((MAX_PERCPU_BUFSIZE >> 1)-1)]), len, (void *)d_name.name);
@@ -1224,7 +1233,7 @@ static __always_inline int save_path_to_str_buf(buf_t *string_p, const struct pa
     if (buf_off == (MAX_PERCPU_BUFSIZE >> 1)) {
         // memfd files have no path in the filesystem -> extract their name
         buf_off = 0;
-        struct qstr d_name = get_d_name_from_dentry(dentry);
+        d_name = get_d_name_from_dentry(dentry);
         bpf_probe_read_str(&(string_p->buf[0]), MAX_STRING_SIZE, (void *)d_name.name);
     } else {
         // Add leading slash
