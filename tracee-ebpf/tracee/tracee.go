@@ -18,8 +18,9 @@ import (
 	"sync/atomic"
 	"syscall"
 
-	bpf "github.com/aquasecurity/tracee/libbpfgo"
-	"github.com/aquasecurity/tracee/libbpfgo/helpers"
+	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/helpers"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
 )
 
 // Config is a struct containing user defined configuration of tracee
@@ -343,17 +344,20 @@ func New(cfg Config) (*Tracee, error) {
 	}
 
 	if err := os.MkdirAll(t.config.Capture.OutputPath, 0755); err != nil {
+		t.Close()
 		return nil, fmt.Errorf("error creating output path: %v", err)
 	}
 	// Todo: tracee.pid should be in a known constant location. /var/run is probably a better choice
 	err = ioutil.WriteFile(path.Join(t.config.Capture.OutputPath, "tracee.pid"), []byte(strconv.Itoa(os.Getpid())+"\n"), 0640)
 	if err != nil {
+		t.Close()
 		return nil, fmt.Errorf("error creating readiness file: %v", err)
 	}
 
 	// Get refernce to stack trace addresses map
 	StackAddressesMap, err := t.bpfModule.GetMap("stack_addresses")
 	if err != nil {
+		t.Close()
 		return nil, fmt.Errorf("error getting acces to 'stack_addresses' eBPF Map %v", err)
 	}
 	t.StackAddressesMap = StackAddressesMap
@@ -1205,7 +1209,7 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 		}
 	}
 	switch ctx.EventID {
-	case SysEnterEventID, SysExitEventID, CapCapableEventID:
+	case SysEnterEventID, SysExitEventID, CapCapableEventID, CommitCredsEventID:
 		//show syscall name instead of id
 		if id, isInt32 := args[t.EncParamName[ctx.EventID%2]["syscall"]].(int32); isInt32 {
 			if event, isKnown := EventsIDToEvent[id]; isKnown {
@@ -1691,6 +1695,10 @@ func readArgFromBuff(dataBuff io.Reader) (argTag, interface{}, error) {
 		res, err = readSockaddrFromBuff(dataBuff)
 	case alertT:
 		var data alert
+		err = binary.Read(dataBuff, binary.LittleEndian, &data)
+		res = data
+	case credT:
+		var data external.SlimCred
 		err = binary.Read(dataBuff, binary.LittleEndian, &data)
 		res = data
 	case strT:

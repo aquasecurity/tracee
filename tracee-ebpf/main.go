@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aquasecurity/tracee/libbpfgo/helpers"
+	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
 	"github.com/syndtr/gocapability/capability"
 	cli "github.com/urfave/cli/v2"
@@ -905,7 +905,11 @@ func missingKernelConfigOptions() []string {
 	}
 
 	kConfig := helpers.KernelConfig{}
-	kConfig.InitKernelConfig()
+	err := kConfig.InitKernelConfig()
+	if err != nil {
+		// we were not able to get kernel config - ignore the check and try to continue
+		return []string{}
+	}
 
 	missing := []string{}
 

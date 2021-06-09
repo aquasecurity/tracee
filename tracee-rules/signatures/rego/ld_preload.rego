@@ -18,6 +18,10 @@ eventSelectors := [
     {
         "source": "tracee",
         "name": "execve"
+    },
+    {
+     "source": "tracee",
+     "name": "security_file_open"
     }
 ]
 
@@ -40,4 +44,15 @@ tracee_match {
 
     envvar := envp[_]
     startswith(envvar, "LD_LIBRARY_PATH")
+}
+
+tracee_match {
+    input.eventName == "security_file_open"
+    flags = helpers.get_tracee_argument("flags")
+
+    helpers.is_file_write(flags)
+
+    pathname := helpers.get_tracee_argument("pathname")
+
+    pathname == "/etc/ld.so.preload"
 }

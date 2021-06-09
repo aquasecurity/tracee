@@ -40,6 +40,7 @@
 #include <linux/ipv6.h>
 
 #include <uapi/linux/bpf.h>
+#include <linux/bpf.h>
 #include <linux/kconfig.h>
 #include <linux/version.h>
 
@@ -101,6 +102,7 @@
 #define ALERT_T       13UL
 #define BYTES_T       14UL
 #define U16_T         15UL
+#define CRED_T        16UL
 #define TYPE_MAX      255UL
 
 #define TAG_NONE           0UL
@@ -118,6 +120,11 @@
 #define SYS_EXIT_GROUP        231
 #define SYS_OPENAT            257
 #define SYS_EXECVEAT          322
+#define SYSCALL_CONNECT       42
+#define SYSCALL_ACCEPT        43
+#define SYSCALL_ACCEPT4       288
+#define SYSCALL_LISTEN        50
+#define SYSCALL_BIND          49
 #elif defined(bpf_target_arm64)
 #define SYS_OPEN              1000 // undefined in arm64
 #define SYS_MMAP              222
@@ -131,6 +138,11 @@
 #define SYS_EXIT_GROUP        94
 #define SYS_OPENAT            56
 #define SYS_EXECVEAT          281
+#define SYSCALL_CONNECT       203
+#define SYSCALL_ACCEPT        202
+#define SYSCALL_ACCEPT4       242
+#define SYSCALL_LISTEN        201
+#define SYSCALL_BIND          200
 #endif
 
 #define RAW_SYS_ENTER           1000
@@ -153,7 +165,9 @@
 #define SECURITY_SOCKET_ACCEPT  1017
 #define SECURITY_SOCKET_BIND    1018
 #define SECURITY_SB_MOUNT       1019
-#define MAX_EVENT_ID            1020
+#define SECURITY_BPF            1020
+#define SECURITY_BPF_MAP        1021
+#define MAX_EVENT_ID            1022
 
 #define CONFIG_SHOW_SYSCALL         1
 #define CONFIG_EXEC_ENV             2
@@ -308,6 +322,23 @@ typedef struct network_connection_v6 {
     u16 remote_port;
 } net_conn_v6_t;
 
+// For a good summary about capabilities, see https://lwn.net/Articles/636533/
+typedef struct slim_cred {
+    uid_t  uid;             /* real UID of the task */
+    gid_t  gid;             /* real GID of the task */
+    uid_t  suid;            /* saved UID of the task */
+    gid_t  sgid;            /* saved GID of the task */
+    uid_t  euid;            /* effective UID of the task */
+    gid_t  egid;            /* effective GID of the task */
+    uid_t  fsuid;           /* UID for VFS ops */
+    gid_t  fsgid;           /* GID for VFS ops */
+    u64    cap_inheritable; /* caps our children can inherit */
+    u64    cap_permitted;   /* caps we're permitted */
+    u64    cap_effective;   /* caps we can actually use */
+    u64    cap_bset;        /* capability bounding set */
+    u64    cap_ambient;     /* Ambient capability set */
+} slim_cred_t;
+
 /*================================ KERNEL STRUCTS =============================*/
 
 struct mnt_namespace {
@@ -344,6 +375,7 @@ BPF_HASH(bin_args_map, u64, bin_args_t);                // Persist args for send
 BPF_HASH(sys_32_to_64_map, u32, u32);                   // Map 32bit syscalls numbers to 64bit syscalls numbers
 BPF_HASH(params_types_map, u32, u64);                   // Encoded parameters types for event
 BPF_HASH(params_names_map, u32, u64);                   // Encoded parameters names for event
+BPF_HASH(sockfd_map, u32, u32);                         // Persist sockfd from syscalls to be used in the corresponding lsm hooks
 BPF_ARRAY(file_filter, path_filter_t, 3);               // Used to filter vfs_write events
 BPF_ARRAY(string_store, path_filter_t, 1);              // Store strings from userspace
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);             // Percpu global buffer variables
@@ -1388,6 +1420,40 @@ static __always_inline int del_retval(u32 event_id)
     return 0;
 }
 
+static __always_inline int save_sockfd(u32 sockfd)
+{
+    u32 pid = bpf_get_current_pid_tgid();
+
+    bpf_map_update_elem(&sockfd_map, &pid, &sockfd, BPF_ANY);
+
+    return 0;
+}
+
+static __always_inline int load_sockfd(u32 *sockfd)
+{
+    u32 pid = bpf_get_current_pid_tgid();
+
+    u32 *saved_sockfd = bpf_map_lookup_elem(&sockfd_map, &pid);
+    if (saved_sockfd == 0) {
+        // missed entry or not traced
+        return -1;
+    }
+
+    *sockfd = *saved_sockfd;
+    bpf_map_delete_elem(&sockfd_map, &pid);
+
+    return 0;
+}
+
+static __always_inline int del_sockfd()
+{
+    u32 pid = bpf_get_current_pid_tgid();
+
+    bpf_map_delete_elem(&sockfd_map, &pid);
+
+    return 0;
+}
+
 #define DEC_ARG(n, enc_arg) ((enc_arg>>(8*n))&0xFF)
 
 static __always_inline int save_args_to_submit_buf(u64 types, u64 tags, args_t *args)
@@ -1672,6 +1738,10 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
         // We passed all filters (in should_trace()) - add this pid to traced pids set
         bpf_map_update_elem(&traced_pids_map, &pid, &pid, BPF_ANY);
     }
+    else if (id == SYSCALL_CONNECT || id == SYSCALL_ACCEPT || id == SYSCALL_ACCEPT4 || id == SYSCALL_BIND || id == SYSCALL_LISTEN) {
+        u32 sockfd = args_tmp.args[0];
+        save_sockfd(sockfd);
+    }
 
     if (event_chosen(RAW_SYS_ENTER)) {
         buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
@@ -1736,6 +1806,9 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
         if (get_config(CONFIG_NEW_PID_FILTER)) {
             bpf_map_update_elem(&new_pids_map, &pid, &pid, BPF_ANY);
         }
+    }
+    else if (id == SYSCALL_CONNECT || id == SYSCALL_ACCEPT || id == SYSCALL_ACCEPT4 || id == SYSCALL_BIND || id == SYSCALL_LISTEN) {
+        del_sockfd();
     }
 
     if (event_chosen(RAW_SYS_EXIT)) {
@@ -2102,7 +2175,6 @@ int BPF_KPROBE(trace_commit_creds)
         return 0;
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    u8 argnum = 0;
     context_t context = init_and_save_context(ctx, submit_p, COMMIT_CREDS, 2 /*argnum*/, 0 /*ret*/);
 
     struct cred *new = (struct cred *)PT_REGS_PARM1(ctx);
@@ -2110,51 +2182,85 @@ int BPF_KPROBE(trace_commit_creds)
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
     struct cred *old = (struct cred *)READ_KERN(task->real_cred);
 
-    kuid_t old_euid = READ_KERN(old->euid);
-    kuid_t new_euid = READ_KERN(new->euid);
-    kgid_t old_egid = READ_KERN(old->egid);
-    kgid_t new_egid = READ_KERN(new->egid);
-    kuid_t old_fsuid = READ_KERN(old->fsuid);
-    kuid_t new_fsuid = READ_KERN(new->fsuid);
-    kernel_cap_t old_cap_eff = READ_KERN(old->cap_effective);
-    kernel_cap_t new_cap_eff = READ_KERN(new->cap_effective);
+    slim_cred_t old_slim = {0};
+    slim_cred_t new_slim = {0};
+
+    old_slim.uid = READ_KERN(old->uid.val);
+    old_slim.gid = READ_KERN(old->gid.val);
+    old_slim.suid = READ_KERN(old->suid.val);
+    old_slim.sgid = READ_KERN(old->sgid.val);
+    old_slim.euid = READ_KERN(old->euid.val);
+    old_slim.egid = READ_KERN(old->egid.val);
+    old_slim.fsuid = READ_KERN(old->fsuid.val);
+    old_slim.fsgid = READ_KERN(old->fsgid.val);
+
+    new_slim.uid = READ_KERN(new->uid.val);
+    new_slim.gid = READ_KERN(new->gid.val);
+    new_slim.suid = READ_KERN(new->suid.val);
+    new_slim.sgid = READ_KERN(new->sgid.val);
+    new_slim.euid = READ_KERN(new->euid.val);
+    new_slim.egid = READ_KERN(new->egid.val);
+    new_slim.fsuid = READ_KERN(new->fsuid.val);
+    new_slim.fsgid = READ_KERN(new->fsgid.val);
 
     // Currently (2021), there are ~40 capabilities in the Linux kernel which are stored in a u32 array of length 2.
     // This might change in the (not so near) future as more capabilities will be added.
     // For now, we use u64 to store this array in one piece
-    u64 old_cap_eff_arr = old_cap_eff.cap[1];
-    old_cap_eff_arr = (old_cap_eff_arr << 32) + old_cap_eff.cap[0];
-    u64 new_cap_eff_arr = new_cap_eff.cap[1];
-    new_cap_eff_arr = (new_cap_eff_arr << 32) + new_cap_eff.cap[0];
+    kernel_cap_t caps;
+    caps = READ_KERN(old->cap_inheritable);
+    old_slim.cap_inheritable = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
+    caps = READ_KERN(old->cap_permitted);
+    old_slim.cap_permitted = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
+    caps = READ_KERN(old->cap_effective);
+    old_slim.cap_effective = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
+    caps = READ_KERN(old->cap_bset);
+    old_slim.cap_bset = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
+    caps = READ_KERN(old->cap_ambient);
+    old_slim.cap_ambient = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
+
+    caps = READ_KERN(new->cap_inheritable);
+    new_slim.cap_inheritable = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
+    caps = READ_KERN(new->cap_permitted);
+    new_slim.cap_permitted = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
+    caps = READ_KERN(new->cap_effective);
+    new_slim.cap_effective = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
+    caps = READ_KERN(new->cap_bset);
+    new_slim.cap_bset = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
+    caps = READ_KERN(new->cap_ambient);
+    new_slim.cap_ambient = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
 
     u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
     if (!tags) {
         return -1;
     }
 
-    if (old_euid.val != new_euid.val) {
-        argnum += save_to_submit_buf(submit_p, (void*)&old_euid.val, sizeof(int), INT_T, DEC_ARG(0, *tags));
-        argnum += save_to_submit_buf(submit_p, (void*)&new_euid.val, sizeof(int), INT_T, DEC_ARG(1, *tags));
-    }
+    save_to_submit_buf(submit_p, (void*)&old_slim, sizeof(slim_cred_t), CRED_T, DEC_ARG(0, *tags));
+    save_to_submit_buf(submit_p, (void*)&new_slim, sizeof(slim_cred_t), CRED_T, DEC_ARG(1, *tags));
 
-    if (old_egid.val != new_egid.val) {
-        argnum += save_to_submit_buf(submit_p, (void*)&old_egid.val, sizeof(int), INT_T, DEC_ARG(2, *tags));
-        argnum += save_to_submit_buf(submit_p, (void*)&new_egid.val, sizeof(int), INT_T, DEC_ARG(3, *tags));
-    }
 
-    if (old_fsuid.val != new_fsuid.val) {
-        argnum += save_to_submit_buf(submit_p, (void*)&old_fsuid.val, sizeof(int), INT_T, DEC_ARG(4, *tags));
-        argnum += save_to_submit_buf(submit_p, (void*)&new_fsuid.val, sizeof(int), INT_T, DEC_ARG(5, *tags));
-    }
+    if ((old_slim.uid != new_slim.uid) ||
+        (old_slim.gid != new_slim.gid) ||
+        (old_slim.suid != new_slim.suid) ||
+        (old_slim.sgid != new_slim.sgid) ||
+        (old_slim.euid != new_slim.euid) ||
+        (old_slim.egid != new_slim.egid) ||
+        (old_slim.fsuid != new_slim.fsuid) ||
+        (old_slim.fsgid != new_slim.fsgid) ||
+        (old_slim.cap_inheritable != new_slim.cap_inheritable) ||
+        (old_slim.cap_permitted != new_slim.cap_permitted) ||
+        (old_slim.cap_effective != new_slim.cap_effective) ||
+        (old_slim.cap_bset != new_slim.cap_bset) ||
+        (old_slim.cap_ambient != new_slim.cap_ambient)) {
 
-    if (old_cap_eff_arr != new_cap_eff_arr) {
-        argnum += save_to_submit_buf(submit_p, (void*)&old_cap_eff_arr, sizeof(unsigned long), ULONG_T, DEC_ARG(6, *tags));
-        argnum += save_to_submit_buf(submit_p, (void*)&new_cap_eff_arr, sizeof(unsigned long), ULONG_T, DEC_ARG(7, *tags));
-    }
+        if (get_config(CONFIG_SHOW_SYSCALL)) {
+            int syscall_nr = get_syscall_ev_id_from_regs();
+            if (syscall_nr >= 0) {
+                context.argnum++;
+                save_context_to_buf(submit_p, (void*)&context);
+                save_to_submit_buf(submit_p, (void*)&syscall_nr, sizeof(int), INT_T, DEC_ARG(2, *tags));
+            }
+        }
 
-    if (argnum) {
-        context.argnum = argnum;
-        save_context_to_buf(submit_p, (void*)&context);
         events_perf_submit(ctx);
     }
 
@@ -2339,13 +2445,18 @@ int BPF_KPROBE(trace_security_socket_listen)
         return 0;
     }
 
-    context_t context = init_and_save_context(ctx, submit_p, SECURITY_SOCKET_LISTEN, 2 /*argnum*/, 0 /*ret*/);
+    u32 sockfd = -1;
+    load_sockfd(&sockfd);
+
+    context_t context = init_and_save_context(ctx, submit_p, SECURITY_SOCKET_LISTEN, 3 /*argnum*/, 0 /*ret*/);
 
     // getting event tags
     u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
     if (!tags) {
         return -1;
     }
+
+    save_to_submit_buf(submit_p, (void *)&sockfd, sizeof(u32), INT_T, DEC_ARG(0, *tags));
 
     if ( family == AF_INET ){
 
@@ -2358,7 +2469,7 @@ int BPF_KPROBE(trace_security_socket_listen)
         local.sin_port = net_details.local_port;
         local.sin_addr.s_addr = net_details.local_address;
 
-        save_to_submit_buf(submit_p, (void *)&local, sizeof(struct sockaddr_in), SOCKADDR_T, DEC_ARG(0, *tags));
+        save_to_submit_buf(submit_p, (void *)&local, sizeof(struct sockaddr_in), SOCKADDR_T, DEC_ARG(1, *tags));
 
     }
     else if ( family == AF_INET6 ){
@@ -2373,10 +2484,10 @@ int BPF_KPROBE(trace_security_socket_listen)
         local.sin6_addr = net_details.local_address;
         local.sin6_scope_id = 0;
 
-        save_to_submit_buf(submit_p, (void *)&local, sizeof(struct sockaddr_in6), SOCKADDR_T, DEC_ARG(0, *tags));
+        save_to_submit_buf(submit_p, (void *)&local, sizeof(struct sockaddr_in6), SOCKADDR_T, DEC_ARG(1, *tags));
     }
 
-    save_to_submit_buf(submit_p, (void *)&backlog, sizeof(int), INT_T, DEC_ARG(1, *tags));
+    save_to_submit_buf(submit_p, (void *)&backlog, sizeof(int), INT_T, DEC_ARG(2, *tags));
 
     events_perf_submit(ctx);
     return 0;
@@ -2404,7 +2515,10 @@ int BPF_KPROBE(trace_security_socket_connect)
         return 0;
     }
 
-    context_t context = init_and_save_context(ctx, submit_p, SECURITY_SOCKET_CONNECT, 1 /*argnum*/, 0 /*ret*/);
+    u32 sockfd = -1;
+    load_sockfd(&sockfd);
+
+    context_t context = init_and_save_context(ctx, submit_p, SECURITY_SOCKET_CONNECT, 2 /*argnum*/, 0 /*ret*/);
 
     // getting event tags
     u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
@@ -2412,14 +2526,16 @@ int BPF_KPROBE(trace_security_socket_connect)
         return -1;
     }
 
+    save_to_submit_buf(submit_p, (void *)&sockfd, sizeof(u32), INT_T, DEC_ARG(0, *tags));
+
     if (sa_fam == AF_INET) {
         // saving to submit buffer
-        save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in), SOCKADDR_T, DEC_ARG(0, *tags));
+        save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in), SOCKADDR_T, DEC_ARG(1, *tags));
 
     }
     else if (sa_fam == AF_INET6) {
         // saving to submit buffer
-        save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in6), SOCKADDR_T, DEC_ARG(0, *tags));
+        save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in6), SOCKADDR_T, DEC_ARG(1, *tags));
     }
 
     events_perf_submit(ctx);
@@ -2445,13 +2561,18 @@ int BPF_KPROBE(trace_security_socket_accept)
         return 0;
     }
 
-    context_t context = init_and_save_context(ctx, submit_p, SECURITY_SOCKET_ACCEPT, 1 /*argnum*/, 0 /*ret*/);
+    u32 sockfd = -1;
+    load_sockfd(&sockfd);
+
+    context_t context = init_and_save_context(ctx, submit_p, SECURITY_SOCKET_ACCEPT, 2 /*argnum*/, 0 /*ret*/);
 
     // getting event tags
     u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
     if (!tags) {
         return -1;
     }
+
+    save_to_submit_buf(submit_p, (void *)&sockfd, sizeof(u32), INT_T, DEC_ARG(0, *tags));
 
     if ( family == AF_INET ){
 
@@ -2464,7 +2585,7 @@ int BPF_KPROBE(trace_security_socket_accept)
         local.sin_port = net_details.local_port;
         local.sin_addr.s_addr = net_details.local_address;
 
-        save_to_submit_buf(submit_p, (void *)&local, sizeof(struct sockaddr_in), SOCKADDR_T, DEC_ARG(0, *tags));
+        save_to_submit_buf(submit_p, (void *)&local, sizeof(struct sockaddr_in), SOCKADDR_T, DEC_ARG(1, *tags));
 
     }
     else if ( family == AF_INET6 ){
@@ -2479,7 +2600,7 @@ int BPF_KPROBE(trace_security_socket_accept)
         local.sin6_addr = net_details.local_address;
         local.sin6_scope_id = 0;
 
-        save_to_submit_buf(submit_p, (void *)&local, sizeof(struct sockaddr_in6), SOCKADDR_T, DEC_ARG(0, *tags));
+        save_to_submit_buf(submit_p, (void *)&local, sizeof(struct sockaddr_in6), SOCKADDR_T, DEC_ARG(1, *tags));
     }
 
     events_perf_submit(ctx);
@@ -2508,7 +2629,10 @@ int BPF_KPROBE(trace_security_socket_bind)
         return 0;
     }
 
-    context_t context = init_and_save_context(ctx, submit_p, SECURITY_SOCKET_BIND, 1 /*argnum*/, 0 /*ret*/);
+    u32 sockfd = -1;
+    load_sockfd(&sockfd);
+
+    context_t context = init_and_save_context(ctx, submit_p, SECURITY_SOCKET_BIND, 2 /*argnum*/, 0 /*ret*/);
 
     // getting event tags
     u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
@@ -2516,14 +2640,16 @@ int BPF_KPROBE(trace_security_socket_bind)
         return -1;
     }
 
+    save_to_submit_buf(submit_p, (void *)&sockfd, sizeof(u32), INT_T, DEC_ARG(0, *tags));
+
     if (sa_fam == AF_INET) {
         // saving to submit buffer
-        save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in), SOCKADDR_T, DEC_ARG(0, *tags));
+        save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in), SOCKADDR_T, DEC_ARG(1, *tags));
 
     }
     else if (sa_fam == AF_INET6) {
         // saving to submit buffer
-        save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in6), SOCKADDR_T, DEC_ARG(0, *tags));
+        save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in6), SOCKADDR_T, DEC_ARG(1, *tags));
     }
 
     events_perf_submit(ctx);
@@ -3030,6 +3156,62 @@ int BPF_KPROBE(trace_mprotect_alert)
         }
     }
 
+    return 0;
+}
+
+SEC("kprobe/security_bpf")
+int BPF_KPROBE(trace_security_bpf)
+{
+    if (!should_trace())
+        return 0;
+
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
+    if (submit_p == NULL)
+        return 0;
+
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+
+    context_t context = init_and_save_context(ctx, submit_p, SECURITY_BPF, 1 /*argnum*/, 0 /*ret*/);
+
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
+    if (!tags)
+        return -1;
+
+    int cmd = (int)PT_REGS_PARM1(ctx);
+
+    /* 1st argument == cmd (int) */
+    save_to_submit_buf(submit_p, (void *)&cmd, sizeof(int), INT_T, DEC_ARG(0, *tags));
+
+    events_perf_submit(ctx);
+    return 0;
+};
+
+SEC("kprobe/security_bpf_map")
+int BPF_KPROBE(trace_security_bpf_map)
+{
+    if (!should_trace())
+        return 0;
+
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
+    if (submit_p == NULL)
+        return 0;
+
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+
+    context_t context = init_and_save_context(ctx, submit_p, SECURITY_BPF_MAP, 2 /*argnum*/, 0 /*ret*/);
+
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
+    if (!tags)
+        return -1;
+
+    struct bpf_map *map = (struct bpf_map *)PT_REGS_PARM1(ctx);
+
+    /* 1st argument == map_id (u32) */
+    save_to_submit_buf(submit_p, (void *)&map->id, sizeof(int), UINT_T, DEC_ARG(0, *tags));
+    /* 2nd argument == map_name (const char *) */
+    save_str_to_buf(submit_p, (void *)&map->name, DEC_ARG(1, *tags));
+
+    events_perf_submit(ctx);
     return 0;
 }
 
