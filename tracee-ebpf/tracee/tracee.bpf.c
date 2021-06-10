@@ -1,5 +1,13 @@
+
 // +build ignore
 // ^^ this is a golang build tag meant to exclude this C file from compilation by the CGO compiler
+
+/* 
+Note: This file is licenced differently from the rest of the project
+SPDX-License-Identifier: GPL-2.0
+Copyright (C) Aqua Security inc.
+*/
+
 
 /* In Linux 5.4 asm_inline was introduced, but it's not supported by clang.
  * Redefine it to just asm to enable successful compilation.
