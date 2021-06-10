@@ -1,3 +1,9 @@
+/* 
+Note: This file is licenced differently from the rest of the project
+SPDX-License-Identifier: GPL-2.0
+Copyright (C) Aqua Security inc.
+*/
+
 // +build ignore
 // ^^ this is a golang build tag meant to exclude this C file from compilation by the CGO compiler
 
