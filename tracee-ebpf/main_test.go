@@ -4,6 +4,8 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
 	"github.com/stretchr/testify/assert"
 )
@@ -1133,16 +1135,37 @@ func TestPrepareCapture(t *testing.T) {
 			},
 			expectedError: nil,
 		},
+		{
+			testName:     "capture exec and enable profile",
+			captureSlice: []string{"exec", "profile"},
+			expectedCapture: tracee.CaptureConfig{
+				OutputPath: "/tmp/tracee/out",
+				Exec:       true,
+				Profile:    true,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:     "just enable profile",
+			captureSlice: []string{"profile"},
+			expectedCapture: tracee.CaptureConfig{
+				OutputPath: "/tmp/tracee/out",
+				Exec:       true,
+				Profile:    true,
+			},
+			expectedError: nil,
+		},
 	}
-	for _, testcase := range testCases {
-		t.Run(testcase.testName, func(t *testing.T) {
-			capture, err := prepareCapture(testcase.captureSlice)
-			assert.Equal(t, testcase.expectedCapture.FileWrite, capture.FileWrite)
-			assert.Equal(t, testcase.expectedCapture.FilterFileWrite, capture.FilterFileWrite)
-			assert.Equal(t, testcase.expectedCapture.Exec, capture.Exec)
-			assert.Equal(t, testcase.expectedCapture.Mem, capture.Mem)
-			assert.Equal(t, testcase.expectedCapture.OutputPath, capture.OutputPath)
-			assert.Equal(t, testcase.expectedError, err)
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
+			capture, err := prepareCapture(tc.captureSlice)
+			if tc.expectedError == nil {
+				require.NoError(t, err)
+				assert.Equal(t, tc.expectedCapture, capture, tc.testName)
+			} else {
+				require.Equal(t, tc.expectedError, err, tc.testName)
+				assert.Empty(t, capture, tc.testName)
+			}
 		})
 	}
 }

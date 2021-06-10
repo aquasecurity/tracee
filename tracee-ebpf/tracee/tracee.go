@@ -2,7 +2,10 @@ package tracee
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/binary"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -99,6 +102,7 @@ type CaptureConfig struct {
 	FilterFileWrite []string
 	Exec            bool
 	Mem             bool
+	Profile         bool
 }
 
 type OutputConfig struct {
@@ -174,6 +178,12 @@ func (tc Config) Validate() error {
 	return nil
 }
 
+type profilerInfo struct {
+	Times            int64  `json:"times,omitempty"`
+	FileHash         string `json:"file_hash,omitempty"`
+	FirstExecutionTs uint64 `json:"-"`
+}
+
 // Tracee traces system calls and system events using eBPF
 type Tracee struct {
 	config            Config
@@ -188,6 +198,7 @@ type Tracee struct {
 	printer           eventPrinter
 	stats             statsStore
 	capturedFiles     map[string]int64
+	profiledFiles     map[string]profilerInfo
 	writtenFiles      map[string]string
 	mntNsFirstPid     map[uint32]uint32
 	DecParamName      [2]map[argTag]string
@@ -316,6 +327,7 @@ func New(cfg Config) (*Tracee, error) {
 
 	t.writtenFiles = make(map[string]string)
 	t.capturedFiles = make(map[string]int64)
+	t.profiledFiles = make(map[string]profilerInfo)
 	//set a default value for config.maxPidsCache
 	if t.config.maxPidsCache == 0 {
 		t.config.maxPidsCache = 5
@@ -865,6 +877,18 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 	return nil
 }
 
+func (t *Tracee) writeProfilerStats(wr io.Writer) error {
+	b, err := json.MarshalIndent(t.profiledFiles, "", "  ")
+	if err != nil {
+		return err
+	}
+	_, err = wr.Write(b)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Run starts the trace. it will run until interrupted
 func (t *Tracee) Run() error {
 	sig := make(chan os.Signal, 1)
@@ -880,6 +904,21 @@ func (t *Tracee) Run() error {
 	t.eventsPerfMap.Stop()
 	t.fileWrPerfMap.Stop()
 	t.printer.Epilogue(t.stats)
+
+	// capture profiler stats
+	if t.config.Capture.Profile {
+		f, err := os.Create(filepath.Join(t.config.Capture.OutputPath, "tracee.profile"))
+		if err != nil {
+			return fmt.Errorf("unable to open tracee.profile for writing: %s", err)
+		}
+
+		// update SHA for all captured files
+		t.updateFileSHA()
+
+		if err := t.writeProfilerStats(f); err != nil {
+			return fmt.Errorf("unable to write profiler output: %s", err)
+		}
+	}
 
 	// record index of written files
 	if t.config.Capture.FileWrite {
@@ -1089,13 +1128,21 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 					//TODO: remove dead pid from cache
 					continue
 				}
-				//don't capture same file twice unless it was modified
+
 				sourceFileCtime := sourceFileStat.Sys().(*syscall.Stat_t).Ctim.Nano()
 				capturedFileID := fmt.Sprintf("%d:%s", ctx.MntID, sourceFilePath)
+
+				// create an in-memory profile
+				if t.config.Capture.Profile {
+					t.updateProfile(fmt.Sprintf("%s:%d", filepath.Join(destinationDirPath, fmt.Sprintf("exec.%s", filepath.Base(filePath))), sourceFileCtime), ctx.Ts)
+				}
+
+				//don't capture same file twice unless it was modified
 				lastCtime, ok := t.capturedFiles[capturedFileID]
 				if ok && lastCtime == sourceFileCtime {
 					return nil
 				}
+
 				//capture
 				err = CopyFileByPath(sourceFilePath, destinationFilePath)
 				if err != nil {
@@ -1110,6 +1157,40 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 	}
 
 	return nil
+}
+
+func getFileHash(fileName string) string {
+	f, _ := os.Open(fileName)
+	if f != nil {
+		defer f.Close()
+		h := sha256.New()
+		_, _ = io.Copy(h, f)
+		return hex.EncodeToString(h.Sum(nil))
+	}
+	return ""
+}
+
+func (t *Tracee) updateProfile(sourceFilePath string, executionTs uint64) {
+	if pf, ok := t.profiledFiles[sourceFilePath]; !ok {
+		t.profiledFiles[sourceFilePath] = profilerInfo{
+			Times:            1,
+			FirstExecutionTs: executionTs,
+		}
+	} else {
+		pf.Times = pf.Times + 1              // bump execution count
+		t.profiledFiles[sourceFilePath] = pf // update
+	}
+}
+
+func (t *Tracee) updateFileSHA() {
+	for k, v := range t.profiledFiles {
+		pathPrefix := strings.Split(k, ".")[0]
+		exeName := strings.Split(strings.Split(k, ".")[1], ":")[0]
+		filePath := fmt.Sprintf("%s.%d.%s", pathPrefix, v.FirstExecutionTs, exeName)
+		fileSHA := getFileHash(filePath)
+		v.FileHash = fileSHA
+		t.profiledFiles[k] = v
+	}
 }
 
 // shouldPrintEvent decides whether or not the given event id should be printed to the output

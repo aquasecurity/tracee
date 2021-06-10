@@ -6,7 +6,7 @@ TRACEE_RULES_EXE=${TRACEE_RULES_EXE:="/tracee/tracee-rules"}
 # handle sub commands
 if [ "$1" = "trace" ]; then
 	shift
-	$TRACEE_EBPF_EXE $@
+	exec $TRACEE_EBPF_EXE $@
 	exit "$?"
 fi
 

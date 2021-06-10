@@ -233,12 +233,14 @@ Possible options:
 [artifact:]all                     capture all of the above artifacts.
 
 dir:/path/to/dir        path where tracee will save produced artifacts. the artifact will be saved into an 'out' subdirectory. (default: /tmp/tracee).
+profile                 creates a runtime profile of program executions and their metadata for forensics use.
 clear-dir               clear the captured artifacts output dir before starting (default: false).
 
 Examples:
   --capture exec                                           | capture executed files into the default output directory
   --capture all --capture dir:/my/dir --capture clear-dir  | delete /my/dir/out and then capture all supported artifacts into it
   --capture write=/usr/bin/* --capture write=/etc/*        | capture files that were written into anywhere under /usr/bin/ or /etc/
+  --capture exec --capture profile                         | captures executed files and create a runtime profile in the output directory
 
 Use this flag multiple times to choose multiple capture options
 `
@@ -285,6 +287,9 @@ Use this flag multiple times to choose multiple capture options
 			if len(outDir) == 0 {
 				return tracee.CaptureConfig{}, fmt.Errorf("capture output dir cannot be empty")
 			}
+		} else if cap == "profile" {
+			capture.Exec = true
+			capture.Profile = true
 		} else {
 			return tracee.CaptureConfig{}, fmt.Errorf("invalid capture option specified, use '--capture help' for more info")
 		}
