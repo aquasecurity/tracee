@@ -45,6 +45,8 @@ func setupTraceeInputSource(opts *traceeInputOptions) (chan types.Event, error) 
 
 func setupTraceeGobInputSource(opts *traceeInputOptions) (chan types.Event, error) {
 	dec := gob.NewDecoder(opts.inputFile)
+	gob.Register(tracee.Event{})
+	gob.Register(tracee.SlimCred{})
 	res := make(chan types.Event)
 	go func() {
 		for {

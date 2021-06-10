@@ -250,6 +250,8 @@ type gobEventPrinter struct {
 
 func (p *gobEventPrinter) Init() error {
 	p.outEnc = gob.NewEncoder(p.out)
+	gob.Register(external.Event{})
+	gob.Register(external.SlimCred{})
 	p.errEnc = gob.NewEncoder(p.err)
 	return nil
 }
