@@ -120,9 +120,6 @@ Copyright (C) Aqua Security inc.
 #define SYS_MMAP              9
 #define SYS_MPROTECT          10
 #define SYS_RT_SIGRETURN      15
-#define SYS_CLONE             56
-#define SYS_FORK              57
-#define SYS_VFORK             58
 #define SYS_EXECVE            59
 #define SYS_EXIT              60
 #define SYS_EXIT_GROUP        231
@@ -138,9 +135,6 @@ Copyright (C) Aqua Security inc.
 #define SYS_MMAP              222
 #define SYS_MPROTECT          226
 #define SYS_RT_SIGRETURN      139
-#define SYS_CLONE             220
-#define SYS_FORK              1000 // undefined in arm64
-#define SYS_VFORK             1000 // undefined in arm64
 #define SYS_EXECVE            221
 #define SYS_EXIT              93
 #define SYS_EXIT_GROUP        94
@@ -1843,16 +1837,7 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
     if (!should_trace())
         return 0;
 
-    // fork events may add new pids to the traced pids set
-    // perform this check after should_trace() to only add forked childs of a traced parent
-    if (id == SYS_CLONE || id == SYS_FORK || id == SYS_VFORK) {
-        u32 pid = ret;
-        bpf_map_update_elem(&traced_pids_map, &pid, &pid, BPF_ANY);
-        if (get_config(CONFIG_NEW_PID_FILTER)) {
-            bpf_map_update_elem(&new_pids_map, &pid, &pid, BPF_ANY);
-        }
-    }
-    else if (id == SYSCALL_CONNECT || id == SYSCALL_ACCEPT || id == SYSCALL_ACCEPT4 || id == SYSCALL_BIND || id == SYSCALL_LISTEN) {
+    if (id == SYSCALL_CONNECT || id == SYSCALL_ACCEPT || id == SYSCALL_ACCEPT4 || id == SYSCALL_BIND || id == SYSCALL_LISTEN) {
         del_sockfd();
     }
 
@@ -2003,7 +1988,17 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         bpf_map_update_elem(&pid_to_cont_id_map, &child_pid, &container_id->id, BPF_ANY);
     }
 
-    if (event_chosen(SCHED_PROCESS_FORK) && should_trace()) {
+    if (!should_trace())
+        return 0;
+
+    // fork events may add new pids to the traced pids set
+    // perform this check after should_trace() to only add forked childs of a traced parent
+    bpf_map_update_elem(&traced_pids_map, &child_pid, &child_pid, BPF_ANY);
+    if (get_config(CONFIG_NEW_PID_FILTER)) {
+        bpf_map_update_elem(&new_pids_map, &child_pid, &child_pid, BPF_ANY);
+    }
+
+    if (event_chosen(SCHED_PROCESS_FORK)) {
         buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
         if (submit_p == NULL)
             return 0;
