@@ -93,6 +93,7 @@ func newEvent(ctx context, argMetas []external.ArgMeta, args []interface{}, Stac
 		EventName:           EventsIDToEvent[int32(ctx.EventID)].Name,
 		ArgsNum:             int(ctx.Argnum),
 		ReturnValue:         int(ctx.Retval),
+		Category:            EventsIDToEvent[int32(ctx.EventID)].Category,
 		Args:                make([]external.Argument, 0, len(args)),
 		StackAddresses:      StackAddresses,
 	}
@@ -119,9 +120,9 @@ func (p tableEventPrinter) Init() error { return nil }
 func (p tableEventPrinter) Preamble() {
 	if p.verbose {
 		if p.containerMode {
-			fmt.Fprintf(p.out, "%-16s %-16s %-16s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-20s %s", "TIME", "UTS_NAME", "CONTAINER_ID", "MNT_NS", "PID_NS", "UID", "COMM", "PID/host", "TID/host", "PPID/host", "RET", "EVENT", "ARGS")
+			fmt.Fprintf(p.out, "%-16s %-16s %-16s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-12s %-20s %s", "TIME", "UTS_NAME", "CONTAINER_ID", "MNT_NS", "PID_NS", "UID", "COMM", "PID/host", "TID/host", "PPID/host", "RET", "CATEGORY", "EVENT", "ARGS")
 		} else {
-			fmt.Fprintf(p.out, "%-16s %-16s %-16s %-12s %-12s %-6s %-16s %-7s %-7s %-7s %-16s %-20s %s", "TIME", "UTS_NAME", "CONTAINER_ID", "MNT_NS", "PID_NS", "UID", "COMM", "PID", "TID", "PPID", "RET", "EVENT", "ARGS")
+			fmt.Fprintf(p.out, "%-16s %-16s %-16s %-12s %-12s %-6s %-16s %-7s %-7s %-7s %-16s %-12s %-20s %s", "TIME", "UTS_NAME", "CONTAINER_ID", "MNT_NS", "PID_NS", "UID", "COMM", "PID", "TID", "PPID", "RET", "CATEGORY", "EVENT", "ARGS")
 		}
 	} else {
 		if p.containerMode {
@@ -141,9 +142,9 @@ func (p tableEventPrinter) Print(event external.Event) {
 	timestamp := fmt.Sprintf("%02d:%02d:%02d:%06d", ut.Hour(), ut.Minute(), ut.Second(), ut.Nanosecond()/1000)
 	if p.verbose {
 		if p.containerMode {
-			fmt.Fprintf(p.out, "%-16s %-16s %-16s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, event.HostName, event.ContainerID, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ParentProcessID, event.ParentProcessID, event.ReturnValue, event.EventName)
+			fmt.Fprintf(p.out, "%-16s %-16s %-16s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s %-20s ", timestamp, event.HostName, event.ContainerID, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ParentProcessID, event.ParentProcessID, event.ReturnValue, event.Category, event.EventName)
 		} else {
-			fmt.Fprintf(p.out, "%-16s %-16s %-16s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-20s ", timestamp, event.HostName, event.ContainerID, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue, event.EventName)
+			fmt.Fprintf(p.out, "%-16s %-16s %-16s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-20s %-20s ", timestamp, event.HostName, event.ContainerID, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue, event.Category, event.EventName)
 		}
 	} else {
 		if p.containerMode {
