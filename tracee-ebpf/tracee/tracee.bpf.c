@@ -223,26 +223,29 @@ extern bool CONFIG_ARCH_HAS_SYSCALL_WRAPPER __kconfig;
 #ifndef CORE
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 2, 0)
 // Use lower values on older kernels, where the instruction limit is 4096
-#define MAX_STR_ARR_ELEM    40
-#define MAX_PATH_PREF_SIZE  64
-#define MAX_PATH_COMPONENTS 25
-#define MAX_BIN_CHUNKS      110
+#define MAX_STR_ARR_ELEM      40
+#define MAX_ARGS_STR_ARR_ELEM 15
+#define MAX_PATH_PREF_SIZE    64
+#define MAX_PATH_COMPONENTS   20
+#define MAX_BIN_CHUNKS        110
 #else
 // Otherwise, the sky is the limit (complexity limit of 1 million verified instructions)
-#define MAX_STR_ARR_ELEM    128
-#define MAX_PATH_PREF_SIZE  128
-#define MAX_PATH_COMPONENTS 128
-#define MAX_BIN_CHUNKS      256
+#define MAX_STR_ARR_ELEM      128
+#define MAX_ARGS_STR_ARR_ELEM 128
+#define MAX_PATH_PREF_SIZE    128
+#define MAX_PATH_COMPONENTS   128
+#define MAX_BIN_CHUNKS        256
 #endif
 #else
 // XXX: In the future, these values will be global volatile constants that 
 //      can be set at runtime from userspace go code. This way we can dynamically
 //      set them based on kernel version. libbpfgo needs this feature first.
 //      For now setting the lower limit is the safest option.
-#define MAX_STR_ARR_ELEM    40
-#define MAX_PATH_PREF_SIZE  64
-#define MAX_PATH_COMPONENTS 25
-#define MAX_BIN_CHUNKS      110
+#define MAX_STR_ARR_ELEM      40
+#define MAX_ARGS_STR_ARR_ELEM 15
+#define MAX_PATH_PREF_SIZE    64
+#define MAX_PATH_COMPONENTS   20
+#define MAX_BIN_CHUNKS        110
 #endif
 
 #ifndef CORE
@@ -681,6 +684,41 @@ static __always_inline struct qstr get_d_name_from_dentry(struct dentry *dentry)
 static __always_inline struct file* get_file_ptr_from_bprm(struct linux_binprm *bprm)
 {
     return READ_KERN(bprm->file);
+}
+
+static __always_inline struct mm_struct* get_mm_from_task(struct task_struct *task)
+{
+    return READ_KERN(task->mm);
+}
+
+static __always_inline unsigned long get_arg_start_from_mm(struct mm_struct *mm)
+{
+    return READ_KERN(mm->arg_start);
+}
+
+static __always_inline unsigned long get_arg_end_from_mm(struct mm_struct *mm)
+{
+    return READ_KERN(mm->arg_end);
+}
+
+static __always_inline int get_argc_from_bprm(struct linux_binprm *bprm)
+{
+    return READ_KERN(bprm->argc);
+}
+
+static __always_inline unsigned long get_env_start_from_mm(struct mm_struct *mm)
+{
+    return READ_KERN(mm->env_start);
+}
+
+static __always_inline unsigned long get_env_end_from_mm(struct mm_struct *mm)
+{
+    return READ_KERN(mm->env_end);
+}
+
+static __always_inline int get_envc_from_bprm(struct linux_binprm *bprm)
+{
+    return READ_KERN(bprm->envc);
 }
 
 static __always_inline dev_t get_dev_from_file(struct file *file)
@@ -1269,6 +1307,84 @@ static __always_inline int save_str_arr_to_buf(buf_t *submit_p, const char __use
 out:
     // save number of elements in the array
     bpf_probe_read(&(submit_p->buf[orig_off & (MAX_PERCPU_BUFSIZE-1)]), 1, &elem_num);
+    return 1;
+}
+
+// This helper saves null (0x00) delimited string array into buf
+static __always_inline int save_args_str_arr_to_buf(buf_t *submit_p, const char *start, const char *end, int elem_num, u8 tag)
+{
+    u8 count=0;
+
+    u32* off = get_buf_off(SUBMIT_BUF_IDX);
+    if (off == NULL)
+        return 0;
+
+    // mark string array start
+    u8 type = STR_ARR_T;
+    int rc = bpf_probe_read(&(submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)]), 1, &type);
+    if (rc != 0)
+        return 0;
+
+    *off += 1;
+
+    // Save argument tag
+    rc = bpf_probe_read(&(submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)]), 1, &tag);
+    if (rc != 0) {
+        *off -= 1;
+        return 0;
+    }
+
+    *off += 1;
+
+    // Save space for number of elements
+    u32 orig_off = *off;
+    *off += 1;
+
+    #pragma unroll
+    for (int i = 0; i < MAX_ARGS_STR_ARR_ELEM; i++) {
+        if (elem_num <= 0 || start >= end)
+            goto out;
+
+        if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int))
+            // not enough space - return
+            goto out;
+
+        // Read into buffer
+        int sz = bpf_probe_read_str(&(submit_p->buf[*off + sizeof(int) & ((MAX_PERCPU_BUFSIZE >> 1)-1)]), MAX_STRING_SIZE, start);
+        if (sz > 0) {
+            if (*off > MAX_PERCPU_BUFSIZE - sizeof(int))
+                // Satisfy validator for probe read
+                goto out;
+            bpf_probe_read(&(submit_p->buf[*off]), sizeof(int), &sz);
+            *off += sz + sizeof(int);
+            elem_num--;
+            count++;
+            start += sz;
+            continue;
+        } else {
+            goto out;
+        }
+    }
+    // handle truncated argument list
+    char ellipsis[] = "...";
+    if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int))
+        // not enough space - return
+        goto out;
+
+    // Read into buffer
+    int sz = bpf_probe_read_str(&(submit_p->buf[*off + sizeof(int)]), MAX_STRING_SIZE, ellipsis);
+    if (sz > 0) {
+        if (*off > MAX_PERCPU_BUFSIZE - sizeof(int))
+            // Satisfy validator for probe read
+            goto out;
+        bpf_probe_read(&(submit_p->buf[*off]), sizeof(int), &sz);
+        *off += sz + sizeof(int);
+        elem_num--;
+        count++;
+    }
+out:
+    // save number of elements in the array
+    bpf_probe_read(&(submit_p->buf[orig_off & (MAX_PERCPU_BUFSIZE-1)]), 1, &count);
     return 1;
 }
 
@@ -2119,7 +2235,8 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
         return 0;
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    context_t context = init_and_save_context(ctx, submit_p, SCHED_PROCESS_EXEC, 2, 0);
+    context_t context = init_and_save_context(ctx, submit_p, SCHED_PROCESS_EXEC, 6, 0);
+
     struct task_struct *task = (struct task_struct *)ctx->args[0];
     struct linux_binprm *bprm = (struct linux_binprm *)ctx->args[2];
 
@@ -2128,14 +2245,54 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     }
 
     int invoked_from_kernel = has_prefix("kworker/", get_task_parent_comm(task), 9);
+
     const char *filename = get_binprm_filename(bprm);
+
+    struct file* file = get_file_ptr_from_bprm(bprm);
+    dev_t s_dev = get_dev_from_file(file);
+    unsigned long inode_nr = get_inode_nr_from_file(file);
+
+    unsigned long arg_start = 0, arg_end = 0;
+    int argc = 0;
+
+    // bprm->mm is null at this point (set by begin_new_exec()), and task->mm is already initialized
+    struct mm_struct *mm = get_mm_from_task(task);
+
+    arg_start = get_arg_start_from_mm(mm);
+    arg_end = get_arg_end_from_mm(mm);
+    argc = get_argc_from_bprm(bprm);
+
+    // Instruction limit exceeds when adding env vars in kernels < 5.2
+    //unsigned long env_start, env_end;
+    //env_start = get_env_start_from_mm(mm);
+    //env_end = get_env_end_from_mm(mm);
+    //int envc = get_envc_from_bprm(bprm);
+
+    // Get per-cpu string buffer
+    buf_t *string_p = get_buf(STRING_BUF_IDX);
+    if (string_p == NULL)
+        return -1;
+    save_path_to_str_buf(string_p, &file->f_path);
+    u32 *off = get_buf_off(STRING_BUF_IDX);
+    if (off == NULL)
+        return -1;
+
     u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
     if (!tags) {
         return -1;
     }
 
+    // Note: Starting from kernel 5.9, there are two new interesting fields in bprm that we should consider adding:
+    // 1. struct file *executable - which can be used to get the executable name passed to an interpreter
+    // 2. fdpath - generated filename for execveat (after resolving dirfd)
+
     save_str_to_buf(submit_p, (void *)filename, DEC_ARG(0, *tags));
-    save_to_submit_buf(submit_p, &invoked_from_kernel, sizeof(int), INT_T, DEC_ARG(1, *tags));
+    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], DEC_ARG(1, *tags));
+    save_args_str_arr_to_buf(submit_p, (void *)arg_start, (void *)arg_end, argc, DEC_ARG(2, *tags));
+    //save_args_str_arr_to_buf(submit_p, (void *)env_start, (void *)env_end, envc, DEC_ARG(3, *tags));
+    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, DEC_ARG(4, *tags));
+    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, DEC_ARG(5, *tags));
+    save_to_submit_buf(submit_p, &invoked_from_kernel, sizeof(int), INT_T, DEC_ARG(6, *tags));
 
     events_perf_submit(ctx);
     return 0;
