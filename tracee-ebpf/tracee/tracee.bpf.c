@@ -67,8 +67,6 @@ Copyright (C) Aqua Security inc.
 #define MAX_PERCPU_BUFSIZE  (1 << 15)     // This value is actually set by the kernel as an upper bound
 #define MAX_STRING_SIZE     4096          // Choosing this value to be the same as PATH_MAX
 #define MAX_BYTES_ARR_SIZE  4096          // Max size of bytes array, arbitrarily chosen
-#define MAX_STR_ARR_ELEM    40            // String array elements number should be bounded due to instructions limit
-#define MAX_PATH_PREF_SIZE  64            // Max path prefix should be bounded due to instructions limit
 #define MAX_STACK_ADDRESSES 1024          // Max amount of different stack trace addresses to buffer in the Map
 #define MAX_STACK_DEPTH     20            // Max depth of each stack trace to track
 #define MAX_STR_FILTER_SIZE 16            // Max string filter size should be bounded to the size of the compared values (comm, uts)
@@ -209,6 +207,20 @@ Copyright (C) Aqua Security inc.
 #define DEV_NULL_STR    0
 
 #define CONT_ID_LEN 12
+
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 2, 0)
+// Use lower values on older kernels, where the instruction limit is 4096
+#define MAX_STR_ARR_ELEM    40
+#define MAX_PATH_PREF_SIZE  64
+#define MAX_PATH_COMPONENTS 25
+#define MAX_BIN_CHUNKS      110
+#else
+// Otherwise, the sky is the limit (complexity limit of 1 million verified instructions)
+#define MAX_STR_ARR_ELEM    128
+#define MAX_PATH_PREF_SIZE  128
+#define MAX_PATH_COMPONENTS 128
+#define MAX_BIN_CHUNKS      256
+#endif
 
 #define READ_KERN(ptr) ({ typeof(ptr) _val;                             \
                           __builtin_memset(&_val, 0, sizeof(_val));     \
@@ -1216,8 +1228,7 @@ static __always_inline int save_path_to_str_buf(buf_t *string_p, const struct pa
     int sz;
 
     #pragma unroll
-    // As bpf loops are not allowed and max instructions number is 4096, path components is limited to 30
-    for (int i = 0; i < 30; i++) {
+    for (int i = 0; i < MAX_PATH_COMPONENTS; i++) {
         mnt_root = get_mnt_root_ptr_from_vfsmnt(vfsmnt);
         d_parent = get_d_parent_ptr_from_dentry(dentry);
         if (dentry == mnt_root || dentry == d_parent) {
@@ -1285,8 +1296,7 @@ static __always_inline int save_dentry_path_to_str_buf(buf_t *string_p, struct d
     u32 buf_off = (MAX_PERCPU_BUFSIZE >> 1);
 
     #pragma unroll
-    // As bpf loops are not allowed and max instructions number is 4096, path components is limited to 30
-    for (int i = 0; i < 30; i++) {
+    for (int i = 0; i < MAX_PATH_COMPONENTS; i++) {
         struct dentry *d_parent = get_d_parent_ptr_from_dentry(dentry);
         if (dentry == d_parent) {
             break;
@@ -2841,7 +2851,7 @@ int BPF_KPROBE(send_bin)
 
     // Handle full chunks in loop
     #pragma unroll
-    for (i = 0; i < 110; i++) {
+    for (i = 0; i < MAX_BIN_CHUNKS; i++) {
         // Dummy instruction, as break instruction can't be first with unroll optimization
         chunk_size = F_CHUNK_SIZE;
 
