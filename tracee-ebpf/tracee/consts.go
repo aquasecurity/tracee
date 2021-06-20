@@ -144,6 +144,7 @@ const (
 	SysEnterEventID int32 = iota + 1000
 	SysExitEventID
 	SchedProcessForkEventID
+	SchedProcessExecEventID
 	SchedProcessExitEventID
 	DoExitEventID
 	CapCapableEventID
@@ -526,6 +527,7 @@ var EventsIDToEvent = map[int32]EventConfig{
 	SysEnterEventID:              {ID: SysEnterEventID, ID32Bit: sys32undefined, Name: "sys_enter", Probes: []probe{{event: "raw_syscalls:sys_enter", attach: rawTracepoint, fn: "tracepoint__raw_syscalls__sys_enter"}}, EssentialEvent: true, Sets: []string{}},
 	SysExitEventID:               {ID: SysExitEventID, ID32Bit: sys32undefined, Name: "sys_exit", Probes: []probe{{event: "raw_syscalls:sys_exit", attach: rawTracepoint, fn: "tracepoint__raw_syscalls__sys_exit"}}, EssentialEvent: true, Sets: []string{}},
 	SchedProcessForkEventID:      {ID: SchedProcessForkEventID, ID32Bit: sys32undefined, Name: "sched_process_fork", Probes: []probe{{event: "sched:sched_process_fork", attach: rawTracepoint, fn: "tracepoint__sched__sched_process_fork"}}, EssentialEvent: true, Sets: []string{}},
+	SchedProcessExecEventID:      {ID: SchedProcessExecEventID, ID32Bit: sys32undefined, Name: "sched_process_exec", Probes: []probe{{event: "sched:sched_process_exec", attach: rawTracepoint, fn: "tracepoint__sched__sched_process_exec"}}, Sets: []string{"proc"}},
 	SchedProcessExitEventID:      {ID: SchedProcessExitEventID, ID32Bit: sys32undefined, Name: "sched_process_exit", Probes: []probe{{event: "sched:sched_process_exit", attach: rawTracepoint, fn: "tracepoint__sched__sched_process_exit"}}, EssentialEvent: true, Sets: []string{"default", "proc", "proc_life"}},
 	DoExitEventID:                {ID: DoExitEventID, ID32Bit: sys32undefined, Name: "do_exit", Probes: []probe{{event: "do_exit", attach: kprobe, fn: "trace_do_exit"}}, Sets: []string{"proc", "proc_life"}},
 	CapCapableEventID:            {ID: CapCapableEventID, ID32Bit: sys32undefined, Name: "cap_capable", Probes: []probe{{event: "cap_capable", attach: kprobe, fn: "trace_cap_capable"}}, Sets: []string{"default"}},
@@ -895,6 +897,7 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	SysEnterEventID:              {{Type: "int", Name: "syscall"}},
 	SysExitEventID:               {{Type: "int", Name: "syscall"}},
 	SchedProcessForkEventID:      {{Type: "int", Name: "parent_pid"}, {Type: "int", Name: "parent_ns_pid"}, {Type: "int", Name: "child_pid"}, {Type: "int", Name: "child_ns_pid"}},
+	SchedProcessExecEventID:      {{Type: "const char *", Name: "filename"}, {Type: "int", Name: "invoked_from_kernel"}},
 	SchedProcessExitEventID:      {},
 	DoExitEventID:                {},
 	CapCapableEventID:            {{Type: "int", Name: "cap"}, {Type: "int", Name: "syscall"}},

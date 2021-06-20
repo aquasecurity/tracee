@@ -150,28 +150,29 @@ Copyright (C) Aqua Security inc.
 #define RAW_SYS_ENTER           1000
 #define RAW_SYS_EXIT            1001
 #define SCHED_PROCESS_FORK      1002
-#define SCHED_PROCESS_EXIT      1003
-#define DO_EXIT                 1004
-#define CAP_CAPABLE             1005
-#define VFS_WRITE               1006
-#define VFS_WRITEV              1007
-#define MEM_PROT_ALERT          1008
-#define COMMIT_CREDS            1009
-#define SWITCH_TASK_NS          1010
-#define MAGIC_WRITE             1011
-#define CGROUP_ATTACH_TASK      1012
-#define SECURITY_BPRM_CHECK     1013
-#define SECURITY_FILE_OPEN      1014
-#define SECURITY_INODE_UNLINK   1015
-#define SECURITY_SOCKET_CREATE  1016
-#define SECURITY_SOCKET_LISTEN  1017
-#define SECURITY_SOCKET_CONNECT 1018
-#define SECURITY_SOCKET_ACCEPT  1019
-#define SECURITY_SOCKET_BIND    1020
-#define SECURITY_SB_MOUNT       1021
-#define SECURITY_BPF            1022
-#define SECURITY_BPF_MAP        1023
-#define MAX_EVENT_ID            1024
+#define SCHED_PROCESS_EXEC      1003
+#define SCHED_PROCESS_EXIT      1004
+#define DO_EXIT                 1005
+#define CAP_CAPABLE             1006
+#define VFS_WRITE               1007
+#define VFS_WRITEV              1008
+#define MEM_PROT_ALERT          1009
+#define COMMIT_CREDS            1010
+#define SWITCH_TASK_NS          1011
+#define MAGIC_WRITE             1012
+#define CGROUP_ATTACH_TASK      1013
+#define SECURITY_BPRM_CHECK     1014
+#define SECURITY_FILE_OPEN      1015
+#define SECURITY_INODE_UNLINK   1016
+#define SECURITY_SOCKET_CREATE  1017
+#define SECURITY_SOCKET_LISTEN  1018
+#define SECURITY_SOCKET_CONNECT 1019
+#define SECURITY_SOCKET_ACCEPT  1020
+#define SECURITY_SOCKET_BIND    1021
+#define SECURITY_SB_MOUNT       1022
+#define SECURITY_BPF            1023
+#define SECURITY_BPF_MAP        1024
+#define MAX_EVENT_ID            1025
 
 #define CONFIG_SHOW_SYSCALL         1
 #define CONFIG_EXEC_ENV             2
@@ -518,6 +519,16 @@ static __always_inline u32 get_task_ppid(struct task_struct *task)
 static __always_inline u32 get_task_host_pid(struct task_struct *task)
 {
     return READ_KERN(task->pid);
+}
+
+static __always_inline char * get_task_parent_comm(struct task_struct *task)
+{
+    return READ_KERN(READ_KERN(task->real_parent)->comm);
+}
+
+static __always_inline const char * get_binprm_filename(struct linux_binprm *bprm)
+{
+    return READ_KERN(bprm->filename);
 }
 
 static __always_inline const char * get_cgroup_dirname(struct cgroup *cgrp)
@@ -2021,6 +2032,41 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         events_perf_submit(ctx);
     }
 
+    return 0;
+}
+
+// include/trace/events/sched.h:
+//TP_PROTO(struct task_struct *p, pid_t old_pid, struct linux_binprm *bprm)
+SEC("raw_tracepoint/sched_process_exec")
+int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
+{
+    if (!should_trace())
+        return 0;
+
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
+    if (submit_p == NULL)
+        return 0;
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+
+    context_t context = init_and_save_context(ctx, submit_p, SCHED_PROCESS_EXEC, 2, 0);
+    struct task_struct *task = (struct task_struct *)ctx->args[0];
+    struct linux_binprm *bprm = (struct linux_binprm *)ctx->args[2];
+
+    if (bprm == NULL) {
+        return -1;
+    }
+
+    int invoked_from_kernel = has_prefix("kworker/", get_task_parent_comm(task), 9);
+    const char *filename = get_binprm_filename(bprm);
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
+    if (!tags) {
+        return -1;
+    }
+
+    save_str_to_buf(submit_p, (void *)filename, DEC_ARG(0, *tags));
+    save_to_submit_buf(submit_p, &invoked_from_kernel, sizeof(int), INT_T, DEC_ARG(1, *tags));
+
+    events_perf_submit(ctx);
     return 0;
 }
 
