@@ -28,6 +28,7 @@ var buildPolicy string
 //go:embed "dist/tracee.bpf/*"
 var bpfBundleInjected embed.FS
 var version string
+var bpf_core string
 
 func main() {
 	app := &cli.App{
@@ -1028,7 +1029,12 @@ func getBPFObject() (string, error) {
 		}
 		return bpfPath, nil
 	}
+
 	bpfObjFileName := fmt.Sprintf("tracee.bpf.%s.%s.o", strings.ReplaceAll(tracee.UnameRelease(), ".", "_"), strings.ReplaceAll(version, ".", "_"))
+	if bpf_core != "" {
+		bpfObjFileName = fmt.Sprintf("tracee.bpf.core.%s.o", strings.ReplaceAll(version, ".", "_"))
+	}
+
 	exePath, err := os.Executable()
 	if err != nil {
 		return "", err
