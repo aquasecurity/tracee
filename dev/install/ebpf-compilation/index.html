@@ -17,7 +17,7 @@
         
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-7.1.5+insiders-2.8.0">
+      <meta name="generator" content="mkdocs-1.2.1, mkdocs-material-7.1.8+insiders-2.9.2">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.48946aae.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.2cfd06f1.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.77b964be.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.73e53a79.min.css">
         
       
       
@@ -46,6 +46,8 @@
     
     
       
+
+
     
     
   </head>
@@ -522,6 +524,7 @@
               
                 
                 
+                
                 <h1 id="ebpf-compilation">eBPF Compilation</h1>
 <p>Tracee is leveraging Linux's eBPF technology, which is kernel and version sensitive. Therefore, Tracee's eBPF component needs to be specifically compiled for your hosts.</p>
 <p>The easiest way to get started is to just let Tracee build the eBPF program for you automatically when it starts, as demonstrated by the Quickstart.<br />
@@ -541,6 +544,9 @@ Once you have the eBPF program artifact, you can provide it to Tracee in any of 
 <p>If using Docker, the following <code>docker run</code> options demonstrate mounting a pre-compiled eBPF artifact into the container, and pointing Tracee to use it:</p>
 <div class="highlight"><pre><span></span><code>docker run ... -v /path/in/host/tracee.bpf.123.o:/path/in/container/tracee.bpf.o -e <span class="nv">TRACEE_BPF_FILE</span><span class="o">=</span>/path/in/container/tracee.bpf.o aquasec/tracee
 </code></pre></div>
+<h1 id="ebpf-core-compilation">eBPF CO:RE Compilation</h1>
+<p>Tracee also can utilize CO:RE (Compile once, run everywhere) technology enabled by libbpf. With this enabled, you can compile the tracee bpf object file on one system, and run it on any kernel with BTF (BPF type format) enabled. To check if your kernel has BTF enabled, check for the <code>CONFIG_DEBUG_INFO_BTF</code> in your kernel config.</p>
+<p>Compiling with CO:RE enabled is as simple as running <code>make CORE=y</code>. This will produce a bpf object file called <code>dist/tracee.bpf.core.{version}</code>. You can ship this object file with your tracee go binary and point to it by path using the <code>TRACEE_BPF_FILE</code> environment variable.</p>
                 
               
               
@@ -549,6 +555,7 @@ Once you have the eBPF program artifact, you can provide it to Tracee in any of 
 
               
             </article>
+            
           </div>
         </div>
         
@@ -559,7 +566,8 @@ Once you have the eBPF program artifact, you can provide it to Tracee in any of 
   
     <nav class="md-footer__inner md-grid" aria-label="Footer">
       
-        <a href="../prerequisites/" class="md-footer__link md-footer__link--prev" rel="prev">
+        
+        <a href="../prerequisites/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Prerequisites" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
           </div>
@@ -574,7 +582,8 @@ Once you have the eBPF program artifact, you can provide it to Tracee in any of 
         </a>
       
       
-        <a href="../headers/" class="md-footer__link md-footer__link--next" rel="next">
+        
+        <a href="../headers/" class="md-footer__link md-footer__link--next" aria-label="Next: Linux Headers" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
@@ -606,10 +615,10 @@ Once you have the eBPF program artifact, you can provide it to Tracee in any of 
     <div class="md-dialog" data-md-component="dialog">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
-    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}, "search": "../../assets/javascripts/workers/search.4c32c4e3.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.df8cae7d.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.37e8e405.min.js"></script>
+      <script src="../../assets/javascripts/bundle.82217815.min.js"></script>
       
     
   </body>

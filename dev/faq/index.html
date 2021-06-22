@@ -17,7 +17,7 @@
         
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.1.2, mkdocs-material-7.1.5+insiders-2.8.0">
+      <meta name="generator" content="mkdocs-1.2.1, mkdocs-material-7.1.8+insiders-2.9.2">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.48946aae.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.2cfd06f1.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.77b964be.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.73e53a79.min.css">
         
       
       
@@ -46,6 +46,8 @@
     
     
       
+
+
     
     
   </head>
@@ -565,6 +567,7 @@
               
                 
                 
+                
                 <h1 id="faq-frequently-asked-questions">FAQ - Frequently Asked Questions</h1>
 <h2 id="secure-tracing">Secure tracing</h2>
 <p>When Tracee-eBPF reads information from user programs it is subject to a race condition where the user program might be able to change the arguments after Tracee has read them. For example, a program invoked <code>execve("/bin/ls", NULL, 0)</code>, Tracee picked that up and will report that, then the program changed the first argument from <code>/bin/ls</code> to <code>/bin/bash</code>, and this is what the kernel will execute. To mitigate this, Tracee also provides "LSM" (Linux Security Module) based events, for example, the <code>bprm_check</code> event which can be reported by Tracee and cross-referenced with the reported regular syscall event.</p>
@@ -576,6 +579,7 @@
 
               
             </article>
+            
           </div>
         </div>
         
@@ -586,7 +590,8 @@
   
     <nav class="md-footer__inner md-grid" aria-label="Footer">
       
-        <a href="../rules-index/" class="md-footer__link md-footer__link--prev" rel="prev">
+        
+        <a href="../rules-index/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Available Rules" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
           </div>
@@ -601,7 +606,8 @@
         </a>
       
       
-        <a href="../architecture/" class="md-footer__link md-footer__link--next" rel="next">
+        
+        <a href="../architecture/" class="md-footer__link md-footer__link--next" aria-label="Next: Architecture" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
@@ -633,10 +639,10 @@
     <div class="md-dialog" data-md-component="dialog">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
-    <script id="__config" type="application/json">{"base": "..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}, "search": "../assets/javascripts/workers/search.4c32c4e3.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.df8cae7d.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.37e8e405.min.js"></script>
+      <script src="../assets/javascripts/bundle.82217815.min.js"></script>
       
     
   </body>
