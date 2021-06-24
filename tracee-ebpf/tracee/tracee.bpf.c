@@ -8,17 +8,17 @@ SPDX-License-Identifier: GPL-2.0
 Copyright (C) Aqua Security inc.
 */
 
-
+#ifndef CORE
 /* In Linux 5.4 asm_inline was introduced, but it's not supported by clang.
  * Redefine it to just asm to enable successful compilation.
  * see https://github.com/iovisor/bcc/commit/2d1497cde1cc9835f759a707b42dea83bee378b8 for more details
+ * Note: types.h should be included before defining asm_inline or compilation might break
  */
 #include <linux/types.h>
 #ifdef asm_inline
 #undef asm_inline
 #define asm_inline asm
 #endif
-
 #include <uapi/linux/ptrace.h>
 #include <uapi/linux/in.h>
 #include <uapi/linux/in6.h>
@@ -52,8 +52,14 @@ Copyright (C) Aqua Security inc.
 #include <linux/kconfig.h>
 #include <linux/version.h>
 
+#else
+//CO:RE is enabled
+#include <vmlinux.h>
+#include "co_re_missing_definitions.h"
+#endif
+
 #undef container_of
-//#include "bpf_core_read.h"
+#include <bpf_core_read.h>
 #include <bpf_helpers.h>
 #include <bpf_tracing.h>
 #include <bpf_endian.h>
@@ -62,6 +68,11 @@ Copyright (C) Aqua Security inc.
 #define PT_REGS_PARM6(ctx)  ((ctx)->r9)
 #elif defined(bpf_target_arm64)
 #define PT_REGS_PARM6(x) (((PT_REGS_ARM64 *)(x))->regs[5])
+#endif
+
+
+#ifdef CORE
+extern bool CONFIG_ARCH_HAS_SYSCALL_WRAPPER __kconfig;
 #endif
 
 #define MAX_PERCPU_BUFSIZE  (1 << 15)     // This value is actually set by the kernel as an upper bound
@@ -209,6 +220,7 @@ Copyright (C) Aqua Security inc.
 
 #define CONT_ID_LEN 12
 
+#ifndef CORE
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 2, 0)
 // Use lower values on older kernels, where the instruction limit is 4096
 #define MAX_STR_ARR_ELEM    40
@@ -222,12 +234,31 @@ Copyright (C) Aqua Security inc.
 #define MAX_PATH_COMPONENTS 128
 #define MAX_BIN_CHUNKS      256
 #endif
+#else
+// XXX: In the future, these values will be global volatile constants that 
+//      can be set at runtime from userspace go code. This way we can dynamically
+//      set them based on kernel version. libbpfgo needs this feature first.
+//      For now setting the lower limit is the safest option.
+#define MAX_STR_ARR_ELEM    40
+#define MAX_PATH_PREF_SIZE  64
+#define MAX_PATH_COMPONENTS 25
+#define MAX_BIN_CHUNKS      110
+#endif
 
+#ifndef CORE
 #define READ_KERN(ptr) ({ typeof(ptr) _val;                             \
                           __builtin_memset(&_val, 0, sizeof(_val));     \
                           bpf_probe_read(&_val, sizeof(_val), &ptr);    \
                           _val;                                         \
                         })
+#else
+// Try using READ_KERN here, just don't embed them in each other
+#define READ_KERN(ptr) ({ typeof(ptr) _val;                             \
+                          __builtin_memset(&_val, 0, sizeof(_val));     \
+                          bpf_core_read(&_val, sizeof(_val), &ptr);    \
+                          _val;                                         \
+                        })
+#endif
 
 #define BPF_MAP(_name, _type, _key_type, _value_type, _max_entries) \
 struct bpf_map_def SEC("maps") _name = { \
@@ -275,7 +306,7 @@ struct bpf_map_def SEC("maps") _name = { \
 
 /*=============================== INTERNAL STRUCTS ===========================*/
 
-typedef struct context {
+typedef struct event_context {
     u64 ts;                     // Timestamp
     u32 pid;                    // PID as in the userspace term
     u32 tid;                    // TID as in the userspace term
@@ -365,6 +396,7 @@ typedef struct slim_cred {
 
 /*================================ KERNEL STRUCTS =============================*/
 
+#ifndef CORE
 struct mnt_namespace {
     atomic_t        count;
     struct ns_common    ns;
@@ -378,7 +410,7 @@ struct mount {
     struct vfsmount mnt;
     // ...
 };
-
+#endif
 /*=================================== MAPS =====================================*/
 
 BPF_HASH(config_map, u32, u32);                         // Various configurations
@@ -419,32 +451,38 @@ BPF_PERF_OUTPUT(file_writes);                       // File writes events submis
 
 static __always_inline u32 get_mnt_ns_id(struct nsproxy *ns)
 {
-    return READ_KERN(READ_KERN(ns->mnt_ns)->ns.inum);
+    struct mnt_namespace* mntns = READ_KERN(ns->mnt_ns);
+    return READ_KERN(mntns->ns.inum);
 }
 
 static __always_inline u32 get_pid_ns_id(struct nsproxy *ns)
 {
-    return READ_KERN(READ_KERN(ns->pid_ns_for_children)->ns.inum);
+    struct pid_namespace* pidns = READ_KERN(ns->pid_ns_for_children);
+    return READ_KERN(pidns->ns.inum);
 }
 
 static __always_inline u32 get_uts_ns_id(struct nsproxy *ns)
 {
-    return READ_KERN(READ_KERN(ns->uts_ns)->ns.inum);
+    struct uts_namespace* uts_ns = READ_KERN(ns->uts_ns);
+    return READ_KERN(uts_ns->ns.inum);
 }
 
 static __always_inline u32 get_ipc_ns_id(struct nsproxy *ns)
 {
-    return READ_KERN(READ_KERN(ns->ipc_ns)->ns.inum);
+    struct ipc_namespace* ipc_ns = READ_KERN(ns->ipc_ns);
+    return READ_KERN(ipc_ns->ns.inum);
 }
 
 static __always_inline u32 get_net_ns_id(struct nsproxy *ns)
 {
-    return READ_KERN(READ_KERN(ns->net_ns)->ns.inum);
+    struct net* net_ns = READ_KERN(ns->net_ns);
+    return READ_KERN(net_ns ->ns.inum);
 }
 
 static __always_inline u32 get_cgroup_ns_id(struct nsproxy *ns)
 {
-    return READ_KERN(READ_KERN(ns->cgroup_ns)->ns.inum);
+    struct cgroup_namespace* cgroup_ns = READ_KERN(ns->cgroup_ns);
+    return READ_KERN(cgroup_ns->ns.inum);
 }
 
 static __always_inline u32 get_task_mnt_ns_id(struct task_struct *task)
@@ -479,53 +517,65 @@ static __always_inline u32 get_task_cgroup_ns_id(struct task_struct *task)
 
 static __always_inline u32 get_task_ns_pid(struct task_struct *task)
 {
-    unsigned int level = READ_KERN(READ_KERN(READ_KERN(task->nsproxy)->pid_ns_for_children)->level);
+    struct nsproxy *namespaceproxy = READ_KERN(task->nsproxy);
+    struct pid_namespace *pid_ns_children = READ_KERN(namespaceproxy->pid_ns_for_children);
+    unsigned int level = READ_KERN(pid_ns_children->level);
 
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && !defined(RHEL_RELEASE_GT_8_0))
     // kernel 4.14-4.18:
     return READ_KERN(READ_KERN(task->pids[PIDTYPE_PID].pid)->numbers[level].nr);
 #else
-    // kernel 4.19 onwards:
-    return READ_KERN(READ_KERN(task->thread_pid)->numbers[level].nr);
+    // kernel 4.19 onwards, and CO:RE:
+    struct pid *tpid = READ_KERN(task->thread_pid);
+    return READ_KERN(tpid->numbers[level].nr);
 #endif
 }
 
 static __always_inline u32 get_task_ns_tgid(struct task_struct *task)
-{
-    unsigned int level = READ_KERN(READ_KERN(READ_KERN(task->nsproxy)->pid_ns_for_children)->level);
+{    
+    struct nsproxy *namespaceproxy = READ_KERN(task->nsproxy);
+    struct pid_namespace *pid_ns_children = READ_KERN(namespaceproxy->pid_ns_for_children);
+    unsigned int level = READ_KERN(pid_ns_children->level);
     struct task_struct *group_leader = READ_KERN(task->group_leader);
 
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && !defined(RHEL_RELEASE_GT_8_0))
     // kernel 4.14-4.18:
     return READ_KERN(READ_KERN(group_leader->pids[PIDTYPE_PID].pid)->numbers[level].nr);
 #else
-    // kernel 4.19 onwards:
-    return READ_KERN(READ_KERN(group_leader->thread_pid)->numbers[level].nr);
+    // kernel 4.19 onwards, and CO:RE:
+    struct pid *tpid = READ_KERN(group_leader->thread_pid);
+    return READ_KERN(tpid->numbers[level].nr);
 #endif
 }
 
 static __always_inline u32 get_task_ns_ppid(struct task_struct *task)
 {
     struct task_struct *real_parent = READ_KERN(task->real_parent);
-    unsigned int level = READ_KERN(READ_KERN(READ_KERN(real_parent->nsproxy)->pid_ns_for_children)->level);
+    struct nsproxy *namespaceproxy = READ_KERN(real_parent->nsproxy);
+    struct pid_namespace *pid_ns_children = READ_KERN(namespaceproxy->pid_ns_for_children);
+    unsigned int level = READ_KERN(pid_ns_children->level);
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && !defined(RHEL_RELEASE_GT_8_0))
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && !defined(RHEL_RELEASE_GT_8_0)) && !defined(CORE)
     // kernel 4.14-4.18:
     return READ_KERN(READ_KERN(real_parent->pids[PIDTYPE_PID].pid)->numbers[level].nr);
 #else
-    // kernel 4.19 onwards:
-    return READ_KERN(READ_KERN(real_parent->thread_pid)->numbers[level].nr);
+    // kernel 4.19 onwards, and CO:RE:
+    struct pid *tpid = READ_KERN(real_parent->thread_pid);
+    return READ_KERN(tpid->numbers[level].nr);
 #endif
 }
 
 static __always_inline char * get_task_uts_name(struct task_struct *task)
 {
-    return READ_KERN(READ_KERN(READ_KERN(task->nsproxy)->uts_ns)->name.nodename);
+    struct nsproxy *np = READ_KERN(task->nsproxy);
+    struct uts_namespace *uts_ns = READ_KERN(np->uts_ns);
+    return READ_KERN(uts_ns->name.nodename);
 }
 
 static __always_inline u32 get_task_ppid(struct task_struct *task)
 {
-    return READ_KERN(READ_KERN(task->real_parent)->pid);
+    struct task_struct *parent = READ_KERN(task->real_parent);
+    return READ_KERN(parent->pid);
 }
 
 static __always_inline u32 get_task_host_pid(struct task_struct *task)
@@ -535,7 +585,8 @@ static __always_inline u32 get_task_host_pid(struct task_struct *task)
 
 static __always_inline char * get_task_parent_comm(struct task_struct *task)
 {
-    return READ_KERN(READ_KERN(task->real_parent)->comm);
+    struct task_struct *parent = READ_KERN(task->real_parent);
+    return READ_KERN(parent->comm);
 }
 
 static __always_inline const char * get_binprm_filename(struct linux_binprm *bprm)
@@ -634,17 +685,21 @@ static __always_inline struct file* get_file_ptr_from_bprm(struct linux_binprm *
 
 static __always_inline dev_t get_dev_from_file(struct file *file)
 {
-    return READ_KERN(READ_KERN(READ_KERN(file->f_inode)->i_sb)->s_dev);
+    struct inode *f_inode = READ_KERN(file->f_inode);
+    struct super_block *i_sb = READ_KERN(f_inode->i_sb);
+    return READ_KERN(i_sb->s_dev);
 }
 
 static __always_inline unsigned long get_inode_nr_from_file(struct file *file)
 {
-    return READ_KERN(READ_KERN(file->f_inode)->i_ino);
+    struct inode *f_inode = READ_KERN(file->f_inode);
+    return READ_KERN(f_inode->i_ino);
 }
 
 static __always_inline unsigned short get_inode_mode_from_file(struct file *file)
 {
-    return READ_KERN(READ_KERN(file->f_inode)->i_mode);
+    struct inode *f_inode = READ_KERN(file->f_inode);
+    return READ_KERN(f_inode->i_mode);
 }
 
 static __always_inline struct path get_path_from_file(struct file *file)
@@ -1735,7 +1790,7 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
     int id = ctx->args[1];
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
 
-#if defined(CONFIG_ARCH_HAS_SYSCALL_WRAPPER)
+if (CONFIG_ARCH_HAS_SYSCALL_WRAPPER) {
     struct pt_regs regs = {};
     bpf_probe_read(&regs, sizeof(struct pt_regs), (void*)ctx->args[0]);
 
@@ -1756,14 +1811,14 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
         args_tmp.args[4] = PT_REGS_PARM5(&regs);
         args_tmp.args[5] = PT_REGS_PARM6(&regs);
     }
-#else // CONFIG_ARCH_HAS_SYSCALL_WRAPPER
+} else { // NO CONFIG_ARCH_HAS_SYSCALL_WRAPPER
     args_tmp.args[0] = ctx->args[0];
     args_tmp.args[1] = ctx->args[1];
     args_tmp.args[2] = ctx->args[2];
     args_tmp.args[3] = ctx->args[3];
     args_tmp.args[4] = ctx->args[4];
     args_tmp.args[5] = ctx->args[5];
-#endif // CONFIG_ARCH_HAS_SYSCALL_WRAPPER
+} // END CONFIG_ARCH_HAS_SYSCALL_WRAPPER
 
     if (is_compat(task)) {
         // Translate 32bit syscalls to 64bit syscalls so we can send to the correct handler
@@ -3394,4 +3449,3 @@ int BPF_KPROBE(trace_security_bpf_map)
 
 char LICENSE[] SEC("license") = "GPL";
 int KERNEL_VERSION SEC("version") = LINUX_VERSION_CODE;
-

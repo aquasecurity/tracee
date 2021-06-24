@@ -28,5 +28,7 @@ jobs:
           fi
       - name: Build
         run: make all DOCKER=1
+      - name: Build CO:RE
+        run: make all DOCKER=1 CORE=y
       - name: Test
         run: make test DOCKER=1
