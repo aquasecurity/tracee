@@ -2140,12 +2140,23 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 SEC("raw_tracepoint/sched_process_exit")
 int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 {
-    // Note: removing container id from pid_to_cont_id_map shoule be performed before should_trace()
     u32 pid = bpf_get_current_pid_tgid();
-    bpf_map_delete_elem(&pid_to_cont_id_map, &pid);
 
-    if (!should_trace())
+    if (!should_trace()) {
+        // Note: we need to remove the container id here as we always add it to the map in cgroup_attach_task event.
+        bpf_map_delete_elem(&pid_to_cont_id_map, &pid);
         return 0;
+    }
+
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
+    if (submit_p == NULL)
+        return 0;
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+
+    init_and_save_context(ctx, submit_p, SCHED_PROCESS_EXIT, 0, 0);
+
+    // Remove the container id (if any) from pid_to_cont_id_map
+    bpf_map_delete_elem(&pid_to_cont_id_map, &pid);
 
     // Remove pid from traced_pids_map
     bpf_map_delete_elem(&traced_pids_map, &pid);
@@ -2164,13 +2175,6 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
         // Remove pid from new_pids_map
         bpf_map_delete_elem(&new_pids_map, &pid);
     }
-
-    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
-    if (submit_p == NULL)
-        return 0;
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
-
-    init_and_save_context(ctx, submit_p, SCHED_PROCESS_EXIT, 0, 0);
 
     events_perf_submit(ctx);
     return 0;
@@ -2207,6 +2211,9 @@ int tracepoint__cgroup__cgroup_attach_task(struct bpf_raw_tracepoint_args *ctx)
     const char *cgrp_dirname = get_cgroup_dirname(dst_cgrp);
 
     bpf_probe_read_str(&container_id.id, CONT_ID_LEN+1, cgrp_dirname);
+
+    if (has_prefix("docker-", (char*)&container_id.id, 8))
+        bpf_probe_read_str(&container_id.id, CONT_ID_LEN+1, cgrp_dirname+7);
 
     // Only update pid_to_cont_id_map for this pid if no element already exists.
     // this way, we only keep track of the first level in the cgroup hierarchy
