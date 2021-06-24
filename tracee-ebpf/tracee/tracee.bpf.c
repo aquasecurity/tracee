@@ -8,18 +8,17 @@ SPDX-License-Identifier: GPL-2.0
 Copyright (C) Aqua Security inc.
 */
 
+#ifndef CORE
+/* In Linux 5.4 asm_inline was introduced, but it's not supported by clang.
+ * Redefine it to just asm to enable successful compilation.
+ * see https://github.com/iovisor/bcc/commit/2d1497cde1cc9835f759a707b42dea83bee378b8 for more details
+ * Note: types.h should be included before defining asm_inline or compilation might break
+ */
+#include <linux/types.h>
 #ifdef asm_inline
 #undef asm_inline
 #define asm_inline asm
 #endif
-
-#ifndef CORE
-
-/* In Linux 5.4 asm_inline was introduced, but it's not supported by clang.
- * Redefine it to just asm to enable successful compilation.
- * see https://github.com/iovisor/bcc/commit/2d1497cde1cc9835f759a707b42dea83bee378b8 for more details
- */
-#include <linux/types.h>
 #include <uapi/linux/ptrace.h>
 #include <uapi/linux/in.h>
 #include <uapi/linux/in6.h>
