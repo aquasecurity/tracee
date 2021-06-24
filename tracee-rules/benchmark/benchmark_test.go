@@ -23,6 +23,7 @@ func BenchmarkOnEventCodeInjectionRegoRule(b *testing.B) {
 	err = codeInjectSig.Init(ignoreFinding)
 	require.NoError(b, err)
 
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		err = codeInjectSig.OnEvent(triggerCodeInjectorPtraceEvent)
 		require.NoError(b, err)
@@ -34,6 +35,7 @@ func BenchmarkOnEventCodeInjectionGoRule(b *testing.B) {
 	err := codeInjectSig.Init(ignoreFinding)
 	require.NoError(b, err)
 
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		err := codeInjectSig.OnEvent(triggerCodeInjectorPtraceEvent)
 		require.NoError(b, err)
@@ -49,8 +51,10 @@ func BenchmarkEngineWithCodeInjectionRegoRule(b *testing.B) {
 		codeInjectSig,
 	}
 
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		// Produce events
+		// Produce events without timing it
+		b.StopTimer()
 		eventsCh := make(chan types.Event, inputEventsCount)
 		ProduceEventsInMemory(eventsCh, inputEventsCount)
 
@@ -60,6 +64,8 @@ func BenchmarkEngineWithCodeInjectionRegoRule(b *testing.B) {
 		output := make(chan types.Finding, inputEventsCount)
 
 		e := engine.NewEngine(sigs, inputs, output, os.Stderr)
+		b.StartTimer()
+
 		// Start rules engine and wait until all events are processed
 		e.Start(waitForEventsProcessed(eventsCh))
 
@@ -75,8 +81,10 @@ func BenchmarkEngineWithCodeInjectionGoRule(b *testing.B) {
 		codeInjectSig,
 	}
 
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		// Produce events
+		// Produce events without timing it
+		b.StopTimer()
 		eventsCh := make(chan types.Event, inputEventsCount)
 		ProduceEventsInMemory(eventsCh, inputEventsCount)
 
@@ -86,6 +94,8 @@ func BenchmarkEngineWithCodeInjectionGoRule(b *testing.B) {
 		output := make(chan types.Finding, inputEventsCount)
 
 		e := engine.NewEngine(sigs, inputs, output, os.Stderr)
+		b.StartTimer()
+
 		// Start rules engine and wait until all events are processed
 		e.Start(waitForEventsProcessed(eventsCh))
 
@@ -106,8 +116,10 @@ func BenchmarkEngineWithMultipleRegoAndGoRules(b *testing.B) {
 		golang.NewAntiDebuggingSignature(),
 	}
 
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		// Produce events
+		// Produce events without timing it
+		b.StopTimer()
 		eventsCh := make(chan types.Event, inputEventsCount)
 		ProduceEventsInMemory(eventsCh, inputEventsCount)
 
@@ -117,6 +129,8 @@ func BenchmarkEngineWithMultipleRegoAndGoRules(b *testing.B) {
 		output := make(chan types.Finding, inputEventsCount*len(sigs))
 
 		e := engine.NewEngine(sigs, inputs, output, os.Stderr)
+		b.StartTimer()
+
 		// Start rules engine and wait until all events are processed
 		e.Start(waitForEventsProcessed(eventsCh))
 
