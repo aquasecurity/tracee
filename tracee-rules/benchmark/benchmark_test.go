@@ -132,7 +132,7 @@ func waitForEventsProcessed(eventsCh chan types.Event) chan bool {
 				done <- true
 				return
 			}
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(1 * time.Millisecond)
 		}
 	}()
 	return done
