@@ -142,6 +142,7 @@ func (sig *RegoSignature) OnEvent(e types.Event) error {
 	if err != nil {
 		return err
 	}
+
 	if len(results) > 0 && len(results[0].Expressions) > 0 && results[0].Expressions[0].Value != nil {
 		switch v := results[0].Expressions[0].Value.(type) {
 		case bool:

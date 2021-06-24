@@ -8,6 +8,7 @@ import (
 
 	"github.com/aquasecurity/tracee/tracee-rules/benchmark/signature/golang"
 	"github.com/aquasecurity/tracee/tracee-rules/benchmark/signature/rego"
+	"github.com/aquasecurity/tracee/tracee-rules/benchmark/signature/wasm"
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/stretchr/testify/require"
@@ -39,6 +40,20 @@ func BenchmarkOnEventCodeInjectionRuleGo(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		err := codeInjectSig.OnEvent(triggerCodeInjectorPtraceEvent)
+		require.NoError(b, err)
+	}
+}
+
+func BenchmarkOnEventCodeInjectionRuleWASM(b *testing.B) {
+	codeInjectSig, err := wasm.NewCodeInjectionSignature()
+	require.NoError(b, err)
+
+	err = codeInjectSig.Init(ignoreFinding)
+	require.NoError(b, err)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		err = codeInjectSig.OnEvent(triggerCodeInjectorPtraceEvent)
 		require.NoError(b, err)
 	}
 }
@@ -87,6 +102,37 @@ func BenchmarkEngineWithCodeInjectionRuleGo(b *testing.B) {
 
 		// Start rules engine and wait until all events are processed
 		e.Start(waitForEventsProcessed(inputs.Tracee))
+
+		b.Logf("Test is done with %d findings", len(output))
+	}
+}
+
+func BenchmarkEngineWithCodeInjectionRuleWASM(b *testing.B) {
+	// Prepare signatures
+	codeInjectSig, err := wasm.NewCodeInjectionSignature()
+	require.NoError(b, err)
+
+	sigs := []types.Signature{
+		codeInjectSig,
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// Produce events without timing it
+		b.StopTimer()
+		eventsCh := make(chan types.Event, inputEventsCount)
+		ProduceEventsInMemory(eventsCh, inputEventsCount)
+
+		inputs := engine.EventSources{
+			Tracee: eventsCh,
+		}
+		output := make(chan types.Finding, inputEventsCount)
+
+		e := engine.NewEngine(sigs, inputs, output, os.Stderr)
+		b.StartTimer()
+
+		// Start rules engine and wait until all events are processed
+		e.Start(waitForEventsProcessed(eventsCh))
 
 		b.Logf("Test is done with %d findings", len(output))
 	}
