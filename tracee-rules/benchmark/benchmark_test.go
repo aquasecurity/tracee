@@ -16,7 +16,7 @@ const (
 	inputEventsCount = 1000
 )
 
-func BenchmarkOnEventCodeInjectionRegoRule(b *testing.B) {
+func BenchmarkOnEventCodeInjectionRuleRego(b *testing.B) {
 	codeInjectSig, err := rego.NewCodeInjectionSignature()
 	require.NoError(b, err)
 
@@ -30,7 +30,7 @@ func BenchmarkOnEventCodeInjectionRegoRule(b *testing.B) {
 	}
 }
 
-func BenchmarkOnEventCodeInjectionGoRule(b *testing.B) {
+func BenchmarkOnEventCodeInjectionRuleGo(b *testing.B) {
 	codeInjectSig := golang.NewCodeInjectionSignature()
 	err := codeInjectSig.Init(ignoreFinding)
 	require.NoError(b, err)
@@ -42,7 +42,7 @@ func BenchmarkOnEventCodeInjectionGoRule(b *testing.B) {
 	}
 }
 
-func BenchmarkEngineWithCodeInjectionRegoRule(b *testing.B) {
+func BenchmarkEngineWithCodeInjectionRuleRego(b *testing.B) {
 	// Prepare signatures
 	codeInjectSig, err := rego.NewCodeInjectionSignature()
 	require.NoError(b, err)
@@ -73,7 +73,7 @@ func BenchmarkEngineWithCodeInjectionRegoRule(b *testing.B) {
 	}
 }
 
-func BenchmarkEngineWithCodeInjectionGoRule(b *testing.B) {
+func BenchmarkEngineWithCodeInjectionRuleGo(b *testing.B) {
 	// Prepare signatures
 	codeInjectSig := golang.NewCodeInjectionSignature()
 
@@ -103,7 +103,7 @@ func BenchmarkEngineWithCodeInjectionGoRule(b *testing.B) {
 	}
 }
 
-func BenchmarkEngineWithMultipleRegoAndGoRules(b *testing.B) {
+func BenchmarkEngineWithMultipleRulesRegoAndGo(b *testing.B) {
 	// Prepare signatures
 	codeInjectionRegoSig, _ := rego.NewCodeInjectionSignature()
 	antiDebuggingRegoSig, _ := rego.NewAntiDebuggingSignature()
