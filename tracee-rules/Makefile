@@ -53,7 +53,7 @@ $(tools): % : check_%
 ifndef DOCKER
 test: $(GO_SRC) $(tools)
 	go test -v ./...
-	opa test . --verbose --ignore="examples" --ignore="dist"
+	opa test . --verbose --ignore="examples" --ignore="dist" --ignore="benchmark"
 else
 test: $(DOCKER_BUILDER)
 	$(call docker_builder_make,$@)
