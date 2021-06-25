@@ -1,6 +1,7 @@
 package benchmark
 
 import (
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -55,19 +56,13 @@ func BenchmarkEngineWithCodeInjectionRuleRego(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		// Produce events without timing it
 		b.StopTimer()
-		eventsCh := make(chan types.Event, inputEventsCount)
-		ProduceEventsInMemory(eventsCh, inputEventsCount)
-
-		inputs := engine.EventSources{
-			Tracee: eventsCh,
-		}
+		inputs := ProduceEventsInMemory(inputEventsCount)
 		output := make(chan types.Finding, inputEventsCount)
-
 		e := engine.NewEngine(sigs, inputs, output, os.Stderr)
 		b.StartTimer()
 
 		// Start rules engine and wait until all events are processed
-		e.Start(waitForEventsProcessed(eventsCh))
+		e.Start(waitForEventsProcessed(inputs.Tracee))
 
 		b.Logf("Test is done with %d findings", len(output))
 	}
@@ -85,19 +80,13 @@ func BenchmarkEngineWithCodeInjectionRuleGo(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		// Produce events without timing it
 		b.StopTimer()
-		eventsCh := make(chan types.Event, inputEventsCount)
-		ProduceEventsInMemory(eventsCh, inputEventsCount)
-
-		inputs := engine.EventSources{
-			Tracee: eventsCh,
-		}
+		inputs := ProduceEventsInMemory(inputEventsCount)
 		output := make(chan types.Finding, inputEventsCount)
-
 		e := engine.NewEngine(sigs, inputs, output, os.Stderr)
 		b.StartTimer()
 
 		// Start rules engine and wait until all events are processed
-		e.Start(waitForEventsProcessed(eventsCh))
+		e.Start(waitForEventsProcessed(inputs.Tracee))
 
 		b.Logf("Test is done with %d findings", len(output))
 	}
@@ -105,8 +94,10 @@ func BenchmarkEngineWithCodeInjectionRuleGo(b *testing.B) {
 
 func BenchmarkEngineWithMultipleRulesRegoAndGo(b *testing.B) {
 	// Prepare signatures
-	codeInjectionRegoSig, _ := rego.NewCodeInjectionSignature()
-	antiDebuggingRegoSig, _ := rego.NewAntiDebuggingSignature()
+	codeInjectionRegoSig, err := rego.NewCodeInjectionSignature()
+	require.NoError(b, err)
+	antiDebuggingRegoSig, err := rego.NewAntiDebuggingSignature()
+	require.NoError(b, err)
 
 	sigs := []types.Signature{
 		codeInjectionRegoSig,
@@ -120,21 +111,74 @@ func BenchmarkEngineWithMultipleRulesRegoAndGo(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		// Produce events without timing it
 		b.StopTimer()
-		eventsCh := make(chan types.Event, inputEventsCount)
-		ProduceEventsInMemory(eventsCh, inputEventsCount)
-
-		inputs := engine.EventSources{
-			Tracee: eventsCh,
-		}
+		inputs := ProduceEventsInMemory(inputEventsCount)
 		output := make(chan types.Finding, inputEventsCount*len(sigs))
-
 		e := engine.NewEngine(sigs, inputs, output, os.Stderr)
 		b.StartTimer()
 
 		// Start rules engine and wait until all events are processed
-		e.Start(waitForEventsProcessed(eventsCh))
+		e.Start(waitForEventsProcessed(inputs.Tracee))
 
 		b.Logf("Test is done with %d findings", len(output))
+	}
+}
+
+func BenchmarkEngineWithNSignaturesRego(b *testing.B) {
+	testCases := []int{2, 4, 8, 16, 32, 64, 128}
+	sig, err := rego.NewCodeInjectionSignature()
+	require.NoError(b, err)
+
+	for _, tc := range testCases {
+		b.Run(fmt.Sprintf("%dSignatures", tc), func(b *testing.B) {
+			sigs := make([]types.Signature, tc)
+			for i := range sigs {
+				sigs[i] = sig
+			}
+
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				// Produce events without timing it
+				b.StopTimer()
+				inputs := ProduceEventsInMemory(inputEventsCount)
+				output := make(chan types.Finding, inputEventsCount*len(sigs))
+				e := engine.NewEngine(sigs, inputs, output, os.Stderr)
+				b.StartTimer()
+
+				// Start rules engine and wait until all events are processed
+				e.Start(waitForEventsProcessed(inputs.Tracee))
+
+				b.Logf("Test is done with %d findings", len(output))
+			}
+		})
+	}
+}
+
+func BenchmarkEngineWithNSignaturesGo(b *testing.B) {
+	testCases := []int{2, 4, 8, 16, 32, 64, 128}
+	sig := golang.NewCodeInjectionSignature()
+
+	for _, tc := range testCases {
+		b.Run(fmt.Sprintf("%dSignatures", tc), func(b *testing.B) {
+			sigs := make([]types.Signature, tc)
+			for i := range sigs {
+				sigs[i] = sig
+			}
+
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				// Produce events without timing it
+				b.StopTimer()
+				inputs := ProduceEventsInMemory(inputEventsCount)
+				output := make(chan types.Finding, inputEventsCount*len(sigs))
+				e := engine.NewEngine(sigs, inputs, output, os.Stderr)
+				b.StartTimer()
+
+				// Start rules engine and wait until all events are processed
+				e.Start(waitForEventsProcessed(inputs.Tracee))
+
+				b.Logf("Test is done with %d findings", len(output))
+			}
+		})
 	}
 }
 

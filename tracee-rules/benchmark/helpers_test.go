@@ -2,14 +2,15 @@ package benchmark
 
 import (
 	_ "embed"
+
 	"encoding/gob"
 	"fmt"
 	"io"
 	"math/rand"
 	"os"
-	"testing"
 
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
+	"github.com/aquasecurity/tracee/tracee-rules/engine"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
@@ -150,8 +151,8 @@ var (
 	}
 )
 
-func ProduceEventsInMemory(eventsCh chan<- types.Event, n int) {
-	ProduceEventsInMemoryRandom(eventsCh, n, []tracee.Event{
+func ProduceEventsInMemory(n int) engine.EventSources {
+	return ProduceEventsInMemoryRandom(n, []tracee.Event{
 		innocentEvent,
 		innocentEvent,
 		innocentEvent,
@@ -161,23 +162,32 @@ func ProduceEventsInMemory(eventsCh chan<- types.Event, n int) {
 	}...)
 }
 
-func ProduceEventsInMemoryRandom(eventsCh chan<- types.Event, n int, seed ...tracee.Event) {
+func ProduceEventsInMemoryRandom(n int, seed ...tracee.Event) engine.EventSources {
+	eventsCh := make(chan types.Event, n)
+
 	for i := 0; i < n; i++ {
 		s := rand.Intn(len(seed))
 		eventsCh <- seed[s]
 	}
+
+	close(eventsCh)
+	return engine.EventSources{
+		Tracee: eventsCh,
+	}
 }
 
-func ProduceEventsFromGobFile(t *testing.T, eventsCh chan<- types.Event, path string) error {
+func ProduceEventsFromGobFile(n int, path string) (engine.EventSources, error) {
 	inputFile, err := os.Open(path)
 	if err != nil {
-		return fmt.Errorf("opening file: %v", err)
+		return engine.EventSources{}, fmt.Errorf("opening file: %v", err)
 	}
 	defer inputFile.Close()
 
 	dec := gob.NewDecoder(inputFile)
 	gob.Register(tracee.Event{})
 	gob.Register(tracee.SlimCred{})
+
+	eventsCh := make(chan types.Event, n)
 
 	for {
 		var event tracee.Event
@@ -186,11 +196,15 @@ func ProduceEventsFromGobFile(t *testing.T, eventsCh chan<- types.Event, path st
 			if err == io.EOF {
 				break
 			} else {
-				return fmt.Errorf("decoding event: %v", err)
+				return engine.EventSources{}, fmt.Errorf("decoding event: %v", err)
 			}
 		} else {
 			eventsCh <- event
 		}
 	}
-	return nil
+
+	close(eventsCh)
+	return engine.EventSources{
+		Tracee: eventsCh,
+	}, nil
 }
