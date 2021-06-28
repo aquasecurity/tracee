@@ -10,8 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/aquasecurity/tracee/tracee-rules/benchmark/signature/wasm"
-
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
@@ -40,20 +38,10 @@ func main() {
 				return errors.New("no flags specified")
 			}
 
-			//sigs, err := getSignatures(c.String("rules-dir"), c.StringSlice("rules"))
-			//if err != nil {
-			//	return err
-			//}
-
-			wasmsig1, _ := wasm.NewCodeInjectionSignature()
-			wasmsig2, _ := wasm.NewAntiDebuggingSignature()
-			sigs := []types.Signature{wasmsig1, wasmsig2}
-			//regosig1, _ := rego.NewCodeInjectionSignature()
-			//regosig2, _ := rego.NewAntiDebuggingSignature()
-			//sigs := []types.Signature{regosig1, regosig2}
-			//gosig1 := golang.NewCodeInjectionSignature()
-			//gosig2 := golang.NewAntiDebuggingSignature()
-			//sigs := []types.Signature{gosig1, gosig2}
+			sigs, err := getSignatures(c.String("rules-dir"), c.StringSlice("rules"))
+			if err != nil {
+				return err
+			}
 
 			var loadedSigIDs []string
 			for _, s := range sigs {
