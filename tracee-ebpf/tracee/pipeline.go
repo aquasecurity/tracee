@@ -200,8 +200,12 @@ func (t *Tracee) printEvent(done <-chan struct{}, in <-chan external.Event) (<-c
 	go func() {
 		defer close(errc)
 		for printEvent := range in {
-			t.stats.eventCounter.Increment()
-			t.printer.Print(printEvent)
+			if t.config.ChanEvents != nil {
+				t.config.ChanEvents <- printEvent
+			} else {
+				t.stats.eventCounter.Increment()
+				t.printer.Print(printEvent)
+			}
 		}
 	}()
 	return errc, nil

@@ -33,6 +33,7 @@ type Config struct {
 	SecurityAlerts     bool
 	maxPidsCache       int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
 	BPFObjPath         string
+	ChanEvents         chan external.Event
 }
 
 type Filter struct {
