@@ -20,7 +20,28 @@ var (
 a = true`
 )
 
-func BenchmarkWasm_SimpleRule(b *testing.B) {
+func BenchmarkWASMOptionTarget_SimpleRule(b *testing.B) {
+	rego := oparego.New(
+		oparego.Query("data.p.a = x"),
+		oparego.Target("wasm"),
+		oparego.Module("module.rego", simpleRego),
+	)
+	pq, err := rego.PrepareForEval(context.Background())
+	if err != nil {
+		panic(err)
+	}
+
+	input := make(map[string]interface{})
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := pq.Eval(context.Background(), oparego.EvalInput(input)); err != nil {
+			panic(err)
+		}
+	}
+}
+
+func BenchmarkWASMLibrary_SimpleRule(b *testing.B) {
 	policy := compileRegoToWasm(simpleRego, "data.p.a = x")
 	opa, _ := opawasm.New().
 		WithPolicyBytes(policy).
@@ -51,7 +72,53 @@ func BenchmarkRegoGoLibrary_SimpleRule(b *testing.B) {
 	}
 }
 
-func BenchmarkWasm_RealRule(b *testing.B) {
+func BenchmarkWASMOptionTarget_RealRule(b *testing.B) {
+	rego := oparego.New(
+		oparego.Query("data.tracee.aio.tracee_match = x"),
+		oparego.Target("wasm"),
+		oparego.Module("module.rego", aioRego),
+	)
+	pq, err := rego.PrepareForEval(context.Background())
+	if err != nil {
+		panic(err)
+	}
+
+	input := tracee.Event{
+		Timestamp:           6123.321183,
+		ProcessID:           1,
+		ThreadID:            1,
+		ParentProcessID:     3788,
+		HostProcessID:       3217,
+		HostThreadID:        3217,
+		HostParentProcessID: 3788,
+		UserID:              0,
+		MountNS:             2983424533,
+		PIDNS:               2983424536,
+		ProcessName:         "injector",
+		HostName:            "234134134ab",
+		EventID:             328,
+		EventName:           "ptrace",
+		ArgsNum:             2,
+		ReturnValue:         0,
+		Args: []tracee.Argument{
+			{
+				ArgMeta: tracee.ArgMeta{
+					Name: "request",
+				},
+				Value: "PTRACE_POKETEXT",
+			},
+		},
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if _, err := pq.Eval(context.Background(), oparego.EvalInput(input)); err != nil {
+			panic(err)
+		}
+	}
+}
+
+func BenchmarkWASMLibrary_RealRule(b *testing.B) {
 	policy := compileRegoToWasm(aioRego, "data.tracee.aio.tracee_match = x")
 	opa, _ := opawasm.New().
 		WithPolicyBytes(policy).
