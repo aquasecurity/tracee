@@ -177,7 +177,7 @@ clean:
 	if [ -r "$$FILE" ] ; then \
 		$(CMD_DOCKER) rmi "$$(< $$FILE)" ; \
 	fi
-	-rm -rf dist $(OUT_DIR)
+	-rm -rf $(OUT_DIR)
 	$(MAKE) -C $(LIBBPF_SRC) clean
 
 check_%:
