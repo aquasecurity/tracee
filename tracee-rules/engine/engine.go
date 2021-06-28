@@ -69,6 +69,7 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 func (engine *Engine) Start(done chan bool) {
 	go engine.consumeSources(done)
 	for s, c := range engine.signatures {
+		defer close(c)
 		go func(s types.Signature, c chan types.Event) {
 			for e := range c {
 				err := s.OnEvent(e)
