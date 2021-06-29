@@ -14,7 +14,7 @@ type codeInjection struct {
 	metadata types.SignatureMetadata
 }
 
-func NewCodeInjectionSignature() types.Signature {
+func NewCodeInjectionSignature() (types.Signature, error) {
 	return &codeInjection{
 		metadata: types.SignatureMetadata{
 			Name:        "Code injection",
@@ -25,7 +25,7 @@ func NewCodeInjectionSignature() types.Signature {
 				"MITRE ATT&CK": "Defense Evasion: Process Injection",
 			},
 		},
-	}
+	}, nil
 }
 
 var processMemFileRegexp *regexp.Regexp

@@ -1,7 +1,6 @@
 package benchmark
 
 import (
-	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -19,180 +18,76 @@ const (
 	inputEventsCount = 1000
 )
 
-func BenchmarkOnEventCodeInjectionRuleRego(b *testing.B) {
-	codeInjectSig, err := rego.NewCodeInjectionSignature()
-	require.NoError(b, err)
-
-	err = codeInjectSig.Init(ignoreFinding)
-	require.NoError(b, err)
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		err = codeInjectSig.OnEvent(triggerCodeInjectorPtraceEvent)
-		require.NoError(b, err)
-	}
-}
-
-func BenchmarkOnEventCodeInjectionRuleGo(b *testing.B) {
-	codeInjectSig := golang.NewCodeInjectionSignature()
-	err := codeInjectSig.Init(ignoreFinding)
-	require.NoError(b, err)
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		err := codeInjectSig.OnEvent(triggerCodeInjectorPtraceEvent)
-		require.NoError(b, err)
-	}
-}
-
-func BenchmarkOnEventCodeInjectionRuleWASM(b *testing.B) {
-	codeInjectSig, err := wasm.NewCodeInjectionSignature()
-	require.NoError(b, err)
-
-	err = codeInjectSig.Init(ignoreFinding)
-	require.NoError(b, err)
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		err = codeInjectSig.OnEvent(triggerCodeInjectorPtraceEvent)
-		require.NoError(b, err)
-	}
-}
-
-func BenchmarkEngineWithCodeInjectionRuleRego(b *testing.B) {
-	// Prepare signatures
-	codeInjectSig, err := rego.NewCodeInjectionSignature()
-	require.NoError(b, err)
-
-	sigs := []types.Signature{
-		codeInjectSig,
+func BenchmarkOnEventCodeInjectionRule(b *testing.B) {
+	benches := []struct {
+		name    string
+		sigFunc func() (types.Signature, error)
+	}{
+		{
+			name:    "rego",
+			sigFunc: rego.NewCodeInjectionSignature,
+		},
+		{
+			name:    "golang",
+			sigFunc: golang.NewCodeInjectionSignature,
+		},
+		{
+			name:    "wasm",
+			sigFunc: wasm.NewCodeInjectionSignature,
+		},
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		// Produce events without timing it
-		b.StopTimer()
-		inputs := ProduceEventsInMemory(inputEventsCount)
-		output := make(chan types.Finding, inputEventsCount)
-		e := engine.NewEngine(sigs, inputs, output, os.Stderr)
-		b.StartTimer()
+	for _, bc := range benches {
+		b.Run(bc.name, func(b *testing.B) {
+			s, err := bc.sigFunc()
+			require.NoError(b, err, bc.name)
+			require.NoError(b, s.Init(ignoreFinding), bc.name)
 
-		// Start rules engine and wait until all events are processed
-		e.Start(waitForEventsProcessed(inputs.Tracee))
-
-		b.Logf("Test is done with %d findings", len(output))
-	}
-}
-
-func BenchmarkEngineWithCodeInjectionRuleGo(b *testing.B) {
-	// Prepare signatures
-	codeInjectSig := golang.NewCodeInjectionSignature()
-
-	sigs := []types.Signature{
-		codeInjectSig,
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		// Produce events without timing it
-		b.StopTimer()
-		inputs := ProduceEventsInMemory(inputEventsCount)
-		output := make(chan types.Finding, inputEventsCount)
-		e := engine.NewEngine(sigs, inputs, output, os.Stderr)
-		b.StartTimer()
-
-		// Start rules engine and wait until all events are processed
-		e.Start(waitForEventsProcessed(inputs.Tracee))
-
-		b.Logf("Test is done with %d findings", len(output))
-	}
-}
-
-func BenchmarkEngineWithCodeInjectionRuleWASM(b *testing.B) {
-	// Prepare signatures
-	codeInjectSig, err := wasm.NewCodeInjectionSignature()
-	require.NoError(b, err)
-
-	sigs := []types.Signature{
-		codeInjectSig,
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		// Produce events without timing it
-		b.StopTimer()
-		eventsCh := make(chan types.Event, inputEventsCount)
-		ProduceEventsInMemory(eventsCh, inputEventsCount)
-
-		inputs := engine.EventSources{
-			Tracee: eventsCh,
-		}
-		output := make(chan types.Finding, inputEventsCount)
-
-		e := engine.NewEngine(sigs, inputs, output, os.Stderr)
-		b.StartTimer()
-
-		// Start rules engine and wait until all events are processed
-		e.Start(waitForEventsProcessed(eventsCh))
-
-		b.Logf("Test is done with %d findings", len(output))
-	}
-}
-
-func BenchmarkEngineWithMultipleRulesRegoAndGo(b *testing.B) {
-	// Prepare signatures
-	codeInjectionRegoSig, err := rego.NewCodeInjectionSignature()
-	require.NoError(b, err)
-	antiDebuggingRegoSig, err := rego.NewAntiDebuggingSignature()
-	require.NoError(b, err)
-
-	sigs := []types.Signature{
-		codeInjectionRegoSig,
-		antiDebuggingRegoSig,
-
-		golang.NewCodeInjectionSignature(),
-		golang.NewAntiDebuggingSignature(),
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		// Produce events without timing it
-		b.StopTimer()
-		inputs := ProduceEventsInMemory(inputEventsCount)
-		output := make(chan types.Finding, inputEventsCount*len(sigs))
-		e := engine.NewEngine(sigs, inputs, output, os.Stderr)
-		b.StartTimer()
-
-		// Start rules engine and wait until all events are processed
-		e.Start(waitForEventsProcessed(inputs.Tracee))
-
-		b.Logf("Test is done with %d findings", len(output))
-	}
-}
-
-func BenchmarkEngineWithNSignaturesRego(b *testing.B) {
-	testCases := []int{2, 4, 8, 16, 32, 64, 128}
-	sig, err := rego.NewCodeInjectionSignature()
-	require.NoError(b, err)
-
-	for _, tc := range testCases {
-		b.Run(fmt.Sprintf("%dSignatures", tc), func(b *testing.B) {
-			sigs := make([]types.Signature, tc)
-			for i := range sigs {
-				sigs[i] = sig
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				require.NoError(b, s.OnEvent(triggerCodeInjectorPtraceEvent), bc.name)
 			}
+		})
+	}
+}
 
+func BenchmarkEngineWithCodeInjection(b *testing.B) {
+	benches := []struct {
+		name    string
+		sigFunc func() (types.Signature, error)
+	}{
+		{
+			name:    "rego",
+			sigFunc: rego.NewCodeInjectionSignature,
+		},
+		{
+			name:    "golang",
+			sigFunc: golang.NewCodeInjectionSignature,
+		},
+		{
+			name:    "wasm",
+			sigFunc: wasm.NewCodeInjectionSignature,
+		},
+	}
+
+	for _, bc := range benches {
+		b.Run(bc.name, func(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				// Produce events without timing it
 				b.StopTimer()
+				eventsCh := make(chan types.Event, inputEventsCount)
 				inputs := ProduceEventsInMemory(inputEventsCount)
-				output := make(chan types.Finding, inputEventsCount*len(sigs))
-				e := engine.NewEngine(sigs, inputs, output, os.Stderr)
+				output := make(chan types.Finding, inputEventsCount)
+
+				s, err := bc.sigFunc()
+				require.NoError(b, err, bc.name)
+
+				e := engine.NewEngine([]types.Signature{s}, inputs, output, os.Stderr)
 				b.StartTimer()
 
 				// Start rules engine and wait until all events are processed
-				e.Start(waitForEventsProcessed(inputs.Tracee))
+				e.Start(waitForEventsProcessed(eventsCh))
 
 				b.Logf("Test is done with %d findings", len(output))
 			}
@@ -200,67 +95,54 @@ func BenchmarkEngineWithNSignaturesRego(b *testing.B) {
 	}
 }
 
-func BenchmarkEngineWithNSignaturesGo(b *testing.B) {
-	testCases := []int{2, 4, 8, 16, 32, 64, 128}
-	sig := golang.NewCodeInjectionSignature()
+func BenchmarkEngineWithMultipleRules(b *testing.B) {
+	benches := []struct {
+		name     string
+		sigFuncs []func() (types.Signature, error)
+	}{
+		{
+			name:     "rego and golang",
+			sigFuncs: []func() (types.Signature, error){rego.NewCodeInjectionSignature, golang.NewCodeInjectionSignature},
+		},
+		{
+			name:     "wasm and golang",
+			sigFuncs: []func() (types.Signature, error){wasm.NewCodeInjectionSignature, golang.NewCodeInjectionSignature},
+		},
+		{
+			name:     "rego and wasm",
+			sigFuncs: []func() (types.Signature, error){rego.NewCodeInjectionSignature, wasm.NewCodeInjectionSignature},
+		},
+		{
+			name:     "rego and golang and wasm",
+			sigFuncs: []func() (types.Signature, error){rego.NewCodeInjectionSignature, golang.NewCodeInjectionSignature, wasm.NewCodeInjectionSignature},
+		},
+	}
 
-	for _, tc := range testCases {
-		b.Run(fmt.Sprintf("%dSignatures", tc), func(b *testing.B) {
-			sigs := make([]types.Signature, tc)
-			for i := range sigs {
-				sigs[i] = sig
+	for _, bc := range benches {
+		b.Run(bc.name, func(b *testing.B) {
+			var sigs []types.Signature
+			for _, sig := range bc.sigFuncs {
+				s, _ := sig()
+				sigs = append(sigs, s)
 			}
 
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				// Produce events without timing it
 				b.StopTimer()
+				eventsCh := make(chan types.Event, inputEventsCount)
 				inputs := ProduceEventsInMemory(inputEventsCount)
 				output := make(chan types.Finding, inputEventsCount*len(sigs))
+
 				e := engine.NewEngine(sigs, inputs, output, os.Stderr)
 				b.StartTimer()
 
 				// Start rules engine and wait until all events are processed
-				e.Start(waitForEventsProcessed(inputs.Tracee))
+				e.Start(waitForEventsProcessed(eventsCh))
 
 				b.Logf("Test is done with %d findings", len(output))
 			}
 		})
-	}
-}
-
-func BenchmarkEngineWithMultipleRulesWASMAndGo(b *testing.B) {
-	// Prepare signatures
-	codeInjectionRegoSig, _ := wasm.NewCodeInjectionSignature()
-	antiDebuggingRegoSig, _ := wasm.NewAntiDebuggingSignature()
-
-	sigs := []types.Signature{
-		codeInjectionRegoSig,
-		antiDebuggingRegoSig,
-
-		golang.NewCodeInjectionSignature(),
-		golang.NewAntiDebuggingSignature(),
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		// Produce events without timing it
-		b.StopTimer()
-		eventsCh := make(chan types.Event, inputEventsCount)
-		ProduceEventsInMemory(eventsCh, inputEventsCount)
-
-		inputs := engine.EventSources{
-			Tracee: eventsCh,
-		}
-		output := make(chan types.Finding, inputEventsCount*len(sigs))
-
-		e := engine.NewEngine(sigs, inputs, output, os.Stderr)
-		b.StartTimer()
-
-		// Start rules engine and wait until all events are processed
-		e.Start(waitForEventsProcessed(eventsCh))
-
-		b.Logf("Test is done with %d findings", len(output))
 	}
 }
 
