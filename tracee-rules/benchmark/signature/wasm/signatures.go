@@ -26,12 +26,6 @@ var (
 	codeInjectionRego string
 )
 
-type CodeInjectionWASMSignature struct {
-	types.Signature
-	rego *opa.OPA
-	cb   types.SignatureHandler
-}
-
 func compileRegoToWasm(regoCodes []string) []byte {
 	re := regexp.MustCompile(`package\s.*`) // TODO: DRY
 
@@ -53,8 +47,6 @@ func compileRegoToWasm(regoCodes []string) []byte {
 		panic(err)
 	}
 
-	//fmt.Println(pkgName)
-
 	cr, err := rego.New(
 		rego.Compiler(compiledRego),
 		rego.Query(fmt.Sprintf("data.%s.tracee_match", pkgName)),
@@ -65,92 +57,60 @@ func compileRegoToWasm(regoCodes []string) []byte {
 	return cr.Bytes
 }
 
-func (w *CodeInjectionWASMSignature) Init(cb types.SignatureHandler) error {
-	w.cb = cb
-
-	var err error
-	w.rego, err = opa.New().WithPolicyBytes(compileRegoToWasm([]string{codeInjectionRego, helpersRego})).Init()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (w *CodeInjectionWASMSignature) OnEvent(event types.Event) error {
-	var input interface{} = event
-	results, err := w.rego.Eval(context.Background(), &input)
-	if err != nil {
-		return err
-	}
-	if results == nil {
-		return fmt.Errorf("no match")
-	}
-
-	r, ok := results.Result.([]interface{})
-	if !ok || len(r) == 0 {
-		return nil
-	}
-
-	if len(r) > 0 && r[0] != nil {
-		switch v := r[0].(type) {
-		case bool:
-			if v {
-				w.cb(types.Finding{
-					Data:    nil,
-					Context: event,
-					//SigMetadata: w.metadata,
-				})
-			}
-		case map[string]interface{}:
-			w.cb(types.Finding{
-				Data:    v,
-				Context: event,
-				//SigMetadata: w.metadata,
-			})
-		}
-	}
-
-	return nil
-}
-
-func (w CodeInjectionWASMSignature) GetMetadata() (types.SignatureMetadata, error) {
-	return types.SignatureMetadata{
+func NewCodeInjectionSignature() (types.Signature, error) {
+	return NewSignature(types.SignatureMetadata{
 		ID: "TRC_WASM_CODE_INJECTION",
-	}, nil
-}
-
-func (w CodeInjectionWASMSignature) GetSelectedEvents() ([]types.SignatureEventSelector, error) {
-	return []types.SignatureEventSelector{
+	}, []types.SignatureEventSelector{
 		{Source: "tracee", Name: "ptrace"},
 		{Source: "tracee", Name: "open"},
 		{Source: "tracee", Name: "openat"},
 		{Source: "tracee", Name: "execve"},
+	}, []string{codeInjectionRego, helpersRego})
+}
+
+func NewAntiDebuggingSignature() (types.Signature, error) {
+	return NewSignature(types.SignatureMetadata{
+		ID: "TRC_WASM_ANTI_DEBUGGING",
+	}, []types.SignatureEventSelector{
+		{Source: "tracee", Name: "ptrace"},
+	}, []string{antiDebuggingPtracemeRego, helpersRego})
+}
+
+type signature struct {
+	metadata types.SignatureMetadata
+	selector []types.SignatureEventSelector
+	cb       types.SignatureHandler
+	rego     *opa.OPA
+}
+
+func NewSignature(metadata types.SignatureMetadata, selector []types.SignatureEventSelector, regoCodes []string) (types.Signature, error) {
+	rego, err := opa.New().WithPolicyBytes(compileRegoToWasm(regoCodes)).Init()
+	if err != nil {
+		return nil, err
+	}
+	return &signature{
+		metadata: metadata,
+		selector: selector,
+		rego:     rego,
 	}, nil
 }
 
-func NewCodeInjectionSignature() (types.Signature, error) {
-	return &CodeInjectionWASMSignature{}, nil
-}
-
-type AntiDebuggingWASMSignature struct {
-	types.Signature
-	cb   types.SignatureHandler
-	rego *opa.OPA
-}
-
-func (w *AntiDebuggingWASMSignature) Init(cb types.SignatureHandler) error {
-	w.cb = cb
-	var err error
-	w.rego, err = opa.New().WithPolicyBytes(compileRegoToWasm([]string{antiDebuggingPtracemeRego, helpersRego})).Init()
-	if err != nil {
-		return err
-	}
+func (s *signature) Init(cb types.SignatureHandler) error {
+	s.cb = cb
 	return nil
 }
 
-func (w *AntiDebuggingWASMSignature) OnEvent(event types.Event) error {
+func (s *signature) GetMetadata() (types.SignatureMetadata, error) {
+	return s.metadata, nil
+}
+
+func (s *signature) GetSelectedEvents() ([]types.SignatureEventSelector, error) {
+	return s.selector, nil
+}
+
+func (s *signature) OnEvent(event types.Event) error {
 	var input interface{} = event
-	results, err := w.rego.Eval(context.Background(), &input)
+	results, err := s.rego.Eval(context.Background(), &input)
 	if err != nil {
 		return err
 	}
@@ -167,17 +127,17 @@ func (w *AntiDebuggingWASMSignature) OnEvent(event types.Event) error {
 		switch v := r[0].(type) {
 		case bool:
 			if v {
-				w.cb(types.Finding{
-					Data:    nil,
-					Context: event,
-					//SigMetadata: w.metadata,
+				s.cb(types.Finding{
+					Data:        nil,
+					Context:     event,
+					SigMetadata: s.metadata,
 				})
 			}
 		case map[string]interface{}:
-			w.cb(types.Finding{
-				Data:    v,
-				Context: event,
-				//SigMetadata: w.metadata,
+			s.cb(types.Finding{
+				Data:        v,
+				Context:     event,
+				SigMetadata: s.metadata,
 			})
 		}
 	}
@@ -185,18 +145,7 @@ func (w *AntiDebuggingWASMSignature) OnEvent(event types.Event) error {
 	return nil
 }
 
-func (w AntiDebuggingWASMSignature) GetMetadata() (types.SignatureMetadata, error) {
-	return types.SignatureMetadata{
-		ID: "TRC_WASM_ANTI_DEBUGGING",
-	}, nil
-}
-
-func (w AntiDebuggingWASMSignature) GetSelectedEvents() ([]types.SignatureEventSelector, error) {
-	return []types.SignatureEventSelector{
-		{Source: "tracee", Name: "ptrace"},
-	}, nil
-}
-
-func NewAntiDebuggingSignature() (types.Signature, error) {
-	return &AntiDebuggingWASMSignature{}, nil
+func (s *signature) OnSignal(_ types.Signal) error {
+	// noop
+	return nil
 }
