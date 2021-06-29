@@ -6,10 +6,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aquasecurity/tracee/tracee-rules/engine"
+
 	"github.com/aquasecurity/tracee/tracee-rules/benchmark/signature/golang"
 	"github.com/aquasecurity/tracee/tracee-rules/benchmark/signature/rego"
 	"github.com/aquasecurity/tracee/tracee-rules/benchmark/signature/wasm"
-	"github.com/aquasecurity/tracee/tracee-rules/engine"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/stretchr/testify/require"
 )
@@ -225,6 +226,41 @@ func BenchmarkEngineWithNSignaturesGo(b *testing.B) {
 				b.Logf("Test is done with %d findings", len(output))
 			}
 		})
+	}
+}
+
+func BenchmarkEngineWithMultipleRulesWASMAndGo(b *testing.B) {
+	// Prepare signatures
+	codeInjectionRegoSig, _ := wasm.NewCodeInjectionSignature()
+	antiDebuggingRegoSig, _ := wasm.NewAntiDebuggingSignature()
+
+	sigs := []types.Signature{
+		codeInjectionRegoSig,
+		antiDebuggingRegoSig,
+
+		golang.NewCodeInjectionSignature(),
+		golang.NewAntiDebuggingSignature(),
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		// Produce events without timing it
+		b.StopTimer()
+		eventsCh := make(chan types.Event, inputEventsCount)
+		ProduceEventsInMemory(eventsCh, inputEventsCount)
+
+		inputs := engine.EventSources{
+			Tracee: eventsCh,
+		}
+		output := make(chan types.Finding, inputEventsCount*len(sigs))
+
+		e := engine.NewEngine(sigs, inputs, output, os.Stderr)
+		b.StartTimer()
+
+		// Start rules engine and wait until all events are processed
+		e.Start(waitForEventsProcessed(eventsCh))
+
+		b.Logf("Test is done with %d findings", len(output))
 	}
 }
 

@@ -7,12 +7,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/open-policy-agent/opa/ast"
-
-	"github.com/open-policy-agent/opa/rego"
-
 	"github.com/aquasecurity/tracee/tracee-rules/types"
-	"github.com/open-policy-agent/golang-opa-wasm/opa"
+	"github.com/open-policy-agent/opa/ast"
+	"github.com/open-policy-agent/opa/rego"
 )
 
 var (
@@ -26,7 +23,7 @@ var (
 	codeInjectionRego string
 )
 
-func compileRegoToWasm(regoCodes []string) []byte {
+func compileRego(regoCodes []string) (*ast.Compiler, string) {
 	re := regexp.MustCompile(`package\s.*`) // TODO: DRY
 
 	var pkgName string
@@ -41,25 +38,17 @@ func compileRegoToWasm(regoCodes []string) []byte {
 		regoMap[regoModuleName] = regoCode
 	}
 
-	var err error
-	compiledRego, err = ast.CompileModules(regoMap)
+	compiledRego, err := ast.CompileModules(regoMap)
 	if err != nil {
 		panic(err)
 	}
-
-	cr, err := rego.New(
-		rego.Compiler(compiledRego),
-		rego.Query(fmt.Sprintf("data.%s.tracee_match", pkgName)),
-	).Compile(context.Background(), rego.CompilePartial(false))
-	if err != nil {
-		panic(err)
-	}
-	return cr.Bytes
+	return compiledRego, pkgName
 }
 
 func NewCodeInjectionSignature() (types.Signature, error) {
 	return NewSignature(types.SignatureMetadata{
-		ID: "TRC_WASM_CODE_INJECTION",
+		ID:   "TRC_WASM_CODE_INJECTION",
+		Name: "Code Injection WASM",
 	}, []types.SignatureEventSelector{
 		{Source: "tracee", Name: "ptrace"},
 		{Source: "tracee", Name: "open"},
@@ -70,7 +59,8 @@ func NewCodeInjectionSignature() (types.Signature, error) {
 
 func NewAntiDebuggingSignature() (types.Signature, error) {
 	return NewSignature(types.SignatureMetadata{
-		ID: "TRC_WASM_ANTI_DEBUGGING",
+		ID:   "TRC_WASM_ANTI_DEBUGGING",
+		Name: "Anti Debugging WASM",
 	}, []types.SignatureEventSelector{
 		{Source: "tracee", Name: "ptrace"},
 	}, []string{antiDebuggingPtracemeRego, helpersRego})
@@ -80,11 +70,18 @@ type signature struct {
 	metadata types.SignatureMetadata
 	selector []types.SignatureEventSelector
 	cb       types.SignatureHandler
-	rego     *opa.OPA
+	rego     *rego.Rego
+	pq       rego.PreparedEvalQuery
 }
 
 func NewSignature(metadata types.SignatureMetadata, selector []types.SignatureEventSelector, regoCodes []string) (types.Signature, error) {
-	rego, err := opa.New().WithPolicyBytes(compileRegoToWasm(regoCodes)).Init()
+	compiledRego, pkgName := compileRego(regoCodes)
+	rego := rego.New(
+		rego.Compiler(compiledRego),
+		rego.Query(fmt.Sprintf("data.%s.tracee_match = x", pkgName)),
+		rego.Target("wasm"),
+	)
+	pq, err := rego.PrepareForEval(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -92,6 +89,7 @@ func NewSignature(metadata types.SignatureMetadata, selector []types.SignatureEv
 		metadata: metadata,
 		selector: selector,
 		rego:     rego,
+		pq:       pq,
 	}, nil
 }
 
@@ -110,21 +108,13 @@ func (s *signature) GetSelectedEvents() ([]types.SignatureEventSelector, error) 
 
 func (s *signature) OnEvent(event types.Event) error {
 	var input interface{} = event
-	results, err := s.rego.Eval(context.Background(), &input)
+	results, err := s.pq.Eval(context.Background(), rego.EvalInput(input))
 	if err != nil {
 		return err
 	}
-	if results == nil {
-		return fmt.Errorf("no match")
-	}
 
-	r, ok := results.Result.([]interface{})
-	if !ok || len(r) == 0 {
-		return nil
-	}
-
-	if len(r) > 0 && r[0] != nil {
-		switch v := r[0].(type) {
+	if len(results) > 0 && len(results[0].Expressions) > 0 && results[0].Expressions[0].Value != nil {
+		switch v := results[0].Expressions[0].Value.(type) {
 		case bool:
 			if v {
 				s.cb(types.Finding{
