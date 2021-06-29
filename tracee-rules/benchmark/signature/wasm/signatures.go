@@ -1,8 +1,9 @@
 package wasm
 
 import (
-	"context"
 	_ "embed"
+
+	"context"
 	"fmt"
 	"regexp"
 	"strings"

@@ -6,11 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aquasecurity/tracee/tracee-rules/engine"
-
 	"github.com/aquasecurity/tracee/tracee-rules/benchmark/signature/golang"
 	"github.com/aquasecurity/tracee/tracee-rules/benchmark/signature/rego"
 	"github.com/aquasecurity/tracee/tracee-rules/benchmark/signature/wasm"
+	"github.com/aquasecurity/tracee/tracee-rules/engine"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/stretchr/testify/require"
 )
@@ -19,7 +18,7 @@ const (
 	inputEventsCount = 1000
 )
 
-func BenchmarkOnEventCodeInjectionRule(b *testing.B) {
+func BenchmarkOnEventWithCodeInjectionSignature(b *testing.B) {
 	benches := []struct {
 		name    string
 		sigFunc func() (types.Signature, error)
@@ -52,7 +51,7 @@ func BenchmarkOnEventCodeInjectionRule(b *testing.B) {
 	}
 }
 
-func BenchmarkEngineWithCodeInjection(b *testing.B) {
+func BenchmarkEngineWithCodeInjectionSignature(b *testing.B) {
 	benches := []struct {
 		name    string
 		sigFunc func() (types.Signature, error)
@@ -89,14 +88,12 @@ func BenchmarkEngineWithCodeInjection(b *testing.B) {
 
 				// Start rules engine and wait until all events are processed
 				e.Start(waitForEventsProcessed(inputs.Tracee))
-
-				b.Logf("Test is done with %d findings", len(output))
 			}
 		})
 	}
 }
 
-func BenchmarkEngineWithMultipleRules(b *testing.B) {
+func BenchmarkEngineWithMultipleSignatures(b *testing.B) {
 	benches := []struct {
 		name     string
 		sigFuncs []func() (types.Signature, error)
@@ -140,8 +137,6 @@ func BenchmarkEngineWithMultipleRules(b *testing.B) {
 
 				// Start rules engine and wait until all events are processed
 				e.Start(waitForEventsProcessed(inputs.Tracee))
-
-				b.Logf("Test is done with %d findings", len(output))
 			}
 		})
 	}
@@ -158,6 +153,11 @@ func BenchmarkEngineWithNSignatures(b *testing.B) {
 		sigCount []int
 	}{
 		{
+			name:     "noop",
+			sigFunc:  golang.NewNoopSignature,
+			sigCount: []int{2, 4, 8, 16, 32, 64, 128},
+		},
+		{
 			name:     "rego",
 			sigFunc:  rego.NewCodeInjectionSignature,
 			sigCount: []int{2, 4, 8, 16, 32, 64, 128},
@@ -168,9 +168,10 @@ func BenchmarkEngineWithNSignatures(b *testing.B) {
 			sigCount: []int{2, 4, 8, 16, 32, 64, 128},
 		},
 		{
-			name:     "wasm",
-			sigFunc:  wasm.NewCodeInjectionSignature,
-			sigCount: []int{2},
+			name:    "wasm",
+			sigFunc: wasm.NewCodeInjectionSignature,
+			// This takes time ...
+			sigCount: []int{2, 4, 8, 16, 32, 64, 128},
 		},
 	}
 
@@ -196,8 +197,6 @@ func BenchmarkEngineWithNSignatures(b *testing.B) {
 
 					// Start rules engine and wait until all events are processed
 					e.Start(waitForEventsProcessed(inputs.Tracee))
-
-					b.Logf("Test is done with %d findings", len(output))
 				}
 			})
 		}
