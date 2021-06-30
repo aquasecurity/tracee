@@ -125,8 +125,8 @@ func (cfg OutputConfig) Validate() error {
 
 // Validate does static validation of the configuration
 func (tc Config) Validate() error {
-	if tc.Filter.EventsToTrace == nil {
-		return fmt.Errorf("eventsToTrace is nil")
+	if tc.Filter == nil || tc.Filter.EventsToTrace == nil {
+		return fmt.Errorf("Filter or EventsToTrace is nil")
 	}
 
 	for _, e := range tc.Filter.EventsToTrace {
@@ -168,7 +168,7 @@ func (tc Config) Validate() error {
 		}
 	}
 	_, err := os.Stat(tc.BPFObjPath)
-	if err == nil {
+	if err != nil {
 		return err
 	}
 
