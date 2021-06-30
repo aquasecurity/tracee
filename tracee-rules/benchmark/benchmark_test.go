@@ -146,6 +146,10 @@ func BenchmarkEngineWithMultipleRules(b *testing.B) {
 }
 
 func BenchmarkEngineWithNSignatures(b *testing.B) {
+	if testing.Short() {
+		b.Skip("skipping in short mode")
+	}
+
 	benches := []struct {
 		name     string
 		sigFunc  func() (types.Signature, error)
