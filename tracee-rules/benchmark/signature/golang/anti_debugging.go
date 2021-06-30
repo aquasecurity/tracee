@@ -13,7 +13,7 @@ type antiDebugging struct {
 	metadata types.SignatureMetadata
 }
 
-func NewAntiDebuggingSignature() types.Signature {
+func NewAntiDebuggingSignature() (types.Signature, error) {
 	return &antiDebugging{
 		metadata: types.SignatureMetadata{
 			Name:        "Anti-Debugging",
@@ -24,7 +24,7 @@ func NewAntiDebuggingSignature() types.Signature {
 				"MITRE ATT&CK": "Defense Evasion: Execution Guardrails",
 			},
 		},
-	}
+	}, nil
 }
 
 func (sig *antiDebugging) Init(cb types.SignatureHandler) error {

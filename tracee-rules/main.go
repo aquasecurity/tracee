@@ -42,6 +42,7 @@ func main() {
 			if err != nil {
 				return err
 			}
+
 			var loadedSigIDs []string
 			for _, s := range sigs {
 				m, err := s.GetMetadata()
