@@ -1,6 +1,7 @@
 package benchmark
 
 import (
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -141,6 +142,57 @@ func BenchmarkEngineWithMultipleRules(b *testing.B) {
 				b.Logf("Test is done with %d findings", len(output))
 			}
 		})
+	}
+}
+
+func BenchmarkEngineWithNSignatures(b *testing.B) {
+	benches := []struct {
+		name     string
+		sigFunc  func() (types.Signature, error)
+		sigCount []int
+	}{
+		{
+			name:     "rego",
+			sigFunc:  rego.NewCodeInjectionSignature,
+			sigCount: []int{2, 4, 8, 16, 32, 64, 128},
+		},
+		{
+			name:     "golang",
+			sigFunc:  golang.NewCodeInjectionSignature,
+			sigCount: []int{2, 4, 8, 16, 32, 64, 128},
+		},
+		{
+			name:     "wasm",
+			sigFunc:  wasm.NewCodeInjectionSignature,
+			sigCount: []int{2},
+		},
+	}
+
+	for _, bc := range benches {
+		for _, tc := range bc.sigCount {
+			b.Run(fmt.Sprintf("%s/%dSignatures", bc.name, tc), func(b *testing.B) {
+				sig, _ := bc.sigFunc()
+				sigs := make([]types.Signature, tc)
+				for i := range sigs {
+					sigs[i] = sig
+				}
+
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					// Produce events without timing it
+					b.StopTimer()
+					inputs := ProduceEventsInMemory(inputEventsCount)
+					output := make(chan types.Finding, inputEventsCount*len(sigs))
+					e := engine.NewEngine(sigs, inputs, output, os.Stderr)
+					b.StartTimer()
+
+					// Start rules engine and wait until all events are processed
+					e.Start(waitForEventsProcessed(inputs.Tracee))
+
+					b.Logf("Test is done with %d findings", len(output))
+				}
+			})
+		}
 	}
 }
 
