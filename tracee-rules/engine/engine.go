@@ -67,7 +67,6 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 // once done, it cleans all internal resources, which means the engine is not reusable
 // note that the input and output channels are created by the consumer and therefore are not closed
 func (engine *Engine) Start(done chan bool) {
-	go engine.consumeSources(done)
 	for s, c := range engine.signatures {
 		defer close(c)
 		go func(s types.Signature, c chan types.Event) {
@@ -80,7 +79,7 @@ func (engine *Engine) Start(done chan bool) {
 			}
 		}(s, c)
 	}
-	<-done
+	engine.consumeSources(done)
 }
 
 // matchHandler is a function that runs when a signature is matched
