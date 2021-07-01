@@ -58,6 +58,7 @@ func (fs fakeSignature) OnSignal(signal types.Signal) error {
 	}
 	return nil
 }
+func (fs *fakeSignature) Close() {}
 
 func TestConsumeSources(t *testing.T) {
 	testCases := []struct {
