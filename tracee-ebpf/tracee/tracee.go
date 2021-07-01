@@ -26,6 +26,8 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
+	"golang.org/x/sys/unix"
+	"inet.af/netaddr"
 )
 
 // Config is a struct containing user defined configuration of tracee
@@ -36,6 +38,7 @@ type Config struct {
 	PerfBufferSize     int
 	BlobPerfBufferSize int
 	SecurityAlerts     bool
+	Debug              bool
 	maxPidsCache       int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
 	BPFObjPath         string
 	ChanEvents         chan external.Event
@@ -211,6 +214,7 @@ type Tracee struct {
 	lostWrChannel     chan uint64
 	lostNetChannel    chan uint64
 	printer           eventPrinter
+	bootTime          uint64
 	stats             statsStore
 	capturedFiles     map[string]int64
 	profiledFiles     map[string]profilerInfo
@@ -276,13 +280,17 @@ func New(cfg Config) (*Tracee, error) {
 		setEssential(MemProtAlertEventID)
 	}
 
-	if cfg.Capture.NetIfaces != nil {
+	if cfg.Capture.NetIfaces != nil || cfg.Debug {
 		setEssential(SecuritySocketBindEventID)
 	}
 
+	systemUptime, _ := Uptime()
+	systemBootTime := time.Now().UnixNano() - systemUptime*1000*1000*1000
+
 	// create tracee
 	t := &Tracee{
-		config: cfg,
+		config:   cfg,
+		bootTime: uint64(systemBootTime),
 	}
 	outf := os.Stdout
 	if t.config.Output.OutPath != "" {
@@ -422,6 +430,16 @@ type bucketsCache struct {
 	buckets     map[uint32][]uint32
 	bucketLimit int
 	Null        uint32
+}
+
+func Uptime() (int64, error) {
+	// return seconds since system boot time
+
+	systemInfo := unix.Sysinfo_t{}
+	if err := unix.Sysinfo(&systemInfo); err != nil {
+		return 0, err
+	}
+	return int64(systemInfo.Uptime), nil
 }
 
 func (c *bucketsCache) Init(bucketLimit int) {
@@ -715,6 +733,7 @@ func (t *Tracee) populateBPFMaps() error {
 	bpfConfigMap.Update(uint32(configExtractDynCode), boolToUInt32(t.config.Capture.Mem))
 	bpfConfigMap.Update(uint32(configTraceePid), uint32(os.Getpid()))
 	bpfConfigMap.Update(uint32(configFollowFilter), boolToUInt32(t.config.Filter.Follow))
+	bpfConfigMap.Update(uint32(configDebugNet), boolToUInt32(t.config.Debug))
 
 	// Initialize tail calls program array
 	bpfProgArrayMap, _ := t.bpfModule.GetMap("prog_array")
@@ -945,8 +964,8 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 		}
 	}
 
-	if t.config.Capture.NetIfaces == nil {
-		// SecuritySocketBindEventID is set as an essentialEvent if 'capture net' was chosen by the user.
+	if t.config.Capture.NetIfaces == nil && !t.config.Debug {
+		// SecuritySocketBindEventID is set as an essentialEvent if 'capture net' or 'debug-net' were chosen by the user.
 		networkProbes := []string{"tc_ingress", "tc_egress", "trace_udp_sendmsg", "trace_udp_disconnect", "trace_udp_destroy_sock", "trace_udpv6_destroy_sock", "tracepoint__inet_sock_set_state"}
 		for _, progName := range networkProbes {
 			prog, _ := t.bpfModule.GetProgram(progName)
@@ -970,16 +989,18 @@ func (t *Tracee) initBPF(bpfObjectPath string) error {
 		return err
 	}
 
-	if t.config.Capture.NetIfaces != nil {
-		ifaceName := t.config.Capture.NetIfaces[0]
-		t.tcProbe.ingressHook, err = t.attachTcProg(ifaceName, bpf.BPFTcIngress, "tc_ingress")
-		if err != nil {
-			return err
-		}
+	if t.config.Capture.NetIfaces != nil || t.config.Debug {
+		if t.config.Capture.NetIfaces != nil {
+			ifaceName := t.config.Capture.NetIfaces[0]
+			t.tcProbe.ingressHook, err = t.attachTcProg(ifaceName, bpf.BPFTcIngress, "tc_ingress")
+			if err != nil {
+				return err
+			}
 
-		t.tcProbe.egressHook, err = t.attachTcProg(ifaceName, bpf.BPFTcEgress, "tc_egress")
-		if err != nil {
-			return err
+			t.tcProbe.egressHook, err = t.attachTcProg(ifaceName, bpf.BPFTcEgress, "tc_egress")
+			if err != nil {
+				return err
+			}
 		}
 
 		if err = t.attachNetProbes(); err != nil {
@@ -1683,32 +1704,123 @@ func (t *Tracee) processNetEvents() {
 	for {
 		select {
 		case in := <-t.netChannel:
-			// Sanity check - timestamp, host tid, comm and packet length must exist in all net events
+			// Sanity check - timestamp, event id, host tid and comm must exist in all net events
 			if len(in) < 32 {
 				continue
 			}
 
 			timeStamp := binary.LittleEndian.Uint64(in[0:8])
-			pktLen := binary.LittleEndian.Uint32(in[8:12])
+			netEventId := binary.LittleEndian.Uint32(in[8:12])
+			hostTid := binary.LittleEndian.Uint32(in[12:16])
+			comm := string(bytes.TrimRight(in[16:32], "\x00"))
+			dataBuff := bytes.NewBuffer(in[32:])
 
-			info := gopacket.CaptureInfo{
-				Timestamp:      time.Unix(0, int64(timeStamp)),
-				CaptureLength:  int(pktLen),
-				Length:         int(pktLen),
-				InterfaceIndex: 0, // todo: accept array of interfaces?
-			}
+			// timeStamp is nanoseconds since system boot time
+			timeStampObj := time.Unix(0, int64(timeStamp+t.bootTime))
 
-			err := t.pcapWriter.WritePacket(info, in[12:12+pktLen])
-			if err != nil {
-				t.handleError(err)
-				continue
-			}
+			if netEventId == NetPacket {
+				var pktLen uint32
+				err := binary.Read(dataBuff, binary.LittleEndian, &pktLen)
+				if err != nil {
+					t.handleError(err)
+					continue
+				}
 
-			// todo: maybe we should not flush every packet?
-			err = t.pcapWriter.Flush()
-			if err != nil {
-				t.handleError(err)
-				continue
+				if t.config.Debug {
+					var pktMeta struct {
+						SrcIP    [16]byte
+						DestIP   [16]byte
+						SrcPort  uint16
+						DestPort uint16
+						Protocol uint8
+						_        [7]byte //padding
+					}
+					err = binary.Read(dataBuff, binary.LittleEndian, &pktMeta)
+					if err != nil {
+						t.handleError(err)
+						continue
+					}
+
+					fmt.Printf("%v  %-16s  %-7d  debug_net/packet               Len: %d, SrcIP: %v, SrcPort: %d, DestIP: %v, DestPort: %d, Protocol: %d\n",
+						timeStampObj,
+						comm,
+						hostTid,
+						pktLen,
+						netaddr.IPFrom16(pktMeta.SrcIP),
+						pktMeta.SrcPort,
+						netaddr.IPFrom16(pktMeta.DestIP),
+						pktMeta.DestPort,
+						pktMeta.Protocol)
+				}
+
+				info := gopacket.CaptureInfo{
+					Timestamp:      timeStampObj,
+					CaptureLength:  int(pktLen),
+					Length:         int(pktLen),
+					InterfaceIndex: 0, // todo: accept array of interfaces?
+				}
+
+				err = t.pcapWriter.WritePacket(info, dataBuff.Bytes()[:pktLen])
+				if err != nil {
+					t.handleError(err)
+					continue
+				}
+
+				// todo: maybe we should not flush every packet?
+				err = t.pcapWriter.Flush()
+				if err != nil {
+					t.handleError(err)
+					continue
+				}
+			} else if t.config.Debug {
+				var pkt struct {
+					LocalIP     [16]byte
+					RemoteIP    [16]byte
+					LocalPort   uint16
+					RemotePort  uint16
+					Protocol    uint8
+					_           [3]byte //padding
+					TcpOldState uint32
+					TcpNewState uint32
+					_           [4]byte //padding
+					SockPtr     uint64
+				}
+				err := binary.Read(dataBuff, binary.LittleEndian, &pkt)
+				if err != nil {
+					t.handleError(err)
+					continue
+				}
+
+				switch netEventId {
+				case DebugNetSecurityBind:
+					fmt.Printf("%v  %-16s  %-7d  debug_net/security_socket_bind LocalIP: %v, LocalPort: %d, Protocol: %d\n",
+						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+				case DebugNetUdpSendmsg:
+					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_sendmsg          LocalIP: %v, LocalPort: %d, Protocol: %d\n",
+						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+				case DebugNetUdpDisconnect:
+					fmt.Printf("%v  %-16s  %-7d  debug_net/__udp_disconnect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
+						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+				case DebugNetUdpDestroySock:
+					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_destroy_sock     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
+						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+				case DebugNetUdpV6DestroySock:
+					fmt.Printf("%v  %-16s  %-7d  debug_net/udpv6_destroy_sock   LocalIP: %v, LocalPort: %d, Protocol: %d\n",
+						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+				case DebugNetInetSockSetState:
+					fmt.Printf("%v  %-16s  %-7d  debug_net/inet_sock_set_state  LocalIP: %v, LocalPort: %d, RemoteIP: %v, RemotePort: %d, Protocol: %d, OldState: %d, NewState: %d, SockPtr: 0x%x\n",
+						timeStampObj,
+						comm,
+						hostTid,
+						netaddr.IPFrom16(pkt.LocalIP),
+						pkt.LocalPort,
+						netaddr.IPFrom16(pkt.RemoteIP),
+						pkt.RemotePort,
+						pkt.Protocol,
+						pkt.TcpOldState,
+						pkt.TcpNewState,
+						pkt.SockPtr)
+				}
 			}
 		case lost := <-t.lostNetChannel:
 			t.stats.lostNtCounter.Increment(int(lost))

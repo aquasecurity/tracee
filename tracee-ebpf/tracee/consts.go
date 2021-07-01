@@ -31,6 +31,7 @@ const (
 	configFollowFilter
 	configNewPidFilter
 	configNewContFilter
+	configDebugNet
 )
 
 const (
@@ -167,6 +168,16 @@ const (
 	SecurityBPFEventID
 	SecurityBPFMapEventID
 	MaxEventID
+)
+
+const (
+	NetPacket uint32 = iota
+	DebugNetSecurityBind
+	DebugNetUdpSendmsg
+	DebugNetUdpDisconnect
+	DebugNetUdpDestroySock
+	DebugNetUdpV6DestroySock
+	DebugNetInetSockSetState
 )
 
 // EventsIDToEvent is list of supported events, indexed by their ID
