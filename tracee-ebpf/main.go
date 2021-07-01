@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -45,6 +46,7 @@ func main() {
 				PerfBufferSize:     c.Int("perf-buffer-size"),
 				BlobPerfBufferSize: c.Int("blob-perf-buffer-size"),
 				SecurityAlerts:     c.Bool("security-alerts"),
+				Debug:              c.Bool("debug"),
 			}
 			output, err := prepareOutput(c.StringSlice("output"))
 			if err != nil {
@@ -288,6 +290,9 @@ Use this flag multiple times to choose multiple capture options
 			capture.Mem = true
 		} else if strings.HasPrefix(cap, "net=") {
 			iface := strings.TrimPrefix(cap, "net=")
+			if _, err := net.InterfaceByName(iface); err != nil {
+				return tracee.CaptureConfig{}, fmt.Errorf("invalid network interface: %s", iface)
+			}
 			capture.NetIfaces = append(capture.NetIfaces, iface)
 		} else if cap == "all" {
 			capture.FileWrite = true
