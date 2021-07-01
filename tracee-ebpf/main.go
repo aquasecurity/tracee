@@ -156,19 +156,26 @@ func prepareOutput(outputSlice []string) (tracee.OutputConfig, error) {
 Control how and where output is printed.
 Possible options:
 
-[format:]{table,table-verbose,json,gob,gotemplate=/path/to/template}   output events in the specified format. for gotemplate, specify the mandatory template file
-out-file:/path/to/file                                                 write the output to a specified file. the path to the file will be created if not existing and the file will be deleted if existing (default: stdout)
-err-file:/path/to/file                                                 write the errors to a specified file. the path to the file will be created if not existing and the file will be deleted if existing (default: stderr)
-option:{stack-addresses,detect-syscall,exec-env}                       augment output according to given options (default: none)
-  stack-addresses                                                    include stack memory addresses for each event
-  detect-syscall                                                     when tracing kernel functions which are not syscalls, detect and show the original syscall that called that function
-  exec-env                                                           when tracing execve/execveat, show the environment variables that were used for execution
+[format:]table                                     output events in table format
+[format:]table-verbose                             output events in table format with extra fields per event
+[format:]json                                      output events in json format
+[format:]gob                                       output events in gob format
+[format:]gotemplate=/path/to/template              output events formatted using a given gotemplate file
+
+out-file:/path/to/file                             write the output to a specified file. create/trim the file if exists (default: stdout)
+err-file:/path/to/file                             write the errors to a specified file. create/trim the file if exists (default: stderr)
+
+option:{stack-addresses,detect-syscall,exec-env}   augment output according to given options (default: none)
+  stack-addresses                                  include stack memory addresses for each event
+  detect-syscall                                   when tracing kernel functions which are not syscalls, detect and show the original syscall that called that function
+  exec-env                                         when tracing execve/execveat, show the environment variables that were used for execution
+
 Examples:
   --output json                                            | output as json
   --output gotemplate=/path/to/my.tmpl                     | output as the provided go template
   --output out-file:/my/out err-file:/my/err               | output to /my/out and errors to /my/err
 
-Use this flag multiple times to choose multiple capture options	
+Use this flag multiple times to choose multiple output options
 `
 
 	res := tracee.OutputConfig{}
