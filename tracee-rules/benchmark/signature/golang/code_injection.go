@@ -131,3 +131,4 @@ func (sig *codeInjection) OnEvent(e types.Event) error {
 func (sig *codeInjection) OnSignal(s types.Signal) error {
 	return nil
 }
+func (sig *codeInjection) Close() {}

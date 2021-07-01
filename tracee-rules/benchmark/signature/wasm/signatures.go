@@ -139,3 +139,4 @@ func (s *signature) OnSignal(_ types.Signal) error {
 	// noop
 	return nil
 }
+func (s *signature) Close() {}

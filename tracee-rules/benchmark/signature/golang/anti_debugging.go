@@ -71,3 +71,5 @@ func (sig *antiDebugging) OnEvent(e types.Event) error {
 func (sig *antiDebugging) OnSignal(_ types.Signal) error {
 	return nil
 }
+
+func (sig *antiDebugging) Close() {}

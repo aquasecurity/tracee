@@ -167,6 +167,7 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 func (sig *stdioOverSocket) OnSignal(s types.Signal) error {
 	return nil
 }
+func (sig *stdioOverSocket) Close() {}
 
 func isSocketDuplicatedIntoStdio(sig *stdioOverSocket, eventObj tracee.Event, pidSocketMap map[int]connectedAddress, srcFd int, dstFd int) error {
 	address, socketfdExists := pidSocketMap[srcFd]

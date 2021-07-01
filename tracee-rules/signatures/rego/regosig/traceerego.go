@@ -169,6 +169,8 @@ func (sig *RegoSignature) OnSignal(signal types.Signal) error {
 	return fmt.Errorf("function OnSignal is not implemented")
 }
 
+func (sig *RegoSignature) Close() {}
+
 func (sig *RegoSignature) evalQuery(query string) (interface{}, error) {
 	pq, err := rego.New(
 		rego.Compiler(sig.compiledRego),

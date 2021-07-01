@@ -9,6 +9,8 @@ type Signature interface {
 	GetSelectedEvents() ([]SignatureEventSelector, error)
 	//Init allows the signature to initialize its internal state
 	Init(cb SignatureHandler) error
+	//Close cleans the signature after Init operation
+	Close()
 	//OnEvent allows the signature to process events passed by the Engine. this is the business logic of the signature
 	OnEvent(event Event) error
 	//OnSignal allows the signature to handle lifecycle events of the signature
