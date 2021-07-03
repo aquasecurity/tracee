@@ -9,6 +9,7 @@ import (
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type fakeSignature struct {
@@ -215,7 +216,8 @@ func TestConsumeSources(t *testing.T) {
 				return nil
 			}
 
-			e := NewEngine(sigs, inputs, outputChan, logger)
+			e, err := NewEngine(sigs, inputs, outputChan, logger)
+			require.NoError(t, err, "constructing engine")
 			go func() {
 				e.Start(done)
 			}()
