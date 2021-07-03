@@ -10,12 +10,18 @@ import (
 )
 
 type codeInjection struct {
-	cb       types.SignatureHandler
-	metadata types.SignatureMetadata
+	processMemFileRegexp *regexp.Regexp
+	cb                   types.SignatureHandler
+	metadata             types.SignatureMetadata
 }
 
 func NewCodeInjectionSignature() (types.Signature, error) {
+	processMemFileRegexp, err := regexp.Compile(`/proc/(?:\d.+|self)/mem`)
+	if err != nil {
+		return nil, err
+	}
 	return &codeInjection{
+		processMemFileRegexp: processMemFileRegexp,
 		metadata: types.SignatureMetadata{
 			Name:        "Code injection",
 			Description: "Possible process injection detected during runtime",
@@ -28,15 +34,8 @@ func NewCodeInjectionSignature() (types.Signature, error) {
 	}, nil
 }
 
-var processMemFileRegexp *regexp.Regexp
-
 func (sig *codeInjection) Init(cb types.SignatureHandler) error {
 	sig.cb = cb
-	var err error
-	processMemFileRegexp, err = regexp.Compile(`/proc/(?:\d.+|self)/mem`)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -73,7 +72,7 @@ func (sig *codeInjection) OnEvent(e types.Event) error {
 			if err != nil {
 				return err
 			}
-			if processMemFileRegexp.MatchString(pathname.Value.(string)) {
+			if sig.processMemFileRegexp.MatchString(pathname.Value.(string)) {
 				sig.cb(types.Finding{
 					//Signature: sig,
 					SigMetadata: sig.metadata,
