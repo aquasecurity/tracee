@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"errors"
 	"io"
 	"log"
 
@@ -24,7 +25,7 @@ type EventSources struct {
 
 // NewEngine creates a new rules-engine with the given arguments
 // inputs and outputs are given as channels created by the consumer
-func NewEngine(sigs []types.Signature, sources EventSources, output chan types.Finding, logWriter io.Writer) *Engine {
+func NewEngine(sigs []types.Signature, sources EventSources, output chan types.Finding, logWriter io.Writer) (*Engine, error) {
 	engine := Engine{}
 	engine.logger = *log.New(logWriter, "", 0)
 	engine.inputs = sources
@@ -59,7 +60,10 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 			continue
 		}
 	}
-	return &engine
+	if len(sigs) != len(engine.signatures) {
+		return nil, errors.New("one or more signatures are not uniquely identifiable")
+	}
+	return &engine, nil
 }
 
 // Start starts processing events and detecting signatures

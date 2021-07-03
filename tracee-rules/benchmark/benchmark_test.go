@@ -83,7 +83,8 @@ func BenchmarkEngineWithCodeInjection(b *testing.B) {
 				s, err := bc.sigFunc()
 				require.NoError(b, err, bc.name)
 
-				e := engine.NewEngine([]types.Signature{s}, inputs, output, os.Stderr)
+				e, err := engine.NewEngine([]types.Signature{s}, inputs, output, os.Stderr)
+				require.NoError(b, err, "constructing engine")
 				b.StartTimer()
 
 				// Start rules engine and wait until all events are processed
@@ -133,7 +134,8 @@ func BenchmarkEngineWithMultipleRules(b *testing.B) {
 				inputs := ProduceEventsInMemory(inputEventsCount)
 				output := make(chan types.Finding, inputEventsCount*len(sigs))
 
-				e := engine.NewEngine(sigs, inputs, output, os.Stderr)
+				e, err := engine.NewEngine(sigs, inputs, output, os.Stderr)
+				require.NoError(b, err, "constructing engine")
 				b.StartTimer()
 
 				// Start rules engine and wait until all events are processed
@@ -175,9 +177,10 @@ func BenchmarkEngineWithNSignatures(b *testing.B) {
 	for _, bc := range benches {
 		for _, tc := range bc.sigCount {
 			b.Run(fmt.Sprintf("%s/%dSignatures", bc.name, tc), func(b *testing.B) {
-				sig, _ := bc.sigFunc()
 				sigs := make([]types.Signature, tc)
 				for i := range sigs {
+					sig, err := bc.sigFunc()
+					require.NoError(b, err, "constructing signature")
 					sigs[i] = sig
 				}
 
@@ -187,7 +190,8 @@ func BenchmarkEngineWithNSignatures(b *testing.B) {
 					b.StopTimer()
 					inputs := ProduceEventsInMemory(inputEventsCount)
 					output := make(chan types.Finding, inputEventsCount*len(sigs))
-					e := engine.NewEngine(sigs, inputs, output, os.Stderr)
+					e, err := engine.NewEngine(sigs, inputs, output, os.Stderr)
+					require.NoError(b, err, "constructing engine")
 					b.StartTimer()
 
 					// Start rules engine and wait until all events are processed

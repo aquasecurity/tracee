@@ -10,10 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/aquasecurity/tracee/tracee-rules/types"
-
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
-	cli "github.com/urfave/cli/v2"
+	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"github.com/urfave/cli/v2"
 )
 
 type Clock interface {
@@ -80,7 +79,10 @@ func main() {
 			if err != nil {
 				return err
 			}
-			e := engine.NewEngine(sigs, inputs, output, os.Stderr)
+			e, err := engine.NewEngine(sigs, inputs, output, os.Stderr)
+			if err != nil {
+				return fmt.Errorf("constructing engine: %w", err)
+			}
 			e.Start(sigHandler())
 			return nil
 		},
