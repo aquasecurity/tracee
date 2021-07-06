@@ -327,7 +327,7 @@ typedef struct event_context {
 } context_t;
 
 typedef struct args {
-    unsigned long args[6];
+    unsigned long args[7]; // the last element of this array is used to save the function entry timestamp
 } args_t;
 
 typedef struct bin_args {
@@ -1477,6 +1477,7 @@ static __always_inline int load_args(args_t *args, bool delete, u32 event_id)
     args->args[3] = saved_args->args[3];
     args->args[4] = saved_args->args[4];
     args->args[5] = saved_args->args[5];
+    args->args[6] = saved_args->args[6];
 
     if (delete)
         bpf_map_delete_elem(&args_map, &id);
@@ -1668,7 +1669,10 @@ static __always_inline int trace_ret_generic(void *ctx, u32 id, u64 types, u64 t
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     u8 argnum = save_args_to_submit_buf(types, tags, args);
-    init_and_save_context(ctx, submit_p, id, argnum, ret);
+    // resave the context to update timestamp
+    context_t context = init_and_save_context(ctx, submit_p, id, argnum, ret);
+    context.ts = args->args[6];
+    save_context_to_buf(submit_p, (void*)&context);
 
     events_perf_submit(ctx);
     return 0;
@@ -1877,6 +1881,8 @@ if (CONFIG_ARCH_HAS_SYSCALL_WRAPPER) {
 
     // exit, exit_group and rt_sigreturn syscalls don't return - don't save args for them
     if (id != SYS_EXIT && id != SYS_EXIT_GROUP && id != SYS_RT_SIGRETURN) {
+        // save the timestamp at function entry
+        args_tmp.args[6] = bpf_ktime_get_ns()/1000;
         save_args(&args_tmp, id);
     }
 
