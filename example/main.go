@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
-	"time"
 
 	"github.com/aquasecurity/tracee/tracee-rules/benchmark/signature/golang"
 
@@ -18,22 +17,18 @@ import (
 
 const (
 	inputEventsCount = 10000
-	numSigs          = 10
 )
 
-func main() {
+func SetupTracee(sigs []types.Signature) (*int, string) {
 	traceeEventsChan, traceeRulesInputChan, totalEvents, done, trcE, tmpDir, err := setupTraceeBPF()
-	defer func() {
-		_ = os.RemoveAll(tmpDir)
-	}()
-	fmt.Println(tmpDir)
+	fmt.Println("tracee tmpDir: ", tmpDir)
 
 	go func() {
 		eventForwarder(traceeEventsChan, traceeRulesInputChan, &totalEvents)
 	}()
 
 	output := make(chan types.Finding, inputEventsCount)
-	e, err := engine.NewEngine(addNSigs(numSigs), engine.EventSources{Tracee: traceeRulesInputChan}, output, os.Stderr)
+	e, err := engine.NewEngine(sigs, engine.EventSources{Tracee: traceeRulesInputChan}, output, os.Stderr)
 	if err != nil {
 		panic(err)
 	}
@@ -50,26 +45,36 @@ func main() {
 		fmt.Println("starting tracee-rules....")
 		e.Start(done)
 	}()
+	return &totalEvents, tmpDir
+}
+
+func AddNSigs(sigFuncs []func() (types.Signature, error)) []types.Signature {
+	var sigs []types.Signature
+	for _, sf := range sigFuncs {
+		s, err := sf()
+		if err != nil {
+			panic(err)
+		}
+		sigs = append(sigs, s)
+	}
+	return sigs
+}
+
+func main() {
+	totalEvents, tmpDir := SetupTracee(AddNSigs([]func() (types.Signature, error){
+		golang.NewCodeInjectionSignature,
+		//rego.NewCodeInjectionSignature,
+		//wasm.NewCodeInjectionSignature,
+	}))
+	defer func() {
+		_ = os.RemoveAll(tmpDir)
+	}()
 
 	sig := make(chan os.Signal, 1)
-	//go func() {
-	//	stopAfterNEvents(totalEvents, sig)
-	//}()
-
 	signal.Notify(sig, os.Interrupt)
 	fmt.Println("waiting for interrupt to finish...")
 	<-sig
-	fmt.Println("total events: ", totalEvents)
-}
-
-func stopAfterNEvents(totalEvents int, sig chan os.Signal) {
-	for {
-		if totalEvents >= inputEventsCount {
-			fmt.Println("total events: ", totalEvents)
-			sig <- os.Interrupt
-		}
-		time.Sleep(time.Second * 1)
-	}
+	fmt.Println("total events: ", *totalEvents)
 }
 
 func setupTraceeBPF() (chan external.Event, chan types.Event, int, chan bool, *tracee.Tracee, string, error) {
@@ -100,7 +105,7 @@ func setupTraceeBPF() (chan external.Event, chan types.Event, int, chan bool, *t
 		},
 		Capture:            &tracee.CaptureConfig{OutputPath: tmpDir},
 		ChanEvents:         traceeEventsChan,
-		BPFObjPath:         "/tmp/tracee/tracee.bpf.5_8_0-55-generic.v0_5_4-7-g049c20d.o",
+		BPFObjPath:         "tracee.bpf.5_8_0-55-generic.v0_5_4-18-g31f21b8.o",
 		Output:             &tracee.OutputConfig{Format: "table"},
 		PerfBufferSize:     1024,
 		BlobPerfBufferSize: 1024,
@@ -109,20 +114,6 @@ func setupTraceeBPF() (chan external.Event, chan types.Event, int, chan bool, *t
 		panic(err)
 	}
 	return traceeEventsChan, traceeRulesInputChan, totalEvents, done, trcE, tmpDir, err
-}
-
-func addNSigs(numSigs int) []types.Signature {
-	var sigs []types.Signature
-	for i := 0; i < numSigs; i++ {
-		s, err := golang.NewCodeInjectionSignature()
-		//s, err := rego.NewCodeInjectionSignature()
-		//s, err := wasm.NewCodeInjectionSignature()
-		if err != nil {
-			panic(err)
-		}
-		sigs = append(sigs, s)
-	}
-	return sigs
 }
 
 // Event forwarder from tracee-ebpf to tracee-rules
