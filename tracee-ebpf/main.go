@@ -569,7 +569,7 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 			continue
 		}
 
-		return tracee.Filter{}, fmt.Errorf("invalid filter option specified, use '--filter help' for more info")
+		return tracee.Filter{}, fmt.Errorf("invalid filter option specified, use '--trace help' for more info")
 	}
 
 	var err error
