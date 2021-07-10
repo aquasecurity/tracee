@@ -1307,7 +1307,7 @@ static __always_inline int save_path_to_str_buf(buf_t *string_p, const struct pa
                 bpf_probe_read(&dentry, sizeof(struct dentry*), &mnt_p->mnt_mountpoint);
                 bpf_probe_read(&mnt_p, sizeof(struct mount*), &mnt_p->mnt_parent);
                 bpf_probe_read(&mnt_parent_p, sizeof(struct mount*), &mnt_p->mnt_parent);
-                bpf_probe_read(&vfsmnt, sizeof(struct vfsmount*), (const void*)&mnt_p->mnt);
+                vfsmnt = &mnt_p->mnt;
                 continue;
             }
             // Global root - path fully parsed
