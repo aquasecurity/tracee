@@ -23,7 +23,7 @@ BPF_SRC := tracee/tracee.bpf.c
 ifndef CORE
 OUT_BPF := $(OUT_DIR)/tracee.bpf.$(subst .,_,$(KERN_RELEASE)).$(subst .,_,$(VERSION)).o
 else
-OUT_BPF := $(OUT_DIR)/tracee.bpf.core.$(subst .,_,$(VERSION)).o
+OUT_BPF := $(OUT_DIR)/tracee.bpf.core.o
 endif
 BPF_HEADERS := 3rdparty/include
 BPF_BUNDLE := $(OUT_DIR)/tracee.bpf.tar.gz
@@ -47,9 +47,9 @@ build: $(OUT_BIN)
 
 go_env := GOOS=linux GOARCH=$(ARCH:x86_64=amd64) CC=$(CMD_CLANG) CGO_CFLAGS="-I $(abspath $(LIBBPF_HEADERS))" CGO_LDFLAGS="$(abspath $(LIBBPF_OBJ))"
 ifndef DOCKER
-$(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(filter-out *_test.go,$(GO_SRC)) $(BPF_BUNDLE) | $(OUT_DIR)
+$(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(OUT_DIR)/tracee.bpf.core.o $(filter-out *_test.go,$(GO_SRC)) $(BPF_BUNDLE) | $(OUT_DIR)
 	$(go_env) go build -v -o $(OUT_BIN) \
-	-ldflags "-X main.version=$(VERSION) -X main.bpf_core=$(CORE)"
+	-ldflags "-extldflags '-static' -X main.version=$(VERSION) -X main.bpf_core=$(CORE)"
 else 
 $(OUT_BIN): $(DOCKER_BUILDER) | $(OUT_DIR)
 	$(call docker_builder_make,$@ VERSION=$(VERSION))
@@ -119,7 +119,7 @@ $(OUT_DIR)/tracee.bpf.%.o: $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compi
 	rm $(@:.o=.ll)
 else
 #docker no, CO:RE yes
-$(OUT_DIR)/tracee.bpf.core.%.o: $(BPF_SRC) $(LIBBPF_HEADERS) $(CMD_CLANG)
+$(OUT_DIR)/tracee.bpf.core.o: $(BPF_SRC) $(LIBBPF_HEADERS) $(CMD_CLANG)
 	$(CMD_CLANG) \
 		-I $(LIBBPF_HEADERS)/bpf \
 		-I $(BPF_HEADERS) \

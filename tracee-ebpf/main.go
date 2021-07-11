@@ -27,6 +27,7 @@ var buildPolicy string
 
 // These vars are supposed to be injected at build time
 //go:embed "dist/tracee.bpf/*"
+//go:embed "dist/tracee.bpf.core.o"
 var bpfBundleInjected embed.FS
 var version string
 var bpf_core string
@@ -1020,6 +1021,14 @@ func printList() {
 // It first tries in the paths given by the dirs, and then a system lookup
 func locateFile(file string, dirs []string) string {
 	var res string
+
+	if filepath.IsAbs(file) {
+		_, err := os.Stat(file)
+		if err == nil {
+			return file
+		}
+	}
+
 	for _, dir := range dirs {
 		if dir != "" {
 			fi, err := os.Stat(filepath.Join(dir, file))
@@ -1047,11 +1056,6 @@ func getBPFObject() (string, error) {
 		return bpfPath, nil
 	}
 
-	bpfObjFileName := fmt.Sprintf("tracee.bpf.%s.%s.o", strings.ReplaceAll(tracee.UnameRelease(), ".", "_"), strings.ReplaceAll(version, ".", "_"))
-	if bpf_core != "" {
-		bpfObjFileName = fmt.Sprintf("tracee.bpf.core.%s.o", strings.ReplaceAll(version, ".", "_"))
-	}
-
 	exePath, err := os.Executable()
 	if err != nil {
 		return "", err
@@ -1061,6 +1065,20 @@ func getBPFObject() (string, error) {
 		filepath.Dir(exePath),
 		traceeInstallPath,
 	}
+
+	bpfObjFileName := fmt.Sprintf("tracee.bpf.%s.%s.o", strings.ReplaceAll(tracee.UnameRelease(), ".", "_"), strings.ReplaceAll(version, ".", "_"))
+	if bpf_core != "" {
+		s, err := unpackCOREBinary()
+		if err != nil {
+			return "", err
+		}
+		bpfObjFileName = s
+		if debug {
+			fmt.Printf("unpacked CO:RE bpf object file to: %s\n", bpfObjFileName)
+		}
+		searchPaths = []string{}
+	}
+
 	bpfObjFilePath := locateFile(bpfObjFileName, searchPaths)
 	if bpfObjFilePath != "" && debug {
 		fmt.Printf("found bpf object file at: %s\n", bpfObjFilePath)
@@ -1085,6 +1103,23 @@ func getBPFObject() (string, error) {
 		return "", fmt.Errorf("could not find or build the bpf object file")
 	}
 	return bpfObjFilePath, nil
+}
+
+func unpackCOREBinary() (string, error) {
+	b, err := bpfBundleInjected.ReadFile("dist/tracee.bpf.core.o")
+	if err != nil {
+		return "", err
+	}
+	f, err := ioutil.TempFile("/tmp/tracee", "tracee.bpf.core.o")
+	if err != nil {
+		return "", err
+	}
+	_, err = f.Write(b)
+	if err != nil {
+		return "", err
+	}
+	f.Close()
+	return f.Name(), nil
 }
 
 // unpackBPFBundle unpacks the bundle into the provided directory
