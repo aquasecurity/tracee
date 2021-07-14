@@ -12,7 +12,7 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig"
-	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
+	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 

@@ -20,7 +20,7 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
-	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
+	"github.com/aquasecurity/tracee/tracee-ebpf/external"
 )
 
 // Config is a struct containing user defined configuration of tracee

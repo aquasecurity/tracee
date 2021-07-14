@@ -9,7 +9,7 @@ import (
 	"os"
 	"testing"
 
-	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
+	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"github.com/stretchr/testify/assert"
 )
 

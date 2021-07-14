@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
+	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"

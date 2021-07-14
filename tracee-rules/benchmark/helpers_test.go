@@ -9,7 +9,7 @@ import (
 	"math/rand"
 	"os"
 
-	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
+	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
