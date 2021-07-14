@@ -27,10 +27,8 @@ var buildPolicy string
 
 // These vars are supposed to be injected at build time
 //go:embed "dist/tracee.bpf/*"
-//go:embed "dist/tracee.bpf.core.o"
 var bpfBundleInjected embed.FS
 var version string
-var bpf_core string
 
 func main() {
 	app := &cli.App{
@@ -1067,7 +1065,7 @@ func getBPFObject() (string, error) {
 	}
 
 	bpfObjFileName := fmt.Sprintf("tracee.bpf.%s.%s.o", strings.ReplaceAll(tracee.UnameRelease(), ".", "_"), strings.ReplaceAll(version, ".", "_"))
-	if bpf_core != "" {
+	if bpf_core {
 		s, err := unpackCOREBinary()
 		if err != nil {
 			return "", err
@@ -1106,7 +1104,7 @@ func getBPFObject() (string, error) {
 }
 
 func unpackCOREBinary() (string, error) {
-	b, err := bpfBundleInjected.ReadFile("dist/tracee.bpf.core.o")
+	b, err := coreObject.ReadFile("dist/tracee.bpf.core.o")
 	if err != nil {
 		return "", err
 	}
