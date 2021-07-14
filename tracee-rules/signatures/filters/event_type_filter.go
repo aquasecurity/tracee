@@ -45,6 +45,7 @@ func createEventFilter(signatures []types.Signature, logger log.Logger) (*roarin
 			}
 		}
 	}
+	return eventFilter, nil
 }
 
 // Return a bitmap representing all the signatures that watch the given event't type
