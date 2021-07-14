@@ -15,7 +15,7 @@ type EventTypeFilter struct {
 }
 
 // Create an EventTypeFilter according to the signatures watched events types.
-func createEventFilter(signatures []types.Signature, logger log.Logger) (*roaring.Bitmap, error) {
+func createEventFilter(signatures []types.Signature, logger log.Logger) (*EventTypeFilter, error) {
 	eventFilter := EventTypeFilter{}
 	eventFilter.logger = logger
 	eventFilter.signatureBitmapMatcher = make(map[types.Event]roaring.Bitmap)
@@ -49,6 +49,6 @@ func createEventFilter(signatures []types.Signature, logger log.Logger) (*roarin
 }
 
 // Return a bitmap representing all the signatures that watch the given event't type
-func filterByEvent(eventFilter EventTypeFilter, filteredEvent tracee.Event) ([]roaring.Bitmap, error) {
+func (eventFilter *EventTypeFilter) filterByEvent(filteredEvent tracee.Event) (*roaring.Bitmap, error) {
 	return eventFilter.signatureBitmapMatcher[filteredEvent.EventName], nil
 }
