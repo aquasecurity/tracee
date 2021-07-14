@@ -895,7 +895,9 @@ func (t *Tracee) Run() error {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
 	done := make(chan struct{})
-	t.printer.Preamble()
+	if t.config.ChanEvents != nil {
+		t.printer.Preamble()
+	}
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
 	go t.processLostEvents()
@@ -904,8 +906,9 @@ func (t *Tracee) Run() error {
 	<-sig
 	t.eventsPerfMap.Stop()
 	t.fileWrPerfMap.Stop()
-	t.printer.Epilogue(t.stats)
-
+	if t.config.ChanEvents != nil {
+		t.printer.Epilogue(t.stats)
+	}
 	// capture profiler stats
 	if t.config.Capture.Profile {
 		f, err := os.Create(filepath.Join(t.config.Capture.OutputPath, "tracee.profile"))
