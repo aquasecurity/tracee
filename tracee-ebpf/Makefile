@@ -49,7 +49,7 @@ build: $(OUT_BIN)
 
 go_env := GOOS=linux GOARCH=$(ARCH:x86_64=amd64) CC=$(CMD_CLANG) CGO_CFLAGS="-I $(abspath $(LIBBPF_HEADERS))" CGO_LDFLAGS="$(abspath $(LIBBPF_OBJ))"
 ifndef DOCKER
-$(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(OUT_DIR)/tracee.bpf.core.o $(filter-out *_test.go,$(GO_SRC)) $(BPF_BUNDLE) | $(OUT_DIR)
+$(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(OUT_BPF) $(filter-out *_test.go,$(GO_SRC)) $(BPF_BUNDLE) | $(OUT_DIR)
 	$(go_env) go build $(GO_BUILD_TAGS) -v -o $(OUT_BIN) \
 	-ldflags "-X main.version=$(VERSION)"
 else 
@@ -121,7 +121,7 @@ $(OUT_DIR)/tracee.bpf.%.o: $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compi
 	rm $(@:.o=.ll)
 else
 #docker no, CO:RE yes
-$(OUT_DIR)/tracee.bpf.core.o: $(BPF_SRC) $(LIBBPF_HEADERS) $(CMD_CLANG)
+$(OUT_BPF): $(BPF_SRC) $(LIBBPF_HEADERS) $(CMD_CLANG)
 	$(CMD_CLANG) \
 		-I $(LIBBPF_HEADERS)/bpf \
 		-I $(BPF_HEADERS) \
