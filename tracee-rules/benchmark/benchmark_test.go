@@ -203,6 +203,47 @@ func BenchmarkEngineWithNSignatures(b *testing.B) {
 	}
 }
 
+func BenchmarkEngineWithNSignaturesVsAIOSignature(b *testing.B) {
+	benches := []struct {
+		name     string
+		sigFuncs []func() (types.Signature, error)
+	}{
+		{
+			name:     "2 separate rego sigs",
+			sigFuncs: []func() (types.Signature, error){rego.NewCodeInjectionSignature, rego.NewAntiDebuggingSignature},
+		},
+		{
+			name:     "1 combined rego sig",
+			sigFuncs: []func() (types.Signature, error){rego.NewAIOSignature},
+		},
+	}
+
+	for _, bc := range benches {
+		b.Run(bc.name, func(b *testing.B) {
+			var sigs []types.Signature
+			for _, s := range bc.sigFuncs {
+				sig, err := s()
+				require.NoError(b, err, "constructing signature")
+				sigs = append(sigs, sig)
+			}
+
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				// Produce events without timing it
+				b.StopTimer()
+				inputs := ProduceEventsInMemory(inputEventsCount)
+				output := make(chan types.Finding, inputEventsCount*len(sigs))
+				e, err := engine.NewEngine(sigs, inputs, output, os.Stderr)
+				require.NoError(b, err, "constructing engine")
+				b.StartTimer()
+
+				// Start rules engine and wait until all events are processed
+				e.Start(waitForEventsProcessed(inputs.Tracee))
+			}
+		})
+	}
+}
+
 func waitForEventsProcessed(eventsCh chan types.Event) chan bool {
 	done := make(chan bool, 1)
 	go func() {

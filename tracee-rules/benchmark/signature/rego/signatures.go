@@ -16,6 +16,9 @@ var (
 
 	//go:embed code_injection.rego
 	codeInjectionRego string
+
+	//go:embed aio.rego
+	aioRego string
 )
 
 func NewCodeInjectionSignature() (types.Signature, error) {
@@ -24,4 +27,8 @@ func NewCodeInjectionSignature() (types.Signature, error) {
 
 func NewAntiDebuggingSignature() (types.Signature, error) {
 	return regosig.NewRegoSignature(antiDebuggingPtracemeRego, helpersRego)
+}
+
+func NewAIOSignature() (types.Signature, error) {
+	return regosig.NewRegoSignature(aioRego, helpersRego)
 }
