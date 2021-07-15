@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
+	filters "github.com/aquasecurity/tracee/tracee-rules/signatures/filters/event_type_filter"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
@@ -19,6 +20,7 @@ type Engine struct {
 	signaturesMutex sync.RWMutex
 	inputs          EventSources
 	output          chan types.Finding
+	filters         []filters.EventTypeFilter
 }
 
 //EventSources is a bundle of input sources used to configure the Engine
@@ -72,6 +74,8 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 			continue
 		}
 	}
+	new_filter, _ := filters.createEventFilter(sigs, engine.logger)
+	engine.filters = []filters.EventTypeFilter{new_filter}
 	engine.signaturesMutex.RLock()
 	lenSigs := len(engine.signatures)
 	engine.signaturesMutex.RUnlock()
@@ -245,4 +249,21 @@ func (engine *Engine) UnloadSignature(signatureId string) error {
 		}
 	}
 	return nil
+}
+
+func (engine *Engine) getFilteredSignaturesCannels(event types.Event) ([]chan types.Event, error) {
+	matchingSignaturesBitmap := roaring.new()
+	for i, filter := range engine.filters {
+		if i == 0 {
+			matchingSignaturesBitmap.Or(filter.filterByEvent(event))
+		} else {
+			matchingSignaturesBitmap.And(filter.filterByEvent(event))
+		}
+	}
+	matchingSignatures := make([]chan types.Event, 0)
+	eventChannelIndexIterator := matchingSignaturesBitmap.Iterator()
+	for eventChannelIndexIterator.HasNext() {
+		matchingSignatures = append(matchingSignatures, engine.signatures[eventChannelIndexIterator.Next()])
+	}
+	return matchingSignatures, nil
 }
