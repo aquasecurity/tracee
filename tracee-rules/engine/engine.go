@@ -7,6 +7,7 @@ import (
 	"log"
 	"sync"
 
+	"github.com/RoaringBitmap/roaring"
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
 	filters "github.com/aquasecurity/tracee/tracee-rules/signatures/filters/event_type_filter"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
