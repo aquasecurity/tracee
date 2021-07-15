@@ -245,7 +245,7 @@ func (engine *Engine) UnloadSignature(signatureId string) error {
 }
 
 func (engine *Engine) getFilteredSignaturesCannels(event types.Event) ([]chan types.Event, error) {
-	matchingSignaturesBitmap := roaring.new()
+	matchingSignaturesBitmap := roaring.New()
 	for i, filter := range engine.filters {
 		if i == 0 {
 			matchingSignaturesBitmap.Or(filter.filterByEvent(event))
