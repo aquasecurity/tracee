@@ -1105,7 +1105,7 @@ func unpackCOREBinary() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	f, err := ioutil.TempFile("/tmp/tracee", "tracee.bpf.core.o")
+	f, err := ioutil.TempFile("", "tracee.bpf.core.o")
 	if err != nil {
 		return "", err
 	}
