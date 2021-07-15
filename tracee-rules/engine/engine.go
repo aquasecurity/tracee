@@ -16,11 +16,12 @@ import (
 type Engine struct {
 	logger          log.Logger
 	signatures      map[types.Signature]chan types.Event
-	signaturesIndex map[types.SignatureEventSelector][]types.Signature
+	signaturesIndex map[int]types.Signature
 	signaturesMutex sync.RWMutex
 	inputs          EventSources
 	output          chan types.Finding
 	filters         []filters.EventTypeFilter
+	removedSigs     []int
 }
 
 //EventSources is a bundle of input sources used to configure the Engine
@@ -40,11 +41,12 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 	engine.output = output
 	engine.signaturesMutex.Lock()
 	engine.signatures = make(map[types.Signature]chan types.Event)
-	engine.signaturesIndex = make(map[types.SignatureEventSelector][]types.Signature)
+	engine.signaturesIndex = make(map[int]types.Signature)
 	engine.signaturesMutex.Unlock()
-	for _, sig := range sigs {
+	for i, sig := range sigs {
 		engine.signaturesMutex.Lock()
 		engine.signatures[sig] = make(chan types.Event)
+		engine.signaturesIndex[i] = sig
 		engine.signaturesMutex.Unlock()
 		meta, err := sig.GetMetadata()
 		if err != nil {
@@ -62,10 +64,6 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 			}
 			if es.Source == "" {
 				engine.logger.Printf("signature %s doesn't declare an input source", meta.Name)
-			} else {
-				engine.signaturesMutex.Lock()
-				engine.signaturesIndex[es] = append(engine.signaturesIndex[es], sig)
-				engine.signaturesMutex.Unlock()
 			}
 		}
 		err = sig.Init(engine.matchHandler)
@@ -117,7 +115,7 @@ func (engine *Engine) unloadAllSignatures() {
 		close(c)
 		delete(engine.signatures, sig)
 	}
-	engine.signaturesIndex = make(map[types.SignatureEventSelector][]types.Signature)
+	engine.signaturesIndex = make(map[int]types.Signature)
 }
 
 // matchHandler is a function that runs when a signature is matched
@@ -187,6 +185,12 @@ func (engine *Engine) LoadSignature(signature types.Signature) (string, error) {
 	}
 	c := make(chan types.Event)
 	engine.signatures[signature] = c
+	if len(engine.removedSigs) == 0 {
+		engine.signaturesIndex[len(engine.signatures)] = signature
+	} else {
+		engine.signaturesIndex[engine.removedSigs[0]] = signature
+		engine.removedSigs = engine.removedSigs[1:]
+	}
 
 	// insert in engine.signaturesIndex map
 	for _, selectedEvent := range selectedEvents {
@@ -195,8 +199,6 @@ func (engine *Engine) LoadSignature(signature types.Signature) (string, error) {
 		}
 		if selectedEvent.Source == "" {
 			engine.logger.Printf("signature %s doesn't declare an input source", metadata.Name)
-		} else {
-			engine.signaturesIndex[selectedEvent] = append(engine.signaturesIndex[selectedEvent], signature)
 		}
 	}
 	if err := signature.Init(engine.matchHandler); err != nil {
@@ -222,10 +224,6 @@ func (engine *Engine) UnloadSignature(signatureId string) error {
 	if signature == nil {
 		return fmt.Errorf("could not find signature with ID: %v", signatureId)
 	}
-	selectedEvents, err := signature.GetSelectedEvents()
-	if err != nil {
-		return fmt.Errorf("failed to unload signature: %w", err)
-	}
 	engine.signaturesMutex.Lock()
 	defer engine.signaturesMutex.Unlock()
 	// remove from engine.signatures map
@@ -234,16 +232,10 @@ func (engine *Engine) UnloadSignature(signatureId string) error {
 		delete(engine.signatures, signature)
 		defer signature.Close()
 		defer close(c)
-	}
-	// remove from engine.signaturesIndex map
-	for _, selectedEvent := range selectedEvents {
-		signatures := engine.signaturesIndex[selectedEvent]
-		for i, sig := range signatures {
-			metadata, _ := sig.GetMetadata()
-			if metadata.ID == signatureId {
-				// signature found, remove it
-				signatures = append(signatures[:i], signatures[i+1:]...)
-				engine.signaturesIndex[selectedEvent] = signatures
+
+		for i, sig := range engine.signaturesIndex {
+			if signature == sig {
+				delete(engine.signaturesIndex, i)
 				break
 			}
 		}
@@ -263,7 +255,7 @@ func (engine *Engine) getFilteredSignaturesCannels(event types.Event) ([]chan ty
 	matchingSignatures := make([]chan types.Event, 0)
 	eventChannelIndexIterator := matchingSignaturesBitmap.Iterator()
 	for eventChannelIndexIterator.HasNext() {
-		matchingSignatures = append(matchingSignatures, engine.signatures[eventChannelIndexIterator.Next()])
+		matchingSignatures = append(matchingSignatures, engine.signatures[engine.signaturesIndex[eventChannelIndexIterator.Next()]])
 	}
 	return matchingSignatures, nil
 }
