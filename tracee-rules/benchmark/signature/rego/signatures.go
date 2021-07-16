@@ -21,6 +21,8 @@ var (
 	aioRego string
 )
 
+const packageNameRegex string = `package\s.*`
+
 func NewCodeInjectionSignature() (types.Signature, error) {
 	return regosig.NewRegoSignature(codeInjectionRego, helpersRego)
 }

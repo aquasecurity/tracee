@@ -28,13 +28,27 @@ type RegoSignature struct {
 	selectedEvents []types.SignatureEventSelector
 }
 
-const queryMatch string = "data.%s.tracee_match"
 const querySelectedEvents string = "data.%s.tracee_selected_events"
 const queryMetadata string = "data.%s.__rego_metadoc__"
 const packageNameRegex string = `package\s.*`
 
+func processRego(regoSigs ...string) string {
+	var regoCodes []string
+	regoCodes = append(regoCodes, `package tracee.aio`)
+	re := regexp.MustCompile(packageNameRegex)
+
+	for i, rs := range regoSigs {
+		regoModuleName := re.FindString(rs)
+		replacer := strings.NewReplacer(regoModuleName, "", "import data.tracee.helpers", "", "eventSelectors", fmt.Sprintf("eventSelectors_%d", i), "__rego_metadoc__", fmt.Sprintf("__rego_metadoc__%s", strings.ReplaceAll(strings.Split(regoModuleName, " ")[1], ".", "_")), "helpers.", "")
+		regoCodes = append(regoCodes, replacer.Replace(rs))
+	}
+	return strings.Join(regoCodes, "\n")
+}
+
 // NewRegoSignature creates a new RegoSignature with the provided rego code string
 func NewRegoSignature(regoCodes ...string) (types.Signature, error) {
+	rc := processRego(regoCodes...)
+
 	var err error
 	res := RegoSignature{}
 	regoMap := make(map[string]string)
@@ -42,13 +56,8 @@ func NewRegoSignature(regoCodes ...string) (types.Signature, error) {
 	re := regexp.MustCompile(packageNameRegex)
 
 	var pkgName string
-	for _, regoCode := range regoCodes {
-		regoModuleName := strings.Split(re.FindString(regoCode), " ")[1]
-		if !strings.Contains(regoCode, "package tracee.helpers") {
-			pkgName = regoModuleName
-		}
-		regoMap[regoModuleName] = regoCode
-	}
+	regoModuleName := strings.Split(re.FindString(rc), " ")[1]
+	regoMap[regoModuleName] = rc
 
 	res.compiledRego, err = ast.CompileModules(regoMap)
 	if err != nil {
@@ -57,7 +66,7 @@ func NewRegoSignature(regoCodes ...string) (types.Signature, error) {
 
 	res.matchPQ, err = rego.New(
 		rego.Compiler(res.compiledRego),
-		rego.Query(fmt.Sprintf(queryMatch, pkgName)),
+		rego.Query("data.tracee.aio.tracee_match"),
 	).PrepareForEval(context.TODO())
 	if err != nil {
 		return nil, err

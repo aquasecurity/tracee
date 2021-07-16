@@ -2,7 +2,6 @@ package main
 
 import (
 	_ "embed"
-
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -11,6 +10,7 @@ import (
 	"plugin"
 
 	"github.com/aquasecurity/tracee/tracee-rules/signatures/rego/regosig"
+
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
@@ -82,12 +82,10 @@ func findRegoSigs(dir string) ([]types.Signature, error) {
 	}
 
 	var res []types.Signature
+	var regoCodes []string
 
 	for _, file := range files {
 		if filepath.Ext(file.Name()) != ".rego" {
-			continue
-		}
-		if file.Name() == "helpers.rego" {
 			continue
 		}
 		regoCode, err := ioutil.ReadFile(filepath.Join(dir, file.Name()))
@@ -95,12 +93,12 @@ func findRegoSigs(dir string) ([]types.Signature, error) {
 			log.Printf("error reading file %s/%s: %v", dir, file, err)
 			continue
 		}
-		sig, err := regosig.NewRegoSignature(string(regoCode), regoHelpersCode)
-		if err != nil {
-			log.Printf("error creating rego signature with: %s: %v ", regoCode[0:20], err)
-			continue
-		}
-		res = append(res, sig)
+		regoCodes = append(regoCodes, string(regoCode))
 	}
+	sig, err := regosig.NewRegoSignature(regoCodes...)
+	if err != nil {
+		return nil, fmt.Errorf("error creating rego signature: %s", err)
+	}
+	res = append(res, sig)
 	return res, nil
 }
