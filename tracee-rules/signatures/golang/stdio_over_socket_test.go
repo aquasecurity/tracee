@@ -1,7 +1,7 @@
 package main
 
 import (
-	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
+	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"testing"
 
 	"github.com/aquasecurity/tracee/tracee-rules/signatures/signaturestest"

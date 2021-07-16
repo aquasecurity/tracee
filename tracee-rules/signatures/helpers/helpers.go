@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
+	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
 )
 
 type ConnectAddrData struct {

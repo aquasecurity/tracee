@@ -71,6 +71,8 @@ github.com/apache/thrift v0.13.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb
 github.com/aquasecurity/libbpfgo v0.1.0/go.mod h1:/+clceXE103FaXvVTIY2HAkQjxNtkra4DRWvZYr2SKw=
 github.com/aquasecurity/tracee/tracee-ebpf v0.0.0-20210608194928-9312e26ed9ac h1:y5FryKCdwS+RJDCXT5eM41kzfdgu40hWzdvuM8CTm2Y=
 github.com/aquasecurity/tracee/tracee-ebpf v0.0.0-20210608194928-9312e26ed9ac/go.mod h1:boZOhSKvYyWMXP6AIw82iU6xWo2d8JIOarZRpa2BuyY=
+github.com/aquasecurity/tracee/tracee-ebpf/external v0.0.0-20210714085017-59acd669cdc8 h1:ys03CdRLveOTkLRRFozTYw/6wKZEUMlP8R6kwm3xbGw=
+github.com/aquasecurity/tracee/tracee-ebpf/external v0.0.0-20210714085017-59acd669cdc8/go.mod h1:uMfMmEqFz939zU6jV0LCj7YRCkSvnVaUl8gF6C3TOMg=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
 github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6/go.mod h1:grANhF5doyWs3UAsr3K4I6qtAmlQcZDesFNEHPZAzj8=
 github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmVTwzkszR9V5SSuryQ31EELlFMUz1kKyl939pY=
