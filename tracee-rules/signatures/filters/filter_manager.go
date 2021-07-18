@@ -1,6 +1,7 @@
 package filter
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/RoaringBitmap/roaring"
@@ -8,10 +9,10 @@ import (
 )
 
 type FilterManager struct {
-	registeredFilters []Filter
-	signaturesIndex   map[int]types.Signature
-	logger            *log.Logger
-	removedSigs       []int
+	registeredFilters  []Filter
+	signaturesIndex    map[int]types.Signature
+	logger             *log.Logger
+	freeSignaturesUIDs []int
 }
 
 // Initialize the manager with all the filters.
@@ -28,7 +29,7 @@ func NewFilterManager(logger *log.Logger, signatures []types.Signature) (*Filter
 }
 
 // Get all the signatures that the event given is relevant for them.
-func (filterManager *FilterManager) getFilteredSignaturesCannels(event types.Event) ([]types.Signature, error) {
+func (filterManager *FilterManager) getFilteredSignatures(event *types.Event) ([]types.Signature, error) {
 	matchingSignaturesBitmap := roaring.New()
 	for i, filter := range filterManager.registeredFilters {
 		filteredSignatures, _ := filter.filterByEvent(event)
@@ -44,4 +45,44 @@ func (filterManager *FilterManager) getFilteredSignaturesCannels(event types.Eve
 		matchingSignatures = append(matchingSignatures, filterManager.signaturesIndex[int(eventChannelIndexIterator.Next())])
 	}
 	return matchingSignatures, nil
+}
+
+// Generate the new signature a new UID and add it to all the filters.
+func (filterManager *FilterManager) addSignature(signature types.Signature) error {
+	newSignatureId := 0
+	if len(filterManager.freeSignaturesUIDs) == 0 {
+		newSignatureId = len(filterManager.signaturesIndex)
+	} else {
+		newSignatureId = filterManager.freeSignaturesUIDs[0]
+		filterManager.freeSignaturesUIDs = filterManager.freeSignaturesUIDs[1:]
+	}
+	filterManager.signaturesIndex[newSignatureId] = signature
+	for _, filter := range filterManager.registeredFilters {
+		err := filter.addSignature(signature, uint32(newSignatureId))
+		if err != nil {
+			filterManager.logger.Printf("Error while adding signature - %v", err)
+		}
+	}
+	return nil
+}
+
+// Remove the signature from all filters and free its UID.
+func (filterManager *FilterManager) removeSignature(signature types.Signature) error {
+	signatureToRemoveId := -1
+	for i, sig := range filterManager.signaturesIndex {
+		if signature == sig {
+			signatureToRemoveId = i
+			break
+		}
+	}
+	if signatureToRemoveId == -1 {
+		signatureMetaData, _ := signature.GetMetadata()
+		return fmt.Errorf("Error removing signature from filters - no matching signature found with ID %+v", signatureMetaData)
+	}
+	for _, filter := range filterManager.registeredFilters {
+		filter.removeSignature(uint32(signatureToRemoveId))
+	}
+	delete(filterManager.signaturesIndex, signatureToRemoveId)
+	filterManager.freeSignaturesUIDs = append(filterManager.freeSignaturesUIDs, signatureToRemoveId)
+	return nil
 }
