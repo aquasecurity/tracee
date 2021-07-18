@@ -19,9 +19,9 @@ import (
 
 type Filter interface {
 	// A method to get a matching bitmap filter for the loaded signatures according to the event occured.
-	filterByEvent(filteredEvent tracee.Event) (*roaring.Bitmap, error)
+	FilterByEvent(filteredEvent tracee.Event) (*roaring.Bitmap, error)
 	// Add signature to the filter with the specified UID.
-	addSignature(signature types.Signature, uid uint32) error
+	AddSignature(signature types.Signature, uid uint32) error
 	// Remove the specified UID signature from the filter.
-	removeSignature(uid uint32) error
+	RemoveSignature(uid uint32) error
 }

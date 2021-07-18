@@ -9,7 +9,7 @@ import (
 
 	"github.com/RoaringBitmap/roaring"
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
-	filters "github.com/aquasecurity/tracee/tracee-rules/signatures/filters/event_type_filter"
+	"github.com/aquasecurity/tracee/tracee-rules/signatures/filter"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
@@ -17,12 +17,10 @@ import (
 type Engine struct {
 	logger          log.Logger
 	signatures      map[types.Signature]chan types.Event
-	signaturesIndex map[int]types.Signature
 	signaturesMutex sync.RWMutex
 	inputs          EventSources
 	output          chan types.Finding
-	filters         []filters.EventTypeFilter
-	removedSigs     []int
+	filterManager   filter.FilterManager
 }
 
 //EventSources is a bundle of input sources used to configure the Engine
@@ -42,39 +40,13 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 	engine.output = output
 	engine.signaturesMutex.Lock()
 	engine.signatures = make(map[types.Signature]chan types.Event)
-	engine.signaturesIndex = make(map[int]types.Signature)
+	engine.filterManager, _ = filter.NewFilterManager(engine.logger, sigs)
 	engine.signaturesMutex.Unlock()
-	for i, sig := range sigs {
+	for _, sig := range sigs {
 		engine.signaturesMutex.Lock()
 		engine.signatures[sig] = make(chan types.Event)
-		engine.signaturesIndex[i] = sig
 		engine.signaturesMutex.Unlock()
-		meta, err := sig.GetMetadata()
-		if err != nil {
-			engine.logger.Printf("error getting metadata: %v", err)
-			continue
-		}
-		se, err := sig.GetSelectedEvents()
-		if err != nil {
-			engine.logger.Printf("error getting selected events for signature %s: %v", meta.Name, err)
-			continue
-		}
-		for _, es := range se {
-			if es.Name == "" {
-				es.Name = "*"
-			}
-			if es.Source == "" {
-				engine.logger.Printf("signature %s doesn't declare an input source", meta.Name)
-			}
-		}
-		err = sig.Init(engine.matchHandler)
-		if err != nil {
-			engine.logger.Printf("error initializing signature %s: %v", meta.Name, err)
-			continue
-		}
 	}
-	new_filter, _ := filters.createEventFilter(sigs, engine.logger)
-	engine.filters = []filters.EventTypeFilter{new_filter}
 	engine.signaturesMutex.RLock()
 	lenSigs := len(engine.signatures)
 	engine.signaturesMutex.RUnlock()
@@ -116,7 +88,7 @@ func (engine *Engine) unloadAllSignatures() {
 		close(c)
 		delete(engine.signatures, sig)
 	}
-	engine.signaturesIndex = make(map[int]types.Signature)
+	// TODO: Reset all filters
 }
 
 // matchHandler is a function that runs when a signature is matched
@@ -155,11 +127,9 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 					engine.signaturesMutex.RUnlock()
 					continue
 				}
-				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName}] {
-					engine.signatures[s] <- event
-				}
-				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: "*"}] {
-					engine.signatures[s] <- event
+				filteredSignatures, _ := engine.filterManager.GetFilteredSignatures(traceeEvt)
+				for signature := range filteredSignatures {
+					engine.signatures[signature] <- traceeEvt
 				}
 				engine.signaturesMutex.RUnlock()
 			}
@@ -172,10 +142,6 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 //LoadSignature will store in Engine data structures the given signature and activate its handling business logics.
 // It will return the signature ID as well as error.
 func (engine *Engine) LoadSignature(signature types.Signature) (string, error) {
-	selectedEvents, err := signature.GetSelectedEvents()
-	if err != nil {
-		return "", fmt.Errorf("failed to store signature: %w", err)
-	}
 	metadata, _ := signature.GetMetadata()
 	// insert in engine.signatures map
 	engine.signaturesMutex.Lock()
@@ -186,22 +152,8 @@ func (engine *Engine) LoadSignature(signature types.Signature) (string, error) {
 	}
 	c := make(chan types.Event)
 	engine.signatures[signature] = c
-	if len(engine.removedSigs) == 0 {
-		engine.signaturesIndex[len(engine.signatures)] = signature
-	} else {
-		engine.signaturesIndex[engine.removedSigs[0]] = signature
-		engine.removedSigs = engine.removedSigs[1:]
-	}
+	engine.filterManager.AddSignature(signature)
 
-	// insert in engine.signaturesIndex map
-	for _, selectedEvent := range selectedEvents {
-		if selectedEvent.Name == "" {
-			selectedEvent.Name = "*"
-		}
-		if selectedEvent.Source == "" {
-			engine.logger.Printf("signature %s doesn't declare an input source", metadata.Name)
-		}
-	}
 	if err := signature.Init(engine.matchHandler); err != nil {
 		engine.logger.Printf("error initializing signature %s: %v", metadata.Name, err)
 
@@ -234,29 +186,7 @@ func (engine *Engine) UnloadSignature(signatureId string) error {
 		defer signature.Close()
 		defer close(c)
 
-		for i, sig := range engine.signaturesIndex {
-			if signature == sig {
-				delete(engine.signaturesIndex, i)
-				break
-			}
-		}
+		engine.filterManager.RemoveSignature(signature)
 	}
 	return nil
-}
-
-func (engine *Engine) getFilteredSignaturesCannels(event types.Event) ([]chan types.Event, error) {
-	matchingSignaturesBitmap := roaring.New()
-	for i, filter := range engine.filters {
-		if i == 0 {
-			matchingSignaturesBitmap.Or(filter.filterByEvent(event))
-		} else {
-			matchingSignaturesBitmap.And(filter.filterByEvent(event))
-		}
-	}
-	matchingSignatures := make([]chan types.Event, 0)
-	eventChannelIndexIterator := matchingSignaturesBitmap.Iterator()
-	for eventChannelIndexIterator.HasNext() {
-		matchingSignatures = append(matchingSignatures, engine.signatures[engine.signaturesIndex[eventChannelIndexIterator.Next()]])
-	}
-	return matchingSignatures, nil
 }

@@ -15,7 +15,7 @@ type EventTypeFilter struct {
 }
 
 // Create an EventTypeFilter according to the signatures watched events types.
-func createEventFilter(signatures []types.Signature, logger *log.Logger) (*EventTypeFilter, error) {
+func CreateEventFilter(signatures []types.Signature, logger *log.Logger) (*EventTypeFilter, error) {
 	eventFilter := EventTypeFilter{}
 	eventFilter.logger = logger
 	eventFilter.signatureBitmapMatcher = make(map[types.Event]*roaring.Bitmap)
@@ -49,11 +49,11 @@ func createEventFilter(signatures []types.Signature, logger *log.Logger) (*Event
 }
 
 // Return a bitmap representing all the signatures that watch the given event't type
-func (eventFilter *EventTypeFilter) filterByEvent(filteredEvent tracee.Event) (*roaring.Bitmap, error) {
+func (eventFilter *EventTypeFilter) FilterByEvent(filteredEvent tracee.Event) (*roaring.Bitmap, error) {
 	return eventFilter.signatureBitmapMatcher[filteredEvent.EventName], nil
 }
 
-func (eventFilter *EventTypeFilter) addSignature(signature types.Signature, uid uint32) error {
+func (eventFilter *EventTypeFilter) AddSignature(signature types.Signature, uid uint32) error {
 	sigSelectedEvents, _ := signature.GetSelectedEvents()
 	for _, selectedEvent := range sigSelectedEvents {
 		eventFilter.signatureBitmapMatcher[selectedEvent.Name].Add(uid)
@@ -61,7 +61,7 @@ func (eventFilter *EventTypeFilter) addSignature(signature types.Signature, uid 
 	return nil
 }
 
-func (eventFilter *EventTypeFilter) removeSignature(uid uint32) error {
+func (eventFilter *EventTypeFilter) RemoveSignature(uid uint32) error {
 	for _, eventFilterBitmap := range eventFilter.signatureBitmapMatcher {
 		eventFilterBitmap.Remove(uid)
 	}
