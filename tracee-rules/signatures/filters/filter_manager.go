@@ -86,3 +86,11 @@ func (filterManager *FilterManager) RemoveSignature(signature types.Signature) e
 	filterManager.freeSignaturesUIDs = append(filterManager.freeSignaturesUIDs, signatureToRemoveId)
 	return nil
 }
+
+// Remove all signatures registered from all filters registered.
+func (filterManager *FilterManager) RemoveAllSignatures() error {
+	for _, filter := range filterManager.registeredFilters {
+		filter.RemoveAllSignatures()
+	}
+	return nil
+}

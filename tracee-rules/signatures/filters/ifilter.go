@@ -24,4 +24,6 @@ type Filter interface {
 	AddSignature(signature types.Signature, uid uint32) error
 	// Remove the specified UID signature from the filter.
 	RemoveSignature(uid uint32) error
+	// Remove all the signatures from the filter.
+	RemoveAllSignatures() error
 }

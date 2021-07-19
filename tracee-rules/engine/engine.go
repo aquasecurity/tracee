@@ -96,7 +96,7 @@ func (engine *Engine) unloadAllSignatures() {
 		close(c)
 		delete(engine.signatures, sig)
 	}
-	// TODO: Reset all filters
+	engine.filterManager.RemoveAllSignatures()
 }
 
 // matchHandler is a function that runs when a signature is matched

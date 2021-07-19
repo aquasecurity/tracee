@@ -67,3 +67,10 @@ func (eventFilter *EventTypeFilter) RemoveSignature(uid uint32) error {
 	}
 	return nil
 }
+
+func (eventFilter *EventTypeFilter) RemoveAllSignatures() error {
+	for _, eventFilterBitmap := range eventFilter.signatureBitmapMatcher {
+		eventFilterBitmap.Clear()
+	}
+	return nil
+}
