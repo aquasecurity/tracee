@@ -45,6 +45,15 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 		engine.signaturesMutex.Lock()
 		engine.signatures[sig] = make(chan types.Event)
 		engine.signaturesMutex.Unlock()
+		err := sig.Init(engine.matchHandler)
+		if err != nil {
+			meta, err := sig.GetMetadata()
+			if err != nil {
+				engine.logger.Printf("error getting metadata: %v", err)
+			}
+			engine.logger.Printf("error initializing signature %s: %v", meta.Name, err)
+			continue
+		}
 	}
 	engine.signaturesMutex.RLock()
 	lenSigs := len(engine.signatures)
