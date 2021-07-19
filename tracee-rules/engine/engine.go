@@ -7,9 +7,8 @@ import (
 	"log"
 	"sync"
 
-	"github.com/RoaringBitmap/roaring"
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
-	"github.com/aquasecurity/tracee/tracee-rules/signatures/filter"
+	filter "github.com/aquasecurity/tracee/tracee-rules/signatures/filters"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
@@ -20,7 +19,7 @@ type Engine struct {
 	signaturesMutex sync.RWMutex
 	inputs          EventSources
 	output          chan types.Finding
-	filterManager   filter.FilterManager
+	filterManager   *filter.FilterManager
 }
 
 //EventSources is a bundle of input sources used to configure the Engine
@@ -40,7 +39,7 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 	engine.output = output
 	engine.signaturesMutex.Lock()
 	engine.signatures = make(map[types.Signature]chan types.Event)
-	engine.filterManager, _ = filter.NewFilterManager(engine.logger, sigs)
+	engine.filterManager, _ = filter.NewFilterManager(&engine.logger, sigs)
 	engine.signaturesMutex.Unlock()
 	for _, sig := range sigs {
 		engine.signaturesMutex.Lock()
@@ -128,7 +127,7 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 					continue
 				}
 				filteredSignatures, _ := engine.filterManager.GetFilteredSignatures(traceeEvt)
-				for signature := range filteredSignatures {
+				for _, signature := range filteredSignatures {
 					engine.signatures[signature] <- traceeEvt
 				}
 				engine.signaturesMutex.RUnlock()

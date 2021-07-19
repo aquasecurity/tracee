@@ -29,7 +29,7 @@ func NewFilterManager(logger *log.Logger, signatures []types.Signature) (*Filter
 }
 
 // Get all the signatures that the event given is relevant for them.
-func (filterManager *FilterManager) GetFilteredSignatures(event *types.Event) ([]types.Signature, error) {
+func (filterManager *FilterManager) GetFilteredSignatures(event types.Event) ([]types.Signature, error) {
 	matchingSignaturesBitmap := roaring.New()
 	for i, filter := range filterManager.registeredFilters {
 		filteredSignatures, _ := filter.FilterByEvent(event)
