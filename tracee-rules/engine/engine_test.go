@@ -6,13 +6,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aquasecurity/tracee/tracee-ebpf/external"
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-type fakeSignature struct {
+type regoFakeSignature struct {
 	getMetadata       func() (types.SignatureMetadata, error)
 	getSelectedEvents func() ([]types.SignatureEventSelector, error)
 	init              func(types.SignatureHandler) error
@@ -20,7 +21,7 @@ type fakeSignature struct {
 	onSignal          func(signal types.Signal) error
 }
 
-func (fs fakeSignature) GetMetadata() (types.SignatureMetadata, error) {
+func (fs regoFakeSignature) GetMetadata() (types.SignatureMetadata, error) {
 	if fs.getMetadata != nil {
 		return fs.getMetadata()
 	}
@@ -30,7 +31,7 @@ func (fs fakeSignature) GetMetadata() (types.SignatureMetadata, error) {
 	}, nil
 }
 
-func (fs fakeSignature) GetSelectedEvents() ([]types.SignatureEventSelector, error) {
+func (fs regoFakeSignature) GetSelectedEvents() ([]types.SignatureEventSelector, error) {
 	if fs.getSelectedEvents != nil {
 		return fs.getSelectedEvents()
 	}
@@ -38,35 +39,36 @@ func (fs fakeSignature) GetSelectedEvents() ([]types.SignatureEventSelector, err
 	return []types.SignatureEventSelector{}, nil
 }
 
-func (fs fakeSignature) Init(cb types.SignatureHandler) error {
+func (fs regoFakeSignature) Init(cb types.SignatureHandler) error {
 	if fs.init != nil {
 		return fs.init(cb)
 	}
 	return nil
 }
 
-func (fs fakeSignature) OnEvent(event types.Event) error {
+func (fs regoFakeSignature) OnEvent(event types.Event) error {
 	if fs.onEvent != nil {
 		return fs.onEvent(event)
 	}
 	return nil
 }
 
-func (fs fakeSignature) OnSignal(signal types.Signal) error {
+func (fs regoFakeSignature) OnSignal(signal types.Signal) error {
 	if fs.onSignal != nil {
 		return fs.onSignal(signal)
 	}
 	return nil
 }
-func (fs *fakeSignature) Close() {}
+func (fs *regoFakeSignature) Close() {}
 
 func TestConsumeSources(t *testing.T) {
 	testCases := []struct {
 		name              string
 		inputEvent        tracee.Event
-		inputSignature    fakeSignature
+		inputSignature    regoFakeSignature
 		expectedNumEvents int
 		expectedError     string
+		expectedEvent     ParsedEvent
 	}{
 		{
 			name: "happy path - with one matching selector",
@@ -83,7 +85,7 @@ func TestConsumeSources(t *testing.T) {
 					},
 				},
 			},
-			inputSignature: fakeSignature{
+			inputSignature: regoFakeSignature{
 				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
 					return []types.SignatureEventSelector{
 						{
@@ -94,13 +96,19 @@ func TestConsumeSources(t *testing.T) {
 				},
 			},
 			expectedNumEvents: 1,
+			expectedEvent: ParsedEvent{
+				Event: tracee.Event{
+					ProcessID: 2, ParentProcessID: 1, Args: []external.Argument{{ArgMeta: external.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
+					EventName: "test_event",
+				},
+			},
 		},
 		{
 			name: "happy path - with no matching event selector",
 			inputEvent: tracee.Event{
 				EventName: "execve",
 			},
-			inputSignature: fakeSignature{
+			inputSignature: regoFakeSignature{
 				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
 					return []types.SignatureEventSelector{
 						{
@@ -117,7 +125,7 @@ func TestConsumeSources(t *testing.T) {
 			inputEvent: tracee.Event{
 				EventName: "execve",
 			},
-			inputSignature: fakeSignature{
+			inputSignature: regoFakeSignature{
 				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
 					return []types.SignatureEventSelector{
 						{
@@ -128,13 +136,14 @@ func TestConsumeSources(t *testing.T) {
 				},
 			},
 			expectedNumEvents: 1,
+			expectedEvent: ParsedEvent{
+				Event: tracee.Event{EventName: "execve"},
+			},
 		},
 		{
-			name: "happy path - with all events selector, no name",
-			inputEvent: tracee.Event{
-				EventName: "execve",
-			},
-			inputSignature: fakeSignature{
+			name:       "happy path - with all events selector, no name",
+			inputEvent: tracee.Event{EventName: "execve"},
+			inputSignature: regoFakeSignature{
 				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
 					return []types.SignatureEventSelector{
 						{
@@ -144,10 +153,13 @@ func TestConsumeSources(t *testing.T) {
 				},
 			},
 			expectedNumEvents: 1,
+			expectedEvent: ParsedEvent{
+				Event: tracee.Event{EventName: "execve"},
+			},
 		},
 		{
 			name: "sad path - with all events selector, no source",
-			inputSignature: fakeSignature{
+			inputSignature: regoFakeSignature{
 				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
 					return []types.SignatureEventSelector{
 						{
@@ -160,7 +172,7 @@ func TestConsumeSources(t *testing.T) {
 		},
 		{
 			name: "sad path - signature init fails",
-			inputSignature: fakeSignature{
+			inputSignature: regoFakeSignature{
 				init: func(handler types.SignatureHandler) error {
 					return errors.New("init failed")
 				},
@@ -170,7 +182,7 @@ func TestConsumeSources(t *testing.T) {
 		},
 		{
 			name: "sad path - getSelectedEvents returns an error",
-			inputSignature: fakeSignature{
+			inputSignature: regoFakeSignature{
 				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
 					return nil, errors.New("getSelectedEvents error")
 				},
@@ -179,7 +191,7 @@ func TestConsumeSources(t *testing.T) {
 		},
 		{
 			name: "sad path - getMetadata returns an error",
-			inputSignature: fakeSignature{
+			inputSignature: regoFakeSignature{
 				getMetadata: func() (types.SignatureMetadata, error) {
 					return types.SignatureMetadata{}, errors.New("getMetadata error")
 				},
@@ -212,7 +224,7 @@ func TestConsumeSources(t *testing.T) {
 
 			var gotNumEvents int
 			tc.inputSignature.onEvent = func(event types.Event) error {
-				assert.Equal(t, tc.inputEvent, event, tc.name)
+				assert.Equal(t, tc.expectedEvent.Event, event.(ParsedEvent).Event, tc.name)
 				gotNumEvents++
 				return nil
 			}
