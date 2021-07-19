@@ -4,8 +4,8 @@ import (
 	"log"
 
 	"github.com/RoaringBitmap/roaring"
+	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
 	tracee_consts "github.com/aquasecurity/tracee/tracee-ebpf/tracee"
-	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
@@ -49,8 +49,8 @@ func CreateEventFilter(signatures []types.Signature, logger *log.Logger) (*Event
 }
 
 // Return a bitmap representing all the signatures that watch the given event't type
-func (eventFilter *EventTypeFilter) FilterByEvent(filteredEvent tracee.Event) (*roaring.Bitmap, error) {
-	return eventFilter.signatureBitmapMatcher[filteredEvent.EventName], nil
+func (eventFilter *EventTypeFilter) FilterByEvent(filteredEvent types.Event) (*roaring.Bitmap, error) {
+	return eventFilter.signatureBitmapMatcher[filteredEvent.(tracee.Event).EventName], nil
 }
 
 func (eventFilter *EventTypeFilter) AddSignature(signature types.Signature, uid uint32) error {

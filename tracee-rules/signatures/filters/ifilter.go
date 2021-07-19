@@ -13,13 +13,12 @@ package filter
 
 import (
 	"github.com/RoaringBitmap/roaring"
-	tracee "github.com/aquasecurity/tracee/tracee-ebpf/tracee/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
 type Filter interface {
 	// A method to get a matching bitmap filter for the loaded signatures according to the event occured.
-	FilterByEvent(filteredEvent tracee.Event) (*roaring.Bitmap, error)
+	FilterByEvent(filteredEvent types.Event) (*roaring.Bitmap, error)
 	// Add signature to the filter with the specified UID.
 	AddSignature(signature types.Signature, uid uint32) error
 	// Remove the specified UID signature from the filter.
