@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -41,6 +42,7 @@ type Config struct {
 	Debug              bool
 	maxPidsCache       int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
 	BPFObjPath         string
+	BPFObjBytes        []byte
 	ChanEvents         chan external.Event
 }
 
@@ -181,12 +183,12 @@ func (tc Config) Validate() error {
 			return fmt.Errorf("the length of a path filter is limited to 50 characters: %s", filter)
 		}
 	}
-	_, err := os.Stat(tc.BPFObjPath)
-	if err != nil {
-		return err
+
+	if tc.BPFObjBytes == nil {
+		return errors.New("nil bpf object in memory")
 	}
 
-	err = tc.Output.Validate()
+	err := tc.Output.Validate()
 	if err != nil {
 		return err
 	}
@@ -351,7 +353,7 @@ func New(cfg Config) (*Tracee, error) {
 		}
 	}
 
-	err = t.initBPF(cfg.BPFObjPath)
+	err = t.initBPF()
 	if err != nil {
 		t.Close()
 		return nil, err
@@ -932,10 +934,10 @@ func (t *Tracee) attachNetProbes() error {
 	return nil
 }
 
-func (t *Tracee) initBPF(bpfObjectPath string) error {
+func (t *Tracee) initBPF() error {
 	var err error
 
-	t.bpfModule, err = bpf.NewModuleFromFile(bpfObjectPath)
+	t.bpfModule, err = bpf.NewModuleFromBuffer(t.config.BPFObjBytes, t.config.BPFObjPath)
 	if err != nil {
 		return err
 	}

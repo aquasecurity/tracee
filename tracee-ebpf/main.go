@@ -66,11 +66,26 @@ func main() {
 			if c.Bool("security-alerts") {
 				cfg.Filter.EventsToTrace = append(cfg.Filter.EventsToTrace, tracee.MemProtAlertEventID)
 			}
-			bpfFile, err := getBPFObject()
-			if err != nil {
-				return err
+			if !bpf_core {
+				bpfFile, err := getBPFObjectPath()
+				if err != nil {
+					return err
+				}
+				cfg.BPFObjPath = bpfFile
+				bpfBytes, err := ioutil.ReadFile(bpfFile)
+				if err != nil {
+					return err
+				}
+				cfg.BPFObjBytes = bpfBytes
+			} else {
+				cfg.BPFObjPath = "embed-core"
+				bpfBytes, err := unpackCOREBinary()
+				if err != nil {
+					return err
+				}
+				cfg.BPFObjBytes = bpfBytes
 			}
-			cfg.BPFObjPath = bpfFile
+
 			if !checkRequiredCapabilities() {
 				return fmt.Errorf("insufficient privileges to run")
 			}
@@ -1044,8 +1059,8 @@ func locateFile(file string, dirs []string) string {
 	return ""
 }
 
-// getBPFObject finds or builds ebpf object file and returns it's path
-func getBPFObject() (string, error) {
+// getBPFObjectPath finds or builds ebpf object file and returns it's path
+func getBPFObjectPath() (string, error) {
 	bpfPath, present := os.LookupEnv("TRACEE_BPF_FILE")
 	if present {
 		if _, err := os.Stat(bpfPath); os.IsNotExist(err) {
@@ -1065,15 +1080,6 @@ func getBPFObject() (string, error) {
 	}
 
 	bpfObjFileName := fmt.Sprintf("tracee.bpf.%s.%s.o", strings.ReplaceAll(tracee.UnameRelease(), ".", "_"), strings.ReplaceAll(version, ".", "_"))
-	if bpf_core {
-		s, err := unpackCOREBinary()
-		if err != nil {
-			return "", err
-		}
-		bpfObjFileName = s
-		searchPaths = []string{}
-	}
-
 	bpfObjFilePath := locateFile(bpfObjFileName, searchPaths)
 	if bpfObjFilePath != "" && debug {
 		fmt.Printf("found bpf object file at: %s\n", bpfObjFilePath)
@@ -1100,26 +1106,17 @@ func getBPFObject() (string, error) {
 	return bpfObjFilePath, nil
 }
 
-func unpackCOREBinary() (string, error) {
+func unpackCOREBinary() ([]byte, error) {
 	b, err := coreObject.ReadFile("dist/tracee.bpf.core.o")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	f, err := ioutil.TempFile("", "tracee.bpf.core.o")
-	if err != nil {
-		return "", err
-	}
-	_, err = f.Write(b)
-	if err != nil {
-		return "", err
-	}
-	f.Close()
 
 	if debug {
-		fmt.Printf("unpacked CO:RE bpf object file to: %s\n", f.Name())
+		fmt.Println("unpacked CO:RE bpf object file into memory")
 	}
 
-	return f.Name(), nil
+	return b, nil
 }
 
 // unpackBPFBundle unpacks the bundle into the provided directory
