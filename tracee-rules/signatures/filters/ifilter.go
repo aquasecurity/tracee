@@ -1,4 +1,5 @@
 /*
+Package filter
 A filter class is a class that helps to reduce the amount of signatures analyzing a certain event.
 Each signature contains information about the events it expects to analyze, and by preprocessing
 the event metadata some of the workload could be prevented.
@@ -17,12 +18,12 @@ import (
 )
 
 type Filter interface {
-	// A method to get a matching bitmap filter for the loaded signatures according to the event occured.
+	// FilterByEvent A method to get a matching bitmap filter for the loaded signatures according to the event occurred.
 	FilterByEvent(filteredEvent types.Event) (*roaring.Bitmap, error)
-	// Add signature to the filter with the specified UID.
+	// AddSignature Add signature to the filter with the specified UID.
 	AddSignature(signature types.Signature, uid uint32) error
-	// Remove the specified UID signature from the filter.
+	// RemoveSignature Remove the specified UID signature from the filter.
 	RemoveSignature(uid uint32) error
-	// Remove all the signatures from the filter.
+	// RemoveAllSignatures Remove all the signatures from the filter.
 	RemoveAllSignatures() error
 }

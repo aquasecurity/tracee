@@ -15,7 +15,7 @@ type FilterManager struct {
 	freeSignaturesUIDs []int
 }
 
-// Initialize the manager with all the filters.
+// NewFilterManager Initialize the manager with all the filters.
 func NewFilterManager(logger *log.Logger, signatures []types.Signature) (*FilterManager, error) {
 	filterManager := FilterManager{}
 	filterManager.signaturesIndex = make(map[int]types.Signature)
@@ -28,7 +28,7 @@ func NewFilterManager(logger *log.Logger, signatures []types.Signature) (*Filter
 	return &filterManager, nil
 }
 
-// Get all the signatures that the event given is relevant for them.
+// GetFilteredSignatures Get all the signatures that the event given is relevant for them.
 func (filterManager *FilterManager) GetFilteredSignatures(event types.Event) ([]types.Signature, error) {
 	matchingSignaturesBitmap := roaring.New()
 	for i, filter := range filterManager.registeredFilters {
@@ -47,7 +47,7 @@ func (filterManager *FilterManager) GetFilteredSignatures(event types.Event) ([]
 	return matchingSignatures, nil
 }
 
-// Generate the new signature a new UID and add it to all the filters.
+// AddSignature Generate the new signature a new UID and add it to all the filters.
 func (filterManager *FilterManager) AddSignature(signature types.Signature) error {
 	newSignatureId := 0
 	if len(filterManager.freeSignaturesUIDs) == 0 {
@@ -66,7 +66,7 @@ func (filterManager *FilterManager) AddSignature(signature types.Signature) erro
 	return nil
 }
 
-// Remove the signature from all filters and free its UID.
+// RemoveSignature Remove the signature from all filters and free its UID.
 func (filterManager *FilterManager) RemoveSignature(signature types.Signature) error {
 	signatureToRemoveId := -1
 	for i, sig := range filterManager.signaturesIndex {
@@ -87,7 +87,7 @@ func (filterManager *FilterManager) RemoveSignature(signature types.Signature) e
 	return nil
 }
 
-// Remove all signatures registered from all filters registered.
+// RemoveAllSignatures Remove all signatures registered from all filters registered.
 func (filterManager *FilterManager) RemoveAllSignatures() error {
 	for _, filter := range filterManager.registeredFilters {
 		filter.RemoveAllSignatures()
