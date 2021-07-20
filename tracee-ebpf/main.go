@@ -27,6 +27,7 @@ var buildPolicy string
 
 // These vars are supposed to be injected at build time
 //go:embed "dist/tracee.bpf/*"
+//go:embed "dist/tracee.bpf.core.o"
 var bpfBundleInjected embed.FS
 var version string
 
@@ -66,7 +67,12 @@ func main() {
 			if c.Bool("security-alerts") {
 				cfg.Filter.EventsToTrace = append(cfg.Filter.EventsToTrace, tracee.MemProtAlertEventID)
 			}
+
+			bpf_core := btfEnabled()
 			if !bpf_core {
+				if debug {
+					fmt.Println("BTF is not enabled")
+				}
 				bpfFile, err := getBPFObjectPath()
 				if err != nil {
 					return err
@@ -78,6 +84,9 @@ func main() {
 				}
 				cfg.BPFObjBytes = bpfBytes
 			} else {
+				if debug {
+					fmt.Println("BTF enabled, attempting to unpack CORE bpf object")
+				}
 				cfg.BPFObjPath = "embed-core"
 				bpfBytes, err := unpackCOREBinary()
 				if err != nil {
@@ -840,6 +849,7 @@ func parseRetFilter(filterName string, operatorAndValues string, eventsNameToID 
 
 	return nil
 }
+
 func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.StringFilter, eventsNameToID map[string]int32) ([]int32, error) {
 	eventFilter.Enabled = true
 	eventsToTrace := eventFilter.Equal
@@ -1107,7 +1117,7 @@ func getBPFObjectPath() (string, error) {
 }
 
 func unpackCOREBinary() ([]byte, error) {
-	b, err := coreObject.ReadFile("dist/tracee.bpf.core.o")
+	b, err := bpfBundleInjected.ReadFile("dist/tracee.bpf.core.o")
 	if err != nil {
 		return nil, err
 	}
@@ -1352,4 +1362,9 @@ func makeBPFObject(outFile string) error {
 	}
 
 	return nil
+}
+
+func btfEnabled() bool {
+	_, err := os.Stat("/sys/kernel/btf/vmlinux")
+	return err == nil
 }
