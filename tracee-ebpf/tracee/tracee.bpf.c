@@ -68,6 +68,8 @@ Copyright (C) Aqua Security inc.
 #define PT_REGS_PARM6(ctx)  ((ctx)->r9)
 #elif defined(bpf_target_arm64)
 #define PT_REGS_PARM6(x) (((PT_REGS_ARM64 *)(x))->regs[5])
+#elif defined(bpf_target_powerpc)
+#define PT_REGS_PARM6(ctx)  ((ctx)->gpr[8])
 #endif
 
 
@@ -154,6 +156,21 @@ extern bool CONFIG_ARCH_HAS_SYSCALL_WRAPPER __kconfig;
 #define SYSCALL_ACCEPT4       242
 #define SYSCALL_LISTEN        201
 #define SYSCALL_BIND          200
+#elif defined(bpf_target_powerpc)
+#define SYS_OPEN              5
+#define SYS_MMAP              90
+#define SYS_MPROTECT          125
+#define SYS_RT_SIGRETURN      172
+#define SYS_EXECVE            11
+#define SYS_EXIT              1
+#define SYS_EXIT_GROUP        234
+#define SYS_OPENAT            286
+#define SYS_EXECVEAT          362
+#define SYSCALL_CONNECT       328
+#define SYSCALL_ACCEPT        330
+#define SYSCALL_ACCEPT4       344
+#define SYSCALL_LISTEN        329
+#define SYSCALL_BIND          327
 #endif
 
 #define RAW_SYS_ENTER           1000
@@ -625,12 +642,24 @@ static __always_inline bool is_arm64_compat(struct task_struct *task)
 #endif
 }
 
+static __always_inline bool is_powerpc_compat(struct task_struct *task)
+{
+#if defined(bpf_target_powerpc)
+    return READ_KERN(task->thread_info.flags) & _TIF_32BIT;
+#else
+    return false;
+#endif
+}
+
+
 static __always_inline bool is_compat(struct task_struct *task)
 {
 #if defined(bpf_target_x86)
     return is_x86_compat(task);
 #elif defined(bpf_target_arm64)
     return is_arm64_compat(task);
+#elif defined(bpf_target_powerpc)
+    return is_powerpc_compat(task);
 #else
     return false;
 #endif
