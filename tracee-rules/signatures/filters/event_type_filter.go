@@ -11,7 +11,7 @@ import (
 const ALL_EVENT_TYPES = "*"
 
 type EventTypeFilter struct {
-	signatureBitmapMatcher map[types.Event]*roaring.Bitmap
+	signatureBitmapMatcher map[string]*roaring.Bitmap
 	logger                 *log.Logger
 }
 
@@ -19,7 +19,7 @@ type EventTypeFilter struct {
 func CreateEventFilter(signatures []types.Signature, logger *log.Logger) (*EventTypeFilter, error) {
 	eventFilter := EventTypeFilter{}
 	eventFilter.logger = logger
-	eventFilter.signatureBitmapMatcher = make(map[types.Event]*roaring.Bitmap)
+	eventFilter.signatureBitmapMatcher = make(map[string]*roaring.Bitmap)
 	// Bitmap for all event types must be initialized.
 	eventFilter.signatureBitmapMatcher[ALL_EVENT_TYPES] = roaring.New()
 
@@ -48,9 +48,12 @@ func CreateEventFilter(signatures []types.Signature, logger *log.Logger) (*Event
 	return &eventFilter, nil
 }
 
-// FilterByEvent Return a bitmap representing all the signatures that watch the given event't type
+// FilterByEvent Return a bitmap representing all the signatures that watch the given event's type
 func (eventFilter *EventTypeFilter) FilterByEvent(filteredEvent types.Event) (*roaring.Bitmap, error) {
 	eventBitmap := eventFilter.signatureBitmapMatcher[filteredEvent.(tracee.Event).EventName]
+	if eventBitmap == nil {
+		eventBitmap = roaring.New()
+	}
 	allEventsBitmap := eventFilter.signatureBitmapMatcher[ALL_EVENT_TYPES]
 	return roaring.Or(eventBitmap, allEventsBitmap), nil
 }
