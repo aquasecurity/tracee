@@ -68,32 +68,46 @@ func main() {
 				cfg.Filter.EventsToTrace = append(cfg.Filter.EventsToTrace, tracee.MemProtAlertEventID)
 			}
 
-			bpf_core := btfEnabled()
-			if !bpf_core {
+			var bpfBytes []byte
+
+			// Check if user specified a bpf object path explicitly
+			bpfFilePath, err := checkTraceeBPFEnvPath()
+			if err != nil {
+				return err
+			}
+			if bpfFilePath != "" {
 				if debug {
-					fmt.Println("BTF is not enabled")
+					fmt.Printf("BPF object file specified by TRACEE_BPF_FILE found: %s", bpfFilePath)
 				}
-				bpfFile, err := getBPFObjectPath()
+				bpfBytes, err = ioutil.ReadFile(bpfFilePath)
 				if err != nil {
 					return err
 				}
-				cfg.BPFObjPath = bpfFile
-				bpfBytes, err := ioutil.ReadFile(bpfFile)
-				if err != nil {
-					return err
-				}
-				cfg.BPFObjBytes = bpfBytes
-			} else {
+			} else if btfEnabled() {
 				if debug {
 					fmt.Println("BTF enabled, attempting to unpack CORE bpf object")
 				}
-				cfg.BPFObjPath = "embed-core"
-				bpfBytes, err := unpackCOREBinary()
+				bpfFilePath = "embedded-core"
+				bpfBytes, err = unpackCOREBinary()
 				if err != nil {
 					return err
 				}
-				cfg.BPFObjBytes = bpfBytes
+			} else {
+				if debug {
+					fmt.Println("BTF is not enabled")
+				}
+				bpfFilePath, err = getBPFObjectPath()
+				if err != nil {
+					return err
+				}
+				bpfBytes, err = ioutil.ReadFile(bpfFilePath)
+				if err != nil {
+					return err
+				}
 			}
+
+			cfg.BPFObjPath = bpfFilePath
+			cfg.BPFObjBytes = bpfBytes
 
 			if !checkRequiredCapabilities() {
 				return fmt.Errorf("insufficient privileges to run")
@@ -1069,8 +1083,7 @@ func locateFile(file string, dirs []string) string {
 	return ""
 }
 
-// getBPFObjectPath finds or builds ebpf object file and returns it's path
-func getBPFObjectPath() (string, error) {
+func checkTraceeBPFEnvPath() (string, error) {
 	bpfPath, present := os.LookupEnv("TRACEE_BPF_FILE")
 	if present {
 		if _, err := os.Stat(bpfPath); os.IsNotExist(err) {
@@ -1078,6 +1091,11 @@ func getBPFObjectPath() (string, error) {
 		}
 		return bpfPath, nil
 	}
+	return "", nil
+}
+
+// getBPFObjectPath finds or builds ebpf object file and returns it's path
+func getBPFObjectPath() (string, error) {
 
 	exePath, err := os.Executable()
 	if err != nil {
