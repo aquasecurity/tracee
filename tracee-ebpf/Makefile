@@ -20,7 +20,6 @@ GO_SRC := $(shell find . -type f -name '*.go')
 OUT_BIN := $(OUT_DIR)/tracee-ebpf
 BPF_SRC := tracee/tracee.bpf.c
 OUT_BPF := $(OUT_DIR)/tracee.bpf.$(subst .,_,$(KERN_RELEASE)).$(subst .,_,$(VERSION)).o
-GO_BUILD_TAGS := -tags
 OUT_BPF_CORE := $(OUT_DIR)/tracee.bpf.core.o
 BPF_HEADERS := 3rdparty/include
 BPF_BUNDLE := $(OUT_DIR)/tracee.bpf.tar.gz
@@ -45,7 +44,7 @@ build: $(OUT_BIN)
 go_env := GOOS=linux GOARCH=$(ARCH:x86_64=amd64) CC=$(CMD_CLANG) CGO_CFLAGS="-I $(abspath $(LIBBPF_HEADERS))" CGO_LDFLAGS="$(abspath $(LIBBPF_OBJ))"
 ifndef DOCKER
 $(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(OUT_BPF_CORE) $(OUT_BPF) $(filter-out *_test.go,$(GO_SRC)) $(BPF_BUNDLE) | $(OUT_DIR)
-	$(go_env) go build $(GO_BUILD_TAGS) -v -o $(OUT_BIN) \
+	$(go_env) go build -v -o $(OUT_BIN) \
 	-ldflags "-X main.version=$(VERSION)"
 else 
 $(OUT_BIN): $(DOCKER_BUILDER) | $(OUT_DIR)
@@ -131,6 +130,9 @@ else
 #docker yes
 $(OUT_BPF): $(DOCKER_BUILDER) | $(OUT_DIR) 
 	$(call docker_builder_make,$@)
+
+$(OUT_BPF_CORE): $(DOCKER_BUILDER) | $(OUT_DIR) 
+	$(call docker_builder_make,$@)
 endif
 
 .PHONY: test 
@@ -163,7 +165,7 @@ endef
 
 .PHONY: mostlyclean
 mostlyclean:
-	-rm -rf $(OUT_BIN) $(bpf_bundle_dir) $(OUT_BPF_CORE) $(BPF_BUNDLE)
+	-rm -rf $(OUT_BIN) $(bpf_bundle_dir) $(OUT_BPF) $(OUT_BPF_CORE) $(BPF_BUNDLE)
 
 .PHONY: clean
 clean:
