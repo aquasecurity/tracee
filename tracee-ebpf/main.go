@@ -27,9 +27,9 @@ var buildPolicy string
 
 // These vars are supposed to be injected at build time
 //go:embed "dist/tracee.bpf/*"
+//go:embed "dist/tracee.bpf.core.o"
 var bpfBundleInjected embed.FS
 var version string
-var bpf_core string
 
 func main() {
 	app := &cli.App{
@@ -67,11 +67,48 @@ func main() {
 			if c.Bool("security-alerts") {
 				cfg.Filter.EventsToTrace = append(cfg.Filter.EventsToTrace, tracee.MemProtAlertEventID)
 			}
-			bpfFile, err := getBPFObject()
+
+			var bpfBytes []byte
+
+			// Check if user specified a bpf object path explicitly
+			bpfFilePath, err := checkTraceeBPFEnvPath()
 			if err != nil {
 				return err
 			}
-			cfg.BPFObjPath = bpfFile
+			if bpfFilePath != "" {
+				if debug {
+					fmt.Printf("BPF object file specified by TRACEE_BPF_FILE found: %s", bpfFilePath)
+				}
+				bpfBytes, err = ioutil.ReadFile(bpfFilePath)
+				if err != nil {
+					return err
+				}
+			} else if btfEnabled() {
+				if debug {
+					fmt.Println("BTF enabled, attempting to unpack CORE bpf object")
+				}
+				bpfFilePath = "embedded-core"
+				bpfBytes, err = unpackCOREBinary()
+				if err != nil {
+					return err
+				}
+			} else {
+				if debug {
+					fmt.Println("BTF is not enabled")
+				}
+				bpfFilePath, err = getBPFObjectPath()
+				if err != nil {
+					return err
+				}
+				bpfBytes, err = ioutil.ReadFile(bpfFilePath)
+				if err != nil {
+					return err
+				}
+			}
+
+			cfg.BPFObjPath = bpfFilePath
+			cfg.BPFObjBytes = bpfBytes
+
 			if !checkRequiredCapabilities() {
 				return fmt.Errorf("insufficient privileges to run")
 			}
@@ -826,6 +863,7 @@ func parseRetFilter(filterName string, operatorAndValues string, eventsNameToID 
 
 	return nil
 }
+
 func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.StringFilter, eventsNameToID map[string]int32) ([]int32, error) {
 	eventFilter.Enabled = true
 	eventsToTrace := eventFilter.Equal
@@ -1020,6 +1058,14 @@ func printList() {
 // It first tries in the paths given by the dirs, and then a system lookup
 func locateFile(file string, dirs []string) string {
 	var res string
+
+	if filepath.IsAbs(file) {
+		_, err := os.Stat(file)
+		if err == nil {
+			return file
+		}
+	}
+
 	for _, dir := range dirs {
 		if dir != "" {
 			fi, err := os.Stat(filepath.Join(dir, file))
@@ -1037,8 +1083,7 @@ func locateFile(file string, dirs []string) string {
 	return ""
 }
 
-// getBPFObject finds or builds ebpf object file and returns it's path
-func getBPFObject() (string, error) {
+func checkTraceeBPFEnvPath() (string, error) {
 	bpfPath, present := os.LookupEnv("TRACEE_BPF_FILE")
 	if present {
 		if _, err := os.Stat(bpfPath); os.IsNotExist(err) {
@@ -1046,11 +1091,11 @@ func getBPFObject() (string, error) {
 		}
 		return bpfPath, nil
 	}
+	return "", nil
+}
 
-	bpfObjFileName := fmt.Sprintf("tracee.bpf.%s.%s.o", strings.ReplaceAll(tracee.UnameRelease(), ".", "_"), strings.ReplaceAll(version, ".", "_"))
-	if bpf_core != "" {
-		bpfObjFileName = fmt.Sprintf("tracee.bpf.core.%s.o", strings.ReplaceAll(version, ".", "_"))
-	}
+// getBPFObjectPath finds or builds ebpf object file and returns it's path
+func getBPFObjectPath() (string, error) {
 
 	exePath, err := os.Executable()
 	if err != nil {
@@ -1061,6 +1106,8 @@ func getBPFObject() (string, error) {
 		filepath.Dir(exePath),
 		traceeInstallPath,
 	}
+
+	bpfObjFileName := fmt.Sprintf("tracee.bpf.%s.%s.o", strings.ReplaceAll(tracee.UnameRelease(), ".", "_"), strings.ReplaceAll(version, ".", "_"))
 	bpfObjFilePath := locateFile(bpfObjFileName, searchPaths)
 	if bpfObjFilePath != "" && debug {
 		fmt.Printf("found bpf object file at: %s\n", bpfObjFilePath)
@@ -1085,6 +1132,19 @@ func getBPFObject() (string, error) {
 		return "", fmt.Errorf("could not find or build the bpf object file")
 	}
 	return bpfObjFilePath, nil
+}
+
+func unpackCOREBinary() ([]byte, error) {
+	b, err := bpfBundleInjected.ReadFile("dist/tracee.bpf.core.o")
+	if err != nil {
+		return nil, err
+	}
+
+	if debug {
+		fmt.Println("unpacked CO:RE bpf object file into memory")
+	}
+
+	return b, nil
 }
 
 // unpackBPFBundle unpacks the bundle into the provided directory
@@ -1320,4 +1380,9 @@ func makeBPFObject(outFile string) error {
 	}
 
 	return nil
+}
+
+func btfEnabled() bool {
+	_, err := os.Stat("/sys/kernel/btf/vmlinux")
+	return err == nil
 }
