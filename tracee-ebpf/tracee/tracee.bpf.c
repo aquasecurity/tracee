@@ -968,8 +968,7 @@ static __always_inline int init_context(context_t *context)
     if (container_id != NULL) {
         __builtin_memcpy(context->cont_id, container_id->id, CONT_ID_LEN);
     }
-    // Save timestamp in microsecond resolution
-    context->ts = bpf_ktime_get_ns()/1000;
+    context->ts = bpf_ktime_get_ns();
 
     // Clean Stack Trace ID
     context->stack_id = 0;
@@ -2162,7 +2161,7 @@ if (CONFIG_ARCH_HAS_SYSCALL_WRAPPER) {
     // exit, exit_group and rt_sigreturn syscalls don't return - don't save args for them
     if (id != SYS_EXIT && id != SYS_EXIT_GROUP && id != SYS_RT_SIGRETURN) {
         // save the timestamp at function entry
-        args_tmp.args[6] = bpf_ktime_get_ns()/1000;
+        args_tmp.args[6] = bpf_ktime_get_ns();
         save_args(&args_tmp, id);
     }
 

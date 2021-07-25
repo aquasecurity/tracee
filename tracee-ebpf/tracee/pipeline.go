@@ -180,6 +180,17 @@ func (t *Tracee) prepareEventForPrint(done <-chan struct{}, in <-chan RawEvent) 
 				StackAddresses, _ = t.getStackAddresses(rawEvent.Ctx.StackID)
 			}
 
+			// Currently, the timestamp received from the bpf code is of the monotonic clock.
+			// Todo: The monotonic clock doesn't take into account system sleep time.
+			// Starting from kernel 5.7, we can get the timestamp relative to the system boot time instead which is preferable.
+			if t.config.Output.RelativeTime {
+				// To get the monotonic time since tracee was started, we have to substract the start time from the timestamp.
+				rawEvent.Ctx.Ts -= t.startTime
+			} else {
+				// To get the current ("wall") time, we add the boot time into it.
+				rawEvent.Ctx.Ts += t.bootTime
+			}
+
 			evt, err := newEvent(rawEvent.Ctx, argMetas, args, StackAddresses)
 			if err != nil {
 				errc <- err

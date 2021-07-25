@@ -208,6 +208,7 @@ option:{stack-addresses,detect-syscall,exec-env}   augment output according to g
   stack-addresses                                  include stack memory addresses for each event
   detect-syscall                                   when tracing kernel functions which are not syscalls, detect and show the original syscall that called that function
   exec-env                                         when tracing execve/execveat, show the environment variables that were used for execution
+  relative-time                                    use relative timestamp instead of wall timestamp for events
 
 Examples:
   --output json                                            | output as json
@@ -254,6 +255,8 @@ Use this flag multiple times to choose multiple output options
 				res.DetectSyscall = true
 			case "exec-env":
 				res.ExecEnv = true
+			case "relative-time":
+				res.RelativeTime = true
 			default:
 				return res, fmt.Errorf("invalid output option: %s, use '--output help' for more info", outputParts[1])
 			}
