@@ -3748,7 +3748,7 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
         if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
             break;
 
-        if (has_prefix(filter_p->path, &string_p->buf[*off], MAX_PATH_PREF_SIZE)) {
+        if (has_prefix(filter_p->path, (char*)&string_p->buf[*off], MAX_PATH_PREF_SIZE)) {
             filter_match = true;
             break;
         }
@@ -3783,7 +3783,7 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
         return -1;
 
     // check for /dev/null
-    if (!has_prefix(stored_str_p->path, &string_p->buf[*off], 10))
+    if (!has_prefix(stored_str_p->path, (char*)&string_p->buf[*off], 10))
         pid = 0;
 
     if (get_config(CONFIG_CAPTURE_FILES)) {
