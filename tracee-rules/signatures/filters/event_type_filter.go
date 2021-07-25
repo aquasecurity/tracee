@@ -51,7 +51,7 @@ func (eventFilter *EventTypeFilter) AddSignature(signature types.Signature, uid 
 	if err != nil {
 		return fmt.Errorf("error getting metadata: %v", err)
 	}
-	if eventFilter.registeredSignatures[uid] == false {
+	if _, isKeyExist := eventFilter.registeredSignatures[uid]; isKeyExist == true {
 		return fmt.Errorf("error registering signature %s to EventTypeFilter: given signature UID (%d) is already taken", meta.Name, uid)
 	}
 	sigSelectedEvents, err := signature.GetSelectedEvents()
