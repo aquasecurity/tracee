@@ -9,7 +9,7 @@ import (
 
 // Event is a user facing data structure representing a single event
 type Event struct {
-	Timestamp           float64    `json:"timestamp"`
+	Timestamp           int        `json:"timestamp"`
 	ProcessID           int        `json:"processId"`
 	ThreadID            int        `json:"threadId"`
 	ParentProcessID     int        `json:"parentProcessId"`

@@ -124,6 +124,7 @@ type OutputConfig struct {
 	StackAddresses bool
 	DetectSyscall  bool
 	ExecEnv        bool
+	RelativeTime   bool
 }
 
 type netProbe struct {
@@ -217,6 +218,7 @@ type Tracee struct {
 	lostNetChannel    chan uint64
 	printer           eventPrinter
 	bootTime          uint64
+	startTime         uint64
 	stats             statsStore
 	capturedFiles     map[string]int64
 	profiledFiles     map[string]profilerInfo
@@ -286,13 +288,20 @@ func New(cfg Config) (*Tracee, error) {
 		setEssential(SecuritySocketBindEventID)
 	}
 
-	systemUptime, _ := Uptime()
-	systemBootTime := time.Now().UnixNano() - systemUptime*1000*1000*1000
+	// Tracee bpf code uses monotonic clock as event timestamp.
+	// Get current monotonic clock so we can calculate event timestamps relative to it.
+	var ts unix.Timespec
+	unix.ClockGettime(unix.CLOCK_MONOTONIC, &ts)
+	startTime := ts.Nano()
+	// Calculate the boot time using the monotonic time (since this is the clock we're using as a timestamp)
+	// Note: this is NOT the real boot time, as the monotonic clock doesn't take into account system sleeps.
+	bootTime := time.Now().UnixNano() - startTime
 
 	// create tracee
 	t := &Tracee{
-		config:   cfg,
-		bootTime: uint64(systemBootTime),
+		config:    cfg,
+		startTime: uint64(startTime),
+		bootTime:  uint64(bootTime),
 	}
 	outf := os.Stdout
 	if t.config.Output.OutPath != "" {
@@ -316,7 +325,7 @@ func New(cfg Config) (*Tracee, error) {
 	}
 	ContainerMode := (t.config.Filter.ContFilter.Enabled && t.config.Filter.ContFilter.Value) ||
 		(t.config.Filter.NewContFilter.Enabled && t.config.Filter.NewContFilter.Value)
-	printObj, err := newEventPrinter(t.config.Output.Format, ContainerMode, outf, errf)
+	printObj, err := newEventPrinter(t.config.Output.Format, ContainerMode, t.config.Output.RelativeTime, outf, errf)
 	if err != nil {
 		return nil, err
 	}
@@ -432,16 +441,6 @@ type bucketsCache struct {
 	buckets     map[uint32][]uint32
 	bucketLimit int
 	Null        uint32
-}
-
-func Uptime() (int64, error) {
-	// return seconds since system boot time
-
-	systemInfo := unix.Sysinfo_t{}
-	if err := unix.Sysinfo(&systemInfo); err != nil {
-		return 0, err
-	}
-	return int64(systemInfo.Uptime), nil
 }
 
 func (c *bucketsCache) Init(bucketLimit int) {

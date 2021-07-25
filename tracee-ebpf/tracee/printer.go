@@ -9,6 +9,7 @@ import (
 	"io"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
 )
@@ -28,7 +29,7 @@ type eventPrinter interface {
 	Close()
 }
 
-func newEventPrinter(kind string, containerMode bool, out io.WriteCloser, err io.WriteCloser) (eventPrinter, error) {
+func newEventPrinter(kind string, containerMode bool, relativeTS bool, out io.WriteCloser, err io.WriteCloser) (eventPrinter, error) {
 	var res eventPrinter
 	var initError error
 	switch {
@@ -38,6 +39,7 @@ func newEventPrinter(kind string, containerMode bool, out io.WriteCloser, err io
 			err:           err,
 			verbose:       false,
 			containerMode: containerMode,
+			relativeTS:    relativeTS,
 		}
 	case kind == "table-verbose":
 		res = &tableEventPrinter{
@@ -45,6 +47,7 @@ func newEventPrinter(kind string, containerMode bool, out io.WriteCloser, err io
 			err:           err,
 			verbose:       true,
 			containerMode: containerMode,
+			relativeTS:    relativeTS,
 		}
 	case kind == "json":
 		res = &jsonEventPrinter{
@@ -73,7 +76,7 @@ func newEventPrinter(kind string, containerMode bool, out io.WriteCloser, err io
 
 func newEvent(ctx context, argMetas []external.ArgMeta, args []interface{}, StackAddresses []uint64) (external.Event, error) {
 	e := external.Event{
-		Timestamp:           float64(ctx.Ts) / 1000000.0,
+		Timestamp:           int(ctx.Ts),
 		ProcessID:           int(ctx.Pid),
 		ThreadID:            int(ctx.Tid),
 		ParentProcessID:     int(ctx.Ppid),
@@ -108,6 +111,7 @@ type tableEventPrinter struct {
 	err           io.WriteCloser
 	verbose       bool
 	containerMode bool
+	relativeTS    bool
 }
 
 func (p tableEventPrinter) Init() error { return nil }
@@ -115,32 +119,37 @@ func (p tableEventPrinter) Init() error { return nil }
 func (p tableEventPrinter) Preamble() {
 	if p.verbose {
 		if p.containerMode {
-			fmt.Fprintf(p.out, "%-14s %-16s %-16s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-20s %s", "TIME(s)", "UTS_NAME", "CONTAINER_ID", "MNT_NS", "PID_NS", "UID", "COMM", "PID/host", "TID/host", "PPID/host", "RET", "EVENT", "ARGS")
+			fmt.Fprintf(p.out, "%-16s %-16s %-16s %-12s %-12s %-6s %-16s %-15s %-15s %-15s %-16s %-20s %s", "TIME", "UTS_NAME", "CONTAINER_ID", "MNT_NS", "PID_NS", "UID", "COMM", "PID/host", "TID/host", "PPID/host", "RET", "EVENT", "ARGS")
 		} else {
-			fmt.Fprintf(p.out, "%-14s %-16s %-16s %-12s %-12s %-6s %-16s %-7s %-7s %-7s %-16s %-20s %s", "TIME(s)", "UTS_NAME", "CONTAINER_ID", "MNT_NS", "PID_NS", "UID", "COMM", "PID", "TID", "PPID", "RET", "EVENT", "ARGS")
+			fmt.Fprintf(p.out, "%-16s %-16s %-16s %-12s %-12s %-6s %-16s %-7s %-7s %-7s %-16s %-20s %s", "TIME", "UTS_NAME", "CONTAINER_ID", "MNT_NS", "PID_NS", "UID", "COMM", "PID", "TID", "PPID", "RET", "EVENT", "ARGS")
 		}
 	} else {
 		if p.containerMode {
-			fmt.Fprintf(p.out, "%-14s %-16s %-16s %-6s %-16s %-15s %-15s %-16s %-20s %s", "TIME(s)", "UTS_NAME", "CONTAINER_ID", "UID", "COMM", "PID/host", "TID/host", "RET", "EVENT", "ARGS")
+			fmt.Fprintf(p.out, "%-16s %-16s %-16s %-6s %-16s %-15s %-15s %-16s %-20s %s", "TIME", "UTS_NAME", "CONTAINER_ID", "UID", "COMM", "PID/host", "TID/host", "RET", "EVENT", "ARGS")
 		} else {
-			fmt.Fprintf(p.out, "%-14s %-6s %-16s %-7s %-7s %-16s %-20s %s", "TIME(s)", "UID", "COMM", "PID", "TID", "RET", "EVENT", "ARGS")
+			fmt.Fprintf(p.out, "%-16s %-6s %-16s %-7s %-7s %-16s %-20s %s", "TIME", "UID", "COMM", "PID", "TID", "RET", "EVENT", "ARGS")
 		}
 	}
 	fmt.Fprintln(p.out)
 }
 
 func (p tableEventPrinter) Print(event external.Event) {
+	ut := time.Unix(0, int64(event.Timestamp))
+	if p.relativeTS {
+		ut = ut.UTC()
+	}
+	timestamp := fmt.Sprintf("%02d:%02d:%02d:%06d", ut.Hour(), ut.Minute(), ut.Second(), ut.Nanosecond()/1000)
 	if p.verbose {
 		if p.containerMode {
-			fmt.Fprintf(p.out, "%-14f %-16s %-16s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ", event.Timestamp, event.HostName, event.ContainerID, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ParentProcessID, event.ParentProcessID, event.ReturnValue, event.EventName)
+			fmt.Fprintf(p.out, "%-16s %-16s %-16s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, event.HostName, event.ContainerID, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ParentProcessID, event.ParentProcessID, event.ReturnValue, event.EventName)
 		} else {
-			fmt.Fprintf(p.out, "%-14f %-16s %-16s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-20s ", event.Timestamp, event.HostName, event.ContainerID, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue, event.EventName)
+			fmt.Fprintf(p.out, "%-16s %-16s %-16s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-20s ", timestamp, event.HostName, event.ContainerID, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue, event.EventName)
 		}
 	} else {
 		if p.containerMode {
-			fmt.Fprintf(p.out, "%-14f %-16s %-16s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-20s ", event.Timestamp, event.HostName, event.ContainerID, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ReturnValue, event.EventName)
+			fmt.Fprintf(p.out, "%-16s %-16s %-16s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, event.HostName, event.ContainerID, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ReturnValue, event.EventName)
 		} else {
-			fmt.Fprintf(p.out, "%-14f %-6d %-16s %-7d %-7d %-16d %-20s ", event.Timestamp, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ReturnValue, event.EventName)
+			fmt.Fprintf(p.out, "%-16s %-6d %-16s %-7d %-7d %-16d %-20s ", timestamp, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ReturnValue, event.EventName)
 		}
 	}
 	for i, arg := range event.Args {
