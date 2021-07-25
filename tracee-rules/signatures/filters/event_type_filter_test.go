@@ -68,23 +68,12 @@ func TestCreateEventFilter(t *testing.T) {
 		matchingUIDs    []uint32
 	}{
 		{
-			name: "Create EventTypeFilter with no signatures",
-			inputSignatures: []fakeSignature{
-				{
-					getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
-						return []types.SignatureEventSelector{
-							{
-								Name:   "not_matching_type",
-								Source: "tracee",
-							},
-						}, nil
-					},
-				},
-			},
-			matchingUIDs: []uint32{},
+			name:            "Create EventTypeFilter with no signatures",
+			inputSignatures: []fakeSignature{{}},
+			matchingUIDs:    []uint32{},
 		},
 		{
-			name: "Create EventTypeFilter with one signature matching the given event",
+			name: "Create EventTypeFilter with one signature which matches the given event",
 			inputSignatures: []fakeSignature{
 				{
 					getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
@@ -100,7 +89,7 @@ func TestCreateEventFilter(t *testing.T) {
 			matchingUIDs: []uint32{0},
 		},
 		{
-			name: "Create EventTypeFilter with one signature not matching the given event",
+			name: "Create EventTypeFilter with one signature which does not match the given event",
 			inputSignatures: []fakeSignature{
 				{
 					getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
@@ -116,13 +105,13 @@ func TestCreateEventFilter(t *testing.T) {
 			matchingUIDs: []uint32{},
 		},
 		{
-			name: "Create EventTypeFilter with one signature matching all events",
+			name: "Create EventTypeFilter with one signature which matches all events",
 			inputSignatures: []fakeSignature{
 				{
 					getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
 						return []types.SignatureEventSelector{
 							{
-								Name:   "not_matching_type",
+								Name:   "*",
 								Source: "tracee",
 							},
 						}, nil
@@ -156,6 +145,6 @@ func TestCreateEventFilter(t *testing.T) {
 		require.NoError(t, err, "creating EventTypeFilter")
 		filteredSignaturesBitmap, err := eventFilter.FilterByEvent(event)
 		require.NoError(t, err, "get filtered events for example one")
-		assert.NotEqual(t, testCase.matchingUIDs, filteredSignaturesBitmap.ToArray(), testCase.name)
+		assert.Equal(t, testCase.matchingUIDs, filteredSignaturesBitmap.ToArray(), testCase.name)
 	}
 }
