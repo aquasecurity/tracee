@@ -1,6 +1,7 @@
 package filter
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/RoaringBitmap/roaring"
@@ -25,24 +26,9 @@ func CreateEventFilter(signatures []types.Signature, logger *log.Logger) (*Event
 
 	// Add all signatures to the matching event filter Bitmap.
 	for signatureIndex, signature := range signatures {
-		meta, err := signature.GetMetadata()
+		err := eventFilter.AddSignature(signature, uint32(signatureIndex))
 		if err != nil {
-			eventFilter.logger.Printf("error getting metadata: %v", err)
-			continue
-		}
-		selectedEvents, err := signature.GetSelectedEvents()
-		if err != nil {
-			eventFilter.logger.Printf("error getting selected events for signature %s: %v", meta.Name, err)
-			continue
-		}
-		for _, selectedEvent := range selectedEvents {
-			if selectedEvent.Name == "" {
-				selectedEvent.Name = ALL_EVENT_TYPES
-			}
-			if eventFilter.signatureBitmapMatcher[selectedEvent.Name] == nil {
-				eventFilter.signatureBitmapMatcher[selectedEvent.Name] = roaring.New()
-			}
-			eventFilter.signatureBitmapMatcher[selectedEvent.Name].Add(uint32(signatureIndex))
+			logger.Println(err)
 		}
 	}
 	return &eventFilter, nil
@@ -59,10 +45,23 @@ func (eventFilter *EventTypeFilter) FilterByEvent(filteredEvent types.Event) (*r
 }
 
 func (eventFilter *EventTypeFilter) AddSignature(signature types.Signature, uid uint32) error {
-	sigSelectedEvents, _ := signature.GetSelectedEvents()
+	meta, err := signature.GetMetadata()
+	if err != nil {
+		return fmt.Errorf("error getting metadata: %v", err)
+	}
+	sigSelectedEvents, err := signature.GetSelectedEvents()
+	if err != nil {
+		return fmt.Errorf("error getting selected events for signature %s: %v", meta.Name, err)
+	}
+	if eventFilter.signatureBitmapMatcher[sigSelectedEvents[0].Name].Contains(uid) {
+		return fmt.Errorf("error loading signature %s: given signature UID (%d) is already taken", meta.Name, uid)
+	}
 	for _, selectedEvent := range sigSelectedEvents {
 		if selectedEvent.Name == "" {
 			selectedEvent.Name = ALL_EVENT_TYPES
+		}
+		if eventFilter.signatureBitmapMatcher[selectedEvent.Name] == nil {
+			eventFilter.signatureBitmapMatcher[selectedEvent.Name] = roaring.New()
 		}
 		eventFilter.signatureBitmapMatcher[selectedEvent.Name].Add(uid)
 	}
