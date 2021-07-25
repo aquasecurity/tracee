@@ -1,6 +1,7 @@
 package filter
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -147,4 +148,49 @@ func TestCreateEventFilter(t *testing.T) {
 		require.NoError(t, err, "get filtered events for example one")
 		assert.Equal(t, testCase.matchingUIDs, filteredSignaturesBitmap.ToArray(), testCase.name)
 	}
+}
+
+func TestAddSignature(t *testing.T) {
+	sig := fakeSignature{
+		getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
+			return []types.SignatureEventSelector{
+				{
+					Name:   "test_event",
+					Source: "tracee",
+				},
+			}, nil
+		},
+	}
+	logger := *log.New(os.Stdout, "", 0)
+	eventFilter, err := CreateEventFilter([]types.Signature{}, &logger)
+	require.NoError(t, err, "creating EventTypeFilter")
+	sigUID := 0
+	err = eventFilter.AddSignature(sig, uint32(sigUID))
+	require.NoError(t, err, "add first signature to filter")
+	err = eventFilter.AddSignature(sig, uint32(sigUID))
+	sigMeta, _ := sig.GetMetadata()
+	errMsg := fmt.Sprintf("error registering signature %s to EventTypeFilter: given signature UID (%d) is already taken", sigMeta.Name, sigUID)
+	require.Errorf(t, err, errMsg)
+}
+
+func TestRemoveSignature(t *testing.T) {
+	sig := fakeSignature{
+		getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
+			return []types.SignatureEventSelector{
+				{
+					Name:   "test_event",
+					Source: "tracee",
+				},
+			}, nil
+		},
+	}
+	logger := *log.New(os.Stdout, "", 0)
+	eventFilter, err := CreateEventFilter([]types.Signature{sig}, &logger)
+	require.NoError(t, err, "creating EventTypeFilter")
+	sigUID := 0
+	err = eventFilter.RemoveSignature(uint32(sigUID))
+	require.NoError(t, err, "removed legitimate signature")
+	err = eventFilter.RemoveSignature(uint32(sigUID))
+	errMsg := fmt.Sprintf("error removing signature with UID %d: no matching signature's UID exist", sigUID)
+	require.Errorf(t, err, errMsg)
 }
