@@ -12,12 +12,13 @@ import (
 const ALL_EVENT_TYPES = "*"
 
 type EventTypeFilter struct {
-	signatureBitmapMatcher map[string]*roaring.Bitmap
+	signatureBitmapMatcher map[string]*roaring.Bitmap // Map between signature type to the matching signatures bitmap.
 	logger                 *log.Logger
-	registeredSignatures   map[uint32]bool
+	registeredSignatures   map[uint32]bool // Each registered signature's UID point to true.
 }
 
-// CreateEventFilter Create an EventTypeFilter according to the signatures watched events types.
+// CreateEventFilter Create an EventTypeFilter according to the signatures received, building bitmaps to filter
+// signatures to be called upon received event according to the event types selected by each signature.
 func CreateEventFilter(signatures []types.Signature, logger *log.Logger) (*EventTypeFilter, error) {
 	eventFilter := EventTypeFilter{}
 	eventFilter.logger = logger
