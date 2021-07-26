@@ -3,6 +3,7 @@ package filter
 import (
 	"fmt"
 	"log"
+	"sync"
 
 	"github.com/RoaringBitmap/roaring"
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
@@ -12,9 +13,10 @@ import (
 const ALL_EVENT_TYPES = "*"
 
 type EventTypeFilter struct {
-	signatureBitmapMatcher map[string]*roaring.Bitmap // Map between signature type to the matching signatures bitmap.
-	logger                 *log.Logger
-	registeredSignatures   map[uint32]bool // Each registered signature's UID point to true.
+	signatureBitmapMatcher   map[string]*roaring.Bitmap // Map between signature type to the matching signatures bitmap.
+	logger                   *log.Logger
+	registeredSignatures     map[uint32]bool // Each registered signature's UID point to true.
+	signatureOperationsMutex sync.Mutex
 }
 
 // CreateEventFilter Create an EventTypeFilter according to the signatures received, building bitmaps to filter
@@ -22,6 +24,8 @@ type EventTypeFilter struct {
 func CreateEventFilter(signatures []types.Signature, logger *log.Logger) (*EventTypeFilter, error) {
 	eventFilter := EventTypeFilter{}
 	eventFilter.logger = logger
+	eventFilter.signatureOperationsMutex.Lock()
+	defer eventFilter.signatureOperationsMutex.Unlock()
 	eventFilter.signatureBitmapMatcher = make(map[string]*roaring.Bitmap)
 	eventFilter.registeredSignatures = make(map[uint32]bool)
 
@@ -39,6 +43,8 @@ func CreateEventFilter(signatures []types.Signature, logger *log.Logger) (*Event
 
 // FilterByEvent Return a bitmap representing all the signatures that watch the given event's type
 func (eventFilter *EventTypeFilter) FilterByEvent(filteredEvent types.Event) (*roaring.Bitmap, error) {
+	eventFilter.signatureOperationsMutex.Lock()
+	defer eventFilter.signatureOperationsMutex.Unlock()
 	eventBitmap := eventFilter.signatureBitmapMatcher[filteredEvent.(tracee.Event).EventName]
 	if eventBitmap == nil {
 		eventBitmap = roaring.New()
@@ -52,6 +58,8 @@ func (eventFilter *EventTypeFilter) AddSignature(signature types.Signature, uid 
 	if err != nil {
 		return fmt.Errorf("error getting metadata: %v", err)
 	}
+	eventFilter.signatureOperationsMutex.Lock()
+	defer eventFilter.signatureOperationsMutex.Unlock()
 	if _, isKeyExist := eventFilter.registeredSignatures[uid]; isKeyExist == true {
 		return fmt.Errorf("error registering signature %s to EventTypeFilter: given signature UID (%d) is already taken", meta.Name, uid)
 	}
@@ -73,6 +81,8 @@ func (eventFilter *EventTypeFilter) AddSignature(signature types.Signature, uid 
 }
 
 func (eventFilter *EventTypeFilter) RemoveSignature(uid uint32) error {
+	eventFilter.signatureOperationsMutex.Lock()
+	defer eventFilter.signatureOperationsMutex.Unlock()
 	if eventFilter.registeredSignatures[uid] == false {
 		return fmt.Errorf("error removing signature with UID %d: no matching signature's UID exist", uid)
 	}
@@ -84,6 +94,8 @@ func (eventFilter *EventTypeFilter) RemoveSignature(uid uint32) error {
 }
 
 func (eventFilter *EventTypeFilter) RemoveAllSignatures() error {
+	eventFilter.signatureOperationsMutex.Lock()
+	defer eventFilter.signatureOperationsMutex.Unlock()
 	for _, eventFilterBitmap := range eventFilter.signatureBitmapMatcher {
 		eventFilterBitmap.Clear()
 	}
