@@ -40,9 +40,9 @@ func (filterManager *FilterManager) GetFilteredSignatures(event types.Event) ([]
 		}
 	}
 	matchingSignatures := make([]types.Signature, 0)
-	eventChannelIndexIterator := matchingSignaturesBitmap.Iterator()
-	for eventChannelIndexIterator.HasNext() {
-		matchingSignatures = append(matchingSignatures, filterManager.signaturesIndex[int(eventChannelIndexIterator.Next())])
+	matchingSignaturesBitmapIterator := matchingSignaturesBitmap.Iterator()
+	for matchingSignaturesBitmapIterator.HasNext() {
+		matchingSignatures = append(matchingSignatures, filterManager.signaturesIndex[int(matchingSignaturesBitmapIterator.Next())])
 	}
 	return matchingSignatures, nil
 }
