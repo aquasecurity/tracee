@@ -21,13 +21,89 @@ type Event struct {
 	PIDNS               int        `json:"pidNamespace"`
 	ProcessName         string     `json:"processName"`
 	HostName            string     `json:"hostName"`
-	ContainerID         string     `json:"containerId`
+	ContainerID         string     `json:"containerId"`
 	EventID             int        `json:"eventId,string"`
 	EventName           string     `json:"eventName"`
 	ArgsNum             int        `json:"argsNum"`
 	ReturnValue         int        `json:"returnValue"`
 	StackAddresses      []uint64   `json:"stackAddresses"`
 	Args                []Argument `json:"args"` //Arguments are ordered according their appearance in the original event
+}
+
+// ToUnstructured returns a JSON compatible map with string, float, int, bool,
+// []interface{}, or map[string]interface{} children.
+//
+// It allows this Event to be manipulated generically. For example, it can be
+// used as a parsed input with OPA SDK to avoid relatively expensive JSON
+// encoding round trip.
+func (e Event) ToUnstructured() (map[string]interface{}, error) {
+	var argsRef interface{}
+
+	if e.Args != nil {
+		args := make([]interface{}, len(e.Args))
+		for i, arg := range e.Args {
+			value, err := jsonRoundTripArgumentValue(arg.Value)
+			if err != nil {
+				return nil, fmt.Errorf("marshalling arg %s with value %v: %w", arg.Name, arg.Value, err)
+			}
+			args[i] = map[string]interface{}{
+				"name":  arg.Name,
+				"type":  arg.Type,
+				"value": value,
+			}
+		}
+		argsRef = args
+	}
+
+	var stackAddressesRef interface{}
+	if e.StackAddresses != nil {
+		// stackAddresses can be ignored in the context of tracee-rules
+		stackAddressesRef = make([]interface{}, len(e.StackAddresses))
+	}
+
+	timestamp, err := json.Marshal(e.Timestamp)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"timestamp":           json.Number(timestamp),
+		"processId":           json.Number(strconv.Itoa(e.ProcessID)),
+		"threadId":            json.Number(strconv.Itoa(e.ThreadID)),
+		"parentProcessId":     json.Number(strconv.Itoa(e.ParentProcessID)),
+		"hostProcessId":       json.Number(strconv.Itoa(e.HostProcessID)),
+		"hostThreadId":        json.Number(strconv.Itoa(e.HostThreadID)),
+		"hostParentProcessId": json.Number(strconv.Itoa(e.HostParentProcessID)),
+		"userId":              json.Number(strconv.Itoa(e.UserID)),
+		"mountNamespace":      json.Number(strconv.Itoa(e.MountNS)),
+		"pidNamespace":        json.Number(strconv.Itoa(e.PIDNS)),
+		"processName":         e.ProcessName,
+		"hostName":            e.HostName,
+		"containerId":         e.ContainerID,
+		"eventId":             strconv.Itoa(e.EventID),
+		"eventName":           e.EventName,
+		"argsNum":             json.Number(strconv.Itoa(e.ArgsNum)),
+		"returnValue":         json.Number(strconv.Itoa(e.ReturnValue)),
+		"args":                argsRef,
+		"stackAddresses":      stackAddressesRef,
+	}, nil
+}
+
+func jsonRoundTripArgumentValue(v interface{}) (interface{}, error) {
+	m, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	buf := bytes.NewBuffer(m)
+
+	var u interface{}
+	d := json.NewDecoder(buf)
+	d.UseNumber()
+	err = d.Decode(&u)
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
 }
 
 // Argument holds the information for one argument
@@ -42,7 +118,7 @@ type ArgMeta struct {
 	Type string `json:"type"`
 }
 
-// UnmarshalJSON implements the encoding/json.Unmershaler interface
+// UnmarshalJSON implements the json.Unmarshaler interface.
 func (arg *Argument) UnmarshalJSON(b []byte) error {
 	type argument Argument //alias Argument so we can unmarshal it within the unmarshaler implementation
 	d := json.NewDecoder(bytes.NewReader(b))
