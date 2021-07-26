@@ -66,12 +66,12 @@ func TestCreateEventFilter(t *testing.T) {
 		name            string
 		inputSignatures []fakeSignature
 		expectedError   string
-		matchingUIDs    []uint32
+		matchingSigIDs  []uint32
 	}{
 		{
 			name:            "Create EventTypeFilter with no signatures",
 			inputSignatures: []fakeSignature{{}},
-			matchingUIDs:    []uint32{},
+			matchingSigIDs:  []uint32{},
 		},
 		{
 			name: "Create EventTypeFilter with one signature which matches the given event",
@@ -87,7 +87,7 @@ func TestCreateEventFilter(t *testing.T) {
 					},
 				},
 			},
-			matchingUIDs: []uint32{0},
+			matchingSigIDs: []uint32{0},
 		},
 		{
 			name: "Create EventTypeFilter with one signature which does not match the given event",
@@ -103,7 +103,7 @@ func TestCreateEventFilter(t *testing.T) {
 					},
 				},
 			},
-			matchingUIDs: []uint32{},
+			matchingSigIDs: []uint32{},
 		},
 		{
 			name: "Create EventTypeFilter with one signature which matches all events",
@@ -119,7 +119,7 @@ func TestCreateEventFilter(t *testing.T) {
 					},
 				},
 			},
-			matchingUIDs: []uint32{0},
+			matchingSigIDs: []uint32{0},
 		},
 	}
 	event := tracee.Event{
@@ -146,7 +146,7 @@ func TestCreateEventFilter(t *testing.T) {
 		require.NoError(t, err, "creating EventTypeFilter")
 		filteredSignaturesBitmap, err := eventFilter.FilterByEvent(event)
 		require.NoError(t, err, "get filtered events for example one")
-		assert.Equal(t, testCase.matchingUIDs, filteredSignaturesBitmap.ToArray(), testCase.name)
+		assert.Equal(t, testCase.matchingSigIDs, filteredSignaturesBitmap.ToArray(), testCase.name)
 	}
 }
 
@@ -164,12 +164,12 @@ func TestAddSignature(t *testing.T) {
 	logger := *log.New(os.Stdout, "", 0)
 	eventFilter, err := CreateEventFilter([]types.Signature{}, &logger)
 	require.NoError(t, err, "creating EventTypeFilter")
-	sigUID := 0
-	err = eventFilter.AddSignature(sig, uint32(sigUID))
+	sigID := 0
+	err = eventFilter.AddSignature(sig, uint32(sigID))
 	require.NoError(t, err, "add first signature to filter")
-	err = eventFilter.AddSignature(sig, uint32(sigUID))
+	err = eventFilter.AddSignature(sig, uint32(sigID))
 	sigMeta, _ := sig.GetMetadata()
-	errMsg := fmt.Sprintf("error registering signature %s to EventTypeFilter: given signature UID (%d) is already taken", sigMeta.Name, sigUID)
+	errMsg := fmt.Sprintf("error registering signature %s to EventTypeFilter: given signature signatureID (%d) is already taken", sigMeta.Name, sigID)
 	require.Errorf(t, err, errMsg)
 }
 
@@ -187,10 +187,10 @@ func TestRemoveSignature(t *testing.T) {
 	logger := *log.New(os.Stdout, "", 0)
 	eventFilter, err := CreateEventFilter([]types.Signature{sig}, &logger)
 	require.NoError(t, err, "creating EventTypeFilter")
-	sigUID := 0
-	err = eventFilter.RemoveSignature(uint32(sigUID))
+	sigID := 0
+	err = eventFilter.RemoveSignature(uint32(sigID))
 	require.NoError(t, err, "removed legitimate signature")
-	err = eventFilter.RemoveSignature(uint32(sigUID))
-	errMsg := fmt.Sprintf("error removing signature with UID %d: no matching signature's UID exist", sigUID)
+	err = eventFilter.RemoveSignature(uint32(sigID))
+	errMsg := fmt.Sprintf("error removing signature with signatureID %d: no matching signature's signatureID exist", sigID)
 	require.Errorf(t, err, errMsg)
 }
