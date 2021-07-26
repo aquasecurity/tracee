@@ -16,7 +16,7 @@ import (
 
 var (
 	innocentEvent = tracee.Event{
-		Timestamp:           7126.141189,
+		Timestamp:           7126141189,
 		ProcessID:           1,
 		ThreadID:            1,
 		ParentProcessID:     4798,
@@ -65,7 +65,7 @@ var (
 	}
 
 	triggerCodeInjectorPtraceEvent = tracee.Event{
-		Timestamp:           6123.321183,
+		Timestamp:           6123321183,
 		ProcessID:           1,
 		ThreadID:            1,
 		ParentProcessID:     3788,
@@ -91,7 +91,7 @@ var (
 		},
 	}
 	triggerCodeInjectorOpenEvent = tracee.Event{
-		Timestamp:           5123.321532,
+		Timestamp:           5123321532,
 		ProcessID:           1,
 		ThreadID:            1,
 		ParentProcessID:     3788,
@@ -124,7 +124,7 @@ var (
 	}
 
 	triggerAntiDebuggingEvent = tracee.Event{
-		Timestamp:           5323.321532,
+		Timestamp:           5323321532,
 		ProcessID:           1,
 		ThreadID:            1,
 		ParentProcessID:     3788,
