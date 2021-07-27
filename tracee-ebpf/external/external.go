@@ -61,13 +61,8 @@ func (e Event) ToUnstructured() (map[string]interface{}, error) {
 		stackAddressesRef = make([]interface{}, len(e.StackAddresses))
 	}
 
-	timestamp, err := json.Marshal(e.Timestamp)
-	if err != nil {
-		return nil, err
-	}
-
 	return map[string]interface{}{
-		"timestamp":           json.Number(timestamp),
+		"timestamp":           json.Number(strconv.Itoa(e.Timestamp)),
 		"processId":           json.Number(strconv.Itoa(e.ProcessID)),
 		"threadId":            json.Number(strconv.Itoa(e.ThreadID)),
 		"parentProcessId":     json.Number(strconv.Itoa(e.ParentProcessID)),
