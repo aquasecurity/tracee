@@ -250,7 +250,7 @@ extern bool CONFIG_ARCH_HAS_SYSCALL_WRAPPER __kconfig;
 #define MAX_STR_ARR_ELEM      128
 #define MAX_ARGS_STR_ARR_ELEM 128
 #define MAX_PATH_PREF_SIZE    128
-#define MAX_PATH_COMPONENTS   128
+#define MAX_PATH_COMPONENTS   80
 #define MAX_BIN_CHUNKS        256
 #endif
 #else
