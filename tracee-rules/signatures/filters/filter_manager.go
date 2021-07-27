@@ -78,10 +78,13 @@ func (filterManager *FilterManager) RemoveSignature(signature types.Signature) e
 	}
 	if signatureToRemoveId == -1 {
 		signatureMetaData, _ := signature.GetMetadata()
-		return fmt.Errorf("Error removing signature from filters - no matching signature found with ID %+v", signatureMetaData)
+		return fmt.Errorf("error removing signature from filters - no matching signature found with ID %+v", signatureMetaData)
 	}
 	for _, filter := range filterManager.registeredFilters {
-		filter.RemoveSignature(uint32(signatureToRemoveId))
+		err := filter.RemoveSignature(uint32(signatureToRemoveId))
+		if err != nil {
+			filterManager.logger.Printf("error removing signature from one of the filters - %+v", err)
+		}
 	}
 	delete(filterManager.signaturesIndex, signatureToRemoveId)
 	filterManager.freeSignaturesUIDs = append(filterManager.freeSignaturesUIDs, signatureToRemoveId)
@@ -91,7 +94,10 @@ func (filterManager *FilterManager) RemoveSignature(signature types.Signature) e
 // RemoveAllSignatures Remove all signatures registered from all filters registered.
 func (filterManager *FilterManager) RemoveAllSignatures() error {
 	for _, filter := range filterManager.registeredFilters {
-		filter.RemoveAllSignatures()
+		err := filter.RemoveAllSignatures()
+		if err != nil {
+			filterManager.logger.Printf("error removing signatures from one of the filters - %+v", err)
+		}
 	}
 	return nil
 }
