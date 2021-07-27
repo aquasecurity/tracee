@@ -142,10 +142,10 @@ func TestCreateEventFilter(t *testing.T) {
 		for _, signature := range testCase.inputSignatures {
 			inputSignatures = append(inputSignatures, signature)
 		}
-		eventFilter, err := CreateEventFilter(inputSignatures, &logger)
-		require.NoError(t, err, "creating EventTypeFilter")
-		filteredSignaturesBitmap, err := eventFilter.FilterByEvent(event)
-		require.NoError(t, err, "get filtered events for example one")
+		eventFilter, createFilterError := CreateEventFilter(inputSignatures, &logger)
+		require.NoError(t, createFilterError, "creating EventTypeFilter")
+		filteredSignaturesBitmap, filterError := eventFilter.FilterByEvent(event)
+		require.NoError(t, filterError, "get filtered events for example one")
 		assert.Equal(t, testCase.matchingSigIDs, filteredSignaturesBitmap.ToArray(), testCase.name)
 	}
 }
@@ -162,15 +162,15 @@ func TestAddSignature(t *testing.T) {
 		},
 	}
 	logger := *log.New(os.Stdout, "", 0)
-	eventFilter, err := CreateEventFilter([]types.Signature{}, &logger)
-	require.NoError(t, err, "creating EventTypeFilter")
+	eventFilter, createFilterError := CreateEventFilter([]types.Signature{}, &logger)
+	require.NoError(t, createFilterError, "creating EventTypeFilter")
 	sigID := 0
-	err = eventFilter.AddSignature(sig, uint32(sigID))
-	require.NoError(t, err, "add first signature to filter")
-	err = eventFilter.AddSignature(sig, uint32(sigID))
+	addSignatureError := eventFilter.AddSignature(sig, uint32(sigID))
+	require.NoError(t, addSignatureError, "add first signature to filter")
+	secondAddSignatureError := eventFilter.AddSignature(sig, uint32(sigID))
 	sigMeta, _ := sig.GetMetadata()
 	errMsg := fmt.Sprintf("error registering signature %s to EventTypeFilter: given signature signatureID (%d) is already taken", sigMeta.Name, sigID)
-	require.Errorf(t, err, errMsg)
+	require.Errorf(t, secondAddSignatureError, errMsg)
 }
 
 func TestRemoveSignature(t *testing.T) {
@@ -185,12 +185,12 @@ func TestRemoveSignature(t *testing.T) {
 		},
 	}
 	logger := *log.New(os.Stdout, "", 0)
-	eventFilter, err := CreateEventFilter([]types.Signature{sig}, &logger)
-	require.NoError(t, err, "creating EventTypeFilter")
+	eventFilter, createFilterError := CreateEventFilter([]types.Signature{sig}, &logger)
+	require.NoError(t, createFilterError, "creating EventTypeFilter")
 	sigID := 0
-	err = eventFilter.RemoveSignature(uint32(sigID))
-	require.NoError(t, err, "removed legitimate signature")
-	err = eventFilter.RemoveSignature(uint32(sigID))
+	removeError := eventFilter.RemoveSignature(uint32(sigID))
+	require.NoError(t, removeError, "removed legitimate signature")
+	secondRemoveError := eventFilter.RemoveSignature(uint32(sigID))
 	errMsg := fmt.Sprintf("error removing signature with signatureID %d: no matching signature's signatureID exist", sigID)
-	require.Errorf(t, err, errMsg)
+	require.Errorf(t, secondRemoveError, errMsg)
 }

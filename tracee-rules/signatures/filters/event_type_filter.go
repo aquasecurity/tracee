@@ -34,9 +34,9 @@ func CreateEventFilter(signatures []types.Signature, logger *log.Logger) (*Event
 	eventFilter.signatureOperationsMutex.Unlock()
 	// Add all signatures to the matching event filter Bitmap.
 	for signatureIndex, signature := range signatures {
-		err := eventFilter.AddSignature(signature, uint32(signatureIndex))
-		if err != nil {
-			logger.Println(err)
+		addError := eventFilter.AddSignature(signature, uint32(signatureIndex))
+		if addError != nil {
+			logger.Println(addError)
 		}
 	}
 	return &eventFilter, nil
@@ -55,18 +55,18 @@ func (eventFilter *EventTypeFilter) FilterByEvent(filteredEvent types.Event) (*r
 }
 
 func (eventFilter *EventTypeFilter) AddSignature(signature types.Signature, signatureID uint32) error {
-	meta, err := signature.GetMetadata()
-	if err != nil {
-		return fmt.Errorf("error getting metadata: %v", err)
+	meta, metaDataError := signature.GetMetadata()
+	if metaDataError != nil {
+		return fmt.Errorf("error getting metadata: %v", metaDataError)
 	}
 	eventFilter.signatureOperationsMutex.Lock()
 	defer eventFilter.signatureOperationsMutex.Unlock()
 	if _, isKeyExist := eventFilter.registeredSignatures[signatureID]; isKeyExist == true {
 		return fmt.Errorf("error registering signature %s to EventTypeFilter: given signature signatureID (%d) is already taken", meta.Name, signatureID)
 	}
-	sigSelectedEvents, err := signature.GetSelectedEvents()
-	if err != nil {
-		return fmt.Errorf("error getting selected events for signature %s: %v", meta.Name, err)
+	sigSelectedEvents, selectedEventsError := signature.GetSelectedEvents()
+	if selectedEventsError != nil {
+		return fmt.Errorf("error getting selected events for signature %s: %v", meta.Name, selectedEventsError)
 	}
 	for _, selectedEvent := range sigSelectedEvents {
 		if selectedEvent.Name == "" {
