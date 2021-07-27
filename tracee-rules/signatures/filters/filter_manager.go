@@ -3,6 +3,7 @@ package filter
 import (
 	"fmt"
 	"log"
+	"reflect"
 
 	"github.com/RoaringBitmap/roaring"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
@@ -70,7 +71,7 @@ func (filterManager *FilterManager) AddSignature(signature types.Signature) erro
 func (filterManager *FilterManager) RemoveSignature(signature types.Signature) error {
 	signatureToRemoveId := -1
 	for i, sig := range filterManager.signaturesIndex {
-		if signature == sig {
+		if reflect.DeepEqual(sig, signature) {
 			signatureToRemoveId = i
 			break
 		}
