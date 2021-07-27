@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"sync"
 
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
@@ -35,7 +34,7 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 		return nil, fmt.Errorf("nil input received")
 	}
 	engine := Engine{}
-	engine.logger = *log.New(os.Stderr, "", 0)
+	engine.logger = *log.New(logWriter, "", 0)
 	engine.inputs = sources
 	engine.output = output
 	engine.signaturesMutex.Lock()
