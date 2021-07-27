@@ -1,4 +1,4 @@
-package filter
+package plugins
 
 import (
 	"fmt"
@@ -13,17 +13,17 @@ import (
 const ALL_EVENT_TYPES = "*"
 const TRACEE_SOURCE = "tracee"
 
-type EventTypeFilter struct {
+type EventSelectorFilter struct {
 	signatureBitmapMatcher   map[types.SignatureEventSelector]*roaring.Bitmap // Map between signature type to the matching signatures bitmap.
 	logger                   *log.Logger
 	registeredSignatures     map[uint32]bool // Each registered signature's signatureID point to true.
 	signatureOperationsMutex sync.Mutex
 }
 
-// CreateEventFilter Create an EventTypeFilter according to the signatures received, building bitmaps to filter
+// CreateEventsSelectorFilter Create an EventSelectorFilter according to the signatures received, building bitmaps to filter
 // signatures to be called upon received event according to the event types selected by each signature.
-func CreateEventFilter(signatures []types.Signature, logger *log.Logger) (*EventTypeFilter, error) {
-	eventFilter := EventTypeFilter{}
+func CreateEventsSelectorFilter(signatures []types.Signature, logger *log.Logger) (*EventSelectorFilter, error) {
+	eventFilter := EventSelectorFilter{}
 	eventFilter.logger = logger
 	eventFilter.signatureOperationsMutex.Lock()
 	eventFilter.signatureBitmapMatcher = make(map[types.SignatureEventSelector]*roaring.Bitmap)
@@ -43,7 +43,7 @@ func CreateEventFilter(signatures []types.Signature, logger *log.Logger) (*Event
 }
 
 // FilterByEvent Return a bitmap representing all the signatures that watch the given event's type
-func (eventFilter *EventTypeFilter) FilterByEvent(filteredEvent types.Event) (*roaring.Bitmap, error) {
+func (eventFilter *EventSelectorFilter) FilterByEvent(filteredEvent types.Event) (*roaring.Bitmap, error) {
 	eventFilter.signatureOperationsMutex.Lock()
 	defer eventFilter.signatureOperationsMutex.Unlock()
 	eventBitmap := eventFilter.signatureBitmapMatcher[types.SignatureEventSelector{Source: TRACEE_SOURCE, Name: filteredEvent.(tracee.Event).EventName}]
@@ -54,7 +54,7 @@ func (eventFilter *EventTypeFilter) FilterByEvent(filteredEvent types.Event) (*r
 	return roaring.Or(eventBitmap, allEventsBitmap), nil
 }
 
-func (eventFilter *EventTypeFilter) AddSignature(signature types.Signature, signatureID uint32) error {
+func (eventFilter *EventSelectorFilter) AddSignature(signature types.Signature, signatureID uint32) error {
 	meta, metaDataError := signature.GetMetadata()
 	if metaDataError != nil {
 		return fmt.Errorf("error getting metadata: %v", metaDataError)
@@ -62,7 +62,7 @@ func (eventFilter *EventTypeFilter) AddSignature(signature types.Signature, sign
 	eventFilter.signatureOperationsMutex.Lock()
 	defer eventFilter.signatureOperationsMutex.Unlock()
 	if _, isKeyExist := eventFilter.registeredSignatures[signatureID]; isKeyExist == true {
-		return fmt.Errorf("error registering signature %s to EventTypeFilter: given signature signatureID (%d) is already taken", meta.Name, signatureID)
+		return fmt.Errorf("error registering signature %s to EventSelectorFilter: given signature signatureID (%d) is already taken", meta.Name, signatureID)
 	}
 	sigSelectedEvents, selectedEventsError := signature.GetSelectedEvents()
 	if selectedEventsError != nil {
@@ -85,7 +85,7 @@ func (eventFilter *EventTypeFilter) AddSignature(signature types.Signature, sign
 	return nil
 }
 
-func (eventFilter *EventTypeFilter) RemoveSignature(signatureID uint32) error {
+func (eventFilter *EventSelectorFilter) RemoveSignature(signatureID uint32) error {
 	eventFilter.signatureOperationsMutex.Lock()
 	defer eventFilter.signatureOperationsMutex.Unlock()
 	if eventFilter.registeredSignatures[signatureID] == false {
@@ -98,7 +98,7 @@ func (eventFilter *EventTypeFilter) RemoveSignature(signatureID uint32) error {
 	return nil
 }
 
-func (eventFilter *EventTypeFilter) RemoveAllSignatures() error {
+func (eventFilter *EventSelectorFilter) RemoveAllSignatures() error {
 	eventFilter.signatureOperationsMutex.Lock()
 	defer eventFilter.signatureOperationsMutex.Unlock()
 	for _, eventFilterBitmap := range eventFilter.signatureBitmapMatcher {

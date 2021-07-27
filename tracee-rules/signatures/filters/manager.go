@@ -1,4 +1,4 @@
-package filter
+package filters
 
 import (
 	"fmt"
@@ -6,31 +6,32 @@ import (
 	"reflect"
 
 	"github.com/RoaringBitmap/roaring"
+	"github.com/aquasecurity/tracee/tracee-rules/signatures/filters/plugins"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
-type FilterManager struct {
-	registeredFilters  []Filter
+type Manager struct {
+	registeredFilters  []plugins.Filter
 	signaturesIndex    map[int]types.Signature
 	logger             *log.Logger
 	freeSignaturesUIDs []int
 }
 
 // NewFilterManager Initialize the manager with all the filters.
-func NewFilterManager(logger *log.Logger, signatures []types.Signature) (*FilterManager, error) {
-	filterManager := FilterManager{}
+func NewFilterManager(logger *log.Logger, signatures []types.Signature) (*Manager, error) {
+	filterManager := Manager{}
 	filterManager.signaturesIndex = make(map[int]types.Signature)
 	for i, signature := range signatures {
 		filterManager.signaturesIndex[i] = signature
 	}
 	filterManager.logger = logger
-	eventFilter, _ := CreateEventFilter(signatures, logger)
+	eventFilter, _ := plugins.CreateEventsSelectorFilter(signatures, logger)
 	filterManager.registeredFilters = append(filterManager.registeredFilters, eventFilter)
 	return &filterManager, nil
 }
 
 // GetFilteredSignatures Get all the signatures that the event given is relevant for them.
-func (filterManager *FilterManager) GetFilteredSignatures(event types.Event) ([]types.Signature, error) {
+func (filterManager *Manager) GetFilteredSignatures(event types.Event) ([]types.Signature, error) {
 	matchingSignaturesBitmap := roaring.New()
 	for i, filter := range filterManager.registeredFilters {
 		filteredSignatures, _ := filter.FilterByEvent(event)
@@ -55,7 +56,7 @@ func (filterManager *FilterManager) GetFilteredSignatures(event types.Event) ([]
 }
 
 // AddSignature Generate the new signature a new UID and add it to all the filters.
-func (filterManager *FilterManager) AddSignature(signature types.Signature) error {
+func (filterManager *Manager) AddSignature(signature types.Signature) error {
 	newSignatureId := 0
 	if len(filterManager.freeSignaturesUIDs) == 0 {
 		newSignatureId = len(filterManager.signaturesIndex)
@@ -74,7 +75,7 @@ func (filterManager *FilterManager) AddSignature(signature types.Signature) erro
 }
 
 // RemoveSignature Remove the signature from all filters and free its UID.
-func (filterManager *FilterManager) RemoveSignature(signature types.Signature) error {
+func (filterManager *Manager) RemoveSignature(signature types.Signature) error {
 	signatureToRemoveId := -1
 	for i, sig := range filterManager.signaturesIndex {
 		if reflect.DeepEqual(sig, signature) {
@@ -98,7 +99,7 @@ func (filterManager *FilterManager) RemoveSignature(signature types.Signature) e
 }
 
 // RemoveAllSignatures Remove all signatures registered from all filters registered.
-func (filterManager *FilterManager) RemoveAllSignatures() error {
+func (filterManager *Manager) RemoveAllSignatures() error {
 	for _, filter := range filterManager.registeredFilters {
 		err := filter.RemoveAllSignatures()
 		if err != nil {

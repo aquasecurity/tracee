@@ -19,7 +19,7 @@ type Engine struct {
 	signaturesMutex sync.RWMutex
 	inputs          EventSources
 	output          chan types.Finding
-	filterManager   *filter.FilterManager
+	filterManager   *filter.Manager
 }
 
 //EventSources is a bundle of input sources used to configure the Engine

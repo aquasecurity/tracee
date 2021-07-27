@@ -1,4 +1,4 @@
-package filter
+package plugins
 
 import (
 	"fmt"
@@ -69,12 +69,12 @@ func TestCreateEventFilter(t *testing.T) {
 		matchingSigIDs  []uint32
 	}{
 		{
-			name:            "Create EventTypeFilter with no signatures",
+			name:            "Create EventSelectorFilter with no signatures",
 			inputSignatures: []fakeSignature{{}},
 			matchingSigIDs:  []uint32{},
 		},
 		{
-			name: "Create EventTypeFilter with one signature which matches the given event",
+			name: "Create EventSelectorFilter with one signature which matches the given event",
 			inputSignatures: []fakeSignature{
 				{
 					getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
@@ -90,7 +90,7 @@ func TestCreateEventFilter(t *testing.T) {
 			matchingSigIDs: []uint32{0},
 		},
 		{
-			name: "Create EventTypeFilter with one signature which does not match the given event",
+			name: "Create EventSelectorFilter with one signature which does not match the given event",
 			inputSignatures: []fakeSignature{
 				{
 					getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
@@ -106,7 +106,7 @@ func TestCreateEventFilter(t *testing.T) {
 			matchingSigIDs: []uint32{},
 		},
 		{
-			name: "Create EventTypeFilter with one signature which matches all events",
+			name: "Create EventSelectorFilter with one signature which matches all events",
 			inputSignatures: []fakeSignature{
 				{
 					getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
@@ -142,8 +142,8 @@ func TestCreateEventFilter(t *testing.T) {
 		for _, signature := range testCase.inputSignatures {
 			inputSignatures = append(inputSignatures, signature)
 		}
-		eventFilter, createFilterError := CreateEventFilter(inputSignatures, &logger)
-		require.NoError(t, createFilterError, "creating EventTypeFilter")
+		eventFilter, createFilterError := CreateEventsSelectorFilter(inputSignatures, &logger)
+		require.NoError(t, createFilterError, "creating EventSelectorFilter")
 		filteredSignaturesBitmap, filterError := eventFilter.FilterByEvent(event)
 		require.NoError(t, filterError, "get filtered events for example one")
 		assert.Equal(t, testCase.matchingSigIDs, filteredSignaturesBitmap.ToArray(), testCase.name)
@@ -162,14 +162,14 @@ func TestAddSignature(t *testing.T) {
 		},
 	}
 	logger := *log.New(os.Stdout, "", 0)
-	eventFilter, createFilterError := CreateEventFilter([]types.Signature{}, &logger)
-	require.NoError(t, createFilterError, "creating EventTypeFilter")
+	eventFilter, createFilterError := CreateEventsSelectorFilter([]types.Signature{}, &logger)
+	require.NoError(t, createFilterError, "creating EventSelectorFilter")
 	sigID := 0
 	addSignatureError := eventFilter.AddSignature(sig, uint32(sigID))
 	require.NoError(t, addSignatureError, "add first signature to filter")
 	secondAddSignatureError := eventFilter.AddSignature(sig, uint32(sigID))
 	sigMeta, _ := sig.GetMetadata()
-	errMsg := fmt.Sprintf("error registering signature %s to EventTypeFilter: given signature signatureID (%d) is already taken", sigMeta.Name, sigID)
+	errMsg := fmt.Sprintf("error registering signature %s to EventSelectorFilter: given signature signatureID (%d) is already taken", sigMeta.Name, sigID)
 	require.Errorf(t, secondAddSignatureError, errMsg)
 }
 
@@ -185,8 +185,8 @@ func TestRemoveSignature(t *testing.T) {
 		},
 	}
 	logger := *log.New(os.Stdout, "", 0)
-	eventFilter, createFilterError := CreateEventFilter([]types.Signature{sig}, &logger)
-	require.NoError(t, createFilterError, "creating EventTypeFilter")
+	eventFilter, createFilterError := CreateEventsSelectorFilter([]types.Signature{sig}, &logger)
+	require.NoError(t, createFilterError, "creating EventSelectorFilter")
 	sigID := 0
 	removeError := eventFilter.RemoveSignature(uint32(sigID))
 	require.NoError(t, removeError, "removed legitimate signature")
