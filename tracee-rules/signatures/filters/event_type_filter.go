@@ -11,9 +11,10 @@ import (
 )
 
 const ALL_EVENT_TYPES = "*"
+const TRACEE_SOURCE = "tracee"
 
 type EventTypeFilter struct {
-	signatureBitmapMatcher   map[string]*roaring.Bitmap // Map between signature type to the matching signatures bitmap.
+	signatureBitmapMatcher   map[types.SignatureEventSelector]*roaring.Bitmap // Map between signature type to the matching signatures bitmap.
 	logger                   *log.Logger
 	registeredSignatures     map[uint32]bool // Each registered signature's signatureID point to true.
 	signatureOperationsMutex sync.Mutex
@@ -25,11 +26,11 @@ func CreateEventFilter(signatures []types.Signature, logger *log.Logger) (*Event
 	eventFilter := EventTypeFilter{}
 	eventFilter.logger = logger
 	eventFilter.signatureOperationsMutex.Lock()
-	eventFilter.signatureBitmapMatcher = make(map[string]*roaring.Bitmap)
+	eventFilter.signatureBitmapMatcher = make(map[types.SignatureEventSelector]*roaring.Bitmap)
 	eventFilter.registeredSignatures = make(map[uint32]bool)
 
 	// Bitmap for all event types must be initialized.
-	eventFilter.signatureBitmapMatcher[ALL_EVENT_TYPES] = roaring.New()
+	eventFilter.signatureBitmapMatcher[types.SignatureEventSelector{Source: TRACEE_SOURCE, Name: ALL_EVENT_TYPES}] = roaring.New()
 	eventFilter.signatureOperationsMutex.Unlock()
 	// Add all signatures to the matching event filter Bitmap.
 	for signatureIndex, signature := range signatures {
@@ -45,11 +46,11 @@ func CreateEventFilter(signatures []types.Signature, logger *log.Logger) (*Event
 func (eventFilter *EventTypeFilter) FilterByEvent(filteredEvent types.Event) (*roaring.Bitmap, error) {
 	eventFilter.signatureOperationsMutex.Lock()
 	defer eventFilter.signatureOperationsMutex.Unlock()
-	eventBitmap := eventFilter.signatureBitmapMatcher[filteredEvent.(tracee.Event).EventName]
+	eventBitmap := eventFilter.signatureBitmapMatcher[types.SignatureEventSelector{Source: TRACEE_SOURCE, Name: filteredEvent.(tracee.Event).EventName}]
 	if eventBitmap == nil {
 		eventBitmap = roaring.New()
 	}
-	allEventsBitmap := eventFilter.signatureBitmapMatcher[ALL_EVENT_TYPES]
+	allEventsBitmap := eventFilter.signatureBitmapMatcher[types.SignatureEventSelector{Source: TRACEE_SOURCE, Name: ALL_EVENT_TYPES}]
 	return roaring.Or(eventBitmap, allEventsBitmap), nil
 }
 
@@ -71,10 +72,14 @@ func (eventFilter *EventTypeFilter) AddSignature(signature types.Signature, sign
 		if selectedEvent.Name == "" {
 			selectedEvent.Name = ALL_EVENT_TYPES
 		}
-		if eventFilter.signatureBitmapMatcher[selectedEvent.Name] == nil {
-			eventFilter.signatureBitmapMatcher[selectedEvent.Name] = roaring.New()
+		if eventFilter.signatureBitmapMatcher[selectedEvent] == nil {
+			eventFilter.signatureBitmapMatcher[selectedEvent] = roaring.New()
 		}
-		eventFilter.signatureBitmapMatcher[selectedEvent.Name].Add(signatureID)
+		if selectedEvent.Source == "" {
+			return fmt.Errorf("signature %s doesn't declare an input source", meta.Name)
+		} else {
+			eventFilter.signatureBitmapMatcher[selectedEvent].Add(signatureID)
+		}
 	}
 	eventFilter.registeredSignatures[signatureID] = true
 	return nil
