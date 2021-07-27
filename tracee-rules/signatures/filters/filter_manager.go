@@ -43,7 +43,13 @@ func (filterManager *FilterManager) GetFilteredSignatures(event types.Event) ([]
 	matchingSignatures := make([]types.Signature, 0)
 	matchingSignaturesBitmapIterator := matchingSignaturesBitmap.Iterator()
 	for matchingSignaturesBitmapIterator.HasNext() {
-		matchingSignatures = append(matchingSignatures, filterManager.signaturesIndex[int(matchingSignaturesBitmapIterator.Next())])
+		matchingSignature, ok := filterManager.signaturesIndex[int(matchingSignaturesBitmapIterator.Next())]
+		if !ok {
+			fetchingError := fmt.Errorf("signatures filters returned a non-existing signature index")
+			filterManager.logger.Fatal(fetchingError)
+			return nil, fetchingError
+		}
+		matchingSignatures = append(matchingSignatures, matchingSignature)
 	}
 	return matchingSignatures, nil
 }
