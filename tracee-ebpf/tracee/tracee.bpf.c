@@ -3650,7 +3650,7 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
     // magic_write event checks if the header of some file is changed
     if (event_chosen(MAGIC_WRITE) && !char_dev && (start_pos == 0)) {
         set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
-        context_t context = init_and_save_context(ctx, submit_p, MAGIC_WRITE, 2 /*argnum*/, PT_REGS_RC(ctx));
+        context_t context = init_and_save_context(ctx, submit_p, MAGIC_WRITE, 4 /*argnum*/, PT_REGS_RC(ctx));
 
         u8 header[FILE_MAGIC_HDR_SIZE];
 
@@ -3677,6 +3677,8 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
         }
 
         save_bytes_to_buf(submit_p, header, header_bytes, DEC_ARG(1, *tags));
+        save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, DEC_ARG(2, *tags));
+        save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, DEC_ARG(3, *tags));
 
         // Submit magic_write event
         events_perf_submit(ctx);
