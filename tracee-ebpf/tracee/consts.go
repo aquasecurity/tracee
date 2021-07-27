@@ -917,7 +917,7 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	MemProtAlertEventID:          {{Type: "alert_t", Name: "alert"}},
 	CommitCredsEventID:           {{Type: "slim_cred_t", Name: "old_cred"}, {Type: "slim_cred_t", Name: "new_cred"}, {Type: "int", Name: "syscall"}},
 	SwitchTaskNSEventID:          {{Type: "pid_t", Name: "pid"}, {Type: "u32", Name: "new_mnt"}, {Type: "u32", Name: "new_pid"}, {Type: "u32", Name: "new_uts"}, {Type: "u32", Name: "new_ipc"}, {Type: "u32", Name: "new_net"}, {Type: "u32", Name: "new_cgroup"}},
-	MagicWriteEventID:            {{Type: "const char*", Name: "pathname"}, {Type: "bytes", Name: "bytes"}},
+	MagicWriteEventID:            {{Type: "const char*", Name: "pathname"}, {Type: "bytes", Name: "bytes"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}},
 	CgroupAttachTaskEventID:      {{Type: "const char*", Name: "cgroup_path"}},
 	SecurityBprmCheckEventID:     {{Type: "const char*", Name: "pathname"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}},
 	SecurityFileOpenEventID:      {{Type: "const char*", Name: "pathname"}, {Type: "int", Name: "flags"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}},
