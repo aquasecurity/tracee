@@ -619,7 +619,7 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	GetpeernameEventID:           {{Type: "int", Name: "sockfd"}, {Type: "struct sockaddr*", Name: "addr"}, {Type: "int*", Name: "addrlen"}},
 	SocketpairEventID:            {{Type: "int", Name: "domain"}, {Type: "int", Name: "type"}, {Type: "int", Name: "protocol"}, {Type: "int[2]", Name: "sv"}},
 	SetsockoptEventID:            {{Type: "int", Name: "sockfd"}, {Type: "int", Name: "level"}, {Type: "int", Name: "optname"}, {Type: "const void*", Name: "optval"}, {Type: "int", Name: "optlen"}},
-	GetsockoptEventID:            {{Type: "int", Name: "sockfd"}, {Type: "int", Name: "level"}, {Type: "int", Name: "optname"}, {Type: "char*", Name: "optval"}, {Type: "int*", Name: "optlen"}},
+	GetsockoptEventID:            {{Type: "int", Name: "sockfd"}, {Type: "int", Name: "level"}, {Type: "int", Name: "optname"}, {Type: "void*", Name: "optval"}, {Type: "int*", Name: "optlen"}},
 	CloneEventID:                 {{Type: "unsigned long", Name: "flags"}, {Type: "void*", Name: "stack"}, {Type: "int*", Name: "parent_tid"}, {Type: "int*", Name: "child_tid"}, {Type: "unsigned long", Name: "tls"}},
 	ForkEventID:                  {},
 	VforkEventID:                 {},

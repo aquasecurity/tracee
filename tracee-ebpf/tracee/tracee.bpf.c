@@ -2090,7 +2090,13 @@ if (CONFIG_ARCH_HAS_SYSCALL_WRAPPER) {
         args_tmp.args[0] = PT_REGS_PARM1(&regs);
         args_tmp.args[1] = PT_REGS_PARM2(&regs);
         args_tmp.args[2] = PT_REGS_PARM3(&regs);
+#if defined(bpf_target_x86)
+        // In x86-64, r10 is used instead of rcx to pass the fourth parameter of a syscall
+        // see also: https://stackoverflow.com/questions/21322100/linux-x64-why-does-r10-come-before-r8-and-r9-in-syscalls
+        args_tmp.args[3] = regs.r10;
+#else
         args_tmp.args[3] = PT_REGS_PARM4(&regs);
+#endif
         args_tmp.args[4] = PT_REGS_PARM5(&regs);
         args_tmp.args[5] = PT_REGS_PARM6(&regs);
     }
