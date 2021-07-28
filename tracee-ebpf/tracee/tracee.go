@@ -930,6 +930,15 @@ func (t *Tracee) attachNetProbes() error {
 		return fmt.Errorf("error attaching event sock:inet_sock_set_state: %v", err)
 	}
 
+	prog, _ = t.bpfModule.GetProgram("trace_tcp_connect")
+	if prog == nil {
+		return fmt.Errorf("couldn't find trace_tcp_connect program")
+	}
+	_, err = prog.AttachKprobe("tcp_connect")
+	if err != nil {
+		return fmt.Errorf("error attaching event tcp_connect: %v", err)
+	}
+
 	return nil
 }
 
@@ -1810,6 +1819,19 @@ func (t *Tracee) processNetEvents() {
 						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
 				case DebugNetInetSockSetState:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/inet_sock_set_state  LocalIP: %v, LocalPort: %d, RemoteIP: %v, RemotePort: %d, Protocol: %d, OldState: %d, NewState: %d, SockPtr: 0x%x\n",
+						timeStampObj,
+						comm,
+						hostTid,
+						netaddr.IPFrom16(pkt.LocalIP),
+						pkt.LocalPort,
+						netaddr.IPFrom16(pkt.RemoteIP),
+						pkt.RemotePort,
+						pkt.Protocol,
+						pkt.TcpOldState,
+						pkt.TcpNewState,
+						pkt.SockPtr)
+				case DebugNetTcpConnect:
+					fmt.Printf("%v  %-16s  %-7d  debug_net/tcp_connect  LocalIP: %v, LocalPort: %d, RemoteIP: %v, RemotePort: %d, Protocol: %d, OldState: %d, NewState: %d, SockPtr: 0x%x\n",
 						timeStampObj,
 						comm,
 						hostTid,
