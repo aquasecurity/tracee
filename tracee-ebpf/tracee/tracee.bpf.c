@@ -2670,11 +2670,15 @@ int BPF_KPROBE(trace_security_sb_mount)
 
     context_t context = init_and_save_context(ctx, submit_p, SECURITY_SB_MOUNT, 4 /*argnum*/, 0 /*ret*/);
 
-
     const char *dev_name = (const char *)PT_REGS_PARM1(ctx);
     const struct path *path = (const struct path *)PT_REGS_PARM2(ctx);
     const char *type = (const char *)PT_REGS_PARM3(ctx);
     unsigned long flags = (unsigned long)PT_REGS_PARM4(ctx);
+
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
+    if (!tags) {
+        return -1;
+    }
 
     // Get per-cpu string buffer
     buf_t *string_p = get_buf(STRING_BUF_IDX);
@@ -2685,15 +2689,12 @@ int BPF_KPROBE(trace_security_sb_mount)
     if (off == NULL)
         return -1;
 
-    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
-    if (!tags) {
-        return -1;
-    }
+    context.argnum = save_str_to_buf(submit_p, (void *)dev_name, DEC_ARG(0, *tags));
+    context.argnum += save_str_to_buf(submit_p, (void *)&string_p->buf[*off], DEC_ARG(1, *tags));
+    context.argnum += save_str_to_buf(submit_p, (void *)type, DEC_ARG(2, *tags));
+    context.argnum += save_to_submit_buf(submit_p, &flags, sizeof(unsigned long), ULONG_T, DEC_ARG(3, *tags));
 
-    save_str_to_buf(submit_p, (void *)dev_name, DEC_ARG(0, *tags));
-    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], DEC_ARG(1, *tags));
-    save_str_to_buf(submit_p, (void *)type, DEC_ARG(2, *tags));
-    save_to_submit_buf(submit_p, &flags, sizeof(unsigned long), ULONG_T, DEC_ARG(3, *tags));
+    save_context_to_buf(submit_p, (void*)&context);
 
     events_perf_submit(ctx);
     return 0;
@@ -3060,9 +3061,6 @@ int BPF_KPROBE(trace_security_socket_listen)
 SEC("kprobe/security_socket_connect")
 int BPF_KPROBE(trace_security_socket_connect)
 {
-
-    // trace the event security_socket_connect
-
     if (!should_trace())
         return 0;
 
