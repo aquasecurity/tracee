@@ -11,13 +11,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
-	"github.com/stretchr/testify/require"
-
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
+	"github.com/aquasecurity/tracee/tracee-rules/engine"
 	"github.com/aquasecurity/tracee/tracee-rules/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetMetadata(t *testing.T) {
@@ -151,6 +150,26 @@ tracee_match = res {
 	}
 }
 `
+
+	matchedEvent := tracee.Event{
+		Args: []tracee.Argument{
+			{
+				ArgMeta: tracee.ArgMeta{
+					Name: "doesn't matter",
+				},
+				Value: "ends with yo",
+			},
+			{
+				ArgMeta: tracee.ArgMeta{
+					Name: "doesn't matter",
+				},
+				Value: 1337,
+			},
+		},
+	}
+	matchedParsedEvent, err := engine.ToParsedEvent(matchedEvent)
+	require.NoError(t, err, "parsing event")
+
 	assertFindingData := func(res types.Finding) {
 		expectedFindingData := map[string]interface{}{
 			"p1": "test",
@@ -180,22 +199,7 @@ tracee_match = res {
 		},
 		{
 			Events: []types.Event{
-				tracee.Event{
-					Args: []tracee.Argument{
-						{
-							ArgMeta: tracee.ArgMeta{
-								Name: "doesn't matter",
-							},
-							Value: "ends with yo",
-						},
-						{
-							ArgMeta: tracee.ArgMeta{
-								Name: "doesn't matter",
-							},
-							Value: 1337,
-						},
-					},
-				},
+				matchedEvent,
 			},
 			Expect: true,
 			CB:     assertFindingData,
@@ -214,6 +218,13 @@ tracee_match = res {
 				},
 			},
 			Expect: false,
+			CB:     assertFindingData,
+		},
+		{
+			Events: []types.Event{
+				matchedParsedEvent,
+			},
+			Expect: true,
 			CB:     assertFindingData,
 		},
 	}

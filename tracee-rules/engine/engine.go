@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"reflect"
+	"strings"
 	"sync"
 
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"github.com/open-policy-agent/opa/ast"
 )
 
 // Engine is a rule-engine that can process events coming from a set of input sources against a set of loaded signatures, and report the signatures' findings
@@ -152,17 +155,34 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 					engine.signaturesMutex.RUnlock()
 					continue
 				}
+
+				pe, err := ToParsedEvent(traceeEvt)
+				if err != nil {
+					engine.logger.Printf("error converting tracee event to OPA ast.Value: %v", err)
+					engine.signaturesMutex.RUnlock()
+					continue
+				}
+
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName}] {
-					engine.signatures[s] <- event
+					engine.dispatchEvent(s, pe)
 				}
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: "*"}] {
-					engine.signatures[s] <- event
+					engine.dispatchEvent(s, pe)
 				}
 				engine.signaturesMutex.RUnlock()
 			}
 		case <-done:
 			return
 		}
+	}
+}
+
+func (engine *Engine) dispatchEvent(s types.Signature, pe ParsedEvent) {
+	switch {
+	case strings.Contains(reflect.TypeOf(s).String(), "rego"):
+		engine.signatures[s] <- pe
+	default:
+		engine.signatures[s] <- pe.Event
 	}
 }
 
@@ -245,4 +265,28 @@ func (engine *Engine) UnloadSignature(signatureId string) error {
 		}
 	}
 	return nil
+}
+
+// ParsedEvent holds the original tracee.Event and its OPA ast.Value representation.
+type ParsedEvent struct {
+	Event tracee.Event
+	Value ast.Value
+}
+
+// ToParsedEvent enhances tracee.Event with OPA ast.Value. This is mainly used
+// for performance optimization to avoid parsing tracee.Event multiple times.
+func ToParsedEvent(e tracee.Event) (ParsedEvent, error) {
+	u, err := e.ToUnstructured()
+	if err != nil {
+		return ParsedEvent{}, fmt.Errorf("unstructuring event: %w", err)
+	}
+	// TODO In OPA >= v0.30.0 we can try passing tracee.Event directly to get rid of ToUnstructured call.
+	v, err := ast.InterfaceToValue(u)
+	if err != nil {
+		return ParsedEvent{}, fmt.Errorf("converting unstructured event to OPA ast.Value: %w", err)
+	}
+	return ParsedEvent{
+		Event: e,
+		Value: v,
+	}, nil
 }
