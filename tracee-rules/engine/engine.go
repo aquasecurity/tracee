@@ -315,6 +315,7 @@ func ToParsedEvent(e tracee.Event) (ParsedEvent, error) {
 	}, nil
 }
 
+// extractEventOriginTag return from which origin the signature expects to receive events from.
 func extractEventOriginTag(signatureMetaData types.SignatureMetadata) string {
 	eventOriginFilter := ALL_EVENT_ORIGINS
 	for _, tag := range signatureMetaData.Tags {
@@ -329,7 +330,7 @@ func extractEventOriginTag(signatureMetaData types.SignatureMetadata) string {
 
 func analyzeEventOrigin(event tracee.Event) string {
 	if event.ContainerID != "" || event.ProcessID != event.HostProcessID {
-		return EVENT_HOST_ORIGIN
+		return EVENT_CONTAINER_ORIGIN
 	} else {
 		return EVENT_HOST_ORIGIN
 	}
