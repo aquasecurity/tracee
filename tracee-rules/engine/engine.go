@@ -170,7 +170,7 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 					continue
 				}
 				
-				eventOrigin, _ := analyzeEventOrigin(event)
+				eventOrigin := analyzeEventOrigin(traceeEvt)
 				for _, s := range engine.signaturesIndex[SignaturesFilter{eventSelector: types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName}, origin: eventOrigin}] {
 					engine.dispatchEvent(s, pe)
 				}
@@ -322,7 +322,10 @@ func extractEventOriginTag(signatureMetaData types.SignatureMetadata) string {
 	return eventOriginFilter
 }
 
-func analyzeEventOrigin(event types.Event) (string, error) {
-	// TODO: Implement
-	return "", nil
+func analyzeEventOrigin(event tracee.Event) string {
+	if event.ContainerID != "" || event.ProcessID != event.HostProcessID {
+		return "container"
+	} else {
+		return "host"
+	}
 }
