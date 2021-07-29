@@ -89,8 +89,8 @@ extern bool CONFIG_ARCH_HAS_SYSCALL_WRAPPER __kconfig;
 #define MAX_STACK_ADDRESSES 1024          // Max amount of different stack trace addresses to buffer in the Map
 #define MAX_STACK_DEPTH     20            // Max depth of each stack trace to track
 #define MAX_STR_FILTER_SIZE 16            // Max string filter size should be bounded to the size of the compared values (comm, uts)
-#define FILE_MAGIC_HDR_SIZE 16            // Number of bytes to save from a file's header (for magic_write event)
-#define FILE_MAGIC_MASK     15            // Mask used to pass verifier when submitting magic_write event bytes
+#define FILE_MAGIC_HDR_SIZE 32            // Number of bytes to save from a file's header (for magic_write event)
+#define FILE_MAGIC_MASK     31            // Mask used to pass verifier when submitting magic_write event bytes
 
 #define SUBMIT_BUF_IDX      0
 #define STRING_BUF_IDX      1
