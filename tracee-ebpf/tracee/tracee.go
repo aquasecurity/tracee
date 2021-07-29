@@ -1399,9 +1399,9 @@ func (t *Tracee) updateProfile(sourceFilePath string, executionTs uint64) {
 
 func (t *Tracee) updateFileSHA() {
 	for k, v := range t.profiledFiles {
-		pathPrefix := strings.Split(k, ".")[0]
-		exeName := strings.Split(strings.Split(k, ".")[1], ":")[0]
-		filePath := fmt.Sprintf("%s.%d.%s", pathPrefix, v.FirstExecutionTs, exeName)
+		s := strings.Split(k, ".")
+		exeName := strings.Split(s[1], ":")[0]
+		filePath := fmt.Sprintf("%s.%d.%s", s[0], v.FirstExecutionTs, exeName)
 		fileSHA := getFileHash(filePath)
 		v.FileHash = fileSHA
 		t.profiledFiles[k] = v
