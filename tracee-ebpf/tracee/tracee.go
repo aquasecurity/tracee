@@ -1080,7 +1080,7 @@ func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 // Run starts the trace. it will run until interrupted
 func (t *Tracee) Run() error {
 	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, os.Interrupt)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 	done := make(chan struct{})
 	if t.config.ChanEvents == nil {
 		t.printer.Preamble()
