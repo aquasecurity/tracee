@@ -23,7 +23,7 @@ const ALL_EVENT_TYPES = "*"
 type Engine struct {
 	logger          log.Logger
 	signatures      map[types.Signature]chan types.Event
-	signaturesIndex map[SignaturesFilter][]types.Signature
+	signaturesIndex map[types.SignatureEventSelector][]types.Signature
 	signaturesMutex sync.RWMutex
 	inputs          EventSources
 	output          chan types.Finding
@@ -32,11 +32,6 @@ type Engine struct {
 //EventSources is a bundle of input sources used to configure the Engine
 type EventSources struct {
 	Tracee chan types.Event
-}
-
-type SignaturesFilter struct {
-	eventSelector types.SignatureEventSelector
-	origin        string
 }
 
 // NewEngine creates a new rules-engine with the given arguments
@@ -51,7 +46,7 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 	engine.output = output
 	engine.signaturesMutex.Lock()
 	engine.signatures = make(map[types.Signature]chan types.Event)
-	engine.signaturesIndex = make(map[SignaturesFilter][]types.Signature)
+	engine.signaturesIndex = make(map[types.SignatureEventSelector][]types.Signature)
 	engine.signaturesMutex.Unlock()
 	for _, sig := range sigs {
 		engine.signaturesMutex.Lock()
@@ -71,13 +66,14 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 			if es.Name == "" {
 				es.Name = ALL_EVENT_TYPES
 			}
+			if es.Origin == "" {
+				es.Origin = ALL_EVENT_ORIGINS
+			}
 			if es.Source == "" {
 				engine.logger.Printf("signature %s doesn't declare an input source", meta.Name)
 			} else {
-				eventOriginTag := extractEventOriginTag(meta)
-				currentSignatureFilter := SignaturesFilter{eventSelector: es, origin: eventOriginTag}
 				engine.signaturesMutex.Lock()
-				engine.signaturesIndex[currentSignatureFilter] = append(engine.signaturesIndex[currentSignatureFilter], sig)
+				engine.signaturesIndex[es] = append(engine.signaturesIndex[es], sig)
 				engine.signaturesMutex.Unlock()
 			}
 		}
@@ -128,7 +124,7 @@ func (engine *Engine) unloadAllSignatures() {
 		close(c)
 		delete(engine.signatures, sig)
 	}
-	engine.signaturesIndex = make(map[SignaturesFilter][]types.Signature)
+	engine.signaturesIndex = make(map[types.SignatureEventSelector][]types.Signature)
 }
 
 // matchHandler is a function that runs when a signature is matched
@@ -176,16 +172,16 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 				}
 
 				eventOrigin := analyzeEventOrigin(traceeEvt)
-				for _, s := range engine.signaturesIndex[SignaturesFilter{eventSelector: types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName}, origin: eventOrigin}] {
+				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName, Origin: eventOrigin}] {
 					engine.dispatchEvent(s, pe)
 				}
-				for _, s := range engine.signaturesIndex[SignaturesFilter{eventSelector: types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName}, origin: ALL_EVENT_ORIGINS}] {
+				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName, Origin: ALL_EVENT_ORIGINS}] {
 					engine.dispatchEvent(s, pe)
 				}
-				for _, s := range engine.signaturesIndex[SignaturesFilter{eventSelector: types.SignatureEventSelector{Source: "tracee", Name: ALL_EVENT_TYPES}, origin: eventOrigin}] {
+				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: ALL_EVENT_TYPES, Origin: eventOrigin}] {
 					engine.dispatchEvent(s, pe)
 				}
-				for _, s := range engine.signaturesIndex[SignaturesFilter{eventSelector: types.SignatureEventSelector{Source: "tracee", Name: ALL_EVENT_TYPES}, origin: ALL_EVENT_ORIGINS}] {
+				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: ALL_EVENT_TYPES, Origin: ALL_EVENT_ORIGINS}] {
 					engine.dispatchEvent(s, pe)
 				}
 				engine.signaturesMutex.RUnlock()
@@ -228,12 +224,13 @@ func (engine *Engine) LoadSignature(signature types.Signature) (string, error) {
 		if selectedEvent.Name == "" {
 			selectedEvent.Name = ALL_EVENT_TYPES
 		}
+		if selectedEvent.Origin == "" {
+			selectedEvent.Origin = ALL_EVENT_ORIGINS
+		}
 		if selectedEvent.Source == "" {
 			engine.logger.Printf("signature %s doesn't declare an input source", metadata.Name)
 		} else {
-			eventOriginTag := extractEventOriginTag(metadata)
-			eventFilter := SignaturesFilter{selectedEvent, eventOriginTag}
-			engine.signaturesIndex[eventFilter] = append(engine.signaturesIndex[eventFilter], signature)
+			engine.signaturesIndex[selectedEvent] = append(engine.signaturesIndex[selectedEvent], signature)
 		}
 	}
 	if err := signature.Init(engine.matchHandler); err != nil {
@@ -248,9 +245,8 @@ func (engine *Engine) LoadSignature(signature types.Signature) (string, error) {
 func (engine *Engine) UnloadSignature(signatureId string) error {
 	var signature types.Signature
 	engine.signaturesMutex.RLock()
-	metadata := types.SignatureMetadata{}
 	for sig, _ := range engine.signatures {
-		metadata, _ = sig.GetMetadata()
+		metadata, _ := sig.GetMetadata()
 		if metadata.ID == signatureId {
 			signature = sig
 			break
@@ -275,15 +271,13 @@ func (engine *Engine) UnloadSignature(signatureId string) error {
 	}
 	// remove from engine.signaturesIndex map
 	for _, selectedEvent := range selectedEvents {
-		eventOriginTag := extractEventOriginTag(metadata)
-		eventFilter := SignaturesFilter{selectedEvent, eventOriginTag}
-		signatures := engine.signaturesIndex[eventFilter]
+		signatures := engine.signaturesIndex[selectedEvent]
 		for i, sig := range signatures {
 			metadata, _ := sig.GetMetadata()
 			if metadata.ID == signatureId {
 				// signature found, remove it
 				signatures = append(signatures[:i], signatures[i+1:]...)
-				engine.signaturesIndex[eventFilter] = signatures
+				engine.signaturesIndex[selectedEvent] = signatures
 				break
 			}
 		}
@@ -313,19 +307,6 @@ func ToParsedEvent(e tracee.Event) (ParsedEvent, error) {
 		Event: e,
 		Value: v,
 	}, nil
-}
-
-// extractEventOriginTag return from which origin the signature expects to receive events from.
-func extractEventOriginTag(signatureMetaData types.SignatureMetadata) string {
-	eventOriginFilter := ALL_EVENT_ORIGINS
-	for _, tag := range signatureMetaData.Tags {
-		switch tag {
-		case EVENT_CONTAINER_ORIGIN, EVENT_HOST_ORIGIN:
-			eventOriginFilter = tag
-		default:
-		}
-	}
-	return eventOriginFilter
 }
 
 func analyzeEventOrigin(event tracee.Event) string {

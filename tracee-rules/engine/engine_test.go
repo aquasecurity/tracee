@@ -179,13 +179,8 @@ func TestConsumeSources(t *testing.T) {
 						{
 							Name:   "test_event",
 							Source: "tracee",
+							Origin: "container",
 						},
-					}, nil
-				},
-				getMetadata: func() (types.SignatureMetadata, error) {
-					return types.SignatureMetadata{
-						Name: "Fake Signature",
-						Tags: []string{"linux", "container"},
 					}, nil
 				},
 			},
@@ -219,13 +214,8 @@ func TestConsumeSources(t *testing.T) {
 						{
 							Name:   "test_event",
 							Source: "tracee",
+							Origin: "host",
 						},
-					}, nil
-				},
-				getMetadata: func() (types.SignatureMetadata, error) {
-					return types.SignatureMetadata{
-						Name: "Fake Signature",
-						Tags: []string{"linux", "host"},
 					}, nil
 				},
 			},
@@ -252,13 +242,8 @@ func TestConsumeSources(t *testing.T) {
 						{
 							Name:   "test_event",
 							Source: "tracee",
+							Origin: "container",
 						},
-					}, nil
-				},
-				getMetadata: func() (types.SignatureMetadata, error) {
-					return types.SignatureMetadata{
-						Name: "Fake Signature",
-						Tags: []string{"linux", "container"},
 					}, nil
 				},
 			},
@@ -332,13 +317,8 @@ func TestConsumeSources(t *testing.T) {
 						{
 							Name:   "test_event",
 							Source: "tracee",
+							Origin: "container",
 						},
-					}, nil
-				},
-				getMetadata: func() (types.SignatureMetadata, error) {
-					return types.SignatureMetadata{
-						Name: "Fake Signature",
-						Tags: []string{"linux", "container"},
 					}, nil
 				},
 			},
