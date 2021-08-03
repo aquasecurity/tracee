@@ -1,6 +1,6 @@
 # Linux Headers
 
-In order to compile the eBPF program, Tracee needs some of the Linux kernel headers. Depending on your Linux distribution, there may be different ways to obtain them.  
+In order to compile the kernel version specific eBPF object, Tracee needs some of the Linux kernel headers. Depending on your Linux distribution, there may be different ways to obtain them.  
 
 - On Ubuntu/Debian/Arch/Manjaro install the `linux-headers` package.
 - On CentOS/Fedora install the `kernel-headers` and `kernel-devel` packages.

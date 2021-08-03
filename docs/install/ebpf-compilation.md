@@ -1,9 +1,12 @@
 # eBPF Compilation
 
-Tracee is leveraging Linux's eBPF technology, which is kernel and version sensitive. Therefore, Tracee's eBPF component needs to be specifically compiled for your hosts.
+Tracee has two eBPF object options. A CO:RE option, and a kernel header dependent option. Both options are built automatically with tracee-ebpf.
 
-The easiest way to get started is to just let Tracee build the eBPF program for you automatically when it starts, as demonstrated by the Quickstart.  
-Alternatively, you can pre-compile the eBPF program, and provide it to Tracee. There are some benefits to this approach as you will not need clang and kernel headers at runtime anymore, as well as reduced risk of invoking an external program at runtime.
+The CO:RE (compile once, run everywhere) option can be compiled on any machine. Running with the CO:RE bpf object requires that the host kernel is compiled with `CONFIG_DEBUG_INFO_BTF` enabled. The CO:RE bpf object is embeded into the Go userspace binary. At runtime tracee-ebpf will load the CO:RE object if BTF is enabled. Otherwise it falls back to attempting to find or build a kernel header dependent object.
+
+If you want to run Tracee on a host without BTF support you can have Tracee build one for you at runtime (it embeds the bpf source code). This will depend on having clang and a kernel version specific kernel-header package.
+
+Alternatively, you can pre-compile the eBPF program, and provide it to Tracee. There are some benefits to this approach as you will not need to depend on clang and kernel headers, as well as reduced risk of invoking an external program at runtime.
 
 You can build the eBPF program in the following ways:
 
@@ -21,11 +24,5 @@ In this case, the full Docker image can be replaced by the lighter-weight `aquas
 If using Docker, the following `docker run` options demonstrate mounting a pre-compiled eBPF artifact into the container, and pointing Tracee to use it:
 
 ```bash
-docker run ... -v /path/in/host/tracee.bpf.123.o:/path/in/container/tracee.bpf.o -e TRACEE_BPF_FILE=/path/in/container/tracee.bpf.o aquasec/tracee
+docker run ... -v /path/in/host/tracee.bpf.123.o:/path/in/container/tracee.bpf.o aquasec/tracee
 ```
-
-# eBPF CO:RE Compilation
-
-Tracee also can utilize CO:RE (Compile once, run everywhere) technology enabled by libbpf. With this enabled, you can compile the tracee bpf object file on one system, and run it on any kernel with BTF (BPF type format) enabled. To check if your kernel has BTF enabled, check for the `CONFIG_DEBUG_INFO_BTF` in your kernel config.
-
-Compiling with CO:RE enabled is as simple as running `make CORE=y`. This will produce a bpf object file called `dist/tracee.bpf.core.{version}`. You can ship this object file with your tracee go binary and point to it by path using the `TRACEE_BPF_FILE` environment variable.
