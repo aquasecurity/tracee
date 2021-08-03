@@ -19,7 +19,7 @@ Check out the [Tracee video hub](https://info.aquasec.com/ebpf-runtime-security)
 Before you proceed, make sure you follow the [minimum requirements for running Tracee](install/prerequisites.md).
 
 ```bash
-docker run --name tracee --rm --privileged -it aquasec/tracee:latest
+docker run --name tracee --rm --privileged -v /boot/config-$(uname -r):/boot/config-$(uname -r):ro -it aquasec/tracee:latest
 ```
 
 This will run Tracee with the portable CO:RE bpf object and default settings. It will start reporting detections to standard output.  

@@ -2,10 +2,7 @@
 
 Portable (CO:RE) option:
 - Linux kernel version >= 4.18
-- `CONFIG_DEBUG_INFO_BTF` Linux compile option enabled (only needed for running, not compilation)
-- libc, and the libraries: libelf, zlib
-- GNU Make >= 4.3
-- clang >= 11
+- BTF enabled
 
 Kernel version specific option:
 - Linux kernel version >= 4.18

@@ -25,15 +25,11 @@ Before you proceed, make sure you follow the [minimum requirements for running T
 If running on BTF enabled kernel:
 
 ```bash
-docker run --name tracee --rm --privileged -it aquasec/tracee:latest
+docker run --name tracee --rm --privileged -v /boot/config-$(uname -r):/boot/config-$(uname -r):ro -it aquasec/tracee:latest
 ```
 
-If running on BTF disabled kernel:
+If running on BTF disabled kernel see [here](https://aquasecurity.github.io/tracee/dev/install/prerequisites/):
 
-```bash
-docker run --name tracee --rm --privileged -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee -it aquasec/tracee:latest
-
-```
 This will run Tracee with default settings and start reporting detections to standard output.  
 In order to simulate a suspicious behavior, you can run `strace ls` in another terminal, which will trigger the "Anti-Debugging" signature, which is loaded by default.
 
