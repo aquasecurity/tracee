@@ -1710,7 +1710,6 @@ func (t *Tracee) processFileWrites() {
 func (t *Tracee) processNetEvents() {
 	// Todo: split pcap files by context (tid + comm)
 	// Todo: add stats for network packets (in epilog)
-	// Todo: support syn+syn-ack packets
 	for {
 		select {
 		case in := <-t.netChannel:
@@ -1831,18 +1830,8 @@ func (t *Tracee) processNetEvents() {
 						pkt.TcpNewState,
 						pkt.SockPtr)
 				case DebugNetTcpConnect:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/tcp_connect  LocalIP: %v, LocalPort: %d, RemoteIP: %v, RemotePort: %d, Protocol: %d, OldState: %d, NewState: %d, SockPtr: 0x%x\n",
-						timeStampObj,
-						comm,
-						hostTid,
-						netaddr.IPFrom16(pkt.LocalIP),
-						pkt.LocalPort,
-						netaddr.IPFrom16(pkt.RemoteIP),
-						pkt.RemotePort,
-						pkt.Protocol,
-						pkt.TcpOldState,
-						pkt.TcpNewState,
-						pkt.SockPtr)
+					fmt.Printf("%v  %-16s  %-7d  debug_net/tcp_connect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
+						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
 				}
 			}
 		case lost := <-t.lostNetChannel:

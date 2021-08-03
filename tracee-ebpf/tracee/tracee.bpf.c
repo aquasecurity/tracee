@@ -3393,10 +3393,6 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
 
     switch (new_state) {
     case TCP_LISTEN:
-        // Ideally, we would update the network map only in 'TCP_ESTABLISHED' state.
-        // However, in the case of a local server program and a local client program, which communicate via the 'lo' interface,
-        // the change to the 'TCP_ESTABLISHED' state of the server's socket doesn't happen in the (process) context of the server.
-        // To update the network_map correctly in that case, we use the 'TCP_LISTEN' state.
         if (connect_id.port) {
             if (!sock_ctx_p) {
                 net_ctx_ext.host_tid = bpf_get_current_pid_tgid();
