@@ -1,12 +1,28 @@
 # eBPF Compilation
 
-Tracee has two eBPF object options. A CO:RE option, and a kernel header dependent option. Both options are built automatically with tracee-ebpf.
+Tracee is leveraging Linux's eBPF technology, which requires kernel level integration. Tracee supports two eBPF integration modes: a portable mode which will seamlessly run everywhere on supporting environment, as demonstrated by the quickstart, or a kernel-specific mode that requires Tracee's eBPF program to be specifically compiled for your host.
 
-The CO:RE (compile once, run everywhere) option can be compiled on any machine. Running with the CO:RE bpf object requires that the host kernel is compiled with `CONFIG_DEBUG_INFO_BTF` enabled. The CO:RE bpf object is embeded into the Go userspace binary. At runtime tracee-ebpf will load the CO:RE object if BTF is enabled. Otherwise it falls back to attempting to find or build a kernel header dependent object.
+The portable option, also known as CO:RE (compile once, run everywhere), requires that your operating system support BTF (BPF Type Format). Tracee will automatically run in CO:RE mode if it detects that the environment supports it. This mode requires no intervention or preparation on your side.
+You can manually detect if your environments supports it by checking if the following file exists on your machine: /sys/kernel/btf/vmlinux or consult the following documentation: https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere.
 
-If you want to run Tracee on a host without BTF support you can have Tracee build one for you at runtime (it embeds the bpf source code). This will depend on having clang and a kernel version specific kernel-header package.
+If you want to run Tracee on a host without BTF support you can have Tracee build the bpf object for you at runtime. This will depend on having clang and a kernel version specific kernel-header package.
 
 Alternatively, you can pre-compile the eBPF program, and provide it to Tracee. There are some benefits to this approach as you will not need to depend on clang and kernel headers, as well as reduced risk of invoking an external program at runtime.
+
+## Compilation Preqrequisites
+
+Portable (CO:RE) option:
+- Linux kernel version >= 4.18
+- libc, and the libraries: libelf, zlib
+- GNU Make >= 4.3
+- clang >= 11
+
+Kernel version specific option:
+- Linux kernel version >= 4.18
+- Linux kernel headers available under conventional location (see [Linux Headers](../headers) section for more info)
+- libc, and the libraries: libelf, zlib
+- GNU Make >= 4.3
+- clang >= 11
 
 You can build the eBPF program in the following ways:
 
@@ -25,4 +41,10 @@ If using Docker, the following `docker run` options demonstrate mounting a pre-c
 
 ```bash
 docker run ... -v /path/in/host/tracee.bpf.123.o:/path/in/container/tracee.bpf.o -e TRACEE_BPF_FILE=/path/in/container/tracee.bpf.o aquasec/tracee
+```
+
+If using Docker on a host without BTF enabled, the following `docker run` options demonstrate mounting of required kernel headers for building the bpf object at runtime:
+
+```bash
+docker run --name tracee --rm --privileged -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee -it aquasec/tracee:latest
 ```
