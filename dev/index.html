@@ -17,7 +17,7 @@
         
       
       <link rel="icon" href="assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.2, mkdocs-material-7.1.11+insiders-2.11.1">
+      <meta name="generator" content="mkdocs-1.2.2, mkdocs-material-7.2.1+insiders-2.12.0">
     
     
       
@@ -25,7 +25,7 @@
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.84bd30f0.min.css">
+      <link rel="stylesheet" href="assets/stylesheets/main.f55811a5.min.css">
       
         
         <link rel="stylesheet" href="assets/stylesheets/palette.73e53a79.min.css">
@@ -50,6 +50,7 @@
       
 
 
+    
     
     
   </head>
@@ -609,12 +610,12 @@
 <p>Check out the <a href="https://info.aquasec.com/ebpf-runtime-security">Tracee video hub</a> for more.</p>
 <h2 id="quickstart">Quickstart</h2>
 <p>Before you proceed, make sure you follow the <a href="install/prerequisites/">minimum requirements for running Tracee</a>.</p>
-<div class="highlight"><pre><span></span><code>docker run --name tracee --rm --privileged -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee aquasec/tracee:latest
+<div class="highlight"><pre><span></span><code>docker run --name tracee --rm --privileged -it aquasec/tracee:latest
 </code></pre></div>
-<p>This will run Tracee with default settings and start reporting detections to standard output.<br />
+<p>This will run Tracee with the portable CO:RE bpf object and default settings. It will start reporting detections to standard output.<br />
 In order to simulate a suspicious behavior, you can run <code>strace ls</code> in another terminal, which will trigger the "Anti-Debugging" signature, which is loaded by default.</p>
 <blockquote>
-<p>Note: You may need to change the volume mounts for the kernel headers based on your setup. See <a href="install/headers/">Linux Headers</a> section for more info.</p>
+<p>Note: You may need to change the volume mounts for the kernel headers based on your setup if the kernel doesn't have BTF enabled. See <a href="install/headers/">Linux Headers</a> section for more info.</p>
 </blockquote>
 <h2 id="trace">Trace</h2>
 <p>In some cases, you might want to leverage Tracee's eBPF event collection capabilities directly, without involving the detection engine. This might be useful for debugging/troubleshooting/analysis/research/education. In this case you can run Tracee with the <code>trace</code> sub-command, which will start dumping raw data directly into standard output. There are many configurations and options available so you can control exactly what is being collected and how. see the Documentation or add the <code>--help</code> flag for more.</p>
@@ -676,7 +677,7 @@ In order to simulate a suspicious behavior, you can run <code>strace ls</code> i
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": ".", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "assets/javascripts/workers/search.74af7bc3.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": ".", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "assets/javascripts/workers/search.db604ae8.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
     
     
       <script src="assets/javascripts/bundle.1afabad3.min.js"></script>

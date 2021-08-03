@@ -17,7 +17,7 @@
         
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.2, mkdocs-material-7.1.11+insiders-2.11.1">
+      <meta name="generator" content="mkdocs-1.2.2, mkdocs-material-7.2.1+insiders-2.12.0">
     
     
       
@@ -25,7 +25,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.84bd30f0.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.f55811a5.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.73e53a79.min.css">
@@ -50,6 +50,7 @@
       
 
 
+    
     
     
   </head>
@@ -527,14 +528,19 @@
                 
                 
                 <h1 id="prerequisites">Prerequisites</h1>
-<ul>
-<li>Linux kernel version &gt;= 4.18</li>
-<li>Linux kernel headers available under conventional location (see <a href="../headers">Linux Headers</a> section for more info)</li>
-<li>libc, and the libraries: libelf, zlib</li>
-<li>GNU Make &gt;= 4.3</li>
-<li>clang &gt;= 9</li>
-</ul>
-<p>Exceptions:</p>
+<p>Portable (CO:RE) option:
+- Linux kernel version &gt;= 4.18
+- <code>CONFIG_DEBUG_INFO_BTF</code> Linux compile option enabled (only needed for running, not compilation)
+- libc, and the libraries: libelf, zlib
+- GNU Make &gt;= 4.3
+- clang &gt;= 11</p>
+<p>Kernel version specific option:
+- Linux kernel version &gt;= 4.18
+- Linux kernel headers available under conventional location (see <a href="../headers">Linux Headers</a> section for more info)
+- libc, and the libraries: libelf, zlib
+- GNU Make &gt;= 4.3
+- clang &gt;= 11
+Exceptions:</p>
 <ul>
 <li>Tracee supports loading a pre-compiled eBPF file, in which case the kernel headers are not required at runtime, but only for the one-time compilation of the eBPF program. See <a href="../ebpf-compilation">Setup Options</a> for more info.</li>
 <li>When using Tracee's Docker image, all of the tooling is built into the image. The only requirement left is the kernel headers or the pre-built eBPF artifact. See <a href="../ebpf-compilation">Setup Options</a> for more info.</li>
@@ -613,7 +619,7 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.74af7bc3.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.db604ae8.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.1afabad3.min.js"></script>
