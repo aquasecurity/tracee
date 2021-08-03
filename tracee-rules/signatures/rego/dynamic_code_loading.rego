@@ -4,7 +4,7 @@ import data.tracee.helpers
 
 __rego_metadoc__ := {
     "id": "TRC-4",
-    "version": "0.1.0",
+    "version": 1,
     "name": "Dynamic Code Loading",
     "description": "Writing to executable allocated memory region",
     "tags": ["linux", "container"],

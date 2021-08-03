@@ -4,7 +4,7 @@ import data.tracee.helpers
 
 __rego_metadoc__ := {
     "id": "TRC-5",
-    "version": "0.1.0",
+    "version": 1,
     "name": "Fileless Execution",
     "description": "Executing a process from memory, without a file in the disk",
     "tags": ["linux", "container"],

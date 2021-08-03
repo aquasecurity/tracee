@@ -20,7 +20,7 @@ type Signature interface {
 //SignatureMetadata represents information about the signature
 type SignatureMetadata struct {
 	ID          string
-	Version     string
+	Version     int
 	Name        string
 	Description string
 	Tags        []string

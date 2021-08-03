@@ -2,7 +2,7 @@ package tracee.TRC_6
 
 __rego_metadoc__ := {
     "id": "TRC-6",
-    "version": "0.1.0",
+    "version": 1,
     "name": "kernel module loading",
     "description": "Attempt to load a kernel module detection",
     "tags": ["linux", "container"],
