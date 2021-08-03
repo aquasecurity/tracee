@@ -178,6 +178,7 @@ const (
 	DebugNetUdpDestroySock
 	DebugNetUdpV6DestroySock
 	DebugNetInetSockSetState
+	DebugNetTcpConnect
 )
 
 // EventsIDToEvent is list of supported events, indexed by their ID

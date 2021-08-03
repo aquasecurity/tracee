@@ -930,6 +930,15 @@ func (t *Tracee) attachNetProbes() error {
 		return fmt.Errorf("error attaching event sock:inet_sock_set_state: %v", err)
 	}
 
+	prog, _ = t.bpfModule.GetProgram("trace_tcp_connect")
+	if prog == nil {
+		return fmt.Errorf("couldn't find trace_tcp_connect program")
+	}
+	_, err = prog.AttachKprobe("tcp_connect")
+	if err != nil {
+		return fmt.Errorf("error attaching event tcp_connect: %v", err)
+	}
+
 	return nil
 }
 
@@ -1701,7 +1710,6 @@ func (t *Tracee) processFileWrites() {
 func (t *Tracee) processNetEvents() {
 	// Todo: split pcap files by context (tid + comm)
 	// Todo: add stats for network packets (in epilog)
-	// Todo: support syn+syn-ack packets
 	for {
 		select {
 		case in := <-t.netChannel:
@@ -1821,6 +1829,9 @@ func (t *Tracee) processNetEvents() {
 						pkt.TcpOldState,
 						pkt.TcpNewState,
 						pkt.SockPtr)
+				case DebugNetTcpConnect:
+					fmt.Printf("%v  %-16s  %-7d  debug_net/tcp_connect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
+						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
 				}
 			}
 		case lost := <-t.lostNetChannel:

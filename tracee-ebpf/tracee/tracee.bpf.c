@@ -198,6 +198,7 @@ extern bool CONFIG_ARCH_HAS_SYSCALL_WRAPPER __kconfig;
 #define DEBUG_NET_UDP_DESTROY_SOCK      4
 #define DEBUG_NET_UDPV6_DESTROY_SOCK    5
 #define DEBUG_NET_INET_SOCK_SET_STATE   6
+#define DEBUG_NET_TCP_CONNECT           7
 
 #define CONFIG_SHOW_SYSCALL         1
 #define CONFIG_EXEC_ENV             2
@@ -3391,23 +3392,7 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
     }
 
     switch (new_state) {
-    case TCP_SYN_SENT:
-        // When we have an outgoing network connection to a remote server, we get 'TCP_ESTABLISHED' with a context
-        // which is different from the client's context.
-        // We use 'TCP_SYN_SENT' state change, which we observed to always happen in the correct context,
-        // and save the socket in sock_ctx_map so we can avoid performing the should_trace() check
-        // Note that in this state, the port equals to 0, so we don't update the network_map here
-        net_ctx_ext.host_tid = bpf_get_current_pid_tgid();
-        bpf_get_current_comm(&net_ctx_ext.comm, sizeof(net_ctx_ext.comm));
-        net_ctx_ext.local_port = connect_id.port;
-        bpf_map_update_elem(&sock_ctx_map, &sk, &net_ctx_ext, BPF_ANY);
-        break;
     case TCP_LISTEN:
-    case TCP_ESTABLISHED:
-        // Ideally, we would update the network map only in 'TCP_ESTABLISHED' state.
-        // However, in the case of a local server program and a local client program, which communicate via the 'lo' interface,
-        // the change to the 'TCP_ESTABLISHED' state of the server's socket doesn't happen in the (process) context of the server.
-        // To update the network_map correctly in that case, we use the 'TCP_LISTEN' state.
         if (connect_id.port) {
             if (!sock_ctx_p) {
                 net_ctx_ext.host_tid = bpf_get_current_pid_tgid();
@@ -3452,6 +3437,40 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
 
     return 0;
 }
+
+SEC("kprobe/tcp_connect")
+int BPF_KPROBE(trace_tcp_connect)
+{
+    if (!should_trace())
+        return 0;
+
+    local_net_id_t connect_id = {0};
+    net_ctx_ext_t net_ctx_ext = {0};
+
+    struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
+
+    u16 family = get_sock_family(sk);
+    if (family == AF_INET) {
+        net_conn_v4_t net_details = {};
+        get_network_details_from_sock_v4(sk, &net_details, 0);
+        get_local_net_id_from_network_details_v4(sk, &connect_id, &net_details, family);
+    } else if (family == AF_INET6) {
+        net_conn_v6_t net_details = {};
+        get_network_details_from_sock_v6(sk, &net_details, 0);
+        get_local_net_id_from_network_details_v6(sk, &connect_id, &net_details, family);
+    } else {
+        return 0;
+    }
+
+    u32 tid = bpf_get_current_pid_tgid();
+
+    net_ctx_ext.host_tid = tid;
+    bpf_get_current_comm(&net_ctx_ext.comm, sizeof(net_ctx_ext.comm));
+    net_ctx_ext.local_port = connect_id.port;
+    bpf_map_update_elem(&sock_ctx_map, &sk, &net_ctx_ext, BPF_ANY);
+
+    return net_map_update_or_delete_sock(ctx, DEBUG_NET_TCP_CONNECT, sk, tid);
+};
 
 SEC("kprobe/send_bin")
 int BPF_KPROBE(send_bin)
