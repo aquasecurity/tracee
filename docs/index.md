@@ -19,13 +19,13 @@ Check out the [Tracee video hub](https://info.aquasec.com/ebpf-runtime-security)
 Before you proceed, make sure you follow the [minimum requirements for running Tracee](install/prerequisites.md).
 
 ```bash
-docker run --name tracee --rm --privileged -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee aquasec/tracee:latest
+docker run --name tracee --rm --privileged -it aquasec/tracee:latest
 ```
 
-This will run Tracee with default settings and start reporting detections to standard output.  
+This will run Tracee with the portable CO:RE bpf object and default settings. It will start reporting detections to standard output.  
 In order to simulate a suspicious behavior, you can run `strace ls` in another terminal, which will trigger the "Anti-Debugging" signature, which is loaded by default.
 
-> Note: You may need to change the volume mounts for the kernel headers based on your setup. See [Linux Headers](install/headers.md) section for more info.
+> Note: You may need to change the volume mounts for the kernel headers based on your setup if the kernel doesn't have BTF enabled. See [Linux Headers](install/headers.md) section for more info.
 
 ## Trace
 

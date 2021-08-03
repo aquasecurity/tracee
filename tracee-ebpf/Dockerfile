@@ -17,7 +17,9 @@ RUN apk --no-cache update && apk --no-cache add clang llvm make gcc libc6-compat
 FROM alpine as slim
 RUN apk --no-cache update && apk --no-cache add libc6-compat elfutils-dev
 
-# must run privileged and with linux headers mounted
+# If running on a BTF enabled kernel:
+# docker run --name tracee --rm --privileged -it aquasec/tracee:latest
+# If running on a BTF disabled kernel, you must mount linux headers:
 # docker run --name tracee --rm --privileged --pid=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee aquasec/tracee
 FROM $BASE
 WORKDIR /tracee

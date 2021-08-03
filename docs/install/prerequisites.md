@@ -1,11 +1,18 @@
 # Prerequisites
 
+Portable (CO:RE) option:
+- Linux kernel version >= 4.18
+- `CONFIG_DEBUG_INFO_BTF` Linux compile option enabled (only needed for running, not compilation)
+- libc, and the libraries: libelf, zlib
+- GNU Make >= 4.3
+- clang >= 11
+
+Kernel version specific option:
 - Linux kernel version >= 4.18
 - Linux kernel headers available under conventional location (see [Linux Headers](../headers) section for more info)
 - libc, and the libraries: libelf, zlib
 - GNU Make >= 4.3
-- clang >= 9
-
+- clang >= 11
 Exceptions:
 
 - Tracee supports loading a pre-compiled eBPF file, in which case the kernel headers are not required at runtime, but only for the one-time compilation of the eBPF program. See [Setup Options](../ebpf-compilation) for more info.
