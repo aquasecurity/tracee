@@ -3,7 +3,7 @@
 Tracee is leveraging Linux's eBPF technology, which requires kernel level integration. Tracee supports two eBPF integration modes: a portable mode which will seamlessly run everywhere on supporting environment, as demonstrated by the quickstart, or a kernel-specific mode that requires Tracee's eBPF program to be specifically compiled for your host.
 
 The portable option, also known as CO:RE (compile once, run everywhere), requires that your operating system support BTF (BPF Type Format). Tracee will automatically run in CO:RE mode if it detects that the environment supports it. This mode requires no intervention or preparation on your side.
-You can manually detect if your environments supports it by checking if the following file exists on your machine: path/to/vmlinux or consult the following documentation: https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere.
+You can manually detect if your environments supports it by checking if the following file exists on your machine: /sys/kernel/btf/vmlinux or consult the following documentation: https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere.
 
 If you want to run Tracee on a host without BTF support you can have Tracee build the bpf object for you at runtime. This will depend on having clang and a kernel version specific kernel-header package.
 
@@ -13,7 +13,6 @@ Alternatively, you can pre-compile the eBPF program, and provide it to Tracee. T
 
 Portable (CO:RE) option:
 - Linux kernel version >= 4.18
-- `CONFIG_DEBUG_INFO_BTF` Linux compile option enabled (only needed for running, not compilation)
 - libc, and the libraries: libelf, zlib
 - GNU Make >= 4.3
 - clang >= 11

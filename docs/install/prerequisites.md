@@ -2,7 +2,7 @@
 
 Portable (CO:RE) option:
 - Linux kernel version >= 4.18
-- BTF enabled
+- BTF enabled (_You can manually detect if your environments supports it by checking if the following file exists on your machine: /sys/kernel/btf/vmlinux or consult the following documentation: https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere_)
 
 Kernel version specific option:
 - Linux kernel version >= 4.18
