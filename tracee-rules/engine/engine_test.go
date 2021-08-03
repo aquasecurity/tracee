@@ -158,6 +158,104 @@ func TestConsumeSources(t *testing.T) {
 			},
 		},
 		{
+			name: "happy path - with one matching selector including event origin from container",
+			inputEvent: tracee.Event{
+				EventName:       "test_event",
+				ProcessID:       2,
+				ParentProcessID: 1,
+				ContainerID:     "container ID",
+				Args: []tracee.Argument{
+					{
+						ArgMeta: tracee.ArgMeta{
+							Name: "pathname",
+						},
+						Value: "/proc/self/mem",
+					},
+				},
+			},
+			inputSignature: regoFakeSignature{
+				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
+					return []types.SignatureEventSelector{
+						{
+							Name:   "test_event",
+							Source: "tracee",
+							Origin: "container",
+						},
+					}, nil
+				},
+			},
+			expectedNumEvents: 1,
+			expectedEvent: ParsedEvent{
+				Event: tracee.Event{
+					ProcessID: 2, ParentProcessID: 1, ContainerID: "container ID", Args: []external.Argument{{ArgMeta: external.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
+					EventName: "test_event",
+				},
+			},
+		},
+		{
+			name: "happy path - with one matching selector with mismatching event origin from container",
+			inputEvent: tracee.Event{
+				EventName:       "test_event",
+				ProcessID:       2,
+				ParentProcessID: 1,
+				ContainerID:     "container ID",
+				Args: []tracee.Argument{
+					{
+						ArgMeta: tracee.ArgMeta{
+							Name: "pathname",
+						},
+						Value: "/proc/self/mem",
+					},
+				},
+			},
+			inputSignature: regoFakeSignature{
+				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
+					return []types.SignatureEventSelector{
+						{
+							Name:   "test_event",
+							Source: "tracee",
+							Origin: "host",
+						},
+					}, nil
+				},
+			},
+			expectedNumEvents: 0,
+		},
+		{
+			name: "happy path - with one matching selector including event origin from host",
+			inputEvent: tracee.Event{
+				EventName:       "test_event",
+				ProcessID:       2,
+				ParentProcessID: 2,
+				Args: []tracee.Argument{
+					{
+						ArgMeta: tracee.ArgMeta{
+							Name: "pathname",
+						},
+						Value: "/proc/self/mem",
+					},
+				},
+			},
+			inputSignature: regoFakeSignature{
+				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
+					return []types.SignatureEventSelector{
+						{
+							Name:   "test_event",
+							Source: "tracee",
+							Origin: "container",
+						},
+					}, nil
+				},
+			},
+			expectedNumEvents: 1,
+			expectedEvent: ParsedEvent{
+				Event: tracee.Event{
+					ProcessID: 2, ParentProcessID: 2, Args: []external.Argument{{ArgMeta: external.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
+					EventName: "test_event",
+				},
+			},
+		},
+		{
 			name: "sad path - with all events selector, no source",
 			inputSignature: regoFakeSignature{
 				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
@@ -197,6 +295,40 @@ func TestConsumeSources(t *testing.T) {
 				},
 			},
 			expectedError: "error getting metadata: getMetadata error\n",
+		},
+		{
+			name: "sad path - event ContainerID was not parsed but event is from container",
+			inputEvent: tracee.Event{
+				EventName:       "test_event",
+				ProcessID:       2,
+				ParentProcessID: 1,
+				Args: []tracee.Argument{
+					{
+						ArgMeta: tracee.ArgMeta{
+							Name: "pathname",
+						},
+						Value: "/proc/self/mem",
+					},
+				},
+			},
+			inputSignature: regoFakeSignature{
+				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
+					return []types.SignatureEventSelector{
+						{
+							Name:   "test_event",
+							Source: "tracee",
+							Origin: "container",
+						},
+					}, nil
+				},
+			},
+			expectedNumEvents: 1,
+			expectedEvent: ParsedEvent{
+				Event: tracee.Event{
+					ProcessID: 2, ParentProcessID: 1, Args: []external.Argument{{ArgMeta: external.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
+					EventName: "test_event",
+				},
+			},
 		},
 	}
 

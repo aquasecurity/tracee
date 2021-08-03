@@ -31,6 +31,7 @@ type SignatureMetadata struct {
 type SignatureEventSelector struct {
 	Source string
 	Name   string
+	Origin string
 }
 
 //SignatureHandler is a callback function that reports a finding

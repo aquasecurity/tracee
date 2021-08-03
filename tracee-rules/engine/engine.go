@@ -14,6 +14,11 @@ import (
 	"github.com/open-policy-agent/opa/ast"
 )
 
+const ALL_EVENT_ORIGINS = "*"
+const EVENT_CONTAINER_ORIGIN = "container"
+const EVENT_HOST_ORIGIN = "host"
+const ALL_EVENT_TYPES = "*"
+
 // Engine is a rule-engine that can process events coming from a set of input sources against a set of loaded signatures, and report the signatures' findings
 type Engine struct {
 	logger          log.Logger
@@ -59,7 +64,10 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 		}
 		for _, es := range se {
 			if es.Name == "" {
-				es.Name = "*"
+				es.Name = ALL_EVENT_TYPES
+			}
+			if es.Origin == "" {
+				es.Origin = ALL_EVENT_ORIGINS
 			}
 			if es.Source == "" {
 				engine.logger.Printf("signature %s doesn't declare an input source", meta.Name)
@@ -163,10 +171,17 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 					continue
 				}
 
-				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName}] {
+				eventOrigin := analyzeEventOrigin(traceeEvt)
+				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName, Origin: eventOrigin}] {
 					engine.dispatchEvent(s, pe)
 				}
-				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: "*"}] {
+				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName, Origin: ALL_EVENT_ORIGINS}] {
+					engine.dispatchEvent(s, pe)
+				}
+				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: ALL_EVENT_TYPES, Origin: eventOrigin}] {
+					engine.dispatchEvent(s, pe)
+				}
+				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: ALL_EVENT_TYPES, Origin: ALL_EVENT_ORIGINS}] {
 					engine.dispatchEvent(s, pe)
 				}
 				engine.signaturesMutex.RUnlock()
@@ -207,7 +222,10 @@ func (engine *Engine) LoadSignature(signature types.Signature) (string, error) {
 	// insert in engine.signaturesIndex map
 	for _, selectedEvent := range selectedEvents {
 		if selectedEvent.Name == "" {
-			selectedEvent.Name = "*"
+			selectedEvent.Name = ALL_EVENT_TYPES
+		}
+		if selectedEvent.Origin == "" {
+			selectedEvent.Origin = ALL_EVENT_ORIGINS
 		}
 		if selectedEvent.Source == "" {
 			engine.logger.Printf("signature %s doesn't declare an input source", metadata.Name)
@@ -289,4 +307,12 @@ func ToParsedEvent(e tracee.Event) (ParsedEvent, error) {
 		Event: e,
 		Value: v,
 	}, nil
+}
+
+func analyzeEventOrigin(event tracee.Event) string {
+	if event.ContainerID != "" || event.ProcessID != event.HostProcessID {
+		return EVENT_CONTAINER_ORIGIN
+	} else {
+		return EVENT_HOST_ORIGIN
+	}
 }
