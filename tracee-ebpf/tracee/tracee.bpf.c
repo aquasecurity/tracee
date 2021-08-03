@@ -164,32 +164,33 @@ extern bool CONFIG_ARCH_HAS_SYSCALL_WRAPPER __kconfig;
 #define SYSCALL_BIND          200
 #endif
 
-#define RAW_SYS_ENTER           1000
-#define RAW_SYS_EXIT            1001
-#define SCHED_PROCESS_FORK      1002
-#define SCHED_PROCESS_EXEC      1003
-#define SCHED_PROCESS_EXIT      1004
-#define DO_EXIT                 1005
-#define CAP_CAPABLE             1006
-#define VFS_WRITE               1007
-#define VFS_WRITEV              1008
-#define MEM_PROT_ALERT          1009
-#define COMMIT_CREDS            1010
-#define SWITCH_TASK_NS          1011
-#define MAGIC_WRITE             1012
-#define CGROUP_ATTACH_TASK      1013
-#define SECURITY_BPRM_CHECK     1014
-#define SECURITY_FILE_OPEN      1015
-#define SECURITY_INODE_UNLINK   1016
-#define SECURITY_SOCKET_CREATE  1017
-#define SECURITY_SOCKET_LISTEN  1018
-#define SECURITY_SOCKET_CONNECT 1019
-#define SECURITY_SOCKET_ACCEPT  1020
-#define SECURITY_SOCKET_BIND    1021
-#define SECURITY_SB_MOUNT       1022
-#define SECURITY_BPF            1023
-#define SECURITY_BPF_MAP        1024
-#define MAX_EVENT_ID            1025
+#define RAW_SYS_ENTER               1000
+#define RAW_SYS_EXIT                1001
+#define SCHED_PROCESS_FORK          1002
+#define SCHED_PROCESS_EXEC          1003
+#define SCHED_PROCESS_EXIT          1004
+#define DO_EXIT                     1005
+#define CAP_CAPABLE                 1006
+#define VFS_WRITE                   1007
+#define VFS_WRITEV                  1008
+#define MEM_PROT_ALERT              1009
+#define COMMIT_CREDS                1010
+#define SWITCH_TASK_NS              1011
+#define MAGIC_WRITE                 1012
+#define CGROUP_ATTACH_TASK          1013
+#define SECURITY_BPRM_CHECK         1014
+#define SECURITY_FILE_OPEN          1015
+#define SECURITY_INODE_UNLINK       1016
+#define SECURITY_SOCKET_CREATE      1017
+#define SECURITY_SOCKET_LISTEN      1018
+#define SECURITY_SOCKET_CONNECT     1019
+#define SECURITY_SOCKET_ACCEPT      1020
+#define SECURITY_SOCKET_BIND        1021
+#define SECURITY_SB_MOUNT           1022
+#define SECURITY_BPF                1023
+#define SECURITY_BPF_MAP            1024
+#define SECURITY_KERNEL_READ_FILE   1025
+#define MAX_EVENT_ID                1026
 
 #define NET_PACKET                      0
 #define DEBUG_NET_SECURITY_BIND         1
@@ -4028,6 +4029,50 @@ int BPF_KPROBE(trace_security_bpf_map)
     save_to_submit_buf(submit_p, (void *)&map->id, sizeof(int), UINT_T, DEC_ARG(0, *tags));
     /* 2nd argument == map_name (const char *) */
     save_str_to_buf(submit_p, (void *)&map->name, DEC_ARG(1, *tags));
+
+    events_perf_submit(ctx);
+    return 0;
+}
+
+SEC("kprobe/security_kernel_read_file")
+int BPF_KPROBE(trace_security_kernel_read_file)
+{
+    if (!should_trace()) {
+        return 0;
+    }
+
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
+    if (submit_p == NULL) {
+        return 0;
+    }
+
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+
+    context_t context = init_and_save_context(ctx, submit_p, SECURITY_KERNEL_READ_FILE, 3 /*argnum*/, 0 /*ret*/);
+
+    struct file* file = (struct file*)PT_REGS_PARM1(ctx);
+    dev_t s_dev = get_dev_from_file(file);
+    unsigned long inode_nr = get_inode_nr_from_file(file);
+
+    // Get per-cpu string buffer
+    buf_t *string_p = get_buf(STRING_BUF_IDX);
+    if (string_p == NULL) {
+        return -1;
+    }
+    save_path_to_str_buf(string_p, &file->f_path);
+    u32 *off = get_buf_off(STRING_BUF_IDX);
+    if (off == NULL) {
+        return -1;
+    }
+
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
+    if (!tags) {
+        return -1;
+    }
+
+    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], DEC_ARG(0, *tags));
+    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, DEC_ARG(1, *tags));
+    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, DEC_ARG(2, *tags));
 
     events_perf_submit(ctx);
     return 0;
