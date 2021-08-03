@@ -530,10 +530,7 @@
                 <h1 id="prerequisites">Prerequisites</h1>
 <p>Portable (CO:RE) option:
 - Linux kernel version &gt;= 4.18
-- <code>CONFIG_DEBUG_INFO_BTF</code> Linux compile option enabled (only needed for running, not compilation)
-- libc, and the libraries: libelf, zlib
-- GNU Make &gt;= 4.3
-- clang &gt;= 11</p>
+- BTF enabled (<em>You can manually detect if your environments supports it by checking if the following file exists on your machine: /sys/kernel/btf/vmlinux or consult the following documentation: https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere</em>)</p>
 <p>Kernel version specific option:
 - Linux kernel version &gt;= 4.18
 - Linux kernel headers available under conventional location (see <a href="../headers">Linux Headers</a> section for more info)
