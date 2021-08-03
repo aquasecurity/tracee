@@ -9,7 +9,7 @@ In some cases, you might want to leverage Tracee's eBPF event collection capabil
 Before you proceed, make sure you follow the [minimum requirements for running Tracee](install/prerequisites.md).
 
 ```bash
-docker run --name tracee --rm --privileged -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee -it aquasec/tracee:latest trace
+docker run --name tracee --rm --privileged -it aquasec/tracee:latest trace
 ```
 
 Here we are running the same `aquasec/tracee` container, but with the `trace` sub-command, which will start just a raw trace (Tracee-eBPF), without the detection engine (Tracee-Rules). Here's a sample output of running with no additional arguments:

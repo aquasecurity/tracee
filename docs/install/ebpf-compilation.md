@@ -24,5 +24,5 @@ In this case, the full Docker image can be replaced by the lighter-weight `aquas
 If using Docker, the following `docker run` options demonstrate mounting a pre-compiled eBPF artifact into the container, and pointing Tracee to use it:
 
 ```bash
-docker run ... -v /path/in/host/tracee.bpf.123.o:/path/in/container/tracee.bpf.o aquasec/tracee
+docker run ... -v /path/in/host/tracee.bpf.123.o:/path/in/container/tracee.bpf.o -e TRACEE_BPF_FILE=/path/in/container/tracee.bpf.o aquasec/tracee
 ```
