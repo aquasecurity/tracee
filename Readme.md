@@ -25,8 +25,10 @@ Before you proceed, make sure you follow the [minimum requirements for running T
 If running on BTF enabled kernel:
 
 ```bash
-docker run --name tracee --rm --privileged -v /boot/config-$(uname -r):/boot/config-$(uname -r):ro -it aquasec/tracee:latest
+docker run --name tracee --rm --privileged -it aquasec/tracee:latest
 ```
+
+Note: __Running bpf requires access to the kernel configuration file. Depending on the linux distribution this can be in either `/proc/config.gz` (which docker mounts by default) or `/boot/config-$(uname -r)` (which must be mounted explicitly)._
 
 If running on BTF disabled kernel see [here](https://aquasecurity.github.io/tracee/dev/install/prerequisites/):
 
