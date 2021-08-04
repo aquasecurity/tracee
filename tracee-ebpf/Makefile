@@ -138,7 +138,7 @@ endif
 .PHONY: test 
 ifndef DOCKER
 test: $(GO_SRC) $(LIBBPF_HEADERS) $(LIBBPF_OBJ)
-	$(go_env)	go test -v ./...
+	$(go_env)	go test $(GOTEST_FLAGS) -v ./...
 else
 test: $(DOCKER_BUILDER)
 	$(call docker_builder_make,$@)
