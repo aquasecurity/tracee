@@ -19,8 +19,10 @@ Check out the [Tracee video hub](https://info.aquasec.com/ebpf-runtime-security)
 Before you proceed, make sure you follow the [minimum requirements for running Tracee](install/prerequisites.md).
 
 ```bash
-docker run --name tracee --rm --privileged -v /boot/config-$(uname -r):/boot/config-$(uname -r):ro -it aquasec/tracee:latest
+docker run --name tracee --rm --privileged -it aquasec/tracee:latest
 ```
+
+Note: __Running bpf requires access to the kernel configuration file. Depending on the linux distribution this can be in either `/proc/config.gz` (which docker mounts by default) or `/boot/config-$(uname -r)` (which must be mounted explicitly)._
 
 This will run Tracee with the portable CO:RE bpf object and default settings. It will start reporting detections to standard output.  
 In order to simulate a suspicious behavior, you can run `strace ls` in another terminal, which will trigger the "Anti-Debugging" signature, which is loaded by default.
