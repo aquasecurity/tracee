@@ -10,7 +10,7 @@ There are 3 basic concepts for Tracee-Rules:
 
 ## Getting started
 
-Tracee-Rules doesn't have any requirement, but in order to run with Tracee-eBPF, make sure you follow the [minimum requirements for running Tracee](TODO).
+Tracee-Rules doesn't have any requirement, but in order to run with Tracee-eBPF, make sure you follow the [minimum requirements for running Tracee](https://aquasecurity.github.io/tracee/dev/install/prerequisites/).
 
 Getting Tracee-Rules:
 Currently you need to build from source. `cd tracee-rules && make` will build the executable as well as all built-in signatures into the local `dist` directory.  
