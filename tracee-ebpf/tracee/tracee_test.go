@@ -268,3 +268,27 @@ func Test_updateFileSHA(t *testing.T) {
 		},
 	}, trc.profiledFiles)
 }
+
+func TestOutputConfigValidate(t *testing.T) {
+
+	testCases := []struct {
+		name          string
+		format        string
+		expectedError error
+	}{
+		{"format:table", "table", nil},
+		{"format:table-verbose", "table-verbose", nil},
+		{"format:json", "json", nil},
+		{"format:gob", "gob", nil},
+		{"format:gotemplate=tmpl", "gotemplate=tmpl", nil},
+		{"invalid format", "invalid", errors.New("unrecognized output format: invalid. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info.")},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := OutputConfig{Format: tc.format}
+			err := cfg.Validate()
+			assert.Equal(t, tc.expectedError, err)
+		})
+	}
+}
