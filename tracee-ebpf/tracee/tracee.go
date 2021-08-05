@@ -309,7 +309,8 @@ func New(cfg Config) (*Tracee, error) {
 		bootTime:  uint64(bootTime),
 	}
 	outf := os.Stdout
-	if t.config.Output.OutPath != "" {
+	if t.config.Output.OutPath != "" &&
+		t.config.Output.OutPath != os.DevNull {
 		dir := filepath.Dir(t.config.Output.OutPath)
 		os.MkdirAll(dir, 0755)
 		os.Remove(t.config.Output.OutPath)
@@ -330,7 +331,13 @@ func New(cfg Config) (*Tracee, error) {
 	}
 	ContainerMode := (t.config.Filter.ContFilter.Enabled && t.config.Filter.ContFilter.Value) ||
 		(t.config.Filter.NewContFilter.Enabled && t.config.Filter.NewContFilter.Value)
-	printObj, err := newEventPrinter(t.config.Output.Format, ContainerMode, t.config.Output.RelativeTime, outf, errf)
+
+	printerKind := t.config.Output.Format
+	if t.config.Output.OutPath == os.DevNull {
+		printerKind = "ignore"
+	}
+
+	printObj, err := newEventPrinter(printerKind, ContainerMode, t.config.Output.RelativeTime, outf, errf)
 	if err != nil {
 		return nil, err
 	}

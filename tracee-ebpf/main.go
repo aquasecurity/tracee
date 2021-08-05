@@ -222,7 +222,7 @@ Possible options:
 [format:]gob                                       output events in gob format
 [format:]gotemplate=/path/to/template              output events formatted using a given gotemplate file
 
-out-file:/path/to/file                             write the output to a specified file. create/trim the file if exists (default: stdout)
+out-file:/path/to/file                             write the output to a specified file. create/trim the file if exists (default: stdout), pass '/dev/null' to ignore the output
 err-file:/path/to/file                             write the errors to a specified file. create/trim the file if exists (default: stderr)
 
 option:{stack-addresses,detect-syscall,exec-env}   augment output according to given options (default: none)
@@ -235,6 +235,7 @@ Examples:
   --output json                                            | output as json
   --output gotemplate=/path/to/my.tmpl                     | output as the provided go template
   --output out-file:/my/out err-file:/my/err               | output to /my/out and errors to /my/err
+  --output out-file:/dev/null                              | ignore events output (usually used with --capture)
 
 Use this flag multiple times to choose multiple output options
 `
@@ -312,6 +313,7 @@ Examples:
   --capture write=/usr/bin/* --capture write=/etc/*        | capture files that were written into anywhere under /usr/bin/ or /etc/
   --capture exec --capture profile                         | capture executed files and create a runtime profile in the output directory
   --capture net=eth0                                       | capture network traffic of eth0
+	--capture exec --output out-file:/dev/null               | capture executed files into the default output directory not printing the stream of events
 
 Use this flag multiple times to choose multiple capture options
 `

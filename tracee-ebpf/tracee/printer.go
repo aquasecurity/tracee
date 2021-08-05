@@ -33,6 +33,8 @@ func newEventPrinter(kind string, containerMode bool, relativeTS bool, out io.Wr
 	var res eventPrinter
 	var initError error
 	switch {
+	case kind == "ignore":
+		res = &ignoreEventPrinter{}
 	case kind == "table":
 		res = &tableEventPrinter{
 			out:           out,
@@ -283,3 +285,21 @@ func (p *gobEventPrinter) Epilogue(stats statsStore) {}
 
 func (p gobEventPrinter) Close() {
 }
+
+// ignoreEventPrinter ignores events
+type ignoreEventPrinter struct {
+}
+
+func (p *ignoreEventPrinter) Init() error {
+	return nil
+}
+
+func (p *ignoreEventPrinter) Preamble() {}
+
+func (p *ignoreEventPrinter) Print(event external.Event) {}
+
+func (p *ignoreEventPrinter) Error(e error) {}
+
+func (p *ignoreEventPrinter) Epilogue(stats statsStore) {}
+
+func (p ignoreEventPrinter) Close() {}
