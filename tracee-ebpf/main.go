@@ -48,16 +48,31 @@ func main() {
 				SecurityAlerts:     c.Bool("security-alerts"),
 				Debug:              c.Bool("debug"),
 			}
+
+			if checkCommandIsHelp(c.StringSlice("output")) {
+				printOutputHelp()
+				return nil
+			}
 			output, err := prepareOutput(c.StringSlice("output"))
 			if err != nil {
 				return err
 			}
 			cfg.Output = &output
+
+			if checkCommandIsHelp(c.StringSlice("capture")) {
+				printCaptureHelp()
+				return nil
+			}
 			capture, err := prepareCapture(c.StringSlice("capture"))
 			if err != nil {
 				return err
 			}
 			cfg.Capture = &capture
+
+			if checkCommandIsHelp(c.StringSlice("trace")) {
+				printFilterHelp()
+				return nil
+			}
 			filter, err := prepareFilter(c.StringSlice("trace"))
 			if err != nil {
 				return err
@@ -190,9 +205,15 @@ func main() {
 	}
 }
 
-func prepareOutput(outputSlice []string) (tracee.OutputConfig, error) {
-	outputHelp := `
-Control how and where output is printed.
+func checkCommandIsHelp(s []string) bool {
+	if len(s) == 1 && s[0] == "help" {
+		return true
+	}
+	return false
+}
+
+func printOutputHelp() {
+	outputHelp := `Control how and where output is printed.
 Possible options:
 
 [format:]table                                     output events in table format
@@ -217,12 +238,11 @@ Examples:
 
 Use this flag multiple times to choose multiple output options
 `
+	fmt.Print(outputHelp)
+}
 
+func prepareOutput(outputSlice []string) (tracee.OutputConfig, error) {
 	res := tracee.OutputConfig{}
-	if len(outputSlice) == 1 && outputSlice[0] == "help" {
-		return res, fmt.Errorf(outputHelp)
-	}
-
 	for _, o := range outputSlice {
 		outputParts := strings.SplitN(o, ":", 2)
 		numParts := len(outputParts)
@@ -271,9 +291,8 @@ Use this flag multiple times to choose multiple output options
 	return res, nil
 }
 
-func prepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
-	captureHelp := `
-Capture artifacts that were written, executed or found to be suspicious.
+func printCaptureHelp() {
+	captureHelp := `Capture artifacts that were written, executed or found to be suspicious.
 Captured artifacts will appear in the 'output-path' directory.
 Possible options:
 
@@ -296,11 +315,10 @@ Examples:
 
 Use this flag multiple times to choose multiple capture options
 `
+	fmt.Print(captureHelp)
+}
 
-	if len(captureSlice) == 1 && captureSlice[0] == "help" {
-		return tracee.CaptureConfig{}, fmt.Errorf(captureHelp)
-	}
-
+func prepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 	capture := tracee.CaptureConfig{}
 
 	outDir := "/tmp/tracee"
@@ -362,9 +380,8 @@ Use this flag multiple times to choose multiple capture options
 	return capture, nil
 }
 
-func prepareFilter(filters []string) (tracee.Filter, error) {
-	filterHelp := `
-Select which events to trace by defining trace expressions that operate on events or process metadata.
+func printFilterHelp() {
+	filterHelp := `Select which events to trace by defining trace expressions that operate on events or process metadata.
 Only events that match all trace expressions will be traced (trace flags are ANDed).
 The following types of expressions are supported:
 
@@ -423,11 +440,10 @@ Examples:
 Note: some of the above operators have special meanings in different shells.
 To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 `
+	fmt.Print(filterHelp)
+}
 
-	if len(filters) == 1 && filters[0] == "help" {
-		return tracee.Filter{}, fmt.Errorf(filterHelp)
-	}
-
+func prepareFilter(filters []string) (tracee.Filter, error) {
 	filter := tracee.Filter{
 		UIDFilter: &tracee.UintFilter{
 			Equal:    []uint64{},
