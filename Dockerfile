@@ -11,7 +11,7 @@ RUN make
 
 # base image for tracee which includes all tools to build the bpf object at runtime
 FROM alpine as fat
-RUN apk --no-cache update && apk --no-cache add clang llvm make gcc libc6-compat coreutils linux-headers musl-dev elfutils-dev libelf-static zlib-static
+RUN apk --no-cache update && apk --no-cache add clang llvm make gcc libc6-compat coreutils linux-headers musl-dev elfutils-dev libelf-static zlib-static tini
 
 # base image for tracee which includes minimal dependencies and expects the bpf object to be provided at runtime
 FROM alpine as slim
@@ -39,4 +39,4 @@ LABEL org.label-schema.build-date=$BUILD_DATE \
     org.label-schema.vendor="Aqua Security" \
     org.label-schema.version=$VERSION
 
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["/sbin/tini", "-g", "--", "./entrypoint.sh"]
