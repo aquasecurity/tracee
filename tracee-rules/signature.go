@@ -100,7 +100,12 @@ func findRegoSigs(dir string) ([]types.Signature, error) {
 		if err != nil {
 			newlineOffset := bytes.Index(regoCode, []byte("\n"))
 			if newlineOffset == -1 {
-				newlineOffset = len(regoCode)
+				codeLength := len(regoCode)
+				if codeLength < 22 {
+					newlineOffset = codeLength
+				} else {
+					newlineOffset = 22
+				}
 			}
 			log.Printf("error creating rego signature with: %s: %v ", regoCode[0:newlineOffset], err)
 			continue
