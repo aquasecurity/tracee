@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"plugin"
+	"strings"
 
 	"github.com/aquasecurity/tracee/tracee-rules/signatures/rego/regosig"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
@@ -83,11 +84,27 @@ func findRegoSigs(dir string) ([]types.Signature, error) {
 
 	var res []types.Signature
 
+	regoHelpers := []string{regoHelpersCode}
 	for _, file := range files {
-		if filepath.Ext(file.Name()) != ".rego" {
+		if file.Name() == "helpers.rego" {
 			continue
 		}
-		if file.Name() == "helpers.rego" {
+
+		if !isHelper(file.Name()) {
+			continue
+		}
+
+		helperCode, err := ioutil.ReadFile(filepath.Join(dir, file.Name()))
+		if err != nil {
+			log.Printf("error reading file %s/%s: %v", dir, file, err)
+			continue
+		}
+
+		regoHelpers = append(regoHelpers, string(helperCode))
+	}
+
+	for _, file := range files {
+		if isHelper(file.Name()) {
 			continue
 		}
 		regoCode, err := ioutil.ReadFile(filepath.Join(dir, file.Name()))
@@ -95,7 +112,7 @@ func findRegoSigs(dir string) ([]types.Signature, error) {
 			log.Printf("error reading file %s/%s: %v", dir, file, err)
 			continue
 		}
-		sig, err := regosig.NewRegoSignature(string(regoCode), regoHelpersCode)
+		sig, err := regosig.NewRegoSignature(append(regoHelpers, string(regoCode))...)
 		if err != nil {
 			log.Printf("error creating rego signature with: %s: %v ", regoCode[0:20], err)
 			continue
@@ -103,4 +120,8 @@ func findRegoSigs(dir string) ([]types.Signature, error) {
 		res = append(res, sig)
 	}
 	return res, nil
+}
+
+func isHelper(name string) bool {
+	return strings.HasSuffix(name, "helpers.rego")
 }
