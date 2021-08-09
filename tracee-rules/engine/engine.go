@@ -143,7 +143,7 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 				for sig := range engine.signatures {
 					se, err := sig.GetSelectedEvents()
 					if err != nil {
-						engine.logger.Printf("%v", err)
+						engine.logger.Printf("error getting selected events: %v", err)
 						continue
 					}
 					for _, sel := range se {

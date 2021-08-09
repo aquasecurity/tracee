@@ -68,7 +68,7 @@ func main() {
 			for _, s := range sigs {
 				m, err := s.GetMetadata()
 				if err != nil {
-					fmt.Println("failed to load signature: ", err)
+					log.Printf("failed to load signature: %v", err)
 					continue
 				}
 				loadedSigIDs = append(loadedSigIDs, m.ID)

@@ -21,7 +21,7 @@ func getSignatures(rulesDir string, rules []string) ([]types.Signature, error) {
 	if rulesDir == "" {
 		exePath, err := os.Executable()
 		if err != nil {
-			log.Print(err)
+			log.Printf("error getting executable path: %v", err)
 		}
 		rulesDir = filepath.Join(filepath.Dir(exePath), "rules")
 	}
