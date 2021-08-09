@@ -124,8 +124,9 @@ func main() {
 			cfg.BPFObjPath = bpfFilePath
 			cfg.BPFObjBytes = bpfBytes
 
-			if !checkRequiredCapabilities() {
-				return fmt.Errorf("insufficient privileges to run")
+			err = checkRequiredCapabilities()
+			if err != nil {
+				return err
 			}
 			missingKernelOptions := missingKernelConfigOptions()
 			if len(missingKernelOptions) != 0 {
@@ -962,12 +963,21 @@ func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.St
 	return res, nil
 }
 
-func checkRequiredCapabilities() bool {
+func checkRequiredCapabilities() error {
 	caps, err := getSelfCapabilities()
 	if err != nil {
-		return false
+		return err
 	}
-	return caps.Get(capability.EFFECTIVE, capability.CAP_SYS_ADMIN)
+
+	if !caps.Get(capability.EFFECTIVE, capability.CAP_SYS_ADMIN) {
+		return fmt.Errorf("insufficient privileges to run: missing CAP_SYS_ADMIN")
+	}
+
+	if !caps.Get(capability.EFFECTIVE, capability.CAP_IPC_LOCK) {
+		return fmt.Errorf("insufficient privileges to run: missing CAP_IPC_LOCK")
+	}
+
+	return nil
 }
 
 func missingKernelConfigOptions() []string {
