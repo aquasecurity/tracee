@@ -313,7 +313,7 @@ Examples:
   --capture write=/usr/bin/* --capture write=/etc/*        | capture files that were written into anywhere under /usr/bin/ or /etc/
   --capture exec --capture profile                         | capture executed files and create a runtime profile in the output directory
   --capture net=eth0                                       | capture network traffic of eth0
-	--capture exec --output out-file:/dev/null               | capture executed files into the default output directory not printing the stream of events
+  --capture exec --output out-file:/dev/null               | capture executed files into the default output directory not printing the stream of events
 
 Use this flag multiple times to choose multiple capture options
 `
