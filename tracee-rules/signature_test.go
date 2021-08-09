@@ -27,3 +27,28 @@ func Test_getSignatures(t *testing.T) {
 		},
 	}, gotMetadata)
 }
+
+func Test_isHelper(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected bool
+	}{
+		{"helpers.rego", true},
+		{"test_helpers.rego", true},
+		{"new_helpers.rego", true},
+		{"test.rego", false},
+		{"new.rego", false},
+		{"test_new.rego", false},
+		{"helpers.go", false},
+		{"test_helpers.go", false},
+		{"aaa.go", false},
+		{"helpers", false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.input, func(t *testing.T) {
+			actual := isHelper(tc.input)
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
+}
