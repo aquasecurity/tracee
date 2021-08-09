@@ -2169,8 +2169,9 @@ if (CONFIG_ARCH_HAS_SYSCALL_WRAPPER) {
     // exit, exit_group and rt_sigreturn syscalls don't return - don't save args for them
     if (id != SYS_EXIT && id != SYS_EXIT_GROUP && id != SYS_RT_SIGRETURN) {
         // save the timestamp at function entry
-        args_tmp.args[6] = bpf_ktime_get_ns();
-        save_args(&args_tmp, id);
+        args_t noargs = {};
+        noargs.args[6] = bpf_ktime_get_ns();
+        save_args(&noargs, id);
     }
 
     // call syscall handler, if exists
