@@ -13,7 +13,8 @@
 statfunc buf_t *get_buf(int);
 statfunc data_filter_key_t *get_string_data_filter_buf(int);
 statfunc data_filter_lpm_key_t *get_string_data_filter_lpm_buf(int);
-statfunc int reverse_string(char *, char *, int, int);
+statfunc int reverse_string(char *, const char *, int, int);
+statfunc void store_u32_le_at_buf(args_buffer_t *, u32, u32);
 statfunc int save_to_submit_buf(args_buffer_t *, void *, u32, u8);
 statfunc int save_bytes_to_buf(args_buffer_t *, void *, u32, u8);
 statfunc int save_str_to_buf(args_buffer_t *, void *, u8);
@@ -46,7 +47,7 @@ statfunc data_filter_lpm_key_t *get_string_data_filter_lpm_buf(int idx)
 // biggest elem to be saved with 'save_to_submit_buf' should be defined here:
 #define MAX_ELEMENT_SIZE sizeof(struct sockaddr_un)
 
-statfunc int reverse_string(char *dst, char *src, int src_off, int len)
+statfunc int reverse_string(char *dst, const char *src, int src_off, int len)
 {
     uint i;
 
@@ -77,6 +78,37 @@ statfunc int reverse_string(char *dst, char *src, int src_off, int len)
 
     // Characters copied with null-termination
     return i + 1;
+}
+
+statfunc void store_u32_le_at_buf(args_buffer_t *buf, u32 offset, u32 value)
+{
+    if (offset > ARGS_BUF_SIZE - sizeof(u32))
+        return;
+    buf->args[offset] = (u8) (value & 0xFF);
+    buf->args[offset + 1] = (u8) ((value >> 8) & 0xFF);
+    buf->args[offset + 2] = (u8) ((value >> 16) & 0xFF);
+    buf->args[offset + 3] = (u8) ((value >> 24) & 0xFF);
+}
+
+// Generic little-endian stores into a byte buffer
+statfunc void store_u32_le_bytes(u8 *dst, u32 offset, u32 value)
+{
+    dst[offset + 0] = (u8) (value & 0xFF);
+    dst[offset + 1] = (u8) ((value >> 8) & 0xFF);
+    dst[offset + 2] = (u8) ((value >> 16) & 0xFF);
+    dst[offset + 3] = (u8) ((value >> 24) & 0xFF);
+}
+
+statfunc void store_u64_le_bytes(u8 *dst, u32 offset, u64 value)
+{
+    dst[offset + 0] = (u8) (value & 0xFF);
+    dst[offset + 1] = (u8) ((value >> 8) & 0xFF);
+    dst[offset + 2] = (u8) ((value >> 16) & 0xFF);
+    dst[offset + 3] = (u8) ((value >> 24) & 0xFF);
+    dst[offset + 4] = (u8) ((value >> 32) & 0xFF);
+    dst[offset + 5] = (u8) ((value >> 40) & 0xFF);
+    dst[offset + 6] = (u8) ((value >> 48) & 0xFF);
+    dst[offset + 7] = (u8) ((value >> 56) & 0xFF);
 }
 
 statfunc int save_to_submit_buf(args_buffer_t *buf, void *ptr, u32 size, u8 index)
@@ -135,17 +167,17 @@ statfunc int save_bytes_to_buf(args_buffer_t *buf, void *ptr, u32 size, u8 index
     if (buf->offset > ARGS_BUF_SIZE - (sizeof(int) + 1))
         return 0;
 
-    // Save size to buffer
-    if (bpf_probe_read(&(buf->args[buf->offset + 1]), sizeof(int), &size) != 0) {
-        return 0;
-    }
+    // Save size to buffer (local scalar)
+    store_u32_le_at_buf(buf, buf->offset + 1, size);
 
     if (buf->offset > ARGS_BUF_SIZE - (MAX_BYTES_ARR_SIZE + 1 + sizeof(int)))
         return 0;
 
-    // Read bytes into buffer
+    // Read bytes into buffer (clamp copy size for older verifiers)
+    u32 copy_size = size & (MAX_BYTES_ARR_SIZE - 1);
+    update_min(copy_size, MAX_BYTES_ARR_SIZE);
     if (bpf_probe_read(&(buf->args[buf->offset + 1 + sizeof(int)]),
-                       size & (MAX_BYTES_ARR_SIZE - 1),
+                       copy_size,
                        ptr) == 0) {
         // We update offset only if all writes were successful
         buf->offset += size + 1 + sizeof(int);
@@ -248,7 +280,8 @@ statfunc int save_str_to_buf(args_buffer_t *buf, void *ptr, u8 index)
         if (buf->offset > ARGS_BUF_SIZE - (MAX_STRING_SIZE + 1 + sizeof(int)))
             return 0;
 
-        __builtin_memcpy(&(buf->args[buf->offset + 1]), &sz, sizeof(int));
+        // Encode size as little-endian for userspace decoder
+        store_u32_le_at_buf(buf, buf->offset + 1, (u32) sz);
         buf->offset += sz + sizeof(int) + 1;
         buf->argnum++;
         return 1;
@@ -306,8 +339,11 @@ statfunc int save_u64_arr_to_buf(args_buffer_t *buf, const u64 *ptr, int len, u8
     if ((buf->offset + sizeof(index) + sizeof(restricted_len) > ARGS_BUF_SIZE - MAX_BYTES_ARR_SIZE))
         return 0;
 
+    // Clamp total byte count for older verifiers
+    u32 bytes_to_copy = total_size & (MAX_BYTES_ARR_SIZE - 1);
+    update_min(bytes_to_copy, MAX_BYTES_ARR_SIZE);
     if (bpf_probe_read(&(buf->args[buf->offset + sizeof(index) + sizeof(restricted_len)]),
-                       total_size & (MAX_BYTES_ARR_SIZE - 1),
+                       bytes_to_copy,
                        (void *) ptr) != 0)
         return 0;
 
@@ -350,7 +386,8 @@ statfunc int save_str_arr_to_buf(args_buffer_t *buf, const char __user *const __
             if (buf->offset > ARGS_BUF_SIZE - sizeof(int))
                 // Satisfy validator
                 goto out;
-            bpf_probe_read(&(buf->args[buf->offset]), sizeof(int), &sz);
+            // Save size (local scalar) directly
+            store_u32_le_at_buf(buf, buf->offset, (u32) sz);
             buf->offset += sz + sizeof(int);
             elem_num++;
             continue;
@@ -370,7 +407,8 @@ statfunc int save_str_arr_to_buf(args_buffer_t *buf, const char __user *const __
         if (buf->offset > ARGS_BUF_SIZE - sizeof(int))
             // Satisfy validator
             goto out;
-        bpf_probe_read(&(buf->args[buf->offset]), sizeof(int), &sz);
+        // Save size (local scalar) directly
+        store_u32_le_at_buf(buf, buf->offset, (u32) sz);
         buf->offset += sz + sizeof(int);
         elem_num++;
     }
@@ -411,22 +449,24 @@ statfunc int save_args_str_arr_to_buf(
     if ((buf->offset + 1) > ARGS_BUF_SIZE - sizeof(int))
         return 0;
 
-    // Save array length
-    bpf_probe_read(&(buf->args[buf->offset + 1]), sizeof(int), &len);
+    // Save array length (local scalar)
+    store_u32_le_at_buf(buf, buf->offset + 1, (u32) len);
 
     // Satisfy validator for probe read
     if ((buf->offset + 5) > ARGS_BUF_SIZE - sizeof(int))
         return 0;
 
-    // Save number of arguments
-    bpf_probe_read(&(buf->args[buf->offset + 5]), sizeof(int), &elem_num);
+    // Save number of arguments (local scalar)
+    store_u32_le_at_buf(buf, buf->offset + 5, (u32) elem_num);
 
     // Satisfy validator for probe read
     if ((buf->offset + 9) > ARGS_BUF_SIZE - MAX_ARR_LEN)
         return 0;
 
-    // Read into buffer
-    if (bpf_probe_read(&(buf->args[buf->offset + 9]), len & (MAX_ARR_LEN - 1), start) == 0) {
+    // Read into buffer (clamp copy size for older verifiers)
+    u32 copy_len = (u32) len & (MAX_ARR_LEN - 1);
+    update_min(copy_len, MAX_ARR_LEN);
+    if (bpf_probe_read(&(buf->args[buf->offset + 9]), copy_len, start) == 0) {
         // We update offset only if all writes were successful
         buf->offset += len + 9;
         buf->argnum++;

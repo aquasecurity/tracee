@@ -238,7 +238,7 @@ statfunc size_t get_path_str_buf(struct path *path, buf_t *out_buf)
             break;
         if (sz > 1) {
             buf_off -= 1; // remove null byte termination with slash sign
-            bpf_probe_read_kernel(&(out_buf->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
+            out_buf->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)] = '/';
             buf_off -= sz - 1;
         } else {
             // If sz is 0 or 1 we have an error (path can't be null nor an empty string)
@@ -254,9 +254,9 @@ statfunc size_t get_path_str_buf(struct path *path, buf_t *out_buf)
     } else {
         // Add leading slash
         buf_off -= 1;
-        bpf_probe_read_kernel(&(out_buf->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
+        out_buf->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)] = '/';
         // Null terminate the path string
-        bpf_probe_read_kernel(&(out_buf->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1]), 1, &zero);
+        out_buf->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1] = 0;
     }
     return buf_off;
 }
@@ -347,7 +347,7 @@ statfunc void *get_dentry_path_str_buf(struct dentry *dentry, buf_t *out_buf)
             break;
         if (sz > 1) {
             buf_off -= 1; // remove null byte termination with slash sign
-            bpf_probe_read_kernel(&(out_buf->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
+            out_buf->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)] = '/';
             buf_off -= sz - 1;
         } else {
             // If sz is 0 or 1 we have an error (path can't be null nor an empty string)
@@ -364,9 +364,9 @@ statfunc void *get_dentry_path_str_buf(struct dentry *dentry, buf_t *out_buf)
     } else {
         // Add leading slash
         buf_off -= 1;
-        bpf_probe_read_kernel(&(out_buf->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
+        out_buf->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)] = '/';
         // Null terminate the path string
-        bpf_probe_read_kernel(&(out_buf->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1]), 1, &zero);
+        out_buf->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1] = 0;
     }
 
     return &out_buf->buf[buf_off & ((MAX_PERCPU_BUFSIZE >> 1) - 1)];
@@ -446,10 +446,11 @@ statfunc void fill_vfs_file_metadata(struct file *file, u32 pid, u8 *metadata)
     unsigned long inode_nr = get_inode_nr_from_file(file);
     unsigned short i_mode = get_inode_mode_from_file(file);
 
-    bpf_probe_read_kernel(metadata, 4, &s_dev);
-    bpf_probe_read_kernel(metadata + 4, 8, &inode_nr);
-    bpf_probe_read_kernel(metadata + 12, 4, &i_mode);
-    bpf_probe_read_kernel(metadata + 16, 4, &pid);
+    // Write metadata LE: dev (u32), inode (u64), mode (u32), pid (u32)
+    store_u32_le_bytes(metadata, 0, (u32) s_dev);
+    store_u64_le_bytes(metadata, 4, (u64) inode_nr);
+    store_u32_le_bytes(metadata, 12, (u32) i_mode);
+    store_u32_le_bytes(metadata, 16, pid);
 }
 
 statfunc void fill_vfs_file_bin_args_io_data(io_data_t io_data, bin_args_t *bin_args)

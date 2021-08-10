@@ -3864,8 +3864,9 @@ int BPF_KPROBE(trace_security_file_mprotect)
     if (should_extract_code) {
         u32 pid = p.event->context.task.host_pid;
         bin_args.type = SEND_MPROTECT;
-        bpf_probe_read_kernel(bin_args.metadata, sizeof(u64), &p.event->context.ts);
-        bpf_probe_read_kernel(&bin_args.metadata[8], 4, &pid);
+        // ts (u64) then pid (u32) in LE
+        store_u64_le_bytes(bin_args.metadata, 0, p.event->context.ts);
+        store_u32_le_bytes(bin_args.metadata, 8, pid);
         bin_args.ptr = (char *) addr;
         bin_args.start_off = 0;
         bin_args.full_size = len;
@@ -3896,10 +3897,9 @@ int syscall__init_module(void *ctx)
 
     if (p.config->options & OPT_CAPTURE_MODULES) {
         bin_args.type = SEND_KERNEL_MODULE;
-        bpf_probe_read_kernel(bin_args.metadata, 4, &dummy);
-        bpf_probe_read_kernel(&bin_args.metadata[4], 8, &dummy);
-        bpf_probe_read_kernel(&bin_args.metadata[12], 4, &pid);
-        bpf_probe_read_kernel(&bin_args.metadata[16], 8, &len);
+        // metadata: first 12 bytes ignored; write pid (u32) and size (u64) in LE
+        store_u32_le_bytes(bin_args.metadata, 12, pid);
+        store_u64_le_bytes(bin_args.metadata, 16, len);
         bin_args.ptr = (char *) addr;
         bin_args.start_off = 0;
         bin_args.full_size = (unsigned int) len;
@@ -3977,9 +3977,9 @@ int BPF_KPROBE(trace_security_bpf)
         }
 
         u32 rand = bpf_get_prandom_u32();
-        bpf_probe_read_kernel(&bin_args.metadata[16], 4, &rand);
-        bpf_probe_read_kernel(&bin_args.metadata[20], 4, &pid);
-        bpf_probe_read_kernel(&bin_args.metadata[24], 4, &insn_size);
+        store_u32_le_bytes(bin_args.metadata, 16, rand);
+        store_u32_le_bytes(bin_args.metadata, 20, pid);
+        store_u32_le_bytes(bin_args.metadata, 24, insn_size);
         bin_args.ptr = (char *) insns;
         bin_args.start_off = 0;
         bin_args.full_size = insn_size;
