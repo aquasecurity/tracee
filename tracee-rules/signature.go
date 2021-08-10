@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	_ "embed"
 
 	"fmt"
@@ -114,7 +115,16 @@ func findRegoSigs(dir string) ([]types.Signature, error) {
 		}
 		sig, err := regosig.NewRegoSignature(append(regoHelpers, string(regoCode))...)
 		if err != nil {
-			log.Printf("error creating rego signature with: %s: %v ", regoCode[0:20], err)
+			newlineOffset := bytes.Index(regoCode, []byte("\n"))
+			if newlineOffset == -1 {
+				codeLength := len(regoCode)
+				if codeLength < 22 {
+					newlineOffset = codeLength
+				} else {
+					newlineOffset = 22
+				}
+			}
+			log.Printf("error creating rego signature with: %s: %v ", regoCode[0:newlineOffset], err)
 			continue
 		}
 		res = append(res, sig)
