@@ -35,6 +35,14 @@ DOCKER_BUILDER_KERN_SRC ?= $(if $(shell readlink $(KERN_SRC_PATH)),$(shell readl
 DOCKER_BUILDER_KERN_SRC_MNT ?= $(dir $(DOCKER_BUILDER_KERN_SRC))
 LINUX_VERSION_CODE := $(shell uname -r | awk '{split($$0,a,"."); split(a[3], b, "-"); print lshift(a[1], 16) + lshift(a[2],8) + b[1];}')
 
+ifneq (,$(wildcard /etc/redhat-release))
+	RHEL_MAJOR := $(shell grep -Eoh -m 1 '[0-9]+\.[0-9]+' /etc/redhat-release | cut -d '.' -f 1)
+	RHEL_MINOR := $(shell grep -Eoh -m 1 '[0-9]+\.[0-9]+' /etc/redhat-release | cut -d '.' -f 2)
+	RHEL_RELEASE_CODE := $(shell echo $$(($(RHEL_MAJOR) << 8 | $(RHEL_MINOR))))
+else
+	RHEL_RELEASE_CODE := 0
+endif
+
 $(OUT_DIR):
 	mkdir -p $@
 
@@ -124,6 +132,7 @@ $(OUT_BPF_CORE): $(BPF_SRC) $(LIBBPF_HEADERS) $(CMD_CLANG)
 		-D__VM_LINUX_H__ \
 		-D__KERNEL__ \
 		-DLINUX_VERSION_CODE=$(LINUX_VERSION_CODE) \
+		-DRHEL_RELEASE_CODE=$(RHEL_RELEASE_CODE) \
 		-target bpf \
 		-O2 -c -g -o $@ $<
 else
