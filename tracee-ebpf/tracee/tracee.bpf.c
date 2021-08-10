@@ -1183,189 +1183,126 @@ static __always_inline int save_to_submit_buf(buf_t *submit_p, void *ptr, u32 si
 {
 // The biggest element that can be saved with this function should be defined here
 #define MAX_ELEMENT_SIZE sizeof(struct sockaddr_un)
-    if (type == 0)
-        return 0;
 
-    if (size == 0)
+    // Data saved to submit buf: [type][tag][ ... buffer[size] ... ]
+
+    if ((type == 0) || (size == 0))
         return 0;
 
     u32* off = get_buf_off(SUBMIT_BUF_IDX);
     if (off == NULL)
         return 0;
-    if (*off > MAX_PERCPU_BUFSIZE - MAX_ELEMENT_SIZE)
-        // Satisfy validator for probe read
+
+    // If we don't have enough space - return
+    if (*off > MAX_PERCPU_BUFSIZE - (size+2))
         return 0;
 
-    // Save argument type
-    int rc = bpf_probe_read(&(submit_p->buf[*off]), 1, &type);
-    if (rc != 0)
-        return 0;
+    // Save argument type & tag
+    submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)] = type;
+    submit_p->buf[(*off+1) & (MAX_PERCPU_BUFSIZE-1)] = tag;
 
-    *off += 1;
-
-    if (*off > MAX_PERCPU_BUFSIZE - MAX_ELEMENT_SIZE)
-        // Satisfy validator for probe read
-        return 0;
-
-    // Save argument tag
-    rc = bpf_probe_read(&(submit_p->buf[*off]), 1, &tag);
-    if (rc != 0) {
-        *off -= 1;
-        return 0;
-    }
-    *off += 1;
-
-    if (*off > MAX_PERCPU_BUFSIZE - MAX_ELEMENT_SIZE) {
-        // Satisfy validator for probe read
-        *off -= 2;
-        return 0;
+    // Satisfy validator for probe read
+    if ((*off+2) <= MAX_PERCPU_BUFSIZE - MAX_ELEMENT_SIZE) {
+        // Read into buffer
+        if (bpf_probe_read(&(submit_p->buf[*off+2]), size, ptr) == 0) {
+            // We update buf_off only if all writes were successfull
+            *off += size+2;
+            return 1;
+        }
     }
 
-    // Read into buffer
-    rc = bpf_probe_read(&(submit_p->buf[*off]), size, ptr);
-    if (rc == 0) {
-        *off += size;
-        return 1;
-    }
-
-    *off -= 2;
     return 0;
 }
 
 static __always_inline int save_bytes_to_buf(buf_t *submit_p, void *ptr, u32 size, u8 tag)
 {
+    // Data saved to submit buf: [type][tag][size][ ... bytes ... ]
+
     if (size == 0)
         return 0;
 
     u32* off = get_buf_off(SUBMIT_BUF_IDX);
     if (off == NULL)
         return 0;
-    if (*off > MAX_PERCPU_BUFSIZE - MAX_BYTES_ARR_SIZE - sizeof(int))
-        // not enough space - return
+
+    // If we don't have enough space - return
+    if (*off > MAX_PERCPU_BUFSIZE - (size+2+sizeof(int)))
         return 0;
 
-    // Save argument type
-    u8 type = BYTES_T;
-    bpf_probe_read(&(submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)]), 1, &type);
+    // Save argument type & tag
+    submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)] = BYTES_T;
+    submit_p->buf[(*off+1) & (MAX_PERCPU_BUFSIZE-1)] = tag;
 
-    *off += 1;
-
-    // Save argument tag
-    int rc = bpf_probe_read(&(submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)]), 1, &tag);
-    if (rc != 0) {
-        *off -= 1;
-        return 0;
-    }
-    *off += 1;
-
-    if (*off > MAX_PERCPU_BUFSIZE - MAX_BYTES_ARR_SIZE - sizeof(int)) {
-        // Satisfy validator for probe read
-        *off -= 2;
-        return 0;
+    if ((*off+2) <= MAX_PERCPU_BUFSIZE - MAX_BYTES_ARR_SIZE - sizeof(int)) {
+        // Save size to buffer
+        if (bpf_probe_read(&(submit_p->buf[*off+2]), sizeof(int), &size) != 0) {
+            return 0;
+        }
     }
 
-    // Save size to buffer
-    rc = bpf_probe_read(&(submit_p->buf[*off]), sizeof(int), &size);
-    if (rc != 0) {
-        *off -= 2;
-        return 0;
-    }
-    *off += sizeof(int);
-
-    if (*off > MAX_PERCPU_BUFSIZE - MAX_BYTES_ARR_SIZE - sizeof(int)) {
-        // Satisfy validator for probe read
-        *off -= (2 + sizeof(int));
-        return 0;
+    if ((*off+2+sizeof(int)) <= MAX_PERCPU_BUFSIZE - MAX_BYTES_ARR_SIZE) {
+        // Read bytes into buffer
+        if (bpf_probe_read(&(submit_p->buf[*off+2+sizeof(int)]), size & (MAX_BYTES_ARR_SIZE-1), ptr) == 0) {
+            // We update buf_off only if all writes were successfull
+            *off += size+2+sizeof(int);
+            return 1;
+        }
     }
 
-    // Read bytes into buffer
-    rc = bpf_probe_read(&(submit_p->buf[*off]), size & (MAX_BYTES_ARR_SIZE-1), ptr);
-    if (rc == 0) {
-        *off += size;
-        return 1;
-    }
-
-    *off -= (2 + sizeof(int));
     return 0;
 }
 
 static __always_inline int save_str_to_buf(buf_t *submit_p, void *ptr, u8 tag)
 {
+    // Data saved to submit buf: [type][tag][size][ ... string ... ]
+
     u32* off = get_buf_off(SUBMIT_BUF_IDX);
     if (off == NULL)
         return 0;
+
+    // If we don't have enough space - return
     if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int))
-        // not enough space - return
         return 0;
 
-    // Save argument type
-    u8 type = STR_T;
-    bpf_probe_read(&(submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)]), 1, &type);
+    // Save argument type & tag
+    submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)] = STR_T;
+    submit_p->buf[(*off+1) & (MAX_PERCPU_BUFSIZE-1)] = tag;
 
-    *off += 1;
-
-    // Save argument tag
-    if (tag != TAG_NONE) {
-        int rc = bpf_probe_read(&(submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)]), 1, &tag);
-        if (rc != 0) {
-            *off -= 1;
-            return 0;
-        }
-
-        *off += 1;
-    }
-
-    if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int)) {
-        // Satisfy validator for probe read
-        *off -= 2;
-        return 0;
-    }
-
-    // Read into buffer
-    int sz = bpf_probe_read_str(&(submit_p->buf[*off + sizeof(int)]), MAX_STRING_SIZE, ptr);
-    if (sz > 0) {
-        if (*off > MAX_PERCPU_BUFSIZE - sizeof(int)) {
+    // Satisfy validator for probe read
+    if ((*off+2) <= MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int)) {
+        // Read into buffer
+        int sz = bpf_probe_read_str(&(submit_p->buf[*off+2+sizeof(int)]), MAX_STRING_SIZE, ptr);
+        if (sz > 0) {
             // Satisfy validator for probe read
-            *off -= 2;
-            return 0;
+            if ((*off+2) > MAX_PERCPU_BUFSIZE - sizeof(int)) {
+                return 0;
+            }
+            __builtin_memcpy(&(submit_p->buf[*off+2]), &sz, sizeof(int));
+            *off += sz + sizeof(int) + 2;
+            return 1;
         }
-        bpf_probe_read(&(submit_p->buf[*off]), sizeof(int), &sz);
-        *off += sz + sizeof(int);
-        return 1;
     }
 
-    *off -= 2;
     return 0;
 }
 
 static __always_inline int save_str_arr_to_buf(buf_t *submit_p, const char __user *const __user *ptr, u8 tag)
 {
+    // Data saved to submit buf: [type][tag][string count][str1 size][str1][str2 size][str2]...
+
     u8 elem_num = 0;
 
     u32* off = get_buf_off(SUBMIT_BUF_IDX);
     if (off == NULL)
         return 0;
 
-    // mark string array start
-    u8 type = STR_ARR_T;
-    int rc = bpf_probe_read(&(submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)]), 1, &type);
-    if (rc != 0)
-        return 0;
+    // Save argument type & tag
+    submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)] = STR_ARR_T;
+    submit_p->buf[(*off+1) & (MAX_PERCPU_BUFSIZE-1)] = tag;
 
-    *off += 1;
-
-    // Save argument tag
-    rc = bpf_probe_read(&(submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)]), 1, &tag);
-    if (rc != 0) {
-        *off -= 1;
-        return 0;
-    }
-
-    *off += 1;
-
-    // Save space for number of elements
-    u32 orig_off = *off;
-    *off += 1;
+    // Save space for number of elements (1 byte)
+    u32 orig_off = *off+2;
+    *off += 3;
 
     #pragma unroll
     for (int i = 0; i < MAX_STR_ARR_ELEM; i++) {
@@ -1382,9 +1319,9 @@ static __always_inline int save_str_arr_to_buf(buf_t *submit_p, const char __use
         int sz = bpf_probe_read_str(&(submit_p->buf[*off + sizeof(int)]), MAX_STRING_SIZE, argp);
         if (sz > 0) {
             if (*off > MAX_PERCPU_BUFSIZE - sizeof(int))
-                // Satisfy validator for probe read
+                // Satisfy validator
                 goto out;
-            bpf_probe_read(&(submit_p->buf[*off]), sizeof(int), &sz);
+            __builtin_memcpy(&(submit_p->buf[*off]), &sz, sizeof(int));
             *off += sz + sizeof(int);
             elem_num++;
             continue;
@@ -1402,47 +1339,36 @@ static __always_inline int save_str_arr_to_buf(buf_t *submit_p, const char __use
     int sz = bpf_probe_read_str(&(submit_p->buf[*off + sizeof(int)]), MAX_STRING_SIZE, ellipsis);
     if (sz > 0) {
         if (*off > MAX_PERCPU_BUFSIZE - sizeof(int))
-            // Satisfy validator for probe read
+            // Satisfy validator
             goto out;
-        bpf_probe_read(&(submit_p->buf[*off]), sizeof(int), &sz);
+        __builtin_memcpy(&(submit_p->buf[*off]), &sz, sizeof(int));
         *off += sz + sizeof(int);
         elem_num++;
     }
 out:
     // save number of elements in the array
-    bpf_probe_read(&(submit_p->buf[orig_off & (MAX_PERCPU_BUFSIZE-1)]), 1, &elem_num);
+    submit_p->buf[orig_off & (MAX_PERCPU_BUFSIZE-1)] = elem_num;
     return 1;
 }
 
 // This helper saves null (0x00) delimited string array into buf
 static __always_inline int save_args_str_arr_to_buf(buf_t *submit_p, const char *start, const char *end, int elem_num, u8 tag)
 {
+    // Data saved to submit buf: [type][tag][string count][str1 size][str1][str2 size][str2]...
+
     u8 count=0;
 
     u32* off = get_buf_off(SUBMIT_BUF_IDX);
     if (off == NULL)
         return 0;
 
-    // mark string array start
-    u8 type = STR_ARR_T;
-    int rc = bpf_probe_read(&(submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)]), 1, &type);
-    if (rc != 0)
-        return 0;
+    // Save argument type & tag
+    submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)] = STR_ARR_T;
+    submit_p->buf[(*off+1) & (MAX_PERCPU_BUFSIZE-1)] = tag;
 
-    *off += 1;
-
-    // Save argument tag
-    rc = bpf_probe_read(&(submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)]), 1, &tag);
-    if (rc != 0) {
-        *off -= 1;
-        return 0;
-    }
-
-    *off += 1;
-
-    // Save space for number of elements
-    u32 orig_off = *off;
-    *off += 1;
+    // Save space for number of elements (1 byte)
+    u32 orig_off = *off+2;
+    *off += 3;
 
     #pragma unroll
     for (int i = 0; i < MAX_ARGS_STR_ARR_ELEM; i++) {
@@ -1457,9 +1383,9 @@ static __always_inline int save_args_str_arr_to_buf(buf_t *submit_p, const char 
         int sz = bpf_probe_read_str(&(submit_p->buf[*off + sizeof(int) & ((MAX_PERCPU_BUFSIZE >> 1)-1)]), MAX_STRING_SIZE, start);
         if (sz > 0) {
             if (*off > MAX_PERCPU_BUFSIZE - sizeof(int))
-                // Satisfy validator for probe read
+                // Satisfy validator
                 goto out;
-            bpf_probe_read(&(submit_p->buf[*off]), sizeof(int), &sz);
+            __builtin_memcpy(&(submit_p->buf[*off]), &sz, sizeof(int));
             *off += sz + sizeof(int);
             elem_num--;
             count++;
@@ -1479,16 +1405,16 @@ static __always_inline int save_args_str_arr_to_buf(buf_t *submit_p, const char 
     int sz = bpf_probe_read_str(&(submit_p->buf[*off + sizeof(int)]), MAX_STRING_SIZE, ellipsis);
     if (sz > 0) {
         if (*off > MAX_PERCPU_BUFSIZE - sizeof(int))
-            // Satisfy validator for probe read
+            // Satisfy validator
             goto out;
-        bpf_probe_read(&(submit_p->buf[*off]), sizeof(int), &sz);
+        __builtin_memcpy(&(submit_p->buf[*off]), &sz, sizeof(int));
         *off += sz + sizeof(int);
         elem_num--;
         count++;
     }
 out:
     // save number of elements in the array
-    bpf_probe_read(&(submit_p->buf[orig_off & (MAX_PERCPU_BUFSIZE-1)]), 1, &count);
+    submit_p->buf[orig_off & (MAX_PERCPU_BUFSIZE-1)] = count;
     return 1;
 }
 
