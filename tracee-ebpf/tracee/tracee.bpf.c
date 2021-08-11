@@ -2416,8 +2416,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     }
 
     int invoked_from_kernel = 0;
-    int parent_flags = get_task_parent_flags(task);
-    if (parent_flags & PF_KTHREAD) {
+    if (get_task_parent_flags(task) & PF_KTHREAD) {
         invoked_from_kernel = 1;
     }
 
