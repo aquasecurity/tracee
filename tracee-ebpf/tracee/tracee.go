@@ -393,6 +393,10 @@ func New(cfg Config) (*Tracee, error) {
 	}
 
 	t.systemInfo = FetchSystemInfo()
+	err = SaveSystemInfo(t.systemInfo, t.config.Output.OutPath)
+	if err != nil {
+		return nil, err
+	}
 
 	if err := os.MkdirAll(t.config.Capture.OutputPath, 0755); err != nil {
 		t.Close()
