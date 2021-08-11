@@ -371,7 +371,7 @@ func New(cfg Config) (*Tracee, error) {
 	}
 
 	t.systemInfo = FetchSystemInfo()
-	err = SaveSystemInfo(t.systemInfo, t.config.Output.OutPath)
+	err = SaveSystemInfo(t.systemInfo, filepath.Dir(t.config.Output.OutPath))
 	if err != nil {
 		return nil, err
 	}
