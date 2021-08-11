@@ -654,10 +654,10 @@ static __always_inline u32 get_task_host_pid(struct task_struct *task)
     return READ_KERN(task->pid);
 }
 
-static __always_inline char * get_task_parent_comm(struct task_struct *task)
+static __always_inline int get_task_parent_flags(struct task_struct *task)
 {
     struct task_struct *parent = READ_KERN(task->real_parent);
-    return READ_KERN(parent->comm);
+    return READ_KERN(parent->flags);
 }
 
 static __always_inline const char * get_binprm_filename(struct linux_binprm *bprm)
@@ -2415,7 +2415,11 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
         return -1;
     }
 
-    int invoked_from_kernel = has_prefix("kworker/", get_task_parent_comm(task), 9);
+    int invoked_from_kernel = 0;
+    int parent_flags = get_task_parent_flags(task);
+    if (parent_flags & PF_KTHREAD) {
+        invoked_from_kernel = 1;
+    }
 
     const char *filename = get_binprm_filename(bprm);
 
