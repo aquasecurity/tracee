@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -39,11 +40,13 @@ func FetchSystemInfo() map[string]interface{} {
 
 func fetchInitNamespaces() map[string]int {
 	initNamespacesMap := make(map[string]int)
+	namespaceValueReg := regexp.MustCompile(":[[[:digit:]]*]")
 	namespacesLinks, _ := ioutil.ReadDir(INIT_PROC_NS_DIR)
 	for _, namespaceLink := range namespacesLinks {
-		namespaceString, _ := os.Readlink(filepath.Join(INIT_PROC_NS_DIR, namespaceLink.Name()))
-		namespaceNumber, _ := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(namespaceString, ":["), ":]"))
-		initNamespacesMap[namespaceString] = namespaceNumber
+		linkString, _ := os.Readlink(filepath.Join(INIT_PROC_NS_DIR, namespaceLink.Name()))
+		trim := strings.Trim(namespaceValueReg.FindString(linkString), "[]:")
+		namespaceNumber, _ := strconv.Atoi(trim)
+		initNamespacesMap[namespaceLink.Name()] = namespaceNumber
 	}
 	return initNamespacesMap
 }
