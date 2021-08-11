@@ -48,19 +48,20 @@ type Config struct {
 }
 
 type Filter struct {
-	EventsToTrace []int32
-	UIDFilter     *UintFilter
-	PIDFilter     *UintFilter
-	NewPidFilter  *BoolFilter
-	MntNSFilter   *UintFilter
-	PidNSFilter   *UintFilter
-	UTSFilter     *StringFilter
-	CommFilter    *StringFilter
-	ContFilter    *BoolFilter
-	NewContFilter *BoolFilter
-	RetFilter     *RetFilter
-	ArgFilter     *ArgFilter
-	Follow        bool
+	EventsToTrace     []int32
+	UIDFilter         *UintFilter
+	PIDFilter         *UintFilter
+	NewPidFilter      *BoolFilter
+	MntNSFilter       *UintFilter
+	PidNSFilter       *UintFilter
+	UTSFilter         *StringFilter
+	CommFilter        *StringFilter
+	ContFilter        *BoolFilter
+	NewContFilter     *BoolFilter
+	RetFilter         *RetFilter
+	ArgFilter         *ArgFilter
+	ProcessTreeFilter *ProcessTreeFilter
+	Follow            bool
 }
 
 type UintFilter struct {
@@ -70,6 +71,12 @@ type UintFilter struct {
 	Less     uint64
 	Is32Bit  bool
 	Enabled  bool
+}
+
+type ProcessTreeFilter struct {
+	PID     uint32
+	Equal   bool
+	Enabled bool
 }
 
 type IntFilter struct {
@@ -557,6 +564,28 @@ func (t *Tracee) initEventsParams() map[int32][]eventParam {
 	return eventsParams
 }
 
+func (t *Tracee) setProcessTreeFilter(filter *ProcessTreeFilter) error {
+	if !filter.Enabled {
+		return nil
+	}
+
+	bpfConfigMap, err := t.bpfModule.GetMap("config_map")
+	if err != nil {
+		return err
+	}
+
+	var pidEqual uint32
+	if filter.Equal {
+		pidEqual = processTreeFilterEqual
+	} else {
+		pidEqual = processTreeFilterNotEqual
+	}
+
+	bpfConfigMap.Update(uint32(configProcTreeFilterPID), filter.PID)
+	bpfConfigMap.Update(uint32(configProcTreeFilterEquality), pidEqual)
+	return nil
+}
+
 func (t *Tracee) setUintFilter(filter *UintFilter, filterMapName string, configFilter bpfConfig, lessIdx uint32) error {
 	if !filter.Enabled {
 		return nil
@@ -815,6 +844,16 @@ func (t *Tracee) populateBPFMaps() error {
 	if err != nil {
 		return err
 	}
+
+	err = t.setProcessTreeFilter(t.config.Filter.ProcessTreeFilter)
+	if err != nil {
+		return fmt.Errorf("error setting process tree filter: %v", err)
+	}
+
+	err = t.setStringFilter(t.config.Filter.UTSFilter, "uts_ns_filter", configUTSNsFilter)
+	if err != nil {
+		return err
+	}
 	for i := uint32(0); i < uint32(len(t.config.Capture.FilterFileWrite)); i++ {
 		FilterFileWriteBytes := []byte(t.config.Capture.FilterFileWrite[i])
 		if err = fileFilterMap.Update(unsafe.Pointer(&i), unsafe.Pointer(&FilterFileWriteBytes[0])); err != nil {
@@ -887,6 +926,25 @@ func (t *Tracee) populateBPFMaps() error {
 			}
 			// err = t.initTailCall(uint32(e), "sys_exit_tails", probFnName) // if ever needed
 		}
+	}
+
+	err = t.populateProcessTreeMap()
+	if err != nil {
+		return fmt.Errorf("error building process tree: %v", err)
+	}
+
+	return nil
+}
+
+func (t *Tracee) populateProcessTreeMap() error {
+	pidsGoMap, err := gatherProcessTreeMap()
+	if err != nil {
+		return fmt.Errorf("could not gather proccess tree map: %v", err)
+	}
+
+	processTreeMap, _ := t.bpfModule.GetMap("process_tree_map")
+	for k, v := range pidsGoMap {
+		processTreeMap.Update(k, v)
 	}
 
 	return nil

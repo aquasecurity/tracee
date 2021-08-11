@@ -568,6 +568,8 @@ Examples:
   --trace uid=0                                                | only trace events from uid 0
   --trace mntns=4026531840                                     | only trace events from mntns id 4026531840
   --trace pidns!=4026531836                                    | only trace events from pidns id not equal to 4026531840
+  --trace tree=476165                                          | only trace events that descend from the process with pid 476165
+  --trace tree!=5023                                           | only trace events if they do not descend from the process with pid 5023
   --trace 'uid>0'                                              | only trace events from uids greater than 0
   --trace 'pid>0' --trace 'pid<1000'                           | only trace events from pids between 0 and 1000
   --trace 'u>0' --trace u!=1000                                | only trace events from uids greater than 0 but not 1000
@@ -635,7 +637,8 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 		ArgFilter: &tracee.ArgFilter{
 			Filters: make(map[int32]map[string]tracee.ArgFilterVal),
 		},
-		EventsToTrace: []int32{},
+		ProcessTreeFilter: &tracee.ProcessTreeFilter{},
+		EventsToTrace:     []int32{},
 	}
 
 	eventFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}}
@@ -729,6 +732,14 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 
 		if filterName == "pidns" {
 			err := parseUintFilter(operatorAndValues, filter.PidNSFilter)
+			if err != nil {
+				return tracee.Filter{}, err
+			}
+			continue
+		}
+
+		if filterName == "tree" {
+			err := parseProcessTreeFilter(operatorAndValues, filter.ProcessTreeFilter)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
@@ -838,6 +849,33 @@ func parseUintFilter(operatorAndValues string, uintFilter *tracee.UintFilter) er
 		}
 	}
 
+	return nil
+}
+
+func parseProcessTreeFilter(operatorAndValues string, procTreeFilter *tracee.ProcessTreeFilter) error {
+
+	procTreeFilter.Enabled = true
+
+	if len(operatorAndValues) < 2 {
+		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
+	}
+
+	var valuesString string
+	if strings.HasPrefix(operatorAndValues, "=") {
+		procTreeFilter.Equal = true
+		valuesString = operatorAndValues[1:]
+	} else if strings.HasPrefix(operatorAndValues, "!=") {
+		procTreeFilter.Equal = false
+		valuesString = operatorAndValues[2:]
+	} else {
+		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
+	}
+
+	pid, err := strconv.ParseUint(valuesString, 10, 32)
+	if err != nil {
+		return fmt.Errorf("invalid PID given to filter: %s", valuesString)
+	}
+	procTreeFilter.PID = uint32(pid)
 	return nil
 }
 
