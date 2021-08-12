@@ -16,7 +16,7 @@ import (
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
-//go:embed signatures/rego/helpers.rego
+//go:embed signatures/helpers/helpers.rego
 var regoHelpersCode string
 
 func getSignatures(rulesDir string, rules []string) ([]types.Signature, error) {
@@ -87,10 +87,6 @@ func findRegoSigs(dir string) ([]types.Signature, error) {
 
 	regoHelpers := []string{regoHelpersCode}
 	for _, file := range files {
-		if file.Name() == "helpers.rego" {
-			continue
-		}
-
 		if !isHelper(file.Name()) {
 			continue
 		}
