@@ -52,3 +52,24 @@ func Test_isHelper(t *testing.T) {
 		})
 	}
 }
+
+func Test_isRegoFile(t *testing.T) {
+	testCases := []struct {
+		input    string
+		expected bool
+	}{
+		{"helpers.rego", true},
+		{"test_helpers.rego", true},
+		{"helpers.go", false},
+		{"builtin.so", false},
+		{"helpers", false},
+		{"helpers.txt", false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.input, func(t *testing.T) {
+			actual := isHelper(tc.input)
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
+}

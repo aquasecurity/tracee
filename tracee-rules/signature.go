@@ -105,6 +105,9 @@ func findRegoSigs(dir string) ([]types.Signature, error) {
 	}
 
 	for _, file := range files {
+		if !isRegoFile(file.Name()) {
+			continue
+		}
 		if isHelper(file.Name()) {
 			continue
 		}
@@ -132,6 +135,9 @@ func findRegoSigs(dir string) ([]types.Signature, error) {
 	return res, nil
 }
 
+func isRegoFile(name string) bool {
+	return filepath.Ext(name) == ".rego"
+}
 func isHelper(name string) bool {
 	return strings.HasSuffix(name, "helpers.rego")
 }
