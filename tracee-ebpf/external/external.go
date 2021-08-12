@@ -27,6 +27,7 @@ type Event struct {
 	ArgsNum             int        `json:"argsNum"`
 	ReturnValue         int        `json:"returnValue"`
 	StackAddresses      []uint64   `json:"stackAddresses"`
+	Category            string     `json:"category"`
 	Args                []Argument `json:"args"` //Arguments are ordered according their appearance in the original event
 }
 
