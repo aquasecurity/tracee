@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/aquasecurity/tracee/tracee-rules/signatures/helpers"
 	"io"
 	"log"
 	"net/http"
@@ -97,6 +98,11 @@ func main() {
 				return err
 			}
 
+			err = helpers.InitSystemInfo(c.String("system-info-file"))
+			if err != nil {
+				fmt.Println("failed to load system info file: ", err)
+			}
+
 			output, err := setupOutput(os.Stdout, c.String("webhook"), c.String("webhook-template"), c.String("webhook-content-type"), c.String("output-template"))
 			if err != nil {
 				return err
@@ -149,6 +155,11 @@ func main() {
 				Name:  "pprof-addr",
 				Usage: "listening address of the pprof endpoints server",
 				Value: ":7777",
+			},
+			&cli.StringFlag{
+				Name:  "system-info-file",
+				Usage: "configure usage of given file as system information of the machine tracee-ebpf have run from",
+				Value: "./system_info.json",
 			},
 		},
 	}
