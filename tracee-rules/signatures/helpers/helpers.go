@@ -3,9 +3,17 @@ package helpers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"strings"
+	"time"
 
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
+)
+
+const (
+	TimeWaitForFileCreation     = 5
+	TimeWaitForCaseOfFileLocked = 1
 )
 
 type ConnectAddrData struct {
@@ -15,6 +23,8 @@ type ConnectAddrData struct {
 	SinPort6 string `json:"sin6_port"`
 	SinAddr6 string `json:"sin6_addr"`
 }
+
+var systemInfo map[string]interface{}
 
 // GetTraceeArgumentByName fetches the argument in event with `Name` that matches argName
 func GetTraceeArgumentByName(event tracee.Event, argName string) (tracee.Argument, error) {
@@ -44,4 +54,36 @@ func GetAddrStructFromArg(addrArg tracee.Argument, connectData *ConnectAddrData)
 		return fmt.Errorf(err.Error())
 	}
 	return nil
+}
+
+func GetSystemInfo() map[string]interface{} {
+	return systemInfo
+}
+
+func InitSystemInfo(systemInfoFilePath string) error {
+	var err error
+	systemInfo, err = retrieveSystemInfo(systemInfoFilePath)
+	return err
+}
+
+func retrieveSystemInfo(systemInfoFilePath string) (map[string]interface{}, error) {
+	systemInfo := make(map[string]interface{})
+	systemInfoFile, err := os.Open(systemInfoFilePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			// Wait for the file creation by tracee-ebpf if it delays
+			time.Sleep(TimeWaitForFileCreation)
+		} else {
+			// Wait in the case that the file is written right now
+			time.Sleep(TimeWaitForCaseOfFileLocked)
+		}
+		systemInfoFile, err = os.Open(systemInfoFilePath)
+		if err != nil {
+			return systemInfo, fmt.Errorf("couldn't get system info file - %s", systemInfoFilePath)
+		}
+	}
+	fileContent, _ := io.ReadAll(systemInfoFile)
+	_ = systemInfoFile.Close()
+	err = json.Unmarshal(fileContent, &systemInfo)
+	return systemInfo, err
 }
