@@ -125,6 +125,7 @@ type OutputConfig struct {
 	DetectSyscall  bool
 	ExecEnv        bool
 	RelativeTime   bool
+	Ignore         bool
 }
 
 type netProbe struct {
@@ -309,8 +310,7 @@ func New(cfg Config) (*Tracee, error) {
 		bootTime:  uint64(bootTime),
 	}
 	outf := os.Stdout
-	if t.config.Output.OutPath != "" &&
-		t.config.Output.OutPath != os.DevNull {
+	if t.config.Output.OutPath != "" {
 		dir := filepath.Dir(t.config.Output.OutPath)
 		os.MkdirAll(dir, 0755)
 		os.Remove(t.config.Output.OutPath)
@@ -333,7 +333,7 @@ func New(cfg Config) (*Tracee, error) {
 		(t.config.Filter.NewContFilter.Enabled && t.config.Filter.NewContFilter.Value)
 
 	printerKind := t.config.Output.Format
-	if t.config.Output.OutPath == os.DevNull {
+	if t.config.Output.Ignore {
 		printerKind = "ignore"
 	}
 

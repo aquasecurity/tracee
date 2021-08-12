@@ -222,8 +222,10 @@ Possible options:
 [format:]gob                                       output events in gob format
 [format:]gotemplate=/path/to/template              output events formatted using a given gotemplate file
 
-out-file:/path/to/file                             write the output to a specified file. create/trim the file if exists (default: stdout), pass '/dev/null' to ignore the output
+out-file:/path/to/file                             write the output to a specified file. create/trim the file if exists (default: stdout)
 err-file:/path/to/file                             write the errors to a specified file. create/trim the file if exists (default: stderr)
+
+none                                               ignore stream of events output, usually used with --capture
 
 option:{stack-addresses,detect-syscall,exec-env}   augment output according to given options (default: none)
   stack-addresses                                  include stack memory addresses for each event
@@ -235,7 +237,7 @@ Examples:
   --output json                                            | output as json
   --output gotemplate=/path/to/my.tmpl                     | output as the provided go template
   --output out-file:/my/out err-file:/my/err               | output to /my/out and errors to /my/err
-  --output out-file:/dev/null                              | ignore events output (usually used with --capture)
+  --output none                                            | ignore events output
 
 Use this flag multiple times to choose multiple output options
 `
@@ -247,7 +249,7 @@ func prepareOutput(outputSlice []string) (tracee.OutputConfig, error) {
 	for _, o := range outputSlice {
 		outputParts := strings.SplitN(o, ":", 2)
 		numParts := len(outputParts)
-		if numParts == 1 {
+		if numParts == 1 && outputParts[0] != "none" {
 			res.Format = outputParts[0]
 			err := res.Validate()
 			if err != nil {
@@ -258,6 +260,8 @@ func prepareOutput(outputSlice []string) (tracee.OutputConfig, error) {
 		}
 
 		switch outputParts[0] {
+		case "none":
+			res.Ignore = true
 		case "format":
 			res.Format = outputParts[1]
 			err := res.Validate()
@@ -313,7 +317,7 @@ Examples:
   --capture write=/usr/bin/* --capture write=/etc/*        | capture files that were written into anywhere under /usr/bin/ or /etc/
   --capture exec --capture profile                         | capture executed files and create a runtime profile in the output directory
   --capture net=eth0                                       | capture network traffic of eth0
-  --capture exec --output out-file:/dev/null               | capture executed files into the default output directory not printing the stream of events
+  --capture exec --output none                             | capture executed files into the default output directory not printing the stream of events
 
 Use this flag multiple times to choose multiple capture options
 `
