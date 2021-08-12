@@ -56,16 +56,19 @@ func GetAddrStructFromArg(addrArg tracee.Argument, connectData *ConnectAddrData)
 	return nil
 }
 
+// GetSystemInfo return the system information fetched from tracee-ebpf for signatures use.
 func GetSystemInfo() map[string]interface{} {
 	return systemInfo
 }
 
+// InitSystemInfo initialize the global, and should only be called from the main tracee-rules package.
 func InitSystemInfo(systemInfoFilePath string) error {
 	var err error
 	systemInfo, err = retrieveSystemInfo(systemInfoFilePath)
 	return err
 }
 
+// retrieveSystemInfo read a file that suppose to contain the system information in json format.
 func retrieveSystemInfo(systemInfoFilePath string) (map[string]interface{}, error) {
 	systemInfo := make(map[string]interface{})
 	systemInfoFile, err := os.Open(systemInfoFilePath)
