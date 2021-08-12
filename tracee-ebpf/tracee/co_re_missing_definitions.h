@@ -51,31 +51,38 @@
 #define sk_flags          __sk_common.skc_flags
 #define sk_rxhash         __sk_common.skc_rxhash
 
-#define TS_COMPAT 0x0002    /* 32bit syscall active (64BIT)*/
-
 #define PF_KTHREAD  0x00200000	/* I am a kernel thread */
 
 #define TASK_COMM_LEN 16
 
-#define THREAD_SIZE_ORDER 1
+// include/uapi/linux/const.h
+#define __AC(X,Y)   (X##Y)
+#define _AC(X,Y)    __AC(X,Y)
 
-#define THREAD_SIZE (2*PAGE_SIZE)
+/*=============================== ARCH SPECIFIC ===========================*/
+#if defined(__TARGET_ARCH_x86)
+
+#define TS_COMPAT 0x0002    /* 32bit syscall active (64BIT)*/
+
+// arch/x86/include/asm/page_64_types.h
+#define KASAN_STACK_ORDER   0  /* We implicitly assume here that KASAN (memory debugger) is disabled */
+#define THREAD_SIZE_ORDER   (2 + KASAN_STACK_ORDER)
+#define THREAD_SIZE         (PAGE_SIZE << THREAD_SIZE_ORDER)
 
 #define PAGE_SHIFT 12
 #define PAGE_SIZE  (_AC(1,UL) << PAGE_SHIFT)
 #define PAGE_MASK  (~(PAGE_SIZE-1))
 
-#define _AC(X,Y)    X
+#define TOP_OF_KERNEL_STACK_PADDING 0
 
-#ifdef CONFIG_X86_32
-# ifdef CONFIG_VM86
-#  define TOP_OF_KERNEL_STACK_PADDING 16
-# else
-#  define TOP_OF_KERNEL_STACK_PADDING 8
-# endif
-#else
-# define TOP_OF_KERNEL_STACK_PADDING 0
+
+#elif defined(__TARGET_ARCH_arm64)
+extern bool CONFIG_ARM64_PAGE_SHIFT __kconfig;
+// arch/arm64/include/asm/page-def.h
+#define PAGE_SHIFT      CONFIG_ARM64_PAGE_SHIFT
+#define PAGE_SIZE       (_AC(1, UL) << PAGE_SHIFT)
 #endif
+/*=============================== ARCH SPECIFIC ===========================*/
 
 /* Supported address families. */
 #define AF_UNSPEC      0
