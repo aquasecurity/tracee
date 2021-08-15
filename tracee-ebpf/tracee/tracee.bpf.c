@@ -433,6 +433,7 @@ typedef struct net_packet {
     u32 host_tid;
     char comm[TASK_COMM_LEN];
     u32 len;
+    u32 ifindex;
     struct in6_addr src_addr, dst_addr;
     __be16 src_port, dst_port;
     u8 protocol;
@@ -4042,6 +4043,7 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     net_packet_t pkt = {0};
     pkt.ts = bpf_ktime_get_ns();
     pkt.len = skb->len;
+    pkt.ifindex = skb->ifindex;
     local_net_id_t connect_id = {0};
 
     uint32_t l4_hdr_off;
@@ -4157,9 +4159,9 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
         bpf_perf_event_output(skb, &net_events, flags, &pkt, sizeof(pkt));
     }
     else {
-        // If not debuggin, only send the minimal required data to save the packet.
-        // This will be the timestamp (u64), net event_id (u32), host_tid (u32), comm (16 bytes) and packet len (u32)
-        bpf_perf_event_output(skb, &net_events, flags, &pkt, 36);
+        // If not debugging, only send the minimal required data to save the packet.
+        // This will be the timestamp (u64), net event_id (u32), host_tid (u32), comm (16 bytes), packet len (u32), and ifindex (u32)
+        bpf_perf_event_output(skb, &net_events, flags, &pkt, 40);
     }
 
     return TC_ACT_UNSPEC;

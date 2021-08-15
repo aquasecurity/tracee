@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"math"
+	"net"
 	"os"
 	"os/signal"
 	"path"
@@ -233,9 +234,10 @@ type Tracee struct {
 	ParamTypes        map[int32]map[string]string
 	pidsInMntns       bucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
-	tcProbe           netProbe
+	tcProbe           []netProbe
 	pcapWriter        *pcapgo.NgWriter
 	pcapFile          *os.File
+	ngIfacesIndex     map[int]int
 }
 
 type counter int32
@@ -414,10 +416,19 @@ func New(cfg Config) (*Tracee, error) {
 		}
 		t.pcapFile = pcapFile
 
-		// todo: handle multiple ifaces (like xdpdump: https://github.com/cloudflare/xdpcap/blob/master/cmd/xdpcap/main.go)
+		t.ngIfacesIndex = make(map[int]int)
+		for idx, iface := range t.config.Capture.NetIfaces {
+			netIface, err := net.InterfaceByName(iface)
+			if err != nil {
+				return nil, fmt.Errorf("invalid network interface: %s", iface)
+			}
+			// Map real network interface index to NgInterface index
+			t.ngIfacesIndex[netIface.Index] = idx
+		}
+
 		ngIface := pcapgo.NgInterface{
-			Name:       "tc iface",
-			Comment:    "tc iface",
+			Name:       t.config.Capture.NetIfaces[0],
+			Comment:    "tracee tc capture",
 			Filter:     "",
 			LinkType:   layers.LinkTypeEthernet,
 			SnapLength: uint32(math.MaxUint16),
@@ -426,6 +437,21 @@ func New(cfg Config) (*Tracee, error) {
 		pcapWriter, err := pcapgo.NewNgWriterInterface(t.pcapFile, ngIface, pcapgo.NgWriterOptions{})
 		if err != nil {
 			return nil, err
+		}
+
+		for _, iface := range t.config.Capture.NetIfaces[1:] {
+			ngIface = pcapgo.NgInterface{
+				Name:       iface,
+				Comment:    "tracee tc capture",
+				Filter:     "",
+				LinkType:   layers.LinkTypeEthernet,
+				SnapLength: uint32(math.MaxUint16),
+			}
+
+			_, err := pcapWriter.AddInterface(ngIface)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		// Flush the header
@@ -1021,7 +1047,7 @@ func (t *Tracee) initBPF() error {
 	}
 
 	if t.config.Capture.NetIfaces == nil && !t.config.Debug {
-		// SecuritySocketBindEventID is set as an essentialEvent if 'capture net' or 'debug-net' were chosen by the user.
+		// SecuritySocketBindEventID is set as an essentialEvent if 'capture net' or 'debug' were chosen by the user.
 		networkProbes := []string{"tc_ingress", "tc_egress", "trace_udp_sendmsg", "trace_udp_disconnect", "trace_udp_destroy_sock", "trace_udpv6_destroy_sock", "tracepoint__inet_sock_set_state"}
 		for _, progName := range networkProbes {
 			prog, _ := t.bpfModule.GetProgram(progName)
@@ -1046,17 +1072,22 @@ func (t *Tracee) initBPF() error {
 	}
 
 	if t.config.Capture.NetIfaces != nil || t.config.Debug {
-		if t.config.Capture.NetIfaces != nil {
-			ifaceName := t.config.Capture.NetIfaces[0]
-			t.tcProbe.ingressHook, err = t.attachTcProg(ifaceName, bpf.BPFTcIngress, "tc_ingress")
+		for _, iface := range t.config.Capture.NetIfaces {
+			ingressHook, err := t.attachTcProg(iface, bpf.BPFTcIngress, "tc_ingress")
 			if err != nil {
 				return err
 			}
 
-			t.tcProbe.egressHook, err = t.attachTcProg(ifaceName, bpf.BPFTcEgress, "tc_egress")
+			egressHook, err := t.attachTcProg(iface, bpf.BPFTcEgress, "tc_egress")
 			if err != nil {
 				return err
 			}
+
+			tcProbe := netProbe{
+				ingressHook: ingressHook,
+				egressHook:  egressHook,
+			}
+			t.tcProbe = append(t.tcProbe, tcProbe)
 		}
 
 		if err = t.attachNetProbes(); err != nil {
@@ -1203,16 +1234,16 @@ func (t *Tracee) Run() error {
 
 // Close cleans up created resources
 func (t *Tracee) Close() {
-	if t.tcProbe.ingressHook != nil {
+	for _, tcProbe := range t.tcProbe {
 		// First, delete filters we created
-		t.tcProbe.ingressHook.Destroy()
-		t.tcProbe.egressHook.Destroy()
+		tcProbe.ingressHook.Destroy()
+		tcProbe.egressHook.Destroy()
 
 		// Todo: Delete the qdisc only if no other filters are installed on it.
 		// There is currently a bug with the libbpf tc API that doesn't allow us to perform this check:
 		// https://lore.kernel.org/bpf/CAMy7=ZULTCoSCcjxw=MdhaKmNM9DXKc=t7QScf9smKKUB+L_fQ@mail.gmail.com/T/#t
-		t.tcProbe.ingressHook.SetAttachPoint(bpf.BPFTcIngressEgress)
-		t.tcProbe.ingressHook.Destroy()
+		tcProbe.ingressHook.SetAttachPoint(bpf.BPFTcIngressEgress)
+		tcProbe.ingressHook.Destroy()
 	}
 
 	if t.bpfModule != nil {

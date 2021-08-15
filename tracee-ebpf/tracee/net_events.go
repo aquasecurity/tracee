@@ -37,6 +37,17 @@ func (t *Tracee) processNetEvents() {
 					t.handleError(err)
 					continue
 				}
+				var ifindex uint32
+				err = binary.Read(dataBuff, binary.LittleEndian, &ifindex)
+				if err != nil {
+					t.handleError(err)
+					continue
+				}
+				idx, ok := t.ngIfacesIndex[int(ifindex)]
+				if !ok {
+					t.handleError(err)
+					continue
+				}
 
 				if t.config.Debug {
 					var pktMeta struct {
@@ -45,7 +56,7 @@ func (t *Tracee) processNetEvents() {
 						SrcPort  uint16
 						DestPort uint16
 						Protocol uint8
-						_        [7]byte //padding
+						_        [3]byte //padding
 					}
 					err = binary.Read(dataBuff, binary.LittleEndian, &pktMeta)
 					if err != nil {
@@ -69,7 +80,7 @@ func (t *Tracee) processNetEvents() {
 					Timestamp:      timeStampObj,
 					CaptureLength:  int(pktLen),
 					Length:         int(pktLen),
-					InterfaceIndex: 0, // todo: accept array of interfaces?
+					InterfaceIndex: idx,
 				}
 
 				err = t.pcapWriter.WritePacket(info, dataBuff.Bytes()[:pktLen])
