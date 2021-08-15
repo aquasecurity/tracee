@@ -19,6 +19,6 @@ Exceptions:
 
 For using the eBPF Linux subsystem, Tracee needs to run with sufficient capabilities: 
 - `CAP_SYS_RESOURCE` (to manage eBPF maps limits)
-- `CAP_BPF`+`CAP_TRACING` which are available on recent kernels (>=5.8), or `SYS_ADMIN` on older kernels (to load and attach the eBPF programs).
+- `CAP_SYS_ADMIN` and `CAP_IPC_LOCK` (to load and attach the eBPF programs).
 
 Alternatively, run as `root` or with the `--privileged` flag of Docker.
