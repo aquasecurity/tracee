@@ -37,6 +37,13 @@ func main() {
 		Usage:   "Trace OS events and syscalls using eBPF",
 		Version: version,
 		Action: func(c *cli.Context) error {
+
+			// tracee-ebpf does not suport arguments, only flags
+			if c.NArg() > 0 {
+				cli.ShowAppHelp(c)
+				return nil
+			}
+
 			if c.Bool("list") {
 				printList()
 				return nil
