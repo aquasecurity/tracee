@@ -371,7 +371,7 @@ Possible options:
 [artifact:]write[=/path/prefix*]   capture written files. A filter can be given to only capture file writes whose path starts with some prefix (up to 50 characters). Up to 3 filters can be given.
 [artifact:]exec                    capture executed files.
 [artifact:]mem                     capture memory regions that had write+execute (w+x) protection, and then changed to execute (x) only.
-[artifact:]net=interface           capture network traffic of the given interface
+[artifact:]net=interface           capture network traffic of the given interface. Only TCP/UDP protocols are currently supported.
 
 dir:/path/to/dir        path where tracee will save produced artifacts. the artifact will be saved into an 'out' subdirectory. (default: /tmp/tracee).
 profile                 creates a runtime profile of program executions and their metadata for forensics use.
@@ -422,7 +422,17 @@ func prepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 			if _, err := net.InterfaceByName(iface); err != nil {
 				return tracee.CaptureConfig{}, fmt.Errorf("invalid network interface: %s", iface)
 			}
-			capture.NetIfaces = append(capture.NetIfaces, iface)
+			found := false
+			// Check if we already have this interface
+			for _, item := range capture.NetIfaces {
+				if iface == item {
+					found = true
+					break
+				}
+			}
+			if !found {
+				capture.NetIfaces = append(capture.NetIfaces, iface)
+			}
 		} else if cap == "clear-dir" {
 			clearDir = true
 		} else if strings.HasPrefix(cap, "dir:") {
