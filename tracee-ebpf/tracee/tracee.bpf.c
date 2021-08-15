@@ -2560,11 +2560,6 @@ int BPF_KPROBE(trace_security_file_open)
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
 
-    // only monitor open and openat syscalls
-    int syscall_nr = get_syscall_ev_id_from_regs();
-    if (syscall_nr != SYS_OPEN && syscall_nr != SYS_OPENAT)
-        return 0;
-
     // Get per-cpu string buffer
     buf_t *string_p = get_buf(STRING_BUF_IDX);
     if (string_p == NULL)
