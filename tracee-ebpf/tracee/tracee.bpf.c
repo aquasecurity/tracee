@@ -1321,7 +1321,7 @@ static __always_inline int save_str_arr_to_buf(buf_t *submit_p, const char __use
             if (*off > MAX_PERCPU_BUFSIZE - sizeof(int))
                 // Satisfy validator
                 goto out;
-            __builtin_memcpy(&(submit_p->buf[*off]), &sz, sizeof(int));
+            bpf_probe_read(&(submit_p->buf[*off]), sizeof(int), &sz);
             *off += sz + sizeof(int);
             elem_num++;
             continue;
@@ -1341,7 +1341,7 @@ static __always_inline int save_str_arr_to_buf(buf_t *submit_p, const char __use
         if (*off > MAX_PERCPU_BUFSIZE - sizeof(int))
             // Satisfy validator
             goto out;
-        __builtin_memcpy(&(submit_p->buf[*off]), &sz, sizeof(int));
+        bpf_probe_read(&(submit_p->buf[*off]), sizeof(int), &sz);
         *off += sz + sizeof(int);
         elem_num++;
     }
@@ -1385,7 +1385,7 @@ static __always_inline int save_args_str_arr_to_buf(buf_t *submit_p, const char 
             if (*off > MAX_PERCPU_BUFSIZE - sizeof(int))
                 // Satisfy validator
                 goto out;
-            __builtin_memcpy(&(submit_p->buf[*off]), &sz, sizeof(int));
+            bpf_probe_read(&(submit_p->buf[*off]), sizeof(int), &sz);
             *off += sz + sizeof(int);
             elem_num--;
             count++;
@@ -1407,7 +1407,7 @@ static __always_inline int save_args_str_arr_to_buf(buf_t *submit_p, const char 
         if (*off > MAX_PERCPU_BUFSIZE - sizeof(int))
             // Satisfy validator
             goto out;
-        __builtin_memcpy(&(submit_p->buf[*off]), &sz, sizeof(int));
+        bpf_probe_read(&(submit_p->buf[*off]), sizeof(int), &sz);
         *off += sz + sizeof(int);
         elem_num--;
         count++;
