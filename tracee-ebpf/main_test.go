@@ -1114,17 +1114,6 @@ func TestPrepareCapture(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			testName:     "capture all",
-			captureSlice: []string{"all"},
-			expectedCapture: tracee.CaptureConfig{
-				OutputPath: "/tmp/tracee/out",
-				FileWrite:  true,
-				Mem:        true,
-				Exec:       true,
-			},
-			expectedError: nil,
-		},
-		{
 			testName:     "multiple capture options",
 			captureSlice: []string{"write", "exec", "mem"},
 			expectedCapture: tracee.CaptureConfig{

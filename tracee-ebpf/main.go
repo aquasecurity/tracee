@@ -300,7 +300,6 @@ Possible options:
 [artifact:]write[=/path/prefix*]   capture written files. A filter can be given to only capture file writes whose path starts with some prefix (up to 50 characters). Up to 3 filters can be given.
 [artifact:]exec                    capture executed files.
 [artifact:]mem                     capture memory regions that had write+execute (w+x) protection, and then changed to execute (x) only.
-[artifact:]all                     capture all of the above artifacts.
 [artifact:]net=interface           capture network traffic of the given interface
 
 dir:/path/to/dir        path where tracee will save produced artifacts. the artifact will be saved into an 'out' subdirectory. (default: /tmp/tracee).
@@ -309,7 +308,7 @@ clear-dir               clear the captured artifacts output dir before starting 
 
 Examples:
   --capture exec                                           | capture executed files into the default output directory
-  --capture all --capture dir:/my/dir --capture clear-dir  | delete /my/dir/out and then capture all supported artifacts into it
+  --capture exec --capture dir:/my/dir --capture clear-dir | delete /my/dir/out and then capture executed files into it
   --capture write=/usr/bin/* --capture write=/etc/*        | capture files that were written into anywhere under /usr/bin/ or /etc/
   --capture exec --capture profile                         | capture executed files and create a runtime profile in the output directory
   --capture net=eth0                                       | capture network traffic of eth0
@@ -330,8 +329,7 @@ func prepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 		cap := captureSlice[i]
 		if strings.HasPrefix(cap, "artifact:write") ||
 			strings.HasPrefix(cap, "artifact:exec") ||
-			strings.HasPrefix(cap, "artifact:mem") ||
-			strings.HasPrefix(cap, "artifact:all") {
+			strings.HasPrefix(cap, "artifact:mem") {
 			cap = strings.TrimPrefix(cap, "artifact:")
 		}
 		if cap == "write" {
@@ -353,10 +351,6 @@ func prepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 				return tracee.CaptureConfig{}, fmt.Errorf("invalid network interface: %s", iface)
 			}
 			capture.NetIfaces = append(capture.NetIfaces, iface)
-		} else if cap == "all" {
-			capture.FileWrite = true
-			capture.Exec = true
-			capture.Mem = true
 		} else if cap == "clear-dir" {
 			clearDir = true
 		} else if strings.HasPrefix(cap, "dir:") {
