@@ -838,21 +838,15 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Initialize pid_to_cont_id_map if tracing containers
-	c := Containers{}
-	err = c.Populate()
-	if err != nil {
+	c := InitContainers()
+	if err := c.Populate(); err != nil {
 		return err
 	}
 	bpfPidToContIdMap, _ := t.bpfModule.GetMap("pid_to_cont_id_map")
 	for _, contId := range c.GetContainers() {
-		for _, pidstr := range c.GetPids(contId) {
+		for _, pid := range c.GetPids(contId) {
 			if t.config.Debug {
-				fmt.Println("Running container =", contId, "pid =", pidstr)
-			}
-			var pid uint32
-			_, err = fmt.Sscanf(pidstr, "%d", &pid)
-			if err != nil {
-				return err
+				fmt.Println("Running container =", contId, "pid =", pid)
 			}
 			contIdBytes := []byte(contId)
 			err = bpfPidToContIdMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&contIdBytes[0]))
