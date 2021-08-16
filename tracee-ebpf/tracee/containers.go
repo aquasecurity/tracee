@@ -17,24 +17,26 @@ type Containers struct {
 	cgroupv1mp string
 	cgroupv2   bool
 	cgroupv2mp string
-	mapContIds map[string][]string
+	mapContIds map[string][]int32
 }
 
-// init will (re)initialize the containers object.
-func (c *Containers) init() {
-
-	c.mapContIds = make(map[string][]string, 0)
-	c.cgroupv1 = false
-	c.cgroupv2 = false
-	c.cgroupv1mp = ""
-	c.cgroupv2mp = ""
+// InitContainers initializes a Containers object and returns a pointer to it.
+// User should further call "Populate" and iterate with Containers data.
+func InitContainers() *Containers {
+	return &Containers{
+		mapContIds: make(map[string][]int32, 0),
+		cgroupv1:   false,
+		cgroupv2:   false,
+		cgroupv1mp: "",
+		cgroupv2mp: "",
+	}
 }
 
 // addContainer adds a container given its uuid.
 func (c *Containers) addContainer(contId string) {
 	_, ok := c.mapContIds[contId]
 	if !ok {
-		c.mapContIds[contId] = make([]string, 0)
+		c.mapContIds[contId] = make([]int32, 0)
 	}
 }
 
@@ -49,12 +51,12 @@ func (c *Containers) GetContainers() []string {
 
 // addPid will add a given pid string to an existing container by given uuid.
 // It will also create the container if given container uuid does not exist.
-func (c *Containers) addPid(contId string, pid string) {
+func (c *Containers) addPid(contId string, pid int32) {
 	c.addContainer(contId)
 	c.mapContIds[contId] = append(c.mapContIds[contId], pid)
 }
 
-func (c *Containers) GetPids(contId string) []string {
+func (c *Containers) GetPids(contId string) []int32 {
 	return c.mapContIds[contId]
 }
 
@@ -62,8 +64,6 @@ func (c *Containers) GetPids(contId string) []string {
 // and cgroups filesystems.
 func (c *Containers) Populate() error {
 	// do all the hard work
-
-	c.init()
 
 	err := c.procMountsCgroups()
 	if err != nil {
@@ -168,7 +168,12 @@ func (c *Containers) populateProcWalk(basedir string, allstr []string) error {
 				}
 				for _, pid := range strings.Split(string(buf), "\n") {
 					if len(pid) > 0 {
-						c.addPid(contId, pid)
+						var pidInt int32
+						_, err = fmt.Sscanf(pid, "%d", &pidInt)
+						if err != nil {
+							continue // ignore sscanf errors
+						}
+						c.addPid(contId, pidInt)
 					}
 				}
 				break // a single match is enough
