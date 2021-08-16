@@ -20,6 +20,7 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
@@ -617,15 +618,24 @@ func (t *Tracee) setUintFilter(filter *UintFilter, filterMapName string, configF
 		return nil
 	}
 
+	filterEqualU32 := uint32(filterEqual) // const need local var for bpfMap.Update()
+	filterNotEqualU32 := uint32(filterNotEqual)
+
+	// equalityFilter filters events for given maps:
+	// 1. uid_filter        u32, u32
+	// 2. pid_filter        u32, u32
+	// 3. mnt_ns_filter     u64, u32
+	// 4. pid_ns_filter     u64, u32
 	equalityFilter, err := t.bpfModule.GetMap(filterMapName)
 	if err != nil {
 		return err
 	}
 	for i := 0; i < len(filter.Equal); i++ {
 		if filter.Is32Bit {
-			err = equalityFilter.Update(uint32(filter.Equal[i]), filterEqual)
+			EqualU32 := uint32(filter.Equal[i])
+			err = equalityFilter.Update(unsafe.Pointer(&EqualU32), unsafe.Pointer(&filterEqualU32))
 		} else {
-			err = equalityFilter.Update(filter.Equal[i], filterEqual)
+			err = equalityFilter.Update(unsafe.Pointer(&filter.Equal[i]), unsafe.Pointer(&filterEqualU32))
 		}
 		if err != nil {
 			return err
@@ -633,40 +643,45 @@ func (t *Tracee) setUintFilter(filter *UintFilter, filterMapName string, configF
 	}
 	for i := 0; i < len(filter.NotEqual); i++ {
 		if filter.Is32Bit {
-			err = equalityFilter.Update(uint32(filter.NotEqual[i]), filterNotEqual)
+			NotEqualU32 := uint32(filter.NotEqual[i])
+			err = equalityFilter.Update(unsafe.Pointer(&NotEqualU32), unsafe.Pointer(&filterNotEqualU32))
 		} else {
-			err = equalityFilter.Update(filter.NotEqual[i], filterNotEqual)
+			err = equalityFilter.Update(unsafe.Pointer(&filter.NotEqual[i]), unsafe.Pointer(&filterNotEqualU32))
 		}
 		if err != nil {
 			return err
 		}
 	}
 
-	inequalityFilter, err := t.bpfModule.GetMap("inequality_filter")
+	filterLessU32 := uint32(filter.Less)
+	filterGreaterU32 := uint32(filter.Greater)
+
+	// inequalityFilter filters events by some uint field either by < or >
+	inequalityFilter, err := t.bpfModule.GetMap("inequality_filter") // u32, u64
 	if err != nil {
+		return err
+	}
+	if err = inequalityFilter.Update(unsafe.Pointer(&lessIdx), unsafe.Pointer(&filterLessU32)); err != nil {
+		return err
+	}
+	lessIdxPlus := uint32(lessIdx + 1)
+	if err = inequalityFilter.Update(unsafe.Pointer(&lessIdxPlus), unsafe.Pointer(&filterGreaterU32)); err != nil {
 		return err
 	}
 
-	err = inequalityFilter.Update(lessIdx, filter.Less)
-	if err != nil {
-		return err
-	}
-	err = inequalityFilter.Update(lessIdx+1, filter.Greater)
-	if err != nil {
-		return err
-	}
-
-	bpfConfigMap, err := t.bpfModule.GetMap("config_map")
+	bpfConfigMap, err := t.bpfModule.GetMap("config_map") // u32, u32
 	if err != nil {
 		return err
 	}
 	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 && filter.Greater == GreaterNotSetUint && filter.Less == LessNotSetUint {
-		bpfConfigMap.Update(uint32(configFilter), filterIn)
+		filterInU32 := uint32(filterIn)
+		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterInU32))
 	} else {
-		bpfConfigMap.Update(uint32(configFilter), filterOut)
+		filterOutU32 := uint32(filterOut)
+		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterOutU32))
 	}
 
-	return nil
+	return err
 }
 
 func (t *Tracee) setStringFilter(filter *StringFilter, filterMapName string, configFilter bpfConfig) error {
@@ -674,34 +689,41 @@ func (t *Tracee) setStringFilter(filter *StringFilter, filterMapName string, con
 		return nil
 	}
 
+	filterEqualU32 := uint32(filterEqual) // const need local var for bpfMap.Update()
+	filterNotEqualU32 := uint32(filterNotEqual)
+
+	// 1. uts_ns_filter     string[MAX_STR_FILTER_SIZE], u32    // filter events by uts namespace name
+	// 2. comm_filter       string[MAX_STR_FILTER_SIZE], u32    // filter events by command name
 	filterMap, err := t.bpfModule.GetMap(filterMapName)
 	if err != nil {
 		return err
 	}
 	for i := 0; i < len(filter.Equal); i++ {
-		err = filterMap.Update([]byte(filter.Equal[i]), filterEqual)
-		if err != nil {
+		filterEqualBytes := []byte(filter.Equal[i])
+		if err = filterMap.Update(unsafe.Pointer(&filterEqualBytes[0]), unsafe.Pointer(&filterEqualU32)); err != nil {
 			return err
 		}
 	}
 	for i := 0; i < len(filter.NotEqual); i++ {
-		err = filterMap.Update([]byte(filter.NotEqual[i]), filterNotEqual)
-		if err != nil {
+		filterNotEqualBytes := []byte(filter.NotEqual[i])
+		if err = filterMap.Update(unsafe.Pointer(&filterNotEqualBytes[0]), unsafe.Pointer(&filterNotEqualU32)); err != nil {
 			return err
 		}
 	}
 
-	bpfConfigMap, err := t.bpfModule.GetMap("config_map")
+	bpfConfigMap, err := t.bpfModule.GetMap("config_map") // u32, u32
 	if err != nil {
 		return err
 	}
 	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 {
-		bpfConfigMap.Update(uint32(configFilter), filterIn)
+		filterInU32 := uint32(filterIn)
+		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterInU32))
 	} else {
-		bpfConfigMap.Update(uint32(configFilter), filterOut)
+		filterOutU32 := uint32(filterOut)
+		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterOutU32))
 	}
 
-	return nil
+	return err
 }
 
 func (t *Tracee) setBoolFilter(filter *BoolFilter, configFilter bpfConfig) error {
@@ -709,118 +731,160 @@ func (t *Tracee) setBoolFilter(filter *BoolFilter, configFilter bpfConfig) error
 		return nil
 	}
 
-	bpfConfigMap, err := t.bpfModule.GetMap("config_map")
+	bpfConfigMap, err := t.bpfModule.GetMap("config_map") // u32, u32
 	if err != nil {
 		return err
 	}
 	if filter.Value {
-		bpfConfigMap.Update(uint32(configFilter), filterIn)
+		filterInU32 := uint32(filterIn)
+		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterInU32))
 	} else {
-		bpfConfigMap.Update(uint32(configFilter), filterOut)
+		filterOutU32 := uint32(filterOut)
+		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterOutU32))
 	}
 
-	return nil
+	return err
+}
+
+// Initialize tail calls program array
+func (t *Tracee) initTailCall(tailNum uint32, mapName string, progName string) error {
+
+	bpfMap, err := t.bpfModule.GetMap(mapName)
+	if err != nil {
+		return err
+	}
+	bpfProg, err := t.bpfModule.GetProgram(progName)
+	if err != nil {
+		return fmt.Errorf("could not get BPF program "+progName+": %v", err)
+	}
+	fd := bpfProg.GetFd()
+	if fd < 0 {
+		return fmt.Errorf("could not get BPF program FD for "+progName+": %v", err)
+	}
+	err = bpfMap.Update(unsafe.Pointer(&tailNum), unsafe.Pointer(&fd))
+
+	return err
 }
 
 func (t *Tracee) populateBPFMaps() error {
-	chosenEventsMap, _ := t.bpfModule.GetMap("chosen_events_map")
+
+	// Set chosen events map according to events chosen by the user
+	chosenEventsMap, err := t.bpfModule.GetMap("chosen_events_map") // u32, u32
+	if err != nil {
+		return err
+	}
 	for e, chosen := range t.eventsToTrace {
-		// Set chosen events map according to events chosen by the user
 		if chosen {
-			chosenEventsMap.Update(e, boolToUInt32(true))
+			eU32 := uint32(e) // e is int32
+			trueU32 := uint32(1)
+			if err := chosenEventsMap.Update(unsafe.Pointer(&eU32), unsafe.Pointer(&trueU32)); err != nil {
+				return err
+			}
 		}
 	}
 
-	sys32to64BPFMap, _ := t.bpfModule.GetMap("sys_32_to_64_map")
+	// Prepare 32bit to 64bit syscall number mapping
+	sys32to64BPFMap, err := t.bpfModule.GetMap("sys_32_to_64_map") // u32, u32
+	if err != nil {
+		return err
+	}
 	for _, event := range EventsIDToEvent {
-		// Prepare 32bit to 64bit syscall number mapping
-		sys32to64BPFMap.Update(event.ID32Bit, event.ID)
+		ID32BitU32 := uint32(event.ID32Bit) // ID32Bit is int32
+		IDU32 := uint32(event.ID)           // ID is int32
+		if err := sys32to64BPFMap.Update(unsafe.Pointer(&ID32BitU32), unsafe.Pointer(&IDU32)); err != nil {
+			return err
+		}
 	}
 
 	// Initialize config and pids maps
-	bpfConfigMap, _ := t.bpfModule.GetMap("config_map")
-	bpfConfigMap.Update(uint32(configDetectOrigSyscall), boolToUInt32(t.config.Output.DetectSyscall))
-	bpfConfigMap.Update(uint32(configExecEnv), boolToUInt32(t.config.Output.ExecEnv))
-	bpfConfigMap.Update(uint32(configStackAddresses), boolToUInt32(t.config.Output.StackAddresses))
-	bpfConfigMap.Update(uint32(configCaptureFiles), boolToUInt32(t.config.Capture.FileWrite))
-	bpfConfigMap.Update(uint32(configExtractDynCode), boolToUInt32(t.config.Capture.Mem))
-	bpfConfigMap.Update(uint32(configTraceePid), uint32(os.Getpid()))
-	bpfConfigMap.Update(uint32(configFollowFilter), boolToUInt32(t.config.Filter.Follow))
-	bpfConfigMap.Update(uint32(configDebugNet), boolToUInt32(t.config.Debug))
+
+	bpfConfigMap, err := t.bpfModule.GetMap("config_map") // u32, u32
+	if err != nil {
+		return err
+	}
+
+	cTP := uint32(configTraceePid)
+	cDOS := uint32(configDetectOrigSyscall)
+	cEV := uint32(configExecEnv)
+	cSA := uint32(configStackAddresses)
+	cCF := uint32(configCaptureFiles)
+	cEDC := uint32(configExtractDynCode)
+	cFF := uint32(configFollowFilter)
+	cDN := uint32(configDebugNet)
+
+	thisPid := uint32(os.Getpid())
+	cDOSval := boolToUInt32(t.config.Output.DetectSyscall)
+	cEVval := boolToUInt32(t.config.Output.ExecEnv)
+	cSAval := boolToUInt32(t.config.Output.StackAddresses)
+	cCFval := boolToUInt32(t.config.Capture.FileWrite)
+	cEDCval := boolToUInt32(t.config.Capture.Mem)
+	cFFval := boolToUInt32(t.config.Filter.Follow)
+	cDNval := boolToUInt32(t.config.Debug)
+
+	errs := make([]error, 0)
+	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cTP), unsafe.Pointer(&thisPid)))
+	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cDOS), unsafe.Pointer(&cDOSval)))
+	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cEV), unsafe.Pointer(&cEVval)))
+	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cSA), unsafe.Pointer(&cSAval)))
+	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cCF), unsafe.Pointer(&cCFval)))
+	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cEDC), unsafe.Pointer(&cEDCval)))
+	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cFF), unsafe.Pointer(&cFFval)))
+	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cDN), unsafe.Pointer(&cDNval)))
+	for _, e := range errs {
+		if e != nil {
+			return e
+		}
+	}
 
 	// Initialize tail calls program array
-	bpfProgArrayMap, _ := t.bpfModule.GetMap("prog_array")
-	prog, err := t.bpfModule.GetProgram("trace_ret_vfs_write_tail")
-	if err != nil {
-		return fmt.Errorf("error getting BPF program trace_ret_vfs_write_tail: %v", err)
+	errs = make([]error, 0)
+	errs = append(errs, t.initTailCall(tailVfsWrite, "prog_array", "trace_ret_vfs_write_tail"))
+	errs = append(errs, t.initTailCall(tailVfsWritev, "prog_array", "trace_ret_vfs_writev_tail"))
+	errs = append(errs, t.initTailCall(tailSendBin, "prog_array", "send_bin"))
+	for _, e := range errs {
+		if e != nil {
+			return e
+		}
 	}
-	bpfProgArrayMap.Update(tailVfsWrite, uint32(prog.GetFd()))
-
-	prog, err = t.bpfModule.GetProgram("trace_ret_vfs_writev_tail")
-	if err != nil {
-		return fmt.Errorf("error getting BPF program trace_ret_vfs_writev_tail: %v", err)
-	}
-	bpfProgArrayMap.Update(tailVfsWritev, uint32(prog.GetFd()))
-
-	prog, err = t.bpfModule.GetProgram("send_bin")
-	if err != nil {
-		return fmt.Errorf("error getting BPF program send_bin: %v", err)
-	}
-	bpfProgArrayMap.Update(tailSendBin, uint32(prog.GetFd()))
 
 	// Set filters given by the user to filter file write events
-	fileFilterMap, _ := t.bpfModule.GetMap("file_filter")
-	for i := 0; i < len(t.config.Capture.FilterFileWrite); i++ {
-		fileFilterMap.Update(uint32(i), []byte(t.config.Capture.FilterFileWrite[i]))
-	}
-
-	err = t.setUintFilter(t.config.Filter.UIDFilter, "uid_filter", configUIDFilter, uidLess)
+	fileFilterMap, err := t.bpfModule.GetMap("file_filter") // u32, u32
 	if err != nil {
-		return fmt.Errorf("error setting uid filter: %v", err)
+		return err
+	}
+	for i := uint32(0); i < uint32(len(t.config.Capture.FilterFileWrite)); i++ {
+		FilterFileWriteBytes := []byte(t.config.Capture.FilterFileWrite[i])
+		if err = fileFilterMap.Update(unsafe.Pointer(&i), unsafe.Pointer(&FilterFileWriteBytes[0])); err != nil {
+			return err
+		}
 	}
 
-	err = t.setUintFilter(t.config.Filter.PIDFilter, "pid_filter", configPidFilter, pidLess)
+	errmap := make(map[string]error, 0)
+	errmap["uid_filter"] = t.setUintFilter(t.config.Filter.UIDFilter, "uid_filter", configUIDFilter, uidLess)
+	errmap["pid_filter"] = t.setUintFilter(t.config.Filter.PIDFilter, "pid_filter", configPidFilter, pidLess)
+	errmap["pid=new_filter"] = t.setBoolFilter(t.config.Filter.NewPidFilter, configNewPidFilter)
+	errmap["mnt_ns_filter"] = t.setUintFilter(t.config.Filter.MntNSFilter, "mnt_ns_filter", configMntNsFilter, mntNsLess)
+	errmap["pid_ns_filter"] = t.setUintFilter(t.config.Filter.PidNSFilter, "pid_ns_filter", configPidNsFilter, pidNsLess)
+	errmap["uts_ns_filter"] = t.setStringFilter(t.config.Filter.UTSFilter, "uts_ns_filter", configUTSNsFilter)
+	errmap["comm_filter"] = t.setStringFilter(t.config.Filter.CommFilter, "comm_filter", configCommFilter)
+	errmap["cont_filter"] = t.setBoolFilter(t.config.Filter.ContFilter, configContFilter)
+	errmap["cont=new_filter"] = t.setBoolFilter(t.config.Filter.NewContFilter, configNewContFilter)
+	for k, v := range errmap {
+		if v != nil {
+			return fmt.Errorf("error setting %v filter: %v", k, v)
+		}
+	}
+
+	stringStoreMap, err := t.bpfModule.GetMap("string_store") // []string[MAX_PATH_PREF_SIZE]
 	if err != nil {
-		return fmt.Errorf("error setting pid filter: %v", err)
+		return err
 	}
-
-	err = t.setBoolFilter(t.config.Filter.NewPidFilter, configNewPidFilter)
+	zero := uint32(0)
+	null := []byte("/dev/null")
+	err = stringStoreMap.Update(unsafe.Pointer(&zero), unsafe.Pointer(&null[0]))
 	if err != nil {
-		return fmt.Errorf("error setting pid=new filter: %v", err)
+		return err
 	}
-
-	err = t.setUintFilter(t.config.Filter.MntNSFilter, "mnt_ns_filter", configMntNsFilter, mntNsLess)
-	if err != nil {
-		return fmt.Errorf("error setting mntns filter: %v", err)
-	}
-
-	err = t.setUintFilter(t.config.Filter.PidNSFilter, "pid_ns_filter", configPidNsFilter, pidNsLess)
-	if err != nil {
-		return fmt.Errorf("error setting pidns filter: %v", err)
-	}
-
-	err = t.setStringFilter(t.config.Filter.UTSFilter, "uts_ns_filter", configUTSNsFilter)
-	if err != nil {
-		return fmt.Errorf("error setting uts_ns filter: %v", err)
-	}
-
-	err = t.setStringFilter(t.config.Filter.CommFilter, "comm_filter", configCommFilter)
-	if err != nil {
-		return fmt.Errorf("error setting comm filter: %v", err)
-	}
-
-	err = t.setBoolFilter(t.config.Filter.ContFilter, configContFilter)
-	if err != nil {
-		return fmt.Errorf("error setting cont filter: %v", err)
-	}
-
-	err = t.setBoolFilter(t.config.Filter.NewContFilter, configNewContFilter)
-	if err != nil {
-		return fmt.Errorf("error setting container=new filter: %v", err)
-	}
-
-	stringStoreMap, _ := t.bpfModule.GetMap("string_store")
-	stringStoreMap.Update(uint32(0), []byte("/dev/null"))
 
 	eventsParams := t.initEventsParams()
 
@@ -836,11 +900,16 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
-	sysEnterTailsBPFMap, _ := t.bpfModule.GetMap("sys_enter_tails")
-	//sysExitTailsBPFMap, _ := t.bpfModule.GetMap("sys_exit_tails")
-	paramsTypesBPFMap, _ := t.bpfModule.GetMap("params_types_map")
-	paramsNamesBPFMap, _ := t.bpfModule.GetMap("params_names_map")
+	paramsTypesBPFMap, err := t.bpfModule.GetMap("params_types_map") // u32, u64
+	if err != nil {
+		return err
+	}
+	paramsNamesBPFMap, err := t.bpfModule.GetMap("params_names_map") // u32, u64
+	if err != nil {
+		return err
+	}
 	for e := range t.eventsToTrace {
+		eU32 := uint32(e) // e is int32
 		params := eventsParams[e]
 		var paramsTypes uint64
 		var paramsNames uint64
@@ -848,23 +917,24 @@ func (t *Tracee) populateBPFMaps() error {
 			paramsTypes = paramsTypes | (uint64(param.encType) << (8 * n))
 			paramsNames = paramsNames | (uint64(param.encName) << (8 * n))
 		}
-		paramsTypesBPFMap.Update(e, paramsTypes)
-		paramsNamesBPFMap.Update(e, paramsNames)
-
+		if err := paramsTypesBPFMap.Update(unsafe.Pointer(&eU32), unsafe.Pointer(&paramsTypes)); err != nil {
+			return err
+		}
+		if err := paramsNamesBPFMap.Update(unsafe.Pointer(&eU32), unsafe.Pointer(&paramsNames)); err != nil {
+			return err
+		}
 		if e == ExecveEventID || e == ExecveatEventID {
 			event, ok := EventsIDToEvent[e]
 			if !ok {
 				continue
 			}
-
-			probFnName := fmt.Sprintf("syscall__%s", event.Name)
-
 			// execve functions require tail call on syscall enter as they perform extra work
-			prog, err := t.bpfModule.GetProgram(probFnName)
+			probFnName := fmt.Sprintf("syscall__%s", event.Name)
+			err = t.initTailCall(eU32, "sys_enter_tails", probFnName)
 			if err != nil {
-				return fmt.Errorf("error loading BPF program %s: %v", probFnName, err)
+				return err
 			}
-			sysEnterTailsBPFMap.Update(e, int32(prog.GetFd()))
+			// err = t.initTailCall(uint32(e), "sys_exit_tails", probFnName) // if ever needed
 		}
 	}
 

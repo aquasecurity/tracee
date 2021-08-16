@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"unsafe"
 
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
 )
@@ -116,7 +117,7 @@ func (t *Tracee) getStackAddresses(StackID uint32) ([]uint64, error) {
 	// Lookup the StackID in the map
 	// The ID could have aged out of the Map, as it only holds a finite number of
 	// Stack IDs in it's Map
-	stackBytes, err := t.StackAddressesMap.GetValue(StackID)
+	stackBytes, err := t.StackAddressesMap.GetValue(unsafe.Pointer(&StackID))
 	if err != nil {
 		return StackAddresses[0:0], nil
 	}
@@ -134,7 +135,7 @@ func (t *Tracee) getStackAddresses(StackID uint32) ([]uint64, error) {
 
 	// Attempt to remove the ID from the map so we don't fill it up
 	// But if this fails continue on
-	_ = t.StackAddressesMap.DeleteKey(StackID)
+	_ = t.StackAddressesMap.DeleteKey(unsafe.Pointer(&StackID))
 
 	return StackAddresses[0:stackCounter], nil
 }
