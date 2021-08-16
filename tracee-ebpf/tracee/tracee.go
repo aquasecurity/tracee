@@ -125,6 +125,7 @@ type OutputConfig struct {
 	DetectSyscall  bool
 	ExecEnv        bool
 	RelativeTime   bool
+	Ignore         bool
 }
 
 type netProbe struct {
@@ -330,7 +331,13 @@ func New(cfg Config) (*Tracee, error) {
 	}
 	ContainerMode := (t.config.Filter.ContFilter.Enabled && t.config.Filter.ContFilter.Value) ||
 		(t.config.Filter.NewContFilter.Enabled && t.config.Filter.NewContFilter.Value)
-	printObj, err := newEventPrinter(t.config.Output.Format, ContainerMode, t.config.Output.RelativeTime, outf, errf)
+
+	printerKind := t.config.Output.Format
+	if t.config.Output.Ignore {
+		printerKind = "ignore"
+	}
+
+	printObj, err := newEventPrinter(printerKind, ContainerMode, t.config.Output.RelativeTime, outf, errf)
 	if err != nil {
 		return nil, err
 	}
