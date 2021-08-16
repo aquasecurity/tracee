@@ -1436,7 +1436,7 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 		}
 	}
 	switch ctx.EventID {
-	case SysEnterEventID, SysExitEventID, CapCapableEventID, CommitCredsEventID:
+	case SysEnterEventID, SysExitEventID, CapCapableEventID, CommitCredsEventID, SecurityFileOpenEventID:
 		//show syscall name instead of id
 		if id, isInt32 := args[t.EncParamName[ctx.EventID%2]["syscall"]].(int32); isInt32 {
 			if event, isKnown := EventsIDToEvent[id]; isKnown {
@@ -1448,6 +1448,11 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 		if ctx.EventID == CapCapableEventID {
 			if capability, isInt32 := args[t.EncParamName[ctx.EventID%2]["cap"]].(int32); isInt32 {
 				args[t.EncParamName[ctx.EventID%2]["cap"]] = helpers.ParseCapability(capability)
+			}
+		}
+		if ctx.EventID == SecurityFileOpenEventID {
+			if flags, isInt32 := args[t.EncParamName[ctx.EventID%2]["flags"]].(int32); isInt32 {
+				args[t.EncParamName[ctx.EventID%2]["flags"]] = helpers.ParseOpenFlags(uint32(flags))
 			}
 		}
 	case MmapEventID, MprotectEventID, PkeyMprotectEventID:
@@ -1514,7 +1519,7 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 		if flags, isInt32 := args[t.EncParamName[ctx.EventID%2]["flags"]].(int32); isInt32 {
 			args[t.EncParamName[ctx.EventID%2]["flags"]] = helpers.ParseExecFlags(uint32(flags))
 		}
-	case OpenEventID, OpenatEventID, SecurityFileOpenEventID:
+	case OpenEventID, OpenatEventID:
 		if flags, isInt32 := args[t.EncParamName[ctx.EventID%2]["flags"]].(int32); isInt32 {
 			args[t.EncParamName[ctx.EventID%2]["flags"]] = helpers.ParseOpenFlags(uint32(flags))
 		}

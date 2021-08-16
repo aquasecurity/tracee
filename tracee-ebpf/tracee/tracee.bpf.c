@@ -2578,6 +2578,14 @@ int BPF_KPROBE(trace_security_file_open)
     save_to_submit_buf(submit_p, (void*)&file->f_flags, sizeof(int), INT_T, DEC_ARG(1, *tags));
     save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, DEC_ARG(2, *tags));
     save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, DEC_ARG(3, *tags));
+    if (get_config(CONFIG_SHOW_SYSCALL)) {
+        int syscall_nr = get_syscall_ev_id_from_regs();
+        if (syscall_nr >= 0) {
+            context.argnum++;
+            save_context_to_buf(submit_p, (void*)&context);
+            save_to_submit_buf(submit_p, (void*)&syscall_nr, sizeof(int), INT_T, DEC_ARG(4, *tags));
+        }
+    }
 
     events_perf_submit(ctx);
     return 0;
