@@ -90,55 +90,114 @@ func main() {
 				cfg.Filter.EventsToTrace = append(cfg.Filter.EventsToTrace, tracee.MemProtAlertEventID)
 			}
 
-			var bpfBytes []byte
+			// environment capabilities
 
-			// Check if user specified a bpf object path explicitly
-			bpfFilePath, err := checkTraceeBPFEnvPath()
+			err = checkRequiredCapabilities()
 			if err != nil {
 				return err
 			}
+
+			missingKernelOptions := missingKernelConfigOptions()
+			if len(missingKernelOptions) != 0 {
+				return fmt.Errorf("kernel is not properly configured, missing: %v", missingKernelOptions)
+			}
+
+			// try to discover distro by /etc/os-release, fallback to kernel version
+
+			btfinfo := helpers.NewBTFInfo()
+			if err = btfinfo.DiscoverDistro(); err != nil {
+				if debug {
+					fmt.Printf("BTF: distro: %v, version: %v, kernel: %v\n", btfinfo.GetDistroId(), btfinfo.GetDistroVer(), btfinfo.GetDistroKernel())
+				}
+			}
+
+			// decision making based on different factors from environment
+
+			var d = struct {
+				btfenv     bool // external BTF file was provided through env TRACEE_BTF_FILE
+				bpfenv     bool // external BPF file was provided through env TRACEE_BPF_FILE
+				btfvmlinux bool // running kernel provides embedded BTF vmlinux file
+			}{
+				// default values
+
+				btfenv:     false,
+				bpfenv:     false,
+				btfvmlinux: helpers.BTFEnabled(),
+			}
+
+			// change decisions based on environment
+
+			bpfFilePath, err := checkEnvPath("TRACEE_BPF_FILE")
 			if bpfFilePath != "" {
+				d.bpfenv = true
+			} else if bpfFilePath == "" && err != nil {
+				return err
+			}
+			btfFilePath, err := checkEnvPath("TRACEE_BTF_FILE")
+			if btfFilePath != "" {
+				d.btfenv = true
+			} else if btfFilePath == "" && err != nil {
+				return err
+			}
+			if debug {
+				fmt.Printf("BTF: bpfenv = %v, btfenv = %v, vmlinux = %v\n", d.bpfenv, d.btfenv, d.btfvmlinux)
+			}
+
+			// BPF related
+
+			var bpfBytes []byte
+
+			// Decisions in order:
+			// 1. external BPF file given and BTF (vmlinux or env) exists: always load BPF as CO-RE
+			// 2. external BPF file given and no BTF exists: it is a non CO-RE BPF, no need to build
+			// 3. no external BPF file given and BTF (vmlinux or env) exists: load embedded BPF as CO-RE
+			// 4. no external BPF file given and no BTF exists: build non CO-RE BPF
+
+			if d.bpfenv { // external BPF file given
 				if debug {
-					fmt.Printf("BPF object file specified by TRACEE_BPF_FILE found: %s", bpfFilePath)
+					fmt.Printf("BPF: using BPF object from environment: %v\n", bpfFilePath)
 				}
-				bpfBytes, err = ioutil.ReadFile(bpfFilePath)
-				if err != nil {
+				if d.btfvmlinux || d.btfenv { // BTF exists: always load BPF as CO-RE
+					if d.btfenv { // prefer external BTF over internal vmlinux
+						if debug {
+							fmt.Printf("BTF: using BTF file from environment: %v\n", btfFilePath)
+						}
+						cfg.BTFObjPath = btfFilePath
+					}
+				} // TODO: else { check if ELF is really non CO-RE }
+				if bpfBytes, err = ioutil.ReadFile(bpfFilePath); err != nil {
 					return err
 				}
-			} else if btfEnabled() {
-				if debug {
-					fmt.Println("BTF enabled, attempting to unpack CORE bpf object")
-				}
-				bpfFilePath = "embedded-core"
-				bpfBytes, err = unpackCOREBinary()
-				if err != nil {
-					return err
-				}
-			} else {
-				if debug {
-					fmt.Println("BTF is not enabled")
-				}
-				bpfFilePath, err = getBPFObjectPath()
-				if err != nil {
-					return err
-				}
-				bpfBytes, err = ioutil.ReadFile(bpfFilePath)
-				if err != nil {
-					return err
+			} else { // no external BPF file given
+				if d.btfvmlinux || d.btfenv { // BTF exists: load embedded BPF as CO-RE
+					if debug {
+						fmt.Println("BPF: using embedded BPF object")
+					}
+					if d.btfenv {
+						if debug {
+							fmt.Printf("BTF: using BTF file from environment: %v\n", btfFilePath)
+						}
+						cfg.BTFObjPath = btfFilePath
+					}
+					bpfFilePath = "embedded-core"
+					bpfBytes, err = unpackCOREBinary()
+				} else { // build non CO-RE BPF
+					if debug {
+						fmt.Println("BPF: no BTF file was found or provided, building BPF object")
+					}
+					if bpfFilePath, err = getBPFObjectPath(); err != nil {
+						return err
+					}
+					if bpfBytes, err = ioutil.ReadFile(bpfFilePath); err != nil {
+						return err
+					}
 				}
 			}
 
 			cfg.BPFObjPath = bpfFilePath
 			cfg.BPFObjBytes = bpfBytes
 
-			err = checkRequiredCapabilities()
-			if err != nil {
-				return err
-			}
-			missingKernelOptions := missingKernelConfigOptions()
-			if len(missingKernelOptions) != 0 {
-				return fmt.Errorf("kernel is not properly configured, missing: %v", missingKernelOptions)
-			}
+			// run with created config
 			t, err := tracee.New(cfg)
 			if err != nil {
 				return fmt.Errorf("error creating Tracee: %v", err)
@@ -1119,13 +1178,14 @@ func locateFile(file string, dirs []string) string {
 	return ""
 }
 
-func checkTraceeBPFEnvPath() (string, error) {
-	bpfPath, present := os.LookupEnv("TRACEE_BPF_FILE")
-	if present {
-		if _, err := os.Stat(bpfPath); os.IsNotExist(err) {
-			return "", fmt.Errorf("path given in TRACEE_BPF_FILE doesn't exist!")
+func checkEnvPath(env string) (string, error) {
+	filePath, _ := os.LookupEnv(env)
+	if filePath != "" {
+		_, err := os.Stat(filePath)
+		if err != nil {
+			return "", fmt.Errorf("could not open %s %s", env, filePath)
 		}
-		return bpfPath, nil
+		return filePath, nil
 	}
 	return "", nil
 }
@@ -1416,9 +1476,4 @@ func makeBPFObject(outFile string) error {
 	}
 
 	return nil
-}
-
-func btfEnabled() bool {
-	_, err := os.Stat("/sys/kernel/btf/vmlinux")
-	return err == nil
 }
