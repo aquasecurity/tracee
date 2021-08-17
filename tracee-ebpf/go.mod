@@ -3,7 +3,7 @@ module github.com/aquasecurity/tracee/tracee-ebpf
 go 1.16
 
 require (
-	github.com/aquasecurity/libbpfgo v0.1.2-0.20210803032413-c500b6207bf6
+	github.com/aquasecurity/libbpfgo v0.1.2-0.20210817133513-e8b2d259d9f7
 	github.com/aquasecurity/tracee/tracee-ebpf/external v0.0.0-20210727091827-bbe411a2a167
 	github.com/google/gopacket v1.1.19
 	github.com/stretchr/testify v1.7.0
