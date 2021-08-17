@@ -836,6 +836,31 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
+	// Initialize pid_to_cont_id_map if tracing containers
+	c := Containers{}
+	err = c.Populate()
+	if err != nil {
+		return err
+	}
+	bpfPidToContIdMap, _ := t.bpfModule.GetMap("pid_to_cont_id_map")
+	for _, contId := range c.GetContainers() {
+		for _, pidstr := range c.GetPids(contId) {
+			if t.config.Debug {
+				fmt.Println("Running container =", contId, "pid =", pidstr)
+			}
+			var pid uint32
+			_, err = fmt.Sscanf(pidstr, "%d", &pid)
+			if err != nil {
+				return err
+			}
+			contIdBytes := []byte(contId)
+			err = bpfPidToContIdMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&contIdBytes[0]))
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	// Initialize tail calls program array
 	errs = make([]error, 0)
 	errs = append(errs, t.initTailCall(tailVfsWrite, "prog_array", "trace_ret_vfs_write_tail"))
