@@ -42,6 +42,7 @@ type Config struct {
 	SecurityAlerts     bool
 	Debug              bool
 	maxPidsCache       int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
+	BTFObjPath         string
 	BPFObjPath         string
 	BPFObjBytes        []byte
 	ChanEvents         chan external.Event
@@ -1027,7 +1028,7 @@ func (t *Tracee) attachNetProbes() error {
 func (t *Tracee) initBPF() error {
 	var err error
 
-	t.bpfModule, err = bpf.NewModuleFromBuffer(t.config.BPFObjBytes, t.config.BPFObjPath)
+	t.bpfModule, err = bpf.NewModuleFromBufferBtf(t.config.BTFObjPath, t.config.BPFObjBytes, t.config.BPFObjPath)
 	if err != nil {
 		return err
 	}
