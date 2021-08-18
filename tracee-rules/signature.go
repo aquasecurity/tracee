@@ -87,6 +87,10 @@ func findRegoSigs(dir string) ([]types.Signature, error) {
 
 	regoHelpers := []string{regoHelpersCode}
 	for _, file := range files {
+		if filepath.Ext(file.Name()) != ".rego" {
+			continue
+		}
+
 		if file.Name() == "helpers.rego" {
 			continue
 		}
