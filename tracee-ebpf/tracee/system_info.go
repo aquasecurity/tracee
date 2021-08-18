@@ -3,12 +3,14 @@ package tracee
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const SYSTEM_INFO_FILE_NAME = "system_info.json"
@@ -32,9 +34,12 @@ func SaveSystemInfo(systemInfo map[string]interface{}, outDir string) error {
 }
 
 // FetchSystemInfo Fetch info from the system that might be significant for later use or for signatures.
-func FetchSystemInfo() map[string]interface{} {
-	systemInfo := make(map[string]interface{})
-	systemInfo["initNamespaces"] = fetchInitNamespaces()
+func FetchSystemInfo() []external.Argument {
+	systemInfo := make([]external.Argument, 1)
+	systemInfo[0] = external.Argument{
+		ArgMeta: external.ArgMeta{Name: "initNamespaces", Type: "map[string]int"},
+		Value:   fetchInitNamespaces(),
+	}
 	return systemInfo
 }
 
@@ -49,4 +54,19 @@ func fetchInitNamespaces() map[string]int {
 		initNamespacesMap[namespaceLink.Name()] = namespaceNumber
 	}
 	return initNamespacesMap
+}
+
+func (t *Tracee) InvokeSystemInfoEvent() error {
+	systemInfoEvent := external.Event{
+		Timestamp:   int(time.Now().UnixNano()),
+		ProcessName: "System Info",
+		HostName:    "",
+		ContainerID: "",
+		EventID:     0,
+		EventName:   "System Info",
+		ArgsNum:     0,
+		Args:        FetchSystemInfo(),
+	}
+	t.printer.Print(systemInfoEvent)
+	return nil
 }
