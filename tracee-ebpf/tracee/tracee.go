@@ -229,7 +229,6 @@ type Tracee struct {
 	pcapWriter        *pcapgo.NgWriter
 	pcapFile          *os.File
 	ngIfacesIndex     map[int]int
-	systemInfo        map[string]interface{}
 }
 
 type counter int32
@@ -368,12 +367,6 @@ func New(cfg Config) (*Tracee, error) {
 		if err == nil {
 			t.pidsInMntns.AddBucketItem(uint32(hostMntns), 1)
 		}
-	}
-
-	t.systemInfo = FetchSystemInfo()
-	err = SaveSystemInfo(t.systemInfo, filepath.Dir(t.config.Output.OutPath))
-	if err != nil {
-		return nil, err
 	}
 
 	if err := os.MkdirAll(t.config.Capture.OutputPath, 0755); err != nil {
@@ -1140,6 +1133,7 @@ func (t *Tracee) Run() error {
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
 	t.netPerfMap.Start()
+	t.InvokeSystemInfoEvent()
 	go t.processLostEvents()
 	go t.runEventPipeline(t.config.ChanDone)
 	go t.processFileWrites()
