@@ -26,6 +26,10 @@ BPF_BUNDLE := $(OUT_DIR)/tracee.bpf.tar.gz
 LIBBPF_SRC := 3rdparty/libbpf/src
 LIBBPF_HEADERS := $(OUT_DIR)/libbpf/usr/include
 LIBBPF_OBJ := $(OUT_DIR)/libbpf/libbpf.a
+# static build:
+ifdef STATIC
+CGO_EXT_LDFLAGS += -static
+endif
 OUT_DOCKER ?= tracee
 DOCKER_BUILDER ?= tracee-builder
 # DOCKER_BUILDER_KERN_SRC(/BLD) is where the docker builder looks for kernel headers
@@ -52,15 +56,15 @@ build: $(OUT_BIN)
 go_env := GOOS=linux GOARCH=$(ARCH:x86_64=amd64) CC=$(CMD_CLANG) CGO_CFLAGS="-I $(abspath $(LIBBPF_HEADERS))" CGO_LDFLAGS="$(abspath $(LIBBPF_OBJ))"
 ifndef DOCKER
 $(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(OUT_BPF_CORE) $(filter-out *_test.go,$(GO_SRC)) $(BPF_BUNDLE) | $(OUT_DIR)
-	$(go_env) go build -v -o $(OUT_BIN) \
-	-ldflags "-X main.version=$(VERSION)"
-else 
+	$(go_env) go build -tags netgo -v -o $(OUT_BIN) \
+	-ldflags "-w -extldflags \"$(CGO_EXT_LDFLAGS)\" -X main.version=$(VERSION)"
+else
 $(OUT_BIN): $(DOCKER_BUILDER) | $(OUT_DIR)
 	$(call docker_builder_make,$@ VERSION=$(VERSION))
 endif
 
 bpf_compile_tools = $(CMD_LLC) $(CMD_CLANG)
-.PHONY: $(bpf_compile_tools) 
+.PHONY: $(bpf_compile_tools)
 $(bpf_compile_tools): % : check_%
 
 $(LIBBPF_SRC):
@@ -69,8 +73,8 @@ $(LIBBPF_SRC):
 $(LIBBPF_HEADERS) $(LIBBPF_HEADERS)/bpf $(LIBBPF_HEADERS)/linux: | $(OUT_DIR) $(bpf_compile_tools) $(LIBBPF_SRC)
 	cd $(LIBBPF_SRC) && $(MAKE) install_headers install_uapi_headers DESTDIR=$(abspath $(OUT_DIR))/libbpf
 
-$(LIBBPF_OBJ): | $(OUT_DIR) $(bpf_compile_tools) $(LIBBPF_SRC) 
-	cd $(LIBBPF_SRC) && $(MAKE) OBJDIR=$(abspath $(OUT_DIR))/libbpf BUILD_STATIC_ONLY=1 
+$(LIBBPF_OBJ): | $(OUT_DIR) $(bpf_compile_tools) $(LIBBPF_SRC)
+	cd $(LIBBPF_SRC) && $(MAKE) OBJDIR=$(abspath $(OUT_DIR))/libbpf BUILD_STATIC_ONLY=1
 
 bpf_bundle_dir := $(OUT_DIR)/tracee.bpf
 $(BPF_BUNDLE): $(BPF_SRC) $(LIBBPF_HEADERS)/bpf $(BPF_HEADERS)
@@ -137,14 +141,14 @@ $(OUT_BPF_CORE): $(BPF_SRC) $(LIBBPF_HEADERS) $(CMD_CLANG)
 		-O2 -c -g -o $@ $<
 else
 #docker yes
-$(OUT_BPF): $(DOCKER_BUILDER) | $(OUT_DIR) 
+$(OUT_BPF): $(DOCKER_BUILDER) | $(OUT_DIR)
 	$(call docker_builder_make,$@)
 
-$(OUT_BPF_CORE): $(DOCKER_BUILDER) | $(OUT_DIR) 
+$(OUT_BPF_CORE): $(DOCKER_BUILDER) | $(OUT_DIR)
 	$(call docker_builder_make,$@)
 endif
 
-.PHONY: test 
+.PHONY: test
 ifndef DOCKER
 test: $(GO_SRC) $(LIBBPF_HEADERS) $(LIBBPF_OBJ)
 	$(go_env)	go test $(GOTEST_FLAGS) -v ./...
