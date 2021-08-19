@@ -57,15 +57,14 @@ func fetchInitNamespaces() map[string]int {
 }
 
 func (t *Tracee) InvokeSystemInfoEvent() error {
+	systemInfoArgs := FetchSystemInfo()
 	systemInfoEvent := external.Event{
 		Timestamp:   int(time.Now().UnixNano()),
-		ProcessName: "System Info",
-		HostName:    "",
-		ContainerID: "",
+		ProcessName: "tracee-ebpf",
 		EventID:     0,
 		EventName:   "System Info",
-		ArgsNum:     0,
-		Args:        FetchSystemInfo(),
+		ArgsNum:     len(systemInfoArgs),
+		Args:        systemInfoArgs,
 	}
 	t.printer.Print(systemInfoEvent)
 	return nil
