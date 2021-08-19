@@ -1171,10 +1171,8 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "invalid output option",
 			outputSlice: []string{"foo"},
 			// it's not the preparer job to validate input. in this case foo is considered an implicit output format.
-			expectedOutput: tracee.OutputConfig{
-				Format: "foo",
-			},
-			expectedError: errors.New("unrecognized output format: foo. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info."),
+			expectedOutput: tracee.OutputConfig{},
+			expectedError:  errors.New("unrecognized output format: foo. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info."),
 		},
 		{
 			testName:       "invalid output option",
@@ -1189,61 +1187,16 @@ func TestPrepareOutput(t *testing.T) {
 			expectedError:  errors.New("invalid output option: foo, use '--output help' for more info"),
 		},
 		{
-			testName:    "format explicit",
-			outputSlice: []string{"format:json"},
-			expectedOutput: tracee.OutputConfig{
-				Format: "json",
-			},
-			expectedError: nil,
-		},
-		{
-			testName:    "format implicit",
-			outputSlice: []string{"json"},
-			expectedOutput: tracee.OutputConfig{
-				Format: "json",
-			},
-			expectedError: nil,
-		},
-		{
-			testName:    "format gotemplate",
-			outputSlice: []string{"gotemplate=/path/to/tmpl"},
-			expectedOutput: tracee.OutputConfig{
-				Format: "gotemplate=/path/to/tmpl",
-			},
-			expectedError: nil,
-		},
-		{
-			testName:    "out",
-			outputSlice: []string{"out-file:/path/to/file"},
-			expectedOutput: tracee.OutputConfig{
-				OutPath: "/path/to/file",
-				Format:  "table",
-			},
-			expectedError: nil,
-		},
-		{
-			testName:    "empty val",
-			outputSlice: []string{"out-file"},
-			expectedOutput: tracee.OutputConfig{
-				Format: "out-file",
-			},
-			expectedError: errors.New("unrecognized output format: out-file. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info."),
-		},
-		{
-			testName:    "err",
-			outputSlice: []string{"err-file:/path/to/file"},
-			expectedOutput: tracee.OutputConfig{
-				ErrPath: "/path/to/file",
-				Format:  "table",
-			},
-			expectedError: nil,
+			testName:       "empty val",
+			outputSlice:    []string{"out-file"},
+			expectedOutput: tracee.OutputConfig{},
+			expectedError:  errors.New("unrecognized output format: out-file. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info."),
 		},
 		{
 			testName:    "option stack-addresses",
 			outputSlice: []string{"option:stack-addresses"},
 			expectedOutput: tracee.OutputConfig{
 				StackAddresses: true,
-				Format:         "table",
 			},
 			expectedError: nil,
 		},
@@ -1252,7 +1205,6 @@ func TestPrepareOutput(t *testing.T) {
 			outputSlice: []string{"option:detect-syscall"},
 			expectedOutput: tracee.OutputConfig{
 				DetectSyscall: true,
-				Format:        "table",
 			},
 			expectedError: nil,
 		},
@@ -1261,17 +1213,13 @@ func TestPrepareOutput(t *testing.T) {
 			outputSlice: []string{"option:exec-env"},
 			expectedOutput: tracee.OutputConfig{
 				ExecEnv: true,
-				Format:  "table",
 			},
 			expectedError: nil,
 		},
 		{
-			testName:    "all",
-			outputSlice: []string{"gotemplate=/path/to/tmpl", "option:stack-addresses", "option:detect-syscall", "option:exec-env", "out-file:/path/to/file", "err-file:/path/to/file"},
+			testName:    "all options",
+			outputSlice: []string{"option:stack-addresses", "option:detect-syscall", "option:exec-env"},
 			expectedOutput: tracee.OutputConfig{
-				Format:         "gotemplate=/path/to/tmpl",
-				OutPath:        "/path/to/file",
-				ErrPath:        "/path/to/file",
 				StackAddresses: true,
 				DetectSyscall:  true,
 				ExecEnv:        true,
@@ -1281,7 +1229,7 @@ func TestPrepareOutput(t *testing.T) {
 	}
 	for _, testcase := range testCases {
 		t.Run(testcase.testName, func(t *testing.T) {
-			output, err := prepareOutput(testcase.outputSlice)
+			output, _, err := prepareOutput(testcase.outputSlice, false)
 			if err != nil {
 				assert.Equal(t, testcase.expectedError, err)
 			} else {

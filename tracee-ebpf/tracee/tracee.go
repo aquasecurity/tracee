@@ -43,6 +43,8 @@ type Config struct {
 	BPFObjPath         string
 	BPFObjBytes        []byte
 	ChanEvents         chan external.Event
+	ChanErrors         chan error
+	ChanDone           chan external.Stats
 }
 
 type Filter struct {
@@ -117,32 +119,15 @@ type CaptureConfig struct {
 }
 
 type OutputConfig struct {
-	Format         string
-	OutPath        string
-	ErrPath        string
 	StackAddresses bool
 	DetectSyscall  bool
 	ExecEnv        bool
 	RelativeTime   bool
-	Ignore         bool
 }
 
 type netProbe struct {
 	ingressHook *bpf.TcHook
 	egressHook  *bpf.TcHook
-}
-
-// Validate does static validation of the configuration
-func (cfg OutputConfig) Validate() error {
-	if cfg.Format != "table" &&
-		cfg.Format != "table-verbose" &&
-		cfg.Format != "json" &&
-		cfg.Format != "gob" &&
-		!strings.HasPrefix(cfg.Format, "gotemplate=") {
-		return fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info.", cfg.Format)
-	}
-
-	return nil
 }
 
 // Validate does static validation of the configuration
@@ -194,10 +179,18 @@ func (tc Config) Validate() error {
 		return errors.New("nil bpf object in memory")
 	}
 
-	err := tc.Output.Validate()
-	if err != nil {
-		return err
+	if tc.ChanEvents == nil {
+		return errors.New("nil events channel")
 	}
+
+	if tc.ChanErrors == nil {
+		return errors.New("nil errors channel")
+	}
+
+	if tc.ChanDone == nil {
+		return errors.New("nil done channel")
+	}
+
 	return nil
 }
 
@@ -221,7 +214,6 @@ type Tracee struct {
 	lostEvChannel     chan uint64
 	lostWrChannel     chan uint64
 	lostNetChannel    chan uint64
-	printer           eventPrinter
 	bootTime          uint64
 	startTime         uint64
 	stats             statsStore
@@ -259,6 +251,18 @@ type statsStore struct {
 	lostEvCounter counter
 	lostWrCounter counter
 	lostNtCounter counter
+}
+
+func (t *Tracee) GetStats() external.Stats {
+	var stats external.Stats
+
+	stats.EventCount = int(t.stats.eventCounter)
+	stats.ErrorCount = int(t.stats.errorCounter)
+	stats.LostEvCount = int(t.stats.lostEvCounter)
+	stats.LostWrCount = int(t.stats.lostWrCounter)
+	stats.LostNtCount = int(t.stats.lostNtCounter)
+
+	return stats
 }
 
 // New creates a new Tracee instance based on a given valid Config
@@ -309,39 +313,7 @@ func New(cfg Config) (*Tracee, error) {
 		startTime: uint64(startTime),
 		bootTime:  uint64(bootTime),
 	}
-	outf := os.Stdout
-	if t.config.Output.OutPath != "" {
-		dir := filepath.Dir(t.config.Output.OutPath)
-		os.MkdirAll(dir, 0755)
-		os.Remove(t.config.Output.OutPath)
-		outf, err = os.Create(t.config.Output.OutPath)
-		if err != nil {
-			return nil, err
-		}
-	}
-	errf := os.Stderr
-	if t.config.Output.ErrPath != "" {
-		dir := filepath.Dir(t.config.Output.ErrPath)
-		os.MkdirAll(dir, 0755)
-		os.Remove(t.config.Output.ErrPath)
-		errf, err = os.Create(t.config.Output.ErrPath)
-		if err != nil {
-			return nil, err
-		}
-	}
-	ContainerMode := (t.config.Filter.ContFilter.Enabled && t.config.Filter.ContFilter.Value) ||
-		(t.config.Filter.NewContFilter.Enabled && t.config.Filter.NewContFilter.Value)
 
-	printerKind := t.config.Output.Format
-	if t.config.Output.Ignore {
-		printerKind = "ignore"
-	}
-
-	printObj, err := newEventPrinter(printerKind, ContainerMode, t.config.Output.RelativeTime, outf, errf)
-	if err != nil {
-		return nil, err
-	}
-	t.printer = printObj
 	t.eventsToTrace = make(map[int32]bool, len(t.config.Filter.EventsToTrace))
 	for _, e := range t.config.Filter.EventsToTrace {
 		// Map value is true iff events requested by the user
@@ -1169,24 +1141,17 @@ func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 func (t *Tracee) Run() error {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	done := make(chan struct{})
-	if t.config.ChanEvents == nil {
-		t.printer.Preamble()
-	}
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
 	t.netPerfMap.Start()
 	go t.processLostEvents()
-	go t.runEventPipeline(done)
+	go t.runEventPipeline(t.config.ChanDone)
 	go t.processFileWrites()
 	go t.processNetEvents()
 	<-sig
 	t.eventsPerfMap.Stop()
 	t.fileWrPerfMap.Stop()
 	t.netPerfMap.Stop()
-	if t.config.ChanEvents == nil {
-		t.printer.Epilogue(t.stats)
-	}
 	// capture profiler stats
 	if t.config.Capture.Profile {
 		f, err := os.Create(filepath.Join(t.config.Capture.OutputPath, "tracee.profile"))
@@ -1228,8 +1193,7 @@ func (t *Tracee) Run() error {
 		}
 	}
 
-	// Signal pipeline that Tracee exits by closing the done channel
-	close(done)
+	t.config.ChanDone <- t.GetStats()
 	t.Close()
 	return nil
 }
@@ -1251,7 +1215,6 @@ func (t *Tracee) Close() {
 	if t.bpfModule != nil {
 		t.bpfModule.Close()
 	}
-	t.printer.Close()
 }
 
 func boolToUInt32(b bool) uint32 {
@@ -1259,11 +1222,6 @@ func boolToUInt32(b bool) uint32 {
 		return uint32(1)
 	}
 	return uint32(0)
-}
-
-func (t *Tracee) handleError(err error) {
-	t.stats.errorCounter.Increment()
-	t.printer.Error(err)
 }
 
 func getFileHash(fileName string) string {
