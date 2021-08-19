@@ -170,6 +170,7 @@ const (
 	SecurityBPFMapEventID
 	SecurityKernelReadFileEventID
 	SecurityInodeMknodEventID
+	SystemInfoEventID
 	MaxEventID
 )
 
@@ -566,6 +567,7 @@ var EventsIDToEvent = map[int32]EventConfig{
 	SecurityBPFMapEventID:         {ID: SecurityBPFMapEventID, ID32Bit: sys32undefined, Name: "security_bpf_map", Probes: []probe{{event: "security_bpf_map", attach: kprobe, fn: "trace_security_bpf_map"}}, Sets: []string{"lsm_hooks"}},
 	SecurityKernelReadFileEventID: {ID: SecurityKernelReadFileEventID, ID32Bit: sys32undefined, Name: "security_kernel_read_file", Probes: []probe{{event: "security_kernel_read_file", attach: kprobe, fn: "trace_security_kernel_read_file"}}, Sets: []string{"lsm_hooks"}},
 	SecurityInodeMknodEventID:     {ID: SecurityInodeMknodEventID, ID32Bit: sys32undefined, Name: "security_inode_mknod", Probes: []probe{{event: "security_inode_mknod", attach: kprobe, fn: "trace_security_inode_mknod"}}, Sets: []string{"lsm_hooks"}},
+	SystemInfoEventID:             {ID: SystemInfoEventID, ID32Bit: sys32undefined, Name: "system_info_fetch", Probes: []probe{}, Sets: []string{"default"}},
 }
 
 // EventsIDToParams is list of the parameters (name and type) used by the events
@@ -938,4 +940,5 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	SecurityBPFMapEventID:         {{Type: "unsigned int", Name: "map_id"}, {Type: "const char*", Name: "map_name"}},
 	SecurityKernelReadFileEventID: {{Type: "const char*", Name: "pathname"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}},
 	SecurityInodeMknodEventID:     {{Type: "const char*", Name: "file_name"}, {Type: "mode_t", Name: "mode"}, {Type: "dev_t", Name: "dev"}},
+	SystemInfoEventID:             {{Type: "map[string]int", Name: "initNamespaces"}},
 }
