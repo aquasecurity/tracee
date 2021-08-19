@@ -205,7 +205,7 @@ func (p *templateEventPrinter) Init() error {
 func (p templateEventPrinter) Preamble() {}
 
 func (p templateEventPrinter) Error(err error) {
-	fmt.Fprintf(p.err, "%v", err)
+	fmt.Fprintf(p.err, "%v\n", err)
 }
 
 func (p templateEventPrinter) Print(event external.Event) {
@@ -241,12 +241,8 @@ func (p jsonEventPrinter) Print(event external.Event) {
 	fmt.Fprintln(p.out, string(eBytes))
 }
 
-func (p jsonEventPrinter) Error(e error) {
-	eBytes, err := json.Marshal(e)
-	if err != nil {
-		return
-	}
-	fmt.Fprintln(p.err, string(eBytes))
+func (p jsonEventPrinter) Error(err error) {
+	fmt.Fprintf(p.err, "%v\n", err)
 }
 
 func (p jsonEventPrinter) Epilogue(stats statsStore) {}
@@ -279,8 +275,8 @@ func (p *gobEventPrinter) Print(event external.Event) {
 	}
 }
 
-func (p *gobEventPrinter) Error(e error) {
-	_ = p.errEnc.Encode(e)
+func (p *gobEventPrinter) Error(err error) {
+	fmt.Fprintf(p.err, "%v\n", err)
 }
 
 func (p *gobEventPrinter) Epilogue(stats statsStore) {}
