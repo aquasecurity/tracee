@@ -334,3 +334,12 @@ func analyzeEventOrigin(event tracee.Event) string {
 		return EVENT_HOST_ORIGIN
 	}
 }
+
+// GetSelectedEvents returns the event selectors that are relevant to the currently loaded signatures
+func (engine *Engine) GetSelectedEvents() []types.SignatureEventSelector {
+	res := make([]types.SignatureEventSelector, 0)
+	for k := range engine.signaturesIndex {
+		res = append(res, k)
+	}
+	return res
+}
