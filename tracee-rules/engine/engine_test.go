@@ -387,3 +387,59 @@ func TestConsumeSources(t *testing.T) {
 		})
 	}
 }
+
+func TestGetSelectedEvents(t *testing.T) {
+	sigs := []types.Signature{
+		&regoFakeSignature{
+			getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
+				return []types.SignatureEventSelector{
+					{
+						Name:   "test_event",
+						Source: "tracee",
+					},
+					{
+						Name:   "test_event2",
+						Source: "tracee",
+					},
+				}, nil
+			},
+		},
+		&regoFakeSignature{
+			getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
+				return []types.SignatureEventSelector{
+					{
+						Name:   "test_event",
+						Source: "tracee",
+						Origin: "host",
+					},
+					{
+						Name:   "test_event2",
+						Source: "tracee",
+					},
+				}, nil
+			},
+		},
+	}
+	e, err := NewEngine(sigs, EventSources{Tracee: make(chan types.Event)}, make(chan types.Finding), &bytes.Buffer{})
+	require.NoError(t, err, "constructing engine")
+	se := e.GetSelectedEvents()
+	expected := []types.SignatureEventSelector{
+		{
+			Name:   "test_event",
+			Source: "tracee",
+			Origin: "*",
+		},
+		{
+			Name:   "test_event2",
+			Source: "tracee",
+			Origin: "*",
+		},
+		{
+			Name:   "test_event",
+			Source: "tracee",
+			Origin: "host",
+		},
+	}
+	require.Equal(t, se, expected)
+
+}
