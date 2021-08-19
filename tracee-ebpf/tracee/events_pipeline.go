@@ -49,6 +49,31 @@ type RawEvent struct {
 	ArgsTags []argTag
 }
 
+// context struct contains common metadata that is collected for all types of events
+// it is used to unmarshal binary data and therefore should match (bit by bit) to the `context_t` struct in the ebpf code.
+// NOTE: Integers want to be aligned in memory, so if changing the format of this struct
+// keep the 1-byte 'Argnum' as the final parameter before the padding (if padding is needed).
+type context struct {
+	Ts       uint64
+	Pid      uint32
+	Tid      uint32
+	Ppid     uint32
+	HostPid  uint32
+	HostTid  uint32
+	HostPpid uint32
+	Uid      uint32
+	MntID    uint32
+	PidID    uint32
+	Comm     [16]byte
+	UtsName  [16]byte
+	ContID   [16]byte
+	EventID  int32
+	Retval   int64
+	StackID  uint32
+	Argnum   uint8
+	_        [3]byte //padding
+}
+
 func (t *Tracee) decodeRawEvent(done <-chan struct{}) (<-chan RawEvent, <-chan error, error) {
 	out := make(chan RawEvent)
 	errc := make(chan error, 1)
