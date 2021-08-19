@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
+	"github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
 	"github.com/syndtr/gocapability/capability"
 	cli "github.com/urfave/cli/v2"
@@ -56,16 +57,6 @@ func main() {
 				Debug:              c.Bool("debug"),
 			}
 
-			if checkCommandIsHelp(c.StringSlice("output")) {
-				printOutputHelp()
-				return nil
-			}
-			output, err := prepareOutput(c.StringSlice("output"))
-			if err != nil {
-				return err
-			}
-			cfg.Output = &output
-
 			if checkCommandIsHelp(c.StringSlice("capture")) {
 				printCaptureHelp()
 				return nil
@@ -85,6 +76,19 @@ func main() {
 				return err
 			}
 			cfg.Filter = &filter
+
+			containerMode := (cfg.Filter.ContFilter.Enabled && cfg.Filter.ContFilter.Value) ||
+				(cfg.Filter.NewContFilter.Enabled && cfg.Filter.NewContFilter.Value)
+
+			if checkCommandIsHelp(c.StringSlice("output")) {
+				printOutputHelp()
+				return nil
+			}
+			output, printer, err := prepareOutput(c.StringSlice("output"), containerMode)
+			if err != nil {
+				return err
+			}
+			cfg.Output = &output
 
 			if c.Bool("security-alerts") {
 				cfg.Filter.EventsToTrace = append(cfg.Filter.EventsToTrace, tracee.MemProtAlertEventID)
@@ -196,6 +200,26 @@ func main() {
 
 			cfg.BPFObjPath = bpfFilePath
 			cfg.BPFObjBytes = bpfBytes
+
+			cfg.ChanEvents = make(chan external.Event)
+			cfg.ChanErrors = make(chan error)
+			cfg.ChanDone = make(chan external.Stats)
+
+			go func() {
+				defer printer.Close()
+				printer.Preamble()
+				for {
+					select {
+					case event := <-cfg.ChanEvents:
+						printer.Print(event)
+					case err := <-cfg.ChanErrors:
+						printer.Error(err)
+					case stats := <-cfg.ChanDone:
+						printer.Epilogue(stats)
+						return
+					}
+				}
+			}()
 
 			// run with created config
 			t, err := tracee.New(cfg)
@@ -311,34 +335,36 @@ Use this flag multiple times to choose multiple output options
 	fmt.Print(outputHelp)
 }
 
-func prepareOutput(outputSlice []string) (tracee.OutputConfig, error) {
+func prepareOutput(outputSlice []string, containerMode bool) (tracee.OutputConfig, eventPrinter, error) {
 	res := tracee.OutputConfig{}
+	printerKind := "table"
+	outPath := ""
+	errPath := ""
+	var err error
 	for _, o := range outputSlice {
 		outputParts := strings.SplitN(o, ":", 2)
 		numParts := len(outputParts)
 		if numParts == 1 && outputParts[0] != "none" {
-			res.Format = outputParts[0]
-			err := res.Validate()
-			if err != nil {
-				return res, err
-			}
 			outputParts = append(outputParts, outputParts[0])
 			outputParts[0] = "format"
 		}
 
 		switch outputParts[0] {
 		case "none":
-			res.Ignore = true
+			printerKind = "ignore"
 		case "format":
-			res.Format = outputParts[1]
-			err := res.Validate()
-			if err != nil {
-				return res, err
+			printerKind = outputParts[1]
+			if printerKind != "table" &&
+				printerKind != "table-verbose" &&
+				printerKind != "json" &&
+				printerKind != "gob" &&
+				!strings.HasPrefix(printerKind, "gotemplate=") {
+				return res, nil, fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info.", printerKind)
 			}
 		case "out-file":
-			res.OutPath = outputParts[1]
+			outPath = outputParts[1]
 		case "err-file":
-			res.ErrPath = outputParts[1]
+			errPath = outputParts[1]
 		case "option":
 			switch outputParts[1] {
 			case "stack-addresses":
@@ -350,17 +376,50 @@ func prepareOutput(outputSlice []string) (tracee.OutputConfig, error) {
 			case "relative-time":
 				res.RelativeTime = true
 			default:
-				return res, fmt.Errorf("invalid output option: %s, use '--output help' for more info", outputParts[1])
+				return res, nil, fmt.Errorf("invalid output option: %s, use '--output help' for more info", outputParts[1])
 			}
 		default:
-			return res, fmt.Errorf("invalid output value: %s, use '--output help' for more info", outputParts[1])
+			return res, nil, fmt.Errorf("invalid output value: %s, use '--output help' for more info", outputParts[1])
 		}
 	}
 
-	if res.Format == "" {
-		res.Format = "table"
+	outf := os.Stdout
+	if outPath != "" {
+		// To avoid accidental deletions, make sure this is not a directory
+		fileInfo, err := os.Stat(outPath)
+		if err == nil && fileInfo.IsDir() {
+			return res, nil, fmt.Errorf("cannot use a path of existing directory %s", outPath)
+		}
+		dir := filepath.Dir(outPath)
+		os.MkdirAll(dir, 0755)
+		os.Remove(outPath)
+		outf, err = os.Create(outPath)
+		if err != nil {
+			return res, nil, fmt.Errorf("failed to create output path: %v", err)
+		}
 	}
-	return res, nil
+	errf := os.Stderr
+	if errPath != "" {
+		// To avoid accidental deletions, make sure this is not a directory
+		fileInfo, err := os.Stat(errPath)
+		if err == nil && fileInfo.IsDir() {
+			return res, nil, fmt.Errorf("cannot use a path of existing directory %s", errPath)
+		}
+		dir := filepath.Dir(errPath)
+		os.MkdirAll(dir, 0755)
+		os.Remove(errPath)
+		errf, err = os.Create(errPath)
+		if err != nil {
+			return res, nil, fmt.Errorf("failed to create error path: %v", err)
+		}
+	}
+
+	printer, err := newEventPrinter(printerKind, containerMode, res.RelativeTime, outf, errf)
+	if err != nil {
+		return res, nil, fmt.Errorf("failed to create event printer: %v", err)
+	}
+
+	return res, printer, nil
 }
 
 func printCaptureHelp() {

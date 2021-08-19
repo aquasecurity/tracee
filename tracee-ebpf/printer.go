@@ -1,7 +1,6 @@
-package tracee
+package main
 
 import (
-	"bytes"
 	"encoding/gob"
 	"encoding/json"
 	"errors"
@@ -20,7 +19,7 @@ type eventPrinter interface {
 	// Preamble prints something before event printing begins (one time)
 	Preamble()
 	// Epilogue prints something after event printing ends (one time)
-	Epilogue(stats statsStore)
+	Epilogue(stats external.Stats)
 	// Print prints a single event
 	Print(event external.Event)
 	// Error prints a single error
@@ -78,39 +77,7 @@ func newEventPrinter(kind string, containerMode bool, relativeTS bool, out io.Wr
 	return res, nil
 }
 
-func newEvent(ctx context, argMetas []external.ArgMeta, args []interface{}, StackAddresses []uint64) (external.Event, error) {
-	e := external.Event{
-		Timestamp:           int(ctx.Ts),
-		ProcessID:           int(ctx.Pid),
-		ThreadID:            int(ctx.Tid),
-		ParentProcessID:     int(ctx.Ppid),
-		HostProcessID:       int(ctx.HostPid),
-		HostThreadID:        int(ctx.HostTid),
-		HostParentProcessID: int(ctx.HostPpid),
-		UserID:              int(ctx.Uid),
-		MountNS:             int(ctx.MntID),
-		PIDNS:               int(ctx.PidID),
-		ProcessName:         string(bytes.TrimRight(ctx.Comm[:], "\x00")),
-		HostName:            string(bytes.TrimRight(ctx.UtsName[:], "\x00")),
-		ContainerID:         string(bytes.TrimRight(ctx.ContID[:], "\x00")),
-		EventID:             int(ctx.EventID),
-		EventName:           EventsIDToEvent[int32(ctx.EventID)].Name,
-		ArgsNum:             int(ctx.Argnum),
-		ReturnValue:         int(ctx.Retval),
-		Args:                make([]external.Argument, 0, len(args)),
-		StackAddresses:      StackAddresses,
-	}
-	for i, arg := range args {
-		e.Args = append(e.Args, external.Argument{
-			ArgMeta: argMetas[i],
-			Value:   arg,
-		})
-	}
-	return e, nil
-}
-
 type tableEventPrinter struct {
-	tracee        *Tracee
 	out           io.WriteCloser
 	err           io.WriteCloser
 	verbose       bool
@@ -170,7 +137,7 @@ func (p tableEventPrinter) Error(err error) {
 	fmt.Fprintf(p.err, "%v\n", err)
 }
 
-func (p tableEventPrinter) Epilogue(stats statsStore) {
+func (p tableEventPrinter) Epilogue(stats external.Stats) {
 	fmt.Println()
 	fmt.Fprintf(p.out, "End of events stream\n")
 	fmt.Fprintf(p.out, "Stats: %+v\n", stats)
@@ -180,7 +147,6 @@ func (p tableEventPrinter) Close() {
 }
 
 type templateEventPrinter struct {
-	tracee        *Tracee
 	out           io.WriteCloser
 	err           io.WriteCloser
 	containerMode bool
@@ -219,7 +185,7 @@ func (p templateEventPrinter) Print(event external.Event) {
 	}
 }
 
-func (p templateEventPrinter) Epilogue(stats statsStore) {}
+func (p templateEventPrinter) Epilogue(stats external.Stats) {}
 
 func (p templateEventPrinter) Close() {
 }
@@ -245,7 +211,7 @@ func (p jsonEventPrinter) Error(err error) {
 	fmt.Fprintf(p.err, "%v\n", err)
 }
 
-func (p jsonEventPrinter) Epilogue(stats statsStore) {}
+func (p jsonEventPrinter) Epilogue(stats external.Stats) {}
 
 func (p jsonEventPrinter) Close() {
 }
@@ -277,7 +243,7 @@ func (p *gobEventPrinter) Error(err error) {
 	fmt.Fprintf(p.err, "%v\n", err)
 }
 
-func (p *gobEventPrinter) Epilogue(stats statsStore) {}
+func (p *gobEventPrinter) Epilogue(stats external.Stats) {}
 
 func (p gobEventPrinter) Close() {
 }
@@ -299,6 +265,6 @@ func (p *ignoreEventPrinter) Error(err error) {
 	fmt.Fprintf(p.err, "%v\n", err)
 }
 
-func (p *ignoreEventPrinter) Epilogue(stats statsStore) {}
+func (p *ignoreEventPrinter) Epilogue(stats external.Stats) {}
 
 func (p ignoreEventPrinter) Close() {}
