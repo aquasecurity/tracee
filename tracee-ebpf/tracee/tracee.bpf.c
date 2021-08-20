@@ -220,8 +220,7 @@ extern bool CONFIG_ARCH_HAS_SYSCALL_WRAPPER __kconfig;
 #define CONFIG_NEW_PID_FILTER       15
 #define CONFIG_NEW_CONT_FILTER      16
 #define CONFIG_DEBUG_NET            17
-#define CONFIG_PROC_TREE_FILTER_PID 18
-#define CONFIG_PROC_TREE_FILTER_EQ  19
+#define CONFIG_PROC_TREE_FILTER_EQ  18
 
 #define PROCESS_TREE_FILTER_EQ     1
 #define PROCESS_TREE_FILTER_NOT_EQ 2
@@ -509,7 +508,7 @@ BPF_HASH(sys_32_to_64_map, u32, u32);                   // Map 32bit syscalls nu
 BPF_HASH(params_types_map, u32, u64);                   // Encoded parameters types for event
 BPF_HASH(params_names_map, u32, u64);                   // Encoded parameters names for event
 BPF_HASH(sockfd_map, u32, u32);                         // Persist sockfd from syscalls to be used in the corresponding lsm hooks
-BPF_HASH(process_tree_map, u32, u32);                   // Used to filter events by the ancestry of the traced process, k=pid, v=ppid
+BPF_HASH(process_tree_map, u32, u32);                   // Used to filter events by the ancestry of the traced process
 BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t);         // Socket address to process context
 BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t);   // Network identifier to process context
 BPF_ARRAY(file_filter, path_filter_t, 3);               // Used to filter vfs_write events
@@ -997,30 +996,6 @@ static __always_inline int get_config(u32 key)
     return *config;
 }
 
-static __always_inline int is_process_descendent(u32 traced_pid, u32 filter_pid) {
-    u32 MAXIMUM = 100;
-    int i;
-
-    u32* current_pid = &traced_pid;
-#pragma unroll
-    for (i = 0; i < MAXIMUM; i++) {
-        current_pid = bpf_map_lookup_elem(&process_tree_map, current_pid);
-        if (current_pid == NULL) {
-            return 0;
-        }
-
-        if (current_pid == NULL) { /*How to signal that something is messed up?*/ return 0; }
-
-        if (*current_pid == 1) {
-            return 0;
-        }
-        if (*current_pid == filter_pid) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
 // returns 1 if you should trace based on uid, 0 if not
 static __always_inline int uint_filter_matches(int filter_config, void *filter_map, u64 key, u32 less_idx, u32 greater_idx)
 {
@@ -1056,29 +1031,22 @@ static __always_inline int uint_filter_matches(int filter_config, void *filter_m
 }
   
 static __always_inline int process_tree_filter_matches(u32 pid) {
-    int filter_pid = get_config(CONFIG_PROC_TREE_FILTER_PID);
-    if (!filter_pid) {
+
+    int filter_pid_equality = get_config(CONFIG_PROC_TREE_FILTER_EQ);
+    if (!filter_pid_equality) {
         return 1;
     }
 
-    int filter_pid_equal = get_config(CONFIG_PROC_TREE_FILTER_EQ);
-    if (!filter_pid_equal) {
-        return 1;
+    u32* pid_filter = bpf_map_lookup_elem(&process_tree_map, &pid);
+    if (!pid_filter) {
+        // pid is not in the map, meaning not a descendent of the filter pid
+        // if filter is set to !=, then we SHOULD trace (return true)
+        return (filter_pid_equality == PROCESS_TREE_FILTER_NOT_EQ);
+    } else {
+        // pid IS in the map, meaning it is a descendent of the filter pid
+        // if filter is set to ==, then we SHOULD trace (return true)
+        return (filter_pid_equality == PROCESS_TREE_FILTER_EQ);
     }
-
-    int process_is_descendent = is_process_descendent(pid, filter_pid);
-
-    if ((filter_pid_equal == PROCESS_TREE_FILTER_EQ) &&
-        (process_is_descendent)) {
-            return 1;
-    }
-
-    if ((filter_pid_equal == PROCESS_TREE_FILTER_NOT_EQ) && 
-        (!process_is_descendent)) {
-            return 1;
-    }
-
-    return 0;
 }
 
 static __always_inline int equality_filter_matches(int filter_config, void *filter_map, void *key)
@@ -2346,8 +2314,12 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         bpf_map_update_elem(&pid_to_cont_id_map, &child_pid, &container_id->id, BPF_ANY);
     }
 
-    // update process tree map
-    bpf_map_update_elem(&process_tree_map, &child_pid, &parent_pid, BPF_ANY);
+    // update process tree map if the parent has an entry
+    u32 *ppid_filtered = bpf_map_lookup_elem(&process_tree_map, &parent_pid);
+    if (ppid_filtered) {
+        bpf_printk("%d %d %d\n", parent_pid, child_pid, *ppid_filtered);
+        bpf_map_update_elem(&process_tree_map, &child_pid, ppid_filtered, BPF_ANY);
+    } 
 
     if (!should_trace())
         return 0;
@@ -2477,7 +2449,6 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
         bpf_map_delete_elem(&process_tree_map, &pid);
         return 0;
     }
-
     bpf_map_delete_elem(&process_tree_map, &pid);
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
