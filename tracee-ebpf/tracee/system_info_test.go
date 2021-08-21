@@ -11,9 +11,15 @@ func getProcNamespaces() []string {
 }
 
 func TestFetchSystemInfo(t *testing.T) {
-	systemInfo := FetchSystemInfo()
-	require.Contains(t, systemInfo, INIT_NAMESPACES_KEY)
-	initNamespaces := systemInfo[INIT_NAMESPACES_KEY]
+	systemInfoArgs := FetchSystemInfo()
+	systemInfo := make(map[string]int)
+	for _, arg := range systemInfoArgs {
+		if arg.Name == INIT_NAMESPACES_KEY {
+			systemInfo = arg.Value.(map[string]int)
+		}
+	}
+	require.True(t, systemInfo != nil)
+	initNamespaces := systemInfo
 	for _, namespace := range getProcNamespaces() {
 		assert.Contains(t, initNamespaces, namespace)
 	}
