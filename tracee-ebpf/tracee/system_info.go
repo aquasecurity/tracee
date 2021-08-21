@@ -40,7 +40,7 @@ func fetchInitNamespaces() map[string]int {
 	return initNamespacesMap
 }
 
-func (t *Tracee) InvokeSystemInfoEvent() error {
+func InvokeSystemInfoEvent(printer eventPrinter) error {
 	systemInfoArgs := FetchSystemInfo()
 	systemInfoEvent := external.Event{
 		Timestamp:   int(time.Now().UnixNano()),
@@ -50,6 +50,6 @@ func (t *Tracee) InvokeSystemInfoEvent() error {
 		ArgsNum:     len(systemInfoArgs),
 		Args:        systemInfoArgs,
 	}
-	t.printer.Print(systemInfoEvent)
+	printer.Print(systemInfoEvent)
 	return nil
 }

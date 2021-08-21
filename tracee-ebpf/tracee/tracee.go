@@ -371,12 +371,6 @@ func New(cfg Config) (*Tracee, error) {
 		}
 	}
 
-	t.systemInfo = FetchSystemInfo()
-	err = SaveSystemInfo(t.systemInfo, filepath.Dir(t.config.Output.OutPath))
-	if err != nil {
-		return nil, err
-	}
-
 	if err := os.MkdirAll(t.config.Capture.OutputPath, 0755); err != nil {
 		t.Close()
 		return nil, fmt.Errorf("error creating output path: %v", err)
@@ -1138,7 +1132,7 @@ func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 func (t *Tracee) Run() error {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	t.InvokeSystemInfoEvent()
+	InvokeSystemInfoEvent(t.printer)
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
 	t.netPerfMap.Start()
