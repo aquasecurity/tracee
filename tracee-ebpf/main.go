@@ -111,7 +111,7 @@ func main() {
 			btfinfo := helpers.NewBTFInfo()
 			if err = btfinfo.DiscoverDistro(); err != nil {
 				if debug {
-					fmt.Printf("BTF: distro: %v, version: %v, kernel: %v\n", btfinfo.GetDistroId(), btfinfo.GetDistroVer(), btfinfo.GetDistroKernel())
+					fmt.Printf("BTF: distro: %v, version: %v, kernel: %v\n", btfinfo.GetDistroID(), btfinfo.GetDistroVer(), btfinfo.GetDistroKernel())
 				}
 			}
 
