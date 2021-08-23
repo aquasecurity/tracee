@@ -31,7 +31,7 @@ func CreateSystemInfoEvent() (external.Event, error) {
 		Timestamp:   int(time.Now().UnixNano()),
 		ProcessName: "tracee-ebpf",
 		EventID:     0,
-		EventName:   "System Info",
+		EventName:   "system_info_fetch",
 		ArgsNum:     len(systemInfoArgs),
 		Args:        systemInfoArgs,
 	}
