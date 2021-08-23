@@ -940,7 +940,9 @@ func (t *Tracee) attachTcProg(ifaceName string, attachPoint bpf.TcAttachPoint, p
 	hook.SetAttachPoint(attachPoint)
 	err = hook.Create()
 	if err != nil {
-		return nil, fmt.Errorf("tc hook create: %v", err)
+		if errno, ok := err.(syscall.Errno); ok && errno != syscall.EEXIST {
+			return nil, fmt.Errorf("tc hook create: %v", err)
+		}
 	}
 	prog, _ := t.bpfModule.GetProgram(progName)
 	if prog == nil {
