@@ -11,8 +11,6 @@ import (
 	"time"
 )
 
-const SYSTEM_INFO_FILE_NAME = "system_info.json"
-
 const INIT_PROC_NS_DIR = "/proc/1/ns"
 
 const INIT_NAMESPACES_KEY = "initNamespaces"
