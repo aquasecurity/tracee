@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/userevents"
 	"io"
 	"io/ioutil"
 	"math"
@@ -1130,7 +1131,8 @@ func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 func (t *Tracee) Run() error {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	t.InvokeSystemInfoEvent()
+	systemInfoEvent, _ := userevents.CreateSystemInfoEvent()
+	t.printer.Print(systemInfoEvent)
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
 	t.netPerfMap.Start()

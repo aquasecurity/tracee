@@ -1,4 +1,4 @@
-package tracee
+package userevents
 
 import (
 	"github.com/stretchr/testify/assert"
@@ -11,7 +11,7 @@ func getProcNamespaces() []string {
 }
 
 func TestFetchSystemInfo(t *testing.T) {
-	systemInfoArgs := FetchSystemInfo()
+	systemInfoArgs := fetchSystemInfo()
 	systemInfo := make(map[string]int)
 	for _, arg := range systemInfoArgs {
 		if arg.Name == INIT_NAMESPACES_KEY {
