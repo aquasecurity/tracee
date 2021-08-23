@@ -230,7 +230,6 @@ type Tracee struct {
 	pcapWriter        *pcapgo.NgWriter
 	pcapFile          *os.File
 	ngIfacesIndex     map[int]int
-	systemInfo        map[string]interface{}
 }
 
 type counter int32
@@ -1132,7 +1131,8 @@ func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 func (t *Tracee) Run() error {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	InvokeSystemInfoEvent(t.printer)
+	systemInfoEvent, _ := userevents.CreateSystemInfoEvent()
+	t.printer.Print(systemInfoEvent)
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
 	t.netPerfMap.Start()
