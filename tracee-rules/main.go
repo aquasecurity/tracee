@@ -93,10 +93,6 @@ func main() {
 				return err
 			}
 
-			if inputs == (engine.EventSources{}) {
-				return err
-			}
-
 			output, err := setupOutput(os.Stdout, c.String("webhook"), c.String("webhook-template"), c.String("webhook-content-type"), c.String("output-template"))
 			if err != nil {
 				return err
