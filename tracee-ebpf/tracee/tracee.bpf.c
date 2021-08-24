@@ -191,7 +191,9 @@ extern bool CONFIG_ARCH_HAS_SYSCALL_WRAPPER __kconfig;
 #define SECURITY_BPF                1023
 #define SECURITY_BPF_MAP            1024
 #define SECURITY_KERNEL_READ_FILE   1025
-#define MAX_EVENT_ID                1026
+#define SECURITY_PATH_MKNOD         1026
+#define SECURITY_INODE_MKNOD        1027
+#define MAX_EVENT_ID                1028
 
 #define NET_PACKET                      0
 #define DEBUG_NET_SECURITY_BIND         1
@@ -4008,6 +4010,112 @@ int BPF_KPROBE(trace_security_kernel_read_file)
     save_str_to_buf(submit_p, (void *)&string_p->buf[*off], DEC_ARG(0, *tags));
     save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, DEC_ARG(1, *tags));
     save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, DEC_ARG(2, *tags));
+
+    events_perf_submit(ctx);
+    return 0;
+}
+
+SEC("kprobe/security_path_mknod")
+int BPF_KPROBE(trace_security_path_mknod)
+{
+    if (!should_trace()) {
+        return 0;
+    }
+
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
+    if (submit_p == NULL) {
+        return 0;
+    }
+
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+
+    context_t context = init_and_save_context(ctx, submit_p, SECURITY_PATH_MKNOD, 4 /*argnum*/, 0 /*ret*/);
+
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
+    if (!tags) {
+        return -1;
+    }
+
+    struct path* dir = (struct path*)PT_REGS_PARM1(ctx);
+    struct dentry* dentry = (struct dentry*)PT_REGS_PARM2(ctx);
+    unsigned short mode = (unsigned short)PT_REGS_PARM3(ctx);
+    unsigned int dev = (unsigned int)PT_REGS_PARM4(ctx);
+
+    // Get per-cpu string buffer
+    buf_t *string_p = get_buf(STRING_BUF_IDX);
+    if (string_p == NULL) {
+        return -1;
+    }
+
+    save_path_to_str_buf(string_p, dir);
+    u32 *off = get_buf_off(STRING_BUF_IDX);
+    if (off == NULL) {
+        return -1;
+    }
+    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], DEC_ARG(0, *tags));
+
+    save_dentry_path_to_str_buf(string_p, dentry);
+    off = get_buf_off(STRING_BUF_IDX);
+    if (off == NULL) {
+        return -1;
+    }
+    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], DEC_ARG(1, *tags));
+
+    save_to_submit_buf(submit_p, &mode, sizeof(unsigned short), U16_T, DEC_ARG(2, *tags));
+    save_to_submit_buf(submit_p, &dev, sizeof(unsigned int), UINT_T, DEC_ARG(3, *tags));
+
+    events_perf_submit(ctx);
+    return 0;
+}
+
+SEC("kprobe/security_inode_mknod")
+int BPF_KPROBE(trace_security_inode_mknod)
+{
+    if (!should_trace()) {
+        return 0;
+    }
+
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
+    if (submit_p == NULL) {
+        return 0;
+    }
+
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+
+    context_t context = init_and_save_context(ctx, submit_p, SECURITY_INODE_MKNOD, 4 /*argnum*/, 0 /*ret*/);
+
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
+    if (!tags) {
+        return -1;
+    }
+
+    struct path* dir = (struct path*)PT_REGS_PARM1(ctx);
+    struct dentry* dentry = (struct dentry*)PT_REGS_PARM2(ctx);
+    unsigned short mode = (unsigned short)PT_REGS_PARM3(ctx);
+    unsigned int dev = (unsigned int)PT_REGS_PARM4(ctx);
+
+    // Get per-cpu string buffer
+    buf_t *string_p = get_buf(STRING_BUF_IDX);
+    if (string_p == NULL) {
+        return -1;
+    }
+
+    save_path_to_str_buf(string_p, dir);
+    u32 *off = get_buf_off(STRING_BUF_IDX);
+    if (off == NULL) {
+        return -1;
+    }
+    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], DEC_ARG(0, *tags));
+
+    save_dentry_path_to_str_buf(string_p, dentry);
+    off = get_buf_off(STRING_BUF_IDX);
+    if (off == NULL) {
+        return -1;
+    }
+    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], DEC_ARG(1, *tags));
+
+    save_to_submit_buf(submit_p, &mode, sizeof(unsigned short), U16_T, DEC_ARG(2, *tags));
+    save_to_submit_buf(submit_p, &dev, sizeof(unsigned int), UINT_T, DEC_ARG(3, *tags));
 
     events_perf_submit(ctx);
     return 0;

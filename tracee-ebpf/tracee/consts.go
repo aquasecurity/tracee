@@ -169,6 +169,8 @@ const (
 	SecurityBPFEventID
 	SecurityBPFMapEventID
 	SecurityKernelReadFileEventID
+	SecurityPathMknodEventID
+	SecurityInodeMknodEventID
 	MaxEventID
 )
 
@@ -564,6 +566,8 @@ var EventsIDToEvent = map[int32]EventConfig{
 	SecurityBPFEventID:            {ID: SecurityBPFEventID, ID32Bit: sys32undefined, Name: "security_bpf", Probes: []probe{{event: "security_bpf", attach: kprobe, fn: "trace_security_bpf"}}, Sets: []string{"lsm_hooks"}},
 	SecurityBPFMapEventID:         {ID: SecurityBPFMapEventID, ID32Bit: sys32undefined, Name: "security_bpf_map", Probes: []probe{{event: "security_bpf_map", attach: kprobe, fn: "trace_security_bpf_map"}}, Sets: []string{"lsm_hooks"}},
 	SecurityKernelReadFileEventID: {ID: SecurityKernelReadFileEventID, ID32Bit: sys32undefined, Name: "security_kernel_read_file", Probes: []probe{{event: "security_kernel_read_file", attach: kprobe, fn: "trace_security_kernel_read_file"}}, Sets: []string{"lsm_hooks"}},
+	SecurityPathMknodEventID:      {ID: SecurityPathMknodEventID, ID32Bit: sys32undefined, Name: "security_path_mknod", Probes: []probe{{event: "security_path_mknod", attach: kprobe, fn: "trace_security_path_mknod"}}, Sets: []string{"lsm_hooks"}},
+	SecurityInodeMknodEventID:     {ID: SecurityInodeMknodEventID, ID32Bit: sys32undefined, Name: "security_inode_mknod", Probes: []probe{{event: "security_inode_mknod", attach: kprobe, fn: "trace_security_inode_mknod"}}, Sets: []string{"lsm_hooks"}},
 }
 
 // EventsIDToParams is list of the parameters (name and type) used by the events
@@ -935,4 +939,6 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	SecurityBPFEventID:            {{Type: "int", Name: "cmd"}},
 	SecurityBPFMapEventID:         {{Type: "unsigned int", Name: "map_id"}, {Type: "const char*", Name: "map_name"}},
 	SecurityKernelReadFileEventID: {{Type: "const char*", Name: "pathname"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}},
+	SecurityPathMknodEventID:      {{Type: "const char*", Name: "dir_path"}, {Type: "const char*", Name: "file_name"}, {Type: "mode_t", Name: "mode"}, {Type: "dev_t", Name: "dev"}},
+	SecurityInodeMknodEventID:     {{Type: "const char*", Name: "dir_path"}, {Type: "const char*", Name: "file_name"}, {Type: "mode_t", Name: "mode"}, {Type: "dev_t", Name: "dev"}},
 }
