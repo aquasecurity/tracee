@@ -1131,8 +1131,7 @@ func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 func (t *Tracee) Run() error {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	systemInfoEvent, _ := userevents.CreateSystemInfoEvent()
-	t.printer.Print(systemInfoEvent)
+	t.invokeSystemInfoEvent()
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
 	t.netPerfMap.Start()
@@ -1379,4 +1378,11 @@ func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 	}
 
 	return nil
+}
+
+func (t *Tracee) invokeSystemInfoEvent() {
+	if t.eventsToTrace[SystemInfoEventID] {
+		systemInfoEvent, _ := userevents.CreateSystemInfoEvent()
+		t.printer.Print(systemInfoEvent)
+	}
 }
