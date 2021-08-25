@@ -1383,6 +1383,6 @@ func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 func (t *Tracee) invokeSystemInfoEvent() {
 	if t.eventsToTrace[SystemInfoEventID] {
 		systemInfoEvent, _ := userevents.CreateSystemInfoEvent()
-		t.printer.Print(systemInfoEvent)
+		t.config.ChanEvents <- systemInfoEvent
 	}
 }
