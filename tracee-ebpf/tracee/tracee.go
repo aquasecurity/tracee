@@ -849,10 +849,6 @@ func (t *Tracee) populateBPFMaps() error {
 		return fmt.Errorf("error setting process tree filter: %v", err)
 	}
 
-	err = t.setStringFilter(t.config.Filter.UTSFilter, "uts_ns_filter", configUTSNsFilter)
-	if err != nil {
-		return err
-	}
 	for i := uint32(0); i < uint32(len(t.config.Capture.FilterFileWrite)); i++ {
 		FilterFileWriteBytes := []byte(t.config.Capture.FilterFileWrite[i])
 		if err = fileFilterMap.Update(unsafe.Pointer(&i), unsafe.Pointer(&FilterFileWriteBytes[0])); err != nil {
