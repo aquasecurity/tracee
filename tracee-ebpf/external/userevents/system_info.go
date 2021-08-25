@@ -21,9 +21,9 @@ import (
 	"time"
 )
 
-const INIT_PROC_NS_DIR = "/proc/1/ns"
+const InitProcNsDir = "/proc/1/ns"
 
-const INIT_NAMESPACES_KEY = "initNamespaces"
+const InitNamespacesKey = "initNamespaces"
 
 // CreateSystemInfoEvent collect information of the running machine and create an event that includes this information.
 func CreateSystemInfoEvent() (external.Event, error) {
@@ -52,9 +52,9 @@ func fetchSystemInfo() []external.Argument {
 func fetchInitNamespaces() map[string]int {
 	initNamespacesMap := make(map[string]int)
 	namespaceValueReg := regexp.MustCompile(":[[[:digit:]]*]")
-	namespacesLinks, _ := ioutil.ReadDir(INIT_PROC_NS_DIR)
+	namespacesLinks, _ := ioutil.ReadDir(InitProcNsDir)
 	for _, namespaceLink := range namespacesLinks {
-		linkString, _ := os.Readlink(filepath.Join(INIT_PROC_NS_DIR, namespaceLink.Name()))
+		linkString, _ := os.Readlink(filepath.Join(InitProcNsDir, namespaceLink.Name()))
 		trim := strings.Trim(namespaceValueReg.FindString(linkString), "[]:")
 		namespaceNumber, _ := strconv.Atoi(trim)
 		initNamespacesMap[namespaceLink.Name()] = namespaceNumber

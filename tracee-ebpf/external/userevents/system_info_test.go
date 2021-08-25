@@ -14,7 +14,7 @@ func TestFetchSystemInfo(t *testing.T) {
 	systemInfoArgs := fetchSystemInfo()
 	systemInfo := make(map[string]int)
 	for _, arg := range systemInfoArgs {
-		if arg.Name == INIT_NAMESPACES_KEY {
+		if arg.Name == InitNamespacesKey {
 			systemInfo = arg.Value.(map[string]int)
 		}
 	}
