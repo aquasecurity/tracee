@@ -220,10 +220,6 @@ extern bool CONFIG_ARCH_HAS_SYSCALL_WRAPPER __kconfig;
 #define CONFIG_NEW_PID_FILTER       15
 #define CONFIG_NEW_CONT_FILTER      16
 #define CONFIG_DEBUG_NET            17
-#define CONFIG_PROC_TREE_FILTER_EQ  18
-
-#define PROCESS_TREE_FILTER_EQ     1
-#define PROCESS_TREE_FILTER_NOT_EQ 2
 
 // get_config(CONFIG_XXX_FILTER) returns 0 if not enabled
 #define FILTER_IN  1
@@ -1029,25 +1025,7 @@ static __always_inline int uint_filter_matches(int filter_config, void *filter_m
 
     return 1;
 }
-  
-static __always_inline int process_tree_filter_matches(u32 pid) {
 
-    int filter_pid_equality = get_config(CONFIG_PROC_TREE_FILTER_EQ);
-    if (!filter_pid_equality) {
-        return 1;
-    }
-
-    u32* pid_filter = bpf_map_lookup_elem(&process_tree_map, &pid);
-    if (!pid_filter) {
-        // pid is not in the map, meaning not a descendent of the filter pid
-        // if filter is set to !=, then we SHOULD trace (return true)
-        return (filter_pid_equality == PROCESS_TREE_FILTER_NOT_EQ);
-    } else {
-        // pid IS in the map, meaning it is a descendent of the filter pid
-        // if filter is set to ==, then we SHOULD trace (return true)
-        return (filter_pid_equality == PROCESS_TREE_FILTER_EQ);
-    }
-}
 
 static __always_inline int equality_filter_matches(int filter_config, void *filter_map, void *key)
 {
@@ -1141,9 +1119,9 @@ static __always_inline int should_trace()
         return 0;
     }
 
-    if (!process_tree_filter_matches(context.pid)) {
-        return 0;
-    }
+    // TODO:
+    // Check the process tree map if 1 or 2 to trace or not
+
 
     // TODO: after we move to minimal kernel 4.18, we can check for container by cgroupid != host cgroupid
     bool is_container = context.tid != context.host_tid;

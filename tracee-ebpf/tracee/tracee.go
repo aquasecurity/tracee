@@ -564,27 +564,6 @@ func (t *Tracee) initEventsParams() map[int32][]eventParam {
 	return eventsParams
 }
 
-func (t *Tracee) setProcessTreeFilter(filter *ProcessTreeFilter, configFilter bpfConfig) error {
-	if !filter.Enabled {
-		return nil
-	}
-
-	bpfConfigMap, err := t.bpfModule.GetMap("config_map")
-	if err != nil {
-		return err
-	}
-
-	var pidEqual uint32
-	if filter.Equal {
-		pidEqual = processTreeFilterEqual
-	} else {
-		pidEqual = processTreeFilterNotEqual
-	}
-
-	bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&pidEqual))
-	return nil
-}
-
 func (t *Tracee) setUintFilter(filter *UintFilter, filterMapName string, configFilter bpfConfig, lessIdx uint32) error {
 	if !filter.Enabled {
 		return nil
@@ -842,11 +821,6 @@ func (t *Tracee) populateBPFMaps() error {
 	fileFilterMap, err := t.bpfModule.GetMap("file_filter") // u32, u32
 	if err != nil {
 		return err
-	}
-
-	err = t.setProcessTreeFilter(t.config.Filter.ProcessTreeFilter, configProcTreeFilterEquality)
-	if err != nil {
-		return fmt.Errorf("error setting process tree filter: %v", err)
 	}
 
 	for i := uint32(0); i < uint32(len(t.config.Capture.FilterFileWrite)); i++ {
