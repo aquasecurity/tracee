@@ -4,9 +4,9 @@ import (
 	"github.com/prometheus/procfs"
 )
 
-// gatherProcessTreeMap will put all PIDs into the returned map that are
-// children of filteredPID
-func gatherProcessTreeMap(filteredPID uint32) (map[uint32]uint32, error) {
+// gatherProcessTreeMap takes a particular PID and a boolean which represents whether or not it's descedent
+// PIDs should be traced or not. The returns map is a snapshot of the process tree and w
+func gatherProcessTreeMap(filteredPID uint32, processTreeFilterEquality bool) (map[uint32]bool, error) {
 	fs, err := procfs.NewFS("/proc")
 	if err != nil {
 		return nil, err
@@ -15,10 +15,6 @@ func gatherProcessTreeMap(filteredPID uint32) (map[uint32]uint32, error) {
 	procs, err := fs.AllProcs()
 	if err != nil {
 		return nil, err
-	}
-
-	filterPidAndChildPids := map[uint32]uint32{
-		filteredPID: 1,
 	}
 
 	processMap := map[uint32][]uint32{}
@@ -30,21 +26,34 @@ func gatherProcessTreeMap(filteredPID uint32) (map[uint32]uint32, error) {
 		processMap[uint32(stat.PPID)] = append(processMap[uint32(stat.PPID)], uint32(stat.PID))
 	}
 
-	pids := gatherEachPidChildPids(filteredPID, processMap)
+	descendentPIDs := gatherAllDescedentPIDs(filteredPID, processMap)
 
-	for _, p := range pids {
-		filterPidAndChildPids[p] = 1
+	filterMap := map[uint32]bool{
+		filteredPID: processTreeFilterEquality,
 	}
 
-	return filterPidAndChildPids, nil
+	for i := range procs {
+		isDescendent := false
+		for j := range descendentPIDs {
+			if descendentPIDs[j] == uint32(procs[i].PID) {
+				isDescendent = true
+			}
+		}
+		filterMap[uint32(procs[i].PID)] = processTreeFilterEquality && isDescendent
+	}
+
+	return filterMap, nil
 }
 
-func gatherEachPidChildPids(pid uint32, pids map[uint32][]uint32) []uint32 {
+// gatherAllDescedentPIDs takes a specific pid, and a map 'pids' which represents
+// a snapshot of the process tree where k = ppid and v = slice of child pids
+// and returns a slice of all the descedent pids
+func gatherAllDescedentPIDs(pid uint32, pids map[uint32][]uint32) []uint32 {
 
 	allDescendents := []uint32{pid}
 
 	for _, p := range pids[pid] {
-		allDescendents = append(allDescendents, gatherEachPidChildPids(p, pids)...)
+		allDescendents = append(allDescendents, gatherAllDescedentPIDs(p, pids)...)
 	}
 	return allDescendents
 }

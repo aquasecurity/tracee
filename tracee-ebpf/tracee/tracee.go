@@ -923,7 +923,7 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
-	err = t.populateProcessTreeMap(t.config.Filter.ProcessTreeFilter.PID)
+	err = t.populateProcessTreeMap(t.config.Filter.ProcessTreeFilter.PID, t.config.Filter.ProcessTreeFilter.Equal)
 	if err != nil {
 		return fmt.Errorf("error building process tree: %v", err)
 	}
@@ -931,8 +931,9 @@ func (t *Tracee) populateBPFMaps() error {
 	return nil
 }
 
-func (t *Tracee) populateProcessTreeMap(filterPID uint32) error {
-	pidsGoMap, err := gatherProcessTreeMap(filterPID)
+func (t *Tracee) populateProcessTreeMap(filterPID uint32, processTreeFilterEquality bool) error {
+
+	pidsGoMap, err := gatherProcessTreeMap(filterPID, processTreeFilterEquality)
 	if err != nil {
 		return fmt.Errorf("could not gather proccess tree map: %v", err)
 	}
@@ -943,7 +944,11 @@ func (t *Tracee) populateProcessTreeMap(filterPID uint32) error {
 	}
 
 	for k, v := range pidsGoMap {
-		err := processTreeMap.Update(unsafe.Pointer(&k), unsafe.Pointer(&v))
+		filterEqual := processTreeFilterEqual
+		if !v {
+			filterEqual = processTreeFilterNotEqual
+		}
+		err := processTreeMap.Update(unsafe.Pointer(&k), unsafe.Pointer(&filterEqual))
 		if err != nil {
 			return err
 		}
