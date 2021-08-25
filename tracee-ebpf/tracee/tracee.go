@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/userevents"
+	"github.com/aquasecurity/tracee/tracee-ebpf/external/userevents"
 	"io"
 	"io/ioutil"
 	"math"
