@@ -30,6 +30,14 @@ type Event struct {
 	Args                []Argument `json:"args"` //Arguments are ordered according their appearance in the original event
 }
 
+type Stats struct {
+	EventCount  int
+	ErrorCount  int
+	LostEvCount int
+	LostWrCount int
+	LostNtCount int
+}
+
 // ToUnstructured returns a JSON compatible map with string, float, int, bool,
 // []interface{}, or map[string]interface{} children.
 //

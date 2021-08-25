@@ -1,9 +1,7 @@
 package tracee
 
 import (
-	"bytes"
 	"crypto/sha256"
-	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -11,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"math"
+	"net"
 	"os"
 	"os/signal"
 	"path"
@@ -20,15 +19,14 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
-	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
 	"golang.org/x/sys/unix"
-	"inet.af/netaddr"
 )
 
 // Config is a struct containing user defined configuration of tracee
@@ -41,9 +39,12 @@ type Config struct {
 	SecurityAlerts     bool
 	Debug              bool
 	maxPidsCache       int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
+	BTFObjPath         string
 	BPFObjPath         string
 	BPFObjBytes        []byte
 	ChanEvents         chan external.Event
+	ChanErrors         chan error
+	ChanDone           chan external.Stats
 }
 
 type Filter struct {
@@ -118,9 +119,6 @@ type CaptureConfig struct {
 }
 
 type OutputConfig struct {
-	Format         string
-	OutPath        string
-	ErrPath        string
 	StackAddresses bool
 	DetectSyscall  bool
 	ExecEnv        bool
@@ -130,19 +128,6 @@ type OutputConfig struct {
 type netProbe struct {
 	ingressHook *bpf.TcHook
 	egressHook  *bpf.TcHook
-}
-
-// Validate does static validation of the configuration
-func (cfg OutputConfig) Validate() error {
-	if cfg.Format != "table" &&
-		cfg.Format != "table-verbose" &&
-		cfg.Format != "json" &&
-		cfg.Format != "gob" &&
-		!strings.HasPrefix(cfg.Format, "gotemplate=") {
-		return fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info.", cfg.Format)
-	}
-
-	return nil
 }
 
 // Validate does static validation of the configuration
@@ -194,10 +179,18 @@ func (tc Config) Validate() error {
 		return errors.New("nil bpf object in memory")
 	}
 
-	err := tc.Output.Validate()
-	if err != nil {
-		return err
+	if tc.ChanEvents == nil {
+		return errors.New("nil events channel")
 	}
+
+	if tc.ChanErrors == nil {
+		return errors.New("nil errors channel")
+	}
+
+	if tc.ChanDone == nil {
+		return errors.New("nil done channel")
+	}
+
 	return nil
 }
 
@@ -221,7 +214,6 @@ type Tracee struct {
 	lostEvChannel     chan uint64
 	lostWrChannel     chan uint64
 	lostNetChannel    chan uint64
-	printer           eventPrinter
 	bootTime          uint64
 	startTime         uint64
 	stats             statsStore
@@ -234,9 +226,10 @@ type Tracee struct {
 	ParamTypes        map[int32]map[string]string
 	pidsInMntns       bucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
-	tcProbe           netProbe
+	tcProbe           []netProbe
 	pcapWriter        *pcapgo.NgWriter
 	pcapFile          *os.File
+	ngIfacesIndex     map[int]int
 }
 
 type counter int32
@@ -258,6 +251,18 @@ type statsStore struct {
 	lostEvCounter counter
 	lostWrCounter counter
 	lostNtCounter counter
+}
+
+func (t *Tracee) GetStats() external.Stats {
+	var stats external.Stats
+
+	stats.EventCount = int(t.stats.eventCounter)
+	stats.ErrorCount = int(t.stats.errorCounter)
+	stats.LostEvCount = int(t.stats.lostEvCounter)
+	stats.LostWrCount = int(t.stats.lostWrCounter)
+	stats.LostNtCount = int(t.stats.lostNtCounter)
+
+	return stats
 }
 
 // New creates a new Tracee instance based on a given valid Config
@@ -308,33 +313,7 @@ func New(cfg Config) (*Tracee, error) {
 		startTime: uint64(startTime),
 		bootTime:  uint64(bootTime),
 	}
-	outf := os.Stdout
-	if t.config.Output.OutPath != "" {
-		dir := filepath.Dir(t.config.Output.OutPath)
-		os.MkdirAll(dir, 0755)
-		os.Remove(t.config.Output.OutPath)
-		outf, err = os.Create(t.config.Output.OutPath)
-		if err != nil {
-			return nil, err
-		}
-	}
-	errf := os.Stderr
-	if t.config.Output.ErrPath != "" {
-		dir := filepath.Dir(t.config.Output.ErrPath)
-		os.MkdirAll(dir, 0755)
-		os.Remove(t.config.Output.ErrPath)
-		errf, err = os.Create(t.config.Output.ErrPath)
-		if err != nil {
-			return nil, err
-		}
-	}
-	ContainerMode := (t.config.Filter.ContFilter.Enabled && t.config.Filter.ContFilter.Value) ||
-		(t.config.Filter.NewContFilter.Enabled && t.config.Filter.NewContFilter.Value)
-	printObj, err := newEventPrinter(t.config.Output.Format, ContainerMode, t.config.Output.RelativeTime, outf, errf)
-	if err != nil {
-		return nil, err
-	}
-	t.printer = printObj
+
 	t.eventsToTrace = make(map[int32]bool, len(t.config.Filter.EventsToTrace))
 	for _, e := range t.config.Filter.EventsToTrace {
 		// Map value is true iff events requested by the user
@@ -409,10 +388,19 @@ func New(cfg Config) (*Tracee, error) {
 		}
 		t.pcapFile = pcapFile
 
-		// todo: handle multiple ifaces (like xdpdump: https://github.com/cloudflare/xdpcap/blob/master/cmd/xdpcap/main.go)
+		t.ngIfacesIndex = make(map[int]int)
+		for idx, iface := range t.config.Capture.NetIfaces {
+			netIface, err := net.InterfaceByName(iface)
+			if err != nil {
+				return nil, fmt.Errorf("invalid network interface: %s", iface)
+			}
+			// Map real network interface index to NgInterface index
+			t.ngIfacesIndex[netIface.Index] = idx
+		}
+
 		ngIface := pcapgo.NgInterface{
-			Name:       "tc iface",
-			Comment:    "tc iface",
+			Name:       t.config.Capture.NetIfaces[0],
+			Comment:    "tracee tc capture",
 			Filter:     "",
 			LinkType:   layers.LinkTypeEthernet,
 			SnapLength: uint32(math.MaxUint16),
@@ -421,6 +409,21 @@ func New(cfg Config) (*Tracee, error) {
 		pcapWriter, err := pcapgo.NewNgWriterInterface(t.pcapFile, ngIface, pcapgo.NgWriterOptions{})
 		if err != nil {
 			return nil, err
+		}
+
+		for _, iface := range t.config.Capture.NetIfaces[1:] {
+			ngIface = pcapgo.NgInterface{
+				Name:       iface,
+				Comment:    "tracee tc capture",
+				Filter:     "",
+				LinkType:   layers.LinkTypeEthernet,
+				SnapLength: uint32(math.MaxUint16),
+			}
+
+			_, err := pcapWriter.AddInterface(ngIface)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		// Flush the header
@@ -440,58 +443,6 @@ func New(cfg Config) (*Tracee, error) {
 	t.StackAddressesMap = StackAddressesMap
 
 	return t, nil
-}
-
-type bucketsCache struct {
-	buckets     map[uint32][]uint32
-	bucketLimit int
-	Null        uint32
-}
-
-func (c *bucketsCache) Init(bucketLimit int) {
-	c.bucketLimit = bucketLimit
-	c.buckets = make(map[uint32][]uint32)
-	c.Null = 0
-}
-
-func (c *bucketsCache) GetBucket(key uint32) []uint32 {
-	return c.buckets[key]
-}
-
-func (c *bucketsCache) GetBucketItem(key uint32, index int) uint32 {
-	b, exists := c.buckets[key]
-	if !exists {
-		return c.Null
-	}
-	if index >= len(b) {
-		return c.Null
-	}
-	return b[index]
-}
-
-func (c *bucketsCache) AddBucketItem(key uint32, value uint32) {
-	c.addBucketItem(key, value, false)
-}
-
-func (c *bucketsCache) ForceAddBucketItem(key uint32, value uint32) {
-	c.addBucketItem(key, value, true)
-}
-
-func (c *bucketsCache) addBucketItem(key uint32, value uint32, force bool) {
-	b, exists := c.buckets[key]
-	if !exists {
-		c.buckets[key] = make([]uint32, 0, c.bucketLimit)
-		b = c.buckets[key]
-	}
-	if len(b) >= c.bucketLimit {
-		if force {
-			b[0] = value
-		} else {
-			return
-		}
-	} else {
-		c.buckets[key] = append(b, value)
-	}
 }
 
 // UnameRelease gets the version string of the current running kernel
@@ -610,15 +561,24 @@ func (t *Tracee) setUintFilter(filter *UintFilter, filterMapName string, configF
 		return nil
 	}
 
+	filterEqualU32 := uint32(filterEqual) // const need local var for bpfMap.Update()
+	filterNotEqualU32 := uint32(filterNotEqual)
+
+	// equalityFilter filters events for given maps:
+	// 1. uid_filter        u32, u32
+	// 2. pid_filter        u32, u32
+	// 3. mnt_ns_filter     u64, u32
+	// 4. pid_ns_filter     u64, u32
 	equalityFilter, err := t.bpfModule.GetMap(filterMapName)
 	if err != nil {
 		return err
 	}
 	for i := 0; i < len(filter.Equal); i++ {
 		if filter.Is32Bit {
-			err = equalityFilter.Update(uint32(filter.Equal[i]), filterEqual)
+			EqualU32 := uint32(filter.Equal[i])
+			err = equalityFilter.Update(unsafe.Pointer(&EqualU32), unsafe.Pointer(&filterEqualU32))
 		} else {
-			err = equalityFilter.Update(filter.Equal[i], filterEqual)
+			err = equalityFilter.Update(unsafe.Pointer(&filter.Equal[i]), unsafe.Pointer(&filterEqualU32))
 		}
 		if err != nil {
 			return err
@@ -626,40 +586,45 @@ func (t *Tracee) setUintFilter(filter *UintFilter, filterMapName string, configF
 	}
 	for i := 0; i < len(filter.NotEqual); i++ {
 		if filter.Is32Bit {
-			err = equalityFilter.Update(uint32(filter.NotEqual[i]), filterNotEqual)
+			NotEqualU32 := uint32(filter.NotEqual[i])
+			err = equalityFilter.Update(unsafe.Pointer(&NotEqualU32), unsafe.Pointer(&filterNotEqualU32))
 		} else {
-			err = equalityFilter.Update(filter.NotEqual[i], filterNotEqual)
+			err = equalityFilter.Update(unsafe.Pointer(&filter.NotEqual[i]), unsafe.Pointer(&filterNotEqualU32))
 		}
 		if err != nil {
 			return err
 		}
 	}
 
-	inequalityFilter, err := t.bpfModule.GetMap("inequality_filter")
+	filterLessU32 := uint32(filter.Less)
+	filterGreaterU32 := uint32(filter.Greater)
+
+	// inequalityFilter filters events by some uint field either by < or >
+	inequalityFilter, err := t.bpfModule.GetMap("inequality_filter") // u32, u64
 	if err != nil {
+		return err
+	}
+	if err = inequalityFilter.Update(unsafe.Pointer(&lessIdx), unsafe.Pointer(&filterLessU32)); err != nil {
+		return err
+	}
+	lessIdxPlus := uint32(lessIdx + 1)
+	if err = inequalityFilter.Update(unsafe.Pointer(&lessIdxPlus), unsafe.Pointer(&filterGreaterU32)); err != nil {
 		return err
 	}
 
-	err = inequalityFilter.Update(lessIdx, filter.Less)
-	if err != nil {
-		return err
-	}
-	err = inequalityFilter.Update(lessIdx+1, filter.Greater)
-	if err != nil {
-		return err
-	}
-
-	bpfConfigMap, err := t.bpfModule.GetMap("config_map")
+	bpfConfigMap, err := t.bpfModule.GetMap("config_map") // u32, u32
 	if err != nil {
 		return err
 	}
 	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 && filter.Greater == GreaterNotSetUint && filter.Less == LessNotSetUint {
-		bpfConfigMap.Update(uint32(configFilter), filterIn)
+		filterInU32 := uint32(filterIn)
+		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterInU32))
 	} else {
-		bpfConfigMap.Update(uint32(configFilter), filterOut)
+		filterOutU32 := uint32(filterOut)
+		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterOutU32))
 	}
 
-	return nil
+	return err
 }
 
 func (t *Tracee) setStringFilter(filter *StringFilter, filterMapName string, configFilter bpfConfig) error {
@@ -667,34 +632,41 @@ func (t *Tracee) setStringFilter(filter *StringFilter, filterMapName string, con
 		return nil
 	}
 
+	filterEqualU32 := uint32(filterEqual) // const need local var for bpfMap.Update()
+	filterNotEqualU32 := uint32(filterNotEqual)
+
+	// 1. uts_ns_filter     string[MAX_STR_FILTER_SIZE], u32    // filter events by uts namespace name
+	// 2. comm_filter       string[MAX_STR_FILTER_SIZE], u32    // filter events by command name
 	filterMap, err := t.bpfModule.GetMap(filterMapName)
 	if err != nil {
 		return err
 	}
 	for i := 0; i < len(filter.Equal); i++ {
-		err = filterMap.Update([]byte(filter.Equal[i]), filterEqual)
-		if err != nil {
+		filterEqualBytes := []byte(filter.Equal[i])
+		if err = filterMap.Update(unsafe.Pointer(&filterEqualBytes[0]), unsafe.Pointer(&filterEqualU32)); err != nil {
 			return err
 		}
 	}
 	for i := 0; i < len(filter.NotEqual); i++ {
-		err = filterMap.Update([]byte(filter.NotEqual[i]), filterNotEqual)
-		if err != nil {
+		filterNotEqualBytes := []byte(filter.NotEqual[i])
+		if err = filterMap.Update(unsafe.Pointer(&filterNotEqualBytes[0]), unsafe.Pointer(&filterNotEqualU32)); err != nil {
 			return err
 		}
 	}
 
-	bpfConfigMap, err := t.bpfModule.GetMap("config_map")
+	bpfConfigMap, err := t.bpfModule.GetMap("config_map") // u32, u32
 	if err != nil {
 		return err
 	}
 	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 {
-		bpfConfigMap.Update(uint32(configFilter), filterIn)
+		filterInU32 := uint32(filterIn)
+		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterInU32))
 	} else {
-		bpfConfigMap.Update(uint32(configFilter), filterOut)
+		filterOutU32 := uint32(filterOut)
+		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterOutU32))
 	}
 
-	return nil
+	return err
 }
 
 func (t *Tracee) setBoolFilter(filter *BoolFilter, configFilter bpfConfig) error {
@@ -702,118 +674,179 @@ func (t *Tracee) setBoolFilter(filter *BoolFilter, configFilter bpfConfig) error
 		return nil
 	}
 
-	bpfConfigMap, err := t.bpfModule.GetMap("config_map")
+	bpfConfigMap, err := t.bpfModule.GetMap("config_map") // u32, u32
 	if err != nil {
 		return err
 	}
 	if filter.Value {
-		bpfConfigMap.Update(uint32(configFilter), filterIn)
+		filterInU32 := uint32(filterIn)
+		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterInU32))
 	} else {
-		bpfConfigMap.Update(uint32(configFilter), filterOut)
+		filterOutU32 := uint32(filterOut)
+		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterOutU32))
 	}
 
-	return nil
+	return err
+}
+
+// Initialize tail calls program array
+func (t *Tracee) initTailCall(tailNum uint32, mapName string, progName string) error {
+
+	bpfMap, err := t.bpfModule.GetMap(mapName)
+	if err != nil {
+		return err
+	}
+	bpfProg, err := t.bpfModule.GetProgram(progName)
+	if err != nil {
+		return fmt.Errorf("could not get BPF program "+progName+": %v", err)
+	}
+	fd := bpfProg.GetFd()
+	if fd < 0 {
+		return fmt.Errorf("could not get BPF program FD for "+progName+": %v", err)
+	}
+	err = bpfMap.Update(unsafe.Pointer(&tailNum), unsafe.Pointer(&fd))
+
+	return err
 }
 
 func (t *Tracee) populateBPFMaps() error {
-	chosenEventsMap, _ := t.bpfModule.GetMap("chosen_events_map")
+
+	// Set chosen events map according to events chosen by the user
+	chosenEventsMap, err := t.bpfModule.GetMap("chosen_events_map") // u32, u32
+	if err != nil {
+		return err
+	}
 	for e, chosen := range t.eventsToTrace {
-		// Set chosen events map according to events chosen by the user
 		if chosen {
-			chosenEventsMap.Update(e, boolToUInt32(true))
+			eU32 := uint32(e) // e is int32
+			trueU32 := uint32(1)
+			if err := chosenEventsMap.Update(unsafe.Pointer(&eU32), unsafe.Pointer(&trueU32)); err != nil {
+				return err
+			}
 		}
 	}
 
-	sys32to64BPFMap, _ := t.bpfModule.GetMap("sys_32_to_64_map")
+	// Prepare 32bit to 64bit syscall number mapping
+	sys32to64BPFMap, err := t.bpfModule.GetMap("sys_32_to_64_map") // u32, u32
+	if err != nil {
+		return err
+	}
 	for _, event := range EventsIDToEvent {
-		// Prepare 32bit to 64bit syscall number mapping
-		sys32to64BPFMap.Update(event.ID32Bit, event.ID)
+		ID32BitU32 := uint32(event.ID32Bit) // ID32Bit is int32
+		IDU32 := uint32(event.ID)           // ID is int32
+		if err := sys32to64BPFMap.Update(unsafe.Pointer(&ID32BitU32), unsafe.Pointer(&IDU32)); err != nil {
+			return err
+		}
 	}
 
 	// Initialize config and pids maps
-	bpfConfigMap, _ := t.bpfModule.GetMap("config_map")
-	bpfConfigMap.Update(uint32(configDetectOrigSyscall), boolToUInt32(t.config.Output.DetectSyscall))
-	bpfConfigMap.Update(uint32(configExecEnv), boolToUInt32(t.config.Output.ExecEnv))
-	bpfConfigMap.Update(uint32(configStackAddresses), boolToUInt32(t.config.Output.StackAddresses))
-	bpfConfigMap.Update(uint32(configCaptureFiles), boolToUInt32(t.config.Capture.FileWrite))
-	bpfConfigMap.Update(uint32(configExtractDynCode), boolToUInt32(t.config.Capture.Mem))
-	bpfConfigMap.Update(uint32(configTraceePid), uint32(os.Getpid()))
-	bpfConfigMap.Update(uint32(configFollowFilter), boolToUInt32(t.config.Filter.Follow))
-	bpfConfigMap.Update(uint32(configDebugNet), boolToUInt32(t.config.Debug))
+
+	bpfConfigMap, err := t.bpfModule.GetMap("config_map") // u32, u32
+	if err != nil {
+		return err
+	}
+
+	cTP := uint32(configTraceePid)
+	cDOS := uint32(configDetectOrigSyscall)
+	cEV := uint32(configExecEnv)
+	cSA := uint32(configStackAddresses)
+	cCF := uint32(configCaptureFiles)
+	cEDC := uint32(configExtractDynCode)
+	cFF := uint32(configFollowFilter)
+	cDN := uint32(configDebugNet)
+
+	thisPid := uint32(os.Getpid())
+	cDOSval := boolToUInt32(t.config.Output.DetectSyscall)
+	cEVval := boolToUInt32(t.config.Output.ExecEnv)
+	cSAval := boolToUInt32(t.config.Output.StackAddresses)
+	cCFval := boolToUInt32(t.config.Capture.FileWrite)
+	cEDCval := boolToUInt32(t.config.Capture.Mem)
+	cFFval := boolToUInt32(t.config.Filter.Follow)
+	cDNval := boolToUInt32(t.config.Debug)
+
+	errs := make([]error, 0)
+	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cTP), unsafe.Pointer(&thisPid)))
+	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cDOS), unsafe.Pointer(&cDOSval)))
+	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cEV), unsafe.Pointer(&cEVval)))
+	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cSA), unsafe.Pointer(&cSAval)))
+	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cCF), unsafe.Pointer(&cCFval)))
+	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cEDC), unsafe.Pointer(&cEDCval)))
+	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cFF), unsafe.Pointer(&cFFval)))
+	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cDN), unsafe.Pointer(&cDNval)))
+	for _, e := range errs {
+		if e != nil {
+			return e
+		}
+	}
+
+	// Initialize pid_to_cont_id_map if tracing containers
+	c := InitContainers()
+	if err := c.Populate(); err != nil {
+		return err
+	}
+	bpfPidToContIdMap, _ := t.bpfModule.GetMap("pid_to_cont_id_map")
+	for _, contId := range c.GetContainers() {
+		for _, pid := range c.GetPids(contId) {
+			if t.config.Debug {
+				fmt.Println("Running container =", contId, "pid =", pid)
+			}
+			contIdBytes := []byte(contId)
+			err = bpfPidToContIdMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&contIdBytes[0]))
+			if err != nil {
+				return err
+			}
+		}
+	}
 
 	// Initialize tail calls program array
-	bpfProgArrayMap, _ := t.bpfModule.GetMap("prog_array")
-	prog, err := t.bpfModule.GetProgram("trace_ret_vfs_write_tail")
-	if err != nil {
-		return fmt.Errorf("error getting BPF program trace_ret_vfs_write_tail: %v", err)
+	errs = make([]error, 0)
+	errs = append(errs, t.initTailCall(tailVfsWrite, "prog_array", "trace_ret_vfs_write_tail"))
+	errs = append(errs, t.initTailCall(tailVfsWritev, "prog_array", "trace_ret_vfs_writev_tail"))
+	errs = append(errs, t.initTailCall(tailSendBin, "prog_array", "send_bin"))
+	for _, e := range errs {
+		if e != nil {
+			return e
+		}
 	}
-	bpfProgArrayMap.Update(tailVfsWrite, uint32(prog.GetFd()))
-
-	prog, err = t.bpfModule.GetProgram("trace_ret_vfs_writev_tail")
-	if err != nil {
-		return fmt.Errorf("error getting BPF program trace_ret_vfs_writev_tail: %v", err)
-	}
-	bpfProgArrayMap.Update(tailVfsWritev, uint32(prog.GetFd()))
-
-	prog, err = t.bpfModule.GetProgram("send_bin")
-	if err != nil {
-		return fmt.Errorf("error getting BPF program send_bin: %v", err)
-	}
-	bpfProgArrayMap.Update(tailSendBin, uint32(prog.GetFd()))
 
 	// Set filters given by the user to filter file write events
-	fileFilterMap, _ := t.bpfModule.GetMap("file_filter")
-	for i := 0; i < len(t.config.Capture.FilterFileWrite); i++ {
-		fileFilterMap.Update(uint32(i), []byte(t.config.Capture.FilterFileWrite[i]))
-	}
-
-	err = t.setUintFilter(t.config.Filter.UIDFilter, "uid_filter", configUIDFilter, uidLess)
+	fileFilterMap, err := t.bpfModule.GetMap("file_filter") // u32, u32
 	if err != nil {
-		return fmt.Errorf("error setting uid filter: %v", err)
+		return err
+	}
+	for i := uint32(0); i < uint32(len(t.config.Capture.FilterFileWrite)); i++ {
+		FilterFileWriteBytes := []byte(t.config.Capture.FilterFileWrite[i])
+		if err = fileFilterMap.Update(unsafe.Pointer(&i), unsafe.Pointer(&FilterFileWriteBytes[0])); err != nil {
+			return err
+		}
 	}
 
-	err = t.setUintFilter(t.config.Filter.PIDFilter, "pid_filter", configPidFilter, pidLess)
+	errmap := make(map[string]error, 0)
+	errmap["uid_filter"] = t.setUintFilter(t.config.Filter.UIDFilter, "uid_filter", configUIDFilter, uidLess)
+	errmap["pid_filter"] = t.setUintFilter(t.config.Filter.PIDFilter, "pid_filter", configPidFilter, pidLess)
+	errmap["pid=new_filter"] = t.setBoolFilter(t.config.Filter.NewPidFilter, configNewPidFilter)
+	errmap["mnt_ns_filter"] = t.setUintFilter(t.config.Filter.MntNSFilter, "mnt_ns_filter", configMntNsFilter, mntNsLess)
+	errmap["pid_ns_filter"] = t.setUintFilter(t.config.Filter.PidNSFilter, "pid_ns_filter", configPidNsFilter, pidNsLess)
+	errmap["uts_ns_filter"] = t.setStringFilter(t.config.Filter.UTSFilter, "uts_ns_filter", configUTSNsFilter)
+	errmap["comm_filter"] = t.setStringFilter(t.config.Filter.CommFilter, "comm_filter", configCommFilter)
+	errmap["cont_filter"] = t.setBoolFilter(t.config.Filter.ContFilter, configContFilter)
+	errmap["cont=new_filter"] = t.setBoolFilter(t.config.Filter.NewContFilter, configNewContFilter)
+	for k, v := range errmap {
+		if v != nil {
+			return fmt.Errorf("error setting %v filter: %v", k, v)
+		}
+	}
+
+	stringStoreMap, err := t.bpfModule.GetMap("string_store") // []string[MAX_PATH_PREF_SIZE]
 	if err != nil {
-		return fmt.Errorf("error setting pid filter: %v", err)
+		return err
 	}
-
-	err = t.setBoolFilter(t.config.Filter.NewPidFilter, configNewPidFilter)
+	zero := uint32(0)
+	null := []byte("/dev/null")
+	err = stringStoreMap.Update(unsafe.Pointer(&zero), unsafe.Pointer(&null[0]))
 	if err != nil {
-		return fmt.Errorf("error setting pid=new filter: %v", err)
+		return err
 	}
-
-	err = t.setUintFilter(t.config.Filter.MntNSFilter, "mnt_ns_filter", configMntNsFilter, mntNsLess)
-	if err != nil {
-		return fmt.Errorf("error setting mntns filter: %v", err)
-	}
-
-	err = t.setUintFilter(t.config.Filter.PidNSFilter, "pid_ns_filter", configPidNsFilter, pidNsLess)
-	if err != nil {
-		return fmt.Errorf("error setting pidns filter: %v", err)
-	}
-
-	err = t.setStringFilter(t.config.Filter.UTSFilter, "uts_ns_filter", configUTSNsFilter)
-	if err != nil {
-		return fmt.Errorf("error setting uts_ns filter: %v", err)
-	}
-
-	err = t.setStringFilter(t.config.Filter.CommFilter, "comm_filter", configCommFilter)
-	if err != nil {
-		return fmt.Errorf("error setting comm filter: %v", err)
-	}
-
-	err = t.setBoolFilter(t.config.Filter.ContFilter, configContFilter)
-	if err != nil {
-		return fmt.Errorf("error setting cont filter: %v", err)
-	}
-
-	err = t.setBoolFilter(t.config.Filter.NewContFilter, configNewContFilter)
-	if err != nil {
-		return fmt.Errorf("error setting container=new filter: %v", err)
-	}
-
-	stringStoreMap, _ := t.bpfModule.GetMap("string_store")
-	stringStoreMap.Update(uint32(0), []byte("/dev/null"))
 
 	eventsParams := t.initEventsParams()
 
@@ -829,11 +862,16 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
-	sysEnterTailsBPFMap, _ := t.bpfModule.GetMap("sys_enter_tails")
-	//sysExitTailsBPFMap, _ := t.bpfModule.GetMap("sys_exit_tails")
-	paramsTypesBPFMap, _ := t.bpfModule.GetMap("params_types_map")
-	paramsNamesBPFMap, _ := t.bpfModule.GetMap("params_names_map")
+	paramsTypesBPFMap, err := t.bpfModule.GetMap("params_types_map") // u32, u64
+	if err != nil {
+		return err
+	}
+	paramsNamesBPFMap, err := t.bpfModule.GetMap("params_names_map") // u32, u64
+	if err != nil {
+		return err
+	}
 	for e := range t.eventsToTrace {
+		eU32 := uint32(e) // e is int32
 		params := eventsParams[e]
 		var paramsTypes uint64
 		var paramsNames uint64
@@ -841,23 +879,24 @@ func (t *Tracee) populateBPFMaps() error {
 			paramsTypes = paramsTypes | (uint64(param.encType) << (8 * n))
 			paramsNames = paramsNames | (uint64(param.encName) << (8 * n))
 		}
-		paramsTypesBPFMap.Update(e, paramsTypes)
-		paramsNamesBPFMap.Update(e, paramsNames)
-
+		if err := paramsTypesBPFMap.Update(unsafe.Pointer(&eU32), unsafe.Pointer(&paramsTypes)); err != nil {
+			return err
+		}
+		if err := paramsNamesBPFMap.Update(unsafe.Pointer(&eU32), unsafe.Pointer(&paramsNames)); err != nil {
+			return err
+		}
 		if e == ExecveEventID || e == ExecveatEventID {
 			event, ok := EventsIDToEvent[e]
 			if !ok {
 				continue
 			}
-
-			probFnName := fmt.Sprintf("syscall__%s", event.Name)
-
 			// execve functions require tail call on syscall enter as they perform extra work
-			prog, err := t.bpfModule.GetProgram(probFnName)
+			probFnName := fmt.Sprintf("syscall__%s", event.Name)
+			err = t.initTailCall(eU32, "sys_enter_tails", probFnName)
 			if err != nil {
-				return fmt.Errorf("error loading BPF program %s: %v", probFnName, err)
+				return err
 			}
-			sysEnterTailsBPFMap.Update(e, int32(prog.GetFd()))
+			// err = t.initTailCall(uint32(e), "sys_exit_tails", probFnName) // if ever needed
 		}
 	}
 
@@ -873,7 +912,9 @@ func (t *Tracee) attachTcProg(ifaceName string, attachPoint bpf.TcAttachPoint, p
 	hook.SetAttachPoint(attachPoint)
 	err = hook.Create()
 	if err != nil {
-		return nil, fmt.Errorf("tc hook create: %v", err)
+		if errno, ok := err.(syscall.Errno); ok && errno != syscall.EEXIST {
+			return nil, fmt.Errorf("tc hook create: %v", err)
+		}
 	}
 	prog, _ := t.bpfModule.GetProgram(progName)
 	if prog == nil {
@@ -950,7 +991,7 @@ func (t *Tracee) attachNetProbes() error {
 func (t *Tracee) initBPF() error {
 	var err error
 
-	t.bpfModule, err = bpf.NewModuleFromBuffer(t.config.BPFObjBytes, t.config.BPFObjPath)
+	t.bpfModule, err = bpf.NewModuleFromBufferBtf(t.config.BTFObjPath, t.config.BPFObjBytes, t.config.BPFObjPath)
 	if err != nil {
 		return err
 	}
@@ -980,7 +1021,7 @@ func (t *Tracee) initBPF() error {
 	}
 
 	if t.config.Capture.NetIfaces == nil && !t.config.Debug {
-		// SecuritySocketBindEventID is set as an essentialEvent if 'capture net' or 'debug-net' were chosen by the user.
+		// SecuritySocketBindEventID is set as an essentialEvent if 'capture net' or 'debug' were chosen by the user.
 		networkProbes := []string{"tc_ingress", "tc_egress", "trace_udp_sendmsg", "trace_udp_disconnect", "trace_udp_destroy_sock", "trace_udpv6_destroy_sock", "tracepoint__inet_sock_set_state"}
 		for _, progName := range networkProbes {
 			prog, _ := t.bpfModule.GetProgram(progName)
@@ -1005,17 +1046,22 @@ func (t *Tracee) initBPF() error {
 	}
 
 	if t.config.Capture.NetIfaces != nil || t.config.Debug {
-		if t.config.Capture.NetIfaces != nil {
-			ifaceName := t.config.Capture.NetIfaces[0]
-			t.tcProbe.ingressHook, err = t.attachTcProg(ifaceName, bpf.BPFTcIngress, "tc_ingress")
+		for _, iface := range t.config.Capture.NetIfaces {
+			ingressHook, err := t.attachTcProg(iface, bpf.BPFTcIngress, "tc_ingress")
 			if err != nil {
 				return err
 			}
 
-			t.tcProbe.egressHook, err = t.attachTcProg(ifaceName, bpf.BPFTcEgress, "tc_egress")
+			egressHook, err := t.attachTcProg(iface, bpf.BPFTcEgress, "tc_egress")
 			if err != nil {
 				return err
 			}
+
+			tcProbe := netProbe{
+				ingressHook: ingressHook,
+				egressHook:  egressHook,
+			}
+			t.tcProbe = append(t.tcProbe, tcProbe)
 		}
 
 		if err = t.attachNetProbes(); err != nil {
@@ -1095,24 +1141,17 @@ func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 func (t *Tracee) Run() error {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
-	done := make(chan struct{})
-	if t.config.ChanEvents == nil {
-		t.printer.Preamble()
-	}
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
 	t.netPerfMap.Start()
 	go t.processLostEvents()
-	go t.runEventPipeline(done)
+	go t.runEventPipeline(t.config.ChanDone)
 	go t.processFileWrites()
 	go t.processNetEvents()
 	<-sig
 	t.eventsPerfMap.Stop()
 	t.fileWrPerfMap.Stop()
 	t.netPerfMap.Stop()
-	if t.config.ChanEvents == nil {
-		t.printer.Epilogue(t.stats)
-	}
 	// capture profiler stats
 	if t.config.Capture.Profile {
 		f, err := os.Create(filepath.Join(t.config.Capture.OutputPath, "tracee.profile"))
@@ -1154,30 +1193,28 @@ func (t *Tracee) Run() error {
 		}
 	}
 
-	// Signal pipeline that Tracee exits by closing the done channel
-	close(done)
+	t.config.ChanDone <- t.GetStats()
 	t.Close()
 	return nil
 }
 
 // Close cleans up created resources
 func (t *Tracee) Close() {
-	if t.tcProbe.ingressHook != nil {
+	for _, tcProbe := range t.tcProbe {
 		// First, delete filters we created
-		t.tcProbe.ingressHook.Destroy()
-		t.tcProbe.egressHook.Destroy()
+		tcProbe.ingressHook.Destroy()
+		tcProbe.egressHook.Destroy()
 
 		// Todo: Delete the qdisc only if no other filters are installed on it.
 		// There is currently a bug with the libbpf tc API that doesn't allow us to perform this check:
 		// https://lore.kernel.org/bpf/CAMy7=ZULTCoSCcjxw=MdhaKmNM9DXKc=t7QScf9smKKUB+L_fQ@mail.gmail.com/T/#t
-		t.tcProbe.ingressHook.SetAttachPoint(bpf.BPFTcIngressEgress)
-		t.tcProbe.ingressHook.Destroy()
+		tcProbe.ingressHook.SetAttachPoint(bpf.BPFTcIngressEgress)
+		tcProbe.ingressHook.Destroy()
 	}
 
 	if t.bpfModule != nil {
 		t.bpfModule.Close()
 	}
-	t.printer.Close()
 }
 
 func boolToUInt32(b bool) uint32 {
@@ -1185,198 +1222,6 @@ func boolToUInt32(b bool) uint32 {
 		return uint32(1)
 	}
 	return uint32(0)
-}
-
-// CopyFileByPath copies a file from src to dst
-func CopyFileByPath(src, dst string) error {
-	sourceFileStat, err := os.Stat(src)
-	if err != nil {
-		return err
-	}
-	if !sourceFileStat.Mode().IsRegular() {
-		return fmt.Errorf("%s is not a regular file", src)
-	}
-	source, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer source.Close()
-	destination, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer destination.Close()
-	_, err = io.Copy(destination, source)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (t *Tracee) handleError(err error) {
-	t.stats.errorCounter.Increment()
-	t.printer.Error(err)
-}
-
-// shouldProcessEvent decides whether or not to drop an event before further processing it
-func (t *Tracee) shouldProcessEvent(e RawEvent) bool {
-	if t.config.Filter.RetFilter.Enabled {
-		if filter, ok := t.config.Filter.RetFilter.Filters[e.Ctx.EventID]; ok {
-			retVal := e.Ctx.Retval
-			match := false
-			for _, f := range filter.Equal {
-				if retVal == f {
-					match = true
-					break
-				}
-			}
-			if !match && len(filter.Equal) > 0 {
-				return false
-			}
-			for _, f := range filter.NotEqual {
-				if retVal == f {
-					return false
-				}
-			}
-			if (filter.Greater != GreaterNotSetInt) && retVal <= filter.Greater {
-				return false
-			}
-			if (filter.Less != LessNotSetInt) && retVal >= filter.Less {
-				return false
-			}
-		}
-	}
-
-	if t.config.Filter.ArgFilter.Enabled {
-		for _, filter := range t.config.Filter.ArgFilter.Filters[e.Ctx.EventID] {
-			argVal, ok := e.RawArgs[filter.argTag]
-			if !ok {
-				continue
-			}
-			// TODO: use type assertion instead of string convertion
-			argValStr := fmt.Sprint(argVal)
-			match := false
-			for _, f := range filter.Equal {
-				if argValStr == f || (f[len(f)-1] == '*' && strings.HasPrefix(argValStr, f[0:len(f)-1])) {
-					match = true
-					break
-				}
-			}
-			if !match && len(filter.Equal) > 0 {
-				return false
-			}
-			for _, f := range filter.NotEqual {
-				if argValStr == f || (f[len(f)-1] == '*' && strings.HasPrefix(argValStr, f[0:len(f)-1])) {
-					return false
-				}
-			}
-		}
-	}
-
-	return true
-}
-
-func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
-	switch ctx.EventID {
-
-	//capture written files
-	case VfsWriteEventID, VfsWritevEventID:
-		if t.config.Capture.FileWrite {
-			filePath, ok := args[t.EncParamName[ctx.EventID%2]["pathname"]].(string)
-			if !ok {
-				return fmt.Errorf("error parsing vfs_write args")
-			}
-			// path should be absolute, except for e.g memfd_create files
-			if filePath == "" || filePath[0] != '/' {
-				return nil
-			}
-			dev, ok := args[t.EncParamName[ctx.EventID%2]["dev"]].(uint32)
-			if !ok {
-				return fmt.Errorf("error parsing vfs_write args")
-			}
-			inode, ok := args[t.EncParamName[ctx.EventID%2]["inode"]].(uint64)
-			if !ok {
-				return fmt.Errorf("error parsing vfs_write args")
-			}
-
-			// stop processing if write was already indexed
-			fileName := fmt.Sprintf("%d/write.dev-%d.inode-%d", ctx.MntID, dev, inode)
-			indexName, ok := t.writtenFiles[fileName]
-			if ok && indexName == filePath {
-				return nil
-			}
-
-			// index written file by original filepath
-			t.writtenFiles[fileName] = filePath
-		}
-
-	case SecurityBprmCheckEventID:
-
-		//cache this pid by it's mnt ns
-		if ctx.Pid == 1 {
-			t.pidsInMntns.ForceAddBucketItem(ctx.MntID, ctx.HostPid)
-		} else {
-			t.pidsInMntns.AddBucketItem(ctx.MntID, ctx.HostPid)
-		}
-
-		//capture executed files
-		if t.config.Capture.Exec {
-			filePath, ok := args[t.EncParamName[ctx.EventID%2]["pathname"]].(string)
-			if !ok {
-				return fmt.Errorf("error parsing security_bprm_check args")
-			}
-			// path should be absolute, except for e.g memfd_create files
-			if filePath == "" || filePath[0] != '/' {
-				return nil
-			}
-
-			destinationDirPath := filepath.Join(t.config.Capture.OutputPath, strconv.Itoa(int(ctx.MntID)))
-			if err := os.MkdirAll(destinationDirPath, 0755); err != nil {
-				return err
-			}
-			destinationFilePath := filepath.Join(destinationDirPath, fmt.Sprintf("exec.%d.%s", ctx.Ts, filepath.Base(filePath)))
-
-			var err error
-			// try to access the root fs via another process in the same mount namespace (since the current process might have already died)
-			pids := t.pidsInMntns.GetBucket(ctx.MntID)
-			for _, pid := range pids { // will break on success
-				err = nil
-				sourceFilePath := fmt.Sprintf("/proc/%s/root%s", strconv.Itoa(int(pid)), filePath)
-				var sourceFileStat os.FileInfo
-				sourceFileStat, err = os.Stat(sourceFilePath)
-				if err != nil {
-					//TODO: remove dead pid from cache
-					continue
-				}
-
-				sourceFileCtime := sourceFileStat.Sys().(*syscall.Stat_t).Ctim.Nano()
-				capturedFileID := fmt.Sprintf("%d:%s", ctx.MntID, sourceFilePath)
-
-				// create an in-memory profile
-				if t.config.Capture.Profile {
-					t.updateProfile(fmt.Sprintf("%s:%d", filepath.Join(destinationDirPath, fmt.Sprintf("exec.%s", filepath.Base(filePath))), sourceFileCtime), ctx.Ts)
-				}
-
-				//don't capture same file twice unless it was modified
-				lastCtime, ok := t.capturedFiles[capturedFileID]
-				if ok && lastCtime == sourceFileCtime {
-					return nil
-				}
-
-				//capture
-				err = CopyFileByPath(sourceFilePath, destinationFilePath)
-				if err != nil {
-					return err
-				}
-				//mark this file as captured
-				t.capturedFiles[capturedFileID] = sourceFileCtime
-				break
-			}
-			return err
-		}
-	}
-
-	return nil
 }
 
 func getFileHash(fileName string) string {
@@ -1388,18 +1233,6 @@ func getFileHash(fileName string) string {
 		return hex.EncodeToString(h.Sum(nil))
 	}
 	return ""
-}
-
-func (t *Tracee) updateProfile(sourceFilePath string, executionTs uint64) {
-	if pf, ok := t.profiledFiles[sourceFilePath]; !ok {
-		t.profiledFiles[sourceFilePath] = profilerInfo{
-			Times:            1,
-			FirstExecutionTs: executionTs,
-		}
-	} else {
-		pf.Times = pf.Times + 1              // bump execution count
-		t.profiledFiles[sourceFilePath] = pf // update
-	}
 }
 
 func (t *Tracee) updateFileSHA() {
@@ -1429,7 +1262,7 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 		}
 	}
 	switch ctx.EventID {
-	case SysEnterEventID, SysExitEventID, CapCapableEventID, CommitCredsEventID:
+	case SysEnterEventID, SysExitEventID, CapCapableEventID, CommitCredsEventID, SecurityFileOpenEventID:
 		//show syscall name instead of id
 		if id, isInt32 := args[t.EncParamName[ctx.EventID%2]["syscall"]].(int32); isInt32 {
 			if event, isKnown := EventsIDToEvent[id]; isKnown {
@@ -1441,6 +1274,11 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 		if ctx.EventID == CapCapableEventID {
 			if capability, isInt32 := args[t.EncParamName[ctx.EventID%2]["cap"]].(int32); isInt32 {
 				args[t.EncParamName[ctx.EventID%2]["cap"]] = helpers.ParseCapability(capability)
+			}
+		}
+		if ctx.EventID == SecurityFileOpenEventID {
+			if flags, isInt32 := args[t.EncParamName[ctx.EventID%2]["flags"]].(int32); isInt32 {
+				args[t.EncParamName[ctx.EventID%2]["flags"]] = helpers.ParseOpenFlags(uint32(flags))
 			}
 		}
 	case MmapEventID, MprotectEventID, PkeyMprotectEventID:
@@ -1507,7 +1345,7 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 		if flags, isInt32 := args[t.EncParamName[ctx.EventID%2]["flags"]].(int32); isInt32 {
 			args[t.EncParamName[ctx.EventID%2]["flags"]] = helpers.ParseExecFlags(uint32(flags))
 		}
-	case OpenEventID, OpenatEventID, SecurityFileOpenEventID:
+	case OpenEventID, OpenatEventID:
 		if flags, isInt32 := args[t.EncParamName[ctx.EventID%2]["flags"]].(int32); isInt32 {
 			args[t.EncParamName[ctx.EventID%2]["flags"]] = helpers.ParseOpenFlags(uint32(flags))
 		}
@@ -1544,550 +1382,4 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 	}
 
 	return nil
-}
-
-// context struct contains common metadata that is collected for all types of events
-// it is used to unmarshal binary data and therefore should match (bit by bit) to the `context_t` struct in the ebpf code.
-// NOTE: Integers want to be aligned in memory, so if changing the format of this struct
-// keep the 1-byte 'Argnum' as the final parameter before the padding (if padding is needed).
-type context struct {
-	Ts       uint64
-	Pid      uint32
-	Tid      uint32
-	Ppid     uint32
-	HostPid  uint32
-	HostTid  uint32
-	HostPpid uint32
-	Uid      uint32
-	MntID    uint32
-	PidID    uint32
-	Comm     [16]byte
-	UtsName  [16]byte
-	ContID   [16]byte
-	EventID  int32
-	Retval   int64
-	StackID  uint32
-	Argnum   uint8
-	_        [3]byte //padding
-}
-
-func (t *Tracee) processLostEvents() {
-	for {
-		lost := <-t.lostEvChannel
-		t.stats.lostEvCounter.Increment(int(lost))
-	}
-}
-
-func (t *Tracee) processFileWrites() {
-	type chunkMeta struct {
-		BinType  binType
-		MntID    uint32
-		Metadata [20]byte
-		Size     int32
-		Off      uint64
-	}
-
-	type vfsWriteMeta struct {
-		DevID uint32
-		Inode uint64
-		Mode  uint32
-		Pid   uint32
-	}
-
-	type mprotectWriteMeta struct {
-		Ts uint64
-	}
-
-	const (
-		S_IFMT uint32 = 0170000 // bit mask for the file type bit field
-
-		S_IFSOCK uint32 = 0140000 // socket
-		S_IFLNK  uint32 = 0120000 // symbolic link
-		S_IFREG  uint32 = 0100000 // regular file
-		S_IFBLK  uint32 = 0060000 // block device
-		S_IFDIR  uint32 = 0040000 // directory
-		S_IFCHR  uint32 = 0020000 // character device
-		S_IFIFO  uint32 = 0010000 // FIFO
-	)
-
-	for {
-		select {
-		case dataRaw := <-t.fileWrChannel:
-			if len(dataRaw) == 0 {
-				continue
-			}
-			dataBuff := bytes.NewBuffer(dataRaw)
-			var meta chunkMeta
-			appendFile := false
-			err := binary.Read(dataBuff, binary.LittleEndian, &meta)
-			if err != nil {
-				t.handleError(err)
-				continue
-			}
-
-			if meta.Size <= 0 {
-				t.handleError(fmt.Errorf("error in file writer: invalid chunk size: %d", meta.Size))
-				continue
-			}
-			if dataBuff.Len() < int(meta.Size) {
-				t.handleError(fmt.Errorf("error in file writer: chunk too large: %d", meta.Size))
-				continue
-			}
-
-			pathname := path.Join(t.config.Capture.OutputPath, strconv.Itoa(int(meta.MntID)))
-			if err := os.MkdirAll(pathname, 0755); err != nil {
-				t.handleError(err)
-				continue
-			}
-			filename := ""
-			metaBuff := bytes.NewBuffer(meta.Metadata[:])
-			if meta.BinType == sendVfsWrite {
-				var vfsMeta vfsWriteMeta
-				err = binary.Read(metaBuff, binary.LittleEndian, &vfsMeta)
-				if err != nil {
-					t.handleError(err)
-					continue
-				}
-				if vfsMeta.Mode&S_IFSOCK == S_IFSOCK || vfsMeta.Mode&S_IFCHR == S_IFCHR || vfsMeta.Mode&S_IFIFO == S_IFIFO {
-					appendFile = true
-				}
-				if vfsMeta.Pid == 0 {
-					filename = fmt.Sprintf("write.dev-%d.inode-%d", vfsMeta.DevID, vfsMeta.Inode)
-				} else {
-					filename = fmt.Sprintf("write.dev-%d.inode-%d.pid-%d", vfsMeta.DevID, vfsMeta.Inode, vfsMeta.Pid)
-				}
-			} else if meta.BinType == sendMprotect {
-				var mprotectMeta mprotectWriteMeta
-				err = binary.Read(metaBuff, binary.LittleEndian, &mprotectMeta)
-				if err != nil {
-					t.handleError(err)
-					continue
-				}
-				// note: size of buffer will determine maximum extracted file size! (as writes from kernel are immediate)
-				filename = fmt.Sprintf("bin.%d", mprotectMeta.Ts)
-			} else {
-				t.handleError(fmt.Errorf("error in file writer: unknown binary type: %d", meta.BinType))
-				continue
-			}
-
-			fullname := path.Join(pathname, filename)
-
-			f, err := os.OpenFile(fullname, os.O_CREATE|os.O_WRONLY, 0640)
-			if err != nil {
-				t.handleError(err)
-				continue
-			}
-			if appendFile {
-				if _, err := f.Seek(0, io.SeekEnd); err != nil {
-					f.Close()
-					t.handleError(err)
-					continue
-				}
-			} else {
-				if _, err := f.Seek(int64(meta.Off), io.SeekStart); err != nil {
-					f.Close()
-					t.handleError(err)
-					continue
-				}
-			}
-
-			dataBytes, err := readByteSliceFromBuff(dataBuff, int(meta.Size))
-			if err != nil {
-				f.Close()
-				t.handleError(err)
-				continue
-			}
-			if _, err := f.Write(dataBytes); err != nil {
-				f.Close()
-				t.handleError(err)
-				continue
-			}
-			if err := f.Close(); err != nil {
-				t.handleError(err)
-				continue
-			}
-		case lost := <-t.lostWrChannel:
-			t.stats.lostWrCounter.Increment(int(lost))
-		}
-	}
-}
-
-func (t *Tracee) processNetEvents() {
-	// Todo: split pcap files by context (tid + comm)
-	// Todo: add stats for network packets (in epilog)
-	for {
-		select {
-		case in := <-t.netChannel:
-			// Sanity check - timestamp, event id, host tid and comm must exist in all net events
-			if len(in) < 32 {
-				continue
-			}
-
-			timeStamp := binary.LittleEndian.Uint64(in[0:8])
-			netEventId := binary.LittleEndian.Uint32(in[8:12])
-			hostTid := binary.LittleEndian.Uint32(in[12:16])
-			comm := string(bytes.TrimRight(in[16:32], "\x00"))
-			dataBuff := bytes.NewBuffer(in[32:])
-
-			// timeStamp is nanoseconds since system boot time
-			timeStampObj := time.Unix(0, int64(timeStamp+t.bootTime))
-
-			if netEventId == NetPacket {
-				var pktLen uint32
-				err := binary.Read(dataBuff, binary.LittleEndian, &pktLen)
-				if err != nil {
-					t.handleError(err)
-					continue
-				}
-
-				if t.config.Debug {
-					var pktMeta struct {
-						SrcIP    [16]byte
-						DestIP   [16]byte
-						SrcPort  uint16
-						DestPort uint16
-						Protocol uint8
-						_        [7]byte //padding
-					}
-					err = binary.Read(dataBuff, binary.LittleEndian, &pktMeta)
-					if err != nil {
-						t.handleError(err)
-						continue
-					}
-
-					fmt.Printf("%v  %-16s  %-7d  debug_net/packet               Len: %d, SrcIP: %v, SrcPort: %d, DestIP: %v, DestPort: %d, Protocol: %d\n",
-						timeStampObj,
-						comm,
-						hostTid,
-						pktLen,
-						netaddr.IPFrom16(pktMeta.SrcIP),
-						pktMeta.SrcPort,
-						netaddr.IPFrom16(pktMeta.DestIP),
-						pktMeta.DestPort,
-						pktMeta.Protocol)
-				}
-
-				info := gopacket.CaptureInfo{
-					Timestamp:      timeStampObj,
-					CaptureLength:  int(pktLen),
-					Length:         int(pktLen),
-					InterfaceIndex: 0, // todo: accept array of interfaces?
-				}
-
-				err = t.pcapWriter.WritePacket(info, dataBuff.Bytes()[:pktLen])
-				if err != nil {
-					t.handleError(err)
-					continue
-				}
-
-				// todo: maybe we should not flush every packet?
-				err = t.pcapWriter.Flush()
-				if err != nil {
-					t.handleError(err)
-					continue
-				}
-			} else if t.config.Debug {
-				var pkt struct {
-					LocalIP     [16]byte
-					RemoteIP    [16]byte
-					LocalPort   uint16
-					RemotePort  uint16
-					Protocol    uint8
-					_           [3]byte //padding
-					TcpOldState uint32
-					TcpNewState uint32
-					_           [4]byte //padding
-					SockPtr     uint64
-				}
-				err := binary.Read(dataBuff, binary.LittleEndian, &pkt)
-				if err != nil {
-					t.handleError(err)
-					continue
-				}
-
-				switch netEventId {
-				case DebugNetSecurityBind:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/security_socket_bind LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
-				case DebugNetUdpSendmsg:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_sendmsg          LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
-				case DebugNetUdpDisconnect:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/__udp_disconnect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
-				case DebugNetUdpDestroySock:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_destroy_sock     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
-				case DebugNetUdpV6DestroySock:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/udpv6_destroy_sock   LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
-				case DebugNetInetSockSetState:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/inet_sock_set_state  LocalIP: %v, LocalPort: %d, RemoteIP: %v, RemotePort: %d, Protocol: %d, OldState: %d, NewState: %d, SockPtr: 0x%x\n",
-						timeStampObj,
-						comm,
-						hostTid,
-						netaddr.IPFrom16(pkt.LocalIP),
-						pkt.LocalPort,
-						netaddr.IPFrom16(pkt.RemoteIP),
-						pkt.RemotePort,
-						pkt.Protocol,
-						pkt.TcpOldState,
-						pkt.TcpNewState,
-						pkt.SockPtr)
-				case DebugNetTcpConnect:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/tcp_connect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
-				}
-			}
-		case lost := <-t.lostNetChannel:
-			t.stats.lostNtCounter.Increment(int(lost))
-		}
-	}
-}
-
-func readStringFromBuff(buff io.Reader) (string, error) {
-	var err error
-	var size uint32
-	err = binary.Read(buff, binary.LittleEndian, &size)
-	if err != nil {
-		return "", fmt.Errorf("error reading string size: %v", err)
-	}
-	if size > 4096 {
-		return "", fmt.Errorf("string size too big: %d", size)
-	}
-	res, err := readByteSliceFromBuff(buff, int(size-1)) //last byte is string terminating null
-	defer func() {
-		var dummy int8
-		binary.Read(buff, binary.LittleEndian, &dummy) //discard last byte which is string terminating null
-	}()
-	if err != nil {
-		return "", fmt.Errorf("error reading string arg: %v", err)
-	}
-	return string(res), nil
-}
-
-// readStringVarFromBuff reads a null-terminated string from `buff`
-// max length can be passed as `max` to optimize memory allocation, otherwise pass 0
-func readStringVarFromBuff(buff io.Reader, max int) (string, error) {
-	var err error
-	var char int8
-	res := make([]byte, max)
-	err = binary.Read(buff, binary.LittleEndian, &char)
-	if err != nil {
-		return "", fmt.Errorf("error reading null terminated string: %v", err)
-	}
-	for count := 1; char != 0 && count < max; count++ {
-		res = append(res, byte(char))
-		err = binary.Read(buff, binary.LittleEndian, &char)
-		if err != nil {
-			return "", fmt.Errorf("error reading null terminated string: %v", err)
-		}
-	}
-	res = bytes.TrimLeft(res[:], "\000")
-	return string(res), nil
-}
-
-func readByteSliceFromBuff(buff io.Reader, len int) ([]byte, error) {
-	var err error
-	res := make([]byte, len)
-	err = binary.Read(buff, binary.LittleEndian, &res)
-	if err != nil {
-		return nil, fmt.Errorf("error reading byte array: %v", err)
-	}
-	return res, nil
-}
-
-func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
-	res := make(map[string]string, 3)
-	var family int16
-	err := binary.Read(buff, binary.LittleEndian, &family)
-	if err != nil {
-		return nil, err
-	}
-	res["sa_family"] = helpers.ParseSocketDomain(uint32(family))
-	switch family {
-	case 1: // AF_UNIX
-		/*
-			http://man7.org/linux/man-pages/man7/unix.7.html
-			struct sockaddr_un {
-					sa_family_t sun_family;     // AF_UNIX
-					char        sun_path[108];  // Pathname
-			};
-		*/
-		var sunPathBuf [108]byte
-		err := binary.Read(buff, binary.LittleEndian, &sunPathBuf)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing sockaddr_un: %v", err)
-		}
-		trimmedPath := bytes.TrimLeft(sunPathBuf[:], "\000")
-		sunPath := ""
-		if len(trimmedPath) != 0 {
-			sunPath, err = readStringVarFromBuff(bytes.NewBuffer(trimmedPath), 108)
-		}
-		if err != nil {
-			return nil, fmt.Errorf("error parsing sockaddr_un: %v", err)
-		}
-		res["sun_path"] = sunPath
-	case 2: // AF_INET
-		/*
-			http://man7.org/linux/man-pages/man7/ip.7.html
-			struct sockaddr_in {
-				sa_family_t    sin_family; // address family: AF_INET
-				in_port_t      sin_port;   // port in network byte order
-				struct in_addr sin_addr;   // internet address
-				// byte        padding[8]; //https://elixir.bootlin.com/linux/v4.20.17/source/include/uapi/linux/in.h#L232
-			};
-			struct in_addr {
-				uint32_t       s_addr;     // address in network byte order
-			};
-		*/
-		var port uint16
-		err = binary.Read(buff, binary.BigEndian, &port)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing sockaddr_in: %v", err)
-		}
-		res["sin_port"] = strconv.Itoa(int(port))
-		var addr uint32
-		err = binary.Read(buff, binary.BigEndian, &addr)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing sockaddr_in: %v", err)
-		}
-		res["sin_addr"] = PrintUint32IP(addr)
-		_, err := readByteSliceFromBuff(buff, 8)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing sockaddr_in: %v", err)
-		}
-	case 10: // AF_INET6
-		/*
-			struct sockaddr_in6 {
-				sa_family_t     sin6_family;   // AF_INET6
-				in_port_t       sin6_port;     // port number
-				uint32_t        sin6_flowinfo; // IPv6 flow information
-				struct in6_addr sin6_addr;     // IPv6 address
-				uint32_t        sin6_scope_id; // Scope ID (new in 2.4)
-			};
-
-			struct in6_addr {
-				unsigned char   s6_addr[16];   // IPv6 address
-			};
-		*/
-		var port uint16
-		err = binary.Read(buff, binary.BigEndian, &port)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing sockaddr_in6: %v", err)
-		}
-		res["sin6_port"] = strconv.Itoa(int(port))
-
-		var flowinfo uint32
-		err = binary.Read(buff, binary.BigEndian, &flowinfo)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing sockaddr_in6: %v", err)
-		}
-		res["sin6_flowinfo"] = strconv.Itoa(int(flowinfo))
-		addr, err := readByteSliceFromBuff(buff, 16)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing sockaddr_in6: %v", err)
-		}
-		res["sin6_addr"] = Print16BytesSliceIP(addr)
-		var scopeid uint32
-		err = binary.Read(buff, binary.BigEndian, &scopeid)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing sockaddr_in6: %v", err)
-		}
-		res["sin6_scopeid"] = strconv.Itoa(int(scopeid))
-	}
-	return res, nil
-}
-
-// alert struct encodes a security alert message with a timestamp
-// it is used to unmarshal binary data and therefore should match (bit by bit) to the `alert_t` struct in the ebpf code.
-type alert struct {
-	Ts      uint64
-	Msg     uint32
-	Payload uint8
-}
-
-func readArgFromBuff(dataBuff io.Reader) (argTag, interface{}, error) {
-	var err error
-	var res interface{}
-	var argTag argTag
-	var argType argType
-	err = binary.Read(dataBuff, binary.LittleEndian, &argType)
-	if err != nil {
-		return argTag, nil, fmt.Errorf("error reading arg type: %v", err)
-	}
-	err = binary.Read(dataBuff, binary.LittleEndian, &argTag)
-	if err != nil {
-		return argTag, nil, fmt.Errorf("error reading arg tag: %v", err)
-	}
-	switch argType {
-	case u16T:
-		var data uint16
-		err = binary.Read(dataBuff, binary.LittleEndian, &data)
-		res = data
-	case intT:
-		var data int32
-		err = binary.Read(dataBuff, binary.LittleEndian, &data)
-		res = data
-	case uintT, devT, modeT:
-		var data uint32
-		err = binary.Read(dataBuff, binary.LittleEndian, &data)
-		res = data
-	case longT:
-		var data int64
-		err = binary.Read(dataBuff, binary.LittleEndian, &data)
-		res = data
-	case ulongT, offT, sizeT:
-		var data uint64
-		err = binary.Read(dataBuff, binary.LittleEndian, &data)
-		res = data
-	case pointerT:
-		var data uint64
-		err = binary.Read(dataBuff, binary.LittleEndian, &data)
-		res = uintptr(data)
-	case sockAddrT:
-		res, err = readSockaddrFromBuff(dataBuff)
-	case alertT:
-		var data alert
-		err = binary.Read(dataBuff, binary.LittleEndian, &data)
-		res = data
-	case credT:
-		var data external.SlimCred
-		err = binary.Read(dataBuff, binary.LittleEndian, &data)
-		res = data
-	case strT:
-		res, err = readStringFromBuff(dataBuff)
-	case strArrT:
-		var ss []string
-		var arrLen uint8
-		err = binary.Read(dataBuff, binary.LittleEndian, &arrLen)
-		if err != nil {
-			return argTag, nil, fmt.Errorf("error reading string array number of elements: %v", err)
-		}
-		for i := 0; i < int(arrLen); i++ {
-			s, err := readStringFromBuff(dataBuff)
-			if err != nil {
-				return argTag, nil, fmt.Errorf("error reading string element: %v", err)
-			}
-			ss = append(ss, s)
-		}
-		res = ss
-	case bytesT:
-		var size uint32
-		err = binary.Read(dataBuff, binary.LittleEndian, &size)
-		if err != nil {
-			return argTag, nil, fmt.Errorf("error reading byte array size: %v", err)
-		}
-		if size > 4096 {
-			return argTag, nil, fmt.Errorf("byte array size too big: %d", size)
-		}
-		res, err = readByteSliceFromBuff(dataBuff, int(size))
-	default:
-		// if we don't recognize the arg type, we can't parse the rest of the buffer
-		return argTag, nil, fmt.Errorf("error unknown arg type %v", argType)
-	}
-	if err != nil {
-		return argTag, nil, err
-	}
-	return argTag, res, nil
 }

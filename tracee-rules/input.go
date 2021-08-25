@@ -56,7 +56,7 @@ func setupTraceeGobInputSource(opts *traceeInputOptions) (chan types.Event, erro
 				if err == io.EOF {
 					break
 				} else {
-					log.Printf("Error while decoding event: %v", err)
+					log.Printf("error while decoding event: %v", err)
 				}
 			} else {
 				res <- event

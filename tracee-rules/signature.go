@@ -23,7 +23,7 @@ func getSignatures(rulesDir string, rules []string) ([]types.Signature, error) {
 	if rulesDir == "" {
 		exePath, err := os.Executable()
 		if err != nil {
-			log.Print(err)
+			log.Printf("error getting executable path: %v", err)
 		}
 		rulesDir = filepath.Join(filepath.Dir(exePath), "rules")
 	}
@@ -110,7 +110,7 @@ func findRegoSigs(dir string) ([]types.Signature, error) {
 			return err
 		}
 
-		if d.IsDir() || filepath.Ext(d.Name()) != ".rego" || isHelper(d.Name()) {
+		if d.IsDir() || !isRegoFile(d.Name()) || isHelper(d.Name()) {
 			return nil
 		}
 
@@ -137,6 +137,10 @@ func findRegoSigs(dir string) ([]types.Signature, error) {
 		return nil
 	})
 	return res, nil
+}
+
+func isRegoFile(name string) bool {
+	return filepath.Ext(name) == ".rego"
 }
 
 func isHelper(name string) bool {

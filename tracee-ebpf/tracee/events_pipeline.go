@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"unsafe"
 
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
 )
 
-func (t *Tracee) runEventPipeline(done <-chan struct{}) error {
+func (t *Tracee) runEventPipeline(done <-chan external.Stats) error {
 	var errcList []<-chan error
 
 	// Source pipeline stage.
@@ -26,13 +27,7 @@ func (t *Tracee) runEventPipeline(done <-chan struct{}) error {
 	}
 	errcList = append(errcList, errc)
 
-	printEventChan, errc, err := t.prepareEventForPrint(done, processedEventChan)
-	if err != nil {
-		return err
-	}
-	errcList = append(errcList, errc)
-
-	errc, err = t.printEvent(done, printEventChan)
+	errc, err = t.prepareEventForPrint(done, processedEventChan)
 	if err != nil {
 		return err
 	}
@@ -48,7 +43,32 @@ type RawEvent struct {
 	ArgsTags []argTag
 }
 
-func (t *Tracee) decodeRawEvent(done <-chan struct{}) (<-chan RawEvent, <-chan error, error) {
+// context struct contains common metadata that is collected for all types of events
+// it is used to unmarshal binary data and therefore should match (bit by bit) to the `context_t` struct in the ebpf code.
+// NOTE: Integers want to be aligned in memory, so if changing the format of this struct
+// keep the 1-byte 'Argnum' as the final parameter before the padding (if padding is needed).
+type context struct {
+	Ts       uint64
+	Pid      uint32
+	Tid      uint32
+	Ppid     uint32
+	HostPid  uint32
+	HostTid  uint32
+	HostPpid uint32
+	Uid      uint32
+	MntID    uint32
+	PidID    uint32
+	Comm     [16]byte
+	UtsName  [16]byte
+	ContID   [16]byte
+	EventID  int32
+	Retval   int64
+	StackID  uint32
+	Argnum   uint8
+	_        [3]byte //padding
+}
+
+func (t *Tracee) decodeRawEvent(done <-chan external.Stats) (<-chan RawEvent, <-chan error, error) {
 	out := make(chan RawEvent)
 	errc := make(chan error, 1)
 	go func() {
@@ -84,7 +104,7 @@ func (t *Tracee) decodeRawEvent(done <-chan struct{}) (<-chan RawEvent, <-chan e
 	return out, errc, nil
 }
 
-func (t *Tracee) processRawEvent(done <-chan struct{}, in <-chan RawEvent) (<-chan RawEvent, <-chan error, error) {
+func (t *Tracee) processRawEvent(done <-chan external.Stats, in <-chan RawEvent) (<-chan RawEvent, <-chan error, error) {
 	out := make(chan RawEvent)
 	errc := make(chan error, 1)
 	go func() {
@@ -116,7 +136,7 @@ func (t *Tracee) getStackAddresses(StackID uint32) ([]uint64, error) {
 	// Lookup the StackID in the map
 	// The ID could have aged out of the Map, as it only holds a finite number of
 	// Stack IDs in it's Map
-	stackBytes, err := t.StackAddressesMap.GetValue(StackID)
+	stackBytes, err := t.StackAddressesMap.GetValue(unsafe.Pointer(&StackID))
 	if err != nil {
 		return StackAddresses[0:0], nil
 	}
@@ -134,16 +154,45 @@ func (t *Tracee) getStackAddresses(StackID uint32) ([]uint64, error) {
 
 	// Attempt to remove the ID from the map so we don't fill it up
 	// But if this fails continue on
-	_ = t.StackAddressesMap.DeleteKey(StackID)
+	_ = t.StackAddressesMap.DeleteKey(unsafe.Pointer(&StackID))
 
 	return StackAddresses[0:stackCounter], nil
 }
 
-func (t *Tracee) prepareEventForPrint(done <-chan struct{}, in <-chan RawEvent) (<-chan external.Event, <-chan error, error) {
-	out := make(chan external.Event, 1000)
+func newEvent(ctx context, argMetas []external.ArgMeta, args []interface{}, StackAddresses []uint64) (external.Event, error) {
+	e := external.Event{
+		Timestamp:           int(ctx.Ts),
+		ProcessID:           int(ctx.Pid),
+		ThreadID:            int(ctx.Tid),
+		ParentProcessID:     int(ctx.Ppid),
+		HostProcessID:       int(ctx.HostPid),
+		HostThreadID:        int(ctx.HostTid),
+		HostParentProcessID: int(ctx.HostPpid),
+		UserID:              int(ctx.Uid),
+		MountNS:             int(ctx.MntID),
+		PIDNS:               int(ctx.PidID),
+		ProcessName:         string(bytes.TrimRight(ctx.Comm[:], "\x00")),
+		HostName:            string(bytes.TrimRight(ctx.UtsName[:], "\x00")),
+		ContainerID:         string(bytes.TrimRight(ctx.ContID[:], "\x00")),
+		EventID:             int(ctx.EventID),
+		EventName:           EventsIDToEvent[int32(ctx.EventID)].Name,
+		ArgsNum:             int(ctx.Argnum),
+		ReturnValue:         int(ctx.Retval),
+		Args:                make([]external.Argument, 0, len(args)),
+		StackAddresses:      StackAddresses,
+	}
+	for i, arg := range args {
+		e.Args = append(e.Args, external.Argument{
+			ArgMeta: argMetas[i],
+			Value:   arg,
+		})
+	}
+	return e, nil
+}
+
+func (t *Tracee) prepareEventForPrint(done <-chan external.Stats, in <-chan RawEvent) (<-chan error, error) {
 	errc := make(chan error, 1)
 	go func() {
-		defer close(out)
 		defer close(errc)
 		for rawEvent := range in {
 			if !t.shouldPrintEvent(rawEvent) {
@@ -196,26 +245,12 @@ func (t *Tracee) prepareEventForPrint(done <-chan struct{}, in <-chan RawEvent) 
 				errc <- err
 				continue
 			}
+			t.stats.eventCounter.Increment()
+
 			select {
-			case out <- evt:
 			case <-done:
 				return
-			}
-		}
-	}()
-	return out, errc, nil
-}
-
-func (t *Tracee) printEvent(done <-chan struct{}, in <-chan external.Event) (<-chan error, error) {
-	errc := make(chan error, 1)
-	go func() {
-		defer close(errc)
-		for printEvent := range in {
-			if t.config.ChanEvents != nil {
-				t.config.ChanEvents <- printEvent
-			} else {
-				t.stats.eventCounter.Increment()
-				t.printer.Print(printEvent)
+			case t.config.ChanEvents <- evt:
 			}
 		}
 	}()
@@ -229,6 +264,11 @@ func (t *Tracee) WaitForPipeline(errs ...<-chan error) error {
 		t.handleError(err)
 	}
 	return nil
+}
+
+func (t *Tracee) handleError(err error) {
+	t.stats.errorCounter.Increment()
+	t.config.ChanErrors <- err
 }
 
 // MergeErrors merges multiple channels of errors.

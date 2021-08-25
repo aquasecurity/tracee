@@ -52,7 +52,7 @@ $(tools): % : check_%
 .PHONY: test
 ifndef DOCKER
 test: $(GO_SRC) $(tools)
-	go test -v ./...
+	go test $(GOTEST_FLAGS) -v ./...
 	opa test . --verbose --ignore="examples" --ignore="dist" --ignore="benchmark"
 else
 test: $(DOCKER_BUILDER)

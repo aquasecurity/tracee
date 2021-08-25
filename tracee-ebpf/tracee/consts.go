@@ -923,7 +923,7 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	MagicWriteEventID:             {{Type: "const char*", Name: "pathname"}, {Type: "bytes", Name: "bytes"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}},
 	CgroupAttachTaskEventID:       {{Type: "const char*", Name: "cgroup_path"}},
 	SecurityBprmCheckEventID:      {{Type: "const char*", Name: "pathname"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}},
-	SecurityFileOpenEventID:       {{Type: "const char*", Name: "pathname"}, {Type: "int", Name: "flags"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}},
+	SecurityFileOpenEventID:       {{Type: "const char*", Name: "pathname"}, {Type: "int", Name: "flags"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}, {Type: "int", Name: "syscall"}},
 	SecurityInodeUnlinkEventID:    {{Type: "const char*", Name: "pathname"}},
 	SecuritySocketCreateEventID:   {{Type: "int", Name: "family"}, {Type: "int", Name: "type"}, {Type: "int", Name: "protocol"}, {Type: "int", Name: "kern"}},
 	SecuritySocketListenEventID:   {{Type: "int", Name: "sockfd"}, {Type: "struct sockaddr*", Name: "local_addr"}, {Type: "int", Name: "backlog"}},

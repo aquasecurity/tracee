@@ -11,7 +11,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/Masterminds/sprig"
+	sprig "github.com/Masterminds/sprig/v3"
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
@@ -60,7 +60,7 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 			switch res.Context.(type) {
 			case tracee.Event:
 				if err := tOutput.Execute(w, res); err != nil {
-					log.Println("error writing to output: ", err)
+					log.Printf("error writing to output: %v", err)
 				}
 			default:
 				log.Printf("unsupported event detected: %T\n", res.Context)
@@ -69,7 +69,7 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 
 			if webhook != "" {
 				if err := sendToWebhook(tWebhook, res, webhook, webhookTemplate, contentType); err != nil {
-					log.Println(err)
+					log.Printf("error sending to webhook: %v", err)
 				}
 			}
 		}

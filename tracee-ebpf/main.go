@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
+	"github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
 	"github.com/syndtr/gocapability/capability"
 	cli "github.com/urfave/cli/v2"
@@ -37,6 +38,13 @@ func main() {
 		Usage:   "Trace OS events and syscalls using eBPF",
 		Version: version,
 		Action: func(c *cli.Context) error {
+
+			// tracee-ebpf does not suport arguments, only flags
+			if c.NArg() > 0 {
+				cli.ShowAppHelp(c)
+				return nil
+			}
+
 			if c.Bool("list") {
 				printList()
 				return nil
@@ -48,16 +56,6 @@ func main() {
 				SecurityAlerts:     c.Bool("security-alerts"),
 				Debug:              c.Bool("debug"),
 			}
-
-			if checkCommandIsHelp(c.StringSlice("output")) {
-				printOutputHelp()
-				return nil
-			}
-			output, err := prepareOutput(c.StringSlice("output"))
-			if err != nil {
-				return err
-			}
-			cfg.Output = &output
 
 			if checkCommandIsHelp(c.StringSlice("capture")) {
 				printCaptureHelp()
@@ -79,59 +77,151 @@ func main() {
 			}
 			cfg.Filter = &filter
 
+			containerMode := (cfg.Filter.ContFilter.Enabled && cfg.Filter.ContFilter.Value) ||
+				(cfg.Filter.NewContFilter.Enabled && cfg.Filter.NewContFilter.Value)
+
+			if checkCommandIsHelp(c.StringSlice("output")) {
+				printOutputHelp()
+				return nil
+			}
+			output, printer, err := prepareOutput(c.StringSlice("output"), containerMode)
+			if err != nil {
+				return err
+			}
+			cfg.Output = &output
+
 			if c.Bool("security-alerts") {
 				cfg.Filter.EventsToTrace = append(cfg.Filter.EventsToTrace, tracee.MemProtAlertEventID)
 			}
 
-			var bpfBytes []byte
+			// environment capabilities
 
-			// Check if user specified a bpf object path explicitly
-			bpfFilePath, err := checkTraceeBPFEnvPath()
+			err = checkRequiredCapabilities()
 			if err != nil {
 				return err
 			}
+
+			missingKernelOptions := missingKernelConfigOptions()
+			if len(missingKernelOptions) != 0 {
+				return fmt.Errorf("kernel is not properly configured, missing: %v", missingKernelOptions)
+			}
+
+			// try to discover distro by /etc/os-release, fallback to kernel version
+
+			btfinfo := helpers.NewBTFInfo()
+			if err = btfinfo.DiscoverDistro(); err != nil {
+				if debug {
+					fmt.Printf("BTF: distro: %v, version: %v, kernel: %v\n", btfinfo.GetDistroId(), btfinfo.GetDistroVer(), btfinfo.GetDistroKernel())
+				}
+			}
+
+			// decision making based on different factors from environment
+
+			var d = struct {
+				btfenv     bool // external BTF file was provided through env TRACEE_BTF_FILE
+				bpfenv     bool // external BPF file was provided through env TRACEE_BPF_FILE
+				btfvmlinux bool // running kernel provides embedded BTF vmlinux file
+			}{
+				// default values
+
+				btfenv:     false,
+				bpfenv:     false,
+				btfvmlinux: helpers.BTFEnabled(),
+			}
+
+			// change decisions based on environment
+
+			bpfFilePath, err := checkEnvPath("TRACEE_BPF_FILE")
 			if bpfFilePath != "" {
+				d.bpfenv = true
+			} else if bpfFilePath == "" && err != nil {
+				return err
+			}
+			btfFilePath, err := checkEnvPath("TRACEE_BTF_FILE")
+			if btfFilePath != "" {
+				d.btfenv = true
+			} else if btfFilePath == "" && err != nil {
+				return err
+			}
+			if debug {
+				fmt.Printf("BTF: bpfenv = %v, btfenv = %v, vmlinux = %v\n", d.bpfenv, d.btfenv, d.btfvmlinux)
+			}
+
+			// BPF related
+
+			var bpfBytes []byte
+
+			// Decisions in order:
+			// 1. external BPF file given and BTF (vmlinux or env) exists: always load BPF as CO-RE
+			// 2. external BPF file given and no BTF exists: it is a non CO-RE BPF, no need to build
+			// 3. no external BPF file given and BTF (vmlinux or env) exists: load embedded BPF as CO-RE
+			// 4. no external BPF file given and no BTF exists: build non CO-RE BPF
+
+			if d.bpfenv { // external BPF file given
 				if debug {
-					fmt.Printf("BPF object file specified by TRACEE_BPF_FILE found: %s", bpfFilePath)
+					fmt.Printf("BPF: using BPF object from environment: %v\n", bpfFilePath)
 				}
-				bpfBytes, err = ioutil.ReadFile(bpfFilePath)
-				if err != nil {
+				if d.btfvmlinux || d.btfenv { // BTF exists: always load BPF as CO-RE
+					if d.btfenv { // prefer external BTF over internal vmlinux
+						if debug {
+							fmt.Printf("BTF: using BTF file from environment: %v\n", btfFilePath)
+						}
+						cfg.BTFObjPath = btfFilePath
+					}
+				} // TODO: else { check if ELF is really non CO-RE }
+				if bpfBytes, err = ioutil.ReadFile(bpfFilePath); err != nil {
 					return err
 				}
-			} else if btfEnabled() {
-				if debug {
-					fmt.Println("BTF enabled, attempting to unpack CORE bpf object")
-				}
-				bpfFilePath = "embedded-core"
-				bpfBytes, err = unpackCOREBinary()
-				if err != nil {
-					return err
-				}
-			} else {
-				if debug {
-					fmt.Println("BTF is not enabled")
-				}
-				bpfFilePath, err = getBPFObjectPath()
-				if err != nil {
-					return err
-				}
-				bpfBytes, err = ioutil.ReadFile(bpfFilePath)
-				if err != nil {
-					return err
+			} else { // no external BPF file given
+				if d.btfvmlinux || d.btfenv { // BTF exists: load embedded BPF as CO-RE
+					if debug {
+						fmt.Println("BPF: using embedded BPF object")
+					}
+					if d.btfenv {
+						if debug {
+							fmt.Printf("BTF: using BTF file from environment: %v\n", btfFilePath)
+						}
+						cfg.BTFObjPath = btfFilePath
+					}
+					bpfFilePath = "embedded-core"
+					bpfBytes, err = unpackCOREBinary()
+				} else { // build non CO-RE BPF
+					if debug {
+						fmt.Println("BPF: no BTF file was found or provided, building BPF object")
+					}
+					if bpfFilePath, err = getBPFObjectPath(); err != nil {
+						return err
+					}
+					if bpfBytes, err = ioutil.ReadFile(bpfFilePath); err != nil {
+						return err
+					}
 				}
 			}
 
 			cfg.BPFObjPath = bpfFilePath
 			cfg.BPFObjBytes = bpfBytes
 
-			err = checkRequiredCapabilities()
-			if err != nil {
-				return err
-			}
-			missingKernelOptions := missingKernelConfigOptions()
-			if len(missingKernelOptions) != 0 {
-				return fmt.Errorf("kernel is not properly configured, missing: %v", missingKernelOptions)
-			}
+			cfg.ChanEvents = make(chan external.Event)
+			cfg.ChanErrors = make(chan error)
+			cfg.ChanDone = make(chan external.Stats)
+
+			go func() {
+				defer printer.Close()
+				printer.Preamble()
+				for {
+					select {
+					case event := <-cfg.ChanEvents:
+						printer.Print(event)
+					case err := <-cfg.ChanErrors:
+						printer.Error(err)
+					case stats := <-cfg.ChanDone:
+						printer.Epilogue(stats)
+						return
+					}
+				}
+			}()
+
+			// run with created config
 			t, err := tracee.New(cfg)
 			if err != nil {
 				return fmt.Errorf("error creating Tracee: %v", err)
@@ -226,6 +316,8 @@ Possible options:
 out-file:/path/to/file                             write the output to a specified file. create/trim the file if exists (default: stdout)
 err-file:/path/to/file                             write the errors to a specified file. create/trim the file if exists (default: stderr)
 
+none                                               ignore stream of events output, usually used with --capture
+
 option:{stack-addresses,detect-syscall,exec-env}   augment output according to given options (default: none)
   stack-addresses                                  include stack memory addresses for each event
   detect-syscall                                   when tracing kernel functions which are not syscalls, detect and show the original syscall that called that function
@@ -236,38 +328,43 @@ Examples:
   --output json                                            | output as json
   --output gotemplate=/path/to/my.tmpl                     | output as the provided go template
   --output out-file:/my/out err-file:/my/err               | output to /my/out and errors to /my/err
+  --output none                                            | ignore events output
 
 Use this flag multiple times to choose multiple output options
 `
 	fmt.Print(outputHelp)
 }
 
-func prepareOutput(outputSlice []string) (tracee.OutputConfig, error) {
+func prepareOutput(outputSlice []string, containerMode bool) (tracee.OutputConfig, eventPrinter, error) {
 	res := tracee.OutputConfig{}
+	printerKind := "table"
+	outPath := ""
+	errPath := ""
+	var err error
 	for _, o := range outputSlice {
 		outputParts := strings.SplitN(o, ":", 2)
 		numParts := len(outputParts)
-		if numParts == 1 {
-			res.Format = outputParts[0]
-			err := res.Validate()
-			if err != nil {
-				return res, err
-			}
+		if numParts == 1 && outputParts[0] != "none" {
 			outputParts = append(outputParts, outputParts[0])
 			outputParts[0] = "format"
 		}
 
 		switch outputParts[0] {
+		case "none":
+			printerKind = "ignore"
 		case "format":
-			res.Format = outputParts[1]
-			err := res.Validate()
-			if err != nil {
-				return res, err
+			printerKind = outputParts[1]
+			if printerKind != "table" &&
+				printerKind != "table-verbose" &&
+				printerKind != "json" &&
+				printerKind != "gob" &&
+				!strings.HasPrefix(printerKind, "gotemplate=") {
+				return res, nil, fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info.", printerKind)
 			}
 		case "out-file":
-			res.OutPath = outputParts[1]
+			outPath = outputParts[1]
 		case "err-file":
-			res.ErrPath = outputParts[1]
+			errPath = outputParts[1]
 		case "option":
 			switch outputParts[1] {
 			case "stack-addresses":
@@ -279,17 +376,50 @@ func prepareOutput(outputSlice []string) (tracee.OutputConfig, error) {
 			case "relative-time":
 				res.RelativeTime = true
 			default:
-				return res, fmt.Errorf("invalid output option: %s, use '--output help' for more info", outputParts[1])
+				return res, nil, fmt.Errorf("invalid output option: %s, use '--output help' for more info", outputParts[1])
 			}
 		default:
-			return res, fmt.Errorf("invalid output value: %s, use '--output help' for more info", outputParts[1])
+			return res, nil, fmt.Errorf("invalid output value: %s, use '--output help' for more info", outputParts[1])
 		}
 	}
 
-	if res.Format == "" {
-		res.Format = "table"
+	outf := os.Stdout
+	if outPath != "" {
+		// To avoid accidental deletions, make sure this is not a directory
+		fileInfo, err := os.Stat(outPath)
+		if err == nil && fileInfo.IsDir() {
+			return res, nil, fmt.Errorf("cannot use a path of existing directory %s", outPath)
+		}
+		dir := filepath.Dir(outPath)
+		os.MkdirAll(dir, 0755)
+		os.Remove(outPath)
+		outf, err = os.Create(outPath)
+		if err != nil {
+			return res, nil, fmt.Errorf("failed to create output path: %v", err)
+		}
 	}
-	return res, nil
+	errf := os.Stderr
+	if errPath != "" {
+		// To avoid accidental deletions, make sure this is not a directory
+		fileInfo, err := os.Stat(errPath)
+		if err == nil && fileInfo.IsDir() {
+			return res, nil, fmt.Errorf("cannot use a path of existing directory %s", errPath)
+		}
+		dir := filepath.Dir(errPath)
+		os.MkdirAll(dir, 0755)
+		os.Remove(errPath)
+		errf, err = os.Create(errPath)
+		if err != nil {
+			return res, nil, fmt.Errorf("failed to create error path: %v", err)
+		}
+	}
+
+	printer, err := newEventPrinter(printerKind, containerMode, res.RelativeTime, outf, errf)
+	if err != nil {
+		return res, nil, fmt.Errorf("failed to create event printer: %v", err)
+	}
+
+	return res, printer, nil
 }
 
 func printCaptureHelp() {
@@ -300,8 +430,7 @@ Possible options:
 [artifact:]write[=/path/prefix*]   capture written files. A filter can be given to only capture file writes whose path starts with some prefix (up to 50 characters). Up to 3 filters can be given.
 [artifact:]exec                    capture executed files.
 [artifact:]mem                     capture memory regions that had write+execute (w+x) protection, and then changed to execute (x) only.
-[artifact:]all                     capture all of the above artifacts.
-[artifact:]net=interface           capture network traffic of the given interface
+[artifact:]net=interface           capture network traffic of the given interface. Only TCP/UDP protocols are currently supported.
 
 dir:/path/to/dir        path where tracee will save produced artifacts. the artifact will be saved into an 'out' subdirectory. (default: /tmp/tracee).
 profile                 creates a runtime profile of program executions and their metadata for forensics use.
@@ -309,10 +438,11 @@ clear-dir               clear the captured artifacts output dir before starting 
 
 Examples:
   --capture exec                                           | capture executed files into the default output directory
-  --capture all --capture dir:/my/dir --capture clear-dir  | delete /my/dir/out and then capture all supported artifacts into it
+  --capture exec --capture dir:/my/dir --capture clear-dir | delete /my/dir/out and then capture executed files into it
   --capture write=/usr/bin/* --capture write=/etc/*        | capture files that were written into anywhere under /usr/bin/ or /etc/
   --capture exec --capture profile                         | capture executed files and create a runtime profile in the output directory
   --capture net=eth0                                       | capture network traffic of eth0
+  --capture exec --output none                             | capture executed files into the default output directory not printing the stream of events
 
 Use this flag multiple times to choose multiple capture options
 `
@@ -330,8 +460,7 @@ func prepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 		cap := captureSlice[i]
 		if strings.HasPrefix(cap, "artifact:write") ||
 			strings.HasPrefix(cap, "artifact:exec") ||
-			strings.HasPrefix(cap, "artifact:mem") ||
-			strings.HasPrefix(cap, "artifact:all") {
+			strings.HasPrefix(cap, "artifact:mem") {
 			cap = strings.TrimPrefix(cap, "artifact:")
 		}
 		if cap == "write" {
@@ -352,11 +481,17 @@ func prepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 			if _, err := net.InterfaceByName(iface); err != nil {
 				return tracee.CaptureConfig{}, fmt.Errorf("invalid network interface: %s", iface)
 			}
-			capture.NetIfaces = append(capture.NetIfaces, iface)
-		} else if cap == "all" {
-			capture.FileWrite = true
-			capture.Exec = true
-			capture.Mem = true
+			found := false
+			// Check if we already have this interface
+			for _, item := range capture.NetIfaces {
+				if iface == item {
+					found = true
+					break
+				}
+			}
+			if !found {
+				capture.NetIfaces = append(capture.NetIfaces, iface)
+			}
 		} else if cap == "clear-dir" {
 			clearDir = true
 		} else if strings.HasPrefix(cap, "dir:") {
@@ -1112,13 +1247,14 @@ func locateFile(file string, dirs []string) string {
 	return ""
 }
 
-func checkTraceeBPFEnvPath() (string, error) {
-	bpfPath, present := os.LookupEnv("TRACEE_BPF_FILE")
-	if present {
-		if _, err := os.Stat(bpfPath); os.IsNotExist(err) {
-			return "", fmt.Errorf("path given in TRACEE_BPF_FILE doesn't exist!")
+func checkEnvPath(env string) (string, error) {
+	filePath, _ := os.LookupEnv(env)
+	if filePath != "" {
+		_, err := os.Stat(filePath)
+		if err != nil {
+			return "", fmt.Errorf("could not open %s %s", env, filePath)
 		}
-		return bpfPath, nil
+		return filePath, nil
 	}
 	return "", nil
 }
@@ -1409,9 +1545,4 @@ func makeBPFObject(outFile string) error {
 	}
 
 	return nil
-}
-
-func btfEnabled() bool {
-	_, err := os.Stat("/sys/kernel/btf/vmlinux")
-	return err == nil
 }
