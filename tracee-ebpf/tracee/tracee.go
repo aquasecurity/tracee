@@ -564,7 +564,7 @@ func (t *Tracee) initEventsParams() map[int32][]eventParam {
 	return eventsParams
 }
 
-func (t *Tracee) setProcessTreeFilter(filter *ProcessTreeFilter) error {
+func (t *Tracee) setProcessTreeFilter(filter *ProcessTreeFilter, configFilter bpfConfig) error {
 	if !filter.Enabled {
 		return nil
 	}
@@ -581,7 +581,7 @@ func (t *Tracee) setProcessTreeFilter(filter *ProcessTreeFilter) error {
 		pidEqual = processTreeFilterNotEqual
 	}
 
-	bpfConfigMap.Update(uint32(configProcTreeFilterEquality), pidEqual)
+	bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&pidEqual))
 	return nil
 }
 
@@ -844,7 +844,7 @@ func (t *Tracee) populateBPFMaps() error {
 		return err
 	}
 
-	err = t.setProcessTreeFilter(t.config.Filter.ProcessTreeFilter)
+	err = t.setProcessTreeFilter(t.config.Filter.ProcessTreeFilter, configProcTreeFilterEquality)
 	if err != nil {
 		return fmt.Errorf("error setting process tree filter: %v", err)
 	}
@@ -947,10 +947,9 @@ func (t *Tracee) populateProcessTreeMap(filterPID uint32) error {
 	}
 
 	for k, v := range pidsGoMap {
-		fmt.Println("updating process tree map ", k, v)
-		err := processTreeMap.Update(k, uint32(v))
+		err := processTreeMap.Update(unsafe.Pointer(&k), unsafe.Pointer(&v))
 		if err != nil {
-			fmt.Println("WELL THERE YOU GO: ", err)
+			return err
 		}
 	}
 

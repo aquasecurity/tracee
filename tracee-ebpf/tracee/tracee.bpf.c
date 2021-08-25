@@ -2317,7 +2317,6 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     // update process tree map if the parent has an entry
     u32 *ppid_filtered = bpf_map_lookup_elem(&process_tree_map, &parent_pid);
     if (ppid_filtered) {
-        bpf_printk("%d %d %d\n", parent_pid, child_pid, *ppid_filtered);
         bpf_map_update_elem(&process_tree_map, &child_pid, ppid_filtered, BPF_ANY);
     } 
 
