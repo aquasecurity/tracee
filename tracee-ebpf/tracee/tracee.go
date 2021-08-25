@@ -103,7 +103,6 @@ type ArgFilter struct {
 }
 
 type ArgFilterVal struct {
-	argTag   argTag
 	Equal    []string
 	NotEqual []string
 }
@@ -852,18 +851,6 @@ func (t *Tracee) populateBPFMaps() error {
 
 	eventsParams := t.initEventsParams()
 
-	// After initializing event params, we can also initialize argument filters argTags
-	for eventID, eventFilters := range t.config.Filter.ArgFilter.Filters {
-		for argName, filter := range eventFilters {
-			argTag, ok := t.EncParamName[eventID%2][argName]
-			if !ok {
-				return fmt.Errorf("event argument %s for event %d was not initialized correctly", argName, eventID)
-			}
-			filter.argTag = argTag
-			eventFilters[argName] = filter
-		}
-	}
-
 	paramsTypesBPFMap, err := t.bpfModule.GetMap("params_types_map") // u32, u64
 	if err != nil {
 		return err
@@ -1250,7 +1237,7 @@ func (t *Tracee) updateFileSHA() {
 }
 
 // shouldPrintEvent decides whether or not the given event id should be printed to the output
-func (t *Tracee) shouldPrintEvent(e RawEvent) bool {
+func (t *Tracee) shouldEmitEvent(e RawEvent) bool {
 	// Only print events requested by the user
 	if !t.eventsToTrace[e.Ctx.EventID] {
 		return false
@@ -1258,7 +1245,7 @@ func (t *Tracee) shouldPrintEvent(e RawEvent) bool {
 	return true
 }
 
-func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) error {
+func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 	for key, arg := range args {
 		if ptr, isUintptr := arg.(uintptr); isUintptr {
 			args[key] = fmt.Sprintf("0x%X", ptr)
@@ -1267,120 +1254,120 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 	switch ctx.EventID {
 	case SysEnterEventID, SysExitEventID, CapCapableEventID, CommitCredsEventID, SecurityFileOpenEventID:
 		//show syscall name instead of id
-		if id, isInt32 := args[t.EncParamName[ctx.EventID%2]["syscall"]].(int32); isInt32 {
+		if id, isInt32 := args["syscall"].(int32); isInt32 {
 			if event, isKnown := EventsIDToEvent[id]; isKnown {
 				if event.Probes[0].attach == sysCall {
-					args[t.EncParamName[ctx.EventID%2]["syscall"]] = event.Probes[0].event
+					args["syscall"] = event.Probes[0].event
 				}
 			}
 		}
 		if ctx.EventID == CapCapableEventID {
-			if capability, isInt32 := args[t.EncParamName[ctx.EventID%2]["cap"]].(int32); isInt32 {
-				args[t.EncParamName[ctx.EventID%2]["cap"]] = helpers.ParseCapability(capability)
+			if capability, isInt32 := args["cap"].(int32); isInt32 {
+				args["cap"] = helpers.ParseCapability(capability)
 			}
 		}
 		if ctx.EventID == SecurityFileOpenEventID {
-			if flags, isInt32 := args[t.EncParamName[ctx.EventID%2]["flags"]].(int32); isInt32 {
-				args[t.EncParamName[ctx.EventID%2]["flags"]] = helpers.ParseOpenFlags(uint32(flags))
+			if flags, isInt32 := args["flags"].(int32); isInt32 {
+				args["flags"] = helpers.ParseOpenFlags(uint32(flags))
 			}
 		}
 	case MmapEventID, MprotectEventID, PkeyMprotectEventID:
-		if prot, isInt32 := args[t.EncParamName[ctx.EventID%2]["prot"]].(int32); isInt32 {
-			args[t.EncParamName[ctx.EventID%2]["prot"]] = helpers.ParseMemProt(uint32(prot))
+		if prot, isInt32 := args["prot"].(int32); isInt32 {
+			args["prot"] = helpers.ParseMemProt(uint32(prot))
 		}
 	case PtraceEventID:
-		if req, isInt64 := args[t.EncParamName[ctx.EventID%2]["request"]].(int64); isInt64 {
-			args[t.EncParamName[ctx.EventID%2]["request"]] = helpers.ParsePtraceRequest(req)
+		if req, isInt64 := args["request"].(int64); isInt64 {
+			args["request"] = helpers.ParsePtraceRequest(req)
 		}
 	case PrctlEventID:
-		if opt, isInt32 := args[t.EncParamName[ctx.EventID%2]["option"]].(int32); isInt32 {
-			args[t.EncParamName[ctx.EventID%2]["option"]] = helpers.ParsePrctlOption(opt)
+		if opt, isInt32 := args["option"].(int32); isInt32 {
+			args["option"] = helpers.ParsePrctlOption(opt)
 		}
 	case SocketEventID:
-		if dom, isInt32 := args[t.EncParamName[ctx.EventID%2]["domain"]].(int32); isInt32 {
-			args[t.EncParamName[ctx.EventID%2]["domain"]] = helpers.ParseSocketDomain(uint32(dom))
+		if dom, isInt32 := args["domain"].(int32); isInt32 {
+			args["domain"] = helpers.ParseSocketDomain(uint32(dom))
 		}
-		if typ, isInt32 := args[t.EncParamName[ctx.EventID%2]["type"]].(int32); isInt32 {
-			args[t.EncParamName[ctx.EventID%2]["type"]] = helpers.ParseSocketType(uint32(typ))
+		if typ, isInt32 := args["type"].(int32); isInt32 {
+			args["type"] = helpers.ParseSocketType(uint32(typ))
 		}
 	case SecuritySocketCreateEventID:
-		if dom, isInt32 := args[t.EncParamName[ctx.EventID%2]["family"]].(int32); isInt32 {
-			args[t.EncParamName[ctx.EventID%2]["family"]] = helpers.ParseSocketDomain(uint32(dom))
+		if dom, isInt32 := args["family"].(int32); isInt32 {
+			args["family"] = helpers.ParseSocketDomain(uint32(dom))
 		}
-		if typ, isInt32 := args[t.EncParamName[ctx.EventID%2]["type"]].(int32); isInt32 {
-			args[t.EncParamName[ctx.EventID%2]["type"]] = helpers.ParseSocketType(uint32(typ))
+		if typ, isInt32 := args["type"].(int32); isInt32 {
+			args["type"] = helpers.ParseSocketType(uint32(typ))
 		}
 	case ConnectEventID, AcceptEventID, Accept4EventID, BindEventID, GetsocknameEventID:
-		if sockAddr, isStrMap := args[t.EncParamName[ctx.EventID%2]["addr"]].(map[string]string); isStrMap {
+		if sockAddr, isStrMap := args["addr"].(map[string]string); isStrMap {
 			var s string
 			for key, val := range sockAddr {
 				s += fmt.Sprintf("'%s': '%s',", key, val)
 			}
 			s = strings.TrimSuffix(s, ",")
 			s = fmt.Sprintf("{%s}", s)
-			args[t.EncParamName[ctx.EventID%2]["addr"]] = s
+			args["addr"] = s
 		}
 	case SecuritySocketBindEventID, SecuritySocketAcceptEventID, SecuritySocketListenEventID:
-		if sockAddr, isStrMap := args[t.EncParamName[ctx.EventID%2]["local_addr"]].(map[string]string); isStrMap {
+		if sockAddr, isStrMap := args["local_addr"].(map[string]string); isStrMap {
 			var s string
 			for key, val := range sockAddr {
 				s += fmt.Sprintf("'%s': '%s',", key, val)
 			}
 			s = strings.TrimSuffix(s, ",")
 			s = fmt.Sprintf("{%s}", s)
-			args[t.EncParamName[ctx.EventID%2]["local_addr"]] = s
+			args["local_addr"] = s
 		}
 	case SecuritySocketConnectEventID:
-		if sockAddr, isStrMap := args[t.EncParamName[ctx.EventID%2]["remote_addr"]].(map[string]string); isStrMap {
+		if sockAddr, isStrMap := args["remote_addr"].(map[string]string); isStrMap {
 			var s string
 			for key, val := range sockAddr {
 				s += fmt.Sprintf("'%s': '%s',", key, val)
 			}
 			s = strings.TrimSuffix(s, ",")
 			s = fmt.Sprintf("{%s}", s)
-			args[t.EncParamName[ctx.EventID%2]["remote_addr"]] = s
+			args["remote_addr"] = s
 		}
 	case AccessEventID, FaccessatEventID:
-		if mode, isInt32 := args[t.EncParamName[ctx.EventID%2]["mode"]].(int32); isInt32 {
-			args[t.EncParamName[ctx.EventID%2]["mode"]] = helpers.ParseAccessMode(uint32(mode))
+		if mode, isInt32 := args["mode"].(int32); isInt32 {
+			args["mode"] = helpers.ParseAccessMode(uint32(mode))
 		}
 	case ExecveatEventID:
-		if flags, isInt32 := args[t.EncParamName[ctx.EventID%2]["flags"]].(int32); isInt32 {
-			args[t.EncParamName[ctx.EventID%2]["flags"]] = helpers.ParseExecFlags(uint32(flags))
+		if flags, isInt32 := args["flags"].(int32); isInt32 {
+			args["flags"] = helpers.ParseExecFlags(uint32(flags))
 		}
 	case OpenEventID, OpenatEventID:
-		if flags, isInt32 := args[t.EncParamName[ctx.EventID%2]["flags"]].(int32); isInt32 {
-			args[t.EncParamName[ctx.EventID%2]["flags"]] = helpers.ParseOpenFlags(uint32(flags))
+		if flags, isInt32 := args["flags"].(int32); isInt32 {
+			args["flags"] = helpers.ParseOpenFlags(uint32(flags))
 		}
 	case MknodEventID, MknodatEventID, ChmodEventID, FchmodEventID, FchmodatEventID:
-		if mode, isUint32 := args[t.EncParamName[ctx.EventID%2]["mode"]].(uint32); isUint32 {
-			args[t.EncParamName[ctx.EventID%2]["mode"]] = helpers.ParseInodeMode(mode)
+		if mode, isUint32 := args["mode"].(uint32); isUint32 {
+			args["mode"] = helpers.ParseInodeMode(mode)
 		}
 	case MemProtAlertEventID:
-		if alert, isAlert := args[t.EncParamName[ctx.EventID%2]["alert"]].(alert); isAlert {
-			args[t.EncParamName[ctx.EventID%2]["alert"]] = PrintAlert(alert)
+		if alert, isAlert := args["alert"].(alert); isAlert {
+			args["alert"] = PrintAlert(alert)
 		}
 	case CloneEventID:
-		if flags, isUint64 := args[t.EncParamName[ctx.EventID%2]["flags"]].(uint64); isUint64 {
-			args[t.EncParamName[ctx.EventID%2]["flags"]] = helpers.ParseCloneFlags(flags)
+		if flags, isUint64 := args["flags"].(uint64); isUint64 {
+			args["flags"] = helpers.ParseCloneFlags(flags)
 		}
 	case SendtoEventID, RecvfromEventID:
-		addrTag := t.EncParamName[ctx.EventID%2]["dest_addr"]
+		addrType := "dest_addr"
 		if ctx.EventID == RecvfromEventID {
-			addrTag = t.EncParamName[ctx.EventID%2]["src_addr"]
+			addrType = "src_addr"
 		}
-		if sockAddr, isStrMap := args[addrTag].(map[string]string); isStrMap {
+		if sockAddr, isStrMap := args[addrType].(map[string]string); isStrMap {
 			var s string
 			for key, val := range sockAddr {
 				s += fmt.Sprintf("'%s': '%s',", key, val)
 			}
 			s = strings.TrimSuffix(s, ",")
 			s = fmt.Sprintf("{%s}", s)
-			args[addrTag] = s
+			args[addrType] = s
 		}
 	case BpfEventID:
-		if cmd, isInt32 := args[t.EncParamName[ctx.EventID%2]["cmd"]].(int32); isInt32 {
-			args[t.EncParamName[ctx.EventID%2]["cmd"]] = helpers.ParseBPFCmd(cmd)
+		if cmd, isInt32 := args["cmd"].(int32); isInt32 {
+			args["cmd"] = helpers.ParseBPFCmd(cmd)
 		}
 	}
 

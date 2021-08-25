@@ -27,7 +27,7 @@ func (t *Tracee) runEventPipeline(done <-chan struct{}) error {
 	}
 	errcList = append(errcList, errc)
 
-	errc, err = t.prepareEventForPrint(done, processedEventChan)
+	errc, err = t.emitEvent(done, processedEventChan)
 	if err != nil {
 		return err
 	}
@@ -39,8 +39,8 @@ func (t *Tracee) runEventPipeline(done <-chan struct{}) error {
 
 type RawEvent struct {
 	Ctx      context
-	RawArgs  map[argTag]interface{}
-	ArgsTags []argTag
+	Args     map[string]interface{}
+	ArgMetas []external.ArgMeta
 }
 
 // context struct contains common metadata that is collected for all types of events
@@ -83,21 +83,38 @@ func (t *Tracee) decodeRawEvent(done <-chan struct{}) (<-chan RawEvent, <-chan e
 				continue
 			}
 
-			rawArgs := make(map[argTag]interface{})
-			argsTags := make([]argTag, ctx.Argnum)
+			rawEvent := RawEvent{
+				Ctx:      ctx,
+				Args:     make(map[string]interface{}, ctx.Argnum),
+				ArgMetas: make([]external.ArgMeta, ctx.Argnum),
+			}
+
 			for i := 0; i < int(ctx.Argnum); i++ {
-				tag, val, err := readArgFromBuff(dataBuff)
+				argTag, argVal, err := readArgFromBuff(dataBuff)
 				if err != nil {
 					errc <- err
 					continue
 				}
-				argsTags[i] = tag
-				rawArgs[tag] = val
+
+				argName, ok := t.DecParamName[ctx.EventID%2][argTag]
+				if !ok {
+					errc <- fmt.Errorf("invalid arg tag for event %d", ctx.EventID)
+					continue
+				}
+				argType, ok := t.ParamTypes[ctx.EventID][argName]
+				if !ok {
+					errc <- fmt.Errorf("invalid arg type for arg name %s of event %d", argName, ctx.EventID)
+					continue
+				}
+				rawEvent.Args[argName] = argVal
+				rawEvent.ArgMetas[i].Name = argName
+				rawEvent.ArgMetas[i].Type = argType
 			}
+
 			select {
-			case out <- RawEvent{ctx, rawArgs, argsTags}:
 			case <-done:
 				return
+			case out <- rawEvent:
 			}
 		}
 	}()
@@ -114,15 +131,15 @@ func (t *Tracee) processRawEvent(done <-chan struct{}, in <-chan RawEvent) (<-ch
 			if !t.shouldProcessEvent(rawEvent) {
 				continue
 			}
-			err := t.processEvent(&rawEvent.Ctx, rawEvent.RawArgs)
+			err := t.processEvent(&rawEvent.Ctx, rawEvent.Args)
 			if err != nil {
 				errc <- err
 				continue
 			}
 			select {
-			case out <- rawEvent:
 			case <-done:
 				return
+			case out <- rawEvent:
 			}
 		}
 	}()
@@ -159,7 +176,7 @@ func (t *Tracee) getStackAddresses(StackID uint32) ([]uint64, error) {
 	return StackAddresses[0:stackCounter], nil
 }
 
-func newEvent(ctx context, argMetas []external.ArgMeta, args []interface{}, StackAddresses []uint64) (external.Event, error) {
+func newEvent(ctx context, argMetas []external.ArgMeta, args map[string]interface{}, StackAddresses []uint64) (external.Event, error) {
 	e := external.Event{
 		Timestamp:           int(ctx.Ts),
 		ProcessID:           int(ctx.Pid),
@@ -181,46 +198,27 @@ func newEvent(ctx context, argMetas []external.ArgMeta, args []interface{}, Stac
 		Args:                make([]external.Argument, 0, len(args)),
 		StackAddresses:      StackAddresses,
 	}
-	for i, arg := range args {
+	for _, meta := range argMetas {
 		e.Args = append(e.Args, external.Argument{
-			ArgMeta: argMetas[i],
-			Value:   arg,
+			ArgMeta: meta,
+			Value:   args[meta.Name],
 		})
 	}
 	return e, nil
 }
 
-func (t *Tracee) prepareEventForPrint(done <-chan struct{}, in <-chan RawEvent) (<-chan error, error) {
+func (t *Tracee) emitEvent(done <-chan struct{}, in <-chan RawEvent) (<-chan error, error) {
 	errc := make(chan error, 1)
 	go func() {
 		defer close(errc)
 		for rawEvent := range in {
-			if !t.shouldPrintEvent(rawEvent) {
+			if !t.shouldEmitEvent(rawEvent) {
 				continue
 			}
-			err := t.prepareArgsForPrint(&rawEvent.Ctx, rawEvent.RawArgs)
+			err := t.prepareArgs(&rawEvent.Ctx, rawEvent.Args)
 			if err != nil {
 				errc <- err
 				continue
-			}
-			args := make([]interface{}, rawEvent.Ctx.Argnum)
-			argMetas := make([]external.ArgMeta, rawEvent.Ctx.Argnum)
-			for i, tag := range rawEvent.ArgsTags {
-				args[i] = rawEvent.RawArgs[tag]
-				argName, ok := t.DecParamName[rawEvent.Ctx.EventID%2][tag]
-				if ok {
-					argMetas[i].Name = argName
-				} else {
-					errc <- fmt.Errorf("invalid arg tag for event %d", rawEvent.Ctx.EventID)
-					continue
-				}
-				argType, ok := t.ParamTypes[rawEvent.Ctx.EventID][argName]
-				if ok {
-					argMetas[i].Type = argType
-				} else {
-					errc <- fmt.Errorf("invalid arg type for arg name %s of event %d", argName, rawEvent.Ctx.EventID)
-					continue
-				}
 			}
 
 			// Add stack trace if needed
@@ -240,17 +238,17 @@ func (t *Tracee) prepareEventForPrint(done <-chan struct{}, in <-chan RawEvent) 
 				rawEvent.Ctx.Ts += t.bootTime
 			}
 
-			evt, err := newEvent(rawEvent.Ctx, argMetas, args, StackAddresses)
+			evt, err := newEvent(rawEvent.Ctx, rawEvent.ArgMetas, rawEvent.Args, StackAddresses)
 			if err != nil {
 				errc <- err
 				continue
 			}
-			t.stats.eventCounter.Increment()
 
 			select {
 			case <-done:
 				return
 			case t.config.ChanEvents <- evt:
+				t.stats.eventCounter.Increment()
 			}
 		}
 	}()

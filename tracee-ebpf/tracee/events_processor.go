@@ -47,8 +47,8 @@ func (t *Tracee) shouldProcessEvent(e RawEvent) bool {
 	}
 
 	if t.config.Filter.ArgFilter.Enabled {
-		for _, filter := range t.config.Filter.ArgFilter.Filters[e.Ctx.EventID] {
-			argVal, ok := e.RawArgs[filter.argTag]
+		for argName, filter := range t.config.Filter.ArgFilter.Filters[e.Ctx.EventID] {
+			argVal, ok := e.Args[argName]
 			if !ok {
 				continue
 			}
@@ -75,13 +75,13 @@ func (t *Tracee) shouldProcessEvent(e RawEvent) bool {
 	return true
 }
 
-func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
+func (t *Tracee) processEvent(ctx *context, args map[string]interface{}) error {
 	switch ctx.EventID {
 
 	//capture written files
 	case VfsWriteEventID, VfsWritevEventID:
 		if t.config.Capture.FileWrite {
-			filePath, ok := args[t.EncParamName[ctx.EventID%2]["pathname"]].(string)
+			filePath, ok := args["pathname"].(string)
 			if !ok {
 				return fmt.Errorf("error parsing vfs_write args")
 			}
@@ -89,11 +89,11 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 			if filePath == "" || filePath[0] != '/' {
 				return nil
 			}
-			dev, ok := args[t.EncParamName[ctx.EventID%2]["dev"]].(uint32)
+			dev, ok := args["dev"].(uint32)
 			if !ok {
 				return fmt.Errorf("error parsing vfs_write args")
 			}
-			inode, ok := args[t.EncParamName[ctx.EventID%2]["inode"]].(uint64)
+			inode, ok := args["inode"].(uint64)
 			if !ok {
 				return fmt.Errorf("error parsing vfs_write args")
 			}
@@ -120,7 +120,7 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 
 		//capture executed files
 		if t.config.Capture.Exec {
-			filePath, ok := args[t.EncParamName[ctx.EventID%2]["pathname"]].(string)
+			filePath, ok := args["pathname"].(string)
 			if !ok {
 				return fmt.Errorf("error parsing security_bprm_check args")
 			}
