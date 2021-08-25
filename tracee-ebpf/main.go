@@ -203,10 +203,9 @@ func main() {
 
 			cfg.ChanEvents = make(chan external.Event)
 			cfg.ChanErrors = make(chan error)
-			cfg.ChanDone = make(chan external.Stats)
+			cfg.ChanDone = make(chan struct{})
 
 			go func() {
-				defer printer.Close()
 				printer.Preamble()
 				for {
 					select {
@@ -214,8 +213,7 @@ func main() {
 						printer.Print(event)
 					case err := <-cfg.ChanErrors:
 						printer.Error(err)
-					case stats := <-cfg.ChanDone:
-						printer.Epilogue(stats)
+					case <-cfg.ChanDone:
 						return
 					}
 				}
@@ -226,7 +224,12 @@ func main() {
 			if err != nil {
 				return fmt.Errorf("error creating Tracee: %v", err)
 			}
-			return t.Run()
+			err = t.Run()
+
+			stats := t.GetStats()
+			printer.Epilogue(stats)
+			printer.Close()
+			return err
 		},
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
