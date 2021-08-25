@@ -11,7 +11,7 @@ import (
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
 )
 
-func (t *Tracee) runEventPipeline(done <-chan external.Stats) error {
+func (t *Tracee) runEventPipeline(done <-chan struct{}) error {
 	var errcList []<-chan error
 
 	// Source pipeline stage.
@@ -68,7 +68,7 @@ type context struct {
 	_        [3]byte //padding
 }
 
-func (t *Tracee) decodeRawEvent(done <-chan external.Stats) (<-chan RawEvent, <-chan error, error) {
+func (t *Tracee) decodeRawEvent(done <-chan struct{}) (<-chan RawEvent, <-chan error, error) {
 	out := make(chan RawEvent)
 	errc := make(chan error, 1)
 	go func() {
@@ -104,7 +104,7 @@ func (t *Tracee) decodeRawEvent(done <-chan external.Stats) (<-chan RawEvent, <-
 	return out, errc, nil
 }
 
-func (t *Tracee) processRawEvent(done <-chan external.Stats, in <-chan RawEvent) (<-chan RawEvent, <-chan error, error) {
+func (t *Tracee) processRawEvent(done <-chan struct{}, in <-chan RawEvent) (<-chan RawEvent, <-chan error, error) {
 	out := make(chan RawEvent)
 	errc := make(chan error, 1)
 	go func() {
@@ -190,7 +190,7 @@ func newEvent(ctx context, argMetas []external.ArgMeta, args []interface{}, Stac
 	return e, nil
 }
 
-func (t *Tracee) prepareEventForPrint(done <-chan external.Stats, in <-chan RawEvent) (<-chan error, error) {
+func (t *Tracee) prepareEventForPrint(done <-chan struct{}, in <-chan RawEvent) (<-chan error, error) {
 	errc := make(chan error, 1)
 	go func() {
 		defer close(errc)

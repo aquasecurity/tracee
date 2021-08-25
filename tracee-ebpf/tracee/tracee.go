@@ -44,7 +44,7 @@ type Config struct {
 	BPFObjBytes        []byte
 	ChanEvents         chan external.Event
 	ChanErrors         chan error
-	ChanDone           chan external.Stats
+	ChanDone           chan struct{}
 }
 
 type Filter struct {
@@ -1193,7 +1193,8 @@ func (t *Tracee) Run() error {
 		}
 	}
 
-	t.config.ChanDone <- t.GetStats()
+	// Signal pipeline that Tracee exits by closing the done channel
+	close(t.config.ChanDone)
 	t.Close()
 	return nil
 }
