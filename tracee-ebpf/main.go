@@ -870,6 +870,9 @@ func parseProcessTreeFilter(operatorAndValues string, procTreeFilter *tracee.Pro
 	} else if strings.HasPrefix(operatorAndValues, "!=") {
 		procTreeFilter.Equal = false
 		valuesString = operatorAndValues[2:]
+		if len(valuesString) == 0 {
+			return fmt.Errorf("no value passed with operator in process tree filter")
+		}
 	} else {
 		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
 	}
