@@ -12,7 +12,7 @@ Tracee-eBPF lets you easily trace events that originate in containers using `--t
 Event metadata can be used in trace expression as well. For example, to trace only `openat` syscalls, use `--trace event:openat`. But you can also filter on a specific argument of the event, e.g `--trace openat.pathname=/bin/ls` which will show only `openat` syscalls that operate on the file `/bin/ls`.
 
 A useful trace mode is the `--trace follow` which, if specified, will trace not only processes that match the given trace expressions, but also their child processes.
-For example, the following will trace all the events that originate from zsh shell, including all of the processes that it will spawn: `--trace command=zsh --follow`.
+For example, the following will trace all the events that originate from zsh shell, including all of the processes that it will spawn: `--trace comm=zsh --trace follow`.
 
 ## CLI Options
 
