@@ -32,6 +32,7 @@ const (
 	configNewPidFilter
 	configNewContFilter
 	configDebugNet
+	configProcTreeFilter
 )
 
 const (
@@ -53,11 +54,6 @@ const (
 	mntNsGreater
 	pidNsLess
 	pidNsGreater
-)
-
-const (
-	processTreeFilterEqual uint32 = iota + 1
-	processTreeFilterNotEqual
 )
 
 // Set default inequality values

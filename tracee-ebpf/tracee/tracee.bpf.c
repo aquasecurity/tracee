@@ -220,6 +220,7 @@ extern bool CONFIG_ARCH_HAS_SYSCALL_WRAPPER __kconfig;
 #define CONFIG_NEW_PID_FILTER       15
 #define CONFIG_NEW_CONT_FILTER      16
 #define CONFIG_DEBUG_NET            17
+#define CONFIG_PROC_TREE_FILTER     18
 
 // get_config(CONFIG_XXX_FILTER) returns 0 if not enabled
 #define FILTER_IN  1
@@ -1119,9 +1120,10 @@ static __always_inline int should_trace()
         return 0;
     }
 
-    // TODO:
-    // Check the process tree map if 1 or 2 to trace or not
-
+    if (!equality_filter_matches(CONFIG_PROC_TREE_FILTER, &process_tree_map, &context.pid))
+    {
+        return 0;
+    }
 
     // TODO: after we move to minimal kernel 4.18, we can check for container by cgroupid != host cgroupid
     bool is_container = context.tid != context.host_tid;

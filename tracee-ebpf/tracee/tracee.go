@@ -762,6 +762,7 @@ func (t *Tracee) populateBPFMaps() error {
 	cEDC := uint32(configExtractDynCode)
 	cFF := uint32(configFollowFilter)
 	cDN := uint32(configDebugNet)
+	cPT := uint32(configProcTreeFilter)
 
 	thisPid := uint32(os.Getpid())
 	cDOSval := boolToUInt32(t.config.Output.DetectSyscall)
@@ -771,6 +772,7 @@ func (t *Tracee) populateBPFMaps() error {
 	cEDCval := boolToUInt32(t.config.Capture.Mem)
 	cFFval := boolToUInt32(t.config.Filter.Follow)
 	cDNval := boolToUInt32(t.config.Debug)
+	cPTval := uint32(t.config.Filter.ProcessTreeFilter.PID)
 
 	errs := make([]error, 0)
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cTP), unsafe.Pointer(&thisPid)))
@@ -781,6 +783,7 @@ func (t *Tracee) populateBPFMaps() error {
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cEDC), unsafe.Pointer(&cEDCval)))
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cFF), unsafe.Pointer(&cFFval)))
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cDN), unsafe.Pointer(&cDNval)))
+	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cPT), unsafe.Pointer(&cPTval)))
 	for _, e := range errs {
 		if e != nil {
 			return e
@@ -918,9 +921,9 @@ func (t *Tracee) populateProcessTreeMap(filterPID uint32, processTreeFilterEqual
 	}
 
 	for k, v := range pidsGoMap {
-		filterEqual := processTreeFilterEqual
+		filterEqual := filterEqual
 		if !v {
-			filterEqual = processTreeFilterNotEqual
+			filterEqual = filterNotEqual
 		}
 		err := processTreeMap.Update(unsafe.Pointer(&k), unsafe.Pointer(&filterEqual))
 		if err != nil {

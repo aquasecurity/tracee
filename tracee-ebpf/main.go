@@ -637,8 +637,11 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 		ArgFilter: &tracee.ArgFilter{
 			Filters: make(map[int32]map[string]tracee.ArgFilterVal),
 		},
-		ProcessTreeFilter: &tracee.ProcessTreeFilter{},
-		EventsToTrace:     []int32{},
+		ProcessTreeFilter: &tracee.ProcessTreeFilter{
+			PID:   1,
+			Equal: true,
+		},
+		EventsToTrace: []int32{},
 	}
 
 	eventFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}}
