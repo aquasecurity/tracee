@@ -27,7 +27,7 @@ func (t *Tracee) runEventPipeline(done <-chan struct{}) error {
 	}
 	errcList = append(errcList, errc)
 
-	errc, err = t.prepareEventForPrint(done, processedEventChan)
+	errc, err = t.emitEvent(done, processedEventChan)
 	if err != nil {
 		return err
 	}
@@ -190,7 +190,7 @@ func newEvent(ctx context, argMetas []external.ArgMeta, args []interface{}, Stac
 	return e, nil
 }
 
-func (t *Tracee) prepareEventForPrint(done <-chan struct{}, in <-chan RawEvent) (<-chan error, error) {
+func (t *Tracee) emitEvent(done <-chan struct{}, in <-chan RawEvent) (<-chan error, error) {
 	errc := make(chan error, 1)
 	go func() {
 		defer close(errc)
@@ -245,12 +245,12 @@ func (t *Tracee) prepareEventForPrint(done <-chan struct{}, in <-chan RawEvent) 
 				errc <- err
 				continue
 			}
-			t.stats.eventCounter.Increment()
 
 			select {
 			case <-done:
 				return
 			case t.config.ChanEvents <- evt:
+				t.stats.eventCounter.Increment()
 			}
 		}
 	}()
