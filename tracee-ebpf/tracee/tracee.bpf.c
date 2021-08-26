@@ -659,6 +659,11 @@ static __always_inline u32 get_task_host_pid(struct task_struct *task)
     return READ_KERN(task->pid);
 }
 
+static __always_inline u32 get_task_host_tgid(struct task_struct *task)
+{
+    return READ_KERN(task->tgid);
+}
+
 static __always_inline int get_task_parent_flags(struct task_struct *task)
 {
     struct task_struct *parent = READ_KERN(task->real_parent);
@@ -2288,6 +2293,9 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     int parent_pid = get_task_host_pid(parent);
     int child_pid = get_task_host_pid(child);
 
+    int parent_tgid = get_task_host_tgid(parent);
+    int child_tgid = get_task_host_tgid(child);
+
     container_id_t *container_id = bpf_map_lookup_elem(&pid_to_cont_id_map, &parent_pid);
     if (container_id != NULL) {
         // copy the container id of the parent process to the child process
@@ -2295,9 +2303,9 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     }
 
     // update process tree map if the parent has an entry
-    u32 *ppid_filtered = bpf_map_lookup_elem(&process_tree_map, &parent_pid);
-    if (ppid_filtered) {
-        bpf_map_update_elem(&process_tree_map, &child_pid, ppid_filtered, BPF_ANY);
+    u32 *tgid_filtered = bpf_map_lookup_elem(&process_tree_map, &parent_tgid);
+    if (tgid_filtered) {
+        bpf_map_update_elem(&process_tree_map, &child_tgid, tgid_filtered, BPF_ANY);
     } 
 
     if (!should_trace())
@@ -2420,12 +2428,14 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 SEC("raw_tracepoint/sched_process_exit")
 int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 {
-    u32 pid = bpf_get_current_pid_tgid();
+    u64 id = bpf_get_current_pid_tgid();
+    u32 pid = id;
+    u32 tgid = id >> 32;
 
     if (!should_trace()) {
         // Note: we need to remove the container id here as we always add it to the map in cgroup_attach_task event.
         bpf_map_delete_elem(&pid_to_cont_id_map, &pid);
-        bpf_map_delete_elem(&process_tree_map, &pid);
+        bpf_map_delete_elem(&process_tree_map, &tgid);
         return 0;
     }
     bpf_map_delete_elem(&process_tree_map, &pid);
