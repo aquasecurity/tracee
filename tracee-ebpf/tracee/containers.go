@@ -112,8 +112,6 @@ func (c *Containers) populate() error {
 		r = append(r, ".*docker.*(.{64})/tasks$")
 		// podman:  <cgroupv1mp>/<random>/libpod-<id>.scope/tasks
 		r = append(r, ".*libpod.*(.{64})\\.scope/tasks$")
-		// generic: <cgroupv1mp>/<random>/<id>.scope/tasks
-		r = append(r, ".*(.{64})\\.scope/tasks$")
 
 		err := c.populateProcWalk(c.cgroupv1mp, r)
 		if err != nil {
@@ -126,8 +124,6 @@ func (c *Containers) populate() error {
 		r = append(r, ".*docker.*(.{64})\\.scope/cgroup.procs$")
 		// podman:  <cgroupv2mp>/<random>/libpod-<id>.scope/cgroup.procs
 		r = append(r, ".*libpod.*(.{64})\\.scope/cgroup.procs$")
-		// generic: <cgroupv2mp>/<random>/<id>.scope/cgroup.procs
-		r = append(r, ".*(.{64})\\.scope/cgroup.procs$")
 
 		err := c.populateProcWalk(c.cgroupv2mp, r)
 		if err != nil {
