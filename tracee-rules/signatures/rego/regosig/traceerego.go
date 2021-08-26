@@ -62,13 +62,20 @@ func NewRegoSignature(regoCodes ...string) (types.Signature, error) {
 		return nil, err
 	}
 
-	res.matchPQ, err = rego.New(
+	ctx := context.Background()
+	pr, err := rego.New(
 		rego.Compiler(res.compiledRego),
 		rego.Query(fmt.Sprintf(queryMatch, pkgName)),
-	).PrepareForEval(context.TODO())
+	).PartialResult(ctx)
 	if err != nil {
 		return nil, err
 	}
+
+	res.matchPQ, err = pr.Rego(rego.Target("wasm")).PrepareForEval(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	res.metadata, err = res.getMetadata(pkgName)
 	if err != nil {
 		return nil, err
