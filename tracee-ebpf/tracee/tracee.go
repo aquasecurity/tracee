@@ -374,12 +374,6 @@ func New(cfg Config) (*Tracee, error) {
 		t.Close()
 		return nil, fmt.Errorf("error creating output path: %v", err)
 	}
-	// Todo: tracee.pid should be in a known constant location. /var/run is probably a better choice
-	err = ioutil.WriteFile(path.Join(t.config.Capture.OutputPath, "tracee.pid"), []byte(strconv.Itoa(os.Getpid())+"\n"), 0640)
-	if err != nil {
-		t.Close()
-		return nil, fmt.Errorf("error creating readiness file: %v", err)
-	}
 
 	if t.config.Capture.NetIfaces != nil {
 		pcapFile, err := os.Create(path.Join(t.config.Capture.OutputPath, "capture.pcap"))
@@ -441,6 +435,12 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error getting acces to 'stack_addresses' eBPF Map %v", err)
 	}
 	t.StackAddressesMap = StackAddressesMap
+
+	err = ioutil.WriteFile(path.Join(t.config.Capture.OutputPath, "tracee.pid"), []byte(strconv.Itoa(os.Getpid())+"\n"), 0640)
+	if err != nil {
+		t.Close()
+		return nil, fmt.Errorf("error creating readiness file: %v", err)
+	}
 
 	return t, nil
 }
