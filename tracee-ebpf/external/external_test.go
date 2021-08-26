@@ -1,15 +1,11 @@
 package external
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"math"
 	"reflect"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestEventUnmarshalJSON(t *testing.T) {
@@ -110,110 +106,4 @@ func TestArgumentUnmarshalJSON(t *testing.T) {
 			t.Errorf("want %v (Value type %T), have %v (Value type %T)", tc.expect, tc.expect.Value, res, res.Value)
 		}
 	}
-}
-
-func TestEvent_ToUnstructured(t *testing.T) {
-	testCases := []struct {
-		name  string
-		event Event
-	}{
-		{
-			name:  "Should unstructure zero Event",
-			event: Event{},
-		},
-		{
-			name: "Should unstructure Event with empty slices",
-			event: Event{
-				Args:           []Argument{},
-				StackAddresses: []uint64{},
-			},
-		},
-		{
-			name: "should unstructure args",
-			event: Event{
-				Args: []Argument{
-					{
-						ArgMeta: ArgMeta{
-							Name: "dirfd",
-							Type: "int",
-						},
-						Value: -100,
-					},
-					{
-						ArgMeta: ArgMeta{
-							Name: "pathname",
-							Type: "const char",
-						},
-						Value: "/sys/fs/cgroup/cpu,cpuacct/cpuacct.stat",
-					},
-					{
-						ArgMeta: ArgMeta{
-							Name: "flags",
-							Type: "int",
-						},
-						Value: "O_RDONLY|O_CLOEXEC",
-					},
-					{
-						ArgMeta: ArgMeta{
-							Name: "mode",
-							Type: "mode_t",
-						},
-						Value: 5038682,
-					},
-				},
-			},
-		},
-		{
-			name: "Should unstructure Event",
-			event: Event{
-				Timestamp:           7126141189,
-				ProcessID:           1,
-				ThreadID:            1,
-				ParentProcessID:     4798,
-				HostProcessID:       4819,
-				HostThreadID:        4819,
-				HostParentProcessID: 4798,
-				UserID:              0,
-				MountNS:             4026532256,
-				PIDNS:               4026532259,
-				ProcessName:         "cadvisor",
-				HostName:            "4213291591ab",
-				EventID:             257,
-				EventName:           "openat",
-				ArgsNum:             4,
-				ReturnValue:         14,
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			actual, err := tc.event.ToUnstructured()
-			require.NoError(t, err)
-			expected, err := jsonRoundTrip(tc.event)
-			require.NoError(t, err)
-
-			assert.Equal(t, expected, actual)
-		})
-	}
-
-}
-
-// jsonRoundTrip is a helper to assert that a static serialization to JSON
-// compatible object is equivalent to the built-in JSON marshaller.
-func jsonRoundTrip(v interface{}) (map[string]interface{}, error) {
-	m, err := json.Marshal(v)
-	if err != nil {
-		return nil, err
-	}
-	buf := bytes.NewBuffer(m)
-
-	var u interface{}
-	d := json.NewDecoder(buf)
-	d.UseNumber()
-	err = d.Decode(&u)
-	if err != nil {
-		return nil, err
-	}
-	return u.(map[string]interface{}), nil
 }
