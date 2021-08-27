@@ -638,8 +638,7 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 			Filters: make(map[int32]map[string]tracee.ArgFilterVal),
 		},
 		ProcessTreeFilter: &tracee.ProcessTreeFilter{
-			PID:   1,
-			Equal: true,
+			PIDs: make(map[uint32]bool),
 		},
 		EventsToTrace: []int32{},
 	}
@@ -863,25 +862,33 @@ func parseProcessTreeFilter(operatorAndValues string, procTreeFilter *tracee.Pro
 		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
 	}
 
-	var valuesString string
+	var (
+		equalityOperator bool
+		valuesString     string
+	)
+
 	if strings.HasPrefix(operatorAndValues, "=") {
-		procTreeFilter.Equal = true
 		valuesString = operatorAndValues[1:]
+		equalityOperator = true
 	} else if strings.HasPrefix(operatorAndValues, "!=") {
-		procTreeFilter.Equal = false
 		valuesString = operatorAndValues[2:]
 		if len(valuesString) == 0 {
 			return fmt.Errorf("no value passed with operator in process tree filter")
 		}
+		equalityOperator = false
 	} else {
 		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
 	}
 
-	pid, err := strconv.ParseUint(valuesString, 10, 32)
-	if err != nil {
-		return fmt.Errorf("invalid PID given to filter: %s", valuesString)
+	values := strings.Split(valuesString, ",")
+	for _, value := range values {
+		pid, err := strconv.ParseUint(value, 10, 32)
+		if err != nil {
+			return fmt.Errorf("invalid PID given to filter: %s", valuesString)
+		}
+		procTreeFilter.PIDs[uint32(pid)] = equalityOperator
 	}
-	procTreeFilter.PID = uint32(pid)
+
 	return nil
 }
 

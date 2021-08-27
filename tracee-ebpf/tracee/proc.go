@@ -4,9 +4,11 @@ import (
 	"github.com/prometheus/procfs"
 )
 
-// gatherProcessTreeMap takes a particular PID and a boolean which represents whether or not it's descedent
-// PIDs should be traced or not. The returns map is a snapshot of the process tree and w
-func gatherProcessTreeMap(filteredPID uint32, processTreeFilterEquality bool) (map[uint32]bool, error) {
+//TODO:
+// != doesn't work
+//
+
+func gatherEntireProcessTree() (map[uint32][]uint32, error) {
 	fs, err := procfs.NewFS("/proc")
 	if err != nil {
 		return nil, err
@@ -23,26 +25,56 @@ func gatherProcessTreeMap(filteredPID uint32, processTreeFilterEquality bool) (m
 		if err != nil {
 			return nil, err
 		}
+		processMap[uint32(stat.PID)] = processMap[uint32(stat.PID)]
 		processMap[uint32(stat.PPID)] = append(processMap[uint32(stat.PPID)], uint32(stat.PID))
 	}
 
-	descendentPIDs := gatherAllDescedentPIDs(filteredPID, processMap)
+	return processMap, nil
+}
 
-	filterMap := map[uint32]bool{
-		filteredPID: processTreeFilterEquality,
+// populateProcessTreeFilterMap takes a map of the process tree (k=ppid, v=[]childpid)
+// and a filter specification map (k=pid,v=trace/not) and returns a fully populated map
+// where k=pid, v=trace/not for all pids
+func populateProcessTreeFilterMap(processTree map[uint32][]uint32,
+	filterSpecification map[uint32]bool) map[uint32]bool {
+
+	filterMap := map[uint32]bool{}
+
+	// Populate inital filter map  (keys representing all pids)
+	for pid, _ := range processTree {
+		filterMap[pid] = false
 	}
 
-	for i := range procs {
-		isDescendent := false
-		for j := range descendentPIDs {
-			if descendentPIDs[j] == uint32(procs[i].PID) {
-				isDescendent = true
+	// Do two iterations, first to apply all '=' filters, then '!='
+	firstPass := true
+	for i := 0; i < 2; i++ {
+
+		// Iterate over each pid
+		for pid, _ := range filterMap {
+
+			// Check if there's a filter specified for this pid and apply to its descendents
+			if shouldBeTraced, ok := filterSpecification[pid]; ok {
+				descendentPIDs := gatherAllDescedentPIDs(pid, processTree)
+
+				if firstPass && shouldBeTraced {
+					// first pass, so only apply pids that should be traced
+					for j := range descendentPIDs {
+						filterMap[descendentPIDs[j]] = true
+					}
+				} else if !firstPass && !shouldBeTraced {
+					// second pass, so only apply pids that should NOT be traced
+					for j := range descendentPIDs {
+						filterMap[descendentPIDs[j]] = false
+					}
+				}
 			}
+
 		}
-		filterMap[uint32(procs[i].PID)] = processTreeFilterEquality && isDescendent
+
+		firstPass = false
 	}
 
-	return filterMap, nil
+	return filterMap
 }
 
 // gatherAllDescedentPIDs takes a specific pid, and a map 'pids' which represents

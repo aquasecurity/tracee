@@ -74,8 +74,7 @@ type UintFilter struct {
 }
 
 type ProcessTreeFilter struct {
-	PID     uint32
-	Equal   bool
+	PIDs    map[uint32]bool // PIDs is a map where k=pid and v represents whether it and its descendents should be traced or not
 	Enabled bool
 }
 
@@ -772,7 +771,7 @@ func (t *Tracee) populateBPFMaps() error {
 	cEDCval := boolToUInt32(t.config.Capture.Mem)
 	cFFval := boolToUInt32(t.config.Filter.Follow)
 	cDNval := boolToUInt32(t.config.Debug)
-	cPTval := uint32(t.config.Filter.ProcessTreeFilter.PID)
+	cPTval := boolToUInt32(len(t.config.Filter.ProcessTreeFilter.PIDs) > 0)
 
 	errs := make([]error, 0)
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cTP), unsafe.Pointer(&thisPid)))
@@ -900,7 +899,7 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
-	err = t.populateProcessTreeMap(t.config.Filter.ProcessTreeFilter.PID, t.config.Filter.ProcessTreeFilter.Equal)
+	err = t.populateProcessTreeBPFMap(t.config.Filter.ProcessTreeFilter.PIDs)
 	if err != nil {
 		return fmt.Errorf("error building process tree: %v", err)
 	}
@@ -908,24 +907,26 @@ func (t *Tracee) populateBPFMaps() error {
 	return nil
 }
 
-func (t *Tracee) populateProcessTreeMap(filterPID uint32, processTreeFilterEquality bool) error {
+func (t *Tracee) populateProcessTreeBPFMap(procTreeFilter map[uint32]bool) error {
 
-	pidsGoMap, err := gatherProcessTreeMap(filterPID, processTreeFilterEquality)
+	processTreeRepresentation, err := gatherEntireProcessTree()
 	if err != nil {
 		return fmt.Errorf("could not gather proccess tree map: %v", err)
 	}
 
-	processTreeMap, err := t.bpfModule.GetMap("process_tree_map")
+	processTreeGoMap := populateProcessTreeFilterMap(processTreeRepresentation, procTreeFilter)
+
+	processTreeBPFMap, err := t.bpfModule.GetMap("process_tree_map")
 	if err != nil {
-		return fmt.Errorf("could not gather proccess tree map: %v", err)
+		return fmt.Errorf("could not find bpf process_tree_map: %v", err)
 	}
 
-	for k, v := range pidsGoMap {
+	for k, v := range processTreeGoMap {
 		filterEqual := filterEqual
 		if !v {
 			filterEqual = filterNotEqual
 		}
-		err := processTreeMap.Update(unsafe.Pointer(&k), unsafe.Pointer(&filterEqual))
+		err := processTreeBPFMap.Update(unsafe.Pointer(&k), unsafe.Pointer(&filterEqual))
 		if err != nil {
 			return err
 		}
