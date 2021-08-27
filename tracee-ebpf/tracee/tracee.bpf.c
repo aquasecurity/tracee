@@ -291,22 +291,22 @@ struct bpf_map_def SEC("maps") _name = { \
 };
 
 #define BPF_HASH(_name, _key_type, _value_type) \
-BPF_MAP(_name, BPF_MAP_TYPE_HASH, _key_type, _value_type, 10240);
+BPF_MAP(_name, BPF_MAP_TYPE_HASH, _key_type, _value_type, 10240)
 
 #define BPF_LRU_HASH(_name, _key_type, _value_type) \
-BPF_MAP(_name, BPF_MAP_TYPE_LRU_HASH, _key_type, _value_type, 10240);
+BPF_MAP(_name, BPF_MAP_TYPE_LRU_HASH, _key_type, _value_type, 10240)
 
 #define BPF_ARRAY(_name, _value_type, _max_entries) \
-BPF_MAP(_name, BPF_MAP_TYPE_ARRAY, u32, _value_type, _max_entries);
+BPF_MAP(_name, BPF_MAP_TYPE_ARRAY, u32, _value_type, _max_entries)
 
 #define BPF_PERCPU_ARRAY(_name, _value_type, _max_entries) \
-BPF_MAP(_name, BPF_MAP_TYPE_PERCPU_ARRAY, u32, _value_type, _max_entries);
+BPF_MAP(_name, BPF_MAP_TYPE_PERCPU_ARRAY, u32, _value_type, _max_entries)
 
 #define BPF_PROG_ARRAY(_name, _max_entries) \
-BPF_MAP(_name, BPF_MAP_TYPE_PROG_ARRAY, u32, u32, _max_entries);
+BPF_MAP(_name, BPF_MAP_TYPE_PROG_ARRAY, u32, u32, _max_entries)
 
 #define BPF_PERF_OUTPUT(_name) \
-BPF_MAP(_name, BPF_MAP_TYPE_PERF_EVENT_ARRAY, int, __u32, 1024);
+BPF_MAP(_name, BPF_MAP_TYPE_PERF_EVENT_ARRAY, int, __u32, 1024)
 
 // Stack Traces are slightly different
 // in that the value is 1 big byte array
@@ -482,42 +482,42 @@ struct mount {
 #endif
 /*=================================== MAPS =====================================*/
 
-BPF_HASH(config_map, u32, u32);                         // Various configurations
-BPF_HASH(chosen_events_map, u32, u32);                  // Events chosen by the user
-BPF_HASH(traced_pids_map, u32, u32);                    // Keep track of traced pids
-BPF_HASH(new_pids_map, u32, u32);                       // Keep track of the processes of newly executed binaries
-BPF_HASH(new_pidns_map, u32, u32);                      // Keep track of new pid namespaces
-BPF_HASH(pid_to_cont_id_map, u32, container_id_t);      // Map pid to container id
-BPF_HASH(args_map, u64, args_t);                        // Persist args info between function entry and return
-BPF_HASH(ret_map, u64, u64);                            // Persist return value to be used in tail calls
-BPF_HASH(inequality_filter, u32, u64);                  // Used to filter events by some uint field either by < or >
-BPF_HASH(uid_filter, u32, u32);                         // Used to filter events by UID, for specific UIDs either by == or !=
-BPF_HASH(pid_filter, u32, u32);                         // Used to filter events by PID
-BPF_HASH(mnt_ns_filter, u64, u32);                      // Used to filter events by mount namespace id
-BPF_HASH(pid_ns_filter, u64, u32);                      // Used to filter events by pid namespace id
-BPF_HASH(uts_ns_filter, string_filter_t, u32);          // Used to filter events by uts namespace name
-BPF_HASH(comm_filter, string_filter_t, u32);            // Used to filter events by command name
-BPF_HASH(bin_args_map, u64, bin_args_t);                // Persist args for send_bin funtion
-BPF_HASH(sys_32_to_64_map, u32, u32);                   // Map 32bit syscalls numbers to 64bit syscalls numbers
-BPF_HASH(params_types_map, u32, u64);                   // Encoded parameters types for event
-BPF_HASH(params_names_map, u32, u64);                   // Encoded parameters names for event
-BPF_HASH(sockfd_map, u32, u32);                         // Persist sockfd from syscalls to be used in the corresponding lsm hooks
-BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t);         // Socket address to process context
-BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t);   // Network identifier to process context
-BPF_ARRAY(file_filter, path_filter_t, 3);               // Used to filter vfs_write events
-BPF_ARRAY(string_store, path_filter_t, 1);              // Store strings from userspace
-BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);             // Percpu global buffer variables
-BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS);           // Holds offsets to bufs respectively
-BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);              // Used to store programs for tail calls
-BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);          // Used to store programs for tail calls
-BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID);           // Used to store programs for tail calls
-BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);  // Used to store stack traces
+BPF_HASH(config_map, u32, u32)                         // Various configurations
+BPF_HASH(chosen_events_map, u32, u32)                  // Events chosen by the user
+BPF_HASH(traced_pids_map, u32, u32)                    // Keep track of traced pids
+BPF_HASH(new_pids_map, u32, u32)                       // Keep track of the processes of newly executed binaries
+BPF_HASH(new_pidns_map, u32, u32)                      // Keep track of new pid namespaces
+BPF_HASH(pid_to_cont_id_map, u32, container_id_t)      // Map pid to container id
+BPF_HASH(args_map, u64, args_t)                        // Persist args info between function entry and return
+BPF_HASH(ret_map, u64, u64)                            // Persist return value to be used in tail calls
+BPF_HASH(inequality_filter, u32, u64)                  // Used to filter events by some uint field either by < or >
+BPF_HASH(uid_filter, u32, u32)                         // Used to filter events by UID, for specific UIDs either by == or !=
+BPF_HASH(pid_filter, u32, u32)                         // Used to filter events by PID
+BPF_HASH(mnt_ns_filter, u64, u32)                      // Used to filter events by mount namespace id
+BPF_HASH(pid_ns_filter, u64, u32)                      // Used to filter events by pid namespace id
+BPF_HASH(uts_ns_filter, string_filter_t, u32)          // Used to filter events by uts namespace name
+BPF_HASH(comm_filter, string_filter_t, u32)            // Used to filter events by command name
+BPF_HASH(bin_args_map, u64, bin_args_t)                // Persist args for send_bin function
+BPF_HASH(sys_32_to_64_map, u32, u32)                   // Map 32bit syscalls numbers to 64bit syscalls numbers
+BPF_HASH(params_types_map, u32, u64)                   // Encoded parameters types for event
+BPF_HASH(params_names_map, u32, u64)                   // Encoded parameters names for event
+BPF_HASH(sockfd_map, u32, u32)                         // Persist sockfd from syscalls to be used in the corresponding lsm hooks
+BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t)         // Socket address to process context
+BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t)   // Network identifier to process context
+BPF_ARRAY(file_filter, path_filter_t, 3)               // Used to filter vfs_write events
+BPF_ARRAY(string_store, path_filter_t, 1)              // Store strings from userspace
+BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS)             // Percpu global buffer variables
+BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS)           // Holds offsets to bufs respectively
+BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL)              // Used to store programs for tail calls
+BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID)          // Used to store programs for tail calls
+BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID)           // Used to store programs for tail calls
+BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES)  // Used to store stack traces
 
 /*================================== EVENTS ====================================*/
 
-BPF_PERF_OUTPUT(events);                            // Events submission
-BPF_PERF_OUTPUT(file_writes);                       // File writes events submission
-BPF_PERF_OUTPUT(net_events);                        // Network events submission
+BPF_PERF_OUTPUT(events)                                // Events submission
+BPF_PERF_OUTPUT(file_writes)                           // File writes events submission
+BPF_PERF_OUTPUT(net_events)                            // Network events submission
 
 /*================== KERNEL VERSION DEPENDANT HELPER FUNCTIONS =================*/
 
@@ -604,7 +604,7 @@ static __always_inline u32 get_task_ns_pid(struct task_struct *task)
 }
 
 static __always_inline u32 get_task_ns_tgid(struct task_struct *task)
-{    
+{
     struct nsproxy *namespaceproxy = READ_KERN(task->nsproxy);
     struct pid_namespace *pid_ns_children = READ_KERN(namespaceproxy->pid_ns_for_children);
     unsigned int level = READ_KERN(pid_ns_children->level);
@@ -1087,7 +1087,7 @@ static __always_inline int should_trace()
 
     if (!uint_filter_matches(CONFIG_UID_FILTER, &uid_filter, context.uid, UID_LESS, UID_GREATER))
     {
-        return 0; 
+        return 0;
     }
 
     if (!uint_filter_matches(CONFIG_MNT_NS_FILTER, &mnt_ns_filter, context.mnt_id, MNTNS_LESS, MNTNS_GREATER))
@@ -1206,7 +1206,7 @@ static __always_inline int save_to_submit_buf(buf_t *submit_p, void *ptr, u32 si
     if ((*off+2) <= MAX_PERCPU_BUFSIZE - MAX_ELEMENT_SIZE) {
         // Read into buffer
         if (bpf_probe_read(&(submit_p->buf[*off+2]), size, ptr) == 0) {
-            // We update buf_off only if all writes were successfull
+            // We update buf_off only if all writes were successful
             *off += size+2;
             return 1;
         }
@@ -1244,7 +1244,7 @@ static __always_inline int save_bytes_to_buf(buf_t *submit_p, void *ptr, u32 siz
     if ((*off+2+sizeof(int)) <= MAX_PERCPU_BUFSIZE - MAX_BYTES_ARR_SIZE) {
         // Read bytes into buffer
         if (bpf_probe_read(&(submit_p->buf[*off+2+sizeof(int)]), size & (MAX_BYTES_ARR_SIZE-1), ptr) == 0) {
-            // We update buf_off only if all writes were successfull
+            // We update buf_off only if all writes were successful
             *off += size+2+sizeof(int);
             return 1;
         }
@@ -1467,7 +1467,7 @@ static __always_inline int save_path_to_str_buf(buf_t *string_p, const struct pa
 
         // Is string buffer big enough for dentry name?
         sz = 0;
-        if (off <= buf_off) { // verify no wrap occured
+        if (off <= buf_off) { // verify no wrap occurred
             len = len & ((MAX_PERCPU_BUFSIZE >> 1)-1);
             sz = bpf_probe_read_str(&(string_p->buf[off & ((MAX_PERCPU_BUFSIZE >> 1)-1)]), len, (void *)d_name.name);
         }
@@ -1520,7 +1520,7 @@ static __always_inline int save_dentry_path_to_str_buf(buf_t *string_p, struct d
         unsigned int off = buf_off - len;
         // Is string buffer big enough for dentry name?
         int sz = 0;
-        if (off <= buf_off) { // verify no wrap occured
+        if (off <= buf_off) { // verify no wrap occurred
             len = len & ((MAX_PERCPU_BUFSIZE >> 1)-1);
             sz = bpf_probe_read_str(&(string_p->buf[off & ((MAX_PERCPU_BUFSIZE >> 1)-1)]), len, (void *)d_name.name);
         }
@@ -1902,17 +1902,16 @@ static __always_inline int get_network_details_from_sock_v6(struct sock *sk, net
 
     /*
     the flowinfo field can be specified by the user to indicate a network flow. how it is used by the kernel, or
-    whether its enforced to be unique is not so obvious.
+    whether it is enforced to be unique is not so obvious.
     getting this value is only supported by the kernel for outgoing packets using the 'struct ipv6_pinfo'.
-    in any case, leaving it with value of 0 won't effect our
-    representation of network flows.
+    in any case, leaving it with value of 0 won't affect our representation of network flows.
     */
     net_details->flowinfo = 0;
     /*
     the scope_id field can be specified by the user to indicate the network interface from which to send a packet. this
     only applies for link-local addresses, and is used only by the local kernel.
     getting this value is done by using the 'ipv6_iface_scope_id(const struct in6_addr *addr, int iface)' function.
-    in any case, leaving it with value of 0 won't effect our representation of network flows.
+    in any case, leaving it with value of 0 won't affect our representation of network flows.
     */
     net_details->scope_id = 0;
 
@@ -2039,7 +2038,7 @@ if (CONFIG_ARCH_HAS_SYSCALL_WRAPPER) {
 } // END CONFIG_ARCH_HAS_SYSCALL_WRAPPER
 
     if (is_compat(task)) {
-        // Translate 32bit syscalls to 64bit syscalls so we can send to the correct handler
+        // Translate 32bit syscalls to 64bit syscalls, so we can send to the correct handler
         u32 *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &id);
         if (id_64 == 0)
             return 0;
@@ -2117,7 +2116,7 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
     int id = READ_KERN(regs->orig_ax);
 
     if (is_compat(task)) {
-        // Translate 32bit syscalls to 64bit syscalls so we can send to the correct handler
+        // Translate 32bit syscalls to 64bit syscalls, so we can send to the correct handler
         u32 *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &id);
         if (id_64 == 0)
             return 0;
@@ -2271,7 +2270,7 @@ int syscall__execveat(void *ctx)
 SEC("raw_tracepoint/sched_process_fork")
 int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
 {
-    // Note: we don't place should_trace() here so we can keep track of the cgroups in the system
+    // Note: we don't place should_trace() here, so we can keep track of the cgroups in the system
     struct task_struct *parent = (struct task_struct*)ctx->args[0];
     struct task_struct *child = (struct task_struct*)ctx->args[1];
 
@@ -2468,7 +2467,7 @@ int BPF_KPROBE(trace_do_exit)
 SEC("raw_tracepoint/cgroup_attach_task")
 int tracepoint__cgroup__cgroup_attach_task(struct bpf_raw_tracepoint_args *ctx)
 {
-    // Note: we don't place should_trace() here so we can keep track of the cgroups in the system
+    // Note: we don't place should_trace() here, so we can keep track of the cgroups in the system
     container_id_t container_id = {0};
     struct cgroup *dst_cgrp = (struct cgroup*)ctx->args[0];
     struct task_struct *task = (struct task_struct*)ctx->args[2];
@@ -2710,7 +2709,7 @@ int BPF_KPROBE(trace_commit_creds)
     new_slim.fsuid = READ_KERN(new->fsuid.val);
     new_slim.fsgid = READ_KERN(new->fsgid.val);
 
-    // Currently (2021), there are ~40 capabilities in the Linux kernel which are stored in a u32 array of length 2.
+    // Currently, (2021), there are ~40 capabilities in the Linux kernel which are stored in an u32 array of length 2.
     // This might change in the (not so near) future as more capabilities will be added.
     // For now, we use u64 to store this array in one piece
     kernel_cap_t caps;
@@ -2893,7 +2892,7 @@ int BPF_KPROBE(trace_cap_capable)
     }
     events_perf_submit(ctx);
     return 0;
-};
+}
 
 SEC("kprobe/security_socket_create")
 int BPF_KPROBE(trace_security_socket_create)
@@ -2929,7 +2928,7 @@ int BPF_KPROBE(trace_security_socket_create)
 
     events_perf_submit(ctx);
     return 0;
-};
+}
 
 SEC("kprobe/security_socket_listen")
 int BPF_KPROBE(trace_security_socket_listen)
@@ -2991,7 +2990,7 @@ int BPF_KPROBE(trace_security_socket_listen)
 
     events_perf_submit(ctx);
     return 0;
-};
+}
 
 SEC("kprobe/security_socket_connect")
 int BPF_KPROBE(trace_security_socket_connect)
@@ -3037,7 +3036,7 @@ int BPF_KPROBE(trace_security_socket_connect)
 
     events_perf_submit(ctx);
     return 0;
-};
+}
 
 SEC("kprobe/security_socket_accept")
 int BPF_KPROBE(trace_security_socket_accept)
@@ -3095,7 +3094,7 @@ int BPF_KPROBE(trace_security_socket_accept)
 
     events_perf_submit(ctx);
     return 0;
-};
+}
 
 SEC("kprobe/security_socket_bind")
 int BPF_KPROBE(trace_security_socket_bind)
@@ -3183,7 +3182,7 @@ int BPF_KPROBE(trace_security_socket_bind)
     }
 
     return 0;
-};
+}
 
 // To delete socket from net map use tid==0, otherwise, update
 static __always_inline int net_map_update_or_delete_sock(void* ctx, int event_id, struct sock *sk, u32 tid)
@@ -3228,7 +3227,7 @@ static __always_inline int net_map_update_or_delete_sock(void* ctx, int event_id
     }
 
     return 0;
-};
+}
 
 SEC("kprobe/udp_sendmsg")
 int BPF_KPROBE(trace_udp_sendmsg)
@@ -3240,7 +3239,7 @@ int BPF_KPROBE(trace_udp_sendmsg)
     u32 tid = bpf_get_current_pid_tgid();
 
     return net_map_update_or_delete_sock(ctx, DEBUG_NET_UDP_SENDMSG, sk, tid);
-};
+}
 
 SEC("kprobe/__udp_disconnect")
 int BPF_KPROBE(trace_udp_disconnect)
@@ -3251,7 +3250,7 @@ int BPF_KPROBE(trace_udp_disconnect)
     struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
 
     return net_map_update_or_delete_sock(ctx, DEBUG_NET_UDP_DISCONNECT, sk, 0);
-};
+}
 
 SEC("kprobe/udp_destroy_sock")
 int BPF_KPROBE(trace_udp_destroy_sock)
@@ -3262,7 +3261,7 @@ int BPF_KPROBE(trace_udp_destroy_sock)
     struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
 
     return net_map_update_or_delete_sock(ctx, DEBUG_NET_UDP_DESTROY_SOCK, sk, 0);
-};
+}
 
 SEC("kprobe/udpv6_destroy_sock")
 int BPF_KPROBE(trace_udpv6_destroy_sock)
@@ -3273,7 +3272,7 @@ int BPF_KPROBE(trace_udpv6_destroy_sock)
     struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
 
     return net_map_update_or_delete_sock(ctx, DEBUG_NET_UDPV6_DESTROY_SOCK, sk, 0);
-};
+}
 
 // include/trace/events/sock.h:
 // TP_PROTO(const struct sock *sk, const int oldstate, const int newstate)
@@ -3404,7 +3403,7 @@ int BPF_KPROBE(trace_tcp_connect)
     bpf_map_update_elem(&sock_ctx_map, &sk, &net_ctx_ext, BPF_ANY);
 
     return net_map_update_or_delete_sock(ctx, DEBUG_NET_TCP_CONNECT, sk, tid);
-};
+}
 
 SEC("kprobe/send_bin")
 int BPF_KPROBE(send_bin)
@@ -3412,7 +3411,7 @@ int BPF_KPROBE(send_bin)
     // Note: sending the data to the userspace have the following constraints:
     // 1. We need a buffer that we know it's exact size (so we can send chunks of known sizes in BPF)
     // 2. We can have multiple cpus - need percpu array
-    // 3. We have to use perf submit and not maps as data can be overriden if userspace doesn't consume it fast enough
+    // 3. We have to use perf submit and not maps as data can be overridden if userspace doesn't consume it fast enough
 
     int i = 0;
     unsigned int chunk_size;
@@ -3428,7 +3427,7 @@ int BPF_KPROBE(send_bin)
         // If there are more vector elements, continue to the next one
         bin_args->iov_idx++;
         if (bin_args->iov_idx < bin_args->iov_len) {
-            // Handle the rest of the write recursively
+            // Handle the rest of write recursively
             struct iovec io_vec;
             bpf_probe_read(&io_vec, sizeof(struct iovec), &bin_args->vec[bin_args->iov_idx]);
             bin_args->ptr = io_vec.iov_base;
@@ -3489,7 +3488,7 @@ int BPF_KPROBE(send_bin)
     chunk_size = bin_args->full_size - i*F_CHUNK_SIZE;
 
     if (chunk_size > F_CHUNK_SIZE) {
-        // Handle the rest of the write recursively
+        // Handle the rest of write recursively
         bin_args->full_size = chunk_size;
         bpf_tail_call(ctx, &prog_array, TAIL_SEND_BIN);
         bpf_map_delete_elem(&bin_args_map, &id);
@@ -3511,7 +3510,7 @@ int BPF_KPROBE(send_bin)
     // We finished writing an element of the vector - continue to next element
     bin_args->iov_idx++;
     if (bin_args->iov_idx < bin_args->iov_len) {
-        // Handle the rest of the write recursively
+        // Handle the rest of write recursively
         struct iovec io_vec;
         bpf_probe_read(&io_vec, sizeof(struct iovec), &bin_args->vec[bin_args->iov_idx]);
         bin_args->ptr = io_vec.iov_base;
@@ -3892,7 +3891,7 @@ int BPF_KPROBE(trace_mprotect_alert)
     if (((prev_prot & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC))
         && (reqprot & VM_EXEC) && !(reqprot & VM_WRITE)) {
         alert_t alert = {.ts = context.ts, .msg = ALERT_MPROT_W_REM, .payload = 0 };
-        if (get_config(CONFIG_EXTRACT_DYN_CODE)) 
+        if (get_config(CONFIG_EXTRACT_DYN_CODE))
             alert.payload = 1;
         save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T, DEC_ARG(0, *tags));
         events_perf_submit(ctx);
@@ -3938,7 +3937,7 @@ int BPF_KPROBE(trace_security_bpf)
 
     events_perf_submit(ctx);
     return 0;
-};
+}
 
 SEC("kprobe/security_bpf_map")
 int BPF_KPROBE(trace_security_bpf_map)
