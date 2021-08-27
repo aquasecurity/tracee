@@ -101,9 +101,17 @@ func main() {
 				return err
 			}
 
-			missingKernelOptions := missingKernelConfigOptions()
-			if len(missingKernelOptions) != 0 {
-				return fmt.Errorf("kernel is not properly configured, missing: %v", missingKernelOptions)
+			if kernelConfig, err := helpers.InitKernelConfig(); err == nil { // do not fail (yet ?) if we cannot init kconfig
+				kernelConfig.AddNeeded(helpers.CONFIG_BPF, helpers.BUILTIN)
+				kernelConfig.AddNeeded(helpers.CONFIG_BPF_SYSCALL, helpers.BUILTIN)
+				kernelConfig.AddNeeded(helpers.CONFIG_KPROBE_EVENTS, helpers.BUILTIN)
+				kernelConfig.AddNeeded(helpers.CONFIG_BPF_EVENTS, helpers.BUILTIN)
+				missing := kernelConfig.CheckMissing() // do fail if we found and it is not enough
+				if len(missing) > 0 {
+					return fmt.Errorf("missing kernel configuration options: %s\n", missing)
+				}
+			} else {
+				fmt.Fprintf(os.Stderr, "warning: could not check enabled kconfig features, trying to continue anyway\n")
 			}
 
 			// try to discover distro by /etc/os-release, fallback to kernel version
@@ -1116,37 +1124,6 @@ func checkRequiredCapabilities() error {
 	}
 
 	return nil
-}
-
-func missingKernelConfigOptions() []string {
-
-	requiredConfigOptions := map[uint32]string{
-		helpers.CONFIG_BPF:           "y",
-		helpers.CONFIG_BPF_SYSCALL:   "y",
-		helpers.CONFIG_KPROBE_EVENTS: "y",
-		helpers.CONFIG_BPF_EVENTS:    "y",
-	}
-
-	kConfig := helpers.KernelConfig{}
-	err := kConfig.InitKernelConfig()
-	if err != nil {
-		// we were not able to get kernel config - ignore the check and try to continue
-		return []string{}
-	}
-
-	missing := []string{}
-
-	for requiredOption, setting := range requiredConfigOptions {
-		opt, err := kConfig.GetKernelConfigValue(requiredOption)
-		if err != nil {
-			missing = append(missing, helpers.KernelConfigKeyIDToString[requiredOption])
-			continue
-		}
-		if opt != setting {
-			missing = append(missing, helpers.KernelConfigKeyIDToString[requiredOption])
-		}
-	}
-	return missing
 }
 
 func getSelfCapabilities() (capability.Capabilities, error) {
