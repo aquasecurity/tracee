@@ -32,7 +32,7 @@ tracee_ebpf_readiness=/tmp/tracee/out/tracee.pid
 # start tracee-ebpf in the background
 rm -f $tracee_ebpf_readiness
 echo "starting tracee-ebpf..."
-$TRACEE_EBPF_EXE --output=format:gob --security-alerts >pipe &
+($TRACEE_EBPF_EXE --output=format:gob --security-alerts >pipe; kill $$)&
 tracee_ebpf_pid=$!
 
 # wait for tracee-ebpf to: load / exit / timeout
