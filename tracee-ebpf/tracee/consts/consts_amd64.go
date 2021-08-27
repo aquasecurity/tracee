@@ -1,6 +1,6 @@
 // +build amd64
 
-package tracee
+package consts
 
 // x86 64bit syscall numbers
 // Also used as event IDs

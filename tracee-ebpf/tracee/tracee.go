@@ -24,6 +24,7 @@ import (
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/consts"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
 	"golang.org/x/sys/unix"
@@ -103,7 +104,7 @@ type ArgFilter struct {
 }
 
 type ArgFilterVal struct {
-	argTag   argTag
+	argTag   consts.ArgTag
 	Equal    []string
 	NotEqual []string
 }
@@ -137,13 +138,13 @@ func (tc Config) Validate() error {
 	}
 
 	for _, e := range tc.Filter.EventsToTrace {
-		if _, ok := EventsIDToEvent[e]; !ok {
+		if _, ok := consts.EventsIDToEvent[e]; !ok {
 			return fmt.Errorf("invalid event to trace: %d", e)
 		}
 	}
 	for eventID, eventFilters := range tc.Filter.ArgFilter.Filters {
 		for argName := range eventFilters {
-			eventParams, ok := EventsIDToParams[eventID]
+			eventParams, ok := consts.EventsIDToParams[eventID]
 			if !ok {
 				return fmt.Errorf("invalid argument filter event id: %d", eventID)
 			}
@@ -221,8 +222,8 @@ type Tracee struct {
 	profiledFiles     map[string]profilerInfo
 	writtenFiles      map[string]string
 	mntNsFirstPid     map[uint32]uint32
-	DecParamName      [2]map[argTag]string
-	EncParamName      [2]map[string]argTag
+	DecParamName      [2]map[consts.ArgTag]string
+	EncParamName      [2]map[string]consts.ArgTag
 	ParamTypes        map[int32]map[string]string
 	pidsInMntns       bucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
@@ -275,27 +276,27 @@ func New(cfg Config) (*Tracee, error) {
 	}
 
 	setEssential := func(id int32) {
-		event := EventsIDToEvent[id]
+		event := consts.EventsIDToEvent[id]
 		event.EssentialEvent = true
-		EventsIDToEvent[id] = event
+		consts.EventsIDToEvent[id] = event
 	}
 	if cfg.Capture.Exec {
-		setEssential(SecurityBprmCheckEventID)
+		setEssential(consts.SecurityBprmCheckEventID)
 	}
 	if cfg.Capture.FileWrite {
-		setEssential(VfsWriteEventID)
-		setEssential(VfsWritevEventID)
+		setEssential(consts.VfsWriteEventID)
+		setEssential(consts.VfsWritevEventID)
 	}
 	if cfg.SecurityAlerts || cfg.Capture.Mem {
-		setEssential(MmapEventID)
-		setEssential(MprotectEventID)
+		setEssential(consts.MmapEventID)
+		setEssential(consts.MprotectEventID)
 	}
 	if cfg.Capture.Mem {
-		setEssential(MemProtAlertEventID)
+		setEssential(consts.MemProtAlertEventID)
 	}
 
 	if cfg.Capture.NetIfaces != nil || cfg.Debug {
-		setEssential(SecuritySocketBindEventID)
+		setEssential(consts.SecuritySocketBindEventID)
 	}
 
 	// Tracee bpf code uses monotonic clock as event timestamp.
@@ -320,26 +321,26 @@ func New(cfg Config) (*Tracee, error) {
 		t.eventsToTrace[e] = true
 	}
 
-	if t.eventsToTrace[MagicWriteEventID] {
-		setEssential(VfsWriteEventID)
-		setEssential(VfsWritevEventID)
+	if t.eventsToTrace[consts.MagicWriteEventID] {
+		setEssential(consts.VfsWriteEventID)
+		setEssential(consts.VfsWritevEventID)
 	}
 
 	// Compile final list of events to trace including essential events
-	for id, event := range EventsIDToEvent {
+	for id, event := range consts.EventsIDToEvent {
 		// If an essential event was not requested by the user, set its map value to false
 		if event.EssentialEvent && !t.eventsToTrace[id] {
 			t.eventsToTrace[id] = false
 		}
 	}
 
-	t.DecParamName[0] = make(map[argTag]string)
-	t.EncParamName[0] = make(map[string]argTag)
-	t.DecParamName[1] = make(map[argTag]string)
-	t.EncParamName[1] = make(map[string]argTag)
+	t.DecParamName[0] = make(map[consts.ArgTag]string)
+	t.EncParamName[0] = make(map[string]consts.ArgTag)
+	t.DecParamName[1] = make(map[consts.ArgTag]string)
+	t.EncParamName[1] = make(map[string]consts.ArgTag)
 	t.ParamTypes = make(map[int32]map[string]string)
 
-	for eventId, params := range EventsIDToParams {
+	for eventId, params := range consts.EventsIDToParams {
 		t.ParamTypes[eventId] = make(map[string]string)
 		for _, param := range params {
 			t.ParamTypes[eventId][param.Name] = param.Type
@@ -486,51 +487,51 @@ func kernelIsAtLeast(verMajor, verMinor int) (bool, error) {
 }
 
 type eventParam struct {
-	encType argType
-	encName argTag
+	encType consts.ArgType
+	encName consts.ArgTag
 }
 
 func (t *Tracee) initEventsParams() map[int32][]eventParam {
 	eventsParams := make(map[int32][]eventParam)
 	var seenNames [2]map[string]bool
-	var ParamNameCounter [2]argTag
+	var ParamNameCounter [2]consts.ArgTag
 	seenNames[0] = make(map[string]bool)
-	ParamNameCounter[0] = argTag(1)
+	ParamNameCounter[0] = consts.ArgTag(1)
 	seenNames[1] = make(map[string]bool)
-	ParamNameCounter[1] = argTag(1)
-	paramT := noneT
-	for id, params := range EventsIDToParams {
+	ParamNameCounter[1] = consts.ArgTag(1)
+	paramT := consts.NoneT
+	for id, params := range consts.EventsIDToParams {
 		for _, param := range params {
 			switch param.Type {
 			case "int", "pid_t", "uid_t", "gid_t", "mqd_t", "clockid_t", "const clockid_t", "key_t", "key_serial_t", "timer_t":
-				paramT = intT
+				paramT = consts.IntT
 			case "unsigned int", "u32":
-				paramT = uintT
+				paramT = consts.UintT
 			case "long":
-				paramT = longT
+				paramT = consts.LongT
 			case "unsigned long", "u64":
-				paramT = ulongT
+				paramT = consts.UlongT
 			case "off_t":
-				paramT = offT
+				paramT = consts.OffT
 			case "mode_t":
-				paramT = modeT
+				paramT = consts.ModeT
 			case "dev_t":
-				paramT = devT
+				paramT = consts.DevT
 			case "size_t":
-				paramT = sizeT
+				paramT = consts.SizeT
 			case "void*", "const void*":
-				paramT = pointerT
+				paramT = consts.PointerT
 			case "char*", "const char*":
-				paramT = strT
+				paramT = consts.StrT
 			case "const char*const*", "const char**", "char**":
-				paramT = strArrT
+				paramT = consts.StrArrT
 			case "const struct sockaddr*", "struct sockaddr*":
-				paramT = sockAddrT
+				paramT = consts.SockAddrT
 			case "bytes":
-				paramT = bytesT
+				paramT = consts.BytesT
 			default:
 				// Default to pointer (printed as hex) for unsupported types
-				paramT = pointerT
+				paramT = consts.PointerT
 			}
 
 			// As the encoded parameter name is u8, it can hold up to 256 different names
@@ -556,13 +557,13 @@ func (t *Tracee) initEventsParams() map[int32][]eventParam {
 	return eventsParams
 }
 
-func (t *Tracee) setUintFilter(filter *UintFilter, filterMapName string, configFilter bpfConfig, lessIdx uint32) error {
+func (t *Tracee) setUintFilter(filter *UintFilter, filterMapName string, configFilter consts.BpfConfig, lessIdx uint32) error {
 	if !filter.Enabled {
 		return nil
 	}
 
-	filterEqualU32 := uint32(filterEqual) // const need local var for bpfMap.Update()
-	filterNotEqualU32 := uint32(filterNotEqual)
+	filterEqualU32 := uint32(consts.FilterEqual) // const need local var for bpfMap.Update()
+	filterNotEqualU32 := uint32(consts.FilterNotEqual)
 
 	// equalityFilter filters events for given maps:
 	// 1. uid_filter        u32, u32
@@ -616,24 +617,24 @@ func (t *Tracee) setUintFilter(filter *UintFilter, filterMapName string, configF
 	if err != nil {
 		return err
 	}
-	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 && filter.Greater == GreaterNotSetUint && filter.Less == LessNotSetUint {
-		filterInU32 := uint32(filterIn)
+	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 && filter.Greater == consts.GreaterNotSetUint && filter.Less == consts.LessNotSetUint {
+		filterInU32 := uint32(consts.FilterIn)
 		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterInU32))
 	} else {
-		filterOutU32 := uint32(filterOut)
+		filterOutU32 := uint32(consts.FilterOut)
 		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterOutU32))
 	}
 
 	return err
 }
 
-func (t *Tracee) setStringFilter(filter *StringFilter, filterMapName string, configFilter bpfConfig) error {
+func (t *Tracee) setStringFilter(filter *StringFilter, filterMapName string, configFilter consts.BpfConfig) error {
 	if !filter.Enabled {
 		return nil
 	}
 
-	filterEqualU32 := uint32(filterEqual) // const need local var for bpfMap.Update()
-	filterNotEqualU32 := uint32(filterNotEqual)
+	filterEqualU32 := uint32(consts.FilterEqual) // const need local var for bpfMap.Update()
+	filterNotEqualU32 := uint32(consts.FilterNotEqual)
 
 	// 1. uts_ns_filter     string[MAX_STR_FILTER_SIZE], u32    // filter events by uts namespace name
 	// 2. comm_filter       string[MAX_STR_FILTER_SIZE], u32    // filter events by command name
@@ -659,17 +660,17 @@ func (t *Tracee) setStringFilter(filter *StringFilter, filterMapName string, con
 		return err
 	}
 	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 {
-		filterInU32 := uint32(filterIn)
+		filterInU32 := uint32(consts.FilterIn)
 		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterInU32))
 	} else {
-		filterOutU32 := uint32(filterOut)
+		filterOutU32 := uint32(consts.FilterOut)
 		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterOutU32))
 	}
 
 	return err
 }
 
-func (t *Tracee) setBoolFilter(filter *BoolFilter, configFilter bpfConfig) error {
+func (t *Tracee) setBoolFilter(filter *BoolFilter, configFilter consts.BpfConfig) error {
 	if !filter.Enabled {
 		return nil
 	}
@@ -679,10 +680,10 @@ func (t *Tracee) setBoolFilter(filter *BoolFilter, configFilter bpfConfig) error
 		return err
 	}
 	if filter.Value {
-		filterInU32 := uint32(filterIn)
+		filterInU32 := uint32(consts.FilterIn)
 		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterInU32))
 	} else {
-		filterOutU32 := uint32(filterOut)
+		filterOutU32 := uint32(consts.FilterOut)
 		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterOutU32))
 	}
 
@@ -731,7 +732,7 @@ func (t *Tracee) populateBPFMaps() error {
 	if err != nil {
 		return err
 	}
-	for _, event := range EventsIDToEvent {
+	for _, event := range consts.EventsIDToEvent {
 		ID32BitU32 := uint32(event.ID32Bit) // ID32Bit is int32
 		IDU32 := uint32(event.ID)           // ID is int32
 		if err := sys32to64BPFMap.Update(unsafe.Pointer(&ID32BitU32), unsafe.Pointer(&IDU32)); err != nil {
@@ -746,14 +747,14 @@ func (t *Tracee) populateBPFMaps() error {
 		return err
 	}
 
-	cTP := uint32(configTraceePid)
-	cDOS := uint32(configDetectOrigSyscall)
-	cEV := uint32(configExecEnv)
-	cSA := uint32(configStackAddresses)
-	cCF := uint32(configCaptureFiles)
-	cEDC := uint32(configExtractDynCode)
-	cFF := uint32(configFollowFilter)
-	cDN := uint32(configDebugNet)
+	cTP := uint32(consts.ConfigTraceePid)
+	cDOS := uint32(consts.ConfigDetectOrigSyscall)
+	cEV := uint32(consts.ConfigExecEnv)
+	cSA := uint32(consts.ConfigStackAddresses)
+	cCF := uint32(consts.ConfigCaptureFiles)
+	cEDC := uint32(consts.ConfigExtractDynCode)
+	cFF := uint32(consts.ConfigFollowFilter)
+	cDN := uint32(consts.ConfigDebugNet)
 
 	thisPid := uint32(os.Getpid())
 	cDOSval := boolToUInt32(t.config.Output.DetectSyscall)
@@ -800,9 +801,9 @@ func (t *Tracee) populateBPFMaps() error {
 
 	// Initialize tail calls program array
 	errs = make([]error, 0)
-	errs = append(errs, t.initTailCall(tailVfsWrite, "prog_array", "trace_ret_vfs_write_tail"))
-	errs = append(errs, t.initTailCall(tailVfsWritev, "prog_array", "trace_ret_vfs_writev_tail"))
-	errs = append(errs, t.initTailCall(tailSendBin, "prog_array", "send_bin"))
+	errs = append(errs, t.initTailCall(consts.TailVfsWrite, "prog_array", "trace_ret_vfs_write_tail"))
+	errs = append(errs, t.initTailCall(consts.TailVfsWritev, "prog_array", "trace_ret_vfs_writev_tail"))
+	errs = append(errs, t.initTailCall(consts.TailSendBin, "prog_array", "send_bin"))
 	for _, e := range errs {
 		if e != nil {
 			return e
@@ -822,15 +823,15 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	errmap := make(map[string]error, 0)
-	errmap["uid_filter"] = t.setUintFilter(t.config.Filter.UIDFilter, "uid_filter", configUIDFilter, uidLess)
-	errmap["pid_filter"] = t.setUintFilter(t.config.Filter.PIDFilter, "pid_filter", configPidFilter, pidLess)
-	errmap["pid=new_filter"] = t.setBoolFilter(t.config.Filter.NewPidFilter, configNewPidFilter)
-	errmap["mnt_ns_filter"] = t.setUintFilter(t.config.Filter.MntNSFilter, "mnt_ns_filter", configMntNsFilter, mntNsLess)
-	errmap["pid_ns_filter"] = t.setUintFilter(t.config.Filter.PidNSFilter, "pid_ns_filter", configPidNsFilter, pidNsLess)
-	errmap["uts_ns_filter"] = t.setStringFilter(t.config.Filter.UTSFilter, "uts_ns_filter", configUTSNsFilter)
-	errmap["comm_filter"] = t.setStringFilter(t.config.Filter.CommFilter, "comm_filter", configCommFilter)
-	errmap["cont_filter"] = t.setBoolFilter(t.config.Filter.ContFilter, configContFilter)
-	errmap["cont=new_filter"] = t.setBoolFilter(t.config.Filter.NewContFilter, configNewContFilter)
+	errmap["uid_filter"] = t.setUintFilter(t.config.Filter.UIDFilter, "uid_filter", consts.ConfigUIDFilter, consts.UidLess)
+	errmap["pid_filter"] = t.setUintFilter(t.config.Filter.PIDFilter, "pid_filter", consts.ConfigPidFilter, consts.PidLess)
+	errmap["pid=new_filter"] = t.setBoolFilter(t.config.Filter.NewPidFilter, consts.ConfigNewPidFilter)
+	errmap["mnt_ns_filter"] = t.setUintFilter(t.config.Filter.MntNSFilter, "mnt_ns_filter", consts.ConfigMntNsFilter, consts.MntNsLess)
+	errmap["pid_ns_filter"] = t.setUintFilter(t.config.Filter.PidNSFilter, "pid_ns_filter", consts.ConfigPidNsFilter, consts.PidNsLess)
+	errmap["uts_ns_filter"] = t.setStringFilter(t.config.Filter.UTSFilter, "uts_ns_filter", consts.ConfigUTSNsFilter)
+	errmap["comm_filter"] = t.setStringFilter(t.config.Filter.CommFilter, "comm_filter", consts.ConfigCommFilter)
+	errmap["cont_filter"] = t.setBoolFilter(t.config.Filter.ContFilter, consts.ConfigContFilter)
+	errmap["cont=new_filter"] = t.setBoolFilter(t.config.Filter.NewContFilter, consts.ConfigNewContFilter)
 	for k, v := range errmap {
 		if v != nil {
 			return fmt.Errorf("error setting %v filter: %v", k, v)
@@ -885,8 +886,8 @@ func (t *Tracee) populateBPFMaps() error {
 		if err := paramsNamesBPFMap.Update(unsafe.Pointer(&eU32), unsafe.Pointer(&paramsNames)); err != nil {
 			return err
 		}
-		if e == ExecveEventID || e == ExecveatEventID {
-			event, ok := EventsIDToEvent[e]
+		if e == consts.ExecveEventID || e == consts.ExecveatEventID {
+			event, ok := consts.EventsIDToEvent[e]
 			if !ok {
 				continue
 			}
@@ -1000,11 +1001,11 @@ func (t *Tracee) initBPF() error {
 	// For every BPF program, we need to make sure that:
 	// 1. We disable autoload if the program is not required by any event and is not essential
 	// 2. The correct BPF program type is set
-	for _, event := range EventsIDToEvent {
+	for _, event := range consts.EventsIDToEvent {
 		for _, probe := range event.Probes {
-			prog, _ := t.bpfModule.GetProgram(probe.fn)
-			if prog == nil && probe.attach == sysCall {
-				prog, _ = t.bpfModule.GetProgram(fmt.Sprintf("syscall__%s", probe.fn))
+			prog, _ := t.bpfModule.GetProgram(probe.Fn)
+			if prog == nil && probe.Attach == consts.SysCall {
+				prog, _ = t.bpfModule.GetProgram(fmt.Sprintf("syscall__%s", probe.Fn))
 			}
 			if prog == nil {
 				continue
@@ -1070,32 +1071,32 @@ func (t *Tracee) initBPF() error {
 	}
 
 	for e := range t.eventsToTrace {
-		event, ok := EventsIDToEvent[e]
+		event, ok := consts.EventsIDToEvent[e]
 		if !ok {
 			continue
 		}
 		for _, probe := range event.Probes {
-			if probe.attach == sysCall {
+			if probe.Attach == consts.SysCall {
 				// Already handled by raw_syscalls tracepoints
 				continue
 			}
-			prog, err := t.bpfModule.GetProgram(probe.fn)
+			prog, err := t.bpfModule.GetProgram(probe.Fn)
 			if err != nil {
-				return fmt.Errorf("error getting program %s: %v", probe.fn, err)
+				return fmt.Errorf("error getting program %s: %v", probe.Fn, err)
 			}
-			switch probe.attach {
-			case kprobe:
-				_, err = prog.AttachKprobe(probe.event)
-			case kretprobe:
-				_, err = prog.AttachKretprobe(probe.event)
-			case tracepoint:
-				_, err = prog.AttachTracepoint(probe.event)
-			case rawTracepoint:
-				tpEvent := strings.Split(probe.event, ":")[1]
+			switch probe.Attach {
+			case consts.Kprobe:
+				_, err = prog.AttachKprobe(probe.Event)
+			case consts.Kretprobe:
+				_, err = prog.AttachKretprobe(probe.Event)
+			case consts.Tracepoint:
+				_, err = prog.AttachTracepoint(probe.Event)
+			case consts.RawTracepoint:
+				tpEvent := strings.Split(probe.Event, ":")[1]
 				_, err = prog.AttachRawTracepoint(tpEvent)
 			}
 			if err != nil {
-				return fmt.Errorf("error attaching event %s: %v", probe.event, err)
+				return fmt.Errorf("error attaching event %s: %v", probe.Event, err)
 			}
 		}
 	}
@@ -1256,59 +1257,59 @@ func (t *Tracee) shouldPrintEvent(e RawEvent) bool {
 	return true
 }
 
-func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) error {
+func (t *Tracee) prepareArgsForPrint(ctx *context, args map[consts.ArgTag]interface{}) error {
 	for key, arg := range args {
 		if ptr, isUintptr := arg.(uintptr); isUintptr {
 			args[key] = fmt.Sprintf("0x%X", ptr)
 		}
 	}
 	switch ctx.EventID {
-	case SysEnterEventID, SysExitEventID, CapCapableEventID, CommitCredsEventID, SecurityFileOpenEventID:
+	case consts.SysEnterEventID, consts.SysExitEventID, consts.CapCapableEventID, consts.CommitCredsEventID, consts.SecurityFileOpenEventID:
 		//show syscall name instead of id
 		if id, isInt32 := args[t.EncParamName[ctx.EventID%2]["syscall"]].(int32); isInt32 {
-			if event, isKnown := EventsIDToEvent[id]; isKnown {
-				if event.Probes[0].attach == sysCall {
-					args[t.EncParamName[ctx.EventID%2]["syscall"]] = event.Probes[0].event
+			if event, isKnown := consts.EventsIDToEvent[id]; isKnown {
+				if event.Probes[0].Attach == consts.SysCall {
+					args[t.EncParamName[ctx.EventID%2]["syscall"]] = event.Probes[0].Event
 				}
 			}
 		}
-		if ctx.EventID == CapCapableEventID {
+		if ctx.EventID == consts.CapCapableEventID {
 			if capability, isInt32 := args[t.EncParamName[ctx.EventID%2]["cap"]].(int32); isInt32 {
 				args[t.EncParamName[ctx.EventID%2]["cap"]] = helpers.ParseCapability(capability)
 			}
 		}
-		if ctx.EventID == SecurityFileOpenEventID {
+		if ctx.EventID == consts.SecurityFileOpenEventID {
 			if flags, isInt32 := args[t.EncParamName[ctx.EventID%2]["flags"]].(int32); isInt32 {
 				args[t.EncParamName[ctx.EventID%2]["flags"]] = helpers.ParseOpenFlags(uint32(flags))
 			}
 		}
-	case MmapEventID, MprotectEventID, PkeyMprotectEventID:
+	case consts.MmapEventID, consts.MprotectEventID, consts.PkeyMprotectEventID:
 		if prot, isInt32 := args[t.EncParamName[ctx.EventID%2]["prot"]].(int32); isInt32 {
 			args[t.EncParamName[ctx.EventID%2]["prot"]] = helpers.ParseMemProt(uint32(prot))
 		}
-	case PtraceEventID:
+	case consts.PtraceEventID:
 		if req, isInt64 := args[t.EncParamName[ctx.EventID%2]["request"]].(int64); isInt64 {
 			args[t.EncParamName[ctx.EventID%2]["request"]] = helpers.ParsePtraceRequest(req)
 		}
-	case PrctlEventID:
+	case consts.PrctlEventID:
 		if opt, isInt32 := args[t.EncParamName[ctx.EventID%2]["option"]].(int32); isInt32 {
 			args[t.EncParamName[ctx.EventID%2]["option"]] = helpers.ParsePrctlOption(opt)
 		}
-	case SocketEventID:
+	case consts.SocketEventID:
 		if dom, isInt32 := args[t.EncParamName[ctx.EventID%2]["domain"]].(int32); isInt32 {
 			args[t.EncParamName[ctx.EventID%2]["domain"]] = helpers.ParseSocketDomain(uint32(dom))
 		}
 		if typ, isInt32 := args[t.EncParamName[ctx.EventID%2]["type"]].(int32); isInt32 {
 			args[t.EncParamName[ctx.EventID%2]["type"]] = helpers.ParseSocketType(uint32(typ))
 		}
-	case SecuritySocketCreateEventID:
+	case consts.SecuritySocketCreateEventID:
 		if dom, isInt32 := args[t.EncParamName[ctx.EventID%2]["family"]].(int32); isInt32 {
 			args[t.EncParamName[ctx.EventID%2]["family"]] = helpers.ParseSocketDomain(uint32(dom))
 		}
 		if typ, isInt32 := args[t.EncParamName[ctx.EventID%2]["type"]].(int32); isInt32 {
 			args[t.EncParamName[ctx.EventID%2]["type"]] = helpers.ParseSocketType(uint32(typ))
 		}
-	case ConnectEventID, AcceptEventID, Accept4EventID, BindEventID, GetsocknameEventID:
+	case consts.ConnectEventID, consts.AcceptEventID, consts.Accept4EventID, consts.BindEventID, consts.GetsocknameEventID:
 		if sockAddr, isStrMap := args[t.EncParamName[ctx.EventID%2]["addr"]].(map[string]string); isStrMap {
 			var s string
 			for key, val := range sockAddr {
@@ -1318,7 +1319,7 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 			s = fmt.Sprintf("{%s}", s)
 			args[t.EncParamName[ctx.EventID%2]["addr"]] = s
 		}
-	case SecuritySocketBindEventID, SecuritySocketAcceptEventID, SecuritySocketListenEventID:
+	case consts.SecuritySocketBindEventID, consts.SecuritySocketAcceptEventID, consts.SecuritySocketListenEventID:
 		if sockAddr, isStrMap := args[t.EncParamName[ctx.EventID%2]["local_addr"]].(map[string]string); isStrMap {
 			var s string
 			for key, val := range sockAddr {
@@ -1328,7 +1329,7 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 			s = fmt.Sprintf("{%s}", s)
 			args[t.EncParamName[ctx.EventID%2]["local_addr"]] = s
 		}
-	case SecuritySocketConnectEventID:
+	case consts.SecuritySocketConnectEventID:
 		if sockAddr, isStrMap := args[t.EncParamName[ctx.EventID%2]["remote_addr"]].(map[string]string); isStrMap {
 			var s string
 			for key, val := range sockAddr {
@@ -1338,33 +1339,33 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 			s = fmt.Sprintf("{%s}", s)
 			args[t.EncParamName[ctx.EventID%2]["remote_addr"]] = s
 		}
-	case AccessEventID, FaccessatEventID:
+	case consts.AccessEventID, consts.FaccessatEventID:
 		if mode, isInt32 := args[t.EncParamName[ctx.EventID%2]["mode"]].(int32); isInt32 {
 			args[t.EncParamName[ctx.EventID%2]["mode"]] = helpers.ParseAccessMode(uint32(mode))
 		}
-	case ExecveatEventID:
+	case consts.ExecveatEventID:
 		if flags, isInt32 := args[t.EncParamName[ctx.EventID%2]["flags"]].(int32); isInt32 {
 			args[t.EncParamName[ctx.EventID%2]["flags"]] = helpers.ParseExecFlags(uint32(flags))
 		}
-	case OpenEventID, OpenatEventID:
+	case consts.OpenEventID, consts.OpenatEventID:
 		if flags, isInt32 := args[t.EncParamName[ctx.EventID%2]["flags"]].(int32); isInt32 {
 			args[t.EncParamName[ctx.EventID%2]["flags"]] = helpers.ParseOpenFlags(uint32(flags))
 		}
-	case MknodEventID, MknodatEventID, ChmodEventID, FchmodEventID, FchmodatEventID:
+	case consts.MknodEventID, consts.MknodatEventID, consts.ChmodEventID, consts.FchmodEventID, consts.FchmodatEventID:
 		if mode, isUint32 := args[t.EncParamName[ctx.EventID%2]["mode"]].(uint32); isUint32 {
 			args[t.EncParamName[ctx.EventID%2]["mode"]] = helpers.ParseInodeMode(mode)
 		}
-	case MemProtAlertEventID:
+	case consts.MemProtAlertEventID:
 		if alert, isAlert := args[t.EncParamName[ctx.EventID%2]["alert"]].(alert); isAlert {
 			args[t.EncParamName[ctx.EventID%2]["alert"]] = PrintAlert(alert)
 		}
-	case CloneEventID:
+	case consts.CloneEventID:
 		if flags, isUint64 := args[t.EncParamName[ctx.EventID%2]["flags"]].(uint64); isUint64 {
 			args[t.EncParamName[ctx.EventID%2]["flags"]] = helpers.ParseCloneFlags(flags)
 		}
-	case SendtoEventID, RecvfromEventID:
+	case consts.SendtoEventID, consts.RecvfromEventID:
 		addrTag := t.EncParamName[ctx.EventID%2]["dest_addr"]
-		if ctx.EventID == RecvfromEventID {
+		if ctx.EventID == consts.RecvfromEventID {
 			addrTag = t.EncParamName[ctx.EventID%2]["src_addr"]
 		}
 		if sockAddr, isStrMap := args[addrTag].(map[string]string); isStrMap {
@@ -1376,7 +1377,7 @@ func (t *Tracee) prepareArgsForPrint(ctx *context, args map[argTag]interface{}) 
 			s = fmt.Sprintf("{%s}", s)
 			args[addrTag] = s
 		}
-	case BpfEventID:
+	case consts.BpfEventID:
 		if cmd, isInt32 := args[t.EncParamName[ctx.EventID%2]["cmd"]].(int32); isInt32 {
 			args[t.EncParamName[ctx.EventID%2]["cmd"]] = helpers.ParseBPFCmd(cmd)
 		}

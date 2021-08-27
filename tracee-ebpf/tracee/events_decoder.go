@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/consts"
 	"io"
 	"strconv"
 
@@ -19,11 +20,11 @@ type alert struct {
 	Payload uint8
 }
 
-func readArgFromBuff(dataBuff io.Reader) (argTag, interface{}, error) {
+func readArgFromBuff(dataBuff io.Reader) (consts.ArgTag, interface{}, error) {
 	var err error
 	var res interface{}
-	var argTag argTag
-	var argType argType
+	var argTag consts.ArgTag
+	var argType consts.ArgType
 	err = binary.Read(dataBuff, binary.LittleEndian, &argType)
 	if err != nil {
 		return argTag, nil, fmt.Errorf("error reading arg type: %v", err)
@@ -33,43 +34,43 @@ func readArgFromBuff(dataBuff io.Reader) (argTag, interface{}, error) {
 		return argTag, nil, fmt.Errorf("error reading arg tag: %v", err)
 	}
 	switch argType {
-	case u16T:
+	case consts.U16T:
 		var data uint16
 		err = binary.Read(dataBuff, binary.LittleEndian, &data)
 		res = data
-	case intT:
+	case consts.IntT:
 		var data int32
 		err = binary.Read(dataBuff, binary.LittleEndian, &data)
 		res = data
-	case uintT, devT, modeT:
+	case consts.UintT, consts.DevT, consts.ModeT:
 		var data uint32
 		err = binary.Read(dataBuff, binary.LittleEndian, &data)
 		res = data
-	case longT:
+	case consts.LongT:
 		var data int64
 		err = binary.Read(dataBuff, binary.LittleEndian, &data)
 		res = data
-	case ulongT, offT, sizeT:
+	case consts.UlongT, consts.OffT, consts.SizeT:
 		var data uint64
 		err = binary.Read(dataBuff, binary.LittleEndian, &data)
 		res = data
-	case pointerT:
+	case consts.PointerT:
 		var data uint64
 		err = binary.Read(dataBuff, binary.LittleEndian, &data)
 		res = uintptr(data)
-	case sockAddrT:
+	case consts.SockAddrT:
 		res, err = readSockaddrFromBuff(dataBuff)
-	case alertT:
+	case consts.AlertT:
 		var data alert
 		err = binary.Read(dataBuff, binary.LittleEndian, &data)
 		res = data
-	case credT:
+	case consts.CredT:
 		var data external.SlimCred
 		err = binary.Read(dataBuff, binary.LittleEndian, &data)
 		res = data
-	case strT:
+	case consts.StrT:
 		res, err = readStringFromBuff(dataBuff)
-	case strArrT:
+	case consts.StrArrT:
 		var ss []string
 		var arrLen uint8
 		err = binary.Read(dataBuff, binary.LittleEndian, &arrLen)
@@ -84,7 +85,7 @@ func readArgFromBuff(dataBuff io.Reader) (argTag, interface{}, error) {
 			ss = append(ss, s)
 		}
 		res = ss
-	case bytesT:
+	case consts.BytesT:
 		var size uint32
 		err = binary.Read(dataBuff, binary.LittleEndian, &size)
 		if err != nil {

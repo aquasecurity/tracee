@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/consts"
 	"io"
 	"os"
 	"path"
@@ -12,7 +13,7 @@ import (
 
 func (t *Tracee) processFileWrites() {
 	type chunkMeta struct {
-		BinType  binType
+		BinType  consts.BinType
 		MntID    uint32
 		Metadata [20]byte
 		Size     int32
@@ -73,7 +74,7 @@ func (t *Tracee) processFileWrites() {
 			}
 			filename := ""
 			metaBuff := bytes.NewBuffer(meta.Metadata[:])
-			if meta.BinType == sendVfsWrite {
+			if meta.BinType == consts.SendVfsWrite {
 				var vfsMeta vfsWriteMeta
 				err = binary.Read(metaBuff, binary.LittleEndian, &vfsMeta)
 				if err != nil {
@@ -88,7 +89,7 @@ func (t *Tracee) processFileWrites() {
 				} else {
 					filename = fmt.Sprintf("write.dev-%d.inode-%d.pid-%d", vfsMeta.DevID, vfsMeta.Inode, vfsMeta.Pid)
 				}
-			} else if meta.BinType == sendMprotect {
+			} else if meta.BinType == consts.SendMprotect {
 				var mprotectMeta mprotectWriteMeta
 				err = binary.Read(metaBuff, binary.LittleEndian, &mprotectMeta)
 				if err != nil {

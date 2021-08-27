@@ -2,6 +2,7 @@ package tracee
 
 import (
 	"fmt"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/consts"
 	"io"
 	"os"
 	"path/filepath"
@@ -37,10 +38,10 @@ func (t *Tracee) shouldProcessEvent(e RawEvent) bool {
 					return false
 				}
 			}
-			if (filter.Greater != GreaterNotSetInt) && retVal <= filter.Greater {
+			if (filter.Greater != consts.GreaterNotSetInt) && retVal <= filter.Greater {
 				return false
 			}
-			if (filter.Less != LessNotSetInt) && retVal >= filter.Less {
+			if (filter.Less != consts.LessNotSetInt) && retVal >= filter.Less {
 				return false
 			}
 		}
@@ -75,11 +76,11 @@ func (t *Tracee) shouldProcessEvent(e RawEvent) bool {
 	return true
 }
 
-func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
+func (t *Tracee) processEvent(ctx *context, args map[consts.ArgTag]interface{}) error {
 	switch ctx.EventID {
 
 	//capture written files
-	case VfsWriteEventID, VfsWritevEventID:
+	case consts.VfsWriteEventID, consts.VfsWritevEventID:
 		if t.config.Capture.FileWrite {
 			filePath, ok := args[t.EncParamName[ctx.EventID%2]["pathname"]].(string)
 			if !ok {
@@ -109,7 +110,7 @@ func (t *Tracee) processEvent(ctx *context, args map[argTag]interface{}) error {
 			t.writtenFiles[fileName] = filePath
 		}
 
-	case SecurityBprmCheckEventID:
+	case consts.SecurityBprmCheckEventID:
 
 		//cache this pid by it's mnt ns
 		if ctx.Pid == 1 {

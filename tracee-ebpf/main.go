@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"fmt"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/consts"
 	"io"
 	"io/ioutil"
 	"log"
@@ -91,7 +92,7 @@ func main() {
 			cfg.Output = &output
 
 			if c.Bool("security-alerts") {
-				cfg.Filter.EventsToTrace = append(cfg.Filter.EventsToTrace, tracee.MemProtAlertEventID)
+				cfg.Filter.EventsToTrace = append(cfg.Filter.EventsToTrace, consts.MemProtAlertEventID)
 			}
 
 			// environment capabilities
@@ -587,29 +588,29 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 		UIDFilter: &tracee.UintFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
-			Less:     tracee.LessNotSetUint,
-			Greater:  tracee.GreaterNotSetUint,
+			Less:     consts.LessNotSetUint,
+			Greater:  consts.GreaterNotSetUint,
 			Is32Bit:  true,
 		},
 		PIDFilter: &tracee.UintFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
-			Less:     tracee.LessNotSetUint,
-			Greater:  tracee.GreaterNotSetUint,
+			Less:     consts.LessNotSetUint,
+			Greater:  consts.GreaterNotSetUint,
 			Is32Bit:  true,
 		},
 		NewPidFilter: &tracee.BoolFilter{},
 		MntNSFilter: &tracee.UintFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
-			Less:     tracee.LessNotSetUint,
-			Greater:  tracee.GreaterNotSetUint,
+			Less:     consts.LessNotSetUint,
+			Greater:  consts.GreaterNotSetUint,
 		},
 		PidNSFilter: &tracee.UintFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
-			Less:     tracee.LessNotSetUint,
-			Greater:  tracee.GreaterNotSetUint,
+			Less:     consts.LessNotSetUint,
+			Greater:  consts.GreaterNotSetUint,
 		},
 		UTSFilter: &tracee.StringFilter{
 			Equal:    []string{},
@@ -633,8 +634,8 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 	eventFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}}
 	setFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}}
 
-	eventsNameToID := make(map[string]int32, len(tracee.EventsIDToEvent))
-	for _, event := range tracee.EventsIDToEvent {
+	eventsNameToID := make(map[string]int32, len(consts.EventsIDToEvent))
+	for _, event := range consts.EventsIDToEvent {
 		eventsNameToID[event.Name] = event.ID
 	}
 
@@ -818,11 +819,11 @@ func parseUintFilter(operatorAndValues string, uintFilter *tracee.UintFilter) er
 		case "!=":
 			uintFilter.NotEqual = append(uintFilter.NotEqual, val)
 		case ">":
-			if (uintFilter.Greater == tracee.GreaterNotSetUint) || (val > uintFilter.Greater) {
+			if (uintFilter.Greater == consts.GreaterNotSetUint) || (val > uintFilter.Greater) {
 				uintFilter.Greater = val
 			}
 		case "<":
-			if (uintFilter.Less == tracee.LessNotSetUint) || (val < uintFilter.Less) {
+			if (uintFilter.Less == consts.LessNotSetUint) || (val < uintFilter.Less) {
 				uintFilter.Less = val
 			}
 		default:
@@ -865,11 +866,11 @@ func parseIntFilter(operatorAndValues string, intFilter *tracee.IntFilter) error
 		case "!=":
 			intFilter.NotEqual = append(intFilter.NotEqual, val)
 		case ">":
-			if (intFilter.Greater == tracee.GreaterNotSetInt) || (val > intFilter.Greater) {
+			if (intFilter.Greater == consts.GreaterNotSetInt) || (val > intFilter.Greater) {
 				intFilter.Greater = val
 			}
 		case "<":
-			if (intFilter.Less == tracee.LessNotSetInt) || (val < intFilter.Less) {
+			if (intFilter.Less == consts.LessNotSetInt) || (val < intFilter.Less) {
 				intFilter.Less = val
 			}
 		default:
@@ -938,7 +939,7 @@ func parseArgFilter(filterName string, operatorAndValues string, eventsNameToID 
 		return fmt.Errorf("invalid argument filter event name: %s", eventName)
 	}
 
-	eventParams, ok := tracee.EventsIDToParams[id]
+	eventParams, ok := consts.EventsIDToParams[id]
 	if !ok {
 		return fmt.Errorf("invalid argument filter event name: %s", eventName)
 	}
@@ -1004,8 +1005,8 @@ func parseRetFilter(filterName string, operatorAndValues string, eventsNameToID 
 		retFilter.Filters[id] = tracee.IntFilter{
 			Equal:    []int64{},
 			NotEqual: []int64{},
-			Less:     tracee.LessNotSetInt,
-			Greater:  tracee.GreaterNotSetInt,
+			Less:     consts.LessNotSetInt,
+			Greater:  consts.GreaterNotSetInt,
 		}
 	}
 
@@ -1031,7 +1032,7 @@ func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.St
 	var res []int32
 	setsToEvents := make(map[string][]int32)
 	isExcluded := make(map[int32]bool)
-	for id, event := range tracee.EventsIDToEvent {
+	for id, event := range consts.EventsIDToEvent {
 		for _, set := range event.Sets {
 			setsToEvents[set] = append(setsToEvents[set], id)
 		}
@@ -1062,7 +1063,7 @@ func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.St
 		setsToTrace = append(setsToTrace, "default")
 	}
 
-	res = make([]int32, 0, len(tracee.EventsIDToEvent))
+	res = make([]int32, 0, len(consts.EventsIDToEvent))
 	for _, name := range eventsToTrace {
 		// Handle event prefixes with wildcards
 		if strings.HasSuffix(name, "*") {
@@ -1162,7 +1163,7 @@ func getSelfCapabilities() (capability.Capabilities, error) {
 }
 
 func fetchFormattedEventParams(eventID int32) string {
-	eventParams := tracee.EventsIDToParams[eventID]
+	eventParams := consts.EventsIDToParams[eventID]
 	var verboseEventParams string
 	verboseEventParams += "("
 	prefix := ""
@@ -1193,9 +1194,9 @@ func printList() {
 	var b strings.Builder
 	b.WriteString("System Calls: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________" + "\n\n")
-	for i := 0; i < int(tracee.SysEnterEventID); i++ {
+	for i := 0; i < int(consts.SysEnterEventID); i++ {
 		index := int32(i)
-		event, ok := tracee.EventsIDToEvent[index]
+		event, ok := consts.EventsIDToEvent[index]
 		if !ok {
 			continue
 		}
@@ -1208,9 +1209,9 @@ func printList() {
 	}
 	b.WriteString("\n\nOther Events: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________\n\n")
-	for i := int(tracee.SysEnterEventID); i < int(tracee.MaxEventID); i++ {
+	for i := int(consts.SysEnterEventID); i < int(consts.MaxEventID); i++ {
 		index := int32(i)
-		event := tracee.EventsIDToEvent[index]
+		event := consts.EventsIDToEvent[index]
 		if event.Sets != nil {
 			eventSets := fmt.Sprintf("%-22s %-40s %s\n", event.Name, fmt.Sprintf("%v", event.Sets), fetchFormattedEventParams(index))
 			b.WriteString(eventSets)

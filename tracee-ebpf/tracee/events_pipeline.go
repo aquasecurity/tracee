@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/consts"
 	"strconv"
 	"sync"
 	"unsafe"
@@ -39,8 +40,8 @@ func (t *Tracee) runEventPipeline(done <-chan struct{}) error {
 
 type RawEvent struct {
 	Ctx      context
-	RawArgs  map[argTag]interface{}
-	ArgsTags []argTag
+	RawArgs  map[consts.ArgTag]interface{}
+	ArgsTags []consts.ArgTag
 }
 
 // context struct contains common metadata that is collected for all types of events
@@ -83,8 +84,8 @@ func (t *Tracee) decodeRawEvent(done <-chan struct{}) (<-chan RawEvent, <-chan e
 				continue
 			}
 
-			rawArgs := make(map[argTag]interface{})
-			argsTags := make([]argTag, ctx.Argnum)
+			rawArgs := make(map[consts.ArgTag]interface{})
+			argsTags := make([]consts.ArgTag, ctx.Argnum)
 			for i := 0; i < int(ctx.Argnum); i++ {
 				tag, val, err := readArgFromBuff(dataBuff)
 				if err != nil {
@@ -130,7 +131,7 @@ func (t *Tracee) processRawEvent(done <-chan struct{}, in <-chan RawEvent) (<-ch
 }
 
 func (t *Tracee) getStackAddresses(StackID uint32) ([]uint64, error) {
-	StackAddresses := make([]uint64, maxStackDepth)
+	StackAddresses := make([]uint64, consts.MaxStackDepth)
 	stackFrameSize := (strconv.IntSize / 8)
 
 	// Lookup the StackID in the map
@@ -175,7 +176,7 @@ func newEvent(ctx context, argMetas []external.ArgMeta, args []interface{}, Stac
 		HostName:            string(bytes.TrimRight(ctx.UtsName[:], "\x00")),
 		ContainerID:         string(bytes.TrimRight(ctx.ContID[:], "\x00")),
 		EventID:             int(ctx.EventID),
-		EventName:           EventsIDToEvent[int32(ctx.EventID)].Name,
+		EventName:           consts.EventsIDToEvent[int32(ctx.EventID)].Name,
 		ArgsNum:             int(ctx.Argnum),
 		ReturnValue:         int(ctx.Retval),
 		Args:                make([]external.Argument, 0, len(args)),

@@ -1,6 +1,6 @@
 // +build arm64
 
-package tracee
+package consts
 
 // ARM64 syscall numbers
 // Also used as event IDs
