@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -244,11 +245,21 @@ func main() {
 				}
 			}()
 
-			// run with created config
 			t, err := tracee.New(cfg)
 			if err != nil {
 				return fmt.Errorf("error creating Tracee: %v", err)
 			}
+
+			if err := os.MkdirAll(t.config.Capture.OutputPath, 0755); err != nil {
+				t.Close()
+				return fmt.Errorf("error creating output path: %v", err)
+			}
+			err = ioutil.WriteFile(path.Join(t.config.Capture.OutputPath, "tracee.pid"), []byte(strconv.Itoa(os.Getpid())+"\n"), 0640)
+			if err != nil {
+				t.Close()
+				return fmt.Errorf("error creating readiness file: %v", err)
+			}
+
 			err = t.Run()
 
 			stats := t.GetStats()
