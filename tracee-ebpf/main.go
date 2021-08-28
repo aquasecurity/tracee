@@ -443,7 +443,7 @@ Examples:
   --capture exec                                           | capture executed files into the default output directory
   --capture exec --capture dir:/my/dir --capture clear-dir | delete /my/dir/out and then capture executed files into it
   --capture write=/usr/bin/* --capture write=/etc/*        | capture files that were written into anywhere under /usr/bin/ or /etc/
-  --capture exec --capture profile                         | capture executed files and create a runtime profile in the output directory
+  --capture profile                                        | capture executed files and create a runtime profile in the output directory
   --capture net=eth0                                       | capture network traffic of eth0
   --capture exec --output none                             | capture executed files into the default output directory not printing the stream of events
 
