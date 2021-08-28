@@ -84,7 +84,7 @@ func main() {
 				printOutputHelp()
 				return nil
 			}
-			output, printer, err := prepareOutput(c.StringSlice("output"), containerMode)
+			output, printerConfig, err := prepareOutput(c.StringSlice("output"))
 			if err != nil {
 				return err
 			}
@@ -225,6 +225,39 @@ func main() {
 			cfg.ChanErrors = make(chan error)
 			cfg.ChanDone = make(chan struct{})
 
+			t, err := tracee.New(cfg)
+			if err != nil {
+				return fmt.Errorf("error creating Tracee: %v", err)
+			}
+
+			if err := os.MkdirAll(cfg.Capture.OutputPath, 0755); err != nil {
+				t.Close()
+				return fmt.Errorf("error creating output path: %v", err)
+			}
+			err = ioutil.WriteFile(path.Join(cfg.Capture.OutputPath, "tracee.pid"), []byte(strconv.Itoa(os.Getpid())+"\n"), 0640)
+			if err != nil {
+				t.Close()
+				return fmt.Errorf("error creating readiness file: %v", err)
+			}
+
+			if printerConfig.outFile == nil {
+				printerConfig.outFile, err = os.OpenFile(printerConfig.outPath, os.O_WRONLY, 0755)
+				if err != nil {
+					return err
+				}
+			}
+			if printerConfig.errFile == nil {
+				printerConfig.errFile, err = os.OpenFile(printerConfig.errPath, os.O_WRONLY, 0755)
+				if err != nil {
+					return err
+				}
+			}
+
+			printer, err := newEventPrinter(printerConfig.kind, containerMode, cfg.Output.RelativeTime, printerConfig.outFile, printerConfig.errFile)
+			if err != nil {
+				return err
+			}
+
 			go func() {
 				printer.Preamble()
 				for {
@@ -238,21 +271,6 @@ func main() {
 					}
 				}
 			}()
-
-			t, err := tracee.New(cfg)
-			if err != nil {
-				return fmt.Errorf("error creating Tracee: %v", err)
-			}
-
-			if err := os.MkdirAll(t.config.Capture.OutputPath, 0755); err != nil {
-				t.Close()
-				return fmt.Errorf("error creating output path: %v", err)
-			}
-			err = ioutil.WriteFile(path.Join(t.config.Capture.OutputPath, "tracee.pid"), []byte(strconv.Itoa(os.Getpid())+"\n"), 0640)
-			if err != nil {
-				t.Close()
-				return fmt.Errorf("error creating readiness file: %v", err)
-			}
 
 			err = t.Run()
 
@@ -366,13 +384,20 @@ Use this flag multiple times to choose multiple output options
 	fmt.Print(outputHelp)
 }
 
-func prepareOutput(outputSlice []string, containerMode bool) (tracee.OutputConfig, eventPrinter, error) {
-	res := tracee.OutputConfig{}
+type printerConfig struct {
+	kind    string
+	outPath string
+	outFile *os.File
+	errPath string
+	errFile *os.File
+}
+
+func prepareOutput(outputSlice []string) (tracee.OutputConfig, printerConfig, error) {
+	outcfg := tracee.OutputConfig{}
+	printcfg := printerConfig{}
 	printerKind := "table"
 	outPath := ""
 	errPath := ""
-	var err error
-
 	for _, o := range outputSlice {
 		outputParts := strings.SplitN(o, ":", 2)
 		numParts := len(outputParts)
@@ -391,7 +416,7 @@ func prepareOutput(outputSlice []string, containerMode bool) (tracee.OutputConfi
 				printerKind != "json" &&
 				printerKind != "gob" &&
 				!strings.HasPrefix(printerKind, "gotemplate=") {
-				return res, nil, fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info.", printerKind)
+				return outcfg, printcfg, fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info.", printerKind)
 			}
 		case "out-file":
 			outPath = outputParts[1]
@@ -400,66 +425,70 @@ func prepareOutput(outputSlice []string, containerMode bool) (tracee.OutputConfi
 		case "option":
 			switch outputParts[1] {
 			case "stack-addresses":
-				res.StackAddresses = true
+				outcfg.StackAddresses = true
 			case "detect-syscall":
-				res.DetectSyscall = true
+				outcfg.DetectSyscall = true
 			case "exec-env":
-				res.ExecEnv = true
+				outcfg.ExecEnv = true
 			case "relative-time":
-				res.RelativeTime = true
+				outcfg.RelativeTime = true
 			case "exec-hash":
-				res.ExecHash = true
+				outcfg.ExecHash = true
 			case "parse-arguments":
-				res.ParseArguments = true
+				outcfg.ParseArguments = true
 			default:
-				return res, nil, fmt.Errorf("invalid output option: %s, use '--output help' for more info", outputParts[1])
+				return outcfg, printcfg, fmt.Errorf("invalid output option: %s, use '--output help' for more info", outputParts[1])
 			}
 		default:
-			return res, nil, fmt.Errorf("invalid output value: %s, use '--output help' for more info", outputParts[1])
+			return outcfg, printcfg, fmt.Errorf("invalid output value: %s, use '--output help' for more info", outputParts[1])
 		}
 	}
 
 	if printerKind == "table" {
-		res.ParseArguments = true
+		outcfg.ParseArguments = true
 	}
 
-	outf := os.Stdout
-	if outPath != "" {
-		// To avoid accidental deletions, make sure this is not a directory
+	printcfg.kind = printerKind
+
+	if outPath == "" {
+		printcfg.outFile = os.Stdout
+	} else {
+		printcfg.outPath = outPath
 		fileInfo, err := os.Stat(outPath)
-		if err == nil && fileInfo.IsDir() {
-			return res, nil, fmt.Errorf("cannot use a path of existing directory %s", outPath)
-		}
-		dir := filepath.Dir(outPath)
-		os.MkdirAll(dir, 0755)
-		os.Remove(outPath)
-		outf, err = os.Create(outPath)
-		if err != nil {
-			return res, nil, fmt.Errorf("failed to create output path: %v", err)
+		if err == nil {
+			if fileInfo.IsDir() {
+				return outcfg, printcfg, fmt.Errorf("cannot use a path of existing directory %s", outPath)
+			}
+		} else {
+			dir := filepath.Dir(outPath)
+			os.MkdirAll(dir, 0755)
+			printcfg.outFile, err = os.Create(outPath)
+			if err != nil {
+				return outcfg, printcfg, fmt.Errorf("failed to create output path: %v", err)
+			}
 		}
 	}
-	errf := os.Stderr
-	if errPath != "" {
-		// To avoid accidental deletions, make sure this is not a directory
+
+	if errPath == "" {
+		printcfg.errFile = os.Stderr
+	} else {
+		printcfg.errPath = errPath
 		fileInfo, err := os.Stat(errPath)
-		if err == nil && fileInfo.IsDir() {
-			return res, nil, fmt.Errorf("cannot use a path of existing directory %s", errPath)
-		}
-		dir := filepath.Dir(errPath)
-		os.MkdirAll(dir, 0755)
-		os.Remove(errPath)
-		errf, err = os.Create(errPath)
-		if err != nil {
-			return res, nil, fmt.Errorf("failed to create error path: %v", err)
+		if err == nil {
+			if fileInfo.IsDir() {
+				return outcfg, printcfg, fmt.Errorf("cannot use a path of existing directory %s", errPath)
+			}
+		} else {
+			dir := filepath.Dir(errPath)
+			os.MkdirAll(dir, 0755)
+			printcfg.errFile, err = os.Create(errPath)
+			if err != nil {
+				return outcfg, printcfg, fmt.Errorf("failed to create output path: %v", err)
+			}
 		}
 	}
 
-	printer, err := newEventPrinter(printerKind, containerMode, res.RelativeTime, outf, errf)
-	if err != nil {
-		return res, nil, fmt.Errorf("failed to create event printer: %v", err)
-	}
-
-	return res, printer, nil
+	return outcfg, printcfg, nil
 }
 
 func printCaptureHelp() {
