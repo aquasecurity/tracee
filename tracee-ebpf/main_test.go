@@ -1304,7 +1304,7 @@ func TestPrepareOutput(t *testing.T) {
 	}
 	for _, testcase := range testCases {
 		t.Run(testcase.testName, func(t *testing.T) {
-			output, _, err := prepareOutput(testcase.outputSlice, false)
+			output, _, err := prepareOutput(testcase.outputSlice)
 			if err != nil {
 				assert.Equal(t, testcase.expectedError, err)
 			} else {
