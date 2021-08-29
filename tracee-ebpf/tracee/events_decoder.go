@@ -94,6 +94,20 @@ func readArgFromBuff(dataBuff io.Reader) (argTag, interface{}, error) {
 			return argTag, nil, fmt.Errorf("byte array size too big: %d", size)
 		}
 		res, err = readByteSliceFromBuff(dataBuff, int(size))
+	case intArr2T:
+		var intArray [2]int32
+
+		err = binary.Read(dataBuff, binary.LittleEndian, &intArray[0])
+		if err != nil {
+			return argTag, nil, fmt.Errorf("error reading string element: %v", err)
+		}
+
+		err = binary.Read(dataBuff, binary.LittleEndian, &intArray[1])
+		if err != nil {
+			return argTag, nil, fmt.Errorf("error reading string element: %v", err)
+		}
+
+		res = intArray
 	default:
 		// if we don't recognize the arg type, we can't parse the rest of the buffer
 		return argTag, nil, fmt.Errorf("error unknown arg type %v", argType)

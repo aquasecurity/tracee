@@ -103,6 +103,7 @@ const (
 	bytesT
 	u16T
 	credT
+	intArr2T
 )
 
 // argTag is an enum that encodes the argument types that the BPF program may write to the shared buffer
@@ -848,7 +849,7 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	Eventfd2EventID:               {{Type: "unsigned int", Name: "initval"}, {Type: "int", Name: "flags"}},
 	EpollCreate1EventID:           {{Type: "int", Name: "flags"}},
 	Dup3EventID:                   {{Type: "int", Name: "oldfd"}, {Type: "int", Name: "newfd"}, {Type: "int", Name: "flags"}},
-	Pipe2EventID:                  {{Type: "int*", Name: "pipefd"}, {Type: "int", Name: "flags"}},
+	Pipe2EventID:                  {{Type: "int[2]", Name: "pipefd"}, {Type: "int", Name: "flags"}},
 	InotifyInit1EventID:           {{Type: "int", Name: "flags"}},
 	PreadvEventID:                 {{Type: "int", Name: "fd"}, {Type: "const struct iovec*", Name: "iov"}, {Type: "unsigned long", Name: "iovcnt"}, {Type: "unsigned long", Name: "pos_l"}, {Type: "unsigned long", Name: "pos_h"}},
 	PwritevEventID:                {{Type: "int", Name: "fd"}, {Type: "const struct iovec*", Name: "iov"}, {Type: "unsigned long", Name: "iovcnt"}, {Type: "unsigned long", Name: "pos_l"}, {Type: "unsigned long", Name: "pos_h"}},
