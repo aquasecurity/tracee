@@ -11,7 +11,7 @@ package userevents
 
 import (
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
-	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/consts"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -31,8 +31,8 @@ func CreateSystemInfoEvent() (external.Event, error) {
 	systemInfoEvent := external.Event{
 		Timestamp:   int(time.Now().UnixNano()),
 		ProcessName: "tracee-ebpf",
-		EventID:     tracee.SystemInfoEventID,
-		EventName:   "system_info_fetch",
+		EventID:     int(consts.SystemInfoEventID),
+		EventName:   consts.EventsIDToEvent[consts.SystemInfoEventID].Name,
 		ArgsNum:     len(systemInfoArgs),
 		Args:        systemInfoArgs,
 	}
