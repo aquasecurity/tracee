@@ -4,10 +4,6 @@ import (
 	"github.com/prometheus/procfs"
 )
 
-//TODO:
-// != doesn't work
-//
-
 func gatherEntireProcessTree() (map[uint32][]uint32, error) {
 	fs, err := procfs.NewFS("/proc")
 	if err != nil {
@@ -40,9 +36,19 @@ func populateProcessTreeFilterMap(processTree map[uint32][]uint32,
 
 	filterMap := map[uint32]bool{}
 
+	// Determine the default filter for PIDs that aren't specified with a proc tree filter
+	// - If one or more '=' filters, default is '!='
+	// - If one or more '!=' filters, default is '='
+	// - If a mix of filters, the default is '='
+	var defaultFilter = true
+	for _, v := range filterSpecification {
+		defaultFilter = defaultFilter && v
+	}
+	defaultFilter = !defaultFilter
+
 	// Populate inital filter map  (keys representing all pids)
 	for pid, _ := range processTree {
-		filterMap[pid] = false
+		filterMap[pid] = defaultFilter
 	}
 
 	// Do two iterations, first to apply all '=' filters, then '!='
