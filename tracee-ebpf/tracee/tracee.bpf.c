@@ -128,6 +128,7 @@ extern bool CONFIG_ARCH_HAS_SYSCALL_WRAPPER __kconfig;
 #define BYTES_T       14UL
 #define U16_T         15UL
 #define CRED_T        16UL
+#define INT_ARR_2_T   17UL
 #define TYPE_MAX      255UL
 
 #define TAG_NONE           0UL
@@ -1795,9 +1796,14 @@ static __always_inline int save_args_to_submit_buf(u64 types, u64 tags, args_t *
                     rc = save_to_submit_buf(submit_p, &family, sizeof(short), type, tag);
                 }
                 break;
+            case INT_ARR_2_T:
+                size = sizeof(int[2]);
+                rc = save_to_submit_buf(submit_p, (void*)(args->args[i]), size, type, tag);
+                break;
         }
-        if ((type != NONE_T) && (type != STR_T) && (type != SOCKADDR_T))
+        if ((type != NONE_T) && (type != STR_T) && (type != SOCKADDR_T) && (type != INT_ARR_2_T)) {
             rc = save_to_submit_buf(submit_p, (void*)&(args->args[i]), size, type, tag);
+        }
 
         if (rc > 0) {
             arg_num++;

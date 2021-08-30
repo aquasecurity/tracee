@@ -528,6 +528,8 @@ func (t *Tracee) initEventsParams() map[int32][]eventParam {
 				paramT = sockAddrT
 			case "bytes":
 				paramT = bytesT
+			case "int[2]":
+				paramT = intArr2T
 			default:
 				// Default to pointer (printed as hex) for unsupported types
 				paramT = pointerT
