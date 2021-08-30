@@ -97,12 +97,7 @@ func readArgFromBuff(dataBuff io.Reader) (argTag, interface{}, error) {
 	case intArr2T:
 		var intArray [2]int32
 
-		err = binary.Read(dataBuff, binary.LittleEndian, &intArray[0])
-		if err != nil {
-			return argTag, nil, fmt.Errorf("error reading string element: %v", err)
-		}
-
-		err = binary.Read(dataBuff, binary.LittleEndian, &intArray[1])
+		err = binary.Read(dataBuff, binary.LittleEndian, &intArray)
 		if err != nil {
 			return argTag, nil, fmt.Errorf("error reading string element: %v", err)
 		}
