@@ -1,4 +1,4 @@
-package userevents
+package tracee
 
 import (
 	"github.com/stretchr/testify/assert"

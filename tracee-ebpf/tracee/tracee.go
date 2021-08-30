@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/aquasecurity/tracee/tracee-ebpf/external/userevents"
 	"io"
 	"io/ioutil"
 	"math"
@@ -1382,7 +1381,7 @@ func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 
 func (t *Tracee) invokeSystemInfoEvent() {
 	if t.eventsToTrace[SystemInfoEventID] {
-		systemInfoEvent, _ := userevents.CreateSystemInfoEvent()
+		systemInfoEvent, _ := CreateSystemInfoEvent()
 		t.config.ChanEvents <- systemInfoEvent
 	}
 }

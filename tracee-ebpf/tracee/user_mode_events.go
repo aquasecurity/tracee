@@ -1,4 +1,3 @@
-// Package userevents
 // Invoked tracee-ebpf events from user mode
 // This utility can prove itself useful to generate information needed by signatures that is not provided by normal
 // events in the kernel.
@@ -7,11 +6,10 @@
 // This is critical because tracee-rules is independent, and doesn't have to run on the same machine as tracee-ebpf.
 // This means that tracee-rules might lack basic information of the operating machine needed for some signatures.
 // By creating user mode events this information could be intentionally collected and passed to tracee-ebpf afterwards.
-package userevents
+package tracee
 
 import (
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
-	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/consts"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -31,8 +29,8 @@ func CreateSystemInfoEvent() (external.Event, error) {
 	systemInfoEvent := external.Event{
 		Timestamp:   int(time.Now().UnixNano()),
 		ProcessName: "tracee-ebpf",
-		EventID:     int(consts.SystemInfoEventID),
-		EventName:   consts.EventsIDToEvent[consts.SystemInfoEventID].Name,
+		EventID:     int(SystemInfoEventID),
+		EventName:   EventsIDToEvent[SystemInfoEventID].Name,
 		ArgsNum:     len(systemInfoArgs),
 		Args:        systemInfoArgs,
 	}
