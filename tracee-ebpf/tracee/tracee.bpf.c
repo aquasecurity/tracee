@@ -2438,7 +2438,7 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
         bpf_map_delete_elem(&process_tree_map, &tgid);
         return 0;
     }
-    bpf_map_delete_elem(&process_tree_map, &pid);
+    bpf_map_delete_elem(&process_tree_map, &tgid);
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)

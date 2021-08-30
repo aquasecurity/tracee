@@ -899,11 +899,6 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
-	err = t.populateProcessTreeBPFMap(t.config.Filter.ProcessTreeFilter.PIDs)
-	if err != nil {
-		return fmt.Errorf("error building process tree: %v", err)
-	}
-
 	return nil
 }
 
@@ -1130,6 +1125,11 @@ func (t *Tracee) initBPF() error {
 				return fmt.Errorf("error attaching event %s: %v", probe.event, err)
 			}
 		}
+	}
+
+	err = t.populateProcessTreeBPFMap(t.config.Filter.ProcessTreeFilter.PIDs)
+	if err != nil {
+		return fmt.Errorf("error building process tree: %v", err)
 	}
 
 	// Initialize perf buffers
