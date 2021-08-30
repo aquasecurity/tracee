@@ -99,7 +99,7 @@ func readArgFromBuff(dataBuff io.Reader) (argTag, interface{}, error) {
 
 		err = binary.Read(dataBuff, binary.LittleEndian, &intArray)
 		if err != nil {
-			return argTag, nil, fmt.Errorf("error reading string element: %v", err)
+			return argTag, nil, fmt.Errorf("error reading int elements: %v", err)
 		}
 
 		res = intArray
