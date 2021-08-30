@@ -43,37 +43,3 @@ func PrintAlert(alert alert) string {
 
 	return res
 }
-
-func ParseMknodMode(mode uint16) string {
-	var modeString string
-
-	var sIfmt uint16
-	var sIfreg uint16
-	var sIfchr uint16
-	var sIfblk uint16
-	var sIfifo uint16
-	var sIfsock uint16
-
-	sIfmt = 00170000
-	sIfreg = 0100000
-	sIfchr = 0020000
-	sIfblk = 0060000
-	sIfifo = 0010000
-	sIfsock = 0140000
-
-	// File Type
-	switch mode & sIfmt {
-	case sIfsock:
-		modeString = "S_IFSOCK"
-	case sIfreg, 0:
-		modeString = "S_IFREG"
-	case sIfblk:
-		modeString = "S_IFBLK"
-	case sIfchr:
-		modeString = "S_IFCHR"
-	case sIfifo:
-		modeString = "S_IFIFO"
-	}
-
-	return modeString
-}
