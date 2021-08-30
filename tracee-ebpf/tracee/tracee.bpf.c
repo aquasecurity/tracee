@@ -2028,14 +2028,9 @@ if (CONFIG_ARCH_HAS_SYSCALL_WRAPPER) {
         args_tmp.args[4] = PT_REGS_PARM5(&regs);
         args_tmp.args[5] = PT_REGS_PARM6(&regs);
     }
-} else { // NO CONFIG_ARCH_HAS_SYSCALL_WRAPPER
-    args_tmp.args[0] = ctx->args[0];
-    args_tmp.args[1] = ctx->args[1];
-    args_tmp.args[2] = ctx->args[2];
-    args_tmp.args[3] = ctx->args[3];
-    args_tmp.args[4] = ctx->args[4];
-    args_tmp.args[5] = ctx->args[5];
-} // END CONFIG_ARCH_HAS_SYSCALL_WRAPPER
+} else { // CONFIG_ARCH_HAS_SYSCALL_WRAPPER
+    bpf_probe_read(args_tmp.args, sizeof(6 * sizeof(u64)), (void *)ctx->args);
+}
 
     if (is_compat(task)) {
         // Translate 32bit syscalls to 64bit syscalls, so we can send to the correct handler
