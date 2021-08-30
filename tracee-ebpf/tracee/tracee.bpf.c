@@ -4051,7 +4051,6 @@ int BPF_KPROBE(trace_security_inode_mknod)
         return -1;
     }
     save_str_to_buf(submit_p, (void *)&string_p->buf[*off], DEC_ARG(0, *tags));
-
     save_to_submit_buf(submit_p, &mode, sizeof(unsigned short), U16_T, DEC_ARG(1, *tags));
     save_to_submit_buf(submit_p, &dev, sizeof(unsigned int), UINT_T, DEC_ARG(2, *tags));
 
