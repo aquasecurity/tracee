@@ -51,33 +51,23 @@ func populateProcessTreeFilterMap(processTree map[uint32][]uint32,
 		filterMap[pid] = defaultFilter
 	}
 
-	// Do two iterations, first to apply all '=' filters, then '!='
-	firstPass := true
-	for i := 0; i < 2; i++ {
+	// Iterate over each pid
+	for pid, _ := range filterMap {
 
-		// Iterate over each pid
-		for pid, _ := range filterMap {
+		// Check if there's a filter specified for this pid and apply to its descendents
+		if shouldBeTraced, ok := filterSpecification[pid]; ok {
+			descendentPIDs := gatherAllDescedentPIDs(pid, processTree)
 
-			// Check if there's a filter specified for this pid and apply to its descendents
-			if shouldBeTraced, ok := filterSpecification[pid]; ok {
-				descendentPIDs := gatherAllDescedentPIDs(pid, processTree)
-
-				if firstPass && shouldBeTraced {
-					// first pass, so only apply pids that should be traced
-					for j := range descendentPIDs {
-						filterMap[descendentPIDs[j]] = true
-					}
-				} else if !firstPass && !shouldBeTraced {
-					// second pass, so only apply pids that should NOT be traced
-					for j := range descendentPIDs {
-						filterMap[descendentPIDs[j]] = false
-					}
+			if shouldBeTraced {
+				for j := range descendentPIDs {
+					filterMap[descendentPIDs[j]] = true
+				}
+			} else if !shouldBeTraced {
+				for j := range descendentPIDs {
+					filterMap[descendentPIDs[j]] = false
 				}
 			}
-
 		}
-
-		firstPass = false
 	}
 
 	return filterMap
