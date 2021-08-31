@@ -19,7 +19,7 @@ import (
 //go:embed signatures/rego/helpers.rego
 var regoHelpersCode string
 
-func getSignatures(rulesDir string, rules []string) ([]types.Signature, error) {
+func getSignatures(partialEval bool, rulesDir string, rules []string) ([]types.Signature, error) {
 	if rulesDir == "" {
 		exePath, err := os.Executable()
 		if err != nil {
@@ -31,7 +31,7 @@ func getSignatures(rulesDir string, rules []string) ([]types.Signature, error) {
 	if err != nil {
 		return nil, err
 	}
-	opasigs, err := findRegoSigs(rulesDir)
+	opasigs, err := findRegoSigs(partialEval, rulesDir)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func findGoSigs(dir string) ([]types.Signature, error) {
 	return res, nil
 }
 
-func findRegoSigs(dir string) ([]types.Signature, error) {
+func findRegoSigs(partialEval bool, dir string) ([]types.Signature, error) {
 	regoHelpers := []string{regoHelpersCode}
 	filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -119,7 +119,7 @@ func findRegoSigs(dir string) ([]types.Signature, error) {
 			log.Printf("error reading file %s: %v", path, err)
 			return nil
 		}
-		sig, err := regosig.NewRegoSignature(append(regoHelpers, string(regoCode))...)
+		sig, err := regosig.NewRegoSignature(partialEval, append(regoHelpers, string(regoCode))...)
 		if err != nil {
 			newlineOffset := bytes.Index(regoCode, []byte("\n"))
 			if newlineOffset == -1 {
