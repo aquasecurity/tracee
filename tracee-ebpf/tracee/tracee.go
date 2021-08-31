@@ -1344,8 +1344,8 @@ func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 			args["mode"] = helpers.ParseInodeMode(mode)
 		}
 	case SecurityInodeMknodEventID:
-		if mode, isUint16 := args[t.EncParamName[ctx.EventID%2]["mode"]].(uint16); isUint16 {
-			args[t.EncParamName[ctx.EventID%2]["mode"]] = helpers.ParseInodeMode(uint32(mode))
+		if mode, isUint16 := args["mode"].(uint16); isUint16 {
+			args["mode"] = helpers.ParseInodeMode(uint32(mode))
 		}
 	case MemProtAlertEventID:
 		if alert, isAlert := args["alert"].(alert); isAlert {
