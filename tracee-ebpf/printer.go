@@ -227,7 +227,6 @@ func (p *gobEventPrinter) Init() error {
 	p.outEnc = gob.NewEncoder(p.out)
 	gob.Register(external.Event{})
 	gob.Register(external.SlimCred{})
-	gob.Register(map[string]int{})
 	return nil
 }
 
