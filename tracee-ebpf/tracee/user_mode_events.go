@@ -21,32 +21,33 @@ import (
 
 const InitProcNsDir = "/proc/1/ns"
 
-const InitNamespacesKey = "initNamespaces"
-
-// CreateSystemInfoEvent collect information of the running machine and create an event that includes this information.
-func CreateSystemInfoEvent() (external.Event, error) {
-	systemInfoArgs := fetchSystemInfo()
-	systemInfoEvent := external.Event{
+// CreateInitNamespacesEvent collect the init process namespaces and create event from them.
+func CreateInitNamespacesEvent() (external.Event, error) {
+	initNamespacesArgs := getInitNamespaceArguments()
+	initNamespacesEvent := external.Event{
 		Timestamp:   int(time.Now().UnixNano()),
 		ProcessName: "tracee-ebpf",
-		EventID:     int(SystemInfoEventID),
-		EventName:   EventsIDToEvent[SystemInfoEventID].Name,
-		ArgsNum:     len(systemInfoArgs),
-		Args:        systemInfoArgs,
+		EventID:     int(InitNamespacesEventID),
+		EventName:   EventsIDToEvent[InitNamespacesEventID].Name,
+		ArgsNum:     len(initNamespacesArgs),
+		Args:        initNamespacesArgs,
 	}
-	return systemInfoEvent, nil
+	return initNamespacesEvent, nil
 }
 
-// fetchSystemInfo Fetch info from the system that might be significant for later use or for signatures.
-func fetchSystemInfo() []external.Argument {
-	systemInfo := make([]external.Argument, 1)
-	systemInfo[0] = external.Argument{
-		ArgMeta: external.ArgMeta{Name: "initNamespaces", Type: "map[string]int"},
-		Value:   fetchInitNamespaces(),
+// getInitNamespaceArguments Fetch the namespaces of the init process and parse them into event arguments.
+func getInitNamespaceArguments() []external.Argument {
+	initNamespaces := fetchInitNamespaces()
+	initNamespacesArgs := make([]external.Argument, len(EventsIDToParams[InitNamespacesEventID]))
+	for i, arg := range initNamespacesArgs {
+		arg.ArgMeta = EventsIDToParams[InitNamespacesEventID][i]
+		arg.Value = initNamespaces[arg.Name]
+		initNamespacesArgs[i] = arg
 	}
-	return systemInfo
+	return initNamespacesArgs
 }
 
+// fetchInitNamespaces fetch the namespaces values from the /proc/1/ns directory
 func fetchInitNamespaces() map[string]int {
 	initNamespacesMap := make(map[string]int)
 	namespaceValueReg := regexp.MustCompile(":[[[:digit:]]*]")

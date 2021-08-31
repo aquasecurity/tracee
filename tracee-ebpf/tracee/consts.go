@@ -170,7 +170,7 @@ const (
 	SecurityBPFMapEventID
 	SecurityKernelReadFileEventID
 	SecurityInodeMknodEventID
-	SystemInfoEventID
+	InitNamespacesEventID
 	MaxEventID
 )
 
@@ -567,7 +567,7 @@ var EventsIDToEvent = map[int32]EventConfig{
 	SecurityBPFMapEventID:         {ID: SecurityBPFMapEventID, ID32Bit: sys32undefined, Name: "security_bpf_map", Probes: []probe{{event: "security_bpf_map", attach: kprobe, fn: "trace_security_bpf_map"}}, Sets: []string{"lsm_hooks"}},
 	SecurityKernelReadFileEventID: {ID: SecurityKernelReadFileEventID, ID32Bit: sys32undefined, Name: "security_kernel_read_file", Probes: []probe{{event: "security_kernel_read_file", attach: kprobe, fn: "trace_security_kernel_read_file"}}, Sets: []string{"lsm_hooks"}},
 	SecurityInodeMknodEventID:     {ID: SecurityInodeMknodEventID, ID32Bit: sys32undefined, Name: "security_inode_mknod", Probes: []probe{{event: "security_inode_mknod", attach: kprobe, fn: "trace_security_inode_mknod"}}, Sets: []string{"lsm_hooks"}},
-	SystemInfoEventID:             {ID: SystemInfoEventID, ID32Bit: sys32undefined, Name: "system_info_fetch", Probes: []probe{}, Sets: []string{"default"}},
+	InitNamespacesEventID:         {ID: InitNamespacesEventID, ID32Bit: sys32undefined, Name: "init_namespaces", Probes: []probe{}, Sets: []string{}},
 }
 
 // EventsIDToParams is list of the parameters (name and type) used by the events
@@ -940,5 +940,5 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	SecurityBPFMapEventID:         {{Type: "unsigned int", Name: "map_id"}, {Type: "const char*", Name: "map_name"}},
 	SecurityKernelReadFileEventID: {{Type: "const char*", Name: "pathname"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}},
 	SecurityInodeMknodEventID:     {{Type: "const char*", Name: "file_name"}, {Type: "mode_t", Name: "mode"}, {Type: "dev_t", Name: "dev"}},
-	SystemInfoEventID:             {{Type: "map[string]int", Name: "initNamespaces"}},
+	InitNamespacesEventID:         {{Type: "int", Name: "cgroup"}, {Type: "int", Name: "ipc"}, {Type: "int", Name: "mnt"}, {Type: "int", Name: "net"}, {Type: "int", Name: "pid"}, {Type: "int", Name: "pid_for_children"}, {Type: "int", Name: "time"}, {Type: "int", Name: "time_for_children"}, {Type: "int", Name: "user"}, {Type: "int", Name: "uts"}},
 }
