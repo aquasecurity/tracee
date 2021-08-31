@@ -913,7 +913,7 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	EpollPwait2EventID:            {{Type: "int", Name: "fd"}, {Type: "struct epoll_event*", Name: "events"}, {Type: "int", Name: "maxevents"}, {Type: "const struct timespec*", Name: "timeout"}, {Type: "const sigset_t*", Name: "sigset"}},
 	SysEnterEventID:               {{Type: "int", Name: "syscall"}},
 	SysExitEventID:                {{Type: "int", Name: "syscall"}},
-	SchedProcessForkEventID:       {{Type: "int", Name: "parent_pid"}, {Type: "int", Name: "parent_ns_pid"}, {Type: "int", Name: "child_pid"}, {Type: "int", Name: "child_ns_pid"}},
+	SchedProcessForkEventID:       {{Type: "int", Name: "parent_tid"}, {Type: "int", Name: "parent_ns_tid"}, {Type: "int", Name: "child_tid"}, {Type: "int", Name: "child_ns_tid"}},
 	SchedProcessExecEventID:       {{Type: "const char *", Name: "cmdpath"}, {Type: "const char *", Name: "pathname"}, {Type: "const char*const*", Name: "argv"}, {Type: "const char*const*", Name: "env"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}, {Type: "int", Name: "invoked_from_kernel"}},
 	SchedProcessExitEventID:       {},
 	DoExitEventID:                 {},
