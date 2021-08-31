@@ -5,7 +5,7 @@ go 1.16
 replace github.com/aquasecurity/tracee/tracee-ebpf/external => ./external/
 
 require (
-	github.com/aquasecurity/libbpfgo v0.1.2-0.20210823200145-0bbee70e5712
+	github.com/aquasecurity/libbpfgo v0.1.2-0.20210831145407-5fde94f7d841
 	github.com/aquasecurity/tracee/tracee-ebpf/external v0.0.0-20210727091827-bbe411a2a167
 	github.com/google/gopacket v1.1.19
 	github.com/stretchr/testify v1.7.0
