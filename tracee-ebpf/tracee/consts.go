@@ -940,5 +940,5 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	SecurityBPFMapEventID:         {{Type: "unsigned int", Name: "map_id"}, {Type: "const char*", Name: "map_name"}},
 	SecurityKernelReadFileEventID: {{Type: "const char*", Name: "pathname"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}},
 	SecurityInodeMknodEventID:     {{Type: "const char*", Name: "file_name"}, {Type: "mode_t", Name: "mode"}, {Type: "dev_t", Name: "dev"}},
-	InitNamespacesEventID:         {{Type: "int", Name: "cgroup"}, {Type: "int", Name: "ipc"}, {Type: "int", Name: "mnt"}, {Type: "int", Name: "net"}, {Type: "int", Name: "pid"}, {Type: "int", Name: "pid_for_children"}, {Type: "int", Name: "time"}, {Type: "int", Name: "time_for_children"}, {Type: "int", Name: "user"}, {Type: "int", Name: "uts"}},
+	InitNamespacesEventID:         {{Type: "u32", Name: "cgroup"}, {Type: "u32", Name: "ipc"}, {Type: "u32", Name: "mnt"}, {Type: "u32", Name: "net"}, {Type: "u32", Name: "pid"}, {Type: "u32", Name: "pid_for_children"}, {Type: "u32", Name: "time"}, {Type: "u32", Name: "time_for_children"}, {Type: "u32", Name: "user"}, {Type: "u32", Name: "uts"}},
 }

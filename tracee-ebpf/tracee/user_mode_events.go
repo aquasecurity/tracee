@@ -48,15 +48,15 @@ func getInitNamespaceArguments() []external.Argument {
 }
 
 // fetchInitNamespaces fetch the namespaces values from the /proc/1/ns directory
-func fetchInitNamespaces() map[string]int {
-	initNamespacesMap := make(map[string]int)
+func fetchInitNamespaces() map[string]uint32 {
+	initNamespacesMap := make(map[string]uint32)
 	namespaceValueReg := regexp.MustCompile(":[[[:digit:]]*]")
 	namespacesLinks, _ := ioutil.ReadDir(InitProcNsDir)
 	for _, namespaceLink := range namespacesLinks {
 		linkString, _ := os.Readlink(filepath.Join(InitProcNsDir, namespaceLink.Name()))
 		trim := strings.Trim(namespaceValueReg.FindString(linkString), "[]:")
-		namespaceNumber, _ := strconv.Atoi(trim)
-		initNamespacesMap[namespaceLink.Name()] = namespaceNumber
+		namespaceNumber, _ := strconv.ParseUint(trim, 10, 32)
+		initNamespacesMap[namespaceLink.Name()] = uint32(namespaceNumber)
 	}
 	return initNamespacesMap
 }

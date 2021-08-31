@@ -11,9 +11,9 @@ func getProcNamespaces() []string {
 
 func TestFetchInitNamespaces(t *testing.T) {
 	initNamespacesArgs := getInitNamespaceArguments()
-	initNamespaces := make(map[string]int)
+	initNamespaces := make(map[string]uint32)
 	for _, arg := range initNamespacesArgs {
-		namespaceVale, ok := arg.Value.(int)
+		namespaceVale, ok := arg.Value.(uint32)
 		assert.Truef(t, ok, "Value of namespace %s is not valid: %v", arg.Name, arg.Value)
 		initNamespaces[arg.Name] = namespaceVale
 	}
