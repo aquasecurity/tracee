@@ -900,13 +900,10 @@ func (t *Tracee) populateBPFMaps() error {
 }
 
 func (t *Tracee) populateProcessTreeBPFMap(filterSpecification map[uint32]bool) error {
-
-	processTreeRepresentation, err := gatherEntireProcessTree()
+	procPPIDMap, err := getPPIDMap()
 	if err != nil {
-		return fmt.Errorf("could not gather proccess tree map: %v", err)
+		return fmt.Errorf("could not gather proccess ppid map: %v", err)
 	}
-
-	filterMap := map[uint32]bool{}
 
 	// Determine the default filter for PIDs that aren't specified with a proc tree filter
 	// - If one or more '=' filters, default is '!='
@@ -926,28 +923,22 @@ func (t *Tracee) populateProcessTreeBPFMap(filterSpecification map[uint32]bool) 
 		return fmt.Errorf("could not find bpf process_tree_map: %v", err)
 	}
 
-	// Populate inital filter map  (keys representing all pids)
-	for pid, _ := range processTreeRepresentation {
-		filterMap[pid] = defaultFilter
-	}
-
-	var saferShouldBeTraced uint64
-
 	// Iterate over each pid
-	for pid, _ := range filterMap {
-
-		// Check if there's a filter specified for this pid and apply to its descendents
-		if shouldBeTraced, ok := filterSpecification[pid]; ok {
-			descendentPIDs := gatherAllDescedentPIDs(pid, processTreeRepresentation)
-
-			saferShouldBeTraced = 0 // populating a bpf map with an unsafe pointer to a 1 byte variable could lead to false positives
-			if shouldBeTraced {
-				saferShouldBeTraced = 1
+	for pid := range procPPIDMap {
+		var fn func(uint32)
+		fn = func(curPid uint32){
+			ppid, ok := procPPIDMap[curPid]
+			if !ok || ppid == 1 {
+				return
 			}
-			for j := range descendentPIDs {
-				processTreeBPFMap.Update(unsafe.Pointer(&descendentPIDs[j]), unsafe.Pointer(&saferShouldBeTraced))
+			if shouldBeTraced, ok := filterSpecification[ppid]; ok {
+				trace := boolToUInt32(shouldBeTraced)
+			    processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&trace))
+			    return
 			}
+			fn(ppid)
 		}
+		fn(pid)
 	}
 
 	return nil
