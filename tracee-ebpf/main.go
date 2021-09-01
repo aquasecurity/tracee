@@ -103,17 +103,26 @@ func main() {
 
 			// OS kconfig information
 
-			if kernelConfig, err := helpers.InitKernelConfig(); err == nil { // do not fail (yet ?) if we cannot init kconfig
+			osKConfigFilePath, err := checkEnvPath("TRACEE_KCONFIG_FILE") // override /proc/config.gz or /boot/config-$(uname -r) if needed (containers)
+			if err != nil {
+				return err
+			}
+
+			kConfigFilePath := ""
+
+			kernelConfig, err := helpers.InitKernelConfig(osKConfigFilePath)
+			if err == nil { // do not fail (yet ?) if we cannot init kconfig
 				kernelConfig.AddNeeded(helpers.CONFIG_BPF, helpers.BUILTIN)
 				kernelConfig.AddNeeded(helpers.CONFIG_BPF_SYSCALL, helpers.BUILTIN)
 				kernelConfig.AddNeeded(helpers.CONFIG_KPROBE_EVENTS, helpers.BUILTIN)
 				kernelConfig.AddNeeded(helpers.CONFIG_BPF_EVENTS, helpers.BUILTIN)
-				missing := kernelConfig.CheckMissing() // do fail if we found and it is not enough
+				kConfigFilePath = kernelConfig.KConfigFilePath // save which KConfig file was used so we can refer it later
+				missing := kernelConfig.CheckMissing()         // do fail if we found os-release file and it is not enough
 				if len(missing) > 0 {
 					return fmt.Errorf("missing kernel configuration options: %s\n", missing)
 				}
 			} else {
-				fmt.Fprintf(os.Stderr, "KConfig: warning: could not check enabled kconfig features, trying to continue anyway\n")
+				fmt.Fprintf(os.Stderr, "KConfig: warning: could not check enabled kconfig features\n(%v)\n", err)
 			}
 
 			// OS release information
@@ -226,6 +235,7 @@ func main() {
 				}
 			}
 
+			cfg.KConfigFilePath = kConfigFilePath
 			cfg.BPFObjPath = bpfFilePath
 			cfg.BPFObjBytes = bpfBytes
 
