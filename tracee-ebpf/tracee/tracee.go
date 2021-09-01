@@ -902,28 +902,47 @@ func (t *Tracee) populateBPFMaps() error {
 	return nil
 }
 
-func (t *Tracee) populateProcessTreeBPFMap(procTreeFilter map[uint32]bool) error {
+func (t *Tracee) populateProcessTreeBPFMap(filterSpecification map[uint32]bool) error {
 
 	processTreeRepresentation, err := gatherEntireProcessTree()
 	if err != nil {
 		return fmt.Errorf("could not gather proccess tree map: %v", err)
 	}
 
-	processTreeGoMap := populateProcessTreeFilterMap(processTreeRepresentation, procTreeFilter)
+	filterMap := map[uint32]bool{}
+
+	// Determine the default filter for PIDs that aren't specified with a proc tree filter
+	// - If one or more '=' filters, default is '!='
+	// - If one or more '!=' filters, default is '='
+	// - If a mix of filters, the default is '='
+	var defaultFilter = true
+	for _, v := range filterSpecification {
+		defaultFilter = defaultFilter && v
+	}
+	defaultFilter = !defaultFilter
 
 	processTreeBPFMap, err := t.bpfModule.GetMap("process_tree_map")
 	if err != nil {
 		return fmt.Errorf("could not find bpf process_tree_map: %v", err)
 	}
 
-	for k, v := range processTreeGoMap {
-		filterEqual := filterEqual
-		if !v {
-			filterEqual = filterNotEqual
-		}
-		err := processTreeBPFMap.Update(unsafe.Pointer(&k), unsafe.Pointer(&filterEqual))
-		if err != nil {
-			return err
+	// Populate inital filter map  (keys representing all pids)
+	for pid, _ := range processTreeRepresentation {
+		filterMap[pid] = defaultFilter
+	}
+
+	// Iterate over each pid
+	for pid, _ := range filterMap {
+
+		// Check if there's a filter specified for this pid and apply to its descendents
+		if shouldBeTraced, ok := filterSpecification[pid]; ok {
+			descendentPIDs := gatherAllDescedentPIDs(pid, processTreeRepresentation)
+			for j := range descendentPIDs {
+				processTreeBPFMap.Update(unsafe.Pointer(&descendentPIDs[j]), unsafe.Pointer(&shouldBeTraced))
+			}
+		} else {
+			processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&defaultFilter))
+
 		}
 	}
 
