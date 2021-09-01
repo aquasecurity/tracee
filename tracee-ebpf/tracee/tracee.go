@@ -1,6 +1,7 @@
 package tracee
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -900,11 +901,6 @@ func (t *Tracee) populateBPFMaps() error {
 }
 
 func (t *Tracee) populateProcessTreeBPFMap(filterSpecification map[uint32]bool) error {
-	procPPIDMap, err := getPPIDMap()
-	if err != nil {
-		return fmt.Errorf("could not gather proccess ppid map: %v", err)
-	}
-
 	// Determine the default filter for PIDs that aren't specified with a proc tree filter
 	// - If one or more '=' filters, default is '!='
 	// - If one or more '!=' filters, default is '='
@@ -913,7 +909,7 @@ func (t *Tracee) populateProcessTreeBPFMap(filterSpecification map[uint32]bool) 
 	for _, v := range filterSpecification {
 		defaultFilter = defaultFilter && v
 	}
-	err = t.setBoolFilter(&BoolFilter{Value: defaultFilter, Enabled: true}, configProcTreeFilter)
+	err := t.setBoolFilter(&BoolFilter{Value: defaultFilter, Enabled: true}, configProcTreeFilter)
 	if err != nil {
 		return fmt.Errorf("could not set default process tree filter value: %v", err)
 	}
@@ -923,12 +919,40 @@ func (t *Tracee) populateProcessTreeBPFMap(filterSpecification map[uint32]bool) 
 		return fmt.Errorf("could not find bpf process_tree_map: %v", err)
 	}
 
+	procDir, err := os.Open("/proc")
+	if err != nil {
+		return fmt.Errorf("could not open proc dir: %v", err)
+	}
+	defer procDir.Close()
+
+	entries, err := procDir.Readdirnames(-1)
+	if err != nil {
+		return fmt.Errorf("could not read proc dir: %v", err)
+	}
+
 	// Iterate over each pid
-	for pid := range procPPIDMap {
+	for _, entry := range entries {
+		pid, err := strconv.ParseUint(entry, 10, 32)
+		if err != nil {
+			continue
+		}
 		var fn func(uint32)
 		fn = func(curPid uint32) {
-			ppid, ok := procPPIDMap[curPid]
-			if !ok || ppid == 1 {
+			stat, err := ioutil.ReadFile(fmt.Sprintf("/proc/%d/stat", curPid))
+			if err != nil {
+				return
+			}
+			// see https://man7.org/linux/man-pages/man5/proc.5.html for how to read /proc/pid/stat
+			commEnd := bytes.LastIndex(stat, []byte(")"))
+			if commEnd < 0 {
+				return
+			}
+			var ppid uint32
+			_, err = fmt.Fscan(bytes.NewBuffer(stat[commEnd+4:]), &ppid)
+			if err != nil {
+				return
+			}
+			if ppid == 1 {
 				return
 			}
 			if shouldBeTraced, ok := filterSpecification[ppid]; ok {
@@ -938,7 +962,7 @@ func (t *Tracee) populateProcessTreeBPFMap(filterSpecification map[uint32]bool) 
 			}
 			fn(ppid)
 		}
-		fn(pid)
+		fn(uint32(pid))
 	}
 
 	for pid, shouldBeTraced := range filterSpecification {

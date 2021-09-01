@@ -8,7 +8,6 @@ require (
 	github.com/aquasecurity/libbpfgo v0.1.2-0.20210831145407-5fde94f7d841
 	github.com/aquasecurity/tracee/tracee-ebpf/external v0.0.0-20210727091827-bbe411a2a167
 	github.com/google/gopacket v1.1.19
-	github.com/prometheus/procfs v0.7.2
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
 	github.com/urfave/cli/v2 v2.3.0
