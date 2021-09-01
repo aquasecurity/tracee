@@ -570,6 +570,7 @@ Examples:
   --trace pidns!=4026531836                                    | only trace events from pidns id not equal to 4026531840
   --trace tree=476165                                          | only trace events that descend from the process with pid 476165
   --trace tree!=5023                                           | only trace events if they do not descend from the process with pid 5023
+  --trace tree=3213,5200 --trace tree!=3215                    | only trace events if they descend from 3213 or 5200, but not 3215
   --trace 'uid>0'                                              | only trace events from uids greater than 0
   --trace 'pid>0' --trace 'pid<1000'                           | only trace events from pids between 0 and 1000
   --trace 'u>0' --trace u!=1000                                | only trace events from uids greater than 0 but not 1000
