@@ -1,6 +1,4 @@
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
-github.com/aquasecurity/libbpfgo v0.1.2-0.20210823200145-0bbee70e5712 h1:e86yHlCfdA42/xN3N6dcC0hpbpd6qrcjNIJBgvjr0QY=
-github.com/aquasecurity/libbpfgo v0.1.2-0.20210823200145-0bbee70e5712/go.mod h1:/+clceXE103FaXvVTIY2HAkQjxNtkra4DRWvZYr2SKw=
 github.com/aquasecurity/libbpfgo v0.1.2-0.20210831145407-5fde94f7d841 h1:/v2mrT5k5LdOKFHizS8fr1LYTz358FVqUJKvL7qezpI=
 github.com/aquasecurity/libbpfgo v0.1.2-0.20210831145407-5fde94f7d841/go.mod h1:/+clceXE103FaXvVTIY2HAkQjxNtkra4DRWvZYr2SKw=
 github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d h1:U+s90UTSYgptZMwQh2aRr3LuazLJIa+Pg3Kc1ylSYVY=

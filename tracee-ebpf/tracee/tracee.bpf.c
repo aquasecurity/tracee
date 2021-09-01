@@ -220,6 +220,7 @@ extern bool CONFIG_ARCH_HAS_SYSCALL_WRAPPER __kconfig;
 #define CONFIG_NEW_PID_FILTER       15
 #define CONFIG_NEW_CONT_FILTER      16
 #define CONFIG_DEBUG_NET            17
+#define CONFIG_PROC_TREE_FILTER     18
 
 // get_config(CONFIG_XXX_FILTER) returns 0 if not enabled
 #define FILTER_IN  1
@@ -484,42 +485,43 @@ struct mount {
 #endif
 /*=================================== MAPS =====================================*/
 
-BPF_HASH(config_map, u32, u32)                         // Various configurations
-BPF_HASH(chosen_events_map, u32, u32)                  // Events chosen by the user
-BPF_HASH(traced_pids_map, u32, u32)                    // Keep track of traced pids
-BPF_HASH(new_pids_map, u32, u32)                       // Keep track of the processes of newly executed binaries
-BPF_HASH(new_pidns_map, u32, u32)                      // Keep track of new pid namespaces
-BPF_HASH(pid_to_cont_id_map, u32, container_id_t)      // Map pid to container id
-BPF_HASH(args_map, u64, args_t)                        // Persist args info between function entry and return
-BPF_HASH(ret_map, u64, u64)                            // Persist return value to be used in tail calls
-BPF_HASH(inequality_filter, u32, u64)                  // Used to filter events by some uint field either by < or >
-BPF_HASH(uid_filter, u32, u32)                         // Used to filter events by UID, for specific UIDs either by == or !=
-BPF_HASH(pid_filter, u32, u32)                         // Used to filter events by PID
-BPF_HASH(mnt_ns_filter, u64, u32)                      // Used to filter events by mount namespace id
-BPF_HASH(pid_ns_filter, u64, u32)                      // Used to filter events by pid namespace id
-BPF_HASH(uts_ns_filter, string_filter_t, u32)          // Used to filter events by uts namespace name
-BPF_HASH(comm_filter, string_filter_t, u32)            // Used to filter events by command name
-BPF_HASH(bin_args_map, u64, bin_args_t)                // Persist args for send_bin function
-BPF_HASH(sys_32_to_64_map, u32, u32)                   // Map 32bit syscalls numbers to 64bit syscalls numbers
-BPF_HASH(params_types_map, u32, u64)                   // Encoded parameters types for event
-BPF_HASH(params_names_map, u32, u64)                   // Encoded parameters names for event
-BPF_HASH(sockfd_map, u32, u32)                         // Persist sockfd from syscalls to be used in the corresponding lsm hooks
-BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t)         // Socket address to process context
-BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t)   // Network identifier to process context
-BPF_ARRAY(file_filter, path_filter_t, 3)               // Used to filter vfs_write events
-BPF_ARRAY(string_store, path_filter_t, 1)              // Store strings from userspace
-BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS)             // Percpu global buffer variables
-BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS)           // Holds offsets to bufs respectively
-BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL)              // Used to store programs for tail calls
-BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID)          // Used to store programs for tail calls
-BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID)           // Used to store programs for tail calls
-BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES)  // Used to store stack traces
+BPF_HASH(config_map, u32, u32);                         // Various configurations
+BPF_HASH(chosen_events_map, u32, u32);                  // Events chosen by the user
+BPF_HASH(traced_pids_map, u32, u32);                    // Keep track of traced pids
+BPF_HASH(new_pids_map, u32, u32);                       // Keep track of the processes of newly executed binaries
+BPF_HASH(new_pidns_map, u32, u32);                      // Keep track of new pid namespaces
+BPF_HASH(pid_to_cont_id_map, u32, container_id_t);      // Map pid to container id
+BPF_HASH(args_map, u64, args_t);                        // Persist args info between function entry and return
+BPF_HASH(ret_map, u64, u64);                            // Persist return value to be used in tail calls
+BPF_HASH(inequality_filter, u32, u64);                  // Used to filter events by some uint field either by < or >
+BPF_HASH(uid_filter, u32, u32);                         // Used to filter events by UID, for specific UIDs either by == or !=
+BPF_HASH(pid_filter, u32, u32);                         // Used to filter events by PID
+BPF_HASH(mnt_ns_filter, u64, u32);                      // Used to filter events by mount namespace id
+BPF_HASH(pid_ns_filter, u64, u32);                      // Used to filter events by pid namespace id
+BPF_HASH(uts_ns_filter, string_filter_t, u32);          // Used to filter events by uts namespace name
+BPF_HASH(comm_filter, string_filter_t, u32);            // Used to filter events by command name
+BPF_HASH(bin_args_map, u64, bin_args_t);                // Persist args for send_bin funtion
+BPF_HASH(sys_32_to_64_map, u32, u32);                   // Map 32bit syscalls numbers to 64bit syscalls numbers
+BPF_HASH(params_types_map, u32, u64);                   // Encoded parameters types for event
+BPF_HASH(params_names_map, u32, u64);                   // Encoded parameters names for event
+BPF_HASH(sockfd_map, u32, u32);                         // Persist sockfd from syscalls to be used in the corresponding lsm hooks
+BPF_HASH(process_tree_map, u32, u32);                   // Used to filter events by the ancestry of the traced process
+BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t);         // Socket address to process context
+BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t);   // Network identifier to process context
+BPF_ARRAY(file_filter, path_filter_t, 3);               // Used to filter vfs_write events
+BPF_ARRAY(string_store, path_filter_t, 1);              // Store strings from userspace
+BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);             // Percpu global buffer variables
+BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS);           // Holds offsets to bufs respectively
+BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);              // Used to store programs for tail calls
+BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);          // Used to store programs for tail calls
+BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID);           // Used to store programs for tail calls
+BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);  // Used to store stack traces
 
 /*================================== EVENTS ====================================*/
 
-BPF_PERF_OUTPUT(events)                                // Events submission
-BPF_PERF_OUTPUT(file_writes)                           // File writes events submission
-BPF_PERF_OUTPUT(net_events)                            // Network events submission
+BPF_PERF_OUTPUT(events);                                // Events submission
+BPF_PERF_OUTPUT(file_writes);                           // File writes events submission
+BPF_PERF_OUTPUT(net_events);                            // Network events submission
 
 /*================== KERNEL VERSION DEPENDANT HELPER FUNCTIONS =================*/
 
@@ -655,6 +657,11 @@ static __always_inline u32 get_task_ppid(struct task_struct *task)
 static __always_inline u32 get_task_host_pid(struct task_struct *task)
 {
     return READ_KERN(task->pid);
+}
+
+static __always_inline u32 get_task_host_tgid(struct task_struct *task)
+{
+    return READ_KERN(task->tgid);
 }
 
 static __always_inline int get_task_parent_flags(struct task_struct *task)
@@ -1116,6 +1123,12 @@ static __always_inline int should_trace()
     {
         return 0;
     }
+
+    if (!equality_filter_matches(CONFIG_PROC_TREE_FILTER, &process_tree_map, &context.pid))
+    {
+        return 0;
+    }
+
     // TODO: after we move to minimal kernel 4.18, we can check for container by cgroupid != host cgroupid
     bool is_container = context.tid != context.host_tid;
     if (!bool_filter_matches(CONFIG_CONT_FILTER, is_container))
@@ -2279,11 +2292,20 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     int parent_pid = get_task_host_pid(parent);
     int child_pid = get_task_host_pid(child);
 
+    int parent_tgid = get_task_host_tgid(parent);
+    int child_tgid = get_task_host_tgid(child);
+
     container_id_t *container_id = bpf_map_lookup_elem(&pid_to_cont_id_map, &parent_pid);
     if (container_id != NULL) {
         // copy the container id of the parent process to the child process
         bpf_map_update_elem(&pid_to_cont_id_map, &child_pid, &container_id->id, BPF_ANY);
     }
+
+    // update process tree map if the parent has an entry
+    u32 *tgid_filtered = bpf_map_lookup_elem(&process_tree_map, &parent_tgid);
+    if (tgid_filtered) {
+        bpf_map_update_elem(&process_tree_map, &child_tgid, tgid_filtered, BPF_ANY);
+    } 
 
     if (!should_trace())
         return 0;
@@ -2405,13 +2427,17 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 SEC("raw_tracepoint/sched_process_exit")
 int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 {
-    u32 pid = bpf_get_current_pid_tgid();
+    u64 id = bpf_get_current_pid_tgid();
+    u32 pid = id;
+    u32 tgid = id >> 32;
 
     if (!should_trace()) {
         // Note: we need to remove the container id here as we always add it to the map in cgroup_attach_task event.
         bpf_map_delete_elem(&pid_to_cont_id_map, &pid);
+        bpf_map_delete_elem(&process_tree_map, &tgid);
         return 0;
     }
+    bpf_map_delete_elem(&process_tree_map, &tgid);
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)

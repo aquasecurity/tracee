@@ -32,6 +32,7 @@ const (
 	configNewPidFilter
 	configNewContFilter
 	configDebugNet
+	configProcTreeFilter
 )
 
 const (
