@@ -943,24 +943,24 @@ func (t *Tracee) populateProcessTreeBPFMap(filterSpecification map[uint32]bool) 
 				return
 			}
 			// see https://man7.org/linux/man-pages/man5/proc.5.html for how to read /proc/pid/stat
-			commEnd := bytes.LastIndex(stat, []byte(")"))
-			if commEnd < 0 {
+			splitStat := bytes.SplitN(stat, []byte{' '}, 5)
+			if len(splitStat) != 5 {
 				return
 			}
-			var ppid uint32
-			_, err = fmt.Fscan(bytes.NewBuffer(stat[commEnd+4:]), &ppid)
+			ppid, err := strconv.Atoi(string(splitStat[3]))
 			if err != nil {
 				return
 			}
 			if ppid == 1 {
 				return
 			}
-			if shouldBeTraced, ok := filterSpecification[ppid]; ok {
+
+			if shouldBeTraced, ok := filterSpecification[uint32(ppid)]; ok {
 				trace := boolToUInt32(shouldBeTraced)
 				processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&trace))
 				return
 			}
-			fn(ppid)
+			fn(uint32(ppid))
 		}
 		fn(uint32(pid))
 	}
