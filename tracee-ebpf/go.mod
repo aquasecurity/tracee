@@ -14,3 +14,5 @@ require (
 	golang.org/x/sys v0.0.0-20210514084401-e8d321eab015
 	inet.af/netaddr v0.0.0-20210603230628-bf05d8b52dda
 )
+
+replace github.com/aquasecurity/libbpfgo => ./3rdparty/libbpfgo/

@@ -116,8 +116,11 @@ func main() {
 
 			// try to discover distro by /etc/os-release, fallback to kernel version
 
-			btfinfo := helpers.NewBTFInfo()
-			if err = btfinfo.DiscoverDistro(); err != nil {
+			BTFInfo := helpers.NewBTFInfo()
+			if BTFInfo == nil {
+				return fmt.Errorf("could get discover OS info")
+			}
+			if err = BTFInfo.DiscoverDistro(); err != nil {
 				if debug {
 					fmt.Printf("BTF: distro: %v, version: %v, kernel: %v\n", btfinfo.GetDistroID(), btfinfo.GetDistroVer(), btfinfo.GetDistroKernel())
 				}
