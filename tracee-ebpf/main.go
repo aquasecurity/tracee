@@ -103,40 +103,32 @@ func main() {
 
 			// OS kconfig information
 
-			if kernelConfig, err := helpers.InitKernelConfig(); err == nil { // do not fail (yet ?) if we cannot init kconfig
+			kConfigFilePath := ""
+			kernelConfig, err := helpers.InitKernelConfig()
+			if err == nil { // do not fail (yet ?) if we cannot init kconfig
 				kernelConfig.AddNeeded(helpers.CONFIG_BPF, helpers.BUILTIN)
 				kernelConfig.AddNeeded(helpers.CONFIG_BPF_SYSCALL, helpers.BUILTIN)
 				kernelConfig.AddNeeded(helpers.CONFIG_KPROBE_EVENTS, helpers.BUILTIN)
 				kernelConfig.AddNeeded(helpers.CONFIG_BPF_EVENTS, helpers.BUILTIN)
-				missing := kernelConfig.CheckMissing() // do fail if we found and it is not enough
+				kConfigFilePath = kernelConfig.KConfigFilePath // save which KConfig file was used so we can refer it later
+				missing := kernelConfig.CheckMissing()         // do fail if we found os-release file and it is not enough
 				if len(missing) > 0 {
 					return fmt.Errorf("missing kernel configuration options: %s\n", missing)
 				}
 			} else {
-				fmt.Fprintf(os.Stderr, "KConfig: warning: could not check enabled kconfig features, trying to continue anyway\n")
+				fmt.Fprintf(os.Stderr, "KConfig: warning: could not check enabled kconfig features\n(%v)\n", err)
 			}
 
 			// OS release information
 
-			osReleaseFilePath, err := checkEnvPath("TRACEE_OSRELEASE_FILE") // useful if users wants to mount host os-release in a container
+			OSInfo, err := helpers.GetOSInfo()
 			if err != nil {
-				return err
-			} else if osReleaseFilePath == "" {
-				osReleaseFilePath = "/etc/os-release"
-			}
-
-			OSInfo, err := helpers.NewOSInfo(osReleaseFilePath)
-			if err != nil {
-				OSInfo, err = helpers.NewOSInfoRelease() // at least check $(uname -r) if os-release could not be found
-				if err != nil {
-					return err
-				}
 				if debug {
-					fmt.Fprintf(os.Stdout, "OSInfo: %v: %v\n", helpers.OS_KERNEL_RELEASE, OSInfo.OSReleaseInfo[helpers.OS_KERNEL_RELEASE])
+					fmt.Fprintf(os.Stdout, "OSInfo: %v: %v\n", helpers.OS_KERNEL_RELEASE, OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE))
 				}
-				fmt.Fprintf(os.Stderr, "OSInfo: warning: no os-release file could be found\n") // only to be enforced when BTF needs to be downloaded, later on
+				fmt.Fprintf(os.Stderr, "OSInfo: warning: os-release file could be found\n(%v)\n", err) // only to be enforced when BTF needs to be downloaded, later on
 			} else if debug {
-				for k, v := range OSInfo.OSReleaseInfo {
+				for k, v := range OSInfo.GetOSReleaseAllFieldValues() {
 					fmt.Fprintf(os.Stdout, "OSInfo: %v: %v\n", k, v)
 				}
 			}
@@ -224,6 +216,7 @@ func main() {
 				}
 			}
 
+			cfg.KConfigFilePath = kConfigFilePath
 			cfg.BPFObjPath = bpfFilePath
 			cfg.BPFObjBytes = bpfBytes
 
