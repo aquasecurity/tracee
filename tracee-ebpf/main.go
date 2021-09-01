@@ -113,7 +113,7 @@ func main() {
 					return fmt.Errorf("missing kernel configuration options: %s\n", missing)
 				}
 			} else {
-				fmt.Fprintf(os.Stderr, "warning: could not check enabled kconfig features, trying to continue anyway\n")
+				fmt.Fprintf(os.Stderr, "KConfig: warning: could not check enabled kconfig features, trying to continue anyway\n")
 			}
 
 			// OS release information
@@ -132,13 +132,13 @@ func main() {
 					return err
 				}
 				if debug {
-					fmt.Printf("OSInfo: no os-release file could be found\n") // only to be enforced when BTF needs to be downloaded, later on
-					fmt.Printf("OSInfo: %v: %v\n", helpers.OS_KERNEL_RELEASE, OSInfo.OSReleaseInfo[helpers.OS_KERNEL_RELEASE])
+					fmt.Fprintf(os.Stdout, "OSInfo: %v: %v\n", helpers.OS_KERNEL_RELEASE, OSInfo.OSReleaseInfo[helpers.OS_KERNEL_RELEASE])
 				}
+				fmt.Fprintf(os.Stderr, "OSInfo: warning: no os-release file could be found\n") // only to be enforced when BTF needs to be downloaded, later on
 			} else {
 				if debug {
 					for k, v := range OSInfo.OSReleaseInfo {
-						fmt.Printf("OSInfo: %v: %v\n", k, v)
+						fmt.Fprintf(os.Stdout, "OSInfo: %v: %v\n", k, v)
 					}
 				}
 			}
