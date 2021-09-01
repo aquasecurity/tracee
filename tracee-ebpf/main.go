@@ -101,6 +101,8 @@ func main() {
 				return err
 			}
 
+			// OS kconfig information
+
 			if kernelConfig, err := helpers.InitKernelConfig(); err == nil { // do not fail (yet ?) if we cannot init kconfig
 				kernelConfig.AddNeeded(helpers.CONFIG_BPF, helpers.BUILTIN)
 				kernelConfig.AddNeeded(helpers.CONFIG_BPF_SYSCALL, helpers.BUILTIN)
@@ -114,15 +116,30 @@ func main() {
 				fmt.Fprintf(os.Stderr, "warning: could not check enabled kconfig features, trying to continue anyway\n")
 			}
 
-			// try to discover distro by /etc/os-release, fallback to kernel version
+			// OS release information
 
-			BTFInfo := helpers.NewBTFInfo()
-			if BTFInfo == nil {
-				return fmt.Errorf("could get discover OS info")
+			osReleaseFilePath, err := checkEnvPath("TRACEE_OSRELEASE_FILE") // useful if users wants to mount host os-release in a container
+			if err != nil {
+				return err
+			} else if osReleaseFilePath == "" {
+				osReleaseFilePath = "/etc/os-release"
 			}
-			if err = BTFInfo.DiscoverDistro(); err != nil {
+
+			OSInfo, err := helpers.NewOSInfo(osReleaseFilePath)
+			if err != nil {
+				OSInfo, err = helpers.NewOSInfoRelease() // at least check $(uname -r) if os-release could not be found
+				if err != nil {
+					return err
+				}
 				if debug {
-					fmt.Printf("BTF: distro: %v, version: %v, kernel: %v\n", btfinfo.GetDistroID(), btfinfo.GetDistroVer(), btfinfo.GetDistroKernel())
+					fmt.Printf("OSInfo: no os-release file could be found\n") // only to be enforced when BTF needs to be downloaded, later on
+					fmt.Printf("OSInfo: %v: %v\n", helpers.OS_KERNEL_RELEASE, OSInfo.OSReleaseInfo[helpers.OS_KERNEL_RELEASE])
+				}
+			} else {
+				if debug {
+					for k, v := range OSInfo.OSReleaseInfo {
+						fmt.Printf("OSInfo: %v: %v\n", k, v)
+					}
 				}
 			}
 
@@ -137,7 +154,7 @@ func main() {
 
 				btfenv:     false,
 				bpfenv:     false,
-				btfvmlinux: helpers.BTFEnabled(),
+				btfvmlinux: helpers.OSBTFEnabled(),
 			}
 
 			// change decisions based on environment
