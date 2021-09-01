@@ -941,6 +941,11 @@ func (t *Tracee) populateProcessTreeBPFMap(filterSpecification map[uint32]bool) 
 		fn(pid)
 	}
 
+	for pid, shouldBeTraced := range filterSpecification {
+		trace := boolToUInt32(shouldBeTraced)
+		processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&trace))
+	}
+
 	return nil
 }
 
