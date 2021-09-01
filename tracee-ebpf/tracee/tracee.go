@@ -926,15 +926,15 @@ func (t *Tracee) populateProcessTreeBPFMap(filterSpecification map[uint32]bool) 
 	// Iterate over each pid
 	for pid := range procPPIDMap {
 		var fn func(uint32)
-		fn = func(curPid uint32){
+		fn = func(curPid uint32) {
 			ppid, ok := procPPIDMap[curPid]
 			if !ok || ppid == 1 {
 				return
 			}
 			if shouldBeTraced, ok := filterSpecification[ppid]; ok {
 				trace := boolToUInt32(shouldBeTraced)
-			    processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&trace))
-			    return
+				processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&trace))
+				return
 			}
 			fn(ppid)
 		}

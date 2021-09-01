@@ -519,9 +519,9 @@ BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);  // Used to store stack t
 
 /*================================== EVENTS ====================================*/
 
-BPF_PERF_OUTPUT(events)                                // Events submission
-BPF_PERF_OUTPUT(file_writes)                           // File writes events submission
-BPF_PERF_OUTPUT(net_events)                            // Network events submission
+BPF_PERF_OUTPUT(events);                                // Events submission
+BPF_PERF_OUTPUT(file_writes);                           // File writes events submission
+BPF_PERF_OUTPUT(net_events);                            // Network events submission
 
 /*================== KERNEL VERSION DEPENDANT HELPER FUNCTIONS =================*/
 
