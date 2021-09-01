@@ -900,13 +900,17 @@ func (t *Tracee) populateBPFMaps() error {
 	return nil
 }
 
-func (t *Tracee) populateProcessTreeBPFMap(filterSpecification map[uint32]bool) error {
+func (t *Tracee) setProcessTreeFilter(filter *ProcessTreeFilter) error {
+	if !filter.Enabled {
+		return nil
+	}
+
 	// Determine the default filter for PIDs that aren't specified with a proc tree filter
 	// - If one or more '=' filters, default is '!='
 	// - If one or more '!=' filters, default is '='
 	// - If a mix of filters, the default is '='
 	var defaultFilter = true
-	for _, v := range filterSpecification {
+	for _, v := range filter.PIDs {
 		defaultFilter = defaultFilter && v
 	}
 	err := t.setBoolFilter(&BoolFilter{Value: defaultFilter, Enabled: true}, configProcTreeFilter)
@@ -955,7 +959,7 @@ func (t *Tracee) populateProcessTreeBPFMap(filterSpecification map[uint32]bool) 
 				return
 			}
 
-			if shouldBeTraced, ok := filterSpecification[uint32(ppid)]; ok {
+			if shouldBeTraced, ok := filter.PIDs[uint32(ppid)]; ok {
 				trace := boolToUInt32(shouldBeTraced)
 				processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&trace))
 				return
@@ -965,7 +969,7 @@ func (t *Tracee) populateProcessTreeBPFMap(filterSpecification map[uint32]bool) 
 		fn(uint32(pid))
 	}
 
-	for pid, shouldBeTraced := range filterSpecification {
+	for pid, shouldBeTraced := range filter.PIDs {
 		trace := boolToUInt32(shouldBeTraced)
 		processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&trace))
 	}
@@ -1170,7 +1174,7 @@ func (t *Tracee) initBPF() error {
 		}
 	}
 
-	err = t.populateProcessTreeBPFMap(t.config.Filter.ProcessTreeFilter.PIDs)
+	err = t.setProcessTreeFilter(t.config.Filter.ProcessTreeFilter)
 	if err != nil {
 		return fmt.Errorf("error building process tree: %v", err)
 	}
