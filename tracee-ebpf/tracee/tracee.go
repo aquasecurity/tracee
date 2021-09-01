@@ -761,7 +761,6 @@ func (t *Tracee) populateBPFMaps() error {
 	cEDC := uint32(configExtractDynCode)
 	cFF := uint32(configFollowFilter)
 	cDN := uint32(configDebugNet)
-	cPT := uint32(configProcTreeFilter)
 
 	thisPid := uint32(os.Getpid())
 	cDOSval := boolToUInt32(t.config.Output.DetectSyscall)
@@ -771,7 +770,6 @@ func (t *Tracee) populateBPFMaps() error {
 	cEDCval := boolToUInt32(t.config.Capture.Mem)
 	cFFval := boolToUInt32(t.config.Filter.Follow)
 	cDNval := boolToUInt32(t.config.Debug)
-	cPTval := boolToUInt32(len(t.config.Filter.ProcessTreeFilter.PIDs) > 0)
 
 	errs := make([]error, 0)
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cTP), unsafe.Pointer(&thisPid)))
@@ -782,7 +780,6 @@ func (t *Tracee) populateBPFMaps() error {
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cEDC), unsafe.Pointer(&cEDCval)))
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cFF), unsafe.Pointer(&cFFval)))
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cDN), unsafe.Pointer(&cDNval)))
-	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cPT), unsafe.Pointer(&cPTval)))
 	for _, e := range errs {
 		if e != nil {
 			return e
@@ -919,10 +916,9 @@ func (t *Tracee) populateProcessTreeBPFMap(filterSpecification map[uint32]bool) 
 	for _, v := range filterSpecification {
 		defaultFilter = defaultFilter && v
 	}
-	defaultFilter = !defaultFilter
-	var saferDefaultFilter uint64 = 0
-	if defaultFilter {
-		saferDefaultFilter = 1
+	err = t.setBoolFilter(&BoolFilter{Value: defaultFilter, Enabled: true}, configProcTreeFilter)
+	if err != nil {
+		return fmt.Errorf("could not set default process tree filter value: %v", err)
 	}
 
 	processTreeBPFMap, err := t.bpfModule.GetMap("process_tree_map")
@@ -951,8 +947,6 @@ func (t *Tracee) populateProcessTreeBPFMap(filterSpecification map[uint32]bool) 
 			for j := range descendentPIDs {
 				processTreeBPFMap.Update(unsafe.Pointer(&descendentPIDs[j]), unsafe.Pointer(&saferShouldBeTraced))
 			}
-		} else {
-			processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&saferDefaultFilter))
 		}
 	}
 
