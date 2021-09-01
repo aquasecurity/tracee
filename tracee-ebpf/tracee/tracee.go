@@ -920,6 +920,10 @@ func (t *Tracee) populateProcessTreeBPFMap(filterSpecification map[uint32]bool) 
 		defaultFilter = defaultFilter && v
 	}
 	defaultFilter = !defaultFilter
+	var saferDefaultFilter uint64 = 0
+	if defaultFilter {
+		saferDefaultFilter = 1
+	}
 
 	processTreeBPFMap, err := t.bpfModule.GetMap("process_tree_map")
 	if err != nil {
@@ -931,18 +935,24 @@ func (t *Tracee) populateProcessTreeBPFMap(filterSpecification map[uint32]bool) 
 		filterMap[pid] = defaultFilter
 	}
 
+	var saferShouldBeTraced uint64
+
 	// Iterate over each pid
 	for pid, _ := range filterMap {
 
 		// Check if there's a filter specified for this pid and apply to its descendents
 		if shouldBeTraced, ok := filterSpecification[pid]; ok {
 			descendentPIDs := gatherAllDescedentPIDs(pid, processTreeRepresentation)
+
+			saferShouldBeTraced = 0 // populating a bpf map with an unsafe pointer to a 1 byte variable could lead to false positives
+			if shouldBeTraced {
+				saferShouldBeTraced = 1
+			}
 			for j := range descendentPIDs {
-				processTreeBPFMap.Update(unsafe.Pointer(&descendentPIDs[j]), unsafe.Pointer(&shouldBeTraced))
+				processTreeBPFMap.Update(unsafe.Pointer(&descendentPIDs[j]), unsafe.Pointer(&saferShouldBeTraced))
 			}
 		} else {
-			processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&defaultFilter))
-
+			processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&saferDefaultFilter))
 		}
 	}
 
