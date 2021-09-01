@@ -1130,6 +1130,7 @@ func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 func (t *Tracee) Run() error {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+	t.invokeInitNamespacesEvent()
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
 	t.netPerfMap.Start()
@@ -1376,4 +1377,11 @@ func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 	}
 
 	return nil
+}
+
+func (t *Tracee) invokeInitNamespacesEvent() {
+	if t.eventsToTrace[InitNamespacesEventID] {
+		systemInfoEvent, _ := CreateInitNamespacesEvent()
+		t.config.ChanEvents <- systemInfoEvent
+	}
 }
