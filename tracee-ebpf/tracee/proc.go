@@ -19,7 +19,7 @@ func gatherEntireProcessTree() (map[uint32][]uint32, error) {
 	for i := range procs {
 		stat, err := procs[i].Stat()
 		if err != nil {
-			return nil, err
+			continue // proc likely exited while iterating over proc, can ignore
 		}
 		processMap[uint32(stat.PID)] = processMap[uint32(stat.PID)]
 		processMap[uint32(stat.PPID)] = append(processMap[uint32(stat.PPID)], uint32(stat.PID))
