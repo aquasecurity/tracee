@@ -1032,7 +1032,6 @@ static __always_inline int uint_filter_matches(int filter_config, void *filter_m
     return 1;
 }
 
-
 static __always_inline int equality_filter_matches(int filter_config, void *filter_map, void *key)
 {
     int config = get_config(filter_config);
