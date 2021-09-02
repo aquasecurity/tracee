@@ -181,6 +181,13 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 			return err
 		}
 		arg.Value = tmp
+	case "slim_cred_t":
+		var tmp SlimCred
+		err := json.Unmarshal(partialArg.Value, &tmp)
+		if err != nil {
+			return err
+		}
+		arg.Value = tmp
 	default:
 		return fmt.Errorf("unrecognized argument type: %v", partialArg.Type)
 	}
