@@ -92,6 +92,10 @@ func TestArgumentUnmarshalJSON(t *testing.T) {
 			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "const char*const*"}, Value: []string{"foo", "bar"}},
 		},
 		{
+			json:   `{ "name":"test", "type":"const char*const*", "value": null}`,
+			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "const char*const*"}, Value: nil},
+		},
+		{
 			json:        `{ "name":"test", "type":"err", "value": 0}`,
 			expectError: true,
 		},

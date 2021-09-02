@@ -129,6 +129,9 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 	if err := d.Decode((*argument)(arg)); err != nil {
 		return err
 	}
+	if arg.Value == nil {
+		return nil
+	}
 	if num, isNum := arg.Value.(json.Number); isNum {
 		switch arg.Type {
 		case "int", "pid_t", "uid_t", "gid_t", "mqd_t", "clockid_t", "const clockid_t", "key_t", "key_serial_t", "timer_t":
@@ -179,7 +182,6 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		}
 		arg.Value = tmp
 	}
-
 	return nil
 }
 
