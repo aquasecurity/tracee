@@ -123,64 +123,66 @@ type ArgMeta struct {
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (arg *Argument) UnmarshalJSON(b []byte) error {
-	type argument Argument //alias Argument so we can unmarshal it within the unmarshaler implementation
+	var partialArg struct {
+		ArgMeta
+		Value json.RawMessage
+	}
 	d := json.NewDecoder(bytes.NewReader(b))
 	d.UseNumber()
-	if err := d.Decode((*argument)(arg)); err != nil {
+	if err := d.Decode(&partialArg); err != nil {
 		return err
 	}
-	if arg.Value == nil {
+	arg.ArgMeta = partialArg.ArgMeta
+	if string(partialArg.Value) == "null" {
 		return nil
 	}
-	if num, isNum := arg.Value.(json.Number); isNum {
-		switch arg.Type {
-		case "int", "pid_t", "uid_t", "gid_t", "mqd_t", "clockid_t", "const clockid_t", "key_t", "key_serial_t", "timer_t":
-			tmp, err := strconv.ParseInt(num.String(), 10, 32)
-			if err != nil {
-				return err
-			}
-			arg.Value = int32(tmp)
-		case "long":
-			tmp, err := num.Int64()
-			if err != nil {
-				return err
-			}
-			arg.Value = tmp
-		case "unsigned int", "u32", "mode_t", "dev_t":
-			tmp, err := strconv.ParseUint(num.String(), 10, 32)
-			if err != nil {
-				return err
-			}
-			arg.Value = uint32(tmp)
-		case "unsigned long", "u64", "off_t", "size_t", "void*", "const void*":
-			tmp, err := strconv.ParseUint(num.String(), 10, 64)
-			if err != nil {
-				return err
-			}
-			arg.Value = uint64(tmp)
-		case "float":
-			tmp, err := strconv.ParseFloat(num.String(), 32)
-			if err != nil {
-				return err
-			}
-			arg.Value = float32(tmp)
-		case "float64":
-			tmp, err := num.Float64()
-			if err != nil {
-				return err
-			}
-			arg.Value = tmp
-		default:
-			return fmt.Errorf("unrecognized argument type")
+	switch partialArg.Type {
+	case "int", "pid_t", "uid_t", "gid_t", "mqd_t", "clockid_t", "const clockid_t", "key_t", "key_serial_t", "timer_t":
+		tmp, err := strconv.ParseInt(string(partialArg.Value), 10, 32)
+		if err != nil {
+			return err
 		}
-	}
-	if arg.Type == "const char*const*" {
-		argValue := arg.Value.([]interface{})
-		tmp := make([]string, len(argValue))
-		for i, v := range argValue {
-			tmp[i] = fmt.Sprint(v)
+		arg.Value = int32(tmp)
+	case "long":
+		tmp, err := strconv.ParseInt(string(partialArg.Value), 10, 64)
+		if err != nil {
+			return err
+		}
+		arg.Value = int32(tmp)
+		arg.Value = tmp
+	case "unsigned int", "u32", "mode_t", "dev_t":
+		tmp, err := strconv.ParseUint(string(partialArg.Value), 10, 32)
+		if err != nil {
+			return err
+		}
+		arg.Value = uint32(tmp)
+	case "unsigned long", "u64", "off_t", "size_t", "void*", "const void*":
+		tmp, err := strconv.ParseUint(string(partialArg.Value), 10, 64)
+		if err != nil {
+			return err
+		}
+		arg.Value = uint64(tmp)
+	case "float":
+		tmp, err := strconv.ParseFloat(string(partialArg.Value), 32)
+		if err != nil {
+			return err
+		}
+		arg.Value = float32(tmp)
+	case "float64":
+		tmp, err := strconv.ParseFloat(string(partialArg.Value), 64)
+		if err != nil {
+			return err
+		}
+		arg.Value = float64(tmp)
+	case "const char*const*":
+		var tmp []string
+		err := json.Unmarshal(partialArg.Value, &tmp)
+		if err != nil {
+			return err
 		}
 		arg.Value = tmp
+	default:
+		return fmt.Errorf("unrecognized argument type: %v", partialArg.Type)
 	}
 	return nil
 }
