@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 // Event is a user facing data structure representing a single event
@@ -190,9 +191,8 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		arg.Value = tmp
 	case "bytes":
 		arg.Value = bytes.Trim(partialArg.Value, "\"")
-	//case "const char*", "char*", "alert_t":
 	default:
-		return fmt.Errorf("unrecognized argument type: %v", partialArg.Type)
+		arg.Value = strings.Trim(string(partialArg.Value), "\"")
 	}
 	return nil
 }

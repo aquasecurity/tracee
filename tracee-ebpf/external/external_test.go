@@ -100,12 +100,24 @@ func TestArgumentUnmarshalJSON(t *testing.T) {
 			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "const char*const*"}, Value: nil},
 		},
 		{
+			json:   `{ "name":"test", "type":"const char*", "value": "foo"}`,
+			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "const char*"}, Value: "foo"},
+		},
+		{
+			json:   `{ "name":"test", "type":"char*", "value": "foo"}`,
+			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "char*"}, Value: "foo"},
+		},
+		{
 			json:   `{ "name":"test", "type":"slim_cred_t", "value": { "uid": 1, "gid": 1, "suid": 1, "sgid": 1, "euid": 1, "egid": 1, "fsuid": 1, "fsgid": 1, "capInheritable": 1, "capPermitted": 1, "capEffective": 1, "capBounding": 1, "capAmbient": 1 } }`,
 			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "slim_cred_t"}, Value: SlimCred{Uid: 1, Gid: 1, Suid: 1, Sgid: 1, Euid: 1, Egid: 1, Fsuid: 1, Fsgid: 1, CapInheritable: 1, CapPermitted: 1, CapEffective: 1, CapBounding: 1, CapAmbient: 1}},
 		},
 		{
-			json:        `{ "name":"test", "type":"err", "value": 0}`,
-			expectError: true,
+			json:   `{ "name":"test", "type":"err", "value": "err"}`,
+			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "err"}, Value: "err"},
+		},
+		{
+			json:   `{ "name":"test", "type":"err", "value": 0}`,
+			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "err"}, Value: "0"},
 		},
 	}
 	for _, tc := range testCases {
