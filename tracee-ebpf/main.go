@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"math"
 	"net"
 	"os"
 	"os/exec"
@@ -671,7 +670,7 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 		}
 
 		if strings.Contains(f, ".retval") {
-			err := parseRetFilter(filterName, operatorAndValues, eventsNameToID, filter.RetFilter)
+			err := filter.RetFilter.Parse(filterName, operatorAndValues, eventsNameToID)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
@@ -679,7 +678,7 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 		}
 
 		if strings.Contains(f, ".") {
-			err := parseArgFilter(filterName, operatorAndValues, eventsNameToID, filter.ArgFilter)
+			err := filter.ArgFilter.Parse(filterName, operatorAndValues, eventsNameToID)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
@@ -690,7 +689,7 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 		// Other filters should be given using their full name.
 		// To avoid collisions between filters that share the same prefix, put the filters which should have an exact match first!
 		if filterName == "comm" {
-			err := parseStringFilter(operatorAndValues, filter.CommFilter)
+			err := filter.CommFilter.Parse(operatorAndValues)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
@@ -700,7 +699,7 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 		if strings.HasPrefix("container", f) || (strings.HasPrefix("!container", f) && len(f) > 1) {
 			filter.NewPidFilter.Enabled = true
 			filter.NewPidFilter.Value = true
-			err := parseBoolFilter(f, filter.ContFilter)
+			err := filter.ContFilter.Parse(f)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
@@ -727,7 +726,7 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 		}
 
 		if strings.HasPrefix("event", filterName) {
-			err := parseStringFilter(operatorAndValues, eventFilter)
+			err := eventFilter.Parse(operatorAndValues)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
@@ -735,7 +734,7 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 		}
 
 		if filterName == "mntns" {
-			err := parseUintFilter(operatorAndValues, filter.MntNSFilter)
+			err := filter.MntNSFilter.Parse(operatorAndValues)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
@@ -743,7 +742,7 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 		}
 
 		if filterName == "pidns" {
-			err := parseUintFilter(operatorAndValues, filter.PidNSFilter)
+			err := filter.PidNSFilter.Parse(operatorAndValues)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
@@ -751,7 +750,7 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 		}
 
 		if filterName == "tree" {
-			err := parseProcessTreeFilter(operatorAndValues, filter.ProcessTreeFilter)
+			err := filter.ProcessTreeFilter.Parse(operatorAndValues)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
@@ -769,7 +768,7 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 				filter.NewPidFilter.Value = false
 				continue
 			}
-			err := parseUintFilter(operatorAndValues, filter.PIDFilter)
+			err := filter.PIDFilter.Parse(operatorAndValues)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
@@ -777,7 +776,7 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 		}
 
 		if strings.HasPrefix("set", filterName) {
-			err := parseStringFilter(operatorAndValues, setFilter)
+			err := setFilter.Parse(operatorAndValues)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
@@ -785,7 +784,7 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 		}
 
 		if filterName == "uts" {
-			err := parseStringFilter(operatorAndValues, filter.UTSFilter)
+			err := filter.UTSFilter.Parse(operatorAndValues)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
@@ -793,7 +792,7 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 		}
 
 		if strings.HasPrefix("uid", filterName) {
-			err := parseUintFilter(operatorAndValues, filter.UIDFilter)
+			err := filter.UIDFilter.Parse(operatorAndValues)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
@@ -815,280 +814,6 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 	}
 
 	return filter, nil
-}
-
-func parseUintFilter(operatorAndValues string, uintFilter *tracee.UintFilter) error {
-	uintFilter.Enabled = true
-	if len(operatorAndValues) < 2 {
-		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
-	}
-	valuesString := string(operatorAndValues[1:])
-	operatorString := string(operatorAndValues[0])
-
-	if operatorString == "!" {
-		if len(operatorAndValues) < 3 {
-			return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
-		}
-		operatorString = operatorAndValues[0:2]
-		valuesString = operatorAndValues[2:]
-	}
-
-	values := strings.Split(valuesString, ",")
-
-	for i := range values {
-		val, err := strconv.ParseUint(values[i], 10, 64)
-		if err != nil {
-			return fmt.Errorf("invalid filter value: %s", values[i])
-		}
-		if uintFilter.Is32Bit && (val > math.MaxUint32) {
-			return fmt.Errorf("filter value is too big: %s", values[i])
-		}
-		switch operatorString {
-		case "=":
-			uintFilter.Equal = append(uintFilter.Equal, val)
-		case "!=":
-			uintFilter.NotEqual = append(uintFilter.NotEqual, val)
-		case ">":
-			if (uintFilter.Greater == tracee.GreaterNotSetUint) || (val > uintFilter.Greater) {
-				uintFilter.Greater = val
-			}
-		case "<":
-			if (uintFilter.Less == tracee.LessNotSetUint) || (val < uintFilter.Less) {
-				uintFilter.Less = val
-			}
-		default:
-			return fmt.Errorf("invalid filter operator: %s", operatorString)
-		}
-	}
-
-	return nil
-}
-
-func parseProcessTreeFilter(operatorAndValues string, procTreeFilter *tracee.ProcessTreeFilter) error {
-
-	procTreeFilter.Enabled = true
-
-	if len(operatorAndValues) < 2 {
-		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
-	}
-
-	var (
-		equalityOperator bool
-		valuesString     string
-	)
-
-	if strings.HasPrefix(operatorAndValues, "=") {
-		valuesString = operatorAndValues[1:]
-		equalityOperator = true
-	} else if strings.HasPrefix(operatorAndValues, "!=") {
-		valuesString = operatorAndValues[2:]
-		if len(valuesString) == 0 {
-			return fmt.Errorf("no value passed with operator in process tree filter")
-		}
-		equalityOperator = false
-	} else {
-		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
-	}
-
-	values := strings.Split(valuesString, ",")
-	for _, value := range values {
-		pid, err := strconv.ParseUint(value, 10, 32)
-		if err != nil {
-			return fmt.Errorf("invalid PID given to filter: %s", valuesString)
-		}
-		procTreeFilter.PIDs[uint32(pid)] = equalityOperator
-	}
-
-	return nil
-}
-
-func parseIntFilter(operatorAndValues string, intFilter *tracee.IntFilter) error {
-	intFilter.Enabled = true
-	if len(operatorAndValues) < 2 {
-		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
-	}
-	valuesString := string(operatorAndValues[1:])
-	operatorString := string(operatorAndValues[0])
-
-	if operatorString == "!" {
-		if len(operatorAndValues) < 3 {
-			return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
-		}
-		operatorString = operatorAndValues[0:2]
-		valuesString = operatorAndValues[2:]
-	}
-
-	values := strings.Split(valuesString, ",")
-
-	for i := range values {
-		val, err := strconv.ParseInt(values[i], 10, 64)
-		if err != nil {
-			return fmt.Errorf("invalid filter value: %s", values[i])
-		}
-		if intFilter.Is32Bit && (val > math.MaxInt32) {
-			return fmt.Errorf("filter value is too big: %s", values[i])
-		}
-		switch operatorString {
-		case "=":
-			intFilter.Equal = append(intFilter.Equal, val)
-		case "!=":
-			intFilter.NotEqual = append(intFilter.NotEqual, val)
-		case ">":
-			if (intFilter.Greater == tracee.GreaterNotSetInt) || (val > intFilter.Greater) {
-				intFilter.Greater = val
-			}
-		case "<":
-			if (intFilter.Less == tracee.LessNotSetInt) || (val < intFilter.Less) {
-				intFilter.Less = val
-			}
-		default:
-			return fmt.Errorf("invalid filter operator: %s", operatorString)
-		}
-	}
-
-	return nil
-}
-
-func parseStringFilter(operatorAndValues string, stringFilter *tracee.StringFilter) error {
-	stringFilter.Enabled = true
-	if len(operatorAndValues) < 2 {
-		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
-	}
-	valuesString := string(operatorAndValues[1:])
-	operatorString := string(operatorAndValues[0])
-
-	if operatorString == "!" {
-		if len(operatorAndValues) < 3 {
-			return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
-		}
-		operatorString = operatorAndValues[0:2]
-		valuesString = operatorAndValues[2:]
-	}
-
-	values := strings.Split(valuesString, ",")
-
-	for i := range values {
-		switch operatorString {
-		case "=":
-			stringFilter.Equal = append(stringFilter.Equal, values[i])
-		case "!=":
-			stringFilter.NotEqual = append(stringFilter.NotEqual, values[i])
-		default:
-			return fmt.Errorf("invalid filter operator: %s", operatorString)
-		}
-	}
-
-	return nil
-}
-
-func parseBoolFilter(value string, boolFilter *tracee.BoolFilter) error {
-	boolFilter.Enabled = true
-	boolFilter.Value = false
-	if value[0] != '!' {
-		boolFilter.Value = true
-	}
-
-	return nil
-}
-
-func parseArgFilter(filterName string, operatorAndValues string, eventsNameToID map[string]int32, argFilter *tracee.ArgFilter) error {
-	argFilter.Enabled = true
-	// Event argument filter has the following format: "event.argname=argval"
-	// filterName have the format event.argname, and operatorAndValues have the format "=argval"
-	splitFilter := strings.Split(filterName, ".")
-	if len(splitFilter) != 2 {
-		return fmt.Errorf("invalid argument filter format %s%s", filterName, operatorAndValues)
-	}
-	eventName := splitFilter[0]
-	argName := splitFilter[1]
-
-	id, ok := eventsNameToID[eventName]
-	if !ok {
-		return fmt.Errorf("invalid argument filter event name: %s", eventName)
-	}
-
-	eventParams, ok := tracee.EventsIDToParams[id]
-	if !ok {
-		return fmt.Errorf("invalid argument filter event name: %s", eventName)
-	}
-
-	// check if argument name exists for this event
-	argFound := false
-	for i := range eventParams {
-		if eventParams[i].Name == argName {
-			argFound = true
-			break
-		}
-	}
-
-	if !argFound {
-		return fmt.Errorf("invalid argument filter argument name: %s", argName)
-	}
-
-	strFilter := &tracee.StringFilter{
-		Equal:    []string{},
-		NotEqual: []string{},
-	}
-
-	// Treat operatorAndValues as a string filter to avoid code duplication
-	err := parseStringFilter(operatorAndValues, strFilter)
-	if err != nil {
-		return err
-	}
-
-	if _, ok := argFilter.Filters[id]; !ok {
-		argFilter.Filters[id] = make(map[string]tracee.ArgFilterVal)
-	}
-
-	if _, ok := argFilter.Filters[id][argName]; !ok {
-		argFilter.Filters[id][argName] = tracee.ArgFilterVal{}
-	}
-
-	val := argFilter.Filters[id][argName]
-
-	val.Equal = append(val.Equal, strFilter.Equal...)
-	val.NotEqual = append(val.NotEqual, strFilter.NotEqual...)
-
-	argFilter.Filters[id][argName] = val
-
-	return nil
-}
-
-func parseRetFilter(filterName string, operatorAndValues string, eventsNameToID map[string]int32, retFilter *tracee.RetFilter) error {
-	retFilter.Enabled = true
-	// Ret filter has the following format: "event.ret=val"
-	// filterName have the format event.retval, and operatorAndValues have the format "=val"
-	splitFilter := strings.Split(filterName, ".")
-	if len(splitFilter) != 2 || splitFilter[1] != "retval" {
-		return fmt.Errorf("invalid retval filter format %s%s", filterName, operatorAndValues)
-	}
-	eventName := splitFilter[0]
-
-	id, ok := eventsNameToID[eventName]
-	if !ok {
-		return fmt.Errorf("invalid retval filter event name: %s", eventName)
-	}
-
-	if _, ok := retFilter.Filters[id]; !ok {
-		retFilter.Filters[id] = tracee.IntFilter{
-			Equal:    []int64{},
-			NotEqual: []int64{},
-			Less:     tracee.LessNotSetInt,
-			Greater:  tracee.GreaterNotSetInt,
-		}
-	}
-
-	intFilter := retFilter.Filters[id]
-
-	// Treat operatorAndValues as an int filter to avoid code duplication
-	err := parseIntFilter(operatorAndValues, &intFilter)
-	if err != nil {
-		return err
-	}
-
-	retFilter.Filters[id] = intFilter
-
-	return nil
 }
 
 func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.StringFilter, eventsNameToID map[string]int32) ([]int32, error) {
