@@ -188,6 +188,9 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 			return err
 		}
 		arg.Value = tmp
+	case "bytes":
+		arg.Value = bytes.Trim(partialArg.Value, "\"")
+	//case "const char*", "char*", "alert_t":
 	default:
 		return fmt.Errorf("unrecognized argument type: %v", partialArg.Type)
 	}
