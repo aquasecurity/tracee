@@ -101,7 +101,7 @@ func main() {
 			if err != nil {
 				return fmt.Errorf("constructing engine: %w", err)
 			}
-			e.Start(sigHandler())
+			e.Start(c.Bool("enable-parsed-events"), sigHandler())
 			return nil
 		},
 		Flags: []cli.Flag{
@@ -145,6 +145,10 @@ func main() {
 				Name:  "pprof-addr",
 				Usage: "listening address of the pprof endpoints server",
 				Value: ":7777",
+			},
+			&cli.BoolFlag{
+				Name:  "enable-parsed-events",
+				Usage: "enables pre parsing of input events to rego prior to evaluation",
 			},
 		},
 	}

@@ -110,14 +110,14 @@ func signatureStart(signature types.Signature, c chan types.Event, wg *sync.Wait
 // it runs continuously until stopped by the done channel
 // once done, it cleans all internal resources, which means the engine is not reusable
 // note that the input and output channels are created by the consumer and therefore are not closed
-func (engine *Engine) Start(done chan bool) {
+func (engine *Engine) Start(parsedEvents bool, done chan bool) {
 	defer engine.unloadAllSignatures()
 	engine.signaturesMutex.RLock()
 	for s, c := range engine.signatures {
 		go signatureStart(s, c, &engine.waitGroup)
 	}
 	engine.signaturesMutex.RUnlock()
-	engine.consumeSources(done)
+	engine.consumeSources(parsedEvents, done)
 }
 
 func (engine *Engine) unloadAllSignatures() {
@@ -149,7 +149,7 @@ func (engine *Engine) checkCompletion() bool {
 
 // consumeSources starts consuming the input sources
 // it runs continuously until stopped by the done channel
-func (engine *Engine) consumeSources(done <-chan bool) {
+func (engine *Engine) consumeSources(parsedEvents bool, done <-chan bool) {
 	for {
 		select {
 		case event, ok := <-engine.inputs.Tracee:
@@ -182,25 +182,18 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 					continue
 				}
 
-				pe, err := ToParsedEvent(traceeEvt)
-				if err != nil {
-					engine.logger.Printf("error converting tracee event to OPA ast.Value: %v", err)
-					engine.signaturesMutex.RUnlock()
-					continue
-				}
-
 				eventOrigin := analyzeEventOrigin(traceeEvt)
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName, Origin: eventOrigin}] {
-					engine.dispatchEvent(s, pe)
+					engine.dispatchEvent(s, event.(tracee.Event), parsedEvents)
 				}
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName, Origin: ALL_EVENT_ORIGINS}] {
-					engine.dispatchEvent(s, pe)
+					engine.dispatchEvent(s, event.(tracee.Event), parsedEvents)
 				}
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: ALL_EVENT_TYPES, Origin: eventOrigin}] {
-					engine.dispatchEvent(s, pe)
+					engine.dispatchEvent(s, event.(tracee.Event), parsedEvents)
 				}
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: ALL_EVENT_TYPES, Origin: ALL_EVENT_ORIGINS}] {
-					engine.dispatchEvent(s, pe)
+					engine.dispatchEvent(s, event.(tracee.Event), parsedEvents)
 				}
 				engine.signaturesMutex.RUnlock()
 			}
@@ -210,12 +203,21 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 	}
 }
 
-func (engine *Engine) dispatchEvent(s types.Signature, pe ParsedEvent) {
+func (engine *Engine) dispatchEvent(s types.Signature, event tracee.Event, parsedEvent bool) {
 	switch {
 	case strings.Contains(reflect.TypeOf(s).String(), "rego"):
-		engine.signatures[s] <- pe
+		if parsedEvent {
+			pe, err := ToParsedEvent(event)
+			if err != nil {
+				engine.logger.Printf("error converting tracee event to OPA ast.Value: %v", err)
+				return
+			}
+			engine.signatures[s] <- pe
+		} else {
+			engine.signatures[s] <- event
+		}
 	default:
-		engine.signatures[s] <- pe.Event
+		engine.signatures[s] <- event
 	}
 }
 
