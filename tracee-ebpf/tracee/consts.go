@@ -14,6 +14,12 @@ type bpfConfig uint32
 // Matches 'MAX_STACK_DEPTH' in eBPF code
 const maxStackDepth int = 20
 
+// Custom KernelConfigOption's to extend kernel_config helper support
+// Add here all kconfig variables used within tracee.bpf.c
+const (
+	CONFIG_ARCH_HAS_SYSCALL_WRAPPER uint32 = iota + 1000
+)
+
 const (
 	configDetectOrigSyscall bpfConfig = iota + 1
 	configExecEnv
