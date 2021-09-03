@@ -73,7 +73,7 @@ func main() {
 				return errors.New("invalid target specified " + target)
 			}
 
-			sigs, err := getSignatures(target, c.Bool("rego-partial-eval"), c.String("rules-dir"), c.StringSlice("rules"))
+			sigs, err := getSignatures(target, c.Bool("rego-partial-eval"), c.String("rules-dir"), c.StringSlice("rules"), c.Bool("rego-aio-enable"))
 			if err != nil {
 				return err
 			}
@@ -167,6 +167,10 @@ func main() {
 			&cli.BoolFlag{
 				Name:  "rego-enable-parsed-events",
 				Usage: "enables pre parsing of input events to rego prior to evaluation",
+			},
+			&cli.BoolFlag{
+				Name:  "rego-aio-enable",
+				Usage: "enable rego AIO rule for rule indexing and evaluation",
 			},
 			&cli.StringFlag{
 				Name:  "rego-runtime-target",

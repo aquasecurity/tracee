@@ -19,7 +19,7 @@ import (
 //go:embed signatures/rego/helpers.rego
 var regoHelpersCode string
 
-func getSignatures(target string, partialEval bool, rulesDir string, rules []string) ([]types.Signature, error) {
+func getSignatures(target string, partialEval bool, rulesDir string, rules []string, aioEnabled bool) ([]types.Signature, error) {
 	if rulesDir == "" {
 		exePath, err := os.Executable()
 		if err != nil {
@@ -31,7 +31,7 @@ func getSignatures(target string, partialEval bool, rulesDir string, rules []str
 	if err != nil {
 		return nil, err
 	}
-	opasigs, err := findRegoSigs(target, partialEval, rulesDir)
+	opasigs, err := findRegoSigs(target, partialEval, rulesDir, aioEnabled)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func findGoSigs(dir string) ([]types.Signature, error) {
 	return res, nil
 }
 
-func findRegoSigs(target string, partialEval bool, dir string) ([]types.Signature, error) {
+func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) ([]types.Signature, error) {
 	regoHelpers := []string{regoHelpersCode}
 	filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -87,6 +87,10 @@ func findRegoSigs(target string, partialEval bool, dir string) ([]types.Signatur
 		}
 
 		if d.IsDir() || d.Name() == "helpers.rego" {
+			return nil
+		}
+
+		if !aioEnabled && isAIO(d.Name()) {
 			return nil
 		}
 
@@ -108,6 +112,10 @@ func findRegoSigs(target string, partialEval bool, dir string) ([]types.Signatur
 	filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
+		}
+
+		if !aioEnabled && isAIO(d.Name()) {
+			return nil
 		}
 
 		if d.IsDir() || !isRegoFile(d.Name()) || isHelper(d.Name()) {
@@ -145,4 +153,8 @@ func isRegoFile(name string) bool {
 
 func isHelper(name string) bool {
 	return strings.HasSuffix(name, "helpers.rego")
+}
+
+func isAIO(name string) bool {
+	return strings.Contains(name, "aio")
 }

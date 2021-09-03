@@ -2,11 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/open-policy-agent/opa/compile"
@@ -17,7 +12,7 @@ import (
 )
 
 func Test_getSignatures(t *testing.T) {
-	sigs, err := getSignatures(compile.TargetRego, false, "signatures/rego", []string{"TRC-2"})
+	sigs, err := getSignatures(compile.TargetRego, false, "signatures/rego", []string{"TRC-2"}, false)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(sigs))
 
@@ -62,71 +57,33 @@ func Test_isHelper(t *testing.T) {
 }
 
 func Test_findRegoSigs(t *testing.T) {
-	// create test signature directory, clean it up after the test
-	testRoot, err := ioutil.TempDir(os.TempDir(), "")
-	require.NoError(t, err)
-	defer os.RemoveAll(testRoot)
-
-	// create directory to test nested rule directories
-	testDir := filepath.Join(testRoot, "test")
-	err = os.Mkdir(testDir, 0777)
-	require.NoError(t, err)
-
-	// copy example go signature to test dir and it's child dir
-	err = copyExampleSig("anti_debugging_ptraceme.rego", testRoot)
-	require.NoError(t, err)
-	err = copyExampleSig("anti_debugging_ptraceme.rego", testDir)
-	require.NoError(t, err)
-
-	// find rego signatures
-	sigs, err := findRegoSigs(compile.TargetRego, false, testRoot)
-	require.NoError(t, err)
-
-	assert.Equal(t, len(sigs), 2)
-	for _, sig := range sigs {
-		gotMetadata, err := sig.GetMetadata()
+	testRoot := "signatures/rego"
+	t.Run("without aio", func(t *testing.T) {
+		sigs, err := findRegoSigs(compile.TargetRego, false, testRoot, false)
 		require.NoError(t, err)
-		assert.Equal(t, types.SignatureMetadata{
-			ID:          "TRC-2",
-			Version:     "0.1.0",
-			Name:        "Anti-Debugging",
-			Description: "Process uses anti-debugging technique to block debugger",
-			Tags:        []string{"linux", "container"},
-			Properties: map[string]interface{}{
-				"MITRE ATT&CK": "Defense Evasion: Execution Guardrails",
-				"Severity":     json.Number("3"),
-			},
-		}, gotMetadata)
-	}
-}
 
-func copyExampleSig(exampleName, destDir string) error {
-	var exampleDir string
-	extension := filepath.Ext(exampleName)
-	if extension == ".rego" {
-		exampleDir = "signatures/rego/%s"
-	} else {
-		return errors.New("unsupported signature type")
-	}
+		var gotSigs []string
+		for _, sig := range sigs {
+			gotMetadata, err := sig.GetMetadata()
+			require.NoError(t, err)
+			gotSigs = append(gotSigs, gotMetadata.ID)
+		}
+		assert.ElementsMatch(t, []string{"FOO-1", "FOO-2", "TRC-2", "TRC-3", "TRC-4", "TRC-5", "TRC-6", "TRC-7"}, gotSigs)
+	})
 
-	// copy example signature
-	exampleFile := fmt.Sprintf(exampleDir, exampleName)
-	_, err := os.Stat(exampleFile)
-	if err != nil {
-		return err
-	}
-	file, err := ioutil.ReadFile(exampleFile)
-	if err != nil {
-		return err
-	}
+	t.Run("with aio", func(t *testing.T) {
+		sigs, err := findRegoSigs(compile.TargetRego, false, testRoot, true)
+		require.NoError(t, err)
 
-	// write example sig to directory
-	testSig := "test" + extension
-	err = ioutil.WriteFile(filepath.Join(destDir, testSig), file, 0777)
-	if err != nil {
-		return err
-	}
-	return nil
+		var gotSigs []string
+		for _, sig := range sigs {
+			gotMetadata, err := sig.GetMetadata()
+			require.NoError(t, err)
+			gotSigs = append(gotSigs, gotMetadata.ID)
+		}
+		assert.ElementsMatch(t, []string{"FOO-1", "FOO-2", "TRC-2", "TRC-3", "TRC-4", "TRC-5", "TRC-6", "TRC-7", "TRC-AIO"}, gotSigs)
+	})
+
 }
 
 func Test_isRegoFile(t *testing.T) {
