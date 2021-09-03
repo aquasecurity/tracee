@@ -39,10 +39,10 @@ type Config struct {
 	SecurityAlerts     bool
 	Debug              bool
 	maxPidsCache       int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
-	KConfigFilePath    string
 	BTFObjPath         string
 	BPFObjPath         string
 	BPFObjBytes        []byte
+	KernelConfig       *helpers.KernelConfig
 	ChanEvents         chan external.Event
 	ChanErrors         chan error
 	ChanDone           chan struct{}
@@ -707,6 +707,23 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
+	// Initialize kconfig variables (map used instead of relying in libbpf's .kconfig automated maps)
+	// Note: this allows libbpf not to rely on the system kconfig file, tracee does the kconfig var identification job
+
+	bpfKConfigMap, err := t.bpfModule.GetMap("kconfig_map") // u32, u32
+	if err != nil {
+		return err
+	}
+
+	key := uint32(helpers.CONFIG_ARCH_HAS_SYSCALL_WRAPPER)
+	v, _ := t.config.KernelConfig.GetValue(helpers.CONFIG_ARCH_HAS_SYSCALL_WRAPPER)
+	value := uint32(v)
+
+	err = bpfKConfigMap.Update(unsafe.Pointer(&key), unsafe.Pointer(&value))
+	if err != nil {
+		return err
+	}
+
 	// Initialize config and pids maps
 
 	bpfConfigMap, err := t.bpfModule.GetMap("config_map") // u32, u32
@@ -1026,7 +1043,7 @@ func (t *Tracee) initBPF() error {
 	var err error
 
 	newModuleArgs := bpf.NewModuleArgs{
-		KConfigFilePath: t.config.KConfigFilePath,
+		KConfigFilePath: t.config.KernelConfig.GetKernelConfigFilePath(),
 		BTFObjPath:      t.config.BTFObjPath,
 		BPFObjBuff:      t.config.BPFObjBytes,
 		BPFObjName:      t.config.BPFObjPath,

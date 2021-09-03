@@ -103,15 +103,13 @@ func main() {
 
 			// OS kconfig information
 
-			kConfigFilePath := ""
 			kernelConfig, err := helpers.InitKernelConfig()
 			if err == nil { // do not fail (yet ?) if we cannot init kconfig
 				kernelConfig.AddNeeded(helpers.CONFIG_BPF, helpers.BUILTIN)
 				kernelConfig.AddNeeded(helpers.CONFIG_BPF_SYSCALL, helpers.BUILTIN)
 				kernelConfig.AddNeeded(helpers.CONFIG_KPROBE_EVENTS, helpers.BUILTIN)
 				kernelConfig.AddNeeded(helpers.CONFIG_BPF_EVENTS, helpers.BUILTIN)
-				kConfigFilePath = kernelConfig.KConfigFilePath // save which KConfig file was used so we can refer it later
-				missing := kernelConfig.CheckMissing()         // do fail if we found os-release file and it is not enough
+				missing := kernelConfig.CheckMissing() // do fail if we found os-release file and it is not enough
 				if len(missing) > 0 {
 					return fmt.Errorf("missing kernel configuration options: %s\n", missing)
 				}
@@ -216,7 +214,7 @@ func main() {
 				}
 			}
 
-			cfg.KConfigFilePath = kConfigFilePath
+			cfg.KernelConfig = kernelConfig // avoid having to read kconfig again later
 			cfg.BPFObjPath = bpfFilePath
 			cfg.BPFObjBytes = bpfBytes
 
@@ -1315,7 +1313,8 @@ func getBPFObjectPath() (string, error) {
 		traceeInstallPath,
 	}
 
-	bpfObjFileName := fmt.Sprintf("tracee.bpf.%s.%s.o", strings.ReplaceAll(tracee.UnameRelease(), ".", "_"), strings.ReplaceAll(version, ".", "_"))
+	release, _ := helpers.UnameRelease()
+	bpfObjFileName := fmt.Sprintf("tracee.bpf.%s.%s.o", strings.ReplaceAll(release, ".", "_"), strings.ReplaceAll(version, ".", "_"))
 	bpfObjFilePath := locateFile(bpfObjFileName, searchPaths)
 	if bpfObjFilePath != "" && debug {
 		fmt.Printf("found bpf object file at: %s\n", bpfObjFilePath)
@@ -1440,9 +1439,13 @@ func makeBPFObject(outFile string) error {
 	}
 	llvmstrip := locateFile("llvm-strip", []string{os.Getenv("LLVM_STRIP")})
 
+	release, err := helpers.UnameRelease()
+	if err != nil {
+		return err
+	}
 	kernelHeaders := locateFile("", []string{os.Getenv("KERN_HEADERS")})
-	kernelBuildPath := locateFile("", []string{fmt.Sprintf("/lib/modules/%s/build", tracee.UnameRelease())})
-	kernelSourcePath := locateFile("", []string{fmt.Sprintf("/lib/modules/%s/source", tracee.UnameRelease())})
+	kernelBuildPath := locateFile("", []string{fmt.Sprintf("/lib/modules/%s/build", release)})
+	kernelSourcePath := locateFile("", []string{fmt.Sprintf("/lib/modules/%s/source", release)})
 	if kernelHeaders != "" {
 		// In case KERN_HEADERS is set, use it for both source/ and build/
 		kernelBuildPath = kernelHeaders
