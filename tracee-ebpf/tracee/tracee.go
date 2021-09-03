@@ -23,6 +23,7 @@ import (
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
@@ -42,6 +43,7 @@ type Config struct {
 	BTFObjPath         string
 	BPFObjPath         string
 	BPFObjBytes        []byte
+	KernelConfig       *helpers.KernelConfig
 	ChanEvents         chan external.Event
 	ChanErrors         chan error
 	ChanDone           chan struct{}
@@ -450,46 +452,6 @@ func New(cfg Config) (*Tracee, error) {
 	return t, nil
 }
 
-// UnameRelease gets the version string of the current running kernel
-func UnameRelease() string {
-	var uname syscall.Utsname
-	if err := syscall.Uname(&uname); err != nil {
-		return ""
-	}
-	var buf [65]byte
-	for i, b := range uname.Release {
-		buf[i] = byte(b)
-	}
-	ver := string(buf[:])
-	if i := strings.Index(ver, "\x00"); i != -1 {
-		ver = ver[:i]
-	}
-	return ver
-}
-
-func kernelIsAtLeast(verMajor, verMinor int) (bool, error) {
-	ver := UnameRelease()
-	if ver == "" {
-		return false, fmt.Errorf("could not determine current release")
-	}
-	verSplit := strings.Split(ver, ".")
-	if len(verSplit) < 2 {
-		return false, fmt.Errorf("invalid version returned by uname")
-	}
-	major, err := strconv.Atoi(verSplit[0])
-	if err != nil {
-		return false, fmt.Errorf("invalid major number: %s", verSplit[0])
-	}
-	minor, err := strconv.Atoi(verSplit[1])
-	if err != nil {
-		return false, fmt.Errorf("invalid minor number: %s", verSplit[1])
-	}
-	if ((major == verMajor) && (minor >= verMinor)) || (major > verMajor) {
-		return true, nil
-	}
-	return false, nil
-}
-
 type eventParam struct {
 	encType argType
 	encName argTag
@@ -744,6 +706,32 @@ func (t *Tracee) populateBPFMaps() error {
 		if err := sys32to64BPFMap.Update(unsafe.Pointer(&ID32BitU32), unsafe.Pointer(&IDU32)); err != nil {
 			return err
 		}
+	}
+
+	// Initialize kconfig variables (map used instead of relying in libbpf's .kconfig automated maps)
+	// Note: this allows libbpf not to rely on the system kconfig file, tracee does the kconfig var identification job
+
+	bpfKConfigMap, err := t.bpfModule.GetMap("kconfig_map") // u32, u32
+	if err != nil {
+		return err
+	}
+
+	// add here all kconfig variables used within tracee.bpf.c
+
+	var value helpers.KernelConfigOptionValue
+	key := CONFIG_ARCH_HAS_SYSCALL_WRAPPER
+	keyString := "CONFIG_ARCH_HAS_SYSCALL_WRAPPER"
+
+	if err := t.config.KernelConfig.AddCustomKernelConfigs(key, keyString); err != nil {
+		// an error here means there is no valid kconfig file set: do not fail, assume values
+		value = 1
+	} else {
+		value, _ = t.config.KernelConfig.GetValue(key) // undefined is not an error here, it might happen
+	}
+
+	err = bpfKConfigMap.Update(unsafe.Pointer(&key), unsafe.Pointer(&value))
+	if err != nil {
+		return err
 	}
 
 	// Initialize config and pids maps
@@ -1064,7 +1052,14 @@ func (t *Tracee) attachNetProbes() error {
 func (t *Tracee) initBPF() error {
 	var err error
 
-	t.bpfModule, err = bpf.NewModuleFromBufferBtf(t.config.BTFObjPath, t.config.BPFObjBytes, t.config.BPFObjPath)
+	newModuleArgs := bpf.NewModuleArgs{
+		KConfigFilePath: t.config.KernelConfig.GetKernelConfigFilePath(),
+		BTFObjPath:      t.config.BTFObjPath,
+		BPFObjBuff:      t.config.BPFObjBytes,
+		BPFObjName:      t.config.BPFObjPath,
+	}
+
+	t.bpfModule, err = bpf.NewModuleFromBufferArgs(newModuleArgs)
 	if err != nil {
 		return err
 	}

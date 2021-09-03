@@ -101,25 +101,33 @@ func main() {
 				return err
 			}
 
-			if kernelConfig, err := helpers.InitKernelConfig(); err == nil { // do not fail (yet ?) if we cannot init kconfig
+			// OS kconfig information
+
+			kernelConfig, err := helpers.InitKernelConfig()
+			if err == nil { // do not fail (yet ?) if we cannot init kconfig
 				kernelConfig.AddNeeded(helpers.CONFIG_BPF, helpers.BUILTIN)
 				kernelConfig.AddNeeded(helpers.CONFIG_BPF_SYSCALL, helpers.BUILTIN)
 				kernelConfig.AddNeeded(helpers.CONFIG_KPROBE_EVENTS, helpers.BUILTIN)
 				kernelConfig.AddNeeded(helpers.CONFIG_BPF_EVENTS, helpers.BUILTIN)
-				missing := kernelConfig.CheckMissing() // do fail if we found and it is not enough
+				missing := kernelConfig.CheckMissing() // do fail if we found os-release file and it is not enough
 				if len(missing) > 0 {
 					return fmt.Errorf("missing kernel configuration options: %s\n", missing)
 				}
 			} else {
-				fmt.Fprintf(os.Stderr, "warning: could not check enabled kconfig features, trying to continue anyway\n")
+				fmt.Fprintf(os.Stderr, "KConfig: warning: could not check enabled kconfig features\n(%v)\n", err)
 			}
 
-			// try to discover distro by /etc/os-release, fallback to kernel version
+			// OS release information
 
-			btfinfo := helpers.NewBTFInfo()
-			if err = btfinfo.DiscoverDistro(); err != nil {
+			OSInfo, err := helpers.GetOSInfo()
+			if err != nil {
 				if debug {
-					fmt.Printf("BTF: distro: %v, version: %v, kernel: %v\n", btfinfo.GetDistroID(), btfinfo.GetDistroVer(), btfinfo.GetDistroKernel())
+					fmt.Fprintf(os.Stdout, "OSInfo: %v: %v\n", helpers.OS_KERNEL_RELEASE, OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE))
+				}
+				fmt.Fprintf(os.Stderr, "OSInfo: warning: os-release file could be found\n(%v)\n", err) // only to be enforced when BTF needs to be downloaded, later on
+			} else if debug {
+				for k, v := range OSInfo.GetOSReleaseAllFieldValues() {
+					fmt.Fprintf(os.Stdout, "OSInfo: %v: %v\n", k, v)
 				}
 			}
 
@@ -134,7 +142,7 @@ func main() {
 
 				btfenv:     false,
 				bpfenv:     false,
-				btfvmlinux: helpers.BTFEnabled(),
+				btfvmlinux: helpers.OSBTFEnabled(),
 			}
 
 			// change decisions based on environment
@@ -206,6 +214,7 @@ func main() {
 				}
 			}
 
+			cfg.KernelConfig = kernelConfig // avoid having to read kconfig again later
 			cfg.BPFObjPath = bpfFilePath
 			cfg.BPFObjBytes = bpfBytes
 
@@ -1304,7 +1313,8 @@ func getBPFObjectPath() (string, error) {
 		traceeInstallPath,
 	}
 
-	bpfObjFileName := fmt.Sprintf("tracee.bpf.%s.%s.o", strings.ReplaceAll(tracee.UnameRelease(), ".", "_"), strings.ReplaceAll(version, ".", "_"))
+	release, _ := helpers.UnameRelease()
+	bpfObjFileName := fmt.Sprintf("tracee.bpf.%s.%s.o", strings.ReplaceAll(release, ".", "_"), strings.ReplaceAll(version, ".", "_"))
 	bpfObjFilePath := locateFile(bpfObjFileName, searchPaths)
 	if bpfObjFilePath != "" && debug {
 		fmt.Printf("found bpf object file at: %s\n", bpfObjFilePath)
@@ -1429,9 +1439,13 @@ func makeBPFObject(outFile string) error {
 	}
 	llvmstrip := locateFile("llvm-strip", []string{os.Getenv("LLVM_STRIP")})
 
+	release, err := helpers.UnameRelease()
+	if err != nil {
+		return err
+	}
 	kernelHeaders := locateFile("", []string{os.Getenv("KERN_HEADERS")})
-	kernelBuildPath := locateFile("", []string{fmt.Sprintf("/lib/modules/%s/build", tracee.UnameRelease())})
-	kernelSourcePath := locateFile("", []string{fmt.Sprintf("/lib/modules/%s/source", tracee.UnameRelease())})
+	kernelBuildPath := locateFile("", []string{fmt.Sprintf("/lib/modules/%s/build", release)})
+	kernelSourcePath := locateFile("", []string{fmt.Sprintf("/lib/modules/%s/source", release)})
 	if kernelHeaders != "" {
 		// In case KERN_HEADERS is set, use it for both source/ and build/
 		kernelBuildPath = kernelHeaders

@@ -78,10 +78,16 @@ Copyright (C) Aqua Security inc.
 #define PT_REGS_PARM6(x) (((PT_REGS_ARM64 *)(x))->regs[5])
 #endif
 
-
 #ifdef CORE
-extern bool CONFIG_ARCH_HAS_SYSCALL_WRAPPER __kconfig;
+#define get_kconfig(x) get_kconfig_val(x)
+#else
+#define get_kconfig(x) CONFIG_##x
 #endif
+
+// All kconfig variables used in this file should be placed here.
+// Note:  Do not use CONFIG_ prefix. Sync with libbpfgo kernel_config.
+// This allows libbpf to work without the system kconfig file.
+#define ARCH_HAS_SYSCALL_WRAPPER 1000u
 
 #define MAX_PERCPU_BUFSIZE  (1 << 15)     // This value is actually set by the kernel as an upper bound
 #define MAX_STRING_SIZE     4096          // Choosing this value to be the same as PATH_MAX
@@ -486,6 +492,7 @@ struct mount {
 /*=================================== MAPS =====================================*/
 
 BPF_HASH(config_map, u32, u32);                         // Various configurations
+BPF_HASH(kconfig_map, u32, u32);                        // Kernel config variables
 BPF_HASH(chosen_events_map, u32, u32);                  // Events chosen by the user
 BPF_HASH(traced_pids_map, u32, u32);                    // Keep track of traced pids
 BPF_HASH(new_pids_map, u32, u32);                       // Keep track of the processes of newly executed binaries
@@ -991,6 +998,16 @@ static __always_inline int init_context(context_t *context)
 static __always_inline int get_config(u32 key)
 {
     u32 *config = bpf_map_lookup_elem(&config_map, &key);
+
+    if (config == NULL)
+        return 0;
+
+    return *config;
+}
+
+static __always_inline int get_kconfig_val(u32 key)
+{
+    u32 *config = bpf_map_lookup_elem(&kconfig_map, &key);
 
     if (config == NULL)
         return 0;
@@ -2021,7 +2038,7 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
     int id = ctx->args[1];
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
 
-if (CONFIG_ARCH_HAS_SYSCALL_WRAPPER) {
+if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER)) {
     struct pt_regs regs = {};
     bpf_probe_read(&regs, sizeof(struct pt_regs), (void*)ctx->args[0]);
 
@@ -2048,7 +2065,7 @@ if (CONFIG_ARCH_HAS_SYSCALL_WRAPPER) {
         args_tmp.args[4] = PT_REGS_PARM5(&regs);
         args_tmp.args[5] = PT_REGS_PARM6(&regs);
     }
-} else { // CONFIG_ARCH_HAS_SYSCALL_WRAPPER
+} else {
     bpf_probe_read(args_tmp.args, sizeof(6 * sizeof(u64)), (void *)ctx->args);
 }
 
