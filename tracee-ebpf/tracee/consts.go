@@ -1,6 +1,7 @@
 package tracee
 
 import (
+	"github.com/aquasecurity/libbpfgo/helpers"
 	"math"
 
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
@@ -17,7 +18,7 @@ const maxStackDepth int = 20
 // Custom KernelConfigOption's to extend kernel_config helper support
 // Add here all kconfig variables used within tracee.bpf.c
 const (
-	CONFIG_ARCH_HAS_SYSCALL_WRAPPER uint32 = iota + 1000
+	CONFIG_ARCH_HAS_SYSCALL_WRAPPER helpers.KernelConfigOption = iota + 1000
 )
 
 const (

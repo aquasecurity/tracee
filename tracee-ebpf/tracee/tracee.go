@@ -715,14 +715,17 @@ func (t *Tracee) populateBPFMaps() error {
 		return err
 	}
 
-	if err := t.config.KernelConfig.AddCustomKernelConfigs(map[uint32]string {
-		CONFIG_ARCH_HAS_SYSCALL_WRAPPER: "CONFIG_ARCH_HAS_SYSCALL_WRAPPER", // add here all kconfig variables used within tracee.bpf.c
-	}); err != nil {
+	// add here all kconfig variables used within tracee.bpf.c
+
+	key := CONFIG_ARCH_HAS_SYSCALL_WRAPPER
+	keyString := "CONFIG_ARCH_HAS_SYSCALL_WRAPPER"
+
+	if err := t.config.KernelConfig.AddCustomKernelConfigs(key, keyString); err != nil {
 		return err
 	}
 
-	key := CONFIG_ARCH_HAS_SYSCALL_WRAPPER
-	value, _ := t.config.KernelConfig.GetValue(CONFIG_ARCH_HAS_SYSCALL_WRAPPER) // undefined not an error
+	value, _ := t.config.KernelConfig.GetValue(key) // undefined is not an error here, it might happen
+
 	err = bpfKConfigMap.Update(unsafe.Pointer(&key), unsafe.Pointer(&value))
 	if err != nil {
 		return err
