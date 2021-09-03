@@ -23,6 +23,7 @@ import (
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
