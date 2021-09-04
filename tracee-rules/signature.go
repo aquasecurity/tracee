@@ -127,7 +127,7 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 			log.Printf("error reading file %s: %v", path, err)
 			return nil
 		}
-		sig, err := regosig.NewRegoSignature(target, partialEval, append(regoHelpers, string(regoCode))...)
+		sig, err := regosig.NewRegoSignature(target, partialEval, aioEnabled, append(regoHelpers, string(regoCode))...)
 		if err != nil {
 			newlineOffset := bytes.Index(regoCode, []byte("\n"))
 			if newlineOffset == -1 {

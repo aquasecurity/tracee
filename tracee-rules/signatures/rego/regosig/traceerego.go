@@ -34,8 +34,12 @@ const querySelectedEvents string = "data.%s.tracee_selected_events"
 const queryMetadata string = "data.%s.__rego_metadoc__"
 const packageNameRegex string = `package\s.*`
 
+const (
+	queryMatchAll = "data.main.tracee_match_all"
+)
+
 // NewRegoSignature creates a new RegoSignature with the provided rego code string
-func NewRegoSignature(target string, partialEval bool, regoCodes ...string) (types.Signature, error) {
+func NewRegoSignature(target string, partialEval bool, aioEnabled bool, regoCodes ...string) (types.Signature, error) {
 	var err error
 	res := RegoSignature{}
 	regoMap := make(map[string]string)
@@ -63,11 +67,20 @@ func NewRegoSignature(target string, partialEval bool, regoCodes ...string) (typ
 	}
 
 	ctx := context.Background()
+
+	var query string
+	switch aioEnabled {
+	case true:
+		query = queryMatchAll
+	default:
+		query = fmt.Sprintf(queryMatch, pkgName)
+	}
+
 	if partialEval {
 		pr, err := rego.New(
 
 			rego.Compiler(res.compiledRego),
-			rego.Query(fmt.Sprintf(queryMatch, pkgName)),
+			rego.Query(query),
 		).PartialResult(ctx)
 		if err != nil {
 			return nil, err
@@ -81,7 +94,7 @@ func NewRegoSignature(target string, partialEval bool, regoCodes ...string) (typ
 		res.matchPQ, err = rego.New(
 			rego.Target(target),
 			rego.Compiler(res.compiledRego),
-			rego.Query(fmt.Sprintf(queryMatch, pkgName)),
+			rego.Query(query),
 		).PrepareForEval(ctx)
 		if err != nil {
 			return nil, err
