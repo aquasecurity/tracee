@@ -2,6 +2,8 @@ module github.com/aquasecurity/tracee/tracee-ebpf
 
 go 1.16
 
+replace github.com/aquasecurity/tracee/tracee-ebpf/external => ./external/
+
 require (
 	github.com/aquasecurity/libbpfgo v0.2.1-libbpf-0.4.0
 	github.com/aquasecurity/tracee/tracee-ebpf/external v0.0.0-20210903145311-dfdb5d66613f
