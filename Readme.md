@@ -22,20 +22,23 @@ The full documentation of Tracee is available at [https://aquasecurity.github.io
 
 Before you proceed, make sure you follow the [minimum requirements for running Tracee](https://aquasecurity.github.io/tracee/dev/install/prerequisites/).
 
-If running on BTF enabled kernel:
+If running on __BTF enabled kernel__:
 
 ```bash
-docker run --name tracee --rm --privileged -it aquasec/tracee:latest
+docker run --name tracee --rm --pid=host --privileged -v /tmp/tracee:/tmp/tracee -it aquasec/tracee:latest
 ```
 
-Note: __Running bpf requires access to the kernel configuration file. Depending on the linux distribution this can be in either `/proc/config.gz` (which docker mounts by default) or `/boot/config-$(uname -r)` (which must be mounted explicitly)._
+> Note: Running on BTF enabled kernel requires access to the kernel configuration file. Depending on the linux distribution this can be in either `/proc/config.gz` (which docker mounts by default) or `/boot/config-$(uname -r)` (which must be mounted explicitly).
 
-If running on BTF disabled kernel see [here](https://aquasecurity.github.io/tracee/dev/install/prerequisites/):
+If running on __BTF disabled kernel__:
+```bash
+docker run --name tracee --rm --pid=host --privileged -v /tmp/tracee:/tmp/tracee -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -it aquasec/tracee:latest
+```
+
+> Note: You may need to change the volume mounts for the kernel headers based on your setup. See [Linux Headers](https://aquasecurity.github.io/tracee/install/headers.md) section for more info.
 
 This will run Tracee with default settings and start reporting detections to standard output.  
 In order to simulate a suspicious behavior, you can run `strace ls` in another terminal, which will trigger the "Anti-Debugging" signature, which is loaded by default.
-
-> Note: You may need to change the volume mounts for the kernel headers based on your setup. See [Linux Headers](https://aquasecurity.github.io/tracee/install/headers.md) section for more info.
 
 ## Trace
 
