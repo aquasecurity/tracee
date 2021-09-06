@@ -114,6 +114,7 @@ func main() {
 				}
 			} else {
 				fmt.Fprintf(os.Stderr, "KConfig: warning: could not check enabled kconfig features\n(%v)\n", err)
+				fmt.Fprintf(os.Stderr, "KConfig: warning: assuming kconfig values, might have unexpected behavior\n")
 			}
 
 			// OS release information
