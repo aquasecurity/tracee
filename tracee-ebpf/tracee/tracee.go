@@ -717,16 +717,21 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// add here all kconfig variables used within tracee.bpf.c
-
 	var value helpers.KernelConfigOptionValue
 	key := CONFIG_ARCH_HAS_SYSCALL_WRAPPER
 	keyString := "CONFIG_ARCH_HAS_SYSCALL_WRAPPER"
+	if err = t.config.KernelConfig.AddCustomKernelConfig(key, keyString); err != nil {
+		return err
+	}
 
-	if err := t.config.KernelConfig.AddCustomKernelConfigs(key, keyString); err != nil {
-		// an error here means there is no valid kconfig file set: do not fail, assume values
-		value = 1
+	// re-load kconfig and get just added kconfig option values
+	if err = t.config.KernelConfig.LoadKernelConfig(); err != nil { // invalid kconfig file: assume values then
+		if t.config.Debug {
+			fmt.Fprintf(os.Stderr, "KConfig: warning: assuming kconfig values, might have unexpected behavior\n")
+		}
+		value = helpers.BUILTIN
 	} else {
-		value, _ = t.config.KernelConfig.GetValue(key) // undefined is not an error here, it might happen
+		value = t.config.KernelConfig.GetValue(key) // undefined, builtin OR module
 	}
 
 	err = bpfKConfigMap.Update(unsafe.Pointer(&key), unsafe.Pointer(&value))
