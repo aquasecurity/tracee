@@ -13,6 +13,13 @@ __rego_metadoc_all__[id] = resp {
 		id := resp.id
 }
 
+tracee_selected_events[eventSelector] {
+	eventSelector := {
+		"source": "tracee",
+		"name": "*"
+	}
+}
+
 # Returns the map of signature identifiers to signature selected events.
 tracee_selected_events_all[id] = resp {
 	some i

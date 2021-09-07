@@ -204,6 +204,7 @@ func (sig *RegoSignature) OnEvent(e types.Event) error {
 				})
 			}
 		case map[string]interface{}:
+			// TODO: Add parsing logic to take care of AIO map[string]interface{}
 			sig.cb(types.Finding{
 				Data:        v,
 				Context:     ee,
