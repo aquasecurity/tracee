@@ -53,20 +53,36 @@ func BenchmarkOnEventWithCodeInjectionSignature(b *testing.B) {
 
 func BenchmarkEngineWithCodeInjectionSignature(b *testing.B) {
 	benches := []struct {
-		name    string
-		sigFunc func() (types.Signature, error)
+		name           string
+		sigFunc        func() (types.Signature, error)
+		preparedEvents bool
 	}{
 		{
 			name:    "rego",
 			sigFunc: rego.NewCodeInjectionSignature,
 		},
 		{
+			name:           "rego + prepared events",
+			sigFunc:        rego.NewCodeInjectionSignature,
+			preparedEvents: true,
+		},
+		{
 			name:    "golang",
 			sigFunc: golang.NewCodeInjectionSignature,
 		},
 		{
+			name:           "golang + prepared events",
+			sigFunc:        golang.NewCodeInjectionSignature,
+			preparedEvents: true,
+		},
+		{
 			name:    "wasm",
 			sigFunc: wasm.NewCodeInjectionSignature,
+		},
+		{
+			name:           "wasm + prepared events",
+			sigFunc:        wasm.NewCodeInjectionSignature,
+			preparedEvents: true,
 		},
 	}
 
@@ -82,7 +98,7 @@ func BenchmarkEngineWithCodeInjectionSignature(b *testing.B) {
 				s, err := bc.sigFunc()
 				require.NoError(b, err, bc.name)
 
-				e, err := engine.NewEngine([]types.Signature{s}, inputs, output, os.Stderr)
+				e, err := engine.NewEngine([]types.Signature{s}, inputs, output, os.Stderr, bc.preparedEvents)
 				require.NoError(b, err, "constructing engine")
 				b.StartTimer()
 
@@ -95,12 +111,18 @@ func BenchmarkEngineWithCodeInjectionSignature(b *testing.B) {
 
 func BenchmarkEngineWithMultipleSignatures(b *testing.B) {
 	benches := []struct {
-		name     string
-		sigFuncs []func() (types.Signature, error)
+		name           string
+		sigFuncs       []func() (types.Signature, error)
+		preparedEvents bool
 	}{
 		{
 			name:     "rego and golang",
 			sigFuncs: []func() (types.Signature, error){rego.NewCodeInjectionSignature, golang.NewCodeInjectionSignature},
+		},
+		{
+			name:           "rego and golang, with prepared events",
+			sigFuncs:       []func() (types.Signature, error){rego.NewCodeInjectionSignature, golang.NewCodeInjectionSignature},
+			preparedEvents: true,
 		},
 		{
 			name:     "wasm and golang",
@@ -131,7 +153,7 @@ func BenchmarkEngineWithMultipleSignatures(b *testing.B) {
 				inputs := ProduceEventsInMemory(inputEventsCount)
 				output := make(chan types.Finding, inputEventsCount*len(sigs))
 
-				e, err := engine.NewEngine(sigs, inputs, output, os.Stderr)
+				e, err := engine.NewEngine(sigs, inputs, output, os.Stderr, bc.preparedEvents)
 				require.NoError(b, err, "constructing engine")
 				b.StartTimer()
 
@@ -191,7 +213,7 @@ func BenchmarkEngineWithNSignatures(b *testing.B) {
 					b.StopTimer()
 					inputs := ProduceEventsInMemory(inputEventsCount)
 					output := make(chan types.Finding, inputEventsCount*len(sigs))
-					e, err := engine.NewEngine(sigs, inputs, output, os.Stderr)
+					e, err := engine.NewEngine(sigs, inputs, output, os.Stderr, false)
 					require.NoError(b, err, "constructing engine")
 					b.StartTimer()
 

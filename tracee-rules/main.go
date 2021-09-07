@@ -97,7 +97,7 @@ func main() {
 			if err != nil {
 				return err
 			}
-			e, err := engine.NewEngine(sigs, inputs, output, os.Stderr)
+			e, err := engine.NewEngine(sigs, inputs, output, os.Stderr, c.Bool("rego-enable-parsed-events"))
 			if err != nil {
 				return fmt.Errorf("constructing engine: %w", err)
 			}
@@ -145,6 +145,10 @@ func main() {
 				Name:  "pprof-addr",
 				Usage: "listening address of the pprof endpoints server",
 				Value: ":7777",
+			},
+			&cli.BoolFlag{
+				Name:  "rego-enable-parsed-events",
+				Usage: "enables pre parsing of input events to rego prior to evaluation",
 			},
 		},
 	}
