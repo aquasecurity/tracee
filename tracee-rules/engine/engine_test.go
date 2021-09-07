@@ -388,10 +388,10 @@ func TestConsumeSources(t *testing.T) {
 				return nil
 			}
 
-			e, err := NewEngine(sigs, inputs, outputChan, logger)
+			e, err := NewEngine(sigs, inputs, outputChan, logger, tc.enableParsedEvent)
 			require.NoError(t, err, "constructing engine")
 			go func() {
-				e.Start(tc.enableParsedEvent, done)
+				e.Start(done)
 			}()
 
 			// send a test event

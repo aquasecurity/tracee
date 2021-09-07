@@ -97,11 +97,11 @@ func main() {
 			if err != nil {
 				return err
 			}
-			e, err := engine.NewEngine(sigs, inputs, output, os.Stderr)
+			e, err := engine.NewEngine(sigs, inputs, output, os.Stderr, c.Bool("enable-parsed-events"))
 			if err != nil {
 				return fmt.Errorf("constructing engine: %w", err)
 			}
-			e.Start(c.Bool("enable-parsed-events"), sigHandler())
+			e.Start(sigHandler())
 			return nil
 		},
 		Flags: []cli.Flag{

@@ -28,6 +28,7 @@ type Engine struct {
 	inputs          EventSources
 	output          chan types.Finding
 	waitGroup       sync.WaitGroup
+	parsedEvents    bool
 }
 
 //EventSources is a bundle of input sources used to configure the Engine
@@ -37,7 +38,7 @@ type EventSources struct {
 
 // NewEngine creates a new rules-engine with the given arguments
 // inputs and outputs are given as channels created by the consumer
-func NewEngine(sigs []types.Signature, sources EventSources, output chan types.Finding, logWriter io.Writer) (*Engine, error) {
+func NewEngine(sigs []types.Signature, sources EventSources, output chan types.Finding, logWriter io.Writer, parsedEvents bool) (*Engine, error) {
 	if sources.Tracee == nil || output == nil || logWriter == nil {
 		return nil, fmt.Errorf("nil input received")
 	}
@@ -46,6 +47,7 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 	engine.logger = *log.New(logWriter, "", 0)
 	engine.inputs = sources
 	engine.output = output
+	engine.parsedEvents = parsedEvents
 	engine.signaturesMutex.Lock()
 	engine.signatures = make(map[types.Signature]chan types.Event)
 	engine.signaturesIndex = make(map[types.SignatureEventSelector][]types.Signature)
@@ -110,14 +112,14 @@ func signatureStart(signature types.Signature, c chan types.Event, wg *sync.Wait
 // it runs continuously until stopped by the done channel
 // once done, it cleans all internal resources, which means the engine is not reusable
 // note that the input and output channels are created by the consumer and therefore are not closed
-func (engine *Engine) Start(parsedEvents bool, done chan bool) {
+func (engine *Engine) Start(done chan bool) {
 	defer engine.unloadAllSignatures()
 	engine.signaturesMutex.RLock()
 	for s, c := range engine.signatures {
 		go signatureStart(s, c, &engine.waitGroup)
 	}
 	engine.signaturesMutex.RUnlock()
-	engine.consumeSources(parsedEvents, done)
+	engine.consumeSources(done)
 }
 
 func (engine *Engine) unloadAllSignatures() {
@@ -149,7 +151,7 @@ func (engine *Engine) checkCompletion() bool {
 
 // consumeSources starts consuming the input sources
 // it runs continuously until stopped by the done channel
-func (engine *Engine) consumeSources(parsedEvents bool, done <-chan bool) {
+func (engine *Engine) consumeSources(done <-chan bool) {
 	for {
 		select {
 		case event, ok := <-engine.inputs.Tracee:
@@ -184,16 +186,16 @@ func (engine *Engine) consumeSources(parsedEvents bool, done <-chan bool) {
 
 				eventOrigin := analyzeEventOrigin(traceeEvt)
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName, Origin: eventOrigin}] {
-					engine.dispatchEvent(s, event.(tracee.Event), parsedEvents)
+					engine.dispatchEvent(s, event.(tracee.Event), engine.parsedEvents)
 				}
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName, Origin: ALL_EVENT_ORIGINS}] {
-					engine.dispatchEvent(s, event.(tracee.Event), parsedEvents)
+					engine.dispatchEvent(s, event.(tracee.Event), engine.parsedEvents)
 				}
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: ALL_EVENT_TYPES, Origin: eventOrigin}] {
-					engine.dispatchEvent(s, event.(tracee.Event), parsedEvents)
+					engine.dispatchEvent(s, event.(tracee.Event), engine.parsedEvents)
 				}
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: ALL_EVENT_TYPES, Origin: ALL_EVENT_ORIGINS}] {
-					engine.dispatchEvent(s, event.(tracee.Event), parsedEvents)
+					engine.dispatchEvent(s, event.(tracee.Event), engine.parsedEvents)
 				}
 				engine.signaturesMutex.RUnlock()
 			}
