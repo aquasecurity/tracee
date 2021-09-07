@@ -186,16 +186,16 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 
 				eventOrigin := analyzeEventOrigin(traceeEvt)
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName, Origin: eventOrigin}] {
-					engine.dispatchEvent(s, event.(tracee.Event), engine.parsedEvents)
+					engine.dispatchEvent(s, traceeEvt, engine.parsedEvents)
 				}
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName, Origin: ALL_EVENT_ORIGINS}] {
-					engine.dispatchEvent(s, event.(tracee.Event), engine.parsedEvents)
+					engine.dispatchEvent(s, traceeEvt, engine.parsedEvents)
 				}
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: ALL_EVENT_TYPES, Origin: eventOrigin}] {
-					engine.dispatchEvent(s, event.(tracee.Event), engine.parsedEvents)
+					engine.dispatchEvent(s, traceeEvt, engine.parsedEvents)
 				}
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: ALL_EVENT_TYPES, Origin: ALL_EVENT_ORIGINS}] {
-					engine.dispatchEvent(s, event.(tracee.Event), engine.parsedEvents)
+					engine.dispatchEvent(s, traceeEvt, engine.parsedEvents)
 				}
 				engine.signaturesMutex.RUnlock()
 			}
