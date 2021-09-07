@@ -447,7 +447,7 @@ func TestGetSelectedEvents(t *testing.T) {
 			},
 		},
 	}
-	e, err := NewEngine(sigs, EventSources{Tracee: make(chan types.Event)}, make(chan types.Finding), &bytes.Buffer{})
+	e, err := NewEngine(sigs, EventSources{Tracee: make(chan types.Event)}, make(chan types.Finding), &bytes.Buffer{}, false)
 	require.NoError(t, err, "constructing engine")
 	se := e.GetSelectedEvents()
 	expected := []types.SignatureEventSelector{
