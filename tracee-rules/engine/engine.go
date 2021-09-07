@@ -186,16 +186,16 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 
 				eventOrigin := analyzeEventOrigin(traceeEvt)
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName, Origin: eventOrigin}] {
-					engine.dispatchEvent(s, traceeEvt, engine.parsedEvents)
+					engine.dispatchEvent(s, traceeEvt)
 				}
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName, Origin: ALL_EVENT_ORIGINS}] {
-					engine.dispatchEvent(s, traceeEvt, engine.parsedEvents)
+					engine.dispatchEvent(s, traceeEvt)
 				}
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: ALL_EVENT_TYPES, Origin: eventOrigin}] {
-					engine.dispatchEvent(s, traceeEvt, engine.parsedEvents)
+					engine.dispatchEvent(s, traceeEvt)
 				}
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: ALL_EVENT_TYPES, Origin: ALL_EVENT_ORIGINS}] {
-					engine.dispatchEvent(s, traceeEvt, engine.parsedEvents)
+					engine.dispatchEvent(s, traceeEvt)
 				}
 				engine.signaturesMutex.RUnlock()
 			}
@@ -205,10 +205,10 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 	}
 }
 
-func (engine *Engine) dispatchEvent(s types.Signature, event tracee.Event, parsedEvent bool) {
+func (engine *Engine) dispatchEvent(s types.Signature, event tracee.Event) {
 	switch {
 	case strings.Contains(reflect.TypeOf(s).String(), "rego"):
-		if parsedEvent {
+		if engine.parsedEvents {
 			pe, err := ToParsedEvent(event)
 			if err != nil {
 				engine.logger.Printf("error converting tracee event to OPA ast.Value: %v", err)
