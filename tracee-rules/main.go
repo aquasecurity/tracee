@@ -97,7 +97,7 @@ func main() {
 			if err != nil {
 				return err
 			}
-			e, err := engine.NewEngine(sigs, inputs, output, os.Stderr, c.Bool("enable-parsed-events"))
+			e, err := engine.NewEngine(sigs, inputs, output, os.Stderr, c.Bool("rego-enable-parsed-events"))
 			if err != nil {
 				return fmt.Errorf("constructing engine: %w", err)
 			}
@@ -147,7 +147,7 @@ func main() {
 				Value: ":7777",
 			},
 			&cli.BoolFlag{
-				Name:  "enable-parsed-events",
+				Name:  "rego-enable-parsed-events",
 				Usage: "enables pre parsing of input events to rego prior to evaluation",
 			},
 		},
