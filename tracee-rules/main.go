@@ -59,7 +59,7 @@ func main() {
 				}()
 			}
 
-			sigs, err := getSignatures(c.Bool("partial-eval"), c.String("rules-dir"), c.StringSlice("rules"))
+			sigs, err := getSignatures(c.Bool("rego-partial-eval"), c.String("rules-dir"), c.StringSlice("rules"))
 			if err != nil {
 				return err
 			}
@@ -114,7 +114,7 @@ func main() {
 				Usage: "directory where to search for rules in OPA (.rego) or Go plugin (.so) formats",
 			},
 			&cli.BoolFlag{
-				Name:  "partial-eval",
+				Name:  "rego-partial-eval",
 				Usage: "enable partial evaluation of rego rules",
 			},
 			&cli.BoolFlag{
