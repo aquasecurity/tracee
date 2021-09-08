@@ -35,7 +35,7 @@ const queryMetadata string = "data.%s.__rego_metadoc__"
 const packageNameRegex string = `package\s.*`
 
 // NewRegoSignature creates a new RegoSignature with the provided rego code string
-func NewRegoSignature(partialEval bool, regoCodes ...string) (types.Signature, error) {
+func NewRegoSignature(target string, partialEval bool, regoCodes ...string) (types.Signature, error) {
 	var err error
 	res := RegoSignature{}
 	regoMap := make(map[string]string)
@@ -65,6 +65,7 @@ func NewRegoSignature(partialEval bool, regoCodes ...string) (types.Signature, e
 	ctx := context.Background()
 	if partialEval {
 		pr, err := rego.New(
+
 			rego.Compiler(res.compiledRego),
 			rego.Query(fmt.Sprintf(queryMatch, pkgName)),
 		).PartialResult(ctx)
@@ -72,12 +73,13 @@ func NewRegoSignature(partialEval bool, regoCodes ...string) (types.Signature, e
 			return nil, err
 		}
 
-		res.matchPQ, err = pr.Rego().PrepareForEval(ctx)
+		res.matchPQ, err = pr.Rego(rego.Target(target)).PrepareForEval(ctx)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		res.matchPQ, err = rego.New(
+			rego.Target(target),
 			rego.Compiler(res.compiledRego),
 			rego.Query(fmt.Sprintf(queryMatch, pkgName)),
 		).PrepareForEval(ctx)
