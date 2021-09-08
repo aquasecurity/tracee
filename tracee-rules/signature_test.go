@@ -15,7 +15,7 @@ import (
 )
 
 func Test_getSignatures(t *testing.T) {
-	sigs, err := getSignatures("signatures/rego", []string{"TRC-2"})
+	sigs, err := getSignatures(false, "signatures/rego", []string{"TRC-2"})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(sigs))
 
@@ -77,7 +77,7 @@ func Test_findRegoSigs(t *testing.T) {
 	require.NoError(t, err)
 
 	// find rego signatures
-	sigs, err := findRegoSigs(testRoot)
+	sigs, err := findRegoSigs(false, testRoot)
 	require.NoError(t, err)
 
 	assert.Equal(t, len(sigs), 2)

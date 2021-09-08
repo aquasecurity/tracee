@@ -19,9 +19,9 @@ var (
 )
 
 func NewCodeInjectionSignature() (types.Signature, error) {
-	return regosig.NewRegoSignature(codeInjectionRego, helpersRego)
+	return regosig.NewRegoSignature(false, codeInjectionRego, helpersRego)
 }
 
 func NewAntiDebuggingSignature() (types.Signature, error) {
-	return regosig.NewRegoSignature(antiDebuggingPtracemeRego, helpersRego)
+	return regosig.NewRegoSignature(false, antiDebuggingPtracemeRego, helpersRego)
 }

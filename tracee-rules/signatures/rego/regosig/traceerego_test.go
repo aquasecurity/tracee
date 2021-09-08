@@ -35,7 +35,7 @@ __rego_metadoc__ := {
 }
 `
 
-	sig, err := NewRegoSignature(testRegoMeta)
+	sig, err := NewRegoSignature(false, testRegoMeta)
 	if err != nil {
 		t.Error(err)
 	}
@@ -66,7 +66,7 @@ tracee_selected_events[eventSelector] {
 	}
 }
 `
-	sig, err := NewRegoSignature(testRegoSelectedEvents)
+	sig, err := NewRegoSignature(false, testRegoSelectedEvents)
 	if err != nil {
 		t.Error(err)
 	}
@@ -119,7 +119,7 @@ tracee_match {
 		},
 	}
 	for _, st := range sts {
-		sig, err := NewRegoSignature(testRegoBool)
+		sig, err := NewRegoSignature(false, testRegoBool)
 		if err != nil {
 			t.Error(err)
 		}
@@ -229,7 +229,7 @@ tracee_match = res {
 		},
 	}
 	for _, st := range sts {
-		sig, err := NewRegoSignature(testRegoObj)
+		sig, err := NewRegoSignature(false, testRegoObj)
 		if err != nil {
 			t.Error(err)
 		}
@@ -268,7 +268,7 @@ func TestNewRegoSignature(t *testing.T) {
 
 	// assert basic attributes
 	for i, rc := range testRegoCodes {
-		gotSig, err := NewRegoSignature(rc)
+		gotSig, err := NewRegoSignature(false, rc)
 		require.NoError(t, err)
 
 		gotMetadata, err := gotSig.GetMetadata()
