@@ -3,6 +3,8 @@ package rego
 import (
 	_ "embed"
 
+	"github.com/open-policy-agent/opa/compile"
+
 	"github.com/aquasecurity/tracee/tracee-rules/signatures/rego/regosig"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
@@ -19,9 +21,9 @@ var (
 )
 
 func NewCodeInjectionSignature() (types.Signature, error) {
-	return regosig.NewRegoSignature(false, codeInjectionRego, helpersRego)
+	return regosig.NewRegoSignature(compile.TargetRego, false, codeInjectionRego, helpersRego)
 }
 
 func NewAntiDebuggingSignature() (types.Signature, error) {
-	return regosig.NewRegoSignature(false, antiDebuggingPtracemeRego, helpersRego)
+	return regosig.NewRegoSignature(compile.TargetRego, false, antiDebuggingPtracemeRego, helpersRego)
 }

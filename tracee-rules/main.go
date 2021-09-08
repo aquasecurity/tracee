@@ -9,8 +9,12 @@ import (
 	"net/http/pprof"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
+
+	"github.com/open-policy-agent/opa/compile"
+	_ "github.com/open-policy-agent/opa/features/wasm"
 
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
@@ -59,7 +63,17 @@ func main() {
 				}()
 			}
 
-			sigs, err := getSignatures(c.Bool("rego-partial-eval"), c.String("rules-dir"), c.StringSlice("rules"))
+			var target string
+			switch strings.ToLower(c.String("rego-runtime-target")) {
+			case "wasm":
+				target = compile.TargetWasm
+			case "rego":
+				target = compile.TargetRego
+			default:
+				return errors.New("invalid target specified " + target)
+			}
+
+			sigs, err := getSignatures(target, c.Bool("rego-partial-eval"), c.String("rules-dir"), c.StringSlice("rules"))
 			if err != nil {
 				return err
 			}
@@ -153,6 +167,11 @@ func main() {
 			&cli.BoolFlag{
 				Name:  "rego-enable-parsed-events",
 				Usage: "enables pre parsing of input events to rego prior to evaluation",
+			},
+			&cli.StringFlag{
+				Name:  "rego-runtime-target",
+				Usage: "select which runtime target to use for evaluation of rego rules: rego, wasm",
+				Value: "rego",
 			},
 		},
 	}

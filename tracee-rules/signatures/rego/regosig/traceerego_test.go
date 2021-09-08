@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/open-policy-agent/opa/compile"
+
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
 	"github.com/aquasecurity/tracee/tracee-rules/signatures/signaturestest"
@@ -35,7 +37,7 @@ __rego_metadoc__ := {
 }
 `
 
-	sig, err := NewRegoSignature(false, testRegoMeta)
+	sig, err := NewRegoSignature(compile.TargetRego, false, testRegoMeta)
 	if err != nil {
 		t.Error(err)
 	}
@@ -66,7 +68,7 @@ tracee_selected_events[eventSelector] {
 	}
 }
 `
-	sig, err := NewRegoSignature(false, testRegoSelectedEvents)
+	sig, err := NewRegoSignature(compile.TargetRego, false, testRegoSelectedEvents)
 	if err != nil {
 		t.Error(err)
 	}
@@ -119,7 +121,7 @@ tracee_match {
 		},
 	}
 	for _, st := range sts {
-		sig, err := NewRegoSignature(false, testRegoBool)
+		sig, err := NewRegoSignature(compile.TargetRego, false, testRegoBool)
 		if err != nil {
 			t.Error(err)
 		}
@@ -229,7 +231,7 @@ tracee_match = res {
 		},
 	}
 	for _, st := range sts {
-		sig, err := NewRegoSignature(false, testRegoObj)
+		sig, err := NewRegoSignature(compile.TargetRego, false, testRegoObj)
 		if err != nil {
 			t.Error(err)
 		}
@@ -268,7 +270,7 @@ func TestNewRegoSignature(t *testing.T) {
 
 	// assert basic attributes
 	for i, rc := range testRegoCodes {
-		gotSig, err := NewRegoSignature(false, rc)
+		gotSig, err := NewRegoSignature(compile.TargetRego, false, rc)
 		require.NoError(t, err)
 
 		gotMetadata, err := gotSig.GetMetadata()

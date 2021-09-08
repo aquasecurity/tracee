@@ -9,13 +9,15 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/open-policy-agent/opa/compile"
+
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_getSignatures(t *testing.T) {
-	sigs, err := getSignatures(false, "signatures/rego", []string{"TRC-2"})
+	sigs, err := getSignatures(compile.TargetRego, false, "signatures/rego", []string{"TRC-2"})
 	require.NoError(t, err)
 	require.Equal(t, 1, len(sigs))
 
@@ -77,7 +79,7 @@ func Test_findRegoSigs(t *testing.T) {
 	require.NoError(t, err)
 
 	// find rego signatures
-	sigs, err := findRegoSigs(false, testRoot)
+	sigs, err := findRegoSigs(compile.TargetRego, false, testRoot)
 	require.NoError(t, err)
 
 	assert.Equal(t, len(sigs), 2)
