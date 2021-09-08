@@ -44,7 +44,7 @@ VERSION_ID := $(shell grep -m 1 'VERSION_ID=' /usr/lib/os-release | cut -d '=' -
 CENTOS_MERGED_RHEL := $(shell echo $(DIST_ID) | sed 's/centos/rhel/')
 ifeq ($(CENTOS_MERGED_RHEL), rhel)
 	RHEL_MAJOR := $(shell echo $(VERSION_ID) | cut -d '.' -f 1)
-	RHEL_MAJOR := $(shell echo $(VERSION_ID) | cut -d '.' -f 2)
+	RHEL_MINOR := $(shell echo $(VERSION_ID) | cut -d '.' -f 2)
 	RHEL_RELEASE_CODE := $(shell echo $$(($(RHEL_MAJOR) << 8 | $(RHEL_MINOR))))
 else
 	RHEL_RELEASE_CODE := 0
