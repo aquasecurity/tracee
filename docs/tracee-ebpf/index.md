@@ -6,7 +6,7 @@ In some cases, you might want to leverage Tracee's eBPF event collection capabil
 
 ## Quickstart
 
-Before you proceed, make sure you follow the [minimum requirements for running Tracee](install/prerequisites.md).
+Before you proceed, make sure you follow the [minimum requirements for running Tracee](../install/prerequisites.md).
 
 ```bash
 docker run --name tracee --rm --privileged -it aquasec/tracee:latest trace
