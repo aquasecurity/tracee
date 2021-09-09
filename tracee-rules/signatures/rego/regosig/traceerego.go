@@ -35,7 +35,7 @@ const queryMetadata string = "data.%s.__rego_metadoc__"
 const packageNameRegex string = `package\s.*`
 
 const (
-	queryMatchAll = "data.main.tracee_match_all"
+	queryMatchAll = "data.tracee_aio.tracee_match_all"
 )
 
 // NewRegoSignature creates a new RegoSignature with the provided rego code string
@@ -59,6 +59,10 @@ func NewRegoSignature(target string, partialEval bool, aioEnabled bool, regoCode
 			pkgName = regoModuleName
 		}
 		regoMap[regoModuleName] = regoCode
+	}
+
+	if aioEnabled {
+		pkgName = "tracee_aio"
 	}
 
 	res.compiledRego, err = ast.CompileModules(regoMap)
@@ -194,6 +198,12 @@ func (sig *RegoSignature) OnEvent(e types.Event) error {
 	}
 
 	if len(results) > 0 && len(results[0].Expressions) > 0 && results[0].Expressions[0].Value != nil {
+		// result set can be an empty set of length=1, so we need to check value
+		values, ok := results[0].Expressions[0].Value.(map[string]interface{})
+		if ok && len(values) <= 0 {
+			return nil
+		}
+
 		switch v := results[0].Expressions[0].Value.(type) {
 		case bool:
 			if v {
@@ -204,7 +214,6 @@ func (sig *RegoSignature) OnEvent(e types.Event) error {
 				})
 			}
 		case map[string]interface{}:
-			// TODO: Add parsing logic to take care of AIO map[string]interface{}
 			sig.cb(types.Finding{
 				Data:        v,
 				Context:     ee,

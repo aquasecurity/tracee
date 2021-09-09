@@ -81,7 +81,7 @@ func Test_findRegoSigs(t *testing.T) {
 			require.NoError(t, err)
 			gotSigs = append(gotSigs, gotMetadata.ID)
 		}
-		assert.ElementsMatch(t, []string{"FOO-1", "FOO-2", "TRC-2", "TRC-3", "TRC-4", "TRC-5", "TRC-6", "TRC-7", "TRC-AIO"}, gotSigs)
+		assert.ElementsMatch(t, []string{"TRC-AIO"}, gotSigs)
 	})
 
 }

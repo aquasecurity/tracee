@@ -1,4 +1,4 @@
-package main
+package tracee_aio
 
 __rego_metadoc__ := {
     "id": "TRC-AIO",

@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	_ "embed"
-
 	"io/fs"
 	"io/ioutil"
 	"log"
@@ -108,47 +107,84 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 		return nil
 	})
 
-	var res []types.Signature
-	filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+	// collect all regoCodes
+	var regoCodes []string
+	filepath.Walk(dir, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-
-		if !aioEnabled && isAIO(d.Name()) {
+		if info.IsDir() || !isRegoFile(info.Name()) || isHelper(info.Name()) || isRegoTest(info.Name()) {
 			return nil
 		}
-
-		if d.IsDir() || !isRegoFile(d.Name()) || isHelper(d.Name()) {
-			return nil
-		}
-
 		regoCode, err := ioutil.ReadFile(path)
 		if err != nil {
 			log.Printf("error reading file %s: %v", path, err)
 			return nil
 		}
-		sig, err := regosig.NewRegoSignature(target, partialEval, aioEnabled, append(regoHelpers, string(regoCode))...)
-		if err != nil {
-			newlineOffset := bytes.Index(regoCode, []byte("\n"))
-			if newlineOffset == -1 {
-				codeLength := len(regoCode)
-				if codeLength < 22 {
-					newlineOffset = codeLength
-				} else {
-					newlineOffset = 22
-				}
-			}
-			log.Printf("error creating rego signature with: %s: %v ", regoCode[0:newlineOffset], err)
-			return nil
-		}
-		res = append(res, sig)
+
+		regoCodes = append(regoCodes, string(regoCode))
 		return nil
 	})
+
+	var res []types.Signature
+	if aioEnabled {
+		sig, err := regosig.NewRegoSignature(target, partialEval, aioEnabled, append(regoHelpers, regoCodes...)...)
+		if err != nil {
+			log.Printf("error creating AIO rego signature: %s", err)
+			return nil, err
+		}
+		res = append(res, sig)
+	} else {
+		filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+
+			if !aioEnabled && isAIO(d.Name()) {
+				return nil
+			}
+
+			if d.IsDir() || !isRegoFile(d.Name()) || isHelper(d.Name()) {
+				return nil
+			}
+
+			regoCode, err := ioutil.ReadFile(path)
+			if err != nil {
+				log.Printf("error reading file %s: %v", path, err)
+				return nil
+			}
+			sig, err := regosig.NewRegoSignature(target, partialEval, aioEnabled, append(regoHelpers, string(regoCode))...)
+			if err != nil {
+				log.Printf("error creating rego signature with: %s: %v ", regoCode[0:handleRegoParsingError(regoCode)], err)
+				return nil
+			}
+			res = append(res, sig)
+			return nil
+		})
+	}
+
 	return res, nil
+}
+
+func handleRegoParsingError(regoCode []byte) int {
+	newlineOffset := bytes.Index(regoCode, []byte("\n"))
+	if newlineOffset == -1 {
+		codeLength := len(regoCode)
+		if codeLength < 22 {
+			newlineOffset = codeLength
+		} else {
+			newlineOffset = 22
+		}
+	}
+	return newlineOffset
 }
 
 func isRegoFile(name string) bool {
 	return filepath.Ext(name) == ".rego"
+}
+
+func isRegoTest(name string) bool {
+	return strings.Contains(name, "test")
 }
 
 func isHelper(name string) bool {
