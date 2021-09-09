@@ -248,6 +248,7 @@ Copyright (C) Aqua Security inc.
 #define DEV_NULL_STR    0
 
 #define CONT_ID_LEN 12
+#define CONT_ID_MIN_FULL_LEN 64
 
 #ifndef CORE
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 2, 0)
@@ -2553,20 +2554,26 @@ SEC("raw_tracepoint/cgroup_attach_task")
 int tracepoint__cgroup__cgroup_attach_task(struct bpf_raw_tracepoint_args *ctx)
 {
     // Note: we don't place should_trace() here, so we can keep track of the cgroups in the system
+    char cgroup_dirname_buffer[CONT_ID_MIN_FULL_LEN];
     container_id_t container_id = {0};
     struct cgroup *dst_cgrp = (struct cgroup*)ctx->args[0];
     struct task_struct *task = (struct task_struct*)ctx->args[2];
     const char *cgrp_dirname = get_cgroup_dirname(dst_cgrp);
 
-    bpf_probe_read_str(&container_id.id, CONT_ID_LEN+1, cgrp_dirname);
+    // Only update container ID for names longer than 64-bytes.
+    // Container's cgroup dirname should contain 64-bytes of hexadecimal number, so a name smaller than 64-bytes
+    // can't be a real container's name (for example, "docker.service").
+    if (bpf_probe_read_str(&cgroup_dirname_buffer, CONT_ID_MIN_FULL_LEN, cgrp_dirname) == CONT_ID_MIN_FULL_LEN) {
+        bpf_probe_read_str(&container_id.id, CONT_ID_LEN+1, cgrp_dirname);
 
-    if (has_prefix("docker-", (char*)&container_id.id, 8))
-        bpf_probe_read_str(&container_id.id, CONT_ID_LEN+1, cgrp_dirname+7);
+        if (has_prefix("docker-", (char*)&container_id.id, 8))
+            bpf_probe_read_str(&container_id.id, CONT_ID_LEN+1, cgrp_dirname+7);
 
-    // Only update pid_to_cont_id_map for this pid if no element already exists.
-    // this way, we only keep track of the first level in the cgroup hierarchy
-    int pid = get_task_host_pid(task);
-    bpf_map_update_elem(&pid_to_cont_id_map, &pid, &container_id.id, BPF_NOEXIST);
+        // Only update pid_to_cont_id_map for this pid if no element already exists.
+        // this way, we only keep track of the first level in the cgroup hierarchy
+        int pid = get_task_host_pid(task);
+        bpf_map_update_elem(&pid_to_cont_id_map, &pid, &container_id.id, BPF_NOEXIST);
+    }
 
     if (event_chosen(CGROUP_ATTACH_TASK) && should_trace()) {
         buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
