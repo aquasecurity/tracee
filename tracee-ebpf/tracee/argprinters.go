@@ -235,7 +235,7 @@ func ParseKernelReadFileId(id int32) (string, error) {
 			7: "x509-certificate",
 		}
 	} else {
-		return "", fmt.Errorf("unhandled kernel version: %s", osInfo)
+		return "", fmt.Errorf("unhandled kernel version: %v", osInfo)
 	}
 
 	kernelReadFileIdStr, _ := kernelReadFileIdStrs[id]
