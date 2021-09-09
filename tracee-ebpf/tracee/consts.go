@@ -156,6 +156,7 @@ const (
 	SchedProcessForkEventID
 	SchedProcessExecEventID
 	SchedProcessExitEventID
+	SchedSwitchEventID
 	DoExitEventID
 	CapCapableEventID
 	VfsWriteEventID
@@ -553,6 +554,7 @@ var EventsIDToEvent = map[int32]EventConfig{
 	SchedProcessForkEventID:       {ID: SchedProcessForkEventID, ID32Bit: sys32undefined, Name: "sched_process_fork", Probes: []probe{{event: "sched:sched_process_fork", attach: rawTracepoint, fn: "tracepoint__sched__sched_process_fork"}}, EssentialEvent: true, Sets: []string{}},
 	SchedProcessExecEventID:       {ID: SchedProcessExecEventID, ID32Bit: sys32undefined, Name: "sched_process_exec", Probes: []probe{{event: "sched:sched_process_exec", attach: rawTracepoint, fn: "tracepoint__sched__sched_process_exec"}}, Sets: []string{"default", "proc"}},
 	SchedProcessExitEventID:       {ID: SchedProcessExitEventID, ID32Bit: sys32undefined, Name: "sched_process_exit", Probes: []probe{{event: "sched:sched_process_exit", attach: rawTracepoint, fn: "tracepoint__sched__sched_process_exit"}}, EssentialEvent: true, Sets: []string{"default", "proc", "proc_life"}},
+	SchedSwitchEventID:            {ID: SchedSwitchEventID, ID32Bit: sys32undefined, Name: "sched_switch", Probes: []probe{{event: "sched:sched_switch", attach: rawTracepoint, fn: "tracepoint__sched__sched_switch"}}, Sets: []string{}},
 	DoExitEventID:                 {ID: DoExitEventID, ID32Bit: sys32undefined, Name: "do_exit", Probes: []probe{{event: "do_exit", attach: kprobe, fn: "trace_do_exit"}}, Sets: []string{"proc", "proc_life"}},
 	CapCapableEventID:             {ID: CapCapableEventID, ID32Bit: sys32undefined, Name: "cap_capable", Probes: []probe{{event: "cap_capable", attach: kprobe, fn: "trace_cap_capable"}}, Sets: []string{"default"}},
 	VfsWriteEventID:               {ID: VfsWriteEventID, ID32Bit: sys32undefined, Name: "vfs_write", Probes: []probe{{event: "vfs_write", attach: kprobe, fn: "trace_vfs_write"}, {event: "vfs_write", attach: kretprobe, fn: "trace_ret_vfs_write"}}, Sets: []string{}},
@@ -926,6 +928,7 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	SchedProcessForkEventID:       {{Type: "int", Name: "parent_tid"}, {Type: "int", Name: "parent_ns_tid"}, {Type: "int", Name: "child_tid"}, {Type: "int", Name: "child_ns_tid"}},
 	SchedProcessExecEventID:       {{Type: "const char *", Name: "cmdpath"}, {Type: "const char *", Name: "pathname"}, {Type: "const char*const*", Name: "argv"}, {Type: "const char*const*", Name: "env"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}, {Type: "int", Name: "invoked_from_kernel"}},
 	SchedProcessExitEventID:       {},
+	SchedSwitchEventID:            {{Type: "int", Name: "cpu"}, {Type: "int", Name: "prev_tid"}, {Type: "const char*", Name: "prev_comm"}, {Type: "int", Name: "next_tid"}, {Type: "const char*", Name: "next_comm"}},
 	DoExitEventID:                 {},
 	CapCapableEventID:             {{Type: "int", Name: "cap"}, {Type: "int", Name: "syscall"}},
 	VfsWriteEventID:               {{Type: "const char*", Name: "pathname"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}, {Type: "size_t", Name: "count"}, {Type: "off_t", Name: "pos"}},
