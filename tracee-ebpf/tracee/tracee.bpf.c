@@ -176,29 +176,30 @@ Copyright (C) Aqua Security inc.
 #define SCHED_PROCESS_FORK          1002
 #define SCHED_PROCESS_EXEC          1003
 #define SCHED_PROCESS_EXIT          1004
-#define DO_EXIT                     1005
-#define CAP_CAPABLE                 1006
-#define VFS_WRITE                   1007
-#define VFS_WRITEV                  1008
-#define MEM_PROT_ALERT              1009
-#define COMMIT_CREDS                1010
-#define SWITCH_TASK_NS              1011
-#define MAGIC_WRITE                 1012
-#define CGROUP_ATTACH_TASK          1013
-#define SECURITY_BPRM_CHECK         1014
-#define SECURITY_FILE_OPEN          1015
-#define SECURITY_INODE_UNLINK       1016
-#define SECURITY_SOCKET_CREATE      1017
-#define SECURITY_SOCKET_LISTEN      1018
-#define SECURITY_SOCKET_CONNECT     1019
-#define SECURITY_SOCKET_ACCEPT      1020
-#define SECURITY_SOCKET_BIND        1021
-#define SECURITY_SB_MOUNT           1022
-#define SECURITY_BPF                1023
-#define SECURITY_BPF_MAP            1024
-#define SECURITY_KERNEL_READ_FILE   1025
-#define SECURITY_INODE_MKNOD        1026
-#define MAX_EVENT_ID                1027
+#define SCHED_SWITCH                1005
+#define DO_EXIT                     1006
+#define CAP_CAPABLE                 1007
+#define VFS_WRITE                   1008
+#define VFS_WRITEV                  1009
+#define MEM_PROT_ALERT              1010
+#define COMMIT_CREDS                1011
+#define SWITCH_TASK_NS              1012
+#define MAGIC_WRITE                 1013
+#define CGROUP_ATTACH_TASK          1014
+#define SECURITY_BPRM_CHECK         1015
+#define SECURITY_FILE_OPEN          1016
+#define SECURITY_INODE_UNLINK       1017
+#define SECURITY_SOCKET_CREATE      1018
+#define SECURITY_SOCKET_LISTEN      1019
+#define SECURITY_SOCKET_CONNECT     1020
+#define SECURITY_SOCKET_ACCEPT      1021
+#define SECURITY_SOCKET_BIND        1022
+#define SECURITY_SB_MOUNT           1023
+#define SECURITY_BPF                1024
+#define SECURITY_BPF_MAP            1025
+#define SECURITY_KERNEL_READ_FILE   1026
+#define SECURITY_INODE_MKNOD        1027
+#define MAX_EVENT_ID                1028
 
 #define NET_PACKET                      0
 #define DEBUG_NET_SECURITY_BIND         1
@@ -2485,6 +2486,45 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     }
 
     events_perf_submit(ctx);
+    return 0;
+}
+
+// include/trace/events/sched.h:
+// TP_PROTO(bool preempt, struct task_struct *prev, struct task_struct *next),
+SEC("raw_tracepoint/sched_switch")
+int tracepoint__sched__sched_switch(struct bpf_raw_tracepoint_args *ctx)
+{
+    if (!should_trace())
+        return 0;
+
+    if (!event_chosen(SCHED_SWITCH))
+        return 0;
+
+    buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
+    if (submit_p == NULL)
+        return 0;
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+
+    context_t context = init_and_save_context(ctx, submit_p, SCHED_SWITCH, 5 /*argnum*/, 0 /*ret*/);
+    u64 *tags = bpf_map_lookup_elem(&params_names_map, &context.eventid);
+    if (!tags) {
+        return -1;
+    }
+
+    struct task_struct *prev = (struct task_struct*)ctx->args[1];
+    struct task_struct *next = (struct task_struct*)ctx->args[2];
+    int prev_pid = get_task_host_pid(prev);
+    int next_pid = get_task_host_pid(next);
+    int cpu = bpf_get_smp_processor_id();
+
+    save_to_submit_buf(submit_p, (void*)&cpu, sizeof(int), INT_T, DEC_ARG(0, *tags));
+    save_to_submit_buf(submit_p, (void*)&prev_pid, sizeof(int), INT_T, DEC_ARG(1, *tags));
+    save_str_to_buf(submit_p, prev->comm, DEC_ARG(2, *tags));
+    save_to_submit_buf(submit_p, (void*)&next_pid, sizeof(int), INT_T, DEC_ARG(3, *tags));
+    save_str_to_buf(submit_p, next->comm, DEC_ARG(4, *tags));
+
+    events_perf_submit(ctx);
+
     return 0;
 }
 
