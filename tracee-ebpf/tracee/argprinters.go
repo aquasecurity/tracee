@@ -198,7 +198,7 @@ func ParseKernelReadFileId(id int32) (string, error) {
 
 	var kernelReadFileIdStrs map[int32]string
 
-	if osInfo.CompareOSBaseKernelRelease("5.9.2") == -1 {
+	if osInfo.CompareOSBaseKernelRelease("5.9.3") != 1 {
 		// kernel version: >=5.9.3
 		kernelReadFileIdStrs = map[int32]string{
 			0: "unknown",
@@ -209,7 +209,7 @@ func ParseKernelReadFileId(id int32) (string, error) {
 			5: "security-policy",
 			6: "x509-certificate",
 		}
-	} else if osInfo.CompareOSBaseKernelRelease("5.6.19") == -1 && osInfo.CompareOSBaseKernelRelease("5.9.3") == 1 && osInfo.CompareOSBaseKernelRelease("5.8.18") != 0 {
+	} else if osInfo.CompareOSBaseKernelRelease("5.7.0") != 1 && osInfo.CompareOSBaseKernelRelease("5.9.2") != -1 && osInfo.CompareOSBaseKernelRelease("5.8.18") != 0 {
 		// kernel version: >=5.7 && <=5.9.2 && !=5.8.18
 		kernelReadFileIdStrs = map[int32]string{
 			0: "unknown",
@@ -222,7 +222,7 @@ func ParseKernelReadFileId(id int32) (string, error) {
 			7: "security-policy",
 			8: "x509-certificate",
 		}
-	} else if osInfo.CompareOSBaseKernelRelease("5.8.18") == 0 || (osInfo.CompareOSBaseKernelRelease("4.17.19") == -1 && osInfo.CompareOSBaseKernelRelease("5.7.1") == 1) {
+	} else if osInfo.CompareOSBaseKernelRelease("5.8.18") == 0 || (osInfo.CompareOSBaseKernelRelease("4.18.0") != 1 && osInfo.CompareOSBaseKernelRelease("5.7.0") == 1) {
 		// kernel version: ==5.8.18 || (<5.7 && >=4.18)
 		kernelReadFileIdStrs = map[int32]string{
 			0: "unknown",
