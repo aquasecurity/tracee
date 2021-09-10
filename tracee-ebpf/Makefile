@@ -26,6 +26,8 @@ BPF_BUNDLE := $(OUT_DIR)/tracee.bpf.tar.gz
 LIBBPF_SRC := 3rdparty/libbpf/src
 LIBBPF_HEADERS := $(OUT_DIR)/libbpf/usr/include
 LIBBPF_OBJ := $(OUT_DIR)/libbpf/libbpf.a
+OS_RELEASE_FILE := /etc/os-release
+
 # static build:
 ifdef STATIC
 CGO_EXT_LDFLAGS += -static
@@ -39,8 +41,8 @@ DOCKER_BUILDER_KERN_SRC ?= $(if $(shell readlink $(KERN_SRC_PATH)),$(shell readl
 DOCKER_BUILDER_KERN_SRC_MNT ?= $(dir $(DOCKER_BUILDER_KERN_SRC))
 LINUX_VERSION_CODE := $(shell uname -r | awk '{split($$0,a,"."); split(a[3], b, "-"); print lshift(a[1], 16) + lshift(a[2],8) + b[1];}')
 
-DIST_ID := $(shell grep -m 1 'ID=' /usr/lib/os-release | cut -d '=' -f '2' | sed 's/\"//g')
-VERSION_ID := $(shell grep -m 1 'VERSION_ID=' /usr/lib/os-release | cut -d '=' -f '2' | sed 's/\"//g')
+DIST_ID := $(shell grep -m 1 'ID=' $(OS_RELEASE_FILE) | cut -d '=' -f '2' | sed 's/\"//g')
+VERSION_ID := $(shell grep -m 1 'VERSION_ID=' $(OS_RELEASE_FILE) | cut -d '=' -f '2' | sed 's/\"//g')
 CENTOS_MERGED_RHEL := $(shell echo $(DIST_ID) | sed 's/centos/rhel/')
 ifeq ($(CENTOS_MERGED_RHEL), rhel)
 	RHEL_MAJOR := $(shell echo $(VERSION_ID) | cut -d '.' -f 1)
