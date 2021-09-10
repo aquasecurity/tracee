@@ -18,7 +18,7 @@ const maxStackDepth int = 20
 // Custom KernelConfigOption's to extend kernel_config helper support
 // Add here all kconfig variables used within tracee.bpf.c
 const (
-	CONFIG_ARCH_HAS_SYSCALL_WRAPPER helpers.KernelConfigOption = iota + helpers.CUSTOM_OPTION_MARK
+	CONFIG_ARCH_HAS_SYSCALL_WRAPPER helpers.KernelConfigOption = iota + helpers.CUSTOM_OPTION_START
 )
 
 const (
