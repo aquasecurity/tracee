@@ -114,8 +114,10 @@ func main() {
 					return fmt.Errorf("missing kernel configuration options: %s\n", missing)
 				}
 			} else {
-				fmt.Fprintf(os.Stderr, "KConfig: warning: could not check enabled kconfig features\n(%v)\n", err)
-				fmt.Fprintf(os.Stderr, "KConfig: warning: assuming kconfig values, might have unexpected behavior\n")
+				if debug {
+					fmt.Fprintf(os.Stderr, "KConfig: warning: could not check enabled kconfig features\n(%v)\n", err)
+					fmt.Fprintf(os.Stderr, "KConfig: warning: assuming kconfig values, might have unexpected behavior\n")
+				}
 			}
 
 			// OS release information
@@ -123,9 +125,9 @@ func main() {
 			OSInfo, err := helpers.GetOSInfo()
 			if err != nil {
 				if debug {
+					fmt.Fprintf(os.Stderr, "OSInfo: warning: os-release file could be found\n(%v)\n", err) // only to be enforced when BTF needs to be downloaded, later on
 					fmt.Fprintf(os.Stdout, "OSInfo: %v: %v\n", helpers.OS_KERNEL_RELEASE, OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE))
 				}
-				fmt.Fprintf(os.Stderr, "OSInfo: warning: os-release file could be found\n(%v)\n", err) // only to be enforced when BTF needs to be downloaded, later on
 			} else if debug {
 				for k, v := range OSInfo.GetOSReleaseAllFieldValues() {
 					fmt.Fprintf(os.Stdout, "OSInfo: %v: %v\n", k, v)
