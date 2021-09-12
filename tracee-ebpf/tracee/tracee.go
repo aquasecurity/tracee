@@ -161,8 +161,6 @@ type Tracee struct {
 	profiledFiles     map[string]profilerInfo
 	writtenFiles      map[string]string
 	mntNsFirstPid     map[uint32]uint32
-	DecParamName      [2]map[argTag]string
-	EncParamName      [2]map[string]argTag
 	ParamTypes        map[int32]map[string]string
 	pidsInMntns       bucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
@@ -273,12 +271,7 @@ func New(cfg Config) (*Tracee, error) {
 		}
 	}
 
-	t.DecParamName[0] = make(map[argTag]string)
-	t.EncParamName[0] = make(map[string]argTag)
-	t.DecParamName[1] = make(map[argTag]string)
-	t.EncParamName[1] = make(map[string]argTag)
 	t.ParamTypes = make(map[int32]map[string]string)
-
 	for eventId, params := range EventsIDToParams {
 		t.ParamTypes[eventId] = make(map[string]string)
 		for _, param := range params {
@@ -385,19 +378,8 @@ func New(cfg Config) (*Tracee, error) {
 	return t, nil
 }
 
-type eventParam struct {
-	encType argType
-	encName argTag
-}
-
-func (t *Tracee) initEventsParams() map[int32][]eventParam {
-	eventsParams := make(map[int32][]eventParam)
-	var seenNames [2]map[string]bool
-	var ParamNameCounter [2]argTag
-	seenNames[0] = make(map[string]bool)
-	ParamNameCounter[0] = argTag(1)
-	seenNames[1] = make(map[string]bool)
-	ParamNameCounter[1] = argTag(1)
+func (t *Tracee) initEventsParams() map[int32][]argType {
+	eventsParams := make(map[int32][]argType)
 	paramT := noneT
 	for id, params := range EventsIDToParams {
 		for _, param := range params {
@@ -435,24 +417,8 @@ func (t *Tracee) initEventsParams() map[int32][]eventParam {
 				paramT = pointerT
 			}
 
-			// As the encoded parameter name is u8, it can hold up to 256 different names
-			// To keep on low communication overhead, we don't change this to u16
-			// Instead, use an array of enc/dec maps, where the key is modulus of the event id
-			// This can easilly be expanded in the future if required
-			if !seenNames[id%2][param.Name] {
-				seenNames[id%2][param.Name] = true
-				t.EncParamName[id%2][param.Name] = ParamNameCounter[id%2]
-				t.DecParamName[id%2][ParamNameCounter[id%2]] = param.Name
-				eventsParams[id] = append(eventsParams[id], eventParam{encType: paramT, encName: ParamNameCounter[id%2]})
-				ParamNameCounter[id%2]++
-			} else {
-				eventsParams[id] = append(eventsParams[id], eventParam{encType: paramT, encName: t.EncParamName[id%2][param.Name]})
-			}
+			eventsParams[id] = append(eventsParams[id], paramT)
 		}
-	}
-
-	if len(seenNames[0]) > 255 || len(seenNames[1]) > 255 {
-		panic("Too many argument names given")
 	}
 
 	return eventsParams
@@ -655,23 +621,14 @@ func (t *Tracee) populateBPFMaps() error {
 	if err != nil {
 		return err
 	}
-	paramsNamesBPFMap, err := t.bpfModule.GetMap("params_names_map") // u32, u64
-	if err != nil {
-		return err
-	}
 	for e := range t.eventsToTrace {
 		eU32 := uint32(e) // e is int32
 		params := eventsParams[e]
 		var paramsTypes uint64
-		var paramsNames uint64
-		for n, param := range params {
-			paramsTypes = paramsTypes | (uint64(param.encType) << (8 * n))
-			paramsNames = paramsNames | (uint64(param.encName) << (8 * n))
+		for n, paramType := range params {
+			paramsTypes = paramsTypes | (uint64(paramType) << (8 * n))
 		}
 		if err := paramsTypesBPFMap.Update(unsafe.Pointer(&eU32), unsafe.Pointer(&paramsTypes)); err != nil {
-			return err
-		}
-		if err := paramsNamesBPFMap.Update(unsafe.Pointer(&eU32), unsafe.Pointer(&paramsNames)); err != nil {
 			return err
 		}
 		if e == ExecveEventID || e == ExecveatEventID {

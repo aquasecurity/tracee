@@ -114,10 +114,6 @@ const (
 	intArr2T
 )
 
-// argTag is an enum that encodes the argument types that the BPF program may write to the shared buffer
-// argument tags should match defined values in ebpf code
-type argTag uint8
-
 // ProbeType is an enum that describes the mechanism used to attach the event
 // Kprobes are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#1-kprobes
 // Tracepoints are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#3-tracepoints

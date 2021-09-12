@@ -19,18 +19,18 @@ type alert struct {
 	Payload uint8
 }
 
-func readArgFromBuff(dataBuff io.Reader) (argTag, interface{}, error) {
+func readArgFromBuff(dataBuff io.Reader) (uint8, interface{}, error) {
 	var err error
 	var res interface{}
-	var argTag argTag
+	var argIdx uint8
 	var argType argType
 	err = binary.Read(dataBuff, binary.LittleEndian, &argType)
 	if err != nil {
-		return argTag, nil, fmt.Errorf("error reading arg type: %v", err)
+		return argIdx, nil, fmt.Errorf("error reading arg type: %v", err)
 	}
-	err = binary.Read(dataBuff, binary.LittleEndian, &argTag)
+	err = binary.Read(dataBuff, binary.LittleEndian, &argIdx)
 	if err != nil {
-		return argTag, nil, fmt.Errorf("error reading arg tag: %v", err)
+		return argIdx, nil, fmt.Errorf("error reading arg index: %v", err)
 	}
 	switch argType {
 	case u16T:
@@ -74,12 +74,12 @@ func readArgFromBuff(dataBuff io.Reader) (argTag, interface{}, error) {
 		var arrLen uint8
 		err = binary.Read(dataBuff, binary.LittleEndian, &arrLen)
 		if err != nil {
-			return argTag, nil, fmt.Errorf("error reading string array number of elements: %v", err)
+			return argIdx, nil, fmt.Errorf("error reading string array number of elements: %v", err)
 		}
 		for i := 0; i < int(arrLen); i++ {
 			s, err := readStringFromBuff(dataBuff)
 			if err != nil {
-				return argTag, nil, fmt.Errorf("error reading string element: %v", err)
+				return argIdx, nil, fmt.Errorf("error reading string element: %v", err)
 			}
 			ss = append(ss, s)
 		}
@@ -88,10 +88,10 @@ func readArgFromBuff(dataBuff io.Reader) (argTag, interface{}, error) {
 		var size uint32
 		err = binary.Read(dataBuff, binary.LittleEndian, &size)
 		if err != nil {
-			return argTag, nil, fmt.Errorf("error reading byte array size: %v", err)
+			return argIdx, nil, fmt.Errorf("error reading byte array size: %v", err)
 		}
 		if size > 4096 {
-			return argTag, nil, fmt.Errorf("byte array size too big: %d", size)
+			return argIdx, nil, fmt.Errorf("byte array size too big: %d", size)
 		}
 		res, err = readByteSliceFromBuff(dataBuff, int(size))
 	case intArr2T:
@@ -99,18 +99,18 @@ func readArgFromBuff(dataBuff io.Reader) (argTag, interface{}, error) {
 
 		err = binary.Read(dataBuff, binary.LittleEndian, &intArray)
 		if err != nil {
-			return argTag, nil, fmt.Errorf("error reading int elements: %v", err)
+			return argIdx, nil, fmt.Errorf("error reading int elements: %v", err)
 		}
 
 		res = intArray
 	default:
 		// if we don't recognize the arg type, we can't parse the rest of the buffer
-		return argTag, nil, fmt.Errorf("error unknown arg type %v", argType)
+		return argIdx, nil, fmt.Errorf("error unknown arg type %v", argType)
 	}
 	if err != nil {
-		return argTag, nil, err
+		return argIdx, nil, err
 	}
-	return argTag, res, nil
+	return argIdx, res, nil
 }
 
 func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
