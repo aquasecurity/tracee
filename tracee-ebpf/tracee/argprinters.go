@@ -189,14 +189,15 @@ func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 	return nil
 }
 
-func ParseKernelReadFileId(id int32) (string, error) {
+// initializing kernelReadFileIdStrs once at init.
+var kernelReadFileIdStrs map[int32]string
+
+func init() {
 
 	osInfo, err := helpers.GetOSInfo()
 	if err != nil {
-		return "", fmt.Errorf("unable to get OS info")
+		return
 	}
-
-	var kernelReadFileIdStrs map[int32]string
 
 	if osInfo.CompareOSBaseKernelRelease("5.9.3") != 1 {
 		// kernel version: >=5.9.3
@@ -234,10 +235,13 @@ func ParseKernelReadFileId(id int32) (string, error) {
 			6: "security-policy",
 			7: "x509-certificate",
 		}
-	} else {
-		return "", fmt.Errorf("unhandled kernel version: %v", osInfo)
 	}
+}
 
-	kernelReadFileIdStr, _ := kernelReadFileIdStrs[id]
+func ParseKernelReadFileId(id int32) (string, error) {
+	kernelReadFileIdStr, idExists := kernelReadFileIdStrs[id]
+	if !idExists {
+		return "", fmt.Errorf("kernelReadFileId doesn't exist in kernelReadFileIdStrs map")
+	}
 	return kernelReadFileIdStr, nil
 }
