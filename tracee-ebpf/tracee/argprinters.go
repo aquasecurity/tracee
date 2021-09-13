@@ -179,10 +179,9 @@ func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 	case SecurityKernelReadFileEventID:
 		if readFileId, isUint32 := args["type"].(uint32); isUint32 {
 			typeIdStr, err := ParseKernelReadFileId(int32(readFileId))
-			if err != nil {
-				return err
+			if err == nil {
+				args["type"] = typeIdStr
 			}
-			args["type"] = typeIdStr
 		}
 	}
 
