@@ -37,7 +37,7 @@ support it, you may face:
 ```
 $ sudo ./dist/tracee-ebpf --debug --trace uid=1000 --trace pid=new --trace event=execve
 OSInfo: KERNEL_RELEASE: 5.14.0-rc5+
-OSInfo: warning: os-release file could be found
+OSInfo: warning: os-release file could not be found
 (open /etc/os-release: no such file or directory)
 BTF: bpfenv = false, btfenv = false, vmlinux = true
 BPF: using embedded BPF object
