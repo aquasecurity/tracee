@@ -4074,11 +4074,12 @@ int BPF_KPROBE(trace_security_kernel_read_file)
 
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
-    context_t context = init_and_save_context(ctx, submit_p, SECURITY_KERNEL_READ_FILE, 3 /*argnum*/, 0 /*ret*/);
+    context_t context = init_and_save_context(ctx, submit_p, SECURITY_KERNEL_READ_FILE, 4 /*argnum*/, 0 /*ret*/);
 
     struct file* file = (struct file*)PT_REGS_PARM1(ctx);
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
+    enum kernel_read_file_id type_id = (enum kernel_read_file_id)PT_REGS_PARM2(ctx);
 
     // Get per-cpu string buffer
     buf_t *string_p = get_buf(STRING_BUF_IDX);
@@ -4099,6 +4100,7 @@ int BPF_KPROBE(trace_security_kernel_read_file)
     save_str_to_buf(submit_p, (void *)&string_p->buf[*off], DEC_ARG(0, *tags));
     save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, DEC_ARG(1, *tags));
     save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, DEC_ARG(2, *tags));
+    save_to_submit_buf(submit_p, &type_id, sizeof(int), UINT_T, DEC_ARG(3, *tags));
 
     events_perf_submit(ctx);
     return 0;
