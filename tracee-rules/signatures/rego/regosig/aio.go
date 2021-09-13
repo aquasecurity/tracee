@@ -2,6 +2,7 @@ package regosig
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"regexp"
 	"strings"
@@ -10,6 +11,9 @@ import (
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
 )
+
+//go:embed aio.rego
+var aioRegoCode string
 
 const (
 	queryMatchAll = "data.tracee_aio.tracee_match_all"
@@ -37,6 +41,7 @@ func NewAIORegoSignature(o Options, regoCodes ...string) (types.Signature, error
 		}
 		regoMap[regoModuleName] = regoCode
 	}
+	regoMap["tracee_aio"] = aioRegoCode
 	pkgName := "tracee_aio"
 
 	res.compiledRego, err = ast.CompileModules(regoMap)
