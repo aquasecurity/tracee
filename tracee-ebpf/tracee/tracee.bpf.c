@@ -1207,44 +1207,12 @@ static __always_inline context_t init_and_save_context(void* ctx, buf_t *submit_
     return context;
 }
 
-static __always_inline int save_to_submit_buf(buf_t *submit_p, void *ptr, u32 size, u8 type, u8 index)
+static __always_inline int save_to_submit_buf(buf_t *submit_p, void *ptr, u32 size, u8 index)
 {
 // The biggest element that can be saved with this function should be defined here
 #define MAX_ELEMENT_SIZE sizeof(struct sockaddr_un)
 
-    // Data saved to submit buf: [type][index][ ... buffer[size] ... ]
-
-    if ((type == 0) || (size == 0))
-        return 0;
-
-    u32* off = get_buf_off(SUBMIT_BUF_IDX);
-    if (off == NULL)
-        return 0;
-
-    // If we don't have enough space - return
-    if (*off > MAX_PERCPU_BUFSIZE - (size+2))
-        return 0;
-
-    // Save argument type & index
-    submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)] = type;
-    submit_p->buf[(*off+1) & (MAX_PERCPU_BUFSIZE-1)] = index;
-
-    // Satisfy validator for probe read
-    if ((*off+2) <= MAX_PERCPU_BUFSIZE - MAX_ELEMENT_SIZE) {
-        // Read into buffer
-        if (bpf_probe_read(&(submit_p->buf[*off+2]), size, ptr) == 0) {
-            // We update buf_off only if all writes were successful
-            *off += size+2;
-            return 1;
-        }
-    }
-
-    return 0;
-}
-
-static __always_inline int save_bytes_to_buf(buf_t *submit_p, void *ptr, u32 size, u8 index)
-{
-    // Data saved to submit buf: [type][index][size][ ... bytes ... ]
+    // Data saved to submit buf: [index][ ... buffer[size] ... ]
 
     if (size == 0)
         return 0;
@@ -1254,25 +1222,55 @@ static __always_inline int save_bytes_to_buf(buf_t *submit_p, void *ptr, u32 siz
         return 0;
 
     // If we don't have enough space - return
-    if (*off > MAX_PERCPU_BUFSIZE - (size+2+sizeof(int)))
+    if (*off > MAX_PERCPU_BUFSIZE - (size+1))
         return 0;
 
-    // Save argument type & index
-    submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)] = BYTES_T;
-    submit_p->buf[(*off+1) & (MAX_PERCPU_BUFSIZE-1)] = index;
+    // Save argument index
+    submit_p->buf[(*off) & (MAX_PERCPU_BUFSIZE-1)] = index;
 
-    if ((*off+2) <= MAX_PERCPU_BUFSIZE - MAX_BYTES_ARR_SIZE - sizeof(int)) {
+    // Satisfy validator for probe read
+    if ((*off+1) <= MAX_PERCPU_BUFSIZE - MAX_ELEMENT_SIZE) {
+        // Read into buffer
+        if (bpf_probe_read(&(submit_p->buf[*off+1]), size, ptr) == 0) {
+            // We update buf_off only if all writes were successful
+            *off += size+1;
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static __always_inline int save_bytes_to_buf(buf_t *submit_p, void *ptr, u32 size, u8 index)
+{
+    // Data saved to submit buf: [index][size][ ... bytes ... ]
+
+    if (size == 0)
+        return 0;
+
+    u32* off = get_buf_off(SUBMIT_BUF_IDX);
+    if (off == NULL)
+        return 0;
+
+    // If we don't have enough space - return
+    if (*off > MAX_PERCPU_BUFSIZE - (size+1+sizeof(int)))
+        return 0;
+
+    // Save argument index
+    submit_p->buf[(*off) & (MAX_PERCPU_BUFSIZE-1)] = index;
+
+    if ((*off+1) <= MAX_PERCPU_BUFSIZE - MAX_BYTES_ARR_SIZE - sizeof(int)) {
         // Save size to buffer
-        if (bpf_probe_read(&(submit_p->buf[*off+2]), sizeof(int), &size) != 0) {
+        if (bpf_probe_read(&(submit_p->buf[*off+1]), sizeof(int), &size) != 0) {
             return 0;
         }
     }
 
-    if ((*off+2+sizeof(int)) <= MAX_PERCPU_BUFSIZE - MAX_BYTES_ARR_SIZE) {
+    if ((*off+1+sizeof(int)) <= MAX_PERCPU_BUFSIZE - MAX_BYTES_ARR_SIZE) {
         // Read bytes into buffer
-        if (bpf_probe_read(&(submit_p->buf[*off+2+sizeof(int)]), size & (MAX_BYTES_ARR_SIZE-1), ptr) == 0) {
+        if (bpf_probe_read(&(submit_p->buf[*off+1+sizeof(int)]), size & (MAX_BYTES_ARR_SIZE-1), ptr) == 0) {
             // We update buf_off only if all writes were successful
-            *off += size+2+sizeof(int);
+            *off += size+1+sizeof(int);
             return 1;
         }
     }
@@ -1282,7 +1280,7 @@ static __always_inline int save_bytes_to_buf(buf_t *submit_p, void *ptr, u32 siz
 
 static __always_inline int save_str_to_buf(buf_t *submit_p, void *ptr, u8 index)
 {
-    // Data saved to submit buf: [type][index][size][ ... string ... ]
+    // Data saved to submit buf: [index][size][ ... string ... ]
 
     u32* off = get_buf_off(SUBMIT_BUF_IDX);
     if (off == NULL)
@@ -1293,20 +1291,19 @@ static __always_inline int save_str_to_buf(buf_t *submit_p, void *ptr, u8 index)
         return 0;
 
     // Save argument type & index
-    submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)] = STR_T;
-    submit_p->buf[(*off+1) & (MAX_PERCPU_BUFSIZE-1)] = index;
+    submit_p->buf[(*off) & (MAX_PERCPU_BUFSIZE-1)] = index;
 
     // Satisfy validator for probe read
-    if ((*off+2) <= MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int)) {
+    if ((*off+1) <= MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int)) {
         // Read into buffer
-        int sz = bpf_probe_read_str(&(submit_p->buf[*off+2+sizeof(int)]), MAX_STRING_SIZE, ptr);
+        int sz = bpf_probe_read_str(&(submit_p->buf[*off+1+sizeof(int)]), MAX_STRING_SIZE, ptr);
         if (sz > 0) {
             // Satisfy validator for probe read
-            if ((*off+2) > MAX_PERCPU_BUFSIZE - sizeof(int)) {
+            if ((*off+1) > MAX_PERCPU_BUFSIZE - sizeof(int)) {
                 return 0;
             }
-            __builtin_memcpy(&(submit_p->buf[*off+2]), &sz, sizeof(int));
-            *off += sz + sizeof(int) + 2;
+            __builtin_memcpy(&(submit_p->buf[*off+1]), &sz, sizeof(int));
+            *off += sz + sizeof(int) + 1;
             return 1;
         }
     }
@@ -1316,7 +1313,7 @@ static __always_inline int save_str_to_buf(buf_t *submit_p, void *ptr, u8 index)
 
 static __always_inline int save_str_arr_to_buf(buf_t *submit_p, const char __user *const __user *ptr, u8 index)
 {
-    // Data saved to submit buf: [type][index][string count][str1 size][str1][str2 size][str2]...
+    // Data saved to submit buf: [index][string count][str1 size][str1][str2 size][str2]...
 
     u8 elem_num = 0;
 
@@ -1325,12 +1322,11 @@ static __always_inline int save_str_arr_to_buf(buf_t *submit_p, const char __use
         return 0;
 
     // Save argument type & index
-    submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)] = STR_ARR_T;
-    submit_p->buf[(*off+1) & (MAX_PERCPU_BUFSIZE-1)] = index;
+    submit_p->buf[(*off) & (MAX_PERCPU_BUFSIZE-1)] = index;
 
     // Save space for number of elements (1 byte)
-    u32 orig_off = *off+2;
-    *off += 3;
+    u32 orig_off = *off+1;
+    *off += 2;
 
     #pragma unroll
     for (int i = 0; i < MAX_STR_ARR_ELEM; i++) {
@@ -1382,7 +1378,7 @@ out:
 // This helper saves null (0x00) delimited string array into buf
 static __always_inline int save_args_str_arr_to_buf(buf_t *submit_p, const char *start, const char *end, int elem_num, u8 index)
 {
-    // Data saved to submit buf: [type][index][string count][str1 size][str1][str2 size][str2]...
+    // Data saved to submit buf: [index][string count][str1 size][str1][str2 size][str2]...
 
     u8 count=0;
 
@@ -1391,12 +1387,11 @@ static __always_inline int save_args_str_arr_to_buf(buf_t *submit_p, const char 
         return 0;
 
     // Save argument type & index
-    submit_p->buf[*off & (MAX_PERCPU_BUFSIZE-1)] = STR_ARR_T;
-    submit_p->buf[(*off+1) & (MAX_PERCPU_BUFSIZE-1)] = index;
+    submit_p->buf[(*off) & (MAX_PERCPU_BUFSIZE-1)] = index;
 
     // Save space for number of elements (1 byte)
-    u32 orig_off = *off+2;
-    *off += 3;
+    u32 orig_off = *off+1;
+    *off += 2;
 
     #pragma unroll
     for (int i = 0; i < MAX_ARGS_STR_ARR_ELEM; i++) {
@@ -1817,18 +1812,18 @@ static __always_inline int save_args_to_submit_buf(u64 types, args_t *args)
                         default:
                             size = sizeof(short);
                     }
-                    rc = save_to_submit_buf(submit_p, (void*)(args->args[i]), size, type, index);
+                    rc = save_to_submit_buf(submit_p, (void*)(args->args[i]), size, index);
                 } else {
-                    rc = save_to_submit_buf(submit_p, &family, sizeof(short), type, index);
+                    rc = save_to_submit_buf(submit_p, &family, sizeof(short), index);
                 }
                 break;
             case INT_ARR_2_T:
                 size = sizeof(int[2]);
-                rc = save_to_submit_buf(submit_p, (void*)(args->args[i]), size, type, index);
+                rc = save_to_submit_buf(submit_p, (void*)(args->args[i]), size, index);
                 break;
         }
         if ((type != NONE_T) && (type != STR_T) && (type != SOCKADDR_T) && (type != INT_ARR_2_T)) {
-            rc = save_to_submit_buf(submit_p, (void*)&(args->args[i]), size, type, index);
+            rc = save_to_submit_buf(submit_p, (void*)&(args->args[i]), size, index);
         }
 
         if (rc > 0) {
@@ -2110,7 +2105,7 @@ if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER)) {
 
         init_and_save_context(ctx, submit_p, RAW_SYS_ENTER, 1 /*argnum*/, 0 /*ret*/);
 
-        save_to_submit_buf(submit_p, (void*)&id, sizeof(int), INT_T, 0);
+        save_to_submit_buf(submit_p, (void*)&id, sizeof(int), 0);
         events_perf_submit(ctx);
     }
 
@@ -2166,7 +2161,7 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
 
         init_and_save_context(ctx, submit_p, RAW_SYS_EXIT, 1 /*argnum*/, ret);
 
-        save_to_submit_buf(submit_p, (void*)&id, sizeof(int), INT_T, 0);
+        save_to_submit_buf(submit_p, (void*)&id, sizeof(int), 0);
         events_perf_submit(ctx);
     }
 
@@ -2248,13 +2243,13 @@ int syscall__execveat(void *ctx)
 
     context_t context = init_and_save_context(ctx, submit_p, SYS_EXECVEAT, 4 /*argnum*/, 0 /*ret*/);
 
-    argnum += save_to_submit_buf(submit_p, (void*)&args.args[0] /*dirfd*/, sizeof(int), INT_T, 0);
+    argnum += save_to_submit_buf(submit_p, (void*)&args.args[0] /*dirfd*/, sizeof(int), 0);
     argnum += save_str_to_buf(submit_p, (void *)args.args[1] /*pathname*/, 1);
     argnum += save_str_arr_to_buf(submit_p, (const char *const *)args.args[2] /*argv*/, 2);
     if (get_config(CONFIG_EXEC_ENV)) {
         argnum += save_str_arr_to_buf(submit_p, (const char *const *)args.args[3] /*envp*/, 3);
     }
-    argnum += save_to_submit_buf(submit_p, (void*)&args.args[4] /*flags*/, sizeof(int), INT_T, 4);
+    argnum += save_to_submit_buf(submit_p, (void*)&args.args[4] /*flags*/, sizeof(int), 4);
 
     context.argnum = argnum;
     save_context_to_buf(submit_p, (void*)&context);
@@ -2312,10 +2307,10 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         int parent_ns_pid = get_task_ns_pid(parent);
         int child_ns_pid = get_task_ns_pid(child);
 
-        save_to_submit_buf(submit_p, (void*)&parent_pid, sizeof(int), INT_T, 0);
-        save_to_submit_buf(submit_p, (void*)&parent_ns_pid, sizeof(int), INT_T, 1);
-        save_to_submit_buf(submit_p, (void*)&child_pid, sizeof(int), INT_T, 2);
-        save_to_submit_buf(submit_p, (void*)&child_ns_pid, sizeof(int), INT_T, 3);
+        save_to_submit_buf(submit_p, (void*)&parent_pid, sizeof(int), 0);
+        save_to_submit_buf(submit_p, (void*)&parent_ns_pid, sizeof(int), 1);
+        save_to_submit_buf(submit_p, (void*)&child_pid, sizeof(int), 2);
+        save_to_submit_buf(submit_p, (void*)&child_ns_pid, sizeof(int), 3);
 
         events_perf_submit(ctx);
     }
@@ -2389,9 +2384,9 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     save_str_to_buf(submit_p, (void *)&string_p->buf[*off], 1);
     save_args_str_arr_to_buf(submit_p, (void *)arg_start, (void *)arg_end, argc, 2);
     //save_args_str_arr_to_buf(submit_p, (void *)env_start, (void *)env_end, envc, 3);
-    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, 4);
-    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, 5);
-    save_to_submit_buf(submit_p, &invoked_from_kernel, sizeof(int), INT_T, 6);
+    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), 4);
+    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), 5);
+    save_to_submit_buf(submit_p, &invoked_from_kernel, sizeof(int), 6);
 
     events_perf_submit(ctx);
     return 0;
@@ -2470,10 +2465,10 @@ int tracepoint__sched__sched_switch(struct bpf_raw_tracepoint_args *ctx)
     int next_pid = get_task_host_pid(next);
     int cpu = bpf_get_smp_processor_id();
 
-    save_to_submit_buf(submit_p, (void*)&cpu, sizeof(int), INT_T, 0);
-    save_to_submit_buf(submit_p, (void*)&prev_pid, sizeof(int), INT_T, 1);
+    save_to_submit_buf(submit_p, (void*)&cpu, sizeof(int), 0);
+    save_to_submit_buf(submit_p, (void*)&prev_pid, sizeof(int), 1);
     save_str_to_buf(submit_p, prev->comm, 2);
-    save_to_submit_buf(submit_p, (void*)&next_pid, sizeof(int), INT_T, 3);
+    save_to_submit_buf(submit_p, (void*)&next_pid, sizeof(int), 3);
     save_str_to_buf(submit_p, next->comm, 4);
 
     events_perf_submit(ctx);
@@ -2570,8 +2565,8 @@ int BPF_KPROBE(trace_security_bprm_check)
         return -1;
 
     save_str_to_buf(submit_p, (void *)&string_p->buf[*off], 0);
-    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, 1);
-    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, 2);
+    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), 1);
+    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), 2);
 
     events_perf_submit(ctx);
     return 0;
@@ -2604,15 +2599,15 @@ int BPF_KPROBE(trace_security_file_open)
         return -1;
 
     save_str_to_buf(submit_p, (void *)&string_p->buf[*off], 0);
-    save_to_submit_buf(submit_p, (void*)&file->f_flags, sizeof(int), INT_T, 1);
-    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, 2);
-    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, 3);
+    save_to_submit_buf(submit_p, (void*)&file->f_flags, sizeof(int), 1);
+    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), 2);
+    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), 3);
     if (get_config(CONFIG_SHOW_SYSCALL)) {
         int syscall_nr = get_syscall_ev_id_from_regs();
         if (syscall_nr >= 0) {
             context.argnum++;
             save_context_to_buf(submit_p, (void*)&context);
-            save_to_submit_buf(submit_p, (void*)&syscall_nr, sizeof(int), INT_T, 4);
+            save_to_submit_buf(submit_p, (void*)&syscall_nr, sizeof(int), 4);
         }
     }
 
@@ -2650,7 +2645,7 @@ int BPF_KPROBE(trace_security_sb_mount)
     context.argnum = save_str_to_buf(submit_p, (void *)dev_name, 0);
     context.argnum += save_str_to_buf(submit_p, (void *)&string_p->buf[*off], 1);
     context.argnum += save_str_to_buf(submit_p, (void *)type, 2);
-    context.argnum += save_to_submit_buf(submit_p, &flags, sizeof(unsigned long), ULONG_T, 3);
+    context.argnum += save_to_submit_buf(submit_p, &flags, sizeof(unsigned long), 3);
 
     save_context_to_buf(submit_p, (void*)&context);
 
@@ -2754,8 +2749,8 @@ int BPF_KPROBE(trace_commit_creds)
     caps = READ_KERN(new->cap_ambient);
     new_slim.cap_ambient = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
 
-    save_to_submit_buf(submit_p, (void*)&old_slim, sizeof(slim_cred_t), CRED_T, 0);
-    save_to_submit_buf(submit_p, (void*)&new_slim, sizeof(slim_cred_t), CRED_T, 1);
+    save_to_submit_buf(submit_p, (void*)&old_slim, sizeof(slim_cred_t), 0);
+    save_to_submit_buf(submit_p, (void*)&new_slim, sizeof(slim_cred_t), 1);
 
 
     if ((old_slim.uid != new_slim.uid) ||
@@ -2777,7 +2772,7 @@ int BPF_KPROBE(trace_commit_creds)
             if (syscall_nr >= 0) {
                 context.argnum++;
                 save_context_to_buf(submit_p, (void*)&context);
-                save_to_submit_buf(submit_p, (void*)&syscall_nr, sizeof(int), INT_T, 2);
+                save_to_submit_buf(submit_p, (void*)&syscall_nr, sizeof(int), 2);
             }
         }
 
@@ -2821,30 +2816,30 @@ int BPF_KPROBE(trace_switch_task_namespaces)
     u32 old_cgroup = get_task_cgroup_ns_id(task);
     u32 new_cgroup = get_cgroup_ns_id(new);
 
-    argnum += save_to_submit_buf(submit_p, (void*)&pid, sizeof(int), INT_T, 0);
+    argnum += save_to_submit_buf(submit_p, (void*)&pid, sizeof(int), 0);
 
     if (old_mnt != new_mnt) {
-        argnum += save_to_submit_buf(submit_p, (void*)&new_mnt, sizeof(u32), UINT_T, 1);
+        argnum += save_to_submit_buf(submit_p, (void*)&new_mnt, sizeof(u32), 1);
     }
 
     if (old_pid != new_pid) {
-        argnum += save_to_submit_buf(submit_p, (void*)&new_pid, sizeof(u32), UINT_T, 2);
+        argnum += save_to_submit_buf(submit_p, (void*)&new_pid, sizeof(u32), 2);
     }
 
     if (old_uts != new_uts) {
-        argnum += save_to_submit_buf(submit_p, (void*)&new_uts, sizeof(u32), UINT_T, 3);
+        argnum += save_to_submit_buf(submit_p, (void*)&new_uts, sizeof(u32), 3);
     }
 
     if (old_ipc != new_ipc) {
-        argnum += save_to_submit_buf(submit_p, (void*)&new_ipc, sizeof(u32), UINT_T, 4);
+        argnum += save_to_submit_buf(submit_p, (void*)&new_ipc, sizeof(u32), 4);
     }
 
     if (old_net != new_net) {
-        argnum += save_to_submit_buf(submit_p, (void*)&new_net, sizeof(u32), UINT_T, 5);
+        argnum += save_to_submit_buf(submit_p, (void*)&new_net, sizeof(u32), 5);
     }
 
     if (old_cgroup != new_cgroup) {
-        argnum += save_to_submit_buf(submit_p, (void*)&new_cgroup, sizeof(u32), UINT_T, 6);
+        argnum += save_to_submit_buf(submit_p, (void*)&new_cgroup, sizeof(u32), 6);
     }
 
     if (argnum > 1) {
@@ -2885,13 +2880,13 @@ int BPF_KPROBE(trace_cap_capable)
     if (audit == 0)
         return 0;
 
-    save_to_submit_buf(submit_p, (void*)&cap, sizeof(int), INT_T, 0);
+    save_to_submit_buf(submit_p, (void*)&cap, sizeof(int), 0);
     if (get_config(CONFIG_SHOW_SYSCALL)) {
         int syscall_nr = get_syscall_ev_id_from_regs();
         if (syscall_nr >= 0) {
             context.argnum++;
             save_context_to_buf(submit_p, (void*)&context);
-            save_to_submit_buf(submit_p, (void*)&syscall_nr, sizeof(int), INT_T, 1);
+            save_to_submit_buf(submit_p, (void*)&syscall_nr, sizeof(int), 1);
         }
     }
     events_perf_submit(ctx);
@@ -2919,10 +2914,10 @@ int BPF_KPROBE(trace_security_socket_create)
     int protocol = (int)PT_REGS_PARM3(ctx);
     int kern = (int)PT_REGS_PARM4(ctx);
 
-    save_to_submit_buf(submit_p, (void *)&family, sizeof(int), INT_T, 0);
-    save_to_submit_buf(submit_p, (void *)&type, sizeof(int), INT_T, 1);
-    save_to_submit_buf(submit_p, (void *)&protocol, sizeof(int), INT_T, 2);
-    save_to_submit_buf(submit_p, (void *)&kern, sizeof(int), INT_T, 3);
+    save_to_submit_buf(submit_p, (void *)&family, sizeof(int), 0);
+    save_to_submit_buf(submit_p, (void *)&type, sizeof(int), 1);
+    save_to_submit_buf(submit_p, (void *)&protocol, sizeof(int), 2);
+    save_to_submit_buf(submit_p, (void *)&kern, sizeof(int), 3);
 
     events_perf_submit(ctx);
     return 0;
@@ -2954,7 +2949,7 @@ int BPF_KPROBE(trace_security_socket_listen)
 
     init_and_save_context(ctx, submit_p, SECURITY_SOCKET_LISTEN, 3 /*argnum*/, 0 /*ret*/);
 
-    save_to_submit_buf(submit_p, (void *)&sockfd, sizeof(u32), INT_T, 0);
+    save_to_submit_buf(submit_p, (void *)&sockfd, sizeof(u32), 0);
 
     if ( family == AF_INET ){
 
@@ -2964,7 +2959,7 @@ int BPF_KPROBE(trace_security_socket_listen)
         struct sockaddr_in local;
         get_local_sockaddr_in_from_network_details(&local, &net_details, family);
 
-        save_to_submit_buf(submit_p, (void *)&local, sizeof(struct sockaddr_in), SOCKADDR_T, 1);
+        save_to_submit_buf(submit_p, (void *)&local, sizeof(struct sockaddr_in), 1);
 
     }
     else if ( family == AF_INET6 ){
@@ -2975,10 +2970,10 @@ int BPF_KPROBE(trace_security_socket_listen)
         struct sockaddr_in6 local;
         get_local_sockaddr_in6_from_network_details(&local, &net_details, family);
 
-        save_to_submit_buf(submit_p, (void *)&local, sizeof(struct sockaddr_in6), SOCKADDR_T, 1);
+        save_to_submit_buf(submit_p, (void *)&local, sizeof(struct sockaddr_in6), 1);
     }
 
-    save_to_submit_buf(submit_p, (void *)&backlog, sizeof(int), INT_T, 2);
+    save_to_submit_buf(submit_p, (void *)&backlog, sizeof(int), 2);
 
     events_perf_submit(ctx);
     return 0;
@@ -3008,16 +3003,16 @@ int BPF_KPROBE(trace_security_socket_connect)
 
     init_and_save_context(ctx, submit_p, SECURITY_SOCKET_CONNECT, 2 /*argnum*/, 0 /*ret*/);
 
-    save_to_submit_buf(submit_p, (void *)&sockfd, sizeof(u32), INT_T, 0);
+    save_to_submit_buf(submit_p, (void *)&sockfd, sizeof(u32), 0);
 
     if (sa_fam == AF_INET) {
         // saving to submit buffer
-        save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in), SOCKADDR_T, 1);
+        save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in), 1);
 
     }
     else if (sa_fam == AF_INET6) {
         // saving to submit buffer
-        save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in6), SOCKADDR_T, 1);
+        save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in6), 1);
     }
 
     events_perf_submit(ctx);
@@ -3048,7 +3043,7 @@ int BPF_KPROBE(trace_security_socket_accept)
 
     init_and_save_context(ctx, submit_p, SECURITY_SOCKET_ACCEPT, 2 /*argnum*/, 0 /*ret*/);
 
-    save_to_submit_buf(submit_p, (void *)&sockfd, sizeof(u32), INT_T, 0);
+    save_to_submit_buf(submit_p, (void *)&sockfd, sizeof(u32), 0);
 
     if ( family == AF_INET ){
 
@@ -3058,7 +3053,7 @@ int BPF_KPROBE(trace_security_socket_accept)
         struct sockaddr_in local;
         get_local_sockaddr_in_from_network_details(&local, &net_details, family);
 
-        save_to_submit_buf(submit_p, (void *)&local, sizeof(struct sockaddr_in), SOCKADDR_T, 1);
+        save_to_submit_buf(submit_p, (void *)&local, sizeof(struct sockaddr_in), 1);
 
     }
     else if ( family == AF_INET6 ){
@@ -3069,7 +3064,7 @@ int BPF_KPROBE(trace_security_socket_accept)
         struct sockaddr_in6 local;
         get_local_sockaddr_in6_from_network_details(&local, &net_details, family);
 
-        save_to_submit_buf(submit_p, (void *)&local, sizeof(struct sockaddr_in6), SOCKADDR_T, 1);
+        save_to_submit_buf(submit_p, (void *)&local, sizeof(struct sockaddr_in6), 1);
     }
 
     events_perf_submit(ctx);
@@ -3103,7 +3098,7 @@ int BPF_KPROBE(trace_security_socket_bind)
 
     context_t context = init_and_save_context(ctx, submit_p, SECURITY_SOCKET_BIND, 2 /*argnum*/, 0 /*ret*/);
 
-    save_to_submit_buf(submit_p, (void *)&sockfd, sizeof(u32), INT_T, 0);
+    save_to_submit_buf(submit_p, (void *)&sockfd, sizeof(u32), 0);
 
     u16 protocol = get_sock_protocol(sk);
     local_net_id_t connect_id = {0};
@@ -3111,7 +3106,7 @@ int BPF_KPROBE(trace_security_socket_bind)
 
     if (sa_fam == AF_INET) {
 
-        save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in), SOCKADDR_T, 1);
+        save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in), 1);
 
         struct sockaddr_in *addr = (struct sockaddr_in *)address;
 
@@ -3123,7 +3118,7 @@ int BPF_KPROBE(trace_security_socket_bind)
     }
     else if (sa_fam == AF_INET6) {
 
-        save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in6), SOCKADDR_T, 1);
+        save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in6), 1);
 
         struct sockaddr_in6 *addr = (struct sockaddr_in6 *)address;
 
@@ -3561,14 +3556,14 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
         init_and_save_context(ctx, submit_p, event_id, 5 /*argnum*/, PT_REGS_RC(ctx));
 
         save_str_to_buf(submit_p, (void *)&string_p->buf[*off], 0);
-        save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, 1);
-        save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, 2);
+        save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), 1);
+        save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), 2);
 
         if (event_id == VFS_WRITE)
-            save_to_submit_buf(submit_p, &count, sizeof(size_t), SIZE_T_T, 3);
+            save_to_submit_buf(submit_p, &count, sizeof(size_t), 3);
         else
-            save_to_submit_buf(submit_p, &vlen, sizeof(unsigned long), ULONG_T, 3);
-        save_to_submit_buf(submit_p, &start_pos, sizeof(off_t), OFF_T_T, 4);
+            save_to_submit_buf(submit_p, &vlen, sizeof(unsigned long), 3);
+        save_to_submit_buf(submit_p, &start_pos, sizeof(off_t), 4);
 
         // Submit vfs_write(v) event
         events_perf_submit(ctx);
@@ -3599,8 +3594,8 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
         }
 
         save_bytes_to_buf(submit_p, header, header_bytes, 1);
-        save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, 2);
-        save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, 3);
+        save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), 2);
+        save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), 3);
 
         // Submit magic_write event
         events_perf_submit(ctx);
@@ -3787,7 +3782,7 @@ int BPF_KPROBE(trace_mmap_alert)
 
     if ((args.args[2] & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC)) {
         alert_t alert = {.ts = context.ts, .msg = ALERT_MMAP_W_X, .payload = 0};
-        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T, 0);
+        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), 0);
         events_perf_submit(ctx);
     }
 
@@ -3829,7 +3824,7 @@ int BPF_KPROBE(trace_mprotect_alert)
 
     if ((!(prev_prot & VM_EXEC)) && (reqprot & VM_EXEC)) {
         alert_t alert = {.ts = context.ts, .msg = ALERT_MPROT_X_ADD, .payload = 0};
-        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T, 0);
+        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), 0);
         events_perf_submit(ctx);
         return 0;
     }
@@ -3837,7 +3832,7 @@ int BPF_KPROBE(trace_mprotect_alert)
     if ((prev_prot & VM_EXEC) && !(prev_prot & VM_WRITE)
         && ((reqprot & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC))) {
         alert_t alert = {.ts = context.ts, .msg = ALERT_MPROT_W_ADD, .payload = 0};
-        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T, 0);
+        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), 0);
         events_perf_submit(ctx);
         return 0;
     }
@@ -3847,7 +3842,7 @@ int BPF_KPROBE(trace_mprotect_alert)
         alert_t alert = {.ts = context.ts, .msg = ALERT_MPROT_W_REM, .payload = 0 };
         if (get_config(CONFIG_EXTRACT_DYN_CODE))
             alert.payload = 1;
-        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), ALERT_T, 0);
+        save_to_submit_buf(submit_p, &alert, sizeof(alert_t), 0);
         events_perf_submit(ctx);
 
         if (get_config(CONFIG_EXTRACT_DYN_CODE)) {
@@ -3883,7 +3878,7 @@ int BPF_KPROBE(trace_security_bpf)
     int cmd = (int)PT_REGS_PARM1(ctx);
 
     /* 1st argument == cmd (int) */
-    save_to_submit_buf(submit_p, (void *)&cmd, sizeof(int), INT_T, 0);
+    save_to_submit_buf(submit_p, (void *)&cmd, sizeof(int), 0);
 
     events_perf_submit(ctx);
     return 0;
@@ -3906,7 +3901,7 @@ int BPF_KPROBE(trace_security_bpf_map)
     struct bpf_map *map = (struct bpf_map *)PT_REGS_PARM1(ctx);
 
     /* 1st argument == map_id (u32) */
-    save_to_submit_buf(submit_p, (void *)&map->id, sizeof(int), UINT_T, 0);
+    save_to_submit_buf(submit_p, (void *)&map->id, sizeof(int), 0);
     /* 2nd argument == map_name (const char *) */
     save_str_to_buf(submit_p, (void *)&map->name, 1);
 
@@ -3947,9 +3942,9 @@ int BPF_KPROBE(trace_security_kernel_read_file)
     }
 
     save_str_to_buf(submit_p, (void *)&string_p->buf[*off], 0);
-    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, 1);
-    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), ULONG_T, 2);
-    save_to_submit_buf(submit_p, &type_id, sizeof(int), UINT_T, 3);
+    save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), 1);
+    save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), 2);
+    save_to_submit_buf(submit_p, &type_id, sizeof(int), 3);
 
     events_perf_submit(ctx);
     return 0;
@@ -3987,8 +3982,8 @@ int BPF_KPROBE(trace_security_inode_mknod)
         return -1;
     }
     save_str_to_buf(submit_p, (void *)&string_p->buf[*off], 0);
-    save_to_submit_buf(submit_p, &mode, sizeof(unsigned short), U16_T, 1);
-    save_to_submit_buf(submit_p, &dev, sizeof(unsigned int), UINT_T, 2);
+    save_to_submit_buf(submit_p, &mode, sizeof(unsigned short), 1);
+    save_to_submit_buf(submit_p, &dev, sizeof(dev_t), 2);
 
     events_perf_submit(ctx);
     return 0;

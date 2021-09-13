@@ -161,7 +161,6 @@ type Tracee struct {
 	profiledFiles     map[string]profilerInfo
 	writtenFiles      map[string]string
 	mntNsFirstPid     map[uint32]uint32
-	ParamTypes        map[int32]map[string]string
 	pidsInMntns       bucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
 	tcProbe           []netProbe
@@ -271,14 +270,6 @@ func New(cfg Config) (*Tracee, error) {
 		}
 	}
 
-	t.ParamTypes = make(map[int32]map[string]string)
-	for eventId, params := range EventsIDToParams {
-		t.ParamTypes[eventId] = make(map[string]string)
-		for _, param := range params {
-			t.ParamTypes[eventId][param.Name] = param.Type
-		}
-	}
-
 	err = t.initBPF()
 	if err != nil {
 		t.Close()
@@ -378,50 +369,46 @@ func New(cfg Config) (*Tracee, error) {
 	return t, nil
 }
 
-func (t *Tracee) initEventsParams() map[int32][]argType {
-	eventsParams := make(map[int32][]argType)
-	paramT := noneT
-	for id, params := range EventsIDToParams {
-		for _, param := range params {
-			switch param.Type {
-			case "int", "pid_t", "uid_t", "gid_t", "mqd_t", "clockid_t", "const clockid_t", "key_t", "key_serial_t", "timer_t":
-				paramT = intT
-			case "unsigned int", "u32":
-				paramT = uintT
-			case "long":
-				paramT = longT
-			case "unsigned long", "u64":
-				paramT = ulongT
-			case "off_t":
-				paramT = offT
-			case "mode_t":
-				paramT = modeT
-			case "dev_t":
-				paramT = devT
-			case "size_t":
-				paramT = sizeT
-			case "void*", "const void*":
-				paramT = pointerT
-			case "char*", "const char*":
-				paramT = strT
-			case "const char*const*", "const char**", "char**":
-				paramT = strArrT
-			case "const struct sockaddr*", "struct sockaddr*":
-				paramT = sockAddrT
-			case "bytes":
-				paramT = bytesT
-			case "int[2]":
-				paramT = intArr2T
-			default:
-				// Default to pointer (printed as hex) for unsupported types
-				paramT = pointerT
-			}
-
-			eventsParams[id] = append(eventsParams[id], paramT)
-		}
+func getParamType(paramType string) argType {
+	switch paramType {
+	case "int", "pid_t", "uid_t", "gid_t", "mqd_t", "clockid_t", "const clockid_t", "key_t", "key_serial_t", "timer_t":
+		return intT
+	case "unsigned int", "u32":
+		return uintT
+	case "long":
+		return longT
+	case "unsigned long", "u64":
+		return ulongT
+	case "off_t":
+		return offT
+	case "mode_t":
+		return modeT
+	case "dev_t":
+		return devT
+	case "size_t":
+		return sizeT
+	case "void*", "const void*":
+		return pointerT
+	case "char*", "const char*":
+		return strT
+	case "const char*const*", "const char**", "char**":
+		return strArrT
+	case "const struct sockaddr*", "struct sockaddr*":
+		return sockAddrT
+	case "bytes":
+		return bytesT
+	case "int[2]":
+		return intArr2T
+	case "alert_t":
+		return alertT
+	case "slim_cred_t":
+		return credT
+	case "umode_t":
+		return u16T
+	default:
+		// Default to pointer (printed as hex) for unsupported types
+		return pointerT
 	}
-
-	return eventsParams
 }
 
 // Initialize tail calls program array
@@ -615,7 +602,12 @@ func (t *Tracee) populateBPFMaps() error {
 		return err
 	}
 
-	eventsParams := t.initEventsParams()
+	eventsParams := make(map[int32][]argType)
+	for id, params := range EventsIDToParams {
+		for _, param := range params {
+			eventsParams[id] = append(eventsParams[id], getParamType(param.Type))
+		}
+	}
 
 	paramsTypesBPFMap, err := t.bpfModule.GetMap("params_types_map") // u32, u64
 	if err != nil {
