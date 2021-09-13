@@ -729,7 +729,7 @@ func (t *Tracee) populateBPFMaps() error {
 		if t.config.Debug {
 			fmt.Fprintf(os.Stderr, "KConfig: warning: assuming kconfig values, might have unexpected behavior\n")
 		}
-		value = helpers.BUILTIN
+		value = helpers.BUILTIN // assume CONFIG_ARCH_HAS_SYSCALL_WRAPPER is a BUILTIN option
 	} else {
 		value = t.config.KernelConfig.GetValue(key) // undefined, builtin OR module
 	}

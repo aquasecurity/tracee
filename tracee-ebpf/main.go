@@ -125,7 +125,7 @@ func main() {
 			OSInfo, err := helpers.GetOSInfo()
 			if err != nil {
 				if debug {
-					fmt.Fprintf(os.Stderr, "OSInfo: warning: os-release file could be found\n(%v)\n", err) // only to be enforced when BTF needs to be downloaded, later on
+					fmt.Fprintf(os.Stderr, "OSInfo: warning: os-release file could not be found\n(%v)\n", err) // only to be enforced when BTF needs to be downloaded, later on
 					fmt.Fprintf(os.Stdout, "OSInfo: %v: %v\n", helpers.OS_KERNEL_RELEASE, OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE))
 				}
 			} else if debug {
