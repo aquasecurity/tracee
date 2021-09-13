@@ -34,12 +34,8 @@ const querySelectedEvents string = "data.%s.tracee_selected_events"
 const queryMetadata string = "data.%s.__rego_metadoc__"
 const packageNameRegex string = `package\s.*`
 
-const (
-	queryMatchAll = "data.tracee_aio.tracee_match_all"
-)
-
 // NewRegoSignature creates a new RegoSignature with the provided rego code string
-func NewRegoSignature(target string, partialEval bool, aioEnabled bool, regoCodes ...string) (types.Signature, error) {
+func NewRegoSignature(target string, partialEval bool, regoCodes ...string) (types.Signature, error) {
 	var err error
 	res := RegoSignature{}
 	regoMap := make(map[string]string)
@@ -61,10 +57,6 @@ func NewRegoSignature(target string, partialEval bool, aioEnabled bool, regoCode
 		regoMap[regoModuleName] = regoCode
 	}
 
-	if aioEnabled {
-		pkgName = "tracee_aio"
-	}
-
 	res.compiledRego, err = ast.CompileModules(regoMap)
 	if err != nil {
 		return nil, err
@@ -72,19 +64,10 @@ func NewRegoSignature(target string, partialEval bool, aioEnabled bool, regoCode
 
 	ctx := context.Background()
 
-	var query string
-	switch aioEnabled {
-	case true:
-		query = queryMatchAll
-	default:
-		query = fmt.Sprintf(queryMatch, pkgName)
-	}
-
 	if partialEval {
 		pr, err := rego.New(
-
 			rego.Compiler(res.compiledRego),
-			rego.Query(query),
+			rego.Query(fmt.Sprintf(queryMatch, pkgName)),
 		).PartialResult(ctx)
 		if err != nil {
 			return nil, err
@@ -98,7 +81,7 @@ func NewRegoSignature(target string, partialEval bool, aioEnabled bool, regoCode
 		res.matchPQ, err = rego.New(
 			rego.Target(target),
 			rego.Compiler(res.compiledRego),
-			rego.Query(query),
+			rego.Query(fmt.Sprintf(queryMatch, pkgName)),
 		).PrepareForEval(ctx)
 		if err != nil {
 			return nil, err
@@ -206,8 +189,7 @@ func (sig *RegoSignature) OnEvent(e types.Event) error {
 				return nil
 			}
 		case bool:
-			m, _ := sig.GetMetadata()
-			sig.dispatch(results[0].Expressions[0].Value, m.ID, ee)
+			sig.dispatch(results[0].Expressions[0].Value, ee)
 		}
 
 		// For AIO: result set can be an empty set of length=1, so we need to check value
@@ -216,34 +198,33 @@ func (sig *RegoSignature) OnEvent(e types.Event) error {
 			return nil
 		}
 
-		for sigID, val := range values {
-			sig.dispatch(val, sigID, ee)
-		}
+		sig.dispatch(values, ee)
 
 	}
 	return nil
 }
 
-func (sig *RegoSignature) dispatch(val interface{}, sigID string, ee tracee.Event) {
-	metadata, _ := sig.GetMetadata()
-	if sigID != "" {
-		metadata.ID = sigID
-	}
-
+func (sig *RegoSignature) dispatch(val interface{}, ee tracee.Event) {
 	switch v := val.(type) {
 	case bool:
 		if v {
 			sig.cb(types.Finding{
 				Data:        nil,
 				Context:     ee,
-				SigMetadata: metadata,
+				SigMetadata: sig.metadata,
 			})
 		}
 	case map[string]interface{}:
 		sig.cb(types.Finding{
 			Data:        v,
 			Context:     ee,
-			SigMetadata: metadata,
+			SigMetadata: sig.metadata,
+		})
+	case string:
+		sig.cb(types.Finding{
+			Data:        map[string]interface{}{sig.metadata.ID: val},
+			Context:     ee,
+			SigMetadata: sig.metadata,
 		})
 	}
 }

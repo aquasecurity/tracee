@@ -128,7 +128,7 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 
 	var res []types.Signature
 	if aioEnabled {
-		sig, err := regosig.NewRegoSignature(target, partialEval, aioEnabled, append(regoHelpers, regoCodes...)...)
+		sig, err := regosig.NewAIORegoSignature(regosig.Options{Target: target, PartialEval: partialEval}, append(regoHelpers, regoCodes...)...)
 		if err != nil {
 			log.Printf("error creating AIO rego signature: %s", err)
 			return nil, err
@@ -153,7 +153,7 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 				log.Printf("error reading file %s: %v", path, err)
 				return nil
 			}
-			sig, err := regosig.NewRegoSignature(target, partialEval, aioEnabled, append(regoHelpers, string(regoCode))...)
+			sig, err := regosig.NewRegoSignature(target, partialEval, append(regoHelpers, string(regoCode))...)
 			if err != nil {
 				log.Printf("error creating rego signature with: %s: %v ", regoCode[0:handleRegoParsingError(regoCode)], err)
 				return nil
