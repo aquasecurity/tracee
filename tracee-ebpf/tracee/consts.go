@@ -922,7 +922,7 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	SysEnterEventID:               {{Type: "int", Name: "syscall"}},
 	SysExitEventID:                {{Type: "int", Name: "syscall"}},
 	SchedProcessForkEventID:       {{Type: "int", Name: "parent_tid"}, {Type: "int", Name: "parent_ns_tid"}, {Type: "int", Name: "child_tid"}, {Type: "int", Name: "child_ns_tid"}},
-	SchedProcessExecEventID:       {{Type: "const char *", Name: "cmdpath"}, {Type: "const char *", Name: "pathname"}, {Type: "const char*const*", Name: "argv"}, {Type: "const char*const*", Name: "env"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}, {Type: "int", Name: "invoked_from_kernel"}},
+	SchedProcessExecEventID:       {{Type: "const char*", Name: "cmdpath"}, {Type: "const char*", Name: "pathname"}, {Type: "const char*const*", Name: "argv"}, {Type: "const char*const*", Name: "env"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}, {Type: "int", Name: "invoked_from_kernel"}},
 	SchedProcessExitEventID:       {},
 	SchedSwitchEventID:            {{Type: "int", Name: "cpu"}, {Type: "int", Name: "prev_tid"}, {Type: "const char*", Name: "prev_comm"}, {Type: "int", Name: "next_tid"}, {Type: "const char*", Name: "next_comm"}},
 	DoExitEventID:                 {},
@@ -946,6 +946,6 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	SecurityBPFEventID:            {{Type: "int", Name: "cmd"}},
 	SecurityBPFMapEventID:         {{Type: "unsigned int", Name: "map_id"}, {Type: "const char*", Name: "map_name"}},
 	SecurityKernelReadFileEventID: {{Type: "const char*", Name: "pathname"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}, {Type: "const char*", Name: "type"}},
-	SecurityInodeMknodEventID:     {{Type: "const char*", Name: "file_name"}, {Type: "mode_t", Name: "mode"}, {Type: "dev_t", Name: "dev"}},
+	SecurityInodeMknodEventID:     {{Type: "const char*", Name: "file_name"}, {Type: "umode_t", Name: "mode"}, {Type: "dev_t", Name: "dev"}},
 	InitNamespacesEventID:         {{Type: "u32", Name: "cgroup"}, {Type: "u32", Name: "ipc"}, {Type: "u32", Name: "mnt"}, {Type: "u32", Name: "net"}, {Type: "u32", Name: "pid"}, {Type: "u32", Name: "pid_for_children"}, {Type: "u32", Name: "time"}, {Type: "u32", Name: "time_for_children"}, {Type: "u32", Name: "user"}, {Type: "u32", Name: "uts"}},
 }

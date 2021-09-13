@@ -89,26 +89,21 @@ func (t *Tracee) decodeRawEvent(done <-chan struct{}) (<-chan RawEvent, <-chan e
 				ArgMetas: make([]external.ArgMeta, ctx.Argnum),
 			}
 
+			params := EventsIDToParams[ctx.EventID]
+			if params == nil {
+				errc <- fmt.Errorf("failed to get parameters of event %d", ctx.EventID)
+				continue
+			}
+
 			for i := 0; i < int(ctx.Argnum); i++ {
-				argIdx, argVal, err := readArgFromBuff(dataBuff)
+				argMeta, argVal, err := readArgFromBuff(dataBuff, params)
 				if err != nil {
-					errc <- err
+					errc <- fmt.Errorf("failed to read argument %d of event %d: %v", i, ctx.EventID, err)
 					continue
 				}
 
-				if int(argIdx) >= len(EventsIDToParams[ctx.EventID]) {
-					errc <- fmt.Errorf("invalid arg index %d of event %d", argIdx, ctx.EventID)
-					continue
-				}
-				argName := EventsIDToParams[ctx.EventID][argIdx].Name
-				argType, ok := t.ParamTypes[ctx.EventID][argName]
-				if !ok {
-					errc <- fmt.Errorf("invalid arg type for arg name %s of event %d", argName, ctx.EventID)
-					continue
-				}
-				rawEvent.Args[argName] = argVal
-				rawEvent.ArgMetas[i].Name = argName
-				rawEvent.ArgMetas[i].Type = argType
+				rawEvent.Args[argMeta.Name] = argVal
+				rawEvent.ArgMetas[i] = argMeta
 			}
 
 			select {
