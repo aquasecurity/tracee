@@ -198,30 +198,54 @@ func (sig *RegoSignature) OnEvent(e types.Event) error {
 	}
 
 	if len(results) > 0 && len(results[0].Expressions) > 0 && results[0].Expressions[0].Value != nil {
-		// result set can be an empty set of length=1, so we need to check value
+
+		switch results[0].Expressions[0].Value.(type) {
+		case map[string]interface{}:
+			values, ok := results[0].Expressions[0].Value.(map[string]interface{})
+			if ok && len(values) <= 0 {
+				return nil
+			}
+		case bool:
+			m, _ := sig.GetMetadata()
+			sig.dispatch(results[0].Expressions[0].Value, m.ID, ee)
+		}
+
+		// For AIO: result set can be an empty set of length=1, so we need to check value
 		values, ok := results[0].Expressions[0].Value.(map[string]interface{})
 		if ok && len(values) <= 0 {
 			return nil
 		}
 
-		switch v := results[0].Expressions[0].Value.(type) {
-		case bool:
-			if v {
-				sig.cb(types.Finding{
-					Data:        nil,
-					Context:     ee,
-					SigMetadata: sig.metadata,
-				})
-			}
-		case map[string]interface{}:
-			sig.cb(types.Finding{
-				Data:        v,
-				Context:     ee,
-				SigMetadata: sig.metadata,
-			})
+		for sigID, val := range values {
+			sig.dispatch(val, sigID, ee)
 		}
+
 	}
 	return nil
+}
+
+func (sig *RegoSignature) dispatch(val interface{}, sigID string, ee tracee.Event) {
+	metadata, _ := sig.GetMetadata()
+	if sigID != "" {
+		metadata.ID = sigID
+	}
+
+	switch v := val.(type) {
+	case bool:
+		if v {
+			sig.cb(types.Finding{
+				Data:        nil,
+				Context:     ee,
+				SigMetadata: metadata,
+			})
+		}
+	case map[string]interface{}:
+		sig.cb(types.Finding{
+			Data:        v,
+			Context:     ee,
+			SigMetadata: metadata,
+		})
+	}
 }
 
 // OnSignal implements the Signature interface by handling lifecycle events of the signature
