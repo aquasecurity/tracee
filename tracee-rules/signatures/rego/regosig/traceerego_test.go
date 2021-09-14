@@ -290,3 +290,129 @@ func TestNewRegoSignature(t *testing.T) {
 		}, gotEvents)
 	}
 }
+
+func Test_generateRegoMap(t *testing.T) {
+	type args struct {
+		regoCodes []string
+	}
+	tests := []struct {
+		name        string
+		args        args
+		wantPkgName string
+		wantRegoMap map[string]string
+		wantErr     string
+	}{
+		{
+			name: "happy path, single rego policy",
+			args: args{regoCodes: []string{`package FOO_1
+
+__rego_metadoc__ := {
+	"id": "FOO-1",
+	"name": "example1"
+}
+
+tracee_selected_events[eventSelector] {
+	eventSelector := {
+		"source": "tracee",
+		#"name": "execve"
+	}
+}
+
+tracee_match {
+	endswith(input.args[0].value, "foo")
+}`},
+			},
+			wantPkgName: "FOO_1",
+			wantRegoMap: map[string]string{
+				"FOO_1": `package FOO_1
+
+__rego_metadoc__ := {
+	"id": "FOO-1",
+	"name": "example1"
+}
+
+tracee_selected_events[eventSelector] {
+	eventSelector := {
+		"source": "tracee",
+		#"name": "execve"
+	}
+}
+
+tracee_match {
+	endswith(input.args[0].value, "foo")
+}`,
+			},
+		},
+		{
+			name: "happy path, rego policy with helpers.rego",
+			args: args{regoCodes: []string{`package FOO_1
+
+__rego_metadoc__ := {
+	"id": "FOO-1",
+	"name": "example1"
+}
+
+tracee_selected_events[eventSelector] {
+	eventSelector := {
+		"source": "tracee",
+		#"name": "execve"
+	}
+}
+
+tracee_match {
+	endswith(input.args[0].value, "foo")
+}`, `package tracee.helpers
+
+get_tracee_argument(arg_name) = res {
+    arg := input.args[_]
+    arg.name == arg_name
+    res := arg.value
+}`},
+			},
+			wantPkgName: "FOO_1",
+			wantRegoMap: map[string]string{
+				"FOO_1": `package FOO_1
+
+__rego_metadoc__ := {
+	"id": "FOO-1",
+	"name": "example1"
+}
+
+tracee_selected_events[eventSelector] {
+	eventSelector := {
+		"source": "tracee",
+		#"name": "execve"
+	}
+}
+
+tracee_match {
+	endswith(input.args[0].value, "foo")
+}`,
+				"tracee.helpers": `package tracee.helpers
+
+get_tracee_argument(arg_name) = res {
+    arg := input.args[_]
+    arg.name == arg_name
+    res := arg.value
+}`,
+			},
+		},
+		{
+			name:    "sad path, invalid rego policy",
+			args:    args{regoCodes: []string{`invalid policy`}},
+			wantErr: "invalid rego code received",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotPkgName, gotRegoMap, err := generateRegoMap(tt.args.regoCodes...)
+			if tt.wantErr != "" {
+				assert.Equal(t, tt.wantErr, err.Error(), tt.name)
+			} else {
+				require.NoError(t, err, tt.name)
+				assert.Equal(t, tt.wantPkgName, gotPkgName, tt.name)
+				assert.Equal(t, tt.wantRegoMap, gotRegoMap, tt.name)
+			}
+		})
+	}
+}

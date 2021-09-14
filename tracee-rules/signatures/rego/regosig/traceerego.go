@@ -34,27 +34,34 @@ const querySelectedEvents string = "data.%s.tracee_selected_events"
 const queryMetadata string = "data.%s.__rego_metadoc__"
 const packageNameRegex string = `package\s.*`
 
-// NewRegoSignature creates a new RegoSignature with the provided rego code string
-func NewRegoSignature(target string, partialEval bool, regoCodes ...string) (types.Signature, error) {
-	var err error
-	res := RegoSignature{}
-	regoMap := make(map[string]string)
-
-	re := regexp.MustCompile(packageNameRegex)
-
+func generateRegoMap(regoCodes ...string) (string, map[string]string, error) {
 	var pkgName string
+	re := regexp.MustCompile(packageNameRegex)
+	regoMap := make(map[string]string)
 	for _, regoCode := range regoCodes {
 		var regoModuleName string
 		splittedName := strings.Split(re.FindString(regoCode), " ")
 		if len(splittedName) > 1 {
 			regoModuleName = splittedName[1]
 		} else {
-			return nil, fmt.Errorf("invalid rego code received")
+			return "", nil, fmt.Errorf("invalid rego code received")
 		}
 		if !strings.Contains(regoCode, "package tracee.helpers") {
 			pkgName = regoModuleName
 		}
 		regoMap[regoModuleName] = regoCode
+	}
+	return pkgName, regoMap, nil
+}
+
+// NewRegoSignature creates a new RegoSignature with the provided rego code string
+func NewRegoSignature(target string, partialEval bool, regoCodes ...string) (types.Signature, error) {
+	var err error
+	res := RegoSignature{}
+
+	pkgName, regoMap, err := generateRegoMap(regoCodes...)
+	if err != nil {
+		return nil, err
 	}
 
 	res.compiledRego, err = ast.CompileModules(regoMap)
