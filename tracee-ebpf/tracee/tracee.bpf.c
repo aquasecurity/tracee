@@ -1441,7 +1441,7 @@ out:
     return 1;
 }
 
-static __always_inline int save_path_to_str_buf(buf_t *string_p, const struct path *path)
+static __always_inline void* get_path_str(struct path *path)
 {
     struct path f_path;
     bpf_probe_read(&f_path, sizeof(struct path), path);
@@ -1461,6 +1461,11 @@ static __always_inline int save_path_to_str_buf(buf_t *string_p, const struct pa
     unsigned int len;
     unsigned int off;
     int sz;
+
+    // Get per-cpu string buffer
+    buf_t *string_p = get_buf(STRING_BUF_IDX);
+    if (string_p == NULL)
+        return NULL;
 
     #pragma unroll
     for (int i = 0; i < MAX_PATH_COMPONENTS; i++) {
@@ -1520,15 +1525,20 @@ static __always_inline int save_path_to_str_buf(buf_t *string_p, const struct pa
     }
 
     set_buf_off(STRING_BUF_IDX, buf_off);
-    return buf_off;
+    return &string_p->buf[buf_off];
 }
 
-static __always_inline int save_dentry_path_to_str_buf(buf_t *string_p, struct dentry* dentry)
+static __always_inline void* get_dentry_path_str(struct dentry* dentry)
 {
     char slash = '/';
     int zero = 0;
 
     u32 buf_off = (MAX_PERCPU_BUFSIZE >> 1);
+
+    // Get per-cpu string buffer
+    buf_t *string_p = get_buf(STRING_BUF_IDX);
+    if (string_p == NULL)
+        return NULL;
 
     #pragma unroll
     for (int i = 0; i < MAX_PATH_COMPONENTS; i++) {
@@ -1573,7 +1583,7 @@ static __always_inline int save_dentry_path_to_str_buf(buf_t *string_p, struct d
     }
 
     set_buf_off(STRING_BUF_IDX, buf_off);
-    return buf_off;
+    return &string_p->buf[buf_off];
 }
 
 static __always_inline int events_perf_submit(void *ctx)
@@ -2367,21 +2377,14 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     //env_end = get_env_end_from_mm(mm);
     //int envc = get_envc_from_bprm(bprm);
 
-    // Get per-cpu string buffer
-    buf_t *string_p = get_buf(STRING_BUF_IDX);
-    if (string_p == NULL)
-        return -1;
-    save_path_to_str_buf(string_p, &file->f_path);
-    u32 *off = get_buf_off(STRING_BUF_IDX);
-    if (off == NULL)
-        return -1;
+    void *file_path = get_path_str(&file->f_path);
 
     // Note: Starting from kernel 5.9, there are two new interesting fields in bprm that we should consider adding:
     // 1. struct file *executable - which can be used to get the executable name passed to an interpreter
     // 2. fdpath - generated filename for execveat (after resolving dirfd)
 
     save_str_to_buf(submit_p, (void *)filename, 0);
-    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], 1);
+    save_str_to_buf(submit_p, file_path, 1);
     save_args_str_arr_to_buf(submit_p, (void *)arg_start, (void *)arg_end, argc, 2);
     //save_args_str_arr_to_buf(submit_p, (void *)env_start, (void *)env_end, envc, 3);
     save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), 4);
@@ -2554,17 +2557,9 @@ int BPF_KPROBE(trace_security_bprm_check)
     struct file* file = get_file_ptr_from_bprm(bprm);
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
+    void *file_path = get_path_str(&file->f_path);
 
-    // Get per-cpu string buffer
-    buf_t *string_p = get_buf(STRING_BUF_IDX);
-    if (string_p == NULL)
-        return -1;
-    save_path_to_str_buf(string_p, &file->f_path);
-    u32 *off = get_buf_off(STRING_BUF_IDX);
-    if (off == NULL)
-        return -1;
-
-    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], 0);
+    save_str_to_buf(submit_p, file_path, 0);
     save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), 1);
     save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), 2);
 
@@ -2588,17 +2583,9 @@ int BPF_KPROBE(trace_security_file_open)
     struct file *file = (struct file *)PT_REGS_PARM1(ctx);
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
+    void *file_path = get_path_str(&file->f_path);
 
-    // Get per-cpu string buffer
-    buf_t *string_p = get_buf(STRING_BUF_IDX);
-    if (string_p == NULL)
-        return -1;
-    save_path_to_str_buf(string_p, &file->f_path);
-    u32 *off = get_buf_off(STRING_BUF_IDX);
-    if (off == NULL)
-        return -1;
-
-    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], 0);
+    save_str_to_buf(submit_p, file_path, 0);
     save_to_submit_buf(submit_p, (void*)&file->f_flags, sizeof(int), 1);
     save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), 2);
     save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), 3);
@@ -2629,21 +2616,14 @@ int BPF_KPROBE(trace_security_sb_mount)
     context_t context = init_and_save_context(ctx, submit_p, SECURITY_SB_MOUNT, 4 /*argnum*/, 0 /*ret*/);
 
     const char *dev_name = (const char *)PT_REGS_PARM1(ctx);
-    const struct path *path = (const struct path *)PT_REGS_PARM2(ctx);
+    struct path *path = (struct path *)PT_REGS_PARM2(ctx);
     const char *type = (const char *)PT_REGS_PARM3(ctx);
     unsigned long flags = (unsigned long)PT_REGS_PARM4(ctx);
 
-    // Get per-cpu string buffer
-    buf_t *string_p = get_buf(STRING_BUF_IDX);
-    if (string_p == NULL)
-        return -1;
-    save_path_to_str_buf(string_p, path);
-    u32 *off = get_buf_off(STRING_BUF_IDX);
-    if (off == NULL)
-        return -1;
+    void *path_str = get_path_str(path);
 
     context.argnum = save_str_to_buf(submit_p, (void *)dev_name, 0);
-    context.argnum += save_str_to_buf(submit_p, (void *)&string_p->buf[*off], 1);
+    context.argnum += save_str_to_buf(submit_p, path_str, 1);
     context.argnum += save_str_to_buf(submit_p, (void *)type, 2);
     context.argnum += save_to_submit_buf(submit_p, &flags, sizeof(unsigned long), 3);
 
@@ -2668,17 +2648,9 @@ int BPF_KPROBE(trace_security_inode_unlink)
 
     //struct inode *dir = (struct inode *)PT_REGS_PARM1(ctx);
     struct dentry *dentry = (struct dentry *)PT_REGS_PARM2(ctx);
+    void *dentry_path = get_dentry_path_str(dentry);
 
-    // Get per-cpu string buffer
-    buf_t *string_p = get_buf(STRING_BUF_IDX);
-    if (string_p == NULL)
-        return -1;
-    save_dentry_path_to_str_buf(string_p, dentry);
-    u32 *off = get_buf_off(STRING_BUF_IDX);
-    if (off == NULL)
-        return -1;
-
-    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], 0);
+    save_str_to_buf(submit_p, dentry_path, 0);
 
     events_perf_submit(ctx);
     return 0;
@@ -3513,15 +3485,7 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
     unsigned long vlen;
 
     struct file *file      = (struct file *) saved_args.args[0];
-
-    // Get per-cpu string buffer
-    buf_t *string_p = get_buf(STRING_BUF_IDX);
-    if (string_p == NULL)
-        return -1;
-    save_path_to_str_buf(string_p, &file->f_path);
-    u32 *off = get_buf_off(STRING_BUF_IDX);
-    if (off == NULL)
-        return -1;
+    void *file_path = get_path_str(&file->f_path);
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
@@ -3555,7 +3519,7 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
         set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
         init_and_save_context(ctx, submit_p, event_id, 5 /*argnum*/, PT_REGS_RC(ctx));
 
-        save_str_to_buf(submit_p, (void *)&string_p->buf[*off], 0);
+        save_str_to_buf(submit_p, file_path, 0);
         save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), 1);
         save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), 2);
 
@@ -3576,7 +3540,7 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
 
         u8 header[FILE_MAGIC_HDR_SIZE];
 
-        save_str_to_buf(submit_p, (void *)&string_p->buf[*off], 0);
+        save_str_to_buf(submit_p, file_path, 0);
 
         if (event_id == VFS_WRITE) {
             if (header_bytes < FILE_MAGIC_HDR_SIZE)
@@ -3645,10 +3609,11 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
     buf_t *string_p = get_buf(STRING_BUF_IDX);
     if (string_p == NULL)
         return -1;
-    save_path_to_str_buf(string_p, &file->f_path);
+    get_path_str(&file->f_path);
     u32 *off = get_buf_off(STRING_BUF_IDX);
     if (off == NULL)
         return -1;
+
 
     // Check if capture write was requested for this path
     #pragma unroll
@@ -3929,19 +3894,9 @@ int BPF_KPROBE(trace_security_kernel_read_file)
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
     enum kernel_read_file_id type_id = (enum kernel_read_file_id)PT_REGS_PARM2(ctx);
+    void *file_path = get_path_str(&file->f_path);
 
-    // Get per-cpu string buffer
-    buf_t *string_p = get_buf(STRING_BUF_IDX);
-    if (string_p == NULL) {
-        return -1;
-    }
-    save_path_to_str_buf(string_p, &file->f_path);
-    u32 *off = get_buf_off(STRING_BUF_IDX);
-    if (off == NULL) {
-        return -1;
-    }
-
-    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], 0);
+    save_str_to_buf(submit_p, file_path, 0);
     save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), 1);
     save_to_submit_buf(submit_p, &inode_nr, sizeof(unsigned long), 2);
     save_to_submit_buf(submit_p, &type_id, sizeof(int), 3);
@@ -3969,19 +3924,9 @@ int BPF_KPROBE(trace_security_inode_mknod)
     struct dentry* dentry = (struct dentry*)PT_REGS_PARM2(ctx);
     unsigned short mode = (unsigned short)PT_REGS_PARM3(ctx);
     unsigned int dev = (unsigned int)PT_REGS_PARM4(ctx);
+    void *dentry_path = get_dentry_path_str(dentry);
 
-    // Get per-cpu string buffer
-    buf_t *string_p = get_buf(STRING_BUF_IDX);
-    if (string_p == NULL) {
-        return -1;
-    }
-
-    save_dentry_path_to_str_buf(string_p, dentry);
-    u32 *off = get_buf_off(STRING_BUF_IDX);
-    if (off == NULL) {
-        return -1;
-    }
-    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], 0);
+    save_str_to_buf(submit_p, dentry_path, 0);
     save_to_submit_buf(submit_p, &mode, sizeof(unsigned short), 1);
     save_to_submit_buf(submit_p, &dev, sizeof(dev_t), 2);
 
