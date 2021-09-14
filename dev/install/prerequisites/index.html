@@ -528,24 +528,26 @@
                 
                 
                 <h1 id="prerequisites">Prerequisites</h1>
-<p>Portable (CO:RE) option:
-- Linux kernel version &gt;= 4.18
-- BTF enabled (<em>You can manually detect if your environments supports it by checking if the following file exists on your machine: /sys/kernel/btf/vmlinux or consult the following documentation: https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere</em>)</p>
-<p>Kernel version specific option:
-- Linux kernel version &gt;= 4.18
-- Linux kernel headers available under conventional location (see <a href="../headers">Linux Headers</a> section for more info)
-- libc, and the libraries: libelf, zlib
-- GNU Make &gt;= 4.3
-- clang &gt;= 11
-Exceptions:</p>
-<ul>
-<li>Tracee supports loading a pre-compiled eBPF file, in which case the kernel headers are not required at runtime, but only for the one-time compilation of the eBPF program. See <a href="../ebpf-compilation">Setup Options</a> for more info.</li>
-<li>When using Tracee's Docker image, all of the tooling is built into the image. The only requirement left is the kernel headers or the pre-built eBPF artifact. See <a href="../ebpf-compilation">Setup Options</a> for more info.</li>
-</ul>
+<p><strong>Portable (CO:RE) option:</strong>
+* Linux kernel version &gt;= 4.18
+* BTF enabled (<em>You can manually detect if your environments supports it by checking if the following file exists on your machine: /sys/kernel/btf/vmlinux or consult the following documentation: https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere)</em></p>
+<blockquote>
+<p>Note: When using Tracee's Docker image, an extra mount might be required to access the kernel configuration file. Depending on the linux distribution this can be in either <code>/proc/config.gz</code> (which docker mounts by default) or <code>/boot/config-$(uname -r)</code> (which must be mounted explicitly).</p>
+</blockquote>
+<p><strong>Kernel version specific option:</strong>
+* Linux kernel version &gt;= 4.18
+* Linux kernel headers available under conventional location (see <a href="../headers">Linux Headers</a> section for more info)
+* libc, and the libraries: libelf, zlib
+* GNU Make &gt;= 4.3
+* clang &gt;= 11</p>
+<p><em>Exceptions:</em>
+* Tracee supports loading a pre-compiled eBPF file, in which case the kernel headers are not required at runtime, but only for the one-time compilation of the eBPF program. See <a href="../ebpf-compilation">Setup Options</a> for more info.
+* When using Tracee's Docker image, all of the tooling is built into the image. The only requirement left is the kernel headers or the pre-built eBPF artifact. See <a href="../ebpf-compilation">Setup Options</a> for more info.</p>
 <h1 id="permissions">Permissions</h1>
 <p>For using the eBPF Linux subsystem, Tracee needs to run with sufficient capabilities: 
-- <code>CAP_SYS_RESOURCE</code> (to manage eBPF maps limits)
-- <code>CAP_BPF</code>+<code>CAP_TRACING</code> which are available on recent kernels (&gt;=5.8), or <code>SYS_ADMIN</code> on older kernels (to load and attach the eBPF programs).</p>
+* <code>CAP_SYS_RESOURCE</code> (to manage eBPF maps limits)
+* <code>CAP_BPF</code>+<code>CAP_PERFMON</code> which are available on recent kernels (&gt;=5.8), or <code>CAP_SYS_ADMIN</code> on older kernels (to load and attach the eBPF programs).
+* On some environments (e.g. Ubuntu) <code>CAP_IPC_LOCK</code> might be required as well</p>
 <p>Alternatively, run as <code>root</code> or with the <code>--privileged</code> flag of Docker.</p>
                 
               

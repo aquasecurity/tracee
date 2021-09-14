@@ -610,14 +610,20 @@
 <p>Check out the <a href="https://info.aquasec.com/ebpf-runtime-security">Tracee video hub</a> for more.</p>
 <h2 id="quickstart">Quickstart</h2>
 <p>Before you proceed, make sure you follow the <a href="install/prerequisites/">minimum requirements for running Tracee</a>.</p>
-<div class="highlight"><pre><span></span><code>docker run --name tracee --rm --privileged -it aquasec/tracee:latest
+<p>If running on <strong>BTF enabled kernel</strong>:</p>
+<div class="highlight"><pre><span></span><code>docker run --name tracee --rm --pid<span class="o">=</span>host --privileged -v /tmp/tracee:/tmp/tracee -it aquasec/tracee:latest
 </code></pre></div>
-<p>Note: __Running bpf requires access to the kernel configuration file. Depending on the linux distribution this can be in either <code>/proc/config.gz</code> (which docker mounts by default) or <code>/boot/config-$(uname -r)</code> (which must be mounted explicitly)._</p>
-<p>This will run Tracee with the portable CO:RE bpf object and default settings. It will start reporting detections to standard output.<br />
-In order to simulate a suspicious behavior, you can run <code>strace ls</code> in another terminal, which will trigger the "Anti-Debugging" signature, which is loaded by default.</p>
 <blockquote>
-<p>Note: You may need to change the volume mounts for the kernel headers based on your setup if the kernel doesn't have BTF enabled. See <a href="install/headers/">Linux Headers</a> section for more info.</p>
+<p>Note: Running on BTF enabled kernel requires access to the kernel configuration file. Depending on the linux distribution this can be in either <code>/proc/config.gz</code> (which docker mounts by default) or <code>/boot/config-$(uname -r)</code> (which must be mounted explicitly).</p>
 </blockquote>
+<p>If running on <strong>BTF disabled kernel</strong>:
+<div class="highlight"><pre><span></span><code>docker run --name tracee --rm --pid<span class="o">=</span>host --privileged -v /tmp/tracee:/tmp/tracee -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -it aquasec/tracee:latest
+</code></pre></div></p>
+<blockquote>
+<p>Note: You may need to change the volume mounts for the kernel headers based on your setup. See <a href="install/headers/">Linux Headers</a> section for more info.</p>
+</blockquote>
+<p>This will run Tracee with default settings and start reporting detections to standard output.
+In order to simulate a suspicious behavior, you can run <code>strace ls</code> in another terminal, which will trigger the "Anti-Debugging" signature, which is loaded by default.</p>
 <h2 id="trace">Trace</h2>
 <p>In some cases, you might want to leverage Tracee's eBPF event collection capabilities directly, without involving the detection engine. This might be useful for debugging/troubleshooting/analysis/research/education. In this case you can run Tracee with the <code>trace</code> sub-command, which will start dumping raw data directly into standard output. There are many configurations and options available so you can control exactly what is being collected and how. see the Documentation or add the <code>--help</code> flag for more.</p>
 <h2 id="components">Components</h2>
