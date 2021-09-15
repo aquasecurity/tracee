@@ -25,7 +25,7 @@ func NewAIORegoSignature(o Options, regoCodes ...string) (types.Signature, error
 	var err error
 	res := RegoSignature{}
 
-	_, regoMap, err := generateRegoMap(regoCodes...)
+	_, regoMap, err := GenerateRegoMap(regoCodes...)
 	if err != nil {
 		return nil, err
 	}

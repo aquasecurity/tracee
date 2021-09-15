@@ -556,7 +556,7 @@ get_tracee_argument(arg_name) = res {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotPkgName, gotRegoMap, err := generateRegoMap(tt.args.regoCodes...)
+			gotPkgName, gotRegoMap, err := regosig.GenerateRegoMap(tt.args.regoCodes...)
 			if tt.wantErr != "" {
 				assert.Equal(t, tt.wantErr, err.Error(), tt.name)
 			} else {

@@ -36,7 +36,7 @@ const querySelectedEvents string = "data.%s.tracee_selected_events"
 const queryMetadata string = "data.%s.__rego_metadoc__"
 const packageNameRegex string = `package\s.*`
 
-func generateRegoMap(regoCodes ...string) (string, map[string]string, error) {
+func GenerateRegoMap(regoCodes ...string) (string, map[string]string, error) {
 	var pkgName string
 	re := regexp.MustCompile(packageNameRegex)
 	regoMap := make(map[string]string)
@@ -61,7 +61,7 @@ func NewRegoSignature(target string, partialEval bool, regoCodes ...string) (typ
 	var err error
 	res := RegoSignature{}
 
-	pkgName, regoMap, err := generateRegoMap(regoCodes...)
+	pkgName, regoMap, err := GenerateRegoMap(regoCodes...)
 	if err != nil {
 		return nil, err
 	}
