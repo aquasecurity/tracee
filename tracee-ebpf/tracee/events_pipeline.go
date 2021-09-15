@@ -90,17 +90,17 @@ func (t *Tracee) decodeRawEvent(done <-chan struct{}) (<-chan RawEvent, <-chan e
 			}
 
 			for i := 0; i < int(ctx.Argnum); i++ {
-				argTag, argVal, err := readArgFromBuff(dataBuff)
+				argIdx, argVal, err := readArgFromBuff(dataBuff)
 				if err != nil {
 					errc <- err
 					continue
 				}
 
-				argName, ok := t.DecParamName[ctx.EventID%2][argTag]
-				if !ok {
-					errc <- fmt.Errorf("invalid arg tag for event %d", ctx.EventID)
+				if int(argIdx) >= len(EventsIDToParams[ctx.EventID]) {
+					errc <- fmt.Errorf("invalid arg index %d of event %d", argIdx, ctx.EventID)
 					continue
 				}
+				argName := EventsIDToParams[ctx.EventID][argIdx].Name
 				argType, ok := t.ParamTypes[ctx.EventID][argName]
 				if !ok {
 					errc <- fmt.Errorf("invalid arg type for arg name %s of event %d", argName, ctx.EventID)

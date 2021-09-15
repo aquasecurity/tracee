@@ -26,6 +26,8 @@ BPF_BUNDLE := $(OUT_DIR)/tracee.bpf.tar.gz
 LIBBPF_SRC := 3rdparty/libbpf/src
 LIBBPF_HEADERS := $(OUT_DIR)/libbpf/usr/include
 LIBBPF_OBJ := $(OUT_DIR)/libbpf/libbpf.a
+OS_RELEASE_FILE := /etc/os-release
+
 # static build:
 ifdef STATIC
 CGO_EXT_LDFLAGS += -static
@@ -33,15 +35,18 @@ endif
 OUT_DOCKER ?= tracee
 DOCKER_BUILDER ?= tracee-builder
 # DOCKER_BUILDER_KERN_SRC(/BLD) is where the docker builder looks for kernel headers
-DOCKER_BUILDER_KERN_BLD ?= $(if $(shell readlink $(KERN_BLD_PATH)),$(shell readlink $(KERN_BLD_PATH)),$(KERN_BLD_PATH))
-DOCKER_BUILDER_KERN_SRC ?= $(if $(shell readlink $(KERN_SRC_PATH)),$(shell readlink $(KERN_SRC_PATH)),$(KERN_SRC_PATH))
+DOCKER_BUILDER_KERN_BLD ?= $(if $(shell readlink -f $(KERN_BLD_PATH)),$(shell readlink -f $(KERN_BLD_PATH)),$(KERN_BLD_PATH))
+DOCKER_BUILDER_KERN_SRC ?= $(if $(shell readlink -f $(KERN_SRC_PATH)),$(shell readlink -f $(KERN_SRC_PATH)),$(KERN_SRC_PATH))
 # DOCKER_BUILDER_KERN_SRC_MNT is the kernel headers directory to mount into the docker builder container. DOCKER_BUILDER_KERN_SRC should usually be a descendent of this path.
 DOCKER_BUILDER_KERN_SRC_MNT ?= $(dir $(DOCKER_BUILDER_KERN_SRC))
 LINUX_VERSION_CODE := $(shell uname -r | awk '{split($$0,a,"."); split(a[3], b, "-"); print lshift(a[1], 16) + lshift(a[2],8) + b[1];}')
 
-ifneq (,$(wildcard /etc/redhat-release))
-	RHEL_MAJOR := $(shell grep -Eoh -m 1 '[0-9]+\.[0-9]+' /etc/redhat-release | cut -d '.' -f 1)
-	RHEL_MINOR := $(shell grep -Eoh -m 1 '[0-9]+\.[0-9]+' /etc/redhat-release | cut -d '.' -f 2)
+DIST_ID := $(shell grep -m 1 'ID=' $(OS_RELEASE_FILE) | cut -d '=' -f '2' | sed 's/\"//g')
+VERSION_ID := $(shell grep -m 1 'VERSION_ID=' $(OS_RELEASE_FILE) | cut -d '=' -f '2' | sed 's/\"//g')
+CENTOS_MERGED_RHEL := $(shell echo $(DIST_ID) | sed 's/centos/rhel/')
+ifeq ($(CENTOS_MERGED_RHEL), rhel)
+	RHEL_MAJOR := $(shell echo $(VERSION_ID) | cut -d '.' -f 1)
+	RHEL_MINOR := $(shell echo $(VERSION_ID) | cut -d '.' -f 2)
 	RHEL_RELEASE_CODE := $(shell echo $$(($(RHEL_MAJOR) << 8 | $(RHEL_MINOR))))
 else
 	RHEL_RELEASE_CODE := 0

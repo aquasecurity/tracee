@@ -176,7 +176,71 @@ func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 		if cmd, isInt32 := args["cmd"].(int32); isInt32 {
 			args["cmd"] = helpers.ParseBPFCmd(cmd)
 		}
+	case SecurityKernelReadFileEventID:
+		if readFileId, isUint32 := args["type"].(uint32); isUint32 {
+			typeIdStr, err := ParseKernelReadFileId(int32(readFileId))
+			if err == nil {
+				args["type"] = typeIdStr
+			}
+		}
 	}
 
 	return nil
+}
+
+// initializing kernelReadFileIdStrs once at init.
+var kernelReadFileIdStrs map[int32]string
+
+func init() {
+
+	osInfo, err := helpers.GetOSInfo()
+	if err != nil {
+		return
+	}
+
+	if osInfo.CompareOSBaseKernelRelease("5.9.3") != 1 {
+		// kernel version: >=5.9.3
+		kernelReadFileIdStrs = map[int32]string{
+			0: "unknown",
+			1: "firmware",
+			2: "kernel-module",
+			3: "kexec-image",
+			4: "kexec-initramfs",
+			5: "security-policy",
+			6: "x509-certificate",
+		}
+	} else if osInfo.CompareOSBaseKernelRelease("5.7.0") != 1 && osInfo.CompareOSBaseKernelRelease("5.9.2") != -1 && osInfo.CompareOSBaseKernelRelease("5.8.18") != 0 {
+		// kernel version: >=5.7 && <=5.9.2 && !=5.8.18
+		kernelReadFileIdStrs = map[int32]string{
+			0: "unknown",
+			1: "firmware",
+			2: "firmware",
+			3: "firmware",
+			4: "kernel-module",
+			5: "kexec-image",
+			6: "kexec-initramfs",
+			7: "security-policy",
+			8: "x509-certificate",
+		}
+	} else if osInfo.CompareOSBaseKernelRelease("5.8.18") == 0 || (osInfo.CompareOSBaseKernelRelease("4.18.0") != 1 && osInfo.CompareOSBaseKernelRelease("5.7.0") == 1) {
+		// kernel version: ==5.8.18 || (<5.7 && >=4.18)
+		kernelReadFileIdStrs = map[int32]string{
+			0: "unknown",
+			1: "firmware",
+			2: "firmware",
+			3: "kernel-module",
+			4: "kexec-image",
+			5: "kexec-initramfs",
+			6: "security-policy",
+			7: "x509-certificate",
+		}
+	}
+}
+
+func ParseKernelReadFileId(id int32) (string, error) {
+	kernelReadFileIdStr, idExists := kernelReadFileIdStrs[id]
+	if !idExists {
+		return "", fmt.Errorf("kernelReadFileId doesn't exist in kernelReadFileIdStrs map")
+	}
+	return kernelReadFileIdStr, nil
 }

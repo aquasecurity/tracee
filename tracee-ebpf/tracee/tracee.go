@@ -1,7 +1,6 @@
 package tracee
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -47,72 +46,6 @@ type Config struct {
 	ChanEvents         chan external.Event
 	ChanErrors         chan error
 	ChanDone           chan struct{}
-}
-
-type Filter struct {
-	EventsToTrace     []int32
-	UIDFilter         *UintFilter
-	PIDFilter         *UintFilter
-	NewPidFilter      *BoolFilter
-	MntNSFilter       *UintFilter
-	PidNSFilter       *UintFilter
-	UTSFilter         *StringFilter
-	CommFilter        *StringFilter
-	ContFilter        *BoolFilter
-	NewContFilter     *BoolFilter
-	RetFilter         *RetFilter
-	ArgFilter         *ArgFilter
-	ProcessTreeFilter *ProcessTreeFilter
-	Follow            bool
-}
-
-type UintFilter struct {
-	Equal    []uint64
-	NotEqual []uint64
-	Greater  uint64
-	Less     uint64
-	Is32Bit  bool
-	Enabled  bool
-}
-
-type ProcessTreeFilter struct {
-	PIDs    map[uint32]bool // PIDs is a map where k=pid and v represents whether it and its descendents should be traced or not
-	Enabled bool
-}
-
-type IntFilter struct {
-	Equal    []int64
-	NotEqual []int64
-	Greater  int64
-	Less     int64
-	Is32Bit  bool
-	Enabled  bool
-}
-
-type StringFilter struct {
-	Equal    []string
-	NotEqual []string
-	Enabled  bool
-}
-
-type BoolFilter struct {
-	Value   bool
-	Enabled bool
-}
-
-type RetFilter struct {
-	Filters map[int32]IntFilter
-	Enabled bool
-}
-
-type ArgFilter struct {
-	Filters map[int32]map[string]ArgFilterVal // key to the first map is event id, and to the second map the argument name
-	Enabled bool
-}
-
-type ArgFilterVal struct {
-	Equal    []string
-	NotEqual []string
 }
 
 type CaptureConfig struct {
@@ -228,8 +161,6 @@ type Tracee struct {
 	profiledFiles     map[string]profilerInfo
 	writtenFiles      map[string]string
 	mntNsFirstPid     map[uint32]uint32
-	DecParamName      [2]map[argTag]string
-	EncParamName      [2]map[string]argTag
 	ParamTypes        map[int32]map[string]string
 	pidsInMntns       bucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
@@ -340,12 +271,7 @@ func New(cfg Config) (*Tracee, error) {
 		}
 	}
 
-	t.DecParamName[0] = make(map[argTag]string)
-	t.EncParamName[0] = make(map[string]argTag)
-	t.DecParamName[1] = make(map[argTag]string)
-	t.EncParamName[1] = make(map[string]argTag)
 	t.ParamTypes = make(map[int32]map[string]string)
-
 	for eventId, params := range EventsIDToParams {
 		t.ParamTypes[eventId] = make(map[string]string)
 		for _, param := range params {
@@ -452,19 +378,8 @@ func New(cfg Config) (*Tracee, error) {
 	return t, nil
 }
 
-type eventParam struct {
-	encType argType
-	encName argTag
-}
-
-func (t *Tracee) initEventsParams() map[int32][]eventParam {
-	eventsParams := make(map[int32][]eventParam)
-	var seenNames [2]map[string]bool
-	var ParamNameCounter [2]argTag
-	seenNames[0] = make(map[string]bool)
-	ParamNameCounter[0] = argTag(1)
-	seenNames[1] = make(map[string]bool)
-	ParamNameCounter[1] = argTag(1)
+func (t *Tracee) initEventsParams() map[int32][]argType {
+	eventsParams := make(map[int32][]argType)
 	paramT := noneT
 	for id, params := range EventsIDToParams {
 		for _, param := range params {
@@ -502,160 +417,11 @@ func (t *Tracee) initEventsParams() map[int32][]eventParam {
 				paramT = pointerT
 			}
 
-			// As the encoded parameter name is u8, it can hold up to 256 different names
-			// To keep on low communication overhead, we don't change this to u16
-			// Instead, use an array of enc/dec maps, where the key is modulus of the event id
-			// This can easilly be expanded in the future if required
-			if !seenNames[id%2][param.Name] {
-				seenNames[id%2][param.Name] = true
-				t.EncParamName[id%2][param.Name] = ParamNameCounter[id%2]
-				t.DecParamName[id%2][ParamNameCounter[id%2]] = param.Name
-				eventsParams[id] = append(eventsParams[id], eventParam{encType: paramT, encName: ParamNameCounter[id%2]})
-				ParamNameCounter[id%2]++
-			} else {
-				eventsParams[id] = append(eventsParams[id], eventParam{encType: paramT, encName: t.EncParamName[id%2][param.Name]})
-			}
+			eventsParams[id] = append(eventsParams[id], paramT)
 		}
-	}
-
-	if len(seenNames[0]) > 255 || len(seenNames[1]) > 255 {
-		panic("Too many argument names given")
 	}
 
 	return eventsParams
-}
-
-func (t *Tracee) setUintFilter(filter *UintFilter, filterMapName string, configFilter bpfConfig, lessIdx uint32) error {
-	if !filter.Enabled {
-		return nil
-	}
-
-	filterEqualU32 := uint32(filterEqual) // const need local var for bpfMap.Update()
-	filterNotEqualU32 := uint32(filterNotEqual)
-
-	// equalityFilter filters events for given maps:
-	// 1. uid_filter        u32, u32
-	// 2. pid_filter        u32, u32
-	// 3. mnt_ns_filter     u64, u32
-	// 4. pid_ns_filter     u64, u32
-	equalityFilter, err := t.bpfModule.GetMap(filterMapName)
-	if err != nil {
-		return err
-	}
-	for i := 0; i < len(filter.Equal); i++ {
-		if filter.Is32Bit {
-			EqualU32 := uint32(filter.Equal[i])
-			err = equalityFilter.Update(unsafe.Pointer(&EqualU32), unsafe.Pointer(&filterEqualU32))
-		} else {
-			err = equalityFilter.Update(unsafe.Pointer(&filter.Equal[i]), unsafe.Pointer(&filterEqualU32))
-		}
-		if err != nil {
-			return err
-		}
-	}
-	for i := 0; i < len(filter.NotEqual); i++ {
-		if filter.Is32Bit {
-			NotEqualU32 := uint32(filter.NotEqual[i])
-			err = equalityFilter.Update(unsafe.Pointer(&NotEqualU32), unsafe.Pointer(&filterNotEqualU32))
-		} else {
-			err = equalityFilter.Update(unsafe.Pointer(&filter.NotEqual[i]), unsafe.Pointer(&filterNotEqualU32))
-		}
-		if err != nil {
-			return err
-		}
-	}
-
-	filterLessU32 := uint32(filter.Less)
-	filterGreaterU32 := uint32(filter.Greater)
-
-	// inequalityFilter filters events by some uint field either by < or >
-	inequalityFilter, err := t.bpfModule.GetMap("inequality_filter") // u32, u64
-	if err != nil {
-		return err
-	}
-	if err = inequalityFilter.Update(unsafe.Pointer(&lessIdx), unsafe.Pointer(&filterLessU32)); err != nil {
-		return err
-	}
-	lessIdxPlus := uint32(lessIdx + 1)
-	if err = inequalityFilter.Update(unsafe.Pointer(&lessIdxPlus), unsafe.Pointer(&filterGreaterU32)); err != nil {
-		return err
-	}
-
-	bpfConfigMap, err := t.bpfModule.GetMap("config_map") // u32, u32
-	if err != nil {
-		return err
-	}
-	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 && filter.Greater == GreaterNotSetUint && filter.Less == LessNotSetUint {
-		filterInU32 := uint32(filterIn)
-		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterInU32))
-	} else {
-		filterOutU32 := uint32(filterOut)
-		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterOutU32))
-	}
-
-	return err
-}
-
-func (t *Tracee) setStringFilter(filter *StringFilter, filterMapName string, configFilter bpfConfig) error {
-	if !filter.Enabled {
-		return nil
-	}
-
-	filterEqualU32 := uint32(filterEqual) // const need local var for bpfMap.Update()
-	filterNotEqualU32 := uint32(filterNotEqual)
-
-	// 1. uts_ns_filter     string[MAX_STR_FILTER_SIZE], u32    // filter events by uts namespace name
-	// 2. comm_filter       string[MAX_STR_FILTER_SIZE], u32    // filter events by command name
-	filterMap, err := t.bpfModule.GetMap(filterMapName)
-	if err != nil {
-		return err
-	}
-	for i := 0; i < len(filter.Equal); i++ {
-		filterEqualBytes := []byte(filter.Equal[i])
-		if err = filterMap.Update(unsafe.Pointer(&filterEqualBytes[0]), unsafe.Pointer(&filterEqualU32)); err != nil {
-			return err
-		}
-	}
-	for i := 0; i < len(filter.NotEqual); i++ {
-		filterNotEqualBytes := []byte(filter.NotEqual[i])
-		if err = filterMap.Update(unsafe.Pointer(&filterNotEqualBytes[0]), unsafe.Pointer(&filterNotEqualU32)); err != nil {
-			return err
-		}
-	}
-
-	bpfConfigMap, err := t.bpfModule.GetMap("config_map") // u32, u32
-	if err != nil {
-		return err
-	}
-	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 {
-		filterInU32 := uint32(filterIn)
-		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterInU32))
-	} else {
-		filterOutU32 := uint32(filterOut)
-		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterOutU32))
-	}
-
-	return err
-}
-
-func (t *Tracee) setBoolFilter(filter *BoolFilter, configFilter bpfConfig) error {
-	if !filter.Enabled {
-		return nil
-	}
-
-	bpfConfigMap, err := t.bpfModule.GetMap("config_map") // u32, u32
-	if err != nil {
-		return err
-	}
-	if filter.Value {
-		filterInU32 := uint32(filterIn)
-		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterInU32))
-	} else {
-		filterOutU32 := uint32(filterOut)
-		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterOutU32))
-	}
-
-	return err
 }
 
 // Initialize tail calls program array
@@ -717,16 +483,21 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// add here all kconfig variables used within tracee.bpf.c
-
 	var value helpers.KernelConfigOptionValue
 	key := CONFIG_ARCH_HAS_SYSCALL_WRAPPER
 	keyString := "CONFIG_ARCH_HAS_SYSCALL_WRAPPER"
+	if err = t.config.KernelConfig.AddCustomKernelConfig(key, keyString); err != nil {
+		return err
+	}
 
-	if err := t.config.KernelConfig.AddCustomKernelConfigs(key, keyString); err != nil {
-		// an error here means there is no valid kconfig file set: do not fail, assume values
-		value = 1
+	// re-load kconfig and get just added kconfig option values
+	if err = t.config.KernelConfig.LoadKernelConfig(); err != nil { // invalid kconfig file: assume values then
+		if t.config.Debug {
+			fmt.Fprintf(os.Stderr, "KConfig: warning: assuming kconfig values, might have unexpected behavior\n")
+		}
+		value = helpers.BUILTIN // assume CONFIG_ARCH_HAS_SYSCALL_WRAPPER is a BUILTIN option
 	} else {
-		value, _ = t.config.KernelConfig.GetValue(key) // undefined is not an error here, it might happen
+		value = t.config.KernelConfig.GetValue(key) // undefined, builtin OR module
 	}
 
 	err = bpfKConfigMap.Update(unsafe.Pointer(&key), unsafe.Pointer(&value))
@@ -818,15 +589,15 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	errmap := make(map[string]error, 0)
-	errmap["uid_filter"] = t.setUintFilter(t.config.Filter.UIDFilter, "uid_filter", configUIDFilter, uidLess)
-	errmap["pid_filter"] = t.setUintFilter(t.config.Filter.PIDFilter, "pid_filter", configPidFilter, pidLess)
-	errmap["pid=new_filter"] = t.setBoolFilter(t.config.Filter.NewPidFilter, configNewPidFilter)
-	errmap["mnt_ns_filter"] = t.setUintFilter(t.config.Filter.MntNSFilter, "mnt_ns_filter", configMntNsFilter, mntNsLess)
-	errmap["pid_ns_filter"] = t.setUintFilter(t.config.Filter.PidNSFilter, "pid_ns_filter", configPidNsFilter, pidNsLess)
-	errmap["uts_ns_filter"] = t.setStringFilter(t.config.Filter.UTSFilter, "uts_ns_filter", configUTSNsFilter)
-	errmap["comm_filter"] = t.setStringFilter(t.config.Filter.CommFilter, "comm_filter", configCommFilter)
-	errmap["cont_filter"] = t.setBoolFilter(t.config.Filter.ContFilter, configContFilter)
-	errmap["cont=new_filter"] = t.setBoolFilter(t.config.Filter.NewContFilter, configNewContFilter)
+	errmap["uid_filter"] = t.config.Filter.UIDFilter.Set(t.bpfModule, "uid_filter", configUIDFilter, uidLess)
+	errmap["pid_filter"] = t.config.Filter.PIDFilter.Set(t.bpfModule, "pid_filter", configPidFilter, pidLess)
+	errmap["pid=new_filter"] = t.config.Filter.NewPidFilter.Set(t.bpfModule, configNewPidFilter)
+	errmap["mnt_ns_filter"] = t.config.Filter.MntNSFilter.Set(t.bpfModule, "mnt_ns_filter", configMntNsFilter, mntNsLess)
+	errmap["pid_ns_filter"] = t.config.Filter.PidNSFilter.Set(t.bpfModule, "pid_ns_filter", configPidNsFilter, pidNsLess)
+	errmap["uts_ns_filter"] = t.config.Filter.UTSFilter.Set(t.bpfModule, "uts_ns_filter", configUTSNsFilter)
+	errmap["comm_filter"] = t.config.Filter.CommFilter.Set(t.bpfModule, "comm_filter", configCommFilter)
+	errmap["cont_filter"] = t.config.Filter.ContFilter.Set(t.bpfModule, configContFilter)
+	errmap["cont=new_filter"] = t.config.Filter.NewContFilter.Set(t.bpfModule, configNewContFilter)
 	for k, v := range errmap {
 		if v != nil {
 			return fmt.Errorf("error setting %v filter: %v", k, v)
@@ -850,23 +621,14 @@ func (t *Tracee) populateBPFMaps() error {
 	if err != nil {
 		return err
 	}
-	paramsNamesBPFMap, err := t.bpfModule.GetMap("params_names_map") // u32, u64
-	if err != nil {
-		return err
-	}
 	for e := range t.eventsToTrace {
 		eU32 := uint32(e) // e is int32
 		params := eventsParams[e]
 		var paramsTypes uint64
-		var paramsNames uint64
-		for n, param := range params {
-			paramsTypes = paramsTypes | (uint64(param.encType) << (8 * n))
-			paramsNames = paramsNames | (uint64(param.encName) << (8 * n))
+		for n, paramType := range params {
+			paramsTypes = paramsTypes | (uint64(paramType) << (8 * n))
 		}
 		if err := paramsTypesBPFMap.Update(unsafe.Pointer(&eU32), unsafe.Pointer(&paramsTypes)); err != nil {
-			return err
-		}
-		if err := paramsNamesBPFMap.Update(unsafe.Pointer(&eU32), unsafe.Pointer(&paramsNames)); err != nil {
 			return err
 		}
 		if e == ExecveEventID || e == ExecveatEventID {
@@ -882,83 +644,6 @@ func (t *Tracee) populateBPFMaps() error {
 			}
 			// err = t.initTailCall(uint32(e), "sys_exit_tails", probFnName) // if ever needed
 		}
-	}
-
-	return nil
-}
-
-func (t *Tracee) setProcessTreeFilter(filter *ProcessTreeFilter) error {
-	if !filter.Enabled {
-		return nil
-	}
-
-	// Determine the default filter for PIDs that aren't specified with a proc tree filter
-	// - If one or more '=' filters, default is '!='
-	// - If one or more '!=' filters, default is '='
-	// - If a mix of filters, the default is '='
-	var defaultFilter = true
-	for _, v := range filter.PIDs {
-		defaultFilter = defaultFilter && v
-	}
-	err := t.setBoolFilter(&BoolFilter{Value: defaultFilter, Enabled: true}, configProcTreeFilter)
-	if err != nil {
-		return fmt.Errorf("could not set default process tree filter value: %v", err)
-	}
-
-	processTreeBPFMap, err := t.bpfModule.GetMap("process_tree_map")
-	if err != nil {
-		return fmt.Errorf("could not find bpf process_tree_map: %v", err)
-	}
-
-	procDir, err := os.Open("/proc")
-	if err != nil {
-		return fmt.Errorf("could not open proc dir: %v", err)
-	}
-	defer procDir.Close()
-
-	entries, err := procDir.Readdirnames(-1)
-	if err != nil {
-		return fmt.Errorf("could not read proc dir: %v", err)
-	}
-
-	// Iterate over each pid
-	for _, entry := range entries {
-		pid, err := strconv.ParseUint(entry, 10, 32)
-		if err != nil {
-			continue
-		}
-		var fn func(uint32)
-		fn = func(curPid uint32) {
-			stat, err := ioutil.ReadFile(fmt.Sprintf("/proc/%d/stat", curPid))
-			if err != nil {
-				return
-			}
-			// see https://man7.org/linux/man-pages/man5/proc.5.html for how to read /proc/pid/stat
-			splitStat := bytes.SplitN(stat, []byte{' '}, 5)
-			if len(splitStat) != 5 {
-				return
-			}
-			ppid, err := strconv.Atoi(string(splitStat[3]))
-			if err != nil {
-				return
-			}
-			if ppid == 1 {
-				return
-			}
-
-			if shouldBeTraced, ok := filter.PIDs[uint32(ppid)]; ok {
-				trace := boolToUInt32(shouldBeTraced)
-				processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&trace))
-				return
-			}
-			fn(uint32(ppid))
-		}
-		fn(uint32(pid))
-	}
-
-	for pid, shouldBeTraced := range filter.PIDs {
-		trace := boolToUInt32(shouldBeTraced)
-		processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&trace))
 	}
 
 	return nil
@@ -1168,7 +853,7 @@ func (t *Tracee) initBPF() error {
 		}
 	}
 
-	err = t.setProcessTreeFilter(t.config.Filter.ProcessTreeFilter)
+	err = t.config.Filter.ProcessTreeFilter.Set(t.bpfModule)
 	if err != nil {
 		return fmt.Errorf("error building process tree: %v", err)
 	}
