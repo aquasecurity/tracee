@@ -6,11 +6,11 @@ import (
 	"os"
 	"testing"
 
-  "github.com/open-policy-agent/opa/compile"
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
 	"github.com/aquasecurity/tracee/tracee-rules/signatures/rego/regosig"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"github.com/open-policy-agent/opa/compile"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
