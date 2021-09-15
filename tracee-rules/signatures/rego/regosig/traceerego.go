@@ -1,6 +1,8 @@
 package regosig
 
 import (
+	_ "github.com/open-policy-agent/opa/features/wasm"
+
 	"bytes"
 	"context"
 	"encoding/json"
@@ -173,7 +175,7 @@ func (sig *RegoSignature) OnEvent(e types.Event) error {
 		ee = pe.Event
 		input = rego.EvalParsedInput(pe.Value)
 	default:
-		return fmt.Errorf("unrecognized event type: %v", v)
+		return fmt.Errorf("unrecognized event type: %T", v)
 	}
 	results, err := sig.matchPQ.Eval(context.TODO(), input)
 	if err != nil {
