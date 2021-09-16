@@ -89,10 +89,6 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 			return nil
 		}
 
-		if !aioEnabled && isAIO(d.Name()) {
-			return nil
-		}
-
 		if !isHelper(d.Name()) {
 			return nil
 		}
@@ -140,10 +136,6 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 				return err
 			}
 
-			if !aioEnabled && isAIO(d.Name()) {
-				return nil
-			}
-
 			if d.IsDir() || !isRegoFile(d.Name()) || isHelper(d.Name()) {
 				return nil
 			}
@@ -189,8 +181,4 @@ func isRegoTest(name string) bool {
 
 func isHelper(name string) bool {
 	return strings.HasSuffix(name, "helpers.rego")
-}
-
-func isAIO(name string) bool {
-	return strings.Contains(name, "aio")
 }

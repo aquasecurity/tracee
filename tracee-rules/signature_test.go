@@ -57,7 +57,7 @@ func Test_isHelper(t *testing.T) {
 }
 
 func Test_findRegoSigs(t *testing.T) {
-	testRoot := "signatures/rego"
+	testRoot := "goldens/signatures/rego"
 	t.Run("without aio", func(t *testing.T) {
 		sigs, err := findRegoSigs(compile.TargetRego, false, testRoot, false)
 		require.NoError(t, err)
@@ -68,7 +68,7 @@ func Test_findRegoSigs(t *testing.T) {
 			require.NoError(t, err)
 			gotSigs = append(gotSigs, gotMetadata.ID)
 		}
-		assert.ElementsMatch(t, []string{"FOO-1", "FOO-2", "TRC-2", "TRC-3", "TRC-4", "TRC-5", "TRC-6", "TRC-7"}, gotSigs)
+		assert.ElementsMatch(t, []string{"TRC-2", "TRC-3"}, gotSigs)
 	})
 
 	t.Run("with aio", func(t *testing.T) {
