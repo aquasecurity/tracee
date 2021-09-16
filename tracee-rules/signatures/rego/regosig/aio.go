@@ -72,6 +72,4 @@ func NewAIORegoSignature(o Options, regoCodes ...string) (types.Signature, error
 		return nil, err
 	}
 	return &res, nil
-
-	return nil, nil
 }
