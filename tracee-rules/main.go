@@ -170,7 +170,7 @@ func main() {
 			},
 			&cli.BoolFlag{
 				Name:  "rego-aio",
-				Usage: "enable rego AIO rule for rule indexing and evaluation",
+				Usage: "enable rego AIO rule",
 			},
 			&cli.StringFlag{
 				Name:  "rego-runtime-target",
