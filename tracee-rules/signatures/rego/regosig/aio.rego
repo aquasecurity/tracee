@@ -31,9 +31,6 @@ tracee_selected_events_all[id] = resp {
 # Returns the map of signature identifiers to values matching the input event.
 tracee_match_all[id] = resp {
 	some i
-		# TODO Try adding event selector
-		# some i, j
-		#   data.tracee[i].tracee_selected_events[j].name == input.eventName
 		resp := data.tracee[i].tracee_match
 		metadata := data.tracee[i].__rego_metadoc__
 		id := metadata.id
