@@ -123,37 +123,37 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 	})
 
 	var res []types.Signature
-	if aioEnabled {
-		sig, err := regosig.NewAIORegoSignature(regosig.Options{Target: target, PartialEval: partialEval}, append(regoHelpers, regoCodes...)...)
+	//if aioEnabled {
+	//	sig, err := regosig.NewAIORegoSignature(regosig.Options{Target: target, PartialEval: partialEval}, append(regoHelpers, regoCodes...)...)
+	//	if err != nil {
+	//		log.Printf("error creating AIO rego signature: %s", err)
+	//		return nil, err
+	//	}
+	//	res = append(res, sig)
+	//} else {
+	filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			log.Printf("error creating AIO rego signature: %s", err)
-			return nil, err
+			return err
+		}
+
+		if d.IsDir() || !isRegoFile(d.Name()) || isHelper(d.Name()) {
+			return nil
+		}
+
+		regoCode, err := ioutil.ReadFile(path)
+		if err != nil {
+			log.Printf("error reading file %s: %v", path, err)
+			return nil
+		}
+		sig, err := regosig.NewRegoSignature(target, partialEval, append(regoHelpers, string(regoCode))...)
+		if err != nil {
+			log.Printf("error creating rego signature with: %s: %v ", regoCode[0:handleRegoParsingError(regoCode)], err)
+			return nil
 		}
 		res = append(res, sig)
-	} else {
-		filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
-			if err != nil {
-				return err
-			}
-
-			if d.IsDir() || !isRegoFile(d.Name()) || isHelper(d.Name()) {
-				return nil
-			}
-
-			regoCode, err := ioutil.ReadFile(path)
-			if err != nil {
-				log.Printf("error reading file %s: %v", path, err)
-				return nil
-			}
-			sig, err := regosig.NewRegoSignature(target, partialEval, append(regoHelpers, string(regoCode))...)
-			if err != nil {
-				log.Printf("error creating rego signature with: %s: %v ", regoCode[0:handleRegoParsingError(regoCode)], err)
-				return nil
-			}
-			res = append(res, sig)
-			return nil
-		})
-	}
+		return nil
+	})
+	//}
 
 	return res, nil
 }

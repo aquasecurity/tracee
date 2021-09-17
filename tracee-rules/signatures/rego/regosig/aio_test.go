@@ -82,11 +82,11 @@ tracee_match = res {
 				require.EqualError(t, err, tt.wantErr, tt.name)
 			} else {
 				require.NoError(t, err, tt.name)
-				gotMetadata, err := got.GetMetadata()
+				gotMetadata, err := got.GetMetadata("tracee_aio")
 				require.NoError(t, err, tt.name)
 				assert.Equal(t, tt.wantMetadata, gotMetadata, tt.name)
 
-				gotSelectedEvents, err := got.GetSelectedEvents()
+				gotSelectedEvents, err := got.GetSelectedEvents("tracee_aio")
 				require.NoError(t, err, tt.name)
 				assert.Equal(t, tt.wantSelectedEvents, gotSelectedEvents, tt.name)
 			}

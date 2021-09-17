@@ -17,6 +17,22 @@ type Signature interface {
 	OnSignal(signal Signal) error
 }
 
+// Signature is the basic unit of business logic for the rule-engine
+type SignatureV2 interface {
+	//GetMetadata allows the signature to declare information about itself
+	GetMetadata(string) (SignatureMetadata, error)
+	//GetSelectedEvents allows the signature to declare which events it subscribes to
+	GetSelectedEvents(string) ([]SignatureEventSelector, error)
+	//Init allows the signature to initialize its internal state
+	Init(cb SignatureHandler) error
+	//Close cleans the signature after Init operation
+	Close()
+	//OnEvent allows the signature to process events passed by the Engine. this is the business logic of the signature
+	OnEvent(event Event) error
+	//OnSignal allows the signature to handle lifecycle events of the signature
+	OnSignal(signal Signal) error
+}
+
 //SignatureMetadata represents information about the signature
 type SignatureMetadata struct {
 	ID          string
