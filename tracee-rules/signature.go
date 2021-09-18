@@ -19,7 +19,7 @@ import (
 //go:embed signatures/rego/helpers.rego
 var regoHelpersCode string
 
-func getSignatures(target string, partialEval bool, rulesDir string, rules []string) ([]types.Signature, error) {
+func getSignatures(target string, partialEval bool, rulesDir string, rules []string, aioEnabled bool) ([]types.Signature, error) {
 	if rulesDir == "" {
 		exePath, err := os.Executable()
 		if err != nil {
@@ -31,7 +31,7 @@ func getSignatures(target string, partialEval bool, rulesDir string, rules []str
 	if err != nil {
 		return nil, err
 	}
-	opasigs, err := findRegoSigs(target, partialEval, rulesDir)
+	opasigs, err := findRegoSigs(target, partialEval, rulesDir, aioEnabled)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,10 @@ func findGoSigs(dir string) ([]types.Signature, error) {
 	return res, nil
 }
 
-func findRegoSigs(target string, partialEval bool, dir string) ([]types.Signature, error) {
+func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) ([]types.Signature, error) {
+	modules := make(map[string]string)
+	modules["helper.rego"] = regoHelpersCode
+
 	regoHelpers := []string{regoHelpersCode}
 	filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -101,6 +104,7 @@ func findRegoSigs(target string, partialEval bool, dir string) ([]types.Signatur
 		}
 
 		regoHelpers = append(regoHelpers, string(helperCode))
+		modules[path] = string(helperCode)
 		return nil
 	})
 
@@ -117,6 +121,10 @@ func findRegoSigs(target string, partialEval bool, dir string) ([]types.Signatur
 		regoCode, err := ioutil.ReadFile(path)
 		if err != nil {
 			log.Printf("error reading file %s: %v", path, err)
+			return nil
+		}
+		modules[path] = string(regoCode)
+		if aioEnabled {
 			return nil
 		}
 		sig, err := regosig.NewRegoSignature(target, partialEval, append(regoHelpers, string(regoCode))...)
@@ -136,6 +144,15 @@ func findRegoSigs(target string, partialEval bool, dir string) ([]types.Signatur
 		res = append(res, sig)
 		return nil
 	})
+	if aioEnabled {
+		aio, err := regosig.NewAIO(modules,
+			regosig.OPATarget(target),
+			regosig.OPAPartial(partialEval))
+		if err != nil {
+			return nil, err
+		}
+		return []types.Signature{aio}, nil
+	}
 	return res, nil
 }
 
