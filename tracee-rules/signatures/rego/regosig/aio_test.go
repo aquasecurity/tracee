@@ -1,7 +1,11 @@
-package regosig
+package regosig_test
 
 import (
 	"testing"
+
+	"github.com/aquasecurity/tracee/tracee-rules/signatures/rego/regosig"
+
+	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
 
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/open-policy-agent/opa/compile"
@@ -9,23 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewAIORegoSignature(t *testing.T) {
-	type args struct {
-		o         Options
-		regoCodes []string
-	}
-	tests := []struct {
-		name               string
-		args               args
-		wantMetadata       types.SignatureMetadata
-		wantSelectedEvents []types.SignatureEventSelector
-		wantErr            string
-	}{
-		{
-			name: "happy path, partial eval off, rego target",
-			args: args{
-				o: Options{PartialEval: false, Target: compile.TargetRego},
-				regoCodes: []string{`package FOO_1
+var testRegoCodes = []string{`package FOO_1
 
 __rego_metadoc__ := {
 	"id": "FOO-1",
@@ -35,7 +23,6 @@ __rego_metadoc__ := {
 tracee_selected_events[eventSelector] {
 	eventSelector := {
 		"source": "tracee",
-		#"name": "execve"
 	}
 }
 
@@ -51,14 +38,31 @@ __rego_metadoc__ := {
 tracee_selected_events[eventSelector] {
 	eventSelector := {
 		"source": "tracee",
-		#"name": "execve"
 	}
 }
 
 tracee_match = res {
 	endswith(input.args[0].value, "yo")
 	res := { "Severity": 1 }
-}`},
+}`}
+
+func TestNewAIORegoSignature(t *testing.T) {
+	type args struct {
+		o         regosig.Options
+		regoCodes []string
+	}
+	tests := []struct {
+		name               string
+		args               args
+		wantMetadata       types.SignatureMetadata
+		wantSelectedEvents []types.SignatureEventSelector
+		wantErr            string
+	}{
+		{
+			name: "happy path, partial eval off, rego target",
+			args: args{
+				o:         regosig.Options{PartialEval: false, Target: compile.TargetRego},
+				regoCodes: testRegoCodes,
 			},
 			wantMetadata: types.SignatureMetadata{
 				ID:          "TRC-AIO",
@@ -77,7 +81,7 @@ tracee_match = res {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewAIORegoSignature(tt.args.o, tt.args.regoCodes...)
+			got, err := regosig.NewAIORegoSignature(tt.args.o, tt.args.regoCodes...)
 			if tt.wantErr != "" {
 				require.EqualError(t, err, tt.wantErr, tt.name)
 			} else {
@@ -92,4 +96,42 @@ tracee_match = res {
 			}
 		})
 	}
+}
+
+func TestAIORegoSignature_OnEvent(t *testing.T) {
+	aio, err := regosig.NewAIORegoSignature(regosig.Options{
+		PartialEval: false,
+		Target:      compile.TargetRego,
+	}, []string{testRegoCodeBoolean, testRegoCodeObject}...)
+	require.NoError(t, err)
+
+	holder := &findingHolder{}
+	err = aio.Init(holder.OnFinding)
+	require.NoError(t, err)
+
+	inputEvent := tracee.Event{
+		Args: []tracee.Argument{
+			{
+				ArgMeta: tracee.ArgMeta{
+					Name: "doesn't matter",
+				},
+				Value: "ends with yo",
+			},
+		},
+	}
+	require.NoError(t, aio.OnEvent(inputEvent))
+	assert.Equal(t, types.Finding{
+		Data: map[string]interface{}{"TRC-BOOL": true},
+		Context: tracee.Event{
+			Args: []tracee.Argument{
+				{
+					ArgMeta: tracee.ArgMeta{
+						Name: "doesn't matter",
+					},
+					Value: "ends with yo",
+				},
+			},
+		},
+		SigMetadata: types.SignatureMetadata{ID: "TRC-AIO", Version: "0.1.0", Name: "All In One Rego Rule", Description: "This rule indexes all loaded Rego rules via one."},
+	}, *holder.value)
 }

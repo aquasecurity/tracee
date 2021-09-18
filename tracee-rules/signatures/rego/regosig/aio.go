@@ -7,6 +7,9 @@ import (
 	"encoding/json"
 	"fmt"
 
+	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
+	"github.com/aquasecurity/tracee/tracee-rules/engine"
+
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
@@ -22,6 +25,8 @@ const (
 )
 
 type AIORegoSignature struct {
+	cb                    types.SignatureHandler
+	index                 index
 	compiledRego          *ast.Compiler
 	matchPQ               rego.PreparedEvalQuery
 	sigIDToMetadata       map[string]types.SignatureMetadata
@@ -61,7 +66,6 @@ func (aio *AIORegoSignature) getMetadata(pkgName string) (types.SignatureMetadat
 	err = dec.Decode(&res)
 	if err != nil {
 		return types.SignatureMetadata{}, err
-		//return nil, err
 	}
 	return res, nil
 }
@@ -96,21 +100,90 @@ func (aio AIORegoSignature) GetSelectedEvents(sigID string) ([]types.SignatureEv
 	return aio.sigIDToSelectedEvents[sigID], nil
 }
 
-func (aio AIORegoSignature) Init(cb types.SignatureHandler) error {
-	panic("implement me")
+func (aio *AIORegoSignature) Init(cb types.SignatureHandler) error {
+	aio.cb = cb
+	return nil
 }
 
-func (aio AIORegoSignature) Close() {
-	panic("implement me")
+func (aio *AIORegoSignature) dispatch(val interface{}, ee tracee.Event, sigIDs []string) {
+	for _, sigID := range sigIDs {
+		switch v := val.(type) {
+		case bool:
+			if v {
+				aio.cb(types.Finding{
+					Data:        nil,
+					Context:     ee,
+					SigMetadata: aio.sigIDToMetadata[sigID],
+				})
+			}
+		case map[string]interface{}:
+			aio.cb(types.Finding{
+				Data:        v,
+				Context:     ee,
+				SigMetadata: aio.sigIDToMetadata[sigID],
+			})
+		case string:
+			aio.cb(types.Finding{
+				Data:        map[string]interface{}{sigID: val},
+				Context:     ee,
+				SigMetadata: aio.sigIDToMetadata[sigID],
+			})
+		}
+	}
+
 }
 
-func (aio AIORegoSignature) OnEvent(event types.Event) error {
-	panic("implement me")
+func (aio AIORegoSignature) OnEvent(e types.Event) error {
+	var input rego.EvalOption
+	var ee tracee.Event
+
+	switch v := e.(type) {
+	// This case is for backward compatibility. From OPA Go SDK standpoint it's more efficient to enter ParsedEvent case.
+	case tracee.Event:
+		ee = e.(tracee.Event)
+		input = rego.EvalInput(e)
+	case engine.ParsedEvent:
+		pe := e.(engine.ParsedEvent)
+		ee = pe.Event
+		input = rego.EvalParsedInput(pe.Value)
+	default:
+		return fmt.Errorf("unrecognized event type: %T", v)
+	}
+	results, err := aio.matchPQ.Eval(context.TODO(), input)
+	if err != nil {
+		return fmt.Errorf("evaluating rego: %w", err)
+	}
+
+	if len(results) > 0 && len(results[0].Expressions) > 0 && results[0].Expressions[0].Value != nil {
+
+		sigIDs := aio.index.getSignaturesMatchingEvent(ee)
+		switch results[0].Expressions[0].Value.(type) {
+		case map[string]interface{}:
+			values, ok := results[0].Expressions[0].Value.(map[string]interface{})
+			if ok && len(values) <= 0 {
+				return nil
+			} else {
+				aio.dispatch(values, ee, sigIDs)
+			}
+		case bool:
+			aio.dispatch(results[0].Expressions[0].Value, ee, sigIDs)
+		}
+
+		// TODO: Check if still needed
+		// For AIO: result set can be an empty set of length=1, so we need to check value
+		//values, ok := results[0].Expressions[0].Value.(map[string]interface{})
+		//if ok && len(values) <= 0 {
+		//	return nil
+		//}
+		//aio.dispatch(values, ee, sigIDs)
+	}
+	return nil
 }
 
 func (aio AIORegoSignature) OnSignal(signal types.Signal) error {
-	panic("implement me")
+	return fmt.Errorf("function OnSignal is not implemented")
 }
+func (aio AIORegoSignature) Close() {}
 
 type Options struct {
 	PartialEval bool
@@ -173,5 +246,6 @@ func NewAIORegoSignature(o Options, regoCodes ...string) (types.SignatureV2, err
 			return nil, err
 		}
 	}
+	aio.index = newIndex(aio.sigIDToSelectedEvents)
 	return &aio, nil
 }
