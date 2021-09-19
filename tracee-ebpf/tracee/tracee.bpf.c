@@ -2172,23 +2172,18 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
 
     if (event_chosen(id)) {
         u64 types = 0;
-        bool submit_event = true;
-        if (id != SYS_EXECVE && id != SYS_EXECVEAT) {
-            u64 *saved_types = bpf_map_lookup_elem(&params_types_map, &id);
-            if (!saved_types) {
-                return -1;
-            }
-            types = *saved_types;
-        } else {
+        u64 *saved_types = bpf_map_lookup_elem(&params_types_map, &id);
+        if (!saved_types) {
+            return -1;
+        }
+        types = *saved_types;
+        if ((id != SYS_EXECVE && id != SYS_EXECVEAT) ||
+            ((id == SYS_EXECVE || id == SYS_EXECVEAT) && (ret != 0))) {
             // We can't use saved args after execve syscall, as pointers are invalid
             // To avoid showing execve event both on entry and exit,
             // we only output failed execs
-            if (ret == 0)
-                submit_event = false;
-        }
-
-        if (submit_event)
             trace_ret_generic(ctx, id, types, &saved_args, ret);
+        }
     }
 
     // call syscall handler, if exists
