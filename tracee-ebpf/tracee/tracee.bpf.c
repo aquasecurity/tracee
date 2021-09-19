@@ -1204,6 +1204,7 @@ static __always_inline context_t init_and_save_context(void* ctx, buf_t *submit_
     }
 
     save_context_to_buf(submit_p, (void*)&context);
+    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
     return context;
 }
 
@@ -1850,11 +1851,11 @@ static __always_inline int trace_ret_generic(void *ctx, u32 id, u64 types, args_
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
+    context_t context = init_and_save_context(ctx, submit_p, id, 0, ret);
 
     u8 argnum = save_args_to_submit_buf(types, args);
-    // resave the context to update timestamp
-    context_t context = init_and_save_context(ctx, submit_p, id, argnum, ret);
+    // resave the context to update argnum and timestamp
+    context.argnum = argnum;
     context.ts = args->args[6];
     save_context_to_buf(submit_p, (void*)&context);
 
@@ -2111,7 +2112,6 @@ if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER)) {
         buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
         if (submit_p == NULL)
             return 0;
-        set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
         init_and_save_context(ctx, submit_p, RAW_SYS_ENTER, 1 /*argnum*/, 0 /*ret*/);
 
@@ -2167,7 +2167,6 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
         buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
         if (submit_p == NULL)
             return 0;
-        set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
         init_and_save_context(ctx, submit_p, RAW_SYS_EXIT, 1 /*argnum*/, ret);
 
@@ -2217,7 +2216,6 @@ int syscall__execve(void *ctx)
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     context_t context = init_and_save_context(ctx, submit_p, SYS_EXECVE, 2 /*argnum*/, 0 /*ret*/);
 
@@ -2249,7 +2247,6 @@ int syscall__execveat(void *ctx)
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     context_t context = init_and_save_context(ctx, submit_p, SYS_EXECVEAT, 4 /*argnum*/, 0 /*ret*/);
 
@@ -2310,7 +2307,6 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
         if (submit_p == NULL)
             return 0;
-        set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
         init_and_save_context(ctx, submit_p, SCHED_PROCESS_FORK, 4 /*argnum*/, 0 /*ret*/);
 
@@ -2339,7 +2335,6 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     init_and_save_context(ctx, submit_p, SCHED_PROCESS_EXEC, 6, 0);
 
@@ -2415,7 +2410,6 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     init_and_save_context(ctx, submit_p, SCHED_PROCESS_EXIT, 0, 0);
 
@@ -2458,7 +2452,6 @@ int tracepoint__sched__sched_switch(struct bpf_raw_tracepoint_args *ctx)
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     init_and_save_context(ctx, submit_p, SCHED_SWITCH, 5 /*argnum*/, 0 /*ret*/);
 
@@ -2488,7 +2481,6 @@ int BPF_KPROBE(trace_do_exit)
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     long code = PT_REGS_PARM1(ctx);
 
@@ -2529,7 +2521,6 @@ int tracepoint__cgroup__cgroup_attach_task(struct bpf_raw_tracepoint_args *ctx)
         buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
         if (submit_p == NULL)
             return 0;
-        set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
         init_and_save_context(ctx, submit_p, CGROUP_ATTACH_TASK, 1 /*argnum*/, 0 /*ret*/);
 
@@ -2549,7 +2540,6 @@ int BPF_KPROBE(trace_security_bprm_check)
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     init_and_save_context(ctx, submit_p, SECURITY_BPRM_CHECK, 3 /*argnum*/, 0 /*ret*/);
 
@@ -2576,7 +2566,6 @@ int BPF_KPROBE(trace_security_file_open)
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     context_t context = init_and_save_context(ctx, submit_p, SECURITY_FILE_OPEN, 4 /*argnum*/, 0 /*ret*/);
 
@@ -2611,7 +2600,6 @@ int BPF_KPROBE(trace_security_sb_mount)
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     context_t context = init_and_save_context(ctx, submit_p, SECURITY_SB_MOUNT, 4 /*argnum*/, 0 /*ret*/);
 
@@ -2642,7 +2630,6 @@ int BPF_KPROBE(trace_security_inode_unlink)
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     init_and_save_context(ctx, submit_p, SECURITY_INODE_UNLINK, 1 /*argnum*/, 0 /*ret*/);
 
@@ -2665,7 +2652,6 @@ int BPF_KPROBE(trace_commit_creds)
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     context_t context = init_and_save_context(ctx, submit_p, COMMIT_CREDS, 2 /*argnum*/, 0 /*ret*/);
 
@@ -2763,7 +2749,6 @@ int BPF_KPROBE(trace_switch_task_namespaces)
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     u8 argnum = 0;
     context_t context = init_and_save_context(ctx, submit_p, SWITCH_TASK_NS, 1 /*argnum*/, 0 /*ret*/);
@@ -2834,7 +2819,6 @@ int BPF_KPROBE(trace_cap_capable)
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     context_t context = init_and_save_context(ctx, submit_p, CAP_CAPABLE, 1 /*argnum*/, 0 /*ret*/);
 
@@ -2877,8 +2861,6 @@ int BPF_KPROBE(trace_security_socket_create)
     if (submit_p == NULL)
         return 0;
 
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
-
     init_and_save_context(ctx, submit_p, SECURITY_SOCKET_CREATE, 4 /*argnum*/, 0 /*ret*/);
 
     int family = (int)PT_REGS_PARM1(ctx);
@@ -2904,7 +2886,6 @@ int BPF_KPROBE(trace_security_socket_listen)
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     struct socket *sock = (struct socket *)PT_REGS_PARM1(ctx);
     int backlog = (int)PT_REGS_PARM2(ctx);
@@ -2961,8 +2942,6 @@ int BPF_KPROBE(trace_security_socket_connect)
     if (submit_p == NULL)
         return 0;
 
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
-
     struct sockaddr *address = (struct sockaddr *)PT_REGS_PARM2(ctx);
 
     sa_family_t sa_fam = get_sockaddr_family(address);
@@ -3000,7 +2979,6 @@ int BPF_KPROBE(trace_security_socket_accept)
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     struct socket *sock = (struct socket *)PT_REGS_PARM1(ctx);
     struct sock *sk = get_socket_sock(sock);
@@ -3052,8 +3030,6 @@ int BPF_KPROBE(trace_security_socket_bind)
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     struct socket *sock = (struct socket *)PT_REGS_PARM1(ctx);
     struct sock *sk = get_socket_sock(sock);
@@ -3516,7 +3492,6 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
         start_pos -= bytes_written;
 
     if (event_chosen(VFS_WRITE) || event_chosen(VFS_WRITEV)) {
-        set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
         init_and_save_context(ctx, submit_p, event_id, 5 /*argnum*/, PT_REGS_RC(ctx));
 
         save_str_to_buf(submit_p, file_path, 0);
@@ -3535,7 +3510,6 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
 
     // magic_write event checks if the header of some file is changed
     if (event_chosen(MAGIC_WRITE) && !char_dev && (start_pos == 0)) {
-        set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
         init_and_save_context(ctx, submit_p, MAGIC_WRITE, 4 /*argnum*/, PT_REGS_RC(ctx));
 
         u8 header[FILE_MAGIC_HDR_SIZE];
@@ -3585,7 +3559,6 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     context_t context = init_and_save_context(ctx, submit_p, event_id, 5 /*argnum*/, PT_REGS_RC(ctx));
 
@@ -3741,7 +3714,6 @@ int BPF_KPROBE(trace_mmap_alert)
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     context_t context = init_and_save_context(ctx, submit_p, MEM_PROT_ALERT, 1 /*argnum*/, 0 /*ret*/);
 
@@ -3783,7 +3755,6 @@ int BPF_KPROBE(trace_mprotect_alert)
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     context_t context = init_and_save_context(ctx, submit_p, MEM_PROT_ALERT, 1 /*argnum*/, 0 /*ret*/);
 
@@ -3836,8 +3807,6 @@ int BPF_KPROBE(trace_security_bpf)
     if (submit_p == NULL)
         return 0;
 
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
-
     init_and_save_context(ctx, submit_p, SECURITY_BPF, 1 /*argnum*/, 0 /*ret*/);
 
     int cmd = (int)PT_REGS_PARM1(ctx);
@@ -3858,8 +3827,6 @@ int BPF_KPROBE(trace_security_bpf_map)
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     init_and_save_context(ctx, submit_p, SECURITY_BPF_MAP, 2 /*argnum*/, 0 /*ret*/);
 
@@ -3885,8 +3852,6 @@ int BPF_KPROBE(trace_security_kernel_read_file)
     if (submit_p == NULL) {
         return 0;
     }
-
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     init_and_save_context(ctx, submit_p, SECURITY_KERNEL_READ_FILE, 4 /*argnum*/, 0 /*ret*/);
 
@@ -3916,8 +3881,6 @@ int BPF_KPROBE(trace_security_inode_mknod)
     if (submit_p == NULL) {
         return 0;
     }
-
-    set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
 
     init_and_save_context(ctx, submit_p, SECURITY_INODE_MKNOD, 3 /*argnum*/, 0 /*ret*/);
 
