@@ -172,7 +172,7 @@ func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 			s = fmt.Sprintf("{%s}", s)
 			args[addrType] = s
 		}
-	case BpfEventID:
+	case BpfEventID, SecurityBPFEventID:
 		if cmd, isInt32 := args["cmd"].(int32); isInt32 {
 			args["cmd"] = helpers.ParseBPFCmd(cmd)
 		}
