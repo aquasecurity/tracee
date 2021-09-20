@@ -175,8 +175,12 @@ const (
 	SecurityBPFMapEventID
 	SecurityKernelReadFileEventID
 	SecurityInodeMknodEventID
-	InitNamespacesEventID
 	MaxEventID
+)
+
+// Events originated from user-space
+const (
+	InitNamespacesEventID int32 = iota + 2000
 )
 
 const (
