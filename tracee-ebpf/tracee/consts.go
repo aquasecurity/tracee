@@ -178,7 +178,7 @@ const (
 	MaxEventID
 )
 
-// Non syscalls events originated from user-space
+// Events originated from user-space
 const (
 	InitNamespacesEventID int32 = iota + 2000
 )
