@@ -3,3 +3,6 @@
 /dist
 
 coverage.txt
+
+.vagrant/
+
