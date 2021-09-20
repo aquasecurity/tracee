@@ -73,7 +73,7 @@ func main() {
 				return errors.New("invalid target specified " + target)
 			}
 
-			sigs, err := getSignatures(target, c.Bool("rego-partial-eval"), c.String("rules-dir"), c.StringSlice("rules"))
+			sigs, err := getSignatures(target, c.Bool("rego-partial-eval"), c.String("rules-dir"), c.StringSlice("rules"), c.Bool("rego-aio"))
 			if err != nil {
 				return err
 			}
@@ -87,7 +87,7 @@ func main() {
 				}
 				loadedSigIDs = append(loadedSigIDs, m.ID)
 			}
-			fmt.Println("Loaded signature(s): ", loadedSigIDs)
+			fmt.Printf("Loaded %d signature(s): %s\n", len(loadedSigIDs), loadedSigIDs)
 
 			if c.Bool("list") {
 				return listSigs(os.Stdout, sigs)
@@ -167,6 +167,10 @@ func main() {
 			&cli.BoolFlag{
 				Name:  "rego-enable-parsed-events",
 				Usage: "enables pre parsing of input events to rego prior to evaluation",
+			},
+			&cli.BoolFlag{
+				Name:  "rego-aio",
+				Usage: "compile rego signatures altogether as an aggregate policy. By default each signature is compiled separately.",
 			},
 			&cli.StringFlag{
 				Name:  "rego-runtime-target",

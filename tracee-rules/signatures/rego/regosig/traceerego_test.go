@@ -60,7 +60,7 @@ __rego_metadoc__ := {
 tracee_selected_events[eventSelector] {
 	eventSelector := {
 		"source": "tracee",
-		"name": "execve"
+		"name": "ptrace"
 	}
 }
 
@@ -74,10 +74,38 @@ tracee_match = res {
 	}
 }
 `
+	testRegoCodeInvalidObject = `package tracee.TRC_INVALID
+__rego_metadoc__ := {
+	"id": "TRC-INVALID",
+	"version": "0.3.0",
+	"name": "test name",
+	"description": "test description",
+	"tags": [ "tag1", "tag2" ],
+	"properties": {
+		"p1": "test",
+		"p2": 1,
+		"p3": true
+	}
+}
+
+tracee_selected_events[eventSelector] {
+	eventSelector := {
+		"source": "tracee",
+		"name": "ptrace"
+	}
+}
+
+tracee_match = res {
+	endswith(input.args[0].value, "invalid")
+	res := "foo bar string"
+}
+`
 )
 
 // findingHolder is a utility struct that defines types.SignatureHandler callback method
 // and holds the types.Finding value received as the callback's argument.
+//
+// Deprecated use findingsHolder instead.
 type findingHolder struct {
 	value *types.Finding
 }
