@@ -114,7 +114,8 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 		modules map[string]string
 		event   tracee.Event
 		// findings are grouped by signature identifier for comparison
-		findings map[string]types.Finding
+		findings  map[string]types.Finding
+		wantError string
 	}{
 		{
 			name: "Should return finding when single rule matches",
@@ -260,6 +261,23 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 				},
 			},
 		},
+		{
+			name: "Should return error when invalid value received",
+			modules: map[string]string{
+				"test_invalid.rego": testRegoCodeInvalidObject,
+			},
+			event: tracee.Event{
+				Args: []tracee.Argument{
+					{
+						ArgMeta: tracee.ArgMeta{
+							Name: "doesn't matter",
+						},
+						Value: "ends with invalid",
+					},
+				},
+			},
+			wantError: "unrecognized value: string",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -275,9 +293,12 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 			require.NoError(t, err)
 
 			err = sig.OnEvent(tc.event)
-			require.NoError(t, err)
-
-			assert.Equal(t, tc.findings, holder.GroupBySigID())
+			if tc.wantError != "" {
+				require.EqualError(t, err, tc.wantError, tc.name)
+			} else {
+				require.NoError(t, err, tc.name)
+				assert.Equal(t, tc.findings, holder.GroupBySigID())
+			}
 		})
 	}
 }
