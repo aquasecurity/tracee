@@ -175,8 +175,12 @@ const (
 	SecurityBPFMapEventID
 	SecurityKernelReadFileEventID
 	SecurityInodeMknodEventID
-	InitNamespacesEventID
 	MaxEventID
+)
+
+// Non syscalls events originated from user-space
+const (
+	InitNamespacesEventID int32 = iota + 2000
 )
 
 const (
