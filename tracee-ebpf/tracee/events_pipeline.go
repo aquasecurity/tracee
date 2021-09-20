@@ -5,37 +5,10 @@ import (
 	"encoding/binary"
 	"fmt"
 	"strconv"
-	"sync"
 	"unsafe"
 
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
 )
-
-func (t *Tracee) runEventPipeline(done <-chan struct{}) error {
-	var errcList []<-chan error
-
-	// Source pipeline stage.
-	rawEventChan, errc, err := t.decodeRawEvent(done)
-	if err != nil {
-		return err
-	}
-	errcList = append(errcList, errc)
-
-	processedEventChan, errc, err := t.processRawEvent(done, rawEventChan)
-	if err != nil {
-		return err
-	}
-	errcList = append(errcList, errc)
-
-	errc, err = t.emitEvent(done, processedEventChan)
-	if err != nil {
-		return err
-	}
-	errcList = append(errcList, errc)
-
-	// Pipeline started. Waiting for pipeline to complete
-	return t.WaitForPipeline(errcList...)
-}
 
 type RawEvent struct {
 	Ctx      context
@@ -68,18 +41,13 @@ type context struct {
 	_        [3]byte //padding
 }
 
-func (t *Tracee) decodeRawEvent(done <-chan struct{}) (<-chan RawEvent, <-chan error, error) {
-	out := make(chan RawEvent)
-	errc := make(chan error, 1)
-	go func() {
-		defer close(out)
-		defer close(errc)
+func (t *Tracee) processEvents(done <-chan struct{}) error {
 		for dataRaw := range t.eventsChannel {
 			dataBuff := bytes.NewBuffer(dataRaw)
 			var ctx context
 			err := binary.Read(dataBuff, binary.LittleEndian, &ctx)
 			if err != nil {
-				errc <- err
+				t.handleError(err)
 				continue
 			}
 
@@ -91,14 +59,14 @@ func (t *Tracee) decodeRawEvent(done <-chan struct{}) (<-chan RawEvent, <-chan e
 
 			params := EventsIDToParams[ctx.EventID]
 			if params == nil {
-				errc <- fmt.Errorf("failed to get parameters of event %d", ctx.EventID)
+				t.handleError(fmt.Errorf("failed to get parameters of event %d", ctx.EventID))
 				continue
 			}
 
 			for i := 0; i < int(ctx.Argnum); i++ {
 				argMeta, argVal, err := readArgFromBuff(dataBuff, params)
 				if err != nil {
-					errc <- fmt.Errorf("failed to read argument %d of event %d: %v", i, ctx.EventID, err)
+					t.handleError(fmt.Errorf("failed to read argument %d of event %d: %v", i, ctx.EventID, err))
 					continue
 				}
 
@@ -106,39 +74,78 @@ func (t *Tracee) decodeRawEvent(done <-chan struct{}) (<-chan RawEvent, <-chan e
 				rawEvent.ArgMetas[i] = argMeta
 			}
 
-			select {
-			case <-done:
-				return
-			case out <- rawEvent:
-			}
-		}
-	}()
-	return out, errc, nil
-}
-
-func (t *Tracee) processRawEvent(done <-chan struct{}, in <-chan RawEvent) (<-chan RawEvent, <-chan error, error) {
-	out := make(chan RawEvent)
-	errc := make(chan error, 1)
-	go func() {
-		defer close(out)
-		defer close(errc)
-		for rawEvent := range in {
 			if !t.shouldProcessEvent(rawEvent) {
 				continue
 			}
-			err := t.processEvent(&rawEvent.Ctx, rawEvent.Args)
+			err = t.processEvent(&rawEvent.Ctx, rawEvent.Args)
 			if err != nil {
-				errc <- err
+				t.handleError(err)
 				continue
 			}
+
+			// Only emit events requested by the user
+			if !t.eventsToTrace[rawEvent.Ctx.EventID] {
+				continue
+			}
+			err = t.prepareArgs(&rawEvent.Ctx, rawEvent.Args)
+			if err != nil {
+				t.handleError(err)
+				continue
+			}
+
+			// Add stack trace if needed
+			var StackAddresses []uint64
+			if t.config.Output.StackAddresses {
+				StackAddresses, _ = t.getStackAddresses(rawEvent.Ctx.StackID)
+			}
+
+			// Currently, the timestamp received from the bpf code is of the monotonic clock.
+			// Todo: The monotonic clock doesn't take into account system sleep time.
+			// Starting from kernel 5.7, we can get the timestamp relative to the system boot time instead which is preferable.
+			if t.config.Output.RelativeTime {
+				// To get the monotonic time since tracee was started, we have to substract the start time from the timestamp.
+				rawEvent.Ctx.Ts -= t.startTime
+			} else {
+				// To get the current ("wall") time, we add the boot time into it.
+				rawEvent.Ctx.Ts += t.bootTime
+			}
+
+			evt := external.Event{
+				Timestamp:           int(rawEvent.Ctx.Ts),
+				ProcessID:           int(rawEvent.Ctx.Pid),
+				ThreadID:            int(rawEvent.Ctx.Tid),
+				ParentProcessID:     int(rawEvent.Ctx.Ppid),
+				HostProcessID:       int(rawEvent.Ctx.HostPid),
+				HostThreadID:        int(rawEvent.Ctx.HostTid),
+				HostParentProcessID: int(rawEvent.Ctx.HostPpid),
+				UserID:              int(rawEvent.Ctx.Uid),
+				MountNS:             int(rawEvent.Ctx.MntID),
+				PIDNS:               int(rawEvent.Ctx.PidID),
+				ProcessName:         string(bytes.TrimRight(rawEvent.Ctx.Comm[:], "\x00")),
+				HostName:            string(bytes.TrimRight(rawEvent.Ctx.UtsName[:], "\x00")),
+				ContainerID:         string(bytes.TrimRight(rawEvent.Ctx.ContID[:], "\x00")),
+				EventID:             int(rawEvent.Ctx.EventID),
+				EventName:           EventsIDToEvent[int32(rawEvent.Ctx.EventID)].Name,
+				ArgsNum:             int(rawEvent.Ctx.Argnum),
+				ReturnValue:         int(rawEvent.Ctx.Retval),
+				Args:                make([]external.Argument, 0, len(rawEvent.Args)),
+				StackAddresses:      StackAddresses,
+			}
+			for _, meta := range rawEvent.ArgMetas {
+				evt.Args = append(evt.Args, external.Argument{
+					ArgMeta: meta,
+					Value:   rawEvent.Args[meta.Name],
+				})
+			}
+
 			select {
 			case <-done:
-				return
-			case out <- rawEvent:
+				return nil
+			case t.config.ChanEvents <- evt:
+				t.stats.eventCounter.Increment()
 			}
 		}
-	}()
-	return out, errc, nil
+		return nil
 }
 
 func (t *Tracee) getStackAddresses(StackID uint32) ([]uint64, error) {
@@ -171,126 +178,7 @@ func (t *Tracee) getStackAddresses(StackID uint32) ([]uint64, error) {
 	return StackAddresses[0:stackCounter], nil
 }
 
-func newEvent(ctx context, argMetas []external.ArgMeta, args map[string]interface{}, StackAddresses []uint64) (external.Event, error) {
-	e := external.Event{
-		Timestamp:           int(ctx.Ts),
-		ProcessID:           int(ctx.Pid),
-		ThreadID:            int(ctx.Tid),
-		ParentProcessID:     int(ctx.Ppid),
-		HostProcessID:       int(ctx.HostPid),
-		HostThreadID:        int(ctx.HostTid),
-		HostParentProcessID: int(ctx.HostPpid),
-		UserID:              int(ctx.Uid),
-		MountNS:             int(ctx.MntID),
-		PIDNS:               int(ctx.PidID),
-		ProcessName:         string(bytes.TrimRight(ctx.Comm[:], "\x00")),
-		HostName:            string(bytes.TrimRight(ctx.UtsName[:], "\x00")),
-		ContainerID:         string(bytes.TrimRight(ctx.ContID[:], "\x00")),
-		EventID:             int(ctx.EventID),
-		EventName:           EventsIDToEvent[int32(ctx.EventID)].Name,
-		ArgsNum:             int(ctx.Argnum),
-		ReturnValue:         int(ctx.Retval),
-		Args:                make([]external.Argument, 0, len(args)),
-		StackAddresses:      StackAddresses,
-	}
-	for _, meta := range argMetas {
-		e.Args = append(e.Args, external.Argument{
-			ArgMeta: meta,
-			Value:   args[meta.Name],
-		})
-	}
-	return e, nil
-}
-
-func (t *Tracee) emitEvent(done <-chan struct{}, in <-chan RawEvent) (<-chan error, error) {
-	errc := make(chan error, 1)
-	go func() {
-		defer close(errc)
-		for rawEvent := range in {
-			if !t.shouldEmitEvent(rawEvent) {
-				continue
-			}
-			err := t.prepareArgs(&rawEvent.Ctx, rawEvent.Args)
-			if err != nil {
-				errc <- err
-				continue
-			}
-
-			// Add stack trace if needed
-			var StackAddresses []uint64
-			if t.config.Output.StackAddresses {
-				StackAddresses, _ = t.getStackAddresses(rawEvent.Ctx.StackID)
-			}
-
-			// Currently, the timestamp received from the bpf code is of the monotonic clock.
-			// Todo: The monotonic clock doesn't take into account system sleep time.
-			// Starting from kernel 5.7, we can get the timestamp relative to the system boot time instead which is preferable.
-			if t.config.Output.RelativeTime {
-				// To get the monotonic time since tracee was started, we have to substract the start time from the timestamp.
-				rawEvent.Ctx.Ts -= t.startTime
-			} else {
-				// To get the current ("wall") time, we add the boot time into it.
-				rawEvent.Ctx.Ts += t.bootTime
-			}
-
-			evt, err := newEvent(rawEvent.Ctx, rawEvent.ArgMetas, rawEvent.Args, StackAddresses)
-			if err != nil {
-				errc <- err
-				continue
-			}
-
-			select {
-			case <-done:
-				return
-			case t.config.ChanEvents <- evt:
-				t.stats.eventCounter.Increment()
-			}
-		}
-	}()
-	return errc, nil
-}
-
-// WaitForPipeline waits for results from all error channels.
-func (t *Tracee) WaitForPipeline(errs ...<-chan error) error {
-	errc := MergeErrors(errs...)
-	for err := range errc {
-		t.handleError(err)
-	}
-	return nil
-}
-
 func (t *Tracee) handleError(err error) {
 	t.stats.errorCounter.Increment()
 	t.config.ChanErrors <- err
-}
-
-// MergeErrors merges multiple channels of errors.
-// Based on https://blog.golang.org/pipelines.
-func MergeErrors(cs ...<-chan error) <-chan error {
-	var wg sync.WaitGroup
-	// We must ensure that the output channel has the capacity to hold as many errors
-	// as there are error channels. This will ensure that it never blocks, even
-	// if WaitForPipeline returns early.
-	out := make(chan error, len(cs))
-
-	// Start an output goroutine for each input channel in cs.  output
-	// copies values from c to out until c is closed, then calls wg.Done.
-	output := func(c <-chan error) {
-		for n := range c {
-			out <- n
-		}
-		wg.Done()
-	}
-	wg.Add(len(cs))
-	for _, c := range cs {
-		go output(c)
-	}
-
-	// Start a goroutine to close out once all the output goroutines are
-	// done.  This must start after the wg.Add call.
-	go func() {
-		wg.Wait()
-		close(out)
-	}()
-	return out
 }
