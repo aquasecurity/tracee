@@ -11,26 +11,12 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
-	"time"
-
-	"github.com/open-policy-agent/opa/compile"
-	_ "github.com/open-policy-agent/opa/features/wasm"
 
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"github.com/open-policy-agent/opa/compile"
 	"github.com/urfave/cli/v2"
 )
-
-type Clock interface {
-	Now() time.Time
-}
-
-type realClock struct {
-}
-
-func (realClock) Now() time.Time {
-	return time.Now()
-}
 
 func main() {
 	app := &cli.App{

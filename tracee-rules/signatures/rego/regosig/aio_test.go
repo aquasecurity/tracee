@@ -14,24 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// findingsHolder is a utility struct that defines types.SignatureHandler callback method
-// and holds the types.Finding value received as the callback's argument.
-type findingsHolder struct {
-	values []types.Finding
-}
-
-func (h *findingsHolder) OnFinding(f types.Finding) {
-	h.values = append(h.values, f)
-}
-
-func (h *findingsHolder) GroupBySigID() map[string]types.Finding {
-	r := make(map[string]types.Finding)
-	for _, v := range h.values {
-		r[v.SigMetadata.ID] = v
-	}
-	return r
-}
-
 func TestAio_GetMetadata(t *testing.T) {
 	sig, err := regosig.NewAIO(map[string]string{
 		"test_boolean.rego": testRegoCodeBoolean,
