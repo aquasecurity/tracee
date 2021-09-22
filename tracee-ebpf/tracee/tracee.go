@@ -896,7 +896,7 @@ func (t *Tracee) Run() error {
 	t.fileWrPerfMap.Start()
 	t.netPerfMap.Start()
 	go t.processLostEvents()
-	go t.runEventPipeline(t.config.ChanDone)
+	go t.processEvents(t.config.ChanDone)
 	go t.processFileWrites()
 	go t.processNetEvents()
 	<-sig
@@ -996,15 +996,6 @@ func (t *Tracee) updateFileSHA() {
 		v.FileHash = fileSHA
 		t.profiledFiles[k] = v
 	}
-}
-
-// shouldPrintEvent decides whether or not the given event id should be printed to the output
-func (t *Tracee) shouldEmitEvent(e RawEvent) bool {
-	// Only print events requested by the user
-	if !t.eventsToTrace[e.Ctx.EventID] {
-		return false
-	}
-	return true
 }
 
 func (t *Tracee) invokeInitNamespacesEvent() {
