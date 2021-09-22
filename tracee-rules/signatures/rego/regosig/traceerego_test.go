@@ -15,105 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	testRegoCodeBoolean = `package tracee.TRC_BOOL
-
-__rego_metadoc__ := {
-	"id": "TRC-BOOL",
-	"version": "0.1.0",
-	"name": "test name",
-	"description": "test description",
-	"tags": [ "tag1", "tag2" ],
-	"properties": {
-		"p1": "test",
-		"p2": 1,
-		"p3": true
-	}
-}
-
-tracee_selected_events[eventSelector] {
-	eventSelector := {
-		"source": "tracee",
-		"name": "execve"
-	}
-}
-
-tracee_match {
-	endswith(input.args[0].value, "yo")
-}
-`
-	testRegoCodeObject = `package tracee.TRC_OBJECT
-
-__rego_metadoc__ := {
-	"id": "TRC-OBJECT",
-	"version": "0.3.0",
-	"name": "test name",
-	"description": "test description",
-	"tags": [ "tag1", "tag2" ],
-	"properties": {
-		"p1": "test",
-		"p2": 1,
-		"p3": true
-	}
-}
-
-tracee_selected_events[eventSelector] {
-	eventSelector := {
-		"source": "tracee",
-		"name": "ptrace"
-	}
-}
-
-tracee_match = res {
-	endswith(input.args[0].value, "yo")
-	input.args[1].value == 1337
-	res := {
-		"p1": "test",
-		"p2": 1,
-		"p3": true
-	}
-}
-`
-	testRegoCodeInvalidObject = `package tracee.TRC_INVALID
-__rego_metadoc__ := {
-	"id": "TRC-INVALID",
-	"version": "0.3.0",
-	"name": "test name",
-	"description": "test description",
-	"tags": [ "tag1", "tag2" ],
-	"properties": {
-		"p1": "test",
-		"p2": 1,
-		"p3": true
-	}
-}
-
-tracee_selected_events[eventSelector] {
-	eventSelector := {
-		"source": "tracee",
-		"name": "ptrace"
-	}
-}
-
-tracee_match = res {
-	endswith(input.args[0].value, "invalid")
-	res := "foo bar string"
-}
-`
-)
-
-// findingHolder is a utility struct that defines types.SignatureHandler callback method
-// and holds the types.Finding value received as the callback's argument.
-//
-// Deprecated use findingsHolder instead.
-type findingHolder struct {
-	value *types.Finding
-}
-
-func (h *findingHolder) OnFinding(f types.Finding) {
-	h.value = &f
-}
-
 func TestRegoSignature_GetMetadata(t *testing.T) {
 	sig, err := regosig.NewRegoSignature(compile.TargetRego, false, testRegoCodeBoolean)
 	require.NoError(t, err)
@@ -431,7 +332,7 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 			sig, err := regosig.NewRegoSignature(target, partial, tc.regoCode)
 			require.NoError(t, err)
 
-			holder := &findingHolder{}
+			holder := &findingsHolder{}
 			err = sig.Init(holder.OnFinding)
 			require.NoError(t, err)
 
@@ -449,7 +350,7 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 				assert.EqualError(t, err, tc.error)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, tc.finding, holder.value)
+				assert.Equal(t, tc.finding, holder.FirstValue())
 			}
 		})
 	}
