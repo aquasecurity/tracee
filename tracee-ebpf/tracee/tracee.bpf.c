@@ -42,6 +42,7 @@ Copyright (C) Aqua Security inc.
 #include <linux/socket.h>
 #include <linux/version.h>
 #define KBUILD_MODNAME "tracee"
+#include <net/af_unix.h>
 #include <net/sock.h>
 #include <net/inet_sock.h>
 #include <net/ipv6.h>
@@ -939,6 +940,17 @@ static __always_inline struct ipv6_pinfo* get_inet_pinet6(struct inet_sock *inet
     struct ipv6_pinfo *pinet6_own_impl;
     bpf_probe_read(&pinet6_own_impl, sizeof(pinet6_own_impl), &inet->pinet6);
     return pinet6_own_impl;
+}
+
+static __always_inline struct sockaddr_un get_unix_sock_addr(struct unix_sock *sock)
+{
+    struct unix_address* addr = READ_KERN(sock->addr);
+    int len = READ_KERN(addr->len);
+    struct sockaddr_un sockaddr = {};
+    if (len <= sizeof(struct sockaddr_un)) {
+        bpf_probe_read(&sockaddr, len, addr->name);
+    }
+    return sockaddr;
 }
 
 /*============================== HELPER FUNCTIONS ==============================*/
@@ -2893,7 +2905,7 @@ int BPF_KPROBE(trace_security_socket_listen)
     struct sock *sk = get_socket_sock(sock);
 
     u16 family = get_sock_family(sk);
-    if ( (family != AF_INET) && (family != AF_INET6) ) {
+    if ( (family != AF_INET) && (family != AF_INET6) && (family != AF_UNIX)) {
         return 0;
     }
 
@@ -2904,8 +2916,7 @@ int BPF_KPROBE(trace_security_socket_listen)
 
     save_to_submit_buf(submit_p, (void *)&sockfd, sizeof(u32), 0);
 
-    if ( family == AF_INET ){
-
+    if (family == AF_INET) {
         net_conn_v4_t net_details = {};
         get_network_details_from_sock_v4(sk, &net_details, 0);
 
@@ -2913,10 +2924,8 @@ int BPF_KPROBE(trace_security_socket_listen)
         get_local_sockaddr_in_from_network_details(&local, &net_details, family);
 
         save_to_submit_buf(submit_p, (void *)&local, sizeof(struct sockaddr_in), 1);
-
     }
-    else if ( family == AF_INET6 ){
-
+    else if (family == AF_INET6) {
         net_conn_v6_t net_details = {};
         get_network_details_from_sock_v6(sk, &net_details, 0);
 
@@ -2924,6 +2933,11 @@ int BPF_KPROBE(trace_security_socket_listen)
         get_local_sockaddr_in6_from_network_details(&local, &net_details, family);
 
         save_to_submit_buf(submit_p, (void *)&local, sizeof(struct sockaddr_in6), 1);
+    }
+    else if (family == AF_UNIX) {
+        struct unix_sock *unix_sk = (struct unix_sock *)sk;
+        struct sockaddr_un sockaddr = get_unix_sock_addr(unix_sk);
+        save_to_submit_buf(submit_p, (void *)&sockaddr, sizeof(struct sockaddr_un), 1);
     }
 
     save_to_submit_buf(submit_p, (void *)&backlog, sizeof(int), 2);
@@ -2945,7 +2959,7 @@ int BPF_KPROBE(trace_security_socket_connect)
     struct sockaddr *address = (struct sockaddr *)PT_REGS_PARM2(ctx);
 
     sa_family_t sa_fam = get_sockaddr_family(address);
-    if ( (sa_fam != AF_INET) && (sa_fam != AF_INET6) ) {
+    if ( (sa_fam != AF_INET) && (sa_fam != AF_INET6) && (sa_fam != AF_UNIX)) {
         return 0;
     }
 
@@ -2957,13 +2971,13 @@ int BPF_KPROBE(trace_security_socket_connect)
     save_to_submit_buf(submit_p, (void *)&sockfd, sizeof(u32), 0);
 
     if (sa_fam == AF_INET) {
-        // saving to submit buffer
         save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in), 1);
-
     }
     else if (sa_fam == AF_INET6) {
-        // saving to submit buffer
         save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in6), 1);
+    }
+    else if (sa_fam == AF_UNIX) {
+        save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_un), 1);
     }
 
     events_perf_submit(ctx);
@@ -2984,7 +2998,7 @@ int BPF_KPROBE(trace_security_socket_accept)
     struct sock *sk = get_socket_sock(sock);
 
     u16 family = get_sock_family(sk);
-    if ( (family != AF_INET) && (family != AF_INET6) ) {
+    if ( (family != AF_INET) && (family != AF_INET6) && (family != AF_UNIX)) {
         return 0;
     }
 
@@ -2995,8 +3009,7 @@ int BPF_KPROBE(trace_security_socket_accept)
 
     save_to_submit_buf(submit_p, (void *)&sockfd, sizeof(u32), 0);
 
-    if ( family == AF_INET ){
-
+    if (family == AF_INET) {
         net_conn_v4_t net_details = {};
         get_network_details_from_sock_v4(sk, &net_details, 0);
 
@@ -3004,10 +3017,8 @@ int BPF_KPROBE(trace_security_socket_accept)
         get_local_sockaddr_in_from_network_details(&local, &net_details, family);
 
         save_to_submit_buf(submit_p, (void *)&local, sizeof(struct sockaddr_in), 1);
-
     }
-    else if ( family == AF_INET6 ){
-
+    else if (family == AF_INET6) {
         net_conn_v6_t net_details = {};
         get_network_details_from_sock_v6(sk, &net_details, 0);
 
@@ -3015,6 +3026,11 @@ int BPF_KPROBE(trace_security_socket_accept)
         get_local_sockaddr_in6_from_network_details(&local, &net_details, family);
 
         save_to_submit_buf(submit_p, (void *)&local, sizeof(struct sockaddr_in6), 1);
+    }
+    else if (family == AF_UNIX) {
+        struct unix_sock *unix_sk = (struct unix_sock *)sk;
+        struct sockaddr_un sockaddr = get_unix_sock_addr(unix_sk);
+        save_to_submit_buf(submit_p, (void *)&sockaddr, sizeof(struct sockaddr_un), 1);
     }
 
     events_perf_submit(ctx);
@@ -3037,7 +3053,7 @@ int BPF_KPROBE(trace_security_socket_bind)
     struct sockaddr *address = (struct sockaddr *)PT_REGS_PARM2(ctx);
 
     sa_family_t sa_fam = get_sockaddr_family(address);
-    if ( (sa_fam != AF_INET) && (sa_fam != AF_INET6) ) {
+    if ( (sa_fam != AF_INET) && (sa_fam != AF_INET6) && (sa_fam != AF_UNIX)) {
         return 0;
     }
 
@@ -3053,7 +3069,6 @@ int BPF_KPROBE(trace_security_socket_bind)
     connect_id.protocol = protocol;
 
     if (sa_fam == AF_INET) {
-
         save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in), 1);
 
         struct sockaddr_in *addr = (struct sockaddr_in *)address;
@@ -3065,7 +3080,6 @@ int BPF_KPROBE(trace_security_socket_bind)
         }
     }
     else if (sa_fam == AF_INET6) {
-
         save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_in6), 1);
 
         struct sockaddr_in6 *addr = (struct sockaddr_in6 *)address;
@@ -3074,6 +3088,9 @@ int BPF_KPROBE(trace_security_socket_bind)
             connect_id.address = READ_KERN(addr->sin6_addr);
             connect_id.port = READ_KERN(addr->sin6_port);
         }
+    }
+    else if (sa_fam == AF_UNIX) {
+        save_to_submit_buf(submit_p, (void *)address, sizeof(struct sockaddr_un), 1);
     }
 
     if (connect_id.port) {
@@ -3086,7 +3103,7 @@ int BPF_KPROBE(trace_security_socket_bind)
     events_perf_submit(ctx);
 
     // netDebug event
-    if (get_config(CONFIG_DEBUG_NET)) {
+    if (get_config(CONFIG_DEBUG_NET) && (sa_fam != AF_UNIX)) {
         net_debug_t debug_event = {0};
         debug_event.ts = bpf_ktime_get_ns();
         debug_event.host_tid = context.host_tid;
