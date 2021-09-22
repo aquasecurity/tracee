@@ -10,12 +10,6 @@ import (
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
 )
 
-type RawEvent struct {
-	Ctx      context
-	Args     map[string]interface{}
-	ArgMetas []external.ArgMeta
-}
-
 // context struct contains common metadata that is collected for all types of events
 // it is used to unmarshal binary data and therefore should match (bit by bit) to the `context_t` struct in the ebpf code.
 // NOTE: Integers want to be aligned in memory, so if changing the format of this struct
@@ -51,11 +45,8 @@ func (t *Tracee) processEvents(done <-chan struct{}) error {
 			continue
 		}
 
-		rawEvent := RawEvent{
-			Ctx:      ctx,
-			Args:     make(map[string]interface{}, ctx.Argnum),
-			ArgMetas: make([]external.ArgMeta, ctx.Argnum),
-		}
+		args := make(map[string]interface{}, ctx.Argnum)
+		argMetas := make([]external.ArgMeta, ctx.Argnum)
 
 		params := EventsIDToParams[ctx.EventID]
 		if params == nil {
@@ -70,24 +61,24 @@ func (t *Tracee) processEvents(done <-chan struct{}) error {
 				continue
 			}
 
-			rawEvent.Args[argMeta.Name] = argVal
-			rawEvent.ArgMetas[i] = argMeta
+			args[argMeta.Name] = argVal
+			argMetas[i] = argMeta
 		}
 
-		if !t.shouldProcessEvent(rawEvent) {
+		if !t.shouldProcessEvent(&ctx, args) {
 			continue
 		}
-		err = t.processEvent(&rawEvent.Ctx, rawEvent.Args)
+		err = t.processEvent(&ctx, args)
 		if err != nil {
 			t.handleError(err)
 			continue
 		}
 
 		// Only emit events requested by the user
-		if !t.eventsToTrace[rawEvent.Ctx.EventID] {
+		if !t.eventsToTrace[ctx.EventID] {
 			continue
 		}
-		err = t.prepareArgs(&rawEvent.Ctx, rawEvent.Args)
+		err = t.prepareArgs(&ctx, args)
 		if err != nil {
 			t.handleError(err)
 			continue
@@ -96,7 +87,7 @@ func (t *Tracee) processEvents(done <-chan struct{}) error {
 		// Add stack trace if needed
 		var StackAddresses []uint64
 		if t.config.Output.StackAddresses {
-			StackAddresses, _ = t.getStackAddresses(rawEvent.Ctx.StackID)
+			StackAddresses, _ = t.getStackAddresses(ctx.StackID)
 		}
 
 		// Currently, the timestamp received from the bpf code is of the monotonic clock.
@@ -104,37 +95,37 @@ func (t *Tracee) processEvents(done <-chan struct{}) error {
 		// Starting from kernel 5.7, we can get the timestamp relative to the system boot time instead which is preferable.
 		if t.config.Output.RelativeTime {
 			// To get the monotonic time since tracee was started, we have to substract the start time from the timestamp.
-			rawEvent.Ctx.Ts -= t.startTime
+			ctx.Ts -= t.startTime
 		} else {
 			// To get the current ("wall") time, we add the boot time into it.
-			rawEvent.Ctx.Ts += t.bootTime
+			ctx.Ts += t.bootTime
 		}
 
 		evt := external.Event{
-			Timestamp:           int(rawEvent.Ctx.Ts),
-			ProcessID:           int(rawEvent.Ctx.Pid),
-			ThreadID:            int(rawEvent.Ctx.Tid),
-			ParentProcessID:     int(rawEvent.Ctx.Ppid),
-			HostProcessID:       int(rawEvent.Ctx.HostPid),
-			HostThreadID:        int(rawEvent.Ctx.HostTid),
-			HostParentProcessID: int(rawEvent.Ctx.HostPpid),
-			UserID:              int(rawEvent.Ctx.Uid),
-			MountNS:             int(rawEvent.Ctx.MntID),
-			PIDNS:               int(rawEvent.Ctx.PidID),
-			ProcessName:         string(bytes.TrimRight(rawEvent.Ctx.Comm[:], "\x00")),
-			HostName:            string(bytes.TrimRight(rawEvent.Ctx.UtsName[:], "\x00")),
-			ContainerID:         string(bytes.TrimRight(rawEvent.Ctx.ContID[:], "\x00")),
-			EventID:             int(rawEvent.Ctx.EventID),
-			EventName:           EventsIDToEvent[int32(rawEvent.Ctx.EventID)].Name,
-			ArgsNum:             int(rawEvent.Ctx.Argnum),
-			ReturnValue:         int(rawEvent.Ctx.Retval),
-			Args:                make([]external.Argument, 0, len(rawEvent.Args)),
+			Timestamp:           int(ctx.Ts),
+			ProcessID:           int(ctx.Pid),
+			ThreadID:            int(ctx.Tid),
+			ParentProcessID:     int(ctx.Ppid),
+			HostProcessID:       int(ctx.HostPid),
+			HostThreadID:        int(ctx.HostTid),
+			HostParentProcessID: int(ctx.HostPpid),
+			UserID:              int(ctx.Uid),
+			MountNS:             int(ctx.MntID),
+			PIDNS:               int(ctx.PidID),
+			ProcessName:         string(bytes.TrimRight(ctx.Comm[:], "\x00")),
+			HostName:            string(bytes.TrimRight(ctx.UtsName[:], "\x00")),
+			ContainerID:         string(bytes.TrimRight(ctx.ContID[:], "\x00")),
+			EventID:             int(ctx.EventID),
+			EventName:           EventsIDToEvent[int32(ctx.EventID)].Name,
+			ArgsNum:             int(ctx.Argnum),
+			ReturnValue:         int(ctx.Retval),
+			Args:                make([]external.Argument, 0, len(args)),
 			StackAddresses:      StackAddresses,
 		}
-		for _, meta := range rawEvent.ArgMetas {
+		for _, meta := range argMetas {
 			evt.Args = append(evt.Args, external.Argument{
 				ArgMeta: meta,
-				Value:   rawEvent.Args[meta.Name],
+				Value:   args[meta.Name],
 			})
 		}
 
