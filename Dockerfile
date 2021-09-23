@@ -39,4 +39,6 @@ LABEL org.label-schema.build-date=$BUILD_DATE \
     org.label-schema.vendor="Aqua Security" \
     org.label-schema.version=$VERSION
 
+ENV TINI_SUBREAPER=true
+
 ENTRYPOINT ["/sbin/tini", "-g", "--", "./entrypoint.sh"]
