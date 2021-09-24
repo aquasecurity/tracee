@@ -959,35 +959,36 @@ static __inline int has_prefix(char *prefix, char *str, int n)
     return 0;
 }
 
-static __always_inline int init_context(context_t *context)
+static __always_inline context_t init_context()
 {
+    context_t context = {};
     struct task_struct *task;
     task = (struct task_struct *)bpf_get_current_task();
 
     u64 id = bpf_get_current_pid_tgid();
-    context->host_tid = id;
-    context->host_pid = id >> 32;
-    context->host_ppid = get_task_ppid(task);
-    context->tid = get_task_ns_pid(task);
-    context->pid = get_task_ns_tgid(task);
-    context->ppid = get_task_ns_ppid(task);
-    context->mnt_id = get_task_mnt_ns_id(task);
-    context->pid_id = get_task_pid_ns_id(task);
-    context->uid = bpf_get_current_uid_gid();
-    bpf_get_current_comm(&context->comm, sizeof(context->comm));
+    context.host_tid = id;
+    context.host_pid = id >> 32;
+    context.host_ppid = get_task_ppid(task);
+    context.tid = get_task_ns_pid(task);
+    context.pid = get_task_ns_tgid(task);
+    context.ppid = get_task_ns_ppid(task);
+    context.mnt_id = get_task_mnt_ns_id(task);
+    context.pid_id = get_task_pid_ns_id(task);
+    context.uid = bpf_get_current_uid_gid();
+    bpf_get_current_comm(&context.comm, sizeof(context.comm));
     char * uts_name = get_task_uts_name(task);
     if (uts_name)
-        bpf_probe_read_str(&context->uts_name, TASK_COMM_LEN, uts_name);
-    container_id_t *container_id = bpf_map_lookup_elem(&pid_to_cont_id_map, &context->host_tid);
+        bpf_probe_read_str(&context.uts_name, TASK_COMM_LEN, uts_name);
+    container_id_t *container_id = bpf_map_lookup_elem(&pid_to_cont_id_map, &context.host_tid);
     if (container_id != NULL) {
-        __builtin_memcpy(context->cont_id, container_id->id, CONT_ID_LEN);
+        __builtin_memcpy(context.cont_id, container_id->id, CONT_ID_LEN);
     }
-    context->ts = bpf_ktime_get_ns();
+    context.ts = bpf_ktime_get_ns();
 
     // Clean Stack Trace ID
-    context->stack_id = 0;
+    context.stack_id = 0;
 
-    return 0;
+    return context;
 }
 
 static __always_inline int get_config(u32 key)
@@ -1078,71 +1079,68 @@ static __always_inline int bool_filter_matches(int filter_config, bool val)
     return 0;
 }
 
-static __always_inline int should_trace()
+static __always_inline int should_trace(context_t *context)
 {
-    context_t context = {};
-    init_context(&context);
-
     if (get_config(CONFIG_FOLLOW_FILTER)) {
-        if (bpf_map_lookup_elem(&traced_pids_map, &context.host_tid) != 0)
+        if (bpf_map_lookup_elem(&traced_pids_map, &context->host_tid) != 0)
             // If the process is already in the traced_pids_map and follow was chosen, don't check the other filters
             return 1;
     }
 
-    bool is_new_pid = bpf_map_lookup_elem(&new_pids_map, &context.host_tid) != 0;
+    bool is_new_pid = bpf_map_lookup_elem(&new_pids_map, &context->host_tid) != 0;
     if (!bool_filter_matches(CONFIG_NEW_PID_FILTER, is_new_pid))
     {
         return 0;
     }
 
-    bool is_new_container = bpf_map_lookup_elem(&new_pidns_map, &context.pid_id) != 0;
+    bool is_new_container = bpf_map_lookup_elem(&new_pidns_map, &context->pid_id) != 0;
     if (!bool_filter_matches(CONFIG_NEW_CONT_FILTER, is_new_container))
     {
         return 0;
     }
 
     // Don't monitor self
-    if (get_config(CONFIG_TRACEE_PID) == context.host_pid) {
+    if (get_config(CONFIG_TRACEE_PID) == context->host_pid) {
         return 0;
     }
 
-    if (!uint_filter_matches(CONFIG_UID_FILTER, &uid_filter, context.uid, UID_LESS, UID_GREATER))
+    if (!uint_filter_matches(CONFIG_UID_FILTER, &uid_filter, context->uid, UID_LESS, UID_GREATER))
     {
         return 0;
     }
 
-    if (!uint_filter_matches(CONFIG_MNT_NS_FILTER, &mnt_ns_filter, context.mnt_id, MNTNS_LESS, MNTNS_GREATER))
+    if (!uint_filter_matches(CONFIG_MNT_NS_FILTER, &mnt_ns_filter, context->mnt_id, MNTNS_LESS, MNTNS_GREATER))
     {
         return 0;
     }
 
-    if (!uint_filter_matches(CONFIG_PID_NS_FILTER, &pid_ns_filter, context.pid_id, PIDNS_LESS, PIDNS_GREATER))
+    if (!uint_filter_matches(CONFIG_PID_NS_FILTER, &pid_ns_filter, context->pid_id, PIDNS_LESS, PIDNS_GREATER))
     {
         return 0;
     }
 
-    if (!uint_filter_matches(CONFIG_PID_FILTER, &pid_filter, context.host_tid, PID_LESS, PID_GREATER))
+    if (!uint_filter_matches(CONFIG_PID_FILTER, &pid_filter, context->host_tid, PID_LESS, PID_GREATER))
     {
         return 0;
     }
 
-    if (!equality_filter_matches(CONFIG_UTS_NS_FILTER, &uts_ns_filter, &context.uts_name))
+    if (!equality_filter_matches(CONFIG_UTS_NS_FILTER, &uts_ns_filter, &context->uts_name))
     {
         return 0;
     }
 
-    if (!equality_filter_matches(CONFIG_COMM_FILTER, &comm_filter, &context.comm))
+    if (!equality_filter_matches(CONFIG_COMM_FILTER, &comm_filter, &context->comm))
     {
         return 0;
     }
 
-    if (!equality_filter_matches(CONFIG_PROC_TREE_FILTER, &process_tree_map, &context.pid))
+    if (!equality_filter_matches(CONFIG_PROC_TREE_FILTER, &process_tree_map, &context->pid))
     {
         return 0;
     }
 
     // TODO: after we move to minimal kernel 4.18, we can check for container by cgroupid != host cgroupid
-    bool is_container = context.tid != context.host_tid;
+    bool is_container = context->tid != context->host_tid;
     if (!bool_filter_matches(CONFIG_CONT_FILTER, is_container))
     {
         return 0;
@@ -1187,25 +1185,22 @@ static __always_inline int save_context_to_buf(buf_t *submit_p, void *ptr)
     return 0;
 }
 
-static __always_inline context_t init_and_save_context(void* ctx, buf_t *submit_p, u32 id, u8 argnum, long ret)
+static __always_inline int update_and_save_context(context_t *context, void* ctx, buf_t *submit_p, u32 id, u8 argnum, long ret)
 {
-    context_t context = {};
-    init_context(&context);
-    context.eventid = id;
-    context.argnum = argnum;
-    context.retval = ret;
+    context->eventid = id;
+    context->argnum = argnum;
+    context->retval = ret;
 
     // Get Stack trace
     if (get_config(CONFIG_CAPTURE_STACK_TRACES)) {
         int stack_id = bpf_get_stackid(ctx, &stack_addresses, BPF_F_USER_STACK);
         if (stack_id >= 0) {
-            context.stack_id = stack_id;
+            context->stack_id = stack_id;
         }
     }
 
-    save_context_to_buf(submit_p, (void*)&context);
     set_buf_off(SUBMIT_BUF_IDX, sizeof(context_t));
-    return context;
+    return save_context_to_buf(submit_p, context);
 }
 
 static __always_inline int save_to_submit_buf(buf_t *submit_p, void *ptr, u32 size, u8 index)
@@ -1846,18 +1841,18 @@ static __always_inline int save_args_to_submit_buf(u64 types, args_t *args)
     return arg_num;
 }
 
-static __always_inline int trace_ret_generic(void *ctx, u32 id, u64 types, args_t *args, long ret)
+static __always_inline int trace_ret_generic(context_t *context, void *ctx, u32 id, u64 types, args_t *args, long ret)
 {
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
-    context_t context = init_and_save_context(ctx, submit_p, id, 0, ret);
+    update_and_save_context(context, ctx, submit_p, id, 0, ret);
 
     u8 argnum = save_args_to_submit_buf(types, args);
     // resave the context to update argnum and timestamp
-    context.argnum = argnum;
-    context.ts = args->args[6];
-    save_context_to_buf(submit_p, (void*)&context);
+    context->argnum = argnum;
+    context->ts = args->args[6];
+    save_context_to_buf(submit_p, context);
 
     events_perf_submit(ctx);
     return 0;
@@ -1866,7 +1861,8 @@ static __always_inline int trace_ret_generic(void *ctx, u32 id, u64 types, args_
 #define TRACE_ENT_FUNC(name, id)                                        \
 int trace_##name(void *ctx)                                             \
 {                                                                       \
-    if (!should_trace())                                                \
+    context_t context = init_context();                                 \
+    if (!should_trace(&context))                                        \
         return 0;                                                       \
     return save_args_from_regs(ctx, id, false);                         \
 }
@@ -1880,13 +1876,14 @@ int trace_ret_##name(void *ctx)                                         \
     if (load_args(&args, delete_args, id) != 0)                         \
         return -1;                                                      \
                                                                         \
-    if (!should_trace())                                                \
+    context_t context = init_context();                                 \
+    if (!should_trace(&context))                                        \
         return -1;                                                      \
                                                                         \
     if (!event_chosen(id))                                              \
         return 0;                                                       \
                                                                         \
-    return trace_ret_generic(ctx, id, types, &args, ret);               \
+    return trace_ret_generic(&context, ctx, id, types, &args, ret);     \
 }
 
 static __always_inline int get_network_details_from_sock_v4(struct sock *sk, net_conn_v4_t *net_details, int peer)
@@ -2079,29 +2076,28 @@ if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER)) {
         id = *id_64;
     }
 
-    u32 pid = bpf_get_current_pid_tgid();
+    context_t context = init_context();
 
     // execve events may add new pids to the traced pids set
     // perform this check before should_trace() so newly executed binaries will be traced
     if (id == SYS_EXECVE || id == SYS_EXECVEAT) {
         if (get_config(CONFIG_NEW_CONT_FILTER)) {
-            u32 pid_ns = get_task_pid_ns_id(task);
-            if (get_task_ns_pid(task) == 1) {
+            if (context.tid == 1) {
                 // A new container/pod was started (pid 1 in namespace executed) - add pid namespace to map
-                bpf_map_update_elem(&new_pidns_map, &pid_ns, &pid_ns, BPF_ANY);
+                bpf_map_update_elem(&new_pidns_map, &context.pid_id, &context.pid_id, BPF_ANY);
             }
         }
         if (get_config(CONFIG_NEW_PID_FILTER)) {
-            bpf_map_update_elem(&new_pids_map, &pid, &pid, BPF_ANY);
+            bpf_map_update_elem(&new_pids_map, &context.host_tid, &context.host_tid, BPF_ANY);
         }
     }
 
-    if (!should_trace())
+    if (!should_trace(&context))
         return 0;
 
     if (id == SYS_EXECVE || id == SYS_EXECVEAT) {
         // We passed all filters (in should_trace()) - add this pid to traced pids set
-        bpf_map_update_elem(&traced_pids_map, &pid, &pid, BPF_ANY);
+        bpf_map_update_elem(&traced_pids_map, &context.host_tid, &context.host_tid, BPF_ANY);
     }
     else if (id == SYSCALL_CONNECT || id == SYSCALL_ACCEPT || id == SYSCALL_ACCEPT4 || id == SYSCALL_BIND || id == SYSCALL_LISTEN) {
         u32 sockfd = args_tmp.args[0];
@@ -2113,7 +2109,7 @@ if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER)) {
         if (submit_p == NULL)
             return 0;
 
-        init_and_save_context(ctx, submit_p, RAW_SYS_ENTER, 1 /*argnum*/, 0 /*ret*/);
+        update_and_save_context(&context, ctx, submit_p, RAW_SYS_ENTER, 1 /*argnum*/, 0 /*ret*/);
 
         save_to_submit_buf(submit_p, (void*)&id, sizeof(int), 0);
         events_perf_submit(ctx);
@@ -2122,7 +2118,7 @@ if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER)) {
     // exit, exit_group and rt_sigreturn syscalls don't return - don't save args for them
     if (id != SYS_EXIT && id != SYS_EXIT_GROUP && id != SYS_RT_SIGRETURN) {
         // save the timestamp at function entry
-        args_tmp.args[6] = bpf_ktime_get_ns();
+        args_tmp.args[6] = context.ts;
         save_args(&args_tmp, id);
     }
 
@@ -2156,7 +2152,8 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
     if (load_args(&saved_args, delete_args, id) != 0)
         return 0;
 
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     if (id == SYSCALL_CONNECT || id == SYSCALL_ACCEPT || id == SYSCALL_ACCEPT4 || id == SYSCALL_BIND || id == SYSCALL_LISTEN) {
@@ -2168,7 +2165,7 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
         if (submit_p == NULL)
             return 0;
 
-        init_and_save_context(ctx, submit_p, RAW_SYS_EXIT, 1 /*argnum*/, ret);
+        update_and_save_context(&context, ctx, submit_p, RAW_SYS_EXIT, 1 /*argnum*/, ret);
 
         save_to_submit_buf(submit_p, (void*)&id, sizeof(int), 0);
         events_perf_submit(ctx);
@@ -2186,7 +2183,7 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
             // We can't use saved args after execve syscall, as pointers are invalid
             // To avoid showing execve event both on entry and exit,
             // we only output failed execs
-            trace_ret_generic(ctx, id, types, &saved_args, ret);
+            trace_ret_generic(&context, ctx, id, types, &saved_args, ret);
         }
     }
 
@@ -2217,7 +2214,8 @@ int syscall__execve(void *ctx)
     if (submit_p == NULL)
         return 0;
 
-    context_t context = init_and_save_context(ctx, submit_p, SYS_EXECVE, 2 /*argnum*/, 0 /*ret*/);
+    context_t context = init_context();
+    update_and_save_context(&context, ctx, submit_p, SYS_EXECVE, 2 /*argnum*/, 0 /*ret*/);
 
     argnum += save_str_to_buf(submit_p, (void *)args.args[0] /*filename*/, 0);
     argnum += save_str_arr_to_buf(submit_p, (const char *const *)args.args[1] /*argv*/, 1);
@@ -2248,7 +2246,8 @@ int syscall__execveat(void *ctx)
     if (submit_p == NULL)
         return 0;
 
-    context_t context = init_and_save_context(ctx, submit_p, SYS_EXECVEAT, 4 /*argnum*/, 0 /*ret*/);
+    context_t context = init_context();
+    update_and_save_context(&context, ctx, submit_p, SYS_EXECVEAT, 4 /*argnum*/, 0 /*ret*/);
 
     argnum += save_to_submit_buf(submit_p, (void*)&args.args[0] /*dirfd*/, sizeof(int), 0);
     argnum += save_str_to_buf(submit_p, (void *)args.args[1] /*pathname*/, 1);
@@ -2293,7 +2292,8 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         bpf_map_update_elem(&process_tree_map, &child_tgid, tgid_filtered, BPF_ANY);
     } 
 
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     // fork events may add new pids to the traced pids set
@@ -2308,7 +2308,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         if (submit_p == NULL)
             return 0;
 
-        init_and_save_context(ctx, submit_p, SCHED_PROCESS_FORK, 4 /*argnum*/, 0 /*ret*/);
+        update_and_save_context(&context, ctx, submit_p, SCHED_PROCESS_FORK, 4 /*argnum*/, 0 /*ret*/);
 
         int parent_ns_pid = get_task_ns_pid(parent);
         int child_ns_pid = get_task_ns_pid(child);
@@ -2329,14 +2329,15 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
 SEC("raw_tracepoint/sched_process_exec")
 int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 {
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
-    init_and_save_context(ctx, submit_p, SCHED_PROCESS_EXEC, 6, 0);
+    update_and_save_context(&context, ctx, submit_p, SCHED_PROCESS_EXEC, 6, 0);
 
     struct task_struct *task = (struct task_struct *)ctx->args[0];
     struct linux_binprm *bprm = (struct linux_binprm *)ctx->args[2];
@@ -2395,43 +2396,34 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 SEC("raw_tracepoint/sched_process_exit")
 int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 {
-    u64 id = bpf_get_current_pid_tgid();
-    u32 pid = id;
-    u32 tgid = id >> 32;
-
-    if (!should_trace()) {
+    context_t context = init_context();
+    if (!should_trace(&context)) {
         // Note: we need to remove the container id here as we always add it to the map in cgroup_attach_task event.
-        bpf_map_delete_elem(&pid_to_cont_id_map, &pid);
-        bpf_map_delete_elem(&process_tree_map, &tgid);
+        bpf_map_delete_elem(&pid_to_cont_id_map, &context.host_tid);
+        bpf_map_delete_elem(&process_tree_map, &context.host_pid);
         return 0;
     }
-    bpf_map_delete_elem(&process_tree_map, &tgid);
+    bpf_map_delete_elem(&process_tree_map, &context.host_pid);
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
-    init_and_save_context(ctx, submit_p, SCHED_PROCESS_EXIT, 0, 0);
+    update_and_save_context(&context, ctx, submit_p, SCHED_PROCESS_EXIT, 0, 0);
 
     // Remove the container id (if any) from pid_to_cont_id_map
-    bpf_map_delete_elem(&pid_to_cont_id_map, &pid);
+    bpf_map_delete_elem(&pid_to_cont_id_map, &context.host_tid);
 
     // Remove pid from traced_pids_map
-    bpf_map_delete_elem(&traced_pids_map, &pid);
+    bpf_map_delete_elem(&traced_pids_map, &context.host_tid);
 
-    if (get_config(CONFIG_NEW_CONT_FILTER)) {
-        struct task_struct *task;
-        task = (struct task_struct *)bpf_get_current_task();
-
-        u32 pid_ns = get_task_pid_ns_id(task);
-        if (get_task_ns_pid(task) == 1) {
-            // If pid equals 1 - stop tracing this pid namespace
-            bpf_map_delete_elem(&new_pidns_map, &pid_ns);
-        }
+    if (get_config(CONFIG_NEW_CONT_FILTER) && (context.tid == 1)) {
+        // If pid equals 1 - stop tracing this pid namespace
+        bpf_map_delete_elem(&new_pidns_map, &context.pid_id);
     }
     if (get_config(CONFIG_NEW_PID_FILTER)) {
         // Remove pid from new_pids_map
-        bpf_map_delete_elem(&new_pids_map, &pid);
+        bpf_map_delete_elem(&new_pids_map, &context.host_tid);
     }
 
     events_perf_submit(ctx);
@@ -2443,7 +2435,8 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 SEC("raw_tracepoint/sched_switch")
 int tracepoint__sched__sched_switch(struct bpf_raw_tracepoint_args *ctx)
 {
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     if (!event_chosen(SCHED_SWITCH))
@@ -2453,7 +2446,7 @@ int tracepoint__sched__sched_switch(struct bpf_raw_tracepoint_args *ctx)
     if (submit_p == NULL)
         return 0;
 
-    init_and_save_context(ctx, submit_p, SCHED_SWITCH, 5 /*argnum*/, 0 /*ret*/);
+    update_and_save_context(&context, ctx, submit_p, SCHED_SWITCH, 5 /*argnum*/, 0 /*ret*/);
 
     struct task_struct *prev = (struct task_struct*)ctx->args[1];
     struct task_struct *next = (struct task_struct*)ctx->args[2];
@@ -2475,7 +2468,8 @@ int tracepoint__sched__sched_switch(struct bpf_raw_tracepoint_args *ctx)
 SEC("kprobe/do_exit")
 int BPF_KPROBE(trace_do_exit)
 {
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
@@ -2484,7 +2478,7 @@ int BPF_KPROBE(trace_do_exit)
 
     long code = PT_REGS_PARM1(ctx);
 
-    init_and_save_context(ctx, submit_p, DO_EXIT, 0, code);
+    update_and_save_context(&context, ctx, submit_p, DO_EXIT, 0, code);
 
     events_perf_submit(ctx);
     return 0;
@@ -2517,12 +2511,13 @@ int tracepoint__cgroup__cgroup_attach_task(struct bpf_raw_tracepoint_args *ctx)
         bpf_map_update_elem(&pid_to_cont_id_map, &pid, &container_id.id, BPF_NOEXIST);
     }
 
-    if (event_chosen(CGROUP_ATTACH_TASK) && should_trace()) {
+    context_t context = init_context();
+    if (event_chosen(CGROUP_ATTACH_TASK) && should_trace(&context)) {
         buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
         if (submit_p == NULL)
             return 0;
 
-        init_and_save_context(ctx, submit_p, CGROUP_ATTACH_TASK, 1 /*argnum*/, 0 /*ret*/);
+        update_and_save_context(&context, ctx, submit_p, CGROUP_ATTACH_TASK, 1 /*argnum*/, 0 /*ret*/);
 
         save_str_to_buf(submit_p, (void *)ctx->args[1], 0);
         events_perf_submit(ctx);
@@ -2534,14 +2529,15 @@ int tracepoint__cgroup__cgroup_attach_task(struct bpf_raw_tracepoint_args *ctx)
 SEC("kprobe/security_bprm_check")
 int BPF_KPROBE(trace_security_bprm_check)
 {
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
-    init_and_save_context(ctx, submit_p, SECURITY_BPRM_CHECK, 3 /*argnum*/, 0 /*ret*/);
+    update_and_save_context(&context, ctx, submit_p, SECURITY_BPRM_CHECK, 3 /*argnum*/, 0 /*ret*/);
 
     struct linux_binprm *bprm = (struct linux_binprm *)PT_REGS_PARM1(ctx);
     struct file* file = get_file_ptr_from_bprm(bprm);
@@ -2560,14 +2556,15 @@ int BPF_KPROBE(trace_security_bprm_check)
 SEC("kprobe/security_file_open")
 int BPF_KPROBE(trace_security_file_open)
 {
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
-    context_t context = init_and_save_context(ctx, submit_p, SECURITY_FILE_OPEN, 4 /*argnum*/, 0 /*ret*/);
+    update_and_save_context(&context, ctx, submit_p, SECURITY_FILE_OPEN, 4 /*argnum*/, 0 /*ret*/);
 
     struct file *file = (struct file *)PT_REGS_PARM1(ctx);
     dev_t s_dev = get_dev_from_file(file);
@@ -2594,14 +2591,15 @@ int BPF_KPROBE(trace_security_file_open)
 SEC("kprobe/security_sb_mount")
 int BPF_KPROBE(trace_security_sb_mount)
 {
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
-    context_t context = init_and_save_context(ctx, submit_p, SECURITY_SB_MOUNT, 4 /*argnum*/, 0 /*ret*/);
+    update_and_save_context(&context, ctx, submit_p, SECURITY_SB_MOUNT, 4 /*argnum*/, 0 /*ret*/);
 
     const char *dev_name = (const char *)PT_REGS_PARM1(ctx);
     struct path *path = (struct path *)PT_REGS_PARM2(ctx);
@@ -2624,14 +2622,15 @@ int BPF_KPROBE(trace_security_sb_mount)
 SEC("kprobe/security_inode_unlink")
 int BPF_KPROBE(trace_security_inode_unlink)
 {
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
-    init_and_save_context(ctx, submit_p, SECURITY_INODE_UNLINK, 1 /*argnum*/, 0 /*ret*/);
+    update_and_save_context(&context, ctx, submit_p, SECURITY_INODE_UNLINK, 1 /*argnum*/, 0 /*ret*/);
 
     //struct inode *dir = (struct inode *)PT_REGS_PARM1(ctx);
     struct dentry *dentry = (struct dentry *)PT_REGS_PARM2(ctx);
@@ -2646,14 +2645,15 @@ int BPF_KPROBE(trace_security_inode_unlink)
 SEC("kprobe/commit_creds")
 int BPF_KPROBE(trace_commit_creds)
 {
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
-    context_t context = init_and_save_context(ctx, submit_p, COMMIT_CREDS, 2 /*argnum*/, 0 /*ret*/);
+    update_and_save_context(&context, ctx, submit_p, COMMIT_CREDS, 2 /*argnum*/, 0 /*ret*/);
 
     struct cred *new = (struct cred *)PT_REGS_PARM1(ctx);
 
@@ -2743,7 +2743,8 @@ int BPF_KPROBE(trace_commit_creds)
 SEC("kprobe/switch_task_namespaces")
 int BPF_KPROBE(trace_switch_task_namespaces)
 {
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
@@ -2751,7 +2752,7 @@ int BPF_KPROBE(trace_switch_task_namespaces)
         return 0;
 
     u8 argnum = 0;
-    context_t context = init_and_save_context(ctx, submit_p, SWITCH_TASK_NS, 1 /*argnum*/, 0 /*ret*/);
+    update_and_save_context(&context, ctx, submit_p, SWITCH_TASK_NS, 1 /*argnum*/, 0 /*ret*/);
 
     struct task_struct *task = (struct task_struct *)PT_REGS_PARM1(ctx);
     struct nsproxy *new = (struct nsproxy *)PT_REGS_PARM2(ctx);
@@ -2760,9 +2761,9 @@ int BPF_KPROBE(trace_switch_task_namespaces)
         return 0;
 
     pid_t pid = READ_KERN(task->pid);
-    u32 old_mnt = get_task_mnt_ns_id(task);
+    u32 old_mnt = context.mnt_id;
     u32 new_mnt = get_mnt_ns_id(new);
-    u32 old_pid = get_task_pid_ns_id(task);
+    u32 old_pid = context.pid_id;
     u32 new_pid = get_pid_ns_id(new);
     u32 old_uts = get_task_uts_ns_id(task);
     u32 new_uts = get_uts_ns_id(new);
@@ -2813,14 +2814,15 @@ int BPF_KPROBE(trace_cap_capable)
 {
     int audit;
 
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
-    context_t context = init_and_save_context(ctx, submit_p, CAP_CAPABLE, 1 /*argnum*/, 0 /*ret*/);
+    update_and_save_context(&context, ctx, submit_p, CAP_CAPABLE, 1 /*argnum*/, 0 /*ret*/);
 
     //const struct cred *cred = (const struct cred *)PT_REGS_PARM1(ctx);
     //struct user_namespace *targ_ns = (struct user_namespace *)PT_REGS_PARM2(ctx);
@@ -2852,16 +2854,15 @@ int BPF_KPROBE(trace_cap_capable)
 SEC("kprobe/security_socket_create")
 int BPF_KPROBE(trace_security_socket_create)
 {
-    // trace the event security_socket_create
-
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
-    init_and_save_context(ctx, submit_p, SECURITY_SOCKET_CREATE, 4 /*argnum*/, 0 /*ret*/);
+    update_and_save_context(&context, ctx, submit_p, SECURITY_SOCKET_CREATE, 4 /*argnum*/, 0 /*ret*/);
 
     int family = (int)PT_REGS_PARM1(ctx);
     int type = (int)PT_REGS_PARM2(ctx);
@@ -2880,7 +2881,8 @@ int BPF_KPROBE(trace_security_socket_create)
 SEC("kprobe/security_socket_listen")
 int BPF_KPROBE(trace_security_socket_listen)
 {
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
@@ -2900,7 +2902,7 @@ int BPF_KPROBE(trace_security_socket_listen)
     u32 sockfd = -1;
     load_sockfd(&sockfd);
 
-    init_and_save_context(ctx, submit_p, SECURITY_SOCKET_LISTEN, 3 /*argnum*/, 0 /*ret*/);
+    update_and_save_context(&context, ctx, submit_p, SECURITY_SOCKET_LISTEN, 3 /*argnum*/, 0 /*ret*/);
 
     save_to_submit_buf(submit_p, (void *)&sockfd, sizeof(u32), 0);
 
@@ -2935,7 +2937,8 @@ int BPF_KPROBE(trace_security_socket_listen)
 SEC("kprobe/security_socket_connect")
 int BPF_KPROBE(trace_security_socket_connect)
 {
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
@@ -2952,7 +2955,7 @@ int BPF_KPROBE(trace_security_socket_connect)
     u32 sockfd = -1;
     load_sockfd(&sockfd);
 
-    init_and_save_context(ctx, submit_p, SECURITY_SOCKET_CONNECT, 2 /*argnum*/, 0 /*ret*/);
+    update_and_save_context(&context, ctx, submit_p, SECURITY_SOCKET_CONNECT, 2 /*argnum*/, 0 /*ret*/);
 
     save_to_submit_buf(submit_p, (void *)&sockfd, sizeof(u32), 0);
 
@@ -2973,7 +2976,8 @@ int BPF_KPROBE(trace_security_socket_connect)
 SEC("kprobe/security_socket_accept")
 int BPF_KPROBE(trace_security_socket_accept)
 {
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
@@ -2991,7 +2995,7 @@ int BPF_KPROBE(trace_security_socket_accept)
     u32 sockfd = -1;
     load_sockfd(&sockfd);
 
-    init_and_save_context(ctx, submit_p, SECURITY_SOCKET_ACCEPT, 2 /*argnum*/, 0 /*ret*/);
+    update_and_save_context(&context, ctx, submit_p, SECURITY_SOCKET_ACCEPT, 2 /*argnum*/, 0 /*ret*/);
 
     save_to_submit_buf(submit_p, (void *)&sockfd, sizeof(u32), 0);
 
@@ -3024,7 +3028,8 @@ int BPF_KPROBE(trace_security_socket_accept)
 SEC("kprobe/security_socket_bind")
 int BPF_KPROBE(trace_security_socket_bind)
 {
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
@@ -3044,7 +3049,7 @@ int BPF_KPROBE(trace_security_socket_bind)
     u32 sockfd = -1;
     load_sockfd(&sockfd);
 
-    context_t context = init_and_save_context(ctx, submit_p, SECURITY_SOCKET_BIND, 2 /*argnum*/, 0 /*ret*/);
+    update_and_save_context(&context, ctx, submit_p, SECURITY_SOCKET_BIND, 2 /*argnum*/, 0 /*ret*/);
 
     save_to_submit_buf(submit_p, (void *)&sockfd, sizeof(u32), 0);
 
@@ -3088,7 +3093,7 @@ int BPF_KPROBE(trace_security_socket_bind)
     // netDebug event
     if (get_config(CONFIG_DEBUG_NET)) {
         net_debug_t debug_event = {0};
-        debug_event.ts = bpf_ktime_get_ns();
+        debug_event.ts = context.ts;
         debug_event.host_tid = context.host_tid;
         __builtin_memcpy(debug_event.comm, context.comm, TASK_COMM_LEN);
         debug_event.event_id = DEBUG_NET_SECURITY_BIND;
@@ -3149,19 +3154,20 @@ static __always_inline int net_map_update_or_delete_sock(void* ctx, int event_id
 SEC("kprobe/udp_sendmsg")
 int BPF_KPROBE(trace_udp_sendmsg)
 {
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
-    u32 tid = bpf_get_current_pid_tgid();
 
-    return net_map_update_or_delete_sock(ctx, DEBUG_NET_UDP_SENDMSG, sk, tid);
+    return net_map_update_or_delete_sock(ctx, DEBUG_NET_UDP_SENDMSG, sk, context.host_tid);
 }
 
 SEC("kprobe/__udp_disconnect")
 int BPF_KPROBE(trace_udp_disconnect)
 {
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
@@ -3172,7 +3178,8 @@ int BPF_KPROBE(trace_udp_disconnect)
 SEC("kprobe/udp_destroy_sock")
 int BPF_KPROBE(trace_udp_destroy_sock)
 {
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
@@ -3183,7 +3190,8 @@ int BPF_KPROBE(trace_udp_destroy_sock)
 SEC("kprobe/udpv6_destroy_sock")
 int BPF_KPROBE(trace_udpv6_destroy_sock)
 {
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
@@ -3209,8 +3217,9 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
     // To overcome this problem, we save the socket pointer in sock_ctx_map in states that we observed to have the correct context.
     // We can then check for the existence of a socket in the map, and continue if it was traced before.
     net_ctx_ext_t *sock_ctx_p = bpf_map_lookup_elem(&sock_ctx_map, &sk);
+    context_t context = init_context();
     if (!sock_ctx_p) {
-        if (!should_trace()) {
+        if (!should_trace(&context)) {
             return 0;
         }
     }
@@ -3245,7 +3254,7 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
     case TCP_LISTEN:
         if (connect_id.port) {
             if (!sock_ctx_p) {
-                net_ctx_ext.host_tid = bpf_get_current_pid_tgid();
+                net_ctx_ext.host_tid = context.host_tid;
                 bpf_get_current_comm(&net_ctx_ext.comm, sizeof(net_ctx_ext.comm));
                 net_ctx_ext.local_port = connect_id.port;
                 bpf_map_update_elem(&sock_ctx_map, &sk, &net_ctx_ext, BPF_ANY);
@@ -3269,9 +3278,9 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
 
     // netDebug event
     if (get_config(CONFIG_DEBUG_NET)) {
-        debug_event.ts = bpf_ktime_get_ns();
+        debug_event.ts = context.ts;
         if (!sock_ctx_p) {
-            debug_event.host_tid = bpf_get_current_pid_tgid();
+            debug_event.host_tid = context.host_tid;
             bpf_get_current_comm(&debug_event.comm, sizeof(debug_event.comm));
         } else {
             debug_event.host_tid = sock_ctx_p->host_tid;
@@ -3291,7 +3300,8 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
 SEC("kprobe/tcp_connect")
 int BPF_KPROBE(trace_tcp_connect)
 {
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     local_net_id_t connect_id = {0};
@@ -3312,14 +3322,12 @@ int BPF_KPROBE(trace_tcp_connect)
         return 0;
     }
 
-    u32 tid = bpf_get_current_pid_tgid();
-
-    net_ctx_ext.host_tid = tid;
+    net_ctx_ext.host_tid = context.host_tid;
     bpf_get_current_comm(&net_ctx_ext.comm, sizeof(net_ctx_ext.comm));
     net_ctx_ext.local_port = connect_id.port;
     bpf_map_update_elem(&sock_ctx_map, &sk, &net_ctx_ext, BPF_ANY);
 
-    return net_map_update_or_delete_sock(ctx, DEBUG_NET_TCP_CONNECT, sk, tid);
+    return net_map_update_or_delete_sock(ctx, DEBUG_NET_TCP_CONNECT, sk, context.host_tid);
 }
 
 SEC("kprobe/send_bin")
@@ -3491,8 +3499,9 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
     if (start_pos != 0)
         start_pos -= bytes_written;
 
+    context_t context = init_context();
     if (event_chosen(VFS_WRITE) || event_chosen(VFS_WRITEV)) {
-        init_and_save_context(ctx, submit_p, event_id, 5 /*argnum*/, PT_REGS_RC(ctx));
+        update_and_save_context(&context, ctx, submit_p, event_id, 5 /*argnum*/, PT_REGS_RC(ctx));
 
         save_str_to_buf(submit_p, file_path, 0);
         save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), 1);
@@ -3510,7 +3519,7 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
 
     // magic_write event checks if the header of some file is changed
     if (event_chosen(MAGIC_WRITE) && !char_dev && (start_pos == 0)) {
-        init_and_save_context(ctx, submit_p, MAGIC_WRITE, 4 /*argnum*/, PT_REGS_RC(ctx));
+        update_and_save_context(&context, ctx, submit_p, MAGIC_WRITE, 4 /*argnum*/, PT_REGS_RC(ctx));
 
         u8 header[FILE_MAGIC_HDR_SIZE];
 
@@ -3560,7 +3569,8 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
     if (submit_p == NULL)
         return 0;
 
-    context_t context = init_and_save_context(ctx, submit_p, event_id, 5 /*argnum*/, PT_REGS_RC(ctx));
+    context_t context = init_context();
+    update_and_save_context(&context, ctx, submit_p, event_id, 5 /*argnum*/, PT_REGS_RC(ctx));
 
     bool delete_args = true;
     if (load_args(&saved_args, delete_args, event_id) != 0) {
@@ -3715,7 +3725,8 @@ int BPF_KPROBE(trace_mmap_alert)
     if (submit_p == NULL)
         return 0;
 
-    context_t context = init_and_save_context(ctx, submit_p, MEM_PROT_ALERT, 1 /*argnum*/, 0 /*ret*/);
+    context_t context = init_context();
+    update_and_save_context(&context, ctx, submit_p, MEM_PROT_ALERT, 1 /*argnum*/, 0 /*ret*/);
 
     if ((args.args[2] & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC)) {
         alert_t alert = {.ts = context.ts, .msg = ALERT_MMAP_W_X, .payload = 0};
@@ -3756,7 +3767,8 @@ int BPF_KPROBE(trace_mprotect_alert)
     if (submit_p == NULL)
         return 0;
 
-    context_t context = init_and_save_context(ctx, submit_p, MEM_PROT_ALERT, 1 /*argnum*/, 0 /*ret*/);
+    context_t context = init_context();
+    update_and_save_context(&context, ctx, submit_p, MEM_PROT_ALERT, 1 /*argnum*/, 0 /*ret*/);
 
     if ((!(prev_prot & VM_EXEC)) && (reqprot & VM_EXEC)) {
         alert_t alert = {.ts = context.ts, .msg = ALERT_MPROT_X_ADD, .payload = 0};
@@ -3800,14 +3812,15 @@ int BPF_KPROBE(trace_mprotect_alert)
 SEC("kprobe/security_bpf")
 int BPF_KPROBE(trace_security_bpf)
 {
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
-    init_and_save_context(ctx, submit_p, SECURITY_BPF, 1 /*argnum*/, 0 /*ret*/);
+    update_and_save_context(&context, ctx, submit_p, SECURITY_BPF, 1 /*argnum*/, 0 /*ret*/);
 
     int cmd = (int)PT_REGS_PARM1(ctx);
 
@@ -3821,14 +3834,15 @@ int BPF_KPROBE(trace_security_bpf)
 SEC("kprobe/security_bpf_map")
 int BPF_KPROBE(trace_security_bpf_map)
 {
-    if (!should_trace())
+    context_t context = init_context();
+    if (!should_trace(&context))
         return 0;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
-    init_and_save_context(ctx, submit_p, SECURITY_BPF_MAP, 2 /*argnum*/, 0 /*ret*/);
+    update_and_save_context(&context, ctx, submit_p, SECURITY_BPF_MAP, 2 /*argnum*/, 0 /*ret*/);
 
     struct bpf_map *map = (struct bpf_map *)PT_REGS_PARM1(ctx);
 
@@ -3844,7 +3858,8 @@ int BPF_KPROBE(trace_security_bpf_map)
 SEC("kprobe/security_kernel_read_file")
 int BPF_KPROBE(trace_security_kernel_read_file)
 {
-    if (!should_trace()) {
+    context_t context = init_context();
+    if (!should_trace(&context)) {
         return 0;
     }
 
@@ -3853,7 +3868,7 @@ int BPF_KPROBE(trace_security_kernel_read_file)
         return 0;
     }
 
-    init_and_save_context(ctx, submit_p, SECURITY_KERNEL_READ_FILE, 4 /*argnum*/, 0 /*ret*/);
+    update_and_save_context(&context, ctx, submit_p, SECURITY_KERNEL_READ_FILE, 4 /*argnum*/, 0 /*ret*/);
 
     struct file* file = (struct file*)PT_REGS_PARM1(ctx);
     dev_t s_dev = get_dev_from_file(file);
@@ -3873,7 +3888,8 @@ int BPF_KPROBE(trace_security_kernel_read_file)
 SEC("kprobe/security_inode_mknod")
 int BPF_KPROBE(trace_security_inode_mknod)
 {
-    if (!should_trace()) {
+    context_t context = init_context();
+    if (!should_trace(&context)) {
         return 0;
     }
 
@@ -3882,7 +3898,7 @@ int BPF_KPROBE(trace_security_inode_mknod)
         return 0;
     }
 
-    init_and_save_context(ctx, submit_p, SECURITY_INODE_MKNOD, 3 /*argnum*/, 0 /*ret*/);
+    update_and_save_context(&context, ctx, submit_p, SECURITY_INODE_MKNOD, 3 /*argnum*/, 0 /*ret*/);
 
     struct dentry* dentry = (struct dentry*)PT_REGS_PARM2(ctx);
     unsigned short mode = (unsigned short)PT_REGS_PARM3(ctx);
