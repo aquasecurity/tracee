@@ -1,21 +1,13 @@
 # Prerequisites
 
-__Portable (CO:RE) option:__
-* Linux kernel version >= 4.18
-* BTF enabled (_You can manually detect if your environments supports it by checking if the following file exists on your machine: /sys/kernel/btf/vmlinux or consult the following documentation: https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere)_
+* Linux kernel version >= 4.18.
+* libc, and the libraries: libelf, zlib.
+* Access to read kernel configuration. This can be in `/proc/config.gz` (auto-mounted in Docker) or `/boot/config-$(uname -r)` (requires mounting in Docker), depending on the Linux distribution.
 
-> Note: When using Tracee's Docker image, an extra mount might be required to access the kernel configuration file. Depending on the linux distribution this can be in either `/proc/config.gz` (which docker mounts by default) or `/boot/config-$(uname -r)` (which must be mounted explicitly).
-
-__Kernel version specific option:__
-* Linux kernel version >= 4.18
-* Linux kernel headers available under conventional location (see [Linux Headers](../headers) section for more info)
-* libc, and the libraries: libelf, zlib
-* GNU Make >= 4.3
-* clang >= 11
-
-_Exceptions:_
-* Tracee supports loading a pre-compiled eBPF file, in which case the kernel headers are not required at runtime, but only for the one-time compilation of the eBPF program. See [Setup Options](../ebpf-compilation) for more info.
-* When using Tracee's Docker image, all of the tooling is built into the image. The only requirement left is the kernel headers or the pre-built eBPF artifact. See [Setup Options](../ebpf-compilation) for more info.
+One of the following:
+* BTF available under `/sys/kernel/btf/vmlinux` (see [libbpf CO-RE documentation](https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere) for more info)).
+* Linux kernel headers available under conventional location (see [Linux Headers](../headers) section for more info).
+* Tracee's eBPF probe pre-compiled (see [eBPF compilation](install/ebpf-compilation.md) section for more info).
 
 # Permissions
 

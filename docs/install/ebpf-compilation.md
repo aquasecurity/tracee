@@ -24,12 +24,17 @@ Kernel version specific option:
 - GNU Make >= 4.3
 - clang >= 11
 
+## Compiling the eBPF program
+
 You can build the eBPF program in the following ways:
 
 1. Clone the repo (including submodules: `git clone --recursive https://github.com/aquasecurity/tracee.git`) and `make bpf`.
 2. `make bpf DOCKER=1` to build in a Docker container which includes all development tooling.
 
-Running this will produce a file called `tracee.bpf.$kernelversion.$traceeversion.o` under the `dist` directory.  
+Running this will produce a file called `tracee.bpf.$kernelversion.$traceeversion.o` under the `dist` directory.
+
+## Using compiled eBPF program
+
 Once you have the eBPF program artifact, you can provide it to Tracee in any of the following locations:
 
 1. Path specified in `TRACEE_BPF_FILE` environment variable
