@@ -1,12 +1,10 @@
 # Prerequisites
 
-* Linux kernel version >= 4.18.
-* libc, and the libraries: libelf, zlib.
-* Access to read kernel configuration. This can be in `/proc/config.gz` (auto-mounted in Docker) or `/boot/config-$(uname -r)` (requires mounting in Docker), depending on the Linux distribution.
+* Linux kernel version >= 4.18
 
 One of the following:
 * BTF available under `/sys/kernel/btf/vmlinux` (see [libbpf CO-RE documentation](https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere) for more info)).
-* Linux kernel headers available under conventional location (see [Linux Headers](../headers) section for more info).
+* Linux kernel headers available under conventional location (see [Linux Headers](../headers) section for more info). In this case system libraries libelf and zlib are required as well.
 * Tracee's eBPF probe pre-compiled (see [eBPF compilation](install/ebpf-compilation.md) section for more info).
 
 # Permissions
