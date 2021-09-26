@@ -137,6 +137,7 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 	if string(partialArg.Value) == "null" {
 		return nil
 	}
+	partialArg.Value = bytes.Trim(partialArg.Value, "\"")
 	switch partialArg.Type {
 	case "int", "pid_t", "uid_t", "gid_t", "mqd_t", "clockid_t", "const clockid_t", "key_t", "key_serial_t", "timer_t":
 		tmp, err := strconv.ParseInt(string(partialArg.Value), 10, 32)
@@ -156,12 +157,18 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 			return err
 		}
 		arg.Value = uint32(tmp)
-	case "unsigned long", "u64", "off_t", "size_t", "void*", "const void*":
+	case "unsigned long", "u64", "off_t", "size_t":
 		tmp, err := strconv.ParseUint(string(partialArg.Value), 10, 64)
 		if err != nil {
 			return err
 		}
 		arg.Value = uint64(tmp)
+	case "void*", "const void*":
+		tmp, err := strconv.ParseUint(strings.TrimPrefix(string(partialArg.Value), "0x"), 16, 64)
+		if err != nil {
+			return err
+		}
+		arg.Value = uintptr(tmp)
 	case "float":
 		tmp, err := strconv.ParseFloat(string(partialArg.Value), 32)
 		if err != nil {
@@ -189,9 +196,9 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		}
 		arg.Value = tmp
 	case "bytes":
-		arg.Value = bytes.Trim(partialArg.Value, "\"")
+		arg.Value = []byte(partialArg.Value)
 	default:
-		arg.Value = strings.Trim(string(partialArg.Value), "\"")
+		arg.Value = string(partialArg.Value)
 	}
 	return nil
 }

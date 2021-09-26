@@ -88,8 +88,8 @@ func TestArgumentUnmarshalJSON(t *testing.T) {
 			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "float64"}, Value: float64(math.MaxFloat64)},
 		},
 		{
-			json:   `{ "name":"test", "type":"bytes", "value": "0x123"}`,
-			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "bytes"}, Value: []byte("0x123")},
+			json:   `{ "name":"test", "type":"bytes", "value": "1z"}`,
+			expect: Argument{ArgMeta: ArgMeta{Name: "test", Type: "bytes"}, Value: []byte("1z")},
 		},
 		{
 			json:   `{ "name":"test", "type":"const char*const*", "value": [ "foo", "bar" ]}`,
