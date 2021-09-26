@@ -149,7 +149,6 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 		if err != nil {
 			return err
 		}
-		arg.Value = int32(tmp)
 		arg.Value = tmp
 	case "unsigned int", "u32", "mode_t", "dev_t":
 		tmp, err := strconv.ParseUint(string(partialArg.Value), 10, 32)
