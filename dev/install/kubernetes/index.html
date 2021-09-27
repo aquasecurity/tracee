@@ -17,7 +17,7 @@
         
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.2, mkdocs-material-7.2.6+insiders-2.13.3">
+      <meta name="generator" content="mkdocs-1.2.2, mkdocs-material-7.3.0+insiders-3.1.1">
     
     
       
@@ -25,7 +25,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.58e805ff.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.fba8558e.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.1d832a92.min.css">
@@ -510,8 +510,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#setting-webhook-configmap" class="md-nav__link">
-    Setting Webhook ConfigMap
+  <a href="#platform-support" class="md-nav__link">
+    Platform support
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#consuming-detections" class="md-nav__link">
+    Consuming detections
   </a>
   
 </li>
@@ -531,16 +538,12 @@
                 
                 
                 <h1 id="deploy-on-kubernetes">Deploy on Kubernetes</h1>
-<blockquote>
-<p>NOTE This approach assumes that kernel headers are available on the Kubernetes nodes under conventional location, e.g /usr/src and /lib/modules. More details about <a href="https://aquasecurity.github.io/tracee/dev/install/prerequisites/">Minimal Requirements to run tracee in the Kubernetes nodes</a></p>
-</blockquote>
-<div class="highlight"><pre><span></span><code>kubectl create -f deploy/kubernetes
-</code></pre></div>
-<h2 id="setting-webhook-configmap">Setting Webhook ConfigMap</h2>
-<p>This sample deploy use falcosidekick.tmpl and a config map for the falcosidekick settings (webhook-cm.yaml). Edit the ConfigMap with the respective values.</p>
-<blockquote>
-<p>NOTE <code>See the complete config file in</code> <a href="https://github.com/falcosecurity/falcosidekick">falcosidekick</a></p>
-</blockquote>
+<p>In the <a href="https://github.com/aquasecurity/tracee/blob/main/deploy/kubernetes">deploy/kubernetes</a> directory you can find Yaml files that deploys Tracee in a Kubernetes environment. This will deploy Tracee as a daemonset, alongside <a href="integrations.md#falcosidekick-webhook">falcosidekick</a> so that you can conveniently consume Tracee's detections.</p>
+<p>To install, simply <code>kubectl create -f deploy/kubernetes</code>.</p>
+<h2 id="platform-support">Platform support</h2>
+<p>This approach assumes that host nodes have either BTF available or kernel headers available under conventional location. see Tracee's <a href="https://aquasecurity.github.io/tracee/dev/install/prerequisites/">prerequisites</a> for more info. For the major Kubernetes platforms this should work out-of-the-box, including GKE, EKS, AKS, minikube. </p>
+<h2 id="consuming-detections">Consuming detections</h2>
+<p><a href="https://github.com/falcosecurity/falcosidekick">falcosidekick</a> is a useful webhook server that can be configured to connect to various "outputs" such as: Slack, Mattermost, Teams, Datadog, Prometheus, StatsD, Email, Elasticsearch, Loki, PagerDuty, OpsGenie, and many more. The YAML deployment also deploys falcosidekick alongside Tracee, so that you can conveniently consume the Tracee's detections. To configure falcosidekick you can edit the <code>webhook-cm.yaml</code> ConfigMap whis is expected to be in the <a href="https://github.com/falcosecurity/falcosidekick">falcosidekick configuration format</a>.</p>
                 
               
               
@@ -575,10 +578,10 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.b07a6a97.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.b473f883.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.bb4d2ab6.min.js"></script>
+      <script src="../../assets/javascripts/bundle.eff61307.min.js"></script>
       
     
   </body>

@@ -17,7 +17,7 @@
         
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.2, mkdocs-material-7.2.6+insiders-2.13.3">
+      <meta name="generator" content="mkdocs-1.2.2, mkdocs-material-7.3.0+insiders-3.1.1">
     
     
       
@@ -25,7 +25,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.58e805ff.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.fba8558e.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.1d832a92.min.css">
@@ -317,6 +317,20 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#compiling-the-ebpf-program" class="md-nav__link">
+    Compiling the eBPF program
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-compiled-ebpf-program" class="md-nav__link">
+    Using compiled eBPF program
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -558,6 +572,20 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#compiling-the-ebpf-program" class="md-nav__link">
+    Compiling the eBPF program
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-compiled-ebpf-program" class="md-nav__link">
+    Using compiled eBPF program
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -590,13 +618,15 @@ You can manually detect if your environments supports it by checking if the foll
 - libc, and the libraries: libelf, zlib
 - GNU Make &gt;= 4.3
 - clang &gt;= 11</p>
+<h2 id="compiling-the-ebpf-program">Compiling the eBPF program</h2>
 <p>You can build the eBPF program in the following ways:</p>
 <ol>
 <li>Clone the repo (including submodules: <code>git clone --recursive https://github.com/aquasecurity/tracee.git</code>) and <code>make bpf</code>.</li>
 <li><code>make bpf DOCKER=1</code> to build in a Docker container which includes all development tooling.</li>
 </ol>
-<p>Running this will produce a file called <code>tracee.bpf.$kernelversion.$traceeversion.o</code> under the <code>dist</code> directory.<br />
-Once you have the eBPF program artifact, you can provide it to Tracee in any of the following locations:</p>
+<p>Running this will produce a file called <code>tracee.bpf.$kernelversion.$traceeversion.o</code> under the <code>dist</code> directory.</p>
+<h2 id="using-compiled-ebpf-program">Using compiled eBPF program</h2>
+<p>Once you have the eBPF program artifact, you can provide it to Tracee in any of the following locations:</p>
 <ol>
 <li>Path specified in <code>TRACEE_BPF_FILE</code> environment variable</li>
 <li><code>/tmp/tracee</code></li>
@@ -677,10 +707,10 @@ Once you have the eBPF program artifact, you can provide it to Tracee in any of 
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.b07a6a97.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.b473f883.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.bb4d2ab6.min.js"></script>
+      <script src="../../assets/javascripts/bundle.eff61307.min.js"></script>
       
     
   </body>

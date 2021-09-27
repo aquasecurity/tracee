@@ -17,7 +17,7 @@
         
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.2, mkdocs-material-7.2.6+insiders-2.13.3">
+      <meta name="generator" content="mkdocs-1.2.2, mkdocs-material-7.3.0+insiders-3.1.1">
     
     
       
@@ -25,7 +25,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.58e805ff.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.fba8558e.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.1d832a92.min.css">
@@ -528,21 +528,13 @@
                 
                 
                 <h1 id="prerequisites">Prerequisites</h1>
-<p><strong>Portable (CO:RE) option:</strong>
-* Linux kernel version &gt;= 4.18
-* BTF enabled (<em>You can manually detect if your environments supports it by checking if the following file exists on your machine: /sys/kernel/btf/vmlinux or consult the following documentation: https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere)</em></p>
-<blockquote>
-<p>Note: When using Tracee's Docker image, an extra mount might be required to access the kernel configuration file. Depending on the linux distribution this can be in either <code>/proc/config.gz</code> (which docker mounts by default) or <code>/boot/config-$(uname -r)</code> (which must be mounted explicitly).</p>
-</blockquote>
-<p><strong>Kernel version specific option:</strong>
-* Linux kernel version &gt;= 4.18
-* Linux kernel headers available under conventional location (see <a href="../headers">Linux Headers</a> section for more info)
-* libc, and the libraries: libelf, zlib
-* GNU Make &gt;= 4.3
-* clang &gt;= 11</p>
-<p><em>Exceptions:</em>
-* Tracee supports loading a pre-compiled eBPF file, in which case the kernel headers are not required at runtime, but only for the one-time compilation of the eBPF program. See <a href="../ebpf-compilation">Setup Options</a> for more info.
-* When using Tracee's Docker image, all of the tooling is built into the image. The only requirement left is the kernel headers or the pre-built eBPF artifact. See <a href="../ebpf-compilation">Setup Options</a> for more info.</p>
+<ul>
+<li>Linux kernel version &gt;= 4.18</li>
+</ul>
+<p>One of the following:
+* BTF available under <code>/sys/kernel/btf/vmlinux</code> (see <a href="https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere">libbpf CO-RE documentation</a> for more info)).
+* Linux kernel headers available under conventional location (see <a href="../headers">Linux Headers</a> section for more info). In this case system libraries libelf and zlib are required as well.
+* Tracee's eBPF probe pre-compiled (see <a href="install/ebpf-compilation.md">eBPF compilation</a> section for more info).</p>
 <h1 id="permissions">Permissions</h1>
 <p>For using the eBPF Linux subsystem, Tracee needs to run with sufficient capabilities: 
 * <code>CAP_SYS_RESOURCE</code> (to manage eBPF maps limits)
@@ -618,10 +610,10 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.b07a6a97.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.b473f883.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.bb4d2ab6.min.js"></script>
+      <script src="../../assets/javascripts/bundle.eff61307.min.js"></script>
       
     
   </body>
