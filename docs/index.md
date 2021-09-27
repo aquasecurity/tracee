@@ -24,7 +24,7 @@ If running on __BTF enabled kernel__:
 docker run --name tracee --rm --pid=host --privileged -v /tmp/tracee:/tmp/tracee -it aquasec/tracee:latest
 ```
 
-> Note: Running on BTF enabled kernel requires access to the kernel configuration file. Depending on the linux distribution this can be in either `/proc/config.gz` (which docker mounts by default) or `/boot/config-$(uname -r)` (which must be mounted explicitly).
+> Note: Running with BTF requires access to the kernel configuration file. Depending on the linux distribution it can be in either `/proc/config.gz` (which docker mounts by default) or `/boot/config-$(uname -r)` (which must be mounted explicitly).
 
 If running on __BTF disabled kernel__:
 ```bash
