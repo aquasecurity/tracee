@@ -36,12 +36,6 @@ tracee_match {
     pathname = helpers.get_tracee_argument("pathname")
     startswith(pathname, "/etc/kubernetes/pki/")
 
-    input.processName != "kube-apiserver"
-    input.processName != "kubelet"
-    input.processName != "kube-controller"
-    
-    res := {
-        "process": input.processName,
-        "file path": pathname
-    }
+    process_names_blocklist = {"kube-apiserver", "kubelet", "kube-controller"}
+    not process_names_blocklist[input.processName]
 }
