@@ -37,6 +37,6 @@ tracee_match {
     contains(pathname,"secrets/kubernetes.io/serviceaccount")
     endswith(pathname,"token")
 
-    process_names_blocklist = {"flanneld", "kube-proxy"}
+    process_names_blocklist := {"flanneld", "kube-proxy"}
     not process_names_blocklist[input.processName]
 }
