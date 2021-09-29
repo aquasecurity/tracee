@@ -1,7 +1,7 @@
 package tracee.TRC_9
 
 test_match_1 {
-    tracee_match== {"file_name": "new_file"} with input as {
+    tracee_match == {"file path": "new_file"} with input as {
         "eventName": "magic_write",
         "args": [
             {
