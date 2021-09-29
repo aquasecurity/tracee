@@ -5,8 +5,8 @@ import data.tracee.helpers
 __rego_metadoc__ := {
     "id": "TRC-12",
     "version": "0.1.0",
-    "name": "Web Server Spawned a Shell",
-    "description": "A Web-Server program on your server spawned a shell program. Shell is the linux command-line program, web servers usually don't run shell programs, so this alert might indicate an adversary is exploiting a web server program to spawn a shell on your server.",
+    "name": "Illegitimate Shell",
+    "description": "A program on your server spawned a shell program. Shell is the linux command-line program, server programs usually don't run shell programs, so this alert might indicate an adversary is exploiting a server program to spawn a shell on your server.",
     "tags": ["linux", "container"],
     "properties": {
         "Severity": 2,
@@ -36,7 +36,7 @@ tracee_match {
     endswith(pathname, binary)
 
     pname := input.processName
-    process_names = ["nginx", "httpd", "httpd-foregroun", "lighttpd", "apache", "apache2"]
-    proc_name := process_names[_]
+    web_server_process_names = ["nginx", "httpd", "httpd-foregroun", "lighttpd", "apache", "apache2"]
+    proc_name := web_server_process_names[_]
     pname == proc_name
   }
