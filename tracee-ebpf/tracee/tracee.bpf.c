@@ -1619,32 +1619,6 @@ static __always_inline int save_args(args_t *args, u32 event_id)
     return 0;
 }
 
-static __always_inline int save_args_from_regs(struct pt_regs *ctx, u32 event_id, bool is_syscall)
-{
-    args_t args = {};
-
-    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
-    if (is_x86_compat(task) && is_syscall) {
-#if defined(bpf_target_x86)
-        args.args[0] = ctx->bx;
-        args.args[1] = ctx->cx;
-        args.args[2] = ctx->dx;
-        args.args[3] = ctx->si;
-        args.args[4] = ctx->di;
-        args.args[5] = ctx->bp;
-#endif
-    } else {
-        args.args[0] = PT_REGS_PARM1(ctx);
-        args.args[1] = PT_REGS_PARM2(ctx);
-        args.args[2] = PT_REGS_PARM3(ctx);
-        args.args[3] = PT_REGS_PARM4(ctx);
-        args.args[4] = PT_REGS_PARM5(ctx);
-        args.args[5] = PT_REGS_PARM6(ctx);
-    }
-
-    return save_args(&args, event_id);
-}
-
 static __always_inline int load_args(args_t *args, bool delete, u32 event_id)
 {
     args_t *saved_args;
@@ -1871,12 +1845,21 @@ static __always_inline int trace_ret_generic(context_t *context, void *ctx, u32 
 }
 
 #define TRACE_ENT_FUNC(name, id)                                        \
-int trace_##name(void *ctx)                                             \
+int trace_##name(struct pt_regs *ctx)                                   \
 {                                                                       \
     context_t context = init_context();                                 \
     if (!should_trace(&context))                                        \
         return 0;                                                       \
-    return save_args_from_regs(ctx, id, false);                         \
+                                                                        \
+    args_t args = {};                                                   \
+    args.args[0] = PT_REGS_PARM1(ctx);                                  \
+    args.args[1] = PT_REGS_PARM2(ctx);                                  \
+    args.args[2] = PT_REGS_PARM3(ctx);                                  \
+    args.args[3] = PT_REGS_PARM4(ctx);                                  \
+    args.args[4] = PT_REGS_PARM5(ctx);                                  \
+    args.args[5] = PT_REGS_PARM6(ctx);                                  \
+                                                                        \
+    return save_args(&args, id);                                        \
 }
 
 #define TRACE_RET_FUNC(name, id, types, ret)                            \
