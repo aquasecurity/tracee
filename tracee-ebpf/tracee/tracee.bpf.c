@@ -667,6 +667,11 @@ static __always_inline u32 get_task_host_tgid(struct task_struct *task)
     return READ_KERN(task->tgid);
 }
 
+static __always_inline u32 get_task_exit_code(struct task_struct *task)
+{
+    return READ_KERN(task->exit_code);
+}
+
 static __always_inline int get_task_parent_flags(struct task_struct *task)
 {
     struct task_struct *parent = READ_KERN(task->real_parent);
@@ -2427,7 +2432,12 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     if (submit_p == NULL)
         return 0;
 
-    update_and_save_context(&context, ctx, submit_p, SCHED_PROCESS_EXIT, 0, 0);
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    long exit_code = get_task_exit_code(task);
+
+    update_and_save_context(&context, ctx, submit_p, SCHED_PROCESS_EXIT, 1, 0);
+
+    save_to_submit_buf(submit_p, (void*)&exit_code, sizeof(long), 0);
 
     events_perf_submit(ctx);
     return 0;
