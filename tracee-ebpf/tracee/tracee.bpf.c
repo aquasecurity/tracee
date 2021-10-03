@@ -2089,29 +2089,10 @@ if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER)) {
     }
 
     context_t context = init_context();
-
-    // execve events may add new pids to the traced pids set
-    // perform this check before should_trace() so newly executed binaries will be traced
-    if (id == SYS_EXECVE || id == SYS_EXECVEAT) {
-        if (get_config(CONFIG_NEW_CONT_FILTER)) {
-            if (context.tid == 1) {
-                // A new container/pod was started (pid 1 in namespace executed) - add pid namespace to map
-                bpf_map_update_elem(&new_pidns_map, &context.pid_id, &context.pid_id, BPF_ANY);
-            }
-        }
-        if (get_config(CONFIG_NEW_PID_FILTER)) {
-            bpf_map_update_elem(&new_pids_map, &context.host_tid, &context.host_tid, BPF_ANY);
-        }
-    }
-
     if (!should_trace(&context))
         return 0;
 
-    if (id == SYS_EXECVE || id == SYS_EXECVEAT) {
-        // We passed all filters (in should_trace()) - add this pid to traced pids set
-        bpf_map_update_elem(&traced_pids_map, &context.host_tid, &context.host_tid, BPF_ANY);
-    }
-    else if (id == SYSCALL_CONNECT || id == SYSCALL_ACCEPT || id == SYSCALL_ACCEPT4 || id == SYSCALL_BIND || id == SYSCALL_LISTEN) {
+    if (id == SYSCALL_CONNECT || id == SYSCALL_ACCEPT || id == SYSCALL_ACCEPT4 || id == SYSCALL_BIND || id == SYSCALL_LISTEN) {
         u32 sockfd = args_tmp.args[0];
         save_sockfd(sockfd);
     }
@@ -2342,8 +2323,19 @@ SEC("raw_tracepoint/sched_process_exec")
 int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 {
     context_t context = init_context();
+
+    // Perform the following checks before should_trace() so we can filter by newly created containers/processes.
+    // We assume that a new container/pod has started when pid 1 in a pid namespace execed
+    if (get_config(CONFIG_NEW_CONT_FILTER) && (context.tid == 1))
+        bpf_map_update_elem(&new_pidns_map, &context.pid_id, &context.pid_id, BPF_ANY);
+    if (get_config(CONFIG_NEW_PID_FILTER))
+        bpf_map_update_elem(&new_pids_map, &context.host_tid, &context.host_tid, BPF_ANY);
+
     if (!should_trace(&context))
         return 0;
+
+    // We passed all filters (in should_trace()) - add this pid to traced pids set
+    bpf_map_update_elem(&traced_pids_map, &context.host_tid, &context.host_tid, BPF_ANY);
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
