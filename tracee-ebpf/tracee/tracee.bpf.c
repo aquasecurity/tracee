@@ -2409,34 +2409,25 @@ SEC("raw_tracepoint/sched_process_exit")
 int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 {
     context_t context = init_context();
-    if (!should_trace(&context)) {
-        // Note: we need to remove the container id here as we always add it to the map in cgroup_attach_task event.
-        bpf_map_delete_elem(&pid_to_cont_id_map, &context.host_tid);
-        bpf_map_delete_elem(&process_tree_map, &context.host_pid);
-        return 0;
-    }
+
+    // Remove this pid from all maps
+    bpf_map_delete_elem(&pid_to_cont_id_map, &context.host_tid);
     bpf_map_delete_elem(&process_tree_map, &context.host_pid);
+    bpf_map_delete_elem(&traced_pids_map, &context.host_tid);
+    bpf_map_delete_elem(&new_pids_map, &context.host_tid);
+
+    // If pid equals 1 - stop tracing this pid namespace
+    if (context.tid == 1)
+        bpf_map_delete_elem(&new_pidns_map, &context.pid_id);
+
+    if (!should_trace(&context))
+        return 0;
 
     buf_t *submit_p = get_buf(SUBMIT_BUF_IDX);
     if (submit_p == NULL)
         return 0;
 
     update_and_save_context(&context, ctx, submit_p, SCHED_PROCESS_EXIT, 0, 0);
-
-    // Remove the container id (if any) from pid_to_cont_id_map
-    bpf_map_delete_elem(&pid_to_cont_id_map, &context.host_tid);
-
-    // Remove pid from traced_pids_map
-    bpf_map_delete_elem(&traced_pids_map, &context.host_tid);
-
-    if (get_config(CONFIG_NEW_CONT_FILTER) && (context.tid == 1)) {
-        // If pid equals 1 - stop tracing this pid namespace
-        bpf_map_delete_elem(&new_pidns_map, &context.pid_id);
-    }
-    if (get_config(CONFIG_NEW_PID_FILTER)) {
-        // Remove pid from new_pids_map
-        bpf_map_delete_elem(&new_pids_map, &context.host_tid);
-    }
 
     events_perf_submit(ctx);
     return 0;
