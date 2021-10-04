@@ -1226,7 +1226,7 @@ func TestPrepareOutput(t *testing.T) {
 		},
 		{
 			testName:    "all options",
-			outputSlice: []string{"option:stack-addresses", "option:detect-syscall", "option:exec-env", "option:exec-Info"},
+			outputSlice: []string{"option:stack-addresses", "option:detect-syscall", "option:exec-env", "option:exec-info"},
 			expectedOutput: tracee.OutputConfig{
 				StackAddresses: true,
 				DetectSyscall:  true,
