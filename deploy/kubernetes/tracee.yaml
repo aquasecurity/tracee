@@ -33,6 +33,18 @@ spec:
         - name: lib-modules
           mountPath: /lib/modules/
           readOnly: true
+        resources:
+          limits:
+            cpu: 500m
+            memory: 300Mi
+          requests:
+            cpu: 350m
+            memory: 50Mi
+      tolerations:
+        - effect: NoSchedule
+          operator: Exists
+        - operator: "Exists"
+          effect: "NoSchedule"
       volumes:
       - hostPath:
           path: /tmp/tracee
