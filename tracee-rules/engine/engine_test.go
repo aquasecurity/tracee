@@ -467,6 +467,5 @@ func TestGetSelectedEvents(t *testing.T) {
 			Origin: "host",
 		},
 	}
-	require.Equal(t, se, expected)
-
+	assert.ElementsMatch(t, expected, se)
 }
