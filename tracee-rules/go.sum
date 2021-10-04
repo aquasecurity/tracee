@@ -54,8 +54,6 @@ github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRF
 github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d/go.mod h1:rBZYJk541a8SKzHPHnH3zbiI+7dagKZ0cgpgrD7Fyho=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
-github.com/aquasecurity/tracee/tracee-ebpf/external v0.0.0-20210727091827-bbe411a2a167 h1:QpuLpMxwd9fFH8p2aZ4umKqfpI9/6vf37D/fvLUyHMk=
-github.com/aquasecurity/tracee/tracee-ebpf/external v0.0.0-20210727091827-bbe411a2a167/go.mod h1:C6aED/3HEi4aKSyjtCBWC//7EDXVlV/cQAdDgSbF1eM=
 github.com/aquasecurity/tracee/tracee-ebpf/external v0.0.0-20210922213431-07969faccea0 h1:W2asvJ+Zh4ybmNhjySSgy0O53RDaDH373qCp87jPWbg=
 github.com/aquasecurity/tracee/tracee-ebpf/external v0.0.0-20210922213431-07969faccea0/go.mod h1:C6aED/3HEi4aKSyjtCBWC//7EDXVlV/cQAdDgSbF1eM=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
