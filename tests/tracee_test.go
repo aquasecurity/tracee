@@ -23,18 +23,18 @@ const (
 func launchTracee(t *testing.T, traceeCmd string) string {
 	t.Helper()
 
-	fmt.Println("Launching Tracee container...")
+	t.Log("Launching Tracee container...")
 	b, err := exec.Command("docker", strings.Split(traceeCmd, " ")...).CombinedOutput()
 	assert.NoError(t, err)
 	containerID := strings.TrimSpace(string(b))
-	fmt.Println("Tracee container ID: ", containerID)
+	t.Log("Tracee container ID: ", containerID)
 	return containerID
 }
 
 func runCommand(t *testing.T, cmd string, args ...string) string {
 	t.Helper()
 
-	fmt.Println("Running", cmd, args, "...")
+	t.Log("Running", cmd, args, "...")
 	output, err := exec.Command(cmd, args...).CombinedOutput()
 	assert.NoError(t, err)
 	return string(output)
@@ -59,11 +59,11 @@ func TestLaunchTracee(t *testing.T) {
 		containerLogs := runCommand(t, "docker", "logs", containerID)
 
 		// assert results
-		fmt.Println("Asserting Logs...")
+		t.Log("Asserting Logs...")
 		assert.Contains(t, string(containerLogs), `Signature ID: TRC-2`)
 
 		// kill the container
-		fmt.Println("Terminating the Tracee container...")
+		t.Log("Terminating the Tracee container...")
 		assert.NoError(t, exec.Command("docker", "kill", containerID).Run())
 	})
 
@@ -83,11 +83,11 @@ func TestLaunchTracee(t *testing.T) {
 		containerLogs := runCommand(t, "docker", "logs", containerID)
 
 		// assert results
-		fmt.Println("Asserting Logs...")
+		t.Log("Asserting Logs...")
 		assert.Contains(t, string(containerLogs), `Signature ID: TRC-2`)
 
 		// kill the container
-		fmt.Println("Terminating the Tracee container...")
+		t.Log("Terminating the Tracee container...")
 		assert.NoError(t, exec.Command("docker", "kill", containerID).Run())
 	})
 }
@@ -97,7 +97,7 @@ func TestLaunchTracee(t *testing.T) {
 // the payload to the HTTP webhook interface
 func TestWebhookIntegration(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("Asserting Logs...")
+		t.Log("Asserting Logs...")
 		b, _ := ioutil.ReadAll(r.Body)
 		assert.Contains(t, string(b), `"Properties":{"MITRE ATT\u0026CK":"Defense Evasion: Execution Guardrails","Severity":3}`)
 		assert.Equal(t, "application/json", r.Header["Content-Type"][0])
@@ -122,6 +122,6 @@ func TestWebhookIntegration(t *testing.T) {
 	assert.NotContains(t, containerLogs, `error sending to webhook`)
 
 	// kill the container
-	fmt.Println("Terminating the Tracee container...")
+	t.Log("Terminating the Tracee container...")
 	assert.NoError(t, exec.Command("docker", "kill", containerID).Run())
 }
