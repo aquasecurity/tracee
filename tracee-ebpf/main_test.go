@@ -1217,12 +1217,21 @@ func TestPrepareOutput(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			testName:    "option exec-info",
+			outputSlice: []string{"option:exec-info"},
+			expectedOutput: tracee.OutputConfig{
+				ExecInfo: true,
+			},
+			expectedError: nil,
+		},
+		{
 			testName:    "all options",
-			outputSlice: []string{"option:stack-addresses", "option:detect-syscall", "option:exec-env"},
+			outputSlice: []string{"option:stack-addresses", "option:detect-syscall", "option:exec-env", "option:exec-Info"},
 			expectedOutput: tracee.OutputConfig{
 				StackAddresses: true,
 				DetectSyscall:  true,
 				ExecEnv:        true,
+				ExecInfo:       true,
 			},
 			expectedError: nil,
 		},
