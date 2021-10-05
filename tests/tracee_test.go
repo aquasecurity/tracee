@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -25,7 +27,7 @@ func launchTracee(t *testing.T, traceeCmd string) string {
 
 	t.Log("Launching Tracee container...")
 	b, err := exec.Command("docker", strings.Split(traceeCmd, " ")...).CombinedOutput()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	containerID := strings.TrimSpace(string(b))
 	t.Log("Tracee container ID: ", containerID)
 	return containerID
