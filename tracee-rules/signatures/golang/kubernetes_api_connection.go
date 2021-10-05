@@ -69,6 +69,11 @@ func (sig *K8sApiConnection) OnEvent(e types.Event) error {
 
 	case "security_socket_connect":
 
+		apiAddress, exists := sig.apiAddressContainerId[containerID]
+		if !exists {
+			return nil
+		}
+
 		remoteAddrArg, err := helpers.GetTraceeArgumentByName(eventObj, "remote_addr")
 		if err != nil {
 			return err
@@ -77,17 +82,14 @@ func (sig *K8sApiConnection) OnEvent(e types.Event) error {
 		if err != nil || ip == "" {
 			return err
 		}
-		IpAddress, exists := sig.apiAddressContainerId[containerID]
-		if !exists {
-			return nil
-		}
-		if ip == IpAddress {
+
+		if ip == apiAddress {
 			m, _ := sig.GetMetadata()
 			sig.cb(types.Finding{
 				SigMetadata: m,
 				Context:     eventObj,
 				Data: map[string]interface{}{
-					"ip": IpAddress,
+					"ip": apiAddress,
 				},
 			})
 		}
