@@ -56,6 +56,9 @@ func (sig *K8sApiConnection) OnEvent(e types.Event) error {
 	switch eventObj.EventName {
 
 	case "execve":
+		// the usage of 'envp' argument of the execve event is vulnerable to TOCTOU attack.
+		// in the future we plan to add 'envp' argument to sched_process_exec, and when it'll happen, we should start
+		// using sched_process_exec instead of execve in this signature.
 		envpArg, err := helpers.GetTraceeArgumentByName(eventObj, "envp")
 		if err != nil {
 			return nil
