@@ -23,7 +23,7 @@ func (sig *K8sApiConnection) Init(cb types.SignatureHandler) error {
 
 func (sig *K8sApiConnection) GetMetadata() (types.SignatureMetadata, error) {
 	return types.SignatureMetadata{
-		ID:          "TRC-15",
+		ID:          "TRC-13",
 		Version:     "0.1.0",
 		Name:        "Kubernetes API server connection detected",
 		Description: "A connection to the kubernetes API server was detected. The K8S API server is the brain of your K8S cluster, adversaries may try and communicate with the K8S API server to gather information/credentials, or even run more containers and laterally expand their grip on your systems.",
