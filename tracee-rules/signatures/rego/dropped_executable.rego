@@ -18,7 +18,7 @@ eventSelectors := [
     {
        "source": "tracee",
        "name": "magic_write",
-       "origin": "*"
+       "origin": "container"
     }
 ]
 
