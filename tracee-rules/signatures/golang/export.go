@@ -6,4 +6,5 @@ import "github.com/aquasecurity/tracee/tracee-rules/types"
 // this is a list of signatures that this plugin exports
 var ExportedSignatures []types.Signature = []types.Signature{
 	&stdioOverSocket{},
+	&K8sApiConnection{},
 }
