@@ -1180,7 +1180,7 @@ func makeBPFObject(outFile string) error {
 		kernelSourcePath = kernelHeaders
 	}
 	if kernelBuildPath == "" {
-		return fmt.Errorf("missing kernel source code compilation dependency")
+		return fmt.Errorf("kernel headers could not be found, they are required for bpf compilation if CORE is not enabled. Set KERN_HEADERS to their path.")
 	}
 	// In some distros (e.g. debian, suse), kernel headers are split to build/ and source/
 	// while in others (e.g. ubuntu, arch), all headers will be located under build/
