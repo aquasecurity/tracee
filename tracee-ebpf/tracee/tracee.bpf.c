@@ -1209,33 +1209,6 @@ static __always_inline u32* get_buf_off(int buf_idx)
     return bpf_map_lookup_elem(&bufs_off, &buf_idx);
 }
 
-// Context will always be at the start of the submission buffer
-// It may be needed to resave the context if the arguments number changed by logic
-static __always_inline int save_context_to_buf(buf_t *submit_p, void *ptr)
-{
-    int rc = bpf_probe_read(&(submit_p->buf[0]), sizeof(context_t), ptr);
-    if (rc == 0)
-        return sizeof(context_t);
-
-    return 0;
-}
-
-static __always_inline int update_and_save_context(event_data_t *data, u32 id, long ret)
-{
-    data->context.eventid = id;
-    data->context.retval = ret;
-
-    // Get Stack trace
-    if (get_config(CONFIG_CAPTURE_STACK_TRACES)) {
-        int stack_id = bpf_get_stackid(data->ctx, &stack_addresses, BPF_F_USER_STACK);
-        if (stack_id >= 0) {
-            data->context.stack_id = stack_id;
-        }
-    }
-
-    return save_context_to_buf(data->submit_p, &data->context);
-}
-
 static __always_inline int save_to_submit_buf(event_data_t *data, void *ptr, u32 size, u8 index)
 {
 // The biggest element that can be saved with this function should be defined here
@@ -1600,8 +1573,21 @@ static __always_inline void* get_dentry_path_str(struct dentry* dentry)
     return &string_p->buf[buf_off];
 }
 
-static __always_inline int events_perf_submit(event_data_t *data)
+static __always_inline int events_perf_submit(event_data_t *data, u32 id, long ret)
 {
+    data->context.eventid = id;
+    data->context.retval = ret;
+
+    // Get Stack trace
+    if (get_config(CONFIG_CAPTURE_STACK_TRACES)) {
+        int stack_id = bpf_get_stackid(data->ctx, &stack_addresses, BPF_F_USER_STACK);
+        if (stack_id >= 0) {
+            data->context.stack_id = stack_id;
+        }
+    }
+
+    bpf_probe_read(&(data->submit_p->buf[0]), sizeof(context_t), &data->context);
+
     /* satisfy validator by setting buffer bounds */
     int size = data->buf_off & (MAX_PERCPU_BUFSIZE-1);
     void *output_data = data->submit_p->buf;
@@ -1822,16 +1808,6 @@ static __always_inline int save_args_to_submit_buf(event_data_t *data, u64 types
     return arg_num;
 }
 
-static __always_inline int trace_ret_generic(event_data_t *data, u32 id, u64 types, args_t *args, long ret)
-{
-    save_args_to_submit_buf(data, types, args);
-    data->context.ts = args->args[6];
-
-    update_and_save_context(data, id, ret);
-    events_perf_submit(data);
-    return 0;
-}
-
 #define TRACE_ENT_FUNC(name, id)                                        \
 int trace_##name(struct pt_regs *ctx)                                   \
 {                                                                       \
@@ -1872,7 +1848,9 @@ int trace_ret_##name(void *ctx)                                         \
     if (!event_chosen(id))                                              \
         return 0;                                                       \
                                                                         \
-    return trace_ret_generic(&data, id, types, &args, ret);             \
+    save_args_to_submit_buf(&data, types, &args);                       \
+                                                                        \
+    return events_perf_submit(&data, id, ret);                          \
 }
 
 static __always_inline int get_network_details_from_sock_v4(struct sock *sk, net_conn_v4_t *net_details, int peer)
@@ -2078,8 +2056,7 @@ if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER)) {
 
     if (event_chosen(RAW_SYS_ENTER)) {
         save_to_submit_buf(&data, (void*)&id, sizeof(int), 0);
-        update_and_save_context(&data, RAW_SYS_ENTER, 0 /*ret*/);
-        events_perf_submit(&data);
+        events_perf_submit(&data, RAW_SYS_ENTER, 0);
     }
 
     // exit, exit_group and rt_sigreturn syscalls don't return - don't save args for them
@@ -2130,8 +2107,7 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
 
     if (event_chosen(RAW_SYS_EXIT)) {
         save_to_submit_buf(&data, (void*)&id, sizeof(int), 0);
-        update_and_save_context(&data, RAW_SYS_EXIT, ret);
-        events_perf_submit(&data);
+        events_perf_submit(&data, RAW_SYS_EXIT, ret);
     }
 
     if (event_chosen(id)) {
@@ -2146,7 +2122,9 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
             // We can't use saved args after execve syscall, as pointers are invalid
             // To avoid showing execve event both on entry and exit,
             // we only output failed execs
-            trace_ret_generic(&data, id, types, &saved_args, ret);
+            save_args_to_submit_buf(&data, types, &saved_args);
+            data.context.ts = saved_args.args[6];
+            events_perf_submit(&data, id, ret);
         }
     }
 
@@ -2181,9 +2159,7 @@ int syscall__execve(void *ctx)
         save_str_arr_to_buf(&data, (const char *const *)args.args[2] /*envp*/, 2);
     }
 
-    update_and_save_context(&data, SYS_EXECVE, 0 /*ret*/);
-    events_perf_submit(&data);
-    return 0;
+    return events_perf_submit(&data, SYS_EXECVE, 0);
 }
 
 SEC("raw_tracepoint/sys_execveat")
@@ -2209,9 +2185,7 @@ int syscall__execveat(void *ctx)
     }
     save_to_submit_buf(&data, (void*)&args.args[4] /*flags*/, sizeof(int), 4);
 
-    update_and_save_context(&data, SYS_EXECVEAT, 0 /*ret*/);
-    events_perf_submit(&data);
-    return 0;
+    return events_perf_submit(&data, SYS_EXECVEAT, 0);
 }
 
 /*============================== OTHER HOOKS ==============================*/
@@ -2266,8 +2240,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         save_to_submit_buf(&data, (void*)&child_pid, sizeof(int), 2);
         save_to_submit_buf(&data, (void*)&child_ns_pid, sizeof(int), 3);
 
-        update_and_save_context(&data, SCHED_PROCESS_FORK, 0 /*ret*/);
-        events_perf_submit(&data);
+        events_perf_submit(&data, SCHED_PROCESS_FORK, 0);
     }
 
     return 0;
@@ -2343,9 +2316,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 5);
     save_to_submit_buf(&data, &invoked_from_kernel, sizeof(int), 6);
 
-    update_and_save_context(&data, SCHED_PROCESS_EXEC, 0);
-    events_perf_submit(&data);
-    return 0;
+    return events_perf_submit(&data, SCHED_PROCESS_EXEC, 0);
 }
 
 // include/trace/events/sched.h:
@@ -2374,9 +2345,7 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 
     save_to_submit_buf(&data, (void*)&exit_code, sizeof(long), 0);
 
-    update_and_save_context(&data, SCHED_PROCESS_EXIT, 0);
-    events_perf_submit(&data);
-    return 0;
+    return events_perf_submit(&data, SCHED_PROCESS_EXIT, 0);
 }
 
 // include/trace/events/sched.h:
@@ -2406,10 +2375,7 @@ int tracepoint__sched__sched_switch(struct bpf_raw_tracepoint_args *ctx)
     save_to_submit_buf(&data, (void*)&next_pid, sizeof(int), 3);
     save_str_to_buf(&data, next->comm, 4);
 
-    update_and_save_context(&data, SCHED_SWITCH, 0 /*ret*/);
-    events_perf_submit(&data);
-
-    return 0;
+    return events_perf_submit(&data, SCHED_SWITCH, 0);
 }
 
 SEC("kprobe/do_exit")
@@ -2424,9 +2390,7 @@ int BPF_KPROBE(trace_do_exit)
 
     long code = PT_REGS_PARM1(ctx);
 
-    update_and_save_context(&data, DO_EXIT, code);
-    events_perf_submit(&data);
-    return 0;
+    return events_perf_submit(&data, DO_EXIT, code);
 }
 
 // include/trace/events/sched.h:
@@ -2462,8 +2426,7 @@ int tracepoint__cgroup__cgroup_attach_task(struct bpf_raw_tracepoint_args *ctx)
 
     if (event_chosen(CGROUP_ATTACH_TASK) && should_trace(&data.context)) {
         save_str_to_buf(&data, (void *)ctx->args[1], 0);
-        update_and_save_context(&data, CGROUP_ATTACH_TASK, 0 /*ret*/);
-        events_perf_submit(&data);
+        events_perf_submit(&data, CGROUP_ATTACH_TASK, 0);
     }
 
     return 0;
@@ -2489,9 +2452,7 @@ int BPF_KPROBE(trace_security_bprm_check)
     save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 1);
     save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 2);
 
-    update_and_save_context(&data, SECURITY_BPRM_CHECK, 0 /*ret*/);
-    events_perf_submit(&data);
-    return 0;
+    return events_perf_submit(&data, SECURITY_BPRM_CHECK, 0);
 }
 
 SEC("kprobe/security_file_open")
@@ -2520,9 +2481,7 @@ int BPF_KPROBE(trace_security_file_open)
         }
     }
 
-    update_and_save_context(&data, SECURITY_FILE_OPEN, 0 /*ret*/);
-    events_perf_submit(&data);
-    return 0;
+    return events_perf_submit(&data, SECURITY_FILE_OPEN, 0);
 }
 
 SEC("kprobe/security_sb_mount")
@@ -2547,9 +2506,7 @@ int BPF_KPROBE(trace_security_sb_mount)
     save_str_to_buf(&data, (void *)type, 2);
     save_to_submit_buf(&data, &flags, sizeof(unsigned long), 3);
 
-    update_and_save_context(&data, SECURITY_SB_MOUNT, 0 /*ret*/);
-    events_perf_submit(&data);
-    return 0;
+    return events_perf_submit(&data, SECURITY_SB_MOUNT, 0);
 }
 
 SEC("kprobe/security_inode_unlink")
@@ -2568,9 +2525,7 @@ int BPF_KPROBE(trace_security_inode_unlink)
 
     save_str_to_buf(&data, dentry_path, 0);
 
-    update_and_save_context(&data, SECURITY_INODE_UNLINK, 0 /*ret*/);
-    events_perf_submit(&data);
-    return 0;
+    return events_perf_submit(&data, SECURITY_INODE_UNLINK, 0);
 }
 
 SEC("kprobe/commit_creds")
@@ -2657,8 +2612,7 @@ int BPF_KPROBE(trace_commit_creds)
             }
         }
 
-        update_and_save_context(&data, COMMIT_CREDS, 0 /*ret*/);
-        events_perf_submit(&data);
+        events_perf_submit(&data, COMMIT_CREDS, 0);
     }
 
     return 0;
@@ -2696,34 +2650,20 @@ int BPF_KPROBE(trace_switch_task_namespaces)
 
     save_to_submit_buf(&data, (void*)&pid, sizeof(int), 0);
 
-    if (old_mnt != new_mnt) {
+    if (old_mnt != new_mnt)
         save_to_submit_buf(&data, (void*)&new_mnt, sizeof(u32), 1);
-    }
-
-    if (old_pid != new_pid) {
+    if (old_pid != new_pid)
         save_to_submit_buf(&data, (void*)&new_pid, sizeof(u32), 2);
-    }
-
-    if (old_uts != new_uts) {
+    if (old_uts != new_uts)
         save_to_submit_buf(&data, (void*)&new_uts, sizeof(u32), 3);
-    }
-
-    if (old_ipc != new_ipc) {
+    if (old_ipc != new_ipc)
         save_to_submit_buf(&data, (void*)&new_ipc, sizeof(u32), 4);
-    }
-
-    if (old_net != new_net) {
+    if (old_net != new_net)
         save_to_submit_buf(&data, (void*)&new_net, sizeof(u32), 5);
-    }
-
-    if (old_cgroup != new_cgroup) {
+    if (old_cgroup != new_cgroup)
         save_to_submit_buf(&data, (void*)&new_cgroup, sizeof(u32), 6);
-    }
-
-    if (data.context.argnum > 1) {
-        update_and_save_context(&data, SWITCH_TASK_NS, 0 /*ret*/);
-        events_perf_submit(&data);
-    }
+    if (data.context.argnum > 1)
+        events_perf_submit(&data, SWITCH_TASK_NS, 0);
 
     return 0;
 }
@@ -2761,9 +2701,8 @@ int BPF_KPROBE(trace_cap_capable)
             save_to_submit_buf(&data, (void*)&syscall_nr, sizeof(int), 1);
         }
     }
-    update_and_save_context(&data, CAP_CAPABLE, 0 /*ret*/);
-    events_perf_submit(&data);
-    return 0;
+
+    return events_perf_submit(&data, CAP_CAPABLE, 0);
 }
 
 SEC("kprobe/security_socket_create")
@@ -2786,9 +2725,7 @@ int BPF_KPROBE(trace_security_socket_create)
     save_to_submit_buf(&data, (void *)&protocol, sizeof(int), 2);
     save_to_submit_buf(&data, (void *)&kern, sizeof(int), 3);
 
-    update_and_save_context(&data, SECURITY_SOCKET_CREATE, 0 /*ret*/);
-    events_perf_submit(&data);
-    return 0;
+    return events_perf_submit(&data, SECURITY_SOCKET_CREATE, 0);
 }
 
 SEC("kprobe/security_socket_listen")
@@ -2842,9 +2779,7 @@ int BPF_KPROBE(trace_security_socket_listen)
 
     save_to_submit_buf(&data, (void *)&backlog, sizeof(int), 2);
 
-    update_and_save_context(&data, SECURITY_SOCKET_LISTEN, 0 /*ret*/);
-    events_perf_submit(&data);
-    return 0;
+    return events_perf_submit(&data, SECURITY_SOCKET_LISTEN, 0);
 }
 
 SEC("kprobe/security_socket_connect")
@@ -2885,9 +2820,7 @@ int BPF_KPROBE(trace_security_socket_connect)
         else save_to_submit_buf(&data, (void *)address, sizeof(struct sockaddr_un), 1);
     }
 
-    update_and_save_context(&data, SECURITY_SOCKET_CONNECT, 0 /*ret*/);
-    events_perf_submit(&data);
-    return 0;
+    return events_perf_submit(&data, SECURITY_SOCKET_CONNECT, 0);
 }
 
 SEC("kprobe/security_socket_accept")
@@ -2937,9 +2870,7 @@ int BPF_KPROBE(trace_security_socket_accept)
         save_to_submit_buf(&data, (void *)&sockaddr, sizeof(struct sockaddr_un), 1);
     }
 
-    update_and_save_context(&data, SECURITY_SOCKET_ACCEPT, 0 /*ret*/);
-    events_perf_submit(&data);
-    return 0;
+    return events_perf_submit(&data, SECURITY_SOCKET_ACCEPT, 0);
 }
 
 SEC("kprobe/security_socket_bind")
@@ -3009,9 +2940,6 @@ int BPF_KPROBE(trace_security_socket_bind)
         bpf_map_update_elem(&network_map, &connect_id, &net_ctx, BPF_ANY);
     }
 
-    update_and_save_context(&data, SECURITY_SOCKET_BIND, 0 /*ret*/);
-    events_perf_submit(&data);
-
     // netDebug event
     if (get_config(CONFIG_DEBUG_NET) && (sa_fam != AF_UNIX)) {
         net_debug_t debug_event = {0};
@@ -3025,7 +2953,7 @@ int BPF_KPROBE(trace_security_socket_bind)
         bpf_perf_event_output(ctx, &net_events, BPF_F_CURRENT_CPU, &debug_event, sizeof(debug_event));
     }
 
-    return 0;
+    return events_perf_submit(&data, SECURITY_SOCKET_BIND, 0);
 }
 
 // To delete socket from net map use tid==0, otherwise, update
@@ -3451,8 +3379,7 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
         save_to_submit_buf(&data, &start_pos, sizeof(off_t), 4);
 
         // Submit vfs_write(v) event
-        update_and_save_context(&data, event_id, PT_REGS_RC(ctx));
-        events_perf_submit(&data);
+        events_perf_submit(&data, event_id, PT_REGS_RC(ctx));
     }
 
     // magic_write event checks if the header of some file is changed
@@ -3484,8 +3411,7 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
         save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 3);
 
         // Submit magic_write event
-        update_and_save_context(&data, MAGIC_WRITE, PT_REGS_RC(ctx));
-        events_perf_submit(&data);
+        events_perf_submit(&data, MAGIC_WRITE, PT_REGS_RC(ctx));
     }
 
     bpf_tail_call(ctx, &prog_array, tail_call_id);
@@ -3665,8 +3591,7 @@ int BPF_KPROBE(trace_mmap_alert)
     if ((args.args[2] & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC)) {
         alert_t alert = {.ts = data.context.ts, .msg = ALERT_MMAP_W_X, .payload = 0};
         save_to_submit_buf(&data, &alert, sizeof(alert_t), 0);
-        update_and_save_context(&data, MEM_PROT_ALERT, 0 /*ret*/);
-        events_perf_submit(&data);
+        events_perf_submit(&data, MEM_PROT_ALERT, 0);
     }
 
     return 0;
@@ -3705,18 +3630,14 @@ int BPF_KPROBE(trace_mprotect_alert)
     if ((!(prev_prot & VM_EXEC)) && (reqprot & VM_EXEC)) {
         alert_t alert = {.ts = data.context.ts, .msg = ALERT_MPROT_X_ADD, .payload = 0};
         save_to_submit_buf(&data, &alert, sizeof(alert_t), 0);
-        update_and_save_context(&data, MEM_PROT_ALERT, 0 /*ret*/);
-        events_perf_submit(&data);
-        return 0;
+        return events_perf_submit(&data, MEM_PROT_ALERT, 0);
     }
 
     if ((prev_prot & VM_EXEC) && !(prev_prot & VM_WRITE)
         && ((reqprot & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC))) {
         alert_t alert = {.ts = data.context.ts, .msg = ALERT_MPROT_W_ADD, .payload = 0};
         save_to_submit_buf(&data, &alert, sizeof(alert_t), 0);
-        update_and_save_context(&data, MEM_PROT_ALERT, 0 /*ret*/);
-        events_perf_submit(&data);
-        return 0;
+        return events_perf_submit(&data, MEM_PROT_ALERT, 0);
     }
 
     if (((prev_prot & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC))
@@ -3725,8 +3646,7 @@ int BPF_KPROBE(trace_mprotect_alert)
         if (get_config(CONFIG_EXTRACT_DYN_CODE))
             alert.payload = 1;
         save_to_submit_buf(&data, &alert, sizeof(alert_t), 0);
-        update_and_save_context(&data, MEM_PROT_ALERT, 0 /*ret*/);
-        events_perf_submit(&data);
+        events_perf_submit(&data, MEM_PROT_ALERT, 0);
 
         if (get_config(CONFIG_EXTRACT_DYN_CODE)) {
             bin_args.type = SEND_MPROTECT;
@@ -3759,9 +3679,7 @@ int BPF_KPROBE(trace_security_bpf)
     /* 1st argument == cmd (int) */
     save_to_submit_buf(&data, (void *)&cmd, sizeof(int), 0);
 
-    update_and_save_context(&data, SECURITY_BPF, 0 /*ret*/);
-    events_perf_submit(&data);
-    return 0;
+    return events_perf_submit(&data, SECURITY_BPF, 0);
 }
 
 SEC("kprobe/security_bpf_map")
@@ -3781,9 +3699,7 @@ int BPF_KPROBE(trace_security_bpf_map)
     /* 2nd argument == map_name (const char *) */
     save_str_to_buf(&data, (void *)&map->name, 1);
 
-    update_and_save_context(&data, SECURITY_BPF_MAP, 0 /*ret*/);
-    events_perf_submit(&data);
-    return 0;
+    return events_perf_submit(&data, SECURITY_BPF_MAP, 0);
 }
 
 SEC("kprobe/security_kernel_read_file")
@@ -3793,9 +3709,8 @@ int BPF_KPROBE(trace_security_kernel_read_file)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context)) {
+    if (!should_trace(&data.context))
         return 0;
-    }
 
     struct file* file = (struct file*)PT_REGS_PARM1(ctx);
     dev_t s_dev = get_dev_from_file(file);
@@ -3808,9 +3723,7 @@ int BPF_KPROBE(trace_security_kernel_read_file)
     save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 2);
     save_to_submit_buf(&data, &type_id, sizeof(int), 3);
 
-    update_and_save_context(&data, SECURITY_KERNEL_READ_FILE, 0 /*ret*/);
-    events_perf_submit(&data);
-    return 0;
+    return events_perf_submit(&data, SECURITY_KERNEL_READ_FILE, 0);
 }
 
 SEC("kprobe/security_inode_mknod")
@@ -3820,9 +3733,8 @@ int BPF_KPROBE(trace_security_inode_mknod)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context)) {
+    if (!should_trace(&data.context))
         return 0;
-    }
 
     struct dentry* dentry = (struct dentry*)PT_REGS_PARM2(ctx);
     unsigned short mode = (unsigned short)PT_REGS_PARM3(ctx);
@@ -3833,9 +3745,7 @@ int BPF_KPROBE(trace_security_inode_mknod)
     save_to_submit_buf(&data, &mode, sizeof(unsigned short), 1);
     save_to_submit_buf(&data, &dev, sizeof(dev_t), 2);
 
-    update_and_save_context(&data, SECURITY_INODE_MKNOD, 0 /*ret*/);
-    events_perf_submit(&data);
-    return 0;
+    return events_perf_submit(&data, SECURITY_INODE_MKNOD, 0);
 }
 
 static __always_inline bool skb_revalidate_data(struct __sk_buff *skb, uint8_t **head, uint8_t **tail, const u32 offset) {
