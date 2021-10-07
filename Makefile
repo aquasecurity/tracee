@@ -11,6 +11,7 @@ BUILD_DATE = $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 VCS_REF="$(shell git rev-parse --short HEAD)"
 VCS_BRANCH="$(shell git rev-parse --abbrev-ref HEAD)"
 BUILD_ARG_DOCKER =--build-arg VERSION=$(VERSION) --build-arg BUILD_DATE=$(BUILD_DATE) --build-arg VCS_BRANCH=$(VCS_BRANCH) --build-arg VCS_REF=$(VCS_REF)
+MODULE_TAG_NAMES = tracee-ebpf/$(RELEASE_TAG) tracee-ebpf/external/$(RELEASE_TAG) tracee-rules/$(RELEASE_TAG)
 
 CMD_DOCKER ?= docker
 CMD_GIT ?= git
@@ -91,8 +92,8 @@ release2: $(OUT_ARCHIVE) $(OUT_CHECKSUMS)
 	$(foreach img,$(release_images_fat),$(call release_docker_image,$(OUT_DOCKER):latest,$(img)))
 	$(foreach img,$(release_images_slim),$(call release_docker_image,$(OUT_DOCKER):slim,$(img)))
 	echo '' >>$(release_notes)
-	$(CMD_GIT) tag $(RELEASE_TAG)
-	$(CMD_GIT) push origin $(RELEASE_TAG)
+	$(foreach MODULE_TAG,$(MODULE_TAG_NAMES),$(CMD_GIT) tag -f $(MODULE_TAG);)
+	$(foreach MODULE_TAG,$(MODULE_TAG_NAMES),$(CMD_GIT) push -u origin $(MODULE_TAG);)
 	$(CMD_GITHUB) release create $(RELEASE_TAG) $(OUT_ARCHIVE) $(OUT_CHECKSUMS) --title $(RELEASE_TAG) --notes-file $(release_notes)
 
 .PHONY: mostlyclean
