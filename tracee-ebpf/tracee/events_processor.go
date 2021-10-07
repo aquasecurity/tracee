@@ -146,13 +146,17 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 
 				sourceFileCtime := sourceFileStat.Sys().(*syscall.Stat_t).Ctim.Nano()
 				capturedFileID := fmt.Sprintf("%d:%s", ctx.MntID, sourceFilePath)
-				var destinationDirPath string
 				if t.config.Capture.Exec {
 					destinationDirPath := filepath.Join(t.config.Capture.OutputPath, strconv.Itoa(int(ctx.MntID)))
 					if err := os.MkdirAll(destinationDirPath, 0755); err != nil {
 						return err
 					}
 					destinationFilePath := filepath.Join(destinationDirPath, fmt.Sprintf("exec.%d.%s", ctx.Ts, filepath.Base(filePath)))
+
+					// create an in-memory profile
+					if t.config.Capture.Profile {
+						t.updateProfile(fmt.Sprintf("%s:%d", filepath.Join(destinationDirPath, fmt.Sprintf("exec.%s", filepath.Base(filePath))), sourceFileCtime), ctx.Ts)
+					}
 
 					//don't capture same file twice unless it was modified
 					lastCtime, ok := t.capturedFiles[capturedFileID]
@@ -192,7 +196,6 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 						mntPath := fmt.Sprintf("/proc/%s/ns/mnt", strconv.Itoa(int(pid)))
 						mntStat, err := os.Stat(mntPath)
 						if err != nil {
-							//TODO: remove dead pid from cache
 							continue
 						}
 						containerCtime = mntStat.Sys().(*syscall.Stat_t).Ctim.Nano()
@@ -213,11 +216,6 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 					*argMetas = append(*argMetas, contCtimeMeta)
 					ctx.Argnum += 1
 					args["container_ctime"] = containerCtime
-				}
-
-				// create an in-memory profile
-				if t.config.Capture.Profile {
-					t.updateProfile(fmt.Sprintf("%s:%d", filepath.Join(destinationDirPath, fmt.Sprintf("exec.%s", filepath.Base(filePath))), sourceFileCtime), ctx.Ts)
 				}
 
 				break
