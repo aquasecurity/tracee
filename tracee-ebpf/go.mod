@@ -13,4 +13,5 @@ require (
 	github.com/urfave/cli/v2 v2.3.0
 	golang.org/x/sys v0.0.0-20210903071746-97244b99971b
 	inet.af/netaddr v0.0.0-20210903134321-85fa6c94624e
+	github.com/hashicorp/golang-lru v0.5.4
 )

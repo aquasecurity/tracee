@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+
+	"github.com/aquasecurity/tracee/tracee-ebpf/external"
 )
 
 func (t *Tracee) processLostEvents() {
@@ -75,7 +77,7 @@ func (t *Tracee) shouldProcessEvent(ctx *context, args map[string]interface{}) b
 	return true
 }
 
-func (t *Tracee) processEvent(ctx *context, args map[string]interface{}) error {
+func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMetas *[]external.ArgMeta) error {
 	switch ctx.EventID {
 
 	//capture written files
@@ -109,7 +111,7 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}) error {
 			t.writtenFiles[fileName] = filePath
 		}
 
-	case SecurityBprmCheckEventID:
+	case SchedProcessExecEventID:
 
 		//cache this pid by it's mnt ns
 		if ctx.Pid == 1 {
@@ -119,21 +121,15 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}) error {
 		}
 
 		//capture executed files
-		if t.config.Capture.Exec {
+		if t.config.Capture.Exec || t.config.Output.ExecInfo {
 			filePath, ok := args["pathname"].(string)
 			if !ok {
-				return fmt.Errorf("error parsing security_bprm_check args")
+				return fmt.Errorf("error parsing sched_process_exec args")
 			}
 			// path should be absolute, except for e.g memfd_create files
 			if filePath == "" || filePath[0] != '/' {
 				return nil
 			}
-
-			destinationDirPath := filepath.Join(t.config.Capture.OutputPath, strconv.Itoa(int(ctx.MntID)))
-			if err := os.MkdirAll(destinationDirPath, 0755); err != nil {
-				return err
-			}
-			destinationFilePath := filepath.Join(destinationDirPath, fmt.Sprintf("exec.%d.%s", ctx.Ts, filepath.Base(filePath)))
 
 			var err error
 			// try to access the root fs via another process in the same mount namespace (since the current process might have already died)
@@ -150,25 +146,60 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}) error {
 
 				sourceFileCtime := sourceFileStat.Sys().(*syscall.Stat_t).Ctim.Nano()
 				capturedFileID := fmt.Sprintf("%d:%s", ctx.MntID, sourceFilePath)
+				if t.config.Capture.Exec {
+					destinationDirPath := filepath.Join(t.config.Capture.OutputPath, strconv.Itoa(int(ctx.MntID)))
+					if err := os.MkdirAll(destinationDirPath, 0755); err != nil {
+						return err
+					}
+					destinationFilePath := filepath.Join(destinationDirPath, fmt.Sprintf("exec.%d.%s", ctx.Ts, filepath.Base(filePath)))
 
-				// create an in-memory profile
-				if t.config.Capture.Profile {
-					t.updateProfile(fmt.Sprintf("%s:%d", filepath.Join(destinationDirPath, fmt.Sprintf("exec.%s", filepath.Base(filePath))), sourceFileCtime), ctx.Ts)
+					// create an in-memory profile
+					if t.config.Capture.Profile {
+						t.updateProfile(fmt.Sprintf("%s:%d", filepath.Join(destinationDirPath, fmt.Sprintf("exec.%s", filepath.Base(filePath))), sourceFileCtime), ctx.Ts)
+					}
+
+					//don't capture same file twice unless it was modified
+					lastCtime, ok := t.capturedFiles[capturedFileID]
+					if !ok || lastCtime != sourceFileCtime {
+						//capture
+						err = CopyFileByPath(sourceFilePath, destinationFilePath)
+						if err != nil {
+							return err
+						}
+						//mark this file as captured
+						t.capturedFiles[capturedFileID] = sourceFileCtime
+					}
 				}
 
-				//don't capture same file twice unless it was modified
-				lastCtime, ok := t.capturedFiles[capturedFileID]
-				if ok && lastCtime == sourceFileCtime {
-					return nil
+				if t.config.Output.ExecInfo {
+					var hashInfoObj fileExecInfo
+					var currentHash string
+					hashInfoInterface, ok := t.fileHashes.Get(capturedFileID)
+
+					// cast to fileExecInfo
+					if ok {
+						hashInfoObj = hashInfoInterface.(fileExecInfo)
+					}
+					// Check if cache can be used
+					if ok && hashInfoObj.LastCtime == sourceFileCtime {
+						currentHash = hashInfoObj.Hash
+					} else {
+						currentHash = getFileHash(sourceFilePath)
+						hashInfoObj = fileExecInfo{sourceFileCtime, currentHash}
+						t.fileHashes.Add(capturedFileID, hashInfoObj)
+					}
+
+					hashMeta := external.ArgMeta{"sha256", "const char*"}
+					*argMetas = append(*argMetas, hashMeta)
+					ctx.Argnum += 1
+					args["sha256"] = currentHash
+
+					ctimeMeta := external.ArgMeta{"ctime", "unsigned long"}
+					*argMetas = append(*argMetas, ctimeMeta)
+					ctx.Argnum += 1
+					args["ctime"] = sourceFileCtime
 				}
 
-				//capture
-				err = CopyFileByPath(sourceFilePath, destinationFilePath)
-				if err != nil {
-					return err
-				}
-				//mark this file as captured
-				t.capturedFiles[capturedFileID] = sourceFileCtime
 				break
 			}
 			return err

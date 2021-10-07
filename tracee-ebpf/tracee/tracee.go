@@ -26,6 +26,7 @@ import (
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
+	lru "github.com/hashicorp/golang-lru"
 	"golang.org/x/sys/unix"
 )
 
@@ -63,6 +64,7 @@ type OutputConfig struct {
 	DetectSyscall  bool
 	ExecEnv        bool
 	RelativeTime   bool
+	ExecInfo       bool
 }
 
 type netProbe struct {
@@ -140,6 +142,11 @@ type profilerInfo struct {
 	FirstExecutionTs uint64 `json:"-"`
 }
 
+type fileExecInfo struct {
+	LastCtime int64
+	Hash      string
+}
+
 // Tracee traces system calls and system events using eBPF
 type Tracee struct {
 	config            Config
@@ -158,6 +165,7 @@ type Tracee struct {
 	startTime         uint64
 	stats             statsStore
 	capturedFiles     map[string]int64
+	fileHashes        *lru.Cache
 	profiledFiles     map[string]profilerInfo
 	writtenFiles      map[string]string
 	mntNsFirstPid     map[uint32]uint32
@@ -217,7 +225,7 @@ func New(cfg Config) (*Tracee, error) {
 		EventsIDToEvent[id] = event
 	}
 	if cfg.Capture.Exec {
-		setEssential(SecurityBprmCheckEventID)
+		setEssential(SchedProcessExecEventID)
 	}
 	if cfg.Capture.FileWrite {
 		setEssential(VfsWriteEventID)
@@ -278,6 +286,11 @@ func New(cfg Config) (*Tracee, error) {
 
 	t.writtenFiles = make(map[string]string)
 	t.capturedFiles = make(map[string]int64)
+	t.fileHashes, err = lru.New(1024)
+	if err != nil {
+		t.Close()
+		return nil, err
+	}
 	t.profiledFiles = make(map[string]profilerInfo)
 	//set a default value for config.maxPidsCache
 	if t.config.maxPidsCache == 0 {

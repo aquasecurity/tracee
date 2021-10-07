@@ -68,7 +68,7 @@ func (t *Tracee) processEvents(done <-chan struct{}) error {
 		if !t.shouldProcessEvent(&ctx, args) {
 			continue
 		}
-		err = t.processEvent(&ctx, args)
+		err = t.processEvent(&ctx, args, &argMetas)
 		if err != nil {
 			t.handleError(err)
 			continue
