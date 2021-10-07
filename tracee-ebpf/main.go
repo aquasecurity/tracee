@@ -346,7 +346,7 @@ option:{stack-addresses,detect-syscall,exec-env,relative-time,exec-info}
   detect-syscall                                   when tracing kernel functions which are not syscalls, detect and show the original syscall that called that function
   exec-env                                         when tracing execve/execveat, show the environment variables that were used for execution
   relative-time                                    use relative timestamp instead of wall timestamp for events
-  exec-info                                        when tracing sched_process_exec, show the file hash(sha256), ctime and container ctime
+  exec-info                                        when tracing sched_process_exec, show the file hash(sha256) and ctime
 
 Examples:
   --output json                                            | output as json
