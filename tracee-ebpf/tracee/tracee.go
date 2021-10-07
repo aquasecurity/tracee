@@ -166,7 +166,6 @@ type Tracee struct {
 	stats             statsStore
 	capturedFiles     map[string]int64
 	fileHashes        *lru.Cache
-	containersCtime   *lru.Cache
 	profiledFiles     map[string]profilerInfo
 	writtenFiles      map[string]string
 	mntNsFirstPid     map[uint32]uint32
@@ -288,7 +287,6 @@ func New(cfg Config) (*Tracee, error) {
 	t.writtenFiles = make(map[string]string)
 	t.capturedFiles = make(map[string]int64)
 	t.fileHashes, err = lru.New(1024)
-	t.containersCtime, err = lru.New(1024)
 	if err != nil {
 		t.Close()
 		return nil, err

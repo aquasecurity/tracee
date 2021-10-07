@@ -188,19 +188,6 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 						hashInfoObj = fileExecInfo{sourceFileCtime, currentHash}
 						t.fileHashes.Add(capturedFileID, hashInfoObj)
 					}
-					var containerCtime int64
-					containerCtimeInterface, ok := t.containersCtime.Get(ctx.ContID)
-					if ok {
-						containerCtime = containerCtimeInterface.(int64)
-					} else {
-						mntPath := fmt.Sprintf("/proc/%s/ns/mnt", strconv.Itoa(int(pid)))
-						mntStat, err := os.Stat(mntPath)
-						if err != nil {
-							continue
-						}
-						containerCtime = mntStat.Sys().(*syscall.Stat_t).Ctim.Nano()
-						t.containersCtime.Add(ctx.ContID, containerCtime)
-					}
 
 					hashMeta := external.ArgMeta{"sha256", "const char*"}
 					*argMetas = append(*argMetas, hashMeta)
@@ -211,11 +198,6 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 					*argMetas = append(*argMetas, ctimeMeta)
 					ctx.Argnum += 1
 					args["ctime"] = sourceFileCtime
-
-					contCtimeMeta := external.ArgMeta{"container_ctime", "unsigned long"}
-					*argMetas = append(*argMetas, contCtimeMeta)
-					ctx.Argnum += 1
-					args["container_ctime"] = containerCtime
 				}
 
 				break
