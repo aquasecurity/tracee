@@ -2,33 +2,34 @@
 
 In the [deploy/kubernetes](https://github.com/aquasecurity/tracee/blob/main/deploy/kubernetes) directory you can find Yaml files that deploys Tracee in a Kubernetes environment. This will deploy Tracee as a daemonset, alongside [falcosidekick](integrations.md#falcosidekick-webhook) so that you can conveniently consume Tracee's detections.
 
-To install Tracee:
+You could use any message routing application. In the following section will be use Postee and Falcosidekick.
 
-`kubectl create -f https://raw.githubusercontent.com/aquasecurity/tracee/main/deploy/kubernetes/tracee.yaml`.
+## Install Tracee and Postee
 
-## Webhoook Setting
+Install Tracee with the webhook using Postee:
 
-You could use any message routing application. In the following section will be use Postee and Falcosidekick
+``` bash
+kubectl create -f https://raw.githubusercontent.com/aquasecurity/tracee/main/deploy/kubernetes/tracee-postee/tracee.yaml
+```
 
-### Postee
+> More details about Postee settings with slack, jira, etc. [HERE](https://github.com/aquasecurity/postee/blob/main/cfg.yaml)
 
-Install Postee in Kubernetes:
+Install Postee:
 
-Download the manifest [here](https://github.com/aquasecurity/postee/tree/main/deploy/kubernetes).
+``` bash
+kubectl create -f https://raw.githubusercontent.com/aquasecurity/postee/main/deploy/kubernetes/postee.yaml
+```
 
-The tracee.yaml using Postee
+## Install Tracee and Falcosidekick
 
-` --webhook http://postee-webhook:8080 --webhook-template ./templates/rawjson.tmpl --webhook-content-type application/json`
-### Falcosidekick
 
-Install Falcosidekick in Kubernetes:
+Install Tracee with the webhook using Falcosidekick:
 
-`kubectl create -f deploy/kubernetes/falcosidekick
+`kubectl create -f deploy/kubernetes/tracee-falcosidekick
 `
 
-The tracee.yaml using Falcosidekick
+> More details about Falcosidekick settings with slack, jira, etc. [HERE](https://github.com/falcosecurity/falcosidekick/blob/master/config_example.yaml)
 
-` --webhook http://falcosidekick-webhook:2801 --webhook-template ./templates/falcosidekick.tmpl --webhook-content-type application/json`
 ## Platform support
 
 This approach assumes that host nodes have either BTF available or kernel headers available under conventional location. see Tracee's [prerequisites](https://aquasecurity.github.io/tracee/dev/install/prerequisites/) for more info. For the major Kubernetes platforms this should work out-of-the-box, including GKE, EKS, AKS, minikube. 
