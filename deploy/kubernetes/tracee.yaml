@@ -43,8 +43,8 @@ spec:
       tolerations:
         - effect: NoSchedule
           operator: Exists
-        - operator: "Exists"
-          effect: "NoSchedule"
+        - effect: NoExecute
+          operator: Exists
       volumes:
       - hostPath:
           path: /tmp/tracee
