@@ -1,23 +1,37 @@
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: falcosidekick-config
+data:
+  cfg.yaml: |-
+    debug: true
+    # Reference: https://github.com/falcosecurity/falcosidekick/blob/master/config_example.yaml
+    # slack:
+    #   webhookurl: "https://hooks.slack.com/xxxxxxxx"
+    # teams:
+    #   webhookurl: "https://xxxxxxx"
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app.kubernetes.io/name: tracee-webhook
+    app.kubernetes.io/name: falcosidekick
     app.kubernetes.io/component: tracee-webhook
     app.kubernetes.io/part-of: tracee
-  name: tracee-webhook
+  name: falcosidekick
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/name: tracee-webhook
+      app.kubernetes.io/name: falcosidekick
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: tracee-webhook
-      name: tracee-webhook
+        app.kubernetes.io/name: falcosidekick
+      name: falcosidekick
     spec:
       containers:
-      - name: tracee-webhook
+      - name: falcosidekick
         image: falcosecurity/falcosidekick
         imagePullPolicy: Always
         ports:
@@ -28,15 +42,15 @@ spec:
             mountPath: /app/config
       volumes:
         - configMap:
-            name: tracee-webhook-config
+            name: falcosidekick-config
           name: webhook-volume
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: tracee-webhook
+  name: falcosidekick-svc
   labels:
-    app.kubernetes.io/name: tracee-webhook
+    app.kubernetes.io/name: falcosidekick
     app.kubernetes.io/component: tracee-webhook
     app.kubernetes.io/part-of: tracee
 spec:
@@ -44,5 +58,5 @@ spec:
     - name: http
       port: 2801
   selector:
-    app.kubernetes.io/name: tracee-webhook
+    app.kubernetes.io/name: falcosidekick
 
