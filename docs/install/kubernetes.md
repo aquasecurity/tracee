@@ -9,7 +9,9 @@ In the [deploy/kubernetes](https://github.com/aquasecurity/tracee/blob/main/depl
 To install Tracee with [Postee](https://github.com/aquasecurity/postee), simply run:
 
 ``` bash
-kubectl create -f https://raw.githubusercontent.com/aquasecurity/postee/main/deploy/kubernetes/postee.yaml https://raw.githubusercontent.com/aquasecurity/tracee/main/deploy/kubernetes/tracee-postee/tracee.yaml
+kubectl create -f \
+https://raw.githubusercontent.com/aquasecurity/postee/main/deploy/kubernetes/postee.yaml \
+https://raw.githubusercontent.com/aquasecurity/tracee/main/deploy/kubernetes/tracee-postee/tracee.yaml
 ```
 
 You can edit the configMap `postee-config` the was created, see an example configuration here: https://github.com/aquasecurity/postee/blob/main/cfg.yaml.
@@ -21,7 +23,9 @@ You can also use the [Postee UI](https://github.com/aquasecurity/postee#postee-u
 To install Tracee with [Falcosidekick](https://github.com/falcosecurity/falcosidekick), simply run:
 
 ``` bash
-kubectl create https://raw.githubusercontent.com/aquasecurity/tracee/main/deploy/kubernetes/tracee-falcosidekick/falcosidekick.yaml https://raw.githubusercontent.com/aquasecurity/tracee/main/deploy/kubernetes/tracee-falcosidekick/tracee.yaml
+kubectl create \
+https://raw.githubusercontent.com/aquasecurity/tracee/main/deploy/kubernetes/tracee-falcosidekick/falcosidekick.yaml \
+https://raw.githubusercontent.com/aquasecurity/tracee/main/deploy/kubernetes/tracee-falcosidekick/tracee.yaml
 ```
 
 You can edit the configMap `falcosidekick-config` the was created, see an example configuration here: https://github.com/falcosecurity/falcosidekick/blob/master/config_example.yaml
