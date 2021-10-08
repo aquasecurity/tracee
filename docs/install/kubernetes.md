@@ -10,7 +10,7 @@ To install Tracee with [Postee](https://github.com/aquasecurity/postee), simply 
 
 ``` bash
 kubectl create -f \
-https://raw.githubusercontent.com/aquasecurity/postee/main/deploy/kubernetes/postee.yaml \
+https://raw.githubusercontent.com/aquasecurity/postee/main/deploy/kubernetes/postee.yaml -f \
 https://raw.githubusercontent.com/aquasecurity/tracee/main/deploy/kubernetes/tracee-postee/tracee.yaml
 ```
 
@@ -23,8 +23,8 @@ You can also use the [Postee UI](https://github.com/aquasecurity/postee#postee-u
 To install Tracee with [Falcosidekick](https://github.com/falcosecurity/falcosidekick), simply run:
 
 ``` bash
-kubectl create \
-https://raw.githubusercontent.com/aquasecurity/tracee/main/deploy/kubernetes/tracee-falcosidekick/falcosidekick.yaml \
+kubectl create -f \
+https://raw.githubusercontent.com/aquasecurity/tracee/main/deploy/kubernetes/tracee-falcosidekick/falcosidekick.yaml -f \
 https://raw.githubusercontent.com/aquasecurity/tracee/main/deploy/kubernetes/tracee-falcosidekick/tracee.yaml
 ```
 
