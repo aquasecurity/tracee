@@ -1,8 +1,6 @@
 package regosig
 
 import (
-	_ "github.com/open-policy-agent/opa/features/wasm"
-
 	"bytes"
 	"context"
 	"encoding/json"
