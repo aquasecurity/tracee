@@ -614,7 +614,7 @@
 <td>write the errors to a specified file. the path to the file will be created if not existing and the file will be deleted if existing (default: stderr)</td>
 </tr>
 <tr>
-<td><code>option:{stack-addresses,detect-syscall,exec-env}</code></td>
+<td><code>option:{stack-addresses,detect-syscall,exec-env,exec-info,relative-time}</code></td>
 <td>augment output according to given options (default: none)</td>
 </tr>
 <tr>
@@ -628,6 +628,14 @@
 <tr>
 <td>exec-env</td>
 <td>when tracing execve/execveat, show the environment variables that were used for execution</td>
+</tr>
+<tr>
+<td>exec-info</td>
+<td>when tracing sched_process_exec, show the file hash(sha256) and ctime</td>
+</tr>
+<tr>
+<td>relative-time</td>
+<td>use relative timestamp instead of wall timestamp for events</td>
 </tr>
 </tbody>
 </table>
