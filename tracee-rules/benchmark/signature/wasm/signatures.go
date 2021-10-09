@@ -10,7 +10,6 @@ import (
 
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/open-policy-agent/opa/ast"
-	_ "github.com/open-policy-agent/opa/features/wasm"
 	"github.com/open-policy-agent/opa/rego"
 )
 

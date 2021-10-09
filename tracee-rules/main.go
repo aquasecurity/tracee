@@ -52,7 +52,7 @@ func main() {
 			var target string
 			switch strings.ToLower(c.String("rego-runtime-target")) {
 			case "wasm":
-				target = compile.TargetWasm
+				return errors.New("target unsupported: " + target)
 			case "rego":
 				target = compile.TargetRego
 			default:
