@@ -358,8 +358,15 @@ typedef struct event_context {
 } context_t;
 
 typedef struct args {
-    unsigned long args[7]; // the last element of this array is used to save the function entry timestamp
+    unsigned long args[6];
 } args_t;
+
+typedef struct syscall_data {
+    uint id;                // Current syscall id
+    args_t args;            // Syscall arguments
+    unsigned long ts;       // Timestamp of syscall entry
+    unsigned long ret;      // Syscall return value. Can be used by syscall exit tail calls
+} syscall_data_t;
 
 typedef struct bin_args {
     u8 type;
@@ -504,7 +511,7 @@ BPF_HASH(new_pids_map, u32, u32);                       // Keep track of the pro
 BPF_HASH(new_pidns_map, u32, u32);                      // Keep track of new pid namespaces
 BPF_HASH(pid_to_cont_id_map, u32, container_id_t);      // Map pid to container id
 BPF_HASH(args_map, u64, args_t);                        // Persist args info between function entry and return
-BPF_HASH(ret_map, u64, u64);                            // Persist return value to be used in tail calls
+BPF_HASH(syscall_data_map, u32, syscall_data_t);        // Persist data during syscall execution
 BPF_HASH(inequality_filter, u32, u64);                  // Used to filter events by some uint field either by < or >
 BPF_HASH(uid_filter, u32, u32);                         // Used to filter events by UID, for specific UIDs either by == or !=
 BPF_HASH(pid_filter, u32, u32);                         // Used to filter events by PID
@@ -515,7 +522,6 @@ BPF_HASH(comm_filter, string_filter_t, u32);            // Used to filter events
 BPF_HASH(bin_args_map, u64, bin_args_t);                // Persist args for send_bin funtion
 BPF_HASH(sys_32_to_64_map, u32, u32);                   // Map 32bit syscalls numbers to 64bit syscalls numbers
 BPF_HASH(params_types_map, u32, u64);                   // Encoded parameters types for event
-BPF_HASH(sockfd_map, u32, u32);                         // Persist sockfd from syscalls to be used in the corresponding lsm hooks
 BPF_HASH(process_tree_map, u32, u32);                   // Used to filter events by the ancestry of the traced process
 BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t);         // Socket address to process context
 BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t);   // Network identifier to process context
@@ -1609,7 +1615,7 @@ static __always_inline int save_args(args_t *args, u32 event_id)
     return 0;
 }
 
-static __always_inline int load_args(args_t *args, bool delete, u32 event_id)
+static __always_inline int load_args(args_t *args, u32 event_id)
 {
     args_t *saved_args;
     u32 tid = bpf_get_current_pid_tgid();
@@ -1628,10 +1634,6 @@ static __always_inline int load_args(args_t *args, bool delete, u32 event_id)
     args->args[3] = saved_args->args[3];
     args->args[4] = saved_args->args[4];
     args->args[5] = saved_args->args[5];
-    args->args[6] = saved_args->args[6];
-
-    if (delete)
-        bpf_map_delete_elem(&args_map, &id);
 
     return 0;
 }
@@ -1643,80 +1645,6 @@ static __always_inline int del_args(u32 event_id)
     id = id << 32 | tid;
 
     bpf_map_delete_elem(&args_map, &id);
-
-    return 0;
-}
-
-static __always_inline int save_retval(u64 retval, u32 event_id)
-{
-    u64 id = event_id;
-    u32 tid = bpf_get_current_pid_tgid();
-    id = id << 32 | tid;
-
-    bpf_map_update_elem(&ret_map, &id, &retval, BPF_ANY);
-
-    return 0;
-}
-
-static __always_inline int load_retval(u64 *retval, u32 event_id)
-{
-    u64 id = event_id;
-    u32 tid = bpf_get_current_pid_tgid();
-    id = id << 32 | tid;
-
-    u64 *saved_retval = bpf_map_lookup_elem(&ret_map, &id);
-    if (saved_retval == 0) {
-        // missed entry or not traced
-        return -1;
-    }
-
-    *retval = *saved_retval;
-    bpf_map_delete_elem(&ret_map, &id);
-
-    return 0;
-}
-
-static __always_inline int del_retval(u32 event_id)
-{
-    u64 id = event_id;
-    u32 tid = bpf_get_current_pid_tgid();
-    id = id << 32 | tid;
-
-    bpf_map_delete_elem(&ret_map, &id);
-
-    return 0;
-}
-
-static __always_inline int save_sockfd(u32 sockfd)
-{
-    u32 pid = bpf_get_current_pid_tgid();
-
-    bpf_map_update_elem(&sockfd_map, &pid, &sockfd, BPF_ANY);
-
-    return 0;
-}
-
-static __always_inline int load_sockfd(u32 *sockfd)
-{
-    u32 pid = bpf_get_current_pid_tgid();
-
-    u32 *saved_sockfd = bpf_map_lookup_elem(&sockfd_map, &pid);
-    if (saved_sockfd == 0) {
-        // missed entry or not traced
-        return -1;
-    }
-
-    *sockfd = *saved_sockfd;
-    bpf_map_delete_elem(&sockfd_map, &pid);
-
-    return 0;
-}
-
-static __always_inline int del_sockfd()
-{
-    u32 pid = bpf_get_current_pid_tgid();
-
-    bpf_map_delete_elem(&sockfd_map, &pid);
 
     return 0;
 }
@@ -1838,17 +1766,13 @@ int trace_##name(struct pt_regs *ctx)                                   \
 int trace_ret_##name(void *ctx)                                         \
 {                                                                       \
     args_t args = {};                                                   \
-                                                                        \
-    bool delete_args = true;                                            \
-    if (load_args(&args, delete_args, id) != 0)                         \
+    if (load_args(&args, id) != 0)                                      \
         return -1;                                                      \
+    del_args(id);                                                       \
                                                                         \
     event_data_t data = {};                                             \
     if (!init_event_data(&data, ctx))                                   \
         return 0;                                                       \
-                                                                        \
-    if (!should_trace(&data.context))                                   \
-        return -1;                                                      \
                                                                         \
     if (!event_chosen(id))                                              \
         return 0;                                                       \
@@ -2004,8 +1928,8 @@ static __always_inline int get_local_net_id_from_network_details_v6(struct sock 
 SEC("raw_tracepoint/sys_enter")
 int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
 {
-    args_t args_tmp = {};
-    int id = ctx->args[1];
+    syscall_data_t sys = {};
+    sys.id = ctx->args[1];
 
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
@@ -2017,63 +1941,58 @@ if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER)) {
 
     if (is_x86_compat(data.task)) {
 #if defined(bpf_target_x86)
-        args_tmp.args[0] = regs.bx;
-        args_tmp.args[1] = regs.cx;
-        args_tmp.args[2] = regs.dx;
-        args_tmp.args[3] = regs.si;
-        args_tmp.args[4] = regs.di;
-        args_tmp.args[5] = regs.bp;
+        sys.args.args[0] = regs.bx;
+        sys.args.args[1] = regs.cx;
+        sys.args.args[2] = regs.dx;
+        sys.args.args[3] = regs.si;
+        sys.args.args[4] = regs.di;
+        sys.args.args[5] = regs.bp;
 #endif // bpf_target_x86
     } else {
-        args_tmp.args[0] = PT_REGS_PARM1(&regs);
-        args_tmp.args[1] = PT_REGS_PARM2(&regs);
-        args_tmp.args[2] = PT_REGS_PARM3(&regs);
+        sys.args.args[0] = PT_REGS_PARM1(&regs);
+        sys.args.args[1] = PT_REGS_PARM2(&regs);
+        sys.args.args[2] = PT_REGS_PARM3(&regs);
 #if defined(bpf_target_x86)
         // In x86-64, r10 is used instead of rcx to pass the fourth parameter of a syscall
         // see also: https://stackoverflow.com/questions/21322100/linux-x64-why-does-r10-come-before-r8-and-r9-in-syscalls
-        args_tmp.args[3] = regs.r10;
+        sys.args.args[3] = regs.r10;
 #else
-        args_tmp.args[3] = PT_REGS_PARM4(&regs);
+        sys.args.args[3] = PT_REGS_PARM4(&regs);
 #endif
-        args_tmp.args[4] = PT_REGS_PARM5(&regs);
-        args_tmp.args[5] = PT_REGS_PARM6(&regs);
+        sys.args.args[4] = PT_REGS_PARM5(&regs);
+        sys.args.args[5] = PT_REGS_PARM6(&regs);
     }
 } else {
-    bpf_probe_read(args_tmp.args, sizeof(6 * sizeof(u64)), (void *)ctx->args);
+    bpf_probe_read(sys.args.args, sizeof(6 * sizeof(u64)), (void *)ctx->args);
 }
 
     if (is_compat(data.task)) {
         // Translate 32bit syscalls to 64bit syscalls, so we can send to the correct handler
-        u32 *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &id);
+        u32 *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &sys.id);
         if (id_64 == 0)
             return 0;
 
-        id = *id_64;
+        sys.id = *id_64;
     }
 
     if (!should_trace(&data.context))
         return 0;
 
-    if (id == SYSCALL_CONNECT || id == SYSCALL_ACCEPT || id == SYSCALL_ACCEPT4 || id == SYSCALL_BIND || id == SYSCALL_LISTEN) {
-        u32 sockfd = args_tmp.args[0];
-        save_sockfd(sockfd);
-    }
-
     if (event_chosen(RAW_SYS_ENTER)) {
-        save_to_submit_buf(&data, (void*)&id, sizeof(int), 0);
+        save_to_submit_buf(&data, (void*)&sys.id, sizeof(int), 0);
         events_perf_submit(&data, RAW_SYS_ENTER, 0);
     }
 
     // exit, exit_group and rt_sigreturn syscalls don't return - don't save args for them
-    if (id != SYS_EXIT && id != SYS_EXIT_GROUP && id != SYS_RT_SIGRETURN) {
-        // save the timestamp at function entry
-        args_tmp.args[6] = data.context.ts;
-        save_args(&args_tmp, id);
+    if (sys.id != SYS_EXIT && sys.id != SYS_EXIT_GROUP && sys.id != SYS_RT_SIGRETURN) {
+        // save syscall data
+        sys.ts = data.context.ts;
+        bpf_map_update_elem(&syscall_data_map, &data.context.host_tid, &sys, BPF_ANY);
     }
 
     // call syscall handler, if exists
     // enter tail calls should never delete saved args
-    bpf_tail_call(ctx, &sys_enter_tails, id);
+    bpf_tail_call(ctx, &sys_enter_tails, sys.id);
     return 0;
 }
 
@@ -2085,6 +2004,7 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
     long ret = ctx->args[1];
     struct pt_regs *regs = (struct pt_regs*)ctx->args[0];
     int id = READ_KERN(regs->orig_ax);
+
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
@@ -2098,17 +2018,14 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
         id = *id_64;
     }
 
-    args_t saved_args = {};
-    bool delete_args = true;
-    if (load_args(&saved_args, delete_args, id) != 0)
+    // Successfully loading syscall data also means we should trace this event
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    if (!sys)
         return 0;
 
-    if (!should_trace(&data.context))
+    // Sanity check - we returned from the expected syscall this task was executing
+    if (sys->id != id)
         return 0;
-
-    if (id == SYSCALL_CONNECT || id == SYSCALL_ACCEPT || id == SYSCALL_ACCEPT4 || id == SYSCALL_BIND || id == SYSCALL_LISTEN) {
-        del_sockfd();
-    }
 
     if (event_chosen(RAW_SYS_EXIT)) {
         save_to_submit_buf(&data, (void*)&id, sizeof(int), 0);
@@ -2119,7 +2036,7 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
         u64 types = 0;
         u64 *saved_types = bpf_map_lookup_elem(&params_types_map, &id);
         if (!saved_types) {
-            return -1;
+            goto out;
         }
         types = *saved_types;
         if ((id != SYS_EXECVE && id != SYS_EXECVEAT) ||
@@ -2127,41 +2044,39 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
             // We can't use saved args after execve syscall, as pointers are invalid
             // To avoid showing execve event both on entry and exit,
             // we only output failed execs
-            save_args_to_submit_buf(&data, types, &saved_args);
-            data.context.ts = saved_args.args[6];
+            save_args_to_submit_buf(&data, types, &sys->args);
+            data.context.ts = sys->ts;
             events_perf_submit(&data, id, ret);
         }
     }
 
+out:
     // call syscall handler, if exists
-    save_args(&saved_args, id);
-    save_retval(ret, id);
+    sys->ret = ret;
     // exit tail calls should always delete args and retval before return
     bpf_tail_call(ctx, &sys_exit_tails, id);
-    del_retval(id);
-    del_args(id);
+    bpf_map_delete_elem(&syscall_data_map, &data.context.host_tid);
     return 0;
 }
 
 SEC("raw_tracepoint/sys_execve")
 int syscall__execve(void *ctx)
 {
-    args_t args = {};
-    bool delete_args = false;
-    if (load_args(&args, delete_args, SYS_EXECVE) != 0)
-        return -1;
-
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
 
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    if (!sys)
+        return -1;
+
     if (!event_chosen(SYS_EXECVE))
         return 0;
 
-    save_str_to_buf(&data, (void *)args.args[0] /*filename*/, 0);
-    save_str_arr_to_buf(&data, (const char *const *)args.args[1] /*argv*/, 1);
+    save_str_to_buf(&data, (void *)sys->args.args[0] /*filename*/, 0);
+    save_str_arr_to_buf(&data, (const char *const *)sys->args.args[1] /*argv*/, 1);
     if (get_config(CONFIG_EXEC_ENV)) {
-        save_str_arr_to_buf(&data, (const char *const *)args.args[2] /*envp*/, 2);
+        save_str_arr_to_buf(&data, (const char *const *)sys->args.args[2] /*envp*/, 2);
     }
 
     return events_perf_submit(&data, SYS_EXECVE, 0);
@@ -2170,25 +2085,24 @@ int syscall__execve(void *ctx)
 SEC("raw_tracepoint/sys_execveat")
 int syscall__execveat(void *ctx)
 {
-    args_t args = {};
-    bool delete_args = false;
-    if (load_args(&args, delete_args, SYS_EXECVEAT) != 0)
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    if (!sys)
         return -1;
 
     if (!event_chosen(SYS_EXECVEAT))
         return 0;
 
-    event_data_t data = {};
-    if (!init_event_data(&data, ctx))
-        return 0;
-
-    save_to_submit_buf(&data, (void*)&args.args[0] /*dirfd*/, sizeof(int), 0);
-    save_str_to_buf(&data, (void *)args.args[1] /*pathname*/, 1);
-    save_str_arr_to_buf(&data, (const char *const *)args.args[2] /*argv*/, 2);
+    save_to_submit_buf(&data, (void*)&sys->args.args[0] /*dirfd*/, sizeof(int), 0);
+    save_str_to_buf(&data, (void *)sys->args.args[1] /*pathname*/, 1);
+    save_str_arr_to_buf(&data, (const char *const *)sys->args.args[2] /*argv*/, 2);
     if (get_config(CONFIG_EXEC_ENV)) {
-        save_str_arr_to_buf(&data, (const char *const *)args.args[3] /*envp*/, 3);
+        save_str_arr_to_buf(&data, (const char *const *)sys->args.args[3] /*envp*/, 3);
     }
-    save_to_submit_buf(&data, (void*)&args.args[4] /*flags*/, sizeof(int), 4);
+    save_to_submit_buf(&data, (void*)&sys->args.args[4] /*flags*/, sizeof(int), 4);
 
     return events_perf_submit(&data, SYS_EXECVEAT, 0);
 }
@@ -2338,6 +2252,7 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     bpf_map_delete_elem(&process_tree_map, &data.context.host_pid);
     bpf_map_delete_elem(&traced_pids_map, &data.context.host_tid);
     bpf_map_delete_elem(&new_pids_map, &data.context.host_tid);
+    bpf_map_delete_elem(&syscall_data_map, &data.context.host_tid);
 
     // If pid equals 1 - stop tracing this pid namespace
     if (data.context.tid == 1)
@@ -2753,10 +2668,12 @@ int BPF_KPROBE(trace_security_socket_listen)
         return 0;
     }
 
-    u32 sockfd = -1;
-    load_sockfd(&sockfd);
+    // Load the arguments given to the listen syscall (which eventually invokes this function)
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    if (!sys || sys->id != SYSCALL_LISTEN)
+        return 0;
 
-    save_to_submit_buf(&data, (void *)&sockfd, sizeof(u32), 0);
+    save_to_submit_buf(&data, (void *)&sys->args.args[0], sizeof(u32), 0);
 
     if (family == AF_INET) {
         net_conn_v4_t net_details = {};
@@ -2805,10 +2722,12 @@ int BPF_KPROBE(trace_security_socket_connect)
         return 0;
     }
 
-    u32 sockfd = -1;
-    load_sockfd(&sockfd);
+    // Load the arguments given to the connect syscall (which eventually invokes this function)
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    if (!sys || sys->id != SYSCALL_CONNECT)
+        return 0;
 
-    save_to_submit_buf(&data, (void *)&sockfd, sizeof(u32), 0);
+    save_to_submit_buf(&data, (void *)&sys->args.args[0], sizeof(u32), 0);
 
     if (sa_fam == AF_INET) {
         save_to_submit_buf(&data, (void *)address, sizeof(struct sockaddr_in), 1);
@@ -2846,10 +2765,12 @@ int BPF_KPROBE(trace_security_socket_accept)
         return 0;
     }
 
-    u32 sockfd = -1;
-    load_sockfd(&sockfd);
+    // Load the arguments given to the accept syscall (which eventually invokes this function)
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    if (!sys || (sys->id != SYSCALL_ACCEPT && sys->id != SYSCALL_ACCEPT4))
+        return 0;
 
-    save_to_submit_buf(&data, (void *)&sockfd, sizeof(u32), 0);
+    save_to_submit_buf(&data, (void *)&sys->args.args[0], sizeof(u32), 0);
 
     if (family == AF_INET) {
         net_conn_v4_t net_details = {};
@@ -2899,10 +2820,12 @@ int BPF_KPROBE(trace_security_socket_bind)
         return 0;
     }
 
-    u32 sockfd = -1;
-    load_sockfd(&sockfd);
+    // Load the arguments given to the bind syscall (which eventually invokes this function)
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    if (!sys || sys->id != SYSCALL_BIND)
+        return 0;
 
-    save_to_submit_buf(&data, (void *)&sockfd, sizeof(u32), 0);
+    save_to_submit_buf(&data, (void *)&sys->args.args[0], sizeof(u32), 0);
 
     u16 protocol = get_sock_protocol(sk);
     local_net_id_t connect_id = {0};
@@ -3323,9 +3246,7 @@ int BPF_KPROBE(send_bin)
 static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id, u32 tail_call_id)
 {
     args_t saved_args;
-
-    bool delete_args = false;
-    if (load_args(&saved_args, delete_args, event_id) != 0) {
+    if (load_args(&saved_args, event_id) != 0) {
         // missed entry or not traced
         return 0;
     }
@@ -3440,11 +3361,9 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
     if (!init_event_data(&data, ctx))
         return 0;
 
-    bool delete_args = true;
-    if (load_args(&saved_args, delete_args, event_id) != 0) {
-        // missed entry or not traced
+    if (load_args(&saved_args, event_id) != 0)
         return 0;
-    }
+    del_args(event_id);
 
     struct file *file      = (struct file *) saved_args.args[0];
     if (event_id == VFS_WRITE) {
@@ -3582,18 +3501,16 @@ int BPF_KPROBE(trace_ret_vfs_writev_tail)
 SEC("kprobe/security_mmap_addr")
 int BPF_KPROBE(trace_mmap_alert)
 {
-    args_t args = {};
-
-    // Arguments will be deleted on raw_syscalls_exit (with mmap syscall id)
-    bool delete_args = false;
-    if (load_args(&args, delete_args, SYS_MMAP) != 0)
-        return 0;
-
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if ((args.args[2] & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC)) {
+    // Load the arguments given to the mmap syscall (which eventually invokes this function)
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    if (!sys || sys->id != SYS_MMAP)
+        return 0;
+
+    if ((sys->args.args[2] & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC)) {
         alert_t alert = {.ts = data.context.ts, .msg = ALERT_MMAP_W_X, .payload = 0};
         save_to_submit_buf(&data, &alert, sizeof(alert_t), 0);
         events_perf_submit(&data, MEM_PROT_ALERT, 0);
@@ -3605,20 +3522,23 @@ int BPF_KPROBE(trace_mmap_alert)
 SEC("kprobe/security_file_mprotect")
 int BPF_KPROBE(trace_mprotect_alert)
 {
-    args_t args = {};
     bin_args_t bin_args = {};
 
-    // Arguments will be deleted on raw_syscalls_exit (with mprotect syscall id)
-    bool delete_args = false;
-    if (load_args(&args, delete_args, SYS_MPROTECT) != 0)
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    // Load the arguments given to the mprotect syscall (which eventually invokes this function)
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    if (!sys || sys->id != SYS_MPROTECT)
         return 0;
 
     struct vm_area_struct *vma = (struct vm_area_struct *)PT_REGS_PARM1(ctx);
     unsigned long reqprot = PT_REGS_PARM2(ctx);
     //unsigned long prot = PT_REGS_PARM3(ctx);
 
-    void *addr = (void*)args.args[0];
-    size_t len = args.args[1];
+    void *addr = (void*)sys->args.args[0];
+    size_t len = sys->args.args[1];
     unsigned long prev_prot = get_vma_flags(vma);
 
     if (addr <= 0)
@@ -3627,10 +3547,6 @@ int BPF_KPROBE(trace_mprotect_alert)
     // If length is 0, the current page permissions are changed
     if (len == 0)
         len = PAGE_SIZE;
-
-    event_data_t data = {};
-    if (!init_event_data(&data, ctx))
-        return 0;
 
     if ((!(prev_prot & VM_EXEC)) && (reqprot & VM_EXEC)) {
         alert_t alert = {.ts = data.context.ts, .msg = ALERT_MPROT_X_ADD, .payload = 0};
