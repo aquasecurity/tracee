@@ -57,7 +57,7 @@ func (t *Tracee) processEvents(done <-chan struct{}) error {
 		for i := 0; i < int(ctx.Argnum); i++ {
 			argMeta, argVal, err := readArgFromBuff(dataBuff, params)
 			if err != nil {
-				t.handleError(fmt.Errorf("failed to read argument %d of event %d: %v", i, ctx.EventID, err))
+				t.handleError(fmt.Errorf("failed to read argument %d of event %s: %v", i, EventsIDToEvent[ctx.EventID].Name, err))
 				continue
 			}
 

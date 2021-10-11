@@ -2915,6 +2915,7 @@ int BPF_KPROBE(trace_security_socket_connect)
         return 0;
 
     struct sockaddr *address = (struct sockaddr *)PT_REGS_PARM2(ctx);
+    uint addr_len = (uint)PT_REGS_PARM3(ctx);
 
     sa_family_t sa_fam = get_sockaddr_family(address);
     if ( (sa_fam != AF_INET) && (sa_fam != AF_INET6) && (sa_fam != AF_UNIX)) {
@@ -2935,7 +2936,12 @@ int BPF_KPROBE(trace_security_socket_connect)
         save_to_submit_buf(data.submit_p, (void *)address, sizeof(struct sockaddr_in6), 1);
     }
     else if (sa_fam == AF_UNIX) {
-        save_to_submit_buf(data.submit_p, (void *)address, sizeof(struct sockaddr_un), 1);
+        if (addr_len <= sizeof(struct sockaddr_un)) {
+            struct sockaddr_un sockaddr = {};
+            bpf_probe_read(&sockaddr, addr_len, (void *)address);
+            save_to_submit_buf(data.submit_p, (void *)&sockaddr, sizeof(struct sockaddr_un), 1);
+        }
+        else save_to_submit_buf(data.submit_p, (void *)address, sizeof(struct sockaddr_un), 1);
     }
 
     events_perf_submit(&data);
@@ -3048,7 +3054,12 @@ int BPF_KPROBE(trace_security_socket_bind)
         }
     }
     else if (sa_fam == AF_UNIX) {
-        save_to_submit_buf(data.submit_p, (void *)address, sizeof(struct sockaddr_un), 1);
+        if (addr_len <= sizeof(struct sockaddr_un)) {
+            struct sockaddr_un sockaddr = {};
+            bpf_probe_read(&sockaddr, addr_len, (void *)address);
+            save_to_submit_buf(data.submit_p, (void *)&sockaddr, sizeof(struct sockaddr_un), 1);
+        }
+        else save_to_submit_buf(data.submit_p, (void *)address, sizeof(struct sockaddr_un), 1);
     }
 
     if (connect_id.port) {
