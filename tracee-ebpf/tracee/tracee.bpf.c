@@ -3015,6 +3015,7 @@ int BPF_KPROBE(trace_security_socket_bind)
     struct sock *sk = get_socket_sock(sock);
 
     struct sockaddr *address = (struct sockaddr *)PT_REGS_PARM2(ctx);
+    uint addr_len = (uint)PT_REGS_PARM3(ctx);
 
     sa_family_t sa_fam = get_sockaddr_family(address);
     if ( (sa_fam != AF_INET) && (sa_fam != AF_INET6) && (sa_fam != AF_UNIX)) {
