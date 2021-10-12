@@ -73,6 +73,12 @@ func main() {
 				}
 				loadedSigIDs = append(loadedSigIDs, m.ID)
 			}
+
+			if c.Bool("list-events") {
+				listEvents(os.Stdout, sigs)
+				return nil
+			}
+
 			fmt.Printf("Loaded %d signature(s): %s\n", len(loadedSigIDs), loadedSigIDs)
 
 			if c.Bool("list") {
@@ -163,6 +169,10 @@ func main() {
 				Usage: "select which runtime target to use for evaluation of rego rules: rego, wasm",
 				Value: "rego",
 			},
+			&cli.BoolFlag{
+				Name:  "list-events",
+				Usage: "print a list of events that currently loaded signatures require",
+			},
 		},
 	}
 	err := app.Run(os.Args)
@@ -181,6 +191,17 @@ func listSigs(w io.Writer, sigs []types.Signature) error {
 		fmt.Fprintf(w, "%-10s %-35s %-7s %s\n", meta.ID, meta.Name, meta.Version, meta.Description)
 	}
 	return nil
+}
+
+func listEvents(w io.Writer, sigs []types.Signature) {
+	var events []string
+	for _, sig := range sigs {
+		es, _ := sig.GetSelectedEvents()
+		for _, e := range es {
+			events = append(events, e.Name)
+		}
+	}
+	fmt.Fprintln(w, strings.Join(events, ","))
 }
 
 func sigHandler() chan bool {

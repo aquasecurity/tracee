@@ -20,7 +20,8 @@ import (
 
 type fakeSignature struct {
 	types.Signature
-	getMetadata func() (types.SignatureMetadata, error)
+	getMetadata       func() (types.SignatureMetadata, error)
+	getSelectedEvents func() ([]types.SignatureEventSelector, error)
 }
 
 func (f fakeSignature) GetMetadata() (types.SignatureMetadata, error) {
@@ -32,6 +33,25 @@ func (f fakeSignature) GetMetadata() (types.SignatureMetadata, error) {
 		ID:          "FOO-666",
 		Name:        "foo bar signature",
 		Description: "the most evil",
+	}, nil
+}
+
+func (f fakeSignature) GetSelectedEvents() ([]types.SignatureEventSelector, error) {
+	if f.getSelectedEvents != nil {
+		return f.getSelectedEvents()
+	}
+
+	return []types.SignatureEventSelector{
+		{
+			Source: "tracee",
+			Name:   "execve",
+			Origin: "foobar",
+		},
+		{
+			Source: "tracee",
+			Name:   "ptrace",
+			Origin: "bazfoo",
+		},
 	}, nil
 }
 
