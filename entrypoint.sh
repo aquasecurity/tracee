@@ -26,4 +26,5 @@ for arg in "$@"; do
 done
 
 # start, and pass all remaining flags to tracee-rules
-$TRACEE_EBPF_EXE --output=format:gob --security-alerts | $TRACEE_RULES_EXE --input-tracee=file:stdin --input-tracee=format:gob $@
+EVENTS=$($TRACEE_RULES_EXE --list-events)
+$TRACEE_EBPF_EXE --output=format:gob --security-alerts --trace event=$EVENTS | $TRACEE_RULES_EXE --input-tracee=file:stdin --input-tracee=format:gob $@

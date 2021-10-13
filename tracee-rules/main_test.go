@@ -51,3 +51,38 @@ FOO-1      foo signature                       1.2.3   foo signature helps with 
 BAR-1      bar signature                       4.5.6   bar signature helps with bar
 `, buf.String())
 }
+
+func Test_listEvents(t *testing.T) {
+	fakeSigs := []fakeSignature{
+		{
+			getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
+				return []types.SignatureEventSelector{
+					{
+						Source: "tracee",
+						Name:   "execve",
+						Origin: "foobar",
+					},
+					{
+						Source: "tracee",
+						Name:   "ptrace",
+						Origin: "bazfoo",
+					},
+				}, nil
+			},
+		},
+		{
+			getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
+				return nil, errors.New("failed to list sigs")
+			},
+		},
+	}
+
+	var inputSigs []types.Signature
+	for _, fs := range fakeSigs {
+		inputSigs = append(inputSigs, fs)
+	}
+
+	buf := bytes.Buffer{}
+	listEvents(&buf, inputSigs)
+	assert.Equal(t, "execve,ptrace\n", buf.String())
+}
