@@ -12,6 +12,7 @@ nav:
     - Prerequisites: install/prerequisites.md
     - eBPF Compilation: install/ebpf-compilation.md
     - Linux Headers: install/headers.md
+    - Kubernetes: install/kubernetes.md
   - Integrations: integrations.md
   - Configuration Options: config.md
   - Authoring Rules: rules-authoring.md
@@ -23,6 +24,7 @@ nav:
     - Output Options: tracee-ebpf/output.md
     - Trace Options: tracee-ebpf/trace-options.md
     - Capturing Artifacts: tracee-ebpf/capture.md
+    - Overriding OS needed files: tracee-ebpf/override-os-needed-files
 
 theme:
     name: material
