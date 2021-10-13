@@ -16,11 +16,11 @@ Check out the [Tracee video hub](https://info.aquasec.com/ebpf-runtime-security)
 
 ## Documentation
 
-The full documentation of Tracee is available at [https://aquasecurity.github.io/tracee/dev](https://aquasecurity.github.io/tracee/dev). You can use the version selector on top to view documentation for a specific version of Tracee.
+The full documentation of Tracee is available at [https://aquasecurity.github.io/tracee/latest](https://aquasecurity.github.io/tracee/latest). You can use the version selector on top to view documentation for a specific version of Tracee.
 
 ## Quickstart
 
-Before you proceed, make sure you follow the [minimum requirements for running Tracee](https://aquasecurity.github.io/tracee/dev/install/prerequisites/).
+Before you proceed, make sure you follow the [minimum requirements for running Tracee](https://aquasecurity.github.io/tracee/latest/install/prerequisites/).
 
 If running on __BTF enabled kernel__:
 
