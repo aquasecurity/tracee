@@ -1,7 +1,9 @@
 ARG BASE=fat
 
-FROM golang:1.16-alpine as builder
-RUN apk --no-cache update && apk --no-cache add git clang llvm make gcc libc6-compat coreutils linux-headers musl-dev elfutils-dev libelf-static zlib-static
+FROM golang:1.17-buster as builder
+RUN echo "deb http://apt.llvm.org/buster/ llvm-toolchain-buster-12 main" >> /etc/apt/sources.list && apt-key adv --keyserver hkps://keyserver.ubuntu.com --recv-keys 15CF4D18AF4F7421 && \
+    DEBIAN_FRONTEND=noninteractive apt-get update -y && apt-get install -y --no-install-recommends gawk libelf-dev llvm-12 clang-12 && \
+    (for tool in "clang" "llc" "llvm-strip"; do path=$(which $tool-12) && ln -s $path ${path%-*}; done)
 WORKDIR /tracee
 
 FROM builder as build
@@ -10,12 +12,14 @@ COPY . /tracee
 RUN make
 
 # base image for tracee which includes all tools to build the bpf object at runtime
-FROM alpine as fat
-RUN apk --no-cache update && apk --no-cache add clang llvm make gcc libc6-compat coreutils linux-headers musl-dev elfutils-dev libelf-static zlib-static tini
+FROM golang:1.17-buster as fat
+RUN echo "deb http://apt.llvm.org/buster/ llvm-toolchain-buster-12 main" >> /etc/apt/sources.list && apt-key adv --keyserver hkps://keyserver.ubuntu.com --recv-keys 15CF4D18AF4F7421 && \
+    DEBIAN_FRONTEND=noninteractive apt-get update -y && apt-get install -y --no-install-recommends gawk libelf-dev llvm-12 clang-12 tini && \
+    (for tool in "clang" "llc" "llvm-strip"; do path=$(which $tool-12) && ln -s $path ${path%-*}; done)
 
 # base image for tracee which includes minimal dependencies and expects the bpf object to be provided at runtime
-FROM alpine as slim
-RUN apk --no-cache update && apk --no-cache add libc6-compat elfutils-dev
+FROM debian:buster-slim as slim
+RUN apt-get update && apt-get install -y libelf-dev
 
 # final image
 FROM $BASE
@@ -41,4 +45,4 @@ LABEL org.label-schema.build-date=$BUILD_DATE \
 
 ENV TINI_SUBREAPER=true
 
-ENTRYPOINT ["/sbin/tini", "-g", "--", "./entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/tini", "-g", "--", "./entrypoint.sh"]
