@@ -2207,10 +2207,17 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 
     // Remove this pid from all maps
     bpf_map_delete_elem(&pid_to_cont_id_map, &data.context.host_tid);
-    bpf_map_delete_elem(&process_tree_map, &data.context.host_pid);
     bpf_map_delete_elem(&traced_pids_map, &data.context.host_tid);
     bpf_map_delete_elem(&new_pids_map, &data.context.host_tid);
     bpf_map_delete_elem(&syscall_data_map, &data.context.host_tid);
+
+    // Determine if last tid of thread group exited
+    u64 pid_tgid = bpf_get_current_pid_tgid();
+    u32 pid = pid_tgid >> 32;
+	u32 tid = (u32)pid_tgid;
+    if (pid != tid) {
+        bpf_map_delete_elem(&process_tree_map, &data.context.host_pid);
+    }
 
     // If pid equals 1 - stop tracing this pid namespace
     if (data.context.tid == 1)
