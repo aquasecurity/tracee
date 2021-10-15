@@ -1144,6 +1144,22 @@ func TestPrepareCapture(t *testing.T) {
 			},
 			expectedError: nil,
 		},
+		{
+			testName:     "network interface",
+			captureSlice: []string{"net=lo"},
+			expectedCapture: tracee.CaptureConfig{
+				OutputPath: "/tmp/tracee/out",
+				NetIfaces:  []string{"lo"},
+			},
+		},
+		{
+			testName:     "network interface, but repeated",
+			captureSlice: []string{"net=lo", "net=lo"},
+			expectedCapture: tracee.CaptureConfig{
+				OutputPath: "/tmp/tracee/out",
+				NetIfaces:  []string{"lo"},
+			},
+		},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
