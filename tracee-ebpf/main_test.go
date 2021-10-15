@@ -1066,6 +1066,11 @@ func TestPrepareCapture(t *testing.T) {
 				expectedError: errors.New("capture output dir cannot be empty"),
 			},
 			{
+				testName:      "invalid network interface",
+				captureSlice:  []string{"net=invalidnetinterface"},
+				expectedError: errors.New("invalid network interface: invalidnetinterface"),
+			},
+			{
 				testName:        "invalid capture write filter",
 				captureSlice:    []string{"write="},
 				expectedCapture: tracee.CaptureConfig{},
