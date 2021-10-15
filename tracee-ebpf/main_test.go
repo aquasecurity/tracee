@@ -4,11 +4,25 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/syndtr/gocapability/capability"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
 	"github.com/stretchr/testify/assert"
 )
+
+type fakeCapabilities struct {
+	capability.Capabilities
+	get func(capability.CapType, capability.Cap) bool
+}
+
+func (fc fakeCapabilities) Get(which capability.CapType, what capability.Cap) bool {
+	if fc.get != nil {
+		return fc.get(which, what)
+	}
+	return true
+}
 
 func TestPrepareFilter(t *testing.T) {
 
@@ -1268,4 +1282,35 @@ func Test_checkCommandIsHelp(t *testing.T) {
 			assert.Equal(t, testcase.expected, actual)
 		})
 	}
+}
+
+func Test_checkRequiredCapabilites(t *testing.T) {
+	t.Run("happy path", func(t *testing.T) {
+		fc := fakeCapabilities{}
+		require.NoError(t, checkRequiredCapabilities(fc))
+	})
+
+	t.Run("CAP_SYS_ADMIN missing", func(t *testing.T) {
+		fc := fakeCapabilities{
+			get: func(capType capability.CapType, c capability.Cap) bool {
+				if c == capability.CAP_SYS_ADMIN {
+					return false
+				}
+				return true
+			},
+		}
+		require.EqualError(t, checkRequiredCapabilities(fc), "insufficient privileges to run: missing CAP_SYS_ADMIN")
+	})
+
+	t.Run("CAP_IPC_LOCK missing", func(t *testing.T) {
+		fc := fakeCapabilities{
+			get: func(capType capability.CapType, c capability.Cap) bool {
+				if c == capability.CAP_IPC_LOCK {
+					return false
+				}
+				return true
+			},
+		}
+		require.EqualError(t, checkRequiredCapabilities(fc), "insufficient privileges to run: missing CAP_IPC_LOCK")
+	})
 }
