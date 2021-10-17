@@ -686,6 +686,11 @@ static __always_inline int get_task_parent_flags(struct task_struct *task)
     return READ_KERN(parent->flags);
 }
 
+static __always_inline const struct cred *get_task_real_cred(struct task_struct *task)
+{
+    return READ_KERN(task->real_cred);
+}
+
 static __always_inline const char * get_binprm_filename(struct linux_binprm *bprm)
 {
     return READ_KERN(bprm->filename);
@@ -2539,7 +2544,7 @@ int BPF_KPROBE(trace_commit_creds)
         return 0;
 
     struct cred *new = (struct cred *)PT_REGS_PARM1(ctx);
-    struct cred *old = (struct cred *)READ_KERN(data.task->real_cred);
+    struct cred *old = (struct cred *)get_task_real_cred(data.task);
 
     slim_cred_t old_slim = {0};
     slim_cred_t new_slim = {0};
