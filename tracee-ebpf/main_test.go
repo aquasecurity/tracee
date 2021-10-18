@@ -1321,6 +1321,44 @@ func Test_checkCommandIsHelp(t *testing.T) {
 	}
 }
 
+func Test_checkClangVersion(t *testing.T) {
+	testCases := []struct {
+		verOut        string
+		expectedError string
+	}{
+		{
+			verOut: `Ubuntu clang version 12.0.0-2
+Target: x86_64-pc-linux-gnu
+Thread model: posix
+InstalledDir: /usr/bin
+`,
+		},
+		{
+			verOut:        `foo bar baz invalid`,
+			expectedError: "could not detect clang version from: foo bar baz invalid",
+		},
+		{
+			verOut: `Ubuntu clang version 11.0.0-2
+Target: x86_64-pc-linux-gnu
+Thread model: posix
+InstalledDir: /usr/bin
+`,
+			expectedError: "detected clang version: 11 is older than required minimum version: 12",
+		},
+	}
+
+	for _, tc := range testCases {
+		err := checkClangVersion([]byte(tc.verOut))
+
+		switch {
+		case tc.expectedError != "":
+			assert.EqualError(t, err, tc.expectedError)
+		default:
+			assert.NoError(t, err)
+		}
+	}
+}
+
 func Test_checkRequiredCapabilites(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		fc := fakeCapabilities{}
