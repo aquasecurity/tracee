@@ -1235,7 +1235,8 @@ static __always_inline int save_to_submit_buf(event_data_t *data, void *ptr, u32
         return 0;
 
     // Save argument index
-    data->submit_p->buf[(data->buf_off) & (MAX_PERCPU_BUFSIZE-1)] = index;
+    volatile int buf_off = data->buf_off;
+    data->submit_p->buf[buf_off & (MAX_PERCPU_BUFSIZE-1)] = index;
 
     // Satisfy validator for probe read
     if ((data->buf_off+1) <= MAX_PERCPU_BUFSIZE - MAX_ELEMENT_SIZE) {
