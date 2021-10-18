@@ -113,7 +113,18 @@ func TestReadArgFromBuff(t *testing.T) {
 				7, 0, 0, 0, //len=7
 				100, 111, 99, 107, 101, 114, 0, //docker
 			},
-			params:      []external.ArgMeta{{Type: "const char**", Name: "strArr0"}},
+			params:      []external.ArgMeta{{Type: "const char*const*", Name: "strArr0"}},
+			expectedArg: []string{"/usr/bin", "docker"},
+		},
+		{
+			name: "argsArrT",
+			input: []byte{0,
+				16, 0, 0, 0, //array len
+				2, 0, 0, 0, //number of arguments
+				47, 117, 115, 114, 47, 98, 105, 110, 0, // /usr/bin
+				100, 111, 99, 107, 101, 114, 0, //docker
+			},
+			params:      []external.ArgMeta{{Type: "const char**", Name: "argsArr0"}},
 			expectedArg: []string{"/usr/bin", "docker"},
 		},
 		{

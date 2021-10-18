@@ -404,8 +404,10 @@ func getParamType(paramType string) argType {
 		return pointerT
 	case "char*", "const char*":
 		return strT
-	case "const char*const*", "const char**", "char**":
+	case "const char*const*": // used by execve(at) argv and env
 		return strArrT
+	case "const char**": // used by sched_process_exec argv and envp
+		return argsArrT
 	case "const struct sockaddr*", "struct sockaddr*":
 		return sockAddrT
 	case "bytes":
