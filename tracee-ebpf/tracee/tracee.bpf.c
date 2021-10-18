@@ -741,35 +741,6 @@ static __always_inline bool is_compat(struct task_struct *task)
 #endif
 }
 
-#if defined(bpf_target_x86)
-static __always_inline struct pt_regs* get_task_pt_regs(struct task_struct *task)
-{
-    void* __ptr = READ_KERN(task->stack) + THREAD_SIZE - TOP_OF_KERNEL_STACK_PADDING;
-    return ((struct pt_regs *)__ptr) - 1;
-}
-#endif
-
-static __always_inline int get_syscall_ev_id_from_regs(event_data_t *data)
-{
-#if defined(bpf_target_x86)
-    struct pt_regs *real_ctx = get_task_pt_regs(data->task);
-    int syscall_nr = READ_KERN(real_ctx->orig_ax);
-
-    if (is_x86_compat(data->task)) {
-        // Translate 32bit syscalls to 64bit syscalls (which also represent the event ids)
-        u32 *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &syscall_nr);
-        if (id_64 == 0)
-            return -1;
-
-        syscall_nr = *id_64;
-    }
-
-    return syscall_nr;
-#else
-    return 0;
-#endif
-}
-
 static __always_inline struct dentry* get_mnt_root_ptr_from_vfsmnt(struct vfsmount *vfsmnt)
 {
     return READ_KERN(vfsmnt->mnt_root);
@@ -2395,9 +2366,9 @@ int BPF_KPROBE(trace_security_file_open)
     save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 2);
     save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 3);
     if (get_config(CONFIG_SHOW_SYSCALL)) {
-        int syscall_nr = get_syscall_ev_id_from_regs(&data);
-        if (syscall_nr >= 0) {
-            save_to_submit_buf(&data, (void*)&syscall_nr, sizeof(int), 4);
+        syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+        if (sys) {
+            save_to_submit_buf(&data, (void*)&sys->id, sizeof(int), 4);
         }
     }
 
@@ -2526,9 +2497,9 @@ int BPF_KPROBE(trace_commit_creds)
         (old_slim.cap_ambient != new_slim.cap_ambient)) {
 
         if (get_config(CONFIG_SHOW_SYSCALL)) {
-            int syscall_nr = get_syscall_ev_id_from_regs(&data);
-            if (syscall_nr >= 0) {
-                save_to_submit_buf(&data, (void*)&syscall_nr, sizeof(int), 2);
+            syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+            if (sys) {
+                save_to_submit_buf(&data, (void*)&sys->id, sizeof(int), 2);
             }
         }
 
@@ -2616,9 +2587,9 @@ int BPF_KPROBE(trace_cap_capable)
 
     save_to_submit_buf(&data, (void*)&cap, sizeof(int), 0);
     if (get_config(CONFIG_SHOW_SYSCALL)) {
-        int syscall_nr = get_syscall_ev_id_from_regs(&data);
-        if (syscall_nr >= 0) {
-            save_to_submit_buf(&data, (void*)&syscall_nr, sizeof(int), 1);
+        syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+        if (sys) {
+            save_to_submit_buf(&data, (void*)&sys->id, sizeof(int), 1);
         }
     }
 
