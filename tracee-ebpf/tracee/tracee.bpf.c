@@ -1265,7 +1265,7 @@ static __always_inline int save_str_to_buf(event_data_t *data, void *ptr, u8 ind
     if (data->buf_off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int))
         return 0;
 
-    // Save argument type & index
+    // Save argument index
     data->submit_p->buf[(data->buf_off) & (MAX_PERCPU_BUFSIZE-1)] = index;
 
     // Satisfy validator for probe read
@@ -1293,7 +1293,7 @@ static __always_inline int save_str_arr_to_buf(event_data_t *data, const char __
 
     u8 elem_num = 0;
 
-    // Save argument type & index
+    // Save argument index
     data->submit_p->buf[(data->buf_off) & (MAX_PERCPU_BUFSIZE-1)] = index;
 
     // Save space for number of elements (1 byte)
@@ -1348,67 +1348,50 @@ out:
     return 1;
 }
 
+#define MAX_ARR_LEN 8192
+
 // This helper saves null (0x00) delimited string array into buf
 static __always_inline int save_args_str_arr_to_buf(event_data_t *data, const char *start, const char *end, int elem_num, u8 index)
 {
-    // Data saved to submit buf: [index][string count][str1 size][str1][str2 size][str2]...
+    // Data saved to submit buf: [index][len][arg #][null delimited string array]
 
-    u8 count=0;
+    if (start >= end)
+        return 0;
 
-    // Save argument type & index
+    int len = end - start;
+    if (len > (MAX_ARR_LEN - 1))
+        len = MAX_ARR_LEN - 1;
+
+    // Save argument index
     data->submit_p->buf[(data->buf_off) & (MAX_PERCPU_BUFSIZE-1)] = index;
 
-    // Save space for number of elements (1 byte)
-    u32 orig_off = data->buf_off+1;
-    data->buf_off += 2;
+    // Satisfy validator for probe read
+    if ((data->buf_off+1) > MAX_PERCPU_BUFSIZE - sizeof(int))
+        return 0;
 
-    #pragma unroll
-    for (int i = 0; i < MAX_ARGS_STR_ARR_ELEM; i++) {
-        if (elem_num <= 0 || start >= end)
-            goto out;
+    // Save array length
+    bpf_probe_read(&(data->submit_p->buf[data->buf_off+1]), sizeof(int), &len);
 
-        if (data->buf_off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int))
-            // not enough space - return
-            goto out;
+    // Satisfy validator for probe read
+    if ((data->buf_off+5) > MAX_PERCPU_BUFSIZE - sizeof(int))
+        return 0;
 
-        // Read into buffer
-        int sz = bpf_probe_read_str(&(data->submit_p->buf[data->buf_off + sizeof(int) & ((MAX_PERCPU_BUFSIZE >> 1)-1)]), MAX_STRING_SIZE, start);
-        if (sz > 0) {
-            if (data->buf_off > MAX_PERCPU_BUFSIZE - sizeof(int))
-                // Satisfy validator
-                goto out;
-            bpf_probe_read(&(data->submit_p->buf[data->buf_off]), sizeof(int), &sz);
-            data->buf_off += sz + sizeof(int);
-            elem_num--;
-            count++;
-            start += sz;
-            continue;
-        } else {
-            goto out;
-        }
-    }
-    // handle truncated argument list
-    char ellipsis[] = "...";
-    if (data->buf_off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int))
-        // not enough space - return
-        goto out;
+    // Save number of arguments
+    bpf_probe_read(&(data->submit_p->buf[data->buf_off+5]), sizeof(int), &elem_num);
+
+    // Satisfy validator for probe read
+    if ((data->buf_off+9) > MAX_PERCPU_BUFSIZE - MAX_ARR_LEN)
+        return 0;
 
     // Read into buffer
-    int sz = bpf_probe_read_str(&(data->submit_p->buf[data->buf_off + sizeof(int)]), MAX_STRING_SIZE, ellipsis);
-    if (sz > 0) {
-        if (data->buf_off > MAX_PERCPU_BUFSIZE - sizeof(int))
-            // Satisfy validator
-            goto out;
-        bpf_probe_read(&(data->submit_p->buf[data->buf_off]), sizeof(int), &sz);
-        data->buf_off += sz + sizeof(int);
-        elem_num--;
-        count++;
+    if (bpf_probe_read(&(data->submit_p->buf[data->buf_off+9]), len & (MAX_ARR_LEN - 1), start) == 0) {
+        // We update buf_off only if all writes were successful
+        data->buf_off += len+9;
+        data->context.argnum++;
+        return 1;
     }
-out:
-    // save number of elements in the array
-    data->submit_p->buf[orig_off & (MAX_PERCPU_BUFSIZE-1)] = count;
-    data->context.argnum++;
-    return 1;
+
+    return 0;
 }
 
 static __always_inline void* get_path_str(struct path *path)
@@ -2177,21 +2160,18 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
 
-    unsigned long arg_start = 0, arg_end = 0;
-    int argc = 0;
-
     // bprm->mm is null at this point (set by begin_new_exec()), and task->mm is already initialized
     struct mm_struct *mm = get_mm_from_task(task);
 
+    unsigned long arg_start, arg_end;
     arg_start = get_arg_start_from_mm(mm);
     arg_end = get_arg_end_from_mm(mm);
-    argc = get_argc_from_bprm(bprm);
+    int argc = get_argc_from_bprm(bprm);
 
-    // Instruction limit exceeds when adding env vars in kernels < 5.2
-    //unsigned long env_start, env_end;
-    //env_start = get_env_start_from_mm(mm);
-    //env_end = get_env_end_from_mm(mm);
-    //int envc = get_envc_from_bprm(bprm);
+    unsigned long env_start, env_end;
+    env_start = get_env_start_from_mm(mm);
+    env_end = get_env_end_from_mm(mm);
+    int envc = get_envc_from_bprm(bprm);
 
     void *file_path = get_path_str(&file->f_path);
 
@@ -2202,7 +2182,9 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     save_str_to_buf(&data, (void *)filename, 0);
     save_str_to_buf(&data, file_path, 1);
     save_args_str_arr_to_buf(&data, (void *)arg_start, (void *)arg_end, argc, 2);
-    //save_args_str_arr_to_buf(&data, (void *)env_start, (void *)env_end, envc, 3);
+    if (get_config(CONFIG_EXEC_ENV)) {
+        save_args_str_arr_to_buf(&data, (void *)env_start, (void *)env_end, envc, 3);
+    }
     save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 4);
     save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 5);
     save_to_submit_buf(&data, &invoked_from_kernel, sizeof(int), 6);

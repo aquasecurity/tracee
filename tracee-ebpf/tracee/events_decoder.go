@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
@@ -85,6 +86,30 @@ func readArgFromBuff(dataBuff io.Reader, params []external.ArgMeta) (external.Ar
 				return argMeta, nil, fmt.Errorf("error reading string element: %v", err)
 			}
 			ss = append(ss, s)
+		}
+		res = ss
+	case argsArrT:
+		var ss []string
+		var arrLen uint32
+		var argNum uint32
+		err = binary.Read(dataBuff, binary.LittleEndian, &arrLen)
+		if err != nil {
+			return argMeta, nil, fmt.Errorf("error reading args array length: %v", err)
+		}
+		err = binary.Read(dataBuff, binary.LittleEndian, &argNum)
+		if err != nil {
+			return argMeta, nil, fmt.Errorf("error reading args number: %v", err)
+		}
+		resBytes, err := readByteSliceFromBuff(dataBuff, int(arrLen))
+		if err != nil {
+			return argMeta, nil, fmt.Errorf("error reading args array: %v", err)
+		}
+		ss = strings.Split(string(resBytes), "\x00")
+		if ss[len(ss)-1] == "" {
+			ss = ss[:len(ss)-1]
+		}
+		for int(argNum) > len(ss) {
+			ss = append(ss, "?")
 		}
 		res = ss
 	case bytesT:

@@ -174,7 +174,7 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("unrecognized argument type")
 		}
 	}
-	if arg.Type == "const char*const*" {
+	if arg.Type == "const char*const*" || arg.Type == "const char**" {
 		argValue := arg.Value.([]interface{})
 		tmp := make([]string, len(argValue))
 		for i, v := range argValue {
