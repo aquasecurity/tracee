@@ -41,6 +41,7 @@ Copyright (C) Aqua Security inc.
 #include <linux/security.h>
 #include <linux/socket.h>
 #include <linux/version.h>
+#include <linux/fdtable.h>
 #define KBUILD_MODNAME "tracee"
 #include <net/af_unix.h>
 #include <net/sock.h>
@@ -152,6 +153,10 @@ Copyright (C) Aqua Security inc.
 #define SYSCALL_ACCEPT4       288
 #define SYSCALL_LISTEN        50
 #define SYSCALL_BIND          49
+#define SYSCALL_SOCKET        41
+#define SYS_DUP               32
+#define SYS_DUP2              33
+#define SYS_DUP3              292
 #elif defined(bpf_target_arm64)
 #define SYS_MMAP              222
 #define SYS_MPROTECT          226
@@ -165,6 +170,10 @@ Copyright (C) Aqua Security inc.
 #define SYSCALL_ACCEPT4       242
 #define SYSCALL_LISTEN        201
 #define SYSCALL_BIND          200
+#define SYSCALL_SOCKET        198
+#define SYS_DUP               23
+#define SYS_DUP2              1000 // undefined in arm64
+#define SYS_DUP3              24
 #endif
 
 #define RAW_SYS_ENTER               1000
@@ -196,7 +205,10 @@ Copyright (C) Aqua Security inc.
 #define SECURITY_KERNEL_READ_FILE   1026
 #define SECURITY_INODE_MKNOD        1027
 #define SECURITY_POST_READ_FILE     1028
-#define MAX_EVENT_ID                1029
+#define SOCKET_DUP                  1029
+#define MAX_EVENT_ID                1030
+
+#define FILE_TYPE_SOCK      0
 
 #define NET_PACKET                      0
 #define DEBUG_NET_SECURITY_BIND         1
@@ -540,6 +552,7 @@ BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);              // Used to store program
 BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);          // Used to store programs for tail calls
 BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID);           // Used to store programs for tail calls
 BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);  // Used to store stack traces
+BPF_ARRAY(file_ops_types, struct file_operations*, 1);  // file types to file_operations structs
 
 /*================================== EVENTS ====================================*/
 
@@ -1883,6 +1896,33 @@ static __always_inline int get_local_net_id_from_network_details_v6(struct sock 
     return 0;
 }
 
+static __always_inline struct file *get_struct_file_from_fd(u64 fd_num)
+{
+
+    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    if (task == NULL) {
+        return NULL;
+    }
+    struct files_struct *files = (struct files_struct *)READ_KERN(task->files);
+    if (files == NULL) {
+        return NULL;
+    }
+    struct fdtable *fdt = (struct fdtable *)READ_KERN(files->fdt);
+    if (fdt == NULL) {
+        return NULL;
+    }
+    struct file **fd = (struct file **)READ_KERN(fdt->fd);
+    if (fd == NULL) {
+        return NULL;
+    }
+    struct file *f = (struct file *)READ_KERN(fd[fd_num]);
+    if (f == NULL) {
+        return NULL;
+    }
+
+    return f;
+}
+
 /*============================== SYSCALL HOOKS ==============================*/
 
 // include/trace/events/syscalls.h:
@@ -2067,6 +2107,163 @@ int syscall__execveat(void *ctx)
     save_to_submit_buf(&data, (void*)&sys->args.args[4] /*flags*/, sizeof(int), 4);
 
     return events_perf_submit(&data, SYS_EXECVEAT, 0);
+}
+
+SEC("raw_tracepoint/sys_socket")
+int sys_socket_exit_tail(void *ctx)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx)) {
+        return 0;
+    }
+
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    if (!sys) {
+        return -1;
+    }
+
+    if (sys->id != SYSCALL_SOCKET) {
+        // sanity check
+        return 0;
+    }
+
+    if (sys->ret < 0) {
+        // socket failed
+        return 0;
+    }
+
+    struct file *f = get_struct_file_from_fd(sys->ret);
+    if (f == NULL) {
+        return -1;
+    }
+    struct file_operations *f_op = (struct file_operations *)READ_KERN(f->f_op);
+
+    u32 idx = FILE_TYPE_SOCK;
+    bpf_map_update_elem(&file_ops_types, &idx, (void *)&f_op, BPF_ANY);
+
+    // delete syscall data before return
+    bpf_map_delete_elem(&syscall_data_map, &data.context.host_tid);
+
+    // remove syscall__socket from tail calls.
+    // in order to remove syscall__socket from the sys_exit_tails, we have to send a 'socket' event to userspace.
+    // this is because the verifier doesn't allow bpf code to call bpf_map_delete_elem on BPF_MAP_TYPE_PROG_ARRAY maps:
+    // https://elixir.bootlin.com/linux/v5.14.12/source/kernel/bpf/verifier.c#L5140
+    if (event_chosen(SYSCALL_SOCKET)) {
+        // if the 'socket' event was chosen by the user, we don't have to do anything special here, because the event
+        // will get to userspace
+        return 0;
+    }
+
+    // send the event (with no data, because the user didn't choose to see this)
+    return events_perf_submit(&data, SYSCALL_SOCKET, 0);
+}
+
+static __always_inline int check_fd_socket(event_data_t *data, u64 oldfd, u64 newfd)
+{
+    if (!event_chosen(SOCKET_DUP))
+        return 0;
+
+    u32 idx = FILE_TYPE_SOCK;
+
+    struct file_operations **socket_fops = (struct file_operations **)bpf_map_lookup_elem(&file_ops_types, &idx);
+    if (socket_fops == NULL) {
+        return -1;
+    }
+
+    struct file *f = get_struct_file_from_fd(oldfd);
+    if (f == NULL) {
+        return -1;
+    }
+
+    struct file_operations *f_ops = (struct file_operations *)READ_KERN(f->f_op);
+    if (f_ops == NULL) {
+        return -1;
+    }
+
+    if (f_ops != *socket_fops) {
+        // this file is not of type socket
+        return -1;
+    }
+
+    // this is a socket - submit the SOCKET_DUP event
+
+    save_to_submit_buf(data, &oldfd, sizeof(u32), 0);
+    save_to_submit_buf(data, &newfd, sizeof(u32), 1);
+
+    // get the address
+    struct socket *socket_from_file = (struct socket *)READ_KERN(f->private_data);
+    if (socket_from_file == NULL) {
+        return -1;
+    }
+
+    struct sock *sk = get_socket_sock(socket_from_file);
+    u16 family = get_sock_family(sk);
+    if ( (family != AF_INET) && (family != AF_INET6) && (family != AF_UNIX)) {
+        return 0;
+    }
+
+    if (family == AF_INET) {
+        net_conn_v4_t net_details = {};
+        get_network_details_from_sock_v4(sk, &net_details, 0);
+
+        struct sockaddr_in remote;
+        get_remote_sockaddr_in_from_network_details(&remote, &net_details, family);
+
+        save_to_submit_buf(data, &remote, sizeof(struct sockaddr_in), 2);
+    }
+    else if (family == AF_INET6) {
+        net_conn_v6_t net_details = {};
+        get_network_details_from_sock_v6(sk, &net_details, 0);
+
+        struct sockaddr_in6 remote;
+        get_remote_sockaddr_in6_from_network_details(&remote, &net_details, family);
+
+        save_to_submit_buf(data, &remote, sizeof(struct sockaddr_in6), 2);
+    }
+    else if (family == AF_UNIX) {
+        struct unix_sock *unix_sk = (struct unix_sock *)sk;
+        struct sockaddr_un sockaddr = get_unix_sock_addr(unix_sk);
+
+        save_to_submit_buf(data, &sockaddr, sizeof(struct sockaddr_un), 2);
+    }
+
+    return events_perf_submit(data, SOCKET_DUP, 0);
+}
+
+SEC("raw_tracepoint/sys_dup")
+int sys_dup_exit_tail(void *ctx)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx)){
+        return 0;
+    }
+
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    if (!sys) {
+        return -1;
+    }
+
+    if (sys->ret < 0) {
+        // dup failed
+        return 0;
+    }
+
+    if (sys->id == SYS_DUP) {
+        // args.args[0]: oldfd
+        // retval: newfd
+        check_fd_socket(&data, sys->args.args[0], sys->ret);
+    }
+    else if (sys->id == SYS_DUP2 || sys->id == SYS_DUP3) {
+        // args.args[0]: oldfd
+        // args.args[1]: newfd
+        // retval: retval
+        check_fd_socket(&data, sys->args.args[0], sys->args.args[1]);
+    }
+
+    // delete syscall data before return
+    bpf_map_delete_elem(&syscall_data_map, &data.context.host_tid);
+
+    return 0;
 }
 
 /*============================== OTHER HOOKS ==============================*/

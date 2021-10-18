@@ -120,7 +120,7 @@ func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 			s = fmt.Sprintf("{%s}", s)
 			args["local_addr"] = s
 		}
-	case SecuritySocketConnectEventID:
+	case SecuritySocketConnectEventID, SocketDupEventID:
 		if sockAddr, isStrMap := args["remote_addr"].(map[string]string); isStrMap {
 			var s string
 			for key, val := range sockAddr {
