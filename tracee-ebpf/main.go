@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -1143,27 +1144,12 @@ func makeBPFObject(outFile string) error {
 	if err != nil {
 		return err
 	}
-	clang := locateFile("clang", []string{os.Getenv("CLANG")})
-	if clang == "" {
-		return fmt.Errorf("missing compilation dependency: clang")
-	}
-	cmdVer := exec.Command(clang, "--version")
-	verOut, err := cmdVer.CombinedOutput()
+
+	clang, err := checkClang()
 	if err != nil {
 		return err
 	}
-	// we are looking for the "version x.y.z" part in the text output
-	start := strings.Index(string(verOut), "version") + 8
-	end := strings.Index(string(verOut), "\n")
-	verStr := string(verOut[start:end])
-	verMajor, err := strconv.Atoi(strings.SplitN(verStr, ".", 2)[0])
-	if err != nil {
-		if debug {
-			fmt.Printf("warning: could not detect clang version from: %s", string(verOut))
-		}
-	} else if verMajor < 9 {
-		return fmt.Errorf("detected clang version: %d is older than required minimum version: 9", verMajor)
-	}
+
 	llc := locateFile("llc", []string{os.Getenv("LLC")})
 	if llc == "" {
 		return fmt.Errorf("missing compilation dependency: llc")
@@ -1321,5 +1307,34 @@ func makeBPFObject(outFile string) error {
 		return err
 	}
 
+	return nil
+}
+
+func checkClang() (string, error) {
+	clang := locateFile("clang", []string{os.Getenv("CLANG")})
+	if clang == "" {
+		return "", fmt.Errorf("missing compilation dependency: clang")
+	}
+	cmdVer := exec.Command(clang, "--version")
+	verOut, err := cmdVer.CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+	return clang, checkClangVersion(verOut)
+}
+
+func checkClangVersion(verOut []byte) error {
+	// we are looking for the "version x.y.z" part in the text output
+	re := regexp.MustCompile(`(version)\s\S*`)
+	versionString := re.FindString(string(verOut))
+	if len(versionString) < 1 {
+		return fmt.Errorf("could not detect clang version from: %s", string(verOut))
+	}
+	verStr := strings.Split(versionString, " ")[1]
+
+	verMajor, _ := strconv.Atoi(strings.SplitN(verStr, ".", 2)[0])
+	if verMajor < 12 {
+		return fmt.Errorf("detected clang version: %d is older than required minimum version: 12", verMajor)
+	}
 	return nil
 }

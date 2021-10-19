@@ -15,14 +15,14 @@ Portable (CO:RE) option:
 - Linux kernel version >= 4.18
 - libc, and the libraries: libelf, zlib
 - GNU Make >= 4.3
-- clang >= 11
+- clang >= 12
 
 Kernel version specific option:
 - Linux kernel version >= 4.18
 - Linux kernel headers available under conventional location (see [Linux Headers](../headers) section for more info)
 - libc, and the libraries: libelf, zlib
 - GNU Make >= 4.3
-- clang >= 11
+- clang >= 12
 
 ## Compiling the eBPF program
 
