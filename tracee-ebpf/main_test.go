@@ -1389,3 +1389,31 @@ func Test_checkRequiredCapabilites(t *testing.T) {
 		require.EqualError(t, checkRequiredCapabilities(fc), "insufficient privileges to run: missing CAP_IPC_LOCK")
 	})
 }
+
+func Test_fetchFormattedEventParams(t *testing.T) {
+	testCases := []struct {
+		input  int32
+		output string
+	}{
+		{
+			input:  tracee.WriteEventID,
+			output: "(int fd, void* buf, size_t count)",
+		},
+		{
+			input:  tracee.RtSigreturnEventID,
+			output: "()",
+		},
+		{
+			input:  tracee.RtSigtimedwaitEventID,
+			output: "(const sigset_t* set, siginfo_t* info, const struct timespec* timeout, size_t sigsetsize)",
+		},
+		{
+			input:  99999999, // unknown event
+			output: "()",
+		},
+	}
+
+	for _, tc := range testCases {
+		assert.Equal(t, tc.output, fetchFormattedEventParams(tc.input))
+	}
+}
