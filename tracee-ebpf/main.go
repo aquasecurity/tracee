@@ -95,7 +95,11 @@ func main() {
 
 			// environment capabilities
 
-			err = checkRequiredCapabilities()
+			selfCap, err := getSelfCapabilities()
+			if err != nil {
+				return err
+			}
+			err = checkRequiredCapabilities(selfCap)
 			if err != nil {
 				return err
 			}
@@ -902,12 +906,7 @@ func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.St
 	return res, nil
 }
 
-func checkRequiredCapabilities() error {
-	caps, err := getSelfCapabilities()
-	if err != nil {
-		return err
-	}
-
+func checkRequiredCapabilities(caps capability.Capabilities) error {
 	if !caps.Get(capability.EFFECTIVE, capability.CAP_SYS_ADMIN) {
 		return fmt.Errorf("insufficient privileges to run: missing CAP_SYS_ADMIN")
 	}
@@ -920,15 +919,15 @@ func checkRequiredCapabilities() error {
 }
 
 func getSelfCapabilities() (capability.Capabilities, error) {
-	cap, err := capability.NewPid2(0)
+	selfCap, err := capability.NewPid2(0)
 	if err != nil {
 		return nil, err
 	}
-	err = cap.Load()
+	err = selfCap.Load()
 	if err != nil {
 		return nil, err
 	}
-	return cap, nil
+	return selfCap, nil
 }
 
 func fetchFormattedEventParams(eventID int32) string {
