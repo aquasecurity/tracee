@@ -2216,7 +2216,7 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     struct task_struct *group_leader = READ_KERN(task->group_leader);
     struct list_head thread_group_head = READ_KERN(group_leader->thread_group);
     struct list_head *next = READ_KERN(thread_group_head.next);
-    if (&group_leader->thread_group == next) {
+    if (__builtin_preserve_access_index(&group_leader->thread_group) == next) {
         bpf_map_delete_elem(&process_tree_map, &data.context.host_pid);
     }
 
