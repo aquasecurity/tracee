@@ -204,6 +204,7 @@ Copyright (C) Aqua Security inc.
 #define DEBUG_NET_UDPV6_DESTROY_SOCK    5
 #define DEBUG_NET_INET_SOCK_SET_STATE   6
 #define DEBUG_NET_TCP_CONNECT           7
+#define NET_PROCESS_EXEC                8
 
 #define CONFIG_SHOW_SYSCALL         1
 #define CONFIG_EXEC_ENV             2
@@ -223,6 +224,7 @@ Copyright (C) Aqua Security inc.
 #define CONFIG_NEW_CONT_FILTER      16
 #define CONFIG_DEBUG_NET            17
 #define CONFIG_PROC_TREE_FILTER     18
+#define CONFIG_CAPTURE_NET          19
 
 // get_config(CONFIG_XXX_FILTER) returns 0 if not enabled
 #define FILTER_IN  1
@@ -2139,6 +2141,15 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
         bpf_map_update_elem(&new_pidns_map, &data.context.pid_id, &data.context.pid_id, BPF_ANY);
     if (get_config(CONFIG_NEW_PID_FILTER))
         bpf_map_update_elem(&new_pids_map, &data.context.host_tid, &data.context.host_tid, BPF_ANY);
+
+    if (get_config(CONFIG_CAPTURE_NET)) {
+        net_debug_t debug_event = {0};
+        debug_event.ts = data.context.ts;
+        debug_event.host_tid = data.context.host_tid;
+        __builtin_memcpy(debug_event.comm, data.context.comm, TASK_COMM_LEN);
+        debug_event.event_id = NET_PROCESS_EXEC;
+        bpf_perf_event_output(ctx, &net_events, BPF_F_CURRENT_CPU, &debug_event, sizeof(debug_event));
+    }
 
     if (!should_trace(&data.context))
         return 0;

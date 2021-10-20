@@ -4,14 +4,96 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/google/gopacket/layers"
+	"github.com/google/gopacket/pcapgo"
+	"math"
+	"os"
+	"path"
 	"time"
 
 	"github.com/google/gopacket"
 	"inet.af/netaddr"
 )
 
+type processPcapId struct {
+	hostTid uint32
+	comm    string
+}
+
+func (t *Tracee) getPcapsDirPath() string {
+	return path.Join(t.config.Capture.OutputPath, "pcaps")
+}
+
+func (t *Tracee) getPcapFilePathWithTime(processPcapContext processPcapId, timeStampObj time.Time) string {
+	pcapFileName := fmt.Sprintf("%s_%d_%d.pcap", processPcapContext.comm, processPcapContext.hostTid, timeStampObj.Unix())
+	return path.Join(t.getPcapsDirPath(), pcapFileName)
+}
+
+func (t *Tracee) getPcapFilePath(processPcapContext processPcapId) string {
+	pcapFileName := fmt.Sprintf("%s_%d.pcap", processPcapContext.comm, processPcapContext.hostTid)
+	return path.Join(t.getPcapsDirPath(), pcapFileName)
+}
+
+func (t *Tracee) renamePcapFileAtProcessExit(processPcapContext processPcapId, timeStamp time.Time) error {
+	origPcapFilePath := t.getPcapFilePath(processPcapContext)
+	newPcapFilePath := t.getPcapFilePathWithTime(processPcapContext, timeStamp)
+
+	return os.Rename(origPcapFilePath, newPcapFilePath)
+}
+
+func (t *Tracee) createProcessPcapFile(processPcapContext processPcapId) error {
+
+	pcapsDirPath := t.getPcapsDirPath()
+	err := os.MkdirAll(pcapsDirPath, os.ModePerm)
+	if err != nil {
+		return fmt.Errorf("error creating pcaps dir: %v", err)
+	}
+
+	pcapFilePath := t.getPcapFilePath(processPcapContext)
+	pcapFile, err := os.Create(pcapFilePath)
+	if err != nil {
+		return fmt.Errorf("error creating pcap file: %v", err)
+	}
+
+	ngIface := pcapgo.NgInterface{
+		Name:       t.config.Capture.NetIfaces[0],
+		Comment:    "tracee tc capture",
+		Filter:     "",
+		LinkType:   layers.LinkTypeEthernet,
+		SnapLength: uint32(math.MaxUint16),
+	}
+
+	pcapWriter, err := pcapgo.NewNgWriterInterface(pcapFile, ngIface, pcapgo.NgWriterOptions{})
+	if err != nil {
+		return err
+	}
+
+	for _, iface := range t.config.Capture.NetIfaces[1:] {
+		ngIface = pcapgo.NgInterface{
+			Name:       iface,
+			Comment:    "tracee tc capture",
+			Filter:     "",
+			LinkType:   layers.LinkTypeEthernet,
+			SnapLength: uint32(math.MaxUint16),
+		}
+
+		_, err := pcapWriter.AddInterface(ngIface)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Flush the header
+	err = pcapWriter.Flush()
+	if err != nil {
+		return err
+	}
+	t.pcapWriters[processPcapContext] = pcapWriter
+
+	return nil
+}
+
 func (t *Tracee) processNetEvents() {
-	// Todo: split pcap files by context (tid + comm)
 	// Todo: add stats for network packets (in epilog)
 	for {
 		select {
@@ -83,17 +165,39 @@ func (t *Tracee) processNetEvents() {
 					InterfaceIndex: idx,
 				}
 
-				err = t.pcapWriter.WritePacket(info, dataBuff.Bytes()[:pktLen])
+				processPcapContext := processPcapId{hostTid: hostTid, comm: comm}
+
+				_, pcapWriterExists := t.pcapWriters[processPcapContext]
+				if !pcapWriterExists {
+					err = t.createProcessPcapFile(processPcapContext)
+					if err != nil {
+						t.handleError(err)
+						continue
+					}
+				}
+
+				err = t.pcapWriters[processPcapContext].WritePacket(info, dataBuff.Bytes()[:pktLen])
 				if err != nil {
 					t.handleError(err)
 					continue
 				}
 
 				// todo: maybe we should not flush every packet?
-				err = t.pcapWriter.Flush()
+				err = t.pcapWriters[processPcapContext].Flush()
 				if err != nil {
 					t.handleError(err)
 					continue
+				}
+			} else if netEventId == NetProcessExec {
+				processPcapContext := processPcapId{hostTid: hostTid, comm: comm}
+				_, pcapWriterExists := t.pcapWriters[processPcapContext]
+				if pcapWriterExists {
+					delete(t.pcapWriters, processPcapContext)
+					err := t.renamePcapFileAtProcessExit(processPcapContext, timeStampObj)
+					if err != nil {
+						t.handleError(err)
+						continue
+					}
 				}
 			} else if t.config.Debug {
 				var pkt struct {

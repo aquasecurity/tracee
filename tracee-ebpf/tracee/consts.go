@@ -40,6 +40,7 @@ const (
 	configNewContFilter
 	configDebugNet
 	configProcTreeFilter
+	configCaptureNet
 )
 
 const (
@@ -193,6 +194,7 @@ const (
 	DebugNetUdpV6DestroySock
 	DebugNetInetSockSetState
 	DebugNetTcpConnect
+	NetProcessExec
 )
 
 // EventsIDToEvent is list of supported events, indexed by their ID

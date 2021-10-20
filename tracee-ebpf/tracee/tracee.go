@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math"
 	"net"
 	"os"
 	"os/signal"
@@ -24,7 +23,6 @@ import (
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
-	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
 	lru "github.com/hashicorp/golang-lru"
 	"golang.org/x/sys/unix"
@@ -172,8 +170,7 @@ type Tracee struct {
 	pidsInMntns       bucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
 	tcProbe           []netProbe
-	pcapWriter        *pcapgo.NgWriter
-	pcapFile          *os.File
+	pcapWriters       map[processPcapId]*pcapgo.NgWriter
 	ngIfacesIndex     map[int]int
 }
 
@@ -318,58 +315,16 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error creating readiness file: %v", err)
 	}
 
-	if t.config.Capture.NetIfaces != nil {
-		pcapFile, err := os.Create(path.Join(t.config.Capture.OutputPath, "capture.pcap"))
+	t.ngIfacesIndex = make(map[int]int)
+	for idx, iface := range t.config.Capture.NetIfaces {
+		netIface, err := net.InterfaceByName(iface)
 		if err != nil {
-			return nil, fmt.Errorf("error creating pcap file: %v", err)
+			return nil, fmt.Errorf("invalid network interface: %s", iface)
 		}
-		t.pcapFile = pcapFile
-
-		t.ngIfacesIndex = make(map[int]int)
-		for idx, iface := range t.config.Capture.NetIfaces {
-			netIface, err := net.InterfaceByName(iface)
-			if err != nil {
-				return nil, fmt.Errorf("invalid network interface: %s", iface)
-			}
-			// Map real network interface index to NgInterface index
-			t.ngIfacesIndex[netIface.Index] = idx
-		}
-
-		ngIface := pcapgo.NgInterface{
-			Name:       t.config.Capture.NetIfaces[0],
-			Comment:    "tracee tc capture",
-			Filter:     "",
-			LinkType:   layers.LinkTypeEthernet,
-			SnapLength: uint32(math.MaxUint16),
-		}
-
-		pcapWriter, err := pcapgo.NewNgWriterInterface(t.pcapFile, ngIface, pcapgo.NgWriterOptions{})
-		if err != nil {
-			return nil, err
-		}
-
-		for _, iface := range t.config.Capture.NetIfaces[1:] {
-			ngIface = pcapgo.NgInterface{
-				Name:       iface,
-				Comment:    "tracee tc capture",
-				Filter:     "",
-				LinkType:   layers.LinkTypeEthernet,
-				SnapLength: uint32(math.MaxUint16),
-			}
-
-			_, err := pcapWriter.AddInterface(ngIface)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		// Flush the header
-		err = pcapWriter.Flush()
-		if err != nil {
-			return nil, err
-		}
-		t.pcapWriter = pcapWriter
+		// Map real network interface index to NgInterface index
+		t.ngIfacesIndex[netIface.Index] = idx
 	}
+	t.pcapWriters = make(map[processPcapId]*pcapgo.NgWriter)
 
 	// Get refernce to stack trace addresses map
 	StackAddressesMap, err := t.bpfModule.GetMap("stack_addresses")
@@ -522,6 +477,7 @@ func (t *Tracee) populateBPFMaps() error {
 	cEDC := uint32(configExtractDynCode)
 	cFF := uint32(configFollowFilter)
 	cDN := uint32(configDebugNet)
+	cNI := uint32(configCaptureNet)
 
 	thisPid := uint32(os.Getpid())
 	cDOSval := boolToUInt32(t.config.Output.DetectSyscall)
@@ -531,6 +487,12 @@ func (t *Tracee) populateBPFMaps() error {
 	cEDCval := boolToUInt32(t.config.Capture.Mem)
 	cFFval := boolToUInt32(t.config.Filter.Follow)
 	cDNval := boolToUInt32(t.config.Debug)
+	var cNIval uint32
+	if t.config.Capture.NetIfaces != nil {
+		cNIval = uint32(1)
+	} else {
+		cNIval = uint32(0)
+	}
 
 	errs := make([]error, 0)
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cTP), unsafe.Pointer(&thisPid)))
@@ -541,6 +503,7 @@ func (t *Tracee) populateBPFMaps() error {
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cEDC), unsafe.Pointer(&cEDCval)))
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cFF), unsafe.Pointer(&cFFval)))
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cDN), unsafe.Pointer(&cDNval)))
+	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cNI), unsafe.Pointer(&cNIval)))
 	for _, e := range errs {
 		if e != nil {
 			return e
