@@ -2213,10 +2213,10 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 
     // Check number of threads in thread group to determine if this is last one
     struct task_struct *task = (struct task_struct *)bpf_get_current_task();
-    struct list_head task_head = READ_KERN(task->thread_group);
     struct task_struct *group_leader = READ_KERN(task->group_leader);
     struct list_head thread_group_head = READ_KERN(group_leader->thread_group);
-    if (thread_group_head.next == task_head.next) {
+    struct list_head *next = READ_KERN(thread_group_head.next)
+    if (&group_leader->thread_group == next) {
         bpf_map_delete_elem(&process_tree_map, &data.context.host_pid);
     }
 
