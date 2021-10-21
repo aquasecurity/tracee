@@ -2090,10 +2090,13 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     }
 
     // update process tree map if the parent has an entry
-    u32 *tgid_filtered = bpf_map_lookup_elem(&process_tree_map, &parent_tgid);
-    if (tgid_filtered) {
-        bpf_map_update_elem(&process_tree_map, &child_tgid, tgid_filtered, BPF_ANY);
-    } 
+    int proc_tree_filter_set = get_config(CONFIG_PROC_TREE_FILTER);
+    if (proc_tree_filter_set) {
+        u32 *tgid_filtered = bpf_map_lookup_elem(&process_tree_map, &parent_tgid);
+        if (tgid_filtered) {
+            bpf_map_update_elem(&process_tree_map, &child_tgid, tgid_filtered, BPF_ANY);
+        }
+    }
 
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
