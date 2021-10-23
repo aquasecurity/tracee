@@ -279,6 +279,8 @@ Copyright (C) Aqua Security inc.
                           bpf_probe_read(&_val, sizeof(_val), &ptr);    \
                           _val;                                         \
                         })
+
+#define GET_FIELD_ADDR(field) &field
 #else
 // Try using READ_KERN here, just don't embed them in each other
 #define READ_KERN(ptr) ({ typeof(ptr) _val;                             \
@@ -286,6 +288,8 @@ Copyright (C) Aqua Security inc.
                           bpf_core_read(&_val, sizeof(_val), &ptr);    \
                           _val;                                         \
                         })
+
+#define GET_FIELD_ADDR(field) __builtin_preserve_access_index(&field)
 #endif
 
 #define BPF_MAP(_name, _type, _key_type, _value_type, _max_entries) \
@@ -2173,7 +2177,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     env_end = get_env_end_from_mm(mm);
     int envc = get_envc_from_bprm(bprm);
 
-    void *file_path = get_path_str(&file->f_path);
+    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
 
     // Note: Starting from kernel 5.9, there are two new interesting fields in bprm that we should consider adding:
     // 1. struct file *executable - which can be used to get the executable name passed to an interpreter
@@ -2320,7 +2324,7 @@ int BPF_KPROBE(trace_security_bprm_check)
     struct file* file = get_file_ptr_from_bprm(bprm);
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
-    void *file_path = get_path_str(&file->f_path);
+    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
 
     save_str_to_buf(&data, file_path, 0);
     save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 1);
@@ -2342,10 +2346,10 @@ int BPF_KPROBE(trace_security_file_open)
     struct file *file = (struct file *)PT_REGS_PARM1(ctx);
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
-    void *file_path = get_path_str(&file->f_path);
+    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
 
     save_str_to_buf(&data, file_path, 0);
-    save_to_submit_buf(&data, (void*)&file->f_flags, sizeof(int), 1);
+    save_to_submit_buf(&data, (void*)GET_FIELD_ADDR(file->f_flags), sizeof(int), 1);
     save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 2);
     save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 3);
     if (get_config(CONFIG_SHOW_SYSCALL)) {
@@ -3217,7 +3221,7 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
     unsigned long vlen;
 
     struct file *file      = (struct file *) saved_args.args[0];
-    void *file_path = get_path_str(&file->f_path);
+    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
 
     if (event_id == VFS_WRITE) {
         ptr                = (void*)         saved_args.args[1];
@@ -3333,7 +3337,7 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
     buf_t *string_p = get_buf(STRING_BUF_IDX);
     if (string_p == NULL)
         return -1;
-    get_path_str(&file->f_path);
+    get_path_str(GET_FIELD_ADDR(file->f_path));
     u32 *off = get_buf_off(STRING_BUF_IDX);
     if (off == NULL)
         return -1;
@@ -3570,9 +3574,9 @@ int BPF_KPROBE(trace_security_bpf_map)
     struct bpf_map *map = (struct bpf_map *)PT_REGS_PARM1(ctx);
 
     /* 1st argument == map_id (u32) */
-    save_to_submit_buf(&data, (void *)&map->id, sizeof(int), 0);
+    save_to_submit_buf(&data, (void *)GET_FIELD_ADDR(map->id), sizeof(int), 0);
     /* 2nd argument == map_name (const char *) */
-    save_str_to_buf(&data, (void *)&map->name, 1);
+    save_str_to_buf(&data, (void *)GET_FIELD_ADDR(map->name), 1);
 
     return events_perf_submit(&data, SECURITY_BPF_MAP, 0);
 }
@@ -3591,7 +3595,7 @@ int BPF_KPROBE(trace_security_kernel_read_file)
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
     enum kernel_read_file_id type_id = (enum kernel_read_file_id)PT_REGS_PARM2(ctx);
-    void *file_path = get_path_str(&file->f_path);
+    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
 
     save_str_to_buf(&data, file_path, 0);
     save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 1);
