@@ -77,10 +77,15 @@
 
 
 #elif defined(__TARGET_ARCH_arm64)
-extern bool CONFIG_ARM64_PAGE_SHIFT __kconfig;
+//extern bool CONFIG_ARM64_PAGE_SHIFT __kconfig;
 // arch/arm64/include/asm/page-def.h
-#define PAGE_SHIFT      CONFIG_ARM64_PAGE_SHIFT
+//#define PAGE_SHIFT      CONFIG_ARM64_PAGE_SHIFT
+// as a temporary workaround for failing builds, use the default value of PAGE_SHIFT
+#define PAGE_SHIFT      12
 #define PAGE_SIZE       (_AC(1, UL) << PAGE_SHIFT)
+
+// arch/arm64/include/asm/thread_info.h
+#define _TIF_32BIT      (1 << 22)
 #endif
 /*=============================== ARCH SPECIFIC ===========================*/
 
