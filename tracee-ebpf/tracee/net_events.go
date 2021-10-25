@@ -93,6 +93,17 @@ func (t *Tracee) createProcessPcapFile(processPcapContext processPcapId) error {
 	return nil
 }
 
+func (t *Tracee) netProcessExit(processPcapContext processPcapId, timeStamp time.Time) {
+
+	time.Sleep(1 * time.Second)
+
+	delete(t.pcapWriters, processPcapContext)
+	err := t.renamePcapFileAtProcessExit(processPcapContext, timeStamp)
+	if err != nil {
+		t.handleError(err)
+	}
+}
+
 func (t *Tracee) processNetEvents() {
 	// Todo: add stats for network packets (in epilog)
 	for {
@@ -188,16 +199,11 @@ func (t *Tracee) processNetEvents() {
 					t.handleError(err)
 					continue
 				}
-			} else if netEventId == NetProcessExec {
+			} else if netEventId == NetProcessExit {
 				processPcapContext := processPcapId{hostTid: hostTid, comm: comm}
 				_, pcapWriterExists := t.pcapWriters[processPcapContext]
 				if pcapWriterExists {
-					delete(t.pcapWriters, processPcapContext)
-					err := t.renamePcapFileAtProcessExit(processPcapContext, timeStampObj)
-					if err != nil {
-						t.handleError(err)
-						continue
-					}
+					go t.netProcessExit(processPcapContext, timeStampObj)
 				}
 			} else if t.config.Debug {
 				var pkt struct {
