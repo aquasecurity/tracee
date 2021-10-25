@@ -30,7 +30,12 @@ func (t *Tracee) getPcapFilePathWithTime(processPcapContext processPcapId, timeS
 }
 
 func (t *Tracee) getPcapFilePath(processPcapContext processPcapId) string {
-	pcapFileName := fmt.Sprintf("%s_%d.pcap", processPcapContext.comm, processPcapContext.hostTid)
+	var pcapFileName string
+	if t.config.Output.SeparatePcap {
+		pcapFileName = fmt.Sprintf("%s_%d.pcap", processPcapContext.comm, processPcapContext.hostTid)
+	} else {
+		pcapFileName = "dump.pcap"
+	}
 	return path.Join(t.getPcapsDirPath(), pcapFileName)
 }
 
@@ -176,7 +181,14 @@ func (t *Tracee) processNetEvents() {
 					InterfaceIndex: idx,
 				}
 
-				processPcapContext := processPcapId{hostTid: hostTid, comm: comm}
+				processPcapContext := processPcapId{}
+				if t.config.Output.SeparatePcap {
+					processPcapContext.hostTid = hostTid
+					processPcapContext.comm = comm
+					//processPcapContext = processPcapId{hostTid: hostTid, comm: comm}
+				} else {
+					processPcapContext.comm = "dump"
+				}
 
 				_, pcapWriterExists := t.pcapWriters[processPcapContext]
 				if !pcapWriterExists {
@@ -199,7 +211,7 @@ func (t *Tracee) processNetEvents() {
 					t.handleError(err)
 					continue
 				}
-			} else if netEventId == NetProcessExit {
+			} else if netEventId == NetProcessExit && t.config.Output.SeparatePcap {
 				processPcapContext := processPcapId{hostTid: hostTid, comm: comm}
 				_, pcapWriterExists := t.pcapWriters[processPcapContext]
 				if pcapWriterExists {
