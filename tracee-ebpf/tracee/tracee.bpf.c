@@ -1940,31 +1940,30 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
         return 0;
 
 if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER)) {
-    struct pt_regs regs = {};
-    bpf_probe_read(&regs, sizeof(struct pt_regs), (void*)ctx->args[0]);
+    struct pt_regs *regs = (struct pt_regs*)ctx->args[0];
 
     if (is_x86_compat(data.task)) {
 #if defined(bpf_target_x86)
-        sys.args.args[0] = regs.bx;
-        sys.args.args[1] = regs.cx;
-        sys.args.args[2] = regs.dx;
-        sys.args.args[3] = regs.si;
-        sys.args.args[4] = regs.di;
-        sys.args.args[5] = regs.bp;
+        sys.args.args[0] = READ_KERN(regs->bx);
+        sys.args.args[1] = READ_KERN(regs->cx);
+        sys.args.args[2] = READ_KERN(regs->dx);
+        sys.args.args[3] = READ_KERN(regs->si);
+        sys.args.args[4] = READ_KERN(regs->di);
+        sys.args.args[5] = READ_KERN(regs->bp);
 #endif // bpf_target_x86
     } else {
-        sys.args.args[0] = PT_REGS_PARM1(&regs);
-        sys.args.args[1] = PT_REGS_PARM2(&regs);
-        sys.args.args[2] = PT_REGS_PARM3(&regs);
+        sys.args.args[0] = READ_KERN(PT_REGS_PARM1(regs));
+        sys.args.args[1] = READ_KERN(PT_REGS_PARM2(regs));
+        sys.args.args[2] = READ_KERN(PT_REGS_PARM3(regs));
 #if defined(bpf_target_x86)
         // In x86-64, r10 is used instead of rcx to pass the fourth parameter of a syscall
         // see also: https://stackoverflow.com/questions/21322100/linux-x64-why-does-r10-come-before-r8-and-r9-in-syscalls
-        sys.args.args[3] = regs.r10;
+        sys.args.args[3] = READ_KERN(regs->r10);
 #else
-        sys.args.args[3] = PT_REGS_PARM4(&regs);
+        sys.args.args[3] = READ_KERN(PT_REGS_PARM4(regs));
 #endif
-        sys.args.args[4] = PT_REGS_PARM5(&regs);
-        sys.args.args[5] = PT_REGS_PARM6(&regs);
+        sys.args.args[4] = READ_KERN(PT_REGS_PARM5(regs));
+        sys.args.args[5] = READ_KERN(PT_REGS_PARM6(regs));
     }
 } else {
     bpf_probe_read(sys.args.args, sizeof(6 * sizeof(u64)), (void *)ctx->args);
@@ -2007,7 +2006,11 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
 {
     long ret = ctx->args[1];
     struct pt_regs *regs = (struct pt_regs*)ctx->args[0];
+#if defined(bpf_target_x86)
     int id = READ_KERN(regs->orig_ax);
+#elif defined(bpf_target_arm64)
+    int id = READ_KERN(regs->syscallno);
+#endif
 
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
