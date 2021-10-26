@@ -37,7 +37,6 @@ type Config struct {
 	Output             *OutputConfig
 	PerfBufferSize     int
 	BlobPerfBufferSize int
-	SecurityAlerts     bool
 	Debug              bool
 	maxPidsCache       int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
 	BTFObjPath         string
@@ -231,11 +230,9 @@ func New(cfg Config) (*Tracee, error) {
 		setEssential(VfsWriteEventID)
 		setEssential(VfsWritevEventID)
 	}
-	if cfg.SecurityAlerts || cfg.Capture.Mem {
+	if cfg.Capture.Mem {
 		setEssential(MmapEventID)
 		setEssential(MprotectEventID)
-	}
-	if cfg.Capture.Mem {
 		setEssential(MemProtAlertEventID)
 	}
 
@@ -268,6 +265,11 @@ func New(cfg Config) (*Tracee, error) {
 	if t.eventsToTrace[MagicWriteEventID] {
 		setEssential(VfsWriteEventID)
 		setEssential(VfsWritevEventID)
+	}
+
+	if t.eventsToTrace[MemProtAlertEventID] {
+		setEssential(MmapEventID)
+		setEssential(MprotectEventID)
 	}
 
 	// Compile final list of events to trace including essential events
