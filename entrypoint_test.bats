@@ -40,5 +40,5 @@ teardown() {
     assert_contains "$TRACEE_WEBHOOK_EXE --config-file=$0"
     assert_contains "processed: event1"
     assert_contains "$TRACEE_RULES_EXE --input-tracee=file:stdin --input-tracee=format:gob --webhook=http://localhost:2801" $log
-    assert_contains "$TRACEE_EBPF_EXE --output=format:gob --security-alerts" $log
+    assert_contains "$TRACEE_EBPF_EXE --output=format:gob --trace event=mem_prot_alert" $log
 }

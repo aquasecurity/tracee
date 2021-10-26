@@ -53,7 +53,6 @@ func main() {
 			cfg := tracee.Config{
 				PerfBufferSize:     c.Int("perf-buffer-size"),
 				BlobPerfBufferSize: c.Int("blob-perf-buffer-size"),
-				SecurityAlerts:     c.Bool("security-alerts"),
 				Debug:              c.Bool("debug"),
 			}
 
@@ -89,10 +88,6 @@ func main() {
 				return err
 			}
 			cfg.Output = &output
-
-			if c.Bool("security-alerts") {
-				cfg.Filter.EventsToTrace = append(cfg.Filter.EventsToTrace, tracee.MemProtAlertEventID)
-			}
 
 			// environment capabilities
 
@@ -279,11 +274,6 @@ func main() {
 				Aliases: []string{"o"},
 				Value:   cli.NewStringSlice("format:table"),
 				Usage:   "Control how and where output is printed. run '--output help' for more info.",
-			},
-			&cli.BoolFlag{
-				Name:  "security-alerts",
-				Value: false,
-				Usage: "alert on security related events",
 			},
 			&cli.IntFlag{
 				Name:    "perf-buffer-size",
