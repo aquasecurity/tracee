@@ -345,7 +345,7 @@ err-file:/path/to/file                             write the errors to a specifi
 
 none                                               ignore stream of events output, usually used with --capture
 
-option:{stack-addresses,detect-syscall,exec-env,relative-time,exec-info,per-process-pcaps}
+option:{stack-addresses,detect-syscall,exec-env,relative-time,exec-info,per-process-pcaps,per-container-pcaps}
                                                    augment output according to given options (default: none)
   stack-addresses                                  include stack memory addresses for each event
   detect-syscall                                   when tracing kernel functions which are not syscalls, detect and show the original syscall that called that function
@@ -353,6 +353,7 @@ option:{stack-addresses,detect-syscall,exec-env,relative-time,exec-info,per-proc
   relative-time                                    use relative timestamp instead of wall timestamp for events
   exec-info                                        when tracing sched_process_exec, show the file hash(sha256) and ctime
   per-process-pcaps								   when capturing network packets, save pcap per process
+  per-container-pcaps							   when capturing network packets, save pcap per container
 
 Examples:
   --output json                                            | output as json
@@ -408,13 +409,19 @@ func prepareOutput(outputSlice []string, containerMode bool) (tracee.OutputConfi
 			case "exec-info":
 				res.ExecInfo = true
 			case "per-process-pcaps":
-				res.SeparatePcap = true
+				res.PcapPerProcess = true
+			case "per-container-pcaps":
+				res.PcapPerContainer = true
 			default:
 				return res, nil, fmt.Errorf("invalid output option: %s, use '--output help' for more info", outputParts[1])
 			}
 		default:
 			return res, nil, fmt.Errorf("invalid output value: %s, use '--output help' for more info", outputParts[1])
 		}
+	}
+
+	if res.PcapPerContainer && res.PcapPerProcess {
+		return res, nil, fmt.Errorf("invalid output flags: can't use both per-process-pcaps and per-container-pcaps output options")
 	}
 
 	outf := os.Stdout

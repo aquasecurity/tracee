@@ -18,35 +18,45 @@ import (
 type processPcapId struct {
 	hostTid uint32
 	comm    string
+	contID  string
 }
 
 func (t *Tracee) getPcapsDirPath() string {
 	return path.Join(t.config.Capture.OutputPath, "pcaps")
 }
 
-func (t *Tracee) getPcapFilePathWithTime(processPcapContext processPcapId, timeStampObj time.Time) string {
-	pcapFileName := fmt.Sprintf("%s_%d_%d.pcap", processPcapContext.comm, processPcapContext.hostTid, timeStampObj.Unix())
-	return path.Join(t.getPcapsDirPath(), pcapFileName)
-}
-
-func (t *Tracee) getPcapFilePath(processPcapContext processPcapId) string {
+func (t *Tracee) getPcapFilePathWithTime(pcapContext processPcapId, timeStampObj time.Time) string {
 	var pcapFileName string
-	if t.config.Output.SeparatePcap {
-		pcapFileName = fmt.Sprintf("%s_%d.pcap", processPcapContext.comm, processPcapContext.hostTid)
+	if t.config.Output.PcapPerProcess {
+		pcapFileName = fmt.Sprintf("%s_%d_%d.pcap", pcapContext.comm, pcapContext.hostTid, timeStampObj.Unix())
+	} else if t.config.Output.PcapPerContainer {
+		pcapFileName = fmt.Sprintf("%s_%d.pcap", pcapContext.contID, timeStampObj.Unix())
 	} else {
 		pcapFileName = "dump.pcap"
 	}
 	return path.Join(t.getPcapsDirPath(), pcapFileName)
 }
 
-func (t *Tracee) renamePcapFileAtProcessExit(processPcapContext processPcapId, timeStamp time.Time) error {
-	origPcapFilePath := t.getPcapFilePath(processPcapContext)
-	newPcapFilePath := t.getPcapFilePathWithTime(processPcapContext, timeStamp)
+func (t *Tracee) getPcapFilePath(pcapContext processPcapId) string {
+	var pcapFileName string
+	if t.config.Output.PcapPerProcess {
+		pcapFileName = fmt.Sprintf("%s_%d.pcap", pcapContext.comm, pcapContext.hostTid)
+	} else if t.config.Output.PcapPerContainer {
+		pcapFileName = fmt.Sprintf("%s.pcap", pcapContext.contID)
+	} else {
+		pcapFileName = "dump.pcap"
+	}
+	return path.Join(t.getPcapsDirPath(), pcapFileName)
+}
+
+func (t *Tracee) renamePcapFileAtExit(pcapContext processPcapId, timeStamp time.Time) error {
+	origPcapFilePath := t.getPcapFilePath(pcapContext)
+	newPcapFilePath := t.getPcapFilePathWithTime(pcapContext, timeStamp)
 
 	return os.Rename(origPcapFilePath, newPcapFilePath)
 }
 
-func (t *Tracee) createProcessPcapFile(processPcapContext processPcapId) error {
+func (t *Tracee) createPcapFile(pcapContext processPcapId) error {
 
 	pcapsDirPath := t.getPcapsDirPath()
 	err := os.MkdirAll(pcapsDirPath, os.ModePerm)
@@ -54,7 +64,7 @@ func (t *Tracee) createProcessPcapFile(processPcapContext processPcapId) error {
 		return fmt.Errorf("error creating pcaps dir: %v", err)
 	}
 
-	pcapFilePath := t.getPcapFilePath(processPcapContext)
+	pcapFilePath := t.getPcapFilePath(pcapContext)
 	pcapFile, err := os.Create(pcapFilePath)
 	if err != nil {
 		return fmt.Errorf("error creating pcap file: %v", err)
@@ -93,17 +103,18 @@ func (t *Tracee) createProcessPcapFile(processPcapContext processPcapId) error {
 	if err != nil {
 		return err
 	}
-	t.pcapWriters[processPcapContext] = pcapWriter
+	t.pcapWriters[pcapContext] = pcapWriter
 
 	return nil
 }
 
-func (t *Tracee) netProcessExit(processPcapContext processPcapId, timeStamp time.Time) {
+func (t *Tracee) netExit(pcapContext processPcapId, timeStamp time.Time) {
 
+	// we have to wait because sometimes few packets are being sent/received after the event of process exit
 	time.Sleep(1 * time.Second)
 
-	delete(t.pcapWriters, processPcapContext)
-	err := t.renamePcapFileAtProcessExit(processPcapContext, timeStamp)
+	delete(t.pcapWriters, pcapContext)
+	err := t.renamePcapFileAtExit(pcapContext, timeStamp)
 	if err != nil {
 		t.handleError(err)
 	}
@@ -123,10 +134,13 @@ func (t *Tracee) processNetEvents() {
 			netEventId := binary.LittleEndian.Uint32(in[8:12])
 			hostTid := binary.LittleEndian.Uint32(in[12:16])
 			comm := string(bytes.TrimRight(in[16:32], "\x00"))
-			dataBuff := bytes.NewBuffer(in[32:])
+			containerId := string(bytes.TrimRight(in[32:48], "\x00"))
+			dataBuff := bytes.NewBuffer(in[48:])
 
 			// timeStamp is nanoseconds since system boot time
 			timeStampObj := time.Unix(0, int64(timeStamp+t.bootTime))
+
+			packetContext := processPcapId{hostTid: hostTid, comm: comm, contID: containerId}
 
 			if netEventId == NetPacket {
 				var pktLen uint32
@@ -181,41 +195,31 @@ func (t *Tracee) processNetEvents() {
 					InterfaceIndex: idx,
 				}
 
-				processPcapContext := processPcapId{}
-				if t.config.Output.SeparatePcap {
-					processPcapContext.hostTid = hostTid
-					processPcapContext.comm = comm
-					//processPcapContext = processPcapId{hostTid: hostTid, comm: comm}
-				} else {
-					processPcapContext.comm = "dump"
-				}
-
-				_, pcapWriterExists := t.pcapWriters[processPcapContext]
+				_, pcapWriterExists := t.pcapWriters[packetContext]
 				if !pcapWriterExists {
-					err = t.createProcessPcapFile(processPcapContext)
+					err = t.createPcapFile(packetContext)
 					if err != nil {
 						t.handleError(err)
 						continue
 					}
 				}
 
-				err = t.pcapWriters[processPcapContext].WritePacket(info, dataBuff.Bytes()[:pktLen])
+				err = t.pcapWriters[packetContext].WritePacket(info, dataBuff.Bytes()[:pktLen])
 				if err != nil {
 					t.handleError(err)
 					continue
 				}
 
 				// todo: maybe we should not flush every packet?
-				err = t.pcapWriters[processPcapContext].Flush()
+				err = t.pcapWriters[packetContext].Flush()
 				if err != nil {
 					t.handleError(err)
 					continue
 				}
-			} else if netEventId == NetProcessExit && t.config.Output.SeparatePcap {
-				processPcapContext := processPcapId{hostTid: hostTid, comm: comm}
-				_, pcapWriterExists := t.pcapWriters[processPcapContext]
+			} else if (netEventId == NetProcessExit && t.config.Output.PcapPerProcess) || (netEventId == NetContainerExit) {
+				_, pcapWriterExists := t.pcapWriters[packetContext]
 				if pcapWriterExists {
-					go t.netProcessExit(processPcapContext, timeStampObj)
+					go t.netExit(packetContext, timeStampObj)
 				}
 			} else if t.config.Debug {
 				var pkt struct {

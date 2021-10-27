@@ -205,6 +205,7 @@ Copyright (C) Aqua Security inc.
 #define DEBUG_NET_INET_SOCK_SET_STATE   6
 #define DEBUG_NET_TCP_CONNECT           7
 #define NET_PROCESS_EXIT                8
+#define NET_CONTAINER_EXIT              9
 
 #define CONFIG_SHOW_SYSCALL         1
 #define CONFIG_EXEC_ENV             2
@@ -246,6 +247,7 @@ Copyright (C) Aqua Security inc.
 
 #define CONT_ID_LEN 12
 #define CONT_ID_MIN_FULL_LEN 64
+#define CONT_ID_PADDED 16
 
 #ifndef CORE
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 2, 0)
@@ -356,7 +358,7 @@ typedef struct event_context {
     u32 pid_id;
     char comm[TASK_COMM_LEN];
     char uts_name[TASK_COMM_LEN];
-    char cont_id[16];           // Container ID, padding to 16 to keep the context struct aligned
+    char cont_id[CONT_ID_PADDED];           // Container ID, padding to 16 to keep the context struct aligned
     u32 eventid;
     s64 retval;
     u32 stack_id;
@@ -459,6 +461,7 @@ typedef struct net_packet {
     u32 event_id;
     u32 host_tid;
     char comm[TASK_COMM_LEN];
+    char cont_id[CONT_ID_PADDED];
     u32 len;
     u32 ifindex;
     struct in6_addr src_addr, dst_addr;
@@ -471,6 +474,7 @@ typedef struct net_debug {
     u32 event_id;
     u32 host_tid;
     char comm[TASK_COMM_LEN];
+    char cont_id[CONT_ID_PADDED];
     struct in6_addr local_addr, remote_addr;
     __be16 local_port, remote_port;
     u8 protocol;
@@ -2223,7 +2227,13 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
         debug_event.ts = data.context.ts;
         debug_event.host_tid = data.context.host_tid;
         __builtin_memcpy(debug_event.comm, data.context.comm, TASK_COMM_LEN);
-        debug_event.event_id = NET_PROCESS_EXIT;
+        __builtin_memcpy(debug_event.cont_id, data.context.cont_id, CONT_ID_LEN);
+        if (data.context.tid == 1) {
+            debug_event.event_id = NET_CONTAINER_EXIT;
+        }
+        else {
+            debug_event.event_id = NET_PROCESS_EXIT;
+        }
         bpf_perf_event_output(ctx, &net_events, BPF_F_CURRENT_CPU, &debug_event, sizeof(debug_event));
     }
 
@@ -3767,6 +3777,10 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
 
     pkt.host_tid = net_ctx->host_tid;
     __builtin_memcpy(pkt.comm, net_ctx->comm, TASK_COMM_LEN);
+    container_id_t *container_id = bpf_map_lookup_elem(&pid_to_cont_id_map, &pkt.host_tid);
+    if (container_id != NULL) {
+        __builtin_memcpy(pkt.cont_id, container_id->id, CONT_ID_LEN);
+    }
 
     /* The tc perf_event_output handler will use the upper 32 bits
      * of the flags argument as a number of bytes to include of the

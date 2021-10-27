@@ -58,12 +58,13 @@ type CaptureConfig struct {
 }
 
 type OutputConfig struct {
-	StackAddresses bool
-	DetectSyscall  bool
-	ExecEnv        bool
-	RelativeTime   bool
-	ExecInfo       bool
-	SeparatePcap   bool
+	StackAddresses   bool
+	DetectSyscall    bool
+	ExecEnv          bool
+	RelativeTime     bool
+	ExecInfo         bool
+	PcapPerProcess   bool
+	PcapPerContainer bool
 }
 
 type netProbe struct {
