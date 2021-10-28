@@ -106,7 +106,8 @@ Copyright (C) Aqua Security inc.
 
 #define SEND_VFS_WRITE      1
 #define SEND_MPROTECT       2
-#define SEND_META_SIZE      20
+#define SEND_KERNEL_MODULE  3
+#define SEND_META_SIZE      24
 
 #define ALERT_MMAP_W_X      1
 #define ALERT_MPROT_X_ADD   2
@@ -194,7 +195,8 @@ Copyright (C) Aqua Security inc.
 #define SECURITY_BPF_MAP            1025
 #define SECURITY_KERNEL_READ_FILE   1026
 #define SECURITY_INODE_MKNOD        1027
-#define MAX_EVENT_ID                1028
+#define SECURITY_POST_READ_FILE     1028
+#define MAX_EVENT_ID                1029
 
 #define NET_PACKET                      0
 #define DEBUG_NET_SECURITY_BIND         1
@@ -223,6 +225,7 @@ Copyright (C) Aqua Security inc.
 #define CONFIG_NEW_CONT_FILTER      16
 #define CONFIG_DEBUG_NET            17
 #define CONFIG_PROC_TREE_FILTER     18
+#define CONFIG_CAPTURE_MODULES      19
 
 // get_config(CONFIG_XXX_FILTER) returns 0 if not enabled
 #define FILTER_IN  1
@@ -3190,7 +3193,7 @@ int BPF_KPROBE(send_bin)
 
     if (chunk_size) {
         // Save last chunk
-        chunk_size = chunk_size & ((MAX_PERCPU_BUFSIZE >> 1) - 1);
+        chunk_size = chunk_size & (F_CHUNK_SIZE - 1);
         bpf_probe_read((void **)&(file_buf_p->buf[F_CHUNK_OFF]), chunk_size, bin_args->ptr);
         bpf_probe_read((void **)&(file_buf_p->buf[F_SZ_OFF]), sizeof(unsigned int), &chunk_size);
         bpf_probe_read((void **)&(file_buf_p->buf[F_POS_OFF]), sizeof(off_t), &bin_args->start_off);
@@ -3617,6 +3620,57 @@ int BPF_KPROBE(trace_security_kernel_read_file)
     save_to_submit_buf(&data, &type_id, sizeof(int), 3);
 
     return events_perf_submit(&data, SECURITY_KERNEL_READ_FILE, 0);
+}
+
+SEC("kprobe/security_kernel_post_read_file")
+int BPF_KPROBE(trace_security_kernel_post_read_file)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data.context))
+        return 0;
+
+    bin_args_t bin_args = {};
+    u64 id = bpf_get_current_pid_tgid();
+
+    struct file* file = (struct file*)PT_REGS_PARM1(ctx);
+    u32 pid = data.context.pid;
+
+    char* buf = (char*)PT_REGS_PARM2(ctx);
+    loff_t size = (loff_t)PT_REGS_PARM3(ctx);
+    enum kernel_read_file_id type_id = (enum kernel_read_file_id)PT_REGS_PARM4(ctx);
+
+    // Send event if chosen
+    if (event_chosen(SECURITY_POST_READ_FILE)) {
+        void *file_path = get_path_str(&file->f_path);
+        save_str_to_buf(&data, file_path, 0);
+        save_to_submit_buf(&data, &size, sizeof(loff_t), 1);
+        save_to_submit_buf(&data, &type_id, sizeof(int), 2);
+        events_perf_submit(&data, SECURITY_POST_READ_FILE, 0);
+    }
+
+    if (get_config(CONFIG_CAPTURE_MODULES)) {
+        // Extract device id, inode number for file name
+        dev_t s_dev = get_dev_from_file(file);
+        unsigned long inode_nr = get_inode_nr_from_file(file);
+
+        bin_args.type = SEND_KERNEL_MODULE;
+        bpf_probe_read(bin_args.metadata, 4, &s_dev);
+        bpf_probe_read(&bin_args.metadata[4], 8, &inode_nr);
+        bpf_probe_read(&bin_args.metadata[12], 4, &pid);
+        bpf_probe_read(&bin_args.metadata[16], 8, &size);
+        bin_args.start_off = 0;
+        bin_args.ptr = buf;
+        bin_args.full_size = size;
+        bpf_map_update_elem(&bin_args_map, &id, &bin_args, BPF_ANY);
+
+        // Send file data
+        bpf_tail_call(ctx, &prog_array, TAIL_SEND_BIN);
+    }
+
+    return 0;
 }
 
 SEC("kprobe/security_inode_mknod")

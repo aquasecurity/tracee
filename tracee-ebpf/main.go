@@ -450,6 +450,7 @@ Possible options:
 
 [artifact:]write[=/path/prefix*]   capture written files. A filter can be given to only capture file writes whose path starts with some prefix (up to 50 characters). Up to 3 filters can be given.
 [artifact:]exec                    capture executed files.
+[artifact:]module                  capture loaded kernel modules.
 [artifact:]mem                     capture memory regions that had write+execute (w+x) protection, and then changed to execute (x) only.
 [artifact:]net=interface           capture network traffic of the given interface. Only TCP/UDP protocols are currently supported.
 
@@ -481,7 +482,8 @@ func prepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 		cap := captureSlice[i]
 		if strings.HasPrefix(cap, "artifact:write") ||
 			strings.HasPrefix(cap, "artifact:exec") ||
-			strings.HasPrefix(cap, "artifact:mem") {
+			strings.HasPrefix(cap, "artifact:mem") ||
+			strings.HasPrefix(cap, "artifact:module") {
 			cap = strings.TrimPrefix(cap, "artifact:")
 		}
 		if cap == "write" {
@@ -495,6 +497,8 @@ func prepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 			filterFileWrite = append(filterFileWrite, pathPrefix)
 		} else if cap == "exec" {
 			capture.Exec = true
+		} else if cap == "module" {
+			capture.Module = true
 		} else if cap == "mem" {
 			capture.Mem = true
 		} else if strings.HasPrefix(cap, "net=") {

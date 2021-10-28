@@ -14,7 +14,7 @@ func (t *Tracee) processFileWrites() {
 	type chunkMeta struct {
 		BinType  binType
 		MntID    uint32
-		Metadata [20]byte
+		Metadata [24]byte
 		Size     int32
 		Off      uint64
 	}
@@ -24,6 +24,13 @@ func (t *Tracee) processFileWrites() {
 		Inode uint64
 		Mode  uint32
 		Pid   uint32
+	}
+
+	type kernelModuleMeta struct {
+		DevID uint32
+		Inode uint64
+		Pid   uint32
+		Size  uint64
 	}
 
 	type mprotectWriteMeta struct {
@@ -73,6 +80,7 @@ func (t *Tracee) processFileWrites() {
 			}
 			filename := ""
 			metaBuff := bytes.NewBuffer(meta.Metadata[:])
+			var kernelModuleMeta kernelModuleMeta
 			if meta.BinType == sendVfsWrite {
 				var vfsMeta vfsWriteMeta
 				err = binary.Read(metaBuff, binary.LittleEndian, &vfsMeta)
@@ -97,6 +105,17 @@ func (t *Tracee) processFileWrites() {
 				}
 				// note: size of buffer will determine maximum extracted file size! (as writes from kernel are immediate)
 				filename = fmt.Sprintf("bin.%d", mprotectMeta.Ts)
+			} else if meta.BinType == sendKernelModule {
+				err = binary.Read(metaBuff, binary.LittleEndian, &kernelModuleMeta)
+				if err != nil {
+					t.handleError(err)
+					continue
+				}
+				if kernelModuleMeta.Pid == 0 {
+					filename = fmt.Sprintf("module.dev-%d.inode-%d", kernelModuleMeta.DevID, kernelModuleMeta.Inode)
+				} else {
+					filename = fmt.Sprintf("module.dev-%d.inode-%d.pid-%d", kernelModuleMeta.DevID, kernelModuleMeta.Inode, kernelModuleMeta.Pid)
+				}
 			} else {
 				t.handleError(fmt.Errorf("error in file writer: unknown binary type: %d", meta.BinType))
 				continue
@@ -137,6 +156,12 @@ func (t *Tracee) processFileWrites() {
 			if err := f.Close(); err != nil {
 				t.handleError(err)
 				continue
+			}
+			if meta.BinType == sendKernelModule {
+				if uint64(meta.Size)+meta.Off == kernelModuleMeta.Size {
+					fileHash := getFileHash(fullname)
+					os.Rename(fullname, fullname+"."+fileHash)
+				}
 			}
 		case lost := <-t.lostWrChannel:
 			t.stats.lostWrCounter.Increment(int(lost))
