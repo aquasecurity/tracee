@@ -1,9 +1,14 @@
 package main
 
 import (
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
+	"context"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/pprof"
@@ -12,10 +17,23 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/aquasecurity/tracee/tracee-rules/signatures/rego/regosig"
+
+	"oras.land/oras-go/pkg/oras"
+
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/urfave/cli/v2"
+
+	"oras.land/oras-go/pkg/content"
+)
+
+const (
+	layerMediaTypeTarGz = "application/vnd.cncf.openpolicyagent.layer.v1.tar+gzip"
+	layerMediaTypeJson  = "application/vnd.cncf.openpolicyagent.config.v1+json"
+	bundleVersion       = ":latest"
+	bundleRepository    = "ghcr.io/github.com/simar7/tracee-rules"
 )
 
 func main() {
@@ -59,10 +77,33 @@ func main() {
 				return errors.New("invalid target specified " + target)
 			}
 
-			sigs, err := getSignatures(target, c.Bool("rego-partial-eval"), c.String("rules-dir"), c.StringSlice("rules"), c.Bool("rego-aio"))
+			eSigs, err := getSignatures(target, c.Bool("rego-partial-eval"), c.String("rules-dir"), c.StringSlice("rules"), c.Bool("rego-aio"))
 			if err != nil {
 				return err
 			}
+			var nSigs []types.Signature
+			if c.Bool("fetch-latest-sigs") {
+				log.Println("Fetching latest sigs from: ", bundleRepository)
+				reg, err := content.NewRegistry(content.RegistryOptions{})
+				if err != nil {
+					return fmt.Errorf("unable to initialize OCI registry: %s", err)
+				}
+				bundle, err := fetchLatestBundle(reg)
+				if err != nil {
+					return fmt.Errorf("unable to fetch new sigs: %s", err)
+				}
+				gzf, err := extractGzip(bundle)
+				if err != nil {
+					return err
+				}
+				nSigs, err = untarSigs(target, c.Bool("rego-partial-eval"), gzf)
+				if err != nil {
+					return err
+				}
+			}
+
+			// de-dup all existing and newly fetched sigs, if any.
+			sigs := dedupSigs(eSigs, nSigs)
 
 			var loadedSigIDs []string
 			for _, s := range sigs {
@@ -173,12 +214,95 @@ func main() {
 				Name:  "list-events",
 				Usage: "print a list of events that currently loaded signatures require",
 			},
+			&cli.BoolFlag{
+				Name:  "fetch-latest-sigs",
+				Usage: "fetches the latest set of available rego sgnature bundle",
+			},
 		},
 	}
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func dedupSigs(eSigs []types.Signature, nSigs []types.Signature) []types.Signature {
+	sigsMap := make(map[string]types.Signature)
+	for _, es := range eSigs {
+		esm, _ := es.GetMetadata()
+		sigsMap[esm.ID] = es
+	}
+	for _, ns := range nSigs {
+		nsm, _ := ns.GetMetadata()
+		sigsMap[nsm.ID] = ns
+	}
+
+	var sigs []types.Signature
+	for _, sig := range sigsMap {
+		sigs = append(sigs, sig)
+	}
+	return sigs
+}
+
+func fetchLatestBundle(reg *content.Registry) ([]byte, error) { // TODO: Write tests
+	store := content.NewMemory()
+	_, err := oras.Copy(context.Background(), reg, bundleRepository+bundleVersion, store, bundleRepository+bundleVersion, oras.WithAllowedMediaTypes([]string{layerMediaTypeTarGz, layerMediaTypeJson}))
+	if err != nil {
+		return nil, err
+	}
+
+	_, b, ok := store.GetByName("bundle.tar.gz")
+	if !ok {
+		return nil, fmt.Errorf("invalid rule bundle")
+	}
+
+	return b, nil
+}
+
+func extractGzip(bundle []byte) (io.Reader, error) {
+	gzf, err := gzip.NewReader(bytes.NewReader(bundle))
+	if err != nil {
+		return nil, fmt.Errorf("unable to read: %s", err)
+	}
+	return gzf, nil
+}
+
+func untarSigs(target string, partialEval bool, gzf io.Reader) ([]types.Signature, error) {
+	var sigs []types.Signature
+	tarReader := tar.NewReader(gzf)
+	i := 0
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("unable to read tar: %s", err)
+		}
+
+		name := header.Name
+		switch header.Typeflag {
+		case tar.TypeDir:
+			continue
+		case tar.TypeReg:
+			if strings.Contains(name, "rego") && !strings.Contains(name, "test") {
+				regoCode, err := ioutil.ReadAll(tarReader)
+				if err != nil {
+					log.Println("unable to read file: ", name, err)
+					continue
+				}
+				regoHelpers := []string{regoHelpersCode}
+				sig, err := regosig.NewRegoSignature(target, partialEval, append(regoHelpers, string(regoCode))...)
+				if err != nil {
+					log.Println("unable to create sig: ", err)
+					continue
+				}
+				sigs = append(sigs, sig)
+			}
+		}
+		i++
+	}
+	return sigs, nil
 }
 
 func listSigs(w io.Writer, sigs []types.Signature) error {
