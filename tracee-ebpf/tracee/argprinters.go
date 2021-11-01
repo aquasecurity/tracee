@@ -176,7 +176,7 @@ func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 		if cmd, isInt32 := args["cmd"].(int32); isInt32 {
 			args["cmd"] = helpers.ParseBPFCmd(cmd)
 		}
-	case SecurityKernelReadFileEventID:
+	case SecurityKernelReadFileEventID, SecurityPostReadFileEventID:
 		if readFileId, isInt32 := args["type"].(int32); isInt32 {
 			typeIdStr, err := ParseKernelReadFileId(readFileId)
 			if err == nil {

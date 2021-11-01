@@ -51,6 +51,7 @@ type Config struct {
 type CaptureConfig struct {
 	OutputPath      string
 	FileWrite       bool
+	Module          bool
 	FilterFileWrite []string
 	Exec            bool
 	Mem             bool
@@ -229,6 +230,9 @@ func New(cfg Config) (*Tracee, error) {
 	if cfg.Capture.FileWrite {
 		setEssential(VfsWriteEventID)
 		setEssential(VfsWritevEventID)
+	}
+	if cfg.Capture.Module {
+		setEssential(SecurityPostReadFileEventID)
 	}
 	if cfg.Capture.Mem {
 		setEssential(MmapEventID)
@@ -521,6 +525,7 @@ func (t *Tracee) populateBPFMaps() error {
 	cEV := uint32(configExecEnv)
 	cSA := uint32(configStackAddresses)
 	cCF := uint32(configCaptureFiles)
+	cCM := uint32(configCaptureModules)
 	cEDC := uint32(configExtractDynCode)
 	cFF := uint32(configFollowFilter)
 	cDN := uint32(configDebugNet)
@@ -530,6 +535,7 @@ func (t *Tracee) populateBPFMaps() error {
 	cEVval := boolToUInt32(t.config.Output.ExecEnv)
 	cSAval := boolToUInt32(t.config.Output.StackAddresses)
 	cCFval := boolToUInt32(t.config.Capture.FileWrite)
+	cCMval := boolToUInt32(t.config.Capture.Module)
 	cEDCval := boolToUInt32(t.config.Capture.Mem)
 	cFFval := boolToUInt32(t.config.Filter.Follow)
 	cDNval := boolToUInt32(t.config.Debug)
@@ -540,6 +546,7 @@ func (t *Tracee) populateBPFMaps() error {
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cEV), unsafe.Pointer(&cEVval)))
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cSA), unsafe.Pointer(&cSAval)))
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cCF), unsafe.Pointer(&cCFval)))
+	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cCM), unsafe.Pointer(&cCMval)))
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cEDC), unsafe.Pointer(&cEDCval)))
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cFF), unsafe.Pointer(&cFFval)))
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cDN), unsafe.Pointer(&cDNval)))
