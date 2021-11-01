@@ -276,6 +276,13 @@ func New(cfg Config) (*Tracee, error) {
 		setEssential(MprotectEventID)
 	}
 
+	if t.eventsToTrace[SocketDupEventID] {
+		setEssential(DupEventID)
+		setEssential(Dup2EventID)
+		setEssential(Dup3EventID)
+		setEssential(SocketEventID)
+	}
+
 	// Compile final list of events to trace including essential events
 	for id, event := range EventsIDToEvent {
 		// If an essential event was not requested by the user, set its map value to false
@@ -647,18 +654,26 @@ func (t *Tracee) populateBPFMaps() error {
 		if err := paramsTypesBPFMap.Update(unsafe.Pointer(&eU32), unsafe.Pointer(&paramsTypes)); err != nil {
 			return err
 		}
+
+		// some functions require tail call on syscall enter/exit as they perform extra work
 		if e == ExecveEventID || e == ExecveatEventID {
 			event, ok := EventsIDToEvent[e]
 			if !ok {
 				continue
 			}
-			// execve functions require tail call on syscall enter as they perform extra work
 			probFnName := fmt.Sprintf("syscall__%s", event.Name)
 			err = t.initTailCall(eU32, "sys_enter_tails", probFnName)
 			if err != nil {
 				return err
 			}
-			// err = t.initTailCall(uint32(e), "sys_exit_tails", probFnName) // if ever needed
+		} else if e == SocketEventID {
+			if err = t.initTailCall(eU32, "sys_exit_tails", "sys_socket_exit_tail"); err != nil {
+				return err
+			}
+		} else if e == DupEventID || e == Dup2EventID || e == Dup3EventID {
+			if err = t.initTailCall(eU32, "sys_exit_tails", "sys_dup_exit_tail"); err != nil {
+				return err
+			}
 		}
 	}
 

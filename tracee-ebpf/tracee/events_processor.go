@@ -7,10 +7,14 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
+	"unsafe"
 
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
 )
+
+var removeSocketTailOnce sync.Once
 
 func (t *Tracee) processLostEvents() {
 	for {
@@ -204,9 +208,28 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 			}
 			return err
 		}
+
+	case SocketEventID:
+		removeSocketTailOnce.Do(t.removeSocketTail)
 	}
 
 	return nil
+}
+
+func (t *Tracee) removeSocketTail() {
+	// removing sys_socket_exit_tail from sys_exit_tails.
+	bpfMap, err := t.bpfModule.GetMap("sys_exit_tails")
+	if err == nil {
+		eU32 := uint32(SocketEventID)
+		_, err = bpfMap.GetValue(unsafe.Pointer(&eU32))
+		if err == nil {
+			// key exists in map
+			err = bpfMap.DeleteKey(unsafe.Pointer(&eU32))
+			if err != nil {
+				t.handleError(err)
+			}
+		}
+	}
 }
 
 func (t *Tracee) updateProfile(sourceFilePath string, executionTs uint64) {
