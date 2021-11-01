@@ -157,6 +157,7 @@ func (t *Tracee) processFileWrites() {
 				t.handleError(err)
 				continue
 			}
+			// Rename the file to add hash when last chunk was received
 			if meta.BinType == sendKernelModule {
 				if uint64(meta.Size)+meta.Off == kernelModuleMeta.Size {
 					fileHash := getFileHash(fullname)

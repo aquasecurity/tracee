@@ -3636,7 +3636,7 @@ int BPF_KPROBE(trace_security_kernel_post_read_file)
     u64 id = bpf_get_current_pid_tgid();
 
     struct file* file = (struct file*)PT_REGS_PARM1(ctx);
-    u32 pid = data.context.pid;
+    u32 pid = data.context.host_pid;
 
     char* buf = (char*)PT_REGS_PARM2(ctx);
     loff_t size = (loff_t)PT_REGS_PARM3(ctx);
