@@ -3193,7 +3193,7 @@ int BPF_KPROBE(send_bin)
 
     if (chunk_size) {
         // Save last chunk
-        chunk_size = chunk_size & (F_CHUNK_SIZE - 1);
+        chunk_size = chunk_size & ((MAX_PERCPU_BUFSIZE >> 1) - 1);
         bpf_probe_read((void **)&(file_buf_p->buf[F_CHUNK_OFF]), chunk_size, bin_args->ptr);
         bpf_probe_read((void **)&(file_buf_p->buf[F_SZ_OFF]), sizeof(unsigned int), &chunk_size);
         bpf_probe_read((void **)&(file_buf_p->buf[F_POS_OFF]), sizeof(off_t), &bin_args->start_off);
