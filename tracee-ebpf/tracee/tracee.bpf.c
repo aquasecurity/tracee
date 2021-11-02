@@ -108,6 +108,7 @@ Copyright (C) Aqua Security inc.
 #define SEND_VFS_WRITE      1
 #define SEND_MPROTECT       2
 #define SEND_KERNEL_MODULE  3
+#define SEND_BUFFER_MODULE  4
 #define SEND_META_SIZE      24
 
 #define ALERT_MMAP_W_X      1
@@ -115,10 +116,11 @@ Copyright (C) Aqua Security inc.
 #define ALERT_MPROT_W_ADD   3
 #define ALERT_MPROT_W_REM   4
 
-#define TAIL_VFS_WRITE      0
-#define TAIL_VFS_WRITEV     1
-#define TAIL_SEND_BIN       2
-#define MAX_TAIL_CALL       3
+#define TAIL_VFS_WRITE         0
+#define TAIL_VFS_WRITEV        1
+#define TAIL_SEND_BIN          2
+#define TAIL_SEND_BIN_SYSCALL  3
+#define MAX_TAIL_CALL          4
 
 #define NONE_T        0UL
 #define INT_T         1UL
@@ -549,6 +551,7 @@ BPF_ARRAY(string_store, path_filter_t, 1);              // Store strings from us
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);             // Percpu global buffer variables
 BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS);           // Holds offsets to bufs respectively
 BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);              // Used to store programs for tail calls
+BPF_PROG_ARRAY(prog_array_syscall, MAX_TAIL_CALL);      // Used to store programs for tail calls
 BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);          // Used to store programs for tail calls
 BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID);           // Used to store programs for tail calls
 BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);  // Used to store stack traces
@@ -966,6 +969,7 @@ static __always_inline struct sockaddr_un get_unix_sock_addr(struct unix_sock *s
     }
     return sockaddr;
 }
+
 
 /*============================== HELPER FUNCTIONS ==============================*/
 
@@ -3298,8 +3302,7 @@ int BPF_KPROBE(trace_tcp_connect)
     return net_map_update_or_delete_sock(ctx, DEBUG_NET_TCP_CONNECT, sk, data.context.host_tid);
 }
 
-SEC("kprobe/send_bin")
-int BPF_KPROBE(send_bin)
+static __always_inline u32 send_bin_helper(void* ctx, struct bpf_map_def *prog_array, int tail_call)
 {
     // Note: sending the data to the userspace have the following constraints:
     // 1. We need a buffer that we know it's exact size (so we can send chunks of known sizes in BPF)
@@ -3325,7 +3328,7 @@ int BPF_KPROBE(send_bin)
             bpf_probe_read(&io_vec, sizeof(struct iovec), &bin_args->vec[bin_args->iov_idx]);
             bin_args->ptr = io_vec.iov_base;
             bin_args->full_size = io_vec.iov_len;
-            bpf_tail_call(ctx, &prog_array, TAIL_SEND_BIN);
+            bpf_tail_call(ctx, prog_array, tail_call);
         }
         bpf_map_delete_elem(&bin_args_map, &id);
         return 0;
@@ -3383,7 +3386,7 @@ int BPF_KPROBE(send_bin)
     if (chunk_size > F_CHUNK_SIZE) {
         // Handle the rest of write recursively
         bin_args->full_size = chunk_size;
-        bpf_tail_call(ctx, &prog_array, TAIL_SEND_BIN);
+        bpf_tail_call(ctx, prog_array, tail_call);
         bpf_map_delete_elem(&bin_args_map, &id);
         return 0;
     }
@@ -3408,12 +3411,25 @@ int BPF_KPROBE(send_bin)
         bpf_probe_read(&io_vec, sizeof(struct iovec), &bin_args->vec[bin_args->iov_idx]);
         bin_args->ptr = io_vec.iov_base;
         bin_args->full_size = io_vec.iov_len;
-        bpf_tail_call(ctx, &prog_array, TAIL_SEND_BIN);
+        bpf_tail_call(ctx, prog_array, tail_call);
     }
 
     bpf_map_delete_elem(&bin_args_map, &id);
     return 0;
 }
+
+SEC("kprobe/send_bin")
+int BPF_KPROBE(send_bin)
+{
+    return send_bin_helper(ctx, &prog_array, TAIL_SEND_BIN);
+}
+
+SEC("raw_tracepoint/send_bin_syscall")
+int send_bin_syscall(void* ctx)
+{
+    return send_bin_helper(ctx, &prog_array_syscall, TAIL_SEND_BIN_SYSCALL);
+}
+
 
 static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id, u32 tail_call_id)
 {
@@ -3754,6 +3770,38 @@ int BPF_KPROBE(trace_mprotect_alert)
         }
     }
 
+    return 0;
+}
+
+SEC("raw_tracepoint/sys_init_module")
+int syscall__init_module(void *ctx)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    if (!sys)
+        return -1;
+
+    bin_args_t bin_args = {};
+
+    u32 pid = data.context.host_pid;
+    void *addr = (void*)sys->args.args[0];
+    unsigned long len = (unsigned int)sys->args.args[1];
+
+    if (get_config(CONFIG_CAPTURE_MODULES)) {
+        bin_args.type = SEND_BUFFER_MODULE;
+        bpf_probe_read(bin_args.metadata, 4, &pid);
+        bpf_probe_read(&bin_args.metadata[4], sizeof(unsigned long), &len);
+        bin_args.ptr = (char *)addr;
+        bin_args.start_off = 0;
+        bin_args.full_size = (unsigned long)len;
+
+        u64 id = bpf_get_current_pid_tgid();
+        bpf_map_update_elem(&bin_args_map, &id, &bin_args, BPF_ANY);
+        bpf_tail_call(ctx, &prog_array_syscall, TAIL_SEND_BIN_SYSCALL);
+    }
     return 0;
 }
 

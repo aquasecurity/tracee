@@ -79,6 +79,7 @@ const (
 	tailVfsWrite uint32 = iota
 	tailVfsWritev
 	tailSendBin
+	tailSendBinSyscall
 )
 
 // binType is an enum that specifies the type of binary data sent in the file perf map
@@ -89,6 +90,7 @@ const (
 	sendVfsWrite binType = iota + 1
 	sendMprotect
 	sendKernelModule
+	sendBufferModule
 )
 
 // argType is an enum that encodes the argument types that the BPF program may write to the shared buffer
