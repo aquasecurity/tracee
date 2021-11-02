@@ -176,6 +176,7 @@ type Tracee struct {
 	pcapWriter        *pcapgo.NgWriter
 	pcapFile          *os.File
 	ngIfacesIndex     map[int]int
+	containers        *Containers
 }
 
 type counter int32
@@ -394,6 +395,12 @@ func New(cfg Config) (*Tracee, error) {
 	}
 	t.StackAddressesMap = StackAddressesMap
 
+	c := InitContainers()
+	if err := c.Populate(); err != nil {
+		return nil, fmt.Errorf("error initializing containers: %v", err)
+	}
+	t.containers = c
+
 	return t, nil
 }
 
@@ -560,25 +567,6 @@ func (t *Tracee) populateBPFMaps() error {
 	for _, e := range errs {
 		if e != nil {
 			return e
-		}
-	}
-
-	// Initialize pid_to_cont_id_map if tracing containers
-	c := InitContainers()
-	if err := c.Populate(); err != nil {
-		return err
-	}
-	bpfPidToContIdMap, _ := t.bpfModule.GetMap("pid_to_cont_id_map")
-	for _, contId := range c.GetContainers() {
-		for _, pid := range c.GetPids(contId) {
-			if t.config.Debug {
-				fmt.Println("Running container =", contId, "pid =", pid)
-			}
-			contIdBytes := []byte(contId)
-			err = bpfPidToContIdMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&contIdBytes[0]))
-			if err != nil {
-				return err
-			}
 		}
 	}
 

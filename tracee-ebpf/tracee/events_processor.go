@@ -202,6 +202,24 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 
 	case SocketEventID:
 		removeSocketTailOnce.Do(t.removeSocketTail)
+
+	case CgroupMkdirEventID:
+		cgroupId, ok := args["cgroup_id"].(uint64)
+		if !ok {
+			return fmt.Errorf("error parsing cgroup_mkdir args")
+		}
+		path, ok := args["cgroup_path"].(string)
+		if !ok {
+			return fmt.Errorf("error parsing cgroup_mkdir args")
+		}
+		t.containers.CgroupUpdate(cgroupId, path)
+
+	case CgroupRmdirEventID:
+		cgroupId, ok := args["cgroup_id"].(uint64)
+		if !ok {
+			return fmt.Errorf("error parsing cgroup_rmdir args")
+		}
+		t.containers.CgroupRemove(cgroupId)
 	}
 
 	return nil

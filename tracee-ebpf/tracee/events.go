@@ -16,6 +16,7 @@ import (
 // keep the 1-byte 'Argnum' as the final parameter before the padding (if padding is needed).
 type context struct {
 	Ts       uint64
+	CgroupID uint64
 	Pid      uint32
 	Tid      uint32
 	Ppid     uint32
@@ -27,7 +28,6 @@ type context struct {
 	PidID    uint32
 	Comm     [16]byte
 	UtsName  [16]byte
-	ContID   [16]byte
 	EventID  int32
 	Retval   int64
 	StackID  uint32
@@ -117,7 +117,7 @@ func (t *Tracee) processEvents(done <-chan struct{}) error {
 			PIDNS:               int(ctx.PidID),
 			ProcessName:         string(bytes.TrimRight(ctx.Comm[:], "\x00")),
 			HostName:            string(bytes.TrimRight(ctx.UtsName[:], "\x00")),
-			ContainerID:         string(bytes.TrimRight(ctx.ContID[:], "\x00")),
+			ContainerID:         t.containers.GetContainerId(ctx.CgroupID),
 			EventID:             int(ctx.EventID),
 			EventName:           EventsIDToEvent[int32(ctx.EventID)].Name,
 			ArgsNum:             int(ctx.Argnum),

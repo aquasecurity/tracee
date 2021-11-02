@@ -4,60 +4,41 @@ import (
 	"bufio"
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"syscall"
 )
 
 // Containers contain information about host running containers in the host.
 type Containers struct {
-	cgroupv1   bool
-	cgroupv1mp string
-	cgroupv2   bool
-	cgroupv2mp string
-	mapContIds map[string][]int32
+	cgroupv1     bool
+	cgroupv1mp   string
+	cgroupv2     bool
+	cgroupv2mp   string
+	cgroupContId map[uint32]string
 }
 
 // InitContainers initializes a Containers object and returns a pointer to it.
 // User should further call "Populate" and iterate with Containers data.
 func InitContainers() *Containers {
 	return &Containers{
-		mapContIds: make(map[string][]int32, 0),
-		cgroupv1:   false,
-		cgroupv2:   false,
-		cgroupv1mp: "",
-		cgroupv2mp: "",
-	}
-}
-
-// addContainer adds a container given its uuid.
-func (c *Containers) addContainer(contId string) {
-	_, ok := c.mapContIds[contId]
-	if !ok {
-		c.mapContIds[contId] = make([]int32, 0)
+		cgroupContId: make(map[uint32]string),
+		cgroupv1:     false,
+		cgroupv2:     false,
+		cgroupv1mp:   "",
+		cgroupv2mp:   "",
 	}
 }
 
 // GetContainers provides a list of all added containers by their uuid.
 func (c *Containers) GetContainers() []string {
 	var conts []string
-	for k := range c.mapContIds {
-		conts = append(conts, k)
+	for _, v := range c.cgroupContId {
+		conts = append(conts, v)
 	}
 	return conts
-}
-
-// addPid will add a given pid string to an existing container by given uuid.
-// It will also create the container if given container uuid does not exist.
-func (c *Containers) addPid(contId string, pid int32) {
-	c.addContainer(contId)
-	c.mapContIds[contId] = append(c.mapContIds[contId], pid)
-}
-
-func (c *Containers) GetPids(contId string) []int32 {
-	return c.mapContIds[contId]
 }
 
 // Populate will populate all Containers information by reading mounted proc
@@ -102,34 +83,37 @@ func (c *Containers) procMountsCgroups() error {
 	return nil
 }
 
-// populate prepares the regex(es) to be used for the population to be done in
-// proc walk.
+// populate walks through cgroups (v1 & v2) filesystems and
+// finds directories based on known container runtimes patterns.
+// it then extracts containers information and saves it by their uuid
 func (c *Containers) populate() error {
+	fn := func(path string, d fs.DirEntry, err error) error {
+		if !d.IsDir() {
+			return nil
+		}
+
+		if err != nil {
+			_, _ = fmt.Fprintln(os.Stderr, err)
+			return nil
+		}
+
+		// The lower 32 bits of the cgroup id are the inode number of the matching cgroupfs entry
+		var stat syscall.Stat_t
+		if err := syscall.Stat(path, &stat); err != nil {
+			return nil
+		}
+
+		return c.CgroupUpdate(stat.Ino, path)
+	}
 
 	if c.cgroupv1 {
-		var r []string
-		// docker:  <cgroupv1mp>/<random>/docker/<id>/tasks
-		r = append(r, ".*docker.*(.{64})/tasks$")
-		// podman:  <cgroupv1mp>/<random>/libpod-<id>.scope/tasks
-		r = append(r, ".*libpod.*(.{64})\\.scope/tasks$")
-		// generic: <cgroupv1mp>/<random>/<id>.scope/tasks
-		r = append(r, ".*(.{64})\\.scope/tasks$")
-
-		err := c.populateProcWalk(c.cgroupv1mp, r)
+		err := filepath.WalkDir(c.cgroupv1mp, fn)
 		if err != nil {
 			return err
 		}
 	}
 	if c.cgroupv2 {
-		var r []string
-		// docker:  <cgroupv2mp>/<random>/docker-<id>.scope/cgroup.procs
-		r = append(r, ".*docker.*(.{64})\\.scope/cgroup.procs$")
-		// podman:  <cgroupv2mp>/<random>/libpod-<id>.scope/cgroup.procs
-		r = append(r, ".*libpod.*(.{64})\\.scope/cgroup.procs$")
-		// generic: <cgroupv2mp>/<random>/<id>.scope/cgroup.procs
-		r = append(r, ".*(.{64})\\.scope/cgroup.procs$")
-
-		err := c.populateProcWalk(c.cgroupv2mp, r)
+		err := filepath.WalkDir(c.cgroupv2mp, fn)
 		if err != nil {
 			return err
 		}
@@ -138,48 +122,65 @@ func (c *Containers) populate() error {
 	return nil
 }
 
-// populateProcWalk walks through procfs for cgroups (v1 & v2) filesystems and
-// find files based on given regex(es). It also extracts containers
-// information from found files and creates containers by their uuid AND adds
-// running pids to those containers.
-func (c *Containers) populateProcWalk(basedir string, allstr []string) error {
+// check if path belongs to a known container runtime and
+// add cgroupId with a matching container id, extracted from path
+func (c *Containers) CgroupUpdate(cgroupId uint64, path string) error {
+	pathComponents := strings.Split(path, "/")
 
-	var allres []*regexp.Regexp
-	allres = make([]*regexp.Regexp, len(allstr))
-	for j := 0; j < len(allstr); j++ {
-		allres[j] = regexp.MustCompile(basedir + allstr[j])
+	for _, pc := range pathComponents {
+		if len(pc) < 64 {
+			continue
+		}
+		containerId, _ := c.getContainerIdFromCgroup(pc)
+		if containerId == "" {
+			continue
+		}
+		c.cgroupContId[uint32(cgroupId)] = containerId
+
+		return nil
 	}
-	err := filepath.WalkDir(basedir,
-		func(fn string, fi fs.DirEntry, err error) error {
-			if err != nil {
-				_, _ = fmt.Fprintln(os.Stderr, err)
-				return nil
-			}
-			for l := 0; l < len(allres); l++ {
-				res := allres[l].FindStringSubmatch(fn)
-				if len(res) == 0 {
-					continue
-				}
-				contId := res[1] // 1st regexp match (Id)
-				c.addContainer(contId)
-				buf, e := ioutil.ReadFile(fn) // res[0] or fn == .tasks or .procs file
-				if e != nil {
-					return e // error if can't read pids file
-				}
-				for _, pid := range strings.Split(string(buf), "\n") {
-					if len(pid) > 0 {
-						var pidInt int32
-						_, err = fmt.Sscanf(pid, "%d", &pidInt)
-						if err != nil {
-							continue // ignore sscanf errors
-						}
-						c.addPid(contId, pidInt)
-					}
-				}
-				break // a single match is enough
-			}
-			return nil
-		})
 
-	return err
+	return nil
+}
+
+// extract container id and container runtime from path
+func (c *Containers) getContainerIdFromCgroup(pathComponent string) (string, string) {
+	runtime := "unknown"
+	path := strings.TrimSuffix(pathComponent, ".scope")
+
+	if strings.HasPrefix(path, "docker-") {
+		runtime = "docker"
+		path = strings.TrimPrefix(path, "docker-")
+		goto check
+	}
+	if strings.HasPrefix(path, "crio-") {
+		runtime = "crio"
+		path = strings.TrimPrefix(path, "crio-")
+		goto check
+	}
+	if strings.HasPrefix(path, "cri-containerd-") {
+		runtime = "containerd"
+		path = strings.TrimPrefix(path, "cri-containerd-")
+		goto check
+	}
+	if strings.HasPrefix(path, "libpod-") {
+		runtime = "podman"
+		path = strings.TrimPrefix(path, "libpod-")
+		goto check
+	}
+
+check:
+	if matched, _ := regexp.MatchString(`^[A-Fa-f0-9]{64}$`, path); !matched {
+		return "", ""
+	}
+
+	return path, runtime
+}
+
+func (c *Containers) CgroupRemove(cgroupId uint64) {
+	delete(c.cgroupContId, uint32(cgroupId))
+}
+
+func (c *Containers) GetContainerId(cgroupId uint64) string {
+	return c.cgroupContId[uint32(cgroupId)]
 }
