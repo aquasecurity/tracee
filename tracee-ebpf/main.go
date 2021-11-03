@@ -335,13 +335,14 @@ err-file:/path/to/file                             write the errors to a specifi
 
 none                                               ignore stream of events output, usually used with --capture
 
-option:{stack-addresses,detect-syscall,exec-env,relative-time,exec-info}
+option:{stack-addresses,detect-syscall,exec-env,relative-time,exec-info,raw-arguments}
                                                    augment output according to given options (default: none)
   stack-addresses                                  include stack memory addresses for each event
   detect-syscall                                   when tracing kernel functions which are not syscalls, detect and show the original syscall that called that function
   exec-env                                         when tracing execve/execveat, show the environment variables that were used for execution
   relative-time                                    use relative timestamp instead of wall timestamp for events
   exec-info                                        when tracing sched_process_exec, show the file hash(sha256) and ctime
+  raw-arguments                                    show raw values for event arguments that are otherwise parsed into strings, such as clone(2) flags
 
 Examples:
   --output json                                            | output as json
@@ -396,6 +397,8 @@ func prepareOutput(outputSlice []string, containerMode bool) (tracee.OutputConfi
 				res.RelativeTime = true
 			case "exec-info":
 				res.ExecInfo = true
+			case "raw-arguments":
+				res.RawArguments = true
 			default:
 				return res, nil, fmt.Errorf("invalid output option: %s, use '--output help' for more info", outputParts[1])
 			}

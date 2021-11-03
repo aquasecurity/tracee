@@ -57,7 +57,7 @@ func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 	switch ctx.EventID {
 	case SysEnterEventID, SysExitEventID, CapCapableEventID, CommitCredsEventID, SecurityFileOpenEventID:
 		//show syscall name instead of id
-		if id, isInt32 := args["syscall"].(int32); isInt32 {
+		if id, isInt32 := args["syscall"].(int32); isInt32 && !t.config.Output.RawArguments {
 			if event, isKnown := EventsIDToEvent[id]; isKnown {
 				if event.Probes[0].attach == sysCall {
 					args["syscall"] = event.Probes[0].event
@@ -65,39 +65,39 @@ func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 			}
 		}
 		if ctx.EventID == CapCapableEventID {
-			if capability, isInt32 := args["cap"].(int32); isInt32 {
+			if capability, isInt32 := args["cap"].(int32); isInt32 && !t.config.Output.RawArguments {
 				args["cap"] = helpers.ParseCapability(capability)
 			}
 		}
 		if ctx.EventID == SecurityFileOpenEventID {
-			if flags, isInt32 := args["flags"].(int32); isInt32 {
+			if flags, isInt32 := args["flags"].(int32); isInt32 && !t.config.Output.RawArguments {
 				args["flags"] = helpers.ParseOpenFlags(uint32(flags))
 			}
 		}
 	case MmapEventID, MprotectEventID, PkeyMprotectEventID:
-		if prot, isInt32 := args["prot"].(int32); isInt32 {
+		if prot, isInt32 := args["prot"].(int32); isInt32 && !t.config.Output.RawArguments {
 			args["prot"] = helpers.ParseMemProt(uint32(prot))
 		}
 	case PtraceEventID:
-		if req, isInt64 := args["request"].(int64); isInt64 {
+		if req, isInt64 := args["request"].(int64); isInt64 && !t.config.Output.RawArguments {
 			args["request"] = helpers.ParsePtraceRequest(req)
 		}
 	case PrctlEventID:
-		if opt, isInt32 := args["option"].(int32); isInt32 {
+		if opt, isInt32 := args["option"].(int32); isInt32 && !t.config.Output.RawArguments {
 			args["option"] = helpers.ParsePrctlOption(opt)
 		}
 	case SocketEventID:
-		if dom, isInt32 := args["domain"].(int32); isInt32 {
+		if dom, isInt32 := args["domain"].(int32); isInt32 && !t.config.Output.RawArguments {
 			args["domain"] = helpers.ParseSocketDomain(uint32(dom))
 		}
-		if typ, isInt32 := args["type"].(int32); isInt32 {
+		if typ, isInt32 := args["type"].(int32); isInt32 && !t.config.Output.RawArguments {
 			args["type"] = helpers.ParseSocketType(uint32(typ))
 		}
 	case SecuritySocketCreateEventID:
-		if dom, isInt32 := args["family"].(int32); isInt32 {
+		if dom, isInt32 := args["family"].(int32); isInt32 && !t.config.Output.RawArguments {
 			args["family"] = helpers.ParseSocketDomain(uint32(dom))
 		}
-		if typ, isInt32 := args["type"].(int32); isInt32 {
+		if typ, isInt32 := args["type"].(int32); isInt32 && !t.config.Output.RawArguments {
 			args["type"] = helpers.ParseSocketType(uint32(typ))
 		}
 	case ConnectEventID, AcceptEventID, Accept4EventID, BindEventID, GetsocknameEventID:
@@ -131,23 +131,23 @@ func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 			args["remote_addr"] = s
 		}
 	case AccessEventID, FaccessatEventID:
-		if mode, isInt32 := args["mode"].(int32); isInt32 {
+		if mode, isInt32 := args["mode"].(int32); isInt32 && !t.config.Output.RawArguments {
 			args["mode"] = helpers.ParseAccessMode(uint32(mode))
 		}
 	case ExecveatEventID:
-		if flags, isInt32 := args["flags"].(int32); isInt32 {
+		if flags, isInt32 := args["flags"].(int32); isInt32 && !t.config.Output.RawArguments {
 			args["flags"] = helpers.ParseExecFlags(uint32(flags))
 		}
 	case OpenEventID, OpenatEventID:
-		if flags, isInt32 := args["flags"].(int32); isInt32 {
+		if flags, isInt32 := args["flags"].(int32); isInt32 && !t.config.Output.RawArguments {
 			args["flags"] = helpers.ParseOpenFlags(uint32(flags))
 		}
 	case MknodEventID, MknodatEventID, ChmodEventID, FchmodEventID, FchmodatEventID:
-		if mode, isUint32 := args["mode"].(uint32); isUint32 {
+		if mode, isUint32 := args["mode"].(uint32); isUint32 && !t.config.Output.RawArguments {
 			args["mode"] = helpers.ParseInodeMode(mode)
 		}
 	case SecurityInodeMknodEventID:
-		if mode, isUint16 := args["mode"].(uint16); isUint16 {
+		if mode, isUint16 := args["mode"].(uint16); isUint16 && !t.config.Output.RawArguments {
 			args["mode"] = helpers.ParseInodeMode(uint32(mode))
 		}
 	case MemProtAlertEventID:
@@ -155,7 +155,7 @@ func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 			args["alert"] = PrintAlert(alert)
 		}
 	case CloneEventID:
-		if flags, isUint64 := args["flags"].(uint64); isUint64 {
+		if flags, isUint64 := args["flags"].(uint64); isUint64 && !t.config.Output.RawArguments {
 			args["flags"] = helpers.ParseCloneFlags(flags)
 		}
 	case SendtoEventID, RecvfromEventID:
@@ -173,11 +173,11 @@ func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 			args[addrType] = s
 		}
 	case BpfEventID, SecurityBPFEventID:
-		if cmd, isInt32 := args["cmd"].(int32); isInt32 {
+		if cmd, isInt32 := args["cmd"].(int32); isInt32 && !t.config.Output.RawArguments {
 			args["cmd"] = helpers.ParseBPFCmd(cmd)
 		}
 	case SecurityKernelReadFileEventID, SecurityPostReadFileEventID:
-		if readFileId, isInt32 := args["type"].(int32); isInt32 {
+		if readFileId, isInt32 := args["type"].(int32); isInt32 && !t.config.Output.RawArguments {
 			typeIdStr, err := ParseKernelReadFileId(readFileId)
 			if err == nil {
 				args["type"] = typeIdStr
