@@ -90,7 +90,6 @@ const (
 	sendVfsWrite binType = iota + 1
 	sendMprotect
 	sendKernelModule
-	sendBufferModule
 )
 
 // argType is an enum that encodes the argument types that the BPF program may write to the shared buffer

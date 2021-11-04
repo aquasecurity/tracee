@@ -3785,15 +3785,14 @@ int syscall__init_module(void *ctx)
     bin_args_t bin_args = {};
 
     u32 pid = data.context.host_pid;
-    u32 dev = 0;
-    u64 inode = 0;
+    u64 dummy = 0;
     void *addr = (void*)sys->args.args[0];
     unsigned long len = (unsigned long)sys->args.args[1];
 
     if (get_config(CONFIG_CAPTURE_MODULES)) {
         bin_args.type = SEND_KERNEL_MODULE;
-        bpf_probe_read(bin_args.metadata, 4, &dev);
-        bpf_probe_read(&bin_args.metadata[4], 8, &inode);
+        bpf_probe_read(bin_args.metadata, 4, &dummy);
+        bpf_probe_read(&bin_args.metadata[4], 8, &dummy);
         bpf_probe_read(&bin_args.metadata[12], 4, &pid);
         bpf_probe_read(&bin_args.metadata[16], 8, &len);
         bin_args.ptr = (char *)addr;
