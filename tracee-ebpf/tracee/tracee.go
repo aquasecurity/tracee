@@ -233,6 +233,7 @@ func New(cfg Config) (*Tracee, error) {
 	}
 	if cfg.Capture.Module {
 		setEssential(SecurityPostReadFileEventID)
+		setEssential(InitModuleEventID)
 	}
 	if cfg.Capture.Mem {
 		setEssential(MmapEventID)
@@ -587,6 +588,7 @@ func (t *Tracee) populateBPFMaps() error {
 	errs = append(errs, t.initTailCall(tailVfsWrite, "prog_array", "trace_ret_vfs_write_tail"))
 	errs = append(errs, t.initTailCall(tailVfsWritev, "prog_array", "trace_ret_vfs_writev_tail"))
 	errs = append(errs, t.initTailCall(tailSendBin, "prog_array", "send_bin"))
+	errs = append(errs, t.initTailCall(tailSendBinTP, "prog_array_tp", "send_bin_tp"))
 	for _, e := range errs {
 		if e != nil {
 			return e
@@ -656,7 +658,7 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 
 		// some functions require tail call on syscall enter/exit as they perform extra work
-		if e == ExecveEventID || e == ExecveatEventID {
+		if e == ExecveEventID || e == ExecveatEventID || e == InitModuleEventID {
 			event, ok := EventsIDToEvent[e]
 			if !ok {
 				continue

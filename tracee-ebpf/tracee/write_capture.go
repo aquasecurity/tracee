@@ -111,10 +111,15 @@ func (t *Tracee) processFileWrites() {
 					t.handleError(err)
 					continue
 				}
-				if kernelModuleMeta.Pid == 0 {
-					filename = fmt.Sprintf("module.dev-%d.inode-%d", kernelModuleMeta.DevID, kernelModuleMeta.Inode)
-				} else {
-					filename = fmt.Sprintf("module.dev-%d.inode-%d.pid-%d", kernelModuleMeta.DevID, kernelModuleMeta.Inode, kernelModuleMeta.Pid)
+				filename = "module"
+				if kernelModuleMeta.DevID != 0 {
+					filename = fmt.Sprintf("%s.dev-%d", filename, kernelModuleMeta.DevID)
+				}
+				if kernelModuleMeta.Inode != 0 {
+					filename = fmt.Sprintf("%s.inode-%d", filename, kernelModuleMeta.Inode)
+				}
+				if kernelModuleMeta.Pid != 0 {
+					filename = fmt.Sprintf("%s.pid-%d", filename, kernelModuleMeta.Pid)
 				}
 			} else {
 				t.handleError(fmt.Errorf("error in file writer: unknown binary type: %d", meta.BinType))
