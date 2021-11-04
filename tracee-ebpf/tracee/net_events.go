@@ -120,6 +120,19 @@ func (t *Tracee) netExit(pcapContext processPcapId, timeStamp time.Time) {
 	}
 }
 
+func (t *Tracee) getPacketContext(hostTid uint32, comm string, containerId string) processPcapId {
+	var packetContext processPcapId
+	if t.config.Output.PcapPerProcess {
+		packetContext = processPcapId{hostTid: hostTid, comm: comm}
+	} else if t.config.Output.PcapPerContainer {
+		packetContext = processPcapId{contID: containerId}
+	} else {
+		packetContext = processPcapId{comm: "dump.pcap"}
+	}
+
+	return packetContext
+}
+
 func (t *Tracee) processNetEvents() {
 	// Todo: add stats for network packets (in epilog)
 	for {
@@ -140,7 +153,7 @@ func (t *Tracee) processNetEvents() {
 			// timeStamp is nanoseconds since system boot time
 			timeStampObj := time.Unix(0, int64(timeStamp+t.bootTime))
 
-			packetContext := processPcapId{hostTid: hostTid, comm: comm, contID: containerId}
+			packetContext := t.getPacketContext(hostTid, comm, containerId)
 
 			if netEventId == NetPacket {
 				var pktLen uint32

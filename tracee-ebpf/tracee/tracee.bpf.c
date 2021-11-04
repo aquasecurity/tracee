@@ -551,6 +551,8 @@ BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);              // Used to store program
 BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);          // Used to store programs for tail calls
 BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID);           // Used to store programs for tail calls
 BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);  // Used to store stack traces
+BPF_ARRAY(proc_ctx_t, process_context_t, 1);            // process_context_t holder
+BPF_ARRAY(net_ctx_struct, net_ctx_ext_t, 1);            // net_ctx_ext_t holder
 
 /*================================== EVENTS ====================================*/
 
@@ -1029,7 +1031,7 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
 static __always_inline int proc_ctx_from_context_t(process_context_t *proc_ctx, context_t *context)
 {
     proc_ctx->host_tid = context->host_tid;
-    proc_ctx->tid = context->tid;
+//    proc_ctx->tid = context->tid;
     proc_ctx->mnt_id = context->mnt_id;
     proc_ctx->pid_id = context->pid_id;
     proc_ctx->uid = context->uid;
@@ -2998,7 +3000,21 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
 {
     local_net_id_t connect_id = {0};
     net_debug_t debug_event = {0};
-    net_ctx_ext_t net_ctx_ext = {0};
+    net_ctx_ext_t *net_ctx_p;
+
+//    process_context_t pc = {0};
+    u32 idx = 0;
+    process_context_t *pc = (process_context_t *)bpf_map_lookup_elem(&proc_ctx_t, &idx);
+    if (pc == NULL) {
+        return -1;
+    }
+
+//    net_ctx_ext_t net_ctx = {0};
+//    idx = 1;
+    net_ctx_ext_t *net_ctx = (net_ctx_ext_t *)bpf_map_lookup_elem(&net_ctx_struct, &idx);
+    if (net_ctx == NULL) {
+        return -1;
+    }
 
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
@@ -3012,8 +3028,8 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
     // In these cases, we won't pass the should_trace() check.
     // To overcome this problem, we save the socket pointer in sock_ctx_map in states that we observed to have the correct context.
     // We can then check for the existence of a socket in the map, and continue if it was traced before.
-    net_ctx_ext_t *sock_ctx_p = bpf_map_lookup_elem(&sock_ctx_map, &sk);
-    if (!sock_ctx_p) {
+    net_ctx_p = bpf_map_lookup_elem(&sock_ctx_map, &sk);
+    if (!net_ctx_p) {
         if (!should_trace(&data.context)) {
             return 0;
         }
@@ -3048,24 +3064,25 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
     switch (new_state) {
     case TCP_LISTEN:
         if (connect_id.port) {
-            if (!sock_ctx_p) {
-                proc_ctx_from_context_t(&net_ctx_ext.proc_ctx, &data.context);
-//                net_ctx_ext.host_tid = data.context.host_tid;
-//                bpf_get_current_comm(&net_ctx_ext.comm, sizeof(net_ctx_ext.comm));
-                net_ctx_ext.local_port = connect_id.port;
-                bpf_map_update_elem(&sock_ctx_map, &sk, &net_ctx_ext, BPF_ANY);
-                bpf_map_update_elem(&network_map, &connect_id, &net_ctx_ext, BPF_ANY);
+            if (!net_ctx_p) {
+                proc_ctx_from_context_t(pc, &data.context);
+                net_ctx->proc_ctx = *pc;
+//                net_ctx.host_tid = data.context.host_tid;
+//                bpf_get_current_comm(&net_ctx.comm, sizeof(net_ctx.comm));
+                net_ctx->local_port = connect_id.port;
+                bpf_map_update_elem(&sock_ctx_map, &sk, net_ctx, BPF_ANY);
+                bpf_map_update_elem(&network_map, &connect_id, net_ctx, BPF_ANY);
             } else {
-                sock_ctx_p->local_port = connect_id.port;
-                bpf_map_update_elem(&network_map, &connect_id, sock_ctx_p, BPF_ANY);
+                net_ctx_p->local_port = connect_id.port;
+                bpf_map_update_elem(&network_map, &connect_id, net_ctx_p, BPF_ANY);
             }
         }
         break;
     case TCP_CLOSE:
         // At this point, port equals 0, so we will not be able to use current connect_id as a key to network map
         // We used the value saved in sock_ctx_map instead
-        if (sock_ctx_p) {
-            connect_id.port = sock_ctx_p->local_port;
+        if (net_ctx_p) {
+            connect_id.port = net_ctx_p->local_port;
         }
         bpf_map_delete_elem(&sock_ctx_map, &sk);
         bpf_map_delete_elem(&network_map, &connect_id);
@@ -3075,12 +3092,12 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
     // netDebug event
     if (get_config(CONFIG_DEBUG_NET)) {
         debug_event.ts = data.context.ts;
-        if (!sock_ctx_p) {
+        if (!net_ctx_p) {
             debug_event.host_tid = data.context.host_tid;
             bpf_get_current_comm(&debug_event.comm, sizeof(debug_event.comm));
         } else {
-            debug_event.host_tid = sock_ctx_p->proc_ctx.host_tid;
-            __builtin_memcpy(debug_event.comm, sock_ctx_p->proc_ctx.comm, TASK_COMM_LEN);
+            debug_event.host_tid = net_ctx_p->proc_ctx.host_tid;
+            __builtin_memcpy(debug_event.comm, net_ctx_p->proc_ctx.comm, TASK_COMM_LEN);
         }
         debug_event.event_id = DEBUG_NET_INET_SOCK_SET_STATE;
         debug_event.old_state = old_state;
@@ -3825,8 +3842,8 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     }
     else {
         // If not debugging, only send the minimal required data to save the packet.
-        // This will be the timestamp (u64), net event_id (u32), host_tid (u32), comm (16 bytes), packet len (u32), and ifindex (u32)
-        bpf_perf_event_output(skb, &net_events, flags, &pkt, 40);
+        // This will be the timestamp (u64), net event_id (u32), host_tid (u32), comm (16 bytes), cont_id (16 bytes), packet len (u32), and ifindex (u32)
+        bpf_perf_event_output(skb, &net_events, flags, &pkt, 56);
     }
 
     return TC_ACT_UNSPEC;
