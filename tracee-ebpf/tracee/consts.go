@@ -79,7 +79,7 @@ const (
 	tailVfsWrite uint32 = iota
 	tailVfsWritev
 	tailSendBin
-	tailSendBinSyscall
+	tailSendBinTP
 )
 
 // binType is an enum that specifies the type of binary data sent in the file perf map

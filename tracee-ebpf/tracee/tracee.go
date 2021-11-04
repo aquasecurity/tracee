@@ -588,7 +588,7 @@ func (t *Tracee) populateBPFMaps() error {
 	errs = append(errs, t.initTailCall(tailVfsWrite, "prog_array", "trace_ret_vfs_write_tail"))
 	errs = append(errs, t.initTailCall(tailVfsWritev, "prog_array", "trace_ret_vfs_writev_tail"))
 	errs = append(errs, t.initTailCall(tailSendBin, "prog_array", "send_bin"))
-	errs = append(errs, t.initTailCall(tailSendBinSyscall, "prog_array_syscall", "send_bin_syscall"))
+	errs = append(errs, t.initTailCall(tailSendBinTP, "prog_array_tp", "send_bin_tp"))
 	for _, e := range errs {
 		if e != nil {
 			return e

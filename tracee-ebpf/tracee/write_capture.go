@@ -33,11 +33,6 @@ func (t *Tracee) processFileWrites() {
 		Size  uint64
 	}
 
-	type bufferModuleMeta struct {
-		Pid  uint32
-		Size uint64
-	}
-
 	type mprotectWriteMeta struct {
 		Ts uint64
 	}
@@ -86,7 +81,6 @@ func (t *Tracee) processFileWrites() {
 			filename := ""
 			metaBuff := bytes.NewBuffer(meta.Metadata[:])
 			var kernelModuleMeta kernelModuleMeta
-			var bufferModuleMeta bufferModuleMeta
 			if meta.BinType == sendVfsWrite {
 				var vfsMeta vfsWriteMeta
 				err = binary.Read(metaBuff, binary.LittleEndian, &vfsMeta)
@@ -117,21 +111,15 @@ func (t *Tracee) processFileWrites() {
 					t.handleError(err)
 					continue
 				}
-				if kernelModuleMeta.Pid == 0 {
-					filename = fmt.Sprintf("module.dev-%d.inode-%d", kernelModuleMeta.DevID, kernelModuleMeta.Inode)
-				} else {
-					filename = fmt.Sprintf("module.dev-%d.inode-%d.pid-%d", kernelModuleMeta.DevID, kernelModuleMeta.Inode, kernelModuleMeta.Pid)
+				filename = "module"
+				if kernelModuleMeta.DevID != 0 {
+					filename = fmt.Sprintf("%s.dev-%d", filename, kernelModuleMeta.DevID)
 				}
-			} else if meta.BinType == sendBufferModule {
-				err = binary.Read(metaBuff, binary.LittleEndian, &bufferModuleMeta)
-				if err != nil {
-					t.handleError(err)
-					continue
+				if kernelModuleMeta.Inode != 0 {
+					filename = fmt.Sprintf("%s.inode-%d", filename, kernelModuleMeta.Inode)
 				}
-				if bufferModuleMeta.Pid == 0 {
-					filename = "module"
-				} else {
-					filename = fmt.Sprintf("module.pid-%d", bufferModuleMeta.Pid)
+				if kernelModuleMeta.Pid != 0 {
+					filename = fmt.Sprintf("%s.pid-%d", filename, kernelModuleMeta.Pid)
 				}
 			} else {
 				t.handleError(fmt.Errorf("error in file writer: unknown binary type: %d", meta.BinType))
@@ -175,14 +163,8 @@ func (t *Tracee) processFileWrites() {
 				continue
 			}
 			// Rename the file to add hash when last chunk was received
-			if meta.BinType == sendKernelModule || meta.BinType == sendBufferModule {
-				var moduleSize uint64
-				if meta.BinType == sendKernelModule {
-					moduleSize = kernelModuleMeta.Size
-				} else {
-					moduleSize = bufferModuleMeta.Size
-				}
-				if uint64(meta.Size)+meta.Off == moduleSize {
+			if meta.BinType == sendKernelModule {
+				if uint64(meta.Size)+meta.Off == kernelModuleMeta.Size {
 					fileHash := getFileHash(fullname)
 					os.Rename(fullname, fullname+"."+fileHash)
 				}
