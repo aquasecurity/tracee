@@ -868,7 +868,8 @@ func (t *Tracee) initBPF() error {
 			case kretprobe:
 				_, err = prog.AttachKretprobe(probe.event)
 			case tracepoint:
-				_, err = prog.AttachTracepoint(probe.event)
+				tpEvent := strings.Split(probe.event, ":")
+				_, err = prog.AttachTracepoint(tpEvent[0], tpEvent[1])
 			case rawTracepoint:
 				tpEvent := strings.Split(probe.event, ":")[1]
 				_, err = prog.AttachRawTracepoint(tpEvent)
