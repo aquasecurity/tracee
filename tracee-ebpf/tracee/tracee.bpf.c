@@ -346,13 +346,18 @@ struct bpf_map_def SEC("maps") _name = { \
 /*=============================== INTERNAL STRUCTS ===========================*/
 
 typedef struct process_context {
-    u32 tid;                    // TID as in the userspace term
-    u32 host_tid;               // TID in host pid namespace
+    u32 pid;
+    u32 tid;
+    u32 ppid;
+    u32 host_pid;
+    u32 host_tid;
+    u32 host_ppid;
     u32 uid;
     u32 mnt_id;
     u32 pid_id;
     char comm[TASK_COMM_LEN];
-    char cont_id[CONT_ID_PADDED];           // Container ID, padding to 16 to keep the context struct aligned
+    char uts_name[TASK_COMM_LEN];
+    char cont_id[CONT_ID_PADDED];
 } process_context_t;
 
 typedef struct event_context {
@@ -1031,12 +1036,17 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
 static __always_inline int proc_ctx_from_context_t(process_context_t *proc_ctx, context_t *context)
 {
     proc_ctx->host_tid = context->host_tid;
-//    proc_ctx->tid = context->tid;
+    proc_ctx->tid = context->tid;
+    proc_ctx->pid = context->pid;
+    proc_ctx->ppid = context->ppid;
+    proc_ctx->host_pid = context->host_pid;
+    proc_ctx->host_ppid = context->host_ppid;
     proc_ctx->mnt_id = context->mnt_id;
     proc_ctx->pid_id = context->pid_id;
     proc_ctx->uid = context->uid;
     __builtin_memcpy(proc_ctx->comm, context->comm, TASK_COMM_LEN);
     __builtin_memcpy(proc_ctx->cont_id, context->cont_id, CONT_ID_PADDED);
+    __builtin_memcpy(proc_ctx->uts_name, context->uts_name, TASK_COMM_LEN);
 
     return 0;
 }
