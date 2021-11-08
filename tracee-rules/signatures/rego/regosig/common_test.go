@@ -1,9 +1,5 @@
 package regosig_test
 
-import (
-	"github.com/aquasecurity/tracee/tracee-rules/types"
-)
-
 const (
 	testRegoCodeBoolean = `package tracee.TRC_BOOL
 
@@ -90,28 +86,3 @@ tracee_match = res {
 }
 `
 )
-
-// findingsHolder is a utility struct that defines types.SignatureHandler callback method
-// and holds types.Finding values received as the callback's argument.
-type findingsHolder struct {
-	values []types.Finding
-}
-
-func (h *findingsHolder) OnFinding(f types.Finding) {
-	h.values = append(h.values, f)
-}
-
-func (h *findingsHolder) GroupBySigID() map[string]types.Finding {
-	r := make(map[string]types.Finding)
-	for _, v := range h.values {
-		r[v.SigMetadata.ID] = v
-	}
-	return r
-}
-
-func (h *findingsHolder) FirstValue() *types.Finding {
-	if len(h.values) == 0 {
-		return nil
-	}
-	return &h.values[0]
-}

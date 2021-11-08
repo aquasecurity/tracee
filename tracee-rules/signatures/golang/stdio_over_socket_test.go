@@ -1,16 +1,36 @@
 package main
 
 import (
-	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"testing"
 
+	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"github.com/aquasecurity/tracee/tracee-rules/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestStdioOverSocket(t *testing.T) {
-	SigTests := []signaturestest.SigTest{
+	noFindings := map[string]types.Finding{}
+	md := types.SignatureMetadata{
+		ID:          "TRC-1",
+		Version:     "0.1.0",
+		Name:        "Standard Input/Output Over Socket",
+		Description: "Redirection of process's standard input/output to socket",
+		Tags:        []string{"linux", "container"},
+		Properties: map[string]interface{}{
+			"Severity":     3,
+			"MITRE ATT&CK": "Persistence: Server Software Component",
+		},
+	}
+
+	testCases := []struct {
+		Name     string
+		Events   []types.Event
+		Findings map[string]types.Finding
+	}{
 		{
+			Name: "A",
 			Events: []types.Event{
 				tracee.Event{
 					ProcessID: 45,
@@ -49,9 +69,37 @@ func TestStdioOverSocket(t *testing.T) {
 					},
 				},
 			},
-			Expect: true,
+			Findings: map[string]types.Finding{
+				"TRC-1": {
+					Data: map[string]interface{}{
+						"fd":   0,
+						"ip":   "10.225.0.2",
+						"port": "53",
+					},
+					SigMetadata: md,
+					Context: tracee.Event{
+						ProcessID: 45,
+						EventName: "dup2",
+						Args: []tracee.Argument{
+							{
+								ArgMeta: tracee.ArgMeta{
+									Name: "oldfd",
+								},
+								Value: int32(5),
+							},
+							{
+								ArgMeta: tracee.ArgMeta{
+									Name: "newfd",
+								},
+								Value: int32(0),
+							},
+						},
+					},
+				},
+			},
 		},
 		{
+			Name: "B",
 			Events: []types.Event{
 				tracee.Event{
 					ProcessID: 45,
@@ -90,9 +138,37 @@ func TestStdioOverSocket(t *testing.T) {
 					},
 				},
 			},
-			Expect: true,
+			Findings: map[string]types.Finding{
+				"TRC-1": {
+					Data: map[string]interface{}{
+						"fd":   0,
+						"ip":   "10.225.0.2",
+						"port": "53",
+					},
+					SigMetadata: md,
+					Context: tracee.Event{
+						ProcessID: 45,
+						EventName: "dup2",
+						Args: []tracee.Argument{
+							{
+								ArgMeta: tracee.ArgMeta{
+									Name: "oldfd",
+								},
+								Value: int32(5),
+							},
+							{
+								ArgMeta: tracee.ArgMeta{
+									Name: "newfd",
+								},
+								Value: int32(0),
+							},
+						},
+					},
+				},
+			},
 		},
 		{
+			Name: "C",
 			Events: []types.Event{
 				tracee.Event{
 					ProcessID: 45,
@@ -126,9 +202,32 @@ func TestStdioOverSocket(t *testing.T) {
 					},
 				},
 			},
-			Expect: true,
+			Findings: map[string]types.Finding{
+				"TRC-1": {
+					Data: map[string]interface{}{
+						"fd":   1,
+						"ip":   "10.225.0.2",
+						"port": "53",
+					},
+					Context: tracee.Event{
+						ProcessID:   45,
+						EventName:   "dup",
+						ReturnValue: 1,
+						Args: []tracee.Argument{
+							{
+								ArgMeta: tracee.ArgMeta{
+									Name: "oldfd",
+								},
+								Value: int32(5),
+							},
+						},
+					},
+					SigMetadata: md,
+				},
+			},
 		},
 		{
+			Name: "D",
 			Events: []types.Event{
 				tracee.Event{
 					ProcessID: 45,
@@ -173,9 +272,43 @@ func TestStdioOverSocket(t *testing.T) {
 					},
 				},
 			},
-			Expect: true,
+			Findings: map[string]types.Finding{
+				"TRC-1": {
+					Data: map[string]interface{}{
+						"fd":   0,
+						"ip":   "10.225.0.2",
+						"port": "53",
+					},
+					Context: tracee.Event{
+						ProcessID: 45,
+						EventName: "dup3",
+						Args: []tracee.Argument{
+							{
+								ArgMeta: tracee.ArgMeta{
+									Name: "oldfd",
+								},
+								Value: int32(5),
+							},
+							{
+								ArgMeta: tracee.ArgMeta{
+									Name: "newfd",
+								},
+								Value: int32(0),
+							},
+							{
+								ArgMeta: tracee.ArgMeta{
+									Name: "flags",
+								},
+								Value: "SOMEFLAGS",
+							},
+						},
+					},
+					SigMetadata: md,
+				},
+			},
 		},
 		{
+			Name: "E",
 			Events: []types.Event{
 				tracee.Event{
 					ProcessID: 45,
@@ -196,9 +329,10 @@ func TestStdioOverSocket(t *testing.T) {
 					},
 				},
 			},
-			Expect: false,
+			Findings: noFindings,
 		},
 		{
+			Name: "F",
 			Events: []types.Event{
 				tracee.Event{
 					ProcessID: 45,
@@ -249,9 +383,10 @@ func TestStdioOverSocket(t *testing.T) {
 					},
 				},
 			},
-			Expect: false,
+			Findings: noFindings,
 		},
 		{
+			Name: "G",
 			Events: []types.Event{
 				tracee.Event{
 					ProcessID: 45,
@@ -290,9 +425,10 @@ func TestStdioOverSocket(t *testing.T) {
 					},
 				},
 			},
-			Expect: false,
+			Findings: noFindings,
 		},
 		{
+			Name: "H",
 			Events: []types.Event{
 				tracee.Event{
 					ProcessID: 45,
@@ -331,21 +467,48 @@ func TestStdioOverSocket(t *testing.T) {
 					},
 				},
 			},
-			Expect: true,
+			Findings: map[string]types.Finding{
+				"TRC-1": {
+					Data: map[string]interface{}{
+						"fd":   0,
+						"ip":   "2001:67c:1360:8001::2f",
+						"port": "443",
+					},
+					Context: tracee.Event{
+						ProcessID: 45,
+						EventName: "dup2",
+						Args: []tracee.Argument{
+							{
+								ArgMeta: tracee.ArgMeta{
+									Name: "oldfd",
+								},
+								Value: int32(5),
+							},
+							{
+								ArgMeta: tracee.ArgMeta{
+									Name: "newfd",
+								},
+								Value: int32(0),
+							},
+						},
+					},
+					SigMetadata: md,
+				},
+			},
 		},
 	}
 
-	for _, st := range SigTests {
-		sig := stdioOverSocket{}
-		st.Init(&sig)
-		for _, e := range st.Events {
-			err := sig.OnEvent(e)
-			if err != nil {
-				t.Error(err, st)
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			holder := signaturestest.FindingsHolder{}
+			sig := stdioOverSocket{}
+			sig.Init(holder.OnFinding)
+
+			for _, e := range tc.Events {
+				err := sig.OnEvent(e)
+				require.NoError(t, err)
 			}
-		}
-		if st.Expect != st.Status {
-			t.Error("unExpected result", st)
-		}
+			assert.Equal(t, tc.Findings, holder.GroupBySigID())
+		})
 	}
 }
