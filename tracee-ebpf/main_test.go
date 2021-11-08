@@ -1258,6 +1258,7 @@ func TestPrepareOutput(t *testing.T) {
 			outputSlice: []string{"option:stack-addresses"},
 			expectedOutput: tracee.OutputConfig{
 				StackAddresses: true,
+				ParseArguments: true,
 			},
 			expectedError: nil,
 		},
@@ -1265,7 +1266,8 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "option detect-syscall",
 			outputSlice: []string{"option:detect-syscall"},
 			expectedOutput: tracee.OutputConfig{
-				DetectSyscall: true,
+				DetectSyscall:  true,
+				ParseArguments: true,
 			},
 			expectedError: nil,
 		},
@@ -1273,7 +1275,8 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "option exec-env",
 			outputSlice: []string{"option:exec-env"},
 			expectedOutput: tracee.OutputConfig{
-				ExecEnv: true,
+				ExecEnv:        true,
+				ParseArguments: true,
 			},
 			expectedError: nil,
 		},
@@ -1281,7 +1284,8 @@ func TestPrepareOutput(t *testing.T) {
 			testName:    "option exec-info",
 			outputSlice: []string{"option:exec-info"},
 			expectedOutput: tracee.OutputConfig{
-				ExecInfo: true,
+				ExecInfo:       true,
+				ParseArguments: true,
 			},
 			expectedError: nil,
 		},
@@ -1293,6 +1297,7 @@ func TestPrepareOutput(t *testing.T) {
 				DetectSyscall:  true,
 				ExecEnv:        true,
 				ExecInfo:       true,
+				ParseArguments: true,
 			},
 			expectedError: nil,
 		},

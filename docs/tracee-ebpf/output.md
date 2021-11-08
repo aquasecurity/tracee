@@ -16,7 +16,7 @@ CLI Option | Description
   exec-env | when tracing execve/execveat, show the environment variables that were used for execution
 exec-info | when tracing sched_process_exec, show the file hash(sha256) and ctime
 relative-time | use relative timestamp instead of wall timestamp for events
-raw-arguments | show raw values for event arguments that are otherwise parsed into strings, such as clone(2) flags
+raw-arguments | do not show raw machine-readable values for event arguments, instead parse into human readable strings
 
 
 
