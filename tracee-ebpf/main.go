@@ -361,6 +361,7 @@ func prepareOutput(outputSlice []string, containerMode bool) (tracee.OutputConfi
 	outPath := ""
 	errPath := ""
 	var err error
+
 	for _, o := range outputSlice {
 		outputParts := strings.SplitN(o, ":", 2)
 		numParts := len(outputParts)
@@ -407,8 +408,7 @@ func prepareOutput(outputSlice []string, containerMode bool) (tracee.OutputConfi
 		}
 	}
 
-	if printerKind == "table" ||
-		true { // XXX: Remove this line once tracee-rules signatures have been updated to take raw args by default into account (see #1123, libbpfgo#88)
+	if printerKind == "table" {
 		res.ParseArguments = true
 	}
 
