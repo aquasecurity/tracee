@@ -65,6 +65,7 @@ type OutputConfig struct {
 	ExecEnv        bool
 	RelativeTime   bool
 	ExecInfo       bool
+	ParseArguments bool
 }
 
 type netProbe struct {

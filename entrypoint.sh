@@ -27,4 +27,4 @@ done
 
 # start, and pass all remaining flags to tracee-rules
 EVENTS=$($TRACEE_RULES_EXE --list-events)
-$TRACEE_EBPF_EXE --output=format:gob --trace event=$EVENTS,mem_prot_alert | $TRACEE_RULES_EXE --input-tracee=file:stdin --input-tracee=format:gob $@
+$TRACEE_EBPF_EXE --output=format:gob --output=option:parse-arguments --trace event=$EVENTS,mem_prot_alert | $TRACEE_RULES_EXE --input-tracee=file:stdin --input-tracee=format:gob $@

@@ -54,6 +54,48 @@ func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 			args[key] = fmt.Sprintf("0x%X", ptr)
 		}
 	}
+
+	switch ctx.EventID {
+	case ConnectEventID, AcceptEventID, Accept4EventID, BindEventID, GetsocknameEventID:
+		if sockAddr, isStrMap := args["addr"].(map[string]string); isStrMap {
+			var s string
+			for key, val := range sockAddr {
+				s += fmt.Sprintf("'%s': '%s',", key, val)
+			}
+			s = strings.TrimSuffix(s, ",")
+			s = fmt.Sprintf("{%s}", s)
+			args["addr"] = s
+		}
+	case SecuritySocketBindEventID, SecuritySocketAcceptEventID, SecuritySocketListenEventID:
+		if sockAddr, isStrMap := args["local_addr"].(map[string]string); isStrMap {
+			var s string
+			for key, val := range sockAddr {
+				s += fmt.Sprintf("'%s': '%s',", key, val)
+			}
+			s = strings.TrimSuffix(s, ",")
+			s = fmt.Sprintf("{%s}", s)
+			args["local_addr"] = s
+		}
+	case SecuritySocketConnectEventID, SocketDupEventID:
+		if sockAddr, isStrMap := args["remote_addr"].(map[string]string); isStrMap {
+			var s string
+			for key, val := range sockAddr {
+				s += fmt.Sprintf("'%s': '%s',", key, val)
+			}
+			s = strings.TrimSuffix(s, ",")
+			s = fmt.Sprintf("{%s}", s)
+			args["remote_addr"] = s
+		}
+	case MemProtAlertEventID:
+		if alert, isAlert := args["alert"].(alert); isAlert {
+			args["alert"] = PrintAlert(alert)
+		}
+	}
+
+	// EventIDs which are optionally parsed/enriched into human readable formats
+	if !t.config.Output.ParseArguments {
+		return nil
+	}
 	switch ctx.EventID {
 	case SysEnterEventID, SysExitEventID, CapCapableEventID, CommitCredsEventID, SecurityFileOpenEventID:
 		//show syscall name instead of id
@@ -100,36 +142,6 @@ func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 		if typ, isInt32 := args["type"].(int32); isInt32 {
 			args["type"] = helpers.ParseSocketType(uint32(typ))
 		}
-	case ConnectEventID, AcceptEventID, Accept4EventID, BindEventID, GetsocknameEventID:
-		if sockAddr, isStrMap := args["addr"].(map[string]string); isStrMap {
-			var s string
-			for key, val := range sockAddr {
-				s += fmt.Sprintf("'%s': '%s',", key, val)
-			}
-			s = strings.TrimSuffix(s, ",")
-			s = fmt.Sprintf("{%s}", s)
-			args["addr"] = s
-		}
-	case SecuritySocketBindEventID, SecuritySocketAcceptEventID, SecuritySocketListenEventID:
-		if sockAddr, isStrMap := args["local_addr"].(map[string]string); isStrMap {
-			var s string
-			for key, val := range sockAddr {
-				s += fmt.Sprintf("'%s': '%s',", key, val)
-			}
-			s = strings.TrimSuffix(s, ",")
-			s = fmt.Sprintf("{%s}", s)
-			args["local_addr"] = s
-		}
-	case SecuritySocketConnectEventID, SocketDupEventID:
-		if sockAddr, isStrMap := args["remote_addr"].(map[string]string); isStrMap {
-			var s string
-			for key, val := range sockAddr {
-				s += fmt.Sprintf("'%s': '%s',", key, val)
-			}
-			s = strings.TrimSuffix(s, ",")
-			s = fmt.Sprintf("{%s}", s)
-			args["remote_addr"] = s
-		}
 	case AccessEventID, FaccessatEventID:
 		if mode, isInt32 := args["mode"].(int32); isInt32 {
 			args["mode"] = helpers.ParseAccessMode(uint32(mode))
@@ -149,10 +161,6 @@ func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 	case SecurityInodeMknodEventID:
 		if mode, isUint16 := args["mode"].(uint16); isUint16 {
 			args["mode"] = helpers.ParseInodeMode(uint32(mode))
-		}
-	case MemProtAlertEventID:
-		if alert, isAlert := args["alert"].(alert); isAlert {
-			args["alert"] = PrintAlert(alert)
 		}
 	case CloneEventID:
 		if flags, isUint64 := args["flags"].(uint64); isUint64 {
