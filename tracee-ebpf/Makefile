@@ -109,16 +109,17 @@ $(OUT_DIR)/tracee.bpf.%.o: $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compi
 		-I $(KERN_BLD_PATH)/include/generated \
 		-I $(KERN_BLD_PATH)/include/generated/uapi \
 		-I $(BPF_HEADERS) \
-		-Wno-address-of-packed-member \
-		-Wno-compare-distinct-pointer-types \
-		-Wno-deprecated-declarations \
-		-Wno-gnu-variable-sized-type-not-at-end \
-		-Wno-pointer-sign \
-		-Wno-pragma-once-outside-header \
-		-Wno-unknown-warning-option \
-		-Wno-unused-value \
 		-Wunused \
 		-Wall \
+		-Wno-frame-address \
+		-Wno-unused-value \
+		-Wno-unknown-warning-option \
+		-Wno-pragma-once-outside-header \
+		-Wno-pointer-sign \
+		-Wno-gnu-variable-sized-type-not-at-end \
+		-Wno-deprecated-declarations \
+		-Wno-compare-distinct-pointer-types \
+		-Wno-address-of-packed-member \
 		-fno-stack-protector \
 		-fno-jump-tables \
 		-fno-unwind-tables \
