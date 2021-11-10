@@ -16,9 +16,10 @@ import (
 )
 
 type processPcapId struct {
-	hostTid uint32
-	comm    string
-	contID  string
+	hostPid       uint32
+	procStartTime uint64
+	comm          string
+	contID        string
 }
 
 func (t *Tracee) getPcapsDirPath() string {
@@ -28,7 +29,7 @@ func (t *Tracee) getPcapsDirPath() string {
 func (t *Tracee) getPcapFilePathWithTime(pcapContext processPcapId, timeStampObj time.Time) string {
 	var pcapFileName string
 	if t.config.Output.PcapPerProcess {
-		pcapFileName = fmt.Sprintf("%s_%d_%d.pcap", pcapContext.comm, pcapContext.hostTid, timeStampObj.Unix())
+		pcapFileName = fmt.Sprintf("%s_%d_%d.pcap", pcapContext.comm, pcapContext.hostPid, pcapContext.procStartTime)
 	} else if t.config.Output.PcapPerContainer {
 		pcapFileName = fmt.Sprintf("%s_%d.pcap", pcapContext.contID, timeStampObj.Unix())
 	} else {
@@ -40,7 +41,7 @@ func (t *Tracee) getPcapFilePathWithTime(pcapContext processPcapId, timeStampObj
 func (t *Tracee) getPcapFilePath(pcapContext processPcapId) string {
 	var pcapFileName string
 	if t.config.Output.PcapPerProcess {
-		pcapFileName = fmt.Sprintf("%s_%d.pcap", pcapContext.comm, pcapContext.hostTid)
+		pcapFileName = fmt.Sprintf("%s_%d_%d.pcap", pcapContext.comm, pcapContext.hostPid, pcapContext.procStartTime)
 	} else if t.config.Output.PcapPerContainer {
 		pcapFileName = fmt.Sprintf("%s.pcap", pcapContext.contID)
 	} else {
@@ -65,7 +66,7 @@ func (t *Tracee) createPcapFile(pcapContext processPcapId) error {
 	}
 
 	pcapFilePath := t.getPcapFilePath(pcapContext)
-	pcapFile, err := os.Create(pcapFilePath)
+	pcapFile, err := os.OpenFile(pcapFilePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return fmt.Errorf("error creating pcap file: %v", err)
 	}
@@ -110,9 +111,6 @@ func (t *Tracee) createPcapFile(pcapContext processPcapId) error {
 
 func (t *Tracee) netExit(pcapContext processPcapId, timeStamp time.Time) {
 
-	// we have to wait because sometimes few packets are being sent/received after the event of process exit
-	time.Sleep(1 * time.Second)
-
 	delete(t.pcapWriters, pcapContext)
 	err := t.renamePcapFileAtExit(pcapContext, timeStamp)
 	if err != nil {
@@ -120,10 +118,10 @@ func (t *Tracee) netExit(pcapContext processPcapId, timeStamp time.Time) {
 	}
 }
 
-func (t *Tracee) getPacketContext(hostTid uint32, comm string, containerId string) processPcapId {
+func (t *Tracee) getPacketContext(hostTid uint32, procStartTime uint64, comm string, containerId string) processPcapId {
 	var packetContext processPcapId
 	if t.config.Output.PcapPerProcess {
-		packetContext = processPcapId{hostTid: hostTid, comm: comm}
+		packetContext = processPcapId{hostPid: hostTid, comm: comm, procStartTime: procStartTime}
 	} else if t.config.Output.PcapPerContainer {
 		packetContext = processPcapId{contID: containerId}
 	} else {
@@ -145,15 +143,18 @@ func (t *Tracee) processNetEvents() {
 
 			timeStamp := binary.LittleEndian.Uint64(in[0:8])
 			netEventId := binary.LittleEndian.Uint32(in[8:12])
-			hostTid := binary.LittleEndian.Uint32(in[12:16])
-			comm := string(bytes.TrimRight(in[16:32], "\x00"))
-			containerId := string(bytes.TrimRight(in[32:48], "\x00"))
-			dataBuff := bytes.NewBuffer(in[48:])
+			// 12:16 is hostTid which is of no use to us here
+			hostPid := binary.LittleEndian.Uint32(in[16:20])
+			// 20:24 is padding
+			procStartTime := binary.LittleEndian.Uint64(in[24:32])
+			comm := string(bytes.TrimRight(in[32:48], "\x00"))
+			containerId := string(bytes.TrimRight(in[48:64], "\x00"))
+			dataBuff := bytes.NewBuffer(in[64:])
 
 			// timeStamp is nanoseconds since system boot time
 			timeStampObj := time.Unix(0, int64(timeStamp+t.bootTime))
 
-			packetContext := t.getPacketContext(hostTid, comm, containerId)
+			packetContext := t.getPacketContext(hostPid, procStartTime, comm, containerId)
 
 			if netEventId == NetPacket {
 				var pktLen uint32
@@ -192,7 +193,7 @@ func (t *Tracee) processNetEvents() {
 					fmt.Printf("%v  %-16s  %-7d  debug_net/packet               Len: %d, SrcIP: %v, SrcPort: %d, DestIP: %v, DestPort: %d, Protocol: %d\n",
 						timeStampObj,
 						comm,
-						hostTid,
+						hostPid,
 						pktLen,
 						netaddr.IPFrom16(pktMeta.SrcIP),
 						pktMeta.SrcPort,
@@ -229,7 +230,7 @@ func (t *Tracee) processNetEvents() {
 					t.handleError(err)
 					continue
 				}
-			} else if (netEventId == NetProcessExit && t.config.Output.PcapPerProcess) || (netEventId == NetContainerExit) {
+			} else if (netEventId == NetConnectionExit && t.config.Output.PcapPerProcess) || (netEventId == NetContainerExit) {
 				_, pcapWriterExists := t.pcapWriters[packetContext]
 				if pcapWriterExists {
 					go t.netExit(packetContext, timeStampObj)
@@ -256,24 +257,24 @@ func (t *Tracee) processNetEvents() {
 				switch netEventId {
 				case DebugNetSecurityBind:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/security_socket_bind LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+						timeStampObj, comm, hostPid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
 				case DebugNetUdpSendmsg:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_sendmsg          LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+						timeStampObj, comm, hostPid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
 				case DebugNetUdpDisconnect:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/__udp_disconnect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+						timeStampObj, comm, hostPid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
 				case DebugNetUdpDestroySock:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_destroy_sock     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+						timeStampObj, comm, hostPid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
 				case DebugNetUdpV6DestroySock:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/udpv6_destroy_sock   LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+						timeStampObj, comm, hostPid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
 				case DebugNetInetSockSetState:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/inet_sock_set_state  LocalIP: %v, LocalPort: %d, RemoteIP: %v, RemotePort: %d, Protocol: %d, OldState: %d, NewState: %d, SockPtr: 0x%x\n",
 						timeStampObj,
 						comm,
-						hostTid,
+						hostPid,
 						netaddr.IPFrom16(pkt.LocalIP),
 						pkt.LocalPort,
 						netaddr.IPFrom16(pkt.RemoteIP),
@@ -284,7 +285,7 @@ func (t *Tracee) processNetEvents() {
 						pkt.SockPtr)
 				case DebugNetTcpConnect:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/tcp_connect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+						timeStampObj, comm, hostPid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
 				}
 			}
 		case lost := <-t.lostNetChannel:

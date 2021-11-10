@@ -204,7 +204,7 @@ Copyright (C) Aqua Security inc.
 #define DEBUG_NET_UDPV6_DESTROY_SOCK    5
 #define DEBUG_NET_INET_SOCK_SET_STATE   6
 #define DEBUG_NET_TCP_CONNECT           7
-#define NET_PROCESS_EXIT                8
+#define NET_CONNECTION_EXIT             8
 #define NET_CONTAINER_EXIT              9
 
 #define CONFIG_SHOW_SYSCALL         1
@@ -355,6 +355,7 @@ typedef struct process_context {
     u32 uid;
     u32 mnt_id;
     u32 pid_id;
+    u64 start_time;
     char comm[TASK_COMM_LEN];
     char uts_name[TASK_COMM_LEN];
     char cont_id[CONT_ID_PADDED];
@@ -475,6 +476,8 @@ typedef struct net_packet {
     uint64_t ts;
     u32 event_id;
     u32 host_tid;
+    u32 host_pid;
+    u64 proc_start_time;
     char comm[TASK_COMM_LEN];
     char cont_id[CONT_ID_PADDED];
     u32 len;
@@ -488,6 +491,8 @@ typedef struct net_debug {
     uint64_t ts;
     u32 event_id;
     u32 host_tid;
+    u32 host_pid;
+    u64 proc_start_time;
     char comm[TASK_COMM_LEN];
     char cont_id[CONT_ID_PADDED];
     struct in6_addr local_addr, remote_addr;
@@ -556,8 +561,9 @@ BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);              // Used to store program
 BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);          // Used to store programs for tail calls
 BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID);           // Used to store programs for tail calls
 BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);  // Used to store stack traces
-BPF_ARRAY(proc_ctx_t, process_context_t, 1);            // process_context_t holder
-BPF_ARRAY(net_ctx_struct, net_ctx_ext_t, 1);            // net_ctx_ext_t holder
+BPF_PERCPU_ARRAY(proc_ctx_t, process_context_t, 1);     // process_context_t holder
+BPF_PERCPU_ARRAY(net_ctx_struct, net_ctx_ext_t, 1);     // net_ctx_ext_t holder
+BPF_PERCPU_ARRAY(net_debug_t_struct, net_debug_t, 1);   // net_debug_t holder
 
 /*================================== EVENTS ====================================*/
 
@@ -720,6 +726,22 @@ static __always_inline int get_task_parent_flags(struct task_struct *task)
 static __always_inline const struct cred *get_task_real_cred(struct task_struct *task)
 {
     return READ_KERN(task->real_cred);
+}
+
+static __always_inline u64 get_task_start_time(struct task_struct *task)
+{
+    return READ_KERN(task->start_time);
+}
+
+static __always_inline u64 get_process_start_time()
+{
+    // get the task_struct of the current thread
+    struct task_struct *current_task = (struct task_struct *)bpf_get_current_task();
+
+    // get the task_struct of the group_leader - i.e. the first thread of the process
+    struct task_struct *group_leader = READ_KERN(current_task->group_leader);
+
+    return get_task_start_time(group_leader);
 }
 
 static __always_inline const char * get_binprm_filename(struct linux_binprm *bprm)
@@ -1044,6 +1066,7 @@ static __always_inline int proc_ctx_from_context_t(process_context_t *proc_ctx, 
     proc_ctx->mnt_id = context->mnt_id;
     proc_ctx->pid_id = context->pid_id;
     proc_ctx->uid = context->uid;
+    proc_ctx->start_time = get_process_start_time();
     __builtin_memcpy(proc_ctx->comm, context->comm, TASK_COMM_LEN);
     __builtin_memcpy(proc_ctx->cont_id, context->cont_id, CONT_ID_PADDED);
     __builtin_memcpy(proc_ctx->uts_name, context->uts_name, TASK_COMM_LEN);
@@ -2255,19 +2278,20 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     if (data.context.tid == 1)
         bpf_map_delete_elem(&new_pidns_map, &data.context.pid_id);
 
-    if (get_config(CONFIG_CAPTURE_NET)) {
-        net_debug_t debug_event = {0};
-        debug_event.ts = data.context.ts;
-        debug_event.host_tid = data.context.host_tid;
-        __builtin_memcpy(debug_event.comm, data.context.comm, TASK_COMM_LEN);
-        __builtin_memcpy(debug_event.cont_id, data.context.cont_id, CONT_ID_LEN);
-        if (data.context.tid == 1) {
-            debug_event.event_id = NET_CONTAINER_EXIT;
+    if (get_config(CONFIG_CAPTURE_NET) && data.context.tid == 1) {
+        u32 idx = 0;
+        net_debug_t *debug_event = bpf_map_lookup_elem(&net_debug_t_struct, &idx);
+        if (debug_event == NULL) {
+            return -1;
         }
-        else {
-            debug_event.event_id = NET_PROCESS_EXIT;
-        }
-        bpf_perf_event_output(ctx, &net_events, BPF_F_CURRENT_CPU, &debug_event, sizeof(debug_event));
+        debug_event->ts = data.context.ts;
+        debug_event->host_tid = data.context.host_tid;
+        debug_event->host_pid = data.context.host_pid;
+        debug_event->proc_start_time = get_process_start_time();
+        __builtin_memcpy(debug_event->comm, data.context.comm, TASK_COMM_LEN);
+        __builtin_memcpy(debug_event->cont_id, data.context.cont_id, CONT_ID_PADDED);
+        debug_event->event_id = NET_CONTAINER_EXIT;
+        bpf_perf_event_output(ctx, &net_events, BPF_F_CURRENT_CPU, debug_event, sizeof(net_debug_t));
     }
 
     if (!should_trace(&data.context))
@@ -2874,24 +2898,27 @@ int BPF_KPROBE(trace_security_socket_bind)
     }
 
     if (connect_id.port) {
-        net_ctx_t net_ctx;
+        net_ctx_t net_ctx = {0};
         proc_ctx_from_context_t(&net_ctx.proc_ctx, &data.context);
-//        net_ctx.host_tid = data.context.host_tid;
-//        __builtin_memcpy(net_ctx.comm, data.context.comm, TASK_COMM_LEN);
         bpf_map_update_elem(&network_map, &connect_id, &net_ctx, BPF_ANY);
     }
 
     // netDebug event
     if (get_config(CONFIG_DEBUG_NET) && (sa_fam != AF_UNIX)) {
-        net_debug_t debug_event = {0};
-        debug_event.ts = data.context.ts;
-        debug_event.host_tid = data.context.host_tid;
-        __builtin_memcpy(debug_event.comm, data.context.comm, TASK_COMM_LEN);
-        debug_event.event_id = DEBUG_NET_SECURITY_BIND;
-        debug_event.local_addr = connect_id.address;
-        debug_event.local_port = __bpf_ntohs(connect_id.port);
-        debug_event.protocol = protocol;
-        bpf_perf_event_output(ctx, &net_events, BPF_F_CURRENT_CPU, &debug_event, sizeof(debug_event));
+        u32 idx = 0;
+        net_debug_t *debug_event = bpf_map_lookup_elem(&net_debug_t_struct, &idx);
+        if (debug_event == NULL) {
+            return -1;
+        }
+        debug_event->ts = data.context.ts;
+        debug_event->host_tid = data.context.host_tid;
+        debug_event->host_pid = data.context.host_pid;
+        __builtin_memcpy(debug_event->comm, data.context.comm, TASK_COMM_LEN);
+        debug_event->event_id = DEBUG_NET_SECURITY_BIND;
+        debug_event->local_addr = connect_id.address;
+        debug_event->local_port = __bpf_ntohs(connect_id.port);
+        debug_event->protocol = protocol;
+        bpf_perf_event_output(ctx, &net_events, BPF_F_CURRENT_CPU, debug_event, sizeof(net_debug_t));
     }
 
     return events_perf_submit(&data, SECURITY_SOCKET_BIND, 0);
@@ -2917,27 +2944,46 @@ static __always_inline int net_map_update_or_delete_sock(event_data_t* data, int
 
     if (connect_id.port) {
         if (tid != 0) {
-            net_ctx_t net_ctx;
+            net_ctx_t net_ctx = {0};
             proc_ctx_from_context_t(&net_ctx.proc_ctx, &data->context);
-//            net_ctx.host_tid = tid;
-//            bpf_get_current_comm(&net_ctx.comm, sizeof(net_ctx.comm));
             bpf_map_update_elem(&network_map, &connect_id, &net_ctx, BPF_ANY);
         } else {
             bpf_map_delete_elem(&network_map, &connect_id);
+
+            if (get_config(CONFIG_CAPTURE_NET)) {
+                u32 idx = 0;
+                net_debug_t *net_event = bpf_map_lookup_elem(&net_debug_t_struct, &idx);
+                if (net_event == NULL) {
+                    return -1;
+                }
+                net_event->ts = data->context.ts;
+                net_event->host_tid = data->context.host_tid;
+                net_event->host_pid = data->context.host_pid;
+                net_event->proc_start_time = get_process_start_time();
+                __builtin_memcpy(net_event->comm, data->context.comm, TASK_COMM_LEN);
+                __builtin_memcpy(net_event->cont_id, data->context.cont_id, CONT_ID_PADDED);
+                net_event->event_id = NET_CONNECTION_EXIT;
+                bpf_perf_event_output(data->ctx, &net_events, BPF_F_CURRENT_CPU, net_event, sizeof(net_debug_t));
+            }
         }
     }
 
     // netDebug event
     if (get_config(CONFIG_DEBUG_NET)) {
-        net_debug_t debug_event = {0};
-        debug_event.ts = bpf_ktime_get_ns();
-        debug_event.host_tid = bpf_get_current_pid_tgid();
-        bpf_get_current_comm(&debug_event.comm, sizeof(debug_event.comm));
-        debug_event.event_id = event_id;
-        debug_event.local_addr = connect_id.address;
-        debug_event.local_port = __bpf_ntohs(connect_id.port);
-        debug_event.protocol = connect_id.protocol;
-        bpf_perf_event_output(data->ctx, &net_events, BPF_F_CURRENT_CPU, &debug_event, sizeof(debug_event));
+        u32 idx = 0;
+        net_debug_t *debug_event = bpf_map_lookup_elem(&net_debug_t_struct, &idx);
+        if (debug_event == NULL) {
+            return -1;
+        }
+        debug_event->ts = bpf_ktime_get_ns();
+        debug_event->host_tid = data->context.host_tid;
+        debug_event->host_pid = data->context.host_pid;
+        bpf_get_current_comm(&debug_event->comm, sizeof(debug_event->comm));
+        debug_event->event_id = event_id;
+        debug_event->local_addr = connect_id.address;
+        debug_event->local_port = __bpf_ntohs(connect_id.port);
+        debug_event->protocol = connect_id.protocol;
+        bpf_perf_event_output(data->ctx, &net_events, BPF_F_CURRENT_CPU, debug_event, sizeof(net_debug_t));
     }
 
     return 0;
@@ -3009,18 +3055,18 @@ SEC("raw_tracepoint/inet_sock_set_state")
 int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
 {
     local_net_id_t connect_id = {0};
-    net_debug_t debug_event = {0};
+    u32 idx = 0;
+    net_debug_t *debug_event = bpf_map_lookup_elem(&net_debug_t_struct, &idx);
+    if (debug_event == NULL) {
+        return -1;
+    }
     net_ctx_ext_t *net_ctx_p;
 
-//    process_context_t pc = {0};
-    u32 idx = 0;
     process_context_t *pc = (process_context_t *)bpf_map_lookup_elem(&proc_ctx_t, &idx);
     if (pc == NULL) {
         return -1;
     }
 
-//    net_ctx_ext_t net_ctx = {0};
-//    idx = 1;
     net_ctx_ext_t *net_ctx = (net_ctx_ext_t *)bpf_map_lookup_elem(&net_ctx_struct, &idx);
     if (net_ctx == NULL) {
         return -1;
@@ -3052,21 +3098,21 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
         get_network_details_from_sock_v4(sk, &net_details, 0);
         get_local_net_id_from_network_details_v4(sk, &connect_id, &net_details, family);
 
-        debug_event.local_addr.s6_addr32[3] = net_details.local_address;
-        debug_event.local_addr.s6_addr16[5] = 0xffff;
-        debug_event.local_port = __bpf_ntohs(net_details.local_port);
-        debug_event.remote_addr.s6_addr32[3] = net_details.remote_address;
-        debug_event.remote_addr.s6_addr16[5] = 0xffff;
-        debug_event.remote_port = __bpf_ntohs(net_details.remote_port);
+        debug_event->local_addr.s6_addr32[3] = net_details.local_address;
+        debug_event->local_addr.s6_addr16[5] = 0xffff;
+        debug_event->local_port = __bpf_ntohs(net_details.local_port);
+        debug_event->remote_addr.s6_addr32[3] = net_details.remote_address;
+        debug_event->remote_addr.s6_addr16[5] = 0xffff;
+        debug_event->remote_port = __bpf_ntohs(net_details.remote_port);
     } else if (family == AF_INET6) {
         net_conn_v6_t net_details = {};
         get_network_details_from_sock_v6(sk, &net_details, 0);
         get_local_net_id_from_network_details_v6(sk, &connect_id, &net_details, family);
 
-        debug_event.local_addr = net_details.local_address;
-        debug_event.local_port = __bpf_ntohs(net_details.local_port);
-        debug_event.remote_addr = net_details.remote_address;
-        debug_event.remote_port = __bpf_ntohs(net_details.remote_port);
+        debug_event->local_addr = net_details.local_address;
+        debug_event->local_port = __bpf_ntohs(net_details.local_port);
+        debug_event->remote_addr = net_details.remote_address;
+        debug_event->remote_port = __bpf_ntohs(net_details.remote_port);
     } else {
         return 0;
     }
@@ -3096,25 +3142,48 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
         }
         bpf_map_delete_elem(&sock_ctx_map, &sk);
         bpf_map_delete_elem(&network_map, &connect_id);
+
+        if (get_config(CONFIG_CAPTURE_NET)) {
+            net_debug_t net_proc_flow = *debug_event;
+            net_proc_flow.ts = data.context.ts;
+            if (!net_ctx_p) {
+                net_proc_flow.host_tid = data.context.host_tid;
+                net_proc_flow.host_pid = data.context.host_pid;
+                bpf_get_current_comm(&net_proc_flow.comm, sizeof(net_proc_flow.comm));
+                __builtin_memcpy(net_proc_flow.cont_id, data.context.cont_id, CONT_ID_PADDED);
+                net_proc_flow.proc_start_time = get_process_start_time();
+            } else {
+                net_proc_flow.host_tid = net_ctx_p->proc_ctx.host_tid;
+                net_proc_flow.host_pid = net_ctx_p->proc_ctx.host_pid;
+                __builtin_memcpy(net_proc_flow.comm, net_ctx_p->proc_ctx.comm, TASK_COMM_LEN);
+                __builtin_memcpy(net_proc_flow.cont_id, net_ctx_p->proc_ctx.cont_id, CONT_ID_PADDED);
+                net_proc_flow.proc_start_time = net_ctx_p->proc_ctx.start_time;
+            }
+            net_proc_flow.event_id = NET_CONNECTION_EXIT;
+            bpf_perf_event_output(ctx, &net_events, BPF_F_CURRENT_CPU, &net_proc_flow, sizeof(net_proc_flow));
+        }
+
         break;
     }
 
     // netDebug event
     if (get_config(CONFIG_DEBUG_NET)) {
-        debug_event.ts = data.context.ts;
+        debug_event->ts = data.context.ts;
         if (!net_ctx_p) {
-            debug_event.host_tid = data.context.host_tid;
-            bpf_get_current_comm(&debug_event.comm, sizeof(debug_event.comm));
+            debug_event->host_tid = data.context.host_tid;
+            debug_event->host_pid = data.context.host_pid;
+            bpf_get_current_comm(&debug_event->comm, sizeof(debug_event->comm));
         } else {
-            debug_event.host_tid = net_ctx_p->proc_ctx.host_tid;
-            __builtin_memcpy(debug_event.comm, net_ctx_p->proc_ctx.comm, TASK_COMM_LEN);
+            debug_event->host_tid = net_ctx_p->proc_ctx.host_tid;
+            debug_event->host_pid = net_ctx_p->proc_ctx.host_pid;
+            __builtin_memcpy(debug_event->comm, net_ctx_p->proc_ctx.comm, TASK_COMM_LEN);
         }
-        debug_event.event_id = DEBUG_NET_INET_SOCK_SET_STATE;
-        debug_event.old_state = old_state;
-        debug_event.new_state = new_state;
-        debug_event.sk_ptr = (u64)sk;
-        debug_event.protocol = connect_id.protocol;
-        bpf_perf_event_output(ctx, &net_events, BPF_F_CURRENT_CPU, &debug_event, sizeof(debug_event));
+        debug_event->event_id = DEBUG_NET_INET_SOCK_SET_STATE;
+        debug_event->old_state = old_state;
+        debug_event->new_state = new_state;
+        debug_event->sk_ptr = (u64)sk;
+        debug_event->protocol = connect_id.protocol;
+        bpf_perf_event_output(ctx, &net_events, BPF_F_CURRENT_CPU, debug_event, sizeof(net_debug_t));
     }
 
     return 0;
@@ -3149,8 +3218,6 @@ int BPF_KPROBE(trace_tcp_connect)
     }
 
     proc_ctx_from_context_t(&net_ctx_ext.proc_ctx, &data.context);
-//    net_ctx_ext.host_tid = data.context.host_tid;
-//    bpf_get_current_comm(&net_ctx_ext.comm, sizeof(net_ctx_ext.comm));
     net_ctx_ext.local_port = connect_id.port;
     bpf_map_update_elem(&sock_ctx_map, &sk, &net_ctx_ext, BPF_ANY);
 
@@ -3828,12 +3895,10 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     }
 
     pkt.host_tid = net_ctx->proc_ctx.host_tid;
+    pkt.host_pid = net_ctx->proc_ctx.host_pid;
+    pkt.proc_start_time = net_ctx->proc_ctx.start_time;
     __builtin_memcpy(pkt.comm, net_ctx->proc_ctx.comm, TASK_COMM_LEN);
-    __builtin_memcpy(pkt.cont_id, net_ctx->proc_ctx.cont_id, CONT_ID_LEN);
-//    container_id_t *container_id = bpf_map_lookup_elem(&pid_to_cont_id_map, &pkt.host_tid);
-//    if (container_id != NULL) {
-//        __builtin_memcpy(pkt.cont_id, container_id->id, CONT_ID_LEN);
-//    }
+    __builtin_memcpy(pkt.cont_id, net_ctx->proc_ctx.cont_id, CONT_ID_PADDED);
 
     /* The tc perf_event_output handler will use the upper 32 bits
      * of the flags argument as a number of bytes to include of the
@@ -3852,8 +3917,8 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     }
     else {
         // If not debugging, only send the minimal required data to save the packet.
-        // This will be the timestamp (u64), net event_id (u32), host_tid (u32), comm (16 bytes), cont_id (16 bytes), packet len (u32), and ifindex (u32)
-        bpf_perf_event_output(skb, &net_events, flags, &pkt, 56);
+        // This will be the timestamp (u64), event_id (u32), host_tid (u32), host_pid (u32), proc_start_time (u64), comm (16 bytes), cont_id (16 bytes), packet len (u32), and ifindex (u32)
+        bpf_perf_event_output(skb, &net_events, flags, &pkt, 72);
     }
 
     return TC_ACT_UNSPEC;

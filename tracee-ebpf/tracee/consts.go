@@ -194,7 +194,7 @@ const (
 	DebugNetUdpV6DestroySock
 	DebugNetInetSockSetState
 	DebugNetTcpConnect
-	NetProcessExit
+	NetConnectionExit
 	NetContainerExit
 )
 
