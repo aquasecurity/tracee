@@ -43,7 +43,11 @@ func (t *Tracee) getPcapFilePath(pcapContext processPcapId) string {
 	if t.config.Output.PcapPerProcess {
 		pcapFileName = fmt.Sprintf("%s_%d_%d.pcap", pcapContext.comm, pcapContext.hostPid, pcapContext.procStartTime)
 	} else if t.config.Output.PcapPerContainer {
-		pcapFileName = fmt.Sprintf("%s.pcap", pcapContext.contID)
+		if pcapContext.contID == "" {
+			pcapFileName = "host.pcap"
+		} else {
+			pcapFileName = fmt.Sprintf("%s.pcap", pcapContext.contID)
+		}
 	} else {
 		pcapFileName = "dump.pcap"
 	}
