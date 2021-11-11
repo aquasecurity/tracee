@@ -439,7 +439,7 @@ typedef struct slim_cred {
     gid_t  egid;            /* effective GID of the task */
     uid_t  fsuid;           /* UID for VFS ops */
     gid_t  fsgid;           /* GID for VFS ops */
-    u32    user_ns;         /* User Namespace of the of the event */
+    u32    user_ns;         /* User Namespace of the event */
     u32    securebits;      /* SUID-less security management */
     u64    cap_inheritable; /* caps our children can inherit */
     u64    cap_permitted;   /* caps we're permitted */
