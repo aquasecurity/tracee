@@ -66,6 +66,20 @@ Copyright (C) Aqua Security inc.
 //CO:RE is enabled
 #include <vmlinux.h>
 #include "co_re_missing_definitions.h"
+
+union kernfs_node_id {
+    struct {
+        u32     ino;
+        u32     generation;
+    };
+    u64         id;
+} __attribute__((preserve_access_index));
+
+struct kernfs_node___old {
+    const char            *name;
+    union kernfs_node_id  id;
+} __attribute__((preserve_access_index));
+
 #endif
 
 #undef container_of
@@ -745,7 +759,20 @@ static __always_inline const u64 get_cgroup_id(struct cgroup *cgrp)
     // id was not always of type u64 (but "union kernfs_node_id" before 5.5)
     // yet we can read it as u64 as the size of both types is the same
     u64 id;
-    bpf_probe_read(&id, sizeof(u64), GET_FIELD_ADDR(kn->id));
+
+#ifdef CORE
+    if (bpf_core_type_exists(union kernfs_node_id)) {
+        // recast pointer to capture kernfs_node___old type for compiler
+        struct kernfs_node___old *kn_old = (void *)kn;
+
+        // now use old "id", which is of type "union kernfs_node_id"
+        bpf_core_read(&id, sizeof(u64), &kn_old->id);
+    } else {
+        bpf_core_read(&id, sizeof(u64), &kn->id);
+    }
+#else
+    bpf_probe_read(&id, sizeof(u64), &kn->id);
+#endif
 
     return id;
 }
