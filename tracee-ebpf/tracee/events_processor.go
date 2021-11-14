@@ -8,7 +8,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"unsafe"
 
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
@@ -141,14 +140,11 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 			for _, pid := range pids { // will break on success
 				err = nil
 				sourceFilePath := fmt.Sprintf("/proc/%s/root%s", strconv.Itoa(int(pid)), filePath)
-				var sourceFileStat os.FileInfo
-				sourceFileStat, err = os.Stat(sourceFilePath)
-				if err != nil {
-					//TODO: remove dead pid from cache
-					continue
+				sourceFileCtime, ok := args["ctime"].(int64)
+				if !ok {
+					return fmt.Errorf("error parsing sched_process_exec args: ctime")
 				}
 
-				sourceFileCtime := sourceFileStat.Sys().(*syscall.Stat_t).Ctim.Nano()
 				capturedFileID := fmt.Sprintf("%d:%s", ctx.MntID, sourceFilePath)
 				if t.config.Capture.Exec {
 					destinationDirPath := filepath.Join(t.config.Capture.OutputPath, strconv.Itoa(int(ctx.MntID)))
@@ -197,11 +193,6 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 					*argMetas = append(*argMetas, hashMeta)
 					ctx.Argnum += 1
 					args["sha256"] = currentHash
-
-					ctimeMeta := external.ArgMeta{"ctime", "unsigned long"}
-					*argMetas = append(*argMetas, ctimeMeta)
-					ctx.Argnum += 1
-					args["ctime"] = sourceFileCtime
 				}
 
 				break
