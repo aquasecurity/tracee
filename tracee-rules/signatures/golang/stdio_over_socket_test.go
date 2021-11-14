@@ -26,7 +26,7 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "remote_addr",
 							},
-							Value: "{'sa_family': 'AF_INET','sin_port': '53','sin_addr': '10.225.0.2'}",
+							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
 						},
 					},
 				},
@@ -67,7 +67,7 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "remote_addr",
 							},
-							Value: "{'sa_family': 'AF_INET','sin_port': '53','sin_addr': '10.225.0.2'}",
+							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
 						},
 					},
 				},
@@ -108,7 +108,7 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "remote_addr",
 							},
-							Value: "{'sa_family': 'AF_INET','sin_port': '53','sin_addr': '10.225.0.2'}",
+							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
 						},
 					},
 				},
@@ -144,7 +144,7 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "remote_addr",
 							},
-							Value: "{'sa_family': 'AF_INET','sin_port': '53','sin_addr': '10.225.0.2'}",
+							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
 						},
 					},
 				},
@@ -214,7 +214,7 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "remote_addr",
 							},
-							Value: "{'sa_family': 'AF_INET','sin_port': '53','sin_addr': '10.225.0.2'}",
+							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
 						},
 					},
 				},
@@ -267,7 +267,7 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "remote_addr",
 							},
-							Value: "{'sa_family': 'AF_INET','sin_port': '53','sin_addr': '10.225.0.2'}",
+							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
 						},
 					},
 				},
@@ -308,7 +308,7 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "remote_addr",
 							},
-							Value: "{'sin6_scopeid': '0','sa_family': 'AF_INET6','sin6_port': '443','sin6_flowinfo': '0','sin6_addr': '2001:67c:1360:8001::2f'}",
+							Value: map[string]string{"sa_family": "AF_INET6", "sin6_port": "443", "sin6_addr": "2001:67c:1360:8001::2f", "sin6_scopeid": "0", "sin6_flowinfo": "0"},
 						},
 					},
 				},

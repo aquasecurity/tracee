@@ -186,6 +186,7 @@ func ProduceEventsFromGobFile(n int, path string) (engine.EventSources, error) {
 	dec := gob.NewDecoder(inputFile)
 	gob.Register(tracee.Event{})
 	gob.Register(tracee.SlimCred{})
+	gob.Register(make(map[string]string))
 
 	eventsCh := make(chan types.Event, n)
 

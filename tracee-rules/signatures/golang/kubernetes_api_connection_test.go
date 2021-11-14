@@ -38,7 +38,7 @@ func TestK8sApiConnection(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "remote_addr",
 							},
-							Value: "{'sa_family': 'AF_INET','sin_port': '80','sin_addr': '1.1.1.1'}",
+							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "80", "sin_addr": "1.1.1.1"},
 						},
 					},
 				},
@@ -73,7 +73,7 @@ func TestK8sApiConnection(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "remote_addr",
 							},
-							Value: "{'sa_family': 'AF_INET','sin_port': '80','sin_addr': '169.254.169.254'}",
+							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "80", "sin_addr": "169.254.169.254"},
 						},
 					},
 				},

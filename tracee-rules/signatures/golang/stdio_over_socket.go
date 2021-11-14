@@ -211,17 +211,15 @@ func intInSlice(a int, list []int) bool {
 
 func getAddressfromAddrArg(arg tracee.Argument) (connectedAddress, error) {
 
-	var connectData helpers.ConnectAddrData
-
-	err := helpers.GetAddrStructFromArg(arg, &connectData)
-	if err != nil {
-		return connectedAddress{}, err
+	addr, isOk := arg.Value.(map[string]string)
+	if !isOk {
+		return connectedAddress{}, fmt.Errorf("couldn't convert arg to addr")
 	}
 
-	if connectData.SaFamily == "AF_INET" {
-		return connectedAddress{ip: connectData.SinAddr, port: connectData.SinPort}, nil
-	} else if connectData.SaFamily == "AF_INET6" {
-		return connectedAddress{ip: connectData.SinAddr6, port: connectData.SinPort6}, nil
+	if addr["sa_family"] == "AF_INET" {
+		return connectedAddress{ip: addr["sin_addr"], port: addr["sin_port"]}, nil
+	} else if addr["sa_family"] == "AF_INET6" {
+		return connectedAddress{ip: addr["sin6_addr"], port: addr["sin6_port"]}, nil
 	}
 
 	return connectedAddress{}, nil

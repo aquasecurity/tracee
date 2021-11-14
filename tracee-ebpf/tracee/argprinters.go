@@ -3,11 +3,9 @@ package tracee
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/aquasecurity/libbpfgo/helpers"
 	"net"
 	"strconv"
-	"strings"
-
-	"github.com/aquasecurity/libbpfgo/helpers"
 )
 
 // PrintUint32IP prints the IP address encoded as a uint32
@@ -55,38 +53,7 @@ func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 		}
 	}
 
-	switch ctx.EventID {
-	case ConnectEventID, AcceptEventID, Accept4EventID, BindEventID, GetsocknameEventID:
-		if sockAddr, isStrMap := args["addr"].(map[string]string); isStrMap {
-			var s string
-			for key, val := range sockAddr {
-				s += fmt.Sprintf("'%s': '%s',", key, val)
-			}
-			s = strings.TrimSuffix(s, ",")
-			s = fmt.Sprintf("{%s}", s)
-			args["addr"] = s
-		}
-	case SecuritySocketBindEventID, SecuritySocketAcceptEventID, SecuritySocketListenEventID:
-		if sockAddr, isStrMap := args["local_addr"].(map[string]string); isStrMap {
-			var s string
-			for key, val := range sockAddr {
-				s += fmt.Sprintf("'%s': '%s',", key, val)
-			}
-			s = strings.TrimSuffix(s, ",")
-			s = fmt.Sprintf("{%s}", s)
-			args["local_addr"] = s
-		}
-	case SecuritySocketConnectEventID, SocketDupEventID:
-		if sockAddr, isStrMap := args["remote_addr"].(map[string]string); isStrMap {
-			var s string
-			for key, val := range sockAddr {
-				s += fmt.Sprintf("'%s': '%s',", key, val)
-			}
-			s = strings.TrimSuffix(s, ",")
-			s = fmt.Sprintf("{%s}", s)
-			args["remote_addr"] = s
-		}
-	case MemProtAlertEventID:
+	if ctx.EventID == MemProtAlertEventID {
 		if alert, isAlert := args["alert"].(alert); isAlert {
 			args["alert"] = PrintAlert(alert)
 		}
@@ -165,20 +132,6 @@ func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 	case CloneEventID:
 		if flags, isUint64 := args["flags"].(uint64); isUint64 {
 			args["flags"] = helpers.ParseCloneFlags(flags)
-		}
-	case SendtoEventID, RecvfromEventID:
-		addrType := "dest_addr"
-		if ctx.EventID == RecvfromEventID {
-			addrType = "src_addr"
-		}
-		if sockAddr, isStrMap := args[addrType].(map[string]string); isStrMap {
-			var s string
-			for key, val := range sockAddr {
-				s += fmt.Sprintf("'%s': '%s',", key, val)
-			}
-			s = strings.TrimSuffix(s, ",")
-			s = fmt.Sprintf("{%s}", s)
-			args[addrType] = s
 		}
 	case BpfEventID, SecurityBPFEventID:
 		if cmd, isInt32 := args["cmd"].(int32); isInt32 {

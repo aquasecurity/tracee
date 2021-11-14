@@ -117,17 +117,16 @@ func getApiAddressFromEnvs(envs []string) string {
 }
 
 func getIPFromAddr(addrArg tracee.Argument) (string, error) {
-	var connectData helpers.ConnectAddrData
 
-	err := helpers.GetAddrStructFromArg(addrArg, &connectData)
-	if err != nil {
-		return "", err
+	addr, isOk := addrArg.Value.(map[string]string)
+	if !isOk {
+		return "", fmt.Errorf("couldn't convert arg to addr")
 	}
 
-	if connectData.SaFamily == "AF_INET" {
-		return connectData.SinAddr, nil
-	} else if connectData.SaFamily == "AF_INET6" {
-		return connectData.SinAddr6, nil
+	if addr["sa_family"] == "AF_INET" {
+		return addr["sin_addr"], nil
+	} else if addr["sa_family"] == "AF_INET6" {
+		return addr["sin6_addr"], nil
 	}
 
 	return "", nil
