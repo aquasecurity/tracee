@@ -831,6 +831,17 @@ static __always_inline unsigned long get_inode_nr_from_file(struct file *file)
     return READ_KERN(f_inode->i_ino);
 }
 
+static __always_inline unsigned long get_ctime_nanosec_from_file(struct file *file)
+{
+    struct inode *f_inode = READ_KERN(file->f_inode);
+    struct timespec64 ts = READ_KERN(f_inode->i_ctime);
+    time64_t sec = READ_KERN(ts.tv_sec);
+    if (sec < 0)
+        return 0;
+    long ns = READ_KERN(ts.tv_nsec);
+    return (sec * 1000000000L) + ns;
+}
+
 static __always_inline unsigned short get_inode_mode_from_file(struct file *file)
 {
     struct inode *f_inode = READ_KERN(file->f_inode);
@@ -2371,6 +2382,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     struct file* file = get_file_ptr_from_bprm(bprm);
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
+    unsigned long ctime = get_ctime_nanosec_from_file(file);
 
     // bprm->mm is null at this point (set by begin_new_exec()), and task->mm is already initialized
     struct mm_struct *mm = get_mm_from_task(task);
@@ -2400,6 +2412,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 4);
     save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 5);
     save_to_submit_buf(&data, &invoked_from_kernel, sizeof(int), 6);
+    save_to_submit_buf(&data, &ctime, sizeof(unsigned long), 7);
 
     return events_perf_submit(&data, SCHED_PROCESS_EXEC, 0);
 }

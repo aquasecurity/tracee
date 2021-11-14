@@ -14,7 +14,7 @@ CLI Option | Description
   stack-addresses | include stack memory addresses for each event
   detect-syscall | when tracing kernel functions which are not syscalls, detect and show the original syscall that called that function
   exec-env | when tracing execve/execveat, show the environment variables that were used for execution
-exec-info | when tracing sched_process_exec, show the file hash(sha256) and ctime
+exec-hash | when tracing sched_process_exec, show the file hash(sha256)
 relative-time | use relative timestamp instead of wall timestamp for events
 parse-arguments | do not show raw machine-readable values for event arguments, instead parse into human readable strings
 
