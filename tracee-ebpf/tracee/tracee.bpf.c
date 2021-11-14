@@ -2064,6 +2064,8 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
             // We can't use saved args after execve syscall, as pointers are invalid
             // To avoid showing execve event both on entry and exit,
             // we only output failed execs
+            data.buf_off = sizeof(context_t);
+            data.context.argnum = 0;
             save_args_to_submit_buf(&data, types, &sys->args);
             data.context.ts = sys->ts;
             events_perf_submit(&data, id, ret);
