@@ -196,6 +196,8 @@ type SlimCred struct {
 	Egid           uint32 /* effective GID of the task */
 	Fsuid          uint32 /* UID for VFS ops */
 	Fsgid          uint32 /* GID for VFS ops */
+	UserNamespace  uint32 /* User Namespace of the of the event */
+	SecureBits     uint32 /* SUID-less security management */
 	CapInheritable uint64 /* caps our children can inherit */
 	CapPermitted   uint64 /* caps we're permitted */
 	CapEffective   uint64 /* caps we can actually use */
