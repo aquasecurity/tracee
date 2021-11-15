@@ -134,11 +134,10 @@ Copyright (C) Aqua Security inc.
 #define STR_T         10UL
 #define STR_ARR_T     11UL
 #define SOCKADDR_T    12UL
-#define ALERT_T       13UL
-#define BYTES_T       14UL
-#define U16_T         15UL
-#define CRED_T        16UL
-#define INT_ARR_2_T   17UL
+#define BYTES_T       13UL
+#define U16_T         14UL
+#define CRED_T        15UL
+#define INT_ARR_2_T   16UL
 #define TYPE_MAX      255UL
 
 #if defined(bpf_target_x86)
@@ -422,12 +421,6 @@ typedef struct event_data {
 typedef struct container_id {
     char id[CONT_ID_LEN+1];
 } container_id_t;
-
-typedef struct alert {
-    u64 ts;     // Timestamp
-    u32 msg;    // Encoded message
-    u8 payload; // Non zero if payload is sent to userspace
-} alert_t;
 
 // For a good summary about capabilities, see https://lwn.net/Articles/636533/
 typedef struct slim_cred {
@@ -3724,8 +3717,8 @@ int BPF_KPROBE(trace_mmap_alert)
         return 0;
 
     if ((sys->args.args[2] & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC)) {
-        alert_t alert = {.ts = data.context.ts, .msg = ALERT_MMAP_W_X, .payload = 0};
-        save_to_submit_buf(&data, &alert, sizeof(alert_t), 0);
+        u32 alert = ALERT_MMAP_W_X;
+        save_to_submit_buf(&data, &alert, sizeof(u32), 0);
         events_perf_submit(&data, MEM_PROT_ALERT, 0);
     }
 
@@ -3762,24 +3755,22 @@ int BPF_KPROBE(trace_mprotect_alert)
         len = PAGE_SIZE;
 
     if ((!(prev_prot & VM_EXEC)) && (reqprot & VM_EXEC)) {
-        alert_t alert = {.ts = data.context.ts, .msg = ALERT_MPROT_X_ADD, .payload = 0};
-        save_to_submit_buf(&data, &alert, sizeof(alert_t), 0);
+        u32 alert = ALERT_MPROT_X_ADD;
+        save_to_submit_buf(&data, &alert, sizeof(u32), 0);
         return events_perf_submit(&data, MEM_PROT_ALERT, 0);
     }
 
     if ((prev_prot & VM_EXEC) && !(prev_prot & VM_WRITE)
         && ((reqprot & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC))) {
-        alert_t alert = {.ts = data.context.ts, .msg = ALERT_MPROT_W_ADD, .payload = 0};
-        save_to_submit_buf(&data, &alert, sizeof(alert_t), 0);
+        u32 alert = ALERT_MPROT_W_ADD;
+        save_to_submit_buf(&data, &alert, sizeof(u32), 0);
         return events_perf_submit(&data, MEM_PROT_ALERT, 0);
     }
 
     if (((prev_prot & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC))
         && (reqprot & VM_EXEC) && !(reqprot & VM_WRITE)) {
-        alert_t alert = {.ts = data.context.ts, .msg = ALERT_MPROT_W_REM, .payload = 0 };
-        if (get_config(CONFIG_EXTRACT_DYN_CODE))
-            alert.payload = 1;
-        save_to_submit_buf(&data, &alert, sizeof(alert_t), 0);
+        u32 alert = ALERT_MPROT_W_REM;
+        save_to_submit_buf(&data, &alert, sizeof(u32), 0);
         events_perf_submit(&data, MEM_PROT_ALERT, 0);
 
         if (get_config(CONFIG_EXTRACT_DYN_CODE)) {

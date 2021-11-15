@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"github.com/aquasecurity/libbpfgo/helpers"
 	"net"
-	"strconv"
+
+	"github.com/aquasecurity/tracee/tracee-ebpf/external"
 )
 
 // PrintUint32IP prints the IP address encoded as a uint32
@@ -22,40 +23,10 @@ func Print16BytesSliceIP(in []byte) string {
 	return ip.String()
 }
 
-// PrintAlert prints the encoded alert message and output file path if required
-func PrintAlert(alert alert) string {
-	var res string
-
-	var securityAlerts = map[uint32]string{
-		1: "Mmaped region with W+E permissions!",
-		2: "Protection changed to Executable!",
-		3: "Protection changed from E to W+E!",
-		4: "Protection changed from W+E to E!",
-	}
-
-	if msg, ok := securityAlerts[alert.Msg]; ok {
-		res = msg
-	} else {
-		res = strconv.Itoa(int(alert.Msg))
-	}
-
-	if alert.Payload != 0 {
-		res += " Saving data to bin." + strconv.Itoa(int(alert.Ts))
-	}
-
-	return res
-}
-
 func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 	for key, arg := range args {
 		if ptr, isUintptr := arg.(uintptr); isUintptr {
 			args[key] = fmt.Sprintf("0x%X", ptr)
-		}
-	}
-
-	if ctx.EventID == MemProtAlertEventID {
-		if alert, isAlert := args["alert"].(alert); isAlert {
-			args["alert"] = PrintAlert(alert)
 		}
 	}
 
@@ -64,6 +35,10 @@ func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
 		return nil
 	}
 	switch ctx.EventID {
+	case MemProtAlertEventID:
+		if alert, isUint32 := args["alert"].(uint32); isUint32 {
+			args["alert"] = external.MemProtAlert(alert).String()
+		}
 	case SysEnterEventID, SysExitEventID, CapCapableEventID, CommitCredsEventID, SecurityFileOpenEventID:
 		//show syscall name instead of id
 		if id, isInt32 := args["syscall"].(int32); isInt32 {
