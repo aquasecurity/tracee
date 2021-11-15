@@ -204,3 +204,30 @@ type SlimCred struct {
 	CapBounding    uint64 /* capability bounding set */
 	CapAmbient     uint64 /* Ambient capability set */
 }
+
+// Message is an enum of possible messages that can be sent by an event to pass some extra information about the event.
+type MemProtAlert uint32
+
+const (
+	ProtAlertUnknown MemProtAlert = iota
+	ProtAlertMmapWX
+	ProtAlertMprotectToX
+	ProtAlertMprotectXToWX
+	ProtAlertMprotectWXToX
+	ProtAlertLast
+)
+
+func (alert MemProtAlert) String() string {
+	switch alert {
+	case ProtAlertMmapWX:
+		return "Mmaped region with W+E permissions!"
+	case ProtAlertMprotectToX:
+		return "Protection changed to Executable!"
+	case ProtAlertMprotectXToWX:
+		return "Protection changed from E to W+E!"
+	case ProtAlertMprotectWXToX:
+		return "Protection changed from W+E to E!"
+	default:
+		return "Unknown alert"
+	}
+}

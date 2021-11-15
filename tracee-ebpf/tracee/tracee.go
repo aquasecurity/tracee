@@ -429,8 +429,6 @@ func getParamType(paramType string) argType {
 		return bytesT
 	case "int[2]":
 		return intArr2T
-	case "alert_t":
-		return alertT
 	case "slim_cred_t":
 		return credT
 	case "umode_t":

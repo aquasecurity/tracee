@@ -12,14 +12,6 @@ import (
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
 )
 
-// alert struct encodes a security alert message with a timestamp
-// it is used to unmarshal binary data and therefore should match (bit by bit) to the `alert_t` struct in the ebpf code.
-type alert struct {
-	Ts      uint64
-	Msg     uint32
-	Payload uint8
-}
-
 func readArgFromBuff(dataBuff io.Reader, params []external.ArgMeta) (external.ArgMeta, interface{}, error) {
 	var err error
 	var res interface{}
@@ -63,10 +55,6 @@ func readArgFromBuff(dataBuff io.Reader, params []external.ArgMeta) (external.Ar
 		res = uintptr(data)
 	case sockAddrT:
 		res, err = readSockaddrFromBuff(dataBuff)
-	case alertT:
-		var data alert
-		err = binary.Read(dataBuff, binary.LittleEndian, &data)
-		res = data
 	case credT:
 		var data external.SlimCred
 		err = binary.Read(dataBuff, binary.LittleEndian, &data)
