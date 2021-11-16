@@ -124,7 +124,7 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 		}
 
 		//capture executed files
-		if t.config.Capture.Exec || t.config.Output.ExecInfo {
+		if t.config.Capture.Exec || t.config.Output.ExecHash {
 			filePath, ok := args["pathname"].(string)
 			if !ok {
 				return fmt.Errorf("error parsing sched_process_exec args")
@@ -171,7 +171,7 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 					}
 				}
 
-				if t.config.Output.ExecInfo {
+				if t.config.Output.ExecHash {
 					var hashInfoObj fileExecInfo
 					var currentHash string
 					hashInfoInterface, ok := t.fileHashes.Get(capturedFileID)
