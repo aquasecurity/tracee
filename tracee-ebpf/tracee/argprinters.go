@@ -23,17 +23,13 @@ func Print16BytesSliceIP(in []byte) string {
 	return ip.String()
 }
 
-func (t *Tracee) prepareArgs(ctx *context, args map[string]interface{}) error {
+func (t *Tracee) parseArgs(ctx *context, args map[string]interface{}) error {
 	for key, arg := range args {
 		if ptr, isUintptr := arg.(uintptr); isUintptr {
 			args[key] = fmt.Sprintf("0x%X", ptr)
 		}
 	}
 
-	// EventIDs which are optionally parsed/enriched into human readable formats
-	if !t.config.Output.ParseArguments {
-		return nil
-	}
 	switch ctx.EventID {
 	case MemProtAlertEventID:
 		if alert, isUint32 := args["alert"].(uint32); isUint32 {

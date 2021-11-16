@@ -78,10 +78,13 @@ func (t *Tracee) processEvents(done <-chan struct{}) error {
 		if !t.eventsToTrace[ctx.EventID] {
 			continue
 		}
-		err = t.prepareArgs(&ctx, args)
-		if err != nil {
-			t.handleError(err)
-			continue
+
+		if t.config.Output.ParseArguments {
+			err = t.parseArgs(&ctx, args)
+			if err != nil {
+				t.handleError(err)
+				continue
+			}
 		}
 
 		// Add stack trace if needed
