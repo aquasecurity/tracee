@@ -64,7 +64,7 @@ type OutputConfig struct {
 	DetectSyscall  bool
 	ExecEnv        bool
 	RelativeTime   bool
-	ExecInfo       bool
+	ExecHash       bool
 	ParseArguments bool
 }
 
