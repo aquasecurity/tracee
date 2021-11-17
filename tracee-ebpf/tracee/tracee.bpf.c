@@ -297,6 +297,11 @@ Copyright (C) Aqua Security inc.
                         })
 
 #define GET_FIELD_ADDR(field) &field
+#define READ_USER(ptr) ({ typeof(ptr) _val;                                             \
+                          __builtin_memset((void *)&_val, 0, sizeof(_val));             \
+                          bpf_probe_read_user((void *)&_val, sizeof(_val), &ptr);            \
+                          _val;                                                         \
+                        })
 #else
 // Try using READ_KERN here, just don't embed them in each other
 #define READ_KERN(ptr) ({ typeof(ptr) _val;                                             \
@@ -304,8 +309,12 @@ Copyright (C) Aqua Security inc.
                           bpf_core_read((void *)&_val, sizeof(_val), &ptr);             \
                           _val;                                                         \
                         })
-
 #define GET_FIELD_ADDR(field) __builtin_preserve_access_index(&field)
+#define READ_USER(ptr) ({ typeof(ptr) _val;                                             \
+                          __builtin_memset((void *)&_val, 0, sizeof(_val));             \
+                          bpf_core_read_user((void *)&_val, sizeof(_val), &ptr);             \
+                          _val;                                                         \
+                        })
 #endif
 
 #define BPF_MAP(_name, _type, _key_type, _value_type, _max_entries) \
