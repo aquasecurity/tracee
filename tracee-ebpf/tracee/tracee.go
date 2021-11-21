@@ -294,6 +294,12 @@ func New(cfg Config) (*Tracee, error) {
 		}
 	}
 
+	c := InitContainers()
+	if err := c.Populate(); err != nil {
+		return nil, fmt.Errorf("error initializing containers: %v", err)
+	}
+	t.containers = c
+
 	err = t.initBPF()
 	if err != nil {
 		t.Close()
@@ -394,12 +400,6 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error getting acces to 'stack_addresses' eBPF Map %v", err)
 	}
 	t.StackAddressesMap = StackAddressesMap
-
-	c := InitContainers()
-	if err := c.Populate(); err != nil {
-		return nil, fmt.Errorf("error initializing containers: %v", err)
-	}
-	t.containers = c
 
 	return t, nil
 }
@@ -543,6 +543,7 @@ func (t *Tracee) populateBPFMaps() error {
 	cEDC := uint32(configExtractDynCode)
 	cFF := uint32(configFollowFilter)
 	cDN := uint32(configDebugNet)
+	cCG1 := uint32(configCgroupV1)
 
 	thisPid := uint32(os.Getpid())
 	cDOSval := boolToUInt32(t.config.Output.DetectSyscall)
@@ -553,6 +554,7 @@ func (t *Tracee) populateBPFMaps() error {
 	cEDCval := boolToUInt32(t.config.Capture.Mem)
 	cFFval := boolToUInt32(t.config.Filter.Follow)
 	cDNval := boolToUInt32(t.config.Debug)
+	cCG1val := boolToUInt32(t.containers.IsCgroupV1())
 
 	errs := make([]error, 0)
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cTP), unsafe.Pointer(&thisPid)))
@@ -564,6 +566,7 @@ func (t *Tracee) populateBPFMaps() error {
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cEDC), unsafe.Pointer(&cEDCval)))
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cFF), unsafe.Pointer(&cFFval)))
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cDN), unsafe.Pointer(&cDNval)))
+	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cCG1), unsafe.Pointer(&cCG1val)))
 	for _, e := range errs {
 		if e != nil {
 			return e

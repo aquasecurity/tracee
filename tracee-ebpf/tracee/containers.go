@@ -13,23 +13,28 @@ import (
 
 // Containers contain information about host running containers in the host.
 type Containers struct {
-	cgroupv1     bool
-	cgroupv1mp   string
-	cgroupv2     bool
-	cgroupv2mp   string
+	cgroupV1     bool
+	cgroupMP     string
 	cgroupContId map[uint32]string
 }
 
 // InitContainers initializes a Containers object and returns a pointer to it.
 // User should further call "Populate" and iterate with Containers data.
 func InitContainers() *Containers {
-	return &Containers{
-		cgroupContId: make(map[uint32]string),
-		cgroupv1:     false,
-		cgroupv2:     false,
-		cgroupv1mp:   "",
-		cgroupv2mp:   "",
+	cgroupV1 := false
+	if _, err := os.Stat("/sys/fs/cgroup/cgroup.controllers"); os.IsNotExist(err) {
+		cgroupV1 = true
 	}
+
+	return &Containers{
+		cgroupV1:     cgroupV1,
+		cgroupMP:     "",
+		cgroupContId: make(map[uint32]string),
+	}
+}
+
+func (c *Containers) IsCgroupV1() bool {
+	return c.cgroupV1
 }
 
 // GetContainers provides a list of all added containers by their uuid.
@@ -63,22 +68,21 @@ func (c *Containers) procMountsCgroups() error {
 	if err != nil {
 		return err
 	}
+	defer file.Close()
+
 	scanner := bufio.NewScanner(file)
 	for i := 1; scanner.Scan(); i++ {
 		sline := strings.Split(scanner.Text(), " ")
 		mountpoint := sline[1]
 		fstype := sline[2]
-		if fstype == "cgroup" {
-			if strings.Contains(mountpoint, "cgroup/pids") {
-				c.cgroupv1 = true
-				c.cgroupv1mp = mountpoint
+		if c.cgroupV1 {
+			if fstype == "cgroup" && strings.Contains(mountpoint, "cpuset") {
+				c.cgroupMP = mountpoint
 			}
 		} else if fstype == "cgroup2" {
-			c.cgroupv2 = true
-			c.cgroupv2mp = mountpoint
+			c.cgroupMP = mountpoint
 		}
 	}
-	_ = file.Close()
 
 	return nil
 }
@@ -106,17 +110,13 @@ func (c *Containers) populate() error {
 		return c.CgroupUpdate(stat.Ino, path)
 	}
 
-	if c.cgroupv1 {
-		err := filepath.WalkDir(c.cgroupv1mp, fn)
-		if err != nil {
-			return err
-		}
+	if c.cgroupMP == "" {
+		return fmt.Errorf("could not determine cgroup mount point")
 	}
-	if c.cgroupv2 {
-		err := filepath.WalkDir(c.cgroupv2mp, fn)
-		if err != nil {
-			return err
-		}
+
+	err := filepath.WalkDir(c.cgroupMP, fn)
+	if err != nil {
+		return err
 	}
 
 	return nil

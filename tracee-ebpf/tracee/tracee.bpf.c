@@ -254,6 +254,7 @@ struct kernfs_node___old {
 #define CONFIG_DEBUG_NET            17
 #define CONFIG_PROC_TREE_FILTER     18
 #define CONFIG_CAPTURE_MODULES      19
+#define CONFIG_CGROUP_V1            20
 
 // get_config(CONFIG_XXX_FILTER) returns 0 if not enabled
 #define FILTER_IN  1
@@ -777,6 +778,14 @@ static __always_inline const u64 get_cgroup_id(struct cgroup *cgrp)
     return id;
 }
 
+static __always_inline const u64 get_cgroup_v1_subsys0_id(struct task_struct *task)
+{
+    struct css_set *cgroups = READ_KERN(task->cgroups);
+    struct cgroup_subsys_state *subsys0 = READ_KERN(cgroups->subsys[0]);
+    struct cgroup *cgroup = READ_KERN(subsys0->cgroup);
+    return get_cgroup_id(cgroup);
+}
+
 static __always_inline bool is_x86_compat(struct task_struct *task)
 {
 #if defined(bpf_target_x86)
@@ -1041,6 +1050,26 @@ static __inline int has_prefix(char *prefix, char *str, int n)
     return 0;
 }
 
+static __always_inline int get_config(u32 key)
+{
+    u32 *config = bpf_map_lookup_elem(&config_map, &key);
+
+    if (config == NULL)
+        return 0;
+
+    return *config;
+}
+
+static __always_inline int get_kconfig_val(u32 key)
+{
+    u32 *config = bpf_map_lookup_elem(&kconfig_map, &key);
+
+    if (config == NULL)
+        return 0;
+
+    return *config;
+}
+
 static __always_inline int init_context(context_t *context, struct task_struct *task)
 {
     u64 id = bpf_get_current_pid_tgid();
@@ -1057,7 +1086,12 @@ static __always_inline int init_context(context_t *context, struct task_struct *
     char * uts_name = get_task_uts_name(task);
     if (uts_name)
         bpf_probe_read_str(&context->uts_name, TASK_COMM_LEN, uts_name);
-    context->cgroup_id = bpf_get_current_cgroup_id();
+    if (get_config(CONFIG_CGROUP_V1)) {
+        context->cgroup_id = get_cgroup_v1_subsys0_id(task);
+    } else {
+        context->cgroup_id = bpf_get_current_cgroup_id();
+    }
+
     context->ts = bpf_ktime_get_ns();
     context->argnum = 0;
 
@@ -1079,26 +1113,6 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
         return 0;
 
     return 1;
-}
-
-static __always_inline int get_config(u32 key)
-{
-    u32 *config = bpf_map_lookup_elem(&config_map, &key);
-
-    if (config == NULL)
-        return 0;
-
-    return *config;
-}
-
-static __always_inline int get_kconfig_val(u32 key)
-{
-    u32 *config = bpf_map_lookup_elem(&kconfig_map, &key);
-
-    if (config == NULL)
-        return 0;
-
-    return *config;
 }
 
 // returns 1 if you should trace based on uid, 0 if not

@@ -41,6 +41,7 @@ const (
 	configDebugNet
 	configProcTreeFilter
 	configCaptureModules
+	configCgroupV1
 )
 
 const (
