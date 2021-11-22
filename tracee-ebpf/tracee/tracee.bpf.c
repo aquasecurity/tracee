@@ -277,6 +277,10 @@ struct kernfs_node___old {
 #define CONT_ID_LEN 12
 #define CONT_ID_MIN_FULL_LEN 64
 
+#define CONTAINER_EXISTED  1  // container existed before tracee was started
+#define CONTAINER_CREATED  2  // new cgroup path created
+#define CONTAINER_STARTED  3  // a process in the cgroup executed a new binary
+
 #ifndef CORE
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 2, 0)
 // Use lower values on older kernels, where the instruction limit is 4096
@@ -545,7 +549,7 @@ BPF_HASH(kconfig_map, u32, u32);                        // Kernel config variabl
 BPF_HASH(chosen_events_map, u32, u32);                  // Events chosen by the user
 BPF_HASH(traced_pids_map, u32, u32);                    // Keep track of traced pids
 BPF_HASH(new_pids_map, u32, u32);                       // Keep track of the processes of newly executed binaries
-BPF_HASH(new_pidns_map, u32, u32);                      // Keep track of new pid namespaces
+BPF_HASH(containers_map, u32, u8);                      // Map cgroup id to container status {EXISTED, CREATED, STARTED}
 BPF_HASH(args_map, u64, args_t);                        // Persist args info between function entry and return
 BPF_HASH(syscall_data_map, u32, syscall_data_t);        // Persist data during syscall execution
 BPF_HASH(inequality_filter, u32, u64);                  // Used to filter events by some uint field either by < or >
@@ -717,6 +721,11 @@ static __always_inline u32 get_task_host_pid(struct task_struct *task)
 static __always_inline u32 get_task_host_tgid(struct task_struct *task)
 {
     return READ_KERN(task->tgid);
+}
+
+static __always_inline struct task_struct * get_parent_task(struct task_struct *task)
+{
+    return READ_KERN(task->real_parent);
 }
 
 static __always_inline u32 get_task_exit_code(struct task_struct *task)
@@ -1191,20 +1200,35 @@ static __always_inline int should_trace(context_t *context)
             return 1;
     }
 
-    bool is_new_pid = bpf_map_lookup_elem(&new_pids_map, &context->host_tid) != 0;
-    if (!bool_filter_matches(CONFIG_NEW_PID_FILTER, is_new_pid))
-    {
+    // Don't monitor self
+    if (get_config(CONFIG_TRACEE_PID) == context->host_pid) {
         return 0;
     }
 
-    bool is_new_container = bpf_map_lookup_elem(&new_pidns_map, &context->pid_id) != 0;
+    bool is_new_pid = bpf_map_lookup_elem(&new_pids_map, &context->host_tid) != 0;
+    bool is_container = false;
+    bool is_new_container = false;
+    u32 cgroup_id_lsb = context->cgroup_id;
+    u8 *state = bpf_map_lookup_elem(&containers_map, &cgroup_id_lsb);
+    if (state != NULL) {
+        if (*state != CONTAINER_CREATED)
+            is_container = true;
+        if (*state == CONTAINER_STARTED)
+            is_new_container = true;
+    }
+
     if (!bool_filter_matches(CONFIG_NEW_CONT_FILTER, is_new_container))
     {
         return 0;
     }
 
-    // Don't monitor self
-    if (get_config(CONFIG_TRACEE_PID) == context->host_pid) {
+    if (!bool_filter_matches(CONFIG_NEW_PID_FILTER, is_new_pid))
+    {
+        return 0;
+    }
+
+    if (!bool_filter_matches(CONFIG_CONT_FILTER, is_container))
+    {
         return 0;
     }
 
@@ -1239,13 +1263,6 @@ static __always_inline int should_trace(context_t *context)
     }
 
     if (!equality_filter_matches(CONFIG_PROC_TREE_FILTER, &process_tree_map, &context->pid))
-    {
-        return 0;
-    }
-
-    // TODO: after we move to minimal kernel 4.18, we can check for container by cgroupid != host cgroupid
-    bool is_container = context->tid != context->host_tid;
-    if (!bool_filter_matches(CONFIG_CONT_FILTER, is_container))
     {
         return 0;
     }
@@ -2403,9 +2420,17 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
         return 0;
 
     // Perform the following checks before should_trace() so we can filter by newly created containers/processes.
-    // We assume that a new container/pod has started when pid 1 in a pid namespace execed
-    if (get_config(CONFIG_NEW_CONT_FILTER) && (data.context.tid == 1))
-        bpf_map_update_elem(&new_pidns_map, &data.context.pid_id, &data.context.pid_id, BPF_ANY);
+    // We assume that a new container/pod has started when a process of a newly created cgroup and mount ns executed a binary
+    u32 cgroup_id_lsb = data.context.cgroup_id;
+    u8 *state = bpf_map_lookup_elem(&containers_map, &cgroup_id_lsb);
+    if (state != NULL && *state == CONTAINER_CREATED) {
+        u32 mntns = get_task_mnt_ns_id(data.task);
+        struct task_struct *parent = get_parent_task(data.task);
+        u32 parent_mntns = get_task_mnt_ns_id(parent);
+        if (mntns != parent_mntns)
+            *state = CONTAINER_STARTED;
+    }
+
     if (get_config(CONFIG_NEW_PID_FILTER))
         bpf_map_update_elem(&new_pids_map, &data.context.host_tid, &data.context.host_tid, BPF_ANY);
 
@@ -2492,10 +2517,6 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
             bpf_map_delete_elem(&process_tree_map, &data.context.host_pid);
         }
     }
-
-    // If pid equals 1 - stop tracing this pid namespace
-    if (data.context.tid == 1)
-        bpf_map_delete_elem(&new_pidns_map, &data.context.pid_id);
 
     if (!should_trace(&data.context))
         return 0;
@@ -2591,6 +2612,10 @@ int tracepoint__cgroup__cgroup_mkdir(struct bpf_raw_tracepoint_args *ctx)
     char *path = (char*)ctx->args[1];
 
     u64 cgroup_id = get_cgroup_id(dst_cgrp);
+    u32 cgroup_id_lsb = cgroup_id;
+    // Assume this is a new container. If not, userspace code will delete this entry
+    u8 state = CONTAINER_CREATED;
+    bpf_map_update_elem(&containers_map, &cgroup_id_lsb, &state, BPF_ANY);
 
     save_to_submit_buf(&data, &cgroup_id, sizeof(u64), 0);
     save_str_to_buf(&data, path, 1);
@@ -2612,6 +2637,8 @@ int tracepoint__cgroup__cgroup_rmdir(struct bpf_raw_tracepoint_args *ctx)
     char *path = (char*)ctx->args[1];
 
     u64 cgroup_id = get_cgroup_id(dst_cgrp);
+    u32 cgroup_id_lsb = cgroup_id;
+    bpf_map_delete_elem(&containers_map, &cgroup_id_lsb);
 
     save_to_submit_buf(&data, &cgroup_id, sizeof(u64), 0);
     save_str_to_buf(&data, path, 1);

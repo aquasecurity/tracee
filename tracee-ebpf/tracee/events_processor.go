@@ -213,7 +213,11 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 		if !ok {
 			return fmt.Errorf("error parsing cgroup_mkdir args")
 		}
-		t.containers.CgroupUpdate(cgroupId, path)
+		info, err := t.containers.CgroupUpdate(cgroupId, path)
+		if err == nil && info.ContainerId == "" {
+			// If not a new container (no regex match) - remove from the bpf container_map
+			t.containers.RemoveFromBpfMap(t.bpfModule, cgroupId)
+		}
 
 	case CgroupRmdirEventID:
 		cgroupId, ok := args["cgroup_id"].(uint64)

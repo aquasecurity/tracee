@@ -74,6 +74,22 @@ func (t *Tracee) processEvents(done <-chan struct{}) error {
 			continue
 		}
 
+		if !t.containers.CgroupExists(ctx.CgroupID) {
+			// Handle false container negatives (we should have identified this container id, but we didn't)
+			// This situation can happen as a race condition when updating the cgroup map.
+			// In that case, we can try to look for it in the cgroupfs and update the map if found.
+			t.containers.CgroupLookupUpdate(ctx.CgroupID)
+		}
+		containerId := t.containers.GetCgroupInfo(ctx.CgroupID).ContainerId
+		if (t.config.Filter.ContFilter.Enabled || t.config.Filter.NewContFilter.Enabled) && containerId == "" {
+			// Don't trace false container positives -
+			// a container filter is set by the user, but this event wasn't originated in a container.
+			// Although kernel filters shouldn't submit such events, we do this check to be on the safe side.
+			// For example, it might be that a new cgroup was created, and not by a container runtime,
+			// while we still didn't processed the cgroup_mkdir event and removed the cgroupid from the bpf container map.
+			continue
+		}
+
 		// Only emit events requested by the user
 		if !t.eventsToTrace[ctx.EventID] {
 			continue
@@ -117,7 +133,7 @@ func (t *Tracee) processEvents(done <-chan struct{}) error {
 			PIDNS:               int(ctx.PidID),
 			ProcessName:         string(bytes.TrimRight(ctx.Comm[:], "\x00")),
 			HostName:            string(bytes.TrimRight(ctx.UtsName[:], "\x00")),
-			ContainerID:         t.containers.GetContainerId(ctx.CgroupID),
+			ContainerID:         containerId,
 			EventID:             int(ctx.EventID),
 			EventName:           EventsIDToEvent[int32(ctx.EventID)].Name,
 			ArgsNum:             int(ctx.Argnum),

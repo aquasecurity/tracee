@@ -573,6 +573,9 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
+	// Populate containers_map with existing containers
+	t.containers.PopulateBpfMap(t.bpfModule)
+
 	// Initialize tail calls program array
 	errs = make([]error, 0)
 	errs = append(errs, t.initTailCall(tailVfsWrite, "prog_array", "trace_ret_vfs_write_tail"))
