@@ -46,7 +46,7 @@ For example templates, see [tracee/tracee-rules/templates](https://github.com/aq
 The following example configures Tracee to output detections to stdout as raw JSON:
 
 ```bash
-docker run --rm --privileged --pid=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee -it aquasec/tracee --output-template /tracee/templates/rawjson.tmpl
+docker run --rm --privileged --pid=host --cgroupns=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee -it aquasec/tracee --output-template /tracee/templates/rawjson.tmpl
 ```
 
 ### falcosidekick webhook
@@ -70,5 +70,5 @@ To use Tracee with falcosidekick:
 docker run --name falcosidekick -p 2801:2801 -e SLACK_WEBHOOKURL=https://hooks.slack.com/services/XXX/YYY/ZZZ falcosecurity/falcosidekick
 
 # Start Tracee, linking it to the falcosidekick container, and configuring it to call it on detections
-docker run --rm --privileged --pid=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee -it --link falcosidekick aquasec/tracee --webhook-template /tracee/templates/falcosidekick.tmpl --webhook-content-type application/json --webhook http://FALCOSIDEKICK:2801
+docker run --rm --privileged --pid=host --cgroupns=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee -it --link falcosidekick aquasec/tracee --webhook-template /tracee/templates/falcosidekick.tmpl --webhook-content-type application/json --webhook http://FALCOSIDEKICK:2801
 ```
