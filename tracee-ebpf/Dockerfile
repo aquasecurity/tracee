@@ -18,9 +18,9 @@ FROM alpine as slim
 RUN apk --no-cache update && apk --no-cache add libc6-compat elfutils-dev
 
 # If running on a BTF enabled kernel:
-# docker run --name tracee --rm --privileged -it aquasec/tracee:latest
+# docker run --name tracee --pid=host --cgroupns=host --rm --privileged -it aquasec/tracee:latest
 # If running on a BTF disabled kernel, you must mount linux headers:
-# docker run --name tracee --rm --privileged --pid=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee aquasec/tracee
+# docker run --name tracee --pid=host --cgroupns=host --rm --privileged --pid=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee aquasec/tracee
 FROM $BASE
 WORKDIR /tracee
 COPY --from=build /tracee/dist/tracee-ebpf ./

@@ -21,14 +21,14 @@ Before you proceed, make sure you follow the [minimum requirements for running T
 If running on __BTF enabled kernel__:
 
 ```bash
-docker run --name tracee --rm --pid=host --privileged -v /tmp/tracee:/tmp/tracee -it aquasec/tracee:latest
+docker run --name tracee --rm --pid=host --cgroupns=host --privileged -v /tmp/tracee:/tmp/tracee -it aquasec/tracee:latest
 ```
 
 > Note: Running with BTF requires access to the kernel configuration file. Depending on the linux distribution it can be in either `/proc/config.gz` (which docker mounts by default) or `/boot/config-$(uname -r)` (which must be mounted explicitly).
 
 If running on __BTF disabled kernel__:
 ```bash
-docker run --name tracee --rm --pid=host --privileged -v /tmp/tracee:/tmp/tracee -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -it aquasec/tracee:latest
+docker run --name tracee --rm --pid=host --cgroupns=host --privileged -v /tmp/tracee:/tmp/tracee -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -it aquasec/tracee:latest
 ```
 
 > Note: You may need to change the volume mounts for the kernel headers based on your setup. See [Linux Headers](install/headers.md) section for more info.
