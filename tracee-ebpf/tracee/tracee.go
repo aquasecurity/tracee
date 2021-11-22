@@ -176,6 +176,7 @@ type Tracee struct {
 	pcapWriter        *pcapgo.NgWriter
 	pcapFile          *os.File
 	ngIfacesIndex     map[int]int
+	containers        *Containers
 }
 
 type counter int32
@@ -292,6 +293,12 @@ func New(cfg Config) (*Tracee, error) {
 			t.eventsToTrace[id] = false
 		}
 	}
+
+	c := InitContainers()
+	if err := c.Populate(); err != nil {
+		return nil, fmt.Errorf("error initializing containers: %v", err)
+	}
+	t.containers = c
 
 	err = t.initBPF()
 	if err != nil {
@@ -536,6 +543,7 @@ func (t *Tracee) populateBPFMaps() error {
 	cEDC := uint32(configExtractDynCode)
 	cFF := uint32(configFollowFilter)
 	cDN := uint32(configDebugNet)
+	cCG1 := uint32(configCgroupV1)
 
 	thisPid := uint32(os.Getpid())
 	cDOSval := boolToUInt32(t.config.Output.DetectSyscall)
@@ -546,6 +554,7 @@ func (t *Tracee) populateBPFMaps() error {
 	cEDCval := boolToUInt32(t.config.Capture.Mem)
 	cFFval := boolToUInt32(t.config.Filter.Follow)
 	cDNval := boolToUInt32(t.config.Debug)
+	cCG1val := boolToUInt32(t.containers.IsCgroupV1())
 
 	errs := make([]error, 0)
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cTP), unsafe.Pointer(&thisPid)))
@@ -557,28 +566,10 @@ func (t *Tracee) populateBPFMaps() error {
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cEDC), unsafe.Pointer(&cEDCval)))
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cFF), unsafe.Pointer(&cFFval)))
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cDN), unsafe.Pointer(&cDNval)))
+	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cCG1), unsafe.Pointer(&cCG1val)))
 	for _, e := range errs {
 		if e != nil {
 			return e
-		}
-	}
-
-	// Initialize pid_to_cont_id_map if tracing containers
-	c := InitContainers()
-	if err := c.Populate(); err != nil {
-		return err
-	}
-	bpfPidToContIdMap, _ := t.bpfModule.GetMap("pid_to_cont_id_map")
-	for _, contId := range c.GetContainers() {
-		for _, pid := range c.GetPids(contId) {
-			if t.config.Debug {
-				fmt.Println("Running container =", contId, "pid =", pid)
-			}
-			contIdBytes := []byte(contId)
-			err = bpfPidToContIdMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&contIdBytes[0]))
-			if err != nil {
-				return err
-			}
 		}
 	}
 

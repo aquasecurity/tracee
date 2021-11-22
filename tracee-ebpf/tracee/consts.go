@@ -41,6 +41,7 @@ const (
 	configDebugNet
 	configProcTreeFilter
 	configCaptureModules
+	configCgroupV1
 )
 
 const (
@@ -165,6 +166,8 @@ const (
 	SwitchTaskNSEventID
 	MagicWriteEventID
 	CgroupAttachTaskEventID
+	CgroupMkdirEventID
+	CgroupRmdirEventID
 	SecurityBprmCheckEventID
 	SecurityFileOpenEventID
 	SecurityInodeUnlinkEventID
@@ -568,7 +571,9 @@ var EventsIDToEvent = map[int32]EventConfig{
 	CommitCredsEventID:            {ID: CommitCredsEventID, ID32Bit: sys32undefined, Name: "commit_creds", Probes: []probe{{event: "commit_creds", attach: kprobe, fn: "trace_commit_creds"}}, Sets: []string{}},
 	SwitchTaskNSEventID:           {ID: SwitchTaskNSEventID, ID32Bit: sys32undefined, Name: "switch_task_ns", Probes: []probe{{event: "switch_task_namespaces", attach: kprobe, fn: "trace_switch_task_namespaces"}}, Sets: []string{}},
 	MagicWriteEventID:             {ID: MagicWriteEventID, ID32Bit: sys32undefined, Name: "magic_write", Probes: []probe{}, Sets: []string{}},
-	CgroupAttachTaskEventID:       {ID: CgroupAttachTaskEventID, ID32Bit: sys32undefined, Name: "cgroup_attach_task", Probes: []probe{{event: "cgroup:cgroup_attach_task", attach: rawTracepoint, fn: "tracepoint__cgroup__cgroup_attach_task"}}, EssentialEvent: true, Sets: []string{}},
+	CgroupAttachTaskEventID:       {ID: CgroupAttachTaskEventID, ID32Bit: sys32undefined, Name: "cgroup_attach_task", Probes: []probe{{event: "cgroup:cgroup_attach_task", attach: rawTracepoint, fn: "tracepoint__cgroup__cgroup_attach_task"}}, Sets: []string{}},
+	CgroupMkdirEventID:            {ID: CgroupMkdirEventID, ID32Bit: sys32undefined, Name: "cgroup_mkdir", Probes: []probe{{event: "cgroup:cgroup_mkdir", attach: rawTracepoint, fn: "tracepoint__cgroup__cgroup_mkdir"}}, EssentialEvent: true, Sets: []string{}},
+	CgroupRmdirEventID:            {ID: CgroupRmdirEventID, ID32Bit: sys32undefined, Name: "cgroup_rmdir", Probes: []probe{{event: "cgroup:cgroup_rmdir", attach: rawTracepoint, fn: "tracepoint__cgroup__cgroup_rmdir"}}, EssentialEvent: true, Sets: []string{}},
 	SecurityBprmCheckEventID:      {ID: SecurityBprmCheckEventID, ID32Bit: sys32undefined, Name: "security_bprm_check", Probes: []probe{{event: "security_bprm_check", attach: kprobe, fn: "trace_security_bprm_check"}}, Sets: []string{"default", "lsm_hooks", "proc", "proc_life"}},
 	SecurityFileOpenEventID:       {ID: SecurityFileOpenEventID, ID32Bit: sys32undefined, Name: "security_file_open", Probes: []probe{{event: "security_file_open", attach: kprobe, fn: "trace_security_file_open"}}, Sets: []string{"default", "lsm_hooks", "fs", "fs_file_ops"}},
 	SecurityInodeUnlinkEventID:    {ID: SecurityInodeUnlinkEventID, ID32Bit: sys32undefined, Name: "security_inode_unlink", Probes: []probe{{event: "security_inode_unlink", attach: kprobe, fn: "trace_security_inode_unlink"}}, Sets: []string{"default", "lsm_hooks", "fs", "fs_file_ops"}},
@@ -944,7 +949,9 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	CommitCredsEventID:            {{Type: "slim_cred_t", Name: "old_cred"}, {Type: "slim_cred_t", Name: "new_cred"}, {Type: "int", Name: "syscall"}},
 	SwitchTaskNSEventID:           {{Type: "pid_t", Name: "pid"}, {Type: "u32", Name: "new_mnt"}, {Type: "u32", Name: "new_pid"}, {Type: "u32", Name: "new_uts"}, {Type: "u32", Name: "new_ipc"}, {Type: "u32", Name: "new_net"}, {Type: "u32", Name: "new_cgroup"}},
 	MagicWriteEventID:             {{Type: "const char*", Name: "pathname"}, {Type: "bytes", Name: "bytes"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}},
-	CgroupAttachTaskEventID:       {{Type: "const char*", Name: "cgroup_path"}},
+	CgroupAttachTaskEventID:       {{Type: "const char*", Name: "cgroup_path"}, {Type: "const char*", Name: "comm"}, {Type: "pid_t", Name: "pid"}},
+	CgroupMkdirEventID:            {{Type: "u64", Name: "cgroup_id"}, {Type: "const char*", Name: "cgroup_path"}},
+	CgroupRmdirEventID:            {{Type: "u64", Name: "cgroup_id"}, {Type: "const char*", Name: "cgroup_path"}},
 	SecurityBprmCheckEventID:      {{Type: "const char*", Name: "pathname"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}},
 	SecurityFileOpenEventID:       {{Type: "const char*", Name: "pathname"}, {Type: "int", Name: "flags"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}, {Type: "int", Name: "syscall"}},
 	SecurityInodeUnlinkEventID:    {{Type: "const char*", Name: "pathname"}},
