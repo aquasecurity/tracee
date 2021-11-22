@@ -140,10 +140,11 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 			for _, pid := range pids { // will break on success
 				err = nil
 				sourceFilePath := fmt.Sprintf("/proc/%s/root%s", strconv.Itoa(int(pid)), filePath)
-				sourceFileCtime, ok := args["ctime"].(int64)
+				sourceFileCtime, ok := args["ctime"].(uint64)
 				if !ok {
 					return fmt.Errorf("error parsing sched_process_exec args: ctime")
 				}
+				castedSourceFileCtime := int64(sourceFileCtime)
 
 				capturedFileID := fmt.Sprintf("%d:%s", ctx.MntID, sourceFilePath)
 				if t.config.Capture.Exec {
@@ -155,19 +156,19 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 
 					// create an in-memory profile
 					if t.config.Capture.Profile {
-						t.updateProfile(fmt.Sprintf("%s:%d", filepath.Join(destinationDirPath, fmt.Sprintf("exec.%s", filepath.Base(filePath))), sourceFileCtime), ctx.Ts)
+						t.updateProfile(fmt.Sprintf("%s:%d", filepath.Join(destinationDirPath, fmt.Sprintf("exec.%s", filepath.Base(filePath))), castedSourceFileCtime), ctx.Ts)
 					}
 
 					//don't capture same file twice unless it was modified
 					lastCtime, ok := t.capturedFiles[capturedFileID]
-					if !ok || lastCtime != sourceFileCtime {
+					if !ok || lastCtime != castedSourceFileCtime {
 						//capture
 						err = CopyFileByPath(sourceFilePath, destinationFilePath)
 						if err != nil {
 							return err
 						}
 						//mark this file as captured
-						t.capturedFiles[capturedFileID] = sourceFileCtime
+						t.capturedFiles[capturedFileID] = castedSourceFileCtime
 					}
 				}
 
@@ -181,11 +182,11 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 						hashInfoObj = hashInfoInterface.(fileExecInfo)
 					}
 					// Check if cache can be used
-					if ok && hashInfoObj.LastCtime == sourceFileCtime {
+					if ok && hashInfoObj.LastCtime == castedSourceFileCtime {
 						currentHash = hashInfoObj.Hash
 					} else {
 						currentHash = getFileHash(sourceFilePath)
-						hashInfoObj = fileExecInfo{sourceFileCtime, currentHash}
+						hashInfoObj = fileExecInfo{castedSourceFileCtime, currentHash}
 						t.fileHashes.Add(capturedFileID, hashInfoObj)
 					}
 
