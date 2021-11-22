@@ -2,6 +2,7 @@ package tracee
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -9,13 +10,22 @@ import (
 	"regexp"
 	"strings"
 	"syscall"
+	"unsafe"
+
+	bpf "github.com/aquasecurity/libbpfgo"
 )
 
 // Containers contain information about host running containers in the host.
 type Containers struct {
-	cgroupV1     bool
-	cgroupMP     string
-	cgroupContId map[uint32]string
+	cgroupV1 bool
+	cgroupMP string
+	cgroups  map[uint32]CgroupInfo
+}
+
+type CgroupInfo struct {
+	Path        string
+	ContainerId string
+	Runtime     string
 }
 
 // InitContainers initializes a Containers object and returns a pointer to it.
@@ -27,23 +37,14 @@ func InitContainers() *Containers {
 	}
 
 	return &Containers{
-		cgroupV1:     cgroupV1,
-		cgroupMP:     "",
-		cgroupContId: make(map[uint32]string),
+		cgroupV1: cgroupV1,
+		cgroupMP: "",
+		cgroups:  make(map[uint32]CgroupInfo),
 	}
 }
 
 func (c *Containers) IsCgroupV1() bool {
 	return c.cgroupV1
-}
-
-// GetContainers provides a list of all added containers by their uuid.
-func (c *Containers) GetContainers() []string {
-	var conts []string
-	for _, v := range c.cgroupContId {
-		conts = append(conts, v)
-	}
-	return conts
 }
 
 // Populate will populate all Containers information by reading mounted proc
@@ -107,40 +108,77 @@ func (c *Containers) populate() error {
 			return nil
 		}
 
-		return c.CgroupUpdate(stat.Ino, path)
+		_, err = c.CgroupUpdate(stat.Ino, path)
+		return err
 	}
 
 	if c.cgroupMP == "" {
 		return fmt.Errorf("could not determine cgroup mount point")
 	}
 
-	err := filepath.WalkDir(c.cgroupMP, fn)
-	if err != nil {
-		return err
+	return filepath.WalkDir(c.cgroupMP, fn)
+}
+
+func (c *Containers) CgroupLookupUpdate(cgroupId uint64) error {
+	fn := func(path string, d fs.DirEntry, err error) error {
+		if !d.IsDir() {
+			return nil
+		}
+
+		if err != nil {
+			_, _ = fmt.Fprintln(os.Stderr, err)
+			return nil
+		}
+
+		// The lower 32 bits of the cgroup id are the inode number of the matching cgroupfs entry
+		var stat syscall.Stat_t
+		if err := syscall.Stat(path, &stat); err != nil {
+			return nil
+		}
+
+		// Check if this cgroup path belongs to cgroupId
+		if (stat.Ino & 0xFFFFFFFF) != (cgroupId & 0xFFFFFFFF) {
+			return nil
+		}
+
+		// If we reached this point, we found a match for cgroupId - update cgroups map and break search
+		c.CgroupUpdate(cgroupId, path)
+		return fs.ErrExist
 	}
 
-	return nil
+	err := filepath.WalkDir(c.cgroupMP, fn)
+	if errors.Is(err, fs.ErrExist) {
+		return nil
+	}
+	if err == nil {
+		// No match was found - update cgroup id with an empty entry
+		c.cgroups[uint32(cgroupId)] = CgroupInfo{}
+	}
+
+	return err
 }
 
 // check if path belongs to a known container runtime and
 // add cgroupId with a matching container id, extracted from path
-func (c *Containers) CgroupUpdate(cgroupId uint64, path string) error {
+func (c *Containers) CgroupUpdate(cgroupId uint64, path string) (CgroupInfo, error) {
 	pathComponents := strings.Split(path, "/")
 
 	for _, pc := range pathComponents {
 		if len(pc) < 64 {
 			continue
 		}
-		containerId, _ := c.getContainerIdFromCgroup(pc)
+		containerId, runtime := c.getContainerIdFromCgroup(pc)
 		if containerId == "" {
 			continue
 		}
-		c.cgroupContId[uint32(cgroupId)] = containerId
-
-		return nil
+		info := CgroupInfo{Path: path, ContainerId: containerId, Runtime: runtime}
+		c.cgroups[uint32(cgroupId)] = info
+		return info, nil
 	}
 
-	return nil
+	info := CgroupInfo{}
+	c.cgroups[uint32(cgroupId)] = info
+	return info, nil
 }
 
 // extract container id and container runtime from path
@@ -178,9 +216,59 @@ check:
 }
 
 func (c *Containers) CgroupRemove(cgroupId uint64) {
-	delete(c.cgroupContId, uint32(cgroupId))
+	delete(c.cgroups, uint32(cgroupId))
 }
 
-func (c *Containers) GetContainerId(cgroupId uint64) string {
-	return c.cgroupContId[uint32(cgroupId)]
+// GetContainers provides a list of all added containers by their uuid.
+func (c *Containers) GetContainers() []string {
+	var conts []string
+	for _, v := range c.cgroups {
+		if v.ContainerId != "" {
+			conts = append(conts, v.ContainerId)
+		}
+	}
+	return conts
+}
+
+func (c *Containers) GetCgroupInfo(cgroupId uint64) CgroupInfo {
+	return c.cgroups[uint32(cgroupId)]
+}
+
+func (c *Containers) CgroupExists(cgroupId uint64) bool {
+	if _, ok := c.cgroups[uint32(cgroupId)]; ok {
+		return true
+	}
+	return false
+}
+
+const (
+	containerExisted uint8 = iota + 1
+	containerCreated
+	containerStarted
+)
+
+func (c *Containers) PopulateBpfMap(bpfModule *bpf.Module) error {
+	containersMap, err := bpfModule.GetMap("containers_map")
+	if err != nil {
+		return err
+	}
+
+	for cgroupIdLsb, info := range c.cgroups {
+		if info.ContainerId != "" {
+			state := containerExisted
+			err = containersMap.Update(unsafe.Pointer(&cgroupIdLsb), unsafe.Pointer(&state))
+		}
+	}
+
+	return err
+}
+
+func (c *Containers) RemoveFromBpfMap(bpfModule *bpf.Module, cgroupId uint64) error {
+	containersMap, err := bpfModule.GetMap("containers_map")
+	if err != nil {
+		return err
+	}
+
+	cgroupIdLsb := uint32(cgroupId)
+	return containersMap.DeleteKey(unsafe.Pointer(&cgroupIdLsb))
 }
