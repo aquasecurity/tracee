@@ -80,6 +80,16 @@ struct kernfs_node___old {
     union kernfs_node_id  id;
 } __attribute__((preserve_access_index));
 
+struct pid_link
+{
+        struct hlist_node node;
+        struct pid *pid;
+} __attribute__((preserve_access_index));
+
+struct task_struct___v419 {
+	struct pid_link pids[PIDTYPE_MAX];
+} __attribute__((preserve_access_index));
+
 #endif
 
 #undef container_of
@@ -659,15 +669,23 @@ static __always_inline u32 get_task_ns_pid(struct task_struct *task)
     unsigned int level = READ_KERN(pid_ns_children->level);
 
 #ifndef CORE
+
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && !defined(RHEL_RELEASE_GT_8_0))
     return READ_KERN(READ_KERN(task->pids[PIDTYPE_PID].pid)->numbers[level].nr);
 #else
     struct pid *tpid = READ_KERN(task->thread_pid);
     return READ_KERN(tpid->numbers[level].nr);
 #endif
+
 #else // CORE
-    struct pid *tpid = READ_KERN(task->thread_pid);
-    return READ_KERN(tpid->numbers[level].nr);
+    if (bpf_core_type_exists(struct pid_link)) {
+		struct task_struct___v419 *taskv419 = (struct task_struct___v419 *) task;
+		struct pid *pid = READ_KERN(taskv419->pids[PIDTYPE_PID].pid);
+		return READ_KERN(pid->numbers[level].nr);
+	} else {
+		struct pid *tpid = READ_KERN(task->thread_pid);
+		return READ_KERN(tpid->numbers[level].nr);
+	}
 #endif
 }
 
