@@ -141,8 +141,6 @@ $(OUT_BPF_CORE): $(BPF_SRC) $(LIBBPF_HEADERS) $(CMD_CLANG)
 		-D__BPF_TRACING__ \
 		-D__VM_LINUX_H__ \
 		-D__KERNEL__ \
-		-DLINUX_VERSION_CODE=$(LINUX_VERSION_CODE) \
-		-DRHEL_RELEASE_CODE=$(RHEL_RELEASE_CODE) \
 		-target bpf \
 		-O2 -c -g -o $@ $<
 else
