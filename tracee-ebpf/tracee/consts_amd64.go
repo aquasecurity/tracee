@@ -173,7 +173,7 @@ const (
 	AcctEventID                int32 = 163
 	SettimeofdayEventID        int32 = 164
 	MountEventID               int32 = 165
-	UmountEventID              int32 = 166
+	Umount2EventID             int32 = 166
 	SwaponEventID              int32 = 167
 	SwapoffEventID             int32 = 168
 	RebootEventID              int32 = 169
@@ -368,6 +368,96 @@ const (
 	LandloclRestrictSetEventID   int32 = 446
 	MemfdSecretEventID           int32 = 447
 	ProcessMreleaseEventID       int32 = 448
+)
+
+// Set of events IDs for 32bit syscalls which have no parallel 64bit syscall
+const (
+	WaitpidEventID int32 = iota + 3000
+	OldfstatEventID
+	BreakEventID
+	OldstatEventID
+	UmountEventID
+	StimeEventID
+	SttyEventID
+	GttyEventID
+	NiceEventID
+	FtimeEventID
+	ProfEventID
+	SignalEventID
+	LockEventID
+	MpxEventID
+	UlimitEventID
+	OldoldunameEventID
+	SigactionEventID
+	SgetmaskEventID
+	SsetmaskEventID
+	SigsuspendEventID
+	SigpendingEventID
+	OldlstatEventID
+	ReaddirEventID
+	ProfilEventID
+	SocketcallEventID
+	OldunameEventID
+	IdleEventID
+	Vm86oldEventID
+	IpcEventID
+	SigreturnEventID
+	SigprocmaskEventID
+	BdflushEventID
+	Afs_syscallEventID
+	LlseekEventID
+	NewselectEventID
+	Vm86EventID
+	UgetrlimitEventID
+	Mmap2EventID
+	Truncate64EventID
+	Ftruncate64EventID
+	Stat64EventID
+	Lstat64EventID
+	Fstat64EventID
+	Lchown32EventID
+	Getuid32EventID
+	Getgid32EventID
+	Geteuid32EventID
+	Getegid32EventID
+	Setreuid32EventID
+	Setregid32EventID
+	Getgroups32EventID
+	Setgroups32EventID
+	Fchown32EventID
+	Setresuid32EventID
+	Getresuid32EventID
+	Setresgid32EventID
+	Getresgid32EventID
+	Chown32EventID
+	Setuid32EventID
+	Setgid32EventID
+	Setfsuid32EventID
+	Setfsgid32EventID
+	Fcntl64EventID
+	Sendfile64EventID
+	Statfs64EventID
+	Fstatfs64EventID
+	Fadvise64_64EventID
+	Clock_gettime64EventID
+	Clock_settime64EventID
+	Clock_adjtime64EventID
+	Clock_getres_time64EventID
+	Clock_nanosleep_time64EventID
+	Timer_gettime64EventID
+	Timer_settime64EventID
+	Timerfd_gettime64EventID
+	Timerfd_settime64EventID
+	Utimensat_time64EventID
+	Pselect6_time64EventID
+	Ppoll_time64EventID
+	Io_pgetevents_time64EventID
+	Recvmmsg_time64EventID
+	Mq_timedsend_time64EventID
+	Mq_timedreceive_time64EventID
+	Rt_sigtimedwait_time64EventID
+	Futex_time64EventID
+	Sched_rr_get_interval_time64EventID
 )
 
 // x86 32bit syscall numbers
