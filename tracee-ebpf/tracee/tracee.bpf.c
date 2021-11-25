@@ -64,7 +64,7 @@ Copyright (C) Aqua Security inc.
 
 #else
 //CO:RE is enabled
-#include <vmlinux.h>
+#include <vmlinux-arch.h>
 #include "co_re_missing_definitions.h"
 
 union kernfs_node_id {
