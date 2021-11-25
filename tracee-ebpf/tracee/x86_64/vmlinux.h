@@ -1,1 +1,1 @@
-vmlinux_512.h
+vmlinux-core.h
