@@ -1,16 +1,23 @@
 package main
 
 import (
-	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"testing"
 
+	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"github.com/aquasecurity/tracee/tracee-rules/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestK8sApiConnection(t *testing.T) {
-	SigTests := []signaturestest.SigTest{
+	testCases := []struct {
+		Name     string
+		Events   []types.Event
+		Findings map[string]types.Finding
+	}{
 		{
+			Name: "should trigger detection",
 			Events: []types.Event{
 				tracee.Event{
 					EventName:   "execve",
@@ -38,14 +45,52 @@ func TestK8sApiConnection(t *testing.T) {
 							ArgMeta: tracee.ArgMeta{
 								Name: "remote_addr",
 							},
-							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "80", "sin_addr": "1.1.1.1"},
+							Value: map[string]string{
+								"sa_family": "AF_INET",
+								"sin_port":  "80",
+								"sin_addr":  "1.1.1.1",
+							},
 						},
 					},
 				},
 			},
-			Expect: true,
+			Findings: map[string]types.Finding{
+				"TRC-13": {
+					Data: map[string]interface{}{
+						"ip": "1.1.1.1",
+					},
+					Context: tracee.Event{
+						EventName:   "security_socket_connect",
+						ContainerID: "0907ef86d7be",
+						Args: []tracee.Argument{
+							{
+								ArgMeta: tracee.ArgMeta{
+									Name: "remote_addr",
+								},
+								Value: map[string]string{
+									"sa_family": "AF_INET",
+									"sin_port":  "80",
+									"sin_addr":  "1.1.1.1",
+								},
+							},
+						},
+					},
+					SigMetadata: types.SignatureMetadata{
+						ID:          "TRC-13",
+						Version:     "0.1.0",
+						Name:        "Kubernetes API server connection detected",
+						Description: "A connection to the kubernetes API server was detected. The K8S API server is the brain of your K8S cluster, adversaries may try and communicate with the K8S API server to gather information/credentials, or even run more containers and laterally expand their grip on your systems.",
+						Tags:        []string{"container"},
+						Properties: map[string]interface{}{
+							"Severity":     1,
+							"MITRE ATT&CK": "Discovery: Cloud Service Discovery",
+						},
+					},
+				},
+			},
 		},
 		{
+			Name: "should not trigger detection",
 			Events: []types.Event{
 				tracee.Event{
 					EventName:   "execve",
@@ -78,22 +123,24 @@ func TestK8sApiConnection(t *testing.T) {
 					},
 				},
 			},
-			Expect: false,
+			Findings: map[string]types.Finding{},
 		},
 	}
 
-	for _, st := range SigTests {
-		sig := K8sApiConnection{}
-		st.Init(&sig)
-		for _, e := range st.Events {
-			err := sig.OnEvent(e)
-			if err != nil {
-				t.Error(err, st)
-			}
-		}
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			holder := signaturestest.FindingsHolder{}
 
-		if st.Expect != st.Status {
-			t.Error("Unexpected result", st)
-		}
+			sig := &K8sApiConnection{}
+			err := sig.Init(holder.OnFinding)
+			require.NoError(t, err)
+
+			for _, e := range tc.Events {
+				err = sig.OnEvent(e)
+				require.NoError(t, err)
+			}
+
+			assert.Equal(t, tc.Findings, holder.GroupBySigID())
+		})
 	}
 }

@@ -8,6 +8,7 @@ import (
 
 	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"github.com/aquasecurity/tracee/tracee-rules/signatures/rego/regosig"
+	"github.com/aquasecurity/tracee/tracee-rules/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/stretchr/testify/assert"
@@ -270,7 +271,7 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 			)
 			require.NoError(t, err)
 
-			holder := &findingsHolder{}
+			holder := &signaturestest.FindingsHolder{}
 			err = sig.Init(holder.OnFinding)
 			require.NoError(t, err)
 
