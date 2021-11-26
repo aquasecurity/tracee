@@ -2,6 +2,7 @@
 #define __VMLINUX_ARCH_H__
 
 #include <vmlinux-core.h>
+#include <vmlinux-flavored.h>
 
 #ifndef BPF_NO_PRESERVE_ACCESS_INDEX
 #pragma clang attribute push (__attribute__((preserve_access_index)), apply_to = record)
