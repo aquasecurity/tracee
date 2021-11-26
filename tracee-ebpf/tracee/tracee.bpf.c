@@ -992,6 +992,7 @@ static __always_inline u16 get_sock_family(struct sock *sock)
 
 static __always_inline u16 get_sock_protocol(struct sock *sock)
 {
+    u16 protocol = 0;
 #ifndef CORE
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0))
     // kernel 4.18-5.5: workaround for reading sk_protocol bit-field:
@@ -999,18 +1000,22 @@ static __always_inline u16 get_sock_protocol(struct sock *sock)
     // sk_gso_max_segs field and go 24 bits backwards (i.e. 3 bytes) because
     // sk_type is 16 bits, and sk_protocol is 8 bits (i.e. 1 byte). **note**:
     // we define protocol as u16 so it'll be compatible with newer kernels.
-	u16 protocol = 0;
     bpf_probe_read(&protocol, 1, (void *)(&sock->sk_gso_max_segs) - 3);
-    return protocol;
 #else
     // kernel 5.6
-    return READ_KERN(sock->sk_protocol);
+    protocol = READ_KERN(sock->sk_protocol);
 #endif
 #else // CORE
-    // CO-RE relocation code take care of sock->sk_protocol type change even if
-    // used vmlinux header file contains the more recent version of struct sock
-    return READ_KERN(sock->sk_protocol);
+    // commit bf9765145b85 ("sock: Make sk_protocol a 16-bit value")
+    struct sock___old *check = NULL;
+    if (bpf_core_field_exists(check->__sk_flags_offset)) {
+        check = (struct sock___old *) sock;
+        bpf_core_read(&protocol, 1, (void *)(&check->sk_gso_max_segs) - 3);
+    } else {
+        protocol = READ_KERN(sock->sk_protocol);
+    }
 #endif
+    return protocol;
 }
 
 static __always_inline u16 get_sockaddr_family(struct sockaddr *address)
