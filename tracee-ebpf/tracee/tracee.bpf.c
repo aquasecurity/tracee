@@ -67,19 +67,6 @@ Copyright (C) Aqua Security inc.
 #include <vmlinux-arch.h>
 #include "co_re_missing_definitions.h"
 
-union kernfs_node_id {
-    struct {
-        u32     ino;
-        u32     generation;
-    };
-    u64         id;
-} __attribute__((preserve_access_index));
-
-struct kernfs_node___old {
-    const char            *name;
-    union kernfs_node_id  id;
-} __attribute__((preserve_access_index));
-
 #endif
 
 #undef container_of
