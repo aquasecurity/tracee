@@ -20,6 +20,19 @@ struct kernfs_node___old {
     union kernfs_node_id  id;
 };
 
+struct sock___old {
+    struct sock_common      __sk_common;
+    unsigned int            __sk_flags_offset[0];
+    unsigned int            sk_padding : 1,
+                            sk_kern_sock : 1,
+                            sk_no_check_tx : 1,
+                            sk_no_check_rx : 1,
+                            sk_userlocks : 4,
+                            sk_protocol  : 8,
+                            sk_type      : 16;
+    u16                     sk_gso_max_segs;
+};
+
 #ifndef BPF_NO_PRESERVE_ACCESS_INDEX
 #pragma clang attribute pop
 #endif
