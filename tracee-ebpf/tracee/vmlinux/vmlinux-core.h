@@ -1,9 +1,7 @@
 #ifndef __VMLINUX_H__
 #define __VMLINUX_H__
 
-#ifndef BPF_NO_PRESERVE_ACCESS_INDEX
 #pragma clang attribute push (__attribute__((preserve_access_index)), apply_to = record)
-#endif
 
 typedef signed char __s8;
 typedef __s8 s8;
@@ -636,8 +634,6 @@ enum kernel_read_file_id {
         READING_MAX_ID = 7,
 };
 
-#ifndef BPF_NO_PRESERVE_ACCESS_INDEX
 #pragma clang attribute pop
-#endif
 
 #endif /* __VMLINUX_H__ */

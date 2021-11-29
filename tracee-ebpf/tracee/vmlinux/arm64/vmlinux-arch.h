@@ -4,9 +4,7 @@
 #include <vmlinux-core.h>
 #include <vmlinux-flavored.h>
 
-#ifndef BPF_NO_PRESERVE_ACCESS_INDEX
 #pragma clang attribute push (__attribute__((preserve_access_index)), apply_to = record)
-#endif
 
 struct thread_info {
 	long unsigned int flags;
@@ -61,8 +59,6 @@ struct task_struct {
 	struct css_set *           cgroups;
 };
 
-#ifndef BPF_NO_PRESERVE_ACCESS_INDEX
 #pragma clang attribute pop
-#endif
 
 #endif /* __VMLINUX_ARCH_H__ */
