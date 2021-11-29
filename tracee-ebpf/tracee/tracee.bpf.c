@@ -892,7 +892,7 @@ static __always_inline unsigned long get_inode_nr_from_file(struct file *file)
     return READ_KERN(f_inode->i_ino);
 }
 
-static __always_inline unsigned long get_ctime_nanosec_from_file(struct file *file)
+static __always_inline u64 get_ctime_nanosec_from_file(struct file *file)
 {
     struct inode *f_inode = READ_KERN(file->f_inode);
     struct timespec64 ts = READ_KERN(f_inode->i_ctime);
