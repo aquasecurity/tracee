@@ -13,10 +13,8 @@ struct thread_info {
 struct task_struct {
 	struct thread_info         thread_info;
 	unsigned int               flags;
-	short unsigned int         migration_flags;
 	struct mm_struct *         mm;
 	int                        exit_code;
-	long unsigned int          atomic_flags;
 	pid_t                      pid;
 	pid_t                      tgid;
 	struct task_struct *       real_parent;
@@ -27,8 +25,6 @@ struct task_struct {
 	char                       comm[16];
 	struct files_struct *      files;
 	struct nsproxy *           nsproxy;
-	unsigned int               sas_ss_flags;
-	unsigned int               psi_flags;
 	struct css_set *           cgroups;
 };
 
