@@ -525,6 +525,21 @@ typedef struct net_ctx_ext {
     char comm[TASK_COMM_LEN];
     __be16 local_port;
 } net_ctx_ext_t;
+typedef struct net_dns_packet {
+    unsigned int id; //packet id
+    unsigned  QR:1; // specifies whether this message is a query (0), or a response (1)
+    unsigned  Opcode:4; // specifies kind of query in this message. (normally set to 0)
+    unsigned  AA:1; // only meaningful in responses, and specifies that the responding name server is an authority for the domain name in question section
+    unsigned  TC:1; // specifies that this message was truncated
+    unsigned  RD:1; // directs the name server to pursue the query recursively
+    unsigned  RA:1; // this be is set or cleared in a response, and denotes whether recursive query support is available in the name server
+    unsigned  Z:1; //Reserved- should be 0
+    unsigned  RCODE:1; //Response code
+    unsigned int qdcount; //specifying the number of entries in the question section
+    unsigned int ancount; //specifying the number of resource records in the answer section
+    unsigned int nscount; //specifying the number of name server resource records in the authority records section
+    unsigned int arcount; //specifying the number of resource records in the additional records section
+} dns_packet_info;
 
 /*================================ KERNEL STRUCTS =============================*/
 
