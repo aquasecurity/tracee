@@ -1,8 +1,6 @@
 #ifndef __VMLINUX_FLAVORED_H__
 #define __VMLINUX_FLAVORED_H__
 
-#include <vmlinux-core.h>
-
 #pragma clang attribute push (__attribute__((preserve_access_index)), apply_to = record)
 
 union kernfs_node_id {
