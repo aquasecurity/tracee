@@ -18,8 +18,8 @@ The following go templates are included in the Tracee container image and are av
 
 File name | Description | Content-Type | Source
 --- | --- | --- | ---
-falcosidekick.tmpl | For compatibility with [falcosidekick](https://github.com/falcosecurity/falcosidekick) | `application/json` | [source](https://github.com/aquasecurity/tracee/blob/main/tracee-rules/templates/falcosidekick.tmpl)
-rawjson.tmpl | Dumps the Finding object as raw JSON | `application/json` | [source](https://github.com/aquasecurity/tracee/blob/main/tracee-rules/templates/rawjson.tmpl)
+falcosidekick.tmpl | For compatibility with [falcosidekick] | `application/json` | [source](https://github.com/aquasecurity/tracee/blob/{{ git_tag_version }}/tracee-rules/templates/falcosidekick.tmpl)
+rawjson.tmpl | Dumps the Finding object as raw JSON | `application/json` | [source](https://github.com/aquasecurity/tracee/blob/{{ git_tag_version }}/tracee-rules/templates/rawjson.tmpl)
 
 
 ## Go Template Authoring
@@ -37,7 +37,7 @@ type Finding struct {
 
 The Go template can utilize helper functions from [Sprig](http://masterminds.github.io/sprig/).
 
-For example templates, see [tracee/tracee-rules/templates](https://github.com/aquasecurity/tracee/tree/main/tracee-rules/templates).
+For example templates, see [tracee/tracee-rules/templates](https://github.com/aquasecurity/tracee/tree/{{ git_tag_version }}/tracee-rules/templates).
 
 ## Examples
 
@@ -46,12 +46,16 @@ For example templates, see [tracee/tracee-rules/templates](https://github.com/aq
 The following example configures Tracee to output detections to stdout as raw JSON:
 
 ```bash
-docker run --rm --privileged --pid=host --cgroupns=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee -it aquasec/tracee --output-template /tracee/templates/rawjson.tmpl
+docker run --rm -it --privileged --pid=host --cgroupns=host \
+  -v /lib/modules/:/lib/modules/:ro \
+  -v /usr/src:/usr/src:ro \
+  -v /tmp/tracee:/tmp/tracee \
+  aquasec/tracee:{{ git_tag_version[1:] }} --output-template /tracee/templates/rawjson.tmpl
 ```
 
 ### falcosidekick webhook
 
-[falcosidekick](https://github.com/falcosecurity/falcosidekick) is a useful webhook server that can be configured to connect to various "outputs" such as: Slack, Mattermost, Teams, Datadog, Prometheus, StatsD, Email, Elasticsearch, Loki, PagerDuty, OpsGenie, and many more.
+[falcosidekick] is a useful webhook server that can be configured to connect to various "outputs" such as: Slack, Mattermost, Teams, Datadog, Prometheus, StatsD, Email, Elasticsearch, Loki, PagerDuty, OpsGenie, and many more.
 
 To use Tracee with falcosidekick:
 
@@ -61,14 +65,25 @@ To use Tracee with falcosidekick:
     1. See the the [falcosidekick Readme](https://github.com/falcosecurity/falcosidekick) for full documentation.
 3. Start Tracee while configuring it to post detections to the falcosidekick endpoint.
     1. If using Docker, you can use the simple [link](https://docs.docker.com/network/links/) flag to allow the containers to communicate
-	  2. Use the webhook flag to point to the falcosidekick container's endpoint
-	  3. Tracee ships with a built-in template for falcosidekick
+    2. Use the webhook flag to point to the falcosidekick container's endpoint
+    3. Tracee ships with a built-in template for falcosidekick
 
 
 ```bash
 # Start falcosidekick configured to post to Slack
-docker run --name falcosidekick -p 2801:2801 -e SLACK_WEBHOOKURL=https://hooks.slack.com/services/XXX/YYY/ZZZ falcosecurity/falcosidekick
+docker run --name falcosidekick -p 2801:2801 \
+  -e SLACK_WEBHOOKURL=https://hooks.slack.com/services/XXX/YYY/ZZZ \
+  falcosecurity/falcosidekick
 
 # Start Tracee, linking it to the falcosidekick container, and configuring it to call it on detections
-docker run --rm --privileged --pid=host --cgroupns=host -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -v /tmp/tracee:/tmp/tracee -it --link falcosidekick aquasec/tracee --webhook-template /tracee/templates/falcosidekick.tmpl --webhook-content-type application/json --webhook http://FALCOSIDEKICK:2801
+docker run --name tracee --rm -it --privileged --pid=host --cgroupns=host \
+  -v /lib/modules/:/lib/modules/:ro \
+  -v /usr/src:/usr/src:ro \
+  -v /tmp/tracee:/tmp/tracee \
+  --link falcosidekick aquasec/tracee:{{ git_tag_version[1:] }} \
+  --webhook-template /tracee/templates/falcosidekick.tmpl \
+  --webhook-content-type application/json \
+  --webhook http://FALCOSIDEKICK:2801
 ```
+
+[falcosidekick]: https://github.com/falcosecurity/falcosidekick
