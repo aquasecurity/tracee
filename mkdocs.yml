@@ -45,4 +45,4 @@ extra:
 plugins:
   - search
   - macros:
-      modules: ["mkdocs_macros_gitsemver"]
+      modules: ["mkdocs_macros_gittagversion"]
