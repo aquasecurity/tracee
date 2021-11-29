@@ -1,6 +1,7 @@
 package tracee
 
 import (
+	"bufio"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -8,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"math"
 	"net"
 	"os"
@@ -20,8 +22,6 @@ import (
 	"syscall"
 	"time"
 	"unsafe"
-	"log"
-	"bufio"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
@@ -75,7 +75,6 @@ type netProbe struct {
 	egressHook  *bpf.TcHook
 }
 
-
 func getAddrFromKallsyms(func_name string) uint64 {
 	file, err := os.Open("/proc/kallsyms")
 
@@ -93,23 +92,22 @@ func getAddrFromKallsyms(func_name string) uint64 {
 	file.Close()
 
 	for _, each_ln := range text {
-		
-		line :=strings.Fields(each_ln)
 
-		if strings.Contains (line[2], func_name) && !strings.HasSuffix(line[2],"file_ops_compat"){
+		line := strings.Fields(each_ln)
+
+		if strings.Contains(line[2], func_name) && !strings.HasSuffix(line[2], "file_ops_compat") {
 			addr := each_ln[0:16]
-			v, err:= strconv.ParseUint(addr, 16, 64)
+			v, err := strconv.ParseUint(addr, 16, 64)
 			if err != nil {
 				log.Fatalf("failed to ParseInt")
 			}
-			
+
 			return v
 
-			}
+		}
 	}
 	return 0
 }
-
 
 // Validate does static validation of the configuration
 func (tc Config) Validate() error {
@@ -710,42 +708,42 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
-	_,hiddenInodesExists 	  	:= t.eventsToTrace[HiddenInodesEventID]
-	_,hookedFopsPointerExists 	:= t.eventsToTrace[HookedFopsPointerEventID]
-	if hookedFopsPointerExists{
+	_, hiddenInodesExists := t.eventsToTrace[HiddenInodesEventID]
+	_, hookedFopsPointerExists := t.eventsToTrace[HookedFopsPointerEventID]
+	if hookedFopsPointerExists {
 		hookedFopsWhiteListMap, err := t.bpfModule.GetMap("hooked_fops_white_list_map") // u32, u32
 		if err != nil {
 			return err
 		}
-		
+
 		fopsList := []string{"no_open_fops.", "proc_root_readdir", "kernfs_file_fops", "simple_dir_operations", "proc_pid_cmdline_ops", "proc_auxv_operations", "proc_sys_file_operations", "ext4_file_operations", "pipefifo_fops", "proc_root_operations", "kernfs_dir_fops", "def_chr_fops", "proc_single_file_operations", "proc_iter_file_ops", "shmem_file_operations"}
 		errUpdate := make([]error, 0)
 		fopVal := uint64(0)
-		for _,fopName := range(fopsList){
-				fopVal = uint64(getAddrFromKallsyms(fopName))
-				errUpdate = append(errUpdate, hookedFopsWhiteListMap.Update(unsafe.Pointer(&fopVal), unsafe.Pointer(&fopVal)))
-				fopVal =0
+		for _, fopName := range fopsList {
+			fopVal = uint64(getAddrFromKallsyms(fopName))
+			errUpdate = append(errUpdate, hookedFopsWhiteListMap.Update(unsafe.Pointer(&fopVal), unsafe.Pointer(&fopVal)))
+			fopVal = 0
 		}
 		for _, err := range errUpdate {
 			if err != nil {
 				panic(err)
 			}
 		}
-		
+
 	}
 
-	if hiddenInodesExists || hookedFopsPointerExists{
-		
+	if hiddenInodesExists || hookedFopsPointerExists {
+
 		codeBoundariesMap, err := t.bpfModule.GetMap("code_boundaries_map") // u32, u32
 		if err != nil {
 			return err
 		}
-		kernelCodeBoundary :=[]string{"_stext", "_etext"}
+		kernelCodeBoundary := []string{"_stext", "_etext"}
 
 		boundaryKey := int(0)
 		boundaryVal := uint64(0)
-		e:= make([]error, 0)
-		for idx,boundary := range(kernelCodeBoundary){
+		e := make([]error, 0)
+		for idx, boundary := range kernelCodeBoundary {
 			boundaryKey = idx
 			boundaryVal = uint64(getAddrFromKallsyms(boundary))
 			e = append(e, codeBoundariesMap.Update(unsafe.Pointer(&boundaryKey), unsafe.Pointer(&boundaryVal)))
