@@ -3,9 +3,7 @@
 
 #include <vmlinux-core.h>
 
-#ifndef BPF_NO_PRESERVE_ACCESS_INDEX
 #pragma clang attribute push (__attribute__((preserve_access_index)), apply_to = record)
-#endif
 
 union kernfs_node_id {
     struct {
@@ -33,8 +31,6 @@ struct sock___old {
     u16                     sk_gso_max_segs;
 };
 
-#ifndef BPF_NO_PRESERVE_ACCESS_INDEX
 #pragma clang attribute pop
-#endif
 
 #endif
