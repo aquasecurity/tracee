@@ -650,7 +650,7 @@ You can manually detect if your environments supports it by checking if the foll
 <h2 id="compiling-the-ebpf-program">Compiling the eBPF program</h2>
 <p>You can build the eBPF program in the following ways:</p>
 <ol>
-<li>Clone the repo (including submodules: <code>git clone --recursive https://github.com/aquasecurity/tracee.git</code>) and <code>make bpf</code>.</li>
+<li>Clone the repo (including submodules: <code>git clone --branch=v0.6.4 --recursive https://github.com/aquasecurity/tracee.git</code>) and <code>make bpf</code>.</li>
 <li><code>make bpf DOCKER=1</code> to build in a Docker container which includes all development tooling.</li>
 </ol>
 <p>Running this will produce a file called <code>tracee.bpf.$kernelversion.$traceeversion.o</code> under the <code>dist</code> directory.</p>
@@ -665,14 +665,14 @@ You can manually detect if your environments supports it by checking if the foll
 <div class="highlight"><pre><span></span><code>docker run --name tracee --rm --privileged -it <span class="se">\</span>
   -v /path/in/host/tracee.bpf.123.o:/path/in/container/tracee.bpf.o <span class="se">\</span>
   -e <span class="nv">TRACEE_BPF_FILE</span><span class="o">=</span>/path/in/container/tracee.bpf.o <span class="se">\</span>
-  aquasec/tracee:slim
+  aquasec/tracee:slim-0.6.4
 </code></pre></div>
 <p>If using Docker on a host without BTF enabled, the following <code>docker run</code> options demonstrate mounting of required kernel headers for building the bpf object at runtime:</p>
 <div class="highlight"><pre><span></span><code>docker run --name tracee --rm --privileged -it <span class="se">\</span>
   -v /lib/modules/:/lib/modules/:ro <span class="se">\</span>
   -v /usr/src:/usr/src:ro <span class="se">\</span>
   -v /tmp/tracee:/tmp/tracee <span class="se">\</span>
-  aquasec/tracee:latest
+  aquasec/tracee:0.6.4
 </code></pre></div>
 
 

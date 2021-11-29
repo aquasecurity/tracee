@@ -636,29 +636,39 @@
 <h2 id="quickstart">Quickstart</h2>
 <p>Before you proceed, make sure you follow the <a href="install/prerequisites/">minimum requirements for running Tracee</a>.</p>
 <p>If running on <strong>BTF enabled kernel</strong>:</p>
-<div class="highlight"><pre><span></span><code>docker run --name tracee --rm --pid<span class="o">=</span>host --cgroupns<span class="o">=</span>host --privileged -v /tmp/tracee:/tmp/tracee -it aquasec/tracee:latest
+<div class="highlight"><pre><span></span><code>docker run --name tracee --rm -it --pid<span class="o">=</span>host --cgroupns<span class="o">=</span>host --privileged <span class="se">\</span>
+  -v /tmp/tracee:/tmp/tracee <span class="se">\</span>
+  aquasec/tracee:0.6.4
 </code></pre></div>
-<blockquote>
-<p>Note: Running with BTF requires access to the kernel configuration file. Depending on the linux distribution it can be in either <code>/proc/config.gz</code> (which docker mounts by default) or <code>/boot/config-$(uname -r)</code> (which must be mounted explicitly).</p>
-</blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Running with BTF requires access to the kernel configuration file. Depending on the Linux distribution it can be in either <code>/proc/config.gz</code> (which docker mounts by default) or <code>/boot/config-$(uname -r)</code> (which must be mounted explicitly).</p>
+</div>
 <p>If running on <strong>BTF disabled kernel</strong>:
-<div class="highlight"><pre><span></span><code>docker run --name tracee --rm --pid<span class="o">=</span>host --cgroupns<span class="o">=</span>host --privileged -v /tmp/tracee:/tmp/tracee -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -it aquasec/tracee:latest
+<div class="highlight"><pre><span></span><code>docker run --name tracee --rm -it --pid<span class="o">=</span>host --cgroupns<span class="o">=</span>host --privileged <span class="se">\</span>
+  -v /tmp/tracee:/tmp/tracee <span class="se">\</span>
+  -v /lib/modules/:/lib/modules/:ro <span class="se">\</span>
+  -v /usr/src:/usr/src:ro <span class="se">\</span>
+  aquasec/tracee:0.6.4
 </code></pre></div></p>
-<blockquote>
-<p>Note: You may need to change the volume mounts for the kernel headers based on your setup. See <a href="install/headers/">Linux Headers</a> section for more info.</p>
-</blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You may need to change the volume mounts for the kernel headers based on your setup. See <a href="install/headers/">Linux Headers</a> section for more info.</p>
+</div>
 <p>This will run Tracee with default settings and start reporting detections to standard output.
 In order to simulate a suspicious behavior, you can run <code>strace ls</code> in another terminal, which will trigger the "Anti-Debugging" signature, which is loaded by default.</p>
 <h2 id="trace">Trace</h2>
 <p>In some cases, you might want to leverage Tracee's eBPF event collection capabilities directly, without involving the detection engine. This might be useful for debugging/troubleshooting/analysis/research/education. In this case you can run Tracee with the <code>trace</code> sub-command, which will start dumping raw data directly into standard output. There are many configurations and options available so you can control exactly what is being collected and how. see the Documentation or add the <code>--help</code> flag for more.</p>
 <h2 id="components">Components</h2>
-<p>Tracee is composed of the following sub-projects, which are hosted in the aquasecurity/tracee repository:
-- <a href="https://github.com/aquasecurity/tracee/tree/main/tracee-ebpf">Tracee-eBPF</a> - Linux Tracing and Forensics using eBPF
-- <a href="https://github.com/aquasecurity/tracee/tree/main/tracee-rules">Tracee-Rules</a> - Runtime Security Detection Engine</p>
+<p>Tracee is composed of the following sub-projects, which are hosted in the aquasecurity/tracee repository:</p>
+<ul>
+<li><a href="https://github.com/aquasecurity/tracee/tree/v0.6.4/tracee-ebpf">Tracee-eBPF</a> - Linux Tracing and Forensics using eBPF</li>
+<li><a href="https://github.com/aquasecurity/tracee/tree/v0.6.4/tracee-rules">Tracee-Rules</a> - Runtime Security Detection Engine</li>
+</ul>
 <hr />
 <p>Tracee is an <a href="https://aquasec.com">Aqua Security</a> open source project.<br />
 Learn about our open source work and portfolio <a href="https://www.aquasec.com/products/open-source-projects/">here</a>.<br />
-Contact us about any matter by opening a GitHub Discussion <a href="https://github.com/aquasecurity/tracee/discussions">here</a>.</p>
+Join the community, and talk to us about any matter in <a href="https://github.com/aquasecurity/tracee/discussions">GitHub Discussion</a> or <a href="https://slack.aquasec.com">Slack</a>.</p>
 
 
 

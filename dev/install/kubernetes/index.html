@@ -656,17 +656,17 @@
 <h2 id="install-tracee">Install Tracee</h2>
 <h3 id="with-postee">With Postee</h3>
 <p>To install Tracee with <a href="https://github.com/aquasecurity/postee">Postee</a>, simply run:</p>
-<div class="highlight"><pre><span></span><code>kubectl create -f <span class="se">\</span>
-https://raw.githubusercontent.com/aquasecurity/postee/main/deploy/kubernetes/postee.yaml -f <span class="se">\</span>
-https://raw.githubusercontent.com/aquasecurity/tracee/main/deploy/kubernetes/tracee-postee/tracee.yaml
+<div class="highlight"><pre><span></span><code>kubectl create <span class="se">\</span>
+  -f https://raw.githubusercontent.com/aquasecurity/postee/main/deploy/kubernetes/postee.yaml <span class="se">\</span>
+  -f https://raw.githubusercontent.com/aquasecurity/tracee/v0.6.4/deploy/kubernetes/tracee-postee/tracee.yaml
 </code></pre></div>
 <p>You can edit the configMap <code>postee-config</code> the was created, see an example configuration here: https://github.com/aquasecurity/postee/blob/main/cfg.yaml.</p>
 <p>You can also use the <a href="https://github.com/aquasecurity/postee#postee-ui">Postee UI</a> to configure integrations.</p>
 <h3 id="with-falcosidekick">With Falcosidekick</h3>
 <p>To install Tracee with <a href="https://github.com/falcosecurity/falcosidekick">Falcosidekick</a>, simply run:</p>
-<div class="highlight"><pre><span></span><code>kubectl create -f <span class="se">\</span>
-https://raw.githubusercontent.com/aquasecurity/tracee/main/deploy/kubernetes/tracee-falcosidekick/falcosidekick.yaml -f <span class="se">\</span>
-https://raw.githubusercontent.com/aquasecurity/tracee/main/deploy/kubernetes/tracee-falcosidekick/tracee.yaml
+<div class="highlight"><pre><span></span><code>kubectl create <span class="se">\</span>
+  -f https://raw.githubusercontent.com/aquasecurity/tracee/v0.6.4/deploy/kubernetes/tracee-falcosidekick/falcosidekick.yaml <span class="se">\</span>
+  -f https://raw.githubusercontent.com/aquasecurity/tracee/v0.6.4/deploy/kubernetes/tracee-falcosidekick/tracee.yaml
 </code></pre></div>
 <p>You can edit the configMap <code>falcosidekick-config</code> the was created, see an example configuration here: https://github.com/falcosecurity/falcosidekick/blob/master/config_example.yaml</p>
 <h2 id="platform-support">Platform support</h2>

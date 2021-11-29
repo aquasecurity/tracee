@@ -558,10 +558,14 @@
 <li>On CentOS/Fedora install the <code>kernel-headers</code> and <code>kernel-devel</code> packages.</li>
 </ul>
 <p>Normally the files will be installed in <code>/lib/modules/${kernel_version}/build</code> which is where Tracee expects them. If you have the headers elsewhere, you can set the <code>KERN_HEADERS</code> environment variable with the correct location.</p>
-<blockquote>
-<p>Note that it's important that the kernel headers match the exact version of the kernel you are running. To check the current kernel version, run the command <code>uname -r</code>. To install a specific kernel headers version append the version to the package name: <code>linux-headers-$(uname -r)</code>.</p>
-<p>Note that more often than not the kernel headers files contains filesystem links to other files in other directories. Therefore, when passing the kernel headers to Tracee docker container, make sure all the necessary directories are mounted. This is why the quickstart example mounts <code>/usr/src</code> in addition to <code>/lib/modules</code>.</p>
-</blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It's important that the kernel headers match the exact version of the kernel you are running. To check the current kernel version, run the command <code>uname -r</code>. To install a specific kernel headers version append the version to the package name: <code>linux-headers-$(uname -r)</code>.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>More often than not the kernel headers files contains filesystem links to other files in other directories. Therefore, when passing the kernel headers to Tracee docker container, make sure all the necessary directories are mounted. This is why the quickstart example mounts <code>/usr/src</code> in addition to <code>/lib/modules</code>.</p>
+</div>
 
 
 
