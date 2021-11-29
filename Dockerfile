@@ -15,7 +15,7 @@ RUN apk --no-cache update && apk --no-cache add clang llvm make gcc libc6-compat
 
 # base image for tracee which includes minimal dependencies and expects the bpf object to be provided at runtime
 FROM alpine as slim
-RUN apk --no-cache update && apk --no-cache add libc6-compat elfutils-dev
+RUN apk --no-cache update && apk --no-cache add libc6-compat elfutils-dev tini
 
 # final image
 FROM $BASE
