@@ -135,6 +135,8 @@ Copyright (C) Aqua Security inc.
 #define SYS_DUP                         32
 #define SYS_DUP2                        33
 #define SYS_DUP3                        292
+#define SYS_PIPE                        22
+#define SYS_PIPE2                       293
 #elif defined(bpf_target_arm64)
 #define SYS_MMAP                        222
 #define SYS_MPROTECT                    226
@@ -152,6 +154,8 @@ Copyright (C) Aqua Security inc.
 #define SYS_DUP                         23
 #define SYS_DUP2                        1000      // undefined in arm64
 #define SYS_DUP3                        24
+#define SYS_PIPE                        1000 // undefined in arm64
+#define SYS_PIPE2                       59
 #endif
 
 #define RAW_SYS_ENTER                   1000
@@ -189,6 +193,7 @@ Copyright (C) Aqua Security inc.
 #define MAX_EVENT_ID                    1032
 
 #define FILE_TYPE_SOCK                  0
+#define FILE_TYPE_PIPE                  1
 
 #define NET_PACKET                      0
 #define DEBUG_NET_SECURITY_BIND         1
@@ -557,7 +562,7 @@ BPF_PROG_ARRAY(prog_array_tp, MAX_TAIL_CALL);           // store programs for ta
 BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);          // store programs for tail calls
 BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID);           // store programs for tail calls
 BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);  // store stack traces
-BPF_ARRAY(file_ops_types, struct file_operations*, 1);  // file types to file_operations structs
+BPF_ARRAY(file_ops_types, struct file_operations*, 2);  // file types to file_operations structs
 
 /*================================== EVENTS ==================================*/
 
@@ -2177,6 +2182,86 @@ int syscall__execveat(void *ctx)
     return events_perf_submit(&data, SYS_EXECVEAT, 0);
 }
 
+SEC("raw_tracepoint/sys_pipe")
+int sys_pipe_exit_tail(void *ctx)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx)) {
+        return 0;
+    }
+
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    if (!sys) {
+        return -1;
+    }
+
+    if (sys->id != SYS_PIPE && sys->id != SYS_PIPE2) {
+        // sanity check
+        return 0;
+    }
+
+    if (sys->ret < 0) {
+        // pipe failed
+        return 0;
+    }
+
+    int *pipefd = (int *)sys->args.args[0];
+    int fdr;
+    bpf_probe_read(&fdr, sizeof(int), (void *)pipefd);
+
+    struct file *f = get_struct_file_from_fd(fdr);
+    if (f == NULL) {
+        return -1;
+    }
+    struct file_operations *f_op = (struct file_operations *)READ_KERN(f->f_op);
+
+    u32 idx = FILE_TYPE_PIPE;
+    bpf_map_update_elem(&file_ops_types, &idx, (void *)&f_op, BPF_ANY);
+
+    // delete syscall data before return
+    bpf_map_delete_elem(&syscall_data_map, &data.context.host_tid);
+
+    // remove sys_pipe_exit_tail from tail calls.
+    // in order to remove sys_pipe_exit_tail from the sys_exit_tails, we have to send a 'pipe' event to userspace.
+    // this is because the verifier doesn't allow bpf code to call bpf_map_delete_elem on BPF_MAP_TYPE_PROG_ARRAY maps:
+    // https://elixir.bootlin.com/linux/v5.14.12/source/kernel/bpf/verifier.c#L5140
+    if (event_chosen(SYS_PIPE) || event_chosen(SYS_PIPE2)) {
+        // if the 'pipe'/'pipe2' event was chosen by the user, we don't have to do anything special here, because the event
+        // will get to userspace
+        return 0;
+    }
+
+    // send the event (with no data, because the user didn't choose to see this)
+    return events_perf_submit(&data, SYS_PIPE, 0);
+}
+
+static __always_inline int check_fd_pipe(u64 fd)
+{
+
+    u32 idx = FILE_TYPE_PIPE;
+    struct file_operations **pipe_fops = (struct file_operations **)bpf_map_lookup_elem(&file_ops_types, &idx);
+    if (pipe_fops == NULL) {
+        return -1;
+    }
+
+    struct file *f = get_struct_file_from_fd(fd);
+    if (f == NULL) {
+        return -1;
+    }
+
+    struct file_operations *f_ops = (struct file_operations *)READ_KERN(f->f_op);
+    if (f_ops == NULL) {
+        return -1;
+    }
+
+    if (f_ops != *pipe_fops) {
+        // this file is not of type pipe
+        return 0;
+    }
+
+    return 1;
+}
+
 SEC("raw_tracepoint/sys_socket")
 int sys_socket_exit_tail(void *ctx)
 {
@@ -2212,9 +2297,9 @@ int sys_socket_exit_tail(void *ctx)
     // delete syscall data before return
     bpf_map_delete_elem(&syscall_data_map, &data.context.host_tid);
 
-    // remove syscall__socket from tail calls.  in order to remove
-    // syscall__socket from the sys_exit_tails, we have to send a 'socket'
-    // event to userspace.  this is because the verifier doesn't allow bpf code
+    // remove sys_socket_exit_tail from tail calls. in order to remove
+    // sys_socket_exit_tail from the sys_exit_tails, we have to send a 'socket'
+    // event to userspace. this is because the verifier doesn't allow bpf code
     // to call bpf_map_delete_elem on BPF_MAP_TYPE_PROG_ARRAY maps:
     // https://elixir.bootlin.com/linux/v5.14.12/source/kernel/bpf/verifier.c#L5140
     if (event_chosen(SYSCALL_SOCKET)) {
@@ -2227,19 +2312,15 @@ int sys_socket_exit_tail(void *ctx)
     return events_perf_submit(&data, SYSCALL_SOCKET, 0);
 }
 
-static __always_inline int check_fd_socket(event_data_t *data, u64 oldfd, u64 newfd)
+static __always_inline int check_fd_socket(u64 fd)
 {
-    if (!event_chosen(SOCKET_DUP))
-        return 0;
-
     u32 idx = FILE_TYPE_SOCK;
-
     struct file_operations **socket_fops = (struct file_operations **)bpf_map_lookup_elem(&file_ops_types, &idx);
     if (socket_fops == NULL) {
         return -1;
     }
 
-    struct file *f = get_struct_file_from_fd(oldfd);
+    struct file *f = get_struct_file_from_fd(fd);
     if (f == NULL) {
         return -1;
     }
@@ -2251,6 +2332,23 @@ static __always_inline int check_fd_socket(event_data_t *data, u64 oldfd, u64 ne
 
     if (f_ops != *socket_fops) {
         // this file is not of type socket
+        return 0;
+    }
+
+    return 1;
+}
+
+static __always_inline int send_socket_dup(event_data_t *data, u64 oldfd, u64 newfd)
+{
+    if (!event_chosen(SOCKET_DUP))
+        return 0;
+
+    if (!check_fd_socket(oldfd)) {
+        return 0;
+    }
+
+    struct file *f = get_struct_file_from_fd(oldfd);
+    if (f == NULL) {
         return -1;
     }
 
@@ -2320,13 +2418,13 @@ int sys_dup_exit_tail(void *ctx)
     if (sys->id == SYS_DUP) {
         // args.args[0]: oldfd
         // retval: newfd
-        check_fd_socket(&data, sys->args.args[0], sys->ret);
+        send_socket_dup(&data, sys->args.args[0], sys->ret);
     }
     else if (sys->id == SYS_DUP2 || sys->id == SYS_DUP3) {
         // args.args[0]: oldfd
         // args.args[1]: newfd
         // retval: retval
-        check_fd_socket(&data, sys->args.args[0], sys->args.args[1]);
+        send_socket_dup(&data, sys->args.args[0], sys->args.args[1]);
     }
 
     // delete syscall data before return
@@ -2457,6 +2555,19 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 
     void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
 
+    int res;
+    int piped_stdin = check_fd_pipe(0);
+    if (!piped_stdin) {
+        int socket_stdin = check_fd_socket(0);
+        if (!socket_stdin) {
+            res = FILE_TYPE_SOCK;       // unspec
+        } else {
+            res = FILE_TYPE_SOCK + 1;   // socket
+        }
+    } else {
+        res = FILE_TYPE_PIPE + 1;       // pipe
+    }
+
     // Note: Starting from kernel 5.9, there are two new interesting fields in
     // bprm that we should consider adding:
     //
@@ -2475,6 +2586,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 5);
     save_to_submit_buf(&data, &invoked_from_kernel, sizeof(int), 6);
     save_to_submit_buf(&data, &ctime, sizeof(u64), 7);
+    save_to_submit_buf(&data, &res, sizeof(int), 8);
 
     return events_perf_submit(&data, SCHED_PROCESS_EXEC, 0);
 }

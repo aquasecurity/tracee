@@ -285,6 +285,12 @@ func New(cfg Config) (*Tracee, error) {
 		setEssential(SocketEventID)
 	}
 
+	if t.eventsToTrace[SchedProcessExecEventID] {
+		setEssential(PipeEventID)
+		setEssential(Pipe2EventID)
+		setEssential(SocketEventID)
+	}
+
 	// Compile final list of events to trace including essential events
 	for id, event := range EventsIDToEvent {
 		// If an essential event was not requested by the user, set its map value to false
@@ -660,6 +666,10 @@ func (t *Tracee) populateBPFMaps() error {
 			}
 		} else if e == DupEventID || e == Dup2EventID || e == Dup3EventID {
 			if err = t.initTailCall(eU32, "sys_exit_tails", "sys_dup_exit_tail"); err != nil {
+				return err
+			}
+		} else if e == PipeEventID || e == Pipe2EventID {
+			if err = t.initTailCall(eU32, "sys_exit_tails", "sys_pipe_exit_tail"); err != nil {
 				return err
 			}
 		}

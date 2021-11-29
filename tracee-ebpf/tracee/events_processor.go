@@ -14,6 +14,7 @@ import (
 )
 
 var removeSocketTailOnce sync.Once
+var removePipeTailOnce sync.Once
 
 func (t *Tracee) processLostEvents() {
 	for {
@@ -204,6 +205,9 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 	case SocketEventID:
 		removeSocketTailOnce.Do(t.removeSocketTail)
 
+	case PipeEventID, Pipe2EventID:
+		removePipeTailOnce.Do(t.removePipeTail)
+
 	case CgroupMkdirEventID:
 		cgroupId, ok := args["cgroup_id"].(uint64)
 		if !ok {
@@ -235,6 +239,32 @@ func (t *Tracee) removeSocketTail() {
 	bpfMap, err := t.bpfModule.GetMap("sys_exit_tails")
 	if err == nil {
 		eU32 := uint32(SocketEventID)
+		_, err = bpfMap.GetValue(unsafe.Pointer(&eU32))
+		if err == nil {
+			// key exists in map
+			err = bpfMap.DeleteKey(unsafe.Pointer(&eU32))
+			if err != nil {
+				t.handleError(err)
+			}
+		}
+	}
+}
+
+func (t *Tracee) removePipeTail() {
+	// removing sys_pipe_exit_tail from sys_exit_tails.
+	bpfMap, err := t.bpfModule.GetMap("sys_exit_tails")
+	if err == nil {
+		eU32 := uint32(PipeEventID)
+		_, err = bpfMap.GetValue(unsafe.Pointer(&eU32))
+		if err == nil {
+			// key exists in map
+			err = bpfMap.DeleteKey(unsafe.Pointer(&eU32))
+			if err != nil {
+				t.handleError(err)
+			}
+		}
+
+		eU32 = uint32(Pipe2EventID)
 		_, err = bpfMap.GetValue(unsafe.Pointer(&eU32))
 		if err == nil {
 			// key exists in map

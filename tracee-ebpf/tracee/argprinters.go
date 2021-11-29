@@ -115,6 +115,14 @@ func (t *Tracee) parseArgs(ctx *context, args map[string]interface{}) error {
 				args["type"] = typeIdStr
 			}
 		}
+	case SchedProcessExecEventID:
+		if stdin, isUint32 := args["stdin"].(uint32); isUint32 {
+			stdinFileType, err := ParseStdinType(stdin)
+			if err != nil {
+				return err
+			}
+			args["stdin"] = stdinFileType
+		}
 	}
 
 	return nil
@@ -175,4 +183,18 @@ func ParseKernelReadFileId(id int32) (string, error) {
 		return "", fmt.Errorf("kernelReadFileId doesn't exist in kernelReadFileIdStrs map")
 	}
 	return kernelReadFileIdStr, nil
+}
+
+func ParseStdinType(stdin uint32) (string, error) {
+
+	switch stdin {
+	case UnspecFileType:
+		return "UNSPEC", nil
+	case PipeFileType:
+		return "Pipe", nil
+	case SocketFileType:
+		return "Socket", nil
+	}
+
+	return "", fmt.Errorf("unknown file type: %d", stdin)
 }
