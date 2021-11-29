@@ -526,6 +526,7 @@ typedef struct net_ctx_ext {
     __be16 local_port;
 } net_ctx_ext_t;
 
+
 /*================================ KERNEL STRUCTS =============================*/
 
 #ifndef CORE
@@ -4329,6 +4330,7 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
         // This will be the timestamp (u64), net event_id (u32), host_tid (u32), comm (16 bytes), packet len (u32), and ifindex (u32)
         bpf_perf_event_output(skb, &net_events, flags, &pkt, 40);
     }
+
 
     return TC_ACT_UNSPEC;
 }
