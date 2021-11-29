@@ -1,6 +1,6 @@
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
-github.com/aquasecurity/libbpfgo v0.2.1-libbpf-0.4.0.0.20210910045113-64a32faceb3c h1:VdquJTWJxJaRK+4Egx6EMIb2mb1ipLxR+OC/3msWgwg=
-github.com/aquasecurity/libbpfgo v0.2.1-libbpf-0.4.0.0.20210910045113-64a32faceb3c/go.mod h1:/+clceXE103FaXvVTIY2HAkQjxNtkra4DRWvZYr2SKw=
+github.com/aquasecurity/libbpfgo v0.2.2-libbpf-0.5.0 h1:Qecy9Qvj4TG0LK7sfuJWzd1QlwMozHo7H0AyZMGjLg8=
+github.com/aquasecurity/libbpfgo v0.2.2-libbpf-0.5.0/go.mod h1:/+clceXE103FaXvVTIY2HAkQjxNtkra4DRWvZYr2SKw=
 github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d h1:U+s90UTSYgptZMwQh2aRr3LuazLJIa+Pg3Kc1ylSYVY=
 github.com/cpuguy83/go-md2man/v2 v2.0.0-20190314233015-f79a8a8ca69d/go.mod h1:maD7wRr/U5Z6m/iR4s+kqSMx2CaBsrgA7czyZG/E6dU=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
