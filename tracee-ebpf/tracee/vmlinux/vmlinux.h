@@ -54,13 +54,79 @@ typedef __kernel_off_t off_t;
 
 typedef long unsigned int __kernel_ulong_t;
 
-
 typedef _Bool bool;
 
 enum {
     false = 0,
     true = 1,
 };
+
+#if defined(__TARGET_ARCH_x86)
+
+struct thread_info {
+	u32 status;
+};
+
+struct pt_regs {
+	long unsigned int r15;
+	long unsigned int r14;
+	long unsigned int r13;
+	long unsigned int r12;
+	long unsigned int bp;
+	long unsigned int bx;
+	long unsigned int r11;
+	long unsigned int r10;
+	long unsigned int r9;
+	long unsigned int r8;
+	long unsigned int ax;
+	long unsigned int cx;
+	long unsigned int dx;
+	long unsigned int si;
+	long unsigned int di;
+	long unsigned int orig_ax;
+	long unsigned int ip;
+	long unsigned int cs;
+	long unsigned int flags;
+	long unsigned int sp;
+	long unsigned int ss;
+};
+
+#elif defined(__TARGET_ARCH_arm64)
+
+struct thread_info {
+	long unsigned int flags;
+};
+
+struct user_pt_regs {
+	__u64 regs[31];
+	__u64 sp;
+	__u64 pc;
+	__u64 pstate;
+};
+
+struct pt_regs {
+	union {
+		struct user_pt_regs user_regs;
+		struct {
+			u64 regs[31];
+			u64 sp;
+			u64 pc;
+			u64 pstate;
+		};
+	};
+	u64 orig_x0;
+	s32 syscallno;
+	u32 unused2;
+	u64 orig_addr_limit;
+	u64 pmr_save;
+	u64 stackframe[2];
+	u64 lockdep_hardirqs;
+	u64 exit_rcu;
+};
+
+#endif
+
+// common to all architectures
 
 enum {
         BPF_ANY = 0,
@@ -177,6 +243,24 @@ typedef __kernel_uid32_t uid_t;
 typedef struct {
 	uid_t val;
 } kuid_t;
+
+struct task_struct {
+	struct thread_info         thread_info;
+	unsigned int               flags;
+	struct mm_struct *         mm;
+	int                        exit_code;
+	pid_t                      pid;
+	pid_t                      tgid;
+	struct task_struct *       real_parent;
+	struct task_struct *       group_leader;
+	struct pid *               thread_pid;
+	struct list_head           thread_group;
+	const struct cred  *       real_cred;
+	char                       comm[16];
+	struct files_struct *      files;
+	struct nsproxy *           nsproxy;
+	struct css_set *           cgroups;
+};
 
 struct vm_area_struct {
 	long unsigned int vm_flags;
@@ -633,6 +717,8 @@ enum kernel_read_file_id {
         READING_X509_CERTIFICATE = 6,
         READING_MAX_ID = 7,
 };
+
+#include <vmlinux-flavors.h>
 
 #pragma clang attribute pop
 
