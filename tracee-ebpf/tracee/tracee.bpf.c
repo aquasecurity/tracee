@@ -515,7 +515,7 @@ typedef struct net_ctx_ext {
 } net_ctx_ext_t;
 typedef struct net_dns_packet {
     unsigned int id; //packet id
-    unsigned  QR:1; // specifies whether this message is a query (0), or a response (1)
+    unsigned  QR:1; // specifies whether this message is a query(request) (0), or a response (1)
     unsigned  Opcode:4; // specifies kind of query in this message. (normally set to 0)
     unsigned  AA:1; // only meaningful in responses, and specifies that the responding name server is an authority for the domain name in question section
     unsigned  TC:1; // specifies that this message was truncated
@@ -527,7 +527,7 @@ typedef struct net_dns_packet {
     unsigned int ancount; //specifying the number of resource records in the answer section
     unsigned int nscount; //specifying the number of name server resource records in the authority records section
     unsigned int arcount; //specifying the number of resource records in the additional records section
-} dns_packet_info;
+} net_dns_packet_hdr_t;
 
 /*================================ KERNEL STRUCTS =============================*/
 
@@ -4295,9 +4295,28 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
 
         pkt.src_port = udp->source;
         pkt.dst_port = udp->dest;
+
+
     } else {
         //todo: support other transport protocols?
         return TC_ACT_UNSPEC;
+    }
+    if (pkt.protocol ==IPPROTO_UDP && (pkt.src_port ==53 || pkt.dst_port == 53))
+    {
+         if (!skb_revalidate_data(skb, &head, &tail,l4_hdr_off+sizeof(udphdr)+sizeof(net_dns_packet_t)) {
+            return TC_ACT_UNSPEC;
+         }
+        struct net_dns_packet_hdr_t *dns_hdr =  (void*)head + l4_hdr_off + (void *)udp;
+        if (pkt.dst_port == 53 && dns_packet->QR == 0){
+         //handle as request
+         u32 dns_question = *((void *)dns_hdr+sizeof(dns_hdr));
+
+        }
+        if (pkt.src_port == 53 && dns_packet->QR == 1){
+        //handle as response
+         u16 dns_answer = *((void *)dns_hdr+sizeof(dns_hdr));
+
+        }
     }
 
     connect_id.protocol = pkt.protocol;

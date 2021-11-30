@@ -185,6 +185,7 @@ const (
 	SocketDupEventID
 	HiddenInodesEventID
 	HookedFopsPointerEventID
+	NetDnsRequestEventID
 	MaxEventID
 )
 
@@ -593,6 +594,7 @@ var EventsIDToEvent = map[int32]EventConfig{
 	InitNamespacesEventID:         {ID: InitNamespacesEventID, ID32Bit: sys32undefined, Name: "init_namespaces", Probes: []probe{}, Sets: []string{}},
 	HiddenInodesEventID:           {ID: HiddenInodesEventID, ID32Bit: sys32undefined, Name: "hidden_inodes", Probes: []probe{{event: "filldir64", attach: kprobe, fn: "trace_filldir64"}}, Sets: []string{}},
 	HookedFopsPointerEventID:      {ID: HookedFopsPointerEventID, ID32Bit: sys32undefined, Name: "hooked_fops_pointer", Probes: []probe{{event: "security_file_permission", attach: kprobe, fn: "trace_security_file_permission"}}, Sets: []string{}},
+	NetDnsRequestEventID:      	   {ID: NetDnsRequestEventID, ID32Bit: sys32undefined, Name: "dns_request", Probes: []probe{{event: "security_file_permission", attach: kprobe, fn: "trace_security_file_permission"}}, Sets: []string{}},
 }
 
 // EventsIDToParams is list of the parameters (name and type) used by the events
