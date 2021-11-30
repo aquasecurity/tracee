@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"syscall"
+	"time"
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
@@ -20,12 +21,14 @@ type Containers struct {
 	cgroupV1 bool
 	cgroupMP string
 	cgroups  map[uint32]CgroupInfo
+	deleted  []uint64
 }
 
 type CgroupInfo struct {
 	Path        string
 	ContainerId string
 	Runtime     string
+	expiresAt   time.Time
 }
 
 // InitContainers initializes a Containers object and returns a pointer to it.
@@ -161,9 +164,9 @@ func (c *Containers) CgroupLookupUpdate(cgroupId uint64) error {
 // check if path belongs to a known container runtime and
 // add cgroupId with a matching container id, extracted from path
 func (c *Containers) CgroupUpdate(cgroupId uint64, path string) (CgroupInfo, error) {
-	pathComponents := strings.Split(path, "/")
+	info := CgroupInfo{Path: path}
 
-	for _, pc := range pathComponents {
+	for _, pc := range strings.Split(path, "/") {
 		if len(pc) < 64 {
 			continue
 		}
@@ -171,12 +174,10 @@ func (c *Containers) CgroupUpdate(cgroupId uint64, path string) (CgroupInfo, err
 		if containerId == "" {
 			continue
 		}
-		info := CgroupInfo{Path: path, ContainerId: containerId, Runtime: runtime}
-		c.cgroups[uint32(cgroupId)] = info
-		return info, nil
+		info.ContainerId = containerId
+		info.Runtime = runtime
 	}
 
-	info := CgroupInfo{}
 	c.cgroups[uint32(cgroupId)] = info
 	return info, nil
 }
@@ -216,14 +217,31 @@ check:
 }
 
 func (c *Containers) CgroupRemove(cgroupId uint64) {
-	delete(c.cgroups, uint32(cgroupId))
+	now := time.Now()
+	// prune containers that have been removed more than 5 seconds ago
+	var deleted []uint64
+	for _, id := range c.deleted {
+		info := c.cgroups[uint32(id)]
+		if now.After(info.expiresAt) {
+			delete(c.cgroups, uint32(id))
+		} else {
+			deleted = append(deleted, id)
+		}
+	}
+	c.deleted = deleted
+
+	info := c.cgroups[uint32(cgroupId)]
+	info.expiresAt = now.Add(5 * time.Second)
+	c.cgroups[uint32(cgroupId)] = info
+	// keep track of removed containers for a short period
+	c.deleted = append(c.deleted, cgroupId)
 }
 
 // GetContainers provides a list of all added containers by their uuid.
 func (c *Containers) GetContainers() []string {
 	var conts []string
 	for _, v := range c.cgroups {
-		if v.ContainerId != "" {
+		if v.ContainerId != "" && v.expiresAt.IsZero() {
 			conts = append(conts, v.ContainerId)
 		}
 	}
