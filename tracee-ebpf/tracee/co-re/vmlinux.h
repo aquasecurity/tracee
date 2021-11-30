@@ -718,7 +718,7 @@ enum kernel_read_file_id {
         READING_MAX_ID = 7,
 };
 
-#include <vmlinux-flavors.h>
+#include <struct_flavors.h>
 
 #pragma clang attribute pop
 

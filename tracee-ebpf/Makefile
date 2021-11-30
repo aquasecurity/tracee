@@ -135,7 +135,7 @@ $(OUT_BPF_CORE): $(BPF_SRC) $(LIBBPF_HEADERS) $(CMD_CLANG)
 	$(CMD_CLANG) \
 		-I $(LIBBPF_HEADERS)/bpf \
 		-I $(BPF_HEADERS) \
-		-I tracee/vmlinux \
+		-I tracee/co-re \
 		-DCORE \
 		-D__TARGET_ARCH_$(linux_arch) \
 		-D__BPF_TRACING__ \
