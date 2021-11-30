@@ -67,19 +67,6 @@ Copyright (C) Aqua Security inc.
 #include <vmlinux.h>
 #include "co_re_missing_definitions.h"
 
-union kernfs_node_id {
-    struct {
-        u32     ino;
-        u32     generation;
-    };
-    u64         id;
-} __attribute__((preserve_access_index));
-
-struct kernfs_node___old {
-    const char            *name;
-    union kernfs_node_id  id;
-} __attribute__((preserve_access_index));
-
 #endif
 
 #undef container_of
@@ -375,15 +362,16 @@ struct bpf_map_def SEC("maps") _name = { \
   .max_entries = _max_entries, \
 };
 
+#ifndef CORE
 #ifdef RHEL_RELEASE_CODE
 #if (RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(8, 0))
 #define RHEL_RELEASE_GT_8_0
 #endif
 #endif
-
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 18, 0)
 #error Minimal required kernel version is 4.18
 #endif
+#endif // CORE
 
 /*=============================== INTERNAL STRUCTS ===========================*/
 
@@ -660,11 +648,16 @@ static __always_inline u32 get_task_ns_pid(struct task_struct *task)
     struct pid_namespace *pid_ns_children = READ_KERN(namespaceproxy->pid_ns_for_children);
     unsigned int level = READ_KERN(pid_ns_children->level);
 
+#ifndef CORE
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && !defined(RHEL_RELEASE_GT_8_0))
-    // kernel 4.14-4.18:
+    // kernel 4.14-4.18
     return READ_KERN(READ_KERN(task->pids[PIDTYPE_PID].pid)->numbers[level].nr);
 #else
-    // kernel 4.19 onwards, and CO:RE:
+    // kernel 4.19 onwards
+    struct pid *tpid = READ_KERN(task->thread_pid);
+    return READ_KERN(tpid->numbers[level].nr);
+#endif
+#else // CORE
     struct pid *tpid = READ_KERN(task->thread_pid);
     return READ_KERN(tpid->numbers[level].nr);
 #endif
@@ -677,11 +670,16 @@ static __always_inline u32 get_task_ns_tgid(struct task_struct *task)
     unsigned int level = READ_KERN(pid_ns_children->level);
     struct task_struct *group_leader = READ_KERN(task->group_leader);
 
+#ifndef CORE
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && !defined(RHEL_RELEASE_GT_8_0))
-    // kernel 4.14-4.18:
+    // kernel 4.14-4.18
     return READ_KERN(READ_KERN(group_leader->pids[PIDTYPE_PID].pid)->numbers[level].nr);
 #else
-    // kernel 4.19 onwards, and CO:RE:
+    // kernel 4.19
+    struct pid *tpid = READ_KERN(group_leader->thread_pid);
+    return READ_KERN(tpid->numbers[level].nr);
+#endif
+#else // CORE
     struct pid *tpid = READ_KERN(group_leader->thread_pid);
     return READ_KERN(tpid->numbers[level].nr);
 #endif
@@ -694,11 +692,16 @@ static __always_inline u32 get_task_ns_ppid(struct task_struct *task)
     struct pid_namespace *pid_ns_children = READ_KERN(namespaceproxy->pid_ns_for_children);
     unsigned int level = READ_KERN(pid_ns_children->level);
 
+#ifndef CORE
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && !defined(RHEL_RELEASE_GT_8_0)) && !defined(CORE)
-    // kernel 4.14-4.18:
+    // kernel 4.14-4.18
     return READ_KERN(READ_KERN(real_parent->pids[PIDTYPE_PID].pid)->numbers[level].nr);
 #else
-    // kernel 4.19 onwards, and CO:RE:
+    // kernel 4.19
+    struct pid *tpid = READ_KERN(real_parent->thread_pid);
+    return READ_KERN(tpid->numbers[level].nr);
+#endif
+#else // CORE
     struct pid *tpid = READ_KERN(real_parent->thread_pid);
     return READ_KERN(tpid->numbers[level].nr);
 #endif
@@ -975,24 +978,30 @@ static __always_inline u16 get_sock_family(struct sock *sock)
 
 static __always_inline u16 get_sock_protocol(struct sock *sock)
 {
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0))
-    /* kernel 4.18-5.5:
-
-    this is a workaround for reading sk_protocol bit-field, because bpf_probe_read doesn't really support reading
-    this type of fields. so we use the sk_gso_max_segs field and go 24 bits backwards (i.e. 3 bytes) because
-    sk_type is 16 bits, and sk_protocol is 8 bits (i.e. 1 byte).
-
-    note: we define protocol as u16 so it'll be compatible with newer kernels.
-    */
-
     u16 protocol = 0;
+#ifndef CORE
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0))
+    // kernel 4.18-5.5: workaround for reading sk_protocol bit-field:
+    // bpf_probe_read doesn't support reading this type of fields. use the
+    // sk_gso_max_segs field and go 24 bits backwards (i.e. 3 bytes) because
+    // sk_type is 16 bits, and sk_protocol is 8 bits (i.e. 1 byte). **note**:
+    // we define protocol as u16 so it'll be compatible with newer kernels.
     bpf_probe_read(&protocol, 1, (void *)(&sock->sk_gso_max_segs) - 3);
-
-    return protocol;
 #else
-    // kernel 5.6 onwards:
-    return READ_KERN(sock->sk_protocol);
+    // kernel 5.6
+    protocol = READ_KERN(sock->sk_protocol);
 #endif
+#else // CORE
+    // commit bf9765145b85 ("sock: Make sk_protocol a 16-bit value")
+    struct sock___old *check = NULL;
+    if (bpf_core_field_exists(check->__sk_flags_offset)) {
+        check = (struct sock___old *) sock;
+        bpf_core_read(&protocol, 1, (void *)(&check->sk_gso_max_segs) - 3);
+    } else {
+        protocol = READ_KERN(sock->sk_protocol);
+    }
+#endif
+    return protocol;
 }
 
 static __always_inline u16 get_sockaddr_family(struct sockaddr *address)
@@ -4346,4 +4355,6 @@ int tc_ingress(struct __sk_buff *skb) {
 }
 
 char LICENSE[] SEC("license") = "GPL";
+#ifndef CORE
 int KERNEL_VERSION SEC("version") = LINUX_VERSION_CODE;
+#endif

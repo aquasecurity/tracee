@@ -109,16 +109,17 @@ $(OUT_DIR)/tracee.bpf.%.o: $(BPF_SRC) $(LIBBPF_HEADERS) | $(OUT_DIR) $(bpf_compi
 		-I $(KERN_BLD_PATH)/include/generated \
 		-I $(KERN_BLD_PATH)/include/generated/uapi \
 		-I $(BPF_HEADERS) \
-		-Wno-address-of-packed-member \
-		-Wno-compare-distinct-pointer-types \
-		-Wno-deprecated-declarations \
-		-Wno-gnu-variable-sized-type-not-at-end \
-		-Wno-pointer-sign \
-		-Wno-pragma-once-outside-header \
-		-Wno-unknown-warning-option \
-		-Wno-unused-value \
 		-Wunused \
 		-Wall \
+		-Wno-frame-address \
+		-Wno-unused-value \
+		-Wno-unknown-warning-option \
+		-Wno-pragma-once-outside-header \
+		-Wno-pointer-sign \
+		-Wno-gnu-variable-sized-type-not-at-end \
+		-Wno-deprecated-declarations \
+		-Wno-compare-distinct-pointer-types \
+		-Wno-address-of-packed-member \
 		-fno-stack-protector \
 		-fno-jump-tables \
 		-fno-unwind-tables \
@@ -134,14 +135,11 @@ $(OUT_BPF_CORE): $(BPF_SRC) $(LIBBPF_HEADERS) $(CMD_CLANG)
 	$(CMD_CLANG) \
 		-I $(LIBBPF_HEADERS)/bpf \
 		-I $(BPF_HEADERS) \
-		-I tracee/$(ARCH) \
+		-I tracee/vmlinux \
 		-DCORE \
 		-D__TARGET_ARCH_$(linux_arch) \
 		-D__BPF_TRACING__ \
-		-D__VM_LINUX_H__ \
 		-D__KERNEL__ \
-		-DLINUX_VERSION_CODE=$(LINUX_VERSION_CODE) \
-		-DRHEL_RELEASE_CODE=$(RHEL_RELEASE_CODE) \
 		-target bpf \
 		-O2 -c -g -o $@ $<
 else
