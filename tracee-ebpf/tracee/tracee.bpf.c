@@ -65,7 +65,7 @@ Copyright (C) Aqua Security inc.
 #else
 //CO:RE is enabled
 #include <vmlinux.h>
-#include "co_re_missing_definitions.h"
+#include <missing_definitions.h>
 
 #endif
 
