@@ -211,7 +211,8 @@ Copyright (C) Aqua Security inc.
 #define SOCKET_DUP                  1031
 #define HIDDEN_INODES               1032
 #define HOOKED_FOPS_POINTER         1033
-#define MAX_EVENT_ID                1034
+#define NET_DNS_REQUEST             1035
+#define MAX_EVENT_ID                1036
 #define FILE_TYPE_SOCK      0
 
 #define NET_PACKET                      0
