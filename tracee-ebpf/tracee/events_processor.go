@@ -221,7 +221,7 @@ func (t *Tracee) processEvent(event *external.Event) error {
 		if err != nil {
 			return fmt.Errorf("error parsing cgroup_mkdir args: %v", err)
 		}
-		info, err := t.containers.CgroupUpdate(cgroupId, path)
+		info, err := t.containers.CgroupMkdir(cgroupId, path)
 		if err == nil && info.ContainerId == "" {
 			// If not a new container (no regex match) - remove from the bpf container_map
 			containers.RemoveFromBpfMap(t.bpfModule, cgroupId, "containers_map")
