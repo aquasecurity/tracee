@@ -2627,56 +2627,56 @@ int BPF_KPROBE(trace_security_file_permission)
     if (!should_trace(&data.context))
         return 0;
 
-
-    char* top = "top";
-    char* ps = "ps";
-    //check's if the called process is top or ps (to list processes)
-    if ((!local_strncmp(top, data.context.comm, 3)) && (!local_strncmp(ps, data.context.comm, 2)))
-        return 0;
-    struct file *called_file = (struct file *)PT_REGS_PARM1(ctx);
-    if (called_file == NULL)
-        return 0;
-    struct inode *file_inode = get_inode_from_file(called_file);
-
-
-
-    struct file_operations *fops = (struct file_operations *)READ_KERN(file_inode->i_fop);
-    if (fops == NULL)
-        return 0;
-
-
-    unsigned long iterate_shared_addr = (unsigned long) READ_KERN(fops->iterate_shared);
-    int found_hyjacked_fops=0;
-
-    u64 addr = (unsigned long)fops;
-    //look if the fop struct is in the white list
-    u64 *current_fop_addr = bpf_map_lookup_elem(&hooked_fops_white_list_map, (void *)&addr);
-    if (current_fop_addr == NULL)
-    {
-        save_to_submit_buf(&data, (void *)&fops, sizeof(unsigned long), 0);
-        found_hyjacked_fops =1;
-    }
-
-
-
-        int key=0;
-        u64 *stext_bound = bpf_map_lookup_elem(&code_boundaries_map, (void *)&key);
-        key++;
-        u64 *etext_bound = bpf_map_lookup_elem(&code_boundaries_map, (void *)&key);
-
-        if (stext_bound == NULL)
-            return 0;
-        if (etext_bound == NULL)
-            return 0;
-        if(!((iterate_shared_addr >= (*stext_bound))&& (iterate_shared_addr < (*etext_bound))) && (iterate_shared_addr != 0))
-        {
-            save_to_submit_buf(&data, (void *)&iterate_shared_addr, sizeof(unsigned long), 1);
-            return events_perf_submit(&data, HOOKED_FOPS_POINTER, 0);
-        }
-        else{
-            if (found_hyjacked_fops)
-                return events_perf_submit(&data, HOOKED_FOPS_POINTER, 0);
-        }
+//
+//    char* top = "top";
+//    char* ps = "ps";
+//    //check's if the called process is top or ps (to list processes)
+//    if ((!local_strncmp(top, data.context.comm, 3)) && (!local_strncmp(ps, data.context.comm, 2)))
+//        return 0;
+//    struct file *called_file = (struct file *)PT_REGS_PARM1(ctx);
+//    if (called_file == NULL)
+//        return 0;
+//    struct inode *file_inode = get_inode_from_file(called_file);
+//
+//
+//
+//    struct file_operations *fops = (struct file_operations *)READ_KERN(file_inode->i_fop);
+//    if (fops == NULL)
+//        return 0;
+//
+//
+//    unsigned long iterate_shared_addr = (unsigned long) READ_KERN(fops->iterate_shared);
+//    int found_hyjacked_fops=0;
+//
+//    u64 addr = (unsigned long)fops;
+//    //look if the fop struct is in the white list
+//    u64 *current_fop_addr = bpf_map_lookup_elem(&hooked_fops_white_list_map, (void *)&addr);
+//    if (current_fop_addr == NULL)
+//    {
+//        save_to_submit_buf(&data, (void *)&fops, sizeof(unsigned long), 0);
+//        found_hyjacked_fops =1;
+//    }
+//
+//
+//
+//        int key=0;
+//        u64 *stext_bound = bpf_map_lookup_elem(&code_boundaries_map, (void *)&key);
+//        key++;
+//        u64 *etext_bound = bpf_map_lookup_elem(&code_boundaries_map, (void *)&key);
+//
+//        if (stext_bound == NULL)
+//            return 0;
+//        if (etext_bound == NULL)
+//            return 0;
+//        if(!((iterate_shared_addr >= (*stext_bound))&& (iterate_shared_addr < (*etext_bound))) && (iterate_shared_addr != 0))
+//        {
+//            save_to_submit_buf(&data, (void *)&iterate_shared_addr, sizeof(unsigned long), 1);
+//            return events_perf_submit(&data, HOOKED_FOPS_POINTER, 0);
+//        }
+//        else{
+//            if (found_hyjacked_fops)
+//                return events_perf_submit(&data, HOOKED_FOPS_POINTER, 0);
+//        }
 
 
      return 0;
