@@ -269,12 +269,6 @@ Copyright (C) Aqua Security inc.
 
 /*================================ eBPF KCONFIGs =============================*/
 
-#if defined(bpf_target_x86)
-#define PT_REGS_PARM6(ctx)  ((ctx)->r9)
-#elif defined(bpf_target_arm64)
-#define PT_REGS_PARM6(x) (((PT_REGS_ARM64 *)(x))->regs[5])
-#endif
-
 #ifdef CORE
 #define get_kconfig(x) get_kconfig_val(x)
 #else
@@ -650,11 +644,12 @@ static __always_inline u32 get_task_ns_pid(struct task_struct *task)
     // kernel 4.14-4.18
     return READ_KERN(READ_KERN(task->pids[PIDTYPE_PID].pid)->numbers[level].nr);
 #else
-    // kernel 4.19
+    // kernel 4.19 onwards
     struct pid *tpid = READ_KERN(task->thread_pid);
     return READ_KERN(tpid->numbers[level].nr);
 #endif
-#else // CORE
+#else
+    // CORE 5.0 onwards (TODO: issue #1171 for < 5.0)
     struct pid *tpid = READ_KERN(task->thread_pid);
     return READ_KERN(tpid->numbers[level].nr);
 #endif
@@ -672,11 +667,12 @@ static __always_inline u32 get_task_ns_tgid(struct task_struct *task)
     // kernel 4.14-4.18
     return READ_KERN(READ_KERN(group_leader->pids[PIDTYPE_PID].pid)->numbers[level].nr);
 #else
-    // kernel 4.19
+    // kernel 4.19 onwards
     struct pid *tpid = READ_KERN(group_leader->thread_pid);
     return READ_KERN(tpid->numbers[level].nr);
 #endif
-#else // CORE
+#else
+    // CORE 5.0 onwards (TODO: issue #1171 for < 5.0)
     struct pid *tpid = READ_KERN(group_leader->thread_pid);
     return READ_KERN(tpid->numbers[level].nr);
 #endif
@@ -694,11 +690,12 @@ static __always_inline u32 get_task_ns_ppid(struct task_struct *task)
     // kernel 4.14-4.18
     return READ_KERN(READ_KERN(real_parent->pids[PIDTYPE_PID].pid)->numbers[level].nr);
 #else
-    // kernel 4.19
+    // kernel 4.19 onwards
     struct pid *tpid = READ_KERN(real_parent->thread_pid);
     return READ_KERN(tpid->numbers[level].nr);
 #endif
-#else // CORE
+#else
+    // CORE 5.0 onwards (TODO: issue #1171 for < 5.0)
     struct pid *tpid = READ_KERN(real_parent->thread_pid);
     return READ_KERN(tpid->numbers[level].nr);
 #endif
@@ -969,7 +966,7 @@ static __always_inline u16 get_sock_protocol(struct sock *sock)
 
 #ifndef CORE
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0))
-    // kernel 5.18-5.5: sk_protocol bit-field: use sk_gso_max_segs field and go
+    // kernel 4.18-5.5: sk_protocol bit-field: use sk_gso_max_segs field and go
     // back 24 bits to reach sk_protocol field index.
     bpf_probe_read(&protocol, 1, (void *)(&sock->sk_gso_max_segs) - 3);
 #else
