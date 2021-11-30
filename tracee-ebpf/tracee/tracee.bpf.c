@@ -4302,23 +4302,23 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
         //todo: support other transport protocols?
         return TC_ACT_UNSPEC;
     }
-    if (pkt.protocol ==IPPROTO_UDP && (pkt.src_port ==53 || pkt.dst_port == 53))
-    {
-         if (!skb_revalidate_data(skb, &head, &tail,l4_hdr_off+sizeof(udphdr)+sizeof(net_dns_packet_t)) {
-            return TC_ACT_UNSPEC;
-         }
-        struct net_dns_packet_hdr_t *dns_hdr =  (void*)head + l4_hdr_off + (void *)udp;
-        if (pkt.dst_port == 53 && dns_packet->QR == 0){
-         //handle as request
-         u32 dns_question = *((void *)dns_hdr+sizeof(dns_hdr));
-
-        }
-        if (pkt.src_port == 53 && dns_packet->QR == 1){
-        //handle as response
-         u16 dns_answer = *((void *)dns_hdr+sizeof(dns_hdr));
-
-        }
-    }
+//    if (pkt.protocol ==IPPROTO_UDP && (pkt.src_port ==53 || pkt.dst_port == 53))
+//    {
+//         if (!skb_revalidate_data(skb, &head, &tail,l4_hdr_off+sizeof(udphdr)+sizeof(net_dns_packet_t)) {
+//            return TC_ACT_UNSPEC;
+//         }
+//        struct net_dns_packet_hdr_t *dns_hdr =  (void*)head + l4_hdr_off + (void *)udp;
+//        if (pkt.dst_port == 53 && dns_packet->QR == 0){
+//         //handle as request
+//         u32 dns_question = *((void *)dns_hdr+sizeof(dns_hdr));
+//
+//        }
+//        if (pkt.src_port == 53 && dns_packet->QR == 1){
+//        //handle as response
+//         u16 dns_answer = *((void *)dns_hdr+sizeof(dns_hdr));
+//
+//        }
+//    }
 
     connect_id.protocol = pkt.protocol;
     connect_id.address = pkt.src_addr;
