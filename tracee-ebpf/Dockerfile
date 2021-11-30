@@ -1,7 +1,7 @@
 ARG BASE=fat
 
-FROM golang:1.16-alpine as builder
-RUN apk --no-cache update && apk --no-cache add git clang llvm make gcc libc6-compat coreutils linux-headers musl-dev elfutils-dev libelf-static zlib-static
+FROM alpine:3.15 as builder
+RUN apk --no-cache update && apk --no-cache add git go clang llvm make gcc libc6-compat coreutils linux-headers musl-dev elfutils-dev libelf-static zlib-static
 WORKDIR /tracee
 
 FROM builder as build
@@ -10,11 +10,11 @@ COPY . /tracee
 RUN make build VERSION=$VERSION
 
 # base image for tracee which includes all tools to build the bpf object at runtime
-FROM alpine as fat
+FROM alpine:3.15 as fat
 RUN apk --no-cache update && apk --no-cache add clang llvm make gcc libc6-compat coreutils linux-headers musl-dev elfutils-dev libelf-static zlib-static
 
 # base image for tracee which includes minimal dependencies and expects the bpf object to be provided at runtime
-FROM alpine as slim
+FROM alpine:3.15 as slim
 RUN apk --no-cache update && apk --no-cache add libc6-compat elfutils-dev
 
 # If running on a BTF enabled kernel:
