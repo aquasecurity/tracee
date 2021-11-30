@@ -210,9 +210,8 @@ Copyright (C) Aqua Security inc.
 #define SECURITY_POST_READ_FILE     1030
 #define SOCKET_DUP                  1031
 #define HIDDEN_INODES               1032
-#define HOOKED_FOPS_POINTER         1033
-#define MAX_EVENT_ID                1034
-#define FILE_TYPE_SOCK      0
+#define MAX_EVENT_ID                1033
+#define FILE_TYPE_SOCK              0
 
 #define NET_PACKET                      0
 #define DEBUG_NET_SECURITY_BIND         1
@@ -553,8 +552,6 @@ BPF_HASH(bin_args_map, u64, bin_args_t);                // Persist args for send
 BPF_HASH(sys_32_to_64_map, u32, u32);                   // Map 32bit syscalls numbers to 64bit syscalls numbers
 BPF_HASH(params_types_map, u32, u64);                   // Encoded parameters types for event
 BPF_HASH(process_tree_map, u32, u32);                   // Used to filter events by the ancestry of the traced process
-BPF_HASH(hooked_fops_white_list_map, u64, u64);         // Used to pass kernel symbols from the user space for hooked_fops event
-BPF_HASH(code_boundaries_map, int, u64);                // Used to pass kernel core text section boundaries
 BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t);         // Socket address to process context
 BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t);   // Network identifier to process context
 BPF_ARRAY(file_filter, path_filter_t, 3);               // Used to filter vfs_write events
@@ -2601,72 +2598,6 @@ int BPF_KPROBE(trace_do_exit)
 
     return events_perf_submit(&data, DO_EXIT, code);
 }
-
-SEC("kprobe/security_file_permission")
-int BPF_KPROBE(trace_security_file_permission)
-{
-    event_data_t data = {};
-    if (!init_event_data(&data, ctx))
-        return 0;
-
-    if (!should_trace(&data.context))
-        return 0;
-
-
-    char* top = "top";
-    char* ps = "ps";
-    //check's if the called process is top or ps (to list processes)
-    if ((!local_strncmp(top, data.context.comm, 3)) && (!local_strncmp(ps, data.context.comm, 2)))
-        return 0;
-    struct file *called_file = (struct file *)PT_REGS_PARM1(ctx);
-    if (called_file == NULL)
-        return 0;
-    struct inode *file_inode = get_inode_from_file(called_file);
-
-
-
-    struct file_operations *fops = (struct file_operations *)READ_KERN(file_inode->i_fop);
-    if (fops == NULL)
-        return 0;
-
-
-    unsigned long iterate_shared_addr = (unsigned long) READ_KERN(fops->iterate_shared);
-    int found_hyjacked_fops=0;
-
-    u64 addr = (unsigned long)fops;
-    //look if the fop struct is in the white list
-    u64 *current_fop_addr = bpf_map_lookup_elem(&hooked_fops_white_list_map, (void *)&addr);
-    if (current_fop_addr == NULL)
-    {
-        save_to_submit_buf(&data, (void *)&fops, sizeof(unsigned long), 0);
-        found_hyjacked_fops =1;
-    }
-
-
-
-        int key=0;
-        u64 *stext_bound = bpf_map_lookup_elem(&code_boundaries_map, (void *)&key);
-        key++;
-        u64 *etext_bound = bpf_map_lookup_elem(&code_boundaries_map, (void *)&key);
-
-        if (stext_bound == NULL)
-            return 0;
-        if (etext_bound == NULL)
-            return 0;
-        if(!((iterate_shared_addr >= (*stext_bound))&& (iterate_shared_addr < (*etext_bound))) && (iterate_shared_addr != 0))
-        {
-            save_to_submit_buf(&data, (void *)&iterate_shared_addr, sizeof(unsigned long), 1);
-            return events_perf_submit(&data, HOOKED_FOPS_POINTER, 0);
-        }
-        else{
-            if (found_hyjacked_fops)
-                return events_perf_submit(&data, HOOKED_FOPS_POINTER, 0);
-        }
-
-
-     return 0;
-}
-
 
 
 SEC("kprobe/filldir64")

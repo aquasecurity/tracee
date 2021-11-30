@@ -708,53 +708,6 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
-	_, hiddenInodesExists := t.eventsToTrace[HiddenInodesEventID]
-	_, hookedFopsPointerExists := t.eventsToTrace[HookedFopsPointerEventID]
-	if hookedFopsPointerExists {
-		hookedFopsWhiteListMap, err := t.bpfModule.GetMap("hooked_fops_white_list_map") // u32, u32
-		if err != nil {
-			return err
-		}
-
-		fopsList := []string{"no_open_fops.", "proc_root_readdir", "kernfs_file_fops", "simple_dir_operations", "proc_pid_cmdline_ops", "proc_auxv_operations", "proc_sys_file_operations", "ext4_file_operations", "pipefifo_fops", "proc_root_operations", "kernfs_dir_fops", "def_chr_fops", "proc_single_file_operations", "proc_iter_file_ops", "shmem_file_operations"}
-		errUpdate := make([]error, 0)
-		fopVal := uint64(0)
-		for _, fopName := range fopsList {
-			fopVal = uint64(getAddrFromKallsyms(fopName))
-			errUpdate = append(errUpdate, hookedFopsWhiteListMap.Update(unsafe.Pointer(&fopVal), unsafe.Pointer(&fopVal)))
-			fopVal = 0
-		}
-		for _, err := range errUpdate {
-			if err != nil {
-				panic(err)
-			}
-		}
-
-	}
-
-	if hiddenInodesExists || hookedFopsPointerExists {
-
-		codeBoundariesMap, err := t.bpfModule.GetMap("code_boundaries_map") // u32, u32
-		if err != nil {
-			return err
-		}
-		kernelCodeBoundary := []string{"_stext", "_etext"}
-
-		boundaryKey := int(0)
-		boundaryVal := uint64(0)
-		e := make([]error, 0)
-		for idx, boundary := range kernelCodeBoundary {
-			boundaryKey = idx
-			boundaryVal = uint64(getAddrFromKallsyms(boundary))
-			e = append(e, codeBoundariesMap.Update(unsafe.Pointer(&boundaryKey), unsafe.Pointer(&boundaryVal)))
-		}
-
-		for _, err := range e {
-			if err != nil {
-				return err
-			}
-		}
-	}
 
 	return nil
 }
