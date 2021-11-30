@@ -439,25 +439,25 @@ const (
 	Statfs64EventID
 	Fstatfs64EventID
 	Fadvise64_64EventID
-	Clock_gettime32EventID
-	Clock_settime32EventID
+	ClockGettime32EventID
+	ClockSettime32EventID
 	Clock_adjtime64EventID
-	Clock_getres_time32EventID
-	Clock_nanosleep_time32EventID
-	Timer_gettime32EventID
-	Timer_settime32EventID
-	Timerfd_gettime32EventID
-	Timerfd_settime32EventID
-	Utimensat_time32EventID
-	Pselect6_time32EventID
-	Ppoll_time32EventID
+	ClockGetresTime32EventID
+	ClockNanosleepTime32EventID
+	TimerGettime32EventID
+	TimerSettime32EventID
+	TimerfdGettime32EventID
+	TimerfdSettime32EventID
+	UtimensatTime32EventID
+	Pselect6Time32EventID
+	PpollTime32EventID
 	Io_pgetevents_time32EventID
-	Recvmmsg_time32EventID
-	Mq_timedsend_time32EventID
-	Mq_timedreceive_time32EventID
-	Rt_sigtimedwait_time32EventID
-	Futex_time32EventID
-	Sched_rr_get_interval_time32EventID
+	RecvmmsgTime32EventID
+	MqTimedsendTime32EventID
+	MqTimedreceiveTime32EventID
+	RtSigtimedwaitTime32EventID
+	FutexTime32EventID
+	SchedRrGetIntervalTime32EventID
 )
 
 // x86 32bit syscall numbers
