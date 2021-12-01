@@ -128,7 +128,7 @@ func readArgFromBuff(dataBuff io.Reader, params []external.ArgMeta) (external.Ar
 }
 
 func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
-	res := make(map[string]string, 3)
+	res := make(map[string]string, 5)
 	var family int16
 	err := binary.Read(buff, binary.LittleEndian, &family)
 	if err != nil {
