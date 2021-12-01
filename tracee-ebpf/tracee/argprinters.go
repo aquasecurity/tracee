@@ -16,13 +16,39 @@ func PrintUint32IP(in uint32) string {
 	return ip.String()
 }
 
-// Print16BytesSliceIP prints the IP address encoded as 16 bytes long PrintBytesSliceIP
-// It would be more correct to accept a [16]byte instead of variable lenth slice, but that would cause unnecessary memory copying and type conversions
+
 func Print16BytesSliceIP(in []byte) string {
 	ip := net.IP(in)
 	return ip.String()
 }
+func getModuleOwnerBySymbol(addr uint64) string{
+	file, err := os.Open("/proc/kallsyms")
+	if err != nil {
+		log.Fatalf("failed to open")
 
+	}
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	var text []string
+
+	for scanner.Scan() {
+		text = append(text, scanner.Text())
+	}
+
+	file.Close()
+	for _, each_ln := range text {
+		words := strings.Fields(each_ln)
+		symbolAddr,_ :=strconv.ParseUint(words[0], 16, 64)
+		if (uint64(symbolAddr) == addr){
+			moduleName := words[3]
+			return moduleName[1:len(moduleName)-1]
+		}
+	}
+	return "Unknown module owner maybe hidden"
+}
+
+// Print16BytesSliceIP prints the IP address encoded as 16 bytes long PrintBytesSliceIP
+// It would be more correct to accept a [16]byte instead of variable lenth slice, but that would cause unnecessary memory copying and type conversions
 func (t *Tracee) parseArgs(ctx *context, args map[string]interface{}) error {
 	for key, arg := range args {
 		if ptr, isUintptr := arg.(uintptr); isUintptr {
@@ -115,6 +141,15 @@ func (t *Tracee) parseArgs(ctx *context, args map[string]interface{}) error {
 				args["type"] = typeIdStr
 			}
 		}
+	case HookedFopsPointerEventID:
+		//fops_hooked_fuction_addr
+		if fopsAddr, isUint64 := args["/proc_fops_hooked_by"].(uint64); isUint64 {
+			args["/proc_fops_hooked_by"] = getModuleOwnerBySymbol(fopsAddr)
+		}
+		if iterateSharedAddr, isUint64 := args["/proc_iterate_shared_function_hooked_by"].(uint64); isUint64 {
+			args["/proc_iterate_shared_function_hooked_by"] = getModuleOwnerBySymbol(iterateSharedAddr)
+		}
+
 	}
 
 	return nil

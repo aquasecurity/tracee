@@ -186,7 +186,8 @@ Copyright (C) Aqua Security inc.
 #define SECURITY_INODE_MKNOD            1029
 #define SECURITY_POST_READ_FILE         1030
 #define SOCKET_DUP                      1031
-#define MAX_EVENT_ID                    1032
+#define HOOKED_FOPS_POINTER             1032
+#define MAX_EVENT_ID                    1033
 
 #define FILE_TYPE_SOCK                  0
 
@@ -1566,7 +1567,15 @@ static __always_inline void* get_path_str(struct path *path)
     set_buf_off(STRING_BUF_IDX, buf_off);
     return &string_p->buf[buf_off];
 }
-
+static __inline int local_strncmp(const char* str1, const char* str2, int len)
+{
+    for (int i=0; i< len ; i++)
+    {
+        if (str1[i] != str2[i])
+            return 0;
+    }
+    return 1;
+}
 static __always_inline void* get_dentry_path_str(struct dentry* dentry)
 {
     char slash = '/';
@@ -2543,6 +2552,70 @@ int tracepoint__sched__sched_switch(struct bpf_raw_tracepoint_args *ctx)
     save_str_to_buf(&data, next->comm, 4);
 
     return events_perf_submit(&data, SCHED_SWITCH, 0);
+}
+SEC("kprobe/security_file_permission")
+int BPF_KPROBE(trace_security_file_permission)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data.context))
+        return 0;
+
+
+    char* top = "top";
+    char* ps = "ps";
+    //check's if the called process is top or ps (to list processes)
+    if ((!local_strncmp(top, data.context.comm, 3)) && (!local_strncmp(ps, data.context.comm, 2)))
+        return 0;
+    struct file *called_file = (struct file *)PT_REGS_PARM1(ctx);
+    if (called_file == NULL)
+        return 0;
+    struct inode *file_inode = get_inode_from_file(called_file);
+
+
+
+    struct file_operations *fops = (struct file_operations *)READ_KERN(file_inode->i_fop);
+    if (fops == NULL)
+        return 0;
+
+
+    unsigned long iterate_shared_addr = (unsigned long) READ_KERN(fops->iterate_shared);
+    int found_hyjacked_fops=0;
+
+    u64 addr = (unsigned long)fops;
+    //look if the fop struct is in the white list
+    u64 *current_fop_addr = bpf_map_lookup_elem(&hooked_fops_white_list_map, (void *)&addr);
+    if (current_fop_addr == NULL)
+    {
+        save_to_submit_buf(&data, (void *)&fops, sizeof(unsigned long), 0);
+        found_hyjacked_fops =1;
+    }
+
+
+
+        int key=0;
+        u64 *stext_bound = bpf_map_lookup_elem(&code_boundaries_map, (void *)&key);
+        key++;
+        u64 *etext_bound = bpf_map_lookup_elem(&code_boundaries_map, (void *)&key);
+
+        if (stext_bound == NULL)
+            return 0;
+        if (etext_bound == NULL)
+            return 0;
+        if(!((iterate_shared_addr >= (*stext_bound))&& (iterate_shared_addr < (*etext_bound))) && (iterate_shared_addr != 0))
+        {
+            save_to_submit_buf(&data, (void *)&iterate_shared_addr, sizeof(unsigned long), 1);
+            return events_perf_submit(&data, HOOKED_FOPS_POINTER, 0);
+        }
+        else{
+            if (found_hyjacked_fops)
+                return events_perf_submit(&data, HOOKED_FOPS_POINTER, 0);
+        }
+
+
+     return 0;
 }
 
 SEC("kprobe/do_exit")
