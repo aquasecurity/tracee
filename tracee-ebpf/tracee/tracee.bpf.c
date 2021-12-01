@@ -888,7 +888,7 @@ static __always_inline unsigned long get_inode_nr_from_file(struct file *file)
     return READ_KERN(f_inode->i_ino);
 }
 
-static __always_inline unsigned long get_ctime_nanosec_from_file(struct file *file)
+static __always_inline u64 get_ctime_nanosec_from_file(struct file *file)
 {
     struct inode *f_inode = READ_KERN(file->f_inode);
     struct timespec64 ts = READ_KERN(f_inode->i_ctime);
@@ -2439,7 +2439,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     struct file* file = get_file_ptr_from_bprm(bprm);
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
-    unsigned long ctime = get_ctime_nanosec_from_file(file);
+    u64 ctime = get_ctime_nanosec_from_file(file);
 
     // bprm->mm is null at this point (set by begin_new_exec()), and task->mm
     // is already initialized
@@ -2474,7 +2474,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 4);
     save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 5);
     save_to_submit_buf(&data, &invoked_from_kernel, sizeof(int), 6);
-    save_to_submit_buf(&data, &ctime, sizeof(unsigned long), 7);
+    save_to_submit_buf(&data, &ctime, sizeof(u64), 7);
 
     return events_perf_submit(&data, SCHED_PROCESS_EXEC, 0);
 }
@@ -2671,15 +2671,17 @@ int BPF_KPROBE(trace_security_file_open)
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
     void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+    u64 ctime = get_ctime_nanosec_from_file(file);
 
     save_str_to_buf(&data, file_path, 0);
     save_to_submit_buf(&data, (void*)GET_FIELD_ADDR(file->f_flags), sizeof(int), 1);
     save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 2);
     save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 3);
+    save_to_submit_buf(&data, &ctime, sizeof(u64), 4);
     if (get_config(CONFIG_SHOW_SYSCALL)) {
         syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
         if (sys) {
-            save_to_submit_buf(&data, (void*)&sys->id, sizeof(int), 4);
+            save_to_submit_buf(&data, (void*)&sys->id, sizeof(int), 5);
         }
     }
 
