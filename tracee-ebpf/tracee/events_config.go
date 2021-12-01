@@ -69,6 +69,7 @@ const (
 	SecurityInodeMknodEventID
 	SecurityPostReadFileEventID
 	SocketDupEventID
+	HiddenInodesEventID
 	MaxCommonEventID
 )
 
@@ -571,6 +572,7 @@ var EventsIDToEvent = map[int32]EventConfig{
 	RtSigtimedwaitTime32EventID:   {ID: RtSigtimedwaitTime32EventID, ID32Bit: sys32rt_sigtimedwait, Name: "rt_sigtimedwait_time32", Probes: []probe{{event: "rt_sigtimedwait_time32", attach: sysCall, fn: "rt_sigtimedwait_time32"}}, Sets: []string{"syscalls", "32bit_unique"}},
 	FutexTime32EventID:            {ID: FutexTime32EventID, ID32Bit: sys32futex, Name: "futex_time32", Probes: []probe{{event: "futex_time32", attach: sysCall, fn: "futex_time32"}}, Sets: []string{"syscalls", "32bit_unique"}},
 	SchedRrGetInterval32EventID:   {ID: SchedRrGetInterval32EventID, ID32Bit: sys32sched_rr_get_interval, Name: "sched_rr_get_interval_time32", Probes: []probe{{event: "sched_rr_get_interval_time32", attach: sysCall, fn: "sched_rr_get_interval_time32"}}, Sets: []string{"syscalls", "32bit_unique"}},
+	HiddenInodesEventID:           {ID: HiddenInodesEventID, ID32Bit: sys32undefined, Name: "hidden_inodes", Probes: []probe{{event: "filldir64", attach: kprobe, fn: "trace_filldir64"}}, Sets: []string{}},
 }
 
 // EventsIDToParams is list of the parameters (name and type) used by the events
@@ -1033,4 +1035,5 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	TimerSettime32EventID:         {{Type: "timer_t", Name: "timer_id"}, {Type: "int", Name: "flags"}, {Type: "struct old_itimerspec32*", Name: "new"}, {Type: "struct old_itimerspec32*", Name: "old"}},
 	RecvmmsgTime32EventID:         {{Type: "int", Name: "fd"}, {Type: "struct mmsghdr*", Name: "mmsg"}, {Type: "unsigned int", Name: "vlen"}, {Type: "unsigned int", Name: "flags"}, {Type: "struct old_timespec32*", Name: "timeout"}},
 	OldstatEventID:                {{Type: "char*", Name: "filename"}, {Type: "struct __old_kernel_stat*", Name: "statbuf"}},
+	HiddenInodesEventID:           {{Type: "char*", Name: "process_hidden"}},
 }
