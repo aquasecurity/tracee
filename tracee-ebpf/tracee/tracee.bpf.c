@@ -547,6 +547,8 @@ BPF_HASH(bin_args_map, u64, bin_args_t);                // persist args for send
 BPF_HASH(sys_32_to_64_map, u32, u32);                   // map 32bit to 64bit syscalls
 BPF_HASH(params_types_map, u32, u64);                   // encoded parameters types for event
 BPF_HASH(process_tree_map, u32, u32);                   // filter events by the ancestry of the traced process
+BPF_HASH(hooked_fops_white_list_map, u64, u64);         // Used to pass kernel symbols from the user space for hooked_fops event
+BPF_HASH(code_boundaries_map, int, u64);                // Used to pass kernel core text section boundaries
 BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t);         // socket address to process context
 BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t);   // network identifier to process context
 BPF_ARRAY(file_filter, path_filter_t, 3);               // filter vfs_write events
