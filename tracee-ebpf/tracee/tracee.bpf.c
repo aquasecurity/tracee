@@ -890,6 +890,10 @@ static __always_inline unsigned long get_inode_nr_from_file(struct file *file)
     struct inode *f_inode = READ_KERN(file->f_inode);
     return READ_KERN(f_inode->i_ino);
 }
+static __always_inline struct inode * get_inode_from_file(struct file *file)
+{
+    return READ_KERN(file->f_inode);
+}
 
 static __always_inline unsigned long get_ctime_nanosec_from_file(struct file *file)
 {
