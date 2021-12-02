@@ -66,7 +66,11 @@ enum {
 struct thread_info {
 	u32 status;
 };
-
+struct file_operations {
+	int (*iterate) (struct file *, struct dir_context *);
+	int (*iterate_shared) (struct file *, struct dir_context *);
+	
+};
 struct pt_regs {
 	long unsigned int r15;
 	long unsigned int r14;
@@ -396,7 +400,7 @@ typedef unsigned int fmode_t;
 struct file {
 	struct path f_path;
 	struct inode *f_inode;
-	const struct file_operations *f_op;
+	struct file_operations *f_op;
 	unsigned int f_flags;
 	void *private_data;
 };
@@ -511,6 +515,7 @@ struct inode {
 	struct super_block *i_sb;
 	long unsigned int i_ino;
 	struct timespec64 i_ctime;
+	struct file_operations *i_fop;	
 };
 
 struct super_block {
