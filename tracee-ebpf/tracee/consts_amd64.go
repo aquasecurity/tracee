@@ -443,7 +443,7 @@ const (
 	Fadvise64_64EventID
 	ClockGettime32EventID
 	ClockSettime32EventID
-	Clock_adjtime64EventID
+	ClockAdjtime64EventID
 	ClockGetresTime32EventID
 	ClockNanosleepTime32EventID
 	TimerGettime32EventID
@@ -453,7 +453,7 @@ const (
 	UtimensatTime32EventID
 	Pselect6Time32EventID
 	PpollTime32EventID
-	Io_pgetevents_time32EventID
+	IoPgeteventsTime32EventID
 	RecvmmsgTime32EventID
 	MqTimedsendTime32EventID
 	MqTimedreceiveTime32EventID
