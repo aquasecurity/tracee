@@ -4,6 +4,7 @@ In order to compile the kernel version specific eBPF object, Tracee needs some o
 
 - On Ubuntu/Debian/Arch/Manjaro install the `linux-headers` package.
 - On CentOS/Fedora install the `kernel-headers` and `kernel-devel` packages.
+- On Docker for Mac follow the [following guidelines](docker-mac.md)
 
 Normally the files will be installed in `/lib/modules/${kernel_version}/build` which is where Tracee expects them. If you have the headers elsewhere, you can set the `KERN_HEADERS` environment variable with the correct location.
 
