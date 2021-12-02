@@ -467,6 +467,7 @@ struct sockaddr_in {
 	__kernel_sa_family_t sin_family;
 	__be16 sin_port;
 	struct in_addr sin_addr;
+	unsigned char __pad[8];
 };
 
 struct unix_sock {

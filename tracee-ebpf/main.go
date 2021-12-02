@@ -95,13 +95,19 @@ func main() {
 			if err != nil {
 				return err
 			}
-			err = checkRequiredCapabilities(selfCap)
-			if err != nil {
+			if err = checkRequiredCapabilities(selfCap); err != nil {
 				return err
 			}
 
-			// OS kconfig information
+			enabled, err := helpers.FtraceEnabled()
+			if err != nil {
+				return err
+			}
+			if !enabled {
+				fmt.Fprintf(os.Stderr, "ftrace_enabled: warning: ftrace is not enabled, kernel events won't be caught, make sure to enable it by executing echo 1 | sudo tee /proc/sys/kernel/ftrace_enabled")
+			}
 
+			// OS kconfig information
 			kernelConfig, err := helpers.InitKernelConfig()
 			if err == nil { // do not fail (yet ?) if we cannot init kconfig
 				kernelConfig.AddNeeded(helpers.CONFIG_BPF, helpers.BUILTIN)
