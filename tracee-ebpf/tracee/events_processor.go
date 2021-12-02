@@ -237,8 +237,6 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 		t.containers.CgroupRemove(cgroupId)
 	}
 
-
-
 	return nil
 }
 
