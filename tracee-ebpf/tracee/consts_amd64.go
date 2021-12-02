@@ -459,7 +459,7 @@ const (
 	MqTimedreceiveTime32EventID
 	RtSigtimedwaitTime32EventID
 	FutexTime32EventID
-	SchedRrGetIntervalTime32EventID
+	SchedRrGetInterval32EventID
 	Unique32BitSyscallsEndID
 )
 
