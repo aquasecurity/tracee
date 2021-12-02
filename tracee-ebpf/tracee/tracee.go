@@ -1,12 +1,15 @@
 package tracee
 
 import (
+	//"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
+	//"log"
 	"math"
 	"net"
 	"os"
@@ -900,6 +903,141 @@ func (t *Tracee) initBPF() error {
 
 	return nil
 }
+func timespecToTime(ts syscall.Timespec) time.Time {
+	return time.Unix(int64(ts.Sec), int64(ts.Nsec))
+}
+func getFileCtime(path string) (time.Time, error) {
+	var ctime time.Time
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return ctime, err
+	}
+	stat_t := fileInfo.Sys().(*syscall.Stat_t)
+	return timespecToTime(stat_t.Ctim), nil
+}
+
+func parseProcStatus(status []string, taskName string) (external.Process_ctx, error) {
+	var process external.Process_ctx
+	processFileds := []string{"Tgid:", "Pid:", "PPid:", "Uid:", "NStgid:", "NSpid:", "NSpgid:"}
+	i := 0
+	var processVals []uint32
+	for idx, val := range status {
+		if val == processFileds[i] {
+
+			i++
+			filed, err := strconv.ParseUint(status[idx+1], 10, 32)
+			if err != nil {
+				//fmt.Println("err")
+				return process, err
+			}
+			processVals = append(processVals, uint32(filed))
+		}
+		if i > len(processFileds)-1 {
+			//fmt.Println("out")
+			break
+		}
+
+	}
+	processCtime, err := getFileCtime(taskName)
+	if err != nil {
+		return process, err
+	}
+	process.Ctime = uint64(processCtime.Unix())
+	process.Host_pid = processVals[0]
+	process.Host_tid = processVals[1]
+	process.Host_ppid = processVals[2]
+	process.Uid = processVals[3]
+	process.Pid = processVals[4]
+	process.Tid = processVals[5]
+	process.Ppid = processVals[6]
+	mntId, pidId, CgroupId, err := getNsIdData(taskName)
+	if err != nil {
+		return process, err
+	}
+	process.Mnt_id = mntId
+	process.Pid_id = pidId
+	process.Cgroup_id = CgroupId
+
+	//fmt.Printf("time:%v\n", processCtime)
+	//process := external.Process_ctx{0, cgroupid, uint32(pid), uint32(tid), uint32(ppid), uint32(hostPid), uint32(hostTid), uint32(hostPpid), uint32(uid), 0, 0}
+	return process, nil
+}
+
+func getNsIdData(taskName string) (uint32, uint32, uint64, error) {
+	path := fmt.Sprintf("%s/ns/mnt", taskName[:len(taskName)-7])
+	processMntId, err := os.Readlink(path)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	processMntId = strings.TrimLeft(strings.TrimRight(processMntId, "]"), "mnt:[")
+	fmt.Println(processMntId)
+	mntId, err := strconv.ParseUint(processMntId, 10, 32)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	path = fmt.Sprintf("%s/ns/pid", taskName[:len(taskName)-7])
+	processPidId, err := os.Readlink(path)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	processPidId = strings.TrimLeft(strings.TrimRight(processPidId, "]"), "pid:[")
+	pidId, err := strconv.ParseUint(processPidId, 10, 32)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	path = fmt.Sprintf("%s/ns/cgroup", taskName[:len(taskName)-7])
+	processCgroupId, err := os.Readlink(path)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	processCgroupId = strings.TrimLeft(strings.TrimRight(processCgroupId, "]"), "cgroup:[")
+	CgroupId, err := strconv.ParseUint(processCgroupId, 10, 32)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+
+	return uint32(mntId), uint32(pidId), CgroupId, nil
+}
+
+func (t *Tracee) initProcessTree() {
+	procDir, err := os.Open("/proc")
+	if err != nil {
+		//return fmt.Errorf("could not open proc dir: %v", err)
+		t.handleError(err)
+	}
+
+	defer procDir.Close()
+
+	entries, err := procDir.Readdirnames(-1)
+	if err != nil {
+		//return fmt.Errorf("could not read proc dir: %v", err)
+		t.handleError(err)
+	}
+
+	// Iterate over each pid
+	for _, procEntry := range entries {
+		pid, err := strconv.ParseUint(procEntry, 10, 32)
+		if err != nil {
+			continue
+		}
+		taskDir, err := os.Open(fmt.Sprintf("/proc/%d/task", pid))
+		processTasks, err := taskDir.Readdirnames(-1)
+		for _, task := range processTasks {
+			taskStatus := fmt.Sprintf("/proc/%d/task/%v/status", pid, task)
+			data, err := ioutil.ReadFile(taskStatus)
+			if err != nil {
+				fmt.Println("File reading error", err)
+			}
+			dataStatus := strings.Fields(string(data))
+			processStatus, err := parseProcStatus(dataStatus, taskStatus)
+			if err != nil {
+				t.handleError(err)
+			}
+			processTreeMap[uint32(processStatus.Tid)] = processStatus
+		}
+	}
+
+}
 
 func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 	b, err := json.MarshalIndent(t.profiledFiles, "", "  ")
@@ -915,6 +1053,7 @@ func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 
 // Run starts the trace. it will run until interrupted
 func (t *Tracee) Run() error {
+	t.initProcessTree()
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 	t.invokeInitNamespacesEvent()

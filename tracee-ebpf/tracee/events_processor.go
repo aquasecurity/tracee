@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"unsafe"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/external"
@@ -84,6 +85,10 @@ func (t *Tracee) shouldProcessEvent(ctx *context, args []external.Argument) bool
 	return true
 }
 
+var processTreeMap = make(map[uint32]external.Process_ctx)
+
+//proc[0] = 0
+
 func (t *Tracee) processEvent(event *external.Event) error {
 	switch int32(event.EventID) {
 
@@ -129,7 +134,9 @@ func (t *Tracee) processEvent(event *external.Event) error {
 		} else {
 			t.pidsInMntns.AddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
 		}
-
+		processData := external.Process_ctx{ctx.Ts, ctx.CgroupID, ctx.Pid, ctx.Tid, ctx.Ppid, ctx.HostPid, ctx.HostTid, ctx.HostPpid, ctx.Uid, ctx.MntID, ctx.PidID}
+		processTreeMap[ctx.Tid] = processData
+		fmt.Println(processTreeMap)
 		//capture executed files
 		if t.config.Capture.Exec || t.config.Output.ExecHash {
 			filePath, err := getEventArgStringVal(event, "pathname")
@@ -213,7 +220,22 @@ func (t *Tracee) processEvent(event *external.Event) error {
 			}
 			return err
 		}
+	case SchedProcessExitEventID:
+		processContextMap, err := t.bpfModule.GetMap("process_context_map")
+		if err != nil {
+			t.Close()
+			return err
+		}
 
+		_ = processContextMap.DeleteKey(unsafe.Pointer(&ctx.Tid))
+		delete(processTreeMap, ctx.Tid)
+	case SchedProcessForkEventID:
+		childTid, ok := args["child_tid"].(uint32)
+		if !ok {
+			return fmt.Errorf("error parsing child_tid arg SchedProcessForkEventID")
+		}
+		processData := external.Process_ctx{ctx.Ts, ctx.CgroupID, ctx.Pid, ctx.Tid, ctx.Ppid, ctx.HostPid, ctx.HostTid, ctx.HostPpid, ctx.Uid, ctx.MntID, ctx.PidID}
+		processTreeMap[childTid] = processData
 	case CgroupMkdirEventID:
 		cgroupId, err := getEventArgUint64Val(event, "cgroup_id")
 		if err != nil {
