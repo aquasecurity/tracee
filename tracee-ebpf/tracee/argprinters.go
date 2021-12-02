@@ -145,14 +145,7 @@ func (t *Tracee) parseArgs(ctx *context, args map[string]interface{}) error {
 				args["type"] = typeIdStr
 			}
 		}
-	case HookedFopsPointerEventID:
-		//fops_hooked_fuction_addr
-		if fopsAddr, isUint64 := args["/proc_fops_hooked_by"].(uint64); isUint64 {
-			args["/proc_fops_hooked_by"] = getModuleOwnerBySymbol(fopsAddr)
-		}
-		if iterateSharedAddr, isUint64 := args["/proc_iterate_shared_function_hooked_by"].(uint64); isUint64 {
-			args["/proc_iterate_shared_function_hooked_by"] = getModuleOwnerBySymbol(iterateSharedAddr)
-		}
+
 
 	}
 

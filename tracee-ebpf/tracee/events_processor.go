@@ -218,7 +218,13 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 			// If not a new container (no regex match) - remove from the bpf container_map
 			t.containers.RemoveFromBpfMap(t.bpfModule, cgroupId)
 		}
-
+	case HookedFopsPointerEventID:
+		if fopsAddr, isUint64 := args["/proc_fops_hooked_by"].(uint64); isUint64 {
+			args["/proc_fops_hooked_by"] = getModuleOwnerBySymbol(fopsAddr)
+		}
+		if iterateSharedAddr, isUint64 := args["iterate_shared_function_hooked_by"].(uint64); isUint64 {
+			args["iterate_shared_function_hooked_by"] = getModuleOwnerBySymbol(iterateSharedAddr)
+		}
 	case CgroupRmdirEventID:
 		cgroupId, ok := args["cgroup_id"].(uint64)
 		if !ok {
@@ -226,6 +232,8 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 		}
 		t.containers.CgroupRemove(cgroupId)
 	}
+
+
 
 	return nil
 }
