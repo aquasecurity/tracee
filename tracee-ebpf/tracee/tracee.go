@@ -20,6 +20,7 @@ import (
 	"syscall"
 	"time"
 	"unsafe"
+	"bufio"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
@@ -71,6 +72,39 @@ type OutputConfig struct {
 type netProbe struct {
 	ingressHook *bpf.TcHook
 	egressHook  *bpf.TcHook
+}
+func getAddrFromKallsyms(func_name string) uint64 {
+	file, err := os.Open("/proc/kallsyms")
+
+	if err != nil {
+		return 0;
+
+	}
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	var text []string
+
+	for scanner.Scan() {
+		text = append(text, scanner.Text())
+	}
+	file.Close()
+
+	for _, each_ln := range text {
+
+		line :=strings.Fields(each_ln)
+
+		if strings.Contains (line[2], func_name) && !strings.HasSuffix(line[2],"file_ops_compat"){
+			addr := each_ln[0:16]
+			v, err:= strconv.ParseUint(addr, 16, 64)
+			if err != nil {
+				return 0
+			}
+
+			return v
+
+		}
+	}
+	return 0
 }
 
 // Validate does static validation of the configuration
@@ -671,7 +705,6 @@ func (t *Tracee) populateBPFMaps() error {
 			}
 		}
 	}
-	_,hiddenInodesExists 	  	:= t.eventsToTrace[HiddenInodesEventID]
 	_,hookedFopsPointerExists 	:= t.eventsToTrace[HookedFopsPointerEventID]
 	if hookedFopsPointerExists{
 		hookedFopsWhiteListMap, err := t.bpfModule.GetMap("hooked_fops_white_list_map") // u32, u32
@@ -699,7 +732,7 @@ func (t *Tracee) populateBPFMaps() error {
 		for idx,boundary := range(kernelCodeBoundary){
 			boundaryKey = idx
 			boundaryVal = uint64(getAddrFromKallsyms(boundary))
-			errUpdatee = append(errUpdate, codeBoundariesMap.Update(unsafe.Pointer(&boundaryKey), unsafe.Pointer(&boundaryVal)))
+			errUpdate = append(errUpdate, codeBoundariesMap.Update(unsafe.Pointer(&boundaryKey), unsafe.Pointer(&boundaryVal)))
 		}
 		for _, err := range errUpdate {
 			if err != nil {

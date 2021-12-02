@@ -5,7 +5,11 @@ import (
 	"fmt"
 	"github.com/aquasecurity/libbpfgo/helpers"
 	"net"
-
+	"os"
+	"log"
+	"bufio"
+	"strings"
+	"strconv"
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
 )
 

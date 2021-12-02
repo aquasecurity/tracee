@@ -66,10 +66,11 @@ enum {
 struct thread_info {
 	u32 status;
 };
+struct dir_context;
+struct file;
+int (*iterate_shared) (struct file *, struct dir_context *);
 struct file_operations {
-	int (*iterate) (struct file *, struct dir_context *);
 	int (*iterate_shared) (struct file *, struct dir_context *);
-	
 };
 struct pt_regs {
 	long unsigned int r15;
