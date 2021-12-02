@@ -686,6 +686,10 @@ var EventsIDToEvent = map[int32]EventConfig{
 }
 
 // EventsIDToParams is list of the parameters (name and type) used by the events
+// There are some syscalls which are not implemented, so they have no arguments here. For the full list of unimplemented
+// syscalls write the command "man 2 unimplemented".
+// Also, some syscalls are not supported after some old version of the kernel and they are not supported in this list
+// either.
 var EventsIDToParams = map[int32][]external.ArgMeta{
 	ReadEventID:                     {{Type: "int", Name: "fd"}, {Type: "void*", Name: "buf"}, {Type: "size_t", Name: "count"}},
 	WriteEventID:                    {{Type: "int", Name: "fd"}, {Type: "void*", Name: "buf"}, {Type: "size_t", Name: "count"}},
