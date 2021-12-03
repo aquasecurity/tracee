@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/aquasecurity/tracee/tracee-ebpf/external"
+	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

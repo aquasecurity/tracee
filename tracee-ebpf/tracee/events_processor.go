@@ -10,7 +10,7 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/aquasecurity/tracee/tracee-ebpf/external"
+	"github.com/aquasecurity/tracee/pkg/external"
 )
 
 var removeSocketTailOnce sync.Once

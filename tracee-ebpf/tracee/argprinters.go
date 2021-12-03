@@ -3,10 +3,10 @@ package tracee
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/aquasecurity/libbpfgo/helpers"
 	"net"
 
-	"github.com/aquasecurity/tracee/tracee-ebpf/external"
+	"github.com/aquasecurity/libbpfgo/helpers"
+	"github.com/aquasecurity/tracee/pkg/external"
 )
 
 // PrintUint32IP prints the IP address encoded as a uint32

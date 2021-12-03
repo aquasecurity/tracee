@@ -22,7 +22,7 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
-	"github.com/aquasecurity/tracee/tracee-ebpf/external"
+	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
 	lru "github.com/hashicorp/golang-lru"

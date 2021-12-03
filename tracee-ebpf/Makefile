@@ -62,7 +62,7 @@ go_env := GOOS=linux GOARCH=$(ARCH:x86_64=amd64) CC=$(CMD_CLANG) CGO_CFLAGS="-I 
 ifndef DOCKER
 $(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(OUT_BPF_CORE) $(filter-out *_test.go,$(GO_SRC)) $(BPF_BUNDLE) | $(OUT_DIR)
 	$(go_env) go build -tags netgo -v -o $(OUT_BIN) \
-	-ldflags "-w -extldflags \"$(CGO_EXT_LDFLAGS)\" -X main.version=$(VERSION)"
+	-ldflags "-w -extldflags \"$(CGO_EXT_LDFLAGS)\" -X main.version=$(VERSION)" ./../cmd/tracee-ebpf/main.go
 else
 $(OUT_BIN): $(DOCKER_BUILDER) | $(OUT_DIR)
 	$(call docker_builder_make,$@ VERSION=$(VERSION))
