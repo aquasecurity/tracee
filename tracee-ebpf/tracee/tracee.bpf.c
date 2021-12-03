@@ -771,9 +771,22 @@ static __always_inline const u64 get_cgroup_id(struct cgroup *cgrp)
 
 #ifdef CORE
     if (bpf_core_type_exists(union kernfs_node_id)) {
-        struct kernfs_node___old *kn_old = (void *)kn;
-        bpf_core_read(&id, sizeof(u64), &kn_old->id);
+        struct kernfs_node___older_v55 *kn_old = (void *)kn;
+        struct kernfs_node___rh8 *kn_rh8 = (void *)kn;
+
+        if (bpf_core_field_exists(kn_rh8->id)) {
+            // RHEL8 has both types declared: union and u64:
+            //     kn->id
+            //     rh->rh_kabi_hidden_172->id
+            // pointing to the same data
+            bpf_core_read(&id, sizeof(u64), &kn_rh8->id);
+        } else {
+            // all other regular kernels bellow v5.5
+            bpf_core_read(&id, sizeof(u64), &kn_old->id);
+        }
+
     } else {
+        // kernel v5.5 and above
         bpf_core_read(&id, sizeof(u64), &kn->id);
     }
 #else
