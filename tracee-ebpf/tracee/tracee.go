@@ -73,11 +73,11 @@ type netProbe struct {
 	ingressHook *bpf.TcHook
 	egressHook  *bpf.TcHook
 }
-func getAddrFromKallsyms(func_name string) uint64 {
+func getAddrFromKallsyms(func_name string) (uint64, error) {
 	file, err := os.Open("/proc/kallsyms")
 
 	if err != nil {
-		return 0;
+		return 0, errors.New("Could not open /proc/kallsyms")
 
 	}
 	scanner := bufio.NewScanner(file)
@@ -94,17 +94,17 @@ func getAddrFromKallsyms(func_name string) uint64 {
 		line :=strings.Fields(each_ln)
 
 		if strings.Contains (line[2], func_name) && !strings.HasSuffix(line[2],"file_ops_compat"){
-			addr := each_ln[0:16]
-			v, err:= strconv.ParseUint(addr, 16, 64)
+			addrStr := line[0]
+			addr, err:= strconv.ParseUint(addrStr, 16, 64)
 			if err != nil {
-				return 0
+				return 0, errors.New("failed to parse string to uint")
 			}
 
-			return v
+			return addr, nil
 
 		}
 	}
-	return 0
+	return 0, errors.New("Could not find the symbol address")
 }
 
 // Validate does static validation of the configuration
@@ -714,11 +714,12 @@ func (t *Tracee) populateBPFMaps() error {
 
 		fopsList := []string{"no_open_fops.", "proc_root_readdir", "kernfs_file_fops", "simple_dir_operations", "proc_pid_cmdline_ops", "proc_auxv_operations", "proc_sys_file_operations", "ext4_file_operations", "pipefifo_fops", "proc_root_operations", "kernfs_dir_fops", "def_chr_fops", "proc_single_file_operations", "proc_iter_file_ops", "shmem_file_operations"}
 		errUpdate := make([]error, 0)
-		fopVal := uint64(0)
 		for _,fopName := range(fopsList){
-			fopVal = uint64(getAddrFromKallsyms(fopName))
-			errUpdate = append(errUpdate, hookedFopsWhiteListMap.Update(unsafe.Pointer(&fopVal), unsafe.Pointer(&fopVal)))
-			fopVal =0
+			fopVal,e := getAddrFromKallsyms(fopName)
+			if e == nil {
+				errUpdate = append(errUpdate, hookedFopsWhiteListMap.Update(unsafe.Pointer(&fopVal), unsafe.Pointer(&fopVal)))
+			}
+
 		}
 
 		codeBoundariesMap, err := t.bpfModule.GetMap("code_boundaries_map") // u32, u32
@@ -728,15 +729,16 @@ func (t *Tracee) populateBPFMaps() error {
 		kernelCodeBoundary :=[]string{"_stext", "_etext"}
 
 		boundaryKey := int(0)
-		boundaryVal := uint64(0)
 		for idx,boundary := range(kernelCodeBoundary){
 			boundaryKey = idx
-			boundaryVal = uint64(getAddrFromKallsyms(boundary))
-			errUpdate = append(errUpdate, codeBoundariesMap.Update(unsafe.Pointer(&boundaryKey), unsafe.Pointer(&boundaryVal)))
+			boundaryVal, e := getAddrFromKallsyms(boundary)
+			if e == nil{
+				errUpdate = append(errUpdate, codeBoundariesMap.Update(unsafe.Pointer(&boundaryKey), unsafe.Pointer(&boundaryVal)))
+			}
 		}
 		for _, err := range errUpdate {
 			if err != nil {
-				panic(err)
+				return err
 			}
 		}
 

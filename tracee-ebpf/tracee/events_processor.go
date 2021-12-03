@@ -220,10 +220,16 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 		}
 	case HookedFopsPointerEventID:
 		if fopsAddr, isUint64 := args["/proc_fops_hooked_by"].(uint64); isUint64 {
-			args["/proc_fops_hooked_by"] = getModuleOwnerBySymbol(fopsAddr)
+			moduleName, err := getModuleOwnerBySymbol(fopsAddr)
+			if err ==nil{
+				args["/proc_fops_hooked_by"] = moduleName
+			}
 		}
 		if iterateSharedAddr, isUint64 := args["iterate_shared_function_hooked_by"].(uint64); isUint64 {
-			args["iterate_shared_function_hooked_by"] = getModuleOwnerBySymbol(iterateSharedAddr)
+			moduleName, err := getModuleOwnerBySymbol(iterateSharedAddr)
+			if err == nil{
+				args["iterate_shared_function_hooked_by"] = moduleName
+			}
 		}
 	case CgroupRmdirEventID:
 		cgroupId, ok := args["cgroup_id"].(uint64)

@@ -6,11 +6,11 @@ import (
 	"github.com/aquasecurity/libbpfgo/helpers"
 	"net"
 	"os"
-	"log"
 	"bufio"
 	"strings"
 	"strconv"
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
+	"errors"
 )
 
 // PrintUint32IP prints the IP address encoded as a uint32
@@ -25,11 +25,10 @@ func Print16BytesSliceIP(in []byte) string {
 	ip := net.IP(in)
 	return ip.String()
 }
-func getModuleOwnerBySymbol(addr uint64) string{
+func getModuleOwnerBySymbol(addr uint64) (string, error){
 	file, err := os.Open("/proc/kallsyms")
 	if err != nil {
-		log.Fatalf("failed to open")
-
+		return "", errors.New("failed to open /proc/kallsyms file")
 	}
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
@@ -45,10 +44,10 @@ func getModuleOwnerBySymbol(addr uint64) string{
 		symbolAddr,_ :=strconv.ParseUint(words[0], 16, 64)
 		if (uint64(symbolAddr) == addr){
 			moduleName := words[3]
-			return moduleName[1:len(moduleName)-1]
+			return moduleName[1:len(moduleName)-1], nil
 		}
 	}
-	return "Unknown module owner maybe hidden"
+	return "", errors.New("Unknown module owner maybe hidden")
 }
 
 // Print16BytesSliceIP prints the IP address encoded as 16 bytes long PrintBytesSliceIP
