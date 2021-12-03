@@ -44,6 +44,27 @@ struct sock___old {
     u16                 sk_gso_max_segs;
 };
 
+// support bpf_core_type_exists((task struct)->pids) for kernels < 5.0
+
+enum pid_type
+{
+    PIDTYPE_PID,
+    PIDTYPE_PGID,
+    PIDTYPE_SID,
+    PIDTYPE_MAX,
+    __PIDTYPE_TGID
+};
+
+struct pid_link
+{
+    struct hlist_node node;
+    struct pid *pid;
+};
+
+struct task_struct___older_v50 {
+    struct pid_link pids[PIDTYPE_MAX];
+};
+
 #pragma clang attribute pop
 
 #endif
