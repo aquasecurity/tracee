@@ -47,7 +47,7 @@ func getModuleOwnerBySymbol(addr uint64) (string, error){
 			return moduleName[1:len(moduleName)-1], nil
 		}
 	}
-	return "", errors.New("Unknown module owner maybe hidden")
+	return "Unknown module", errors.New("Unknown module owner maybe hidden")
 }
 
 // Print16BytesSliceIP prints the IP address encoded as 16 bytes long PrintBytesSliceIP
