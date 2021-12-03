@@ -3,6 +3,8 @@
 
 #pragma clang attribute push (__attribute__((preserve_access_index)), apply_to = record)
 
+// (struct kernfs_node *)->id was union kernfs_node_id before 5.5
+
 union kernfs_node_id {
     struct {
         u32 ino;
@@ -27,17 +29,19 @@ struct kernfs_node___rh8 {
     };
 };
 
+// commit bf9765145b85 ("sock: Make sk_protocol a 16-bit value")
+
 struct sock___old {
-    struct sock_common      __sk_common;
-    unsigned int            __sk_flags_offset[0];
-    unsigned int            sk_padding : 1,
-                            sk_kern_sock : 1,
-                            sk_no_check_tx : 1,
-                            sk_no_check_rx : 1,
-                            sk_userlocks : 4,
-                            sk_protocol  : 8,
-                            sk_type      : 16;
-    u16                     sk_gso_max_segs;
+    struct sock_common  __sk_common;
+    unsigned int        __sk_flags_offset[0];
+    unsigned int        sk_padding : 1,
+                        sk_kern_sock : 1,
+                        sk_no_check_tx : 1,
+                        sk_no_check_rx : 1,
+                        sk_userlocks : 4,
+                        sk_protocol  : 8,
+                        sk_type      : 16;
+    u16                 sk_gso_max_segs;
 };
 
 #pragma clang attribute pop
