@@ -19,6 +19,9 @@ Vagrant.configure("2") do |config|
       sudo ln -s $path ${path%-*}
     done
 
+    apt-get install --yes docker.io
+    usermod -aG docker vagrant
+
     wget --quiet https://golang.org/dl/go1.16.linux-amd64.tar.gz
     tar -C /usr/local -xzf go1.16.linux-amd64.tar.gz
     echo 'export PATH=$PATH:/usr/local/go/bin' >> /home/vagrant/.profile
