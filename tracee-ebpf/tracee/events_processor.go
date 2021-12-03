@@ -221,14 +221,19 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 	case HookedFopsPointerEventID:
 		if fopsAddr, isUint64 := args["/proc_fops_hooked_by"].(uint64); isUint64 {
 			moduleName, err := getModuleOwnerBySymbol(fopsAddr)
-			if err ==nil{
+			if err ==nil {
 				args["/proc_fops_hooked_by"] = moduleName
+			}else{
+				args["/proc_fops_hooked_by"] ="Unknown module owner maybe hidden"
 			}
+
 		}
 		if iterateSharedAddr, isUint64 := args["iterate_shared_function_hooked_by"].(uint64); isUint64 {
 			moduleName, err := getModuleOwnerBySymbol(iterateSharedAddr)
 			if err == nil{
 				args["iterate_shared_function_hooked_by"] = moduleName
+			}else {
+				args["iterate_shared_function_hooked_by"] ="Unknown module owner maybe hidden"
 			}
 		}
 	case CgroupRmdirEventID:
