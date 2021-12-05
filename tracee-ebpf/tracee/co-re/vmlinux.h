@@ -318,6 +318,7 @@ struct pid_namespace {
 
 struct upid {
 	int nr;
+	struct pid_namespace *ns;
 };
 
 struct pid {
