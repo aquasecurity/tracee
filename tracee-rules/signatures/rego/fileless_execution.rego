@@ -17,7 +17,7 @@ __rego_metadoc__ := {
 eventSelectors := [
     {
         "source": "tracee",
-        "name": "security_bprm_check"
+        "name": "sched_process_exec"
     }
 ]
 
@@ -27,13 +27,24 @@ tracee_selected_events[eventSelector] {
 
 
 tracee_match {
-    input.eventName == "security_bprm_check"
+    input.eventName == "sched_process_exec"
     pathname = helpers.get_tracee_argument("pathname")
     startswith(pathname, "memfd:")
+
+    not startswith(pathname, "memfd:runc")
+    input.containerId == ""
 }
 
 tracee_match {
-    input.eventName == "security_bprm_check"
+    input.eventName == "sched_process_exec"
+    pathname = helpers.get_tracee_argument("pathname")
+    startswith(pathname, "memfd:")
+
+    input.containerId != ""
+}
+
+tracee_match {
+    input.eventName == "sched_process_exec"
     pathname = helpers.get_tracee_argument("pathname")
     startswith(pathname, "/dev/shm")
 }
