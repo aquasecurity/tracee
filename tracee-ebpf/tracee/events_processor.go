@@ -237,15 +237,18 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 func (t *Tracee) removeSocketTail() {
 	// removing sys_socket_exit_tail from sys_exit_tails.
 	bpfMap, err := t.bpfModule.GetMap("sys_exit_tails")
+	if err != nil {
+		t.handleError(err)
+		return
+	}
+
+	eU32 := uint32(SocketEventID)
+	_, err = bpfMap.GetValue(unsafe.Pointer(&eU32))
 	if err == nil {
-		eU32 := uint32(SocketEventID)
-		_, err = bpfMap.GetValue(unsafe.Pointer(&eU32))
-		if err == nil {
-			// key exists in map
-			err = bpfMap.DeleteKey(unsafe.Pointer(&eU32))
-			if err != nil {
-				t.handleError(err)
-			}
+		// key exists in map
+		err = bpfMap.DeleteKey(unsafe.Pointer(&eU32))
+		if err != nil {
+			t.handleError(err)
 		}
 	}
 }
@@ -253,25 +256,28 @@ func (t *Tracee) removeSocketTail() {
 func (t *Tracee) removePipeTail() {
 	// removing sys_pipe_exit_tail from sys_exit_tails.
 	bpfMap, err := t.bpfModule.GetMap("sys_exit_tails")
-	if err == nil {
-		eU32 := uint32(PipeEventID)
-		_, err = bpfMap.GetValue(unsafe.Pointer(&eU32))
-		if err == nil {
-			// key exists in map
-			err = bpfMap.DeleteKey(unsafe.Pointer(&eU32))
-			if err != nil {
-				t.handleError(err)
-			}
-		}
+	if err != nil {
+		t.handleError(err)
+		return
+	}
 
-		eU32 = uint32(Pipe2EventID)
-		_, err = bpfMap.GetValue(unsafe.Pointer(&eU32))
-		if err == nil {
-			// key exists in map
-			err = bpfMap.DeleteKey(unsafe.Pointer(&eU32))
-			if err != nil {
-				t.handleError(err)
-			}
+	eU32 := uint32(PipeEventID)
+	_, err = bpfMap.GetValue(unsafe.Pointer(&eU32))
+	if err == nil {
+		// key exists in map
+		err = bpfMap.DeleteKey(unsafe.Pointer(&eU32))
+		if err != nil {
+			t.handleError(err)
+		}
+	}
+
+	eU32 = uint32(Pipe2EventID)
+	_, err = bpfMap.GetValue(unsafe.Pointer(&eU32))
+	if err == nil {
+		// key exists in map
+		err = bpfMap.DeleteKey(unsafe.Pointer(&eU32))
+		if err != nil {
+			t.handleError(err)
 		}
 	}
 }
