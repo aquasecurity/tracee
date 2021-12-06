@@ -116,8 +116,8 @@ func (t *Tracee) parseArgs(ctx *context, args map[string]interface{}) error {
 			}
 		}
 	case SchedProcessExecEventID:
-		if mode, isUint16 := args["stdin"].(uint16); isUint16 {
-			args["stdin"] = helpers.ParseInodeMode(uint32(mode))
+		if mode, isUint16 := args["stdin_type"].(uint16); isUint16 {
+			args["stdin_type"] = helpers.ParseInodeMode(uint32(mode))
 		}
 	}
 
