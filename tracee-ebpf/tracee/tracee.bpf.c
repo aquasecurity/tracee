@@ -13,6 +13,7 @@ Copyright (C) Aqua Security inc.
 #include <uapi/linux/uio.h>
 #include <uapi/linux/un.h>
 #include <uapi/linux/utsname.h>
+#include <uapi/linux/stat.h>
 #include <linux/binfmts.h>
 #include <linux/cred.h>
 #include <linux/sched.h>
@@ -187,8 +188,6 @@ Copyright (C) Aqua Security inc.
 #define SECURITY_POST_READ_FILE         1030
 #define SOCKET_DUP                      1031
 #define MAX_EVENT_ID                    1032
-
-#define FILE_TYPE_SOCK                  0
 
 #define NET_PACKET                      0
 #define DEBUG_NET_SECURITY_BIND         1
@@ -557,7 +556,6 @@ BPF_PROG_ARRAY(prog_array_tp, MAX_TAIL_CALL);           // store programs for ta
 BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);          // store programs for tail calls
 BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID);           // store programs for tail calls
 BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);  // store stack traces
-BPF_ARRAY(file_ops_types, struct file_operations*, 1);  // file types to file_operations structs
 
 /*================================== EVENTS ==================================*/
 
@@ -2027,6 +2025,17 @@ static __always_inline struct file *get_struct_file_from_fd(u64 fd_num)
     return f;
 }
 
+static __always_inline unsigned short get_inode_mode_from_fd(u64 fd)
+{
+    struct file *f = get_struct_file_from_fd(fd);
+    if (f == NULL) {
+        return -1;
+    }
+
+    struct inode *f_inode = READ_KERN(f->f_inode);
+    return READ_KERN(f_inode->i_mode);
+}
+
 /*============================== SYSCALL HOOKS ===============================*/
 
 // include/trace/events/syscalls.h:
@@ -2217,80 +2226,28 @@ int syscall__execveat(void *ctx)
     return events_perf_submit(&data, SYS_EXECVEAT, 0);
 }
 
-SEC("raw_tracepoint/sys_socket")
-int sys_socket_exit_tail(void *ctx)
+static __always_inline int check_fd_type(u64 fd, u16 type)
 {
-    event_data_t data = {};
-    if (!init_event_data(&data, ctx)) {
-        return 0;
+    unsigned short i_mode = get_inode_mode_from_fd(fd);
+
+    if ((i_mode & S_IFMT) == type) {
+        return 1;
     }
 
-    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
-    if (!sys) {
-        return -1;
-    }
-
-    if (sys->id != SYSCALL_SOCKET) {
-        // sanity check
-        return 0;
-    }
-
-    if (sys->ret < 0) {
-        // socket failed
-        return 0;
-    }
-
-    struct file *f = get_struct_file_from_fd(sys->ret);
-    if (f == NULL) {
-        return -1;
-    }
-    struct file_operations *f_op = (struct file_operations *)READ_KERN(f->f_op);
-
-    u32 idx = FILE_TYPE_SOCK;
-    bpf_map_update_elem(&file_ops_types, &idx, (void *)&f_op, BPF_ANY);
-
-    // delete syscall data before return
-    bpf_map_delete_elem(&syscall_data_map, &data.context.host_tid);
-
-    // remove syscall__socket from tail calls.  in order to remove
-    // syscall__socket from the sys_exit_tails, we have to send a 'socket'
-    // event to userspace.  this is because the verifier doesn't allow bpf code
-    // to call bpf_map_delete_elem on BPF_MAP_TYPE_PROG_ARRAY maps:
-    // https://elixir.bootlin.com/linux/v5.14.12/source/kernel/bpf/verifier.c#L5140
-    if (event_chosen(SYSCALL_SOCKET)) {
-        // if the 'socket' event was chosen by the user, we don't have to do
-        // anything special here, because the event will get to userspace
-        return 0;
-    }
-
-    // send the event (with no data, because the user didn't choose to see this)
-    return events_perf_submit(&data, SYSCALL_SOCKET, 0);
+    return 0;
 }
 
-static __always_inline int check_fd_socket(event_data_t *data, u64 oldfd, u64 newfd)
+static __always_inline int send_socket_dup(event_data_t *data, u64 oldfd, u64 newfd)
 {
     if (!event_chosen(SOCKET_DUP))
         return 0;
 
-    u32 idx = FILE_TYPE_SOCK;
-
-    struct file_operations **socket_fops = (struct file_operations **)bpf_map_lookup_elem(&file_ops_types, &idx);
-    if (socket_fops == NULL) {
-        return -1;
+    if (!check_fd_type(oldfd, S_IFSOCK)) {
+        return 0;
     }
 
     struct file *f = get_struct_file_from_fd(oldfd);
     if (f == NULL) {
-        return -1;
-    }
-
-    struct file_operations *f_ops = (struct file_operations *)READ_KERN(f->f_op);
-    if (f_ops == NULL) {
-        return -1;
-    }
-
-    if (f_ops != *socket_fops) {
-        // this file is not of type socket
         return -1;
     }
 
@@ -2360,13 +2317,13 @@ int sys_dup_exit_tail(void *ctx)
     if (sys->id == SYS_DUP) {
         // args.args[0]: oldfd
         // retval: newfd
-        check_fd_socket(&data, sys->args.args[0], sys->ret);
+        send_socket_dup(&data, sys->args.args[0], sys->ret);
     }
     else if (sys->id == SYS_DUP2 || sys->id == SYS_DUP3) {
         // args.args[0]: oldfd
         // args.args[1]: newfd
         // retval: retval
-        check_fd_socket(&data, sys->args.args[0], sys->args.args[1]);
+        send_socket_dup(&data, sys->args.args[0], sys->args.args[1]);
     }
 
     // delete syscall data before return
