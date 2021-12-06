@@ -2226,11 +2226,11 @@ int syscall__execveat(void *ctx)
     return events_perf_submit(&data, SYS_EXECVEAT, 0);
 }
 
-static __always_inline int check_fd_socket(u64 fd)
+static __always_inline int check_fd_type(u64 fd, u16 type)
 {
     unsigned short i_mode = get_inode_mode_from_fd(fd);
 
-    if ((i_mode & S_IFMT) == S_IFSOCK) {
+    if ((i_mode & S_IFMT) == type) {
         return 1;
     }
 
@@ -2242,7 +2242,7 @@ static __always_inline int send_socket_dup(event_data_t *data, u64 oldfd, u64 ne
     if (!event_chosen(SOCKET_DUP))
         return 0;
 
-    if (!check_fd_socket(oldfd)) {
+    if (!check_fd_type(oldfd, S_IFSOCK)) {
         return 0;
     }
 
