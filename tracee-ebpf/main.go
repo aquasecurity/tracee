@@ -382,7 +382,7 @@ option:{stack-addresses,detect-syscall,exec-env,relative-time,exec-hash,parse-ar
 Examples:
   --output json                                            | output as json
   --output gotemplate=/path/to/my.tmpl                     | output as the provided go template
-  --output out-file:/my/out err-file:/my/err               | output to /my/out and errors to /my/err
+  --output out-file:/my/out --output err-file:/my/err      | output to /my/out and errors to /my/err
   --output none                                            | ignore events output
 
 Use this flag multiple times to choose multiple output options

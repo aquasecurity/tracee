@@ -39,5 +39,5 @@ output as the provided go template
 output to `/my/out` and errors to `/my/err`
 
 ```
---output out-file:/my/out err-file:/my/err
+--output out-file:/my/out --output err-file:/my/err
 ```
