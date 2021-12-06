@@ -2470,6 +2470,8 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 
     void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
 
+    unsigned short stdin_type = get_inode_mode_from_fd(0) & S_IFMT;
+
     // Note: Starting from kernel 5.9, there are two new interesting fields in
     // bprm that we should consider adding:
     //
@@ -2488,6 +2490,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 5);
     save_to_submit_buf(&data, &invoked_from_kernel, sizeof(int), 6);
     save_to_submit_buf(&data, &ctime, sizeof(u64), 7);
+    save_to_submit_buf(&data, &stdin_type, sizeof(unsigned short), 8);
 
     return events_perf_submit(&data, SCHED_PROCESS_EXEC, 0);
 }

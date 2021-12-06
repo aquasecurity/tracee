@@ -940,7 +940,7 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	SysEnterEventID:               {{Type: "int", Name: "syscall"}},
 	SysExitEventID:                {{Type: "int", Name: "syscall"}},
 	SchedProcessForkEventID:       {{Type: "int", Name: "parent_tid"}, {Type: "int", Name: "parent_ns_tid"}, {Type: "int", Name: "child_tid"}, {Type: "int", Name: "child_ns_tid"}},
-	SchedProcessExecEventID:       {{Type: "const char*", Name: "cmdpath"}, {Type: "const char*", Name: "pathname"}, {Type: "const char**", Name: "argv"}, {Type: "const char**", Name: "env"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}, {Type: "int", Name: "invoked_from_kernel"}, {Type: "unsigned long", Name: "ctime"}},
+	SchedProcessExecEventID:       {{Type: "const char*", Name: "cmdpath"}, {Type: "const char*", Name: "pathname"}, {Type: "const char**", Name: "argv"}, {Type: "const char**", Name: "env"}, {Type: "dev_t", Name: "dev"}, {Type: "unsigned long", Name: "inode"}, {Type: "int", Name: "invoked_from_kernel"}, {Type: "unsigned long", Name: "ctime"}, {Type: "umode_t", Name: "stdin_type"}},
 	SchedProcessExitEventID:       {{Type: "long", Name: "exit_code"}},
 	SchedSwitchEventID:            {{Type: "int", Name: "cpu"}, {Type: "int", Name: "prev_tid"}, {Type: "const char*", Name: "prev_comm"}, {Type: "int", Name: "next_tid"}, {Type: "const char*", Name: "next_comm"}},
 	DoExitEventID:                 {},

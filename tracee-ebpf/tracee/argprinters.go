@@ -20,6 +20,8 @@ func PrintUint32IP(in uint32) string {
 	return ip.String()
 }
 
+// Print16BytesSliceIP prints the IP address encoded as 16 bytes long PrintBytesSliceIP
+// It would be more correct to accept a [16]byte instead of variable lenth slice, but that would cause unnecessary memory copying and type conversions
 func Print16BytesSliceIP(in []byte) string {
 	ip := net.IP(in)
 	return ip.String()
@@ -36,7 +38,6 @@ func getModuleOwnerBySymbol(addr uint64) (string, error) {
 	for scanner.Scan() {
 		text = append(text, scanner.Text())
 	}
-
 	file.Close()
 	for _, each_ln := range text {
 		words := strings.Fields(each_ln)
@@ -143,7 +144,10 @@ func (t *Tracee) parseArgs(ctx *context, args map[string]interface{}) error {
 				args["type"] = typeIdStr
 			}
 		}
-
+	case SchedProcessExecEventID:
+		if mode, isUint16 := args["stdin_type"].(uint16); isUint16 {
+			args["stdin_type"] = helpers.ParseInodeMode(uint32(mode))
+		}
 	}
 
 	return nil
