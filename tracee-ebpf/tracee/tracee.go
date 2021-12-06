@@ -654,10 +654,6 @@ func (t *Tracee) populateBPFMaps() error {
 			if err != nil {
 				return err
 			}
-		} else if e == SocketEventID {
-			if err = t.initTailCall(eU32, "sys_exit_tails", "sys_socket_exit_tail"); err != nil {
-				return err
-			}
 		} else if e == DupEventID || e == Dup2EventID || e == Dup3EventID {
 			if err = t.initTailCall(eU32, "sys_exit_tails", "sys_dup_exit_tail"); err != nil {
 				return err
