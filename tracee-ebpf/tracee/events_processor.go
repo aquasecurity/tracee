@@ -121,7 +121,6 @@ func (t *Tracee) processEvent(event *external.Event) error {
 			// index written file by original filepath
 			t.writtenFiles[fileName] = filePath
 		}
-
 	case SchedProcessExecEventID:
 
 		//cache this pid by it's mnt ns

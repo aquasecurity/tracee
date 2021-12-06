@@ -115,6 +115,12 @@ type Argument struct {
 	Value interface{} `json:"value"`
 }
 
+//data type for storing args result for detect_hooked_syscalls
+type HookedSyscallData struct {
+	SyscallName string
+	ModuleOwner string
+}
+
 // ArgMeta describes an argument
 type ArgMeta struct {
 	Name string `json:"name"`

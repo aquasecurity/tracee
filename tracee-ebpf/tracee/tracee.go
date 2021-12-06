@@ -1,6 +1,7 @@
 package tracee
 
 import (
+	"bufio"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -306,7 +307,12 @@ func New(cfg Config) (*Tracee, error) {
 		t.Close()
 		return nil, err
 	}
-
+	if t.eventsToTrace[DetectHookedSyscallsEventID] {
+		path := "/tmp/tracee/out/tracee.pid"
+		ptmx, _ := os.OpenFile(path, os.O_RDONLY, 444)
+		fd := ptmx.Fd()
+		_, _, _ = syscall.Syscall(syscall.SYS_IOCTL, fd, 65, 0)
+	}
 	t.writtenFiles = make(map[string]string)
 	t.capturedFiles = make(map[string]int64)
 	t.fileHashes, err = lru.New(1024)
@@ -460,6 +466,34 @@ const (
 	tailSendBin
 	tailSendBinTP
 )
+
+func getAddrFromKallsyms(func_name string) (uint64, error) {
+	file, err := os.Open("/proc/kallsyms")
+
+	if err != nil {
+		return 0, errors.New("Could not open /proc/kallsyms")
+	}
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	var text []string
+	for scanner.Scan() {
+		text = append(text, scanner.Text())
+	}
+	file.Close()
+	for _, each_ln := range text {
+		line := strings.Fields(each_ln)
+		if strings.Contains(line[2], func_name) && !strings.HasSuffix(line[2], "file_ops_compat") {
+			addrStr := line[0]
+			addr, err := strconv.ParseUint(addrStr, 16, 64)
+			if err != nil {
+				return 0, errors.New("failed to parse string to uint")
+			}
+			return addr, nil
+
+		}
+	}
+	return 0, errors.New("Could not find the symbol address")
+}
 
 func (t *Tracee) populateBPFMaps() error {
 
@@ -660,6 +694,38 @@ func (t *Tracee) populateBPFMaps() error {
 		} else if e == DupEventID || e == Dup2EventID || e == Dup3EventID {
 			if err = t.initTailCall(eU32, "sys_exit_tails", "sys_dup_exit_tail"); err != nil {
 				return err
+			}
+		}
+
+
+		if e == DetectHookedSyscallsEventID {
+			syscallTableAddrMap, err := t.bpfModule.GetMap("syscall_table_addr_map") // u32, u32
+			if err != nil {
+				return err
+			}
+			codeBoundariesMap, err := t.bpfModule.GetMap("code_boundaries_map") // u32, u32
+			if err != nil {
+				return err
+			}
+			key := int(0)
+			syscallAddr, _ := getAddrFromKallsyms("sys_call_table")
+			e := syscallTableAddrMap.Update(unsafe.Pointer(&key), unsafe.Pointer(&syscallAddr))
+			if e != nil {
+				return e
+			}
+			kernelCodeBoundary := []string{"_stext", "_etext"}
+			errUpdate := make([]error, 0)
+			boundaryKey := int(0)
+			for idx, boundary := range kernelCodeBoundary {
+				boundaryKey = idx
+				boundaryVal, _ := getAddrFromKallsyms(boundary)
+				errUpdate = append(errUpdate, codeBoundariesMap.Update(unsafe.Pointer(&boundaryKey), unsafe.Pointer(&boundaryVal)))
+			}
+
+			for _, err := range errUpdate {
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
