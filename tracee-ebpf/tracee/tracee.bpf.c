@@ -638,6 +638,7 @@ static __always_inline u32 get_task_cgroup_ns_id(struct task_struct *task)
 
 static __always_inline u32 get_task_ns_pid(struct task_struct *task)
 {
+    int nr = 0;
     struct nsproxy *namespaceproxy = READ_KERN(task->nsproxy);
     struct pid_namespace *pid_ns_children = READ_KERN(namespaceproxy->pid_ns_for_children);
     unsigned int level = READ_KERN(pid_ns_children->level);
@@ -645,21 +646,30 @@ static __always_inline u32 get_task_ns_pid(struct task_struct *task)
 #ifndef CORE
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && !defined(RHEL_RELEASE_GT_8_0))
     // kernel 4.14-4.18
-    return READ_KERN(READ_KERN(task->pids[PIDTYPE_PID].pid)->numbers[level].nr);
+    nr = READ_KERN(READ_KERN(task->pids[PIDTYPE_PID].pid)->numbers[level].nr);
 #else
     // kernel 4.19 onwards
     struct pid *tpid = READ_KERN(task->thread_pid);
-    return READ_KERN(tpid->numbers[level].nr);
+    nr = READ_KERN(tpid->numbers[level].nr);
 #endif
 #else
-    // CORE 5.0 onwards (TODO: issue #1171 for < 5.0)
-    struct pid *tpid = READ_KERN(task->thread_pid);
-    return READ_KERN(tpid->numbers[level].nr);
+    if (bpf_core_type_exists(struct pid_link)) {
+        struct task_struct___older_v50 *t = (void *) task;
+        struct pid_link *pl = READ_KERN(t->pids);
+        struct pid *p = READ_KERN(pl[PIDTYPE_MAX].pid);
+        nr = READ_KERN(p->numbers[level].nr);
+    } else {
+        struct pid *tpid = READ_KERN(task->thread_pid);
+        nr = READ_KERN(tpid->numbers[level].nr);
+    }
 #endif
+
+    return nr;
 }
 
 static __always_inline u32 get_task_ns_tgid(struct task_struct *task)
 {
+    int nr = 0;
     struct nsproxy *namespaceproxy = READ_KERN(task->nsproxy);
     struct pid_namespace *pid_ns_children = READ_KERN(namespaceproxy->pid_ns_for_children);
     unsigned int level = READ_KERN(pid_ns_children->level);
@@ -668,21 +678,30 @@ static __always_inline u32 get_task_ns_tgid(struct task_struct *task)
 #ifndef CORE
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && !defined(RHEL_RELEASE_GT_8_0))
     // kernel 4.14-4.18
-    return READ_KERN(READ_KERN(group_leader->pids[PIDTYPE_PID].pid)->numbers[level].nr);
+    nr = READ_KERN(READ_KERN(group_leader->pids[PIDTYPE_PID].pid)->numbers[level].nr);
 #else
     // kernel 4.19 onwards
     struct pid *tpid = READ_KERN(group_leader->thread_pid);
-    return READ_KERN(tpid->numbers[level].nr);
+    nr = READ_KERN(tpid->numbers[level].nr);
 #endif
 #else
-    // CORE 5.0 onwards (TODO: issue #1171 for < 5.0)
-    struct pid *tpid = READ_KERN(group_leader->thread_pid);
-    return READ_KERN(tpid->numbers[level].nr);
+    if (bpf_core_type_exists(struct pid_link)) {
+        struct task_struct___older_v50 *gl = (void *) group_leader;
+        struct pid_link *pl = READ_KERN(gl->pids);
+        struct pid *p = READ_KERN(pl[PIDTYPE_MAX].pid);
+        nr = READ_KERN(p->numbers[level].nr);
+    } else {
+        struct pid *tpid = READ_KERN(group_leader->thread_pid);
+        nr = READ_KERN(tpid->numbers[level].nr);
+    }
 #endif
+
+    return nr;
 }
 
 static __always_inline u32 get_task_ns_ppid(struct task_struct *task)
 {
+    int nr = 0;
     struct task_struct *real_parent = READ_KERN(task->real_parent);
     struct nsproxy *namespaceproxy = READ_KERN(real_parent->nsproxy);
     struct pid_namespace *pid_ns_children = READ_KERN(namespaceproxy->pid_ns_for_children);
@@ -691,17 +710,25 @@ static __always_inline u32 get_task_ns_ppid(struct task_struct *task)
 #ifndef CORE
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && !defined(RHEL_RELEASE_GT_8_0)) && !defined(CORE)
     // kernel 4.14-4.18
-    return READ_KERN(READ_KERN(real_parent->pids[PIDTYPE_PID].pid)->numbers[level].nr);
+    nr = (READ_KERN(real_parent->pids[PIDTYPE_PID].pid)->numbers[level].nr);
 #else
     // kernel 4.19 onwards
     struct pid *tpid = READ_KERN(real_parent->thread_pid);
-    return READ_KERN(tpid->numbers[level].nr);
+    nr = READ_KERN(tpid->numbers[level].nr);
 #endif
 #else
-    // CORE 5.0 onwards (TODO: issue #1171 for < 5.0)
-    struct pid *tpid = READ_KERN(real_parent->thread_pid);
-    return READ_KERN(tpid->numbers[level].nr);
+    if (bpf_core_type_exists(struct pid_link)) {
+        struct task_struct___older_v50 *rp = (void *) real_parent;
+        struct pid_link *pl = READ_KERN(rp->pids);
+        struct pid *p = READ_KERN(pl[PIDTYPE_MAX].pid);
+        nr = READ_KERN(p->numbers[level].nr);
+    } else {
+        struct pid *tpid = READ_KERN(real_parent->thread_pid);
+        nr = READ_KERN(tpid->numbers[level].nr);
+    }
 #endif
+
+    return nr;
 }
 
 static __always_inline char * get_task_uts_name(struct task_struct *task)
@@ -774,9 +801,22 @@ static __always_inline const u64 get_cgroup_id(struct cgroup *cgrp)
 
 #ifdef CORE
     if (bpf_core_type_exists(union kernfs_node_id)) {
-        struct kernfs_node___old *kn_old = (void *)kn;
-        bpf_core_read(&id, sizeof(u64), &kn_old->id);
+        struct kernfs_node___older_v55 *kn_old = (void *)kn;
+        struct kernfs_node___rh8 *kn_rh8 = (void *)kn;
+
+        if (bpf_core_field_exists(kn_rh8->id)) {
+            // RHEL8 has both types declared: union and u64:
+            //     kn->id
+            //     rh->rh_kabi_hidden_172->id
+            // pointing to the same data
+            bpf_core_read(&id, sizeof(u64), &kn_rh8->id);
+        } else {
+            // all other regular kernels bellow v5.5
+            bpf_core_read(&id, sizeof(u64), &kn_old->id);
+        }
+
     } else {
+        // kernel v5.5 and above
         bpf_core_read(&id, sizeof(u64), &kn->id);
     }
 #else

@@ -25,6 +25,29 @@ for arg in "$@"; do
 	esac
 done
 
-# start, and pass all remaining flags to tracee-rules
+# create named pipe for communicating between tracee-ebpf and tracee-rules
+tracee_pipe=/tmp/tracee/pipe
+rm -f $tracee_pipe && mkfifo $tracee_pipe
+
+# start tracee-ebpf in the background
 EVENTS=$($TRACEE_RULES_EXE --list-events)
-$TRACEE_EBPF_EXE --output=format:gob --output=option:parse-arguments --trace event=$EVENTS,mem_prot_alert | $TRACEE_RULES_EXE --input-tracee=file:stdin --input-tracee=format:gob $@
+echo "starting tracee-ebpf..."
+$TRACEE_EBPF_EXE --output=format:gob --output=option:parse-arguments --trace event=$EVENTS --output=out-file:$tracee_pipe &
+tracee_ebpf_pid=$!
+
+# wait for tracee-ebpf to: load / exit / timeout
+tracee_ebpf_readiness=/tmp/tracee/out/tracee.pid
+rm -f $tracee_ebpf_readiness
+timeout=15
+i=0
+while [ ! -f $tracee_ebpf_readiness ] && $(ls /proc/$tracee_ebpf_pid >/dev/null 2>&1) && [ $i -le $timeout ]
+do
+	i=$(( i + 1 ))
+	sleep 1
+done
+
+[ ! -f $tracee_ebpf_readiness ] && exit
+
+# start tracee-rules
+echo "starting tracee-rules..."
+$TRACEE_RULES_EXE --input-tracee=file:$tracee_pipe --input-tracee=format:gob $@
