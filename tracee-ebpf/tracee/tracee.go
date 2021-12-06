@@ -282,7 +282,6 @@ func New(cfg Config) (*Tracee, error) {
 		setEssential(DupEventID)
 		setEssential(Dup2EventID)
 		setEssential(Dup3EventID)
-		setEssential(SocketEventID)
 	}
 
 	// Compile final list of events to trace including essential events
