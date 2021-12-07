@@ -4,7 +4,7 @@ import (
 	"github.com/aquasecurity/libbpfgo/helpers"
 	"math"
 
-	"github.com/aquasecurity/tracee/tracee-ebpf/external"
+	"github.com/aquasecurity/tracee/pkg/external"
 )
 
 // bpfConfig is an enum that include various configurations that can be passed to bpf code

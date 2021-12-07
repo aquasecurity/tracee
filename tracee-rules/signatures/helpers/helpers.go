@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
+	tracee "github.com/aquasecurity/tracee/pkg/external"
 )
 
 // GetTraceeArgumentByName fetches the argument in event with `Name` that matches argName

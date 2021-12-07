@@ -70,7 +70,7 @@ clean mostlyclean:
 # docker_builder_make runs a make command in the tracee-builder container
 define docker_builder_make
 	$(CMD_DOCKER) run --rm \
-	-v $(abspath .):/tracee/tracee-rules \
+	-v $(abspath ./..):/tracee \
 	-w /tracee/tracee-rules \
 	--entrypoint make $(DOCKER_BUILDER) $(1)
 endef

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
+	tracee "github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/open-policy-agent/opa/ast"
 )

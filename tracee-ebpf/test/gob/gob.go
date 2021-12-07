@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/aquasecurity/tracee/tracee-ebpf/external"
+	"github.com/aquasecurity/tracee/pkg/external"
 )
 
 func main() {
