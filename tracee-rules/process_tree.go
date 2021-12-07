@@ -42,10 +42,10 @@ func (tree *ContainerProcessTree) GetProcessInfo(processID int) (*ProcessInfo, e
 }
 
 type ProcessTree struct {
-	tree map[int]ContainerProcessTree
+	tree map[string]ContainerProcessTree
 }
 
-func (tree *ProcessTree) getContainerTree(containerID int) (*ContainerProcessTree, error) {
+func (tree *ProcessTree) getContainerTree(containerID string) (*ContainerProcessTree, error) {
 	containerTree, ok := tree.tree[containerID]
 	if !ok {
 		return nil, fmt.Errorf("no container with given ID is recorded")
@@ -53,11 +53,47 @@ func (tree *ProcessTree) getContainerTree(containerID int) (*ContainerProcessTre
 	return &containerTree, nil
 }
 
-func (tree *ProcessTree) InsertProcess(event external.Event) error {
+func (tree *ProcessTree) ProcessExec(event external.Event) error {
+	containerTree, _ := tree.getContainerTree(event.ContainerID)
+	process, _ := containerTree.GetProcessInfo(event.ParentProcessID)
+	process.Cmd = event.Args[2].Value.([]string)
+	process.ExecutionBinary = BinaryInfo{
+		Path:  event.Args[1].Value.(string),
+		Hash:  "",
+		Ctime: event.Args[7].Value.(int),
+	}
 	return nil
 }
 
-func (tree *ProcessTree) GetProcessInfo(containerID int, processID int) (*ProcessInfo, error) {
+func (tree *ProcessTree) ProcessFork(event external.Event) error {
+	fatherProcess, _ := tree.GetProcessInfo(event.ContainerID, event.HostProcessID)
+	process := ProcessInfo{
+		InHostIDs: ProcessIDs{
+			Pid:  event.HostProcessID,
+			Ppid: event.HostParentProcessID,
+			Tid:  event.HostThreadID,
+		},
+		InContainerIDs: ProcessIDs{
+			Pid:  event.ProcessID,
+			Ppid: event.ParentProcessID,
+			Tid:  event.HostThreadID,
+		},
+		StartTime:     event.Timestamp,
+		ParentProcess: fatherProcess,
+	}
+	fatherProcess.ChildProcesses = append(fatherProcess.ChildProcesses, &process) // Problematic because will point to the ProcessInfo in the stack and not in the map
+	containerTree, err := tree.getContainerTree(event.ContainerID)
+	if err != nil {
+		tree.tree[event.ContainerID] = ContainerProcessTree{
+			root: &process, // Problematic because will point to the ProcessInfo in the stack and not in the map
+		}
+		containerTree, _ = tree.getContainerTree(event.ContainerID)
+	}
+	containerTree.tree[event.ParentProcessID] = process
+	return nil
+}
+
+func (tree *ProcessTree) GetProcessInfo(containerID string, processID int) (*ProcessInfo, error) {
 	containerTree, err := tree.getContainerTree(containerID)
 	if err != nil {
 		return nil, err
@@ -65,7 +101,7 @@ func (tree *ProcessTree) GetProcessInfo(containerID int, processID int) (*Proces
 	return containerTree.GetProcessInfo(processID)
 }
 
-func (tree *ProcessTree) GetContainerRoot(containerID int) (*ProcessInfo, error) {
+func (tree *ProcessTree) GetContainerRoot(containerID string) (*ProcessInfo, error) {
 	containerTree, err := tree.getContainerTree(containerID)
 	if err != nil {
 		return nil, err
