@@ -121,3 +121,8 @@ test-entrypoint: entrypoint.sh entrypoint_test.bats test/mocks/* test/bats-helpe
 mkdocs-serve:
 	$(CMD_DOCKER) build -t $(MKDOCS_IMAGE) -f docs/Dockerfile docs
 	$(CMD_DOCKER) run --name mkdocs-serve --rm -v $(PWD):/docs -p $(MKDOCS_PORT):8000 $(MKDOCS_IMAGE)
+
+.PHONY:
+sanity:
+	docker build -t tracee-test:latest .
+	cd tests && go test -v tracee_test.go
