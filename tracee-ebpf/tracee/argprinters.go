@@ -1,16 +1,16 @@
 package tracee
 
 import (
+	"bufio"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"github.com/aquasecurity/libbpfgo/helpers"
+	"github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"net"
 	"os"
-	"bufio"
-	"strings"
 	"strconv"
-	"github.com/aquasecurity/tracee/tracee-ebpf/external"
-	"errors"
+	"strings"
 )
 
 // PrintUint32IP prints the IP address encoded as a uint32
@@ -20,12 +20,11 @@ func PrintUint32IP(in uint32) string {
 	return ip.String()
 }
 
-
 func Print16BytesSliceIP(in []byte) string {
 	ip := net.IP(in)
 	return ip.String()
 }
-func getModuleOwnerBySymbol(addr uint64) (string, error){
+func getModuleOwnerBySymbol(addr uint64) (string, error) {
 	file, err := os.Open("/proc/kallsyms")
 	if err != nil {
 		return "", errors.New("failed to open /proc/kallsyms file")
@@ -41,10 +40,10 @@ func getModuleOwnerBySymbol(addr uint64) (string, error){
 	file.Close()
 	for _, each_ln := range text {
 		words := strings.Fields(each_ln)
-		symbolAddr,_ :=strconv.ParseUint(words[0], 16, 64)
-		if (uint64(symbolAddr) == addr){
+		symbolAddr, _ := strconv.ParseUint(words[0], 16, 64)
+		if uint64(symbolAddr) == addr {
 			moduleName := words[3]
-			return moduleName[1:len(moduleName)-1], nil
+			return moduleName[1 : len(moduleName)-1], nil
 		}
 	}
 	return "Unknown module", errors.New("Unknown module owner maybe hidden")
@@ -144,7 +143,6 @@ func (t *Tracee) parseArgs(ctx *context, args map[string]interface{}) error {
 				args["type"] = typeIdStr
 			}
 		}
-
 
 	}
 
