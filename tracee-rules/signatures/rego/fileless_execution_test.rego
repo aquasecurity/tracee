@@ -2,8 +2,9 @@ package tracee.TRC_5
 
 test_match_1 {
     tracee_match with input as {
-        "eventName": "security_bprm_check",
+        "eventName": "sched_process_exec",
         "argsNum": 1,
+        "containerId": "someContainer",
         "args": [
             {
                 "name": "pathname",
@@ -15,8 +16,51 @@ test_match_1 {
 
 test_match_2 {
     tracee_match with input as {
-        "eventName": "security_bprm_check",
+        "eventName": "sched_process_exec",
         "argsNum": 1,
+        "containerId": "someContainer",
+        "args": [
+            {
+                "name": "pathname",
+                "value": "memfd:runc"
+            }
+        ]
+    }
+}
+
+test_match_3 {
+    tracee_match with input as {
+        "eventName": "sched_process_exec",
+        "argsNum": 1,
+        "containerId": "",
+        "args": [
+            {
+                "name": "pathname",
+                "value": "memfd://something/something"
+            }
+        ]
+    }
+}
+
+test_match_4 {
+    not tracee_match with input as {
+        "eventName": "sched_process_exec",
+        "argsNum": 1,
+        "containerId": "",
+        "args": [
+            {
+                "name": "pathname",
+                "value": "memfd:runc"
+            }
+        ]
+    }
+}
+
+test_match_5 {
+    tracee_match with input as {
+        "eventName": "sched_process_exec",
+        "argsNum": 1,
+        "containerId": "someContainer",
         "args": [
             {
                 "name": "pathname",
@@ -28,8 +72,9 @@ test_match_2 {
 
 test_match_wrong_pathname {
     not tracee_match with input as {
-        "eventName": "security_bprm_check",
+        "eventName": "sched_process_exec",
         "argsNum": 1,
+        "containerId": "someContainer",
         "args": [
             {
                 "name": "pathname",
