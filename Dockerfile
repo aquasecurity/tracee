@@ -41,4 +41,4 @@ LABEL org.label-schema.build-date=$BUILD_DATE \
 
 ENV TINI_SUBREAPER=true
 
-ENTRYPOINT ["/sbin/tini", "-g", "--", "./entrypoint.sh"]
+ENTRYPOINT ["./entrypoint.sh"]

@@ -3,16 +3,21 @@ on:
   pull_request:
 
 jobs:
-  build-test:
+  sanity-test:
+    name: "Sanity Test"
     runs-on: ${{ matrix.os }}
     strategy:
-        matrix:
-            os: [ubuntu-20.04]
+      matrix:
+        os: [centos-8.2-linux-4.18]
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
-        with:
-          submodules: true
-      - name: Run Tracee sanity tests
-        run: |
-          make sanity
+    - name: Checkout Code
+      uses: actions/checkout@v2
+      with:
+        submodules: true
+    - name: Setup Go
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.16
+    - name: Run Tracee sanity tests
+      run: |
+        make sanity
