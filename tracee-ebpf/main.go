@@ -23,14 +23,13 @@ import (
 	cli "github.com/urfave/cli/v2"
 )
 
+//go:embed "dist/tracee.bpf/*"
+var embeddedBundle embed.FS
+
 var debug bool
 var traceeInstallPath string
 var buildPolicy string
 
-// These vars are supposed to be injected at build time
-//go:embed "dist/tracee.bpf/*"
-//go:embed "dist/tracee.bpf.core.o"
-var bpfBundleInjected embed.FS
 var version string
 
 func main() {
@@ -180,7 +179,8 @@ func main() {
 			// 1. external BPF file given and BTF (vmlinux or env) exists: always load BPF as CO-RE
 			// 2. external BPF file given and no BTF exists: it is a non CO-RE BPF, no need to build
 			// 3. no external BPF file given and BTF (vmlinux or env) exists: load embedded BPF as CO-RE
-			// 4. no external BPF file given and no BTF exists: build non CO-RE BPF
+			// 4. no external BPF file given and no vmlinux BTF available: check embedded BTF files
+			// 5. no external BPF file given, no vmlinux BTF and no embedded BTF: build non CO-RE BPF
 
 			if d.bpfenv { // external BPF file given
 				if debug {
@@ -210,15 +210,35 @@ func main() {
 					}
 					bpfFilePath = "embedded-core"
 					bpfBytes, err = unpackCOREBinary()
-				} else { // build non CO-RE BPF
-					if debug {
-						fmt.Println("BPF: no BTF file was found or provided, building BPF object")
+					if err != nil {
+						return fmt.Errorf("could not unpack embedded CO-RE eBPF object: %v", err)
 					}
-					if bpfFilePath, err = getBPFObjectPath(); err != nil {
-						return err
-					}
-					if bpfBytes, err = ioutil.ReadFile(bpfFilePath); err != nil {
-						return err
+				} else {
+					// check embedded BTFHub to use CO-RE
+					unpackBTFFile := filepath.Join(traceeInstallPath, "/tracee.btf")
+					err = unpackBTFHub(unpackBTFFile, OSInfo)
+					if err != nil {
+						// no other solution than to build non CO-RE object
+						if debug {
+							fmt.Println("BPF: no BTF file was found or provided, building BPF object")
+						}
+						if bpfFilePath, err = getBPFObjectPath(); err != nil {
+							return err
+						}
+						if bpfBytes, err = ioutil.ReadFile(bpfFilePath); err != nil {
+							return err
+						}
+					} else {
+						// embedded BTF file found and extracted, use it with CO-RE embedded obj
+						if debug {
+							fmt.Printf("BTF: using BTF file from embedded btfhub: %v\n", unpackBTFFile)
+						}
+						cfg.BTFObjPath = unpackBTFFile
+						bpfFilePath = "embedded-core"
+						bpfBytes, err = unpackCOREBinary()
+						if err != nil {
+							return fmt.Errorf("could not unpack embedded CO-RE eBPF object: %v", err)
+						}
 					}
 				}
 			}
@@ -1121,12 +1141,16 @@ func getBPFObjectPath() (string, error) {
 	return bpfObjFilePath, nil
 }
 
+// unpackCOREBinary unpacks tracee.bpf.core.o as an array of bytes
 func unpackCOREBinary() ([]byte, error) {
-	b, err := bpfBundleInjected.ReadFile("dist/tracee.bpf.core.o")
+	if !coreEmbedded {
+		return nil, fmt.Errorf("there is no embedded CO-RE eBPF object available")
+	}
+
+	b, err := embeddedCORE.ReadFile("dist/tracee.bpf.core.o")
 	if err != nil {
 		return nil, err
 	}
-
 	if debug {
 		fmt.Println("unpacked CO:RE bpf object file into memory")
 	}
@@ -1137,7 +1161,7 @@ func unpackCOREBinary() ([]byte, error) {
 // unpackBPFBundle unpacks the bundle into the provided directory
 func unpackBPFBundle(dir string) error {
 	basePath := "dist/tracee.bpf"
-	files, err := bpfBundleInjected.ReadDir(basePath)
+	files, err := embeddedBundle.ReadDir(basePath)
 	if err != nil {
 		return fmt.Errorf("error reading embedded bpf bundle: %s", err.Error())
 	}
@@ -1148,7 +1172,7 @@ func unpackBPFBundle(dir string) error {
 		}
 		defer outFile.Close()
 
-		f, err := bpfBundleInjected.Open(filepath.Join(basePath, f.Name()))
+		f, err := embeddedBundle.Open(filepath.Join(basePath, f.Name()))
 		if err != nil {
 			return fmt.Errorf("error opening bpf bundle file: %s", err.Error())
 		}
@@ -1158,6 +1182,45 @@ func unpackBPFBundle(dir string) error {
 			return fmt.Errorf("error copying bpf file: %s", err.Error())
 		}
 	}
+
+	return nil
+}
+
+// unpackBTFHub unpacks tailored, to the compiled eBPF object, BTF files for kernel supported by BTFHub
+func unpackBTFHub(outFilePath string, OSInfo *helpers.OSInfo) error {
+	if !btfEmbedded {
+		return fmt.Errorf("there are no embedded BTF files available")
+	}
+
+	var btfFilePath string
+
+	osId := OSInfo.GetOSReleaseFieldValue(helpers.OS_ID)
+	versionId := strings.Replace(OSInfo.GetOSReleaseFieldValue(helpers.OS_VERSION_ID), "\"", "", -1)
+	kernelRelease := OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE)
+	arch := OSInfo.GetOSReleaseFieldValue(helpers.OS_ARCH)
+
+	if err := os.MkdirAll(filepath.Dir(outFilePath), 0); err != nil {
+		return fmt.Errorf("could not create temp dir: %s", err.Error())
+	}
+
+	btfFilePath = fmt.Sprintf("dist/btfhub/%s/%s/%s/%s.btf", osId, versionId, arch, kernelRelease)
+	btfFile, err := embeddedBTF.Open(btfFilePath)
+	if err != nil {
+		return fmt.Errorf("error opening embedded btfhub file: %s", err.Error())
+	}
+	defer btfFile.Close()
+
+	outFile, err := os.Create(outFilePath)
+	if err != nil {
+		return fmt.Errorf("could not create btf file: %s", err.Error())
+	}
+	defer outFile.Close()
+
+	if _, err := io.Copy(outFile, btfFile); err != nil {
+		return fmt.Errorf("error copying embedded btfhub file: %s", err.Error())
+
+	}
+
 	return nil
 }
 

@@ -1,5 +1,8 @@
 .PHONY: all
-all: build bpf
+all:
+	$(MAKE) bpf
+	$(MAKE) btfhub
+	$(MAKE) build
 
 # tools:
 CMD_LLC ?= llc
@@ -18,6 +21,7 @@ VERSION ?= $(if $(RELEASE_TAG),$(RELEASE_TAG),$(notdir $(LAST_GIT_TAG)))
 # inputs and outputs:
 OUT_DIR ?= dist
 GO_SRC := $(shell find . -type f -name '*.go')
+GO_BUILD_TAGS = core
 OUT_BIN := $(OUT_DIR)/tracee-ebpf
 BPF_SRC := tracee/tracee.bpf.c
 OUT_BPF := $(OUT_DIR)/tracee.bpf.$(subst .,_,$(KERN_RELEASE)).$(subst .,_,$(VERSION)).o
@@ -28,11 +32,18 @@ LIBBPF_SRC := 3rdparty/libbpf/src
 LIBBPF_HEADERS := $(OUT_DIR)/libbpf/usr/include
 LIBBPF_OBJ := $(OUT_DIR)/libbpf/libbpf.a
 OS_RELEASE_FILE := /etc/os-release
-
-# static build:
-ifdef STATIC
-CGO_EXT_LDFLAGS += -static
+# env variables
+STATIC ?= 0
+BTFHUB ?= 0
+ifeq ($(BTFHUB), 1)
+GO_BUILD_TAGS := $(GO_BUILD_TAGS),btfhub
 endif
+OUT_BTFHUB := $(OUT_DIR)/btfhub
+ifeq ($(STATIC), 1)
+CGO_EXT_LDFLAGS += -static
+GO_BUILD_TAGS := $(GO_BUILD_TAGS),netgo
+endif
+# docker
 OUT_DOCKER ?= tracee
 DOCKER_BUILDER ?= tracee-builder
 # DOCKER_BUILDER_KERN_SRC(/BLD) is where the docker builder looks for kernel headers
@@ -41,7 +52,7 @@ DOCKER_BUILDER_KERN_SRC ?= $(if $(shell readlink -f $(KERN_SRC_PATH)),$(shell re
 # DOCKER_BUILDER_KERN_SRC_MNT is the kernel headers directory to mount into the docker builder container. DOCKER_BUILDER_KERN_SRC should usually be a descendent of this path.
 DOCKER_BUILDER_KERN_SRC_MNT ?= $(dir $(DOCKER_BUILDER_KERN_SRC))
 LINUX_VERSION_CODE := $(shell uname -r | awk '{split($$0,a,"."); split(a[3], b, "-"); print lshift(a[1], 16) + lshift(a[2],8) + b[1];}')
-
+# distribution
 DIST_ID_LIKE := $(shell grep -m 1 'ID_LIKE=' $(OS_RELEASE_FILE) | cut -d '=' -f '2' | sed 's/\"//g')
 VERSION_ID := $(shell grep -m 1 'VERSION_ID=' $(OS_RELEASE_FILE) | cut -d '=' -f '2' | sed 's/\"//g')
 ifneq (,$(findstring rhel,$(DIST_ID_LIKE)))
@@ -52,6 +63,8 @@ else
 	RHEL_RELEASE_CODE := 0
 endif
 
+# targets
+
 $(OUT_DIR):
 	mkdir -p $@
 
@@ -61,8 +74,10 @@ build: $(OUT_BIN)
 go_env := GOOS=linux GOARCH=$(ARCH:x86_64=amd64) CC=$(CMD_CLANG) CGO_CFLAGS="-I $(abspath $(LIBBPF_HEADERS))" CGO_LDFLAGS="$(abspath $(LIBBPF_OBJ))"
 ifndef DOCKER
 $(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(OUT_BPF_CORE) $(filter-out *_test.go,$(GO_SRC)) $(BPF_BUNDLE) | $(OUT_DIR)
-	$(go_env) go build -tags netgo -v -o $(OUT_BIN) \
-	-ldflags "-w -extldflags \"$(CGO_EXT_LDFLAGS)\" -X main.version=$(VERSION)"
+	$(go_env) go build \
+		-tags $(GO_BUILD_TAGS) \
+		-v -o $(OUT_BIN) \
+		-ldflags "-w -extldflags \"$(CGO_EXT_LDFLAGS)\" -X main.version=$(VERSION)"
 else
 $(OUT_BIN): $(DOCKER_BUILDER) | $(OUT_DIR)
 	$(call docker_builder_make,$@ VERSION=$(VERSION))
@@ -202,3 +217,9 @@ docker:
 .PHONY: docker-slim
 docker-slim:
 	$(CMD_DOCKER) build --build-arg VERSION=$(VERSION) -t $(OUT_DOCKER):slim --build-arg BASE=slim .
+
+.PHONY: btfhub
+btfhub:
+ifeq ($(BTFHUB), 1)
+	./3rdparty/btfhub.sh
+endif
