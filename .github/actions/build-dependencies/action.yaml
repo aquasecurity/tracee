@@ -1,0 +1,34 @@
+name: Build Dependencies
+description: |
+  Install build dependencies to test and compile tracee artifacts
+inputs:
+  go-version:
+    description: Version of Go
+    required: true
+    default: "1.16"
+  opa-version:
+    description: Version of OPA
+    required: true
+    default: "v0.35.0"
+runs:
+  using: composite
+  steps:
+    - name: Setup Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ inputs.go-version }}
+    - name: Install Compilers
+      run: |
+        sudo apt-get update
+        sudo apt-get install --yes build-essential pkgconf libelf-dev llvm-12 clang-12
+        for tool in "clang" "llc" "llvm-strip"
+        do
+          sudo rm -f /usr/bin/$tool
+          sudo ln -s /usr/bin/$tool-12 /usr/bin/$tool
+        done
+      shell: bash
+    - name: Install OPA
+      run: |
+        sudo curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/${{ inputs.opa-version }}/opa_linux_amd64
+        sudo chmod 755 /usr/bin/opa
+      shell: bash

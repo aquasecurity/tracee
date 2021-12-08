@@ -12,6 +12,7 @@ func getProcNamespaces() []string {
 
 // FIXME https://github.com/aquasecurity/tracee/issues/1228
 func TestFetchInitNamespaces(t *testing.T) {
+	t.Skip("This is an integration test that requires root permissions")
 	initNamespacesArgs := getInitNamespaceArguments()
 	initNamespaces := make(map[string]uint32)
 	for _, arg := range initNamespacesArgs {
