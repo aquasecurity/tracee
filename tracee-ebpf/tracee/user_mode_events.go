@@ -9,7 +9,7 @@
 package tracee
 
 import (
-	"github.com/aquasecurity/tracee/tracee-ebpf/external"
+	"github.com/aquasecurity/tracee/pkg/external"
 	"io/ioutil"
 	"os"
 	"path/filepath"

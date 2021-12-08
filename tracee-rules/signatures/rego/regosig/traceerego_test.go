@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	tracee "github.com/aquasecurity/tracee/tracee-ebpf/external"
+	tracee "github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
 	"github.com/aquasecurity/tracee/tracee-rules/signatures/rego/regosig"
 	"github.com/aquasecurity/tracee/tracee-rules/signatures/signaturestest"
