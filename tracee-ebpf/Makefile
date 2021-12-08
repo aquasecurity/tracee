@@ -164,7 +164,7 @@ $(DOCKER_BUILDER) $(docker_builder_file) &: Dockerfile.builder | $(OUT_DIR) chec
 define docker_builder_make
 	$(CMD_DOCKER) run --rm \
 	-v $(abspath $(DOCKER_BUILDER_KERN_SRC_MNT)):$(DOCKER_BUILDER_KERN_SRC_MNT) \
-	-v $(abspath .):/tracee/tracee-ebpf \
+	-v $(abspath ./..):/tracee \
 	-w /tracee/tracee-ebpf \
 	--entrypoint make $(DOCKER_BUILDER) KERN_BLD_PATH=$(DOCKER_BUILDER_KERN_BLD) KERN_SRC_PATH=$(DOCKER_BUILDER_KERN_SRC) $(1)
 endef

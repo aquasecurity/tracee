@@ -1,14 +1,16 @@
 package tracee
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func getProcNamespaces() []string {
 	return []string{"mnt", "cgroup", "pid", "pid_for_children", "time", "time_for_children", "user", "ipc", "net", "uts"}
 }
 
+// FIXME https://github.com/aquasecurity/tracee/issues/1228
 func TestFetchInitNamespaces(t *testing.T) {
 	initNamespacesArgs := getInitNamespaceArguments()
 	initNamespaces := make(map[string]uint32)
