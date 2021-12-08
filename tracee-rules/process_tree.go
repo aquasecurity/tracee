@@ -29,7 +29,7 @@ type ProcessInfo struct {
 }
 
 type ContainerProcessTree struct {
-	tree map[int]ProcessInfo
+	tree map[int]*ProcessInfo
 	root *ProcessInfo
 }
 
@@ -38,11 +38,11 @@ func (tree *ContainerProcessTree) GetProcessInfo(processID int) (*ProcessInfo, e
 	if !ok {
 		return nil, fmt.Errorf("no process with given ID is recorded")
 	}
-	return &processInfo, nil
+	return processInfo, nil
 }
 
 type ProcessTree struct {
-	tree map[string]ContainerProcessTree
+	tree map[string]*ContainerProcessTree
 }
 
 func (tree *ProcessTree) getContainerTree(containerID string) (*ContainerProcessTree, error) {
@@ -50,7 +50,7 @@ func (tree *ProcessTree) getContainerTree(containerID string) (*ContainerProcess
 	if !ok {
 		return nil, fmt.Errorf("no container with given ID is recorded")
 	}
-	return &containerTree, nil
+	return containerTree, nil
 }
 
 func (tree *ProcessTree) ProcessExec(event external.Event) error {
@@ -102,18 +102,17 @@ func (tree *ProcessTree) ProcessFork(event external.Event) error {
 			Ppid: event.ParentProcessID,
 			Tid:  event.HostThreadID,
 		},
-		StartTime:     event.Timestamp,
-		ParentProcess: fatherProcess,
+		StartTime: event.Timestamp,
 	}
-	fatherProcess.ChildProcesses = append(fatherProcess.ChildProcesses, &process) // Problematic because will point to the ProcessInfo in the stack and not in the map
+	fatherProcess.ChildProcesses = append(fatherProcess.ChildProcesses, &process)
 	containerTree, err := tree.getContainerTree(event.ContainerID)
 	if err != nil {
-		tree.tree[event.ContainerID] = ContainerProcessTree{
-			root: &process, // Problematic because will point to the ProcessInfo in the stack and not in the map
+		containerTree = &ContainerProcessTree{
+			root: &process,
 		}
-		containerTree, _ = tree.getContainerTree(event.ContainerID)
+		tree.tree[event.ContainerID] = containerTree
 	}
-	containerTree.tree[event.ParentProcessID] = process
+	containerTree.tree[event.ParentProcessID] = &process
 	return nil
 }
 
