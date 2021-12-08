@@ -100,6 +100,7 @@ const (
 	RegisterChrdevEventID
 	SharedObjectLoadedEventID
 	DoInitModuleEventID
+	SocketAcceptEventID
 	MaxCommonEventID
 )
 
@@ -5675,5 +5676,25 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "unsigned long", Name: "prev_next"},
 			{Type: "unsigned long", Name: "next_prev"},
 		},
+	},
+	SocketAcceptEventID: {
+		ID32Bit:  sys32undefined,
+		Name:     "socket_accept",
+		Internal: false,
+		Probes: []probe{
+			{event: "raw_syscalls:sys_enter", attach: rawTracepoint, fn: "tracepoint__raw_syscalls__sys_enter"},
+			{event: "raw_syscalls:sys_exit", attach: rawTracepoint, fn: "tracepoint__raw_syscalls__sys_exit"},
+		},
+		Dependencies: dependencies{
+			events: []eventDependency{{eventID: SecuritySocketAcceptEventID}},
+			tailCalls: []tailCall{
+				{mapName: "sys_exit_tails", mapIdx: uint32(AcceptEventID), progName: "syscall__accept4"},
+				{mapName: "sys_exit_tails", mapIdx: uint32(Accept4EventID), progName: "syscall__accept4"},
+			},
+		},
+		Params: []trace.ArgMeta{
+			{Type: "int", Name: "sockfd"},
+			{Type: "struct sockaddr*", Name: "local_addr"},
+			{Type: "struct sockaddr*", Name: "remote_addr"}},
 	},
 }
