@@ -4,6 +4,8 @@ import (
 	"bytes"
 	_ "embed"
 
+	regosig "github.com/aquasecurity/tracee/signatures/rego/regosig"
+
 	"io/fs"
 	"io/ioutil"
 	"log"
@@ -12,11 +14,10 @@ import (
 	"plugin"
 	"strings"
 
-	"github.com/aquasecurity/tracee/tracee-rules/signatures/rego/regosig"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
-//go:embed signatures/rego/helpers.rego
+//go:embed helpers.rego
 var regoHelpersCode string
 
 func getSignatures(target string, partialEval bool, rulesDir string, rules []string, aioEnabled bool) ([]types.Signature, error) {

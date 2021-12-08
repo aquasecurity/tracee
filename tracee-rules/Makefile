@@ -11,7 +11,7 @@ GO_SRC := $(shell find . -type f -name '*.go')
 GOSIGNATURES_DIR ?= ../signatures/golang
 GOSIGNATURES_SRC := $(shell find $(GOSIGNATURES_DIR) -type f -name '*.go' ! -name '*_test.go' ! -path '$(GOSIGNATURES_DIR)/examples/*')
 OUT_GOSIGNATURES := $(OUT_RULES)/builtin.so
-REGO_SIGNATURES_DIR ?= signatures/rego
+REGO_SIGNATURES_DIR ?= ../signatures/rego
 REGO_SIGNATURES_SRC := $(shell find $(REGO_SIGNATURES_DIR) -type f -name '*.rego' ! -name '*_test.rego' ! -path '$(REGO_SIGNATURES_DIR)/examples/*')
 DOCKER_BUILDER ?= tracee-rules-builder
 
