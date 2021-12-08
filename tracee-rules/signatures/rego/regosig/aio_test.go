@@ -6,9 +6,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/aquasecurity/tracee/signatures/signaturestest"
+
 	tracee "github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-rules/signatures/rego/regosig"
-	"github.com/aquasecurity/tracee/tracee-rules/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/stretchr/testify/assert"
