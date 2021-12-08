@@ -26,6 +26,7 @@ type ProcessInfo struct {
 	StartTime       int
 	ParentProcess   *ProcessInfo
 	ChildProcesses  []*ProcessInfo
+	IsAlive         bool
 }
 
 type ContainerProcessTree struct {
@@ -103,6 +104,7 @@ func (tree *ProcessTree) ProcessFork(event external.Event) error {
 			Tid:  event.HostThreadID,
 		},
 		StartTime: event.Timestamp,
+		IsAlive:   true,
 	}
 	fatherProcess.ChildProcesses = append(fatherProcess.ChildProcesses, &process)
 	containerTree, err := tree.getContainerTree(event.ContainerID)
@@ -113,6 +115,29 @@ func (tree *ProcessTree) ProcessFork(event external.Event) error {
 		tree.tree[event.ContainerID] = containerTree
 	}
 	containerTree.tree[event.ParentProcessID] = &process
+	return nil
+}
+
+func (tree *ProcessTree) ProcessExit(event external.Event) error {
+	containerTree, err := tree.getContainerTree(event.ContainerID)
+	if err != nil {
+		return err
+	}
+	process, err := containerTree.GetProcessInfo(event.HostProcessID)
+	if err != nil {
+		return err
+	}
+	process.IsAlive = false
+	if len(process.ChildProcesses) == 0 {
+		cp := process
+		for {
+			if cp.IsAlive {
+				break
+			}
+			delete(containerTree.tree, cp.InHostIDs.Pid)
+			cp = cp.ParentProcess
+		}
+	}
 	return nil
 }
 
