@@ -56,11 +56,35 @@ func (tree *ProcessTree) getContainerTree(containerID string) (*ContainerProcess
 func (tree *ProcessTree) ProcessExec(event external.Event) error {
 	containerTree, _ := tree.getContainerTree(event.ContainerID)
 	process, _ := containerTree.GetProcessInfo(event.ParentProcessID)
-	process.Cmd = event.Args[2].Value.([]string)
+	execArgv, err := getArgumentByName(event, "argv")
+	if err != nil {
+		return err
+	}
+	var ok bool
+	process.Cmd, ok = execArgv.Value.([]string)
+	if !ok {
+		return fmt.Errorf("invalid argument type of argument '%s%", execArgv.Name)
+	}
+	execPathName, err := getArgumentByName(event, "pathname")
+	if err != nil {
+		return err
+	}
+	pathName, ok := execPathName.Value.(string)
+	if !ok {
+		return fmt.Errorf("invalid argument type of argument '%s%", execArgv.Name)
+	}
+	execCtime, err := getArgumentByName(event, "ctime")
+	if err != nil {
+		return err
+	}
+	ctime, ok := execCtime.Value.(int)
+	if !ok {
+		return fmt.Errorf("invalid argument type of argument '%s%", execArgv.Name)
+	}
 	process.ExecutionBinary = BinaryInfo{
-		Path:  event.Args[1].Value.(string),
+		Path:  pathName,
 		Hash:  "",
-		Ctime: event.Args[7].Value.(int),
+		Ctime: ctime,
 	}
 	return nil
 }
@@ -107,4 +131,14 @@ func (tree *ProcessTree) GetContainerRoot(containerID string) (*ProcessInfo, err
 		return nil, err
 	}
 	return containerTree.root, nil
+}
+
+// getArgumentByName fetches the argument in event with "Name" that matches argName.
+func getArgumentByName(event external.Event, argName string) (external.Argument, error) {
+	for _, arg := range event.Args {
+		if arg.Name == argName {
+			return arg, nil
+		}
+	}
+	return external.Argument{}, fmt.Errorf("argument %s not found", argName)
 }
