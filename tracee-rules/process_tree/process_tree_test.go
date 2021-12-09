@@ -123,7 +123,12 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 		map[string]*ContainerProcessTree{
 			exitEvent.ContainerID: {
 				tree: map[int]*ProcessInfo{
-					exitEvent.HostProcessID: {IsAlive: true},
+					exitEvent.HostProcessID: {
+						IsAlive: true,
+						InHostIDs: ProcessIDs{
+							Tid: exitEvent.HostThreadID,
+						},
+					},
 				},
 			},
 		},
@@ -132,5 +137,5 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, tree.ProcessExit(exitEvent))
 	_, err = tree.GetProcessInfo(exitEvent.ContainerID, exitEvent.HostThreadID)
-	assert.ErrorIs(t, fmt.Errorf("no container with given ID is recorded"), err)
+	assert.Equal(t, err, fmt.Errorf("no container with given ID is recorded"))
 }
