@@ -16,8 +16,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	exampleRulesDir = "../signatures/rego"
+)
+
 func Test_getSignatures(t *testing.T) {
-	sigs, err := getSignatures(compile.TargetRego, false, "signatures/rego", []string{"TRC-2"}, false)
+	sigs, err := getSignatures(compile.TargetRego, false, exampleRulesDir, []string{"TRC-2"}, false)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(sigs))
 
@@ -104,7 +108,7 @@ func copyExampleSig(exampleName, destDir string) error {
 	var exampleDir string
 	extension := filepath.Ext(exampleName)
 	if extension == ".rego" {
-		exampleDir = "signatures/rego/%s"
+		exampleDir = fmt.Sprint(exampleRulesDir + "/%s")
 	} else {
 		return errors.New("unsupported signature type")
 	}

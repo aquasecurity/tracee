@@ -3,9 +3,6 @@ package main
 import (
 	"bytes"
 	_ "embed"
-
-	regosig "github.com/aquasecurity/tracee/signatures/rego/regosig"
-
 	"io/fs"
 	"io/ioutil"
 	"log"
@@ -14,11 +11,10 @@ import (
 	"plugin"
 	"strings"
 
+	embedded "github.com/aquasecurity/tracee"
+	"github.com/aquasecurity/tracee/signatures/rego/regosig"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
-
-//go:embed helpers.rego
-var regoHelpersCode string
 
 func getSignatures(target string, partialEval bool, rulesDir string, rules []string, aioEnabled bool) ([]types.Signature, error) {
 	if rulesDir == "" {
@@ -82,9 +78,9 @@ func findGoSigs(dir string) ([]types.Signature, error) {
 
 func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) ([]types.Signature, error) {
 	modules := make(map[string]string)
-	modules["helper.rego"] = regoHelpersCode
+	modules["helper.rego"] = embedded.RegoHelpersCode
 
-	regoHelpers := []string{regoHelpersCode}
+	regoHelpers := []string{embedded.RegoHelpersCode}
 	filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
