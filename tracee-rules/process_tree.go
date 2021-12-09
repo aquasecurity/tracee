@@ -34,8 +34,8 @@ type ContainerProcessTree struct {
 	root *ProcessInfo
 }
 
-func (tree *ContainerProcessTree) GetProcessInfo(processID int) (*ProcessInfo, error) {
-	processInfo, ok := tree.tree[processID]
+func (tree *ContainerProcessTree) GetProcessInfo(threadID int) (*ProcessInfo, error) {
+	processInfo, ok := tree.tree[threadID]
 	if !ok {
 		return nil, fmt.Errorf("no process with given ID is recorded")
 	}
@@ -56,7 +56,7 @@ func (tree *ProcessTree) getContainerTree(containerID string) (*ContainerProcess
 
 func (tree *ProcessTree) ProcessExec(event external.Event) error {
 	containerTree, _ := tree.getContainerTree(event.ContainerID)
-	process, _ := containerTree.GetProcessInfo(event.ParentProcessID)
+	process, _ := containerTree.GetProcessInfo(event.HostThreadID)
 	execArgv, err := getArgumentByName(event, "argv")
 	if err != nil {
 		return err
@@ -64,7 +64,7 @@ func (tree *ProcessTree) ProcessExec(event external.Event) error {
 	var ok bool
 	process.Cmd, ok = execArgv.Value.([]string)
 	if !ok {
-		return fmt.Errorf("invalid argument type of argument '%s%", execArgv.Name)
+		return fmt.Errorf("invalid type of argument '%s%", execArgv.Name)
 	}
 	execPathName, err := getArgumentByName(event, "pathname")
 	if err != nil {
@@ -72,7 +72,7 @@ func (tree *ProcessTree) ProcessExec(event external.Event) error {
 	}
 	pathName, ok := execPathName.Value.(string)
 	if !ok {
-		return fmt.Errorf("invalid argument type of argument '%s%", execArgv.Name)
+		return fmt.Errorf("invalid type of argument '%s%", execArgv.Name)
 	}
 	execCtime, err := getArgumentByName(event, "ctime")
 	if err != nil {
@@ -80,28 +80,36 @@ func (tree *ProcessTree) ProcessExec(event external.Event) error {
 	}
 	ctime, ok := execCtime.Value.(int)
 	if !ok {
-		return fmt.Errorf("invalid argument type of argument '%s%", execArgv.Name)
+		return fmt.Errorf("invalid type of argument '%s%", execArgv.Name)
 	}
 	process.ExecutionBinary = BinaryInfo{
 		Path:  pathName,
 		Hash:  "",
 		Ctime: ctime,
 	}
+	process.InContainerIDs.Pid = event.ProcessID
+	process.InContainerIDs.Tid = event.ThreadID
 	return nil
 }
 
 func (tree *ProcessTree) ProcessFork(event external.Event) error {
-	fatherProcess, _ := tree.GetProcessInfo(event.ContainerID, event.HostProcessID)
+	newProcessHostTIDArgument, err := getArgumentByName(event, "child_tid")
+	if err != nil {
+		return err
+	}
+	newProcessHostTID, ok := newProcessHostTIDArgument.Value.(int)
+	if !ok {
+		return fmt.Errorf("invalid type of argument '%s%", newProcessHostTIDArgument.Name)
+	}
+	fatherProcess, _ := tree.GetProcessInfo(event.ContainerID, newProcessHostTID)
 	process := ProcessInfo{
 		InHostIDs: ProcessIDs{
-			Pid:  event.HostProcessID,
-			Ppid: event.HostParentProcessID,
-			Tid:  event.HostThreadID,
+			Pid:  newProcessHostTID,
+			Ppid: event.HostProcessID,
+			Tid:  newProcessHostTID,
 		},
 		InContainerIDs: ProcessIDs{
-			Pid:  event.ProcessID,
-			Ppid: event.ParentProcessID,
-			Tid:  event.HostThreadID,
+			Ppid: event.ProcessID,
 		},
 		StartTime: event.Timestamp,
 		IsAlive:   true,
@@ -114,7 +122,7 @@ func (tree *ProcessTree) ProcessFork(event external.Event) error {
 		}
 		tree.tree[event.ContainerID] = containerTree
 	}
-	containerTree.tree[event.ParentProcessID] = &process
+	containerTree.tree[event.HostThreadID] = &process
 	return nil
 }
 
@@ -123,7 +131,7 @@ func (tree *ProcessTree) ProcessExit(event external.Event) error {
 	if err != nil {
 		return err
 	}
-	process, err := containerTree.GetProcessInfo(event.HostProcessID)
+	process, err := containerTree.GetProcessInfo(event.HostThreadID)
 	if err != nil {
 		return err
 	}
@@ -132,7 +140,7 @@ func (tree *ProcessTree) ProcessExit(event external.Event) error {
 	if len(process.ChildProcesses) == 0 {
 		cp := process
 		for {
-			delete(containerTree.tree, cp.InHostIDs.Pid)
+			delete(containerTree.tree, cp.InHostIDs.Tid)
 			if cp.ParentProcess == nil || cp.ParentProcess.IsAlive {
 				break
 			}
@@ -148,12 +156,12 @@ func (tree *ProcessTree) ProcessExit(event external.Event) error {
 	return nil
 }
 
-func (tree *ProcessTree) GetProcessInfo(containerID string, processID int) (*ProcessInfo, error) {
+func (tree *ProcessTree) GetProcessInfo(containerID string, threadID int) (*ProcessInfo, error) {
 	containerTree, err := tree.getContainerTree(containerID)
 	if err != nil {
 		return nil, err
 	}
-	return containerTree.GetProcessInfo(processID)
+	return containerTree.GetProcessInfo(threadID)
 }
 
 func (tree *ProcessTree) GetContainerRoot(containerID string) (*ProcessInfo, error) {
