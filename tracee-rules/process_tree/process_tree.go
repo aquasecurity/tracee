@@ -1,4 +1,4 @@
-package main
+package process_tree
 
 import (
 	"fmt"
