@@ -8,6 +8,8 @@ import (
 	"testing"
 )
 
+const TestContainerID = "a7f965fba4e145e02c99b1577febe0cb723a943d850278365994ac9b0190540e"
+
 func TestProcessTree_ProcessExec(t *testing.T) {
 	execCmd := []string{"ls"}
 	execBinaryPath := "/bin/busybox"
@@ -25,7 +27,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 		PIDNS:               4026532551,
 		ProcessName:         "ls",
 		HostName:            "aac1fa476fcd",
-		ContainerID:         "a7f965fba4e145e02c99b1577febe0cb723a943d850278365994ac9b0190540e",
+		ContainerID:         TestContainerID,
 		EventID:             1003,
 		EventName:           "sched_process_exec",
 		ArgsNum:             9,
@@ -74,7 +76,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 		PIDNS:               4026532551,
 		ProcessName:         "sh",
 		HostName:            "aac1fa476fcd",
-		ContainerID:         "a7f965fba4e145e02c99b1577febe0cb723a943d850278365994ac9b0190540e",
+		ContainerID:         TestContainerID,
 		EventID:             1002,
 		EventName:           "sched_process_fork",
 		ArgsNum:             4,
@@ -109,7 +111,7 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 		PIDNS:               4026532551,
 		ProcessName:         "ls",
 		HostName:            "aac1fa476fcd",
-		ContainerID:         "a7f965fba4e145e02c99b1577febe0cb723a943d850278365994ac9b0190540e",
+		ContainerID:         TestContainerID,
 		EventID:             1004,
 		EventName:           "sched_process_exit",
 		ArgsNum:             1,
@@ -119,23 +121,105 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 			{ArgMeta: external.ArgMeta{Name: "exit_code", Type: "long"}, Value: 0},
 		},
 	}
-	tree := ProcessTree{
-		map[string]*ContainerProcessTree{
-			exitEvent.ContainerID: {
-				tree: map[int]*ProcessInfo{
-					exitEvent.HostProcessID: {
-						IsAlive: true,
-						InHostIDs: ProcessIDs{
-							Tid: exitEvent.HostThreadID,
-						},
-					},
+	type testProcess struct {
+		isAlive bool
+		aErr    error
+	}
+
+	tests := []struct {
+		name      string
+		processes []testProcess // Each process in the list will be the father of the next process in the list
+	}{
+		{
+			name: "exit of root process of container",
+			processes: []testProcess{
+				{
+					isAlive: true,
+					aErr:    fmt.Errorf("no container with given ID is recorded"),
+				},
+			},
+		},
+		{
+			name: "exit of process with alive father",
+			processes: []testProcess{
+				{
+					isAlive: true,
+					aErr:    nil,
+				},
+				{
+					isAlive: true,
+					aErr:    fmt.Errorf("no process with given ID is recorded"),
+				},
+			},
+		},
+		{
+			name: "exit of process with dead father which is not root",
+			processes: []testProcess{
+				{
+					isAlive: true,
+					aErr:    nil,
+				},
+				{
+					isAlive: false,
+					aErr:    fmt.Errorf("no process with given ID is recorded"),
+				},
+				{
+					isAlive: true,
+					aErr:    fmt.Errorf("no process with given ID is recorded"),
+				},
+			},
+		},
+		{
+			name: "exit of process with dead father which is root",
+			processes: []testProcess{
+				{
+					isAlive: false,
+					aErr:    fmt.Errorf("no container with given ID is recorded"),
+				},
+				{
+					isAlive: true,
+					aErr:    fmt.Errorf("no container with given ID is recorded"),
 				},
 			},
 		},
 	}
-	_, err := tree.GetProcessInfo(exitEvent.ContainerID, exitEvent.HostThreadID)
-	require.NoError(t, err)
-	require.NoError(t, tree.ProcessExit(exitEvent))
-	_, err = tree.GetProcessInfo(exitEvent.ContainerID, exitEvent.HostThreadID)
-	assert.Equal(t, err, fmt.Errorf("no container with given ID is recorded"))
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			containerTree := ContainerProcessTree{
+				tree: map[int]*ProcessInfo{},
+			}
+			tree := ProcessTree{
+				tree: map[string]*ContainerProcessTree{
+					exitEvent.ContainerID: &containerTree,
+				},
+			}
+			// Build the container tree
+			for i, tp := range test.processes {
+				np := ProcessInfo{
+					IsAlive: tp.isAlive,
+					InHostIDs: ProcessIDs{
+						Tid: exitEvent.HostThreadID - (len(test.processes) - (i + 1)),
+					},
+				}
+				containerTree.tree[np.InHostIDs.Tid] = &np
+				if i != 0 {
+					var err error
+					np.ParentProcess, err = tree.GetProcessInfo(exitEvent.ContainerID, exitEvent.HostThreadID-(len(test.processes)-i))
+					require.NoError(t, err)
+					np.ParentProcess.ChildProcesses = append(np.ParentProcess.ChildProcesses, &np)
+				} else {
+					containerTree.root = &np
+				}
+			}
+
+			err := tree.ProcessExit(exitEvent)
+			require.NoError(t, err)
+			// Check that all nodes removed as expected
+			for i, tp := range test.processes {
+				_, err = tree.GetProcessInfo(exitEvent.ContainerID, exitEvent.HostThreadID-(len(test.processes)-(i+1)))
+				assert.Equal(t, tp.aErr, err)
+			}
+		})
+	}
 }
