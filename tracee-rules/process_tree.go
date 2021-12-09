@@ -128,13 +128,20 @@ func (tree *ProcessTree) ProcessExit(event external.Event) error {
 		return err
 	}
 	process.IsAlive = false
+	// Remove process and all dead ancestors so only processes with alive descendants will remain.
 	if len(process.ChildProcesses) == 0 {
 		cp := process
 		for {
-			if cp.IsAlive {
+			delete(containerTree.tree, cp.InHostIDs.Pid)
+			if cp.ParentProcess == nil || cp.ParentProcess.IsAlive {
 				break
 			}
-			delete(containerTree.tree, cp.InHostIDs.Pid)
+			for i, childProcess := range cp.ParentProcess.ChildProcesses {
+				if childProcess == cp {
+					cp.ParentProcess.ChildProcesses = append(cp.ParentProcess.ChildProcesses[:i],
+						cp.ParentProcess.ChildProcesses[i+1:]...)
+				}
+			}
 			cp = cp.ParentProcess
 		}
 	}
