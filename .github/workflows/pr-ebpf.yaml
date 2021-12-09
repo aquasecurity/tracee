@@ -27,8 +27,8 @@ jobs:
             exit 1
           fi
       - name: Build
-        run: make all DOCKER=1
+        run: DOCKER_BUILDKIT=1 make all DOCKER=1
       - name: Build CO:RE
-        run: make all DOCKER=1 CORE=y
+        run: DOCKER_BUILDKIT=1 make all DOCKER=1 CORE=y
       - name: Test
-        run: make test DOCKER=1
+        run: DOCKER_BUILDKIT=1 make test DOCKER=1
