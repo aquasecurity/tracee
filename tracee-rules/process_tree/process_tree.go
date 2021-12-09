@@ -64,7 +64,7 @@ func (tree *ProcessTree) ProcessExec(event external.Event) error {
 	var ok bool
 	process.Cmd, ok = execArgv.Value.([]string)
 	if !ok {
-		return fmt.Errorf("invalid type of argument '%s%", execArgv.Name)
+		return fmt.Errorf("invalid type of argument '%s'", execArgv.Name)
 	}
 	execPathName, err := getArgumentByName(event, "pathname")
 	if err != nil {
@@ -72,7 +72,7 @@ func (tree *ProcessTree) ProcessExec(event external.Event) error {
 	}
 	pathName, ok := execPathName.Value.(string)
 	if !ok {
-		return fmt.Errorf("invalid type of argument '%s%", execArgv.Name)
+		return fmt.Errorf("invalid type of argument '%s'", execArgv.Name)
 	}
 	execCtime, err := getArgumentByName(event, "ctime")
 	if err != nil {
@@ -80,7 +80,7 @@ func (tree *ProcessTree) ProcessExec(event external.Event) error {
 	}
 	ctime, ok := execCtime.Value.(int)
 	if !ok {
-		return fmt.Errorf("invalid type of argument '%s%", execArgv.Name)
+		return fmt.Errorf("invalid type of argument '%s'", execArgv.Name)
 	}
 	process.ExecutionBinary = BinaryInfo{
 		Path:  pathName,
@@ -99,7 +99,7 @@ func (tree *ProcessTree) ProcessFork(event external.Event) error {
 	}
 	newProcessHostTID, ok := newProcessHostTIDArgument.Value.(int)
 	if !ok {
-		return fmt.Errorf("invalid type of argument '%s%", newProcessHostTIDArgument.Name)
+		return fmt.Errorf("invalid type of argument '%s'", newProcessHostTIDArgument.Name)
 	}
 	fatherProcess, _ := tree.GetProcessInfo(event.ContainerID, newProcessHostTID)
 	process := ProcessInfo{
@@ -114,10 +114,13 @@ func (tree *ProcessTree) ProcessFork(event external.Event) error {
 		StartTime: event.Timestamp,
 		IsAlive:   true,
 	}
-	fatherProcess.ChildProcesses = append(fatherProcess.ChildProcesses, &process)
+	if fatherProcess != nil {
+		fatherProcess.ChildProcesses = append(fatherProcess.ChildProcesses, &process)
+	}
 	containerTree, err := tree.getContainerTree(event.ContainerID)
 	if err != nil {
 		containerTree = &ContainerProcessTree{
+			tree: make(map[int]*ProcessInfo),
 			root: &process,
 		}
 		tree.tree[event.ContainerID] = containerTree
@@ -141,7 +144,14 @@ func (tree *ProcessTree) ProcessExit(event external.Event) error {
 		cp := process
 		for {
 			delete(containerTree.tree, cp.InHostIDs.Tid)
-			if cp.ParentProcess == nil || cp.ParentProcess.IsAlive {
+			if cp.ParentProcess == nil {
+				delete(tree.tree, event.ContainerID)
+				if len(containerTree.tree) > 0 {
+					return fmt.Errorf("root process of container exited without children, but container still has recorded processes")
+				}
+				break
+			}
+			if cp.ParentProcess.IsAlive {
 				break
 			}
 			for i, childProcess := range cp.ParentProcess.ChildProcesses {
