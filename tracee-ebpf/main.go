@@ -1,7 +1,6 @@
 package main
 
 import (
-	"embed"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -17,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
+	embed "github.com/aquasecurity/tracee"
 	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
 	"github.com/syndtr/gocapability/capability"
@@ -27,10 +27,6 @@ var debug bool
 var traceeInstallPath string
 var buildPolicy string
 
-// These vars are supposed to be injected at build time
-//go:embed "dist/tracee.bpf/*"
-//go:embed "dist/tracee.bpf.core.o"
-var bpfBundleInjected embed.FS
 var version string
 
 func main() {
@@ -1122,7 +1118,7 @@ func getBPFObjectPath() (string, error) {
 }
 
 func unpackCOREBinary() ([]byte, error) {
-	b, err := bpfBundleInjected.ReadFile("dist/tracee.bpf.core.o")
+	b, err := embed.BPFBundleInjected.ReadFile("dist/tracee.bpf.core.o")
 	if err != nil {
 		return nil, err
 	}
@@ -1137,7 +1133,7 @@ func unpackCOREBinary() ([]byte, error) {
 // unpackBPFBundle unpacks the bundle into the provided directory
 func unpackBPFBundle(dir string) error {
 	basePath := "dist/tracee.bpf"
-	files, err := bpfBundleInjected.ReadDir(basePath)
+	files, err := embed.BPFBundleInjected.ReadDir(basePath)
 	if err != nil {
 		return fmt.Errorf("error reading embedded bpf bundle: %s", err.Error())
 	}
@@ -1148,7 +1144,7 @@ func unpackBPFBundle(dir string) error {
 		}
 		defer outFile.Close()
 
-		f, err := bpfBundleInjected.Open(filepath.Join(basePath, f.Name()))
+		f, err := embed.BPFBundleInjected.Open(filepath.Join(basePath, f.Name()))
 		if err != nil {
 			return fmt.Errorf("error opening bpf bundle file: %s", err.Error())
 		}

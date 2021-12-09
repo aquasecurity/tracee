@@ -51,7 +51,11 @@ build: $(OUT_BIN)
 go_env := GOOS=linux GOARCH=$(ARCH:x86_64=amd64) CC=$(CMD_CLANG) CGO_CFLAGS="-I $(abspath $(LIBBPF_HEADERS))" CGO_LDFLAGS="$(abspath $(LIBBPF_OBJ))"
 ifndef DOCKER
 $(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(OUT_BPF_CORE) $(filter-out *_test.go,$(GO_SRC)) $(BPF_BUNDLE) | $(OUT_DIR)
-	$(go_env) go build -tags netgo -v -o $(OUT_BIN) \
+	# workaround until Makefile.one becomes standard
+	mkdir -p ../dist/
+	cp -rfp ./dist/* ../dist/
+	# end of workaround
+	$(go_env) go build -tags ebpf,netgo -v -o $(OUT_BIN) \
 	-ldflags "-w -extldflags \"$(CGO_EXT_LDFLAGS)\" -X main.version=$(VERSION)"
 else
 $(OUT_BIN): $(DOCKER_BUILDER) | $(OUT_DIR)
@@ -75,6 +79,10 @@ bpf_bundle_dir := $(OUT_DIR)/tracee.bpf
 $(BPF_BUNDLE): $(BPF_SRC) $(LIBBPF_HEADERS)/bpf $(BPF_HEADERS)
 	mkdir -p $(bpf_bundle_dir)
 	cp $$(find $^ -type f) $(bpf_bundle_dir)
+	# workaround until Makefile.one becomes standard
+	mkdir -p ../dist/
+	cp -rf $(bpf_bundle_dir) ../dist/
+	# end of workaround
 
 .PHONY: bpf
 bpf: $(OUT_BPF) $(OUT_BPF_CORE)
@@ -144,7 +152,8 @@ endif
 .PHONY: test
 ifndef DOCKER
 test: $(GO_SRC) $(LIBBPF_HEADERS) $(LIBBPF_OBJ)
-	$(go_env)	go test $(GOTEST_FLAGS) -v ./...
+	$(go_env)	go test -tags ebpf $(GOTEST_FLAGS) -v ./...
+
 else
 test: $(DOCKER_BUILDER)
 	$(call docker_builder_make,$@)
