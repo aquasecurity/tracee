@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	embedded "github.com/aquasecurity/tracee"
-	"github.com/aquasecurity/tracee/signatures/rego/regosig"
+	"github.com/aquasecurity/tracee/tracee-rules/regosig"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 

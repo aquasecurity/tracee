@@ -3,11 +3,9 @@ package rego
 import (
 	_ "embed"
 
-	"github.com/aquasecurity/tracee/signatures/rego/regosig"
-
-	"github.com/open-policy-agent/opa/compile"
-
+	"github.com/aquasecurity/tracee/tracee-rules/regosig"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"github.com/open-policy-agent/opa/compile"
 )
 
 var (
