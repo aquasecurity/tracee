@@ -267,7 +267,7 @@ func (engine *Engine) LoadSignature(signature types.Signature) (string, error) {
 func (engine *Engine) UnloadSignature(signatureId string) error {
 	var signature types.Signature
 	engine.signaturesMutex.RLock()
-	for sig, _ := range engine.signatures {
+	for sig := range engine.signatures {
 		metadata, _ := sig.GetMetadata()
 		if metadata.ID == signatureId {
 			signature = sig

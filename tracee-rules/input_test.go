@@ -102,7 +102,7 @@ func TestSetupTraceeJSONInputSource(t *testing.T) {
 		{
 			testName: "one event",
 			events: []tracee.Event{
-				tracee.Event{
+				{
 					EventName: "Yankees are the best team in baseball",
 				},
 			},
@@ -111,10 +111,10 @@ func TestSetupTraceeJSONInputSource(t *testing.T) {
 		{
 			testName: "two events",
 			events: []tracee.Event{
-				tracee.Event{
+				{
 					EventName: "Yankees are the best team in baseball",
 				},
-				tracee.Event{
+				{
 					EventName: "I hate the Red Sox",
 				},
 			},
@@ -183,7 +183,7 @@ func TestSetupTraceeGobInputSource(t *testing.T) {
 		{
 			testName: "one event",
 			events: []tracee.Event{
-				tracee.Event{
+				{
 					EventName: "Yankees are the best team in baseball",
 				},
 			},
@@ -192,10 +192,10 @@ func TestSetupTraceeGobInputSource(t *testing.T) {
 		{
 			testName: "two events",
 			events: []tracee.Event{
-				tracee.Event{
+				{
 					EventName: "Yankees are the best team in baseball",
 				},
-				tracee.Event{
+				{
 					EventName: "I hate the Red Sox so much",
 				},
 			},
@@ -204,13 +204,13 @@ func TestSetupTraceeGobInputSource(t *testing.T) {
 		{
 			testName: "three events",
 			events: []tracee.Event{
-				tracee.Event{
+				{
 					EventName: "Yankees are the best team in baseball",
 				},
-				tracee.Event{
+				{
 					EventName: "I hate the Red Sox so much",
 				},
-				tracee.Event{
+				{
 					EventName: "Aaron Judge is my idol",
 				},
 			},
