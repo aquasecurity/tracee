@@ -8,11 +8,11 @@ OUT_DIR ?= dist
 OUT_BIN := $(OUT_DIR)/tracee-rules
 OUT_RULES := $(OUT_DIR)/rules
 GO_SRC := $(shell find . -type f -name '*.go')
-GOSIGNATURES_DIR ?= signatures/golang
+GOSIGNATURES_DIR ?= ../signatures/golang
 GOSIGNATURES_SRC := $(shell find $(GOSIGNATURES_DIR) -type f -name '*.go' ! -name '*_test.go' ! -path '$(GOSIGNATURES_DIR)/examples/*')
 OUT_GOSIGNATURES := $(OUT_RULES)/builtin.so
-REGO_SIGNATURES_DIR ?= signatures/rego
-REGO_SIGNATURES_SRC := $(shell find $(REGO_SIGNATURES_DIR) -type f -name '*.rego' ! -name '*_test.rego' ! -path '$(REGO_SIGNATURES_DIR)/examples/*')
+REGO_SIGNATURES_DIR ?= ../signatures/rego
+REGO_SIGNATURES_SRC := $(shell find $(REGO_SIGNATURES_DIR) -type f -name '*.rego' ! -name '*_test.rego' ! -path '$(REGO_SIGNATURES_DIR)/examples/*' ! -name 'aio.rego')
 DOCKER_BUILDER ?= tracee-rules-builder
 
 $(OUT_DIR):
@@ -53,7 +53,7 @@ $(tools): % : check_%
 ifndef DOCKER
 test: $(GO_SRC) $(tools)
 	go test $(GOTEST_FLAGS) -v ./...
-	opa test . --verbose --ignore="examples" --ignore="dist" --ignore="benchmark"
+	opa test ../signatures/rego --verbose --ignore="examples" --ignore="dist" --ignore="benchmark"
 else
 test: $(DOCKER_BUILDER)
 	$(call docker_builder_make,$@)
