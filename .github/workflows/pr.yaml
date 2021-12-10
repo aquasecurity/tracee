@@ -52,6 +52,13 @@ jobs:
         run: |
           make -C tracee-ebpf/ all DOCKER=1
           make -C tracee-ebpf/ test DOCKER=1
+      - name: Test Single Makefile tracee-ebpf
+        run: |
+          rm -rf tracee-ebpf/dist
+          rm -rf dist
+          make -f Makefile.one tracee-ebpf
+          make -f Makefile.one clean
+          make -f Makefile.one test-tracee-ebpf
   test-tracee-rules:
     name: Test tracee-rules
     needs:
@@ -73,6 +80,17 @@ jobs:
       - name: Test tracee-rules in Docker
         run: |
           make -C tracee-rules/ test DOCKER=1
+      - name: Test Single Makefile tracee-rules
+        run: |
+          rm -rf tracee-rules/dist
+          rm -rf dist
+          make -f Makefile.one tracee-rules
+          make -f Makefile.one clean
+          make -f Makefile.one rules
+          make -f Makefile.one clean
+          make -f Makefile.one test-tracee-rules
+          make -f Makefile.one clean
+          make -f Makefile.one test-rules
   release-snapshot:
     name: Release Snapshot
     needs:
