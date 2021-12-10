@@ -1,8 +1,9 @@
 package main
 
 import (
-	"bytes"
 	_ "embed"
+
+	"bytes"
 	"io/fs"
 	"io/ioutil"
 	"log"

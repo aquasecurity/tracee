@@ -3,9 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/aquasecurity/tracee/signatures/helpers"
-
 	tracee "github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
