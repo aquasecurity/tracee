@@ -1,0 +1,133 @@
+.PHONY: all
+all:
+
+# tools
+
+MAKEFLAGS += --no-print-directory
+
+# tools
+
+CMD_DOCKER ?= docker
+
+check_%:
+	@command -v $* >/dev/null || (echo "missing required tool $*" ; exit 1)
+
+# usage
+
+.PHONY: help
+help:
+	@echo ""
+	@echo "To create an alpine-tracee-make container:"
+	@echo ""
+	@echo "    $ make -f builder/Makefile.docker alpine-prepare"
+	@echo ""
+	@echo "To create an ubuntu-tracee-make container:"
+	@echo ""
+	@echo "    $ make -f builder/Makefile.docker ubuntu-prepare"
+	@echo ""
+	@echo "To execute an alpine-tracee-make shell:"
+	@echo ""
+	@echo "    $ make -f builder/Makefile.docker alpine-shell"
+	@echo ""
+	@echo "To execute an ubuntu-tracee-make shell:"
+	@echo ""
+	@echo "    $ make -f builder/Makefile.docker ubuntu-shell"
+	@echo ""
+	@echo "Examples:"
+	@echo ""
+	@echo "    $ make -f builder/Makefile.docker ubuntu-make ARG=\"clean\""
+	@echo "    $ make -f builder/Makefile.docker ubuntu-make ARG=\"bpf-core\""
+	@echo "    $ make -f builder/Makefile.docker ubuntu-make ARG=\"tracee-ebpf\""
+	@echo ""
+	@echo "Tell tracee-make to do STATIC builds:"
+	@echo ""
+	@echo "    $ STATIC=0 make -f builder/Makefile.docker alpine-make ARG=\"tracee-ebpf\""
+	@echo "    $ STATIC=1 make -f builder/Makefile.docker alpine-make ARG=\"tracee-ebpf\""
+	@echo ""
+
+# requirements
+
+.PHONY: check_tree
+check_tree:
+	@if [ ! -d ./builder ]; then \
+		echo "you must be in the root directory"; \
+		exit 1; \
+	fi
+
+# create tracee-make
+
+UID = $(shell id -u)
+GID = $(shell id -g)
+PWD = $(shell pwd)
+
+ALPINE_MAKE_CONTNAME = alpine-tracee-make
+ALPINE_MAKE_DOCKERFILE = $(abspath $(shell find -name Dockerfile.alpine-tracee-make))
+
+.PHONY: alpine-prepare
+alpine-prepare: check_$(CMD_DOCKER) | check_tree
+	$(CMD_DOCKER) build \
+		-f $(ALPINE_MAKE_DOCKERFILE) \
+		-t $(ALPINE_MAKE_CONTNAME):latest \
+		--build-arg uid=$(UID) \
+		--build-arg gid=$(GID) \
+		.
+
+UBUNTU_MAKE_CONTNAME = ubuntu-tracee-make
+UBUNTU_MAKE_DOCKERFILE = $(abspath $(shell find -name Dockerfile.ubuntu-tracee-make))
+
+.PHONY: ubuntu-prepare
+ubuntu-prepare: check_$(CMD_DOCKER) | check_tree
+	$(CMD_DOCKER) build \
+		-f $(UBUNTU_MAKE_DOCKERFILE) \
+		-t $(UBUNTU_MAKE_CONTNAME):latest \
+		--build-arg uid=$(UID) \
+		--build-arg gid=$(GID) \
+		.
+
+# tracee-make's shell
+
+ifeq ($(STATIC), 1)
+    DOCKER_RUN_ENV = -e STATIC=1
+endif
+
+DOCKER_RUN_ARGS = run --rm --pid=host --privileged \
+		-v /etc/os-release:/etc/os-release-host:ro \
+		-v $(PWD):/tracee \
+		-v /lib/modules:/lib/modules:ro \
+		-v /usr/src:/usr/src:ro \
+		-v /tmp/tracee:/tmp/tracee \
+		-e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+		$(DOCKER_RUN_ENV)
+
+.PHONY: alpine-shell
+alpine-shell: check_$(CMD_DOCKER) | check_tree
+	$(CMD_DOCKER) $(DOCKER_RUN_ARGS) \
+		-it $(ALPINE_MAKE_CONTNAME) \
+		/bin/bash
+
+.PHONY: ubuntu-shell
+ubuntu-shell: check_$(CMD_DOCKER) | check_tree
+	$(CMD_DOCKER) $(DOCKER_RUN_ARGS) \
+		-it $(UBUNTU_MAKE_CONTNAME) \
+		/bin/bash
+
+# tracee-make replacing make
+
+.PHONY: alpine-make
+alpine-make: check_$(CMD_DOCKER) | check_tree
+ifneq ($(ARG),)
+	$(CMD_DOCKER) $(DOCKER_RUN_ARGS) \
+		-it $(ALPINE_MAKE_CONTNAME) \
+		$(MAKE) -f Makefile.one $(ARG)
+endif
+
+.PHONY: ubuntu-make
+ubuntu-make: check_$(CMD_DOCKER) | check_tree
+ifneq ($(ARG),)
+	$(CMD_DOCKER) $(DOCKER_RUN_ARGS) \
+		-it $(UBUNTU_MAKE_CONTNAME) \
+		$(MAKE) -f Makefile.one $(ARG)
+endif
+
+.PHONY: clean
+clean:

@@ -1,0 +1,31 @@
+FROM alpine:3.15
+
+ARG uid=1000
+ARG gid=1000
+
+RUN apk --no-cache update && \
+    apk --no-cache add sudo coreutils findutils && \
+    apk --no-cache add bash git curl && \
+    apk --no-cache add musl-dev libc6-compat && \
+    apk --no-cache add llvm clang go make gcc && \
+    apk --no-cache add linux-headers && \
+    apk --no-cache add elfutils-dev && \
+    apk --no-cache add libelf-static && \
+    apk --no-cache add zlib-static && \
+    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.33.1/opa_linux_amd64_static && \
+    chmod 755 /usr/bin/opa
+
+RUN export uid=$uid gid=$gid && \
+    mkdir -p /home/tracee && \
+    echo "tracee:x:${uid}:${gid}:Tracee,,,:/home/tracee:/bin/bash" >> /etc/passwd && \
+    echo "tracee:x:${gid}:" >> /etc/group && \
+    echo "tracee ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/tracee && \
+    chmod 0440 /etc/sudoers.d/tracee && \
+    chown ${uid}:${gid} -R /home/tracee && \
+    echo "export PS1=\"\u@\h[\w]$ \"" > /home/tracee/.bashrc && \
+    echo "alias ls=\"ls --color\"" >> /home/tracee/.bashrc && \
+    ln -s /home/tracee/.bashrc /home/tracee/.profile
+
+USER tracee
+ENV HOME /home/tracee
+WORKDIR /tracee
