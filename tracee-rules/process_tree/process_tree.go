@@ -29,6 +29,16 @@ type ProcessInfo struct {
 	IsAlive         bool
 }
 
+func (p *ProcessInfo) GetAncestors() []*ProcessInfo {
+	var ancestors []*ProcessInfo
+	anc := p.ParentProcess
+	for anc != nil {
+		ancestors = append(ancestors, anc)
+		anc = anc.ParentProcess
+	}
+	return ancestors
+}
+
 type ContainerProcessTree struct {
 	tree map[int]*ProcessInfo
 	root *ProcessInfo
