@@ -3,6 +3,7 @@ package engine
 import (
 	"errors"
 	"fmt"
+	"github.com/aquasecurity/tracee/tracee-rules/process_tree"
 	"io"
 	"log"
 	"reflect"
@@ -29,6 +30,7 @@ type Engine struct {
 	output          chan types.Finding
 	waitGroup       sync.WaitGroup
 	parsedEvents    bool
+	psTreeInput     chan types.Event
 }
 
 //EventSources is a bundle of input sources used to configure the Engine
@@ -50,6 +52,7 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 	engine.parsedEvents = parsedEvents
 	engine.signaturesMutex.Lock()
 	engine.signatures = make(map[types.Signature]chan types.Event)
+	engine.psTreeInput = make(chan types.Event)
 	engine.signaturesIndex = make(map[types.SignatureEventSelector][]types.Signature)
 	engine.signaturesMutex.Unlock()
 	for _, sig := range sigs {
@@ -108,6 +111,17 @@ func signatureStart(signature types.Signature, c chan types.Event, wg *sync.Wait
 	wg.Done()
 }
 
+func processTreeStart(c chan types.Event, wg *sync.WaitGroup) {
+	wg.Add(1)
+	for e := range c {
+		err := process_tree.ProcessEvent(e)
+		if err != nil {
+			log.Printf("error processing event in process tree: %v", err)
+		}
+	}
+	wg.Done()
+}
+
 // Start starts processing events and detecting signatures
 // it runs continuously until stopped by the done channel
 // once done, it cleans all internal resources, which means the engine is not reusable
@@ -118,6 +132,7 @@ func (engine *Engine) Start(done chan bool) {
 	for s, c := range engine.signatures {
 		go signatureStart(s, c, &engine.waitGroup)
 	}
+	go processTreeStart(engine.psTreeInput, &engine.waitGroup)
 	engine.signaturesMutex.RUnlock()
 	engine.consumeSources(done)
 }
@@ -183,7 +198,7 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 					engine.signaturesMutex.RUnlock()
 					continue
 				}
-
+				engine.psTreeInput <- traceeEvt
 				eventOrigin := analyzeEventOrigin(traceeEvt)
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName, Origin: eventOrigin}] {
 					engine.dispatchEvent(s, traceeEvt)
