@@ -54,8 +54,24 @@ func (tree *ProcessTree) getContainerTree(containerID string) (*ContainerProcess
 	return containerTree, nil
 }
 
+func (tree *ProcessTree) ProcessEvent(event external.Event) error {
+	switch event.EventName {
+	case "sched_process_fork":
+		return tree.ProcessFork(event)
+	case "sched_process_exec":
+		return tree.ProcessExec(event)
+	case "sched_process_exit":
+		return tree.ProcessExit(event)
+	default:
+		return nil
+	}
+}
+
 func (tree *ProcessTree) ProcessExec(event external.Event) error {
-	containerTree, _ := tree.getContainerTree(event.ContainerID)
+	containerTree, err := tree.getContainerTree(event.ContainerID)
+	if err != nil {
+		return err
+	}
 	process, _ := containerTree.GetProcessInfo(event.HostThreadID)
 	execArgv, err := getArgumentByName(event, "argv")
 	if err != nil {
@@ -125,7 +141,7 @@ func (tree *ProcessTree) ProcessFork(event external.Event) error {
 		}
 		tree.tree[event.ContainerID] = containerTree
 	}
-	containerTree.tree[event.HostThreadID] = &process
+	containerTree.tree[newProcessHostTID] = &process
 	return nil
 }
 
