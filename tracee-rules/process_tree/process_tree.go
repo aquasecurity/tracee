@@ -118,30 +118,33 @@ func (tree *ProcessTree) ProcessFork(event external.Event) error {
 		return fmt.Errorf("invalid type of argument '%s'", newProcessHostTIDArgument.Name)
 	}
 	fatherProcess, _ := tree.GetProcessInfo(event.ContainerID, newProcessHostTID)
-	process := ProcessInfo{
-		InHostIDs: ProcessIDs{
-			Pid:  newProcessHostTID,
-			Ppid: event.HostProcessID,
-			Tid:  newProcessHostTID,
-		},
-		InContainerIDs: ProcessIDs{
-			Ppid: event.ProcessID,
-		},
-		StartTime: event.Timestamp,
-		IsAlive:   true,
-	}
+	var newProcess ProcessInfo
 	if fatherProcess != nil {
-		fatherProcess.ChildProcesses = append(fatherProcess.ChildProcesses, &process)
+		newProcess = *fatherProcess
+		newProcess.ParentProcess = fatherProcess
+		fatherProcess.ChildProcesses = append(fatherProcess.ChildProcesses, &newProcess)
 	}
+	newProcess.ProcessName = event.ProcessName
+	newProcess.InHostIDs = ProcessIDs{
+		Pid:  newProcessHostTID,
+		Ppid: event.HostProcessID,
+		Tid:  newProcessHostTID,
+	}
+	newProcess.InContainerIDs = ProcessIDs{
+		Ppid: event.ProcessID,
+	}
+	newProcess.StartTime = event.Timestamp
+	newProcess.IsAlive = true
+
 	containerTree, err := tree.getContainerTree(event.ContainerID)
 	if err != nil {
 		containerTree = &ContainerProcessTree{
 			tree: make(map[int]*ProcessInfo),
-			root: &process,
+			root: &newProcess,
 		}
 		tree.tree[event.ContainerID] = containerTree
 	}
-	containerTree.tree[newProcessHostTID] = &process
+	containerTree.tree[newProcessHostTID] = &newProcess
 	return nil
 }
 
