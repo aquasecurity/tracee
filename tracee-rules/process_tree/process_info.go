@@ -9,7 +9,7 @@ type ProcessIDs struct {
 type BinaryInfo struct {
 	Path  string
 	Hash  string
-	Ctime int
+	Ctime uint
 }
 
 type ProcessInfo struct {

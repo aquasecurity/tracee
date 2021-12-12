@@ -55,7 +55,9 @@ func (tree *ProcessTree) processExec(event external.Event) error {
 	var ok bool
 	process.Cmd, ok = execArgv.Value.([]string)
 	if !ok {
-		return fmt.Errorf("invalid type of argument '%s'", execArgv.Name)
+		return fmt.Errorf("invalid type of argument '%s' - %T",
+			execArgv.Name,
+			execArgv.Name)
 	}
 	execPathName, err := getArgumentByName(event, "pathname")
 	if err != nil {
@@ -63,16 +65,21 @@ func (tree *ProcessTree) processExec(event external.Event) error {
 	}
 	pathName, ok := execPathName.Value.(string)
 	if !ok {
-		return fmt.Errorf("invalid type of argument '%s'", execArgv.Name)
+		return fmt.Errorf("invalid type of argument '%s' - %T",
+			execPathName.Name,
+			execPathName.Type)
 	}
 	execCtime, err := getArgumentByName(event, "ctime")
 	if err != nil {
 		return err
 	}
-	ctime, ok := execCtime.Value.(int)
+	ctime64, ok := execCtime.Value.(uint64)
 	if !ok {
-		return fmt.Errorf("invalid type of argument '%s'", execArgv.Name)
+		return fmt.Errorf("invalid type of argument '%s' - %T",
+			execCtime.Name,
+			execCtime.Type)
 	}
+	ctime := uint(ctime64)
 	process.ExecutionBinary = BinaryInfo{
 		Path:  pathName,
 		Hash:  "",
@@ -90,10 +97,13 @@ func (tree *ProcessTree) processFork(event external.Event) error {
 	if err != nil {
 		return err
 	}
-	newProcessHostTID, ok := newProcessHostTIDArgument.Value.(int)
+	newProcessHostTID32, ok := newProcessHostTIDArgument.Value.(int32)
 	if !ok {
-		return fmt.Errorf("invalid type of argument '%s'", newProcessHostTIDArgument.Name)
+		return fmt.Errorf("invalid type of argument '%s' - %T",
+			newProcessHostTIDArgument.Name,
+			newProcessHostTIDArgument.Value)
 	}
+	newProcessHostTID := int(newProcessHostTID32)
 	fatherProcess, _ := tree.GetProcessInfo(event.ContainerID, newProcessHostTID)
 	var newProcess ProcessInfo
 	if fatherProcess != nil {
