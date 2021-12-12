@@ -526,36 +526,37 @@ struct mount {
 
 /*================================= MAPS =====================================*/
 
-BPF_HASH(config_map, u32, u32);                         // various configurations
-BPF_HASH(kconfig_map, u32, u32);                        // kernel config variables
-BPF_HASH(chosen_events_map, u32, u32);                  // events chosen by the user
-BPF_HASH(traced_pids_map, u32, u32);                    // track traced pids
-BPF_HASH(new_pids_map, u32, u32);                       // track processes of newly executed binaries
-BPF_HASH(containers_map, u32, u8);                      // map cgroup id to container status {EXISTED, CREATED, STARTED}
-BPF_HASH(args_map, u64, args_t);                        // persist args between function entry and return
-BPF_HASH(syscall_data_map, u32, syscall_data_t);        // persist data during syscall execution
-BPF_HASH(inequality_filter, u32, u64);                  // filter events by some uint field either by < or >
-BPF_HASH(uid_filter, u32, u32);                         // filter events by UID, for specific UIDs either by == or !=
-BPF_HASH(pid_filter, u32, u32);                         // filter events by PID
-BPF_HASH(mnt_ns_filter, u64, u32);                      // filter events by mount namespace id
-BPF_HASH(pid_ns_filter, u64, u32);                      // filter events by pid namespace id
-BPF_HASH(uts_ns_filter, string_filter_t, u32);          // filter events by uts namespace name
-BPF_HASH(comm_filter, string_filter_t, u32);            // filter events by command name
-BPF_HASH(bin_args_map, u64, bin_args_t);                // persist args for send_bin funtion
-BPF_HASH(sys_32_to_64_map, u32, u32);                   // map 32bit to 64bit syscalls
-BPF_HASH(params_types_map, u32, u64);                   // encoded parameters types for event
-BPF_HASH(process_tree_map, u32, u32);                   // filter events by the ancestry of the traced process
-BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t);         // socket address to process context
-BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t);   // network identifier to process context
-BPF_ARRAY(file_filter, path_filter_t, 3);               // filter vfs_write events
-BPF_ARRAY(string_store, path_filter_t, 1);              // store strings from userspace
-BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);             // percpu global buffer variables
-BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS);           // holds offsets to bufs respectively
-BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);              // store programs for tail calls
-BPF_PROG_ARRAY(prog_array_tp, MAX_TAIL_CALL);           // store programs for tail calls
-BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);          // store programs for tail calls
-BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID);           // store programs for tail calls
-BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);  // store stack traces
+BPF_HASH(config_map, u32, u32);                                 // various configurations
+BPF_HASH(kconfig_map, u32, u32);                                // kernel config variables
+BPF_HASH(chosen_events_map, u32, u32);                          // events chosen by the user
+BPF_HASH(traced_pids_map, u32, u32);                            // track traced pids
+BPF_HASH(new_pids_map, u32, u32);                               // track processes of newly executed binaries
+BPF_HASH(containers_map, u32, u8);                              // map cgroup id to container status {EXISTED, CREATED, STARTED}
+BPF_HASH(args_map, u64, args_t);                                // persist args between function entry and return
+BPF_HASH(syscall_data_map, u32, syscall_data_t);                // persist data during syscall execution
+BPF_HASH(inequality_filter, u32, u64);                          // filter events by some uint field either by < or >
+BPF_HASH(uid_filter, u32, u32);                                 // filter events by UID, for specific UIDs either by == or !=
+BPF_HASH(pid_filter, u32, u32);                                 // filter events by PID
+BPF_HASH(mnt_ns_filter, u64, u32);                              // filter events by mount namespace id
+BPF_HASH(pid_ns_filter, u64, u32);                              // filter events by pid namespace id
+BPF_HASH(uts_ns_filter, string_filter_t, u32);                  // filter events by uts namespace name
+BPF_HASH(comm_filter, string_filter_t, u32);                    // filter events by command name
+BPF_HASH(bin_args_map, u64, bin_args_t);                        // persist args for send_bin funtion
+BPF_HASH(sys_32_to_64_map, u32, u32);                           // map 32bit to 64bit syscalls
+BPF_HASH(params_types_map, u32, u64);                           // encoded parameters types for event
+BPF_HASH(process_tree_map, u32, u32);                           // filter events by the ancestry of the traced process
+BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t);                 // socket address to process context
+BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t);           // network identifier to process context
+BPF_ARRAY(file_filter, path_filter_t, 3);                       // filter vfs_write events
+BPF_ARRAY(string_store, path_filter_t, 1);                      // store strings from userspace
+BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);                     // percpu global buffer variables
+BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS);                   // holds offsets to bufs respectively
+BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);                      // store programs for tail calls
+BPF_PROG_ARRAY(prog_array_tp, MAX_TAIL_CALL);                   // store programs for tail calls
+BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);                  // store programs for tail calls
+BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID);                   // store programs for tail calls
+BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);          // store stack traces
+BPF_PERCPU_ARRAY(sock_common_struct, struct sock_common, 1);    // struct sock_common holder
 
 /*================================== EVENTS ==================================*/
 
@@ -958,39 +959,64 @@ static inline struct mount *real_mount(struct vfsmount *mnt)
     return container_of(mnt, struct mount, mnt);
 }
 
-static __always_inline u32 get_inet_rcv_saddr(struct inet_sock *inet)
-{
-    return READ_KERN(inet->inet_rcv_saddr);
-}
-
-static __always_inline u32 get_inet_saddr(struct inet_sock *inet)
-{
-    return READ_KERN(inet->inet_saddr);
-}
-
-static __always_inline u32 get_inet_daddr(struct inet_sock *inet)
-{
-    return READ_KERN(inet->inet_daddr);
-}
-
 static __always_inline u16 get_inet_sport(struct inet_sock *inet)
 {
     return READ_KERN(inet->inet_sport);
 }
 
-static __always_inline u16 get_inet_num(struct inet_sock *inet)
-{
-    return READ_KERN(inet->inet_num);
-}
-
-static __always_inline u16 get_inet_dport(struct inet_sock *inet)
-{
-    return READ_KERN(inet->inet_dport);
-}
-
 static __always_inline struct sock* get_socket_sock(struct socket *socket)
 {
     return READ_KERN(socket->sk);
+}
+
+static __always_inline struct sock_common * get_sock_sk_common(struct sock *sock)
+{
+    // get sock_common from map to avoid reaching bpf stack limit
+    u32 idx = 0;
+    struct sock_common *sk_common = bpf_map_lookup_elem(&sock_common_struct, &idx);
+    if (sk_common == NULL)
+        return NULL;
+
+    #ifdef CORE
+        bpf_core_read((void *)sk_common, sizeof(struct sock_common), &sock->__sk_common);
+    #else
+        bpf_probe_read((void *)sk_common, sizeof(struct sock_common), &sock->__sk_common);
+    #endif
+
+    bpf_probe_read((void *)sk_common, sizeof(struct sock_common), &sock->__sk_common);
+    return sk_common;
+}
+
+static __always_inline u32 get_sock_rcv_saddr(struct sock *sock)
+{
+    struct sock_common *sk_common = get_sock_sk_common(sock);
+    if (sk_common == NULL)
+        return 0;
+    return sk_common->skc_rcv_saddr;
+}
+
+static __always_inline u32 get_sock_daddr(struct sock *sock)
+{
+    struct sock_common *sk_common = get_sock_sk_common(sock);
+    if (sk_common == NULL)
+        return 0;
+    return sk_common->skc_daddr;
+}
+
+static __always_inline u16 get_sock_num(struct sock *sock)
+{
+    struct sock_common *sk_common = get_sock_sk_common(sock);
+    if (sk_common == NULL)
+        return 0;
+    return sk_common->skc_num;
+}
+
+static __always_inline u16 get_sock_dport(struct sock *sock)
+{
+    struct sock_common *sk_common = get_sock_sk_common(sock);
+    if (sk_common == NULL)
+        return 0;
+    return sk_common->skc_dport;
 }
 
 static __always_inline u16 get_sock_family(struct sock *sock)
@@ -1863,19 +1889,17 @@ int trace_ret_##name(void *ctx)                                         \
 
 static __always_inline int get_network_details_from_sock_v4(struct sock *sk, net_conn_v4_t *net_details, int peer)
 {
-    struct inet_sock *inet = inet_sk(sk);
-
     if (!peer) {
-        net_details->local_address = get_inet_rcv_saddr(inet);
-        net_details->local_port = bpf_ntohs(get_inet_num(inet));
-        net_details->remote_address = get_inet_daddr(inet);
-        net_details->remote_port = get_inet_dport(inet);
+        net_details->local_address = get_sock_rcv_saddr(sk);
+        net_details->local_port = bpf_ntohs(get_sock_num(sk));
+        net_details->remote_address = get_sock_daddr(sk);
+        net_details->remote_port = get_sock_dport(sk);
     }
     else {
-        net_details->remote_address = get_inet_rcv_saddr(inet);
-        net_details->remote_port = bpf_ntohs(get_inet_num(inet));
-        net_details->local_address = get_inet_daddr(inet);
-        net_details->local_port = get_inet_dport(inet);
+        net_details->remote_address = get_sock_rcv_saddr(sk);
+        net_details->remote_port = bpf_ntohs(get_sock_num(sk));
+        net_details->local_address = get_sock_daddr(sk);
+        net_details->local_port = get_sock_dport(sk);
     }
 
     return 0;
@@ -1925,7 +1949,7 @@ static __always_inline int get_network_details_from_sock_v6(struct sock *sk, net
 
     if (peer) {
         net_details->local_address = get_sock_v6_daddr(sk);
-        net_details->local_port = get_inet_dport(inet);
+        net_details->local_port = get_sock_dport(sk);
         net_details->remote_address = addr;
         net_details->remote_port = get_inet_sport(inet);
     }
@@ -1933,7 +1957,7 @@ static __always_inline int get_network_details_from_sock_v6(struct sock *sk, net
         net_details->local_address = addr;
         net_details->local_port = get_inet_sport(inet);
         net_details->remote_address = get_sock_v6_daddr(sk);
-        net_details->remote_port = get_inet_dport(inet);
+        net_details->remote_port = get_sock_dport(sk);
     }
 
     return 0;
