@@ -17,6 +17,7 @@ func (tree *ProcessTree) GetProcessInfo(containerID string, threadID int) (*Proc
 	return containerTree.GetProcessInfo(threadID)
 }
 
+// GetContainerRoot return the first recorded process in a container
 func (tree *ProcessTree) GetContainerRoot(containerID string) (*ProcessInfo, error) {
 	containerTree, err := tree.getContainerTree(containerID)
 	if err != nil {
@@ -25,6 +26,7 @@ func (tree *ProcessTree) GetContainerRoot(containerID string) (*ProcessInfo, err
 	return containerTree.root, nil
 }
 
+// ProcessEvent update the process tree according to arriving event
 func (tree *ProcessTree) ProcessEvent(event external.Event) error {
 	switch event.EventName {
 	case "sched_process_fork":
@@ -38,6 +40,8 @@ func (tree *ProcessTree) ProcessEvent(event external.Event) error {
 	}
 }
 
+// processExec fill the fields of the process according to exec information.
+// It also fills the missing information from the fork.
 func (tree *ProcessTree) processExec(event external.Event) error {
 	containerTree, err := tree.getContainerTree(event.ContainerID)
 	if err != nil {
@@ -79,6 +83,8 @@ func (tree *ProcessTree) processExec(event external.Event) error {
 	return nil
 }
 
+// processFork add new process to the tree with all possible information available.
+// Notice that the new process ID and TID are not available, and will be collected only upon exec.
 func (tree *ProcessTree) processFork(event external.Event) error {
 	newProcessHostTIDArgument, err := getArgumentByName(event, "child_tid")
 	if err != nil {
@@ -119,6 +125,9 @@ func (tree *ProcessTree) processFork(event external.Event) error {
 	return nil
 }
 
+// processExit remove references of processes from the tree when the corresponding process exit without children, or
+// if the last child process of a process exits.
+// Notice that there is a danger of memory leak if there are lost events of sched_process_exit
 func (tree *ProcessTree) processExit(event external.Event) error {
 	containerTree, err := tree.getContainerTree(event.ContainerID)
 	if err != nil {
