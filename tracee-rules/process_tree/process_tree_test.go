@@ -46,7 +46,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 		},
 	}
 	tree := ProcessTree{
-		map[string]*ContainerProcessTree{
+		map[string]*containerProcessTree{
 			execEvent.ContainerID: {
 				tree: map[int]*ProcessInfo{
 					execEvent.HostProcessID: {},
@@ -54,7 +54,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 			},
 		},
 	}
-	require.NoError(t, tree.ProcessExec(execEvent))
+	require.NoError(t, tree.processExec(execEvent))
 	execProcess, err := tree.GetProcessInfo(execEvent.ContainerID, execEvent.HostThreadID)
 	require.NoError(t, err)
 	assert.Equal(t, execCmd, execProcess.Cmd)
@@ -91,9 +91,9 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 		},
 	}
 	tree := ProcessTree{
-		map[string]*ContainerProcessTree{},
+		map[string]*containerProcessTree{},
 	}
-	require.NoError(t, tree.ProcessFork(forkEvent))
+	require.NoError(t, tree.processFork(forkEvent))
 	_, err := tree.GetProcessInfo(forkEvent.ContainerID, newProcessTID)
 	assert.NoError(t, err)
 }
@@ -187,11 +187,11 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			containerTree := ContainerProcessTree{
+			containerTree := containerProcessTree{
 				tree: map[int]*ProcessInfo{},
 			}
 			tree := ProcessTree{
-				tree: map[string]*ContainerProcessTree{
+				tree: map[string]*containerProcessTree{
 					exitEvent.ContainerID: &containerTree,
 				},
 			}
@@ -214,7 +214,7 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 				}
 			}
 
-			err := tree.ProcessExit(exitEvent)
+			err := tree.processExit(exitEvent)
 			require.NoError(t, err)
 			// Check that all nodes removed as expected
 			for i, tp := range test.processes {
@@ -226,7 +226,7 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 }
 
 func TestProcessTree_ProcessEvent(t *testing.T) {
-	tree := ProcessTree{tree: map[string]*ContainerProcessTree{}}
+	tree := ProcessTree{tree: map[string]*containerProcessTree{}}
 
 	ptid := 22482
 	ppid := 22447
@@ -329,7 +329,7 @@ func TestProcessTree_ProcessEvent(t *testing.T) {
 	assert.Equal(t, execCmd, process.Cmd)
 	assert.Equal(t, execBinaryPath, process.ExecutionBinary.Path)
 	assert.Equal(t, execBinaryCtime, process.ExecutionBinary.Ctime)
-	err = tree.ProcessExit(exitEvent)
+	err = tree.processExit(exitEvent)
 	require.NoError(t, err)
 	_, err = tree.GetProcessInfo(TestContainerID, ptid)
 	assert.Error(t, err)

@@ -5,79 +5,40 @@ import (
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
 )
 
-type ProcessIDs struct {
-	Pid  int
-	Ppid int
-	Tid  int
-}
-
-type BinaryInfo struct {
-	Path  string
-	Hash  string
-	Ctime int
-}
-
-type ProcessInfo struct {
-	InContainerIDs  ProcessIDs
-	InHostIDs       ProcessIDs
-	ProcessName     string
-	Cmd             []string
-	ExecutionBinary BinaryInfo
-	StartTime       int
-	ParentProcess   *ProcessInfo
-	ChildProcesses  []*ProcessInfo
-	IsAlive         bool
-}
-
-func (p *ProcessInfo) GetAncestors() []*ProcessInfo {
-	var ancestors []*ProcessInfo
-	anc := p.ParentProcess
-	for anc != nil {
-		ancestors = append(ancestors, anc)
-		anc = anc.ParentProcess
-	}
-	return ancestors
-}
-
-type ContainerProcessTree struct {
-	tree map[int]*ProcessInfo
-	root *ProcessInfo
-}
-
-func (tree *ContainerProcessTree) GetProcessInfo(threadID int) (*ProcessInfo, error) {
-	processInfo, ok := tree.tree[threadID]
-	if !ok {
-		return nil, fmt.Errorf("no process with given ID is recorded")
-	}
-	return processInfo, nil
-}
-
 type ProcessTree struct {
-	tree map[string]*ContainerProcessTree
+	tree map[string]*containerProcessTree
 }
 
-func (tree *ProcessTree) getContainerTree(containerID string) (*ContainerProcessTree, error) {
-	containerTree, ok := tree.tree[containerID]
-	if !ok {
-		return nil, fmt.Errorf("no container with given ID is recorded")
+func (tree *ProcessTree) GetProcessInfo(containerID string, threadID int) (*ProcessInfo, error) {
+	containerTree, err := tree.getContainerTree(containerID)
+	if err != nil {
+		return nil, err
 	}
-	return containerTree, nil
+	return containerTree.GetProcessInfo(threadID)
+}
+
+func (tree *ProcessTree) GetContainerRoot(containerID string) (*ProcessInfo, error) {
+	containerTree, err := tree.getContainerTree(containerID)
+	if err != nil {
+		return nil, err
+	}
+	return containerTree.root, nil
 }
 
 func (tree *ProcessTree) ProcessEvent(event external.Event) error {
 	switch event.EventName {
 	case "sched_process_fork":
-		return tree.ProcessFork(event)
+		return tree.processFork(event)
 	case "sched_process_exec":
-		return tree.ProcessExec(event)
+		return tree.processExec(event)
 	case "sched_process_exit":
-		return tree.ProcessExit(event)
+		return tree.processExit(event)
 	default:
 		return nil
 	}
 }
 
-func (tree *ProcessTree) ProcessExec(event external.Event) error {
+func (tree *ProcessTree) processExec(event external.Event) error {
 	containerTree, err := tree.getContainerTree(event.ContainerID)
 	if err != nil {
 		return err
@@ -118,7 +79,7 @@ func (tree *ProcessTree) ProcessExec(event external.Event) error {
 	return nil
 }
 
-func (tree *ProcessTree) ProcessFork(event external.Event) error {
+func (tree *ProcessTree) processFork(event external.Event) error {
 	newProcessHostTIDArgument, err := getArgumentByName(event, "child_tid")
 	if err != nil {
 		return err
@@ -148,7 +109,7 @@ func (tree *ProcessTree) ProcessFork(event external.Event) error {
 
 	containerTree, err := tree.getContainerTree(event.ContainerID)
 	if err != nil {
-		containerTree = &ContainerProcessTree{
+		containerTree = &containerProcessTree{
 			tree: make(map[int]*ProcessInfo),
 			root: &newProcess,
 		}
@@ -158,7 +119,7 @@ func (tree *ProcessTree) ProcessFork(event external.Event) error {
 	return nil
 }
 
-func (tree *ProcessTree) ProcessExit(event external.Event) error {
+func (tree *ProcessTree) processExit(event external.Event) error {
 	containerTree, err := tree.getContainerTree(event.ContainerID)
 	if err != nil {
 		return err
@@ -195,22 +156,6 @@ func (tree *ProcessTree) ProcessExit(event external.Event) error {
 	return nil
 }
 
-func (tree *ProcessTree) GetProcessInfo(containerID string, threadID int) (*ProcessInfo, error) {
-	containerTree, err := tree.getContainerTree(containerID)
-	if err != nil {
-		return nil, err
-	}
-	return containerTree.GetProcessInfo(threadID)
-}
-
-func (tree *ProcessTree) GetContainerRoot(containerID string) (*ProcessInfo, error) {
-	containerTree, err := tree.getContainerTree(containerID)
-	if err != nil {
-		return nil, err
-	}
-	return containerTree.root, nil
-}
-
 // getArgumentByName fetches the argument in event with "Name" that matches argName.
 func getArgumentByName(event external.Event, argName string) (external.Argument, error) {
 	for _, arg := range event.Args {
@@ -219,4 +164,12 @@ func getArgumentByName(event external.Event, argName string) (external.Argument,
 		}
 	}
 	return external.Argument{}, fmt.Errorf("argument %s not found", argName)
+}
+
+func (tree *ProcessTree) getContainerTree(containerID string) (*containerProcessTree, error) {
+	containerTree, ok := tree.tree[containerID]
+	if !ok {
+		return nil, fmt.Errorf("no container with given ID is recorded")
+	}
+	return containerTree, nil
 }
