@@ -41,7 +41,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 			{ArgMeta: external.ArgMeta{Name: "dev", Type: "dev_t"}, Value: interface{}(46)},
 			{ArgMeta: external.ArgMeta{Name: "inode", Type: "unsigned long"}, Value: interface{}(576807)},
 			{ArgMeta: external.ArgMeta{Name: "invoked_from_kernel", Type: "int"}, Value: interface{}(0)},
-			{ArgMeta: external.ArgMeta{Name: "ctime", Type: "unsigned long"}, Value: interface{}(execBinaryCtime)},
+			{ArgMeta: external.ArgMeta{Name: "ctime", Type: "unsigned long"}, Value: interface{}(uint64(execBinaryCtime))},
 			{ArgMeta: external.ArgMeta{Name: "sha256", Type: "const char*"}, Value: interface{}("abfd081fd7fad08d4743443061a12ebfbd25e3c5e446441795d472c389444527")},
 		},
 	}
@@ -59,7 +59,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, execCmd, execProcess.Cmd)
 	assert.Equal(t, execBinaryPath, execProcess.ExecutionBinary.Path)
-	assert.Equal(t, execBinaryCtime, execProcess.ExecutionBinary.Ctime)
+	assert.Equal(t, execBinaryCtime, int(execProcess.ExecutionBinary.Ctime))
 }
 
 func TestProcessTree_ProcessFork(t *testing.T) {
@@ -86,7 +86,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 		Args: []external.Argument{
 			{ArgMeta: external.ArgMeta{Name: "parent_tid", Type: "int"}, Value: 22447},
 			{ArgMeta: external.ArgMeta{Name: "parent_ns_tid", Type: "int"}, Value: 0},
-			{ArgMeta: external.ArgMeta{Name: "child_tid", Type: "int"}, Value: newProcessTID},
+			{ArgMeta: external.ArgMeta{Name: "child_tid", Type: "int"}, Value: int32(newProcessTID)},
 			{ArgMeta: external.ArgMeta{Name: "child_ns_tid", Type: "int"}, Value: 0},
 		},
 	}
@@ -195,12 +195,13 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 					exitEvent.ContainerID: &containerTree,
 				},
 			}
+			exitProcessIndex := len(test.processes) - 1
 			// Build the container tree
 			for i, tp := range test.processes {
 				np := ProcessInfo{
 					IsAlive: tp.isAlive,
 					InHostIDs: ProcessIDs{
-						Tid: exitEvent.HostThreadID - (len(test.processes) - (i + 1)),
+						Tid: exitEvent.HostThreadID - (exitProcessIndex - i),
 					},
 				}
 				containerTree.tree[np.InHostIDs.Tid] = &np
@@ -217,12 +218,30 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 			err := tree.processExit(exitEvent)
 			require.NoError(t, err)
 			// Check that all nodes removed as expected
+			eLivingNodes := 0
 			for i, tp := range test.processes {
-				_, err = tree.GetProcessInfo(exitEvent.ContainerID, exitEvent.HostThreadID-(len(test.processes)-(i+1)))
+				_, err = tree.GetProcessInfo(exitEvent.ContainerID, exitEvent.HostThreadID-(exitProcessIndex-i))
 				assert.Equal(t, tp.aErr, err)
+				if tp.isAlive && i != exitProcessIndex {
+					eLivingNodes = i + 1
+				}
+			}
+			p, err := tree.GetContainerRoot(exitEvent.ContainerID)
+			if err == nil {
+				assert.Equal(t, eLivingNodes, countChildren(p))
+			} else {
+				assert.Zero(t, eLivingNodes)
 			}
 		})
 	}
+}
+
+func countChildren(p *ProcessInfo) int {
+	c := 0
+	for _, chld := range p.ChildProcesses {
+		c += countChildren(chld)
+	}
+	return 1 + c
 }
 
 func TestProcessTree_ProcessEvent(t *testing.T) {
@@ -233,7 +252,7 @@ func TestProcessTree_ProcessEvent(t *testing.T) {
 	forkTimestamp := 1639044471927303690
 	execCmd := []string{"ls"}
 	execBinaryPath := "/bin/busybox"
-	execBinaryCtime := 1625759227634052514
+	execBinaryCtime := uint(1625759227634052514)
 
 	forkEvent := external.Event{
 		Timestamp:           forkTimestamp,
@@ -255,9 +274,9 @@ func TestProcessTree_ProcessEvent(t *testing.T) {
 		ReturnValue:         0,
 		StackAddresses:      nil,
 		Args: []external.Argument{
-			{ArgMeta: external.ArgMeta{Name: "parent_tid", Type: "int"}, Value: ppid},
+			{ArgMeta: external.ArgMeta{Name: "parent_tid", Type: "int"}, Value: int32(ppid)},
 			{ArgMeta: external.ArgMeta{Name: "parent_ns_tid", Type: "int"}, Value: 0},
-			{ArgMeta: external.ArgMeta{Name: "child_tid", Type: "int"}, Value: ptid},
+			{ArgMeta: external.ArgMeta{Name: "child_tid", Type: "int"}, Value: int32(ptid)},
 			{ArgMeta: external.ArgMeta{Name: "child_ns_tid", Type: "int"}, Value: 0},
 		},
 	}
@@ -288,7 +307,7 @@ func TestProcessTree_ProcessEvent(t *testing.T) {
 			{ArgMeta: external.ArgMeta{Name: "dev", Type: "dev_t"}, Value: interface{}(46)},
 			{ArgMeta: external.ArgMeta{Name: "inode", Type: "unsigned long"}, Value: interface{}(576807)},
 			{ArgMeta: external.ArgMeta{Name: "invoked_from_kernel", Type: "int"}, Value: interface{}(0)},
-			{ArgMeta: external.ArgMeta{Name: "ctime", Type: "unsigned long"}, Value: interface{}(execBinaryCtime)},
+			{ArgMeta: external.ArgMeta{Name: "ctime", Type: "unsigned long"}, Value: interface{}(uint64(execBinaryCtime))},
 			{ArgMeta: external.ArgMeta{Name: "sha256", Type: "const char*"}, Value: interface{}("abfd081fd7fad08d4743443061a12ebfbd25e3c5e446441795d472c389444527")},
 		},
 	}
