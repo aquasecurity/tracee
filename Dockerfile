@@ -27,7 +27,7 @@ WORKDIR /tracee
 
 COPY --from=build /tracee/dist/tracee-ebpf /tracee/dist/tracee-rules /tracee/entrypoint.sh ./
 COPY --from=build /tracee/dist/rules ./rules
-COPY --from=build /tracee/tracee-rules/templates /tracee/templates/
+COPY --from=build /tracee/cmd/tracee-rules/templates /tracee/templates/
 
 LABEL org.label-schema.build-date=$BUILD_DATE \
     org.label-schema.description="Linux Runtime Security and Forensics using eBPF" \
