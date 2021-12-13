@@ -1,8 +1,6 @@
 name: pr-ebpf
 on: 
   pull_request:
-    paths: 
-      - "tracee-ebpf/**"
 jobs:
   build-test:
     runs-on: ${{ matrix.os }}
