@@ -128,8 +128,10 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 	}
 
 	tests := []struct {
-		name      string
-		processes []testProcess // Each process in the list will be the father of the next process in the list
+		name string
+		// Each process in the list will be the father of the next process in the list
+		// The last process in the list is the process that the exit event will occur in
+		processes []testProcess
 	}{
 		{
 			name: "exit of root process of container",
