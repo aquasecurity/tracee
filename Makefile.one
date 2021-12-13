@@ -404,7 +404,7 @@ $(OUTPUT_DIR)/tracee-rules: $(TRACEE_RULES_SRC) | $(OUTPUT_DIR)
 		-ldflags="-w \
 			-extldflags \"$(CGO_EXT_LDFLAGS_RULES)\" \
 			" \
-		-v -o $@ ./tracee-rules
+		-v -o $@ ./cmd/tracee-rules
 
 .PHONY: clean-tracee-rules
 clean-tracee-rules:
@@ -413,8 +413,9 @@ clean-tracee-rules:
 .PHONY: test-tracee-rules
 test-tracee-rules:
 	$(GO_ENV_RULES) $(CMD_GO) test \
-		-tags $(GO_TAGS_RULES) \
-		-v ./tracee-rules/...
+		-tags $(GO_TAGS_RULES) -v \
+		./cmd/tracee-rules/... \
+		./tracee-rules/...
 
 # rules
 
