@@ -23,11 +23,7 @@ func (tree *ProcessTree) ProcessEvent(event external.Event) error {
 // processExec fill the fields of the process according to exec information.
 // It also fills the missing information from the fork.
 func (tree *ProcessTree) processExec(event external.Event) error {
-	containerTree, err := tree.getContainerTree(event.ContainerID)
-	if err != nil {
-		return err
-	}
-	process, err := containerTree.GetProcessInfo(event.HostThreadID)
+	process, err := tree.GetProcessInfo(event.HostThreadID)
 	if err != nil {
 		return err
 	}
@@ -100,13 +96,23 @@ func (tree *ProcessTree) processFork(event external.Event) error {
 		StartTime: event.Timestamp,
 		IsAlive:   true,
 	}
-	fatherProcess, err := tree.GetProcessInfo(event.ContainerID, event.HostProcessID)
-	if err == nil {
-		newProcess.ExecutionBinary = fatherProcess.ExecutionBinary
-		newProcess.Cmd = fatherProcess.Cmd
-		newProcess.ParentProcess = fatherProcess
-		fatherProcess.ChildProcesses = append(fatherProcess.ChildProcesses, &newProcess)
+
+	containerTree, err := tree.getContainerTree(event.ContainerID)
+	if err != nil {
+		containerTree = &containerProcessTree{
+			Root: &newProcess,
+		}
+		tree.containers[event.ContainerID] = containerTree
+	} else {
+		fatherProcess, err := tree.GetProcessInfo(event.HostProcessID)
+		if err == nil {
+			newProcess.ExecutionBinary = fatherProcess.ExecutionBinary
+			newProcess.Cmd = fatherProcess.Cmd
+			newProcess.ParentProcess = fatherProcess
+			fatherProcess.ChildProcesses = append(fatherProcess.ChildProcesses, &newProcess)
+		}
 	}
+
 	newProcess.ProcessName = event.ProcessName
 	newProcess.InHostIDs = ProcessIDs{
 		Pid:  newProcessHostTID,
@@ -119,15 +125,7 @@ func (tree *ProcessTree) processFork(event external.Event) error {
 	newProcess.StartTime = event.Timestamp
 	newProcess.IsAlive = true
 
-	containerTree, err := tree.getContainerTree(event.ContainerID)
-	if err != nil {
-		containerTree = &containerProcessTree{
-			tree: make(map[int]*ProcessInfo),
-			root: &newProcess,
-		}
-		tree.tree[event.ContainerID] = containerTree
-	}
-	containerTree.tree[newProcessHostTID] = &newProcess
+	tree.tree[newProcessHostTID] = &newProcess
 	return nil
 }
 
@@ -135,25 +133,24 @@ func (tree *ProcessTree) processFork(event external.Event) error {
 // if the last child process of a process exits.
 // Notice that there is a danger of memory leak if there are lost events of sched_process_exit
 func (tree *ProcessTree) processExit(event external.Event) error {
-	containerTree, err := tree.getContainerTree(event.ContainerID)
-	if err != nil {
-		return err
-	}
-	process, err := containerTree.GetProcessInfo(event.HostThreadID)
+	process, err := tree.GetProcessInfo(event.HostThreadID)
 	if err != nil {
 		return err
 	}
 	process.IsAlive = false
 	// Remove process and all dead ancestors so only processes with alive descendants will remain.
 	if len(process.ChildProcesses) == 0 {
+		container, err := tree.getContainerTree(event.ContainerID)
+		if err != nil {
+			return err
+		}
 		cp := process
 		for {
-			delete(containerTree.tree, cp.InHostIDs.Tid)
+			delete(tree.tree, cp.InHostIDs.Tid)
+			if container.Root == cp {
+				delete(tree.containers, event.ContainerID)
+			}
 			if cp.ParentProcess == nil {
-				if len(containerTree.tree) > 0 {
-					return fmt.Errorf("root process of container exited without children, but container still has recorded processes")
-				}
-				delete(tree.tree, event.ContainerID)
 				break
 			}
 			for i, childProcess := range cp.ParentProcess.ChildProcesses {

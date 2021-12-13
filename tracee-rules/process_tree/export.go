@@ -7,10 +7,13 @@ import (
 )
 
 // The process tree instance to be used by the engine and the signatures
-var globalTree = ProcessTree{tree: make(map[string]*containerProcessTree)}
+var globalTree = ProcessTree{
+	containers: make(map[string]*containerProcessTree),
+	tree:       map[int]*ProcessInfo{},
+}
 
 func GetProcessInfo(containerID string, threadID int) (*ProcessInfo, error) {
-	return globalTree.GetProcessInfo(containerID, threadID)
+	return globalTree.GetProcessInfo(threadID)
 }
 
 func GetContainerRoot(containerID string) (*ProcessInfo, error) {
@@ -23,9 +26,9 @@ func ProcessEvent(event types.Event) error {
 }
 
 func PrintTree() {
-	for cid, c := range globalTree.tree {
+	for cid, c := range globalTree.containers {
 		fmt.Printf("%s:\n", cid)
-		printNodeRec(c.root, "")
+		printNodeRec(c.Root, "")
 	}
 }
 

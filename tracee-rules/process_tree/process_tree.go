@@ -4,16 +4,21 @@ import (
 	"fmt"
 )
 
-type ProcessTree struct {
-	tree map[string]*containerProcessTree
+type containerProcessTree struct {
+	Root *ProcessInfo
 }
 
-func (tree *ProcessTree) GetProcessInfo(containerID string, threadID int) (*ProcessInfo, error) {
-	containerTree, err := tree.getContainerTree(containerID)
-	if err != nil {
-		return nil, err
+type ProcessTree struct {
+	containers map[string]*containerProcessTree
+	tree       map[int]*ProcessInfo
+}
+
+func (tree *ProcessTree) GetProcessInfo(threadID int) (*ProcessInfo, error) {
+	process, ok := tree.tree[threadID]
+	if !ok {
+		return nil, fmt.Errorf("no process with given ID is recorded")
 	}
-	return containerTree.GetProcessInfo(threadID)
+	return process, nil
 }
 
 // GetContainerRoot return the first recorded process in a container
@@ -22,11 +27,11 @@ func (tree *ProcessTree) GetContainerRoot(containerID string) (*ProcessInfo, err
 	if err != nil {
 		return nil, err
 	}
-	return containerTree.root, nil
+	return containerTree.Root, nil
 }
 
 func (tree *ProcessTree) getContainerTree(containerID string) (*containerProcessTree, error) {
-	containerTree, ok := tree.tree[containerID]
+	containerTree, ok := tree.containers[containerID]
 	if !ok {
 		return nil, fmt.Errorf("no container with given ID is recorded")
 	}

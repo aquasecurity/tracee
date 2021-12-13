@@ -45,17 +45,19 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 			{ArgMeta: external.ArgMeta{Name: "sha256", Type: "const char*"}, Value: interface{}("abfd081fd7fad08d4743443061a12ebfbd25e3c5e446441795d472c389444527")},
 		},
 	}
+	p := &ProcessInfo{}
 	tree := ProcessTree{
-		map[string]*containerProcessTree{
+		tree: map[int]*ProcessInfo{
+			execEvent.HostThreadID: p,
+		},
+		containers: map[string]*containerProcessTree{
 			execEvent.ContainerID: {
-				tree: map[int]*ProcessInfo{
-					execEvent.HostProcessID: {},
-				},
+				Root: p,
 			},
 		},
 	}
 	require.NoError(t, tree.processExec(execEvent))
-	execProcess, err := tree.GetProcessInfo(execEvent.ContainerID, execEvent.HostThreadID)
+	execProcess, err := tree.GetProcessInfo(execEvent.HostThreadID)
 	require.NoError(t, err)
 	assert.Equal(t, execCmd, execProcess.Cmd)
 	assert.Equal(t, execBinaryPath, execProcess.ExecutionBinary.Path)
@@ -91,10 +93,11 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 		},
 	}
 	tree := ProcessTree{
-		map[string]*containerProcessTree{},
+		tree:       map[int]*ProcessInfo{},
+		containers: map[string]*containerProcessTree{},
 	}
 	require.NoError(t, tree.processFork(forkEvent))
-	_, err := tree.GetProcessInfo(forkEvent.ContainerID, newProcessTID)
+	_, err := tree.GetProcessInfo(newProcessTID)
 	assert.NoError(t, err)
 }
 
@@ -138,7 +141,7 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 			processes: []testProcess{
 				{
 					isAlive: true,
-					aErr:    fmt.Errorf("no container with given ID is recorded"),
+					aErr:    fmt.Errorf("no process with given ID is recorded"),
 				},
 			},
 		},
@@ -177,11 +180,11 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 			processes: []testProcess{
 				{
 					isAlive: false,
-					aErr:    fmt.Errorf("no container with given ID is recorded"),
+					aErr:    fmt.Errorf("no process with given ID is recorded"),
 				},
 				{
 					isAlive: true,
-					aErr:    fmt.Errorf("no container with given ID is recorded"),
+					aErr:    fmt.Errorf("no process with given ID is recorded"),
 				},
 			},
 		},
@@ -189,13 +192,9 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			containerTree := containerProcessTree{
-				tree: map[int]*ProcessInfo{},
-			}
 			tree := ProcessTree{
-				tree: map[string]*containerProcessTree{
-					exitEvent.ContainerID: &containerTree,
-				},
+				tree:       map[int]*ProcessInfo{},
+				containers: map[string]*containerProcessTree{},
 			}
 			exitProcessIndex := len(test.processes) - 1
 			// Build the container tree
@@ -206,14 +205,14 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 						Tid: exitEvent.HostThreadID - (exitProcessIndex - i),
 					},
 				}
-				containerTree.tree[np.InHostIDs.Tid] = &np
+				tree.tree[np.InHostIDs.Tid] = &np
 				if i != 0 {
 					var err error
-					np.ParentProcess, err = tree.GetProcessInfo(exitEvent.ContainerID, exitEvent.HostThreadID-(len(test.processes)-i))
+					np.ParentProcess, err = tree.GetProcessInfo(exitEvent.HostThreadID - (len(test.processes) - i))
 					require.NoError(t, err)
 					np.ParentProcess.ChildProcesses = append(np.ParentProcess.ChildProcesses, &np)
 				} else {
-					containerTree.root = &np
+					tree.containers[TestContainerID] = &containerProcessTree{Root: &np}
 				}
 			}
 
@@ -222,7 +221,7 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 			// Check that all nodes removed as expected
 			eLivingNodes := 0
 			for i, tp := range test.processes {
-				_, err = tree.GetProcessInfo(exitEvent.ContainerID, exitEvent.HostThreadID-(exitProcessIndex-i))
+				_, err = tree.GetProcessInfo(exitEvent.HostThreadID - (exitProcessIndex - i))
 				assert.Equal(t, tp.aErr, err)
 				if tp.isAlive && i != exitProcessIndex {
 					eLivingNodes = i + 1
@@ -230,7 +229,9 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 			}
 			p, err := tree.GetContainerRoot(exitEvent.ContainerID)
 			if err == nil {
-				assert.Equal(t, eLivingNodes, countChildren(p))
+				rLivingChildren := countChildren(p)
+				assert.NotZero(t, rLivingChildren)
+				assert.Equal(t, eLivingNodes, rLivingChildren)
 			} else {
 				assert.Zero(t, eLivingNodes)
 			}
@@ -247,7 +248,10 @@ func countChildren(p *ProcessInfo) int {
 }
 
 func TestProcessTree_ProcessEvent(t *testing.T) {
-	tree := ProcessTree{tree: map[string]*containerProcessTree{}}
+	tree := ProcessTree{
+		containers: map[string]*containerProcessTree{},
+		tree:       map[int]*ProcessInfo{},
+	}
 
 	ptid := 22482
 	ppid := 22447
@@ -341,7 +345,7 @@ func TestProcessTree_ProcessEvent(t *testing.T) {
 	require.NoError(t, err)
 	err = tree.ProcessEvent(execEvent)
 	require.NoError(t, err)
-	process, err := tree.GetProcessInfo(TestContainerID, ptid)
+	process, err := tree.GetProcessInfo(ptid)
 	assert.NoError(t, err)
 	assert.Equal(t, ptid, process.InHostIDs.Tid)
 	assert.Equal(t, ptid, process.InHostIDs.Pid)
@@ -352,6 +356,6 @@ func TestProcessTree_ProcessEvent(t *testing.T) {
 	assert.Equal(t, execBinaryCtime, process.ExecutionBinary.Ctime)
 	err = tree.processExit(exitEvent)
 	require.NoError(t, err)
-	_, err = tree.GetProcessInfo(TestContainerID, ptid)
+	_, err = tree.GetProcessInfo(ptid)
 	assert.Error(t, err)
 }
