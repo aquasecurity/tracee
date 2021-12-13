@@ -107,9 +107,9 @@ func (tree *ProcessTree) processFork(event external.Event) error {
 			newProcessHostTIDArgument.Value)
 	}
 	newProcessHostTID := int(newProcessHostTID32)
-	fatherProcess, _ := tree.GetProcessInfo(event.ContainerID, newProcessHostTID)
+	fatherProcess, err := tree.GetProcessInfo(event.ContainerID, event.HostProcessID)
 	var newProcess ProcessInfo
-	if fatherProcess != nil {
+	if err == nil {
 		newProcess = *fatherProcess
 		newProcess.ParentProcess = fatherProcess
 		fatherProcess.ChildProcesses = append(fatherProcess.ChildProcesses, &newProcess)
