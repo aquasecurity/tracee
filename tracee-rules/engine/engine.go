@@ -159,6 +159,7 @@ func (engine *Engine) matchHandler(res types.Finding) {
 func (engine *Engine) checkCompletion() bool {
 	if engine.inputs.Tracee == nil {
 		engine.unloadAllSignatures()
+		close(engine.psTreeInput)
 		engine.waitGroup.Wait()
 		return true
 	}
