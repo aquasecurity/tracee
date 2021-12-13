@@ -207,7 +207,7 @@ $(OUTPUT_DIR):
 .PHONY: $(OUTPUT_DIR)/tracee.bpf
 $(OUTPUT_DIR)/tracee.bpf:
 	$(CMD_MKDIR) -p $@
-	$(CMD_INSTALL) -m 0640 ./tracee-ebpf/3rdparty/include/* $@
+	$(CMD_INSTALL) -m 0640 ./3rdparty/include/* $@
 	$(CMD_INSTALL) -m 0640 $(OUTPUT_DIR)/libbpf/bpf/*.h $@
 	$(CMD_INSTALL) -m 0640 $(TRACEE_EBPF_OBJ_SRC) $@
 
@@ -217,7 +217,7 @@ $(OUTPUT_DIR)/tracee.bpf:
 
 LIBBPF_CFLAGS =
 LIBBPF_LDLAGS =
-LIBBPF_SRC = ./tracee-ebpf/3rdparty/libbpf/src
+LIBBPF_SRC = ./3rdparty/libbpf/src
 
 $(OUTPUT_DIR)/libbpf/libbpf.a: $(LIBBPF_SRC) $(wildcard $(LIBBPF_SRC)/*.[ch]) | $(OUTPUT_DIR)
 	CC="$(CMD_CLANG)" \
@@ -301,7 +301,7 @@ clean-bpf-nocore:
 # co-re ebpf
 #
 
-TRACEE_EBPF_OBJ_CORE_HEADERS = $(shell find tracee-ebpf -name *.h ! -iregex '.*3rdparty.*')
+TRACEE_EBPF_OBJ_CORE_HEADERS = $(shell find tracee-ebpf -name *.h)
 
 .PHONY: bpf-core
 bpf-core: $(OUTPUT_DIR)/tracee.bpf.core.o
