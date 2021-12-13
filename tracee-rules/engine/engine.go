@@ -135,6 +135,7 @@ func (engine *Engine) Start(done chan bool) {
 	go processTreeStart(engine.psTreeInput, &engine.waitGroup)
 	engine.signaturesMutex.RUnlock()
 	engine.consumeSources(done)
+	process_tree.PrintTree()
 }
 
 func (engine *Engine) unloadAllSignatures() {

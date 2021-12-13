@@ -21,3 +21,17 @@ func ProcessEvent(event types.Event) error {
 	tevent := event.(external.Event)
 	return globalTree.ProcessEvent(tevent)
 }
+
+func PrintTree() {
+	for cid, c := range globalTree.tree {
+		fmt.Printf("%s:\n", cid)
+		printNodeRec(c.root, "")
+	}
+}
+
+func printNodeRec(p *ProcessInfo, s string) {
+	fmt.Println(s, " ", *p)
+	for _, c := range p.ChildProcesses {
+		printNodeRec(c, s+"-")
+	}
+}
