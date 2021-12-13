@@ -1,9 +1,6 @@
 name: PR
 on:
   pull_request:
-    branches:
-      - next
-      - main
 env:
   GO_VERSION: "1.16"
   OPA_VERSION: "v0.35.0"
@@ -119,3 +116,32 @@ jobs:
       - name: Build Slim Docker Image
         run: |
           make docker-slim
+
+  test-integration:
+    name: Test tracee-ebpf and tracee-rules integration
+    needs:
+      - test-tracee-ebpf
+      - test-tracee-rules
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Install Dependencies
+        uses: ./.github/actions/build-dependencies
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          opa-version: ${{ env.OPA_VERSION }}
+      - name: Build Docker Image
+        run: |
+          make docker
+          docker image pull aquasec/tracee:0.6.5
+          docker image ls
+      - name: Run Integration Test
+        continue-on-error: true
+        run: |
+          go test -v ./tests/
+      - name: Check Tracee Logs
+        run: |
+          docker logs tracee
