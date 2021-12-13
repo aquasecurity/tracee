@@ -47,7 +47,10 @@ func (tree *ProcessTree) processExec(event external.Event) error {
 	if err != nil {
 		return err
 	}
-	process, _ := containerTree.GetProcessInfo(event.HostThreadID)
+	process, err := containerTree.GetProcessInfo(event.HostThreadID)
+	if err != nil {
+		return err
+	}
 	execArgv, err := getArgumentByName(event, "argv")
 	if err != nil {
 		return err
