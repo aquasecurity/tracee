@@ -94,7 +94,8 @@ jobs:
   release-snapshot:
     name: Release Snapshot
     needs:
-      - verify-code
+      - test-tracee-ebpf
+      - test-tracee-rules
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Code

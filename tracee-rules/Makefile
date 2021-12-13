@@ -23,7 +23,7 @@ build: $(OUT_BIN)
 
 ifndef DOCKER
 $(OUT_BIN): $(filter-out *_test.go,$(GO_SRC)) | $(OUT_DIR)
-	go build -o $(OUT_BIN)
+	go build -o $(OUT_BIN) ./../cmd/tracee-rules
 else
 $(OUT_BIN): $(DOCKER_BUILDER)
 	$(call docker_builder_make,$@)
@@ -52,7 +52,7 @@ $(tools): % : check_%
 .PHONY: test
 ifndef DOCKER
 test: $(GO_SRC) $(tools)
-	go test $(GOTEST_FLAGS) -v ./...
+	go test $(GOTEST_FLAGS) -v ./../cmd/tracee-rules ./...
 	opa test ../signatures/rego --verbose --ignore="examples" --ignore="dist" --ignore="benchmark"
 else
 test: $(DOCKER_BUILDER)
