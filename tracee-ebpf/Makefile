@@ -55,8 +55,14 @@ $(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(OUT_BPF_CORE) $(filter-out *_test.
 	mkdir -p ../dist/
 	cp -rfp ./dist/* ../dist/
 	# end of workaround
-	$(go_env) go build -tags ebpf,netgo -v -o $(OUT_BIN) \
-	-ldflags "-w -extldflags \"$(CGO_EXT_LDFLAGS)\" -X main.version=$(VERSION)"
+	$(go_env) go build \
+		-tags ebpf,netgo \
+		-ldflags="\
+			-w -extldflags \"$(CGO_EXT_LDFLAGS)\" \
+			-X main.version=\"$(VERSION)\" \
+			" \
+		-v -o ./dist/ \
+		../cmd/tracee-ebpf
 else
 $(OUT_BIN): $(DOCKER_BUILDER) | $(OUT_DIR)
 	$(call docker_builder_make,$@ VERSION=$(VERSION))
@@ -152,7 +158,11 @@ endif
 .PHONY: test
 ifndef DOCKER
 test: $(GO_SRC) $(LIBBPF_HEADERS) $(LIBBPF_OBJ)
-	$(go_env)	go test -tags ebpf $(GOTEST_FLAGS) -v ./...
+	$(go_env) go test \
+		-tags ebpf $(GOTEST_FLAGS) \
+		-v \
+		../cmd/tracee-ebpf/ \
+		./...
 
 else
 test: $(DOCKER_BUILDER)
