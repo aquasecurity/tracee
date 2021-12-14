@@ -948,6 +948,7 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	LandlockAddRuleEventID:        {{Type: "int", Name: "ruleset_fd"}, {Type: "landlock_rule_type", Name: "rule_type"}, {Type: "void*", Name: "rule_attr"}, {Type: "u32", Name: "flags"}},
 	LandloclRestrictSetEventID:    {{Type: "int", Name: "ruleset_fd"}, {Type: "u32", Name: "flags"}},
 	MemfdSecretEventID:            {{Type: "unsigned int", Name: "flags"}},
+	ProcessMreleaseEventID:        {{Type: "int", Name: "pidfd"}, {Type: "unsigned int", Name: "flags"}},
 	SysEnterEventID:               {{Type: "int", Name: "syscall"}},
 	SysExitEventID:                {{Type: "int", Name: "syscall"}},
 	SchedProcessForkEventID:       {{Type: "int", Name: "parent_tid"}, {Type: "int", Name: "parent_ns_tid"}, {Type: "int", Name: "child_tid"}, {Type: "int", Name: "child_ns_tid"}},
