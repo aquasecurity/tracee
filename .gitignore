@@ -6,3 +6,5 @@ coverage.txt
 
 .vagrant/
 
+*.md5
+

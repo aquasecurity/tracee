@@ -53,6 +53,8 @@ ifndef DOCKER
 $(OUT_BIN): $(LIBBPF_HEADERS) $(LIBBPF_OBJ) $(OUT_BPF_CORE) $(filter-out *_test.go,$(GO_SRC)) $(BPF_BUNDLE) | $(OUT_DIR)
 	# workaround until Makefile.one becomes standard
 	mkdir -p ../dist/
+	mkdir -p ../dist/btfhub
+	touch ../dist/btfhub/.place-holder
 	cp -rfp ./dist/* ../dist/
 	# end of workaround
 	$(go_env) go build \
