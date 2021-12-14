@@ -418,23 +418,14 @@ struct in6_addr {
 	} in6_u;
 };
 
-typedef __u32 __portpair;
-typedef __u64 __addrpair;
-
 struct sock_common {
 	union {
-	    __addrpair	skc_addrpair;
 		struct {
 			__be32 skc_daddr;
 			__be32 skc_rcv_saddr;
 		};
 	};
 	union {
-        unsigned int	skc_hash;
-        __u16		skc_u16hashes[2];
-    };
-	union {
-	    __portpair	skc_portpair;
 		struct {
 			__be16 skc_dport;
 			__u16 skc_num;
