@@ -183,7 +183,7 @@ const (
 	SecurityInodeMknodEventID
 	SecurityPostReadFileEventID
 	SocketDupEventID
-	MaxEventID
+	MaxNonSyscallEventID
 )
 
 // Events originated from user-space
@@ -201,6 +201,8 @@ const (
 	DebugNetInetSockSetState
 	DebugNetTcpConnect
 )
+
+const Unique32BitSyscallsStartID = 3000
 
 // EventsIDToEvent is list of supported events, indexed by their ID
 var EventsIDToEvent = map[int32]EventConfig{

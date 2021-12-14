@@ -1069,7 +1069,7 @@ func printList() {
 	}
 	b.WriteString("\n\nOther Events: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________\n\n")
-	for i := int(tracee.SysEnterEventID); i < int(tracee.MaxEventID); i++ {
+	for i := int(tracee.SysEnterEventID); i < int(tracee.MaxNonSyscallEventID); i++ {
 		index := int32(i)
 		event := tracee.EventsIDToEvent[index]
 		if event.Sets != nil {

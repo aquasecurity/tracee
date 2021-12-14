@@ -370,8 +370,6 @@ const (
 	ProcessMreleaseEventID       int32 = 448
 )
 
-const Unique32BitSyscallsStartID = 3000
-
 // Set of events IDs for 32bit syscalls which have no parallel 64bit syscall
 const (
 	WaitpidEventID int32 = iota + Unique32BitSyscallsStartID
