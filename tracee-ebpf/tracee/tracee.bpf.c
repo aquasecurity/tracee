@@ -983,7 +983,6 @@ static __always_inline struct sock_common * get_sock_sk_common(struct sock *sock
         bpf_probe_read((void *)sk_common, sizeof(struct sock_common), &sock->__sk_common);
     #endif
 
-    bpf_probe_read((void *)sk_common, sizeof(struct sock_common), &sock->__sk_common);
     return sk_common;
 }
 
