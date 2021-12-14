@@ -16,7 +16,7 @@
         
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.0.4+insiders-4.3.0">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.1+insiders-4.4.0">
     
     
       
@@ -24,13 +24,13 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.16e430b9.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.9d9d8b72.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.fe799546.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.e6a45f82.min.css">
         
       
-      <link rel="preload" as="style" href="../assets/stylesheets/vendor/mermaid.733f213f.min.css">
+      <link rel="preload" as="style" href="../assets/stylesheets/vendor/mermaid.9c0dc1da.min.css">
       
     
     
@@ -683,13 +683,13 @@
 <td>falcosidekick.tmpl</td>
 <td>For compatibility with <a href="https://github.com/falcosecurity/falcosidekick">falcosidekick</a></td>
 <td><code>application/json</code></td>
-<td><a href="https://github.com/aquasecurity/tracee/blob/v0.6.4/tracee-rules/templates/falcosidekick.tmpl">source</a></td>
+<td><a href="https://github.com/aquasecurity/tracee/blob/v0.6.5/tracee-rules/templates/falcosidekick.tmpl">source</a></td>
 </tr>
 <tr>
 <td>rawjson.tmpl</td>
 <td>Dumps the Finding object as raw JSON</td>
 <td><code>application/json</code></td>
-<td><a href="https://github.com/aquasecurity/tracee/blob/v0.6.4/tracee-rules/templates/rawjson.tmpl">source</a></td>
+<td><a href="https://github.com/aquasecurity/tracee/blob/v0.6.5/tracee-rules/templates/rawjson.tmpl">source</a></td>
 </tr>
 </tbody>
 </table>
@@ -703,7 +703,7 @@
 <span class="p">}</span>
 </code></pre></div>
 <p>The Go template can utilize helper functions from <a href="http://masterminds.github.io/sprig/">Sprig</a>.</p>
-<p>For example templates, see <a href="https://github.com/aquasecurity/tracee/tree/v0.6.4/tracee-rules/templates">tracee/tracee-rules/templates</a>.</p>
+<p>For example templates, see <a href="https://github.com/aquasecurity/tracee/tree/v0.6.5/tracee-rules/templates">tracee/tracee-rules/templates</a>.</p>
 <h2 id="examples">Examples</h2>
 <h3 id="raw-json-stdout">Raw JSON stdout</h3>
 <p>The following example configures Tracee to output detections to stdout as raw JSON:</p>
@@ -711,7 +711,7 @@
   -v /lib/modules/:/lib/modules/:ro <span class="se">\</span>
   -v /usr/src:/usr/src:ro <span class="se">\</span>
   -v /tmp/tracee:/tmp/tracee <span class="se">\</span>
-  aquasec/tracee:0.6.4 --output-template /tracee/templates/rawjson.tmpl
+  aquasec/tracee:0.6.5 --output-template /tracee/templates/rawjson.tmpl
 </code></pre></div>
 <h3 id="falcosidekick-webhook">falcosidekick webhook</h3>
 <p><a href="https://github.com/falcosecurity/falcosidekick">falcosidekick</a> is a useful webhook server that can be configured to connect to various "outputs" such as: Slack, Mattermost, Teams, Datadog, Prometheus, StatsD, Email, Elasticsearch, Loki, PagerDuty, OpsGenie, and many more.</p>
@@ -742,7 +742,7 @@ docker run --name tracee --rm -it --privileged --pid<span class="o">=</span>host
   -v /lib/modules/:/lib/modules/:ro <span class="se">\</span>
   -v /usr/src:/usr/src:ro <span class="se">\</span>
   -v /tmp/tracee:/tmp/tracee <span class="se">\</span>
-  --link falcosidekick aquasec/tracee:0.6.4 <span class="se">\</span>
+  --link falcosidekick aquasec/tracee:0.6.5 <span class="se">\</span>
   --webhook-template /tracee/templates/falcosidekick.tmpl <span class="se">\</span>
   --webhook-content-type application/json <span class="se">\</span>
   --webhook http://FALCOSIDEKICK:2801
@@ -812,10 +812,10 @@ docker run --name tracee --rm -it --privileged --pid<span class="o">=</span>host
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.51301f06.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.2c14e664.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.04e4bdfb.min.js"></script>
+      <script src="../assets/javascripts/bundle.67f51cf8.min.js"></script>
       
     
   </body>
