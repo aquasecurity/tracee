@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"io"
 	"io/ioutil"
 	"log"
@@ -88,11 +89,11 @@ func main() {
 
 			// environment capabilities
 
-			selfCap, err := getSelfCapabilities()
+			selfCap, err := capabilities.SelfCapabilities()
 			if err != nil {
 				return err
 			}
-			if err = checkRequiredCapabilities(selfCap); err != nil {
+			if err = capabilities.CheckRequiredCapabilities(selfCap); err != nil {
 				return err
 			}
 
@@ -951,30 +952,6 @@ func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.St
 	return res, nil
 }
 
-func checkRequiredCapabilities(caps capability.Capabilities) error {
-	if !caps.Get(capability.EFFECTIVE, capability.CAP_SYS_ADMIN) {
-		return fmt.Errorf("insufficient privileges to run: missing CAP_SYS_ADMIN")
-	}
-
-	if !caps.Get(capability.EFFECTIVE, capability.CAP_IPC_LOCK) {
-		return fmt.Errorf("insufficient privileges to run: missing CAP_IPC_LOCK")
-	}
-
-	return nil
-}
-
-func getSelfCapabilities() (capability.Capabilities, error) {
-	selfCap, err := capability.NewPid2(0)
-	if err != nil {
-		return nil, err
-	}
-	err = selfCap.Load()
-	if err != nil {
-		return nil, err
-	}
-	return selfCap, nil
-}
-
 func fetchFormattedEventParams(eventID int32) string {
 	eventParams := tracee.EventsIDToParams[eventID]
 	var verboseEventParams string
@@ -1160,7 +1137,7 @@ func unpackBPFBundle(dir string) error {
 // makeBPFObject builds the ebpf object from source code into the provided path
 func makeBPFObject(outFile string) error {
 	// drop capabilities for the compilation process
-	cap, err := getSelfCapabilities()
+	cap, err := capabilities.SelfCapabilities()
 	if err != nil {
 		return err
 	}

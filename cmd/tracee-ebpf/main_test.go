@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"io/ioutil"
 	"testing"
 
@@ -1377,7 +1378,7 @@ InstalledDir: /usr/bin
 func Test_checkRequiredCapabilites(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		fc := fakeCapabilities{}
-		require.NoError(t, checkRequiredCapabilities(fc))
+		require.NoError(t, capabilities.CheckRequiredCapabilities(fc))
 	})
 
 	t.Run("CAP_SYS_ADMIN missing", func(t *testing.T) {
@@ -1389,7 +1390,7 @@ func Test_checkRequiredCapabilites(t *testing.T) {
 				return true
 			},
 		}
-		require.EqualError(t, checkRequiredCapabilities(fc), "insufficient privileges to run: missing CAP_SYS_ADMIN")
+		require.EqualError(t, capabilities.CheckRequiredCapabilities(fc), "insufficient privileges to run: missing CAP_SYS_ADMIN")
 	})
 
 	t.Run("CAP_IPC_LOCK missing", func(t *testing.T) {
@@ -1401,7 +1402,7 @@ func Test_checkRequiredCapabilites(t *testing.T) {
 				return true
 			},
 		}
-		require.EqualError(t, checkRequiredCapabilities(fc), "insufficient privileges to run: missing CAP_IPC_LOCK")
+		require.EqualError(t, capabilities.CheckRequiredCapabilities(fc), "insufficient privileges to run: missing CAP_IPC_LOCK")
 	})
 }
 
