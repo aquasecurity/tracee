@@ -9,13 +9,13 @@ import (
 	"math/rand"
 	"os"
 
-	tracee "github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
 var (
-	innocentEvent = tracee.Event{
+	innocentEvent = external.Event{
 		Timestamp:           7126141189,
 		ProcessID:           1,
 		ThreadID:            1,
@@ -32,30 +32,30 @@ var (
 		EventName:           "openat",
 		ArgsNum:             4,
 		ReturnValue:         14,
-		Args: []tracee.Argument{
+		Args: []external.Argument{
 			{
-				ArgMeta: tracee.ArgMeta{
+				ArgMeta: external.ArgMeta{
 					Name: "dirfd",
 					Type: "int",
 				},
 				Value: -100,
 			},
 			{
-				ArgMeta: tracee.ArgMeta{
+				ArgMeta: external.ArgMeta{
 					Name: "pathname",
 					Type: "const char",
 				},
 				Value: "/sys/fs/cgroup/cpu,cpuacct/cpuacct.stat",
 			},
 			{
-				ArgMeta: tracee.ArgMeta{
+				ArgMeta: external.ArgMeta{
 					Name: "flags",
 					Type: "int",
 				},
 				Value: "O_RDONLY|O_CLOEXEC",
 			},
 			{
-				ArgMeta: tracee.ArgMeta{
+				ArgMeta: external.ArgMeta{
 					Name: "mode",
 					Type: "mode_t",
 				},
@@ -64,7 +64,7 @@ var (
 		},
 	}
 
-	triggerCodeInjectorPtraceEvent = tracee.Event{
+	triggerCodeInjectorPtraceEvent = external.Event{
 		Timestamp:           6123321183,
 		ProcessID:           1,
 		ThreadID:            1,
@@ -81,16 +81,16 @@ var (
 		EventName:           "ptrace",
 		ArgsNum:             2,
 		ReturnValue:         0,
-		Args: []tracee.Argument{
+		Args: []external.Argument{
 			{
-				ArgMeta: tracee.ArgMeta{
+				ArgMeta: external.ArgMeta{
 					Name: "request",
 				},
 				Value: "PTRACE_POKETEXT",
 			},
 		},
 	}
-	triggerCodeInjectorOpenEvent = tracee.Event{
+	triggerCodeInjectorOpenEvent = external.Event{
 		Timestamp:           5123321532,
 		ProcessID:           1,
 		ThreadID:            1,
@@ -107,15 +107,15 @@ var (
 		EventName:           "open",
 		ArgsNum:             2,
 		ReturnValue:         0,
-		Args: []tracee.Argument{
+		Args: []external.Argument{
 			{
-				ArgMeta: tracee.ArgMeta{
+				ArgMeta: external.ArgMeta{
 					Name: "flags",
 				},
 				Value: "o_wronly",
 			},
 			{
-				ArgMeta: tracee.ArgMeta{
+				ArgMeta: external.ArgMeta{
 					Name: "pathname",
 				},
 				Value: "/proc/self/mem",
@@ -123,7 +123,7 @@ var (
 		},
 	}
 
-	triggerAntiDebuggingEvent = tracee.Event{
+	triggerAntiDebuggingEvent = external.Event{
 		Timestamp:           5323321532,
 		ProcessID:           1,
 		ThreadID:            1,
@@ -140,9 +140,9 @@ var (
 		EventName:           "ptrace",
 		ArgsNum:             2,
 		ReturnValue:         124,
-		Args: []tracee.Argument{
+		Args: []external.Argument{
 			{
-				ArgMeta: tracee.ArgMeta{
+				ArgMeta: external.ArgMeta{
 					Name: "request",
 				},
 				Value: "PTRACE_TRACEME",
@@ -152,7 +152,7 @@ var (
 )
 
 func ProduceEventsInMemory(n int) engine.EventSources {
-	return ProduceEventsInMemoryRandom(n, []tracee.Event{
+	return ProduceEventsInMemoryRandom(n, []external.Event{
 		innocentEvent,
 		innocentEvent,
 		innocentEvent,
@@ -162,7 +162,7 @@ func ProduceEventsInMemory(n int) engine.EventSources {
 	}...)
 }
 
-func ProduceEventsInMemoryRandom(n int, seed ...tracee.Event) engine.EventSources {
+func ProduceEventsInMemoryRandom(n int, seed ...external.Event) engine.EventSources {
 	eventsCh := make(chan types.Event, n)
 
 	for i := 0; i < n; i++ {
@@ -184,14 +184,14 @@ func ProduceEventsFromGobFile(n int, path string) (engine.EventSources, error) {
 	defer inputFile.Close()
 
 	dec := gob.NewDecoder(inputFile)
-	gob.Register(tracee.Event{})
-	gob.Register(tracee.SlimCred{})
+	gob.Register(external.Event{})
+	gob.Register(external.SlimCred{})
 	gob.Register(make(map[string]string))
 
 	eventsCh := make(chan types.Event, n)
 
 	for {
-		var event tracee.Event
+		var event external.Event
 		err := dec.Decode(&event)
 		if err != nil {
 			if err == io.EOF {

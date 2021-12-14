@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	tracee "github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/stretchr/testify/assert"
@@ -32,36 +32,36 @@ func TestStdioOverSocket(t *testing.T) {
 		{
 			Name: "A",
 			Events: []types.Event{
-				tracee.Event{
+				external.Event{
 					ProcessID: 45,
 					EventName: "security_socket_connect",
-					Args: []tracee.Argument{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "sockfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "remote_addr",
 							},
 							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
 						},
 					},
 				},
-				tracee.Event{
+				external.Event{
 					ProcessID: 45,
 					EventName: "dup2",
-					Args: []tracee.Argument{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "oldfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "newfd",
 							},
 							Value: int32(0),
@@ -77,18 +77,18 @@ func TestStdioOverSocket(t *testing.T) {
 						"port": "53",
 					},
 					SigMetadata: md,
-					Context: tracee.Event{
+					Context: external.Event{
 						ProcessID: 45,
 						EventName: "dup2",
-						Args: []tracee.Argument{
+						Args: []external.Argument{
 							{
-								ArgMeta: tracee.ArgMeta{
+								ArgMeta: external.ArgMeta{
 									Name: "oldfd",
 								},
 								Value: int32(5),
 							},
 							{
-								ArgMeta: tracee.ArgMeta{
+								ArgMeta: external.ArgMeta{
 									Name: "newfd",
 								},
 								Value: int32(0),
@@ -101,36 +101,36 @@ func TestStdioOverSocket(t *testing.T) {
 		{
 			Name: "B",
 			Events: []types.Event{
-				tracee.Event{
+				external.Event{
 					ProcessID: 45,
 					EventName: "security_socket_connect",
-					Args: []tracee.Argument{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "sockfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "remote_addr",
 							},
 							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
 						},
 					},
 				},
-				tracee.Event{
+				external.Event{
 					ProcessID: 45,
 					EventName: "dup2",
-					Args: []tracee.Argument{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "oldfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "newfd",
 							},
 							Value: int32(0),
@@ -146,18 +146,18 @@ func TestStdioOverSocket(t *testing.T) {
 						"port": "53",
 					},
 					SigMetadata: md,
-					Context: tracee.Event{
+					Context: external.Event{
 						ProcessID: 45,
 						EventName: "dup2",
-						Args: []tracee.Argument{
+						Args: []external.Argument{
 							{
-								ArgMeta: tracee.ArgMeta{
+								ArgMeta: external.ArgMeta{
 									Name: "oldfd",
 								},
 								Value: int32(5),
 							},
 							{
-								ArgMeta: tracee.ArgMeta{
+								ArgMeta: external.ArgMeta{
 									Name: "newfd",
 								},
 								Value: int32(0),
@@ -170,31 +170,31 @@ func TestStdioOverSocket(t *testing.T) {
 		{
 			Name: "C",
 			Events: []types.Event{
-				tracee.Event{
+				external.Event{
 					ProcessID: 45,
 					EventName: "security_socket_connect",
-					Args: []tracee.Argument{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "sockfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "remote_addr",
 							},
 							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
 						},
 					},
 				},
-				tracee.Event{
+				external.Event{
 					ProcessID:   45,
 					EventName:   "dup",
 					ReturnValue: 1,
-					Args: []tracee.Argument{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "oldfd",
 							},
 							Value: int32(5),
@@ -209,13 +209,13 @@ func TestStdioOverSocket(t *testing.T) {
 						"ip":   "10.225.0.2",
 						"port": "53",
 					},
-					Context: tracee.Event{
+					Context: external.Event{
 						ProcessID:   45,
 						EventName:   "dup",
 						ReturnValue: 1,
-						Args: []tracee.Argument{
+						Args: []external.Argument{
 							{
-								ArgMeta: tracee.ArgMeta{
+								ArgMeta: external.ArgMeta{
 									Name: "oldfd",
 								},
 								Value: int32(5),
@@ -229,42 +229,42 @@ func TestStdioOverSocket(t *testing.T) {
 		{
 			Name: "D",
 			Events: []types.Event{
-				tracee.Event{
+				external.Event{
 					ProcessID: 45,
 					EventName: "security_socket_connect",
-					Args: []tracee.Argument{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "sockfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "remote_addr",
 							},
 							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
 						},
 					},
 				},
-				tracee.Event{
+				external.Event{
 					ProcessID: 45,
 					EventName: "dup3",
-					Args: []tracee.Argument{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "oldfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "newfd",
 							},
 							Value: int32(0),
 						},
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "flags",
 							},
 							Value: "SOMEFLAGS",
@@ -279,24 +279,24 @@ func TestStdioOverSocket(t *testing.T) {
 						"ip":   "10.225.0.2",
 						"port": "53",
 					},
-					Context: tracee.Event{
+					Context: external.Event{
 						ProcessID: 45,
 						EventName: "dup3",
-						Args: []tracee.Argument{
+						Args: []external.Argument{
 							{
-								ArgMeta: tracee.ArgMeta{
+								ArgMeta: external.ArgMeta{
 									Name: "oldfd",
 								},
 								Value: int32(5),
 							},
 							{
-								ArgMeta: tracee.ArgMeta{
+								ArgMeta: external.ArgMeta{
 									Name: "newfd",
 								},
 								Value: int32(0),
 							},
 							{
-								ArgMeta: tracee.ArgMeta{
+								ArgMeta: external.ArgMeta{
 									Name: "flags",
 								},
 								Value: "SOMEFLAGS",
@@ -310,18 +310,18 @@ func TestStdioOverSocket(t *testing.T) {
 		{
 			Name: "E",
 			Events: []types.Event{
-				tracee.Event{
+				external.Event{
 					ProcessID: 45,
 					EventName: "dup2",
-					Args: []tracee.Argument{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "oldfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "newfd",
 							},
 							Value: int32(0),
@@ -334,48 +334,48 @@ func TestStdioOverSocket(t *testing.T) {
 		{
 			Name: "F",
 			Events: []types.Event{
-				tracee.Event{
+				external.Event{
 					ProcessID: 45,
 					EventName: "security_socket_connect",
-					Args: []tracee.Argument{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "sockfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "remote_addr",
 							},
 							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
 						},
 					},
 				},
-				tracee.Event{
+				external.Event{
 					ProcessID: 45,
 					EventName: "close",
-					Args: []tracee.Argument{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "fd",
 							},
 							Value: int32(5),
 						},
 					},
 				},
-				tracee.Event{
+				external.Event{
 					ProcessID: 45,
 					EventName: "dup2",
-					Args: []tracee.Argument{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "oldfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "newfd",
 							},
 							Value: int32(0),
@@ -388,36 +388,36 @@ func TestStdioOverSocket(t *testing.T) {
 		{
 			Name: "G",
 			Events: []types.Event{
-				tracee.Event{
+				external.Event{
 					ProcessID: 45,
 					EventName: "security_socket_connect",
-					Args: []tracee.Argument{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "sockfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "remote_addr",
 							},
 							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
 						},
 					},
 				},
-				tracee.Event{
+				external.Event{
 					ProcessID: 22,
 					EventName: "dup2",
-					Args: []tracee.Argument{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "oldfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "newfd",
 							},
 							Value: int32(0),
@@ -430,36 +430,36 @@ func TestStdioOverSocket(t *testing.T) {
 		{
 			Name: "H",
 			Events: []types.Event{
-				tracee.Event{
+				external.Event{
 					ProcessID: 45,
 					EventName: "security_socket_connect",
-					Args: []tracee.Argument{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "sockfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "remote_addr",
 							},
 							Value: map[string]string{"sa_family": "AF_INET6", "sin6_port": "443", "sin6_addr": "2001:67c:1360:8001::2f", "sin6_scopeid": "0", "sin6_flowinfo": "0"},
 						},
 					},
 				},
-				tracee.Event{
+				external.Event{
 					ProcessID: 45,
 					EventName: "dup2",
-					Args: []tracee.Argument{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "oldfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "newfd",
 							},
 							Value: int32(0),
@@ -474,18 +474,18 @@ func TestStdioOverSocket(t *testing.T) {
 						"ip":   "2001:67c:1360:8001::2f",
 						"port": "443",
 					},
-					Context: tracee.Event{
+					Context: external.Event{
 						ProcessID: 45,
 						EventName: "dup2",
-						Args: []tracee.Argument{
+						Args: []external.Argument{
 							{
-								ArgMeta: tracee.ArgMeta{
+								ArgMeta: external.ArgMeta{
 									Name: "oldfd",
 								},
 								Value: int32(5),
 							},
 							{
-								ArgMeta: tracee.ArgMeta{
+								ArgMeta: external.ArgMeta{
 									Name: "newfd",
 								},
 								Value: int32(0),

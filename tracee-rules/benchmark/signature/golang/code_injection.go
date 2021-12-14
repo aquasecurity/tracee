@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
-	tracee "github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
@@ -57,7 +57,7 @@ func (sig *codeInjection) OnEvent(e types.Event) error {
 	// { "eventName": "ptrace", "args": [{"name": "request", "value": "PTRACE_POKETEXT" }]}
 	// { "eventName": "open", "args": [{"name": "flags", "value": "o_wronly" }, {"name": "pathname", "value": "/proc/self/mem" }]}
 	// { "eventName": "execve" args": [{"name": "envp", "value": ["FOO=BAR", "LD_PRELOAD=/something"] }, {"name": "argv", "value": ["ls"] }]}
-	ee, ok := e.(tracee.Event)
+	ee, ok := e.(external.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}

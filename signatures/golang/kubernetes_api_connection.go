@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	tracee "github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
@@ -43,7 +43,7 @@ func (sig *K8sApiConnection) GetSelectedEvents() ([]types.SignatureEventSelector
 }
 
 func (sig *K8sApiConnection) OnEvent(e types.Event) error {
-	eventObj, ok := e.(tracee.Event)
+	eventObj, ok := e.(external.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}
@@ -116,7 +116,7 @@ func getApiAddressFromEnvs(envs []string) string {
 	return ""
 }
 
-func getIPFromAddr(addrArg tracee.Argument) (string, error) {
+func getIPFromAddr(addrArg external.Argument) (string, error) {
 
 	addr, isOk := addrArg.Value.(map[string]string)
 	if !isOk {

@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	tracee "github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/stretchr/testify/assert"
@@ -19,30 +19,30 @@ func TestK8sApiConnection(t *testing.T) {
 		{
 			Name: "should trigger detection",
 			Events: []types.Event{
-				tracee.Event{
+				external.Event{
 					EventName:   "execve",
 					ContainerID: "0907ef86d7be",
-					Args: []tracee.Argument{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "argv",
 							},
 							Value: []string{"/bin/ls"},
 						},
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "envp",
 							},
 							Value: []string{"CURL_CA_BUNDLE=/cacert.pem", "HOSTNAME=3c5f9dbcb5da", "CURL_RELEASE_TAG=curl-7_76_1", "CURL_GIT_REPO=https://github.com/curl/curl.git", "SHLVL=2", "HOME=/home/curl_user", "TERM=xterm", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "PWD=/", "KUBERNETES_SERVICE_HOST=1.1.1.1", "CURL_VERSION=7_76_1"},
 						},
 					},
 				},
-				tracee.Event{
+				external.Event{
 					EventName:   "security_socket_connect",
 					ContainerID: "0907ef86d7be",
-					Args: []tracee.Argument{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "remote_addr",
 							},
 							Value: map[string]string{
@@ -59,12 +59,12 @@ func TestK8sApiConnection(t *testing.T) {
 					Data: map[string]interface{}{
 						"ip": "1.1.1.1",
 					},
-					Context: tracee.Event{
+					Context: external.Event{
 						EventName:   "security_socket_connect",
 						ContainerID: "0907ef86d7be",
-						Args: []tracee.Argument{
+						Args: []external.Argument{
 							{
-								ArgMeta: tracee.ArgMeta{
+								ArgMeta: external.ArgMeta{
 									Name: "remote_addr",
 								},
 								Value: map[string]string{
@@ -92,30 +92,30 @@ func TestK8sApiConnection(t *testing.T) {
 		{
 			Name: "should not trigger detection",
 			Events: []types.Event{
-				tracee.Event{
+				external.Event{
 					EventName:   "execve",
 					ContainerID: "0907ef86d7be",
-					Args: []tracee.Argument{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "argv",
 							},
 							Value: []string{"/bin/ls"},
 						},
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "envp",
 							},
 							Value: []string{"CURL_CA_BUNDLE=/cacert.pem", "HOSTNAME=3c5f9dbcb5da", "CURL_RELEASE_TAG=curl-7_76_1", "CURL_GIT_REPO=https://github.com/curl/curl.git", "SHLVL=2", "HOME=/home/curl_user", "TERM=xterm", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "PWD=/", "KUBERNETES_SERVICE_HOST=1.1.1.1", "CURL_VERSION=7_76_1"},
 						},
 					},
 				},
-				tracee.Event{
+				external.Event{
 					EventName:   "security_socket_connect",
 					ContainerID: "0907ef86d7be",
-					Args: []tracee.Argument{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "remote_addr",
 							},
 							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "80", "sin_addr": "169.254.169.254"},

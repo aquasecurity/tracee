@@ -7,6 +7,9 @@ require (
 	github.com/aquasecurity/libbpfgo v0.2.2-libbpf-0.5.0
 	github.com/google/gopacket v1.1.19
 	github.com/hashicorp/golang-lru v0.5.4
+	github.com/kelseyhightower/envconfig v1.4.0
+	github.com/mitchellh/go-ps v1.0.0
+	github.com/onsi/gomega v1.17.0
 	github.com/open-policy-agent/opa v0.35.0
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635

@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	tracee "github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/open-policy-agent/opa/ast"
@@ -160,13 +160,13 @@ func (sig *RegoSignature) getSelectedEvents(pkgName string) ([]types.SignatureEv
 // if document is "returned", any non-empty evaluation will generate a Finding with the document as the Finding's "Data"
 func (sig *RegoSignature) OnEvent(e types.Event) error {
 	var input rego.EvalOption
-	var ee tracee.Event
+	var ee external.Event
 
 	// TODO(danielpacak) OnEvent is called very often. Hence, check what's the performance impact of Go type switch here.
 	switch v := e.(type) {
 	// This case is for backward compatibility. From OPA Go SDK stand point it's more efficient to enter ParsedEvent case.
-	case tracee.Event:
-		ee = e.(tracee.Event)
+	case external.Event:
+		ee = e.(external.Event)
 		input = rego.EvalInput(e)
 	case engine.ParsedEvent:
 		pe := e.(engine.ParsedEvent)

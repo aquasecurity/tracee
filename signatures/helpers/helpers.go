@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"strings"
 
-	tracee "github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/external"
 )
 
 // GetTraceeArgumentByName fetches the argument in event with `Name` that matches argName
-func GetTraceeArgumentByName(event tracee.Event, argName string) (tracee.Argument, error) {
+func GetTraceeArgumentByName(event external.Event, argName string) (external.Argument, error) {
 	for _, arg := range event.Args {
 		if arg.Name == argName {
 			return arg, nil
 		}
 	}
-	return tracee.Argument{}, fmt.Errorf("argument %s not found", argName)
+	return external.Argument{}, fmt.Errorf("argument %s not found", argName)
 }
 
 // IsFileWrite returns whether or not the passed file permissions string contains

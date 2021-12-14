@@ -3,7 +3,7 @@ package golang
 import (
 	"fmt"
 
-	tracee "github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
@@ -43,7 +43,7 @@ func (sig *antiDebugging) GetSelectedEvents() ([]types.SignatureEventSelector, e
 }
 
 func (sig *antiDebugging) OnEvent(e types.Event) error {
-	ee, ok := e.(tracee.Event)
+	ee, ok := e.(external.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}

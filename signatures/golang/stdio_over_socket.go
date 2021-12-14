@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	tracee "github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
@@ -52,7 +52,7 @@ func (sig *stdioOverSocket) GetSelectedEvents() ([]types.SignatureEventSelector,
 
 func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 
-	eventObj, ok := e.(tracee.Event)
+	eventObj, ok := e.(external.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}
@@ -169,7 +169,7 @@ func (sig *stdioOverSocket) OnSignal(s types.Signal) error {
 }
 func (sig *stdioOverSocket) Close() {}
 
-func isSocketDuplicatedIntoStdio(sig *stdioOverSocket, eventObj tracee.Event, pidSocketMap map[int]connectedAddress, srcFd int, dstFd int) error {
+func isSocketDuplicatedIntoStdio(sig *stdioOverSocket, eventObj external.Event, pidSocketMap map[int]connectedAddress, srcFd int, dstFd int) error {
 	address, socketfdExists := pidSocketMap[srcFd]
 
 	// this means that a socket FD is duplicated into one of the standard FDs
@@ -180,7 +180,7 @@ func isSocketDuplicatedIntoStdio(sig *stdioOverSocket, eventObj tracee.Event, pi
 	return nil
 }
 
-func isSocketOverStdio(sig *stdioOverSocket, eventObj tracee.Event, address connectedAddress, fd int) error {
+func isSocketOverStdio(sig *stdioOverSocket, eventObj external.Event, address connectedAddress, fd int) error {
 
 	stdAll := []int{0, 1, 2}
 
@@ -209,7 +209,7 @@ func intInSlice(a int, list []int) bool {
 	return false
 }
 
-func getAddressfromAddrArg(arg tracee.Argument) (connectedAddress, error) {
+func getAddressfromAddrArg(arg external.Argument) (connectedAddress, error) {
 
 	addr, isOk := arg.Value.(map[string]string)
 	if !isOk {

@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	tracee "github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/tracee-rules/regosig"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
@@ -95,7 +95,7 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 	testCases := []struct {
 		name    string
 		modules map[string]string
-		event   tracee.Event
+		event   external.Event
 		// findings are grouped by signature identifier for comparison
 		findings  map[string]types.Finding
 		wantError string
@@ -106,10 +106,10 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 				"test_boolean.rego": testRegoCodeBoolean,
 				"test_object.rego":  testRegoCodeObject,
 			},
-			event: tracee.Event{
-				Args: []tracee.Argument{
+			event: external.Event{
+				Args: []external.Argument{
 					{
-						ArgMeta: tracee.ArgMeta{
+						ArgMeta: external.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: "ends with yo",
@@ -119,10 +119,10 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 			findings: map[string]types.Finding{
 				"TRC-BOOL": {
 					Data: nil,
-					Context: tracee.Event{
-						Args: []tracee.Argument{
+					Context: external.Event{
+						Args: []external.Argument{
 							{
-								ArgMeta: tracee.ArgMeta{
+								ArgMeta: external.ArgMeta{
 									Name: "doesn't matter",
 								},
 								Value: "ends with yo",
@@ -153,16 +153,16 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 				"test_boolean.rego": testRegoCodeBoolean,
 				"test_object.rego":  testRegoCodeObject,
 			},
-			event: tracee.Event{
-				Args: []tracee.Argument{
+			event: external.Event{
+				Args: []external.Argument{
 					{
-						ArgMeta: tracee.ArgMeta{
+						ArgMeta: external.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: "ends with yo",
 					},
 					{
-						ArgMeta: tracee.ArgMeta{
+						ArgMeta: external.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: 1337,
@@ -176,16 +176,16 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 						"p2": json.Number("1"),
 						"p3": true,
 					},
-					Context: tracee.Event{
-						Args: []tracee.Argument{
+					Context: external.Event{
+						Args: []external.Argument{
 							{
-								ArgMeta: tracee.ArgMeta{
+								ArgMeta: external.ArgMeta{
 									Name: "doesn't matter",
 								},
 								Value: "ends with yo",
 							},
 							{
-								ArgMeta: tracee.ArgMeta{
+								ArgMeta: external.ArgMeta{
 									Name: "doesn't matter",
 								},
 								Value: 1337,
@@ -210,16 +210,16 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 				},
 				"TRC-BOOL": {
 					Data: nil,
-					Context: tracee.Event{
-						Args: []tracee.Argument{
+					Context: external.Event{
+						Args: []external.Argument{
 							{
-								ArgMeta: tracee.ArgMeta{
+								ArgMeta: external.ArgMeta{
 									Name: "doesn't matter",
 								},
 								Value: "ends with yo",
 							},
 							{
-								ArgMeta: tracee.ArgMeta{
+								ArgMeta: external.ArgMeta{
 									Name: "doesn't matter",
 								},
 								Value: 1337,
@@ -249,10 +249,10 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 			modules: map[string]string{
 				"test_invalid.rego": testRegoCodeInvalidObject,
 			},
-			event: tracee.Event{
-				Args: []tracee.Argument{
+			event: external.Event{
+				Args: []external.Argument{
 					{
-						ArgMeta: tracee.ArgMeta{
+						ArgMeta: external.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: "ends with invalid",
