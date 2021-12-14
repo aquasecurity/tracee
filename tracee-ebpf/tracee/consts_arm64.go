@@ -341,6 +341,13 @@ const (
 	Faccessat2EventID               int32 = 439
 	ProcessMadviseEventID           int32 = 440
 	EpollPwait2EventID              int32 = 441
+	MountSetattEventID              int32 = 442
+	QuotactlFdEventID               int32 = 443
+	LandlockCreateRulesetEventID    int32 = 444
+	LandlockAddRuleEventID          int32 = 445
+	LandloclRestrictSetEventID      int32 = 446
+	MemfdSecretEventID              int32 = 447
+	ProcessMreleaseEventID          int32 = 448
 )
 
 // following syscalls are undefined on arm64
@@ -849,6 +856,13 @@ const (
 	sys32faccessat2                   int32 = 439
 	sys32process_madvise              int32 = 440
 	sys32epoll_pwait2                 int32 = 441
+	sys32mount_setattr                int32 = 442
+	sys32quotactl_fd                  int32 = 443
+	sys32landlock_create_ruleset      int32 = 444
+	sys32landlock_add_rule            int32 = 445
+	sys32landlock_restrict_self       int32 = 446
+	sys32memfd_secret                 int32 = 447
+	sys32process_mrelease             int32 = 448
 	sys32undefined                    int32 = 10000
 )
 
