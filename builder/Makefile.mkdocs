@@ -1,0 +1,66 @@
+.PHONY: all
+all:
+	$(MAKE) mkdocs-build
+	$(MAKE) mkdocs-serve
+
+# tools
+
+MAKE = make -f $(shell find . -name Makefile.mkdocs)
+MAKEFLAGS += --no-print-directory
+
+# tools
+
+CMD_DOCKER ?= docker
+
+check_%:
+	@command -v $* >/dev/null || (echo "missing required tool $*" ; exit 1)
+
+# usage
+
+.PHONY: help
+help:
+	@echo ""
+	@echo "To build the mkdocs docker container:"
+	@echo ""
+	@echo "    $ make -f builder/Makefile.mkdocs mkdocs-build"
+	@echo ""
+	@echo "To serve mkdocs through mkdocks container:"
+	@echo ""
+	@echo "    $ make -f builder/Makefile.mkdocs mkdocs-serve"
+	@echo ""
+	@echo "Or simply:"
+	@echo ""
+	@echo "    $ make -f builder/Makefile.mkdocs"
+	@echo ""
+
+# requirements
+
+.PHONY: check_tree
+check_tree:
+	@if [ ! -d ./builder ]; then \
+		echo "you must be in the root directory"; \
+		exit 1; \
+	fi
+
+# mkdocs dev server
+
+MKDOCS_CONTNAME = tracee-mkdocs:latest
+
+.PHONY: mkdocs-build
+mkdocs-build: check_$(CMD_DOCKER) | check_tree
+	$(CMD_DOCKER) build \
+		-f builder/Dockerfile.mkdocs \
+		-t $(MKDOCS_CONTNAME) \
+		.
+
+.PHONY: mkdocs-serve
+mkdocs-serve: check_$(CMD_DOCKER) | check_tree
+	$(CMD_DOCKER) run --rm \
+		-v $(shell pwd):/docs \
+		-p 8000:8000 \
+		$(MKDOCS_CONTNAME)
+
+# clean
+
+.PHONY: clean
+clean:

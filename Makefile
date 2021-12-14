@@ -23,9 +23,6 @@ CMD_BATS ?= bats
 
 release_tools := $(CMD_DOCKER) $(CMD_GIT) $(CMD_CHECKSUM) $(CMD_GITHUB) $(CMD_TAR) $(CMP_CP)
 
-MKDOCS_IMAGE := aquasec/mkdocs-material:tracee
-MKDOCS_PORT := 8000
-
 # DOCKER variable is used by sub-makefiles to build their artifact in a container
 export DOCKER
 
@@ -115,9 +112,3 @@ clean:
 test-entrypoint: entrypoint.sh entrypoint_test.bats test/mocks/* test/bats-helpers.bash
 	@command -v $$BATS >/dev/null || (echo "missing required tool $$BATS"; false)
 	bats ./entrypoint_test.bats
-
-# Runs MkDocs dev server to preview the docs page before it is published.
-.PHONY: mkdocs-serve
-mkdocs-serve:
-	$(CMD_DOCKER) build -t $(MKDOCS_IMAGE) -f docs/Dockerfile docs
-	$(CMD_DOCKER) run --name mkdocs-serve --rm -v $(PWD):/docs -p $(MKDOCS_PORT):8000 $(MKDOCS_IMAGE)
