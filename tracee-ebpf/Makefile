@@ -42,16 +42,6 @@ DOCKER_BUILDER_KERN_SRC ?= $(if $(shell readlink -f $(KERN_SRC_PATH)),$(shell re
 DOCKER_BUILDER_KERN_SRC_MNT ?= $(dir $(DOCKER_BUILDER_KERN_SRC))
 LINUX_VERSION_CODE := $(shell uname -r | awk '{split($$0,a,"."); split(a[3], b, "-"); print lshift(a[1], 16) + lshift(a[2],8) + b[1];}')
 
-DIST_ID_LIKE := $(shell grep -m 1 'ID_LIKE=' $(OS_RELEASE_FILE) | cut -d '=' -f '2' | sed 's/\"//g')
-VERSION_ID := $(shell grep -m 1 'VERSION_ID=' $(OS_RELEASE_FILE) | cut -d '=' -f '2' | sed 's/\"//g')
-ifneq (,$(findstring rhel,$(DIST_ID_LIKE)))
-	RHEL_MAJOR := $(shell echo $(VERSION_ID) | cut -d '.' -f 1)
-	RHEL_MINOR := $(shell echo $(VERSION_ID) | cut -d '.' -f 2)
-	RHEL_RELEASE_CODE := $(shell echo $$(($(RHEL_MAJOR) << 8 | $(RHEL_MINOR))))
-else
-	RHEL_RELEASE_CODE := 0
-endif
-
 $(OUT_DIR):
 	mkdir -p $@
 

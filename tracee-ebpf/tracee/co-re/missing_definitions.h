@@ -11,8 +11,6 @@
 #ifndef __TRACEE_MISSING_MACROS_H__
 #define __TRACEE_MISSING_MACROS_H__
 
-#define RHEL_RELEASE_VERSION(a,b) (((a) << 8) + (b))
-
 #define ULLONG_MAX (~0ULL)
 
 #define inet_daddr     sk.__sk_common.skc_daddr
