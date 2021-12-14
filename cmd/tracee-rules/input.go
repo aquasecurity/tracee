@@ -11,7 +11,7 @@ import (
 	"os"
 	"strings"
 
-	tracee "github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
@@ -45,13 +45,13 @@ func setupTraceeInputSource(opts *traceeInputOptions) (chan types.Event, error) 
 
 func setupTraceeGobInputSource(opts *traceeInputOptions) (chan types.Event, error) {
 	dec := gob.NewDecoder(opts.inputFile)
-	gob.Register(tracee.Event{})
-	gob.Register(tracee.SlimCred{})
+	gob.Register(external.Event{})
+	gob.Register(external.SlimCred{})
 	gob.Register(make(map[string]string))
 	res := make(chan types.Event)
 	go func() {
 		for {
-			var event tracee.Event
+			var event external.Event
 			err := dec.Decode(&event)
 			if err != nil {
 				if err == io.EOF {
@@ -75,7 +75,7 @@ func setupTraceeJSONInputSource(opts *traceeInputOptions) (chan types.Event, err
 	go func() {
 		for scanner.Scan() {
 			event := scanner.Bytes()
-			var e tracee.Event
+			var e external.Event
 			err := json.Unmarshal(event, &e)
 			if err != nil {
 				log.Printf("invalid json in %s: %v", string(event), err)

@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	tracee "github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
 	"github.com/aquasecurity/tracee/tracee-rules/regosig"
@@ -88,7 +88,7 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 	testCases := []struct {
 		name       string
 		regoCode   string
-		event      tracee.Event
+		event      external.Event
 		parseEvent bool
 
 		finding *types.Finding
@@ -97,10 +97,10 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 		{
 			name:     "Should trigger finding when tracee_match rule returns boolean and event matches",
 			regoCode: testRegoCodeBoolean,
-			event: tracee.Event{
-				Args: []tracee.Argument{
+			event: external.Event{
+				Args: []external.Argument{
 					{
-						ArgMeta: tracee.ArgMeta{
+						ArgMeta: external.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: "ends with yo",
@@ -109,10 +109,10 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 			},
 			finding: &types.Finding{
 				Data: nil,
-				Context: tracee.Event{
-					Args: []tracee.Argument{
+				Context: external.Event{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "doesn't matter",
 							},
 							Value: "ends with yo",
@@ -139,10 +139,10 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 		{
 			name:     "Should trigger finding when tracee_match rule returns boolean and parsed event matches",
 			regoCode: testRegoCodeBoolean,
-			event: tracee.Event{
-				Args: []tracee.Argument{
+			event: external.Event{
+				Args: []external.Argument{
 					{
-						ArgMeta: tracee.ArgMeta{
+						ArgMeta: external.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: "ends with yo",
@@ -152,10 +152,10 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 			parseEvent: true,
 			finding: &types.Finding{
 				Data: nil,
-				Context: tracee.Event{
-					Args: []tracee.Argument{
+				Context: external.Event{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "doesn't matter",
 							},
 							Value: "ends with yo",
@@ -182,10 +182,10 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 		{
 			name:     "Shouldn't trigger finding when tracee_match rule returns boolean but event doesn't match",
 			regoCode: testRegoCodeBoolean,
-			event: tracee.Event{
-				Args: []tracee.Argument{
+			event: external.Event{
+				Args: []external.Argument{
 					{
-						ArgMeta: tracee.ArgMeta{
+						ArgMeta: external.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: "doesn't end with yo!",
@@ -197,16 +197,16 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 		{
 			name:     "Should trigger finding when tracee_match rule returns object and event matches",
 			regoCode: testRegoCodeObject,
-			event: tracee.Event{
-				Args: []tracee.Argument{
+			event: external.Event{
+				Args: []external.Argument{
 					{
-						ArgMeta: tracee.ArgMeta{
+						ArgMeta: external.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: "ends with yo",
 					},
 					{
-						ArgMeta: tracee.ArgMeta{
+						ArgMeta: external.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: 1337,
@@ -219,16 +219,16 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 					"p2": json.Number("1"),
 					"p3": true,
 				},
-				Context: tracee.Event{
-					Args: []tracee.Argument{
+				Context: external.Event{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "doesn't matter",
 							},
 							Value: "ends with yo",
 						},
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "doesn't matter",
 							},
 							Value: 1337,
@@ -255,16 +255,16 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 		{
 			name:     "Should trigger finding when tracee_match rule returns object and parsed event matches",
 			regoCode: testRegoCodeObject,
-			event: tracee.Event{
-				Args: []tracee.Argument{
+			event: external.Event{
+				Args: []external.Argument{
 					{
-						ArgMeta: tracee.ArgMeta{
+						ArgMeta: external.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: "ends with yo",
 					},
 					{
-						ArgMeta: tracee.ArgMeta{
+						ArgMeta: external.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: 1337,
@@ -278,16 +278,16 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 					"p2": json.Number("1"),
 					"p3": true,
 				},
-				Context: tracee.Event{
-					Args: []tracee.Argument{
+				Context: external.Event{
+					Args: []external.Argument{
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "doesn't matter",
 							},
 							Value: "ends with yo",
 						},
 						{
-							ArgMeta: tracee.ArgMeta{
+							ArgMeta: external.ArgMeta{
 								Name: "doesn't matter",
 							},
 							Value: 1337,
@@ -314,10 +314,10 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 		{
 			name:     "Shouldn't trigger finding when tracee_match rule returns object but event doesn't match",
 			regoCode: testRegoCodeObject,
-			event: tracee.Event{
-				Args: []tracee.Argument{
+			event: external.Event{
+				Args: []external.Argument{
 					{
-						ArgMeta: tracee.ArgMeta{
+						ArgMeta: external.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: "yo is not at end",

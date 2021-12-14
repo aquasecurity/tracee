@@ -11,8 +11,8 @@ import (
 	"strings"
 	"text/template"
 
-	sprig "github.com/Masterminds/sprig/v3"
-	tracee "github.com/aquasecurity/tracee/pkg/external"
+	"github.com/Masterminds/sprig/v3"
+	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
@@ -58,7 +58,7 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 	go func(w io.Writer, tWebhook, tOutput *template.Template) {
 		for res := range out {
 			switch res.Context.(type) {
-			case tracee.Event:
+			case external.Event:
 				if err := tOutput.Execute(w, res); err != nil {
 					log.Printf("error writing to output: %v", err)
 				}

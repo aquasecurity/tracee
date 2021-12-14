@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	tracee "github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/open-policy-agent/opa/ast"
 )
@@ -177,7 +177,7 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 				}
 			} else if event != nil {
 				engine.signaturesMutex.RLock()
-				traceeEvt, ok := event.(tracee.Event)
+				traceeEvt, ok := event.(external.Event)
 				if !ok {
 					engine.logger.Printf("invalid event received (should be of type tracee.Event)")
 					engine.signaturesMutex.RUnlock()
@@ -205,7 +205,7 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 	}
 }
 
-func (engine *Engine) dispatchEvent(s types.Signature, event tracee.Event) {
+func (engine *Engine) dispatchEvent(s types.Signature, event external.Event) {
 	switch {
 	case strings.Contains(reflect.TypeOf(s).String(), "rego"):
 		if engine.parsedEvents {
@@ -309,13 +309,13 @@ func (engine *Engine) UnloadSignature(signatureId string) error {
 
 // ParsedEvent holds the original tracee.Event and its OPA ast.Value representation.
 type ParsedEvent struct {
-	Event tracee.Event
+	Event external.Event
 	Value ast.Value
 }
 
 // ToParsedEvent enhances tracee.Event with OPA ast.Value. This is mainly used
 // for performance optimization to avoid parsing tracee.Event multiple times.
-func ToParsedEvent(e tracee.Event) (ParsedEvent, error) {
+func ToParsedEvent(e external.Event) (ParsedEvent, error) {
 	u, err := e.ToUnstructured()
 	if err != nil {
 		return ParsedEvent{}, fmt.Errorf("unstructuring event: %w", err)
@@ -331,7 +331,7 @@ func ToParsedEvent(e tracee.Event) (ParsedEvent, error) {
 	}, nil
 }
 
-func analyzeEventOrigin(event tracee.Event) string {
+func analyzeEventOrigin(event external.Event) string {
 	if event.ContainerID != "" || event.ProcessID != event.HostProcessID {
 		return EVENT_CONTAINER_ORIGIN
 	} else {

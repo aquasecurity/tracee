@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/external"
-	tracee "github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -64,7 +63,7 @@ func (fs *regoFakeSignature) Close() {}
 func TestConsumeSources(t *testing.T) {
 	testCases := []struct {
 		name              string
-		inputEvent        tracee.Event
+		inputEvent        external.Event
 		inputSignature    regoFakeSignature
 		expectedNumEvents int
 		expectedError     string
@@ -73,13 +72,13 @@ func TestConsumeSources(t *testing.T) {
 	}{
 		{
 			name: "happy path - with one matching selector, parsed event enabled",
-			inputEvent: tracee.Event{
+			inputEvent: external.Event{
 				EventName:       "test_event",
 				ProcessID:       2,
 				ParentProcessID: 1,
-				Args: []tracee.Argument{
+				Args: []external.Argument{
 					{
-						ArgMeta: tracee.ArgMeta{
+						ArgMeta: external.ArgMeta{
 							Name: "pathname",
 						},
 						Value: "/proc/self/mem",
@@ -97,7 +96,7 @@ func TestConsumeSources(t *testing.T) {
 				},
 			},
 			expectedNumEvents: 1,
-			expectedEvent: tracee.Event{
+			expectedEvent: external.Event{
 				ProcessID: 2, ParentProcessID: 1, Args: []external.Argument{{ArgMeta: external.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
 				EventName: "test_event",
 			},
@@ -105,13 +104,13 @@ func TestConsumeSources(t *testing.T) {
 		},
 		{
 			name: "happy path - with one matching selector",
-			inputEvent: tracee.Event{
+			inputEvent: external.Event{
 				EventName:       "test_event",
 				ProcessID:       2,
 				ParentProcessID: 1,
-				Args: []tracee.Argument{
+				Args: []external.Argument{
 					{
-						ArgMeta: tracee.ArgMeta{
+						ArgMeta: external.ArgMeta{
 							Name: "pathname",
 						},
 						Value: "/proc/self/mem",
@@ -129,14 +128,14 @@ func TestConsumeSources(t *testing.T) {
 				},
 			},
 			expectedNumEvents: 1,
-			expectedEvent: tracee.Event{
+			expectedEvent: external.Event{
 				ProcessID: 2, ParentProcessID: 1, Args: []external.Argument{{ArgMeta: external.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
 				EventName: "test_event",
 			},
 		},
 		{
 			name: "happy path - with no matching event selector",
-			inputEvent: tracee.Event{
+			inputEvent: external.Event{
 				EventName: "execve",
 			},
 			inputSignature: regoFakeSignature{
@@ -153,7 +152,7 @@ func TestConsumeSources(t *testing.T) {
 		},
 		{
 			name: "happy path - with all events selector",
-			inputEvent: tracee.Event{
+			inputEvent: external.Event{
 				EventName: "execve",
 			},
 			inputSignature: regoFakeSignature{
@@ -167,13 +166,13 @@ func TestConsumeSources(t *testing.T) {
 				},
 			},
 			expectedNumEvents: 1,
-			expectedEvent: tracee.Event{
+			expectedEvent: external.Event{
 				EventName: "execve",
 			},
 		},
 		{
 			name:       "happy path - with all events selector, no name",
-			inputEvent: tracee.Event{EventName: "execve"},
+			inputEvent: external.Event{EventName: "execve"},
 			inputSignature: regoFakeSignature{
 				getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
 					return []types.SignatureEventSelector{
@@ -184,18 +183,18 @@ func TestConsumeSources(t *testing.T) {
 				},
 			},
 			expectedNumEvents: 1,
-			expectedEvent:     tracee.Event{EventName: "execve"},
+			expectedEvent:     external.Event{EventName: "execve"},
 		},
 		{
 			name: "happy path - with one matching selector including event origin from container",
-			inputEvent: tracee.Event{
+			inputEvent: external.Event{
 				EventName:       "test_event",
 				ProcessID:       2,
 				ParentProcessID: 1,
 				ContainerID:     "container ID",
-				Args: []tracee.Argument{
+				Args: []external.Argument{
 					{
-						ArgMeta: tracee.ArgMeta{
+						ArgMeta: external.ArgMeta{
 							Name: "pathname",
 						},
 						Value: "/proc/self/mem",
@@ -214,21 +213,21 @@ func TestConsumeSources(t *testing.T) {
 				},
 			},
 			expectedNumEvents: 1,
-			expectedEvent: tracee.Event{
+			expectedEvent: external.Event{
 				ProcessID: 2, ParentProcessID: 1, ContainerID: "container ID", Args: []external.Argument{{ArgMeta: external.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
 				EventName: "test_event",
 			},
 		},
 		{
 			name: "happy path - with one matching selector with mismatching event origin from container",
-			inputEvent: tracee.Event{
+			inputEvent: external.Event{
 				EventName:       "test_event",
 				ProcessID:       2,
 				ParentProcessID: 1,
 				ContainerID:     "container ID",
-				Args: []tracee.Argument{
+				Args: []external.Argument{
 					{
-						ArgMeta: tracee.ArgMeta{
+						ArgMeta: external.ArgMeta{
 							Name: "pathname",
 						},
 						Value: "/proc/self/mem",
@@ -250,13 +249,13 @@ func TestConsumeSources(t *testing.T) {
 		},
 		{
 			name: "happy path - with one matching selector including event origin from host",
-			inputEvent: tracee.Event{
+			inputEvent: external.Event{
 				EventName:       "test_event",
 				ProcessID:       2,
 				ParentProcessID: 2,
-				Args: []tracee.Argument{
+				Args: []external.Argument{
 					{
-						ArgMeta: tracee.ArgMeta{
+						ArgMeta: external.ArgMeta{
 							Name: "pathname",
 						},
 						Value: "/proc/self/mem",
@@ -275,7 +274,7 @@ func TestConsumeSources(t *testing.T) {
 				},
 			},
 			expectedNumEvents: 1,
-			expectedEvent: tracee.Event{
+			expectedEvent: external.Event{
 				ProcessID: 2, ParentProcessID: 2, Args: []external.Argument{{ArgMeta: external.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
 				EventName: "test_event",
 			},
@@ -323,13 +322,13 @@ func TestConsumeSources(t *testing.T) {
 		},
 		{
 			name: "sad path - event ContainerID was not parsed but event is from container",
-			inputEvent: tracee.Event{
+			inputEvent: external.Event{
 				EventName:       "test_event",
 				ProcessID:       2,
 				ParentProcessID: 1,
-				Args: []tracee.Argument{
+				Args: []external.Argument{
 					{
-						ArgMeta: tracee.ArgMeta{
+						ArgMeta: external.ArgMeta{
 							Name: "pathname",
 						},
 						Value: "/proc/self/mem",
@@ -348,7 +347,7 @@ func TestConsumeSources(t *testing.T) {
 				},
 			},
 			expectedNumEvents: 1,
-			expectedEvent: tracee.Event{
+			expectedEvent: external.Event{
 				ProcessID: 2, ParentProcessID: 1, Args: []external.Argument{{ArgMeta: external.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
 				EventName: "test_event",
 			},
@@ -382,7 +381,7 @@ func TestConsumeSources(t *testing.T) {
 				if tc.enableParsedEvent {
 					assert.Equal(t, tc.expectedEvent, event.(ParsedEvent).Event, tc.name)
 				} else {
-					assert.Equal(t, tc.expectedEvent, event.(tracee.Event), tc.name)
+					assert.Equal(t, tc.expectedEvent, event.(external.Event), tc.name)
 				}
 				gotNumEvents++
 				return nil

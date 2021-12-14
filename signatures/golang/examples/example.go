@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	tracee "github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
@@ -41,7 +41,7 @@ func (sig *counter) GetSelectedEvents() ([]types.SignatureEventSelector, error) 
 
 // OnEvent implements the Signature interface by handling each Event passed by the Engine. this is the business logic of the signature
 func (sig *counter) OnEvent(e types.Event) error {
-	ee, ok := e.(tracee.Event)
+	ee, ok := e.(external.Event)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}

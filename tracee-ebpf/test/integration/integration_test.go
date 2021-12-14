@@ -14,13 +14,11 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
-
-	ps "github.com/mitchellh/go-ps"
-	"github.com/onsi/gomega/gexec"
-	"github.com/stretchr/testify/require"
-
 	"github.com/kelseyhightower/envconfig"
+	"github.com/mitchellh/go-ps"
+	"github.com/onsi/gomega/gexec"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -215,6 +213,7 @@ func getAllSyscallsInSet(set string) []string {
 }
 
 func Test_Events(t *testing.T) {
+	t.Skip("This is an integration test")
 	var testCases = []struct {
 		name       string
 		args       []string
