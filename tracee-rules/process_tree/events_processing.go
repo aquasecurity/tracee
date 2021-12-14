@@ -66,6 +66,7 @@ func (tree *ProcessTree) processExec(event external.Event) error {
 	}
 	process.InContainerIDs.Pid = event.ProcessID
 	process.InContainerIDs.Tid = event.ThreadID
+	process.ProcessName = event.ProcessName
 	return nil
 }
 
@@ -146,7 +147,7 @@ func (tree *ProcessTree) processExit(event external.Event) error {
 		}
 		cp := process
 		for {
-			delete(tree.tree, cp.InHostIDs.Tid)
+			tree.cachedDeleteProcess(cp.InHostIDs.Tid)
 			if container.Root == cp {
 				delete(tree.containers, event.ContainerID)
 			}
@@ -176,4 +177,15 @@ func getArgumentByName(event external.Event, argName string) (external.Argument,
 		}
 	}
 	return external.Argument{}, fmt.Errorf("argument %s not found", argName)
+}
+
+const cachedDeadEvents = 100
+
+func (tree *ProcessTree) cachedDeleteProcess(tid int) {
+	tree.deadProcessesCache = append(tree.deadProcessesCache, tid)
+	if len(tree.deadProcessesCache) > cachedDeadEvents {
+		dtid := tree.deadProcessesCache[0]
+		tree.deadProcessesCache = tree.deadProcessesCache[1:]
+		delete(tree.tree, dtid)
+	}
 }

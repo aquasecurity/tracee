@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/aquasecurity/tracee/tracee-rules/process_tree"
 	"io"
 	"log"
 	"net/http"
@@ -24,7 +25,14 @@ Signature: {{ .SigMetadata.Name }}
 Data: {{ .Data }}
 Command: {{ .Context.ProcessName }}
 Hostname: {{ .Context.HostName }}
+Process Lineage: {{ range .ProcessLineage }}
+	PID = {{ .InHostIDs.Pid }}, Name = {{ .ProcessName }}{{end}}
 `
+
+type FinaleFinding struct {
+	types.Finding
+	ProcessLineage process_tree.ProcessLineage
+}
 
 func setupTemplate(inputTemplateFile string) (*template.Template, error) {
 	switch {
@@ -57,9 +65,14 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 
 	go func(w io.Writer, tWebhook, tOutput *template.Template) {
 		for res := range out {
+			lineage, _ := process_tree.GetProcessLineage(res.Context.(tracee.Event).HostThreadID)
+			ffinding := FinaleFinding{
+				res,
+				lineage,
+			}
 			switch res.Context.(type) {
 			case external.Event:
-				if err := tOutput.Execute(w, res); err != nil {
+				if err := tOutput.Execute(w, ffinding); err != nil {
 					log.Printf("error writing to output: %v", err)
 				}
 			default:
@@ -68,7 +81,7 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 			}
 
 			if webhook != "" {
-				if err := sendToWebhook(tWebhook, res, webhook, webhookTemplate, contentType); err != nil {
+				if err := sendToWebhook(tWebhook, ffinding, webhook, webhookTemplate, contentType); err != nil {
 					log.Printf("error sending to webhook: %v", err)
 				}
 			}
@@ -77,7 +90,7 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 	return out, nil
 }
 
-func sendToWebhook(t *template.Template, res types.Finding, webhook string, webhookTemplate string, contentType string) error {
+func sendToWebhook(t *template.Template, res FinaleFinding, webhook string, webhookTemplate string, contentType string) error {
 	var payload string
 
 	switch {

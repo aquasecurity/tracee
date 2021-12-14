@@ -9,8 +9,9 @@ type containerProcessTree struct {
 }
 
 type ProcessTree struct {
-	containers map[string]*containerProcessTree
-	tree       map[int]*ProcessInfo
+	containers         map[string]*containerProcessTree
+	tree               map[int]*ProcessInfo
+	deadProcessesCache []int
 }
 
 func (tree *ProcessTree) GetProcessInfo(threadID int) (*ProcessInfo, error) {
