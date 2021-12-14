@@ -343,24 +343,31 @@ const (
 	IoPgeteventsEventID        int32 = 333
 	RseqEventID                int32 = 334
 	// 335 through 423 are unassigned to sync up with generic numbers
-	PidfdSendSignalEventID int32 = 424
-	IoUringSetupEventID    int32 = 425
-	IoUringEnterEventID    int32 = 426
-	IoUringRegisterEventID int32 = 427
-	OpenTreeEventID        int32 = 428
-	MoveMountEventID       int32 = 429
-	FsopenEventID          int32 = 430
-	FsconfigEventID        int32 = 431
-	FsmountEventID         int32 = 432
-	FspickEventID          int32 = 433
-	PidfdOpenEventID       int32 = 434
-	Clone3EventID          int32 = 435
-	CloseRangeEventID      int32 = 436
-	Openat2EventID         int32 = 437
-	PidfdGetfdEventID      int32 = 438
-	Faccessat2EventID      int32 = 439
-	ProcessMadviseEventID  int32 = 440
-	EpollPwait2EventID     int32 = 441
+	PidfdSendSignalEventID       int32 = 424
+	IoUringSetupEventID          int32 = 425
+	IoUringEnterEventID          int32 = 426
+	IoUringRegisterEventID       int32 = 427
+	OpenTreeEventID              int32 = 428
+	MoveMountEventID             int32 = 429
+	FsopenEventID                int32 = 430
+	FsconfigEventID              int32 = 431
+	FsmountEventID               int32 = 432
+	FspickEventID                int32 = 433
+	PidfdOpenEventID             int32 = 434
+	Clone3EventID                int32 = 435
+	CloseRangeEventID            int32 = 436
+	Openat2EventID               int32 = 437
+	PidfdGetfdEventID            int32 = 438
+	Faccessat2EventID            int32 = 439
+	ProcessMadviseEventID        int32 = 440
+	EpollPwait2EventID           int32 = 441
+	MountSetattEventID           int32 = 442
+	QuotactlFdEventID            int32 = 443
+	LandlockCreateRulesetEventID int32 = 444
+	LandlockAddRuleEventID       int32 = 445
+	LandloclRestrictSetEventID   int32 = 446
+	MemfdSecretEventID           int32 = 447
+	ProcessMreleaseEventID       int32 = 448
 )
 
 // x86 32bit syscall numbers
@@ -798,5 +805,12 @@ const (
 	sys32faccessat2                   int32 = 439
 	sys32process_madvise              int32 = 440
 	sys32epoll_pwait2                 int32 = 441
+	sys32mount_setattr                int32 = 442
+	sys32quotactl_fd                  int32 = 443
+	sys32landlock_create_ruleset      int32 = 444
+	sys32landlock_add_rule            int32 = 445
+	sys32landlock_restrict_self       int32 = 446
+	sys32memfd_secret                 int32 = 447
+	sys32process_mrelease             int32 = 448
 	sys32undefined                    int32 = 10000
 )
