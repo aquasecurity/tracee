@@ -736,7 +736,7 @@ static __always_inline char * get_task_uts_name(struct task_struct *task)
 static __always_inline u32 get_task_ppid(struct task_struct *task)
 {
     struct task_struct *parent = READ_KERN(task->real_parent);
-    return READ_KERN(parent->pid);
+    return READ_KERN(parent->tgid);
 }
 
 static __always_inline u32 get_task_host_pid(struct task_struct *task)
