@@ -30,6 +30,21 @@ func (tree *ProcessTree) GetContainerRoot(containerID string) (*ProcessInfo, err
 	return containerTree.Root, nil
 }
 
+// GetProcessLineage returns list of processes starting with the ID matching events back to the root of the container
+// or oldest registered ancestor in the container (if root is missing)
+func (tree *ProcessTree) GetProcessLineage(threadID int) (ProcessLineage, error) {
+	process, err := tree.GetProcessInfo(threadID)
+	if err != nil {
+		return nil, err
+	}
+	var lineage ProcessLineage
+	for process != nil {
+		lineage = append(lineage, *process)
+		process = process.ParentProcess
+	}
+	return lineage, nil
+}
+
 func (tree *ProcessTree) getContainerTree(containerID string) (*containerProcessTree, error) {
 	containerTree, ok := tree.containers[containerID]
 	if !ok {
