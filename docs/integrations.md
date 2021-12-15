@@ -9,18 +9,19 @@ tracee-rules --output-template /path/to/my.tmpl
 In addition, Tracee can notify a web service when a detection is made using a custom webhook:
 
 ```bash
-tracee-rules --webhook http://my.webhook/endpoint --webhook-template /path/to/my.tmpl --webhook-content-type application/json
+tracee-rules --webhook http://my.webhook/endpoint \
+  --webhook-template /path/to/my.tmpl \
+  --webhook-content-type application/json
 ```
 
 ## Included Go templates
 
-The following go templates are included in the Tracee container image and are available for use under the `/tracee/templates/` directory in the container:
+The following Go templates are included in the Tracee container image and are available for use under the `/tracee/templates/` directory in the container:
 
-File name | Description | Content-Type | Source
---- | --- | --- | ---
-falcosidekick.tmpl | For compatibility with [falcosidekick] | `application/json` | [source](https://github.com/aquasecurity/tracee/blob/{{ git_tag_version }}/tracee-rules/templates/falcosidekick.tmpl)
-rawjson.tmpl | Dumps the Finding object as raw JSON | `application/json` | [source](https://github.com/aquasecurity/tracee/blob/{{ git_tag_version }}/tracee-rules/templates/rawjson.tmpl)
-
+| File name          | Description                            | Content-Type       | Source                                                                                                            |
+|--------------------|----------------------------------------|--------------------|-------------------------------------------------------------------------------------------------------------------|
+| falcosidekick.tmpl | For compatibility with [falcosidekick] | `application/json` | [source](https://github.com/aquasecurity/tracee/blob/{{ git.tag }}/cmd/tracee-rules/templates/falcosidekick.tmpl) |
+| rawjson.tmpl       | Dumps the Finding object as raw JSON   | `application/json` | [source](https://github.com/aquasecurity/tracee/blob/{{ git.tag }}/cmd/tracee-rules/templates/rawjson.tmpl)       |
 
 ## Go Template Authoring
 
@@ -35,9 +36,9 @@ type Finding struct {
 }
 ```
 
-The Go template can utilize helper functions from [Sprig](http://masterminds.github.io/sprig/).
+The Go template can utilize helper functions from [Sprig].
 
-For example templates, see [tracee/tracee-rules/templates](https://github.com/aquasecurity/tracee/tree/{{ git_tag_version }}/tracee-rules/templates).
+For example templates, see [tracee/cmd/tracee-rules/templates].
 
 ## Examples
 
@@ -50,7 +51,8 @@ docker run --rm -it --privileged --pid=host --cgroupns=host \
   -v /lib/modules/:/lib/modules/:ro \
   -v /usr/src:/usr/src:ro \
   -v /tmp/tracee:/tmp/tracee \
-  aquasec/tracee:{{ git_tag_version[1:] }} --output-template /tracee/templates/rawjson.tmpl
+  aquasec/tracee:{{ git.tag[1:] }} \
+  --output-template /tracee/templates/rawjson.tmpl
 ```
 
 ### falcosidekick webhook
@@ -62,7 +64,7 @@ To use Tracee with falcosidekick:
 1. Obtain connection credentials to the system you want to integrate with.
     1. Consult the system's documentation and look for how to configure an incoming webhook.
 2. Start the falcosidekick container, configured with the obtained output credentials:
-    1. See the the [falcosidekick Readme](https://github.com/falcosecurity/falcosidekick) for full documentation.
+    1. See the [falcosidekick Readme](https://github.com/falcosecurity/falcosidekick) for full documentation.
 3. Start Tracee while configuring it to post detections to the falcosidekick endpoint.
     1. If using Docker, you can use the simple [link](https://docs.docker.com/network/links/) flag to allow the containers to communicate
     2. Use the webhook flag to point to the falcosidekick container's endpoint
@@ -80,10 +82,12 @@ docker run --name tracee --rm -it --privileged --pid=host --cgroupns=host \
   -v /lib/modules/:/lib/modules/:ro \
   -v /usr/src:/usr/src:ro \
   -v /tmp/tracee:/tmp/tracee \
-  --link falcosidekick aquasec/tracee:{{ git_tag_version[1:] }} \
+  --link falcosidekick aquasec/tracee:{{ git.tag[1:] }} \
   --webhook-template /tracee/templates/falcosidekick.tmpl \
   --webhook-content-type application/json \
   --webhook http://FALCOSIDEKICK:2801
 ```
 
+[Sprig]: http://masterminds.github.io/sprig/
+[tracee/cmd/tracee-rules/templates]: https://github.com/aquasecurity/tracee/tree/{{ git.tag }}/cmd/tracee-rules/templates
 [falcosidekick]: https://github.com/falcosecurity/falcosidekick
