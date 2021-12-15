@@ -213,7 +213,18 @@ func getAddressfromAddrArg(arg external.Argument) (connectedAddress, error) {
 
 	addr, isOk := arg.Value.(map[string]string)
 	if !isOk {
-		return connectedAddress{}, fmt.Errorf("couldn't convert arg to addr")
+		addr = make(map[string]string)
+		stringInterMap, isStringInterMap := arg.Value.(map[string]interface{})
+		if !isStringInterMap {
+			return connectedAddress{}, fmt.Errorf("couldn't convert arg to addr")
+		}
+		for k, v := range stringInterMap {
+			s, isString := v.(string)
+			if !isString {
+				return connectedAddress{}, fmt.Errorf("couldn't convert arg to addr")
+			}
+			addr[k] = s
+		}
 	}
 
 	if addr["sa_family"] == "AF_INET" {
