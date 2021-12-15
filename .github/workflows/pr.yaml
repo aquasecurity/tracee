@@ -29,6 +29,12 @@ jobs:
             gofmt -s -d .
             exit 1
           fi
+  sanity-test:
+    name: Sanity test system
+    steps:
+      - name: Run sanity tests
+      - run: |
+          make sanity-test
   test-tracee-ebpf:
     name: Test tracee-ebpf
     needs:

@@ -112,3 +112,7 @@ clean:
 test-entrypoint: entrypoint.sh entrypoint_test.bats test/mocks/* test/bats-helpers.bash
 	@command -v $$BATS >/dev/null || (echo "missing required tool $$BATS"; false)
 	bats ./entrypoint_test.bats
+
+.PHONY: sanity-test
+sanity-test: tests
+	go test -v ./tests
