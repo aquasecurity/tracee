@@ -31,7 +31,7 @@ Process Lineage: {{ range .ProcessLineage }}
 
 type FinaleFinding struct {
 	types.Finding
-	ProcessLineage process_tree.ProcessLineage
+	ProcessLineage types.ProcessLineage
 }
 
 func setupTemplate(inputTemplateFile string) (*template.Template, error) {

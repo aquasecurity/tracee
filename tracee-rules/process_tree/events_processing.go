@@ -59,7 +59,7 @@ func (tree *ProcessTree) processExec(event external.Event) error {
 			execCtime.Type)
 	}
 	ctime := uint(ctime64)
-	process.ExecutionBinary = BinaryInfo{
+	process.ExecutionBinary = types.BinaryInfo{
 		Path:  pathName,
 		Hash:  "",
 		Ctime: ctime,
@@ -84,14 +84,14 @@ func (tree *ProcessTree) processFork(event external.Event) error {
 			newProcessHostTIDArgument.Value)
 	}
 	newProcessHostTID := int(newProcessHostTID32)
-	newProcess := ProcessInfo{
+	newProcess := types.ProcessInfo{
 		ProcessName: event.ProcessName,
-		InHostIDs: ProcessIDs{
+		InHostIDs: types.ProcessIDs{
 			Pid:  newProcessHostTID,
 			Ppid: event.HostProcessID,
 			Tid:  newProcessHostTID,
 		},
-		InContainerIDs: ProcessIDs{
+		InContainerIDs: types.ProcessIDs{
 			Ppid: event.ProcessID,
 		},
 		StartTime: event.Timestamp,
@@ -115,12 +115,12 @@ func (tree *ProcessTree) processFork(event external.Event) error {
 	}
 
 	newProcess.ProcessName = event.ProcessName
-	newProcess.InHostIDs = ProcessIDs{
+	newProcess.InHostIDs = types.ProcessIDs{
 		Pid:  newProcessHostTID,
 		Ppid: event.HostProcessID,
 		Tid:  newProcessHostTID,
 	}
-	newProcess.InContainerIDs = ProcessIDs{
+	newProcess.InContainerIDs = types.ProcessIDs{
 		Ppid: event.ProcessID,
 	}
 	newProcess.StartTime = event.Timestamp

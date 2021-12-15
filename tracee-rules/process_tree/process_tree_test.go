@@ -3,6 +3,7 @@ package process_tree
 import (
 	"fmt"
 	"github.com/aquasecurity/tracee/tracee-ebpf/external"
+	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -45,9 +46,9 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 			{ArgMeta: external.ArgMeta{Name: "sha256", Type: "const char*"}, Value: interface{}("abfd081fd7fad08d4743443061a12ebfbd25e3c5e446441795d472c389444527")},
 		},
 	}
-	p := &ProcessInfo{}
+	p := &types.ProcessInfo{}
 	tree := ProcessTree{
-		tree: map[int]*ProcessInfo{
+		tree: map[int]*types.ProcessInfo{
 			execEvent.HostThreadID: p,
 		},
 		containers: map[string]*containerProcessTree{
@@ -93,7 +94,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 		},
 	}
 	tree := ProcessTree{
-		tree:       map[int]*ProcessInfo{},
+		tree:       map[int]*types.ProcessInfo{},
 		containers: map[string]*containerProcessTree{},
 	}
 	require.NoError(t, tree.processFork(forkEvent))
@@ -193,15 +194,15 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			tree := ProcessTree{
-				tree:       map[int]*ProcessInfo{},
+				tree:       map[int]*types.ProcessInfo{},
 				containers: map[string]*containerProcessTree{},
 			}
 			exitProcessIndex := len(test.processes) - 1
 			// Build the container tree
 			for i, tp := range test.processes {
-				np := ProcessInfo{
+				np := types.ProcessInfo{
 					IsAlive: tp.isAlive,
-					InHostIDs: ProcessIDs{
+					InHostIDs: types.ProcessIDs{
 						Tid: exitEvent.HostThreadID - (exitProcessIndex - i),
 					},
 				}
@@ -239,7 +240,7 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 	}
 }
 
-func countChildren(p *ProcessInfo) int {
+func countChildren(p *types.ProcessInfo) int {
 	c := 0
 	for _, chld := range p.ChildProcesses {
 		c += countChildren(chld)
@@ -250,7 +251,7 @@ func countChildren(p *ProcessInfo) int {
 func TestProcessTree_ProcessEvent(t *testing.T) {
 	tree := ProcessTree{
 		containers: map[string]*containerProcessTree{},
-		tree:       map[int]*ProcessInfo{},
+		tree:       map[int]*types.ProcessInfo{},
 	}
 
 	ptid := 22482

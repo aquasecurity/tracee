@@ -1,4 +1,4 @@
-package process_tree
+package types
 
 type ProcessIDs struct {
 	Pid  int
