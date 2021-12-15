@@ -16,14 +16,10 @@ func CheckRequiredCapabilities(caps capability.Capabilities, reqCaps []capabilit
 	return nil
 }
 
-func GetSelfCapabilities() (capability.Capabilities, error) {
-	selfCap, err := capability.NewPid2(0)
+func LoadSelfCapabilities(selfCap capability.Capabilities) (capability.Capabilities, error) {
+	err := selfCap.Load()
 	if err != nil {
-		return nil, err
-	}
-	err = selfCap.Load()
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("loading capabilities failed: %s", err)
 	}
 	return selfCap, nil
 }

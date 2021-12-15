@@ -88,8 +88,11 @@ func main() {
 			cfg.Output = &output
 
 			// environment capabilities
-
-			selfCap, err := capabilities.GetSelfCapabilities()
+			selfCap, err := capability.NewPid2(0)
+			if err != nil {
+				return err
+			}
+			selfCap, err = capabilities.LoadSelfCapabilities(selfCap)
 			if err != nil {
 				return err
 			}
@@ -1137,7 +1140,11 @@ func unpackBPFBundle(dir string) error {
 // makeBPFObject builds the ebpf object from source code into the provided path
 func makeBPFObject(outFile string) error {
 	// drop capabilities for the compilation process
-	cap, err := capabilities.GetSelfCapabilities()
+	selfCap, err := capability.NewPid2(0)
+	if err != nil {
+		return err
+	}
+	cap, err := capabilities.LoadSelfCapabilities(selfCap)
 	if err != nil {
 		return err
 	}
