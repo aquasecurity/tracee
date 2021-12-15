@@ -134,7 +134,7 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 	}
 	if num, isNum := arg.Value.(json.Number); isNum {
 		switch arg.Type {
-		case "int", "pid_t", "uid_t", "gid_t", "mqd_t", "clockid_t", "const clockid_t", "key_t", "key_serial_t", "timer_t":
+		case "int", "pid_t", "uid_t", "gid_t", "mqd_t", "clockid_t", "const clockid_t", "key_t", "key_serial_t", "timer_t", "landlock_rule_type":
 			tmp, err := strconv.ParseInt(num.String(), 10, 32)
 			if err != nil {
 				return err
