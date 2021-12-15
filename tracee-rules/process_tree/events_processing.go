@@ -7,14 +7,18 @@ import (
 )
 
 // ProcessEvent update the process tree according to arriving event
-func (tree *ProcessTree) ProcessEvent(event external.Event) error {
-	switch event.EventName {
+func (tree *ProcessTree) ProcessEvent(event types.Event) error {
+	traceeEvent, ok := event.(external.Event)
+	if !ok {
+		return fmt.Errorf("received event of unsupported type to process - %t", event)
+	}
+	switch traceeEvent.EventName {
 	case "sched_process_fork":
-		return tree.processFork(event)
+		return tree.processFork(traceeEvent)
 	case "sched_process_exec":
-		return tree.processExec(event)
+		return tree.processExec(traceeEvent)
 	case "sched_process_exit":
-		return tree.processExit(event)
+		return tree.processExit(traceeEvent)
 	default:
 		return nil
 	}

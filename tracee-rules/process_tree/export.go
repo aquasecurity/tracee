@@ -2,7 +2,6 @@ package process_tree
 
 import (
 	"fmt"
-	"github.com/aquasecurity/tracee/tracee-ebpf/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
@@ -24,7 +23,7 @@ func GetProcessLineage(threadID int) (types.ProcessLineage, error) {
 	return globalTree.GetProcessLineage(threadID)
 }
 
-func ProcessEvent(event external.Event) error {
+func ProcessEvent(event types.Event) error {
 	return globalTree.ProcessEvent(event)
 }
 
