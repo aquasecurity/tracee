@@ -1,9 +1,6 @@
 name: PR
 on:
   pull_request:
-    branches:
-      - next
-      - main
 env:
   GO_VERSION: "1.16"
   OPA_VERSION: "v0.35.0"
