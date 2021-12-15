@@ -3,9 +3,9 @@ package tracee
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/aquasecurity/libbpfgo/helpers"
 	"net"
 
+	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/pkg/external"
 )
 
@@ -23,7 +23,7 @@ func Print16BytesSliceIP(in []byte) string {
 	return ip.String()
 }
 
-func (t *Tracee) parseArgs(ctx *context, args map[string]interface{}) error {
+func (t *Tracee) parseArgs(ctx *context, args map[string]interface{}, argMetas *[]external.ArgMeta) error {
 	for key, arg := range args {
 		if ptr, isUintptr := arg.(uintptr); isUintptr {
 			args[key] = fmt.Sprintf("0x%X", ptr)
@@ -47,66 +47,82 @@ func (t *Tracee) parseArgs(ctx *context, args map[string]interface{}) error {
 		if ctx.EventID == CapCapableEventID {
 			if capability, isInt32 := args["cap"].(int32); isInt32 {
 				args["cap"] = helpers.ParseCapability(capability)
+				setArgumentType("cap", "string", argMetas)
 			}
 		}
 		if ctx.EventID == SecurityFileOpenEventID {
 			if flags, isInt32 := args["flags"].(int32); isInt32 {
 				args["flags"] = helpers.ParseOpenFlags(uint32(flags))
+				setArgumentType("flags", "string", argMetas)
 			}
 		}
 	case MmapEventID, MprotectEventID, PkeyMprotectEventID:
 		if prot, isInt32 := args["prot"].(int32); isInt32 {
 			args["prot"] = helpers.ParseMemProt(uint32(prot))
+			setArgumentType("prot", "string", argMetas)
 		}
 	case PtraceEventID:
 		if req, isInt64 := args["request"].(int64); isInt64 {
 			args["request"] = helpers.ParsePtraceRequest(req)
+			setArgumentType("request", "string", argMetas)
 		}
 	case PrctlEventID:
 		if opt, isInt32 := args["option"].(int32); isInt32 {
 			args["option"] = helpers.ParsePrctlOption(opt)
+			setArgumentType("option", "string", argMetas)
 		}
 	case SocketEventID:
 		if dom, isInt32 := args["domain"].(int32); isInt32 {
 			args["domain"] = helpers.ParseSocketDomain(uint32(dom))
+			setArgumentType("domain", "string", argMetas)
 		}
 		if typ, isInt32 := args["type"].(int32); isInt32 {
 			args["type"] = helpers.ParseSocketType(uint32(typ))
+			setArgumentType("type", "string", argMetas)
 		}
 	case SecuritySocketCreateEventID:
 		if dom, isInt32 := args["family"].(int32); isInt32 {
 			args["family"] = helpers.ParseSocketDomain(uint32(dom))
+			setArgumentType("family", "string", argMetas)
 		}
 		if typ, isInt32 := args["type"].(int32); isInt32 {
 			args["type"] = helpers.ParseSocketType(uint32(typ))
+			setArgumentType("type", "string", argMetas)
 		}
 	case AccessEventID, FaccessatEventID:
 		if mode, isInt32 := args["mode"].(int32); isInt32 {
 			args["mode"] = helpers.ParseAccessMode(uint32(mode))
+			setArgumentType("mode", "string", argMetas)
 		}
 	case ExecveatEventID:
 		if flags, isInt32 := args["flags"].(int32); isInt32 {
 			args["flags"] = helpers.ParseExecFlags(uint32(flags))
+			setArgumentType("flags", "string", argMetas)
 		}
 	case OpenEventID, OpenatEventID:
 		if flags, isInt32 := args["flags"].(int32); isInt32 {
 			args["flags"] = helpers.ParseOpenFlags(uint32(flags))
+			setArgumentType("flags", "string", argMetas)
 		}
 	case MknodEventID, MknodatEventID, ChmodEventID, FchmodEventID, FchmodatEventID:
 		if mode, isUint32 := args["mode"].(uint32); isUint32 {
 			args["mode"] = helpers.ParseInodeMode(mode)
+			setArgumentType("mode", "string", argMetas)
 		}
 	case SecurityInodeMknodEventID:
 		if mode, isUint16 := args["mode"].(uint16); isUint16 {
 			args["mode"] = helpers.ParseInodeMode(uint32(mode))
+			setArgumentType("mode", "string", argMetas)
 		}
 	case CloneEventID:
 		if flags, isUint64 := args["flags"].(uint64); isUint64 {
 			args["flags"] = helpers.ParseCloneFlags(flags)
+			setArgumentType("flags", "string", argMetas)
 		}
 	case BpfEventID, SecurityBPFEventID:
 		if cmd, isInt32 := args["cmd"].(int32); isInt32 {
 			args["cmd"] = helpers.ParseBPFCmd(cmd)
+			setArgumentType("cmd", "string", argMetas)
 		}
 	case SecurityKernelReadFileEventID, SecurityPostReadFileEventID:
 		if readFileId, isInt32 := args["type"].(int32); isInt32 {
@@ -122,6 +138,15 @@ func (t *Tracee) parseArgs(ctx *context, args map[string]interface{}) error {
 	}
 
 	return nil
+}
+
+func setArgumentType(name, typeName string, argMetas *[]external.ArgMeta) {
+	for i := range *argMetas {
+		if (*argMetas)[i].Name == name {
+			(*argMetas)[i].Type = typeName
+			break
+		}
+	}
 }
 
 // initializing kernelReadFileIdStrs once at init.

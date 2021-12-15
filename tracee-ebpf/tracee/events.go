@@ -96,7 +96,7 @@ func (t *Tracee) processEvents(done <-chan struct{}) error {
 		}
 
 		if t.config.Output.ParseArguments {
-			err = t.parseArgs(&ctx, args)
+			err = t.parseArgs(&ctx, args, &argMetas)
 			if err != nil {
 				t.handleError(err)
 				continue
