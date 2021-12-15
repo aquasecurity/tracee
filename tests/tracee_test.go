@@ -100,7 +100,7 @@ func TestWebhookIntegration(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Log("Asserting Logs...")
 		b, _ := ioutil.ReadAll(r.Body)
-		assert.Contains(t, string(b), `"Properties":{"MITRE ATT\u0026CK":"Defense Evasion: Execution Guardrails","Severity":3}`)
+		assert.Contains(t, string(b), `"SigMetadata"`)
 		assert.Equal(t, "application/json", r.Header["Content-Type"][0])
 	}))
 	defer ts.Close()
