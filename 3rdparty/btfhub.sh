@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 # This script downloads & updates 2 repos inside tracee dir structure:
 #
@@ -54,6 +54,13 @@ branch_clean() {
     cd ${BASEDIR}
 }
 
+# requirements
+
+CMDS="rsync git cp rm mv"
+for cmd in ${CMDS}; do
+	command -v $cmd 2>&1 >/dev/null || die "cmd ${cmd} not found"
+done
+
 [ ! -f ${TRACEE_BPF_CORE} ] && die "tracee CO-RE obj not found"
 
 [ ! -d ${BTFHUB_DIR} ] && git clone "${BTFHUB_REPO}" ${BTFHUB_DIR}
@@ -64,7 +71,13 @@ branch_clean ${BTFHUB_ARCH_DIR}
 
 cd ${BTFHUB_DIR}
 
-# only supported distros and kernels
+#
+# https://github.com/aquasecurity/btfhub/blob/main/docs/supported-distros.md
+#
+# remove BTFs for:
+# - centos7 & v4.15 kernels: unsupported eBPF features
+# - fedora 29 & 30 (from 5.3 and on) and newer: already have BTF embedded
+#
 
 rsync -avz \
     ${BTFHUB_ARCH_DIR}/                 \
