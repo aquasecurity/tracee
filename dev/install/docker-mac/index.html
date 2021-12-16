@@ -16,15 +16,15 @@
         
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.1+insiders-4.4.0">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.2+insiders-4.4.0">
     
     
       
-        <title>Docker mac - Tracee</title>
+        <title>Docker for Mac - Tracee</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.9d9d8b72.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.bdb7debb.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.e6a45f82.min.css">
@@ -67,6 +67,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#docker-for-mac" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -99,7 +104,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Docker mac
+              Docker for Mac
             
           </span>
         </div>
@@ -221,12 +226,14 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" checked>
       
       
       
@@ -294,6 +301,30 @@
       <a href="../kubernetes/" class="md-nav__link">
         Kubernetes
       </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Docker for Mac
+      </a>
+      
     </li>
   
 
@@ -506,6 +537,24 @@
               </div>
             
             
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
           
           <div class="md-content" data-md-component="content">
             <article class="md-content__inner md-typeset">
@@ -513,36 +562,27 @@
                 
 
 
-  <h1>Docker mac</h1>
-
+<h1 id="docker-for-mac">Docker for Mac<a class="headerlink" href="#docker-for-mac" title="Permanent link">&para;</a></h1>
 <p>Docker for Mac does not come with Kernel headers.
 You need to do the following to make Tracee work:</p>
 <ol>
-<li>
-<p>Identify your docker version:
- <div class="highlight"><pre><span></span><code>dockerver=$(docker version | grep  Version | head -n 1 | cut -d &#39;:&#39; -f 2 | xargs)
-</code></pre></div></p>
-</li>
-<li>
-<p>Run a container with Docker CLI, while mounting to the host path:
- <div class="highlight"><pre><span></span><code>  docker run -it -v /:/host -v /var/run/docker.sock:/var/run/docker.sock docker:$dockerver /bin/sh
-</code></pre></div></p>
-</li>
-<li>
-<p>Get the Kernel Header files from the linuxkit Docker image and copy it to the host /usr/src path:</p>
-</li>
-</ol>
-<div class="highlight"><pre><span></span><code>   mkdir /host/kheader
-   cd /host/kheader
-   linux_version=&quot;${VERSION:-$(uname -r | cut -d - -f 1)}&quot;
-   docker pull &quot;linuxkit/kernel:$linux_version&quot;
-   docker save &quot;linuxkit/kernel:$linux_version&quot; &gt; &quot;linuxkit.tar&quot;
-   tar -xf &quot;linuxkit.tar&quot;
-   layertar=$(find . -name layer.tar)
-   tar -xf &quot;$layertar&quot;
-   tar -xf &quot;kernel-dev.tar&quot; --directory /host/
-</code></pre></div>
-<ol>
+<li>Identify your docker version:
+   <div class="highlight"><pre><span></span><code>dockerver=$(docker version | grep  Version | head -n 1 | cut -d &#39;:&#39; -f 2 | xargs)
+</code></pre></div></li>
+<li>Run a container with Docker CLI, while mounting to the host path:
+   <div class="highlight"><pre><span></span><code>docker run -it -v /:/host -v /var/run/docker.sock:/var/run/docker.sock docker:$dockerver /bin/sh
+</code></pre></div></li>
+<li>Get the Kernel Header files from the linuxkit Docker image and copy it to the host /usr/src path:
+   <div class="highlight"><pre><span></span><code>mkdir /host/kheader
+cd /host/kheader
+linux_version=&quot;${VERSION:-$(uname -r | cut -d - -f 1)}&quot;
+docker pull &quot;linuxkit/kernel:$linux_version&quot;
+docker save &quot;linuxkit/kernel:$linux_version&quot; &gt; &quot;linuxkit.tar&quot;
+tar -xf &quot;linuxkit.tar&quot;
+layertar=$(find . -name layer.tar)
+tar -xf &quot;$layertar&quot;
+tar -xf &quot;kernel-dev.tar&quot; --directory /host/
+</code></pre></div></li>
 <li>You can now run Tracee on your Docker for Mac</li>
 </ol>
 
@@ -558,6 +598,41 @@ You need to do the following to make Tracee work:</p>
       </main>
       
         <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="../kubernetes/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Kubernetes" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Kubernetes
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../../integrations/" class="md-footer__link md-footer__link--next" aria-label="Next: Integrations" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Integrations
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">

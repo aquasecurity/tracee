@@ -16,7 +16,7 @@
         
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.1+insiders-4.4.0">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.2+insiders-4.4.0">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.9d9d8b72.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.bdb7debb.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.e6a45f82.min.css">
@@ -304,6 +304,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../install/docker-mac/" class="md-nav__link">
+        Docker for Mac
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -565,7 +579,7 @@
                 
 
 
-<h1 id="overriding-os-needed-files">Overriding OS needed files</h1>
+<h1 id="overriding-os-needed-files">Overriding OS needed files<a class="headerlink" href="#overriding-os-needed-files" title="Permanent link">&para;</a></h1>
 <p>Tracee supports eBPF CO-RE (Compile Once - Run Everywhere) technology and,
 because of that, it might need some information about the Linux OS it is
 running at. Tracee, through libbpfgo, must have access to /etc/os-release file
@@ -575,7 +589,7 @@ at helpers/kernel_config).</p>
 <p>Note that, despite having this need, tracee will try to execute as CO-RE eBPF
 program in any environment it is executed.</p>
 </blockquote>
-<h2 id="etcos-release">/etc/os-release</h2>
+<h2 id="etcos-release">/etc/os-release<a class="headerlink" href="#etcos-release" title="Permanent link">&para;</a></h2>
 <p>Tracee will show you collected information about the running Linux OS with the
 <code>--debug</code> argument:</p>
 <div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf --debug --trace uid=1000 --trace pid=new --trace event=execve
@@ -633,7 +647,7 @@ TIME             UID    COMM             PID     TID     RET              EVENT 
 /etc/os-release from the host as /etc/os-release-host into the guest and
 inform that through the <code>LIBBPFGO_OSRELEASE_FILE</code> environment variable.</p>
 </blockquote>
-<h2 id="procconfiggz-or-bootconfig-uname-r">/proc/config.gz OR /boot/config-$(uname -r)</h2>
+<h2 id="procconfiggz-or-bootconfig-uname-r">/proc/config.gz OR /boot/config-$(uname -r)<a class="headerlink" href="#procconfiggz-or-bootconfig-uname-r" title="Permanent link">&para;</a></h2>
 <p>Tracee needs access to kconfig file in order to:</p>
 <ol>
 <li>Check if the kernel of your running environment supports needed eBPF features</li>
@@ -682,7 +696,7 @@ TIME             UID    COMM             PID     TID     RET              EVENT 
 guest and inform that through the <code>LIBBPFGO_OSRELEASE_FILE</code> environment
 variable.</p>
 </blockquote>
-<h2 id="attention-in-case-kconfig-file-is-not-found">ATTENTION: in case kconfig file is NOT found</h2>
+<h2 id="attention-in-case-kconfig-file-is-not-found">ATTENTION: in case kconfig file is NOT found<a class="headerlink" href="#attention-in-case-kconfig-file-is-not-found" title="Permanent link">&para;</a></h2>
 <p>In case no kconfig file is found, tracee takes some decisions blindly and it
 may give you unexpected errors. Example:</p>
 <div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf --debug --trace uid=1000 --trace pid=new --trace event=execve

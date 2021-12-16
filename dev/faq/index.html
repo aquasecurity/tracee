@@ -16,7 +16,7 @@
         
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.1+insiders-4.4.0">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.2+insiders-4.4.0">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.9d9d8b72.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.bdb7debb.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.e6a45f82.min.css">
@@ -298,6 +298,20 @@
     <li class="md-nav__item">
       <a href="../install/kubernetes/" class="md-nav__link">
         Kubernetes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/docker-mac/" class="md-nav__link">
+        Docker for Mac
       </a>
     </li>
   
@@ -592,8 +606,8 @@
                 
 
 
-<h1 id="faq-frequently-asked-questions">FAQ - Frequently Asked Questions</h1>
-<h2 id="secure-tracing">Secure tracing</h2>
+<h1 id="faq-frequently-asked-questions">FAQ - Frequently Asked Questions<a class="headerlink" href="#faq-frequently-asked-questions" title="Permanent link">&para;</a></h1>
+<h2 id="secure-tracing">Secure tracing<a class="headerlink" href="#secure-tracing" title="Permanent link">&para;</a></h2>
 <p>When Tracee-eBPF reads information from user programs it is subject to a race condition where the user program might be able to change the arguments after Tracee has read them. For example, a program invoked <code>execve("/bin/ls", NULL, 0)</code>, Tracee picked that up and will report that, then the program changed the first argument from <code>/bin/ls</code> to <code>/bin/bash</code>, and this is what the kernel will execute. To mitigate this, Tracee also provides "LSM" (Linux Security Module) based events, for example, the <code>bprm_check</code> event which can be reported by Tracee and cross-referenced with the reported regular syscall event.</p>
 
 

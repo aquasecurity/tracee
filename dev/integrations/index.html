@@ -16,7 +16,7 @@
         
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.1+insiders-4.4.0">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.2+insiders-4.4.0">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.9d9d8b72.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.bdb7debb.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.e6a45f82.min.css">
@@ -298,6 +298,20 @@
     <li class="md-nav__item">
       <a href="../install/kubernetes/" class="md-nav__link">
         Kubernetes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/docker-mac/" class="md-nav__link">
+        Docker for Mac
       </a>
     </li>
   
@@ -660,15 +674,17 @@
                 
 
 
-<h1 id="integrations">Integrations</h1>
+<h1 id="integrations">Integrations<a class="headerlink" href="#integrations" title="Permanent link">&para;</a></h1>
 <p>When a detection is made by any of the signatures, it will always be printed to stdout. You can customize the output format using a <a href="https://golang.org/pkg/text/template/">go template</a>:</p>
 <div class="highlight"><pre><span></span><code>tracee-rules --output-template /path/to/my.tmpl
 </code></pre></div>
 <p>In addition, Tracee can notify a web service when a detection is made using a custom webhook:</p>
-<div class="highlight"><pre><span></span><code>tracee-rules --webhook http://my.webhook/endpoint --webhook-template /path/to/my.tmpl --webhook-content-type application/json
+<div class="highlight"><pre><span></span><code>tracee-rules --webhook http://my.webhook/endpoint <span class="se">\</span>
+  --webhook-template /path/to/my.tmpl <span class="se">\</span>
+  --webhook-content-type application/json
 </code></pre></div>
-<h2 id="included-go-templates">Included Go templates</h2>
-<p>The following go templates are included in the Tracee container image and are available for use under the <code>/tracee/templates/</code> directory in the container:</p>
+<h2 id="included-go-templates">Included Go templates<a class="headerlink" href="#included-go-templates" title="Permanent link">&para;</a></h2>
+<p>The following Go templates are included in the Tracee container image and are available for use under the <code>/tracee/templates/</code> directory in the container:</p>
 <table>
 <thead>
 <tr>
@@ -683,17 +699,17 @@
 <td>falcosidekick.tmpl</td>
 <td>For compatibility with <a href="https://github.com/falcosecurity/falcosidekick">falcosidekick</a></td>
 <td><code>application/json</code></td>
-<td><a href="https://github.com/aquasecurity/tracee/blob/v0.6.5/tracee-rules/templates/falcosidekick.tmpl">source</a></td>
+<td><a href="https://github.com/aquasecurity/tracee/blob/tracee/cmd/tracee-rules/templates/falcosidekick.tmpl">source</a></td>
 </tr>
 <tr>
 <td>rawjson.tmpl</td>
 <td>Dumps the Finding object as raw JSON</td>
 <td><code>application/json</code></td>
-<td><a href="https://github.com/aquasecurity/tracee/blob/v0.6.5/tracee-rules/templates/rawjson.tmpl">source</a></td>
+<td><a href="https://github.com/aquasecurity/tracee/blob/tracee/cmd/tracee-rules/templates/rawjson.tmpl">source</a></td>
 </tr>
 </tbody>
 </table>
-<h2 id="go-template-authoring">Go Template Authoring</h2>
+<h2 id="go-template-authoring">Go Template Authoring<a class="headerlink" href="#go-template-authoring" title="Permanent link">&para;</a></h2>
 <p>When authoring a Go template for either stdout or webhook, you have Tracee's <code>types.Finding</code> struct as the data source:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">//Finding is the main output of a signature. It represents a match result for the signature business logic</span>
 <span class="kd">type</span> <span class="nx">Finding</span> <span class="kd">struct</span> <span class="p">{</span>
@@ -703,17 +719,18 @@
 <span class="p">}</span>
 </code></pre></div>
 <p>The Go template can utilize helper functions from <a href="http://masterminds.github.io/sprig/">Sprig</a>.</p>
-<p>For example templates, see <a href="https://github.com/aquasecurity/tracee/tree/v0.6.5/tracee-rules/templates">tracee/tracee-rules/templates</a>.</p>
-<h2 id="examples">Examples</h2>
-<h3 id="raw-json-stdout">Raw JSON stdout</h3>
+<p>For example templates, see <a href="https://github.com/aquasecurity/tracee/tree/tracee/cmd/tracee-rules/templates">tracee/cmd/tracee-rules/templates</a>.</p>
+<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
+<h3 id="raw-json-stdout">Raw JSON stdout<a class="headerlink" href="#raw-json-stdout" title="Permanent link">&para;</a></h3>
 <p>The following example configures Tracee to output detections to stdout as raw JSON:</p>
 <div class="highlight"><pre><span></span><code>docker run --rm -it --privileged --pid<span class="o">=</span>host --cgroupns<span class="o">=</span>host <span class="se">\</span>
   -v /lib/modules/:/lib/modules/:ro <span class="se">\</span>
   -v /usr/src:/usr/src:ro <span class="se">\</span>
   -v /tmp/tracee:/tmp/tracee <span class="se">\</span>
-  aquasec/tracee:0.6.5 --output-template /tracee/templates/rawjson.tmpl
+  aquasec/tracee:racee <span class="se">\</span>
+  --output-template /tracee/templates/rawjson.tmpl
 </code></pre></div>
-<h3 id="falcosidekick-webhook">falcosidekick webhook</h3>
+<h3 id="falcosidekick-webhook">falcosidekick webhook<a class="headerlink" href="#falcosidekick-webhook" title="Permanent link">&para;</a></h3>
 <p><a href="https://github.com/falcosecurity/falcosidekick">falcosidekick</a> is a useful webhook server that can be configured to connect to various "outputs" such as: Slack, Mattermost, Teams, Datadog, Prometheus, StatsD, Email, Elasticsearch, Loki, PagerDuty, OpsGenie, and many more.</p>
 <p>To use Tracee with falcosidekick:</p>
 <ol>
@@ -722,7 +739,7 @@
 </ol>
 </li>
 <li>Start the falcosidekick container, configured with the obtained output credentials:<ol>
-<li>See the the <a href="https://github.com/falcosecurity/falcosidekick">falcosidekick Readme</a> for full documentation.</li>
+<li>See the <a href="https://github.com/falcosecurity/falcosidekick">falcosidekick Readme</a> for full documentation.</li>
 </ol>
 </li>
 <li>Start Tracee while configuring it to post detections to the falcosidekick endpoint.<ol>
@@ -742,7 +759,7 @@ docker run --name tracee --rm -it --privileged --pid<span class="o">=</span>host
   -v /lib/modules/:/lib/modules/:ro <span class="se">\</span>
   -v /usr/src:/usr/src:ro <span class="se">\</span>
   -v /tmp/tracee:/tmp/tracee <span class="se">\</span>
-  --link falcosidekick aquasec/tracee:0.6.5 <span class="se">\</span>
+  --link falcosidekick aquasec/tracee:racee <span class="se">\</span>
   --webhook-template /tracee/templates/falcosidekick.tmpl <span class="se">\</span>
   --webhook-content-type application/json <span class="se">\</span>
   --webhook http://FALCOSIDEKICK:2801
@@ -764,7 +781,7 @@ docker run --name tracee --rm -it --privileged --pid<span class="o">=</span>host
     <nav class="md-footer__inner md-grid" aria-label="Footer">
       
         
-        <a href="../install/kubernetes/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Kubernetes" rel="prev">
+        <a href="../install/docker-mac/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Docker for Mac" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
           </div>
@@ -773,7 +790,7 @@ docker run --name tracee --rm -it --privileged --pid<span class="o">=</span>host
               <span class="md-footer__direction">
                 Previous
               </span>
-              Kubernetes
+              Docker for Mac
             </div>
           </div>
         </a>

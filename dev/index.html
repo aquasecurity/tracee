@@ -16,7 +16,7 @@
         
       
       <link rel="icon" href="assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.1+insiders-4.4.0">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.2+insiders-4.4.0">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.9d9d8b72.min.css">
+      <link rel="stylesheet" href="assets/stylesheets/main.bdb7debb.min.css">
       
         
         <link rel="stylesheet" href="assets/stylesheets/palette.e6a45f82.min.css">
@@ -359,6 +359,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="install/docker-mac/" class="md-nav__link">
+        Docker for Mac
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -625,17 +639,17 @@
 <a href="https://goreportcard.com/report/github.com/aquasecurity/tracee"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/aquasecurity/tracee" /></a>
 <a href="https://github.com/aquasecurity/tracee/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/aquasecurity/tracee" /></a>
 <a href="https://hub.docker.com/r/aquasec/tracee"><img alt="docker" src="https://badgen.net/docker/pulls/aquasec/tracee" /></a></p>
-<h1 id="tracee-runtime-security-and-forensics-using-ebpf">Tracee: Runtime Security and Forensics using eBPF</h1>
+<h1 id="tracee-runtime-security-and-forensics-using-ebpf">Tracee: Runtime Security and Forensics using eBPF<a class="headerlink" href="#tracee-runtime-security-and-forensics-using-ebpf" title="Permanent link">&para;</a></h1>
 <p>Tracee is a Runtime Security and forensics tool for Linux. It is using Linux eBPF technology to trace your system and applications at runtime, and analyze collected events to detect suspicious behavioral patterns. It is delivered as a Docker image that monitors the OS and detects suspicious behavior based on a predefined set of behavioral patterns.</p>
 <p>Watch a quick video demo of Tracee: <br>
 <a href="https://youtu.be/9qxaOYto_5g"><img src="http://i3.ytimg.com/vi/9qxaOYto_5g/maxresdefault.jpg" width="400"></a></p>
 <p>Check out the <a href="https://info.aquasec.com/ebpf-runtime-security">Tracee video hub</a> for more.</p>
-<h2 id="quickstart">Quickstart</h2>
+<h2 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h2>
 <p>Before you proceed, make sure you follow the <a href="install/prerequisites/">minimum requirements for running Tracee</a>.</p>
 <p>If running on <strong>BTF enabled kernel</strong>:</p>
 <div class="highlight"><pre><span></span><code>docker run --name tracee --rm -it --pid<span class="o">=</span>host --cgroupns<span class="o">=</span>host --privileged <span class="se">\</span>
   -v /tmp/tracee:/tmp/tracee <span class="se">\</span>
-  aquasec/tracee:0.6.5
+  aquasec/tracee:racee
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -646,7 +660,7 @@
   -v /tmp/tracee:/tmp/tracee <span class="se">\</span>
   -v /lib/modules/:/lib/modules/:ro <span class="se">\</span>
   -v /usr/src:/usr/src:ro <span class="se">\</span>
-  aquasec/tracee:0.6.5
+  aquasec/tracee:racee
 </code></pre></div></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -654,13 +668,13 @@
 </div>
 <p>This will run Tracee with default settings and start reporting detections to standard output.
 In order to simulate a suspicious behavior, you can run <code>strace ls</code> in another terminal, which will trigger the "Anti-Debugging" signature, which is loaded by default.</p>
-<h2 id="trace">Trace</h2>
+<h2 id="trace">Trace<a class="headerlink" href="#trace" title="Permanent link">&para;</a></h2>
 <p>In some cases, you might want to leverage Tracee's eBPF event collection capabilities directly, without involving the detection engine. This might be useful for debugging/troubleshooting/analysis/research/education. In this case you can run Tracee with the <code>trace</code> sub-command, which will start dumping raw data directly into standard output. There are many configurations and options available so you can control exactly what is being collected and how. see the Documentation or add the <code>--help</code> flag for more.</p>
-<h2 id="components">Components</h2>
+<h2 id="components">Components<a class="headerlink" href="#components" title="Permanent link">&para;</a></h2>
 <p>Tracee is composed of the following sub-projects, which are hosted in the aquasecurity/tracee repository:</p>
 <ul>
-<li><a href="https://github.com/aquasecurity/tracee/tree/v0.6.5/tracee-ebpf">Tracee-eBPF</a> - Linux Tracing and Forensics using eBPF</li>
-<li><a href="https://github.com/aquasecurity/tracee/tree/v0.6.5/tracee-rules">Tracee-Rules</a> - Runtime Security Detection Engine</li>
+<li><a href="https://github.com/aquasecurity/tracee/tree/tracee/tracee-ebpf">Tracee-eBPF</a> - Linux Tracing and Forensics using eBPF</li>
+<li><a href="https://github.com/aquasecurity/tracee/tree/tracee/tracee-rules">Tracee-Rules</a> - Runtime Security Detection Engine</li>
 </ul>
 <hr />
 <p>Tracee is an <a href="https://aquasec.com">Aqua Security</a> open source project.<br />

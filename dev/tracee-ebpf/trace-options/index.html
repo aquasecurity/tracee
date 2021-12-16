@@ -16,7 +16,7 @@
         
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.1+insiders-4.4.0">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.2+insiders-4.4.0">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.9d9d8b72.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.bdb7debb.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.e6a45f82.min.css">
@@ -298,6 +298,20 @@
     <li class="md-nav__item">
       <a href="../../install/kubernetes/" class="md-nav__link">
         Kubernetes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../install/docker-mac/" class="md-nav__link">
+        Docker for Mac
       </a>
     </li>
   
@@ -608,7 +622,7 @@
                 
 
 
-<h1 id="trace-options">Trace Options</h1>
+<h1 id="trace-options">Trace Options<a class="headerlink" href="#trace-options" title="Permanent link">&para;</a></h1>
 <p>Trace output can easily become unwieldy when tracing all of the events from all of the system. Luckily, Tracee has a powerful mechanism to accurately trace just the information that is relevant to you, using the <code>--trace</code> flag.
 Using the <code>--trace</code> you define expressions that tells Tracee-eBPF what you are interested in by means of event metadata, and process metadata. Only events that match this criteria will be traced.</p>
 <p>You can filter by most of the visible fields on a Tracee event. For example to trace only events related to user ID 1000, use <code>--trace uid=1000</code>.<br />
@@ -618,7 +632,7 @@ Tracee-eBPF lets you easily trace events that originate in containers using <cod
 <p>Event metadata can be used in trace expression as well. For example, to trace only <code>openat</code> syscalls, use <code>--trace event:openat</code>. But you can also filter on a specific argument of the event, e.g <code>--trace openat.pathname=/bin/ls</code> which will show only <code>openat</code> syscalls that operate on the file <code>/bin/ls</code>.</p>
 <p>A useful trace mode is the <code>--trace follow</code> which, if specified, will trace not only processes that match the given trace expressions, but also their child processes.
 For example, the following will trace all the events that originate from zsh shell, including all of the processes that it will spawn: <code>--trace comm=zsh --trace follow</code>.</p>
-<h2 id="cli-options">CLI Options</h2>
+<h2 id="cli-options">CLI Options<a class="headerlink" href="#cli-options" title="Permanent link">&para;</a></h2>
 <p>Only events that match all trace expressions will be traced (trace flags are ANDed).
 The following types of expressions are supported:</p>
 <p>Numerical expressions which compare numbers and allow the following operators: '=', '!=', '&lt;', '&gt;'.
@@ -638,7 +652,7 @@ Multiple values are ORed if used with equals operator '=', but are ANDed if used
 <p>The field 'set' selects a set of events to trace according to predefined sets, which can be listed by using the 'list' flag.</p>
 <p>The special 'follow' expression declares that not only processes that match the criteria will be traced, but also their descendants.</p>
 <p>Note: some of the above operators have special meanings in different shells. To 'escape' those operators, please use single quotes, e.g.: 'uid&gt;0'</p>
-<h2 id="examples">Examples</h2>
+<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <p>only trace events from new processes</p>
 <div class="highlight"><pre><span></span><code>--trace pid=new
 </code></pre></div>

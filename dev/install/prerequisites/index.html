@@ -16,7 +16,7 @@
         
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.1+insiders-4.4.0">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.2+insiders-4.4.0">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.9d9d8b72.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.bdb7debb.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.e6a45f82.min.css">
@@ -316,6 +316,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker-mac/" class="md-nav__link">
+        Docker for Mac
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -548,7 +562,7 @@
                 
 
 
-<h1 id="prerequisites">Prerequisites</h1>
+<h1 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h1>
 <ul>
 <li>Linux kernel version &gt;= 4.18</li>
 </ul>
@@ -557,9 +571,9 @@
 <li>BTF available under <code>/sys/kernel/btf/vmlinux</code> (see <a href="https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere">libbpf CO-RE documentation</a> for more info).</li>
 <li>Linux kernel headers available under conventional location (see <a href="../headers/">Linux Headers</a> section for more info).
   In this case system libraries libelf and zlib are required as well.</li>
-<li>Tracee's eBPF probe pre-compiled (see <a href="../ebpf-compilation/">eBPF compilation</a> section for more info).</li>
+<li>Tracee's eBPF probe pre-compiled (see <a href="../ebpf-compilation/">eBPF Compilation</a> section for more info).</li>
 </ul>
-<h1 id="permissions">Permissions</h1>
+<h1 id="permissions">Permissions<a class="headerlink" href="#permissions" title="Permanent link">&para;</a></h1>
 <p>For using the eBPF Linux subsystem, Tracee needs to run with sufficient capabilities:</p>
 <ul>
 <li><code>CAP_SYS_RESOURCE</code> (to manage eBPF maps limits)</li>

@@ -16,7 +16,7 @@
         
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.1+insiders-4.4.0">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.2+insiders-4.4.0">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.9d9d8b72.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.bdb7debb.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.e6a45f82.min.css">
@@ -360,7 +360,7 @@
       
         <li class="md-nav__item">
   <a href="#platform-support" class="md-nav__link">
-    Platform support
+    Platform Support
   </a>
   
 </li>
@@ -369,6 +369,20 @@
   
 </nav>
       
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker-mac/" class="md-nav__link">
+        Docker for Mac
+      </a>
     </li>
   
 
@@ -629,7 +643,7 @@
       
         <li class="md-nav__item">
   <a href="#platform-support" class="md-nav__link">
-    Platform support
+    Platform Support
   </a>
   
 </li>
@@ -648,26 +662,30 @@
                 
 
 
-<h1 id="deploy-on-kubernetes">Deploy on Kubernetes</h1>
-<p>In the <a href="https://github.com/aquasecurity/tracee/blob/main/deploy/kubernetes">deploy/kubernetes</a> directory you can find Yaml files that deploys Tracee in a Kubernetes environment. This will deploy Tracee as a daemonset, alongside a message routing application that will help you consume the detections in your preferred way (e.g slack, email, JIRA and more).</p>
-<h2 id="install-tracee">Install Tracee</h2>
-<h3 id="with-postee">With Postee</h3>
+<h1 id="deploy-on-kubernetes">Deploy on Kubernetes<a class="headerlink" href="#deploy-on-kubernetes" title="Permanent link">&para;</a></h1>
+<p>In the <a href="https://github.com/aquasecurity/tracee/blob/tracee/deploy/kubernetes">deploy/kubernetes</a> directory you
+can find Yaml files to deploy Tracee in a Kubernetes environment. This will deploy Tracee as a DaemonSet, alongside
+a message routing application that will help you consume the detections in your preferred way (e.g. slack, email, JIRA and more).</p>
+<h2 id="install-tracee">Install Tracee<a class="headerlink" href="#install-tracee" title="Permanent link">&para;</a></h2>
+<h3 id="with-postee">With Postee<a class="headerlink" href="#with-postee" title="Permanent link">&para;</a></h3>
 <p>To install Tracee with <a href="https://github.com/aquasecurity/postee">Postee</a>, simply run:</p>
 <div class="highlight"><pre><span></span><code>kubectl create <span class="se">\</span>
   -f https://raw.githubusercontent.com/aquasecurity/postee/main/deploy/kubernetes/postee.yaml <span class="se">\</span>
-  -f https://raw.githubusercontent.com/aquasecurity/tracee/v0.6.5/deploy/kubernetes/tracee-postee/tracee.yaml
+  -f https://raw.githubusercontent.com/aquasecurity/tracee/tracee/deploy/kubernetes/tracee-postee/tracee.yaml
 </code></pre></div>
 <p>You can edit the configMap <code>postee-config</code> the was created, see an example configuration here: https://github.com/aquasecurity/postee/blob/main/cfg.yaml.</p>
 <p>You can also use the <a href="https://github.com/aquasecurity/postee#postee-ui">Postee UI</a> to configure integrations.</p>
-<h3 id="with-falcosidekick">With Falcosidekick</h3>
+<h3 id="with-falcosidekick">With Falcosidekick<a class="headerlink" href="#with-falcosidekick" title="Permanent link">&para;</a></h3>
 <p>To install Tracee with <a href="https://github.com/falcosecurity/falcosidekick">Falcosidekick</a>, simply run:</p>
 <div class="highlight"><pre><span></span><code>kubectl create <span class="se">\</span>
-  -f https://raw.githubusercontent.com/aquasecurity/tracee/v0.6.5/deploy/kubernetes/tracee-falcosidekick/falcosidekick.yaml <span class="se">\</span>
-  -f https://raw.githubusercontent.com/aquasecurity/tracee/v0.6.5/deploy/kubernetes/tracee-falcosidekick/tracee.yaml
+  -f https://raw.githubusercontent.com/aquasecurity/tracee/tracee/deploy/kubernetes/tracee-falcosidekick/falcosidekick.yaml <span class="se">\</span>
+  -f https://raw.githubusercontent.com/aquasecurity/tracee/tracee/deploy/kubernetes/tracee-falcosidekick/tracee.yaml
 </code></pre></div>
 <p>You can edit the configMap <code>falcosidekick-config</code> the was created, see an example configuration here: https://github.com/falcosecurity/falcosidekick/blob/master/config_example.yaml</p>
-<h2 id="platform-support">Platform support</h2>
-<p>This approach assumes that host nodes have either BTF available or kernel headers available under conventional location. see Tracee's <a href="https://aquasecurity.github.io/tracee/dev/install/prerequisites/">prerequisites</a> for more info. For the major Kubernetes platforms this should work out-of-the-box, including GKE, EKS, AKS, minikube. </p>
+<h2 id="platform-support">Platform Support<a class="headerlink" href="#platform-support" title="Permanent link">&para;</a></h2>
+<p>This approach assumes that host nodes have either BTF available or kernel headers available under conventional location.
+See Tracee's <a href="../prerequisites/">prerequisites</a> for more info. For the major Kubernetes platforms this should
+work out-of-the-box, including GKE, EKS, AKS, minikube.</p>
 
 
 
@@ -701,13 +719,13 @@
       
       
         
-        <a href="../../integrations/" class="md-footer__link md-footer__link--next" aria-label="Next: Integrations" rel="next">
+        <a href="../docker-mac/" class="md-footer__link md-footer__link--next" aria-label="Next: Docker for Mac" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Integrations
+              Docker for Mac
             </div>
           </div>
           <div class="md-footer__button md-icon">

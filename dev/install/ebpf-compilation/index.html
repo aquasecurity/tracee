@@ -16,7 +16,7 @@
         
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.1+insiders-4.4.0">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.2+insiders-4.4.0">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.9d9d8b72.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.bdb7debb.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.e6a45f82.min.css">
@@ -361,6 +361,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker-mac/" class="md-nav__link">
+        Docker for Mac
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -622,13 +636,13 @@
                 
 
 
-<h1 id="ebpf-compilation">eBPF Compilation</h1>
+<h1 id="ebpf-compilation">eBPF Compilation<a class="headerlink" href="#ebpf-compilation" title="Permanent link">&para;</a></h1>
 <p>Tracee is leveraging Linux's eBPF technology, which requires kernel level integration. Tracee supports two eBPF integration modes: a portable mode which will seamlessly run everywhere on supporting environment, as demonstrated by the quickstart, or a kernel-specific mode that requires Tracee's eBPF program to be specifically compiled for your host.</p>
 <p>The portable option, also known as CO:RE (compile once, run everywhere), requires that your operating system support BTF (BPF Type Format). Tracee will automatically run in CO:RE mode if it detects that the environment supports it. This mode requires no intervention or preparation on your side.
 You can manually detect if your environments supports it by checking if the following file exists on your machine: <code>/sys/kernel/btf/vmlinux</code> or consult the following documentation: <a href="https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere">BPF CO-RE (Compile Once – Run Everywhere)</a>.</p>
 <p>If you want to run Tracee on a host without BTF support you can have Tracee build the bpf object for you at runtime. This will depend on having clang and a kernel version specific kernel-header package.</p>
 <p>Alternatively, you can pre-compile the eBPF program, and provide it to Tracee. There are some benefits to this approach as you will not need to depend on clang and kernel headers, as well as reduced risk of invoking an external program at runtime.</p>
-<h2 id="compilation-prerequisites">Compilation Prerequisites</h2>
+<h2 id="compilation-prerequisites">Compilation Prerequisites<a class="headerlink" href="#compilation-prerequisites" title="Permanent link">&para;</a></h2>
 <p>Portable (CO:RE) option:</p>
 <ul>
 <li>Linux kernel version &gt;= 4.18</li>
@@ -644,14 +658,14 @@ You can manually detect if your environments supports it by checking if the foll
 <li>GNU Make &gt;= 4.3</li>
 <li>clang &gt;= 12</li>
 </ul>
-<h2 id="compiling-the-ebpf-program">Compiling the eBPF program</h2>
+<h2 id="compiling-the-ebpf-program">Compiling the eBPF program<a class="headerlink" href="#compiling-the-ebpf-program" title="Permanent link">&para;</a></h2>
 <p>You can build the eBPF program in the following ways:</p>
 <ol>
-<li>Clone the repo (including submodules: <code>git clone --branch=v0.6.5 --recursive https://github.com/aquasecurity/tracee.git</code>) and <code>make bpf</code>.</li>
+<li>Clone the repo (including submodules: <code>git clone --branch=tracee --recursive https://github.com/aquasecurity/tracee.git</code>) and <code>make bpf</code>.</li>
 <li><code>make bpf DOCKER=1</code> to build in a Docker container which includes all development tooling.</li>
 </ol>
 <p>Running this will produce a file called <code>tracee.bpf.$kernelversion.$traceeversion.o</code> under the <code>dist</code> directory.</p>
-<h2 id="using-compiled-ebpf-program">Using compiled eBPF program</h2>
+<h2 id="using-compiled-ebpf-program">Using compiled eBPF program<a class="headerlink" href="#using-compiled-ebpf-program" title="Permanent link">&para;</a></h2>
 <p>Once you have the eBPF program artifact, you can provide it to Tracee in any of the following locations:</p>
 <ol>
 <li>Path specified in <code>TRACEE_BPF_FILE</code> environment variable</li>
@@ -662,14 +676,14 @@ You can manually detect if your environments supports it by checking if the foll
 <div class="highlight"><pre><span></span><code>docker run --name tracee --rm --privileged -it <span class="se">\</span>
   -v /path/in/host/tracee.bpf.123.o:/path/in/container/tracee.bpf.o <span class="se">\</span>
   -e <span class="nv">TRACEE_BPF_FILE</span><span class="o">=</span>/path/in/container/tracee.bpf.o <span class="se">\</span>
-  aquasec/tracee:slim-0.6.5
+  aquasec/tracee:slim-racee
 </code></pre></div>
 <p>If using Docker on a host without BTF enabled, the following <code>docker run</code> options demonstrate mounting of required kernel headers for building the bpf object at runtime:</p>
 <div class="highlight"><pre><span></span><code>docker run --name tracee --rm --privileged -it <span class="se">\</span>
   -v /lib/modules/:/lib/modules/:ro <span class="se">\</span>
   -v /usr/src:/usr/src:ro <span class="se">\</span>
   -v /tmp/tracee:/tmp/tracee <span class="se">\</span>
-  aquasec/tracee:0.6.5
+  aquasec/tracee:racee
 </code></pre></div>
 
 
