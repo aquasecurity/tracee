@@ -8,11 +8,10 @@ all:
 
 PARALLEL = $(shell $(CMD_GREP) -c ^processor /proc/cpuinfo)
 
-NORM_MAKE = make -j$(PARALLEL)
+NORM_MAKE = make
 
 MAKE = make -f Makefile.one
 MAKEFLAGS += --no-print-directory
-MAKEFLAGS += -j$(PARALLEL)
 
 # tools
 
@@ -245,7 +244,8 @@ $(OUTPUT_DIR)/libbpf/libbpf.a: $(LIBBPF_SRC) $(wildcard $(LIBBPF_SRC)/*.[ch]) | 
 	CC="$(CMD_CLANG)" \
 		CFLAGS="$(LIBBPF_CFLAGS)" \
 		LD_FLAGS="$(LIBBPF_LDFLAGS)" \
-		$(NORM_MAKE) -C $(LIBBPF_SRC) \
+		$(NORM_MAKE) -j$(PARALLEL) \
+		-C $(LIBBPF_SRC) \
 		BUILD_STATIC_ONLY=1 \
 		DESTDIR=$(abspath ./$(OUTPUT_DIR)/libbpf/) \
 		OBJDIR=$(abspath ./$(OUTPUT_DIR)/libbpf/obj) \
