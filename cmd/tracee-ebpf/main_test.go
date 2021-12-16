@@ -3,13 +3,12 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"testing"
-
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/flags"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"io/ioutil"
+	"testing"
 )
 
 func TestPrepareFilter(t *testing.T) {
@@ -1319,44 +1318,6 @@ func Test_checkCommandIsHelp(t *testing.T) {
 			actual := checkCommandIsHelp(testcase.input)
 			assert.Equal(t, testcase.expected, actual)
 		})
-	}
-}
-
-func Test_checkClangVersion(t *testing.T) {
-	testCases := []struct {
-		verOut        string
-		expectedError string
-	}{
-		{
-			verOut: `Ubuntu clang version 12.0.0-2
-Target: x86_64-pc-linux-gnu
-Thread model: posix
-InstalledDir: /usr/bin
-`,
-		},
-		{
-			verOut:        `foo bar baz invalid`,
-			expectedError: "could not detect clang version from: foo bar baz invalid",
-		},
-		{
-			verOut: `Ubuntu clang version 11.0.0-2
-Target: x86_64-pc-linux-gnu
-Thread model: posix
-InstalledDir: /usr/bin
-`,
-			expectedError: "detected clang version: 11 is older than required minimum version: 12",
-		},
-	}
-
-	for _, tc := range testCases {
-		err := checkClangVersion([]byte(tc.verOut))
-
-		switch {
-		case tc.expectedError != "":
-			assert.EqualError(t, err, tc.expectedError)
-		default:
-			assert.NoError(t, err)
-		}
 	}
 }
 
