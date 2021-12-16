@@ -1,6 +1,5 @@
-FROM squidfunk/mkdocs-material:8.0.1
+FROM squidfunk/mkdocs-material:8.1.2
 
 RUN pip install --upgrade pip && \
     pip install mike && \
-    pip install mkdocs-macros-plugin && \
-    pip install git+https://github.com/itaysk/mkdocs-macros-gittagversion
+    pip install mkdocs-macros-plugin

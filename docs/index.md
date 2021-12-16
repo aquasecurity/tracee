@@ -23,7 +23,7 @@ If running on __BTF enabled kernel__:
 ```bash
 docker run --name tracee --rm -it --pid=host --cgroupns=host --privileged \
   -v /tmp/tracee:/tmp/tracee \
-  aquasec/tracee:{{ git_tag_version[1:] }}
+  aquasec/tracee:{{ git.tag[1:] }}
 ```
 
 !!! note
@@ -35,7 +35,7 @@ docker run --name tracee --rm -it --pid=host --cgroupns=host --privileged \
   -v /tmp/tracee:/tmp/tracee \
   -v /lib/modules/:/lib/modules/:ro \
   -v /usr/src:/usr/src:ro \
-  aquasec/tracee:{{ git_tag_version[1:] }}
+  aquasec/tracee:{{ git.tag[1:] }}
 ```
 
 !!! note
@@ -52,8 +52,8 @@ In some cases, you might want to leverage Tracee's eBPF event collection capabil
 
 Tracee is composed of the following sub-projects, which are hosted in the aquasecurity/tracee repository:
 
-- [Tracee-eBPF](https://github.com/aquasecurity/tracee/tree/{{ git_tag_version }}/tracee-ebpf) - Linux Tracing and Forensics using eBPF
-- [Tracee-Rules](https://github.com/aquasecurity/tracee/tree/{{ git_tag_version }}/tracee-rules) - Runtime Security Detection Engine
+- [Tracee-eBPF](https://github.com/aquasecurity/tracee/tree/{{ git.tag }}/tracee-ebpf) - Linux Tracing and Forensics using eBPF
+- [Tracee-Rules](https://github.com/aquasecurity/tracee/tree/{{ git.tag }}/tracee-rules) - Runtime Security Detection Engine
 
 ---
 

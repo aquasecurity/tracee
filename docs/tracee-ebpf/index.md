@@ -9,7 +9,7 @@ In some cases, you might want to leverage Tracee's eBPF event collection capabil
 Before you proceed, make sure you follow the [minimum requirements for running Tracee](../install/prerequisites.md).
 
 ```bash
-docker run --name tracee --rm --pid=host --cgroupns=host --privileged -it aquasec/tracee:{{ git_tag_version[1:] }} trace
+docker run --name tracee --rm --pid=host --cgroupns=host --privileged -it aquasec/tracee:{{ git.tag[1:] }} trace
 ```
 
 Here we are running the same `aquasec/tracee` container, but with the `trace` sub-command, which will start just a raw trace (Tracee-eBPF), without the detection engine (Tracee-Rules). Here's a sample output of running with no additional arguments:
@@ -39,7 +39,7 @@ Each line is a single event collected by Tracee-eBPF, with the following informa
 You can obtain Tracee-eBPF in any of the following ways:
 
 1. Download from the [GitHub Releases](https://github.com/aquasecurity/tracee/releases) (`tracee.tar.gz`).
-2. Use the docker image from Docker Hub: `aquasec/tracee` with the `trace` sub-command.
+2. Use the docker image from Docker Hub: `aquasec/tracee:{{ git.tag[1:] }}` with the `trace` sub-command.
 3. Build the executable from source using `make build`. For that you will need additional development tooling.
 4. Build the executable from source in a Docker container which includes all development tooling, using `make build DOCKER=1`.
 
