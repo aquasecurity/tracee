@@ -213,6 +213,11 @@ help:
 	@echo "$ make tracee-rules         # build ./dist/tracee-rules"
 	@echo "$ make rules                # build ./dist/rules"
 	@echo ""
+	@echo "# install"
+	@echo ""
+	@echo "$ make install-bpf-nocore   # install BPF no CO-RE obj into /tmp/tracee"
+	@echo "$ make uninstall-bpf-nocore # uninstall BPF no CO-RE obj from /tmp/tracee"
+	@echo ""
 	@echo "# clean"
 	@echo ""
 	@echo "$ make clean                # wipe ./dist/"
@@ -284,10 +289,9 @@ LIBBPF_LDLAGS =
 LIBBPF_SRC = ./3rdparty/libbpf/src
 
 $(OUTPUT_DIR)/libbpf/libbpf.a: \
-	.checkver_$(CMD_CLANG) \
 	$(LIBBPF_SRC) \
 	$(wildcard $(LIBBPF_SRC)/*.[ch]) \
-	| $(OUTPUT_DIR)
+	| .checkver_$(CMD_CLANG) $(OUTPUT_DIR)
 #
 	CC="$(CMD_CLANG)" \
 		CFLAGS="$(LIBBPF_CFLAGS)" \
@@ -371,6 +375,26 @@ $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o: \
 clean-bpf-nocore:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o
+
+TMP_DIR = /tmp/tracee
+
+.PHONY: install-bpf-nocore
+.ONESHELL:
+install-bpf-nocore: \
+	$(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o \
+	| .check_$(CMD_INSTALL) \
+	.check_$(CMD_RM) \
+	.check_$(CMD_MKDIR) \
+#
+	@$(CMD_MKDIR) -p $(TMP_DIR)
+	$(CMD_RM) -f $(TMP_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o
+	$(CMD_INSTALL) -m 0640 $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o $(TMP_DIR)
+
+.PHONY: uninstall-bpf-nocore
+uninstall-bpf-nocore: \
+	| .check_$(CMD_RM)
+#
+	$(CMD_RM) -f $(TMP_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o
 
 #
 # co-re ebpf

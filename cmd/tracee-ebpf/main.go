@@ -6,11 +6,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
-	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -26,7 +23,6 @@ import (
 
 var debug bool
 var traceeInstallPath string
-var buildPolicy string
 
 var version string
 
@@ -247,12 +243,6 @@ func main() {
 				Usage:       "path where tracee will install or lookup it's resources",
 				Destination: &traceeInstallPath,
 			},
-			&cli.StringFlag{
-				Name:        "build-policy",
-				Value:       "if-needed",
-				Usage:       "when to build the bpf program. possible options: 'never'/'always'/'if-needed'",
-				Destination: &buildPolicy,
-			},
 		},
 	}
 
@@ -263,7 +253,6 @@ func main() {
 }
 
 func prepareBpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSInfo *helpers.OSInfo) error {
-
 	var d = struct {
 		btfenv     bool
 		bpfenv     bool
@@ -290,6 +279,7 @@ func prepareBpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSIn
 		fmt.Printf("BTF: bpfenv = %v, btfenv = %v, vmlinux = %v\n", d.bpfenv, d.btfenv, d.btfvmlinux)
 	}
 
+	var tVersion, kVersion string
 	var bpfBytes []byte
 	var unpackBTFFile string
 
@@ -359,18 +349,21 @@ func prepareBpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSIn
 
 	// (5) no BPF file given & no BTF available & no embedded BTF: non CO-RE BPF
 
+	tVersion = strings.ReplaceAll(version, "\"", "")
+	tVersion = strings.ReplaceAll(tVersion, ".", "_")
+	kVersion = OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE)
+	kVersion = strings.ReplaceAll(kVersion, ".", "_")
+
+	bpfFilePath = fmt.Sprintf("/tmp/tracee/tracee.bpf.%s.%s.o", kVersion, tVersion)
 	if debug {
-		fmt.Println("BPF: no BTF file was found or provided, building BPF object")
-	}
-	if bpfFilePath, err = getBPFObjectPath(); err != nil {
-		return err
+		fmt.Printf("BPF: no BTF file was found or provided\n")
+		fmt.Printf("BPF: trying non CO-RE eBPF at %s\n", bpfFilePath)
 	}
 	if bpfBytes, err = ioutil.ReadFile(bpfFilePath); err != nil {
 		return err
 	}
 
 out:
-
 	config.KernelConfig = kConfig
 	config.BPFObjPath = bpfFilePath
 	config.BPFObjBytes = bpfBytes
@@ -482,35 +475,6 @@ func printList() {
 	fmt.Println(b.String())
 }
 
-// locateFile locates a file named file, or a directory if name is empty, and returns it's full path
-// It first tries in the paths given by the dirs, and then a system lookup
-func locateFile(file string, dirs []string) string {
-	var res string
-
-	if filepath.IsAbs(file) {
-		_, err := os.Stat(file)
-		if err == nil {
-			return file
-		}
-	}
-
-	for _, dir := range dirs {
-		if dir != "" {
-			fi, err := os.Stat(filepath.Join(dir, file))
-			if err == nil && ((file == "" && fi.IsDir()) || (file != "" && fi.Mode().IsRegular())) {
-				return filepath.Join(dir, file)
-			}
-		}
-	}
-	if file != "" && res == "" {
-		p, _ := exec.LookPath(file)
-		if p != "" {
-			return p
-		}
-	}
-	return ""
-}
-
 func checkEnvPath(env string) (string, error) {
 	filePath, _ := os.LookupEnv(env)
 	if filePath != "" {
@@ -521,47 +485,6 @@ func checkEnvPath(env string) (string, error) {
 		return filePath, nil
 	}
 	return "", nil
-}
-
-// getBPFObjectPath finds or builds ebpf object file and returns it's path
-func getBPFObjectPath() (string, error) {
-
-	exePath, err := os.Executable()
-	if err != nil {
-		return "", err
-	}
-	//locations to search for the bpf file, in the following order
-	searchPaths := []string{
-		filepath.Dir(exePath),
-		traceeInstallPath,
-	}
-
-	release, _ := helpers.UnameRelease()
-	bpfObjFileName := fmt.Sprintf("tracee.bpf.%s.%s.o", strings.ReplaceAll(release, ".", "_"), strings.ReplaceAll(version, ".", "_"))
-	bpfObjFilePath := locateFile(bpfObjFileName, searchPaths)
-	if bpfObjFilePath != "" && debug {
-		fmt.Printf("found bpf object file at: %s\n", bpfObjFilePath)
-	}
-
-	if (bpfObjFilePath == "" && buildPolicy != "never") || buildPolicy == "always" {
-		if debug {
-			fmt.Printf("attempting to build the bpf object file\n")
-		}
-		bpfObjInstallPath := filepath.Join(traceeInstallPath, bpfObjFileName)
-		err = makeBPFObject(bpfObjInstallPath)
-		if err != nil {
-			return "", err
-		}
-		if debug {
-			fmt.Printf("successfully built ebpf obj file into: %s\n", bpfObjInstallPath)
-		}
-		bpfObjFilePath = bpfObjInstallPath
-	}
-
-	if bpfObjFilePath == "" {
-		return "", fmt.Errorf("could not find or build the bpf object file")
-	}
-	return bpfObjFilePath, nil
 }
 
 func unpackCOREBinary() ([]byte, error) {
@@ -635,231 +558,5 @@ func unpackBTFHub(outFilePath string, OSInfo *helpers.OSInfo) error {
 
 	}
 
-	return nil
-}
-
-// makeBPFObject builds the ebpf object from source code into the provided path
-func makeBPFObject(outFile string) error {
-	// drop capabilities for the compilation process
-	caps, err := capabilities.Self()
-	if err != nil {
-		return err
-	}
-	capNew, err := capability.NewPid2(0)
-	if err != err {
-		return err
-	}
-	capNew.Clear(capability.BOUNDS)
-	err = capNew.Apply(capability.BOUNDS)
-	if err != err {
-		return err
-	}
-	defer caps.Apply(capability.BOUNDS)
-	dir, err := ioutil.TempDir("", "tracee-make")
-	if err != nil {
-		return err
-	}
-	if debug {
-		fmt.Printf("building bpf object in: %s\n", dir)
-	} else {
-		defer os.RemoveAll(dir)
-	}
-	objFile := filepath.Join(dir, "tracee.bpf.o")
-	err = unpackBPFBundle(dir)
-	if err != nil {
-		return err
-	}
-
-	clang, err := checkClang()
-	if err != nil {
-		return err
-	}
-
-	llc := locateFile("llc", []string{os.Getenv("LLC")})
-	if llc == "" {
-		return fmt.Errorf("missing compilation dependency: llc")
-	}
-	llvmstrip := locateFile("llvm-strip", []string{os.Getenv("LLVM_STRIP")})
-
-	release, err := helpers.UnameRelease()
-	if err != nil {
-		return err
-	}
-	kernelHeaders := locateFile("", []string{os.Getenv("KERN_HEADERS")})
-	kernelBuildPath := locateFile("", []string{fmt.Sprintf("/lib/modules/%s/build", release)})
-	kernelSourcePath := locateFile("", []string{fmt.Sprintf("/lib/modules/%s/source", release)})
-	if kernelHeaders != "" {
-		// In case KERN_HEADERS is set, use it for both source/ and build/
-		kernelBuildPath = kernelHeaders
-		kernelSourcePath = kernelHeaders
-	}
-	if kernelBuildPath == "" {
-		return fmt.Errorf("kernel headers could not be found, they are required for bpf compilation if CORE is not enabled. Set KERN_HEADERS to their path.")
-	}
-	// In some distros (e.g. debian, suse), kernel headers are split to build/ and source/
-	// while in others (e.g. ubuntu, arch), all headers will be located under build/
-	if kernelSourcePath == "" {
-		kernelSourcePath = kernelBuildPath
-	}
-	linuxArch := os.Getenv("ARCH")
-	if linuxArch == "" {
-		linuxArch = strings.Replace(runtime.GOARCH, "amd64", "x86", 1)
-	}
-
-	// from the Makefile:
-	// $(CLANG) -S \
-	// 	-D__BPF_TRACING__ \
-	// 	-D__KERNEL__ \
-	// 	-D__TARGET_ARCH_$(linux_arch) \
-	// 	-I $(LIBBPF_HEADERS)/bpf \
-	// 	-include $(KERN_SRC_PATH)/include/linux/kconfig.h \
-	// 	-I $(KERN_SRC_PATH)/arch/$(linux_arch)/include \
-	// 	-I $(KERN_SRC_PATH)/arch/$(linux_arch)/include/uapi \
-	// 	-I $(KERN_BLD_PATH)/arch/$(linux_arch)/include/generated \
-	// 	-I $(KERN_BLD_PATH)/arch/$(linux_arch)/include/generated/uapi \
-	// 	-I $(KERN_SRC_PATH)/include \
-	// 	-I $(KERN_BLD_PATH)/include \
-	// 	-I $(KERN_SRC_PATH)/include/uapi \
-	// 	-I $(KERN_BLD_PATH)/include/generated \
-	// 	-I $(KERN_BLD_PATH)/include/generated/uapi \
-	// 	-I $(BPF_HEADERS) \
-	// 	-Wno-address-of-packed-member \
-	// 	-Wno-compare-distinct-pointer-types \
-	// 	-Wno-deprecated-declarations \
-	// 	-Wno-gnu-variable-sized-type-not-at-end \
-	// 	-Wno-pointer-sign \
-	// 	-Wno-pragma-once-outside-heade \
-	// 	-Wno-unknown-warning-option \
-	// 	-Wno-unused-value \
-	// 	-Wunused \
-	// 	-Wall \
-	// 	-fno-stack-protector \
-	// 	-fno-jump-tables \
-	// 	-fno-unwind-tables \
-	// 	-fno-asynchronous-unwind-tables \
-	// 	-xc \
-	// 	-nostdinc \
-	// 	-O2 -emit-llvm -c -g $< -o $(@:.o=.ll)
-	intermediateFile := strings.Replace(objFile, ".o", ".ll", 1)
-	// TODO: validate all files/directories. perhaps using locateFile
-	cmd1 := exec.Command(clang,
-		"-S",
-		"-D__BPF_TRACING__",
-		"-D__KERNEL__",
-		fmt.Sprintf("-D__TARGET_ARCH_%s", linuxArch),
-		fmt.Sprintf("-I%s", dir),
-		fmt.Sprintf("-include%s/include/linux/kconfig.h", kernelSourcePath),
-		fmt.Sprintf("-I%s/arch/%s/include", kernelSourcePath, linuxArch),
-		fmt.Sprintf("-I%s/arch/%s/include/uapi", kernelSourcePath, linuxArch),
-		fmt.Sprintf("-I%s/arch/%s/include/generated", kernelBuildPath, linuxArch),
-		fmt.Sprintf("-I%s/arch/%s/include/generated/uapi", kernelBuildPath, linuxArch),
-		fmt.Sprintf("-I%s/include", kernelSourcePath),
-		fmt.Sprintf("-I%s/include", kernelBuildPath),
-		fmt.Sprintf("-I%s/include/uapi", kernelSourcePath),
-		fmt.Sprintf("-I%s/include/generated", kernelBuildPath),
-		fmt.Sprintf("-I%s/include/generated/uapi", kernelBuildPath),
-		"-Wno-address-of-packed-member",
-		"-Wno-compare-distinct-pointer-types",
-		"-Wno-deprecated-declarations",
-		"-Wno-gnu-variable-sized-type-not-at-end",
-		"-Wno-pointer-sign",
-		"-Wno-pragma-once-outside-heade",
-		"-Wno-unknown-warning-option",
-		"-Wno-unused-value",
-		"-Wunused",
-		"-Wall",
-		"-fno-stack-protector",
-		"-fno-jump-tables",
-		"-fno-unwind-tables",
-		"-fno-asynchronous-unwind-tables",
-		"-xc",
-		"-nostdinc", "-O2", "-emit-llvm", "-c", "-g", filepath.Join(dir, "tracee.bpf.c"), fmt.Sprintf("-o%s", intermediateFile),
-	)
-	cmd1.Dir = dir
-	if debug {
-		fmt.Println(cmd1)
-		cmd1.Stdout = os.Stdout
-		cmd1.Stderr = os.Stderr
-	}
-	err = cmd1.Run()
-	if err != nil {
-		return fmt.Errorf("failed to make BPF object (clang): %v. Try using --debug for more info", err)
-	}
-
-	// from Makefile:
-	// $(LLC) -march=bpf -filetype=obj -o $@ $(@:.o=.ll)
-	cmd2 := exec.Command(llc,
-		"-march=bpf",
-		"-filetype=obj",
-		"-o", objFile,
-		intermediateFile,
-	)
-	cmd2.Dir = dir
-	if debug {
-		fmt.Println(cmd2)
-		cmd2.Stdout = os.Stdout
-		cmd2.Stderr = os.Stderr
-	}
-	err = cmd2.Run()
-	if err != nil {
-		return fmt.Errorf("failed to make BPF object (llc): %v. Try using --debug for more info", err)
-	}
-
-	// from Makefile:
-	// -$(LLVM_STRIP) -g $@
-	if llvmstrip != "" {
-		cmd3 := exec.Command(llvmstrip,
-			"-g", objFile,
-		)
-		cmd3.Dir = dir
-		if debug {
-			fmt.Println(cmd3)
-			cmd3.Stdout = os.Stdout
-			cmd3.Stderr = os.Stderr
-		}
-		err = cmd3.Run()
-		if err != nil {
-			return fmt.Errorf("failed to make BPF object (llvm-strip): %v. Try using --debug for more info", err)
-		}
-	}
-
-	if debug {
-		fmt.Printf("successfully built ebpf obj file at: %s\n", objFile)
-	}
-	os.MkdirAll(filepath.Dir(outFile), 0755)
-	err = tracee.CopyFileByPath(objFile, outFile)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func checkClang() (string, error) {
-	clang := locateFile("clang", []string{os.Getenv("CLANG")})
-	if clang == "" {
-		return "", fmt.Errorf("missing compilation dependency: clang")
-	}
-	cmdVer := exec.Command(clang, "--version")
-	verOut, err := cmdVer.CombinedOutput()
-	if err != nil {
-		return "", err
-	}
-	return clang, checkClangVersion(verOut)
-}
-
-func checkClangVersion(verOut []byte) error {
-	// we are looking for the "version x.y.z" part in the text output
-	re := regexp.MustCompile(`(version)\s\S*`)
-	versionString := re.FindString(string(verOut))
-	if len(versionString) < 1 {
-		return fmt.Errorf("could not detect clang version from: %s", string(verOut))
-	}
-	verStr := strings.Split(versionString, " ")[1]
-
-	verMajor, _ := strconv.Atoi(strings.SplitN(verStr, ".", 2)[0])
-	if verMajor < 12 {
-		return fmt.Errorf("detected clang version: %d is older than required minimum version: 12", verMajor)
-	}
 	return nil
 }

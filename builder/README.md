@@ -108,4 +108,7 @@ $ STATIC=1 make -f builder/Makefile.docker xxxx-make ARG="tracee-ebpf"
 
 ## More information
 
-Read [MORE](README-containers.md) on how to use 'tracee-make' container.
+* Read [MORE](README-containers.md) about how to use the **tracee-make**
+  container.
+* Read [HERE](README-no-CORE.md) how to generate non CO-RE eBPF object in
+  environments that don't support CO-RE.

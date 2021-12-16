@@ -123,7 +123,6 @@ DOCKER_RUN_ARGS = run --rm --pid=host --privileged \
 		-v $(PWD):/tracee \
 		-v /lib/modules:/lib/modules:ro \
 		-v /usr/src:/usr/src:ro \
-		-v /tmp/tracee:/tmp/tracee \
 		-e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
 		$(DOCKER_RUN_ENV)
 
