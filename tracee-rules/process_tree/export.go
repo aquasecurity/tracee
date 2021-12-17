@@ -3,6 +3,7 @@ package process_tree
 import (
 	"fmt"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"log"
 )
 
 // The process tree instance to be used by the engine and the signatures
@@ -25,6 +26,22 @@ func GetProcessLineage(threadID int) (types.ProcessLineage, error) {
 
 func ProcessEvent(event types.Event) error {
 	return globalTree.ProcessEvent(event)
+}
+
+func CreateProcessTreePipeline(in chan types.Event) chan types.Event {
+	out := make(chan types.Event, 100)
+	go processTreeStart(in, out)
+	return out
+}
+
+func processTreeStart(in chan types.Event, out chan types.Event) {
+	for e := range in {
+		err := ProcessEvent(e)
+		if err != nil {
+			log.Printf("error processing event in process tree: %v", err)
+		}
+		out <- e
+	}
 }
 
 func PrintTree() {
