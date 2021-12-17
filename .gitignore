@@ -1,10 +1,7 @@
 .vscode
 .idea
 /dist
-
 coverage.txt
-
 .vagrant/
-
 *.md5
-
+runner

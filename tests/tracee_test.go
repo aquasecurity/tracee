@@ -1,6 +1,7 @@
-package tests
+package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
 )
 
 const (
@@ -125,4 +127,86 @@ func TestWebhookIntegration(t *testing.T) {
 	// kill the container
 	t.Log("Terminating the Tracee container...")
 	assert.NoError(t, exec.Command("docker", "kill", containerID).Run())
+}
+
+type traceeContainer struct {
+	testcontainers.Container
+}
+
+func setupTraceeContainer(ctx context.Context) (*traceeContainer, error) {
+	req := testcontainers.ContainerRequest{
+		Image:      "tracee",
+		Privileged: true,
+		BindMounts: map[string]string{"/tmp/tracee": "/tmp/tracee"},
+		Name:       "tracee",
+		AutoRemove: true,
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &traceeContainer{Container: container}, nil
+}
+
+func setupTraceeTrainerContainer(ctx context.Context, sigid string) (*traceeContainer, error) {
+	req := testcontainers.ContainerRequest{
+		Image:      "tracee-trainer",
+		Entrypoint: []string{"/runner", sigid},
+		Privileged: true,
+		Name:       "tracee-trainer",
+		AutoRemove: true,
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &traceeContainer{Container: container}, nil
+}
+
+func TestTraceeSignatures(t *testing.T) {
+	for _, sigid := range []string{"TRC-11"} {
+		t.Run(sigid, func(t *testing.T) {
+			ctx := context.Background()
+
+			// run tracee container
+			traceeContainer, err := setupTraceeContainer(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer traceeContainer.Terminate(ctx)
+
+			// wait for tracee to initialize
+			time.Sleep(time.Second * 5)
+
+			// run trace signature trainer container
+			traceeSigTrainer, err := setupTraceeTrainerContainer(ctx, sigid)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer traceeSigTrainer.Terminate(ctx)
+
+			// wait for tracee to detect
+			time.Sleep(time.Second * 10)
+
+			b, err := traceeContainer.Logs(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			log, err := ioutil.ReadAll(b)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// assert our required signature was triggered
+			assert.Contains(t, string(log), sigid)
+		})
+	}
 }
