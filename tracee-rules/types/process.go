@@ -15,6 +15,7 @@ type BinaryInfo struct {
 type ProcessInfo struct {
 	InContainerIDs  ProcessIDs
 	InHostIDs       ProcessIDs
+	ContainerID     string
 	ProcessName     string
 	Cmd             []string
 	ExecutionBinary BinaryInfo

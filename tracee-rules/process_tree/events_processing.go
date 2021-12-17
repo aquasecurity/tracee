@@ -19,6 +19,8 @@ func (tree *ProcessTree) ProcessEvent(event types.Event) error {
 		return tree.processExec(traceeEvent)
 	case "sched_process_exit":
 		return tree.processExit(traceeEvent)
+	case "exit":
+		return nil
 	default:
 		return nil
 	}
@@ -29,7 +31,10 @@ func (tree *ProcessTree) ProcessEvent(event types.Event) error {
 func (tree *ProcessTree) processExec(event external.Event) error {
 	process, err := tree.GetProcessInfo(event.HostThreadID)
 	if err != nil {
-		return err
+		process = tree.addGeneralEventProcess(event)
+	}
+	if process.ParentProcess == nil {
+		tree.generateParentProcess(process)
 	}
 	execArgv, err := getArgumentByName(event, "argv")
 	if err != nil {
@@ -98,8 +103,9 @@ func (tree *ProcessTree) processFork(event external.Event) error {
 		InContainerIDs: types.ProcessIDs{
 			Ppid: event.ProcessID,
 		},
-		StartTime: event.Timestamp,
-		IsAlive:   true,
+		ContainerID: event.ContainerID,
+		StartTime:   event.Timestamp,
+		IsAlive:     true,
 	}
 
 	containerTree, err := tree.getContainerTree(event.ContainerID)
@@ -163,6 +169,7 @@ func (tree *ProcessTree) processExit(event external.Event) error {
 					cp.ParentProcess.ChildProcesses = append(cp.ParentProcess.ChildProcesses[:i],
 						cp.ParentProcess.ChildProcesses[i+1:]...)
 				}
+				break
 			}
 			if cp.ParentProcess.IsAlive {
 				break
@@ -171,6 +178,78 @@ func (tree *ProcessTree) processExit(event external.Event) error {
 		}
 	}
 	return nil
+}
+
+// processDefaultEvent tries to expand the process tree in case of lost events or missing start information
+func (tree *ProcessTree) processDefaultEvent(event external.Event) error {
+	process, err := tree.GetProcessInfo(event.HostThreadID)
+	if err != nil {
+		process = tree.addGeneralEventProcess(event)
+	}
+	if process.ParentProcess == nil {
+		parentProcess, err := tree.GetProcessInfo(event.HostParentProcessID)
+		if err == nil {
+			process.ParentProcess = parentProcess
+			parentProcess.ChildProcesses = append(parentProcess.ChildProcesses, process)
+		} else {
+			tree.generateParentProcess(process)
+		}
+	}
+	return nil
+
+}
+
+func (tree *ProcessTree) addGeneralEventProcess(event external.Event) *types.ProcessInfo {
+	process := &types.ProcessInfo{
+		ProcessName: event.ProcessName,
+		InHostIDs: types.ProcessIDs{
+			Pid:  event.HostProcessID,
+			Ppid: event.HostParentProcessID,
+			Tid:  event.HostThreadID,
+		},
+		InContainerIDs: types.ProcessIDs{
+			Pid:  event.ProcessID,
+			Ppid: event.ProcessID,
+			Tid:  event.ThreadID,
+		},
+		ContainerID: event.ContainerID,
+		IsAlive:     true,
+	}
+	tree.tree[event.HostThreadID] = process
+	_, err := tree.getContainerTree(event.ContainerID)
+	if err != nil {
+		containerTree := &containerProcessTree{
+			Root: process,
+		}
+		tree.containers[event.ContainerID] = containerTree
+	}
+	return process
+}
+
+// generateParentProcess creates a parent process of given one from tree if existing or creates new node with best
+// effort info
+func (tree *ProcessTree) generateParentProcess(process *types.ProcessInfo) *types.ProcessInfo {
+	if process.InContainerIDs.Ppid != 0 {
+		parentProcess, err := tree.GetProcessInfo(process.InHostIDs.Ppid)
+		if err != nil {
+			parentProcess = &types.ProcessInfo{
+				InHostIDs: types.ProcessIDs{
+					Pid: process.InHostIDs.Ppid,
+				},
+				InContainerIDs: types.ProcessIDs{
+					Pid: process.InContainerIDs.Ppid,
+				},
+			}
+		}
+		process.ParentProcess = parentProcess
+		parentProcess.ChildProcesses = append(parentProcess.ChildProcesses, process)
+
+		croot, _ := tree.GetContainerRoot(process.ContainerID)
+		if croot == process {
+			tree.containers[process.ContainerID].Root = parentProcess
+		}
+	}
+	return process
 }
 
 // getArgumentByName fetches the argument in event with "Name" that matches argName.
