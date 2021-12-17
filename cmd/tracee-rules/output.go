@@ -23,16 +23,11 @@ Time: {{ dateInZone "2006-01-02T15:04:05Z" (now) "UTC" }}
 Signature ID: {{ .SigMetadata.ID }}
 Signature: {{ .SigMetadata.Name }}
 Data: {{ .Data }}
-Command: {{ .Context.ProcessName }}
-Hostname: {{ .Context.HostName }}
-Process Lineage: {{ range .ProcessLineage }}
+Command: {{ .Context.Event.ProcessName }}
+Hostname: {{ .Context.Event.HostName }}
+Process Lineage: {{ range .Context.ProcessLineage }}
 	PID = {{ .InHostIDs.Pid }}, Name = {{ .ProcessName }}{{end}}
 `
-
-type FinaleFinding struct {
-	types.Finding
-	ProcessLineage types.ProcessLineage
-}
 
 func setupTemplate(inputTemplateFile string) (*template.Template, error) {
 	switch {
@@ -65,14 +60,13 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 
 	go func(w io.Writer, tWebhook, tOutput *template.Template) {
 		for res := range out {
-			lineage, _ := process_tree.GetProcessLineage(res.Context.(tracee.Event).HostThreadID)
-			ffinding := FinaleFinding{
-				res,
-				lineage,
-			}
 			switch res.Context.(type) {
 			case external.Event:
-				if err := tOutput.Execute(w, ffinding); err != nil {
+				res, err = enrichFindingWithProcessTree(res)
+				if err != nil {
+					log.Println(err)
+				}
+				if err := tOutput.Execute(w, res); err != nil {
 					log.Printf("error writing to output: %v", err)
 				}
 			default:
@@ -81,7 +75,7 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 			}
 
 			if webhook != "" {
-				if err := sendToWebhook(tWebhook, ffinding, webhook, webhookTemplate, contentType); err != nil {
+				if err := sendToWebhook(tWebhook, res, webhook, webhookTemplate, contentType); err != nil {
 					log.Printf("error sending to webhook: %v", err)
 				}
 			}
@@ -90,7 +84,7 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 	return out, nil
 }
 
-func sendToWebhook(t *template.Template, res FinaleFinding, webhook string, webhookTemplate string, contentType string) error {
+func sendToWebhook(t *template.Template, res types.Finding, webhook string, webhookTemplate string, contentType string) error {
 	var payload string
 
 	switch {
@@ -116,4 +110,23 @@ func sendToWebhook(t *template.Template, res FinaleFinding, webhook string, webh
 	}
 	_ = resp.Body.Close()
 	return nil
+}
+
+type PTEnrichedContext struct {
+	Event          types.Event
+	ProcessLineage types.ProcessLineage
+}
+
+func enrichFindingWithProcessTree(f types.Finding) (types.Finding, error) {
+	event, ok := f.Context.(external.Event)
+	if !ok {
+		return f, fmt.Errorf("couldn't enrich finding because the event is not a tracee-ebpf event")
+	}
+	lineage, _ := process_tree.GetProcessLineage(f.Context.(external.Event).HostThreadID)
+	enrichedFinding := f
+	enrichedFinding.Context = PTEnrichedContext{
+		Event:          event,
+		ProcessLineage: lineage,
+	}
+	return enrichedFinding, nil
 }
