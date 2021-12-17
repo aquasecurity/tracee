@@ -122,7 +122,7 @@ func enrichFindingWithProcessTree(f types.Finding) (types.Finding, error) {
 	if !ok {
 		return f, fmt.Errorf("couldn't enrich finding because the event is not a tracee-ebpf event")
 	}
-	lineage, _ := process_tree.GetProcessLineage(f.Context.(external.Event).HostThreadID)
+	lineage, _ := process_tree.GetProcessLineage(f.Context.(external.Event).HostProcessID)
 	enrichedFinding := f
 	enrichedFinding.Context = PTEnrichedContext{
 		Event:          event,

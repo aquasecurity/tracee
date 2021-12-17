@@ -29,7 +29,7 @@ func (tree *ProcessTree) ProcessEvent(event types.Event) error {
 // processExec fill the fields of the process according to exec information.
 // It also fills the missing information from the fork.
 func (tree *ProcessTree) processExec(event external.Event) error {
-	process, err := tree.GetProcessInfo(event.HostThreadID)
+	process, err := tree.GetProcessInfo(event.HostProcessID)
 	if err != nil {
 		process = tree.addGeneralEventProcess(event)
 	}
@@ -136,6 +136,7 @@ func (tree *ProcessTree) processFork(event external.Event) error {
 	newProcess.StartTime = event.Timestamp
 	newProcess.IsAlive = true
 
+	// This will delete old instance if its exit was missing
 	tree.tree[newProcessHostTID] = &newProcess
 	return nil
 }
@@ -144,7 +145,7 @@ func (tree *ProcessTree) processFork(event external.Event) error {
 // if the last child process of a process exits.
 // Notice that there is a danger of memory leak if there are lost events of sched_process_exit
 func (tree *ProcessTree) processExit(event external.Event) error {
-	process, err := tree.GetProcessInfo(event.HostThreadID)
+	process, err := tree.GetProcessInfo(event.HostProcessID)
 	if err != nil {
 		return err
 	}
@@ -182,7 +183,7 @@ func (tree *ProcessTree) processExit(event external.Event) error {
 
 // processDefaultEvent tries to expand the process tree in case of lost events or missing start information
 func (tree *ProcessTree) processDefaultEvent(event external.Event) error {
-	process, err := tree.GetProcessInfo(event.HostThreadID)
+	process, err := tree.GetProcessInfo(event.HostProcessID)
 	if err != nil {
 		process = tree.addGeneralEventProcess(event)
 	}
@@ -215,7 +216,7 @@ func (tree *ProcessTree) addGeneralEventProcess(event external.Event) *types.Pro
 		ContainerID: event.ContainerID,
 		IsAlive:     true,
 	}
-	tree.tree[event.HostThreadID] = process
+	tree.tree[event.HostProcessID] = process
 	_, err := tree.getContainerTree(event.ContainerID)
 	if err != nil {
 		containerTree := &containerProcessTree{

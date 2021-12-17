@@ -12,16 +12,16 @@ var globalTree = ProcessTree{
 	tree:       map[int]*types.ProcessInfo{},
 }
 
-func GetProcessInfo(threadID int) (*types.ProcessInfo, error) {
-	return globalTree.GetProcessInfo(threadID)
+func GetProcessInfo(hostProcessID int) (*types.ProcessInfo, error) {
+	return globalTree.GetProcessInfo(hostProcessID)
 }
 
 func GetContainerRoot(containerID string) (*types.ProcessInfo, error) {
 	return globalTree.GetContainerRoot(containerID)
 }
 
-func GetProcessLineage(threadID int) (types.ProcessLineage, error) {
-	return globalTree.GetProcessLineage(threadID)
+func GetProcessLineage(hostProcessID int) (types.ProcessLineage, error) {
+	return globalTree.GetProcessLineage(hostProcessID)
 }
 
 func ProcessEvent(event types.Event) error {

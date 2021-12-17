@@ -15,8 +15,8 @@ type ProcessTree struct {
 	deadProcessesCache []int
 }
 
-func (tree *ProcessTree) GetProcessInfo(threadID int) (*types.ProcessInfo, error) {
-	process, ok := tree.tree[threadID]
+func (tree *ProcessTree) GetProcessInfo(hostProcessID int) (*types.ProcessInfo, error) {
+	process, ok := tree.tree[hostProcessID]
 	if !ok {
 		return nil, fmt.Errorf("no process with given ID is recorded")
 	}
@@ -34,8 +34,8 @@ func (tree *ProcessTree) GetContainerRoot(containerID string) (*types.ProcessInf
 
 // GetProcessLineage returns list of processes starting with the ID matching events back to the root of the container
 // or oldest registered ancestor in the container (if root is missing)
-func (tree *ProcessTree) GetProcessLineage(threadID int) (types.ProcessLineage, error) {
-	process, err := tree.GetProcessInfo(threadID)
+func (tree *ProcessTree) GetProcessLineage(hostProcessID int) (types.ProcessLineage, error) {
+	process, err := tree.GetProcessInfo(hostProcessID)
 	if err != nil {
 		return nil, err
 	}
