@@ -22,15 +22,15 @@ const ALL_EVENT_TYPES = "*"
 
 // Engine is a rule-engine that can process events coming from a set of input sources against a set of loaded signatures, and report the signatures' findings
 type Engine struct {
-	logger          log.Logger
-	signatures      map[types.Signature]chan types.Event
-	signaturesIndex map[types.SignatureEventSelector][]types.Signature
-	signaturesMutex sync.RWMutex
-	inputs          EventSources
-	output          chan types.Finding
-	waitGroup       sync.WaitGroup
-	parsedEvents    bool
-	psTreeInput     chan types.Event
+	logger               log.Logger
+	signatures           map[types.Signature]chan types.Event
+	signaturesIndex      map[types.SignatureEventSelector][]types.Signature
+	signaturesMutex      sync.RWMutex
+	inputs               EventSources
+	output               chan types.Finding
+	waitGroup            sync.WaitGroup
+	parsedEvents         bool
+	eventsPipelineOutput chan types.Event
 }
 
 //EventSources is a bundle of input sources used to configure the Engine
@@ -52,7 +52,6 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 	engine.parsedEvents = parsedEvents
 	engine.signaturesMutex.Lock()
 	engine.signatures = make(map[types.Signature]chan types.Event)
-	engine.psTreeInput = make(chan types.Event)
 	engine.signaturesIndex = make(map[types.SignatureEventSelector][]types.Signature)
 	engine.signaturesMutex.Unlock()
 	for _, sig := range sigs {
@@ -111,13 +110,20 @@ func signatureStart(signature types.Signature, c chan types.Event, wg *sync.Wait
 	wg.Done()
 }
 
-func processTreeStart(c chan types.Event, wg *sync.WaitGroup) {
+func createProcessTreePipeline(in chan types.Event, wg *sync.WaitGroup) chan types.Event {
+	out := make(chan types.Event, 100)
+	go processTreeStart(in, out, wg)
+	return out
+}
+
+func processTreeStart(in chan types.Event, out chan types.Event, wg *sync.WaitGroup) {
 	wg.Add(1)
-	for e := range c {
+	for e := range in {
 		err := process_tree.ProcessEvent(e)
 		if err != nil {
 			log.Printf("error processing event in process tree: %v", err)
 		}
+		out <- e
 	}
 	wg.Done()
 }
@@ -132,7 +138,7 @@ func (engine *Engine) Start(done chan bool) {
 	for s, c := range engine.signatures {
 		go signatureStart(s, c, &engine.waitGroup)
 	}
-	go processTreeStart(engine.psTreeInput, &engine.waitGroup)
+	engine.eventsPipelineOutput = createProcessTreePipeline(engine.inputs.Tracee, &engine.waitGroup)
 	engine.signaturesMutex.RUnlock()
 	engine.consumeSources(done)
 	process_tree.PrintTree()
@@ -159,7 +165,6 @@ func (engine *Engine) matchHandler(res types.Finding) {
 func (engine *Engine) checkCompletion() bool {
 	if engine.inputs.Tracee == nil {
 		engine.unloadAllSignatures()
-		close(engine.psTreeInput)
 		engine.waitGroup.Wait()
 		return true
 	}
@@ -171,7 +176,7 @@ func (engine *Engine) checkCompletion() bool {
 func (engine *Engine) consumeSources(done <-chan bool) {
 	for {
 		select {
-		case event, ok := <-engine.inputs.Tracee:
+		case event, ok := <-engine.eventsPipelineOutput:
 			if !ok {
 				engine.signaturesMutex.RLock()
 				for sig := range engine.signatures {
@@ -200,7 +205,6 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 					engine.signaturesMutex.RUnlock()
 					continue
 				}
-				engine.psTreeInput <- traceeEvt
 				eventOrigin := analyzeEventOrigin(traceeEvt)
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName, Origin: eventOrigin}] {
 					engine.dispatchEvent(s, traceeEvt)
