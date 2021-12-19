@@ -22,7 +22,7 @@ func (tree *ProcessTree) ProcessEvent(event types.Event) error {
 	case "exit":
 		return nil
 	default:
-		return nil
+		return tree.processDefaultEvent(traceeEvent)
 	}
 }
 
@@ -79,7 +79,12 @@ func (tree *ProcessTree) processExec(event external.Event) error {
 	process.InContainerIDs.Pid = event.ProcessID
 	process.InContainerIDs.Tid = event.ThreadID
 	process.ProcessName = event.ProcessName
-	process.Status = types.Executed
+
+	if process.Status == types.Forked {
+		process.Status = types.Complete
+	} else {
+		process.Status = types.Executed
+	}
 	return nil
 }
 
