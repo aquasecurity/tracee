@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"os/exec"
 	"strings"
 	"testing"
@@ -133,11 +134,11 @@ type traceeContainer struct {
 	testcontainers.Container
 }
 
-func setupTraceeContainer(ctx context.Context) (*traceeContainer, error) {
+func setupTraceeContainer(ctx context.Context, tempDir string) (*traceeContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:      "tracee",
 		Privileged: true,
-		BindMounts: map[string]string{"/tmp/tracee": "/tmp/tracee"},
+		BindMounts: map[string]string{tempDir: tempDir},
 		Name:       "tracee",
 		AutoRemove: true,
 	}
@@ -172,12 +173,19 @@ func setupTraceeTrainerContainer(ctx context.Context, sigid string) (*traceeCont
 }
 
 func TestTraceeSignatures(t *testing.T) {
-	for _, sigid := range []string{"TRC-11"} {
+	tempDir := "/tmp/tracee"
+	err := os.MkdirAll(tempDir, os.ModePerm) // TODO: Investiagte why passing ioutil.Temp does not work with Tracee mount
+	require.NoError(t, err)
+	defer func() {
+		os.RemoveAll(tempDir)
+	}()
+
+	for _, sigid := range []string{"TRC-3", "TRC-4", "TRC-9", "TRC-10", "TRC-11"} {
 		t.Run(sigid, func(t *testing.T) {
 			ctx := context.Background()
 
 			// run tracee container
-			traceeContainer, err := setupTraceeContainer(ctx)
+			traceeContainer, err := setupTraceeContainer(ctx, tempDir)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -206,7 +214,7 @@ func TestTraceeSignatures(t *testing.T) {
 			}
 
 			// assert our required signature was triggered
-			assert.Contains(t, string(log), sigid)
+			assert.Contains(t, string(log), fmt.Sprint("Signature ID: ", sigid))
 		})
 	}
 }
