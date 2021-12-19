@@ -36,6 +36,9 @@ func (tree *ProcessTree) processExec(event external.Event) error {
 	if process.ParentProcess == nil {
 		tree.generateParentProcess(process)
 	}
+	if process.Status == types.HollowParent {
+		fillHollowParentProcessGeneral(process, event)
+	}
 	execArgv, err := getArgumentByName(event, "argv")
 	if err != nil {
 		return err
@@ -243,6 +246,8 @@ func (tree *ProcessTree) processDefaultEvent(event external.Event) error {
 	process, err := tree.GetProcessInfo(event.HostProcessID)
 	if err != nil {
 		process = tree.addGeneralEventProcess(event)
+	} else if process.Status == types.HollowParent {
+		fillHollowParentProcessGeneral(process, event)
 	}
 	if process.ParentProcess == nil {
 		parentProcess, err := tree.GetProcessInfo(event.HostParentProcessID)
@@ -310,6 +315,22 @@ func (tree *ProcessTree) generateParentProcess(process *types.ProcessInfo) *type
 		}
 	}
 	return process
+}
+
+func fillHollowParentProcessGeneral(p *types.ProcessInfo, event external.Event) {
+	p.InHostIDs = types.ProcessIDs{
+		Pid:  event.HostProcessID,
+		Tid:  event.HostThreadID,
+		Ppid: event.HostProcessID,
+	}
+	p.InContainerIDs = types.ProcessIDs{
+		Pid:  event.ProcessID,
+		Tid:  event.ThreadID,
+		Ppid: event.ProcessID,
+	}
+	p.ProcessName = event.ProcessName
+	p.IsAlive = true
+	p.Status = types.GeneralCreated
 }
 
 // getArgumentByName fetches the argument in event with "Name" that matches argName.
