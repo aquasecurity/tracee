@@ -1,5 +1,15 @@
 package types
 
+type ProcessStatus uint
+
+const (
+	Forked ProcessStatus = iota
+	Executed
+	GeneralCreated
+	HollowParent
+	Complete
+)
+
 type ProcessIDs struct {
 	Pid  int
 	Ppid int
@@ -23,6 +33,7 @@ type ProcessInfo struct {
 	ParentProcess   *ProcessInfo
 	ChildProcesses  []*ProcessInfo
 	IsAlive         bool
+	Status          ProcessStatus
 }
 
 type ProcessLineage []ProcessInfo
