@@ -2278,8 +2278,8 @@ static __always_inline int send_socket_dup(event_data_t *data, u64 oldfd, u64 ne
         save_to_submit_buf(data, &remote, sizeof(struct sockaddr_in), 2);
     }
     else if (family == AF_INET6) {
-        struct sockaddr_in6 remote;
         net_conn_v6_t net_details = {};
+        struct sockaddr_in6 remote;
 
         get_network_details_from_sock_v6(sk, &net_details, 0);
         get_remote_sockaddr_in6_from_network_details(&remote, &net_details, family);
