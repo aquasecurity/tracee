@@ -1054,9 +1054,22 @@ func printList() {
 			b.WriteString(event.Name + "\n")
 		}
 	}
+	for i := tracee.Unique32BitSyscallsStartID; i < int(tracee.Unique32BitSyscallsEndID); i++ {
+		index := int32(i)
+		event, ok := tracee.EventsIDToEvent[index]
+		if !ok {
+			continue
+		}
+		if event.Sets != nil {
+			eventSets := fmt.Sprintf("%-22s %-40s %s\n", event.Name, fmt.Sprintf("%v", event.Sets), fetchFormattedEventParams(index))
+			b.WriteString(eventSets)
+		} else {
+			b.WriteString(event.Name + "\n")
+		}
+	}
 	b.WriteString("\n\nOther Events: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________\n\n")
-	for i := int(tracee.SysEnterEventID); i < int(tracee.MaxEventID); i++ {
+	for i := int(tracee.SysEnterEventID); i < int(tracee.MaxCommonEventID); i++ {
 		index := int32(i)
 		event := tracee.EventsIDToEvent[index]
 		if event.Sets != nil {

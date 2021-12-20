@@ -170,6 +170,12 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 				return err
 			}
 			arg.Value = tmp
+		case "unsigned short", "old_uid_t", "old_gid_t":
+			tmp, err := strconv.ParseUint(num.String(), 10, 16)
+			if err != nil {
+				return err
+			}
+			arg.Value = uint16(tmp)
 		default:
 			return fmt.Errorf("unrecognized argument type")
 		}
