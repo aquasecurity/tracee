@@ -2374,12 +2374,18 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
 
     if (event_chosen(SCHED_PROCESS_FORK)) {
         int parent_ns_pid = get_task_ns_pid(parent);
+        int parent_ns_tgid = get_task_ns_tgid(parent);
         int child_ns_pid = get_task_ns_pid(child);
+        int child_ns_tgid = get_task_ns_tgid(child);
 
         save_to_submit_buf(&data, (void*)&parent_pid, sizeof(int), 0);
         save_to_submit_buf(&data, (void*)&parent_ns_pid, sizeof(int), 1);
-        save_to_submit_buf(&data, (void*)&child_pid, sizeof(int), 2);
-        save_to_submit_buf(&data, (void*)&child_ns_pid, sizeof(int), 3);
+        save_to_submit_buf(&data, (void*)&parent_tgid, sizeof(int), 2);
+        save_to_submit_buf(&data, (void*)&parent_ns_tgid, sizeof(int), 3);
+        save_to_submit_buf(&data, (void*)&child_pid, sizeof(int), 4);
+        save_to_submit_buf(&data, (void*)&child_ns_pid, sizeof(int), 5);
+        save_to_submit_buf(&data, (void*)&child_tgid, sizeof(int), 6);
+        save_to_submit_buf(&data, (void*)&child_ns_tgid, sizeof(int), 7);
 
         events_perf_submit(&data, SCHED_PROCESS_FORK, 0);
     }
