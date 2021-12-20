@@ -61,31 +61,6 @@ const (
 	sendKernelModule
 )
 
-// argType is an enum that encodes the argument types that the BPF program may write to the shared buffer
-// argument types should match defined values in ebpf code
-type argType uint8
-
-const (
-	noneT argType = iota
-	intT
-	uintT
-	longT
-	ulongT
-	offT
-	modeT
-	devT
-	sizeT
-	pointerT
-	strT
-	strArrT
-	sockAddrT
-	bytesT
-	u16T
-	credT
-	intArr2T
-	argsArrT
-)
-
 // ProbeType is an enum that describes the mechanism used to attach the event
 // Kprobes are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#1-kprobes
 // Tracepoints are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#3-tracepoints
