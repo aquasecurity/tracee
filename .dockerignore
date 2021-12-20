@@ -1,3 +1,7 @@
 ./dist/*
 ./tracee-ebpf/dist/*
 ./tracee-rules/dist/*
+./3rdparty/btfhub
+./3rdparty/btfhub/*
+./3rdparty/btfhub-archive
+./3rdparty/btfhub-archive/*
