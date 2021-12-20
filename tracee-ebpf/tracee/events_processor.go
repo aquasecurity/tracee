@@ -1,12 +1,15 @@
 package tracee
 
 import (
+	"encoding/binary"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
+	"unsafe"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/external"
@@ -233,6 +236,35 @@ func (t *Tracee) processEvent(event *external.Event) error {
 			return fmt.Errorf("error parsing cgroup_rmdir args: %v", err)
 		}
 		t.containers.CgroupRemove(cgroupId)
+
+	case DetectHookedSyscallsEventID:
+		doOnce.Do(func() {
+			hookedSyscallNumberMap, err := t.bpfModule.GetMap("hooked_syscalls_map")
+			if err == nil {
+				hookedSyscallData := make([]HookedSyscallData, 0, 0)
+				for i := range [hoookedSyscallsToCheck]int{} {
+					syscallDataBytes, err := hookedSyscallNumberMap.GetValue(unsafe.Pointer(&i))
+					if err != nil {
+						continue
+					}
+					syscallNum := binary.LittleEndian.Uint32(syscallDataBytes)
+					syscallAddr := binary.LittleEndian.Uint64(syscallDataBytes[8:16])
+					syscallModule, err := getModuleOwnerBySymbol(syscallAddr)
+					if err != nil {
+						t.handleError(err)
+					}
+					event, _ := EventsDefinitions[int32(syscallNum)]
+					syscallName := event.Name
+					hookedSyscall := HookedSyscallData{syscallName, syscallModule}
+					hookedSyscallData = append(hookedSyscallData, hookedSyscall)
+				}
+				event.Args = append(event.Args, external.Argument{
+					ArgMeta: external.ArgMeta{Name: "hooked_syscalls", Type: "hookedSyscallData[]"},
+					Value:   hookedSyscallData,
+				})
+
+			}
+		})
 	}
 
 	return nil
@@ -313,4 +345,22 @@ func CopyFileByPath(src, dst string) error {
 		return err
 	}
 	return nil
+}
+
+var doOnce sync.Once
+
+func getModuleOwnerBySymbol(addr uint64) (string, error) {
+	text, err := getKallsymsData()
+	if err != nil {
+		return "", err
+	}
+	for _, each_ln := range text {
+		words := strings.Fields(each_ln)
+		symbolAddr, _ := strconv.ParseUint(words[0], 16, 64)
+		if uint64(symbolAddr) == addr {
+			moduleName := words[3]
+			return moduleName[1 : len(moduleName)-1], nil
+		}
+	}
+	return "Unknown module", fmt.Errorf("Unknown module owner maybe hidden")
 }

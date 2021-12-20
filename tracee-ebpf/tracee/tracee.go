@@ -74,6 +74,13 @@ type netProbe struct {
 	ingressHook *bpf.TcHook
 	egressHook  *bpf.TcHook
 }
+type HookedSyscallData struct {
+	SyscallName string
+	ModuleOwner string
+}
+
+const ioctlCmdToVerefiction int = 65
+const hoookedSyscallsToCheck int = 10
 
 // Validate does static validation of the configuration
 func (tc Config) Validate() error {
@@ -309,9 +316,13 @@ func New(cfg Config) (*Tracee, error) {
 	}
 	if t.eventsToTrace[DetectHookedSyscallsEventID] {
 		path := "/tmp/tracee/out/tracee.pid"
-		ptmx, _ := os.OpenFile(path, os.O_RDONLY, 444)
+		ptmx, err := os.OpenFile(path, os.O_RDONLY, 444)
+		if err != nil {
+			t.handleError(err)
+		}
 		fd := ptmx.Fd()
-		_, _, _ = syscall.Syscall(syscall.SYS_IOCTL, fd, 65, 0)
+		_, _, _ = syscall.Syscall(syscall.SYS_IOCTL, fd, uintptr(ioctlCmdToVerefiction), 0)
+		ptmx.Close()
 	}
 	t.writtenFiles = make(map[string]string)
 	t.capturedFiles = make(map[string]int64)
@@ -467,11 +478,10 @@ const (
 	tailSendBinTP
 )
 
-func getAddrFromKallsyms(func_name string) (uint64, error) {
+func getKallsymsData() ([]string, error) {
 	file, err := os.Open("/proc/kallsyms")
-
 	if err != nil {
-		return 0, errors.New("Could not open /proc/kallsyms")
+		return nil, fmt.Errorf("Could not open /proc/kallsyms")
 	}
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
@@ -480,19 +490,25 @@ func getAddrFromKallsyms(func_name string) (uint64, error) {
 		text = append(text, scanner.Text())
 	}
 	file.Close()
+	return text, nil
+}
+func getAddrFromKallsyms(func_name string) (uint64, error) {
+	text, err := getKallsymsData()
+	if err != nil {
+		return 0, err
+	}
 	for _, each_ln := range text {
 		line := strings.Fields(each_ln)
 		if strings.Contains(line[2], func_name) && !strings.HasSuffix(line[2], "file_ops_compat") {
 			addrStr := line[0]
 			addr, err := strconv.ParseUint(addrStr, 16, 64)
 			if err != nil {
-				return 0, errors.New("failed to parse string to uint")
+				return 0, fmt.Errorf("failed to parse string to uint")
 			}
 			return addr, nil
-
 		}
 	}
-	return 0, errors.New("Could not find the symbol address")
+	return 0, fmt.Errorf("Could not find the symbol address")
 }
 
 func (t *Tracee) populateBPFMaps() error {
@@ -697,21 +713,20 @@ func (t *Tracee) populateBPFMaps() error {
 			}
 		}
 
-
 		if e == DetectHookedSyscallsEventID {
 			syscallTableAddrMap, err := t.bpfModule.GetMap("syscall_table_addr_map") // u32, u32
 			if err != nil {
-				return err
+				t.handleError(err)
 			}
 			codeBoundariesMap, err := t.bpfModule.GetMap("code_boundaries_map") // u32, u32
 			if err != nil {
-				return err
+				t.handleError(err)
 			}
 			key := int(0)
-			syscallAddr, _ := getAddrFromKallsyms("sys_call_table")
+			syscallAddr, err := getAddrFromKallsyms("sys_call_table")
 			e := syscallTableAddrMap.Update(unsafe.Pointer(&key), unsafe.Pointer(&syscallAddr))
 			if e != nil {
-				return e
+				t.handleError(err)
 			}
 			kernelCodeBoundary := []string{"_stext", "_etext"}
 			errUpdate := make([]error, 0)
@@ -724,8 +739,23 @@ func (t *Tracee) populateBPFMaps() error {
 
 			for _, err := range errUpdate {
 				if err != nil {
-					return err
+					t.handleError(err)
 				}
+			}
+		}
+		if e == ExecveEventID || e == ExecveatEventID || e == InitModuleEventID {
+			event, ok := EventsDefinitions[e]
+			if !ok {
+				continue
+			}
+			probFnName := fmt.Sprintf("syscall__%s", event.Name)
+			err = t.initTailCall(eU32, "sys_enter_tails", probFnName)
+			if err != nil {
+				return err
+			}
+		} else if e == DupEventID || e == Dup2EventID || e == Dup3EventID {
+			if err = t.initTailCall(eU32, "sys_exit_tails", "sys_dup_exit_tail"); err != nil {
+				return err
 			}
 		}
 	}

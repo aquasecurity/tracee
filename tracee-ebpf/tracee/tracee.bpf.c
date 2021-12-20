@@ -268,6 +268,9 @@ Copyright (C) Aqua Security inc.
 #define MAX_BIN_CHUNKS                  110
 #endif
 
+#define IOCTL_CMD_VEREFICTION           65
+#define HOOKED_STSCALLS_TO_CHECK        10
+
 /*================================ eBPF KCONFIGs =============================*/
 
 #ifdef CORE
@@ -2577,17 +2580,24 @@ int BPF_KPROBE(trace_filldir64)
     return 0;
 }
 
+/*this event will trigger by tracee itself using ioctl syscalls
+ to verify it is out specific call of ioctl, tracee check the following things:
+ 1. the syscall called from tracee
+ 2. tracee triggers ioctl with specific number and then check it, which is: IOCTL_CMD_VEREFICTION
+ 3. in event_processor we check only one time of detect_hooked_syscall event
+*/
 SEC("kprobe/security_file_ioctl")
 int BPF_KPROBE(trace_security_file_ioctl)
 {
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
+
     if (get_config(CONFIG_TRACEE_PID) != data.context.host_pid)
         return 0;
     int cmd = PT_REGS_PARM2(ctx);
 
-    if (cmd != 65)
+    if (cmd != IOCTL_CMD_VEREFICTION )
         return 0;
 
     int key =0;
@@ -2614,21 +2624,17 @@ int BPF_KPROBE(trace_security_file_ioctl)
 
 
     //list of all sysaclls number we want to check
-//	int syscalls_to_check[13]={0};
 #if defined(bpf_target_x86)
     int syscalls_to_check[] = {0, 1, 2, 3, 16, 62, 78, 217, 41, 59, 322, 101, 321};
 #elif defined(bpf_target_arm64)
      int syscalls_to_check[] = {3, 4, 5, 6, 11, 26, 37, 141, 217, 281, 322, 386, 387};
 #endif
-    //check if the array is initialized
-//    if (syscalls_to_check[2] ==0)
-//        return 0;
 
 
 
     int i=0 ,syscall_number;
     #pragma unroll
-    for(int syscall_index=0;syscall_index<10;syscall_index++)
+    for(int syscall_index=0;syscall_index<HOOKED_STSCALLS_TO_CHECK;syscall_index++)
     {
         syscall_number = syscalls_to_check[syscall_index];
         syscall_addr = READ_KERN(syscall_table_addr[syscall_number]);

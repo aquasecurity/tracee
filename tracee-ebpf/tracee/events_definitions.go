@@ -70,6 +70,7 @@ const (
 	SecurityPostReadFileEventID
 	SocketDupEventID
 	HiddenInodesEventID
+	DetectHookedSyscallsEventID
 	MaxCommonEventID
 )
 
@@ -6101,5 +6102,16 @@ var EventsDefinitions = map[int32]EventDefinition{
 		},
 		Sets:   []string{},
 		Params: []external.ArgMeta{},
+	},
+	DetectHookedSyscallsEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "detect_hooked_syscalls",
+		Probes: []probe{
+			{event: "security_file_ioctl", attach: kprobe, fn: "trace_security_file_ioctl"},
+		},
+		Sets: []string{},
+		Params: []external.ArgMeta{
+			{Type: "external.exhookedSyscallData[]", Name: "hooked_syscalls"},
+		},
 	},
 }

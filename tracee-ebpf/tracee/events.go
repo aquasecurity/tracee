@@ -1,14 +1,10 @@
 package tracee
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
-	"os"
 	"strconv"
-	"strings"
 	"unsafe"
 
 	"github.com/aquasecurity/tracee/pkg/external"
@@ -43,29 +39,6 @@ type context struct {
 	_        [3]byte //padding
 }
 
-func getModuleOwnerBySymbol(addr uint64) (string, error) {
-	file, err := os.Open("/proc/kallsyms")
-	if err != nil {
-		return "", errors.New("failed to open /proc/kallsyms file")
-	}
-	scanner := bufio.NewScanner(file)
-	scanner.Split(bufio.ScanLines)
-	var text []string
-	for scanner.Scan() {
-		text = append(text, scanner.Text())
-	}
-	file.Close()
-	for _, each_ln := range text {
-		words := strings.Fields(each_ln)
-		symbolAddr, _ := strconv.ParseUint(words[0], 16, 64)
-		if uint64(symbolAddr) == addr {
-			moduleName := words[3]
-			return moduleName[1 : len(moduleName)-1], nil
-		}
-	}
-	return "Unknown module", errors.New("Unknown module owner maybe hidden")
-}
-
 func (t *Tracee) processEvents(done <-chan struct{}) error {
 	for dataRaw := range t.eventsChannel {
 		dataBuff := bytes.NewBuffer(dataRaw)
@@ -93,30 +66,7 @@ func (t *Tracee) processEvents(done <-chan struct{}) error {
 
 			args = append(args, external.Argument{ArgMeta: argMeta, Value: argVal})
 		}
-		if t.eventsToTrace[DetectHookedSyscallsEventID] {
-			hookedSyscallNumberMap, err := t.bpfModule.GetMap("hooked_syscalls_map")
-			if err != nil {
-				return err
-			}
-			hookedSyscallData := make([]external.HookedSyscallData, 0, 0)
-			for i := range [10]int{} {
-				syscallDataBytes, err := hookedSyscallNumberMap.GetValue(unsafe.Pointer(&i))
-				if err != nil {
-					break
-				}
-				syscallNum := binary.LittleEndian.Uint32(syscallDataBytes)
-				syscallAddr := binary.LittleEndian.Uint64(syscallDataBytes[8:16])
-				syscallModule, _ := getModuleOwnerBySymbol(syscallAddr)
-				event, _ := EventsIDToEvent[int32(syscallNum)]
-				syscallName := event.Probes[0].event
-				hookedSyscall := external.HookedSyscallData{syscallName, syscallModule}
-				hookedSyscallData = append(hookedSyscallData, hookedSyscall)
-			}
-			tmp_arg := external.ArgMeta{Name: "hooked_syscalls", Type: "hookedSyscallData[]"}
-			args["hooked_syscalls"] = hookedSyscallData
-			argMetas = append(argMetas, tmp_arg)
 
-		}
 		if !t.shouldProcessEvent(&ctx, args) {
 			continue
 		}
