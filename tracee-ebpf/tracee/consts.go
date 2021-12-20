@@ -183,7 +183,7 @@ const (
 	SecurityInodeMknodEventID
 	SecurityPostReadFileEventID
 	SocketDupEventID
-	MaxNonSyscallEventID
+	MaxCommonEventID
 )
 
 // Events originated from user-space
