@@ -3668,7 +3668,6 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
     loff_t start_pos;
 
     void *ptr;
-    size_t count;
     struct iovec *vec;
     unsigned long vlen;
     bool has_filter = false;
@@ -3685,7 +3684,6 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
     struct file *file      = (struct file *) saved_args.args[0];
     if (event_id == VFS_WRITE) {
         ptr                = (void*)         saved_args.args[1];
-        count              = (size_t)        saved_args.args[2];
     } else {
         vec                = (struct iovec*) saved_args.args[1];
         vlen               =                 saved_args.args[2];
