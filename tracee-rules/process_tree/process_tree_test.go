@@ -2,7 +2,7 @@ package process_tree
 
 import (
 	"fmt"
-	"github.com/aquasecurity/tracee/tracee-ebpf/external"
+	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -46,23 +46,245 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 			{ArgMeta: external.ArgMeta{Name: "sha256", Type: "const char*"}, Value: interface{}("abfd081fd7fad08d4743443061a12ebfbd25e3c5e446441795d472c389444527")},
 		},
 	}
-	p := &types.ProcessInfo{}
-	tree := ProcessTree{
-		tree: map[int]*types.ProcessInfo{
-			execEvent.HostThreadID: p,
+	testCases := []struct {
+		testName        string
+		initialTree     ProcessTree
+		expectedProcess types.ProcessInfo
+	}{
+		{
+			testName: "empty tree",
+			initialTree: ProcessTree{
+				tree:       map[int]*types.ProcessInfo{},
+				containers: map[string]*containerProcessTree{},
+			},
+			expectedProcess: types.ProcessInfo{
+				InHostIDs: types.ProcessIDs{
+					Pid:  execEvent.HostProcessID,
+					Ppid: execEvent.HostParentProcessID,
+					Tid:  execEvent.HostThreadID,
+				},
+				InContainerIDs: types.ProcessIDs{
+					Pid:  execEvent.ProcessID,
+					Ppid: execEvent.ParentProcessID,
+					Tid:  execEvent.ThreadID,
+				},
+				ProcessName: execEvent.ProcessName,
+				Cmd:         execCmd,
+				ExecutionBinary: types.BinaryInfo{
+					Path:  execBinaryPath,
+					Ctime: uint(execBinaryCtime),
+				},
+				ContainerID: TestContainerID,
+				StartTime:   0,
+				Status:      types.Executed,
+			},
 		},
-		containers: map[string]*containerProcessTree{
-			execEvent.ContainerID: {
-				Root: p,
+		{
+			testName: "Forked event executed",
+			initialTree: ProcessTree{
+				tree: map[int]*types.ProcessInfo{
+					execEvent.HostProcessID: &types.ProcessInfo{
+						InHostIDs: types.ProcessIDs{
+							Pid:  execEvent.HostProcessID,
+							Ppid: execEvent.HostParentProcessID,
+							Tid:  execEvent.HostThreadID,
+						},
+						InContainerIDs: types.ProcessIDs{
+							Pid:  execEvent.ProcessID,
+							Ppid: execEvent.ParentProcessID,
+							Tid:  execEvent.ThreadID,
+						},
+						ContainerID: TestContainerID,
+						StartTime:   100000000,
+						ProcessName: "bash",
+						Status:      types.Forked,
+					},
+				},
+				containers: map[string]*containerProcessTree{},
+			},
+			expectedProcess: types.ProcessInfo{
+				InHostIDs: types.ProcessIDs{
+					Pid:  execEvent.HostProcessID,
+					Ppid: execEvent.HostParentProcessID,
+					Tid:  execEvent.HostThreadID,
+				},
+				InContainerIDs: types.ProcessIDs{
+					Pid:  execEvent.ProcessID,
+					Ppid: execEvent.ParentProcessID,
+					Tid:  execEvent.ThreadID,
+				},
+				Cmd: execCmd,
+				ExecutionBinary: types.BinaryInfo{
+					Path:  execBinaryPath,
+					Ctime: uint(execBinaryCtime),
+				},
+				ContainerID: TestContainerID,
+				StartTime:   100000000,
+				Status:      types.Complete,
+				ProcessName: execEvent.ProcessName,
+			},
+		},
+		{
+			testName: "Double execve process",
+			initialTree: ProcessTree{
+				tree: map[int]*types.ProcessInfo{
+					execEvent.HostProcessID: &types.ProcessInfo{
+						InHostIDs: types.ProcessIDs{
+							Pid:  execEvent.HostProcessID,
+							Ppid: execEvent.HostParentProcessID,
+							Tid:  execEvent.HostThreadID,
+						},
+						InContainerIDs: types.ProcessIDs{
+							Pid:  execEvent.ProcessID,
+							Ppid: execEvent.ParentProcessID,
+							Tid:  execEvent.ThreadID,
+						},
+						ContainerID: TestContainerID,
+						StartTime:   100000000,
+						ProcessName: "sleep",
+						Status:      types.Complete,
+						ExecutionBinary: types.BinaryInfo{
+							Path:  "/bin/sleep",
+							Ctime: 100,
+						},
+					},
+				},
+				containers: map[string]*containerProcessTree{},
+			},
+			expectedProcess: types.ProcessInfo{
+				InHostIDs: types.ProcessIDs{
+					Pid:  execEvent.HostProcessID,
+					Ppid: execEvent.HostParentProcessID,
+					Tid:  execEvent.HostThreadID,
+				},
+				InContainerIDs: types.ProcessIDs{
+					Pid:  execEvent.ProcessID,
+					Ppid: execEvent.ParentProcessID,
+					Tid:  execEvent.ThreadID,
+				},
+				ContainerID: TestContainerID,
+				Cmd:         execCmd,
+				ExecutionBinary: types.BinaryInfo{
+					Path:  execBinaryPath,
+					Ctime: uint(execBinaryCtime),
+				},
+				StartTime:   100000000,
+				Status:      types.Complete,
+				ProcessName: execEvent.ProcessName,
+			},
+		},
+		{
+			testName: "General event generate process",
+			initialTree: ProcessTree{
+				tree: map[int]*types.ProcessInfo{
+					execEvent.HostProcessID: &types.ProcessInfo{
+						InHostIDs: types.ProcessIDs{
+							Pid:  execEvent.HostProcessID,
+							Ppid: execEvent.HostParentProcessID,
+							Tid:  execEvent.HostThreadID,
+						},
+						InContainerIDs: types.ProcessIDs{
+							Pid:  execEvent.ProcessID,
+							Ppid: execEvent.ParentProcessID,
+							Tid:  execEvent.ThreadID,
+						},
+						ContainerID: TestContainerID,
+						ProcessName: execEvent.ProcessName,
+						Status:      types.GeneralCreated,
+					},
+				},
+				containers: map[string]*containerProcessTree{},
+			},
+			expectedProcess: types.ProcessInfo{
+				InHostIDs: types.ProcessIDs{
+					Pid:  execEvent.HostProcessID,
+					Ppid: execEvent.HostParentProcessID,
+					Tid:  execEvent.HostThreadID,
+				},
+				InContainerIDs: types.ProcessIDs{
+					Pid:  execEvent.ProcessID,
+					Ppid: execEvent.ParentProcessID,
+					Tid:  execEvent.ThreadID,
+				},
+				ContainerID: TestContainerID,
+				Cmd:         execCmd,
+				ExecutionBinary: types.BinaryInfo{
+					Path:  execBinaryPath,
+					Ctime: uint(execBinaryCtime),
+				},
+				Status:      types.Executed,
+				ProcessName: execEvent.ProcessName,
+			},
+		},
+		{
+			testName: "Lost exit event process with same PID",
+			initialTree: ProcessTree{
+				tree: map[int]*types.ProcessInfo{
+					execEvent.HostProcessID: &types.ProcessInfo{
+						InHostIDs: types.ProcessIDs{
+							Pid:  execEvent.HostProcessID,
+							Ppid: 1,
+							Tid:  execEvent.HostThreadID,
+						},
+						InContainerIDs: types.ProcessIDs{
+							Pid:  22,
+							Ppid: 21,
+							Tid:  22,
+						},
+						StartTime:   100,
+						ProcessName: "sleep",
+						Status:      types.Complete,
+						ExecutionBinary: types.BinaryInfo{
+							Path:  "/bin/sleep",
+							Ctime: 50,
+						},
+					},
+				},
+				containers: map[string]*containerProcessTree{},
+			},
+			expectedProcess: types.ProcessInfo{
+				InHostIDs: types.ProcessIDs{
+					Pid:  execEvent.HostProcessID,
+					Ppid: execEvent.HostParentProcessID,
+					Tid:  execEvent.HostThreadID,
+				},
+				InContainerIDs: types.ProcessIDs{
+					Pid:  execEvent.ProcessID,
+					Ppid: execEvent.ParentProcessID,
+					Tid:  execEvent.ThreadID,
+				},
+				ContainerID: TestContainerID,
+				Cmd:         execCmd,
+				ExecutionBinary: types.BinaryInfo{
+					Path:  execBinaryPath,
+					Ctime: uint(execBinaryCtime),
+				},
+				StartTime:   100000000,
+				Status:      types.Executed,
+				ProcessName: execEvent.ProcessName,
 			},
 		},
 	}
-	require.NoError(t, tree.processExec(execEvent))
-	execProcess, err := tree.GetProcessInfo(execEvent.HostThreadID)
-	require.NoError(t, err)
-	assert.Equal(t, execCmd, execProcess.Cmd)
-	assert.Equal(t, execBinaryPath, execProcess.ExecutionBinary.Path)
-	assert.Equal(t, execBinaryCtime, int(execProcess.ExecutionBinary.Ctime))
+	for _, testCase := range testCases {
+		t.Run(testCase.testName, func(t *testing.T) {
+			require.NoError(t, testCase.initialTree.processExec(execEvent))
+			execProcess, err := testCase.initialTree.GetProcessInfo(execEvent.HostThreadID)
+			require.NoError(t, err)
+			assert.Equal(t, testCase.expectedProcess.Cmd, execProcess.Cmd)
+			assert.Equal(t, testCase.expectedProcess.ProcessName, execProcess.ProcessName)
+			assert.Equal(t, testCase.expectedProcess.ContainerID, execProcess.ContainerID)
+			assert.Equal(t, testCase.expectedProcess.InHostIDs.Pid, execProcess.InHostIDs.Pid)
+			assert.Equal(t, testCase.expectedProcess.InHostIDs.Tid, execProcess.InHostIDs.Tid)
+			assert.Equal(t, testCase.expectedProcess.InHostIDs.Ppid, execProcess.InHostIDs.Ppid)
+			assert.Equal(t, testCase.expectedProcess.InContainerIDs.Pid, execProcess.InContainerIDs.Pid)
+			assert.Equal(t, testCase.expectedProcess.InContainerIDs.Tid, execProcess.InContainerIDs.Tid)
+			assert.Equal(t, testCase.expectedProcess.InContainerIDs.Ppid, execProcess.InContainerIDs.Ppid)
+			assert.Equal(t, testCase.expectedProcess.StartTime, execProcess.StartTime)
+			assert.Equal(t, testCase.expectedProcess.Status, execProcess.Status)
+			assert.Equal(t, testCase.expectedProcess.ExecutionBinary.Path, execProcess.ExecutionBinary.Path)
+			assert.Equal(t, testCase.expectedProcess.ExecutionBinary.Ctime, execProcess.ExecutionBinary.Ctime)
+		})
+	}
 }
 
 func TestProcessTree_ProcessFork(t *testing.T) {
@@ -87,10 +309,14 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 		ReturnValue:         0,
 		StackAddresses:      nil,
 		Args: []external.Argument{
-			{ArgMeta: external.ArgMeta{Name: "parent_tid", Type: "int"}, Value: 22447},
-			{ArgMeta: external.ArgMeta{Name: "parent_ns_tid", Type: "int"}, Value: 0},
+			{ArgMeta: external.ArgMeta{Name: "parent_tid", Type: "int"}, Value: int32(22447)},
+			{ArgMeta: external.ArgMeta{Name: "parent_ns_tid", Type: "int"}, Value: int32(0)},
+			{ArgMeta: external.ArgMeta{Name: "parent_pid", Type: "int"}, Value: int32(22447)},
+			{ArgMeta: external.ArgMeta{Name: "parent_ns_pid", Type: "int"}, Value: int32(0)},
 			{ArgMeta: external.ArgMeta{Name: "child_tid", Type: "int"}, Value: int32(newProcessTID)},
-			{ArgMeta: external.ArgMeta{Name: "child_ns_tid", Type: "int"}, Value: 0},
+			{ArgMeta: external.ArgMeta{Name: "child_ns_tid", Type: "int"}, Value: int32(0)},
+			{ArgMeta: external.ArgMeta{Name: "child_pid", Type: "int"}, Value: int32(newProcessTID)},
+			{ArgMeta: external.ArgMeta{Name: "child_ns_pid", Type: "int"}, Value: int32(0)},
 		},
 	}
 	tree := ProcessTree{
@@ -282,9 +508,13 @@ func TestProcessTree_ProcessEvent(t *testing.T) {
 		StackAddresses:      nil,
 		Args: []external.Argument{
 			{ArgMeta: external.ArgMeta{Name: "parent_tid", Type: "int"}, Value: int32(ppid)},
-			{ArgMeta: external.ArgMeta{Name: "parent_ns_tid", Type: "int"}, Value: 0},
+			{ArgMeta: external.ArgMeta{Name: "parent_ns_tid", Type: "int"}, Value: int32(0)},
+			{ArgMeta: external.ArgMeta{Name: "parent_pid", Type: "int"}, Value: int32(ppid)},
+			{ArgMeta: external.ArgMeta{Name: "parent_ns_pid", Type: "int"}, Value: int32(0)},
 			{ArgMeta: external.ArgMeta{Name: "child_tid", Type: "int"}, Value: int32(ptid)},
-			{ArgMeta: external.ArgMeta{Name: "child_ns_tid", Type: "int"}, Value: 0},
+			{ArgMeta: external.ArgMeta{Name: "child_ns_tid", Type: "int"}, Value: int32(0)},
+			{ArgMeta: external.ArgMeta{Name: "child_pid", Type: "int"}, Value: int32(ptid)},
+			{ArgMeta: external.ArgMeta{Name: "child_ns_pid", Type: "int"}, Value: int32(0)},
 		},
 	}
 	execEvent := external.Event{

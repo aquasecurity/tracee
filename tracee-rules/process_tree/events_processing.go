@@ -37,50 +37,16 @@ func (tree *ProcessTree) processExec(event external.Event) error {
 		tree.generateParentProcess(process)
 	}
 	if process.Status == types.HollowParent {
-		fillHollowParentProcessGeneral(process, event)
+		fillHollowParentProcessGeneralEvent(process, event)
 	}
-	execArgv, err := getArgumentByName(event, "argv")
+	process.ExecutionBinary, process.Cmd, err = parseExecArguments(event)
 	if err != nil {
 		return err
 	}
-	var ok bool
-	process.Cmd, ok = execArgv.Value.([]string)
-	if !ok {
-		return fmt.Errorf("invalid type of argument '%s' - %T",
-			execArgv.Name,
-			execArgv.Name)
-	}
-	execPathName, err := getArgumentByName(event, "pathname")
-	if err != nil {
-		return err
-	}
-	pathName, ok := execPathName.Value.(string)
-	if !ok {
-		return fmt.Errorf("invalid type of argument '%s' - %T",
-			execPathName.Name,
-			execPathName.Type)
-	}
-	execCtime, err := getArgumentByName(event, "ctime")
-	if err != nil {
-		return err
-	}
-	ctime64, ok := execCtime.Value.(uint64)
-	if !ok {
-		return fmt.Errorf("invalid type of argument '%s' - %T",
-			execCtime.Name,
-			execCtime.Type)
-	}
-	ctime := uint(ctime64)
-	process.ExecutionBinary = types.BinaryInfo{
-		Path:  pathName,
-		Hash:  "",
-		Ctime: ctime,
-	}
-	process.InContainerIDs.Pid = event.ProcessID
-	process.InContainerIDs.Tid = event.ThreadID
 	process.ProcessName = event.ProcessName
 
-	if process.Status == types.Forked {
+	if process.Status == types.Forked ||
+		process.Status == types.Complete {
 		process.Status = types.Complete
 	} else {
 		process.Status = types.Executed
@@ -91,115 +57,52 @@ func (tree *ProcessTree) processExec(event external.Event) error {
 // processFork add new process to the tree with all possible information available.
 // Notice that the new process ID and TID are not available, and will be collected only upon exec.
 func (tree *ProcessTree) processFork(event external.Event) error {
-	newProcessHostPIDArgument, err := getArgumentByName(event, "child_pid")
+	newProcessInHostIDs, err := parseForkInHostIDs(event)
 	if err != nil {
 		return err
 	}
-	newProcessHostPID32, ok := newProcessHostPIDArgument.Value.(int32)
-	if !ok {
-		return fmt.Errorf("invalid type of argument '%s' - %T",
-			newProcessHostPIDArgument.Name,
-			newProcessHostPIDArgument.Value)
-	}
-	newProcessHostPID := int(newProcessHostPID32)
-	newProcessHostTIDArgument, err := getArgumentByName(event, "child_tid")
+	newProcessInContainerIDs, err := parseForkInContainerIDs(event)
 	if err != nil {
 		return err
-	}
-	newProcessHostTID32, ok := newProcessHostTIDArgument.Value.(int32)
-	if !ok {
-		return fmt.Errorf("invalid type of argument '%s' - %T",
-			newProcessHostTIDArgument.Name,
-			newProcessHostTIDArgument.Value)
-	}
-	newProcessHostTID := int(newProcessHostTID32)
-	newProcessContainerPIDArgument, err := getArgumentByName(event, "child_ns_pid")
-	if err != nil {
-		return err
-	}
-	newProcessContainerPID32, ok := newProcessContainerPIDArgument.Value.(int32)
-	if !ok {
-		return fmt.Errorf("invalid type of argument '%s' - %T",
-			newProcessContainerPIDArgument.Name,
-			newProcessContainerPIDArgument.Value)
-	}
-	newProcessContainerPID := int(newProcessContainerPID32)
-	newProcessContainerTIDArgument, err := getArgumentByName(event, "child_ns_tid")
-	if err != nil {
-		return err
-	}
-	newProcessContainerTID32, ok := newProcessContainerTIDArgument.Value.(int32)
-	if !ok {
-		return fmt.Errorf("invalid type of argument '%s' - %T",
-			newProcessContainerTIDArgument.Name,
-			newProcessContainerTIDArgument.Value)
-	}
-	newProcessContainerTID := int(newProcessContainerTID32)
-	newProcess, err := tree.GetProcessInfo(newProcessHostTID)
-	if err != nil {
-		// If the process is already forked by main thread there is no purpose in continuing
-		if newProcess.Status == types.Complete ||
-			newProcess.Status == types.Forked {
-			return nil
-		}
-		if newProcess.Status == types.HollowParent {
-			newProcess.InHostIDs = types.ProcessIDs{
-				Pid:  newProcessHostPID,
-				Tid:  newProcessHostTID,
-				Ppid: event.HostProcessID,
-			}
-			newProcess.InContainerIDs = types.ProcessIDs{
-				Pid:  newProcessContainerPID,
-				Tid:  newProcessContainerTID,
-				Ppid: event.ProcessID,
-			}
-			newProcess.ProcessName = event.ProcessName
-			newProcess.IsAlive = true
-			newProcess.Status = types.GeneralCreated
-		}
-		// Add fork information if the main thread
-		if newProcessHostPID == newProcessHostTID {
-			newProcess.StartTime = event.Timestamp
-			if newProcess.Status == types.Forked {
-				newProcess.Status = types.Complete
-			} else {
-				newProcess.Status = types.Forked
-			}
-		}
-	} else {
-		newProcess = &types.ProcessInfo{
-			ProcessName: event.ProcessName,
-			InHostIDs: types.ProcessIDs{
-				Pid:  newProcessHostTID,
-				Ppid: event.HostProcessID,
-				Tid:  newProcessHostTID,
-			},
-			InContainerIDs: types.ProcessIDs{
-				Ppid: event.ProcessID,
-			},
-			ContainerID: event.ContainerID,
-			StartTime:   event.Timestamp,
-			IsAlive:     true,
-			Status:      types.Forked,
-		}
-		containerTree, err := tree.getContainerTree(event.ContainerID)
-		if err != nil {
-			containerTree = &containerProcessTree{
-				Root: newProcess,
-			}
-			tree.containers[event.ContainerID] = containerTree
-		}
-		// This will delete old instance if its exit was missing
-		tree.tree[newProcessHostTID] = newProcess
 	}
 
-	if newProcess.Status == types.Forked {
-		fatherProcess, err := tree.GetProcessInfo(event.HostProcessID)
-		if err == nil {
-			newProcess.ExecutionBinary = fatherProcess.ExecutionBinary
-			newProcess.Cmd = fatherProcess.Cmd
-			newProcess.ParentProcess = fatherProcess
-			fatherProcess.ChildProcesses = append(fatherProcess.ChildProcesses, newProcess)
+	isMainThread := newProcessInHostIDs.Pid == newProcessInHostIDs.Tid
+	newProcess, npErr := tree.GetProcessInfo(newProcessInHostIDs.Pid)
+	if isMainThread {
+		// If it is a new process or if for some reason the existing process is a result of lost exit event
+		if npErr != nil ||
+			newProcess.Status == types.Complete ||
+			newProcess.Status == types.Forked {
+			newProcess = tree.addNewForkedProcess(event, newProcessInHostIDs, newProcessInContainerIDs)
+		}
+
+		// If exec did not happened yet, add binary information of parent
+		if newProcess.Status == types.Forked {
+			tree.copyParentBinaryInfo(newProcess)
+		}
+
+	} else {
+		if npErr != nil {
+			// In this case, calling thread is another thread of the process and we have normal general information on it
+			newProcess = tree.addGeneralEventProcess(event)
+			tree.generateParentProcess(newProcess)
+		}
+	}
+	if newProcess.Status == types.HollowParent {
+		fillHollowProcessInfo(
+			newProcess,
+			newProcessInHostIDs,
+			newProcessInContainerIDs,
+			event.ContainerID,
+			event.ProcessName,
+		)
+	}
+	if isMainThread {
+		newProcess.StartTime = event.Timestamp
+		if newProcess.Status == types.Forked {
+			newProcess.Status = types.Complete
+		} else {
+			newProcess.Status = types.Forked
 		}
 	}
 
@@ -252,7 +155,7 @@ func (tree *ProcessTree) processDefaultEvent(event external.Event) error {
 	if err != nil {
 		process = tree.addGeneralEventProcess(event)
 	} else if process.Status == types.HollowParent {
-		fillHollowParentProcessGeneral(process, event)
+		fillHollowParentProcessGeneralEvent(process, event)
 	}
 	if process.ParentProcess == nil {
 		parentProcess, err := tree.GetProcessInfo(event.HostParentProcessID)
@@ -322,20 +225,14 @@ func (tree *ProcessTree) generateParentProcess(process *types.ProcessInfo) *type
 	return process
 }
 
-func fillHollowParentProcessGeneral(p *types.ProcessInfo, event external.Event) {
-	p.InHostIDs = types.ProcessIDs{
-		Pid:  event.HostProcessID,
-		Tid:  event.HostThreadID,
-		Ppid: event.HostProcessID,
-	}
-	p.InContainerIDs = types.ProcessIDs{
-		Pid:  event.ProcessID,
-		Tid:  event.ThreadID,
-		Ppid: event.ProcessID,
-	}
-	p.ProcessName = event.ProcessName
-	p.IsAlive = true
-	p.Status = types.GeneralCreated
+func fillHollowParentProcessGeneralEvent(p *types.ProcessInfo, event external.Event) {
+	fillHollowProcessInfo(
+		p,
+		types.ProcessIDs{Pid: event.HostProcessID, Tid: event.HostThreadID, Ppid: event.HostProcessID},
+		types.ProcessIDs{Pid: event.ProcessID, Tid: event.ThreadID, Ppid: event.ProcessID},
+		event.ProcessName,
+		event.ContainerID,
+	)
 }
 
 // getArgumentByName fetches the argument in event with "Name" that matches argName.
@@ -357,4 +254,148 @@ func (tree *ProcessTree) cachedDeleteProcess(tid int) {
 		tree.deadProcessesCache = tree.deadProcessesCache[1:]
 		delete(tree.tree, dtid)
 	}
+}
+
+func (tree *ProcessTree) addNewForkedProcess(event external.Event, inHostIDs types.ProcessIDs, inContainerIDs types.ProcessIDs) *types.ProcessInfo {
+	newProcess := &types.ProcessInfo{
+		ProcessName:    event.ProcessName,
+		InHostIDs:      inHostIDs,
+		InContainerIDs: inContainerIDs,
+		ContainerID:    event.ContainerID,
+		StartTime:      event.Timestamp,
+		IsAlive:        true,
+		Status:         types.Forked,
+	}
+	containerTree, err := tree.getContainerTree(event.ContainerID)
+	if err != nil {
+		containerTree = &containerProcessTree{
+			Root: newProcess,
+		}
+		tree.containers[event.ContainerID] = containerTree
+	}
+	if newProcess.InContainerIDs.Ppid != 0 {
+		fatherProcess, err := tree.GetProcessInfo(newProcess.InHostIDs.Ppid)
+		if err == nil {
+			newProcess.ParentProcess = fatherProcess
+			fatherProcess.ChildProcesses = append(fatherProcess.ChildProcesses, newProcess)
+		}
+	} else {
+		containerTree.Root = newProcess
+	}
+	// This will delete old instance if its exit was missing
+	tree.tree[inHostIDs.Pid] = newProcess
+	return newProcess
+}
+
+func (tree *ProcessTree) copyParentBinaryInfo(p *types.ProcessInfo) {
+	if p.Status == types.Forked {
+		fatherProcess, err := tree.GetProcessInfo(p.InHostIDs.Ppid)
+		if err == nil {
+			p.ExecutionBinary = fatherProcess.ExecutionBinary
+			p.Cmd = fatherProcess.Cmd
+		}
+	}
+}
+
+func parseForkInHostIDs(event external.Event) (types.ProcessIDs, error) {
+	var inHostIDs types.ProcessIDs
+	var err error
+	inHostIDs.Pid, err = parseInt32Field(event, "child_pid")
+	if err != nil {
+		return inHostIDs, err
+	}
+	inHostIDs.Tid, err = parseInt32Field(event, "child_tid")
+	if err != nil {
+		return inHostIDs, err
+	}
+	inHostIDs.Ppid = event.HostProcessID
+
+	return inHostIDs, nil
+}
+
+func parseForkInContainerIDs(event external.Event) (types.ProcessIDs, error) {
+	var inContainerIDs types.ProcessIDs
+	var err error
+	inContainerIDs.Pid, err = parseInt32Field(event, "child_ns_pid")
+	if err != nil {
+		return inContainerIDs, err
+	}
+	inContainerIDs.Tid, err = parseInt32Field(event, "child_ns_tid")
+	if err != nil {
+		return inContainerIDs, err
+	}
+	inContainerIDs.Ppid = event.ProcessID
+
+	return inContainerIDs, nil
+}
+
+func parseExecArguments(event external.Event) (types.BinaryInfo, []string, error) {
+	var binaryInfo types.BinaryInfo
+	var cmd []string
+	execArgv, err := getArgumentByName(event, "argv")
+	if err != nil {
+		return binaryInfo, cmd, err
+	}
+	var ok bool
+	cmd, ok = execArgv.Value.([]string)
+	if !ok {
+		return binaryInfo, cmd, fmt.Errorf("invalid type of argument '%s' - %T",
+			execArgv.Name,
+			execArgv.Name)
+	}
+	execPathName, err := getArgumentByName(event, "pathname")
+	if err != nil {
+		return binaryInfo, cmd, err
+	}
+	pathName, ok := execPathName.Value.(string)
+	if !ok {
+		return binaryInfo, cmd, fmt.Errorf("invalid type of argument '%s' - %T",
+			execPathName.Name,
+			execPathName.Type)
+	}
+	execCtime, err := getArgumentByName(event, "ctime")
+	if err != nil {
+		return binaryInfo, cmd, err
+	}
+	ctime64, ok := execCtime.Value.(uint64)
+	if !ok {
+		return binaryInfo, cmd, fmt.Errorf("invalid type of argument '%s' - %T",
+			execCtime.Name,
+			execCtime.Type)
+	}
+	binaryInfo = types.BinaryInfo{
+		Path:  pathName,
+		Hash:  "",
+		Ctime: uint(ctime64),
+	}
+	return binaryInfo, cmd, nil
+}
+
+func parseInt32Field(event external.Event, fieldName string) (int, error) {
+	argument, err := getArgumentByName(event, fieldName)
+	if err != nil {
+		return 0, err
+	}
+	argumentValue32, ok := argument.Value.(int32)
+	if !ok {
+		return 0, fmt.Errorf("invalid type of argument '%s' - %T",
+			argument.Name,
+			argument.Value)
+	}
+	return int(argumentValue32), nil
+}
+
+func fillHollowProcessInfo(
+	p *types.ProcessInfo,
+	inHostIDs types.ProcessIDs,
+	inContainerIDs types.ProcessIDs,
+	processName string,
+	containerID string,
+) {
+	p.InHostIDs = inHostIDs
+	p.InContainerIDs = inContainerIDs
+	p.ContainerID = containerID
+	p.ProcessName = processName
+	p.IsAlive = true
+	p.Status = types.GeneralCreated
 }
