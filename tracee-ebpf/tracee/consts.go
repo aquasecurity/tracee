@@ -2,24 +2,12 @@ package tracee
 
 import (
 	"github.com/aquasecurity/libbpfgo/helpers"
-	"math"
-
 	"github.com/aquasecurity/tracee/pkg/external"
 )
 
 // bpfConfig is an enum that include various configurations that can be passed to bpf code
 // config should match defined values in ebpf code
 type bpfConfig uint32
-
-// Max depth of each stack trace to track
-// Matches 'MAX_STACK_DEPTH' in eBPF code
-const maxStackDepth int = 20
-
-// Custom KernelConfigOption's to extend kernel_config helper support
-// Add here all kconfig variables used within tracee.bpf.c
-const (
-	CONFIG_ARCH_HAS_SYSCALL_WRAPPER helpers.KernelConfigOption = iota + helpers.CUSTOM_OPTION_START
-)
 
 const (
 	configDetectOrigSyscall bpfConfig = iota + 1
@@ -44,34 +32,14 @@ const (
 	configCgroupV1
 )
 
-const (
-	filterNotEqual uint32 = iota
-	filterEqual
-)
+// Max depth of each stack trace to track
+// Matches 'MAX_STACK_DEPTH' in eBPF code
+const maxStackDepth int = 20
 
+// Custom KernelConfigOption's to extend kernel_config helper support
+// Add here all kconfig variables used within tracee.bpf.c
 const (
-	filterIn  uint8 = 1
-	filterOut uint8 = 2
-)
-
-const (
-	uidLess uint32 = iota
-	uidGreater
-	pidLess
-	pidGreater
-	mntNsLess
-	mntNsGreater
-	pidNsLess
-	pidNsGreater
-)
-
-// Set default inequality values
-// val<0 and val>math.MaxUint64 should never be used by the user as they give an empty set
-const (
-	LessNotSetUint    uint64 = 0
-	GreaterNotSetUint uint64 = math.MaxUint64
-	LessNotSetInt     int64  = math.MinInt64
-	GreaterNotSetInt  int64  = math.MaxInt64
+	CONFIG_ARCH_HAS_SYSCALL_WRAPPER helpers.KernelConfigOption = iota + helpers.CUSTOM_OPTION_START
 )
 
 // an enum that specifies the index of a function to be used in a bpf tail call
