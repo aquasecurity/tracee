@@ -51,16 +51,6 @@ const (
 	tailSendBinTP
 )
 
-// binType is an enum that specifies the type of binary data sent in the file perf map
-// binary types should match defined values in ebpf code
-type binType uint8
-
-const (
-	sendVfsWrite binType = iota + 1
-	sendMprotect
-	sendKernelModule
-)
-
 // ProbeType is an enum that describes the mechanism used to attach the event
 // Kprobes are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#1-kprobes
 // Tracepoints are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#3-tracepoints

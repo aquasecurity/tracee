@@ -10,6 +10,16 @@ import (
 	"strconv"
 )
 
+// binType is an enum that specifies the type of binary data sent in the file perf map
+// binary types should match defined values in ebpf code
+type binType uint8
+
+const (
+	sendVfsWrite binType = iota + 1
+	sendMprotect
+	sendKernelModule
+)
+
 func (t *Tracee) processFileWrites() {
 	type chunkMeta struct {
 		BinType  binType
