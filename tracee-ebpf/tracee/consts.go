@@ -1,54 +1,7 @@
 package tracee
 
 import (
-	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/pkg/external"
-)
-
-// bpfConfig is an enum that include various configurations that can be passed to bpf code
-// config should match defined values in ebpf code
-type bpfConfig uint32
-
-const (
-	configDetectOrigSyscall bpfConfig = iota + 1
-	configExecEnv
-	configCaptureFiles
-	configExtractDynCode
-	configTraceePid
-	configStackAddresses
-	configUIDFilter
-	configMntNsFilter
-	configPidNsFilter
-	configUTSNsFilter
-	configCommFilter
-	configPidFilter
-	configContFilter
-	configFollowFilter
-	configNewPidFilter
-	configNewContFilter
-	configDebugNet
-	configProcTreeFilter
-	configCaptureModules
-	configCgroupV1
-)
-
-// Max depth of each stack trace to track
-// Matches 'MAX_STACK_DEPTH' in eBPF code
-const maxStackDepth int = 20
-
-// Custom KernelConfigOption's to extend kernel_config helper support
-// Add here all kconfig variables used within tracee.bpf.c
-const (
-	CONFIG_ARCH_HAS_SYSCALL_WRAPPER helpers.KernelConfigOption = iota + helpers.CUSTOM_OPTION_START
-)
-
-// an enum that specifies the index of a function to be used in a bpf tail call
-// tail function indexes should match defined values in ebpf code
-const (
-	tailVfsWrite uint32 = iota
-	tailVfsWritev
-	tailSendBin
-	tailSendBinTP
 )
 
 // ProbeType is an enum that describes the mechanism used to attach the event

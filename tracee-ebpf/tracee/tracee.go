@@ -417,6 +417,48 @@ func (t *Tracee) initTailCall(tailNum uint32, mapName string, progName string) e
 	return err
 }
 
+// bpfConfig is an enum that include various configurations that can be passed to bpf code
+// config should match defined values in ebpf code
+type bpfConfig uint32
+
+const (
+	configDetectOrigSyscall bpfConfig = iota + 1
+	configExecEnv
+	configCaptureFiles
+	configExtractDynCode
+	configTraceePid
+	configStackAddresses
+	configUIDFilter
+	configMntNsFilter
+	configPidNsFilter
+	configUTSNsFilter
+	configCommFilter
+	configPidFilter
+	configContFilter
+	configFollowFilter
+	configNewPidFilter
+	configNewContFilter
+	configDebugNet
+	configProcTreeFilter
+	configCaptureModules
+	configCgroupV1
+)
+
+// Custom KernelConfigOption's to extend kernel_config helper support
+// Add here all kconfig variables used within tracee.bpf.c
+const (
+	CONFIG_ARCH_HAS_SYSCALL_WRAPPER helpers.KernelConfigOption = iota + helpers.CUSTOM_OPTION_START
+)
+
+// an enum that specifies the index of a function to be used in a bpf tail call
+// tail function indexes should match defined values in ebpf code
+const (
+	tailVfsWrite uint32 = iota
+	tailVfsWritev
+	tailSendBin
+	tailSendBinTP
+)
+
 func (t *Tracee) populateBPFMaps() error {
 
 	// Set chosen events map according to events chosen by the user
