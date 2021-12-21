@@ -426,10 +426,11 @@ func (argFilter *ArgFilter) Parse(filterName string, operatorAndValues string, e
 		return fmt.Errorf("invalid argument filter event name: %s", eventName)
 	}
 
-	eventParams, ok := EventsIDToParams[id]
+	eventDefinition, ok := EventsDefinitions[id]
 	if !ok {
 		return fmt.Errorf("invalid argument filter event name: %s", eventName)
 	}
+	eventParams := eventDefinition.Params
 
 	// check if argument name exists for this event
 	argFound := false

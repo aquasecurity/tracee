@@ -86,10 +86,11 @@ func (tc Config) Validate() error {
 	}
 	for eventID, eventFilters := range tc.Filter.ArgFilter.Filters {
 		for argName := range eventFilters {
-			eventParams, ok := EventsIDToParams[eventID]
+			eventDefinition, ok := EventsDefinitions[eventID]
 			if !ok {
 				return fmt.Errorf("invalid argument filter event id: %d", eventID)
 			}
+			eventParams := eventDefinition.Params
 			// check if argument name exists for this event
 			argFound := false
 			for i := range eventParams {
@@ -622,7 +623,8 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	eventsParams := make(map[int32][]argType)
-	for id, params := range EventsIDToParams {
+	for id, eventDefinition := range EventsDefinitions {
+		params := eventDefinition.Params
 		for _, param := range params {
 			eventsParams[id] = append(eventsParams[id], getParamType(param.Type))
 		}

@@ -1010,7 +1010,7 @@ func getSelfCapabilities() (capability.Capabilities, error) {
 }
 
 func getFormattedEventParams(eventID int32) string {
-	eventParams := tracee.EventsIDToParams[eventID]
+	eventParams := tracee.EventsDefinitions[eventID].Params
 	var verboseEventParams string
 	verboseEventParams += "("
 	prefix := ""
