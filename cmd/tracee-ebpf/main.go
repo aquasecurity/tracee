@@ -745,8 +745,8 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 	eventFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}}
 	setFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}}
 
-	eventsNameToID := make(map[string]int32, len(tracee.EventsIDToEvent))
-	for _, event := range tracee.EventsIDToEvent {
+	eventsNameToID := make(map[string]int32, len(tracee.EventsDefinitions))
+	for _, event := range tracee.EventsDefinitions {
 		eventsNameToID[event.Name] = event.ID
 	}
 
@@ -915,7 +915,7 @@ func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.St
 	var res []int32
 	setsToEvents := make(map[string][]int32)
 	isExcluded := make(map[int32]bool)
-	for id, event := range tracee.EventsIDToEvent {
+	for id, event := range tracee.EventsDefinitions {
 		for _, set := range event.Sets {
 			setsToEvents[set] = append(setsToEvents[set], id)
 		}
@@ -946,7 +946,7 @@ func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.St
 		setsToTrace = append(setsToTrace, "default")
 	}
 
-	res = make([]int32, 0, len(tracee.EventsIDToEvent))
+	res = make([]int32, 0, len(tracee.EventsDefinitions))
 	for _, name := range eventsToTrace {
 		// Handle event prefixes with wildcards
 		if strings.HasSuffix(name, "*") {
@@ -1009,7 +1009,7 @@ func getSelfCapabilities() (capability.Capabilities, error) {
 	return selfCap, nil
 }
 
-func fetchFormattedEventParams(eventID int32) string {
+func getFormattedEventParams(eventID int32) string {
 	eventParams := tracee.EventsIDToParams[eventID]
 	var verboseEventParams string
 	verboseEventParams += "("
@@ -1043,12 +1043,12 @@ func printList() {
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________" + "\n\n")
 	for i := 0; i < int(tracee.SysEnterEventID); i++ {
 		index := int32(i)
-		event, ok := tracee.EventsIDToEvent[index]
+		event, ok := tracee.EventsDefinitions[index]
 		if !ok {
 			continue
 		}
 		if event.Sets != nil {
-			eventSets := fmt.Sprintf("%-22s %-40s %s\n", event.Name, fmt.Sprintf("%v", event.Sets), fetchFormattedEventParams(index))
+			eventSets := fmt.Sprintf("%-22s %-40s %s\n", event.Name, fmt.Sprintf("%v", event.Sets), getFormattedEventParams(index))
 			b.WriteString(eventSets)
 		} else {
 			b.WriteString(event.Name + "\n")
@@ -1056,12 +1056,12 @@ func printList() {
 	}
 	for i := tracee.Unique32BitSyscallsStartID; i < int(tracee.Unique32BitSyscallsEndID); i++ {
 		index := int32(i)
-		event, ok := tracee.EventsIDToEvent[index]
+		event, ok := tracee.EventsDefinitions[index]
 		if !ok {
 			continue
 		}
 		if event.Sets != nil {
-			eventSets := fmt.Sprintf("%-22s %-40s %s\n", event.Name, fmt.Sprintf("%v", event.Sets), fetchFormattedEventParams(index))
+			eventSets := fmt.Sprintf("%-22s %-40s %s\n", event.Name, fmt.Sprintf("%v", event.Sets), getFormattedEventParams(index))
 			b.WriteString(eventSets)
 		} else {
 			b.WriteString(event.Name + "\n")
@@ -1071,9 +1071,9 @@ func printList() {
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________\n\n")
 	for i := int(tracee.SysEnterEventID); i < int(tracee.MaxCommonEventID); i++ {
 		index := int32(i)
-		event := tracee.EventsIDToEvent[index]
+		event := tracee.EventsDefinitions[index]
 		if event.Sets != nil {
-			eventSets := fmt.Sprintf("%-22s %-40s %s\n", event.Name, fmt.Sprintf("%v", event.Sets), fetchFormattedEventParams(index))
+			eventSets := fmt.Sprintf("%-22s %-40s %s\n", event.Name, fmt.Sprintf("%v", event.Sets), getFormattedEventParams(index))
 			b.WriteString(eventSets)
 		} else {
 			b.WriteString(event.Name + "\n")

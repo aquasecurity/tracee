@@ -1405,7 +1405,7 @@ func Test_checkRequiredCapabilites(t *testing.T) {
 	})
 }
 
-func Test_fetchFormattedEventParams(t *testing.T) {
+func Test_getFormattedEventParams(t *testing.T) {
 	testCases := []struct {
 		input  int32
 		output string
@@ -1429,6 +1429,6 @@ func Test_fetchFormattedEventParams(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		assert.Equal(t, tc.output, fetchFormattedEventParams(tc.input))
+		assert.Equal(t, tc.output, getFormattedEventParams(tc.input))
 	}
 }

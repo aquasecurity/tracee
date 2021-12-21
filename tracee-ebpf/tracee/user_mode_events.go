@@ -28,7 +28,7 @@ func CreateInitNamespacesEvent() (external.Event, error) {
 		Timestamp:   int(time.Now().UnixNano()),
 		ProcessName: "tracee-ebpf",
 		EventID:     int(InitNamespacesEventID),
-		EventName:   EventsIDToEvent[InitNamespacesEventID].Name,
+		EventName:   EventsDefinitions[InitNamespacesEventID].Name,
 		ArgsNum:     len(initNamespacesArgs),
 		Args:        initNamespacesArgs,
 	}
