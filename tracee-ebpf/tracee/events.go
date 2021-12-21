@@ -10,6 +10,10 @@ import (
 	"github.com/aquasecurity/tracee/pkg/external"
 )
 
+// Max depth of each stack trace to track
+// Matches 'MAX_STACK_DEPTH' in eBPF code
+const maxStackDepth int = 20
+
 // context struct contains common metadata that is collected for all types of events
 // it is used to unmarshal binary data and therefore should match (bit by bit) to the `context_t` struct in the ebpf code.
 // NOTE: Integers want to be aligned in memory, so if changing the format of this struct

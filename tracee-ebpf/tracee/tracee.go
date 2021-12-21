@@ -397,48 +397,6 @@ func New(cfg Config) (*Tracee, error) {
 	return t, nil
 }
 
-func getParamType(paramType string) argType {
-	switch paramType {
-	case "int", "pid_t", "uid_t", "gid_t", "mqd_t", "clockid_t", "const clockid_t", "key_t", "key_serial_t", "timer_t":
-		return intT
-	case "unsigned int", "u32":
-		return uintT
-	case "long":
-		return longT
-	case "unsigned long", "u64":
-		return ulongT
-	case "off_t":
-		return offT
-	case "mode_t":
-		return modeT
-	case "dev_t":
-		return devT
-	case "size_t":
-		return sizeT
-	case "void*", "const void*":
-		return pointerT
-	case "char*", "const char*":
-		return strT
-	case "const char*const*": // used by execve(at) argv and env
-		return strArrT
-	case "const char**": // used by sched_process_exec argv and envp
-		return argsArrT
-	case "const struct sockaddr*", "struct sockaddr*":
-		return sockAddrT
-	case "bytes":
-		return bytesT
-	case "int[2]":
-		return intArr2T
-	case "slim_cred_t":
-		return credT
-	case "umode_t":
-		return u16T
-	default:
-		// Default to pointer (printed as hex) for unsupported types
-		return pointerT
-	}
-}
-
 // Initialize tail calls program array
 func (t *Tracee) initTailCall(tailNum uint32, mapName string, progName string) error {
 
@@ -458,6 +416,48 @@ func (t *Tracee) initTailCall(tailNum uint32, mapName string, progName string) e
 
 	return err
 }
+
+// bpfConfig is an enum that include various configurations that can be passed to bpf code
+// config should match defined values in ebpf code
+type bpfConfig uint32
+
+const (
+	configDetectOrigSyscall bpfConfig = iota + 1
+	configExecEnv
+	configCaptureFiles
+	configExtractDynCode
+	configTraceePid
+	configStackAddresses
+	configUIDFilter
+	configMntNsFilter
+	configPidNsFilter
+	configUTSNsFilter
+	configCommFilter
+	configPidFilter
+	configContFilter
+	configFollowFilter
+	configNewPidFilter
+	configNewContFilter
+	configDebugNet
+	configProcTreeFilter
+	configCaptureModules
+	configCgroupV1
+)
+
+// Custom KernelConfigOption's to extend kernel_config helper support
+// Add here all kconfig variables used within tracee.bpf.c
+const (
+	CONFIG_ARCH_HAS_SYSCALL_WRAPPER helpers.KernelConfigOption = iota + helpers.CUSTOM_OPTION_START
+)
+
+// an enum that specifies the index of a function to be used in a bpf tail call
+// tail function indexes should match defined values in ebpf code
+const (
+	tailVfsWrite uint32 = iota
+	tailVfsWritev
+	tailSendBin
+	tailSendBinTP
+)
 
 func (t *Tracee) populateBPFMaps() error {
 
