@@ -16,7 +16,7 @@ import (
 	bpf "github.com/aquasecurity/libbpfgo"
 )
 
-// Containers contain information about host running containers in the host.
+// Containers contain information about running containers in the host.
 type Containers struct {
 	cgroupV1 bool
 	cgroupMP string

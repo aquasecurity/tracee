@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path"
-	"strconv"
 )
 
 // binType is an enum that specifies the type of binary data sent in the file perf map
@@ -23,7 +22,7 @@ const (
 func (t *Tracee) processFileWrites() {
 	type chunkMeta struct {
 		BinType  binType
-		MntID    uint32
+		CgroupID uint64
 		Metadata [24]byte
 		Size     int32
 		Off      uint64
@@ -83,7 +82,11 @@ func (t *Tracee) processFileWrites() {
 				continue
 			}
 
-			pathname := path.Join(t.config.Capture.OutputPath, strconv.Itoa(int(meta.MntID)))
+			containerId := t.containers.GetCgroupInfo(uint64(meta.CgroupID)).ContainerId
+			if containerId == "" {
+				containerId = "host"
+			}
+			pathname := path.Join(t.config.Capture.OutputPath, containerId)
 			if err := os.MkdirAll(pathname, 0755); err != nil {
 				t.handleError(err)
 				continue
