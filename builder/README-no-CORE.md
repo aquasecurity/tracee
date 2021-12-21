@@ -1,4 +1,4 @@
-## Instructions on how to use **Makefile.docker** for non-CORE eBPF
+## Instructions on how to use **Makefile.tracee-make** for non-CORE eBPF
 
 Until recently, `tracee-ebpf` binary was capable of building a non CO-RE eBPF
 object during whenever the running kernel did not support CO-RE. This behavior
@@ -30,13 +30,13 @@ And observe BPF object from /tmp/tracee being used, if needed, just like:
     BPF: no BTF file was found or provided, trying non CO-RE eBPF at
          /tmp/tracee/tracee.bpf.5_8_0-63-generic.v0_6_5-20-g3353501.o
 
-### Using **Makefile.docker** to generate and run non CO-RE eBPF based tracee
+### Using **Makefile.tracee-make** to generate and run non CO-RE eBPF based tracee
 
 If you're willing to generate the non CO-RE eBPF object using the
 tracee-make container, you're able to by doing:
 
-    $ make -f builder/Makefile.docker alpine-prepare # use ubuntu also
-    $ make -f builder/Makefile.docker alpine-shell   # use ubuntu also
+    $ make -f builder/Makefile.tracee-make alpine-prepare # use ubuntu also
+    $ make -f builder/Makefile.tracee-make alpine-shell   # use ubuntu also
 
 and then, inside the docker container:
 
