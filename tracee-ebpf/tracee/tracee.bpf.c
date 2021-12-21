@@ -3495,8 +3495,8 @@ static __always_inline u32 send_bin_helper(void* ctx, struct bpf_map_def *prog_a
     }
 
 #define F_SEND_TYPE   0
-#define F_MNT_NS      (F_SEND_TYPE + sizeof(u8))
-#define F_META_OFF    (F_MNT_NS + sizeof(u32))
+#define F_CGROUP_ID   (F_SEND_TYPE + sizeof(u8))
+#define F_META_OFF    (F_CGROUP_ID + sizeof(u64))
 #define F_SZ_OFF      (F_META_OFF + SEND_META_SIZE)
 #define F_POS_OFF     (F_SZ_OFF + sizeof(unsigned int))
 #define F_CHUNK_OFF   (F_POS_OFF + sizeof(off_t))
@@ -3504,8 +3504,13 @@ static __always_inline u32 send_bin_helper(void* ctx, struct bpf_map_def *prog_a
 
     bpf_probe_read((void **)&(file_buf_p->buf[F_SEND_TYPE]), sizeof(u8), &bin_args->type);
 
-    u32 mnt_id = get_task_mnt_ns_id((struct task_struct *)bpf_get_current_task());
-    bpf_probe_read((void **)&(file_buf_p->buf[F_MNT_NS]), sizeof(u32), &mnt_id);
+    u64 cgroup_id;
+    if (get_config(CONFIG_CGROUP_V1)) {
+        cgroup_id = get_cgroup_v1_subsys0_id((struct task_struct *)bpf_get_current_task());
+    } else {
+        cgroup_id = bpf_get_current_cgroup_id();
+    }
+    bpf_probe_read((void **)&(file_buf_p->buf[F_CGROUP_ID]), sizeof(u64), &cgroup_id);
 
     // Save metadata to be used in filename
     bpf_probe_read((void **)&(file_buf_p->buf[F_META_OFF]), SEND_META_SIZE, bin_args->metadata);

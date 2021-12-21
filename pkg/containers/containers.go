@@ -17,7 +17,7 @@ import (
 	"github.com/aquasecurity/libbpfgo"
 )
 
-// Containers contain information about host running containers in the host.
+// Containers contain information about running containers in the host.
 type Containers struct {
 	cgroupV1 bool
 	cgroupMP string
@@ -180,8 +180,9 @@ func (c *Containers) CgroupUpdate(cgroupId uint64, path string) (CgroupInfo, err
 		}
 		info.ContainerId = containerId
 		info.Runtime = runtime
+		// we want to get container info with respect to host
+		break
 	}
-
 	c.mtx.Lock()
 	c.cgroups[uint32(cgroupId)] = info
 	c.mtx.Unlock()
