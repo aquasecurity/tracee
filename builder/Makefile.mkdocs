@@ -36,15 +36,15 @@ help:
 	@echo ""
 	@echo "To build the mkdocs docker container:"
 	@echo ""
-	@echo "    $ make -f builder/Makefile.mkdocs mkdocs-build"
+	@echo "    $$ make -f builder/Makefile.mkdocs mkdocs-build"
 	@echo ""
 	@echo "To serve mkdocs through mkdocks container:"
 	@echo ""
-	@echo "    $ make -f builder/Makefile.mkdocs mkdocs-serve"
+	@echo "    $$ make -f builder/Makefile.mkdocs mkdocs-serve"
 	@echo ""
 	@echo "Or simply:"
 	@echo ""
-	@echo "    $ make -f builder/Makefile.mkdocs"
+	@echo "    $$ make -f builder/Makefile.mkdocs"
 	@echo ""
 
 #
