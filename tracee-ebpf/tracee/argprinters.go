@@ -38,7 +38,7 @@ func (t *Tracee) parseArgs(ctx *context, args map[string]interface{}, argMetas *
 	case SysEnterEventID, SysExitEventID, CapCapableEventID, CommitCredsEventID, SecurityFileOpenEventID:
 		//show syscall name instead of id
 		if id, isInt32 := args["syscall"].(int32); isInt32 {
-			if event, isKnown := EventsIDToEvent[id]; isKnown {
+			if event, isKnown := EventsDefinitions[id]; isKnown {
 				if event.Probes[0].attach == sysCall {
 					args["syscall"] = event.Probes[0].event
 				}

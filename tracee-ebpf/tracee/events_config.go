@@ -24,8 +24,8 @@ type probe struct {
 	fn     string
 }
 
-// EventConfig is a struct describing an event configuration
-type EventConfig struct {
+// EventDefinition is a struct describing an event configuration
+type EventDefinition struct {
 	ID             int32
 	ID32Bit        int32
 	Name           string
@@ -34,7 +34,7 @@ type EventConfig struct {
 	Sets           []string
 }
 
-// Non syscalls events (used by all architectures)
+// Common events (used by all architectures)
 // events should match defined values in ebpf code
 const (
 	SysEnterEventID int32 = iota + 1000
@@ -91,8 +91,7 @@ const (
 
 const Unique32BitSyscallsStartID = 3000
 
-// EventsIDToEvent is list of supported events, indexed by their ID
-var EventsIDToEvent = map[int32]EventConfig{
+var EventsDefinitions = map[int32]EventDefinition{
 	ReadEventID: {
 		ID:      ReadEventID,
 		ID32Bit: sys32read,

@@ -61,7 +61,7 @@ func (t *Tracee) processEvents(done <-chan struct{}) error {
 		for i := 0; i < int(ctx.Argnum); i++ {
 			argMeta, argVal, err := readArgFromBuff(dataBuff, params)
 			if err != nil {
-				t.handleError(fmt.Errorf("failed to read argument %d of event %s: %v", i, EventsIDToEvent[ctx.EventID].Name, err))
+				t.handleError(fmt.Errorf("failed to read argument %d of event %s: %v", i, EventsDefinitions[ctx.EventID].Name, err))
 				continue
 			}
 
@@ -133,7 +133,7 @@ func (t *Tracee) processEvents(done <-chan struct{}) error {
 			HostName:            string(bytes.TrimRight(ctx.UtsName[:], "\x00")),
 			ContainerID:         containerId,
 			EventID:             int(ctx.EventID),
-			EventName:           EventsIDToEvent[int32(ctx.EventID)].Name,
+			EventName:           EventsDefinitions[int32(ctx.EventID)].Name,
 			ArgsNum:             int(ctx.Argnum),
 			ReturnValue:         int(ctx.Retval),
 			Args:                make([]external.Argument, 0, len(args)),

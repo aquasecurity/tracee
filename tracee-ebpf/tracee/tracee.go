@@ -80,7 +80,7 @@ func (tc Config) Validate() error {
 	}
 
 	for _, e := range tc.Filter.EventsToTrace {
-		if _, ok := EventsIDToEvent[e]; !ok {
+		if _, ok := EventsDefinitions[e]; !ok {
 			return fmt.Errorf("invalid event to trace: %d", e)
 		}
 	}
@@ -222,9 +222,9 @@ func New(cfg Config) (*Tracee, error) {
 	}
 
 	setEssential := func(id int32) {
-		event := EventsIDToEvent[id]
+		event := EventsDefinitions[id]
 		event.EssentialEvent = true
-		EventsIDToEvent[id] = event
+		EventsDefinitions[id] = event
 	}
 	if cfg.Capture.Exec {
 		setEssential(SchedProcessExecEventID)
@@ -286,7 +286,7 @@ func New(cfg Config) (*Tracee, error) {
 	}
 
 	// Compile final list of events to trace including essential events
-	for id, event := range EventsIDToEvent {
+	for id, event := range EventsDefinitions {
 		// If an essential event was not requested by the user, set its map value to false
 		if event.EssentialEvent && !t.eventsToTrace[id] {
 			t.eventsToTrace[id] = false
@@ -481,7 +481,7 @@ func (t *Tracee) populateBPFMaps() error {
 	if err != nil {
 		return err
 	}
-	for _, event := range EventsIDToEvent {
+	for _, event := range EventsDefinitions {
 		ID32BitU32 := uint32(event.ID32Bit) // ID32Bit is int32
 		IDU32 := uint32(event.ID)           // ID is int32
 		if err := sys32to64BPFMap.Update(unsafe.Pointer(&ID32BitU32), unsafe.Pointer(&IDU32)); err != nil {
@@ -645,7 +645,7 @@ func (t *Tracee) populateBPFMaps() error {
 
 		// some functions require tail call on syscall enter/exit as they perform extra work
 		if e == ExecveEventID || e == ExecveatEventID || e == InitModuleEventID {
-			event, ok := EventsIDToEvent[e]
+			event, ok := EventsDefinitions[e]
 			if !ok {
 				continue
 			}
@@ -768,7 +768,7 @@ func (t *Tracee) initBPF() error {
 	// For every BPF program, we need to make sure that:
 	// 1. We disable autoload if the program is not required by any event and is not essential
 	// 2. The correct BPF program type is set
-	for _, event := range EventsIDToEvent {
+	for _, event := range EventsDefinitions {
 		for _, probe := range event.Probes {
 			prog, _ := t.bpfModule.GetProgram(probe.fn)
 			if prog == nil && probe.attach == sysCall {
@@ -838,7 +838,7 @@ func (t *Tracee) initBPF() error {
 	}
 
 	for e := range t.eventsToTrace {
-		event, ok := EventsIDToEvent[e]
+		event, ok := EventsDefinitions[e]
 		if !ok {
 			continue
 		}
