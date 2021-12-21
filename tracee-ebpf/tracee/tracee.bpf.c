@@ -187,7 +187,8 @@ Copyright (C) Aqua Security inc.
 #define SECURITY_INODE_MKNOD            1029
 #define SECURITY_POST_READ_FILE         1030
 #define SOCKET_DUP                      1031
-#define MAX_EVENT_ID                    1032
+#define HIDDEN_INODES                   1032
+#define MAX_EVENT_ID                    1033
 
 #define NET_PACKET                      0
 #define DEBUG_NET_SECURITY_BIND         1
@@ -2550,7 +2551,24 @@ int tracepoint__sched__sched_switch(struct bpf_raw_tracepoint_args *ctx)
 
     return events_perf_submit(&data, SCHED_SWITCH, 0);
 }
+SEC("kprobe/filldir64")
+int BPF_KPROBE(trace_filldir64)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+    if (!should_trace((&data.context)))
+        return 0;
 
+    char * process_name = (char *)PT_REGS_PARM2(ctx);
+    unsigned long process_inode_number = (unsigned long) PT_REGS_PARM5(ctx);
+    if (process_inode_number == 0)
+    {
+        save_str_to_buf(&data, process_name, 0);
+        return events_perf_submit(&data, HIDDEN_INODES, 0);
+    }
+    return 0;
+}
 SEC("kprobe/do_exit")
 int BPF_KPROBE(trace_do_exit)
 {
