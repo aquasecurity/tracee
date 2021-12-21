@@ -26,7 +26,6 @@ type probe struct {
 
 // EventDefinition is a struct describing an event configuration
 type EventDefinition struct {
-	ID             int32
 	ID32Bit        int32
 	Name           string
 	Probes         []probe
@@ -93,7 +92,6 @@ const Unique32BitSyscallsStartID = 3000
 
 var EventsDefinitions = map[int32]EventDefinition{
 	ReadEventID: {
-		ID:      ReadEventID,
 		ID32Bit: sys32read,
 		Name:    "read",
 		Probes: []probe{
@@ -102,7 +100,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_read_write"},
 	},
 	WriteEventID: {
-		ID:      WriteEventID,
 		ID32Bit: sys32write,
 		Name:    "write",
 		Probes: []probe{
@@ -111,7 +108,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_read_write"},
 	},
 	OpenEventID: {
-		ID:      OpenEventID,
 		ID32Bit: sys32open,
 		Name:    "open",
 		Probes: []probe{
@@ -120,7 +116,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_file_ops"},
 	},
 	CloseEventID: {
-		ID:      CloseEventID,
 		ID32Bit: sys32close,
 		Name:    "close",
 		Probes: []probe{
@@ -129,7 +124,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_file_ops"},
 	},
 	StatEventID: {
-		ID:      StatEventID,
 		ID32Bit: sys32stat,
 		Name:    "stat",
 		Probes: []probe{
@@ -138,7 +132,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
 	},
 	FstatEventID: {
-		ID:      FstatEventID,
 		ID32Bit: sys32fstat,
 		Name:    "fstat",
 		Probes: []probe{
@@ -147,7 +140,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
 	},
 	LstatEventID: {
-		ID:      LstatEventID,
 		ID32Bit: sys32lstat,
 		Name:    "lstat",
 		Probes: []probe{
@@ -156,7 +148,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
 	},
 	PollEventID: {
-		ID:      PollEventID,
 		ID32Bit: sys32poll,
 		Name:    "poll",
 		Probes: []probe{
@@ -165,7 +156,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_mux_io"},
 	},
 	LseekEventID: {
-		ID:      LseekEventID,
 		ID32Bit: sys32lseek,
 		Name:    "lseek",
 		Probes: []probe{
@@ -174,7 +164,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_read_write"},
 	},
 	MmapEventID: {
-		ID:      MmapEventID,
 		ID32Bit: sys32mmap,
 		Name:    "mmap",
 		Probes: []probe{
@@ -183,7 +172,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_mem"},
 	},
 	MprotectEventID: {
-		ID:      MprotectEventID,
 		ID32Bit: sys32mprotect,
 		Name:    "mprotect",
 		Probes: []probe{
@@ -192,7 +180,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_mem"},
 	},
 	MunmapEventID: {
-		ID:      MunmapEventID,
 		ID32Bit: sys32munmap,
 		Name:    "munmap",
 		Probes: []probe{
@@ -201,7 +188,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_mem"},
 	},
 	BrkEventID: {
-		ID:      BrkEventID,
 		ID32Bit: sys32brk,
 		Name:    "brk",
 		Probes: []probe{
@@ -210,7 +196,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_mem"},
 	},
 	RtSigactionEventID: {
-		ID:      RtSigactionEventID,
 		ID32Bit: sys32rt_sigaction,
 		Name:    "rt_sigaction",
 		Probes: []probe{
@@ -219,7 +204,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "signals"},
 	},
 	RtSigprocmaskEventID: {
-		ID:      RtSigprocmaskEventID,
 		ID32Bit: sys32rt_sigprocmask,
 		Name:    "rt_sigprocmask",
 		Probes: []probe{
@@ -228,7 +212,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "signals"},
 	},
 	RtSigreturnEventID: {
-		ID:      RtSigreturnEventID,
 		ID32Bit: sys32rt_sigreturn,
 		Name:    "rt_sigreturn",
 		Probes: []probe{
@@ -237,7 +220,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "signals"},
 	},
 	IoctlEventID: {
-		ID:      IoctlEventID,
 		ID32Bit: sys32ioctl,
 		Name:    "ioctl",
 		Probes: []probe{
@@ -246,7 +228,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_fd_ops"},
 	},
 	Pread64EventID: {
-		ID:      Pread64EventID,
 		ID32Bit: sys32pread64,
 		Name:    "pread64",
 		Probes: []probe{
@@ -255,7 +236,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_read_write"},
 	},
 	Pwrite64EventID: {
-		ID:      Pwrite64EventID,
 		ID32Bit: sys32pwrite64,
 		Name:    "pwrite64",
 		Probes: []probe{
@@ -264,7 +244,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_read_write"},
 	},
 	ReadvEventID: {
-		ID:      ReadvEventID,
 		ID32Bit: sys32readv,
 		Name:    "readv",
 		Probes: []probe{
@@ -273,7 +252,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_read_write"},
 	},
 	WritevEventID: {
-		ID:      WritevEventID,
 		ID32Bit: sys32writev,
 		Name:    "writev",
 		Probes: []probe{
@@ -282,7 +260,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_read_write"},
 	},
 	AccessEventID: {
-		ID:      AccessEventID,
 		ID32Bit: sys32access,
 		Name:    "access",
 		Probes: []probe{
@@ -291,7 +268,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
 	},
 	PipeEventID: {
-		ID:      PipeEventID,
 		ID32Bit: sys32pipe,
 		Name:    "pipe",
 		Probes: []probe{
@@ -300,7 +276,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_pipe"},
 	},
 	SelectEventID: {
-		ID:      SelectEventID,
 		ID32Bit: sys32_newselect,
 		Name:    "select",
 		Probes: []probe{
@@ -309,7 +284,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_mux_io"},
 	},
 	SchedYieldEventID: {
-		ID:      SchedYieldEventID,
 		ID32Bit: sys32sched_yield,
 		Name:    "sched_yield",
 		Probes: []probe{
@@ -318,7 +292,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_sched"},
 	},
 	MremapEventID: {
-		ID:      MremapEventID,
 		ID32Bit: sys32mremap,
 		Name:    "mremap",
 		Probes: []probe{
@@ -327,7 +300,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_mem"},
 	},
 	MsyncEventID: {
-		ID:      MsyncEventID,
 		ID32Bit: sys32msync,
 		Name:    "msync",
 		Probes: []probe{
@@ -336,7 +308,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_sync"},
 	},
 	MincoreEventID: {
-		ID:      MincoreEventID,
 		ID32Bit: sys32mincore,
 		Name:    "mincore",
 		Probes: []probe{
@@ -345,7 +316,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_mem"},
 	},
 	MadviseEventID: {
-		ID:      MadviseEventID,
 		ID32Bit: sys32madvise,
 		Name:    "madvise",
 		Probes: []probe{
@@ -354,7 +324,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_mem"},
 	},
 	ShmgetEventID: {
-		ID:      ShmgetEventID,
 		ID32Bit: sys32shmget,
 		Name:    "shmget",
 		Probes: []probe{
@@ -363,7 +332,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_shm"},
 	},
 	ShmatEventID: {
-		ID:      ShmatEventID,
 		ID32Bit: sys32shmat,
 		Name:    "shmat",
 		Probes: []probe{
@@ -372,7 +340,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_shm"},
 	},
 	ShmctlEventID: {
-		ID:      ShmctlEventID,
 		ID32Bit: sys32shmctl,
 		Name:    "shmctl",
 		Probes: []probe{
@@ -381,7 +348,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_shm"},
 	},
 	DupEventID: {
-		ID:      DupEventID,
 		ID32Bit: sys32dup,
 		Name:    "dup",
 		Probes: []probe{
@@ -390,7 +356,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_fd_ops"},
 	},
 	Dup2EventID: {
-		ID:      Dup2EventID,
 		ID32Bit: sys32dup2,
 		Name:    "dup2",
 		Probes: []probe{
@@ -399,7 +364,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_fd_ops"},
 	},
 	PauseEventID: {
-		ID:      PauseEventID,
 		ID32Bit: sys32pause,
 		Name:    "pause",
 		Probes: []probe{
@@ -408,7 +372,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "signals"},
 	},
 	NanosleepEventID: {
-		ID:      NanosleepEventID,
 		ID32Bit: sys32nanosleep,
 		Name:    "nanosleep",
 		Probes: []probe{
@@ -417,7 +380,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "time", "time_timer"},
 	},
 	GetitimerEventID: {
-		ID:      GetitimerEventID,
 		ID32Bit: sys32getitimer,
 		Name:    "getitimer",
 		Probes: []probe{
@@ -426,7 +388,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "time", "time_timer"},
 	},
 	AlarmEventID: {
-		ID:      AlarmEventID,
 		ID32Bit: sys32alarm,
 		Name:    "alarm",
 		Probes: []probe{
@@ -435,7 +396,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "time", "time_timer"},
 	},
 	SetitimerEventID: {
-		ID:      SetitimerEventID,
 		ID32Bit: sys32setitimer,
 		Name:    "setitimer",
 		Probes: []probe{
@@ -444,7 +404,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "time", "time_timer"},
 	},
 	GetpidEventID: {
-		ID:      GetpidEventID,
 		ID32Bit: sys32getpid,
 		Name:    "getpid",
 		Probes: []probe{
@@ -453,7 +412,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_ids"},
 	},
 	SendfileEventID: {
-		ID:      SendfileEventID,
 		ID32Bit: sys32sendfile64,
 		Name:    "sendfile",
 		Probes: []probe{
@@ -462,7 +420,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_read_write"},
 	},
 	SocketEventID: {
-		ID:      SocketEventID,
 		ID32Bit: sys32socket,
 		Name:    "socket",
 		Probes: []probe{
@@ -471,7 +428,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "net", "net_sock"},
 	},
 	ConnectEventID: {
-		ID:      ConnectEventID,
 		ID32Bit: sys32connect,
 		Name:    "connect",
 		Probes: []probe{
@@ -480,7 +436,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "net", "net_sock"},
 	},
 	AcceptEventID: {
-		ID:      AcceptEventID,
 		ID32Bit: sys32undefined,
 		Name:    "accept",
 		Probes: []probe{
@@ -489,7 +444,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "net", "net_sock"},
 	},
 	SendtoEventID: {
-		ID:      SendtoEventID,
 		ID32Bit: sys32sendto,
 		Name:    "sendto",
 		Probes: []probe{
@@ -498,7 +452,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "net", "net_snd_rcv"},
 	},
 	RecvfromEventID: {
-		ID:      RecvfromEventID,
 		ID32Bit: sys32recvfrom,
 		Name:    "recvfrom",
 		Probes: []probe{
@@ -507,7 +460,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "net", "net_snd_rcv"},
 	},
 	SendmsgEventID: {
-		ID:      SendmsgEventID,
 		ID32Bit: sys32sendmsg,
 		Name:    "sendmsg",
 		Probes: []probe{
@@ -516,7 +468,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "net", "net_snd_rcv"},
 	},
 	RecvmsgEventID: {
-		ID:      RecvmsgEventID,
 		ID32Bit: sys32recvmsg,
 		Name:    "recvmsg",
 		Probes: []probe{
@@ -525,7 +476,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "net", "net_snd_rcv"},
 	},
 	ShutdownEventID: {
-		ID:      ShutdownEventID,
 		ID32Bit: sys32shutdown,
 		Name:    "shutdown",
 		Probes: []probe{
@@ -534,7 +484,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "net", "net_sock"},
 	},
 	BindEventID: {
-		ID:      BindEventID,
 		ID32Bit: sys32bind,
 		Name:    "bind",
 		Probes: []probe{
@@ -543,7 +492,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "net", "net_sock"},
 	},
 	ListenEventID: {
-		ID:      ListenEventID,
 		ID32Bit: sys32listen,
 		Name:    "listen",
 		Probes: []probe{
@@ -552,7 +500,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "net", "net_sock"},
 	},
 	GetsocknameEventID: {
-		ID:      GetsocknameEventID,
 		ID32Bit: sys32getsockname,
 		Name:    "getsockname",
 		Probes: []probe{
@@ -561,7 +508,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "net", "net_sock"},
 	},
 	GetpeernameEventID: {
-		ID:      GetpeernameEventID,
 		ID32Bit: sys32getpeername,
 		Name:    "getpeername",
 		Probes: []probe{
@@ -570,7 +516,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "net", "net_sock"},
 	},
 	SocketpairEventID: {
-		ID:      SocketpairEventID,
 		ID32Bit: sys32socketpair,
 		Name:    "socketpair",
 		Probes: []probe{
@@ -579,7 +524,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "net", "net_sock"},
 	},
 	SetsockoptEventID: {
-		ID:      SetsockoptEventID,
 		ID32Bit: sys32setsockopt,
 		Name:    "setsockopt",
 		Probes: []probe{
@@ -588,7 +532,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "net", "net_sock"},
 	},
 	GetsockoptEventID: {
-		ID:      GetsockoptEventID,
 		ID32Bit: sys32getsockopt,
 		Name:    "getsockopt",
 		Probes: []probe{
@@ -597,7 +540,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "net", "net_sock"},
 	},
 	CloneEventID: {
-		ID:      CloneEventID,
 		ID32Bit: sys32clone,
 		Name:    "clone",
 		Probes: []probe{
@@ -606,7 +548,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "proc", "proc_life"},
 	},
 	ForkEventID: {
-		ID:      ForkEventID,
 		ID32Bit: sys32fork,
 		Name:    "fork",
 		Probes: []probe{
@@ -615,7 +556,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "proc", "proc_life"},
 	},
 	VforkEventID: {
-		ID:      VforkEventID,
 		ID32Bit: sys32vfork,
 		Name:    "vfork",
 		Probes: []probe{
@@ -624,7 +564,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "proc", "proc_life"},
 	},
 	ExecveEventID: {
-		ID:      ExecveEventID,
 		ID32Bit: sys32execve,
 		Name:    "execve",
 		Probes: []probe{
@@ -633,7 +572,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "proc", "proc_life"},
 	},
 	ExitEventID: {
-		ID:      ExitEventID,
 		ID32Bit: sys32exit,
 		Name:    "exit",
 		Probes: []probe{
@@ -642,7 +580,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_life"},
 	},
 	Wait4EventID: {
-		ID:      Wait4EventID,
 		ID32Bit: sys32wait4,
 		Name:    "wait4",
 		Probes: []probe{
@@ -651,7 +588,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_life"},
 	},
 	KillEventID: {
-		ID:      KillEventID,
 		ID32Bit: sys32kill,
 		Name:    "kill",
 		Probes: []probe{
@@ -660,7 +596,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "signals"},
 	},
 	UnameEventID: {
-		ID:      UnameEventID,
 		ID32Bit: sys32uname,
 		Name:    "uname",
 		Probes: []probe{
@@ -669,7 +604,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system"},
 	},
 	SemgetEventID: {
-		ID:      SemgetEventID,
 		ID32Bit: sys32semget,
 		Name:    "semget",
 		Probes: []probe{
@@ -678,7 +612,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_sem"},
 	},
 	SemopEventID: {
-		ID:      SemopEventID,
 		ID32Bit: sys32undefined,
 		Name:    "semop",
 		Probes: []probe{
@@ -687,7 +620,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_sem"},
 	},
 	SemctlEventID: {
-		ID:      SemctlEventID,
 		ID32Bit: sys32semctl,
 		Name:    "semctl",
 		Probes: []probe{
@@ -696,7 +628,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_sem"},
 	},
 	ShmdtEventID: {
-		ID:      ShmdtEventID,
 		ID32Bit: sys32shmdt,
 		Name:    "shmdt",
 		Probes: []probe{
@@ -705,7 +636,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_shm"},
 	},
 	MsggetEventID: {
-		ID:      MsggetEventID,
 		ID32Bit: sys32msgget,
 		Name:    "msgget",
 		Probes: []probe{
@@ -714,7 +644,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_msgq"},
 	},
 	MsgsndEventID: {
-		ID:      MsgsndEventID,
 		ID32Bit: sys32msgsnd,
 		Name:    "msgsnd",
 		Probes: []probe{
@@ -723,7 +652,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_msgq"},
 	},
 	MsgrcvEventID: {
-		ID:      MsgrcvEventID,
 		ID32Bit: sys32msgrcv,
 		Name:    "msgrcv",
 		Probes: []probe{
@@ -732,7 +660,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_msgq"},
 	},
 	MsgctlEventID: {
-		ID:      MsgctlEventID,
 		ID32Bit: sys32msgctl,
 		Name:    "msgctl",
 		Probes: []probe{
@@ -741,7 +668,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_msgq"},
 	},
 	FcntlEventID: {
-		ID:      FcntlEventID,
 		ID32Bit: sys32fcntl,
 		Name:    "fcntl",
 		Probes: []probe{
@@ -750,7 +676,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_fd_ops"},
 	},
 	FlockEventID: {
-		ID:      FlockEventID,
 		ID32Bit: sys32flock,
 		Name:    "flock",
 		Probes: []probe{
@@ -759,7 +684,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_fd_ops"},
 	},
 	FsyncEventID: {
-		ID:      FsyncEventID,
 		ID32Bit: sys32fsync,
 		Name:    "fsync",
 		Probes: []probe{
@@ -768,7 +692,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_sync"},
 	},
 	FdatasyncEventID: {
-		ID:      FdatasyncEventID,
 		ID32Bit: sys32fdatasync,
 		Name:    "fdatasync",
 		Probes: []probe{
@@ -777,7 +700,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_sync"},
 	},
 	TruncateEventID: {
-		ID:      TruncateEventID,
 		ID32Bit: sys32truncate,
 		Name:    "truncate",
 		Probes: []probe{
@@ -786,7 +708,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_ops"},
 	},
 	FtruncateEventID: {
-		ID:      FtruncateEventID,
 		ID32Bit: sys32ftruncate,
 		Name:    "ftruncate",
 		Probes: []probe{
@@ -795,7 +716,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_ops"},
 	},
 	GetdentsEventID: {
-		ID:      GetdentsEventID,
 		ID32Bit: sys32getdents,
 		Name:    "getdents",
 		Probes: []probe{
@@ -804,7 +724,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_dir_ops"},
 	},
 	GetcwdEventID: {
-		ID:      GetcwdEventID,
 		ID32Bit: sys32getcwd,
 		Name:    "getcwd",
 		Probes: []probe{
@@ -813,7 +732,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_dir_ops"},
 	},
 	ChdirEventID: {
-		ID:      ChdirEventID,
 		ID32Bit: sys32chdir,
 		Name:    "chdir",
 		Probes: []probe{
@@ -822,7 +740,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_dir_ops"},
 	},
 	FchdirEventID: {
-		ID:      FchdirEventID,
 		ID32Bit: sys32fchdir,
 		Name:    "fchdir",
 		Probes: []probe{
@@ -831,7 +748,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_dir_ops"},
 	},
 	RenameEventID: {
-		ID:      RenameEventID,
 		ID32Bit: sys32rename,
 		Name:    "rename",
 		Probes: []probe{
@@ -840,7 +756,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_ops"},
 	},
 	MkdirEventID: {
-		ID:      MkdirEventID,
 		ID32Bit: sys32mkdir,
 		Name:    "mkdir",
 		Probes: []probe{
@@ -849,7 +764,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_dir_ops"},
 	},
 	RmdirEventID: {
-		ID:      RmdirEventID,
 		ID32Bit: sys32rmdir,
 		Name:    "rmdir",
 		Probes: []probe{
@@ -858,7 +772,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_dir_ops"},
 	},
 	CreatEventID: {
-		ID:      CreatEventID,
 		ID32Bit: sys32creat,
 		Name:    "creat",
 		Probes: []probe{
@@ -867,7 +780,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_file_ops"},
 	},
 	LinkEventID: {
-		ID:      LinkEventID,
 		ID32Bit: sys32link,
 		Name:    "link",
 		Probes: []probe{
@@ -876,7 +788,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_link_ops"},
 	},
 	UnlinkEventID: {
-		ID:      UnlinkEventID,
 		ID32Bit: sys32unlink,
 		Name:    "unlink",
 		Probes: []probe{
@@ -885,7 +796,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_link_ops"},
 	},
 	SymlinkEventID: {
-		ID:      SymlinkEventID,
 		ID32Bit: sys32symlink,
 		Name:    "symlink",
 		Probes: []probe{
@@ -894,7 +804,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_link_ops"},
 	},
 	ReadlinkEventID: {
-		ID:      ReadlinkEventID,
 		ID32Bit: sys32readlink,
 		Name:    "readlink",
 		Probes: []probe{
@@ -903,7 +812,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_link_ops"},
 	},
 	ChmodEventID: {
-		ID:      ChmodEventID,
 		ID32Bit: sys32chmod,
 		Name:    "chmod",
 		Probes: []probe{
@@ -912,7 +820,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
 	},
 	FchmodEventID: {
-		ID:      FchmodEventID,
 		ID32Bit: sys32fchmod,
 		Name:    "fchmod",
 		Probes: []probe{
@@ -921,7 +828,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
 	},
 	ChownEventID: {
-		ID:      ChownEventID,
 		ID32Bit: sys32chown32,
 		Name:    "chown",
 		Probes: []probe{
@@ -930,7 +836,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
 	},
 	FchownEventID: {
-		ID:      FchownEventID,
 		ID32Bit: sys32fchown32,
 		Name:    "fchown",
 		Probes: []probe{
@@ -939,7 +844,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
 	},
 	LchownEventID: {
-		ID:      LchownEventID,
 		ID32Bit: sys32lchown32,
 		Name:    "lchown",
 		Probes: []probe{
@@ -948,7 +852,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
 	},
 	UmaskEventID: {
-		ID:      UmaskEventID,
 		ID32Bit: sys32umask,
 		Name:    "umask",
 		Probes: []probe{
@@ -957,7 +860,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_attr"},
 	},
 	GettimeofdayEventID: {
-		ID:      GettimeofdayEventID,
 		ID32Bit: sys32gettimeofday,
 		Name:    "gettimeofday",
 		Probes: []probe{
@@ -966,7 +868,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "time", "time_tod"},
 	},
 	GetrlimitEventID: {
-		ID:      GetrlimitEventID,
 		ID32Bit: sys32ugetrlimit,
 		Name:    "getrlimit",
 		Probes: []probe{
@@ -975,7 +876,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc"},
 	},
 	GetrusageEventID: {
-		ID:      GetrusageEventID,
 		ID32Bit: sys32getrusage,
 		Name:    "getrusage",
 		Probes: []probe{
@@ -984,7 +884,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc"},
 	},
 	SysinfoEventID: {
-		ID:      SysinfoEventID,
 		ID32Bit: sys32sysinfo,
 		Name:    "sysinfo",
 		Probes: []probe{
@@ -993,7 +892,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system"},
 	},
 	TimesEventID: {
-		ID:      TimesEventID,
 		ID32Bit: sys32times,
 		Name:    "times",
 		Probes: []probe{
@@ -1002,7 +900,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc"},
 	},
 	PtraceEventID: {
-		ID:      PtraceEventID,
 		ID32Bit: sys32ptrace,
 		Name:    "ptrace",
 		Probes: []probe{
@@ -1011,7 +908,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "proc"},
 	},
 	GetuidEventID: {
-		ID:      GetuidEventID,
 		ID32Bit: sys32getuid32,
 		Name:    "getuid",
 		Probes: []probe{
@@ -1020,7 +916,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_ids"},
 	},
 	SyslogEventID: {
-		ID:      SyslogEventID,
 		ID32Bit: sys32syslog,
 		Name:    "syslog",
 		Probes: []probe{
@@ -1029,7 +924,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system"},
 	},
 	GetgidEventID: {
-		ID:      GetgidEventID,
 		ID32Bit: sys32getgid32,
 		Name:    "getgid",
 		Probes: []probe{
@@ -1038,7 +932,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_ids"},
 	},
 	SetuidEventID: {
-		ID:      SetuidEventID,
 		ID32Bit: sys32setuid32,
 		Name:    "setuid",
 		Probes: []probe{
@@ -1047,7 +940,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "proc", "proc_ids"},
 	},
 	SetgidEventID: {
-		ID:      SetgidEventID,
 		ID32Bit: sys32setgid32,
 		Name:    "setgid",
 		Probes: []probe{
@@ -1056,7 +948,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "proc", "proc_ids"},
 	},
 	GeteuidEventID: {
-		ID:      GeteuidEventID,
 		ID32Bit: sys32geteuid32,
 		Name:    "geteuid",
 		Probes: []probe{
@@ -1065,7 +956,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_ids"},
 	},
 	GetegidEventID: {
-		ID:      GetegidEventID,
 		ID32Bit: sys32getegid32,
 		Name:    "getegid",
 		Probes: []probe{
@@ -1074,7 +964,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_ids"},
 	},
 	SetpgidEventID: {
-		ID:      SetpgidEventID,
 		ID32Bit: sys32setpgid,
 		Name:    "setpgid",
 		Probes: []probe{
@@ -1083,7 +972,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_ids"},
 	},
 	GetppidEventID: {
-		ID:      GetppidEventID,
 		ID32Bit: sys32getppid,
 		Name:    "getppid",
 		Probes: []probe{
@@ -1092,7 +980,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_ids"},
 	},
 	GetpgrpEventID: {
-		ID:      GetpgrpEventID,
 		ID32Bit: sys32getpgrp,
 		Name:    "getpgrp",
 		Probes: []probe{
@@ -1101,7 +988,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_ids"},
 	},
 	SetsidEventID: {
-		ID:      SetsidEventID,
 		ID32Bit: sys32setsid,
 		Name:    "setsid",
 		Probes: []probe{
@@ -1110,7 +996,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_ids"},
 	},
 	SetreuidEventID: {
-		ID:      SetreuidEventID,
 		ID32Bit: sys32setreuid32,
 		Name:    "setreuid",
 		Probes: []probe{
@@ -1119,7 +1004,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "proc", "proc_ids"},
 	},
 	SetregidEventID: {
-		ID:      SetregidEventID,
 		ID32Bit: sys32setregid32,
 		Name:    "setregid",
 		Probes: []probe{
@@ -1128,7 +1012,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "proc", "proc_ids"},
 	},
 	GetgroupsEventID: {
-		ID:      GetgroupsEventID,
 		ID32Bit: sys32getgroups32,
 		Name:    "getgroups",
 		Probes: []probe{
@@ -1137,7 +1020,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_ids"},
 	},
 	SetgroupsEventID: {
-		ID:      SetgroupsEventID,
 		ID32Bit: sys32setgroups32,
 		Name:    "setgroups",
 		Probes: []probe{
@@ -1146,7 +1028,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_ids"},
 	},
 	SetresuidEventID: {
-		ID:      SetresuidEventID,
 		ID32Bit: sys32setresuid32,
 		Name:    "setresuid",
 		Probes: []probe{
@@ -1155,7 +1036,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_ids"},
 	},
 	GetresuidEventID: {
-		ID:      GetresuidEventID,
 		ID32Bit: sys32getresuid32,
 		Name:    "getresuid",
 		Probes: []probe{
@@ -1164,7 +1044,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_ids"},
 	},
 	SetresgidEventID: {
-		ID:      SetresgidEventID,
 		ID32Bit: sys32setresgid32,
 		Name:    "setresgid",
 		Probes: []probe{
@@ -1173,7 +1052,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_ids"},
 	},
 	GetresgidEventID: {
-		ID:      GetresgidEventID,
 		ID32Bit: sys32getresgid32,
 		Name:    "getresgid",
 		Probes: []probe{
@@ -1182,7 +1060,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_ids"},
 	},
 	GetpgidEventID: {
-		ID:      GetpgidEventID,
 		ID32Bit: sys32getpgid,
 		Name:    "getpgid",
 		Probes: []probe{
@@ -1191,7 +1068,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_ids"},
 	},
 	SetfsuidEventID: {
-		ID:      SetfsuidEventID,
 		ID32Bit: sys32setfsuid32,
 		Name:    "setfsuid",
 		Probes: []probe{
@@ -1200,7 +1076,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "proc", "proc_ids"},
 	},
 	SetfsgidEventID: {
-		ID:      SetfsgidEventID,
 		ID32Bit: sys32setfsgid32,
 		Name:    "setfsgid",
 		Probes: []probe{
@@ -1209,7 +1084,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "proc", "proc_ids"},
 	},
 	GetsidEventID: {
-		ID:      GetsidEventID,
 		ID32Bit: sys32getsid,
 		Name:    "getsid",
 		Probes: []probe{
@@ -1218,7 +1092,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_ids"},
 	},
 	CapgetEventID: {
-		ID:      CapgetEventID,
 		ID32Bit: sys32capget,
 		Name:    "capget",
 		Probes: []probe{
@@ -1227,7 +1100,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc"},
 	},
 	CapsetEventID: {
-		ID:      CapsetEventID,
 		ID32Bit: sys32capset,
 		Name:    "capset",
 		Probes: []probe{
@@ -1236,7 +1108,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc"},
 	},
 	RtSigpendingEventID: {
-		ID:      RtSigpendingEventID,
 		ID32Bit: sys32rt_sigpending,
 		Name:    "rt_sigpending",
 		Probes: []probe{
@@ -1245,7 +1116,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "signals"},
 	},
 	RtSigtimedwaitEventID: {
-		ID:      RtSigtimedwaitEventID,
 		ID32Bit: sys32rt_sigtimedwait_time64,
 		Name:    "rt_sigtimedwait",
 		Probes: []probe{
@@ -1254,7 +1124,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "signals"},
 	},
 	RtSigqueueinfoEventID: {
-		ID:      RtSigqueueinfoEventID,
 		ID32Bit: sys32rt_sigqueueinfo,
 		Name:    "rt_sigqueueinfo",
 		Probes: []probe{
@@ -1263,7 +1132,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "signals"},
 	},
 	RtSigsuspendEventID: {
-		ID:      RtSigsuspendEventID,
 		ID32Bit: sys32rt_sigsuspend,
 		Name:    "rt_sigsuspend",
 		Probes: []probe{
@@ -1272,7 +1140,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "signals"},
 	},
 	SigaltstackEventID: {
-		ID:      SigaltstackEventID,
 		ID32Bit: sys32sigaltstack,
 		Name:    "sigaltstack",
 		Probes: []probe{
@@ -1281,7 +1148,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "signals"},
 	},
 	UtimeEventID: {
-		ID:      UtimeEventID,
 		ID32Bit: sys32utime,
 		Name:    "utime",
 		Probes: []probe{
@@ -1290,7 +1156,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_attr"},
 	},
 	MknodEventID: {
-		ID:      MknodEventID,
 		ID32Bit: sys32mknod,
 		Name:    "mknod",
 		Probes: []probe{
@@ -1299,7 +1164,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_file_ops"},
 	},
 	UselibEventID: {
-		ID:      UselibEventID,
 		ID32Bit: sys32uselib,
 		Name:    "uselib",
 		Probes: []probe{
@@ -1308,7 +1172,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc"},
 	},
 	PersonalityEventID: {
-		ID:      PersonalityEventID,
 		ID32Bit: sys32personality,
 		Name:    "personality",
 		Probes: []probe{
@@ -1317,7 +1180,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system"},
 	},
 	UstatEventID: {
-		ID:      UstatEventID,
 		ID32Bit: sys32ustat,
 		Name:    "ustat",
 		Probes: []probe{
@@ -1326,7 +1188,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_info"},
 	},
 	StatfsEventID: {
-		ID:      StatfsEventID,
 		ID32Bit: sys32statfs,
 		Name:    "statfs",
 		Probes: []probe{
@@ -1335,7 +1196,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_info"},
 	},
 	FstatfsEventID: {
-		ID:      FstatfsEventID,
 		ID32Bit: sys32fstatfs,
 		Name:    "fstatfs",
 		Probes: []probe{
@@ -1344,7 +1204,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_info"},
 	},
 	SysfsEventID: {
-		ID:      SysfsEventID,
 		ID32Bit: sys32sysfs,
 		Name:    "sysfs",
 		Probes: []probe{
@@ -1353,7 +1212,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_info"},
 	},
 	GetpriorityEventID: {
-		ID:      GetpriorityEventID,
 		ID32Bit: sys32getpriority,
 		Name:    "getpriority",
 		Probes: []probe{
@@ -1362,7 +1220,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_sched"},
 	},
 	SetpriorityEventID: {
-		ID:      SetpriorityEventID,
 		ID32Bit: sys32setpriority,
 		Name:    "setpriority",
 		Probes: []probe{
@@ -1371,7 +1228,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_sched"},
 	},
 	SchedSetparamEventID: {
-		ID:      SchedSetparamEventID,
 		ID32Bit: sys32sched_setparam,
 		Name:    "sched_setparam",
 		Probes: []probe{
@@ -1380,7 +1236,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_sched"},
 	},
 	SchedGetparamEventID: {
-		ID:      SchedGetparamEventID,
 		ID32Bit: sys32sched_getparam,
 		Name:    "sched_getparam",
 		Probes: []probe{
@@ -1389,7 +1244,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_sched"},
 	},
 	SchedSetschedulerEventID: {
-		ID:      SchedSetschedulerEventID,
 		ID32Bit: sys32sched_setscheduler,
 		Name:    "sched_setscheduler",
 		Probes: []probe{
@@ -1398,7 +1252,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_sched"},
 	},
 	SchedGetschedulerEventID: {
-		ID:      SchedGetschedulerEventID,
 		ID32Bit: sys32sched_getscheduler,
 		Name:    "sched_getscheduler",
 		Probes: []probe{
@@ -1407,7 +1260,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_sched"},
 	},
 	SchedGetPriorityMaxEventID: {
-		ID:      SchedGetPriorityMaxEventID,
 		ID32Bit: sys32sched_get_priority_max,
 		Name:    "sched_get_priority_max",
 		Probes: []probe{
@@ -1416,7 +1268,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_sched"},
 	},
 	SchedGetPriorityMinEventID: {
-		ID:      SchedGetPriorityMinEventID,
 		ID32Bit: sys32sched_get_priority_min,
 		Name:    "sched_get_priority_min",
 		Probes: []probe{
@@ -1425,7 +1276,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_sched"},
 	},
 	SchedRrGetIntervalEventID: {
-		ID:      SchedRrGetIntervalEventID,
 		ID32Bit: sys32sched_rr_get_interval_time64,
 		Name:    "sched_rr_get_interval",
 		Probes: []probe{
@@ -1434,7 +1284,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_sched"},
 	},
 	MlockEventID: {
-		ID:      MlockEventID,
 		ID32Bit: sys32mlock,
 		Name:    "mlock",
 		Probes: []probe{
@@ -1443,7 +1292,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_mem"},
 	},
 	MunlockEventID: {
-		ID:      MunlockEventID,
 		ID32Bit: sys32munlock,
 		Name:    "munlock",
 		Probes: []probe{
@@ -1452,7 +1300,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_mem"},
 	},
 	MlockallEventID: {
-		ID:      MlockallEventID,
 		ID32Bit: sys32mlockall,
 		Name:    "mlockall",
 		Probes: []probe{
@@ -1461,7 +1308,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_mem"},
 	},
 	MunlockallEventID: {
-		ID:      MunlockallEventID,
 		ID32Bit: sys32munlockall,
 		Name:    "munlockall",
 		Probes: []probe{
@@ -1470,7 +1316,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_mem"},
 	},
 	VhangupEventID: {
-		ID:      VhangupEventID,
 		ID32Bit: sys32vhangup,
 		Name:    "vhangup",
 		Probes: []probe{
@@ -1479,7 +1324,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system"},
 	},
 	ModifyLdtEventID: {
-		ID:      ModifyLdtEventID,
 		ID32Bit: sys32modify_ldt,
 		Name:    "modify_ldt",
 		Probes: []probe{
@@ -1488,7 +1332,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_mem"},
 	},
 	PivotRootEventID: {
-		ID:      PivotRootEventID,
 		ID32Bit: sys32pivot_root,
 		Name:    "pivot_root",
 		Probes: []probe{
@@ -1497,7 +1340,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs"},
 	},
 	SysctlEventID: {
-		ID:      SysctlEventID,
 		ID32Bit: sys32_sysctl,
 		Name:    "sysctl",
 		Probes: []probe{
@@ -1506,7 +1348,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system"},
 	},
 	PrctlEventID: {
-		ID:      PrctlEventID,
 		ID32Bit: sys32prctl,
 		Name:    "prctl",
 		Probes: []probe{
@@ -1515,7 +1356,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "proc"},
 	},
 	ArchPrctlEventID: {
-		ID:      ArchPrctlEventID,
 		ID32Bit: sys32arch_prctl,
 		Name:    "arch_prctl",
 		Probes: []probe{
@@ -1524,7 +1364,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc"},
 	},
 	AdjtimexEventID: {
-		ID:      AdjtimexEventID,
 		ID32Bit: sys32adjtimex,
 		Name:    "adjtimex",
 		Probes: []probe{
@@ -1533,7 +1372,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "time", "time_clock"},
 	},
 	SetrlimitEventID: {
-		ID:      SetrlimitEventID,
 		ID32Bit: sys32setrlimit,
 		Name:    "setrlimit",
 		Probes: []probe{
@@ -1542,7 +1380,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc"},
 	},
 	ChrootEventID: {
-		ID:      ChrootEventID,
 		ID32Bit: sys32chroot,
 		Name:    "chroot",
 		Probes: []probe{
@@ -1551,7 +1388,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_dir_ops"},
 	},
 	SyncEventID: {
-		ID:      SyncEventID,
 		ID32Bit: sys32sync,
 		Name:    "sync",
 		Probes: []probe{
@@ -1560,7 +1396,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_sync"},
 	},
 	AcctEventID: {
-		ID:      AcctEventID,
 		ID32Bit: sys32acct,
 		Name:    "acct",
 		Probes: []probe{
@@ -1569,7 +1404,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system"},
 	},
 	SettimeofdayEventID: {
-		ID:      SettimeofdayEventID,
 		ID32Bit: sys32settimeofday,
 		Name:    "settimeofday",
 		Probes: []probe{
@@ -1578,7 +1412,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "time", "time_tod"},
 	},
 	MountEventID: {
-		ID:      MountEventID,
 		ID32Bit: sys32mount,
 		Name:    "mount",
 		Probes: []probe{
@@ -1587,7 +1420,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs"},
 	},
 	Umount2EventID: {
-		ID:      Umount2EventID,
 		ID32Bit: sys32umount2,
 		Name:    "umount2",
 		Probes: []probe{
@@ -1596,7 +1428,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs"},
 	},
 	SwaponEventID: {
-		ID:      SwaponEventID,
 		ID32Bit: sys32swapon,
 		Name:    "swapon",
 		Probes: []probe{
@@ -1605,7 +1436,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs"},
 	},
 	SwapoffEventID: {
-		ID:      SwapoffEventID,
 		ID32Bit: sys32swapoff,
 		Name:    "swapoff",
 		Probes: []probe{
@@ -1614,7 +1444,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs"},
 	},
 	RebootEventID: {
-		ID:      RebootEventID,
 		ID32Bit: sys32reboot,
 		Name:    "reboot",
 		Probes: []probe{
@@ -1623,7 +1452,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system"},
 	},
 	SethostnameEventID: {
-		ID:      SethostnameEventID,
 		ID32Bit: sys32sethostname,
 		Name:    "sethostname",
 		Probes: []probe{
@@ -1632,7 +1460,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "net"},
 	},
 	SetdomainnameEventID: {
-		ID:      SetdomainnameEventID,
 		ID32Bit: sys32setdomainname,
 		Name:    "setdomainname",
 		Probes: []probe{
@@ -1641,7 +1468,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "net"},
 	},
 	IoplEventID: {
-		ID:      IoplEventID,
 		ID32Bit: sys32iopl,
 		Name:    "iopl",
 		Probes: []probe{
@@ -1650,7 +1476,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system"},
 	},
 	IopermEventID: {
-		ID:      IopermEventID,
 		ID32Bit: sys32ioperm,
 		Name:    "ioperm",
 		Probes: []probe{
@@ -1659,7 +1484,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system"},
 	},
 	CreateModuleEventID: {
-		ID:      CreateModuleEventID,
 		ID32Bit: sys32create_module,
 		Name:    "create_module",
 		Probes: []probe{
@@ -1668,7 +1492,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system", "system_module"},
 	},
 	InitModuleEventID: {
-		ID:      InitModuleEventID,
 		ID32Bit: sys32init_module,
 		Name:    "init_module",
 		Probes: []probe{
@@ -1677,7 +1500,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "system", "system_module"},
 	},
 	DeleteModuleEventID: {
-		ID:      DeleteModuleEventID,
 		ID32Bit: sys32delete_module,
 		Name:    "delete_module",
 		Probes: []probe{
@@ -1686,7 +1508,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "system", "system_module"},
 	},
 	GetKernelSymsEventID: {
-		ID:      GetKernelSymsEventID,
 		ID32Bit: sys32get_kernel_syms,
 		Name:    "get_kernel_syms",
 		Probes: []probe{
@@ -1695,7 +1516,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system", "system_module"},
 	},
 	QueryModuleEventID: {
-		ID:      QueryModuleEventID,
 		ID32Bit: sys32query_module,
 		Name:    "query_module",
 		Probes: []probe{
@@ -1704,7 +1524,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system", "system_module"},
 	},
 	QuotactlEventID: {
-		ID:      QuotactlEventID,
 		ID32Bit: sys32quotactl,
 		Name:    "quotactl",
 		Probes: []probe{
@@ -1713,7 +1532,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system"},
 	},
 	NfsservctlEventID: {
-		ID:      NfsservctlEventID,
 		ID32Bit: sys32nfsservctl,
 		Name:    "nfsservctl",
 		Probes: []probe{
@@ -1722,7 +1540,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs"},
 	},
 	GetpmsgEventID: {
-		ID:      GetpmsgEventID,
 		ID32Bit: sys32getpmsg,
 		Name:    "getpmsg",
 		Probes: []probe{
@@ -1731,7 +1548,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls"},
 	},
 	PutpmsgEventID: {
-		ID:      PutpmsgEventID,
 		ID32Bit: sys32putpmsg,
 		Name:    "putpmsg",
 		Probes: []probe{
@@ -1740,7 +1556,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls"},
 	},
 	AfsEventID: {
-		ID:      AfsEventID,
 		ID32Bit: sys32undefined,
 		Name:    "afs",
 		Probes: []probe{
@@ -1749,7 +1564,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls"},
 	},
 	TuxcallEventID: {
-		ID:      TuxcallEventID,
 		ID32Bit: sys32undefined,
 		Name:    "tuxcall",
 		Probes: []probe{
@@ -1758,7 +1572,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls"},
 	},
 	SecurityEventID: {
-		ID:      SecurityEventID,
 		ID32Bit: sys32undefined,
 		Name:    "security",
 		Probes: []probe{
@@ -1767,7 +1580,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls"},
 	},
 	GettidEventID: {
-		ID:      GettidEventID,
 		ID32Bit: sys32gettid,
 		Name:    "gettid",
 		Probes: []probe{
@@ -1776,7 +1588,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_ids"},
 	},
 	ReadaheadEventID: {
-		ID:      ReadaheadEventID,
 		ID32Bit: sys32readahead,
 		Name:    "readahead",
 		Probes: []probe{
@@ -1785,7 +1596,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs"},
 	},
 	SetxattrEventID: {
-		ID:      SetxattrEventID,
 		ID32Bit: sys32setxattr,
 		Name:    "setxattr",
 		Probes: []probe{
@@ -1794,7 +1604,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_attr"},
 	},
 	LsetxattrEventID: {
-		ID:      LsetxattrEventID,
 		ID32Bit: sys32lsetxattr,
 		Name:    "lsetxattr",
 		Probes: []probe{
@@ -1803,7 +1612,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_attr"},
 	},
 	FsetxattrEventID: {
-		ID:      FsetxattrEventID,
 		ID32Bit: sys32fsetxattr,
 		Name:    "fsetxattr",
 		Probes: []probe{
@@ -1812,7 +1620,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_attr"},
 	},
 	GetxattrEventID: {
-		ID:      GetxattrEventID,
 		ID32Bit: sys32getxattr,
 		Name:    "getxattr",
 		Probes: []probe{
@@ -1821,7 +1628,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_attr"},
 	},
 	LgetxattrEventID: {
-		ID:      LgetxattrEventID,
 		ID32Bit: sys32lgetxattr,
 		Name:    "lgetxattr",
 		Probes: []probe{
@@ -1830,7 +1636,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_attr"},
 	},
 	FgetxattrEventID: {
-		ID:      FgetxattrEventID,
 		ID32Bit: sys32fgetxattr,
 		Name:    "fgetxattr",
 		Probes: []probe{
@@ -1839,7 +1644,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_attr"},
 	},
 	ListxattrEventID: {
-		ID:      ListxattrEventID,
 		ID32Bit: sys32listxattr,
 		Name:    "listxattr",
 		Probes: []probe{
@@ -1848,7 +1652,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_attr"},
 	},
 	LlistxattrEventID: {
-		ID:      LlistxattrEventID,
 		ID32Bit: sys32llistxattr,
 		Name:    "llistxattr",
 		Probes: []probe{
@@ -1857,7 +1660,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_attr"},
 	},
 	FlistxattrEventID: {
-		ID:      FlistxattrEventID,
 		ID32Bit: sys32flistxattr,
 		Name:    "flistxattr",
 		Probes: []probe{
@@ -1866,7 +1668,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_attr"},
 	},
 	RemovexattrEventID: {
-		ID:      RemovexattrEventID,
 		ID32Bit: sys32removexattr,
 		Name:    "removexattr",
 		Probes: []probe{
@@ -1875,7 +1676,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_attr"},
 	},
 	LremovexattrEventID: {
-		ID:      LremovexattrEventID,
 		ID32Bit: sys32lremovexattr,
 		Name:    "lremovexattr",
 		Probes: []probe{
@@ -1884,7 +1684,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_attr"},
 	},
 	FremovexattrEventID: {
-		ID:      FremovexattrEventID,
 		ID32Bit: sys32fremovexattr,
 		Name:    "fremovexattr",
 		Probes: []probe{
@@ -1893,7 +1692,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_attr"},
 	},
 	TkillEventID: {
-		ID:      TkillEventID,
 		ID32Bit: sys32tkill,
 		Name:    "tkill",
 		Probes: []probe{
@@ -1902,7 +1700,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "signals"},
 	},
 	TimeEventID: {
-		ID:      TimeEventID,
 		ID32Bit: sys32time,
 		Name:    "time",
 		Probes: []probe{
@@ -1911,7 +1708,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "time", "time_tod"},
 	},
 	FutexEventID: {
-		ID:      FutexEventID,
 		ID32Bit: sys32futex_time64,
 		Name:    "futex",
 		Probes: []probe{
@@ -1920,7 +1716,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_futex"},
 	},
 	SchedSetaffinityEventID: {
-		ID:      SchedSetaffinityEventID,
 		ID32Bit: sys32sched_setaffinity,
 		Name:    "sched_setaffinity",
 		Probes: []probe{
@@ -1929,7 +1724,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_sched"},
 	},
 	SchedGetaffinityEventID: {
-		ID:      SchedGetaffinityEventID,
 		ID32Bit: sys32sched_getaffinity,
 		Name:    "sched_getaffinity",
 		Probes: []probe{
@@ -1938,7 +1732,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_sched"},
 	},
 	SetThreadAreaEventID: {
-		ID:      SetThreadAreaEventID,
 		ID32Bit: sys32set_thread_area,
 		Name:    "set_thread_area",
 		Probes: []probe{
@@ -1947,7 +1740,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc"},
 	},
 	IoSetupEventID: {
-		ID:      IoSetupEventID,
 		ID32Bit: sys32io_setup,
 		Name:    "io_setup",
 		Probes: []probe{
@@ -1956,7 +1748,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_async_io"},
 	},
 	IoDestroyEventID: {
-		ID:      IoDestroyEventID,
 		ID32Bit: sys32io_destroy,
 		Name:    "io_destroy",
 		Probes: []probe{
@@ -1965,7 +1756,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_async_io"},
 	},
 	IoGeteventsEventID: {
-		ID:      IoGeteventsEventID,
 		ID32Bit: sys32io_getevents,
 		Name:    "io_getevents",
 		Probes: []probe{
@@ -1974,7 +1764,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_async_io"},
 	},
 	IoSubmitEventID: {
-		ID:      IoSubmitEventID,
 		ID32Bit: sys32io_submit,
 		Name:    "io_submit",
 		Probes: []probe{
@@ -1983,7 +1772,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_async_io"},
 	},
 	IoCancelEventID: {
-		ID:      IoCancelEventID,
 		ID32Bit: sys32io_cancel,
 		Name:    "io_cancel",
 		Probes: []probe{
@@ -1992,7 +1780,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_async_io"},
 	},
 	GetThreadAreaEventID: {
-		ID:      GetThreadAreaEventID,
 		ID32Bit: sys32get_thread_area,
 		Name:    "get_thread_area",
 		Probes: []probe{
@@ -2001,7 +1788,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc"},
 	},
 	LookupDcookieEventID: {
-		ID:      LookupDcookieEventID,
 		ID32Bit: sys32lookup_dcookie,
 		Name:    "lookup_dcookie",
 		Probes: []probe{
@@ -2010,7 +1796,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_dir_ops"},
 	},
 	EpollCreateEventID: {
-		ID:      EpollCreateEventID,
 		ID32Bit: sys32epoll_create,
 		Name:    "epoll_create",
 		Probes: []probe{
@@ -2019,7 +1804,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_mux_io"},
 	},
 	EpollCtlOldEventID: {
-		ID:      EpollCtlOldEventID,
 		ID32Bit: sys32undefined,
 		Name:    "epoll_ctl_old",
 		Probes: []probe{
@@ -2028,7 +1812,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_mux_io"},
 	},
 	EpollWaitOldEventID: {
-		ID:      EpollWaitOldEventID,
 		ID32Bit: sys32undefined,
 		Name:    "epoll_wait_old",
 		Probes: []probe{
@@ -2037,7 +1820,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_mux_io"},
 	},
 	RemapFilePagesEventID: {
-		ID:      RemapFilePagesEventID,
 		ID32Bit: sys32remap_file_pages,
 		Name:    "remap_file_pages",
 		Probes: []probe{
@@ -2046,7 +1828,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls"},
 	},
 	Getdents64EventID: {
-		ID:      Getdents64EventID,
 		ID32Bit: sys32getdents64,
 		Name:    "getdents64",
 		Probes: []probe{
@@ -2055,7 +1836,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_dir_ops"},
 	},
 	SetTidAddressEventID: {
-		ID:      SetTidAddressEventID,
 		ID32Bit: sys32set_tid_address,
 		Name:    "set_tid_address",
 		Probes: []probe{
@@ -2064,7 +1844,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc"},
 	},
 	RestartSyscallEventID: {
-		ID:      RestartSyscallEventID,
 		ID32Bit: sys32restart_syscall,
 		Name:    "restart_syscall",
 		Probes: []probe{
@@ -2073,7 +1852,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "signals"},
 	},
 	SemtimedopEventID: {
-		ID:      SemtimedopEventID,
 		ID32Bit: sys32semtimedop_time64,
 		Name:    "semtimedop",
 		Probes: []probe{
@@ -2082,7 +1860,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_sem"},
 	},
 	Fadvise64EventID: {
-		ID:      Fadvise64EventID,
 		ID32Bit: sys32fadvise64,
 		Name:    "fadvise64",
 		Probes: []probe{
@@ -2091,7 +1868,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs"},
 	},
 	TimerCreateEventID: {
-		ID:      TimerCreateEventID,
 		ID32Bit: sys32timer_create,
 		Name:    "timer_create",
 		Probes: []probe{
@@ -2100,7 +1876,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "time", "time_timer"},
 	},
 	TimerSettimeEventID: {
-		ID:      TimerSettimeEventID,
 		ID32Bit: sys32timer_settime64,
 		Name:    "timer_settime",
 		Probes: []probe{
@@ -2109,7 +1884,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "time", "time_timer"},
 	},
 	TimerGettimeEventID: {
-		ID:      TimerGettimeEventID,
 		ID32Bit: sys32timer_gettime64,
 		Name:    "timer_gettime",
 		Probes: []probe{
@@ -2118,7 +1892,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "time", "time_timer"},
 	},
 	TimerGetoverrunEventID: {
-		ID:      TimerGetoverrunEventID,
 		ID32Bit: sys32timer_getoverrun,
 		Name:    "timer_getoverrun",
 		Probes: []probe{
@@ -2127,7 +1900,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "time", "time_timer"},
 	},
 	TimerDeleteEventID: {
-		ID:      TimerDeleteEventID,
 		ID32Bit: sys32timer_delete,
 		Name:    "timer_delete",
 		Probes: []probe{
@@ -2136,7 +1908,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "time", "time_timer"},
 	},
 	ClockSettimeEventID: {
-		ID:      ClockSettimeEventID,
 		ID32Bit: sys32clock_settime64,
 		Name:    "clock_settime",
 		Probes: []probe{
@@ -2145,7 +1916,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "time", "time_clock"},
 	},
 	ClockGettimeEventID: {
-		ID:      ClockGettimeEventID,
 		ID32Bit: sys32clock_gettime64,
 		Name:    "clock_gettime",
 		Probes: []probe{
@@ -2154,7 +1924,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "time", "time_clock"},
 	},
 	ClockGetresEventID: {
-		ID:      ClockGetresEventID,
 		ID32Bit: sys32clock_getres_time64,
 		Name:    "clock_getres",
 		Probes: []probe{
@@ -2163,7 +1932,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "time", "time_clock"},
 	},
 	ClockNanosleepEventID: {
-		ID:      ClockNanosleepEventID,
 		ID32Bit: sys32clock_nanosleep_time64,
 		Name:    "clock_nanosleep",
 		Probes: []probe{
@@ -2172,7 +1940,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "time", "time_clock"},
 	},
 	ExitGroupEventID: {
-		ID:      ExitGroupEventID,
 		ID32Bit: sys32exit_group,
 		Name:    "exit_group",
 		Probes: []probe{
@@ -2181,7 +1948,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_life"},
 	},
 	EpollWaitEventID: {
-		ID:      EpollWaitEventID,
 		ID32Bit: sys32epoll_wait,
 		Name:    "epoll_wait",
 		Probes: []probe{
@@ -2190,7 +1956,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_mux_io"},
 	},
 	EpollCtlEventID: {
-		ID:      EpollCtlEventID,
 		ID32Bit: sys32epoll_ctl,
 		Name:    "epoll_ctl",
 		Probes: []probe{
@@ -2199,7 +1964,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_mux_io"},
 	},
 	TgkillEventID: {
-		ID:      TgkillEventID,
 		ID32Bit: sys32tgkill,
 		Name:    "tgkill",
 		Probes: []probe{
@@ -2208,7 +1972,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "signals"},
 	},
 	UtimesEventID: {
-		ID:      UtimesEventID,
 		ID32Bit: sys32utimes,
 		Name:    "utimes",
 		Probes: []probe{
@@ -2217,7 +1980,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_attr"},
 	},
 	VserverEventID: {
-		ID:      VserverEventID,
 		ID32Bit: sys32vserver,
 		Name:    "vserver",
 		Probes: []probe{
@@ -2226,7 +1988,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls"},
 	},
 	MbindEventID: {
-		ID:      MbindEventID,
 		ID32Bit: sys32mbind,
 		Name:    "mbind",
 		Probes: []probe{
@@ -2235,7 +1996,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system", "system_numa"},
 	},
 	SetMempolicyEventID: {
-		ID:      SetMempolicyEventID,
 		ID32Bit: sys32set_mempolicy,
 		Name:    "set_mempolicy",
 		Probes: []probe{
@@ -2244,7 +2004,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system", "system_numa"},
 	},
 	GetMempolicyEventID: {
-		ID:      GetMempolicyEventID,
 		ID32Bit: sys32get_mempolicy,
 		Name:    "get_mempolicy",
 		Probes: []probe{
@@ -2253,7 +2012,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system", "system_numa"},
 	},
 	MqOpenEventID: {
-		ID:      MqOpenEventID,
 		ID32Bit: sys32mq_open,
 		Name:    "mq_open",
 		Probes: []probe{
@@ -2262,7 +2020,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_msgq"},
 	},
 	MqUnlinkEventID: {
-		ID:      MqUnlinkEventID,
 		ID32Bit: sys32mq_unlink,
 		Name:    "mq_unlink",
 		Probes: []probe{
@@ -2271,7 +2028,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_msgq"},
 	},
 	MqTimedsendEventID: {
-		ID:      MqTimedsendEventID,
 		ID32Bit: sys32mq_timedsend_time64,
 		Name:    "mq_timedsend",
 		Probes: []probe{
@@ -2280,7 +2036,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_msgq"},
 	},
 	MqTimedreceiveEventID: {
-		ID:      MqTimedreceiveEventID,
 		ID32Bit: sys32mq_timedreceive_time64,
 		Name:    "mq_timedreceive",
 		Probes: []probe{
@@ -2289,7 +2044,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_msgq"},
 	},
 	MqNotifyEventID: {
-		ID:      MqNotifyEventID,
 		ID32Bit: sys32mq_notify,
 		Name:    "mq_notify",
 		Probes: []probe{
@@ -2298,7 +2052,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_msgq"},
 	},
 	MqGetsetattrEventID: {
-		ID:      MqGetsetattrEventID,
 		ID32Bit: sys32mq_getsetattr,
 		Name:    "mq_getsetattr",
 		Probes: []probe{
@@ -2307,7 +2060,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_msgq"},
 	},
 	KexecLoadEventID: {
-		ID:      KexecLoadEventID,
 		ID32Bit: sys32kexec_load,
 		Name:    "kexec_load",
 		Probes: []probe{
@@ -2316,7 +2068,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system"},
 	},
 	WaitidEventID: {
-		ID:      WaitidEventID,
 		ID32Bit: sys32waitid,
 		Name:    "waitid",
 		Probes: []probe{
@@ -2325,7 +2076,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_life"},
 	},
 	AddKeyEventID: {
-		ID:      AddKeyEventID,
 		ID32Bit: sys32add_key,
 		Name:    "add_key",
 		Probes: []probe{
@@ -2334,7 +2084,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system", "system_keys"},
 	},
 	RequestKeyEventID: {
-		ID:      RequestKeyEventID,
 		ID32Bit: sys32request_key,
 		Name:    "request_key",
 		Probes: []probe{
@@ -2343,7 +2092,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system", "system_keys"},
 	},
 	KeyctlEventID: {
-		ID:      KeyctlEventID,
 		ID32Bit: sys32keyctl,
 		Name:    "keyctl",
 		Probes: []probe{
@@ -2352,7 +2100,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system", "system_keys"},
 	},
 	IoprioSetEventID: {
-		ID:      IoprioSetEventID,
 		ID32Bit: sys32ioprio_set,
 		Name:    "ioprio_set",
 		Probes: []probe{
@@ -2361,7 +2108,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_sched"},
 	},
 	IoprioGetEventID: {
-		ID:      IoprioGetEventID,
 		ID32Bit: sys32ioprio_get,
 		Name:    "ioprio_get",
 		Probes: []probe{
@@ -2370,7 +2116,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_sched"},
 	},
 	InotifyInitEventID: {
-		ID:      InotifyInitEventID,
 		ID32Bit: sys32inotify_init,
 		Name:    "inotify_init",
 		Probes: []probe{
@@ -2379,7 +2124,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_monitor"},
 	},
 	InotifyAddWatchEventID: {
-		ID:      InotifyAddWatchEventID,
 		ID32Bit: sys32inotify_add_watch,
 		Name:    "inotify_add_watch",
 		Probes: []probe{
@@ -2388,7 +2132,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_monitor"},
 	},
 	InotifyRmWatchEventID: {
-		ID:      InotifyRmWatchEventID,
 		ID32Bit: sys32inotify_rm_watch,
 		Name:    "inotify_rm_watch",
 		Probes: []probe{
@@ -2397,7 +2140,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_monitor"},
 	},
 	MigratePagesEventID: {
-		ID:      MigratePagesEventID,
 		ID32Bit: sys32migrate_pages,
 		Name:    "migrate_pages",
 		Probes: []probe{
@@ -2406,7 +2148,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system", "system_numa"},
 	},
 	OpenatEventID: {
-		ID:      OpenatEventID,
 		ID32Bit: sys32openat,
 		Name:    "openat",
 		Probes: []probe{
@@ -2415,7 +2156,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_file_ops"},
 	},
 	MkdiratEventID: {
-		ID:      MkdiratEventID,
 		ID32Bit: sys32mkdirat,
 		Name:    "mkdirat",
 		Probes: []probe{
@@ -2424,7 +2164,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_dir_ops"},
 	},
 	MknodatEventID: {
-		ID:      MknodatEventID,
 		ID32Bit: sys32mknodat,
 		Name:    "mknodat",
 		Probes: []probe{
@@ -2433,7 +2172,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_file_ops"},
 	},
 	FchownatEventID: {
-		ID:      FchownatEventID,
 		ID32Bit: sys32fchownat,
 		Name:    "fchownat",
 		Probes: []probe{
@@ -2442,7 +2180,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
 	},
 	FutimesatEventID: {
-		ID:      FutimesatEventID,
 		ID32Bit: sys32futimesat,
 		Name:    "futimesat",
 		Probes: []probe{
@@ -2451,7 +2188,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_attr"},
 	},
 	NewfstatatEventID: {
-		ID:      NewfstatatEventID,
 		ID32Bit: sys32fstatat64,
 		Name:    "newfstatat",
 		Probes: []probe{
@@ -2460,7 +2196,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_attr"},
 	},
 	UnlinkatEventID: {
-		ID:      UnlinkatEventID,
 		ID32Bit: sys32unlinkat,
 		Name:    "unlinkat",
 		Probes: []probe{
@@ -2469,7 +2204,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_link_ops"},
 	},
 	RenameatEventID: {
-		ID:      RenameatEventID,
 		ID32Bit: sys32renameat,
 		Name:    "renameat",
 		Probes: []probe{
@@ -2478,7 +2212,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_ops"},
 	},
 	LinkatEventID: {
-		ID:      LinkatEventID,
 		ID32Bit: sys32linkat,
 		Name:    "linkat",
 		Probes: []probe{
@@ -2487,7 +2220,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_link_ops"},
 	},
 	SymlinkatEventID: {
-		ID:      SymlinkatEventID,
 		ID32Bit: sys32symlinkat,
 		Name:    "symlinkat",
 		Probes: []probe{
@@ -2496,7 +2228,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_link_ops"},
 	},
 	ReadlinkatEventID: {
-		ID:      ReadlinkatEventID,
 		ID32Bit: sys32readlinkat,
 		Name:    "readlinkat",
 		Probes: []probe{
@@ -2505,7 +2236,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_link_ops"},
 	},
 	FchmodatEventID: {
-		ID:      FchmodatEventID,
 		ID32Bit: sys32fchmodat,
 		Name:    "fchmodat",
 		Probes: []probe{
@@ -2514,7 +2244,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
 	},
 	FaccessatEventID: {
-		ID:      FaccessatEventID,
 		ID32Bit: sys32faccessat,
 		Name:    "faccessat",
 		Probes: []probe{
@@ -2523,7 +2252,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
 	},
 	Pselect6EventID: {
-		ID:      Pselect6EventID,
 		ID32Bit: sys32pselect6_time64,
 		Name:    "pselect6",
 		Probes: []probe{
@@ -2532,7 +2260,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_mux_io"},
 	},
 	PpollEventID: {
-		ID:      PpollEventID,
 		ID32Bit: sys32ppoll_time64,
 		Name:    "ppoll",
 		Probes: []probe{
@@ -2541,7 +2268,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_mux_io"},
 	},
 	UnshareEventID: {
-		ID:      UnshareEventID,
 		ID32Bit: sys32unshare,
 		Name:    "unshare",
 		Probes: []probe{
@@ -2550,7 +2276,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc"},
 	},
 	SetRobustListEventID: {
-		ID:      SetRobustListEventID,
 		ID32Bit: sys32set_robust_list,
 		Name:    "set_robust_list",
 		Probes: []probe{
@@ -2559,7 +2284,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_futex"},
 	},
 	GetRobustListEventID: {
-		ID:      GetRobustListEventID,
 		ID32Bit: sys32get_robust_list,
 		Name:    "get_robust_list",
 		Probes: []probe{
@@ -2568,7 +2292,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_futex"},
 	},
 	SpliceEventID: {
-		ID:      SpliceEventID,
 		ID32Bit: sys32splice,
 		Name:    "splice",
 		Probes: []probe{
@@ -2577,7 +2300,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_pipe"},
 	},
 	TeeEventID: {
-		ID:      TeeEventID,
 		ID32Bit: sys32tee,
 		Name:    "tee",
 		Probes: []probe{
@@ -2586,7 +2308,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_pipe"},
 	},
 	SyncFileRangeEventID: {
-		ID:      SyncFileRangeEventID,
 		ID32Bit: sys32sync_file_range,
 		Name:    "sync_file_range",
 		Probes: []probe{
@@ -2595,7 +2316,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_sync"},
 	},
 	VmspliceEventID: {
-		ID:      VmspliceEventID,
 		ID32Bit: sys32vmsplice,
 		Name:    "vmsplice",
 		Probes: []probe{
@@ -2604,7 +2324,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_pipe"},
 	},
 	MovePagesEventID: {
-		ID:      MovePagesEventID,
 		ID32Bit: sys32move_pages,
 		Name:    "move_pages",
 		Probes: []probe{
@@ -2613,7 +2332,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system", "system_numa"},
 	},
 	UtimensatEventID: {
-		ID:      UtimensatEventID,
 		ID32Bit: sys32utimensat_time64,
 		Name:    "utimensat",
 		Probes: []probe{
@@ -2622,7 +2340,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_attr"},
 	},
 	EpollPwaitEventID: {
-		ID:      EpollPwaitEventID,
 		ID32Bit: sys32epoll_pwait,
 		Name:    "epoll_pwait",
 		Probes: []probe{
@@ -2631,7 +2348,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_mux_io"},
 	},
 	SignalfdEventID: {
-		ID:      SignalfdEventID,
 		ID32Bit: sys32signalfd,
 		Name:    "signalfd",
 		Probes: []probe{
@@ -2640,7 +2356,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "signals"},
 	},
 	TimerfdCreateEventID: {
-		ID:      TimerfdCreateEventID,
 		ID32Bit: sys32timerfd_create,
 		Name:    "timerfd_create",
 		Probes: []probe{
@@ -2649,7 +2364,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "time", "time_timer"},
 	},
 	EventfdEventID: {
-		ID:      EventfdEventID,
 		ID32Bit: sys32eventfd,
 		Name:    "eventfd",
 		Probes: []probe{
@@ -2658,7 +2372,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "signals"},
 	},
 	FallocateEventID: {
-		ID:      FallocateEventID,
 		ID32Bit: sys32fallocate,
 		Name:    "fallocate",
 		Probes: []probe{
@@ -2667,7 +2380,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_ops"},
 	},
 	TimerfdSettimeEventID: {
-		ID:      TimerfdSettimeEventID,
 		ID32Bit: sys32timerfd_settime64,
 		Name:    "timerfd_settime",
 		Probes: []probe{
@@ -2676,7 +2388,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "time", "time_timer"},
 	},
 	TimerfdGettimeEventID: {
-		ID:      TimerfdGettimeEventID,
 		ID32Bit: sys32timerfd_gettime64,
 		Name:    "timerfd_gettime",
 		Probes: []probe{
@@ -2685,7 +2396,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "time", "time_timer"},
 	},
 	Accept4EventID: {
-		ID:      Accept4EventID,
 		ID32Bit: sys32accept4,
 		Name:    "accept4",
 		Probes: []probe{
@@ -2694,7 +2404,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "net", "net_sock"},
 	},
 	Signalfd4EventID: {
-		ID:      Signalfd4EventID,
 		ID32Bit: sys32signalfd4,
 		Name:    "signalfd4",
 		Probes: []probe{
@@ -2703,7 +2412,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "signals"},
 	},
 	Eventfd2EventID: {
-		ID:      Eventfd2EventID,
 		ID32Bit: sys32eventfd2,
 		Name:    "eventfd2",
 		Probes: []probe{
@@ -2712,7 +2420,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "signals"},
 	},
 	EpollCreate1EventID: {
-		ID:      EpollCreate1EventID,
 		ID32Bit: sys32epoll_create1,
 		Name:    "epoll_create1",
 		Probes: []probe{
@@ -2721,7 +2428,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_mux_io"},
 	},
 	Dup3EventID: {
-		ID:      Dup3EventID,
 		ID32Bit: sys32dup3,
 		Name:    "dup3",
 		Probes: []probe{
@@ -2730,7 +2436,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_fd_ops"},
 	},
 	Pipe2EventID: {
-		ID:      Pipe2EventID,
 		ID32Bit: sys32pipe2,
 		Name:    "pipe2",
 		Probes: []probe{
@@ -2739,7 +2444,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "ipc", "ipc_pipe"},
 	},
 	InotifyInit1EventID: {
-		ID:      InotifyInit1EventID,
 		ID32Bit: sys32inotify_init1,
 		Name:    "inotify_init1",
 		Probes: []probe{
@@ -2748,7 +2452,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_monitor"},
 	},
 	PreadvEventID: {
-		ID:      PreadvEventID,
 		ID32Bit: sys32preadv,
 		Name:    "preadv",
 		Probes: []probe{
@@ -2757,7 +2460,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_read_write"},
 	},
 	PwritevEventID: {
-		ID:      PwritevEventID,
 		ID32Bit: sys32pwritev,
 		Name:    "pwritev",
 		Probes: []probe{
@@ -2766,7 +2468,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_read_write"},
 	},
 	RtTgsigqueueinfoEventID: {
-		ID:      RtTgsigqueueinfoEventID,
 		ID32Bit: sys32rt_tgsigqueueinfo,
 		Name:    "rt_tgsigqueueinfo",
 		Probes: []probe{
@@ -2775,7 +2476,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "signals"},
 	},
 	PerfEventOpenEventID: {
-		ID:      PerfEventOpenEventID,
 		ID32Bit: sys32perf_event_open,
 		Name:    "perf_event_open",
 		Probes: []probe{
@@ -2784,7 +2484,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system"},
 	},
 	RecvmmsgEventID: {
-		ID:      RecvmmsgEventID,
 		ID32Bit: sys32recvmmsg_time64,
 		Name:    "recvmmsg",
 		Probes: []probe{
@@ -2793,7 +2492,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "net", "net_snd_rcv"},
 	},
 	FanotifyInitEventID: {
-		ID:      FanotifyInitEventID,
 		ID32Bit: sys32fanotify_init,
 		Name:    "fanotify_init",
 		Probes: []probe{
@@ -2802,7 +2500,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_monitor"},
 	},
 	FanotifyMarkEventID: {
-		ID:      FanotifyMarkEventID,
 		ID32Bit: sys32fanotify_mark,
 		Name:    "fanotify_mark",
 		Probes: []probe{
@@ -2811,7 +2508,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_monitor"},
 	},
 	Prlimit64EventID: {
-		ID:      Prlimit64EventID,
 		ID32Bit: sys32prlimit64,
 		Name:    "prlimit64",
 		Probes: []probe{
@@ -2820,7 +2516,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc"},
 	},
 	NameToHandleAtEventID: {
-		ID:      NameToHandleAtEventID,
 		ID32Bit: sys32name_to_handle_at,
 		Name:    "name_to_handle_at",
 		Probes: []probe{
@@ -2829,7 +2524,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_ops"},
 	},
 	OpenByHandleAtEventID: {
-		ID:      OpenByHandleAtEventID,
 		ID32Bit: sys32open_by_handle_at,
 		Name:    "open_by_handle_at",
 		Probes: []probe{
@@ -2838,7 +2532,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_ops"},
 	},
 	ClockAdjtimeEventID: {
-		ID:      ClockAdjtimeEventID,
 		ID32Bit: sys32clock_adjtime,
 		Name:    "clock_adjtime",
 		Probes: []probe{
@@ -2847,7 +2540,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "time", "time_clock"},
 	},
 	SyncfsEventID: {
-		ID:      SyncfsEventID,
 		ID32Bit: sys32syncfs,
 		Name:    "syncfs",
 		Probes: []probe{
@@ -2856,7 +2548,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_sync"},
 	},
 	SendmmsgEventID: {
-		ID:      SendmmsgEventID,
 		ID32Bit: sys32sendmmsg,
 		Name:    "sendmmsg",
 		Probes: []probe{
@@ -2865,7 +2556,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "net", "net_snd_rcv"},
 	},
 	SetnsEventID: {
-		ID:      SetnsEventID,
 		ID32Bit: sys32setns,
 		Name:    "setns",
 		Probes: []probe{
@@ -2874,7 +2564,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc"},
 	},
 	GetcpuEventID: {
-		ID:      GetcpuEventID,
 		ID32Bit: sys32getcpu,
 		Name:    "getcpu",
 		Probes: []probe{
@@ -2883,7 +2572,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system", "system_numa"},
 	},
 	ProcessVmReadvEventID: {
-		ID:      ProcessVmReadvEventID,
 		ID32Bit: sys32process_vm_readv,
 		Name:    "process_vm_readv",
 		Probes: []probe{
@@ -2892,7 +2580,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "proc"},
 	},
 	ProcessVmWritevEventID: {
-		ID:      ProcessVmWritevEventID,
 		ID32Bit: sys32process_vm_writev,
 		Name:    "process_vm_writev",
 		Probes: []probe{
@@ -2901,7 +2588,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "proc"},
 	},
 	KcmpEventID: {
-		ID:      KcmpEventID,
 		ID32Bit: sys32kcmp,
 		Name:    "kcmp",
 		Probes: []probe{
@@ -2910,7 +2596,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc"},
 	},
 	FinitModuleEventID: {
-		ID:      FinitModuleEventID,
 		ID32Bit: sys32finit_module,
 		Name:    "finit_module",
 		Probes: []probe{
@@ -2919,7 +2604,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "system", "system_module"},
 	},
 	SchedSetattrEventID: {
-		ID:      SchedSetattrEventID,
 		ID32Bit: sys32sched_setattr,
 		Name:    "sched_setattr",
 		Probes: []probe{
@@ -2928,7 +2612,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_sched"},
 	},
 	SchedGetattrEventID: {
-		ID:      SchedGetattrEventID,
 		ID32Bit: sys32sched_getattr,
 		Name:    "sched_getattr",
 		Probes: []probe{
@@ -2937,7 +2620,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_sched"},
 	},
 	Renameat2EventID: {
-		ID:      Renameat2EventID,
 		ID32Bit: sys32renameat2,
 		Name:    "renameat2",
 		Probes: []probe{
@@ -2946,7 +2628,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_ops"},
 	},
 	SeccompEventID: {
-		ID:      SeccompEventID,
 		ID32Bit: sys32seccomp,
 		Name:    "seccomp",
 		Probes: []probe{
@@ -2955,7 +2636,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc"},
 	},
 	GetrandomEventID: {
-		ID:      GetrandomEventID,
 		ID32Bit: sys32getrandom,
 		Name:    "getrandom",
 		Probes: []probe{
@@ -2964,7 +2644,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs"},
 	},
 	MemfdCreateEventID: {
-		ID:      MemfdCreateEventID,
 		ID32Bit: sys32memfd_create,
 		Name:    "memfd_create",
 		Probes: []probe{
@@ -2973,7 +2652,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_file_ops"},
 	},
 	KexecFileLoadEventID: {
-		ID:      KexecFileLoadEventID,
 		ID32Bit: sys32undefined,
 		Name:    "kexec_file_load",
 		Probes: []probe{
@@ -2982,7 +2660,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system"},
 	},
 	BpfEventID: {
-		ID:      BpfEventID,
 		ID32Bit: sys32bpf,
 		Name:    "bpf",
 		Probes: []probe{
@@ -2991,7 +2668,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "system"},
 	},
 	ExecveatEventID: {
-		ID:      ExecveatEventID,
 		ID32Bit: sys32execveat,
 		Name:    "execveat",
 		Probes: []probe{
@@ -3000,7 +2676,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "proc", "proc_life"},
 	},
 	UserfaultfdEventID: {
-		ID:      UserfaultfdEventID,
 		ID32Bit: sys32userfaultfd,
 		Name:    "userfaultfd",
 		Probes: []probe{
@@ -3009,7 +2684,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "system"},
 	},
 	MembarrierEventID: {
-		ID:      MembarrierEventID,
 		ID32Bit: sys32membarrier,
 		Name:    "membarrier",
 		Probes: []probe{
@@ -3018,7 +2692,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_mem"},
 	},
 	Mlock2EventID: {
-		ID:      Mlock2EventID,
 		ID32Bit: sys32mlock2,
 		Name:    "mlock2",
 		Probes: []probe{
@@ -3027,7 +2700,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_mem"},
 	},
 	CopyFileRangeEventID: {
-		ID:      CopyFileRangeEventID,
 		ID32Bit: sys32copy_file_range,
 		Name:    "copy_file_range",
 		Probes: []probe{
@@ -3036,7 +2708,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_read_write"},
 	},
 	Preadv2EventID: {
-		ID:      Preadv2EventID,
 		ID32Bit: sys32preadv2,
 		Name:    "preadv2",
 		Probes: []probe{
@@ -3045,7 +2716,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_read_write"},
 	},
 	Pwritev2EventID: {
-		ID:      Pwritev2EventID,
 		ID32Bit: sys32pwritev2,
 		Name:    "pwritev2",
 		Probes: []probe{
@@ -3054,7 +2724,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_read_write"},
 	},
 	PkeyMprotectEventID: {
-		ID:      PkeyMprotectEventID,
 		ID32Bit: sys32pkey_mprotect,
 		Name:    "pkey_mprotect",
 		Probes: []probe{
@@ -3063,7 +2732,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "proc", "proc_mem"},
 	},
 	PkeyAllocEventID: {
-		ID:      PkeyAllocEventID,
 		ID32Bit: sys32pkey_alloc,
 		Name:    "pkey_alloc",
 		Probes: []probe{
@@ -3072,7 +2740,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_mem"},
 	},
 	PkeyFreeEventID: {
-		ID:      PkeyFreeEventID,
 		ID32Bit: sys32pkey_free,
 		Name:    "pkey_free",
 		Probes: []probe{
@@ -3081,7 +2748,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "proc_mem"},
 	},
 	StatxEventID: {
-		ID:      StatxEventID,
 		ID32Bit: sys32statx,
 		Name:    "statx",
 		Probes: []probe{
@@ -3090,7 +2756,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_file_attr"},
 	},
 	IoPgeteventsEventID: {
-		ID:      IoPgeteventsEventID,
 		ID32Bit: sys32io_pgetevents_time64,
 		Name:    "io_pgetevents",
 		Probes: []probe{
@@ -3099,7 +2764,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_async_io"},
 	},
 	RseqEventID: {
-		ID:      RseqEventID,
 		ID32Bit: sys32rseq,
 		Name:    "rseq",
 		Probes: []probe{
@@ -3108,7 +2772,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls"},
 	},
 	PidfdSendSignalEventID: {
-		ID:      PidfdSendSignalEventID,
 		ID32Bit: sys32pidfd_send_signal,
 		Name:    "pidfd_send_signal",
 		Probes: []probe{
@@ -3117,7 +2780,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "signals"},
 	},
 	IoUringSetupEventID: {
-		ID:      IoUringSetupEventID,
 		ID32Bit: sys32io_uring_setup,
 		Name:    "io_uring_setup",
 		Probes: []probe{
@@ -3126,7 +2788,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls"},
 	},
 	IoUringEnterEventID: {
-		ID:      IoUringEnterEventID,
 		ID32Bit: sys32io_uring_enter,
 		Name:    "io_uring_enter",
 		Probes: []probe{
@@ -3135,7 +2796,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls"},
 	},
 	IoUringRegisterEventID: {
-		ID:      IoUringRegisterEventID,
 		ID32Bit: sys32io_uring_register,
 		Name:    "io_uring_register",
 		Probes: []probe{
@@ -3144,7 +2804,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls"},
 	},
 	OpenTreeEventID: {
-		ID:      OpenTreeEventID,
 		ID32Bit: sys32open_tree,
 		Name:    "open_tree",
 		Probes: []probe{
@@ -3153,7 +2812,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls"},
 	},
 	MoveMountEventID: {
-		ID:      MoveMountEventID,
 		ID32Bit: sys32move_mount,
 		Name:    "move_mount",
 		Probes: []probe{
@@ -3162,7 +2820,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs"},
 	},
 	FsopenEventID: {
-		ID:      FsopenEventID,
 		ID32Bit: sys32fsopen,
 		Name:    "fsopen",
 		Probes: []probe{
@@ -3171,7 +2828,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs"},
 	},
 	FsconfigEventID: {
-		ID:      FsconfigEventID,
 		ID32Bit: sys32fsconfig,
 		Name:    "fsconfig",
 		Probes: []probe{
@@ -3180,7 +2836,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs"},
 	},
 	FsmountEventID: {
-		ID:      FsmountEventID,
 		ID32Bit: sys32fsmount,
 		Name:    "fsmount",
 		Probes: []probe{
@@ -3189,7 +2844,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs"},
 	},
 	FspickEventID: {
-		ID:      FspickEventID,
 		ID32Bit: sys32fspick,
 		Name:    "fspick",
 		Probes: []probe{
@@ -3198,7 +2852,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs"},
 	},
 	PidfdOpenEventID: {
-		ID:      PidfdOpenEventID,
 		ID32Bit: sys32pidfd_open,
 		Name:    "pidfd_open",
 		Probes: []probe{
@@ -3207,7 +2860,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls"},
 	},
 	Clone3EventID: {
-		ID:      Clone3EventID,
 		ID32Bit: sys32clone3,
 		Name:    "clone3",
 		Probes: []probe{
@@ -3216,7 +2868,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "proc", "proc_life"},
 	},
 	CloseRangeEventID: {
-		ID:      CloseRangeEventID,
 		ID32Bit: sys32close_range,
 		Name:    "close_range",
 		Probes: []probe{
@@ -3225,7 +2876,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_file_ops"},
 	},
 	Openat2EventID: {
-		ID:      Openat2EventID,
 		ID32Bit: sys32openat2,
 		Name:    "openat2",
 		Probes: []probe{
@@ -3234,7 +2884,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_file_ops"},
 	},
 	PidfdGetfdEventID: {
-		ID:      PidfdGetfdEventID,
 		ID32Bit: sys32pidfd_getfd,
 		Name:    "pidfd_getfd",
 		Probes: []probe{
@@ -3243,7 +2892,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls"},
 	},
 	Faccessat2EventID: {
-		ID:      Faccessat2EventID,
 		ID32Bit: sys32faccessat2,
 		Name:    "faccessat2",
 		Probes: []probe{
@@ -3252,7 +2900,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
 	},
 	ProcessMadviseEventID: {
-		ID:      ProcessMadviseEventID,
 		ID32Bit: sys32process_madvise,
 		Name:    "process_madvise",
 		Probes: []probe{
@@ -3261,7 +2908,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls"},
 	},
 	EpollPwait2EventID: {
-		ID:      EpollPwait2EventID,
 		ID32Bit: sys32epoll_pwait2,
 		Name:    "epoll_pwait2",
 		Probes: []probe{
@@ -3270,7 +2916,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs", "fs_mux_io"},
 	},
 	MountSetattEventID: {
-		ID:      MountSetattEventID,
 		ID32Bit: sys32mount_setattr,
 		Name:    "mount_setattr",
 		Probes: []probe{
@@ -3279,7 +2924,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs"},
 	},
 	QuotactlFdEventID: {
-		ID:      QuotactlFdEventID,
 		ID32Bit: sys32quotactl_fd,
 		Name:    "quotactl_fd",
 		Probes: []probe{
@@ -3288,7 +2932,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "fs"},
 	},
 	LandlockCreateRulesetEventID: {
-		ID:      LandlockCreateRulesetEventID,
 		ID32Bit: sys32landlock_create_ruleset,
 		Name:    "landlock_create_ruleset",
 		Probes: []probe{
@@ -3297,7 +2940,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "fs"},
 	},
 	LandlockAddRuleEventID: {
-		ID:      LandlockAddRuleEventID,
 		ID32Bit: sys32landlock_add_rule,
 		Name:    "landlock_add_rule",
 		Probes: []probe{
@@ -3306,7 +2948,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "fs"},
 	},
 	LandloclRestrictSetEventID: {
-		ID:      LandloclRestrictSetEventID,
 		ID32Bit: sys32landlock_restrict_self,
 		Name:    "landlock_restrict_self",
 		Probes: []probe{
@@ -3315,7 +2956,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "proc", "fs"},
 	},
 	MemfdSecretEventID: {
-		ID:      MemfdSecretEventID,
 		ID32Bit: sys32memfd_secret,
 		Name:    "memfd_secret",
 		Probes: []probe{
@@ -3324,7 +2964,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls"},
 	},
 	ProcessMreleaseEventID: {
-		ID:      ProcessMreleaseEventID,
 		ID32Bit: sys32process_mrelease,
 		Name:    "process_mrelease",
 		Probes: []probe{
@@ -3333,7 +2972,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls"},
 	},
 	WaitpidEventID: {
-		ID:      WaitpidEventID,
 		ID32Bit: sys32waitpid,
 		Name:    "waitpid",
 		Probes: []probe{
@@ -3342,7 +2980,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	OldfstatEventID: {
-		ID:      OldfstatEventID,
 		ID32Bit: sys32oldfstat,
 		Name:    "oldfstat",
 		Probes: []probe{
@@ -3351,7 +2988,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	BreakEventID: {
-		ID:      BreakEventID,
 		ID32Bit: sys32break,
 		Name:    "break",
 		Probes: []probe{
@@ -3360,7 +2996,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	OldstatEventID: {
-		ID:      OldfstatEventID,
 		ID32Bit: sys32oldstat,
 		Name:    "oldstat",
 		Probes: []probe{
@@ -3369,7 +3004,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	UmountEventID: {
-		ID:      UmountEventID,
 		ID32Bit: sys32umount,
 		Name:    "umount",
 		Probes: []probe{
@@ -3378,7 +3012,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	StimeEventID: {
-		ID:      StimeEventID,
 		ID32Bit: sys32stime,
 		Name:    "stime",
 		Probes: []probe{
@@ -3387,7 +3020,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	SttyEventID: {
-		ID:      SttyEventID,
 		ID32Bit: sys32stty,
 		Name:    "stty",
 		Probes: []probe{
@@ -3396,7 +3028,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	GttyEventID: {
-		ID:      GttyEventID,
 		ID32Bit: sys32gtty,
 		Name:    "gtty",
 		Probes: []probe{
@@ -3405,7 +3036,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	NiceEventID: {
-		ID:      NiceEventID,
 		ID32Bit: sys32nice,
 		Name:    "nice",
 		Probes: []probe{
@@ -3414,7 +3044,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	FtimeEventID: {
-		ID:      FtimeEventID,
 		ID32Bit: sys32ftime,
 		Name:    "ftime",
 		Probes: []probe{
@@ -3423,7 +3052,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	ProfEventID: {
-		ID:      ProfEventID,
 		ID32Bit: sys32prof,
 		Name:    "prof",
 		Probes: []probe{
@@ -3432,7 +3060,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	SignalEventID: {
-		ID:      SignalEventID,
 		ID32Bit: sys32signal,
 		Name:    "signal",
 		Probes: []probe{
@@ -3441,7 +3068,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	LockEventID: {
-		ID:      LockEventID,
 		ID32Bit: sys32lock,
 		Name:    "lock",
 		Probes: []probe{
@@ -3450,7 +3076,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	MpxEventID: {
-		ID:      MpxEventID,
 		ID32Bit: sys32mpx,
 		Name:    "mpx",
 		Probes: []probe{
@@ -3459,7 +3084,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	UlimitEventID: {
-		ID:      UlimitEventID,
 		ID32Bit: sys32ulimit,
 		Name:    "ulimit",
 		Probes: []probe{
@@ -3468,7 +3092,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	OldoldunameEventID: {
-		ID:      OldoldunameEventID,
 		ID32Bit: sys32oldolduname,
 		Name:    "oldolduname",
 		Probes: []probe{
@@ -3477,7 +3100,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	SigactionEventID: {
-		ID:      SigactionEventID,
 		ID32Bit: sys32sigaction,
 		Name:    "sigaction",
 		Probes: []probe{
@@ -3486,7 +3108,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	SgetmaskEventID: {
-		ID:      SgetmaskEventID,
 		ID32Bit: sys32sgetmask,
 		Name:    "sgetmask",
 		Probes: []probe{
@@ -3495,7 +3116,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	SsetmaskEventID: {
-		ID:      SsetmaskEventID,
 		ID32Bit: sys32ssetmask,
 		Name:    "ssetmask",
 		Probes: []probe{
@@ -3504,7 +3124,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	SigsuspendEventID: {
-		ID:      SigsuspendEventID,
 		ID32Bit: sys32sigsuspend,
 		Name:    "sigsuspend",
 		Probes: []probe{
@@ -3513,7 +3132,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	SigpendingEventID: {
-		ID:      SigpendingEventID,
 		ID32Bit: sys32sigpending,
 		Name:    "sigpending",
 		Probes: []probe{
@@ -3522,7 +3140,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	OldlstatEventID: {
-		ID:      OldlstatEventID,
 		ID32Bit: sys32oldlstat,
 		Name:    "oldlstat",
 		Probes: []probe{
@@ -3531,7 +3148,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	ReaddirEventID: {
-		ID:      ReaddirEventID,
 		ID32Bit: sys32readdir,
 		Name:    "readdir",
 		Probes: []probe{
@@ -3540,7 +3156,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	ProfilEventID: {
-		ID:      ProfilEventID,
 		ID32Bit: sys32profil,
 		Name:    "profil",
 		Probes: []probe{
@@ -3549,7 +3164,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	SocketcallEventID: {
-		ID:      SocketcallEventID,
 		ID32Bit: sys32socketcall,
 		Name:    "socketcall",
 		Probes: []probe{
@@ -3558,7 +3172,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	OldunameEventID: {
-		ID:      OldunameEventID,
 		ID32Bit: sys32olduname,
 		Name:    "olduname",
 		Probes: []probe{
@@ -3567,7 +3180,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	IdleEventID: {
-		ID:      IdleEventID,
 		ID32Bit: sys32idle,
 		Name:    "idle",
 		Probes: []probe{
@@ -3576,7 +3188,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Vm86oldEventID: {
-		ID:      Vm86oldEventID,
 		ID32Bit: sys32vm86old,
 		Name:    "vm86old",
 		Probes: []probe{
@@ -3585,7 +3196,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	IpcEventID: {
-		ID:      IpcEventID,
 		ID32Bit: sys32ipc,
 		Name:    "ipc",
 		Probes: []probe{
@@ -3594,7 +3204,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	SigreturnEventID: {
-		ID:      SigreturnEventID,
 		ID32Bit: sys32sigreturn,
 		Name:    "sigreturn",
 		Probes: []probe{
@@ -3603,7 +3212,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	SigprocmaskEventID: {
-		ID:      SigprocmaskEventID,
 		ID32Bit: sys32sigprocmask,
 		Name:    "sigprocmask",
 		Probes: []probe{
@@ -3612,7 +3220,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	BdflushEventID: {
-		ID:      BdflushEventID,
 		ID32Bit: sys32bdflush,
 		Name:    "bdflush",
 		Probes: []probe{
@@ -3621,7 +3228,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Afs_syscallEventID: {
-		ID:      Afs_syscallEventID,
 		ID32Bit: sys32afs_syscall,
 		Name:    "afs_syscall",
 		Probes: []probe{
@@ -3630,7 +3236,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	LlseekEventID: {
-		ID:      LlseekEventID,
 		ID32Bit: sys32_llseek,
 		Name:    "llseek",
 		Probes: []probe{
@@ -3639,7 +3244,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	OldSelectEventID: {
-		ID:      OldSelectEventID,
 		ID32Bit: sys32select,
 		Name:    "old_select",
 		Probes: []probe{
@@ -3648,7 +3252,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Vm86EventID: {
-		ID:      Vm86EventID,
 		ID32Bit: sys32vm86,
 		Name:    "vm86",
 		Probes: []probe{
@@ -3657,7 +3260,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	OldGetrlimitEventID: {
-		ID:      OldGetrlimitEventID,
 		ID32Bit: sys32getrlimit,
 		Name:    "old_getrlimit",
 		Probes: []probe{
@@ -3666,7 +3268,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Mmap2EventID: {
-		ID:      Mmap2EventID,
 		ID32Bit: sys32mmap2,
 		Name:    "mmap2",
 		Probes: []probe{
@@ -3675,7 +3276,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Truncate64EventID: {
-		ID:      Truncate64EventID,
 		ID32Bit: sys32truncate64,
 		Name:    "truncate64",
 		Probes: []probe{
@@ -3684,7 +3284,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Ftruncate64EventID: {
-		ID:      Ftruncate64EventID,
 		ID32Bit: sys32ftruncate64,
 		Name:    "ftruncate64",
 		Probes: []probe{
@@ -3693,7 +3292,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Stat64EventID: {
-		ID:      Stat64EventID,
 		ID32Bit: sys32stat64,
 		Name:    "stat64",
 		Probes: []probe{
@@ -3702,7 +3300,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Lstat64EventID: {
-		ID:      Lstat64EventID,
 		ID32Bit: sys32lstat64,
 		Name:    "lstat64",
 		Probes: []probe{
@@ -3711,7 +3308,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Fstat64EventID: {
-		ID:      Fstat64EventID,
 		ID32Bit: sys32fstat64,
 		Name:    "fstat64",
 		Probes: []probe{
@@ -3720,7 +3316,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Lchown16EventID: {
-		ID:      Lchown16EventID,
 		ID32Bit: sys32lchown,
 		Name:    "lchown16",
 		Probes: []probe{
@@ -3729,7 +3324,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Getuid16EventID: {
-		ID:      Getuid16EventID,
 		ID32Bit: sys32getuid,
 		Name:    "getuid16",
 		Probes: []probe{
@@ -3738,7 +3332,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Getgid16EventID: {
-		ID:      Getgid16EventID,
 		ID32Bit: sys32getgid,
 		Name:    "getgid16",
 		Probes: []probe{
@@ -3747,7 +3340,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Geteuid16EventID: {
-		ID:      Geteuid16EventID,
 		ID32Bit: sys32geteuid,
 		Name:    "geteuid16",
 		Probes: []probe{
@@ -3756,7 +3348,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Getegid16EventID: {
-		ID:      Getegid16EventID,
 		ID32Bit: sys32getegid,
 		Name:    "getegid16",
 		Probes: []probe{
@@ -3765,7 +3356,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Setreuid16EventID: {
-		ID:      Setreuid16EventID,
 		ID32Bit: sys32setreuid,
 		Name:    "setreuid16",
 		Probes: []probe{
@@ -3774,7 +3364,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Setregid16EventID: {
-		ID:      Setregid16EventID,
 		ID32Bit: sys32setregid,
 		Name:    "setregid16",
 		Probes: []probe{
@@ -3783,7 +3372,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Getgroups16EventID: {
-		ID:      Getgroups16EventID,
 		ID32Bit: sys32getgroups,
 		Name:    "getgroups16",
 		Probes: []probe{
@@ -3792,7 +3380,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Setgroups16EventID: {
-		ID:      Setgroups16EventID,
 		ID32Bit: sys32setgroups,
 		Name:    "setgroups16",
 		Probes: []probe{
@@ -3801,7 +3388,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Fchown16EventID: {
-		ID:      Fchown16EventID,
 		ID32Bit: sys32fchown,
 		Name:    "fchown16",
 		Probes: []probe{
@@ -3810,7 +3396,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Setresuid16EventID: {
-		ID:      Setresuid16EventID,
 		ID32Bit: sys32setresuid,
 		Name:    "setresuid16",
 		Probes: []probe{
@@ -3819,7 +3404,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Getresuid16EventID: {
-		ID:      Getresuid16EventID,
 		ID32Bit: sys32getresuid,
 		Name:    "getresuid16",
 		Probes: []probe{
@@ -3828,7 +3412,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Setresgid16EventID: {
-		ID:      Setresgid16EventID,
 		ID32Bit: sys32setresgid,
 		Name:    "setresgid16",
 		Probes: []probe{
@@ -3837,7 +3420,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Getresgid16EventID: {
-		ID:      Getresgid16EventID,
 		ID32Bit: sys32getresgid,
 		Name:    "getresgid16",
 		Probes: []probe{
@@ -3846,7 +3428,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Chown16EventID: {
-		ID:      Chown16EventID,
 		ID32Bit: sys32chown,
 		Name:    "chown16",
 		Probes: []probe{
@@ -3855,7 +3436,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Setuid16EventID: {
-		ID:      Setuid16EventID,
 		ID32Bit: sys32setuid,
 		Name:    "setuid16",
 		Probes: []probe{
@@ -3864,7 +3444,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Setgid16EventID: {
-		ID:      Setgid16EventID,
 		ID32Bit: sys32setgid,
 		Name:    "setgid16",
 		Probes: []probe{
@@ -3873,7 +3452,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Setfsuid16EventID: {
-		ID:      Setfsuid16EventID,
 		ID32Bit: sys32setfsuid,
 		Name:    "setfsuid16",
 		Probes: []probe{
@@ -3882,7 +3460,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Setfsgid16EventID: {
-		ID:      Setfsgid16EventID,
 		ID32Bit: sys32setfsgid,
 		Name:    "setfsgid16",
 		Probes: []probe{
@@ -3891,7 +3468,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Fcntl64EventID: {
-		ID:      Fcntl64EventID,
 		ID32Bit: sys32fcntl64,
 		Name:    "fcntl64",
 		Probes: []probe{
@@ -3900,7 +3476,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Sendfile32EventID: {
-		ID:      Sendfile32EventID,
 		ID32Bit: sys32sendfile,
 		Name:    "sendfile32",
 		Probes: []probe{
@@ -3909,7 +3484,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Statfs64EventID: {
-		ID:      Statfs64EventID,
 		ID32Bit: sys32statfs64,
 		Name:    "statfs64",
 		Probes: []probe{
@@ -3918,7 +3492,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Fstatfs64EventID: {
-		ID:      Fstatfs64EventID,
 		ID32Bit: sys32fstatfs64,
 		Name:    "fstatfs64",
 		Probes: []probe{
@@ -3927,7 +3500,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Fadvise64_64EventID: {
-		ID:      Fadvise64_64EventID,
 		ID32Bit: sys32fadvise64_64,
 		Name:    "fadvise64_64",
 		Probes: []probe{
@@ -3936,7 +3508,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	ClockGettime32EventID: {
-		ID:      ClockGettime32EventID,
 		ID32Bit: sys32clock_gettime,
 		Name:    "clock_gettime32",
 		Probes: []probe{
@@ -3945,7 +3516,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	ClockSettime32EventID: {
-		ID:      ClockSettime32EventID,
 		ID32Bit: sys32clock_settime,
 		Name:    "clock_settime32",
 		Probes: []probe{
@@ -3954,7 +3524,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	ClockAdjtime64EventID: {
-		ID:      ClockAdjtime64EventID,
 		ID32Bit: sys32clock_adjtime64,
 		Name:    "clock_adjtime64",
 		Probes: []probe{
@@ -3963,7 +3532,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	ClockGetresTime32EventID: {
-		ID:      ClockGetresTime32EventID,
 		ID32Bit: sys32clock_getres,
 		Name:    "clock_getres_time32",
 		Probes: []probe{
@@ -3972,7 +3540,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	ClockNanosleepTime32EventID: {
-		ID:      ClockNanosleepTime32EventID,
 		ID32Bit: sys32clock_nanosleep,
 		Name:    "clock_nanosleep_time32",
 		Probes: []probe{
@@ -3981,7 +3548,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	TimerGettime32EventID: {
-		ID:      TimerGettime32EventID,
 		ID32Bit: sys32timer_gettime,
 		Name:    "timer_gettime32",
 		Probes: []probe{
@@ -3990,7 +3556,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	TimerSettime32EventID: {
-		ID:      TimerSettime32EventID,
 		ID32Bit: sys32timer_settime,
 		Name:    "timer_settime32",
 		Probes: []probe{
@@ -3999,7 +3564,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	TimerfdGettime32EventID: {
-		ID:      TimerfdGettime32EventID,
 		ID32Bit: sys32timerfd_gettime,
 		Name:    "timerfd_gettime32",
 		Probes: []probe{
@@ -4008,7 +3572,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	TimerfdSettime32EventID: {
-		ID:      TimerfdSettime32EventID,
 		ID32Bit: sys32timerfd_settime,
 		Name:    "timerfd_settime32",
 		Probes: []probe{
@@ -4017,7 +3580,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	UtimensatTime32EventID: {
-		ID:      UtimensatTime32EventID,
 		ID32Bit: sys32utimensat,
 		Name:    "utimensat_time32",
 		Probes: []probe{
@@ -4026,7 +3588,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	Pselect6Time32EventID: {
-		ID:      Pselect6Time32EventID,
 		ID32Bit: sys32pselect6,
 		Name:    "pselect6_time32",
 		Probes: []probe{
@@ -4035,7 +3596,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	PpollTime32EventID: {
-		ID:      PpollTime32EventID,
 		ID32Bit: sys32ppoll,
 		Name:    "ppoll_time32",
 		Probes: []probe{
@@ -4044,7 +3604,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	IoPgeteventsTime32EventID: {
-		ID:      IoPgeteventsTime32EventID,
 		ID32Bit: sys32io_pgetevents,
 		Name:    "io_pgetevents_time32",
 		Probes: []probe{
@@ -4053,7 +3612,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	RecvmmsgTime32EventID: {
-		ID:      RecvmmsgTime32EventID,
 		ID32Bit: sys32recvmmsg,
 		Name:    "recvmmsg_time32",
 		Probes: []probe{
@@ -4062,7 +3620,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	MqTimedsendTime32EventID: {
-		ID:      MqTimedsendTime32EventID,
 		ID32Bit: sys32mq_timedsend,
 		Name:    "mq_timedsend_time32",
 		Probes: []probe{
@@ -4071,7 +3628,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	MqTimedreceiveTime32EventID: {
-		ID:      MqTimedreceiveTime32EventID,
 		ID32Bit: sys32mq_timedreceive,
 		Name:    "mq_timedreceive_time32",
 		Probes: []probe{
@@ -4080,7 +3636,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	RtSigtimedwaitTime32EventID: {
-		ID:      RtSigtimedwaitTime32EventID,
 		ID32Bit: sys32rt_sigtimedwait,
 		Name:    "rt_sigtimedwait_time32",
 		Probes: []probe{
@@ -4089,7 +3644,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	FutexTime32EventID: {
-		ID:      FutexTime32EventID,
 		ID32Bit: sys32futex,
 		Name:    "futex_time32",
 		Probes: []probe{
@@ -4098,7 +3652,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	SchedRrGetInterval32EventID: {
-		ID:      SchedRrGetInterval32EventID,
 		ID32Bit: sys32sched_rr_get_interval,
 		Name:    "sched_rr_get_interval_time32",
 		Probes: []probe{
@@ -4107,7 +3660,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"syscalls", "32bit_unique"},
 	},
 	SysEnterEventID: {
-		ID:      SysEnterEventID,
 		ID32Bit: sys32undefined,
 		Name:    "sys_enter",
 		Probes: []probe{
@@ -4117,7 +3669,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets:           []string{},
 	},
 	SysExitEventID: {
-		ID:      SysExitEventID,
 		ID32Bit: sys32undefined,
 		Name:    "sys_exit",
 		Probes: []probe{
@@ -4127,7 +3678,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets:           []string{},
 	},
 	SchedProcessForkEventID: {
-		ID:      SchedProcessForkEventID,
 		ID32Bit: sys32undefined,
 		Name:    "sched_process_fork",
 		Probes: []probe{
@@ -4137,7 +3687,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets:           []string{},
 	},
 	SchedProcessExecEventID: {
-		ID:      SchedProcessExecEventID,
 		ID32Bit: sys32undefined,
 		Name:    "sched_process_exec",
 		Probes: []probe{
@@ -4147,7 +3696,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets:           []string{"default", "proc"},
 	},
 	SchedProcessExitEventID: {
-		ID:      SchedProcessExitEventID,
 		ID32Bit: sys32undefined,
 		Name:    "sched_process_exit",
 		Probes: []probe{
@@ -4157,7 +3705,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets:           []string{"default", "proc", "proc_life"},
 	},
 	SchedSwitchEventID: {
-		ID:      SchedSwitchEventID,
 		ID32Bit: sys32undefined,
 		Name:    "sched_switch",
 		Probes: []probe{
@@ -4166,7 +3713,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{},
 	},
 	DoExitEventID: {
-		ID:      DoExitEventID,
 		ID32Bit: sys32undefined,
 		Name:    "do_exit",
 		Probes: []probe{
@@ -4175,7 +3721,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"proc", "proc_life"},
 	},
 	CapCapableEventID: {
-		ID:      CapCapableEventID,
 		ID32Bit: sys32undefined,
 		Name:    "cap_capable",
 		Probes: []probe{
@@ -4184,7 +3729,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default"},
 	},
 	VfsWriteEventID: {
-		ID:      VfsWriteEventID,
 		ID32Bit: sys32undefined,
 		Name:    "vfs_write",
 		Probes: []probe{
@@ -4194,7 +3738,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{},
 	},
 	VfsWritevEventID: {
-		ID:      VfsWritevEventID,
 		ID32Bit: sys32undefined,
 		Name:    "vfs_writev",
 		Probes: []probe{
@@ -4204,7 +3747,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{},
 	},
 	MemProtAlertEventID: {
-		ID:      MemProtAlertEventID,
 		ID32Bit: sys32undefined,
 		Name:    "mem_prot_alert",
 		Probes: []probe{
@@ -4214,7 +3756,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{},
 	},
 	CommitCredsEventID: {
-		ID:      CommitCredsEventID,
 		ID32Bit: sys32undefined,
 		Name:    "commit_creds",
 		Probes: []probe{
@@ -4223,7 +3764,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{},
 	},
 	SwitchTaskNSEventID: {
-		ID:      SwitchTaskNSEventID,
 		ID32Bit: sys32undefined,
 		Name:    "switch_task_ns",
 		Probes: []probe{
@@ -4232,13 +3772,11 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{},
 	},
 	MagicWriteEventID: {
-		ID:      MagicWriteEventID,
 		ID32Bit: sys32undefined,
 		Name:    "magic_write",
 		Probes:  []probe{}, Sets: []string{},
 	},
 	CgroupAttachTaskEventID: {
-		ID:      CgroupAttachTaskEventID,
 		ID32Bit: sys32undefined,
 		Name:    "cgroup_attach_task",
 		Probes: []probe{
@@ -4247,7 +3785,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{},
 	},
 	CgroupMkdirEventID: {
-		ID:      CgroupMkdirEventID,
 		ID32Bit: sys32undefined,
 		Name:    "cgroup_mkdir",
 		Probes: []probe{
@@ -4257,7 +3794,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets:           []string{},
 	},
 	CgroupRmdirEventID: {
-		ID:      CgroupRmdirEventID,
 		ID32Bit: sys32undefined,
 		Name:    "cgroup_rmdir",
 		Probes: []probe{
@@ -4267,7 +3803,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets:           []string{},
 	},
 	SecurityBprmCheckEventID: {
-		ID:      SecurityBprmCheckEventID,
 		ID32Bit: sys32undefined,
 		Name:    "security_bprm_check",
 		Probes: []probe{
@@ -4276,7 +3811,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "lsm_hooks", "proc", "proc_life"},
 	},
 	SecurityFileOpenEventID: {
-		ID:      SecurityFileOpenEventID,
 		ID32Bit: sys32undefined,
 		Name:    "security_file_open",
 		Probes: []probe{
@@ -4285,7 +3819,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "lsm_hooks", "fs", "fs_file_ops"},
 	},
 	SecurityInodeUnlinkEventID: {
-		ID:      SecurityInodeUnlinkEventID,
 		ID32Bit: sys32undefined,
 		Name:    "security_inode_unlink",
 		Probes: []probe{
@@ -4294,7 +3827,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "lsm_hooks", "fs", "fs_file_ops"},
 	},
 	SecuritySocketCreateEventID: {
-		ID:      SecuritySocketCreateEventID,
 		ID32Bit: sys32undefined,
 		Name:    "security_socket_create",
 		Probes: []probe{
@@ -4303,7 +3835,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "lsm_hooks", "net", "net_sock"},
 	},
 	SecuritySocketListenEventID: {
-		ID:      SecuritySocketListenEventID,
 		ID32Bit: sys32undefined,
 		Name:    "security_socket_listen",
 		Probes: []probe{
@@ -4312,7 +3843,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "lsm_hooks", "net", "net_sock"},
 	},
 	SecuritySocketConnectEventID: {
-		ID:      SecuritySocketConnectEventID,
 		ID32Bit: sys32undefined,
 		Name:    "security_socket_connect",
 		Probes: []probe{
@@ -4321,7 +3851,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "lsm_hooks", "net", "net_sock"},
 	},
 	SecuritySocketAcceptEventID: {
-		ID:      SecuritySocketAcceptEventID,
 		ID32Bit: sys32undefined,
 		Name:    "security_socket_accept",
 		Probes: []probe{
@@ -4330,7 +3859,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "lsm_hooks", "net", "net_sock"},
 	},
 	SecuritySocketBindEventID: {
-		ID:      SecuritySocketBindEventID,
 		ID32Bit: sys32undefined,
 		Name:    "security_socket_bind",
 		Probes: []probe{
@@ -4339,7 +3867,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "lsm_hooks", "net", "net_sock"},
 	},
 	SecuritySbMountEventID: {
-		ID:      SecuritySbMountEventID,
 		ID32Bit: sys32undefined,
 		Name:    "security_sb_mount",
 		Probes: []probe{
@@ -4348,7 +3875,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"default", "lsm_hooks", "fs"},
 	},
 	SecurityBPFEventID: {
-		ID:      SecurityBPFEventID,
 		ID32Bit: sys32undefined,
 		Name:    "security_bpf",
 		Probes: []probe{
@@ -4357,7 +3883,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"lsm_hooks"},
 	},
 	SecurityBPFMapEventID: {
-		ID:      SecurityBPFMapEventID,
 		ID32Bit: sys32undefined,
 		Name:    "security_bpf_map",
 		Probes: []probe{
@@ -4366,7 +3891,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"lsm_hooks"},
 	},
 	SecurityKernelReadFileEventID: {
-		ID:      SecurityKernelReadFileEventID,
 		ID32Bit: sys32undefined,
 		Name:    "security_kernel_read_file",
 		Probes: []probe{
@@ -4375,7 +3899,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"lsm_hooks"},
 	},
 	SecurityPostReadFileEventID: {
-		ID:      SecurityPostReadFileEventID,
 		ID32Bit: sys32undefined,
 		Name:    "security_kernel_post_read_file",
 		Probes: []probe{
@@ -4384,7 +3907,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"lsm_hooks"},
 	},
 	SecurityInodeMknodEventID: {
-		ID:      SecurityInodeMknodEventID,
 		ID32Bit: sys32undefined,
 		Name:    "security_inode_mknod",
 		Probes: []probe{
@@ -4393,21 +3915,18 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{"lsm_hooks"},
 	},
 	InitNamespacesEventID: {
-		ID:      InitNamespacesEventID,
 		ID32Bit: sys32undefined,
 		Name:    "init_namespaces",
 		Probes:  []probe{},
 		Sets:    []string{},
 	},
 	SocketDupEventID: {
-		ID:      SocketDupEventID,
 		ID32Bit: sys32undefined,
 		Name:    "socket_dup",
 		Probes:  []probe{},
 		Sets:    []string{},
 	},
 	HiddenInodesEventID: {
-		ID:      HiddenInodesEventID,
 		ID32Bit: sys32undefined,
 		Name:    "hidden_inodes",
 		Probes: []probe{

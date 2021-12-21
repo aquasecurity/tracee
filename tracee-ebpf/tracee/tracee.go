@@ -481,9 +481,9 @@ func (t *Tracee) populateBPFMaps() error {
 	if err != nil {
 		return err
 	}
-	for _, event := range EventsDefinitions {
+	for id, event := range EventsDefinitions {
 		ID32BitU32 := uint32(event.ID32Bit) // ID32Bit is int32
-		IDU32 := uint32(event.ID)           // ID is int32
+		IDU32 := uint32(id)                 // ID is int32
 		if err := sys32to64BPFMap.Update(unsafe.Pointer(&ID32BitU32), unsafe.Pointer(&IDU32)); err != nil {
 			return err
 		}
@@ -768,7 +768,7 @@ func (t *Tracee) initBPF() error {
 	// For every BPF program, we need to make sure that:
 	// 1. We disable autoload if the program is not required by any event and is not essential
 	// 2. The correct BPF program type is set
-	for _, event := range EventsDefinitions {
+	for id, event := range EventsDefinitions {
 		for _, probe := range event.Probes {
 			prog, _ := t.bpfModule.GetProgram(probe.fn)
 			if prog == nil && probe.attach == sysCall {
@@ -777,7 +777,7 @@ func (t *Tracee) initBPF() error {
 			if prog == nil {
 				continue
 			}
-			if _, ok := t.eventsToTrace[event.ID]; !ok {
+			if _, ok := t.eventsToTrace[id]; !ok {
 				// This event is not being traced - set its respective program(s) "autoload" to false
 				err = prog.SetAutoload(false)
 				if err != nil {
