@@ -350,6 +350,9 @@ const (
 	ProcessMreleaseEventID          int32 = 448
 )
 
+// TODO: There isnt a Unique32BitSyscalls list for arm64
+const Unique32BitSyscallsEndID int32 = Unique32BitSyscallsStartID
+
 // following syscalls are undefined on arm64
 const (
 	OpenEventID int32 = iota + 10000
@@ -409,6 +412,92 @@ const (
 	FutimesatEventID
 	SignalfdEventID
 	EventfdEventID
+	WaitpidEventID
+	OldfstatEventID
+	BreakEventID
+	OldstatEventID
+	StimeEventID
+	SttyEventID
+	GttyEventID
+	NiceEventID
+	FtimeEventID
+	ProfEventID
+	SignalEventID
+	LockEventID
+	MpxEventID
+	UlimitEventID
+	OldoldunameEventID
+	SigactionEventID
+	SgetmaskEventID
+	SsetmaskEventID
+	SigsuspendEventID
+	SigpendingEventID
+	OldlstatEventID
+	ReaddirEventID
+	ProfilEventID
+	SocketcallEventID
+	OldunameEventID
+	IdleEventID
+	Vm86oldEventID
+	IpcEventID
+	SigreturnEventID
+	SigprocmaskEventID
+	BdflushEventID
+	Afs_syscallEventID
+	LlseekEventID
+	OldSelectEventID
+	Vm86EventID
+	OldGetrlimitEventID
+	Mmap2EventID
+	Truncate64EventID
+	Ftruncate64EventID
+	Stat64EventID
+	Lstat64EventID
+	Fstat64EventID
+	Lchown16EventID
+	Getuid16EventID
+	Getgid16EventID
+	Geteuid16EventID
+	Getegid16EventID
+	Setreuid16EventID
+	Setregid16EventID
+	Getgroups16EventID
+	Setgroups16EventID
+	Fchown16EventID
+	Setresuid16EventID
+	Getresuid16EventID
+	Setresgid16EventID
+	Getresgid16EventID
+	Chown16EventID
+	Setuid16EventID
+	Setgid16EventID
+	Setfsuid16EventID
+	Setfsgid16EventID
+	Fcntl64EventID
+	Sendfile32EventID
+	Statfs64EventID
+	Fstatfs64EventID
+	Fadvise64_64EventID
+	ClockGettime32EventID
+	ClockSettime32EventID
+	ClockGetresTime32EventID
+	ClockNanosleepTime32EventID
+	TimerGettime32EventID
+	TimerSettime32EventID
+	TimerfdGettime32EventID
+	TimerfdSettime32EventID
+	UtimensatTime32EventID
+	Pselect6Time32EventID
+	PpollTime32EventID
+	IoPgeteventsTime32EventID
+	RecvmmsgTime32EventID
+	MqTimedsendTime32EventID
+	MqTimedreceiveTime32EventID
+	RtSigtimedwaitTime32EventID
+	FutexTime32EventID
+	SchedRrGetInterval32EventID
+	sys32vm86old
+	sys32fadvise64_64
 )
 
 // ARM 32bit syscall numbers
