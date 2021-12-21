@@ -22,8 +22,20 @@ type processPcapId struct {
 	contID        string
 }
 
-func (t *Tracee) getPcapsDirPath() string {
-	return path.Join(t.config.Capture.OutputPath, "pcaps")
+func (t *Tracee) getPcapsDirPath(pcapContext processPcapId) string {
+	var dirName string
+	if t.config.Output.PcapPerProcess {
+		dirName = pcapContext.contID
+	} else if t.config.Output.PcapPerContainer {
+		dirName = pcapContext.contID
+	} else {
+		dirName = "host"
+	}
+
+	pcapsDirPath := path.Join(t.config.Capture.OutputPath, dirName)
+	_ = os.MkdirAll(pcapsDirPath, os.ModePerm)
+
+	return pcapsDirPath
 }
 
 func (t *Tracee) getPcapFilePathWithTime(pcapContext processPcapId, timeStampObj time.Time) string {
@@ -31,11 +43,11 @@ func (t *Tracee) getPcapFilePathWithTime(pcapContext processPcapId, timeStampObj
 	if t.config.Output.PcapPerProcess {
 		pcapFileName = fmt.Sprintf("%s_%d_%d.pcap", pcapContext.comm, pcapContext.hostPid, pcapContext.procStartTime)
 	} else if t.config.Output.PcapPerContainer {
-		pcapFileName = fmt.Sprintf("%s.pcap", pcapContext.contID)
+		pcapFileName = "dump.pcap"
 	} else {
 		pcapFileName = "dump.pcap"
 	}
-	return path.Join(t.getPcapsDirPath(), pcapFileName)
+	return path.Join(t.getPcapsDirPath(pcapContext), pcapFileName)
 }
 
 func (t *Tracee) getPcapFilePath(pcapContext processPcapId) string {
@@ -43,15 +55,11 @@ func (t *Tracee) getPcapFilePath(pcapContext processPcapId) string {
 	if t.config.Output.PcapPerProcess {
 		pcapFileName = fmt.Sprintf("%s_%d_%d.pcap", pcapContext.comm, pcapContext.hostPid, pcapContext.procStartTime)
 	} else if t.config.Output.PcapPerContainer {
-		if pcapContext.contID == "" {
-			pcapFileName = "host.pcap"
-		} else {
-			pcapFileName = fmt.Sprintf("%s.pcap", pcapContext.contID)
-		}
+		pcapFileName = "dump.pcap"
 	} else {
 		pcapFileName = "dump.pcap"
 	}
-	return path.Join(t.getPcapsDirPath(), pcapFileName)
+	return path.Join(t.getPcapsDirPath(pcapContext), pcapFileName)
 }
 
 func (t *Tracee) renamePcapFileAtExit(pcapContext processPcapId, timeStamp time.Time) error {
@@ -63,11 +71,11 @@ func (t *Tracee) renamePcapFileAtExit(pcapContext processPcapId, timeStamp time.
 
 func (t *Tracee) createPcapFile(pcapContext processPcapId) error {
 
-	pcapsDirPath := t.getPcapsDirPath()
-	err := os.MkdirAll(pcapsDirPath, os.ModePerm)
-	if err != nil {
-		return fmt.Errorf("error creating pcaps dir: %v", err)
-	}
+	//pcapsDirPath := t.getPcapsDirPath(pcapContext)
+	//err := os.MkdirAll(pcapsDirPath, os.ModePerm)
+	//if err != nil {
+	//	return fmt.Errorf("error creating pcaps dir: %v", err)
+	//}
 
 	pcapFilePath := t.getPcapFilePath(pcapContext)
 	pcapFile, err := os.OpenFile(pcapFilePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
@@ -125,9 +133,17 @@ func (t *Tracee) netExit(pcapContext processPcapId, timeStamp time.Time) {
 func (t *Tracee) getPacketContext(hostTid uint32, procStartTime uint64, comm string, containerId string) processPcapId {
 	var packetContext processPcapId
 	if t.config.Output.PcapPerProcess {
-		packetContext = processPcapId{hostPid: hostTid, comm: comm, procStartTime: procStartTime}
+		if containerId == "" {
+			packetContext = processPcapId{hostPid: hostTid, comm: comm, procStartTime: procStartTime, contID: "host"}
+		} else {
+			packetContext = processPcapId{hostPid: hostTid, comm: comm, procStartTime: procStartTime, contID: containerId}
+		}
 	} else if t.config.Output.PcapPerContainer {
-		packetContext = processPcapId{contID: containerId}
+		if containerId == "" {
+			packetContext = processPcapId{contID: "host"}
+		} else {
+			packetContext = processPcapId{contID: containerId}
+		}
 	} else {
 		packetContext = processPcapId{comm: "dump.pcap"}
 	}

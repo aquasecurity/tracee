@@ -1,6 +1,7 @@
 package tracee
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -147,7 +148,11 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 				sourceFileCtime := sourceFileStat.Sys().(*syscall.Stat_t).Ctim.Nano()
 				capturedFileID := fmt.Sprintf("%d:%s", ctx.MntID, sourceFilePath)
 				if t.config.Capture.Exec {
-					destinationDirPath := filepath.Join(t.config.Capture.OutputPath, strconv.Itoa(int(ctx.MntID)))
+					contId := string(bytes.TrimRight(ctx.ContID[:], "\x00"))
+					if contId == "" {
+						contId = "host"
+					}
+					destinationDirPath := filepath.Join(t.config.Capture.OutputPath, contId)
 					if err := os.MkdirAll(destinationDirPath, 0755); err != nil {
 						return err
 					}

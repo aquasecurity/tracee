@@ -7,13 +7,13 @@ import (
 	"io"
 	"os"
 	"path"
-	"strconv"
 )
 
 func (t *Tracee) processFileWrites() {
 	type chunkMeta struct {
 		BinType  binType
 		MntID    uint32
+		ContID   [16]byte
 		Metadata [20]byte
 		Size     int32
 		Off      uint64
@@ -66,7 +66,12 @@ func (t *Tracee) processFileWrites() {
 				continue
 			}
 
-			pathname := path.Join(t.config.Capture.OutputPath, strconv.Itoa(int(meta.MntID)))
+			containerIdDir := "host"
+			s := string(bytes.TrimRight(meta.ContID[:], "\x00"))
+			if s != "" {
+				containerIdDir = s
+			}
+			pathname := path.Join(t.config.Capture.OutputPath, containerIdDir)
 			if err := os.MkdirAll(pathname, 0755); err != nil {
 				t.handleError(err)
 				continue

@@ -3265,7 +3265,8 @@ int BPF_KPROBE(send_bin)
 
 #define F_SEND_TYPE   0
 #define F_MNT_NS      (F_SEND_TYPE + sizeof(u8))
-#define F_META_OFF    (F_MNT_NS + sizeof(u32))
+#define F_CONT_ID     (F_MNT_NS + sizeof(u32))
+#define F_META_OFF    (F_CONT_ID + CONT_ID_PADDED)
 #define F_SZ_OFF      (F_META_OFF + SEND_META_SIZE)
 #define F_POS_OFF     (F_SZ_OFF + sizeof(unsigned int))
 #define F_CHUNK_OFF   (F_POS_OFF + sizeof(off_t))
@@ -3275,6 +3276,13 @@ int BPF_KPROBE(send_bin)
 
     u32 mnt_id = get_task_mnt_ns_id((struct task_struct *)bpf_get_current_task());
     bpf_probe_read((void **)&(file_buf_p->buf[F_MNT_NS]), sizeof(u32), &mnt_id);
+
+    __builtin_memset((void **)&(file_buf_p->buf[F_CONT_ID]), 0, CONT_ID_PADDED);
+    u32 host_tid = id;
+    container_id_t *container_id = bpf_map_lookup_elem(&pid_to_cont_id_map, &host_tid);
+    if (container_id != NULL) {
+        bpf_probe_read((void **)&(file_buf_p->buf[F_CONT_ID]), CONT_ID_PADDED, container_id);
+    }
 
     // Save metadata to be used in filename
     bpf_probe_read((void **)&(file_buf_p->buf[F_META_OFF]), SEND_META_SIZE, bin_args->metadata);
