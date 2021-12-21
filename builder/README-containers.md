@@ -1,7 +1,7 @@
 ## Instructions on how to use the 'tracee-make' docker container
 
 > Here you will find an explanation about what
-> [Makefile.docker](./Makefile.docker) does "under the hood".
+> [Makefile.tracee-make](./Makefile.tracee-make) does "under the hood".
 
 ### To create **tracee-make** container:
 

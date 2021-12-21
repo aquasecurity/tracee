@@ -1,7 +1,7 @@
-## Instructions on how to use **Makefile.docker**
+## Instructions on how to use **Makefile.tracee-make**
 
 In order to have a controlled building environment for tracee, tracee provides
-a [Makefile.docker](./Makefile.docker) file that allows you to create and use
+a [Makefile.tracee-make](./Makefile.tracee-make) file that allows you to create and use
 docker controlled environments to build & test `tracee-ebpf` and
 `tracee-rules`.
 
@@ -24,13 +24,13 @@ Dockerfile flavors only changing the distro version).
 To create an **alpine-tracee-make** container:
 
 ```
-$ make -f builder/Makefile.docker alpine-prepare
+$ make -f builder/Makefile.tracee-make alpine-prepare
 ```
 
 OR to create an **ubuntu-tracee-make** container:
 
 ```
-$ make -f builder/Makefile.docker ubuntu-prepare
+$ make -f builder/Makefile.tracee-make ubuntu-prepare
 ```
 
 ### Executing a builder shell
@@ -38,13 +38,13 @@ $ make -f builder/Makefile.docker ubuntu-prepare
 Execute an **alpine-tracee-make** shell:
 
 ```
-$ make -f builder/Makefile.docker alpine-shell
+$ make -f builder/Makefile.tracee-make alpine-shell
 ```
 
 OR execute an **ubuntu-tracee-make** shell:
 
 ```
-$ make -f builder/Makefile.docker ubuntu-shell
+$ make -f builder/Makefile.tracee-make ubuntu-shell
 ```
 
 ### Executing compiled binaries inside builder shell
@@ -92,16 +92,16 @@ You may also want to execute the **tracee-make** docker container as a
 replacement to the `make` command:
 
 ```
-$ make -f builder/Makefile.docker xxxx-make ARG="clean"
-$ make -f builder/Makefile.docker xxxx-make ARG="bpf-core"
-$ make -f builder/Makefile.docker xxxx-make ARG="tracee-ebpf"
+$ make -f builder/Makefile.tracee-make xxxx-make ARG="clean"
+$ make -f builder/Makefile.tracee-make xxxx-make ARG="bpf-core"
+$ make -f builder/Makefile.tracee-make xxxx-make ARG="tracee-ebpf"
 ```
 
 And even tell **tracee-make** to do STATIC builds:
 
 ```
-$ STATIC=0 make -f builder/Makefile.docker xxxx-make ARG="tracee-ebpf"
-$ STATIC=1 make -f builder/Makefile.docker xxxx-make ARG="tracee-ebpf"
+$ STATIC=0 make -f builder/Makefile.tracee-make xxxx-make ARG="tracee-ebpf"
+$ STATIC=1 make -f builder/Makefile.tracee-make xxxx-make ARG="tracee-ebpf"
 ```
 
 > where xxxx might be 'alpine' or 'ubuntu'
