@@ -746,8 +746,8 @@ func prepareFilter(filters []string) (tracee.Filter, error) {
 	setFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}}
 
 	eventsNameToID := make(map[string]int32, len(tracee.EventsDefinitions))
-	for _, event := range tracee.EventsDefinitions {
-		eventsNameToID[event.Name] = event.ID
+	for id, event := range tracee.EventsDefinitions {
+		eventsNameToID[event.Name] = id
 	}
 
 	for _, f := range filters {
