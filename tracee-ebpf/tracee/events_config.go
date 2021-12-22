@@ -126,7 +126,7 @@ var EventsIDToEvent = map[int32]EventConfig{
 	ShmatEventID:                  {ID: ShmatEventID, ID32Bit: sys32shmat, Name: "shmat", Probes: []probe{{event: "shmat", attach: sysCall, fn: "shmat"}}, Sets: []string{"syscalls", "ipc", "ipc_shm"}},
 	ShmctlEventID:                 {ID: ShmctlEventID, ID32Bit: sys32shmctl, Name: "shmctl", Probes: []probe{{event: "shmctl", attach: sysCall, fn: "shmctl"}}, Sets: []string{"syscalls", "ipc", "ipc_shm"}},
 	DupEventID:                    {ID: DupEventID, ID32Bit: sys32dup, Name: "dup", Probes: []probe{{event: "dup", attach: sysCall, fn: "dup"}}, Sets: []string{"default", "syscalls", "fs", "fs_fd_ops"}},
-	Dup2EventID:                   {ID: Dup2EventID, ID32Bit: sys32dup2, Name: "dup2", Probes: []probe{{event: "dup2", attach: sysCall, fn: "dup2"}}, Sets: []string{"default", "syscalls", "fs", "fs_fd_ops"}},
+	Dup2EventID:                   {ID: Dup2EventID, ID32Bit: sys32dup2, Name: "dup2", Probes: []probe{{event: "dup2", attach: sysCall, fn: "dup2"}}, Sets: []string{"syscalls", "fs", "fs_fd_ops"}},
 	PauseEventID:                  {ID: PauseEventID, ID32Bit: sys32pause, Name: "pause", Probes: []probe{{event: "pause", attach: sysCall, fn: "pause"}}, Sets: []string{"syscalls", "signals"}},
 	NanosleepEventID:              {ID: NanosleepEventID, ID32Bit: sys32nanosleep, Name: "nanosleep", Probes: []probe{{event: "nanosleep", attach: sysCall, fn: "nanosleep"}}, Sets: []string{"syscalls", "time", "time_timer"}},
 	GetitimerEventID:              {ID: GetitimerEventID, ID32Bit: sys32getitimer, Name: "getitimer", Probes: []probe{{event: "getitimer", attach: sysCall, fn: "getitimer"}}, Sets: []string{"syscalls", "time", "time_timer"}},
