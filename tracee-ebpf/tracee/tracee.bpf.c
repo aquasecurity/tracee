@@ -3053,12 +3053,15 @@ int BPF_KPROBE(trace_security_socket_connect)
         save_to_submit_buf(&data, (void *)address, sizeof(struct sockaddr_in6), 1);
     }
     else if (sa_fam == AF_UNIX) {
+#if defined(__TARGET_ARCH_x86) // TODO: this is broken in arm64 (issue: #1129)
         if (addr_len <= sizeof(struct sockaddr_un)) {
             struct sockaddr_un sockaddr = {};
             bpf_probe_read(&sockaddr, addr_len, (void *)address);
             save_to_submit_buf(&data, (void *)&sockaddr, sizeof(struct sockaddr_un), 1);
         }
-        else save_to_submit_buf(&data, (void *)address, sizeof(struct sockaddr_un), 1);
+        else
+#endif
+            save_to_submit_buf(&data, (void *)address, sizeof(struct sockaddr_un), 1);
     }
 
     return events_perf_submit(&data, SECURITY_SOCKET_CONNECT, 0);
@@ -3170,12 +3173,15 @@ int BPF_KPROBE(trace_security_socket_bind)
         }
     }
     else if (sa_fam == AF_UNIX) {
+#if defined(__TARGET_ARCH_x86) // TODO: this is broken in arm64 (issue: #1129)
         if (addr_len <= sizeof(struct sockaddr_un)) {
             struct sockaddr_un sockaddr = {};
             bpf_probe_read(&sockaddr, addr_len, (void *)address);
             save_to_submit_buf(&data, (void *)&sockaddr, sizeof(struct sockaddr_un), 1);
         }
-        else save_to_submit_buf(&data, (void *)address, sizeof(struct sockaddr_un), 1);
+        else
+#endif
+            save_to_submit_buf(&data, (void *)address, sizeof(struct sockaddr_un), 1);
     }
 
     if (connect_id.port) {
