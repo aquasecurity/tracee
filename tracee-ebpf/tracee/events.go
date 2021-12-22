@@ -78,12 +78,6 @@ func (t *Tracee) processEvents(done <-chan struct{}) error {
 			continue
 		}
 
-		if !t.containers.CgroupExists(ctx.CgroupID) {
-			// Handle false container negatives (we should have identified this container id, but we didn't)
-			// This situation can happen as a race condition when updating the cgroup map.
-			// In that case, we can try to look for it in the cgroupfs and update the map if found.
-			t.containers.CgroupLookupUpdate(ctx.CgroupID)
-		}
 		containerId := t.containers.GetCgroupInfo(ctx.CgroupID).ContainerId
 		if (t.config.Filter.ContFilter.Enabled || t.config.Filter.NewContFilter.Enabled) && containerId == "" {
 			// Don't trace false container positives -

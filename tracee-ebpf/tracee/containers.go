@@ -122,7 +122,7 @@ func (c *Containers) populate() error {
 	return filepath.WalkDir(c.cgroupMP, fn)
 }
 
-func (c *Containers) CgroupLookupUpdate(cgroupId uint64) error {
+func (c *Containers) cgroupLookupUpdate(cgroupId uint64) error {
 	fn := func(path string, d fs.DirEntry, err error) error {
 		if !d.IsDir() {
 			return nil
@@ -249,6 +249,12 @@ func (c *Containers) GetContainers() []string {
 }
 
 func (c *Containers) GetCgroupInfo(cgroupId uint64) CgroupInfo {
+	if !c.CgroupExists(cgroupId) {
+		// Handle false container negatives (we should have identified this container id, but we didn't)
+		// This situation can happen as a race condition when updating the cgroup map.
+		// In that case, we can try to look for it in the cgroupfs and update the map if found.
+		c.cgroupLookupUpdate(cgroupId)
+	}
 	return c.cgroups[uint32(cgroupId)]
 }
 
