@@ -796,7 +796,7 @@ func TestPrepareFilter(t *testing.T) {
 				NewContFilter: &tracee.BoolFilter{},
 				ArgFilter: &tracee.ArgFilter{
 					Filters: map[int32]map[string]tracee.ArgFilterVal{
-						257: {
+						tracee.OpenatEventID: {
 							"pathname": tracee.ArgFilterVal{
 								Equal:    []string{"/bin/ls", "/tmp/tracee"},
 								NotEqual: []string{"/etc/passwd"},
@@ -857,7 +857,7 @@ func TestPrepareFilter(t *testing.T) {
 				},
 				RetFilter: &tracee.RetFilter{
 					Filters: map[int32]tracee.IntFilter{
-						257: {
+						tracee.OpenatEventID: {
 							Equal:    []int64{2},
 							NotEqual: []int64{},
 							Less:     tracee.LessNotSetInt,
@@ -874,7 +874,7 @@ func TestPrepareFilter(t *testing.T) {
 			testName: "wildcard filter",
 			filters:  []string{"event=open*"},
 			expectedFilter: tracee.Filter{
-				EventsToTrace: []int32{2, 257},
+				EventsToTrace: []int32{tracee.OpenEventID, tracee.OpenatEventID},
 				UIDFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
