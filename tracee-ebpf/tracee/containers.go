@@ -170,7 +170,7 @@ func (c *Containers) CgroupUpdate(cgroupId uint64, path string) (CgroupInfo, err
 		if len(pc) < 64 {
 			continue
 		}
-		containerId, runtime := c.getContainerIdFromCgroup(pc)
+		containerId, runtime := getContainerIdFromCgroup(pc)
 		if containerId == "" {
 			continue
 		}
@@ -183,7 +183,7 @@ func (c *Containers) CgroupUpdate(cgroupId uint64, path string) (CgroupInfo, err
 }
 
 // extract container id and container runtime from path
-func (c *Containers) getContainerIdFromCgroup(pathComponent string) (string, string) {
+func getContainerIdFromCgroup(pathComponent string) (string, string) {
 	runtime := "unknown"
 	path := strings.TrimSuffix(pathComponent, ".scope")
 
@@ -287,7 +287,7 @@ func (c *Containers) PopulateBpfMap(bpfModule *bpf.Module) error {
 	return err
 }
 
-func (c *Containers) RemoveFromBpfMap(bpfModule *bpf.Module, cgroupId uint64) error {
+func RemoveFromBpfMap(bpfModule *bpf.Module, cgroupId uint64) error {
 	containersMap, err := bpfModule.GetMap("containers_map")
 	if err != nil {
 		return err

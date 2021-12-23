@@ -209,7 +209,7 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 		info, err := t.containers.CgroupUpdate(cgroupId, path)
 		if err == nil && info.ContainerId == "" {
 			// If not a new container (no regex match) - remove from the bpf container_map
-			t.containers.RemoveFromBpfMap(t.bpfModule, cgroupId)
+			RemoveFromBpfMap(t.bpfModule, cgroupId)
 		}
 
 	case CgroupRmdirEventID:
