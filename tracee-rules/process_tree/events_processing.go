@@ -86,6 +86,8 @@ func (tree *ProcessTree) processFork(event external.Event) error {
 			// In this case, calling thread is another thread of the process and we have normal general information on it
 			newProcess = tree.addGeneralEventProcess(event)
 			tree.generateParentProcess(newProcess)
+		} else {
+			newProcess.ThreadsCount += 1
 		}
 	}
 	if newProcess.Status == types.HollowParent {
@@ -99,7 +101,7 @@ func (tree *ProcessTree) processFork(event external.Event) error {
 	}
 	if isMainThread {
 		newProcess.StartTime = event.Timestamp
-		if newProcess.Status == types.Forked {
+		if newProcess.Status == types.Executed {
 			newProcess.Status = types.Complete
 		} else {
 			newProcess.Status = types.Forked
@@ -117,33 +119,37 @@ func (tree *ProcessTree) processExit(event external.Event) error {
 	if err != nil {
 		return err
 	}
-	process.IsAlive = false
-	// Remove process and all dead ancestors so only processes with alive descendants will remain.
-	if len(process.ChildProcesses) == 0 {
-		container, err := tree.getContainerTree(event.ContainerID)
-		if err != nil {
-			return err
-		}
-		cp := process
-		for {
-			tree.cachedDeleteProcess(cp.InHostIDs.Tid)
-			if container.Root == cp {
-				delete(tree.containers, event.ContainerID)
+	process.ThreadsCount -= 1
+	// In case of concurrent processing, this check will be problematic
+	if process.ThreadsCount == 0 {
+		process.IsAlive = false
+		// Remove process and all dead ancestors so only processes with alive descendants will remain.
+		if len(process.ChildProcesses) == 0 {
+			container, err := tree.getContainerTree(event.ContainerID)
+			if err != nil {
+				return err
 			}
-			if cp.ParentProcess == nil {
-				break
-			}
-			for i, childProcess := range cp.ParentProcess.ChildProcesses {
-				if childProcess == cp {
-					cp.ParentProcess.ChildProcesses = append(cp.ParentProcess.ChildProcesses[:i],
-						cp.ParentProcess.ChildProcesses[i+1:]...)
+			cp := process
+			for {
+				tree.cachedDeleteProcess(cp.InHostIDs.Tid)
+				if container.Root == cp {
+					delete(tree.containers, event.ContainerID)
 				}
-				break
+				if cp.ParentProcess == nil {
+					break
+				}
+				for i, childProcess := range cp.ParentProcess.ChildProcesses {
+					if childProcess == cp {
+						cp.ParentProcess.ChildProcesses = append(cp.ParentProcess.ChildProcesses[:i],
+							cp.ParentProcess.ChildProcesses[i+1:]...)
+					}
+					break
+				}
+				if cp.ParentProcess.IsAlive {
+					break
+				}
+				cp = cp.ParentProcess
 			}
-			if cp.ParentProcess.IsAlive {
-				break
-			}
-			cp = cp.ParentProcess
 		}
 	}
 	return nil
@@ -183,9 +189,10 @@ func (tree *ProcessTree) addGeneralEventProcess(event external.Event) *types.Pro
 			Ppid: event.ProcessID,
 			Tid:  event.ThreadID,
 		},
-		ContainerID: event.ContainerID,
-		IsAlive:     true,
-		Status:      types.GeneralCreated,
+		ContainerID:  event.ContainerID,
+		ThreadsCount: 1,
+		IsAlive:      true,
+		Status:       types.GeneralCreated,
 	}
 	tree.tree[event.HostProcessID] = process
 	_, err := tree.getContainerTree(event.ContainerID)
@@ -265,6 +272,7 @@ func (tree *ProcessTree) addNewForkedProcess(event external.Event, inHostIDs typ
 		StartTime:      event.Timestamp,
 		IsAlive:        true,
 		Status:         types.Forked,
+		ThreadsCount:   1,
 	}
 	containerTree, err := tree.getContainerTree(event.ContainerID)
 	if err != nil {
@@ -396,6 +404,7 @@ func fillHollowProcessInfo(
 	p.InContainerIDs = inContainerIDs
 	p.ContainerID = containerID
 	p.ProcessName = processName
+	p.ThreadsCount = 1
 	p.IsAlive = true
 	p.Status = types.GeneralCreated
 }

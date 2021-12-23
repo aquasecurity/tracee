@@ -32,6 +32,7 @@ type ProcessInfo struct {
 	StartTime       int
 	ParentProcess   *ProcessInfo
 	ChildProcesses  []*ProcessInfo
+	ThreadsCount    int
 	IsAlive         bool
 	Status          ProcessStatus
 }
