@@ -24,7 +24,7 @@ func (tree *ProcessTree) addGeneralEventProcess(event external.Event) *types.Pro
 		IsAlive:      true,
 		Status:       types.GeneralCreated,
 	}
-	tree.tree[event.HostProcessID] = process
+	tree.processes[event.HostProcessID] = process
 	_, err := tree.getContainerTree(event.ContainerID)
 	if err != nil {
 		containerTree := &containerProcessTree{

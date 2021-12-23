@@ -101,7 +101,7 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			tree := ProcessTree{
-				tree:       map[int]*types.ProcessInfo{},
+				processes:  map[int]*types.ProcessInfo{},
 				containers: map[string]*containerProcessTree{},
 			}
 			exitProcessIndex := len(test.processes) - 1
@@ -116,7 +116,7 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 					},
 					ThreadsCount: 1,
 				}
-				tree.tree[np.InHostIDs.Tid] = &np
+				tree.processes[np.InHostIDs.Tid] = &np
 				if i != 0 {
 					var err error
 					np.ParentProcess, err = tree.GetProcessInfo(exitEvent.HostThreadID - (len(test.processes) - i))

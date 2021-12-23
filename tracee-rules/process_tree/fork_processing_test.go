@@ -41,7 +41,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 		},
 	}
 	tree := ProcessTree{
-		tree:       map[int]*types.ProcessInfo{},
+		processes:  map[int]*types.ProcessInfo{},
 		containers: map[string]*containerProcessTree{},
 	}
 	require.NoError(t, tree.processFork(forkEvent))

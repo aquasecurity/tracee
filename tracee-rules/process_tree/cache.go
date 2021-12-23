@@ -7,13 +7,13 @@ func (tree *ProcessTree) cachedDeleteProcess(pid int) {
 	if len(tree.deadProcessesCache) > cachedDeadEvents {
 		dpid := tree.deadProcessesCache[0]
 		tree.deadProcessesCache = tree.deadProcessesCache[1:]
-		delete(tree.tree, dpid)
+		delete(tree.processes, dpid)
 	}
 }
 
 func (tree *ProcessTree) EmptyProcessCache() {
 	for _, dpid := range tree.deadProcessesCache {
-		delete(tree.tree, dpid)
+		delete(tree.processes, dpid)
 	}
 	tree.deadProcessesCache = []int{}
 	return

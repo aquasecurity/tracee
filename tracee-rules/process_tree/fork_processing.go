@@ -123,7 +123,7 @@ func (tree *ProcessTree) addNewForkedProcess(event external.Event, inHostIDs typ
 		containerTree.Root = newProcess
 	}
 	// This will delete old instance if its exit was missing
-	tree.tree[inHostIDs.Pid] = newProcess
+	tree.processes[inHostIDs.Pid] = newProcess
 	return newProcess
 }
 

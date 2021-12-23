@@ -9,7 +9,7 @@ import (
 // The process tree instance to be used by the engine and the signatures
 var globalTree = ProcessTree{
 	containers: make(map[string]*containerProcessTree),
-	tree:       map[int]*types.ProcessInfo{},
+	processes:  map[int]*types.ProcessInfo{},
 }
 
 func GetProcessInfo(hostProcessID int) (*types.ProcessInfo, error) {

@@ -11,12 +11,12 @@ type containerProcessTree struct {
 
 type ProcessTree struct {
 	containers         map[string]*containerProcessTree
-	tree               map[int]*types.ProcessInfo
+	processes          map[int]*types.ProcessInfo
 	deadProcessesCache []int
 }
 
 func (tree *ProcessTree) GetProcessInfo(hostProcessID int) (*types.ProcessInfo, error) {
-	process, ok := tree.tree[hostProcessID]
+	process, ok := tree.processes[hostProcessID]
 	if !ok {
 		return nil, fmt.Errorf("no process with given ID is recorded")
 	}

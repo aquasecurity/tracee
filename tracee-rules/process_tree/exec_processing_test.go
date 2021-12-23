@@ -51,7 +51,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 		{
 			testName: "empty tree",
 			initialTree: ProcessTree{
-				tree:       map[int]*types.ProcessInfo{},
+				processes:  map[int]*types.ProcessInfo{},
 				containers: map[string]*containerProcessTree{},
 			},
 			expectedProcess: types.ProcessInfo{
@@ -79,7 +79,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 		{
 			testName: "Forked event executed",
 			initialTree: ProcessTree{
-				tree: map[int]*types.ProcessInfo{
+				processes: map[int]*types.ProcessInfo{
 					execEvent.HostProcessID: &types.ProcessInfo{
 						InHostIDs: types.ProcessIDs{
 							Pid:  execEvent.HostProcessID,
@@ -124,7 +124,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 		{
 			testName: "Double execve process",
 			initialTree: ProcessTree{
-				tree: map[int]*types.ProcessInfo{
+				processes: map[int]*types.ProcessInfo{
 					execEvent.HostProcessID: &types.ProcessInfo{
 						InHostIDs: types.ProcessIDs{
 							Pid:  execEvent.HostProcessID,
@@ -173,7 +173,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 		{
 			testName: "General event generate process",
 			initialTree: ProcessTree{
-				tree: map[int]*types.ProcessInfo{
+				processes: map[int]*types.ProcessInfo{
 					execEvent.HostProcessID: &types.ProcessInfo{
 						InHostIDs: types.ProcessIDs{
 							Pid:  execEvent.HostProcessID,
