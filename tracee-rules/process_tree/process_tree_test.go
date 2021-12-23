@@ -216,54 +216,6 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 				ProcessName: execEvent.ProcessName,
 			},
 		},
-		{
-			testName: "Lost exit event process with same PID",
-			initialTree: ProcessTree{
-				tree: map[int]*types.ProcessInfo{
-					execEvent.HostProcessID: &types.ProcessInfo{
-						InHostIDs: types.ProcessIDs{
-							Pid:  execEvent.HostProcessID,
-							Ppid: 1,
-							Tid:  execEvent.HostThreadID,
-						},
-						InContainerIDs: types.ProcessIDs{
-							Pid:  22,
-							Ppid: 21,
-							Tid:  22,
-						},
-						StartTime:   100,
-						ProcessName: "sleep",
-						Status:      types.Completed,
-						ExecutionBinary: types.BinaryInfo{
-							Path:  "/bin/sleep",
-							Ctime: 50,
-						},
-					},
-				},
-				containers: map[string]*containerProcessTree{},
-			},
-			expectedProcess: types.ProcessInfo{
-				InHostIDs: types.ProcessIDs{
-					Pid:  execEvent.HostProcessID,
-					Ppid: execEvent.HostParentProcessID,
-					Tid:  execEvent.HostThreadID,
-				},
-				InContainerIDs: types.ProcessIDs{
-					Pid:  execEvent.ProcessID,
-					Ppid: execEvent.ParentProcessID,
-					Tid:  execEvent.ThreadID,
-				},
-				ContainerID: TestContainerID,
-				Cmd:         execCmd,
-				ExecutionBinary: types.BinaryInfo{
-					Path:  execBinaryPath,
-					Ctime: uint(execBinaryCtime),
-				},
-				StartTime:   100000000,
-				Status:      types.Executed,
-				ProcessName: execEvent.ProcessName,
-			},
-		},
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.testName, func(t *testing.T) {
