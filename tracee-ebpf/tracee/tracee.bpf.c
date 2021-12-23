@@ -2481,7 +2481,6 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     process_context_t process = {};
     struct task_struct * process_task = (struct task_struct *)bpf_get_current_task();
     init_process_context(&process, process_task);
-//        return 0;
 
     // Perform the following checks before should_trace() so we can filter by
     // newly created containers/processes.  We assume that a new container/pod
@@ -2583,6 +2582,9 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     bpf_map_delete_elem(&traced_pids_map, &data.context.host_tid);
     bpf_map_delete_elem(&new_pids_map, &data.context.host_tid);
     bpf_map_delete_elem(&syscall_data_map, &data.context.host_tid);
+
+    //Remove this process from process tree map
+    bpf_map_delete_elem(&process_context_map, &data.context.host_tid);
 
     int proc_tree_filter_set = get_config(CONFIG_PROC_TREE_FILTER);
 
@@ -4316,42 +4318,6 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     pkt.host_tid = net_ctx->host_tid;
     __builtin_memcpy(pkt.comm, net_ctx->comm, TASK_COMM_LEN);
 
-    pkt.src_port = (__bpf_ntohs(pkt.src_port));
-    pkt.dst_port = (__bpf_ntohs(pkt.dst_port));
-
-    //check if the packet is dns protocol
-    if ( pkt.protocol == IPPROTO_UDP && (pkt.src_port == 53 || pkt.dst_port == 53)) {
-                bpf_printk("dns \n");
-
-
-            if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off + sizeof(struct udphdr))) {
-                        return TC_ACT_UNSPEC;
-            }
-
-            struct udphdr *udp = (void *)head + l4_hdr_off;
-            if (!skb_revalidate_data(skb, &head, &tail,sizeof(head)+l4_hdr_off+sizeof(struct udphdr)+sizeof(dns_hdr_t)))
-                return TC_ACT_UNSPEC;
-
-            dns_hdr_t *dns_hdr = (void *) head+ l4_hdr_off+sizeof(struct udphdr);// +sizeof(struct udphdr)+sizeof(uint64_t)+sizeof(uint32_t);
-            if (dns_hdr == NULL)
-                return 0;
-
-            u64 flagss = BPF_F_CURRENT_CPU;
-            flagss |= (u64)skb->len << 32;
-            if (pkt.src_port == 53 && dns_hdr->qr ==1)
-                pkt.event_id = NET_DNS_RESPONSE;
-
-            else if(pkt.dst_port == 53 && dns_hdr->qr ==0)
-                pkt.event_id = NET_DNS_REQUEST;
-
-
-            bpf_perf_event_output(skb, &net_events, flagss, &pkt, sizeof(pkt));
-        }
-        pkt.event_id = NET_PACKET;
-
-
-
-
     // The tc perf_event_output handler will use the upper 32 bits of the flags
     // argument as a number of bytes to include of the packet payload in the
     // event data. If the size is too big, the call to bpf_perf_event_output
@@ -4361,8 +4327,8 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     u64 flags = BPF_F_CURRENT_CPU;
     flags |= (u64)skb->len << 32;
     if (get_config(CONFIG_DEBUG_NET)){
-//        pkt.src_port = __bpf_ntohs(pkt.src_port);
-//        pkt.dst_port = __bpf_ntohs(pkt.dst_port);
+        pkt.src_port = __bpf_ntohs(pkt.src_port);
+        pkt.dst_port = __bpf_ntohs(pkt.dst_port);
         bpf_perf_event_output(skb, &net_events, flags, &pkt, sizeof(pkt));
     }
     else {

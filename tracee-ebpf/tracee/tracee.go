@@ -903,6 +903,28 @@ func (t *Tracee) initBPF() error {
 
 	return nil
 }
+
+func (t *Tracee) getProcessCtx(hostTid uint32) (external.Process_ctx, error) {
+	processCtx, procExist := processTreeMap[hostTid]
+	if procExist {
+		//fmt.Printf("network process data: pid: %d, ctime: %v, ppid: %v, cgroup_id: %v\n",data.Pid, time.Unix(0, int64(data.Ctime+t.bootTime)), data.Ppid, data.Cgroup_id)
+		return processCtx, nil
+	} else {
+
+		processContextMap, err := t.bpfModule.GetMap("process_context_map")
+		if err != nil {
+			t.Close()
+			return processCtx, err
+		}
+		processCtxBpfMap, err := processContextMap.GetValue(unsafe.Pointer(&hostTid))
+		if err != nil {
+			return processCtx, err
+		}
+		processCtx = external.SetProcessContext(processCtxBpfMap)
+		return processCtx, nil
+	}
+}
+
 func timespecToTime(ts syscall.Timespec) time.Time {
 	return time.Unix(int64(ts.Sec), int64(ts.Nsec))
 }
@@ -957,9 +979,6 @@ func parseProcStatus(status []string, taskName string) (external.Process_ctx, er
 	process.Mnt_id = mntId
 	process.Pid_id = pidId
 	process.Cgroup_id = CgroupId
-
-	//fmt.Printf("time:%v\n", processCtime)
-	//process := external.Process_ctx{0, cgroupid, uint32(pid), uint32(tid), uint32(ppid), uint32(hostPid), uint32(hostTid), uint32(hostPpid), uint32(uid), 0, 0}
 	return process, nil
 }
 
@@ -1033,7 +1052,7 @@ func (t *Tracee) initProcessTree() {
 			if err != nil {
 				t.handleError(err)
 			}
-			processTreeMap[uint32(processStatus.Tid)] = processStatus
+			processTreeMap[uint32(processStatus.Host_tid)] = processStatus
 		}
 	}
 
