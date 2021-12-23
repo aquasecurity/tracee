@@ -46,8 +46,8 @@ func (tree *ProcessTree) processExec(event external.Event) error {
 	process.ProcessName = event.ProcessName
 
 	if process.Status == types.Forked ||
-		process.Status == types.Complete {
-		process.Status = types.Complete
+		process.Status == types.Completed {
+		process.Status = types.Completed
 	} else {
 		process.Status = types.Executed
 	}
@@ -71,7 +71,7 @@ func (tree *ProcessTree) processFork(event external.Event) error {
 	if isMainThread {
 		// If it is a new process or if for some reason the existing process is a result of lost exit event
 		if npErr != nil ||
-			newProcess.Status == types.Complete ||
+			newProcess.Status == types.Completed ||
 			newProcess.Status == types.Forked {
 			newProcess = tree.addNewForkedProcess(event, newProcessInHostIDs, newProcessInContainerIDs)
 		}
@@ -101,8 +101,9 @@ func (tree *ProcessTree) processFork(event external.Event) error {
 	}
 	if isMainThread {
 		newProcess.StartTime = event.Timestamp
+		// Because this is the main thread, it was not forked until now so it can't be completed yet
 		if newProcess.Status == types.Executed {
-			newProcess.Status = types.Complete
+			newProcess.Status = types.Completed
 		} else {
 			newProcess.Status = types.Forked
 		}

@@ -1,13 +1,13 @@
 package types
 
-type ProcessStatus uint
+type ProcessInformationStatus uint
 
 const (
-	Forked ProcessStatus = iota
+	Forked ProcessInformationStatus = iota
 	Executed
 	GeneralCreated
 	HollowParent
-	Complete
+	Completed
 )
 
 type ProcessIDs struct {
@@ -34,7 +34,7 @@ type ProcessInfo struct {
 	ChildProcesses  []*ProcessInfo
 	ThreadsCount    int
 	IsAlive         bool
-	Status          ProcessStatus
+	Status          ProcessInformationStatus
 }
 
 type ProcessLineage []ProcessInfo
