@@ -949,13 +949,11 @@ func parseProcStatus(status []string, taskName string) (external.Process_ctx, er
 			i++
 			filed, err := strconv.ParseUint(status[idx+1], 10, 32)
 			if err != nil {
-				//fmt.Println("err")
 				return process, err
 			}
 			processVals = append(processVals, uint32(filed))
 		}
 		if i > len(processFileds)-1 {
-			//fmt.Println("out")
 			break
 		}
 
@@ -989,7 +987,6 @@ func getNsIdData(taskName string) (uint32, uint32, uint64, error) {
 		return 0, 0, 0, err
 	}
 	processMntId = strings.TrimLeft(strings.TrimRight(processMntId, "]"), "mnt:[")
-	fmt.Println(processMntId)
 	mntId, err := strconv.ParseUint(processMntId, 10, 32)
 	if err != nil {
 		return 0, 0, 0, err
@@ -1045,7 +1042,7 @@ func (t *Tracee) initProcessTree() {
 			taskStatus := fmt.Sprintf("/proc/%d/task/%v/status", pid, task)
 			data, err := ioutil.ReadFile(taskStatus)
 			if err != nil {
-				fmt.Println("File reading error", err)
+				t.handleError(err)
 			}
 			dataStatus := strings.Fields(string(data))
 			processStatus, err := parseProcStatus(dataStatus, taskStatus)

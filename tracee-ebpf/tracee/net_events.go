@@ -128,17 +128,42 @@ func (t *Tracee) processNetEvents() {
 						t.handleError(err)
 						continue
 					}
-
-					fmt.Printf("%v  %-16s  %-7d  debug_net/packet               Len: %d, SrcIP: %v, SrcPort: %d, DestIP: %v, DestPort: %d, Protocol: %d\n",
-						timeStampObj,
-						comm,
-						hostTid,
-						pktLen,
-						netaddr.IPFrom16(pktMeta.SrcIP),
-						pktMeta.SrcPort,
-						netaddr.IPFrom16(pktMeta.DestIP),
-						pktMeta.DestPort,
-						pktMeta.Protocol)
+					networkProcess, err := t.getProcessCtx(hostTid)
+					hr, min, sec := timeStampObj.Clock()
+					nsec := timeStampObj.Nanosecond()
+					if err != nil {
+						fmt.Printf("%v:%v:%v:%v  %-16s  %-7d  debug_net/packet               Len: %d, SrcIP: %v, SrcPort: %d, DestIP: %v, DestPort: %d, Protocol: %d\n",
+							hr,
+							min,
+							sec,
+							nsec,
+							comm,
+							hostTid,
+							pktLen,
+							netaddr.IPFrom16(pktMeta.SrcIP),
+							pktMeta.SrcPort,
+							netaddr.IPFrom16(pktMeta.DestIP),
+							pktMeta.DestPort,
+							pktMeta.Protocol)
+					} else {
+						fmt.Printf("%v:%v:%v:%v  %v   %-16s  %v  %v    %d             debug_net/packet     %-7d            Len: %d, SrcIP: %v, SrcPort: %d, DestIP: %v, DestPort: %d, Protocol: %d\n",
+							hr,
+							min,
+							sec,
+							nsec,
+							networkProcess.Uid,
+							comm,
+							networkProcess.Pid,
+							networkProcess.Tid,
+							0,
+							hostTid,
+							pktLen,
+							netaddr.IPFrom16(pktMeta.SrcIP),
+							pktMeta.SrcPort,
+							netaddr.IPFrom16(pktMeta.DestIP),
+							pktMeta.DestPort,
+							pktMeta.Protocol)
+					}
 
 				}
 
