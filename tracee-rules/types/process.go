@@ -30,6 +30,7 @@ type ProcessInfo struct {
 	Cmd             []string
 	ExecutionBinary BinaryInfo
 	StartTime       int
+	ExecTime        int
 	ParentProcess   *ProcessInfo
 	ChildProcesses  []*ProcessInfo
 	ThreadsCount    int

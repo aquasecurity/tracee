@@ -44,6 +44,7 @@ func (tree *ProcessTree) processExec(event external.Event) error {
 		return err
 	}
 	process.ProcessName = event.ProcessName
+	process.ExecTime = event.Timestamp
 
 	if process.Status == types.Forked ||
 		process.Status == types.Completed {
@@ -380,9 +381,21 @@ func parseExecArguments(event external.Event) (types.BinaryInfo, []string, error
 			execCtime.Name,
 			execCtime.Type)
 	}
+	hash := ""
+	execHash, err := getArgumentByName(event, "sha256")
+	// Executed binary hash is not mandatory field, so failing in reading it does not mean error necessarily
+	if err == nil {
+		hash, ok = execHash.Value.(string)
+		if !ok {
+			return binaryInfo, cmd, fmt.Errorf("invalid type of argument '%s' - %T",
+				execPathName.Name,
+				execPathName.Type)
+		}
+	}
+
 	binaryInfo = types.BinaryInfo{
 		Path:  pathName,
-		Hash:  "",
+		Hash:  hash,
 		Ctime: uint(ctime64),
 	}
 	return binaryInfo, cmd, nil
