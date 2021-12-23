@@ -29,6 +29,8 @@ func (t *Tracee) processNetEvents() {
 
 			// timeStamp is nanoseconds since system boot time
 			timeStampObj := time.Unix(0, int64(timeStamp+t.bootTime))
+			hr, min, sec := timeStampObj.Clock()
+			nsec := timeStampObj.Nanosecond()
 
 			if netEventId == NetPacket {
 				var pktLen uint32
@@ -64,8 +66,11 @@ func (t *Tracee) processNetEvents() {
 						continue
 					}
 
-					fmt.Printf("%v  %-16s  %-7d  debug_net/packet               Len: %d, SrcIP: %v, SrcPort: %d, DestIP: %v, DestPort: %d, Protocol: %d\n",
-						timeStampObj,
+					fmt.Printf("%v:%v:%v:%v  %-16s  %-7d  debug_net/packet               Len: %d, SrcIP: %v, SrcPort: %d, DestIP: %v, DestPort: %d, Protocol: %d\n",
+						hr,
+						min,
+						sec,
+						nsec,
 						comm,
 						hostTid,
 						pktLen,
@@ -116,23 +121,46 @@ func (t *Tracee) processNetEvents() {
 
 				switch netEventId {
 				case DebugNetSecurityBind:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/security_socket_bind LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+					fmt.Printf("%v:%v:%v:%v  %-16s  %-7d  debug_net/security_socket_bind LocalIP: %v, LocalPort: %d, Protocol: %d\n",
+						hr,
+						min,
+						sec,
+						nsec,
+						comm,
+						hostTid,
+						netaddr.IPFrom16(pkt.LocalIP),
+						pkt.LocalPort,
+						pkt.Protocol)
 				case DebugNetUdpSendmsg:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_sendmsg          LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+					fmt.Printf("%v:%v:%v:%v  %-16s  %-7d  debug_net/udp_sendmsg          LocalIP: %v, LocalPort: %d, Protocol: %d\n",
+						hr,
+						min,
+						sec,
+						nsec, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
 				case DebugNetUdpDisconnect:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/__udp_disconnect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+					fmt.Printf("%v:%v:%v:%v  %-16s  %-7d  debug_net/__udp_disconnect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
+						hr,
+						min,
+						sec,
+						nsec, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
 				case DebugNetUdpDestroySock:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_destroy_sock     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+					fmt.Printf("%v:%v:%v:%v  %-16s  %-7d  debug_net/udp_destroy_sock     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
+						hr,
+						min,
+						sec,
+						nsec, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
 				case DebugNetUdpV6DestroySock:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/udpv6_destroy_sock   LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+					fmt.Printf("%v:%v:%v:%v  %-16s  %-7d  debug_net/udpv6_destroy_sock   LocalIP: %v, LocalPort: %d, Protocol: %d\n",
+						hr,
+						min,
+						sec,
+						nsec, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
 				case DebugNetInetSockSetState:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/inet_sock_set_state  LocalIP: %v, LocalPort: %d, RemoteIP: %v, RemotePort: %d, Protocol: %d, OldState: %d, NewState: %d, SockPtr: 0x%x\n",
-						timeStampObj,
+					fmt.Printf("%v:%v:%v:%v  %-16s  %-7d  debug_net/inet_sock_set_state  LocalIP: %v, LocalPort: %d, RemoteIP: %v, RemotePort: %d, Protocol: %d, OldState: %d, NewState: %d, SockPtr: 0x%x\n",
+						hr,
+						min,
+						sec,
+						nsec,
 						comm,
 						hostTid,
 						netaddr.IPFrom16(pkt.LocalIP),
@@ -144,8 +172,11 @@ func (t *Tracee) processNetEvents() {
 						pkt.TcpNewState,
 						pkt.SockPtr)
 				case DebugNetTcpConnect:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/tcp_connect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+					fmt.Printf("%v:%v:%v:%v  %-16s  %-7d  debug_net/tcp_connect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
+						hr,
+						min,
+						sec,
+						nsec, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
 				}
 			}
 		case lost := <-t.lostNetChannel:
