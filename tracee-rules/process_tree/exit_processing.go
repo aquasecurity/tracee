@@ -2,10 +2,10 @@ package process_tree
 
 import "github.com/aquasecurity/tracee/pkg/external"
 
-// processExit remove references of processes from the tree when the corresponding process exit without children, or
+// processExitEvent remove references of processes from the tree when the corresponding process exit without children, or
 // if the last child process of a process exits.
 // Notice that there is a danger of memory leak if there are lost events of sched_process_exit
-func (tree *ProcessTree) processExit(event external.Event) error {
+func (tree *ProcessTree) processExitEvent(event external.Event) error {
 	process, err := tree.GetProcessInfo(event.HostProcessID)
 	if err != nil {
 		return err

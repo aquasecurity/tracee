@@ -121,7 +121,7 @@ func TestProcessTree_ProcessEvent(t *testing.T) {
 	assert.Equal(t, execCmd, process.Cmd)
 	assert.Equal(t, execBinaryPath, process.ExecutionBinary.Path)
 	assert.Equal(t, execBinaryCtime, process.ExecutionBinary.Ctime)
-	err = tree.processExit(exitEvent)
+	err = tree.processExitEvent(exitEvent)
 	tree.EmptyProcessCache()
 	require.NoError(t, err)
 	_, err = tree.GetProcessInfo(ptid)

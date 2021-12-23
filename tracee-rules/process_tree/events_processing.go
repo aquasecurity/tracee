@@ -14,11 +14,11 @@ func (tree *ProcessTree) ProcessEvent(event types.Event) error {
 	}
 	switch traceeEvent.EventName {
 	case "sched_process_fork":
-		return tree.processFork(traceeEvent)
+		return tree.processForkEvent(traceeEvent)
 	case "sched_process_exec":
-		return tree.processExec(traceeEvent)
+		return tree.processExecEvent(traceeEvent)
 	case "sched_process_exit":
-		return tree.processExit(traceeEvent)
+		return tree.processExitEvent(traceeEvent)
 	case "exit":
 		return nil
 	default:

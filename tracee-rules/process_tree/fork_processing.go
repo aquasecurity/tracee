@@ -5,9 +5,9 @@ import (
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
-// processFork add new process to the tree with all possible information available.
+// processForkEvent add new process to the tree with all possible information available.
 // Notice that the new process ID and TID are not available, and will be collected only upon exec.
-func (tree *ProcessTree) processFork(event external.Event) error {
+func (tree *ProcessTree) processForkEvent(event external.Event) error {
 	newProcessInHostIDs, err := parseForkInHostIDs(event)
 	if err != nil {
 		return err

@@ -216,7 +216,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.testName, func(t *testing.T) {
-			require.NoError(t, testCase.initialTree.processExec(execEvent))
+			require.NoError(t, testCase.initialTree.processExecEvent(execEvent))
 			execProcess, err := testCase.initialTree.GetProcessInfo(execEvent.HostThreadID)
 			require.NoError(t, err)
 			assert.Equal(t, testCase.expectedProcess.Cmd, execProcess.Cmd)

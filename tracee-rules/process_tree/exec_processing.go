@@ -6,9 +6,9 @@ import (
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
-// processExec fill the fields of the process according to exec information.
+// processExecEvent fill the fields of the process according to exec information.
 // It also fills the missing information from the fork.
-func (tree *ProcessTree) processExec(event external.Event) error {
+func (tree *ProcessTree) processExecEvent(event external.Event) error {
 	process, err := tree.GetProcessInfo(event.HostProcessID)
 	if err != nil {
 		process = tree.addGeneralEventProcess(event)

@@ -127,7 +127,7 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 				}
 			}
 
-			err := tree.processExit(exitEvent)
+			err := tree.processExitEvent(exitEvent)
 			require.NoError(t, err)
 			tree.EmptyProcessCache()
 			// Check that all nodes removed as expected

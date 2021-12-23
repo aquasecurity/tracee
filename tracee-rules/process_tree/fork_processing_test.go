@@ -44,7 +44,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 		processes:  map[int]*types.ProcessInfo{},
 		containers: map[string]*containerProcessTree{},
 	}
-	require.NoError(t, tree.processFork(forkEvent))
+	require.NoError(t, tree.processForkEvent(forkEvent))
 	_, err := tree.GetProcessInfo(newProcessTID)
 	assert.NoError(t, err)
 }
