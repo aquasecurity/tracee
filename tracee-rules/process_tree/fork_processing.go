@@ -17,49 +17,64 @@ func (tree *ProcessTree) processFork(event external.Event) error {
 		return err
 	}
 
-	isMainThread := newProcessInHostIDs.Pid == newProcessInHostIDs.Tid
-	newProcess, npErr := tree.GetProcessInfo(newProcessInHostIDs.Pid)
-	if isMainThread {
-		// If it is a new process or if for some reason the existing process is a result of lost exit event
-		if npErr != nil ||
-			newProcess.Status == types.Completed ||
-			newProcess.Status == types.Forked {
-			newProcess = tree.addNewForkedProcess(event, newProcessInHostIDs, newProcessInContainerIDs)
-		}
-
-		// If exec did not happened yet, add binary information of parent
-		if newProcess.Status == types.Forked {
-			tree.copyParentBinaryInfo(newProcess)
-		}
-
+	if newProcessInHostIDs.Pid == newProcessInHostIDs.Tid {
+		return tree.processMainThreadFork(event, newProcessInHostIDs, newProcessInContainerIDs)
 	} else {
-		if npErr != nil {
-			// In this case, calling thread is another thread of the process and we have normal general information on it
-			newProcess = tree.addGeneralEventProcess(event)
-			tree.generateParentProcess(newProcess)
-		} else {
-			newProcess.ThreadsCount += 1
-		}
+		return tree.processThreadFork(event, newProcessInHostIDs, newProcessInContainerIDs)
+	}
+}
+
+func (tree *ProcessTree) processMainThreadFork(event external.Event, inHostIDs types.ProcessIDs, inContainerIDs types.ProcessIDs) error {
+	newProcess, npErr := tree.GetProcessInfo(inHostIDs.Pid)
+	// If it is a new process or if for some reason the existing process is a result of lost exit event
+	if npErr != nil ||
+		newProcess.Status == types.Completed ||
+		newProcess.Status == types.Forked {
+		newProcess = tree.addNewForkedProcess(event, inHostIDs, inContainerIDs)
+	}
+
+	// If exec did not happened yet, add binary information of parent
+	if newProcess.Status == types.Forked {
+		tree.copyParentBinaryInfo(newProcess)
 	}
 	if newProcess.Status == types.HollowParent {
 		fillHollowProcessInfo(
 			newProcess,
-			newProcessInHostIDs,
-			newProcessInContainerIDs,
+			inHostIDs,
+			inContainerIDs,
 			event.ContainerID,
 			event.ProcessName,
 		)
 	}
-	if isMainThread {
-		newProcess.StartTime = event.Timestamp
-		// Because this is the main thread, it was not forked until now so it can't be completed yet
-		if newProcess.Status == types.Executed {
-			newProcess.Status = types.Completed
-		} else {
-			newProcess.Status = types.Forked
-		}
+
+	newProcess.StartTime = event.Timestamp
+	if newProcess.Status == types.Executed {
+		newProcess.Status = types.Completed
+	} else {
+		newProcess.Status = types.Forked
+	}
+	return nil
+}
+
+func (tree *ProcessTree) processThreadFork(event external.Event, inHostIDs types.ProcessIDs, inContainerIDs types.ProcessIDs) error {
+	newProcess, npErr := tree.GetProcessInfo(inHostIDs.Pid)
+	if npErr != nil {
+		// In this case, calling thread is another thread of the process and we have normal general information on it
+		newProcess = tree.addGeneralEventProcess(event)
+		tree.generateParentProcess(newProcess)
+	} else {
+		newProcess.ThreadsCount += 1
 	}
 
+	if newProcess.Status == types.HollowParent {
+		fillHollowProcessInfo(
+			newProcess,
+			inHostIDs,
+			inContainerIDs,
+			event.ContainerID,
+			event.ProcessName,
+		)
+	}
 	return nil
 }
 
