@@ -122,7 +122,7 @@ func (tree *ProcessTree) processExit(event external.Event) error {
 	}
 	process.ThreadsCount -= 1
 	// In case of concurrent processing, this check will be problematic
-	if process.ThreadsCount == 0 {
+	if process.ThreadsCount <= 0 {
 		process.IsAlive = false
 		// Remove process and all dead ancestors so only processes with alive descendants will remain.
 		if len(process.ChildProcesses) == 0 {
@@ -132,7 +132,7 @@ func (tree *ProcessTree) processExit(event external.Event) error {
 			}
 			cp := process
 			for {
-				tree.cachedDeleteProcess(cp.InHostIDs.Tid)
+				tree.cachedDeleteProcess(cp.InHostIDs.Pid)
 				if container.Root == cp {
 					delete(tree.containers, event.ContainerID)
 				}
@@ -255,13 +255,21 @@ func getArgumentByName(event external.Event, argName string) (external.Argument,
 
 const cachedDeadEvents = 100
 
-func (tree *ProcessTree) cachedDeleteProcess(tid int) {
-	tree.deadProcessesCache = append(tree.deadProcessesCache, tid)
+func (tree *ProcessTree) cachedDeleteProcess(pid int) {
+	tree.deadProcessesCache = append(tree.deadProcessesCache, pid)
 	if len(tree.deadProcessesCache) > cachedDeadEvents {
-		dtid := tree.deadProcessesCache[0]
+		dpid := tree.deadProcessesCache[0]
 		tree.deadProcessesCache = tree.deadProcessesCache[1:]
-		delete(tree.tree, dtid)
+		delete(tree.tree, dpid)
 	}
+}
+
+func (tree *ProcessTree) emptyProcessCache() {
+	for _, dpid := range tree.deadProcessesCache {
+		delete(tree.tree, dpid)
+	}
+	tree.deadProcessesCache = []int{}
+	return
 }
 
 func (tree *ProcessTree) addNewForkedProcess(event external.Event, inHostIDs types.ProcessIDs, inContainerIDs types.ProcessIDs) *types.ProcessInfo {

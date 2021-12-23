@@ -429,8 +429,11 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 				np := types.ProcessInfo{
 					IsAlive: tp.isAlive,
 					InHostIDs: types.ProcessIDs{
-						Tid: exitEvent.HostThreadID - (exitProcessIndex - i),
+						Tid:  exitEvent.HostThreadID - (exitProcessIndex - i),
+						Pid:  exitEvent.HostProcessID - (exitProcessIndex - i),
+						Ppid: exitEvent.HostParentProcessID - (exitProcessIndex - i),
 					},
+					ThreadsCount: 1,
 				}
 				tree.tree[np.InHostIDs.Tid] = &np
 				if i != 0 {
@@ -445,6 +448,7 @@ func TestProcessTree_ProcessExit(t *testing.T) {
 
 			err := tree.processExit(exitEvent)
 			require.NoError(t, err)
+			tree.emptyProcessCache()
 			// Check that all nodes removed as expected
 			eLivingNodes := 0
 			for i, tp := range test.processes {
@@ -586,6 +590,7 @@ func TestProcessTree_ProcessEvent(t *testing.T) {
 	assert.Equal(t, execBinaryPath, process.ExecutionBinary.Path)
 	assert.Equal(t, execBinaryCtime, process.ExecutionBinary.Ctime)
 	err = tree.processExit(exitEvent)
+	tree.emptyProcessCache()
 	require.NoError(t, err)
 	_, err = tree.GetProcessInfo(ptid)
 	assert.Error(t, err)
