@@ -5,8 +5,9 @@ import (
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
-// processForkEvent add new process to the tree with all possible information available.
-// Notice that the new process ID and TID are not available, and will be collected only upon exec.
+// processForkEvent add new process to process tree if new process created, or update process threads if new thread
+// created. New process information upon fork is lacking, so the full information will be collected only once a new
+// event from the process and/or execve will occur.
 func (tree *ProcessTree) processForkEvent(event external.Event) error {
 	newProcessInHostIDs, err := parseForkInHostIDs(event)
 	if err != nil {
@@ -20,6 +21,8 @@ func (tree *ProcessTree) processForkEvent(event external.Event) error {
 	}
 }
 
+// processMainThreadFork add new process to the tree with all possible information available.
+// Notice that the new process ID and TID are not available, and will be collected only upon exec and/or any other event.
 func (tree *ProcessTree) processMainThreadFork(event external.Event, inHostIDs types.ProcessIDs) error {
 	inContainerIDs, err := parseForkInContainerIDs(event)
 	if err != nil {
@@ -57,6 +60,7 @@ func (tree *ProcessTree) processMainThreadFork(event external.Event, inHostIDs t
 	return nil
 }
 
+// processThreadFork fill process information if lacking, and add to thread count.
 func (tree *ProcessTree) processThreadFork(event external.Event) error {
 	newProcess, npErr := tree.GetProcessInfo(event.HostProcessID)
 	if npErr != nil {
