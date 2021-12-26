@@ -239,35 +239,32 @@ func (alert MemProtAlert) String() string {
 	}
 }
 
-type Process_ctx struct {
-	Ctime     uint64 // Ctime timestamp
-	Cgroup_id uint64
-	Pid       uint32 // PID as in the userspace term = nstgid
-	Tid       uint32 // TID as in the userspace term =
-	Ppid      uint32 // Parent PID as in the userspace term
-	Host_pid  uint32 // PID in host pid namespace
-	Host_tid  uint32 // TID in host pid namespace
-	Host_ppid uint32 // Parent PID in host pid namespace
-	Uid       uint32
-	Mnt_id    uint32
-	Pid_id    uint32
+type ProcessCtx struct {
+	Ctime       int
+	ContainerID string
+	Pid         int
+	Tid         int
+	Ppid        int
+	HostPid     int
+	HostTid     int
+	HostPpid    int
+	Uid         int
+	MntId       int
+	PidId       int
 }
 
-func SetProcessContext(ctx []byte) Process_ctx {
-	//if len(ctx) <52{
-	//	return
-	//}
-	var procCtx = Process_ctx{}
-	procCtx.Ctime = binary.LittleEndian.Uint64(ctx[0:8])
-	procCtx.Cgroup_id = binary.LittleEndian.Uint64(ctx[8:16])
-	procCtx.Pid = binary.LittleEndian.Uint32(ctx[16:20])
-	procCtx.Tid = binary.LittleEndian.Uint32(ctx[20:24])
-	procCtx.Ppid = binary.LittleEndian.Uint32(ctx[24:28])
-	procCtx.Host_pid = binary.LittleEndian.Uint32(ctx[28:32])
-	procCtx.Host_tid = binary.LittleEndian.Uint32(ctx[32:36])
-	procCtx.Host_ppid = binary.LittleEndian.Uint32(ctx[36:40])
-	procCtx.Uid = binary.LittleEndian.Uint32(ctx[40:44])
-	procCtx.Mnt_id = binary.LittleEndian.Uint32(ctx[44:48])
-	procCtx.Pid_id = binary.LittleEndian.Uint32(ctx[48:52])
+func SetProcessContext(ctx []byte) ProcessCtx {
+	var procCtx = ProcessCtx{}
+	procCtx.Ctime = int(binary.LittleEndian.Uint64(ctx[0:8]))
+	procCtx.ContainerID = string(binary.LittleEndian.Uint64(ctx[8:16]))
+	procCtx.Pid = int(binary.LittleEndian.Uint32(ctx[16:20]))
+	procCtx.Tid = int(binary.LittleEndian.Uint32(ctx[20:24]))
+	procCtx.Ppid = int(binary.LittleEndian.Uint32(ctx[24:28]))
+	procCtx.HostPid = int(binary.LittleEndian.Uint32(ctx[28:32]))
+	procCtx.HostTid = int(binary.LittleEndian.Uint32(ctx[32:36]))
+	procCtx.HostPpid = int(binary.LittleEndian.Uint32(ctx[36:40]))
+	procCtx.Uid = int(binary.LittleEndian.Uint32(ctx[40:44]))
+	procCtx.MntId = int(binary.LittleEndian.Uint32(ctx[44:48]))
+	procCtx.PidId = int(binary.LittleEndian.Uint32(ctx[48:52]))
 	return procCtx
 }

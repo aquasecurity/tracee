@@ -904,7 +904,7 @@ func (t *Tracee) initBPF() error {
 	return nil
 }
 
-func (t *Tracee) getProcessCtx(hostTid uint32) (external.Process_ctx, error) {
+func (t *Tracee) getProcessCtx(hostTid int) (external.ProcessCtx, error) {
 	processCtx, procExist := processTreeMap[hostTid]
 	if procExist {
 		//fmt.Printf("network process data: pid: %d, ctime: %v, ppid: %v, cgroup_id: %v\n",data.Pid, time.Unix(0, int64(data.Ctime+t.bootTime)), data.Ppid, data.Cgroup_id)
@@ -938,11 +938,11 @@ func getFileCtime(path string) (time.Time, error) {
 	return timespecToTime(stat_t.Ctim), nil
 }
 
-func parseProcStatus(status []string, taskName string) (external.Process_ctx, error) {
-	var process external.Process_ctx
+func parseProcStatus(status []string, taskName string) (external.ProcessCtx, error) {
+	var process external.ProcessCtx
 	processFileds := []string{"Tgid:", "Pid:", "PPid:", "Uid:", "NStgid:", "NSpid:", "NSpgid:"}
 	i := 0
-	var processVals []uint32
+	var processVals []int
 	for idx, val := range status {
 		if val == processFileds[i] {
 
@@ -951,7 +951,7 @@ func parseProcStatus(status []string, taskName string) (external.Process_ctx, er
 			if err != nil {
 				return process, err
 			}
-			processVals = append(processVals, uint32(filed))
+			processVals = append(processVals, int(filed))
 		}
 		if i > len(processFileds)-1 {
 			break
@@ -962,10 +962,10 @@ func parseProcStatus(status []string, taskName string) (external.Process_ctx, er
 	if err != nil {
 		return process, err
 	}
-	process.Ctime = uint64(processCtime.Unix())
-	process.Host_pid = processVals[0]
-	process.Host_tid = processVals[1]
-	process.Host_ppid = processVals[2]
+	process.Ctime = int(processCtime.Unix())
+	process.HostPid = processVals[0]
+	process.HostTid = processVals[1]
+	process.HostPpid = processVals[2]
 	process.Uid = processVals[3]
 	process.Pid = processVals[4]
 	process.Tid = processVals[5]
@@ -974,9 +974,9 @@ func parseProcStatus(status []string, taskName string) (external.Process_ctx, er
 	if err != nil {
 		return process, err
 	}
-	process.Mnt_id = mntId
-	process.Pid_id = pidId
-	process.Cgroup_id = CgroupId
+	process.MntId = int(mntId)
+	process.PidId = int(pidId)
+	process.ContainerID = fmt.Sprint(CgroupId)
 	return process, nil
 }
 
@@ -1042,14 +1042,14 @@ func (t *Tracee) initProcessTree() {
 			taskStatus := fmt.Sprintf("/proc/%d/task/%v/status", pid, task)
 			data, err := ioutil.ReadFile(taskStatus)
 			if err != nil {
-				t.handleError(err)
+				continue
 			}
 			dataStatus := strings.Fields(string(data))
 			processStatus, err := parseProcStatus(dataStatus, taskStatus)
 			if err != nil {
 				t.handleError(err)
 			}
-			processTreeMap[uint32(processStatus.Host_tid)] = processStatus
+			processTreeMap[int(processStatus.HostTid)] = processStatus
 		}
 	}
 

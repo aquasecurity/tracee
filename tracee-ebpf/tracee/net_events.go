@@ -9,72 +9,6 @@ import (
 	"time"
 )
 
-func DnsPaseName(payload []byte) string {
-	for idx, val := range payload {
-		if int16(val) < 32 && idx != 0 {
-			payload[idx] = byte('.')
-		}
-	}
-	return string(payload)
-}
-
-//asumme we get the payload as the start of the name and then we parse the name, class , type
-func ParseDnsMetaData(payload []byte) ([3]string, int32) {
-
-	queryData := [3]string{"", "Unknown", "Unknown"} //name, type, class
-	for idx, val := range payload {
-		if val == 0 || val == 0xc0 {
-			//fmt.Println(payload[idx:idx+10])
-
-			if val == 0xc0 {
-				idx++
-			} else if payload[idx+1] == 0xc0 {
-				idx += 2
-				queryData[0] = "prev"
-			} else {
-				if idx != 0 {
-					queryData[0] = DnsPaseName(payload[1:idx])
-				}
-			}
-			dataTypeB := payload[idx+2]
-			dataClassB := payload[idx+4]
-			switch dataClassB {
-			case 0:
-				queryData[2] = "Reserved"
-			case 1:
-				queryData[2] = "IN"
-			case 2:
-				queryData[2] = "Unassigned"
-			case 3:
-				queryData[2] = "CH"
-			case 4:
-				queryData[2] = "HS"
-			}
-			switch dataTypeB {
-			case 1:
-				queryData[1] = "A (IPv4)"
-
-			case 28:
-				queryData[1] = "AAAA (IPv6)"
-			case 16:
-				queryData[1] = "TXT"
-			case 33:
-				queryData[1] = "SRV (location of service)"
-			case 5:
-				queryData[1] = "CNAME"
-			case 15:
-				queryData[1] = "MX"
-			case 2:
-				queryData[2] = "NS"
-
-			}
-			return queryData, int32(idx + 4)
-		}
-
-	}
-	return queryData, 0
-}
-
 func (t *Tracee) processNetEvents() {
 	// Todo: split pcap files by context (tid + comm)
 	// Todo: add stats for network packets (in epilog)
@@ -128,9 +62,10 @@ func (t *Tracee) processNetEvents() {
 						t.handleError(err)
 						continue
 					}
-					networkProcess, err := t.getProcessCtx(hostTid)
+					networkProcess, err := t.getProcessCtx(int(hostTid))
 					hr, min, sec := timeStampObj.Clock()
-					nsec := timeStampObj.Nanosecond()
+					nsec := uint16(timeStampObj.Nanosecond())
+
 					if err != nil {
 						fmt.Printf("%v:%v:%v:%v  %-16s  %-7d  debug_net/packet               Len: %d, SrcIP: %v, SrcPort: %d, DestIP: %v, DestPort: %d, Protocol: %d\n",
 							hr,
@@ -146,7 +81,7 @@ func (t *Tracee) processNetEvents() {
 							pktMeta.DestPort,
 							pktMeta.Protocol)
 					} else {
-						fmt.Printf("%v:%v:%v:%v  %v   %-16s  %v  %v    %d             debug_net/packet     %-7d            Len: %d, SrcIP: %v, SrcPort: %d, DestIP: %v, DestPort: %d, Protocol: %d\n",
+						fmt.Printf("%v:%v:%v:%v   %v    %-16s  %v  %v    %d             debug_net/packet              Len: %d, SrcIP: %v, SrcPort: %d, DestIP: %v, DestPort: %d, Protocol: %d\n",
 							hr,
 							min,
 							sec,
@@ -156,7 +91,6 @@ func (t *Tracee) processNetEvents() {
 							networkProcess.Pid,
 							networkProcess.Tid,
 							0,
-							hostTid,
 							pktLen,
 							netaddr.IPFrom16(pktMeta.SrcIP),
 							pktMeta.SrcPort,

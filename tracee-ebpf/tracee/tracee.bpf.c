@@ -199,8 +199,7 @@ Copyright (C) Aqua Security inc.
 #define DEBUG_NET_UDPV6_DESTROY_SOCK    5
 #define DEBUG_NET_INET_SOCK_SET_STATE   6
 #define DEBUG_NET_TCP_CONNECT           7
-#define NET_DNS_REQUEST                 8
-#define NET_DNS_RESPONSE                9
+
 
 
 #define CONFIG_SHOW_SYSCALL             1
@@ -525,42 +524,6 @@ typedef struct net_ctx_ext {
     __be16 local_port;
 } net_ctx_ext_t;
 
-
-typedef struct dns_hdr {
-    uint16_t transaction_id;
-    uint8_t rd : 1;      //Recursion desired
-    uint8_t tc : 1;      //Truncated
-    uint8_t aa : 1;      //Authoritive answer
-    uint8_t opcode : 4;  //Opcode
-    uint8_t qr : 1;      //Query/response flag
-    uint8_t rcode : 4;   //Response code
-    uint8_t cd : 1;      //Checking disabled
-    uint8_t ad : 1;      //Authenticated data
-    uint8_t z : 1;       //Z reserved bit
-    uint8_t ra : 1;      //Recursion available
-    uint16_t q_count;    //Number of questions
-    uint16_t ans_count;  //Number of answer RRs
-    uint16_t auth_count; //Number of authority RRs
-    uint16_t add_count;  //Number of resource RRs
-} __attribute__((packed)) dns_hdr_t;
-
-
-
-
-typedef struct dns_request_info{
-    uint64_t qname :48;
-    uint16_t qtype;
-    uint16_t qclass;
-
-} dns_request_info_t;
-typedef struct dns_response_info{
-    uint64_t name;
-    uint16_t type;
-    uint16_t rdata_class; // formerly known as "class" in the originally struct
-    uint32_t ttl;
-    uint16_t rd_length;
-    uint32_t rdata;
-} dns_response_info_t;
 
 /*=============================== KERNEL STRUCTS =============================*/
 
@@ -4315,6 +4278,7 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
             }
         }
     }
+
     pkt.host_tid = net_ctx->host_tid;
     __builtin_memcpy(pkt.comm, net_ctx->comm, TASK_COMM_LEN);
 
