@@ -12,19 +12,20 @@ func (tree *ProcessTree) processForkEvent(event external.Event) error {
 	if err != nil {
 		return err
 	}
-	newProcessInContainerIDs, err := parseForkInContainerIDs(event)
+
+	if newProcessInHostIDs.Pid == newProcessInHostIDs.Tid {
+		return tree.processMainThreadFork(event, newProcessInHostIDs)
+	} else {
+		return tree.processThreadFork(event)
+	}
+}
+
+func (tree *ProcessTree) processMainThreadFork(event external.Event, inHostIDs types.ProcessIDs) error {
+	inContainerIDs, err := parseForkInContainerIDs(event)
 	if err != nil {
 		return err
 	}
 
-	if newProcessInHostIDs.Pid == newProcessInHostIDs.Tid {
-		return tree.processMainThreadFork(event, newProcessInHostIDs, newProcessInContainerIDs)
-	} else {
-		return tree.processThreadFork(event, newProcessInHostIDs, newProcessInContainerIDs)
-	}
-}
-
-func (tree *ProcessTree) processMainThreadFork(event external.Event, inHostIDs types.ProcessIDs, inContainerIDs types.ProcessIDs) error {
 	newProcess, npErr := tree.GetProcessInfo(inHostIDs.Pid)
 	// If it is a new process or if for some reason the existing process is a result of lost exit event
 	if npErr != nil ||
@@ -56,8 +57,8 @@ func (tree *ProcessTree) processMainThreadFork(event external.Event, inHostIDs t
 	return nil
 }
 
-func (tree *ProcessTree) processThreadFork(event external.Event, inHostIDs types.ProcessIDs, inContainerIDs types.ProcessIDs) error {
-	newProcess, npErr := tree.GetProcessInfo(inHostIDs.Pid)
+func (tree *ProcessTree) processThreadFork(event external.Event) error {
+	newProcess, npErr := tree.GetProcessInfo(event.HostProcessID)
 	if npErr != nil {
 		// In this case, calling thread is another thread of the process and we have normal general information on it
 		newProcess = tree.addGeneralEventProcess(event)
@@ -69,10 +70,18 @@ func (tree *ProcessTree) processThreadFork(event external.Event, inHostIDs types
 	if newProcess.Status == types.HollowParent {
 		fillHollowProcessInfo(
 			newProcess,
-			inHostIDs,
-			inContainerIDs,
-			event.ContainerID,
+			types.ProcessIDs{
+				Pid:  event.HostProcessID,
+				Ppid: event.HostParentProcessID,
+				Tid:  event.HostProcessID, // The process TID should be the same as the PID
+			},
+			types.ProcessIDs{
+				Pid:  event.ProcessID,
+				Ppid: event.ParentProcessID,
+				Tid:  event.ProcessID, // The process TID should be the same as the PID
+			},
 			event.ProcessName,
+			event.ContainerID,
 		)
 	}
 	return nil

@@ -12,11 +12,11 @@ func (tree *ProcessTree) addGeneralEventProcess(event external.Event) *types.Pro
 		InHostIDs: types.ProcessIDs{
 			Pid:  event.HostProcessID,
 			Ppid: event.HostParentProcessID,
-			Tid:  event.HostThreadID,
+			Tid:  event.HostProcessID,
 		},
 		InContainerIDs: types.ProcessIDs{
 			Pid:  event.ProcessID,
-			Ppid: event.ProcessID,
+			Ppid: event.ParentProcessID,
 			Tid:  event.ThreadID,
 		},
 		ContainerID:  event.ContainerID,
