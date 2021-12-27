@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/Masterminds/sprig/v3 v3.2.2
+	github.com/RoaringBitmap/roaring v0.9.4 // indirect
 	github.com/aquasecurity/libbpfgo v0.2.2-libbpf-0.5.0
 	github.com/google/gopacket v1.1.19
 	github.com/hashicorp/golang-lru v0.5.4

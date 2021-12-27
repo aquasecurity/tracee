@@ -31,7 +31,7 @@ func (tree *ProcessTree) processDefaultEvent(event external.Event) error {
 	process, err := tree.GetProcessInfo(event.HostProcessID)
 	if err != nil {
 		process = tree.addGeneralEventProcess(event)
-	} else if process.Status == types.HollowParent {
+	} else if process.Status.Contains(uint32(types.HollowParent)) {
 		fillHollowParentProcessGeneralEvent(process, event)
 	}
 	if process.ParentProcess == nil {

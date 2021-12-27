@@ -16,7 +16,7 @@ func (tree *ProcessTree) processExecEvent(event external.Event) error {
 	if process.ParentProcess == nil {
 		tree.generateParentProcess(process)
 	}
-	if process.Status == types.HollowParent {
+	if process.Status.Contains(uint32(types.HollowParent)) {
 		fillHollowParentProcessGeneralEvent(process, event)
 	}
 	process.ExecutionBinary, process.Cmd, err = parseExecArguments(event)
@@ -26,12 +26,7 @@ func (tree *ProcessTree) processExecEvent(event external.Event) error {
 	process.ProcessName = event.ProcessName
 	process.ExecTime = event.Timestamp
 
-	if process.Status == types.Forked ||
-		process.Status == types.Completed {
-		process.Status = types.Completed
-	} else {
-		process.Status = types.Executed
-	}
+	process.Status.Add(uint32(types.Executed))
 	return nil
 }
 

@@ -1,6 +1,7 @@
 package process_tree
 
 import (
+	"github.com/RoaringBitmap/roaring"
 	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
@@ -32,16 +33,15 @@ func (tree *ProcessTree) processMainThreadFork(event external.Event, inHostIDs t
 	newProcess, npErr := tree.GetProcessInfo(inHostIDs.Pid)
 	// If it is a new process or if for some reason the existing process is a result of lost exit event
 	if npErr != nil ||
-		newProcess.Status == types.Completed ||
-		newProcess.Status == types.Forked {
+		newProcess.Status.Contains(uint32(types.Forked)) {
 		newProcess = tree.addNewForkedProcess(event, inHostIDs, inContainerIDs)
 	}
 
 	// If exec did not happened yet, add binary information of parent
-	if newProcess.Status == types.Forked {
+	if newProcess.Status.Contains(uint32(types.Forked)) {
 		tree.copyParentBinaryInfo(newProcess)
 	}
-	if newProcess.Status == types.HollowParent {
+	if newProcess.Status.Contains(uint32(types.HollowParent)) {
 		fillHollowProcessInfo(
 			newProcess,
 			inHostIDs,
@@ -52,11 +52,7 @@ func (tree *ProcessTree) processMainThreadFork(event external.Event, inHostIDs t
 	}
 
 	newProcess.StartTime = event.Timestamp
-	if newProcess.Status == types.Executed {
-		newProcess.Status = types.Completed
-	} else {
-		newProcess.Status = types.Forked
-	}
+	newProcess.Status.Add(uint32(types.Forked))
 	return nil
 }
 
@@ -71,7 +67,7 @@ func (tree *ProcessTree) processThreadFork(event external.Event) error {
 		newProcess.ThreadsCount += 1
 	}
 
-	if newProcess.Status == types.HollowParent {
+	if newProcess.Status.Contains(uint32(types.HollowParent)) {
 		fillHollowProcessInfo(
 			newProcess,
 			types.ProcessIDs{
@@ -131,7 +127,7 @@ func (tree *ProcessTree) addNewForkedProcess(event external.Event, inHostIDs typ
 		ContainerID:    event.ContainerID,
 		StartTime:      event.Timestamp,
 		IsAlive:        true,
-		Status:         types.Forked,
+		Status:         *roaring.BitmapOf(uint32(types.Forked)),
 		ThreadsCount:   1,
 	}
 	containerTree, err := tree.getContainerTree(event.ContainerID)
@@ -156,7 +152,7 @@ func (tree *ProcessTree) addNewForkedProcess(event external.Event, inHostIDs typ
 }
 
 func (tree *ProcessTree) copyParentBinaryInfo(p *types.ProcessInfo) {
-	if p.Status == types.Forked {
+	if p.Status.Contains(uint32(types.Forked)) {
 		fatherProcess, err := tree.GetProcessInfo(p.InHostIDs.Ppid)
 		if err == nil {
 			p.ExecutionBinary = fatherProcess.ExecutionBinary

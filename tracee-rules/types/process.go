@@ -1,13 +1,14 @@
 package types
 
-type ProcessInformationStatus uint
+import "github.com/RoaringBitmap/roaring"
+
+type ProcessInformationStatus uint32
 
 const (
 	Forked ProcessInformationStatus = iota
 	Executed
 	GeneralCreated
 	HollowParent
-	Completed
 )
 
 type ProcessIDs struct {
@@ -35,7 +36,7 @@ type ProcessInfo struct {
 	ChildProcesses  []*ProcessInfo
 	ThreadsCount    int
 	IsAlive         bool
-	Status          ProcessInformationStatus
+	Status          roaring.Bitmap // Values type are ProcessInformationStatus
 }
 
 type ProcessLineage []ProcessInfo

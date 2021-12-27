@@ -1,6 +1,7 @@
 package process_tree
 
 import (
+	"github.com/RoaringBitmap/roaring"
 	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/stretchr/testify/assert"
@@ -16,7 +17,7 @@ const cPPID = 2
 
 func TestProcessTree_ProcessFork(t *testing.T) {
 	type expectedValues struct {
-		status       types.ProcessInformationStatus
+		status       roaring.Bitmap
 		threadsCount int
 	}
 	t.Run("Main thread fork", func(t *testing.T) {
@@ -48,10 +49,10 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					ContainerID:  TestContainerID,
 					ThreadsCount: 1,
 					IsAlive:      true,
-					Status:       types.Executed,
+					Status:       *roaring.BitmapOf(uint32(types.Executed), uint32(types.GeneralCreated)),
 				}),
 				expected: expectedValues{
-					types.Completed,
+					*roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked), uint32(types.Executed)),
 					1,
 				},
 			},
@@ -71,10 +72,10 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					StartTime:    shCtime - 100000,
 					ThreadsCount: 1,
 					IsAlive:      true,
-					Status:       types.Forked,
+					Status:       *roaring.BitmapOf(uint32(types.Forked)),
 				}),
 				expected: expectedValues{
-					types.Forked,
+					*roaring.BitmapOf(uint32(types.Forked)),
 					1,
 				},
 			},
@@ -102,10 +103,10 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					ContainerID:  "",
 					ThreadsCount: 1,
 					IsAlive:      true,
-					Status:       types.Completed,
+					Status:       *roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked), uint32(types.Executed)),
 				}),
 				expected: expectedValues{
-					types.Forked,
+					*roaring.BitmapOf(uint32(types.Forked)),
 					1,
 				},
 			},
@@ -118,10 +119,10 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					InContainerIDs: types.ProcessIDs{
 						Pid: cPID,
 					},
-					Status: types.HollowParent,
+					Status: *roaring.BitmapOf(uint32(types.HollowParent)),
 				}),
 				expected: expectedValues{
-					types.Forked,
+					*roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked)),
 					1,
 				},
 			},
@@ -142,10 +143,10 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					ContainerID:  TestContainerID,
 					ThreadsCount: 1,
 					IsAlive:      true,
-					Status:       types.GeneralCreated,
+					Status:       *roaring.BitmapOf(uint32(types.GeneralCreated)),
 				}),
 				expected: expectedValues{
-					types.Forked,
+					*roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked)),
 					1,
 				},
 			},
@@ -156,7 +157,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					containers: map[string]*containerProcessTree{},
 				},
 				expected: expectedValues{
-					types.Forked,
+					*roaring.BitmapOf(uint32(types.Forked)),
 					1,
 				},
 			},
@@ -167,7 +168,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 				require.NoError(t, testCase.tree.ProcessEvent(forkEvent))
 				p, err := testCase.tree.GetProcessInfo(threadPID)
 				require.NoError(t, err)
-				assert.Equal(t, testCase.expected.status, p.Status)
+				assert.Equal(t, testCase.expected.status.ToArray(), p.Status.ToArray())
 				assert.Equal(t, testCase.expected.threadsCount, p.ThreadsCount)
 				assert.Equal(t, forkEvent.HostProcessID, p.InHostIDs.Ppid)
 				assert.Equal(t, forkEvent.ProcessID, p.InContainerIDs.Ppid)
@@ -204,10 +205,10 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					ContainerID:  TestContainerID,
 					ThreadsCount: 1,
 					IsAlive:      true,
-					Status:       types.Executed,
+					Status:       *roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Executed)),
 				}),
 				expected: expectedValues{
-					types.Executed,
+					*roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Executed)),
 					2,
 				},
 			},
@@ -225,12 +226,13 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 						Tid:  cPID,
 					},
 					StartTime:    shCtime,
+					ProcessName:  "sh",
 					ThreadsCount: 1,
 					IsAlive:      true,
-					Status:       types.Forked,
+					Status:       *roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked)),
 				}),
 				expected: expectedValues{
-					types.Forked,
+					*roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked)),
 					2,
 				},
 			},
@@ -258,10 +260,10 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					ContainerID:  TestContainerID,
 					ThreadsCount: 1,
 					IsAlive:      true,
-					Status:       types.Completed,
+					Status:       *roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked), uint32(types.Executed)),
 				}),
 				expected: expectedValues{
-					types.Completed,
+					*roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked), uint32(types.Executed)),
 					2,
 				},
 			},
@@ -274,10 +276,10 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					InContainerIDs: types.ProcessIDs{
 						Pid: cPID,
 					},
-					Status: types.HollowParent,
+					Status: *roaring.BitmapOf(uint32(types.HollowParent)),
 				}),
 				expected: expectedValues{
-					types.GeneralCreated,
+					*roaring.BitmapOf(uint32(types.GeneralCreated)),
 					1,
 				},
 			},
@@ -298,10 +300,10 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					ContainerID:  TestContainerID,
 					ThreadsCount: 1,
 					IsAlive:      true,
-					Status:       types.GeneralCreated,
+					Status:       *roaring.BitmapOf(uint32(types.GeneralCreated)),
 				}),
 				expected: expectedValues{
-					types.GeneralCreated,
+					*roaring.BitmapOf(uint32(types.GeneralCreated)),
 					2,
 				},
 			},
@@ -312,7 +314,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					containers: map[string]*containerProcessTree{},
 				},
 				expected: expectedValues{
-					types.GeneralCreated,
+					*roaring.BitmapOf(uint32(types.GeneralCreated)),
 					1,
 				},
 			},
@@ -323,7 +325,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 				require.NoError(t, testCase.tree.ProcessEvent(forkEvent))
 				p, err := testCase.tree.GetProcessInfo(threadPID)
 				require.NoError(t, err)
-				assert.Equal(t, testCase.expected.status, p.Status)
+				assert.Equal(t, testCase.expected.status.ToArray(), p.Status.ToArray())
 				assert.Equal(t, testCase.expected.threadsCount, p.ThreadsCount)
 				assert.Equal(t, forkEvent.ProcessName, p.ProcessName)
 				assert.Equal(t, forkEvent.HostProcessID, p.InHostIDs.Pid)

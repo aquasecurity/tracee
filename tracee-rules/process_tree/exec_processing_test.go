@@ -1,6 +1,7 @@
 package process_tree
 
 import (
+	"github.com/RoaringBitmap/roaring"
 	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/stretchr/testify/assert"
@@ -73,7 +74,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 				},
 				ContainerID: TestContainerID,
 				StartTime:   0,
-				Status:      types.Executed,
+				Status:      *roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Executed)),
 			},
 		},
 		{
@@ -94,7 +95,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 						ContainerID: TestContainerID,
 						StartTime:   100000000,
 						ProcessName: "bash",
-						Status:      types.Forked,
+						Status:      *roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked)),
 					},
 				},
 				containers: map[string]*containerProcessTree{},
@@ -117,7 +118,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 				},
 				ContainerID: TestContainerID,
 				StartTime:   100000000,
-				Status:      types.Completed,
+				Status:      *roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked), uint32(types.Executed)),
 				ProcessName: execEvent.ProcessName,
 			},
 		},
@@ -139,7 +140,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 						ContainerID: TestContainerID,
 						StartTime:   100000000,
 						ProcessName: "sleep",
-						Status:      types.Completed,
+						Status:      *roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked), uint32(types.Executed)),
 						ExecutionBinary: types.BinaryInfo{
 							Path:  "/bin/sleep",
 							Ctime: 100,
@@ -166,7 +167,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 					Ctime: uint(execBinaryCtime),
 				},
 				StartTime:   100000000,
-				Status:      types.Completed,
+				Status:      *roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked), uint32(types.Executed)),
 				ProcessName: execEvent.ProcessName,
 			},
 		},
@@ -187,7 +188,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 						},
 						ContainerID: TestContainerID,
 						ProcessName: execEvent.ProcessName,
-						Status:      types.GeneralCreated,
+						Status:      *roaring.BitmapOf(uint32(types.GeneralCreated)),
 					},
 				},
 				containers: map[string]*containerProcessTree{},
@@ -209,7 +210,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 					Path:  execBinaryPath,
 					Ctime: uint(execBinaryCtime),
 				},
-				Status:      types.Executed,
+				Status:      *roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Executed)),
 				ProcessName: execEvent.ProcessName,
 			},
 		},

@@ -2,6 +2,7 @@ package process_tree
 
 import (
 	"fmt"
+	"github.com/RoaringBitmap/roaring"
 	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
@@ -22,7 +23,7 @@ func (tree *ProcessTree) addGeneralEventProcess(event external.Event) *types.Pro
 		ContainerID:  event.ContainerID,
 		ThreadsCount: 1,
 		IsAlive:      true,
-		Status:       types.GeneralCreated,
+		Status:       *roaring.BitmapOf(uint32(types.GeneralCreated)),
 	}
 	tree.processes[event.HostProcessID] = process
 	_, err := tree.getContainerTree(event.ContainerID)
@@ -48,7 +49,7 @@ func (tree *ProcessTree) generateParentProcess(process *types.ProcessInfo) *type
 				InContainerIDs: types.ProcessIDs{
 					Pid: process.InContainerIDs.Ppid,
 				},
-				Status: types.HollowParent,
+				Status: *roaring.BitmapOf(uint32(types.HollowParent)),
 			}
 		}
 		process.ParentProcess = parentProcess
@@ -109,5 +110,6 @@ func fillHollowProcessInfo(
 	p.ProcessName = processName
 	p.ThreadsCount = 1
 	p.IsAlive = true
-	p.Status = types.GeneralCreated
+	p.Status.Add(uint32(types.GeneralCreated))
+	p.Status.Remove(uint32(types.HollowParent))
 }
