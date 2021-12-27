@@ -1,4 +1,4 @@
-package tracee
+package containers
 
 import (
 	"bufio"
@@ -13,7 +13,7 @@ import (
 	"time"
 	"unsafe"
 
-	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo"
 )
 
 // Containers contain information about host running containers in the host.
@@ -271,8 +271,8 @@ const (
 	containerStarted
 )
 
-func (c *Containers) PopulateBpfMap(bpfModule *bpf.Module) error {
-	containersMap, err := bpfModule.GetMap("containers_map")
+func (c *Containers) PopulateBpfMap(bpfModule *libbpfgo.Module, mapName string) error {
+	containersMap, err := bpfModule.GetMap(mapName)
 	if err != nil {
 		return err
 	}
@@ -287,8 +287,8 @@ func (c *Containers) PopulateBpfMap(bpfModule *bpf.Module) error {
 	return err
 }
 
-func RemoveFromBpfMap(bpfModule *bpf.Module, cgroupId uint64) error {
-	containersMap, err := bpfModule.GetMap("containers_map")
+func RemoveFromBpfMap(bpfModule *libbpfgo.Module, cgroupId uint64, mapName string) error {
+	containersMap, err := bpfModule.GetMap(mapName)
 	if err != nil {
 		return err
 	}

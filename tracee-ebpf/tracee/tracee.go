@@ -23,6 +23,7 @@ import (
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/pkg/bucketscache"
+	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
@@ -177,7 +178,7 @@ type Tracee struct {
 	pcapWriter        *pcapgo.NgWriter
 	pcapFile          *os.File
 	ngIfacesIndex     map[int]int
-	containers        *Containers
+	containers        *containers.Containers
 }
 
 type counter int32
@@ -294,7 +295,7 @@ func New(cfg Config) (*Tracee, error) {
 		}
 	}
 
-	c := InitContainers()
+	c := containers.InitContainers()
 	if err := c.Populate(); err != nil {
 		return nil, fmt.Errorf("error initializing containers: %v", err)
 	}
@@ -568,7 +569,7 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Populate containers_map with existing containers
-	t.containers.PopulateBpfMap(t.bpfModule)
+	t.containers.PopulateBpfMap(t.bpfModule, "containers_map")
 
 	// Initialize tail calls program array
 	errs = make([]error, 0)
