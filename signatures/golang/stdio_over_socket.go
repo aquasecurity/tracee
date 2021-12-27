@@ -221,7 +221,7 @@ func getAddressfromAddrArg(arg external.Argument) (connectedAddress, error) {
 		for k, v := range stringInterMap {
 			s, isString := v.(string)
 			if !isString {
-				return connectedAddress{}, fmt.Errorf("couldn't convert arg to addr")
+				return connectedAddress{}, fmt.Errorf("couldn't convert arg %v to string addr", v)
 			}
 			addr[k] = s
 		}
