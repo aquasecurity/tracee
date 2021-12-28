@@ -26,13 +26,6 @@ func (tree *ProcessTree) addGeneralEventProcess(event external.Event) *types.Pro
 		Status:       *roaring.BitmapOf(uint32(types.GeneralCreated)),
 	}
 	tree.processes[event.HostProcessID] = process
-	_, err := tree.getContainerTree(event.ContainerID)
-	if err != nil {
-		containerTree := &containerProcessTree{
-			Root: process,
-		}
-		tree.containers[event.ContainerID] = containerTree
-	}
 	return process
 }
 
@@ -56,11 +49,6 @@ func (tree *ProcessTree) generateParentProcess(process *types.ProcessInfo) *type
 		}
 		process.ParentProcess = parentProcess
 		parentProcess.ChildProcesses = append(parentProcess.ChildProcesses, process)
-
-		croot, _ := tree.GetContainerRoot(process.ContainerID)
-		if croot == process {
-			tree.containers[process.ContainerID].Root = parentProcess
-		}
 	}
 	return process
 }

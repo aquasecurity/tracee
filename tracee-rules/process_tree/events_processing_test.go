@@ -12,8 +12,7 @@ const TestContainerID = "a7f965fba4e145e02c99b1577febe0cb723a943d850278365994ac9
 
 func TestProcessTree_ProcessEvent(t *testing.T) {
 	tree := ProcessTree{
-		containers: map[string]*containerProcessTree{},
-		processes:  map[int]*types.ProcessInfo{},
+		processes: map[int]*types.ProcessInfo{},
 	}
 
 	ptid := 22482

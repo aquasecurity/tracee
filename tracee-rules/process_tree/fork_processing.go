@@ -130,13 +130,6 @@ func (tree *ProcessTree) addNewForkedProcess(event external.Event, inHostIDs typ
 		Status:         *roaring.BitmapOf(uint32(types.Forked)),
 		ThreadsCount:   1,
 	}
-	containerTree, err := tree.getContainerTree(event.ContainerID)
-	if err != nil {
-		containerTree = &containerProcessTree{
-			Root: newProcess,
-		}
-		tree.containers[event.ContainerID] = containerTree
-	}
 	if newProcess.InContainerIDs.Ppid != 0 &&
 		newProcess.InHostIDs.Pid != newProcess.InHostIDs.Ppid { // Prevent looped references
 		fatherProcess, err := tree.GetProcessInfo(newProcess.InHostIDs.Ppid)
@@ -144,8 +137,6 @@ func (tree *ProcessTree) addNewForkedProcess(event external.Event, inHostIDs typ
 			newProcess.ParentProcess = fatherProcess
 			fatherProcess.ChildProcesses = append(fatherProcess.ChildProcesses, newProcess)
 		}
-	} else {
-		containerTree.Root = newProcess
 	}
 	// This will delete old instance if its exit was missing
 	tree.processes[inHostIDs.Pid] = newProcess

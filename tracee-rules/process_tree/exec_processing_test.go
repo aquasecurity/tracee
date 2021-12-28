@@ -52,8 +52,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 		{
 			testName: "empty tree",
 			initialTree: ProcessTree{
-				processes:  map[int]*types.ProcessInfo{},
-				containers: map[string]*containerProcessTree{},
+				processes: map[int]*types.ProcessInfo{},
 			},
 			expectedProcess: types.ProcessInfo{
 				InHostIDs: types.ProcessIDs{
@@ -98,7 +97,6 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 						Status:      *roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked)),
 					},
 				},
-				containers: map[string]*containerProcessTree{},
 			},
 			expectedProcess: types.ProcessInfo{
 				InHostIDs: types.ProcessIDs{
@@ -147,7 +145,6 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 						},
 					},
 				},
-				containers: map[string]*containerProcessTree{},
 			},
 			expectedProcess: types.ProcessInfo{
 				InHostIDs: types.ProcessIDs{
@@ -191,7 +188,6 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 						Status:      *roaring.BitmapOf(uint32(types.GeneralCreated)),
 					},
 				},
-				containers: map[string]*containerProcessTree{},
 			},
 			expectedProcess: types.ProcessInfo{
 				InHostIDs: types.ProcessIDs{

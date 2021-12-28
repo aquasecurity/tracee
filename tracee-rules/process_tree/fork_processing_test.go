@@ -153,8 +153,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 			{
 				testName: "Non existing process",
 				tree: ProcessTree{
-					processes:  map[int]*types.ProcessInfo{},
-					containers: map[string]*containerProcessTree{},
+					processes: map[int]*types.ProcessInfo{},
 				},
 				expected: expectedValues{
 					*roaring.BitmapOf(uint32(types.Forked)),
@@ -310,8 +309,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 			{
 				testName: "Non existing process",
 				tree: ProcessTree{
-					processes:  map[int]*types.ProcessInfo{},
-					containers: map[string]*containerProcessTree{},
+					processes: map[int]*types.ProcessInfo{},
 				},
 				expected: expectedValues{
 					*roaring.BitmapOf(uint32(types.GeneralCreated)),
@@ -342,11 +340,6 @@ func generateProcessTree(p *types.ProcessInfo) ProcessTree {
 	return ProcessTree{
 		processes: map[int]*types.ProcessInfo{
 			p.InHostIDs.Pid: p,
-		},
-		containers: map[string]*containerProcessTree{
-			p.ContainerID: {
-				Root: p,
-			},
 		},
 	}
 }

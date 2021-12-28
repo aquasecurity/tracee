@@ -23,15 +23,6 @@ func (tree *ProcessTree) GetProcessInfo(hostProcessID int) (*types.ProcessInfo, 
 	return process, nil
 }
 
-// GetContainerRoot return the first recorded process in a container
-func (tree *ProcessTree) GetContainerRoot(containerID string) (*types.ProcessInfo, error) {
-	containerTree, err := tree.getContainerTree(containerID)
-	if err != nil {
-		return nil, err
-	}
-	return containerTree.Root, nil
-}
-
 // GetProcessLineage returns list of processes starting with the ID matching events back to the root of the container
 // or oldest registered ancestor in the container (if root is missing)
 func (tree *ProcessTree) GetProcessLineage(hostProcessID int) (types.ProcessLineage, error) {
@@ -45,12 +36,4 @@ func (tree *ProcessTree) GetProcessLineage(hostProcessID int) (types.ProcessLine
 		process = process.ParentProcess
 	}
 	return lineage, nil
-}
-
-func (tree *ProcessTree) getContainerTree(containerID string) (*containerProcessTree, error) {
-	containerTree, ok := tree.containers[containerID]
-	if !ok {
-		return nil, fmt.Errorf("no container with given ID is recorded")
-	}
-	return containerTree, nil
 }

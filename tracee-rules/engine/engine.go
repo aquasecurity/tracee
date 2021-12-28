@@ -3,7 +3,6 @@ package engine
 import (
 	"errors"
 	"fmt"
-	"github.com/aquasecurity/tracee/tracee-rules/process_tree"
 	"io"
 	"log"
 	"reflect"
@@ -121,7 +120,6 @@ func (engine *Engine) Start(done chan bool) {
 	}
 	engine.signaturesMutex.RUnlock()
 	engine.consumeSources(done)
-	process_tree.PrintTree()
 }
 
 func (engine *Engine) unloadAllSignatures() {

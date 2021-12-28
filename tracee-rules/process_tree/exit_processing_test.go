@@ -106,7 +106,7 @@ func testLinearTreeExit(t *testing.T) {
 					eLivingNodes = i + 1
 				}
 			}
-			p, err := tree.GetContainerRoot(exitEvent.ContainerID)
+			p, err := tree.GetProcessInfo(exitEvent.HostProcessID - exitProcessIndex)
 			if err == nil {
 				rLivingChildren := countChildTreeNodes(p)
 				assert.NotZero(t, rLivingChildren)
@@ -169,11 +169,6 @@ func testExitWithSiblings(t *testing.T) {
 				processes: map[int]*types.ProcessInfo{
 					parentProcess.InHostIDs.Pid: parentProcess,
 				},
-				containers: map[string]*containerProcessTree{
-					parentProcess.ContainerID: {
-						Root: parentProcess,
-					},
-				},
 			}
 
 			for i := 0; i < test.siblingsNum; i++ {
@@ -210,10 +205,7 @@ func testExitWithSiblings(t *testing.T) {
 					assert.Contains(t, pp.ChildProcesses, p)
 				}
 			}
-			root, err := tree.GetContainerRoot(exitEvent.ContainerID)
-			require.NoError(t, err)
-			assert.Equal(t, pp, root)
-			assert.Equal(t, test.siblingsNum, countChildTreeNodes(root))
+			assert.Equal(t, test.siblingsNum, countChildTreeNodes(pp))
 		})
 	}
 }
@@ -228,8 +220,7 @@ func countChildTreeNodes(p *types.ProcessInfo) int {
 
 func buildOneLineTree(tps []testProcess, lastProcessIDs types.ProcessIDs) (ProcessTree, error) {
 	tree := ProcessTree{
-		processes:  map[int]*types.ProcessInfo{},
-		containers: map[string]*containerProcessTree{},
+		processes: map[int]*types.ProcessInfo{},
 	}
 
 	exitProcessIndex := len(tps) - 1
@@ -252,8 +243,6 @@ func buildOneLineTree(tps []testProcess, lastProcessIDs types.ProcessIDs) (Proce
 				return tree, err
 			}
 			np.ParentProcess.ChildProcesses = append(np.ParentProcess.ChildProcesses, &np)
-		} else {
-			tree.containers[TestContainerID] = &containerProcessTree{Root: &np}
 		}
 	}
 

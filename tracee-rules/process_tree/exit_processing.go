@@ -16,16 +16,9 @@ func (tree *ProcessTree) processExitEvent(event external.Event) error {
 		process.IsAlive = false
 		// Remove process and all dead ancestors so only processes with alive descendants will remain.
 		if len(process.ChildProcesses) == 0 {
-			container, err := tree.getContainerTree(event.ContainerID)
-			if err != nil {
-				return err
-			}
 			cp := process
 			for {
 				tree.cachedDeleteProcess(cp.InHostIDs.Pid)
-				if container.Root == cp {
-					delete(tree.containers, event.ContainerID)
-				}
 				if cp.ParentProcess == nil {
 					break
 				}

@@ -1,7 +1,5 @@
 package process_tree
 
-import "fmt"
-
 const cachedDeadEvents = 100
 
 func (tree *ProcessTree) cachedDeleteProcess(pid int) {
