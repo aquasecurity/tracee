@@ -33,8 +33,8 @@ func (tree *ProcessTree) processExitEvent(event external.Event) error {
 					if childProcess == cp {
 						cp.ParentProcess.ChildProcesses = append(cp.ParentProcess.ChildProcesses[:i],
 							cp.ParentProcess.ChildProcesses[i+1:]...)
+						break
 					}
-					break
 				}
 				if cp.ParentProcess.IsAlive {
 					break
