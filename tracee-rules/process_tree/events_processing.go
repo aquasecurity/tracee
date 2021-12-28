@@ -19,7 +19,7 @@ func (tree *ProcessTree) ProcessEvent(event types.Event) error {
 		return tree.processExecEvent(traceeEvent)
 	case "sched_process_exit":
 		return tree.processExitEvent(traceeEvent)
-	case "exit":
+	case "exit", "init_namespaces":
 		return nil
 	default:
 		return tree.processDefaultEvent(traceeEvent)
@@ -34,7 +34,8 @@ func (tree *ProcessTree) processDefaultEvent(event external.Event) error {
 	} else if process.Status.Contains(uint32(types.HollowParent)) {
 		fillHollowParentProcessGeneralEvent(process, event)
 	}
-	if process.ParentProcess == nil {
+	if process.ParentProcess == nil &&
+		process.InHostIDs.Pid != process.InHostIDs.Ppid { // Prevent looped references
 		parentProcess, err := tree.GetProcessInfo(event.HostParentProcessID)
 		if err == nil {
 			process.ParentProcess = parentProcess

@@ -39,7 +39,8 @@ func (tree *ProcessTree) addGeneralEventProcess(event external.Event) *types.Pro
 // generateParentProcess creates a parent process of given one from tree if existing or creates new node with best
 // effort info
 func (tree *ProcessTree) generateParentProcess(process *types.ProcessInfo) *types.ProcessInfo {
-	if process.InContainerIDs.Ppid != 0 {
+	if process.InContainerIDs.Ppid != 0 &&
+		process.InHostIDs.Pid != process.InHostIDs.Ppid { // Prevent looped references
 		parentProcess, err := tree.GetProcessInfo(process.InHostIDs.Ppid)
 		if err != nil {
 			parentProcess = &types.ProcessInfo{

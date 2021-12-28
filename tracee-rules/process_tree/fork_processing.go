@@ -137,7 +137,8 @@ func (tree *ProcessTree) addNewForkedProcess(event external.Event, inHostIDs typ
 		}
 		tree.containers[event.ContainerID] = containerTree
 	}
-	if newProcess.InContainerIDs.Ppid != 0 {
+	if newProcess.InContainerIDs.Ppid != 0 &&
+		newProcess.InHostIDs.Pid != newProcess.InHostIDs.Ppid { // Prevent looped references
 		fatherProcess, err := tree.GetProcessInfo(newProcess.InHostIDs.Ppid)
 		if err == nil {
 			newProcess.ParentProcess = fatherProcess

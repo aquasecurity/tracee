@@ -1,5 +1,7 @@
 package process_tree
 
+import "fmt"
+
 const cachedDeadEvents = 100
 
 func (tree *ProcessTree) cachedDeleteProcess(pid int) {
@@ -7,22 +9,25 @@ func (tree *ProcessTree) cachedDeleteProcess(pid int) {
 	if len(tree.deadProcessesCache) > cachedDeadEvents {
 		dpid := tree.deadProcessesCache[0]
 		tree.deadProcessesCache = tree.deadProcessesCache[1:]
-		p, _ := tree.GetProcessInfo(dpid)
-		// Make sure that the process is not deleted because missed children or events
-		if len(p.ChildProcesses) == 0 && p.IsAlive == false {
-			delete(tree.processes, dpid)
-		}
+		tree.deleteProcessFromTree(dpid)
 	}
 }
 
 func (tree *ProcessTree) EmptyProcessCache() {
 	for _, dpid := range tree.deadProcessesCache {
-		p, _ := tree.GetProcessInfo(dpid)
-		// Make sure that the process is not deleted because missed children or events
-		if len(p.ChildProcesses) == 0 && p.IsAlive == false {
-			delete(tree.processes, dpid)
-		}
+		tree.deleteProcessFromTree(dpid)
 	}
 	tree.deadProcessesCache = []int{}
 	return
+}
+
+func (tree *ProcessTree) deleteProcessFromTree(dpid int) {
+	p, err := tree.GetProcessInfo(dpid)
+	if err != nil {
+		return
+	}
+	// Make sure that the process is not deleted because missed children or events
+	if len(p.ChildProcesses) == 0 && p.IsAlive == false {
+		delete(tree.processes, dpid)
+	}
 }
