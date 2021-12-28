@@ -7,13 +7,21 @@ func (tree *ProcessTree) cachedDeleteProcess(pid int) {
 	if len(tree.deadProcessesCache) > cachedDeadEvents {
 		dpid := tree.deadProcessesCache[0]
 		tree.deadProcessesCache = tree.deadProcessesCache[1:]
-		delete(tree.processes, dpid)
+		p, _ := tree.GetProcessInfo(dpid)
+		// Make sure that the process is not deleted because missed children or events
+		if len(p.ChildProcesses) == 0 && p.IsAlive == false {
+			delete(tree.processes, dpid)
+		}
 	}
 }
 
 func (tree *ProcessTree) EmptyProcessCache() {
 	for _, dpid := range tree.deadProcessesCache {
-		delete(tree.processes, dpid)
+		p, _ := tree.GetProcessInfo(dpid)
+		// Make sure that the process is not deleted because missed children or events
+		if len(p.ChildProcesses) == 0 && p.IsAlive == false {
+			delete(tree.processes, dpid)
+		}
 	}
 	tree.deadProcessesCache = []int{}
 	return

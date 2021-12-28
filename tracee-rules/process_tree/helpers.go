@@ -51,6 +51,7 @@ func (tree *ProcessTree) generateParentProcess(process *types.ProcessInfo) *type
 				},
 				Status: *roaring.BitmapOf(uint32(types.HollowParent)),
 			}
+			tree.processes[parentProcess.InHostIDs.Pid] = parentProcess
 		}
 		process.ParentProcess = parentProcess
 		parentProcess.ChildProcesses = append(parentProcess.ChildProcesses, process)
