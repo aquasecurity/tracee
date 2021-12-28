@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/external"
 )
 
@@ -209,7 +210,7 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 		info, err := t.containers.CgroupUpdate(cgroupId, path)
 		if err == nil && info.ContainerId == "" {
 			// If not a new container (no regex match) - remove from the bpf container_map
-			RemoveFromBpfMap(t.bpfModule, cgroupId)
+			containers.RemoveFromBpfMap(t.bpfModule, cgroupId, "containers_map")
 		}
 
 	case CgroupRmdirEventID:
