@@ -119,8 +119,8 @@ func parseForkInContainerIDs(event external.Event) (types.ProcessIDs, error) {
 	return inContainerIDs, nil
 }
 
-func (tree *ProcessTree) addNewForkedProcess(event external.Event, inHostIDs types.ProcessIDs, inContainerIDs types.ProcessIDs) *types.ProcessInfo {
-	newProcess := &types.ProcessInfo{
+func (tree *ProcessTree) addNewForkedProcess(event external.Event, inHostIDs types.ProcessIDs, inContainerIDs types.ProcessIDs) *processNode {
+	newProcess := &processNode{
 		ProcessName:    event.ProcessName,
 		InHostIDs:      inHostIDs,
 		InContainerIDs: inContainerIDs,
@@ -143,7 +143,7 @@ func (tree *ProcessTree) addNewForkedProcess(event external.Event, inHostIDs typ
 	return newProcess
 }
 
-func (tree *ProcessTree) copyParentBinaryInfo(p *types.ProcessInfo) {
+func (tree *ProcessTree) copyParentBinaryInfo(p *processNode) {
 	if p.Status.Contains(uint32(types.Forked)) {
 		fatherProcess, err := tree.GetProcessInfo(p.InHostIDs.Ppid)
 		if err == nil {

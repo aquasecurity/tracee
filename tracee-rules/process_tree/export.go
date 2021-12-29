@@ -7,15 +7,27 @@ import (
 
 // The process tree instance to be used by the engine and the signatures
 var globalTree = ProcessTree{
-	processes: map[int]*types.ProcessInfo{},
+	processes: map[int]*processNode{},
 }
 
-func GetProcessInfo(hostProcessID int) (*types.ProcessInfo, error) {
-	return globalTree.GetProcessInfo(hostProcessID)
+func GetProcessInfo(hostProcessID int) (types.ProcessInfo, error) {
+	pn, err := globalTree.GetProcessInfo(hostProcessID)
+	if err != nil {
+		return types.ProcessInfo{}, err
+	}
+	return pn.Export(), nil
 }
 
 func GetProcessLineage(hostProcessID int) (types.ProcessLineage, error) {
-	return globalTree.GetProcessLineage(hostProcessID)
+	pList, err := globalTree.GetProcessLineage(hostProcessID)
+	if err != nil {
+		return nil, err
+	}
+	lineage := make(types.ProcessLineage, len(pList))
+	for i, p := range pList {
+		lineage[i] = p.Export()
+	}
+	return lineage, nil
 }
 
 func ProcessEvent(event types.Event) error {
@@ -35,5 +47,20 @@ func processTreeStart(in chan types.Event, out chan types.Event) {
 			log.Printf("error processing event in process tree: %v", err)
 		}
 		out <- e
+	}
+}
+
+func (p *processNode) Export() types.ProcessInfo {
+	return types.ProcessInfo{
+		InContainerIDs:  p.InContainerIDs,
+		InHostIDs:       p.InHostIDs,
+		ContainerID:     p.ContainerID,
+		ProcessName:     p.ProcessName,
+		Cmd:             p.Cmd,
+		ExecutionBinary: p.ExecutionBinary,
+		StartTime:       p.StartTime,
+		ExecTime:        p.ExecTime,
+		ThreadsCount:    p.ThreadsCount,
+		IsAlive:         p.IsAlive,
 	}
 }

@@ -47,14 +47,14 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 	testCases := []struct {
 		testName        string
 		initialTree     ProcessTree
-		expectedProcess types.ProcessInfo
+		expectedProcess processNode
 	}{
 		{
 			testName: "empty tree",
 			initialTree: ProcessTree{
-				processes: map[int]*types.ProcessInfo{},
+				processes: map[int]*processNode{},
 			},
-			expectedProcess: types.ProcessInfo{
+			expectedProcess: processNode{
 				InHostIDs: types.ProcessIDs{
 					Pid:  execEvent.HostProcessID,
 					Ppid: execEvent.HostParentProcessID,
@@ -79,8 +79,8 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 		{
 			testName: "Forked event executed",
 			initialTree: ProcessTree{
-				processes: map[int]*types.ProcessInfo{
-					execEvent.HostProcessID: &types.ProcessInfo{
+				processes: map[int]*processNode{
+					execEvent.HostProcessID: &processNode{
 						InHostIDs: types.ProcessIDs{
 							Pid:  execEvent.HostProcessID,
 							Ppid: execEvent.HostParentProcessID,
@@ -98,7 +98,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 					},
 				},
 			},
-			expectedProcess: types.ProcessInfo{
+			expectedProcess: processNode{
 				InHostIDs: types.ProcessIDs{
 					Pid:  execEvent.HostProcessID,
 					Ppid: execEvent.HostParentProcessID,
@@ -123,8 +123,8 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 		{
 			testName: "Double execve process",
 			initialTree: ProcessTree{
-				processes: map[int]*types.ProcessInfo{
-					execEvent.HostProcessID: &types.ProcessInfo{
+				processes: map[int]*processNode{
+					execEvent.HostProcessID: &processNode{
 						InHostIDs: types.ProcessIDs{
 							Pid:  execEvent.HostProcessID,
 							Ppid: execEvent.HostParentProcessID,
@@ -146,7 +146,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 					},
 				},
 			},
-			expectedProcess: types.ProcessInfo{
+			expectedProcess: processNode{
 				InHostIDs: types.ProcessIDs{
 					Pid:  execEvent.HostProcessID,
 					Ppid: execEvent.HostParentProcessID,
@@ -171,8 +171,8 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 		{
 			testName: "General event generate process",
 			initialTree: ProcessTree{
-				processes: map[int]*types.ProcessInfo{
-					execEvent.HostProcessID: &types.ProcessInfo{
+				processes: map[int]*processNode{
+					execEvent.HostProcessID: &processNode{
 						InHostIDs: types.ProcessIDs{
 							Pid:  execEvent.HostProcessID,
 							Ppid: execEvent.HostParentProcessID,
@@ -189,7 +189,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 					},
 				},
 			},
-			expectedProcess: types.ProcessInfo{
+			expectedProcess: processNode{
 				InHostIDs: types.ProcessIDs{
 					Pid:  execEvent.HostProcessID,
 					Ppid: execEvent.HostParentProcessID,

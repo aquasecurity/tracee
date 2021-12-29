@@ -7,8 +7,8 @@ import (
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
-func (tree *ProcessTree) addGeneralEventProcess(event external.Event) *types.ProcessInfo {
-	process := &types.ProcessInfo{
+func (tree *ProcessTree) addGeneralEventProcess(event external.Event) *processNode {
+	process := &processNode{
 		ProcessName: event.ProcessName,
 		InHostIDs: types.ProcessIDs{
 			Pid:  event.HostProcessID,
@@ -31,12 +31,12 @@ func (tree *ProcessTree) addGeneralEventProcess(event external.Event) *types.Pro
 
 // generateParentProcess creates a parent process of given one from tree if existing or creates new node with best
 // effort info
-func (tree *ProcessTree) generateParentProcess(process *types.ProcessInfo) *types.ProcessInfo {
+func (tree *ProcessTree) generateParentProcess(process *processNode) *processNode {
 	if process.InContainerIDs.Ppid != 0 &&
 		process.InHostIDs.Pid != process.InHostIDs.Ppid { // Prevent looped references
 		parentProcess, err := tree.GetProcessInfo(process.InHostIDs.Ppid)
 		if err != nil {
-			parentProcess = &types.ProcessInfo{
+			parentProcess = &processNode{
 				InHostIDs: types.ProcessIDs{
 					Pid: process.InHostIDs.Ppid,
 				},
@@ -53,7 +53,7 @@ func (tree *ProcessTree) generateParentProcess(process *types.ProcessInfo) *type
 	return process
 }
 
-func fillHollowParentProcessGeneralEvent(p *types.ProcessInfo, event external.Event) {
+func fillHollowParentProcessGeneralEvent(p *processNode, event external.Event) {
 	fillHollowProcessInfo(
 		p,
 		types.ProcessIDs{Pid: event.HostProcessID, Tid: event.HostThreadID, Ppid: event.HostProcessID},
@@ -88,7 +88,7 @@ func parseInt32Field(event external.Event, fieldName string) (int, error) {
 }
 
 func fillHollowProcessInfo(
-	p *types.ProcessInfo,
+	p *processNode,
 	inHostIDs types.ProcessIDs,
 	inContainerIDs types.ProcessIDs,
 	processName string,

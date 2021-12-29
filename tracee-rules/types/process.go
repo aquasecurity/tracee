@@ -1,7 +1,5 @@
 package types
 
-import "github.com/RoaringBitmap/roaring"
-
 type ProcessInformationStatus uint32
 
 const (
@@ -32,11 +30,8 @@ type ProcessInfo struct {
 	ExecutionBinary BinaryInfo
 	StartTime       int
 	ExecTime        int
-	ParentProcess   *ProcessInfo
-	ChildProcesses  []*ProcessInfo
 	ThreadsCount    int
 	IsAlive         bool
-	Status          roaring.Bitmap // Values type are ProcessInformationStatus
 }
 
 type ProcessLineage []ProcessInfo

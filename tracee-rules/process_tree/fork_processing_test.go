@@ -28,7 +28,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 		}{
 			{
 				testName: "Existing executed process",
-				tree: generateProcessTree(&types.ProcessInfo{
+				tree: generateProcessTree(&processNode{
 					ProcessName: "sh",
 					InHostIDs: types.ProcessIDs{
 						Pid:  threadPID,
@@ -58,7 +58,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 			},
 			{
 				testName: "Lost exit event - existing forked process",
-				tree: generateProcessTree(&types.ProcessInfo{
+				tree: generateProcessTree(&processNode{
 					InHostIDs: types.ProcessIDs{
 						Pid:  threadPID,
 						Ppid: 10,
@@ -81,7 +81,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 			},
 			{
 				testName: "Lost exit event - existing completed process",
-				tree: generateProcessTree(&types.ProcessInfo{
+				tree: generateProcessTree(&processNode{
 					ProcessName: "sleep",
 					InHostIDs: types.ProcessIDs{
 						Pid:  threadPID,
@@ -112,7 +112,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 			},
 			{
 				testName: "Existing hollow parent process",
-				tree: generateProcessTree(&types.ProcessInfo{
+				tree: generateProcessTree(&processNode{
 					InHostIDs: types.ProcessIDs{
 						Pid: threadPID,
 					},
@@ -128,7 +128,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 			},
 			{
 				testName: "Existing general event process",
-				tree: generateProcessTree(&types.ProcessInfo{
+				tree: generateProcessTree(&processNode{
 					ProcessName: "sh",
 					InHostIDs: types.ProcessIDs{
 						Pid:  threadPID,
@@ -153,7 +153,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 			{
 				testName: "Non existing process",
 				tree: ProcessTree{
-					processes: map[int]*types.ProcessInfo{},
+					processes: map[int]*processNode{},
 				},
 				expected: expectedValues{
 					*roaring.BitmapOf(uint32(types.Forked)),
@@ -183,7 +183,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 		}{
 			{
 				testName: "Existing executed process",
-				tree: generateProcessTree(&types.ProcessInfo{
+				tree: generateProcessTree(&processNode{
 					ProcessName: "sh",
 					InHostIDs: types.ProcessIDs{
 						Pid:  threadPID,
@@ -213,7 +213,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 			},
 			{
 				testName: "Existing forked process",
-				tree: generateProcessTree(&types.ProcessInfo{
+				tree: generateProcessTree(&processNode{
 					InHostIDs: types.ProcessIDs{
 						Pid:  threadPID,
 						Ppid: threadPPID,
@@ -237,7 +237,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 			},
 			{
 				testName: "Existing completed process",
-				tree: generateProcessTree(&types.ProcessInfo{
+				tree: generateProcessTree(&processNode{
 					ProcessName: "sh",
 					InHostIDs: types.ProcessIDs{
 						Pid:  threadPID,
@@ -268,7 +268,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 			},
 			{
 				testName: "Existing hollow parent process",
-				tree: generateProcessTree(&types.ProcessInfo{
+				tree: generateProcessTree(&processNode{
 					InHostIDs: types.ProcessIDs{
 						Pid: threadPID,
 					},
@@ -284,7 +284,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 			},
 			{
 				testName: "Existing general event process",
-				tree: generateProcessTree(&types.ProcessInfo{
+				tree: generateProcessTree(&processNode{
 					ProcessName: "sh",
 					InHostIDs: types.ProcessIDs{
 						Pid:  threadPID,
@@ -309,7 +309,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 			{
 				testName: "Non existing process",
 				tree: ProcessTree{
-					processes: map[int]*types.ProcessInfo{},
+					processes: map[int]*processNode{},
 				},
 				expected: expectedValues{
 					*roaring.BitmapOf(uint32(types.GeneralCreated)),
@@ -336,9 +336,9 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 
 }
 
-func generateProcessTree(p *types.ProcessInfo) ProcessTree {
+func generateProcessTree(p *processNode) ProcessTree {
 	return ProcessTree{
-		processes: map[int]*types.ProcessInfo{
+		processes: map[int]*processNode{
 			p.InHostIDs.Pid: p,
 		},
 	}

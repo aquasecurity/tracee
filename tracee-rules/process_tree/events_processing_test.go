@@ -2,7 +2,6 @@ package process_tree
 
 import (
 	"github.com/aquasecurity/tracee/pkg/external"
-	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -12,7 +11,7 @@ const TestContainerID = "a7f965fba4e145e02c99b1577febe0cb723a943d850278365994ac9
 
 func TestProcessTree_ProcessEvent(t *testing.T) {
 	tree := ProcessTree{
-		processes: map[int]*types.ProcessInfo{},
+		processes: map[int]*processNode{},
 	}
 
 	ptid := 22482

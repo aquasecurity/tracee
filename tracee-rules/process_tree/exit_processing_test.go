@@ -155,7 +155,7 @@ func testExitWithSiblings(t *testing.T) {
 
 	for _, test := range multiChildrenTests {
 		t.Run(test.name, func(t *testing.T) {
-			parentProcess := &types.ProcessInfo{
+			parentProcess := &processNode{
 				InHostIDs: types.ProcessIDs{
 					Pid:  1,
 					Tid:  1,
@@ -166,13 +166,13 @@ func testExitWithSiblings(t *testing.T) {
 				IsAlive:      true,
 			}
 			tree := ProcessTree{
-				processes: map[int]*types.ProcessInfo{
+				processes: map[int]*processNode{
 					parentProcess.InHostIDs.Pid: parentProcess,
 				},
 			}
 
 			for i := 0; i < test.siblingsNum; i++ {
-				cp := &types.ProcessInfo{
+				cp := &processNode{
 					InHostIDs: types.ProcessIDs{
 						Pid:  exitEvent.HostProcessID - test.exitIndex + i,
 						Tid:  exitEvent.ThreadID - test.exitIndex + i,
@@ -210,7 +210,7 @@ func testExitWithSiblings(t *testing.T) {
 	}
 }
 
-func countChildTreeNodes(p *types.ProcessInfo) int {
+func countChildTreeNodes(p *processNode) int {
 	c := 0
 	for _, chld := range p.ChildProcesses {
 		c += countChildTreeNodes(chld)
@@ -220,13 +220,13 @@ func countChildTreeNodes(p *types.ProcessInfo) int {
 
 func buildOneLineTree(tps []testProcess, lastProcessIDs types.ProcessIDs) (ProcessTree, error) {
 	tree := ProcessTree{
-		processes: map[int]*types.ProcessInfo{},
+		processes: map[int]*processNode{},
 	}
 
 	exitProcessIndex := len(tps) - 1
 
 	for i, tp := range tps {
-		np := types.ProcessInfo{
+		np := processNode{
 			IsAlive: tp.isAlive,
 			InHostIDs: types.ProcessIDs{
 				Tid:  lastProcessIDs.Tid - (exitProcessIndex - i),
