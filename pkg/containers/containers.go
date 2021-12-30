@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 	"unsafe"
@@ -16,12 +17,13 @@ import (
 	"github.com/aquasecurity/libbpfgo"
 )
 
-// Containers contain information about host running containers in the host.
+// Containers contain information about running containers in the host.
 type Containers struct {
 	cgroupV1 bool
 	cgroupMP string
 	cgroups  map[uint32]CgroupInfo
 	deleted  []uint64
+	mtx      sync.RWMutex // protecting both cgroups and deleted fields
 }
 
 type CgroupInfo struct {
@@ -43,6 +45,7 @@ func InitContainers() *Containers {
 		cgroupV1: cgroupV1,
 		cgroupMP: "",
 		cgroups:  make(map[uint32]CgroupInfo),
+		mtx:      sync.RWMutex{},
 	}
 }
 
@@ -155,9 +158,10 @@ func (c *Containers) cgroupLookupUpdate(cgroupId uint64) error {
 	}
 	if err == nil {
 		// No match was found - update cgroup id with an empty entry
+		c.mtx.Lock()
 		c.cgroups[uint32(cgroupId)] = CgroupInfo{}
+		c.mtx.Unlock()
 	}
-
 	return err
 }
 
@@ -176,9 +180,12 @@ func (c *Containers) CgroupUpdate(cgroupId uint64, path string) (CgroupInfo, err
 		}
 		info.ContainerId = containerId
 		info.Runtime = runtime
+		// we want to get container info with respect to host
+		break
 	}
-
+	c.mtx.Lock()
 	c.cgroups[uint32(cgroupId)] = info
+	c.mtx.Unlock()
 	return info, nil
 }
 
@@ -220,6 +227,8 @@ func (c *Containers) CgroupRemove(cgroupId uint64) {
 	now := time.Now()
 	// prune containers that have been removed more than 5 seconds ago
 	var deleted []uint64
+	c.mtx.Lock()
+	defer c.mtx.Unlock()
 	for _, id := range c.deleted {
 		info := c.cgroups[uint32(id)]
 		if now.After(info.expiresAt) {
@@ -240,6 +249,8 @@ func (c *Containers) CgroupRemove(cgroupId uint64) {
 // GetContainers provides a list of all added containers by their uuid.
 func (c *Containers) GetContainers() []string {
 	var conts []string
+	c.mtx.RLock()
+	defer c.mtx.RUnlock()
 	for _, v := range c.cgroups {
 		if v.ContainerId != "" && v.expiresAt.IsZero() {
 			conts = append(conts, v.ContainerId)
@@ -255,14 +266,17 @@ func (c *Containers) GetCgroupInfo(cgroupId uint64) CgroupInfo {
 		// In that case, we can try to look for it in the cgroupfs and update the map if found.
 		c.cgroupLookupUpdate(cgroupId)
 	}
-	return c.cgroups[uint32(cgroupId)]
+	c.mtx.RLock()
+	cgroupInfo := c.cgroups[uint32(cgroupId)]
+	c.mtx.RUnlock()
+	return cgroupInfo
 }
 
 func (c *Containers) CgroupExists(cgroupId uint64) bool {
-	if _, ok := c.cgroups[uint32(cgroupId)]; ok {
-		return true
-	}
-	return false
+	c.mtx.RLock()
+	_, ok := c.cgroups[uint32(cgroupId)]
+	c.mtx.RUnlock()
+	return ok
 }
 
 const (
@@ -277,12 +291,14 @@ func (c *Containers) PopulateBpfMap(bpfModule *libbpfgo.Module, mapName string) 
 		return err
 	}
 
+	c.mtx.RLock()
 	for cgroupIdLsb, info := range c.cgroups {
 		if info.ContainerId != "" {
 			state := containerExisted
 			err = containersMap.Update(unsafe.Pointer(&cgroupIdLsb), unsafe.Pointer(&state))
 		}
 	}
+	c.mtx.RUnlock()
 
 	return err
 }
