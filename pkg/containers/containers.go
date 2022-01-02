@@ -169,20 +169,8 @@ func (c *Containers) cgroupLookupUpdate(cgroupId uint64) error {
 // add cgroupId with a matching container id, extracted from path
 func (c *Containers) CgroupUpdate(cgroupId uint64, path string) (CgroupInfo, error) {
 	info := CgroupInfo{Path: path}
+	info.ContainerId, info.Runtime = getContainerIdFromCgroup(path)
 
-	for _, pc := range strings.Split(path, "/") {
-		if len(pc) < 64 {
-			continue
-		}
-		containerId, runtime := getContainerIdFromCgroup(pc)
-		if containerId == "" {
-			continue
-		}
-		info.ContainerId = containerId
-		info.Runtime = runtime
-		// we want to get container info with respect to host
-		break
-	}
 	c.mtx.Lock()
 	c.cgroups[uint32(cgroupId)] = info
 	c.mtx.Unlock()
@@ -190,37 +178,45 @@ func (c *Containers) CgroupUpdate(cgroupId uint64, path string) (CgroupInfo, err
 }
 
 // extract container id and container runtime from path
-func getContainerIdFromCgroup(pathComponent string) (string, string) {
-	runtime := "unknown"
-	path := strings.TrimSuffix(pathComponent, ".scope")
+func getContainerIdFromCgroup(cgroupPath string) (string, string) {
+	prevPathComp := ""
+	for _, pc := range strings.Split(cgroupPath, "/") {
+		if len(pc) < 64 {
+			prevPathComp = pc
+			continue
+		}
 
-	if strings.HasPrefix(path, "docker-") {
-		runtime = "docker"
-		path = strings.TrimPrefix(path, "docker-")
-		goto check
-	}
-	if strings.HasPrefix(path, "crio-") {
-		runtime = "crio"
-		path = strings.TrimPrefix(path, "crio-")
-		goto check
-	}
-	if strings.HasPrefix(path, "cri-containerd-") {
-		runtime = "containerd"
-		path = strings.TrimPrefix(path, "cri-containerd-")
-		goto check
-	}
-	if strings.HasPrefix(path, "libpod-") {
-		runtime = "podman"
-		path = strings.TrimPrefix(path, "libpod-")
-		goto check
+		runtime := "unknown"
+		id := strings.TrimSuffix(pc, ".scope")
+
+		switch {
+		case strings.HasPrefix(id, "docker-"):
+			runtime = "docker"
+			id = strings.TrimPrefix(id, "docker-")
+		case strings.HasPrefix(id, "crio-"):
+			runtime = "crio"
+			id = strings.TrimPrefix(id, "crio-")
+		case strings.HasPrefix(id, "cri-containerd-"):
+			runtime = "containerd"
+			id = strings.TrimPrefix(id, "cri-containerd-")
+		case strings.HasPrefix(id, "libpod-"):
+			runtime = "podman"
+			id = strings.TrimPrefix(id, "libpod-")
+		}
+
+		if matched, _ := regexp.MatchString(`^[A-Fa-f0-9]{64}$`, id); matched {
+			if runtime == "unknown" && prevPathComp == "docker" {
+				// non-systemd docker in the following format:
+				// /docker/01adbaf26db7fac62f8b7ec5b116b2e60f4abbf230e29122e667996c6b5c04d4/
+				runtime = "docker"
+			}
+			// return first match as we want to get container info with respect to host
+			return id, runtime
+		}
+		prevPathComp = pc
 	}
 
-check:
-	if matched, _ := regexp.MatchString(`^[A-Fa-f0-9]{64}$`, path); !matched {
-		return "", ""
-	}
-
-	return path, runtime
+	return "", ""
 }
 
 func (c *Containers) CgroupRemove(cgroupId uint64) {
