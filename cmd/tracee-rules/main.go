@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/aquasecurity/tracee/tracee-rules/pipeline"
 	"io"
 	"log"
 	"net/http"
@@ -85,7 +86,11 @@ func main() {
 				return listSigs(os.Stdout, sigs)
 			}
 
-			var inputs engine.EventSources
+			traceeConfig := types.TraceePipelineConfig{
+				EnableProcessTree: c.Bool("enable-process-tree"),
+			}
+
+			var inputs, inputPipelines engine.EventSources
 			opts, err := parseTraceeInputOptions(c.StringSlice("input-tracee"))
 			if err == errHelp {
 				printHelp()
@@ -98,12 +103,14 @@ func main() {
 			if err != nil {
 				return err
 			}
+			inputPipelines.Tracee = pipeline.CreateTraceeInputPipeline(inputs.Tracee, traceeConfig)
 
 			output, err := setupOutput(os.Stdout, c.String("webhook"), c.String("webhook-template"), c.String("webhook-content-type"), c.String("output-template"))
+			outputPipeline := pipeline.CreateTraceeOutputPipeline(output, traceeConfig)
 			if err != nil {
 				return err
 			}
-			e, err := engine.NewEngine(sigs, inputs, output, os.Stderr, c.Bool("rego-enable-parsed-events"))
+			e, err := engine.NewEngine(sigs, inputPipelines, outputPipeline, os.Stderr, c.Bool("rego-enable-parsed-events"))
 			if err != nil {
 				return fmt.Errorf("constructing engine: %w", err)
 			}
@@ -172,6 +179,10 @@ func main() {
 			&cli.BoolFlag{
 				Name:  "list-events",
 				Usage: "print a list of events that currently loaded signatures require",
+			},
+			&cli.BoolFlag{
+				Name:  "enable-process-tree",
+				Usage: "manage a real-time process tree to enrich findings and add metadata for signatures to use",
 			},
 		},
 	}

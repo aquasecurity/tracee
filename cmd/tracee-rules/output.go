@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/aquasecurity/tracee/tracee-rules/process_tree"
 	"io"
 	"log"
 	"net/http"
@@ -23,10 +22,8 @@ Time: {{ dateInZone "2006-01-02T15:04:05Z" (now) "UTC" }}
 Signature ID: {{ .SigMetadata.ID }}
 Signature: {{ .SigMetadata.Name }}
 Data: {{ .Data }}
-Command: {{ .Context.Event.ProcessName }}
-Hostname: {{ .Context.Event.HostName }}
-Process Lineage: {{ range .Context.ProcessLineage }}
-	PID = {{ .InHostIDs.Pid }}, Name = {{ .ProcessName }}{{end}}
+Command: {{ .Context.ProcessName }}
+Hostname: {{ .Context.HostName }}
 `
 
 func setupTemplate(inputTemplateFile string) (*template.Template, error) {
@@ -62,10 +59,6 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 		for res := range out {
 			switch res.Context.(type) {
 			case external.Event:
-				res, err = enrichFindingWithProcessTree(res)
-				if err != nil {
-					log.Println(err)
-				}
 				if err := tOutput.Execute(w, res); err != nil {
 					log.Printf("error writing to output: %v", err)
 				}
@@ -110,23 +103,4 @@ func sendToWebhook(t *template.Template, res types.Finding, webhook string, webh
 	}
 	_ = resp.Body.Close()
 	return nil
-}
-
-type PTEnrichedContext struct {
-	Event          types.Event
-	ProcessLineage types.ProcessLineage
-}
-
-func enrichFindingWithProcessTree(f types.Finding) (types.Finding, error) {
-	event, ok := f.Context.(external.Event)
-	if !ok {
-		return f, fmt.Errorf("couldn't enrich finding because the event is not a tracee-ebpf event")
-	}
-	lineage, _ := process_tree.GetProcessLineage(f.Context.(external.Event).HostProcessID)
-	enrichedFinding := f
-	enrichedFinding.Context = PTEnrichedContext{
-		Event:          event,
-		ProcessLineage: lineage,
-	}
-	return enrichedFinding, nil
 }

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/aquasecurity/tracee/tracee-rules/process_tree"
 	"io"
 	"log"
 	"os"
@@ -32,20 +31,14 @@ type traceeInputOptions struct {
 }
 
 func setupTraceeInputSource(opts *traceeInputOptions) (chan types.Event, error) {
-	var traceeInputChan chan types.Event
-	var err error
-
 	switch opts.inputFormat {
 	case jsonInputFormat:
-		traceeInputChan, err = setupTraceeJSONInputSource(opts)
+		return setupTraceeJSONInputSource(opts)
 	case gobInputFormat:
-		traceeInputChan, err = setupTraceeGobInputSource(opts)
+		return setupTraceeGobInputSource(opts)
 	default:
 		return nil, errors.New("could not set up input source")
 	}
-
-	return process_tree.CreateProcessTreePipeline(traceeInputChan), err
-
 }
 
 func setupTraceeGobInputSource(opts *traceeInputOptions) (chan types.Event, error) {

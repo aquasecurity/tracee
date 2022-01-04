@@ -1,6 +1,7 @@
 package process_tree
 
 import (
+	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"log"
 )
@@ -34,7 +35,7 @@ func ProcessEvent(event types.Event) error {
 	return globalTree.ProcessEvent(event)
 }
 
-func CreateProcessTreePipeline(in chan types.Event) chan types.Event {
+func CreateProcessTreeInputPipeline(in chan types.Event) chan types.Event {
 	out := make(chan types.Event, 100)
 	go processTreeStart(in, out)
 	return out
@@ -48,6 +49,26 @@ func processTreeStart(in chan types.Event, out chan types.Event) {
 		}
 		out <- e
 	}
+}
+
+func CreateProcessTreeOutputEnrichmentPipeline(out chan types.Finding) chan types.Finding {
+	in := make(chan types.Finding)
+	go func() {
+		for f := range in {
+			if f.ExtendedContext == nil {
+				f.ExtendedContext = make(map[string]interface{})
+			}
+			e, ok := f.Context.(external.Event)
+			if ok {
+				pLineage, err := GetProcessLineage(e.HostProcessID)
+				if err == nil {
+					f.ExtendedContext["process-lineage"] = pLineage
+				}
+			}
+			out <- f
+		}
+	}()
+	return in
 }
 
 func (p *processNode) Export() types.ProcessInfo {
