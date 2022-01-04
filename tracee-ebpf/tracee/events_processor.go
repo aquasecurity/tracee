@@ -87,8 +87,8 @@ func (t *Tracee) shouldProcessEvent(ctx *context, args []external.Argument) bool
 func (t *Tracee) processEvent(event *external.Event) error {
 	switch int32(event.EventID) {
 
-	//capture written files
 	case VfsWriteEventID, VfsWritevEventID:
+		//capture written files
 		if t.config.Capture.FileWrite {
 			filePath, err := getEventArgStringVal(event, "pathname")
 			if err != nil {
@@ -123,7 +123,6 @@ func (t *Tracee) processEvent(event *external.Event) error {
 		}
 
 	case SchedProcessExecEventID:
-
 		//cache this pid by it's mnt ns
 		if event.ProcessID == 1 {
 			t.pidsInMntns.ForceAddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
