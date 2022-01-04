@@ -30,7 +30,7 @@ type ProcessInfo struct {
 	ExecutionBinary BinaryInfo
 	StartTime       int
 	ExecTime        int
-	ThreadsCount    int
+	ExistingThreads []int
 	IsAlive         bool
 }
 

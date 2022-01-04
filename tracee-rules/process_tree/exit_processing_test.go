@@ -161,9 +161,9 @@ func testExitWithSiblings(t *testing.T) {
 					Tid:  1,
 					Ppid: 0,
 				},
-				ThreadsCount: 1,
-				ContainerID:  exitEvent.ContainerID,
-				IsAlive:      true,
+				ExistingThreads: []int{1},
+				ContainerID:     exitEvent.ContainerID,
+				IsAlive:         true,
 			}
 			tree := ProcessTree{
 				processes: map[int]*processNode{
@@ -175,13 +175,13 @@ func testExitWithSiblings(t *testing.T) {
 				cp := &processNode{
 					InHostIDs: types.ProcessIDs{
 						Pid:  exitEvent.HostProcessID - test.exitIndex + i,
-						Tid:  exitEvent.ThreadID - test.exitIndex + i,
+						Tid:  exitEvent.HostThreadID - test.exitIndex + i,
 						Ppid: 1,
 					},
-					ThreadsCount:  1,
-					ContainerID:   exitEvent.ContainerID,
-					ParentProcess: parentProcess,
-					IsAlive:       true,
+					ExistingThreads: []int{exitEvent.HostThreadID - test.exitIndex + i},
+					ContainerID:     exitEvent.ContainerID,
+					ParentProcess:   parentProcess,
+					IsAlive:         true,
 				}
 				parentProcess.ChildProcesses = append(parentProcess.ChildProcesses, cp)
 				tree.processes[cp.InHostIDs.Pid] = cp
@@ -233,7 +233,7 @@ func buildOneLineTree(tps []testProcess, lastProcessIDs types.ProcessIDs) (Proce
 				Pid:  lastProcessIDs.Pid - (exitProcessIndex - i),
 				Ppid: lastProcessIDs.Ppid - (exitProcessIndex - i),
 			},
-			ThreadsCount: 1,
+			ExistingThreads: []int{lastProcessIDs.Tid - (exitProcessIndex - i)},
 		}
 		tree.processes[np.InHostIDs.Tid] = &np
 		if i != 0 {

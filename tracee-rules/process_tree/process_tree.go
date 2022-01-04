@@ -17,7 +17,7 @@ type processNode struct {
 	ExecTime        int
 	ParentProcess   *processNode
 	ChildProcesses  []*processNode
-	ThreadsCount    int
+	ExistingThreads []int
 	IsAlive         bool
 	Status          roaring.Bitmap // Values type are ProcessInformationStatus
 }

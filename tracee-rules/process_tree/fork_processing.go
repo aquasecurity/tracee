@@ -18,7 +18,7 @@ func (tree *ProcessTree) processForkEvent(event external.Event) error {
 	if newProcessInHostIDs.Pid == newProcessInHostIDs.Tid {
 		return tree.processMainThreadFork(event, newProcessInHostIDs)
 	} else {
-		return tree.processThreadFork(event)
+		return tree.processThreadFork(event, newProcessInHostIDs)
 	}
 }
 
@@ -57,14 +57,23 @@ func (tree *ProcessTree) processMainThreadFork(event external.Event, inHostIDs t
 }
 
 // processThreadFork fill process information if lacking, and add to thread count.
-func (tree *ProcessTree) processThreadFork(event external.Event) error {
+func (tree *ProcessTree) processThreadFork(event external.Event, newInHostIDs types.ProcessIDs) error {
 	newProcess, npErr := tree.GetProcessInfo(event.HostProcessID)
 	if npErr != nil {
 		// In this case, calling thread is another thread of the process and we have normal general information on it
 		newProcess = tree.addGeneralEventProcess(event)
 		tree.generateParentProcess(newProcess)
 	} else {
-		newProcess.ThreadsCount += 1
+		exist := false
+		for _, tid := range newProcess.ExistingThreads {
+			if newInHostIDs.Tid == tid {
+				exist = true
+				break
+			}
+		}
+		if !exist {
+			newProcess.ExistingThreads = append(newProcess.ExistingThreads, event.HostThreadID)
+		}
 	}
 
 	if newProcess.Status.Contains(uint32(types.HollowParent)) {
@@ -121,14 +130,14 @@ func parseForkInContainerIDs(event external.Event) (types.ProcessIDs, error) {
 
 func (tree *ProcessTree) addNewForkedProcess(event external.Event, inHostIDs types.ProcessIDs, inContainerIDs types.ProcessIDs) *processNode {
 	newProcess := &processNode{
-		ProcessName:    event.ProcessName,
-		InHostIDs:      inHostIDs,
-		InContainerIDs: inContainerIDs,
-		ContainerID:    event.ContainerID,
-		StartTime:      event.Timestamp,
-		IsAlive:        true,
-		Status:         *roaring.BitmapOf(uint32(types.Forked)),
-		ThreadsCount:   1,
+		ProcessName:     event.ProcessName,
+		InHostIDs:       inHostIDs,
+		InContainerIDs:  inContainerIDs,
+		ContainerID:     event.ContainerID,
+		StartTime:       event.Timestamp,
+		IsAlive:         true,
+		Status:          *roaring.BitmapOf(uint32(types.Forked)),
+		ExistingThreads: []int{inHostIDs.Tid},
 	}
 	if newProcess.InContainerIDs.Ppid != 0 &&
 		newProcess.InHostIDs.Pid != newProcess.InHostIDs.Ppid { // Prevent looped references

@@ -60,7 +60,7 @@ func (p *processNode) Export() types.ProcessInfo {
 		ExecutionBinary: p.ExecutionBinary,
 		StartTime:       p.StartTime,
 		ExecTime:        p.ExecTime,
-		ThreadsCount:    p.ThreadsCount,
+		ExistingThreads: p.ExistingThreads,
 		IsAlive:         p.IsAlive,
 	}
 }

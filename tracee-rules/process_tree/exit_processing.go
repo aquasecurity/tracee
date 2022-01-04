@@ -10,9 +10,16 @@ func (tree *ProcessTree) processExitEvent(event external.Event) error {
 	if err != nil {
 		return err
 	}
-	process.ThreadsCount -= 1
+	threadCount := len(process.ExistingThreads)
+	for i, tid := range process.ExistingThreads {
+		if event.HostThreadID == tid {
+			process.ExistingThreads[i] = process.ExistingThreads[threadCount-1]
+			process.ExistingThreads = process.ExistingThreads[:threadCount-1]
+			threadCount -= 1
+		}
+	}
 	// In case of concurrent processing, this check will be problematic
-	if process.ThreadsCount <= 0 {
+	if threadCount <= 0 {
 		process.IsAlive = false
 		// Remove process and all dead ancestors so only processes with alive descendants will remain.
 		if len(process.ChildProcesses) == 0 {
