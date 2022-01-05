@@ -60,12 +60,20 @@ func TestLoadSelfCapabilities(t *testing.T) {
 			NewPid2 = oldNewPid2
 		}()
 
+		var orderOfFuncs []string
 		NewPid2 = fakeCapability{newpid2: func(i int) (capability.Capabilities, error) {
-			return fakeCapability{}, nil
+			orderOfFuncs = append(orderOfFuncs, "NewPid2")
+			return fakeCapability{
+				load: func() error {
+					orderOfFuncs = append(orderOfFuncs, "Load")
+					return nil
+				},
+			}, nil
 		}}.newpid2
 		sc, err := Self()
 		require.NoError(t, err)
 		require.NotNil(t, sc)
+		require.Equal(t, []string{"NewPid2", "Load"}, orderOfFuncs)
 	})
 
 	t.Run("sad path - NewPid2 fails", func(t *testing.T) {

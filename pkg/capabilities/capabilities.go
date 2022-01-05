@@ -27,6 +27,7 @@ func Self() (capability.Capabilities, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	err = selfCap.Load()
 	if err != nil {
 		return nil, fmt.Errorf("loading capabilities failed: %s", err)
