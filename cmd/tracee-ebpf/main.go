@@ -92,11 +92,11 @@ func main() {
 			if err != nil {
 				return err
 			}
-			selfCap, err = capabilities.LoadSelfCapabilities(selfCap)
+			selfCap, err = capabilities.Self(selfCap)
 			if err != nil {
 				return err
 			}
-			if err = capabilities.CheckRequiredCapabilities(selfCap, []capability.Cap{capability.CAP_IPC_LOCK, capability.CAP_SYS_ADMIN}); err != nil {
+			if err = capabilities.CheckRequired(selfCap, []capability.Cap{capability.CAP_IPC_LOCK, capability.CAP_SYS_ADMIN}); err != nil {
 				return err
 			}
 
@@ -1144,7 +1144,7 @@ func makeBPFObject(outFile string) error {
 	if err != nil {
 		return err
 	}
-	cap, err := capabilities.LoadSelfCapabilities(selfCap)
+	cap, err := capabilities.Self(selfCap)
 	if err != nil {
 		return err
 	}

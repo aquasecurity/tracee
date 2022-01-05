@@ -31,11 +31,11 @@ func (f fakeCapability) Load() error {
 }
 func TestCheckRequiredCapabilities(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
-		require.NoError(t, CheckRequiredCapabilities(fakeCapability{}, []capability.Cap{capability.CAP_SYS_ADMIN, capability.CAP_IPC_LOCK}))
+		require.NoError(t, CheckRequired(fakeCapability{}, []capability.Cap{capability.CAP_SYS_ADMIN, capability.CAP_IPC_LOCK}))
 	})
 
 	t.Run("missing CAP_SYS_ADMIN", func(t *testing.T) {
-		err := CheckRequiredCapabilities(fakeCapability{get: func(capType capability.CapType, c capability.Cap) bool {
+		err := CheckRequired(fakeCapability{get: func(capType capability.CapType, c capability.Cap) bool {
 			assert.Equal(t, capability.EFFECTIVE, capType)
 			assert.Equal(t, capability.CAP_SYS_ADMIN, c)
 			return false
@@ -46,13 +46,13 @@ func TestCheckRequiredCapabilities(t *testing.T) {
 
 func TestLoadSelfCapabilities(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
-		sc, err := LoadSelfCapabilities(fakeCapability{})
+		sc, err := Self(fakeCapability{})
 		require.NoError(t, err)
 		require.NotNil(t, sc)
 	})
 
 	t.Run("sad path - loading capabilities fails", func(t *testing.T) {
-		sc, err := LoadSelfCapabilities(fakeCapability{load: func() error {
+		sc, err := Self(fakeCapability{load: func() error {
 			return fmt.Errorf("an error occurred")
 		}})
 		require.EqualError(t, err, "loading capabilities failed: an error occurred")
