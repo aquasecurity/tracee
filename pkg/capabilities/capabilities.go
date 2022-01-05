@@ -7,6 +7,12 @@ import (
 	"github.com/syndtr/gocapability/capability"
 )
 
+var (
+	// NewPid2 is not defined on an interface
+	// therefore it must be patched in for testability
+	NewPid2 = capability.NewPid2
+)
+
 func CheckRequired(caps capability.Capabilities, reqCaps []capability.Cap) error {
 	for _, c := range reqCaps {
 		if !caps.Get(capability.EFFECTIVE, c) {
@@ -16,8 +22,12 @@ func CheckRequired(caps capability.Capabilities, reqCaps []capability.Cap) error
 	return nil
 }
 
-func Self(selfCap capability.Capabilities) (capability.Capabilities, error) {
-	err := selfCap.Load()
+func Self() (capability.Capabilities, error) {
+	selfCap, err := NewPid2(0)
+	if err != nil {
+		return nil, err
+	}
+	err = selfCap.Load()
 	if err != nil {
 		return nil, fmt.Errorf("loading capabilities failed: %s", err)
 	}

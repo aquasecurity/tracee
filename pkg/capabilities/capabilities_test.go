@@ -12,8 +12,9 @@ import (
 type fakeCapability struct {
 	capability.Capabilities
 
-	get  func(capability.CapType, capability.Cap) bool
-	load func() error
+	newpid2 func(int) (capability.Capabilities, error)
+	get     func(capability.CapType, capability.Cap) bool
+	load    func() error
 }
 
 func (f fakeCapability) Get(which capability.CapType, what capability.Cap) bool {
@@ -29,6 +30,14 @@ func (f fakeCapability) Load() error {
 	}
 	return nil
 }
+
+func (f fakeCapability) NewPid2(pid int) (capability.Capabilities, error) {
+	if f.newpid2 != nil {
+		return f.newpid2(pid)
+	}
+	return nil, nil
+}
+
 func TestCheckRequiredCapabilities(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		require.NoError(t, CheckRequired(fakeCapability{}, []capability.Cap{capability.CAP_SYS_ADMIN, capability.CAP_IPC_LOCK}))
@@ -46,15 +55,45 @@ func TestCheckRequiredCapabilities(t *testing.T) {
 
 func TestLoadSelfCapabilities(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
-		sc, err := Self(fakeCapability{})
+		oldNewPid2 := NewPid2
+		defer func() {
+			NewPid2 = oldNewPid2
+		}()
+
+		NewPid2 = fakeCapability{newpid2: func(i int) (capability.Capabilities, error) {
+			return fakeCapability{}, nil
+		}}.newpid2
+		sc, err := Self()
 		require.NoError(t, err)
 		require.NotNil(t, sc)
 	})
 
+	t.Run("sad path - NewPid2 fails", func(t *testing.T) {
+		oldNewPid2 := NewPid2
+		defer func() {
+			NewPid2 = oldNewPid2
+		}()
+
+		NewPid2 = fakeCapability{newpid2: func(i int) (capability.Capabilities, error) {
+			return nil, fmt.Errorf("newPid2 failed")
+		}}.newpid2
+		sc, err := Self()
+		require.EqualError(t, err, "newPid2 failed")
+		require.Nil(t, sc)
+	})
+
 	t.Run("sad path - loading capabilities fails", func(t *testing.T) {
-		sc, err := Self(fakeCapability{load: func() error {
-			return fmt.Errorf("an error occurred")
-		}})
+		oldNewPid2 := NewPid2
+		defer func() {
+			NewPid2 = oldNewPid2
+		}()
+
+		NewPid2 = fakeCapability{newpid2: func(i int) (capability.Capabilities, error) {
+			return fakeCapability{load: func() error {
+				return fmt.Errorf("an error occurred")
+			}}, nil
+		}}.newpid2
+		sc, err := Self()
 		require.EqualError(t, err, "loading capabilities failed: an error occurred")
 		require.Nil(t, sc)
 	})

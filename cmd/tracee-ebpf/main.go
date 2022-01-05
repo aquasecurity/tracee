@@ -88,11 +88,7 @@ func main() {
 			cfg.Output = &output
 
 			// environment capabilities
-			selfCap, err := capability.NewPid2(0)
-			if err != nil {
-				return err
-			}
-			selfCap, err = capabilities.Self(selfCap)
+			selfCap, err := capabilities.Self()
 			if err != nil {
 				return err
 			}
@@ -1140,11 +1136,7 @@ func unpackBPFBundle(dir string) error {
 // makeBPFObject builds the ebpf object from source code into the provided path
 func makeBPFObject(outFile string) error {
 	// drop capabilities for the compilation process
-	selfCap, err := capability.NewPid2(0)
-	if err != nil {
-		return err
-	}
-	cap, err := capabilities.Self(selfCap)
+	caps, err := capabilities.Self()
 	if err != nil {
 		return err
 	}
@@ -1157,7 +1149,7 @@ func makeBPFObject(outFile string) error {
 	if err != err {
 		return err
 	}
-	defer cap.Apply(capability.BOUNDS)
+	defer caps.Apply(capability.BOUNDS)
 	dir, err := ioutil.TempDir("", "tracee-make")
 	if err != nil {
 		return err
