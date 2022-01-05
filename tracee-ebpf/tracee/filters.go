@@ -13,6 +13,36 @@ import (
 	bpf "github.com/aquasecurity/libbpfgo"
 )
 
+const (
+	filterNotEqual uint32 = iota
+	filterEqual
+)
+
+const (
+	filterIn  uint8 = 1
+	filterOut uint8 = 2
+)
+
+const (
+	uidLess uint32 = iota
+	uidGreater
+	pidLess
+	pidGreater
+	mntNsLess
+	mntNsGreater
+	pidNsLess
+	pidNsGreater
+)
+
+// Set default inequality values
+// val<0 and val>math.MaxUint64 should never be used by the user as they give an empty set
+const (
+	LessNotSetUint    uint64 = 0
+	GreaterNotSetUint uint64 = math.MaxUint64
+	LessNotSetInt     int64  = math.MinInt64
+	GreaterNotSetInt  int64  = math.MaxInt64
+)
+
 type Filter struct {
 	EventsToTrace     []int32
 	UIDFilter         *UintFilter
@@ -396,10 +426,11 @@ func (argFilter *ArgFilter) Parse(filterName string, operatorAndValues string, e
 		return fmt.Errorf("invalid argument filter event name: %s", eventName)
 	}
 
-	eventParams, ok := EventsIDToParams[id]
+	eventDefinition, ok := EventsDefinitions[id]
 	if !ok {
 		return fmt.Errorf("invalid argument filter event name: %s", eventName)
 	}
+	eventParams := eventDefinition.Params
 
 	// check if argument name exists for this event
 	argFound := false

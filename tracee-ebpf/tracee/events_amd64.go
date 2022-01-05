@@ -173,7 +173,7 @@ const (
 	AcctEventID                int32 = 163
 	SettimeofdayEventID        int32 = 164
 	MountEventID               int32 = 165
-	UmountEventID              int32 = 166
+	Umount2EventID             int32 = 166
 	SwaponEventID              int32 = 167
 	SwapoffEventID             int32 = 168
 	RebootEventID              int32 = 169
@@ -343,24 +343,122 @@ const (
 	IoPgeteventsEventID        int32 = 333
 	RseqEventID                int32 = 334
 	// 335 through 423 are unassigned to sync up with generic numbers
-	PidfdSendSignalEventID int32 = 424
-	IoUringSetupEventID    int32 = 425
-	IoUringEnterEventID    int32 = 426
-	IoUringRegisterEventID int32 = 427
-	OpenTreeEventID        int32 = 428
-	MoveMountEventID       int32 = 429
-	FsopenEventID          int32 = 430
-	FsconfigEventID        int32 = 431
-	FsmountEventID         int32 = 432
-	FspickEventID          int32 = 433
-	PidfdOpenEventID       int32 = 434
-	Clone3EventID          int32 = 435
-	CloseRangeEventID      int32 = 436
-	Openat2EventID         int32 = 437
-	PidfdGetfdEventID      int32 = 438
-	Faccessat2EventID      int32 = 439
-	ProcessMadviseEventID  int32 = 440
-	EpollPwait2EventID     int32 = 441
+	PidfdSendSignalEventID       int32 = 424
+	IoUringSetupEventID          int32 = 425
+	IoUringEnterEventID          int32 = 426
+	IoUringRegisterEventID       int32 = 427
+	OpenTreeEventID              int32 = 428
+	MoveMountEventID             int32 = 429
+	FsopenEventID                int32 = 430
+	FsconfigEventID              int32 = 431
+	FsmountEventID               int32 = 432
+	FspickEventID                int32 = 433
+	PidfdOpenEventID             int32 = 434
+	Clone3EventID                int32 = 435
+	CloseRangeEventID            int32 = 436
+	Openat2EventID               int32 = 437
+	PidfdGetfdEventID            int32 = 438
+	Faccessat2EventID            int32 = 439
+	ProcessMadviseEventID        int32 = 440
+	EpollPwait2EventID           int32 = 441
+	MountSetattEventID           int32 = 442
+	QuotactlFdEventID            int32 = 443
+	LandlockCreateRulesetEventID int32 = 444
+	LandlockAddRuleEventID       int32 = 445
+	LandloclRestrictSetEventID   int32 = 446
+	MemfdSecretEventID           int32 = 447
+	ProcessMreleaseEventID       int32 = 448
+)
+
+// Set of events IDs for 32bit syscalls which have no parallel 64bit syscall
+const (
+	WaitpidEventID int32 = iota + Unique32BitSyscallsStartID
+	OldfstatEventID
+	BreakEventID
+	OldstatEventID
+	UmountEventID
+	StimeEventID
+	SttyEventID
+	GttyEventID
+	NiceEventID
+	FtimeEventID
+	ProfEventID
+	SignalEventID
+	LockEventID
+	MpxEventID
+	UlimitEventID
+	OldoldunameEventID
+	SigactionEventID
+	SgetmaskEventID
+	SsetmaskEventID
+	SigsuspendEventID
+	SigpendingEventID
+	OldlstatEventID
+	ReaddirEventID
+	ProfilEventID
+	SocketcallEventID
+	OldunameEventID
+	IdleEventID
+	Vm86oldEventID
+	IpcEventID
+	SigreturnEventID
+	SigprocmaskEventID
+	BdflushEventID
+	Afs_syscallEventID
+	LlseekEventID
+	OldSelectEventID
+	Vm86EventID
+	OldGetrlimitEventID
+	Mmap2EventID
+	Truncate64EventID
+	Ftruncate64EventID
+	Stat64EventID
+	Lstat64EventID
+	Fstat64EventID
+	Lchown16EventID
+	Getuid16EventID
+	Getgid16EventID
+	Geteuid16EventID
+	Getegid16EventID
+	Setreuid16EventID
+	Setregid16EventID
+	Getgroups16EventID
+	Setgroups16EventID
+	Fchown16EventID
+	Setresuid16EventID
+	Getresuid16EventID
+	Setresgid16EventID
+	Getresgid16EventID
+	Chown16EventID
+	Setuid16EventID
+	Setgid16EventID
+	Setfsuid16EventID
+	Setfsgid16EventID
+	Fcntl64EventID
+	Sendfile32EventID
+	Statfs64EventID
+	Fstatfs64EventID
+	Fadvise64_64EventID
+	ClockGettime32EventID
+	ClockSettime32EventID
+	ClockAdjtime64EventID
+	ClockGetresTime32EventID
+	ClockNanosleepTime32EventID
+	TimerGettime32EventID
+	TimerSettime32EventID
+	TimerfdGettime32EventID
+	TimerfdSettime32EventID
+	UtimensatTime32EventID
+	Pselect6Time32EventID
+	PpollTime32EventID
+	IoPgeteventsTime32EventID
+	RecvmmsgTime32EventID
+	MqTimedsendTime32EventID
+	MqTimedreceiveTime32EventID
+	RtSigtimedwaitTime32EventID
+	FutexTime32EventID
+	SchedRrGetInterval32EventID
+	Unique32BitSyscallsEndID
 )
 
 // x86 32bit syscall numbers
@@ -798,5 +896,12 @@ const (
 	sys32faccessat2                   int32 = 439
 	sys32process_madvise              int32 = 440
 	sys32epoll_pwait2                 int32 = 441
+	sys32mount_setattr                int32 = 442
+	sys32quotactl_fd                  int32 = 443
+	sys32landlock_create_ruleset      int32 = 444
+	sys32landlock_add_rule            int32 = 445
+	sys32landlock_restrict_self       int32 = 446
+	sys32memfd_secret                 int32 = 447
+	sys32process_mrelease             int32 = 448
 	sys32undefined                    int32 = 10000
 )

@@ -10,6 +10,10 @@ import (
 	"github.com/aquasecurity/tracee/pkg/external"
 )
 
+// Max depth of each stack trace to track
+// Matches 'MAX_STACK_DEPTH' in eBPF code
+const maxStackDepth int = 20
+
 // context struct contains common metadata that is collected for all types of events
 // it is used to unmarshal binary data and therefore should match (bit by bit) to the `context_t` struct in the ebpf code.
 // NOTE: Integers want to be aligned in memory, so if changing the format of this struct
@@ -48,16 +52,17 @@ func (t *Tracee) processEvents(done <-chan struct{}) error {
 		args := make(map[string]interface{}, ctx.Argnum)
 		argMetas := make([]external.ArgMeta, ctx.Argnum)
 
-		params := EventsIDToParams[ctx.EventID]
-		if params == nil {
-			t.handleError(fmt.Errorf("failed to get parameters of event %d", ctx.EventID))
+		eventDefinition, ok := EventsDefinitions[ctx.EventID]
+		if !ok {
+			t.handleError(fmt.Errorf("failed to get configuration of event %d", ctx.EventID))
 			continue
 		}
+		params := eventDefinition.Params
 
 		for i := 0; i < int(ctx.Argnum); i++ {
 			argMeta, argVal, err := readArgFromBuff(dataBuff, params)
 			if err != nil {
-				t.handleError(fmt.Errorf("failed to read argument %d of event %s: %v", i, EventsIDToEvent[ctx.EventID].Name, err))
+				t.handleError(fmt.Errorf("failed to read argument %d of event %s: %v", i, eventDefinition.Name, err))
 				continue
 			}
 
@@ -74,12 +79,6 @@ func (t *Tracee) processEvents(done <-chan struct{}) error {
 			continue
 		}
 
-		if !t.containers.CgroupExists(ctx.CgroupID) {
-			// Handle false container negatives (we should have identified this container id, but we didn't)
-			// This situation can happen as a race condition when updating the cgroup map.
-			// In that case, we can try to look for it in the cgroupfs and update the map if found.
-			t.containers.CgroupLookupUpdate(ctx.CgroupID)
-		}
 		containerId := t.containers.GetCgroupInfo(ctx.CgroupID).ContainerId
 		if (t.config.Filter.ContFilter.Enabled || t.config.Filter.NewContFilter.Enabled) && containerId == "" {
 			// Don't trace false container positives -
@@ -96,7 +95,7 @@ func (t *Tracee) processEvents(done <-chan struct{}) error {
 		}
 
 		if t.config.Output.ParseArguments {
-			err = t.parseArgs(&ctx, args)
+			err = t.parseArgs(&ctx, args, &argMetas)
 			if err != nil {
 				t.handleError(err)
 				continue
@@ -135,7 +134,7 @@ func (t *Tracee) processEvents(done <-chan struct{}) error {
 			HostName:            string(bytes.TrimRight(ctx.UtsName[:], "\x00")),
 			ContainerID:         containerId,
 			EventID:             int(ctx.EventID),
-			EventName:           EventsIDToEvent[int32(ctx.EventID)].Name,
+			EventName:           eventDefinition.Name,
 			ArgsNum:             int(ctx.Argnum),
 			ReturnValue:         int(ctx.Retval),
 			Args:                make([]external.Argument, 0, len(args)),

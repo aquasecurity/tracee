@@ -781,7 +781,7 @@ func TestPrepareFilter(t *testing.T) {
 				NewContFilter: &tracee.BoolFilter{},
 				ArgFilter: &tracee.ArgFilter{
 					Filters: map[int32]map[string]tracee.ArgFilterVal{
-						257: {
+						tracee.OpenatEventID: {
 							"pathname": tracee.ArgFilterVal{
 								Equal:    []string{"/bin/ls", "/tmp/tracee"},
 								NotEqual: []string{"/etc/passwd"},
@@ -842,7 +842,7 @@ func TestPrepareFilter(t *testing.T) {
 				},
 				RetFilter: &tracee.RetFilter{
 					Filters: map[int32]tracee.IntFilter{
-						257: {
+						tracee.OpenatEventID: {
 							Equal:    []int64{2},
 							NotEqual: []int64{},
 							Less:     tracee.LessNotSetInt,
@@ -859,7 +859,7 @@ func TestPrepareFilter(t *testing.T) {
 			testName: "wildcard filter",
 			filters:  []string{"event=open*"},
 			expectedFilter: tracee.Filter{
-				EventsToTrace: []int32{2, 257},
+				EventsToTrace: []int32{tracee.OpenEventID, tracee.OpenatEventID},
 				UIDFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
@@ -1359,7 +1359,38 @@ InstalledDir: /usr/bin
 	}
 }
 
-func Test_fetchFormattedEventParams(t *testing.T) {
+func Test_checkRequiredCapabilites(t *testing.T) {
+	t.Run("happy path", func(t *testing.T) {
+		fc := fakeCapabilities{}
+		require.NoError(t, checkRequiredCapabilities(fc))
+	})
+
+	t.Run("CAP_SYS_ADMIN missing", func(t *testing.T) {
+		fc := fakeCapabilities{
+			get: func(capType capability.CapType, c capability.Cap) bool {
+				if c == capability.CAP_SYS_ADMIN {
+					return false
+				}
+				return true
+			},
+		}
+		require.EqualError(t, checkRequiredCapabilities(fc), "insufficient privileges to run: missing CAP_SYS_ADMIN")
+	})
+
+	t.Run("CAP_IPC_LOCK missing", func(t *testing.T) {
+		fc := fakeCapabilities{
+			get: func(capType capability.CapType, c capability.Cap) bool {
+				if c == capability.CAP_IPC_LOCK {
+					return false
+				}
+				return true
+			},
+		}
+		require.EqualError(t, checkRequiredCapabilities(fc), "insufficient privileges to run: missing CAP_IPC_LOCK")
+	})
+}
+
+func Test_getFormattedEventParams(t *testing.T) {
 	testCases := []struct {
 		input  int32
 		output string
@@ -1383,6 +1414,6 @@ func Test_fetchFormattedEventParams(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		assert.Equal(t, tc.output, fetchFormattedEventParams(tc.input))
+		assert.Equal(t, tc.output, getFormattedEventParams(tc.input))
 	}
 }

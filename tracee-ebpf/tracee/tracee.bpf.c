@@ -187,7 +187,8 @@ Copyright (C) Aqua Security inc.
 #define SECURITY_INODE_MKNOD            1029
 #define SECURITY_POST_READ_FILE         1030
 #define SOCKET_DUP                      1031
-#define MAX_EVENT_ID                    1032
+#define HIDDEN_INODES                   1032
+#define MAX_EVENT_ID                    1033
 
 #define NET_PACKET                      0
 #define DEBUG_NET_SECURITY_BIND         1
@@ -736,7 +737,7 @@ static __always_inline char * get_task_uts_name(struct task_struct *task)
 static __always_inline u32 get_task_ppid(struct task_struct *task)
 {
     struct task_struct *parent = READ_KERN(task->real_parent);
-    return READ_KERN(parent->pid);
+    return READ_KERN(parent->tgid);
 }
 
 static __always_inline u32 get_task_host_pid(struct task_struct *task)
@@ -2270,18 +2271,18 @@ static __always_inline int send_socket_dup(event_data_t *data, u64 oldfd, u64 ne
 
     if (family == AF_INET) {
         net_conn_v4_t net_details = {};
-        get_network_details_from_sock_v4(sk, &net_details, 0);
-
         struct sockaddr_in remote;
+
+        get_network_details_from_sock_v4(sk, &net_details, 0);
         get_remote_sockaddr_in_from_network_details(&remote, &net_details, family);
 
         save_to_submit_buf(data, &remote, sizeof(struct sockaddr_in), 2);
     }
     else if (family == AF_INET6) {
         net_conn_v6_t net_details = {};
-        get_network_details_from_sock_v6(sk, &net_details, 0);
-
         struct sockaddr_in6 remote;
+
+        get_network_details_from_sock_v6(sk, &net_details, 0);
         get_remote_sockaddr_in6_from_network_details(&remote, &net_details, family);
 
         save_to_submit_buf(data, &remote, sizeof(struct sockaddr_in6), 2);
@@ -2374,12 +2375,18 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
 
     if (event_chosen(SCHED_PROCESS_FORK)) {
         int parent_ns_pid = get_task_ns_pid(parent);
+        int parent_ns_tgid = get_task_ns_tgid(parent);
         int child_ns_pid = get_task_ns_pid(child);
+        int child_ns_tgid = get_task_ns_tgid(child);
 
         save_to_submit_buf(&data, (void*)&parent_pid, sizeof(int), 0);
         save_to_submit_buf(&data, (void*)&parent_ns_pid, sizeof(int), 1);
-        save_to_submit_buf(&data, (void*)&child_pid, sizeof(int), 2);
-        save_to_submit_buf(&data, (void*)&child_ns_pid, sizeof(int), 3);
+        save_to_submit_buf(&data, (void*)&parent_tgid, sizeof(int), 2);
+        save_to_submit_buf(&data, (void*)&parent_ns_tgid, sizeof(int), 3);
+        save_to_submit_buf(&data, (void*)&child_pid, sizeof(int), 4);
+        save_to_submit_buf(&data, (void*)&child_ns_pid, sizeof(int), 5);
+        save_to_submit_buf(&data, (void*)&child_tgid, sizeof(int), 6);
+        save_to_submit_buf(&data, (void*)&child_ns_tgid, sizeof(int), 7);
 
         events_perf_submit(&data, SCHED_PROCESS_FORK, 0);
     }
@@ -2544,7 +2551,24 @@ int tracepoint__sched__sched_switch(struct bpf_raw_tracepoint_args *ctx)
 
     return events_perf_submit(&data, SCHED_SWITCH, 0);
 }
+SEC("kprobe/filldir64")
+int BPF_KPROBE(trace_filldir64)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+    if (!should_trace((&data.context)))
+        return 0;
 
+    char * process_name = (char *)PT_REGS_PARM2(ctx);
+    unsigned long process_inode_number = (unsigned long) PT_REGS_PARM5(ctx);
+    if (process_inode_number == 0)
+    {
+        save_str_to_buf(&data, process_name, 0);
+        return events_perf_submit(&data, HIDDEN_INODES, 0);
+    }
+    return 0;
+}
 SEC("kprobe/do_exit")
 int BPF_KPROBE(trace_do_exit)
 {
@@ -2970,18 +2994,18 @@ int BPF_KPROBE(trace_security_socket_listen)
 
     if (family == AF_INET) {
         net_conn_v4_t net_details = {};
-        get_network_details_from_sock_v4(sk, &net_details, 0);
-
         struct sockaddr_in local;
+
+        get_network_details_from_sock_v4(sk, &net_details, 0);
         get_local_sockaddr_in_from_network_details(&local, &net_details, family);
 
         save_to_submit_buf(&data, (void *)&local, sizeof(struct sockaddr_in), 1);
     }
     else if (family == AF_INET6) {
         net_conn_v6_t net_details = {};
-        get_network_details_from_sock_v6(sk, &net_details, 0);
-
         struct sockaddr_in6 local;
+
+        get_network_details_from_sock_v6(sk, &net_details, 0);
         get_local_sockaddr_in6_from_network_details(&local, &net_details, family);
 
         save_to_submit_buf(&data, (void *)&local, sizeof(struct sockaddr_in6), 1);
@@ -3029,12 +3053,15 @@ int BPF_KPROBE(trace_security_socket_connect)
         save_to_submit_buf(&data, (void *)address, sizeof(struct sockaddr_in6), 1);
     }
     else if (sa_fam == AF_UNIX) {
+#if defined(__TARGET_ARCH_x86) // TODO: this is broken in arm64 (issue: #1129)
         if (addr_len <= sizeof(struct sockaddr_un)) {
             struct sockaddr_un sockaddr = {};
             bpf_probe_read(&sockaddr, addr_len, (void *)address);
             save_to_submit_buf(&data, (void *)&sockaddr, sizeof(struct sockaddr_un), 1);
         }
-        else save_to_submit_buf(&data, (void *)address, sizeof(struct sockaddr_un), 1);
+        else
+#endif
+            save_to_submit_buf(&data, (void *)address, sizeof(struct sockaddr_un), 1);
     }
 
     return events_perf_submit(&data, SECURITY_SOCKET_CONNECT, 0);
@@ -3067,18 +3094,18 @@ int BPF_KPROBE(trace_security_socket_accept)
 
     if (family == AF_INET) {
         net_conn_v4_t net_details = {};
-        get_network_details_from_sock_v4(sk, &net_details, 0);
-
         struct sockaddr_in local;
+
+        get_network_details_from_sock_v4(sk, &net_details, 0);
         get_local_sockaddr_in_from_network_details(&local, &net_details, family);
 
         save_to_submit_buf(&data, (void *)&local, sizeof(struct sockaddr_in), 1);
     }
     else if (family == AF_INET6) {
         net_conn_v6_t net_details = {};
-        get_network_details_from_sock_v6(sk, &net_details, 0);
-
         struct sockaddr_in6 local;
+
+        get_network_details_from_sock_v6(sk, &net_details, 0);
         get_local_sockaddr_in6_from_network_details(&local, &net_details, family);
 
         save_to_submit_buf(&data, (void *)&local, sizeof(struct sockaddr_in6), 1);
@@ -3146,12 +3173,15 @@ int BPF_KPROBE(trace_security_socket_bind)
         }
     }
     else if (sa_fam == AF_UNIX) {
+#if defined(__TARGET_ARCH_x86) // TODO: this is broken in arm64 (issue: #1129)
         if (addr_len <= sizeof(struct sockaddr_un)) {
             struct sockaddr_un sockaddr = {};
             bpf_probe_read(&sockaddr, addr_len, (void *)address);
             save_to_submit_buf(&data, (void *)&sockaddr, sizeof(struct sockaddr_un), 1);
         }
-        else save_to_submit_buf(&data, (void *)address, sizeof(struct sockaddr_un), 1);
+        else
+#endif
+            save_to_submit_buf(&data, (void *)address, sizeof(struct sockaddr_un), 1);
     }
 
     if (connect_id.port) {
@@ -3465,8 +3495,8 @@ static __always_inline u32 send_bin_helper(void* ctx, struct bpf_map_def *prog_a
     }
 
 #define F_SEND_TYPE   0
-#define F_MNT_NS      (F_SEND_TYPE + sizeof(u8))
-#define F_META_OFF    (F_MNT_NS + sizeof(u32))
+#define F_CGROUP_ID   (F_SEND_TYPE + sizeof(u8))
+#define F_META_OFF    (F_CGROUP_ID + sizeof(u64))
 #define F_SZ_OFF      (F_META_OFF + SEND_META_SIZE)
 #define F_POS_OFF     (F_SZ_OFF + sizeof(unsigned int))
 #define F_CHUNK_OFF   (F_POS_OFF + sizeof(off_t))
@@ -3474,8 +3504,13 @@ static __always_inline u32 send_bin_helper(void* ctx, struct bpf_map_def *prog_a
 
     bpf_probe_read((void **)&(file_buf_p->buf[F_SEND_TYPE]), sizeof(u8), &bin_args->type);
 
-    u32 mnt_id = get_task_mnt_ns_id((struct task_struct *)bpf_get_current_task());
-    bpf_probe_read((void **)&(file_buf_p->buf[F_MNT_NS]), sizeof(u32), &mnt_id);
+    u64 cgroup_id;
+    if (get_config(CONFIG_CGROUP_V1)) {
+        cgroup_id = get_cgroup_v1_subsys0_id((struct task_struct *)bpf_get_current_task());
+    } else {
+        cgroup_id = bpf_get_current_cgroup_id();
+    }
+    bpf_probe_read((void **)&(file_buf_p->buf[F_CGROUP_ID]), sizeof(u64), &cgroup_id);
 
     // Save metadata to be used in filename
     bpf_probe_read((void **)&(file_buf_p->buf[F_META_OFF]), SEND_META_SIZE, bin_args->metadata);
@@ -3662,7 +3697,6 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
     loff_t start_pos;
 
     void *ptr;
-    size_t count;
     struct iovec *vec;
     unsigned long vlen;
     bool has_filter = false;
@@ -3679,7 +3713,6 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
     struct file *file      = (struct file *) saved_args.args[0];
     if (event_id == VFS_WRITE) {
         ptr                = (void*)         saved_args.args[1];
-        count              = (size_t)        saved_args.args[2];
     } else {
         vec                = (struct iovec*) saved_args.args[1];
         vlen               =                 saved_args.args[2];

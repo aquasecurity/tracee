@@ -30,7 +30,7 @@ Kernel version specific option:
 
 You can build the eBPF program in the following ways:
 
-1. Clone the repo (including submodules: `git clone --branch={{ git_tag_version }} --recursive https://github.com/aquasecurity/tracee.git`) and `make bpf`.
+1. Clone the repo (including submodules: `git clone --branch={{ git.tag }} --recursive https://github.com/aquasecurity/tracee.git`) and `make bpf`.
 2. `make bpf DOCKER=1` to build in a Docker container which includes all development tooling.
 
 Running this will produce a file called `tracee.bpf.$kernelversion.$traceeversion.o` under the `dist` directory.
@@ -50,7 +50,7 @@ If using Docker, the following `docker run` options demonstrate mounting a pre-c
 docker run --name tracee --rm --privileged -it \
   -v /path/in/host/tracee.bpf.123.o:/path/in/container/tracee.bpf.o \
   -e TRACEE_BPF_FILE=/path/in/container/tracee.bpf.o \
-  aquasec/tracee:slim-{{ git_tag_version[1:] }}
+  aquasec/tracee:slim-{{ git.tag[1:] }}
 ```
 
 If using Docker on a host without BTF enabled, the following `docker run` options demonstrate mounting of required kernel headers for building the bpf object at runtime:
@@ -60,7 +60,7 @@ docker run --name tracee --rm --privileged -it \
   -v /lib/modules/:/lib/modules/:ro \
   -v /usr/src:/usr/src:ro \
   -v /tmp/tracee:/tmp/tracee \
-  aquasec/tracee:{{ git_tag_version[1:] }}
+  aquasec/tracee:{{ git.tag[1:] }}
 ```
 
 [Linux Headers]: ./headers.md

@@ -13,6 +13,7 @@ nav:
     - eBPF Compilation: install/ebpf-compilation.md
     - Linux Headers: install/headers.md
     - Kubernetes: install/kubernetes.md
+    - Docker for Mac: install/docker-mac.md
   - Integrations: integrations.md
   - Configuration Options: config.md
   - Authoring Rules: rules-authoring.md
@@ -35,6 +36,8 @@ markdown_extensions:
   - pymdownx.highlight
   - pymdownx.superfences
   - admonition
+  - toc:
+      permalink: true
 
 extra:
   generator: false
@@ -44,5 +47,4 @@ extra:
 
 plugins:
   - search
-  - macros:
-      modules: ["mkdocs_macros_gittagversion"]
+  - macros

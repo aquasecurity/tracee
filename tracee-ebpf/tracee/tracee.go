@@ -22,6 +22,8 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
+	"github.com/aquasecurity/tracee/pkg/bucketscache"
+	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
@@ -79,16 +81,17 @@ func (tc Config) Validate() error {
 	}
 
 	for _, e := range tc.Filter.EventsToTrace {
-		if _, ok := EventsIDToEvent[e]; !ok {
+		if _, ok := EventsDefinitions[e]; !ok {
 			return fmt.Errorf("invalid event to trace: %d", e)
 		}
 	}
 	for eventID, eventFilters := range tc.Filter.ArgFilter.Filters {
 		for argName := range eventFilters {
-			eventParams, ok := EventsIDToParams[eventID]
+			eventDefinition, ok := EventsDefinitions[eventID]
 			if !ok {
 				return fmt.Errorf("invalid argument filter event id: %d", eventID)
 			}
+			eventParams := eventDefinition.Params
 			// check if argument name exists for this event
 			argFound := false
 			for i := range eventParams {
@@ -169,13 +172,13 @@ type Tracee struct {
 	profiledFiles     map[string]profilerInfo
 	writtenFiles      map[string]string
 	mntNsFirstPid     map[uint32]uint32
-	pidsInMntns       bucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
+	pidsInMntns       bucketscache.BucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
 	tcProbe           []netProbe
 	pcapWriter        *pcapgo.NgWriter
 	pcapFile          *os.File
 	ngIfacesIndex     map[int]int
-	containers        *Containers
+	containers        *containers.Containers
 }
 
 type counter int32
@@ -221,9 +224,9 @@ func New(cfg Config) (*Tracee, error) {
 	}
 
 	setEssential := func(id int32) {
-		event := EventsIDToEvent[id]
+		event := EventsDefinitions[id]
 		event.EssentialEvent = true
-		EventsIDToEvent[id] = event
+		EventsDefinitions[id] = event
 	}
 	if cfg.Capture.Exec {
 		setEssential(SchedProcessExecEventID)
@@ -285,14 +288,14 @@ func New(cfg Config) (*Tracee, error) {
 	}
 
 	// Compile final list of events to trace including essential events
-	for id, event := range EventsIDToEvent {
+	for id, event := range EventsDefinitions {
 		// If an essential event was not requested by the user, set its map value to false
 		if event.EssentialEvent && !t.eventsToTrace[id] {
 			t.eventsToTrace[id] = false
 		}
 	}
 
-	c := InitContainers()
+	c := containers.InitContainers()
 	if err := c.Populate(); err != nil {
 		return nil, fmt.Errorf("error initializing containers: %v", err)
 	}
@@ -396,48 +399,6 @@ func New(cfg Config) (*Tracee, error) {
 	return t, nil
 }
 
-func getParamType(paramType string) argType {
-	switch paramType {
-	case "int", "pid_t", "uid_t", "gid_t", "mqd_t", "clockid_t", "const clockid_t", "key_t", "key_serial_t", "timer_t":
-		return intT
-	case "unsigned int", "u32":
-		return uintT
-	case "long":
-		return longT
-	case "unsigned long", "u64":
-		return ulongT
-	case "off_t":
-		return offT
-	case "mode_t":
-		return modeT
-	case "dev_t":
-		return devT
-	case "size_t":
-		return sizeT
-	case "void*", "const void*":
-		return pointerT
-	case "char*", "const char*":
-		return strT
-	case "const char*const*": // used by execve(at) argv and env
-		return strArrT
-	case "const char**": // used by sched_process_exec argv and envp
-		return argsArrT
-	case "const struct sockaddr*", "struct sockaddr*":
-		return sockAddrT
-	case "bytes":
-		return bytesT
-	case "int[2]":
-		return intArr2T
-	case "slim_cred_t":
-		return credT
-	case "umode_t":
-		return u16T
-	default:
-		// Default to pointer (printed as hex) for unsupported types
-		return pointerT
-	}
-}
-
 // Initialize tail calls program array
 func (t *Tracee) initTailCall(tailNum uint32, mapName string, progName string) error {
 
@@ -457,6 +418,48 @@ func (t *Tracee) initTailCall(tailNum uint32, mapName string, progName string) e
 
 	return err
 }
+
+// bpfConfig is an enum that include various configurations that can be passed to bpf code
+// config should match defined values in ebpf code
+type bpfConfig uint32
+
+const (
+	configDetectOrigSyscall bpfConfig = iota + 1
+	configExecEnv
+	configCaptureFiles
+	configExtractDynCode
+	configTraceePid
+	configStackAddresses
+	configUIDFilter
+	configMntNsFilter
+	configPidNsFilter
+	configUTSNsFilter
+	configCommFilter
+	configPidFilter
+	configContFilter
+	configFollowFilter
+	configNewPidFilter
+	configNewContFilter
+	configDebugNet
+	configProcTreeFilter
+	configCaptureModules
+	configCgroupV1
+)
+
+// Custom KernelConfigOption's to extend kernel_config helper support
+// Add here all kconfig variables used within tracee.bpf.c
+const (
+	CONFIG_ARCH_HAS_SYSCALL_WRAPPER helpers.KernelConfigOption = iota + helpers.CUSTOM_OPTION_START
+)
+
+// an enum that specifies the index of a function to be used in a bpf tail call
+// tail function indexes should match defined values in ebpf code
+const (
+	tailVfsWrite uint32 = iota
+	tailVfsWritev
+	tailSendBin
+	tailSendBinTP
+)
 
 func (t *Tracee) populateBPFMaps() error {
 
@@ -480,9 +483,9 @@ func (t *Tracee) populateBPFMaps() error {
 	if err != nil {
 		return err
 	}
-	for _, event := range EventsIDToEvent {
+	for id, event := range EventsDefinitions {
 		ID32BitU32 := uint32(event.ID32Bit) // ID32Bit is int32
-		IDU32 := uint32(event.ID)           // ID is int32
+		IDU32 := uint32(id)                 // ID is int32
 		if err := sys32to64BPFMap.Update(unsafe.Pointer(&ID32BitU32), unsafe.Pointer(&IDU32)); err != nil {
 			return err
 		}
@@ -566,7 +569,7 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Populate containers_map with existing containers
-	t.containers.PopulateBpfMap(t.bpfModule)
+	t.containers.PopulateBpfMap(t.bpfModule, "containers_map")
 
 	// Initialize tail calls program array
 	errs = make([]error, 0)
@@ -621,7 +624,8 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	eventsParams := make(map[int32][]argType)
-	for id, params := range EventsIDToParams {
+	for id, eventDefinition := range EventsDefinitions {
+		params := eventDefinition.Params
 		for _, param := range params {
 			eventsParams[id] = append(eventsParams[id], getParamType(param.Type))
 		}
@@ -644,7 +648,7 @@ func (t *Tracee) populateBPFMaps() error {
 
 		// some functions require tail call on syscall enter/exit as they perform extra work
 		if e == ExecveEventID || e == ExecveatEventID || e == InitModuleEventID {
-			event, ok := EventsIDToEvent[e]
+			event, ok := EventsDefinitions[e]
 			if !ok {
 				continue
 			}
@@ -767,7 +771,7 @@ func (t *Tracee) initBPF() error {
 	// For every BPF program, we need to make sure that:
 	// 1. We disable autoload if the program is not required by any event and is not essential
 	// 2. The correct BPF program type is set
-	for _, event := range EventsIDToEvent {
+	for id, event := range EventsDefinitions {
 		for _, probe := range event.Probes {
 			prog, _ := t.bpfModule.GetProgram(probe.fn)
 			if prog == nil && probe.attach == sysCall {
@@ -776,7 +780,7 @@ func (t *Tracee) initBPF() error {
 			if prog == nil {
 				continue
 			}
-			if _, ok := t.eventsToTrace[event.ID]; !ok {
+			if _, ok := t.eventsToTrace[id]; !ok {
 				// This event is not being traced - set its respective program(s) "autoload" to false
 				err = prog.SetAutoload(false)
 				if err != nil {
@@ -837,7 +841,7 @@ func (t *Tracee) initBPF() error {
 	}
 
 	for e := range t.eventsToTrace {
-		event, ok := EventsIDToEvent[e]
+		event, ok := EventsDefinitions[e]
 		if !ok {
 			continue
 		}

@@ -1,8 +1,11 @@
+---
+# The PR workflow is triggered automatically whenever a pull request (PR) is
+# opened to the main branch. It's also triggered when a PR is updated by adding
+# commits to the PR branch.
 name: PR
 on:
   pull_request:
     branches:
-      - next
       - main
 env:
   GO_VERSION: "1.16"
@@ -29,8 +32,8 @@ jobs:
             gofmt -s -d .
             exit 1
           fi
-  test-tracee-ebpf:
-    name: Test tracee-ebpf
+  verify-tracee-ebpf:
+    name: Verify tracee-ebpf
     needs:
       - verify-code
     runs-on: ubuntu-20.04
@@ -44,23 +47,14 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           opa-version: ${{ env.OPA_VERSION }}
+      - name: Build tracee-ebpf
+        run: |
+          make -f Makefile.one tracee-ebpf
       - name: Test tracee-ebpf
         run: |
-          make -C tracee-ebpf/ all
-          make -C tracee-ebpf/ test
-      - name: Test tracee-ebpf in Docker
-        run: |
-          make -C tracee-ebpf/ all DOCKER=1
-          make -C tracee-ebpf/ test DOCKER=1
-      - name: Test Single Makefile tracee-ebpf
-        run: |
-          rm -rf tracee-ebpf/dist
-          rm -rf dist
-          make -f Makefile.one tracee-ebpf
-          make -f Makefile.one clean
           make -f Makefile.one test-tracee-ebpf
-  test-tracee-rules:
-    name: Test tracee-rules
+  verify-tracee-rules:
+    name: Verify tracee-rules
     needs:
       - verify-code
     runs-on: ubuntu-20.04
@@ -74,28 +68,41 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           opa-version: ${{ env.OPA_VERSION }}
+      - name: Build tracee-rules
+        run: |
+          make -f Makefile.one tracee-rules
       - name: Test tracee-rules
         run: |
-          make -C tracee-rules/ test
-      - name: Test tracee-rules in Docker
-        run: |
-          make -C tracee-rules/ test DOCKER=1
-      - name: Test Single Makefile tracee-rules
-        run: |
-          rm -rf tracee-rules/dist
-          rm -rf dist
-          make -f Makefile.one tracee-rules
-          make -f Makefile.one clean
-          make -f Makefile.one rules
-          make -f Makefile.one clean
           make -f Makefile.one test-tracee-rules
-          make -f Makefile.one clean
+  verify-signatures:
+    name: Verify Signatures
+    needs:
+      - verify-code
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Install Dependencies
+        uses: ./.github/actions/build-dependencies
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          opa-version: ${{ env.OPA_VERSION }}
+      - name: Build Signatures
+        run: |
+          make -f Makefile.one rules
+      - name: Test Signatures
+        run: |
           make -f Makefile.one test-rules
   release-snapshot:
     name: Release Snapshot
     needs:
-      - test-tracee-ebpf
-      - test-tracee-rules
+      - verify-tracee-ebpf
+      - verify-tracee-rules
+      - verify-signatures
+      - deprecated-verify-tracee-ebpf
+      - deprecated-verify-tracee-rules
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Code
@@ -116,6 +123,76 @@ jobs:
       - name: Build Docker Image
         run: |
           make docker
+      - name: Scan Docker Image for Vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "tracee:latest"
+          severity: "CRITICAL"
+          exit-code: "1"
       - name: Build Slim Docker Image
         run: |
           make docker-slim
+      - name: Scan Slim Docker Image for Vulnerabilities
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "tracee:slim"
+          severity: "CRITICAL"
+          exit-code: "1"
+
+
+
+  # deprecated-verify-tracee-ebpf and deprecated-verify-tracee-rules jobs are
+  # supposed to be removed once we fully migrate to Makefile.one and get rid of
+  # tracee-ebpf/Makefile and tracee-rules/Makefile. We run them on each PR
+  # verification workflow to make sure that Make targets are backward compatible.
+  deprecated-verify-tracee-ebpf:
+    name: "[DEPRECATED] Verify tracee-ebpf"
+    needs:
+      - verify-code
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Install Dependencies
+        uses: ./.github/actions/build-dependencies
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          opa-version: ${{ env.OPA_VERSION }}
+      - name: Build and test tracee-ebpf
+        run: |
+          make -C tracee-ebpf/ all
+          make -C tracee-ebpf/ test
+      - name: Build and test tracee-ebpf in Docker
+        run: |
+          make -C tracee-ebpf/ all DOCKER=1
+          make -C tracee-ebpf/ test DOCKER=1
+
+  deprecated-verify-tracee-rules:
+    name: "[DEPRECATED] Verify tracee-rules"
+    needs:
+      - verify-code
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Install Dependencies
+        uses: ./.github/actions/build-dependencies
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          opa-version: ${{ env.OPA_VERSION }}
+      - name: Build tracee-rules
+        run: |
+          make -C tracee-rules/ build
+      - name: Build Signatures
+        run: |
+          make -C tracee-rules/ rules
+      - name: Test tracee-rules
+        run: |
+          make -C tracee-rules/ test
+      - name: Test tracee-rules in Docker
+        run: |
+          make -C tracee-rules/ test DOCKER=1

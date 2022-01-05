@@ -341,7 +341,17 @@ const (
 	Faccessat2EventID               int32 = 439
 	ProcessMadviseEventID           int32 = 440
 	EpollPwait2EventID              int32 = 441
+	MountSetattEventID              int32 = 442
+	QuotactlFdEventID               int32 = 443
+	LandlockCreateRulesetEventID    int32 = 444
+	LandlockAddRuleEventID          int32 = 445
+	LandloclRestrictSetEventID      int32 = 446
+	MemfdSecretEventID              int32 = 447
+	ProcessMreleaseEventID          int32 = 448
 )
+
+// TODO: There isnt a Unique32BitSyscalls list for arm64
+const Unique32BitSyscallsEndID int32 = Unique32BitSyscallsStartID
 
 // following syscalls are undefined on arm64
 const (
@@ -402,6 +412,92 @@ const (
 	FutimesatEventID
 	SignalfdEventID
 	EventfdEventID
+	WaitpidEventID
+	OldfstatEventID
+	BreakEventID
+	OldstatEventID
+	StimeEventID
+	SttyEventID
+	GttyEventID
+	NiceEventID
+	FtimeEventID
+	ProfEventID
+	SignalEventID
+	LockEventID
+	MpxEventID
+	UlimitEventID
+	OldoldunameEventID
+	SigactionEventID
+	SgetmaskEventID
+	SsetmaskEventID
+	SigsuspendEventID
+	SigpendingEventID
+	OldlstatEventID
+	ReaddirEventID
+	ProfilEventID
+	SocketcallEventID
+	OldunameEventID
+	IdleEventID
+	Vm86oldEventID
+	IpcEventID
+	SigreturnEventID
+	SigprocmaskEventID
+	BdflushEventID
+	Afs_syscallEventID
+	LlseekEventID
+	OldSelectEventID
+	Vm86EventID
+	OldGetrlimitEventID
+	Mmap2EventID
+	Truncate64EventID
+	Ftruncate64EventID
+	Stat64EventID
+	Lstat64EventID
+	Fstat64EventID
+	Lchown16EventID
+	Getuid16EventID
+	Getgid16EventID
+	Geteuid16EventID
+	Getegid16EventID
+	Setreuid16EventID
+	Setregid16EventID
+	Getgroups16EventID
+	Setgroups16EventID
+	Fchown16EventID
+	Setresuid16EventID
+	Getresuid16EventID
+	Setresgid16EventID
+	Getresgid16EventID
+	Chown16EventID
+	Setuid16EventID
+	Setgid16EventID
+	Setfsuid16EventID
+	Setfsgid16EventID
+	Fcntl64EventID
+	Sendfile32EventID
+	Statfs64EventID
+	Fstatfs64EventID
+	Fadvise64_64EventID
+	ClockGettime32EventID
+	ClockSettime32EventID
+	ClockGetresTime32EventID
+	ClockNanosleepTime32EventID
+	TimerGettime32EventID
+	TimerSettime32EventID
+	TimerfdGettime32EventID
+	TimerfdSettime32EventID
+	UtimensatTime32EventID
+	Pselect6Time32EventID
+	PpollTime32EventID
+	IoPgeteventsTime32EventID
+	RecvmmsgTime32EventID
+	MqTimedsendTime32EventID
+	MqTimedreceiveTime32EventID
+	RtSigtimedwaitTime32EventID
+	FutexTime32EventID
+	SchedRrGetInterval32EventID
+	sys32vm86old
+	sys32fadvise64_64
 )
 
 // ARM 32bit syscall numbers
@@ -849,6 +945,13 @@ const (
 	sys32faccessat2                   int32 = 439
 	sys32process_madvise              int32 = 440
 	sys32epoll_pwait2                 int32 = 441
+	sys32mount_setattr                int32 = 442
+	sys32quotactl_fd                  int32 = 443
+	sys32landlock_create_ruleset      int32 = 444
+	sys32landlock_add_rule            int32 = 445
+	sys32landlock_restrict_self       int32 = 446
+	sys32memfd_secret                 int32 = 447
+	sys32process_mrelease             int32 = 448
 	sys32undefined                    int32 = 10000
 )
 

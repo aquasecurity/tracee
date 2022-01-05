@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/external"
 )
 
@@ -100,7 +101,11 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 			}
 
 			// stop processing if write was already indexed
-			fileName := fmt.Sprintf("%d/write.dev-%d.inode-%d", ctx.MntID, dev, inode)
+			containerId := t.containers.GetCgroupInfo(ctx.CgroupID).ContainerId
+			if containerId == "" {
+				containerId = "host"
+			}
+			fileName := fmt.Sprintf("%s/write.dev-%d.inode-%d", containerId, dev, inode)
 			indexName, ok := t.writtenFiles[fileName]
 			if ok && indexName == filePath {
 				return nil
@@ -142,9 +147,13 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 				}
 				castedSourceFileCtime := int64(sourceFileCtime)
 
-				capturedFileID := fmt.Sprintf("%d:%s", ctx.MntID, sourceFilePath)
+				containerId := t.containers.GetCgroupInfo(ctx.CgroupID).ContainerId
+				if containerId == "" {
+					containerId = "host"
+				}
+				capturedFileID := fmt.Sprintf("%s:%s", containerId, sourceFilePath)
 				if t.config.Capture.Exec {
-					destinationDirPath := filepath.Join(t.config.Capture.OutputPath, strconv.Itoa(int(ctx.MntID)))
+					destinationDirPath := filepath.Join(t.config.Capture.OutputPath, containerId)
 					if err := os.MkdirAll(destinationDirPath, 0755); err != nil {
 						return err
 					}
@@ -209,7 +218,7 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 		info, err := t.containers.CgroupUpdate(cgroupId, path)
 		if err == nil && info.ContainerId == "" {
 			// If not a new container (no regex match) - remove from the bpf container_map
-			t.containers.RemoveFromBpfMap(t.bpfModule, cgroupId)
+			containers.RemoveFromBpfMap(t.bpfModule, cgroupId, "containers_map")
 		}
 
 	case CgroupRmdirEventID:
