@@ -2,6 +2,8 @@ package helpers
 
 import (
 	"fmt"
+	"github.com/aquasecurity/tracee/tracee-rules/process_tree"
+	"github.com/aquasecurity/tracee/tracee-rules/types"
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/external"
@@ -25,4 +27,12 @@ func IsFileWrite(flags string) bool {
 		return true
 	}
 	return false
+}
+
+func GetProcessInfoFromTree(hostProcessID int) (types.ProcessInfo, error) {
+	return process_tree.GetProcessInfo(hostProcessID)
+}
+
+func GetProcessLineageFromTree(hostProcessID int) (types.ProcessLineage, error) {
+	return process_tree.GetProcessLineage(hostProcessID)
 }
