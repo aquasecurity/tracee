@@ -128,14 +128,11 @@ env:
 	@echo "CMD_CLANG                $(CMD_CLANG)"
 	@echo "CMD_GIT                  $(CMD_GIT)"
 	@echo "CMD_GO                   $(CMD_GO)"
-	@echo "CMD_GREP                 $(CMD_GREP)"
 	@echo "CMD_INSTALL              $(CMD_INSTALL)"
 	@echo "CMD_LLC                  $(CMD_LLC)"
 	@echo "CMD_MD5                  $(CMD_MD5)"
-	@echo "CMD_MKDIR                $(CMD_MKDIR)"
 	@echo "CMD_OPA                  $(CMD_OPA)"
 	@echo "CMD_PKGCONFIG            $(CMD_PKGCONFIG)"
-	@echo "CMD_RM                   $(CMD_RM)"
 	@echo "CMD_STRIP                $(CMD_STRIP)"
 	@echo ---------------------------------------
 	@echo "LIB_ELF                  $(LIB_ELF)"
@@ -242,8 +239,7 @@ BPF_VCPU = v2
 
 OUTPUT_DIR = ./dist
 
-$(OUTPUT_DIR): \
-	| .check_$(CMD_MKDIR)
+$(OUTPUT_DIR):
 #
 	@$(CMD_MKDIR) -p $@
 	@$(CMD_MKDIR) -p $@/libbpf
@@ -253,9 +249,7 @@ $(OUTPUT_DIR): \
 # embedded btfhub
 #
 
-$(OUTPUT_DIR)/btfhub: \
-	| .check_$(CMD_MKDIR) \
-	.check_$(CMD_TOUCH)
+$(OUTPUT_DIR)/btfhub:
 #
 	@$(CMD_MKDIR) -p $@
 	@$(CMD_TOUCH) $@/.place-holder # needed for embed.FS
@@ -266,7 +260,6 @@ $(OUTPUT_DIR)/btfhub: \
 
 .PHONY: $(OUTPUT_DIR)/tracee.bpf
 $(OUTPUT_DIR)/tracee.bpf: \
-	| .check_$(CMD_MKDIR) \
 	.check_$(CMD_INSTALL)
 #
 	@$(CMD_MKDIR) -p $@
@@ -367,8 +360,7 @@ $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o: \
 	$(CMD_RM) $(@:.o=.ll)
 
 .PHONY: clean-bpf-nocore
-clean-bpf-nocore: \
-	| .check_$(CMD_RM)
+clean-bpf-nocore:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o
 
@@ -400,8 +392,7 @@ $(OUTPUT_DIR)/tracee.bpf.core.o: \
 		-o $@
 
 .PHONY: clean-bpf-core
-clean-bpf-core: \
-	| .check_$(CMD_RM)
+clean-bpf-core:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee.bpf.core.o
 
@@ -456,8 +447,7 @@ endif
 		./cmd/tracee-ebpf
 
 .PHONY: clean-tracee-ebpf
-clean-tracee-ebpf: \
-	| .check_$(CMD_RM)
+clean-tracee-ebpf:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-ebpf
 	$(CMD_RM) -rf .*.md5
@@ -483,8 +473,7 @@ SH_BTFHUB = ./3rdparty/btfhub.sh
 .PHONY: btfhub
 btfhub: \
 	$(OUTPUT_DIR)/tracee.bpf.core.o \
-	| .check_$(CMD_MD5) \
-	.check_$(CMD_CAT)
+	| .check_$(CMD_MD5)
 #
 ifeq ($(BTFHUB), 1)
 	@new=$($(CMD_MD5) -b $< | cut -d' ' -f1)
@@ -538,8 +527,7 @@ $(OUTPUT_DIR)/tracee-rules: \
 		./cmd/tracee-rules
 
 .PHONY: clean-tracee-rules
-clean-tracee-rules: \
-	| .check_$(CMD_RM)
+clean-tracee-rules:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-rules
 
@@ -580,7 +568,6 @@ $(OUTPUT_DIR)/rules: \
 	$(GOSIGNATURES_SRC) \
 	$(REGO_SIGNATURES_SRC) \
 	| .checkver_$(CMD_GO) \
-	.check_$(CMD_MKDIR) \
 	.check_$(CMD_INSTALL) \
 	$(OUTPUT_DIR)
 #
@@ -592,8 +579,7 @@ $(OUTPUT_DIR)/rules: \
 	$(CMD_INSTALL) -m 0640 $(REGO_SIGNATURES_SRC) $@
 
 .PHONY: clean-rules
-clean-rules: \
-	| .check_$(CMD_RM)
+clean-rules:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/rules
 
@@ -615,8 +601,7 @@ test: test-tracee-ebpf test-tracee-rules test-rules
 #
 
 .PHONY: clean
-clean: \
-	| .check_$(CMD_RM)
+clean:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)
 	$(CMD_RM) -rf .*.md5
