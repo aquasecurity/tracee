@@ -23,130 +23,172 @@ func Print16BytesSliceIP(in []byte) string {
 	return ip.String()
 }
 
-func (t *Tracee) parseArgs(ctx *context, args map[string]interface{}, argMetas *[]external.ArgMeta) error {
-	for key, arg := range args {
-		if ptr, isUintptr := arg.(uintptr); isUintptr {
-			args[key] = fmt.Sprintf("0x%X", ptr)
+func (t *Tracee) parseArgs(event *external.Event) error {
+	for i := range event.Args {
+		if ptr, isUintptr := event.Args[i].Value.(uintptr); isUintptr {
+			event.Args[i].Value = fmt.Sprintf("0x%X", ptr)
 		}
 	}
 
-	switch ctx.EventID {
+	switch int32(event.EventID) {
 	case MemProtAlertEventID:
-		if alert, isUint32 := args["alert"].(uint32); isUint32 {
-			args["alert"] = external.MemProtAlert(alert).String()
+		if alertArg := getEventArg(event, "alert"); alertArg != nil {
+			if alert, isUint32 := alertArg.Value.(uint32); isUint32 {
+				alertArg.Value = external.MemProtAlert(alert).String()
+			}
 		}
 	case SysEnterEventID, SysExitEventID, CapCapableEventID, CommitCredsEventID, SecurityFileOpenEventID:
-		//show syscall name instead of id
-		if id, isInt32 := args["syscall"].(int32); isInt32 {
-			if event, isKnown := EventsDefinitions[id]; isKnown {
-				if event.Probes[0].attach == sysCall {
-					args["syscall"] = event.Probes[0].event
+		if syscallArg := getEventArg(event, "syscall"); syscallArg != nil {
+			//show syscall name instead of id
+			if id, isInt32 := syscallArg.Value.(int32); isInt32 {
+				if event, isKnown := EventsDefinitions[id]; isKnown {
+					if event.Probes[0].attach == sysCall {
+						syscallArg.Value = event.Probes[0].event
+					}
 				}
 			}
 		}
-		if ctx.EventID == CapCapableEventID {
-			if capability, isInt32 := args["cap"].(int32); isInt32 {
-				args["cap"] = helpers.ParseCapability(capability)
-				setArgumentType("cap", "string", argMetas)
+		if int32(event.EventID) == CapCapableEventID {
+			if capArg := getEventArg(event, "cap"); capArg != nil {
+				if capability, isInt32 := capArg.Value.(int32); isInt32 {
+					capArg.Value = helpers.ParseCapability(capability)
+					capArg.Type = "string"
+				}
 			}
 		}
-		if ctx.EventID == SecurityFileOpenEventID {
-			if flags, isInt32 := args["flags"].(int32); isInt32 {
-				args["flags"] = helpers.ParseOpenFlags(uint32(flags))
-				setArgumentType("flags", "string", argMetas)
+		if int32(event.EventID) == SecurityFileOpenEventID {
+			if flagsArg := getEventArg(event, "flags"); flagsArg != nil {
+				if flags, isInt32 := flagsArg.Value.(int32); isInt32 {
+					flagsArg.Value = helpers.ParseOpenFlags(uint32(flags))
+					flagsArg.Type = "string"
+				}
 			}
 		}
 	case MmapEventID, MprotectEventID, PkeyMprotectEventID:
-		if prot, isInt32 := args["prot"].(int32); isInt32 {
-			args["prot"] = helpers.ParseMemProt(uint32(prot))
-			setArgumentType("prot", "string", argMetas)
+		if protArg := getEventArg(event, "prot"); protArg != nil {
+			if prot, isInt32 := protArg.Value.(int32); isInt32 {
+				protArg.Value = helpers.ParseMemProt(uint32(prot))
+				protArg.Type = "string"
+			}
 		}
 	case PtraceEventID:
-		if req, isInt64 := args["request"].(int64); isInt64 {
-			args["request"] = helpers.ParsePtraceRequest(req)
-			setArgumentType("request", "string", argMetas)
+		if reqArg := getEventArg(event, "request"); reqArg != nil {
+			if req, isInt64 := reqArg.Value.(int64); isInt64 {
+				reqArg.Value = helpers.ParsePtraceRequest(req)
+				reqArg.Type = "string"
+			}
 		}
 	case PrctlEventID:
-		if opt, isInt32 := args["option"].(int32); isInt32 {
-			args["option"] = helpers.ParsePrctlOption(opt)
-			setArgumentType("option", "string", argMetas)
+		if optArg := getEventArg(event, "option"); optArg != nil {
+			if opt, isInt32 := optArg.Value.(int32); isInt32 {
+				optArg.Value = helpers.ParsePrctlOption(opt)
+				optArg.Type = "string"
+			}
 		}
 	case SocketEventID:
-		if dom, isInt32 := args["domain"].(int32); isInt32 {
-			args["domain"] = helpers.ParseSocketDomain(uint32(dom))
-			setArgumentType("domain", "string", argMetas)
+		if domArg := getEventArg(event, "domain"); domArg != nil {
+			if dom, isInt32 := domArg.Value.(int32); isInt32 {
+				domArg.Value = helpers.ParseSocketDomain(uint32(dom))
+				domArg.Type = "string"
+			}
 		}
-		if typ, isInt32 := args["type"].(int32); isInt32 {
-			args["type"] = helpers.ParseSocketType(uint32(typ))
-			setArgumentType("type", "string", argMetas)
+		if typeArg := getEventArg(event, "type"); typeArg != nil {
+			if typ, isInt32 := typeArg.Value.(int32); isInt32 {
+				typeArg.Value = helpers.ParseSocketType(uint32(typ))
+				typeArg.Type = "string"
+			}
 		}
 	case SecuritySocketCreateEventID:
-		if dom, isInt32 := args["family"].(int32); isInt32 {
-			args["family"] = helpers.ParseSocketDomain(uint32(dom))
-			setArgumentType("family", "string", argMetas)
+		if domArg := getEventArg(event, "family"); domArg != nil {
+			if dom, isInt32 := domArg.Value.(int32); isInt32 {
+				domArg.Value = helpers.ParseSocketDomain(uint32(dom))
+				domArg.Type = "string"
+			}
 		}
-		if typ, isInt32 := args["type"].(int32); isInt32 {
-			args["type"] = helpers.ParseSocketType(uint32(typ))
-			setArgumentType("type", "string", argMetas)
+		if typeArg := getEventArg(event, "type"); typeArg != nil {
+			if typ, isInt32 := typeArg.Value.(int32); isInt32 {
+				typeArg.Value = helpers.ParseSocketType(uint32(typ))
+				typeArg.Type = "string"
+			}
 		}
 	case AccessEventID, FaccessatEventID:
-		if mode, isInt32 := args["mode"].(int32); isInt32 {
-			args["mode"] = helpers.ParseAccessMode(uint32(mode))
-			setArgumentType("mode", "string", argMetas)
+		if modeArg := getEventArg(event, "mode"); modeArg != nil {
+			if mode, isInt32 := modeArg.Value.(int32); isInt32 {
+				modeArg.Value = helpers.ParseAccessMode(uint32(mode))
+				modeArg.Type = "string"
+			}
 		}
 	case ExecveatEventID:
-		if flags, isInt32 := args["flags"].(int32); isInt32 {
-			args["flags"] = helpers.ParseExecFlags(uint32(flags))
-			setArgumentType("flags", "string", argMetas)
+		if flagsArg := getEventArg(event, "flags"); flagsArg != nil {
+			if flags, isInt32 := flagsArg.Value.(int32); isInt32 {
+				flagsArg.Value = helpers.ParseExecFlags(uint32(flags))
+				flagsArg.Type = "string"
+			}
 		}
 	case OpenEventID, OpenatEventID:
-		if flags, isInt32 := args["flags"].(int32); isInt32 {
-			args["flags"] = helpers.ParseOpenFlags(uint32(flags))
-			setArgumentType("flags", "string", argMetas)
+		if flagsArg := getEventArg(event, "flags"); flagsArg != nil {
+			if flags, isInt32 := flagsArg.Value.(int32); isInt32 {
+				flagsArg.Value = helpers.ParseOpenFlags(uint32(flags))
+				flagsArg.Type = "string"
+			}
 		}
 	case MknodEventID, MknodatEventID, ChmodEventID, FchmodEventID, FchmodatEventID:
-		if mode, isUint32 := args["mode"].(uint32); isUint32 {
-			args["mode"] = helpers.ParseInodeMode(mode)
-			setArgumentType("mode", "string", argMetas)
+		if modeArg := getEventArg(event, "mode"); modeArg != nil {
+			if mode, isUint32 := modeArg.Value.(uint32); isUint32 {
+				modeArg.Value = helpers.ParseInodeMode(mode)
+				modeArg.Type = "string"
+			}
 		}
 	case SecurityInodeMknodEventID:
-		if mode, isUint16 := args["mode"].(uint16); isUint16 {
-			args["mode"] = helpers.ParseInodeMode(uint32(mode))
-			setArgumentType("mode", "string", argMetas)
+		if modeArg := getEventArg(event, "mode"); modeArg != nil {
+			if mode, isUint16 := modeArg.Value.(uint16); isUint16 {
+				modeArg.Value = helpers.ParseInodeMode(uint32(mode))
+				modeArg.Type = "string"
+			}
 		}
 	case CloneEventID:
-		if flags, isUint64 := args["flags"].(uint64); isUint64 {
-			args["flags"] = helpers.ParseCloneFlags(flags)
-			setArgumentType("flags", "string", argMetas)
+		if flagsArg := getEventArg(event, "flags"); flagsArg != nil {
+			if flags, isUint64 := flagsArg.Value.(uint64); isUint64 {
+				flagsArg.Value = helpers.ParseCloneFlags(flags)
+				flagsArg.Type = "string"
+			}
 		}
 	case BpfEventID, SecurityBPFEventID:
-		if cmd, isInt32 := args["cmd"].(int32); isInt32 {
-			args["cmd"] = helpers.ParseBPFCmd(cmd)
-			setArgumentType("cmd", "string", argMetas)
+		if cmdArg := getEventArg(event, "cmd"); cmdArg != nil {
+			if cmd, isInt32 := cmdArg.Value.(int32); isInt32 {
+				cmdArg.Value = helpers.ParseBPFCmd(cmd)
+				cmdArg.Type = "string"
+			}
 		}
 	case SecurityKernelReadFileEventID, SecurityPostReadFileEventID:
-		if readFileId, isInt32 := args["type"].(int32); isInt32 {
-			typeIdStr, err := ParseKernelReadFileId(readFileId)
-			if err == nil {
-				args["type"] = typeIdStr
+		if typeArg := getEventArg(event, "type"); typeArg != nil {
+			if readFileId, isInt32 := typeArg.Value.(int32); isInt32 {
+				typeIdStr, err := ParseKernelReadFileId(readFileId)
+				if err == nil {
+					typeArg.Value = typeIdStr
+					typeArg.Type = "string"
+				}
 			}
 		}
 	case SchedProcessExecEventID:
-		if mode, isUint16 := args["stdin_type"].(uint16); isUint16 {
-			args["stdin_type"] = helpers.ParseInodeMode(uint32(mode))
+		if modeArg := getEventArg(event, "stdin_type"); modeArg != nil {
+			if mode, isUint16 := modeArg.Value.(uint16); isUint16 {
+				modeArg.Value = helpers.ParseInodeMode(uint32(mode))
+				modeArg.Type = "string"
+			}
 		}
 	}
 
 	return nil
 }
 
-func setArgumentType(name, typeName string, argMetas *[]external.ArgMeta) {
-	for i := range *argMetas {
-		if (*argMetas)[i].Name == name {
-			(*argMetas)[i].Type = typeName
-			break
+func getEventArg(event *external.Event, argName string) *external.Argument {
+	for i := range event.Args {
+		if event.Args[i].Name == argName {
+			return &event.Args[i]
 		}
 	}
+	return nil
 }
 
 // initializing kernelReadFileIdStrs once at init.

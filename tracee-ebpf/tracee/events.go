@@ -49,33 +49,25 @@ func (t *Tracee) processEvents(done <-chan struct{}) error {
 			continue
 		}
 
-		args := make(map[string]interface{}, ctx.Argnum)
-		argMetas := make([]external.ArgMeta, ctx.Argnum)
-
 		eventDefinition, ok := EventsDefinitions[ctx.EventID]
 		if !ok {
 			t.handleError(fmt.Errorf("failed to get configuration of event %d", ctx.EventID))
 			continue
 		}
-		params := eventDefinition.Params
+
+		args := make([]external.Argument, 0, ctx.Argnum)
 
 		for i := 0; i < int(ctx.Argnum); i++ {
-			argMeta, argVal, err := readArgFromBuff(dataBuff, params)
+			argMeta, argVal, err := readArgFromBuff(dataBuff, eventDefinition.Params)
 			if err != nil {
 				t.handleError(fmt.Errorf("failed to read argument %d of event %s: %v", i, eventDefinition.Name, err))
 				continue
 			}
 
-			args[argMeta.Name] = argVal
-			argMetas[i] = argMeta
+			args = append(args, external.Argument{ArgMeta: argMeta, Value: argVal})
 		}
 
 		if !t.shouldProcessEvent(&ctx, args) {
-			continue
-		}
-		err = t.processEvent(&ctx, args, &argMetas)
-		if err != nil {
-			t.handleError(err)
 			continue
 		}
 
@@ -87,19 +79,6 @@ func (t *Tracee) processEvents(done <-chan struct{}) error {
 			// For example, it might be that a new cgroup was created, and not by a container runtime,
 			// while we still didn't processed the cgroup_mkdir event and removed the cgroupid from the bpf container map.
 			continue
-		}
-
-		// Only emit events requested by the user
-		if !t.eventsToTrace[ctx.EventID] {
-			continue
-		}
-
-		if t.config.Output.ParseArguments {
-			err = t.parseArgs(&ctx, args, &argMetas)
-			if err != nil {
-				t.handleError(err)
-				continue
-			}
 		}
 
 		// Add stack trace if needed
@@ -137,14 +116,27 @@ func (t *Tracee) processEvents(done <-chan struct{}) error {
 			EventName:           eventDefinition.Name,
 			ArgsNum:             int(ctx.Argnum),
 			ReturnValue:         int(ctx.Retval),
-			Args:                make([]external.Argument, 0, len(args)),
+			Args:                args,
 			StackAddresses:      StackAddresses,
 		}
-		for _, meta := range argMetas {
-			evt.Args = append(evt.Args, external.Argument{
-				ArgMeta: meta,
-				Value:   args[meta.Name],
-			})
+
+		err = t.processEvent(&evt)
+		if err != nil {
+			t.handleError(err)
+			continue
+		}
+
+		// Only emit events requested by the user
+		if !t.eventsToTrace[ctx.EventID] {
+			continue
+		}
+
+		if t.config.Output.ParseArguments {
+			err = t.parseArgs(&evt)
+			if err != nil {
+				t.handleError(err)
+				continue
+			}
 		}
 
 		select {
