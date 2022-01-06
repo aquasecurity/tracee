@@ -1,4 +1,4 @@
-package main
+package flags
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
 )
 
-func filterHelp() string {
+func FilterHelp() string {
 	return `Select which events to trace by defining trace expressions that operate on events or process metadata.
 Only events that match all trace expressions will be traced (trace flags are ANDed).
 The following types of expressions are supported:
@@ -72,7 +72,7 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 `
 }
 
-func prepareFilter(filters []string) (tracee.Filter, error) {
+func PrepareFilter(filters []string) (tracee.Filter, error) {
 	filter := tracee.Filter{
 		UIDFilter: &tracee.UintFilter{
 			Equal:    []uint64{},

@@ -1,4 +1,4 @@
-package main
+package flags
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
 )
 
-func captureHelp() string {
+func CaptureHelp() string {
 	return `Capture artifacts that were written, executed or found to be suspicious.
 Captured artifacts will appear in the 'output-path' directory.
 Possible options:
@@ -37,7 +37,7 @@ Use this flag multiple times to choose multiple capture options
 `
 }
 
-func prepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
+func PrepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 	capture := tracee.CaptureConfig{}
 
 	outDir := "/tmp/tracee"

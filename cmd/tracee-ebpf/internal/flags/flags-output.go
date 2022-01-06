@@ -1,4 +1,4 @@
-package main
+package flags
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
 )
 
-func outputHelp() string {
+func OutputHelp() string {
 	return `Control how and where output is printed.
 Possible options:
 [format:]table                                     output events in table format
@@ -38,14 +38,14 @@ Use this flag multiple times to choose multiple output options
 }
 
 type printerConfig struct {
-	kind    string
-	outPath string
-	outFile *os.File
-	errPath string
-	errFile *os.File
+	Kind    string
+	OutPath string
+	OutFile *os.File
+	ErrPath string
+	ErrFile *os.File
 }
 
-func prepareOutput(outputSlice []string) (tracee.OutputConfig, printerConfig, error) {
+func PrepareOutput(outputSlice []string) (tracee.OutputConfig, printerConfig, error) {
 	outcfg := tracee.OutputConfig{}
 	printcfg := printerConfig{}
 	printerKind := "table"
@@ -101,12 +101,12 @@ func prepareOutput(outputSlice []string) (tracee.OutputConfig, printerConfig, er
 		outcfg.ParseArguments = true
 	}
 
-	printcfg.kind = printerKind
+	printcfg.Kind = printerKind
 
 	if outPath == "" {
-		printcfg.outFile = os.Stdout
+		printcfg.OutFile = os.Stdout
 	} else {
-		printcfg.outPath = outPath
+		printcfg.OutPath = outPath
 		fileInfo, err := os.Stat(outPath)
 		if err == nil {
 			if fileInfo.IsDir() {
@@ -115,7 +115,7 @@ func prepareOutput(outputSlice []string) (tracee.OutputConfig, printerConfig, er
 		} else {
 			dir := filepath.Dir(outPath)
 			os.MkdirAll(dir, 0755)
-			printcfg.outFile, err = os.Create(outPath)
+			printcfg.OutFile, err = os.Create(outPath)
 			if err != nil {
 				return outcfg, printcfg, fmt.Errorf("failed to create output path: %v", err)
 			}
@@ -123,9 +123,9 @@ func prepareOutput(outputSlice []string) (tracee.OutputConfig, printerConfig, er
 	}
 
 	if errPath == "" {
-		printcfg.errFile = os.Stderr
+		printcfg.ErrFile = os.Stderr
 	} else {
-		printcfg.errPath = errPath
+		printcfg.ErrPath = errPath
 		fileInfo, err := os.Stat(errPath)
 		if err == nil {
 			if fileInfo.IsDir() {
@@ -134,7 +134,7 @@ func prepareOutput(outputSlice []string) (tracee.OutputConfig, printerConfig, er
 		} else {
 			dir := filepath.Dir(errPath)
 			os.MkdirAll(dir, 0755)
-			printcfg.errFile, err = os.Create(errPath)
+			printcfg.ErrFile, err = os.Create(errPath)
 			if err != nil {
 				return outcfg, printcfg, fmt.Errorf("failed to create output path: %v", err)
 			}

@@ -16,6 +16,7 @@ import (
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 	embed "github.com/aquasecurity/tracee"
+	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/flags"
 	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
 	"github.com/syndtr/gocapability/capability"
@@ -53,20 +54,20 @@ func main() {
 			}
 
 			if checkCommandIsHelp(c.StringSlice("capture")) {
-				fmt.Print(captureHelp())
+				fmt.Print(flags.CaptureHelp())
 				return nil
 			}
-			capture, err := prepareCapture(c.StringSlice("capture"))
+			capture, err := flags.PrepareCapture(c.StringSlice("capture"))
 			if err != nil {
 				return err
 			}
 			cfg.Capture = &capture
 
 			if checkCommandIsHelp(c.StringSlice("trace")) {
-				fmt.Print(filterHelp())
+				fmt.Print(flags.FilterHelp())
 				return nil
 			}
-			filter, err := prepareFilter(c.StringSlice("trace"))
+			filter, err := flags.PrepareFilter(c.StringSlice("trace"))
 			if err != nil {
 				return err
 			}
@@ -76,10 +77,10 @@ func main() {
 				(cfg.Filter.NewContFilter.Enabled && cfg.Filter.NewContFilter.Value)
 
 			if checkCommandIsHelp(c.StringSlice("output")) {
-				fmt.Print(outputHelp())
+				fmt.Print(flags.OutputHelp())
 				return nil
 			}
-			output, printerConfig, err := prepareOutput(c.StringSlice("output"))
+			output, printerConfig, err := flags.PrepareOutput(c.StringSlice("output"))
 			if err != nil {
 				return err
 			}
@@ -159,20 +160,20 @@ func main() {
 				return fmt.Errorf("error creating readiness file: %v", err)
 			}
 
-			if printerConfig.outFile == nil {
-				printerConfig.outFile, err = os.OpenFile(printerConfig.outPath, os.O_WRONLY, 0755)
+			if printerConfig.OutFile == nil {
+				printerConfig.OutFile, err = os.OpenFile(printerConfig.OutPath, os.O_WRONLY, 0755)
 				if err != nil {
 					return err
 				}
 			}
-			if printerConfig.errFile == nil {
-				printerConfig.errFile, err = os.OpenFile(printerConfig.errPath, os.O_WRONLY, 0755)
+			if printerConfig.ErrFile == nil {
+				printerConfig.ErrFile, err = os.OpenFile(printerConfig.ErrPath, os.O_WRONLY, 0755)
 				if err != nil {
 					return err
 				}
 			}
 
-			printer, err := newEventPrinter(printerConfig.kind, containerMode, cfg.Output.RelativeTime, printerConfig.outFile, printerConfig.errFile)
+			printer, err := newEventPrinter(printerConfig.Kind, containerMode, cfg.Output.RelativeTime, printerConfig.OutFile, printerConfig.ErrFile)
 			if err != nil {
 				return err
 			}
