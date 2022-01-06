@@ -24,7 +24,7 @@ func main() {
 	err := config.LoadConfig(config.DefaultConfigLocation())
 
 	if err != nil {
-		log.Fatal(err)
+		log.Println("No configuration file found in environment variable or default location, flags will be set from cli.")
 	}
 
 	app := &cli.App{
