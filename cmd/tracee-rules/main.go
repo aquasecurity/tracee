@@ -17,6 +17,7 @@ import (
 	"github.com/aquasecurity/tracee/types"
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v2/altsrc"
 )
 
 func main() {
@@ -112,14 +113,18 @@ func main() {
 			return nil
 		},
 		Flags: []cli.Flag{
-			&cli.StringSliceFlag{
+			&cli.StringFlag{
+				Name:  "config",
+				Usage: "path to a json config file. the file should have equivalent fields to the existing cli flags.",
+			},
+			altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
 				Name:  "rules",
 				Usage: "select which rules to load. Specify multiple rules by repeating this flag. Use --list for rules to select from",
-			},
-			&cli.StringFlag{
+			}),
+			altsrc.NewStringFlag(&cli.StringFlag{
 				Name:  "rules-dir",
 				Usage: "directory where to search for rules in OPA (.rego) or Go plugin (.so) formats",
-			},
+			}),
 			&cli.BoolFlag{
 				Name:  "rego-partial-eval",
 				Usage: "enable partial evaluation of rego rules",
@@ -128,10 +133,11 @@ func main() {
 				Name:  "list",
 				Usage: "print all available rules",
 			},
-			&cli.StringFlag{
-				Name:  "webhook",
-				Usage: "HTTP endpoint to call for every match",
-			},
+			altsrc.NewStringFlag(&cli.StringFlag{
+				Name:     "webhook",
+				Usage:    "HTTP endpoint to call for every match",
+				Required: false,
+			}),
 			&cli.StringFlag{
 				Name:  "webhook-template",
 				Usage: "path to a gotemplate for formatting webhook output",
@@ -176,6 +182,9 @@ func main() {
 			},
 		},
 	}
+
+	app.Before = altsrc.InitInputSourceWithContext(app.Flags, altsrc.NewJSONSourceFromFlagFunc("config"))
+
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
