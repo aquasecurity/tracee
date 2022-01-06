@@ -13,6 +13,7 @@ import (
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 	embed "github.com/aquasecurity/tracee"
+	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/config"
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/flags"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/external"
@@ -28,6 +29,12 @@ var traceeInstallPath string
 var version string
 
 func main() {
+	err := config.LoadConfig(config.DefaultConfigLocation())
+
+	if err != nil {
+		log.Println("No configuration file found in environment variable or default location, flags will be set from cli.")
+	}
+
 	app := &cli.App{
 		Name:    "Tracee",
 		Usage:   "Trace OS events and syscalls using eBPF",
@@ -220,41 +227,41 @@ func main() {
 			&cli.StringSliceFlag{
 				Name:    "trace",
 				Aliases: []string{"t"},
-				Value:   nil,
+				Value:   cli.NewStringSlice(config.Config.Trace...),
 				Usage:   "select events to trace by defining trace expressions. run '--trace help' for more info.",
 			},
 			&cli.StringSliceFlag{
 				Name:    "capture",
 				Aliases: []string{"c"},
-				Value:   nil,
+				Value:   cli.NewStringSlice(config.Config.Capture...),
 				Usage:   "capture artifacts that were written, executed or found to be suspicious. run '--capture help' for more info.",
 			},
 			&cli.StringSliceFlag{
 				Name:    "output",
 				Aliases: []string{"o"},
-				Value:   cli.NewStringSlice("format:table"),
+				Value:   cli.NewStringSlice(append([]string{"format:table"}, config.Config.Output...)...),
 				Usage:   "Control how and where output is printed. run '--output help' for more info.",
 			},
 			&cli.IntFlag{
 				Name:    "perf-buffer-size",
 				Aliases: []string{"b"},
-				Value:   1024,
+				Value:   config.Config.DefaultEventSubmitBufferSize(),
 				Usage:   "size, in pages, of the internal perf ring buffer used to submit events from the kernel",
 			},
 			&cli.IntFlag{
 				Name:  "blob-perf-buffer-size",
-				Value: 1024,
+				Value: config.Config.DefaultBlobBufferSize(),
 				Usage: "size, in pages, of the internal perf ring buffer used to send blobs from the kernel",
 			},
 			&cli.BoolFlag{
 				Name:        "debug",
-				Value:       false,
+				Value:       config.Config.VerboseDebug,
 				Usage:       "write verbose debug messages to standard output and retain intermediate artifacts",
 				Destination: &debug,
 			},
 			&cli.StringFlag{
 				Name:        "install-path",
-				Value:       "/tmp/tracee",
+				Value:       config.Config.DefaultInstallPath(),
 				Usage:       "path where tracee will install or lookup it's resources",
 				Destination: &traceeInstallPath,
 			},
@@ -263,7 +270,7 @@ func main() {
 
 	app.Before = altsrc.InitInputSourceWithContext(app.Flags, altsrc.NewJSONSourceFromFlagFunc("config"))
 
-	err := app.Run(os.Args)
+	err = app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
