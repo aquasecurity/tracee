@@ -49,6 +49,7 @@ func processTreeStart(in chan types.Event, out chan types.Event) {
 		}
 		out <- e
 	}
+	close(out)
 }
 
 func CreateProcessTreeOutputEnrichmentPipeline(out chan types.Finding) chan types.Finding {
