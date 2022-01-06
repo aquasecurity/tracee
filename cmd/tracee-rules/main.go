@@ -13,19 +13,24 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/aquasecurity/tracee/cmd/tracee-rules/internal/config"
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
 	"github.com/aquasecurity/tracee/types"
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/urfave/cli/v2"
-	"github.com/urfave/cli/v2/altsrc"
 )
 
 func main() {
+	err := config.LoadConfig(config.DefaultConfigLocation())
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	app := &cli.App{
 		Name:  "tracee-rules",
 		Usage: "A rule engine for Runtime Security",
 		Action: func(c *cli.Context) error {
-
 			if c.NumFlags() == 0 {
 				cli.ShowAppHelp(c)
 				return errors.New("no flags specified")
@@ -117,64 +122,75 @@ func main() {
 				Name:  "config",
 				Usage: "path to a json config file. the file should have equivalent fields to the existing cli flags.",
 			},
-			altsrc.NewStringSliceFlag(&cli.StringSliceFlag{
+			&cli.StringSliceFlag{
 				Name:  "rules",
 				Usage: "select which rules to load. Specify multiple rules by repeating this flag. Use --list for rules to select from",
-			}),
-			altsrc.NewStringFlag(&cli.StringFlag{
+				Value: cli.NewStringSlice(config.Config.Rules.RuleIds...),
+			},
+			&cli.StringFlag{
 				Name:  "rules-dir",
 				Usage: "directory where to search for rules in OPA (.rego) or Go plugin (.so) formats",
-			}),
+				Value: config.Config.Rules.InputDirectory,
+			},
 			&cli.BoolFlag{
 				Name:  "rego-partial-eval",
 				Usage: "enable partial evaluation of rego rules",
+				Value: config.Config.RegoConfig.PartialEval,
 			},
 			&cli.BoolFlag{
 				Name:  "list",
 				Usage: "print all available rules",
 			},
-			altsrc.NewStringFlag(&cli.StringFlag{
+			&cli.StringFlag{
 				Name:     "webhook",
 				Usage:    "HTTP endpoint to call for every match",
 				Required: false,
-			}),
+				Value:    config.Config.Webhook.Url,
+			},
 			&cli.StringFlag{
 				Name:  "webhook-template",
 				Usage: "path to a gotemplate for formatting webhook output",
+				Value: config.Config.Webhook.Template,
 			},
 			&cli.StringFlag{
 				Name:  "webhook-content-type",
 				Usage: "content type of the template in use. Recommended if using --webhook-template",
+				Value: config.Config.Webhook.ContentType,
 			},
 			&cli.StringSliceFlag{
 				Name:  "input-tracee",
 				Usage: "configure tracee-ebpf as input source. see '--input-tracee help' for more info",
+				Value: cli.NewStringSlice(config.Config.GetTraceeInputSlice()...),
 			},
 			&cli.StringFlag{
 				Name:  "output-template",
 				Usage: "configure output format via templates. Usage: --output-template=path/to/my.tmpl",
+				Value: config.Config.Output.Template,
 			},
 			&cli.BoolFlag{
 				Name:  "pprof",
 				Usage: "enables pprof endpoints",
+				Value: config.Config.Pprof.Enable,
 			},
 			&cli.StringFlag{
 				Name:  "pprof-addr",
 				Usage: "listening address of the pprof endpoints server",
-				Value: ":7777",
+				Value: config.Config.GetDefaultPprofAddress(),
 			},
 			&cli.BoolFlag{
 				Name:  "rego-enable-parsed-events",
 				Usage: "enables pre parsing of input events to rego prior to evaluation",
+				Value: config.Config.RegoConfig.EnableParsedEvent,
 			},
 			&cli.BoolFlag{
 				Name:  "rego-aio",
 				Usage: "compile rego signatures altogether as an aggregate policy. By default each signature is compiled separately.",
+				Value: config.Config.RegoConfig.Aio,
 			},
 			&cli.StringFlag{
 				Name:  "rego-runtime-target",
 				Usage: "select which runtime target to use for evaluation of rego rules: rego, wasm",
-				Value: "rego",
+				Value: config.Config.GetDefaultRegoRuntime(),
 			},
 			&cli.BoolFlag{
 				Name:  "list-events",
@@ -183,9 +199,7 @@ func main() {
 		},
 	}
 
-	app.Before = altsrc.InitInputSourceWithContext(app.Flags, altsrc.NewJSONSourceFromFlagFunc("config"))
-
-	err := app.Run(os.Args)
+	err = app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
