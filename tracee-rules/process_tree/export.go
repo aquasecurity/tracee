@@ -16,7 +16,7 @@ func GetProcessInfo(hostProcessID int) (types.ProcessInfo, error) {
 	if err != nil {
 		return types.ProcessInfo{}, err
 	}
-	return pn.Export(), nil
+	return pn.export(), nil
 }
 
 func GetProcessLineage(hostProcessID int) (types.ProcessLineage, error) {
@@ -26,7 +26,7 @@ func GetProcessLineage(hostProcessID int) (types.ProcessLineage, error) {
 	}
 	lineage := make(types.ProcessLineage, len(pList))
 	for i, p := range pList {
-		lineage[i] = p.Export()
+		lineage[i] = p.export()
 	}
 	return lineage, nil
 }
@@ -72,17 +72,22 @@ func CreateProcessTreeOutputEnrichmentPipeline(out chan types.Finding) chan type
 	return in
 }
 
-func (p *processNode) Export() types.ProcessInfo {
+func (p *processNode) export() types.ProcessInfo {
+	var childrenIDs []int
+	for _, child := range p.ChildProcesses {
+		childrenIDs = append(childrenIDs, child.InHostIDs.Pid)
+	}
 	return types.ProcessInfo{
-		InContainerIDs:  p.InContainerIDs,
-		InHostIDs:       p.InHostIDs,
-		ContainerID:     p.ContainerID,
-		ProcessName:     p.ProcessName,
-		Cmd:             p.Cmd,
-		ExecutionBinary: p.ExecutionBinary,
-		StartTime:       p.StartTime,
-		ExecTime:        p.ExecTime,
-		ExistingThreads: p.ExistingThreads,
-		IsAlive:         p.IsAlive,
+		InContainerIDs:       p.InContainerIDs,
+		InHostIDs:            p.InHostIDs,
+		ContainerID:          p.ContainerID,
+		ProcessName:          p.ProcessName,
+		Cmd:                  p.Cmd,
+		ExecutionBinary:      p.ExecutionBinary,
+		StartTime:            p.StartTime,
+		ExecTime:             p.ExecTime,
+		ExistingThreads:      p.ExistingThreads,
+		IsAlive:              p.IsAlive,
+		ChildrenProcessesIDs: childrenIDs,
 	}
 }
