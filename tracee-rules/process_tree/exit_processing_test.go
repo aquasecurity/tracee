@@ -95,7 +95,7 @@ func testLinearTreeExit(t *testing.T) {
 
 			err = tree.processExitEvent(exitEvent)
 			require.NoError(t, err)
-			tree.EmptyProcessCache()
+			tree.emptyDeadProcessesCache()
 			// Check that all nodes removed as expected
 			eLivingNodes := 0
 			exitProcessIndex := len(test.processes) - 1
@@ -189,7 +189,7 @@ func testExitWithSiblings(t *testing.T) {
 
 			err := tree.processExitEvent(exitEvent)
 			require.NoError(t, err)
-			tree.EmptyProcessCache()
+			tree.emptyDeadProcessesCache()
 
 			pp, err := tree.GetProcessInfo(parentProcess.InHostIDs.Pid)
 			require.NoError(t, err)

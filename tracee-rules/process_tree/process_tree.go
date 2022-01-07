@@ -19,7 +19,7 @@ type processNode struct {
 	ChildProcesses  []*processNode
 	ExistingThreads []int
 	IsAlive         bool
-	Status          roaring.Bitmap // Values type are ProcessInformationStatus
+	Status          roaring.Bitmap // Values type are types.ProcessInformationStatus
 }
 
 type containerProcessTree struct {

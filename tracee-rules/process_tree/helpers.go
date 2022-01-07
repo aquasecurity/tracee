@@ -7,6 +7,7 @@ import (
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
+// addGeneralEventProcess generate a new process with information that could be received from any event from the process
 func (tree *ProcessTree) addGeneralEventProcess(event external.Event) *processNode {
 	process := &processNode{
 		ProcessName: event.ProcessName,
@@ -29,7 +30,7 @@ func (tree *ProcessTree) addGeneralEventProcess(event external.Event) *processNo
 	return process
 }
 
-// generateParentProcess creates a parent process of given one from tree if existing or creates new node with best
+// generateParentProcess create a parent process of given one from tree if existing or creates new node with best
 // effort info
 func (tree *ProcessTree) generateParentProcess(process *processNode) *processNode {
 	if process.InContainerIDs.Ppid != 0 &&

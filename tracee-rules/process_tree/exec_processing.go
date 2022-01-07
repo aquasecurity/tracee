@@ -6,18 +6,15 @@ import (
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
-// processExecEvent fill the fields of the process according to exec information.
-// It also fills the missing information from the fork.
+// processExecEvent fills process information as any other general event, but add execution information.
 func (tree *ProcessTree) processExecEvent(event external.Event) error {
+	err := tree.processDefaultEvent(event)
+	if err != nil {
+		return err
+	}
 	process, err := tree.GetProcessInfo(event.HostProcessID)
 	if err != nil {
-		process = tree.addGeneralEventProcess(event)
-	}
-	if process.ParentProcess == nil {
-		tree.generateParentProcess(process)
-	}
-	if process.Status.Contains(uint32(types.HollowParent)) {
-		fillHollowParentProcessGeneralEvent(process, event)
+		return fmt.Errorf("process was inserted to the treee but is missing right after")
 	}
 	process.ExecutionBinary, process.Cmd, err = parseExecArguments(event)
 	if err != nil {
@@ -30,6 +27,8 @@ func (tree *ProcessTree) processExecEvent(event external.Event) error {
 	return nil
 }
 
+const typeErrorMessage = "invalid type of argument '%s' - %T"
+
 func parseExecArguments(event external.Event) (types.BinaryInfo, []string, error) {
 	var binaryInfo types.BinaryInfo
 	var cmd []string
@@ -40,7 +39,7 @@ func parseExecArguments(event external.Event) (types.BinaryInfo, []string, error
 	var ok bool
 	cmd, ok = execArgv.Value.([]string)
 	if !ok {
-		return binaryInfo, cmd, fmt.Errorf("invalid type of argument '%s' - %T",
+		return binaryInfo, cmd, fmt.Errorf(typeErrorMessage,
 			execArgv.Name,
 			execArgv.Name)
 	}
@@ -50,7 +49,7 @@ func parseExecArguments(event external.Event) (types.BinaryInfo, []string, error
 	}
 	pathName, ok := execPathName.Value.(string)
 	if !ok {
-		return binaryInfo, cmd, fmt.Errorf("invalid type of argument '%s' - %T",
+		return binaryInfo, cmd, fmt.Errorf(typeErrorMessage,
 			execPathName.Name,
 			execPathName.Type)
 	}
@@ -60,7 +59,7 @@ func parseExecArguments(event external.Event) (types.BinaryInfo, []string, error
 	}
 	ctime64, ok := execCtime.Value.(uint64)
 	if !ok {
-		return binaryInfo, cmd, fmt.Errorf("invalid type of argument '%s' - %T",
+		return binaryInfo, cmd, fmt.Errorf(typeErrorMessage,
 			execCtime.Name,
 			execCtime.Type)
 	}

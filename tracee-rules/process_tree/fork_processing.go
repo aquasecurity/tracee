@@ -7,8 +7,8 @@ import (
 )
 
 // processForkEvent add new process to process tree if new process created, or update process threads if new thread
-// created. New process information upon fork is lacking, so the full information will be collected only once a new
-// event from the process and/or execve will occur.
+// created. Because the fork at start is only a copy of the father, the important information regarding of the
+// process information and binary will be collected upon execve.
 func (tree *ProcessTree) processForkEvent(event external.Event) error {
 	newProcessInHostIDs, err := parseForkInHostIDs(event)
 	if err != nil {
@@ -23,7 +23,7 @@ func (tree *ProcessTree) processForkEvent(event external.Event) error {
 }
 
 // processMainThreadFork add new process to the tree with all possible information available.
-// Notice that the new process ID and TID are not available, and will be collected only upon exec and/or any other event.
+// Notice that the new process information is a duplicate of the father, until an exec will occur.
 func (tree *ProcessTree) processMainThreadFork(event external.Event, inHostIDs types.ProcessIDs) error {
 	inContainerIDs, err := parseForkInContainerIDs(event)
 	if err != nil {
@@ -38,7 +38,7 @@ func (tree *ProcessTree) processMainThreadFork(event external.Event, inHostIDs t
 	}
 
 	// If exec did not happened yet, add binary information of parent
-	if newProcess.Status.Contains(uint32(types.Forked)) {
+	if !newProcess.Status.Contains(uint32(types.Executed)) {
 		tree.copyParentBinaryInfo(newProcess)
 	}
 	if newProcess.Status.Contains(uint32(types.HollowParent)) {
@@ -64,6 +64,24 @@ func (tree *ProcessTree) processThreadFork(event external.Event, newInHostIDs ty
 		newProcess = tree.addGeneralEventProcess(event)
 		tree.generateParentProcess(newProcess)
 	} else {
+		if newProcess.Status.Contains(uint32(types.HollowParent)) {
+			fillHollowProcessInfo(
+				newProcess,
+				types.ProcessIDs{
+					Pid:  event.HostProcessID,
+					Ppid: event.HostParentProcessID,
+					Tid:  event.HostProcessID, // The process TID should be the same as the PID
+				},
+				types.ProcessIDs{
+					Pid:  event.ProcessID,
+					Ppid: event.ParentProcessID,
+					Tid:  event.ProcessID, // The process TID should be the same as the PID
+				},
+				event.ProcessName,
+				event.ContainerID,
+			)
+		}
+
 		exist := false
 		for _, tid := range newProcess.ExistingThreads {
 			if newInHostIDs.Tid == tid {
@@ -74,24 +92,6 @@ func (tree *ProcessTree) processThreadFork(event external.Event, newInHostIDs ty
 		if !exist {
 			newProcess.ExistingThreads = append(newProcess.ExistingThreads, event.HostThreadID)
 		}
-	}
-
-	if newProcess.Status.Contains(uint32(types.HollowParent)) {
-		fillHollowProcessInfo(
-			newProcess,
-			types.ProcessIDs{
-				Pid:  event.HostProcessID,
-				Ppid: event.HostParentProcessID,
-				Tid:  event.HostProcessID, // The process TID should be the same as the PID
-			},
-			types.ProcessIDs{
-				Pid:  event.ProcessID,
-				Ppid: event.ParentProcessID,
-				Tid:  event.ProcessID, // The process TID should be the same as the PID
-			},
-			event.ProcessName,
-			event.ContainerID,
-		)
 	}
 	return nil
 }
@@ -136,7 +136,7 @@ func (tree *ProcessTree) addNewForkedProcess(event external.Event, inHostIDs typ
 		ContainerID:     event.ContainerID,
 		StartTime:       event.Timestamp,
 		IsAlive:         true,
-		Status:          *roaring.BitmapOf(uint32(types.Forked)),
+		Status:          *roaring.BitmapOf(uint32(types.Forked), uint32(types.GeneralCreated)),
 		ExistingThreads: []int{inHostIDs.Tid},
 	}
 	if newProcess.InContainerIDs.Ppid != 0 &&

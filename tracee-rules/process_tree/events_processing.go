@@ -34,15 +34,8 @@ func (tree *ProcessTree) processDefaultEvent(event external.Event) error {
 	} else if process.Status.Contains(uint32(types.HollowParent)) {
 		fillHollowParentProcessGeneralEvent(process, event)
 	}
-	if process.ParentProcess == nil &&
-		process.InHostIDs.Pid != process.InHostIDs.Ppid { // Prevent looped references
-		parentProcess, err := tree.GetProcessInfo(event.HostParentProcessID)
-		if err == nil {
-			process.ParentProcess = parentProcess
-			parentProcess.ChildProcesses = append(parentProcess.ChildProcesses, process)
-		} else {
-			tree.generateParentProcess(process)
-		}
+	if process.ParentProcess == nil {
+		tree.generateParentProcess(process)
 	}
 	return nil
 

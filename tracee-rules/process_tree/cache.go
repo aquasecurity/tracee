@@ -11,7 +11,7 @@ func (tree *ProcessTree) cachedDeleteProcess(pid int) {
 	}
 }
 
-func (tree *ProcessTree) EmptyProcessCache() {
+func (tree *ProcessTree) emptyDeadProcessesCache() {
 	for _, dpid := range tree.deadProcessesCache {
 		tree.deleteProcessFromTree(dpid)
 	}
