@@ -71,7 +71,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					Status:          *roaring.BitmapOf(uint32(types.Forked)),
 				}),
 				expected: expectedValues{
-					*roaring.BitmapOf(uint32(types.Forked)),
+					*roaring.BitmapOf(uint32(types.Forked), uint32(types.GeneralCreated)),
 					1,
 				},
 			},
@@ -100,7 +100,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					Status:          *roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked), uint32(types.Executed)),
 				}),
 				expected: expectedValues{
-					*roaring.BitmapOf(uint32(types.Forked)),
+					*roaring.BitmapOf(uint32(types.Forked), uint32(types.GeneralCreated)),
 					1,
 				},
 			},
@@ -117,7 +117,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 				}),
 				expected: expectedValues{
 					*roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked)),
-					0,
+					1,
 				},
 			},
 			{
@@ -148,7 +148,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					processes: map[int]*processNode{},
 				},
 				expected: expectedValues{
-					*roaring.BitmapOf(uint32(types.Forked)),
+					*roaring.BitmapOf(uint32(types.Forked), uint32(types.GeneralCreated)),
 					1,
 				},
 			},

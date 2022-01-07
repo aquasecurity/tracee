@@ -49,13 +49,14 @@ func (tree *ProcessTree) processMainThreadFork(event external.Event, inHostIDs t
 	if newProcess.Status.Contains(uint32(types.HollowParent)) {
 		fillHollowProcessInfo(
 			newProcess,
-			inHostIDs.ProcessIDs,
+			inHostIDs,
 			inContainerIDs.ProcessIDs,
 			event.ContainerID,
 			event.ProcessName,
 		)
 	}
 
+	newProcess.addThreadID(inHostIDs.Tid)
 	newProcess.StartTime = event.Timestamp
 	newProcess.Status.Add(uint32(types.Forked))
 	return nil
@@ -67,14 +68,18 @@ func (tree *ProcessTree) processThreadFork(event external.Event, newInHostIDs th
 	if npErr != nil {
 		// In this case, calling thread is another thread of the process and we have normal general information on it
 		newProcess = tree.addGeneralEventProcess(event)
+		newProcess.addThreadID(newInHostIDs.Tid)
 		tree.generateParentProcess(newProcess)
 	} else {
 		if newProcess.Status.Contains(uint32(types.HollowParent)) {
 			fillHollowProcessInfo(
 				newProcess,
-				types.ProcessIDs{
-					Pid:  event.HostProcessID,
-					Ppid: event.HostParentProcessID,
+				threadIDs{
+					ProcessIDs: types.ProcessIDs{
+						Pid:  event.HostProcessID,
+						Ppid: event.HostParentProcessID,
+					},
+					Tid: newInHostIDs.Tid,
 				},
 				types.ProcessIDs{
 					Pid:  event.ProcessID,
@@ -85,16 +90,7 @@ func (tree *ProcessTree) processThreadFork(event external.Event, newInHostIDs th
 			)
 		}
 
-		exist := false
-		for _, tid := range newProcess.ExistingThreads {
-			if newInHostIDs.Tid == tid {
-				exist = true
-				break
-			}
-		}
-		if !exist {
-			newProcess.ExistingThreads = append(newProcess.ExistingThreads, event.HostThreadID)
-		}
+		newProcess.addThreadID(newInHostIDs.Tid)
 	}
 	return nil
 }
@@ -140,7 +136,7 @@ func (tree *ProcessTree) addNewForkedProcess(event external.Event, inHostIDs thr
 		StartTime:       event.Timestamp,
 		IsAlive:         true,
 		Status:          *roaring.BitmapOf(uint32(types.Forked), uint32(types.GeneralCreated)),
-		ExistingThreads: []int{inHostIDs.Tid},
+		ExistingThreads: []int{},
 	}
 	if newProcess.InContainerIDs.Ppid != 0 &&
 		newProcess.InHostIDs.Pid != newProcess.InHostIDs.Ppid { // Prevent looped references
