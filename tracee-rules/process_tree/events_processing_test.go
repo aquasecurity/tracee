@@ -112,7 +112,6 @@ func TestProcessTree_ProcessEvent(t *testing.T) {
 	require.NoError(t, err)
 	process, err := tree.GetProcessInfo(ptid)
 	assert.NoError(t, err)
-	assert.Equal(t, ptid, process.InHostIDs.Tid)
 	assert.Equal(t, ptid, process.InHostIDs.Pid)
 	assert.Equal(t, ppid, process.InHostIDs.Ppid)
 	assert.Equal(t, forkTimestamp, process.StartTime)

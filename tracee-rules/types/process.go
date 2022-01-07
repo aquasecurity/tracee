@@ -12,7 +12,6 @@ const (
 type ProcessIDs struct {
 	Pid  int
 	Ppid int
-	Tid  int
 }
 
 type BinaryInfo struct {

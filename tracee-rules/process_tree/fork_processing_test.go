@@ -33,12 +33,10 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					InHostIDs: types.ProcessIDs{
 						Pid:  threadPID,
 						Ppid: threadPPID,
-						Tid:  threadPID,
 					},
 					InContainerIDs: types.ProcessIDs{
 						Pid:  cPID,
 						Ppid: cPPID,
-						Tid:  cPID,
 					},
 					ExecutionBinary: types.BinaryInfo{
 						Path:  "/bin/sh",
@@ -62,12 +60,10 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					InHostIDs: types.ProcessIDs{
 						Pid:  threadPID,
 						Ppid: 10,
-						Tid:  threadPID,
 					},
 					InContainerIDs: types.ProcessIDs{
 						Pid:  threadPID,
 						Ppid: 10,
-						Tid:  threadPID,
 					},
 					StartTime:       shCtime - 100000,
 					ExistingThreads: []int{threadPID},
@@ -86,12 +82,10 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					InHostIDs: types.ProcessIDs{
 						Pid:  threadPID,
 						Ppid: 10,
-						Tid:  threadPID,
 					},
 					InContainerIDs: types.ProcessIDs{
 						Pid:  threadPID,
 						Ppid: 10,
-						Tid:  threadPID,
 					},
 					ExecutionBinary: types.BinaryInfo{
 						Path:  "/bin/busybox",
@@ -123,7 +117,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 				}),
 				expected: expectedValues{
 					*roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked)),
-					1,
+					0,
 				},
 			},
 			{
@@ -133,12 +127,10 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					InHostIDs: types.ProcessIDs{
 						Pid:  threadPID,
 						Ppid: threadPPID,
-						Tid:  threadPID,
 					},
 					InContainerIDs: types.ProcessIDs{
 						Pid:  cPID,
 						Ppid: cPPID,
-						Tid:  cPID,
 					},
 					ContainerID:     TestContainerID,
 					ExistingThreads: []int{threadPID},
@@ -188,12 +180,10 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					InHostIDs: types.ProcessIDs{
 						Pid:  threadPID,
 						Ppid: threadPPID,
-						Tid:  threadPID,
 					},
 					InContainerIDs: types.ProcessIDs{
 						Pid:  cPID,
 						Ppid: cPPID,
-						Tid:  cPID,
 					},
 					ExecutionBinary: types.BinaryInfo{
 						Path:  "/bin/sh",
@@ -217,12 +207,10 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					InHostIDs: types.ProcessIDs{
 						Pid:  threadPID,
 						Ppid: threadPPID,
-						Tid:  threadPID,
 					},
 					InContainerIDs: types.ProcessIDs{
 						Pid:  cPID,
 						Ppid: cPPID,
-						Tid:  cPID,
 					},
 					StartTime:       shCtime,
 					ProcessName:     "sh",
@@ -242,12 +230,10 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					InHostIDs: types.ProcessIDs{
 						Pid:  threadPID,
 						Ppid: threadPPID,
-						Tid:  threadPID,
 					},
 					InContainerIDs: types.ProcessIDs{
 						Pid:  cPID,
 						Ppid: cPPID,
-						Tid:  cPID,
 					},
 					ExecutionBinary: types.BinaryInfo{
 						Path:  "/bin/sh",
@@ -289,12 +275,10 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					InHostIDs: types.ProcessIDs{
 						Pid:  threadPID,
 						Ppid: threadPPID,
-						Tid:  threadPID,
 					},
 					InContainerIDs: types.ProcessIDs{
 						Pid:  cPID,
 						Ppid: cPPID,
-						Tid:  cPID,
 					},
 					ContainerID:     TestContainerID,
 					ExistingThreads: []int{threadPID},

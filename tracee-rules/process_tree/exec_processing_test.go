@@ -58,12 +58,10 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 				InHostIDs: types.ProcessIDs{
 					Pid:  execEvent.HostProcessID,
 					Ppid: execEvent.HostParentProcessID,
-					Tid:  execEvent.HostThreadID,
 				},
 				InContainerIDs: types.ProcessIDs{
 					Pid:  execEvent.ProcessID,
 					Ppid: execEvent.ParentProcessID,
-					Tid:  execEvent.ThreadID,
 				},
 				ProcessName: execEvent.ProcessName,
 				Cmd:         execCmd,
@@ -84,12 +82,10 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 						InHostIDs: types.ProcessIDs{
 							Pid:  execEvent.HostProcessID,
 							Ppid: execEvent.HostParentProcessID,
-							Tid:  execEvent.HostThreadID,
 						},
 						InContainerIDs: types.ProcessIDs{
 							Pid:  execEvent.ProcessID,
 							Ppid: execEvent.ParentProcessID,
-							Tid:  execEvent.ThreadID,
 						},
 						ContainerID: TestContainerID,
 						StartTime:   100000000,
@@ -102,12 +98,10 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 				InHostIDs: types.ProcessIDs{
 					Pid:  execEvent.HostProcessID,
 					Ppid: execEvent.HostParentProcessID,
-					Tid:  execEvent.HostThreadID,
 				},
 				InContainerIDs: types.ProcessIDs{
 					Pid:  execEvent.ProcessID,
 					Ppid: execEvent.ParentProcessID,
-					Tid:  execEvent.ThreadID,
 				},
 				Cmd: execCmd,
 				ExecutionBinary: types.BinaryInfo{
@@ -128,12 +122,10 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 						InHostIDs: types.ProcessIDs{
 							Pid:  execEvent.HostProcessID,
 							Ppid: execEvent.HostParentProcessID,
-							Tid:  execEvent.HostThreadID,
 						},
 						InContainerIDs: types.ProcessIDs{
 							Pid:  execEvent.ProcessID,
 							Ppid: execEvent.ParentProcessID,
-							Tid:  execEvent.ThreadID,
 						},
 						ContainerID: TestContainerID,
 						StartTime:   100000000,
@@ -150,12 +142,10 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 				InHostIDs: types.ProcessIDs{
 					Pid:  execEvent.HostProcessID,
 					Ppid: execEvent.HostParentProcessID,
-					Tid:  execEvent.HostThreadID,
 				},
 				InContainerIDs: types.ProcessIDs{
 					Pid:  execEvent.ProcessID,
 					Ppid: execEvent.ParentProcessID,
-					Tid:  execEvent.ThreadID,
 				},
 				ContainerID: TestContainerID,
 				Cmd:         execCmd,
@@ -176,12 +166,10 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 						InHostIDs: types.ProcessIDs{
 							Pid:  execEvent.HostProcessID,
 							Ppid: execEvent.HostParentProcessID,
-							Tid:  execEvent.HostThreadID,
 						},
 						InContainerIDs: types.ProcessIDs{
 							Pid:  execEvent.ProcessID,
 							Ppid: execEvent.ParentProcessID,
-							Tid:  execEvent.ThreadID,
 						},
 						ContainerID: TestContainerID,
 						ProcessName: execEvent.ProcessName,
@@ -193,12 +181,10 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 				InHostIDs: types.ProcessIDs{
 					Pid:  execEvent.HostProcessID,
 					Ppid: execEvent.HostParentProcessID,
-					Tid:  execEvent.HostThreadID,
 				},
 				InContainerIDs: types.ProcessIDs{
 					Pid:  execEvent.ProcessID,
 					Ppid: execEvent.ParentProcessID,
-					Tid:  execEvent.ThreadID,
 				},
 				ContainerID: TestContainerID,
 				Cmd:         execCmd,
@@ -220,10 +206,8 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 			assert.Equal(t, testCase.expectedProcess.ProcessName, execProcess.ProcessName)
 			assert.Equal(t, testCase.expectedProcess.ContainerID, execProcess.ContainerID)
 			assert.Equal(t, testCase.expectedProcess.InHostIDs.Pid, execProcess.InHostIDs.Pid)
-			assert.Equal(t, testCase.expectedProcess.InHostIDs.Tid, execProcess.InHostIDs.Tid)
 			assert.Equal(t, testCase.expectedProcess.InHostIDs.Ppid, execProcess.InHostIDs.Ppid)
 			assert.Equal(t, testCase.expectedProcess.InContainerIDs.Pid, execProcess.InContainerIDs.Pid)
-			assert.Equal(t, testCase.expectedProcess.InContainerIDs.Tid, execProcess.InContainerIDs.Tid)
 			assert.Equal(t, testCase.expectedProcess.InContainerIDs.Ppid, execProcess.InContainerIDs.Ppid)
 			assert.Equal(t, testCase.expectedProcess.StartTime, execProcess.StartTime)
 			assert.Equal(t, testCase.expectedProcess.Status, execProcess.Status)

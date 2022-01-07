@@ -84,7 +84,6 @@ func testLinearTreeExit(t *testing.T) {
 
 	exitIDs := types.ProcessIDs{
 		Pid:  exitEvent.HostProcessID,
-		Tid:  exitEvent.HostThreadID,
 		Ppid: exitEvent.HostParentProcessID,
 	}
 
@@ -158,7 +157,6 @@ func testExitWithSiblings(t *testing.T) {
 			parentProcess := &processNode{
 				InHostIDs: types.ProcessIDs{
 					Pid:  1,
-					Tid:  1,
 					Ppid: 0,
 				},
 				ExistingThreads: []int{1},
@@ -175,7 +173,6 @@ func testExitWithSiblings(t *testing.T) {
 				cp := &processNode{
 					InHostIDs: types.ProcessIDs{
 						Pid:  exitEvent.HostProcessID - test.exitIndex + i,
-						Tid:  exitEvent.HostThreadID - test.exitIndex + i,
 						Ppid: 1,
 					},
 					ExistingThreads: []int{exitEvent.HostThreadID - test.exitIndex + i},
@@ -229,13 +226,12 @@ func buildOneLineTree(tps []testProcess, lastProcessIDs types.ProcessIDs) (Proce
 		np := processNode{
 			IsAlive: tp.isAlive,
 			InHostIDs: types.ProcessIDs{
-				Tid:  lastProcessIDs.Tid - (exitProcessIndex - i),
 				Pid:  lastProcessIDs.Pid - (exitProcessIndex - i),
 				Ppid: lastProcessIDs.Ppid - (exitProcessIndex - i),
 			},
-			ExistingThreads: []int{lastProcessIDs.Tid - (exitProcessIndex - i)},
+			ExistingThreads: []int{lastProcessIDs.Pid - (exitProcessIndex - i)},
 		}
-		tree.processes[np.InHostIDs.Tid] = &np
+		tree.processes[np.InHostIDs.Pid] = &np
 		if i != 0 {
 			var err error
 			np.ParentProcess, err = tree.GetProcessInfo(lastProcessIDs.Pid - (exitProcessIndex - i + 1))

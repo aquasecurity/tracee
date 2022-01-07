@@ -6,6 +6,11 @@ import (
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
+type threadIDs struct {
+	types.ProcessIDs
+	Tid int
+}
+
 // processForkEvent add new process to process tree if new process created, or update process threads if new thread
 // created. Because the fork at start is only a copy of the father, the important information regarding of the
 // process information and binary will be collected upon execve.
@@ -24,7 +29,7 @@ func (tree *ProcessTree) processForkEvent(event external.Event) error {
 
 // processMainThreadFork add new process to the tree with all possible information available.
 // Notice that the new process information is a duplicate of the father, until an exec will occur.
-func (tree *ProcessTree) processMainThreadFork(event external.Event, inHostIDs types.ProcessIDs) error {
+func (tree *ProcessTree) processMainThreadFork(event external.Event, inHostIDs threadIDs) error {
 	inContainerIDs, err := parseForkInContainerIDs(event)
 	if err != nil {
 		return err
@@ -44,8 +49,8 @@ func (tree *ProcessTree) processMainThreadFork(event external.Event, inHostIDs t
 	if newProcess.Status.Contains(uint32(types.HollowParent)) {
 		fillHollowProcessInfo(
 			newProcess,
-			inHostIDs,
-			inContainerIDs,
+			inHostIDs.ProcessIDs,
+			inContainerIDs.ProcessIDs,
 			event.ContainerID,
 			event.ProcessName,
 		)
@@ -57,7 +62,7 @@ func (tree *ProcessTree) processMainThreadFork(event external.Event, inHostIDs t
 }
 
 // processThreadFork fill process information if lacking, and add to thread count.
-func (tree *ProcessTree) processThreadFork(event external.Event, newInHostIDs types.ProcessIDs) error {
+func (tree *ProcessTree) processThreadFork(event external.Event, newInHostIDs threadIDs) error {
 	newProcess, npErr := tree.GetProcessInfo(event.HostProcessID)
 	if npErr != nil {
 		// In this case, calling thread is another thread of the process and we have normal general information on it
@@ -70,12 +75,10 @@ func (tree *ProcessTree) processThreadFork(event external.Event, newInHostIDs ty
 				types.ProcessIDs{
 					Pid:  event.HostProcessID,
 					Ppid: event.HostParentProcessID,
-					Tid:  event.HostProcessID, // The process TID should be the same as the PID
 				},
 				types.ProcessIDs{
 					Pid:  event.ProcessID,
 					Ppid: event.ParentProcessID,
-					Tid:  event.ProcessID, // The process TID should be the same as the PID
 				},
 				event.ProcessName,
 				event.ContainerID,
@@ -96,8 +99,8 @@ func (tree *ProcessTree) processThreadFork(event external.Event, newInHostIDs ty
 	return nil
 }
 
-func parseForkInHostIDs(event external.Event) (types.ProcessIDs, error) {
-	var inHostIDs types.ProcessIDs
+func parseForkInHostIDs(event external.Event) (threadIDs, error) {
+	var inHostIDs threadIDs
 	var err error
 	inHostIDs.Pid, err = parseInt32Field(event, "child_pid")
 	if err != nil {
@@ -112,8 +115,8 @@ func parseForkInHostIDs(event external.Event) (types.ProcessIDs, error) {
 	return inHostIDs, nil
 }
 
-func parseForkInContainerIDs(event external.Event) (types.ProcessIDs, error) {
-	var inContainerIDs types.ProcessIDs
+func parseForkInContainerIDs(event external.Event) (threadIDs, error) {
+	var inContainerIDs threadIDs
 	var err error
 	inContainerIDs.Pid, err = parseInt32Field(event, "child_ns_pid")
 	if err != nil {
@@ -128,11 +131,11 @@ func parseForkInContainerIDs(event external.Event) (types.ProcessIDs, error) {
 	return inContainerIDs, nil
 }
 
-func (tree *ProcessTree) addNewForkedProcess(event external.Event, inHostIDs types.ProcessIDs, inContainerIDs types.ProcessIDs) *processNode {
+func (tree *ProcessTree) addNewForkedProcess(event external.Event, inHostIDs threadIDs, inContainerIDs threadIDs) *processNode {
 	newProcess := &processNode{
 		ProcessName:     event.ProcessName,
-		InHostIDs:       inHostIDs,
-		InContainerIDs:  inContainerIDs,
+		InHostIDs:       inHostIDs.ProcessIDs,
+		InContainerIDs:  inContainerIDs.ProcessIDs,
 		ContainerID:     event.ContainerID,
 		StartTime:       event.Timestamp,
 		IsAlive:         true,
