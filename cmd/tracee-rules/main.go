@@ -9,6 +9,7 @@ import (
 	"net/http/pprof"
 	"os"
 	"os/signal"
+	"sort"
 	"strings"
 	"syscall"
 
@@ -194,13 +195,22 @@ func listSigs(w io.Writer, sigs []types.Signature) error {
 }
 
 func listEvents(w io.Writer, sigs []types.Signature) {
-	var events []string
+	m := make(map[string]struct{})
 	for _, sig := range sigs {
 		es, _ := sig.GetSelectedEvents()
 		for _, e := range es {
-			events = append(events, e.Name)
+			if _, ok := m[e.Name]; !ok {
+				m[e.Name] = struct{}{}
+			}
 		}
 	}
+
+	var events []string
+	for k, _ := range m {
+		events = append(events, k)
+	}
+
+	sort.Slice(events, func(i, j int) bool { return events[i] < events[j] })
 	fmt.Fprintln(w, strings.Join(events, ","))
 }
 
