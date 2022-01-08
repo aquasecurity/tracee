@@ -1,4 +1,4 @@
-FROM ubuntu:20.10
+FROM debian:buster
 
 ADD ./runner /
 ADD ./tracee-trainer/* /
