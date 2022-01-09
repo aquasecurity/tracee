@@ -34,7 +34,6 @@ type CliConfig struct {
 		Enable  bool
 		Address string
 	}
-	List bool
 }
 
 func Load(fileName string) (config *CliConfig, err error) {
