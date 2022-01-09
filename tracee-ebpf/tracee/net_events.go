@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"time"
+
 	"github.com/google/gopacket"
 	"inet.af/netaddr"
-	"time"
 )
 
 func (t *Tracee) processNetEvents() {

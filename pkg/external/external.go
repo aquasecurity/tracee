@@ -2,7 +2,6 @@ package external
 
 import (
 	"bytes"
-	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -237,34 +236,4 @@ func (alert MemProtAlert) String() string {
 	default:
 		return "Unknown alert"
 	}
-}
-
-type ProcessCtx struct {
-	Ctime       int
-	ContainerID string
-	Pid         int
-	Tid         int
-	Ppid        int
-	HostPid     int
-	HostTid     int
-	HostPpid    int
-	Uid         int
-	MntId       int
-	PidId       int
-}
-
-func SetProcessContext(ctx []byte) ProcessCtx {
-	var procCtx = ProcessCtx{}
-	procCtx.Ctime = int(binary.LittleEndian.Uint64(ctx[0:8]))
-	procCtx.ContainerID = string(binary.LittleEndian.Uint64(ctx[8:16]))
-	procCtx.Pid = int(binary.LittleEndian.Uint32(ctx[16:20]))
-	procCtx.Tid = int(binary.LittleEndian.Uint32(ctx[20:24]))
-	procCtx.Ppid = int(binary.LittleEndian.Uint32(ctx[24:28]))
-	procCtx.HostPid = int(binary.LittleEndian.Uint32(ctx[28:32]))
-	procCtx.HostTid = int(binary.LittleEndian.Uint32(ctx[32:36]))
-	procCtx.HostPpid = int(binary.LittleEndian.Uint32(ctx[36:40]))
-	procCtx.Uid = int(binary.LittleEndian.Uint32(ctx[40:44]))
-	procCtx.MntId = int(binary.LittleEndian.Uint32(ctx[44:48]))
-	procCtx.PidId = int(binary.LittleEndian.Uint32(ctx[48:52]))
-	return procCtx
 }

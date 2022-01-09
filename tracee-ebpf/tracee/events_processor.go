@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"unsafe"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/external"
@@ -85,7 +84,6 @@ func (t *Tracee) shouldProcessEvent(ctx *context, args []external.Argument) bool
 	return true
 }
 
-
 func (t *Tracee) processEvent(event *external.Event) error {
 	switch int32(event.EventID) {
 
@@ -126,8 +124,8 @@ func (t *Tracee) processEvent(event *external.Event) error {
 
 	case SchedProcessExecEventID:
 		//update the process tree
-		processData := external.ProcessCtx{event.Timestamp, event.ContainerID, event.ProcessID, event.ThreadID, event.ParentProcessID, event.HostProcessID, event.HostThreadID, event.HostParentProcessID, event.UserID, event.MountNS, event.PIDNS}
-		processTreeMap[event.HostThreadID] = processData
+		processData := ProcessCtx{event.Timestamp, event.ContainerID, uint32(event.ProcessID), uint32(event.ThreadID), uint32(event.ParentProcessID), uint32(event.HostProcessID), uint32(event.HostThreadID), uint32(event.HostParentProcessID), uint32(event.UserID), uint32(event.MountNS), uint32(event.PIDNS)}
+		t.processTree.processTreeMap[event.HostThreadID] = processData
 		//cache this pid by it's mnt ns
 		if event.ProcessID == 1 {
 			t.pidsInMntns.ForceAddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
@@ -218,16 +216,16 @@ func (t *Tracee) processEvent(event *external.Event) error {
 			return err
 		}
 	case SchedProcessExitEventID:
-		delete(processTreeMap, event.HostProcessID)
+		delete(t.processTree.processTreeMap, event.HostProcessID)
 	case SchedProcessForkEventID:
-		childTid, err := getEventArgUint64Val(event, "child_tid")
-		if err != nil {
-			return fmt.Errorf("error parsing child_tid arg SchedProcessForkEventID")
-		}
-		//processData := external.ProcessCtx{ctx.Ts, ctx.CgroupID, ctx.Pid, ctx.Tid, ctx.Ppid, ctx.HostPid, ctx.HostTid, ctx.HostPpid, ctx.Uid, ctx.MntID, ctx.PidID}
-		processData := external.ProcessCtx{event.Timestamp, event.ContainerID, event.ProcessID, event.ThreadID, event.ParentProcessID, event.HostProcessID, event.HostThreadID, event.HostParentProcessID, event.UserID, event.MountNS, event.ProcessID}
-		processTreeMap[event.HostThreadID] = processData
-		processTreeMap[int(childTid)] = processData
+		hostTid, _ := getEventArgUint32Val(event, "child_tid")
+		childPid, _ := getEventArgUint32Val(event, "child_pid")
+		pid, _ := getEventArgUint32Val(event, "child_ns_pid")
+		ppid, _ := getEventArgUint32Val(event, "parent_ns_pid")
+		hostPpid, _ := getEventArgUint32Val(event, "parent_pid")
+		childTid, _ := getEventArgUint32Val(event, "child_ns_tid")
+		processData := ProcessCtx{event.Timestamp, event.ContainerID, pid, childPid, ppid, hostTid, hostTid, hostPpid, uint32(event.UserID), uint32(event.MountNS), uint32(event.ProcessID)}
+		t.processTree.processTreeMap[int(childTid)] = processData
 	case CgroupMkdirEventID:
 		cgroupId, err := getEventArgUint64Val(event, "cgroup_id")
 		if err != nil {

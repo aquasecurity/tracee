@@ -200,8 +200,6 @@ Copyright (C) Aqua Security inc.
 #define DEBUG_NET_INET_SOCK_SET_STATE   6
 #define DEBUG_NET_TCP_CONNECT           7
 
-
-
 #define CONFIG_SHOW_SYSCALL             1
 #define CONFIG_EXEC_ENV                 2
 #define CONFIG_CAPTURE_FILES            3
@@ -524,7 +522,6 @@ typedef struct net_ctx_ext {
     __be16 local_port;
 } net_ctx_ext_t;
 
-
 /*=============================== KERNEL STRUCTS =============================*/
 
 #ifndef CORE
@@ -564,7 +561,7 @@ BPF_HASH(bin_args_map, u64, bin_args_t);                // persist args for send
 BPF_HASH(sys_32_to_64_map, u32, u32);                   // map 32bit to 64bit syscalls
 BPF_HASH(params_types_map, u32, u64);                   // encoded parameters types for event
 BPF_HASH(process_tree_map, u32, u32);                   // filter events by the ancestry of the traced process
-BPF_HASH(process_context_map, u32, process_context_t);  // houlds the process_context data for every tid
+BPF_HASH(process_context_map, u32, process_context_t);  // holds the process_context data for every tid
 BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t);         // socket address to process context
 BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t);   // network identifier to process context
 BPF_ARRAY(file_filter, path_filter_t, 3);               // filter vfs_write events
@@ -1136,22 +1133,6 @@ static __always_inline int get_kconfig_val(u32 key)
         return 0;
 
     return *config;
-}
-
-static __always_inline int init_process_context(process_context_t *context, struct task_struct *task)
-{
-    u64 id = bpf_get_current_pid_tgid();
-    context->host_tid = id;
-    context->host_pid = id >> 32;
-    context->host_ppid = get_task_ppid(task);
-    context->tid = get_task_ns_pid(task);
-    context->pid = get_task_ns_tgid(task);
-    context->ppid = get_task_ns_ppid(task);
-    context->mnt_id = get_task_mnt_ns_id(task);
-    context->pid_id = get_task_pid_ns_id(task);
-    context->uid = bpf_get_current_uid_gid();
-    context->ts = bpf_ktime_get_ns();
-    return 0;
 }
 
 static __always_inline int init_context(context_t *context, struct task_struct *task)
@@ -2383,10 +2364,10 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     struct task_struct *parent = (struct task_struct*)ctx->args[0];
     struct task_struct *child = (struct task_struct*)ctx->args[1];
 
-    process_context_t process = {};
-    init_process_context(&process, parent);
-    process.tid = get_task_ns_pid(child);
-    bpf_map_update_elem(&process_context_map, &process.host_tid, &process, BPF_ANY);
+    process_context_t *process = (process_context_t*) &data.context;
+    process->tid = get_task_ns_pid(child);
+    process->host_tid = get_task_host_pid(child);
+    bpf_map_update_elem(&process_context_map, &process->host_tid, &process, BPF_ANY);
     int parent_pid = get_task_host_pid(parent);
     int child_pid = get_task_host_pid(child);
 
@@ -2441,9 +2422,8 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
-    process_context_t process = {};
-    struct task_struct * process_task = (struct task_struct *)bpf_get_current_task();
-    init_process_context(&process, process_task);
+
+    process_context_t *process = (process_context_t*) &data.context;
 
     // Perform the following checks before should_trace() so we can filter by
     // newly created containers/processes.  We assume that a new container/pod
@@ -2467,7 +2447,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 
     // We passed all filters (in should_trace()) - add this pid to traced pids set
     bpf_map_update_elem(&traced_pids_map, &data.context.host_tid, &data.context.host_tid, BPF_ANY);
-    bpf_map_update_elem(&process_context_map, &data.context.host_tid, &process, BPF_ANY);
+    bpf_map_update_elem(&process_context_map, &data.context.host_tid, process, BPF_ANY);
 
     struct task_struct *task = (struct task_struct *)ctx->args[0];
     struct linux_binprm *bprm = (struct linux_binprm *)ctx->args[2];
@@ -2545,8 +2525,6 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     bpf_map_delete_elem(&traced_pids_map, &data.context.host_tid);
     bpf_map_delete_elem(&new_pids_map, &data.context.host_tid);
     bpf_map_delete_elem(&syscall_data_map, &data.context.host_tid);
-
-    //Remove this process from process tree map
     bpf_map_delete_elem(&process_context_map, &data.context.host_tid);
 
     int proc_tree_filter_set = get_config(CONFIG_PROC_TREE_FILTER);
