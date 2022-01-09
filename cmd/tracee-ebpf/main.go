@@ -29,8 +29,7 @@ var traceeInstallPath string
 var version string
 
 func main() {
-	err := config.LoadConfig(config.DefaultConfigLocation())
-
+	config, err := config.LoadConfig(config.DefaultConfigLocation())
 	if err != nil {
 		log.Println("No configuration file found in environment variable or default location, flags will be set from cli.")
 	}
@@ -227,41 +226,41 @@ func main() {
 			&cli.StringSliceFlag{
 				Name:    "trace",
 				Aliases: []string{"t"},
-				Value:   cli.NewStringSlice(config.Config.Trace...),
+				Value:   cli.NewStringSlice(config.Trace...),
 				Usage:   "select events to trace by defining trace expressions. run '--trace help' for more info.",
 			},
 			&cli.StringSliceFlag{
 				Name:    "capture",
 				Aliases: []string{"c"},
-				Value:   cli.NewStringSlice(config.Config.Capture...),
+				Value:   cli.NewStringSlice(config.Capture...),
 				Usage:   "capture artifacts that were written, executed or found to be suspicious. run '--capture help' for more info.",
 			},
 			&cli.StringSliceFlag{
 				Name:    "output",
 				Aliases: []string{"o"},
-				Value:   cli.NewStringSlice(append([]string{"format:table"}, config.Config.Output...)...),
+				Value:   cli.NewStringSlice(append([]string{"format:table"}, config.Output...)...),
 				Usage:   "Control how and where output is printed. run '--output help' for more info.",
 			},
 			&cli.IntFlag{
 				Name:    "perf-buffer-size",
 				Aliases: []string{"b"},
-				Value:   config.Config.DefaultEventSubmitBufferSize(),
+				Value:   config.DefaultEventSubmitBufferSize(),
 				Usage:   "size, in pages, of the internal perf ring buffer used to submit events from the kernel",
 			},
 			&cli.IntFlag{
 				Name:  "blob-perf-buffer-size",
-				Value: config.Config.DefaultBlobBufferSize(),
+				Value: config.DefaultBlobBufferSize(),
 				Usage: "size, in pages, of the internal perf ring buffer used to send blobs from the kernel",
 			},
 			&cli.BoolFlag{
 				Name:        "debug",
-				Value:       config.Config.VerboseDebug,
+				Value:       config.VerboseDebug,
 				Usage:       "write verbose debug messages to standard output and retain intermediate artifacts",
 				Destination: &debug,
 			},
 			&cli.StringFlag{
 				Name:        "install-path",
-				Value:       config.Config.DefaultInstallPath(),
+				Value:       config.DefaultInstallPath(),
 				Usage:       "path where tracee will install or lookup it's resources",
 				Destination: &traceeInstallPath,
 			},

@@ -19,13 +19,11 @@ type TraceeEbpfCliConfig struct {
 	Capture      []string
 }
 
-var Config TraceeEbpfCliConfig
-
-func LoadConfig(fileName string) error {
+func LoadConfig(fileName string) (config *TraceeEbpfCliConfig, err error) {
 	cfgFile, err := os.Open(fileName)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	defer cfgFile.Close()
@@ -33,12 +31,12 @@ func LoadConfig(fileName string) error {
 	byteValue, err := ioutil.ReadAll(cfgFile)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	err = json.Unmarshal(byteValue, &Config)
+	err = json.Unmarshal(byteValue, &config)
 
-	return err
+	return config, err
 }
 
 func DefaultConfigLocation() string {

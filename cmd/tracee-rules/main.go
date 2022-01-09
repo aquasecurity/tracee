@@ -21,7 +21,7 @@ import (
 )
 
 func main() {
-	err := config.LoadConfig(config.DefaultConfigLocation())
+	config, err := config.LoadConfig(config.DefaultConfigLocation())
 
 	if err != nil {
 		log.Println("No configuration file found in environment variable or default location, flags will be set from cli.")
@@ -125,17 +125,17 @@ func main() {
 			&cli.StringSliceFlag{
 				Name:  "rules",
 				Usage: "select which rules to load. Specify multiple rules by repeating this flag. Use --list for rules to select from",
-				Value: cli.NewStringSlice(config.Config.Rules.RuleIds...),
+				Value: cli.NewStringSlice(config.Rules.RuleIds...),
 			},
 			&cli.StringFlag{
 				Name:  "rules-dir",
 				Usage: "directory where to search for rules in OPA (.rego) or Go plugin (.so) formats",
-				Value: config.Config.Rules.InputDirectory,
+				Value: config.Rules.InputDirectory,
 			},
 			&cli.BoolFlag{
 				Name:  "rego-partial-eval",
 				Usage: "enable partial evaluation of rego rules",
-				Value: config.Config.RegoConfig.PartialEval,
+				Value: config.RegoConfig.PartialEval,
 			},
 			&cli.BoolFlag{
 				Name:  "list",
@@ -145,52 +145,52 @@ func main() {
 				Name:     "webhook",
 				Usage:    "HTTP endpoint to call for every match",
 				Required: false,
-				Value:    config.Config.Webhook.Url,
+				Value:    config.Webhook.Url,
 			},
 			&cli.StringFlag{
 				Name:  "webhook-template",
 				Usage: "path to a gotemplate for formatting webhook output",
-				Value: config.Config.Webhook.Template,
+				Value: config.Webhook.Template,
 			},
 			&cli.StringFlag{
 				Name:  "webhook-content-type",
 				Usage: "content type of the template in use. Recommended if using --webhook-template",
-				Value: config.Config.Webhook.ContentType,
+				Value: config.Webhook.ContentType,
 			},
 			&cli.StringSliceFlag{
 				Name:  "input-tracee",
 				Usage: "configure tracee-ebpf as input source. see '--input-tracee help' for more info",
-				Value: cli.NewStringSlice(config.Config.GetTraceeInputSlice()...),
+				Value: cli.NewStringSlice(config.GetTraceeInputSlice()...),
 			},
 			&cli.StringFlag{
 				Name:  "output-template",
 				Usage: "configure output format via templates. Usage: --output-template=path/to/my.tmpl",
-				Value: config.Config.Output.Template,
+				Value: config.Output.Template,
 			},
 			&cli.BoolFlag{
 				Name:  "pprof",
 				Usage: "enables pprof endpoints",
-				Value: config.Config.Pprof.Enable,
+				Value: config.Pprof.Enable,
 			},
 			&cli.StringFlag{
 				Name:  "pprof-addr",
 				Usage: "listening address of the pprof endpoints server",
-				Value: config.Config.GetDefaultPprofAddress(),
+				Value: config.GetDefaultPprofAddress(),
 			},
 			&cli.BoolFlag{
 				Name:  "rego-enable-parsed-events",
 				Usage: "enables pre parsing of input events to rego prior to evaluation",
-				Value: config.Config.RegoConfig.EnableParsedEvent,
+				Value: config.RegoConfig.EnableParsedEvent,
 			},
 			&cli.BoolFlag{
 				Name:  "rego-aio",
 				Usage: "compile rego signatures altogether as an aggregate policy. By default each signature is compiled separately.",
-				Value: config.Config.RegoConfig.Aio,
+				Value: config.RegoConfig.Aio,
 			},
 			&cli.StringFlag{
 				Name:  "rego-runtime-target",
 				Usage: "select which runtime target to use for evaluation of rego rules: rego, wasm",
-				Value: config.Config.GetDefaultRegoRuntime(),
+				Value: config.GetDefaultRegoRuntime(),
 			},
 			&cli.BoolFlag{
 				Name:  "list-events",
