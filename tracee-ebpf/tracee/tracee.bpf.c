@@ -2503,12 +2503,12 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 
     int proc_tree_filter_set = get_config(CONFIG_PROC_TREE_FILTER);
 
-    int is_group_exit = 0;
-    struct task_struct *task = (struct task_struct *)bpf_get_current_task();
+    bool group_dead = false;
+    struct task_struct *task = data.task;
     struct signal_struct *signal = READ_KERN(task->signal);
     atomic_t live = READ_KERN(signal->live);
     if (live.counter == 0) {
-        is_group_exit = 1;
+        group_dead = true;
         if (proc_tree_filter_set) {
             bpf_map_delete_elem(&process_tree_map, &data.context.host_pid);
         }
@@ -2520,7 +2520,7 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     long exit_code = get_task_exit_code(data.task);
 
     save_to_submit_buf(&data, (void*)&exit_code, sizeof(long), 0);
-    save_to_submit_buf(&data, (void*)&is_group_exit, sizeof(int), 1);
+    save_to_submit_buf(&data, (void*)&group_dead, sizeof(bool), 1);
 
     return events_perf_submit(&data, SCHED_PROCESS_EXIT, 0);
 }
