@@ -31,7 +31,7 @@ var version string
 func main() {
 	config, err := config.LoadConfig(config.DefaultConfigLocation())
 	if err != nil {
-		log.Println("No configuration file found in environment variable or default location, flags will be set from cli.")
+		fmt.Printf("No configuration file found in environment variable or default location, flags will be set from cli.\n")
 	}
 
 	app := &cli.App{
