@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-type TraceeRulesCliConfig struct {
+type CliConfig struct {
 	RegoConfig struct {
 		Aio               bool
 		EnableParsedEvent bool
@@ -37,7 +37,7 @@ type TraceeRulesCliConfig struct {
 	List bool
 }
 
-func Load(fileName string) (config *TraceeRulesCliConfig, err error) {
+func Load(fileName string) (config *CliConfig, err error) {
 	cfgFile, err := os.Open(fileName)
 
 	if err != nil {
@@ -65,21 +65,21 @@ func DefaultConfigLocation() string {
 	return "./tracee-rules-config.json"
 }
 
-func (c *TraceeRulesCliConfig) GetTraceeInputSlice() []string {
+func (c *CliConfig) GetTraceeInputSlice() []string {
 	if c.Input.File != "" && c.Input.Format != "" {
 		return []string{fmt.Sprintf("file:%s", c.Input.File), fmt.Sprintf("format:%s", c.Input.Format)}
 	}
 	return []string{}
 }
 
-func (c *TraceeRulesCliConfig) GetDefaultPprofAddress() string {
+func (c *CliConfig) GetDefaultPprofAddress() string {
 	if c.Pprof.Address != "" {
 		return c.Pprof.Address
 	}
 	return ":7777"
 }
 
-func (c *TraceeRulesCliConfig) GetDefaultRegoRuntime() string {
+func (c *CliConfig) GetDefaultRegoRuntime() string {
 	if c.RegoConfig.RunTimeTarget != "" {
 		return c.RegoConfig.RunTimeTarget
 	}

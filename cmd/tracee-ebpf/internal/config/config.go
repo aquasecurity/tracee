@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-type TraceeEbpfCliConfig struct {
+type CliConfig struct {
 	PerfRingBuffers struct {
 		EventSubmitBufferSize int
 		BlobBufferSize        int
@@ -19,7 +19,7 @@ type TraceeEbpfCliConfig struct {
 	Capture      []string
 }
 
-func Load(fileName string) (config *TraceeEbpfCliConfig, err error) {
+func Load(fileName string) (config *CliConfig, err error) {
 	cfgFile, err := os.Open(fileName)
 
 	if err != nil {
@@ -47,21 +47,21 @@ func DefaultConfigLocation() string {
 	return "./tracee-ebpf-config.json"
 }
 
-func (c *TraceeEbpfCliConfig) DefaultInstallPath() string {
+func (c *CliConfig) DefaultInstallPath() string {
 	if c.InstallPath != "" {
 		return c.InstallPath
 	}
 	return "/tmp/tracee"
 }
 
-func (c *TraceeEbpfCliConfig) DefaultBuildPolicy() string {
+func (c *CliConfig) DefaultBuildPolicy() string {
 	if c.BuildPolicy != "" {
 		return c.BuildPolicy
 	}
 	return "if-needed"
 }
 
-func (c *TraceeEbpfCliConfig) DefaultEventSubmitBufferSize() int {
+func (c *CliConfig) DefaultEventSubmitBufferSize() int {
 	bufferSize := c.PerfRingBuffers.EventSubmitBufferSize
 	if bufferSize != 0 {
 		return bufferSize
@@ -69,7 +69,7 @@ func (c *TraceeEbpfCliConfig) DefaultEventSubmitBufferSize() int {
 	return 1024
 }
 
-func (c *TraceeEbpfCliConfig) DefaultBlobBufferSize() int {
+func (c *CliConfig) DefaultBlobBufferSize() int {
 	bufferSize := c.PerfRingBuffers.BlobBufferSize
 	if bufferSize != 0 {
 		return bufferSize
