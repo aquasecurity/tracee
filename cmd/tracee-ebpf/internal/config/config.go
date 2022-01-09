@@ -8,15 +8,15 @@ import (
 
 type CliConfig struct {
 	PerfRingBuffers struct {
-		EventSubmitBufferSize int
-		BlobBufferSize        int
-	}
-	VerboseDebug bool
-	InstallPath  string
-	BuildPolicy  string
-	Trace        []string
-	Output       []string
-	Capture      []string
+		EventSubmitBufferSize int `json:"eventSubmitBufferSize"`
+		BlobBufferSize        int `json:"blobBufferSize"`
+	} `json:"perfRingBuffers"`
+	VerboseDebug bool     `json:"verboseDebug"`
+	InstallPath  string   `json:"installPath"`
+	BuildPolicy  string   `json:"buildPolicy"`
+	Trace        []string `json:"trace"`
+	Output       []string `json:"output"`
+	Capture      []string `json:"capture"`
 }
 
 func Load(fileName string) (config *CliConfig, err error) {

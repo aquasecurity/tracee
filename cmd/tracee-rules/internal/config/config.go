@@ -9,31 +9,31 @@ import (
 
 type CliConfig struct {
 	RegoConfig struct {
-		Aio               bool
-		EnableParsedEvent bool
-		PartialEval       bool
-		RunTimeTarget     string
-	}
+		Aio               bool   `json:"aio"`
+		EnableParsedEvent bool   `json:"enabledParsedEvent"`
+		PartialEval       bool   `json:"partialEval"`
+		RunTimeTarget     string `json:"runtimeTarget"`
+	} `json:"regoConfig"`
 	Rules struct {
-		InputDirectory string
-		RuleIds        []string
-	}
+		InputDirectory string   `json:"inputDirectory"`
+		RuleIds        []string `json:"rulesIds"`
+	} `json:"rules"`
 	Webhook struct {
-		Url         string
-		Template    string
-		ContentType string
-	}
+		Url         string `json:"url"`
+		Template    string `json:"template"`
+		ContentType string `json:"contentType"`
+	} `json:"webhook"`
 	Input struct {
-		File   string
-		Format string
-	}
+		File   string `json:"file"`
+		Format string `json:"format"`
+	} `json:"input"`
 	Output struct {
-		Template string
-	}
+		Template string `json:"template"`
+	} `json:"output"`
 	Pprof struct {
-		Enable  bool
-		Address string
-	}
+		Enable  bool   `json:"enable"`
+		Address string `json:"address"`
+	} `json:"pprof"`
 }
 
 func Load(fileName string) (config *CliConfig, err error) {
