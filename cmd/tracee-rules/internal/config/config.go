@@ -36,11 +36,11 @@ type CliConfig struct {
 	} `json:"pprof"`
 }
 
-func Load(fileName string) (config *CliConfig, err error) {
+func Load(fileName string) (config CliConfig, err error) {
 	cfgFile, err := os.Open(fileName)
 
 	if err != nil {
-		return nil, err
+		return CliConfig{}, err
 	}
 
 	defer cfgFile.Close()
@@ -48,7 +48,7 @@ func Load(fileName string) (config *CliConfig, err error) {
 	byteValue, err := ioutil.ReadAll(cfgFile)
 
 	if err != nil {
-		return nil, err
+		return CliConfig{}, err
 	}
 
 	err = json.Unmarshal(byteValue, &config)
