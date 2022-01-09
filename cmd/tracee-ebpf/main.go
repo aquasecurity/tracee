@@ -20,7 +20,6 @@ import (
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
 	"github.com/syndtr/gocapability/capability"
 	cli "github.com/urfave/cli/v2"
-	"github.com/urfave/cli/v2/altsrc"
 )
 
 var debug bool
@@ -266,8 +265,6 @@ func main() {
 			},
 		},
 	}
-
-	app.Before = altsrc.InitInputSourceWithContext(app.Flags, altsrc.NewJSONSourceFromFlagFunc("config"))
 
 	err = app.Run(os.Args)
 	if err != nil {
