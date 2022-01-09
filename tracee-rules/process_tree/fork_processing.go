@@ -57,7 +57,7 @@ func (tree *ProcessTree) processMainThreadFork(event external.Event, inHostIDs t
 	}
 
 	newProcess.addThreadID(inHostIDs.Tid)
-	newProcess.StartTime = event.Timestamp
+	newProcess.StartTime = timestamp(event.Timestamp)
 	newProcess.Status.Add(uint32(types.Forked))
 	return nil
 }
@@ -129,14 +129,14 @@ func parseForkInContainerIDs(event external.Event) (threadIDs, error) {
 
 func (tree *ProcessTree) addNewForkedProcess(event external.Event, inHostIDs threadIDs, inContainerIDs threadIDs) *processNode {
 	newProcess := &processNode{
-		ProcessName:     event.ProcessName,
-		InHostIDs:       inHostIDs.ProcessIDs,
-		InContainerIDs:  inContainerIDs.ProcessIDs,
-		ContainerID:     event.ContainerID,
-		StartTime:       event.Timestamp,
-		IsAlive:         true,
-		Status:          *roaring.BitmapOf(uint32(types.Forked), uint32(types.GeneralCreated)),
-		ExistingThreads: []int{},
+		ProcessName:    event.ProcessName,
+		InHostIDs:      inHostIDs.ProcessIDs,
+		InContainerIDs: inContainerIDs.ProcessIDs,
+		ContainerID:    event.ContainerID,
+		StartTime:      timestamp(event.Timestamp),
+		IsAlive:        true,
+		Status:         *roaring.BitmapOf(uint32(types.Forked), uint32(types.GeneralCreated)),
+		ThreadsExits:   map[int]timestamp{},
 	}
 	if newProcess.InContainerIDs.Ppid != 0 &&
 		newProcess.InHostIDs.Pid != newProcess.InHostIDs.Ppid { // Prevent looped references

@@ -6,6 +6,8 @@ import (
 	"github.com/aquasecurity/tracee/tracee-rules/types"
 )
 
+type timestamp int
+
 type processNode struct {
 	InContainerIDs  types.ProcessIDs
 	InHostIDs       types.ProcessIDs
@@ -13,11 +15,12 @@ type processNode struct {
 	ProcessName     string
 	Cmd             []string
 	ExecutionBinary types.BinaryInfo
-	StartTime       int
-	ExecTime        int
+	StartTime       timestamp
+	ExecTime        timestamp
+	ExitTime        timestamp
 	ParentProcess   *processNode
 	ChildProcesses  []*processNode
-	ExistingThreads []int
+	ThreadsExits    map[int]timestamp
 	IsAlive         bool
 	Status          roaring.Bitmap // Values type are types.ProcessInformationStatus
 }

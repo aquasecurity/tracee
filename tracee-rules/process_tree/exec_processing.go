@@ -21,7 +21,7 @@ func (tree *ProcessTree) processExecEvent(event external.Event) error {
 		return err
 	}
 	process.ProcessName = event.ProcessName
-	process.ExecTime = event.Timestamp
+	process.ExecTime = timestamp(event.Timestamp)
 
 	process.Status.Add(uint32(types.Executed))
 	return nil

@@ -1,6 +1,9 @@
 package process_tree
 
-import "github.com/aquasecurity/tracee/pkg/external"
+import (
+	"fmt"
+	"github.com/aquasecurity/tracee/pkg/external"
+)
 
 // processExitEvent remove references of processes from the tree when the corresponding process exit without children, or
 // if the last child process of a process exits.
@@ -11,17 +14,23 @@ func (tree *ProcessTree) processExitEvent(event external.Event) error {
 	if err != nil {
 		return err
 	}
-	threadCount := len(process.ExistingThreads)
-	for i, tid := range process.ExistingThreads {
-		if event.HostThreadID == tid {
-			process.ExistingThreads[i] = process.ExistingThreads[threadCount-1]
-			process.ExistingThreads = process.ExistingThreads[:threadCount-1]
-			threadCount -= 1
-		}
+	process.ThreadsExits[event.HostThreadID] = timestamp(event.Timestamp)
+
+	argument, err := getArgumentByName(event, "process_group_exit")
+	if err != nil {
+		return err
 	}
+	processGroupExit, ok := argument.Value.(bool)
+	if !ok {
+		return fmt.Errorf("invalid type of argument '%s' - %T",
+			argument.Name,
+			argument.Value)
+	}
+
 	// In case of concurrent processing, this check will be problematic
-	if threadCount <= 0 {
+	if processGroupExit {
 		process.IsAlive = false
+		process.ExitTime = timestamp(event.Timestamp)
 		// Remove process and all dead ancestors so only processes with alive descendants will remain.
 		if len(process.ChildProcesses) == 0 {
 			cp := process

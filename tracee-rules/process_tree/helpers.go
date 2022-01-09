@@ -19,10 +19,10 @@ func (tree *ProcessTree) addGeneralEventProcess(event external.Event) *processNo
 			Pid:  event.ProcessID,
 			Ppid: event.ParentProcessID,
 		},
-		ContainerID:     event.ContainerID,
-		ExistingThreads: []int{},
-		IsAlive:         true,
-		Status:          *roaring.BitmapOf(uint32(types.GeneralCreated)),
+		ContainerID:  event.ContainerID,
+		ThreadsExits: map[int]timestamp{},
+		IsAlive:      true,
+		Status:       *roaring.BitmapOf(uint32(types.GeneralCreated)),
 	}
 	tree.processes[event.HostProcessID] = process
 	return process
@@ -97,21 +97,15 @@ func fillHollowProcessInfo(
 	p.InContainerIDs = inContainerIDs
 	p.ContainerID = containerID
 	p.ProcessName = processName
-	p.ExistingThreads = []int{}
+	p.ThreadsExits = map[int]timestamp{}
 	p.IsAlive = true
 	p.Status.Add(uint32(types.GeneralCreated))
 	p.Status.Remove(uint32(types.HollowParent))
 }
 
 func (p *processNode) addThreadID(tid int) {
-	exist := false
-	for _, existingTID := range p.ExistingThreads {
-		if existingTID == tid {
-			exist = true
-			break
-		}
-	}
+	_, exist := p.ThreadsExits[tid]
 	if !exist {
-		p.ExistingThreads = append(p.ExistingThreads, tid)
+		p.ThreadsExits[tid] = timestamp(0)
 	}
 }

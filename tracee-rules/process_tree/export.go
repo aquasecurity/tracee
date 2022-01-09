@@ -11,22 +11,22 @@ var globalTree = ProcessTree{
 	processes: map[int]*processNode{},
 }
 
-func GetProcessInfo(hostProcessID int) (types.ProcessInfo, error) {
+func GetProcessInfo(hostProcessID int, time int) (types.ProcessInfo, error) {
 	pn, err := globalTree.GetProcessInfo(hostProcessID)
 	if err != nil {
 		return types.ProcessInfo{}, err
 	}
-	return pn.export(), nil
+	return pn.export(time), nil
 }
 
-func GetProcessLineage(hostProcessID int) (types.ProcessLineage, error) {
+func GetProcessLineage(hostProcessID int, time int) (types.ProcessLineage, error) {
 	pList, err := globalTree.GetProcessLineage(hostProcessID)
 	if err != nil {
 		return nil, err
 	}
 	lineage := make(types.ProcessLineage, len(pList))
 	for i, p := range pList {
-		lineage[i] = p.export()
+		lineage[i] = p.export(time)
 	}
 	return lineage, nil
 }
@@ -61,7 +61,7 @@ func CreateProcessTreeOutputEnrichmentPipeline(out chan types.Finding) chan type
 			}
 			e, ok := f.Context.(external.Event)
 			if ok {
-				pLineage, err := GetProcessLineage(e.HostProcessID)
+				pLineage, err := GetProcessLineage(e.HostProcessID, e.Timestamp)
 				if err == nil {
 					f.ExtendedContext["process-lineage"] = pLineage
 				}
@@ -72,11 +72,19 @@ func CreateProcessTreeOutputEnrichmentPipeline(out chan types.Finding) chan type
 	return in
 }
 
-func (p *processNode) export() types.ProcessInfo {
+func (p *processNode) export(time int) types.ProcessInfo {
 	var childrenIDs []int
+	var threadIDs []int
 	for _, child := range p.ChildProcesses {
 		childrenIDs = append(childrenIDs, child.InHostIDs.Pid)
 	}
+	for tid, threadExitTime := range p.ThreadsExits {
+		if threadExitTime != 0 &&
+			time > int(threadExitTime) {
+			threadIDs = append(threadIDs, tid)
+		}
+	}
+	isAlive := (p.IsAlive == true) || (time < int(p.ExitTime))
 	return types.ProcessInfo{
 		InContainerIDs:       p.InContainerIDs,
 		InHostIDs:            p.InHostIDs,
@@ -84,10 +92,10 @@ func (p *processNode) export() types.ProcessInfo {
 		ProcessName:          p.ProcessName,
 		Cmd:                  p.Cmd,
 		ExecutionBinary:      p.ExecutionBinary,
-		StartTime:            p.StartTime,
-		ExecTime:             p.ExecTime,
-		ExistingThreads:      p.ExistingThreads,
-		IsAlive:              p.IsAlive,
+		StartTime:            int(p.StartTime),
+		ExecTime:             int(p.ExecTime),
+		ExistingThreads:      threadIDs,
+		IsAlive:              isAlive,
 		ChildrenProcessesIDs: childrenIDs,
 	}
 }

@@ -29,10 +29,10 @@ func IsFileWrite(flags string) bool {
 	return false
 }
 
-func GetProcessInfoFromTree(hostProcessID int) (types.ProcessInfo, error) {
-	return process_tree.GetProcessInfo(hostProcessID)
+func GetProcessInfoFromTree(hostProcessID int, time int) (types.ProcessInfo, error) {
+	return process_tree.GetProcessInfo(hostProcessID, time)
 }
 
-func GetProcessLineageFromTree(hostProcessID int) (types.ProcessLineage, error) {
-	return process_tree.GetProcessLineage(hostProcessID)
+func GetProcessLineageFromTree(hostProcessID int, time int) (types.ProcessLineage, error) {
+	return process_tree.GetProcessLineage(hostProcessID, time)
 }

@@ -91,6 +91,9 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 						StartTime:   100000000,
 						ProcessName: "bash",
 						Status:      *roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked)),
+						ThreadsExits: map[int]timestamp{
+							execEvent.HostProcessID: timestamp(0),
+						},
 					},
 				},
 			},
@@ -135,6 +138,9 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 							Path:  "/bin/sleep",
 							Ctime: 100,
 						},
+						ThreadsExits: map[int]timestamp{
+							execEvent.HostProcessID: timestamp(0),
+						},
 					},
 				},
 			},
@@ -174,6 +180,9 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 						ContainerID: TestContainerID,
 						ProcessName: execEvent.ProcessName,
 						Status:      *roaring.BitmapOf(uint32(types.GeneralCreated)),
+						ThreadsExits: map[int]timestamp{
+							execEvent.HostProcessID: timestamp(0),
+						},
 					},
 				},
 			},
