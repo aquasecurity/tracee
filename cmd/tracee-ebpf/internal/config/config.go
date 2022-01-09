@@ -19,7 +19,7 @@ type TraceeEbpfCliConfig struct {
 	Capture      []string
 }
 
-func LoadConfig(fileName string) (config *TraceeEbpfCliConfig, err error) {
+func Load(fileName string) (config *TraceeEbpfCliConfig, err error) {
 	cfgFile, err := os.Open(fileName)
 
 	if err != nil {

@@ -37,7 +37,7 @@ type TraceeRulesCliConfig struct {
 	List bool
 }
 
-func LoadConfig(fileName string) (config *TraceeRulesCliConfig, err error) {
+func Load(fileName string) (config *TraceeRulesCliConfig, err error) {
 	cfgFile, err := os.Open(fileName)
 
 	if err != nil {

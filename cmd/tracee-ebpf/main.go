@@ -29,7 +29,7 @@ var traceeInstallPath string
 var version string
 
 func main() {
-	config, err := config.LoadConfig(config.DefaultConfigLocation())
+	config, err := config.Load(config.DefaultConfigLocation())
 	if err != nil {
 		fmt.Printf("No configuration file found in environment variable or default location, flags will be set from cli.\n")
 	}
