@@ -34,7 +34,12 @@ const (
 	u16T
 	credT
 	intArr2T
-	argsArrT
+)
+
+// This types are not matching the defined ones in the ebpf code because they are not types used by syscalls.
+// They have their own set of value to avoid collision in the future.
+const (
+	argsArrT argType = iota + 0x80
 	boolT
 )
 
