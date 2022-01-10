@@ -342,7 +342,7 @@ func TestProcessTree_ProcessEvent(t *testing.T) {
 			}
 			var err error
 			err = tree.ProcessEvent(processExitEvent)
-			require.Error(t, err)
+			require.NoError(t, err)
 			err = tree.ProcessEvent(processForkEvent)
 			require.NoError(t, err)
 			err = tree.ProcessEvent(execEvent)
@@ -352,17 +352,13 @@ func TestProcessTree_ProcessEvent(t *testing.T) {
 			process, err := tree.GetProcessInfo(pid)
 			assert.NoError(t, err)
 			checkGeneralInfo(t, process)
-			checkProcessForksInfo(t, process, 0)
+			checkProcessForksInfo(t, process, processExitEvent.Timestamp)
 			checkThreadForkInfo(t, process, 0)
 			checkExecInfo(t, process)
 			err = tree.ProcessEvent(threadExitEvent)
 			require.NoError(t, err)
 			checkThreadExitInfo(t, process)
-			assert.Equal(t, timestamp(0), process.ThreadsExits[pid])
-			tree.emptyDeadProcessesCache()
-			process, err = tree.GetProcessInfo(pid)
-			assert.NoError(t, err)
-			assert.Contains(t, process.ThreadsExits, pid)
+			checkProcessExitSuccess(t, &tree)
 		})
 	})
 	t.Run("Missing event flow", func(t *testing.T) {

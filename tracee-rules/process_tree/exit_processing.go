@@ -12,7 +12,8 @@ import (
 func (tree *ProcessTree) processExitEvent(event external.Event) error {
 	process, err := tree.GetProcessInfo(event.HostProcessID)
 	if err != nil {
-		return err
+		process = tree.addGeneralEventProcess(event)
+		tree.generateParentProcess(process)
 	}
 	process.ThreadsExits[event.HostThreadID] = timestamp(event.Timestamp)
 
@@ -36,27 +37,57 @@ func (tree *ProcessTree) processExitEvent(event external.Event) error {
 				process.ThreadsExits[tid] = timestamp(event.Timestamp)
 			}
 		}
-		// Remove process and all dead ancestors so only processes with alive descendants will remain.
-		if len(process.ChildProcesses) == 0 {
-			cp := process
-			for {
-				tree.cachedDeleteProcess(cp.InHostIDs.Pid)
-				if cp.ParentProcess == nil {
-					break
-				}
-				for i, childProcess := range cp.ParentProcess.ChildProcesses {
-					if childProcess == cp {
-						cp.ParentProcess.ChildProcesses = append(cp.ParentProcess.ChildProcesses[:i],
-							cp.ParentProcess.ChildProcesses[i+1:]...)
-						break
-					}
-				}
-				if cp.ParentProcess.IsAlive {
-					break
-				}
-				cp = cp.ParentProcess
-			}
-		}
+		tree.cachedDeleteProcess(process.InHostIDs.Pid)
+
 	}
 	return nil
+}
+
+const cachedDeadEvents = 100
+
+func (tree *ProcessTree) cachedDeleteProcess(pid int) {
+	tree.deadProcessesCache = append(tree.deadProcessesCache, pid)
+	if len(tree.deadProcessesCache) > cachedDeadEvents {
+		dpid := tree.deadProcessesCache[0]
+		tree.deadProcessesCache = tree.deadProcessesCache[1:]
+		tree.deleteProcessFromTree(dpid)
+	}
+}
+
+func (tree *ProcessTree) emptyDeadProcessesCache() {
+	for _, dpid := range tree.deadProcessesCache {
+		tree.deleteProcessFromTree(dpid)
+	}
+	tree.deadProcessesCache = []int{}
+	return
+}
+
+func (tree *ProcessTree) deleteProcessFromTree(dpid int) {
+	p, err := tree.GetProcessInfo(dpid)
+	if err != nil {
+		return
+	}
+	// Make sure that the process is not deleted because missed children or events
+	if len(p.ChildProcesses) == 0 && p.IsAlive == false {
+		// Remove process and all dead ancestors so only processes with alive descendants will remain.
+		cp := p
+		for {
+			delete(tree.processes, cp.InHostIDs.Pid)
+			if cp.ParentProcess == nil {
+				break
+			}
+			for i, childProcess := range cp.ParentProcess.ChildProcesses {
+				if childProcess == cp {
+					cp.ParentProcess.ChildProcesses = append(cp.ParentProcess.ChildProcesses[:i],
+						cp.ParentProcess.ChildProcesses[i+1:]...)
+					break
+				}
+			}
+			if cp.ParentProcess.IsAlive {
+				break
+			}
+			cp = cp.ParentProcess
+		}
+
+	}
 }
