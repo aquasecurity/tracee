@@ -275,7 +275,8 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					InContainerIDs: types.ProcessIDs{
 						Pid: cPID,
 					},
-					Status: *roaring.BitmapOf(uint32(types.HollowParent)),
+					Status:       *roaring.BitmapOf(uint32(types.HollowParent)),
+					ThreadsExits: map[int]timestamp{},
 				}),
 				expected: expectedValues{
 					*roaring.BitmapOf(uint32(types.GeneralCreated)),
@@ -313,7 +314,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 				},
 				expected: expectedValues{
 					*roaring.BitmapOf(uint32(types.GeneralCreated)),
-					1,
+					2,
 				},
 			},
 		}
