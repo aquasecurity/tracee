@@ -31,6 +31,11 @@ func (tree *ProcessTree) processExitEvent(event external.Event) error {
 	if processGroupExit {
 		process.IsAlive = false
 		process.ExitTime = timestamp(event.Timestamp)
+		for tid, exitTime := range process.ThreadsExits {
+			if exitTime == 0 {
+				process.ThreadsExits[tid] = timestamp(event.Timestamp)
+			}
+		}
 		// Remove process and all dead ancestors so only processes with alive descendants will remain.
 		if len(process.ChildProcesses) == 0 {
 			cp := process

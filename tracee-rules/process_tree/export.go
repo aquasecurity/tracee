@@ -79,8 +79,8 @@ func (p *processNode) export(time int) types.ProcessInfo {
 		childrenIDs = append(childrenIDs, child.InHostIDs.Pid)
 	}
 	for tid, threadExitTime := range p.ThreadsExits {
-		if threadExitTime != 0 &&
-			time > int(threadExitTime) {
+		if threadExitTime == 0 ||
+			time < int(threadExitTime) {
 			threadIDs = append(threadIDs, tid)
 		}
 	}
@@ -94,6 +94,7 @@ func (p *processNode) export(time int) types.ProcessInfo {
 		ExecutionBinary:      p.ExecutionBinary,
 		StartTime:            int(p.StartTime),
 		ExecTime:             int(p.ExecTime),
+		ExitTime:             int(p.ExitTime),
 		ExistingThreads:      threadIDs,
 		IsAlive:              isAlive,
 		ChildrenProcessesIDs: childrenIDs,

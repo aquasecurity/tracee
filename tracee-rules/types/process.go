@@ -29,6 +29,7 @@ type ProcessInfo struct {
 	ExecutionBinary      BinaryInfo
 	StartTime            int
 	ExecTime             int
+	ExitTime             int
 	ExistingThreads      []int
 	IsAlive              bool
 	ChildrenProcessesIDs []int
