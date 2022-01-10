@@ -9,7 +9,7 @@ import (
 // if the last child process of a process exits.
 // Notice that there is a danger of memory leak if there are lost events of sched_process_exit (but is limited to the
 // possible number of PIDs - 32768)
-func (tree *ProcessTree) processExitEvent(event external.Event) error {
+func (tree *ProcessTree) processExitEvent(event *external.Event) error {
 	err := tree.processDefaultEvent(event)
 	if err != nil {
 		return err
@@ -28,7 +28,6 @@ func (tree *ProcessTree) processExitEvent(event external.Event) error {
 			argument.Value)
 	}
 
-	// In case of concurrent processing, this check will be problematic
 	if processGroupExit {
 		process.IsAlive = false
 		process.ExitTime = timestamp(event.Timestamp)
@@ -67,9 +66,9 @@ func (tree *ProcessTree) deleteProcessFromTree(dpid int) {
 	if err != nil {
 		return
 	}
-	// Make sure that the process is not deleted because missed children or events
-	if len(p.ChildProcesses) == 0 && p.IsAlive == false {
-		// Remove process and all dead ancestors so only processes with alive descendants will remain.
+	// Make sure that the process is not deleted because missed children
+	if len(p.ChildProcesses) == 0 {
+		// Remove process and all dead ancestors so only processes which are alive or with living descendants will remain.
 		cp := p
 		for {
 			delete(tree.processes, cp.InHostIDs.Pid)

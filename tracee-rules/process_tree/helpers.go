@@ -8,7 +8,7 @@ import (
 )
 
 // addGeneralEventProcess generate a new process with information that could be received from any event from the process
-func (tree *ProcessTree) addGeneralEventProcess(event external.Event) *processNode {
+func (tree *ProcessTree) addGeneralEventProcess(event *external.Event) *processNode {
 	process := &processNode{
 		ProcessName: event.ProcessName,
 		InHostIDs: types.ProcessIDs{
@@ -28,7 +28,7 @@ func (tree *ProcessTree) addGeneralEventProcess(event external.Event) *processNo
 	return process
 }
 
-// generateParentProcess create a parent process of given one from tree if existing or creates new node with best
+// generateParentProcess add a parent process to given process from tree if existing or creates new node with best
 // effort info
 func (tree *ProcessTree) generateParentProcess(process *processNode) *processNode {
 	if process.InContainerIDs.Ppid != 0 &&
@@ -52,7 +52,7 @@ func (tree *ProcessTree) generateParentProcess(process *processNode) *processNod
 	return process
 }
 
-func fillHollowParentProcessGeneralEvent(p *processNode, event external.Event) {
+func fillHollowParentProcessGeneralEvent(p *processNode, event *external.Event) {
 	fillHollowProcessInfo(
 		p,
 		threadIDs{ProcessIDs: types.ProcessIDs{Pid: event.HostProcessID, Ppid: event.HostParentProcessID}, Tid: event.HostThreadID},
@@ -63,7 +63,7 @@ func fillHollowParentProcessGeneralEvent(p *processNode, event external.Event) {
 }
 
 // getArgumentByName fetches the argument in event with "Name" that matches argName.
-func getArgumentByName(event external.Event, argName string) (external.Argument, error) {
+func getArgumentByName(event *external.Event, argName string) (external.Argument, error) {
 	for _, arg := range event.Args {
 		if arg.Name == argName {
 			return arg, nil
@@ -72,7 +72,7 @@ func getArgumentByName(event external.Event, argName string) (external.Argument,
 	return external.Argument{}, fmt.Errorf("argument %s not found", argName)
 }
 
-func parseInt32Field(event external.Event, fieldName string) (int, error) {
+func parseInt32Field(event *external.Event, fieldName string) (int, error) {
 	argument, err := getArgumentByName(event, fieldName)
 	if err != nil {
 		return 0, err

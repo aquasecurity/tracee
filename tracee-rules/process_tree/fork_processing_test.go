@@ -9,16 +9,18 @@ import (
 	"testing"
 )
 
-const threadPID = 22482
-const threadPPID = 22447
+const pid = 22482
+const ppid = 22447
 const shCtime = 1639044471927000000
-const cPID = 3
-const cPPID = 2
+const cpid = 3
+const cppid = 2
+const threadTID = pid + 1
+const threadCTID = cpid + 1
 
 func TestProcessTree_ProcessFork(t *testing.T) {
 	type expectedValues struct {
-		status       roaring.Bitmap
-		threadsCount int
+		status        roaring.Bitmap
+		livingThreads []int
 	}
 	t.Run("Main thread fork", func(t *testing.T) {
 		testCases := []struct {
@@ -31,12 +33,12 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 				tree: generateProcessTree(&processNode{
 					ProcessName: "sh",
 					InHostIDs: types.ProcessIDs{
-						Pid:  threadPID,
-						Ppid: threadPPID,
+						Pid:  pid,
+						Ppid: ppid,
 					},
 					InContainerIDs: types.ProcessIDs{
-						Pid:  cPID,
-						Ppid: cPPID,
+						Pid:  cpid,
+						Ppid: cppid,
 					},
 					ExecutionBinary: types.BinaryInfo{
 						Path:  "/bin/sh",
@@ -46,37 +48,37 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					ExecTime:    shCtime,
 					ContainerID: TestContainerID,
 					ThreadsExits: map[int]timestamp{
-						threadPID: timestamp(0),
+						pid: timestamp(0),
 					},
 					IsAlive: true,
 					Status:  *roaring.BitmapOf(uint32(types.Executed), uint32(types.GeneralCreated)),
 				}),
 				expected: expectedValues{
 					*roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked), uint32(types.Executed)),
-					1,
+					[]int{pid},
 				},
 			},
 			{
 				testName: "Lost exit event - existing forked process",
 				tree: generateProcessTree(&processNode{
 					InHostIDs: types.ProcessIDs{
-						Pid:  threadPID,
+						Pid:  pid,
 						Ppid: 10,
 					},
 					InContainerIDs: types.ProcessIDs{
-						Pid:  threadPID,
+						Pid:  pid,
 						Ppid: 10,
 					},
 					StartTime: shCtime - 100000,
 					ThreadsExits: map[int]timestamp{
-						threadPID: timestamp(0),
+						pid: timestamp(0),
 					},
 					IsAlive: true,
 					Status:  *roaring.BitmapOf(uint32(types.Forked)),
 				}),
 				expected: expectedValues{
 					*roaring.BitmapOf(uint32(types.Forked), uint32(types.GeneralCreated)),
-					1,
+					[]int{pid},
 				},
 			},
 			{
@@ -84,11 +86,11 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 				tree: generateProcessTree(&processNode{
 					ProcessName: "sleep",
 					InHostIDs: types.ProcessIDs{
-						Pid:  threadPID,
+						Pid:  pid,
 						Ppid: 10,
 					},
 					InContainerIDs: types.ProcessIDs{
-						Pid:  threadPID,
+						Pid:  pid,
 						Ppid: 10,
 					},
 					ExecutionBinary: types.BinaryInfo{
@@ -100,30 +102,30 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					StartTime:   shCtime - 100000,
 					ContainerID: "",
 					ThreadsExits: map[int]timestamp{
-						threadPID: timestamp(0),
+						pid: timestamp(0),
 					},
 					IsAlive: true,
 					Status:  *roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked), uint32(types.Executed)),
 				}),
 				expected: expectedValues{
 					*roaring.BitmapOf(uint32(types.Forked), uint32(types.GeneralCreated)),
-					1,
+					[]int{pid},
 				},
 			},
 			{
 				testName: "Existing hollow parent process",
 				tree: generateProcessTree(&processNode{
 					InHostIDs: types.ProcessIDs{
-						Pid: threadPID,
+						Pid: pid,
 					},
 					InContainerIDs: types.ProcessIDs{
-						Pid: cPID,
+						Pid: cpid,
 					},
 					Status: *roaring.BitmapOf(uint32(types.HollowParent)),
 				}),
 				expected: expectedValues{
 					*roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked)),
-					1,
+					[]int{pid},
 				},
 			},
 			{
@@ -131,23 +133,23 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 				tree: generateProcessTree(&processNode{
 					ProcessName: "sh",
 					InHostIDs: types.ProcessIDs{
-						Pid:  threadPID,
-						Ppid: threadPPID,
+						Pid:  pid,
+						Ppid: ppid,
 					},
 					InContainerIDs: types.ProcessIDs{
-						Pid:  cPID,
-						Ppid: cPPID,
+						Pid:  cpid,
+						Ppid: cppid,
 					},
 					ContainerID: TestContainerID,
 					ThreadsExits: map[int]timestamp{
-						threadPID: timestamp(0),
+						pid: timestamp(0),
 					},
 					IsAlive: true,
 					Status:  *roaring.BitmapOf(uint32(types.GeneralCreated)),
 				}),
 				expected: expectedValues{
 					*roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked)),
-					1,
+					[]int{pid},
 				},
 			},
 			{
@@ -157,18 +159,22 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 				},
 				expected: expectedValues{
 					*roaring.BitmapOf(uint32(types.Forked), uint32(types.GeneralCreated)),
-					1,
+					[]int{pid},
 				},
 			},
 		}
 		forkEvent := generateMainForkEvent()
 		for _, testCase := range testCases {
 			t.Run(testCase.testName, func(t *testing.T) {
-				require.NoError(t, testCase.tree.ProcessEvent(forkEvent))
-				p, err := testCase.tree.GetProcessInfo(threadPID)
+				require.NoError(t, testCase.tree.processForkEvent(&forkEvent))
+				p, err := testCase.tree.GetProcessInfo(pid)
 				require.NoError(t, err)
 				assert.Equal(t, testCase.expected.status.ToArray(), p.Status.ToArray())
-				assert.Equal(t, testCase.expected.threadsCount, len(p.ThreadsExits))
+				assert.Equal(t, len(testCase.expected.livingThreads), len(p.ThreadsExits))
+				for _, livingTID := range testCase.expected.livingThreads {
+					assert.Contains(t, p.ThreadsExits, livingTID)
+					assert.Equal(t, timestamp(0), p.ThreadsExits[livingTID])
+				}
 				assert.Equal(t, forkEvent.HostProcessID, p.InHostIDs.Ppid)
 				assert.Equal(t, forkEvent.ProcessID, p.InContainerIDs.Ppid)
 			})
@@ -186,12 +192,12 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 				tree: generateProcessTree(&processNode{
 					ProcessName: "sh",
 					InHostIDs: types.ProcessIDs{
-						Pid:  threadPID,
-						Ppid: threadPPID,
+						Pid:  pid,
+						Ppid: ppid,
 					},
 					InContainerIDs: types.ProcessIDs{
-						Pid:  cPID,
-						Ppid: cPPID,
+						Pid:  cpid,
+						Ppid: cppid,
 					},
 					ExecutionBinary: types.BinaryInfo{
 						Path:  "/bin/sh",
@@ -201,38 +207,38 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					ExecTime:    shCtime,
 					ContainerID: TestContainerID,
 					ThreadsExits: map[int]timestamp{
-						threadPID: timestamp(0),
+						pid: timestamp(0),
 					},
 					IsAlive: true,
 					Status:  *roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Executed)),
 				}),
 				expected: expectedValues{
 					*roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Executed)),
-					2,
+					[]int{pid, threadTID},
 				},
 			},
 			{
 				testName: "Existing forked process",
 				tree: generateProcessTree(&processNode{
 					InHostIDs: types.ProcessIDs{
-						Pid:  threadPID,
-						Ppid: threadPPID,
+						Pid:  pid,
+						Ppid: ppid,
 					},
 					InContainerIDs: types.ProcessIDs{
-						Pid:  cPID,
-						Ppid: cPPID,
+						Pid:  cpid,
+						Ppid: cppid,
 					},
 					StartTime:   shCtime,
 					ProcessName: "sh",
 					ThreadsExits: map[int]timestamp{
-						threadPID: timestamp(0),
+						pid: timestamp(0),
 					},
 					IsAlive: true,
 					Status:  *roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked)),
 				}),
 				expected: expectedValues{
 					*roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked)),
-					2,
+					[]int{pid, threadTID},
 				},
 			},
 			{
@@ -240,12 +246,12 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 				tree: generateProcessTree(&processNode{
 					ProcessName: "sh",
 					InHostIDs: types.ProcessIDs{
-						Pid:  threadPID,
-						Ppid: threadPPID,
+						Pid:  pid,
+						Ppid: ppid,
 					},
 					InContainerIDs: types.ProcessIDs{
-						Pid:  cPID,
-						Ppid: cPPID,
+						Pid:  cpid,
+						Ppid: cppid,
 					},
 					ExecutionBinary: types.BinaryInfo{
 						Path:  "/bin/sh",
@@ -256,31 +262,31 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 					StartTime:   shCtime,
 					ContainerID: TestContainerID,
 					ThreadsExits: map[int]timestamp{
-						threadPID: timestamp(0),
+						pid: timestamp(0),
 					},
 					IsAlive: true,
 					Status:  *roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked), uint32(types.Executed)),
 				}),
 				expected: expectedValues{
 					*roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked), uint32(types.Executed)),
-					2,
+					[]int{pid, threadTID},
 				},
 			},
 			{
 				testName: "Existing hollow parent process",
 				tree: generateProcessTree(&processNode{
 					InHostIDs: types.ProcessIDs{
-						Pid: threadPID,
+						Pid: pid,
 					},
 					InContainerIDs: types.ProcessIDs{
-						Pid: cPID,
+						Pid: cpid,
 					},
 					Status:       *roaring.BitmapOf(uint32(types.HollowParent)),
 					ThreadsExits: map[int]timestamp{},
 				}),
 				expected: expectedValues{
 					*roaring.BitmapOf(uint32(types.GeneralCreated)),
-					2,
+					[]int{pid, threadTID},
 				},
 			},
 			{
@@ -288,23 +294,23 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 				tree: generateProcessTree(&processNode{
 					ProcessName: "sh",
 					InHostIDs: types.ProcessIDs{
-						Pid:  threadPID,
-						Ppid: threadPPID,
+						Pid:  pid,
+						Ppid: ppid,
 					},
 					InContainerIDs: types.ProcessIDs{
-						Pid:  cPID,
-						Ppid: cPPID,
+						Pid:  cpid,
+						Ppid: cppid,
 					},
 					ContainerID: TestContainerID,
 					ThreadsExits: map[int]timestamp{
-						threadPID: timestamp(0),
+						pid: timestamp(0),
 					},
 					IsAlive: true,
 					Status:  *roaring.BitmapOf(uint32(types.GeneralCreated)),
 				}),
 				expected: expectedValues{
 					*roaring.BitmapOf(uint32(types.GeneralCreated)),
-					2,
+					[]int{pid, threadTID},
 				},
 			},
 			{
@@ -314,18 +320,22 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 				},
 				expected: expectedValues{
 					*roaring.BitmapOf(uint32(types.GeneralCreated)),
-					2,
+					[]int{pid, threadTID},
 				},
 			},
 		}
 		for _, testCase := range testCases {
 			t.Run(testCase.testName, func(t *testing.T) {
 				forkEvent := generateThreadForkEvent()
-				require.NoError(t, testCase.tree.ProcessEvent(forkEvent))
-				p, err := testCase.tree.GetProcessInfo(threadPID)
+				require.NoError(t, testCase.tree.processForkEvent(&forkEvent))
+				p, err := testCase.tree.GetProcessInfo(pid)
 				require.NoError(t, err)
 				assert.Equal(t, testCase.expected.status.ToArray(), p.Status.ToArray())
-				assert.Equal(t, testCase.expected.threadsCount, len(p.ThreadsExits))
+				assert.Equal(t, len(testCase.expected.livingThreads), len(p.ThreadsExits))
+				for _, livingTID := range testCase.expected.livingThreads {
+					assert.Contains(t, p.ThreadsExits, livingTID)
+					assert.Equal(t, timestamp(0), p.ThreadsExits[livingTID])
+				}
 				assert.Equal(t, forkEvent.ProcessName, p.ProcessName)
 				assert.Equal(t, forkEvent.HostProcessID, p.InHostIDs.Pid)
 				assert.Equal(t, forkEvent.HostParentProcessID, p.InHostIDs.Ppid)
@@ -348,11 +358,11 @@ func generateProcessTree(p *processNode) ProcessTree {
 func generateMainForkEvent() external.Event {
 	return external.Event{
 		Timestamp:           1639044471927303690,
-		ProcessID:           cPPID,
-		ThreadID:            cPPID,
+		ProcessID:           cppid,
+		ThreadID:            cppid,
 		ParentProcessID:     1,
-		HostProcessID:       threadPPID,
-		HostThreadID:        threadPPID,
+		HostProcessID:       ppid,
+		HostThreadID:        ppid,
 		HostParentProcessID: 22422,
 		UserID:              0,
 		MountNS:             4026532548,
@@ -366,29 +376,27 @@ func generateMainForkEvent() external.Event {
 		ReturnValue:         0,
 		StackAddresses:      nil,
 		Args: []external.Argument{
-			{ArgMeta: external.ArgMeta{Name: "parent_tid", Type: "int"}, Value: int32(threadPPID)},
-			{ArgMeta: external.ArgMeta{Name: "parent_ns_tid", Type: "int"}, Value: int32(cPPID)},
-			{ArgMeta: external.ArgMeta{Name: "parent_pid", Type: "int"}, Value: int32(threadPPID)},
-			{ArgMeta: external.ArgMeta{Name: "parent_ns_pid", Type: "int"}, Value: int32(cPPID)},
-			{ArgMeta: external.ArgMeta{Name: "child_tid", Type: "int"}, Value: int32(threadPID)},
-			{ArgMeta: external.ArgMeta{Name: "child_ns_tid", Type: "int"}, Value: int32(cPID)},
-			{ArgMeta: external.ArgMeta{Name: "child_pid", Type: "int"}, Value: int32(threadPID)},
-			{ArgMeta: external.ArgMeta{Name: "child_ns_pid", Type: "int"}, Value: int32(cPID)},
+			{ArgMeta: external.ArgMeta{Name: "parent_tid", Type: "int"}, Value: int32(ppid)},
+			{ArgMeta: external.ArgMeta{Name: "parent_ns_tid", Type: "int"}, Value: int32(cppid)},
+			{ArgMeta: external.ArgMeta{Name: "parent_pid", Type: "int"}, Value: int32(ppid)},
+			{ArgMeta: external.ArgMeta{Name: "parent_ns_pid", Type: "int"}, Value: int32(cppid)},
+			{ArgMeta: external.ArgMeta{Name: "child_tid", Type: "int"}, Value: int32(pid)},
+			{ArgMeta: external.ArgMeta{Name: "child_ns_tid", Type: "int"}, Value: int32(cpid)},
+			{ArgMeta: external.ArgMeta{Name: "child_pid", Type: "int"}, Value: int32(pid)},
+			{ArgMeta: external.ArgMeta{Name: "child_ns_pid", Type: "int"}, Value: int32(cpid)},
 		},
 	}
 }
 
 func generateThreadForkEvent() external.Event {
-	newTID := threadPID + 1
-	newCTID := cPID + 1
 	return external.Event{
 		Timestamp:           1639044471927303690,
-		ProcessID:           cPID,
-		ThreadID:            cPID,
-		ParentProcessID:     cPPID,
-		HostProcessID:       threadPID,
-		HostThreadID:        threadPID,
-		HostParentProcessID: threadPPID,
+		ProcessID:           cpid,
+		ThreadID:            cpid,
+		ParentProcessID:     cppid,
+		HostProcessID:       pid,
+		HostThreadID:        pid,
+		HostParentProcessID: ppid,
 		UserID:              0,
 		MountNS:             4026532548,
 		PIDNS:               4026532551,
@@ -401,14 +409,14 @@ func generateThreadForkEvent() external.Event {
 		ReturnValue:         0,
 		StackAddresses:      nil,
 		Args: []external.Argument{
-			{ArgMeta: external.ArgMeta{Name: "parent_tid", Type: "int"}, Value: int32(threadPID)},
-			{ArgMeta: external.ArgMeta{Name: "parent_ns_tid", Type: "int"}, Value: int32(cPID)},
-			{ArgMeta: external.ArgMeta{Name: "parent_pid", Type: "int"}, Value: int32(threadPID)},
-			{ArgMeta: external.ArgMeta{Name: "parent_ns_pid", Type: "int"}, Value: int32(cPID)},
-			{ArgMeta: external.ArgMeta{Name: "child_tid", Type: "int"}, Value: int32(newTID)},
-			{ArgMeta: external.ArgMeta{Name: "child_ns_tid", Type: "int"}, Value: int32(newCTID)},
-			{ArgMeta: external.ArgMeta{Name: "child_pid", Type: "int"}, Value: int32(threadPID)},
-			{ArgMeta: external.ArgMeta{Name: "child_ns_pid", Type: "int"}, Value: int32(cPID)},
+			{ArgMeta: external.ArgMeta{Name: "parent_tid", Type: "int"}, Value: int32(pid)},
+			{ArgMeta: external.ArgMeta{Name: "parent_ns_tid", Type: "int"}, Value: int32(cpid)},
+			{ArgMeta: external.ArgMeta{Name: "parent_pid", Type: "int"}, Value: int32(pid)},
+			{ArgMeta: external.ArgMeta{Name: "parent_ns_pid", Type: "int"}, Value: int32(cpid)},
+			{ArgMeta: external.ArgMeta{Name: "child_tid", Type: "int"}, Value: int32(threadTID)},
+			{ArgMeta: external.ArgMeta{Name: "child_ns_tid", Type: "int"}, Value: int32(threadCTID)},
+			{ArgMeta: external.ArgMeta{Name: "child_pid", Type: "int"}, Value: int32(pid)},
+			{ArgMeta: external.ArgMeta{Name: "child_ns_pid", Type: "int"}, Value: int32(cpid)},
 		},
 	}
 }

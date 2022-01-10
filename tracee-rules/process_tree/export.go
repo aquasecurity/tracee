@@ -11,6 +11,7 @@ var globalTree = ProcessTree{
 	processes: map[int]*processNode{},
 }
 
+// GetProcessInfo return the process information from the process tree relevant to the given time
 func GetProcessInfo(hostProcessID int, time int) (types.ProcessInfo, error) {
 	pn, err := globalTree.GetProcessInfo(hostProcessID)
 	if err != nil {
@@ -19,6 +20,9 @@ func GetProcessInfo(hostProcessID int, time int) (types.ProcessInfo, error) {
 	return pn.export(time), nil
 }
 
+// GetProcessLineage return list of processes, starting with give PID process upward, of the ancestors of the process
+// up to the last known ancestor or the container root.
+// The information of all of the processes is relevant to the given time
 func GetProcessLineage(hostProcessID int, time int) (types.ProcessLineage, error) {
 	pList, err := globalTree.GetProcessLineage(hostProcessID)
 	if err != nil {

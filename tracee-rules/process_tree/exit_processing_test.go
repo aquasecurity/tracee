@@ -89,11 +89,10 @@ func testLinearTreeExit(t *testing.T) {
 
 	for _, test := range straitTreeTests {
 		t.Run(test.name, func(t *testing.T) {
-			tree, err := buildOneLineTree(test.processes, exitIDs)
+			tree, err := buildLinearTree(test.processes, exitIDs)
 			require.NoError(t, err)
 
-			err = tree.processExitEvent(exitEvent)
-			require.NoError(t, err)
+			require.NoError(t, tree.processExitEvent(&exitEvent))
 			tree.emptyDeadProcessesCache()
 			// Check that all nodes removed as expected
 			eLivingNodes := 0
@@ -151,48 +150,14 @@ func testExitWithSiblings(t *testing.T) {
 			exitIndex:   2,
 		},
 	}
-
+	const ppid = 1
 	for _, test := range multiChildrenTests {
 		t.Run(test.name, func(t *testing.T) {
-			parentProcess := &processNode{
-				InHostIDs: types.ProcessIDs{
-					Pid:  1,
-					Ppid: 0,
-				},
-				ThreadsExits: map[int]timestamp{
-					1: timestamp(0),
-				},
-				ContainerID: exitEvent.ContainerID,
-				IsAlive:     true,
-			}
-			tree := ProcessTree{
-				processes: map[int]*processNode{
-					parentProcess.InHostIDs.Pid: parentProcess,
-				},
-			}
-
-			for i := 0; i < test.siblingsNum; i++ {
-				cp := &processNode{
-					InHostIDs: types.ProcessIDs{
-						Pid:  exitEvent.HostProcessID - test.exitIndex + i,
-						Ppid: 1,
-					},
-					ThreadsExits: map[int]timestamp{
-						exitEvent.HostThreadID - test.exitIndex + i: timestamp(0),
-					},
-					ContainerID:   exitEvent.ContainerID,
-					ParentProcess: parentProcess,
-					IsAlive:       true,
-				}
-				parentProcess.ChildProcesses = append(parentProcess.ChildProcesses, cp)
-				tree.processes[cp.InHostIDs.Pid] = cp
-			}
-
-			err := tree.processExitEvent(exitEvent)
-			require.NoError(t, err)
+			tree := buildWideBranchTree(test.siblingsNum, test.exitIndex, &exitEvent, ppid)
+			require.NoError(t, tree.processExitEvent(&exitEvent))
 			tree.emptyDeadProcessesCache()
 
-			pp, err := tree.GetProcessInfo(parentProcess.InHostIDs.Pid)
+			pp, err := tree.GetProcessInfo(ppid)
 			require.NoError(t, err)
 			assert.Equal(t, true, pp.IsAlive)
 			// Check that all nodes removed as expected
@@ -219,7 +184,7 @@ func countChildTreeNodes(p *processNode) int {
 	return 1 + c
 }
 
-func buildOneLineTree(tps []testProcess, lastProcessIDs types.ProcessIDs) (ProcessTree, error) {
+func buildLinearTree(tps []testProcess, lastProcessIDs types.ProcessIDs) (ProcessTree, error) {
 	tree := ProcessTree{
 		processes: map[int]*processNode{},
 	}
@@ -249,6 +214,43 @@ func buildOneLineTree(tps []testProcess, lastProcessIDs types.ProcessIDs) (Proce
 	}
 
 	return tree, nil
+}
+
+func buildWideBranchTree(siblingsNum int, exitIndex int, exitEvent *external.Event, ppid int) ProcessTree {
+	parentProcess := &processNode{
+		InHostIDs: types.ProcessIDs{
+			Pid:  ppid,
+			Ppid: 0,
+		},
+		ThreadsExits: map[int]timestamp{
+			ppid: timestamp(0),
+		},
+		ContainerID: exitEvent.ContainerID,
+		IsAlive:     true,
+	}
+	tree := ProcessTree{
+		processes: map[int]*processNode{
+			parentProcess.InHostIDs.Pid: parentProcess,
+		},
+	}
+
+	for i := 0; i < siblingsNum; i++ {
+		cp := &processNode{
+			InHostIDs: types.ProcessIDs{
+				Pid:  exitEvent.HostProcessID - exitIndex + i,
+				Ppid: ppid,
+			},
+			ThreadsExits: map[int]timestamp{
+				exitEvent.HostThreadID - exitIndex + i: timestamp(0),
+			},
+			ContainerID:   exitEvent.ContainerID,
+			ParentProcess: parentProcess,
+			IsAlive:       true,
+		}
+		parentProcess.ChildProcesses = append(parentProcess.ChildProcesses, cp)
+		tree.processes[cp.InHostIDs.Pid] = cp
+	}
+	return tree
 }
 
 func getExitEvent() external.Event {

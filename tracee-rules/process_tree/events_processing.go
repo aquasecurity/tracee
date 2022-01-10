@@ -14,20 +14,20 @@ func (tree *ProcessTree) ProcessEvent(event types.Event) error {
 	}
 	switch traceeEvent.EventName {
 	case "sched_process_fork":
-		return tree.processForkEvent(traceeEvent)
+		return tree.processForkEvent(&traceeEvent)
 	case "sched_process_exec":
-		return tree.processExecEvent(traceeEvent)
+		return tree.processExecEvent(&traceeEvent)
 	case "sched_process_exit":
-		return tree.processExitEvent(traceeEvent)
+		return tree.processExitEvent(&traceeEvent)
 	case "exit", "init_namespaces":
 		return nil
 	default:
-		return tree.processDefaultEvent(traceeEvent)
+		return tree.processDefaultEvent(&traceeEvent)
 	}
 }
 
-// processDefaultEvent tries to expand the process tree in case of lost events or missing start information
-func (tree *ProcessTree) processDefaultEvent(event external.Event) error {
+// processDefaultEvent tries to expand the process tree in case of lost events or missing general information
+func (tree *ProcessTree) processDefaultEvent(event *external.Event) error {
 	process, err := tree.GetProcessInfo(event.HostProcessID)
 	if err != nil {
 		process = tree.addGeneralEventProcess(event)

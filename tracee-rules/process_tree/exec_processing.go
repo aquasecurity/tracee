@@ -7,7 +7,7 @@ import (
 )
 
 // processExecEvent fills process information as any other general event, but add execution information.
-func (tree *ProcessTree) processExecEvent(event external.Event) error {
+func (tree *ProcessTree) processExecEvent(event *external.Event) error {
 	err := tree.processDefaultEvent(event)
 	if err != nil {
 		return err
@@ -29,7 +29,7 @@ func (tree *ProcessTree) processExecEvent(event external.Event) error {
 
 const typeErrorMessage = "invalid type of argument '%s' - %T"
 
-func parseExecArguments(event external.Event) (types.BinaryInfo, []string, error) {
+func parseExecArguments(event *external.Event) (types.BinaryInfo, []string, error) {
 	var binaryInfo types.BinaryInfo
 	var cmd []string
 	execArgv, err := getArgumentByName(event, "argv")

@@ -13,6 +13,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 	execCmd := []string{"ls"}
 	execBinaryPath := "/bin/busybox"
 	execBinaryCtime := 1625759227634052514
+	execBinaryHash := "abfd081fd7fad08d4743443061a12ebfbd25e3c5e446441795d472c389444527"
 	execEvent := external.Event{
 		Timestamp:           1639044471927556667,
 		ProcessID:           0,
@@ -41,7 +42,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 			{ArgMeta: external.ArgMeta{Name: "inode", Type: "unsigned long"}, Value: interface{}(576807)},
 			{ArgMeta: external.ArgMeta{Name: "invoked_from_kernel", Type: "int"}, Value: interface{}(0)},
 			{ArgMeta: external.ArgMeta{Name: "ctime", Type: "unsigned long"}, Value: interface{}(uint64(execBinaryCtime))},
-			{ArgMeta: external.ArgMeta{Name: "sha256", Type: "const char*"}, Value: interface{}("abfd081fd7fad08d4743443061a12ebfbd25e3c5e446441795d472c389444527")},
+			{ArgMeta: external.ArgMeta{Name: "sha256", Type: "const char*"}, Value: interface{}(execBinaryHash)},
 		},
 	}
 	testCases := []struct {
@@ -68,6 +69,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 				ExecutionBinary: types.BinaryInfo{
 					Path:  execBinaryPath,
 					Ctime: uint(execBinaryCtime),
+					Hash:  execBinaryHash,
 				},
 				ContainerID: TestContainerID,
 				StartTime:   0,
@@ -110,6 +112,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 				ExecutionBinary: types.BinaryInfo{
 					Path:  execBinaryPath,
 					Ctime: uint(execBinaryCtime),
+					Hash:  execBinaryHash,
 				},
 				ContainerID: TestContainerID,
 				StartTime:   100000000,
@@ -158,6 +161,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 				ExecutionBinary: types.BinaryInfo{
 					Path:  execBinaryPath,
 					Ctime: uint(execBinaryCtime),
+					Hash:  execBinaryHash,
 				},
 				StartTime:   100000000,
 				Status:      *roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Forked), uint32(types.Executed)),
@@ -200,6 +204,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 				ExecutionBinary: types.BinaryInfo{
 					Path:  execBinaryPath,
 					Ctime: uint(execBinaryCtime),
+					Hash:  execBinaryHash,
 				},
 				Status:      *roaring.BitmapOf(uint32(types.GeneralCreated), uint32(types.Executed)),
 				ProcessName: execEvent.ProcessName,
@@ -208,7 +213,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 	}
 	for _, testCase := range testCases {
 		t.Run(testCase.testName, func(t *testing.T) {
-			require.NoError(t, testCase.initialTree.processExecEvent(execEvent))
+			require.NoError(t, testCase.initialTree.processExecEvent(&execEvent))
 			execProcess, err := testCase.initialTree.GetProcessInfo(execEvent.HostThreadID)
 			require.NoError(t, err)
 			assert.Equal(t, testCase.expectedProcess.Cmd, execProcess.Cmd)
@@ -222,6 +227,7 @@ func TestProcessTree_ProcessExec(t *testing.T) {
 			assert.Equal(t, testCase.expectedProcess.Status, execProcess.Status)
 			assert.Equal(t, testCase.expectedProcess.ExecutionBinary.Path, execProcess.ExecutionBinary.Path)
 			assert.Equal(t, testCase.expectedProcess.ExecutionBinary.Ctime, execProcess.ExecutionBinary.Ctime)
+			assert.Equal(t, testCase.expectedProcess.ExecutionBinary.Hash, execProcess.ExecutionBinary.Hash)
 		})
 	}
 }
