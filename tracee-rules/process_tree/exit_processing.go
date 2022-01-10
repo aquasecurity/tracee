@@ -10,11 +10,11 @@ import (
 // Notice that there is a danger of memory leak if there are lost events of sched_process_exit (but is limited to the
 // possible number of PIDs - 32768)
 func (tree *ProcessTree) processExitEvent(event external.Event) error {
-	process, err := tree.GetProcessInfo(event.HostProcessID)
+	err := tree.processDefaultEvent(event)
 	if err != nil {
-		process = tree.addGeneralEventProcess(event)
-		tree.generateParentProcess(process)
+		return err
 	}
+	process, _ := tree.GetProcessInfo(event.HostProcessID)
 	process.ThreadsExits[event.HostThreadID] = timestamp(event.Timestamp)
 
 	argument, err := getArgumentByName(event, "process_group_exit")
