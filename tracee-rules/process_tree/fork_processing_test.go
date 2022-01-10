@@ -280,7 +280,7 @@ func TestProcessTree_ProcessFork(t *testing.T) {
 				}),
 				expected: expectedValues{
 					*roaring.BitmapOf(uint32(types.GeneralCreated)),
-					1,
+					2,
 				},
 			},
 			{

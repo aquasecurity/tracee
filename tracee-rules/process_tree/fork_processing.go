@@ -15,13 +15,10 @@ type threadIDs struct {
 // created. Because the fork at start is only a copy of the father, the important information regarding of the
 // process information and binary will be collected upon execve.
 func (tree *ProcessTree) processForkEvent(event external.Event) error {
-	process, npErr := tree.GetProcessInfo(event.HostProcessID)
-	if npErr != nil {
-		// In this case, calling thread is another thread of the process and we have normal general information on it
-		process = tree.addGeneralEventProcess(event)
-		tree.generateParentProcess(process)
+	err := tree.processDefaultEvent(event)
+	if err != nil {
+		return err
 	}
-	process.addThreadID(event.HostThreadID)
 
 	newProcessInHostIDs, err := parseForkInHostIDs(event)
 	if err != nil {
@@ -31,7 +28,7 @@ func (tree *ProcessTree) processForkEvent(event external.Event) error {
 	if newProcessInHostIDs.Pid == newProcessInHostIDs.Tid {
 		return tree.processMainThreadFork(event, newProcessInHostIDs)
 	} else {
-		return tree.processThreadFork(event, newProcessInHostIDs, process)
+		return tree.processThreadFork(event, newProcessInHostIDs)
 	}
 }
 
@@ -70,25 +67,11 @@ func (tree *ProcessTree) processMainThreadFork(event external.Event, inHostIDs t
 	return nil
 }
 
-// processThreadFork fill process information if lacking, and add to thread count.
-func (tree *ProcessTree) processThreadFork(event external.Event, newInHostIDs threadIDs, process *processNode) error {
-	if process.Status.Contains(uint32(types.HollowParent)) {
-		fillHollowProcessInfo(
-			process,
-			threadIDs{
-				ProcessIDs: types.ProcessIDs{
-					Pid:  event.HostProcessID,
-					Ppid: event.HostParentProcessID,
-				},
-				Tid: newInHostIDs.Tid,
-			},
-			types.ProcessIDs{
-				Pid:  event.ProcessID,
-				Ppid: event.ParentProcessID,
-			},
-			event.ProcessName,
-			event.ContainerID,
-		)
+// processThreadFork add new invoked thread to process threads.
+func (tree *ProcessTree) processThreadFork(event external.Event, newInHostIDs threadIDs) error {
+	process, err := tree.GetProcessInfo(event.HostProcessID)
+	if err != nil {
+		return err
 	}
 	process.addThreadID(newInHostIDs.Tid)
 	return nil
