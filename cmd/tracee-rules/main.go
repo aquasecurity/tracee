@@ -128,10 +128,6 @@ func main() {
 			return nil
 		},
 		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  "config",
-				Usage: "path to a json config file. the file should have equivalent fields to the existing cli flags.",
-			},
 			&cli.StringSliceFlag{
 				Name:  "rules",
 				Usage: "select which rules to load. Specify multiple rules by repeating this flag. Use --list for rules to select from",
