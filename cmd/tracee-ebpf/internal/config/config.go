@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"os"
 )
@@ -39,12 +40,12 @@ func Load(fileName string) (config CliConfig, err error) {
 	return config, err
 }
 
-func DefaultConfigLocation() string {
+func DefaultConfigLocation() (string, error) {
 	envLocation := os.Getenv("TRACEE_EBPF_CONFIG")
 	if envLocation != "" {
-		return envLocation
+		return envLocation, nil
 	}
-	return "./tracee-ebpf-config.json"
+	return "", errors.New("configuration location not found in TRACEE_EBPF_CONFIG")
 }
 
 func (c *CliConfig) DefaultInstallPath() string {

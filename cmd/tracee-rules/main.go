@@ -21,17 +21,27 @@ import (
 )
 
 func main() {
-	config, err := config.Load(config.DefaultConfigLocation())
+	configLoaded := false
+	cliCfg := config.CliConfig{}
+
+	configLocation, err := config.DefaultConfigLocation()
 
 	if err != nil {
-		fmt.Printf("No configuration file found in environment variable or default location, flags will be set from cli.\n")
+		fmt.Printf("%s. Arguments will be set from cli flags\n", err.Error())
+	} else {
+		cliCfg, err = config.Load(configLocation)
+		if err != nil {
+			fmt.Printf("Failed to parse configuration file, arguments will be set from cli flags\n")
+		} else {
+			configLoaded = true
+		}
 	}
 
 	app := &cli.App{
 		Name:  "tracee-rules",
 		Usage: "A rule engine for Runtime Security",
 		Action: func(c *cli.Context) error {
-			if c.NumFlags() == 0 {
+			if c.NumFlags() == 0 && !configLoaded {
 				cli.ShowAppHelp(c)
 				return errors.New("no flags specified")
 			}
@@ -125,17 +135,17 @@ func main() {
 			&cli.StringSliceFlag{
 				Name:  "rules",
 				Usage: "select which rules to load. Specify multiple rules by repeating this flag. Use --list for rules to select from",
-				Value: cli.NewStringSlice(config.Rules.RuleIds...),
+				Value: cli.NewStringSlice(cliCfg.Rules.RuleIds...),
 			},
 			&cli.StringFlag{
 				Name:  "rules-dir",
 				Usage: "directory where to search for rules in OPA (.rego) or Go plugin (.so) formats",
-				Value: config.Rules.InputDirectory,
+				Value: cliCfg.Rules.InputDirectory,
 			},
 			&cli.BoolFlag{
 				Name:  "rego-partial-eval",
 				Usage: "enable partial evaluation of rego rules",
-				Value: config.RegoConfig.PartialEval,
+				Value: cliCfg.RegoConfig.PartialEval,
 			},
 			&cli.BoolFlag{
 				Name:  "list",
@@ -145,52 +155,52 @@ func main() {
 				Name:     "webhook",
 				Usage:    "HTTP endpoint to call for every match",
 				Required: false,
-				Value:    config.Webhook.Url,
+				Value:    cliCfg.Webhook.Url,
 			},
 			&cli.StringFlag{
 				Name:  "webhook-template",
 				Usage: "path to a gotemplate for formatting webhook output",
-				Value: config.Webhook.Template,
+				Value: cliCfg.Webhook.Template,
 			},
 			&cli.StringFlag{
 				Name:  "webhook-content-type",
 				Usage: "content type of the template in use. Recommended if using --webhook-template",
-				Value: config.Webhook.ContentType,
+				Value: cliCfg.Webhook.ContentType,
 			},
 			&cli.StringSliceFlag{
 				Name:  "input-tracee",
 				Usage: "configure tracee-ebpf as input source. see '--input-tracee help' for more info",
-				Value: cli.NewStringSlice(config.GetTraceeInputSlice()...),
+				Value: cli.NewStringSlice(cliCfg.GetTraceeInputSlice()...),
 			},
 			&cli.StringFlag{
 				Name:  "output-template",
 				Usage: "configure output format via templates. Usage: --output-template=path/to/my.tmpl",
-				Value: config.Output.Template,
+				Value: cliCfg.Output.Template,
 			},
 			&cli.BoolFlag{
 				Name:  "pprof",
 				Usage: "enables pprof endpoints",
-				Value: config.Pprof.Enable,
+				Value: cliCfg.Pprof.Enable,
 			},
 			&cli.StringFlag{
 				Name:  "pprof-addr",
 				Usage: "listening address of the pprof endpoints server",
-				Value: config.GetDefaultPprofAddress(),
+				Value: cliCfg.GetDefaultPprofAddress(),
 			},
 			&cli.BoolFlag{
 				Name:  "rego-enable-parsed-events",
 				Usage: "enables pre parsing of input events to rego prior to evaluation",
-				Value: config.RegoConfig.EnableParsedEvent,
+				Value: cliCfg.RegoConfig.EnableParsedEvent,
 			},
 			&cli.BoolFlag{
 				Name:  "rego-aio",
 				Usage: "compile rego signatures altogether as an aggregate policy. By default each signature is compiled separately.",
-				Value: config.RegoConfig.Aio,
+				Value: cliCfg.RegoConfig.Aio,
 			},
 			&cli.StringFlag{
 				Name:  "rego-runtime-target",
 				Usage: "select which runtime target to use for evaluation of rego rules: rego, wasm",
-				Value: config.GetDefaultRegoRuntime(),
+				Value: cliCfg.GetDefaultRegoRuntime(),
 			},
 			&cli.BoolFlag{
 				Name:  "list-events",

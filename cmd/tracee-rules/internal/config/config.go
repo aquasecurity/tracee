@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -56,12 +57,12 @@ func Load(fileName string) (config CliConfig, err error) {
 	return config, err
 }
 
-func DefaultConfigLocation() string {
+func DefaultConfigLocation() (string, error) {
 	envLocation := os.Getenv("TRACEE_RULES_CONFIG")
 	if envLocation != "" {
-		return envLocation
+		return envLocation, nil
 	}
-	return "./tracee-rules-config.json"
+	return "", errors.New("configuration location not found in TRACEE_RULES_CONFIG")
 }
 
 func (c *CliConfig) GetTraceeInputSlice() []string {

@@ -28,9 +28,17 @@ var traceeInstallPath string
 var version string
 
 func main() {
-	config, err := config.Load(config.DefaultConfigLocation())
+	cliCfg := config.CliConfig{}
+
+	configLocation, err := config.DefaultConfigLocation()
+
 	if err != nil {
-		fmt.Printf("No configuration file found in environment variable or default location, flags will be set from cli.\n")
+		fmt.Printf("%s. Arguments will be set from cli flags\n", err.Error())
+	} else {
+		cliCfg, err = config.Load(configLocation)
+		if err != nil {
+			fmt.Printf("Failed to parse configuration file, arguments will be set from cli flags\n")
+		}
 	}
 
 	app := &cli.App{
@@ -64,7 +72,6 @@ func main() {
 				return err
 			}
 			cfg.Capture = &capture
-
 			if checkCommandIsHelp(c.StringSlice("trace")) {
 				fmt.Print(flags.FilterHelp())
 				return nil
@@ -225,41 +232,41 @@ func main() {
 			&cli.StringSliceFlag{
 				Name:    "trace",
 				Aliases: []string{"t"},
-				Value:   cli.NewStringSlice(config.Trace...),
+				Value:   cli.NewStringSlice(cliCfg.Trace...),
 				Usage:   "select events to trace by defining trace expressions. run '--trace help' for more info.",
 			},
 			&cli.StringSliceFlag{
 				Name:    "capture",
 				Aliases: []string{"c"},
-				Value:   cli.NewStringSlice(config.Capture...),
+				Value:   cli.NewStringSlice(cliCfg.Capture...),
 				Usage:   "capture artifacts that were written, executed or found to be suspicious. run '--capture help' for more info.",
 			},
 			&cli.StringSliceFlag{
 				Name:    "output",
 				Aliases: []string{"o"},
-				Value:   cli.NewStringSlice(append([]string{"format:table"}, config.Output...)...),
+				Value:   cli.NewStringSlice(append([]string{"format:table"}, cliCfg.Output...)...),
 				Usage:   "Control how and where output is printed. run '--output help' for more info.",
 			},
 			&cli.IntFlag{
 				Name:    "perf-buffer-size",
 				Aliases: []string{"b"},
-				Value:   config.DefaultEventSubmitBufferSize(),
+				Value:   cliCfg.DefaultEventSubmitBufferSize(),
 				Usage:   "size, in pages, of the internal perf ring buffer used to submit events from the kernel",
 			},
 			&cli.IntFlag{
 				Name:  "blob-perf-buffer-size",
-				Value: config.DefaultBlobBufferSize(),
+				Value: cliCfg.DefaultBlobBufferSize(),
 				Usage: "size, in pages, of the internal perf ring buffer used to send blobs from the kernel",
 			},
 			&cli.BoolFlag{
 				Name:        "debug",
-				Value:       config.VerboseDebug,
+				Value:       cliCfg.VerboseDebug,
 				Usage:       "write verbose debug messages to standard output and retain intermediate artifacts",
 				Destination: &debug,
 			},
 			&cli.StringFlag{
 				Name:        "install-path",
-				Value:       config.DefaultInstallPath(),
+				Value:       cliCfg.DefaultInstallPath(),
 				Usage:       "path where tracee will install or lookup it's resources",
 				Destination: &traceeInstallPath,
 			},
