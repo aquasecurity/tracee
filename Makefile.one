@@ -17,6 +17,10 @@ MAKEFLAGS += --no-print-directory
 # tools
 #
 
+CMD_TR ?= tr
+CMD_CUT ?= cut
+CMD_AWK ?= awk
+CMD_SED ?= sed
 CMD_GIT ?= git
 CMD_CLANG ?= clang
 CMD_LLC ?= llc
@@ -65,29 +69,33 @@ LIB_ZLIB ?= zlib
 #
 
 CLANG_VERSION = $(shell $(CMD_CLANG) --version 2>/dev/null | \
-	head -1 | tr -d '[:alpha:]' | tr -d '[:space:]' | cut -d'.' -f1)
+	head -1 | $(CMD_TR) -d '[:alpha:]' | $(CMD_TR) -d '[:space:]' | $(CMD_CUT) -d'.' -f1)
 
 .checkver_$(CMD_CLANG): \
 	| .check_$(CMD_CLANG)
 #
 	@if [ ${CLANG_VERSION} -lt 12 ]; then
-		echo -n "make sure you're using clang 12 or higher, "
+		echo -n "you MUST use clang 12 or newer, "
 		echo "your current clang version is ${CLANG_VERSION}"
 		exit 1
 	fi
 	touch $@ # avoid target rebuilds over and over due to inexistent file
 
-GO_VERSION = $(shell $(CMD_GO) version 2>/dev/null | awk '{print $$3}' | sed 's:go::g' | cut -d. -f1,2)
+GO_VERSION = $(shell $(CMD_GO) version 2>/dev/null | $(CMD_AWK) '{print $$3}' | $(CMD_SED) 's:go::g' | $(CMD_CUT) -d. -f1,2)
+GO_VERSION_MAJ = $(shell echo $(GO_VERSION) | $(CMD_CUT) -d'.' -f1)
+GO_VERSION_MIN = $(shell echo $(GO_VERSION) | $(CMD_CUT) -d'.' -f2)
 
 .checkver_$(CMD_GO): \
 	| .check_$(CMD_GO)
 #
-	@if [ "${GO_VERSION}" != "1.16" ] && [ "${GO_VERSION}" != "1.17" ]; then
-		echo -n "you MUST use golang 1.16 or 1.17, "
-		echo "your current golang version is ${GO_VERSION}"
-		exit 1
+	@if [ ${GO_VERSION_MAJ} -eq 1 ]; then
+		if [ ${GO_VERSION_MIN} -lt 16 ]; then
+			echo -n "you MUST use golang 1.16 or newer, "
+			echo "your current golang version is ${GO_VERSION}"
+			exit 1
+		fi
 	fi
-	touch $@ # avoid target rebuilds over and over due to inexistent file
+	touch $@
 
 #
 # version
