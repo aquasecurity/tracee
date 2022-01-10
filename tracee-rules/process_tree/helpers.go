@@ -55,8 +55,8 @@ func (tree *ProcessTree) generateParentProcess(process *processNode) *processNod
 func fillHollowParentProcessGeneralEvent(p *processNode, event external.Event) {
 	fillHollowProcessInfo(
 		p,
-		threadIDs{ProcessIDs: types.ProcessIDs{Pid: event.HostProcessID, Ppid: event.HostProcessID}, Tid: event.HostThreadID},
-		types.ProcessIDs{Pid: event.ProcessID, Ppid: event.ProcessID},
+		threadIDs{ProcessIDs: types.ProcessIDs{Pid: event.HostProcessID, Ppid: event.HostParentProcessID}, Tid: event.HostThreadID},
+		types.ProcessIDs{Pid: event.ProcessID, Ppid: event.ParentProcessID},
 		event.ProcessName,
 		event.ContainerID,
 	)
