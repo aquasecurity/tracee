@@ -76,7 +76,10 @@ func (p *processNode) export(time int) types.ProcessInfo {
 	var childrenIDs []int
 	var threadIDs []int
 	for _, child := range p.ChildProcesses {
-		childrenIDs = append(childrenIDs, child.InHostIDs.Pid)
+		if child.IsAlive == true ||
+			time < int(child.ExitTime) {
+			childrenIDs = append(childrenIDs, child.InHostIDs.Pid)
+		}
 	}
 	for tid, threadExitTime := range p.ThreadsExits {
 		if threadExitTime == 0 ||
