@@ -114,8 +114,14 @@ ubuntu-prepare: \
 # tracee-make's shell
 #
 
+DOCKER_RUN_ENV =
+
 ifeq ($(STATIC), 1)
-    DOCKER_RUN_ENV = -e STATIC=1
+    DOCKER_RUN_ENV += -e STATIC=1
+endif
+
+ifeq ($(BTFHUB), 1)
+    DOCKER_RUN_ENV += -e BTFHUB=1
 endif
 
 DOCKER_RUN_ARGS = run --rm --pid=host --privileged \
