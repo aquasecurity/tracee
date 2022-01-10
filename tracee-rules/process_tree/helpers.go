@@ -107,5 +107,7 @@ func (p *processNode) addThreadID(tid int) {
 	_, exist := p.ThreadsExits[tid]
 	if !exist {
 		p.ThreadsExits[tid] = timestamp(0)
+	} else if p.IsAlive == false {
+		p.ThreadsExits[tid] = p.ExitTime
 	}
 }
