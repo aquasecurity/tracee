@@ -165,24 +165,34 @@ func (t *Tracee) processEvents(ctx gocontext.Context, in <-chan *external.Event)
 				continue
 			}
 
-			// Only emit events requested by the user
-			if !t.eventsToTrace[int32(event.EventID)] {
-				continue
-			}
+			// Derive event before parsing its arguments
+			derivatives := t.deriveEvent(*event)
 
-			if t.config.Output.ParseArguments {
-				err = t.parseArgs(event)
-				if err != nil {
-					t.handleError(err)
-					continue
+			// Only emit events requested by the user
+			if t.eventsToTrace[int32(event.EventID)] {
+				if t.config.Output.ParseArguments {
+					err = t.parseArgs(event)
+					if err != nil {
+						t.handleError(err)
+						continue
+					}
+				}
+
+				select {
+				case t.config.ChanEvents <- *event:
+					t.stats.eventCounter.Increment()
+				case <-ctx.Done():
+					return
 				}
 			}
 
-			select {
-			case t.config.ChanEvents <- *event:
-				t.stats.eventCounter.Increment()
-			case <-ctx.Done():
-				return
+			for _, derivative := range derivatives {
+				select {
+				case t.config.ChanEvents <- derivative:
+					t.stats.eventCounter.Increment()
+				case <-ctx.Done():
+					return
+				}
 			}
 		}
 	}()

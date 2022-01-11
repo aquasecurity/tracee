@@ -81,6 +81,9 @@ const (
 // Events originated from user-space
 const (
 	InitNamespacesEventID int32 = iota + 2000
+	ContainerCreateEventID
+	ContainerRemoveEventID
+	MaxUserSpaceEventID
 )
 
 const (
@@ -6120,6 +6123,33 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{},
 		Params: []external.ArgMeta{
 			{Type: "char*", Name: "hidden_process"},
+		},
+	},
+	ContainerCreateEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "container_create",
+		Probes:  []probe{},
+		Dependencies: []dependency{
+			{eventID: CgroupMkdirEventID},
+		},
+		Sets: []string{},
+		Params: []external.ArgMeta{
+			{Type: "const char*", Name: "runtime"},
+			{Type: "const char*", Name: "container_id"},
+			{Type: "unsigned long", Name: "ctime"},
+		},
+	},
+	ContainerRemoveEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "container_remove",
+		Probes:  []probe{},
+		Dependencies: []dependency{
+			{eventID: CgroupRmdirEventID},
+		},
+		Sets: []string{},
+		Params: []external.ArgMeta{
+			{Type: "const char*", Name: "runtime"},
+			{Type: "const char*", Name: "container_id"},
 		},
 	},
 }
