@@ -2496,6 +2496,9 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     if (!init_event_data(&data, ctx))
         return 0;
 
+    // evaluate should_trace before removing this pid from the maps
+    bool traced = should_trace(&data.context);
+
     // Remove this pid from all maps
     bpf_map_delete_elem(&traced_pids_map, &data.context.host_tid);
     bpf_map_delete_elem(&new_pids_map, &data.context.host_tid);
@@ -2514,7 +2517,7 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
         }
     }
 
-    if (!should_trace(&data.context))
+    if (!traced)
         return 0;
 
     long exit_code = get_task_exit_code(data.task);
