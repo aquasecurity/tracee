@@ -38,7 +38,7 @@ tracee_ebpf_pid=$!
 # wait for tracee-ebpf to: load / exit / timeout
 tracee_ebpf_readiness=/tmp/tracee/out/tracee.pid
 rm -f $tracee_ebpf_readiness
-timeout=15
+timeout=60
 i=0
 while [ ! -f $tracee_ebpf_readiness ] && $(ls /proc/$tracee_ebpf_pid >/dev/null 2>&1) && [ $i -le $timeout ]
 do
