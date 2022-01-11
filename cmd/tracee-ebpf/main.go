@@ -82,6 +82,19 @@ func main() {
 			}
 			cfg.Output = &output
 
+			// kernel lockdown check
+
+			lockdown, err := helpers.Lockdown()
+			if err != nil {
+				return err
+			}
+			if lockdown == helpers.CONFIDENTIALITY {
+				return fmt.Errorf("kernel lockdown is set to 'confidentiality', can't load eBPF programs.")
+			}
+			if debug {
+				fmt.Fprintf(os.Stdout, "OSInfo: Security Lockdown is '%v'\n", lockdown)
+			}
+
 			// environment capabilities
 			selfCap, err := capabilities.Self()
 			if err != nil {
