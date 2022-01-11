@@ -34,7 +34,13 @@ const (
 	u16T
 	credT
 	intArr2T
-	argsArrT
+)
+
+// These types don't match the ones defined in the ebpf code since they are not being used by syscalls arguments.
+// They have their own set of value to avoid collision in the future.
+const (
+	argsArrT argType = iota + 0x80
+	boolT
 )
 
 func readArgFromBuff(dataBuff io.Reader, params []external.ArgMeta) (external.ArgMeta, interface{}, error) {
@@ -72,6 +78,10 @@ func readArgFromBuff(dataBuff io.Reader, params []external.ArgMeta) (external.Ar
 		res = data
 	case ulongT, offT, sizeT:
 		var data uint64
+		err = binary.Read(dataBuff, binary.LittleEndian, &data)
+		res = data
+	case boolT:
+		var data bool
 		err = binary.Read(dataBuff, binary.LittleEndian, &data)
 		res = data
 	case pointerT:
@@ -162,6 +172,8 @@ func getParamType(paramType string) argType {
 		return longT
 	case "unsigned long", "u64":
 		return ulongT
+	case "bool":
+		return boolT
 	case "off_t":
 		return offT
 	case "mode_t":

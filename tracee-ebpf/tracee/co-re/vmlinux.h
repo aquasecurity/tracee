@@ -260,6 +260,15 @@ struct task_struct {
 	struct files_struct *      files;
 	struct nsproxy *           nsproxy;
 	struct css_set *           cgroups;
+	struct signal_struct *     signal;
+};
+
+typedef struct {
+    int counter;
+} atomic_t;
+
+struct signal_struct {
+    atomic_t live;
 };
 
 struct vm_area_struct {
