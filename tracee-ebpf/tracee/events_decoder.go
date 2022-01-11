@@ -36,7 +36,7 @@ const (
 	intArr2T
 )
 
-// This types are not matching the defined ones in the ebpf code because they are not types used by syscalls.
+// These types don't match the ones defined in the ebpf code since they are not being used by syscalls arguments.
 // They have their own set of value to avoid collision in the future.
 const (
 	argsArrT argType = iota + 0x80
