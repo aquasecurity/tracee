@@ -195,9 +195,11 @@ func (t *Tracee) processEvent(event *external.Event) error {
 					if ok && hashInfoObj.LastCtime == castedSourceFileCtime {
 						currentHash = hashInfoObj.Hash
 					} else {
-						currentHash = getFileHash(sourceFilePath)
-						hashInfoObj = fileExecInfo{castedSourceFileCtime, currentHash}
-						t.fileHashes.Add(capturedFileID, hashInfoObj)
+						currentHash, err = computeFileHash(sourceFilePath)
+						if err == nil {
+							hashInfoObj = fileExecInfo{castedSourceFileCtime, currentHash}
+							t.fileHashes.Add(capturedFileID, hashInfoObj)
+						}
 					}
 
 					event.Args = append(event.Args, external.Argument{
