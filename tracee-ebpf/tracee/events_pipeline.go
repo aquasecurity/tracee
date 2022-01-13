@@ -94,16 +94,6 @@ func (t *Tracee) decodeEvents(done <-chan struct{}) (<-chan *external.Event, <-c
 				continue
 			}
 
-			containerId := t.containers.GetCgroupInfo(ctx.CgroupID).ContainerId
-			if (t.config.Filter.ContFilter.Enabled || t.config.Filter.NewContFilter.Enabled) && containerId == "" {
-				// Don't trace false container positives -
-				// a container filter is set by the user, but this event wasn't originated in a container.
-				// Although kernel filters shouldn't submit such events, we do this check to be on the safe side.
-				// For example, it might be that a new cgroup was created, and not by a container runtime,
-				// while we still didn't processed the cgroup_mkdir event and removed the cgroupid from the bpf container map.
-				continue
-			}
-
 			// Add stack trace if needed
 			var StackAddresses []uint64
 			if t.config.Output.StackAddresses {
@@ -134,7 +124,7 @@ func (t *Tracee) decodeEvents(done <-chan struct{}) (<-chan *external.Event, <-c
 				PIDNS:               int(ctx.PidID),
 				ProcessName:         string(bytes.TrimRight(ctx.Comm[:], "\x00")),
 				HostName:            string(bytes.TrimRight(ctx.UtsName[:], "\x00")),
-				ContainerID:         containerId,
+				ContainerID:         t.containers.GetCgroupInfo(ctx.CgroupID).ContainerId,
 				EventID:             int(ctx.EventID),
 				EventName:           eventDefinition.Name,
 				ArgsNum:             int(ctx.Argnum),
@@ -162,6 +152,16 @@ func (t *Tracee) processEvents(done <-chan struct{}, in <-chan *external.Event) 
 			err := t.processEvent(event)
 			if err != nil {
 				t.handleError(err)
+				continue
+			}
+
+			if (t.config.Filter.ContFilter.Enabled || t.config.Filter.NewContFilter.Enabled) && event.ContainerID == "" {
+				// Don't trace false container positives -
+				// a container filter is set by the user, but this event wasn't originated in a container.
+				// Although kernel filters shouldn't submit such events, we do this check to be on the safe side.
+				// For example, it might be that a new cgroup was created, and not by a container runtime,
+				// while we still didn't processed the cgroup_mkdir event and removed the cgroupid from the bpf container map.
+				// Note: this check should be placed after processEvent() so cgroup_mkdir event is processed
 				continue
 			}
 
