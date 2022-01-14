@@ -17,6 +17,7 @@ import (
 	"github.com/aquasecurity/libbpfgo/helpers"
 	embed "github.com/aquasecurity/tracee"
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/flags"
+	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
 	"github.com/syndtr/gocapability/capability"
@@ -87,12 +88,11 @@ func main() {
 			cfg.Output = &output
 
 			// environment capabilities
-
-			selfCap, err := getSelfCapabilities()
+			selfCap, err := capabilities.Self()
 			if err != nil {
 				return err
 			}
-			if err = checkRequiredCapabilities(selfCap); err != nil {
+			if err = capabilities.CheckRequired(selfCap, []capability.Cap{capability.CAP_IPC_LOCK, capability.CAP_SYS_ADMIN}); err != nil {
 				return err
 			}
 
@@ -641,7 +641,7 @@ func unpackBTFHub(outFilePath string, OSInfo *helpers.OSInfo) error {
 // makeBPFObject builds the ebpf object from source code into the provided path
 func makeBPFObject(outFile string) error {
 	// drop capabilities for the compilation process
-	cap, err := getSelfCapabilities()
+	caps, err := capabilities.Self()
 	if err != nil {
 		return err
 	}
@@ -654,7 +654,7 @@ func makeBPFObject(outFile string) error {
 	if err != err {
 		return err
 	}
-	defer cap.Apply(capability.BOUNDS)
+	defer caps.Apply(capability.BOUNDS)
 	dir, err := ioutil.TempDir("", "tracee-make")
 	if err != nil {
 		return err
