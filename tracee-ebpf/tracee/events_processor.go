@@ -20,7 +20,7 @@ func (t *Tracee) processLostEvents() {
 }
 
 // shouldProcessEvent decides whether or not to drop an event before further processing it
-func (t *Tracee) shouldProcessEvent(ctx *context, args map[string]interface{}) bool {
+func (t *Tracee) shouldProcessEvent(ctx *context, args []external.Argument) bool {
 	if t.config.Filter.RetFilter.Enabled {
 		if filter, ok := t.config.Filter.RetFilter.Filters[ctx.EventID]; ok {
 			retVal := ctx.Retval
@@ -50,7 +50,14 @@ func (t *Tracee) shouldProcessEvent(ctx *context, args map[string]interface{}) b
 
 	if t.config.Filter.ArgFilter.Enabled {
 		for argName, filter := range t.config.Filter.ArgFilter.Filters[ctx.EventID] {
-			argVal, ok := args[argName]
+			var argVal interface{}
+			ok := false
+			for _, arg := range args {
+				if arg.Name == argName {
+					argVal = arg.Value
+					ok = true
+				}
+			}
 			if !ok {
 				continue
 			}
@@ -77,31 +84,31 @@ func (t *Tracee) shouldProcessEvent(ctx *context, args map[string]interface{}) b
 	return true
 }
 
-func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMetas *[]external.ArgMeta) error {
-	switch ctx.EventID {
+func (t *Tracee) processEvent(event *external.Event) error {
+	switch int32(event.EventID) {
 
-	//capture written files
 	case VfsWriteEventID, VfsWritevEventID:
+		//capture written files
 		if t.config.Capture.FileWrite {
-			filePath, ok := args["pathname"].(string)
-			if !ok {
-				return fmt.Errorf("error parsing vfs_write args")
+			filePath, err := getEventArgStringVal(event, "pathname")
+			if err != nil {
+				return fmt.Errorf("error parsing vfs_write args: %v", err)
 			}
 			// path should be absolute, except for e.g memfd_create files
 			if filePath == "" || filePath[0] != '/' {
 				return nil
 			}
-			dev, ok := args["dev"].(uint32)
-			if !ok {
-				return fmt.Errorf("error parsing vfs_write args")
+			dev, err := getEventArgUint32Val(event, "dev")
+			if err != nil {
+				return fmt.Errorf("error parsing vfs_write args: %v", err)
 			}
-			inode, ok := args["inode"].(uint64)
-			if !ok {
-				return fmt.Errorf("error parsing vfs_write args")
+			inode, err := getEventArgUint64Val(event, "inode")
+			if err != nil {
+				return fmt.Errorf("error parsing vfs_write args: %v", err)
 			}
 
 			// stop processing if write was already indexed
-			containerId := t.containers.GetCgroupInfo(ctx.CgroupID).ContainerId
+			containerId := event.ContainerID
 			if containerId == "" {
 				containerId = "host"
 			}
@@ -116,38 +123,36 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 		}
 
 	case SchedProcessExecEventID:
-
 		//cache this pid by it's mnt ns
-		if ctx.Pid == 1 {
-			t.pidsInMntns.ForceAddBucketItem(ctx.MntID, ctx.HostPid)
+		if event.ProcessID == 1 {
+			t.pidsInMntns.ForceAddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
 		} else {
-			t.pidsInMntns.AddBucketItem(ctx.MntID, ctx.HostPid)
+			t.pidsInMntns.AddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
 		}
 
 		//capture executed files
 		if t.config.Capture.Exec || t.config.Output.ExecHash {
-			filePath, ok := args["pathname"].(string)
-			if !ok {
-				return fmt.Errorf("error parsing sched_process_exec args")
+			filePath, err := getEventArgStringVal(event, "pathname")
+			if err != nil {
+				return fmt.Errorf("error parsing sched_process_exec args: %v", err)
 			}
 			// path should be absolute, except for e.g memfd_create files
 			if filePath == "" || filePath[0] != '/' {
 				return nil
 			}
 
-			var err error
 			// try to access the root fs via another process in the same mount namespace (since the current process might have already died)
-			pids := t.pidsInMntns.GetBucket(ctx.MntID)
+			pids := t.pidsInMntns.GetBucket(uint32(event.MountNS))
 			for _, pid := range pids { // will break on success
 				err = nil
 				sourceFilePath := fmt.Sprintf("/proc/%s/root%s", strconv.Itoa(int(pid)), filePath)
-				sourceFileCtime, ok := args["ctime"].(uint64)
-				if !ok {
-					return fmt.Errorf("error parsing sched_process_exec args: ctime")
+				sourceFileCtime, err := getEventArgUint64Val(event, "ctime")
+				if err != nil {
+					return fmt.Errorf("error parsing sched_process_exec args: %v", err)
 				}
 				castedSourceFileCtime := int64(sourceFileCtime)
 
-				containerId := t.containers.GetCgroupInfo(ctx.CgroupID).ContainerId
+				containerId := event.ContainerID
 				if containerId == "" {
 					containerId = "host"
 				}
@@ -157,11 +162,11 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 					if err := os.MkdirAll(destinationDirPath, 0755); err != nil {
 						return err
 					}
-					destinationFilePath := filepath.Join(destinationDirPath, fmt.Sprintf("exec.%d.%s", ctx.Ts, filepath.Base(filePath)))
+					destinationFilePath := filepath.Join(destinationDirPath, fmt.Sprintf("exec.%d.%s", event.Timestamp, filepath.Base(filePath)))
 
 					// create an in-memory profile
 					if t.config.Capture.Profile {
-						t.updateProfile(fmt.Sprintf("%s:%d", filepath.Join(destinationDirPath, fmt.Sprintf("exec.%s", filepath.Base(filePath))), castedSourceFileCtime), ctx.Ts)
+						t.updateProfile(fmt.Sprintf("%s:%d", filepath.Join(destinationDirPath, fmt.Sprintf("exec.%s", filepath.Base(filePath))), castedSourceFileCtime), uint64(event.Timestamp))
 					}
 
 					//don't capture same file twice unless it was modified
@@ -195,10 +200,11 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 						t.fileHashes.Add(capturedFileID, hashInfoObj)
 					}
 
-					hashMeta := external.ArgMeta{"sha256", "const char*"}
-					*argMetas = append(*argMetas, hashMeta)
-					ctx.Argnum += 1
-					args["sha256"] = currentHash
+					event.Args = append(event.Args, external.Argument{
+						ArgMeta: external.ArgMeta{Name: "sha256", Type: "const char*"},
+						Value:   currentHash,
+					})
+					event.ArgsNum += 1
 				}
 
 				break
@@ -207,13 +213,13 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 		}
 
 	case CgroupMkdirEventID:
-		cgroupId, ok := args["cgroup_id"].(uint64)
-		if !ok {
-			return fmt.Errorf("error parsing cgroup_mkdir args")
+		cgroupId, err := getEventArgUint64Val(event, "cgroup_id")
+		if err != nil {
+			return fmt.Errorf("error parsing cgroup_mkdir args: %v", err)
 		}
-		path, ok := args["cgroup_path"].(string)
-		if !ok {
-			return fmt.Errorf("error parsing cgroup_mkdir args")
+		path, err := getEventArgStringVal(event, "cgroup_path")
+		if err != nil {
+			return fmt.Errorf("error parsing cgroup_mkdir args: %v", err)
 		}
 		info, err := t.containers.CgroupUpdate(cgroupId, path)
 		if err == nil && info.ContainerId == "" {
@@ -222,14 +228,53 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 		}
 
 	case CgroupRmdirEventID:
-		cgroupId, ok := args["cgroup_id"].(uint64)
-		if !ok {
-			return fmt.Errorf("error parsing cgroup_rmdir args")
+		cgroupId, err := getEventArgUint64Val(event, "cgroup_id")
+		if err != nil {
+			return fmt.Errorf("error parsing cgroup_rmdir args: %v", err)
 		}
 		t.containers.CgroupRemove(cgroupId)
 	}
 
 	return nil
+}
+
+func getEventArgStringVal(event *external.Event, argName string) (string, error) {
+	for _, arg := range event.Args {
+		if arg.Name == argName {
+			val, ok := arg.Value.(string)
+			if !ok {
+				return "", fmt.Errorf("argument %s is not of type string", argName)
+			}
+			return val, nil
+		}
+	}
+	return "", fmt.Errorf("argument %s not found", argName)
+}
+
+func getEventArgUint64Val(event *external.Event, argName string) (uint64, error) {
+	for _, arg := range event.Args {
+		if arg.Name == argName {
+			val, ok := arg.Value.(uint64)
+			if !ok {
+				return 0, fmt.Errorf("argument %s is not of type uint64", argName)
+			}
+			return val, nil
+		}
+	}
+	return 0, fmt.Errorf("argument %s not found", argName)
+}
+
+func getEventArgUint32Val(event *external.Event, argName string) (uint32, error) {
+	for _, arg := range event.Args {
+		if arg.Name == argName {
+			val, ok := arg.Value.(uint32)
+			if !ok {
+				return 0, fmt.Errorf("argument %s is not of type uint32", argName)
+			}
+			return val, nil
+		}
+	}
+	return 0, fmt.Errorf("argument %s not found", argName)
 }
 
 func (t *Tracee) updateProfile(sourceFilePath string, executionTs uint64) {

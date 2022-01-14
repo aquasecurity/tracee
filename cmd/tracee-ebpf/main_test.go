@@ -6,6 +6,9 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/syndtr/gocapability/capability"
+	"github.com/stretchr/testify/require"
+	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/flags"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -1028,7 +1031,7 @@ func TestPrepareFilter(t *testing.T) {
 	}
 	for _, testcase := range testCases {
 		t.Run(testcase.testName, func(t *testing.T) {
-			filter, err := prepareFilter(testcase.filters)
+			filter, err := flags.PrepareFilter(testcase.filters)
 			assert.Equal(t, testcase.expectedFilter.UIDFilter, filter.UIDFilter)
 			assert.Equal(t, testcase.expectedFilter.PIDFilter, filter.PIDFilter)
 			assert.Equal(t, testcase.expectedFilter.NewPidFilter, filter.NewPidFilter)
@@ -1184,7 +1187,7 @@ func TestPrepareCapture(t *testing.T) {
 		}
 		for _, tc := range testCases {
 			t.Run(tc.testName, func(t *testing.T) {
-				capture, err := prepareCapture(tc.captureSlice)
+				capture, err := flags.PrepareCapture(tc.captureSlice)
 				if tc.expectedError == nil {
 					require.NoError(t, err)
 					assert.Equal(t, tc.expectedCapture, capture, tc.testName)
@@ -1198,7 +1201,7 @@ func TestPrepareCapture(t *testing.T) {
 
 	t.Run("clear dir", func(t *testing.T) {
 		d, _ := ioutil.TempDir("", "TestPrepareCapture-*")
-		capture, err := prepareCapture([]string{fmt.Sprintf("dir:%s", d), "clear-dir"})
+		capture, err := flags.PrepareCapture([]string{fmt.Sprintf("dir:%s", d), "clear-dir"})
 		require.NoError(t, err)
 		assert.Equal(t, tracee.CaptureConfig{OutputPath: fmt.Sprintf("%s/out", d)}, capture)
 		require.NoDirExists(t, d+"out")
@@ -1289,7 +1292,7 @@ func TestPrepareOutput(t *testing.T) {
 	}
 	for _, testcase := range testCases {
 		t.Run(testcase.testName, func(t *testing.T) {
-			output, _, err := prepareOutput(testcase.outputSlice)
+			output, _, err := flags.PrepareOutput(testcase.outputSlice)
 			if err != nil {
 				assert.Equal(t, testcase.expectedError, err)
 			} else {

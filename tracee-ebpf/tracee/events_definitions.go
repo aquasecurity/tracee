@@ -5722,6 +5722,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets:           []string{"default", "proc", "proc_life"},
 		Params: []external.ArgMeta{
 			{Type: "long", Name: "exit_code"},
+			{Type: "bool", Name: "process_group_exit"},
 		},
 	},
 	SchedSwitchEventID: {

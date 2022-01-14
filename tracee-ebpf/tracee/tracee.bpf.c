@@ -17,6 +17,7 @@ Copyright (C) Aqua Security inc.
 #include <linux/binfmts.h>
 #include <linux/cred.h>
 #include <linux/sched.h>
+#include <linux/signal.h>
 #include <linux/fs.h>
 #include <linux/mm_types.h>
 #include <linux/mount.h>
@@ -2495,29 +2496,34 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     if (!init_event_data(&data, ctx))
         return 0;
 
+    // evaluate should_trace before removing this pid from the maps
+    bool traced = should_trace(&data.context);
+
     // Remove this pid from all maps
     bpf_map_delete_elem(&traced_pids_map, &data.context.host_tid);
     bpf_map_delete_elem(&new_pids_map, &data.context.host_tid);
     bpf_map_delete_elem(&syscall_data_map, &data.context.host_tid);
 
     int proc_tree_filter_set = get_config(CONFIG_PROC_TREE_FILTER);
-    if (proc_tree_filter_set) {
-        // Check number of threads in thread group to determine if this is last one
-        struct task_struct *task = (struct task_struct *)bpf_get_current_task();
-        struct task_struct *group_leader = READ_KERN(task->group_leader);
-        struct list_head thread_group_head = READ_KERN(group_leader->thread_group);
-        struct list_head *next = READ_KERN(thread_group_head.next);
-        if (GET_FIELD_ADDR(group_leader->thread_group) == next) {
+
+    bool group_dead = false;
+    struct task_struct *task = data.task;
+    struct signal_struct *signal = READ_KERN(task->signal);
+    atomic_t live = READ_KERN(signal->live);
+    if (live.counter == 0) {
+        group_dead = true;
+        if (proc_tree_filter_set) {
             bpf_map_delete_elem(&process_tree_map, &data.context.host_pid);
         }
     }
 
-    if (!should_trace(&data.context))
+    if (!traced)
         return 0;
 
     long exit_code = get_task_exit_code(data.task);
 
     save_to_submit_buf(&data, (void*)&exit_code, sizeof(long), 0);
+    save_to_submit_buf(&data, (void*)&group_dead, sizeof(bool), 1);
 
     return events_perf_submit(&data, SCHED_PROCESS_EXIT, 0);
 }

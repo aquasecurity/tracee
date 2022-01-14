@@ -927,7 +927,7 @@ func (t *Tracee) Run() error {
 	t.fileWrPerfMap.Start()
 	t.netPerfMap.Start()
 	go t.processLostEvents()
-	go t.processEvents(t.config.ChanDone)
+	go t.handleEvents(t.config.ChanDone)
 	go t.processFileWrites()
 	go t.processNetEvents()
 	<-sig

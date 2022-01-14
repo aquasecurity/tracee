@@ -1,18 +1,32 @@
 .PHONY: all
 all:
 
-# tools
+#
+# make
+#
 
 MAKEFLAGS += --no-print-directory
 
+#
 # tools
+#
 
 CMD_DOCKER ?= docker
 
-check_%:
-	@command -v $* >/dev/null || (echo "missing required tool $*" ; exit 1)
+.ONESHELL:
+.check_%:
+#
+	@command -v $* >/dev/null
+	if [ $$? -ne 0 ]; then
+		echo "missing required tool $*"
+		exit 1
+	else
+		touch $@ # avoid target rebuilds due to inexistent file
+	fi
 
+#
 # usage
+#
 
 .PHONY: help
 help:
@@ -45,16 +59,22 @@ help:
 	@echo "    $ STATIC=1 make -f builder/Makefile.docker alpine-make ARG=\"tracee-ebpf\""
 	@echo ""
 
+#
 # requirements
+#
 
-.PHONY: check_tree
-check_tree:
-	@if [ ! -d ./builder ]; then \
-		echo "you must be in the root directory"; \
-		exit 1; \
+.PHONY: .check_tree
+.ONESHELL:
+.check_tree:
+#
+	@if [ ! -d ./builder ]; then
+		echo "you must be in the root directory"
+		exit 1
 	fi
 
+#
 # create tracee-make
+#
 
 UID = $(shell id -u)
 GID = $(shell id -g)
@@ -64,7 +84,10 @@ ALPINE_MAKE_CONTNAME = alpine-tracee-make
 ALPINE_MAKE_DOCKERFILE = $(abspath $(shell find -name Dockerfile.alpine-tracee-make))
 
 .PHONY: alpine-prepare
-alpine-prepare: check_$(CMD_DOCKER) | check_tree
+alpine-prepare: \
+	| .check_$(CMD_DOCKER) \
+	.check_tree
+#
 	$(CMD_DOCKER) build \
 		-f $(ALPINE_MAKE_DOCKERFILE) \
 		-t $(ALPINE_MAKE_CONTNAME):latest \
@@ -76,7 +99,10 @@ UBUNTU_MAKE_CONTNAME = ubuntu-tracee-make
 UBUNTU_MAKE_DOCKERFILE = $(abspath $(shell find -name Dockerfile.ubuntu-tracee-make))
 
 .PHONY: ubuntu-prepare
-ubuntu-prepare: check_$(CMD_DOCKER) | check_tree
+ubuntu-prepare: \
+	| .check_$(CMD_DOCKER) \
+	.check_tree
+#
 	$(CMD_DOCKER) build \
 		-f $(UBUNTU_MAKE_DOCKERFILE) \
 		-t $(UBUNTU_MAKE_CONTNAME):latest \
@@ -84,7 +110,9 @@ ubuntu-prepare: check_$(CMD_DOCKER) | check_tree
 		--build-arg gid=$(GID) \
 		.
 
+#
 # tracee-make's shell
+#
 
 ifeq ($(STATIC), 1)
     DOCKER_RUN_ENV = -e STATIC=1
@@ -100,21 +128,32 @@ DOCKER_RUN_ARGS = run --rm --pid=host --privileged \
 		$(DOCKER_RUN_ENV)
 
 .PHONY: alpine-shell
-alpine-shell: check_$(CMD_DOCKER) | check_tree
+alpine-shell: \
+	| .check_$(CMD_DOCKER) \
+	.check_tree
+#
 	$(CMD_DOCKER) $(DOCKER_RUN_ARGS) \
 		-it $(ALPINE_MAKE_CONTNAME) \
 		/bin/bash
 
 .PHONY: ubuntu-shell
-ubuntu-shell: check_$(CMD_DOCKER) | check_tree
+ubuntu-shell: \
+	| .check_$(CMD_DOCKER) \
+	.check_tree
+#
 	$(CMD_DOCKER) $(DOCKER_RUN_ARGS) \
 		-it $(UBUNTU_MAKE_CONTNAME) \
 		/bin/bash
 
+#
 # tracee-make replacing make
+#
 
 .PHONY: alpine-make
-alpine-make: check_$(CMD_DOCKER) | check_tree
+alpine-make: \
+	| .check_$(CMD_DOCKER) \
+	.check_tree
+#
 ifneq ($(ARG),)
 	$(CMD_DOCKER) $(DOCKER_RUN_ARGS) \
 		-it $(ALPINE_MAKE_CONTNAME) \
@@ -122,12 +161,19 @@ ifneq ($(ARG),)
 endif
 
 .PHONY: ubuntu-make
-ubuntu-make: check_$(CMD_DOCKER) | check_tree
+ubuntu-make: \
+	| .check_$(CMD_DOCKER) \
+	.check_tree
+#
 ifneq ($(ARG),)
 	$(CMD_DOCKER) $(DOCKER_RUN_ARGS) \
 		-it $(UBUNTU_MAKE_CONTNAME) \
 		$(MAKE) -f Makefile.one $(ARG)
 endif
+
+#
+# clean
+#
 
 .PHONY: clean
 clean:
