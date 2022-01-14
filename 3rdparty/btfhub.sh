@@ -77,6 +77,7 @@ cd ${BTFHUB_DIR}
 # remove BTFs for:
 # - centos7 & v4.15 kernels: unsupported eBPF features
 # - fedora 29 & 30 (from 5.3 and on) and newer: already have BTF embedded
+# - amzn2: older than 4.19
 #
 
 rsync -avz \
@@ -91,6 +92,7 @@ rsync -avz \
     --exclude="fedora/33*"              \
     --exclude="fedora/34*"              \
     --exclude="4.15*"                   \
+    --exclude="amzn*"			\
     ./archive/
 
 # cleanup unneeded architectures
