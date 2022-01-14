@@ -10,7 +10,7 @@ Vagrant.configure("2") do |config|
   end
 
   config.vm.provision "shell", inline: <<-SHELL
-    GO_VERSION="1.16"
+    GO_VERSION="1.17"
     OPA_VERSION="v0.35.0"
 
     apt-get update
