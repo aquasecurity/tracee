@@ -206,7 +206,7 @@ func listEvents(w io.Writer, sigs []types.Signature) {
 	}
 
 	var events []string
-	for k, _ := range m {
+	for k := range m {
 		events = append(events, k)
 	}
 

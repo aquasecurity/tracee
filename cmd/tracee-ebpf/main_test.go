@@ -6,8 +6,6 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/syndtr/gocapability/capability"
-	"github.com/stretchr/testify/require"
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/flags"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
 	"github.com/stretchr/testify/assert"
