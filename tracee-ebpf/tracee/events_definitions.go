@@ -6100,7 +6100,9 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Probes: []probe{
 			{event: "filldir64", attach: kprobe, fn: "trace_filldir64"},
 		},
-		Sets:   []string{},
-		Params: []external.ArgMeta{},
+		Sets: []string{},
+		Params: []external.ArgMeta{
+			{Type: "char*", Name: "process_hidden"},
+		},
 	},
 }
