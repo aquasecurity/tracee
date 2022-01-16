@@ -223,7 +223,9 @@ func (t *Tracee) processEvent(event *external.Event) error {
 		}
 		info, err := t.containers.CgroupMkdir(cgroupId, path)
 		if err == nil && info.ContainerId == "" {
-			// If not a new container (no regex match) - remove from the bpf container_map
+			// If cgroupId is from a regular cgroup directory, and not the
+			// container base directory (from known runtimes), it should be
+			// removed from the "containers_map".
 			containers.RemoveFromBpfMap(t.bpfModule, cgroupId, "containers_map")
 		}
 
