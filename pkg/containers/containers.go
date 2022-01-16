@@ -16,7 +16,7 @@ import (
 	"github.com/aquasecurity/libbpfgo"
 )
 
-// Containers contain information about running containers in the host.
+// Containers contains information about running containers in the host.
 type Containers struct {
 	cgroupV1 bool
 	cgroupMP string
@@ -25,6 +25,7 @@ type Containers struct {
 	mtx      sync.RWMutex // protecting both cgroups and deleted fields
 }
 
+// CgroupInfo represents a cgroup dir (might describe a container cgroup dir).
 type CgroupInfo struct {
 	Path        string
 	ContainerId string
@@ -53,11 +54,8 @@ func (c *Containers) IsCgroupV1() bool {
 	return c.cgroupV1
 }
 
-// Populate will populate all Containers information by reading mounted proc
-// and cgroups filesystems.
+// Populate populates Containers struct by reading mounted proc and cgroups fs.
 func (c *Containers) Populate() error {
-	// do all the hard work
-
 	err := c.procMountsCgroups()
 	if err != nil {
 		return err
@@ -66,10 +64,8 @@ func (c *Containers) Populate() error {
 	return c.populate()
 }
 
-// procMountsCgroups finds cgroups v1 and v2 mountpoints for the procfs walks.
+// procMountsCgroups finds cgroups v1 and v2 mountpoints.
 func (c *Containers) procMountsCgroups() error {
-	// find cgroups v1 and v2 mountpoints for procfs walks
-
 	mountsFile := "/proc/mounts"
 	file, err := os.Open(mountsFile)
 	if err != nil {
@@ -94,50 +90,59 @@ func (c *Containers) procMountsCgroups() error {
 	return nil
 }
 
-// populate walks through cgroups (v1 & v2) filesystems and
-// finds directories based on known container runtimes patterns.
-// it then extracts containers information and saves it by their uuid
+// populate walks the cgroup fs informing CgroupUpdate() about existing dirs.
 func (c *Containers) populate() error {
+	if c.cgroupMP == "" {
+		return fmt.Errorf("could not determine cgroup mount point")
+	}
+
 	fn := func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return nil
+		}
 		if !d.IsDir() {
 			return nil
 		}
 
-		if err != nil {
-			_, _ = fmt.Fprintln(os.Stderr, err)
-			return nil
-		}
-
-		// The lower 32 bits of the cgroup id are the inode number of the matching cgroupfs entry
+		// cgroup id == container cgroupfs directory inode (lower 32 bits)
 		var stat syscall.Stat_t
 		if err := syscall.Stat(path, &stat); err != nil {
 			return nil
 		}
 
-		_, err = c.CgroupUpdate(stat.Ino, path, time.Unix(stat.Ctim.Sec, stat.Ctim.Nsec))
-		return err
-	}
+		inodeNumber := stat.Ino
+		statusChange := time.Unix(stat.Ctim.Sec, stat.Ctim.Nsec)
+		_, err = c.CgroupUpdate(inodeNumber, path, statusChange)
 
-	if c.cgroupMP == "" {
-		return fmt.Errorf("could not determine cgroup mount point")
+		return err
 	}
 
 	return filepath.WalkDir(c.cgroupMP, fn)
 }
 
-// CgroupUpdate checks if path belongs to a known container runtime and
-// updates cgroupId with a matching container id, extracted from path
+// CgroupUpdate checks if given path belongs to a known container runtime,
+// saving container information in Containers CgroupInfo map.
+// NOTE: ALL given cgroup dir paths are stored in CgroupInfo map.
 func (c *Containers) CgroupUpdate(cgroupId uint64, path string, ctime time.Time) (CgroupInfo, error) {
-	info := CgroupInfo{Path: path, Ctime: ctime}
-	info.ContainerId, info.Runtime = getContainerIdFromCgroup(path)
+	containerId, runtime := getContainerIdFromCgroup(path)
+
+	info := CgroupInfo{
+		Path:        path,
+		ContainerId: containerId,
+		Runtime:     runtime,
+		Ctime:       ctime,
+	}
 
 	c.mtx.Lock()
 	c.cgroups[uint32(cgroupId)] = info
 	c.mtx.Unlock()
+
 	return info, nil
 }
 
-// getContainerIdFromCgroup extracts container id and container runtime from path
+// getContainerIdFromCgroup extracts container id and its runtime from path.
+// It returns (containerId, runtime string).
 func getContainerIdFromCgroup(cgroupPath string) (string, string) {
 	prevPathComp := ""
 	for _, pc := range strings.Split(cgroupPath, "/") {
@@ -166,25 +171,33 @@ func getContainerIdFromCgroup(cgroupPath string) (string, string) {
 
 		if matched, _ := regexp.MatchString(`^[A-Fa-f0-9]{64}$`, id); matched {
 			if runtime == "unknown" && prevPathComp == "docker" {
-				// non-systemd docker in the following format:
-				// /docker/01adbaf26db7fac62f8b7ec5b116b2e60f4abbf230e29122e667996c6b5c04d4/
+				// non-systemd docker with format: .../docker/01adbf...f26db7f/
+				// (found at nested containers)
 				runtime = "docker"
 			}
-			// return first match as we want to get container info with respect to host
+
+			// return first match: closest to root dir path component
+			// (to have container id of the outer container)
 			return id, runtime
 		}
+
 		prevPathComp = pc
 	}
 
+	// cgroup dirs unrelated to containers provides empty (containerId, runtime)
 	return "", ""
 }
 
+// CgroupRemove removes cgroupInfo of deleted cgroup dir from Containers struct.
+// NOTE: Expiration logic of 5 seconds to avoid race conditions (if cgroup dir
+// event arrives too fast and its cgroupInfo data is still needed).
 func (c *Containers) CgroupRemove(cgroupId uint64) {
 	now := time.Now()
-	// prune containers that have been removed more than 5 seconds ago
 	var deleted []uint64
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
+
+	// process previously deleted cgroupInfo data (deleted cgroup dirs)
 	for _, id := range c.deleted {
 		info := c.cgroups[uint32(id)]
 		if now.After(info.expiresAt) {
@@ -198,39 +211,46 @@ func (c *Containers) CgroupRemove(cgroupId uint64) {
 	info := c.cgroups[uint32(cgroupId)]
 	info.expiresAt = now.Add(5 * time.Second)
 	c.cgroups[uint32(cgroupId)] = info
-	// keep track of removed containers for a short period
 	c.deleted = append(c.deleted, cgroupId)
 }
 
+// CgroupMkdir adds cgroupInfo of a created cgroup dir to Containers struct.
 func (c *Containers) CgroupMkdir(cgroupId uint64, subPath string) (CgroupInfo, error) {
+	// Find container cgroup dir path to get directory stats
 	curTime := time.Now()
-	// first try to find this new cgroup in cgroup fs
 	path, err := getCgroupPath(c.cgroupMP, cgroupId, subPath)
 	if err == nil {
-		// cgroup entry found in cgroupfs
 		var stat syscall.Stat_t
 		if err := syscall.Stat(path, &stat); err == nil {
+			// Add cgroupInfo to Containers struct w/ found path (and its last modification time)
 			return c.CgroupUpdate(cgroupId, path, time.Unix(stat.Ctim.Sec, stat.Ctim.Nsec))
 		}
 	}
 
-	// if no entry found, container may have already exited
-	// update map with existing data (ctime becomes an estimation only)
+	// No entry found: container may have already exited already.
+	// Add cgroupInfo to Containers struct with existing data.
+	// In this case, ctime is just an estimation (current time).
 	return c.CgroupUpdate(cgroupId, subPath, curTime)
 }
 
+// getCgroupPath walks the cgroup fs and provides the cgroup directory path of
+// given cgroupId and subPath (related to cgroup fs root dir). If subPath is
+// empty, then all directories from cgroup fs will be searched for the given
+// cgroupId.
 func getCgroupPath(rootDir string, cgroupId uint64, subPath string) (string, error) {
 	entries, err := os.ReadDir(rootDir)
 	if err != nil {
 		return "", err
 	}
+
 	for _, entry := range entries {
 		if !entry.IsDir() {
 			continue
 		}
+
 		entryPath := filepath.Join(rootDir, entry.Name())
 		if strings.HasSuffix(entryPath, subPath) {
-			// The lower 32 bits of the cgroup id are the inode number of the matching cgroupfs entry
+			// Lower 32 bits of the cgroup id == inode number of matching cgroupfs entry
 			var stat syscall.Stat_t
 			if err := syscall.Stat(entryPath, &stat); err == nil {
 				// Check if this cgroup path belongs to cgroupId
@@ -239,12 +259,14 @@ func getCgroupPath(rootDir string, cgroupId uint64, subPath string) (string, err
 				}
 			}
 		}
-		// No match found - continue recursively
+
+		// No match at this dir level: continue recursively
 		path, err := getCgroupPath(entryPath, cgroupId, subPath)
 		if err == nil {
 			return path, nil
 		}
 	}
+
 	return "", fs.ErrNotExist
 }
 
@@ -261,13 +283,19 @@ func (c *Containers) GetContainers() []string {
 	return conts
 }
 
+// GetcgroupInfo returns the Containers struct cgroupInfo data of a given cgroupId.
 func (c *Containers) GetCgroupInfo(cgroupId uint64) CgroupInfo {
 	if !c.CgroupExists(cgroupId) {
-		// Handle false container negatives (we should have identified this container id, but we didn't)
-		// This situation can happen as a race condition when updating the cgroup map.
-		// In that case, we can try to look for it in the cgroupfs and update the map if found.
-		if path, err := getCgroupPath(c.cgroupMP, cgroupId, ""); err == nil {
-			// cgroup entry found in cgroupfs
+		// There should be a cgroupInfo for the given cgroupId but there isn't.
+		// Tracee might be processing an event for an already created container
+		// before the CgroupMkdirEventID logic was executed, for example.
+
+		// Get the path for given cgroupId from cgroupfs and update its
+		// cgroupInfo in the Containers struct. An empty subPath will make
+		// getCgroupPath() to walk all cgroupfs directories until it finds the
+		// directory of given cgroupId.
+		path, err := getCgroupPath(c.cgroupMP, cgroupId, "")
+		if err == nil {
 			var stat syscall.Stat_t
 			if err = syscall.Stat(path, &stat); err == nil {
 				info, err := c.CgroupUpdate(cgroupId, path, time.Unix(stat.Ctim.Sec, stat.Ctim.Nsec))
@@ -277,12 +305,15 @@ func (c *Containers) GetCgroupInfo(cgroupId uint64) CgroupInfo {
 			}
 		}
 	}
+
 	c.mtx.RLock()
 	cgroupInfo := c.cgroups[uint32(cgroupId)]
 	c.mtx.RUnlock()
+
 	return cgroupInfo
 }
 
+// CgroupExists checks if there is a cgroupInfo data of a given cgroupId.
 func (c *Containers) CgroupExists(cgroupId uint64) bool {
 	c.mtx.RLock()
 	_, ok := c.cgroups[uint32(cgroupId)]
