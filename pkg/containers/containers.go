@@ -172,7 +172,6 @@ func getContainerIdFromCgroup(cgroupPath string) (string, string) {
 		if matched, _ := regexp.MatchString(`^[A-Fa-f0-9]{64}$`, id); matched {
 			if runtime == "unknown" && prevPathComp == "docker" {
 				// non-systemd docker with format: .../docker/01adbf...f26db7f/
-				// (found at nested containers)
 				runtime = "docker"
 			}
 
@@ -227,7 +226,7 @@ func (c *Containers) CgroupMkdir(cgroupId uint64, subPath string) (CgroupInfo, e
 		}
 	}
 
-	// No entry found: container may have already exited already.
+	// No entry found: container may have already exited.
 	// Add cgroupInfo to Containers struct with existing data.
 	// In this case, ctime is just an estimation (current time).
 	return c.CgroupUpdate(cgroupId, subPath, curTime)
@@ -283,7 +282,7 @@ func (c *Containers) GetContainers() []string {
 	return conts
 }
 
-// GetcgroupInfo returns the Containers struct cgroupInfo data of a given cgroupId.
+// GetCgroupInfo returns the Containers struct cgroupInfo data of a given cgroupId.
 func (c *Containers) GetCgroupInfo(cgroupId uint64) CgroupInfo {
 	if !c.CgroupExists(cgroupId) {
 		// There should be a cgroupInfo for the given cgroupId but there isn't.
