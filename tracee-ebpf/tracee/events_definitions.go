@@ -24,11 +24,16 @@ type probe struct {
 	fn     string
 }
 
+type dependency struct {
+	eventID int32
+}
+
 // EventDefinition is a struct describing an event configuration
 type EventDefinition struct {
 	ID32Bit        int32
 	Name           string
 	Probes         []probe
+	Dependencies   []dependency
 	EssentialEvent bool
 	Sets           []string
 	Params         []external.ArgMeta
@@ -5842,6 +5847,10 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit: sys32undefined,
 		Name:    "magic_write",
 		Probes:  []probe{}, Sets: []string{},
+		Dependencies: []dependency{
+			{eventID: VfsWriteEventID},
+			{eventID: VfsWritevEventID},
+		},
 		Params: []external.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "bytes", Name: "bytes"},
@@ -6090,7 +6099,12 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit: sys32undefined,
 		Name:    "socket_dup",
 		Probes:  []probe{},
-		Sets:    []string{},
+		Dependencies: []dependency{
+			{eventID: DupEventID},
+			{eventID: Dup2EventID},
+			{eventID: Dup3EventID},
+		},
+		Sets: []string{},
 		Params: []external.ArgMeta{
 			{Type: "int", Name: "oldfd"},
 			{Type: "int", Name: "newfd"},
