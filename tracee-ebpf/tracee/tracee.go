@@ -270,17 +270,11 @@ func New(cfg Config) (*Tracee, error) {
 	for _, e := range t.config.Filter.EventsToTrace {
 		// Map value is true iff events requested by the user
 		t.eventsToTrace[e] = true
-	}
 
-	if t.eventsToTrace[MagicWriteEventID] {
-		setEssential(VfsWriteEventID)
-		setEssential(VfsWritevEventID)
-	}
-
-	if t.eventsToTrace[SocketDupEventID] {
-		setEssential(DupEventID)
-		setEssential(Dup2EventID)
-		setEssential(Dup3EventID)
+		// Some events depend on other events - mark those essential
+		for _, dependency := range EventsDefinitions[e].Dependencies {
+			setEssential(dependency.eventID)
+		}
 	}
 
 	// Compile final list of events to trace including essential events
