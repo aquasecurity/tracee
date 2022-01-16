@@ -6102,7 +6102,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		},
 		Sets: []string{},
 		Params: []external.ArgMeta{
-			{Type: "char*", Name: "process_hidden"},
+			{Type: "char*", Name: "hidden_process"},
 		},
 	},
 }
