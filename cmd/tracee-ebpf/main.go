@@ -33,10 +33,9 @@ func main() {
 		Version: version,
 		Action: func(c *cli.Context) error {
 
-			// tracee-ebpf does not suport arguments, only flags
+			// tracee-ebpf does not support arguments, only flags
 			if c.NArg() > 0 {
-				cli.ShowAppHelp(c)
-				return nil
+				return cli.ShowAppHelp(c)
 			}
 
 			if c.Bool("list") {
@@ -134,8 +133,10 @@ func main() {
 			}
 
 			// decide BTF & BPF files to use based on kconfig, release & environment
-
-			prepareBpfObject(&cfg, kernelConfig, OSInfo)
+			err = prepareBpfObject(&cfg, kernelConfig, OSInfo)
+			if err != nil {
+				return fmt.Errorf("failed preparing BPF object: %w", err)
+			}
 
 			cfg.ChanEvents = make(chan external.Event)
 			cfg.ChanErrors = make(chan error)
