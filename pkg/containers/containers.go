@@ -141,6 +141,10 @@ func (c *Containers) CgroupUpdate(cgroupId uint64, path string, ctime time.Time)
 	return info, nil
 }
 
+var (
+	containerIdFromCgroupRegex = regexp.MustCompile(`^[A-Fa-f0-9]{64}$`)
+)
+
 // getContainerIdFromCgroup extracts container id and its runtime from path.
 // It returns (containerId, runtime string).
 func getContainerIdFromCgroup(cgroupPath string) (string, string) {
@@ -169,7 +173,8 @@ func getContainerIdFromCgroup(cgroupPath string) (string, string) {
 			id = strings.TrimPrefix(id, "libpod-")
 		}
 
-		if matched, _ := regexp.MatchString(`^[A-Fa-f0-9]{64}$`, id); matched {
+		regex := containerIdFromCgroupRegex
+		if matched := regex.MatchString(id); matched {
 			if runtime == "unknown" && prevPathComp == "docker" {
 				// non-systemd docker with format: .../docker/01adbf...f26db7f/
 				runtime = "docker"
