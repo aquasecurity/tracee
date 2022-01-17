@@ -2510,6 +2510,8 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     struct task_struct *task = data.task;
     struct signal_struct *signal = READ_KERN(task->signal);
     atomic_t live = READ_KERN(signal->live);
+    // This check could be true for multiple thread exits if the thread count was 0 when the hooks were triggered.
+    // This could happen for example if the threads performed exit in different CPUs simultaneously.
     if (live.counter == 0) {
         group_dead = true;
         if (proc_tree_filter_set) {
