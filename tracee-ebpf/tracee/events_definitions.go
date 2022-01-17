@@ -5722,7 +5722,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets:           []string{"default", "proc", "proc_life"},
 		Params: []external.ArgMeta{
 			{Type: "long", Name: "exit_code"},
-			// The filed value represents that all threads exited at the event time.
+			// The field value represents that all threads exited at the event time.
 			// Multiple exits of threads of the same process group at the same time could result that all threads exit
 			// events would have 'true' value in this field altogether.
 			{Type: "bool", Name: "process_group_exit"},
