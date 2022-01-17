@@ -25,6 +25,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/ebpf/initialization"
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
+	"github.com/aquasecurity/tracee/pkg/eventsthrottle"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -153,32 +154,33 @@ type fileExecInfo struct {
 
 // Tracee traces system calls and system events using eBPF
 type Tracee struct {
-	config            Config
-	eventsToTrace     map[int32]bool
-	bpfModule         *bpf.Module
-	eventsPerfMap     *bpf.PerfBuffer
-	fileWrPerfMap     *bpf.PerfBuffer
-	netPerfMap        *bpf.PerfBuffer
-	eventsChannel     chan []byte
-	fileWrChannel     chan []byte
-	netChannel        chan []byte
-	lostEvChannel     chan uint64
-	lostWrChannel     chan uint64
-	lostNetChannel    chan uint64
-	bootTime          uint64
-	startTime         uint64
-	stats             metrics.Stats
-	capturedFiles     map[string]int64
-	fileHashes        *lru.Cache
-	profiledFiles     map[string]profilerInfo
-	writtenFiles      map[string]string
-	pidsInMntns       bucketscache.BucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
-	StackAddressesMap *bpf.BPFMap
-	tcProbe           []netProbe
-	netCapture        netInfo
-	containers        *containers.Containers
-	procInfo          *procinfo.ProcInfo
-	eventsSorter      *sorting.EventsChronologicalSorter
+	config                Config
+	eventsToTrace         map[int32]bool
+	bpfModule             *bpf.Module
+	eventsPerfMap         *bpf.PerfBuffer
+	fileWrPerfMap         *bpf.PerfBuffer
+	netPerfMap            *bpf.PerfBuffer
+	eventsChannel         chan []byte
+	fileWrChannel         chan []byte
+	netChannel            chan []byte
+	lostEvChannel         chan uint64
+	lostWrChannel         chan uint64
+	lostNetChannel        chan uint64
+	bootTime              uint64
+	startTime             uint64
+	stats                 metrics.Stats
+	capturedFiles         map[string]int64
+	fileHashes            *lru.Cache
+	profiledFiles         map[string]profilerInfo
+	writtenFiles          map[string]string
+	pidsInMntns           bucketscache.BucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
+	StackAddressesMap     *bpf.BPFMap
+	tcProbe               []netProbe
+	netPcap               netInfo
+	containers            *containers.Containers
+	procInfo              *procinfo.ProcInfo
+	eventsSorter          *sorting.EventsChronologicalSorter
+	eventsThrottlingState eventsthrottle.EventsThrottlingState
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -331,7 +333,15 @@ func New(cfg Config) (*Tracee, error) {
 		}
 	}
 
+	if err = t.installEventThrottle(); err != nil {
+		return nil, fmt.Errorf("couldn't install tracer health probe: %v", err)
+	}
 	return t, nil
+}
+
+func (t *Tracee) installEventThrottle() error {
+	t.eventsThrottlingState = eventsthrottle.NewEventsThrottlingState()
+	return nil
 }
 
 // Initialize tail calls program array
@@ -1043,6 +1053,104 @@ func (t *Tracee) Close() {
 	if t.bpfModule != nil {
 		t.bpfModule.Close()
 	}
+}
+
+func (t *Tracee) dropEvents() ([]int, error) {
+	if t.eventsThrottlingState.PriorityThreshold() < t.eventsThrottlingState.MinPriorityThreshold() {
+		if t.config.Debug {
+			fmt.Printf("events priority threshold already at minimum - no events to dropped")
+		}
+		return []int{}, nil
+	}
+	t.eventsThrottlingState.DecreasePriorityThreshold()
+	var droppedEvents []int
+	chosenEventsMap, err := t.bpfModule.GetMap("chosen_events_map") // u32, u32
+	if err != nil {
+		return droppedEvents, err
+	}
+	currentPrioThreshold := t.eventsThrottlingState.PriorityThreshold()
+	for e, chosen := range t.eventsToTrace {
+		if chosen {
+			eU32 := uint32(e) // e is int32
+			eventDef, ok := EventsDefinitions[e]
+			if !ok {
+				continue
+			}
+			if currentPrioThreshold < eventDef.Priority {
+				falseU32 := uint32(0)
+				if err := chosenEventsMap.Update(unsafe.Pointer(&eU32), unsafe.Pointer(&falseU32)); err != nil {
+					if t.config.Debug {
+						fmt.Printf("failed to update chosen_events_map: %v", err)
+					}
+					continue
+				}
+				droppedEvents = append(droppedEvents, int(e))
+			}
+		}
+	}
+	return droppedEvents, nil
+}
+
+func (t *Tracee) restoreEvents() ([]int, error) {
+	if t.eventsThrottlingState.PriorityThreshold() > t.eventsThrottlingState.MaxPriorityThreshold() {
+		if t.config.Debug {
+			fmt.Printf("events priority threshold already at maximum - no events to load")
+		}
+	}
+	t.eventsThrottlingState.IncreasePriorityThreshold()
+	var restoredEvents []int
+	chosenEventsMap, err := t.bpfModule.GetMap("chosen_events_map") // u32, u32
+	if err != nil {
+		return restoredEvents, err
+	}
+	currentPrioThreshold := t.eventsThrottlingState.PriorityThreshold()
+	for e, chosen := range t.eventsToTrace {
+		if chosen {
+			eU32 := uint32(e) // e is int32
+			eventDef, ok := EventsDefinitions[e]
+			if !ok {
+				continue
+			}
+			if currentPrioThreshold >= eventDef.Priority {
+				trueU32 := uint32(1)
+				if err := chosenEventsMap.Update(unsafe.Pointer(&eU32), unsafe.Pointer(&trueU32)); err != nil {
+					if t.config.Debug {
+						fmt.Printf("failed to update chosen_events_map: %v", err)
+					}
+					continue
+				}
+				restoredEvents = append(restoredEvents, int(e))
+			}
+		}
+	}
+	return restoredEvents, nil
+
+}
+
+func (t *Tracee) DecreaseLoad() (eventsthrottle.LoadChange, error) {
+	droppedEvents, err := t.dropEvents()
+	if err != nil {
+		return eventsthrottle.LoadChange{}, err
+	}
+	return eventsthrottle.LoadChange{
+		ChangeInEvents: eventsthrottle.EventsChange{
+			AffectedEvents:   droppedEvents,
+			AreEventsDropped: true,
+		},
+	}, nil
+}
+
+func (t *Tracee) IncreaseLoad() (eventsthrottle.LoadChange, error) {
+	restoredEvents, err := t.restoreEvents()
+	if err != nil {
+		return eventsthrottle.LoadChange{}, err
+	}
+	return eventsthrottle.LoadChange{
+		ChangeInEvents: eventsthrottle.EventsChange{
+			AffectedEvents:   restoredEvents,
+			AreEventsDropped: false,
+		},
+	}, nil
 }
 
 func boolToUInt32(b bool) uint32 {

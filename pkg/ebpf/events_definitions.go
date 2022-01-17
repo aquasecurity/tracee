@@ -35,6 +35,7 @@ type EventDefinition struct {
 	EssentialEvent bool
 	Sets           []string
 	Params         []trace.ArgMeta
+	Priority       int
 }
 
 // Common events (used by all architectures)
