@@ -276,11 +276,6 @@ func New(cfg Config) (*Tracee, error) {
 		setEssential(VfsWritevEventID)
 	}
 
-	if t.eventsToTrace[MemProtAlertEventID] {
-		setEssential(MmapEventID)
-		setEssential(MprotectEventID)
-	}
-
 	if t.eventsToTrace[SocketDupEventID] {
 		setEssential(DupEventID)
 		setEssential(Dup2EventID)
