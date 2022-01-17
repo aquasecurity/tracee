@@ -379,30 +379,6 @@ func checkCommandIsHelp(s []string) bool {
 	return false
 }
 
-func checkRequiredCapabilities(caps capability.Capabilities) error {
-	if !caps.Get(capability.EFFECTIVE, capability.CAP_SYS_ADMIN) {
-		return fmt.Errorf("insufficient privileges to run: missing CAP_SYS_ADMIN")
-	}
-
-	if !caps.Get(capability.EFFECTIVE, capability.CAP_IPC_LOCK) {
-		return fmt.Errorf("insufficient privileges to run: missing CAP_IPC_LOCK")
-	}
-
-	return nil
-}
-
-func getSelfCapabilities() (capability.Capabilities, error) {
-	selfCap, err := capability.NewPid2(0)
-	if err != nil {
-		return nil, err
-	}
-	err = selfCap.Load()
-	if err != nil {
-		return nil, err
-	}
-	return selfCap, nil
-}
-
 func getFormattedEventParams(eventID int32) string {
 	eventParams := tracee.EventsDefinitions[eventID].Params
 	var verboseEventParams string
@@ -499,33 +475,6 @@ func unpackCOREBinary() ([]byte, error) {
 	}
 
 	return b, nil
-}
-
-// unpackBPFBundle unpacks the bundle into the provided directory
-func unpackBPFBundle(dir string) error {
-	basePath := "dist/tracee.bpf"
-	files, err := embed.BPFBundleInjected.ReadDir(basePath)
-	if err != nil {
-		return fmt.Errorf("error reading embedded bpf bundle: %s", err.Error())
-	}
-	for _, f := range files {
-		outFile, err := os.Create(filepath.Join(dir, filepath.Base(f.Name())))
-		if err != nil {
-			return fmt.Errorf("error creating bpf file: %s", err.Error())
-		}
-		defer outFile.Close()
-
-		f, err := embed.BPFBundleInjected.Open(filepath.Join(basePath, f.Name()))
-		if err != nil {
-			return fmt.Errorf("error opening bpf bundle file: %s", err.Error())
-		}
-		defer f.Close()
-
-		if _, err := io.Copy(outFile, f); err != nil {
-			return fmt.Errorf("error copying bpf file: %s", err.Error())
-		}
-	}
-	return nil
 }
 
 // unpackBTFHub unpacks tailored, to the compiled eBPF object, BTF files for kernel supported by BTFHub
