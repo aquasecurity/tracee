@@ -564,7 +564,7 @@ clean-tracee-rules:
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-rules
 
 .PHONY: test-tracee-rules
-test-tracee-rules:
+test-tracee-rules: \
 	.checkver_$(CMD_GO)
 #
 	$(GO_ENV_RULES) $(CMD_GO) test \
