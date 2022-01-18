@@ -50,6 +50,7 @@ help:
 	@echo "To execute tracee-ebpf container(s):"
 	@echo ""
 	@echo "    $$ make -f builder/Makefile.tracee-container run-alpine-tracee-ebpf-core"
+	@echo "    $$ make -f builder/Makefile.tracee-container run-alpine-tracee-ebpf-core-btfhub"
 	@echo "    $$ make -f builder/Makefile.tracee-container run-alpine-tracee-ebpf-nocore"
 	@echo ""
 	@echo "Note: You may provide \"run\" arguments using the ARG variable."
