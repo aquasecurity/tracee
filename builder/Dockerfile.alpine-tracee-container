@@ -6,7 +6,7 @@
 #
 # 1. BUILDING tracee container:
 #
-#   $ docker build -f builder/Dockerfile.alpine-tracee \
+#   $ docker build -f builder/Dockerfile.alpine-tracee-container \
 #           --build-arg=BTFHUB=[0|1] \
 #           --build-arg=FLAVOR=[tracee-core|tracee-nocore] \
 #           -t alpine-tracee:latest \
@@ -42,8 +42,8 @@
 
 # FLAVOR(s):
 #
-# tracee-core           entrypoint: tracee-ebpf + tracee-rules
-# tracee-nocore         entrypoint: install-bpf-nocore + tracee-ebpf + tracee-rules
+# tracee-core      entrypoint: tracee-ebpf + tracee-rules
+# tracee-nocore    entrypoint: install-bpf-nocore + tracee-ebpf + tracee-rules
 
 ARG BTFHUB=0
 ARG FLAVOR=tracee-ebpf-core
@@ -112,7 +112,7 @@ WORKDIR /tracee
 COPY --from=tracee-make /tracee/dist/tracee-ebpf /tracee
 COPY --from=tracee-make /tracee/dist/tracee-rules /tracee
 COPY --from=tracee-make /tracee/dist/rules/ /tracee/rules/
-COPY --from=tracee-make /tracee/builder/tracee.sh /tracee/entrypoint.sh
+COPY --from=tracee-make /tracee/builder/entrypoint.sh /tracee/entrypoint.sh
 
 ENTRYPOINT ["/tracee/entrypoint.sh"]
 
@@ -129,7 +129,7 @@ COPY --from=tracee-make /tracee /tracee/src
 COPY --from=tracee-make /tracee/dist/tracee-ebpf /tracee
 COPY --from=tracee-make /tracee/dist/tracee-rules /tracee
 COPY --from=tracee-make /tracee/dist/rules/ /tracee/rules
-COPY --from=tracee-make /tracee/builder/tracee.sh /tracee/entrypoint.sh
+COPY --from=tracee-make /tracee/builder/entrypoint.sh /tracee/entrypoint.sh
 
 ENTRYPOINT ["/tracee/entrypoint.sh"]
 
