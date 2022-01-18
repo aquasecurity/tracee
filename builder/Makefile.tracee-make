@@ -1,3 +1,7 @@
+#
+# Responsible for creating a local docker building environment (alpine & ubuntu)
+#
+
 .PHONY: all
 all:
 

@@ -1,3 +1,7 @@
+#
+# Responsible for creating the official tracee container images
+#
+
 .PHONY: all
 all:
 
@@ -33,31 +37,28 @@ help:
 	@echo ""
 	@echo "To generate tracee container(s):"
 	@echo ""
-	@echo "    $$ make -f builder/Makefile.tracee build-alpine-tracee-core"
-	@echo "    $$ make -f builder/Makefile.tracee build-alpine-tracee-core-btfhub"
-	@echo "    $$ make -f builder/Makefile.tracee build-alpine-tracee-nocore"
+	@echo "    $$ make -f builder/Makefile.tracee-container build-alpine-tracee-core"
+	@echo "    $$ make -f builder/Makefile.tracee-container build-alpine-tracee-core-btfhub"
+	@echo "    $$ make -f builder/Makefile.tracee-container build-alpine-tracee-nocore"
 	@echo ""
 	@echo "To execute tracee container(s):"
 	@echo ""
-	@echo "    $$ make -f builder/Makefile.tracee run-alpine-tracee-core"
-	@echo "    $$ make -f builder/Makefile.tracee run-alpine-tracee-core-btfhub"
-	@echo "    $$ make -f builder/Makefile.tracee run-alpine-tracee-nocore"
+	@echo "    $$ make -f builder/Makefile.tracee-container run-alpine-tracee-core"
+	@echo "    $$ make -f builder/Makefile.tracee-container run-alpine-tracee-core-btfhub"
+	@echo "    $$ make -f builder/Makefile.tracee-container run-alpine-tracee-nocore"
 	@echo ""
 	@echo "To execute tracee-ebpf container(s):"
 	@echo ""
-	@echo "    $$ make -f builder/Makefile.tracee run-alpine-tracee-ebpf-core"
-	@echo "    $$ make -f builder/Makefile.tracee run-alpine-tracee-ebpf-nocore"
+	@echo "    $$ make -f builder/Makefile.tracee-container run-alpine-tracee-ebpf-core"
+	@echo "    $$ make -f builder/Makefile.tracee-container run-alpine-tracee-ebpf-nocore"
 	@echo ""
-	@echo "Note:"
-	@echo ""
-	@echo "You may provide arguments to executions using ARG variable"
+	@echo "Note: You may provide \"run\" arguments using the ARG variable."
 	@echo ""
 	@echo "Example:"
 	@echo ""
-	@echo "    $$ make -f builder/Makefile.tracee build-alpine-tracee-core-btfhub"
+	@echo "    $$ make -f builder/Makefile.tracee-container build-alpine-tracee-core-btfhub"
 	@echo ""
-	@echo "    $$ make -f builder/Makefile.tracee \ "
-	@echo "          run-alpine-tracee-ebpf-core \ "
+	@echo "    $$ make -f builder/Makefile.tracee-container run-alpine-tracee-ebpf-core \ "
 	@echo "          ARG=\"--debug -trace event!='sched*'\" "
 	@echo ""
 
@@ -79,7 +80,7 @@ help:
 #
 
 ALPINE_TRACEE_CORE_CONTNAME = tracee
-ALPINE_TRACEE_CORE_DOCKERFILE = builder/Dockerfile.alpine-tracee
+ALPINE_TRACEE_CORE_DOCKERFILE = builder/Dockerfile.alpine-tracee-container
 
 .PHONY: build-alpine-tracee-core
 build-alpine-tracee-core: \
@@ -94,7 +95,7 @@ build-alpine-tracee-core: \
 		.
 
 ALPINE_TRACEE_CORE_BTFHUB_CONTNAME = tracee-btfhub
-ALPINE_TRACEE_CORE_DOCKERFILE = builder/Dockerfile.alpine-tracee
+ALPINE_TRACEE_CORE_DOCKERFILE = builder/Dockerfile.alpine-tracee-container
 
 .PHONY: build-alpine-tracee-core-btfhub
 build-alpine-tracee-core-btfhub: \
@@ -109,7 +110,7 @@ build-alpine-tracee-core-btfhub: \
 		.
 
 ALPINE_TRACEE_NOCORE_CONTNAME = tracee-nocore
-ALPINE_TRACEE_NOCORE_DOCKERFILE = builder/Dockerfile.alpine-tracee
+ALPINE_TRACEE_NOCORE_DOCKERFILE = builder/Dockerfile.alpine-tracee-container
 
 .PHONY: build-alpine-tracee-nocore
 build-alpine-tracee-nocore: \
