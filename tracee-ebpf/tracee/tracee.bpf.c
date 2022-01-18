@@ -80,6 +80,9 @@ Copyright (C) Aqua Security inc.
 #define FILE_MAGIC_HDR_SIZE             32        // magic_write: bytes to save from a file's header
 #define FILE_MAGIC_MASK                 31        // magic_write: mask used for verifier boundaries
 
+#define BPF_PROG_LOAD                   5
+#define BPG_BTF_LOAD                    18
+
 #define SUBMIT_BUF_IDX                  0
 #define STRING_BUF_IDX                  1
 #define FILE_BUF_IDX                    2
@@ -88,7 +91,8 @@ Copyright (C) Aqua Security inc.
 #define SEND_VFS_WRITE                  1
 #define SEND_MPROTECT                   2
 #define SEND_KERNEL_MODULE              3
-#define SEND_META_SIZE                  24
+#define SEND_BPF_OBJECT                 4
+#define SEND_META_SIZE                  28
 
 #define ALERT_MMAP_W_X                  1
 #define ALERT_MPROT_X_ADD               2
@@ -220,6 +224,7 @@ Copyright (C) Aqua Security inc.
 #define CONFIG_PROC_TREE_FILTER         18
 #define CONFIG_CAPTURE_MODULES          19
 #define CONFIG_CGROUP_V1                20
+#define CONFIG_CAPTURE_BPF              21
 
 // get_config(CONFIG_XXX_FILTER) returns 0 if not enabled
 #define FILTER_IN                       1
@@ -524,6 +529,30 @@ struct mount {
     struct vfsmount mnt;
     // ...
 };
+
+struct btf_header {
+    u16 magic;
+    u8 version;
+    u8 flags;
+    u32 hdr_len;
+    /* All offsets are in bytes relative to the end of this header */
+    u32 type_off; /* offset of type section*/
+    u32 type_len; /* length of type section*/
+    u32 str_off; /* offset of string section*/
+    u32 str_len; /* length of string section*/
+};
+
+struct btf {
+    void *data;
+    struct btf_type **types;
+    u32 *resolved_ids;
+    u32 *resolved_sizes;
+    const char *strings;
+    void *nohdr_data;
+    struct btf_header hdr;
+    u32 nr_types; /* includes VOID for base BTF */
+    // ...
+};
 #endif
 
 /*================================= MAPS =====================================*/
@@ -566,6 +595,16 @@ BPF_PERF_OUTPUT(file_writes);                           // file writes events su
 BPF_PERF_OUTPUT(net_events);                            // network events submission
 
 /*================ KERNEL VERSION DEPENDANT HELPER FUNCTIONS =================*/
+
+static __always_inline u32 get_attr_insn_cnt(union bpf_attr *attr)
+{
+    return READ_KERN(attr->insn_cnt);
+}
+
+static __always_inline const struct bpf_insn * get_attr_insns(union bpf_attr *attr)
+{
+    return (const struct bpf_insn *)READ_KERN(attr->insns);
+}
 
 static __always_inline u32 get_mnt_ns_id(struct nsproxy *ns)
 {
@@ -3985,6 +4024,39 @@ int BPF_KPROBE(trace_security_bpf)
     // 1st argument == cmd (int)
     save_to_submit_buf(&data, (void *)&cmd, sizeof(int), 0);
 
+    // Capture BPF object loaded
+    if (cmd == BPF_PROG_LOAD && get_config(CONFIG_CAPTURE_BPF)) {
+        bin_args_t bin_args = {};
+        u32 pid = data.context.host_pid;
+
+        union bpf_attr *attr = (union bpf_attr *)PT_REGS_PARM2(ctx);
+        u32 insn_cnt = get_attr_insn_cnt(attr);
+        const struct bpf_insn *insns = get_attr_insns(attr);
+        unsigned int insn_size = (unsigned int)(sizeof(struct bpf_insn) * insn_cnt);
+
+        bin_args.type = SEND_BPF_OBJECT;
+        char prog_name[16] = {0};
+        long sz = bpf_probe_read_str(prog_name, 16, attr->prog_name);
+        if (sz > 0) {
+            sz = bpf_probe_read_str(bin_args.metadata, sz, prog_name);
+        }
+
+        u32 rand = bpf_get_prandom_u32();
+        bpf_probe_read(&bin_args.metadata[16], 4, &rand);
+        bpf_probe_read(&bin_args.metadata[20], 4, &pid);
+        bpf_probe_read(&bin_args.metadata[24], 4, &insn_size);
+        bin_args.ptr = (char *)insns;
+        bin_args.start_off = 0;
+        bin_args.full_size = insn_size;
+
+        u64 id = bpf_get_current_pid_tgid();
+        bpf_map_update_elem(&bin_args_map, &id, &bin_args, BPF_ANY);
+
+        events_perf_submit(&data, SECURITY_BPF, 0);
+
+        bpf_tail_call(ctx, &prog_array, TAIL_SEND_BIN);
+    }
+
     return events_perf_submit(&data, SECURITY_BPF, 0);
 }
 
@@ -4062,6 +4134,11 @@ int BPF_KPROBE(trace_security_kernel_post_read_file)
     }
 
     if (get_config(CONFIG_CAPTURE_MODULES)) {
+        // Do not extract files greater than 4GB
+        if (size >= (u64)1<<32) {
+            return 0;
+        }
+
         // Extract device id, inode number for file name
         dev_t s_dev = get_dev_from_file(file);
         unsigned long inode_nr = get_inode_nr_from_file(file);
@@ -4070,7 +4147,7 @@ int BPF_KPROBE(trace_security_kernel_post_read_file)
         bpf_probe_read(bin_args.metadata, 4, &s_dev);
         bpf_probe_read(&bin_args.metadata[4], 8, &inode_nr);
         bpf_probe_read(&bin_args.metadata[12], 4, &pid);
-        bpf_probe_read(&bin_args.metadata[16], 8, &size);
+        bpf_probe_read(&bin_args.metadata[16], 4, &size);
         bin_args.start_off = 0;
         bin_args.ptr = buf;
         bin_args.full_size = size;

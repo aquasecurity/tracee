@@ -57,6 +57,7 @@ type CaptureConfig struct {
 	Exec            bool
 	Mem             bool
 	Profile         bool
+	Bpf             bool
 	NetIfaces       []string
 }
 
@@ -238,6 +239,9 @@ func New(cfg Config) (*Tracee, error) {
 	if cfg.Capture.Module {
 		setEssential(SecurityPostReadFileEventID)
 		setEssential(InitModuleEventID)
+	}
+	if cfg.Capture.Bpf {
+		setEssential(SecurityBPFEventID)
 	}
 	if cfg.Capture.Mem {
 		setEssential(MmapEventID)
@@ -439,6 +443,7 @@ const (
 	configProcTreeFilter
 	configCaptureModules
 	configCgroupV1
+	configCaptureBpf
 )
 
 // Custom KernelConfigOption's to extend kernel_config helper support
@@ -530,6 +535,7 @@ func (t *Tracee) populateBPFMaps() error {
 	cSA := uint32(configStackAddresses)
 	cCF := uint32(configCaptureFiles)
 	cCM := uint32(configCaptureModules)
+	cCB := uint32(configCaptureBpf)
 	cEDC := uint32(configExtractDynCode)
 	cFF := uint32(configFollowFilter)
 	cDN := uint32(configDebugNet)
@@ -541,6 +547,7 @@ func (t *Tracee) populateBPFMaps() error {
 	cSAval := boolToUInt32(t.config.Output.StackAddresses)
 	cCFval := boolToUInt32(t.config.Capture.FileWrite)
 	cCMval := boolToUInt32(t.config.Capture.Module)
+	cCBval := boolToUInt32(t.config.Capture.Bpf)
 	cEDCval := boolToUInt32(t.config.Capture.Mem)
 	cFFval := boolToUInt32(t.config.Filter.Follow)
 	cDNval := boolToUInt32(t.config.Debug)
@@ -553,6 +560,7 @@ func (t *Tracee) populateBPFMaps() error {
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cSA), unsafe.Pointer(&cSAval)))
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cCF), unsafe.Pointer(&cCFval)))
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cCM), unsafe.Pointer(&cCMval)))
+	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cCB), unsafe.Pointer(&cCBval)))
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cEDC), unsafe.Pointer(&cEDCval)))
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cFF), unsafe.Pointer(&cFFval)))
 	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cDN), unsafe.Pointer(&cDNval)))

@@ -1,6 +1,8 @@
 #ifndef __VMLINUX_H__
 #define __VMLINUX_H__
 
+#define BPF_OBJ_NAME_LEN 16U
+
 #pragma clang attribute push (__attribute__((preserve_access_index)), apply_to = record)
 
 typedef signed char __s8;
@@ -728,6 +730,59 @@ enum kernel_read_file_id {
         READING_X509_CERTIFICATE = 6,
         READING_MAX_ID = 7,
 };
+
+struct bpf_insn {
+	__u8	code;		/* opcode */
+	__u8	dst_reg:4;	/* dest register */
+	__u8	src_reg:4;	/* source register */
+	__s16	off;		/* signed offset */
+	__s32	imm;		/* signed immediate constant */
+};
+
+union bpf_attr {
+	struct { /* anonymous struct used by BPF_PROG_LOAD command */
+		__u32		prog_type;	/* one of enum bpf_prog_type */
+		__u32		insn_cnt;
+		__u64	    insns;
+		__u64	    license;
+		__u32		log_level;	/* verbosity level of verifier */
+		__u32		log_size;	/* size of user buffer */
+		__u64	    log_buf;	/* user supplied buffer */
+		__u32		kern_version;	/* not used */
+		__u32		prog_flags;
+		char		prog_name[BPF_OBJ_NAME_LEN];
+		__u32		prog_ifindex;	/* ifindex of netdev to prep for */
+		/* For some prog types expected attach type must be known at
+		 * load time to verify attach type specific parts of prog
+		 * (context accesses, allowed helpers, etc).
+		 */
+		__u32		expected_attach_type;
+		__u32		prog_btf_fd;	/* fd pointing to BTF type data */
+		__u32		func_info_rec_size;	/* userspace bpf_func_info size */
+		__u64	    func_info;	/* func info */
+		__u32		func_info_cnt;	/* number of bpf_func_info records */
+		__u32		line_info_rec_size;	/* userspace bpf_line_info size */
+		__u64	    line_info;	/* line info */
+		__u32		line_info_cnt;	/* number of bpf_line_info records */
+		__u32		attach_btf_id;	/* in-kernel BTF type id to attach to */
+		union {
+			/* valid prog_fd to attach to bpf prog */
+			__u32		attach_prog_fd;
+			/* or valid module BTF object fd or 0 to attach to vmlinux */
+			__u32		attach_btf_obj_fd;
+		};
+		__u32		:32;		/* pad */
+		__u64	    fd_array;	/* array of FDs */
+	};
+
+	struct { /* anonymous struct for BPF_BTF_LOAD */
+		__u64	    btf;
+		__u64	    btf_log_buf;
+		__u32		btf_size;
+		__u32		btf_log_size;
+		__u32		btf_log_level;
+	};
+} __attribute__((aligned(8)));
 
 #include <struct_flavors.h>
 

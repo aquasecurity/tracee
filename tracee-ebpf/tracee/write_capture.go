@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"strings"
 )
 
 // binType is an enum that specifies the type of binary data sent in the file perf map
@@ -17,13 +18,14 @@ const (
 	sendVfsWrite binType = iota + 1
 	sendMprotect
 	sendKernelModule
+	sendBpfObject
 )
 
 func (t *Tracee) processFileWrites() {
 	type chunkMeta struct {
 		BinType  binType
 		CgroupID uint64
-		Metadata [24]byte
+		Metadata [28]byte
 		Size     int32
 		Off      uint64
 	}
@@ -39,7 +41,14 @@ func (t *Tracee) processFileWrites() {
 		DevID uint32
 		Inode uint64
 		Pid   uint32
-		Size  uint64
+		Size  uint32
+	}
+
+	type bpfObjectMeta struct {
+		Name [16]byte
+		Rand uint32
+		Pid  uint32
+		Size uint32
 	}
 
 	type mprotectWriteMeta struct {
@@ -94,6 +103,7 @@ func (t *Tracee) processFileWrites() {
 			filename := ""
 			metaBuff := bytes.NewBuffer(meta.Metadata[:])
 			var kernelModuleMeta kernelModuleMeta
+			var bpfObjectMeta bpfObjectMeta
 			if meta.BinType == sendVfsWrite {
 				var vfsMeta vfsWriteMeta
 				err = binary.Read(metaBuff, binary.LittleEndian, &vfsMeta)
@@ -134,6 +144,18 @@ func (t *Tracee) processFileWrites() {
 				if kernelModuleMeta.Pid != 0 {
 					filename = fmt.Sprintf("%s.pid-%d", filename, kernelModuleMeta.Pid)
 				}
+			} else if meta.BinType == sendBpfObject {
+				err = binary.Read(metaBuff, binary.LittleEndian, &bpfObjectMeta)
+				if err != nil {
+					t.handleError(err)
+					continue
+				}
+				bpfName := string(bytes.TrimRight(bpfObjectMeta.Name[:], "\x00"))
+				filename = fmt.Sprintf("bpf.name-%s", bpfName)
+				if bpfObjectMeta.Pid != 0 {
+					filename = fmt.Sprintf("%s.pid-%d", filename, bpfObjectMeta.Pid)
+				}
+				filename = fmt.Sprintf("%s.%d", filename, bpfObjectMeta.Rand)
 			} else {
 				t.handleError(fmt.Errorf("error in file writer: unknown binary type: %d", meta.BinType))
 				continue
@@ -176,10 +198,28 @@ func (t *Tracee) processFileWrites() {
 				continue
 			}
 			// Rename the file to add hash when last chunk was received
-			if meta.BinType == sendKernelModule {
-				if uint64(meta.Size)+meta.Off == kernelModuleMeta.Size {
-					fileHash, _ := computeFileHash(fullname)
-					os.Rename(fullname, fullname+"."+fileHash)
+			if meta.BinType == sendKernelModule || meta.BinType == sendBpfObject {
+				switch meta.BinType {
+				case sendKernelModule:
+					if (uint32(meta.Size) + uint32(meta.Off)) == kernelModuleMeta.Size {
+						fileHash, err := computeFileHash(fullname)
+						if err != nil {
+							t.handleError(err)
+							continue
+						}
+						os.Rename(fullname, fullname+"."+fileHash)
+					}
+				case sendBpfObject:
+					if (uint32(meta.Size) + uint32(meta.Off)) == bpfObjectMeta.Size {
+						fileHash, err := computeFileHash(fullname)
+						if err != nil {
+							t.handleError(err)
+							continue
+						}
+						// Delete the random int used to differentiate files
+						dotIndex := strings.LastIndex(fullname, ".")
+						os.Rename(fullname, fullname[:dotIndex]+"."+fileHash)
+					}
 				}
 			}
 		case lost := <-t.lostWrChannel:

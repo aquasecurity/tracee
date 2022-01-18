@@ -1124,6 +1124,15 @@ func TestPrepareCapture(t *testing.T) {
 				expectedError: nil,
 			},
 			{
+				testName:     "capture bpf",
+				captureSlice: []string{"bpf"},
+				expectedCapture: tracee.CaptureConfig{
+					OutputPath: "/tmp/tracee/out",
+					Bpf:        true,
+				},
+				expectedError: nil,
+			},
+			{
 				testName:     "capture write filtered",
 				captureSlice: []string{"write=/tmp*"},
 				expectedCapture: tracee.CaptureConfig{
@@ -1135,13 +1144,14 @@ func TestPrepareCapture(t *testing.T) {
 			},
 			{
 				testName:     "multiple capture options",
-				captureSlice: []string{"write", "exec", "mem", "module"},
+				captureSlice: []string{"write", "exec", "mem", "module", "bpf"},
 				expectedCapture: tracee.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
 					FileWrite:  true,
 					Mem:        true,
 					Exec:       true,
 					Module:     true,
+					Bpf:        true,
 				},
 				expectedError: nil,
 			},
