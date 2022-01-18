@@ -1002,15 +1002,18 @@ func boolToUInt32(b bool) uint32 {
 	return uint32(0)
 }
 
-func getFileHash(fileName string) string {
-	f, _ := os.Open(fileName)
-	if f != nil {
-		defer f.Close()
-		h := sha256.New()
-		_, _ = io.Copy(h, f)
-		return hex.EncodeToString(h.Sum(nil))
+func computeFileHash(fileName string) (string, error) {
+	f, err := os.Open(fileName)
+	if err != nil {
+		return "", err
 	}
-	return ""
+	defer f.Close()
+	h := sha256.New()
+	_, err = io.Copy(h, f)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 func (t *Tracee) updateFileSHA() {
@@ -1018,7 +1021,7 @@ func (t *Tracee) updateFileSHA() {
 		s := strings.Split(k, ".")
 		exeName := strings.Split(s[1], ":")[0]
 		filePath := fmt.Sprintf("%s.%d.%s", s[0], v.FirstExecutionTs, exeName)
-		fileSHA := getFileHash(filePath)
+		fileSHA, _ := computeFileHash(filePath)
 		v.FileHash = fileSHA
 		t.profiledFiles[k] = v
 	}
