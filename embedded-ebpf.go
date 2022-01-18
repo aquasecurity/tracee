@@ -7,7 +7,6 @@ import (
 	"embed"
 )
 
-//go:embed "dist/tracee.bpf/*"
 //go:embed "dist/tracee.bpf.core.o"
 //go:embed "dist/btfhub/*"
 
