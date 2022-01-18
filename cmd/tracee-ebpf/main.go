@@ -355,7 +355,7 @@ func prepareBpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSIn
 	kVersion = OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE)
 	kVersion = strings.ReplaceAll(kVersion, ".", "_")
 
-	bpfFilePath = fmt.Sprintf("/tmp/tracee/tracee.bpf.%s.%s.o", kVersion, tVersion)
+	bpfFilePath = fmt.Sprintf("%s/tracee.bpf.%s.%s.o", traceeInstallPath, kVersion, tVersion)
 	if debug {
 		fmt.Printf("BPF: no BTF file was found or provided\n")
 		fmt.Printf("BPF: trying non CO-RE eBPF at %s\n", bpfFilePath)
