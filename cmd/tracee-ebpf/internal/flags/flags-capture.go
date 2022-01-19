@@ -18,6 +18,7 @@ Possible options:
 [artifact:]write[=/path/prefix*]   capture written files. A filter can be given to only capture file writes whose path starts with some prefix (up to 50 characters). Up to 3 filters can be given.
 [artifact:]exec                    capture executed files.
 [artifact:]module                  capture loaded kernel modules.
+[artifact:]bpf                     capture loaded BPF programs bytecode.
 [artifact:]mem                     capture memory regions that had write+execute (w+x) protection, and then changed to execute (x) only.
 [artifact:]net=interface           capture network traffic of the given interface. Only TCP/UDP protocols are currently supported.
 
