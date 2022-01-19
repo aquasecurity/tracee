@@ -39,6 +39,8 @@ Copyright (C) Aqua Security inc.
 #include <net/ipv6.h>
 #include <net/tcp_states.h>
 #include <linux/ipv6.h>
+#include <uapi/linux/icmp.h>
+#include <uapi/linux/icmpv6.h>
 
 #include <uapi/linux/bpf.h>
 #include <linux/bpf.h>
@@ -3608,6 +3610,163 @@ int BPF_KPROBE(trace_tcp_connect)
     return net_map_update_or_delete_sock(ctx, DEBUG_NET_TCP_CONNECT, sk, data.context.host_tid);
 }
 
+static __always_inline int icmp_delete_network_map(struct sk_buff *skb, int send, int ipv6) {
+
+    local_net_id_t connect_id = {0};
+
+    if (ipv6) {
+        connect_id.protocol = IPPROTO_ICMPV6;
+        struct ipv6hdr *ip_header = (struct ipv6hdr *)(READ_KERN(skb->head) + READ_KERN(skb->network_header));
+
+        struct in6_addr daddr = READ_KERN(ip_header->daddr);
+        struct in6_addr saddr = READ_KERN(ip_header->saddr);
+        if (send) {
+            connect_id.address = daddr;
+        }
+        else {
+            struct icmp6hdr *icmph = (struct icmp6hdr *)(READ_KERN(skb->head) + READ_KERN(skb->transport_header));
+            u8 icmp_type = READ_KERN(icmph->icmp6_type);
+            if (icmp_type == ICMPV6_ECHO_REQUEST) {
+                return 0;
+            }
+
+            connect_id.address = saddr;
+        }
+    }
+    else {
+        connect_id.protocol = IPPROTO_ICMP;
+        struct iphdr *ip_header = (struct iphdr *)(READ_KERN(skb->head) + READ_KERN(skb->network_header));
+
+        __be32 daddr = READ_KERN(ip_header->daddr);
+        __be32 saddr = READ_KERN(ip_header->saddr);
+        if (send) {
+            connect_id.address.s6_addr32[3] = daddr;
+        }
+        else {
+            struct icmphdr *icmph = (struct icmphdr *)(READ_KERN(skb->head) + READ_KERN(skb->transport_header));
+            u8 icmp_type = READ_KERN(icmph->type);
+            if (icmp_type == ICMP_ECHO) {
+                return 0;
+            }
+            #ifdef ICMP_EXT_ECHO
+            if (icmp_type == ICMP_EXT_ECHO) {
+                return 0;
+            }
+            #endif
+
+            connect_id.address.s6_addr32[3] = saddr;
+        }
+        connect_id.address.s6_addr16[5] = 0xffff;
+    }
+
+    bpf_map_delete_elem(&network_map, &connect_id);
+
+    return 0;
+}
+
+SEC("kprobe/icmp_send")
+int BPF_KPROBE(trace_icmp_send)
+{
+    struct sk_buff *skb = (struct sk_buff *)PT_REGS_PARM1(ctx);
+    icmp_delete_network_map(skb, 1, 0);
+
+    return 0;
+}
+
+SEC("kprobe/icmp6_send")
+int BPF_KPROBE(trace_icmp6_send)
+{
+    struct sk_buff *skb = (struct sk_buff *)PT_REGS_PARM1(ctx);
+    icmp_delete_network_map(skb, 1, 1);
+
+    return 0;
+}
+
+SEC("kprobe/icmp_rcv")
+int BPF_KPROBE(trace_icmp_rcv)
+{
+    struct sk_buff *skb = (struct sk_buff *)PT_REGS_PARM1(ctx);
+    icmp_delete_network_map(skb, 0, 0);
+
+    return 0;
+}
+
+SEC("kprobe/icmpv6_rcv")
+int BPF_KPROBE(trace_icmpv6_rcv)
+{
+    struct sk_buff *skb = (struct sk_buff *)PT_REGS_PARM1(ctx);
+    icmp_delete_network_map(skb, 0, 1);
+
+    return 0;
+}
+
+static __always_inline int icmp_update_network_map(event_data_t *data, struct sock *sk, struct msghdr *msg) {
+    u16 family = get_sock_family(sk);
+    u16 protocol = get_sock_protocol(sk);
+
+    if ((protocol != IPPROTO_ICMP && protocol != IPPROTO_ICMPV6) || (family != AF_INET && family != AF_INET6)) {
+        return 0;
+    }
+
+    // this is icmp packet send
+
+    local_net_id_t connect_id = {0};
+    connect_id.protocol = protocol;
+
+    if (family == AF_INET) {
+        struct sockaddr_in *addr = (struct sockaddr_in *)READ_KERN(msg->msg_name);
+        connect_id.address.s6_addr32[3] = READ_KERN(addr->sin_addr).s_addr;
+        connect_id.address.s6_addr16[5] = 0xffff;
+    }
+    else if (family == AF_INET6) {
+        struct sockaddr_in6 *addr = (struct sockaddr_in6 *)READ_KERN(msg->msg_name);
+        connect_id.address = READ_KERN(addr->sin6_addr);
+    }
+
+    net_ctx_t net_ctx;
+    net_ctx.host_tid = data->context.host_tid;
+    __builtin_memcpy(net_ctx.comm, data->context.comm, TASK_COMM_LEN);
+    bpf_map_update_elem(&network_map, &connect_id, &net_ctx, BPF_ANY);
+
+    return 0;
+}
+
+SEC("kprobe/inet_sendmsg")
+int BPF_KPROBE(trace_inet_sendmsg)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data.context))
+        return 0;
+
+    struct socket *sock = (struct socket *)PT_REGS_PARM1(ctx);
+    struct sock *sk = get_socket_sock(sock);
+
+    struct msghdr *msg = (struct msghdr *)PT_REGS_PARM2(ctx);
+
+    return icmp_update_network_map(&data, sk, msg);
+}
+
+SEC("kprobe/inet6_sendmsg")
+int BPF_KPROBE(trace_inet6_sendmsg)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data.context))
+        return 0;
+
+    struct socket *sock = (struct socket *)PT_REGS_PARM1(ctx);
+    struct sock *sk = get_socket_sock(sock);
+
+    struct msghdr *msg = (struct msghdr *)PT_REGS_PARM2(ctx);
+
+    return icmp_update_network_map(&data, sk, msg);
+}
+
 static __always_inline u32 send_bin_helper(void* ctx, void *prog_array, int tail_call)
 {
     // Note: sending the data to the userspace have the following constraints:
@@ -4341,7 +4500,11 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
 
         pkt.src_port = udp->source;
         pkt.dst_port = udp->dest;
-    } else {
+    } else if (pkt.protocol == IPPROTO_ICMP || pkt.protocol == IPPROTO_ICMPV6) {
+        pkt.src_port = 0;
+        pkt.dst_port = 0;
+    }
+    else {
         //todo: support other transport protocols?
         return TC_ACT_UNSPEC;
     }
