@@ -123,6 +123,14 @@ type ArgMeta struct {
 	Type string `json:"type"`
 }
 
+func CreateArgument(argName string, argValue string) Argument {
+	arg := Argument{
+		ArgMeta: ArgMeta{argName, "string"},
+		Value:   argValue,
+	}
+	return arg
+}
+
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (arg *Argument) UnmarshalJSON(b []byte) error {
 	type argument Argument //alias Argument so we can unmarshal it within the unmarshaler implementation
@@ -239,4 +247,13 @@ func (alert MemProtAlert) String() string {
 	default:
 		return "Unknown alert"
 	}
+}
+
+//for supporting networking events in tracee rules
+type PktMeta struct {
+	SrcIP    string `json:"src_ip"`
+	DestIP   string `json:"dest_ip"`
+	SrcPort  uint16 `json:"src_port"`
+	DestPort uint16 `json:"dest_port"`
+	Protocol uint8  `json:"protocol"`
 }

@@ -20,14 +20,6 @@ type PktMeta struct {
 	_        [3]byte  //padding
 }
 
-type NetPacketData struct {
-	timestamp uint64  `json:"time_stamp"`
-	comm      string  `json:"comm"`
-	hostTid   uint32  `json:"host_tid"`
-	pktLen    uint32  `json:"pkt_len"`
-	metaData  PktMeta `json:"meta_data"`
-}
-
 func (t Tracee) parsePacketMetaData(payload *bytes.Buffer) (PktMeta, uint32, int, error) {
 	var pktMetaData PktMeta
 	var pktLen uint32
@@ -60,47 +52,32 @@ func isIpv6(ip [16]byte) bool {
 	return true
 }
 
-func createNetworkArgs(packetmeta PktMeta) []external.Argument {
+//takes the packet metadata and create argument array with that data
+func createPacketMetadataArg(packetmeta PktMeta) []external.Argument {
 	eventArgs := make([]external.Argument, 0, 0)
+	arg := external.PktMeta{}
 	if isIpv6(packetmeta.SrcIP) {
-		eventArgs = append(eventArgs, external.Argument{
-			ArgMeta: external.ArgMeta{"src_ip", "string"},
-			Value:   netaddr.IPFrom16(packetmeta.SrcIP).String(),
-		})
+		arg.SrcIP = netaddr.IPFrom16(packetmeta.SrcIP).String()
 	} else {
 		var ip [4]byte
 		copy(ip[:], packetmeta.SrcIP[12:])
-		eventArgs = append(eventArgs, external.Argument{
-			ArgMeta: external.ArgMeta{"src_ip", "string"},
-			Value:   netaddr.IPFrom4(ip).String(),
-		})
+		arg.SrcIP = netaddr.IPFrom4(ip).String()
 	}
 	if isIpv6(packetmeta.DestIP) {
-		eventArgs = append(eventArgs, external.Argument{
-			ArgMeta: external.ArgMeta{"dst_ip", "string"},
-			Value:   netaddr.IPFrom16(packetmeta.DestIP).String(),
-		})
+		arg.DestIP = netaddr.IPFrom16(packetmeta.DestIP).String()
 	} else {
 		var ip [4]byte
 		copy(ip[:], packetmeta.SrcIP[12:])
-		eventArgs = append(eventArgs, external.Argument{
-			ArgMeta: external.ArgMeta{"dst_ip", "string"},
-			Value:   netaddr.IPFrom4(ip).String(),
-		})
+		arg.DestIP = netaddr.IPFrom4(ip).String()
 	}
-	eventArgs = append(eventArgs, external.Argument{
-		ArgMeta: external.ArgMeta{"src_port", "uint16"},
-		Value:   packetmeta.SrcPort,
-	})
-	eventArgs = append(eventArgs, external.Argument{
-		ArgMeta: external.ArgMeta{"dest_port", "uint16"},
-		Value:   packetmeta.DestPort,
-	})
-	eventArgs = append(eventArgs, external.Argument{
-		ArgMeta: external.ArgMeta{"protocol", "uint8"},
-		Value:   packetmeta.Protocol,
-	})
-
+	arg.SrcPort = packetmeta.SrcPort
+	arg.DestPort = packetmeta.DestPort
+	arg.Protocol = packetmeta.Protocol
+	evtArg := external.Argument{
+		ArgMeta: external.ArgMeta{"PacketMetaData", "PktMeta"},
+		Value:   arg,
+	}
+	eventArgs = append(eventArgs, evtArg)
 	return eventArgs
 }
 
@@ -115,12 +92,13 @@ func getEventByProcessCtx(ctx ProcessCtx) external.Event {
 	event.HostParentProcessID = int(ctx.HostPpid)
 	event.UserID = int(ctx.Uid)
 	event.MountNS = int(ctx.MntId)
+	event.PIDNS = int(ctx.PidId)
 	return event
 
 }
 
-func createNetEvent(ts int, hostTid int, processName string, eventId int32, eventName string, meta PktMeta, ctx ProcessCtx) external.Event {
-	args := createNetworkArgs(meta)
+func createNetEvent(ts int, hostTid int, processName string, eventId int32, eventName string, pkt PktMeta, ctx ProcessCtx) external.Event {
+	args := createPacketMetadataArg(pkt)
 	evt := getEventByProcessCtx(ctx)
 	evt.Timestamp = ts
 	evt.ProcessName = processName
@@ -156,12 +134,12 @@ func (t *Tracee) processNetEvents() {
 			if netEventId == NetPacket {
 				pktMeta, pktLen, interfaceIndex, err := t.parsePacketMetaData(dataBuff)
 				if err != nil {
-					t.handleError(fmt.Errorf("couldent find the process"))
+					t.handleError(fmt.Errorf("couldent parse the packet metadata"))
 					continue
 				}
 				ctx, exist := t.processTree.processTreeMap[hostTid]
 				if !exist {
-					t.handleError(fmt.Errorf("couldent find the process"))
+					t.handleError(fmt.Errorf("couldn't find the process"))
 					continue
 				}
 				evt := createNetEvent(int(timeStamp), hostTid, processName, netEventId, "NetPacket", pktMeta, ctx)
