@@ -86,8 +86,9 @@ const (
 	MaxUserSpaceEventID
 )
 
+// Network events that came from the tc_probe
 const (
-	NetPacket uint32 = iota
+	NetPacket int32 = iota + 4000
 	DebugNetSecurityBind
 	DebugNetUdpSendmsg
 	DebugNetUdpDisconnect
