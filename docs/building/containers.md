@@ -4,7 +4,7 @@
 > containers images, instead of just downloading them from the
 > [Docker Hub](https://hub.docker.com/r/aquasec/tracee). If you would like to
 > have a local building building and execution environment,
-> [read this](./building-environment.md) instead.
+> [read this](./environment.md) instead.
 
 ## Generating Tracee containers
 

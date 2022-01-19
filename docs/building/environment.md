@@ -2,7 +2,7 @@
 
 > These instructions are meant to describe how to create a local building and
 > execution environment. If you would like to build tracee container(s)
-> image(s), [read this](./building-containers.md) instead.
+> image(s), [read this](./containers.md) instead.
 
 ## Quick steps (**impatient readers**)
 
