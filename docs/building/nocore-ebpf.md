@@ -146,7 +146,7 @@ TIME             UID    COMM             PID     TID     RET              EVENT 
 ...
 ```
 
-## Use the [building environment](./building-environment.md)
+## Use the [building environment](./environment.md)
 
 If you're willing to generate the non CO-RE eBPF object using the `tracee-make`
 building environment container, you're able to by doing:
