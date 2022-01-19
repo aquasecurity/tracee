@@ -123,13 +123,15 @@ func (t *Tracee) processEvent(event *external.Event) error {
 		}
 
 	case SchedProcessExecEventID:
+		//update the process tree
+		processData := ProcessCtx{event.Timestamp, event.ContainerID, uint32(event.ProcessID), uint32(event.ThreadID), uint32(event.ParentProcessID), uint32(event.HostProcessID), uint32(event.HostThreadID), uint32(event.HostParentProcessID), uint32(event.UserID), uint32(event.MountNS), uint32(event.PIDNS)}
+		t.processTree.processTreeMap[event.HostThreadID] = processData
 		//cache this pid by it's mnt ns
 		if event.ProcessID == 1 {
 			t.pidsInMntns.ForceAddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
 		} else {
 			t.pidsInMntns.AddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
 		}
-
 		//capture executed files
 		if t.config.Capture.Exec || t.config.Output.ExecHash {
 			filePath, err := getEventArgStringVal(event, "pathname")
@@ -213,7 +215,17 @@ func (t *Tracee) processEvent(event *external.Event) error {
 			}
 			return err
 		}
-
+	case SchedProcessExitEventID:
+		delete(t.processTree.processTreeMap, event.HostProcessID)
+	case SchedProcessForkEventID:
+		hostTid, _ := getEventArgUint32Val(event, "child_tid")
+		childPid, _ := getEventArgUint32Val(event, "child_pid")
+		pid, _ := getEventArgUint32Val(event, "child_ns_pid")
+		ppid, _ := getEventArgUint32Val(event, "parent_ns_pid")
+		hostPpid, _ := getEventArgUint32Val(event, "parent_pid")
+		childTid, _ := getEventArgUint32Val(event, "child_ns_tid")
+		processData := ProcessCtx{event.Timestamp, event.ContainerID, pid, childPid, ppid, hostTid, hostTid, hostPpid, uint32(event.UserID), uint32(event.MountNS), uint32(event.ProcessID)}
+		t.processTree.processTreeMap[int(childTid)] = processData
 	case CgroupMkdirEventID:
 		cgroupId, err := getEventArgUint64Val(event, "cgroup_id")
 		if err != nil {

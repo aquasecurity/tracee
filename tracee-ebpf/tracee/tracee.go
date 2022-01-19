@@ -179,6 +179,7 @@ type Tracee struct {
 	pcapFile          *os.File
 	ngIfacesIndex     map[int]int
 	containers        *containers.Containers
+	processTree       *ProcessTree
 }
 
 type counter int32
@@ -390,7 +391,11 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error getting acces to 'stack_addresses' eBPF Map %v", err)
 	}
 	t.StackAddressesMap = StackAddressesMap
-
+	t.processTree, err = NewProcessTree()
+	if err != nil {
+		t.Close()
+		return nil, fmt.Errorf("error creating process tree: %v", err)
+	}
 	return t, nil
 }
 
@@ -911,6 +916,25 @@ func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 		return err
 	}
 	return nil
+}
+
+func (t *Tracee) getProcessCtx(hostTid int) (ProcessCtx, error) {
+	processCtx, procExist := t.processTree.processTreeMap[hostTid]
+	if procExist {
+		return processCtx, nil
+	} else {
+		processContextMap, err := t.bpfModule.GetMap("process_context_map")
+		if err != nil {
+			return processCtx, err
+		}
+		processCtxBpfMap, err := processContextMap.GetValue(unsafe.Pointer(&hostTid))
+		if err != nil {
+			return processCtx, err
+		}
+		processCtx, err = t.ParseProcessContext(processCtxBpfMap)
+		t.processTree.processTreeMap[hostTid] = processCtx
+		return processCtx, err
+	}
 }
 
 // Run starts the trace. it will run until interrupted

@@ -90,6 +90,25 @@ func (c *Containers) procMountsCgroups() error {
 	return nil
 }
 
+// gets a containerID from a given task or process directory path
+func GetContainerIdFromTaskDir(taskPath string) (string, error) {
+	containerId := ""
+	taskPath = fmt.Sprintf("%s/cgroup", taskPath)
+	cgroupFile, err := os.Open(taskPath)
+	if err != nil {
+		return containerId, err
+	}
+	defer cgroupFile.Close()
+	scanner := bufio.NewScanner(cgroupFile)
+	for scanner.Scan() {
+		containerId, _ := getContainerIdFromCgroup(scanner.Text())
+		if containerId != "" {
+			break
+		}
+	}
+	return containerId, nil
+}
+
 // populate walks the cgroup fs informing CgroupUpdate() about existing dirs.
 func (c *Containers) populate() error {
 	if c.cgroupMP == "" {
