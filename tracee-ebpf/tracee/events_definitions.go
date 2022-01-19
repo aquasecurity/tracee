@@ -2,6 +2,7 @@ package tracee
 
 import (
 	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/netproto"
 )
 
 // ProbeType is an enum that describes the mechanism used to attach the event
@@ -84,17 +85,6 @@ const (
 	ContainerCreateEventID
 	ContainerRemoveEventID
 	MaxUserSpaceEventID
-)
-
-const (
-	NetPacket uint32 = iota
-	DebugNetSecurityBind
-	DebugNetUdpSendmsg
-	DebugNetUdpDisconnect
-	DebugNetUdpDestroySock
-	DebugNetUdpV6DestroySock
-	DebugNetInetSockSetState
-	DebugNetTcpConnect
 )
 
 const Unique32BitSyscallsStartID = 3000
@@ -6150,6 +6140,78 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Params: []external.ArgMeta{
 			{Type: "const char*", Name: "runtime"},
 			{Type: "const char*", Name: "container_id"},
+		},
+	},
+	netproto.NetPacket: {
+		ID32Bit: sys32undefined,
+		Name:    "net_packet",
+		Probes:  []probe{},
+		Sets:    []string{"net_debug"},
+		Params: []external.ArgMeta{
+			{Type: "external.PktMeta", Name: "PacketMetaData"},
+		},
+	},
+	netproto.NetSecurityBind: {
+		ID32Bit: sys32undefined,
+		Name:    "set_security_bind",
+		Probes:  []probe{},
+		Sets:    []string{"net_debug"},
+		Params: []external.ArgMeta{
+			{Type: "external.FunctionBasedPacket", Name: "PacketMetaData"},
+		},
+	},
+	netproto.NetUdpSendmsg: {
+		ID32Bit: sys32undefined,
+		Name:    "net_udp_send_msg",
+		Probes:  []probe{},
+		Sets:    []string{"net_debug"},
+		Params: []external.ArgMeta{
+			{Type: "external.FunctionBasedPacket", Name: "PacketMetaData"},
+		},
+	},
+	netproto.NetUdpDisconnect: {
+		ID32Bit: sys32undefined,
+		Name:    "net_udp_disconnect",
+		Probes:  []probe{},
+		Sets:    []string{"net_debug"},
+		Params: []external.ArgMeta{
+			{Type: "external.FunctionBasedPacket", Name: "PacketMetaData"},
+		},
+	},
+	netproto.NetUdpDestroySock: {
+		ID32Bit: sys32undefined,
+		Name:    "net_udp_destroy_sock",
+		Probes:  []probe{},
+		Sets:    []string{"net_debug"},
+		Params: []external.ArgMeta{
+			{Type: "external.FunctionBasedPacket", Name: "PacketMetaData"},
+		},
+	},
+	netproto.NetUdpV6DestroySock: {
+		ID32Bit: sys32undefined,
+		Name:    "net_udp_v6_destroy_sock",
+		Probes:  []probe{},
+		Sets:    []string{"net_debug"},
+		Params: []external.ArgMeta{
+			{Type: "external.FunctionBasedPacket", Name: "PacketMetaData"},
+		},
+	},
+	netproto.NetInetSockSetState: {
+		ID32Bit: sys32undefined,
+		Name:    "net_inet_sock_set_state",
+		Probes:  []probe{},
+		Sets:    []string{"net_debug"},
+		Params: []external.ArgMeta{
+			{Type: "external.FunctionBasedPacket", Name: "PacketMetaData"},
+		},
+	},
+	netproto.NetTcpConnect: {
+		ID32Bit: sys32undefined,
+		Name:    "net_tcp_connect",
+		Probes:  []probe{},
+		Sets:    []string{"net_debug"},
+		Params: []external.ArgMeta{
+			{Type: "external.FunctionBasedPacket", Name: "PacketMetaData"},
 		},
 	},
 }
