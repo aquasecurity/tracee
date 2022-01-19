@@ -4159,6 +4159,7 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     net_packet_t pkt = {0};
     pkt.ts = bpf_ktime_get_ns();
     pkt.len = skb->len;
+    pkt.event_id = NET_PACKET;
     pkt.ifindex = skb->ifindex;
     local_net_id_t connect_id = {0};
 
@@ -4272,7 +4273,6 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     if (get_config(CONFIG_DEBUG_NET)){
         pkt.src_port = __bpf_ntohs(pkt.src_port);
         pkt.dst_port = __bpf_ntohs(pkt.dst_port);
-        pkt.event_id = NET_PACKET;
         bpf_perf_event_output(skb, &net_events, flags, &pkt, sizeof(pkt));
     }
     else {

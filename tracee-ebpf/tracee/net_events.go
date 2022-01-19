@@ -130,7 +130,6 @@ func createNetEvent(ts int, hostTid int, processName string, eventId int32, even
 	evt.ArgsNum = len(args)
 	evt.ReturnValue = 0
 	evt.StackAddresses = nil
-
 	return evt
 }
 
@@ -155,25 +154,19 @@ func (t *Tracee) processNetEvents() {
 			timeStampObj := time.Unix(0, int64(timeStamp+t.bootTime))
 
 			if netEventId == NetPacket {
-				fmt.Println("1111111\n\n")
-
 				pktMeta, pktLen, interfaceIndex, err := t.parsePacketMetaData(dataBuff)
 				if err != nil {
 					t.handleError(fmt.Errorf("couldent find the process"))
 					continue
 				}
-				fmt.Println("22222\n\n")
-
 				ctx, exist := t.processTree.processTreeMap[hostTid]
 				if !exist {
 					t.handleError(fmt.Errorf("couldent find the process"))
 					continue
 				}
-				fmt.Println("3333333\n\n")
-
 				evt := createNetEvent(int(timeStamp), hostTid, processName, netEventId, "NetPacket", pktMeta, ctx)
 				if t.config.Debug {
-					fmt.Println("444444\n\n")
+					fmt.Println("IN")
 					t.config.ChanEvents <- evt
 					t.stats.eventCounter.Increment()
 
