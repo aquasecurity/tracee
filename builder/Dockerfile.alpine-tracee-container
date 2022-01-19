@@ -53,6 +53,7 @@ ARG FLAVOR=tracee-ebpf-core
 #
 
 FROM alpine:3.15 as tracee-base
+LABEL AS=tracee-base
 USER root
 
 # install base environment
@@ -70,6 +71,7 @@ RUN apk --no-cache update && \
 #
 
 FROM tracee-base as tracee-make-base
+LABEL AS=tracee-make-base
 USER root
 
 # install needed environment
@@ -89,6 +91,7 @@ RUN apk --no-cache update && \
 #
 
 FROM tracee-make-base as tracee-make
+LABEL AS=tracee-make
 ARG BTFHUB
 USER root
 ENV HOME /tracee
@@ -108,6 +111,7 @@ RUN make -f Makefile.one clean && \
 #
 
 FROM tracee-base as tracee-core
+LABEL AS=tracee-core
 USER root
 ENV HOME /tracee
 WORKDIR /tracee
@@ -124,6 +128,7 @@ ENTRYPOINT ["/tracee/entrypoint.sh"]
 #
 
 FROM tracee-make-base as tracee-nocore
+LABEL AS=tracee-nocore
 USER root
 ENV HOME /tracee
 WORKDIR /tracee

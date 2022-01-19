@@ -1,9 +1,8 @@
 name: release
-on: 
-  workflow_dispatch:
-    inputs:
-      tag:
-        required: true
+on:
+  push:
+    tags:
+      - "v*"
 jobs:
   release:
     runs-on: ubuntu-20.04
@@ -17,4 +16,5 @@ jobs:
           gh auth login --with-token <<<'${{ secrets.GITHUB_TOKEN }}'
           docker login docker.io --username ${{ secrets.DOCKERHUB_USER }} --password-stdin <<<'${{ secrets.DOCKERHUB_TOKEN }}'
       - name: release
-        run: make release DOCKER=1 RELEASE_TAG=${{ github.event.inputs.tag }}
+        run: |
+          make -f builder/Makefile.release SNAPSHOT_VERSION=$(git describe --tags --abbrev=0) PUSH_DOCKER_REPO=aquasec/tracee snapshot publish
