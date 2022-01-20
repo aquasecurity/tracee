@@ -43,7 +43,7 @@ Now, in your host's bash shell, execute a command. You will see all events
   	--input-tracee format:json
   ```
 
-Now, in your host's bash shell, execute: `strace /bin/ls` and observe tracee
+Now, in your host's bash shell, execute: `sudo strace /bin/ls` and observe tracee
 warning you about a possible risk (with its Anti-Debugging signature).
 
 Now, for **more patient readers** ...
