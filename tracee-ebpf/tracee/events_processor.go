@@ -10,6 +10,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/internal/bufferdecoder"
 )
 
 func (t *Tracee) processLostEvents() {
@@ -26,7 +27,7 @@ func (t *Tracee) processLostEvents() {
 }
 
 // shouldProcessEvent decides whether or not to drop an event before further processing it
-func (t *Tracee) shouldProcessEvent(ctx *context, args []external.Argument) bool {
+func (t *Tracee) shouldProcessEvent(ctx *bufferdecoder.Context, args []external.Argument) bool {
 	if t.config.Filter.RetFilter.Enabled {
 		if filter, ok := t.config.Filter.RetFilter.Filters[ctx.EventID]; ok {
 			retVal := ctx.Retval

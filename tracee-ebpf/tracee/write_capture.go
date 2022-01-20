@@ -1,50 +1,15 @@
 package tracee
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
 	"io"
 	"os"
 	"path"
-)
 
-// binType is an enum that specifies the type of binary data sent in the file perf map
-// binary types should match defined values in ebpf code
-type binType uint8
-
-const (
-	sendVfsWrite binType = iota + 1
-	sendMprotect
-	sendKernelModule
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/internal/bufferdecoder"
 )
 
 func (t *Tracee) processFileWrites() {
-	type chunkMeta struct {
-		BinType  binType
-		CgroupID uint64
-		Metadata [24]byte
-		Size     int32
-		Off      uint64
-	}
-
-	type vfsWriteMeta struct {
-		DevID uint32
-		Inode uint64
-		Mode  uint32
-		Pid   uint32
-	}
-
-	type kernelModuleMeta struct {
-		DevID uint32
-		Inode uint64
-		Pid   uint32
-		Size  uint64
-	}
-
-	type mprotectWriteMeta struct {
-		Ts uint64
-	}
 
 	const (
 		S_IFMT uint32 = 0170000 // bit mask for the file type bit field
@@ -64,10 +29,11 @@ func (t *Tracee) processFileWrites() {
 			if len(dataRaw) == 0 {
 				continue
 			}
-			dataBuff := bytes.NewBuffer(dataRaw)
-			var meta chunkMeta
+			ebpfMsgDecoder := bufferdecoder.New(dataRaw)
+			var meta bufferdecoder.ChunkMeta
 			appendFile := false
-			err := binary.Read(dataBuff, binary.LittleEndian, &meta)
+
+			err := ebpfMsgDecoder.DecodeChunkMeta(&meta)
 			if err != nil {
 				t.handleError(err)
 				continue
@@ -77,7 +43,8 @@ func (t *Tracee) processFileWrites() {
 				t.handleError(fmt.Errorf("error in file writer: invalid chunk size: %d", meta.Size))
 				continue
 			}
-			if dataBuff.Len() < int(meta.Size) {
+
+			if ebpfMsgDecoder.BuffLen() < int(meta.Size) {
 				t.handleError(fmt.Errorf("error in file writer: chunk too large: %d", meta.Size))
 				continue
 			}
@@ -92,11 +59,11 @@ func (t *Tracee) processFileWrites() {
 				continue
 			}
 			filename := ""
-			metaBuff := bytes.NewBuffer(meta.Metadata[:])
-			var kernelModuleMeta kernelModuleMeta
-			if meta.BinType == sendVfsWrite {
-				var vfsMeta vfsWriteMeta
-				err = binary.Read(metaBuff, binary.LittleEndian, &vfsMeta)
+			metaBuffDecoder := bufferdecoder.New(meta.Metadata[:])
+			var kernelModuleMeta bufferdecoder.KernelModuleMeta
+			if meta.BinType == bufferdecoder.SendVfsWrite {
+				var vfsMeta bufferdecoder.VfsWriteMeta
+				err = metaBuffDecoder.DecodeVfsWriteMeta(&vfsMeta)
 				if err != nil {
 					t.handleError(err)
 					continue
@@ -109,17 +76,17 @@ func (t *Tracee) processFileWrites() {
 				} else {
 					filename = fmt.Sprintf("write.dev-%d.inode-%d.pid-%d", vfsMeta.DevID, vfsMeta.Inode, vfsMeta.Pid)
 				}
-			} else if meta.BinType == sendMprotect {
-				var mprotectMeta mprotectWriteMeta
-				err = binary.Read(metaBuff, binary.LittleEndian, &mprotectMeta)
+			} else if meta.BinType == bufferdecoder.SendMprotect {
+				var mprotectMeta bufferdecoder.MprotectWriteMeta
+				err = metaBuffDecoder.DecodeMprotectWriteMeta(&mprotectMeta)
 				if err != nil {
 					t.handleError(err)
 					continue
 				}
 				// note: size of buffer will determine maximum extracted file size! (as writes from kernel are immediate)
 				filename = fmt.Sprintf("bin.%d", mprotectMeta.Ts)
-			} else if meta.BinType == sendKernelModule {
-				err = binary.Read(metaBuff, binary.LittleEndian, &kernelModuleMeta)
+			} else if meta.BinType == bufferdecoder.SendKernelModule {
+				err = metaBuffDecoder.DecodeKernelModuleMeta(&kernelModuleMeta)
 				if err != nil {
 					t.handleError(err)
 					continue
@@ -160,7 +127,7 @@ func (t *Tracee) processFileWrites() {
 				}
 			}
 
-			dataBytes, err := readByteSliceFromBuff(dataBuff, int(meta.Size))
+			dataBytes, err := bufferdecoder.ReadByteSliceFromBuff(ebpfMsgDecoder, int(meta.Size))
 			if err != nil {
 				f.Close()
 				t.handleError(err)
@@ -176,7 +143,7 @@ func (t *Tracee) processFileWrites() {
 				continue
 			}
 			// Rename the file to add hash when last chunk was received
-			if meta.BinType == sendKernelModule {
+			if meta.BinType == bufferdecoder.SendKernelModule {
 				if uint64(meta.Size)+meta.Off == kernelModuleMeta.Size {
 					fileHash, _ := computeFileHash(fullname)
 					os.Rename(fullname, fullname+"."+fileHash)

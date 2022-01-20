@@ -26,6 +26,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
 	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/internal/bufferdecoder"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
 	lru "github.com/hashicorp/golang-lru"
@@ -626,11 +627,11 @@ func (t *Tracee) populateBPFMaps() error {
 		return err
 	}
 
-	eventsParams := make(map[int32][]argType)
+	eventsParams := make(map[int32][]bufferdecoder.ArgType)
 	for id, eventDefinition := range EventsDefinitions {
 		params := eventDefinition.Params
 		for _, param := range params {
-			eventsParams[id] = append(eventsParams[id], getParamType(param.Type))
+			eventsParams[id] = append(eventsParams[id], bufferdecoder.GetParamType(param.Type))
 		}
 	}
 
