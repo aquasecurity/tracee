@@ -403,7 +403,7 @@ func New(cfg Config) (*Tracee, error) {
 }
 
 // Initialize tail calls program array
-func (t *Tracee) initTailCall(tailNum uint32, mapName string, progName string) error {
+func (t *Tracee) initTailCall(mapName string, mapIdx uint32, progName string) error {
 
 	bpfMap, err := t.bpfModule.GetMap(mapName)
 	if err != nil {
@@ -417,7 +417,7 @@ func (t *Tracee) initTailCall(tailNum uint32, mapName string, progName string) e
 	if fd < 0 {
 		return fmt.Errorf("could not get BPF program FD for "+progName+": %v", err)
 	}
-	err = bpfMap.Update(unsafe.Pointer(&tailNum), unsafe.Pointer(&fd))
+	err = bpfMap.Update(unsafe.Pointer(&mapIdx), unsafe.Pointer(&fd))
 
 	return err
 }
@@ -584,7 +584,7 @@ func (t *Tracee) getFiltersConfig() uint32 {
 }
 
 // an enum that specifies the index of a function to be used in a bpf tail call
-// tail function indexes should match defined values in ebpf code
+// tail function indexes should match defined values in ebpf code for prog_array map
 const (
 	tailVfsWrite uint32 = iota
 	tailVfsWritev
@@ -713,22 +713,6 @@ func (t *Tracee) populateBPFMaps() error {
 	// Populate containers_map with existing containers
 	t.containers.PopulateBpfMap(t.bpfModule, "containers_map")
 
-	// Initialize tail calls program array
-	errs := make([]error, 0)
-	errs = append(errs, t.initTailCall(tailVfsWrite, "prog_array", "trace_ret_vfs_write_tail"))
-	errs = append(errs, t.initTailCall(tailVfsWritev, "prog_array", "trace_ret_vfs_writev_tail"))
-	errs = append(errs, t.initTailCall(tailSendBin, "prog_array", "send_bin"))
-	errs = append(errs, t.initTailCall(tailSendBinTP, "prog_array_tp", "send_bin_tp"))
-	errs = append(errs, t.initTailCall(tailKernelWrite, "prog_array", "trace_ret_kernel_write_tail"))
-	errs = append(errs, t.initTailCall(uint32(DupEventID), "sys_exit_tails", "sys_dup_exit_tail"))
-	errs = append(errs, t.initTailCall(uint32(Dup2EventID), "sys_exit_tails", "sys_dup_exit_tail"))
-	errs = append(errs, t.initTailCall(uint32(Dup3EventID), "sys_exit_tails", "sys_dup_exit_tail"))
-	for _, e := range errs {
-		if e != nil {
-			return e
-		}
-	}
-
 	// Set filters given by the user to filter file write events
 	fileFilterMap, err := t.bpfModule.GetMap("file_filter") // u32, u32
 	if err != nil {
@@ -742,6 +726,7 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
+	// Initialize param types map
 	eventsParams := make(map[int32][]bufferdecoder.ArgType)
 	for id, eventDefinition := range EventsDefinitions {
 		params := eventDefinition.Params
@@ -749,10 +734,20 @@ func (t *Tracee) populateBPFMaps() error {
 			eventsParams[id] = append(eventsParams[id], bufferdecoder.GetParamType(param.Type))
 		}
 	}
-
 	paramsTypesBPFMap, err := t.bpfModule.GetMap("params_types_map") // u32, u64
 	if err != nil {
 		return err
+	}
+	for e := range t.events {
+		eU32 := uint32(e) // e is int32
+		params := eventsParams[e]
+		var paramsTypes uint64
+		for n, paramType := range params {
+			paramsTypes = paramsTypes | (uint64(paramType) << (8 * n))
+		}
+		if err := paramsTypesBPFMap.Update(unsafe.Pointer(&eU32), unsafe.Pointer(&paramsTypes)); err != nil {
+			return err
+		}
 	}
 
 	_, ok1 := t.events[PrintSyscallTableEventID]
@@ -775,30 +770,34 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
+	// Initialize tail call dependencies
+	tailCalls := make(map[tailCall]bool)
+	if t.config.Capture.FileWrite {
+		tailCalls[tailCall{mapName: "prog_array", mapIdx: tailVfsWrite, progName: "trace_ret_vfs_write_tail"}] = true
+		tailCalls[tailCall{mapName: "prog_array", mapIdx: tailVfsWritev, progName: "trace_ret_vfs_writev_tail"}] = true
+		tailCalls[tailCall{mapName: "prog_array", mapIdx: tailKernelWrite, progName: "trace_ret_kernel_write_tail"}] = true
+		tailCalls[tailCall{mapName: "prog_array", mapIdx: tailSendBin, progName: "send_bin"}] = true
+	}
+	if t.config.Capture.Module {
+		tailCalls[tailCall{mapName: "sys_enter_tails", mapIdx: uint32(InitModuleEventID), progName: "syscall__init_module"}] = true
+		tailCalls[tailCall{mapName: "prog_array_tp", mapIdx: tailSendBinTP, progName: "send_bin_tp"}] = true
+		tailCalls[tailCall{mapName: "prog_array", mapIdx: tailSendBin, progName: "send_bin"}] = true
+	}
+	if t.config.Capture.Mem {
+		tailCalls[tailCall{mapName: "prog_array", mapIdx: tailSendBin, progName: "send_bin"}] = true
+	}
 	for e := range t.events {
-		eU32 := uint32(e) // e is int32
-		params := eventsParams[e]
-		var paramsTypes uint64
-		for n, paramType := range params {
-			paramsTypes = paramsTypes | (uint64(paramType) << (8 * n))
-		}
-		if err := paramsTypesBPFMap.Update(unsafe.Pointer(&eU32), unsafe.Pointer(&paramsTypes)); err != nil {
-			return err
-		}
-
-		// some functions require tail call on syscall enter/exit as they perform extra work
-		if e == ExecveEventID || e == ExecveatEventID || e == InitModuleEventID {
-			event, ok := EventsDefinitions[e]
-			if !ok {
-				continue
-			}
-			probFnName := fmt.Sprintf("syscall__%s", event.Name)
-			err = t.initTailCall(eU32, "sys_enter_tails", probFnName)
-			if err != nil {
-				return err
-			}
+		for _, tailCall := range EventsDefinitions[e].Dependencies.tailCalls {
+			tailCalls[tailCall] = true
 		}
 	}
+	for tailCall := range tailCalls {
+		err := t.initTailCall(tailCall.mapName, tailCall.mapIdx, tailCall.progName)
+		if err != nil {
+			return fmt.Errorf("failed to initialize tail call: %w", err)
+		}
+	}
+
 	if len(t.netInfo.ifaces) > 0 {
 		networkConfingMap, err := t.bpfModule.GetMap("network_config") // u32, int
 		if err != nil {
