@@ -160,15 +160,16 @@ func NewProcessTree() (*ProcessTree, error) {
 			taskStatus := fmt.Sprintf("/proc/%d/task/%v/status", pid, task)
 			data, err := ioutil.ReadFile(taskStatus)
 			if err != nil {
+				// process might have exited - ignore this task
 				continue
 			}
 			processStatus, err := parseProcStatus(data, taskStatus)
 			if err != nil {
-				return nil, err
+				continue
 			}
 			containerId, err := containers.GetContainerIdFromTaskDir(taskDir)
 			if err != nil {
-				return nil, err
+				continue
 			}
 			processStatus.ContainerID = containerId
 			p.processTreeMap[int(processStatus.HostTid)] = processStatus
