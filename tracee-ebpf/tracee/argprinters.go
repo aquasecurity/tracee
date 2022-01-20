@@ -1,27 +1,11 @@
 package tracee
 
 import (
-	"encoding/binary"
 	"fmt"
-	"net"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/pkg/external"
 )
-
-// PrintUint32IP prints the IP address encoded as a uint32
-func PrintUint32IP(in uint32) string {
-	ip := make(net.IP, net.IPv4len)
-	binary.BigEndian.PutUint32(ip, in)
-	return ip.String()
-}
-
-// Print16BytesSliceIP prints the IP address encoded as 16 bytes long PrintBytesSliceIP
-// It would be more correct to accept a [16]byte instead of variable lenth slice, but that would cause unnecessary memory copying and type conversions
-func Print16BytesSliceIP(in []byte) string {
-	ip := net.IP(in)
-	return ip.String()
-}
 
 func (t *Tracee) parseArgs(event *external.Event) error {
 	for i := range event.Args {

@@ -10,37 +10,12 @@ import (
 	"unsafe"
 
 	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/internal/bufferdecoder"
 )
 
 // Max depth of each stack trace to track
 // Matches 'MAX_STACK_DEPTH' in eBPF code
 const maxStackDepth int = 20
-
-// context struct contains common metadata that is collected for all types of events
-// it is used to unmarshal binary data and therefore should match (bit by bit) to the `context_t` struct in the ebpf code.
-// NOTE: Integers want to be aligned in memory, so if changing the format of this struct
-// keep the 1-byte 'Argnum' as the final parameter before the padding (if padding is needed).
-type context struct {
-	Ts          uint64
-	CgroupID    uint64
-	Pid         uint32
-	Tid         uint32
-	Ppid        uint32
-	HostPid     uint32
-	HostTid     uint32
-	HostPpid    uint32
-	Uid         uint32
-	MntID       uint32
-	PidID       uint32
-	Comm        [16]byte
-	UtsName     [16]byte
-	EventID     int32
-	Retval      int64
-	StackID     uint32
-	ProcessorId uint16
-	Argnum      uint8
-	_           [1]byte //padding
-}
 
 // handleEvents is a high-level function that starts all operations related to events processing
 func (t *Tracee) handleEvents(ctx gocontext.Context) {
@@ -71,14 +46,12 @@ func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *external.Even
 		defer close(out)
 		defer close(errc)
 		for dataRaw := range t.eventsChannel {
-			dataBuff := bytes.NewBuffer(dataRaw)
-			var ctx context
-			err := binary.Read(dataBuff, binary.LittleEndian, &ctx)
-			if err != nil {
+			ebpfMsgDecoder := bufferdecoder.New(dataRaw)
+			var ctx bufferdecoder.Context
+			if err := ebpfMsgDecoder.DecodeContext(&ctx); err != nil {
 				t.handleError(err)
 				continue
 			}
-
 			eventDefinition, ok := EventsDefinitions[ctx.EventID]
 			if !ok {
 				t.handleError(fmt.Errorf("failed to get configuration of event %d", ctx.EventID))
@@ -88,7 +61,7 @@ func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *external.Even
 			args := make([]external.Argument, 0, ctx.Argnum)
 
 			for i := 0; i < int(ctx.Argnum); i++ {
-				argMeta, argVal, err := readArgFromBuff(dataBuff, eventDefinition.Params)
+				argMeta, argVal, err := bufferdecoder.ReadArgFromBuff(ebpfMsgDecoder, eventDefinition.Params)
 				if err != nil {
 					t.handleError(fmt.Errorf("failed to read argument %d of event %s: %v", i, eventDefinition.Name, err))
 					continue

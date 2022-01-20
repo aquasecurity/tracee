@@ -1,7 +1,6 @@
 package tracee
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"io/ioutil"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/internal/bufferdecoder"
 )
 
 type ProcessCtx struct {
@@ -37,17 +37,17 @@ func (t *Tracee) ParseProcessContext(ctx []byte) (ProcessCtx, error) {
 	procCtx.StartTime = int(binary.LittleEndian.Uint64(ctx[0:8]))
 	cgroupId := binary.LittleEndian.Uint64(ctx[8:16])
 	procCtx.ContainerID = t.containers.GetCgroupInfo(cgroupId).ContainerId
-	dataBuff := bytes.NewBuffer(ctx[16:]) // this is the offset after the cgroup and startTime in the ctx byte array
+	decoder := bufferdecoder.New(ctx[16:]) // this is the offset after the cgroup and startTime in the ctx byte array
 	var errs []error
-	errs = append(errs, binary.Read(dataBuff, binary.LittleEndian, &procCtx.Pid))
-	errs = append(errs, binary.Read(dataBuff, binary.LittleEndian, &procCtx.Tid))
-	errs = append(errs, binary.Read(dataBuff, binary.LittleEndian, &procCtx.Ppid))
-	errs = append(errs, binary.Read(dataBuff, binary.LittleEndian, &procCtx.HostTid))
-	errs = append(errs, binary.Read(dataBuff, binary.LittleEndian, &procCtx.HostPid))
-	errs = append(errs, binary.Read(dataBuff, binary.LittleEndian, &procCtx.HostPpid))
-	errs = append(errs, binary.Read(dataBuff, binary.LittleEndian, &procCtx.Uid))
-	errs = append(errs, binary.Read(dataBuff, binary.LittleEndian, &procCtx.MntId))
-	errs = append(errs, binary.Read(dataBuff, binary.LittleEndian, &procCtx.PidId))
+	errs = append(errs, decoder.DecodeUint32(&procCtx.Pid))
+	errs = append(errs, decoder.DecodeUint32(&procCtx.Tid))
+	errs = append(errs, decoder.DecodeUint32(&procCtx.Ppid))
+	errs = append(errs, decoder.DecodeUint32(&procCtx.HostTid))
+	errs = append(errs, decoder.DecodeUint32(&procCtx.HostPid))
+	errs = append(errs, decoder.DecodeUint32(&procCtx.HostPpid))
+	errs = append(errs, decoder.DecodeUint32(&procCtx.Uid))
+	errs = append(errs, decoder.DecodeUint32(&procCtx.MntId))
+	errs = append(errs, decoder.DecodeUint32(&procCtx.PidId))
 	for _, e := range errs {
 		if e != nil {
 			return procCtx, e
@@ -106,7 +106,7 @@ func parseProcStatus(status []byte, taskStatusPath string) (ProcessCtx, error) {
 	return process, nil
 }
 
-//gets the namespace data for the process context struct by parsing the /proc/<Pid>/task directory
+//gets the namespace data for the process Context struct by parsing the /proc/<Pid>/task directory
 func getNsIdData(taskStatusPath string) (uint32, uint32, error) {
 	path := fmt.Sprintf("%s/ns/mnt", taskStatusPath[:len(taskStatusPath)-7])
 	processMntId, err := os.Readlink(path)

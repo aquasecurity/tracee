@@ -1,10 +1,10 @@
-package tracee
+package bufferdecoder
 
 import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"io"
+	"net"
 	"strconv"
 	"strings"
 
@@ -14,10 +14,10 @@ import (
 
 // argType is an enum that encodes the argument types that the BPF program may write to the shared buffer
 // argument types should match defined values in ebpf code
-type argType uint8
+type ArgType uint8
 
 const (
-	noneT argType = iota
+	noneT ArgType = iota
 	intT
 	uintT
 	longT
@@ -39,17 +39,17 @@ const (
 // These types don't match the ones defined in the ebpf code since they are not being used by syscalls arguments.
 // They have their own set of value to avoid collision in the future.
 const (
-	argsArrT argType = iota + 0x80
+	argsArrT ArgType = iota + 0x80
 	boolT
 )
 
-func readArgFromBuff(dataBuff io.Reader, params []external.ArgMeta) (external.ArgMeta, interface{}, error) {
+func ReadArgFromBuff(ebpfMsgDecoder *EbpfDecoder, params []external.ArgMeta) (external.ArgMeta, interface{}, error) {
 	var err error
 	var res interface{}
 	var argIdx uint8
 	var argMeta external.ArgMeta
 
-	err = binary.Read(dataBuff, binary.LittleEndian, &argIdx)
+	err = ebpfMsgDecoder.DecodeUint8(&argIdx)
 	if err != nil {
 		return argMeta, nil, fmt.Errorf("error reading arg index: %v", err)
 	}
@@ -57,54 +57,55 @@ func readArgFromBuff(dataBuff io.Reader, params []external.ArgMeta) (external.Ar
 		return argMeta, nil, fmt.Errorf("invalid arg index %d", argIdx)
 	}
 	argMeta = params[argIdx]
-	argType := getParamType(argMeta.Type)
+	argType := GetParamType(argMeta.Type)
 
 	switch argType {
 	case u16T:
 		var data uint16
-		err = binary.Read(dataBuff, binary.LittleEndian, &data)
+		err = ebpfMsgDecoder.DecodeUint16(&data)
 		res = data
 	case intT:
 		var data int32
-		err = binary.Read(dataBuff, binary.LittleEndian, &data)
+		err = ebpfMsgDecoder.DecodeInt32(&data)
 		res = data
 	case uintT, devT, modeT:
 		var data uint32
-		err = binary.Read(dataBuff, binary.LittleEndian, &data)
+		err = ebpfMsgDecoder.DecodeUint32(&data)
 		res = data
 	case longT:
 		var data int64
-		err = binary.Read(dataBuff, binary.LittleEndian, &data)
+		err = ebpfMsgDecoder.DecodeInt64(&data)
 		res = data
 	case ulongT, offT, sizeT:
 		var data uint64
-		err = binary.Read(dataBuff, binary.LittleEndian, &data)
+		err = ebpfMsgDecoder.DecodeUint64(&data)
 		res = data
 	case boolT:
 		var data bool
-		err = binary.Read(dataBuff, binary.LittleEndian, &data)
+		err = ebpfMsgDecoder.DecodeBool(&data)
 		res = data
 	case pointerT:
 		var data uint64
-		err = binary.Read(dataBuff, binary.LittleEndian, &data)
+		err = ebpfMsgDecoder.DecodeUint64(&data)
 		res = uintptr(data)
 	case sockAddrT:
-		res, err = readSockaddrFromBuff(dataBuff)
+		res, err = readSockaddrFromBuff(ebpfMsgDecoder)
 	case credT:
-		var data external.SlimCred
-		err = binary.Read(dataBuff, binary.LittleEndian, &data)
+		var data SlimCred
+		err = ebpfMsgDecoder.DecodeSlimCred(&data)
 		res = data
 	case strT:
-		res, err = readStringFromBuff(dataBuff)
+		res, err = readStringFromBuff(ebpfMsgDecoder)
 	case strArrT:
+		// TODO optimization: create slice after getting arrLen
 		var ss []string
 		var arrLen uint8
-		err = binary.Read(dataBuff, binary.LittleEndian, &arrLen)
+		err = ebpfMsgDecoder.DecodeUint8(&arrLen)
 		if err != nil {
 			return argMeta, nil, fmt.Errorf("error reading string array number of elements: %v", err)
 		}
 		for i := 0; i < int(arrLen); i++ {
-			s, err := readStringFromBuff(dataBuff)
+			s, err := readStringFromBuff(ebpfMsgDecoder)
 			if err != nil {
 				return argMeta, nil, fmt.Errorf("error reading string element: %v", err)
 			}
@@ -115,15 +116,16 @@ func readArgFromBuff(dataBuff io.Reader, params []external.ArgMeta) (external.Ar
 		var ss []string
 		var arrLen uint32
 		var argNum uint32
-		err = binary.Read(dataBuff, binary.LittleEndian, &arrLen)
+
+		err = ebpfMsgDecoder.DecodeUint32(&arrLen)
 		if err != nil {
 			return argMeta, nil, fmt.Errorf("error reading args array length: %v", err)
 		}
-		err = binary.Read(dataBuff, binary.LittleEndian, &argNum)
+		err = ebpfMsgDecoder.DecodeUint32(&argNum)
 		if err != nil {
 			return argMeta, nil, fmt.Errorf("error reading args number: %v", err)
 		}
-		resBytes, err := readByteSliceFromBuff(dataBuff, int(arrLen))
+		resBytes, err := ReadByteSliceFromBuff(ebpfMsgDecoder, int(arrLen))
 		if err != nil {
 			return argMeta, nil, fmt.Errorf("error reading args array: %v", err)
 		}
@@ -137,17 +139,17 @@ func readArgFromBuff(dataBuff io.Reader, params []external.ArgMeta) (external.Ar
 		res = ss
 	case bytesT:
 		var size uint32
-		err = binary.Read(dataBuff, binary.LittleEndian, &size)
+		err = ebpfMsgDecoder.DecodeUint32(&size)
 		if err != nil {
 			return argMeta, nil, fmt.Errorf("error reading byte array size: %v", err)
 		}
 		if size > 4096 {
 			return argMeta, nil, fmt.Errorf("byte array size too big: %d", size)
 		}
-		res, err = readByteSliceFromBuff(dataBuff, int(size))
+		res, err = ReadByteSliceFromBuff(ebpfMsgDecoder, int(size))
 	case intArr2T:
 		var intArray [2]int32
-		err = binary.Read(dataBuff, binary.LittleEndian, &intArray)
+		err = ebpfMsgDecoder.DecodeIntArray(intArray[:], 2)
 		if err != nil {
 			return argMeta, nil, fmt.Errorf("error reading int elements: %v", err)
 		}
@@ -162,7 +164,7 @@ func readArgFromBuff(dataBuff io.Reader, params []external.ArgMeta) (external.Ar
 	return argMeta, res, nil
 }
 
-func getParamType(paramType string) argType {
+func GetParamType(paramType string) ArgType {
 	switch paramType {
 	case "int", "pid_t", "uid_t", "gid_t", "mqd_t", "clockid_t", "const clockid_t", "key_t", "key_serial_t", "timer_t":
 		return intT
@@ -206,10 +208,10 @@ func getParamType(paramType string) argType {
 	}
 }
 
-func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
+func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error) {
 	res := make(map[string]string, 5)
 	var family int16
-	err := binary.Read(buff, binary.LittleEndian, &family)
+	err := ebpfMsgDecoder.DecodeInt16(&family)
 	if err != nil {
 		return nil, err
 	}
@@ -228,14 +230,15 @@ func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
 			};
 		*/
 		var sunPathBuf [108]byte
-		err := binary.Read(buff, binary.LittleEndian, &sunPathBuf)
+		err := ebpfMsgDecoder.DecodeBytes(sunPathBuf[:], 108)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_un: %v", err)
 		}
 		trimmedPath := bytes.TrimLeft(sunPathBuf[:], "\000")
 		sunPath := ""
 		if len(trimmedPath) != 0 {
-			sunPath, err = readStringVarFromBuff(bytes.NewBuffer(trimmedPath), 108)
+			pathDecoder := New(trimmedPath)
+			sunPath, err = readStringVarFromBuff(pathDecoder, 108)
 		}
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_un: %v", err)
@@ -255,18 +258,18 @@ func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
 			};
 		*/
 		var port uint16
-		err = binary.Read(buff, binary.BigEndian, &port)
+		err = ebpfMsgDecoder.DecodeUint16BigEndian(&port)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_in: %v", err)
 		}
 		res["sin_port"] = strconv.Itoa(int(port))
 		var addr uint32
-		err = binary.Read(buff, binary.BigEndian, &addr)
+		err = ebpfMsgDecoder.DecodeUint32BigEndian(&addr)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_in: %v", err)
 		}
 		res["sin_addr"] = PrintUint32IP(addr)
-		_, err := readByteSliceFromBuff(buff, 8)
+		_, err := ReadByteSliceFromBuff(ebpfMsgDecoder, 8)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_in: %v", err)
 		}
@@ -285,25 +288,25 @@ func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
 			};
 		*/
 		var port uint16
-		err = binary.Read(buff, binary.BigEndian, &port)
+		err = ebpfMsgDecoder.DecodeUint16BigEndian(&port)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_in6: %v", err)
 		}
 		res["sin6_port"] = strconv.Itoa(int(port))
 
 		var flowinfo uint32
-		err = binary.Read(buff, binary.BigEndian, &flowinfo)
+		err = ebpfMsgDecoder.DecodeUint32BigEndian(&flowinfo)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_in6: %v", err)
 		}
 		res["sin6_flowinfo"] = strconv.Itoa(int(flowinfo))
-		addr, err := readByteSliceFromBuff(buff, 16)
+		addr, err := ReadByteSliceFromBuff(ebpfMsgDecoder, 16)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_in6: %v", err)
 		}
 		res["sin6_addr"] = Print16BytesSliceIP(addr)
 		var scopeid uint32
-		err = binary.Read(buff, binary.BigEndian, &scopeid)
+		err = ebpfMsgDecoder.DecodeUint32BigEndian(&scopeid)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_in6: %v", err)
 		}
@@ -312,20 +315,20 @@ func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
 	return res, nil
 }
 
-func readStringFromBuff(buff io.Reader) (string, error) {
+func readStringFromBuff(ebpfMsgDecoder *EbpfDecoder) (string, error) {
 	var err error
 	var size uint32
-	err = binary.Read(buff, binary.LittleEndian, &size)
+	err = ebpfMsgDecoder.DecodeUint32(&size)
 	if err != nil {
 		return "", fmt.Errorf("error reading string size: %v", err)
 	}
 	if size > 4096 {
 		return "", fmt.Errorf("string size too big: %d", size)
 	}
-	res, err := readByteSliceFromBuff(buff, int(size-1)) //last byte is string terminating null
+	res, err := ReadByteSliceFromBuff(ebpfMsgDecoder, int(size-1)) //last byte is string terminating null
 	defer func() {
 		var dummy int8
-		binary.Read(buff, binary.LittleEndian, &dummy) //discard last byte which is string terminating null
+		ebpfMsgDecoder.DecodeInt8(&dummy) // discard last byte which is string terminating null
 	}()
 	if err != nil {
 		return "", fmt.Errorf("error reading string arg: %v", err)
@@ -335,17 +338,17 @@ func readStringFromBuff(buff io.Reader) (string, error) {
 
 // readStringVarFromBuff reads a null-terminated string from `buff`
 // max length can be passed as `max` to optimize memory allocation, otherwise pass 0
-func readStringVarFromBuff(buff io.Reader, max int) (string, error) {
+func readStringVarFromBuff(decoder *EbpfDecoder, max int) (string, error) {
 	var err error
 	var char int8
 	res := make([]byte, max)
-	err = binary.Read(buff, binary.LittleEndian, &char)
+	err = decoder.DecodeInt8(&char)
 	if err != nil {
 		return "", fmt.Errorf("error reading null terminated string: %v", err)
 	}
 	for count := 1; char != 0 && count < max; count++ {
 		res = append(res, byte(char))
-		err = binary.Read(buff, binary.LittleEndian, &char)
+		err = decoder.DecodeInt8(&char)
 		if err != nil {
 			return "", fmt.Errorf("error reading null terminated string: %v", err)
 		}
@@ -354,12 +357,26 @@ func readStringVarFromBuff(buff io.Reader, max int) (string, error) {
 	return string(res), nil
 }
 
-func readByteSliceFromBuff(buff io.Reader, len int) ([]byte, error) {
+func ReadByteSliceFromBuff(ebpfMsgDecoder *EbpfDecoder, len int) ([]byte, error) {
 	var err error
 	res := make([]byte, len)
-	err = binary.Read(buff, binary.LittleEndian, &res)
+	err = ebpfMsgDecoder.DecodeBytes(res[:], uint32(len))
 	if err != nil {
 		return nil, fmt.Errorf("error reading byte array: %v", err)
 	}
 	return res, nil
+}
+
+// PrintUint32IP prints the IP address encoded as a uint32
+func PrintUint32IP(in uint32) string {
+	ip := make(net.IP, net.IPv4len)
+	binary.BigEndian.PutUint32(ip, in)
+	return ip.String()
+}
+
+// Print16BytesSliceIP prints the IP address encoded as 16 bytes long PrintBytesSliceIP
+// It would be more correct to accept a [16]byte instead of variable lenth slice, but that would cause unnecessary memory copying and type conversions
+func Print16BytesSliceIP(in []byte) string {
+	ip := net.IP(in)
+	return ip.String()
 }
