@@ -10,21 +10,21 @@
       
       
       
-        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/install/ebpf-compilation/">
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/building/environment/">
       
       
         
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.2+insiders-4.4.0">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.7+insiders-4.6.1">
     
     
       
-        <title>eBPF Compilation - Tracee</title>
+        <title>Building Environment - Tracee</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.bdb7debb.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.005db8a3.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.e6a45f82.min.css">
@@ -62,13 +62,53 @@
   
     
     
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+    
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
         
-        <a href="#ebpf-compilation" class="md-skip">
+        <a href="#creating-a-local-building-environment" class="md-skip">
           Skip to content
         </a>
       
@@ -104,7 +144,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              eBPF Compilation
+              Building Environment
             
           </span>
         </div>
@@ -209,12 +249,18 @@
       
       
 
+
   
   
   
     <li class="md-nav__item">
       <a href="../.." class="md-nav__link">
-        Getting Started
+        
+  
+  <span class="md-ellipsis">
+    Getting Started
+  </span>
+
       </a>
     </li>
   
@@ -223,6 +269,7 @@
       
       
       
+
 
   
   
@@ -239,30 +286,21 @@
       
       
         <label class="md-nav__link" for="__nav_2">
-          Installation
+          
+  
+  <span class="md-ellipsis">
+    Building
+  </span>
+
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <nav class="md-nav" aria-label="Installation" data-md-level="1">
+      <nav class="md-nav" aria-label="Building" data-md-level="1">
         <label class="md-nav__title" for="__nav_2">
           <span class="md-nav__icon md-icon"></span>
-          Installation
+          Building
         </label>
         <ul class="md-nav__list" data-md-scrollfix>
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../prerequisites/" class="md-nav__link">
-        Prerequisites
-      </a>
-    </li>
-  
-
-            
           
             
               
@@ -280,12 +318,22 @@
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          eBPF Compilation
+          
+  
+  <span class="md-ellipsis">
+    Building Environment
+  </span>
+
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
-        eBPF Compilation
+        
+  
+  <span class="md-ellipsis">
+    Building Environment
+  </span>
+
       </a>
       
         
@@ -304,23 +352,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#compilation-prerequisites" class="md-nav__link">
-    Compilation Prerequisites
+  <a href="#quick-steps-impatient-readers" class="md-nav__link">
+    Quick steps (impatient readers)
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#compiling-the-ebpf-program" class="md-nav__link">
-    Compiling the eBPF program
+  <a href="#how-to-build-and-use-the-environment" class="md-nav__link">
+    How to build and use the environment
+  </a>
+  
+    <nav class="md-nav" aria-label="How to build and use the environment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-builder-environment" class="md-nav__link">
+    Creating a builder environment
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#using-compiled-ebpf-program" class="md-nav__link">
-    Using compiled eBPF program
+        
+          <li class="md-nav__item">
+  <a href="#executing-a-builder-environment" class="md-nav__link">
+    Executing a builder environment
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-build-environment-as-a-make-replacement" class="md-nav__link">
+    Using build environment as a make replacement
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -339,8 +407,13 @@
   
   
     <li class="md-nav__item">
-      <a href="../headers/" class="md-nav__link">
-        Linux Headers
+      <a href="../containers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Building Containers
+  </span>
+
       </a>
     </li>
   
@@ -353,22 +426,13 @@
   
   
     <li class="md-nav__item">
-      <a href="../kubernetes/" class="md-nav__link">
-        Kubernetes
-      </a>
-    </li>
+      <a href="../nocore-ebpf/" class="md-nav__link">
+        
   
+  <span class="md-ellipsis">
+    Building non CO-RE
+  </span>
 
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../docker-mac/" class="md-nav__link">
-        Docker for Mac
       </a>
     </li>
   
@@ -385,95 +449,6 @@
       
       
 
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../integrations/" class="md-nav__link">
-        Integrations
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../config/" class="md-nav__link">
-        Configuration Options
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../rules-authoring/" class="md-nav__link">
-        Authoring Rules
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../rules-index/" class="md-nav__link">
-        Available Rules
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../faq/" class="md-nav__link">
-        FAQ
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../architecture/" class="md-nav__link">
-        Architecture
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
 
   
   
@@ -482,18 +457,265 @@
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_9" type="checkbox" id="__nav_9" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
       
       
       
       
-        <label class="md-nav__link" for="__nav_9">
-          Tracing
+        <label class="md-nav__link" for="__nav_3">
+          
+  
+  <span class="md-ellipsis">
+    Installation
+  </span>
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Installation" data-md-level="1">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Installation
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../install/prerequisites/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Prerequisites
+  </span>
+
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../install/headers.md" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Linux Headers
+  </span>
+
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../install/kubernetes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Kubernetes
+  </span>
+
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../install/docker-mac/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Docker for Mac
+  </span>
+
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../integrations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Integrations
+  </span>
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration Options
+  </span>
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rules-authoring/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Authoring Rules
+  </span>
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../rules-index/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Available Rules
+  </span>
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    FAQ
+  </span>
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Architecture
+  </span>
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_10" type="checkbox" id="__nav_10" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_10">
+          
+  
+  <span class="md-ellipsis">
+    Tracing
+  </span>
+
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="Tracing" data-md-level="1">
-        <label class="md-nav__title" for="__nav_9">
+        <label class="md-nav__title" for="__nav_10">
           <span class="md-nav__icon md-icon"></span>
           Tracing
         </label>
@@ -506,7 +728,12 @@
   
     <li class="md-nav__item">
       <a href="../../tracee-ebpf/" class="md-nav__link">
-        Getting Started
+        
+  
+  <span class="md-ellipsis">
+    Getting Started
+  </span>
+
       </a>
     </li>
   
@@ -520,7 +747,12 @@
   
     <li class="md-nav__item">
       <a href="../../tracee-ebpf/output/" class="md-nav__link">
-        Output Options
+        
+  
+  <span class="md-ellipsis">
+    Output Options
+  </span>
+
       </a>
     </li>
   
@@ -534,7 +766,12 @@
   
     <li class="md-nav__item">
       <a href="../../tracee-ebpf/trace-options/" class="md-nav__link">
-        Trace Options
+        
+  
+  <span class="md-ellipsis">
+    Trace Options
+  </span>
+
       </a>
     </li>
   
@@ -548,7 +785,12 @@
   
     <li class="md-nav__item">
       <a href="../../tracee-ebpf/capture/" class="md-nav__link">
-        Capturing Artifacts
+        
+  
+  <span class="md-ellipsis">
+    Capturing Artifacts
+  </span>
+
       </a>
     </li>
   
@@ -562,7 +804,12 @@
   
     <li class="md-nav__item">
       <a href="../../tracee-ebpf/override-os-needed-files" class="md-nav__link">
-        Overriding OS needed files
+        
+  
+  <span class="md-ellipsis">
+    Overriding OS needed files
+  </span>
+
       </a>
     </li>
   
@@ -602,23 +849,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#compilation-prerequisites" class="md-nav__link">
-    Compilation Prerequisites
+  <a href="#quick-steps-impatient-readers" class="md-nav__link">
+    Quick steps (impatient readers)
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#compiling-the-ebpf-program" class="md-nav__link">
-    Compiling the eBPF program
+  <a href="#how-to-build-and-use-the-environment" class="md-nav__link">
+    How to build and use the environment
+  </a>
+  
+    <nav class="md-nav" aria-label="How to build and use the environment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-builder-environment" class="md-nav__link">
+    Creating a builder environment
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#using-compiled-ebpf-program" class="md-nav__link">
-    Using compiled eBPF program
+        
+          <li class="md-nav__item">
+  <a href="#executing-a-builder-environment" class="md-nav__link">
+    Executing a builder environment
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-build-environment-as-a-make-replacement" class="md-nav__link">
+    Using build environment as a make replacement
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -636,55 +903,123 @@
                 
 
 
-<h1 id="ebpf-compilation">eBPF Compilation<a class="headerlink" href="#ebpf-compilation" title="Permanent link">&para;</a></h1>
-<p>Tracee is leveraging Linux's eBPF technology, which requires kernel level integration. Tracee supports two eBPF integration modes: a portable mode which will seamlessly run everywhere on supporting environment, as demonstrated by the quickstart, or a kernel-specific mode that requires Tracee's eBPF program to be specifically compiled for your host.</p>
-<p>The portable option, also known as CO:RE (compile once, run everywhere), requires that your operating system support BTF (BPF Type Format). Tracee will automatically run in CO:RE mode if it detects that the environment supports it. This mode requires no intervention or preparation on your side.
-You can manually detect if your environments supports it by checking if the following file exists on your machine: <code>/sys/kernel/btf/vmlinux</code> or consult the following documentation: <a href="https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere">BPF CO-RE (Compile Once – Run Everywhere)</a>.</p>
-<p>If you want to run Tracee on a host without BTF support you can have Tracee build the bpf object for you at runtime. This will depend on having clang and a kernel version specific kernel-header package.</p>
-<p>Alternatively, you can pre-compile the eBPF program, and provide it to Tracee. There are some benefits to this approach as you will not need to depend on clang and kernel headers, as well as reduced risk of invoking an external program at runtime.</p>
-<h2 id="compilation-prerequisites">Compilation Prerequisites<a class="headerlink" href="#compilation-prerequisites" title="Permanent link">&para;</a></h2>
-<p>Portable (CO:RE) option:</p>
+<h1 id="creating-a-local-building-environment">Creating a local building environment<a class="headerlink" href="#creating-a-local-building-environment" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>These instructions are meant to describe how to create a local building and
+execution environment. If you would like to build tracee container(s)
+image(s), <a href="../containers/">read this</a> instead.</p>
+</blockquote>
+<h2 id="quick-steps-impatient-readers">Quick steps (<strong>impatient readers</strong>)<a class="headerlink" href="#quick-steps-impatient-readers" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Linux kernel version &gt;= 4.18</li>
-<li>libc, and the libraries: libelf, zlib</li>
-<li>GNU Make &gt;= 4.3</li>
-<li>clang &gt;= 12</li>
+<li>Build and execute <code>tracee-ebpf</code>:</li>
 </ul>
-<p>Kernel version specific option:</p>
+<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-make alpine-prepare
+$ make -f builder/Makefile.tracee-make alpine-shell
+
+tracee@f64bb4a2f0b1[/tracee]$ make -f Makefile.one clean
+tracee@f64bb4a2f0b1[/tracee]$ make -f Makefile.one tracee-ebpf
+tracee@f64bb4a2f0b1[/tracee]$ sudo ./dist/tracee-ebpf \
+  -o option:parse-arguments \
+  --trace comm=bash \
+  --trace follow \
+  --trace event!=&#39;sched*&#39;
+</code></pre></div>
+<p>Now, in your host's bash shell, execute a command. You will see all events
+(except scheduler ones) being printed, in "table format", to stdout.</p>
 <ul>
-<li>Linux kernel version &gt;= 4.18</li>
-<li>Linux kernel headers available under conventional location (see <a href="../headers/">Linux Headers</a> section for more info)</li>
-<li>libc, and the libraries: libelf, zlib</li>
-<li>GNU Make &gt;= 4.3</li>
-<li>clang &gt;= 12</li>
+<li>Build and execute <code>tracee</code>:</li>
 </ul>
-<h2 id="compiling-the-ebpf-program">Compiling the eBPF program<a class="headerlink" href="#compiling-the-ebpf-program" title="Permanent link">&para;</a></h2>
-<p>You can build the eBPF program in the following ways:</p>
-<ol>
-<li>Clone the repo (including submodules: <code>git clone --branch=tracee --recursive https://github.com/aquasecurity/tracee.git</code>) and <code>make bpf</code>.</li>
-<li><code>make bpf DOCKER=1</code> to build in a Docker container which includes all development tooling.</li>
-</ol>
-<p>Running this will produce a file called <code>tracee.bpf.$kernelversion.$traceeversion.o</code> under the <code>dist</code> directory.</p>
-<h2 id="using-compiled-ebpf-program">Using compiled eBPF program<a class="headerlink" href="#using-compiled-ebpf-program" title="Permanent link">&para;</a></h2>
-<p>Once you have the eBPF program artifact, you can provide it to Tracee in any of the following locations:</p>
-<ol>
-<li>Path specified in <code>TRACEE_BPF_FILE</code> environment variable</li>
-<li><code>/tmp/tracee</code></li>
-</ol>
-<p>In this case, the full Docker image can be replaced by the lighter-weight <code>aquasec/tracee:slim</code> image. This image cannot build the eBPF program on its own, and is meant to be used when you have already compiled the eBPF program beforehand.</p>
-<p>If using Docker, the following <code>docker run</code> options demonstrate mounting a pre-compiled eBPF artifact into the container, and pointing Tracee to use it:</p>
-<div class="highlight"><pre><span></span><code>docker run --name tracee --rm --privileged -it <span class="se">\</span>
-  -v /path/in/host/tracee.bpf.123.o:/path/in/container/tracee.bpf.o <span class="se">\</span>
-  -e <span class="nv">TRACEE_BPF_FILE</span><span class="o">=</span>/path/in/container/tracee.bpf.o <span class="se">\</span>
-  aquasec/tracee:slim-racee
+<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-make alpine-prepare
+$ make -f builder/Makefile.tracee-make alpine-shell
+
+tracee@f64bb4a2f0b1[/tracee]$ make -f Makefile.one clean
+tracee@f64bb4a2f0b1[/tracee]$ make -f Makefile.one all
+tracee@f64bb4a2f0b1[/tracee]$ sudo ./dist/tracee-ebpf \
+  -o format:json \
+  -o option:parse-arguments \
+  --trace comm=bash \
+  --trace follow \
+  --trace event!=&#39;sched*&#39; | \
+  ./dist/tracee-rules \
+  --input-tracee file:stdin \
+  --input-tracee format:json
 </code></pre></div>
-<p>If using Docker on a host without BTF enabled, the following <code>docker run</code> options demonstrate mounting of required kernel headers for building the bpf object at runtime:</p>
-<div class="highlight"><pre><span></span><code>docker run --name tracee --rm --privileged -it <span class="se">\</span>
-  -v /lib/modules/:/lib/modules/:ro <span class="se">\</span>
-  -v /usr/src:/usr/src:ro <span class="se">\</span>
-  -v /tmp/tracee:/tmp/tracee <span class="se">\</span>
-  aquasec/tracee:racee
+<p>Now, in your host's bash shell, execute: <code>sudo strace /bin/ls</code> and observe tracee
+warning you about a possible risk (with its Anti-Debugging signature).</p>
+<p>Now, for <strong>more patient readers</strong> ...</p>
+<h2 id="how-to-build-and-use-the-environment">How to build and use the environment<a class="headerlink" href="#how-to-build-and-use-the-environment" title="Permanent link">&para;</a></h2>
+<p>In order to have a controlled building environment for tracee, tracee provides
+a <code>Makefile.tracee-make</code> file that allows you to create and use docker
+controlled environments to build &amp; test <code>tracee-ebpf</code> and <code>tracee-rules</code>.</p>
+<p>Two different environments are maintained for building tracee:</p>
+<ul>
+<li>Alpine</li>
+<li>Ubuntu</li>
+</ul>
+<p>The reason for that is that <strong>Alpine Linux</strong> is based in the
+<a href="https://en.wikipedia.org/wiki/Musl">musl</a> C standard library, while the
+<strong>Ubuntu Linux</strong> uses <a href="https://en.wikipedia.org/wiki/Glibc">glibc</a>. By
+supporting both building environments we can always be sure that the project
+builds (and executes) correctly in both environments.</p>
+<p>Be aware: locally created containers, called <code>alpine-tracee-make</code> or
+<code>ubuntu-tracee-make</code>, share the host source code directory. This means that, if
+you build tracee binaries using <code>alpine</code> distribution, binaries <code>tracee-ebpf</code>
+and <code>tracee-rules</code> might not be compatible to the Linux distribution from your
+host OS.</p>
+<h3 id="creating-a-builder-environment">Creating a builder environment<a class="headerlink" href="#creating-a-builder-environment" title="Permanent link">&para;</a></h3>
+<p>To create an <strong>alpine-tracee-make</strong> container:</p>
+<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-make alpine-prepare
 </code></pre></div>
+<p>To create an <strong>ubuntu-tracee-make</strong> container:</p>
+<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-make ubuntu-prepare
+</code></pre></div>
+<h3 id="executing-a-builder-environment">Executing a builder environment<a class="headerlink" href="#executing-a-builder-environment" title="Permanent link">&para;</a></h3>
+<p>To execute an <strong>alpine-tracee-make</strong> shell:</p>
+<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-make alpine-shell
+</code></pre></div>
+<p>To execute an <strong>ubuntu-tracee-make</strong> shell:</p>
+<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-make ubuntu-shell
+</code></pre></div>
+<h3 id="using-build-environment-as-a-make-replacement">Using build environment as a <strong>make</strong> replacement<a class="headerlink" href="#using-build-environment-as-a-make-replacement" title="Permanent link">&para;</a></h3>
+<p>Instead of executing a builder shell, you may use <code>alpine-tracee-make</code>, or
+<code>ubuntu-tracee-make</code>, as a replacement for the <code>make</code> command:</p>
+<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-make ubuntu-prepare
+$ make -f builder/Makefile.tracee-make ubuntu-make ARG=&quot;help&quot;
+$ make -f builder/Makefile.tracee-make ubuntu-make ARG=&quot;clean&quot;
+$ make -f builder/Makefile.tracee-make ubuntu-make ARG=&quot;bpf-core&quot;
+$ make -f builder/Makefile.tracee-make ubuntu-make ARG=&quot;tracee-ebpf&quot;
+$ make -f builder/Makefile.tracee-make ubuntu-make ARG=&quot;all&quot;
+</code></pre></div>
+<p>And, after the compilation, run the commands directly in your host:</p>
+<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf \
+    -o option:parse-arguments \
+    --trace comm=bash \
+    --trace follow \
+    --trace event!=&#39;sched*&#39;
+</code></pre></div>
+<blockquote>
+<p><strong>Note</strong>: the generated binary must be compatible to your host (depending on
+glibc version, for example).</p>
+</blockquote>
+<p>If you don't want to depend on host's libraries versions, or if you are using
+the <code>alpine-tracee-make</code> container as a replacement for <code>make</code>, and your host
+is not an <strong>Alpine Linux</strong>, then you may set STATIC=1 variable so you can run
+compiled binaries in your host:</p>
+<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-make alpine-prepare
+$ make -f builder/Makefile.tracee-make alpine-make ARG=&quot;help&quot;
+$ STATIC=1 make -f builder/Makefile.tracee-make alpine-make ARG=&quot;all&quot;
+</code></pre></div>
+<p>and execute the static binary from your host:</p>
+<div class="highlight"><pre><span></span><code>$ ldd dist/tracee-ebpf
+    not a dynamic executable
+</code></pre></div>
+<blockquote>
+<p><strong>Warning</strong>: compiling <code>tracee-rules</code> with STATIC=1 won't allow you to use
+golang based signatures:</p>
+<div class="highlight"><pre><span></span><code>2021/12/13 13:27:21 error opening plugin /tracee/dist/rules/builtin.so:
+plugin.Open(&quot;/tracee/dist/rules/builtin.so&quot;): Dynamic loading not supported
+</code></pre></div>
+</blockquote>
 
 
 
@@ -702,7 +1037,7 @@ You can manually detect if your environments supports it by checking if the foll
     <nav class="md-footer__inner md-grid" aria-label="Footer">
       
         
-        <a href="../prerequisites/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Prerequisites" rel="prev">
+        <a href="../.." class="md-footer__link md-footer__link--prev" aria-label="Previous: Getting Started" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
           </div>
@@ -711,20 +1046,20 @@ You can manually detect if your environments supports it by checking if the foll
               <span class="md-footer__direction">
                 Previous
               </span>
-              Prerequisites
+              Getting Started
             </div>
           </div>
         </a>
       
       
         
-        <a href="../headers/" class="md-footer__link md-footer__link--next" aria-label="Next: Linux Headers" rel="next">
+        <a href="../containers/" class="md-footer__link md-footer__link--next" aria-label="Next: Building Containers" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Linux Headers
+              Building Containers
             </div>
           </div>
           <div class="md-footer__button md-icon">
@@ -750,10 +1085,10 @@ You can manually detect if your environments supports it by checking if the foll
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.2c14e664.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.f7fe2898.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.67f51cf8.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d3a5db87.min.js"></script>
       
     
   </body>
