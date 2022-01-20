@@ -123,12 +123,11 @@ type ArgMeta struct {
 	Type string `json:"type"`
 }
 
-func CreateArgument(argName string, argValue string) Argument {
-	arg := Argument{
+func CreateStringArgument(argName string, argValue string) Argument {
+	return Argument{
 		ArgMeta: ArgMeta{argName, "string"},
 		Value:   argValue,
 	}
-	return arg
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
