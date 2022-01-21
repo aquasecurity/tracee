@@ -86,7 +86,6 @@ func (t *Tracee) parseArgs(event *external.Event) error {
 		if reqArg := getEventArg(event, "request"); reqArg != nil {
 			if req, isInt64 := reqArg.Value.(int64); isInt64 {
 				ptraceRequestArgument, err := helpers.ParsePtraceRequestArgument(uint64(req))
-				// TODO: https://github.com/aquasecurity/libbpfgo/issues/108
 				ParseOrEmptyString(reqArg, ptraceRequestArgument, err)
 			}
 		}
