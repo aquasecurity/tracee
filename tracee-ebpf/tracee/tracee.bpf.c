@@ -2364,10 +2364,13 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     struct task_struct *parent = (struct task_struct*)ctx->args[0];
     struct task_struct *child = (struct task_struct*)ctx->args[1];
 
-    process_context_t *process = (process_context_t*) &data.context;
-    process->tid = get_task_ns_pid(child);
-    process->host_tid = get_task_host_pid(child);
-    bpf_map_update_elem(&process_context_map, &process->host_tid, &process, BPF_ANY);
+    // note: v5.4 verifier does not like using (process_context_t *) from &data->context
+    process_context_t process = {};
+    __builtin_memcpy(&process, &data.context, sizeof(process_context_t));
+    process.tid = get_task_ns_pid(child);
+    process.host_tid = get_task_host_pid(child);
+    bpf_map_update_elem(&process_context_map, &process.host_tid, &process, BPF_ANY);
+
     int parent_pid = get_task_host_pid(parent);
     int child_pid = get_task_host_pid(child);
 
