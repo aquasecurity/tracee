@@ -213,7 +213,11 @@ func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	res["sa_family"] = helpers.ParseSocketDomain(uint32(family))
+	socketDomainArg, err := helpers.ParseSocketDomainArgument(uint64(family))
+	if err != nil {
+		socketDomainArg = helpers.AF_UNSPEC
+	}
+	res["sa_family"] = socketDomainArg.String()
 	switch family {
 	case 1: // AF_UNIX
 		/*
