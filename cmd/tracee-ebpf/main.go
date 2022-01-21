@@ -1,15 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
+	"os/signal"
 	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 	embed "github.com/aquasecurity/tracee"
@@ -153,7 +156,6 @@ func main() {
 
 			cfg.ChanEvents = make(chan external.Event)
 			cfg.ChanErrors = make(chan error)
-			cfg.ChanDone = make(chan struct{})
 
 			t, err := tracee.New(cfg)
 			if err != nil {
@@ -188,6 +190,23 @@ func main() {
 				return err
 			}
 
+			// create a context that is cancelled by SIGINT/SIGTERM
+			ctx := context.Background()
+			ctx, cancel := context.WithCancel(ctx)
+			sig := make(chan os.Signal, 1)
+			signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+			defer func() {
+				signal.Stop(sig)
+				cancel()
+			}()
+			go func() {
+				select {
+				case <-sig:
+					cancel()
+				case <-ctx.Done():
+				}
+			}()
+
 			go func() {
 				printer.Preamble()
 				for {
@@ -196,18 +215,21 @@ func main() {
 						printer.Print(event)
 					case err := <-cfg.ChanErrors:
 						printer.Error(err)
-					case <-cfg.ChanDone:
+					case <-ctx.Done():
 						return
 					}
 				}
 			}()
 
-			err = t.Run()
+			// always print stats before exiting
+			defer func() {
+				stats := t.GetStats()
+				printer.Epilogue(stats)
+				printer.Close()
+			}()
 
-			stats := t.GetStats()
-			printer.Epilogue(stats)
-			printer.Close()
-			return err
+			// run until ctx is cancelled by signal
+			return t.Run(ctx)
 		},
 		Flags: []cli.Flag{
 			&cli.BoolFlag{

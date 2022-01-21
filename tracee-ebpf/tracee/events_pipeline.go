@@ -2,6 +2,7 @@ package tracee
 
 import (
 	"bytes"
+	gocontext "context"
 	"encoding/binary"
 	"fmt"
 	"strconv"
@@ -41,15 +42,15 @@ type context struct {
 }
 
 // handleEvents is a high-level function that starts all operations related to events processing
-func (t *Tracee) handleEvents(done <-chan struct{}) {
+func (t *Tracee) handleEvents(ctx gocontext.Context) {
 	var errcList []<-chan error
 
 	// Source pipeline stage.
-	eventsChan, errc := t.decodeEvents(done)
+	eventsChan, errc := t.decodeEvents(ctx)
 	errcList = append(errcList, errc)
 
 	// Sink pipeline stage.
-	errc = t.processEvents(done, eventsChan)
+	errc = t.processEvents(ctx, eventsChan)
 	errcList = append(errcList, errc)
 
 	// Pipeline started. Waiting for pipeline to complete
@@ -57,7 +58,7 @@ func (t *Tracee) handleEvents(done <-chan struct{}) {
 }
 
 // decodeEvents read the events received from the BPF programs and parse it into external.Event type
-func (t *Tracee) decodeEvents(done <-chan struct{}) (<-chan *external.Event, <-chan error) {
+func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *external.Event, <-chan error) {
 	out := make(chan *external.Event)
 	errc := make(chan error, 1)
 	go func() {
@@ -135,8 +136,7 @@ func (t *Tracee) decodeEvents(done <-chan struct{}) (<-chan *external.Event, <-c
 
 			select {
 			case out <- &evt:
-				break
-			case <-done:
+			case <-outerCtx.Done():
 				return
 			}
 		}
@@ -144,7 +144,7 @@ func (t *Tracee) decodeEvents(done <-chan struct{}) (<-chan *external.Event, <-c
 	return out, errc
 }
 
-func (t *Tracee) processEvents(done <-chan struct{}, in <-chan *external.Event) <-chan error {
+func (t *Tracee) processEvents(ctx gocontext.Context, in <-chan *external.Event) <-chan error {
 	errc := make(chan error, 1)
 	go func() {
 		defer close(errc)
@@ -181,7 +181,7 @@ func (t *Tracee) processEvents(done <-chan struct{}, in <-chan *external.Event) 
 			select {
 			case t.config.ChanEvents <- *event:
 				t.stats.eventCounter.Increment()
-			case <-done:
+			case <-ctx.Done():
 				return
 			}
 		}

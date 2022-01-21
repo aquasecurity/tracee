@@ -1,6 +1,7 @@
 package tracee
 
 import (
+	gocontext "context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -10,7 +11,6 @@ import (
 	"math"
 	"net"
 	"os"
-	"os/signal"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -46,7 +46,6 @@ type Config struct {
 	KernelConfig       *helpers.KernelConfig
 	ChanEvents         chan external.Event
 	ChanErrors         chan error
-	ChanDone           chan struct{}
 }
 
 type CaptureConfig struct {
@@ -130,10 +129,6 @@ func (tc Config) Validate() error {
 
 	if tc.ChanErrors == nil {
 		return errors.New("nil errors channel")
-	}
-
-	if tc.ChanDone == nil {
-		return errors.New("nil done channel")
 	}
 
 	return nil
@@ -931,19 +926,18 @@ func (t *Tracee) getProcessCtx(hostTid int) (ProcessCtx, error) {
 	}
 }
 
-// Run starts the trace. it will run until interrupted
-func (t *Tracee) Run() error {
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+// Run starts the trace. it will run until ctx is cancelled
+func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.invokeInitNamespacesEvent()
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
 	t.netPerfMap.Start()
 	go t.processLostEvents()
-	go t.handleEvents(t.config.ChanDone)
+	go t.handleEvents(ctx)
 	go t.processFileWrites()
 	go t.processNetEvents()
-	<-sig
+	// block until ctx is cancelled elsewhere
+	<-ctx.Done()
 	t.eventsPerfMap.Stop()
 	t.fileWrPerfMap.Stop()
 	t.netPerfMap.Stop()
@@ -988,8 +982,6 @@ func (t *Tracee) Run() error {
 		}
 	}
 
-	// Signal pipeline that Tracee exits by closing the done channel
-	close(t.config.ChanDone)
 	t.Close()
 	return nil
 }
