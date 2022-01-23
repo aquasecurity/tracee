@@ -1049,5 +1049,6 @@ func (t *Tracee) invokeInitNamespacesEvent() {
 	if t.eventsToTrace[InitNamespacesEventID] {
 		systemInfoEvent, _ := CreateInitNamespacesEvent()
 		t.config.ChanEvents <- systemInfoEvent
+		t.stats.eventCounter.Increment()
 	}
 }
