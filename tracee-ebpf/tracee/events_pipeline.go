@@ -135,7 +135,7 @@ func (t *Tracee) decodeEvents(done <-chan struct{}) (<-chan *external.Event, <-c
 
 			select {
 			case out <- &evt:
-				t.stats.eventCounter.Increment()
+				break
 			case <-done:
 				return
 			}
