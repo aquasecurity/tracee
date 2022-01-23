@@ -66,7 +66,7 @@ func (t *Tracee) processNetEvents() {
 			// timeStamp is nanoseconds since system boot time
 			timeStampObj := time.Unix(0, int64(evtMeta.timeStamp+t.bootTime))
 
-			ctx, exist := t.processTree.processTreeMap[evtMeta.hostTid]
+			processContext, exist := t.processTree.processTreeMap[evtMeta.hostTid]
 			if !exist {
 				t.handleError(fmt.Errorf("couldn't find the process"))
 				continue
@@ -82,7 +82,7 @@ func (t *Tracee) processNetEvents() {
 				// now we are only supporting net event tracing only in debug mode.
 				// in the feature we will create specific flag for that feature
 				if t.config.Debug {
-					evt := createNetEvent(int(evtMeta.timeStamp), evtMeta.hostTid, evtMeta.processName, evtMeta.netEventId, "NetPacket", ctx)
+					evt := createNetEvent(int(evtMeta.timeStamp), evtMeta.hostTid, evtMeta.processName, evtMeta.netEventId, "NetPacket", processContext)
 					createNetPacketMetaArgs(&evt, packet)
 					t.config.ChanEvents <- evt
 					t.stats.eventCounter.Increment()
@@ -115,7 +115,7 @@ func (t *Tracee) processNetEvents() {
 					t.handleError(err)
 					continue
 				}
-				evt := createNetEvent(int(evtMeta.timeStamp), evtMeta.hostTid, evtMeta.processName, evtMeta.netEventId, NetEvents[evtMeta.netEventId], ctx)
+				evt := createNetEvent(int(evtMeta.timeStamp), evtMeta.hostTid, evtMeta.processName, evtMeta.netEventId, NetEvents[evtMeta.netEventId], processContext)
 				createDebugPacketMetaArgs(&evt, debugEventPacket)
 				t.config.ChanEvents <- evt
 				t.stats.eventCounter.Increment()
