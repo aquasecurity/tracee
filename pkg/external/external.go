@@ -256,3 +256,15 @@ type PktMeta struct {
 	DestPort uint16 `json:"dest_port"`
 	Protocol uint8  `json:"protocol"`
 }
+type DebugPacketMetaData struct {
+	LocalIP     string
+	RemoteIP    string
+	LocalPort   uint16
+	RemotePort  uint16
+	Protocol    uint8
+	_           [3]byte //padding
+	TcpOldState uint32
+	TcpNewState uint32
+	_           [4]byte //padding
+	SockPtr     uint64
+}
