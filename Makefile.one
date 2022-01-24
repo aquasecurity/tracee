@@ -496,7 +496,8 @@ test-tracee-ebpf: \
 		-tags $(GO_TAGS_EBPF) \
 		-v \
 		./tracee-ebpf/... \
-		./cmd/tracee-ebpf/...
+		./cmd/tracee-ebpf/... \
+		./pkg/...
 
 #
 # btfhub (expensive: only run if core obj changed)
