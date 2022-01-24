@@ -1,7 +1,7 @@
 package signaturestest
 
 import (
-	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"github.com/aquasecurity/tracee/types"
 )
 
 // FindingsHolder is a utility struct that defines types.SignatureHandler

@@ -14,7 +14,7 @@ import (
 	"syscall"
 
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
-	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"github.com/aquasecurity/tracee/types"
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/urfave/cli/v2"
 )
