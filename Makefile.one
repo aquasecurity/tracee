@@ -381,7 +381,6 @@ clean-bpf-nocore:
 TMP_DIR = /tmp/tracee
 
 .PHONY: install-bpf-nocore
-.ONESHELL:
 install-bpf-nocore: \
 	$(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o \
 	| .check_$(CMD_INSTALL) \

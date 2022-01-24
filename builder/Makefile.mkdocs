@@ -7,6 +7,9 @@ all:
 # make
 #
 
+.ONESHELL:
+SHELL = /bin/sh
+
 MAKE = make -f $(shell find . -name Makefile.mkdocs)
 MAKEFLAGS += --no-print-directory
 
@@ -16,7 +19,6 @@ MAKEFLAGS += --no-print-directory
 
 CMD_DOCKER ?= docker
 
-.ONESHELL:
 .check_%:
 #
 	@command -v $* >/dev/null
@@ -52,7 +54,6 @@ help:
 #
 
 .PHONY: .check_tree
-.ONESHELL:
 .check_tree:
 #
 	@if [ ! -d ./builder ]; then
