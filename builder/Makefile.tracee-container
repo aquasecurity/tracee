@@ -9,6 +9,9 @@ all:
 # make
 #
 
+.ONESHELL:
+SHELL = /bin/sh
+
 MAKEFLAGS += --no-print-directory
 
 #
@@ -17,7 +20,6 @@ MAKEFLAGS += --no-print-directory
 
 CMD_DOCKER ?= docker
 
-.ONESHELL:
 .check_%:
 #
 	@command -v $* >/dev/null
@@ -68,7 +70,6 @@ help:
 #
 
 .PHONY: .check_tree
-.ONESHELL:
 .check_tree:
 #
 	@if [ ! -d ./builder ]; then
