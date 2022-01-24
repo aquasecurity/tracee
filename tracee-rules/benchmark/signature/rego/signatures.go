@@ -4,7 +4,7 @@ import (
 	_ "embed"
 
 	"github.com/aquasecurity/tracee/tracee-rules/regosig"
-	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"github.com/aquasecurity/tracee/types"
 	"github.com/open-policy-agent/opa/compile"
 )
 

@@ -13,7 +13,7 @@ import (
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/aquasecurity/tracee/pkg/external"
-	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"github.com/aquasecurity/tracee/types"
 )
 
 const DefaultDetectionOutputTemplate string = `

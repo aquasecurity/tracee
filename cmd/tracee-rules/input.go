@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/external"
-	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"github.com/aquasecurity/tracee/types"
 )
 
 var errHelp = errors.New("user has requested help text")

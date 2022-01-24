@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"github.com/aquasecurity/tracee/types"
 )
 
 func Test_listSigs(t *testing.T) {

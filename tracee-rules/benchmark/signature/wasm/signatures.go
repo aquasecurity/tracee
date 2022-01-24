@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"github.com/aquasecurity/tracee/types"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
 )

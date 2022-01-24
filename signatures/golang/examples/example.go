@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/external"
-	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"github.com/aquasecurity/tracee/types"
 )
 
 // counter is a simple demo signature that counts towards a target

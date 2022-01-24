@@ -11,7 +11,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
-	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"github.com/aquasecurity/tracee/types"
 )
 
 var (

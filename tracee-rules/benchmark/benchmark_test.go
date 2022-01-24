@@ -10,7 +10,7 @@ import (
 	"github.com/aquasecurity/tracee/tracee-rules/benchmark/signature/rego"
 	"github.com/aquasecurity/tracee/tracee-rules/benchmark/signature/wasm"
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
-	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"github.com/aquasecurity/tracee/types"
 	"github.com/stretchr/testify/require"
 )
 
