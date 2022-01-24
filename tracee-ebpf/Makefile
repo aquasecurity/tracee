@@ -164,6 +164,7 @@ test: $(GO_SRC) $(LIBBPF_HEADERS) $(LIBBPF_OBJ)
 		-tags ebpf $(GOTEST_FLAGS) \
 		-v \
 		../cmd/tracee-ebpf/ \
+		../pkg/... \
 		./...
 
 else
