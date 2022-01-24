@@ -42,7 +42,7 @@ type EventDefinition struct {
 // Common events (used by all architectures)
 // events should match defined values in ebpf code
 const (
-	SysEnterEventID int32 = iota + 1000
+	SysEnterEventID int32 = iota + MaxNetEventID
 	SysExitEventID
 	SchedProcessForkEventID
 	SchedProcessExecEventID
@@ -6151,6 +6151,78 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Params: []external.ArgMeta{
 			{Type: "const char*", Name: "runtime"},
 			{Type: "const char*", Name: "container_id"},
+		},
+	},
+	NetPacket: {
+		ID32Bit: sys32undefined,
+		Name:    "NetPacket",
+		Probes:  []probe{},
+		Sets:    []string{},
+		Params: []external.ArgMeta{
+			{Type: "external.PktMeta", Name: "PacketMetaData"},
+		},
+	},
+	NetSecurityBind: {
+		ID32Bit: sys32undefined,
+		Name:    "NetSecurityBind",
+		Probes:  []probe{},
+		Sets:    []string{},
+		Params: []external.ArgMeta{
+			{Type: "external.PktMeta", Name: "PacketMetaData"},
+		},
+	},
+	NetUdpSendmsg: {
+		ID32Bit: sys32undefined,
+		Name:    "NetUdpSendmsg",
+		Probes:  []probe{},
+		Sets:    []string{},
+		Params: []external.ArgMeta{
+			{Type: "external.PktMeta", Name: "PacketMetaData"},
+		},
+	},
+	NetUdpDisconnect: {
+		ID32Bit: sys32undefined,
+		Name:    "NetUdpDisconnect",
+		Probes:  []probe{},
+		Sets:    []string{},
+		Params: []external.ArgMeta{
+			{Type: "external.PktMeta", Name: "PacketMetaData"},
+		},
+	},
+	NetUdpDestroySock: {
+		ID32Bit: sys32undefined,
+		Name:    "NetUdpDestroySock",
+		Probes:  []probe{},
+		Sets:    []string{},
+		Params: []external.ArgMeta{
+			{Type: "external.PktMeta", Name: "PacketMetaData"},
+		},
+	},
+	NetUdpV6DestroySock: {
+		ID32Bit: sys32undefined,
+		Name:    "NetUdpV6DestroySock",
+		Probes:  []probe{},
+		Sets:    []string{},
+		Params: []external.ArgMeta{
+			{Type: "external.PktMeta", Name: "PacketMetaData"},
+		},
+	},
+	NetInetSockSetState: {
+		ID32Bit: sys32undefined,
+		Name:    "NetInetSockSetState",
+		Probes:  []probe{},
+		Sets:    []string{},
+		Params: []external.ArgMeta{
+			{Type: "external.PktMeta", Name: "PacketMetaData"},
+		},
+	},
+	NetTcpConnect: {
+		ID32Bit: sys32undefined,
+		Name:    "NetTcpConnect",
+		Probes:  []probe{},
+		Sets:    []string{},
+		Params: []external.ArgMeta{
+			{Type: "external.PktMeta", Name: "PacketMetaData"},
 		},
 	},
 }

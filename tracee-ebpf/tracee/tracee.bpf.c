@@ -156,49 +156,52 @@ Copyright (C) Aqua Security inc.
 #define SYS_DUP3                        24
 #endif
 
-#define RAW_SYS_ENTER                   1000
-#define RAW_SYS_EXIT                    1001
-#define SCHED_PROCESS_FORK              1002
-#define SCHED_PROCESS_EXEC              1003
-#define SCHED_PROCESS_EXIT              1004
-#define SCHED_SWITCH                    1005
-#define DO_EXIT                         1006
-#define CAP_CAPABLE                     1007
-#define VFS_WRITE                       1008
-#define VFS_WRITEV                      1009
-#define MEM_PROT_ALERT                  1010
-#define COMMIT_CREDS                    1011
-#define SWITCH_TASK_NS                  1012
-#define MAGIC_WRITE                     1013
-#define CGROUP_ATTACH_TASK              1014
-#define CGROUP_MKDIR                    1015
-#define CGROUP_RMDIR                    1016
-#define SECURITY_BPRM_CHECK             1017
-#define SECURITY_FILE_OPEN              1018
-#define SECURITY_INODE_UNLINK           1019
-#define SECURITY_SOCKET_CREATE          1020
-#define SECURITY_SOCKET_LISTEN          1021
-#define SECURITY_SOCKET_CONNECT         1022
-#define SECURITY_SOCKET_ACCEPT          1023
-#define SECURITY_SOCKET_BIND            1024
-#define SECURITY_SB_MOUNT               1025
-#define SECURITY_BPF                    1026
-#define SECURITY_BPF_MAP                1027
-#define SECURITY_KERNEL_READ_FILE       1028
-#define SECURITY_INODE_MKNOD            1029
-#define SECURITY_POST_READ_FILE         1030
-#define SOCKET_DUP                      1031
-#define HIDDEN_INODES                   1032
-#define MAX_EVENT_ID                    1033
 
-#define NET_PACKET                      4000
-#define DEBUG_NET_SECURITY_BIND         4001
-#define DEBUG_NET_UDP_SENDMSG           4002
-#define DEBUG_NET_UDP_DISCONNECT        4003
-#define DEBUG_NET_UDP_DESTROY_SOCK      4004
-#define DEBUG_NET_UDPV6_DESTROY_SOCK    4005
-#define DEBUG_NET_INET_SOCK_SET_STATE   4006
-#define DEBUG_NET_TCP_CONNECT           4007
+#define NET_PACKET                      1000
+#define DEBUG_NET_SECURITY_BIND         1001
+#define DEBUG_NET_UDP_SENDMSG           1002
+#define DEBUG_NET_UDP_DISCONNECT        1003
+#define DEBUG_NET_UDP_DESTROY_SOCK      1004
+#define DEBUG_NET_UDPV6_DESTROY_SOCK    1005
+#define DEBUG_NET_INET_SOCK_SET_STATE   1006
+#define DEBUG_NET_TCP_CONNECT           1007
+#define MAX_NET_EVENT_ID                1008
+
+#define RAW_SYS_ENTER                   MAX_NET_EVENT_ID +0
+#define RAW_SYS_EXIT                    MAX_NET_EVENT_ID +1
+#define SCHED_PROCESS_FORK              MAX_NET_EVENT_ID +2
+#define SCHED_PROCESS_EXEC              MAX_NET_EVENT_ID +3
+#define SCHED_PROCESS_EXIT              MAX_NET_EVENT_ID +4
+#define SCHED_SWITCH                    MAX_NET_EVENT_ID +5
+#define DO_EXIT                         MAX_NET_EVENT_ID +6
+#define CAP_CAPABLE                     MAX_NET_EVENT_ID +7
+#define VFS_WRITE                       MAX_NET_EVENT_ID +8
+#define VFS_WRITEV                      MAX_NET_EVENT_ID +9
+#define MEM_PROT_ALERT                  MAX_NET_EVENT_ID +10
+#define COMMIT_CREDS                    MAX_NET_EVENT_ID +11
+#define SWITCH_TASK_NS                  MAX_NET_EVENT_ID +12
+#define MAGIC_WRITE                     MAX_NET_EVENT_ID +13
+#define CGROUP_ATTACH_TASK              MAX_NET_EVENT_ID +14
+#define CGROUP_MKDIR                    MAX_NET_EVENT_ID +15
+#define CGROUP_RMDIR                    MAX_NET_EVENT_ID +16
+#define SECURITY_BPRM_CHECK             MAX_NET_EVENT_ID +17
+#define SECURITY_FILE_OPEN              MAX_NET_EVENT_ID +18
+#define SECURITY_INODE_UNLINK           MAX_NET_EVENT_ID +19
+#define SECURITY_SOCKET_CREATE          1028
+#define SECURITY_SOCKET_LISTEN          1029
+#define SECURITY_SOCKET_CONNECT         1030
+#define SECURITY_SOCKET_ACCEPT          1031
+#define SECURITY_SOCKET_BIND            1032
+#define SECURITY_SB_MOUNT               1033
+#define SECURITY_BPF                    1034
+#define SECURITY_BPF_MAP                1035
+#define SECURITY_KERNEL_READ_FILE       1036
+#define SECURITY_INODE_MKNOD            1037
+#define SECURITY_POST_READ_FILE         1038
+#define SOCKET_DUP                      1039
+#define HIDDEN_INODES                   1040
+#define MAX_EVENT_ID                    1041
+
 
 #define CONFIG_SHOW_SYSCALL             1
 #define CONFIG_EXEC_ENV                 2
