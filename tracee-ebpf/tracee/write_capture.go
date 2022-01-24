@@ -184,6 +184,7 @@ func (t *Tracee) processFileWrites() {
 			}
 		case lost := <-t.lostWrChannel:
 			t.stats.lostWrCounter.Increment(int(lost))
+			t.config.ChanErrors <- fmt.Errorf("lost %d write events", lost)
 		}
 	}
 }

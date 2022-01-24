@@ -177,6 +177,7 @@ func (t *Tracee) processNetEvents() {
 
 		case lost := <-t.lostNetChannel:
 			t.stats.lostNtCounter.Increment(int(lost))
+			t.config.ChanErrors <- fmt.Errorf("lost %d network events", lost)
 		}
 	}
 }

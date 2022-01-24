@@ -16,6 +16,7 @@ func (t *Tracee) processLostEvents() {
 	for {
 		lost := <-t.lostEvChannel
 		t.stats.lostEvCounter.Increment(int(lost))
+		t.config.ChanErrors <- fmt.Errorf("lost %d events", lost)
 	}
 }
 
