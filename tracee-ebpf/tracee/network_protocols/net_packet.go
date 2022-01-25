@@ -7,9 +7,20 @@ import (
 	"inet.af/netaddr"
 )
 
+type PacketMeta struct {
+	PktLen   uint32   `json:"pkt_len"`
+	IfIndex  uint32   `json:"if_index"`
+	SrcIP    [16]byte `json:"src_ip"`
+	DestIP   [16]byte `json:"dest_ip"`
+	SrcPort  uint16   `json:"src_port"`
+	DestPort uint16   `json:"dest_port"`
+	Protocol uint8    `json:"protocol"`
+	_        [3]byte  //padding
+}
+
 // parsing the PacketMeta struct from bytes.buffer
-func ParseNetPacketMetaData(payload *bytes.Buffer) (external.PacketMeta, error) {
-	var pktMetaData external.PacketMeta
+func ParseNetPacketMetaData(payload *bytes.Buffer) (PacketMeta, error) {
+	var pktMetaData PacketMeta
 	err := binary.Read(payload, binary.LittleEndian, &pktMetaData)
 	if err != nil {
 		return pktMetaData, err
@@ -18,7 +29,7 @@ func ParseNetPacketMetaData(payload *bytes.Buffer) (external.PacketMeta, error) 
 }
 
 //takes the packet metadata and create argument array with that data
-func createNetPacketMetadataArg(packet external.PacketMeta) []external.Argument {
+func createNetPacketMetadataArg(packet PacketMeta) []external.Argument {
 	eventArgs := make([]external.Argument, 0, 0)
 	arg := external.PktMeta{}
 	if IsIpv6(packet.SrcIP) {
@@ -44,7 +55,7 @@ func createNetPacketMetadataArg(packet external.PacketMeta) []external.Argument 
 	return eventArgs
 }
 
-func CreateNetPacketMetaArgs(event *external.Event, NetPacket external.PacketMeta) {
+func CreateNetPacketMetaArgs(event *external.Event, NetPacket PacketMeta) {
 	event.Args = createNetPacketMetadataArg(NetPacket)
 	event.ArgsNum = len(event.Args)
 }

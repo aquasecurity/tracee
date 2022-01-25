@@ -11,6 +11,7 @@ func IsIpv6(ip [16]byte) bool {
 	return true
 }
 
+//corvent a ipV4 to samller byte array
 func AssginIpV4(ip [16]byte) [4]byte {
 	var ipV4 [4]byte
 	copy(ipV4[:], ip[12:16])

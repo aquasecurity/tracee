@@ -11,10 +11,10 @@ import (
 )
 
 type EventMeta struct {
-	timeStamp   uint64 `json:"time_stamp"`
-	netEventId  int32  `json:"net_event_id"`
-	hostTid     int    `json:"host_tid"`
-	processName string `json:"process_name"`
+	TimeStamp   uint64 `json:"time_stamp"`
+	NetEventId  int32  `json:"net_event_id"`
+	HostTid     int    `json:"host_tid"`
+	ProcessName string `json:"process_name"`
 }
 
 func (t *Tracee) processNetEvents() {
@@ -29,15 +29,15 @@ func (t *Tracee) processNetEvents() {
 			}
 			evtMeta, dataBuff := parseEventMetaData(in)
 			// timeStamp is nanoseconds since system boot time
-			timeStampObj := time.Unix(0, int64(evtMeta.timeStamp+t.bootTime))
+			timeStampObj := time.Unix(0, int64(evtMeta.TimeStamp+t.bootTime))
 
-			processContext, exist := t.processTree.processTreeMap[evtMeta.hostTid]
+			processContext, exist := t.processTree.processTreeMap[evtMeta.HostTid]
 			if !exist {
-				t.handleError(fmt.Errorf("couldn't find the process: %d", evtMeta.hostTid))
+				t.handleError(fmt.Errorf("couldn't find the process: %d", evtMeta.HostTid))
 				continue
 			}
 
-			if evtMeta.netEventId == NetPacket {
+			if evtMeta.NetEventId == NetPacket {
 				packet, err := network_protocols.ParseNetPacketMetaData(dataBuff)
 				if err != nil {
 					t.handleError(fmt.Errorf("couldent parse the packet metadata"))
@@ -47,7 +47,7 @@ func (t *Tracee) processNetEvents() {
 				// now we are only supporting net event tracing only in debug mode.
 				// in the feature we will create specific flag for that feature
 				if t.config.Debug {
-					evt := createNetEvent(int(evtMeta.timeStamp), evtMeta.hostTid, evtMeta.processName, evtMeta.netEventId, "NetPacket", processContext)
+					evt := createNetEvent(int(evtMeta.TimeStamp), evtMeta.HostTid, evtMeta.ProcessName, evtMeta.NetEventId, "NetPacket", processContext)
 					network_protocols.CreateNetPacketMetaArgs(&evt, packet)
 					t.config.ChanEvents <- evt
 					t.stats.eventCounter.Increment()
@@ -65,7 +65,7 @@ func (t *Tracee) processNetEvents() {
 					t.handleError(err)
 					continue
 				}
-				evt := createNetEvent(int(evtMeta.timeStamp), evtMeta.hostTid, evtMeta.processName, evtMeta.netEventId, EventsDefinitions[evtMeta.netEventId].Name, processContext)
+				evt := createNetEvent(int(evtMeta.TimeStamp), evtMeta.HostTid, evtMeta.ProcessName, evtMeta.NetEventId, EventsDefinitions[evtMeta.NetEventId].Name, processContext)
 				createDebugPacketMetaArgs(&evt, debugEventPacket)
 				t.config.ChanEvents <- evt
 				t.stats.eventCounter.Increment()
@@ -108,10 +108,10 @@ func (t *Tracee) writePacket(packetLen uint32, timeStamp time.Time, interfaceInd
 // Note: after this function the next data in the packet byte array is the PacketMeta struct so i recommend to call 'parseNetPacketMetaData' after this function had called
 func parseEventMetaData(payloadBytes []byte) (EventMeta, *bytes.Buffer) {
 	var eventMetaData EventMeta
-	eventMetaData.timeStamp = binary.LittleEndian.Uint64(payloadBytes[0:8])
-	eventMetaData.netEventId = int32(binary.LittleEndian.Uint32(payloadBytes[8:12]))
-	eventMetaData.hostTid = int(binary.LittleEndian.Uint32(payloadBytes[12:16]))
-	eventMetaData.processName = string(bytes.TrimRight(payloadBytes[16:32], "\x00"))
+	eventMetaData.TimeStamp = binary.LittleEndian.Uint64(payloadBytes[0:8])
+	eventMetaData.NetEventId = int32(binary.LittleEndian.Uint32(payloadBytes[8:12]))
+	eventMetaData.HostTid = int(binary.LittleEndian.Uint32(payloadBytes[12:16]))
+	eventMetaData.ProcessName = string(bytes.TrimRight(payloadBytes[16:32], "\x00"))
 	return eventMetaData, bytes.NewBuffer(payloadBytes[32:])
 
 }
