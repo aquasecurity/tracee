@@ -17,6 +17,7 @@ Copyright (C) Aqua Security inc.
 #include <linux/binfmts.h>
 #include <linux/cred.h>
 #include <linux/sched.h>
+#include <linux/signal.h>
 #include <linux/fs.h>
 #include <linux/mm_types.h>
 #include <linux/mount.h>
@@ -187,7 +188,8 @@ Copyright (C) Aqua Security inc.
 #define SECURITY_INODE_MKNOD            1029
 #define SECURITY_POST_READ_FILE         1030
 #define SOCKET_DUP                      1031
-#define MAX_EVENT_ID                    1032
+#define HIDDEN_INODES                   1032
+#define MAX_EVENT_ID                    1033
 
 #define NET_PACKET                      0
 #define DEBUG_NET_SECURITY_BIND         1
@@ -387,6 +389,20 @@ typedef struct event_context {
     u8 argnum;
 } context_t;
 
+typedef struct process_context {
+    u64 ts;                        // Timestamp
+    u64 cgroup_id;
+    u32 pid;                       // PID as in the userspace term
+    u32 tid;                       // TID as in the userspace term
+    u32 ppid;                      // Parent PID as in the userspace term
+    u32 host_pid;                  // PID in host pid namespace
+    u32 host_tid;                  // TID in host pid namespace
+    u32 host_ppid;                 // Parent PID in host pid namespace
+    u32 uid;
+    u32 mnt_id;
+    u32 pid_id;
+} process_context_t;
+
 typedef struct args {
     unsigned long args[6];
 } args_t;
@@ -545,6 +561,7 @@ BPF_HASH(bin_args_map, u64, bin_args_t);                // persist args for send
 BPF_HASH(sys_32_to_64_map, u32, u32);                   // map 32bit to 64bit syscalls
 BPF_HASH(params_types_map, u32, u64);                   // encoded parameters types for event
 BPF_HASH(process_tree_map, u32, u32);                   // filter events by the ancestry of the traced process
+BPF_HASH(process_context_map, u32, process_context_t);  // holds the process_context data for every tid
 BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t);         // socket address to process context
 BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t);   // network identifier to process context
 BPF_ARRAY(file_filter, path_filter_t, 3);               // filter vfs_write events
@@ -736,7 +753,7 @@ static __always_inline char * get_task_uts_name(struct task_struct *task)
 static __always_inline u32 get_task_ppid(struct task_struct *task)
 {
     struct task_struct *parent = READ_KERN(task->real_parent);
-    return READ_KERN(parent->pid);
+    return READ_KERN(parent->tgid);
 }
 
 static __always_inline u32 get_task_host_pid(struct task_struct *task)
@@ -2270,18 +2287,18 @@ static __always_inline int send_socket_dup(event_data_t *data, u64 oldfd, u64 ne
 
     if (family == AF_INET) {
         net_conn_v4_t net_details = {};
-        get_network_details_from_sock_v4(sk, &net_details, 0);
-
         struct sockaddr_in remote;
+
+        get_network_details_from_sock_v4(sk, &net_details, 0);
         get_remote_sockaddr_in_from_network_details(&remote, &net_details, family);
 
         save_to_submit_buf(data, &remote, sizeof(struct sockaddr_in), 2);
     }
     else if (family == AF_INET6) {
         net_conn_v6_t net_details = {};
-        get_network_details_from_sock_v6(sk, &net_details, 0);
-
         struct sockaddr_in6 remote;
+
+        get_network_details_from_sock_v6(sk, &net_details, 0);
         get_remote_sockaddr_in6_from_network_details(&remote, &net_details, family);
 
         save_to_submit_buf(data, &remote, sizeof(struct sockaddr_in6), 2);
@@ -2347,6 +2364,13 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     struct task_struct *parent = (struct task_struct*)ctx->args[0];
     struct task_struct *child = (struct task_struct*)ctx->args[1];
 
+    // note: v5.4 verifier does not like using (process_context_t *) from &data->context
+    process_context_t process = {};
+    __builtin_memcpy(&process, &data.context, sizeof(process_context_t));
+    process.tid = get_task_ns_pid(child);
+    process.host_tid = get_task_host_pid(child);
+    bpf_map_update_elem(&process_context_map, &process.host_tid, &process, BPF_ANY);
+
     int parent_pid = get_task_host_pid(parent);
     int child_pid = get_task_host_pid(child);
 
@@ -2374,12 +2398,18 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
 
     if (event_chosen(SCHED_PROCESS_FORK)) {
         int parent_ns_pid = get_task_ns_pid(parent);
+        int parent_ns_tgid = get_task_ns_tgid(parent);
         int child_ns_pid = get_task_ns_pid(child);
+        int child_ns_tgid = get_task_ns_tgid(child);
 
         save_to_submit_buf(&data, (void*)&parent_pid, sizeof(int), 0);
         save_to_submit_buf(&data, (void*)&parent_ns_pid, sizeof(int), 1);
-        save_to_submit_buf(&data, (void*)&child_pid, sizeof(int), 2);
-        save_to_submit_buf(&data, (void*)&child_ns_pid, sizeof(int), 3);
+        save_to_submit_buf(&data, (void*)&parent_tgid, sizeof(int), 2);
+        save_to_submit_buf(&data, (void*)&parent_ns_tgid, sizeof(int), 3);
+        save_to_submit_buf(&data, (void*)&child_pid, sizeof(int), 4);
+        save_to_submit_buf(&data, (void*)&child_ns_pid, sizeof(int), 5);
+        save_to_submit_buf(&data, (void*)&child_tgid, sizeof(int), 6);
+        save_to_submit_buf(&data, (void*)&child_ns_tgid, sizeof(int), 7);
 
         events_perf_submit(&data, SCHED_PROCESS_FORK, 0);
     }
@@ -2395,6 +2425,8 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
+
+    process_context_t *process = (process_context_t*) &data.context;
 
     // Perform the following checks before should_trace() so we can filter by
     // newly created containers/processes.  We assume that a new container/pod
@@ -2418,6 +2450,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 
     // We passed all filters (in should_trace()) - add this pid to traced pids set
     bpf_map_update_elem(&traced_pids_map, &data.context.host_tid, &data.context.host_tid, BPF_ANY);
+    bpf_map_update_elem(&process_context_map, &data.context.host_tid, process, BPF_ANY);
 
     struct task_struct *task = (struct task_struct *)ctx->args[0];
     struct linux_binprm *bprm = (struct linux_binprm *)ctx->args[2];
@@ -2488,29 +2521,37 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     if (!init_event_data(&data, ctx))
         return 0;
 
+    // evaluate should_trace before removing this pid from the maps
+    bool traced = should_trace(&data.context);
+
     // Remove this pid from all maps
     bpf_map_delete_elem(&traced_pids_map, &data.context.host_tid);
     bpf_map_delete_elem(&new_pids_map, &data.context.host_tid);
     bpf_map_delete_elem(&syscall_data_map, &data.context.host_tid);
+    bpf_map_delete_elem(&process_context_map, &data.context.host_tid);
 
     int proc_tree_filter_set = get_config(CONFIG_PROC_TREE_FILTER);
-    if (proc_tree_filter_set) {
-        // Check number of threads in thread group to determine if this is last one
-        struct task_struct *task = (struct task_struct *)bpf_get_current_task();
-        struct task_struct *group_leader = READ_KERN(task->group_leader);
-        struct list_head thread_group_head = READ_KERN(group_leader->thread_group);
-        struct list_head *next = READ_KERN(thread_group_head.next);
-        if (GET_FIELD_ADDR(group_leader->thread_group) == next) {
+
+    bool group_dead = false;
+    struct task_struct *task = data.task;
+    struct signal_struct *signal = READ_KERN(task->signal);
+    atomic_t live = READ_KERN(signal->live);
+    // This check could be true for multiple thread exits if the thread count was 0 when the hooks were triggered.
+    // This could happen for example if the threads performed exit in different CPUs simultaneously.
+    if (live.counter == 0) {
+        group_dead = true;
+        if (proc_tree_filter_set) {
             bpf_map_delete_elem(&process_tree_map, &data.context.host_pid);
         }
     }
 
-    if (!should_trace(&data.context))
+    if (!traced)
         return 0;
 
     long exit_code = get_task_exit_code(data.task);
 
     save_to_submit_buf(&data, (void*)&exit_code, sizeof(long), 0);
+    save_to_submit_buf(&data, (void*)&group_dead, sizeof(bool), 1);
 
     return events_perf_submit(&data, SCHED_PROCESS_EXIT, 0);
 }
@@ -2544,7 +2585,24 @@ int tracepoint__sched__sched_switch(struct bpf_raw_tracepoint_args *ctx)
 
     return events_perf_submit(&data, SCHED_SWITCH, 0);
 }
+SEC("kprobe/filldir64")
+int BPF_KPROBE(trace_filldir64)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+    if (!should_trace((&data.context)))
+        return 0;
 
+    char * process_name = (char *)PT_REGS_PARM2(ctx);
+    unsigned long process_inode_number = (unsigned long) PT_REGS_PARM5(ctx);
+    if (process_inode_number == 0)
+    {
+        save_str_to_buf(&data, process_name, 0);
+        return events_perf_submit(&data, HIDDEN_INODES, 0);
+    }
+    return 0;
+}
 SEC("kprobe/do_exit")
 int BPF_KPROBE(trace_do_exit)
 {
@@ -2970,18 +3028,18 @@ int BPF_KPROBE(trace_security_socket_listen)
 
     if (family == AF_INET) {
         net_conn_v4_t net_details = {};
-        get_network_details_from_sock_v4(sk, &net_details, 0);
-
         struct sockaddr_in local;
+
+        get_network_details_from_sock_v4(sk, &net_details, 0);
         get_local_sockaddr_in_from_network_details(&local, &net_details, family);
 
         save_to_submit_buf(&data, (void *)&local, sizeof(struct sockaddr_in), 1);
     }
     else if (family == AF_INET6) {
         net_conn_v6_t net_details = {};
-        get_network_details_from_sock_v6(sk, &net_details, 0);
-
         struct sockaddr_in6 local;
+
+        get_network_details_from_sock_v6(sk, &net_details, 0);
         get_local_sockaddr_in6_from_network_details(&local, &net_details, family);
 
         save_to_submit_buf(&data, (void *)&local, sizeof(struct sockaddr_in6), 1);
@@ -3029,12 +3087,15 @@ int BPF_KPROBE(trace_security_socket_connect)
         save_to_submit_buf(&data, (void *)address, sizeof(struct sockaddr_in6), 1);
     }
     else if (sa_fam == AF_UNIX) {
+#if defined(__TARGET_ARCH_x86) // TODO: this is broken in arm64 (issue: #1129)
         if (addr_len <= sizeof(struct sockaddr_un)) {
             struct sockaddr_un sockaddr = {};
             bpf_probe_read(&sockaddr, addr_len, (void *)address);
             save_to_submit_buf(&data, (void *)&sockaddr, sizeof(struct sockaddr_un), 1);
         }
-        else save_to_submit_buf(&data, (void *)address, sizeof(struct sockaddr_un), 1);
+        else
+#endif
+            save_to_submit_buf(&data, (void *)address, sizeof(struct sockaddr_un), 1);
     }
 
     return events_perf_submit(&data, SECURITY_SOCKET_CONNECT, 0);
@@ -3067,18 +3128,18 @@ int BPF_KPROBE(trace_security_socket_accept)
 
     if (family == AF_INET) {
         net_conn_v4_t net_details = {};
-        get_network_details_from_sock_v4(sk, &net_details, 0);
-
         struct sockaddr_in local;
+
+        get_network_details_from_sock_v4(sk, &net_details, 0);
         get_local_sockaddr_in_from_network_details(&local, &net_details, family);
 
         save_to_submit_buf(&data, (void *)&local, sizeof(struct sockaddr_in), 1);
     }
     else if (family == AF_INET6) {
         net_conn_v6_t net_details = {};
-        get_network_details_from_sock_v6(sk, &net_details, 0);
-
         struct sockaddr_in6 local;
+
+        get_network_details_from_sock_v6(sk, &net_details, 0);
         get_local_sockaddr_in6_from_network_details(&local, &net_details, family);
 
         save_to_submit_buf(&data, (void *)&local, sizeof(struct sockaddr_in6), 1);
@@ -3146,12 +3207,15 @@ int BPF_KPROBE(trace_security_socket_bind)
         }
     }
     else if (sa_fam == AF_UNIX) {
+#if defined(__TARGET_ARCH_x86) // TODO: this is broken in arm64 (issue: #1129)
         if (addr_len <= sizeof(struct sockaddr_un)) {
             struct sockaddr_un sockaddr = {};
             bpf_probe_read(&sockaddr, addr_len, (void *)address);
             save_to_submit_buf(&data, (void *)&sockaddr, sizeof(struct sockaddr_un), 1);
         }
-        else save_to_submit_buf(&data, (void *)address, sizeof(struct sockaddr_un), 1);
+        else
+#endif
+            save_to_submit_buf(&data, (void *)address, sizeof(struct sockaddr_un), 1);
     }
 
     if (connect_id.port) {
@@ -3465,8 +3529,8 @@ static __always_inline u32 send_bin_helper(void* ctx, struct bpf_map_def *prog_a
     }
 
 #define F_SEND_TYPE   0
-#define F_MNT_NS      (F_SEND_TYPE + sizeof(u8))
-#define F_META_OFF    (F_MNT_NS + sizeof(u32))
+#define F_CGROUP_ID   (F_SEND_TYPE + sizeof(u8))
+#define F_META_OFF    (F_CGROUP_ID + sizeof(u64))
 #define F_SZ_OFF      (F_META_OFF + SEND_META_SIZE)
 #define F_POS_OFF     (F_SZ_OFF + sizeof(unsigned int))
 #define F_CHUNK_OFF   (F_POS_OFF + sizeof(off_t))
@@ -3474,8 +3538,13 @@ static __always_inline u32 send_bin_helper(void* ctx, struct bpf_map_def *prog_a
 
     bpf_probe_read((void **)&(file_buf_p->buf[F_SEND_TYPE]), sizeof(u8), &bin_args->type);
 
-    u32 mnt_id = get_task_mnt_ns_id((struct task_struct *)bpf_get_current_task());
-    bpf_probe_read((void **)&(file_buf_p->buf[F_MNT_NS]), sizeof(u32), &mnt_id);
+    u64 cgroup_id;
+    if (get_config(CONFIG_CGROUP_V1)) {
+        cgroup_id = get_cgroup_v1_subsys0_id((struct task_struct *)bpf_get_current_task());
+    } else {
+        cgroup_id = bpf_get_current_cgroup_id();
+    }
+    bpf_probe_read((void **)&(file_buf_p->buf[F_CGROUP_ID]), sizeof(u64), &cgroup_id);
 
     // Save metadata to be used in filename
     bpf_probe_read((void **)&(file_buf_p->buf[F_META_OFF]), SEND_META_SIZE, bin_args->metadata);
@@ -3662,7 +3731,6 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
     loff_t start_pos;
 
     void *ptr;
-    size_t count;
     struct iovec *vec;
     unsigned long vlen;
     bool has_filter = false;
@@ -3679,7 +3747,6 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
     struct file *file      = (struct file *) saved_args.args[0];
     if (event_id == VFS_WRITE) {
         ptr                = (void*)         saved_args.args[1];
-        count              = (size_t)        saved_args.args[2];
     } else {
         vec                = (struct iovec*) saved_args.args[1];
         vlen               =                 saved_args.args[2];

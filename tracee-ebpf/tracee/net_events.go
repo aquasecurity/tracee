@@ -63,17 +63,43 @@ func (t *Tracee) processNetEvents() {
 						t.handleError(err)
 						continue
 					}
+					networkProcess, err := t.getProcessCtx(int(hostTid))
+					hr, min, sec := timeStampObj.Clock()
+					nsec := uint16(timeStampObj.Nanosecond())
 
-					fmt.Printf("%v  %-16s  %-7d  debug_net/packet               Len: %d, SrcIP: %v, SrcPort: %d, DestIP: %v, DestPort: %d, Protocol: %d\n",
-						timeStampObj,
-						comm,
-						hostTid,
-						pktLen,
-						netaddr.IPFrom16(pktMeta.SrcIP),
-						pktMeta.SrcPort,
-						netaddr.IPFrom16(pktMeta.DestIP),
-						pktMeta.DestPort,
-						pktMeta.Protocol)
+					if err != nil {
+						fmt.Printf("%v:%v:%v:%v  %-16s  %-7d  debug_net/packet               Len: %d, SrcIP: %v, SrcPort: %d, DestIP: %v, DestPort: %d, Protocol: %d\n",
+							hr,
+							min,
+							sec,
+							nsec,
+							comm,
+							hostTid,
+							pktLen,
+							netaddr.IPFrom16(pktMeta.SrcIP),
+							pktMeta.SrcPort,
+							netaddr.IPFrom16(pktMeta.DestIP),
+							pktMeta.DestPort,
+							pktMeta.Protocol)
+					} else {
+						fmt.Printf("%v:%v:%v:%v   %v    %-16s  %v  %v    %d             debug_net/packet              Len: %d, SrcIP: %v, SrcPort: %d, DestIP: %v, DestPort: %d, Protocol: %d\n",
+							hr,
+							min,
+							sec,
+							nsec,
+							networkProcess.Uid,
+							comm,
+							networkProcess.Pid,
+							networkProcess.Tid,
+							0,
+							pktLen,
+							netaddr.IPFrom16(pktMeta.SrcIP),
+							pktMeta.SrcPort,
+							netaddr.IPFrom16(pktMeta.DestIP),
+							pktMeta.DestPort,
+							pktMeta.Protocol)
+					}
+
 				}
 
 				info := gopacket.CaptureInfo{
@@ -148,6 +174,7 @@ func (t *Tracee) processNetEvents() {
 						timeStampObj, comm, hostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
 				}
 			}
+
 		case lost := <-t.lostNetChannel:
 			t.stats.lostNtCounter.Increment(int(lost))
 		}

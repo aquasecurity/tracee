@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/external"
 )
 
@@ -19,7 +20,7 @@ func (t *Tracee) processLostEvents() {
 }
 
 // shouldProcessEvent decides whether or not to drop an event before further processing it
-func (t *Tracee) shouldProcessEvent(ctx *context, args map[string]interface{}) bool {
+func (t *Tracee) shouldProcessEvent(ctx *context, args []external.Argument) bool {
 	if t.config.Filter.RetFilter.Enabled {
 		if filter, ok := t.config.Filter.RetFilter.Filters[ctx.EventID]; ok {
 			retVal := ctx.Retval
@@ -49,7 +50,14 @@ func (t *Tracee) shouldProcessEvent(ctx *context, args map[string]interface{}) b
 
 	if t.config.Filter.ArgFilter.Enabled {
 		for argName, filter := range t.config.Filter.ArgFilter.Filters[ctx.EventID] {
-			argVal, ok := args[argName]
+			var argVal interface{}
+			ok := false
+			for _, arg := range args {
+				if arg.Name == argName {
+					argVal = arg.Value
+					ok = true
+				}
+			}
 			if !ok {
 				continue
 			}
@@ -76,31 +84,35 @@ func (t *Tracee) shouldProcessEvent(ctx *context, args map[string]interface{}) b
 	return true
 }
 
-func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMetas *[]external.ArgMeta) error {
-	switch ctx.EventID {
+func (t *Tracee) processEvent(event *external.Event) error {
+	switch int32(event.EventID) {
 
-	//capture written files
 	case VfsWriteEventID, VfsWritevEventID:
+		//capture written files
 		if t.config.Capture.FileWrite {
-			filePath, ok := args["pathname"].(string)
-			if !ok {
-				return fmt.Errorf("error parsing vfs_write args")
+			filePath, err := getEventArgStringVal(event, "pathname")
+			if err != nil {
+				return fmt.Errorf("error parsing vfs_write args: %v", err)
 			}
 			// path should be absolute, except for e.g memfd_create files
 			if filePath == "" || filePath[0] != '/' {
 				return nil
 			}
-			dev, ok := args["dev"].(uint32)
-			if !ok {
-				return fmt.Errorf("error parsing vfs_write args")
+			dev, err := getEventArgUint32Val(event, "dev")
+			if err != nil {
+				return fmt.Errorf("error parsing vfs_write args: %v", err)
 			}
-			inode, ok := args["inode"].(uint64)
-			if !ok {
-				return fmt.Errorf("error parsing vfs_write args")
+			inode, err := getEventArgUint64Val(event, "inode")
+			if err != nil {
+				return fmt.Errorf("error parsing vfs_write args: %v", err)
 			}
 
 			// stop processing if write was already indexed
-			fileName := fmt.Sprintf("%d/write.dev-%d.inode-%d", ctx.MntID, dev, inode)
+			containerId := event.ContainerID
+			if containerId == "" {
+				containerId = "host"
+			}
+			fileName := fmt.Sprintf("%s/write.dev-%d.inode-%d", containerId, dev, inode)
 			indexName, ok := t.writtenFiles[fileName]
 			if ok && indexName == filePath {
 				return nil
@@ -111,48 +123,52 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 		}
 
 	case SchedProcessExecEventID:
-
+		//update the process tree
+		processData := ProcessCtx{event.Timestamp, event.ContainerID, uint32(event.ProcessID), uint32(event.ThreadID), uint32(event.ParentProcessID), uint32(event.HostProcessID), uint32(event.HostThreadID), uint32(event.HostParentProcessID), uint32(event.UserID), uint32(event.MountNS), uint32(event.PIDNS)}
+		t.processTree.processTreeMap[event.HostThreadID] = processData
 		//cache this pid by it's mnt ns
-		if ctx.Pid == 1 {
-			t.pidsInMntns.ForceAddBucketItem(ctx.MntID, ctx.HostPid)
+		if event.ProcessID == 1 {
+			t.pidsInMntns.ForceAddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
 		} else {
-			t.pidsInMntns.AddBucketItem(ctx.MntID, ctx.HostPid)
+			t.pidsInMntns.AddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
 		}
-
 		//capture executed files
 		if t.config.Capture.Exec || t.config.Output.ExecHash {
-			filePath, ok := args["pathname"].(string)
-			if !ok {
-				return fmt.Errorf("error parsing sched_process_exec args")
+			filePath, err := getEventArgStringVal(event, "pathname")
+			if err != nil {
+				return fmt.Errorf("error parsing sched_process_exec args: %v", err)
 			}
 			// path should be absolute, except for e.g memfd_create files
 			if filePath == "" || filePath[0] != '/' {
 				return nil
 			}
 
-			var err error
 			// try to access the root fs via another process in the same mount namespace (since the current process might have already died)
-			pids := t.pidsInMntns.GetBucket(ctx.MntID)
+			pids := t.pidsInMntns.GetBucket(uint32(event.MountNS))
 			for _, pid := range pids { // will break on success
 				err = nil
 				sourceFilePath := fmt.Sprintf("/proc/%s/root%s", strconv.Itoa(int(pid)), filePath)
-				sourceFileCtime, ok := args["ctime"].(uint64)
-				if !ok {
-					return fmt.Errorf("error parsing sched_process_exec args: ctime")
+				sourceFileCtime, err := getEventArgUint64Val(event, "ctime")
+				if err != nil {
+					return fmt.Errorf("error parsing sched_process_exec args: %v", err)
 				}
 				castedSourceFileCtime := int64(sourceFileCtime)
 
-				capturedFileID := fmt.Sprintf("%d:%s", ctx.MntID, sourceFilePath)
+				containerId := event.ContainerID
+				if containerId == "" {
+					containerId = "host"
+				}
+				capturedFileID := fmt.Sprintf("%s:%s", containerId, sourceFilePath)
 				if t.config.Capture.Exec {
-					destinationDirPath := filepath.Join(t.config.Capture.OutputPath, strconv.Itoa(int(ctx.MntID)))
+					destinationDirPath := filepath.Join(t.config.Capture.OutputPath, containerId)
 					if err := os.MkdirAll(destinationDirPath, 0755); err != nil {
 						return err
 					}
-					destinationFilePath := filepath.Join(destinationDirPath, fmt.Sprintf("exec.%d.%s", ctx.Ts, filepath.Base(filePath)))
+					destinationFilePath := filepath.Join(destinationDirPath, fmt.Sprintf("exec.%d.%s", event.Timestamp, filepath.Base(filePath)))
 
 					// create an in-memory profile
 					if t.config.Capture.Profile {
-						t.updateProfile(fmt.Sprintf("%s:%d", filepath.Join(destinationDirPath, fmt.Sprintf("exec.%s", filepath.Base(filePath))), castedSourceFileCtime), ctx.Ts)
+						t.updateProfile(fmt.Sprintf("%s:%d", filepath.Join(destinationDirPath, fmt.Sprintf("exec.%s", filepath.Base(filePath))), castedSourceFileCtime), uint64(event.Timestamp))
 					}
 
 					//don't capture same file twice unless it was modified
@@ -181,46 +197,100 @@ func (t *Tracee) processEvent(ctx *context, args map[string]interface{}, argMeta
 					if ok && hashInfoObj.LastCtime == castedSourceFileCtime {
 						currentHash = hashInfoObj.Hash
 					} else {
-						currentHash = getFileHash(sourceFilePath)
-						hashInfoObj = fileExecInfo{castedSourceFileCtime, currentHash}
-						t.fileHashes.Add(capturedFileID, hashInfoObj)
+						currentHash, err = computeFileHash(sourceFilePath)
+						if err == nil {
+							hashInfoObj = fileExecInfo{castedSourceFileCtime, currentHash}
+							t.fileHashes.Add(capturedFileID, hashInfoObj)
+						}
 					}
 
-					hashMeta := external.ArgMeta{"sha256", "const char*"}
-					*argMetas = append(*argMetas, hashMeta)
-					ctx.Argnum += 1
-					args["sha256"] = currentHash
+					event.Args = append(event.Args, external.Argument{
+						ArgMeta: external.ArgMeta{Name: "sha256", Type: "const char*"},
+						Value:   currentHash,
+					})
+					event.ArgsNum += 1
 				}
 
 				break
 			}
 			return err
 		}
-
+	case SchedProcessExitEventID:
+		delete(t.processTree.processTreeMap, event.HostProcessID)
+	case SchedProcessForkEventID:
+		hostTid, _ := getEventArgUint32Val(event, "child_tid")
+		childPid, _ := getEventArgUint32Val(event, "child_pid")
+		pid, _ := getEventArgUint32Val(event, "child_ns_pid")
+		ppid, _ := getEventArgUint32Val(event, "parent_ns_pid")
+		hostPpid, _ := getEventArgUint32Val(event, "parent_pid")
+		childTid, _ := getEventArgUint32Val(event, "child_ns_tid")
+		processData := ProcessCtx{event.Timestamp, event.ContainerID, pid, childPid, ppid, hostTid, hostTid, hostPpid, uint32(event.UserID), uint32(event.MountNS), uint32(event.ProcessID)}
+		t.processTree.processTreeMap[int(childTid)] = processData
 	case CgroupMkdirEventID:
-		cgroupId, ok := args["cgroup_id"].(uint64)
-		if !ok {
-			return fmt.Errorf("error parsing cgroup_mkdir args")
+		cgroupId, err := getEventArgUint64Val(event, "cgroup_id")
+		if err != nil {
+			return fmt.Errorf("error parsing cgroup_mkdir args: %v", err)
 		}
-		path, ok := args["cgroup_path"].(string)
-		if !ok {
-			return fmt.Errorf("error parsing cgroup_mkdir args")
+		path, err := getEventArgStringVal(event, "cgroup_path")
+		if err != nil {
+			return fmt.Errorf("error parsing cgroup_mkdir args: %v", err)
 		}
-		info, err := t.containers.CgroupUpdate(cgroupId, path)
+		info, err := t.containers.CgroupMkdir(cgroupId, path)
 		if err == nil && info.ContainerId == "" {
-			// If not a new container (no regex match) - remove from the bpf container_map
-			t.containers.RemoveFromBpfMap(t.bpfModule, cgroupId)
+			// If cgroupId is from a regular cgroup directory, and not the
+			// container base directory (from known runtimes), it should be
+			// removed from the "containers_map".
+			containers.RemoveFromBpfMap(t.bpfModule, cgroupId, "containers_map")
 		}
 
 	case CgroupRmdirEventID:
-		cgroupId, ok := args["cgroup_id"].(uint64)
-		if !ok {
-			return fmt.Errorf("error parsing cgroup_rmdir args")
+		cgroupId, err := getEventArgUint64Val(event, "cgroup_id")
+		if err != nil {
+			return fmt.Errorf("error parsing cgroup_rmdir args: %v", err)
 		}
 		t.containers.CgroupRemove(cgroupId)
 	}
 
 	return nil
+}
+
+func getEventArgStringVal(event *external.Event, argName string) (string, error) {
+	for _, arg := range event.Args {
+		if arg.Name == argName {
+			val, ok := arg.Value.(string)
+			if !ok {
+				return "", fmt.Errorf("argument %s is not of type string", argName)
+			}
+			return val, nil
+		}
+	}
+	return "", fmt.Errorf("argument %s not found", argName)
+}
+
+func getEventArgUint64Val(event *external.Event, argName string) (uint64, error) {
+	for _, arg := range event.Args {
+		if arg.Name == argName {
+			val, ok := arg.Value.(uint64)
+			if !ok {
+				return 0, fmt.Errorf("argument %s is not of type uint64", argName)
+			}
+			return val, nil
+		}
+	}
+	return 0, fmt.Errorf("argument %s not found", argName)
+}
+
+func getEventArgUint32Val(event *external.Event, argName string) (uint32, error) {
+	for _, arg := range event.Args {
+		if arg.Name == argName {
+			val, ok := arg.Value.(uint32)
+			if !ok {
+				return 0, fmt.Errorf("argument %s is not of type uint32", argName)
+			}
+			return val, nil
+		}
+	}
+	return 0, fmt.Errorf("argument %s not found", argName)
 }
 
 func (t *Tracee) updateProfile(sourceFilePath string, executionTs uint64) {

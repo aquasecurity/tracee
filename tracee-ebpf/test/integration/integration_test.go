@@ -202,7 +202,7 @@ func checkSetFs(t *testing.T, gotOutput *bytes.Buffer) {
 
 func getAllSyscallsInSet(set string) []string {
 	var syscallsInSet []string
-	for _, v := range tracee.EventsIDToEvent {
+	for _, v := range tracee.EventsDefinitions {
 		for _, c := range v.Sets {
 			if c == set {
 				syscallsInSet = append(syscallsInSet, v.Name)

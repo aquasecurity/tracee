@@ -7,13 +7,22 @@ import (
 	"io"
 	"os"
 	"path"
-	"strconv"
+)
+
+// binType is an enum that specifies the type of binary data sent in the file perf map
+// binary types should match defined values in ebpf code
+type binType uint8
+
+const (
+	sendVfsWrite binType = iota + 1
+	sendMprotect
+	sendKernelModule
 )
 
 func (t *Tracee) processFileWrites() {
 	type chunkMeta struct {
 		BinType  binType
-		MntID    uint32
+		CgroupID uint64
 		Metadata [24]byte
 		Size     int32
 		Off      uint64
@@ -73,7 +82,11 @@ func (t *Tracee) processFileWrites() {
 				continue
 			}
 
-			pathname := path.Join(t.config.Capture.OutputPath, strconv.Itoa(int(meta.MntID)))
+			containerId := t.containers.GetCgroupInfo(meta.CgroupID).ContainerId
+			if containerId == "" {
+				containerId = "host"
+			}
+			pathname := path.Join(t.config.Capture.OutputPath, containerId)
 			if err := os.MkdirAll(pathname, 0755); err != nil {
 				t.handleError(err)
 				continue
@@ -165,7 +178,7 @@ func (t *Tracee) processFileWrites() {
 			// Rename the file to add hash when last chunk was received
 			if meta.BinType == sendKernelModule {
 				if uint64(meta.Size)+meta.Off == kernelModuleMeta.Size {
-					fileHash := getFileHash(fullname)
+					fileHash, _ := computeFileHash(fullname)
 					os.Rename(fullname, fullname+"."+fileHash)
 				}
 			}

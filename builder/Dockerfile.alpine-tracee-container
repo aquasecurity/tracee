@@ -1,0 +1,145 @@
+################################################################################
+# INSTRUCTIONS
+################################################################################
+#
+# This Dockerfile is meant to build the official tracee containers.
+#
+# 1. BUILDING tracee container:
+#
+#   $ docker build -f builder/Dockerfile.alpine-tracee-container \
+#           --build-arg=BTFHUB=[0|1] \
+#           --build-arg=FLAVOR=[tracee-core|tracee-nocore] \
+#           -t alpine-tracee:latest \
+#           .
+#
+# 2. RUNNING tracee container:
+#
+#   2.1 tracee-core:
+#
+#   $ docker run --privileged --pid=host \
+#           -v /etc/os-release:/etc/os-release-host:ro \
+#           -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+#           -e TRACEE_EBPF_ONLY=0 \
+#           --rm -it alpine-tracee [arguments | --help]
+#
+#   2.2 tracee-nocore:
+#
+#   $ docker run --privileged --pid=host \
+#           -v /etc/os-release:/etc/os-release-host:ro \
+#           -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+#           -v /usr/src:/usr/src:ro \
+#           -v /lib/modules:/lib/modules:ro \
+#           -e TRACEE_EBPF_ONLY=0 \
+#           -e FORCE_CORE=0 \
+#           --rm -it alpine-tracee [arguments | --help]
+#
+#   Notes:
+#
+#   - TRACEE_EBPF_ONLY=1 will execute "tracee-ebpf" instead of "tracee".
+#   - FORCE_CORE=1 will force CORE obj loading in a tracee-nocore container.
+#
+################################################################################
+
+# FLAVOR(s):
+#
+# tracee-core      entrypoint: tracee-ebpf + tracee-rules
+# tracee-nocore    entrypoint: install-bpf-nocore + tracee-ebpf + tracee-rules
+
+ARG BTFHUB=0
+ARG FLAVOR=tracee-ebpf-core
+
+#
+# tracee-base
+#
+
+FROM alpine:3.15 as tracee-base
+USER root
+
+# install base environment
+
+RUN apk --no-cache update && \
+    apk --no-cache add sudo curl && \
+    apk --no-cache add libelf zlib && \
+    apk --no-cache add libc6-compat && \
+    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.33.1/opa_linux_amd64_static && \
+    chmod 755 /usr/bin/opa
+
+#
+# tracee-make-base
+#
+
+FROM tracee-base as tracee-make-base
+USER root
+
+# install needed environment
+
+RUN apk --no-cache update && \
+    apk --no-cache add bash git rsync && \
+    apk --no-cache add coreutils findutils && \
+    apk --no-cache add llvm clang go make gcc && \
+    apk --no-cache add musl-dev && \
+    apk --no-cache add linux-headers && \
+    apk --no-cache add elfutils-dev && \
+    apk --no-cache add libelf-static && \
+    apk --no-cache add zlib-static
+
+#
+# tracee-make
+#
+
+FROM tracee-make-base as tracee-make
+ARG BTFHUB
+USER root
+ENV HOME /tracee
+WORKDIR /tracee
+
+COPY . /tracee
+
+RUN make -f Makefile.one clean && \
+    BTFHUB=$BTFHUB make -f Makefile.one tracee-ebpf && \
+    make -f Makefile.one tracee-rules && \
+    make -f Makefile.one rules
+
+#
+# tracee-core (tracee-base as base)
+#
+
+FROM tracee-base as tracee-core
+USER root
+ENV HOME /tracee
+WORKDIR /tracee
+
+COPY --from=tracee-make /tracee/dist/tracee-ebpf /tracee
+COPY --from=tracee-make /tracee/dist/tracee-rules /tracee
+COPY --from=tracee-make /tracee/dist/rules/ /tracee/rules/
+COPY --from=tracee-make /tracee/builder/entrypoint.sh /tracee/entrypoint.sh
+
+ENTRYPOINT ["/tracee/entrypoint.sh"]
+
+#
+# tracee-nocore (tracee-make as base)
+#
+
+FROM tracee-make-base as tracee-nocore
+USER root
+ENV HOME /tracee
+WORKDIR /tracee
+
+COPY --from=tracee-make /tracee /tracee/src
+COPY --from=tracee-make /tracee/dist/tracee-ebpf /tracee
+COPY --from=tracee-make /tracee/dist/tracee-rules /tracee
+COPY --from=tracee-make /tracee/dist/rules/ /tracee/rules
+COPY --from=tracee-make /tracee/builder/entrypoint.sh /tracee/entrypoint.sh
+
+ENTRYPOINT ["/tracee/entrypoint.sh"]
+
+#
+# tracee
+#
+
+FROM $FLAVOR
+USER root
+ENV HOME /tracee
+WORKDIR /tracee
+
+# vi:syntax=dockerfile:expandtab:tabstop=4:shiftwidth=4:softtabstop=4

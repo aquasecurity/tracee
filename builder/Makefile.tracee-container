@@ -1,0 +1,219 @@
+#
+# Responsible for creating the official tracee container images
+#
+
+.PHONY: all
+all:
+
+#
+# make
+#
+
+MAKEFLAGS += --no-print-directory
+
+#
+# tools
+#
+
+CMD_DOCKER ?= docker
+
+.ONESHELL:
+.check_%:
+#
+	@command -v $* >/dev/null
+	if [ $$? -ne 0 ]; then
+		echo "missing required tool $*"
+		exit 1
+	else
+		touch $@ # avoid target rebuilds due to inexistent file
+	fi
+
+#
+# usage
+#
+
+.PHONY: help
+help:
+	@echo ""
+	@echo "To generate tracee container(s):"
+	@echo ""
+	@echo "    $$ make -f builder/Makefile.tracee-container build-alpine-tracee-core"
+	@echo "    $$ make -f builder/Makefile.tracee-container build-alpine-tracee-core-btfhub"
+	@echo "    $$ make -f builder/Makefile.tracee-container build-alpine-tracee-nocore"
+	@echo ""
+	@echo "To execute tracee container(s):"
+	@echo ""
+	@echo "    $$ make -f builder/Makefile.tracee-container run-alpine-tracee-core"
+	@echo "    $$ make -f builder/Makefile.tracee-container run-alpine-tracee-core-btfhub"
+	@echo "    $$ make -f builder/Makefile.tracee-container run-alpine-tracee-nocore"
+	@echo ""
+	@echo "To execute tracee-ebpf container(s):"
+	@echo ""
+	@echo "    $$ make -f builder/Makefile.tracee-container run-alpine-tracee-ebpf-core"
+	@echo "    $$ make -f builder/Makefile.tracee-container run-alpine-tracee-ebpf-core-btfhub"
+	@echo "    $$ make -f builder/Makefile.tracee-container run-alpine-tracee-ebpf-nocore"
+	@echo ""
+	@echo "Note: You may provide \"run\" arguments using the ARG variable."
+	@echo ""
+	@echo "Example:"
+	@echo ""
+	@echo "    $$ make -f builder/Makefile.tracee-container build-alpine-tracee-core-btfhub"
+	@echo ""
+	@echo "    $$ make -f builder/Makefile.tracee-container run-alpine-tracee-ebpf-core \ "
+	@echo "          ARG=\"--debug -trace event!='sched*'\" "
+	@echo ""
+
+#
+# requirements
+#
+
+.PHONY: .check_tree
+.ONESHELL:
+.check_tree:
+#
+	@if [ ! -d ./builder ]; then
+		echo "you must be in the root directory"
+		exit 1
+	fi
+
+#
+# create tracee (tracee-ebpf + tracee-rules + rules)
+#
+
+ALPINE_TRACEE_CORE_CONTNAME = tracee
+ALPINE_TRACEE_CORE_DOCKERFILE = builder/Dockerfile.alpine-tracee-container
+
+.PHONY: build-alpine-tracee-core
+build-alpine-tracee-core: \
+	| .check_$(CMD_DOCKER) \
+	.check_tree
+#
+	$(CMD_DOCKER) build \
+		-f $(ALPINE_TRACEE_CORE_DOCKERFILE) \
+		-t $(ALPINE_TRACEE_CORE_CONTNAME):latest \
+		--build-arg=BTFHUB=0 \
+		--build-arg=FLAVOR=tracee-core \
+		.
+
+ALPINE_TRACEE_CORE_BTFHUB_CONTNAME = tracee-btfhub
+ALPINE_TRACEE_CORE_DOCKERFILE = builder/Dockerfile.alpine-tracee-container
+
+.PHONY: build-alpine-tracee-core-btfhub
+build-alpine-tracee-core-btfhub: \
+	| .check_$(CMD_DOCKER) \
+	.check_tree
+#
+	$(CMD_DOCKER) build \
+		-f $(ALPINE_TRACEE_CORE_DOCKERFILE) \
+		-t $(ALPINE_TRACEE_CORE_BTFHUB_CONTNAME):latest \
+		--build-arg=BTFHUB=1 \
+		--build-arg=FLAVOR=tracee-core \
+		.
+
+ALPINE_TRACEE_NOCORE_CONTNAME = tracee-nocore
+ALPINE_TRACEE_NOCORE_DOCKERFILE = builder/Dockerfile.alpine-tracee-container
+
+.PHONY: build-alpine-tracee-nocore
+build-alpine-tracee-nocore: \
+	| .check_$(CMD_DOCKER) \
+	.check_tree
+#
+	$(CMD_DOCKER) build \
+		-f $(ALPINE_TRACEE_NOCORE_DOCKERFILE) \
+		-t $(ALPINE_TRACEE_NOCORE_CONTNAME):latest \
+		--build-arg=BTFHUB=0 \
+		--build-arg=FLAVOR=tracee-nocore \
+		.
+
+#
+# run tracee (tracee-ebpf + tracee-rules)
+#
+
+.PHONY: run-alpine-tracee-core
+run-alpine-tracee-core: \
+	| .check_$(CMD_DOCKER) \
+	.check_tree
+#
+	$(CMD_DOCKER) run --privileged --pid=host \
+		-v /etc/os-release:/etc/os-release-host:ro \
+		-e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+		-e TRACEE_EBPF_ONLY=0 \
+		--rm -it $(ALPINE_TRACEE_CORE_CONTNAME) \
+		$(ARG)
+
+.PHONY: run-alpine-tracee-core-btfhub
+run-alpine-tracee-core-btfhub: \
+	| .check_$(CMD_DOCKER) \
+	.check_tree
+#
+	$(CMD_DOCKER) run --privileged --pid=host \
+		-v /etc/os-release:/etc/os-release-host:ro \
+		-e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+		-e TRACEE_EBPF_ONLY=0 \
+		--rm -it $(ALPINE_TRACEE_CORE_BTFHUB_CONTNAME) \
+		$(ARG)
+
+.PHONY: run-alpine-tracee-nocore
+run-alpine-tracee-nocore: \
+	| .check_$(CMD_DOCKER) \
+	.check_tree
+#
+	$(CMD_DOCKER) run --privileged --pid=host \
+		-v /etc/os-release:/etc/os-release-host:ro \
+		-e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+		-v /usr/src:/usr/src:ro \
+		-v /lib/modules:/lib/modules:ro \
+		-e TRACEE_EBPF_ONLY=0 \
+		-e FORCE_CORE=0 \
+		--rm -it $(ALPINE_TRACEE_NOCORE_CONTNAME) \
+		$(ARG)
+
+#
+# run tracee-ebpf only
+#
+
+.PHONY: run-alpine-tracee-ebpf-core
+run-alpine-tracee-ebpf-core: \
+	| .check_$(CMD_DOCKER) \
+	.check_tree
+#
+	$(CMD_DOCKER) run --privileged --pid=host \
+		-v /etc/os-release:/etc/os-release-host:ro \
+		-e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+		-e TRACEE_EBPF_ONLY=1 \
+		--rm -it $(ALPINE_TRACEE_CORE_CONTNAME) \
+		$(ARG)
+
+.PHONY: run-alpine-tracee-ebpf-core-btfhub
+run-alpine-tracee-ebpf-core-btfhub: \
+	| .check_$(CMD_DOCKER) \
+	.check_tree
+#
+	$(CMD_DOCKER) run --privileged --pid=host \
+		-v /etc/os-release:/etc/os-release-host:ro \
+		-e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+		-e TRACEE_EBPF_ONLY=1 \
+		--rm -it $(ALPINE_TRACEE_CORE_BTFHUB_CONTNAME) \
+		$(ARG)
+
+.PHONY: run-alpine-tracee-ebpf-nocore
+run-alpine-tracee-ebpf-nocore: \
+	| .check_$(CMD_DOCKER) \
+	.check_tree
+#
+	$(CMD_DOCKER) run --privileged --pid=host \
+		-v /etc/os-release:/etc/os-release-host:ro \
+		-e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+		-v /usr/src:/usr/src:ro \
+		-v /lib/modules:/lib/modules:ro \
+		-e TRACEE_EBPF_ONLY=1 \
+		-e FORCE_CORE=0 \
+		--rm -it $(ALPINE_TRACEE_NOCORE_CONTNAME) \
+		$(ARG)
+
+#
+# clean
+#
+
+.PHONY: clean
+clean:

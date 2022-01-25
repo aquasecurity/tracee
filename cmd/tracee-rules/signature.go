@@ -14,7 +14,7 @@ import (
 
 	embedded "github.com/aquasecurity/tracee"
 	"github.com/aquasecurity/tracee/tracee-rules/regosig"
-	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"github.com/aquasecurity/tracee/types"
 )
 
 func getSignatures(target string, partialEval bool, rulesDir string, rules []string, aioEnabled bool) ([]types.Signature, error) {

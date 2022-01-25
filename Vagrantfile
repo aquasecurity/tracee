@@ -2,15 +2,17 @@
 # vi: set ft=ruby :
 
 Vagrant.configure("2") do |config|
-  config.vm.box = "ubuntu/focal64"
+  # config.vm.box = "ubuntu/focal64"     # Ubuntu 20.04 Focal Fossa (no CORE)
+  # config.vm.box = "ubuntu/hirsute64"   # Ubuntu 21.04 Hirsute Hippo (CORE)
+  config.vm.box = "ubuntu/impish64"      # Ubuntu 21.10 Impish Indri (CORE)
 
   config.vm.provider "virtualbox" do |vb|
     vb.gui = false
-    vb.memory = "1024"
+    vb.memory = "2048"
   end
 
   config.vm.provision "shell", inline: <<-SHELL
-    GO_VERSION="1.16"
+    GO_VERSION="1.17"
     OPA_VERSION="v0.35.0"
 
     apt-get update
@@ -21,6 +23,8 @@ Vagrant.configure("2") do |config|
       path=$(which $tool-12)
       sudo ln -s $path ${path%-*}
     done
+
+    apt-get install --yes linux-tools-$(uname -r)
 
     apt-get install --yes docker.io
     usermod -aG docker vagrant

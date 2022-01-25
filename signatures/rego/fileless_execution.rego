@@ -48,3 +48,9 @@ tracee_match {
     pathname = helpers.get_tracee_argument("pathname")
     startswith(pathname, "/dev/shm")
 }
+
+tracee_match {
+    input.eventName == "sched_process_exec"
+    pathname = helpers.get_tracee_argument("pathname")
+    startswith(pathname, "/run/shm")
+}

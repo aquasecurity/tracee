@@ -8,9 +8,12 @@ edit_uri: ""
 
 nav:
   - Getting Started: index.md
+  - Building:
+    - Building Environment: building/environment.md
+    - Building Containers: building/containers.md
+    - Building non CO-RE: building/nocore-ebpf.md
   - Installation:
     - Prerequisites: install/prerequisites.md
-    - eBPF Compilation: install/ebpf-compilation.md
     - Linux Headers: install/headers.md
     - Kubernetes: install/kubernetes.md
     - Docker for Mac: install/docker-mac.md

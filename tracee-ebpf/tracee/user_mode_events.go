@@ -28,7 +28,7 @@ func CreateInitNamespacesEvent() (external.Event, error) {
 		Timestamp:   int(time.Now().UnixNano()),
 		ProcessName: "tracee-ebpf",
 		EventID:     int(InitNamespacesEventID),
-		EventName:   EventsIDToEvent[InitNamespacesEventID].Name,
+		EventName:   EventsDefinitions[InitNamespacesEventID].Name,
 		ArgsNum:     len(initNamespacesArgs),
 		Args:        initNamespacesArgs,
 	}
@@ -38,9 +38,10 @@ func CreateInitNamespacesEvent() (external.Event, error) {
 // getInitNamespaceArguments Fetch the namespaces of the init process and parse them into event arguments.
 func getInitNamespaceArguments() []external.Argument {
 	initNamespaces := fetchInitNamespaces()
-	initNamespacesArgs := make([]external.Argument, len(EventsIDToParams[InitNamespacesEventID]))
+	eventDefinition := EventsDefinitions[InitNamespacesEventID]
+	initNamespacesArgs := make([]external.Argument, len(eventDefinition.Params))
 	for i, arg := range initNamespacesArgs {
-		arg.ArgMeta = EventsIDToParams[InitNamespacesEventID][i]
+		arg.ArgMeta = eventDefinition.Params[i]
 		arg.Value = initNamespaces[arg.Name]
 		initNamespacesArgs[i] = arg
 	}

@@ -5,9 +5,8 @@
 One of the following:
 
 * BTF available under `/sys/kernel/btf/vmlinux` (see [libbpf CO-RE documentation] for more info).
-* Linux kernel headers available under conventional location (see [Linux Headers](./headers.md) section for more info).
+* Linux kernel headers available under conventional location (see [Linux Headers](../building/headers.md) section for more info).
   In this case system libraries libelf and zlib are required as well.
-* Tracee's eBPF probe pre-compiled (see [eBPF Compilation](./ebpf-compilation.md) section for more info).
 
 # Permissions
 

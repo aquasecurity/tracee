@@ -70,6 +70,20 @@ test_match_5 {
     }
 }
 
+test_match_6 {
+    tracee_match with input as {
+        "eventName": "sched_process_exec",
+        "argsNum": 1,
+        "containerId": "someContainer",
+        "args": [
+            {
+                "name": "pathname",
+                "value": "/run/shm/something"
+            }
+        ]
+    }
+}
+
 test_match_wrong_pathname {
     not tracee_match with input as {
         "eventName": "sched_process_exec",

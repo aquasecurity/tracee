@@ -12,6 +12,37 @@ import (
 	"github.com/aquasecurity/tracee/pkg/external"
 )
 
+// argType is an enum that encodes the argument types that the BPF program may write to the shared buffer
+// argument types should match defined values in ebpf code
+type argType uint8
+
+const (
+	noneT argType = iota
+	intT
+	uintT
+	longT
+	ulongT
+	offT
+	modeT
+	devT
+	sizeT
+	pointerT
+	strT
+	strArrT
+	sockAddrT
+	bytesT
+	u16T
+	credT
+	intArr2T
+)
+
+// These types don't match the ones defined in the ebpf code since they are not being used by syscalls arguments.
+// They have their own set of value to avoid collision in the future.
+const (
+	argsArrT argType = iota + 0x80
+	boolT
+)
+
 func readArgFromBuff(dataBuff io.Reader, params []external.ArgMeta) (external.ArgMeta, interface{}, error) {
 	var err error
 	var res interface{}
@@ -47,6 +78,10 @@ func readArgFromBuff(dataBuff io.Reader, params []external.ArgMeta) (external.Ar
 		res = data
 	case ulongT, offT, sizeT:
 		var data uint64
+		err = binary.Read(dataBuff, binary.LittleEndian, &data)
+		res = data
+	case boolT:
+		var data bool
 		err = binary.Read(dataBuff, binary.LittleEndian, &data)
 		res = data
 	case pointerT:
@@ -127,6 +162,50 @@ func readArgFromBuff(dataBuff io.Reader, params []external.ArgMeta) (external.Ar
 	return argMeta, res, nil
 }
 
+func getParamType(paramType string) argType {
+	switch paramType {
+	case "int", "pid_t", "uid_t", "gid_t", "mqd_t", "clockid_t", "const clockid_t", "key_t", "key_serial_t", "timer_t":
+		return intT
+	case "unsigned int", "u32":
+		return uintT
+	case "long":
+		return longT
+	case "unsigned long", "u64":
+		return ulongT
+	case "bool":
+		return boolT
+	case "off_t":
+		return offT
+	case "mode_t":
+		return modeT
+	case "dev_t":
+		return devT
+	case "size_t":
+		return sizeT
+	case "void*", "const void*":
+		return pointerT
+	case "char*", "const char*":
+		return strT
+	case "const char*const*": // used by execve(at) argv and env
+		return strArrT
+	case "const char**": // used by sched_process_exec argv and envp
+		return argsArrT
+	case "const struct sockaddr*", "struct sockaddr*":
+		return sockAddrT
+	case "bytes":
+		return bytesT
+	case "int[2]":
+		return intArr2T
+	case "slim_cred_t":
+		return credT
+	case "umode_t":
+		return u16T
+	default:
+		// Default to pointer (printed as hex) for unsupported types
+		return pointerT
+	}
+}
+
 func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
 	res := make(map[string]string, 5)
 	var family int16
@@ -134,7 +213,11 @@ func readSockaddrFromBuff(buff io.Reader) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	res["sa_family"] = helpers.ParseSocketDomain(uint32(family))
+	socketDomainArg, err := helpers.ParseSocketDomainArgument(uint64(family))
+	if err != nil {
+		socketDomainArg = helpers.AF_UNSPEC
+	}
+	res["sa_family"] = socketDomainArg.String()
 	switch family {
 	case 1: // AF_UNIX
 		/*

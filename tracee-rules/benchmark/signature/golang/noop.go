@@ -1,7 +1,7 @@
 package golang
 
 import (
-	"github.com/aquasecurity/tracee/tracee-rules/types"
+	"github.com/aquasecurity/tracee/types"
 )
 
 type noop struct {

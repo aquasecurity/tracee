@@ -3,28 +3,13 @@ package main
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"testing"
-
-	"github.com/syndtr/gocapability/capability"
-
-	"github.com/stretchr/testify/require"
-
+	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/flags"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"io/ioutil"
+	"testing"
 )
-
-type fakeCapabilities struct {
-	capability.Capabilities
-	get func(capability.CapType, capability.Cap) bool
-}
-
-func (fc fakeCapabilities) Get(which capability.CapType, what capability.Cap) bool {
-	if fc.get != nil {
-		return fc.get(which, what)
-	}
-	return true
-}
 
 func TestPrepareFilter(t *testing.T) {
 
@@ -796,7 +781,7 @@ func TestPrepareFilter(t *testing.T) {
 				NewContFilter: &tracee.BoolFilter{},
 				ArgFilter: &tracee.ArgFilter{
 					Filters: map[int32]map[string]tracee.ArgFilterVal{
-						257: {
+						tracee.OpenatEventID: {
 							"pathname": tracee.ArgFilterVal{
 								Equal:    []string{"/bin/ls", "/tmp/tracee"},
 								NotEqual: []string{"/etc/passwd"},
@@ -857,7 +842,7 @@ func TestPrepareFilter(t *testing.T) {
 				},
 				RetFilter: &tracee.RetFilter{
 					Filters: map[int32]tracee.IntFilter{
-						257: {
+						tracee.OpenatEventID: {
 							Equal:    []int64{2},
 							NotEqual: []int64{},
 							Less:     tracee.LessNotSetInt,
@@ -874,7 +859,7 @@ func TestPrepareFilter(t *testing.T) {
 			testName: "wildcard filter",
 			filters:  []string{"event=open*"},
 			expectedFilter: tracee.Filter{
-				EventsToTrace: []int32{2, 257},
+				EventsToTrace: []int32{tracee.OpenEventID, tracee.OpenatEventID},
 				UIDFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
@@ -1043,7 +1028,7 @@ func TestPrepareFilter(t *testing.T) {
 	}
 	for _, testcase := range testCases {
 		t.Run(testcase.testName, func(t *testing.T) {
-			filter, err := prepareFilter(testcase.filters)
+			filter, err := flags.PrepareFilter(testcase.filters)
 			assert.Equal(t, testcase.expectedFilter.UIDFilter, filter.UIDFilter)
 			assert.Equal(t, testcase.expectedFilter.PIDFilter, filter.PIDFilter)
 			assert.Equal(t, testcase.expectedFilter.NewPidFilter, filter.NewPidFilter)
@@ -1199,7 +1184,7 @@ func TestPrepareCapture(t *testing.T) {
 		}
 		for _, tc := range testCases {
 			t.Run(tc.testName, func(t *testing.T) {
-				capture, err := prepareCapture(tc.captureSlice)
+				capture, err := flags.PrepareCapture(tc.captureSlice)
 				if tc.expectedError == nil {
 					require.NoError(t, err)
 					assert.Equal(t, tc.expectedCapture, capture, tc.testName)
@@ -1213,7 +1198,7 @@ func TestPrepareCapture(t *testing.T) {
 
 	t.Run("clear dir", func(t *testing.T) {
 		d, _ := ioutil.TempDir("", "TestPrepareCapture-*")
-		capture, err := prepareCapture([]string{fmt.Sprintf("dir:%s", d), "clear-dir"})
+		capture, err := flags.PrepareCapture([]string{fmt.Sprintf("dir:%s", d), "clear-dir"})
 		require.NoError(t, err)
 		assert.Equal(t, tracee.CaptureConfig{OutputPath: fmt.Sprintf("%s/out", d)}, capture)
 		require.NoDirExists(t, d+"out")
@@ -1304,7 +1289,7 @@ func TestPrepareOutput(t *testing.T) {
 	}
 	for _, testcase := range testCases {
 		t.Run(testcase.testName, func(t *testing.T) {
-			output, _, err := prepareOutput(testcase.outputSlice)
+			output, _, err := flags.PrepareOutput(testcase.outputSlice)
 			if err != nil {
 				assert.Equal(t, testcase.expectedError, err)
 			} else {
@@ -1336,76 +1321,7 @@ func Test_checkCommandIsHelp(t *testing.T) {
 	}
 }
 
-func Test_checkClangVersion(t *testing.T) {
-	testCases := []struct {
-		verOut        string
-		expectedError string
-	}{
-		{
-			verOut: `Ubuntu clang version 12.0.0-2
-Target: x86_64-pc-linux-gnu
-Thread model: posix
-InstalledDir: /usr/bin
-`,
-		},
-		{
-			verOut:        `foo bar baz invalid`,
-			expectedError: "could not detect clang version from: foo bar baz invalid",
-		},
-		{
-			verOut: `Ubuntu clang version 11.0.0-2
-Target: x86_64-pc-linux-gnu
-Thread model: posix
-InstalledDir: /usr/bin
-`,
-			expectedError: "detected clang version: 11 is older than required minimum version: 12",
-		},
-	}
-
-	for _, tc := range testCases {
-		err := checkClangVersion([]byte(tc.verOut))
-
-		switch {
-		case tc.expectedError != "":
-			assert.EqualError(t, err, tc.expectedError)
-		default:
-			assert.NoError(t, err)
-		}
-	}
-}
-
-func Test_checkRequiredCapabilites(t *testing.T) {
-	t.Run("happy path", func(t *testing.T) {
-		fc := fakeCapabilities{}
-		require.NoError(t, checkRequiredCapabilities(fc))
-	})
-
-	t.Run("CAP_SYS_ADMIN missing", func(t *testing.T) {
-		fc := fakeCapabilities{
-			get: func(capType capability.CapType, c capability.Cap) bool {
-				if c == capability.CAP_SYS_ADMIN {
-					return false
-				}
-				return true
-			},
-		}
-		require.EqualError(t, checkRequiredCapabilities(fc), "insufficient privileges to run: missing CAP_SYS_ADMIN")
-	})
-
-	t.Run("CAP_IPC_LOCK missing", func(t *testing.T) {
-		fc := fakeCapabilities{
-			get: func(capType capability.CapType, c capability.Cap) bool {
-				if c == capability.CAP_IPC_LOCK {
-					return false
-				}
-				return true
-			},
-		}
-		require.EqualError(t, checkRequiredCapabilities(fc), "insufficient privileges to run: missing CAP_IPC_LOCK")
-	})
-}
-
-func Test_fetchFormattedEventParams(t *testing.T) {
+func Test_getFormattedEventParams(t *testing.T) {
 	testCases := []struct {
 		input  int32
 		output string
@@ -1429,6 +1345,6 @@ func Test_fetchFormattedEventParams(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		assert.Equal(t, tc.output, fetchFormattedEventParams(tc.input))
+		assert.Equal(t, tc.output, getFormattedEventParams(tc.input))
 	}
 }
