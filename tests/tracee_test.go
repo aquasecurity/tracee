@@ -135,13 +135,15 @@ type traceeContainer struct {
 	testcontainers.Container
 }
 
-func setupTraceeContainer(ctx context.Context, tempDir string) (*traceeContainer, error) {
+func setupTraceeContainer(ctx context.Context, tempDir string, image string) (*traceeContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:      "tracee",
+		Image:      image,
 		Privileged: true,
 		BindMounts: map[string]string{ // container:host
-			tempDir:                tempDir,
-			"/etc/os-release-host": "/etc/os-release",
+			tempDir:                tempDir,           // required for all
+			"/etc/os-release-host": "/etc/os-release", // required for all
+			"/usr/src":             "/usr/src",        // required for -nocore
+			"/lib/modules":         "/lib/modules",    // required for -nocore
 		},
 		Env: map[string]string{
 			"LIBBPFGO_OSRELEASE_FILE": "/etc/os-release-host",
@@ -186,26 +188,28 @@ func TestTraceeSignatures(t *testing.T) {
 		os.RemoveAll(tempDir)
 	}()
 
-	for _, sigid := range []string{"TRC-3", "TRC-4", "TRC-9", "TRC-10", "TRC-11"} {
-		t.Run(sigid, func(t *testing.T) {
-			ctx := context.Background()
+	for _, image := range []string{"tracee", "tracee-btfhub", "tracee-nocore"} {
+		for _, sigid := range []string{"TRC-3", "TRC-4", "TRC-9", "TRC-10", "TRC-11"} {
+			t.Run(fmt.Sprintf("%s/%s", image, sigid), func(t *testing.T) {
+				ctx := context.Background()
 
-			// run tracee container
-			traceeContainer, err := setupTraceeContainer(ctx, tempDir)
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer traceeContainer.Terminate(ctx)
+				// run tracee container
+				traceeContainer, err := setupTraceeContainer(ctx, tempDir, image)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer traceeContainer.Terminate(ctx)
 
-			// run trace signature trainer container
-			traceeSigTrainer, err := setupTraceeTrainerContainer(ctx, sigid)
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer traceeSigTrainer.Terminate(ctx)
+				// run trace signature trainer container
+				traceeSigTrainer, err := setupTraceeTrainerContainer(ctx, sigid)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer traceeSigTrainer.Terminate(ctx)
 
-			traceeContainer.assertLogs(t, ctx, sigid)
-		})
+				traceeContainer.assertLogs(t, ctx, sigid)
+			})
+		}
 	}
 }
 
