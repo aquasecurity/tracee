@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
@@ -138,9 +139,16 @@ func setupTraceeContainer(ctx context.Context, tempDir string) (*traceeContainer
 	req := testcontainers.ContainerRequest{
 		Image:      "tracee",
 		Privileged: true,
-		BindMounts: map[string]string{tempDir: tempDir},
+		BindMounts: map[string]string{ // container:host
+			tempDir:                tempDir,
+			"/etc/os-release-host": "/etc/os-release",
+		},
+		Env: map[string]string{
+			"LIBBPFGO_OSRELEASE_FILE": "/etc/os-release-host",
+		},
 		Name:       "tracee",
 		AutoRemove: true,
+		WaitingFor: wait.NewLogStrategy("Loaded"),
 	}
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
@@ -173,9 +181,7 @@ func setupTraceeTrainerContainer(ctx context.Context, sigid string) (*traceeCont
 }
 
 func TestTraceeSignatures(t *testing.T) {
-	tempDir := "/tmp/tracee"
-	err := os.MkdirAll(tempDir, os.ModePerm) // TODO: Investiagte why passing ioutil.Temp does not work with Tracee mount
-	require.NoError(t, err)
+	tempDir := os.TempDir()
 	defer func() {
 		os.RemoveAll(tempDir)
 	}()
@@ -191,9 +197,6 @@ func TestTraceeSignatures(t *testing.T) {
 			}
 			defer traceeContainer.Terminate(ctx)
 
-			// wait for tracee to initialize
-			time.Sleep(time.Second * 5)
-
 			// run trace signature trainer container
 			traceeSigTrainer, err := setupTraceeTrainerContainer(ctx, sigid)
 			if err != nil {
@@ -201,20 +204,22 @@ func TestTraceeSignatures(t *testing.T) {
 			}
 			defer traceeSigTrainer.Terminate(ctx)
 
-			// wait for tracee to detect
-			time.Sleep(time.Second * 10)
-
-			b, err := traceeContainer.Logs(ctx)
-			if err != nil {
-				t.Fatal(err)
-			}
-			log, err := ioutil.ReadAll(b)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			// assert our required signature was triggered
-			assert.Contains(t, string(log), fmt.Sprint("Signature ID: ", sigid))
+			traceeContainer.assertLogs(t, ctx, sigid)
 		})
 	}
+}
+
+func (tc traceeContainer) assertLogs(t *testing.T, ctx context.Context, sigid string) {
+	time.Sleep(time.Second * 10) // wait for tracee to detect
+
+	b, err := tc.Logs(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	log, err := ioutil.ReadAll(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Contains(t, string(log), fmt.Sprint("Signature ID: ", sigid))
 }
