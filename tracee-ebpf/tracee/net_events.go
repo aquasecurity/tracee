@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/processContext"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/network_protocols"
 	"github.com/google/gopacket"
 	"time"
@@ -31,7 +32,7 @@ func (t *Tracee) processNetEvents() {
 			// timeStamp is nanoseconds since system boot time
 			timeStampObj := time.Unix(0, int64(evtMeta.TimeStamp+t.bootTime))
 
-			processContext, exist := t.processTree.processTreeMap[evtMeta.HostTid]
+			processContext, exist := t.processTree.ProcessTreeMap[evtMeta.HostTid]
 			if !exist {
 				t.handleError(fmt.Errorf("couldn't find the process: %d", evtMeta.HostTid))
 				continue
@@ -66,7 +67,7 @@ func (t *Tracee) processNetEvents() {
 					continue
 				}
 				evt := createNetEvent(int(evtMeta.TimeStamp), evtMeta.HostTid, evtMeta.ProcessName, evtMeta.NetEventId, EventsDefinitions[evtMeta.NetEventId].Name, processContext)
-				createDebugPacketMetaArgs(&evt, debugEventPacket)
+				network_protocols.CreateDebugPacketMetadataArg(&evt, debugEventPacket)
 				t.config.ChanEvents <- evt
 				t.stats.eventCounter.Increment()
 			}
@@ -116,7 +117,7 @@ func parseEventMetaData(payloadBytes []byte) (EventMeta, *bytes.Buffer) {
 
 }
 
-func getEventByProcessCtx(ctx ProcessCtx) external.Event {
+func getEventByProcessCtx(ctx processContext.ProcessCtx) external.Event {
 	var event external.Event
 	event.ContainerID = ctx.ContainerID
 	event.ProcessID = int(ctx.Pid)
@@ -132,7 +133,7 @@ func getEventByProcessCtx(ctx ProcessCtx) external.Event {
 
 }
 
-func createNetEvent(ts int, hostTid int, processName string, eventId int32, eventName string, ctx ProcessCtx) external.Event {
+func createNetEvent(ts int, hostTid int, processName string, eventId int32, eventName string, ctx processContext.ProcessCtx) external.Event {
 	evt := getEventByProcessCtx(ctx)
 	evt.Timestamp = ts
 	evt.ProcessName = processName
@@ -141,8 +142,4 @@ func createNetEvent(ts int, hostTid int, processName string, eventId int32, even
 	evt.ReturnValue = 0
 	evt.StackAddresses = nil
 	return evt
-}
-func createDebugPacketMetaArgs(event *external.Event, NetPacket network_protocols.FunctionBasedPacket) {
-	event.Args = network_protocols.CreateDebugPacketMetaffdataArg(NetPacket)
-	event.ArgsNum = len(event.Args)
 }

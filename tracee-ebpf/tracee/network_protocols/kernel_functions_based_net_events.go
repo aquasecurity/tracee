@@ -31,7 +31,7 @@ func ParseDebugPacketMetaData(payload *bytes.Buffer) (FunctionBasedPacket, error
 	return pktMetaData, nil
 }
 
-func CreateDebugPacketMetaffdataArg(packet FunctionBasedPacket) []external.Argument {
+func CreateDebugPacketMetadataArg(event *external.Event, packet FunctionBasedPacket) {
 	eventArgs := make([]external.Argument, 0, 0)
 	arg := external.PktMeta{}
 	if IsIpv6(packet.LocalIP) {
@@ -54,5 +54,6 @@ func CreateDebugPacketMetaffdataArg(packet FunctionBasedPacket) []external.Argum
 		Value:   arg,
 	}
 	eventArgs = append(eventArgs, evtArg)
-	return eventArgs
+	event.Args = eventArgs
+	event.ArgsNum = len(eventArgs)
 }

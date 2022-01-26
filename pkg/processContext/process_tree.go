@@ -1,4 +1,4 @@
-package tracee
+package processContext
 
 import (
 	"encoding/binary"
@@ -29,14 +29,16 @@ type ProcessCtx struct {
 }
 
 type ProcessTree struct {
-	processTreeMap map[int]ProcessCtx
+	ProcessTreeMap map[int]ProcessCtx
 }
 
-func (t *Tracee) ParseProcessContext(ctx []byte) (ProcessCtx, error) {
+// ParseProcessContext gets a byte array and parse the process context
+// Note: to prevent the ParseProcessContext to be Tracee function , the parsing of the containerID (which is using tracee containers API)
+func ParseProcessContext(ctx []byte, containerId string) (ProcessCtx, error) {
 	var procCtx = ProcessCtx{}
 	procCtx.StartTime = int(binary.LittleEndian.Uint64(ctx[0:8]))
 	cgroupId := binary.LittleEndian.Uint64(ctx[8:16])
-	procCtx.ContainerID = t.containers.GetCgroupInfo(cgroupId).ContainerId
+	procCtx.ContainerID = containerId
 	decoder := bufferdecoder.New(ctx[16:]) // this is the offset after the cgroup and startTime in the ctx byte array
 	var errs []error
 	errs = append(errs, decoder.DecodeUint32(&procCtx.Pid))
@@ -172,7 +174,7 @@ func NewProcessTree() (*ProcessTree, error) {
 				continue
 			}
 			processStatus.ContainerID = containerId
-			p.processTreeMap[int(processStatus.HostTid)] = processStatus
+			p.ProcessTreeMap[int(processStatus.HostTid)] = processStatus
 		}
 	}
 	return &p, nil

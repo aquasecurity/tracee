@@ -3,6 +3,7 @@ package tracee
 import (
 	gocontext "context"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -29,6 +30,7 @@ import (
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/internal/bufferdecoder"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
+	"github.com/aquasecurity/tracee/pkg/processContext"
 	lru "github.com/hashicorp/golang-lru"
 	"golang.org/x/sys/unix"
 )
@@ -177,7 +179,7 @@ type Tracee struct {
 	pcapFile          *os.File
 	ngIfacesIndex     map[int]int
 	containers        *containers.Containers
-	processTree       *ProcessTree
+	processTree       *processContext.ProcessTree
 	eventsSorter      *sorting.EventsChronologicalSorter
 }
 
@@ -384,7 +386,7 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error getting acces to 'stack_addresses' eBPF Map %v", err)
 	}
 	t.StackAddressesMap = StackAddressesMap
-	t.processTree, err = NewProcessTree()
+	t.processTree, err = processContext.NewProcessTree()
 	if err != nil {
 		t.Close()
 		return nil, fmt.Errorf("error creating process tree: %v", err)
@@ -922,8 +924,8 @@ func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 	return nil
 }
 
-func (t *Tracee) getProcessCtx(hostTid int) (ProcessCtx, error) {
-	processCtx, procExist := t.processTree.processTreeMap[hostTid]
+func (t *Tracee) getProcessCtx(hostTid int) (processContext.ProcessCtx, error) {
+	processCtx, procExist := t.processTree.ProcessTreeMap[hostTid]
 	if procExist {
 		return processCtx, nil
 	} else {
@@ -935,8 +937,9 @@ func (t *Tracee) getProcessCtx(hostTid int) (ProcessCtx, error) {
 		if err != nil {
 			return processCtx, err
 		}
-		processCtx, err = t.ParseProcessContext(processCtxBpfMap)
-		t.processTree.processTreeMap[hostTid] = processCtx
+		cgroupId := t.containers.GetCgroupInfo(binary.LittleEndian.Uint64(processCtxBpfMap[8:16])).ContainerId
+		processCtx, err = processContext.ParseProcessContext(processCtxBpfMap, cgroupId)
+		t.processTree.ProcessTreeMap[hostTid] = processCtx
 		return processCtx, err
 	}
 }

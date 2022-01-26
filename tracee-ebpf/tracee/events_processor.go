@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/processContext"
 	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/internal/bufferdecoder"
 )
@@ -223,7 +224,7 @@ func (t *Tracee) processEvent(event *external.Event) error {
 			return err
 		}
 	case SchedProcessExitEventID:
-		delete(t.processTree.processTreeMap, event.HostProcessID)
+		delete(t.processTree.ProcessTreeMap, event.HostProcessID)
 	case SchedProcessForkEventID:
 		hostTid, _ := getEventArgInt32Val(event, "child_tid")
 		hostPid, _ := getEventArgInt32Val(event, "child_pid")
