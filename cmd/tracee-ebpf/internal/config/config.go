@@ -14,7 +14,6 @@ type CliConfig struct {
 	} `json:"perfRingBuffers"`
 	VerboseDebug bool     `json:"verboseDebug"`
 	InstallPath  string   `json:"installPath"`
-	BuildPolicy  string   `json:"buildPolicy"`
 	Trace        []string `json:"trace"`
 	Output       []string `json:"output"`
 	Capture      []string `json:"capture"`
@@ -53,13 +52,6 @@ func (c *CliConfig) DefaultInstallPath() string {
 		return c.InstallPath
 	}
 	return "/tmp/tracee"
-}
-
-func (c *CliConfig) DefaultBuildPolicy() string {
-	if c.BuildPolicy != "" {
-		return c.BuildPolicy
-	}
-	return "if-needed"
 }
 
 func (c *CliConfig) DefaultEventSubmitBufferSize() int {
