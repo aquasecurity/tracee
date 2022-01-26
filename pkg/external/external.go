@@ -257,7 +257,7 @@ type PktMeta struct {
 	Protocol uint8  `json:"protocol"`
 }
 
-type DebugPacketMetaData struct {
+type FunctionBasedPacket struct {
 	LocalIP     string
 	RemoteIP    string
 	LocalPort   uint16

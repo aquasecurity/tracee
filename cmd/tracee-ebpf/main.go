@@ -20,6 +20,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/network_protocols"
 	"github.com/syndtr/gocapability/capability"
 	cli "github.com/urfave/cli/v2"
 )
@@ -447,7 +448,7 @@ func printList() {
 	printEventGroup(&b, tracee.Unique32BitSyscallsStartID, int(tracee.Unique32BitSyscallsEndID))
 	b.WriteString("Network Events: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________" + "\n\n")
-	printEventGroup(&b, int(tracee.NetPacket), int(tracee.SysEnterEventID))
+	printEventGroup(&b, int(network_protocols.NetPacket), int(network_protocols.MaxNetEventID))
 	b.WriteString("\n\nOther Events: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________\n\n")
 	printEventGroup(&b, int(tracee.SysEnterEventID), int(tracee.MaxCommonEventID))

@@ -4,19 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/aquasecurity/tracee/pkg/external"
-	"github.com/aquasecurity/tracee/pkg/processContext"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/network_protocols"
 	"github.com/google/gopacket"
 	"time"
 )
-
-type EventMeta struct {
-	TimeStamp   uint64 `json:"time_stamp"`
-	NetEventId  int32  `json:"net_event_id"`
-	HostTid     int    `json:"host_tid"`
-	ProcessName string `json:"process_name"`
-}
 
 func (t *Tracee) processNetEvents() {
 	// Todo: split pcap files by context (tid + comm)
@@ -29,8 +20,6 @@ func (t *Tracee) processNetEvents() {
 				continue
 			}
 			evtMeta, dataBuff := parseEventMetaData(in)
-			// timeStamp is nanoseconds since system boot time
-			timeStampObj := time.Unix(0, int64(evtMeta.TimeStamp+t.bootTime))
 
 			processContext, exist := t.processTree.ProcessTreeMap[evtMeta.HostTid]
 			if !exist {
@@ -38,39 +27,16 @@ func (t *Tracee) processNetEvents() {
 				continue
 			}
 
-			if evtMeta.NetEventId == NetPacket {
-				packet, err := network_protocols.ParseNetPacketMetaData(dataBuff)
-				if err != nil {
-					t.handleError(fmt.Errorf("couldent parse the packet metadata"))
-					continue
-				}
-				interfaceIndex, ok := t.ngIfacesIndex[int(packet.IfIndex)]
-				// now we are only supporting net event tracing only in debug mode.
-				// in the feature we will create specific flag for that feature
-				if t.config.Debug {
-					evt := createNetEvent(int(evtMeta.TimeStamp), evtMeta.HostTid, evtMeta.ProcessName, evtMeta.NetEventId, "NetPacket", processContext)
-					network_protocols.CreateNetPacketMetaArgs(&evt, packet)
-					t.config.ChanEvents <- evt
-					t.stats.eventCounter.Increment()
-					if ok {
-						if err := t.writePacket(packet.PktLen, timeStampObj, interfaceIndex, dataBuff); err != nil {
-							t.handleError(err)
-							continue
-						}
-					}
+			evt := network_protocols.ProcessNetEvent(dataBuff, evtMeta, EventsDefinitions[evtMeta.NetEventId].Name, processContext)
 
-				}
-			} else if t.config.Debug {
-				debugEventPacket, err := network_protocols.ParseDebugPacketMetaData(dataBuff)
-				if err != nil {
-					t.handleError(err)
-					continue
-				}
-				evt := createNetEvent(int(evtMeta.TimeStamp), evtMeta.HostTid, evtMeta.ProcessName, evtMeta.NetEventId, EventsDefinitions[evtMeta.NetEventId].Name, processContext)
-				network_protocols.CreateDebugPacketMetadataArg(&evt, debugEventPacket)
-				t.config.ChanEvents <- evt
-				t.stats.eventCounter.Increment()
-			}
+			//interfaceIndex, ok := t.ngIfacesIndex[int(evtMeta.IfIndex)]  --not supprot yet
+			//// now we are only supporting net event tracing only in debug mode.
+			//// in the feature we will create specific flag for that feature
+			//if t.config.Debug {
+			//	evt := CreateNetEvent(int(evtMeta.TimeStamp), evtMeta.HostTid, evtMeta.ProcessName, evtMeta.NetEventId, "NetPacket", processContext)
+			//	network_protocols.CreateNetPacketMetaArgs(&evt, packet)
+			t.config.ChanEvents <- evt
+			t.stats.eventCounter.Increment()
 
 		case lost := <-t.lostNetChannel:
 			// When terminating tracee-ebpf the lost channel receives multiple "0 lost events" events.
@@ -107,39 +73,12 @@ func (t *Tracee) writePacket(packetLen uint32, timeStamp time.Time, interfaceInd
 
 // parsing the EventMeta struct from byte array and returns bytes.Buffer pointers
 // Note: after this function the next data in the packet byte array is the PacketMeta struct so i recommend to call 'parseNetPacketMetaData' after this function had called
-func parseEventMetaData(payloadBytes []byte) (EventMeta, *bytes.Buffer) {
-	var eventMetaData EventMeta
+func parseEventMetaData(payloadBytes []byte) (network_protocols.EventMeta, *bytes.Buffer) {
+	var eventMetaData network_protocols.EventMeta
 	eventMetaData.TimeStamp = binary.LittleEndian.Uint64(payloadBytes[0:8])
 	eventMetaData.NetEventId = int32(binary.LittleEndian.Uint32(payloadBytes[8:12]))
 	eventMetaData.HostTid = int(binary.LittleEndian.Uint32(payloadBytes[12:16]))
 	eventMetaData.ProcessName = string(bytes.TrimRight(payloadBytes[16:32], "\x00"))
 	return eventMetaData, bytes.NewBuffer(payloadBytes[32:])
 
-}
-
-func getEventByProcessCtx(ctx processContext.ProcessCtx) external.Event {
-	var event external.Event
-	event.ContainerID = ctx.ContainerID
-	event.ProcessID = int(ctx.Pid)
-	event.ThreadID = int(ctx.Tid)
-	event.ParentProcessID = int(ctx.Ppid)
-	event.HostProcessID = int(ctx.HostPid)
-	event.HostThreadID = int(ctx.HostTid)
-	event.HostParentProcessID = int(ctx.HostPpid)
-	event.UserID = int(ctx.Uid)
-	event.MountNS = int(ctx.MntId)
-	event.PIDNS = int(ctx.PidId)
-	return event
-
-}
-
-func createNetEvent(ts int, hostTid int, processName string, eventId int32, eventName string, ctx processContext.ProcessCtx) external.Event {
-	evt := getEventByProcessCtx(ctx)
-	evt.Timestamp = ts
-	evt.ProcessName = processName
-	evt.EventID = int(eventId)
-	evt.EventName = eventName
-	evt.ReturnValue = 0
-	evt.StackAddresses = nil
-	return evt
 }

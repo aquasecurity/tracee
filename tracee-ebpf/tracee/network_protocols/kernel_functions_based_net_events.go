@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/processContext"
 	"inet.af/netaddr"
 )
 
@@ -18,6 +19,17 @@ type FunctionBasedPacket struct {
 	TcpNewState uint32
 	_           [4]byte //padding
 	SockPtr     uint64
+}
+
+func FunctionBasedNetEventHandler(buffer *bytes.Buffer, evtMeta EventMeta, ctx processContext.ProcessCtx, evtName string) external.Event {
+	var evt external.Event
+	debugEventPacket, err := ParseDebugPacketMetaData(buffer)
+	if err != nil {
+		return evt
+	}
+	evt = CreateNetEvent(evtMeta, evtName, ctx)
+	CreateDebugPacketMetadataArg(&evt, debugEventPacket)
+	return evt
 }
 
 // parsing the PacketMeta struct from bytes.buffer
@@ -50,7 +62,7 @@ func CreateDebugPacketMetadataArg(event *external.Event, packet FunctionBasedPac
 	arg.DestPort = packet.RemotePort
 	arg.Protocol = packet.Protocol
 	evtArg := external.Argument{
-		ArgMeta: external.ArgMeta{"DebugPacketMetaData", "PacketMeta"},
+		ArgMeta: external.ArgMeta{"FunctionBasedPacket", "PacketMeta"},
 		Value:   arg,
 	}
 	eventArgs = append(eventArgs, evtArg)

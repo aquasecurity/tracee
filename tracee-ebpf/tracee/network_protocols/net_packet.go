@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/processContext"
 	"inet.af/netaddr"
 )
 
@@ -16,6 +17,17 @@ type PacketMeta struct {
 	DestPort uint16   `json:"dest_port"`
 	Protocol uint8    `json:"protocol"`
 	_        [3]byte  //padding
+}
+
+func netPacketProtocolHandler(buffer *bytes.Buffer, evtMeta EventMeta, ctx processContext.ProcessCtx) external.Event {
+	var evt external.Event
+	packet, err := ParseNetPacketMetaData(buffer)
+	if err != nil {
+		return evt
+	}
+	evt = CreateNetEvent(evtMeta, "NetPacket", ctx)
+	CreateNetPacketMetaArgs(&evt, packet)
+	return evt
 }
 
 // parsing the PacketMeta struct from bytes.buffer
