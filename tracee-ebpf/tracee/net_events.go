@@ -27,9 +27,16 @@ func (t *Tracee) processNetEvents() {
 				continue
 			}
 
-			evt := network_protocols.ProcessNetEvent(dataBuff, evtMeta, EventsDefinitions[evtMeta.NetEventId].Name, processContext)
+			evt, ShouldCapture, cap := network_protocols.ProcessNetEvent(dataBuff, evtMeta, EventsDefinitions[evtMeta.NetEventId].Name, processContext)
 
-			//interfaceIndex, ok := t.ngIfacesIndex[int(evtMeta.IfIndex)]  --not supprot yet
+			if ShouldCapture {
+				interfaceIndex, ok := t.ngIfacesIndex[int(cap.InterfaceIndex)]
+				if ok {
+					packet := evt.Args[0].Value
+					t.writePacket()
+				}
+			}
+
 			//// now we are only supporting net event tracing only in debug mode.
 			//// in the feature we will create specific flag for that feature
 			//if t.config.Debug {

@@ -24,19 +24,25 @@ type EventMeta struct {
 	HostTid     int    `json:"host_tid"`
 	ProcessName string `json:"process_name"`
 }
+type CaptueData struct {
+	PacketLen      int
+	InterfaceIndex uint32
+}
 
-func ProcessNetEvent(buffer *bytes.Buffer, evtMeta EventMeta, eventName string, ctx processContext.ProcessCtx) external.Event {
+func ProcessNetEvent(buffer *bytes.Buffer, evtMeta EventMeta, eventName string, ctx processContext.ProcessCtx) (external.Event, bool, CaptueData) {
 	var evt external.Event
+	var captureData CaptueData
 	switch evtMeta.NetEventId {
 	case NetPacket:
-		return netPacketProtocolHandler(buffer, evtMeta, ctx)
+		evt = netPacketProtocolHandler(buffer, evtMeta, ctx)
+
+		return evt, false, captureData
 
 	}
 	if evtMeta.NetEventId > NetPacket && evtMeta.NetEventId <= NetTcpConnect {
-		evt = FunctionBasedNetEventHandler(buffer, evtMeta, ctx, eventName)
+		return FunctionBasedNetEventHandler(buffer, evtMeta, ctx, eventName), false, captureData
 	}
-
-	return evt
+	return evt, true, captureData
 
 }
 
