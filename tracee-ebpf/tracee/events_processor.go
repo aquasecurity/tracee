@@ -216,7 +216,7 @@ func (t *Tracee) processEvent(event *external.Event) error {
 			return err
 		}
 	case SchedProcessExitEventID:
-		delete(t.processTree.processTreeMap, event.HostThreadID)
+		delete(t.processTree.processTreeMap, event.HostProcessID)
 	case SchedProcessForkEventID:
 		hostTid, _ := getEventArgInt32Val(event, "child_tid")
 		hostPid, _ := getEventArgInt32Val(event, "child_pid")
