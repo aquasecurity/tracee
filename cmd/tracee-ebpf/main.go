@@ -50,6 +50,20 @@ func main() {
 				return nil
 			}
 
+			// OS release information
+
+			OSInfo, err := helpers.GetOSInfo()
+			if err != nil {
+				if debug {
+					fmt.Fprintf(os.Stderr, "OSInfo: warning: os-release file could not be found\n(%v)\n", err) // only to be enforced when BTF needs to be downloaded, later on
+					fmt.Fprintf(os.Stdout, "OSInfo: %v: %v\n", helpers.OS_KERNEL_RELEASE, OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE))
+				}
+			} else if debug {
+				for k, v := range OSInfo.GetOSReleaseAllFieldValues() {
+					fmt.Fprintf(os.Stdout, "OSInfo: %v: %v\n", k, v)
+				}
+			}
+
 			// enable debug mode if debug flag is passed
 			if c.Bool("debug") {
 				err := flags.EnableDebugMode()

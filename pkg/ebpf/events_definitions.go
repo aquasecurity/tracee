@@ -86,6 +86,7 @@ const (
 	DirtyPipeSpliceEventID
 	DebugfsCreateFile
 	PrintSyscallTableEventID
+	FetchProcFopsEventID
 	MaxCommonEventID
 )
 
@@ -96,6 +97,7 @@ const (
 	ContainerRemoveEventID
 	ExistingContainerEventID
 	DetectHookedSyscallsEventID
+	DetectHookedProcFopsEventID
 	MaxUserSpaceEventID
 )
 
@@ -6238,6 +6240,29 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "const char*", Name: "runtime"},
 			{Type: "const char*", Name: "container_id"},
 			{Type: "unsigned long", Name: "ctime"},
+		},
+	},
+	FetchProcFopsEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "fetch_proc_fops",
+		Probes: []probe{
+			{event: "security_file_permission", attach: kprobe, fn: "trace_security_file_permission"},
+		},
+		Sets: []string{},
+		Params: []trace.ArgMeta{
+			{Type: "unsigned long[]", Name: "fops_address"},
+		},
+	},
+	DetectHookedProcFopsEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "detect_hooked_proc_fops",
+		Probes:  []probe{},
+		Dependencies: dependencies{
+			events: []eventDependency{{FetchProcFopsEventID}},
+		},
+		Sets: []string{},
+		Params: []trace.ArgMeta{
+			{Type: "HookedFunctionData[]", Name: "hooked_fops_pointers"},
 		},
 	},
 	NetPacket: {

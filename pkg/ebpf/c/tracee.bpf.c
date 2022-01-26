@@ -202,7 +202,8 @@ Copyright (C) Aqua Security inc.
 #define DIRTY_PIPE_SPLICE               1038
 #define DEBUGFS_CREATE_FILE             1039
 #define PRINT_SYSCALL_TABLE             1040
-#define MAX_EVENT_ID                    1041
+#define FETCH_PROC_FOPS                 1035
+#define MAX_EVENT_ID                    1036
 
 #define NET_PACKET                      4000
 
@@ -1215,6 +1216,11 @@ static __always_inline struct pipe_buffer *get_last_write_pipe_buffer(struct pip
 
     struct pipe_buffer *current_buffer = get_node_addr(bufs, curbuf);
     return current_buffer;
+}
+
+static __always_inline struct inode * get_inode_from_file(struct file *file)
+{
+    return READ_KERN(file->f_inode);
 }
 
 /*============================ HELPER FUNCTIONS ==============================*/
@@ -2268,6 +2274,32 @@ static __always_inline struct pipe_inode_info *get_file_pipe_info(struct file *f
         return NULL;
     }
     return pipe;
+}
+
+static __always_inline void send_file_operations_struct(event_data_t *data, struct file * called_file)
+{
+    char* top = "top";
+    char* ps = "ps";
+    //check's if the called process is top or ps (to list processes)
+    if ((!has_prefix(data->context.comm, "top ", 4)) && (!has_prefix(data->context.comm, "ps ", 3)))
+        return ;
+    struct inode *file_inode = get_inode_from_file(called_file);
+    struct file_operations *fops = (struct file_operations *)READ_KERN(file_inode->i_fop);
+    if (fops == NULL)
+        return ;
+
+    unsigned long iterate_shared_addr = (unsigned long) READ_KERN(fops->iterate_shared);
+    if (iterate_shared_addr == 0)
+        return ;
+
+    unsigned long fops_addresses[2] ={
+        iterate_shared_addr,
+        (unsigned long) fops
+    };
+
+    save_u64_arr_to_buf(data, (const u64 *)fops_addresses, 2, 0);
+    events_perf_submit(data, FETCH_PROC_FOPS, 0);
+
 }
 
 /*============================== SYSCALL HOOKS ===============================*/
@@ -4817,6 +4849,23 @@ int BPF_KPROBE(trace_ret_do_splice)
     save_to_submit_buf(&data, &out_pipe_last_buffer_flags, sizeof(unsigned int), 6);
 
     return events_perf_submit(&data, DIRTY_PIPE_SPLICE, 0);
+}
+
+SEC("kprobe/security_file_permission")
+int BPF_KPROBE(trace_security_file_permission)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+       return 0;
+
+    if (!should_trace(&data.context))
+        return 0;
+    struct file *f = (struct file *)PT_REGS_PARM1(ctx);
+    if (f == NULL)
+        return 0;
+    send_file_operations_struct(&data, f);
+
+    return 0;
 }
 
 static __always_inline bool skb_revalidate_data(struct __sk_buff *skb, uint8_t **head, uint8_t **tail, const u32 offset) {

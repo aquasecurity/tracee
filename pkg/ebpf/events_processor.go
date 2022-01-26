@@ -327,7 +327,6 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 				go t.netExit(pcapContext)
 			}
 		}
-
 		hId, err := getEventArgUint32Val(event, "hierarchy_id")
 		if err != nil {
 			return fmt.Errorf("error parsing cgroup_mkdir args: %w", err)
