@@ -176,6 +176,9 @@ func (t *Tracee) processNetEvents() {
 			}
 
 		case lost := <-t.lostNetChannel:
+			// When terminating tracee-ebpf the lost channel receives multiple "0 lost events" events.
+			// This check prevents those 0 lost events messages to be written to stderr until the bug is fixed:
+			// https://github.com/aquasecurity/libbpfgo/issues/122
 			if lost > 0 {
 				t.stats.lostNtCounter.Increment(int(lost))
 				t.config.ChanErrors <- fmt.Errorf("lost %d network events", lost)
