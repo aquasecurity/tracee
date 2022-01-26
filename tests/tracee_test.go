@@ -166,7 +166,7 @@ func setupTraceeContainer(ctx context.Context, tempDir string, image string) (*t
 func setupTraceeTrainerContainer(ctx context.Context, sigid string) (*traceeContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:      "tracee-trainer",
-		Entrypoint: []string{"/runner", sigid},
+		Entrypoint: []string{"/runner.sh", sigid},
 		Privileged: true,
 		Name:       "tracee-trainer",
 		AutoRemove: true,
