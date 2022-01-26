@@ -100,6 +100,12 @@ func (t *Tracee) deleteProcInfoDelayed(hostTid int) {
 	t.procInfo.DeleteElement(hostTid)
 }
 
+const (
+	StructFopsPointer int = iota
+	IterateShared
+	Iterate
+)
+
 func (t *Tracee) processEvent(event *trace.Event) error {
 	switch int32(event.EventID) {
 
@@ -343,6 +349,36 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 	case InitModuleEventID:
 		t.invokeIoctlTriggeredEvents()
 		t.updateKallsyms()
+
+	case HookedProcFopsEventID:
+		fopsAddresses, err := getEventArgUlongArrVal(event, "hooked_fops_pointers")
+		if err != nil || fopsAddresses == nil {
+			return fmt.Errorf("error parsing hooked_proc_fops args: %w", err)
+		}
+		hookedFops := make([]trace.HookedSymbolData, 0)
+		for idx, addr := range fopsAddresses {
+			inTextSeg, err := t.kernelSymbols.TextSegmentContains(addr)
+			if err != nil {
+				return fmt.Errorf("error checking kernel address: %v", err)
+			}
+			if !inTextSeg {
+				hookingFunction := parseSymbol(addr, t.kernelSymbols)
+				if hookingFunction.Owner == "system" {
+					continue
+				}
+				functionName := "unknown"
+				switch idx {
+				case StructFopsPointer:
+					functionName = "struct file_operations pointer"
+				case IterateShared:
+					functionName = "iterate_shared"
+				case Iterate:
+					functionName = "iterate"
+				}
+				hookedFops = append(hookedFops, trace.HookedSymbolData{SymbolName: functionName, ModuleOwner: hookingFunction.Owner})
+			}
+		}
+		event.Args[0].Value = hookedFops
 	}
 
 	return nil

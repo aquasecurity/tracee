@@ -5,6 +5,7 @@
 // Copyright (C) Aqua Security inc.
 
 #ifndef CORE
+    #include <uapi/linux/magic.h>
     #include <uapi/linux/ptrace.h>
     #include <uapi/linux/in.h>
     #include <uapi/linux/in6.h>
@@ -230,6 +231,7 @@ enum event_id_e
     DO_INIT_MODULE,
     SOCKET_ACCEPT,
     LOAD_ELF_PHDRS,
+    HOOKED_PROC_FOPS,
     MAX_EVENT_ID,
 
     // Net events IDs
@@ -1328,6 +1330,21 @@ static __always_inline struct sockaddr_un get_unix_sock_addr(struct unix_sock *s
 }
 
 // INTERNAL: CONFIG --------------------------------------------------------------------------------
+
+static __always_inline struct inode *get_inode_from_file(struct file *file)
+{
+    return READ_KERN(file->f_inode);
+}
+
+static __always_inline struct super_block *get_super_block_from_inode(struct inode *f_inode)
+{
+    return READ_KERN(f_inode->i_sb);
+}
+
+static __always_inline unsigned long get_s_magic_from_super_block(struct super_block *i_sb)
+{
+    return READ_KERN(i_sb->s_magic);
+}
 
 static __always_inline int get_config(u32 key)
 {
@@ -5293,6 +5310,44 @@ int BPF_KPROBE(trace_load_elf_phdrs)
         events_perf_submit(&data, LOAD_ELF_PHDRS, 0);
     }
 
+    return 0;
+}
+
+SEC("kprobe/security_file_permission")
+int BPF_KPROBE(trace_security_file_permission)
+{
+    struct file *file = (struct file *) PT_REGS_PARM1(ctx);
+    if (file == NULL)
+        return 0;
+    struct inode *f_inode = get_inode_from_file(file);
+    struct super_block *i_sb = get_super_block_from_inode(f_inode);
+    unsigned long s_magic = get_s_magic_from_super_block(i_sb);
+
+    // Only check procfs entries
+    if (s_magic != PROC_SUPER_MAGIC) {
+        return 0;
+    }
+
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data.context))
+        return 0;
+
+    struct file_operations *fops = (struct file_operations *) READ_KERN(f_inode->i_fop);
+    if (fops == NULL)
+        return 0;
+
+    unsigned long iterate_shared_addr = (unsigned long) READ_KERN(fops->iterate_shared);
+    unsigned long iterate_addr = (unsigned long) READ_KERN(fops->iterate);
+    if (iterate_addr == 0 && iterate_shared_addr == 0)
+        return 0;
+
+    unsigned long fops_addresses[3] = {(unsigned long) fops, iterate_shared_addr, iterate_addr};
+
+    save_u64_arr_to_buf(&data, (const u64 *) fops_addresses, 3, 0);
+    events_perf_submit(&data, HOOKED_PROC_FOPS, 0);
     return 0;
 }
 
