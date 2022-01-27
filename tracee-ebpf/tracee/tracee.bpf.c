@@ -165,6 +165,7 @@ Copyright (C) Aqua Security inc.
 #define NET_UDPV6_DESTROY_SOCK          1005
 #define NET_INET_SOCK_SET_STATE         1006
 #define NET_TCP_CONNECT                 1007
+#define MIN_PROTOCOL_EVENT_ID           1008    // this is the minimum eventID of a net event that sent from the tc_probe
 #define MAX_NET_EVENT_ID                1008
 
 #define RAW_SYS_ENTER                   MAX_NET_EVENT_ID +0
@@ -3227,7 +3228,7 @@ int BPF_KPROBE(trace_security_socket_bind)
     }
 
     // netDebug event
-    if (get_config(CONFIG_DEBUG_NET) && (sa_fam != AF_UNIX)) {
+    if ((event_chosen(NET_SECURITY_BIND) || get_config(CONFIG_DEBUG_NET)) && (sa_fam != AF_UNIX)) {
         net_debug_t debug_event = {0};
         debug_event.ts = data.context.ts;
         debug_event.host_tid = data.context.host_tid;
@@ -3359,6 +3360,8 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
+    if (!get_config(CONFIG_DEBUG_NET) && !event_chosen(NET_INET_SOCK_SET_STATE))
+            return 0;
 
     struct sock *sk = (struct sock *)ctx->args[0];
     int old_state = ctx->args[1];
@@ -3461,6 +3464,7 @@ int BPF_KPROBE(trace_tcp_connect)
 
     if (!should_trace(&data.context))
         return 0;
+
 
     local_net_id_t connect_id = {0};
     net_ctx_ext_t net_ctx_ext = {0};
@@ -4149,6 +4153,21 @@ static __always_inline bool skb_revalidate_data(struct __sk_buff *skb, uint8_t *
     return true;
 }
 
+/* should_trace_net_protocols iterates over the network events that are driven from tc_probe
+ * and checks if the events is chosen in the user-space.
+ */
+static __always_inline bool should_trace_net_protocols(){
+
+    #pragma unroll
+    for (int i=MIN_PROTOCOL_EVENT_ID; i<MAX_NET_EVENT_ID;i++){
+    if (event_chosen(i) != 0)
+        return true;
+
+    }
+    return false;
+
+}
+
 /* check_protocols is checking for potential network protocols based packets
  * if it is finds a potential protocol based packet it sends it to the user-space with the eventID
  * in the user-space we checking the packet data more deeply to verify it is the acual protocl,
@@ -4282,7 +4301,7 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     // See bpf_skb_event_output in net/core/filter.c.
     u64 flags = BPF_F_CURRENT_CPU;
     flags |= (u64)skb->len << 32;
-    if (get_config(CONFIG_DEBUG_NET)){
+    if (get_config(CONFIG_DEBUG_NET) || event_chosen(NET_PACKET) || should_trace_net_protocols()){
         pkt.src_port = __bpf_ntohs(pkt.src_port);
         pkt.dst_port = __bpf_ntohs(pkt.dst_port);
         bpf_perf_event_output(skb, &net_events, flags, &pkt, sizeof(pkt));
