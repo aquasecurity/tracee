@@ -118,7 +118,7 @@ ubuntu-prepare: \
 		.
 
 #
-# tracee-make's shell
+# docker environment
 #
 
 DOCKER_RUN_ENV =
@@ -139,6 +139,10 @@ DOCKER_RUN_ARGS = run --rm --pid=host --privileged \
 		-v /sys/kernel/security:/sys/kernel/security:ro \
 		-e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
 		$(DOCKER_RUN_ENV)
+
+#
+# tracee-make's shell
+#
 
 .PHONY: alpine-shell
 alpine-shell: \
