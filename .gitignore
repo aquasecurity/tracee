@@ -11,4 +11,3 @@ coverage.txt
 
 # needed for the makefile btfhub building logic
 *.md5
-runner
