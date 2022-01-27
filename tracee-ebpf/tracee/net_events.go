@@ -28,22 +28,18 @@ func (t *Tracee) processNetEvents() {
 			}
 
 			evt, ShouldCapture, cap := network_protocols.ProcessNetEvent(dataBuff, evtMeta, EventsDefinitions[evtMeta.NetEventId].Name, processContext)
+			t.config.ChanEvents <- evt
+			t.stats.eventCounter.Increment()
 
 			if ShouldCapture {
 				interfaceIndex, ok := t.ngIfacesIndex[int(cap.InterfaceIndex)]
 				if ok {
-					packet := evt.Args[0].Value
-					t.writePacket()
+					if err := t.writePacket(cap.PacketLen, time.Unix(int64(evt.Timestamp), 0), interfaceIndex, dataBuff); err != nil {
+						t.handleError(err)
+						continue
+					}
 				}
 			}
-
-			//// now we are only supporting net event tracing only in debug mode.
-			//// in the feature we will create specific flag for that feature
-			//if t.config.Debug {
-			//	evt := CreateNetEvent(int(evtMeta.TimeStamp), evtMeta.HostTid, evtMeta.ProcessName, evtMeta.NetEventId, "NetPacket", processContext)
-			//	network_protocols.CreateNetPacketMetaArgs(&evt, packet)
-			t.config.ChanEvents <- evt
-			t.stats.eventCounter.Increment()
 
 		case lost := <-t.lostNetChannel:
 			// When terminating tracee-ebpf the lost channel receives multiple "0 lost events" events.

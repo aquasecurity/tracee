@@ -25,7 +25,7 @@ type EventMeta struct {
 	ProcessName string `json:"process_name"`
 }
 type CaptueData struct {
-	PacketLen      int
+	PacketLen      uint32
 	InterfaceIndex uint32
 }
 
@@ -34,15 +34,17 @@ func ProcessNetEvent(buffer *bytes.Buffer, evtMeta EventMeta, eventName string, 
 	var captureData CaptueData
 	switch evtMeta.NetEventId {
 	case NetPacket:
-		evt = netPacketProtocolHandler(buffer, evtMeta, ctx)
-
-		return evt, false, captureData
+		var packet PacketMeta
+		evt, packet = netPacketProtocolHandler(buffer, evtMeta, ctx)
+		captureData.PacketLen = packet.PktLen
+		captureData.InterfaceIndex = packet.IfIndex
+		return evt, true, captureData
 
 	}
 	if evtMeta.NetEventId > NetPacket && evtMeta.NetEventId <= NetTcpConnect {
 		return FunctionBasedNetEventHandler(buffer, evtMeta, ctx, eventName), false, captureData
 	}
-	return evt, true, captureData
+	return evt, false, captureData
 
 }
 

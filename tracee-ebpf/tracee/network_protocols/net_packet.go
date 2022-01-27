@@ -19,15 +19,15 @@ type PacketMeta struct {
 	_        [3]byte  //padding
 }
 
-func netPacketProtocolHandler(buffer *bytes.Buffer, evtMeta EventMeta, ctx processContext.ProcessCtx) external.Event {
+func netPacketProtocolHandler(buffer *bytes.Buffer, evtMeta EventMeta, ctx processContext.ProcessCtx) (external.Event, PacketMeta) {
 	var evt external.Event
 	packet, err := ParseNetPacketMetaData(buffer)
 	if err != nil {
-		return evt
+		return evt, packet
 	}
 	evt = CreateNetEvent(evtMeta, "NetPacket", ctx)
 	CreateNetPacketMetaArgs(&evt, packet)
-	return evt
+	return evt, packet
 }
 
 // parsing the PacketMeta struct from bytes.buffer
