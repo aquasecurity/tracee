@@ -129,14 +129,21 @@ build-alpine-tracee-nocore: \
 # run tracee (tracee-ebpf + tracee-rules)
 #
 
+DOCKER_RUN_ARGS = run --rm --pid=host --privileged \
+		-v /etc/os-release:/etc/os-release-host:ro \
+		-v $(PWD):/tracee \
+		-v /lib/modules:/lib/modules:ro \
+		-v /usr/src:/usr/src:ro \
+		-v /sys/kernel/security:/sys/kernel/security:ro \
+		-e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host
+
 .PHONY: run-alpine-tracee-core
 run-alpine-tracee-core: \
 	| .check_$(CMD_DOCKER) \
 	.check_tree
 #
-	$(CMD_DOCKER) run --privileged --pid=host \
-		-v /etc/os-release:/etc/os-release-host:ro \
-		-e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+	$(CMD_DOCKER) \
+		$(DOCKER_RUN_ARGS) \
 		-e TRACEE_EBPF_ONLY=0 \
 		--rm -it $(ALPINE_TRACEE_CORE_CONTNAME) \
 		$(ARG)
@@ -146,9 +153,8 @@ run-alpine-tracee-core-btfhub: \
 	| .check_$(CMD_DOCKER) \
 	.check_tree
 #
-	$(CMD_DOCKER) run --privileged --pid=host \
-		-v /etc/os-release:/etc/os-release-host:ro \
-		-e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+	$(CMD_DOCKER) \
+		$(DOCKER_RUN_ARGS) \
 		-e TRACEE_EBPF_ONLY=0 \
 		--rm -it $(ALPINE_TRACEE_CORE_BTFHUB_CONTNAME) \
 		$(ARG)
@@ -158,11 +164,8 @@ run-alpine-tracee-nocore: \
 	| .check_$(CMD_DOCKER) \
 	.check_tree
 #
-	$(CMD_DOCKER) run --privileged --pid=host \
-		-v /etc/os-release:/etc/os-release-host:ro \
-		-e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-		-v /usr/src:/usr/src:ro \
-		-v /lib/modules:/lib/modules:ro \
+	$(CMD_DOCKER) \
+		$(DOCKER_RUN_ARGS) \
 		-e TRACEE_EBPF_ONLY=0 \
 		-e FORCE_CORE=0 \
 		--rm -it $(ALPINE_TRACEE_NOCORE_CONTNAME) \
@@ -177,9 +180,8 @@ run-alpine-tracee-ebpf-core: \
 	| .check_$(CMD_DOCKER) \
 	.check_tree
 #
-	$(CMD_DOCKER) run --privileged --pid=host \
-		-v /etc/os-release:/etc/os-release-host:ro \
-		-e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+	$(CMD_DOCKER) \
+		$(DOCKER_RUN_ARGS) \
 		-e TRACEE_EBPF_ONLY=1 \
 		--rm -it $(ALPINE_TRACEE_CORE_CONTNAME) \
 		$(ARG)
@@ -189,23 +191,20 @@ run-alpine-tracee-ebpf-core-btfhub: \
 	| .check_$(CMD_DOCKER) \
 	.check_tree
 #
-	$(CMD_DOCKER) run --privileged --pid=host \
-		-v /etc/os-release:/etc/os-release-host:ro \
-		-e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+	$(CMD_DOCKER) \
+		$(DOCKER_RUN_ARGS) \
 		-e TRACEE_EBPF_ONLY=1 \
 		--rm -it $(ALPINE_TRACEE_CORE_BTFHUB_CONTNAME) \
 		$(ARG)
+
 
 .PHONY: run-alpine-tracee-ebpf-nocore
 run-alpine-tracee-ebpf-nocore: \
 	| .check_$(CMD_DOCKER) \
 	.check_tree
 #
-	$(CMD_DOCKER) run --privileged --pid=host \
-		-v /etc/os-release:/etc/os-release-host:ro \
-		-e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-		-v /usr/src:/usr/src:ro \
-		-v /lib/modules:/lib/modules:ro \
+	$(CMD_DOCKER) \
+		$(DOCKER_RUN_ARGS) \
 		-e TRACEE_EBPF_ONLY=1 \
 		-e FORCE_CORE=0 \
 		--rm -it $(ALPINE_TRACEE_NOCORE_CONTNAME) \
