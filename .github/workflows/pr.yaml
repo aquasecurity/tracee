@@ -12,6 +12,7 @@ env:
   OPA_VERSION: "v0.35.0"
 jobs:
   verify-code:
+    if: "false"   # FIXME Removed just to test things out
     name: Verify Code
     runs-on: ubuntu-20.04
     steps:
@@ -148,12 +149,6 @@ jobs:
   # introduce dedicated workflows and run them on schedule (weekly or nightly).
   test-signatures:
     name: "[E2E] Test Signatures"
-    needs:
-      - verify-tracee-ebpf
-      - verify-tracee-rules
-      - verify-signatures
-      - deprecated-verify-tracee-ebpf
-      - deprecated-verify-tracee-rules
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout main
@@ -168,12 +163,12 @@ jobs:
       - name: Buld tracee trainer
         run: |
           make -f tests/Makefile docker-build-tracee-trainer
-      - name: Build tracee-nocore
+      - name: Build tracee-core-btfhub
         run: |
-          make -f builder/Makefile.tracee-container build-alpine-tracee-nocore
-      - name: Install BPF
-        run: |
-          make -f Makefile.one install-bpf-nocore
+          make -f builder/Makefile.tracee-container build-alpine-tracee-core-btfhub
+#      - name: Install BPF
+#        run: |
+#          make -f Makefile.one install-bpf-nocore
       - name: Run tests
         run: |
           go test -v -run=TestTraceeSignatures ./tests/tracee_test.go

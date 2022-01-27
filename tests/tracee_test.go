@@ -196,12 +196,12 @@ func TestTraceeSignatures(t *testing.T) {
 	//       as input parameter to this test so we can set in the CI workflow
 	//       instead of hardcoding it here. The actual logic of the test should be
 	//       agnostic of tracee container flavor.
-	for _, image := range []string{"tracee-nocore"} {
+	for _, image := range []string{"tracee-btfhub"} {
 		// FIXME Pass signature identifiers (TRC-3, TRC-4, TRC-9, etc.) as input
 		//       parameter to this test so we can use it as smoke test in the
 		//       PR validation workflow (with TRC-2) only or as full-blown end-to-end
 		//       nightly test run.
-		for _, sigID := range []string{"TRC-3", "TRC-4", "TRC-9", "TRC-10", "TRC-11"} {
+		for _, sigID := range []string{"TRC-3"} {
 			t.Run(fmt.Sprintf("%s/%s", image, sigID), func(t *testing.T) {
 				ctx := context.Background()
 
