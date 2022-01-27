@@ -188,9 +188,21 @@ func TestTraceeSignatures(t *testing.T) {
 		os.RemoveAll(tempDir)
 	}()
 
-	for _, image := range []string{"tracee", "tracee-btfhub", "tracee-nocore"} {
-		for _, sigid := range []string{"TRC-3", "TRC-4", "TRC-9", "TRC-10", "TRC-11"} {
-			t.Run(fmt.Sprintf("%s/%s", image, sigid), func(t *testing.T) {
+	// Ubuntu 20.04 provided by GitHub Actions runner does not support CO:RE.
+	// Thus, we are running end-to-end signatures tests using tracee non CO:RE
+	// container image.
+
+	// FIXME Pass tracee container image flavor (tracee-nocore, tracee-core, etc.)
+	//       as input parameter to this test so we can set in the CI workflow
+	//       instead of hardcoding it here. The actual logic of the test should be
+	//       agnostic of tracee container flavor.
+	for _, image := range []string{"tracee-nocore"} {
+		// FIXME Pass signature identifiers (TRC-3, TRC-4, TRC-9, etc.) as input
+		//       parameter to this test so we can use it as smoke test in the
+		//       PR validation workflow (with TRC-2) only or as full-blown end-to-end
+		//       nightly test run.
+		for _, sigID := range []string{"TRC-3", "TRC-4", "TRC-9", "TRC-10", "TRC-11"} {
+			t.Run(fmt.Sprintf("%s/%s", image, sigID), func(t *testing.T) {
 				ctx := context.Background()
 
 				// run tracee container
@@ -201,13 +213,13 @@ func TestTraceeSignatures(t *testing.T) {
 				defer traceeContainer.Terminate(ctx)
 
 				// run trace signature trainer container
-				traceeSigTrainer, err := setupTraceeTrainerContainer(ctx, sigid)
+				traceeSigTrainer, err := setupTraceeTrainerContainer(ctx, sigID)
 				if err != nil {
 					t.Fatal(err)
 				}
 				defer traceeSigTrainer.Terminate(ctx)
 
-				traceeContainer.assertLogs(t, ctx, sigid)
+				traceeContainer.assertLogs(t, ctx, sigID)
 			})
 		}
 	}

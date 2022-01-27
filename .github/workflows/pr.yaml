@@ -140,6 +140,44 @@ jobs:
           exit-code: "1"
 
 
+  # test-signatures job is using multiple signatures and acts as a smoke
+  # (aka sanity) test on each PR. Eventually, we'll parameterize the
+  # TestTraceeSignatures method and run it only with a single signature
+  # in the PR validation workflow.
+  # Te keep testing all signatures with different flavors of tracee we'll
+  # introduce dedicated workflows and run them on schedule (weekly or nightly).
+  test-signatures:
+    name: "[E2E] Test Signatures"
+    needs:
+      - verify-tracee-ebpf
+      - verify-tracee-rules
+      - verify-signatures
+      - deprecated-verify-tracee-ebpf
+      - deprecated-verify-tracee-rules
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Install Dependencies
+        uses: ./.github/actions/build-dependencies
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          opa-version: ${{ env.OPA_VERSION }}
+      - name: Buld tracee trainer
+        run: |
+          make -f tests/Makefile docker-build-tracee-trainer
+      - name: Build tracee-nocore
+        run: |
+          make -f builder/Makefile.tracee-container build-alpine-tracee-nocore
+      - name: Install BPF
+        run: |
+          make -f Makefile.one install-bpf-nocore
+      - name: Run tests
+        run: |
+          go test -v -run=TestTraceeSignatures ./tests/tracee_test.go
+
 
   # deprecated-verify-tracee-ebpf and deprecated-verify-tracee-rules jobs are
   # supposed to be removed once we fully migrate to Makefile.one and get rid of
