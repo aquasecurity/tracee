@@ -158,13 +158,13 @@ Copyright (C) Aqua Security inc.
 
 
 #define NET_PACKET                      1000
-#define DEBUG_NET_SECURITY_BIND         1001
-#define DEBUG_NET_UDP_SENDMSG           1002
-#define DEBUG_NET_UDP_DISCONNECT        1003
-#define DEBUG_NET_UDP_DESTROY_SOCK      1004
-#define DEBUG_NET_UDPV6_DESTROY_SOCK    1005
-#define DEBUG_NET_INET_SOCK_SET_STATE   1006
-#define DEBUG_NET_TCP_CONNECT           1007
+#define NET_SECURITY_BIND               1001
+#define NET_UDP_SENDMSG                 1002
+#define NET_UDP_DISCONNECT              1003
+#define NET_UDP_DESTROY_SOCK            1004
+#define NET_UDPV6_DESTROY_SOCK          1005
+#define NET_INET_SOCK_SET_STATE         1006
+#define NET_TCP_CONNECT                 1007
 #define MAX_NET_EVENT_ID                1008
 
 #define RAW_SYS_ENTER                   MAX_NET_EVENT_ID +0
@@ -187,20 +187,20 @@ Copyright (C) Aqua Security inc.
 #define SECURITY_BPRM_CHECK             MAX_NET_EVENT_ID +17
 #define SECURITY_FILE_OPEN              MAX_NET_EVENT_ID +18
 #define SECURITY_INODE_UNLINK           MAX_NET_EVENT_ID +19
-#define SECURITY_SOCKET_CREATE          1028
-#define SECURITY_SOCKET_LISTEN          1029
-#define SECURITY_SOCKET_CONNECT         1030
-#define SECURITY_SOCKET_ACCEPT          1031
-#define SECURITY_SOCKET_BIND            1032
-#define SECURITY_SB_MOUNT               1033
-#define SECURITY_BPF                    1034
-#define SECURITY_BPF_MAP                1035
-#define SECURITY_KERNEL_READ_FILE       1036
-#define SECURITY_INODE_MKNOD            1037
-#define SECURITY_POST_READ_FILE         1038
-#define SOCKET_DUP                      1039
-#define HIDDEN_INODES                   1040
-#define MAX_EVENT_ID                    1041
+#define SECURITY_SOCKET_CREATE          MAX_NET_EVENT_ID +20
+#define SECURITY_SOCKET_LISTEN          MAX_NET_EVENT_ID +21
+#define SECURITY_SOCKET_CONNECT         MAX_NET_EVENT_ID +22
+#define SECURITY_SOCKET_ACCEPT          MAX_NET_EVENT_ID +22
+#define SECURITY_SOCKET_BIND            MAX_NET_EVENT_ID +23
+#define SECURITY_SB_MOUNT               MAX_NET_EVENT_ID +24
+#define SECURITY_BPF                    MAX_NET_EVENT_ID +25
+#define SECURITY_BPF_MAP                MAX_NET_EVENT_ID +26
+#define SECURITY_KERNEL_READ_FILE       MAX_NET_EVENT_ID +27
+#define SECURITY_INODE_MKNOD            MAX_NET_EVENT_ID +28
+#define SECURITY_POST_READ_FILE         MAX_NET_EVENT_ID +29
+#define SOCKET_DUP                      MAX_NET_EVENT_ID +30
+#define HIDDEN_INODES                   MAX_NET_EVENT_ID +31
+#define MAX_EVENT_ID                    MAX_NET_EVENT_ID +32
 
 
 #define CONFIG_SHOW_SYSCALL             1
@@ -3232,7 +3232,7 @@ int BPF_KPROBE(trace_security_socket_bind)
         debug_event.ts = data.context.ts;
         debug_event.host_tid = data.context.host_tid;
         __builtin_memcpy(debug_event.comm, data.context.comm, TASK_COMM_LEN);
-        debug_event.event_id = DEBUG_NET_SECURITY_BIND;
+        debug_event.event_id = NET_SECURITY_BIND;
         debug_event.local_addr = connect_id.address;
         debug_event.local_port = __bpf_ntohs(connect_id.port);
         debug_event.protocol = protocol;
@@ -3299,7 +3299,7 @@ int BPF_KPROBE(trace_udp_sendmsg)
 
     struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
 
-    return net_map_update_or_delete_sock(ctx, DEBUG_NET_UDP_SENDMSG, sk, data.context.host_tid);
+    return net_map_update_or_delete_sock(ctx, NET_UDP_SENDMSG, sk, data.context.host_tid);
 }
 
 SEC("kprobe/__udp_disconnect")
@@ -3314,7 +3314,7 @@ int BPF_KPROBE(trace_udp_disconnect)
 
     struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
 
-    return net_map_update_or_delete_sock(ctx, DEBUG_NET_UDP_DISCONNECT, sk, 0);
+    return net_map_update_or_delete_sock(ctx, NET_UDP_DISCONNECT, sk, 0);
 }
 
 SEC("kprobe/udp_destroy_sock")
@@ -3329,7 +3329,7 @@ int BPF_KPROBE(trace_udp_destroy_sock)
 
     struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
 
-    return net_map_update_or_delete_sock(ctx, DEBUG_NET_UDP_DESTROY_SOCK, sk, 0);
+    return net_map_update_or_delete_sock(ctx, NET_UDP_DESTROY_SOCK, sk, 0);
 }
 
 SEC("kprobe/udpv6_destroy_sock")
@@ -3344,7 +3344,7 @@ int BPF_KPROBE(trace_udpv6_destroy_sock)
 
     struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
 
-    return net_map_update_or_delete_sock(ctx, DEBUG_NET_UDPV6_DESTROY_SOCK, sk, 0);
+    return net_map_update_or_delete_sock(ctx, NET_UDPV6_DESTROY_SOCK, sk, 0);
 }
 
 // include/trace/events/sock.h:
@@ -3441,7 +3441,7 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
             debug_event.host_tid = sock_ctx_p->host_tid;
             __builtin_memcpy(debug_event.comm, sock_ctx_p->comm, TASK_COMM_LEN);
         }
-        debug_event.event_id = DEBUG_NET_INET_SOCK_SET_STATE;
+        debug_event.event_id = NET_INET_SOCK_SET_STATE;
         debug_event.old_state = old_state;
         debug_event.new_state = new_state;
         debug_event.sk_ptr = (u64)sk;
@@ -3485,7 +3485,7 @@ int BPF_KPROBE(trace_tcp_connect)
     net_ctx_ext.local_port = connect_id.port;
     bpf_map_update_elem(&sock_ctx_map, &sk, &net_ctx_ext, BPF_ANY);
 
-    return net_map_update_or_delete_sock(ctx, DEBUG_NET_TCP_CONNECT, sk, data.context.host_tid);
+    return net_map_update_or_delete_sock(ctx, NET_TCP_CONNECT, sk, data.context.host_tid);
 }
 
 static __always_inline u32 send_bin_helper(void* ctx, struct bpf_map_def *prog_array, int tail_call)
@@ -4149,6 +4149,15 @@ static __always_inline bool skb_revalidate_data(struct __sk_buff *skb, uint8_t *
     return true;
 }
 
+/* check_protocols is checking for potential network protocols based packets
+ * if it is finds a potential protocol based packet it sends it to the user-space with the eventID
+ * in the user-space we checking the packet data more deeply to verify it is the acual protocl,
+ * and if it is- we parsing it and alerting to the user space
+*/
+static __always_inline void check_protocols(struct __sk_buff *skb, struct bpf_map_def *events_channel, u64 flags, net_packet_t* pkt){
+
+}
+
 static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     // Note: if we are attaching to docker0 bridge, the ingress bool argument is actually egress
     uint8_t *head = (uint8_t *)(long)skb->data;
@@ -4277,6 +4286,7 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
         pkt.src_port = __bpf_ntohs(pkt.src_port);
         pkt.dst_port = __bpf_ntohs(pkt.dst_port);
         bpf_perf_event_output(skb, &net_events, flags, &pkt, sizeof(pkt));
+        check_protocols(skb, &net_events, flags, &pkt);
     }
     else {
         // If not debugging, only send the minimal required data to save the
