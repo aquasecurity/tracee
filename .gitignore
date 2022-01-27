@@ -1,9 +1,7 @@
 .vscode
 .idea
 /dist
-
 coverage.txt
-
 .vagrant/
 
 # .check* files are needed so .PHONY dependencies in makefile
@@ -13,4 +11,3 @@ coverage.txt
 
 # needed for the makefile btfhub building logic
 *.md5
-

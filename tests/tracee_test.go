@@ -1,10 +1,12 @@
-package tests
+package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"os/exec"
 	"strings"
 	"testing"
@@ -12,6 +14,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
@@ -125,4 +129,101 @@ func TestWebhookIntegration(t *testing.T) {
 	// kill the container
 	t.Log("Terminating the Tracee container...")
 	assert.NoError(t, exec.Command("docker", "kill", containerID).Run())
+}
+
+type traceeContainer struct {
+	testcontainers.Container
+}
+
+func setupTraceeContainer(ctx context.Context, tempDir string, image string) (*traceeContainer, error) {
+	req := testcontainers.ContainerRequest{
+		Image:      image,
+		Privileged: true,
+		BindMounts: map[string]string{ // container:host
+			tempDir:                tempDir,           // required for all
+			"/etc/os-release-host": "/etc/os-release", // required for all
+			"/usr/src":             "/usr/src",        // required for -nocore
+			"/lib/modules":         "/lib/modules",    // required for -nocore
+		},
+		Env: map[string]string{
+			"LIBBPFGO_OSRELEASE_FILE": "/etc/os-release-host",
+		},
+		Name:       "tracee",
+		AutoRemove: true,
+		WaitingFor: wait.NewLogStrategy("Loaded"),
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &traceeContainer{Container: container}, nil
+}
+
+func setupTraceeTrainerContainer(ctx context.Context, sigid string) (*traceeContainer, error) {
+	req := testcontainers.ContainerRequest{
+		Image:      "tracee-trainer",
+		Entrypoint: []string{"/runner.sh", sigid},
+		Privileged: true,
+		Name:       "tracee-trainer",
+		AutoRemove: true,
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &traceeContainer{Container: container}, nil
+}
+
+func TestTraceeSignatures(t *testing.T) {
+	tempDir := os.TempDir()
+	defer func() {
+		os.RemoveAll(tempDir)
+	}()
+
+	for _, image := range []string{"tracee", "tracee-btfhub", "tracee-nocore"} {
+		for _, sigid := range []string{"TRC-3", "TRC-4", "TRC-9", "TRC-10", "TRC-11"} {
+			t.Run(fmt.Sprintf("%s/%s", image, sigid), func(t *testing.T) {
+				ctx := context.Background()
+
+				// run tracee container
+				traceeContainer, err := setupTraceeContainer(ctx, tempDir, image)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer traceeContainer.Terminate(ctx)
+
+				// run trace signature trainer container
+				traceeSigTrainer, err := setupTraceeTrainerContainer(ctx, sigid)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer traceeSigTrainer.Terminate(ctx)
+
+				traceeContainer.assertLogs(t, ctx, sigid)
+			})
+		}
+	}
+}
+
+func (tc traceeContainer) assertLogs(t *testing.T, ctx context.Context, sigid string) {
+	time.Sleep(time.Second * 10) // wait for tracee to detect
+
+	b, err := tc.Logs(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	log, err := ioutil.ReadAll(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Contains(t, string(log), fmt.Sprint("Signature ID: ", sigid))
 }
