@@ -15,6 +15,7 @@ const (
 	NetUdpV6DestroySock
 	NetInetSockSetState
 	NetTcpConnect
+	NetDnsRequest
 	MaxNetEventID
 )
 
@@ -39,7 +40,9 @@ func ProcessNetEvent(buffer *bytes.Buffer, evtMeta EventMeta, eventName string, 
 		captureData.PacketLen = packet.PktLen
 		captureData.InterfaceIndex = packet.IfIndex
 		return evt, true, captureData
-
+	case NetDnsRequest:
+		evt, _ = dnsRequestPrototcolsHandler(buffer, evtMeta, ctx)
+		return evt, false, captureData
 	}
 	if evtMeta.NetEventId > NetPacket && evtMeta.NetEventId <= NetTcpConnect {
 		return FunctionBasedNetEventHandler(buffer, evtMeta, ctx, eventName), false, captureData
