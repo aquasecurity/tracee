@@ -2,6 +2,9 @@
 
 apt-get update
 
+# TRC-2 Anti-debugging
+apt-get install -y strace
+
 # TRC-3 Code Injection
 chmod +x ./injector
 apt-get install -y ncat gcc

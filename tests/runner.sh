@@ -1,6 +1,9 @@
 #!/bin/sh
 
 case $@ in
+  "TRC-2")
+    ./trc2.sh
+    ;;
   "TRC-3")
     ./trc3.sh
     ;;
