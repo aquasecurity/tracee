@@ -11,3 +11,7 @@ coverage.txt
 
 # needed for the makefile btfhub building logic
 *.md5
+
+# ignore local and temporary packaging files
+debian
+.ubuntu*

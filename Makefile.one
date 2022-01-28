@@ -638,5 +638,6 @@ test: test-tracee-ebpf test-tracee-rules test-rules
 clean:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)
-	$(CMD_RM) -rf .*.md5
-	$(CMD_RM) -rf .check*
+	$(CMD_RM) -f .*.md5
+	$(CMD_RM) -f .check*
+	$(CMD_RM) -f .ubuntu-pkgs*
