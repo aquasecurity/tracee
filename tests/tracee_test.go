@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -163,10 +164,10 @@ func setupTraceeContainer(ctx context.Context, tempDir string, image string) (*t
 	return &traceeContainer{Container: container}, nil
 }
 
-func setupTraceeTrainerContainer(ctx context.Context, sigid string) (*traceeContainer, error) {
+func setupTraceeTrainerContainer(ctx context.Context, sigID string) (*traceeContainer, error) {
 	req := testcontainers.ContainerRequest{
 		Image:      "tracee-trainer",
-		Entrypoint: []string{"/runner.sh", sigid},
+		Entrypoint: []string{"/runner.sh", sigID},
 		Privileged: true,
 		Name:       "tracee-trainer",
 		AutoRemove: true,
@@ -182,50 +183,66 @@ func setupTraceeTrainerContainer(ctx context.Context, sigid string) (*traceeCont
 	return &traceeContainer{Container: container}, nil
 }
 
+var (
+	traceeImageRef = flag.String("tracee-image-ref", "tracee-nocore:latest",
+		"tracee container image reference")
+	signatureIDs = flag.String("tracee-signatures", "TRC-2,TRC-3,TRC-4,TRC-5,TRC-7,TRC-8,TRC-9,TRC-10,TRC-11,TRC-12,TRC-14",
+		"comma-separated list of tracee signature identifiers")
+)
+
+func parseSignatureIDs() []string {
+	signatureIDs := strings.Split(*signatureIDs, ",")
+	for index, sigID := range signatureIDs {
+		signatureIDs[index] = strings.TrimSpace(sigID)
+	}
+	return signatureIDs
+}
+
+// TestTraceeSignatures tests tracee signatures (-tracee-signatures) using the
+// specified tracee container image (-tracee-image-ref).
+//
+// Passing signature identifiers as input to the TestTraceeSignatures allows us
+// to use it as a quick smoke test in the PR validation workflow or as
+// full-blown end-to-end test run on CRON schedule.
+//
+// Passing tracee container image reference as input to the TestTraceeSignatures
+// allows us to test different flavors of tracee container image, i.e. CO:RE
+// non CO:RE, and CO:RE with BTFHub support.
+//
+//     go test -v -run "^\QTestTraceeSignatures\E$" ./tests/tracee_test.go \
+//            -tracee-image-ref "tracee-nocore:latest" \
+//            -tracee-signatures "TRC-2,TRC-3"
 func TestTraceeSignatures(t *testing.T) {
 	tempDir := os.TempDir()
 	defer func() {
 		os.RemoveAll(tempDir)
 	}()
 
-	// Ubuntu 20.04 provided by GitHub Actions runner does not support CO:RE.
-	// Thus, we are running end-to-end signatures tests using tracee non CO:RE
-	// container image.
+	for _, sigID := range parseSignatureIDs() {
+		t.Run(fmt.Sprintf("%s/%s", *traceeImageRef, sigID), func(t *testing.T) {
+			ctx := context.Background()
 
-	// FIXME Pass tracee container image flavor (tracee-nocore, tracee-core, etc.)
-	//       as input parameter to this test so we can set in the CI workflow
-	//       instead of hardcoding it here. The actual logic of the test should be
-	//       agnostic of tracee container flavor.
-	for _, image := range []string{"tracee-nocore"} {
-		// FIXME Pass signature identifiers (TRC-3, TRC-4, TRC-9, etc.) as input
-		//       parameter to this test so we can use it as smoke test in the
-		//       PR validation workflow (with TRC-2) only or as full-blown end-to-end
-		//       nightly test run.
-		for _, sigID := range []string{"TRC-2", "TRC-3", "TRC-4", "TRC-5", "TRC-7", "TRC-8", "TRC-9", "TRC-10", "TRC-11", "TRC-12", "TRC-14"} {
-			t.Run(fmt.Sprintf("%s/%s", image, sigID), func(t *testing.T) {
-				ctx := context.Background()
+			// run tracee container
+			traceeContainer, err := setupTraceeContainer(ctx, tempDir, *traceeImageRef)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer traceeContainer.Terminate(ctx)
 
-				// run tracee container
-				traceeContainer, err := setupTraceeContainer(ctx, tempDir, image)
-				if err != nil {
-					t.Fatal(err)
-				}
-				defer traceeContainer.Terminate(ctx)
+			// run trace signature trainer container
+			traceeSigTrainer, err := setupTraceeTrainerContainer(ctx, sigID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer traceeSigTrainer.Terminate(ctx)
 
-				// run trace signature trainer container
-				traceeSigTrainer, err := setupTraceeTrainerContainer(ctx, sigID)
-				if err != nil {
-					t.Fatal(err)
-				}
-				defer traceeSigTrainer.Terminate(ctx)
-
-				traceeContainer.assertLogs(t, ctx, sigID)
-			})
-		}
+			traceeContainer.assertLogs(t, ctx, sigID)
+		})
 	}
 }
 
-func (tc traceeContainer) assertLogs(t *testing.T, ctx context.Context, sigid string) {
+func (tc traceeContainer) assertLogs(t *testing.T, ctx context.Context, sigID string) {
+	t.Helper()
 	time.Sleep(time.Second * 10) // wait for tracee to detect
 
 	b, err := tc.Logs(ctx)
@@ -237,5 +254,5 @@ func (tc traceeContainer) assertLogs(t *testing.T, ctx context.Context, sigid st
 		t.Fatal(err)
 	}
 
-	assert.Contains(t, string(log), fmt.Sprint("Signature ID: ", sigid))
+	assert.Contains(t, string(log), fmt.Sprint("Signature ID: ", sigID))
 }
