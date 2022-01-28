@@ -13,6 +13,9 @@ case $@ in
   "TRC-5")
     ./trc5.sh
     ;;
+  "TRC-7")
+    ./trc7.sh
+    ;;
   "TRC-8")
     ./trc8.sh
     ;;
