@@ -201,7 +201,7 @@ func TestTraceeSignatures(t *testing.T) {
 		//       parameter to this test so we can use it as smoke test in the
 		//       PR validation workflow (with TRC-2) only or as full-blown end-to-end
 		//       nightly test run.
-		for _, sigID := range []string{"TRC-2", "TRC-3", "TRC-4", "TRC-5", "TRC-9", "TRC-10", "TRC-11", "TRC-12", "TRC-14"} {
+		for _, sigID := range []string{"TRC-2", "TRC-3", "TRC-4", "TRC-5", "TRC-8", "TRC-9", "TRC-10", "TRC-11", "TRC-12", "TRC-14"} {
 			t.Run(fmt.Sprintf("%s/%s", image, sigID), func(t *testing.T) {
 				ctx := context.Background()
 
