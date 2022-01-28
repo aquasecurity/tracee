@@ -18,3 +18,6 @@ mkdir -p /etc/kubernetes/pki
 echo "test" > /var/run/secrets/kubernetes.io/serviceaccount/token
 echo "test" > /etc/kubernetes/pki/token
 echo "test" > /authorized_keys
+
+# TRC-14 CGroups Release Agent File Modification
+chmod +x ./cdk_linux_amd64

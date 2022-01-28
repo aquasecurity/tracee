@@ -19,6 +19,9 @@ case $@ in
   "TRC-11")
     ./trc11.sh
     ;;
+  "TRC-14")
+    ./trc14.sh
+    ;;
   *)
     echo "invalid args specified:" "$@"
 esac
