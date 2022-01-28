@@ -47,6 +47,15 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           opa-version: ${{ env.OPA_VERSION }}
+      - name: Restore Go modules from cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
       - name: Build tracee-ebpf
         run: |
           make -f Makefile.one tracee-ebpf
@@ -68,6 +77,15 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           opa-version: ${{ env.OPA_VERSION }}
+      - name: Restore Go modules from cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
       - name: Build tracee-rules
         run: |
           make -f Makefile.one tracee-rules
@@ -114,6 +132,15 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           opa-version: ${{ env.OPA_VERSION }}
+      - name: Restore Go modules from cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
       - name: Build
         run: |
           make
@@ -165,6 +192,15 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           opa-version: ${{ env.OPA_VERSION }}
+      - name: Restore Go modules from cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
       - name: Buld tracee trainer
         run: |
           make -f tests/Makefile docker-build-tracee-trainer
