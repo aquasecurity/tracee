@@ -140,14 +140,14 @@ jobs:
           exit-code: "1"
 
 
-  # test-signatures job is using multiple signatures and acts as a smoke
-  # (aka sanity) test on each PR. Eventually, we'll parameterize the
-  # TestTraceeSignatures method and run it only with a single signature
-  # in the PR validation workflow.
-  # Te keep testing all signatures with different flavors of tracee we'll
-  # introduce dedicated workflows and run them on schedule (weekly or nightly).
-  test-signatures:
-    name: "[E2E] Test Signatures"
+  # test-signatures job is using TRC-2 (Anti-Debugging) signature and tracee non
+  # CO:RE container image to run a quick smoke test on each PR.
+  #
+  # NB: Ubuntu 20.04 provided by GitHub Actions runner does not support CO:RE.
+  # Thus, we are running end-to-end signatures tests using tracee non CO:RE
+  # container image.
+  smoke-test-signatures:
+    name: "[Smoke] Test Signatures"
     needs:
       - verify-tracee-ebpf
       - verify-tracee-rules
@@ -176,7 +176,9 @@ jobs:
           make -f Makefile.one install-bpf-nocore
       - name: Run tests
         run: |
-          go test -v -run=TestTraceeSignatures ./tests/tracee_test.go
+          go test -v -run "TestTraceeSignatures" ./tests/tracee_test.go \
+            -tracee-image-ref "tracee-nocore:latest" \
+            -tracee-signatures "TRC-2"
 
 
   # deprecated-verify-tracee-ebpf and deprecated-verify-tracee-rules jobs are
