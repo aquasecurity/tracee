@@ -1,0 +1,152 @@
+#
+# Responsible for Linux distribution packages for tracee
+#
+
+.PHONY: all
+all:
+
+#
+# make
+#
+
+.ONESHELL:
+SHELL = /bin/sh
+
+NORM_MAKE = make -f Makefile.one
+MAKE = make -f builder/Makefile.packaging
+MAKEFLAGS += --no-print-directory
+
+#
+# tools
+#
+
+CMD_DOCKER ?= docker
+CMD_FIND ?= find
+CMD_RM ?= rm
+CMD_TOUCH ?= touch
+
+.check_%:
+#
+	@command -v $* >/dev/null
+	if [ $$? -ne 0 ]; then
+		echo "missing required tool $*"
+		exit 1
+	else
+		touch $@ # avoid target rebuilds due to inexistent file
+	fi
+
+#
+# usage
+#
+
+.PHONY: help
+help:
+	@echo ""
+	@echo "Build Linux Packages for supported distributions"
+	@echo ""
+	@echo "UBUNTU:"
+	@echo ""
+	@echo "  * Bionic (LTS)"
+	@echo "    $ make -f builder/Makefile.packaging ubuntu-bin-bionic"
+	@echo ""
+	@echo "  * Focal (LTS)"
+	@echo "    $ make -f builder/Makefile.packaging ubuntu-bin-focal"
+	@echo ""
+	@echo "  * Impish"
+	@echo "    $ make -f builder/Makefile.packaging ubuntu-bin-impish"
+	@echo ""
+	@echo "Note: You can complement ubuntu-bin-XXX where XXX is the name"
+	@echo "      of the Ubuntu release you want tracee packages to be"
+	@echo "      built for (jammy)"
+	@echo ""
+
+#
+# requirements
+#
+
+.PHONY: .check_tree
+.check_tree:
+#
+	@if [ ! -d ./builder ]; then
+		echo "you must be in the root directory"
+		exit 1
+	fi
+
+#
+# docker environment
+#
+
+# workdir has to be /tracee/tracee because of .deb default generation in ../
+DOCKER_RUN_ARGS = run --rm --pid=host --privileged \
+                -v /etc/os-release:/etc/os-release-host:ro \
+                -v $(PWD):/tracee/tracee \
+                -v /lib/modules:/lib/modules:ro \
+                -v /usr/src:/usr/src:ro \
+                -v /sys/kernel/security:/sys/kernel/security:ro \
+                -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host
+
+#
+# UBUNTU: base container for building packages
+#
+
+UID = $(shell id -u)
+GID = $(shell id -g)
+PWD = $(shell pwd)
+
+UBUNTU_PKGS_CONTNAME = ubuntu-pkgs-make
+UBUNTU_PKGS_DOCKERFILE = $(abspath $(shell $(CMD_FIND) -name Dockerfile.ubuntu-packaging))
+
+.PHONY: .ubuntu-pkgs-prepare-%
+.ubuntu-pkgs-prepare-%: \
+	| .check_tree \
+	.check_$(CMD_DOCKER)
+#
+	$(CMD_DOCKER) \
+		build \
+		-f $(UBUNTU_PKGS_DOCKERFILE) \
+		-t $(UBUNTU_PKGS_CONTNAME):$* \
+		--build-arg uid=$(UID) \
+		--build-arg gid=$(GID) \
+		--build-arg version=$* \
+		. && \
+	$(CMD_TOUCH) $@
+
+#
+# UBUNTU: invoke the package builder container (ubuntu-pkgs-make:version)
+#
+
+.PHONY: .ubuntu-pkgs-make-%
+.ubuntu-pkgs-make-%: \
+	.ubuntu-pkgs-prepare-% \
+	| .check_tree \
+	.check_$(CMD_DOCKER)
+#
+ifneq ($(ARG),)
+	$(CMD_DOCKER) \
+		$(DOCKER_RUN_ARGS) \
+		-it $(UBUNTU_PKGS_CONTNAME):$* \
+		$(ARG)
+endif
+
+#
+# UBUNTU: binary pkg (ubuntu-pkgs-bin-focal, ubuntu-pkgs-bin-impish, ...)
+#
+
+.PHONY: ubuntu-bin-%
+ubuntu-bin-%: \
+	| .check_tree
+#
+	$(MAKE) .ubuntu-pkgs-make-$* ARG="packaging/ubuntu-pkgs.sh bin $*"
+
+#
+# TODO: fedora...
+#
+
+#
+# clean
+#
+
+.PHONY: clean
+clean:
+	$(CMD_RM) -f .check_tree
+	$(CMD_RM) -f .ubuntu-pkgs*
