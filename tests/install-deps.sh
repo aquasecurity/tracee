@@ -12,6 +12,9 @@ apt-get install -y ncat gcc
 # TRC-4 Dynamic code loading
 apt-get install -y upx
 
+# TRC-5 Fileless execution
+apt-get install -y python2
+
 # k8s service account tokens
 mkdir -p /var/run/secrets/kubernetes.io/serviceaccount
 mkdir -p /etc/kubernetes/pki
