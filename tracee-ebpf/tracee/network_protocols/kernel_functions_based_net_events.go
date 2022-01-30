@@ -21,6 +21,12 @@ type FunctionBasedPacket struct {
 	SockPtr     uint64
 }
 
+/* FunctionBasedNetEvents are events that related to the network events and parse like them.
+ * they sent over the net_events channel and in the main handler we parse them as the other net events.
+ * those events start from `NetSecurityBind` to `NetTcpConnect`
+ * Note: that events are not trigger from the tc_probe but rather a kprobes
+ */
+
 func FunctionBasedNetEventHandler(buffer *bytes.Buffer, evtMeta EventMeta, ctx processContext.ProcessCtx, evtName string) external.Event {
 	var evt external.Event
 	debugEventPacket, err := ParseDebugPacketMetaData(buffer)

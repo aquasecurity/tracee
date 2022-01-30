@@ -6221,6 +6221,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets:    []string{},
 		Params: []external.ArgMeta{
 			{Type: "external.PktMeta", Name: "PacketMetaData"},
+			{Type: "external.DnsQueryData", Name: "dnsQuestion"},
 		},
 	},
 }

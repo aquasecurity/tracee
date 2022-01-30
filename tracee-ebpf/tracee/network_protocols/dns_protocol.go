@@ -9,18 +9,14 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-type DnsQueryData struct {
-	query      string `json:"query"`
-	queryType  string `json:"queryType"`
-	queryClass string `json:"queryclass"`
-}
-
 func dnsRequestPrototcolsHandler(buffer *bytes.Buffer, meta EventMeta, ctx processContext.ProcessCtx) (external.Event, PacketMeta) {
 	evt, packet := netPacketProtocolHandler(buffer, meta, ctx)
 	evt.EventName = "dns_request"
 	appendDnsRequestData(&evt, buffer)
 	return evt, packet
 }
+
+// appendDnsRequestData parse the given buffer to dns questions and adds it to the event
 func appendDnsRequestData(event *external.Event, buffer *bytes.Buffer) {
 	packet := gopacket.NewPacket(buffer.Bytes(), layers.LayerTypeEthernet, gopacket.Default)
 	dnsLayer := packet.Layer(layers.LayerTypeDNS).(*layers.DNS)
