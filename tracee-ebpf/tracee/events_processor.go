@@ -130,7 +130,7 @@ func (t *Tracee) processEvent(event *external.Event) error {
 
 	case SchedProcessExecEventID:
 		//update the process tree
-		processData := ProcessCtx{event.Timestamp, event.ContainerID, uint32(event.ProcessID), uint32(event.ThreadID), uint32(event.ParentProcessID), uint32(event.HostProcessID), uint32(event.HostThreadID), uint32(event.HostParentProcessID), uint32(event.UserID), uint32(event.MountNS), uint32(event.PIDNS)}
+		processData := ProcessCtx{event.Timestamp, event.ContainerID, uint32(event.ProcessID), uint32(event.ThreadID), uint32(event.ParentProcessID), uint32(event.HostThreadID), uint32(event.HostProcessID), uint32(event.HostParentProcessID), uint32(event.UserID), uint32(event.MountNS), uint32(event.PIDNS)}
 		t.processTree.processTreeMap[event.HostThreadID] = processData
 		//cache this pid by it's mnt ns
 		if event.ProcessID == 1 {
@@ -224,14 +224,14 @@ func (t *Tracee) processEvent(event *external.Event) error {
 	case SchedProcessExitEventID:
 		delete(t.processTree.processTreeMap, event.HostProcessID)
 	case SchedProcessForkEventID:
-		hostTid, _ := getEventArgUint32Val(event, "child_tid")
-		childPid, _ := getEventArgUint32Val(event, "child_pid")
-		pid, _ := getEventArgUint32Val(event, "child_ns_pid")
-		ppid, _ := getEventArgUint32Val(event, "parent_ns_pid")
-		hostPpid, _ := getEventArgUint32Val(event, "parent_pid")
-		childTid, _ := getEventArgUint32Val(event, "child_ns_tid")
-		processData := ProcessCtx{event.Timestamp, event.ContainerID, pid, childPid, ppid, hostTid, hostTid, hostPpid, uint32(event.UserID), uint32(event.MountNS), uint32(event.ProcessID)}
-		t.processTree.processTreeMap[int(childTid)] = processData
+		hostTid, _ := getEventArgInt32Val(event, "child_tid")
+		hostPid, _ := getEventArgInt32Val(event, "child_pid")
+		pid, _ := getEventArgInt32Val(event, "child_ns_pid")
+		ppid, _ := getEventArgInt32Val(event, "parent_ns_pid")
+		hostPpid, _ := getEventArgInt32Val(event, "parent_pid")
+		tid, _ := getEventArgInt32Val(event, "child_ns_tid")
+		processData := ProcessCtx{event.Timestamp, event.ContainerID, uint32(pid), uint32(tid), uint32(ppid), uint32(hostTid), uint32(hostPid), uint32(hostPpid), uint32(event.UserID), uint32(event.MountNS), uint32(event.PIDNS)}
+		t.processTree.processTreeMap[int(hostTid)] = processData
 	case CgroupMkdirEventID:
 		cgroupId, err := getEventArgUint64Val(event, "cgroup_id")
 		if err != nil {
@@ -292,6 +292,19 @@ func getEventArgUint32Val(event *external.Event, argName string) (uint32, error)
 			val, ok := arg.Value.(uint32)
 			if !ok {
 				return 0, fmt.Errorf("argument %s is not of type uint32", argName)
+			}
+			return val, nil
+		}
+	}
+	return 0, fmt.Errorf("argument %s not found", argName)
+}
+
+func getEventArgInt32Val(event *external.Event, argName string) (int32, error) {
+	for _, arg := range event.Args {
+		if arg.Name == argName {
+			val, ok := arg.Value.(int32)
+			if !ok {
+				return 0, fmt.Errorf("argument %s is not of type int32", argName)
 			}
 			return val, nil
 		}
