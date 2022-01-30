@@ -446,7 +446,7 @@ func printList() {
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________" + "\n\n")
 	printEventGroup(&b, 0, int(tracee.SysEnterEventID))
 	printEventGroup(&b, tracee.Unique32BitSyscallsStartID, int(tracee.Unique32BitSyscallsEndID))
-	b.WriteString("Network Events: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
+	b.WriteString("\n\nNetwork Events: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________" + "\n\n")
 	printEventGroup(&b, int(network_protocols.NetPacket), int(network_protocols.MaxNetEventID))
 	b.WriteString("\n\nOther Events: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")

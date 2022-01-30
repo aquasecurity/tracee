@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
-	"github.com/aquasecurity/tracee/pkg/processContext"
 	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/processContext"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/internal/bufferdecoder"
 )
 
@@ -132,8 +132,8 @@ func (t *Tracee) processEvent(event *external.Event) error {
 
 	case SchedProcessExecEventID:
 		//update the process tree
-		processData := ProcessCtx{event.Timestamp, event.ContainerID, uint32(event.ProcessID), uint32(event.ThreadID), uint32(event.ParentProcessID), uint32(event.HostThreadID), uint32(event.HostProcessID), uint32(event.HostParentProcessID), uint32(event.UserID), uint32(event.MountNS), uint32(event.PIDNS)}
-		t.processTree.processTreeMap[event.HostThreadID] = processData
+		processData := processContext.ProcessCtx{event.Timestamp, event.ContainerID, uint32(event.ProcessID), uint32(event.ThreadID), uint32(event.ParentProcessID), uint32(event.HostThreadID), uint32(event.HostProcessID), uint32(event.HostParentProcessID), uint32(event.UserID), uint32(event.MountNS), uint32(event.PIDNS)}
+		t.processTree.ProcessTreeMap[event.HostThreadID] = processData
 		//cache this pid by it's mnt ns
 		if event.ProcessID == 1 {
 			t.pidsInMntns.ForceAddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
@@ -232,8 +232,8 @@ func (t *Tracee) processEvent(event *external.Event) error {
 		ppid, _ := getEventArgInt32Val(event, "parent_ns_pid")
 		hostPpid, _ := getEventArgInt32Val(event, "parent_pid")
 		tid, _ := getEventArgInt32Val(event, "child_ns_tid")
-		processData := ProcessCtx{event.Timestamp, event.ContainerID, uint32(pid), uint32(tid), uint32(ppid), uint32(hostTid), uint32(hostPid), uint32(hostPpid), uint32(event.UserID), uint32(event.MountNS), uint32(event.PIDNS)}
-		t.processTree.processTreeMap[int(hostTid)] = processData
+		processData := processContext.ProcessCtx{event.Timestamp, event.ContainerID, uint32(pid), uint32(tid), uint32(ppid), uint32(hostTid), uint32(hostPid), uint32(hostPpid), uint32(event.UserID), uint32(event.MountNS), uint32(event.PIDNS)}
+		t.processTree.ProcessTreeMap[int(hostTid)] = processData
 	case CgroupMkdirEventID:
 		cgroupId, err := getEventArgUint64Val(event, "cgroup_id")
 		if err != nil {

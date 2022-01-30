@@ -4342,7 +4342,7 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     if (event_chosen(NET_PACKET) || get_config(CONFIG_DEBUG_NET) ){
         bpf_perf_event_output(skb, &net_events, flags, &pkt, sizeof(pkt));
     }
-    if (get_config(CONFIG_DEBUG_NET) || should_trace_net_protocols()){
+    else if (get_config(CONFIG_DEBUG_NET) || should_trace_net_protocols()){
         check_protocols(skb, head, tail, &net_events, &pkt);
     }
     else {
