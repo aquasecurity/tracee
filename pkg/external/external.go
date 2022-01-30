@@ -269,3 +269,8 @@ type FunctionBasedPacket struct {
 	_           [4]byte //padding
 	SockPtr     uint64
 }
+type DnsQueryData struct {
+	Query      string `json:"Query"`
+	QueryType  string `json:"QueryType"`
+	QueryClass string `json:"queryclass"`
+}

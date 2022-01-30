@@ -37,7 +37,6 @@ type ProcessTree struct {
 func ParseProcessContext(ctx []byte, containerId string) (ProcessCtx, error) {
 	var procCtx = ProcessCtx{}
 	procCtx.StartTime = int(binary.LittleEndian.Uint64(ctx[0:8]))
-	cgroupId := binary.LittleEndian.Uint64(ctx[8:16])
 	procCtx.ContainerID = containerId
 	decoder := bufferdecoder.New(ctx[16:]) // this is the offset after the cgroup and startTime in the ctx byte array
 	var errs []error

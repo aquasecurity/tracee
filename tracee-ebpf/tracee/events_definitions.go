@@ -6220,7 +6220,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Probes:  []probe{},
 		Sets:    []string{},
 		Params: []external.ArgMeta{
-			{Type: "external.FunctionBasedPacket", Name: "PacketMetaData"},
+			{Type: "external.PktMeta", Name: "PacketMetaData"},
 		},
 	},
 }

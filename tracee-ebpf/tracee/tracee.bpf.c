@@ -4172,19 +4172,6 @@ static __always_inline bool skb_revalidate_data(struct __sk_buff *skb, uint8_t *
     return true;
 }
 
-/* should_trace_net_protocols iterates over the network events that are driven from tc_probe
- * and checks if the events is chosen in the user-space.
- */
-static __always_inline bool should_trace_net_protocols(){
-    #pragma unroll
-    for (int i=MIN_PROTOCOL_EVENT_ID; i<MAX_NET_EVENT_ID;i++){
-    if (event_chosen(i) != 0)
-        return true;
-    }
-    return false;
-
-}
-
 static __always_inline bool is_dns_request(uint8_t * head, uint8_t* tail, struct __sk_buff * skb, net_packet_t * pkt){
 
 //    uint32_t l4_hdr_off = sizeof(struct ethhdr) + sizeof(struct ipv6hdr);
@@ -4193,7 +4180,7 @@ static __always_inline bool is_dns_request(uint8_t * head, uint8_t* tail, struct
 //    dns_hdr_t *dns_hdr = (void *) head+ l4_hdr_off+sizeof(struct udphdr);// +sizeof(struct udphdr)+sizeof(uint64_t)+sizeof(uint32_t);
 //    if (dns_hdr == NULL)
 //            return false;
-    if(pkt->dst_port == 53){
+    if(pkt->dst_port == 53 && pkt->protocol == IPPROTO_UDP){
         return true;
     }
     return false;
@@ -4205,11 +4192,11 @@ static __always_inline bool is_dns_request(uint8_t * head, uint8_t* tail, struct
  * and if it is- we parsing it and alerting to the user space
 */
 static __always_inline void check_protocols(struct __sk_buff *skb, uint8_t* head, uint8_t* tail, struct bpf_map_def *events_channel, net_packet_t* pkt){
-   if (is_dns_request(head, tail, skb, pkt)){
+   if (is_dns_request(head, tail, skb, pkt) && event_chosen(NET_DNS_REQUEST)){
         pkt->event_id = NET_DNS_REQUEST;
         u64 flags = BPF_F_CURRENT_CPU;
         flags |= (u64)skb->len << 32;
-        bpf_perf_event_output(skb, &net_events, flags, pkt, sizeof(pkt));
+        bpf_perf_event_output(skb, &net_events, flags, pkt, sizeof(net_packet_t));
    }
 }
 
@@ -4342,16 +4329,7 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     if (event_chosen(NET_PACKET) || get_config(CONFIG_DEBUG_NET) ){
         bpf_perf_event_output(skb, &net_events, flags, &pkt, sizeof(pkt));
     }
-    else if (get_config(CONFIG_DEBUG_NET) || should_trace_net_protocols()){
-        check_protocols(skb, head, tail, &net_events, &pkt);
-    }
-    else {
-        // If not debugging, only send the minimal required data to save the
-        // packet. This will be the timestamp (u64), net event_id (u32),
-        // host_tid (u32), comm (16 bytes), packet len (u32), and ifindex (u32)
-        bpf_perf_event_output(skb, &net_events, flags, &pkt, 40);
-    }
-
+     check_protocols(skb, head, tail, &net_events, &pkt);
     return TC_ACT_UNSPEC;
 }
 

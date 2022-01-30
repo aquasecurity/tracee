@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/aquasecurity/tracee/pkg/processContext"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/network_protocols"
 	"github.com/google/gopacket"
 	"time"
@@ -22,8 +21,8 @@ func (t *Tracee) processNetEvents() {
 			}
 			evtMeta, dataBuff := parseEventMetaData(in)
 
-			processContext, exist := t.processTree.ProcessTreeMap[evtMeta.HostTid]
-			if !exist {
+			processContext, exist := t.getProcessCtx(evtMeta.HostTid)
+			if exist != nil {
 				t.handleError(fmt.Errorf("couldn't find the process: %d", evtMeta.HostTid))
 				continue
 			}

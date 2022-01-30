@@ -48,7 +48,6 @@ func ProcessNetEvent(buffer *bytes.Buffer, evtMeta EventMeta, eventName string, 
 		return FunctionBasedNetEventHandler(buffer, evtMeta, ctx, eventName), false, captureData
 	}
 	return evt, false, captureData
-
 }
 
 func CreateNetEvent(eventMeta EventMeta, eventName string, ctx processContext.ProcessCtx) external.Event {
