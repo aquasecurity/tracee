@@ -140,14 +140,14 @@ jobs:
           exit-code: "1"
 
 
-  # test-signatures job is using TRC-2 (Anti-Debugging) signature and tracee non
-  # CO:RE container image to run a quick smoke test on each PR.
+  # smoke-test-noncore job is using TRC-2 (Anti-Debugging) signature and tracee
+  # non CO-RE container image to run a quick smoke test on each PR.
   #
-  # NB: Ubuntu 20.04 provided by GitHub Actions runner does not support CO:RE.
-  # Thus, we are running end-to-end signatures tests using tracee non CO:RE
+  # NB: Ubuntu 20.04 provided by GitHub Actions runner does not support CO-RE.
+  # Thus, we are running end-to-end signatures tests using tracee non CO-RE
   # container image.
-  smoke-test-signatures:
-    name: "[Smoke] Test Signatures"
+  smoke-test-noncore:
+    name: "[Smoke] Test non CO-RE"
     needs:
       - verify-tracee-ebpf
       - verify-tracee-rules
@@ -178,6 +178,43 @@ jobs:
         run: |
           go test -v -run "TestTraceeSignatures" ./tests/tracee_test.go \
             -tracee-image-ref "tracee-nocore:latest" \
+            -tracee-signatures "TRC-2"
+
+  # smoke-test-core job is using TRC-2 (Anti-Debugging) signature and tracee
+  # CO-RE container image with embedded BTF info objects to run a quick smoke
+  # test on each PR.
+  smoke-test-core:
+    name: "[Smoke] Test CO-RE"
+    needs:
+      - verify-tracee-ebpf
+      - verify-tracee-rules
+      - verify-signatures
+      - deprecated-verify-tracee-ebpf
+      - deprecated-verify-tracee-rules
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Install Dependencies
+        uses: ./.github/actions/build-dependencies
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          opa-version: ${{ env.OPA_VERSION }}
+      - name: Built tracee BPF
+        run: |
+          make -f Makefile.one bpf-core
+      - name: Build tracee-core-btfhub
+        run: |
+          make -f builder/Makefile.tracee-container build-alpine-tracee-core-btfhub
+      - name: Buld tracee trainer
+        run: |
+          make -f tests/Makefile docker-build-tracee-trainer
+      - name: Run tests
+        run: |
+          go test -v -run "TestTraceeSignatures" ./tests/tracee_test.go \
+            -tracee-image-ref "tracee-btfhub:latest" \
             -tracee-signatures "TRC-2"
 
 
