@@ -2942,32 +2942,21 @@ int BPF_KPROBE(trace_switch_task_namespaces)
 SEC("kprobe/cap_capable")
 int BPF_KPROBE(trace_cap_capable)
 {
-    int audit;
-
     event_data_t data = {};
+
     if (!init_event_data(&data, ctx))
         return 0;
 
     if (!should_trace(&data.context))
         return 0;
 
-    //const struct cred *cred = (const struct cred *)PT_REGS_PARM1(ctx);
-    //struct user_namespace *targ_ns = (struct user_namespace *)PT_REGS_PARM2(ctx);
     int cap = PT_REGS_PARM3(ctx);
-    int cap_opt = PT_REGS_PARM4(ctx);
-
-  #ifdef CAP_OPT_NONE
-    audit = (cap_opt & 0b10) == 0;
-  #else
-    audit = cap_opt;
-  #endif
-
-    if (audit == 0)
-        return 0;
 
     save_to_submit_buf(&data, (void*)&cap, sizeof(int), 0);
+
     if (get_config(CONFIG_SHOW_SYSCALL)) {
-        syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+        syscall_data_t *sys;
+        sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
         if (sys) {
             save_to_submit_buf(&data, (void*)&sys->id, sizeof(int), 1);
         }
