@@ -156,19 +156,16 @@ func (filter *UintFilter) Set(bpfModule *bpf.Module, filterMapName string, confi
 		}
 	}
 
-	filterLessU32 := uint32(filter.Less)
-	filterGreaterU32 := uint32(filter.Greater)
-
 	// inequalityFilter filters events by some uint field either by < or >
 	inequalityFilter, err := bpfModule.GetMap("inequality_filter") // u32, u64
 	if err != nil {
 		return err
 	}
-	if err = inequalityFilter.Update(unsafe.Pointer(&lessIdx), unsafe.Pointer(&filterLessU32)); err != nil {
+	if err = inequalityFilter.Update(unsafe.Pointer(&lessIdx), unsafe.Pointer(&filter.Less)); err != nil {
 		return err
 	}
 	lessIdxPlus := uint32(lessIdx + 1)
-	if err = inequalityFilter.Update(unsafe.Pointer(&lessIdxPlus), unsafe.Pointer(&filterGreaterU32)); err != nil {
+	if err = inequalityFilter.Update(unsafe.Pointer(&lessIdxPlus), unsafe.Pointer(&filter.Greater)); err != nil {
 		return err
 	}
 
