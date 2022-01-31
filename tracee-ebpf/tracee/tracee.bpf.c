@@ -4153,7 +4153,7 @@ static __always_inline bool skb_revalidate_data(struct __sk_buff *skb, uint8_t *
     return true;
 }
 
-static __always_inline bool is_dns_request(uint8_t * head, uint8_t* tail, struct __sk_buff * skb, net_packet_t * pkt,uint32_t l4_hdr_off){
+static __always_inline bool is_dns_request(uint8_t * head, uint8_t* tail, struct __sk_buff * skb, net_packet_t * pkt){
     if(pkt->dst_port == 53)
         return true;
     return false;
@@ -4164,11 +4164,9 @@ static __always_inline bool is_dns_request(uint8_t * head, uint8_t* tail, struct
  * in the user-space we checking the packet data more deeply to verify it is the acual protocl,
  * and if it is- we parsing it and alerting to the user space
 */
-static __always_inline void check_protocols(struct __sk_buff *skb, uint8_t* head, uint8_t* tail, struct bpf_map_def *events_channel, net_packet_t* pkt, uint32_t l4_hdr_off){
-   if (is_dns_request(head, tail, skb, pkt, l4_hdr_off) && event_chosen(NET_DNS_REQUEST)){
+static __always_inline void check_protocols(struct __sk_buff *skb, uint8_t* head, uint8_t* tail, struct bpf_map_def *events_channel, net_packet_t* pkt, u64 flags){
+   if (is_dns_request(head, tail, skb, pkt) && event_chosen(NET_DNS_REQUEST)){
         pkt->event_id = NET_DNS_REQUEST;
-        u64 flags = BPF_F_CURRENT_CPU;
-        flags |= (u64)skb->len << 32;
         bpf_perf_event_output(skb, &net_events, flags, pkt, sizeof(net_packet_t));
    }
 }
@@ -4302,7 +4300,7 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     if (event_chosen(NET_PACKET) || get_config(CONFIG_DEBUG_NET) ){
         bpf_perf_event_output(skb, &net_events, flags, &pkt, sizeof(pkt));
     }
-     check_protocols(skb, head, tail, &net_events, &pkt, l4_hdr_off);
+     check_protocols(skb, head, tail, &net_events, &pkt, flags);
     return TC_ACT_UNSPEC;
 }
 
