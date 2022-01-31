@@ -33,6 +33,7 @@ type CaptueData struct {
 func ProcessNetEvent(buffer *bytes.Buffer, evtMeta EventMeta, eventName string, ctx processContext.ProcessCtx) (external.Event, bool, CaptueData) {
 	var evt external.Event
 	var captureData CaptueData
+	evt.EventName = eventName
 	switch evtMeta.NetEventId {
 	case NetPacket:
 		var packet PacketMeta
@@ -45,17 +46,16 @@ func ProcessNetEvent(buffer *bytes.Buffer, evtMeta EventMeta, eventName string, 
 		return evt, false, captureData
 	}
 	if evtMeta.NetEventId > NetPacket && evtMeta.NetEventId <= NetTcpConnect {
-		return FunctionBasedNetEventHandler(buffer, evtMeta, ctx, eventName), false, captureData
+		return FunctionBasedNetEventHandler(buffer, evtMeta, ctx), false, captureData
 	}
 	return evt, false, captureData
 }
 
-func CreateNetEvent(eventMeta EventMeta, eventName string, ctx processContext.ProcessCtx) external.Event {
+func CreateNetEvent(eventMeta EventMeta, ctx processContext.ProcessCtx) external.Event {
 	evt := getEventByProcessCtx(ctx)
 	evt.Timestamp = int(eventMeta.TimeStamp)
 	evt.ProcessName = eventMeta.ProcessName
 	evt.EventID = int(eventMeta.NetEventId)
-	evt.EventName = eventName
 	evt.ReturnValue = 0
 	evt.StackAddresses = nil
 	return evt

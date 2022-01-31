@@ -11,7 +11,6 @@ import (
 
 func dnsRequestPrototcolsHandler(buffer *bytes.Buffer, meta EventMeta, ctx processContext.ProcessCtx) (external.Event, PacketMeta) {
 	evt, packet := netPacketProtocolHandler(buffer, meta, ctx)
-	evt.EventName = "dns_request"
 	appendDnsRequestData(&evt, buffer)
 	return evt, packet
 }

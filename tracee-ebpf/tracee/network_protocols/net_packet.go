@@ -25,7 +25,7 @@ func netPacketProtocolHandler(buffer *bytes.Buffer, evtMeta EventMeta, ctx proce
 	if err != nil {
 		return evt, packet
 	}
-	evt = CreateNetEvent(evtMeta, "NetPacket", ctx)
+	evt = CreateNetEvent(evtMeta, ctx)
 	CreateNetPacketMetaArgs(&evt, packet)
 	return evt, packet
 }

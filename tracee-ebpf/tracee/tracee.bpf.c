@@ -165,7 +165,6 @@ Copyright (C) Aqua Security inc.
 #define NET_UDPV6_DESTROY_SOCK          1005
 #define NET_INET_SOCK_SET_STATE         1006
 #define NET_TCP_CONNECT                 1007
-#define MIN_PROTOCOL_EVENT_ID           1008    // this is the minimum eventID of a net event that sent from the tc_probe
 #define NET_DNS_REQUEST                 1008
 #define MAX_NET_EVENT_ID                1009
 
@@ -528,24 +527,6 @@ typedef struct net_ctx_ext {
     char comm[TASK_COMM_LEN];
     __be16 local_port;
 } net_ctx_ext_t;
-
-typedef struct dns_hdr {
-    uint16_t transaction_id;
-    uint8_t rd : 1;      //Recursion desired
-    uint8_t tc : 1;      //Truncated
-    uint8_t aa : 1;      //Authoritive answer
-    uint8_t opcode : 4;  //Opcode
-    uint8_t qr : 1;      //Query/response flag
-    uint8_t rcode : 4;   //Response code
-    uint8_t cd : 1;      //Checking disabled
-    uint8_t ad : 1;      //Authenticated data
-    uint8_t z : 1;       //Z reserved bit
-    uint8_t ra : 1;      //Recursion available
-    uint16_t q_count;    //Number of questions
-    uint16_t ans_count;  //Number of answer RRs
-    uint16_t auth_count; //Number of authority RRs
-    uint16_t add_count;  //Number of resource RRs
-} __attribute__((packed)) dns_hdr_t;
 
 /*=============================== KERNEL STRUCTS =============================*/
 
@@ -4172,17 +4153,9 @@ static __always_inline bool skb_revalidate_data(struct __sk_buff *skb, uint8_t *
     return true;
 }
 
-static __always_inline bool is_dns_request(uint8_t * head, uint8_t* tail, struct __sk_buff * skb, net_packet_t * pkt){
-
-//    uint32_t l4_hdr_off = sizeof(struct ethhdr) + sizeof(struct ipv6hdr);
-//    if (!skb_revalidate_data(skb, &head, &tail,sizeof(head)+l4_hdr_off+sizeof(struct udphdr)+sizeof(dns_hdr_t)))
-//        return false;
-//    dns_hdr_t *dns_hdr = (void *) head+ l4_hdr_off+sizeof(struct udphdr);// +sizeof(struct udphdr)+sizeof(uint64_t)+sizeof(uint32_t);
-//    if (dns_hdr == NULL)
-//            return false;
-    if(pkt->dst_port == 53 && pkt->protocol == IPPROTO_UDP){
+static __always_inline bool is_dns_request(uint8_t * head, uint8_t* tail, struct __sk_buff * skb, net_packet_t * pkt,uint32_t l4_hdr_off){
+    if(pkt->dst_port == 53)
         return true;
-    }
     return false;
 }
 
@@ -4191,8 +4164,8 @@ static __always_inline bool is_dns_request(uint8_t * head, uint8_t* tail, struct
  * in the user-space we checking the packet data more deeply to verify it is the acual protocl,
  * and if it is- we parsing it and alerting to the user space
 */
-static __always_inline void check_protocols(struct __sk_buff *skb, uint8_t* head, uint8_t* tail, struct bpf_map_def *events_channel, net_packet_t* pkt){
-   if (is_dns_request(head, tail, skb, pkt) && event_chosen(NET_DNS_REQUEST)){
+static __always_inline void check_protocols(struct __sk_buff *skb, uint8_t* head, uint8_t* tail, struct bpf_map_def *events_channel, net_packet_t* pkt, uint32_t l4_hdr_off){
+   if (is_dns_request(head, tail, skb, pkt, l4_hdr_off) && event_chosen(NET_DNS_REQUEST)){
         pkt->event_id = NET_DNS_REQUEST;
         u64 flags = BPF_F_CURRENT_CPU;
         flags |= (u64)skb->len << 32;
@@ -4329,7 +4302,7 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     if (event_chosen(NET_PACKET) || get_config(CONFIG_DEBUG_NET) ){
         bpf_perf_event_output(skb, &net_events, flags, &pkt, sizeof(pkt));
     }
-     check_protocols(skb, head, tail, &net_events, &pkt);
+     check_protocols(skb, head, tail, &net_events, &pkt, l4_hdr_off);
     return TC_ACT_UNSPEC;
 }
 
