@@ -68,7 +68,7 @@ func TestConsumeSources(t *testing.T) {
 		expectedNumEvents int
 		expectedError     string
 		expectedEvent     interface{}
-		enableParsedEvent bool
+		config            Config
 	}{
 		{
 			name: "happy path - with one matching selector, parsed event enabled",
@@ -100,7 +100,9 @@ func TestConsumeSources(t *testing.T) {
 				ProcessID: 2, ParentProcessID: 1, Args: []external.Argument{{ArgMeta: external.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
 				EventName: "test_event",
 			},
-			enableParsedEvent: true,
+			config: Config{
+				ParsedEvents: true,
+			},
 		},
 		{
 			name: "happy path - with one matching selector",
@@ -378,7 +380,7 @@ func TestConsumeSources(t *testing.T) {
 
 			var gotNumEvents int
 			tc.inputSignature.onEvent = func(event types.Event) error {
-				if tc.enableParsedEvent {
+				if tc.config.ParsedEvents {
 					assert.Equal(t, tc.expectedEvent, event.(ParsedEvent).Event, tc.name)
 				} else {
 					assert.Equal(t, tc.expectedEvent, event.(external.Event), tc.name)
@@ -387,7 +389,7 @@ func TestConsumeSources(t *testing.T) {
 				return nil
 			}
 
-			e, err := NewEngine(sigs, inputs, outputChan, logger, tc.enableParsedEvent)
+			e, err := NewEngine(sigs, inputs, outputChan, logger, tc.config)
 			require.NoError(t, err, "constructing engine")
 			go func() {
 				e.Start(done)
@@ -446,7 +448,7 @@ func TestGetSelectedEvents(t *testing.T) {
 			},
 		},
 	}
-	e, err := NewEngine(sigs, EventSources{Tracee: make(chan types.Event)}, make(chan types.Finding), &bytes.Buffer{}, false)
+	e, err := NewEngine(sigs, EventSources{Tracee: make(chan types.Event)}, make(chan types.Finding), &bytes.Buffer{}, Config{})
 	require.NoError(t, err, "constructing engine")
 	se := e.GetSelectedEvents()
 	expected := []types.SignatureEventSelector{

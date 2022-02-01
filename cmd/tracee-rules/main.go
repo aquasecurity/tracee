@@ -104,7 +104,11 @@ func main() {
 			if err != nil {
 				return err
 			}
-			e, err := engine.NewEngine(sigs, inputs, output, os.Stderr, c.Bool("rego-enable-parsed-events"))
+
+			config := engine.Config{
+				ParsedEvents: c.Bool("rego-enable-parsed-events"),
+			}
+			e, err := engine.NewEngine(sigs, inputs, output, os.Stderr, config)
 			if err != nil {
 				return fmt.Errorf("constructing engine: %w", err)
 			}
