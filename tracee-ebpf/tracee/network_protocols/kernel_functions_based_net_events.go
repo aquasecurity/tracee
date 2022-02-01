@@ -48,13 +48,15 @@ func CreateFunctionBasedPacketMetadataArgs(event *external.Event, packet Functio
 	eventArgs := make([]external.Argument, 0, 0)
 	arg := external.FunctionBasedPacket{}
 	arg.LocalIP = parseIP(packet.LocalIP)
-	arg.RemoteIP = parseIP(packet.RemoteIP)
 	arg.LocalPort = packet.LocalPort
-	arg.LocalPort = packet.RemotePort
+	arg.RemoteIP = parseIP(packet.RemoteIP)
 	arg.Protocol = packet.Protocol
-	arg.TcpNewState = packet.TcpNewState
-	arg.TcpOldState = packet.TcpOldState
-	arg.SockPtr = packet.SockPtr
+	if event.EventID == int(NetInetSockSetState) {
+		arg.RemotePort = packet.RemotePort
+		arg.TcpNewState = packet.TcpNewState
+		arg.TcpOldState = packet.TcpOldState
+		arg.SockPtr = packet.SockPtr
+	}
 	evtArg := external.Argument{
 		ArgMeta: external.ArgMeta{"FunctionBasedPacket", "external.FunctionBasedPacket"},
 		Value:   arg,
