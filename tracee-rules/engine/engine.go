@@ -19,6 +19,12 @@ const EVENT_CONTAINER_ORIGIN = "container"
 const EVENT_HOST_ORIGIN = "host"
 const ALL_EVENT_TYPES = "*"
 
+// Config defines the engine's configurable values
+type Config struct {
+	ParsedEvents        bool
+	SignatureBufferSize int
+}
+
 // Engine is a rule-engine that can process events coming from a set of input sources against a set of loaded signatures, and report the signatures' findings
 type Engine struct {
 	logger          log.Logger
@@ -28,7 +34,7 @@ type Engine struct {
 	inputs          EventSources
 	output          chan types.Finding
 	waitGroup       sync.WaitGroup
-	parsedEvents    bool
+	config          Config
 }
 
 //EventSources is a bundle of input sources used to configure the Engine
@@ -38,7 +44,7 @@ type EventSources struct {
 
 // NewEngine creates a new rules-engine with the given arguments
 // inputs and outputs are given as channels created by the consumer
-func NewEngine(sigs []types.Signature, sources EventSources, output chan types.Finding, logWriter io.Writer, parsedEvents bool) (*Engine, error) {
+func NewEngine(sigs []types.Signature, sources EventSources, output chan types.Finding, logWriter io.Writer, config Config) (*Engine, error) {
 	if sources.Tracee == nil || output == nil || logWriter == nil {
 		return nil, fmt.Errorf("nil input received")
 	}
@@ -47,7 +53,7 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 	engine.logger = *log.New(logWriter, "", 0)
 	engine.inputs = sources
 	engine.output = output
-	engine.parsedEvents = parsedEvents
+	engine.config = config
 	engine.signaturesMutex.Lock()
 	engine.signatures = make(map[types.Signature]chan types.Event)
 	engine.signaturesIndex = make(map[types.SignatureEventSelector][]types.Signature)
@@ -208,7 +214,7 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 func (engine *Engine) dispatchEvent(s types.Signature, event external.Event) {
 	switch {
 	case strings.Contains(reflect.TypeOf(s).String(), "rego"):
-		if engine.parsedEvents {
+		if engine.config.ParsedEvents {
 			pe, err := ToParsedEvent(event)
 			if err != nil {
 				engine.logger.Printf("error converting tracee event to OPA ast.Value: %v", err)
