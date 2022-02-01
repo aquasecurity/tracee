@@ -3273,7 +3273,7 @@ static __always_inline int net_map_update_or_delete_sock(void* ctx, int event_id
     }
 
     // netDebug event
-    if (get_config(CONFIG_DEBUG_NET)) {
+    if ((get_config(CONFIG_DEBUG_NET) || event_chosen(event_id)) && connect_id.port) {
         net_debug_t debug_event = {0};
         debug_event.ts = bpf_ktime_get_ns();
         debug_event.host_tid = bpf_get_current_pid_tgid();
