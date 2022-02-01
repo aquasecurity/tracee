@@ -1275,14 +1275,24 @@ func TestPrepareOutput(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			testName:    "option sort-events",
+			outputSlice: []string{"option:sort-events"},
+			expectedOutput: tracee.OutputConfig{
+				ParseArguments: true,
+				EventsSorting:  true,
+			},
+			expectedError: nil,
+		},
+		{
 			testName:    "all options",
-			outputSlice: []string{"option:stack-addresses", "option:detect-syscall", "option:exec-env", "option:exec-hash"},
+			outputSlice: []string{"option:stack-addresses", "option:detect-syscall", "option:exec-env", "option:exec-hash", "option:sort-events"},
 			expectedOutput: tracee.OutputConfig{
 				StackAddresses: true,
 				DetectSyscall:  true,
 				ExecEnv:        true,
 				ExecHash:       true,
 				ParseArguments: true,
+				EventsSorting:  true,
 			},
 			expectedError: nil,
 		},
