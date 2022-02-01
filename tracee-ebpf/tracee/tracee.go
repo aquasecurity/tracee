@@ -24,6 +24,7 @@ import (
 	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/pkg/bucketscache"
 	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/events/sorting"
 	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
@@ -175,6 +176,7 @@ type Tracee struct {
 	ngIfacesIndex     map[int]int
 	containers        *containers.Containers
 	processTree       *ProcessTree
+	eventsSorter      *sorting.EventsChronologicalSorter
 }
 
 type counter int32
@@ -385,6 +387,12 @@ func New(cfg Config) (*Tracee, error) {
 		t.Close()
 		return nil, fmt.Errorf("error creating process tree: %v", err)
 	}
+
+	t.eventsSorter, err = sorting.InitEventSorter()
+	if err != nil {
+		return nil, err
+	}
+
 	return t, nil
 }
 
