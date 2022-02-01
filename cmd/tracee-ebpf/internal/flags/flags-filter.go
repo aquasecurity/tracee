@@ -111,6 +111,10 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 		},
 		ContFilter:    &tracee.BoolFilter{},
 		NewContFilter: &tracee.BoolFilter{},
+		ContIDFilter: &tracee.ContIDFilter{
+			Equal:    []string{},
+			NotEqual: []string{},
+		},
 		RetFilter: &tracee.RetFilter{
 			Filters: make(map[int32]tracee.IntFilter),
 		},
@@ -194,6 +198,11 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 				filter.NewContFilter.Value = false
 				continue
 			}
+			err := filter.ContIDFilter.Parse(operatorAndValues)
+			if err != nil {
+				return tracee.Filter{}, err
+			}
+			continue
 		}
 
 		if strings.HasPrefix("event", filterName) {

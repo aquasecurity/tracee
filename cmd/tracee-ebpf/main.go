@@ -73,7 +73,8 @@ func main() {
 			cfg.Filter = &filter
 
 			containerMode := (cfg.Filter.ContFilter.Enabled && cfg.Filter.ContFilter.Value) ||
-				(cfg.Filter.NewContFilter.Enabled && cfg.Filter.NewContFilter.Value)
+				(cfg.Filter.NewContFilter.Enabled && cfg.Filter.NewContFilter.Value) ||
+				cfg.Filter.ContIDFilter.Enabled
 
 			if checkCommandIsHelp(c.StringSlice("output")) {
 				fmt.Print(flags.OutputHelp())

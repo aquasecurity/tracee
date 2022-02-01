@@ -220,6 +220,7 @@ Copyright (C) Aqua Security inc.
 #define CONFIG_PROC_TREE_FILTER         18
 #define CONFIG_CAPTURE_MODULES          19
 #define CONFIG_CGROUP_V1                20
+#define CONFIG_CGROUP_ID_FILTER         21
 
 // get_config(CONFIG_XXX_FILTER) returns 0 if not enabled
 #define FILTER_IN                       1
@@ -557,6 +558,7 @@ BPF_HASH(mnt_ns_filter, u64, u32);                      // filter events by moun
 BPF_HASH(pid_ns_filter, u64, u32);                      // filter events by pid namespace id
 BPF_HASH(uts_ns_filter, string_filter_t, u32);          // filter events by uts namespace name
 BPF_HASH(comm_filter, string_filter_t, u32);            // filter events by command name
+BPF_HASH(cgroup_id_filter, u32, u32);                   // filter events by cgroup id
 BPF_HASH(bin_args_map, u64, bin_args_t);                // persist args for send_bin funtion
 BPF_HASH(sys_32_to_64_map, u32, u32);                   // map 32bit to 64bit syscalls
 BPF_HASH(params_types_map, u32, u64);                   // encoded parameters types for event
@@ -1302,6 +1304,9 @@ static __always_inline int should_trace(context_t *context)
         return 0;
 
     if (!equality_filter_matches(CONFIG_PROC_TREE_FILTER, &process_tree_map, &context->pid))
+        return 0;
+
+    if (!equality_filter_matches(CONFIG_CGROUP_ID_FILTER, &cgroup_id_filter, &cgroup_id_lsb))
         return 0;
 
     // We passed all filters successfully
