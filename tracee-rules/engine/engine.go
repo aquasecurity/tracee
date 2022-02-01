@@ -60,7 +60,7 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 	engine.signaturesMutex.Unlock()
 	for _, sig := range sigs {
 		engine.signaturesMutex.Lock()
-		engine.signatures[sig] = make(chan types.Event)
+		engine.signatures[sig] = make(chan types.Event, engine.config.SignatureBufferSize)
 		engine.signaturesMutex.Unlock()
 		meta, err := sig.GetMetadata()
 		if err != nil {
@@ -244,7 +244,7 @@ func (engine *Engine) LoadSignature(signature types.Signature) (string, error) {
 		// signature already exists
 		return metadata.ID, nil
 	}
-	c := make(chan types.Event)
+	c := make(chan types.Event, engine.config.SignatureBufferSize)
 	engine.signatures[signature] = c
 
 	// insert in engine.signaturesIndex map

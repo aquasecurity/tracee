@@ -19,6 +19,10 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+const (
+	signatureBufferFlag = "sig-buffer"
+)
+
 func main() {
 	app := &cli.App{
 		Name:  "tracee-rules",
@@ -106,7 +110,8 @@ func main() {
 			}
 
 			config := engine.Config{
-				ParsedEvents: c.Bool("rego-enable-parsed-events"),
+				ParsedEvents:        c.Bool("rego-enable-parsed-events"),
+				SignatureBufferSize: c.Int(signatureBufferFlag),
 			}
 			e, err := engine.NewEngine(sigs, inputs, output, os.Stderr, config)
 			if err != nil {
@@ -177,6 +182,11 @@ func main() {
 			&cli.BoolFlag{
 				Name:  "list-events",
 				Usage: "print a list of events that currently loaded signatures require",
+			},
+			&cli.IntFlag{
+				Name:  signatureBufferFlag,
+				Usage: "size of the event channel's buffer consumed by signatures",
+				Value: 1000,
 			},
 		},
 	}
