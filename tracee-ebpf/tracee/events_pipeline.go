@@ -50,8 +50,10 @@ func (t *Tracee) handleEvents(ctx gocontext.Context) {
 	eventsChan, errc := t.decodeEvents(ctx)
 	errcList = append(errcList, errc)
 
-	eventsChan, errc = t.eventsSorter.StartPipeline(ctx, eventsChan)
-	errcList = append(errcList, errc)
+	if t.config.Output.EventsSorting {
+		eventsChan, errc = t.eventsSorter.StartPipeline(ctx, eventsChan)
+		errcList = append(errcList, errc)
+	}
 
 	// Sink pipeline stage.
 	errc = t.processEvents(ctx, eventsChan)

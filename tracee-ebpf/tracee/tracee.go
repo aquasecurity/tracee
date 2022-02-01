@@ -67,6 +67,7 @@ type OutputConfig struct {
 	RelativeTime   bool
 	ExecHash       bool
 	ParseArguments bool
+	EventsSorting  bool
 }
 
 type netProbe struct {
@@ -388,9 +389,11 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error creating process tree: %v", err)
 	}
 
-	t.eventsSorter, err = sorting.InitEventSorter()
-	if err != nil {
-		return nil, err
+	if t.config.Output.EventsSorting {
+		t.eventsSorter, err = sorting.InitEventSorter()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return t, nil

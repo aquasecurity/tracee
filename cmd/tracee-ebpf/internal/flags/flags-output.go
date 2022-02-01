@@ -20,7 +20,7 @@ Possible options:
 out-file:/path/to/file                             write the output to a specified file. create/trim the file if exists (default: stdout)
 err-file:/path/to/file                             write the errors to a specified file. create/trim the file if exists (default: stderr)
 none                                               ignore stream of events output, usually used with --capture
-option:{stack-addresses,detect-syscall,exec-env,relative-time,exec-hash,parse-arguments}
+option:{stack-addresses,detect-syscall,exec-env,relative-time,exec-hash,parse-arguments,sort-events}
                                                    augment output according to given options (default: none)
   stack-addresses                                  include stack memory addresses for each event
   detect-syscall                                   when tracing kernel functions which are not syscalls, detect and show the original syscall that called that function
@@ -28,6 +28,7 @@ option:{stack-addresses,detect-syscall,exec-env,relative-time,exec-hash,parse-ar
   relative-time                                    use relative timestamp instead of wall timestamp for events
   exec-hash                                        when tracing sched_process_exec, show the file hash(sha256) and ctime
   parse-arguments                                  do not show raw machine-readable values for event arguments, instead parse into human readable strings
+  sort-events                                      enable sorting events before passing to them output. This will decrease the overall program efficiency.
 Examples:
   --output json                                            | output as json
   --output gotemplate=/path/to/my.tmpl                     | output as the provided go template
@@ -89,6 +90,8 @@ func PrepareOutput(outputSlice []string) (tracee.OutputConfig, printerConfig, er
 				outcfg.ExecHash = true
 			case "parse-arguments":
 				outcfg.ParseArguments = true
+			case "sort-events":
+				outcfg.EventsSorting = true
 			default:
 				return outcfg, printcfg, fmt.Errorf("invalid output option: %s, use '--output help' for more info", outputParts[1])
 			}
