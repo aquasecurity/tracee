@@ -7,13 +7,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/external"
 )
 
-type eventNode struct {
-	event       *external.Event
-	previous    *eventNode
-	next        *eventNode
-	isAllocated bool
-}
-
 const poolFreeingPart = 2
 const minPoolFreeingSize = 200
 
