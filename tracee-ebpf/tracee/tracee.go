@@ -433,6 +433,7 @@ const (
 	configProcTreeFilter
 	configCaptureModules
 	configCgroupV1
+	configCgroupIdFilter
 )
 
 // Custom KernelConfigOption's to extend kernel_config helper support
@@ -595,6 +596,8 @@ func (t *Tracee) populateBPFMaps() error {
 	errmap["comm_filter"] = t.config.Filter.CommFilter.Set(t.bpfModule, "comm_filter", configCommFilter)
 	errmap["cont_filter"] = t.config.Filter.ContFilter.Set(t.bpfModule, configContFilter)
 	errmap["cont=new_filter"] = t.config.Filter.NewContFilter.Set(t.bpfModule, configNewContFilter)
+	errmap["cont_id_filter"] = t.config.Filter.ContIDFilter.Set(t.bpfModule, t.containers, "cgroup_id_filter", configCgroupIdFilter)
+
 	for k, v := range errmap {
 		if v != nil {
 			return fmt.Errorf("error setting %v filter: %v", k, v)

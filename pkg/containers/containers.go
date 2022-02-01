@@ -293,17 +293,17 @@ func getCgroupPath(rootDir string, cgroupId uint64, subPath string) (string, err
 	return "", fs.ErrNotExist
 }
 
-// GetContainers provides a list of all added containers by their uuid.
-func (c *Containers) GetContainers() []string {
-	var conts []string
+// FindContainerCgroupID32LSB returns the 32 LSB of the Cgroup ID for a given container ID
+func (c *Containers) FindContainerCgroupID32LSB(containerID string) []uint32 {
+	var cgroupIDs []uint32
 	c.mtx.RLock()
 	defer c.mtx.RUnlock()
-	for _, v := range c.cgroups {
-		if v.ContainerId != "" && v.expiresAt.IsZero() {
-			conts = append(conts, v.ContainerId)
+	for k, v := range c.cgroups {
+		if strings.HasPrefix(v.ContainerId, containerID) {
+			cgroupIDs = append(cgroupIDs, k)
 		}
 	}
-	return conts
+	return cgroupIDs
 }
 
 // GetCgroupInfo returns the Containers struct cgroupInfo data of a given cgroupId.
