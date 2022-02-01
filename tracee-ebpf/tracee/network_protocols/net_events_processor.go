@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	NetPacket int32 = iota + 1000
+	NetPacket int32 = iota + 4000
 	NetSecurityBind
 	NetUdpSendmsg
 	NetUdpDisconnect
@@ -20,10 +20,10 @@ const (
 )
 
 type EventMeta struct {
-	TimeStamp   uint64 `json:"time_stamp"`
-	NetEventId  int32  `json:"net_event_id"`
-	HostTid     int    `json:"host_tid"`
-	ProcessName string `json:"process_name"`
+	TimeStamp   uint64 `json:"timeStamp"`
+	NetEventId  int32  `json:"netEventId"`
+	HostTid     int    `json:"hostTid"`
+	ProcessName string `json:"processName"`
 }
 type CaptueData struct {
 	PacketLen      uint32
@@ -33,20 +33,19 @@ type CaptueData struct {
 func ProcessNetEvent(buffer *bytes.Buffer, evtMeta EventMeta, eventName string, ctx processContext.ProcessCtx) (external.Event, bool, CaptueData) {
 	var evt external.Event
 	var captureData CaptueData
-	evt.EventName = eventName
 	switch evtMeta.NetEventId {
 	case NetPacket:
 		var packet PacketMeta
-		evt, packet = netPacketProtocolHandler(buffer, evtMeta, ctx)
+		evt, packet = netPacketProtocolHandler(buffer, evtMeta, ctx, eventName)
 		captureData.PacketLen = packet.PktLen
 		captureData.InterfaceIndex = packet.IfIndex
 		return evt, true, captureData
 	case NetDnsRequest:
-		evt, _ = dnsRequestPrototcolsHandler(buffer, evtMeta, ctx)
+		evt, _ = dnsRequestPrototcolsHandler(buffer, evtMeta, ctx, eventName)
 		return evt, false, captureData
 	}
 	if evtMeta.NetEventId > NetPacket && evtMeta.NetEventId <= NetTcpConnect {
-		return FunctionBasedNetEventHandler(buffer, evtMeta, ctx), false, captureData
+		return FunctionBasedNetEventHandler(buffer, evtMeta, ctx, eventName), false, captureData
 	}
 	return evt, false, captureData
 }

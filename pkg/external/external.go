@@ -250,28 +250,28 @@ func (alert MemProtAlert) String() string {
 
 //for supporting networking events in tracee rules
 type PktMeta struct {
-	SrcIP    string `json:"src_ip"`
-	DestIP   string `json:"dest_ip"`
-	SrcPort  uint16 `json:"src_port"`
-	DestPort uint16 `json:"dest_port"`
+	SrcIP    string `json:"srcIP"`
+	DestIP   string `json:"destIP"`
+	SrcPort  uint16 `json:"srcPort"`
+	DestPort uint16 `json:"destPort"`
 	Protocol uint8  `json:"protocol"`
 }
 
 type FunctionBasedPacket struct {
-	LocalIP     string
-	RemoteIP    string
-	LocalPort   uint16
-	RemotePort  uint16
-	Protocol    uint8
+	LocalIP     string  `json:"localIP"`
+	RemoteIP    string  `json:"remoteIP"`
+	LocalPort   uint16  `json:"localPort"`
+	RemotePort  uint16  `json:"remotePort"`
+	Protocol    uint8   `json:"protocol"`
 	_           [3]byte //padding
-	TcpOldState uint32
-	TcpNewState uint32
+	TcpOldState uint32  `json:"tcpOldState"`
+	TcpNewState uint32  `json:"tcpNewState"`
 	_           [4]byte //padding
-	SockPtr     uint64
+	SockPtr     uint64  `json:"sockPtr"`
 }
 
 type DnsQueryData struct {
-	Query      string `json:"Query"`
-	QueryType  string `json:"QueryType"`
-	QueryClass string `json:"queryclass"`
+	Query      string `json:"query"`
+	QueryType  string `json:"queryType"`
+	QueryClass string `json:"queryClass"`
 }

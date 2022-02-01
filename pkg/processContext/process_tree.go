@@ -33,7 +33,6 @@ type ProcessTree struct {
 }
 
 // ParseProcessContext gets a byte array and parse the process context
-// Note: to prevent the ParseProcessContext to be Tracee function , the parsing of the containerID (which is using tracee containers API)
 func ParseProcessContext(ctx []byte, containerId string) (ProcessCtx, error) {
 	var procCtx = ProcessCtx{}
 	procCtx.StartTime = int(binary.LittleEndian.Uint64(ctx[0:8]))

@@ -27,7 +27,8 @@ func (t *Tracee) processNetEvents() {
 				continue
 			}
 
-			evt, ShouldCapture, cap := network_protocols.ProcessNetEvent(dataBuff, evtMeta, EventsDefinitions[evtMeta.NetEventId].Name, processContext)
+			eventName := EventsDefinitions[evtMeta.NetEventId].Name
+			evt, ShouldCapture, cap := network_protocols.ProcessNetEvent(dataBuff, evtMeta, eventName, processContext)
 			t.config.ChanEvents <- evt
 			t.stats.eventCounter.Increment()
 
@@ -75,7 +76,6 @@ func (t *Tracee) writePacket(packetLen uint32, timeStamp time.Time, interfaceInd
 }
 
 // parsing the EventMeta struct from byte array and returns bytes.Buffer pointers
-// Note: after this function the next data in the packet byte array is the PacketMeta struct so i recommend to call 'parseNetPacketMetaData' after this function had called
 func parseEventMetaData(payloadBytes []byte) (network_protocols.EventMeta, *bytes.Buffer) {
 	var eventMetaData network_protocols.EventMeta
 	eventMetaData.TimeStamp = binary.LittleEndian.Uint64(payloadBytes[0:8])

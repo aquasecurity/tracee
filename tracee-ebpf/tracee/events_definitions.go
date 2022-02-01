@@ -43,7 +43,7 @@ type EventDefinition struct {
 // Common events (used by all architectures)
 // events should match defined values in ebpf code
 const (
-	SysEnterEventID int32 = iota + network_protocols.MaxNetEventID
+	SysEnterEventID int32 = iota + 1000
 	SysExitEventID
 	SchedProcessForkEventID
 	SchedProcessExecEventID

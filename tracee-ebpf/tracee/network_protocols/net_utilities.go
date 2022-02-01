@@ -1,6 +1,18 @@
 package network_protocols
 
-import "bytes"
+import (
+	"bytes"
+	"inet.af/netaddr"
+)
+
+func parseIP(ip [16]byte) string {
+	if IsIpv6(ip) {
+		return netaddr.IPFrom16(ip).String()
+	} else {
+		ipv4 := AssginIpV4(ip)
+		return netaddr.IPFrom4(ipv4).String()
+	}
+}
 
 // check if a given Ip as byte array is Ipv6 or Ipv4
 func IsIpv6(ip [16]byte) bool {

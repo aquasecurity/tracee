@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/pkg/processContext"
-	"inet.af/netaddr"
 )
 
 type PacketMeta struct {
@@ -19,7 +18,7 @@ type PacketMeta struct {
 	_        [3]byte  //padding
 }
 
-func netPacketProtocolHandler(buffer *bytes.Buffer, evtMeta EventMeta, ctx processContext.ProcessCtx) (external.Event, PacketMeta) {
+func netPacketProtocolHandler(buffer *bytes.Buffer, evtMeta EventMeta, ctx processContext.ProcessCtx, eventName string) (external.Event, PacketMeta) {
 	var evt external.Event
 	packet, err := ParseNetPacketMetaData(buffer)
 	if err != nil {
@@ -27,6 +26,7 @@ func netPacketProtocolHandler(buffer *bytes.Buffer, evtMeta EventMeta, ctx proce
 	}
 	evt = CreateNetEvent(evtMeta, ctx)
 	CreateNetPacketMetaArgs(&evt, packet)
+	evt.EventName = eventName
 	return evt, packet
 }
 
@@ -44,18 +44,8 @@ func ParseNetPacketMetaData(payload *bytes.Buffer) (PacketMeta, error) {
 func createNetPacketMetadataArg(packet PacketMeta) []external.Argument {
 	eventArgs := make([]external.Argument, 0, 0)
 	arg := external.PktMeta{}
-	if IsIpv6(packet.SrcIP) {
-		arg.SrcIP = netaddr.IPFrom16(packet.SrcIP).String()
-	} else {
-		ip := AssginIpV4(packet.SrcIP)
-		arg.SrcIP = netaddr.IPFrom4(ip).String()
-	}
-	if IsIpv6(packet.DestIP) {
-		arg.DestIP = netaddr.IPFrom16(packet.DestIP).String()
-	} else {
-		ip := AssginIpV4(packet.DestIP)
-		arg.DestIP = netaddr.IPFrom4(ip).String()
-	}
+	arg.SrcIP = parseIP(packet.SrcIP)
+	arg.DestIP = parseIP(packet.SrcIP)
 	arg.SrcPort = packet.SrcPort
 	arg.DestPort = packet.DestPort
 	arg.Protocol = packet.Protocol

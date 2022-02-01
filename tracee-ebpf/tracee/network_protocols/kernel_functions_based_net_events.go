@@ -5,15 +5,9 @@ import (
 	"encoding/binary"
 	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/pkg/processContext"
-	"inet.af/netaddr"
 )
 
-/* FunctionBasedNetEvents are events that related to the network events and parse like them.
- * they sent over the net_events channel and in the main handler we parse them as the other net events.
- * those events start from `NetSecurityBind` to `NetTcpConnect`
- * Note: that events are not trigger from the tc_probe but rather a kprobes
- */
-
+// FunctionBasedNetEvents are net events originated from kernel functions (kprobes) rather than from the tc (tc_probes).
 type FunctionBasedPacket struct {
 	LocalIP     [16]byte
 	RemoteIP    [16]byte
@@ -27,19 +21,20 @@ type FunctionBasedPacket struct {
 	SockPtr     uint64
 }
 
-func FunctionBasedNetEventHandler(buffer *bytes.Buffer, evtMeta EventMeta, ctx processContext.ProcessCtx) external.Event {
+func FunctionBasedNetEventHandler(buffer *bytes.Buffer, evtMeta EventMeta, ctx processContext.ProcessCtx, eventName string) external.Event {
 	var evt external.Event
-	debugEventPacket, err := ParseDebugPacketMetaData(buffer)
+	functionBasedEventPacket, err := ParseFunctionBasedPacketMetaData(buffer)
 	if err != nil {
 		return evt
 	}
 	evt = CreateNetEvent(evtMeta, ctx)
-	CreateDebugPacketMetadataArg(&evt, debugEventPacket)
+	CreateFunctionBasedPacketMetadataArgs(&evt, functionBasedEventPacket)
+	evt.EventName = eventName
 	return evt
 }
 
 // parsing the PacketMeta struct from bytes.buffer
-func ParseDebugPacketMetaData(payload *bytes.Buffer) (FunctionBasedPacket, error) {
+func ParseFunctionBasedPacketMetaData(payload *bytes.Buffer) (FunctionBasedPacket, error) {
 	var pktMetaData FunctionBasedPacket
 	err := binary.Read(payload, binary.LittleEndian, &pktMetaData)
 	if err != nil {
@@ -49,26 +44,19 @@ func ParseDebugPacketMetaData(payload *bytes.Buffer) (FunctionBasedPacket, error
 	return pktMetaData, nil
 }
 
-func CreateDebugPacketMetadataArg(event *external.Event, packet FunctionBasedPacket) {
+func CreateFunctionBasedPacketMetadataArgs(event *external.Event, packet FunctionBasedPacket) {
 	eventArgs := make([]external.Argument, 0, 0)
-	arg := external.PktMeta{}
-	if IsIpv6(packet.LocalIP) {
-		arg.SrcIP = netaddr.IPFrom16(packet.LocalIP).String()
-	} else {
-		ip := AssginIpV4(packet.LocalIP)
-		arg.SrcIP = netaddr.IPFrom4(ip).String()
-	}
-	if IsIpv6(packet.RemoteIP) {
-		arg.DestIP = netaddr.IPFrom16(packet.RemoteIP).String()
-	} else {
-		ip := AssginIpV4(packet.RemoteIP)
-		arg.DestIP = netaddr.IPFrom4(ip).String()
-	}
-	arg.SrcPort = packet.LocalPort
-	arg.DestPort = packet.RemotePort
+	arg := external.FunctionBasedPacket{}
+	arg.LocalIP = parseIP(packet.LocalIP)
+	arg.RemoteIP = parseIP(packet.RemoteIP)
+	arg.LocalPort = packet.LocalPort
+	arg.LocalPort = packet.RemotePort
 	arg.Protocol = packet.Protocol
+	arg.TcpNewState = packet.TcpNewState
+	arg.TcpOldState = packet.TcpOldState
+	arg.SockPtr = packet.SockPtr
 	evtArg := external.Argument{
-		ArgMeta: external.ArgMeta{"FunctionBasedPacket", "PacketMeta"},
+		ArgMeta: external.ArgMeta{"FunctionBasedPacket", "external.FunctionBasedPacket"},
 		Value:   arg,
 	}
 	eventArgs = append(eventArgs, evtArg)
