@@ -136,9 +136,9 @@ type traceeContainer struct {
 	testcontainers.Container
 }
 
-func setupTraceeContainer(ctx context.Context, tempDir string, image string) (*traceeContainer, error) {
+func runTraceeContainer(ctx context.Context, tempDir string) (*traceeContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:      image,
+		Image:      *traceeImageRef,
 		Privileged: true,
 		BindMounts: map[string]string{ // container:host
 			tempDir:                tempDir,           // required for all
@@ -164,12 +164,12 @@ func setupTraceeContainer(ctx context.Context, tempDir string, image string) (*t
 	return &traceeContainer{Container: container}, nil
 }
 
-func setupTraceeTrainerContainer(ctx context.Context, sigID string) (*traceeContainer, error) {
+func runTraceeTesterContainer(ctx context.Context, sigID string) (*traceeContainer, error) {
 	req := testcontainers.ContainerRequest{
-		Image:      "tracee-trainer",
-		Entrypoint: []string{"/runner.sh", sigID},
+		Image:      *testerImageRef,
+		Entrypoint: []string{"/entrypoint.sh", sigID},
 		Privileged: true,
-		Name:       "tracee-trainer",
+		Name:       "tracee-tester",
 		AutoRemove: true,
 	}
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -184,6 +184,8 @@ func setupTraceeTrainerContainer(ctx context.Context, sigID string) (*traceeCont
 }
 
 var (
+	testerImageRef = flag.String("tracee-tester-image-ref", "docker.io/aquasec/tracee-tester:latest",
+		"tracee tester container image reference")
 	traceeImageRef = flag.String("tracee-image-ref", "tracee-nocore:latest",
 		"tracee container image reference")
 	signatureIDs = flag.String("tracee-signatures", "TRC-2,TRC-3,TRC-4,TRC-5,TRC-7,TRC-8,TRC-9,TRC-10,TRC-11,TRC-12,TRC-14",
@@ -199,7 +201,8 @@ func parseSignatureIDs() []string {
 }
 
 // TestTraceeSignatures tests tracee signatures (-tracee-signatures) using the
-// specified tracee container image (-tracee-image-ref).
+// specified tracee container image (-tracee-image-ref) and tester container
+// image (-tracee-tester-image-ref).
 //
 // Passing signature identifiers as input to the TestTraceeSignatures allows us
 // to use it as a quick smoke test in the PR validation workflow or as
@@ -209,8 +212,9 @@ func parseSignatureIDs() []string {
 // allows us to test different flavors of tracee container image, i.e. CO:RE
 // non CO:RE, and CO:RE with BTFHub support.
 //
-//     go test -v -run "^\QTestTraceeSignatures\E$" ./tests/tracee_test.go \
+//     go test -v -run "TestTraceeSignatures" ./tests/tracee_test.go \
 //            -tracee-image-ref "tracee-nocore:latest" \
+//            -tracee-tester-image-ref "aquasec/tracee-tester:latest" \
 //            -tracee-signatures "TRC-2,TRC-3"
 func TestTraceeSignatures(t *testing.T) {
 	tempDir := os.TempDir()
@@ -222,19 +226,17 @@ func TestTraceeSignatures(t *testing.T) {
 		t.Run(fmt.Sprintf("%s/%s", *traceeImageRef, sigID), func(t *testing.T) {
 			ctx := context.Background()
 
-			// run tracee container
-			traceeContainer, err := setupTraceeContainer(ctx, tempDir, *traceeImageRef)
+			traceeContainer, err := runTraceeContainer(ctx, tempDir)
 			if err != nil {
 				t.Fatal(err)
 			}
 			defer traceeContainer.Terminate(ctx)
 
-			// run trace signature trainer container
-			traceeSigTrainer, err := setupTraceeTrainerContainer(ctx, sigID)
+			traceeTesterContainer, err := runTraceeTesterContainer(ctx, sigID)
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer traceeSigTrainer.Terminate(ctx)
+			defer traceeTesterContainer.Terminate(ctx)
 
 			traceeContainer.assertLogs(t, ctx, sigID)
 		})
