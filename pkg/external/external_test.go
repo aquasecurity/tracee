@@ -171,6 +171,7 @@ func TestEvent_ToUnstructured(t *testing.T) {
 			name: "Should unstructure Event",
 			event: Event{
 				Timestamp:           7126141189,
+				ProcessorID:         0,
 				ProcessID:           1,
 				ThreadID:            1,
 				ParentProcessID:     4798,

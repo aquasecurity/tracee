@@ -10,6 +10,7 @@ import (
 // Event is a user facing data structure representing a single event
 type Event struct {
 	Timestamp           int        `json:"timestamp"`
+	ProcessorID         int        `json:"processorId"`
 	ProcessID           int        `json:"processId"`
 	ThreadID            int        `json:"threadId"`
 	ParentProcessID     int        `json:"parentProcessId"`
@@ -71,6 +72,7 @@ func (e Event) ToUnstructured() (map[string]interface{}, error) {
 
 	return map[string]interface{}{
 		"timestamp":           json.Number(strconv.Itoa(e.Timestamp)),
+		"processorId":         json.Number(strconv.Itoa(e.ProcessorID)),
 		"processId":           json.Number(strconv.Itoa(e.ProcessID)),
 		"threadId":            json.Number(strconv.Itoa(e.ThreadID)),
 		"parentProcessId":     json.Number(strconv.Itoa(e.ParentProcessID)),
