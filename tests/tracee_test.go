@@ -21,8 +21,6 @@ import (
 
 const (
 	waitTime                   = time.Second * 3
-	traceeDockerRunBTFEnabled  = `run --detach --name tracee --rm --pid=host --privileged -v /tmp/tracee:/tmp/tracee -t aquasec/tracee:latest`
-	traceeDockerRunBTFDisabled = `run --detach --name tracee --rm --pid=host --privileged -v /tmp/tracee:/tmp/tracee -v /lib/modules/:/lib/modules/:ro -v /usr/src:/usr/src:ro -it aquasec/tracee:latest`
 	traceeDockerRunWithWebhook = `run --detach --name tracee --rm --pid=host --net=host --privileged -v /tmp/tracee:/tmp/tracee -t aquasec/tracee:latest --webhook=%s --webhook-template=%s --webhook-content-type=application/json`
 )
 
@@ -44,58 +42,6 @@ func runCommand(t *testing.T, cmd string, args ...string) string {
 	output, err := exec.Command(cmd, args...).CombinedOutput()
 	assert.NoError(t, err)
 	return string(output)
-}
-
-// TestLaunchTracee tests the basic sanity workflow of running tracee
-// and detecting an attack by simulating a signature trigger
-func TestLaunchTracee(t *testing.T) {
-	t.Run("BTF enabled", func(t *testing.T) {
-		containerID := launchTracee(t, traceeDockerRunBTFEnabled)
-
-		// wait for tracee to get ready
-		time.Sleep(waitTime)
-
-		// do an `strace ls`
-		_ = runCommand(t, "strace", "ls")
-
-		// wait for tracee to detect
-		time.Sleep(waitTime)
-
-		// get tracee container logs
-		containerLogs := runCommand(t, "docker", "logs", containerID)
-
-		// assert results
-		t.Log("Asserting Logs...")
-		assert.Contains(t, string(containerLogs), `Signature ID: TRC-2`)
-
-		// kill the container
-		t.Log("Terminating the Tracee container...")
-		assert.NoError(t, exec.Command("docker", "kill", containerID).Run())
-	})
-
-	t.Run("BTF disabled", func(t *testing.T) {
-		containerID := launchTracee(t, traceeDockerRunBTFDisabled)
-
-		// wait for tracee to get ready
-		time.Sleep(waitTime)
-
-		// do an `strace ls`
-		_ = runCommand(t, "strace", "ls")
-
-		// wait for tracee to detect
-		time.Sleep(waitTime)
-
-		// get tracee container logs
-		containerLogs := runCommand(t, "docker", "logs", containerID)
-
-		// assert results
-		t.Log("Asserting Logs...")
-		assert.Contains(t, string(containerLogs), `Signature ID: TRC-2`)
-
-		// kill the container
-		t.Log("Terminating the Tracee container...")
-		assert.NoError(t, exec.Command("docker", "kill", containerID).Run())
-	})
 }
 
 // TestWebhookIntegration tests the same workflow of running tracee
