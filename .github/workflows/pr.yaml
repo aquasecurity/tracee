@@ -165,9 +165,6 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           opa-version: ${{ env.OPA_VERSION }}
-      - name: Buld tracee-tester image
-        run: |
-          make -f tests/Makefile docker-build-tracee-tester
       - name: Build tracee-nocore
         run: |
           make -f builder/Makefile.tracee-container build-alpine-tracee-nocore
@@ -209,9 +206,6 @@ jobs:
       - name: Build tracee-core-btfhub
         run: |
           make -f builder/Makefile.tracee-container build-alpine-tracee-core-btfhub
-      - name: Buld tracee-tester image
-        run: |
-          make -f tests/Makefile docker-build-tracee-tester
       - name: Run tests
         run: |
           go test -v -run "TestTraceeSignatures" ./tests/tracee_test.go \

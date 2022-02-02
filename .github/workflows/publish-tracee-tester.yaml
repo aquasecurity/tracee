@@ -9,11 +9,11 @@ on:
       tag:
         description: "Name and optionally a tag in the 'name:tag' format"
         default: "aquasec/tracee-tester:latest"
-        required: false
+        required: true
 jobs:
-  deploy:
-    name: Deploy the latest documentation
-    runs-on: ubuntu-18.04
+  publish:
+    name: Publish tracee-tester Image
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout main
         uses: actions/checkout@v2
