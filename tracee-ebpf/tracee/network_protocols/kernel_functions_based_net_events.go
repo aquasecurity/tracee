@@ -21,7 +21,7 @@ type FunctionBasedPacket struct {
 	SockPtr     uint64
 }
 
-func FunctionBasedNetEventHandler(buffer *bytes.Buffer, evtMeta EventMeta, ctx processContext.ProcessCtx, eventName string) external.Event {
+func FunctionBasedNetEventHandler(buffer *bytes.Buffer, evtMeta EventMeta, ctx processContext.ProcessCtx, eventName string, bootTime uint64) external.Event {
 	var evt external.Event
 	functionBasedEventPacket, err := ParseFunctionBasedPacketMetaData(buffer)
 	if err != nil {
@@ -30,6 +30,7 @@ func FunctionBasedNetEventHandler(buffer *bytes.Buffer, evtMeta EventMeta, ctx p
 	evt = CreateNetEvent(evtMeta, ctx)
 	CreateFunctionBasedPacketMetadataArgs(&evt, functionBasedEventPacket)
 	evt.EventName = eventName
+	evt.Timestamp = int(evtMeta.TimeStamp + bootTime)
 	return evt
 }
 

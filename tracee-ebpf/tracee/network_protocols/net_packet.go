@@ -18,7 +18,7 @@ type PacketMeta struct {
 	_        [3]byte  //padding
 }
 
-func netPacketProtocolHandler(buffer *bytes.Buffer, evtMeta EventMeta, ctx processContext.ProcessCtx, eventName string) (external.Event, PacketMeta) {
+func netPacketProtocolHandler(buffer *bytes.Buffer, evtMeta EventMeta, ctx processContext.ProcessCtx, eventName string, bootTime uint64) (external.Event, PacketMeta) {
 	var evt external.Event
 	packet, err := ParseNetPacketMetaData(buffer)
 	if err != nil {
@@ -27,6 +27,7 @@ func netPacketProtocolHandler(buffer *bytes.Buffer, evtMeta EventMeta, ctx proce
 	evt = CreateNetEvent(evtMeta, ctx)
 	CreateNetPacketMetaArgs(&evt, packet)
 	evt.EventName = eventName
+	evt.Timestamp = int(evtMeta.TimeStamp + bootTime)
 	return evt, packet
 }
 

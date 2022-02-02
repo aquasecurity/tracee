@@ -938,8 +938,8 @@ func (t *Tracee) getProcessCtx(hostTid int) (processContext.ProcessCtx, error) {
 		if err != nil {
 			return processCtx, err
 		}
-		cgroupId := t.containers.GetCgroupInfo(binary.LittleEndian.Uint64(processCtxBpfMap[8:16])).ContainerId
-		processCtx, err = processContext.ParseProcessContext(processCtxBpfMap, cgroupId)
+		containerId := t.containers.GetCgroupInfo(binary.LittleEndian.Uint64(processCtxBpfMap[8:16])).ContainerId
+		processCtx, err = processContext.ParseProcessContext(processCtxBpfMap, containerId)
 		t.processTree.ProcessTreeMap[hostTid] = processCtx
 		return processCtx, err
 	}

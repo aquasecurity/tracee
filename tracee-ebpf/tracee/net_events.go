@@ -21,14 +21,19 @@ func (t *Tracee) processNetEvents() {
 			}
 			evtMeta, dataBuff := parseEventMetaData(in)
 
-			processContext, exist := t.getProcessCtx(evtMeta.HostTid)
-			if exist != nil {
+			processContext, err := t.getProcessCtx(evtMeta.HostTid)
+			if err != nil {
 				t.handleError(fmt.Errorf("couldn't find the process: %d", evtMeta.HostTid))
 				continue
 			}
 
-			eventName := EventsDefinitions[evtMeta.NetEventId].Name
-			evt, ShouldCapture, cap := network_protocols.ProcessNetEvent(dataBuff, evtMeta, eventName, processContext)
+			eventData, exist := EventsDefinitions[evtMeta.NetEventId]
+			if !exist {
+				t.handleError(fmt.Errorf("Net eventId didnt found in the map\n"))
+				continue
+			}
+			eventName := eventData.Name
+			evt, ShouldCapture, cap := network_protocols.ProcessNetEvent(dataBuff, evtMeta, eventName, processContext, t.bootTime)
 			t.config.ChanEvents <- evt
 			t.stats.eventCounter.Increment()
 

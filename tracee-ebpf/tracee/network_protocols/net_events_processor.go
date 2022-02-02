@@ -30,22 +30,23 @@ type CaptueData struct {
 	InterfaceIndex uint32
 }
 
-func ProcessNetEvent(buffer *bytes.Buffer, evtMeta EventMeta, eventName string, ctx processContext.ProcessCtx) (external.Event, bool, CaptueData) {
+func ProcessNetEvent(buffer *bytes.Buffer, evtMeta EventMeta, eventName string, ctx processContext.ProcessCtx, bootTime uint64) (external.Event, bool, CaptueData) {
 	var evt external.Event
 	var captureData CaptueData
 	switch evtMeta.NetEventId {
 	case NetPacket:
 		var packet PacketMeta
-		evt, packet = netPacketProtocolHandler(buffer, evtMeta, ctx, eventName)
+		evt, packet = netPacketProtocolHandler(buffer, evtMeta, ctx, eventName, bootTime)
 		captureData.PacketLen = packet.PktLen
 		captureData.InterfaceIndex = packet.IfIndex
 		return evt, true, captureData
 	case NetDnsRequest:
-		evt, _ = dnsRequestPrototcolsHandler(buffer, evtMeta, ctx, eventName)
-		return evt, false, captureData
+		evt, _ = dnsRequestPrototcolsHandler(buffer, evtMeta, ctx, eventName, bootTime)
+
+		return evt, true, captureData
 	}
 	if evtMeta.NetEventId > NetPacket && evtMeta.NetEventId <= NetTcpConnect {
-		return FunctionBasedNetEventHandler(buffer, evtMeta, ctx, eventName), false, captureData
+		return FunctionBasedNetEventHandler(buffer, evtMeta, ctx, eventName, bootTime), false, captureData
 	}
 	return evt, false, captureData
 }

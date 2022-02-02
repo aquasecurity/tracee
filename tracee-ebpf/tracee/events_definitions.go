@@ -6146,7 +6146,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit: sys32undefined,
 		Name:    "net_packet",
 		Probes:  []probe{},
-		Sets:    []string{},
+		Sets:    []string{"net_debug"},
 		Params: []external.ArgMeta{
 			{Type: "external.PktMeta", Name: "PacketMetaData"},
 		},
@@ -6155,7 +6155,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit: sys32undefined,
 		Name:    "set_security_bind",
 		Probes:  []probe{},
-		Sets:    []string{},
+		Sets:    []string{"net_debug"},
 		Params: []external.ArgMeta{
 			{Type: "external.FunctionBasedPacket", Name: "PacketMetaData"},
 		},
@@ -6164,7 +6164,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit: sys32undefined,
 		Name:    "net_udp_send_msg",
 		Probes:  []probe{},
-		Sets:    []string{},
+		Sets:    []string{"net_debug"},
 		Params: []external.ArgMeta{
 			{Type: "external.FunctionBasedPacket", Name: "PacketMetaData"},
 		},
@@ -6173,7 +6173,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit: sys32undefined,
 		Name:    "net_udp_disconnect",
 		Probes:  []probe{},
-		Sets:    []string{},
+		Sets:    []string{"net_debug"},
 		Params: []external.ArgMeta{
 			{Type: "external.FunctionBasedPacket", Name: "PacketMetaData"},
 		},
@@ -6182,7 +6182,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit: sys32undefined,
 		Name:    "net_udp_destroy_sock",
 		Probes:  []probe{},
-		Sets:    []string{},
+		Sets:    []string{"net_debug"},
 		Params: []external.ArgMeta{
 			{Type: "external.FunctionBasedPacket", Name: "PacketMetaData"},
 		},
@@ -6191,7 +6191,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit: sys32undefined,
 		Name:    "net_udp_v6_destroy_sock",
 		Probes:  []probe{},
-		Sets:    []string{},
+		Sets:    []string{"net_debug"},
 		Params: []external.ArgMeta{
 			{Type: "external.FunctionBasedPacket", Name: "PacketMetaData"},
 		},
@@ -6200,7 +6200,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit: sys32undefined,
 		Name:    "net_inet_sock_set_state",
 		Probes:  []probe{},
-		Sets:    []string{},
+		Sets:    []string{"net_debug"},
 		Params: []external.ArgMeta{
 			{Type: "external.FunctionBasedPacket", Name: "PacketMetaData"},
 		},
@@ -6209,7 +6209,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit: sys32undefined,
 		Name:    "net_tcp_connect",
 		Probes:  []probe{},
-		Sets:    []string{},
+		Sets:    []string{"net_debug"},
 		Params: []external.ArgMeta{
 			{Type: "external.FunctionBasedPacket", Name: "PacketMetaData"},
 		},
@@ -6218,7 +6218,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit: sys32undefined,
 		Name:    "net_dns_request",
 		Probes:  []probe{},
-		Sets:    []string{},
+		Sets:    []string{"net_debug"},
 		Params: []external.ArgMeta{
 			{Type: "external.PktMeta", Name: "PacketMetaData"},
 			{Type: "external.DnsQueryData", Name: "dnsQuestion"},

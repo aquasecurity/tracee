@@ -9,8 +9,8 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-func dnsRequestPrototcolsHandler(buffer *bytes.Buffer, meta EventMeta, ctx processContext.ProcessCtx, eventName string) (external.Event, PacketMeta) {
-	evt, packet := netPacketProtocolHandler(buffer, meta, ctx, eventName)
+func dnsRequestPrototcolsHandler(buffer *bytes.Buffer, meta EventMeta, ctx processContext.ProcessCtx, eventName string, bootTime uint64) (external.Event, PacketMeta) {
+	evt, packet := netPacketProtocolHandler(buffer, meta, ctx, eventName, bootTime)
 	appendDnsRequestArgs(&evt, buffer)
 	return evt, packet
 }
@@ -42,7 +42,7 @@ func appendDnsRequestArgs(event *external.Event, buffer *bytes.Buffer) {
 	requests := parseDnsRequest(dnsLayer.Questions)
 	for _, request := range requests {
 		event.Args = append(event.Args, external.Argument{
-			ArgMeta: external.ArgMeta{"dnsQuestion", "network_protocols.DnsQueryData"},
+			ArgMeta: external.ArgMeta{"dnsQuestion", "external_network.DnsQueryData"},
 			Value:   request,
 		})
 		event.ArgsNum++
