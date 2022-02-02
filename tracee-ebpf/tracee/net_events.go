@@ -2,6 +2,7 @@ package tracee
 
 import (
 	"bytes"
+	gocontext "context"
 	"encoding/binary"
 	"fmt"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/network_protocols"
@@ -9,7 +10,7 @@ import (
 	"time"
 )
 
-func (t *Tracee) processNetEvents() {
+func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 	// Todo: split pcap files by context (tid + comm)
 	// Todo: add stats for network packets (in epilog)
 	for {
@@ -34,8 +35,6 @@ func (t *Tracee) processNetEvents() {
 			}
 			eventName := eventData.Name
 			evt, ShouldCapture, cap := network_protocols.ProcessNetEvent(dataBuff, evtMeta, eventName, processContext, t.bootTime)
-			t.config.ChanEvents <- evt
-			t.stats.eventCounter.Increment()
 
 			if ShouldCapture {
 				interfaceIndex, ok := t.ngIfacesIndex[int(cap.InterfaceIndex)]
@@ -45,6 +44,12 @@ func (t *Tracee) processNetEvents() {
 						continue
 					}
 				}
+			}
+			select {
+			case t.config.ChanEvents <- evt:
+				t.stats.eventCounter.Increment()
+			case <-ctx.Done():
+				return
 			}
 
 		case lost := <-t.lostNetChannel:
