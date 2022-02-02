@@ -105,7 +105,7 @@ func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *external.Even
 			// Todo: The monotonic clock doesn't take into account system sleep time.
 			// Starting from kernel 5.7, we can get the timestamp relative to the system boot time instead which is preferable.
 			if t.config.Output.RelativeTime {
-				// To get the monotonic time since tracee was started, we have to substract the start time from the timestamp.
+				// To get the monotonic time since tracee was started, we have to subtract the start time from the timestamp.
 				ctx.Ts -= t.startTime
 			} else {
 				// To get the current ("wall") time, we add the boot time into it.

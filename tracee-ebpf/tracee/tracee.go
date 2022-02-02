@@ -373,7 +373,7 @@ func New(cfg Config) (*Tracee, error) {
 		t.pcapWriter = pcapWriter
 	}
 
-	// Get refernce to stack trace addresses map
+	// Get reference to stack trace addresses map
 	StackAddressesMap, err := t.bpfModule.GetMap("stack_addresses")
 	if err != nil {
 		t.Close()
