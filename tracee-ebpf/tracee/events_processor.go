@@ -67,7 +67,7 @@ func (t *Tracee) shouldProcessEvent(ctx *context, args []external.Argument) bool
 			if !ok {
 				continue
 			}
-			// TODO: use type assertion instead of string convertion
+			// TODO: use type assertion instead of string conversion
 			argValStr := fmt.Sprint(argVal)
 			match := false
 			for _, f := range filter.Equal {

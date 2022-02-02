@@ -40,7 +40,7 @@ LOOP:
 			err = dec.Decode(&event)
 			if err != nil {
 				if err == io.EOF {
-					// ignore EOF becasue we assume events can keep streaming into the file
+					// ignore EOF because we assume events can keep streaming into the file
 					time.Sleep(time.Millisecond * 500)
 					continue
 				} else {
