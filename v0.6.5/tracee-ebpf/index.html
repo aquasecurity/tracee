@@ -12,11 +12,8 @@
       
         <link rel="canonical" href="https://aquasecurity.github.io/tracee/v0.6.5/tracee-ebpf/">
       
-      
-        
-      
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.0.5+insiders-4.3.0">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.9">
     
     
       
@@ -24,13 +21,11 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.e65715bb.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.2b4465f4.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.fe799546.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.e6a45f82.min.css">
         
-      
-      <link rel="preload" as="style" href="../assets/stylesheets/vendor/mermaid.733f213f.min.css">
       
     
     
@@ -43,11 +38,10 @@
       
     
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
-    
     
     
   </head>
@@ -78,7 +72,9 @@
     </div>
     
       <div data-md-component="outdated" hidden>
-        
+        <aside class="md-banner md-banner--warning">
+          
+        </aside>
       </div>
     
     
@@ -237,12 +233,88 @@
       
       
         <label class="md-nav__link" for="__nav_2">
+          Building
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Building" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Building
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../building/environment/" class="md-nav__link">
+        Building Environment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../building/containers/" class="md-nav__link">
+        Building Containers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../building/nocore-ebpf/" class="md-nav__link">
+        Building non CO-RE
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
           Installation
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="Installation" data-md-level="1">
-        <label class="md-nav__title" for="__nav_2">
+        <label class="md-nav__title" for="__nav_3">
           <span class="md-nav__icon md-icon"></span>
           Installation
         </label>
@@ -268,21 +340,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../install/ebpf-compilation/" class="md-nav__link">
-        eBPF Compilation
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../install/headers/" class="md-nav__link">
+      <a href="../install/headers.md" class="md-nav__link">
         Linux Headers
       </a>
     </li>
@@ -298,6 +356,20 @@
     <li class="md-nav__item">
       <a href="../install/kubernetes/" class="md-nav__link">
         Kubernetes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/docker-mac/" class="md-nav__link">
+        Docker for Mac
       </a>
     </li>
   
@@ -413,18 +485,18 @@
     <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_9" type="checkbox" id="__nav_9" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_10" type="checkbox" id="__nav_10" checked>
       
       
       
       
-        <label class="md-nav__link" for="__nav_9">
+        <label class="md-nav__link" for="__nav_10">
           Tracing
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="Tracing" data-md-level="1">
-        <label class="md-nav__title" for="__nav_9">
+        <label class="md-nav__title" for="__nav_10">
           <span class="md-nav__icon md-icon"></span>
           Tracing
         </label>
@@ -607,13 +679,12 @@
               
                 
 
-
-<h1 id="tracing">Tracing</h1>
+<h1 id="tracing">Tracing<a class="headerlink" href="#tracing" title="Permanent link">&para;</a></h1>
 <p>In some cases, you might want to leverage Tracee's eBPF event collection capabilities directly, without involving the detection engine. This might be useful for debugging/troubleshooting/analysis/research/education. In this case you can use Tracee's eBPF collector component, which will start dumping raw data directly into standard output.</p>
 <p><a href="https://youtu.be/WTqE2ae257o">Watch a quick video demo of Tracee's eBPF tracing capabilities</a></p>
-<h2 id="quickstart">Quickstart</h2>
+<h2 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h2>
 <p>Before you proceed, make sure you follow the <a href="../install/prerequisites/">minimum requirements for running Tracee</a>.</p>
-<div class="highlight"><pre><span></span><code>docker run --name tracee --rm --pid<span class="o">=</span>host --cgroupns<span class="o">=</span>host --privileged -it aquasec/tracee:0.6.5 trace
+<div class="highlight"><pre><span></span><code>docker run --name tracee --rm --pid<span class="o">=</span>host --cgroupns<span class="o">=</span>host --privileged -it aquasec/tracee:racee trace
 </code></pre></div>
 <p>Here we are running the same <code>aquasec/tracee</code> container, but with the <code>trace</code> sub-command, which will start just a raw trace (Tracee-eBPF), without the detection engine (Tracee-Rules). Here's a sample output of running with no additional arguments:</p>
 <div class="highlight"><pre><span></span><code>TIME(s)        UID    COMM             PID     TID     RET             EVENT                ARGS
@@ -634,22 +705,18 @@
 <li>EVENT - identifies the event (e.g. syscall name)</li>
 <li>ARGS - list of arguments given to the function</li>
 </ol>
-<h2 id="getting-tracee-ebpf">Getting Tracee-eBPF</h2>
+<h2 id="getting-tracee-ebpf">Getting Tracee-eBPF<a class="headerlink" href="#getting-tracee-ebpf" title="Permanent link">&para;</a></h2>
 <p>You can obtain Tracee-eBPF in any of the following ways:</p>
 <ol>
 <li>Download from the <a href="https://github.com/aquasecurity/tracee/releases">GitHub Releases</a> (<code>tracee.tar.gz</code>).</li>
-<li>Use the docker image from Docker Hub: <code>aquasec/tracee</code> with the <code>trace</code> sub-command.</li>
+<li>Use the docker image from Docker Hub: <code>aquasec/tracee:racee</code> with the <code>trace</code> sub-command.</li>
 <li>Build the executable from source using <code>make build</code>. For that you will need additional development tooling.</li>
 <li>Build the executable from source in a Docker container which includes all development tooling, using <code>make build DOCKER=1</code>.</li>
 </ol>
 <p>All of the other setup options and considerations listed under Tracee's Installation section applies to Tracee-eBPF as well.</p>
 
-
-
-
               
             </article>
-            
           </div>
         </div>
         
@@ -707,11 +774,10 @@
     <div class="md-dialog" data-md-component="dialog">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
+    <script id="__config" type="application/json">{"base": "..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.22074ed6.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
     
-    <script id="__config" type="application/json">{"base": "..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.51301f06.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
     
-    
-      <script src="../assets/javascripts/bundle.1f8df98b.min.js"></script>
+      <script src="../assets/javascripts/bundle.960e086b.min.js"></script>
       
     
   </body>

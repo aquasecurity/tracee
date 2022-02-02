@@ -12,11 +12,8 @@
       
         <link rel="canonical" href="https://aquasecurity.github.io/tracee/v0.6.5/tracee-ebpf/trace-options/">
       
-      
-        
-      
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.0.5+insiders-4.3.0">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.9">
     
     
       
@@ -24,13 +21,11 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.e65715bb.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.2b4465f4.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.fe799546.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.e6a45f82.min.css">
         
-      
-      <link rel="preload" as="style" href="../../assets/stylesheets/vendor/mermaid.733f213f.min.css">
       
     
     
@@ -43,11 +38,10 @@
       
     
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
-    
     
     
   </head>
@@ -78,7 +72,9 @@
     </div>
     
       <div data-md-component="outdated" hidden>
-        
+        <aside class="md-banner md-banner--warning">
+          
+        </aside>
       </div>
     
     
@@ -237,12 +233,88 @@
       
       
         <label class="md-nav__link" for="__nav_2">
+          Building
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Building" data-md-level="1">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Building
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../building/environment/" class="md-nav__link">
+        Building Environment
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../building/containers/" class="md-nav__link">
+        Building Containers
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../building/nocore-ebpf/" class="md-nav__link">
+        Building non CO-RE
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3">
           Installation
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="Installation" data-md-level="1">
-        <label class="md-nav__title" for="__nav_2">
+        <label class="md-nav__title" for="__nav_3">
           <span class="md-nav__icon md-icon"></span>
           Installation
         </label>
@@ -268,21 +340,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/ebpf-compilation/" class="md-nav__link">
-        eBPF Compilation
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../install/headers/" class="md-nav__link">
+      <a href="../../install/headers.md" class="md-nav__link">
         Linux Headers
       </a>
     </li>
@@ -298,6 +356,20 @@
     <li class="md-nav__item">
       <a href="../../install/kubernetes/" class="md-nav__link">
         Kubernetes
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../install/docker-mac/" class="md-nav__link">
+        Docker for Mac
       </a>
     </li>
   
@@ -413,18 +485,18 @@
     <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_9" type="checkbox" id="__nav_9" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_10" type="checkbox" id="__nav_10" checked>
       
       
       
       
-        <label class="md-nav__link" for="__nav_9">
+        <label class="md-nav__link" for="__nav_10">
           Tracing
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <nav class="md-nav" aria-label="Tracing" data-md-level="1">
-        <label class="md-nav__title" for="__nav_9">
+        <label class="md-nav__title" for="__nav_10">
           <span class="md-nav__icon md-icon"></span>
           Tracing
         </label>
@@ -607,8 +679,7 @@
               
                 
 
-
-<h1 id="trace-options">Trace Options</h1>
+<h1 id="trace-options">Trace Options<a class="headerlink" href="#trace-options" title="Permanent link">&para;</a></h1>
 <p>Trace output can easily become unwieldy when tracing all of the events from all of the system. Luckily, Tracee has a powerful mechanism to accurately trace just the information that is relevant to you, using the <code>--trace</code> flag.
 Using the <code>--trace</code> you define expressions that tells Tracee-eBPF what you are interested in by means of event metadata, and process metadata. Only events that match this criteria will be traced.</p>
 <p>You can filter by most of the visible fields on a Tracee event. For example to trace only events related to user ID 1000, use <code>--trace uid=1000</code>.<br />
@@ -618,7 +689,7 @@ Tracee-eBPF lets you easily trace events that originate in containers using <cod
 <p>Event metadata can be used in trace expression as well. For example, to trace only <code>openat</code> syscalls, use <code>--trace event:openat</code>. But you can also filter on a specific argument of the event, e.g <code>--trace openat.pathname=/bin/ls</code> which will show only <code>openat</code> syscalls that operate on the file <code>/bin/ls</code>.</p>
 <p>A useful trace mode is the <code>--trace follow</code> which, if specified, will trace not only processes that match the given trace expressions, but also their child processes.
 For example, the following will trace all the events that originate from zsh shell, including all of the processes that it will spawn: <code>--trace comm=zsh --trace follow</code>.</p>
-<h2 id="cli-options">CLI Options</h2>
+<h2 id="cli-options">CLI Options<a class="headerlink" href="#cli-options" title="Permanent link">&para;</a></h2>
 <p>Only events that match all trace expressions will be traced (trace flags are ANDed).
 The following types of expressions are supported:</p>
 <p>Numerical expressions which compare numbers and allow the following operators: '=', '!=', '&lt;', '&gt;'.
@@ -638,7 +709,7 @@ Multiple values are ORed if used with equals operator '=', but are ANDed if used
 <p>The field 'set' selects a set of events to trace according to predefined sets, which can be listed by using the 'list' flag.</p>
 <p>The special 'follow' expression declares that not only processes that match the criteria will be traced, but also their descendants.</p>
 <p>Note: some of the above operators have special meanings in different shells. To 'escape' those operators, please use single quotes, e.g.: 'uid&gt;0'</p>
-<h2 id="examples">Examples</h2>
+<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
 <p>only trace events from new processes</p>
 <div class="highlight"><pre><span></span><code>--trace pid=new
 </code></pre></div>
@@ -712,12 +783,8 @@ Multiple values are ORed if used with equals operator '=', but are ANDed if used
 <div class="highlight"><pre><span></span><code>--trace comm=bash --trace follow
 </code></pre></div>
 
-
-
-
               
             </article>
-            
           </div>
         </div>
         
@@ -775,11 +842,10 @@ Multiple values are ORed if used with equals operator '=', but are ANDed if used
     <div class="md-dialog" data-md-component="dialog">
       <div class="md-dialog__inner md-typeset"></div>
     </div>
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.22074ed6.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
     
-    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.51301f06.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
     
-    
-      <script src="../../assets/javascripts/bundle.1f8df98b.min.js"></script>
+      <script src="../../assets/javascripts/bundle.960e086b.min.js"></script>
       
     
   </body>
