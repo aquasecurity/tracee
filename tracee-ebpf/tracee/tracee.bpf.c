@@ -373,7 +373,6 @@ Copyright (C) Aqua Security inc.
 typedef struct event_context {
     u64 ts;                        // Timestamp
     u64 cgroup_id;
-    u64 processor_id;              // The ID of the processor which processed the event
     u32 pid;                       // PID as in the userspace term
     u32 tid;                       // TID as in the userspace term
     u32 ppid;                      // Parent PID as in the userspace term
@@ -388,6 +387,7 @@ typedef struct event_context {
     u32 eventid;
     s64 retval;
     u32 stack_id;
+    u16 processor_id;              // The ID of the processor which processed the event
     u8 argnum;
 } context_t;
 
@@ -1166,7 +1166,7 @@ static __always_inline int init_context(context_t *context, struct task_struct *
     // Clean Stack Trace ID
     context->stack_id = 0;
 
-    context->processor_id = bpf_get_smp_processor_id();
+    context->processor_id = (u16)bpf_get_smp_processor_id();
 
     return 0;
 }

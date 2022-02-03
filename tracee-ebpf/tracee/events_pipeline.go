@@ -23,7 +23,6 @@ const maxStackDepth int = 20
 type context struct {
 	Ts          uint64
 	CgroupID    uint64
-	ProcessorId uint64
 	Pid         uint32
 	Tid         uint32
 	Ppid        uint32
@@ -38,8 +37,9 @@ type context struct {
 	EventID     int32
 	Retval      int64
 	StackID     uint32
+	ProcessorId uint16
 	Argnum      uint8
-	_           [3]byte //padding
+	_           [1]byte //padding
 }
 
 // handleEvents is a high-level function that starts all operations related to events processing
