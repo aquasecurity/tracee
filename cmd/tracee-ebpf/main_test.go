@@ -644,10 +644,7 @@ func TestPrepareFilter(t *testing.T) {
 					Greater:  tracee.GreaterNotSetUint,
 					Is32Bit:  true,
 				},
-				NewPidFilter: &tracee.BoolFilter{
-					Value:   true,
-					Enabled: true,
-				},
+				NewPidFilter: &tracee.BoolFilter{},
 				MntNSFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
@@ -700,10 +697,7 @@ func TestPrepareFilter(t *testing.T) {
 					Greater:  tracee.GreaterNotSetUint,
 					Is32Bit:  true,
 				},
-				NewPidFilter: &tracee.BoolFilter{
-					Value:   true,
-					Enabled: true,
-				},
+				NewPidFilter: &tracee.BoolFilter{},
 				MntNSFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
