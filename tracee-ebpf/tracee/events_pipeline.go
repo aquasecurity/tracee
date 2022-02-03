@@ -135,7 +135,7 @@ func (t *Tracee) processEvents(ctx gocontext.Context, in <-chan *external.Event)
 				continue
 			}
 
-			if (t.config.Filter.ContFilter.Enabled || t.config.Filter.NewContFilter.Enabled) && event.ContainerID == "" {
+			if (t.config.Filter.ContFilter.Value || t.config.Filter.NewContFilter.Enabled) && event.ContainerID == "" {
 				// Don't trace false container positives -
 				// a container filter is set by the user, but this event wasn't originated in a container.
 				// Although kernel filters shouldn't submit such events, we do this check to be on the safe side.

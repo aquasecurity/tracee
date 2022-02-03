@@ -172,8 +172,6 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 		}
 
 		if strings.HasPrefix("container", f) || (strings.HasPrefix("!container", f) && len(f) > 1) {
-			filter.NewPidFilter.Enabled = true
-			filter.NewPidFilter.Value = true
 			err := filter.ContFilter.Parse(f)
 			if err != nil {
 				return tracee.Filter{}, err
@@ -183,8 +181,6 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 
 		if strings.HasPrefix("container", filterName) {
 			if operatorAndValues == "=new" {
-				filter.NewPidFilter.Enabled = true
-				filter.NewPidFilter.Value = true
 				filter.NewContFilter.Enabled = true
 				filter.NewContFilter.Value = true
 				continue
@@ -192,8 +188,6 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 			if operatorAndValues == "!=new" {
 				filter.ContFilter.Enabled = true
 				filter.ContFilter.Value = true
-				filter.NewPidFilter.Enabled = true
-				filter.NewPidFilter.Value = true
 				filter.NewContFilter.Enabled = true
 				filter.NewContFilter.Value = false
 				continue
