@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/processContext"
 	"io"
 	"math"
 	"net"
@@ -30,7 +31,6 @@ import (
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/internal/bufferdecoder"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
-	"github.com/aquasecurity/tracee/pkg/processContext"
 	lru "github.com/hashicorp/golang-lru"
 	"golang.org/x/sys/unix"
 )

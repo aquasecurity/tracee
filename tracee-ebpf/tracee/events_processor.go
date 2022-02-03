@@ -2,6 +2,7 @@ package tracee
 
 import (
 	"fmt"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/processContext"
 	"io"
 	"os"
 	"path/filepath"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/external"
-	"github.com/aquasecurity/tracee/pkg/processContext"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/internal/bufferdecoder"
 )
 

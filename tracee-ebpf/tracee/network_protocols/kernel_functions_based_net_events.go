@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"github.com/aquasecurity/tracee/pkg/external"
-	"github.com/aquasecurity/tracee/pkg/processContext"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/processContext"
 )
 
 // FunctionBasedNetEvents are net events originated from kernel functions (kprobes) rather than from the tc (tc_probes).
