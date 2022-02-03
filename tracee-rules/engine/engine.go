@@ -22,7 +22,7 @@ const ALL_EVENT_TYPES = "*"
 // Config defines the engine's configurable values
 type Config struct {
 	ParsedEvents        bool
-	SignatureBufferSize int
+	SignatureBufferSize uint
 }
 
 // Engine is a rule-engine that can process events coming from a set of input sources against a set of loaded signatures, and report the signatures' findings

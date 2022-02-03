@@ -111,7 +111,7 @@ func main() {
 
 			config := engine.Config{
 				ParsedEvents:        c.Bool("rego-enable-parsed-events"),
-				SignatureBufferSize: c.Int(signatureBufferFlag),
+				SignatureBufferSize: c.Uint(signatureBufferFlag),
 			}
 			e, err := engine.NewEngine(sigs, inputs, output, os.Stderr, config)
 			if err != nil {
@@ -183,7 +183,7 @@ func main() {
 				Name:  "list-events",
 				Usage: "print a list of events that currently loaded signatures require",
 			},
-			&cli.IntFlag{
+			&cli.UintFlag{
 				Name:  signatureBufferFlag,
 				Usage: "size of the event channel's buffer consumed by signatures",
 				Value: 1000,
