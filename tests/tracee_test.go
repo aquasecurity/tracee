@@ -115,6 +115,14 @@ func TestTraceeSignatures(t *testing.T) {
 			}
 			defer traceeContainer.Terminate(ctx)
 
+			err = traceeContainer.StartLogProducer(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer traceeContainer.StopLogProducer()
+
+			traceeContainer.FollowOutput(errorLogConsumer(t))
+
 			traceeTesterContainer, err := runTraceeTesterContainer(ctx, sigID)
 			if err != nil {
 				t.Fatal(err)
@@ -140,4 +148,19 @@ func (tc traceeContainer) assertLogs(t *testing.T, ctx context.Context, sigID st
 	}
 
 	assert.Contains(t, string(log), fmt.Sprint("Signature ID: ", sigID))
+}
+
+type LogConsumerFunc func(log testcontainers.Log)
+
+func (f LogConsumerFunc) Accept(log testcontainers.Log) {
+	f(log)
+}
+
+// errorLogConsumer returns testcontainers.LogConsumer that prints container
+// logs to the error log. Logs will be printed only if the test fails or the
+// -test.v flag is set.
+func errorLogConsumer(t *testing.T) LogConsumerFunc {
+	return func(log testcontainers.Log) {
+		t.Logf("%s: %s", log.LogType, string(log.Content))
+	}
 }
