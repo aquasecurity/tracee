@@ -24,9 +24,6 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           opa-version: ${{ env.OPA_VERSION }}
-      - name: Buld tracee-tester image
-        run: |
-          make -f tests/Makefile docker-build-tracee-tester
       - name: Build tracee-nocore
         run: |
           make -f builder/Makefile.tracee-container build-alpine-tracee-nocore
