@@ -5,78 +5,15 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"net/http"
-	"net/http/httptest"
 	"os"
-	"os/exec"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
-
-const (
-	waitTime                   = time.Second * 3
-	traceeDockerRunWithWebhook = `run --detach --name tracee --rm --pid=host --net=host --privileged -v /tmp/tracee:/tmp/tracee -t aquasec/tracee:latest --webhook=%s --webhook-template=%s --webhook-content-type=application/json`
-)
-
-func launchTracee(t *testing.T, traceeCmd string) string {
-	t.Helper()
-
-	t.Log("Launching Tracee container...")
-	b, err := exec.Command("docker", strings.Split(traceeCmd, " ")...).CombinedOutput()
-	require.NoError(t, err)
-	containerID := strings.TrimSpace(string(b))
-	t.Log("Tracee container ID: ", containerID)
-	return containerID
-}
-
-func runCommand(t *testing.T, cmd string, args ...string) string {
-	t.Helper()
-
-	t.Log("Running", cmd, args, "...")
-	output, err := exec.Command(cmd, args...).CombinedOutput()
-	assert.NoError(t, err)
-	return string(output)
-}
-
-// TestWebhookIntegration tests the same workflow of running tracee
-// and triggering a signature but also asserts the results of sending
-// the payload to the HTTP webhook interface
-func TestWebhookIntegration(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		t.Log("Asserting Logs...")
-		b, _ := ioutil.ReadAll(r.Body)
-		assert.Contains(t, string(b), `"Properties":{"MITRE ATT\u0026CK":"Defense Evasion: Execution Guardrails","Severity":3}`)
-		assert.Equal(t, "application/json", r.Header["Content-Type"][0])
-	}))
-	defer ts.Close()
-
-	containerID := launchTracee(t, fmt.Sprintf(traceeDockerRunWithWebhook, ts.URL, "/tracee/templates/rawjson.tmpl"))
-
-	// wait for tracee to get ready
-	time.Sleep(waitTime)
-
-	// do an `strace ls`
-	_ = runCommand(t, "strace", "ls")
-
-	// wait for tracee to detect
-	time.Sleep(waitTime)
-
-	// get tracee container logs
-	containerLogs := runCommand(t, "docker", "logs", containerID)
-
-	// assert results
-	assert.NotContains(t, containerLogs, `error sending to webhook`)
-
-	// kill the container
-	t.Log("Terminating the Tracee container...")
-	assert.NoError(t, exec.Command("docker", "kill", containerID).Run())
-}
 
 type traceeContainer struct {
 	testcontainers.Container
@@ -155,8 +92,8 @@ func parseSignatureIDs() []string {
 // full-blown end-to-end test run on CRON schedule.
 //
 // Passing tracee container image reference as input to the TestTraceeSignatures
-// allows us to test different flavors of tracee container image, i.e. CO:RE
-// non CO:RE, and CO:RE with BTFHub support.
+// allows us to test different flavors of tracee container image, i.e. CO-RE,
+// non CO-RE, and CO-RE with custom BTFHub support.
 //
 //     go test -v -run "TestTraceeSignatures" ./tests/tracee_test.go \
 //            -tracee-image-ref "tracee-nocore:latest" \
