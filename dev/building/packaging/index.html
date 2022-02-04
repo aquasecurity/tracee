@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/tracee-ebpf/override-os-needed-files/">
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/building/packaging/">
       
       
         
@@ -20,7 +20,7 @@
     
     
       
-        <title>Overriding OS needed files - Tracee</title>
+        <title>Creating Tracee Linux packages - Tracee</title>
       
     
     
@@ -110,7 +110,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#overriding-os-needed-files" class="md-skip">
+        <a href="#creating-tracee-linux-packages" class="md-skip">
           Skip to content
         </a>
       
@@ -146,7 +146,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Overriding OS needed files
+              Creating Tracee Linux packages
             
           </span>
         </div>
@@ -308,7 +308,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../building/environment/" class="md-nav__link">
+      <a href="../environment/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -327,7 +327,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../building/containers/" class="md-nav__link">
+      <a href="../containers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -346,7 +346,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../building/nocore-ebpf/" class="md-nav__link">
+      <a href="../nocore-ebpf/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -647,7 +647,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../" class="md-nav__link">
+      <a href="../../tracee-ebpf/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -666,7 +666,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../output/" class="md-nav__link">
+      <a href="../../tracee-ebpf/output/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -685,7 +685,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../trace-options/" class="md-nav__link">
+      <a href="../../tracee-ebpf/trace-options/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -704,7 +704,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../capture/" class="md-nav__link">
+      <a href="../../tracee-ebpf/capture/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -723,7 +723,7 @@
   
   
     <li class="md-nav__item">
-      <a href="." class="md-nav__link">
+      <a href="../../tracee-ebpf/override-os-needed-files" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -769,23 +769,29 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#etcos-release" class="md-nav__link">
-    /etc/os-release
+  <a href="#ubuntu-linux" class="md-nav__link">
+    Ubuntu Linux
+  </a>
+  
+    <nav class="md-nav" aria-label="Ubuntu Linux">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#building" class="md-nav__link">
+    Building
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#procconfiggz-or-bootconfig-uname-r" class="md-nav__link">
-    /proc/config.gz OR /boot/config-$(uname -r)
+        
+          <li class="md-nav__item">
+  <a href="#versioning" class="md-nav__link">
+    Versioning
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#attention-in-case-kconfig-file-is-not-found" class="md-nav__link">
-    ATTENTION: in case kconfig file is NOT found
-  </a>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -803,145 +809,61 @@
                 
 
 
-<h1 id="overriding-os-needed-files">Overriding OS needed files<a class="headerlink" href="#overriding-os-needed-files" title="Permanent link">&para;</a></h1>
-<p>Tracee supports eBPF CO-RE (Compile Once - Run Everywhere) technology and,
-because of that, it might need some information about the Linux OS it is
-running at. Tracee, through libbpfgo, must have access to /etc/os-release file
-AND either /boot/config-$(uname-r) OR /proc/config.gz files (KernelConfig API
-at helpers/kernel_config).</p>
+<h1 id="creating-tracee-linux-packages">Creating Tracee Linux packages<a class="headerlink" href="#creating-tracee-linux-packages" title="Permanent link">&para;</a></h1>
 <blockquote>
-<p>Note that, despite having this need, tracee will try to execute as CO-RE eBPF
-program in any environment it is executed.</p>
+<p>These instructions are meant to describe how to build Linux distributions
+packages If you would like to have a local building building and execution
+environment, <a href="../environment/">read this</a> instead.</p>
 </blockquote>
-<h2 id="etcos-release">/etc/os-release<a class="headerlink" href="#etcos-release" title="Permanent link">&para;</a></h2>
-<p>Tracee will show you collected information about the running Linux OS with the
-<code>--debug</code> argument:</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf --debug --trace uid=1000 --trace pid=new --trace event=execve
-OSInfo: VERSION_ID: &quot;21.04&quot;
-OSInfo: VERSION_CODENAME: hirsute
-OSInfo: KERNEL_RELEASE: 5.11.0-31-generic
-OSInfo: VERSION: &quot;21.04 (Hirsute Hippo)&quot;
-OSInfo: ID: ubuntu
-OSInfo: ID_LIKE: debian
-OSInfo: PRETTY_NAME: &quot;Ubuntu 21.04&quot;
-BTF: bpfenv = false, btfenv = false, vmlinux = true
-BPF: using embedded BPF object
-unpacked CO:RE bpf object file into memory
-TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
-02:34:43:212623  1000   bash             2787679 2787679 0                execve               pathname: /bin/true, argv: [/bin/true]
+<h2 id="ubuntu-linux">Ubuntu Linux<a class="headerlink" href="#ubuntu-linux" title="Permanent link">&para;</a></h2>
+<p>Tracee has a directory "packaging" with a skeleton of the needed "debian/"
+directory called "ubuntu". This skeleton is used by "packaging/ubuntu-pkgs.sh"
+script and this script should run from an Ubuntu Linux box.</p>
+<p>It is not needed that you have an Ubuntu box to generate the Ubuntu <code>.deb</code>
+packages. Instead, you may use the <code>builder/Makefile.packaging</code> make script to
+build it for you (by using Docker images).</p>
+<h3 id="building">Building<a class="headerlink" href="#building" title="Permanent link">&para;</a></h3>
+<p>With this make script, you're able to build binary <code>.deb</code> packages for:</p>
+<ul>
+<li>Bionic (LTS)</li>
+</ul>
+<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.packaging ubuntu-bin-bionic
 </code></pre></div>
-<p>If, because you're running in a distribution that does not have
-/etc/os-release, or because you're running inside a container that does not
-support it, you may face:</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf --debug --trace uid=1000 --trace pid=new --trace event=execve
-OSInfo: KERNEL_RELEASE: 5.14.0-rc5+
-OSInfo: warning: os-release file could not be found
-(open /etc/os-release: no such file or directory)
-BTF: bpfenv = false, btfenv = false, vmlinux = true
-BPF: using embedded BPF object
-unpacked CO:RE bpf object file into memory
-TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
-05:37:02:831787  1000   bash             13940   13940   0                execve               pathname: /bin/true, argv: [/bin/true]
+<ul>
+<li>Focal (LTS)</li>
+</ul>
+<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.packaging ubuntu-bin-focal
+</code></pre></div>
+<ul>
+<li>Impish (Current)</li>
+</ul>
+<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.packaging ubuntu-bin-impish
+</code></pre></div>
+<ul>
+<li>Jammy (Devel)</li>
+</ul>
+<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.packaging ubuntu-bin-jammy
+</code></pre></div>
+<h3 id="versioning">Versioning<a class="headerlink" href="#versioning" title="Permanent link">&para;</a></h3>
+<p>The ubuntu <code>.deb</code> packages have the following versioning format:</p>
+<p><code>tracee-{ebpf,rules}_version~ubuntuver~buildate-lastcommit_arch.deb</code></p>
+<p>Examples:</p>
+<div class="highlight"><pre><span></span><code># bionic
+tracee-ebpf_0.6.5-111~18.04~2201281255-3a6874a_amd64.deb
+tracee-rules_0.6.5-111~18.04~2201281255-3a6874a_amd64.deb
 
-End of events stream
-Stats: {EventCount:1 ErrorCount:0 LostEvCount:0 LostWrCount:0 LostNtCount:0}
+# focal
+tracee-ebpf_0.6.5-111~20.04~2201281302-3a6874a_amd64.deb
+tracee-rules_0.6.5-111~20.04~2201281302-3a6874a_amd64.deb
+
+# impish
+tracee-ebpf_0.6.5-111~21.10~2201281314-3a6874a_amd64.deb
+tracee-rules_0.6.5-111~21.10~2201281314-3a6874a_amd64.deb
 </code></pre></div>
-<p>But do note that tracee-ebpf shall continue working (informing only the
-KERNEL_RELEASE OSInfo option).</p>
-<p>If you need to override the underlaying Linux OS information, because you're
-running inside a container that already has /etc/os-release file, for example,
-you may create another os-release file and inform tracee-ebpf by using
-LIBBPFGO's environment variable <code>LIBBPFGO_OSRELEASE_FILE</code>:</p>
-<div class="highlight"><pre><span></span><code>$ sudo LIBBPFGO_OSRELEASE_FILE=/etc/os-release.orig ./dist/tracee-ebpf --debug --trace uid=1000 --trace pid=new --trace event=execve
-OSInfo: VERSION_CODENAME: impish
-OSInfo: ID: ubuntu
-OSInfo: ID_LIKE: debian
-OSInfo: KERNEL_RELEASE: 5.14.0-rc5+
-OSInfo: PRETTY_NAME: &quot;Ubuntu Impish Indri (development branch)&quot;
-OSInfo: VERSION_ID: &quot;21.10&quot;
-OSInfo: VERSION: &quot;21.10 (Impish Indri)&quot;
-BTF: bpfenv = false, btfenv = false, vmlinux = true
-BPF: using embedded BPF object
-unpacked CO:RE bpf object file into memory
-TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
-05:39:24:100006  1000   bash             14014   14014   0                execve               pathname: /bin/true, argv: [/bin/true]
-</code></pre></div>
-<blockquote>
-<p>If you're running tracee inside a docker container, you can simply bind mount
-/etc/os-release from the host as /etc/os-release-host into the guest and
-inform that through the <code>LIBBPFGO_OSRELEASE_FILE</code> environment variable.</p>
-</blockquote>
-<h2 id="procconfiggz-or-bootconfig-uname-r">/proc/config.gz OR /boot/config-$(uname -r)<a class="headerlink" href="#procconfiggz-or-bootconfig-uname-r" title="Permanent link">&para;</a></h2>
-<p>Tracee needs access to kconfig file in order to:</p>
-<ol>
-<li>Check if the kernel of your running environment supports needed eBPF features</li>
-<li>Provide kconfig variables to its eBPF counter-part (so eBPF program take decisions)</li>
-</ol>
-<p>Tracee should NOT fail when it cannot find a kconfig file:</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf --debug --trace uid=1000 --trace pid=new --trace event=execve
-KConfig: warning: could not check enabled kconfig features
-(could not read /boot/config-5.14.0-rc5+: stat /boot/config-5.14.0-rc5+: no such file or directory)
-OSInfo: KERNEL_RELEASE: 5.14.0-rc5+
-OSInfo: PRETTY_NAME: &quot;Ubuntu Impish Indri (development branch)&quot;
-OSInfo: VERSION_ID: &quot;21.10&quot;
-OSInfo: VERSION: &quot;21.10 (Impish Indri)&quot;
-OSInfo: VERSION_CODENAME: impish
-OSInfo: ID: ubuntu
-OSInfo: ID_LIKE: debian
-BTF: bpfenv = false, btfenv = false, vmlinux = true
-BPF: using embedded BPF object
-unpacked CO:RE bpf object file into memory
-TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
-05:44:18:877838  1000   bash             14089   14089   0                execve               pathname: /bin/true, argv: [/bin/true]
-</code></pre></div>
-<p>but do have in mind it is assuming some things from the host environment and
-its behavior might have inconsistencies.</p>
-<p>If you are running tracee in an environment that does not have a kconfig file
-(nor /proc/config.gz support), it is recommended that you provide the host
-kconfig file location to tracee through the <code>LIBBPFGO_KCONFIG_FILE</code> environment
-variable:</p>
-<div class="highlight"><pre><span></span><code>$ sudo LIBBPFGO_KCONFIG_FILE=/boot/config-5.14.0-rc5+.orig ./dist/tracee-ebpf --debug --trace uid=1000 --trace pid=new --trace event=execve
-OSInfo: VERSION_CODENAME: impish
-OSInfo: ID: ubuntu
-OSInfo: ID_LIKE: debian
-OSInfo: KERNEL_RELEASE: 5.14.0-rc5+
-OSInfo: PRETTY_NAME: &quot;Ubuntu Impish Indri (development branch)&quot;
-OSInfo: VERSION_ID: &quot;21.10&quot;
-OSInfo: VERSION: &quot;21.10 (Impish Indri)&quot;
-BTF: bpfenv = false, btfenv = false, vmlinux = true
-BPF: using embedded BPF object
-unpacked CO:RE bpf object file into memory
-TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
-05:47:45:245869  1000   bash             14165   14165   0                execve               pathname: /bin/true, argv: [/bin/true]
-</code></pre></div>
-<blockquote>
-<p>If you're running tracee inside a docker container, you can simply bind mount
-/boot/config-$(uname -r) from the host as /boot/config-$(uname -r) into the
-guest and inform that through the <code>LIBBPFGO_OSRELEASE_FILE</code> environment
-variable.</p>
-</blockquote>
-<h2 id="attention-in-case-kconfig-file-is-not-found">ATTENTION: in case kconfig file is NOT found<a class="headerlink" href="#attention-in-case-kconfig-file-is-not-found" title="Permanent link">&para;</a></h2>
-<p>In case no kconfig file is found, tracee takes some decisions blindly and it
-may give you unexpected errors. Example:</p>
-<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf --debug --trace uid=1000 --trace pid=new --trace event=execve
-KConfig: warning: could not check enabled kconfig features
-(could not read /boot/config-5.14.0-rc5+: stat /boot/config-5.14.0-rc5+: no such file or directory)
-OSInfo: PRETTY_NAME: &quot;Ubuntu Impish Indri (development branch)&quot;
-OSInfo: VERSION_ID: &quot;21.10&quot;
-OSInfo: VERSION: &quot;21.10 (Impish Indri)&quot;
-OSInfo: VERSION_CODENAME: impish
-OSInfo: ID: ubuntu
-OSInfo: ID_LIKE: debian
-OSInfo: KERNEL_RELEASE: 5.14.0-rc5+
-BTF: bpfenv = false, btfenv = false, vmlinux = true
-BPF: using embedded BPF object
-unpacked CO:RE bpf object file into memory
-TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
-05:50:53:742705  1000   bash             14244   14244   0                execve               pathname:  , argv: []
-</code></pre></div>
-<p>In this example tracee has assumed the environment had
-<code>CONFIG_ARCH_HAS_SYSCALL_WRAPPER=y</code> kconfig option set but that wasn't the
-case. It led tracee not to be able to get syscalls arguments correctly.</p>
+<p>This allows upgrades among future releases of tracee AND ubuntu. It also allows
+you to upgrade to "in between releases" versions if a fix is needed.</p>
+<p>The packages will be generated in <code>dist/</code> directory, together with the built
+binaries.</p>
 
 
 
