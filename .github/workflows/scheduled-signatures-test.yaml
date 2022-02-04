@@ -32,6 +32,7 @@ jobs:
           make -f Makefile.one install-bpf-nocore
       - name: Run tests
         run: |
+          docker image pull aquasec/tracee-tester:latest
           go test -v -run "TestTraceeSignatures" ./tests/tracee_test.go \
             -tracee-image-ref "tracee-nocore:latest" \
             -tracee-tester-image-ref "aquasec/tracee-tester:latest"
