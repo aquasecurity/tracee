@@ -5766,7 +5766,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Probes: []probe{
 			{event: "cap_capable", attach: kprobe, fn: "trace_cap_capable"},
 		},
-		Sets: []string{"default"},
+		Sets: []string{},
 		Params: []external.ArgMeta{
 			{Type: "int", Name: "cap"},
 			{Type: "int", Name: "syscall"},
