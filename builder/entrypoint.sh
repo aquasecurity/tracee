@@ -1,8 +1,25 @@
-#!/bin/sh -e
+#!/bin/sh
 
 #
 # Entrypoint for the official tracee container images
 #
+
+# variables
+
+TRACEE_TMP="/tmp/tracee"
+TRACEE_PIPE="${TRACEE_TMP}/pipe"
+TRACEE_OUT="${TRACEE_TMP}/out"
+
+TRACEE_EBPF_SRC=${TRACEE_EBPF_SRC:="/tracee/src"}
+TRACEE_EBPF_EXE=${TRACEE_EBPF_EXE:="/tracee/tracee-ebpf"}
+TRACEE_RULES_EXE=${TRACEE_RULES_EXE:="/tracee/tracee-rules"}
+LIBBPFGO_OSRELEASE_FILE=${LIBBPFGO_OSRELEASE_FILE:=""}
+
+TRACEE_EBPF_ONLY=${TRACEE_EBPF_ONLY:=0} # used by both container images
+
+EBPF_PROBE_TIMEOUT=${EBPF_PROBE_TIMEOUT:=3} # 3 seconds for ebpf co-re probe
+
+# functions
 
 run_tracee() {
     if [ ${TRACEE_EBPF_ONLY} -eq 1 ]; then
@@ -12,70 +29,68 @@ run_tracee() {
     fi
 }
 
+probe_tracee_ebpf() {
+    # check if non CO-RE obj is needed (tracee-ebpf ret code is 2)
+
+    TRACEE_RET=0
+    if [ ${probed_cap} -ne 1 ]; then
+        probed_cap=1
+
+        echo "INFO: probing tracee-ebpf capabilities..."
+        timeout --preserve-status ${EBPF_PROBE_TIMEOUT} \
+            ${TRACEE_EBPF_EXE} --output=none \
+            --trace comm="nothing" 2>&1 > /dev/null 2>&1
+        TRACEE_RET=$?
+    fi
+}
+
 run_tracee_ebpf() {
+    probe_tracee_ebpf
+    if [ ${TRACEE_RET} -eq 2 ]; then
+        return
+    fi
+
     ${TRACEE_EBPF_EXE} $@
-    return $?
+    TRACEE_RET=$?
 }
 
 run_tracee_rules() {
-    # named pipe for tracee-ebpf <=> tracee-rules communication
 
-    tracee_pipe=/tmp/tracee/pipe
-    mkdir -p /tmp/tracee/out
-    rm -f ${tracee_pipe}
-    mkfifo ${tracee_pipe}
-
-    # start tracee-ebpf in the background
-
-    EVENTS=$($TRACEE_RULES_EXE --list-events)
-    echo "starting tracee-ebpf..."
-    ${TRACEE_EBPF_EXE} --output=format:gob --output=option:parse-arguments --trace event=$EVENTS --output=out-file:$tracee_pipe &
-    tracee_ebpf_pid=$!
-
-    # wait for tracee-ebpf to: load / exit / timeout
-
-    tracee_ebpf_readiness=/tmp/tracee/out/tracee.pid
-    rm -f ${tracee_ebpf_readiness}
-    timeout=15
-    i=0
-    while [ ! -f ${tracee_ebpf_readiness} ] && \
-        $(ls /proc/${tracee_ebpf_pid} >/dev/null 2>&1) && \
-        [ ${i} -le ${timeout} ]
-    do
-    	i=$(( i + 1 ))
-    	sleep 1
-    done
-
-    if [ ! -f ${tracee_ebpf_readiness} ]; then
-        echo "could not start tracee-ebpf"
-        exit 1
+    probe_tracee_ebpf
+    if [ ${TRACEE_RET} -eq 2 ]; then
+        return
     fi
+
+    mkdir -p ${TRACEE_OUT}
+    rm -f ${TRACEE_PIPE}
+    mkfifo ${TRACEE_PIPE}
+
+    # start tracee-ebpf
+
+    events=$($TRACEE_RULES_EXE --list-events)
+
+    echo "INFO: starting tracee-ebpf..."
+    ${TRACEE_EBPF_EXE} --output=format:gob --output=option:parse-arguments --trace event=${events} --output=out-file:${TRACEE_PIPE} &
+    tracee_ebpf_pid=$!
 
     # start tracee-rules
 
-    echo "starting tracee-rules..."
-    $TRACEE_RULES_EXE --input-tracee=file:$tracee_pipe --input-tracee=format:gob $@
-    return $?
+    echo "INFO: starting tracee-rules..."
+    $TRACEE_RULES_EXE --input-tracee=file:${TRACEE_PIPE} --input-tracee=format:gob $@
+    TRACEE_RET=$?
 }
 
-# variables
+# startup
 
-TRACEE_EBPF_SRC=${TRACEE_EBPF_SRC:="/tracee/src"}
-TRACEE_EBPF_EXE=${TRACEE_EBPF_EXE:="/tracee/tracee-ebpf"}
-TRACEE_RULES_EXE=${TRACEE_RULES_EXE:="/tracee/tracee-rules"}
-FORCE_CORE=${FORCE_CORE:=0}
-LIBBPFGO_OSRELEASE_FILE=${LIBBPFGO_OSRELEASE_FILE:=""}
-TRACEE_EBPF_ONLY=${TRACEE_EBPF_ONLY:=0}
-
-# startup checks
+probed_cap=0
 
 if [ ! -x ${TRACEE_EBPF_EXE} ]; then
-    echo "Cannot execute ${TRACEE_EBPF_EXE}"
+    echo "ERROR: cannot execute ${TRACEE_EBPF_EXE}"
     exit 1
 fi
 
 if [ ! -x ${TRACEE_RULES_EXE} ]; then
-    echo "Cannot execute ${TRACEE_EBPF_EXE}"
+    echo "ERROR: cannot execute ${TRACEE_EBPF_EXE}"
     exit 1
 fi
 
@@ -94,28 +109,27 @@ for arg in ${@}; do
 done
 
 if [ "${LIBBPFGO_OSRELEASE_FILE}" == "" ]; then
-    echo ""
-    echo "You have to set LIBBPFGO_OSRELEASE_FILE env variable."
-    echo "It allows tracee to detect host environment features."
-    echo ""
-    echo "Run docker with :"
-    echo "    -v /etc/os-release:/etc/os-release-host:ro"
-    echo ""
-    echo "Then you may set LIBBPFGO_OSRELEASE_FILE:"
-    echo "    -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host"
-    echo ""
+    echo "ERROR:"
+    echo "ERROR: You have to set LIBBPFGO_OSRELEASE_FILE env variable."
+    echo "ERROR: It allows tracee to detect host environment features."
+    echo "ERROR: "
+    echo "ERROR: Run docker with :"
+    echo "ERROR:     -v /etc/os-release:/etc/os-release-host:ro"
+    echo "ERROR: "
+    echo "ERROR: Then you may set LIBBPFGO_OSRELEASE_FILE:"
+    echo "ERROR:     -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host"
+    echo "ERROR:"
 
     exit 1;
 fi
 
 if [ ! -f "${LIBBPFGO_OSRELEASE_FILE}" ]; then
-    echo ""
-    echo "You provided a LIBBPFGO_OSRELEASE_FILE variable but missed"
-    echo " providing the bind mount for it."
-    echo ""
-    echo "Run docker with:"
-    echo "    -v /etc/os-release:/etc/os-release-host:ro"
-    echo ""
+    echo "ERROR:"
+    echo "ERROR: You provided a LIBBPFGO_OSRELEASE_FILE variable but"
+    echo "ERROR: missed providing the bind mount for it."
+    echo "ERROR:"
+    echo "ERROR: Try docker with: -v /etc/os-release:/etc/os-release-host:ro"
+    echo "ERROR:"
 
     exit 1;
 fi
@@ -123,39 +137,51 @@ fi
 # main
 
 if [ -d "${TRACEE_EBPF_SRC}" ]; then
-    # container contains tracee source code
+    # full container image
 
-    if [ ${FORCE_CORE} -eq 1 ]; then
-            run_tracee $@
-    fi
+    # run first, may find cached eBPF non CO-RE obj in /tmp/tracee
+    run_tracee $@
 
-    if [ ! -d "/lib/modules/$(uname -r)" ]; then
-        echo ""
-        echo "Tracee needs to build its non-CORE eBPF object!"
-        echo "You need to bind mount /usr/src and /lib/modules."
-        echo ""
-        echo "Run docker with:"
-        echo "    -v /usr/src:/usr/src:ro"
-        echo "    -v /lib/modules:/lib/modules:ro"
-        echo ""
+    if [ ${TRACEE_RET} -eq 2 ]; then
+        # if ret code is 2, compile non CO-RE obj, run again
 
-        exit 1
-    fi
+        if [ ! -d "/lib/modules/$(uname -r)" ]; then
+            echo "ERROR:"
+            echo "ERROR: Tracee needs to build its non-CORE eBPF object!"
+            echo "ERROR: You need to bind mount /usr/src and /lib/modules."
+            echo "ERROR:"
+            echo "ERROR: Run docker with:"
+            echo "ERROR:     -v /usr/src:/usr/src:ro"
+            echo "ERROR:     -v /lib/modules:/lib/modules:ro"
+            echo "ERROR:"
 
-    cd ${TRACEE_EBPF_SRC}
-    make -f Makefile.one clean
-    make -f Makefile.one install-bpf-nocore
+            exit 1
+        fi
 
-    # force nocore ebpf object
+        cd ${TRACEE_EBPF_SRC}
+        make -f Makefile.one clean
+        make -f Makefile.one install-bpf-nocore
+        # force nocore ebpf object
 
-    export TRACEE_BPF_FILE=$(ls -tr1 /tmp/tracee/tracee.bpf.*.o | head -1)
-    if [ ! -f "${TRACEE_BPF_FILE}" ]; then
-        echo "Error, could not find TRACEE_BPF_FILE"
-
-        exit 1
+        # make sure the just generated eBPF non CO-RE obj is used
+        export TRACEE_BPF_FILE=$(ls -tr1 /tmp/tracee/tracee.bpf.*.o | head -1)
+        if [ ! -f "${TRACEE_BPF_FILE}" ]; then
+            echo "ERROR: could not find TRACEE_BPF_FILE"
+            exit 1
+        fi
     fi
 fi
 
 run_tracee $@
+
+if [ ${TRACEE_RET} -eq 2 ] && [ ! -d "${TRACEE_EBPF_SRC}" ]; then
+    echo "INFO:"
+    echo "INFO: You should try the FULL tracee container image, it supports"
+    echo "INFO: building, based on your host environment, needed eBPF objects"
+    echo "INFO: so tracee-ebpf may work."
+    echo "INFO:"
+fi
+
+exit ${TRACEE_RET}
 
 # vi:syntax=sh:expandtab:tabstop=4:shiftwidth=4:softtabstop=4

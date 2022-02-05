@@ -8,97 +8,71 @@
 
 ## Generating Tracee containers
 
-Tracee containers come in **3 flavors**:
+Tracee containers come in **2 flavors**:
 
-* `tracee`: default [CO-RE eBPF](https://nakryiko.com/posts/bpf-portability-and-co-re/) tracee (portable).
-
-  ```
-  $ make -f builder/Makefile.tracee-container build-alpine-tracee-core
-  ```
-
-* `tracee-btfhub`: CO-RE eBPF tracee with [older kernels support](https://github.com/aquasecurity/btfhub/blob/main/docs/supported-distros.md).
+* `tracee:latest`
 
   ```
-  $ make -f builder/Makefile.tracee-container build-alpine-tracee-core-btfhub
+  $ BTFHUB={0,1} make -f builder/Makefile.tracee-container build-tracee
   ```
 
-* `tracee-nocore`: non CO-RE eBPF binary (eBPF code is compiled before the run).
+* `tracee:full`
 
   ```
-  $ make -f builder/Makefile.tracee-container build-alpine-tracee-nocore
+  $ BTFHUB={0,1} make -f builder/Makefile.tracee-container build-tracee-full
   ```
 
-At the end you will end up with 3 docker images built. Example:
+> Note: BTFHUB=1 adds support to some [older kernels](https://github.com/aquasecurity/btfhub/blob/main/docs/supported-distros.md)
+> so user doesn't need to build specific non CO-RE eBPF objects to them.
 
-```
-$ docker image ls
-REPOSITORY           TAG       IMAGE ID       CREATED        SIZE
-tracee-btfhub        latest    1612003190b7   11 hours ago   73.6MB
-tracee-nocore        latest    cc8eba17fd76   11 hours ago   1.19GB
-tracee               latest    11dd16c3bda3   11 hours ago   72.1MB
-```
+## Running Tracee containers
 
-Then, you may chose to run the container images through the cmdline, or to use
-the same Makefile.tracee-container file with targets that will run it for you.
+Containers are supposed to be executed through docker cmdline directly, from the
+official built images. Nevertheless, during the image building process, it may
+be usefull to execute them with correct arguments to see if they're working.
 
-## Executing Tracee containers
+User may execute built containers through `Makefile.tracee-container` file with
+the "run" targets:
 
-You may chose to generate container images locally or not. You're able to run
-the containers images, with correct/needed docker arguments, through the
-Makefile.tracee-container file.
-
-* To run the `tracee` container:
+* To run the `tracee:latest` container:
 
   ```
-  $ make -f builder/Makefile.tracee-container run-alpine-tracee-core
+  $ make -f builder/Makefile.tracee-container run-tracee
   ```
 
-* To run the `tracee-btfhub` container:
+* To run the `tracee:full` container:
 
   ```
-  $ make -f builder/Makefile.tracee-container run-alpine-tracee-core-btfhub
+  $ make -f builder/Makefile.tracee-container run-tracee-full
   ```
 
-* To run the `tracee-nocore` container:
-
-  ```
-  $ make -f builder/Makefile.tracee-container run-alpine-tracee-nocore
-  ```
-
-> You may provide arguments to tracee through the `ARG` variable to the Makefile:
+> Note: tracee-ebpf arguments are passed through the ARG="" variable
 >
 > ```
-> $ make -f builder/Makefile.tracee-container run-alpine-tracee-core ARG="--debug"
+> $ make -f builder/Makefile.tracee-container run-tracee ARG="--help"
 > ```
 
-## Executing `tracee-ebpf` only
+## Running Tracee-eBPF only
 
-Generated tracee containers allow you to run **tracee**, as a complete solution
-(tracee-ebpf passes events to tracee-rules and tracee-rules process events
-based on existing signatures) OR to run **tracee-ebpf** only, as an
-introspection tool.
+Generated containers allow user to run **tracee**, as a complete security
+solution (tracee-ebpf passes events to tracee-rules & tracee-rules process
+events based on existing security signatures) OR to run **tracee-ebpf** only,
+as an introspection tool.
 
-* To run the `tracee` container with `tracee-ebpf` only:
-
-  ```
-  $ make -f builder/Makefile.tracee-container run-alpine-tracee-ebpf-core
-  ```
-
-* To run the `tracee-btfhub` container with `tracee-ebpf` only:
+* To run the `tracee:latest` container with `tracee-ebpf` only:
 
   ```
-  $ make -f builder/Makefile.tracee-container run-alpine-tracee-ebpf-core-btfhub
+  $ make -f builder/Makefile.tracee-container run-tracee-ebpf
   ```
 
-* To run the `tracee-nocore` container with `tracee-ebpf` only:
+* To run the `tracee:full` container with `tracee-ebpf` only:
 
   ```
-  $ make -f builder/Makefile.tracee-container run-alpine-tracee-ebpf-nocore
+  $ make -f builder/Makefile.tracee-container run-tracee-ebpf-full
   ```
 
-> You may provide arguments to tracee-ebpf through the `ARG` variable to the
-> Makefile:
+> Note: tracee-ebpf arguments are passed through the ARG="" variable
 >
 > ```
-> $ make -f builder/Makefile.tracee-container run-alpine-tracee-ebpf-core ARG="--debug"
+> $ make -f builder/Makefile.tracee-container run-tracee-ebpf ARG="--debug"
 > ```

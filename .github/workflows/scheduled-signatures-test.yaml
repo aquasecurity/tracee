@@ -24,9 +24,9 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           opa-version: ${{ env.OPA_VERSION }}
-      - name: Build tracee-nocore
+      - name: Build tracee image (slim w/ BTFHUB)
         run: |
-          make -f builder/Makefile.tracee-container build-alpine-tracee-nocore
+          BTFHUB=1 make -f builder/Makefile.tracee-container build-tracee
       - name: Install BPF
         run: |
           make -f Makefile.one install-bpf-nocore
@@ -34,5 +34,5 @@ jobs:
         run: |
           docker image pull aquasec/tracee-tester:latest
           go test -v -run "TestTraceeSignatures" ./tests/tracee_test.go \
-            -tracee-image-ref "tracee-nocore:latest" \
+            -tracee-image-ref "tracee:latest" \
             -tracee-tester-image-ref "aquasec/tracee-tester:latest"

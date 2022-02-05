@@ -393,7 +393,13 @@ func prepareBpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSIn
 		fmt.Printf("BPF: trying non CO-RE eBPF at %s\n", bpfFilePath)
 	}
 	if bpfBytes, err = ioutil.ReadFile(bpfFilePath); err != nil {
-		return err
+		// tell entrypoint that eBPF non CO-RE obj compilation is needed
+		fmt.Printf("BPF: %v\n", err)
+		fmt.Printf("BPF: ATTENTION:\n")
+		fmt.Printf("BPF: It seems tracee-ebpf can't load CO-RE eBPF obj and could not find\n")
+		fmt.Printf("BPF: the non CO-RE object in %s. You may build a non CO-RE eBPF\n", traceeInstallPath)
+		fmt.Printf("BPF: obj by using the source tree and executing \"make install-bpf-nocore\".\n")
+		os.Exit(2)
 	}
 
 out:
