@@ -10,7 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
-	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // Max depth of each stack trace to track
@@ -38,9 +38,9 @@ func (t *Tracee) handleEvents(ctx gocontext.Context) {
 	t.WaitForPipeline(errcList...)
 }
 
-// decodeEvents read the events received from the BPF programs and parse it into external.Event type
-func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *external.Event, <-chan error) {
-	out := make(chan *external.Event)
+// decodeEvents read the events received from the BPF programs and parse it into trace.TraceeEvent type
+func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *trace.TraceeEvent, <-chan error) {
+	out := make(chan *trace.TraceeEvent)
 	errc := make(chan error, 1)
 	go func() {
 		defer close(out)
@@ -58,7 +58,7 @@ func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *external.Even
 				continue
 			}
 
-			args := make([]external.Argument, 0, ctx.Argnum)
+			args := make([]trace.Argument, 0, ctx.Argnum)
 
 			for i := 0; i < int(ctx.Argnum); i++ {
 				argMeta, argVal, err := bufferdecoder.ReadArgFromBuff(ebpfMsgDecoder, eventDefinition.Params)
@@ -67,7 +67,7 @@ func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *external.Even
 					continue
 				}
 
-				args = append(args, external.Argument{ArgMeta: argMeta, Value: argVal})
+				args = append(args, trace.Argument{ArgMeta: argMeta, Value: argVal})
 			}
 
 			if !t.shouldProcessEvent(&ctx, args) {
@@ -91,7 +91,7 @@ func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *external.Even
 				ctx.Ts += t.bootTime
 			}
 
-			evt := external.Event{
+			evt := trace.TraceeEvent{
 				Timestamp:           int(ctx.Ts),
 				ProcessorID:         int(ctx.ProcessorId),
 				ProcessID:           int(ctx.Pid),
@@ -124,7 +124,7 @@ func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *external.Even
 	return out, errc
 }
 
-func (t *Tracee) processEvents(ctx gocontext.Context, in <-chan *external.Event) <-chan error {
+func (t *Tracee) processEvents(ctx gocontext.Context, in <-chan *trace.TraceeEvent) <-chan error {
 	errc := make(chan error, 1)
 	go func() {
 		defer close(errc)

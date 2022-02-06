@@ -6,13 +6,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aquasecurity/tracee/types/detect"
+	"github.com/aquasecurity/tracee/types/trace"
 	"io"
 	"log"
 	"os"
 	"strings"
-
-	"github.com/aquasecurity/tracee/pkg/external"
-	"github.com/aquasecurity/tracee/types"
 )
 
 var errHelp = errors.New("user has requested help text")
@@ -30,7 +29,7 @@ type traceeInputOptions struct {
 	inputFormat inputFormat
 }
 
-func setupTraceeInputSource(opts *traceeInputOptions) (chan types.Event, error) {
+func setupTraceeInputSource(opts *traceeInputOptions) (chan detect.Event, error) {
 
 	if opts.inputFormat == jsonInputFormat {
 		return setupTraceeJSONInputSource(opts)
@@ -43,16 +42,15 @@ func setupTraceeInputSource(opts *traceeInputOptions) (chan types.Event, error) 
 	return nil, errors.New("could not set up input source")
 }
 
-func setupTraceeGobInputSource(opts *traceeInputOptions) (chan types.Event, error) {
+func setupTraceeGobInputSource(opts *traceeInputOptions) (chan detect.Event, error) {
 	dec := gob.NewDecoder(opts.inputFile)
-	gob.Register(external.Event{})
-	gob.Register(external.SlimCred{})
+	gob.Register(trace.TraceeEvent{})
+	gob.Register(trace.SlimCred{})
 	gob.Register(make(map[string]string))
-	gob.Register(external.PktMeta{})
-	res := make(chan types.Event)
+	res := make(chan detect.Event)
 	go func() {
 		for {
-			var event external.Event
+			var event trace.TraceeEvent
 			err := dec.Decode(&event)
 			if err != nil {
 				if err == io.EOF {
@@ -70,13 +68,13 @@ func setupTraceeGobInputSource(opts *traceeInputOptions) (chan types.Event, erro
 	return res, nil
 }
 
-func setupTraceeJSONInputSource(opts *traceeInputOptions) (chan types.Event, error) {
-	res := make(chan types.Event)
+func setupTraceeJSONInputSource(opts *traceeInputOptions) (chan detect.Event, error) {
+	res := make(chan detect.Event)
 	scanner := bufio.NewScanner(opts.inputFile)
 	go func() {
 		for scanner.Scan() {
 			event := scanner.Bytes()
-			var e external.Event
+			var e trace.TraceeEvent
 			err := json.Unmarshal(event, &e)
 			if err != nil {
 				log.Printf("invalid json in %s: %v", string(event), err)

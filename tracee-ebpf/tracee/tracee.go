@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aquasecurity/tracee/types/detect/trace"
 	"io"
 	"math"
 	"net"
@@ -25,9 +26,9 @@ import (
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
-	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/tracee-ebpf/metrics"
+	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
 	lru "github.com/hashicorp/golang-lru"
@@ -47,7 +48,7 @@ type Config struct {
 	BPFObjPath         string
 	BPFObjBytes        []byte
 	KernelConfig       *helpers.KernelConfig
-	ChanEvents         chan external.Event
+	ChanEvents         chan trace.TraceeEvent
 	ChanErrors         chan error
 }
 

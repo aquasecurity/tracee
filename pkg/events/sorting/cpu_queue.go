@@ -3,7 +3,7 @@ package sorting
 import (
 	"fmt"
 
-	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // Events queue with the ability to follow if it was updated since last check and insertion by time specific for CPU
@@ -14,7 +14,7 @@ type cpuEventsQueue struct {
 }
 
 // InsertByTimestamp insert new event to the queue in the right position according to its timestamp
-func (cq *cpuEventsQueue) InsertByTimestamp(newEvent *external.Event) error {
+func (cq *cpuEventsQueue) InsertByTimestamp(newEvent *trace.TraceeEvent) error {
 	newNode, allocErr := cq.pool.Alloc(newEvent)
 	if allocErr != nil {
 		cq.pool.Reset()

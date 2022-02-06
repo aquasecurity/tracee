@@ -25,7 +25,7 @@ The following Go templates are included in the Tracee container image and are av
 
 ## Go Template Authoring
 
-When authoring a Go template for either stdout or webhook, you have Tracee's `types.Finding` struct as the data source:
+When authoring a Go template for either stdout or webhook, you have Tracee's `detect.Finding` struct as the data source:
 
 ```go
 //Finding is the main output of a signature. It represents a match result for the signature business logic

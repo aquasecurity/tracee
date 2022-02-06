@@ -4,7 +4,7 @@ import (
 	_ "embed"
 
 	"github.com/aquasecurity/tracee/tracee-rules/regosig"
-	"github.com/aquasecurity/tracee/types"
+	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/open-policy-agent/opa/compile"
 )
 
@@ -19,10 +19,10 @@ var (
 	codeInjectionRego string
 )
 
-func NewCodeInjectionSignature() (types.Signature, error) {
+func NewCodeInjectionSignature() (detect.Signature, error) {
 	return regosig.NewRegoSignature(compile.TargetRego, false, codeInjectionRego, helpersRego)
 }
 
-func NewAntiDebuggingSignature() (types.Signature, error) {
+func NewAntiDebuggingSignature() (detect.Signature, error) {
 	return regosig.NewRegoSignature(compile.TargetRego, false, antiDebuggingPtracemeRego, helpersRego)
 }

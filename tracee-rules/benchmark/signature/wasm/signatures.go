@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/aquasecurity/tracee/types"
+	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
 )
@@ -46,11 +46,11 @@ func compileRego(regoCodes []string) (*ast.Compiler, string) {
 	return compiledRego, pkgName
 }
 
-func NewCodeInjectionSignature() (types.Signature, error) {
-	return NewSignature(types.SignatureMetadata{
+func NewCodeInjectionSignature() (detect.Signature, error) {
+	return NewSignature(detect.SignatureMetadata{
 		ID:   "TRC_WASM_CODE_INJECTION",
 		Name: "Code Injection WASM",
-	}, []types.SignatureEventSelector{
+	}, []detect.SignatureEventSelector{
 		{Source: "tracee", Name: "ptrace"},
 		{Source: "tracee", Name: "open"},
 		{Source: "tracee", Name: "openat"},
@@ -58,24 +58,24 @@ func NewCodeInjectionSignature() (types.Signature, error) {
 	}, []string{codeInjectionRego, helpersRego})
 }
 
-func NewAntiDebuggingSignature() (types.Signature, error) {
-	return NewSignature(types.SignatureMetadata{
+func NewAntiDebuggingSignature() (detect.Signature, error) {
+	return NewSignature(detect.SignatureMetadata{
 		ID:   "TRC_WASM_ANTI_DEBUGGING",
 		Name: "Anti Debugging WASM",
-	}, []types.SignatureEventSelector{
+	}, []detect.SignatureEventSelector{
 		{Source: "tracee", Name: "ptrace"},
 	}, []string{antiDebuggingPtracemeRego, helpersRego})
 }
 
 type signature struct {
-	metadata types.SignatureMetadata
-	selector []types.SignatureEventSelector
-	cb       types.SignatureHandler
+	metadata detect.SignatureMetadata
+	selector []detect.SignatureEventSelector
+	cb       detect.SignatureHandler
 	rego     *rego.Rego
 	pq       rego.PreparedEvalQuery
 }
 
-func NewSignature(metadata types.SignatureMetadata, selector []types.SignatureEventSelector, regoCodes []string) (types.Signature, error) {
+func NewSignature(metadata detect.SignatureMetadata, selector []detect.SignatureEventSelector, regoCodes []string) (detect.Signature, error) {
 	compiledRego, pkgName := compileRego(regoCodes)
 	rego := rego.New(
 		rego.Compiler(compiledRego),
@@ -94,20 +94,20 @@ func NewSignature(metadata types.SignatureMetadata, selector []types.SignatureEv
 	}, nil
 }
 
-func (s *signature) Init(cb types.SignatureHandler) error {
+func (s *signature) Init(cb detect.SignatureHandler) error {
 	s.cb = cb
 	return nil
 }
 
-func (s *signature) GetMetadata() (types.SignatureMetadata, error) {
+func (s *signature) GetMetadata() (detect.SignatureMetadata, error) {
 	return s.metadata, nil
 }
 
-func (s *signature) GetSelectedEvents() ([]types.SignatureEventSelector, error) {
+func (s *signature) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
 	return s.selector, nil
 }
 
-func (s *signature) OnEvent(event types.Event) error {
+func (s *signature) OnEvent(event detect.Event) error {
 	var input interface{} = event
 	results, err := s.pq.Eval(context.Background(), rego.EvalInput(input))
 	if err != nil {
@@ -118,14 +118,14 @@ func (s *signature) OnEvent(event types.Event) error {
 		switch v := results[0].Expressions[0].Value.(type) {
 		case bool:
 			if v {
-				s.cb(types.Finding{
+				s.cb(detect.Finding{
 					Data:        nil,
 					Context:     event,
 					SigMetadata: s.metadata,
 				})
 			}
 		case map[string]interface{}:
-			s.cb(types.Finding{
+			s.cb(detect.Finding{
 				Data:        v,
 				Context:     event,
 				SigMetadata: s.metadata,
@@ -136,7 +136,7 @@ func (s *signature) OnEvent(event types.Event) error {
 	return nil
 }
 
-func (s *signature) OnSignal(_ types.Signal) error {
+func (s *signature) OnSignal(_ detect.Signal) error {
 	// noop
 	return nil
 }

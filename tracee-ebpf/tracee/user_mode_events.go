@@ -9,7 +9,7 @@
 package tracee
 
 import (
-	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/types/trace"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -22,9 +22,9 @@ import (
 const InitProcNsDir = "/proc/1/ns"
 
 // CreateInitNamespacesEvent collect the init process namespaces and create event from them.
-func CreateInitNamespacesEvent() (external.Event, error) {
+func CreateInitNamespacesEvent() (trace.TraceeEvent, error) {
 	initNamespacesArgs := getInitNamespaceArguments()
-	initNamespacesEvent := external.Event{
+	initNamespacesEvent := trace.TraceeEvent{
 		Timestamp:   int(time.Now().UnixNano()),
 		ProcessName: "tracee-ebpf",
 		EventID:     int(InitNamespacesEventID),
@@ -36,10 +36,10 @@ func CreateInitNamespacesEvent() (external.Event, error) {
 }
 
 // getInitNamespaceArguments Fetch the namespaces of the init process and parse them into event arguments.
-func getInitNamespaceArguments() []external.Argument {
+func getInitNamespaceArguments() []trace.Argument {
 	initNamespaces := fetchInitNamespaces()
 	eventDefinition := EventsDefinitions[InitNamespacesEventID]
-	initNamespacesArgs := make([]external.Argument, len(eventDefinition.Params))
+	initNamespacesArgs := make([]trace.Argument, len(eventDefinition.Params))
 	for i, arg := range initNamespacesArgs {
 		arg.ArgMeta = eventDefinition.Params[i]
 		arg.Value = initNamespaces[arg.Name]

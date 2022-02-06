@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/aquasecurity/tracee/types/trace"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -10,36 +11,35 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aquasecurity/tracee/pkg/external"
-	"github.com/aquasecurity/tracee/types"
+	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 type fakeSignature struct {
-	types.Signature
-	getMetadata       func() (types.SignatureMetadata, error)
-	getSelectedEvents func() ([]types.SignatureEventSelector, error)
+	detect.Signature
+	getMetadata       func() (detect.SignatureMetadata, error)
+	getSelectedEvents func() ([]detect.SignatureEventSelector, error)
 }
 
-func (f fakeSignature) GetMetadata() (types.SignatureMetadata, error) {
+func (f fakeSignature) GetMetadata() (detect.SignatureMetadata, error) {
 	if f.getMetadata != nil {
 		return f.getMetadata()
 	}
 
-	return types.SignatureMetadata{
+	return detect.SignatureMetadata{
 		ID:          "FOO-666",
 		Name:        "foo bar signature",
 		Description: "the most evil",
 	}, nil
 }
 
-func (f fakeSignature) GetSelectedEvents() ([]types.SignatureEventSelector, error) {
+func (f fakeSignature) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
 	if f.getSelectedEvents != nil {
 		return f.getSelectedEvents()
 	}
 
-	return []types.SignatureEventSelector{
+	return []detect.SignatureEventSelector{
 		{
 			Source: "tracee",
 			Name:   "execve",
@@ -62,7 +62,7 @@ func Test_setupOutput(t *testing.T) {
 	}{
 		{
 			name: "happy path with tracee event and default output",
-			inputContext: external.Event{
+			inputContext: trace.TraceeEvent{
 				ProcessName: "foobar.exe",
 				HostName:    "foobar.local",
 			},
@@ -78,7 +78,7 @@ Hostname: foobar.local
 		},
 		{
 			name: "happy path with tracee event and simple custom output template",
-			inputContext: external.Event{
+			inputContext: trace.TraceeEvent{
 				ProcessName: "foobar.exe",
 				HostName:    "foobar.local",
 			},
@@ -98,7 +98,7 @@ HostName: foobar.local
 		},
 		{
 			name: "sad path with invalid custom template",
-			inputContext: external.Event{
+			inputContext: trace.TraceeEvent{
 				ProcessName: "foobar.exe",
 				HostName:    "foobar.local",
 			},
@@ -112,7 +112,7 @@ HostName: foobar.local
 		require.NoError(t, err, tc.name)
 
 		sm, _ := fakeSignature{}.GetMetadata()
-		findingCh <- types.Finding{
+		findingCh <- detect.Finding{
 			Data: map[string]interface{}{
 				"foo1": "bar1, baz1",
 				"foo2": []string{"bar2", "baz2"},
@@ -199,7 +199,7 @@ HostName: foobar.local
 			name:              "sad path, with an invalid template",
 			contentType:       "application/foo",
 			inputTemplateFile: "goldens/broken.tmpl",
-			expectedError:     `error writing to the template: template: broken.tmpl:1:3: executing "broken.tmpl" at <.InvalidField>: can't evaluate field InvalidField in type types.Finding`,
+			expectedError:     `error writing to the template: template: broken.tmpl:1:3: executing "broken.tmpl" at <.InvalidField>: can't evaluate field InvalidField in type detect.Finding`,
 		},
 		{
 			name:          "sad path, no --webhook-template flag specified",
@@ -223,12 +223,12 @@ HostName: foobar.local
 			inputTemplate, _ := setupTemplate(tc.inputTemplateFile)
 
 			m, _ := tc.inputSignature.GetMetadata()
-			actualError := sendToWebhook(inputTemplate, types.Finding{
+			actualError := sendToWebhook(inputTemplate, detect.Finding{
 				Data: map[string]interface{}{
 					"foo1": "bar1, baz1",
 					"foo2": []string{"bar2", "baz2"},
 				},
-				Context: external.Event{
+				Context: trace.TraceeEvent{
 					ProcessName: "foobar.exe",
 					HostName:    "foobar.local",
 				},

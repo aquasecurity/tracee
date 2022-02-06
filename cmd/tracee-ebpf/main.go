@@ -19,9 +19,9 @@ import (
 	embed "github.com/aquasecurity/tracee"
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/flags"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
-	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-ebpf/metrics"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
+	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/syndtr/gocapability/capability"
 	cli "github.com/urfave/cli/v2"
@@ -156,7 +156,7 @@ func main() {
 				return fmt.Errorf("failed preparing BPF object: %w", err)
 			}
 
-			cfg.ChanEvents = make(chan external.Event)
+			cfg.ChanEvents = make(chan trace.TraceeEvent)
 			cfg.ChanErrors = make(chan error)
 
 			t, err := tracee.New(cfg)

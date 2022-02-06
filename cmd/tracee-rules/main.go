@@ -15,7 +15,7 @@ import (
 
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
 	"github.com/aquasecurity/tracee/tracee-rules/metrics"
-	"github.com/aquasecurity/tracee/types"
+	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
@@ -230,7 +230,7 @@ func main() {
 	}
 }
 
-func listSigs(w io.Writer, sigs []types.Signature) error {
+func listSigs(w io.Writer, sigs []detect.Signature) error {
 	fmt.Fprintf(w, "%-10s %-35s %s %s\n", "ID", "NAME", "VERSION", "DESCRIPTION")
 	for _, sig := range sigs {
 		meta, err := sig.GetMetadata()
@@ -242,7 +242,7 @@ func listSigs(w io.Writer, sigs []types.Signature) error {
 	return nil
 }
 
-func listEvents(w io.Writer, sigs []types.Signature) {
+func listEvents(w io.Writer, sigs []detect.Signature) {
 	m := make(map[string]struct{})
 	for _, sig := range sigs {
 		es, _ := sig.GetSelectedEvents()

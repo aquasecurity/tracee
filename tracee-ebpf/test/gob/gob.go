@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func main() {
@@ -36,7 +36,7 @@ LOOP:
 		case <-sig:
 			break LOOP
 		default:
-			var event external.Event
+			var event trace.TraceeEvent
 			err = dec.Decode(&event)
 			if err != nil {
 				if err == io.EOF {

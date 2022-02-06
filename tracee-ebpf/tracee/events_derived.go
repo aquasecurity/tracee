@@ -2,15 +2,14 @@ package tracee
 
 import (
 	"fmt"
-
-	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 type deriveFn func(EventDefinition) error
 
-func (t *Tracee) deriveEvent(event external.Event) []external.Event {
+func (t *Tracee) deriveEvent(event trace.TraceeEvent) []trace.TraceeEvent {
 	var deriveFns map[int32]deriveFn
-	var derivatives []external.Event
+	var derivatives []trace.TraceeEvent
 
 	eventID := int32(event.EventID)
 	switch eventID {
@@ -27,7 +26,7 @@ func (t *Tracee) deriveEvent(event external.Event) []external.Event {
 				de.EventName = "container_create"
 				de.ReturnValue = 0
 				de.StackAddresses = make([]uint64, 1)
-				de.Args = []external.Argument{
+				de.Args = []trace.Argument{
 					{ArgMeta: def.Params[0], Value: info.Runtime},
 					{ArgMeta: def.Params[1], Value: info.ContainerId},
 					{ArgMeta: def.Params[2], Value: info.Ctime.UnixNano()},
@@ -55,7 +54,7 @@ func (t *Tracee) deriveEvent(event external.Event) []external.Event {
 				de.EventName = "container_remove"
 				de.ReturnValue = 0
 				de.StackAddresses = make([]uint64, 1)
-				de.Args = []external.Argument{
+				de.Args = []trace.Argument{
 					{ArgMeta: def.Params[0], Value: info.Runtime},
 					{ArgMeta: def.Params[1], Value: info.ContainerId},
 				}

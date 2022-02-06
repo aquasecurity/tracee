@@ -16,8 +16,8 @@ See [tracee/signatures/rego] for example Rego signatures.
 Tracee exports a `Signature` interface that you can implement. We use [Go Plugins] to load Go signatures.
 
 1. Create a new Go project with a package `main`.
-2. Import `github.com/aquasecurity/tracee/types` and implement the `types.Signature` interface.
-3. Export a package level variable called `ExportedSignatures` of type `[]types.Signature` that declares the implemented signature (or more) that your package exports.
+2. Import `github.com/aquasecurity/tracee/types/detect` and implement the `detect.Signature` interface.
+3. Export a package level variable called `ExportedSignatures` of type `[]detect.Signature` that declares the implemented signature (or more) that your package exports.
 4. Compile using goplugins `go build -buildmode=plugin -o yourplugin.so yoursource.go`.
 5. Place the resulting compiled file in the rules directory, and it will be automatically discovered by Tracee.
 

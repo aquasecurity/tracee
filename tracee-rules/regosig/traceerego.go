@@ -5,12 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/aquasecurity/tracee/types/detect"
+	"github.com/aquasecurity/tracee/types/trace"
 	"regexp"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
-	"github.com/aquasecurity/tracee/types"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/rego"
 )
@@ -22,11 +22,11 @@ import (
 // tracee_selected_events: a *set* rule that defines the event selectors (see GetSelectedEvent())
 // tracee_match: a *boolean*, or a *document* rule that defines the logic of the signature (see OnEvent())
 type RegoSignature struct {
-	cb             types.SignatureHandler
+	cb             detect.SignatureHandler
 	compiledRego   *ast.Compiler
 	matchPQ        rego.PreparedEvalQuery
-	metadata       types.SignatureMetadata
-	selectedEvents []types.SignatureEventSelector
+	metadata       detect.SignatureMetadata
+	selectedEvents []detect.SignatureEventSelector
 }
 
 const queryMatch string = "data.%s.tracee_match"
@@ -35,7 +35,7 @@ const queryMetadata string = "data.%s.__rego_metadoc__"
 const packageNameRegex string = `package\s.*`
 
 // NewRegoSignature creates a new RegoSignature with the provided rego code string
-func NewRegoSignature(target string, partialEval bool, regoCodes ...string) (types.Signature, error) {
+func NewRegoSignature(target string, partialEval bool, regoCodes ...string) (detect.Signature, error) {
 	var err error
 	res := RegoSignature{}
 	regoMap := make(map[string]string)
@@ -100,7 +100,7 @@ func NewRegoSignature(target string, partialEval bool, regoCodes ...string) (typ
 }
 
 // Init implements the Signature interface by resetting internal state
-func (sig *RegoSignature) Init(cb types.SignatureHandler) error {
+func (sig *RegoSignature) Init(cb detect.SignatureHandler) error {
 	sig.cb = cb
 	return nil
 }
@@ -108,36 +108,36 @@ func (sig *RegoSignature) Init(cb types.SignatureHandler) error {
 // GetMetadata implements the Signature interface by evaluating the Rego policy's __rego_metadoc__ rule
 // this is a *document* rule that defines the rule's metadata
 // based on WIP Rego convention for describing policy metadata: https://hackmd.io/@ZtQnh19kS26YiNlJLqKJnw/H1gAv5nBw
-func (sig *RegoSignature) GetMetadata() (types.SignatureMetadata, error) {
+func (sig *RegoSignature) GetMetadata() (detect.SignatureMetadata, error) {
 	return sig.metadata, nil
 }
 
-func (sig *RegoSignature) getMetadata(pkgName string) (types.SignatureMetadata, error) {
+func (sig *RegoSignature) getMetadata(pkgName string) (detect.SignatureMetadata, error) {
 	evalRes, err := sig.evalQuery(fmt.Sprintf(queryMetadata, pkgName))
 	if err != nil {
-		return types.SignatureMetadata{}, err
+		return detect.SignatureMetadata{}, err
 	}
 	resJSON, err := json.Marshal(evalRes)
 	if err != nil {
-		return types.SignatureMetadata{}, err
+		return detect.SignatureMetadata{}, err
 	}
 	dec := json.NewDecoder(bytes.NewBuffer(resJSON))
 	dec.UseNumber()
-	var res types.SignatureMetadata
+	var res detect.SignatureMetadata
 	err = dec.Decode(&res)
 	if err != nil {
-		return types.SignatureMetadata{}, err
+		return detect.SignatureMetadata{}, err
 	}
 	return res, nil
 }
 
 // GetSelectedEvents implements the Signature interface by evaluating the Rego policy's tracee_selected_events rule
 // this is a *set* rule that defines the rule's SelectedEvents
-func (sig *RegoSignature) GetSelectedEvents() ([]types.SignatureEventSelector, error) {
+func (sig *RegoSignature) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
 	return sig.selectedEvents, nil
 }
 
-func (sig *RegoSignature) getSelectedEvents(pkgName string) ([]types.SignatureEventSelector, error) {
+func (sig *RegoSignature) getSelectedEvents(pkgName string) ([]detect.SignatureEventSelector, error) {
 	evalRes, err := sig.evalQuery(fmt.Sprintf(querySelectedEvents, pkgName))
 	if err != nil {
 		return nil, err
@@ -146,7 +146,7 @@ func (sig *RegoSignature) getSelectedEvents(pkgName string) ([]types.SignatureEv
 	if err != nil {
 		return nil, err
 	}
-	var res []types.SignatureEventSelector
+	var res []detect.SignatureEventSelector
 	err = json.Unmarshal(resJSON, &res)
 	if err != nil {
 		return nil, err
@@ -158,15 +158,15 @@ func (sig *RegoSignature) getSelectedEvents(pkgName string) ([]types.SignatureEv
 // this is a *boolean* or a *document* rule that defines the logic of the signature
 // if bool is "returned", a true evaluation will generate a Finding with no data
 // if document is "returned", any non-empty evaluation will generate a Finding with the document as the Finding's "Data"
-func (sig *RegoSignature) OnEvent(e types.Event) error {
+func (sig *RegoSignature) OnEvent(e detect.Event) error {
 	var input rego.EvalOption
-	var ee external.Event
+	var ee trace.TraceeEvent
 
 	// TODO(danielpacak) OnEvent is called very often. Hence, check what's the performance impact of Go type switch here.
 	switch v := e.(type) {
 	// This case is for backward compatibility. From OPA Go SDK stand point it's more efficient to enter ParsedEvent case.
-	case external.Event:
-		ee = e.(external.Event)
+	case trace.TraceeEvent:
+		ee = e.(trace.TraceeEvent)
 		input = rego.EvalInput(e)
 	case engine.ParsedEvent:
 		pe := e.(engine.ParsedEvent)
@@ -184,14 +184,14 @@ func (sig *RegoSignature) OnEvent(e types.Event) error {
 		switch v := results[0].Expressions[0].Value.(type) {
 		case bool:
 			if v {
-				sig.cb(types.Finding{
+				sig.cb(detect.Finding{
 					Data:        nil,
 					Context:     ee,
 					SigMetadata: sig.metadata,
 				})
 			}
 		case map[string]interface{}:
-			sig.cb(types.Finding{
+			sig.cb(detect.Finding{
 				Data:        v,
 				Context:     ee,
 				SigMetadata: sig.metadata,
@@ -202,7 +202,7 @@ func (sig *RegoSignature) OnEvent(e types.Event) error {
 }
 
 // OnSignal implements the Signature interface by handling lifecycle events of the signature
-func (sig *RegoSignature) OnSignal(signal types.Signal) error {
+func (sig *RegoSignature) OnSignal(signal detect.Signal) error {
 	return fmt.Errorf("function OnSignal is not implemented")
 }
 

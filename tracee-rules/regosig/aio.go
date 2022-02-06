@@ -2,15 +2,15 @@ package regosig
 
 import (
 	_ "embed"
+	"github.com/aquasecurity/tracee/types/detect"
+	"github.com/aquasecurity/tracee/types/trace"
 
 	"context"
 	"fmt"
 	"sort"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
-	"github.com/aquasecurity/tracee/types"
 	"github.com/open-policy-agent/opa/ast"
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/open-policy-agent/opa/rego"
@@ -67,19 +67,19 @@ func newDefaultOptions() *Options {
 }
 
 type aio struct {
-	cb       types.SignatureHandler
-	metadata types.SignatureMetadata
+	cb       detect.SignatureHandler
+	metadata detect.SignatureMetadata
 
 	preparedQuery   rego.PreparedEvalQuery
-	sigIDToMetadata map[string]types.SignatureMetadata
-	selectedEvents  []types.SignatureEventSelector
+	sigIDToMetadata map[string]detect.SignatureMetadata
+	selectedEvents  []detect.SignatureEventSelector
 }
 
-// NewAIO constructs a new types.Signature with the specified Rego modules and Option items.
+// NewAIO constructs a new detect.Signature with the specified Rego modules and Option items.
 //
 // This implementation compiles all modules once and prepares the single,
 // aka all in one, query for evaluation.
-func NewAIO(modules map[string]string, opts ...Option) (types.Signature, error) {
+func NewAIO(modules map[string]string, opts ...Option) (detect.Signature, error) {
 	options := newDefaultOptions()
 
 	for _, opt := range opts {
@@ -145,9 +145,9 @@ func NewAIO(modules map[string]string, opts ...Option) (types.Signature, error) 
 	}
 
 	var sigIDs []string
-	var selectedEvents []types.SignatureEventSelector
+	var selectedEvents []detect.SignatureEventSelector
 
-	selectedEventsSet := make(map[types.SignatureEventSelector]bool)
+	selectedEventsSet := make(map[detect.SignatureEventSelector]bool)
 
 	for sigID, sigEvents := range sigIDToSelectedEvents {
 		sigIDs = append(sigIDs, sigID)
@@ -161,7 +161,7 @@ func NewAIO(modules map[string]string, opts ...Option) (types.Signature, error) 
 	}
 
 	sort.Strings(sigIDs)
-	metadata := types.SignatureMetadata{
+	metadata := detect.SignatureMetadata{
 		ID:      fmt.Sprintf("TRC-AIO (%s)", strings.Join(sigIDs, ",")),
 		Version: "1.0.0",
 		Name:    "AIO",
@@ -175,20 +175,20 @@ func NewAIO(modules map[string]string, opts ...Option) (types.Signature, error) 
 	}, nil
 }
 
-func (a *aio) Init(cb types.SignatureHandler) error {
+func (a *aio) Init(cb detect.SignatureHandler) error {
 	a.cb = cb
 	return nil
 }
 
-func (a *aio) GetMetadata() (types.SignatureMetadata, error) {
+func (a *aio) GetMetadata() (detect.SignatureMetadata, error) {
 	return a.metadata, nil
 }
 
-func (a *aio) GetSelectedEvents() ([]types.SignatureEventSelector, error) {
+func (a *aio) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
 	return a.selectedEvents, nil
 }
 
-func (a *aio) OnEvent(ee types.Event) error {
+func (a *aio) OnEvent(ee detect.Event) error {
 	input, event, err := toInputOption(ee)
 	if err != nil {
 		return err
@@ -207,14 +207,14 @@ func (a *aio) OnEvent(ee types.Event) error {
 		switch v := value.(type) {
 		case bool:
 			if v {
-				a.cb(types.Finding{
+				a.cb(detect.Finding{
 					Data:        nil,
 					Context:     event,
 					SigMetadata: a.sigIDToMetadata[sigID],
 				})
 			}
 		case map[string]interface{}:
-			a.cb(types.Finding{
+			a.cb(detect.Finding{
 				Data:        v,
 				Context:     event,
 				SigMetadata: a.sigIDToMetadata[sigID],
@@ -226,20 +226,20 @@ func (a *aio) OnEvent(ee types.Event) error {
 	return nil
 }
 
-func toInputOption(ee types.Event) (rego.EvalOption, external.Event, error) {
+func toInputOption(ee detect.Event) (rego.EvalOption, trace.TraceeEvent, error) {
 	var input rego.EvalOption
-	var event external.Event
+	var event trace.TraceeEvent
 
 	switch ee.(type) {
-	case external.Event:
-		event = ee.(external.Event)
+	case trace.TraceeEvent:
+		event = ee.(trace.TraceeEvent)
 		input = rego.EvalInput(ee)
 	case engine.ParsedEvent:
 		pe := ee.(engine.ParsedEvent)
 		event = pe.Event
 		input = rego.EvalParsedInput(pe.Value)
 	default:
-		return nil, external.Event{}, fmt.Errorf("unrecognized event type: %T", ee)
+		return nil, trace.TraceeEvent{}, fmt.Errorf("unrecognized event type: %T", ee)
 	}
 	return input, event, nil
 }
@@ -248,6 +248,6 @@ func (a *aio) Close() {
 	// noop
 }
 
-func (a aio) OnSignal(signal types.Signal) error {
+func (a aio) OnSignal(signal detect.Signal) error {
 	return fmt.Errorf("unsupported operation")
 }

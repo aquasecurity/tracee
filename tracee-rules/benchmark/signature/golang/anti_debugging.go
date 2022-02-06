@@ -3,19 +3,19 @@ package golang
 import (
 	"fmt"
 
-	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/signatures/helpers"
-	"github.com/aquasecurity/tracee/types"
+	"github.com/aquasecurity/tracee/types/detect"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 type antiDebugging struct {
-	cb       types.SignatureHandler
-	metadata types.SignatureMetadata
+	cb       detect.SignatureHandler
+	metadata detect.SignatureMetadata
 }
 
-func NewAntiDebuggingSignature() (types.Signature, error) {
+func NewAntiDebuggingSignature() (detect.Signature, error) {
 	return &antiDebugging{
-		metadata: types.SignatureMetadata{
+		metadata: detect.SignatureMetadata{
 			Name:        "Anti-Debugging",
 			Description: "Process uses anti-debugging technique to block debugger",
 			Tags:        []string{"linux", "container"},
@@ -27,23 +27,23 @@ func NewAntiDebuggingSignature() (types.Signature, error) {
 	}, nil
 }
 
-func (sig *antiDebugging) Init(cb types.SignatureHandler) error {
+func (sig *antiDebugging) Init(cb detect.SignatureHandler) error {
 	sig.cb = cb
 	return nil
 }
 
-func (sig *antiDebugging) GetMetadata() (types.SignatureMetadata, error) {
+func (sig *antiDebugging) GetMetadata() (detect.SignatureMetadata, error) {
 	return sig.metadata, nil
 }
 
-func (sig *antiDebugging) GetSelectedEvents() ([]types.SignatureEventSelector, error) {
-	return []types.SignatureEventSelector{
+func (sig *antiDebugging) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
+	return []detect.SignatureEventSelector{
 		{Source: "tracee", Name: "ptrace"},
 	}, nil
 }
 
-func (sig *antiDebugging) OnEvent(e types.Event) error {
-	ee, ok := e.(external.Event)
+func (sig *antiDebugging) OnEvent(e detect.Event) error {
+	ee, ok := e.(trace.TraceeEvent)
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}
@@ -58,7 +58,7 @@ func (sig *antiDebugging) OnEvent(e types.Event) error {
 	if requestString != "PTRACE_TRACEME" {
 		return nil
 	}
-	sig.cb(types.Finding{
+	sig.cb(detect.Finding{
 		SigMetadata: sig.metadata,
 		Context:     ee,
 		Data: map[string]interface{}{
@@ -68,7 +68,7 @@ func (sig *antiDebugging) OnEvent(e types.Event) error {
 	return nil
 }
 
-func (sig *antiDebugging) OnSignal(_ types.Signal) error {
+func (sig *antiDebugging) OnSignal(_ detect.Signal) error {
 	return nil
 }
 
