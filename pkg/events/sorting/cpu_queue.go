@@ -15,7 +15,10 @@ type cpuEventsQueue struct {
 
 // InsertByTimestamp insert new event to the queue in the right position according to its timestamp
 func (cq *cpuEventsQueue) InsertByTimestamp(newEvent *external.Event) error {
-	newNode := cq.pool.Alloc(newEvent)
+	newNode, allocErr := cq.pool.Alloc(newEvent)
+	if allocErr != nil {
+		cq.pool.Reset()
+	}
 
 	cq.mutex.Lock()
 	defer cq.mutex.Unlock()
@@ -31,7 +34,10 @@ func (cq *cpuEventsQueue) InsertByTimestamp(newEvent *external.Event) error {
 				break
 			}
 			if insertLocation.next == insertLocation {
-				return fmt.Errorf("encountered node with self reference at next")
+				err := fmt.Errorf("encountered node with self reference at next")
+				if allocErr != nil {
+					err = fmt.Errorf("%s\n%s", allocErr, err)
+				}
 			}
 			insertLocation = insertLocation.next
 		}
@@ -39,7 +45,7 @@ func (cq *cpuEventsQueue) InsertByTimestamp(newEvent *external.Event) error {
 	} else {
 		cq.put(newNode)
 	}
-	return nil
+	return allocErr
 }
 
 // insertAfter insert new event to the queue after another node
