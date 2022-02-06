@@ -1,5 +1,5 @@
-// Package types includes the "API" of the rule-engine and includes public facing types that consumers of the rule engine should work with
-package types
+// Package detect includes the "API" of the rule-engine and includes public facing types that consumers of the rule engine should work with
+package detect
 
 // Signature is the basic unit of business logic for the rule-engine
 type Signature interface {
@@ -43,7 +43,7 @@ type Event interface{}
 //Signal is a generic lifecycle event for a signature
 type Signal interface{}
 
-//SignalSourceComplete signals that an input source the signature was subscribed to has ended
+//SignalSourceComplete signals that an input source the signature was subscribed to had ended
 type SignalSourceComplete string
 
 //Finding is the main output of a signature. It represents a match result for the signature business logic

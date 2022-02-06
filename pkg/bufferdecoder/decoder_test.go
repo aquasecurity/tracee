@@ -707,7 +707,7 @@ func BenchmarkBinaryBool(*testing.B) {
 
 func BenchmarkDecodeSlimCred(*testing.B) {
 	/*
-		s := external.SlimCred{
+		s := bufferdecoder.SlimCred{
 			Uid:            12,
 			Gid:            34,
 			Suid:           56,
@@ -741,7 +741,7 @@ func BenchmarkDecodeSlimCred(*testing.B) {
 
 func BenchmarkBinarySlimCred(*testing.B) {
 	/*
-		s := external.SlimCred{
+		s := bufferdecoder.SlimCred{
 			Uid:            12,
 			Gid:            34,
 			Suid:           56,
