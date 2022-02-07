@@ -132,9 +132,7 @@ func (t *Tracee) processEvent(event *external.Event) error {
 	case SchedProcessExecEventID:
 		//update the process tree
 		processData := ProcessCtx{event.Timestamp, event.ContainerID, uint32(event.ProcessID), uint32(event.ThreadID), uint32(event.ParentProcessID), uint32(event.HostThreadID), uint32(event.HostProcessID), uint32(event.HostParentProcessID), uint32(event.UserID), uint32(event.MountNS), uint32(event.PIDNS)}
-		t.processTree.mtx.RLock()
-		t.processTree.processTreeMap[event.HostThreadID] = processData
-		t.processTree.mtx.RUnlock()
+		t.processTree.UpdateElementProcessTree(event.HostThreadID, processData)
 		//cache this pid by it's mnt ns
 		if event.ProcessID == 1 {
 			t.pidsInMntns.ForceAddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
@@ -225,9 +223,7 @@ func (t *Tracee) processEvent(event *external.Event) error {
 			return err
 		}
 	case SchedProcessExitEventID:
-		t.processTree.mtx.RLock()
-		delete(t.processTree.processTreeMap, event.HostProcessID)
-		t.processTree.mtx.RUnlock()
+		t.processTree.DeleteElementProcessTree(event.HostThreadID)
 	case SchedProcessForkEventID:
 		hostTid, _ := getEventArgInt32Val(event, "child_tid")
 		hostPid, _ := getEventArgInt32Val(event, "child_pid")
@@ -236,10 +232,7 @@ func (t *Tracee) processEvent(event *external.Event) error {
 		hostPpid, _ := getEventArgInt32Val(event, "parent_pid")
 		tid, _ := getEventArgInt32Val(event, "child_ns_tid")
 		processData := ProcessCtx{event.Timestamp, event.ContainerID, uint32(pid), uint32(tid), uint32(ppid), uint32(hostTid), uint32(hostPid), uint32(hostPpid), uint32(event.UserID), uint32(event.MountNS), uint32(event.PIDNS)}
-		t.processTree.mtx.RLock()
-		t.processTree.processTreeMap[int(hostTid)] = processData
-		t.processTree.mtx.RUnlock()
-
+		t.processTree.UpdateElementProcessTree(event.HostThreadID, processData)
 	case CgroupMkdirEventID:
 		cgroupId, err := getEventArgUint64Val(event, "cgroup_id")
 		if err != nil {

@@ -136,6 +136,17 @@ func getNsIdData(taskStatusPath string) (uint32, uint32, error) {
 	return uint32(mntId), uint32(pidId), nil
 }
 
+func (p *ProcessTree) UpdateElementProcessTree(hostTid int, ctx ProcessCtx) {
+	p.mtx.RLock()
+	p.processTreeMap[hostTid] = ctx
+	p.mtx.RUnlock()
+}
+func (p *ProcessTree) DeleteElementProcessTree(hostTid int) {
+	p.mtx.RLock()
+	delete(p.processTreeMap, hostTid)
+	p.mtx.RUnlock()
+}
+
 //initialize new process-tree
 func NewProcessTree() (*ProcessTree, error) {
 	p := ProcessTree{make(map[int]ProcessCtx), sync.RWMutex{}}
