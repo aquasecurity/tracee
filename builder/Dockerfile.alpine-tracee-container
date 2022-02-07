@@ -58,6 +58,7 @@ USER root
 # install base environment
 
 RUN apk --no-cache update && \
+    apk --no-cache add coreutils && \
     apk --no-cache add sudo curl && \
     apk --no-cache add libelf zlib && \
     apk --no-cache add libc6-compat && \
@@ -98,7 +99,9 @@ COPY . /tracee
 RUN make -f Makefile.one clean && \
     BTFHUB=$BTFHUB make -f Makefile.one tracee-ebpf && \
     make -f Makefile.one tracee-rules && \
-    make -f Makefile.one rules
+    make -f Makefile.one rules && \
+    rm -rf ./3rdparty/btfhub/ && \
+    rm -rf ./3rdparty/btfhub-archive/
 
 #
 # tracee-core (tracee-base as base)

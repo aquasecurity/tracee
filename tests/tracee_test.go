@@ -26,8 +26,8 @@ func runTraceeContainer(ctx context.Context, tempDir string) (*traceeContainer, 
 		BindMounts: map[string]string{ // container:host
 			tempDir:                tempDir,           // required for all
 			"/etc/os-release-host": "/etc/os-release", // required for all
-			"/usr/src":             "/usr/src",        // required for -nocore
-			"/lib/modules":         "/lib/modules",    // required for -nocore
+			"/usr/src":             "/usr/src",        // required for full
+			"/lib/modules":         "/lib/modules",    // required for full
 		},
 		Env: map[string]string{
 			"LIBBPFGO_OSRELEASE_FILE": "/etc/os-release-host",
@@ -69,7 +69,7 @@ func runTraceeTesterContainer(ctx context.Context, sigID string) (*traceeContain
 var (
 	testerImageRef = flag.String("tracee-tester-image-ref", "docker.io/aquasec/tracee-tester:latest",
 		"tracee tester container image reference")
-	traceeImageRef = flag.String("tracee-image-ref", "tracee-nocore:latest",
+	traceeImageRef = flag.String("tracee-image-ref", "tracee:full",
 		"tracee container image reference")
 	signatureIDs = flag.String("tracee-signatures", "TRC-2,TRC-3,TRC-4,TRC-5,TRC-7,TRC-8,TRC-9,TRC-10,TRC-11,TRC-12,TRC-14",
 		"comma-separated list of tracee signature identifiers")
@@ -96,7 +96,7 @@ func parseSignatureIDs() []string {
 // non CO-RE, and CO-RE with custom BTFHub support.
 //
 //     go test -v -run "TestTraceeSignatures" ./tests/tracee_test.go \
-//            -tracee-image-ref "tracee-nocore:latest" \
+//            -tracee-image-ref "tracee:full" \
 //            -tracee-tester-image-ref "aquasec/tracee-tester:latest" \
 //            -tracee-signatures "TRC-2,TRC-3"
 func TestTraceeSignatures(t *testing.T) {
