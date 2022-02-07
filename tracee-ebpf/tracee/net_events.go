@@ -12,7 +12,7 @@ import (
 
 type EventMeta struct {
 	TimeStamp   uint64 `json:"timeStamp"`
-	NetEventId  int32  `json:"netEventId"`
+	NetEventId  uint32 `json:"netEventId"`
 	HostTid     int    `json:"hostTid"`
 	ProcessName string `json:"processName"`
 }
@@ -33,7 +33,7 @@ func (t *Tracee) processNetEvents() {
 			// timeStamp is nanoseconds since system boot time
 			timeStampObj := time.Unix(0, int64(evtMeta.TimeStamp+t.bootTime))
 
-			if uint32(evtMeta.NetEventId) == NetPacket {
+			if evtMeta.NetEventId == NetPacket {
 				var pktLen uint32
 				err := binary.Read(dataBuff, binary.LittleEndian, &pktLen)
 				if err != nil {
@@ -128,7 +128,7 @@ func (t *Tracee) processNetEvents() {
 					continue
 				}
 
-				switch uint32(evtMeta.NetEventId) {
+				switch evtMeta.NetEventId {
 				case DebugNetSecurityBind:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/security_socket_bind LocalIP: %v, LocalPort: %d, Protocol: %d\n",
 						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
@@ -200,7 +200,7 @@ func (t *Tracee) writePacket(packetLen uint32, timeStamp time.Time, interfaceInd
 func parseEventMetaData(payloadBytes []byte) (EventMeta, *bytes.Buffer) {
 	var eventMetaData EventMeta
 	eventMetaData.TimeStamp = binary.LittleEndian.Uint64(payloadBytes[0:8])
-	eventMetaData.NetEventId = int32(binary.LittleEndian.Uint32(payloadBytes[8:12]))
+	eventMetaData.NetEventId = binary.LittleEndian.Uint32(payloadBytes[8:12])
 	eventMetaData.HostTid = int(binary.LittleEndian.Uint32(payloadBytes[12:16]))
 	eventMetaData.ProcessName = string(bytes.TrimRight(payloadBytes[16:32], "\x00"))
 	return eventMetaData, bytes.NewBuffer(payloadBytes[32:])
