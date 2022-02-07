@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -30,6 +31,7 @@ type ProcessCtx struct {
 
 type ProcessTree struct {
 	processTreeMap map[int]ProcessCtx
+	mtx            sync.RWMutex // protecting both update and delete entries
 }
 
 func (t *Tracee) ParseProcessContext(ctx []byte) (ProcessCtx, error) {
@@ -136,7 +138,7 @@ func getNsIdData(taskStatusPath string) (uint32, uint32, error) {
 
 //initialize new process-tree
 func NewProcessTree() (*ProcessTree, error) {
-	p := ProcessTree{make(map[int]ProcessCtx)}
+	p := ProcessTree{make(map[int]ProcessCtx), sync.RWMutex{}}
 	procDir, err := os.Open("/proc")
 	if err != nil {
 		return nil, err
