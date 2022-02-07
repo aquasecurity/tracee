@@ -191,14 +191,14 @@ Copyright (C) Aqua Security inc.
 #define HIDDEN_INODES                   1032
 #define MAX_EVENT_ID                    1033
 
-#define NET_PACKET                      4000
-#define NET_SECURITY_BIND               4001
-#define NET_UDP_SENDMSG                 4002
-#define NET_UDP_DISCONNECT              4003
-#define NET_UDP_DESTROY_SOCK            4004
-#define NET_UDPV6_DESTROY_SOCK          4005
-#define NET_INET_SOCK_SET_STATE         4006
-#define NET_TCP_CONNECT                 4007
+#define NET_PACKET                      0
+#define DEBUG_NET_SECURITY_BIND         1
+#define DEBUG_NET_UDP_SENDMSG           2
+#define DEBUG_NET_UDP_DISCONNECT        3
+#define DEBUG_NET_UDP_DESTROY_SOCK      4
+#define DEBUG_NET_UDPV6_DESTROY_SOCK    5
+#define DEBUG_NET_INET_SOCK_SET_STATE   6
+#define DEBUG_NET_TCP_CONNECT           7
 
 #define CONFIG_SHOW_SYSCALL             1
 #define CONFIG_EXEC_ENV                 2
@@ -3229,7 +3229,7 @@ int BPF_KPROBE(trace_security_socket_bind)
         debug_event.ts = data.context.ts;
         debug_event.host_tid = data.context.host_tid;
         __builtin_memcpy(debug_event.comm, data.context.comm, TASK_COMM_LEN);
-        debug_event.event_id = NET_SECURITY_BIND;
+        debug_event.event_id = DEBUG_NET_SECURITY_BIND;
         debug_event.local_addr = connect_id.address;
         debug_event.local_port = __bpf_ntohs(connect_id.port);
         debug_event.protocol = protocol;
@@ -3296,7 +3296,7 @@ int BPF_KPROBE(trace_udp_sendmsg)
 
     struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
 
-    return net_map_update_or_delete_sock(ctx, NET_UDP_SENDMSG, sk, data.context.host_tid);
+    return net_map_update_or_delete_sock(ctx, DEBUG_NET_UDP_SENDMSG, sk, data.context.host_tid);
 }
 
 SEC("kprobe/__udp_disconnect")
@@ -3311,7 +3311,7 @@ int BPF_KPROBE(trace_udp_disconnect)
 
     struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
 
-    return net_map_update_or_delete_sock(ctx, NET_UDP_DISCONNECT, sk, 0);
+    return net_map_update_or_delete_sock(ctx, DEBUG_NET_UDP_DISCONNECT, sk, 0);
 }
 
 SEC("kprobe/udp_destroy_sock")
@@ -3326,7 +3326,7 @@ int BPF_KPROBE(trace_udp_destroy_sock)
 
     struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
 
-    return net_map_update_or_delete_sock(ctx, NET_UDP_DESTROY_SOCK, sk, 0);
+    return net_map_update_or_delete_sock(ctx, DEBUG_NET_UDP_DESTROY_SOCK, sk, 0);
 }
 
 SEC("kprobe/udpv6_destroy_sock")
@@ -3341,7 +3341,7 @@ int BPF_KPROBE(trace_udpv6_destroy_sock)
 
     struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
 
-    return net_map_update_or_delete_sock(ctx, NET_UDPV6_DESTROY_SOCK, sk, 0);
+    return net_map_update_or_delete_sock(ctx, DEBUG_NET_UDPV6_DESTROY_SOCK, sk, 0);
 }
 
 // include/trace/events/sock.h:
@@ -3438,7 +3438,7 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
             debug_event.host_tid = sock_ctx_p->host_tid;
             __builtin_memcpy(debug_event.comm, sock_ctx_p->comm, TASK_COMM_LEN);
         }
-        debug_event.event_id = NET_INET_SOCK_SET_STATE;
+        debug_event.event_id = DEBUG_NET_INET_SOCK_SET_STATE;
         debug_event.old_state = old_state;
         debug_event.new_state = new_state;
         debug_event.sk_ptr = (u64)sk;
@@ -3482,7 +3482,7 @@ int BPF_KPROBE(trace_tcp_connect)
     net_ctx_ext.local_port = connect_id.port;
     bpf_map_update_elem(&sock_ctx_map, &sk, &net_ctx_ext, BPF_ANY);
 
-    return net_map_update_or_delete_sock(ctx, NET_TCP_CONNECT, sk, data.context.host_tid);
+    return net_map_update_or_delete_sock(ctx, DEBUG_NET_TCP_CONNECT, sk, data.context.host_tid);
 }
 
 static __always_inline u32 send_bin_helper(void* ctx, struct bpf_map_def *prog_array, int tail_call)
@@ -4157,7 +4157,6 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
 
     struct ethhdr *eth = (void *)head;
     net_packet_t pkt = {0};
-    pkt.event_id = NET_PACKET;
     pkt.ts = bpf_ktime_get_ns();
     pkt.len = skb->len;
     pkt.ifindex = skb->ifindex;

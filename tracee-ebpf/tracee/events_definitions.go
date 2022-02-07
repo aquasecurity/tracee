@@ -87,14 +87,14 @@ const (
 )
 
 const (
-	NetPacket int32 = iota + 4000
-	NetSecurityBind
-	NetUdpSendmsg
-	NetUdpDisconnect
-	NetUdpDestroySock
-	NetUdpV6DestroySock
-	NetInetSockSetState
-	NetTcpConnect
+	NetPacket uint32 = iota
+	DebugNetSecurityBind
+	DebugNetUdpSendmsg
+	DebugNetUdpDisconnect
+	DebugNetUdpDestroySock
+	DebugNetUdpV6DestroySock
+	DebugNetInetSockSetState
+	DebugNetTcpConnect
 )
 
 const Unique32BitSyscallsStartID = 3000

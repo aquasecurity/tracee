@@ -33,7 +33,7 @@ func (t *Tracee) processNetEvents() {
 			// timeStamp is nanoseconds since system boot time
 			timeStampObj := time.Unix(0, int64(evtMeta.TimeStamp+t.bootTime))
 
-			if evtMeta.NetEventId == NetPacket {
+			if uint32(evtMeta.NetEventId) == NetPacket {
 				var pktLen uint32
 				err := binary.Read(dataBuff, binary.LittleEndian, &pktLen)
 				if err != nil {
@@ -128,23 +128,23 @@ func (t *Tracee) processNetEvents() {
 					continue
 				}
 
-				switch evtMeta.NetEventId {
-				case NetSecurityBind:
+				switch uint32(evtMeta.NetEventId) {
+				case DebugNetSecurityBind:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/security_socket_bind LocalIP: %v, LocalPort: %d, Protocol: %d\n",
 						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
-				case NetUdpSendmsg:
+				case DebugNetUdpSendmsg:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_sendmsg          LocalIP: %v, LocalPort: %d, Protocol: %d\n",
 						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
-				case NetUdpDisconnect:
+				case DebugNetUdpDisconnect:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/__udp_disconnect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
 						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
-				case NetUdpDestroySock:
+				case DebugNetUdpDestroySock:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_destroy_sock     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
 						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
-				case NetUdpV6DestroySock:
+				case DebugNetUdpV6DestroySock:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/udpv6_destroy_sock   LocalIP: %v, LocalPort: %d, Protocol: %d\n",
 						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
-				case NetInetSockSetState:
+				case DebugNetInetSockSetState:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/inet_sock_set_state  LocalIP: %v, LocalPort: %d, RemoteIP: %v, RemotePort: %d, Protocol: %d, OldState: %d, NewState: %d, SockPtr: 0x%x\n",
 						timeStampObj,
 						evtMeta.ProcessName,
@@ -157,7 +157,7 @@ func (t *Tracee) processNetEvents() {
 						pkt.TcpOldState,
 						pkt.TcpNewState,
 						pkt.SockPtr)
-				case NetTcpConnect:
+				case DebugNetTcpConnect:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/tcp_connect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
 						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
 				}
