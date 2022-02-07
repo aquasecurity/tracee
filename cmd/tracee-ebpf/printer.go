@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/tracee-ebpf/metrics"
 )
 
 type eventPrinter interface {
@@ -19,7 +20,7 @@ type eventPrinter interface {
 	// Preamble prints something before event printing begins (one time)
 	Preamble()
 	// Epilogue prints something after event printing ends (one time)
-	Epilogue(stats external.Stats)
+	Epilogue(stats metrics.Stats)
 	// Print prints a single event
 	Print(event external.Event)
 	// Error prints a single error
@@ -143,7 +144,7 @@ func (p tableEventPrinter) Error(err error) {
 	fmt.Fprintf(p.err, "%v\n", err)
 }
 
-func (p tableEventPrinter) Epilogue(stats external.Stats) {
+func (p tableEventPrinter) Epilogue(stats metrics.Stats) {
 	fmt.Println()
 	fmt.Fprintf(p.out, "End of events stream\n")
 	fmt.Fprintf(p.out, "Stats: %+v\n", stats)
@@ -191,7 +192,7 @@ func (p templateEventPrinter) Print(event external.Event) {
 	}
 }
 
-func (p templateEventPrinter) Epilogue(stats external.Stats) {}
+func (p templateEventPrinter) Epilogue(stats metrics.Stats) {}
 
 func (p templateEventPrinter) Close() {
 }
@@ -217,7 +218,7 @@ func (p jsonEventPrinter) Error(err error) {
 	fmt.Fprintf(p.err, "%v\n", err)
 }
 
-func (p jsonEventPrinter) Epilogue(stats external.Stats) {}
+func (p jsonEventPrinter) Epilogue(stats metrics.Stats) {}
 
 func (p jsonEventPrinter) Close() {
 }
@@ -250,7 +251,7 @@ func (p *gobEventPrinter) Error(err error) {
 	fmt.Fprintf(p.err, "%v\n", err)
 }
 
-func (p *gobEventPrinter) Epilogue(stats external.Stats) {}
+func (p *gobEventPrinter) Epilogue(stats metrics.Stats) {}
 
 func (p gobEventPrinter) Close() {
 }
@@ -272,6 +273,6 @@ func (p *ignoreEventPrinter) Error(err error) {
 	fmt.Fprintf(p.err, "%v\n", err)
 }
 
-func (p *ignoreEventPrinter) Epilogue(stats external.Stats) {}
+func (p *ignoreEventPrinter) Epilogue(stats metrics.Stats) {}
 
 func (p ignoreEventPrinter) Close() {}

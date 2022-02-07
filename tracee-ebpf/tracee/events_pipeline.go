@@ -160,7 +160,7 @@ func (t *Tracee) processEvents(ctx gocontext.Context, in <-chan *external.Event)
 
 				select {
 				case t.config.ChanEvents <- *event:
-					t.stats.eventCounter.Increment()
+					t.stats.EventCount.Increment()
 				case <-ctx.Done():
 					return
 				}
@@ -169,7 +169,7 @@ func (t *Tracee) processEvents(ctx gocontext.Context, in <-chan *external.Event)
 			for _, derivative := range derivatives {
 				select {
 				case t.config.ChanEvents <- derivative:
-					t.stats.eventCounter.Increment()
+					t.stats.EventCount.Increment()
 				case <-ctx.Done():
 					return
 				}
@@ -250,6 +250,6 @@ func MergeErrors(cs ...<-chan error) <-chan error {
 }
 
 func (t *Tracee) handleError(err error) {
-	t.stats.errorCounter.Increment()
+	t.stats.ErrorCount.Increment()
 	t.config.ChanErrors <- err
 }
