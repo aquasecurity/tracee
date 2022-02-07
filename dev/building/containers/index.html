@@ -16,7 +16,7 @@
         
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.9+insiders-4.7.2">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.10+insiders-4.8.1">
     
     
       
@@ -24,13 +24,13 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ab02f2be.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.dea0c3a6.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.e6a45f82.min.css">
         
       
-      <link rel="preload" as="style" href="../../assets/stylesheets/vendor/mermaid.acdec53c.min.css">
+      <link rel="preload" as="style" href="../../assets/stylesheets/vendor/mermaid.53552a32.min.css">
       
     
     
@@ -380,15 +380,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#executing-tracee-containers" class="md-nav__link">
-    Executing Tracee containers
+  <a href="#running-tracee-containers" class="md-nav__link">
+    Running Tracee containers
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#executing-tracee-ebpf-only" class="md-nav__link">
-    Executing tracee-ebpf only
+  <a href="#running-tracee-ebpf-only" class="md-nav__link">
+    Running Tracee-eBPF only
   </a>
   
 </li>
@@ -838,15 +838,15 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#executing-tracee-containers" class="md-nav__link">
-    Executing Tracee containers
+  <a href="#running-tracee-containers" class="md-nav__link">
+    Running Tracee containers
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#executing-tracee-ebpf-only" class="md-nav__link">
-    Executing tracee-ebpf only
+  <a href="#running-tracee-ebpf-only" class="md-nav__link">
+    Running Tracee-eBPF only
   </a>
   
 </li>
@@ -874,79 +874,60 @@ have a local building building and execution environment,
 <a href="../environment/">read this</a> instead.</p>
 </blockquote>
 <h2 id="generating-tracee-containers">Generating Tracee containers<a class="headerlink" href="#generating-tracee-containers" title="Permanent link">&para;</a></h2>
-<p>Tracee containers come in <strong>3 flavors</strong>:</p>
+<p>Tracee containers come in <strong>2 flavors</strong>:</p>
 <ul>
-<li><code>tracee</code>: default <a href="https://nakryiko.com/posts/bpf-portability-and-co-re/">CO-RE eBPF</a> tracee (portable).</li>
+<li><code>tracee:latest</code> (CO-RE enabled embedded tracee bpf object)</li>
 </ul>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container build-alpine-tracee-core
+<div class="highlight"><pre><span></span><code>$ BTFHUB={0,1} make -f builder/Makefile.tracee-container build-tracee
 </code></pre></div>
 <ul>
-<li><code>tracee-btfhub</code>: CO-RE eBPF tracee with <a href="https://github.com/aquasecurity/btfhub/blob/main/docs/supported-distros.md">older kernels support</a>.</li>
+<li><code>tracee:full</code> (Contains tracee bpf source code and compiler tool chain) </li>
 </ul>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container build-alpine-tracee-core-btfhub
-</code></pre></div>
-<ul>
-<li><code>tracee-nocore</code>: non CO-RE eBPF binary (eBPF code is compiled before the run).</li>
-</ul>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container build-alpine-tracee-nocore
-</code></pre></div>
-<p>At the end you will end up with 3 docker images built. Example:</p>
-<div class="highlight"><pre><span></span><code>$ docker image ls
-REPOSITORY           TAG       IMAGE ID       CREATED        SIZE
-tracee-btfhub        latest    1612003190b7   11 hours ago   73.6MB
-tracee-nocore        latest    cc8eba17fd76   11 hours ago   1.19GB
-tracee               latest    11dd16c3bda3   11 hours ago   72.1MB
-</code></pre></div>
-<p>Then, you may chose to run the container images through the cmdline, or to use
-the same Makefile.tracee-container file with targets that will run it for you.</p>
-<h2 id="executing-tracee-containers">Executing Tracee containers<a class="headerlink" href="#executing-tracee-containers" title="Permanent link">&para;</a></h2>
-<p>You may chose to generate container images locally or not. You're able to run
-the containers images, with correct/needed docker arguments, through the
-Makefile.tracee-container file.</p>
-<ul>
-<li>To run the <code>tracee</code> container:</li>
-</ul>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-alpine-tracee-core
-</code></pre></div>
-<ul>
-<li>To run the <code>tracee-btfhub</code> container:</li>
-</ul>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-alpine-tracee-core-btfhub
-</code></pre></div>
-<ul>
-<li>To run the <code>tracee-nocore</code> container:</li>
-</ul>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-alpine-tracee-nocore
+<div class="highlight"><pre><span></span><code>$ BTFHUB={0,1} make -f builder/Makefile.tracee-container build-tracee-full
 </code></pre></div>
 <blockquote>
-<p>You may provide arguments to tracee through the <code>ARG</code> variable to the Makefile:</p>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-alpine-tracee-core ARG=&quot;--debug&quot;
+<p>Note: BTFHUB=1 adds support to some <a href="https://github.com/aquasecurity/btfhub/blob/main/docs/supported-distros.md">older kernels</a>
+so user doesn't need to build specific non CO-RE eBPF objects to them.</p>
+</blockquote>
+<h2 id="running-tracee-containers">Running Tracee containers<a class="headerlink" href="#running-tracee-containers" title="Permanent link">&para;</a></h2>
+<p>Containers are supposed to be executed through docker cmdline directly, from the
+official built images. Nevertheless, during the image building process, it may
+be usefull to execute them with correct arguments to see if they're working.</p>
+<p>User may execute built containers through <code>Makefile.tracee-container</code> file with
+the "run" targets:</p>
+<ul>
+<li>To run the <code>tracee:latest</code> container:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-tracee
+</code></pre></div>
+<ul>
+<li>To run the <code>tracee:full</code> container:</li>
+</ul>
+<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-tracee-full
+</code></pre></div>
+<blockquote>
+<p>Note: tracee-ebpf arguments are passed through the ARG="" variable</p>
+<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-tracee ARG=&quot;--help&quot;
 </code></pre></div>
 </blockquote>
-<h2 id="executing-tracee-ebpf-only">Executing <code>tracee-ebpf</code> only<a class="headerlink" href="#executing-tracee-ebpf-only" title="Permanent link">&para;</a></h2>
-<p>Generated tracee containers allow you to run <strong>tracee</strong>, as a complete solution
-(tracee-ebpf passes events to tracee-rules and tracee-rules process events
-based on existing signatures) OR to run <strong>tracee-ebpf</strong> only, as an
-introspection tool.</p>
+<h2 id="running-tracee-ebpf-only">Running Tracee-eBPF only<a class="headerlink" href="#running-tracee-ebpf-only" title="Permanent link">&para;</a></h2>
+<p>Generated containers allow user to run <strong>tracee</strong>, as a complete security
+solution (tracee-ebpf passes events to tracee-rules &amp; tracee-rules process
+events based on existing security signatures) OR to run <strong>tracee-ebpf</strong> only,
+as an introspection tool.</p>
 <ul>
-<li>To run the <code>tracee</code> container with <code>tracee-ebpf</code> only:</li>
+<li>To run the <code>tracee:latest</code> container with <code>tracee-ebpf</code> only:</li>
 </ul>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-alpine-tracee-ebpf-core
+<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-tracee-ebpf
 </code></pre></div>
 <ul>
-<li>To run the <code>tracee-btfhub</code> container with <code>tracee-ebpf</code> only:</li>
+<li>To run the <code>tracee:full</code> container with <code>tracee-ebpf</code> only:</li>
 </ul>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-alpine-tracee-ebpf-core-btfhub
-</code></pre></div>
-<ul>
-<li>To run the <code>tracee-nocore</code> container with <code>tracee-ebpf</code> only:</li>
-</ul>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-alpine-tracee-ebpf-nocore
+<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-tracee-ebpf-full
 </code></pre></div>
 <blockquote>
-<p>You may provide arguments to tracee-ebpf through the <code>ARG</code> variable to the
-Makefile:</p>
-<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-alpine-tracee-ebpf-core ARG=&quot;--debug&quot;
+<p>Note: tracee-ebpf arguments are passed through the ARG="" variable</p>
+<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-tracee-ebpf ARG=&quot;--debug&quot;
 </code></pre></div>
 </blockquote>
 
@@ -1014,10 +995,10 @@ Makefile:</p>
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.f7fe2898.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../../assets/javascripts/workers/search.5c9dbbf3.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.7cc7e457.min.js"></script>
+      <script src="../../assets/javascripts/bundle.3069b7cf.min.js"></script>
       
     
   </body>
