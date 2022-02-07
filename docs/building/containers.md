@@ -10,7 +10,7 @@
 
 Tracee containers come in **2 flavors**:
 
-* `tracee:latest`
+* `tracee:latest` (CO-RE enabled embedded tracee bpf object)
 
   ```
   $ BTFHUB={0,1} make -f builder/Makefile.tracee-container build-tracee
