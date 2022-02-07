@@ -16,7 +16,7 @@ Tracee containers come in **2 flavors**:
   $ BTFHUB={0,1} make -f builder/Makefile.tracee-container build-tracee
   ```
 
-* `tracee:full`
+* `tracee:full` (Contains tracee bpf source code and compiler tool chain) 
 
   ```
   $ BTFHUB={0,1} make -f builder/Makefile.tracee-container build-tracee-full
