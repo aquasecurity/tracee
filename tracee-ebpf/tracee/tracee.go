@@ -15,7 +15,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync/atomic"
 	"syscall"
 	"time"
 	"unsafe"
@@ -28,6 +27,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
 	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
+	"github.com/aquasecurity/tracee/tracee-ebpf/metrics"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
 	lru "github.com/hashicorp/golang-lru"
@@ -165,7 +165,7 @@ type Tracee struct {
 	lostNetChannel    chan uint64
 	bootTime          uint64
 	startTime         uint64
-	stats             statsStore
+	stats             metrics.Stats
 	capturedFiles     map[string]int64
 	fileHashes        *lru.Cache
 	profiledFiles     map[string]profilerInfo
@@ -182,37 +182,8 @@ type Tracee struct {
 	eventsSorter      *sorting.EventsChronologicalSorter
 }
 
-type counter int32
-
-func (c *counter) Increment(amount ...int) {
-	sum := 1
-	if len(amount) > 0 {
-		sum = 0
-		for _, a := range amount {
-			sum = sum + a
-		}
-	}
-	atomic.AddInt32((*int32)(c), int32(sum))
-}
-
-type statsStore struct {
-	eventCounter  counter
-	errorCounter  counter
-	lostEvCounter counter
-	lostWrCounter counter
-	lostNtCounter counter
-}
-
-func (t *Tracee) GetStats() external.Stats {
-	var stats external.Stats
-
-	stats.EventCount = int(t.stats.eventCounter)
-	stats.ErrorCount = int(t.stats.errorCounter)
-	stats.LostEvCount = int(t.stats.lostEvCounter)
-	stats.LostWrCount = int(t.stats.lostWrCounter)
-	stats.LostNtCount = int(t.stats.lostNtCounter)
-
-	return stats
+func (t *Tracee) Stats() *metrics.Stats {
+	return &t.stats
 }
 
 // New creates a new Tracee instance based on a given valid Config
@@ -1046,6 +1017,6 @@ func (t *Tracee) invokeInitNamespacesEvent() {
 	if t.eventsToTrace[InitNamespacesEventID] {
 		systemInfoEvent, _ := CreateInitNamespacesEvent()
 		t.config.ChanEvents <- systemInfoEvent
-		t.stats.eventCounter.Increment()
+		t.stats.EventCount.Increment()
 	}
 }

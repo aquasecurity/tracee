@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/tracee-rules/metrics"
 	"github.com/aquasecurity/tracee/types"
 	"github.com/open-policy-agent/opa/ast"
 )
@@ -35,11 +36,16 @@ type Engine struct {
 	output          chan types.Finding
 	waitGroup       sync.WaitGroup
 	config          Config
+	stats           metrics.Stats
 }
 
 //EventSources is a bundle of input sources used to configure the Engine
 type EventSources struct {
 	Tracee chan types.Event
+}
+
+func (e *Engine) Stats() *metrics.Stats {
+	return &e.stats
 }
 
 // NewEngine creates a new rules-engine with the given arguments
@@ -141,6 +147,7 @@ func (engine *Engine) unloadAllSignatures() {
 
 // matchHandler is a function that runs when a signature is matched
 func (engine *Engine) matchHandler(res types.Finding) {
+	engine.stats.Detections.Increment()
 	engine.output <- res
 }
 
@@ -189,6 +196,8 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 					engine.signaturesMutex.RUnlock()
 					continue
 				}
+
+				engine.stats.Events.Increment()
 
 				eventOrigin := analyzeEventOrigin(traceeEvt)
 				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName, Origin: eventOrigin}] {
@@ -265,6 +274,7 @@ func (engine *Engine) LoadSignature(signature types.Signature) (string, error) {
 		engine.logger.Printf("error initializing signature %s: %v", metadata.Name, err)
 
 	}
+	engine.stats.Signatures.Increment()
 	go signatureStart(signature, c, &engine.waitGroup)
 	return metadata.ID, nil
 }
@@ -294,6 +304,7 @@ func (engine *Engine) UnloadSignature(signatureId string) error {
 	c, ok := engine.signatures[signature]
 	if ok {
 		delete(engine.signatures, signature)
+		defer engine.stats.Signatures.Decrement()
 		defer signature.Close()
 		defer close(c)
 	}
