@@ -33,6 +33,9 @@ type ProcessTree struct {
 
 func ParseProcessContext(ctx []byte, containers *containers.Containers) (ProcessCtx, error) {
 	var procCtx = ProcessCtx{}
+	if len(ctx) < 52 {
+		return procCtx, fmt.Errorf("Error: ctx byte array to small %v", len(ctx))
+	}
 	procCtx.StartTime = int(binary.LittleEndian.Uint64(ctx[0:8]))
 	cgroupId := binary.LittleEndian.Uint64(ctx[8:16])
 	procCtx.ContainerID = containers.GetCgroupInfo(cgroupId).ContainerId
