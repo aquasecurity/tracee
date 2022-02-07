@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"path"
@@ -19,13 +20,17 @@ import (
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/flags"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/tracee-ebpf/metrics"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/syndtr/gocapability/capability"
 	cli "github.com/urfave/cli/v2"
 )
 
 var debug bool
 var traceeInstallPath string
+var listenMetrics bool
+var metricsAddr string
 
 var version string
 
@@ -159,6 +164,24 @@ func main() {
 				return fmt.Errorf("error creating Tracee: %v", err)
 			}
 
+			if listenMetrics {
+				err := metrics.RegisterPrometheus(t.Stats())
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error registering prometheus metrics: %v\n", err)
+				} else {
+					mux := http.NewServeMux()
+					mux.Handle("/metrics", promhttp.Handler())
+
+					go func() {
+						fmt.Fprintf(os.Stdout, "Serving metrics endpoint at %s\n", metricsAddr)
+						if err := http.ListenAndServe(metricsAddr, mux); err != http.ErrServerClosed {
+							fmt.Fprintf(os.Stderr, "Error serving metrics endpoint: %v\n", err)
+						}
+					}()
+				}
+
+			}
+
 			if err := os.MkdirAll(cfg.Capture.OutputPath, 0755); err != nil {
 				t.Close()
 				return fmt.Errorf("error creating output path: %v", err)
@@ -220,8 +243,8 @@ func main() {
 
 			// always print stats before exiting
 			defer func() {
-				stats := t.GetStats()
-				printer.Epilogue(stats)
+				stats := t.Stats()
+				printer.Epilogue(*stats)
 				printer.Close()
 			}()
 
@@ -275,6 +298,18 @@ func main() {
 				Value:       "/tmp/tracee",
 				Usage:       "path where tracee will install or lookup it's resources",
 				Destination: &traceeInstallPath,
+			},
+			&cli.BoolFlag{
+				Name:        "metrics",
+				Usage:       "enable metrics endpoint",
+				Destination: &listenMetrics,
+				Value:       false,
+			},
+			&cli.StringFlag{
+				Name:        "metrics-addr",
+				Usage:       "listening address of the metrics endpoint server",
+				Value:       ":3366",
+				Destination: &metricsAddr,
 			},
 		},
 	}
