@@ -1,4 +1,4 @@
-package tracee
+package proctree
 
 import (
 	"encoding/binary"
@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
-	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/internal/bufferdecoder"
 )
 
 type ProcessCtx struct {
@@ -29,30 +28,23 @@ type ProcessCtx struct {
 }
 
 type ProcessTree struct {
-	processTreeMap map[int]ProcessCtx
+	ProcessTreeMap map[int]ProcessCtx
 }
 
-func (t *Tracee) ParseProcessContext(ctx []byte) (ProcessCtx, error) {
+func ParseProcessContext(ctx []byte, containers *containers.Containers) (ProcessCtx, error) {
 	var procCtx = ProcessCtx{}
 	procCtx.StartTime = int(binary.LittleEndian.Uint64(ctx[0:8]))
 	cgroupId := binary.LittleEndian.Uint64(ctx[8:16])
-	procCtx.ContainerID = t.containers.GetCgroupInfo(cgroupId).ContainerId
-	decoder := bufferdecoder.New(ctx[16:]) // this is the offset after the cgroup and startTime in the ctx byte array
-	var errs []error
-	errs = append(errs, decoder.DecodeUint32(&procCtx.Pid))
-	errs = append(errs, decoder.DecodeUint32(&procCtx.Tid))
-	errs = append(errs, decoder.DecodeUint32(&procCtx.Ppid))
-	errs = append(errs, decoder.DecodeUint32(&procCtx.HostTid))
-	errs = append(errs, decoder.DecodeUint32(&procCtx.HostPid))
-	errs = append(errs, decoder.DecodeUint32(&procCtx.HostPpid))
-	errs = append(errs, decoder.DecodeUint32(&procCtx.Uid))
-	errs = append(errs, decoder.DecodeUint32(&procCtx.MntId))
-	errs = append(errs, decoder.DecodeUint32(&procCtx.PidId))
-	for _, e := range errs {
-		if e != nil {
-			return procCtx, e
-		}
-	}
+	procCtx.ContainerID = containers.GetCgroupInfo(cgroupId).ContainerId
+	procCtx.Pid = binary.LittleEndian.Uint32(ctx[16:20])
+	procCtx.Tid = binary.LittleEndian.Uint32(ctx[20:24])
+	procCtx.Ppid = binary.LittleEndian.Uint32(ctx[24:28])
+	procCtx.HostTid = binary.LittleEndian.Uint32(ctx[28:32])
+	procCtx.HostPid = binary.LittleEndian.Uint32(ctx[32:36])
+	procCtx.HostPpid = binary.LittleEndian.Uint32(ctx[36:40])
+	procCtx.Uid = binary.LittleEndian.Uint32(ctx[40:44])
+	procCtx.MntId = binary.LittleEndian.Uint32(ctx[44:48])
+	procCtx.PidId = binary.LittleEndian.Uint32(ctx[48:52])
 	return procCtx, nil
 }
 
@@ -172,7 +164,7 @@ func NewProcessTree() (*ProcessTree, error) {
 				continue
 			}
 			processStatus.ContainerID = containerId
-			p.processTreeMap[int(processStatus.HostTid)] = processStatus
+			p.ProcessTreeMap[int(processStatus.HostTid)] = processStatus
 		}
 	}
 	return &p, nil

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aquasecurity/tracee/pkg/proctree"
 	"io"
 	"math"
 	"net"
@@ -177,7 +178,7 @@ type Tracee struct {
 	pcapFile          *os.File
 	ngIfacesIndex     map[int]int
 	containers        *containers.Containers
-	processTree       *ProcessTree
+	processTree       *proctree.ProcessTree
 	eventsSorter      *sorting.EventsChronologicalSorter
 }
 
@@ -384,7 +385,7 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error getting acces to 'stack_addresses' eBPF Map %v", err)
 	}
 	t.StackAddressesMap = StackAddressesMap
-	t.processTree, err = NewProcessTree()
+	t.processTree, err = proctree.NewProcessTree()
 	if err != nil {
 		t.Close()
 		return nil, fmt.Errorf("error creating process tree: %v", err)
@@ -922,8 +923,8 @@ func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 	return nil
 }
 
-func (t *Tracee) getProcessCtx(hostTid int) (ProcessCtx, error) {
-	processCtx, procExist := t.processTree.processTreeMap[hostTid]
+func (t *Tracee) getProcessCtx(hostTid int) (proctree.ProcessCtx, error) {
+	processCtx, procExist := t.processTree.ProcessTreeMap[hostTid]
 	if procExist {
 		return processCtx, nil
 	} else {
@@ -935,8 +936,8 @@ func (t *Tracee) getProcessCtx(hostTid int) (ProcessCtx, error) {
 		if err != nil {
 			return processCtx, err
 		}
-		processCtx, err = t.ParseProcessContext(processCtxBpfMap)
-		t.processTree.processTreeMap[hostTid] = processCtx
+		processCtx, err = proctree.ParseProcessContext(processCtxBpfMap, t.containers)
+		t.processTree.ProcessTreeMap[hostTid] = processCtx
 		return processCtx, err
 	}
 }
