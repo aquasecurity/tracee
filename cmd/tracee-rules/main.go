@@ -14,13 +14,17 @@ import (
 	"syscall"
 
 	"github.com/aquasecurity/tracee/tracee-rules/engine"
+	"github.com/aquasecurity/tracee/tracee-rules/metrics"
 	"github.com/aquasecurity/tracee/types"
 	"github.com/open-policy-agent/opa/compile"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
 )
 
 const (
 	signatureBufferFlag = "sig-buffer"
+	metricsFlag         = "metrics"
+	metricsAddrFlag     = "metrics-addr"
 )
 
 func main() {
@@ -117,6 +121,26 @@ func main() {
 			if err != nil {
 				return fmt.Errorf("constructing engine: %w", err)
 			}
+
+			if c.Bool(metricsFlag) {
+				err := metrics.RegisterPrometheus(e.Stats())
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error registering prometheus metrics: %v\n", err)
+				} else {
+					mux := http.NewServeMux()
+					mux.Handle("/metrics", promhttp.Handler())
+
+					go func() {
+						metricsAddr := c.String(metricsAddrFlag)
+						fmt.Fprintf(os.Stdout, "Serving metrics endpoint at %s\n", metricsAddr)
+						if err := http.ListenAndServe(metricsAddr, mux); err != http.ErrServerClosed {
+							fmt.Fprintf(os.Stderr, "Error serving metrics endpoint: %v\n", err)
+						}
+					}()
+				}
+
+			}
+
 			e.Start(sigHandler())
 			return nil
 		},
@@ -187,6 +211,16 @@ func main() {
 				Name:  signatureBufferFlag,
 				Usage: "size of the event channel's buffer consumed by signatures",
 				Value: 1000,
+			},
+			&cli.BoolFlag{
+				Name:  metricsFlag,
+				Usage: "enable metrics endpoint",
+				Value: false,
+			},
+			&cli.StringFlag{
+				Name:  metricsAddrFlag,
+				Usage: "listening address of the metrics endpoint server",
+				Value: ":4466",
 			},
 		},
 	}
