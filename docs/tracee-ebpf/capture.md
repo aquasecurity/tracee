@@ -23,8 +23,8 @@ CLI Option | Description
 `profile` | creates a runtime profile of program executions and their metadata for forensics use.
 `dir:/path/to/dir` | path where tracee will save produced artifacts. the artifact will be saved into an 'out' subdirectory. (default: /tmp/tracee).
 `clear-dir` | clear the captured artifacts output dir before starting (default: false).
-`net:per-container` | when capturing network packets, save pcap per container
-`net:per-process` | when capturing network packets, save pcap per process
+`pcap:per-container` | when capturing network packets, save pcap per container
+`pcap:per-process` | when capturing network packets, save pcap per process
 
 (Use this flag multiple times to choose multiple capture options)
 
@@ -58,7 +58,7 @@ Capture pcap files
 
 ```
 --capture net=enp0s3
---capture net=enp0s3 --capture net:per-container
+--capture net=enp0s3 --capture pcap:per-container
 ```
 
 Creates a runtime profile of program executions and their metadata for forensics use. The profiles created can be compared among executions to identify if there is any difference. For example, [use it as a github action to identify if any new process was executed since the last pipeline](https://github.com/aquasecurity/tracee-action), useful for supply chain security.
