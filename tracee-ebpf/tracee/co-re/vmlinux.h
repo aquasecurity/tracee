@@ -375,6 +375,7 @@ struct cgroup_file {
 
 struct cgroup {
 	struct kernfs_node *kn;
+	struct cgroup_root *root;
 };
 
 typedef long long int __kernel_loff_t;
@@ -386,6 +387,10 @@ typedef unsigned short umode_t;
 struct kernfs_node {
 	const char *name;
 	u64 id;
+};
+
+struct cgroup_root {
+	int hierarchy_id;
 };
 
 struct fdtable {
