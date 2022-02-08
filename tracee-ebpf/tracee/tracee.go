@@ -26,6 +26,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
 	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/internal/bufferdecoder"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
@@ -177,7 +178,7 @@ type Tracee struct {
 	pcapFile          *os.File
 	ngIfacesIndex     map[int]int
 	containers        *containers.Containers
-	processTree       *ProcessTree
+	procInfo          *procinfo.ProcInfo
 	eventsSorter      *sorting.EventsChronologicalSorter
 }
 
@@ -384,7 +385,7 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error getting acces to 'stack_addresses' eBPF Map %v", err)
 	}
 	t.StackAddressesMap = StackAddressesMap
-	t.processTree, err = NewProcessTree()
+	t.procInfo, err = procinfo.NewProcessInfo()
 	if err != nil {
 		t.Close()
 		return nil, fmt.Errorf("error creating process tree: %v", err)
@@ -922,9 +923,9 @@ func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 	return nil
 }
 
-func (t *Tracee) getProcessCtx(hostTid int) (ProcessCtx, error) {
-	processCtx, procExist := t.processTree.processTreeMap[hostTid]
-	if procExist {
+func (t *Tracee) getProcessCtx(hostTid int) (procinfo.ProcessCtx, error) {
+	processCtx, err := t.procInfo.GetElement(hostTid)
+	if err == nil {
 		return processCtx, nil
 	} else {
 		processContextMap, err := t.bpfModule.GetMap("process_context_map")
@@ -935,8 +936,8 @@ func (t *Tracee) getProcessCtx(hostTid int) (ProcessCtx, error) {
 		if err != nil {
 			return processCtx, err
 		}
-		processCtx, err = t.ParseProcessContext(processCtxBpfMap)
-		t.processTree.processTreeMap[hostTid] = processCtx
+		processCtx, err = procinfo.ParseProcessContext(processCtxBpfMap, t.containers)
+		t.procInfo.UpdateElement(hostTid, processCtx)
 		return processCtx, err
 	}
 }
