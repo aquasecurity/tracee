@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/containers"
@@ -92,6 +93,14 @@ func (t *Tracee) shouldProcessEvent(ctx *bufferdecoder.Context, args []trace.Arg
 	return true
 }
 
+func (t *Tracee) deleteFromProcessTree(hostTid int) {
+	// wait a second before deleting from the map - because there might events coming in the context of this process,
+	// after we receive its sched_process_exit. this mainly happens from network events, because these events come from
+	// the netChannel, and there might be a race condition between this channel and the eventsChannel.
+	time.Sleep(time.Second * 1)
+	t.procInfo.DeleteElement(hostTid)
+}
+
 func (t *Tracee) processEvent(event *trace.Event) error {
 	switch int32(event.EventID) {
 
@@ -134,6 +143,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		//update the process tree
 		processData := procinfo.ProcessCtx{
 			StartTime:   event.Timestamp,
+			ProcStartTime: event.Timestamp,
 			ContainerID: event.ContainerID,
 			Pid:         uint32(event.ProcessID),
 			Tid:         uint32(event.ThreadID),
@@ -144,6 +154,10 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			Uid:         uint32(event.UserID),
 			MntId:       uint32(event.MountNS),
 			PidId:       uint32(event.PIDNS)}
+		err := t.FillProcessStartTime(&processData)
+		if err != nil {
+			t.handleError(err)
+		}
 		t.procInfo.UpdateElement(event.HostThreadID, processData)
 		//cache this pid by it's mnt ns
 		if event.ProcessID == 1 {
@@ -235,7 +249,14 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			return err
 		}
 	case SchedProcessExitEventID:
-		t.procInfo.DeleteElement(event.HostThreadID)
+		if t.config.Capture.NetPerProcess {
+			pcapContext, _, err := t.getPcapContext(uint32(event.HostThreadID), event.ProcessName)
+			if err == nil {
+				go t.netExit(pcapContext)
+			}
+		}
+
+		go t.deleteFromProcessTree(event.HostThreadID)
 	case SchedProcessForkEventID:
 		hostTid, err := getEventArgInt32Val(event, "child_tid")
 		if err != nil {
@@ -263,6 +284,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 		processData := procinfo.ProcessCtx{
 			StartTime:   event.Timestamp,
+			ProcStartTime: event.Timestamp,
 			ContainerID: event.ContainerID,
 			Pid:         uint32(pid),
 			Tid:         uint32(tid),
@@ -273,7 +295,11 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			Uid:         uint32(event.UserID),
 			MntId:       uint32(event.MountNS),
 			PidId:       uint32(event.PIDNS)}
-		t.procInfo.UpdateElement(event.HostThreadID, processData)
+		err = t.FillProcessStartTime(&processData)
+		if err != nil {
+			t.handleError(err)
+		}
+		t.procInfo.UpdateElement(int(hostTid), processData)
 	case CgroupMkdirEventID:
 		cgroupId, err := getEventArgUint64Val(event, "cgroup_id")
 		if err != nil {
@@ -296,6 +322,13 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 
 	case CgroupRmdirEventID:
+		if t.config.Capture.NetPerContainer {
+			pcapContext, _, err := t.getPcapContext(uint32(event.HostThreadID), event.ProcessName)
+			if err == nil {
+				go t.netExit(pcapContext)
+			}
+		}
+
 		cgroupId, err := getEventArgUint64Val(event, "cgroup_id")
 		if err != nil {
 			return fmt.Errorf("error parsing cgroup_rmdir args: %v", err)

@@ -16,17 +16,18 @@ import (
 )
 
 type ProcessCtx struct {
-	StartTime   int
-	ContainerID string
-	Pid         uint32
-	Tid         uint32
-	Ppid        uint32
-	HostTid     uint32
-	HostPid     uint32
-	HostPpid    uint32
-	Uid         uint32
-	MntId       uint32
-	PidId       uint32
+	StartTime     int // start time of the thread
+	ProcStartTime int // start time of the process
+	ContainerID   string
+	Pid           uint32
+	Tid           uint32
+	Ppid          uint32
+	HostTid       uint32
+	HostPid       uint32
+	HostPpid      uint32
+	Uid           uint32
+	MntId         uint32
+	PidId         uint32
 }
 
 type ProcInfo struct {
@@ -189,6 +190,13 @@ func NewProcessInfo() (*ProcInfo, error) {
 		if err != nil {
 			continue
 		}
+
+		processStatusFile := fmt.Sprintf("/proc/%d/status", pid)
+		processStartTime, err := getFileCtime(processStatusFile)
+		if err != nil {
+			continue
+		}
+
 		taskDir, err := os.Open(fmt.Sprintf("/proc/%d/task", pid))
 		if err != nil {
 			continue
@@ -214,6 +222,7 @@ func NewProcessInfo() (*ProcInfo, error) {
 				continue
 			}
 			processStatus.ContainerID = containerId
+			processStatus.ProcStartTime = processStartTime
 			p.UpdateElement(int(processStatus.HostTid), processStatus)
 		}
 	}
