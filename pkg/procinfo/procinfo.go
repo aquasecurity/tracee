@@ -34,26 +34,31 @@ type ProcInfo struct {
 }
 
 func (p *ProcInfo) UpdateElement(hostTid int, ctx ProcessCtx) {
-	p.mtx.RLock()
+	p.mtx.Lock()
+	defer p.mtx.Unlock()
 	p.procInfoMap[hostTid] = ctx
-	p.mtx.RUnlock()
 }
+
 func (p *ProcInfo) DeleteElement(hostTid int) {
-	p.mtx.RLock()
+	p.mtx.Lock()
+	defer p.mtx.Unlock()
 	delete(p.procInfoMap, hostTid)
-	p.mtx.RUnlock()
 }
+
 func (p *ProcInfo) GetElement(hostTid int) (ProcessCtx, error) {
-	processCtx, procExist := p.procInfoMap[hostTid]
-	if procExist {
-		return processCtx, nil
+	p.mtx.RLock()
+	defer p.mtx.RUnlock()
+	processCtx, ok := p.procInfoMap[hostTid]
+	if !ok {
+		return ProcessCtx{}, fmt.Errorf("no such a key: %v", hostTid)
 	}
-	return processCtx, fmt.Errorf("couldn't find the process in the map")
+	return processCtx, nil
 }
 
 func ParseProcessContext(ctx []byte, containers *containers.Containers) (ProcessCtx, error) {
 	var procCtx = ProcessCtx{}
-	if len(ctx) < 52 {
+	const ctxSize = 52
+	if len(ctx) < ctxSize {
 		return procCtx, fmt.Errorf("can't read process context: buffer too short")
 	}
 	procCtx.StartTime = int(binary.LittleEndian.Uint64(ctx[0:8]))
@@ -67,7 +72,7 @@ func ParseProcessContext(ctx []byte, containers *containers.Containers) (Process
 	procCtx.HostPpid = binary.LittleEndian.Uint32(ctx[36:40])
 	procCtx.Uid = binary.LittleEndian.Uint32(ctx[40:44])
 	procCtx.MntId = binary.LittleEndian.Uint32(ctx[44:48])
-	procCtx.PidId = binary.LittleEndian.Uint32(ctx[48:52])
+	procCtx.PidId = binary.LittleEndian.Uint32(ctx[48:ctxSize])
 	return procCtx, nil
 }
 
@@ -85,7 +90,6 @@ func getFileCtime(path string) (int, error) {
 
 //parse the status file of a process or given task and returns process context struct
 func parseProcStatus(status []byte, taskStatusPath string) (ProcessCtx, error) {
-	var process ProcessCtx
 	processVals := make(map[string]uint32)
 	for _, line := range strings.Split(string(status), "\n") {
 		lineFields := strings.Split(line, ":")
@@ -103,6 +107,7 @@ func parseProcStatus(status []byte, taskStatusPath string) (ProcessCtx, error) {
 	}
 
 	var err error
+	var process ProcessCtx
 	process.StartTime, err = getFileCtime(taskStatusPath)
 	if err != nil {
 		return process, err
@@ -162,14 +167,20 @@ func NewProcessInfo() (*ProcInfo, error) {
 		return nil, err
 	}
 
-	// Iterate over each pid
+	// iterate over each pid
 	for _, procEntry := range entries {
 		pid, err := strconv.ParseUint(procEntry, 10, 32)
 		if err != nil {
 			continue
 		}
 		taskDir, err := os.Open(fmt.Sprintf("/proc/%d/task", pid))
+		if err != nil {
+			continue
+		}
 		processTasks, err := taskDir.Readdirnames(-1)
+		if err != nil {
+			continue
+		}
 		for _, task := range processTasks {
 			taskDir := fmt.Sprintf("/proc/%d/task/%v", pid, task)
 			taskStatus := fmt.Sprintf("/proc/%d/task/%v/status", pid, task)
