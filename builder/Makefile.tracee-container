@@ -3,7 +3,7 @@
 #
 
 .PHONY: all
-all:
+all: help
 
 #
 # make
@@ -19,6 +19,7 @@ MAKEFLAGS += --no-print-directory
 #
 
 CMD_DOCKER ?= docker
+CMD_RM ?= rm
 
 .check_%:
 #
@@ -84,8 +85,6 @@ ifeq ($(BTFHUB),)
 BTFHUB=0
 endif
 
-# TODO: change BTFHUB=1 for the pull request
-
 TRACEE_CONT_NAME = tracee:latest
 TRACEE_FULL_CONT_NAME = tracee:full
 
@@ -101,7 +100,12 @@ build-tracee: \
 		-t $(TRACEE_CONT_NAME) \
 		--build-arg=BTFHUB=$(BTFHUB) \
 		--build-arg=FLAVOR=tracee-core \
+		--target tracee-core \
 		.
+	$(CMD_DOCKER) images \
+		--filter "label=AS=tracee-make" \
+		--format "{{.ID}}" \
+		| xargs $(CMD_DOCKER) rmi
 
 .PHONY: build-tracee-full
 build-tracee-full: \
@@ -113,7 +117,12 @@ build-tracee-full: \
 		-t $(TRACEE_FULL_CONT_NAME) \
 		--build-arg=BTFHUB=$(BTFHUB) \
 		--build-arg=FLAVOR=tracee-nocore \
+		--target tracee-nocore \
 		.
+	$(CMD_DOCKER) images \
+		--filter "label=AS=tracee-make" \
+		--format "{{.ID}}" \
+		| xargs $(CMD_DOCKER) rmi
 
 #
 # run tracee and tracee-full
@@ -185,3 +194,4 @@ run-tracee-ebpf-full: \
 
 .PHONY: clean
 clean:
+	$(MAKE) -f Makefile.one clean
