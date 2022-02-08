@@ -243,7 +243,11 @@ func (t *Tracee) processEvent(event *external.Event) error {
 		if err != nil {
 			return fmt.Errorf("error parsing cgroup_mkdir args: %v", err)
 		}
-		info, err := t.containers.CgroupMkdir(cgroupId, path)
+		hId, err := getEventArgUint32Val(event, "hierarchy_id")
+		if err != nil {
+			return fmt.Errorf("error parsing cgroup_mkdir args: %v", err)
+		}
+		info, err := t.containers.CgroupMkdir(cgroupId, path, hId)
 		if err == nil && info.ContainerId == "" {
 			// If cgroupId is from a regular cgroup directory, and not the
 			// container base directory (from known runtimes), it should be

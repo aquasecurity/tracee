@@ -841,6 +841,12 @@ static __always_inline const u64 get_cgroup_id(struct cgroup *cgrp)
     return id;
 }
 
+static __always_inline const u32 get_cgroup_hierarchy_id(struct cgroup *cgrp)
+{
+    struct cgroup_root *root = READ_KERN(cgrp->root);
+    return READ_KERN(root->hierarchy_id);
+}
+
 static __always_inline const u64 get_cgroup_v1_subsys0_id(struct task_struct *task)
 {
     struct css_set *cgroups = READ_KERN(task->cgroups);
@@ -2664,14 +2670,17 @@ int tracepoint__cgroup__cgroup_mkdir(struct bpf_raw_tracepoint_args *ctx)
     struct cgroup *dst_cgrp = (struct cgroup*)ctx->args[0];
     char *path = (char*)ctx->args[1];
 
+    u32 hierarchy_id = get_cgroup_hierarchy_id(dst_cgrp);
     u64 cgroup_id = get_cgroup_id(dst_cgrp);
     u32 cgroup_id_lsb = cgroup_id;
+
     // Assume this is a new container. If not, userspace code will delete this entry
     u8 state = CONTAINER_CREATED;
     bpf_map_update_elem(&containers_map, &cgroup_id_lsb, &state, BPF_ANY);
 
     save_to_submit_buf(&data, &cgroup_id, sizeof(u64), 0);
     save_str_to_buf(&data, path, 1);
+    save_to_submit_buf(&data, &hierarchy_id, sizeof(u32), 2);
     events_perf_submit(&data, CGROUP_MKDIR, 0);
 
     return 0;

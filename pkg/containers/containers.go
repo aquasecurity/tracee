@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -15,6 +16,10 @@ import (
 
 	"github.com/aquasecurity/libbpfgo"
 )
+
+var cgroupV1HierarchyID int
+
+const cgroupV1Controller = "cpuset"
 
 // Containers contains information about running containers in the host.
 type Containers struct {
@@ -40,6 +45,7 @@ func InitContainers() *Containers {
 	cgroupV1 := false
 	if _, err := os.Stat("/sys/fs/cgroup/cgroup.controllers"); os.IsNotExist(err) {
 		cgroupV1 = true
+		initCgroupV1()
 	}
 
 	return &Containers{
@@ -64,6 +70,32 @@ func (c *Containers) Populate() error {
 	return c.populate()
 }
 
+// getCgroupV1SSID finds cgroup v1 hierarchy ID.
+func initCgroupV1() {
+	// Set hierarchy ID to 1 as a fallback in case of an error
+	cgroupV1HierarchyID = 1
+
+	cgroupsFile := "/proc/cgroups"
+	file, err := os.Open(cgroupsFile)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for i := 1; scanner.Scan(); i++ {
+		sline := strings.Fields(scanner.Text())
+		if len(sline) < 2 || sline[0] != cgroupV1Controller {
+			continue
+		}
+		intID, err := strconv.Atoi(sline[1])
+		if err != nil || intID < 0 {
+			return
+		}
+		cgroupV1HierarchyID = intID
+	}
+}
+
 // procMountsCgroups finds cgroups v1 and v2 mountpoints.
 func (c *Containers) procMountsCgroups() error {
 	mountsFile := "/proc/mounts"
@@ -79,7 +111,7 @@ func (c *Containers) procMountsCgroups() error {
 		mountpoint := sline[1]
 		fstype := sline[2]
 		if c.cgroupV1 {
-			if fstype == "cgroup" && strings.Contains(mountpoint, "cpuset") {
+			if fstype == "cgroup" && strings.Contains(mountpoint, cgroupV1Controller) {
 				c.cgroupMP = mountpoint
 			}
 		} else if fstype == "cgroup2" {
@@ -231,14 +263,19 @@ func (c *Containers) CgroupRemove(cgroupId uint64) {
 	}
 	c.deleted = deleted
 
-	info := c.cgroups[uint32(cgroupId)]
-	info.expiresAt = now.Add(5 * time.Second)
-	c.cgroups[uint32(cgroupId)] = info
-	c.deleted = append(c.deleted, cgroupId)
+	if info, ok := c.cgroups[uint32(cgroupId)]; ok {
+		info.expiresAt = now.Add(5 * time.Second)
+		c.cgroups[uint32(cgroupId)] = info
+		c.deleted = append(c.deleted, cgroupId)
+	}
 }
 
 // CgroupMkdir adds cgroupInfo of a created cgroup dir to Containers struct.
-func (c *Containers) CgroupMkdir(cgroupId uint64, subPath string) (CgroupInfo, error) {
+func (c *Containers) CgroupMkdir(cgroupId uint64, subPath string, hierarchyID uint32) (CgroupInfo, error) {
+	if c.cgroupV1 && int(hierarchyID) != cgroupV1HierarchyID {
+		// For cgroup v1, we only need to look at one controller
+		return CgroupInfo{}, nil
+	}
 	// Find container cgroup dir path to get directory stats
 	curTime := time.Now()
 	path, err := getCgroupPath(c.cgroupMP, cgroupId, subPath)
