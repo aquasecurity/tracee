@@ -28,27 +28,27 @@ type ProcessCtx struct {
 	PidId       uint32
 }
 
-type ProcessTree struct {
+type ProcInfo struct {
 	procInfoMap map[int]ProcessCtx
 	mtx         sync.RWMutex // protecting both update and delete entries
 }
 
-func (p *ProcessTree) UpdateElement(hostTid int, ctx ProcessCtx) {
+func (p *ProcInfo) UpdateElement(hostTid int, ctx ProcessCtx) {
 	p.mtx.RLock()
 	p.procInfoMap[hostTid] = ctx
 	p.mtx.RUnlock()
 }
-func (p *ProcessTree) DeleteElement(hostTid int) {
+func (p *ProcInfo) DeleteElement(hostTid int) {
 	p.mtx.RLock()
 	delete(p.procInfoMap, hostTid)
 	p.mtx.RUnlock()
 }
-func (p *ProcessTree) GetElement(hostTid int) (ProcessCtx, error) {
+func (p *ProcInfo) GetElement(hostTid int) (ProcessCtx, error) {
 	processCtx, procExist := p.procInfoMap[hostTid]
 	if procExist {
 		return processCtx, nil
 	}
-	return processCtx, fmt.Errorf("couldent find the process in the map")
+	return processCtx, fmt.Errorf("couldn't find the process in the map")
 }
 
 func ParseProcessContext(ctx []byte, containers *containers.Containers) (ProcessCtx, error) {
@@ -150,8 +150,8 @@ func getNsIdData(taskStatusPath string) (uint32, uint32, error) {
 }
 
 //initialize new process-tree
-func NewProcessTree() (*ProcessTree, error) {
-	p := ProcessTree{make(map[int]ProcessCtx), sync.RWMutex{}}
+func NewProcessInfo() (*ProcInfo, error) {
+	p := ProcInfo{make(map[int]ProcessCtx), sync.RWMutex{}}
 	procDir, err := os.Open("/proc")
 	if err != nil {
 		return nil, err

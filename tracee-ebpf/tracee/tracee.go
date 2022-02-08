@@ -178,7 +178,7 @@ type Tracee struct {
 	pcapFile          *os.File
 	ngIfacesIndex     map[int]int
 	containers        *containers.Containers
-	processTree       *procinfo.ProcessTree
+	procInfo          *procinfo.ProcInfo
 	eventsSorter      *sorting.EventsChronologicalSorter
 }
 
@@ -385,7 +385,7 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error getting acces to 'stack_addresses' eBPF Map %v", err)
 	}
 	t.StackAddressesMap = StackAddressesMap
-	t.processTree, err = procinfo.NewProcessTree()
+	t.procInfo, err = procinfo.NewProcessInfo()
 	if err != nil {
 		t.Close()
 		return nil, fmt.Errorf("error creating process tree: %v", err)
@@ -924,7 +924,7 @@ func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 }
 
 func (t *Tracee) getProcessCtx(hostTid int) (procinfo.ProcessCtx, error) {
-	processCtx, err := t.processTree.GetElement(hostTid)
+	processCtx, err := t.procInfo.GetElement(hostTid)
 	if err == nil {
 		return processCtx, nil
 	} else {
@@ -937,7 +937,7 @@ func (t *Tracee) getProcessCtx(hostTid int) (procinfo.ProcessCtx, error) {
 			return processCtx, err
 		}
 		processCtx, err = procinfo.ParseProcessContext(processCtxBpfMap, t.containers)
-		t.processTree.UpdateElement(hostTid, processCtx)
+		t.procInfo.UpdateElement(hostTid, processCtx)
 		return processCtx, err
 	}
 }

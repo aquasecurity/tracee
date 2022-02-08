@@ -2,7 +2,6 @@ package tracee
 
 import (
 	"fmt"
-	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"io"
 	"os"
 	"path/filepath"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/internal/bufferdecoder"
 )
 
@@ -133,7 +133,7 @@ func (t *Tracee) processEvent(event *external.Event) error {
 	case SchedProcessExecEventID:
 		//update the process tree
 		processData := procinfo.ProcessCtx{event.Timestamp, event.ContainerID, uint32(event.ProcessID), uint32(event.ThreadID), uint32(event.ParentProcessID), uint32(event.HostThreadID), uint32(event.HostProcessID), uint32(event.HostParentProcessID), uint32(event.UserID), uint32(event.MountNS), uint32(event.PIDNS)}
-		t.processTree.UpdateElement(event.HostThreadID, processData)
+		t.procInfo.UpdateElement(event.HostThreadID, processData)
 		//cache this pid by it's mnt ns
 		if event.ProcessID == 1 {
 			t.pidsInMntns.ForceAddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
@@ -224,7 +224,7 @@ func (t *Tracee) processEvent(event *external.Event) error {
 			return err
 		}
 	case SchedProcessExitEventID:
-		t.processTree.DeleteElement(event.HostThreadID)
+		t.procInfo.DeleteElement(event.HostThreadID)
 	case SchedProcessForkEventID:
 		hostTid, _ := getEventArgInt32Val(event, "child_tid")
 		hostPid, _ := getEventArgInt32Val(event, "child_pid")
@@ -233,7 +233,7 @@ func (t *Tracee) processEvent(event *external.Event) error {
 		hostPpid, _ := getEventArgInt32Val(event, "parent_pid")
 		tid, _ := getEventArgInt32Val(event, "child_ns_tid")
 		processData := procinfo.ProcessCtx{event.Timestamp, event.ContainerID, uint32(pid), uint32(tid), uint32(ppid), uint32(hostTid), uint32(hostPid), uint32(hostPpid), uint32(event.UserID), uint32(event.MountNS), uint32(event.PIDNS)}
-		t.processTree.UpdateElement(event.HostThreadID, processData)
+		t.procInfo.UpdateElement(event.HostThreadID, processData)
 	case CgroupMkdirEventID:
 		cgroupId, err := getEventArgUint64Val(event, "cgroup_id")
 		if err != nil {
