@@ -26,6 +26,7 @@ CMD_TAR ?= tar
 CMD_GIT ?= git
 CMD_RM ?= rm
 CMD_TOUCH ?= touch
+CMD_MKDIR ?= mkdir
 
 .ONESHELL:
 .check_%:
@@ -52,6 +53,7 @@ env:
 	@echo "CMD_TAR               $(CMD_TAR)"
 	@echo "CMD_TOUCH             $(CMD_TOUCH)"
 	@echo "CMD_RM                $(CMD_RM)"
+	@echo "CMD_MKDIR             $(CMD_MKDIR)"
 	@echo ---------------------------------------
 	@echo "PUSH_DOCKER_REPO      $(PUSH_DOCKER_REPO)"
 	@echo ---------------------------------------
@@ -125,7 +127,7 @@ RELEASE_NOTES ?= $(OUTPUT_DIR)/release_notes.txt
 
 $(OUTPUT_DIR):
 #
-	@$(CMD_MKDIR) -p $@
+	$(CMD_MKDIR) -p $@
 	$(CMD_TOUCH) $(RELEASE_NOTES)
 
 #
@@ -147,8 +149,8 @@ PUSH_DOCKER_REPO ?= aquasec/tracee
 
 .PHONY: snapshot
 snapshot: \
-	| $(OUT_DIR) \
-	.check_tree \
+	$(OUTPUT_DIR) \
+	| .check_tree \
 	.check_$(CMD_DOCKER) \
 	.check_$(CMD_TAR) \
 	.check_$(CMD_CHECKSUM) \
@@ -171,7 +173,7 @@ snapshot: \
 
 .PHONY: publish
 publish: \
-	$(OUT_DIR) \
+	$(OUTPUT_DIR) \
 	$(OUT_ARCHIVE) \
 	$(OUT_CHECKSUMS) \
 	| .check_tree \
