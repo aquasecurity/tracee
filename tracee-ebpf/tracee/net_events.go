@@ -5,10 +5,11 @@ import (
 	gocontext "context"
 	"encoding/binary"
 	"fmt"
+	"time"
+
 	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/netproto"
 	"github.com/google/gopacket"
 	"inet.af/netaddr"
-	"time"
 )
 
 func (t *Tracee) processNetEvents(ctx gocontext.Context) {

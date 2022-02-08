@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"github.com/aquasecurity/tracee/pkg/external"
-	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/internal/processContext"
+	"github.com/aquasecurity/tracee/pkg/procinfo"
 )
 
 type PacketMeta struct {
@@ -18,7 +18,7 @@ type PacketMeta struct {
 	_        [3]byte  //padding
 }
 
-func netPacketProtocolHandler(buffer *bytes.Buffer, evtMeta EventMeta, ctx processContext.ProcessCtx, eventName string, bootTime uint64) (external.Event, PacketMeta) {
+func netPacketProtocolHandler(buffer *bytes.Buffer, evtMeta EventMeta, ctx procinfo.ProcessCtx, eventName string, bootTime uint64) (external.Event, PacketMeta) {
 	var evt external.Event
 	packet, err := ParseNetPacketMetaData(buffer)
 	if err != nil {
@@ -51,7 +51,7 @@ func createNetPacketMetadataArg(packet PacketMeta) []external.Argument {
 	arg.DestPort = packet.DestPort
 	arg.Protocol = packet.Protocol
 	evtArg := external.Argument{
-		ArgMeta: external.ArgMeta{"PacketMetaData", "PacketMeta"},
+		ArgMeta: external.ArgMeta{"metadata", "PacketMeta"},
 		Value:   arg,
 	}
 	eventArgs = append(eventArgs, evtArg)

@@ -24,14 +24,14 @@ type EventMeta struct {
 	HostTid     int    `json:"hostTid"`
 	ProcessName string `json:"processName"`
 }
-type CaptueData struct {
+type CaptureData struct {
 	PacketLen      uint32
 	InterfaceIndex uint32
 }
 
-func ProcessNetEvent(buffer *bytes.Buffer, evtMeta EventMeta, eventName string, ctx procinfo.ProcessCtx, bootTime uint64) (external.Event, bool, CaptueData) {
+func ProcessNetEvent(buffer *bytes.Buffer, evtMeta EventMeta, eventName string, ctx procinfo.ProcessCtx, bootTime uint64) (external.Event, bool, CaptureData) {
 	var evt external.Event
-	var captureData CaptueData
+	var captureData CaptureData
 	switch evtMeta.NetEventId {
 	case NetPacket:
 		var packet PacketMeta
