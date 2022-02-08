@@ -21,10 +21,10 @@ Possible options:
 [artifact:]mem                     capture memory regions that had write+execute (w+x) protection, and then changed to execute (x) only.
 [artifact:]net=interface           capture network traffic of the given interface. Only TCP/UDP protocols are currently supported.
 
-dir:/path/to/dir        			path where tracee will save produced artifacts. the artifact will be saved into an 'out' subdirectory. (default: /tmp/tracee).
-profile                 			creates a runtime profile of program executions and their metadata for forensics use.
-clear-dir               			clear the captured artifacts output dir before starting (default: false).
-net:[per-container|per-process]		capture separate pcap file based on container/process context (default: none - saving one pcap for the entire host).
+dir:/path/to/dir                    path where tracee will save produced artifacts. the artifact will be saved into an 'out' subdirectory. (default: /tmp/tracee).
+profile                             creates a runtime profile of program executions and their metadata for forensics use.
+clear-dir                           clear the captured artifacts output dir before starting (default: false).
+net:[per-container|per-process]     capture separate pcap file based on container/process context (default: none - saving one pcap for the entire host).
 
 Examples:
   --capture exec                                           | capture executed files into the default output directory
