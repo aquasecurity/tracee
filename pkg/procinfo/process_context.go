@@ -1,4 +1,4 @@
-package proctree
+package procinfo
 
 import (
 	"encoding/binary"
@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -28,13 +29,32 @@ type ProcessCtx struct {
 }
 
 type ProcessTree struct {
-	ProcessTreeMap map[int]ProcessCtx
+	procInfoMap map[int]ProcessCtx
+	mtx         sync.RWMutex // protecting both update and delete entries
+}
+
+func (p *ProcessTree) UpdateElement(hostTid int, ctx ProcessCtx) {
+	p.mtx.RLock()
+	p.procInfoMap[hostTid] = ctx
+	p.mtx.RUnlock()
+}
+func (p *ProcessTree) DeleteElement(hostTid int) {
+	p.mtx.RLock()
+	delete(p.procInfoMap, hostTid)
+	p.mtx.RUnlock()
+}
+func (p *ProcessTree) GetElement(hostTid int) (ProcessCtx, error) {
+	processCtx, procExist := p.procInfoMap[hostTid]
+	if procExist {
+		return processCtx, nil
+	}
+	return processCtx, fmt.Errorf("couldent find the process in the map")
 }
 
 func ParseProcessContext(ctx []byte, containers *containers.Containers) (ProcessCtx, error) {
 	var procCtx = ProcessCtx{}
 	if len(ctx) < 52 {
-		return procCtx, fmt.Errorf("Error: ctx byte array to small %v", len(ctx))
+		return procCtx, fmt.Errorf("can't read process context: buffer too short")
 	}
 	procCtx.StartTime = int(binary.LittleEndian.Uint64(ctx[0:8]))
 	cgroupId := binary.LittleEndian.Uint64(ctx[8:16])
@@ -131,7 +151,7 @@ func getNsIdData(taskStatusPath string) (uint32, uint32, error) {
 
 //initialize new process-tree
 func NewProcessTree() (*ProcessTree, error) {
-	p := ProcessTree{make(map[int]ProcessCtx)}
+	p := ProcessTree{make(map[int]ProcessCtx), sync.RWMutex{}}
 	procDir, err := os.Open("/proc")
 	if err != nil {
 		return nil, err
@@ -167,7 +187,7 @@ func NewProcessTree() (*ProcessTree, error) {
 				continue
 			}
 			processStatus.ContainerID = containerId
-			p.ProcessTreeMap[int(processStatus.HostTid)] = processStatus
+			p.UpdateElement(int(processStatus.HostTid), processStatus)
 		}
 	}
 	return &p, nil
