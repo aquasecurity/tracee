@@ -6,7 +6,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/internal/bufferdecoder"
+	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 )
 
 func (t *Tracee) processFileWrites() {

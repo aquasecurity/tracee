@@ -9,8 +9,8 @@ import (
 	"sync"
 	"unsafe"
 
+	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/external"
-	"github.com/aquasecurity/tracee/tracee-ebpf/tracee/internal/bufferdecoder"
 )
 
 // Max depth of each stack trace to track
