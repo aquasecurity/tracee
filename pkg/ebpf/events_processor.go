@@ -142,18 +142,18 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 	case SchedProcessExecEventID:
 		//update the process tree
 		processData := procinfo.ProcessCtx{
-			StartTime:   event.Timestamp,
+			StartTime:     event.Timestamp,
 			ProcStartTime: event.Timestamp,
-			ContainerID: event.ContainerID,
-			Pid:         uint32(event.ProcessID),
-			Tid:         uint32(event.ThreadID),
-			Ppid:        uint32(event.ParentProcessID),
-			HostTid:     uint32(event.HostThreadID),
-			HostPid:     uint32(event.HostProcessID),
-			HostPpid:    uint32(event.HostParentProcessID),
-			Uid:         uint32(event.UserID),
-			MntId:       uint32(event.MountNS),
-			PidId:       uint32(event.PIDNS)}
+			ContainerID:   event.ContainerID,
+			Pid:           uint32(event.ProcessID),
+			Tid:           uint32(event.ThreadID),
+			Ppid:          uint32(event.ParentProcessID),
+			HostTid:       uint32(event.HostThreadID),
+			HostPid:       uint32(event.HostProcessID),
+			HostPpid:      uint32(event.HostParentProcessID),
+			Uid:           uint32(event.UserID),
+			MntId:         uint32(event.MountNS),
+			PidId:         uint32(event.PIDNS)}
 		err := t.FillProcessStartTime(&processData)
 		if err != nil {
 			t.handleError(err)
@@ -283,18 +283,18 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			return err
 		}
 		processData := procinfo.ProcessCtx{
-			StartTime:   event.Timestamp,
+			StartTime:     event.Timestamp,
 			ProcStartTime: event.Timestamp,
-			ContainerID: event.ContainerID,
-			Pid:         uint32(pid),
-			Tid:         uint32(tid),
-			Ppid:        uint32(ppid),
-			HostTid:     uint32(hostTid),
-			HostPid:     uint32(hostPid),
-			HostPpid:    uint32(hostPpid),
-			Uid:         uint32(event.UserID),
-			MntId:       uint32(event.MountNS),
-			PidId:       uint32(event.PIDNS)}
+			ContainerID:   event.ContainerID,
+			Pid:           uint32(pid),
+			Tid:           uint32(tid),
+			Ppid:          uint32(ppid),
+			HostTid:       uint32(hostTid),
+			HostPid:       uint32(hostPid),
+			HostPpid:      uint32(hostPpid),
+			Uid:           uint32(event.UserID),
+			MntId:         uint32(event.MountNS),
+			PidId:         uint32(event.PIDNS)}
 		err = t.FillProcessStartTime(&processData)
 		if err != nil {
 			t.handleError(err)
