@@ -6053,6 +6053,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "dev_t", Name: "dev"},
 			{Type: "unsigned long", Name: "inode"},
 			{Type: "int", Name: "type"},
+			{Type: "unsigned long", Name: "ctime"},
 		},
 	},
 	SecurityPostReadFileEventID: {
