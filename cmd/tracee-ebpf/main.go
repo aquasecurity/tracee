@@ -508,7 +508,7 @@ func unpackBTFHub(outFilePath string, OSInfo *helpers.OSInfo) error {
 	kernelRelease := OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE)
 	arch := OSInfo.GetOSReleaseFieldValue(helpers.OS_ARCH)
 
-	if err := os.MkdirAll(filepath.Dir(outFilePath), 0); err != nil {
+	if err := os.MkdirAll(filepath.Dir(outFilePath), 0755); err != nil {
 		return fmt.Errorf("could not create temp dir: %s", err.Error())
 	}
 
