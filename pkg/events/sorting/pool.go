@@ -24,20 +24,26 @@ type eventsPool struct {
 // Alloc return an eventNode that contains the event given.
 // The function will try to use stored eventNode if there is one available.
 // If there isn't, it will allocate new one.
-func (p *eventsPool) Alloc(event *external.Event) *eventNode {
+func (p *eventsPool) Alloc(event *external.Event) (*eventNode, error) {
 	p.poolMutex.Lock()
 	p.allocationsCount += 1
-	defer p.poolMutex.Unlock()
 	node := p.head
-	if node != nil && node.isAllocated == false {
+	if node != nil {
+		if node.isAllocated == true {
+			p.poolMutex.Unlock()
+			return &eventNode{event: event, isAllocated: true}, fmt.Errorf("BUG: alocated node in pool")
+		}
 		p.head = node.previous
 		node.event = event
 		node.isAllocated = true
 		node.previous = nil
+		node.next = nil
 		p.poolSize -= 1
-		return node
+		p.poolMutex.Unlock()
+		return node, nil
 	}
-	return &eventNode{event: event, isAllocated: true}
+	p.poolMutex.Unlock()
+	return &eventNode{event: event, isAllocated: true}, nil
 }
 
 // Free handle the eventNode after its usage has ended.

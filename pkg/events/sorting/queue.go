@@ -23,11 +23,15 @@ type eventsQueue struct {
 }
 
 // Put insert new event to the double linked list
-func (eq *eventsQueue) Put(newEvent *external.Event) {
-	newNode := eq.pool.Alloc(newEvent)
+func (eq *eventsQueue) Put(newEvent *external.Event) error {
+	newNode, err := eq.pool.Alloc(newEvent)
+	if err != nil {
+		eq.pool.Reset()
+	}
 	eq.mutex.Lock()
 	defer eq.mutex.Unlock()
 	eq.put(newNode)
+	return err
 }
 
 // Get remove the node at the head of the queue and return it
