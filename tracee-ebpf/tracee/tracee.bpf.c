@@ -4056,11 +4056,13 @@ int BPF_KPROBE(trace_security_kernel_read_file)
     unsigned long inode_nr = get_inode_nr_from_file(file);
     enum kernel_read_file_id type_id = (enum kernel_read_file_id)PT_REGS_PARM2(ctx);
     void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+    u64 ctime = get_ctime_nanosec_from_file(file);
 
     save_str_to_buf(&data, file_path, 0);
     save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 1);
     save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 2);
     save_to_submit_buf(&data, &type_id, sizeof(int), 3);
+    save_to_submit_buf(&data, &ctime, sizeof(u64), 4);
 
     return events_perf_submit(&data, SECURITY_KERNEL_READ_FILE, 0);
 }
