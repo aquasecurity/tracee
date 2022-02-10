@@ -12,8 +12,8 @@
   $ make -f builder/Makefile.tracee-make alpine-prepare
   $ make -f builder/Makefile.tracee-make alpine-shell
 
-  tracee@f64bb4a2f0b1[/tracee]$ make -f Makefile.one clean
-  tracee@f64bb4a2f0b1[/tracee]$ make -f Makefile.one tracee-ebpf
+  tracee@f64bb4a2f0b1[/tracee]$ make clean
+  tracee@f64bb4a2f0b1[/tracee]$ make tracee-ebpf
   tracee@f64bb4a2f0b1[/tracee]$ sudo ./dist/tracee-ebpf \
   	-o option:parse-arguments \
   	--trace comm=bash \
@@ -30,8 +30,8 @@ Now, in your host's bash shell, execute a command. You will see all events
   $ make -f builder/Makefile.tracee-make alpine-prepare
   $ make -f builder/Makefile.tracee-make alpine-shell
 
-  tracee@f64bb4a2f0b1[/tracee]$ make -f Makefile.one clean
-  tracee@f64bb4a2f0b1[/tracee]$ make -f Makefile.one all
+  tracee@f64bb4a2f0b1[/tracee]$ make clean
+  tracee@f64bb4a2f0b1[/tracee]$ make all
   tracee@f64bb4a2f0b1[/tracee]$ sudo ./dist/tracee-ebpf \
   	-o format:json \
   	-o option:parse-arguments \

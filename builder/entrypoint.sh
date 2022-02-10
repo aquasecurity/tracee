@@ -159,8 +159,8 @@ if [ -d "${TRACEE_EBPF_SRC}" ]; then
         fi
 
         cd ${TRACEE_EBPF_SRC}
-        make -f Makefile.one clean
-        make -f Makefile.one install-bpf-nocore
+        make clean
+        make install-bpf-nocore
         # force nocore ebpf object
 
         # make sure the just generated eBPF non CO-RE obj is used

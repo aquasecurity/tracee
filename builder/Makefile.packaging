@@ -12,8 +12,7 @@ all:
 .ONESHELL:
 SHELL = /bin/sh
 
-NORM_MAKE = make -f Makefile.one
-MAKE = make -f builder/Makefile.packaging
+MAKE = make
 MAKEFLAGS += --no-print-directory
 
 #

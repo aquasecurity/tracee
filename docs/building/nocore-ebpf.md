@@ -41,7 +41,7 @@ level integration. Tracee supports two eBPF integration modes:
      provide the TRACEE_BTF_FILE environment variable pointing to the BTF file
      of your running kernel.
 
-  2. to have `../../Makefile.one` build and install the eBPF object for you
+  2. to have `../../Makefile` build and install the eBPF object for you
      (instructions in this file). This will depend on having clang and a kernel
      version specific kernel-header package.
 
@@ -80,9 +80,9 @@ through the Makefile).
 By running:
 
 ```
-$ make -f Makefile.one clean
-$ make -f Makefile.one all
-$ make -f Makefile.one install-bpf-nocore
+$ make clean
+$ make all
+$ make install-bpf-nocore
 ```
 
 make installs an eBPF object file under `/tmp/tracee` for the current running
@@ -166,9 +166,9 @@ $ make -f builder/Makefile.tracee-make ubuntu-shell
 and then, inside the docker container:
 
 ```
-tracee@f65bab137305[/tracee]$ make -f Makefile.one clean
-tracee@f65bab137305[/tracee]$ make -f Makefile.one tracee-ebpf
-tracee@f65bab137305[/tracee]$ make -f Makefile.one install-bpf-nocore
+tracee@f65bab137305[/tracee]$ make clean
+tracee@f65bab137305[/tracee]$ make tracee-ebpf
+tracee@f65bab137305[/tracee]$ make install-bpf-nocore
 
 tracee@f65bab137305[/tracee]$ sudo ./dist/tracee-ebpf --debug --trace 'event!=sched*'
 KConfig: warning: could not check enabled kconfig features

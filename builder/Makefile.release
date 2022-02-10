@@ -195,4 +195,4 @@ publish: \
 .PHONY: clean
 clean:
 #
-	$(MAKE) -f Makefile.one clean
+	$(MAKE) clean
