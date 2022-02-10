@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/google/gopacket"
-	"inet.af/netaddr"
 )
 
 type EventMeta struct {
@@ -79,9 +78,9 @@ func (t *Tracee) processNetEvents() {
 							evtMeta.ProcessName,
 							evtMeta.HostTid,
 							pktLen,
-							netaddr.IPFrom16(pktMeta.SrcIP),
+							parseIP(pktMeta.SrcIP),
 							pktMeta.SrcPort,
-							netaddr.IPFrom16(pktMeta.DestIP),
+							parseIP(pktMeta.DestIP),
 							pktMeta.DestPort,
 							pktMeta.Protocol)
 					} else {
@@ -96,9 +95,9 @@ func (t *Tracee) processNetEvents() {
 							networkProcess.Tid,
 							0,
 							pktLen,
-							netaddr.IPFrom16(pktMeta.SrcIP),
+							parseIP(pktMeta.SrcIP),
 							pktMeta.SrcPort,
-							netaddr.IPFrom16(pktMeta.DestIP),
+							parseIP(pktMeta.DestIP),
 							pktMeta.DestPort,
 							pktMeta.Protocol)
 					}
@@ -130,36 +129,36 @@ func (t *Tracee) processNetEvents() {
 
 				switch evtMeta.NetEventId {
 				case DebugNetSecurityBind:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/security_socket_bind LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+					fmt.Printf("%v  %-16s  %-7d  debug_net/security_socket_bind LocalIP: %s, LocalPort: %d, Protocol: %d\n",
+						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, parseIP(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
 				case DebugNetUdpSendmsg:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_sendmsg          LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_sendmsg          LocalIP: %s, LocalPort: %d, Protocol: %d\n",
+						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, parseIP(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
 				case DebugNetUdpDisconnect:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/__udp_disconnect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+					fmt.Printf("%v  %-16s  %-7d  debug_net/__udp_disconnect     LocalIP: %s, LocalPort: %d, Protocol: %d\n",
+						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, parseIP(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
 				case DebugNetUdpDestroySock:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_destroy_sock     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_destroy_sock     LocalIP: %s, LocalPort: %d, Protocol: %d\n",
+						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, parseIP(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
 				case DebugNetUdpV6DestroySock:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/udpv6_destroy_sock   LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+					fmt.Printf("%v  %-16s  %-7d  debug_net/udpv6_destroy_sock   LocalIP: %s, LocalPort: %d, Protocol: %d\n",
+						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, parseIP(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
 				case DebugNetInetSockSetState:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/inet_sock_set_state  LocalIP: %v, LocalPort: %d, RemoteIP: %v, RemotePort: %d, Protocol: %d, OldState: %d, NewState: %d, SockPtr: 0x%x\n",
+					fmt.Printf("%v  %-16s  %-7d  debug_net/inet_sock_set_state  LocalIP: %s, LocalPort: %d, RemoteIP: %s, RemotePort: %d, Protocol: %d, OldState: %d, NewState: %d, SockPtr: 0x%x\n",
 						timeStampObj,
 						evtMeta.ProcessName,
 						evtMeta.HostTid,
-						netaddr.IPFrom16(pkt.LocalIP),
+						parseIP(pkt.LocalIP),
 						pkt.LocalPort,
-						netaddr.IPFrom16(pkt.RemoteIP),
+						parseIP(pkt.RemoteIP),
 						pkt.RemotePort,
 						pkt.Protocol,
 						pkt.TcpOldState,
 						pkt.TcpNewState,
 						pkt.SockPtr)
 				case DebugNetTcpConnect:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/tcp_connect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+					fmt.Printf("%v  %-16s  %-7d  debug_net/tcp_connect     LocalIP: %s, LocalPort: %d, Protocol: %d\n",
+						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, parseIP(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
 				}
 			}
 
