@@ -3,6 +3,7 @@ package procinfo
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/aquasecurity/tracee/pkg/external"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -53,6 +54,22 @@ func (p *ProcInfo) GetElement(hostTid int) (ProcessCtx, error) {
 		return ProcessCtx{}, fmt.Errorf("no such a key: %v", hostTid)
 	}
 	return processCtx, nil
+}
+
+func (ctx *ProcessCtx) GetEventByProcessCtx() external.Event {
+	var event external.Event
+	event.ContainerID = ctx.ContainerID
+	event.ProcessID = int(ctx.Pid)
+	event.ThreadID = int(ctx.Tid)
+	event.ParentProcessID = int(ctx.Ppid)
+	event.HostProcessID = int(ctx.HostPid)
+	event.HostThreadID = int(ctx.HostTid)
+	event.HostParentProcessID = int(ctx.HostPpid)
+	event.UserID = int(ctx.Uid)
+	event.MountNS = int(ctx.MntId)
+	event.PIDNS = int(ctx.PidId)
+	return event
+
 }
 
 func ParseProcessContext(ctx []byte, containers *containers.Containers) (ProcessCtx, error) {

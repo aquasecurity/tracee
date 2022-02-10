@@ -2,8 +2,20 @@ package tracee
 
 import (
 	"bytes"
+	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"inet.af/netaddr"
 )
+
+func CreateNetEvent(eventMeta EventMeta, ctx procinfo.ProcessCtx) external.Event {
+	evt := ctx.GetEventByProcessCtx()
+	evt.Timestamp = int(eventMeta.TimeStamp)
+	evt.ProcessName = eventMeta.ProcessName
+	evt.EventID = int(eventMeta.NetEventId)
+	evt.ReturnValue = 0
+	evt.StackAddresses = nil
+	return evt
+}
 
 func parseIP(ip [16]byte) string {
 	if IsIpv6(ip) {

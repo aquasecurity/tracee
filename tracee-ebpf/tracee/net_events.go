@@ -2,8 +2,11 @@ package tracee
 
 import (
 	"bytes"
+	gocontext "context"
 	"encoding/binary"
 	"fmt"
+	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"time"
 
 	"github.com/google/gopacket"
@@ -16,7 +19,23 @@ type EventMeta struct {
 	ProcessName string `json:"processName"`
 }
 
-func (t *Tracee) processNetEvents() {
+type CaptureData struct {
+	PacketLen      uint32
+	InterfaceIndex uint32
+}
+
+type PacketMeta struct {
+	PktLen   uint32   `json:"pkt_len"`
+	IfIndex  uint32   `json:"if_index"`
+	SrcIP    [16]byte `json:"src_ip"`
+	DestIP   [16]byte `json:"dest_ip"`
+	SrcPort  uint16   `json:"src_port"`
+	DestPort uint16   `json:"dest_port"`
+	Protocol uint8    `json:"protocol"`
+	_        [3]byte  //padding
+}
+
+func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 	// Todo: split pcap files by context (tid + comm)
 	// Todo: add stats for network packets (in epilog)
 	for {
@@ -33,79 +52,27 @@ func (t *Tracee) processNetEvents() {
 			timeStampObj := time.Unix(0, int64(evtMeta.TimeStamp+t.bootTime))
 
 			if evtMeta.NetEventId == NetPacket {
-				var pktLen uint32
-				err := binary.Read(dataBuff, binary.LittleEndian, &pktLen)
-				if err != nil {
-					t.handleError(err)
-					continue
-				}
-				var ifindex uint32
-				err = binary.Read(dataBuff, binary.LittleEndian, &ifindex)
-				if err != nil {
-					t.handleError(err)
-					continue
-				}
-				idx, ok := t.ngIfacesIndex[int(ifindex)]
-				if !ok {
-					t.handleError(err)
-					continue
-				}
 
 				if t.config.Debug {
-					var pktMeta struct {
-						SrcIP    [16]byte
-						DestIP   [16]byte
-						SrcPort  uint16
-						DestPort uint16
-						Protocol uint8
-						_        [3]byte //padding
-					}
-					err = binary.Read(dataBuff, binary.LittleEndian, &pktMeta)
+					var captureData CaptureData
+					networkProcess, err := t.getProcessCtx(int(evtMeta.HostTid))
 					if err != nil {
 						t.handleError(err)
 						continue
 					}
-					networkProcess, err := t.getProcessCtx(int(evtMeta.HostTid))
-					hr, min, sec := timeStampObj.Clock()
-					nsec := uint16(timeStampObj.Nanosecond())
-
-					if err != nil {
-						fmt.Printf("%v:%v:%v:%v  %-16s  %-7d  debug_net/packet               Len: %d, SrcIP: %v, SrcPort: %d, DestIP: %v, DestPort: %d, Protocol: %d\n",
-							hr,
-							min,
-							sec,
-							nsec,
-							evtMeta.ProcessName,
-							evtMeta.HostTid,
-							pktLen,
-							parseIP(pktMeta.SrcIP),
-							pktMeta.SrcPort,
-							parseIP(pktMeta.DestIP),
-							pktMeta.DestPort,
-							pktMeta.Protocol)
-					} else {
-						fmt.Printf("%v:%v:%v:%v   %v    %-16s  %v  %v    %d             debug_net/packet              Len: %d, SrcIP: %v, SrcPort: %d, DestIP: %v, DestPort: %d, Protocol: %d\n",
-							hr,
-							min,
-							sec,
-							nsec,
-							networkProcess.Uid,
-							evtMeta.ProcessName,
-							networkProcess.Pid,
-							networkProcess.Tid,
-							0,
-							pktLen,
-							parseIP(pktMeta.SrcIP),
-							pktMeta.SrcPort,
-							parseIP(pktMeta.DestIP),
-							pktMeta.DestPort,
-							pktMeta.Protocol)
+					evt, packet := netPacketProtocolHandler(dataBuff, evtMeta, networkProcess, "net_packet", t.bootTime)
+					captureData.PacketLen = packet.PktLen
+					captureData.InterfaceIndex = packet.IfIndex
+					if err := t.writePacket(captureData, time.Unix(int64(evtMeta.TimeStamp), 0), dataBuff); err != nil {
+						t.handleError(err)
+						continue
 					}
-
-				}
-				if err := t.writePacket(pktLen, time.Unix(int64(evtMeta.TimeStamp), 0), idx, dataBuff); err != nil {
-					t.handleError(err)
-					continue
+					select {
+					case t.config.ChanEvents <- evt:
+						t.stats.eventCounter.Increment()
+					case <-ctx.Done():
+						return
+					}
 				}
 
 			} else if t.config.Debug {
@@ -174,15 +141,19 @@ func (t *Tracee) processNetEvents() {
 	}
 }
 
-func (t *Tracee) writePacket(packetLen uint32, timeStamp time.Time, interfaceIndex int, dataBuff *bytes.Buffer) error {
+func (t *Tracee) writePacket(capData CaptureData, timeStamp time.Time, dataBuff *bytes.Buffer) error {
+	idx, ok := t.ngIfacesIndex[int(capData.InterfaceIndex)]
+	if !ok {
+		return fmt.Errorf("cant get the right interface index\n")
+	}
 	info := gopacket.CaptureInfo{
 		Timestamp:      timeStamp,
-		CaptureLength:  int(packetLen),
-		Length:         int(packetLen),
-		InterfaceIndex: interfaceIndex,
+		CaptureLength:  int(capData.PacketLen),
+		Length:         int(capData.PacketLen),
+		InterfaceIndex: int(idx),
 	}
 
-	err := t.pcapWriter.WritePacket(info, dataBuff.Bytes()[:packetLen])
+	err := t.pcapWriter.WritePacket(info, dataBuff.Bytes()[:capData.PacketLen])
 	if err != nil {
 		return err
 	}
@@ -204,4 +175,49 @@ func parseEventMetaData(payloadBytes []byte) (EventMeta, *bytes.Buffer) {
 	eventMetaData.ProcessName = string(bytes.TrimRight(payloadBytes[16:32], "\x00"))
 	return eventMetaData, bytes.NewBuffer(payloadBytes[32:])
 
+}
+
+func netPacketProtocolHandler(buffer *bytes.Buffer, evtMeta EventMeta, ctx procinfo.ProcessCtx, eventName string, bootTime uint64) (external.Event, PacketMeta) {
+	var evt external.Event
+	packet, err := ParseNetPacketMetaData(buffer)
+	if err != nil {
+		return evt, packet
+	}
+	evt = CreateNetEvent(evtMeta, ctx)
+	CreateNetPacketMetaArgs(&evt, packet)
+	evt.EventName = eventName
+	evt.Timestamp = int(evtMeta.TimeStamp + bootTime)
+	return evt, packet
+}
+
+// parsing the PacketMeta struct from bytes.buffer
+func ParseNetPacketMetaData(payload *bytes.Buffer) (PacketMeta, error) {
+	var pktMetaData PacketMeta
+	err := binary.Read(payload, binary.LittleEndian, &pktMetaData)
+	if err != nil {
+		return pktMetaData, err
+	}
+	return pktMetaData, nil
+}
+
+//takes the packet metadata and create argument array with that data
+func createNetPacketMetadataArg(packet PacketMeta) []external.Argument {
+	eventArgs := make([]external.Argument, 0, 0)
+	arg := external.PktMeta{}
+	arg.SrcIP = parseIP(packet.SrcIP)
+	arg.DestIP = parseIP(packet.SrcIP)
+	arg.SrcPort = packet.SrcPort
+	arg.DestPort = packet.DestPort
+	arg.Protocol = packet.Protocol
+	evtArg := external.Argument{
+		ArgMeta: external.ArgMeta{"metadata", "external.PktMeta"},
+		Value:   arg,
+	}
+	eventArgs = append(eventArgs, evtArg)
+	return eventArgs
+}
+
+func CreateNetPacketMetaArgs(event *external.Event, NetPacket PacketMeta) {
+	event.Args = createNetPacketMetadataArg(NetPacket)
+	event.ArgsNum = len(event.Args)
 }

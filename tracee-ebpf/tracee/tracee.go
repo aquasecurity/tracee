@@ -913,7 +913,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	go t.processLostEvents()
 	go t.handleEvents(ctx)
 	go t.processFileWrites()
-	go t.processNetEvents()
+	go t.processNetEvents(ctx)
 	// block until ctx is cancelled elsewhere
 	<-ctx.Done()
 	t.eventsPerfMap.Stop()
