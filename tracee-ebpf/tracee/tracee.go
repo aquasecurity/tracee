@@ -237,6 +237,13 @@ func New(cfg Config) (*Tracee, error) {
 		bootTime:  uint64(bootTime),
 	}
 
+	// the process-tree initialize must be before we start receiving events to ensure we already have the needed data for the events that use that tree
+	t.procInfo, err = procinfo.NewProcessInfo()
+	if err != nil {
+		t.Close()
+		return nil, fmt.Errorf("error creating process tree: %v", err)
+	}
+
 	t.eventsToTrace = make(map[int32]bool, len(t.config.Filter.EventsToTrace))
 	for _, e := range t.config.Filter.EventsToTrace {
 		// Map value is true iff events requested by the user
@@ -356,11 +363,6 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error getting acces to 'stack_addresses' eBPF Map %v", err)
 	}
 	t.StackAddressesMap = StackAddressesMap
-	t.procInfo, err = procinfo.NewProcessInfo()
-	if err != nil {
-		t.Close()
-		return nil, fmt.Errorf("error creating process tree: %v", err)
-	}
 
 	if t.config.Output.EventsSorting {
 		t.eventsSorter, err = sorting.InitEventSorter()
