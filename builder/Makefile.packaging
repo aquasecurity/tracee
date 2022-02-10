@@ -3,7 +3,7 @@
 #
 
 .PHONY: all
-all:
+all: help
 
 #
 # make
@@ -147,5 +147,4 @@ ubuntu-bin-%: \
 
 .PHONY: clean
 clean:
-	$(CMD_RM) -f .check_tree
-	$(CMD_RM) -f .ubuntu-pkgs*
+	$(MAKE) clean

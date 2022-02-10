@@ -3,7 +3,7 @@
 #
 
 .PHONY: all
-all:
+all: help
 
 #
 # make
@@ -198,3 +198,4 @@ endif
 
 .PHONY: clean
 clean:
+	$(MAKE) clean
