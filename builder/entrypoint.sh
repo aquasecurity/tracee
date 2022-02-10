@@ -70,7 +70,13 @@ run_tracee_rules() {
     events=$($TRACEE_RULES_EXE --list-events)
 
     echo "INFO: starting tracee-ebpf..."
-    ${TRACEE_EBPF_EXE} --metrics --output=format:gob --output=option:parse-arguments --trace event=${events} --output=out-file:${TRACEE_PIPE} &
+    ${TRACEE_EBPF_EXE} \
+        --metrics \
+        --output=format:gob \
+        --output=option:parse-arguments \
+        --output=option:cache-events \
+        --trace event=${events} \
+        --output=out-file:${TRACEE_PIPE} &
     tracee_ebpf_pid=$!
 
     # start tracee-rules

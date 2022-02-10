@@ -1278,8 +1278,17 @@ func TestPrepareOutput(t *testing.T) {
 			expectedError: nil,
 		},
 		{
+			testName:    "option cache-events",
+			outputSlice: []string{"option:cache-events"},
+			expectedOutput: tracee.OutputConfig{
+				ParseArguments: true,
+				EventsCaching:  true,
+			},
+			expectedError: nil,
+		},
+		{
 			testName:    "all options",
-			outputSlice: []string{"option:stack-addresses", "option:detect-syscall", "option:exec-env", "option:exec-hash", "option:sort-events"},
+			outputSlice: []string{"option:stack-addresses", "option:detect-syscall", "option:exec-env", "option:exec-hash", "option:sort-events", "option:cache-events"},
 			expectedOutput: tracee.OutputConfig{
 				StackAddresses: true,
 				DetectSyscall:  true,
@@ -1287,6 +1296,7 @@ func TestPrepareOutput(t *testing.T) {
 				ExecHash:       true,
 				ParseArguments: true,
 				EventsSorting:  true,
+				EventsCaching:  true,
 			},
 			expectedError: nil,
 		},

@@ -156,7 +156,7 @@ func main() {
 				return fmt.Errorf("failed preparing BPF object: %w", err)
 			}
 
-			cfg.ChanEvents = make(chan external.Event)
+			cfg.ChanEvents = make(chan external.Event, 10000) // TODO: sync buffer size with queueEventsBufferSize setup
 			cfg.ChanErrors = make(chan error)
 
 			t, err := tracee.New(cfg)

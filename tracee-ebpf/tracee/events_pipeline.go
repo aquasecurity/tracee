@@ -2,6 +2,7 @@ package tracee
 
 import (
 	"bytes"
+	"container/list"
 	gocontext "context"
 	"encoding/binary"
 	"fmt"
@@ -21,9 +22,19 @@ const maxStackDepth int = 20
 func (t *Tracee) handleEvents(ctx gocontext.Context) {
 	var errcList []<-chan error
 
+	// cache in here could be []bytes
+
 	// Source pipeline stage.
 	eventsChan, errc := t.decodeEvents(ctx)
 	errcList = append(errcList, errc)
+
+	if t.config.Output.EventsCaching {
+		// Event asynchronous queue. Placed after decodeEvents so events that
+		// does not require processing aren't kept in queue, reducing the memory
+		// footprint. TODO: turn queueEventsBufferSize configurable.
+		eventsChan, errc = t.queueEvents(ctx, eventsChan)
+		errcList = append(errcList, errc)
+	}
 
 	if t.config.Output.EventsSorting {
 		eventsChan, errc = t.eventsSorter.StartPipeline(ctx, eventsChan)
@@ -36,6 +47,73 @@ func (t *Tracee) handleEvents(ctx gocontext.Context) {
 
 	// Pipeline started. Waiting for pipeline to complete
 	t.WaitForPipeline(errcList...)
+}
+
+const queueEventsBufferSize int = 1000000 // 1M events in queue for now
+
+// queueEvents is a queue to cache events coming from the pipeline. This is
+// needed because tracee-rules pipeline consumption might not be as fast as the
+// eBPF event generation, causing latencies to perf buffer consumption and event
+// loss. Unfortunately, the channel buffer isn't enough to release the pipeline
+// pressure, thus the need for such queue. The default value has behaved well
+// in a 2GB environment (consumed ~1GB and caused event loss only after buffer
+// was full). Memory is released correctly as the buffer emptied.
+// TODO: benchmark default queue size for different host sizes.
+func (t *Tracee) queueEvents(ctx gocontext.Context, in <-chan *external.Event) (chan *external.Event, chan error) {
+	out := make(chan *external.Event, queueEventsBufferSize/5) // 20% of queue size
+	errc := make(chan error, 1)
+	done := make(chan bool, 1)
+
+	max := queueEventsBufferSize // # of cached events
+	cache := list.New()
+	var lock sync.Mutex
+
+	// receive and cache events (release pressure in the pipeline)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				done <- true
+				return
+			default:
+			}
+			lock.Lock()
+			if cache.Len() < max {
+				select {
+				case event := <-in:
+					if event != nil {
+						cache.PushBack(*event)
+						event = nil
+					}
+				}
+			}
+			lock.Unlock()
+		}
+	}()
+
+	// de-cache and send events (free cache space)
+	go func() {
+		defer close(out)
+		defer close(errc)
+
+		for {
+			select {
+			case <-done:
+				return
+			default:
+			}
+			lock.Lock()
+			if cache.Len() > 0 {
+				e := cache.Front()
+				event := e.Value.(external.Event)
+				out <- &event
+				cache.Remove(e)
+			}
+			lock.Unlock()
+		}
+	}()
+
+	return out, errc
 }
 
 // decodeEvents read the events received from the BPF programs and parse it into external.Event type
@@ -161,6 +239,7 @@ func (t *Tracee) processEvents(ctx gocontext.Context, in <-chan *external.Event)
 				select {
 				case t.config.ChanEvents <- *event:
 					t.stats.EventCount.Increment()
+					event = nil
 				case <-ctx.Done():
 					return
 				}

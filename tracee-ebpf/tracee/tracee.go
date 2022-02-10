@@ -70,6 +70,7 @@ type OutputConfig struct {
 	ExecHash       bool
 	ParseArguments bool
 	EventsSorting  bool
+	EventsCaching  bool
 }
 
 type netProbe struct {

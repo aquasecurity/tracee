@@ -29,6 +29,7 @@ option:{stack-addresses,detect-syscall,exec-env,relative-time,exec-hash,parse-ar
   exec-hash                                        when tracing sched_process_exec, show the file hash(sha256) and ctime
   parse-arguments                                  do not show raw machine-readable values for event arguments, instead parse into human readable strings
   sort-events                                      enable sorting events before passing to them output. This will decrease the overall program efficiency.
+  cache-events                                     enable caching events to release perf-buffer pressure. This will decrease amount of event loss until cache is full.
 Examples:
   --output json                                            | output as json
   --output gotemplate=/path/to/my.tmpl                     | output as the provided go template
@@ -92,6 +93,8 @@ func PrepareOutput(outputSlice []string) (tracee.OutputConfig, printerConfig, er
 				outcfg.ParseArguments = true
 			case "sort-events":
 				outcfg.EventsSorting = true
+			case "cache-events":
+				outcfg.EventsCaching = true
 			default:
 				return outcfg, printcfg, fmt.Errorf("invalid output option: %s, use '--output help' for more info", outputParts[1])
 			}
