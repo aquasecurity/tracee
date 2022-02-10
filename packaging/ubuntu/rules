@@ -8,7 +8,7 @@ include /etc/os-release
 STATIC := 0 # can't use golang tracee-rules if enabled
 BTFHUB := 1 # will include tailored BTF files from btfhub
 
-TRACEE_MAKE = BTFHUB=$(BTFHUB) STATIC=$(STATIC) make -f Makefile.one
+TRACEE_MAKE = BTFHUB=$(BTFHUB) STATIC=$(STATIC) make
 
 GO_PATH :=
 

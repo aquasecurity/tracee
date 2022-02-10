@@ -194,4 +194,4 @@ run-tracee-ebpf-full: \
 
 .PHONY: clean
 clean:
-	$(MAKE) -f Makefile.one clean
+	$(MAKE) clean

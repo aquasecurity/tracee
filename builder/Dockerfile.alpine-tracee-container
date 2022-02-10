@@ -99,10 +99,10 @@ WORKDIR /tracee
 
 COPY . /tracee
 
-RUN make -f Makefile.one clean && \
-    BTFHUB=$BTFHUB make -f Makefile.one tracee-ebpf && \
-    make -f Makefile.one tracee-rules && \
-    make -f Makefile.one rules && \
+RUN make clean && \
+    BTFHUB=$BTFHUB make tracee-ebpf && \
+    make tracee-rules && \
+    make rules && \
     rm -rf ./3rdparty/btfhub/ && \
     rm -rf ./3rdparty/btfhub-archive/
 

@@ -177,7 +177,7 @@ ifneq ($(ARG),)
 	$(CMD_DOCKER) \
 		$(DOCKER_RUN_ARGS) \
 		-it $(ALPINE_MAKE_CONTNAME) \
-		$(MAKE) -f Makefile.one $(ARG)
+		$(MAKE) $(ARG)
 endif
 
 .PHONY: ubuntu-make
@@ -189,7 +189,7 @@ ifneq ($(ARG),)
 	$(CMD_DOCKER) \
 		$(DOCKER_RUN_ARGS) \
 		-it $(UBUNTU_MAKE_CONTNAME) \
-		$(MAKE) -f Makefile.one $(ARG)
+		$(MAKE) $(ARG)
 endif
 
 #
