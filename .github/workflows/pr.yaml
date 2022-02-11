@@ -114,26 +114,17 @@ jobs:
           opa-version: ${{ env.OPA_VERSION }}
       - name: Build
         run: |
-          make
-      - name: Build in Docker
-        run: |
-          make DOCKER=1
-      - name: Build Docker Image
-        run: |
-          make docker
+          make -f builder/Makefile.release snapshot
       - name: Scan Docker Image for Vulnerabilities
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: "tracee:latest"
           severity: "CRITICAL"
           exit-code: "1"
-      - name: Build Slim Docker Image
-        run: |
-          make docker-slim
-      - name: Scan Slim Docker Image for Vulnerabilities
+      - name: Scan Docker Image for Vulnerabilities
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: "tracee:slim"
+          image-ref: "tracee:full"
           severity: "CRITICAL"
           exit-code: "1"
 
