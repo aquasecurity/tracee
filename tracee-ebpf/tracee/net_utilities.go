@@ -2,20 +2,8 @@ package tracee
 
 import (
 	"bytes"
-	"github.com/aquasecurity/tracee/pkg/external"
-	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"inet.af/netaddr"
 )
-
-func CreateNetEvent(eventMeta EventMeta, ctx procinfo.ProcessCtx) external.Event {
-	evt := ctx.GetEventByProcessCtx()
-	evt.Timestamp = int(eventMeta.TimeStamp)
-	evt.ProcessName = eventMeta.ProcessName
-	evt.EventID = int(eventMeta.NetEventId)
-	evt.ReturnValue = 0
-	evt.StackAddresses = nil
-	return evt
-}
 
 func parseIP(ip [16]byte) string {
 	if IsIpv6(ip) {
@@ -28,14 +16,14 @@ func parseIP(ip [16]byte) string {
 
 // check if a given Ip as byte array is Ipv6 or Ipv4
 func IsIpv6(ip [16]byte) bool {
-	zeroedPattern := make([]byte, 9, 9)
+	var zeroedPattern []byte
 	if bytes.Compare(ip[:9], zeroedPattern) == 0 {
 		return false
 	}
 	return true
 }
 
-//corvent a ipV4 to samller byte array
+// convert a ipV4 to samller byte array
 func AssginIpV4(ip [16]byte) [4]byte {
 	var ipV4 [4]byte
 	copy(ipV4[:], ip[12:16])

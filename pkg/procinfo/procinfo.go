@@ -3,7 +3,6 @@ package procinfo
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/aquasecurity/tracee/pkg/external"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/external"
 )
 
 type ProcessCtx struct {

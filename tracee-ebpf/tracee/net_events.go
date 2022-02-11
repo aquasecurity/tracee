@@ -5,10 +5,10 @@ import (
 	gocontext "context"
 	"encoding/binary"
 	"fmt"
-	"github.com/aquasecurity/tracee/pkg/external"
-	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"time"
 
+	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/google/gopacket"
 )
 
@@ -52,24 +52,30 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 			timeStampObj := time.Unix(0, int64(evtMeta.TimeStamp+t.bootTime))
 
 			if evtMeta.NetEventId == NetPacket {
-
+				networkProcess, err := t.getProcessCtx(int(evtMeta.HostTid))
+				if err != nil {
+					t.handleError(err)
+					continue
+				}
+				if t.config.Output.RelativeTime {
+					// To get the monotonic time since tracee was started, we have to subtract the start time from the timestamp.
+					evtMeta.TimeStamp -= t.startTime
+				} else {
+					// To get the current ("wall") time, we add the boot time into it.
+					evtMeta.TimeStamp += t.bootTime
+				}
+				evt, packet := netPacketProtocolHandler(dataBuff, evtMeta, networkProcess, "net_packet")
+				var captureData CaptureData
+				captureData.PacketLen = packet.PktLen
+				captureData.InterfaceIndex = packet.IfIndex
+				if err := t.writePacket(captureData, time.Unix(int64(evtMeta.TimeStamp), 0), dataBuff); err != nil {
+					t.handleError(err)
+					continue
+				}
 				if t.config.Debug {
-					var captureData CaptureData
-					networkProcess, err := t.getProcessCtx(int(evtMeta.HostTid))
-					if err != nil {
-						t.handleError(err)
-						continue
-					}
-					evt, packet := netPacketProtocolHandler(dataBuff, evtMeta, networkProcess, "net_packet", t.bootTime)
-					captureData.PacketLen = packet.PktLen
-					captureData.InterfaceIndex = packet.IfIndex
-					if err := t.writePacket(captureData, time.Unix(int64(evtMeta.TimeStamp), 0), dataBuff); err != nil {
-						t.handleError(err)
-						continue
-					}
 					select {
 					case t.config.ChanEvents <- evt:
-						t.stats.eventCounter.Increment()
+						t.stats.netEventCounter.Increment()
 					case <-ctx.Done():
 						return
 					}
@@ -177,16 +183,24 @@ func parseEventMetaData(payloadBytes []byte) (EventMeta, *bytes.Buffer) {
 
 }
 
-func netPacketProtocolHandler(buffer *bytes.Buffer, evtMeta EventMeta, ctx procinfo.ProcessCtx, eventName string, bootTime uint64) (external.Event, PacketMeta) {
+func CreateNetEvent(eventMeta EventMeta, ctx procinfo.ProcessCtx, eventName string, ts int) external.Event {
+	evt := ctx.GetEventByProcessCtx()
+	evt.Timestamp = int(eventMeta.TimeStamp)
+	evt.ProcessName = eventMeta.ProcessName
+	evt.EventID = int(eventMeta.NetEventId)
+	evt.EventName = eventName
+	evt.Timestamp = ts
+	return evt
+}
+
+func netPacketProtocolHandler(buffer *bytes.Buffer, evtMeta EventMeta, ctx procinfo.ProcessCtx, eventName string) (external.Event, PacketMeta) {
 	var evt external.Event
 	packet, err := ParseNetPacketMetaData(buffer)
 	if err != nil {
 		return evt, packet
 	}
-	evt = CreateNetEvent(evtMeta, ctx)
+	evt = CreateNetEvent(evtMeta, ctx, eventName, int(evtMeta.TimeStamp))
 	CreateNetPacketMetaArgs(&evt, packet)
-	evt.EventName = eventName
-	evt.Timestamp = int(evtMeta.TimeStamp + bootTime)
 	return evt, packet
 }
 
@@ -202,22 +216,20 @@ func ParseNetPacketMetaData(payload *bytes.Buffer) (PacketMeta, error) {
 
 //takes the packet metadata and create argument array with that data
 func createNetPacketMetadataArg(packet PacketMeta) []external.Argument {
-	eventArgs := make([]external.Argument, 0, 0)
 	arg := external.PktMeta{}
 	arg.SrcIP = parseIP(packet.SrcIP)
 	arg.DestIP = parseIP(packet.SrcIP)
 	arg.SrcPort = packet.SrcPort
 	arg.DestPort = packet.DestPort
 	arg.Protocol = packet.Protocol
-	evtArg := external.Argument{
+	eventArgs := []external.Argument{external.Argument{
 		ArgMeta: external.ArgMeta{"metadata", "external.PktMeta"},
 		Value:   arg,
-	}
-	eventArgs = append(eventArgs, evtArg)
+	}}
 	return eventArgs
 }
 
 func CreateNetPacketMetaArgs(event *external.Event, NetPacket PacketMeta) {
 	event.Args = createNetPacketMetadataArg(NetPacket)
-	event.ArgsNum = len(event.Args)
+	event.ArgsNum = 1
 }
