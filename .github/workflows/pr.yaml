@@ -101,8 +101,6 @@ jobs:
       - verify-tracee-ebpf
       - verify-tracee-rules
       - verify-signatures
-      - deprecated-verify-tracee-ebpf
-      - deprecated-verify-tracee-rules
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Code
@@ -151,8 +149,6 @@ jobs:
       - verify-tracee-ebpf
       - verify-tracee-rules
       - verify-signatures
-      - deprecated-verify-tracee-ebpf
-      - deprecated-verify-tracee-rules
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout main
@@ -187,8 +183,6 @@ jobs:
       - verify-tracee-ebpf
       - verify-tracee-rules
       - verify-signatures
-      - deprecated-verify-tracee-ebpf
-      - deprecated-verify-tracee-rules
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout main
