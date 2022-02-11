@@ -49,10 +49,10 @@ jobs:
           opa-version: ${{ env.OPA_VERSION }}
       - name: Build tracee-ebpf
         run: |
-          make -f Makefile.one tracee-ebpf
+          make tracee-ebpf
       - name: Test tracee-ebpf
         run: |
-          make -f Makefile.one test-tracee-ebpf
+          make test-tracee-ebpf
   verify-tracee-rules:
     name: Verify tracee-rules
     needs:
@@ -70,10 +70,10 @@ jobs:
           opa-version: ${{ env.OPA_VERSION }}
       - name: Build tracee-rules
         run: |
-          make -f Makefile.one tracee-rules
+          make tracee-rules
       - name: Test tracee-rules
         run: |
-          make -f Makefile.one test-tracee-rules
+          make test-tracee-rules
   verify-signatures:
     name: Verify Signatures
     needs:
@@ -91,10 +91,10 @@ jobs:
           opa-version: ${{ env.OPA_VERSION }}
       - name: Build Signatures
         run: |
-          make -f Makefile.one rules
+          make rules
       - name: Test Signatures
         run: |
-          make -f Makefile.one test-rules
+          make test-rules
   release-snapshot:
     name: Release Snapshot
     needs:
@@ -165,7 +165,7 @@ jobs:
           BTFHUB=0 make -f builder/Makefile.tracee-container build-tracee-full
       - name: Install BPF
         run: |
-          make -f Makefile.one install-bpf-nocore
+          make install-bpf-nocore
       - name: Run tests
         run: |
           docker image pull aquasec/tracee-tester:latest
@@ -196,7 +196,7 @@ jobs:
           opa-version: ${{ env.OPA_VERSION }}
       - name: Built tracee BPF
         run: |
-          make -f Makefile.one bpf-core
+          make bpf-core
       - name: Build tracee image (slim w/ BTFHUB)
         run: |
           BTFHUB=1 make -f builder/Makefile.tracee-container build-tracee
