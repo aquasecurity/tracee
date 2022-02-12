@@ -397,28 +397,155 @@ func (t *Tracee) initTailCall(tailNum uint32, mapName string, progName string) e
 type bpfConfig uint32
 
 const (
-	configDetectOrigSyscall bpfConfig = iota + 1
-	configExecEnv
-	configCaptureFiles
-	configExtractDynCode
-	configTraceePid
-	configStackAddresses
-	configUIDFilter
-	configMntNsFilter
-	configPidNsFilter
-	configUTSNsFilter
-	configCommFilter
-	configPidFilter
-	configContFilter
-	configFollowFilter
-	configNewPidFilter
-	configNewContFilter
-	configDebugNet
-	configProcTreeFilter
-	configCaptureModules
-	configCgroupV1
-	configCgroupIdFilter
+	configTraceePid bpfConfig = iota
+	configOptions
+	configFilters
 )
+
+// options config should match defined values in ebpf code
+const (
+	optDetectOrigSyscall uint32 = 1 << iota
+	optExecEnv
+	optCaptureFiles
+	optExtractDynCode
+	optStackAddresses
+	optDebugNet
+	optCaptureModules
+	optCgroupV1
+)
+
+// filters config should match defined values in ebpf code
+const (
+	filterUIDEnabled uint32 = 1 << iota
+	filterUIDOut
+	filterMntNsEnabled
+	filterMntNsOut
+	filterPidNsEnabled
+	filterPidNsOut
+	filterUTSNsEnabled
+	filterUTSNsOut
+	filterCommEnabled
+	filterCommOut
+	filterPidEnabled
+	filterPidOut
+	filterContEnabled
+	filterContOut
+	filterFollowEnabled
+	filterNewPidEnabled
+	filterNewPidOut
+	filterNewContEnabled
+	filterNewContOut
+	filterProcTreeEnabled
+	filterProcTreeOut
+	filterCgroupIdEnabled
+	filterCgroupIdOut
+)
+
+func (t *Tracee) getOptionsConfig() uint32 {
+	var cOptVal uint32
+
+	if t.config.Output.DetectSyscall {
+		cOptVal = cOptVal | optDetectOrigSyscall
+	}
+	if t.config.Output.ExecEnv {
+		cOptVal = cOptVal | optExecEnv
+	}
+	if t.config.Output.StackAddresses {
+		cOptVal = cOptVal | optStackAddresses
+	}
+	if t.config.Capture.FileWrite {
+		cOptVal = cOptVal | optCaptureFiles
+	}
+	if t.config.Capture.Module {
+		cOptVal = cOptVal | optCaptureModules
+	}
+	if t.config.Capture.Mem {
+		cOptVal = cOptVal | optExtractDynCode
+	}
+	if t.config.Debug {
+		cOptVal = cOptVal | optDebugNet
+	}
+	if t.containers.IsCgroupV1() {
+		cOptVal = cOptVal | optCgroupV1
+	}
+
+	return cOptVal
+}
+
+func (t *Tracee) getFiltersConfig() uint32 {
+	var cFilterVal uint32
+	if t.config.Filter.UIDFilter.Enabled {
+		cFilterVal = cFilterVal | filterUIDEnabled
+		if t.config.Filter.UIDFilter.FilterOut() {
+			cFilterVal = cFilterVal | filterUIDOut
+		}
+	}
+	if t.config.Filter.PIDFilter.Enabled {
+		cFilterVal = cFilterVal | filterPidEnabled
+		if t.config.Filter.PIDFilter.FilterOut() {
+			cFilterVal = cFilterVal | filterPidOut
+		}
+	}
+	if t.config.Filter.NewPidFilter.Enabled {
+		cFilterVal = cFilterVal | filterNewPidEnabled
+		if t.config.Filter.NewPidFilter.FilterOut() {
+			cFilterVal = cFilterVal | filterNewPidOut
+		}
+	}
+	if t.config.Filter.MntNSFilter.Enabled {
+		cFilterVal = cFilterVal | filterMntNsEnabled
+		if t.config.Filter.MntNSFilter.FilterOut() {
+			cFilterVal = cFilterVal | filterMntNsOut
+		}
+	}
+	if t.config.Filter.PidNSFilter.Enabled {
+		cFilterVal = cFilterVal | filterPidNsEnabled
+		if t.config.Filter.PidNSFilter.FilterOut() {
+			cFilterVal = cFilterVal | filterPidNsOut
+		}
+	}
+	if t.config.Filter.UTSFilter.Enabled {
+		cFilterVal = cFilterVal | filterUTSNsEnabled
+		if t.config.Filter.UTSFilter.FilterOut() {
+			cFilterVal = cFilterVal | filterUTSNsOut
+		}
+	}
+	if t.config.Filter.CommFilter.Enabled {
+		cFilterVal = cFilterVal | filterCommEnabled
+		if t.config.Filter.CommFilter.FilterOut() {
+			cFilterVal = cFilterVal | filterCommOut
+		}
+	}
+	if t.config.Filter.ContFilter.Enabled {
+		cFilterVal = cFilterVal | filterContEnabled
+		if t.config.Filter.ContFilter.FilterOut() {
+			cFilterVal = cFilterVal | filterContOut
+		}
+	}
+	if t.config.Filter.NewContFilter.Enabled {
+		cFilterVal = cFilterVal | filterNewContEnabled
+		if t.config.Filter.NewContFilter.FilterOut() {
+			cFilterVal = cFilterVal | filterNewContOut
+		}
+	}
+	if t.config.Filter.ContIDFilter.Enabled {
+		cFilterVal = cFilterVal | filterCgroupIdEnabled
+		if t.config.Filter.ContIDFilter.FilterOut() {
+			cFilterVal = cFilterVal | filterCgroupIdOut
+		}
+	}
+	if t.config.Filter.ProcessTreeFilter.Enabled {
+		cFilterVal = cFilterVal | filterProcTreeEnabled
+		if t.config.Filter.ProcessTreeFilter.FilterOut() {
+			cFilterVal = cFilterVal | filterProcTreeOut
+		}
+	}
+	if t.config.Filter.Follow {
+		cFilterVal = cFilterVal | filterFollowEnabled
+	}
+
+	return cFilterVal
+}
 
 // Custom KernelConfigOption's to extend kernel_config helper support
 // Add here all kconfig variables used within tracee.bpf.c
@@ -504,41 +631,35 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	cTP := uint32(configTraceePid)
-	cDOS := uint32(configDetectOrigSyscall)
-	cEV := uint32(configExecEnv)
-	cSA := uint32(configStackAddresses)
-	cCF := uint32(configCaptureFiles)
-	cCM := uint32(configCaptureModules)
-	cEDC := uint32(configExtractDynCode)
-	cFF := uint32(configFollowFilter)
-	cDN := uint32(configDebugNet)
-	cCG1 := uint32(configCgroupV1)
-
 	thisPid := uint32(os.Getpid())
-	cDOSval := boolToUInt32(t.config.Output.DetectSyscall)
-	cEVval := boolToUInt32(t.config.Output.ExecEnv)
-	cSAval := boolToUInt32(t.config.Output.StackAddresses)
-	cCFval := boolToUInt32(t.config.Capture.FileWrite)
-	cCMval := boolToUInt32(t.config.Capture.Module)
-	cEDCval := boolToUInt32(t.config.Capture.Mem)
-	cFFval := boolToUInt32(t.config.Filter.Follow)
-	cDNval := boolToUInt32(t.config.Debug)
-	cCG1val := boolToUInt32(t.containers.IsCgroupV1())
+	if err = bpfConfigMap.Update(unsafe.Pointer(&cTP), unsafe.Pointer(&thisPid)); err != nil {
+		return err
+	}
 
-	errs := make([]error, 0)
-	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cTP), unsafe.Pointer(&thisPid)))
-	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cDOS), unsafe.Pointer(&cDOSval)))
-	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cEV), unsafe.Pointer(&cEVval)))
-	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cSA), unsafe.Pointer(&cSAval)))
-	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cCF), unsafe.Pointer(&cCFval)))
-	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cCM), unsafe.Pointer(&cCMval)))
-	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cEDC), unsafe.Pointer(&cEDCval)))
-	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cFF), unsafe.Pointer(&cFFval)))
-	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cDN), unsafe.Pointer(&cDNval)))
-	errs = append(errs, bpfConfigMap.Update(unsafe.Pointer(&cCG1), unsafe.Pointer(&cCG1val)))
-	for _, e := range errs {
-		if e != nil {
-			return e
+	cOpt := uint32(configOptions)
+	cOptVal := t.getOptionsConfig()
+	if err = bpfConfigMap.Update(unsafe.Pointer(&cOpt), unsafe.Pointer(&cOptVal)); err != nil {
+		return err
+	}
+
+	cFilter := uint32(configFilters)
+	cFilterVal := t.getFiltersConfig()
+	if err = bpfConfigMap.Update(unsafe.Pointer(&cFilter), unsafe.Pointer(&cFilterVal)); err != nil {
+		return err
+	}
+
+	errmap := make(map[string]error, 0)
+	errmap["uid_filter"] = t.config.Filter.UIDFilter.Set(t.bpfModule, "uid_filter", uidLess)
+	errmap["pid_filter"] = t.config.Filter.PIDFilter.Set(t.bpfModule, "pid_filter", pidLess)
+	errmap["mnt_ns_filter"] = t.config.Filter.MntNSFilter.Set(t.bpfModule, "mnt_ns_filter", mntNsLess)
+	errmap["pid_ns_filter"] = t.config.Filter.PidNSFilter.Set(t.bpfModule, "pid_ns_filter", pidNsLess)
+	errmap["uts_ns_filter"] = t.config.Filter.UTSFilter.Set(t.bpfModule, "uts_ns_filter")
+	errmap["comm_filter"] = t.config.Filter.CommFilter.Set(t.bpfModule, "comm_filter")
+	errmap["cont_id_filter"] = t.config.Filter.ContIDFilter.Set(t.bpfModule, t.containers, "cgroup_id_filter")
+
+	for k, v := range errmap {
+		if v != nil {
+			return fmt.Errorf("error setting %v filter: %v", k, v)
 		}
 	}
 
@@ -546,7 +667,7 @@ func (t *Tracee) populateBPFMaps() error {
 	t.containers.PopulateBpfMap(t.bpfModule, "containers_map")
 
 	// Initialize tail calls program array
-	errs = make([]error, 0)
+	errs := make([]error, 0)
 	errs = append(errs, t.initTailCall(tailVfsWrite, "prog_array", "trace_ret_vfs_write_tail"))
 	errs = append(errs, t.initTailCall(tailVfsWritev, "prog_array", "trace_ret_vfs_writev_tail"))
 	errs = append(errs, t.initTailCall(tailSendBin, "prog_array", "send_bin"))
@@ -567,24 +688,6 @@ func (t *Tracee) populateBPFMaps() error {
 		FilterFileWriteBytes := []byte(t.config.Capture.FilterFileWrite[i])
 		if err = fileFilterMap.Update(unsafe.Pointer(&i), unsafe.Pointer(&FilterFileWriteBytes[0])); err != nil {
 			return err
-		}
-	}
-
-	errmap := make(map[string]error, 0)
-	errmap["uid_filter"] = t.config.Filter.UIDFilter.Set(t.bpfModule, "uid_filter", configUIDFilter, uidLess)
-	errmap["pid_filter"] = t.config.Filter.PIDFilter.Set(t.bpfModule, "pid_filter", configPidFilter, pidLess)
-	errmap["pid=new_filter"] = t.config.Filter.NewPidFilter.Set(t.bpfModule, configNewPidFilter)
-	errmap["mnt_ns_filter"] = t.config.Filter.MntNSFilter.Set(t.bpfModule, "mnt_ns_filter", configMntNsFilter, mntNsLess)
-	errmap["pid_ns_filter"] = t.config.Filter.PidNSFilter.Set(t.bpfModule, "pid_ns_filter", configPidNsFilter, pidNsLess)
-	errmap["uts_ns_filter"] = t.config.Filter.UTSFilter.Set(t.bpfModule, "uts_ns_filter", configUTSNsFilter)
-	errmap["comm_filter"] = t.config.Filter.CommFilter.Set(t.bpfModule, "comm_filter", configCommFilter)
-	errmap["cont_filter"] = t.config.Filter.ContFilter.Set(t.bpfModule, configContFilter)
-	errmap["cont=new_filter"] = t.config.Filter.NewContFilter.Set(t.bpfModule, configNewContFilter)
-	errmap["cont_id_filter"] = t.config.Filter.ContIDFilter.Set(t.bpfModule, t.containers, "cgroup_id_filter", configCgroupIdFilter)
-
-	for k, v := range errmap {
-		if v != nil {
-			return fmt.Errorf("error setting %v filter: %v", k, v)
 		}
 	}
 

@@ -200,31 +200,42 @@ Copyright (C) Aqua Security inc.
 #define DEBUG_NET_INET_SOCK_SET_STATE   6
 #define DEBUG_NET_TCP_CONNECT           7
 
-#define CONFIG_SHOW_SYSCALL             1
-#define CONFIG_EXEC_ENV                 2
-#define CONFIG_CAPTURE_FILES            3
-#define CONFIG_EXTRACT_DYN_CODE         4
-#define CONFIG_TRACEE_PID               5
-#define CONFIG_CAPTURE_STACK_TRACES     6
-#define CONFIG_UID_FILTER               7
-#define CONFIG_MNT_NS_FILTER            8
-#define CONFIG_PID_NS_FILTER            9
-#define CONFIG_UTS_NS_FILTER            10
-#define CONFIG_COMM_FILTER              11
-#define CONFIG_PID_FILTER               12
-#define CONFIG_CONT_FILTER              13
-#define CONFIG_FOLLOW_FILTER            14
-#define CONFIG_NEW_PID_FILTER           15
-#define CONFIG_NEW_CONT_FILTER          16
-#define CONFIG_DEBUG_NET                17
-#define CONFIG_PROC_TREE_FILTER         18
-#define CONFIG_CAPTURE_MODULES          19
-#define CONFIG_CGROUP_V1                20
-#define CONFIG_CGROUP_ID_FILTER         21
+#define CONFIG_TRACEE_PID               0
+#define CONFIG_OPTIONS                  1
+#define CONFIG_FILTERS                  2
 
-// get_config(CONFIG_XXX_FILTER) returns 0 if not enabled
-#define FILTER_IN                       1
-#define FILTER_OUT                      2
+#define OPT_SHOW_SYSCALL                (1 << 0)
+#define OPT_EXEC_ENV                    (1 << 1)
+#define OPT_CAPTURE_FILES               (1 << 2)
+#define OPT_EXTRACT_DYN_CODE            (1 << 3)
+#define OPT_CAPTURE_STACK_TRACES        (1 << 4)
+#define OPT_DEBUG_NET                   (1 << 5)
+#define OPT_CAPTURE_MODULES             (1 << 6)
+#define OPT_CGROUP_V1                   (1 << 7)
+
+#define FILTER_UID_ENABLED              (1 << 0)
+#define FILTER_UID_OUT                  (1 << 1)
+#define FILTER_MNT_NS_ENABLED           (1 << 2)
+#define FILTER_MNT_NS_OUT               (1 << 3)
+#define FILTER_PID_NS_ENABLED           (1 << 4)
+#define FILTER_PID_NS_OUT               (1 << 5)
+#define FILTER_UTS_NS_ENABLED           (1 << 6)
+#define FILTER_UTS_NS_OUT               (1 << 7)
+#define FILTER_COMM_ENABLED             (1 << 8)
+#define FILTER_COMM_OUT                 (1 << 9)
+#define FILTER_PID_ENABLED              (1 << 10)
+#define FILTER_PID_OUT                  (1 << 11)
+#define FILTER_CONT_ENABLED             (1 << 12)
+#define FILTER_CONT_OUT                 (1 << 13)
+#define FILTER_FOLLOW_ENABLED           (1 << 14)
+#define FILTER_NEW_PID_ENABLED          (1 << 15)
+#define FILTER_NEW_PID_OUT              (1 << 16)
+#define FILTER_NEW_CONT_ENABLED         (1 << 17)
+#define FILTER_NEW_CONT_OUT             (1 << 18)
+#define FILTER_PROC_TREE_ENABLED        (1 << 19)
+#define FILTER_PROC_TREE_OUT            (1 << 20)
+#define FILTER_CGROUP_ID_ENABLED        (1 << 21)
+#define FILTER_CGROUP_ID_OUT            (1 << 22)
 
 #define UID_LESS                        0
 #define UID_GREATER                     1
@@ -445,6 +456,7 @@ typedef struct event_data {
     void *ctx;
     buf_t *submit_p;
     u32 buf_off;
+    u32 options;
 } event_data_t;
 
 // For a good summary about capabilities, see https://lwn.net/Articles/636533/
@@ -544,7 +556,6 @@ struct mount {
 
 /*================================= MAPS =====================================*/
 
-BPF_HASH(config_map, u32, u32);                         // various configurations
 BPF_HASH(kconfig_map, u32, u32);                        // kernel config variables
 BPF_HASH(chosen_events_map, u32, u32);                  // events chosen by the user
 BPF_HASH(traced_pids_map, u32, u32);                    // track traced pids
@@ -567,6 +578,7 @@ BPF_HASH(process_tree_map, u32, u32);                   // filter events by the 
 BPF_HASH(process_context_map, u32, process_context_t);  // holds the process_context data for every tid
 BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t);         // socket address to process context
 BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t);   // network identifier to process context
+BPF_ARRAY(config_map, u32, 3);                          // various configurations
 BPF_ARRAY(file_filter, path_filter_t, 3);               // filter vfs_write events
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);             // percpu global buffer variables
 BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS);           // holds offsets to bufs respectively
@@ -1143,7 +1155,7 @@ static __always_inline int get_kconfig_val(u32 key)
     return *config;
 }
 
-static __always_inline int init_context(context_t *context, struct task_struct *task)
+static __always_inline int init_context(context_t *context, struct task_struct *task, u32 options)
 {
     u64 id = bpf_get_current_pid_tgid();
     context->host_tid = id;
@@ -1159,7 +1171,7 @@ static __always_inline int init_context(context_t *context, struct task_struct *
     char * uts_name = get_task_uts_name(task);
     if (uts_name)
         bpf_probe_read_str(&context->uts_name, TASK_COMM_LEN, uts_name);
-    if (get_config(CONFIG_CGROUP_V1)) {
+    if (options & OPT_CGROUP_V1) {
         context->cgroup_id = get_cgroup_v1_subsys0_id(task);
     } else {
         context->cgroup_id = bpf_get_current_cgroup_id();
@@ -1179,7 +1191,8 @@ static __always_inline int init_context(context_t *context, struct task_struct *
 static __always_inline int init_event_data(event_data_t *data, void *ctx)
 {
     data->task = (struct task_struct *)bpf_get_current_task();
-    init_context(&data->context, data->task);
+    data->options = get_config(CONFIG_OPTIONS);
+    init_context(&data->context, data->task, data->options);
     data->ctx = ctx;
     data->buf_off = sizeof(context_t);
     int buf_idx = SUBMIT_BUF_IDX;
@@ -1191,76 +1204,60 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
 }
 
 // returns 1 if you should trace based on uid, 0 if not
-static __always_inline int uint_filter_matches(int filter_config, void *filter_map, u64 key, u32 less_idx, u32 greater_idx)
+static __always_inline int uint_filter_matches(bool filter_out, void *filter_map, u64 key, u32 less_idx, u32 greater_idx)
 {
-    int config = get_config(filter_config);
-    if (!config)
-        return 1;
-
     u8* equality = bpf_map_lookup_elem(filter_map, &key);
-    if (equality != NULL) {
+    if (equality != NULL)
         return *equality;
-    }
 
-    if (config == FILTER_IN)
+    if (!filter_out)
         return 0;
 
     u64* lessThan = bpf_map_lookup_elem(&inequality_filter, &less_idx);
     if (lessThan == NULL)
         return 1;
 
-    if ((*lessThan != LESS_NOT_SET) && (key >= *lessThan)) {
+    if ((*lessThan != LESS_NOT_SET) && (key >= *lessThan))
         return 0;
-    }
 
     u64* greaterThan = bpf_map_lookup_elem(&inequality_filter, &greater_idx);
     if (greaterThan == NULL)
         return 1;
 
-    if ((*greaterThan != GREATER_NOT_SET) && (key <= *greaterThan)) {
+    if ((*greaterThan != GREATER_NOT_SET) && (key <= *greaterThan))
         return 0;
-    }
 
     return 1;
 }
 
-static __always_inline int equality_filter_matches(int filter_config, void *filter_map, void *key)
+static __always_inline int equality_filter_matches(bool filter_out, void *filter_map, void *key)
 {
-    int config = get_config(filter_config);
-    if (!config)
-        return 1;
-
     u32* equality = bpf_map_lookup_elem(filter_map, key);
-    if (equality != NULL) {
+    if (equality != NULL)
         return *equality;
-    }
 
-    if (config == FILTER_IN)
+    if (!filter_out)
         return 0;
 
     return 1;
 }
 
-static __always_inline int bool_filter_matches(int filter_config, bool val)
+static __always_inline int bool_filter_matches(bool filter_out, bool val)
 {
-    int config = get_config(filter_config);
-    if (!config)
+    if (!filter_out && val)
         return 1;
 
-    if ((config == FILTER_IN) && val){
+    if (filter_out && !val)
         return 1;
-    }
-
-    if ((config == FILTER_OUT) && !val) {
-        return 1;
-    }
 
     return 0;
 }
 
 static __always_inline int should_trace(context_t *context)
 {
-    if (get_config(CONFIG_FOLLOW_FILTER)) {
+    int config = get_config(CONFIG_FILTERS);
+
+    if (config & FILTER_FOLLOW_ENABLED) {
         if (bpf_map_lookup_elem(&traced_pids_map, &context->host_tid) != 0)
             // If the process is already in the traced_pids_map and follow was
             // chosen, don't check the other filters
@@ -1272,50 +1269,83 @@ static __always_inline int should_trace(context_t *context)
         return 0;
     }
 
-    bool is_new_pid = bpf_map_lookup_elem(&new_pids_map, &context->host_tid) != 0;
-    bool is_container = false;
-    bool is_new_container = false;
-    u32 cgroup_id_lsb = context->cgroup_id;
-    u8 *state = bpf_map_lookup_elem(&containers_map, &cgroup_id_lsb);
-    if (state != NULL) {
-        if (*state != CONTAINER_CREATED)
+    if (config & FILTER_CONT_ENABLED) {
+        bool is_container = false;
+        u32 cgroup_id_lsb = context->cgroup_id;
+        u8 *state = bpf_map_lookup_elem(&containers_map, &cgroup_id_lsb);
+        if ((state != NULL) && (*state != CONTAINER_CREATED))
             is_container = true;
-        if (*state == CONTAINER_STARTED)
-            is_new_container = true;
+        bool filter_out = (config & FILTER_CONT_OUT) == FILTER_CONT_OUT;
+        if (!bool_filter_matches(filter_out, is_container))
+            return 0;
     }
 
-    if (!bool_filter_matches(CONFIG_NEW_CONT_FILTER, is_new_container))
-        return 0;
+    if (config & FILTER_NEW_CONT_ENABLED) {
+        bool is_new_container = false;
+        u32 cgroup_id_lsb = context->cgroup_id;
+        u8 *state = bpf_map_lookup_elem(&containers_map, &cgroup_id_lsb);
+        if ((state != NULL) && (*state == CONTAINER_STARTED))
+                is_new_container = true;
+        bool filter_out = (config & FILTER_NEW_CONT_OUT) == FILTER_NEW_CONT_OUT;
+        if (!bool_filter_matches(filter_out, is_new_container))
+            return 0;
+    }
 
-    if (!bool_filter_matches(CONFIG_NEW_PID_FILTER, is_new_pid))
-        return 0;
+    if (config & FILTER_PID_ENABLED) {
+        bool filter_out = (config & FILTER_PID_OUT) == FILTER_PID_OUT;
+        if (!uint_filter_matches(filter_out, &pid_filter, context->host_tid, PID_LESS, PID_GREATER))
+            return 0;
+    }
 
-    if (!bool_filter_matches(CONFIG_CONT_FILTER, is_container))
-        return 0;
+    if (config & FILTER_NEW_PID_ENABLED) {
+        bool filter_out = (config & FILTER_NEW_PID_OUT) == FILTER_NEW_PID_OUT;
+        bool is_new_pid = bpf_map_lookup_elem(&new_pids_map, &context->host_tid) != 0;
+        if (!bool_filter_matches(filter_out, is_new_pid))
+            return 0;
+    }
 
-    if (!uint_filter_matches(CONFIG_UID_FILTER, &uid_filter, context->uid, UID_LESS, UID_GREATER))
-        return 0;
+    if (config & FILTER_UID_ENABLED) {
+        bool filter_out = (config & FILTER_UID_OUT) == FILTER_UID_OUT;
+        if (!uint_filter_matches(filter_out, &uid_filter, context->uid, UID_LESS, UID_GREATER))
+            return 0;
+    }
 
-    if (!uint_filter_matches(CONFIG_MNT_NS_FILTER, &mnt_ns_filter, context->mnt_id, MNTNS_LESS, MNTNS_GREATER))
-        return 0;
+    if (config & FILTER_MNT_NS_ENABLED) {
+        bool filter_out = (config & FILTER_MNT_NS_OUT) == FILTER_MNT_NS_OUT;
+        if (!uint_filter_matches(filter_out, &mnt_ns_filter, context->mnt_id, MNTNS_LESS, MNTNS_GREATER))
+            return 0;
+    }
 
-    if (!uint_filter_matches(CONFIG_PID_NS_FILTER, &pid_ns_filter, context->pid_id, PIDNS_LESS, PIDNS_GREATER))
-        return 0;
+    if (config & FILTER_PID_NS_ENABLED) {
+        bool filter_out = (config & FILTER_PID_NS_OUT) == FILTER_PID_NS_OUT;
+        if (!uint_filter_matches(filter_out, &pid_ns_filter, context->pid_id, PIDNS_LESS, PIDNS_GREATER))
+            return 0;
+    }
 
-    if (!uint_filter_matches(CONFIG_PID_FILTER, &pid_filter, context->host_tid, PID_LESS, PID_GREATER))
-        return 0;
+    if (config & FILTER_UTS_NS_ENABLED) {
+        bool filter_out = (config & FILTER_UTS_NS_OUT) == FILTER_UTS_NS_OUT;
+        if (!equality_filter_matches(filter_out, &uts_ns_filter, &context->uts_name))
+            return 0;
+    }
 
-    if (!equality_filter_matches(CONFIG_UTS_NS_FILTER, &uts_ns_filter, &context->uts_name))
-        return 0;
+    if (config & FILTER_COMM_ENABLED) {
+        bool filter_out = (config & FILTER_COMM_OUT) == FILTER_COMM_OUT;
+        if (!equality_filter_matches(filter_out, &comm_filter, &context->comm))
+            return 0;
+    }
 
-    if (!equality_filter_matches(CONFIG_COMM_FILTER, &comm_filter, &context->comm))
-        return 0;
+    if (config & FILTER_PROC_TREE_ENABLED) {
+        bool filter_out = (config & FILTER_PROC_TREE_OUT) == FILTER_PROC_TREE_OUT;
+        if (!equality_filter_matches(filter_out, &process_tree_map, &context->pid))
+            return 0;
+    }
 
-    if (!equality_filter_matches(CONFIG_PROC_TREE_FILTER, &process_tree_map, &context->pid))
-        return 0;
-
-    if (!equality_filter_matches(CONFIG_CGROUP_ID_FILTER, &cgroup_id_filter, &cgroup_id_lsb))
-        return 0;
+    if (config & FILTER_CGROUP_ID_ENABLED) {
+        bool filter_out = (config & FILTER_CGROUP_ID_OUT) == FILTER_CGROUP_ID_OUT;
+        u32 cgroup_id_lsb = context->cgroup_id;
+        if (!equality_filter_matches(filter_out, &cgroup_id_filter, &cgroup_id_lsb))
+            return 0;
+    }
 
     // We passed all filters successfully
     return 1;
@@ -1699,7 +1729,7 @@ static __always_inline int events_perf_submit(event_data_t *data, u32 id, long r
     data->context.retval = ret;
 
     // Get Stack trace
-    if (get_config(CONFIG_CAPTURE_STACK_TRACES)) {
+    if (data->options & OPT_CAPTURE_STACK_TRACES) {
         int stack_id = bpf_get_stackid(data->ctx, &stack_addresses, BPF_F_USER_STACK);
         if (stack_id >= 0) {
             data->context.stack_id = stack_id;
@@ -2224,7 +2254,7 @@ int syscall__execve(void *ctx)
 
     save_str_to_buf(&data, (void *)sys->args.args[0] /*filename*/, 0);
     save_str_arr_to_buf(&data, (const char *const *)sys->args.args[1] /*argv*/, 1);
-    if (get_config(CONFIG_EXEC_ENV)) {
+    if (data.options & OPT_EXEC_ENV) {
         save_str_arr_to_buf(&data, (const char *const *)sys->args.args[2] /*envp*/, 2);
     }
 
@@ -2248,7 +2278,7 @@ int syscall__execveat(void *ctx)
     save_to_submit_buf(&data, (void*)&sys->args.args[0] /*dirfd*/, sizeof(int), 0);
     save_str_to_buf(&data, (void *)sys->args.args[1] /*pathname*/, 1);
     save_str_arr_to_buf(&data, (const char *const *)sys->args.args[2] /*argv*/, 2);
-    if (get_config(CONFIG_EXEC_ENV)) {
+    if (data.options & OPT_EXEC_ENV) {
         save_str_arr_to_buf(&data, (const char *const *)sys->args.args[3] /*envp*/, 3);
     }
     save_to_submit_buf(&data, (void*)&sys->args.args[4] /*flags*/, sizeof(int), 4);
@@ -2391,8 +2421,8 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     int child_tgid = get_task_host_tgid(child);
 
     // update process tree map if the parent has an entry
-    int proc_tree_filter_set = get_config(CONFIG_PROC_TREE_FILTER);
-    if (proc_tree_filter_set) {
+    u32 filters_config = get_config(CONFIG_FILTERS);
+    if (filters_config & FILTER_PROC_TREE_ENABLED) {
         u32 *tgid_filtered = bpf_map_lookup_elem(&process_tree_map, &parent_tgid);
         if (tgid_filtered) {
             bpf_map_update_elem(&process_tree_map, &child_tgid, tgid_filtered, BPF_ANY);
@@ -2405,7 +2435,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     // fork events may add new pids to the traced pids set
     // perform this check after should_trace() to only add forked childs of a traced parent
     bpf_map_update_elem(&traced_pids_map, &child_pid, &child_pid, BPF_ANY);
-    if (get_config(CONFIG_NEW_PID_FILTER)) {
+    if (filters_config & FILTER_NEW_PID_ENABLED) {
         bpf_map_update_elem(&new_pids_map, &child_pid, &child_pid, BPF_ANY);
     }
 
@@ -2455,7 +2485,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
             *state = CONTAINER_STARTED;
     }
 
-    if (get_config(CONFIG_NEW_PID_FILTER))
+    if (get_config(CONFIG_FILTERS) & FILTER_NEW_PID_ENABLED)
         bpf_map_update_elem(&new_pids_map, &data.context.host_tid, &data.context.host_tid, BPF_ANY);
 
     if (!should_trace(&data.context))
@@ -2513,7 +2543,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     save_str_to_buf(&data, (void *)filename, 0);
     save_str_to_buf(&data, file_path, 1);
     save_args_str_arr_to_buf(&data, (void *)arg_start, (void *)arg_end, argc, 2);
-    if (get_config(CONFIG_EXEC_ENV)) {
+    if (data.options & OPT_EXEC_ENV) {
         save_args_str_arr_to_buf(&data, (void *)env_start, (void *)env_end, envc, 3);
     }
     save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 4);
@@ -2543,7 +2573,7 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     bpf_map_delete_elem(&syscall_data_map, &data.context.host_tid);
     bpf_map_delete_elem(&process_context_map, &data.context.host_tid);
 
-    int proc_tree_filter_set = get_config(CONFIG_PROC_TREE_FILTER);
+    int proc_tree_filter_set = get_config(CONFIG_FILTERS) & FILTER_PROC_TREE_ENABLED;
 
     bool group_dead = false;
     struct task_struct *task = data.task;
@@ -2752,7 +2782,7 @@ int BPF_KPROBE(trace_security_file_open)
     save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 2);
     save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 3);
     save_to_submit_buf(&data, &ctime, sizeof(u64), 4);
-    if (get_config(CONFIG_SHOW_SYSCALL)) {
+    if (data.options & OPT_SHOW_SYSCALL) {
         syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
         if (sys) {
             save_to_submit_buf(&data, (void*)&sys->id, sizeof(int), 5);
@@ -2892,7 +2922,7 @@ int BPF_KPROBE(trace_commit_creds)
         (old_slim.cap_bset != new_slim.cap_bset) ||
         (old_slim.cap_ambient != new_slim.cap_ambient)) {
 
-        if (get_config(CONFIG_SHOW_SYSCALL)) {
+        if (data.options & OPT_SHOW_SYSCALL) {
             syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
             if (sys) {
                 save_to_submit_buf(&data, (void*)&sys->id, sizeof(int), 2);
@@ -2972,7 +3002,7 @@ int BPF_KPROBE(trace_cap_capable)
         return 0;
 
     save_to_submit_buf(&data, (void*)&cap, sizeof(int), 0);
-    if (get_config(CONFIG_SHOW_SYSCALL)) {
+    if (data.options & OPT_SHOW_SYSCALL) {
         syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
         if (sys) {
             save_to_submit_buf(&data, (void*)&sys->id, sizeof(int), 1);
@@ -3232,7 +3262,7 @@ int BPF_KPROBE(trace_security_socket_bind)
     }
 
     // netDebug event
-    if (get_config(CONFIG_DEBUG_NET) && (sa_fam != AF_UNIX)) {
+    if ((data.options & OPT_DEBUG_NET) && (sa_fam != AF_UNIX)) {
         net_debug_t debug_event = {0};
         debug_event.ts = data.context.ts;
         debug_event.host_tid = data.context.host_tid;
@@ -3277,7 +3307,7 @@ static __always_inline int net_map_update_or_delete_sock(void* ctx, int event_id
     }
 
     // netDebug event
-    if (get_config(CONFIG_DEBUG_NET)) {
+    if (get_config(CONFIG_OPTIONS) & OPT_DEBUG_NET) {
         net_debug_t debug_event = {0};
         debug_event.ts = bpf_ktime_get_ns();
         debug_event.host_tid = bpf_get_current_pid_tgid();
@@ -3437,7 +3467,7 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
     }
 
     // netDebug event
-    if (get_config(CONFIG_DEBUG_NET)) {
+    if (data.options & OPT_DEBUG_NET) {
         debug_event.ts = data.context.ts;
         if (!sock_ctx_p) {
             debug_event.host_tid = data.context.host_tid;
@@ -3545,7 +3575,7 @@ static __always_inline u32 send_bin_helper(void* ctx, struct bpf_map_def *prog_a
     bpf_probe_read((void **)&(file_buf_p->buf[F_SEND_TYPE]), sizeof(u8), &bin_args->type);
 
     u64 cgroup_id;
-    if (get_config(CONFIG_CGROUP_V1)) {
+    if (get_config(CONFIG_OPTIONS) & OPT_CGROUP_V1) {
         cgroup_id = get_cgroup_v1_subsys0_id((struct task_struct *)bpf_get_current_task());
     } else {
         cgroup_id = bpf_get_current_cgroup_id();
@@ -3817,7 +3847,7 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
     if (!has_prefix("/dev/null", (char*)&string_p->buf[*off], 10))
         pid = 0;
 
-    if (get_config(CONFIG_CAPTURE_FILES)) {
+    if (data.options & OPT_CAPTURE_FILES) {
         bin_args.type = SEND_VFS_WRITE;
         bpf_probe_read(bin_args.metadata, 4, &s_dev);
         bpf_probe_read(&bin_args.metadata[4], 8, &inode_nr);
@@ -3945,7 +3975,7 @@ int BPF_KPROBE(trace_mprotect_alert)
         save_to_submit_buf(&data, &alert, sizeof(u32), 0);
         events_perf_submit(&data, MEM_PROT_ALERT, 0);
 
-        if (get_config(CONFIG_EXTRACT_DYN_CODE)) {
+        if (data.options & OPT_EXTRACT_DYN_CODE) {
             bin_args.type = SEND_MPROTECT;
             bpf_probe_read(bin_args.metadata, sizeof(u64), &data.context.ts);
             bin_args.ptr = (char *)addr;
@@ -3979,7 +4009,7 @@ int syscall__init_module(void *ctx)
     void *addr = (void*)sys->args.args[0];
     unsigned long len = (unsigned long)sys->args.args[1];
 
-    if (get_config(CONFIG_CAPTURE_MODULES)) {
+    if (data.options & OPT_CAPTURE_MODULES) {
         bin_args.type = SEND_KERNEL_MODULE;
         bpf_probe_read(bin_args.metadata, 4, &dummy);
         bpf_probe_read(&bin_args.metadata[4], 8, &dummy);
@@ -4089,7 +4119,7 @@ int BPF_KPROBE(trace_security_kernel_post_read_file)
         events_perf_submit(&data, SECURITY_POST_READ_FILE, 0);
     }
 
-    if (get_config(CONFIG_CAPTURE_MODULES)) {
+    if (data.options & OPT_CAPTURE_MODULES) {
         // Extract device id, inode number for file name
         dev_t s_dev = get_dev_from_file(file);
         unsigned long inode_nr = get_inode_nr_from_file(file);
@@ -4273,7 +4303,7 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     // See bpf_skb_event_output in net/core/filter.c.
     u64 flags = BPF_F_CURRENT_CPU;
     flags |= (u64)skb->len << 32;
-    if (get_config(CONFIG_DEBUG_NET)){
+    if (get_config(CONFIG_OPTIONS) & OPT_DEBUG_NET){
         pkt.src_port = __bpf_ntohs(pkt.src_port);
         pkt.dst_port = __bpf_ntohs(pkt.dst_port);
         bpf_perf_event_output(skb, &net_events, flags, &pkt, sizeof(pkt));

@@ -20,11 +20,6 @@ const (
 )
 
 const (
-	filterIn  uint8 = 1
-	filterOut uint8 = 2
-)
-
-const (
 	uidLess uint32 = iota
 	uidGreater
 	pidLess
@@ -71,8 +66,8 @@ type UintFilter struct {
 	Enabled  bool
 }
 
-func (uintFilter *UintFilter) Parse(operatorAndValues string) error {
-	uintFilter.Enabled = true
+func (filter *UintFilter) Parse(operatorAndValues string) error {
+	filter.Enabled = true
 	if len(operatorAndValues) < 2 {
 		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
 	}
@@ -94,21 +89,21 @@ func (uintFilter *UintFilter) Parse(operatorAndValues string) error {
 		if err != nil {
 			return fmt.Errorf("invalid filter value: %s", values[i])
 		}
-		if uintFilter.Is32Bit && (val > math.MaxUint32) {
+		if filter.Is32Bit && (val > math.MaxUint32) {
 			return fmt.Errorf("filter value is too big: %s", values[i])
 		}
 		switch operatorString {
 		case "=":
-			uintFilter.Equal = append(uintFilter.Equal, val)
+			filter.Equal = append(filter.Equal, val)
 		case "!=":
-			uintFilter.NotEqual = append(uintFilter.NotEqual, val)
+			filter.NotEqual = append(filter.NotEqual, val)
 		case ">":
-			if (uintFilter.Greater == GreaterNotSetUint) || (val > uintFilter.Greater) {
-				uintFilter.Greater = val
+			if (filter.Greater == GreaterNotSetUint) || (val > filter.Greater) {
+				filter.Greater = val
 			}
 		case "<":
-			if (uintFilter.Less == LessNotSetUint) || (val < uintFilter.Less) {
-				uintFilter.Less = val
+			if (filter.Less == LessNotSetUint) || (val < filter.Less) {
+				filter.Less = val
 			}
 		default:
 			return fmt.Errorf("invalid filter operator: %s", operatorString)
@@ -118,7 +113,7 @@ func (uintFilter *UintFilter) Parse(operatorAndValues string) error {
 	return nil
 }
 
-func (filter *UintFilter) Set(bpfModule *bpf.Module, filterMapName string, configFilter bpfConfig, lessIdx uint32) error {
+func (filter *UintFilter) Set(bpfModule *bpf.Module, filterMapName string, lessIdx uint32) error {
 	if !filter.Enabled {
 		return nil
 	}
@@ -174,19 +169,15 @@ func (filter *UintFilter) Set(bpfModule *bpf.Module, filterMapName string, confi
 		return err
 	}
 
-	bpfConfigMap, err := bpfModule.GetMap("config_map") // u32, u32
-	if err != nil {
-		return err
-	}
-	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 && filter.Greater == GreaterNotSetUint && filter.Less == LessNotSetUint {
-		filterInU32 := uint32(filterIn)
-		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterInU32))
-	} else {
-		filterOutU32 := uint32(filterOut)
-		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterOutU32))
-	}
+	return nil
+}
 
-	return err
+func (filter *UintFilter) FilterOut() bool {
+	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 && filter.Greater == GreaterNotSetUint && filter.Less == LessNotSetUint {
+		return false
+	} else {
+		return true
+	}
 }
 
 type IntFilter struct {
@@ -198,8 +189,8 @@ type IntFilter struct {
 	Enabled  bool
 }
 
-func (intFilter *IntFilter) Parse(operatorAndValues string) error {
-	intFilter.Enabled = true
+func (filter *IntFilter) Parse(operatorAndValues string) error {
+	filter.Enabled = true
 	if len(operatorAndValues) < 2 {
 		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
 	}
@@ -221,21 +212,21 @@ func (intFilter *IntFilter) Parse(operatorAndValues string) error {
 		if err != nil {
 			return fmt.Errorf("invalid filter value: %s", values[i])
 		}
-		if intFilter.Is32Bit && (val > math.MaxInt32) {
+		if filter.Is32Bit && (val > math.MaxInt32) {
 			return fmt.Errorf("filter value is too big: %s", values[i])
 		}
 		switch operatorString {
 		case "=":
-			intFilter.Equal = append(intFilter.Equal, val)
+			filter.Equal = append(filter.Equal, val)
 		case "!=":
-			intFilter.NotEqual = append(intFilter.NotEqual, val)
+			filter.NotEqual = append(filter.NotEqual, val)
 		case ">":
-			if (intFilter.Greater == GreaterNotSetInt) || (val > intFilter.Greater) {
-				intFilter.Greater = val
+			if (filter.Greater == GreaterNotSetInt) || (val > filter.Greater) {
+				filter.Greater = val
 			}
 		case "<":
-			if (intFilter.Less == LessNotSetInt) || (val < intFilter.Less) {
-				intFilter.Less = val
+			if (filter.Less == LessNotSetInt) || (val < filter.Less) {
+				filter.Less = val
 			}
 		default:
 			return fmt.Errorf("invalid filter operator: %s", operatorString)
@@ -251,8 +242,8 @@ type StringFilter struct {
 	Enabled  bool
 }
 
-func (stringFilter *StringFilter) Parse(operatorAndValues string) error {
-	stringFilter.Enabled = true
+func (filter *StringFilter) Parse(operatorAndValues string) error {
+	filter.Enabled = true
 	if len(operatorAndValues) < 2 {
 		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
 	}
@@ -272,9 +263,9 @@ func (stringFilter *StringFilter) Parse(operatorAndValues string) error {
 	for i := range values {
 		switch operatorString {
 		case "=":
-			stringFilter.Equal = append(stringFilter.Equal, values[i])
+			filter.Equal = append(filter.Equal, values[i])
 		case "!=":
-			stringFilter.NotEqual = append(stringFilter.NotEqual, values[i])
+			filter.NotEqual = append(filter.NotEqual, values[i])
 		default:
 			return fmt.Errorf("invalid filter operator: %s", operatorString)
 		}
@@ -283,7 +274,7 @@ func (stringFilter *StringFilter) Parse(operatorAndValues string) error {
 	return nil
 }
 
-func (filter *StringFilter) Set(bpfModule *bpf.Module, filterMapName string, configFilter bpfConfig) error {
+func (filter *StringFilter) Set(bpfModule *bpf.Module, filterMapName string) error {
 	if !filter.Enabled {
 		return nil
 	}
@@ -310,19 +301,15 @@ func (filter *StringFilter) Set(bpfModule *bpf.Module, filterMapName string, con
 		}
 	}
 
-	bpfConfigMap, err := bpfModule.GetMap("config_map") // u32, u32
-	if err != nil {
-		return err
-	}
-	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 {
-		filterInU32 := uint32(filterIn)
-		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterInU32))
-	} else {
-		filterOutU32 := uint32(filterOut)
-		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterOutU32))
-	}
+	return nil
+}
 
-	return err
+func (filter *StringFilter) FilterOut() bool {
+	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 {
+		return false
+	} else {
+		return true
+	}
 }
 
 type BoolFilter struct {
@@ -330,34 +317,22 @@ type BoolFilter struct {
 	Enabled bool
 }
 
-func (boolFilter *BoolFilter) Parse(value string) error {
-	boolFilter.Enabled = true
-	boolFilter.Value = false
+func (filter *BoolFilter) Parse(value string) error {
+	filter.Enabled = true
+	filter.Value = false
 	if value[0] != '!' {
-		boolFilter.Value = true
+		filter.Value = true
 	}
 
 	return nil
 }
 
-func (filter *BoolFilter) Set(bpfModule *bpf.Module, configFilter bpfConfig) error {
-	if !filter.Enabled {
-		return nil
-	}
-
-	bpfConfigMap, err := bpfModule.GetMap("config_map") // u32, u32
-	if err != nil {
-		return err
-	}
+func (filter *BoolFilter) FilterOut() bool {
 	if filter.Value {
-		filterInU32 := uint32(filterIn)
-		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterInU32))
+		return false
 	} else {
-		filterOutU32 := uint32(filterOut)
-		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterOutU32))
+		return true
 	}
-
-	return err
 }
 
 type RetFilter struct {
@@ -365,8 +340,8 @@ type RetFilter struct {
 	Enabled bool
 }
 
-func (retFilter *RetFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]int32) error {
-	retFilter.Enabled = true
+func (filter *RetFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]int32) error {
+	filter.Enabled = true
 	// Ret filter has the following format: "event.ret=val"
 	// filterName have the format event.retval, and operatorAndValues have the format "=val"
 	splitFilter := strings.Split(filterName, ".")
@@ -380,8 +355,8 @@ func (retFilter *RetFilter) Parse(filterName string, operatorAndValues string, e
 		return fmt.Errorf("invalid retval filter event name: %s", eventName)
 	}
 
-	if _, ok := retFilter.Filters[id]; !ok {
-		retFilter.Filters[id] = IntFilter{
+	if _, ok := filter.Filters[id]; !ok {
+		filter.Filters[id] = IntFilter{
 			Equal:    []int64{},
 			NotEqual: []int64{},
 			Less:     LessNotSetInt,
@@ -389,7 +364,7 @@ func (retFilter *RetFilter) Parse(filterName string, operatorAndValues string, e
 		}
 	}
 
-	intFilter := retFilter.Filters[id]
+	intFilter := filter.Filters[id]
 
 	// Treat operatorAndValues as an int filter to avoid code duplication
 	err := (&intFilter).Parse(operatorAndValues)
@@ -397,7 +372,7 @@ func (retFilter *RetFilter) Parse(filterName string, operatorAndValues string, e
 		return err
 	}
 
-	retFilter.Filters[id] = intFilter
+	filter.Filters[id] = intFilter
 
 	return nil
 }
@@ -412,8 +387,8 @@ type ArgFilterVal struct {
 	NotEqual []string
 }
 
-func (argFilter *ArgFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]int32) error {
-	argFilter.Enabled = true
+func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]int32) error {
+	filter.Enabled = true
 	// Event argument filter has the following format: "event.argname=argval"
 	// filterName have the format event.argname, and operatorAndValues have the format "=argval"
 	splitFilter := strings.Split(filterName, ".")
@@ -458,20 +433,20 @@ func (argFilter *ArgFilter) Parse(filterName string, operatorAndValues string, e
 		return err
 	}
 
-	if _, ok := argFilter.Filters[id]; !ok {
-		argFilter.Filters[id] = make(map[string]ArgFilterVal)
+	if _, ok := filter.Filters[id]; !ok {
+		filter.Filters[id] = make(map[string]ArgFilterVal)
 	}
 
-	if _, ok := argFilter.Filters[id][argName]; !ok {
-		argFilter.Filters[id][argName] = ArgFilterVal{}
+	if _, ok := filter.Filters[id][argName]; !ok {
+		filter.Filters[id][argName] = ArgFilterVal{}
 	}
 
-	val := argFilter.Filters[id][argName]
+	val := filter.Filters[id][argName]
 
 	val.Equal = append(val.Equal, strFilter.Equal...)
 	val.NotEqual = append(val.NotEqual, strFilter.NotEqual...)
 
-	argFilter.Filters[id][argName] = val
+	filter.Filters[id][argName] = val
 
 	return nil
 }
@@ -481,8 +456,8 @@ type ProcessTreeFilter struct {
 	Enabled bool
 }
 
-func (procTreeFilter *ProcessTreeFilter) Parse(operatorAndValues string) error {
-	procTreeFilter.Enabled = true
+func (filter *ProcessTreeFilter) Parse(operatorAndValues string) error {
+	filter.Enabled = true
 
 	if len(operatorAndValues) < 2 {
 		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
@@ -512,7 +487,7 @@ func (procTreeFilter *ProcessTreeFilter) Parse(operatorAndValues string) error {
 		if err != nil {
 			return fmt.Errorf("invalid PID given to filter: %s", valuesString)
 		}
-		procTreeFilter.PIDs[uint32(pid)] = equalityOperator
+		filter.PIDs[uint32(pid)] = equalityOperator
 	}
 
 	return nil
@@ -521,19 +496,6 @@ func (procTreeFilter *ProcessTreeFilter) Parse(operatorAndValues string) error {
 func (filter *ProcessTreeFilter) Set(bpfModule *bpf.Module) error {
 	if !filter.Enabled {
 		return nil
-	}
-
-	// Determine the default filter for PIDs that aren't specified with a proc tree filter
-	// - If one or more '=' filters, default is '!='
-	// - If one or more '!=' filters, default is '='
-	// - If a mix of filters, the default is '='
-	var defaultFilter = true
-	for _, v := range filter.PIDs {
-		defaultFilter = defaultFilter && v
-	}
-	err := (&BoolFilter{Value: defaultFilter, Enabled: true}).Set(bpfModule, configProcTreeFilter)
-	if err != nil {
-		return fmt.Errorf("could not set default process tree filter value: %v", err)
 	}
 
 	processTreeBPFMap, err := bpfModule.GetMap("process_tree_map")
@@ -595,6 +557,18 @@ func (filter *ProcessTreeFilter) Set(bpfModule *bpf.Module) error {
 	return nil
 }
 
+func (filter *ProcessTreeFilter) FilterOut() bool {
+	// Determine the default filter for PIDs that aren't specified with a proc tree filter
+	// - If one or more '=' filters, default is '!='
+	// - If one or more '!=' filters, default is '='
+	// - If a mix of filters, the default is '='
+	var filterIn = true
+	for _, v := range filter.PIDs {
+		filterIn = filterIn && v
+	}
+	return !filterIn
+}
+
 type ContIDFilter struct {
 	Equal    []string
 	NotEqual []string
@@ -621,7 +595,7 @@ func (filter *ContIDFilter) Parse(operatorAndValues string) error {
 	return nil
 }
 
-func (filter *ContIDFilter) Set(bpfModule *bpf.Module, conts *containers.Containers, filterMapName string, configFilter bpfConfig) error {
+func (filter *ContIDFilter) Set(bpfModule *bpf.Module, conts *containers.Containers, filterMapName string) error {
 	if !filter.Enabled {
 		return nil
 	}
@@ -659,17 +633,13 @@ func (filter *ContIDFilter) Set(bpfModule *bpf.Module, conts *containers.Contain
 		}
 	}
 
-	bpfConfigMap, err := bpfModule.GetMap("config_map") // u32, u32
-	if err != nil {
-		return err
-	}
-	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 {
-		filterInU32 := uint32(filterIn)
-		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterInU32))
-	} else {
-		filterOutU32 := uint32(filterOut)
-		err = bpfConfigMap.Update(unsafe.Pointer(&configFilter), unsafe.Pointer(&filterOutU32))
-	}
+	return nil
+}
 
-	return err
+func (filter *ContIDFilter) FilterOut() bool {
+	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 {
+		return false
+	} else {
+		return true
+	}
 }
