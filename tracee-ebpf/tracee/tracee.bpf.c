@@ -2073,12 +2073,15 @@ static __always_inline unsigned short get_inode_mode_from_fd(u64 fd)
 SEC("raw_tracepoint/sys_enter")
 int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
 {
-    syscall_data_t sys = {};
-    sys.id = ctx->args[1];
-
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
+
+    if (!should_trace(&data.context))
+        return 0;
+
+    syscall_data_t sys = {};
+    sys.id = ctx->args[1];
 
 if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER)) {
     struct pt_regs *regs = (struct pt_regs*)ctx->args[0];
@@ -2118,9 +2121,6 @@ if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER)) {
         sys.id = *id_64;
     }
 
-    if (!should_trace(&data.context))
-        return 0;
-
     if (event_chosen(RAW_SYS_ENTER)) {
         save_to_submit_buf(&data, (void*)&sys.id, sizeof(int), 0);
         events_perf_submit(&data, RAW_SYS_ENTER, 0);
@@ -2144,6 +2144,15 @@ if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER)) {
 SEC("raw_tracepoint/sys_exit")
 int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
 {
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    // Successfully loading syscall data also means we should trace this event
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    if (!sys)
+        return 0;
+
     long ret = ctx->args[1];
     struct pt_regs *regs = (struct pt_regs*)ctx->args[0];
 #if defined(bpf_target_x86)
@@ -2151,10 +2160,6 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
 #elif defined(bpf_target_arm64)
     int id = READ_KERN(regs->syscallno);
 #endif
-
-    event_data_t data = {};
-    if (!init_event_data(&data, ctx))
-        return 0;
 
     if (is_compat(data.task)) {
         // Translate 32bit syscalls to 64bit syscalls, so we can send to the correct handler
@@ -2164,11 +2169,6 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
 
         id = *id_64;
     }
-
-    // Successfully loading syscall data also means we should trace this event
-    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
-    if (!sys)
-        return 0;
 
     // Sanity check - we returned from the expected syscall this task was executing
     if (sys->id != id)
