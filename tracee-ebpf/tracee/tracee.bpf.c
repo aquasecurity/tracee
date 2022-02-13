@@ -568,7 +568,6 @@ BPF_HASH(process_context_map, u32, process_context_t);  // holds the process_con
 BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t);         // socket address to process context
 BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t);   // network identifier to process context
 BPF_ARRAY(file_filter, path_filter_t, 3);               // filter vfs_write events
-BPF_ARRAY(string_store, path_filter_t, 1);              // store strings from userspace
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);             // percpu global buffer variables
 BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS);           // holds offsets to bufs respectively
 BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);              // store programs for tail calls
@@ -3812,16 +3811,10 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
     u64 id = bpf_get_current_pid_tgid();
     u32 pid = data.context.pid;
 
-    int idx = DEV_NULL_STR;
-    path_filter_t *stored_str_p = bpf_map_lookup_elem(&string_store, &idx);
-    if (stored_str_p == NULL)
-        return -1;
-
     if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
         return -1;
 
-    // check for /dev/null
-    if (!has_prefix(stored_str_p->path, (char*)&string_p->buf[*off], 10))
+    if (!has_prefix("/dev/null", (char*)&string_p->buf[*off], 10))
         pid = 0;
 
     if (get_config(CONFIG_CAPTURE_FILES)) {
