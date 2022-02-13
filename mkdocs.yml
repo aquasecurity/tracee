@@ -21,7 +21,6 @@ nav:
   - Configuration Options: config.md
   - Authoring Rules: rules-authoring.md
   - Available Rules: rules-index.md
-  - FAQ: faq.md
   - Architecture: architecture.md
   - Tracing:
     - Getting Started: tracee-ebpf/index.md
@@ -29,6 +28,8 @@ nav:
     - Trace Options: tracee-ebpf/trace-options.md
     - Capturing Artifacts: tracee-ebpf/capture.md
     - Overriding OS needed files: tracee-ebpf/override-os-needed-files
+  - FAQ: faq.md
+  - Further Reading: further-reading.md
 
 theme:
     name: material
