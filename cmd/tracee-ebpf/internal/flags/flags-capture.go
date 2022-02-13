@@ -31,7 +31,8 @@ Examples:
   --capture exec --capture dir:/my/dir --capture clear-dir | delete /my/dir/out and then capture executed files into it
   --capture write=/usr/bin/* --capture write=/etc/*        | capture files that were written into anywhere under /usr/bin/ or /etc/
   --capture profile                                        | capture executed files and create a runtime profile in the output directory
-  --capture net=eth0 --capture pcap:per-container           | capture network traffic of eth0, and save pcap for each container
+  --capture net=eth0                                       | capture network traffic of eth0
+  --capture net=eth0 --capture pcap:per-container          | capture network traffic of eth0, and save pcap for each container
   --capture exec --output none                             | capture executed files into the default output directory not printing the stream of events
 
 Use this flag multiple times to choose multiple capture options
