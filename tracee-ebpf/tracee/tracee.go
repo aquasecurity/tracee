@@ -617,17 +617,6 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
-	stringStoreMap, err := t.bpfModule.GetMap("string_store") // []string[MAX_PATH_PREF_SIZE]
-	if err != nil {
-		return err
-	}
-	zero := uint32(0)
-	null := []byte("/dev/null")
-	err = stringStoreMap.Update(unsafe.Pointer(&zero), unsafe.Pointer(&null[0]))
-	if err != nil {
-		return err
-	}
-
 	eventsParams := make(map[int32][]bufferdecoder.ArgType)
 	for id, eventDefinition := range EventsDefinitions {
 		params := eventDefinition.Params
