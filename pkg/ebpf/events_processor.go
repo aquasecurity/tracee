@@ -93,7 +93,7 @@ func (t *Tracee) shouldProcessEvent(ctx *bufferdecoder.Context, args []trace.Arg
 	return true
 }
 
-func (t *Tracee) deleteFromProcessTree(hostTid int) {
+func (t *Tracee) deleteProcInfoDelayed(hostTid int) {
 	// wait a second before deleting from the map - because there might events coming in the context of this process,
 	// after we receive its sched_process_exit. this mainly happens from network events, because these events come from
 	// the netChannel, and there might be a race condition between this channel and the eventsChannel.
@@ -256,7 +256,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			}
 		}
 
-		go t.deleteFromProcessTree(event.HostThreadID)
+		go t.deleteProcInfoDelayed(event.HostThreadID)
 	case SchedProcessForkEventID:
 		hostTid, err := getEventArgInt32Val(event, "child_tid")
 		if err != nil {
