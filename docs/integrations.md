@@ -40,6 +40,14 @@ The Go template can utilize helper functions from [Sprig].
 
 For example templates, see [tracee/cmd/tracee-rules/templates].
 
+## Prometheus
+
+Tracee is enabled for prometheus scraping by default. Scraping can be done through the following URLs:1
+1. `tracee-ebpf` can be scraped through `:3366/metrics`
+2. `tracee-rules` can be scraped through `:4466/metrics`
+
+The metrics addresses can be changed through running with the `metrics` and `metrics-addr` in the cli.
+
 ## Examples
 
 ### Raw JSON stdout
