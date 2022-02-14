@@ -316,7 +316,7 @@ endif
 # non co-re ebpf
 #
 
-TRACEE_EBPF_OBJ_SRC = ./tracee-ebpf/tracee/tracee.bpf.c
+TRACEE_EBPF_OBJ_SRC = ./pkg/bpf/tracee.bpf.c
 
 KERN_RELEASE ?= $(UNAME_R)
 KERN_BUILD_PATH ?= $(if $(KERN_HEADERS),$(KERN_HEADERS),/lib/modules/$(KERN_RELEASE)/build)
@@ -415,7 +415,7 @@ $(OUTPUT_DIR)/tracee.bpf.core.o: \
 		-D__TARGET_ARCH_$(LINUX_ARCH) \
 		-D__BPF_TRACING__ \
 		-DCORE \
-		-I./tracee-ebpf/tracee/co-re/ \
+		-I./pkg/bpf/co-re/ \
 		-I$(OUTPUT_DIR)/tracee.bpf \
 		-target bpf \
 		-O2 -g \
@@ -493,7 +493,6 @@ test-tracee-ebpf: \
 	$(GO_ENV_EBPF) $(CMD_GO) test \
 		-tags $(GO_TAGS_EBPF) \
 		-v \
-		./tracee-ebpf/... \
 		./cmd/tracee-ebpf/... \
 		./pkg/...
 
@@ -540,7 +539,7 @@ GO_ENV_RULES += GOARCH=$(GO_ARCH)
 GO_ENV_RULES += CGO_CFLAGS=
 GO_ENV_RULES += CGO_LDFLAGS=
 
-TRACEE_RULES_SRC_DIRS = ./cmd/tracee-rules/ ./tracee-rules/
+TRACEE_RULES_SRC_DIRS = ./cmd/tracee-rules/ ./pkg/rules/
 TRACEE_RULES_SRC=$(shell find $(TRACEE_RULES_SRC_DIRS) -type f -name '*.go')
 
 .PHONY: tracee-rules
@@ -572,7 +571,7 @@ test-tracee-rules: \
 		-tags $(GO_TAGS_RULES) \
 		-v \
 		./cmd/tracee-rules/... \
-		./tracee-rules/...
+		./pkg/rules/...
 
 #
 # rules
