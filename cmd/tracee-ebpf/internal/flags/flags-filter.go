@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
+	tracee "github.com/aquasecurity/tracee/pkg/bpf"
 )
 
 func FilterHelp() string {

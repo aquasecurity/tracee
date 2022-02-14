@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/external"
-	"github.com/aquasecurity/tracee/tracee-ebpf/metrics"
+	"github.com/aquasecurity/tracee/pkg/metrics"
 )
 
 type eventPrinter interface {
