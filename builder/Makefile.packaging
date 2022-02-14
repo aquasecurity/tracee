@@ -12,7 +12,7 @@ all: help
 .ONESHELL:
 SHELL = /bin/sh
 
-MAKE = make
+MAKE = make -f builder/Makefile.packaging
 MAKEFLAGS += --no-print-directory
 
 #
