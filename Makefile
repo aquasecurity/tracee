@@ -639,4 +639,4 @@ clean:
 	$(CMD_RM) -rf $(OUTPUT_DIR)
 	$(CMD_RM) -f .*.md5
 	$(CMD_RM) -f .check*
-	$(CMD_RM) -f .ubuntu-pkgs*
+	$(CMD_RM) -f .*-pkgs*

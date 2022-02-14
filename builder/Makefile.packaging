@@ -51,12 +51,22 @@ help:
 	@echo "  * Focal (LTS)"
 	@echo "    $ make -f builder/Makefile.packaging ubuntu-bin-focal"
 	@echo ""
-	@echo "  * Impish"
+	@echo "  * Impish (latest)"
 	@echo "    $ make -f builder/Makefile.packaging ubuntu-bin-impish"
 	@echo ""
-	@echo "Note: You can complement ubuntu-bin-XXX where XXX is the name"
-	@echo "      of the Ubuntu release you want tracee packages to be"
-	@echo "      built for (jammy)"
+	@echo "  * Jammy (devel)"
+	@echo "    $ make -f builder/Makefile.packaging ubuntu-bin-jammy"
+	@echo ""
+	@echo "FEDORA:"
+	@echo ""
+	@echo "  * 34 (still maintained)"
+	@echo "    $ make -f builder/Makefile.packaging fedora-bin-34"
+	@echo ""
+	@echo "  * 35 (latest)"
+	@echo "    $ make -f builder/Makefile.packaging fedora-bin-35"
+	@echo ""
+	@echo "  * 36 (devel)"
+	@echo "    $ make -f builder/Makefile.packaging fedora-bin-36"
 	@echo ""
 
 #
@@ -85,12 +95,18 @@ DOCKER_RUN_ARGS = run --rm --pid=host --privileged \
                 -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host
 
 #
-# UBUNTU: base container for building packages
+# environment
 #
 
 UID = $(shell id -u)
 GID = $(shell id -g)
 PWD = $(shell pwd)
+
+#### UBUNTU
+
+#
+# UBUNTU: base container for building packages
+#
 
 UBUNTU_PKGS_CONTNAME = ubuntu-pkgs-make
 UBUNTU_PKGS_DOCKERFILE = $(abspath $(shell $(CMD_FIND) -name Dockerfile.ubuntu-packaging))
@@ -137,8 +153,59 @@ ubuntu-bin-%: \
 #
 	$(MAKE) .ubuntu-pkgs-make-$* ARG="packaging/ubuntu-pkgs.sh bin $*"
 
+#### FEDORA
+
 #
-# TODO: fedora...
+# FEDORA: base container for building packages
+#
+
+FEDORA_PKGS_CONTNAME = fedora-pkgs-make
+FEDORA_PKGS_DOCKERFILE = $(abspath $(shell $(CMD_FIND) -name Dockerfile.fedora-packaging))
+
+.PHONY: .fedora-pkgs-prepare-%
+.fedora-pkgs-prepare-%: \
+	| .check_tree \
+	.check_$(CMD_DOCKER)
+#
+	$(CMD_DOCKER) \
+		build \
+		-f $(FEDORA_PKGS_DOCKERFILE) \
+		-t $(FEDORA_PKGS_CONTNAME):$* \
+		--build-arg uid=$(UID) \
+		--build-arg gid=$(GID) \
+		--build-arg version=$* \
+		. && \
+	$(CMD_TOUCH) $@
+
+#
+# FEDORA: invoke the package builder container (fedora-pkgs-make:version)
+#
+
+.PHONY: .fedora-pkgs-make-%
+.fedora-pkgs-make-%: \
+	.fedora-pkgs-prepare-% \
+	| .check_tree \
+	.check_$(CMD_DOCKER)
+#
+ifneq ($(ARG),)
+	$(CMD_DOCKER) \
+		$(DOCKER_RUN_ARGS) \
+		-it $(FEDORA_PKGS_CONTNAME):$* \
+		$(ARG)
+endif
+
+#
+# FEDORA: binary pkg (fedora-pkgs-bin-34, fedora-pkgs-bin-35, ...)
+#
+
+.PHONY: fedora-bin-%
+fedora-bin-%: \
+	| .check_tree
+#
+	$(MAKE) .fedora-pkgs-make-$* ARG="packaging/fedora-pkgs.sh bin $*"
+
+#
+# TODO: centos, stream, opensuse...
 #
 
 #
