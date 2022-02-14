@@ -789,6 +789,47 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#location" class="md-nav__link">
+    Location
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fedora-linux" class="md-nav__link">
+    Fedora Linux
+  </a>
+  
+    <nav class="md-nav" aria-label="Fedora Linux">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#building_1" class="md-nav__link">
+    Building
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#versioning_1" class="md-nav__link">
+    Versioning
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#location_1" class="md-nav__link">
+    Location
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -814,15 +855,15 @@
 packages If you would like to have a local building building and execution
 environment, <a href="../environment/">read this</a> instead.</p>
 </blockquote>
+<ol>
+<li><a href="#Ubuntu-Linux">Ubuntu</a></li>
+<li><a href="#Fedora-Linux">Fedora</a></li>
+</ol>
 <h2 id="ubuntu-linux">Ubuntu Linux<a class="headerlink" href="#ubuntu-linux" title="Permanent link">&para;</a></h2>
-<p>Tracee has a directory "packaging" with a skeleton of the needed "debian/"
-directory called "ubuntu". This skeleton is used by "packaging/ubuntu-pkgs.sh"
-script and this script should run from an Ubuntu Linux box.</p>
-<p>It is not needed that you have an Ubuntu box to generate the Ubuntu <code>.deb</code>
-packages. Instead, you may use the <code>builder/Makefile.packaging</code> make script to
-build it for you (by using Docker images).</p>
+<p>You may use <code>builder/Makefile.packaging</code> to generate Ubuntu deb packages. It
+will use docker containers to generate appropriate packages, so you don't need
+to install build depencies in your OS.</p>
 <h3 id="building">Building<a class="headerlink" href="#building" title="Permanent link">&para;</a></h3>
-<p>With this make script, you're able to build binary <code>.deb</code> packages for:</p>
 <ul>
 <li>Bionic (LTS)</li>
 </ul>
@@ -845,7 +886,7 @@ build it for you (by using Docker images).</p>
 </code></pre></div>
 <h3 id="versioning">Versioning<a class="headerlink" href="#versioning" title="Permanent link">&para;</a></h3>
 <p>The ubuntu <code>.deb</code> packages have the following versioning format:</p>
-<p><code>tracee-{ebpf,rules}_version~ubuntuver~buildate-lastcommit_arch.deb</code></p>
+<p><code>tracee-{ebpf,rules}_version~ubuntuver~builddate-lastcommit_arch.deb</code></p>
 <p>Examples:</p>
 <div class="highlight"><pre><span></span><code># bionic
 tracee-ebpf_0.6.5-111~18.04~2201281255-3a6874a_amd64.deb
@@ -861,8 +902,50 @@ tracee-rules_0.6.5-111~21.10~2201281314-3a6874a_amd64.deb
 </code></pre></div>
 <p>This allows upgrades among future releases of tracee AND ubuntu. It also allows
 you to upgrade to "in between releases" versions if a fix is needed.</p>
-<p>The packages will be generated in <code>dist/</code> directory, together with the built
-binaries.</p>
+<h3 id="location">Location<a class="headerlink" href="#location" title="Permanent link">&para;</a></h3>
+<p>The packages will be generated in <code>dist/</code> directory.</p>
+<h2 id="fedora-linux">Fedora Linux<a class="headerlink" href="#fedora-linux" title="Permanent link">&para;</a></h2>
+<p>You may use <code>builder/Makefile.packaging</code> to generate Fedora rpm packages. It
+will use docker containers to generate appropriate packages, so you don't need
+to install build depencies in your OS.</p>
+<h3 id="building_1">Building<a class="headerlink" href="#building_1" title="Permanent link">&para;</a></h3>
+<ul>
+<li>
+<p>34 (still maintained)</p>
+<div class="highlight"><pre><span></span><code>make -f builder/Makefile.packaging fedora-bin-34
+</code></pre></div>
+</li>
+<li>
+<p>35 (latest)</p>
+<div class="highlight"><pre><span></span><code>make -f builder/Makefile.packaging fedora-bin-35
+</code></pre></div>
+</li>
+<li>
+<p>36 (devel)</p>
+<div class="highlight"><pre><span></span><code>make -f builder/Makefile.packaging fedora-bin-36
+</code></pre></div>
+</li>
+</ul>
+<h3 id="versioning_1">Versioning<a class="headerlink" href="#versioning_1" title="Permanent link">&para;</a></h3>
+<p>The fedora <code>.rpm</code> packages have the following versioning format:</p>
+<p><code>tracee-{ebpf,rules}-version-f{34,35,36}.builddate.lastcommit.arch.rpm</code></p>
+<p>Examples:</p>
+<div class="highlight"><pre><span></span><code># f34
+tracee-ebpf-0.6.5.163-f34.2202140510.ef35306d.x86_64.rpm
+tracee-rules-0.6.5.163-f34.2202140510.ef35306d.x86_64.rpm
+
+# f35
+tracee-ebpf-0.6.5.163-f35.2202140512.ef35306d.x86_64.rpm
+tracee-rules-0.6.5.163-f35.2202140512.ef35306d.x86_64.rpm
+
+# f36
+tracee-ebpf-0.6.5.163-f36.2202140514.ef35306d.x86_64.rpm
+tracee-rules-0.6.5.163-f36.2202140514.ef35306d.x86_64.rpm
+</code></pre></div>
+<p>This allows upgrades among future releases of tracee AND fedora. It also allows
+you to upgrade to "in between releases" versions if a fix is needed.</p>
+<h3 id="location_1">Location<a class="headerlink" href="#location_1" title="Permanent link">&para;</a></h3>
+<p>The packages will be generated in <code>dist/</code> directory.</p>
 
 
 
