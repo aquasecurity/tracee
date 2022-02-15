@@ -42,7 +42,7 @@ type Stats struct {
 // ToUnstructured returns a JSON compatible map with string, float, int, bool,
 // []interface{}, or map[string]interface{} children.
 //
-// It allows this Event to be manipulated generically. For example, it can be
+// It allows this TraceeEvent to be manipulated generically. For example, it can be
 // used as a parsed input with OPA SDK to avoid relatively expensive JSON
 // encoding round trip.
 func (e TraceeEvent) ToUnstructured() (map[string]interface{}, error) {

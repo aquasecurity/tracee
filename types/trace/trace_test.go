@@ -15,7 +15,7 @@ import (
 func TestEventUnmarshalJSON(t *testing.T) {
 	type testCase struct {
 		json        string
-		expect      Event
+		expect      TraceeEvent
 		expectError bool
 	}
 
@@ -26,11 +26,11 @@ func TestEventUnmarshalJSON(t *testing.T) {
 			"pidnamespace":4026531836,"processname":"strace","hostname":"ubuntu","eventid":"101","eventname":"ptrace",
 			"argsnum":4,"returnvalue":0,"args":[{"name":"request","type":"long","value":"ptrace_seize"},
 			{"name":"pid","type":"pid_t","value":12435},{"name":"addr","type":"void*","value":"0x0"},{"name":"data","type":"void*","value":"0x7f6f1eb44b83"}]}`,
-			expect: Event{Timestamp: 26018249532, ProcessID: 12434, ThreadID: 12434, ParentProcessID: 23921, HostProcessID: 12434, HostThreadID: 12434, HostParentProcessID: 23921, UserID: 1000, MountNS: 4026531840, PIDNS: 4026531836, ProcessName: "strace", HostName: "ubuntu", EventID: 101, EventName: "ptrace", ArgsNum: 4, ReturnValue: 0, Args: []Argument{{ArgMeta: ArgMeta{Name: "request", Type: "long"}, Value: "ptrace_seize"}, {ArgMeta: ArgMeta{Name: "pid", Type: "pid_t"}, Value: int32(12435)}, {ArgMeta: ArgMeta{Name: "addr", Type: "void*"}, Value: "0x0"}, {ArgMeta: ArgMeta{Name: "data", Type: "void*"}, Value: "0x7f6f1eb44b83"}}},
+			expect: TraceeEvent{Timestamp: 26018249532, ProcessID: 12434, ThreadID: 12434, ParentProcessID: 23921, HostProcessID: 12434, HostThreadID: 12434, HostParentProcessID: 23921, UserID: 1000, MountNS: 4026531840, PIDNS: 4026531836, ProcessName: "strace", HostName: "ubuntu", EventID: 101, EventName: "ptrace", ArgsNum: 4, ReturnValue: 0, Args: []Argument{{ArgMeta: ArgMeta{Name: "request", Type: "long"}, Value: "ptrace_seize"}, {ArgMeta: ArgMeta{Name: "pid", Type: "pid_t"}, Value: int32(12435)}, {ArgMeta: ArgMeta{Name: "addr", Type: "void*"}, Value: "0x0"}, {ArgMeta: ArgMeta{Name: "data", Type: "void*"}, Value: "0x7f6f1eb44b83"}}},
 		},
 	}
 	for _, tc := range testCases {
-		var res Event
+		var res TraceeEvent
 		err := json.Unmarshal([]byte(tc.json), &res)
 		if err != nil {
 			if !tc.expectError {
@@ -119,22 +119,22 @@ func TestArgumentUnmarshalJSON(t *testing.T) {
 func TestEvent_ToUnstructured(t *testing.T) {
 	testCases := []struct {
 		name  string
-		event Event
+		event TraceeEvent
 	}{
 		{
-			name:  "Should unstructure zero Event",
-			event: Event{},
+			name:  "Should unstructure zero TraceeEvent",
+			event: TraceeEvent{},
 		},
 		{
-			name: "Should unstructure Event with empty slices",
-			event: Event{
+			name: "Should unstructure TraceeEvent with empty slices",
+			event: TraceeEvent{
 				Args:           []Argument{},
 				StackAddresses: []uint64{},
 			},
 		},
 		{
 			name: "should unstructure args",
-			event: Event{
+			event: TraceeEvent{
 				Args: []Argument{
 					{
 						ArgMeta: ArgMeta{
@@ -168,8 +168,8 @@ func TestEvent_ToUnstructured(t *testing.T) {
 			},
 		},
 		{
-			name: "Should unstructure Event",
-			event: Event{
+			name: "Should unstructure TraceeEvent",
+			event: TraceeEvent{
 				Timestamp:           7126141189,
 				ProcessorID:         0,
 				ProcessID:           1,
