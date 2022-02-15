@@ -48,6 +48,7 @@ func setupTraceeGobInputSource(opts *traceeInputOptions) (chan types.Event, erro
 	gob.Register(external.Event{})
 	gob.Register(external.SlimCred{})
 	gob.Register(make(map[string]string))
+	gob.Register(external.PktMeta{})
 	res := make(chan types.Event)
 	go func() {
 		for {

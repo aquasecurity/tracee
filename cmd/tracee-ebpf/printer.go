@@ -235,6 +235,7 @@ func (p *gobEventPrinter) Init() error {
 	gob.Register(external.Event{})
 	gob.Register(external.SlimCred{})
 	gob.Register(make(map[string]string))
+	gob.Register(external.PktMeta{})
 	return nil
 }
 

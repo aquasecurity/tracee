@@ -57,18 +57,18 @@ func (p *ProcInfo) GetElement(hostTid int) (ProcessCtx, error) {
 }
 
 func (ctx *ProcessCtx) GetEventByProcessCtx() external.Event {
-	var event external.Event
-	event.ContainerID = ctx.ContainerID
-	event.ProcessID = int(ctx.Pid)
-	event.ThreadID = int(ctx.Tid)
-	event.ParentProcessID = int(ctx.Ppid)
-	event.HostProcessID = int(ctx.HostPid)
-	event.HostThreadID = int(ctx.HostTid)
-	event.HostParentProcessID = int(ctx.HostPpid)
-	event.UserID = int(ctx.Uid)
-	event.MountNS = int(ctx.MntId)
-	event.PIDNS = int(ctx.PidId)
-	return event
+	return external.Event{
+		ContainerID:         ctx.ContainerID,
+		ProcessID:           int(ctx.Pid),
+		ThreadID:            int(ctx.Tid),
+		ParentProcessID:     int(ctx.Ppid),
+		HostProcessID:       int(ctx.HostPid),
+		HostThreadID:        int(ctx.HostTid),
+		HostParentProcessID: int(ctx.HostPpid),
+		UserID:              int(ctx.Uid),
+		MountNS:             int(ctx.MntId),
+		PIDNS:               int(ctx.PidId),
+	}
 
 }
 
