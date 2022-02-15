@@ -1,4 +1,4 @@
-module github.com/aquasecurity/tracee/external
+module github.com/aquasecurity/tracee/pkg/types
 
 go 1.17
 
