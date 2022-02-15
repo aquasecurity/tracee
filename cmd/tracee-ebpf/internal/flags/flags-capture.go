@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	tracee "github.com/aquasecurity/tracee/pkg/bpf"
+	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 )
 
 func CaptureHelp() string {

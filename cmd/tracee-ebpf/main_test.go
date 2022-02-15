@@ -3,12 +3,13 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/flags"
-	"github.com/aquasecurity/tracee/pkg/bpf"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"io/ioutil"
 	"testing"
+
+	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/flags"
+	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPrepareFilter(t *testing.T) {

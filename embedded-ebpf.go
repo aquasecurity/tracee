@@ -1,7 +1,7 @@
 //go:build ebpf
 // +build ebpf
 
-package tracee
+package ebpf
 
 import (
 	"embed"
