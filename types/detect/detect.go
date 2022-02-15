@@ -1,6 +1,8 @@
 // Package detect includes the "API" of the rule-engine and includes public facing types that consumers of the rule engine should work with
 package detect
 
+import "github.com/aquasecurity/tracee/types/protocol"
+
 // Signature is the basic unit of business logic for the rule-engine
 type Signature interface {
 	//GetMetadata allows the signature to declare information about itself
@@ -12,7 +14,7 @@ type Signature interface {
 	//Close cleans the signature after Init operation
 	Close()
 	//OnEvent allows the signature to process events passed by the Engine. this is the business logic of the signature
-	OnEvent(event Event) error
+	OnEvent(event protocol.Event) error
 	//OnSignal allows the signature to handle lifecycle events of the signature
 	OnSignal(signal Signal) error
 }
@@ -37,9 +39,6 @@ type SignatureEventSelector struct {
 //SignatureHandler is a callback function that reports a finding
 type SignatureHandler func(found Finding)
 
-//Event is a generic event that the Engine can process
-type Event interface{}
-
 //Signal is a generic lifecycle event for a signature
 type Signal interface{}
 
@@ -49,6 +48,6 @@ type SignalSourceComplete string
 //Finding is the main output of a signature. It represents a match result for the signature business logic
 type Finding struct {
 	Data        map[string]interface{}
-	Context     Event
+	Event       protocol.Event //Event is the causal event of the Finding
 	SigMetadata SignatureMetadata
 }
