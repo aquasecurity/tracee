@@ -38,7 +38,7 @@ func (t *Tracee) handleEvents(ctx gocontext.Context) {
 	t.WaitForPipeline(errcList...)
 }
 
-// decodeEvents read the events received from the BPF programs and parse it into types.Event type
+// decodeEvents read the events received from the BPF programs and parse it into external.Event type
 func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *external.Event, <-chan error) {
 	out := make(chan *external.Event)
 	errc := make(chan error, 1)
