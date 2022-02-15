@@ -9,13 +9,13 @@ import (
 	"math/rand"
 	"os"
 
-	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/pkg/rules/engine"
-	"github.com/aquasecurity/tracee/types"
+	"github.com/aquasecurity/tracee/types/protocol"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 var (
-	innocentEvent = external.Event{
+	innocentEvent = trace.Event{
 		Timestamp:           7126141189,
 		ProcessID:           1,
 		ThreadID:            1,
@@ -32,30 +32,30 @@ var (
 		EventName:           "openat",
 		ArgsNum:             4,
 		ReturnValue:         14,
-		Args: []external.Argument{
+		Args: []trace.Argument{
 			{
-				ArgMeta: external.ArgMeta{
+				ArgMeta: trace.ArgMeta{
 					Name: "dirfd",
 					Type: "int",
 				},
 				Value: -100,
 			},
 			{
-				ArgMeta: external.ArgMeta{
+				ArgMeta: trace.ArgMeta{
 					Name: "pathname",
 					Type: "const char",
 				},
 				Value: "/sys/fs/cgroup/cpu,cpuacct/cpuacct.stat",
 			},
 			{
-				ArgMeta: external.ArgMeta{
+				ArgMeta: trace.ArgMeta{
 					Name: "flags",
 					Type: "int",
 				},
 				Value: "O_RDONLY|O_CLOEXEC",
 			},
 			{
-				ArgMeta: external.ArgMeta{
+				ArgMeta: trace.ArgMeta{
 					Name: "mode",
 					Type: "mode_t",
 				},
@@ -64,7 +64,7 @@ var (
 		},
 	}
 
-	triggerCodeInjectorPtraceEvent = external.Event{
+	triggerCodeInjectorPtraceEvent = trace.Event{
 		Timestamp:           6123321183,
 		ProcessID:           1,
 		ThreadID:            1,
@@ -81,16 +81,16 @@ var (
 		EventName:           "ptrace",
 		ArgsNum:             2,
 		ReturnValue:         0,
-		Args: []external.Argument{
+		Args: []trace.Argument{
 			{
-				ArgMeta: external.ArgMeta{
+				ArgMeta: trace.ArgMeta{
 					Name: "request",
 				},
 				Value: "PTRACE_POKETEXT",
 			},
 		},
 	}
-	triggerCodeInjectorOpenEvent = external.Event{
+	triggerCodeInjectorOpenEvent = trace.Event{
 		Timestamp:           5123321532,
 		ProcessID:           1,
 		ThreadID:            1,
@@ -107,15 +107,15 @@ var (
 		EventName:           "open",
 		ArgsNum:             2,
 		ReturnValue:         0,
-		Args: []external.Argument{
+		Args: []trace.Argument{
 			{
-				ArgMeta: external.ArgMeta{
+				ArgMeta: trace.ArgMeta{
 					Name: "flags",
 				},
 				Value: "o_wronly",
 			},
 			{
-				ArgMeta: external.ArgMeta{
+				ArgMeta: trace.ArgMeta{
 					Name: "pathname",
 				},
 				Value: "/proc/self/mem",
@@ -123,7 +123,7 @@ var (
 		},
 	}
 
-	triggerAntiDebuggingEvent = external.Event{
+	triggerAntiDebuggingEvent = trace.Event{
 		Timestamp:           5323321532,
 		ProcessID:           1,
 		ThreadID:            1,
@@ -140,9 +140,9 @@ var (
 		EventName:           "ptrace",
 		ArgsNum:             2,
 		ReturnValue:         124,
-		Args: []external.Argument{
+		Args: []trace.Argument{
 			{
-				ArgMeta: external.ArgMeta{
+				ArgMeta: trace.ArgMeta{
 					Name: "request",
 				},
 				Value: "PTRACE_TRACEME",
@@ -152,7 +152,7 @@ var (
 )
 
 func ProduceEventsInMemory(n int) engine.EventSources {
-	return ProduceEventsInMemoryRandom(n, []external.Event{
+	return ProduceEventsInMemoryRandom(n, []trace.Event{
 		innocentEvent,
 		innocentEvent,
 		innocentEvent,
@@ -162,12 +162,13 @@ func ProduceEventsInMemory(n int) engine.EventSources {
 	}...)
 }
 
-func ProduceEventsInMemoryRandom(n int, seed ...external.Event) engine.EventSources {
-	eventsCh := make(chan types.Event, n)
+func ProduceEventsInMemoryRandom(n int, seed ...trace.Event) engine.EventSources {
+	eventsCh := make(chan protocol.Event, n)
 
 	for i := 0; i < n; i++ {
 		s := rand.Intn(len(seed))
-		eventsCh <- seed[s]
+		e := seed[s].ToProtocol()
+		eventsCh <- e
 	}
 
 	close(eventsCh)
@@ -184,14 +185,14 @@ func ProduceEventsFromGobFile(n int, path string) (engine.EventSources, error) {
 	defer inputFile.Close()
 
 	dec := gob.NewDecoder(inputFile)
-	gob.Register(external.Event{})
-	gob.Register(external.SlimCred{})
+	gob.Register(trace.Event{})
+	gob.Register(trace.SlimCred{})
 	gob.Register(make(map[string]string))
 
-	eventsCh := make(chan types.Event, n)
+	eventsCh := make(chan protocol.Event, n)
 
 	for {
-		var event external.Event
+		var event trace.Event
 		err := dec.Decode(&event)
 		if err != nil {
 			if err == io.EOF {
@@ -200,7 +201,8 @@ func ProduceEventsFromGobFile(n int, path string) (engine.EventSources, error) {
 				return engine.EventSources{}, fmt.Errorf("decoding event: %v", err)
 			}
 		} else {
-			eventsCh <- event
+			e := event.ToProtocol()
+			eventsCh <- e
 		}
 	}
 

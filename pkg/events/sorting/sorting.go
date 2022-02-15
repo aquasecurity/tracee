@@ -101,8 +101,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/pkg/utils/environment"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // The minimum time of delay before sending events forward.
@@ -131,9 +131,9 @@ func InitEventSorter() (*EventsChronologicalSorter, error) {
 	return &newSorter, nil
 }
 
-func (sorter *EventsChronologicalSorter) StartPipeline(ctx gocontext.Context, in <-chan *external.Event) (
-	chan *external.Event, chan error) {
-	out := make(chan *external.Event, 1000)
+func (sorter *EventsChronologicalSorter) StartPipeline(ctx gocontext.Context, in <-chan *trace.Event) (
+	chan *trace.Event, chan error) {
+	out := make(chan *trace.Event, 1000)
 	errc := make(chan error, 1)
 	go sorter.Start(in, out, ctx, errc)
 	return out, errc
@@ -142,7 +142,7 @@ func (sorter *EventsChronologicalSorter) StartPipeline(ctx gocontext.Context, in
 // Start is the main function of the EventsChronologicalSorter class, which orders input events from events channels
 // and pass forward all ordered events to the output channel after each interval.
 // When exits, the sorter will send forward all buffered events in ordered matter.
-func (sorter *EventsChronologicalSorter) Start(in <-chan *external.Event, out chan<- *external.Event,
+func (sorter *EventsChronologicalSorter) Start(in <-chan *trace.Event, out chan<- *trace.Event,
 	ctx gocontext.Context, errc chan error) {
 	sorter.errorChan = errc
 	defer close(out)
@@ -172,7 +172,7 @@ func (sorter *EventsChronologicalSorter) Start(in <-chan *external.Event, out ch
 }
 
 // addEvent add a new event to the appropriate place in queue according to its timestamp
-func (sorter *EventsChronologicalSorter) addEvent(newEvent *external.Event) {
+func (sorter *EventsChronologicalSorter) addEvent(newEvent *trace.Event) {
 	cq := &sorter.cpuEventsQueues[newEvent.ProcessorID]
 	err := cq.InsertByTimestamp(newEvent)
 	if err != nil {
@@ -182,7 +182,7 @@ func (sorter *EventsChronologicalSorter) addEvent(newEvent *external.Event) {
 }
 
 // sendEvents send to output channel all events up to given timestamp
-func (sorter *EventsChronologicalSorter) sendEvents(outputChan chan<- *external.Event, extractionMaxTimestamp int) {
+func (sorter *EventsChronologicalSorter) sendEvents(outputChan chan<- *trace.Event, extractionMaxTimestamp int) {
 	sorter.outputChanMutex.Lock()
 	defer sorter.outputChanMutex.Unlock()
 	for {

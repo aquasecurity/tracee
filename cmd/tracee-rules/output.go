@@ -12,8 +12,8 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig/v3"
-	"github.com/aquasecurity/tracee/pkg/external"
-	"github.com/aquasecurity/tracee/types"
+	"github.com/aquasecurity/tracee/types/detect"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 const DefaultDetectionOutputTemplate string = `
@@ -39,8 +39,8 @@ func setupTemplate(inputTemplateFile string) (*template.Template, error) {
 	}
 }
 
-func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentType string, outputTemplate string) (chan types.Finding, error) {
-	out := make(chan types.Finding)
+func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentType string, outputTemplate string) (chan detect.Finding, error) {
+	out := make(chan detect.Finding)
 	var err error
 
 	var tWebhook *template.Template
@@ -57,13 +57,13 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 
 	go func(w io.Writer, tWebhook, tOutput *template.Template) {
 		for res := range out {
-			switch res.Context.(type) {
-			case external.Event:
+			switch res.Event.Payload.(type) {
+			case trace.Event:
 				if err := tOutput.Execute(w, res); err != nil {
 					log.Printf("error writing to output: %v", err)
 				}
 			default:
-				log.Printf("unsupported event detected: %T\n", res.Context)
+				log.Printf("unsupported event detected: %T\n", res.Event.Payload)
 				continue
 			}
 
@@ -77,7 +77,7 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 	return out, nil
 }
 
-func sendToWebhook(t *template.Template, res types.Finding, webhook string, webhookTemplate string, contentType string) error {
+func sendToWebhook(t *template.Template, res detect.Finding, webhook string, webhookTemplate string, contentType string) error {
 	var payload string
 
 	switch {

@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -766,7 +766,7 @@ func BenchmarkBinarySlimCred(*testing.B) {
 	buffer := []byte{12, 0, 0, 0, 34, 0, 0, 0, 56, 0, 0, 0, 78, 0, 0, 0, 91, 0, 0, 0, 234, 0, 0, 0, 142, 2, 0, 0, 253, 2, 0, 0,
 		230, 29, 0, 0, 230, 29, 0, 0, 89, 1, 0, 0, 0, 0, 0, 0, 234, 0, 0, 0, 0, 0, 0, 0, 229, 29, 0, 0, 0, 0, 0, 0,
 		61, 34, 0, 0, 0, 0, 0, 0, 239, 173, 11, 0, 0, 0, 0, 0}
-	var s external.SlimCred
+	var s trace.SlimCred
 	for i := 0; i < 100; i++ {
 		binBuf := bytes.NewBuffer(buffer)
 		binary.Read(binBuf, binary.LittleEndian, &s)

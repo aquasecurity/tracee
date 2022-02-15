@@ -4,25 +4,26 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/signatures/helpers"
-	"github.com/aquasecurity/tracee/types"
+	"github.com/aquasecurity/tracee/types/detect"
+	"github.com/aquasecurity/tracee/types/protocol"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 type codeInjection struct {
 	processMemFileRegexp *regexp.Regexp
-	cb                   types.SignatureHandler
-	metadata             types.SignatureMetadata
+	cb                   detect.SignatureHandler
+	metadata             detect.SignatureMetadata
 }
 
-func NewCodeInjectionSignature() (types.Signature, error) {
+func NewCodeInjectionSignature() (detect.Signature, error) {
 	processMemFileRegexp, err := regexp.Compile(`/proc/(?:\d.+|self)/mem`)
 	if err != nil {
 		return nil, err
 	}
 	return &codeInjection{
 		processMemFileRegexp: processMemFileRegexp,
-		metadata: types.SignatureMetadata{
+		metadata: detect.SignatureMetadata{
 			Name:        "Code injection",
 			Description: "Possible process injection detected during runtime",
 			Tags:        []string{"linux", "container"},
@@ -34,17 +35,17 @@ func NewCodeInjectionSignature() (types.Signature, error) {
 	}, nil
 }
 
-func (sig *codeInjection) Init(cb types.SignatureHandler) error {
+func (sig *codeInjection) Init(cb detect.SignatureHandler) error {
 	sig.cb = cb
 	return nil
 }
 
-func (sig *codeInjection) GetMetadata() (types.SignatureMetadata, error) {
+func (sig *codeInjection) GetMetadata() (detect.SignatureMetadata, error) {
 	return sig.metadata, nil
 }
 
-func (sig *codeInjection) GetSelectedEvents() ([]types.SignatureEventSelector, error) {
-	return []types.SignatureEventSelector{
+func (sig *codeInjection) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
+	return []detect.SignatureEventSelector{
 		{Source: "tracee", Name: "ptrace"},
 		{Source: "tracee", Name: "open"},
 		{Source: "tracee", Name: "openat"},
@@ -52,14 +53,15 @@ func (sig *codeInjection) GetSelectedEvents() ([]types.SignatureEventSelector, e
 	}, nil
 }
 
-func (sig *codeInjection) OnEvent(e types.Event) error {
+func (sig *codeInjection) OnEvent(event protocol.Event) error {
 	// event example:
 	// { "eventName": "ptrace", "args": [{"name": "request", "value": "PTRACE_POKETEXT" }]}
 	// { "eventName": "open", "args": [{"name": "flags", "value": "o_wronly" }, {"name": "pathname", "value": "/proc/self/mem" }]}
 	// { "eventName": "execve" args": [{"name": "envp", "value": ["FOO=BAR", "LD_PRELOAD=/something"] }, {"name": "argv", "value": ["ls"] }]}
-	ee, ok := e.(external.Event)
+	ee, ok := event.Payload.(trace.Event)
+
 	if !ok {
-		return fmt.Errorf("invalid event")
+		return fmt.Errorf("failed to cast event's payload")
 	}
 	switch ee.EventName {
 	case "open", "openat":
@@ -73,10 +75,10 @@ func (sig *codeInjection) OnEvent(e types.Event) error {
 				return err
 			}
 			if sig.processMemFileRegexp.MatchString(pathname.Value.(string)) {
-				sig.cb(types.Finding{
+				sig.cb(detect.Finding{
 					//Signature: sig,
 					SigMetadata: sig.metadata,
-					Context:     ee,
+					Event:       event,
 					Data: map[string]interface{}{
 						"file flags": flags,
 						"file path":  pathname.Value.(string),
@@ -91,10 +93,10 @@ func (sig *codeInjection) OnEvent(e types.Event) error {
 		}
 		requestString := request.Value.(string)
 		if requestString == "PTRACE_POKETEXT" || requestString == "PTRACE_POKEDATA" {
-			sig.cb(types.Finding{
+			sig.cb(detect.Finding{
 				//Signature: sig,
 				SigMetadata: sig.metadata,
-				Context:     ee,
+				Event:       event,
 				Data: map[string]interface{}{
 					"ptrace request": requestString,
 				},
@@ -113,10 +115,10 @@ func (sig *codeInjection) OnEvent(e types.Event) error {
 		//			if err != nil {
 		//				return err
 		//			}
-		//			sig.cb(types.Finding{
+		//			sig.cb(detect.Finding{
 		//				//Signature: sig,
 		//				SigMetadata: sig.metadata,
-		//				Context:     ee,
+		//				Payload:     ee,
 		//				Data: map[string]interface{}{
 		//					"command":     cmd,
 		//					"command env": env,
@@ -128,7 +130,7 @@ func (sig *codeInjection) OnEvent(e types.Event) error {
 	return nil
 }
 
-func (sig *codeInjection) OnSignal(s types.Signal) error {
+func (sig *codeInjection) OnSignal(s detect.Signal) error {
 	return nil
 }
 func (sig *codeInjection) Close() {}

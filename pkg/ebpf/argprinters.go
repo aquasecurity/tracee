@@ -5,22 +5,22 @@ import (
 	"strconv"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
-	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
-func (t *Tracee) parseArgs(event *external.Event) error {
+func (t *Tracee) parseArgs(event *trace.Event) error {
 	for i := range event.Args {
 		if ptr, isUintptr := event.Args[i].Value.(uintptr); isUintptr {
 			event.Args[i].Value = "0x" + strconv.FormatUint(uint64(ptr), 16)
 		}
 	}
 
-	EmptyString := func(arg *external.Argument) {
+	EmptyString := func(arg *trace.Argument) {
 		arg.Type = "string"
 		arg.Value = ""
 	}
 
-	ParseOrEmptyString := func(arg *external.Argument, sysArg helpers.SystemFunctionArgument, err error) {
+	ParseOrEmptyString := func(arg *trace.Argument, sysArg helpers.SystemFunctionArgument, err error) {
 		EmptyString(arg)
 		if err == nil {
 			arg.Value = sysArg.String()
@@ -31,7 +31,7 @@ func (t *Tracee) parseArgs(event *external.Event) error {
 	case MemProtAlertEventID:
 		if alertArg := getEventArg(event, "alert"); alertArg != nil {
 			if alert, isUint32 := alertArg.Value.(uint32); isUint32 {
-				alertArg.Value = external.MemProtAlert(alert).String()
+				alertArg.Value = trace.MemProtAlert(alert).String()
 			}
 		}
 	case SysEnterEventID, SysExitEventID, CapCapableEventID, CommitCredsEventID, SecurityFileOpenEventID:
@@ -177,7 +177,7 @@ func (t *Tracee) parseArgs(event *external.Event) error {
 	return nil
 }
 
-func getEventArg(event *external.Event, argName string) *external.Argument {
+func getEventArg(event *trace.Event, argName string) *trace.Argument {
 	for i := range event.Args {
 		if event.Args[i].Name == argName {
 			return &event.Args[i]

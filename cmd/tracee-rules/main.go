@@ -15,7 +15,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/rules/engine"
 	"github.com/aquasecurity/tracee/pkg/rules/metrics"
-	"github.com/aquasecurity/tracee/types"
+	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
@@ -114,7 +114,6 @@ func main() {
 			}
 
 			config := engine.Config{
-				ParsedEvents:        c.Bool("rego-enable-parsed-events"),
 				SignatureBufferSize: c.Uint(signatureBufferFlag),
 			}
 			e, err := engine.NewEngine(sigs, inputs, output, os.Stderr, config)
@@ -191,10 +190,6 @@ func main() {
 				Value: ":7777",
 			},
 			&cli.BoolFlag{
-				Name:  "rego-enable-parsed-events",
-				Usage: "enables pre parsing of input events to rego prior to evaluation",
-			},
-			&cli.BoolFlag{
 				Name:  "rego-aio",
 				Usage: "compile rego signatures altogether as an aggregate policy. By default each signature is compiled separately.",
 			},
@@ -230,7 +225,7 @@ func main() {
 	}
 }
 
-func listSigs(w io.Writer, sigs []types.Signature) error {
+func listSigs(w io.Writer, sigs []detect.Signature) error {
 	fmt.Fprintf(w, "%-10s %-35s %s %s\n", "ID", "NAME", "VERSION", "DESCRIPTION")
 	for _, sig := range sigs {
 		meta, err := sig.GetMetadata()
@@ -242,7 +237,7 @@ func listSigs(w io.Writer, sigs []types.Signature) error {
 	return nil
 }
 
-func listEvents(w io.Writer, sigs []types.Signature) {
+func listEvents(w io.Writer, sigs []detect.Signature) {
 	m := make(map[string]struct{})
 	for _, sig := range sigs {
 		es, _ := sig.GetSelectedEvents()

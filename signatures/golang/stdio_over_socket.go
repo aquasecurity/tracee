@@ -3,9 +3,10 @@ package main
 import (
 	"fmt"
 
-	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/signatures/helpers"
-	"github.com/aquasecurity/tracee/types"
+	"github.com/aquasecurity/tracee/types/detect"
+	"github.com/aquasecurity/tracee/types/protocol"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 type connectedAddress struct {
@@ -14,19 +15,19 @@ type connectedAddress struct {
 }
 
 type stdioOverSocket struct {
-	cb              types.SignatureHandler
+	cb              detect.SignatureHandler
 	pidFDAddressMap map[int]map[int]connectedAddress
 }
 
-func (sig *stdioOverSocket) Init(cb types.SignatureHandler) error {
+func (sig *stdioOverSocket) Init(cb detect.SignatureHandler) error {
 	sig.cb = cb
 	sig.pidFDAddressMap = make(map[int]map[int]connectedAddress)
 
 	return nil
 }
 
-func (sig *stdioOverSocket) GetMetadata() (types.SignatureMetadata, error) {
-	return types.SignatureMetadata{
+func (sig *stdioOverSocket) GetMetadata() (detect.SignatureMetadata, error) {
+	return detect.SignatureMetadata{
 		ID:          "TRC-1",
 		Version:     "0.1.0",
 		Name:        "Standard Input/Output Over Socket",
@@ -39,8 +40,8 @@ func (sig *stdioOverSocket) GetMetadata() (types.SignatureMetadata, error) {
 	}, nil
 }
 
-func (sig *stdioOverSocket) GetSelectedEvents() ([]types.SignatureEventSelector, error) {
-	return []types.SignatureEventSelector{
+func (sig *stdioOverSocket) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
+	return []detect.SignatureEventSelector{
 		{Source: "tracee", Name: "security_socket_connect"},
 		{Source: "tracee", Name: "dup"},
 		{Source: "tracee", Name: "dup2"},
@@ -50,11 +51,11 @@ func (sig *stdioOverSocket) GetSelectedEvents() ([]types.SignatureEventSelector,
 	}, nil
 }
 
-func (sig *stdioOverSocket) OnEvent(e types.Event) error {
+func (sig *stdioOverSocket) OnEvent(event protocol.Event) error {
+	eventObj, ok := event.Payload.(trace.Event)
 
-	eventObj, ok := e.(external.Event)
 	if !ok {
-		return fmt.Errorf("invalid event")
+		return fmt.Errorf("failed to cast event's payload")
 	}
 
 	pid := eventObj.ProcessID
@@ -81,7 +82,7 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 
 		sockfd := int(sockfdArg.Value.(int32))
 
-		err = isSocketOverStdio(sig, eventObj, address, sockfd)
+		err = isSocketOverStdio(sig, event, address, sockfd)
 		if err != nil {
 			return err
 		}
@@ -112,7 +113,7 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 
 		dstFd := eventObj.ReturnValue
 
-		err = isSocketDuplicatedIntoStdio(sig, eventObj, pidSocketMap, srcFd, dstFd)
+		err = isSocketDuplicatedIntoStdio(sig, event, pidSocketMap, srcFd, dstFd)
 		if err != nil {
 			return err
 		}
@@ -139,7 +140,7 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 
 		dstFd := int(newFdArg.Value.(int32))
 
-		err = isSocketDuplicatedIntoStdio(sig, eventObj, pidSocketMap, srcFd, dstFd)
+		err = isSocketDuplicatedIntoStdio(sig, event, pidSocketMap, srcFd, dstFd)
 		if err != nil {
 			return err
 		}
@@ -164,31 +165,31 @@ func (sig *stdioOverSocket) OnEvent(e types.Event) error {
 	return nil
 }
 
-func (sig *stdioOverSocket) OnSignal(s types.Signal) error {
+func (sig *stdioOverSocket) OnSignal(s detect.Signal) error {
 	return nil
 }
 func (sig *stdioOverSocket) Close() {}
 
-func isSocketDuplicatedIntoStdio(sig *stdioOverSocket, eventObj external.Event, pidSocketMap map[int]connectedAddress, srcFd int, dstFd int) error {
+func isSocketDuplicatedIntoStdio(sig *stdioOverSocket, event protocol.Event, pidSocketMap map[int]connectedAddress, srcFd int, dstFd int) error {
 	address, socketfdExists := pidSocketMap[srcFd]
 
 	// this means that a socket FD is duplicated into one of the standard FDs
 	if socketfdExists {
-		isSocketOverStdio(sig, eventObj, address, dstFd)
+		isSocketOverStdio(sig, event, address, dstFd)
 	}
 
 	return nil
 }
 
-func isSocketOverStdio(sig *stdioOverSocket, eventObj external.Event, address connectedAddress, fd int) error {
+func isSocketOverStdio(sig *stdioOverSocket, event protocol.Event, address connectedAddress, fd int) error {
 
 	stdAll := []int{0, 1, 2}
 
 	if intInSlice(fd, stdAll) {
 		m, _ := sig.GetMetadata()
-		sig.cb(types.Finding{
+		sig.cb(detect.Finding{
 			SigMetadata: m,
-			Context:     eventObj,
+			Event:       event,
 			Data: map[string]interface{}{
 				"ip":   address.ip,
 				"port": address.port,
@@ -209,7 +210,7 @@ func intInSlice(a int, list []int) bool {
 	return false
 }
 
-func getAddressfromAddrArg(arg external.Argument) (connectedAddress, error) {
+func getAddressfromAddrArg(arg trace.Argument) (connectedAddress, error) {
 
 	addr, isOk := arg.Value.(map[string]string)
 	if !isOk {

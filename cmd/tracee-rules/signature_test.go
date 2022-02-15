@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/aquasecurity/tracee/types"
+	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,7 +27,7 @@ func Test_getSignatures(t *testing.T) {
 
 	gotMetadata, err := sigs[0].GetMetadata()
 	require.NoError(t, err)
-	assert.Equal(t, types.SignatureMetadata{
+	assert.Equal(t, detect.SignatureMetadata{
 		ID:          "TRC-2",
 		Version:     "0.1.0",
 		Name:        "Anti-Debugging",
@@ -90,7 +90,7 @@ func Test_findRegoSigs(t *testing.T) {
 	for _, sig := range sigs {
 		gotMetadata, err := sig.GetMetadata()
 		require.NoError(t, err)
-		assert.Equal(t, types.SignatureMetadata{
+		assert.Equal(t, detect.SignatureMetadata{
 			ID:          "TRC-2",
 			Version:     "0.1.0",
 			Name:        "Anti-Debugging",

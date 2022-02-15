@@ -3,19 +3,20 @@ package golang
 import (
 	"fmt"
 
-	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/signatures/helpers"
-	"github.com/aquasecurity/tracee/types"
+	"github.com/aquasecurity/tracee/types/detect"
+	"github.com/aquasecurity/tracee/types/protocol"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 type antiDebugging struct {
-	cb       types.SignatureHandler
-	metadata types.SignatureMetadata
+	cb       detect.SignatureHandler
+	metadata detect.SignatureMetadata
 }
 
-func NewAntiDebuggingSignature() (types.Signature, error) {
+func NewAntiDebuggingSignature() (detect.Signature, error) {
 	return &antiDebugging{
-		metadata: types.SignatureMetadata{
+		metadata: detect.SignatureMetadata{
 			Name:        "Anti-Debugging",
 			Description: "Process uses anti-debugging technique to block debugger",
 			Tags:        []string{"linux", "container"},
@@ -27,25 +28,26 @@ func NewAntiDebuggingSignature() (types.Signature, error) {
 	}, nil
 }
 
-func (sig *antiDebugging) Init(cb types.SignatureHandler) error {
+func (sig *antiDebugging) Init(cb detect.SignatureHandler) error {
 	sig.cb = cb
 	return nil
 }
 
-func (sig *antiDebugging) GetMetadata() (types.SignatureMetadata, error) {
+func (sig *antiDebugging) GetMetadata() (detect.SignatureMetadata, error) {
 	return sig.metadata, nil
 }
 
-func (sig *antiDebugging) GetSelectedEvents() ([]types.SignatureEventSelector, error) {
-	return []types.SignatureEventSelector{
+func (sig *antiDebugging) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
+	return []detect.SignatureEventSelector{
 		{Source: "tracee", Name: "ptrace"},
 	}, nil
 }
 
-func (sig *antiDebugging) OnEvent(e types.Event) error {
-	ee, ok := e.(external.Event)
+func (sig *antiDebugging) OnEvent(event protocol.Event) error {
+	ee, ok := event.Payload.(trace.Event)
+
 	if !ok {
-		return fmt.Errorf("invalid event")
+		return fmt.Errorf("failed to cast event's payload")
 	}
 	if ee.EventName != "ptrace" {
 		return nil
@@ -58,9 +60,9 @@ func (sig *antiDebugging) OnEvent(e types.Event) error {
 	if requestString != "PTRACE_TRACEME" {
 		return nil
 	}
-	sig.cb(types.Finding{
+	sig.cb(detect.Finding{
 		SigMetadata: sig.metadata,
-		Context:     ee,
+		Event:       event,
 		Data: map[string]interface{}{
 			"ptrace request": requestString,
 		},
@@ -68,7 +70,7 @@ func (sig *antiDebugging) OnEvent(e types.Event) error {
 	return nil
 }
 
-func (sig *antiDebugging) OnSignal(_ types.Signal) error {
+func (sig *antiDebugging) OnSignal(_ detect.Signal) error {
 	return nil
 }
 

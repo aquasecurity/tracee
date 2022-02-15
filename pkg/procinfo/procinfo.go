@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
-	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 type ProcessCtx struct {
@@ -56,8 +56,8 @@ func (p *ProcInfo) GetElement(hostTid int) (ProcessCtx, error) {
 	return processCtx, nil
 }
 
-func (ctx *ProcessCtx) GetEventByProcessCtx() external.Event {
-	return external.Event{
+func (ctx *ProcessCtx) GetEventByProcessCtx() trace.Event {
+	return trace.Event{
 		ContainerID:         ctx.ContainerID,
 		ProcessID:           int(ctx.Pid),
 		ThreadID:            int(ctx.Tid),

@@ -14,10 +14,10 @@ import (
 
 	embedded "github.com/aquasecurity/tracee"
 	"github.com/aquasecurity/tracee/pkg/rules/regosig"
-	"github.com/aquasecurity/tracee/types"
+	"github.com/aquasecurity/tracee/types/detect"
 )
 
-func getSignatures(target string, partialEval bool, rulesDir string, rules []string, aioEnabled bool) ([]types.Signature, error) {
+func getSignatures(target string, partialEval bool, rulesDir string, rules []string, aioEnabled bool) ([]detect.Signature, error) {
 	if rulesDir == "" {
 		exePath, err := os.Executable()
 		if err != nil {
@@ -34,7 +34,7 @@ func getSignatures(target string, partialEval bool, rulesDir string, rules []str
 		return nil, err
 	}
 	sigs := append(gosigs, opasigs...)
-	var res []types.Signature
+	var res []detect.Signature
 	if rules == nil {
 		res = sigs
 	} else {
@@ -49,8 +49,8 @@ func getSignatures(target string, partialEval bool, rulesDir string, rules []str
 	return res, nil
 }
 
-func findGoSigs(dir string) ([]types.Signature, error) {
-	var res []types.Signature
+func findGoSigs(dir string) ([]detect.Signature, error) {
+	var res []detect.Signature
 	filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -70,14 +70,14 @@ func findGoSigs(dir string) ([]types.Signature, error) {
 			log.Printf("missing Export symbol in plugin %s", d.Name())
 			return err
 		}
-		sigs := *export.(*[]types.Signature)
+		sigs := *export.(*[]detect.Signature)
 		res = append(res, sigs...)
 		return nil
 	})
 	return res, nil
 }
 
-func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) ([]types.Signature, error) {
+func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) ([]detect.Signature, error) {
 	modules := make(map[string]string)
 	modules["helper.rego"] = embedded.RegoHelpersCode
 
@@ -106,7 +106,7 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 		return nil
 	})
 
-	var res []types.Signature
+	var res []detect.Signature
 	filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -149,7 +149,7 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 		if err != nil {
 			return nil, err
 		}
-		return []types.Signature{aio}, nil
+		return []detect.Signature{aio}, nil
 	}
 	return res, nil
 }
