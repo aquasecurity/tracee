@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/aquasecurity/tracee/types"
+	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/open-policy-agent/opa/rego"
 )
 
@@ -20,7 +20,7 @@ func MapRS(rs rego.ResultSet) *Mapper {
 	}
 }
 
-func (m Mapper) ToSignatureMetadataAll() (map[string]types.SignatureMetadata, error) {
+func (m Mapper) ToSignatureMetadataAll() (map[string]detect.SignatureMetadata, error) {
 	if m.isEmpty() {
 		return nil, errors.New("empty result set")
 	}
@@ -30,7 +30,7 @@ func (m Mapper) ToSignatureMetadataAll() (map[string]types.SignatureMetadata, er
 	}
 	dec := json.NewDecoder(bytes.NewBuffer(resJSON))
 	dec.UseNumber()
-	var res map[string]types.SignatureMetadata
+	var res map[string]detect.SignatureMetadata
 	err = dec.Decode(&res)
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func (m Mapper) ToSignatureMetadataAll() (map[string]types.SignatureMetadata, er
 	return res, nil
 }
 
-func (m Mapper) ToSelectedEventsAll() (map[string][]types.SignatureEventSelector, error) {
+func (m Mapper) ToSelectedEventsAll() (map[string][]detect.SignatureEventSelector, error) {
 	if m.isEmpty() {
 		return nil, errors.New("empty result set")
 	}
@@ -48,7 +48,7 @@ func (m Mapper) ToSelectedEventsAll() (map[string][]types.SignatureEventSelector
 	}
 	dec := json.NewDecoder(bytes.NewBuffer(resJSON))
 	dec.UseNumber()
-	var res map[string][]types.SignatureEventSelector
+	var res map[string][]detect.SignatureEventSelector
 	err = dec.Decode(&res)
 	if err != nil {
 		return nil, err

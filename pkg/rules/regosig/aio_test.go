@@ -6,10 +6,10 @@ import (
 	"os"
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/pkg/rules/regosig"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
-	"github.com/aquasecurity/tracee/types"
+	"github.com/aquasecurity/tracee/types/detect"
+	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,7 +24,7 @@ func TestAio_GetMetadata(t *testing.T) {
 
 	metadata, err := sig.GetMetadata()
 	require.NoError(t, err)
-	assert.Equal(t, types.SignatureMetadata{
+	assert.Equal(t, detect.SignatureMetadata{
 		ID:      "TRC-AIO (TRC-BOOL,TRC-OBJECT)",
 		Version: "1.0.0",
 		Name:    "AIO",
@@ -40,14 +40,14 @@ func TestAio_GetSelectedEvents(t *testing.T) {
 	events, err := sig.GetSelectedEvents()
 	require.NoError(t, err)
 
-	eventsSet := make(map[types.SignatureEventSelector]bool)
+	eventsSet := make(map[detect.SignatureEventSelector]bool)
 	for _, event := range events {
 		if _, value := eventsSet[event]; !value {
 			eventsSet[event] = true
 		}
 	}
 
-	assert.Equal(t, map[types.SignatureEventSelector]bool{
+	assert.Equal(t, map[detect.SignatureEventSelector]bool{
 		{
 			Source: "tracee",
 			Name:   "ptrace",
@@ -95,9 +95,9 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 	testCases := []struct {
 		name    string
 		modules map[string]string
-		event   external.Event
+		event   trace.Event
 		// findings are grouped by signature identifier for comparison
-		findings  map[string]types.Finding
+		findings  map[string]detect.Finding
 		wantError string
 	}{
 		{
@@ -106,30 +106,30 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 				"test_boolean.rego": testRegoCodeBoolean,
 				"test_object.rego":  testRegoCodeObject,
 			},
-			event: external.Event{
-				Args: []external.Argument{
+			event: trace.Event{
+				Args: []trace.Argument{
 					{
-						ArgMeta: external.ArgMeta{
+						ArgMeta: trace.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: "ends with yo",
 					},
 				},
 			},
-			findings: map[string]types.Finding{
+			findings: map[string]detect.Finding{
 				"TRC-BOOL": {
 					Data: nil,
-					Context: external.Event{
-						Args: []external.Argument{
+					Event: trace.Event{
+						Args: []trace.Argument{
 							{
-								ArgMeta: external.ArgMeta{
+								ArgMeta: trace.ArgMeta{
 									Name: "doesn't matter",
 								},
 								Value: "ends with yo",
 							},
 						},
-					},
-					SigMetadata: types.SignatureMetadata{
+					}.ToProtocol(),
+					SigMetadata: detect.SignatureMetadata{
 						ID:          "TRC-BOOL",
 						Version:     "0.1.0",
 						Name:        "test name",
@@ -153,46 +153,46 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 				"test_boolean.rego": testRegoCodeBoolean,
 				"test_object.rego":  testRegoCodeObject,
 			},
-			event: external.Event{
-				Args: []external.Argument{
+			event: trace.Event{
+				Args: []trace.Argument{
 					{
-						ArgMeta: external.ArgMeta{
+						ArgMeta: trace.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: "ends with yo",
 					},
 					{
-						ArgMeta: external.ArgMeta{
+						ArgMeta: trace.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: 1337,
 					},
 				},
 			},
-			findings: map[string]types.Finding{
+			findings: map[string]detect.Finding{
 				"TRC-OBJECT": {
 					Data: map[string]interface{}{
 						"p1": "test",
 						"p2": json.Number("1"),
 						"p3": true,
 					},
-					Context: external.Event{
-						Args: []external.Argument{
+					Event: trace.Event{
+						Args: []trace.Argument{
 							{
-								ArgMeta: external.ArgMeta{
+								ArgMeta: trace.ArgMeta{
 									Name: "doesn't matter",
 								},
 								Value: "ends with yo",
 							},
 							{
-								ArgMeta: external.ArgMeta{
+								ArgMeta: trace.ArgMeta{
 									Name: "doesn't matter",
 								},
 								Value: 1337,
 							},
 						},
-					},
-					SigMetadata: types.SignatureMetadata{
+					}.ToProtocol(),
+					SigMetadata: detect.SignatureMetadata{
 						ID:          "TRC-OBJECT",
 						Version:     "0.3.0",
 						Name:        "test name",
@@ -210,23 +210,23 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 				},
 				"TRC-BOOL": {
 					Data: nil,
-					Context: external.Event{
-						Args: []external.Argument{
+					Event: trace.Event{
+						Args: []trace.Argument{
 							{
-								ArgMeta: external.ArgMeta{
+								ArgMeta: trace.ArgMeta{
 									Name: "doesn't matter",
 								},
 								Value: "ends with yo",
 							},
 							{
-								ArgMeta: external.ArgMeta{
+								ArgMeta: trace.ArgMeta{
 									Name: "doesn't matter",
 								},
 								Value: 1337,
 							},
 						},
-					},
-					SigMetadata: types.SignatureMetadata{
+					}.ToProtocol(),
+					SigMetadata: detect.SignatureMetadata{
 						ID:          "TRC-BOOL",
 						Version:     "0.1.0",
 						Name:        "test name",
@@ -249,10 +249,10 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 			modules: map[string]string{
 				"test_invalid.rego": testRegoCodeInvalidObject,
 			},
-			event: external.Event{
-				Args: []external.Argument{
+			event: trace.Event{
+				Args: []trace.Argument{
 					{
-						ArgMeta: external.ArgMeta{
+						ArgMeta: trace.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: "ends with invalid",
@@ -275,7 +275,7 @@ func AioOnEventSpec(t *testing.T, target string, partial bool) {
 			err = sig.Init(holder.OnFinding)
 			require.NoError(t, err)
 
-			err = sig.OnEvent(tc.event)
+			err = sig.OnEvent(tc.event.ToProtocol())
 			if tc.wantError != "" {
 				require.EqualError(t, err, tc.wantError, tc.name)
 			} else {

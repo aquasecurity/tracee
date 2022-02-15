@@ -4,25 +4,26 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/signatures/helpers"
-	"github.com/aquasecurity/tracee/types"
+	"github.com/aquasecurity/tracee/types/detect"
+	"github.com/aquasecurity/tracee/types/protocol"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 type K8sApiConnection struct {
-	cb                    types.SignatureHandler
+	cb                    detect.SignatureHandler
 	apiAddressContainerId map[string]string
 }
 
-func (sig *K8sApiConnection) Init(cb types.SignatureHandler) error {
+func (sig *K8sApiConnection) Init(cb detect.SignatureHandler) error {
 	sig.cb = cb
 	sig.apiAddressContainerId = make(map[string]string)
 
 	return nil
 }
 
-func (sig *K8sApiConnection) GetMetadata() (types.SignatureMetadata, error) {
-	return types.SignatureMetadata{
+func (sig *K8sApiConnection) GetMetadata() (detect.SignatureMetadata, error) {
+	return detect.SignatureMetadata{
 		ID:          "TRC-13",
 		Version:     "0.1.0",
 		Name:        "Kubernetes API server connection detected",
@@ -35,19 +36,19 @@ func (sig *K8sApiConnection) GetMetadata() (types.SignatureMetadata, error) {
 	}, nil
 }
 
-func (sig *K8sApiConnection) GetSelectedEvents() ([]types.SignatureEventSelector, error) {
-	return []types.SignatureEventSelector{
+func (sig *K8sApiConnection) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
+	return []detect.SignatureEventSelector{
 		{Source: "tracee", Name: "execve", Origin: "container"},
 		{Source: "tracee", Name: "security_socket_connect", Origin: "container"},
 	}, nil
 }
 
-func (sig *K8sApiConnection) OnEvent(e types.Event) error {
-	eventObj, ok := e.(external.Event)
-	if !ok {
-		return fmt.Errorf("invalid event")
-	}
+func (sig *K8sApiConnection) OnEvent(event protocol.Event) error {
+	eventObj, ok := event.Payload.(trace.Event)
 
+	if !ok {
+		return fmt.Errorf("failed to cast event's payload")
+	}
 	containerID := eventObj.ContainerID
 	if containerID == "" {
 		return nil
@@ -88,9 +89,9 @@ func (sig *K8sApiConnection) OnEvent(e types.Event) error {
 
 		if ip == apiAddress {
 			m, _ := sig.GetMetadata()
-			sig.cb(types.Finding{
+			sig.cb(detect.Finding{
 				SigMetadata: m,
-				Context:     eventObj,
+				Event:       event,
 				Data: map[string]interface{}{
 					"ip": apiAddress,
 				},
@@ -100,7 +101,7 @@ func (sig *K8sApiConnection) OnEvent(e types.Event) error {
 	return nil
 }
 
-func (sig *K8sApiConnection) OnSignal(s types.Signal) error {
+func (sig *K8sApiConnection) OnSignal(s detect.Signal) error {
 	return nil
 }
 
@@ -116,7 +117,7 @@ func getApiAddressFromEnvs(envs []string) string {
 	return ""
 }
 
-func getIPFromAddr(addrArg external.Argument) (string, error) {
+func getIPFromAddr(addrArg trace.Argument) (string, error) {
 
 	addr, isOk := addrArg.Value.(map[string]string)
 	if !isOk {

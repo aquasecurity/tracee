@@ -10,8 +10,8 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/containers"
-	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 func (t *Tracee) processLostEvents() {
@@ -28,7 +28,7 @@ func (t *Tracee) processLostEvents() {
 }
 
 // shouldProcessEvent decides whether or not to drop an event before further processing it
-func (t *Tracee) shouldProcessEvent(ctx *bufferdecoder.Context, args []external.Argument) bool {
+func (t *Tracee) shouldProcessEvent(ctx *bufferdecoder.Context, args []trace.Argument) bool {
 	if t.config.Filter.RetFilter.Enabled {
 		if filter, ok := t.config.Filter.RetFilter.Filters[ctx.EventID]; ok {
 			retVal := ctx.Retval
@@ -92,7 +92,7 @@ func (t *Tracee) shouldProcessEvent(ctx *bufferdecoder.Context, args []external.
 	return true
 }
 
-func (t *Tracee) processEvent(event *external.Event) error {
+func (t *Tracee) processEvent(event *trace.Event) error {
 	switch int32(event.EventID) {
 
 	case VfsWriteEventID, VfsWritevEventID:
@@ -223,8 +223,8 @@ func (t *Tracee) processEvent(event *external.Event) error {
 						}
 					}
 
-					event.Args = append(event.Args, external.Argument{
-						ArgMeta: external.ArgMeta{Name: "sha256", Type: "const char*"},
+					event.Args = append(event.Args, trace.Argument{
+						ArgMeta: trace.ArgMeta{Name: "sha256", Type: "const char*"},
 						Value:   currentHash,
 					})
 					event.ArgsNum += 1
@@ -306,7 +306,7 @@ func (t *Tracee) processEvent(event *external.Event) error {
 	return nil
 }
 
-func getEventArgStringVal(event *external.Event, argName string) (string, error) {
+func getEventArgStringVal(event *trace.Event, argName string) (string, error) {
 	for _, arg := range event.Args {
 		if arg.Name == argName {
 			val, ok := arg.Value.(string)
@@ -319,7 +319,7 @@ func getEventArgStringVal(event *external.Event, argName string) (string, error)
 	return "", fmt.Errorf("argument %s not found", argName)
 }
 
-func getEventArgUint64Val(event *external.Event, argName string) (uint64, error) {
+func getEventArgUint64Val(event *trace.Event, argName string) (uint64, error) {
 	for _, arg := range event.Args {
 		if arg.Name == argName {
 			val, ok := arg.Value.(uint64)
@@ -332,7 +332,7 @@ func getEventArgUint64Val(event *external.Event, argName string) (uint64, error)
 	return 0, fmt.Errorf("argument %s not found", argName)
 }
 
-func getEventArgUint32Val(event *external.Event, argName string) (uint32, error) {
+func getEventArgUint32Val(event *trace.Event, argName string) (uint32, error) {
 	for _, arg := range event.Args {
 		if arg.Name == argName {
 			val, ok := arg.Value.(uint32)
@@ -345,7 +345,7 @@ func getEventArgUint32Val(event *external.Event, argName string) (uint32, error)
 	return 0, fmt.Errorf("argument %s not found", argName)
 }
 
-func getEventArgInt32Val(event *external.Event, argName string) (int32, error) {
+func getEventArgInt32Val(event *trace.Event, argName string) (int32, error) {
 	for _, arg := range event.Args {
 		if arg.Name == argName {
 			val, ok := arg.Value.(int32)

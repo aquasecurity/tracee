@@ -3,9 +3,9 @@ package main
 import (
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
-	"github.com/aquasecurity/tracee/types"
+	"github.com/aquasecurity/tracee/types/detect"
+	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,36 +13,36 @@ import (
 func TestK8sApiConnection(t *testing.T) {
 	testCases := []struct {
 		Name     string
-		Events   []types.Event
-		Findings map[string]types.Finding
+		Events   []trace.Event
+		Findings map[string]detect.Finding
 	}{
 		{
 			Name: "should trigger detection",
-			Events: []types.Event{
-				external.Event{
+			Events: []trace.Event{
+				trace.Event{
 					EventName:   "execve",
 					ContainerID: "0907ef86d7be",
-					Args: []external.Argument{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "argv",
 							},
 							Value: []string{"/bin/ls"},
 						},
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "envp",
 							},
 							Value: []string{"CURL_CA_BUNDLE=/cacert.pem", "HOSTNAME=3c5f9dbcb5da", "CURL_RELEASE_TAG=curl-7_76_1", "CURL_GIT_REPO=https://github.com/curl/curl.git", "SHLVL=2", "HOME=/home/curl_user", "TERM=xterm", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "PWD=/", "KUBERNETES_SERVICE_HOST=1.1.1.1", "CURL_VERSION=7_76_1"},
 						},
 					},
 				},
-				external.Event{
+				trace.Event{
 					EventName:   "security_socket_connect",
 					ContainerID: "0907ef86d7be",
-					Args: []external.Argument{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "remote_addr",
 							},
 							Value: map[string]string{
@@ -54,17 +54,17 @@ func TestK8sApiConnection(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]types.Finding{
+			Findings: map[string]detect.Finding{
 				"TRC-13": {
 					Data: map[string]interface{}{
 						"ip": "1.1.1.1",
 					},
-					Context: external.Event{
+					Event: trace.Event{
 						EventName:   "security_socket_connect",
 						ContainerID: "0907ef86d7be",
-						Args: []external.Argument{
+						Args: []trace.Argument{
 							{
-								ArgMeta: external.ArgMeta{
+								ArgMeta: trace.ArgMeta{
 									Name: "remote_addr",
 								},
 								Value: map[string]string{
@@ -74,8 +74,8 @@ func TestK8sApiConnection(t *testing.T) {
 								},
 							},
 						},
-					},
-					SigMetadata: types.SignatureMetadata{
+					}.ToProtocol(),
+					SigMetadata: detect.SignatureMetadata{
 						ID:          "TRC-13",
 						Version:     "0.1.0",
 						Name:        "Kubernetes API server connection detected",
@@ -91,31 +91,31 @@ func TestK8sApiConnection(t *testing.T) {
 		},
 		{
 			Name: "should not trigger detection",
-			Events: []types.Event{
-				external.Event{
+			Events: []trace.Event{
+				trace.Event{
 					EventName:   "execve",
 					ContainerID: "0907ef86d7be",
-					Args: []external.Argument{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "argv",
 							},
 							Value: []string{"/bin/ls"},
 						},
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "envp",
 							},
 							Value: []string{"CURL_CA_BUNDLE=/cacert.pem", "HOSTNAME=3c5f9dbcb5da", "CURL_RELEASE_TAG=curl-7_76_1", "CURL_GIT_REPO=https://github.com/curl/curl.git", "SHLVL=2", "HOME=/home/curl_user", "TERM=xterm", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "PWD=/", "KUBERNETES_SERVICE_HOST=1.1.1.1", "CURL_VERSION=7_76_1"},
 						},
 					},
 				},
-				external.Event{
+				trace.Event{
 					EventName:   "security_socket_connect",
 					ContainerID: "0907ef86d7be",
-					Args: []external.Argument{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "remote_addr",
 							},
 							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "80", "sin_addr": "169.254.169.254"},
@@ -123,7 +123,7 @@ func TestK8sApiConnection(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]types.Finding{},
+			Findings: map[string]detect.Finding{},
 		},
 	}
 
@@ -136,7 +136,7 @@ func TestK8sApiConnection(t *testing.T) {
 			require.NoError(t, err)
 
 			for _, e := range tc.Events {
-				err = sig.OnEvent(e)
+				err = sig.OnEvent(e.ToProtocol())
 				require.NoError(t, err)
 			}
 

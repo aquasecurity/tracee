@@ -10,8 +10,8 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/pkg/metrics"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 type eventPrinter interface {
@@ -22,7 +22,7 @@ type eventPrinter interface {
 	// Epilogue prints something after event printing ends (one time)
 	Epilogue(stats metrics.Stats)
 	// Print prints a single event
-	Print(event external.Event)
+	Print(event trace.Event)
 	// Error prints a single error
 	Error(err error)
 	// dispose of resources
@@ -105,7 +105,7 @@ func (p tableEventPrinter) Preamble() {
 	fmt.Fprintln(p.out)
 }
 
-func (p tableEventPrinter) Print(event external.Event) {
+func (p tableEventPrinter) Print(event trace.Event) {
 	ut := time.Unix(0, int64(event.Timestamp))
 	if p.relativeTS {
 		ut = ut.UTC()
@@ -181,7 +181,7 @@ func (p templateEventPrinter) Error(err error) {
 	fmt.Fprintf(p.err, "%v\n", err)
 }
 
-func (p templateEventPrinter) Print(event external.Event) {
+func (p templateEventPrinter) Print(event trace.Event) {
 	if p.templateObj != nil {
 		err := (*p.templateObj).Execute(p.out, event)
 		if err != nil {
@@ -206,7 +206,7 @@ func (p jsonEventPrinter) Init() error { return nil }
 
 func (p jsonEventPrinter) Preamble() {}
 
-func (p jsonEventPrinter) Print(event external.Event) {
+func (p jsonEventPrinter) Print(event trace.Event) {
 	eBytes, err := json.Marshal(event)
 	if err != nil {
 		p.Error(err)
@@ -232,16 +232,16 @@ type gobEventPrinter struct {
 
 func (p *gobEventPrinter) Init() error {
 	p.outEnc = gob.NewEncoder(p.out)
-	gob.Register(external.Event{})
-	gob.Register(external.SlimCred{})
+	gob.Register(trace.Event{})
+	gob.Register(trace.SlimCred{})
 	gob.Register(make(map[string]string))
-	gob.Register(external.PktMeta{})
+	gob.Register(trace.PktMeta{})
 	return nil
 }
 
 func (p *gobEventPrinter) Preamble() {}
 
-func (p *gobEventPrinter) Print(event external.Event) {
+func (p *gobEventPrinter) Print(event trace.Event) {
 	err := p.outEnc.Encode(event)
 	if err != nil {
 		p.Error(err)
@@ -268,7 +268,7 @@ func (p *ignoreEventPrinter) Init() error {
 
 func (p *ignoreEventPrinter) Preamble() {}
 
-func (p *ignoreEventPrinter) Print(event external.Event) {}
+func (p *ignoreEventPrinter) Print(event trace.Event) {}
 
 func (p *ignoreEventPrinter) Error(err error) {
 	fmt.Fprintf(p.err, "%v\n", err)

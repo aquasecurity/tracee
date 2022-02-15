@@ -5,14 +5,13 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"reflect"
 	"strings"
 	"sync"
 
-	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/pkg/rules/metrics"
-	"github.com/aquasecurity/tracee/types"
-	"github.com/open-policy-agent/opa/ast"
+	"github.com/aquasecurity/tracee/types/detect"
+	"github.com/aquasecurity/tracee/types/protocol"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 const ALL_EVENT_ORIGINS = "*"
@@ -22,18 +21,17 @@ const ALL_EVENT_TYPES = "*"
 
 // Config defines the engine's configurable values
 type Config struct {
-	ParsedEvents        bool
 	SignatureBufferSize uint
 }
 
 // Engine is a rule-engine that can process events coming from a set of input sources against a set of loaded signatures, and report the signatures' findings
 type Engine struct {
 	logger          log.Logger
-	signatures      map[types.Signature]chan types.Event
-	signaturesIndex map[types.SignatureEventSelector][]types.Signature
+	signatures      map[detect.Signature]chan protocol.Event
+	signaturesIndex map[detect.SignatureEventSelector][]detect.Signature
 	signaturesMutex sync.RWMutex
 	inputs          EventSources
-	output          chan types.Finding
+	output          chan detect.Finding
 	waitGroup       sync.WaitGroup
 	config          Config
 	stats           metrics.Stats
@@ -41,7 +39,7 @@ type Engine struct {
 
 //EventSources is a bundle of input sources used to configure the Engine
 type EventSources struct {
-	Tracee chan types.Event
+	Tracee chan protocol.Event
 }
 
 func (e *Engine) Stats() *metrics.Stats {
@@ -50,7 +48,7 @@ func (e *Engine) Stats() *metrics.Stats {
 
 // NewEngine creates a new rules-engine with the given arguments
 // inputs and outputs are given as channels created by the consumer
-func NewEngine(sigs []types.Signature, sources EventSources, output chan types.Finding, logWriter io.Writer, config Config) (*Engine, error) {
+func NewEngine(sigs []detect.Signature, sources EventSources, output chan detect.Finding, logWriter io.Writer, config Config) (*Engine, error) {
 	if sources.Tracee == nil || output == nil || logWriter == nil {
 		return nil, fmt.Errorf("nil input received")
 	}
@@ -61,12 +59,12 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 	engine.output = output
 	engine.config = config
 	engine.signaturesMutex.Lock()
-	engine.signatures = make(map[types.Signature]chan types.Event)
-	engine.signaturesIndex = make(map[types.SignatureEventSelector][]types.Signature)
+	engine.signatures = make(map[detect.Signature]chan protocol.Event)
+	engine.signaturesIndex = make(map[detect.SignatureEventSelector][]detect.Signature)
 	engine.signaturesMutex.Unlock()
 	for _, sig := range sigs {
 		engine.signaturesMutex.Lock()
-		engine.signatures[sig] = make(chan types.Event, engine.config.SignatureBufferSize)
+		engine.signatures[sig] = make(chan protocol.Event, engine.config.SignatureBufferSize)
 		engine.signaturesMutex.Unlock()
 		meta, err := sig.GetMetadata()
 		if err != nil {
@@ -109,7 +107,7 @@ func NewEngine(sigs []types.Signature, sources EventSources, output chan types.F
 }
 
 // signatureStart is the signature handling business logics.
-func signatureStart(signature types.Signature, c chan types.Event, wg *sync.WaitGroup) {
+func signatureStart(signature detect.Signature, c chan protocol.Event, wg *sync.WaitGroup) {
 	wg.Add(1)
 	for e := range c {
 		if err := signature.OnEvent(e); err != nil {
@@ -142,11 +140,11 @@ func (engine *Engine) unloadAllSignatures() {
 		close(c)
 		delete(engine.signatures, sig)
 	}
-	engine.signaturesIndex = make(map[types.SignatureEventSelector][]types.Signature)
+	engine.signaturesIndex = make(map[detect.SignatureEventSelector][]detect.Signature)
 }
 
 // matchHandler is a function that runs when a signature is matched
-func (engine *Engine) matchHandler(res types.Finding) {
+func (engine *Engine) matchHandler(res detect.Finding) {
 	engine.stats.Detections.Increment()
 	engine.output <- res
 }
@@ -178,7 +176,7 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 					}
 					for _, sel := range se {
 						if sel.Source == "tracee" {
-							_ = sig.OnSignal(types.SignalSourceComplete("tracee"))
+							_ = sig.OnSignal(detect.SignalSourceComplete("tracee"))
 							break
 						}
 					}
@@ -188,29 +186,28 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 				if engine.checkCompletion() {
 					return
 				}
-			} else if event != nil {
+			} else {
 				engine.signaturesMutex.RLock()
-				traceeEvt, ok := event.(external.Event)
-				if !ok {
-					engine.logger.Printf("invalid event received (should be of type tracee.Event)")
+				signatureSelector, err := eventSignatureSelector(event)
+
+				if err != nil {
+					engine.logger.Printf("invalid event received (should be of type %s)", trace.EventContentType)
 					engine.signaturesMutex.RUnlock()
 					continue
 				}
-
 				engine.stats.Events.Increment()
 
-				eventOrigin := analyzeEventOrigin(traceeEvt)
-				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName, Origin: eventOrigin}] {
-					engine.dispatchEvent(s, traceeEvt)
+				for _, s := range engine.signaturesIndex[signatureSelector] {
+					engine.dispatchEvent(s, event)
 				}
-				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: traceeEvt.EventName, Origin: ALL_EVENT_ORIGINS}] {
-					engine.dispatchEvent(s, traceeEvt)
+				for _, s := range engine.signaturesIndex[detect.SignatureEventSelector{Source: "tracee", Name: signatureSelector.Name, Origin: ALL_EVENT_ORIGINS}] {
+					engine.dispatchEvent(s, event)
 				}
-				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: ALL_EVENT_TYPES, Origin: eventOrigin}] {
-					engine.dispatchEvent(s, traceeEvt)
+				for _, s := range engine.signaturesIndex[detect.SignatureEventSelector{Source: "tracee", Name: ALL_EVENT_TYPES, Origin: signatureSelector.Origin}] {
+					engine.dispatchEvent(s, event)
 				}
-				for _, s := range engine.signaturesIndex[types.SignatureEventSelector{Source: "tracee", Name: ALL_EVENT_TYPES, Origin: ALL_EVENT_ORIGINS}] {
-					engine.dispatchEvent(s, traceeEvt)
+				for _, s := range engine.signaturesIndex[detect.SignatureEventSelector{Source: "tracee", Name: ALL_EVENT_TYPES, Origin: ALL_EVENT_ORIGINS}] {
+					engine.dispatchEvent(s, event)
 				}
 				engine.signaturesMutex.RUnlock()
 			}
@@ -220,27 +217,13 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 	}
 }
 
-func (engine *Engine) dispatchEvent(s types.Signature, event external.Event) {
-	switch {
-	case strings.Contains(reflect.TypeOf(s).String(), "rego"):
-		if engine.config.ParsedEvents {
-			pe, err := ToParsedEvent(event)
-			if err != nil {
-				engine.logger.Printf("error converting tracee event to OPA ast.Value: %v", err)
-				return
-			}
-			engine.signatures[s] <- pe
-		} else {
-			engine.signatures[s] <- event
-		}
-	default:
-		engine.signatures[s] <- event
-	}
+func (engine *Engine) dispatchEvent(s detect.Signature, event protocol.Event) {
+	engine.signatures[s] <- event
 }
 
 //LoadSignature will store in Engine data structures the given signature and activate its handling business logics.
 // It will return the signature ID as well as error.
-func (engine *Engine) LoadSignature(signature types.Signature) (string, error) {
+func (engine *Engine) LoadSignature(signature detect.Signature) (string, error) {
 	selectedEvents, err := signature.GetSelectedEvents()
 	if err != nil {
 		return "", fmt.Errorf("failed to store signature: %w", err)
@@ -253,7 +236,7 @@ func (engine *Engine) LoadSignature(signature types.Signature) (string, error) {
 		// signature already exists
 		return metadata.ID, nil
 	}
-	c := make(chan types.Event, engine.config.SignatureBufferSize)
+	c := make(chan protocol.Event, engine.config.SignatureBufferSize)
 	engine.signatures[signature] = c
 
 	// insert in engine.signaturesIndex map
@@ -281,7 +264,7 @@ func (engine *Engine) LoadSignature(signature types.Signature) (string, error) {
 
 //UnloadSignature will remove from Engine data structures the given signature and stop its handling goroutine
 func (engine *Engine) UnloadSignature(signatureId string) error {
-	var signature types.Signature
+	var signature detect.Signature
 	engine.signaturesMutex.RLock()
 	for sig := range engine.signatures {
 		metadata, _ := sig.GetMetadata()
@@ -324,41 +307,23 @@ func (engine *Engine) UnloadSignature(signatureId string) error {
 	return nil
 }
 
-// ParsedEvent holds the original tracee.Event and its OPA ast.Value representation.
-type ParsedEvent struct {
-	Event external.Event
-	Value ast.Value
-}
+func eventSignatureSelector(event protocol.Event) (detect.SignatureEventSelector, error) {
+	origin := event.Origin()
+	contentType := event.ContentType()
+	if !(strings.HasPrefix(origin, trace.EventSource) && strings.HasPrefix(contentType, trace.EventContentType)) {
+		return detect.SignatureEventSelector{}, fmt.Errorf("the signature selector could not be determined since the event isn't a tracee event")
+	}
 
-// ToParsedEvent enhances tracee.Event with OPA ast.Value. This is mainly used
-// for performance optimization to avoid parsing tracee.Event multiple times.
-func ToParsedEvent(e external.Event) (ParsedEvent, error) {
-	u, err := e.ToUnstructured()
-	if err != nil {
-		return ParsedEvent{}, fmt.Errorf("unstructuring event: %w", err)
-	}
-	// TODO In OPA >= v0.30.0 we can try passing tracee.Event directly to get rid of ToUnstructured call.
-	v, err := ast.InterfaceToValue(u)
-	if err != nil {
-		return ParsedEvent{}, fmt.Errorf("converting unstructured event to OPA ast.Value: %w", err)
-	}
-	return ParsedEvent{
-		Event: e,
-		Value: v,
+	return detect.SignatureEventSelector{
+		Origin: strings.TrimPrefix(origin, trace.EventSource+"/"),
+		Name:   strings.TrimPrefix(contentType, trace.EventContentType+"-"),
+		Source: "tracee",
 	}, nil
 }
 
-func analyzeEventOrigin(event external.Event) string {
-	if event.ContainerID != "" || event.ProcessID != event.HostProcessID {
-		return EVENT_CONTAINER_ORIGIN
-	} else {
-		return EVENT_HOST_ORIGIN
-	}
-}
-
 // GetSelectedEvents returns the event selectors that are relevant to the currently loaded signatures
-func (engine *Engine) GetSelectedEvents() []types.SignatureEventSelector {
-	res := make([]types.SignatureEventSelector, 0)
+func (engine *Engine) GetSelectedEvents() []detect.SignatureEventSelector {
+	res := make([]detect.SignatureEventSelector, 0)
 	for k := range engine.signaturesIndex {
 		res = append(res, k)
 	}

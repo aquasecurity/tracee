@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
-	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // argType is an enum that encodes the argument types that the BPF program may write to the shared buffer
@@ -43,11 +43,11 @@ const (
 	boolT
 )
 
-func ReadArgFromBuff(ebpfMsgDecoder *EbpfDecoder, params []external.ArgMeta) (external.ArgMeta, interface{}, error) {
+func ReadArgFromBuff(ebpfMsgDecoder *EbpfDecoder, params []trace.ArgMeta) (trace.ArgMeta, interface{}, error) {
 	var err error
 	var res interface{}
 	var argIdx uint8
-	var argMeta external.ArgMeta
+	var argMeta trace.ArgMeta
 
 	err = ebpfMsgDecoder.DecodeUint8(&argIdx)
 	if err != nil {

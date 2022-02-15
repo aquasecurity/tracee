@@ -10,7 +10,8 @@ import (
 	"github.com/aquasecurity/tracee/pkg/rules/benchmark/signature/rego"
 	"github.com/aquasecurity/tracee/pkg/rules/benchmark/signature/wasm"
 	"github.com/aquasecurity/tracee/pkg/rules/engine"
-	"github.com/aquasecurity/tracee/types"
+	"github.com/aquasecurity/tracee/types/detect"
+	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/stretchr/testify/require"
 )
 
@@ -21,7 +22,7 @@ const (
 func BenchmarkOnEventWithCodeInjectionSignature(b *testing.B) {
 	benches := []struct {
 		name    string
-		sigFunc func() (types.Signature, error)
+		sigFunc func() (detect.Signature, error)
 	}{
 		{
 			name:    "rego",
@@ -45,7 +46,8 @@ func BenchmarkOnEventWithCodeInjectionSignature(b *testing.B) {
 
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				require.NoError(b, s.OnEvent(triggerCodeInjectorPtraceEvent), bc.name)
+				event := triggerCodeInjectorPtraceEvent.ToProtocol()
+				require.NoError(b, s.OnEvent(event), bc.name)
 			}
 		})
 	}
@@ -54,7 +56,7 @@ func BenchmarkOnEventWithCodeInjectionSignature(b *testing.B) {
 func BenchmarkEngineWithCodeInjectionSignature(b *testing.B) {
 	benches := []struct {
 		name           string
-		sigFunc        func() (types.Signature, error)
+		sigFunc        func() (detect.Signature, error)
 		preparedEvents bool
 	}{
 		{
@@ -93,14 +95,12 @@ func BenchmarkEngineWithCodeInjectionSignature(b *testing.B) {
 				// Produce events without timing it
 				b.StopTimer()
 				inputs := ProduceEventsInMemory(inputEventsCount)
-				output := make(chan types.Finding, inputEventsCount)
+				output := make(chan detect.Finding, inputEventsCount)
 
 				s, err := bc.sigFunc()
 				require.NoError(b, err, bc.name)
 
-				e, err := engine.NewEngine([]types.Signature{s}, inputs, output, os.Stderr, engine.Config{
-					ParsedEvents: bc.preparedEvents,
-				})
+				e, err := engine.NewEngine([]detect.Signature{s}, inputs, output, os.Stderr, engine.Config{})
 				require.NoError(b, err, "constructing engine")
 				b.StartTimer()
 
@@ -114,35 +114,35 @@ func BenchmarkEngineWithCodeInjectionSignature(b *testing.B) {
 func BenchmarkEngineWithMultipleSignatures(b *testing.B) {
 	benches := []struct {
 		name           string
-		sigFuncs       []func() (types.Signature, error)
+		sigFuncs       []func() (detect.Signature, error)
 		preparedEvents bool
 	}{
 		{
 			name:     "rego and golang",
-			sigFuncs: []func() (types.Signature, error){rego.NewCodeInjectionSignature, golang.NewCodeInjectionSignature},
+			sigFuncs: []func() (detect.Signature, error){rego.NewCodeInjectionSignature, golang.NewCodeInjectionSignature},
 		},
 		{
 			name:           "rego and golang, with prepared events",
-			sigFuncs:       []func() (types.Signature, error){rego.NewCodeInjectionSignature, golang.NewCodeInjectionSignature},
+			sigFuncs:       []func() (detect.Signature, error){rego.NewCodeInjectionSignature, golang.NewCodeInjectionSignature},
 			preparedEvents: true,
 		},
 		{
 			name:     "wasm and golang",
-			sigFuncs: []func() (types.Signature, error){wasm.NewCodeInjectionSignature, golang.NewCodeInjectionSignature},
+			sigFuncs: []func() (detect.Signature, error){wasm.NewCodeInjectionSignature, golang.NewCodeInjectionSignature},
 		},
 		{
 			name:     "rego and wasm",
-			sigFuncs: []func() (types.Signature, error){rego.NewCodeInjectionSignature, wasm.NewCodeInjectionSignature},
+			sigFuncs: []func() (detect.Signature, error){rego.NewCodeInjectionSignature, wasm.NewCodeInjectionSignature},
 		},
 		{
 			name:     "rego and golang and wasm",
-			sigFuncs: []func() (types.Signature, error){rego.NewCodeInjectionSignature, golang.NewCodeInjectionSignature, wasm.NewCodeInjectionSignature},
+			sigFuncs: []func() (detect.Signature, error){rego.NewCodeInjectionSignature, golang.NewCodeInjectionSignature, wasm.NewCodeInjectionSignature},
 		},
 	}
 
 	for _, bc := range benches {
 		b.Run(bc.name, func(b *testing.B) {
-			var sigs []types.Signature
+			var sigs []detect.Signature
 			for _, sig := range bc.sigFuncs {
 				s, _ := sig()
 				sigs = append(sigs, s)
@@ -153,11 +153,9 @@ func BenchmarkEngineWithMultipleSignatures(b *testing.B) {
 				// Produce events without timing it
 				b.StopTimer()
 				inputs := ProduceEventsInMemory(inputEventsCount)
-				output := make(chan types.Finding, inputEventsCount*len(sigs))
+				output := make(chan detect.Finding, inputEventsCount*len(sigs))
 
-				e, err := engine.NewEngine(sigs, inputs, output, os.Stderr, engine.Config{
-					ParsedEvents: bc.preparedEvents,
-				})
+				e, err := engine.NewEngine(sigs, inputs, output, os.Stderr, engine.Config{})
 				require.NoError(b, err, "constructing engine")
 				b.StartTimer()
 
@@ -175,7 +173,7 @@ func BenchmarkEngineWithNSignatures(b *testing.B) {
 
 	benches := []struct {
 		name     string
-		sigFunc  func() (types.Signature, error)
+		sigFunc  func() (detect.Signature, error)
 		sigCount []int
 	}{
 		{
@@ -204,7 +202,7 @@ func BenchmarkEngineWithNSignatures(b *testing.B) {
 	for _, bc := range benches {
 		for _, tc := range bc.sigCount {
 			b.Run(fmt.Sprintf("%s/%dSignatures", bc.name, tc), func(b *testing.B) {
-				sigs := make([]types.Signature, tc)
+				sigs := make([]detect.Signature, tc)
 				for i := range sigs {
 					sig, err := bc.sigFunc()
 					require.NoError(b, err, "constructing signature")
@@ -216,7 +214,7 @@ func BenchmarkEngineWithNSignatures(b *testing.B) {
 					// Produce events without timing it
 					b.StopTimer()
 					inputs := ProduceEventsInMemory(inputEventsCount)
-					output := make(chan types.Finding, inputEventsCount*len(sigs))
+					output := make(chan detect.Finding, inputEventsCount*len(sigs))
 					e, err := engine.NewEngine(sigs, inputs, output, os.Stderr, engine.Config{})
 					require.NoError(b, err, "constructing engine")
 					b.StartTimer()
@@ -229,7 +227,7 @@ func BenchmarkEngineWithNSignatures(b *testing.B) {
 	}
 }
 
-func waitForEventsProcessed(eventsCh chan types.Event) chan bool {
+func waitForEventsProcessed(eventsCh chan protocol.Event) chan bool {
 	done := make(chan bool, 1)
 	go func() {
 		for {
@@ -243,6 +241,6 @@ func waitForEventsProcessed(eventsCh chan types.Event) chan bool {
 	return done
 }
 
-func ignoreFinding(_ types.Finding) {
+func ignoreFinding(_ detect.Finding) {
 	// noop
 }

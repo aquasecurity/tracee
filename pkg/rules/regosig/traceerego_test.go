@@ -6,11 +6,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/external"
-	"github.com/aquasecurity/tracee/pkg/rules/engine"
 	"github.com/aquasecurity/tracee/pkg/rules/regosig"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
-	"github.com/aquasecurity/tracee/types"
+	"github.com/aquasecurity/tracee/types/detect"
+	"github.com/aquasecurity/tracee/types/protocol"
+	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,7 +22,7 @@ func TestRegoSignature_GetMetadata(t *testing.T) {
 
 	metadata, err := sig.GetMetadata()
 	require.NoError(t, err)
-	assert.Equal(t, types.SignatureMetadata{
+	assert.Equal(t, detect.SignatureMetadata{
 		ID:          "TRC-BOOL",
 		Version:     "0.1.0",
 		Name:        "test name",
@@ -44,7 +44,7 @@ func TestRegoSignature_GetSelectedEvents(t *testing.T) {
 	require.NoError(t, err)
 	events, err := sig.GetSelectedEvents()
 	require.NoError(t, err)
-	assert.Equal(t, []types.SignatureEventSelector{
+	assert.Equal(t, []detect.SignatureEventSelector{
 		{
 			Source: "tracee",
 			Name:   "execve",
@@ -86,40 +86,39 @@ func TestRegoSignature_OnEvent(t *testing.T) {
 // OnEventSpec describes the behavior of RegoSignature.OnEvent.
 func OnEventSpec(t *testing.T, target string, partial bool) {
 	testCases := []struct {
-		name       string
-		regoCode   string
-		event      external.Event
-		parseEvent bool
+		name     string
+		regoCode string
+		event    trace.Event
 
-		finding *types.Finding
+		finding *detect.Finding
 		error   string
 	}{
 		{
 			name:     "Should trigger finding when tracee_match rule returns boolean and event matches",
 			regoCode: testRegoCodeBoolean,
-			event: external.Event{
-				Args: []external.Argument{
+			event: trace.Event{
+				Args: []trace.Argument{
 					{
-						ArgMeta: external.ArgMeta{
+						ArgMeta: trace.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: "ends with yo",
 					},
 				},
 			},
-			finding: &types.Finding{
+			finding: &detect.Finding{
 				Data: nil,
-				Context: external.Event{
-					Args: []external.Argument{
+				Event: trace.Event{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "doesn't matter",
 							},
 							Value: "ends with yo",
 						},
 					},
-				},
-				SigMetadata: types.SignatureMetadata{
+				}.ToProtocol(),
+				SigMetadata: detect.SignatureMetadata{
 					ID:          "TRC-BOOL",
 					Version:     "0.1.0",
 					Name:        "test name",
@@ -139,30 +138,29 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 		{
 			name:     "Should trigger finding when tracee_match rule returns boolean and parsed event matches",
 			regoCode: testRegoCodeBoolean,
-			event: external.Event{
-				Args: []external.Argument{
+			event: trace.Event{
+				Args: []trace.Argument{
 					{
-						ArgMeta: external.ArgMeta{
+						ArgMeta: trace.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: "ends with yo",
 					},
 				},
 			},
-			parseEvent: true,
-			finding: &types.Finding{
+			finding: &detect.Finding{
 				Data: nil,
-				Context: external.Event{
-					Args: []external.Argument{
+				Event: trace.Event{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "doesn't matter",
 							},
 							Value: "ends with yo",
 						},
 					},
-				},
-				SigMetadata: types.SignatureMetadata{
+				}.ToProtocol(),
+				SigMetadata: detect.SignatureMetadata{
 					ID:          "TRC-BOOL",
 					Version:     "0.1.0",
 					Name:        "test name",
@@ -182,10 +180,10 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 		{
 			name:     "Shouldn't trigger finding when tracee_match rule returns boolean but event doesn't match",
 			regoCode: testRegoCodeBoolean,
-			event: external.Event{
-				Args: []external.Argument{
+			event: trace.Event{
+				Args: []trace.Argument{
 					{
-						ArgMeta: external.ArgMeta{
+						ArgMeta: trace.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: "doesn't end with yo!",
@@ -197,45 +195,45 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 		{
 			name:     "Should trigger finding when tracee_match rule returns object and event matches",
 			regoCode: testRegoCodeObject,
-			event: external.Event{
-				Args: []external.Argument{
+			event: trace.Event{
+				Args: []trace.Argument{
 					{
-						ArgMeta: external.ArgMeta{
+						ArgMeta: trace.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: "ends with yo",
 					},
 					{
-						ArgMeta: external.ArgMeta{
+						ArgMeta: trace.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: 1337,
 					},
 				},
 			},
-			finding: &types.Finding{
+			finding: &detect.Finding{
 				Data: map[string]interface{}{
 					"p1": "test",
 					"p2": json.Number("1"),
 					"p3": true,
 				},
-				Context: external.Event{
-					Args: []external.Argument{
+				Event: trace.Event{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "doesn't matter",
 							},
 							Value: "ends with yo",
 						},
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "doesn't matter",
 							},
 							Value: 1337,
 						},
 					},
-				},
-				SigMetadata: types.SignatureMetadata{
+				}.ToProtocol(),
+				SigMetadata: detect.SignatureMetadata{
 					ID:          "TRC-OBJECT",
 					Version:     "0.3.0",
 					Name:        "test name",
@@ -255,46 +253,45 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 		{
 			name:     "Should trigger finding when tracee_match rule returns object and parsed event matches",
 			regoCode: testRegoCodeObject,
-			event: external.Event{
-				Args: []external.Argument{
+			event: trace.Event{
+				Args: []trace.Argument{
 					{
-						ArgMeta: external.ArgMeta{
+						ArgMeta: trace.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: "ends with yo",
 					},
 					{
-						ArgMeta: external.ArgMeta{
+						ArgMeta: trace.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: 1337,
 					},
 				},
 			},
-			parseEvent: true,
-			finding: &types.Finding{
+			finding: &detect.Finding{
 				Data: map[string]interface{}{
 					"p1": "test",
 					"p2": json.Number("1"),
 					"p3": true,
 				},
-				Context: external.Event{
-					Args: []external.Argument{
+				Event: trace.Event{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "doesn't matter",
 							},
 							Value: "ends with yo",
 						},
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "doesn't matter",
 							},
 							Value: 1337,
 						},
 					},
-				},
-				SigMetadata: types.SignatureMetadata{
+				}.ToProtocol(),
+				SigMetadata: detect.SignatureMetadata{
 					ID:          "TRC-OBJECT",
 					Version:     "0.3.0",
 					Name:        "test name",
@@ -314,10 +311,10 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 		{
 			name:     "Shouldn't trigger finding when tracee_match rule returns object but event doesn't match",
 			regoCode: testRegoCodeObject,
-			event: external.Event{
-				Args: []external.Argument{
+			event: trace.Event{
+				Args: []trace.Argument{
 					{
-						ArgMeta: external.ArgMeta{
+						ArgMeta: trace.ArgMeta{
 							Name: "doesn't matter",
 						},
 						Value: "yo is not at end",
@@ -337,14 +334,9 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 			err = sig.Init(holder.OnFinding)
 			require.NoError(t, err)
 
-			var event interface{}
+			event := tc.event.ToProtocol()
 
-			if tc.parseEvent {
-				event, err = engine.ToParsedEvent(tc.event)
-				require.NoError(t, err)
-			} else {
-				event = tc.event
-			}
+			require.NoError(t, err)
 
 			err = sig.OnEvent(event)
 			if tc.error != "" {
@@ -360,8 +352,16 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 		sig, err := regosig.NewRegoSignature(target, partial, testRegoCodeBoolean)
 		require.NoError(t, err)
 
-		err = sig.OnEvent("UNRECOGNIZED")
-		assert.EqualError(t, err, "unrecognized event type: string")
+		notTraceeEvt := protocol.Event{
+			Headers: protocol.EventHeaders{
+				ContentType: "tracee.notevent.lol",
+				Origin:      "nottracee/*",
+			},
+			Payload: "just some stuff",
+		}
+
+		err = sig.OnEvent(notTraceeEvt)
+		assert.EqualError(t, err, "failed to cast event's payload")
 	})
 }
 

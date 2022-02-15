@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,7 +12,7 @@ func TestReadArgFromBuff(t *testing.T) {
 	testCases := []struct {
 		name          string
 		input         []byte
-		params        []external.ArgMeta
+		params        []trace.ArgMeta
 		expectedArg   interface{}
 		expectedError error
 	}{
@@ -21,7 +21,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, //-1
 			},
-			params:      []external.ArgMeta{{Type: "int", Name: "int0"}},
+			params:      []trace.ArgMeta{{Type: "int", Name: "int0"}},
 			expectedArg: int32(-1),
 		},
 		{
@@ -29,7 +29,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, //4294967295
 			},
-			params:      []external.ArgMeta{{Type: "unsigned int", Name: "uint0"}},
+			params:      []trace.ArgMeta{{Type: "unsigned int", Name: "uint0"}},
 			expectedArg: uint32(4294967295),
 		},
 		{
@@ -37,7 +37,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, //-1
 			},
-			params:      []external.ArgMeta{{Type: "long", Name: "long0"}},
+			params:      []trace.ArgMeta{{Type: "long", Name: "long0"}},
 			expectedArg: int64(-1),
 		},
 		{
@@ -45,7 +45,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, //18446744073709551615
 			},
-			params:      []external.ArgMeta{{Type: "unsigned long", Name: "ulong0"}},
+			params:      []trace.ArgMeta{{Type: "unsigned long", Name: "ulong0"}},
 			expectedArg: uint64(18446744073709551615),
 		},
 		{
@@ -53,7 +53,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, //18446744073709551615
 			},
-			params:      []external.ArgMeta{{Type: "off_t", Name: "offT0"}},
+			params:      []trace.ArgMeta{{Type: "off_t", Name: "offT0"}},
 			expectedArg: uint64(18446744073709551615),
 		},
 		{
@@ -61,7 +61,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xB6, 0x11, 0x0, 0x0, //0x000011B6 == 010666 == S_IFIFO|S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH
 			},
-			params:      []external.ArgMeta{{Type: "mode_t", Name: "modeT0"}},
+			params:      []trace.ArgMeta{{Type: "mode_t", Name: "modeT0"}},
 			expectedArg: uint32(0x11b6),
 		},
 		{
@@ -69,7 +69,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, //4294967295
 			},
-			params:      []external.ArgMeta{{Type: "dev_t", Name: "devT0"}},
+			params:      []trace.ArgMeta{{Type: "dev_t", Name: "devT0"}},
 			expectedArg: uint32(4294967295),
 		},
 		{
@@ -77,7 +77,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, //18446744073709551615
 			},
-			params:      []external.ArgMeta{{Type: "off_t", Name: "offT0"}},
+			params:      []trace.ArgMeta{{Type: "off_t", Name: "offT0"}},
 			expectedArg: uint64(18446744073709551615),
 		},
 		{ // This is expected to fail. TODO: change pointer parsed type to uint64
@@ -85,7 +85,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 			},
-			params:      []external.ArgMeta{{Type: "void*", Name: "pointer0"}},
+			params:      []trace.ArgMeta{{Type: "void*", Name: "pointer0"}},
 			expectedArg: uintptr(0xFFFFFFFFFFFFFFFF),
 		},
 		{
@@ -94,7 +94,7 @@ func TestReadArgFromBuff(t *testing.T) {
 				16, 0, 0, 0, //len=16
 				47, 117, 115, 114, 47, 98, 105, 110, 47, 100, 111, 99, 107, 101, 114, 0, // /usr/bin/docker
 			},
-			params:      []external.ArgMeta{{Type: "const char*", Name: "str0"}},
+			params:      []trace.ArgMeta{{Type: "const char*", Name: "str0"}},
 			expectedArg: "/usr/bin/docker",
 		},
 		{
@@ -106,7 +106,7 @@ func TestReadArgFromBuff(t *testing.T) {
 				7, 0, 0, 0, //len=7
 				100, 111, 99, 107, 101, 114, 0, //docker
 			},
-			params:      []external.ArgMeta{{Type: "const char*const*", Name: "strArr0"}},
+			params:      []trace.ArgMeta{{Type: "const char*const*", Name: "strArr0"}},
 			expectedArg: []string{"/usr/bin", "docker"},
 		},
 		{
@@ -117,7 +117,7 @@ func TestReadArgFromBuff(t *testing.T) {
 				47, 117, 115, 114, 47, 98, 105, 110, 0, // /usr/bin
 				100, 111, 99, 107, 101, 114, 0, //docker
 			},
-			params:      []external.ArgMeta{{Type: "const char**", Name: "argsArr0"}},
+			params:      []trace.ArgMeta{{Type: "const char**", Name: "argsArr0"}},
 			expectedArg: []string{"/usr/bin", "docker"},
 		},
 		{
@@ -128,7 +128,7 @@ func TestReadArgFromBuff(t *testing.T) {
 				0xFF, 0xFF, 0xFF, 0xFF, //sin_addr=255.255.255.255
 				0, 0, 0, 0, 0, 0, 0, 0, //padding[8]
 			},
-			params:      []external.ArgMeta{{Type: "struct sockaddr*", Name: "sockAddr0"}},
+			params:      []trace.ArgMeta{{Type: "struct sockaddr*", Name: "sockAddr0"}},
 			expectedArg: map[string]string(map[string]string{"sa_family": "AF_INET", "sin_addr": "255.255.255.255", "sin_port": "65535"}),
 		},
 		{
@@ -137,7 +137,7 @@ func TestReadArgFromBuff(t *testing.T) {
 				1, 0, //sa_family=AF_UNIX
 				47, 116, 109, 112, 47, 115, 111, 99, 107, 101, 116, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 101, 110, 0, 0, 0, // sun_path=/tmp/socket
 			},
-			params:      []external.ArgMeta{{Type: "struct sockaddr*", Name: "sockAddr0"}},
+			params:      []trace.ArgMeta{{Type: "struct sockaddr*", Name: "sockAddr0"}},
 			expectedArg: map[string]string{"sa_family": "AF_UNIX", "sun_path": "/tmp/socket"},
 		},
 		{
@@ -150,7 +150,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{0,
 				0, 0, 0, 1, //len=16777216
 			},
-			params:        []external.ArgMeta{{Type: "const char*", Name: "str0"}},
+			params:        []trace.ArgMeta{{Type: "const char*", Name: "str0"}},
 			expectedError: errors.New("string size too big: 16777216"),
 		},
 		{
@@ -158,7 +158,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{1,
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, //18446744073709551615
 			},
-			params:      []external.ArgMeta{{Type: "const char*", Name: "str0"}, {Type: "off_t", Name: "offT1"}},
+			params:      []trace.ArgMeta{{Type: "const char*", Name: "str0"}, {Type: "off_t", Name: "offT1"}},
 			expectedArg: uint64(18446744073709551615),
 		},
 	}
