@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	tracee "github.com/aquasecurity/tracee/pkg/bpf"
+	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/mitchellh/go-ps"
 	"github.com/onsi/gomega/gexec"

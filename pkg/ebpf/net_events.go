@@ -1,4 +1,4 @@
-package tracee
+package ebpf
 
 import (
 	"bytes"

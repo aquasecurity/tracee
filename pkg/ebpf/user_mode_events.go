@@ -6,10 +6,9 @@
 // This is critical because tracee-rules is independent, and doesn't have to run on the same machine as tracee-ebpf.
 // This means that tracee-rules might lack basic information of the operating machine needed for some signatures.
 // By creating user mode events this information could be intentionally collected and passed to tracee-ebpf afterwards.
-package tracee
+package ebpf
 
 import (
-	"github.com/aquasecurity/tracee/pkg/external"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -17,6 +16,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/aquasecurity/tracee/pkg/external"
 )
 
 const InitProcNsDir = "/proc/1/ns"

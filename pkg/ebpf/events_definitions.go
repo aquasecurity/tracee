@@ -1,4 +1,4 @@
-package tracee
+package ebpf
 
 import (
 	"github.com/aquasecurity/tracee/pkg/external"
