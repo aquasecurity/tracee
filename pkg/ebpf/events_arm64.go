@@ -1,7 +1,7 @@
 //go:build arm64
 // +build arm64
 
-package tracee
+package ebpf
 
 // ARM64 syscall numbers
 // Also used as event IDs

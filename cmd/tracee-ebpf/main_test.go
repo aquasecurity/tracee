@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/flags"
-	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
+	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

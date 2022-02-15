@@ -316,7 +316,7 @@ endif
 # non co-re ebpf
 #
 
-TRACEE_EBPF_OBJ_SRC = ./pkg/bpf/tracee.bpf.c
+TRACEE_EBPF_OBJ_SRC = ./pkg/ebpf/c/tracee.bpf.c
 
 KERN_RELEASE ?= $(UNAME_R)
 KERN_BUILD_PATH ?= $(if $(KERN_HEADERS),$(KERN_HEADERS),/lib/modules/$(KERN_RELEASE)/build)
@@ -400,7 +400,7 @@ uninstall-bpf-nocore: \
 # co-re ebpf
 #
 
-TRACEE_EBPF_OBJ_CORE_HEADERS = $(shell find tracee-ebpf -name *.h)
+TRACEE_EBPF_OBJ_CORE_HEADERS = $(shell find pkg/ebpf/c -name *.h)
 
 .PHONY: bpf-core
 bpf-core: $(OUTPUT_DIR)/tracee.bpf.core.o
@@ -415,7 +415,7 @@ $(OUTPUT_DIR)/tracee.bpf.core.o: \
 		-D__TARGET_ARCH_$(LINUX_ARCH) \
 		-D__BPF_TRACING__ \
 		-DCORE \
-		-I./pkg/bpf/co-re/ \
+		-I./pkg/ebpf/c/ \
 		-I$(OUTPUT_DIR)/tracee.bpf \
 		-target bpf \
 		-O2 -g \
@@ -451,7 +451,7 @@ GO_ENV_EBPF += GOARCH=$(GO_ARCH)
 GO_ENV_EBPF += CGO_CFLAGS=$(CUSTOM_CGO_CFLAGS)
 GO_ENV_EBPF += CGO_LDFLAGS=$(CUSTOM_CGO_LDFLAGS)
 
-TRACEE_EBPF_SRC_DIRS = ./cmd/tracee-ebpf/ ./tracee-ebpf/ ./pkg/
+TRACEE_EBPF_SRC_DIRS = ./cmd/tracee-ebpf/ ./pkg/ebpf
 TRACEE_EBPF_SRC = $(shell find $(TRACEE_EBPF_SRC_DIRS) -type f -name '*.go' ! -name '*_test.go')
 
 .PHONY: tracee-ebpf

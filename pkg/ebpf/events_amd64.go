@@ -1,7 +1,7 @@
 //go:build amd64
 // +build amd64
 
-package tracee
+package ebpf
 
 // x86 64bit syscall numbers
 // Also used as event IDs
