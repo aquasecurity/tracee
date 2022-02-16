@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/aquasecurity/tracee/types/detect/trace"
 	"io"
 	"math"
 	"net"
