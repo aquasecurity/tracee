@@ -13,7 +13,7 @@ To install Tracee with [Postee](https://github.com/aquasecurity/postee), simply 
 ``` bash
 kubectl create \
   -f https://raw.githubusercontent.com/aquasecurity/postee/main/deploy/kubernetes/postee.yaml \
-  -f https://raw.githubusercontent.com/aquasecurity/tracee/{{ git.tag }}/deploy/kubernetes/tracee-postee/tracee.yaml
+  -f https://raw.githubusercontent.com/aquasecurity/tracee/main/deploy/kubernetes/tracee-postee/tracee.yaml
 ```
 
 You can edit the configMap `postee-config` the was created, see an example configuration here: https://github.com/aquasecurity/postee/blob/main/cfg.yaml.
