@@ -40,36 +40,37 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 
 			timeStampObj := time.Unix(0, int64(evtMeta.TimeStamp+t.bootTime))
 
-			captureData, err := parseCaptureData(dataBuff)
-			dataBuffer := bytes.NewBuffer(dataBuff)
-			if err == nil {
-				if err := t.writePacket(captureData, time.Unix(int64(evtMeta.TimeStamp), 0), dataBuffer); err != nil {
-					t.handleError(err)
-					continue
-				}
+			if t.config.Output.RelativeTime {
+				// To get the current ("wall") time, we add the boot time into it.
+				evtMeta.TimeStamp -= t.startTime
+			} else {
+				// timeStamp is nanoseconds since system boot time
+				// To get the monotonic time since tracee was started, we have to subtract the start time from the timestamp.
+				evtMeta.TimeStamp += t.bootTime
 			}
 
 			if evtMeta.NetEventId == NetPacket {
-				networkProcess, err := t.getProcessCtx(int(evtMeta.HostTid))
-				if err != nil {
-					t.handleError(err)
-					continue
+				captureData, err := parseCaptureData(dataBuff)
+				if err == nil && len(t.config.Capture.NetIfaces) > 0 {
+					if err := t.writePacket(captureData, time.Unix(int64(evtMeta.TimeStamp), 0), bytes.NewBuffer(dataBuff)); err != nil {
+						t.handleError(err)
+						continue
+					}
 				}
-				if t.config.Output.RelativeTime {
-					// To get the current ("wall") time, we add the boot time into it.
-					evtMeta.TimeStamp -= t.startTime
-				} else {
-					// timeStamp is nanoseconds since system boot time
-					// To get the monotonic time since tracee was started, we have to subtract the start time from the timestamp.
-					evtMeta.TimeStamp += t.bootTime
-				}
-				evt, err := netPacketProtocolHandler(dataBuff, evtMeta, networkProcess, "net_packet")
-				if err == nil && t.config.Debug {
-					select {
-					case t.config.ChanEvents <- evt:
-						t.stats.NetEvCount.Increment()
-					case <-ctx.Done():
-						return
+				if t.config.Debug {
+					networkProcess, err := t.getProcessCtx(int(evtMeta.HostTid))
+					if err != nil {
+						t.handleError(err)
+						continue
+					}
+					evt, err := netPacketProtocolHandler(dataBuff, evtMeta, networkProcess, "net_packet")
+					if err == nil {
+						select {
+						case t.config.ChanEvents <- evt:
+							t.stats.NetEvCount.Increment()
+						case <-ctx.Done():
+							return
+						}
 					}
 				}
 
@@ -86,7 +87,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 					_           [4]byte //padding
 					SockPtr     uint64
 				}
-				err := binary.Read(dataBuffer, binary.LittleEndian, &pkt)
+				err := binary.Read(bytes.NewBuffer(dataBuff), binary.LittleEndian, &pkt)
 				if err != nil {
 					t.handleError(err)
 					continue
@@ -194,7 +195,7 @@ func parseCaptureData(payload []byte) (CaptureData, error) {
 	}
 	capData.PacketLen = binary.LittleEndian.Uint32(payload[0:4])
 	capData.InterfaceIndex = binary.LittleEndian.Uint32(payload[4:8])
-	return capData, fmt.Errorf("payload too short\n")
+	return capData, nil
 }
 
 // parsing the PacketMeta struct from bytes.buffer

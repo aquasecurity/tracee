@@ -69,7 +69,6 @@ func (ctx *ProcessCtx) GetEventByProcessCtx() external.Event {
 		MountNS:             int(ctx.MntId),
 		PIDNS:               int(ctx.PidId),
 	}
-
 }
 
 func ParseProcessContext(ctx []byte, containers *containers.Containers) (ProcessCtx, error) {
