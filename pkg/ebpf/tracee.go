@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"io"
 	"net"
 	"os"
@@ -36,6 +37,7 @@ type Config struct {
 	Filter             *Filter
 	Capture            *CaptureConfig
 	Output             *OutputConfig
+	Cache              queue.CacheConfig
 	PerfBufferSize     int
 	BlobPerfBufferSize int
 	Debug              bool
