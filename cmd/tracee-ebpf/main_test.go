@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"io/ioutil"
 	"testing"
 
@@ -1299,6 +1300,71 @@ func TestPrepareOutput(t *testing.T) {
 				assert.Equal(t, testcase.expectedError, err)
 			} else {
 				assert.Equal(t, testcase.expectedOutput, output)
+			}
+		})
+	}
+}
+
+func TestPrepareCache(t *testing.T) {
+	testCases := []struct {
+		testName      string
+		cacheSlice    []string
+		expectedCache queue.CacheConfig
+		expectedError error
+	}{
+		{
+			testName:   "invalid cache option",
+			cacheSlice: []string{"foo"},
+			expectedCache: &queue.EventQueueMem{
+				EventsCacheMemSizeMB: 0,
+			},
+			expectedError: errors.New("unrecognized cache option format: foo"),
+		},
+		{
+			testName:   "invalid cache-type",
+			cacheSlice: []string{"cache-type=bleh"},
+			expectedCache: &queue.EventQueueMem{
+				EventsCacheMemSizeMB: 0,
+			},
+			expectedError: errors.New("unrecognized cache-mem option: cache-type=bleh (valid options are: none,mem)"),
+		},
+		{
+			testName:      "cache-type=none",
+			cacheSlice:    []string{"cache-type=none"},
+			expectedCache: nil,
+			expectedError: nil,
+		},
+		{
+			testName:   "cache-type=mem",
+			cacheSlice: []string{"cache-type=mem"},
+			expectedCache: &queue.EventQueueMem{
+				EventsCacheMemSizeMB: 0,
+			},
+			expectedError: nil,
+		},
+		{
+			testName:      "mem-cache-size=X without cache-type=mem",
+			cacheSlice:    []string{"mem-cache-size=256"},
+			expectedCache: nil,
+			expectedError: errors.New("you need to specify cache-type=mem before setting mem-cache-size"),
+		},
+		{
+			testName:   "cache-type=mem with mem-cache-size=512",
+			cacheSlice: []string{"cache-type=mem", "mem-cache-size=512"},
+			expectedCache: &queue.EventQueueMem{
+				EventsCacheMemSizeMB: 512,
+			},
+			expectedError: nil,
+		},
+	}
+
+	for _, testcase := range testCases {
+		t.Run(testcase.testName, func(t *testing.T) {
+			cache, err := flags.PrepareCache(testcase.cacheSlice)
+			if err != nil {
+				assert.Equal(t, testcase.expectedError, err)
+			} else {
+				assert.Equal(t, testcase.expectedCache, cache)
 			}
 		})
 	}
