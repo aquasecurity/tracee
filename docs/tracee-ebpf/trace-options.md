@@ -23,7 +23,7 @@ Numerical expressions which compare numbers and allow the following operators: '
 Available numerical expressions: uid, pid, mntns, pidns.
 
 String expressions which compares text and allow the following operators: '=', '!='.
-Available string expressions: event, set, uts, comm.
+Available string expressions: event, set, uts, comm, container.
 
 Boolean expressions that check if a boolean is true and allow the following operator: '!'.
 Available boolean expressions: container.
@@ -70,6 +70,12 @@ only trace events from newly created containers
 
 ```
 --trace container=new
+```
+
+only trace events from container id ab356bc4dd554
+
+```
+--trace container=ab356bc4dd554
 ```
 
 only trace events from containers
