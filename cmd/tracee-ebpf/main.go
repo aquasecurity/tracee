@@ -57,6 +57,20 @@ func main() {
 				Debug:              c.Bool("debug"),
 			}
 
+			cacheSlice := c.StringSlice("cache")
+			if checkCommandIsHelp(cacheSlice) {
+				fmt.Print(flags.CacheHelp())
+				return nil
+			}
+			cache, err := flags.PrepareCache(cacheSlice)
+			if err != nil {
+				return err
+			}
+			cfg.Cache = cache
+			if debug && cfg.Cache != nil {
+				fmt.Fprintf(os.Stdout, "Cache: cache type is \"%s\"\n", cfg.Cache)
+			}
+
 			captureSlice := c.StringSlice("capture")
 			if checkCommandIsHelp(captureSlice) {
 				fmt.Print(flags.CaptureHelp())
@@ -279,15 +293,21 @@ func main() {
 				Value:   cli.NewStringSlice("format:table"),
 				Usage:   "Control how and where output is printed. run '--output help' for more info.",
 			},
+			&cli.StringSliceFlag{
+				Name:    "cache",
+				Aliases: []string{"a"},
+				Value:   cli.NewStringSlice("none"),
+				Usage:   "Control event caching queues. run '--cache help' for more info.",
+			},
 			&cli.IntFlag{
 				Name:    "perf-buffer-size",
 				Aliases: []string{"b"},
-				Value:   1024,
+				Value:   1024, // 4 MB of contigous pages
 				Usage:   "size, in pages, of the internal perf ring buffer used to submit events from the kernel",
 			},
 			&cli.IntFlag{
 				Name:  "blob-perf-buffer-size",
-				Value: 1024,
+				Value: 1024, // 4 MB of contigous pages
 				Usage: "size, in pages, of the internal perf ring buffer used to send blobs from the kernel",
 			},
 			&cli.BoolFlag{
