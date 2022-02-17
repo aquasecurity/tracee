@@ -2,6 +2,7 @@ package tracee
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/pkg/external"
@@ -10,7 +11,7 @@ import (
 func (t *Tracee) parseArgs(event *external.Event) error {
 	for i := range event.Args {
 		if ptr, isUintptr := event.Args[i].Value.(uintptr); isUintptr {
-			event.Args[i].Value = fmt.Sprintf("0x%X", ptr)
+			event.Args[i].Value = "0x" + strconv.FormatUint(uint64(ptr), 16)
 		}
 	}
 
