@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/aquasecurity/tracee/pkg/utils/environment"
 	"io"
 	"io/ioutil"
 	"log"
@@ -55,6 +56,10 @@ func main() {
 				PerfBufferSize:     c.Int("perf-buffer-size"),
 				BlobPerfBufferSize: c.Int("blob-perf-buffer-size"),
 				Debug:              c.Bool("debug"),
+			}
+
+			if cfg.PerfBufferSize == 0 {
+				cfg.PerfBufferSize = defaultPerfBufferSize(environment.GetMEMAmountInMBs())
 			}
 
 			if checkCommandIsHelp(c.StringSlice("capture")) {
@@ -279,7 +284,7 @@ func main() {
 			&cli.IntFlag{
 				Name:    "perf-buffer-size",
 				Aliases: []string{"b"},
-				Value:   1024,
+				Value:   0,
 				Usage:   "size, in pages, of the internal perf ring buffer used to submit events from the kernel",
 			},
 			&cli.IntFlag{
@@ -566,4 +571,31 @@ func unpackBTFHub(outFilePath string, OSInfo *helpers.OSInfo) error {
 	}
 
 	return nil
+}
+
+// defaultPerfBufferSize returns size of perf buffer cache based on host size
+func defaultPerfBufferSize(memAmountInMB int) int {
+	MBtoKB := func(amountInMB int) int {
+		return amountInMB * 1024
+	}
+	GBtoMB := func(amountInGB int) int {
+		return amountInGB * 1024
+	}
+	PagesNum := func(amountInMB int) int {
+		return MBtoKB(amountInMB) / 4096
+	}
+
+	switch {
+	case memAmountInMB <= GBtoMB(1): // host:   1GB, cache = 256MB
+		return PagesNum(256)
+	case memAmountInMB <= GBtoMB(4): // host:   4GB, cache = 512MB
+		return PagesNum(512)
+	case memAmountInMB <= GBtoMB(8): // host:   8GB, cache = 1GB
+		return PagesNum(GBtoMB(1))
+	case memAmountInMB <= GBtoMB(16): // host:  16GB, cache = 2GB
+		return PagesNum(GBtoMB(2))
+	}
+
+	// bigger hosts, cache = 4GB
+	return PagesNum(GBtoMB(4))
 }
