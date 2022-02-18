@@ -16,7 +16,7 @@
         
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.1.11+insiders-4.8.3">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.2.1+insiders-4.8.3">
     
     
       
@@ -866,7 +866,7 @@ The following types of expressions are supported:</p>
 <p>Numerical expressions which compare numbers and allow the following operators: '=', '!=', '&lt;', '&gt;'.
 Available numerical expressions: uid, pid, mntns, pidns.</p>
 <p>String expressions which compares text and allow the following operators: '=', '!='.
-Available string expressions: event, set, uts, comm.</p>
+Available string expressions: event, set, uts, comm, container.</p>
 <p>Boolean expressions that check if a boolean is true and allow the following operator: '!'.
 Available boolean expressions: container.</p>
 <p>Event arguments can be accessed using 'event_name.event_arg' and provide a way to filter an event by its arguments.
@@ -892,6 +892,9 @@ Multiple values are ORed if used with equals operator '=', but are ANDed if used
 </code></pre></div>
 <p>only trace events from newly created containers</p>
 <div class="highlight"><pre><span></span><code>--trace container=new
+</code></pre></div>
+<p>only trace events from container id ab356bc4dd554</p>
+<div class="highlight"><pre><span></span><code>--trace container=ab356bc4dd554
 </code></pre></div>
 <p>only trace events from containers</p>
 <div class="highlight"><pre><span></span><code>--trace container
