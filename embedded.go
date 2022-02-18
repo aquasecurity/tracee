@@ -1,4 +1,4 @@
-package ebpf
+package tracee
 
 import _ "embed"
 
