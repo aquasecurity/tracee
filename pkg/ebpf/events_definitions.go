@@ -73,6 +73,7 @@ const (
 	SecurityKernelReadFileEventID
 	SecurityInodeMknodEventID
 	SecurityPostReadFileEventID
+	SecurityInodeSymlinkEventId
 	SocketDupEventID
 	HiddenInodesEventID
 	MaxCommonEventID
@@ -6080,6 +6081,18 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "const char*", Name: "file_name"},
 			{Type: "umode_t", Name: "mode"},
 			{Type: "dev_t", Name: "dev"},
+		},
+	},
+	SecurityInodeSymlinkEventId: {
+		ID32Bit: sys32undefined,
+		Name:    "security_inode_symlink",
+		Probes: []probe{
+			{event: "security_inode_symlink", attach: kprobe, fn: "trace_security_inode_symlink"},
+		},
+		Sets: []string{"lsm_hooks", "fs", "fs_file_ops"},
+		Params: []external.ArgMeta{
+			{Type: "const char*", Name: "linkpath"},
+			{Type: "const char*", Name: "target"},
 		},
 	},
 	InitNamespacesEventID: {
