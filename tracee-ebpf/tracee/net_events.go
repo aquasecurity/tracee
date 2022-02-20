@@ -36,7 +36,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 				continue
 			}
 
-			evtMeta, dataBuff := parseEventMetaData(in)
+			evtMeta, payloadBytes := parseEventMetaData(in)
 
 			timeStampObj := time.Unix(0, int64(evtMeta.TimeStamp+t.bootTime))
 
@@ -50,12 +50,14 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 			}
 
 			if evtMeta.NetEventId == NetPacket {
-				captureData, err := parseCaptureData(dataBuff)
-				if err == nil && len(t.config.Capture.NetIfaces) > 0 {
-					if err := t.writePacket(captureData, time.Unix(int64(evtMeta.TimeStamp), 0), bytes.NewBuffer(dataBuff)); err != nil {
-						t.handleError(err)
-						continue
-					}
+				captureData, err := parseCaptureData(payloadBytes)
+				if err != nil {
+					t.handleError(err)
+					continue
+				}
+				if err := t.writePacket(captureData, time.Unix(int64(evtMeta.TimeStamp), 0), bytes.NewBuffer(payloadBytes)); err != nil {
+					t.handleError(err)
+					continue
 				}
 				if t.config.Debug {
 					networkProcess, err := t.getProcessCtx(int(evtMeta.HostTid))
@@ -63,7 +65,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 						t.handleError(err)
 						continue
 					}
-					evt, err := netPacketProtocolHandler(dataBuff, evtMeta, networkProcess, "net_packet")
+					evt, err := netPacketProtocolHandler(payloadBytes, evtMeta, networkProcess, "net_packet")
 					if err == nil {
 						select {
 						case t.config.ChanEvents <- evt:
@@ -87,7 +89,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 					_           [4]byte //padding
 					SockPtr     uint64
 				}
-				err := binary.Read(bytes.NewBuffer(dataBuff), binary.LittleEndian, &pkt)
+				err := binary.Read(bytes.NewBuffer(payloadBytes), binary.LittleEndian, &pkt)
 				if err != nil {
 					t.handleError(err)
 					continue
