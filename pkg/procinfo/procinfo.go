@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/external"
 )
 
 type ProcessCtx struct {
@@ -53,6 +54,21 @@ func (p *ProcInfo) GetElement(hostTid int) (ProcessCtx, error) {
 		return ProcessCtx{}, fmt.Errorf("no such a key: %v", hostTid)
 	}
 	return processCtx, nil
+}
+
+func (ctx *ProcessCtx) GetEventByProcessCtx() external.Event {
+	return external.Event{
+		ContainerID:         ctx.ContainerID,
+		ProcessID:           int(ctx.Pid),
+		ThreadID:            int(ctx.Tid),
+		ParentProcessID:     int(ctx.Ppid),
+		HostProcessID:       int(ctx.HostPid),
+		HostThreadID:        int(ctx.HostTid),
+		HostParentProcessID: int(ctx.HostPpid),
+		UserID:              int(ctx.Uid),
+		MountNS:             int(ctx.MntId),
+		PIDNS:               int(ctx.PidId),
+	}
 }
 
 func ParseProcessContext(ctx []byte, containers *containers.Containers) (ProcessCtx, error) {
