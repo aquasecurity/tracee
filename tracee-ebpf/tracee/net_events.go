@@ -60,7 +60,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 					continue
 				}
 				if t.config.Debug {
-					networkProcess, err := t.getProcessCtx(int(evtMeta.HostTid))
+					networkProcess, _ := t.getProcessCtx(int(evtMeta.HostTid))
 					evt, err := netPacketProtocolHandler(payloadBytes, evtMeta, networkProcess, "net_packet")
 					if err == nil {
 						select {
