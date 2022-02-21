@@ -1,8 +1,4 @@
-Files: tracee/pkg/ebpf/c/tracee.bpf.c
-Copyright: 2022, Aqua Security
-License: GPL-2+
-
-Files: tracee/tracee-ebpf/c/*
+Files: tracee/pkg/ebpf/c/*
 Copyright: 2022, Aqua Security
 License: GPL-2+
 
