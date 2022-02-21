@@ -843,7 +843,7 @@ func (t *Tracee) initBPF() error {
 		return err
 	}
 
-	if t.config.Capture.NetIfaces != nil || t.config.Debug {
+	if t.config.Capture.NetIfaces != nil || t.eventsToTrace[NetPacket] {
 		for _, iface := range t.config.Capture.NetIfaces {
 			ingressHook, err := t.attachTcProg(iface, bpf.BPFTcIngress, "tc_ingress")
 			if err != nil {
