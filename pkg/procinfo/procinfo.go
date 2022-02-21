@@ -3,6 +3,7 @@ package procinfo
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/aquasecurity/tracee/types/trace"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -12,7 +13,6 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
-	"github.com/aquasecurity/tracee/pkg/external"
 )
 
 type ProcessCtx struct {
@@ -56,8 +56,8 @@ func (p *ProcInfo) GetElement(hostTid int) (ProcessCtx, error) {
 	return processCtx, nil
 }
 
-func (ctx *ProcessCtx) GetEventByProcessCtx() external.Event {
-	return external.Event{
+func (ctx *ProcessCtx) GetEventByProcessCtx() trace.TraceeEvent {
+	return trace.TraceeEvent{
 		ContainerID:         ctx.ContainerID,
 		ProcessID:           int(ctx.Pid),
 		ThreadID:            int(ctx.Tid),

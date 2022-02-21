@@ -5,10 +5,10 @@ import (
 	gocontext "context"
 	"encoding/binary"
 	"fmt"
+	"github.com/aquasecurity/tracee/types/trace"
 	"inet.af/netaddr"
 	"time"
 
-	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/google/gopacket"
 )
@@ -175,8 +175,8 @@ func parseEventMetaData(payloadBytes []byte) (EventMeta, []byte) {
 }
 
 // netPacketProtocolHandler parse a given a packet bytes buffer to packetMeta and event
-func netPacketProtocolHandler(buffer []byte, evtMeta EventMeta, ctx procinfo.ProcessCtx, eventName string) (external.Event, error) {
-	var evt external.Event
+func netPacketProtocolHandler(buffer []byte, evtMeta EventMeta, ctx procinfo.ProcessCtx, eventName string) (trace.TraceeEvent, error) {
+	var evt trace.TraceeEvent
 	packet, err := ParseNetPacketMetaData(buffer)
 	if err != nil {
 		return evt, err
@@ -197,8 +197,8 @@ func parseCaptureData(payload []byte) (CaptureData, error) {
 }
 
 // parsing the PacketMeta struct from bytes.buffer
-func ParseNetPacketMetaData(payload []byte) (external.PktMeta, error) {
-	var pktMetaData external.PktMeta
+func ParseNetPacketMetaData(payload []byte) (trace.PktMeta, error) {
+	var pktMetaData trace.PktMeta
 	if len(payload) < 45 {
 		return pktMetaData, fmt.Errorf("Payload size too short\n")
 	}
@@ -213,7 +213,7 @@ func ParseNetPacketMetaData(payload []byte) (external.PktMeta, error) {
 	return pktMetaData, nil
 }
 
-func CreateNetEvent(eventMeta EventMeta, ctx procinfo.ProcessCtx, eventName string, ts int) external.Event {
+func CreateNetEvent(eventMeta EventMeta, ctx procinfo.ProcessCtx, eventName string, ts int) trace.TraceeEvent {
 	evt := ctx.GetEventByProcessCtx()
 	evt.Timestamp = int(eventMeta.TimeStamp)
 	evt.ProcessName = eventMeta.ProcessName
@@ -224,10 +224,10 @@ func CreateNetEvent(eventMeta EventMeta, ctx procinfo.ProcessCtx, eventName stri
 }
 
 //takes the packet metadata and create argument array with that data
-func appendPktMetaArg(event *external.Event, NetPacket external.PktMeta) {
-	event.Args = []external.Argument{external.Argument{
-		ArgMeta: external.ArgMeta{"metadata", "external.PktMeta"},
-		Value: external.PktMeta{
+func appendPktMetaArg(event *trace.TraceeEvent, NetPacket trace.PktMeta) {
+	event.Args = []trace.Argument{trace.Argument{
+		ArgMeta: trace.ArgMeta{"metadata", "trace.PktMeta"},
+		Value: trace.PktMeta{
 			SrcIP:    NetPacket.SrcIP,
 			DstIP:    NetPacket.DstIP,
 			SrcPort:  NetPacket.SrcPort,
