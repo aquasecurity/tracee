@@ -20,7 +20,7 @@ spec:
       - image: aquasec/tracee:latest
         imagePullPolicy: Always
         args:
-          - --webhook http://postee-svc:8080 --webhook-template ./templates/rawjson.tmpl --webhook-content-type application/json
+          - --webhook http://postee-svc:8082 --webhook-template ./templates/rawjson.tmpl --webhook-content-type application/json
         name: tracee
         securityContext:
           privileged: true
