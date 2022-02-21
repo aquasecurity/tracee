@@ -77,6 +77,21 @@ type netProbe struct {
 	egressHook  *bpf.TcHook
 }
 
+func appendStr2Str(str1 []string, str2 []string) []string {
+	found := false
+	for _, str := range str1 {
+		for _, val := range str2 {
+			if val == str {
+				found = true
+			}
+		}
+		if !found {
+			str2 = append(str2, str)
+		}
+	}
+	return str2
+}
+
 // Validate does static validation of the configuration
 func (tc Config) Validate() error {
 	if tc.Filter == nil || tc.Filter.EventsToTrace == nil {
@@ -818,7 +833,7 @@ func (t *Tracee) initBPF() error {
 		}
 	}
 
-	if t.config.Capture.NetIfaces == nil && !t.config.Debug {
+	if t.config.Capture.NetIfaces == nil && !t.config.Debug && t.config.Filter.InterfaceToTrace == nil {
 		// SecuritySocketBindEventID is set as an essentialEvent if 'capture net' or 'debug' were chosen by the user.
 		networkProbes := []string{"tc_ingress", "tc_egress", "trace_udp_sendmsg", "trace_udp_disconnect", "trace_udp_destroy_sock", "trace_udpv6_destroy_sock", "tracepoint__inet_sock_set_state"}
 		for _, progName := range networkProbes {
@@ -837,14 +852,9 @@ func (t *Tracee) initBPF() error {
 	if err != nil {
 		return err
 	}
-
-	err = t.populateBPFMaps()
-	if err != nil {
-		return err
-	}
-
-	if t.config.Capture.NetIfaces != nil || t.eventsToTrace[NetPacket] {
-		for _, iface := range t.config.Capture.NetIfaces {
+	if t.config.Capture.NetIfaces != nil || t.config.Filter.InterfaceToTrace != nil {
+		ifaceList := appendStr2Str(t.config.Filter.InterfaceToTrace, t.config.Capture.NetIfaces)
+		for _, iface := range ifaceList {
 			ingressHook, err := t.attachTcProg(iface, bpf.BPFTcIngress, "tc_ingress")
 			if err != nil {
 				return err
@@ -865,6 +875,12 @@ func (t *Tracee) initBPF() error {
 		if err = t.attachNetProbes(); err != nil {
 			return err
 		}
+
+	}
+
+	err = t.populateBPFMaps()
+	if err != nil {
+		return err
 	}
 
 	for e := range t.eventsToTrace {

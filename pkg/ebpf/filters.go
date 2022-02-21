@@ -55,6 +55,7 @@ type Filter struct {
 	ArgFilter         *ArgFilter
 	ProcessTreeFilter *ProcessTreeFilter
 	Follow            bool
+	InterfaceToTrace  []string
 }
 
 type UintFilter struct {

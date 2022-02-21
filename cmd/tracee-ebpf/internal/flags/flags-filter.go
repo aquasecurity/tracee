@@ -2,6 +2,7 @@ package flags
 
 import (
 	"fmt"
+	"net"
 	"strings"
 
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
@@ -73,6 +74,28 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 `
 }
 
+func parseNetFields(comm string, interfaceArray *[]string) (bool, error) {
+	if strings.HasPrefix(comm, "net=") {
+		iface := strings.TrimPrefix(comm, "net=")
+		if _, err := net.InterfaceByName(iface); err != nil {
+			return false, fmt.Errorf("invalid network interface: %s", iface)
+		}
+		found := false
+		// Check if we already have this interface
+		for _, item := range *interfaceArray {
+			if iface == item {
+				found = true
+				break
+			}
+		}
+		if !found {
+			*interfaceArray = append(*interfaceArray, iface)
+		}
+		return true, nil
+	}
+	return false, nil
+}
+
 func PrepareFilter(filters []string) (tracee.Filter, error) {
 	filter := tracee.Filter{
 		UIDFilter: &tracee.UintFilter{
@@ -125,7 +148,8 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 		ProcessTreeFilter: &tracee.ProcessTreeFilter{
 			PIDs: make(map[uint32]bool),
 		},
-		EventsToTrace: []int32{},
+		EventsToTrace:    []int32{},
+		InterfaceToTrace: []string{},
 	}
 
 	eventFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}}
@@ -278,7 +302,13 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 			filter.Follow = true
 			continue
 		}
-
+		found, err := parseNetFields(f, &filter.InterfaceToTrace)
+		if err != nil {
+			return filter, err
+		}
+		if found {
+			continue
+		}
 		return tracee.Filter{}, fmt.Errorf("invalid filter option specified, use '--trace help' for more info")
 	}
 
