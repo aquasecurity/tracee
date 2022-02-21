@@ -13,8 +13,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/aquasecurity/tracee/tracee-rules/engine"
-	"github.com/aquasecurity/tracee/tracee-rules/metrics"
+	"github.com/aquasecurity/tracee/pkg/rules/engine"
+	"github.com/aquasecurity/tracee/pkg/rules/metrics"
 	"github.com/aquasecurity/tracee/types"
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
