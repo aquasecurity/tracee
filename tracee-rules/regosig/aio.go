@@ -2,6 +2,7 @@ package regosig
 
 import (
 	_ "embed"
+
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
 

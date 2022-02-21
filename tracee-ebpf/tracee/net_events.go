@@ -5,9 +5,10 @@ import (
 	gocontext "context"
 	"encoding/binary"
 	"fmt"
+	"time"
+
 	"github.com/aquasecurity/tracee/types/trace"
 	"inet.af/netaddr"
-	"time"
 
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/google/gopacket"

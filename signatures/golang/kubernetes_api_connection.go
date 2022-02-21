@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/aquasecurity/tracee/types/trace"
 	"strings"
+
+	"github.com/aquasecurity/tracee/types/trace"
 
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"

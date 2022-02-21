@@ -3,7 +3,6 @@ package procinfo
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/aquasecurity/tracee/types/trace"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -11,6 +10,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/aquasecurity/tracee/types/trace"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
 )

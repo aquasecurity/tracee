@@ -2,10 +2,11 @@ package sorting
 
 import (
 	"fmt"
-	"golang.org/x/net/context"
 	"sort"
 	"testing"
 	"time"
+
+	"golang.org/x/net/context"
 
 	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/stretchr/testify/assert"

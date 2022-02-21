@@ -2,12 +2,13 @@ package tracee
 
 import (
 	"fmt"
-	"github.com/aquasecurity/tracee/types/trace"
 	"io"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/aquasecurity/tracee/types/trace"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/containers"

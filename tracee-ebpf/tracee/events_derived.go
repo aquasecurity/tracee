@@ -2,6 +2,7 @@ package tracee
 
 import (
 	"fmt"
+
 	"github.com/aquasecurity/tracee/types/trace"
 )
 

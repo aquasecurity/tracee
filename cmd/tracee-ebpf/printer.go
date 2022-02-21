@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/aquasecurity/tracee/types/trace"
 	"io"
 	"strings"
 	"text/template"
 	"time"
+
+	"github.com/aquasecurity/tracee/types/trace"
 
 	"github.com/aquasecurity/tracee/tracee-ebpf/metrics"
 )

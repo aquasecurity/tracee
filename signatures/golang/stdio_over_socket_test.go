@@ -1,9 +1,10 @@
 package main
 
 import (
+	"testing"
+
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
-	"testing"
 
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/stretchr/testify/assert"

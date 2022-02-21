@@ -2,8 +2,9 @@ package helpers
 
 import (
 	"fmt"
-	"github.com/aquasecurity/tracee/types/trace"
 	"strings"
+
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // GetTraceeArgumentByName fetches the argument in event with `Name` that matches argName

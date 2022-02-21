@@ -9,7 +9,6 @@
 package tracee
 
 import (
-	"github.com/aquasecurity/tracee/types/trace"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -17,6 +16,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 const InitProcNsDir = "/proc/1/ns"

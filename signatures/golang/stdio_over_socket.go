@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/trace"
 

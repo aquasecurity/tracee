@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/aquasecurity/tracee/types/detect"
-	"github.com/aquasecurity/tracee/types/trace"
 	"strconv"
 	"strings"
+
+	"github.com/aquasecurity/tracee/types/detect"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // counter is a simple demo signature that counts towards a target
