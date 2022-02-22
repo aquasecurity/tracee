@@ -28,8 +28,9 @@ type EventMeta struct {
 }
 
 type CaptureData struct {
-	PacketLen      uint32 `json:"pkt_len"`
-	InterfaceIndex uint32 `json:"if_index"`
+	PacketLength      uint32 `json:"pkt_len"`
+	InterfaceIndex    uint32 `json:"if_index"`
+	PacketStartOffset uint32 `json:"pkt_start_off"`
 }
 
 type netInfo struct {
@@ -202,12 +203,12 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 			packetContext, networkThread, _ := t.getPcapContext(uint32(evtMeta.HostTid))
 
 			if evtMeta.NetEventId == NetPacket {
-				captureData, offset, err := parseCaptureData(payloadBytes)
+				captureData, err := parseCaptureData(payloadBytes, t.config.Debug)
 				if err != nil {
 					t.handleError(err)
 					continue
 				}
-				if err := t.writePacket(captureData, time.Unix(0, int64(evtMeta.TimeStamp)), packetContext, bytes.NewBuffer(payloadBytes[offset:])); err != nil {
+				if err := t.writePacket(captureData, time.Unix(0, int64(evtMeta.TimeStamp)), packetContext, payloadBytes)); err != nil {
 					t.handleError(err)
 					continue
 				}
@@ -289,7 +290,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 	}
 }
 
-func (t *Tracee) writePacket(capData CaptureData, timeStamp time.Time, packetContext processPcapId, dataBuff *bytes.Buffer) error {
+func (t *Tracee) writePacket(capData CaptureData, timeStamp time.Time, packetContext processPcapId, payloadBytes []byte) error {
 	idx, ok := t.netPcap.ngIfacesIndex[int(capData.InterfaceIndex)]
 	if !ok {
 		return fmt.Errorf("cannot get the right interface index")
@@ -297,8 +298,8 @@ func (t *Tracee) writePacket(capData CaptureData, timeStamp time.Time, packetCon
 
 	info := gopacket.CaptureInfo{
 		Timestamp:      timeStamp,
-		CaptureLength:  int(capData.PacketLen),
-		Length:         int(capData.PacketLen),
+		CaptureLength:  int(capData.PacketLength),
+		Length:         int(capData.PacketLength),
 		InterfaceIndex: int(idx),
 	}
 
@@ -311,7 +312,7 @@ func (t *Tracee) writePacket(capData CaptureData, timeStamp time.Time, packetCon
 	}
 
 	writer, _ := t.netPcap.GetPcapWriter(packetContext)
-	err := writer.WritePacket(info, dataBuff.Bytes()[:capData.PacketLen])
+	err := writer.WritePacket(info, payloadBytes[capData.PacketStartOffset:capData.PacketLength+capData.PacketStartOffset])
 	if err != nil {
 		return err
 	}
@@ -347,14 +348,18 @@ func netPacketProtocolHandler(buffer []byte, evtMeta EventMeta, ctx procinfo.Pro
 	return evt, nil
 }
 
-func parseCaptureData(payload []byte) (CaptureData, int, error) {
+func parseCaptureData(payload []byte, debug bool) (CaptureData, error) {
 	var capData CaptureData
 	if len(payload) < 8 {
-		return capData, 0, fmt.Errorf("payload too short")
+		return capData, fmt.Errorf("payload too short")
 	}
-	capData.PacketLen = binary.LittleEndian.Uint32(payload[0:4])
+	capData.PacketLength = binary.LittleEndian.Uint32(payload[0:4])
 	capData.InterfaceIndex = binary.LittleEndian.Uint32(payload[4:8])
-	return capData, 8, nil
+	capData.PacketStartOffset = 8
+	if debug {
+		capData.PacketStartOffset = 48
+	}
+	return capData, nil
 }
 
 // parsing the PacketMeta struct from bytes.buffer
