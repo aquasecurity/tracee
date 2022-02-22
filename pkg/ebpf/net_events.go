@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
+	"inet.af/netaddr"
 	"math"
 	"os"
 	"path"
@@ -177,7 +178,7 @@ func (t *Tracee) getPcapContext(hostTid uint32, comm string) (processPcapId, pro
 	return packetContext, networkThread, nil
 }
 
-func (t *Tracee) processNetEvents() {
+func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 	// Todo: add stats for network packets (in epilog)
 	for {
 		select {
