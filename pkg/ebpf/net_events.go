@@ -202,12 +202,12 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 			packetContext, networkThread, _ := t.getPcapContext(uint32(evtMeta.HostTid))
 
 			if evtMeta.NetEventId == NetPacket {
-				captureData, err := parseCaptureData(payloadBytes)
+				captureData, offset, err := parseCaptureData(payloadBytes)
 				if err != nil {
 					t.handleError(err)
 					continue
 				}
-				if err := t.writePacket(captureData, time.Unix(int64(evtMeta.TimeStamp), 0), packetContext, bytes.NewBuffer(payloadBytes)); err != nil {
+				if err := t.writePacket(captureData, time.Unix(0, int64(evtMeta.TimeStamp)), packetContext, bytes.NewBuffer(payloadBytes[offset:])); err != nil {
 					t.handleError(err)
 					continue
 				}
@@ -347,14 +347,14 @@ func netPacketProtocolHandler(buffer []byte, evtMeta EventMeta, ctx procinfo.Pro
 	return evt, nil
 }
 
-func parseCaptureData(payload []byte) (CaptureData, error) {
+func parseCaptureData(payload []byte) (CaptureData, int, error) {
 	var capData CaptureData
 	if len(payload) < 8 {
-		return capData, fmt.Errorf("payload too short")
+		return capData, 0, fmt.Errorf("payload too short")
 	}
 	capData.PacketLen = binary.LittleEndian.Uint32(payload[0:4])
 	capData.InterfaceIndex = binary.LittleEndian.Uint32(payload[4:8])
-	return capData, nil
+	return capData, 8, nil
 }
 
 // parsing the PacketMeta struct from bytes.buffer
