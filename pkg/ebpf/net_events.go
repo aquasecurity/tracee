@@ -5,27 +5,19 @@ import (
 	gocontext "context"
 	"encoding/binary"
 	"fmt"
+	"github.com/aquasecurity/tracee/pkg/procinfo"
+	"inet.af/netaddr"
 	"math"
 	"os"
 	"path"
 	"sync"
 	"time"
 
-	"inet.af/netaddr"
-
-	"github.com/aquasecurity/tracee/pkg/procinfo"
-	"github.com/aquasecurity/tracee/types/trace"
+	"github.com/aquasecurity/tracee/pkg/netproto"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
 )
-
-type EventMeta struct {
-	TimeStamp   uint64 `json:"timeStamp"`
-	NetEventId  uint32 `json:"netEventId"`
-	HostTid     int    `json:"hostTid"`
-	ProcessName string `json:"processName"`
-}
 
 type CaptureData struct {
 	PacketLen      uint32 `json:"pkt_len"`
@@ -212,7 +204,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 					continue
 				}
 				if t.config.Debug {
-					evt, err := netPacketProtocolHandler(payloadBytes, evtMeta, networkThread, "net_packet")
+					evt, err := netproto.NetPacketProtocolHandler(payloadBytes, evtMeta, networkThread, "net_packet")
 					if err == nil {
 						select {
 						case t.config.ChanEvents <- evt:
@@ -325,26 +317,14 @@ func (t *Tracee) writePacket(capData CaptureData, timeStamp time.Time, packetCon
 }
 
 // parsing the EventMeta struct from byte array and returns a slice of the rest payload
-func parseEventMetaData(payloadBytes []byte) (EventMeta, []byte) {
-	var eventMetaData EventMeta
+func parseEventMetaData(payloadBytes []byte) (netproto.EventMeta, []byte) {
+	var eventMetaData netproto.EventMeta
 	eventMetaData.TimeStamp = binary.LittleEndian.Uint64(payloadBytes[0:8])
 	eventMetaData.NetEventId = binary.LittleEndian.Uint32(payloadBytes[8:12])
 	eventMetaData.HostTid = int(binary.LittleEndian.Uint32(payloadBytes[12:16]))
 	eventMetaData.ProcessName = string(bytes.TrimRight(payloadBytes[16:32], "\x00"))
 	return eventMetaData, payloadBytes[32:]
 
-}
-
-// netPacketProtocolHandler parse a given a packet bytes buffer to packetMeta and event
-func netPacketProtocolHandler(buffer []byte, evtMeta EventMeta, ctx procinfo.ProcessCtx, eventName string) (trace.Event, error) {
-	var evt trace.Event
-	packet, err := ParseNetPacketMetaData(buffer)
-	if err != nil {
-		return evt, err
-	}
-	evt = CreateNetEvent(evtMeta, ctx, eventName, int(evtMeta.TimeStamp))
-	appendPktMetaArg(&evt, packet)
-	return evt, nil
 }
 
 func parseCaptureData(payload []byte) (CaptureData, error) {
@@ -355,46 +335,4 @@ func parseCaptureData(payload []byte) (CaptureData, error) {
 	capData.PacketLen = binary.LittleEndian.Uint32(payload[0:4])
 	capData.InterfaceIndex = binary.LittleEndian.Uint32(payload[4:8])
 	return capData, nil
-}
-
-// parsing the PacketMeta struct from bytes.buffer
-func ParseNetPacketMetaData(payload []byte) (trace.PktMeta, error) {
-	var pktMetaData trace.PktMeta
-	if len(payload) < 45 {
-		return pktMetaData, fmt.Errorf("Payload size too short\n")
-	}
-	ip := [16]byte{0}
-	copy(ip[:], payload[8:24])
-	pktMetaData.SrcIP = netaddr.IPFrom16(ip).String()
-	copy(ip[:], payload[24:40])
-	pktMetaData.DstIP = netaddr.IPFrom16(ip).String()
-	pktMetaData.SrcPort = binary.LittleEndian.Uint16(payload[40:42])
-	pktMetaData.DstPort = binary.LittleEndian.Uint16(payload[42:44])
-	pktMetaData.Protocol = payload[44]
-	return pktMetaData, nil
-}
-
-func CreateNetEvent(eventMeta EventMeta, ctx procinfo.ProcessCtx, eventName string, ts int) trace.Event {
-	evt := ctx.GetEventByProcessCtx()
-	evt.Timestamp = int(eventMeta.TimeStamp)
-	evt.ProcessName = eventMeta.ProcessName
-	evt.EventID = int(eventMeta.NetEventId)
-	evt.EventName = eventName
-	evt.Timestamp = ts
-	return evt
-}
-
-//takes the packet metadata and create argument array with that data
-func appendPktMetaArg(event *trace.Event, NetPacket trace.PktMeta) {
-	event.Args = []trace.Argument{trace.Argument{
-		ArgMeta: trace.ArgMeta{"metadata", "trace.PktMeta"},
-		Value: trace.PktMeta{
-			SrcIP:    NetPacket.SrcIP,
-			DstIP:    NetPacket.DstIP,
-			SrcPort:  NetPacket.SrcPort,
-			DstPort:  NetPacket.DstPort,
-			Protocol: NetPacket.Protocol,
-		},
-	}}
-	event.ArgsNum = 1
 }
