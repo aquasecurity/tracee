@@ -572,7 +572,8 @@ test-tracee-rules: \
 		-v \
 		./cmd/tracee-rules/... \
 		./pkg/rules/...
-
+	cd ./types; $(CMD_GO) test -v ./...
+	cd ..
 #
 # rules
 #
