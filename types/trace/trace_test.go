@@ -6,6 +6,9 @@ import (
 	"math"
 	"reflect"
 	"testing"
+
+	"github.com/aquasecurity/tracee/types/protocol"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEventUnmarshalJSON(t *testing.T) {
@@ -109,5 +112,108 @@ func TestArgumentUnmarshalJSON(t *testing.T) {
 		if !reflect.DeepEqual(tc.expect, res) {
 			t.Errorf("want %v (Value type %T), have %v (Value type %T)", tc.expect, tc.expect.Value, res, res.Value)
 		}
+	}
+}
+
+func TestEventOrigin(t *testing.T) {
+	type testCase struct {
+		event    Event
+		expected EventOrigin
+	}
+	testCases := []testCase{
+		{
+			event: Event{
+				EventName:     "execve",
+				HostProcessID: 123,
+				ProcessID:     123,
+			},
+			expected: HostOrigin,
+		},
+		{
+			event: Event{
+				EventName:     "execve",
+				HostProcessID: 321,
+				ProcessID:     123,
+			},
+			expected: ContainerOrigin,
+		},
+		{
+			event: Event{
+				EventName:   "execve",
+				ContainerID: "ab123",
+			},
+			expected: ContainerOrigin,
+		},
+	}
+
+	for _, tc := range testCases {
+		assert.Equal(t, tc.expected, tc.event.Origin())
+	}
+
+}
+
+func TestToProtocol(t *testing.T) {
+	type testCase struct {
+		payload  Event
+		expected protocol.Event
+	}
+
+	testCases := []testCase{
+		{
+			payload: Event{
+				EventName:     "execve",
+				HostProcessID: 123,
+				ProcessID:     123,
+			},
+			expected: protocol.Event{
+				Headers: protocol.EventHeaders{
+					ContentType: "tracee/event-execve",
+					Origin:      "tracee/host",
+				},
+				Payload: Event{
+					EventName:     "execve",
+					HostProcessID: 123,
+					ProcessID:     123,
+				},
+			},
+		},
+		{
+			payload: Event{
+				EventName:     "execve",
+				HostProcessID: 123,
+				ProcessID:     321,
+			},
+			expected: protocol.Event{
+				Headers: protocol.EventHeaders{
+					ContentType: "tracee/event-execve",
+					Origin:      "tracee/container",
+				},
+				Payload: Event{
+					EventName:     "execve",
+					HostProcessID: 123,
+					ProcessID:     321,
+				},
+			},
+		},
+		{
+			payload: Event{
+				EventName:   "open",
+				ContainerID: "abc123",
+			},
+			expected: protocol.Event{
+				Headers: protocol.EventHeaders{
+					ContentType: "tracee/event-open",
+					Origin:      "tracee/container",
+				},
+				Payload: Event{
+					EventName:   "open",
+					ContainerID: "abc123",
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		assert.Equal(t, tc.expected, tc.payload.ToProtocol())
 	}
 }
