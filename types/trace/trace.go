@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+
+	"github.com/aquasecurity/tracee/types/protocol"
 )
 
-// TraceeEvent is a user facing data structure representing a single event
-type TraceeEvent struct {
+// Event is a single result of an ebpf event process. It is used as a payload later delivered to tracee-rules.
+type Event struct {
 	Timestamp           int        `json:"timestamp"`
 	ProcessorID         int        `json:"processorId"`
 	ProcessID           int        `json:"processId"`
@@ -31,84 +33,37 @@ type TraceeEvent struct {
 	Args                []Argument `json:"args"` //Arguments are ordered according their appearance in the original event
 }
 
-type Stats struct {
-	EventCount  int
-	ErrorCount  int
-	LostEvCount int
-	LostWrCount int
-	LostNtCount int
+type EventOrigin string
+
+const (
+	ContainerOrigin EventOrigin = "container"
+	HostOrigin      EventOrigin = "host"
+)
+
+func (e Event) Origin() EventOrigin {
+	if e.ContainerID != "" || e.ProcessID != e.HostProcessID {
+		return ContainerOrigin
+	} else {
+		return HostOrigin
+	}
 }
 
-// ToUnstructured returns a JSON compatible map with string, float, int, bool,
-// []interface{}, or map[string]interface{} children.
-//
-// It allows this TraceeEvent to be manipulated generically. For example, it can be
-// used as a parsed input with OPA SDK to avoid relatively expensive JSON
-// encoding round trip.
-func (e TraceeEvent) ToUnstructured() (map[string]interface{}, error) {
-	var argsRef interface{}
+const (
+	EventSource      = "tracee"
+	EventContentType = "tracee/event"
+)
 
-	if e.Args != nil {
-		args := make([]interface{}, len(e.Args))
-		for i, arg := range e.Args {
-			value, err := jsonRoundTripArgumentValue(arg.Value)
-			if err != nil {
-				return nil, fmt.Errorf("marshalling arg %s with value %v: %w", arg.Name, arg.Value, err)
-			}
-			args[i] = map[string]interface{}{
-				"name":  arg.Name,
-				"type":  arg.Type,
-				"value": value,
-			}
-		}
-		argsRef = args
+func (e Event) ToProtocol() protocol.Event {
+	origin := EventSource + "/" + string(e.Origin())
+	contentType := EventContentType + "-" + e.EventName
+
+	return protocol.Event{
+		Headers: protocol.EventHeaders{
+			ContentType: contentType,
+			Origin:      origin,
+		},
+		Payload: e,
 	}
-
-	var stackAddressesRef interface{}
-	if e.StackAddresses != nil {
-		// stackAddresses can be ignored in the context of tracee-rules
-		stackAddressesRef = make([]interface{}, len(e.StackAddresses))
-	}
-
-	return map[string]interface{}{
-		"timestamp":           json.Number(strconv.Itoa(e.Timestamp)),
-		"processorId":         json.Number(strconv.Itoa(e.ProcessorID)),
-		"processId":           json.Number(strconv.Itoa(e.ProcessID)),
-		"threadId":            json.Number(strconv.Itoa(e.ThreadID)),
-		"parentProcessId":     json.Number(strconv.Itoa(e.ParentProcessID)),
-		"hostProcessId":       json.Number(strconv.Itoa(e.HostProcessID)),
-		"hostThreadId":        json.Number(strconv.Itoa(e.HostThreadID)),
-		"hostParentProcessId": json.Number(strconv.Itoa(e.HostParentProcessID)),
-		"userId":              json.Number(strconv.Itoa(e.UserID)),
-		"mountNamespace":      json.Number(strconv.Itoa(e.MountNS)),
-		"pidNamespace":        json.Number(strconv.Itoa(e.PIDNS)),
-		"processName":         e.ProcessName,
-		"hostName":            e.HostName,
-		"containerId":         e.ContainerID,
-		"eventId":             strconv.Itoa(e.EventID),
-		"eventName":           e.EventName,
-		"argsNum":             json.Number(strconv.Itoa(e.ArgsNum)),
-		"returnValue":         json.Number(strconv.Itoa(e.ReturnValue)),
-		"args":                argsRef,
-		"stackAddresses":      stackAddressesRef,
-	}, nil
-}
-
-func jsonRoundTripArgumentValue(v interface{}) (interface{}, error) {
-	m, err := json.Marshal(v)
-	if err != nil {
-		return nil, err
-	}
-	buf := bytes.NewBuffer(m)
-
-	var u interface{}
-	d := json.NewDecoder(buf)
-	d.UseNumber()
-	err = d.Decode(&u)
-	if err != nil {
-		return nil, err
-	}
-	return u, nil
 }
 
 // Argument holds the information for one argument
