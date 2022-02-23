@@ -24,6 +24,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/bucketscache"
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/ebpf/initialization"
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
 	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/pkg/metrics"
@@ -549,12 +550,6 @@ func (t *Tracee) getFiltersConfig() uint32 {
 	return cFilterVal
 }
 
-// Custom KernelConfigOption's to extend kernel_config helper support
-// Add here all kconfig variables used within tracee.bpf.c
-const (
-	CONFIG_ARCH_HAS_SYSCALL_WRAPPER helpers.KernelConfigOption = iota + helpers.CUSTOM_OPTION_START
-)
-
 // an enum that specifies the index of a function to be used in a bpf tail call
 // tail function indexes should match defined values in ebpf code
 const (
@@ -602,27 +597,18 @@ func (t *Tracee) populateBPFMaps() error {
 		return err
 	}
 
-	// add here all kconfig variables used within tracee.bpf.c
-	var value helpers.KernelConfigOptionValue
-	key := CONFIG_ARCH_HAS_SYSCALL_WRAPPER
-	keyString := "CONFIG_ARCH_HAS_SYSCALL_WRAPPER"
-	if err = t.config.KernelConfig.AddCustomKernelConfig(key, keyString); err != nil {
-		return err
-	}
-
-	// re-load kconfig and get just added kconfig option values
-	if err = t.config.KernelConfig.LoadKernelConfig(); err != nil { // invalid kconfig file: assume values then
-		if t.config.Debug {
-			fmt.Fprintf(os.Stderr, "KConfig: warning: assuming kconfig values, might have unexpected behavior\n")
-		}
-		value = helpers.BUILTIN // assume CONFIG_ARCH_HAS_SYSCALL_WRAPPER is a BUILTIN option
-	} else {
-		value = t.config.KernelConfig.GetValue(key) // undefined, builtin OR module
-	}
-
-	err = bpfKConfigMap.Update(unsafe.Pointer(&key), unsafe.Pointer(&value))
+	kconfigValues, err := initialization.LoadKconfigValues(t.config.KernelConfig, t.config.Debug)
 	if err != nil {
 		return err
+	}
+
+	for key, value := range kconfigValues {
+		keyU32 := uint32(key)
+		valueU32 := uint32(value)
+		err = bpfKConfigMap.Update(unsafe.Pointer(&keyU32), unsafe.Pointer(&valueU32))
+		if err != nil {
+			return err
+		}
 	}
 
 	// Initialize config and pids maps

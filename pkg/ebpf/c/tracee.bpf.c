@@ -288,7 +288,17 @@ Copyright (C) Aqua Security inc.
 #define get_kconfig(x) CONFIG_##x
 #endif
 
+#ifdef CORE
+
 #define ARCH_HAS_SYSCALL_WRAPPER        1000U
+
+#else
+
+#ifndef CONFIG_ARCH_HAS_SYSCALL_WRAPPER
+#define CONFIG_ARCH_HAS_SYSCALL_WRAPPER 0
+#endif
+
+#endif // CORE
 
 /*================================ eBPF MAPS =================================*/
 
