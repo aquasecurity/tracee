@@ -79,6 +79,11 @@ type netProbe struct {
 	egressHook  *bpf.TcHook
 }
 
+// RequiredInitValues determines if to initialize values that might be needed by eBPF programs
+type RequiredInitValues struct {
+	kallsyms bool
+}
+
 // Validate does static validation of the configuration
 func (tc Config) Validate() error {
 	if tc.Filter == nil || tc.Filter.EventsToTrace == nil {
@@ -202,13 +207,16 @@ func setEssential(id int32) {
 	EventsDefinitions[id] = event
 }
 
-func handleEventsDependencies(e int32) {
+func handleEventsDependencies(e int32, initReq *RequiredInitValues) {
 	eDependencies := EventsDefinitions[e].Dependencies
+	if len(eDependencies.ksymbols) > 0 {
+		initReq.kallsyms = true
+	}
 	// Some events depend on other events - mark those essential
 	for _, dependentEvent := range eDependencies.events {
 		if !isEssential(dependentEvent.eventID) {
 			setEssential(dependentEvent.eventID)
-			handleEventsDependencies(dependentEvent.eventID)
+			handleEventsDependencies(dependentEvent.eventID, initReq)
 		}
 	}
 }
@@ -272,10 +280,11 @@ func New(cfg Config) (*Tracee, error) {
 		t.eventsToTrace[e] = true
 	}
 
+	initReq := RequiredInitValues{}
 	// Handles all essential events dependencies
 	for id, event := range EventsDefinitions {
 		if event.EssentialEvent || t.eventsToTrace[id] {
-			handleEventsDependencies(id)
+			handleEventsDependencies(id, &initReq)
 		}
 	}
 
@@ -302,13 +311,15 @@ func New(cfg Config) (*Tracee, error) {
 	}
 	t.containers = c
 
-	t.kernelSymbols, err = helpers.NewKernelSymbolsMap()
-	if err != nil {
-		t.Close()
-		return nil, fmt.Errorf("error creating symbols map: %v", err)
-	}
-	if !initialization.ValidateKsymbolsTable(t.kernelSymbols) {
-		return nil, fmt.Errorf("kernel symbols were not loaded currectly. Make sure tracee-ebpf has the CAP_SYSLOG capability")
+	if initReq.kallsyms {
+		t.kernelSymbols, err = helpers.NewKernelSymbolsMap()
+		if err != nil {
+			t.Close()
+			return nil, fmt.Errorf("error creating symbols map: %v", err)
+		}
+		if !initialization.ValidateKsymbolsTable(t.kernelSymbols) {
+			return nil, fmt.Errorf("kernel symbols were not loaded currectly. Make sure tracee-ebpf has the CAP_SYSLOG capability")
+		}
 	}
 
 	t.netInfo.ifaces = make(map[int]*net.Interface)
