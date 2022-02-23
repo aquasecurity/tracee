@@ -185,6 +185,7 @@ type Tracee struct {
 	procInfo          *procinfo.ProcInfo
 	eventsSorter      *sorting.EventsChronologicalSorter
 	eventDerivations  map[int32]map[int32]deriveFn
+	kernelSymbols     *helpers.KernelSymbolTable
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -300,6 +301,15 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error initializing containers: %w", err)
 	}
 	t.containers = c
+
+	t.kernelSymbols, err = helpers.NewKernelSymbolsMap()
+	if err != nil {
+		t.Close()
+		return nil, fmt.Errorf("error creating symbols map: %v", err)
+	}
+	if !initialization.ValidateKsymbolsTable(t.kernelSymbols) {
+		return nil, fmt.Errorf("kernel symbols were not loaded currectly. Make sure tracee-ebpf has the CAP_SYSLOG capability")
+	}
 
 	t.netInfo.ifaces = make(map[int]*net.Interface)
 	t.netInfo.ifacesConfig = make(map[string]int32)
