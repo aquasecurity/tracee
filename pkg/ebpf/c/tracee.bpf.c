@@ -187,9 +187,10 @@ Copyright (C) Aqua Security inc.
 #define SECURITY_KERNEL_READ_FILE       1028
 #define SECURITY_INODE_MKNOD            1029
 #define SECURITY_POST_READ_FILE         1030
-#define SOCKET_DUP                      1031
-#define HIDDEN_INODES                   1032
-#define MAX_EVENT_ID                    1033
+#define SECURITY_INODE_SYMLINK          1031
+#define SOCKET_DUP                      1032
+#define HIDDEN_INODES                   1033
+#define MAX_EVENT_ID                    1034
 
 #define NET_PACKET                      0
 #define DEBUG_NET_SECURITY_BIND         1
@@ -3033,6 +3034,28 @@ int BPF_KPROBE(trace_security_socket_create)
     save_to_submit_buf(&data, (void *)&kern, sizeof(int), 3);
 
     return events_perf_submit(&data, SECURITY_SOCKET_CREATE, 0);
+}
+
+SEC("kprobe/security_inode_symlink")
+int BPF_KPROBE(trace_security_inode_symlink)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data.context))
+        return 0;
+
+    //struct inode *dir = (struct inode *)PT_REGS_PARM1(ctx);
+    struct dentry *dentry = (struct dentry *)PT_REGS_PARM2(ctx);
+    const char *old_name = (const char *)PT_REGS_PARM3(ctx);
+
+    void *dentry_path = get_dentry_path_str(dentry);
+
+    save_str_to_buf(&data, dentry_path, 0);
+    save_str_to_buf(&data, (void *)old_name, 1);
+
+    return events_perf_submit(&data, SECURITY_INODE_SYMLINK, 0);
 }
 
 SEC("kprobe/security_socket_listen")
