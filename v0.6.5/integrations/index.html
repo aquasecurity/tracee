@@ -974,7 +974,7 @@
   -v /lib/modules/:/lib/modules/:ro <span class="se">\</span>
   -v /usr/src:/usr/src:ro <span class="se">\</span>
   -v /tmp/tracee:/tmp/tracee <span class="se">\</span>
-  aquasec/tracee:racee <span class="se">\</span>
+  aquasec/tracee:0.6.5 <span class="se">\</span>
   --output-template /tracee/templates/rawjson.tmpl
 </code></pre></div>
 <h3 id="falcosidekick-webhook">falcosidekick webhook<a class="headerlink" href="#falcosidekick-webhook" title="Permanent link">&para;</a></h3>
@@ -1006,7 +1006,7 @@ docker run --name tracee --rm -it --privileged --pid<span class="o">=</span>host
   -v /lib/modules/:/lib/modules/:ro <span class="se">\</span>
   -v /usr/src:/usr/src:ro <span class="se">\</span>
   -v /tmp/tracee:/tmp/tracee <span class="se">\</span>
-  --link falcosidekick aquasec/tracee:racee <span class="se">\</span>
+  --link falcosidekick aquasec/tracee:0.6.5 <span class="se">\</span>
   --webhook-template /tracee/templates/falcosidekick.tmpl <span class="se">\</span>
   --webhook-content-type application/json <span class="se">\</span>
   --webhook http://FALCOSIDEKICK:2801
