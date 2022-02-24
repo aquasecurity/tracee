@@ -16,18 +16,18 @@ import (
 )
 
 type ProcessCtx struct {
-	StartTime     int // start time of the thread
-	ProcStartTime int // start time of the process
-	ContainerID   string
-	Pid           uint32
-	Tid           uint32
-	Ppid          uint32
-	HostTid       uint32
-	HostPid       uint32
-	HostPpid      uint32
-	Uid           uint32
-	MntId         uint32
-	PidId         uint32
+	StartTime   int // start time of the thread
+	ContainerID string
+	Pid         uint32
+	Tid         uint32
+	Ppid        uint32
+	HostTid     uint32
+	HostPid     uint32
+	HostPpid    uint32
+	Uid         uint32
+	MntId       uint32
+	PidId       uint32
+	Comm        string
 }
 
 type ProcInfo struct {
@@ -107,12 +107,17 @@ func getFileCtime(path string) (int, error) {
 
 //parse the status file of a process or given task and returns process context struct
 func parseProcStatus(status []byte, taskStatusPath string) (ProcessCtx, error) {
+	var processName string
 	processVals := make(map[string]uint32)
 	for _, line := range strings.Split(string(status), "\n") {
 		lineFields := strings.Split(line, ":")
 		if len(lineFields) > 1 {
 			valFields := strings.Fields(lineFields[1])
 			if len(valFields) > 0 {
+				if lineFields[0] == "Name" {
+					processName = valFields[0]
+					continue
+				}
 				val, err := strconv.ParseUint(strings.TrimSpace(valFields[0]), 10, 32)
 				if err != nil {
 					continue
@@ -140,6 +145,7 @@ func parseProcStatus(status []byte, taskStatusPath string) (ProcessCtx, error) {
 	if err != nil {
 		return process, err
 	}
+	process.Comm = processName
 	return process, nil
 }
 
@@ -191,12 +197,6 @@ func NewProcessInfo() (*ProcInfo, error) {
 			continue
 		}
 
-		processStatusFile := fmt.Sprintf("/proc/%d/status", pid)
-		processStartTime, err := getFileCtime(processStatusFile)
-		if err != nil {
-			continue
-		}
-
 		taskDir, err := os.Open(fmt.Sprintf("/proc/%d/task", pid))
 		if err != nil {
 			continue
@@ -222,7 +222,6 @@ func NewProcessInfo() (*ProcInfo, error) {
 				continue
 			}
 			processStatus.ContainerID = containerId
-			processStatus.ProcStartTime = processStartTime
 			p.UpdateElement(int(processStatus.HostTid), processStatus)
 		}
 	}

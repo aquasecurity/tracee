@@ -404,7 +404,7 @@ typedef struct event_context {
 } context_t;
 
 typedef struct process_context {
-    u64 ts;                        // Timestamp
+    u64 start_time;                // Timestamp
     u64 cgroup_id;
     u32 pid;                       // PID as in the userspace term
     u32 tid;                       // TID as in the userspace term
@@ -415,6 +415,7 @@ typedef struct process_context {
     u32 uid;
     u32 mnt_id;
     u32 pid_id;
+    char comm[TASK_COMM_LEN];
 } process_context_t;
 
 typedef struct args {
@@ -769,6 +770,11 @@ static __always_inline u32 get_task_ppid(struct task_struct *task)
 {
     struct task_struct *parent = READ_KERN(task->real_parent);
     return READ_KERN(parent->tgid);
+}
+
+static __always_inline u64 get_task_start_time(struct task_struct *task)
+{
+    return READ_KERN(task->start_time);
 }
 
 static __always_inline u32 get_task_host_pid(struct task_struct *task)
@@ -2413,6 +2419,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     __builtin_memcpy(&process, &data.context, sizeof(process_context_t));
     process.tid = get_task_ns_pid(child);
     process.host_tid = get_task_host_pid(child);
+    process.start_time = get_task_start_time(child);
     bpf_map_update_elem(&process_context_map, &process.host_tid, &process, BPF_ANY);
 
     int parent_pid = get_task_host_pid(parent);
@@ -2453,6 +2460,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     save_to_submit_buf(&data, (void*)&child_ns_pid, sizeof(int), 5);
     save_to_submit_buf(&data, (void*)&child_tgid, sizeof(int), 6);
     save_to_submit_buf(&data, (void*)&child_ns_tgid, sizeof(int), 7);
+    save_to_submit_buf(&data, (void*)&process.start_time, sizeof(u64), 8);
 
     events_perf_submit(&data, SCHED_PROCESS_FORK, 0);
 
@@ -2467,8 +2475,6 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
-
-    process_context_t *process = (process_context_t*) &data.context;
 
     // Perform the following checks before should_trace() so we can filter by
     // newly created containers/processes.  We assume that a new container/pod
@@ -2492,7 +2498,12 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 
     // We passed all filters (in should_trace()) - add this pid to traced pids set
     bpf_map_update_elem(&traced_pids_map, &data.context.host_tid, &data.context.host_tid, BPF_ANY);
-    bpf_map_update_elem(&process_context_map, &data.context.host_tid, process, BPF_ANY);
+
+    process_context_t *process = bpf_map_lookup_elem(&process_context_map, &data.context.host_tid);
+    if (process != NULL) {
+        __builtin_memcpy(process->comm, data.context.comm, TASK_COMM_LEN);
+        bpf_map_update_elem(&process_context_map, &data.context.host_tid, process, BPF_ANY);
+    }
 
     struct task_struct *task = (struct task_struct *)ctx->args[0];
     struct linux_binprm *bprm = (struct linux_binprm *)ctx->args[2];

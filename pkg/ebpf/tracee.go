@@ -943,22 +943,6 @@ func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 	return nil
 }
 
-func (t *Tracee) FillProcessStartTime(ctx *procinfo.ProcessCtx) error {
-
-	// default value for process start time
-	ctx.ProcStartTime = ctx.StartTime
-
-	if ctx.HostTid != ctx.HostPid {
-		process, err := t.getProcessCtx(ctx.HostPid)
-		if err != nil {
-			return err
-		}
-		ctx.ProcStartTime = process.StartTime
-	}
-
-	return nil
-}
-
 func (t *Tracee) getProcessCtx(hostTid uint32) (procinfo.ProcessCtx, error) {
 	processCtx, err := t.procInfo.GetElement(int(hostTid))
 	if err == nil {
@@ -973,10 +957,6 @@ func (t *Tracee) getProcessCtx(hostTid uint32) (procinfo.ProcessCtx, error) {
 			return processCtx, err
 		}
 		processCtx, err = procinfo.ParseProcessContext(processCtxBpfMap, t.containers)
-		err = t.FillProcessStartTime(&processCtx)
-		if err != nil {
-			return processCtx, err
-		}
 		t.procInfo.UpdateElement(int(hostTid), processCtx)
 		return processCtx, err
 	}

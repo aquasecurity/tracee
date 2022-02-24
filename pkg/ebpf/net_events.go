@@ -152,9 +152,13 @@ func (t *Tracee) netExit(pcapContext processPcapId) {
 	t.netPcap.DeletePcapWriter(pcapContext)
 }
 
-func (t *Tracee) getPcapContext(hostTid uint32, comm string) (processPcapId, procinfo.ProcessCtx, error) {
+func (t *Tracee) getPcapContext(hostTid uint32) (processPcapId, procinfo.ProcessCtx, error) {
 
 	networkThread, err := t.getProcessCtx(hostTid)
+	if err != nil {
+		return processPcapId{}, procinfo.ProcessCtx{}, err
+	}
+	networkProcess, err := t.getProcessCtx(networkThread.HostPid)
 	if err != nil {
 		return processPcapId{}, procinfo.ProcessCtx{}, err
 	}
@@ -168,7 +172,7 @@ func (t *Tracee) getPcapContext(hostTid uint32, comm string) (processPcapId, pro
 
 	var packetContext processPcapId
 	if t.config.Capture.NetPerProcess {
-		packetContext = processPcapId{hostPid: networkThread.HostPid, comm: comm, procStartTime: uint64(networkThread.ProcStartTime), contID: contID}
+		packetContext = processPcapId{hostPid: networkProcess.HostPid, comm: networkProcess.Comm, procStartTime: uint64(networkProcess.StartTime), contID: contID}
 	} else if t.config.Capture.NetPerContainer {
 		packetContext = processPcapId{contID: contID}
 	} else {
@@ -201,7 +205,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 				evtMeta.TimeStamp += t.bootTime
 			}
 
-			packetContext, networkThread, err := t.getPcapContext(uint32(evtMeta.HostTid), evtMeta.ProcessName)
+			packetContext, networkThread, err := t.getPcapContext(uint32(evtMeta.HostTid))
 			if err != nil {
 				t.handleError(err)
 				continue

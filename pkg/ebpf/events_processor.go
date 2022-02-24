@@ -140,25 +140,13 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 
 	case SchedProcessExecEventID:
-		//update the process tree
-		processData := procinfo.ProcessCtx{
-			StartTime:     event.Timestamp,
-			ProcStartTime: event.Timestamp,
-			ContainerID:   event.ContainerID,
-			Pid:           uint32(event.ProcessID),
-			Tid:           uint32(event.ThreadID),
-			Ppid:          uint32(event.ParentProcessID),
-			HostTid:       uint32(event.HostThreadID),
-			HostPid:       uint32(event.HostProcessID),
-			HostPpid:      uint32(event.HostParentProcessID),
-			Uid:           uint32(event.UserID),
-			MntId:         uint32(event.MountNS),
-			PidId:         uint32(event.PIDNS)}
-		err := t.FillProcessStartTime(&processData)
-		if err != nil {
-			t.handleError(err)
+		//update the process tree with correct comm name
+		processData, err := t.procInfo.GetElement(event.HostThreadID)
+		if err == nil {
+			processData.Comm = event.ProcessName
+			t.procInfo.UpdateElement(event.HostThreadID, processData)
 		}
-		t.procInfo.UpdateElement(event.HostThreadID, processData)
+
 		//cache this pid by it's mnt ns
 		if event.ProcessID == 1 {
 			t.pidsInMntns.ForceAddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
@@ -250,7 +238,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 	case SchedProcessExitEventID:
 		if t.config.Capture.NetPerProcess {
-			pcapContext, _, err := t.getPcapContext(uint32(event.HostThreadID), event.ProcessName)
+			pcapContext, _, err := t.getPcapContext(uint32(event.HostThreadID))
 			if err == nil {
 				go t.netExit(pcapContext)
 			}
@@ -282,22 +270,23 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		if err != nil {
 			return err
 		}
-		processData := procinfo.ProcessCtx{
-			StartTime:     event.Timestamp,
-			ProcStartTime: event.Timestamp,
-			ContainerID:   event.ContainerID,
-			Pid:           uint32(pid),
-			Tid:           uint32(tid),
-			Ppid:          uint32(ppid),
-			HostTid:       uint32(hostTid),
-			HostPid:       uint32(hostPid),
-			HostPpid:      uint32(hostPpid),
-			Uid:           uint32(event.UserID),
-			MntId:         uint32(event.MountNS),
-			PidId:         uint32(event.PIDNS)}
-		err = t.FillProcessStartTime(&processData)
+		startTime, err := getEventArgUint64Val(event, "start_time")
 		if err != nil {
-			t.handleError(err)
+			return err
+		}
+		processData := procinfo.ProcessCtx{
+			StartTime:   int(startTime),
+			ContainerID: event.ContainerID,
+			Pid:         uint32(pid),
+			Tid:         uint32(tid),
+			Ppid:        uint32(ppid),
+			HostTid:     uint32(hostTid),
+			HostPid:     uint32(hostPid),
+			HostPpid:    uint32(hostPpid),
+			Uid:         uint32(event.UserID),
+			MntId:       uint32(event.MountNS),
+			PidId:       uint32(event.PIDNS),
+			Comm:        event.ProcessName,
 		}
 		t.procInfo.UpdateElement(int(hostTid), processData)
 	case CgroupMkdirEventID:
@@ -323,7 +312,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 
 	case CgroupRmdirEventID:
 		if t.config.Capture.NetPerContainer {
-			pcapContext, _, err := t.getPcapContext(uint32(event.HostThreadID), event.ProcessName)
+			pcapContext, _, err := t.getPcapContext(uint32(event.HostThreadID))
 			if err == nil {
 				go t.netExit(pcapContext)
 			}
