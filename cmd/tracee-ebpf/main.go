@@ -57,21 +57,23 @@ func main() {
 				Debug:              c.Bool("debug"),
 			}
 
-			if checkCommandIsHelp(c.StringSlice("capture")) {
+			captureSlice := c.StringSlice("capture")
+			if checkCommandIsHelp(captureSlice) {
 				fmt.Print(flags.CaptureHelp())
 				return nil
 			}
-			capture, err := flags.PrepareCapture(c.StringSlice("capture"))
+			capture, err := flags.PrepareCapture(captureSlice)
 			if err != nil {
 				return err
 			}
 			cfg.Capture = &capture
 
-			if checkCommandIsHelp(c.StringSlice("trace")) {
+			traceSlice := c.StringSlice("trace")
+			if checkCommandIsHelp(traceSlice) {
 				fmt.Print(flags.FilterHelp())
 				return nil
 			}
-			filter, err := flags.PrepareFilter(c.StringSlice("trace"))
+			filter, err := flags.PrepareFilter(traceSlice)
 			if err != nil {
 				return err
 			}
@@ -81,11 +83,12 @@ func main() {
 				(cfg.Filter.NewContFilter.Enabled && cfg.Filter.NewContFilter.Value) ||
 				cfg.Filter.ContIDFilter.Enabled
 
-			if checkCommandIsHelp(c.StringSlice("output")) {
+			outputSlice := c.StringSlice("output")
+			if checkCommandIsHelp(outputSlice) {
 				fmt.Print(flags.OutputHelp())
 				return nil
 			}
-			output, printerConfig, err := flags.PrepareOutput(c.StringSlice("output"))
+			output, printerConfig, err := flags.PrepareOutput(outputSlice)
 			if err != nil {
 				return err
 			}
