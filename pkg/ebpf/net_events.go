@@ -28,9 +28,8 @@ type EventMeta struct {
 }
 
 type CaptureData struct {
-	PacketLength      uint32 `json:"pkt_len"`
-	InterfaceIndex    uint32 `json:"if_index"`
-	PacketStartOffset uint32 `json:"pkt_start_off"`
+	PacketLength   uint32 `json:"pkt_len"`
+	InterfaceIndex uint32 `json:"if_index"`
 }
 
 type netInfo struct {
@@ -203,24 +202,36 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 			packetContext, networkThread, _ := t.getPcapContext(uint32(evtMeta.HostTid))
 
 			if evtMeta.NetEventId == NetPacket {
-				captureData, err := parseCaptureData(payloadBytes, t.config.Debug)
+				captureData, captureDataFinishOffset, err := parseCaptureData(payloadBytes)
 				if err != nil {
 					t.handleError(err)
 					continue
 				}
-				if err := t.writePacket(captureData, time.Unix(0, int64(evtMeta.TimeStamp)), packetContext, payloadBytes)); err != nil {
-					t.handleError(err)
-					continue
-				}
-				if t.config.Debug {
-					evt, err := netPacketProtocolHandler(payloadBytes, evtMeta, networkThread, "net_packet")
-					if err == nil {
-						select {
-						case t.config.ChanEvents <- evt:
-							t.stats.NetEvCount.Increment()
-						case <-ctx.Done():
-							return
-						}
+
+				if !t.config.Debug {
+					if err := t.writePacket(captureData, time.Unix(0, int64(evtMeta.TimeStamp)), packetContext, payloadBytes, captureDataFinishOffset); err != nil {
+						t.handleError(err)
+						continue
+					}
+				} else {
+					evt, packetStartOffset, err := netPacketProtocolHandler(payloadBytes, captureDataFinishOffset, evtMeta, networkThread, "net_packet")
+					if err != nil {
+						t.handleError(err)
+						continue
+					}
+
+					// capture the packet
+					if err := t.writePacket(captureData, time.Unix(0, int64(evtMeta.TimeStamp)), packetContext, payloadBytes, packetStartOffset); err != nil {
+						t.handleError(err)
+						continue
+					}
+
+					// output the event
+					select {
+					case t.config.ChanEvents <- evt:
+						t.stats.NetEvCount.Increment()
+					case <-ctx.Done():
+						return
 					}
 				}
 
@@ -290,7 +301,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 	}
 }
 
-func (t *Tracee) writePacket(capData CaptureData, timeStamp time.Time, packetContext processPcapId, payloadBytes []byte) error {
+func (t *Tracee) writePacket(capData CaptureData, timeStamp time.Time, packetContext processPcapId, payloadBytes []byte, offset uint32) error {
 	idx, ok := t.netPcap.ngIfacesIndex[int(capData.InterfaceIndex)]
 	if !ok {
 		return fmt.Errorf("cannot get the right interface index")
@@ -312,7 +323,7 @@ func (t *Tracee) writePacket(capData CaptureData, timeStamp time.Time, packetCon
 	}
 
 	writer, _ := t.netPcap.GetPcapWriter(packetContext)
-	err := writer.WritePacket(info, payloadBytes[capData.PacketStartOffset:capData.PacketLength+capData.PacketStartOffset])
+	err := writer.WritePacket(info, payloadBytes[offset:capData.PacketLength+offset])
 	if err != nil {
 		return err
 	}
@@ -336,47 +347,45 @@ func parseEventMetaData(payloadBytes []byte) (EventMeta, []byte) {
 
 }
 
-// netPacketProtocolHandler parse a given a packet bytes buffer to packetMeta and event
-func netPacketProtocolHandler(buffer []byte, evtMeta EventMeta, ctx procinfo.ProcessCtx, eventName string) (trace.Event, error) {
+// netPacketProtocolHandler parse a given a packet bytes buffer to packetMeta and event, and return the offset of start of the packet
+func netPacketProtocolHandler(buffer []byte, captureDataFinishOffset uint32, evtMeta EventMeta, ctx procinfo.ProcessCtx, eventName string) (trace.Event, uint32, error) {
 	var evt trace.Event
-	packet, err := ParseNetPacketMetaData(buffer)
+	packet, packetStartOffset, err := ParseNetPacketMetaData(buffer, captureDataFinishOffset)
 	if err != nil {
-		return evt, err
+		return evt, packetStartOffset, err
 	}
 	evt = CreateNetEvent(evtMeta, ctx, eventName, int(evtMeta.TimeStamp))
 	appendPktMetaArg(&evt, packet)
-	return evt, nil
+	return evt, packetStartOffset, nil
 }
 
-func parseCaptureData(payload []byte, debug bool) (CaptureData, error) {
+// parseCaptureData parses and returns CaptureData struct from the buffer, and return the offset of start of the packet
+func parseCaptureData(payload []byte) (CaptureData, uint32, error) {
 	var capData CaptureData
 	if len(payload) < 8 {
-		return capData, fmt.Errorf("payload too short")
+		return capData, 0, fmt.Errorf("payload too short")
 	}
 	capData.PacketLength = binary.LittleEndian.Uint32(payload[0:4])
 	capData.InterfaceIndex = binary.LittleEndian.Uint32(payload[4:8])
-	capData.PacketStartOffset = 8
-	if debug {
-		capData.PacketStartOffset = 48
-	}
-	return capData, nil
+	return capData, 8, nil
 }
 
-// parsing the PacketMeta struct from bytes.buffer
-func ParseNetPacketMetaData(payload []byte) (trace.PktMeta, error) {
+//ParseNetPacketMetaData parsing and returning the PacketMeta struct from bytes.buffer and return the offset of start of the packet
+func ParseNetPacketMetaData(payload []byte, captureDataFinishOffset uint32) (trace.PktMeta, uint32, error) {
 	var pktMetaData trace.PktMeta
 	if len(payload) < 45 {
-		return pktMetaData, fmt.Errorf("payload size too short")
+		return pktMetaData, 0, fmt.Errorf("payload size too short\n")
 	}
 	ip := [16]byte{0}
-	copy(ip[:], payload[8:24])
+	copy(ip[:], payload[captureDataFinishOffset:captureDataFinishOffset+16])
 	pktMetaData.SrcIP = netaddr.IPFrom16(ip).String()
-	copy(ip[:], payload[24:40])
+	copy(ip[:], payload[captureDataFinishOffset+16:captureDataFinishOffset+32])
 	pktMetaData.DstIP = netaddr.IPFrom16(ip).String()
-	pktMetaData.SrcPort = binary.LittleEndian.Uint16(payload[40:42])
-	pktMetaData.DstPort = binary.LittleEndian.Uint16(payload[42:44])
-	pktMetaData.Protocol = payload[44]
-	return pktMetaData, nil
+	pktMetaData.SrcPort = binary.LittleEndian.Uint16(payload[captureDataFinishOffset+32 : captureDataFinishOffset+34])
+	pktMetaData.DstPort = binary.LittleEndian.Uint16(payload[captureDataFinishOffset+34 : captureDataFinishOffset+36])
+	pktMetaData.Protocol = payload[captureDataFinishOffset+36]
+	// there is a padding of 3 bytes
+	return pktMetaData, captureDataFinishOffset + 40, nil
 }
 
 func CreateNetEvent(eventMeta EventMeta, ctx procinfo.ProcessCtx, eventName string, ts int) trace.Event {
