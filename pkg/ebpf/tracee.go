@@ -46,6 +46,7 @@ type Config struct {
 	KernelConfig       *helpers.KernelConfig
 	ChanEvents         chan trace.Event
 	ChanErrors         chan error
+	ProcessTree        bool
 }
 
 type CaptureConfig struct {
@@ -369,6 +370,7 @@ const (
 	optDebugNet
 	optCaptureModules
 	optCgroupV1
+	optProcessInfo
 )
 
 // filters config should match defined values in ebpf code
@@ -424,6 +426,10 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	}
 	if t.containers.IsCgroupV1() {
 		cOptVal = cOptVal | optCgroupV1
+	}
+	if t.config.Capture.NetIfaces != nil || t.config.Debug {
+		cOptVal = cOptVal | optProcessInfo
+		t.config.ProcessTree = true
 	}
 
 	return cOptVal
