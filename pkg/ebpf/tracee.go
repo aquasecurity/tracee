@@ -1009,7 +1009,7 @@ func (t *Tracee) getProcessCtx(hostTid int) (procinfo.ProcessCtx, error) {
 
 // Run starts the trace. it will run until ctx is cancelled
 func (t *Tracee) Run(ctx gocontext.Context) error {
-	t.invokeInitNamespacesEvent()
+	t.invokeInitEvents()
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
 	t.netPerfMap.Start()
@@ -1118,10 +1118,16 @@ func (t *Tracee) updateFileSHA() {
 	}
 }
 
-func (t *Tracee) invokeInitNamespacesEvent() {
+func (t *Tracee) invokeInitEvents() {
 	if t.eventsToTrace[InitNamespacesEventID] {
 		systemInfoEvent, _ := CreateInitNamespacesEvent()
 		t.config.ChanEvents <- systemInfoEvent
 		t.stats.EventCount.Increment()
+	}
+	if t.eventsToTrace[ExistingContainerEventID] {
+		for _, e := range t.CreateExistingContainersEvents() {
+			t.config.ChanEvents <- e
+			t.stats.EventCount.Increment()
+		}
 	}
 }
