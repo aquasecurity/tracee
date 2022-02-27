@@ -24,7 +24,7 @@ Possible options:
 dir:/path/to/dir                    path where tracee will save produced artifacts. the artifact will be saved into an 'out' subdirectory. (default: /tmp/tracee).
 profile                             creates a runtime profile of program executions and their metadata for forensics use.
 clear-dir                           clear the captured artifacts output dir before starting (default: false).
-pcap:[per-container|per-process]     capture separate pcap file based on container/process context (default: none - saving one pcap for the entire host).
+pcap:[per-container|per-process]    capture separate pcap file based on container/process context (default: none - saving one pcap for the entire host).
 
 Examples:
   --capture exec                                           | capture executed files into the default output directory
