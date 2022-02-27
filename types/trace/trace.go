@@ -1,3 +1,4 @@
+// Package trace defines the public types exported through the EBPF code and produced outwards from tracee-ebpf
 package trace
 
 import (
