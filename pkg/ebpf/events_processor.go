@@ -142,10 +142,10 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 	case SchedProcessExecEventID:
 		//update the process tree with correct comm name
 		if t.config.ProcessTree {
-			processData, err := t.procInfo.GetElement(event.HostThreadID)
+			processData, err := t.procInfo.GetElement(event.HostProcessID)
 			if err == nil {
 				processData.Comm = event.ProcessName
-				t.procInfo.UpdateElement(event.HostThreadID, processData)
+				t.procInfo.UpdateElement(event.HostProcessID, processData)
 			}
 		}
 
