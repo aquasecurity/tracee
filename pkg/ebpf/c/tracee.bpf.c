@@ -405,7 +405,7 @@ typedef struct event_context {
 } context_t;
 
 typedef struct process_context {
-    u64 start_time;                // Timestamp
+    u64 start_time;                // thread's start time
     u64 cgroup_id;
     u32 pid;                       // PID as in the userspace term
     u32 tid;                       // TID as in the userspace term
