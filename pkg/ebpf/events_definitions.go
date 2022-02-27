@@ -82,6 +82,7 @@ const (
 	InitNamespacesEventID int32 = iota + 2000
 	ContainerCreateEventID
 	ContainerRemoveEventID
+	ExistingContainerEventID
 	MaxUserSpaceEventID
 )
 
@@ -6164,6 +6165,17 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "runtime"},
 			{Type: "const char*", Name: "container_id"},
+		},
+	},
+	ExistingContainerEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "existing_container",
+		Probes:  []probe{},
+		Sets:    []string{},
+		Params: []external.ArgMeta{
+			{Type: "const char*", Name: "runtime"},
+			{Type: "const char*", Name: "container_id"},
+			{Type: "unsigned long", Name: "ctime"},
 		},
 	},
 }

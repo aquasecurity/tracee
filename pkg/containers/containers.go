@@ -373,6 +373,19 @@ func (c *Containers) GetCgroupInfo(cgroupId uint64) CgroupInfo {
 	return cgroupInfo
 }
 
+// GetContainers provides a list of all existing containers.
+func (c *Containers) GetContainers() []CgroupInfo {
+	var conts []CgroupInfo
+	c.mtx.RLock()
+	defer c.mtx.RUnlock()
+	for _, v := range c.cgroups {
+		if v.ContainerId != "" && v.expiresAt.IsZero() {
+			conts = append(conts, v)
+		}
+	}
+	return conts
+}
+
 // CgroupExists checks if there is a cgroupInfo data of a given cgroupId.
 func (c *Containers) CgroupExists(cgroupId uint64) bool {
 	c.mtx.RLock()
