@@ -46,7 +46,7 @@ type Config struct {
 	KernelConfig       *helpers.KernelConfig
 	ChanEvents         chan trace.Event
 	ChanErrors         chan error
-	ProcessTree        bool
+	ProcessInfo        bool
 }
 
 type CaptureConfig struct {
@@ -174,7 +174,7 @@ type Tracee struct {
 	pidsInMntns       bucketscache.BucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
 	tcProbe           []netProbe
-	netPcap           traceeNet
+	netPcap           netInfo
 	containers        *containers.Containers
 	procInfo          *procinfo.ProcInfo
 	eventsSorter      *sorting.EventsChronologicalSorter
@@ -429,7 +429,7 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	}
 	if t.config.Capture.NetIfaces != nil || t.config.Debug {
 		cOptVal = cOptVal | optProcessInfo
-		t.config.ProcessTree = true
+		t.config.ProcessInfo = true
 	}
 
 	return cOptVal

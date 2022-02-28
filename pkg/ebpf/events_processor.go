@@ -141,7 +141,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 
 	case SchedProcessExecEventID:
 		//update the process tree with correct comm name
-		if t.config.ProcessTree {
+		if t.config.ProcessInfo {
 			processData, err := t.procInfo.GetElement(event.HostProcessID)
 			if err == nil {
 				processData.Comm = event.ProcessName
@@ -239,7 +239,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			return err
 		}
 	case SchedProcessExitEventID:
-		if t.config.ProcessTree {
+		if t.config.ProcessInfo {
 			if t.config.Capture.NetPerProcess {
 				pcapContext, _, err := t.getPcapContext(uint32(event.HostThreadID))
 				if err == nil {
@@ -250,7 +250,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			go t.deleteProcInfoDelayed(event.HostThreadID)
 		}
 	case SchedProcessForkEventID:
-		if t.config.ProcessTree {
+		if t.config.ProcessInfo {
 			hostTid, err := getEventArgInt32Val(event, "child_tid")
 			if err != nil {
 				return err

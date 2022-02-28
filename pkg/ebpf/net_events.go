@@ -33,32 +33,32 @@ type CaptureData struct {
 	InterfaceIndex uint32 `json:"if_index"`
 }
 
-type traceeNet struct {
+type netInfo struct {
 	mtx           sync.Mutex
 	pcapWriters   map[processPcapId]*pcapgo.NgWriter
 	ngIfacesIndex map[int]int
 }
 
-func (tn *traceeNet) GetPcapWriter(id processPcapId) (*pcapgo.NgWriter, bool) {
-	tn.mtx.Lock()
-	defer tn.mtx.Unlock()
+func (ni *netInfo) GetPcapWriter(id processPcapId) (*pcapgo.NgWriter, bool) {
+	ni.mtx.Lock()
+	defer ni.mtx.Unlock()
 
-	writer, exists := tn.pcapWriters[id]
+	writer, exists := ni.pcapWriters[id]
 	return writer, exists
 }
 
-func (tn *traceeNet) PutPcapWriter(id processPcapId, writer *pcapgo.NgWriter) {
-	tn.mtx.Lock()
-	defer tn.mtx.Unlock()
+func (ni *netInfo) SetPcapWriter(id processPcapId, writer *pcapgo.NgWriter) {
+	ni.mtx.Lock()
+	defer ni.mtx.Unlock()
 
-	tn.pcapWriters[id] = writer
+	ni.pcapWriters[id] = writer
 }
 
-func (tn *traceeNet) DeletePcapWriter(id processPcapId) {
-	tn.mtx.Lock()
-	defer tn.mtx.Unlock()
+func (ni *netInfo) DeletePcapWriter(id processPcapId) {
+	ni.mtx.Lock()
+	defer ni.mtx.Unlock()
 
-	delete(tn.pcapWriters, id)
+	delete(ni.pcapWriters, id)
 }
 
 type processPcapId struct {
@@ -69,7 +69,6 @@ type processPcapId struct {
 }
 
 func (t *Tracee) createPcapsDirPath(pcapContext processPcapId) (string, error) {
-
 	pcapsDirPath := path.Join(t.config.Capture.OutputPath, pcapContext.contID)
 	err := os.MkdirAll(pcapsDirPath, os.ModePerm)
 	if err != nil {
@@ -80,7 +79,6 @@ func (t *Tracee) createPcapsDirPath(pcapContext processPcapId) (string, error) {
 }
 
 func (t *Tracee) getPcapFilePath(pcapContext processPcapId) (string, error) {
-
 	pcapsDirPath, err := t.createPcapsDirPath(pcapContext)
 	if err != nil {
 		return "", err
@@ -97,7 +95,6 @@ func (t *Tracee) getPcapFilePath(pcapContext processPcapId) (string, error) {
 }
 
 func (t *Tracee) createPcapFile(pcapContext processPcapId) error {
-
 	pcapFilePath, err := t.getPcapFilePath(pcapContext)
 	if err != nil {
 		return fmt.Errorf("error getting pcap file path: %v", err)
@@ -141,7 +138,7 @@ func (t *Tracee) createPcapFile(pcapContext processPcapId) error {
 	if err != nil {
 		return err
 	}
-	t.netPcap.PutPcapWriter(pcapContext, pcapWriter)
+	t.netPcap.SetPcapWriter(pcapContext, pcapWriter)
 
 	return nil
 }
@@ -153,7 +150,6 @@ func (t *Tracee) netExit(pcapContext processPcapId) {
 }
 
 func (t *Tracee) getPcapContext(hostTid uint32) (processPcapId, procinfo.ProcessCtx, error) {
-
 	networkThread, err := t.getProcessCtx(hostTid)
 	if err != nil {
 		return processPcapId{}, procinfo.ProcessCtx{}, err
