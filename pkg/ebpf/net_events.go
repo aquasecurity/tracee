@@ -5,8 +5,6 @@ import (
 	gocontext "context"
 	"encoding/binary"
 	"fmt"
-	"github.com/google/gopacket/layers"
-	"github.com/google/gopacket/pcapgo"
 	"math"
 	"os"
 	"path"
@@ -18,6 +16,8 @@ import (
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/google/gopacket"
+	"github.com/google/gopacket/layers"
+	"github.com/google/gopacket/pcapgo"
 )
 
 type EventMeta struct {
