@@ -94,10 +94,10 @@ func (t *Tracee) shouldProcessEvent(ctx *bufferdecoder.Context, args []trace.Arg
 }
 
 func (t *Tracee) deleteProcInfoDelayed(hostTid int) {
-	// wait a second before deleting from the map - because there might events coming in the context of this process,
+	// wait 5 seconds before deleting from the map - because there might events coming in the context of this process,
 	// after we receive its sched_process_exit. this mainly happens from network events, because these events come from
 	// the netChannel, and there might be a race condition between this channel and the eventsChannel.
-	time.Sleep(time.Second * 1)
+	time.Sleep(time.Second * 5)
 	t.procInfo.DeleteElement(hostTid)
 }
 
