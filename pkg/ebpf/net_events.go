@@ -198,10 +198,8 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 				evtMeta.TimeStamp += t.bootTime
 			}
 
-			packetContext, networkThread, err := t.getPcapContext(uint32(evtMeta.HostTid))
-			if err != nil {
-				t.handleError(err)
-			}
+			// continue without checking for error, as packetContext will be valid anyway
+			packetContext, networkThread, _ := t.getPcapContext(uint32(evtMeta.HostTid))
 
 			if evtMeta.NetEventId == NetPacket {
 				captureData, err := parseCaptureData(payloadBytes)
