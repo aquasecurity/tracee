@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
-	"inet.af/netaddr"
 	"math"
 	"os"
 	"path"
