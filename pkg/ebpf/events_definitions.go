@@ -5697,6 +5697,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "int", Name: "child_ns_tid"},
 			{Type: "int", Name: "child_pid"},
 			{Type: "int", Name: "child_ns_pid"},
+			{Type: "unsigned long", Name: "start_time"},
 		},
 	},
 	SchedProcessExecEventID: {

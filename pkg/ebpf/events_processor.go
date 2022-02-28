@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/containers"
@@ -92,6 +93,14 @@ func (t *Tracee) shouldProcessEvent(ctx *bufferdecoder.Context, args []trace.Arg
 	return true
 }
 
+func (t *Tracee) deleteProcInfoDelayed(hostTid int) {
+	// wait 5 seconds before deleting from the map - because there might events coming in the context of this process,
+	// after we receive its sched_process_exit. this mainly happens from network events, because these events come from
+	// the netChannel, and there might be a race condition between this channel and the eventsChannel.
+	time.Sleep(time.Second * 5)
+	t.procInfo.DeleteElement(hostTid)
+}
+
 func (t *Tracee) processEvent(event *trace.Event) error {
 	switch int32(event.EventID) {
 
@@ -131,20 +140,15 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 
 	case SchedProcessExecEventID:
-		//update the process tree
-		processData := procinfo.ProcessCtx{
-			StartTime:   event.Timestamp,
-			ContainerID: event.ContainerID,
-			Pid:         uint32(event.ProcessID),
-			Tid:         uint32(event.ThreadID),
-			Ppid:        uint32(event.ParentProcessID),
-			HostTid:     uint32(event.HostThreadID),
-			HostPid:     uint32(event.HostProcessID),
-			HostPpid:    uint32(event.HostParentProcessID),
-			Uid:         uint32(event.UserID),
-			MntId:       uint32(event.MountNS),
-			PidId:       uint32(event.PIDNS)}
-		t.procInfo.UpdateElement(event.HostThreadID, processData)
+		//update the process tree with correct comm name
+		if t.config.ProcessInfo {
+			processData, err := t.procInfo.GetElement(event.HostProcessID)
+			if err == nil {
+				processData.Comm = event.ProcessName
+				t.procInfo.UpdateElement(event.HostProcessID, processData)
+			}
+		}
+
 		//cache this pid by it's mnt ns
 		if event.ProcessID == 1 {
 			t.pidsInMntns.ForceAddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
@@ -235,45 +239,62 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			return err
 		}
 	case SchedProcessExitEventID:
-		t.procInfo.DeleteElement(event.HostThreadID)
+		if t.config.ProcessInfo {
+			if t.config.Capture.NetPerProcess {
+				pcapContext, _, err := t.getPcapContext(uint32(event.HostThreadID))
+				if err == nil {
+					go t.netExit(pcapContext)
+				}
+			}
+
+			go t.deleteProcInfoDelayed(event.HostThreadID)
+		}
 	case SchedProcessForkEventID:
-		hostTid, err := getEventArgInt32Val(event, "child_tid")
-		if err != nil {
-			return err
+		if t.config.ProcessInfo {
+			hostTid, err := getEventArgInt32Val(event, "child_tid")
+			if err != nil {
+				return err
+			}
+			hostPid, err := getEventArgInt32Val(event, "child_pid")
+			if err != nil {
+				return err
+			}
+			pid, err := getEventArgInt32Val(event, "child_ns_pid")
+			if err != nil {
+				return err
+			}
+			ppid, err := getEventArgInt32Val(event, "parent_ns_pid")
+			if err != nil {
+				return err
+			}
+			hostPpid, err := getEventArgInt32Val(event, "parent_pid")
+			if err != nil {
+				return err
+			}
+			tid, err := getEventArgInt32Val(event, "child_ns_tid")
+			if err != nil {
+				return err
+			}
+			startTime, err := getEventArgUint64Val(event, "start_time")
+			if err != nil {
+				return err
+			}
+			processData := procinfo.ProcessCtx{
+				StartTime:   int(startTime),
+				ContainerID: event.ContainerID,
+				Pid:         uint32(pid),
+				Tid:         uint32(tid),
+				Ppid:        uint32(ppid),
+				HostTid:     uint32(hostTid),
+				HostPid:     uint32(hostPid),
+				HostPpid:    uint32(hostPpid),
+				Uid:         uint32(event.UserID),
+				MntId:       uint32(event.MountNS),
+				PidId:       uint32(event.PIDNS),
+				Comm:        event.ProcessName,
+			}
+			t.procInfo.UpdateElement(int(hostTid), processData)
 		}
-		hostPid, err := getEventArgInt32Val(event, "child_pid")
-		if err != nil {
-			return err
-		}
-		pid, err := getEventArgInt32Val(event, "child_ns_pid")
-		if err != nil {
-			return err
-		}
-		ppid, err := getEventArgInt32Val(event, "parent_ns_pid")
-		if err != nil {
-			return err
-		}
-		hostPpid, err := getEventArgInt32Val(event, "parent_pid")
-		if err != nil {
-			return err
-		}
-		tid, err := getEventArgInt32Val(event, "child_ns_tid")
-		if err != nil {
-			return err
-		}
-		processData := procinfo.ProcessCtx{
-			StartTime:   event.Timestamp,
-			ContainerID: event.ContainerID,
-			Pid:         uint32(pid),
-			Tid:         uint32(tid),
-			Ppid:        uint32(ppid),
-			HostTid:     uint32(hostTid),
-			HostPid:     uint32(hostPid),
-			HostPpid:    uint32(hostPpid),
-			Uid:         uint32(event.UserID),
-			MntId:       uint32(event.MountNS),
-			PidId:       uint32(event.PIDNS)}
-		t.procInfo.UpdateElement(event.HostThreadID, processData)
 	case CgroupMkdirEventID:
 		cgroupId, err := getEventArgUint64Val(event, "cgroup_id")
 		if err != nil {
@@ -296,6 +317,13 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 
 	case CgroupRmdirEventID:
+		if t.config.Capture.NetPerContainer {
+			pcapContext, _, err := t.getPcapContext(uint32(event.HostThreadID))
+			if err == nil {
+				go t.netExit(pcapContext)
+			}
+		}
+
 		cgroupId, err := getEventArgUint64Val(event, "cgroup_id")
 		if err != nil {
 			return fmt.Errorf("error parsing cgroup_rmdir args: %v", err)

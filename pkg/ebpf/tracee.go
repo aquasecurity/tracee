@@ -8,10 +8,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math"
 	"net"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -28,7 +26,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/types/trace"
-	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
 	lru "github.com/hashicorp/golang-lru"
 	"golang.org/x/sys/unix"
@@ -49,6 +46,7 @@ type Config struct {
 	KernelConfig       *helpers.KernelConfig
 	ChanEvents         chan trace.Event
 	ChanErrors         chan error
+	ProcessInfo        bool
 }
 
 type CaptureConfig struct {
@@ -60,6 +58,8 @@ type CaptureConfig struct {
 	Mem             bool
 	Profile         bool
 	NetIfaces       []string
+	NetPerContainer bool
+	NetPerProcess   bool
 }
 
 type OutputConfig struct {
@@ -174,9 +174,7 @@ type Tracee struct {
 	pidsInMntns       bucketscache.BucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
 	tcProbe           []netProbe
-	pcapWriter        *pcapgo.NgWriter
-	pcapFile          *os.File
-	ngIfacesIndex     map[int]int
+	netPcap           netInfo
 	containers        *containers.Containers
 	procInfo          *procinfo.ProcInfo
 	eventsSorter      *sorting.EventsChronologicalSorter
@@ -303,58 +301,16 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error creating output path: %v", err)
 	}
 
-	if t.config.Capture.NetIfaces != nil {
-		pcapFile, err := os.Create(path.Join(t.config.Capture.OutputPath, "capture.pcap"))
+	t.netPcap.ngIfacesIndex = make(map[int]int)
+	for idx, iface := range t.config.Capture.NetIfaces {
+		netIface, err := net.InterfaceByName(iface)
 		if err != nil {
-			return nil, fmt.Errorf("error creating pcap file: %v", err)
+			return nil, fmt.Errorf("invalid network interface: %s", iface)
 		}
-		t.pcapFile = pcapFile
-
-		t.ngIfacesIndex = make(map[int]int)
-		for idx, iface := range t.config.Capture.NetIfaces {
-			netIface, err := net.InterfaceByName(iface)
-			if err != nil {
-				return nil, fmt.Errorf("invalid network interface: %s", iface)
-			}
-			// Map real network interface index to NgInterface index
-			t.ngIfacesIndex[netIface.Index] = idx
-		}
-
-		ngIface := pcapgo.NgInterface{
-			Name:       t.config.Capture.NetIfaces[0],
-			Comment:    "tracee tc capture",
-			Filter:     "",
-			LinkType:   layers.LinkTypeEthernet,
-			SnapLength: uint32(math.MaxUint16),
-		}
-
-		pcapWriter, err := pcapgo.NewNgWriterInterface(t.pcapFile, ngIface, pcapgo.NgWriterOptions{})
-		if err != nil {
-			return nil, err
-		}
-
-		for _, iface := range t.config.Capture.NetIfaces[1:] {
-			ngIface = pcapgo.NgInterface{
-				Name:       iface,
-				Comment:    "tracee tc capture",
-				Filter:     "",
-				LinkType:   layers.LinkTypeEthernet,
-				SnapLength: uint32(math.MaxUint16),
-			}
-
-			_, err := pcapWriter.AddInterface(ngIface)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		// Flush the header
-		err = pcapWriter.Flush()
-		if err != nil {
-			return nil, err
-		}
-		t.pcapWriter = pcapWriter
+		// Map real network interface index to NgInterface index
+		t.netPcap.ngIfacesIndex[netIface.Index] = idx
 	}
+	t.netPcap.pcapWriters = make(map[processPcapId]*pcapgo.NgWriter)
 
 	// Get reference to stack trace addresses map
 	StackAddressesMap, err := t.bpfModule.GetMap("stack_addresses")
@@ -414,6 +370,7 @@ const (
 	optDebugNet
 	optCaptureModules
 	optCgroupV1
+	optProcessInfo
 )
 
 // filters config should match defined values in ebpf code
@@ -469,6 +426,10 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	}
 	if t.containers.IsCgroupV1() {
 		cOptVal = cOptVal | optCgroupV1
+	}
+	if t.config.Capture.NetIfaces != nil || t.config.Debug {
+		cOptVal = cOptVal | optProcessInfo
+		t.config.ProcessInfo = true
 	}
 
 	return cOptVal
@@ -988,8 +949,8 @@ func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 	return nil
 }
 
-func (t *Tracee) getProcessCtx(hostTid int) (procinfo.ProcessCtx, error) {
-	processCtx, err := t.procInfo.GetElement(hostTid)
+func (t *Tracee) getProcessCtx(hostTid uint32) (procinfo.ProcessCtx, error) {
+	processCtx, err := t.procInfo.GetElement(int(hostTid))
 	if err == nil {
 		return processCtx, nil
 	} else {
@@ -1002,7 +963,7 @@ func (t *Tracee) getProcessCtx(hostTid int) (procinfo.ProcessCtx, error) {
 			return processCtx, err
 		}
 		processCtx, err = procinfo.ParseProcessContext(processCtxBpfMap, t.containers)
-		t.procInfo.UpdateElement(hostTid, processCtx)
+		t.procInfo.UpdateElement(int(hostTid), processCtx)
 		return processCtx, err
 	}
 }

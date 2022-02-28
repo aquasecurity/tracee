@@ -213,6 +213,7 @@ Copyright (C) Aqua Security inc.
 #define OPT_DEBUG_NET                   (1 << 5)
 #define OPT_CAPTURE_MODULES             (1 << 6)
 #define OPT_CGROUP_V1                   (1 << 7)
+#define OPT_PROCESS_INFO                (1 << 8)
 
 #define FILTER_UID_ENABLED              (1 << 0)
 #define FILTER_UID_OUT                  (1 << 1)
@@ -404,7 +405,7 @@ typedef struct event_context {
 } context_t;
 
 typedef struct process_context {
-    u64 ts;                        // Timestamp
+    u64 start_time;                // thread's start time
     u64 cgroup_id;
     u32 pid;                       // PID as in the userspace term
     u32 tid;                       // TID as in the userspace term
@@ -415,6 +416,7 @@ typedef struct process_context {
     u32 uid;
     u32 mnt_id;
     u32 pid_id;
+    char comm[TASK_COMM_LEN];
 } process_context_t;
 
 typedef struct args {
@@ -769,6 +771,11 @@ static __always_inline u32 get_task_ppid(struct task_struct *task)
 {
     struct task_struct *parent = READ_KERN(task->real_parent);
     return READ_KERN(parent->tgid);
+}
+
+static __always_inline u64 get_task_start_time(struct task_struct *task)
+{
+    return READ_KERN(task->start_time);
 }
 
 static __always_inline u32 get_task_host_pid(struct task_struct *task)
@@ -2408,12 +2415,17 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     struct task_struct *parent = (struct task_struct*)ctx->args[0];
     struct task_struct *child = (struct task_struct*)ctx->args[1];
 
+    u64 start_time = get_task_start_time(child);
+
     // note: v5.4 verifier does not like using (process_context_t *) from &data->context
-    process_context_t process = {};
-    __builtin_memcpy(&process, &data.context, sizeof(process_context_t));
-    process.tid = get_task_ns_pid(child);
-    process.host_tid = get_task_host_pid(child);
-    bpf_map_update_elem(&process_context_map, &process.host_tid, &process, BPF_ANY);
+    if (data.options & OPT_PROCESS_INFO) {
+        process_context_t process = {};
+        __builtin_memcpy(&process, &data.context, sizeof(process_context_t));
+        process.tid = get_task_ns_pid(child);
+        process.host_tid = get_task_host_pid(child);
+        process.start_time = start_time;
+        bpf_map_update_elem(&process_context_map, &process.host_tid, &process, BPF_ANY);
+    }
 
     int parent_pid = get_task_host_pid(parent);
     int child_pid = get_task_host_pid(child);
@@ -2440,7 +2452,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         bpf_map_update_elem(&new_pids_map, &child_pid, &child_pid, BPF_ANY);
     }
 
-    if (event_chosen(SCHED_PROCESS_FORK)) {
+    if (event_chosen(SCHED_PROCESS_FORK) || data.options & OPT_PROCESS_INFO) {
         int parent_ns_pid = get_task_ns_pid(parent);
         int parent_ns_tgid = get_task_ns_tgid(parent);
         int child_ns_pid = get_task_ns_pid(child);
@@ -2454,6 +2466,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         save_to_submit_buf(&data, (void*)&child_ns_pid, sizeof(int), 5);
         save_to_submit_buf(&data, (void*)&child_tgid, sizeof(int), 6);
         save_to_submit_buf(&data, (void*)&child_ns_tgid, sizeof(int), 7);
+        save_to_submit_buf(&data, (void*)&start_time, sizeof(u64), 8);
 
         events_perf_submit(&data, SCHED_PROCESS_FORK, 0);
     }
@@ -2469,8 +2482,6 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
-
-    process_context_t *process = (process_context_t*) &data.context;
 
     // Perform the following checks before should_trace() so we can filter by
     // newly created containers/processes.  We assume that a new container/pod
@@ -2494,7 +2505,13 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 
     // We passed all filters (in should_trace()) - add this pid to traced pids set
     bpf_map_update_elem(&traced_pids_map, &data.context.host_tid, &data.context.host_tid, BPF_ANY);
-    bpf_map_update_elem(&process_context_map, &data.context.host_tid, process, BPF_ANY);
+
+    if (data.options & OPT_PROCESS_INFO) {
+        process_context_t *process = bpf_map_lookup_elem(&process_context_map, &data.context.host_tid);
+        if (process != NULL) {
+            __builtin_memcpy(process->comm, data.context.comm, TASK_COMM_LEN);
+        }
+    }
 
     struct task_struct *task = (struct task_struct *)ctx->args[0];
     struct linux_binprm *bprm = (struct linux_binprm *)ctx->args[2];
@@ -2541,19 +2558,23 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     // 2. fdpath                  - generated filename for execveat (after
     //                              resolving dirfd)
 
-    save_str_to_buf(&data, (void *)filename, 0);
-    save_str_to_buf(&data, file_path, 1);
-    save_args_str_arr_to_buf(&data, (void *)arg_start, (void *)arg_end, argc, 2);
-    if (data.options & OPT_EXEC_ENV) {
-        save_args_str_arr_to_buf(&data, (void *)env_start, (void *)env_end, envc, 3);
-    }
-    save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 4);
-    save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 5);
-    save_to_submit_buf(&data, &invoked_from_kernel, sizeof(int), 6);
-    save_to_submit_buf(&data, &ctime, sizeof(u64), 7);
-    save_to_submit_buf(&data, &stdin_type, sizeof(unsigned short), 8);
+    if (event_chosen(SCHED_PROCESS_EXEC) || data.options & OPT_PROCESS_INFO) {
+        save_str_to_buf(&data, (void *)filename, 0);
+        save_str_to_buf(&data, file_path, 1);
+        save_args_str_arr_to_buf(&data, (void *)arg_start, (void *)arg_end, argc, 2);
+        if (data.options & OPT_EXEC_ENV) {
+            save_args_str_arr_to_buf(&data, (void *)env_start, (void *)env_end, envc, 3);
+        }
+        save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 4);
+        save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 5);
+        save_to_submit_buf(&data, &invoked_from_kernel, sizeof(int), 6);
+        save_to_submit_buf(&data, &ctime, sizeof(u64), 7);
+        save_to_submit_buf(&data, &stdin_type, sizeof(unsigned short), 8);
 
-    return events_perf_submit(&data, SCHED_PROCESS_EXEC, 0);
+        events_perf_submit(&data, SCHED_PROCESS_EXEC, 0);
+    }
+
+    return 0;
 }
 
 // include/trace/events/sched.h:
@@ -2594,10 +2615,14 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 
     long exit_code = get_task_exit_code(data.task);
 
-    save_to_submit_buf(&data, (void*)&exit_code, sizeof(long), 0);
-    save_to_submit_buf(&data, (void*)&group_dead, sizeof(bool), 1);
+    if (event_chosen(SCHED_PROCESS_EXIT) || data.options & OPT_PROCESS_INFO) {
+        save_to_submit_buf(&data, (void*)&exit_code, sizeof(long), 0);
+        save_to_submit_buf(&data, (void*)&group_dead, sizeof(bool), 1);
 
-    return events_perf_submit(&data, SCHED_PROCESS_EXIT, 0);
+        events_perf_submit(&data, SCHED_PROCESS_EXIT, 0);
+    }
+
+    return 0;
 }
 
 // include/trace/events/sched.h:

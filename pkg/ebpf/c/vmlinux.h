@@ -255,6 +255,7 @@ struct task_struct {
 	struct task_struct *       group_leader;
 	struct pid *               thread_pid;
 	struct list_head           thread_group;
+	u64                        start_time;
 	const struct cred  *       real_cred;
 	char                       comm[16];
 	struct files_struct *      files;
