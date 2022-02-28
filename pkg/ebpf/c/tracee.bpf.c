@@ -2593,9 +2593,7 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     bpf_map_delete_elem(&traced_pids_map, &data.context.host_tid);
     bpf_map_delete_elem(&new_pids_map, &data.context.host_tid);
     bpf_map_delete_elem(&syscall_data_map, &data.context.host_tid);
-    if (data.options & OPT_PROCESS_INFO) {
-        bpf_map_delete_elem(&process_context_map, &data.context.host_tid);
-    }
+    bpf_map_delete_elem(&process_context_map, &data.context.host_tid);
 
     int proc_tree_filter_set = get_config(CONFIG_FILTERS) & FILTER_PROC_TREE_ENABLED;
 
