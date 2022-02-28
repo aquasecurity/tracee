@@ -150,13 +150,14 @@ func (t *Tracee) netExit(pcapContext processPcapId) {
 }
 
 func (t *Tracee) getPcapContext(hostTid uint32) (processPcapId, procinfo.ProcessCtx, error) {
+	packetContext := processPcapId{contID: "host"}
 	networkThread, err := t.getProcessCtx(hostTid)
 	if err != nil {
-		return processPcapId{}, procinfo.ProcessCtx{}, err
+		return packetContext, procinfo.ProcessCtx{}, fmt.Errorf("unable to get ProcessCtx of hostTid %d to generate pcap context. got error %v. using default pcap context.", hostTid, err)
 	}
 	networkProcess, err := t.getProcessCtx(networkThread.HostPid)
 	if err != nil {
-		return processPcapId{}, procinfo.ProcessCtx{}, err
+		return packetContext, procinfo.ProcessCtx{}, fmt.Errorf("unable to get ProcessCtx of hostTid %d to generate pcap context. got error %v. using default pcap context.", networkThread.HostPid, err)
 	}
 
 	var contID string
@@ -166,13 +167,10 @@ func (t *Tracee) getPcapContext(hostTid uint32) (processPcapId, procinfo.Process
 		contID = networkThread.ContainerID
 	}
 
-	var packetContext processPcapId
 	if t.config.Capture.NetPerProcess {
 		packetContext = processPcapId{hostPid: networkProcess.HostPid, comm: networkProcess.Comm, procStartTime: uint64(networkProcess.StartTime), contID: contID}
 	} else if t.config.Capture.NetPerContainer {
 		packetContext = processPcapId{contID: contID}
-	} else {
-		packetContext = processPcapId{contID: "host"}
 	}
 
 	return packetContext, networkThread, nil
@@ -204,7 +202,6 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 			packetContext, networkThread, err := t.getPcapContext(uint32(evtMeta.HostTid))
 			if err != nil {
 				t.handleError(err)
-				continue
 			}
 
 			if evtMeta.NetEventId == NetPacket {
