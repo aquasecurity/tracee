@@ -170,7 +170,6 @@ type Tracee struct {
 	fileHashes        *lru.Cache
 	profiledFiles     map[string]profilerInfo
 	writtenFiles      map[string]string
-	mntNsFirstPid     map[uint32]uint32
 	pidsInMntns       bucketscache.BucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
 	tcProbe           []netProbe
