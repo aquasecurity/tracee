@@ -152,11 +152,11 @@ func (t *Tracee) getPcapContext(hostTid uint32) (processPcapId, procinfo.Process
 	packetContext := processPcapId{contID: "host"}
 	networkThread, err := t.getProcessCtx(hostTid)
 	if err != nil {
-		return packetContext, procinfo.ProcessCtx{}, fmt.Errorf("unable to get ProcessCtx of hostTid %d to generate pcap context. got error %v. using default pcap context.", hostTid, err)
+		return packetContext, procinfo.ProcessCtx{}, fmt.Errorf("unable to get ProcessCtx of hostTid %d to generate pcap context: %v", hostTid, err)
 	}
 	networkProcess, err := t.getProcessCtx(networkThread.HostPid)
 	if err != nil {
-		return packetContext, procinfo.ProcessCtx{}, fmt.Errorf("unable to get ProcessCtx of hostTid %d to generate pcap context. got error %v. using default pcap context.", networkThread.HostPid, err)
+		return packetContext, procinfo.ProcessCtx{}, fmt.Errorf("unable to get ProcessCtx of hostTid %d to generate pcap context: %v", networkThread.HostPid, err)
 	}
 
 	var contID string
@@ -292,7 +292,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 func (t *Tracee) writePacket(capData CaptureData, timeStamp time.Time, packetContext processPcapId, dataBuff *bytes.Buffer) error {
 	idx, ok := t.netPcap.ngIfacesIndex[int(capData.InterfaceIndex)]
 	if !ok {
-		return fmt.Errorf("cant get the right interface index\n")
+		return fmt.Errorf("cannot get the right interface index")
 	}
 
 	info := gopacket.CaptureInfo{
@@ -350,7 +350,7 @@ func netPacketProtocolHandler(buffer []byte, evtMeta EventMeta, ctx procinfo.Pro
 func parseCaptureData(payload []byte) (CaptureData, error) {
 	var capData CaptureData
 	if len(payload) < 8 {
-		return capData, fmt.Errorf("payload too short\n")
+		return capData, fmt.Errorf("payload too short")
 	}
 	capData.PacketLen = binary.LittleEndian.Uint32(payload[0:4])
 	capData.InterfaceIndex = binary.LittleEndian.Uint32(payload[4:8])
@@ -361,7 +361,7 @@ func parseCaptureData(payload []byte) (CaptureData, error) {
 func ParseNetPacketMetaData(payload []byte) (trace.PktMeta, error) {
 	var pktMetaData trace.PktMeta
 	if len(payload) < 45 {
-		return pktMetaData, fmt.Errorf("Payload size too short\n")
+		return pktMetaData, fmt.Errorf("payload size too short")
 	}
 	ip := [16]byte{0}
 	copy(ip[:], payload[8:24])
@@ -386,15 +386,19 @@ func CreateNetEvent(eventMeta EventMeta, ctx procinfo.ProcessCtx, eventName stri
 
 //takes the packet metadata and create argument array with that data
 func appendPktMetaArg(event *trace.Event, NetPacket trace.PktMeta) {
-	event.Args = []trace.Argument{trace.Argument{
-		ArgMeta: trace.ArgMeta{"metadata", "trace.PktMeta"},
-		Value: trace.PktMeta{
-			SrcIP:    NetPacket.SrcIP,
-			DstIP:    NetPacket.DstIP,
-			SrcPort:  NetPacket.SrcPort,
-			DstPort:  NetPacket.DstPort,
-			Protocol: NetPacket.Protocol,
+	event.Args = []trace.Argument{
+		{
+			ArgMeta: trace.ArgMeta{
+				Name: "metadata",
+				Type: "trace.PktMeta"},
+			Value: trace.PktMeta{
+				SrcIP:    NetPacket.SrcIP,
+				DstIP:    NetPacket.DstIP,
+				SrcPort:  NetPacket.SrcPort,
+				DstPort:  NetPacket.DstPort,
+				Protocol: NetPacket.Protocol,
+			},
 		},
-	}}
+	}
 	event.ArgsNum = 1
 }
