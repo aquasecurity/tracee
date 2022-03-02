@@ -19,7 +19,7 @@ func TestK8sApiConnection(t *testing.T) {
 		{
 			Name: "should trigger detection",
 			Events: []trace.Event{
-				trace.Event{
+				{
 					EventName:   "execve",
 					ContainerID: "0907ef86d7be",
 					Args: []trace.Argument{
@@ -37,7 +37,7 @@ func TestK8sApiConnection(t *testing.T) {
 						},
 					},
 				},
-				trace.Event{
+				{
 					EventName:   "security_socket_connect",
 					ContainerID: "0907ef86d7be",
 					Args: []trace.Argument{
@@ -92,7 +92,7 @@ func TestK8sApiConnection(t *testing.T) {
 		{
 			Name: "should not trigger detection",
 			Events: []trace.Event{
-				trace.Event{
+				{
 					EventName:   "execve",
 					ContainerID: "0907ef86d7be",
 					Args: []trace.Argument{
@@ -110,7 +110,7 @@ func TestK8sApiConnection(t *testing.T) {
 						},
 					},
 				},
-				trace.Event{
+				{
 					EventName:   "security_socket_connect",
 					ContainerID: "0907ef86d7be",
 					Args: []trace.Argument{
