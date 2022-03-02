@@ -69,7 +69,7 @@ func (t *Tracee) handleEvents(ctx gocontext.Context) {
 func (t *Tracee) queueEvents(ctx gocontext.Context, in <-chan *trace.Event) (chan *trace.Event, chan error) {
 	out := make(chan *trace.Event, 10000)
 	errc := make(chan error, 1)
-	done := make(chan bool, 1)
+	done := make(chan struct{}, 1)
 
 	err := t.config.Cache.Setup()
 	if err != nil {
@@ -82,7 +82,7 @@ func (t *Tracee) queueEvents(ctx gocontext.Context, in <-chan *trace.Event) (cha
 		for {
 			select {
 			case <-ctx.Done():
-				done <- true
+				done <- struct{}{}
 				return
 			case event := <-in:
 				if event != nil {
