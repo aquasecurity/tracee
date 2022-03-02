@@ -93,7 +93,7 @@ func ReadArgFromBuff(ebpfMsgDecoder *EbpfDecoder, params []trace.ArgMeta) (trace
 	case credT:
 		var data SlimCred
 		err = ebpfMsgDecoder.DecodeSlimCred(&data)
-		res = data
+		res = trace.SlimCred(data) //here we cast to trace.SlimCred to ensure we send the public interface and not bufferdecoder.SlimCred
 	case strT:
 		res, err = readStringFromBuff(ebpfMsgDecoder)
 	case strArrT:
