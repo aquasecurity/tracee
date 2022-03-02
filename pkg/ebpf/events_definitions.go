@@ -74,6 +74,7 @@ const (
 	SecurityInodeSymlinkEventId
 	SocketDupEventID
 	HiddenInodesEventID
+	__KernelWriteEventID
 	MaxCommonEventID
 )
 
@@ -5850,10 +5851,12 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MagicWriteEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "magic_write",
-		Probes:  []probe{}, Sets: []string{},
+		Probes:  []probe{},
+		Sets:    []string{},
 		Dependencies: []dependency{
 			{eventID: VfsWriteEventID},
 			{eventID: VfsWritevEventID},
+			{eventID: __KernelWriteEventID},
 		},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
@@ -6138,6 +6141,22 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{},
 		Params: []trace.ArgMeta{
 			{Type: "char*", Name: "hidden_process"},
+		},
+	},
+	__KernelWriteEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "__kernel_write",
+		Probes: []probe{
+			{event: "__kernel_write", attach: kprobe, fn: "trace_kernel_write"},
+			{event: "__kernel_write", attach: kretprobe, fn: "trace_ret_kernel_write"},
+		},
+		Sets: []string{},
+		Params: []trace.ArgMeta{
+			{Type: "const char*", Name: "pathname"},
+			{Type: "dev_t", Name: "dev"},
+			{Type: "unsigned long", Name: "inode"},
+			{Type: "size_t", Name: "count"},
+			{Type: "off_t", Name: "pos"},
 		},
 	},
 	ContainerCreateEventID: {

@@ -99,7 +99,8 @@ Copyright (C) Aqua Security inc.
 #define TAIL_VFS_WRITEV                 1
 #define TAIL_SEND_BIN                   2
 #define TAIL_SEND_BIN_TP                3
-#define MAX_TAIL_CALL                   4
+#define TAIL_KERNEL_WRITE               4
+#define MAX_TAIL_CALL                   5
 
 #define NONE_T                          0UL
 #define INT_T                           1UL
@@ -190,7 +191,8 @@ Copyright (C) Aqua Security inc.
 #define SECURITY_INODE_SYMLINK          1031
 #define SOCKET_DUP                      1032
 #define HIDDEN_INODES                   1033
-#define MAX_EVENT_ID                    1034
+#define __KERNEL_WRITE                  1034
+#define MAX_EVENT_ID                    1035
 
 #define NET_PACKET                      0
 #define DEBUG_NET_SECURITY_BIND         1
@@ -3713,7 +3715,7 @@ int send_bin_tp(void* ctx)
     return send_bin_helper(ctx, &prog_array_tp, TAIL_SEND_BIN_TP);
 }
 
-static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id, u32 tail_call_id)
+static __always_inline int do_file_write_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id)
 {
     args_t saved_args;
     if (load_args(&saved_args, event_id) != 0) {
@@ -3735,7 +3737,7 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
     struct file *file      = (struct file *) saved_args.args[0];
     void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
 
-    if (event_id == VFS_WRITE) {
+    if (event_id == VFS_WRITE || event_id == __KERNEL_WRITE) {
         ptr                = (void*)         saved_args.args[1];
         count              = (size_t)        saved_args.args[2];
     } else {
@@ -3763,12 +3765,12 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (event_chosen(VFS_WRITE) || event_chosen(VFS_WRITEV)) {
+    if (event_chosen(VFS_WRITE) || event_chosen(VFS_WRITEV) || event_chosen(__KERNEL_WRITE)) {
         save_str_to_buf(&data, file_path, 0);
         save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 1);
         save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 2);
 
-        if (event_id == VFS_WRITE)
+        if (event_id == VFS_WRITE || event_id == __KERNEL_WRITE)
             save_to_submit_buf(&data, &count, sizeof(size_t), 3);
         else
             save_to_submit_buf(&data, &vlen, sizeof(unsigned long), 3);
@@ -3787,7 +3789,7 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
 
         save_str_to_buf(&data, file_path, 0);
 
-        if (event_id == VFS_WRITE) {
+        if (event_id == VFS_WRITE || event_id == __KERNEL_WRITE) {
             if (header_bytes < FILE_MAGIC_HDR_SIZE)
                 bpf_probe_read(header, header_bytes & FILE_MAGIC_MASK, ptr);
             else
@@ -3814,7 +3816,7 @@ static __always_inline int do_vfs_write_writev(struct pt_regs *ctx, u32 event_id
     return 0;
 }
 
-static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 event_id)
+static __always_inline int do_file_write_operation_tail(struct pt_regs *ctx, u32 event_id)
 {
     args_t saved_args;
     bin_args_t bin_args = {};
@@ -3835,7 +3837,7 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
     del_args(event_id);
 
     struct file *file      = (struct file *) saved_args.args[0];
-    if (event_id == VFS_WRITE) {
+    if (event_id == VFS_WRITE || event_id == __KERNEL_WRITE) {
         ptr                = (void*)         saved_args.args[1];
     } else {
         vec                = (struct iovec*) saved_args.args[1];
@@ -3908,7 +3910,7 @@ static __always_inline int do_vfs_write_writev_tail(struct pt_regs *ctx, u32 eve
         bpf_probe_read(&bin_args.metadata[12], 4, &i_mode);
         bpf_probe_read(&bin_args.metadata[16], 4, &pid);
         bin_args.start_off = start_pos;
-        if (event_id == VFS_WRITE) {
+        if (event_id == VFS_WRITE || event_id == __KERNEL_WRITE) {
             bin_args.ptr = ptr;
             bin_args.full_size = PT_REGS_RC(ctx);
         } else {
@@ -3936,13 +3938,13 @@ TRACE_ENT_FUNC(vfs_write, VFS_WRITE);
 SEC("kretprobe/vfs_write")
 int BPF_KPROBE(trace_ret_vfs_write)
 {
-    return do_vfs_write_writev(ctx, VFS_WRITE, TAIL_VFS_WRITE);
+    return do_file_write_operation(ctx, VFS_WRITE, TAIL_VFS_WRITE);
 }
 
 SEC("kretprobe/vfs_write_tail")
 int BPF_KPROBE(trace_ret_vfs_write_tail)
 {
-    return do_vfs_write_writev_tail(ctx, VFS_WRITE);
+    return do_file_write_operation_tail(ctx, VFS_WRITE);
 }
 
 SEC("kprobe/vfs_writev")
@@ -3951,13 +3953,28 @@ TRACE_ENT_FUNC(vfs_writev, VFS_WRITEV);
 SEC("kretprobe/vfs_writev")
 int BPF_KPROBE(trace_ret_vfs_writev)
 {
-    return do_vfs_write_writev(ctx, VFS_WRITEV, TAIL_VFS_WRITEV);
+    return do_file_write_operation(ctx, VFS_WRITEV, TAIL_VFS_WRITEV);
 }
 
 SEC("kretprobe/vfs_writev_tail")
 int BPF_KPROBE(trace_ret_vfs_writev_tail)
 {
-    return do_vfs_write_writev_tail(ctx, VFS_WRITEV);
+    return do_file_write_operation_tail(ctx, VFS_WRITEV);
+}
+
+SEC("kprobe/__kernel_write")
+TRACE_ENT_FUNC(kernel_write, __KERNEL_WRITE);
+
+SEC("kretprobe/__kernel_write")
+int BPF_KPROBE(trace_ret_kernel_write)
+{
+    return do_file_write_operation(ctx, __KERNEL_WRITE, TAIL_KERNEL_WRITE);
+}
+
+SEC("kretprobe/__kernel_write_tail")
+int BPF_KPROBE(trace_ret_kernel_write_tail)
+{
+    return do_file_write_operation_tail(ctx, TAIL_KERNEL_WRITE);
 }
 
 SEC("kprobe/security_mmap_addr")
