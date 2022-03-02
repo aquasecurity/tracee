@@ -1,9 +1,7 @@
 package ebpf
 
 import (
-	"bytes"
 	gocontext "context"
-	"encoding/binary"
 	"fmt"
 	"math"
 	"os"
@@ -13,24 +11,13 @@ import (
 
 	"inet.af/netaddr"
 
+	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
 )
-
-type EventMeta struct {
-	TimeStamp   uint64 `json:"timeStamp"`
-	NetEventId  uint32 `json:"netEventId"`
-	HostTid     int    `json:"hostTid"`
-	ProcessName string `json:"processName"`
-}
-
-type CaptureData struct {
-	PacketLength   uint32 `json:"pkt_len"`
-	InterfaceIndex uint32 `json:"if_index"`
-}
 
 type netInfo struct {
 	mtx           sync.Mutex
@@ -185,43 +172,62 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 				continue
 			}
 
-			evtMeta, payloadBytes := parseEventMetaData(in)
+			netDecoder := bufferdecoder.New(in)
 
-			timeStampObj := time.Unix(0, int64(evtMeta.TimeStamp+t.bootTime))
+			var netEventMetadata bufferdecoder.NetEventMetadata
+			err := netDecoder.DecodeNetEventMetadata(&netEventMetadata)
+			if err != nil {
+				t.handleError(err)
+				continue
+			}
+
+			timeStampObj := time.Unix(0, int64(netEventMetadata.TimeStamp+t.bootTime))
 
 			if t.config.Output.RelativeTime {
 				// To get the current ("wall") time, we add the boot time into it.
-				evtMeta.TimeStamp -= t.startTime
+				netEventMetadata.TimeStamp -= t.startTime
 			} else {
 				// timeStamp is nanoseconds since system boot time
 				// To get the monotonic time since tracee was started, we have to subtract the start time from the timestamp.
-				evtMeta.TimeStamp += t.bootTime
+				netEventMetadata.TimeStamp += t.bootTime
 			}
 
 			// continue without checking for error, as packetContext will be valid anyway
-			packetContext, networkThread, _ := t.getPcapContext(uint32(evtMeta.HostTid))
+			packetContext, networkThread, _ := t.getPcapContext(netEventMetadata.HostTid)
 
-			if evtMeta.NetEventId == NetPacket {
-				captureData, captureDataFinishOffset, err := parseCaptureData(payloadBytes)
+			if netEventMetadata.NetEventId == NetPacket {
+				var netCaptureData bufferdecoder.NetCaptureData
+				err = netDecoder.DecodeNetCaptureData(&netCaptureData)
 				if err != nil {
 					t.handleError(err)
 					continue
 				}
 
 				if !t.config.Debug {
-					if err := t.writePacket(captureData, time.Unix(0, int64(evtMeta.TimeStamp)), packetContext, payloadBytes, captureDataFinishOffset); err != nil {
+					packetBytes, err := getPacketBytes(netDecoder, netCaptureData.PacketLength)
+					if err != nil {
+						t.handleError(err)
+						continue
+					}
+
+					if err := t.writePacket(netCaptureData, time.Unix(0, int64(netEventMetadata.TimeStamp)), packetContext, packetBytes); err != nil {
 						t.handleError(err)
 						continue
 					}
 				} else {
-					evt, packetStartOffset, err := netPacketProtocolHandler(payloadBytes, captureDataFinishOffset, evtMeta, networkThread, "net_packet")
+					evt, err := netPacketProtocolHandler(netDecoder, netEventMetadata, networkThread, "net_packet")
 					if err != nil {
 						t.handleError(err)
 						continue
 					}
 
 					// capture the packet
-					if err := t.writePacket(captureData, time.Unix(0, int64(evtMeta.TimeStamp)), packetContext, payloadBytes, packetStartOffset); err != nil {
+					packetBytes, err := getPacketBytes(netDecoder, netCaptureData.PacketLength)
+					if err != nil {
+						t.handleError(err)
+						continue
+					}
+					if err := t.writePacket(netCaptureData, time.Unix(0, int64(netEventMetadata.TimeStamp)), packetContext, packetBytes); err != nil {
 						t.handleError(err)
 						continue
 					}
@@ -236,56 +242,45 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 				}
 
 			} else if t.config.Debug {
-				var pkt struct {
-					LocalIP     [16]byte
-					RemoteIP    [16]byte
-					LocalPort   uint16
-					RemotePort  uint16
-					Protocol    uint8
-					_           [3]byte //padding
-					TcpOldState uint32
-					TcpNewState uint32
-					_           [4]byte //padding
-					SockPtr     uint64
-				}
-				err := binary.Read(bytes.NewBuffer(payloadBytes), binary.LittleEndian, &pkt)
+				var netDebugEvent bufferdecoder.NetDebugEvent
+				err = netDecoder.DecodeNetDebugEvent(&netDebugEvent)
 				if err != nil {
 					t.handleError(err)
 					continue
 				}
 
-				switch evtMeta.NetEventId {
+				switch netEventMetadata.NetEventId {
 				case DebugNetSecurityBind:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/security_socket_bind LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+						timeStampObj, netEventMetadata.ProcessName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
 				case DebugNetUdpSendmsg:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_sendmsg          LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+						timeStampObj, netEventMetadata.ProcessName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
 				case DebugNetUdpDisconnect:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/__udp_disconnect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+						timeStampObj, netEventMetadata.ProcessName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
 				case DebugNetUdpDestroySock:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_destroy_sock     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+						timeStampObj, netEventMetadata.ProcessName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
 				case DebugNetUdpV6DestroySock:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/udpv6_destroy_sock   LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+						timeStampObj, netEventMetadata.ProcessName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
 				case DebugNetInetSockSetState:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/inet_sock_set_state  LocalIP: %v, LocalPort: %d, RemoteIP: %v, RemotePort: %d, Protocol: %d, OldState: %d, NewState: %d, SockPtr: 0x%x\n",
 						timeStampObj,
-						evtMeta.ProcessName,
-						evtMeta.HostTid,
-						netaddr.IPFrom16(pkt.LocalIP),
-						pkt.LocalPort,
-						netaddr.IPFrom16(pkt.RemoteIP),
-						pkt.RemotePort,
-						pkt.Protocol,
-						pkt.TcpOldState,
-						pkt.TcpNewState,
-						pkt.SockPtr)
+						netEventMetadata.ProcessName,
+						netEventMetadata.HostTid,
+						netaddr.IPFrom16(netDebugEvent.LocalIP),
+						netDebugEvent.LocalPort,
+						netaddr.IPFrom16(netDebugEvent.RemoteIP),
+						netDebugEvent.RemotePort,
+						netDebugEvent.Protocol,
+						netDebugEvent.TcpOldState,
+						netDebugEvent.TcpNewState,
+						netDebugEvent.SockPtr)
 				case DebugNetTcpConnect:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/tcp_connect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, evtMeta.ProcessName, evtMeta.HostTid, netaddr.IPFrom16(pkt.LocalIP), pkt.LocalPort, pkt.Protocol)
+						timeStampObj, netEventMetadata.ProcessName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
 				}
 			}
 
@@ -301,7 +296,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 	}
 }
 
-func (t *Tracee) writePacket(capData CaptureData, timeStamp time.Time, packetContext processPcapId, payloadBytes []byte, offset uint32) error {
+func (t *Tracee) writePacket(capData bufferdecoder.NetCaptureData, timeStamp time.Time, packetContext processPcapId, packetBytes []byte) error {
 	idx, ok := t.netPcap.ngIfacesIndex[int(capData.InterfaceIndex)]
 	if !ok {
 		return fmt.Errorf("cannot get the right interface index")
@@ -311,7 +306,7 @@ func (t *Tracee) writePacket(capData CaptureData, timeStamp time.Time, packetCon
 		Timestamp:      timeStamp,
 		CaptureLength:  int(capData.PacketLength),
 		Length:         int(capData.PacketLength),
-		InterfaceIndex: int(idx),
+		InterfaceIndex: idx,
 	}
 
 	_, pcapWriterExists := t.netPcap.GetPcapWriter(packetContext)
@@ -323,7 +318,7 @@ func (t *Tracee) writePacket(capData CaptureData, timeStamp time.Time, packetCon
 	}
 
 	writer, _ := t.netPcap.GetPcapWriter(packetContext)
-	err := writer.WritePacket(info, payloadBytes[offset:capData.PacketLength+offset])
+	err := writer.WritePacket(info, packetBytes)
 	if err != nil {
 		return err
 	}
@@ -336,81 +331,50 @@ func (t *Tracee) writePacket(capData CaptureData, timeStamp time.Time, packetCon
 	return nil
 }
 
-// parsing the EventMeta struct from byte array and returns a slice of the rest payload
-func parseEventMetaData(payloadBytes []byte) (EventMeta, []byte) {
-	var eventMetaData EventMeta
-	eventMetaData.TimeStamp = binary.LittleEndian.Uint64(payloadBytes[0:8])
-	eventMetaData.NetEventId = binary.LittleEndian.Uint32(payloadBytes[8:12])
-	eventMetaData.HostTid = int(binary.LittleEndian.Uint32(payloadBytes[12:16]))
-	eventMetaData.ProcessName = string(bytes.TrimRight(payloadBytes[16:32], "\x00"))
-	return eventMetaData, payloadBytes[32:]
-
-}
-
-// netPacketProtocolHandler parse a given a packet bytes buffer to packetMeta and event, and return the offset of start of the packet
-func netPacketProtocolHandler(buffer []byte, captureDataFinishOffset uint32, evtMeta EventMeta, ctx procinfo.ProcessCtx, eventName string) (trace.Event, uint32, error) {
-	var evt trace.Event
-	packet, packetStartOffset, err := ParseNetPacketMetaData(buffer, captureDataFinishOffset)
+func getPacketBytes(netDecoder *bufferdecoder.EbpfDecoder, packetLength uint32) ([]byte, error) {
+	packetBytes := make([]byte, packetLength)
+	err := netDecoder.DecodeBytes(packetBytes[:], packetLength)
 	if err != nil {
-		return evt, packetStartOffset, err
+		return packetBytes, err
 	}
-	evt = CreateNetEvent(evtMeta, ctx, eventName, int(evtMeta.TimeStamp))
-	appendPktMetaArg(&evt, packet)
-	return evt, packetStartOffset, nil
+	return packetBytes, nil
 }
 
-// parseCaptureData parses and returns CaptureData struct from the buffer, and return the offset of start of the packet
-func parseCaptureData(payload []byte) (CaptureData, uint32, error) {
-	var capData CaptureData
-	if len(payload) < 8 {
-		return capData, 0, fmt.Errorf("payload too short")
+// netPacketProtocolHandler parse a given a packet bytes buffer to packetMeta and event
+func netPacketProtocolHandler(netDecoder *bufferdecoder.EbpfDecoder, evtMeta bufferdecoder.NetEventMetadata, ctx procinfo.ProcessCtx, eventName string) (trace.Event, error) {
+	var packetEvent bufferdecoder.NetPacketEvent
+	err := netDecoder.DecodeNetPacketEvent(&packetEvent)
+	if err != nil {
+		return trace.Event{}, err
 	}
-	capData.PacketLength = binary.LittleEndian.Uint32(payload[0:4])
-	capData.InterfaceIndex = binary.LittleEndian.Uint32(payload[4:8])
-	return capData, 8, nil
+
+	evt := CreateNetEvent(evtMeta, ctx, eventName)
+	appendPktMetaArg(&evt, packetEvent)
+	return evt, nil
 }
 
-//ParseNetPacketMetaData parsing and returning the PacketMeta struct from bytes.buffer and return the offset of start of the packet
-func ParseNetPacketMetaData(payload []byte, captureDataFinishOffset uint32) (trace.PktMeta, uint32, error) {
-	var pktMetaData trace.PktMeta
-	if len(payload) < 45 {
-		return pktMetaData, 0, fmt.Errorf("payload size too short\n")
-	}
-	ip := [16]byte{0}
-	copy(ip[:], payload[captureDataFinishOffset:captureDataFinishOffset+16])
-	pktMetaData.SrcIP = netaddr.IPFrom16(ip).String()
-	copy(ip[:], payload[captureDataFinishOffset+16:captureDataFinishOffset+32])
-	pktMetaData.DstIP = netaddr.IPFrom16(ip).String()
-	pktMetaData.SrcPort = binary.LittleEndian.Uint16(payload[captureDataFinishOffset+32 : captureDataFinishOffset+34])
-	pktMetaData.DstPort = binary.LittleEndian.Uint16(payload[captureDataFinishOffset+34 : captureDataFinishOffset+36])
-	pktMetaData.Protocol = payload[captureDataFinishOffset+36]
-	// there is a padding of 3 bytes
-	return pktMetaData, captureDataFinishOffset + 40, nil
-}
-
-func CreateNetEvent(eventMeta EventMeta, ctx procinfo.ProcessCtx, eventName string, ts int) trace.Event {
+func CreateNetEvent(eventMeta bufferdecoder.NetEventMetadata, ctx procinfo.ProcessCtx, eventName string) trace.Event {
 	evt := ctx.GetEventByProcessCtx()
 	evt.Timestamp = int(eventMeta.TimeStamp)
-	evt.ProcessName = eventMeta.ProcessName
+	evt.ProcessName = string(eventMeta.ProcessName[:])
 	evt.EventID = int(eventMeta.NetEventId)
 	evt.EventName = eventName
-	evt.Timestamp = ts
 	return evt
 }
 
 //takes the packet metadata and create argument array with that data
-func appendPktMetaArg(event *trace.Event, NetPacket trace.PktMeta) {
+func appendPktMetaArg(event *trace.Event, netPacket bufferdecoder.NetPacketEvent) {
 	event.Args = []trace.Argument{
 		{
 			ArgMeta: trace.ArgMeta{
 				Name: "metadata",
 				Type: "trace.PktMeta"},
 			Value: trace.PktMeta{
-				SrcIP:    NetPacket.SrcIP,
-				DstIP:    NetPacket.DstIP,
-				SrcPort:  NetPacket.SrcPort,
-				DstPort:  NetPacket.DstPort,
-				Protocol: NetPacket.Protocol,
+				SrcIP:    netaddr.IPFrom16(netPacket.SrcIP).String(),
+				DstIP:    netaddr.IPFrom16(netPacket.DstIP).String(),
+				SrcPort:  netPacket.SrcPort,
+				DstPort:  netPacket.DstPort,
+				Protocol: netPacket.Protocol,
 			},
 		},
 	}
