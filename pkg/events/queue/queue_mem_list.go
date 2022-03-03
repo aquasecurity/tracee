@@ -8,6 +8,7 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
+// this usecase implements EventQueue interface with a memory stored queue (FIFO)
 type eventQueueMem struct {
 	mutex                *sync.Mutex
 	cond                 *sync.Cond
@@ -79,7 +80,7 @@ func (q *eventQueueMem) Dequeue() *trace.Event {
 // getQueueSizeInEvents returns size of the fifo queue, in # of events, based on
 // the host size
 func (q *eventQueueMem) getQueueSizeInEvents() int {
-	// eventSize is the memory footprint per event, in bytes. This is NOT the
+	// eventSize is the memory footprint per event in bytes. This is NOT the
 	// size of a single event, but the overall impact in memory consumption to
 	// each cached event (defined by experimentation)
 	eventSize := 1024
