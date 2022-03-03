@@ -71,12 +71,6 @@ func (t *Tracee) queueEvents(ctx gocontext.Context, in <-chan *trace.Event) (cha
 	errc := make(chan error, 1)
 	done := make(chan struct{}, 1)
 
-	err := t.config.Cache.Setup()
-	if err != nil {
-		errc <- err
-		return out, errc
-	}
-
 	// receive and cache events (release pressure in the pipeline)
 	go func() {
 		for {

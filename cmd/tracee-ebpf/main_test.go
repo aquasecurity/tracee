@@ -3,9 +3,10 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"io/ioutil"
 	"testing"
+
+	"github.com/aquasecurity/tracee/pkg/events/queue"
 
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/flags"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
@@ -1313,19 +1314,15 @@ func TestPrepareCache(t *testing.T) {
 		expectedError error
 	}{
 		{
-			testName:   "invalid cache option",
-			cacheSlice: []string{"foo"},
-			expectedCache: &queue.EventQueueMem{
-				EventsCacheMemSizeMB: 0,
-			},
+			testName:      "invalid cache option",
+			cacheSlice:    []string{"foo"},
+			expectedCache: nil,
 			expectedError: errors.New("unrecognized cache option format: foo"),
 		},
 		{
-			testName:   "invalid cache-type",
-			cacheSlice: []string{"cache-type=bleh"},
-			expectedCache: &queue.EventQueueMem{
-				EventsCacheMemSizeMB: 0,
-			},
+			testName:      "invalid cache-type",
+			cacheSlice:    []string{"cache-type=bleh"},
+			expectedCache: nil,
 			expectedError: errors.New("unrecognized cache-mem option: cache-type=bleh (valid options are: none,mem)"),
 		},
 		{
@@ -1335,11 +1332,9 @@ func TestPrepareCache(t *testing.T) {
 			expectedError: nil,
 		},
 		{
-			testName:   "cache-type=mem",
-			cacheSlice: []string{"cache-type=mem"},
-			expectedCache: &queue.EventQueueMem{
-				EventsCacheMemSizeMB: 0,
-			},
+			testName:      "cache-type=mem",
+			cacheSlice:    []string{"cache-type=mem"},
+			expectedCache: queue.NewEventQueueMem(0),
 			expectedError: nil,
 		},
 		{
@@ -1349,11 +1344,9 @@ func TestPrepareCache(t *testing.T) {
 			expectedError: errors.New("you need to specify cache-type=mem before setting mem-cache-size"),
 		},
 		{
-			testName:   "cache-type=mem with mem-cache-size=512",
-			cacheSlice: []string{"cache-type=mem", "mem-cache-size=512"},
-			expectedCache: &queue.EventQueueMem{
-				EventsCacheMemSizeMB: 512,
-			},
+			testName:      "cache-type=mem with mem-cache-size=512",
+			cacheSlice:    []string{"cache-type=mem", "mem-cache-size=512"},
+			expectedCache: queue.NewEventQueueMem(512),
 			expectedError: nil,
 		},
 	}
@@ -1361,11 +1354,8 @@ func TestPrepareCache(t *testing.T) {
 	for _, testcase := range testCases {
 		t.Run(testcase.testName, func(t *testing.T) {
 			cache, err := flags.PrepareCache(testcase.cacheSlice)
-			if err != nil {
-				assert.Equal(t, testcase.expectedError, err)
-			} else {
-				assert.Equal(t, testcase.expectedCache, cache)
-			}
+			assert.Equal(t, testcase.expectedError, err)
+			assert.Equal(t, testcase.expectedCache, cache)
 		})
 	}
 }

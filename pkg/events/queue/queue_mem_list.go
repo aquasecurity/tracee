@@ -3,53 +3,60 @@ package queue
 import (
 	"container/list"
 	"fmt"
-	"github.com/aquasecurity/tracee/types/trace"
 	"sync"
+
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
-type EventQueueMem struct {
+type eventQueueMem struct {
 	mutex                *sync.Mutex
 	cond                 *sync.Cond
 	cache                *list.List
 	maxAmountOfEvents    int // max number of cached events possible
-	EventsCacheMemSizeMB int
+	eventsCacheMemSizeMB int
+	verbose              string
 }
 
-func (q *EventQueueMem) String() string {
-	return fmt.Sprintf("In-Memory Event Queue (Size = %d MB)", q.EventsCacheMemSizeMB)
+func NewEventQueueMem(queueSizeMb int) CacheConfig {
+	q := &eventQueueMem{
+		eventsCacheMemSizeMB: queueSizeMb,
+	}
+	q.setup()
+	q.verbose = fmt.Sprintf("In-Memory Event Queue (Size = %d MB)", q.eventsCacheMemSizeMB)
+	return q
 }
 
-func (q *EventQueueMem) Setup() error {
+func (q *eventQueueMem) String() string {
+	return q.verbose
+}
+
+func (q *eventQueueMem) setup() {
 	q.mutex = new(sync.Mutex)
 	q.cond = sync.NewCond(q.mutex)
 
 	// set queue size and init queue
 	q.maxAmountOfEvents = q.getQueueSizeInEvents()
 	q.cache = new(list.List)
-
-	return nil
 }
 
 // Enqueue pushes an event into the queue (may block until queue is available)
-func (q *EventQueueMem) Enqueue(evt *trace.Event) {
-	q.mutex.Lock()
-	defer q.mutex.Unlock()
-
-	// enqueue waits for de-queuing if cache is full
-	for q.cache.Len() == q.maxAmountOfEvents {
+func (q *eventQueueMem) Enqueue(evt *trace.Event) {
+	q.cond.L.Lock()
+	// enqueue waits for de-queuing if cache is full (using >= instead of == to be in the safe side...)
+	for q.cache.Len() >= q.maxAmountOfEvents {
 		q.cond.Wait()
 	}
 
 	q.cache.PushBack(*evt)
+	q.cond.L.Unlock()
 	q.cond.Signal() // unblock dequeue if needed
 
 	evt = nil
 }
 
 // Dequeue pops an event from the queue
-func (q *EventQueueMem) Dequeue() *trace.Event {
-	q.mutex.Lock()
-	defer q.mutex.Unlock()
+func (q *eventQueueMem) Dequeue() *trace.Event {
+	q.cond.L.Lock()
 
 	// dequeue waits for en-queueing if cache is empty
 	for q.cache.Len() == 0 {
@@ -59,9 +66,11 @@ func (q *EventQueueMem) Dequeue() *trace.Event {
 	e := q.cache.Front()
 	event, ok := e.Value.(trace.Event)
 	if !ok {
+		q.cond.L.Unlock()
 		return nil
 	}
 	q.cache.Remove(e)
+	q.cond.L.Unlock()
 	q.cond.Signal() // unblock enqueue if needed
 
 	return &event
@@ -69,7 +78,7 @@ func (q *EventQueueMem) Dequeue() *trace.Event {
 
 // getQueueSizeInEvents returns size of the fifo queue, in # of events, based on
 // the host size
-func (q *EventQueueMem) getQueueSizeInEvents() int {
+func (q *eventQueueMem) getQueueSizeInEvents() int {
 	// eventSize is the memory footprint per event, in bytes. This is NOT the
 	// size of a single event, but the overall impact in memory consumption to
 	// each cached event (defined by experimentation)
@@ -89,19 +98,18 @@ func (q *EventQueueMem) getQueueSizeInEvents() int {
 	}
 
 	// EventsCacheMemSize was provided, return exact amount of events for it
-	if q.EventsCacheMemSizeMB > 0 {
-		return AmountOfEvents(q.EventsCacheMemSizeMB)
-
+	if q.eventsCacheMemSizeMB > 0 {
+		return AmountOfEvents(q.eventsCacheMemSizeMB)
 	}
 
 	switch {
-	case q.EventsCacheMemSizeMB <= GBtoMB(1): // up to 1GB, cache = ~256MB in events #
+	case q.eventsCacheMemSizeMB <= GBtoMB(1): // up to 1GB, cache = ~256MB in events #
 		return AmountOfEvents(256)
-	case q.EventsCacheMemSizeMB <= GBtoMB(4): // up to 4GB, cache = ~512MB in events #
+	case q.eventsCacheMemSizeMB <= GBtoMB(4): // up to 4GB, cache = ~512MB in events #
 		return AmountOfEvents(512)
-	case q.EventsCacheMemSizeMB <= GBtoMB(8): // up to 8GB, cache = ~1GB in events #
+	case q.eventsCacheMemSizeMB <= GBtoMB(8): // up to 8GB, cache = ~1GB in events #
 		return AmountOfEvents(GBtoMB(1))
-	case q.EventsCacheMemSizeMB <= GBtoMB(16): // up to 16GB, cache = ~2GB in events #
+	case q.eventsCacheMemSizeMB <= GBtoMB(16): // up to 16GB, cache = ~2GB in events #
 		return AmountOfEvents(GBtoMB(2))
 	}
 
