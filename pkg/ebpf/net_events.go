@@ -203,31 +203,9 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 					continue
 				}
 
-				if !t.config.Debug {
-					packetBytes, err := getPacketBytes(netDecoder, netCaptureData.PacketLength)
-					if err != nil {
-						t.handleError(err)
-						continue
-					}
-
-					if err := t.writePacket(netCaptureData, time.Unix(0, int64(netEventMetadata.TimeStamp)), packetContext, packetBytes); err != nil {
-						t.handleError(err)
-						continue
-					}
-				} else {
+				if t.config.Debug {
 					evt, err := netPacketProtocolHandler(netDecoder, netEventMetadata, networkThread, "net_packet")
 					if err != nil {
-						t.handleError(err)
-						continue
-					}
-
-					// capture the packet
-					packetBytes, err := getPacketBytes(netDecoder, netCaptureData.PacketLength)
-					if err != nil {
-						t.handleError(err)
-						continue
-					}
-					if err := t.writePacket(netCaptureData, time.Unix(0, int64(netEventMetadata.TimeStamp)), packetContext, packetBytes); err != nil {
 						t.handleError(err)
 						continue
 					}
@@ -241,6 +219,16 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 					}
 				}
 
+				// capture the packet
+				packetBytes, err := getPacketBytes(netDecoder, netCaptureData.PacketLength)
+				if err != nil {
+					t.handleError(err)
+					continue
+				}
+				if err := t.writePacket(netCaptureData, time.Unix(0, int64(netEventMetadata.TimeStamp)), packetContext, packetBytes); err != nil {
+					t.handleError(err)
+					continue
+				}
 			} else if t.config.Debug {
 				var netDebugEvent bufferdecoder.NetDebugEvent
 				err = netDecoder.DecodeNetDebugEvent(&netDebugEvent)
@@ -334,10 +322,7 @@ func (t *Tracee) writePacket(capData bufferdecoder.NetCaptureData, timeStamp tim
 func getPacketBytes(netDecoder *bufferdecoder.EbpfDecoder, packetLength uint32) ([]byte, error) {
 	packetBytes := make([]byte, packetLength)
 	err := netDecoder.DecodeBytes(packetBytes[:], packetLength)
-	if err != nil {
-		return packetBytes, err
-	}
-	return packetBytes, nil
+	return packetBytes, err
 }
 
 // netPacketProtocolHandler parse a given a packet bytes buffer to packetMeta and event
