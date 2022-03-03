@@ -1,3 +1,6 @@
+// package queue defines the interface and and implementation of a queue for events storage.
+// the interface is defined by EventQueue while the (currently only) implementation is defined by
+// eventQueueMem.
 package queue
 
 import (
@@ -8,7 +11,6 @@ type CacheConfig EventQueue
 
 type EventQueue interface {
 	String() string
-	Setup() error
 	Enqueue(*trace.Event)
-	Dequeue() *trace.Event // bool is for blocking (true) or non-blocking (false)
+	Dequeue() *trace.Event
 }
