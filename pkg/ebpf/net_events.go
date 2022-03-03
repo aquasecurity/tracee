@@ -34,8 +34,8 @@ func (ni *netInfo) GetPcapWriter(id processPcapId) (netPcap, bool) {
 	ni.mtx.Lock()
 	defer ni.mtx.Unlock()
 
-	writer, exists := ni.pcapWriters[id]
-	return writer, exists
+	pcap, exists := ni.pcapWriters[id]
+	return pcap, exists
 }
 
 func (ni *netInfo) SetPcapWriter(id processPcapId, pcap netPcap) {
@@ -93,15 +93,15 @@ func (t *Tracee) getPcapFilePath(pcapContext processPcapId) (string, error) {
 	return path.Join(pcapsDirPath, pcapFileName), nil
 }
 
-func (t *Tracee) createPcapFile(pcapContext processPcapId) error {
+func (t *Tracee) createPcapFile(pcapContext processPcapId) (netPcap, error) {
 	pcapFilePath, err := t.getPcapFilePath(pcapContext)
 	if err != nil {
-		return fmt.Errorf("error getting pcap file path: %v", err)
+		return netPcap{}, fmt.Errorf("error getting pcap file path: %v", err)
 	}
 
 	pcapFile, err := os.OpenFile(pcapFilePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
-		return fmt.Errorf("error creating pcap file: %v", err)
+		return netPcap{}, fmt.Errorf("error creating pcap file: %v", err)
 	}
 
 	ngIface := pcapgo.NgInterface{
@@ -114,7 +114,7 @@ func (t *Tracee) createPcapFile(pcapContext processPcapId) error {
 
 	pcapWriter, err := pcapgo.NewNgWriterInterface(pcapFile, ngIface, pcapgo.NgWriterOptions{})
 	if err != nil {
-		return err
+		return netPcap{}, err
 	}
 
 	for _, iface := range t.config.Capture.NetIfaces[1:] {
@@ -128,18 +128,20 @@ func (t *Tracee) createPcapFile(pcapContext processPcapId) error {
 
 		_, err := pcapWriter.AddInterface(ngIface)
 		if err != nil {
-			return err
+			return netPcap{}, err
 		}
 	}
 
 	// Flush the header
 	err = pcapWriter.Flush()
 	if err != nil {
-		return err
+		return netPcap{}, err
 	}
-	t.netCapture.SetPcapWriter(pcapContext, netPcap{pcapFile, pcapWriter})
 
-	return nil
+	pcap := netPcap{pcapFile, pcapWriter}
+	t.netCapture.SetPcapWriter(pcapContext, pcap)
+
+	return pcap, nil
 }
 
 func (t *Tracee) netExit(pcapContext processPcapId) {
@@ -310,16 +312,17 @@ func (t *Tracee) writePacket(capData bufferdecoder.NetCaptureData, timeStamp tim
 		InterfaceIndex: idx,
 	}
 
-	_, pcapWriterExists := t.netCapture.GetPcapWriter(packetContext)
+	var err error
+
+	pcap, pcapWriterExists := t.netCapture.GetPcapWriter(packetContext)
 	if !pcapWriterExists {
-		err := t.createPcapFile(packetContext)
+		pcap, err = t.createPcapFile(packetContext)
 		if err != nil {
 			return err
 		}
 	}
 
-	pcap, _ := t.netCapture.GetPcapWriter(packetContext)
-	err := pcap.Writer.WritePacket(info, packetBytes)
+	err = pcap.Writer.WritePacket(info, packetBytes)
 	if err != nil {
 		return err
 	}
