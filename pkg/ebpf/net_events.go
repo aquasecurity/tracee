@@ -20,8 +20,8 @@ import (
 )
 
 type netPcap struct {
-	FileObj *os.File
-	Writer  *pcapgo.NgWriter
+	FileObj os.File
+	Writer  pcapgo.NgWriter
 }
 
 type netInfo struct {
@@ -138,7 +138,7 @@ func (t *Tracee) createPcapFile(pcapContext processPcapId) (netPcap, error) {
 		return netPcap{}, err
 	}
 
-	pcap := netPcap{pcapFile, pcapWriter}
+	pcap := netPcap{*pcapFile, *pcapWriter}
 	t.netCapture.SetPcapWriter(pcapContext, pcap)
 
 	return pcap, nil
