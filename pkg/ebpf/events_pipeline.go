@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strconv"
 	"sync"
+	"time"
 	"unsafe"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
@@ -195,53 +196,74 @@ func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *trace.Event, 
 
 func (t *Tracee) processEvents(ctx gocontext.Context, in <-chan *trace.Event) <-chan error {
 	errc := make(chan error, 1)
+	throughputInterval := 1
+	throughputTicker := time.NewTicker(time.Second * time.Duration(throughputInterval))
+	eventsPerSec := 0.0
+	eventsCounter := 0.0
+	maximalThroughput := 0
 	go func() {
 		defer close(errc)
-		for event := range in {
-			err := t.processEvent(event)
-			if err != nil {
-				t.handleError(err)
-				continue
-			}
-
-			if (t.config.Filter.ContFilter.Value || t.config.Filter.NewContFilter.Enabled) && event.ContainerID == "" {
-				// Don't trace false container positives -
-				// a container filter is set by the user, but this event wasn't originated in a container.
-				// Although kernel filters shouldn't submit such events, we do this check to be on the safe side.
-				// For example, it might be that a new cgroup was created, and not by a container runtime,
-				// while we still didn't processed the cgroup_mkdir event and removed the cgroupid from the bpf container map.
-				// Note: this check should be placed after processEvent() so cgroup_mkdir event is processed
-				continue
-			}
-
-			// Derive event before parsing its arguments
-			derivatives := t.deriveEvent(*event)
-
-			// Only emit events requested by the user
-			if t.eventsToTrace[int32(event.EventID)] {
-				if t.config.Output.ParseArguments {
-					err = t.parseArgs(event)
+		for {
+			select {
+			case event := <-in:
+				{
+					eventsCounter++
+					err := t.processEvent(event)
 					if err != nil {
 						t.handleError(err)
 						continue
 					}
-				}
 
-				select {
-				case t.config.ChanEvents <- *event:
-					t.stats.EventCount.Increment()
-					event = nil
-				case <-ctx.Done():
-					return
-				}
-			}
+					if (t.config.Filter.ContFilter.Value || t.config.Filter.NewContFilter.Enabled) && event.ContainerID == "" {
+						// Don't trace false container positives -
+						// a container filter is set by the user, but this event wasn't originated in a container.
+						// Although kernel filters shouldn't submit such events, we do this check to be on the safe side.
+						// For example, it might be that a new cgroup was created, and not by a container runtime,
+						// while we still didn't processed the cgroup_mkdir event and removed the cgroupid from the bpf container map.
+						// Note: this check should be placed after processEvent() so cgroup_mkdir event is processed
+						continue
+					}
 
-			for _, derivative := range derivatives {
-				select {
-				case t.config.ChanEvents <- derivative:
-					t.stats.EventCount.Increment()
-				case <-ctx.Done():
-					return
+					// Derive event before parsing its arguments
+					derivatives := t.deriveEvent(*event)
+
+					// Only emit events requested by the user
+					if t.eventsToTrace[int32(event.EventID)] {
+						if t.config.Output.ParseArguments {
+							err = t.parseArgs(event)
+							if err != nil {
+								t.handleError(err)
+								continue
+							}
+						}
+
+						select {
+						case t.config.ChanEvents <- *event:
+							t.stats.EventCount.Increment()
+						case <-ctx.Done():
+							return
+						}
+					}
+
+					for _, derivative := range derivatives {
+						select {
+						case t.config.ChanEvents <- derivative:
+							t.stats.EventCount.Increment()
+						case <-ctx.Done():
+							return
+						}
+					}
+				}
+			case <-throughputTicker.C:
+				{
+
+					eventsPerSec = eventsCounter / float64(throughputInterval)
+					if eventsPerSec > float64(maximalThroughput) {
+						if d, _ := t.DecreaseLoad(); len(d.ChangeInEvents.AffectedEvents) != 0 {
+							fmt.Println("****************** DECREASING LOAD ***********************")
+
+						}
+					}
 				}
 			}
 		}

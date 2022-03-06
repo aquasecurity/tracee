@@ -334,7 +334,7 @@ func New(cfg Config) (*Tracee, error) {
 	}
 
 	if err = t.installEventThrottle(); err != nil {
-		return nil, fmt.Errorf("couldn't install tracer health probe: %v", err)
+		return nil, fmt.Errorf("couldn't install tracer events throttle: %v", err)
 	}
 	return t, nil
 }
