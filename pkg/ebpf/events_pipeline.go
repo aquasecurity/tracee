@@ -5,6 +5,7 @@ import (
 	gocontext "context"
 	"encoding/binary"
 	"fmt"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -196,18 +197,15 @@ func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *trace.Event, 
 
 func (t *Tracee) processEvents(ctx gocontext.Context, in <-chan *trace.Event) <-chan error {
 	errc := make(chan error, 1)
-	throughputInterval := 1
+	throughputInterval := 60
 	throughputTicker := time.NewTicker(time.Second * time.Duration(throughputInterval))
-	eventsPerSec := 0.0
-	eventsCounter := 0.0
-	maximalThroughput := 0
+	lostEvents := t.stats.LostEvCount.Read()
 	go func() {
 		defer close(errc)
 		for {
 			select {
 			case event := <-in:
 				{
-					eventsCounter++
 					err := t.processEvent(event)
 					if err != nil {
 						t.handleError(err)
@@ -254,14 +252,18 @@ func (t *Tracee) processEvents(ctx gocontext.Context, in <-chan *trace.Event) <-
 						}
 					}
 				}
-			case <-throughputTicker.C:
+			case <-throughputTicker.C: // proportional integral derivative
 				{
-
-					eventsPerSec = eventsCounter / float64(throughputInterval)
-					if eventsPerSec > float64(maximalThroughput) {
+					lostEventsCurrent := t.stats.LostEvCount.Read()
+					delta := lostEventsCurrent - lostEvents
+					lostEvents = lostEventsCurrent
+					if delta > 0 {
 						if d, _ := t.DecreaseLoad(); len(d.ChangeInEvents.AffectedEvents) != 0 {
-							fmt.Println("****************** DECREASING LOAD ***********************")
-
+							fmt.Fprintf(os.Stderr, "****************** DECREASING LOAD - EVENTS PER SEC ***********************\n")
+						}
+					} else {
+						if d, _ := t.IncreaseLoad(); len(d.ChangeInEvents.AffectedEvents) != 0 {
+							fmt.Fprintf(os.Stderr, "****************** DECREASING LOAD - EVENTS PER SEC ***********************\n")
 						}
 					}
 				}

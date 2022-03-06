@@ -176,7 +176,7 @@ type Tracee struct {
 	pidsInMntns           bucketscache.BucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap     *bpf.BPFMap
 	tcProbe               []netProbe
-	netPcap               netInfo
+	netCapture            netInfo
 	containers            *containers.Containers
 	procInfo              *procinfo.ProcInfo
 	eventsSorter          *sorting.EventsChronologicalSorter
