@@ -41,11 +41,13 @@ type CgroupInfo struct {
 
 // InitContainers initializes a Containers object and returns a pointer to it.
 // User should further call "Populate" and iterate with Containers data.
-func InitContainers() *Containers {
+func InitContainers() (*Containers, error) {
 	cgroupV1 := false
 	if _, err := os.Stat("/sys/fs/cgroup/cgroup.controllers"); os.IsNotExist(err) {
 		cgroupV1 = true
-		initCgroupV1()
+		if err := initCgroupV1(); err != nil {
+			return nil, err
+		}
 	}
 
 	return &Containers{
@@ -53,11 +55,15 @@ func InitContainers() *Containers {
 		cgroupMP: "",
 		cgroups:  make(map[uint32]CgroupInfo),
 		mtx:      sync.RWMutex{},
-	}
+	}, nil
 }
 
 func (c *Containers) IsCgroupV1() bool {
 	return c.cgroupV1
+}
+
+func (c *Containers) GetCgroupV1HID() int {
+	return cgroupV1HierarchyID
 }
 
 // Populate populates Containers struct by reading mounted proc and cgroups fs.
@@ -71,14 +77,11 @@ func (c *Containers) Populate() error {
 }
 
 // getCgroupV1SSID finds cgroup v1 hierarchy ID.
-func initCgroupV1() {
-	// Set hierarchy ID to 1 as a fallback in case of an error
-	cgroupV1HierarchyID = 1
-
+func initCgroupV1() error {
 	cgroupsFile := "/proc/cgroups"
 	file, err := os.Open(cgroupsFile)
 	if err != nil {
-		return
+		return fmt.Errorf("could not open cgroups file %s: %w", cgroupsFile, err)
 	}
 	defer file.Close()
 
@@ -90,10 +93,13 @@ func initCgroupV1() {
 		}
 		intID, err := strconv.Atoi(sline[1])
 		if err != nil || intID < 0 {
-			return
+			return fmt.Errorf("error parsing %s: %w", cgroupsFile, err)
 		}
 		cgroupV1HierarchyID = intID
+		return nil
 	}
+
+	return fmt.Errorf("couldn't determine cgroup v1 hierarchy id")
 }
 
 // procMountsCgroups finds cgroups v1 and v2 mountpoints.
@@ -246,7 +252,12 @@ func getContainerIdFromCgroup(cgroupPath string) (string, string) {
 // CgroupRemove removes cgroupInfo of deleted cgroup dir from Containers struct.
 // NOTE: Expiration logic of 5 seconds to avoid race conditions (if cgroup dir
 // event arrives too fast and its cgroupInfo data is still needed).
-func (c *Containers) CgroupRemove(cgroupId uint64) {
+func (c *Containers) CgroupRemove(cgroupId uint64, hierarchyID uint32) {
+	if c.cgroupV1 && int(hierarchyID) != cgroupV1HierarchyID {
+		// For cgroup v1, we only need to look at one controller
+		return
+	}
+
 	now := time.Now()
 	var deleted []uint64
 	c.mtx.Lock()
@@ -418,7 +429,12 @@ func (c *Containers) PopulateBpfMap(bpfModule *libbpfgo.Module, mapName string) 
 	return err
 }
 
-func RemoveFromBpfMap(bpfModule *libbpfgo.Module, cgroupId uint64, mapName string) error {
+func (c *Containers) RemoveFromBpfMap(bpfModule *libbpfgo.Module, cgroupId uint64, hierarchyID uint32, mapName string) error {
+	if c.cgroupV1 && int(hierarchyID) != cgroupV1HierarchyID {
+		// For cgroup v1, we only need to look at one controller
+		return nil
+	}
+
 	containersMap, err := bpfModule.GetMap(mapName)
 	if err != nil {
 		return err

@@ -204,6 +204,7 @@ Copyright (C) Aqua Security inc.
 #define CONFIG_TRACEE_PID               0
 #define CONFIG_OPTIONS                  1
 #define CONFIG_FILTERS                  2
+#define CONFIG_CGROUP_V1_HID            3
 
 #define OPT_SHOW_SYSCALL                (1 << 0)
 #define OPT_EXEC_ENV                    (1 << 1)
@@ -587,7 +588,7 @@ BPF_HASH(process_tree_map, u32, u32);                   // filter events by the 
 BPF_HASH(process_context_map, u32, process_context_t);  // holds the process_context data for every tid
 BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t);         // socket address to process context
 BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t);   // network identifier to process context
-BPF_ARRAY(config_map, u32, 3);                          // various configurations
+BPF_ARRAY(config_map, u32, 4);                          // various configurations
 BPF_ARRAY(file_filter, path_filter_t, 3);               // filter vfs_write events
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);             // percpu global buffer variables
 BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS);           // holds offsets to bufs respectively
@@ -2735,9 +2736,15 @@ int tracepoint__cgroup__cgroup_mkdir(struct bpf_raw_tracepoint_args *ctx)
     u64 cgroup_id = get_cgroup_id(dst_cgrp);
     u32 cgroup_id_lsb = cgroup_id;
 
-    // Assume this is a new container. If not, userspace code will delete this entry
-    u8 state = CONTAINER_CREATED;
-    bpf_map_update_elem(&containers_map, &cgroup_id_lsb, &state, BPF_ANY);
+    bool should_update = true;
+    if ((data.options & OPT_CGROUP_V1) && (get_config(CONFIG_CGROUP_V1_HID) != hierarchy_id))
+        should_update = false;
+
+    if (should_update) {
+        // Assume this is a new container. If not, userspace code will delete this entry
+        u8 state = CONTAINER_CREATED;
+        bpf_map_update_elem(&containers_map, &cgroup_id_lsb, &state, BPF_ANY);
+    }
 
     save_to_submit_buf(&data, &cgroup_id, sizeof(u64), 0);
     save_str_to_buf(&data, path, 1);
@@ -2759,12 +2766,20 @@ int tracepoint__cgroup__cgroup_rmdir(struct bpf_raw_tracepoint_args *ctx)
     struct cgroup *dst_cgrp = (struct cgroup*)ctx->args[0];
     char *path = (char*)ctx->args[1];
 
+    u32 hierarchy_id = get_cgroup_hierarchy_id(dst_cgrp);
     u64 cgroup_id = get_cgroup_id(dst_cgrp);
     u32 cgroup_id_lsb = cgroup_id;
-    bpf_map_delete_elem(&containers_map, &cgroup_id_lsb);
+
+    bool should_update = true;
+    if ((data.options & OPT_CGROUP_V1) && (get_config(CONFIG_CGROUP_V1_HID) != hierarchy_id))
+        should_update = false;
+
+    if (should_update)
+        bpf_map_delete_elem(&containers_map, &cgroup_id_lsb);
 
     save_to_submit_buf(&data, &cgroup_id, sizeof(u64), 0);
     save_str_to_buf(&data, path, 1);
+    save_to_submit_buf(&data, &hierarchy_id, sizeof(u32), 2);
     events_perf_submit(&data, CGROUP_RMDIR, 0);
 
     return 0;

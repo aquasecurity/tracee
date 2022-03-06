@@ -5900,6 +5900,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Params: []trace.ArgMeta{
 			{Type: "u64", Name: "cgroup_id"},
 			{Type: "const char*", Name: "cgroup_path"},
+			{Type: "u32", Name: "hierarchy_id"},
 		},
 	},
 	SecurityBprmCheckEventID: {
