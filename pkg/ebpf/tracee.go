@@ -260,9 +260,12 @@ func New(cfg Config) (*Tracee, error) {
 		}
 	}
 
-	c := containers.InitContainers()
+	c, err := containers.InitContainers()
+	if err != nil {
+		return nil, fmt.Errorf("error initializing containers: %w", err)
+	}
 	if err := c.Populate(); err != nil {
-		return nil, fmt.Errorf("error initializing containers: %v", err)
+		return nil, fmt.Errorf("error initializing containers: %w", err)
 	}
 	t.containers = c
 
@@ -357,6 +360,7 @@ const (
 	configTraceePid bpfConfig = iota
 	configOptions
 	configFilters
+	configCgroupV1HID
 )
 
 // options config should match defined values in ebpf code
@@ -587,6 +591,14 @@ func (t *Tracee) populateBPFMaps() error {
 	cOptVal := t.getOptionsConfig()
 	if err = bpfConfigMap.Update(unsafe.Pointer(&cOpt), unsafe.Pointer(&cOptVal)); err != nil {
 		return err
+	}
+
+	if t.containers.IsCgroupV1() {
+		cHID := uint32(configCgroupV1HID)
+		cHIDVal := t.containers.GetCgroupV1HID()
+		if err = bpfConfigMap.Update(unsafe.Pointer(&cHID), unsafe.Pointer(&cHIDVal)); err != nil {
+			return err
+		}
 	}
 
 	cFilter := uint32(configFilters)
