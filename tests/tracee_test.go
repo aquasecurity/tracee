@@ -26,6 +26,7 @@ func runTraceeContainer(ctx context.Context, tempDir string) (*traceeContainer, 
 		BindMounts: map[string]string{ // container:host
 			tempDir:                tempDir,           // required for all
 			"/etc/os-release-host": "/etc/os-release", // required for all
+			"/boot":                "/boot",           // required for all
 			"/usr/src":             "/usr/src",        // required for full
 			"/lib/modules":         "/lib/modules",    // required for full
 		},
