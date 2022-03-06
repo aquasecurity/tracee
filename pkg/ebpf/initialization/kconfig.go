@@ -40,5 +40,5 @@ func LoadKconfigValues(kc *helpers.KernelConfig, isDebug bool) (map[helpers.Kern
 			values[key] = kc.GetValue(key) // undefined, builtin OR module
 		}
 	}
-	return values, err
+	return values, nil
 }
