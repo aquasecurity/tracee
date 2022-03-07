@@ -27,7 +27,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/types/trace"
-	"github.com/google/gopacket/pcapgo"
 	lru "github.com/hashicorp/golang-lru"
 	"golang.org/x/sys/unix"
 )
@@ -174,7 +173,7 @@ type Tracee struct {
 	pidsInMntns       bucketscache.BucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
 	tcProbe           []netProbe
-	netPcap           netInfo
+	netCapture        netInfo
 	containers        *containers.Containers
 	procInfo          *procinfo.ProcInfo
 	eventsSorter      *sorting.EventsChronologicalSorter
@@ -301,16 +300,16 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error creating output path: %v", err)
 	}
 
-	t.netPcap.ngIfacesIndex = make(map[int]int)
+	t.netCapture.ngIfacesIndex = make(map[int]int)
 	for idx, iface := range t.config.Capture.NetIfaces {
 		netIface, err := net.InterfaceByName(iface)
 		if err != nil {
 			return nil, fmt.Errorf("invalid network interface: %s", iface)
 		}
 		// Map real network interface index to NgInterface index
-		t.netPcap.ngIfacesIndex[netIface.Index] = idx
+		t.netCapture.ngIfacesIndex[netIface.Index] = idx
 	}
-	t.netPcap.pcapWriters = make(map[processPcapId]*pcapgo.NgWriter)
+	t.netCapture.pcapWriters = make(map[processPcapId]netPcap)
 
 	// Get reference to stack trace addresses map
 	StackAddressesMap, err := t.bpfModule.GetMap("stack_addresses")

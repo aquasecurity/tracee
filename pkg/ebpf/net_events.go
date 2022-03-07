@@ -19,31 +19,44 @@ import (
 	"github.com/google/gopacket/pcapgo"
 )
 
+type netPcap struct {
+	FileObj os.File
+	Writer  pcapgo.NgWriter
+}
+
 type netInfo struct {
 	mtx           sync.Mutex
-	pcapWriters   map[processPcapId]*pcapgo.NgWriter
+	pcapWriters   map[processPcapId]netPcap
 	ngIfacesIndex map[int]int
 }
 
-func (ni *netInfo) GetPcapWriter(id processPcapId) (*pcapgo.NgWriter, bool) {
+func (ni *netInfo) GetPcapWriter(id processPcapId) (netPcap, bool) {
 	ni.mtx.Lock()
 	defer ni.mtx.Unlock()
 
-	writer, exists := ni.pcapWriters[id]
-	return writer, exists
+	pcap, exists := ni.pcapWriters[id]
+	return pcap, exists
 }
 
-func (ni *netInfo) SetPcapWriter(id processPcapId, writer *pcapgo.NgWriter) {
+func (ni *netInfo) SetPcapWriter(id processPcapId, pcap netPcap) {
 	ni.mtx.Lock()
 	defer ni.mtx.Unlock()
 
-	ni.pcapWriters[id] = writer
+	ni.pcapWriters[id] = pcap
 }
 
 func (ni *netInfo) DeletePcapWriter(id processPcapId) {
+	// close the pcap file
+	pcap, exists := ni.GetPcapWriter(id)
+	if exists {
+		pcap.Writer.Flush()
+		pcap.FileObj.Close()
+	}
+
 	ni.mtx.Lock()
 	defer ni.mtx.Unlock()
 
+	// delete from map
 	delete(ni.pcapWriters, id)
 }
 
@@ -80,15 +93,15 @@ func (t *Tracee) getPcapFilePath(pcapContext processPcapId) (string, error) {
 	return path.Join(pcapsDirPath, pcapFileName), nil
 }
 
-func (t *Tracee) createPcapFile(pcapContext processPcapId) error {
+func (t *Tracee) createPcapFile(pcapContext processPcapId) (netPcap, error) {
 	pcapFilePath, err := t.getPcapFilePath(pcapContext)
 	if err != nil {
-		return fmt.Errorf("error getting pcap file path: %v", err)
+		return netPcap{}, fmt.Errorf("error getting pcap file path: %v", err)
 	}
 
 	pcapFile, err := os.OpenFile(pcapFilePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
-		return fmt.Errorf("error creating pcap file: %v", err)
+		return netPcap{}, fmt.Errorf("error creating pcap file: %v", err)
 	}
 
 	ngIface := pcapgo.NgInterface{
@@ -101,7 +114,7 @@ func (t *Tracee) createPcapFile(pcapContext processPcapId) error {
 
 	pcapWriter, err := pcapgo.NewNgWriterInterface(pcapFile, ngIface, pcapgo.NgWriterOptions{})
 	if err != nil {
-		return err
+		return netPcap{}, err
 	}
 
 	for _, iface := range t.config.Capture.NetIfaces[1:] {
@@ -115,24 +128,26 @@ func (t *Tracee) createPcapFile(pcapContext processPcapId) error {
 
 		_, err := pcapWriter.AddInterface(ngIface)
 		if err != nil {
-			return err
+			return netPcap{}, err
 		}
 	}
 
 	// Flush the header
 	err = pcapWriter.Flush()
 	if err != nil {
-		return err
+		return netPcap{}, err
 	}
-	t.netPcap.SetPcapWriter(pcapContext, pcapWriter)
 
-	return nil
+	pcap := netPcap{*pcapFile, *pcapWriter}
+	t.netCapture.SetPcapWriter(pcapContext, pcap)
+
+	return pcap, nil
 }
 
 func (t *Tracee) netExit(pcapContext processPcapId) {
 	// wait a second before deleting from the map - because there might be more packets coming in
 	time.Sleep(time.Second * 1)
-	t.netPcap.DeletePcapWriter(pcapContext)
+	t.netCapture.DeletePcapWriter(pcapContext)
 }
 
 func (t *Tracee) getPcapContext(hostTid uint32) (processPcapId, procinfo.ProcessCtx, error) {
@@ -285,7 +300,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 }
 
 func (t *Tracee) writePacket(capData bufferdecoder.NetCaptureData, timeStamp time.Time, packetContext processPcapId, packetBytes []byte) error {
-	idx, ok := t.netPcap.ngIfacesIndex[int(capData.InterfaceIndex)]
+	idx, ok := t.netCapture.ngIfacesIndex[int(capData.InterfaceIndex)]
 	if !ok {
 		return fmt.Errorf("cannot get the right interface index")
 	}
@@ -297,22 +312,23 @@ func (t *Tracee) writePacket(capData bufferdecoder.NetCaptureData, timeStamp tim
 		InterfaceIndex: idx,
 	}
 
-	_, pcapWriterExists := t.netPcap.GetPcapWriter(packetContext)
+	var err error
+
+	pcap, pcapWriterExists := t.netCapture.GetPcapWriter(packetContext)
 	if !pcapWriterExists {
-		err := t.createPcapFile(packetContext)
+		pcap, err = t.createPcapFile(packetContext)
 		if err != nil {
 			return err
 		}
 	}
 
-	writer, _ := t.netPcap.GetPcapWriter(packetContext)
-	err := writer.WritePacket(info, packetBytes)
+	err = pcap.Writer.WritePacket(info, packetBytes)
 	if err != nil {
 		return err
 	}
 
 	// todo: maybe we should not flush every packet?
-	err = writer.Flush()
+	err = pcap.Writer.Flush()
 	if err != nil {
 		return err
 	}
