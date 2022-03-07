@@ -4,6 +4,7 @@ import (
 	gocontext "context"
 	"fmt"
 	"math"
+	"net"
 	"os"
 	"path"
 	"sync"
@@ -25,9 +26,19 @@ type netPcap struct {
 }
 
 type netInfo struct {
-	mtx           sync.Mutex
-	pcapWriters   map[processPcapId]netPcap
-	ngIfacesIndex map[int]int
+	mtx          sync.Mutex
+	pcapWriters  map[processPcapId]netPcap
+	ifaces       map[int]*net.Interface
+	ifacesConfig map[string]int32
+}
+
+func (n *netInfo) hasIface(ifaceName string) bool {
+	for _, iface := range n.ifaces {
+		if iface.Name == ifaceName {
+			return true
+		}
+	}
+	return false
 }
 
 func (ni *netInfo) GetPcapWriter(id processPcapId) (netPcap, bool) {
@@ -139,7 +150,7 @@ func (t *Tracee) createPcapFile(pcapContext processPcapId) (netPcap, error) {
 	}
 
 	pcap := netPcap{*pcapFile, *pcapWriter}
-	t.netCapture.SetPcapWriter(pcapContext, pcap)
+	t.netInfo.SetPcapWriter(pcapContext, pcap)
 
 	return pcap, nil
 }
@@ -147,7 +158,7 @@ func (t *Tracee) createPcapFile(pcapContext processPcapId) (netPcap, error) {
 func (t *Tracee) netExit(pcapContext processPcapId) {
 	// wait a second before deleting from the map - because there might be more packets coming in
 	time.Sleep(time.Second * 1)
-	t.netCapture.DeletePcapWriter(pcapContext)
+	t.netInfo.DeletePcapWriter(pcapContext)
 }
 
 func (t *Tracee) getHostPcapContext() processPcapId {
@@ -230,32 +241,40 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 					continue
 				}
 
-				if t.config.Debug {
-					evt, err := netPacketProtocolHandler(netDecoder, netEventMetadata, networkThread, "net_packet")
+				ifaceName := t.netInfo.ifaces[int(netCaptureData.ConfigIfaceIndex)].Name
+				ifaceIdx, err := t.getTracedIfaceIdx(ifaceName)
+				if err == nil && ifaceIdx >= 0 {
+					if t.eventsToTrace[netEventMetadata.NetEventId] {
+						evt, err := netPacketProtocolHandler(netDecoder, netEventMetadata, networkThread, "net_packet")
+						if err != nil {
+							t.handleError(err)
+							continue
+						}
+						// output the event
+						select {
+						case t.config.ChanEvents <- evt:
+							t.stats.NetEvCount.Increment()
+						case <-ctx.Done():
+							return
+						}
+					}
+				}
+
+				ifaceName = t.netInfo.ifaces[int(netCaptureData.ConfigIfaceIndex)].Name
+				ifaceIdx, err = t.getCapturedIfaceIdx(ifaceName)
+				if ifaceIdx >= 0 && err == nil {
+					// capture the packet
+					packetBytes, err := getPacketBytes(netDecoder, netCaptureData.PacketLength)
 					if err != nil {
 						t.handleError(err)
 						continue
 					}
-
-					// output the event
-					select {
-					case t.config.ChanEvents <- evt:
-						t.stats.NetEvCount.Increment()
-					case <-ctx.Done():
-						return
+					if err := t.writePacket(netCaptureData, time.Unix(0, int64(netEventMetadata.TimeStamp)), packetContext, packetBytes); err != nil {
+						t.handleError(err)
+						continue
 					}
 				}
 
-				// capture the packet
-				packetBytes, err := getPacketBytes(netDecoder, netCaptureData.PacketLength)
-				if err != nil {
-					t.handleError(err)
-					continue
-				}
-				if err := t.writePacket(netCaptureData, time.Unix(0, int64(netEventMetadata.TimeStamp)), packetContext, packetBytes); err != nil {
-					t.handleError(err)
-					continue
-				}
 			} else if t.config.Debug {
 				var netDebugEvent bufferdecoder.NetDebugEvent
 				err = netDecoder.DecodeNetDebugEvent(&netDebugEvent)
@@ -263,7 +282,6 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 					t.handleError(err)
 					continue
 				}
-
 				switch netEventMetadata.NetEventId {
 				case DebugNetSecurityBind:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/security_socket_bind LocalIP: %v, LocalPort: %d, Protocol: %d\n",
@@ -312,21 +330,23 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 }
 
 func (t *Tracee) writePacket(capData bufferdecoder.NetCaptureData, timeStamp time.Time, packetContext processPcapId, packetBytes []byte) error {
-	idx, ok := t.netCapture.ngIfacesIndex[int(capData.InterfaceIndex)]
+	iface, ok := t.netInfo.ifaces[int(capData.ConfigIfaceIndex)]
 	if !ok {
-		return fmt.Errorf("cannot get the right interface index")
+		return fmt.Errorf("cannot get the right interface")
 	}
 
+	ifaceIdx, err := t.getCapturedIfaceIdx(iface.Name)
+	if err != nil {
+		return fmt.Errorf("cannot get the right interface idx in the capture ifaces list")
+	}
 	info := gopacket.CaptureInfo{
 		Timestamp:      timeStamp,
 		CaptureLength:  int(capData.PacketLength),
 		Length:         int(capData.PacketLength),
-		InterfaceIndex: idx,
+		InterfaceIndex: ifaceIdx,
 	}
 
-	var err error
-
-	pcap, pcapWriterExists := t.netCapture.GetPcapWriter(packetContext)
+	pcap, pcapWriterExists := t.netInfo.GetPcapWriter(packetContext)
 	if !pcapWriterExists {
 		pcap, err = t.createPcapFile(packetContext)
 		if err != nil {

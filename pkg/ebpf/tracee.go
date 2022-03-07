@@ -77,21 +77,6 @@ type netProbe struct {
 	egressHook  *bpf.TcHook
 }
 
-func appendStr2Str(str1 []string, str2 []string) []string {
-	found := false
-	for _, str := range str1 {
-		for _, val := range str2 {
-			if val == str {
-				found = true
-			}
-		}
-		if !found {
-			str2 = append(str2, str)
-		}
-	}
-	return str2
-}
-
 // Validate does static validation of the configuration
 func (tc Config) Validate() error {
 	if tc.Filter == nil || tc.Filter.EventsToTrace == nil {
@@ -101,6 +86,11 @@ func (tc Config) Validate() error {
 	for _, e := range tc.Filter.EventsToTrace {
 		if _, ok := EventsDefinitions[e]; !ok {
 			return fmt.Errorf("invalid event to trace: %d", e)
+		}
+		if strings.Compare(EventsDefinitions[e].Name, EventsDefinitions[NetPacket].Name) == 0 {
+			if len(tc.Filter.NetFilter.InterfacesToTrace) == 0 {
+				return fmt.Errorf("missing interface for net event: %s, please add -t net=<iface>", EventsDefinitions[e].Name)
+			}
 		}
 	}
 	for eventID, eventFilters := range tc.Filter.ArgFilter.Filters {
@@ -188,7 +178,7 @@ type Tracee struct {
 	pidsInMntns       bucketscache.BucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
 	tcProbe           []netProbe
-	netCapture        netInfo
+	netInfo           netInfo
 	containers        *containers.Containers
 	procInfo          *procinfo.ProcInfo
 	eventsSorter      *sorting.EventsChronologicalSorter
@@ -284,6 +274,30 @@ func New(cfg Config) (*Tracee, error) {
 	}
 	t.containers = c
 
+	t.netInfo.ifaces = make(map[int]*net.Interface)
+	t.netInfo.ifacesConfig = make(map[string]int32)
+	for _, iface := range t.config.Filter.NetFilter.InterfacesToTrace {
+		netIface, err := net.InterfaceByName(iface)
+		if err != nil {
+			return nil, fmt.Errorf("invalid network interface: %s", iface)
+		}
+		// Map real network interface index to interface object
+		t.netInfo.ifaces[netIface.Index] = netIface
+		t.netInfo.ifacesConfig[netIface.Name] |= TraceIface
+	}
+
+	for _, iface := range t.config.Capture.NetIfaces {
+		netIface, err := net.InterfaceByName(iface)
+		if err != nil {
+			return nil, fmt.Errorf("invalid network interface: %s", iface)
+		}
+		if !t.netInfo.hasIface(netIface.Name) {
+			// Map real network interface index to interface object
+			t.netInfo.ifaces[netIface.Index] = netIface
+		}
+		t.netInfo.ifacesConfig[netIface.Name] |= CaptureIface
+	}
+
 	err = t.initBPF()
 	if err != nil {
 		t.Close()
@@ -317,17 +331,7 @@ func New(cfg Config) (*Tracee, error) {
 		t.Close()
 		return nil, fmt.Errorf("error creating output path: %v", err)
 	}
-
-	t.netCapture.ngIfacesIndex = make(map[int]int)
-	for idx, iface := range t.config.Capture.NetIfaces {
-		netIface, err := net.InterfaceByName(iface)
-		if err != nil {
-			return nil, fmt.Errorf("invalid network interface: %s", iface)
-		}
-		// Map real network interface index to NgInterface index
-		t.netCapture.ngIfacesIndex[netIface.Index] = idx
-	}
-	t.netCapture.pcapWriters = make(map[processPcapId]netPcap)
+	t.netInfo.pcapWriters = make(map[processPcapId]netPcap)
 
 	// Get reference to stack trace addresses map
 	StackAddressesMap, err := t.bpfModule.GetMap("stack_addresses")
@@ -705,6 +709,20 @@ func (t *Tracee) populateBPFMaps() error {
 			}
 		}
 	}
+	if len(t.netInfo.ifaces) > 0 {
+		networkConfingMap, err := t.bpfModule.GetMap("network_config") // u32, int
+		if err != nil {
+			return err
+		}
+		for _, iface := range t.netInfo.ifaces {
+			ifaceIdx := iface.Index
+			ifaceConf := t.netInfo.ifacesConfig[iface.Name]
+			if err := networkConfingMap.Update(unsafe.Pointer(&ifaceIdx), unsafe.Pointer(&ifaceConf)); err != nil {
+				return err
+			}
+
+		}
+	}
 
 	return nil
 }
@@ -833,7 +851,7 @@ func (t *Tracee) initBPF() error {
 		}
 	}
 
-	if t.config.Capture.NetIfaces == nil && !t.config.Debug && t.config.Filter.InterfaceToTrace == nil {
+	if t.config.Capture.NetIfaces == nil && !t.config.Debug && t.config.Filter.NetFilter.InterfacesToTrace == nil {
 		// SecuritySocketBindEventID is set as an essentialEvent if 'capture net' or 'debug' were chosen by the user.
 		networkProbes := []string{"tc_ingress", "tc_egress", "trace_udp_sendmsg", "trace_udp_disconnect", "trace_udp_destroy_sock", "trace_udpv6_destroy_sock", "tracepoint__inet_sock_set_state"}
 		for _, progName := range networkProbes {
@@ -852,34 +870,34 @@ func (t *Tracee) initBPF() error {
 	if err != nil {
 		return err
 	}
-	if t.config.Capture.NetIfaces != nil || t.config.Filter.InterfaceToTrace != nil {
-		ifaceList := appendStr2Str(t.config.Filter.InterfaceToTrace, t.config.Capture.NetIfaces)
-		for _, iface := range ifaceList {
-			ingressHook, err := t.attachTcProg(iface, bpf.BPFTcIngress, "tc_ingress")
-			if err != nil {
-				return err
-			}
-
-			egressHook, err := t.attachTcProg(iface, bpf.BPFTcEgress, "tc_egress")
-			if err != nil {
-				return err
-			}
-
-			tcProbe := netProbe{
-				ingressHook: ingressHook,
-				egressHook:  egressHook,
-			}
-			t.tcProbe = append(t.tcProbe, tcProbe)
-		}
-
-		if err = t.attachNetProbes(); err != nil {
-			return err
-		}
-
-	}
 
 	err = t.populateBPFMaps()
 	if err != nil {
+		return err
+	}
+
+	if t.eventsToTrace[NetPacket] && len(t.config.Filter.NetFilter.InterfacesToTrace) == 0 {
+		return fmt.Errorf("couldn't trace %s event, missing interface", EventsDefinitions[NetPacket].Name)
+	}
+	for _, iface := range t.netInfo.ifaces {
+		ingressHook, err := t.attachTcProg(iface.Name, bpf.BPFTcIngress, "tc_ingress")
+		if err != nil {
+			return err
+		}
+
+		egressHook, err := t.attachTcProg(iface.Name, bpf.BPFTcEgress, "tc_egress")
+		if err != nil {
+			return err
+		}
+
+		tcProbe := netProbe{
+			ingressHook: ingressHook,
+			egressHook:  egressHook,
+		}
+		t.tcProbe = append(t.tcProbe, tcProbe)
+	}
+
+	if err = t.attachNetProbes(); err != nil {
 		return err
 	}
 
@@ -1103,4 +1121,18 @@ func (t *Tracee) invokeInitEvents() {
 			t.stats.EventCount.Increment()
 		}
 	}
+}
+func (t *Tracee) getTracedIfaceIdx(ifaceName string) (int, error) {
+	return findInList(ifaceName, &t.config.Filter.NetFilter.InterfacesToTrace)
+}
+func (t *Tracee) getCapturedIfaceIdx(ifaceName string) (int, error) {
+	return findInList(ifaceName, &t.config.Capture.NetIfaces)
+}
+func findInList(element string, list *[]string) (int, error) {
+	for idx, name := range *list {
+		if name == element {
+			return idx, nil
+		}
+	}
+	return 0, fmt.Errorf("element: %s dosent found\n", element)
 }

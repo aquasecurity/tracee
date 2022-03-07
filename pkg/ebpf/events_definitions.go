@@ -90,8 +90,14 @@ const Unique32BitSyscallsStartID = 3000
 
 const (
 	NetPacket int32 = iota + 4000
-	MaxNetEventEventID
+	MaxNetEventID
 )
+
+const (
+	CaptureIface int32 = iota + 1
+	TraceIface
+)
+
 const (
 	DebugNetSecurityBind int32 = iota + 5000
 	DebugNetUdpSendmsg
@@ -6187,8 +6193,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Name:         "net_packet",
 		Probes:       []probe{},
 		Dependencies: []dependency{},
-		Sets:         []string{"net_events"},
-		Params: []external.ArgMeta{
+		Sets:         []string{},
+		Params: []trace.ArgMeta{
 			{Type: "external.PktMeta", Name: "metadata"},
 		},
 	},

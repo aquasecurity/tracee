@@ -196,3 +196,9 @@ trace all events that originated from bash or from one of the processes spawned 
 ```
 --trace comm=bash --trace follow
 ```
+
+trace the network events over a given interface name
+
+```
+-trace net=<iface>
+```

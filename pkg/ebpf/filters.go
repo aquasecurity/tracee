@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -55,7 +56,7 @@ type Filter struct {
 	ArgFilter         *ArgFilter
 	ProcessTreeFilter *ProcessTreeFilter
 	Follow            bool
-	InterfaceToTrace  []string
+	NetFilter         *NetFilter
 }
 
 type UintFilter struct {
@@ -643,4 +644,28 @@ func (filter *ContIDFilter) FilterOut() bool {
 	} else {
 		return true
 	}
+}
+
+type NetFilter struct {
+	InterfacesToTrace []string
+}
+
+func (filter *NetFilter) Parse(operatorAndValues string) error {
+	return ParseIface(operatorAndValues, &filter.InterfacesToTrace)
+}
+
+func ParseIface(operatorAndValues string, ifacesList *[]string) error {
+	ifaces := strings.Split(strings.TrimPrefix(operatorAndValues, "="), ",")
+	for _, iface := range ifaces {
+		if _, err := net.InterfaceByName(iface); err != nil {
+			return fmt.Errorf("invalid network interface: %s", iface)
+		}
+		_, err := findInList(iface, ifacesList)
+		// if the interface is not already in the interface list, we want to add it
+		if err != nil {
+			*ifacesList = append(*ifacesList, iface)
+		}
+	}
+
+	return nil
 }

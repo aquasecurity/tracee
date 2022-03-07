@@ -2,7 +2,6 @@ package flags
 
 import (
 	"fmt"
-	"net"
 	"strings"
 
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
@@ -38,6 +37,9 @@ The field 'set' selects a set of events to trace according to predefined sets, w
 
 The special 'follow' expression declares that not only processes that match the criteria will be traced, but also their descendants.
 
+The field 'net' specifies which interfaces to monitor when tracing network events.
+Notice that the 'net' field is mandatory when tracing network events.
+
 Examples:
   --trace pid=new                                              | only trace events from new processes
   --trace pid=510,1709                                         | only trace events from pid 510 or pid 1709
@@ -67,33 +69,12 @@ Examples:
   --trace openat.pathname=/tmp*                                | only trace 'openat' events that have 'pathname' prefixed by "/tmp"
   --trace openat.pathname!=/tmp/1,/bin/ls                      | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
   --trace comm=bash --trace follow                             | trace all events that originated from bash or from one of the processes spawned by bash
+  --trace net=docker0 			                       | trace the net events over docker0 interface
 
 
 Note: some of the above operators have special meanings in different shells.
 To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 `
-}
-
-func parseNetFields(comm string, interfaceArray *[]string) (bool, error) {
-	if strings.HasPrefix(comm, "net=") {
-		iface := strings.TrimPrefix(comm, "net=")
-		if _, err := net.InterfaceByName(iface); err != nil {
-			return false, fmt.Errorf("invalid network interface: %s", iface)
-		}
-		found := false
-		// Check if we already have this interface
-		for _, item := range *interfaceArray {
-			if iface == item {
-				found = true
-				break
-			}
-		}
-		if !found {
-			*interfaceArray = append(*interfaceArray, iface)
-		}
-		return true, nil
-	}
-	return false, nil
 }
 
 func PrepareFilter(filters []string) (tracee.Filter, error) {
@@ -148,8 +129,10 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 		ProcessTreeFilter: &tracee.ProcessTreeFilter{
 			PIDs: make(map[uint32]bool),
 		},
-		EventsToTrace:    []int32{},
-		InterfaceToTrace: []string{},
+		EventsToTrace: []int32{},
+		NetFilter: &tracee.NetFilter{
+			InterfacesToTrace: []string{},
+		},
 	}
 
 	eventFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}}
@@ -232,6 +215,14 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 			continue
 		}
 
+		if strings.HasPrefix(filterName, "net") {
+			err := filter.NetFilter.Parse(operatorAndValues)
+			if err != nil {
+				return tracee.Filter{}, err
+			}
+			continue
+		}
+
 		if filterName == "mntns" {
 			err := filter.MntNSFilter.Parse(operatorAndValues)
 			if err != nil {
@@ -300,13 +291,6 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 
 		if strings.HasPrefix("follow", f) {
 			filter.Follow = true
-			continue
-		}
-		found, err := parseNetFields(f, &filter.InterfaceToTrace)
-		if err != nil {
-			return filter, err
-		}
-		if found {
 			continue
 		}
 		return tracee.Filter{}, fmt.Errorf("invalid filter option specified, use '--trace help' for more info")
