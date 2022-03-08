@@ -3613,19 +3613,24 @@ int BPF_KPROBE(trace_tcp_connect)
 static __always_inline int icmp_delete_network_map(struct sk_buff *skb, int send, int ipv6) {
 
     local_net_id_t connect_id = {0};
+    __u8 icmp_type;
 
     if (ipv6) {
         connect_id.protocol = IPPROTO_ICMPV6;
-        struct ipv6hdr *ip_header = (struct ipv6hdr *)(READ_KERN(skb->head) + READ_KERN(skb->network_header));
 
+        struct ipv6hdr *ip_header = (struct ipv6hdr *)(READ_KERN(skb->head) + READ_KERN(skb->network_header));
         struct in6_addr daddr = READ_KERN(ip_header->daddr);
         struct in6_addr saddr = READ_KERN(ip_header->saddr);
+
+        struct icmp6hdr *icmph = (struct icmp6hdr *)(READ_KERN(skb->head) + READ_KERN(skb->transport_header));
+        icmp_type = READ_KERN(icmph->icmp6_type);
+
+        connect_id.port = READ_KERN(icmph->icmp6_dataun.u_echo.identifier);
+
         if (send) {
             connect_id.address = daddr;
         }
         else {
-            struct icmp6hdr *icmph = (struct icmp6hdr *)(READ_KERN(skb->head) + READ_KERN(skb->transport_header));
-            u8 icmp_type = READ_KERN(icmph->icmp6_type);
             if (icmp_type == ICMPV6_ECHO_REQUEST) {
                 return 0;
             }
@@ -3635,16 +3640,20 @@ static __always_inline int icmp_delete_network_map(struct sk_buff *skb, int send
     }
     else {
         connect_id.protocol = IPPROTO_ICMP;
-        struct iphdr *ip_header = (struct iphdr *)(READ_KERN(skb->head) + READ_KERN(skb->network_header));
 
+        struct iphdr *ip_header = (struct iphdr *)(READ_KERN(skb->head) + READ_KERN(skb->network_header));
         __be32 daddr = READ_KERN(ip_header->daddr);
         __be32 saddr = READ_KERN(ip_header->saddr);
+
+        struct icmphdr *icmph = (struct icmphdr *)(READ_KERN(skb->head) + READ_KERN(skb->transport_header));
+        icmp_type = READ_KERN(icmph->type);
+
+        connect_id.port = READ_KERN(icmph->un.echo.id);
+
         if (send) {
             connect_id.address.s6_addr32[3] = daddr;
         }
         else {
-            struct icmphdr *icmph = (struct icmphdr *)(READ_KERN(skb->head) + READ_KERN(skb->transport_header));
-            u8 icmp_type = READ_KERN(icmph->type);
             if (icmp_type == ICMP_ECHO) {
                 return 0;
             }
@@ -3700,39 +3709,44 @@ int BPF_KPROBE(trace_icmpv6_rcv)
     return 0;
 }
 
-static __always_inline int icmp_update_network_map(event_data_t *data, struct sock *sk, struct msghdr *msg) {
-    u16 family = get_sock_family(sk);
-    u16 protocol = get_sock_protocol(sk);
-
-    if ((protocol != IPPROTO_ICMP && protocol != IPPROTO_ICMPV6) || (family != AF_INET && family != AF_INET6)) {
+SEC("kprobe/ping_v4_sendmsg")
+int BPF_KPROBE(trace_ping_v4_sendmsg)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
         return 0;
-    }
 
-    // this is icmp packet send
+    if (!should_trace(&data.context))
+        return 0;
 
     local_net_id_t connect_id = {0};
-    connect_id.protocol = protocol;
 
-    if (family == AF_INET) {
-        struct sockaddr_in *addr = (struct sockaddr_in *)READ_KERN(msg->msg_name);
-        connect_id.address.s6_addr32[3] = READ_KERN(addr->sin_addr).s_addr;
-        connect_id.address.s6_addr16[5] = 0xffff;
-    }
-    else if (family == AF_INET6) {
-        struct sockaddr_in6 *addr = (struct sockaddr_in6 *)READ_KERN(msg->msg_name);
-        connect_id.address = READ_KERN(addr->sin6_addr);
-    }
+    // this is v4 function
+    connect_id.protocol = IPPROTO_ICMP;
 
+    // get the icmp id
+    struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
+    struct inet_sock *inet = inet_sk(sk);
+    u16 sport = get_inet_sport(inet);
+    connect_id.port = sport;
+
+    // get the address
+    struct msghdr *msg = (struct msghdr *)PT_REGS_PARM2(ctx);
+    struct sockaddr_in *addr = (struct sockaddr_in *)READ_KERN(msg->msg_name);
+    connect_id.address.s6_addr32[3] = READ_KERN(addr->sin_addr).s_addr;
+    connect_id.address.s6_addr16[5] = 0xffff;
+
+    // update the map
     net_ctx_t net_ctx;
-    net_ctx.host_tid = data->context.host_tid;
-    __builtin_memcpy(net_ctx.comm, data->context.comm, TASK_COMM_LEN);
+    net_ctx.host_tid = data.context.host_tid;
+    __builtin_memcpy(net_ctx.comm, data.context.comm, TASK_COMM_LEN);
     bpf_map_update_elem(&network_map, &connect_id, &net_ctx, BPF_ANY);
 
     return 0;
 }
 
-SEC("kprobe/inet_sendmsg")
-int BPF_KPROBE(trace_inet_sendmsg)
+SEC("kprobe/ping_v6_sendmsg")
+int BPF_KPROBE(trace_ping_v6_sendmsg)
 {
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
@@ -3741,30 +3755,29 @@ int BPF_KPROBE(trace_inet_sendmsg)
     if (!should_trace(&data.context))
         return 0;
 
-    struct socket *sock = (struct socket *)PT_REGS_PARM1(ctx);
-    struct sock *sk = get_socket_sock(sock);
+    local_net_id_t connect_id = {0};
 
+    // this is v6 function
+    connect_id.protocol = IPPROTO_ICMPV6;
+
+    // get the icmp id
+    struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
+    struct inet_sock *inet = inet_sk(sk);
+    u16 sport = get_inet_sport(inet);
+    connect_id.port = sport;
+
+    // get the address
     struct msghdr *msg = (struct msghdr *)PT_REGS_PARM2(ctx);
+    struct sockaddr_in6 *addr = (struct sockaddr_in6 *)READ_KERN(msg->msg_name);
+    connect_id.address = READ_KERN(addr->sin6_addr);
 
-    return icmp_update_network_map(&data, sk, msg);
-}
+    // update the map
+    net_ctx_t net_ctx;
+    net_ctx.host_tid = data.context.host_tid;
+    __builtin_memcpy(net_ctx.comm, data.context.comm, TASK_COMM_LEN);
+    bpf_map_update_elem(&network_map, &connect_id, &net_ctx, BPF_ANY);
 
-SEC("kprobe/inet6_sendmsg")
-int BPF_KPROBE(trace_inet6_sendmsg)
-{
-    event_data_t data = {};
-    if (!init_event_data(&data, ctx))
-        return 0;
-
-    if (!should_trace(&data.context))
-        return 0;
-
-    struct socket *sock = (struct socket *)PT_REGS_PARM1(ctx);
-    struct sock *sk = get_socket_sock(sock);
-
-    struct msghdr *msg = (struct msghdr *)PT_REGS_PARM2(ctx);
-
-    return icmp_update_network_map(&data, sk, msg);
+    return 0;
 }
 
 static __always_inline u32 send_bin_helper(void* ctx, void *prog_array, int tail_call)
@@ -4500,9 +4513,28 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
 
         pkt.src_port = udp->source;
         pkt.dst_port = udp->dest;
-    } else if (pkt.protocol == IPPROTO_ICMP || pkt.protocol == IPPROTO_ICMPV6) {
-        pkt.src_port = 0;
-        pkt.dst_port = 0;
+    } else if (pkt.protocol == IPPROTO_ICMP) {
+        if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off + sizeof(struct icmphdr))) {
+            return TC_ACT_UNSPEC;
+        }
+
+        struct icmphdr *icmph = (void *)head + l4_hdr_off;
+        u16 icmp_id = READ_KERN(icmph->un.echo.id);
+
+        // set the ports to icmp_id so that the connect_id could be found
+        pkt.src_port = icmp_id;
+        pkt.dst_port = icmp_id;
+    } else if (pkt.protocol == IPPROTO_ICMPV6) {
+        if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off + sizeof(struct icmp6hdr))) {
+            return TC_ACT_UNSPEC;
+        }
+
+        struct icmp6hdr *icmph = (void *)head + l4_hdr_off;
+        u16 icmp_id = READ_KERN(icmph->icmp6_dataun.u_echo.identifier);
+
+        // set the ports to icmp_id so that the connect_id could be found
+        pkt.src_port = icmp_id;
+        pkt.dst_port = icmp_id;
     }
     else {
         //todo: support other transport protocols?

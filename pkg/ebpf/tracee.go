@@ -818,24 +818,6 @@ func (t *Tracee) attachNetProbes() error {
 		return fmt.Errorf("error attaching event tcp_connect: %v", err)
 	}
 
-	prog, _ = t.bpfModule.GetProgram("trace_inet_sendmsg")
-	if prog == nil {
-		return fmt.Errorf("couldn't find trace_inet_sendmsg program")
-	}
-	_, err = prog.AttachKprobe("inet_sendmsg")
-	if err != nil {
-		return fmt.Errorf("error attaching event inet_sendmsg: %v", err)
-	}
-
-	prog, _ = t.bpfModule.GetProgram("trace_inet6_sendmsg")
-	if prog == nil {
-		return fmt.Errorf("couldn't find trace_inet6_sendmsg program")
-	}
-	_, err = prog.AttachKprobe("inet6_sendmsg")
-	if err != nil {
-		return fmt.Errorf("error attaching event inet6_sendmsg: %v", err)
-	}
-
 	prog, _ = t.bpfModule.GetProgram("trace_icmp_rcv")
 	if prog == nil {
 		return fmt.Errorf("couldn't find trace_icmp_rcv program")
@@ -870,6 +852,24 @@ func (t *Tracee) attachNetProbes() error {
 	_, err = prog.AttachKprobe("icmp6_send")
 	if err != nil {
 		return fmt.Errorf("error attaching event icmp6_send: %v", err)
+	}
+
+	prog, _ = t.bpfModule.GetProgram("trace_ping_v4_sendmsg")
+	if prog == nil {
+		return fmt.Errorf("couldn't find trace_ping_v4_sendmsg program")
+	}
+	_, err = prog.AttachKprobe("ping_v4_sendmsg")
+	if err != nil {
+		return fmt.Errorf("error attaching event ping_v4_sendmsg: %v", err)
+	}
+
+	prog, _ = t.bpfModule.GetProgram("trace_ping_v6_sendmsg")
+	if prog == nil {
+		return fmt.Errorf("couldn't find trace_ping_v6_sendmsg program")
+	}
+	_, err = prog.AttachKprobe("ping_v6_sendmsg")
+	if err != nil {
+		return fmt.Errorf("error attaching event ping_v6_sendmsg: %v", err)
 	}
 
 	return nil
@@ -916,7 +916,7 @@ func (t *Tracee) initBPF() error {
 
 	if t.config.Capture.NetIfaces == nil && !t.config.Debug && t.config.Filter.NetFilter.InterfacesToTrace == nil {
 		// SecuritySocketBindEventID is set as an essentialEvent if 'capture net' or 'debug' were chosen by the user.
-		networkProbes := []string{"tc_ingress", "tc_egress", "trace_udp_sendmsg", "trace_udp_disconnect", "trace_udp_destroy_sock", "trace_udpv6_destroy_sock", "tracepoint__inet_sock_set_state", "trace_inet_sendmsg", "trace_icmp_rcv", "trace_icmp_send", "trace_inet6_sendmsg", "trace_icmp6_send", "trace_icmpv6_rcv"}
+		networkProbes := []string{"tc_ingress", "tc_egress", "trace_udp_sendmsg", "trace_udp_disconnect", "trace_udp_destroy_sock", "trace_udpv6_destroy_sock", "tracepoint__inet_sock_set_state", "trace_icmp_send", "trace_icmp_rcv", "trace_icmp6_send", "trace_icmpv6_rcv", "trace_ping_v4_sendmsg", "trace_ping_v6_sendmsg"}
 		for _, progName := range networkProbes {
 			prog, _ := t.bpfModule.GetProgram(progName)
 			if prog == nil {

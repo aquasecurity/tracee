@@ -521,10 +521,22 @@ struct sk_buff {
 
 struct icmphdr {
 	__u8 type;
+    union {
+        struct {
+            __be16	id;
+            __be16	sequence;
+        } echo;
+    } un;
 };
 
 struct icmp6hdr {
 	__u8 icmp6_type;
+	union {
+	    struct icmpv6_echo {
+            __be16		identifier;
+            __be16		sequence;
+        } u_echo;
+	} icmp6_dataun;
 };
 
 struct linux_binprm {
