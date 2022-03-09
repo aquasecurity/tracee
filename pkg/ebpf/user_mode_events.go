@@ -63,16 +63,16 @@ func fetchInitNamespaces() map[string]uint32 {
 	return initNamespacesMap
 }
 
-func (t *Tracee) CreateExistingContainersEvents() []external.Event {
-	var events []external.Event
+func (t *Tracee) CreateExistingContainersEvents() []trace.Event {
+	var events []trace.Event
 	def := EventsDefinitions[ExistingContainerEventID]
 	for _, info := range t.containers.GetContainers() {
-		args := []external.Argument{
+		args := []trace.Argument{
 			{ArgMeta: def.Params[0], Value: info.Runtime},
 			{ArgMeta: def.Params[1], Value: info.ContainerId},
 			{ArgMeta: def.Params[2], Value: info.Ctime.UnixNano()},
 		}
-		existingContainerEvent := external.Event{
+		existingContainerEvent := trace.Event{
 			Timestamp:   int(time.Now().UnixNano()),
 			ProcessName: "tracee-ebpf",
 			EventID:     int(ExistingContainerEventID),
