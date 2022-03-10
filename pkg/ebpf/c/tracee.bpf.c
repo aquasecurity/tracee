@@ -346,12 +346,12 @@ Copyright (C) Aqua Security inc.
 #endif
 
 #define BPF_MAP(_name, _type, _key_type, _value_type, _max_entries)     \
-    struct bpf_map_def SEC("maps") _name = {                            \
-        .type = _type,                                                  \
-        .key_size = sizeof(_key_type),                                  \
-        .value_size = sizeof(_value_type),                              \
-        .max_entries = _max_entries,                                    \
-    };
+    struct {                                                            \
+        __uint(type, _type);                                            \
+        __uint(max_entries, _max_entries);                              \
+        __type(key, _key_type);                                         \
+        __type(value, _value_type);                                     \
+    } _name SEC(".maps");
 
 #define BPF_HASH(_name, _key_type, _value_type) \
     BPF_MAP(_name, BPF_MAP_TYPE_HASH, _key_type, _value_type, 10240)
@@ -372,13 +372,9 @@ Copyright (C) Aqua Security inc.
     BPF_MAP(_name, BPF_MAP_TYPE_PERF_EVENT_ARRAY, int, __u32, 1024)
 
 // stack traces: the value is 1 big byte array of the stack addresses
-#define BPF_STACK_TRACE(_name, _max_entries)                            \
-    struct bpf_map_def SEC("maps") _name = {                            \
-        .type = BPF_MAP_TYPE_STACK_TRACE,                               \
-        .key_size = sizeof(u32),                                        \
-        .value_size = sizeof(size_t) * MAX_STACK_DEPTH,                 \
-        .max_entries = _max_entries,                                    \
-    };
+typedef __u64 stack_trace_t[MAX_STACK_DEPTH];
+#define BPF_STACK_TRACE(_name, _max_entries) \
+    BPF_MAP(_name, BPF_MAP_TYPE_STACK_TRACE, u32, stack_trace_t, _max_entries)
 
 #ifndef CORE
 #ifdef RHEL_RELEASE_CODE
@@ -3581,7 +3577,7 @@ int BPF_KPROBE(trace_tcp_connect)
     return net_map_update_or_delete_sock(ctx, DEBUG_NET_TCP_CONNECT, sk, data.context.host_tid);
 }
 
-static __always_inline u32 send_bin_helper(void* ctx, struct bpf_map_def *prog_array, int tail_call)
+static __always_inline u32 send_bin_helper(void* ctx, void *prog_array, int tail_call)
 {
     // Note: sending the data to the userspace have the following constraints:
     //

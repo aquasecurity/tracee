@@ -92,8 +92,8 @@ github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4/go.mod h1:ybxpYRF
 github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d/go.mod h1:rBZYJk541a8SKzHPHnH3zbiI+7dagKZ0cgpgrD7Fyho=
 github.com/alexflint/go-filemutex v0.0.0-20171022225611-72bdc8eae2ae/go.mod h1:CgnQgUtFrFz9mxFNtED3jI5tLDjKlOM+oUF/sTk6ps0=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
-github.com/aquasecurity/libbpfgo v0.2.4-libbpf-0.6.1.0.20220228145039-5617016fe995 h1:yOyZr+Y+Ih0pmHAsxzLsOH7v9sDV6fWwSLPO2wEx11o=
-github.com/aquasecurity/libbpfgo v0.2.4-libbpf-0.6.1.0.20220228145039-5617016fe995/go.mod h1:/+clceXE103FaXvVTIY2HAkQjxNtkra4DRWvZYr2SKw=
+github.com/aquasecurity/libbpfgo v0.2.5-libbpf-0.7.0 h1:BpW7qxkveYXx8TCtvYWIvmliPqaTCz/IYs1i+Gyj0MQ=
+github.com/aquasecurity/libbpfgo v0.2.5-libbpf-0.7.0/go.mod h1:/+clceXE103FaXvVTIY2HAkQjxNtkra4DRWvZYr2SKw=
 github.com/aquasecurity/tracee/types v0.0.0-20220228102148-dffb469aed94 h1:8dNst7rq3V688n0CyVGy0aNV179s5jGfi6i+C8fCeh4=
 github.com/aquasecurity/tracee/types v0.0.0-20220228102148-dffb469aed94/go.mod h1:l8MikK8yNCxoFVFq+WqvRg3kiDUX4wDTQwo7oD7YnWM=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=
