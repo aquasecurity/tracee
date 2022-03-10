@@ -373,13 +373,8 @@ Copyright (C) Aqua Security inc.
 
 // stack traces: the value is 1 big byte array of the stack addresses
 typedef __u64 stack_trace_t[MAX_STACK_DEPTH];
-#define BPF_STACK_TRACE(_name, _max_entries)                            \
-    struct {                                                            \
-        __uint(type, BPF_MAP_TYPE_STACK_TRACE);                         \
-        __uint(max_entries, _max_entries);                              \
-        __type(key, u32);                                               \
-        __type(value, stack_trace_t);                                   \
-    } _name SEC(".maps");
+#define BPF_STACK_TRACE(_name, _max_entries) \
+    BPF_MAP(_name, BPF_MAP_TYPE_STACK_TRACE, u32, stack_trace_t, _max_entries)
 
 #ifndef CORE
 #ifdef RHEL_RELEASE_CODE
