@@ -1,5 +1,4 @@
-.PHONY: all | env
-all: tracee-ebpf tracee-rules rules
+.DEFAULT_GOAL := all
 
 #
 # make
@@ -104,7 +103,7 @@ LAST_GIT_TAG ?= $(shell $(CMD_GIT) describe --tags --match 'v*' 2>/dev/null)
 VERSION ?= $(if $(RELEASE_TAG),$(RELEASE_TAG),$(LAST_GIT_TAG))
 
 #
-# environment
+##@ environment
 #
 
 UNAME_M := $(shell uname -m)
@@ -123,7 +122,7 @@ ifeq ($(UNAME_M),aarch64)
 endif
 
 .PHONY: env
-env:
+env:  ## show makefile environment/variables
 	@echo ---------------------------------------
 	@echo "Makefile Environment:"
 	@echo ---------------------------------------
@@ -198,48 +197,40 @@ env:
 # usage
 #
 
+COLOR_OFF := \033[0m
+COLOR_BOLD := \033[1m
+COLOR_CYAN := \033[36m
+comma := ,
+
 .PHONY: help
 help:
-	@echo ""
-	@echo "# environment"
-	@echo ""
-	@echo "    $$ make env                  	# show makefile environment/variables"
-	@echo ""
-	@echo "# build"
-	@echo ""
-	@echo "    $$ make all                  	# build tracee-ebpf, tracee-rules & rules"
-	@echo "    $$ make bpf-core             	# build ./dist/tracee.bpf.core.o"
-	@echo "    $$ make bpf-nocore           	# build ./dist/tracee.bpf.XXX.o"
-	@echo "    $$ make tracee-ebpf          	# build ./dist/tracee-ebpf"
-	@echo "    $$ make tracee-rules         	# build ./dist/tracee-rules"
-	@echo "    $$ make rules                	# build ./dist/rules"
-	@echo ""
-	@echo "# install"
-	@echo ""
-	@echo "    $$ make install-bpf-nocore   	# install BPF no CO-RE obj into /tmp/tracee"
-	@echo "    $$ make uninstall-bpf-nocore 	# uninstall BPF no CO-RE obj from /tmp/tracee"
-	@echo ""
-	@echo "# clean"
-	@echo ""
-	@echo "    $$ make clean                	# wipe ./dist/"
-	@echo "    $$ make clean-bpf-core       	# wipe ./dist/tracee.bpf.core.o"
-	@echo "    $$ make clean-bpf-nocore     	# wipe ./dist/tracee.bpf.XXX.o"
-	@echo "    $$ make clean-tracee-ebpf    	# wipe ./dist/tracee-ebpf"
-	@echo "    $$ make clean-tracee-rules   	# wipe ./dist/tracee-rules"
-	@echo "    $$ make clean-rules          	# wipe ./dist/rules"
-	@echo ""
-	@echo "# test"
-	@echo ""
-	@echo "    $$ make test                 	# run all go & opa tests"
-	@echo "    $$ make test-tracee-ebpf     	# go test tracee-ebpf"
-	@echo "    $$ make test-tracee-rules    	# go test tracee-rules"
-	@echo "    $$ make test-rules           	# opa test (tracee-rules)"
-	@echo ""
-	@echo "# flags"
-	@echo ""
-	@echo "    $$ STATIC=1 make ...                 # build static binaries"
-	@echo "    $$ BTFHUB=1 STATIC=1 make ...        # build static binaries, embed BTF"
-	@echo ""
+	@$(CMD_AWK) '																						\
+	function colorize(text, color) {																	\
+		return color text "${COLOR_OFF}";																\
+	}																									\
+	function help_category(title) {																		\
+		printf "\n%s\n", colorize(title, "${COLOR_BOLD}");												\
+	}																									\
+	function help_entry(target, desc) {																	\
+		printf "  %-40s %s\n", colorize(target, "${COLOR_CYAN}"), desc;									\
+	}																									\
+	BEGIN {																								\
+		FS = ":.*##"; 																					\
+		printf "\nUsage:\n  make %s\n", colorize("<target>", "${COLOR_CYAN}");							\
+	} 																									\
+	/^[a-zA-Z_0-9-]+:.*?##/ { 																			\
+		help_entry($$1, $$2);									 										\
+	} 																									\
+	/^##@/ { 																							\
+		help_category(substr($$0, 5));							 										\
+	} 																									\
+	END {																								\
+		help_category("flags");																			\
+		help_entry("STATIC=1 make ...", " build static binaries");										\
+		help_entry("BTFHUB=1 STATIC=1 make ...", " build static binaries$(comma) embed BTF");			\
+		print "";																						\
+	}																									\
+	' $(MAKEFILE_LIST)
 
 #
 # variables
@@ -271,6 +262,12 @@ $(OUTPUT_DIR)/btfhub:
 #
 # bundle
 #
+
+##@ build
+
+.PHONY: all
+all: tracee-ebpf tracee-rules rules ## build tracee-ebpf, tracee-rules & rules
+
 
 .PHONY: $(OUTPUT_DIR)/tracee.bpf
 $(OUTPUT_DIR)/tracee.bpf: \
@@ -313,6 +310,33 @@ ifeq ($(wildcard $@), )
 endif
 
 #
+# co-re ebpf
+#
+
+TRACEE_EBPF_OBJ_CORE_HEADERS = $(shell find pkg/ebpf/c -name *.h)
+
+.PHONY: bpf-core
+bpf-core: $(OUTPUT_DIR)/tracee.bpf.core.o ## build ./dist/tracee.bpf.core.o
+
+$(OUTPUT_DIR)/tracee.bpf.core.o: \
+	$(OUTPUT_DIR)/libbpf/libbpf.a \
+	$(TRACEE_EBPF_OBJ_SRC) \
+	$(TRACEE_EBPF_OBJ_CORE_HEADERS)
+#
+	$(MAKE) $(OUTPUT_DIR)/tracee.bpf
+	$(CMD_CLANG) \
+		-D__TARGET_ARCH_$(LINUX_ARCH) \
+		-D__BPF_TRACING__ \
+		-DCORE \
+		-I./pkg/ebpf/c/ \
+		-I$(OUTPUT_DIR)/tracee.bpf \
+		-target bpf \
+		-O2 -g \
+		-march=bpf -mcpu=$(BPF_VCPU) \
+		-c $(TRACEE_EBPF_OBJ_SRC) \
+		-o $@
+
+#
 # non co-re ebpf
 #
 
@@ -325,7 +349,7 @@ KERN_SRC_PATH ?= $(if $(KERN_HEADERS),$(KERN_HEADERS),$(if $(wildcard /lib/modul
 BPF_NOCORE_TAG = $(subst .,_,$(KERN_RELEASE)).$(subst .,_,$(VERSION))
 
 .PHONY: bpf-nocore
-bpf-nocore: $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o
+bpf-nocore: $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o ## build ./dist/tracee.bpf.XXX.o
 
 $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o: \
 	$(OUTPUT_DIR)/libbpf/libbpf.a \
@@ -372,62 +396,6 @@ $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o: \
 		$(@:.o=.ll)
 	$(CMD_RM) $(@:.o=.ll)
 
-.PHONY: clean-bpf-nocore
-clean-bpf-nocore:
-#
-	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o
-
-TMP_DIR = /tmp/tracee
-
-.PHONY: install-bpf-nocore
-install-bpf-nocore: \
-	$(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o \
-	| .check_$(CMD_INSTALL) \
-	.check_$(CMD_RM) \
-	.check_$(CMD_MKDIR) \
-#
-	@$(CMD_MKDIR) -p $(TMP_DIR)
-	$(CMD_RM) -f $(TMP_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o
-	$(CMD_INSTALL) -m 0640 $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o $(TMP_DIR)
-
-.PHONY: uninstall-bpf-nocore
-uninstall-bpf-nocore: \
-	| .check_$(CMD_RM)
-#
-	$(CMD_RM) -f $(TMP_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o
-
-#
-# co-re ebpf
-#
-
-TRACEE_EBPF_OBJ_CORE_HEADERS = $(shell find pkg/ebpf/c -name *.h)
-
-.PHONY: bpf-core
-bpf-core: $(OUTPUT_DIR)/tracee.bpf.core.o
-
-$(OUTPUT_DIR)/tracee.bpf.core.o: \
-	$(OUTPUT_DIR)/libbpf/libbpf.a \
-	$(TRACEE_EBPF_OBJ_SRC) \
-	$(TRACEE_EBPF_OBJ_CORE_HEADERS)
-#
-	$(MAKE) $(OUTPUT_DIR)/tracee.bpf
-	$(CMD_CLANG) \
-		-D__TARGET_ARCH_$(LINUX_ARCH) \
-		-D__BPF_TRACING__ \
-		-DCORE \
-		-I./pkg/ebpf/c/ \
-		-I$(OUTPUT_DIR)/tracee.bpf \
-		-target bpf \
-		-O2 -g \
-		-march=bpf -mcpu=$(BPF_VCPU) \
-		-c $(TRACEE_EBPF_OBJ_SRC) \
-		-o $@
-
-.PHONY: clean-bpf-core
-clean-bpf-core:
-#
-	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee.bpf.core.o
-
 #
 # tracee-ebpf
 #
@@ -455,7 +423,7 @@ TRACEE_EBPF_SRC_DIRS = ./cmd/tracee-ebpf/ ./pkg/ebpf ./pkg
 TRACEE_EBPF_SRC = $(shell find $(TRACEE_EBPF_SRC_DIRS) -type f -name '*.go' ! -name '*_test.go')
 
 .PHONY: tracee-ebpf
-tracee-ebpf: $(OUTPUT_DIR)/tracee-ebpf
+tracee-ebpf: $(OUTPUT_DIR)/tracee-ebpf ## build ./dist/tracee-ebpf
 
 $(OUTPUT_DIR)/tracee-ebpf: \
 	.checkver_$(CMD_GO) \
@@ -477,24 +445,6 @@ endif
 			" \
 		-v -o $@ \
 		./cmd/tracee-ebpf
-
-.PHONY: clean-tracee-ebpf
-clean-tracee-ebpf:
-#
-	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-ebpf
-	$(CMD_RM) -rf .*.md5
-
-.PHONY: test-tracee-ebpf
-test-tracee-ebpf: \
-	.checkver_$(CMD_GO) \
-	$(OUTPUT_DIR)/tracee.bpf.core.o
-#
-	$(MAKE) $(OUTPUT_DIR)/btfhub
-	$(GO_ENV_EBPF) $(CMD_GO) test \
-		-tags $(GO_TAGS_EBPF) \
-		-v \
-		./cmd/tracee-ebpf/... \
-		./pkg/...
 
 #
 # btfhub (expensive: only run if core obj changed)
@@ -543,7 +493,7 @@ TRACEE_RULES_SRC_DIRS = ./cmd/tracee-rules/ ./pkg/rules/
 TRACEE_RULES_SRC=$(shell find $(TRACEE_RULES_SRC_DIRS) -type f -name '*.go')
 
 .PHONY: tracee-rules
-tracee-rules: $(OUTPUT_DIR)/tracee-rules
+tracee-rules: $(OUTPUT_DIR)/tracee-rules ## build ./dist/tracee-rules
 
 $(OUTPUT_DIR)/tracee-rules: \
 	.checkver_$(CMD_GO) \
@@ -558,22 +508,6 @@ $(OUTPUT_DIR)/tracee-rules: \
 		-v -o $@ \
 		./cmd/tracee-rules
 
-.PHONY: clean-tracee-rules
-clean-tracee-rules:
-#
-	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-rules
-
-.PHONY: test-tracee-rules
-test-tracee-rules: \
-	.checkver_$(CMD_GO)
-#
-	$(GO_ENV_RULES) $(CMD_GO) test \
-		-tags $(GO_TAGS_RULES) \
-		-v \
-		./cmd/tracee-rules/... \
-		./pkg/rules/...
-	cd ./types; $(CMD_GO) test -v ./...
-	cd ..
 #
 # rules
 #
@@ -595,7 +529,7 @@ REGO_SIGNATURES_SRC :=	$(shell find $(REGO_SIGNATURES_DIR) \
 			)
 
 .PHONY: rules
-rules: $(OUTPUT_DIR)/rules
+rules: $(OUTPUT_DIR)/rules ## build ./dist/rules
 
 $(OUTPUT_DIR)/rules: \
 	$(GOSIGNATURES_SRC) \
@@ -611,32 +545,89 @@ $(OUTPUT_DIR)/rules: \
 		$(GOSIGNATURES_SRC)
 	$(CMD_INSTALL) -m 0640 $(REGO_SIGNATURES_SRC) $@
 
-.PHONY: clean-rules
-clean-rules:
-#
-	$(CMD_RM) -rf $(OUTPUT_DIR)/rules
+##@ install
 
-.PHONY: test-rules
-test-rules: \
-	| .check_$(CMD_OPA)
-#
-	$(CMD_OPA) test $(REGO_SIGNATURES_DIR) --verbose
+TMP_DIR = /tmp/tracee
 
+.PHONY: install-bpf-nocore
+install-bpf-nocore: $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o | .check_$(CMD_INSTALL) .check_$(CMD_RM) .check_$(CMD_MKDIR) ## install BPF no CO-RE obj into /tmp/tracee
 #
-# test
-#
+	@$(CMD_MKDIR) -p $(TMP_DIR)
+	$(CMD_RM) -f $(TMP_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o
+	$(CMD_INSTALL) -m 0640 $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o $(TMP_DIR)
 
-.PHONY: test
-test: test-tracee-ebpf test-tracee-rules test-rules
+.PHONY: uninstall-bpf-nocore
+uninstall-bpf-nocore: | .check_$(CMD_RM) ## uninstall BPF no CO-RE obj from /tmp/tracee
+#
+	$(CMD_RM) -f $(TMP_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o
 
 #
-# clean
+##@ clean
 #
 
 .PHONY: clean
-clean:
+clean: ## wipe ./dist/
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)
 	$(CMD_RM) -f .*.md5
 	$(CMD_RM) -f .check*
 	$(CMD_RM) -f .*-pkgs*
+
+.PHONY: clean-bpf-core
+clean-bpf-core: ## wipe ./dist/tracee.bpf.core.o
+#
+	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee.bpf.core.o
+
+.PHONY: clean-bpf-nocore
+clean-bpf-nocore: ## wipe ./dist/tracee.bpf.XXX.o
+#
+	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o
+
+.PHONY: clean-tracee-ebpf
+clean-tracee-ebpf: ## wipe ./dist/tracee-ebpf
+#
+	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-ebpf
+	$(CMD_RM) -rf .*.md5
+
+.PHONY: clean-tracee-rules
+clean-tracee-rules: ## wipe ./dist/tracee-rules
+#
+	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-rules
+
+.PHONY: clean-rules
+clean-rules: ## wipe ./dist/rules
+#
+	$(CMD_RM) -rf $(OUTPUT_DIR)/rules
+
+#
+##@ test
+#
+
+.PHONY: test
+test: test-tracee-ebpf test-tracee-rules test-rules ## run all go & opa tests
+
+.PHONY: test-tracee-ebpf
+test-tracee-ebpf: .checkver_$(CMD_GO) $(OUTPUT_DIR)/tracee.bpf.core.o ## go test tracee-ebpf
+#
+	$(MAKE) $(OUTPUT_DIR)/btfhub
+	$(GO_ENV_EBPF) $(CMD_GO) test \
+		-tags $(GO_TAGS_EBPF) \
+		-v \
+		./cmd/tracee-ebpf/... \
+		./pkg/...
+
+.PHONY: test-tracee-rules
+test-tracee-rules: .checkver_$(CMD_GO) ## go test tracee-rules
+#
+	$(GO_ENV_RULES) $(CMD_GO) test \
+		-tags $(GO_TAGS_RULES) \
+		-v \
+		./cmd/tracee-rules/... \
+		./pkg/rules/...
+	cd ./types; $(CMD_GO) test -v ./...
+	cd ..
+
+.PHONY: test-rules
+test-rules: | .check_$(CMD_OPA) ## opa test (tracee-rules)
+#
+	$(CMD_OPA) test $(REGO_SIGNATURES_DIR) --verbose
