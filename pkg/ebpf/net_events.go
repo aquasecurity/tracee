@@ -182,10 +182,8 @@ func (t *Tracee) getPcapContextFromTid(hostTid uint32) (processPcapId, procinfo.
 			return pcapContext, procinfo.ProcessCtx{}, fmt.Errorf("unable to get ProcessCtx of hostTid %d to generate pcap context: %v", networkThread.HostPid, err)
 		}
 		pcapContext = t.getProcessPcapContext(networkProcess.HostPid, networkProcess.Comm, uint64(networkProcess.StartTime), contID)
-		return pcapContext, networkThread, nil
 	} else if t.config.Capture.NetPerContainer {
 		pcapContext = t.getContainerPcapContext(contID)
-		return pcapContext, networkThread, nil
 	}
 
 	return pcapContext, networkThread, nil
