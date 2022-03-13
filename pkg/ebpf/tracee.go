@@ -608,6 +608,25 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
+	if t.kernelSymbols != nil {
+		// Initialize map for global symbols of the kernel
+		bpfKsymsMap, err := t.bpfModule.GetMap("ksymbols_map") // u32, u64
+		if err != nil {
+			return err
+		}
+
+		var reqKsyms []string
+		for id, event := range EventsDefinitions {
+			if event.EssentialEvent || t.eventsToTrace[id] {
+				reqKsyms = append(reqKsyms, event.Dependencies.ksymbols...)
+			}
+		}
+
+		kallsymsValues := initialization.LoadKallsymsValues(t.kernelSymbols, reqKsyms)
+
+		initialization.SendKsymbolsToMap(bpfKsymsMap, kallsymsValues)
+	}
+
 	// Initialize kconfig variables (map used instead of relying in libbpf's .kconfig automated maps)
 	// Note: this allows libbpf not to rely on the system kconfig file, tracee does the kconfig var identification job
 

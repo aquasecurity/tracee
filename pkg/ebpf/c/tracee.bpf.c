@@ -79,6 +79,7 @@ Copyright (C) Aqua Security inc.
 #define MAX_STR_FILTER_SIZE             16        // bounded to size of the compared values (comm)
 #define FILE_MAGIC_HDR_SIZE             32        // magic_write: bytes to save from a file's header
 #define FILE_MAGIC_MASK                 31        // magic_write: mask used for verifier boundaries
+#define MAX_KSYM_NAME_SIZE              64
 
 #define SUBMIT_BUF_IDX                  0
 #define STRING_BUF_IDX                  1
@@ -466,6 +467,10 @@ typedef struct string_filter {
     char str[MAX_STR_FILTER_SIZE];
 } string_filter_t;
 
+typedef struct ksym_name {
+    char str[MAX_KSYM_NAME_SIZE];
+} ksym_name_t;
+
 typedef struct event_data {
     struct task_struct *task;
     context_t context;
@@ -593,6 +598,7 @@ BPF_HASH(params_types_map, u32, u64);                   // encoded parameters ty
 BPF_HASH(process_tree_map, u32, u32);                   // filter events by the ancestry of the traced process
 BPF_HASH(process_context_map, u32, process_context_t);  // holds the process_context data for every tid
 BPF_HASH(network_config, u32, int);                     // holds the network config for each iface
+BPF_HASH(ksymbols_map, ksym_name_t, u64)            // holds the addresses of some kernel symbols
 BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t);         // socket address to process context
 BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t);   // network identifier to process context
 BPF_ARRAY(config_map, u32, 4);                          // various configurations
@@ -1175,6 +1181,18 @@ static __always_inline int get_kconfig_val(u32 key)
         return 0;
 
     return *config;
+}
+
+static __always_inline void* get_symbol_addr(char *symbol_name)
+{
+    char new_ksym_name[MAX_KSYM_NAME_SIZE] = {};
+    bpf_probe_read_str(new_ksym_name, MAX_KSYM_NAME_SIZE, symbol_name);
+    void **sym = bpf_map_lookup_elem(&ksymbols_map, (void *)&new_ksym_name);
+
+    if (sym == NULL)
+        return 0;
+
+    return *sym;
 }
 
 static __always_inline int init_context(context_t *context, struct task_struct *task, u32 options)

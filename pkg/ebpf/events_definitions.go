@@ -28,6 +28,7 @@ type eventDependency struct {
 
 type dependencies struct {
 	events   []eventDependency // Events required to be loaded and/or submitted for the event to happen
+	ksymbols []string
 }
 
 // EventDefinition is a struct describing an event configuration
