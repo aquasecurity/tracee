@@ -22,8 +22,12 @@ type probe struct {
 	fn     string
 }
 
-type dependency struct {
+type eventDependency struct {
 	eventID int32
+}
+
+type dependencies struct {
+	events   []eventDependency // Events required to be loaded and/or submitted for the event to happen
 }
 
 // EventDefinition is a struct describing an event configuration
@@ -31,7 +35,7 @@ type EventDefinition struct {
 	ID32Bit        int32
 	Name           string
 	Probes         []probe
-	Dependencies   []dependency
+	Dependencies   dependencies
 	EssentialEvent bool
 	Sets           []string
 	Params         []trace.ArgMeta
@@ -5860,9 +5864,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit: sys32undefined,
 		Name:    "magic_write",
 		Probes:  []probe{}, Sets: []string{},
-		Dependencies: []dependency{
-			{eventID: VfsWriteEventID},
-			{eventID: VfsWritevEventID},
+		Dependencies: dependencies{
+			events: []eventDependency{{VfsWriteEventID}, {VfsWritevEventID}},
 		},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
@@ -6127,10 +6130,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit: sys32undefined,
 		Name:    "socket_dup",
 		Probes:  []probe{},
-		Dependencies: []dependency{
-			{eventID: DupEventID},
-			{eventID: Dup2EventID},
-			{eventID: Dup3EventID},
+		Dependencies: dependencies{
+			events: []eventDependency{{DupEventID}, {Dup2EventID}, {Dup3EventID}},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -6154,8 +6155,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit: sys32undefined,
 		Name:    "container_create",
 		Probes:  []probe{},
-		Dependencies: []dependency{
-			{eventID: CgroupMkdirEventID},
+		Dependencies: dependencies{
+			events: []eventDependency{{CgroupMkdirEventID}},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -6168,8 +6169,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit: sys32undefined,
 		Name:    "container_remove",
 		Probes:  []probe{},
-		Dependencies: []dependency{
-			{eventID: CgroupRmdirEventID},
+		Dependencies: dependencies{
+			events: []eventDependency{{CgroupRmdirEventID}},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -6189,11 +6190,10 @@ var EventsDefinitions = map[int32]EventDefinition{
 		},
 	},
 	NetPacket: {
-		ID32Bit:      sys32undefined,
-		Name:         "net_packet",
-		Probes:       []probe{},
-		Dependencies: []dependency{},
-		Sets:         []string{},
+		ID32Bit: sys32undefined,
+		Name:    "net_packet",
+		Probes:  []probe{},
+		Sets:    []string{},
 		Params: []trace.ArgMeta{
 			{Type: "external.PktMeta", Name: "metadata"},
 		},

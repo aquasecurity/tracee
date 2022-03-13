@@ -191,6 +191,27 @@ func (t *Tracee) Stats() *metrics.Stats {
 	return &t.stats
 }
 
+func isEssential(id int32) bool {
+	return EventsDefinitions[id].EssentialEvent
+}
+
+func setEssential(id int32) {
+	event := EventsDefinitions[id]
+	event.EssentialEvent = true
+	EventsDefinitions[id] = event
+}
+
+func handleEventsDependencies(e int32) {
+	eDependencies := EventsDefinitions[e].Dependencies
+	// Some events depend on other events - mark those essential
+	for _, dependentEvent := range eDependencies.events {
+		if !isEssential(dependentEvent.eventID) {
+			setEssential(dependentEvent.eventID)
+			handleEventsDependencies(dependentEvent.eventID)
+		}
+	}
+}
+
 // New creates a new Tracee instance based on a given valid Config
 func New(cfg Config) (*Tracee, error) {
 	var err error
@@ -200,11 +221,6 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("validation error: %v", err)
 	}
 
-	setEssential := func(id int32) {
-		event := EventsDefinitions[id]
-		event.EssentialEvent = true
-		EventsDefinitions[id] = event
-	}
 	if cfg.Capture.Exec {
 		setEssential(SchedProcessExecEventID)
 	}
@@ -253,10 +269,12 @@ func New(cfg Config) (*Tracee, error) {
 	for _, e := range t.config.Filter.EventsToTrace {
 		// Map value is true iff events requested by the user
 		t.eventsToTrace[e] = true
+	}
 
-		// Some events depend on other events - mark those essential
-		for _, dependency := range EventsDefinitions[e].Dependencies {
-			setEssential(dependency.eventID)
+	// Handles all essential events dependencies
+	for id, event := range EventsDefinitions {
+		if event.EssentialEvent || t.eventsToTrace[id] {
+			handleEventsDependencies(id)
 		}
 	}
 
