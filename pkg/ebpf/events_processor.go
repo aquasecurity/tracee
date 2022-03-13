@@ -241,7 +241,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 	case SchedProcessExitEventID:
 		if t.config.ProcessInfo {
 			if t.config.Capture.NetPerProcess {
-				pcapContext, _, err := t.getPcapContext(uint32(event.HostThreadID))
+				pcapContext, _, err := t.getPcapContextFromTid(uint32(event.HostThreadID))
 				if err == nil {
 					go t.netExit(pcapContext)
 				}
@@ -317,17 +317,18 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 
 	case CgroupRmdirEventID:
-		if t.config.Capture.NetPerContainer {
-			pcapContext, _, err := t.getPcapContext(uint32(event.HostThreadID))
-			if err == nil {
-				go t.netExit(pcapContext)
-			}
-		}
-
 		cgroupId, err := getEventArgUint64Val(event, "cgroup_id")
 		if err != nil {
 			return fmt.Errorf("error parsing cgroup_rmdir args: %v", err)
 		}
+
+		if t.config.Capture.NetPerContainer {
+			if info := t.containers.GetCgroupInfo(cgroupId); info.ContainerId != "" {
+				pcapContext := t.getContainerPcapContext(info.ContainerId)
+				go t.netExit(pcapContext)
+			}
+		}
+
 		t.containers.CgroupRemove(cgroupId)
 	}
 

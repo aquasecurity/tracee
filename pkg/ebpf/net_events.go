@@ -150,15 +150,23 @@ func (t *Tracee) netExit(pcapContext processPcapId) {
 	t.netCapture.DeletePcapWriter(pcapContext)
 }
 
-func (t *Tracee) getPcapContext(hostTid uint32) (processPcapId, procinfo.ProcessCtx, error) {
-	packetContext := processPcapId{contID: "host"}
+func (t *Tracee) getHostPcapContext() processPcapId {
+	return processPcapId{contID: "host"}
+}
+
+func (t *Tracee) getContainerPcapContext(containerId string) processPcapId {
+	return processPcapId{contID: containerId}
+}
+
+func (t *Tracee) getProcessPcapContext(hostPid uint32, ProcessName string, procStartTime uint64, containerId string) processPcapId {
+	return processPcapId{hostPid: hostPid, comm: ProcessName, procStartTime: procStartTime, contID: containerId}
+}
+
+func (t *Tracee) getPcapContextFromTid(hostTid uint32) (processPcapId, procinfo.ProcessCtx, error) {
+	pcapContext := t.getHostPcapContext()
 	networkThread, err := t.getProcessCtx(hostTid)
 	if err != nil {
-		return packetContext, procinfo.ProcessCtx{}, fmt.Errorf("unable to get ProcessCtx of hostTid %d to generate pcap context: %v", hostTid, err)
-	}
-	networkProcess, err := t.getProcessCtx(networkThread.HostPid)
-	if err != nil {
-		return packetContext, procinfo.ProcessCtx{}, fmt.Errorf("unable to get ProcessCtx of hostTid %d to generate pcap context: %v", networkThread.HostPid, err)
+		return pcapContext, procinfo.ProcessCtx{}, fmt.Errorf("unable to get ProcessCtx of hostTid %d to generate pcap context: %v", hostTid, err)
 	}
 
 	var contID string
@@ -169,12 +177,18 @@ func (t *Tracee) getPcapContext(hostTid uint32) (processPcapId, procinfo.Process
 	}
 
 	if t.config.Capture.NetPerProcess {
-		packetContext = processPcapId{hostPid: networkProcess.HostPid, comm: networkProcess.Comm, procStartTime: uint64(networkProcess.StartTime), contID: contID}
+		networkProcess, err := t.getProcessCtx(networkThread.HostPid)
+		if err != nil {
+			return pcapContext, procinfo.ProcessCtx{}, fmt.Errorf("unable to get ProcessCtx of hostTid %d to generate pcap context: %v", networkThread.HostPid, err)
+		}
+		pcapContext = t.getProcessPcapContext(networkProcess.HostPid, networkProcess.Comm, uint64(networkProcess.StartTime), contID)
+		return pcapContext, networkThread, nil
 	} else if t.config.Capture.NetPerContainer {
-		packetContext = processPcapId{contID: contID}
+		pcapContext = t.getContainerPcapContext(contID)
+		return pcapContext, networkThread, nil
 	}
 
-	return packetContext, networkThread, nil
+	return pcapContext, networkThread, nil
 }
 
 func (t *Tracee) processNetEvents(ctx gocontext.Context) {
@@ -208,7 +222,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 			}
 
 			// continue without checking for error, as packetContext will be valid anyway
-			packetContext, networkThread, _ := t.getPcapContext(netEventMetadata.HostTid)
+			packetContext, networkThread, _ := t.getPcapContextFromTid(netEventMetadata.HostTid)
 
 			if netEventMetadata.NetEventId == NetPacket {
 				var netCaptureData bufferdecoder.NetCaptureData
