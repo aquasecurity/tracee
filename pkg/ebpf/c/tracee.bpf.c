@@ -4372,12 +4372,12 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     return TC_ACT_UNSPEC;
 }
 
-SEC("classifier")
+SEC("tc")
 int tc_egress(struct __sk_buff *skb) {
     return tc_probe(skb, false);
 }
 
-SEC("classifier")
+SEC("tc")
 int tc_ingress(struct __sk_buff *skb) {
     return tc_probe(skb, true);
 }
