@@ -18,7 +18,7 @@ Possible options:
 [artifact:]exec                    capture executed files.
 [artifact:]module                  capture loaded kernel modules.
 [artifact:]mem                     capture memory regions that had write+execute (w+x) protection, and then changed to execute (x) only.
-[artifact:]net=interface           capture network traffic of the given interface. Only TCP/UDP protocols are currently supported.
+[artifact:]net=interface           capture network traffic of the given interface. Only TCP/UDP/ICMP protocols are currently supported.
 
 dir:/path/to/dir                    path where tracee will save produced artifacts. the artifact will be saved into an 'out' subdirectory. (default: /tmp/tracee).
 profile                             creates a runtime profile of program executions and their metadata for forensics use.
