@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCustomHeaders(t *testing.T) {
+func TestEvent_SetHeader(t *testing.T) {
 	evt := Event{
 		Headers: EventHeaders{},
 		Payload: "blah",
