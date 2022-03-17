@@ -26,6 +26,11 @@ type Event struct {
 	ProcessName         string     `json:"processName"`
 	HostName            string     `json:"hostName"`
 	ContainerID         string     `json:"containerId"`
+	ContainerImage      string     `json:"containerImage"`
+	ContainerName       string     `json:"containerName"`
+	PodName             string     `json:"podName"`
+	PodNamespace        string     `json:"podNamespace"`
+	PodUID              string     `json:"podUID"`
 	EventID             int        `json:"eventId,string"`
 	EventName           string     `json:"eventName"`
 	ArgsNum             int        `json:"argsNum"`
