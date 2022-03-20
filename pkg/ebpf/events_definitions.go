@@ -95,6 +95,7 @@ const (
 	ContainerCreateEventID
 	ContainerRemoveEventID
 	ExistingContainerEventID
+	DetectHookedSyscallsEventID
 	MaxUserSpaceEventID
 )
 

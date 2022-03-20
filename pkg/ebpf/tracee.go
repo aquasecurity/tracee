@@ -1354,7 +1354,7 @@ const IoctlFetchSyscalls int = 65 // randomly picked number for ioctl cmd
 
 func (t *Tracee) invokeIoctlTriggeredEvents() {
 	// invoke DetectHookedSyscallsEvent
-	if t.eventsToTrace[PrintSyscallTableEventID] {
+	if t.eventsToTrace[PrintSyscallTableEventID] || t.eventsToTrace[DetectHookedSyscallsEventID] {
 		ptmx, err := os.OpenFile(t.config.Capture.OutputPath, os.O_RDONLY, 444)
 		if err != nil {
 			return
