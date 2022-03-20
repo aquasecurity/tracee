@@ -333,6 +333,9 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			return fmt.Errorf("error parsing cgroup_mkdir args: %w", err)
 		}
 		t.containers.CgroupRemove(cgroupId, hId)
+
+	case FinitModuleEventID:
+		t.invokeIoctlTriggeredEvents()
 	}
 
 	return nil

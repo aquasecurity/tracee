@@ -6317,6 +6317,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit: sys32undefined,
 		Name:    "detect_hooked_syscalls",
 		Dependencies: []dependency{
+			{eventID: FinitModuleEventID},
 			{eventID: PrintSyscallTableEventID},
 		},
 		Sets: []string{},
