@@ -225,6 +225,9 @@ func getContainerIdFromCgroup(cgroupPath string) (string, string) {
 		case strings.HasPrefix(id, "cri-containerd-"):
 			runtime = "containerd"
 			id = strings.TrimPrefix(id, "cri-containerd-")
+		case strings.Contains(pc, ":cri-containerd:"):
+			runtime = "containerd"
+			id = pc[strings.LastIndex(pc, ":cri-containerd:")+len(":cri-containerd:"):]
 		case strings.HasPrefix(id, "libpod-"):
 			runtime = "podman"
 			id = strings.TrimPrefix(id, "libpod-")
