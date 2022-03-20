@@ -122,6 +122,7 @@ Copyright (C) Aqua Security inc.
 #define U16_T                           14UL
 #define CRED_T                          15UL
 #define INT_ARR_2_T                     16UL
+#define UINT64_ARR_T                    17UL
 #define TYPE_MAX                        255UL
 
 #if defined(bpf_target_x86)
@@ -1583,6 +1584,57 @@ static __always_inline int save_str_to_buf(event_data_t *data, void *ptr, u8 ind
     }
 
     return 0;
+}
+
+static __always_inline int save_u64_arr_to_buf(event_data_t *data, const u64 __user *ptr,int len , u8 index){
+
+    // Data saved to submit buf: [index][u64 count][u64 1][u64 2][u64 3]...
+
+
+    u8 elem_num = 0;
+    // Save argument index
+    data->submit_p->buf[(data->buf_off) & (MAX_PERCPU_BUFSIZE-1)] = index;
+
+    // Save space for number of elements (1 byte)
+    u32 orig_off = data->buf_off+1;
+    data->buf_off += 2;
+
+    #pragma unroll
+    for (int i = 0; i < len; i++) {
+        u64 element = 0;
+        int err = bpf_probe_read(&element, sizeof(u64), &ptr[i]);
+        if (err !=0)
+            goto out;
+        if (data->buf_off > MAX_PERCPU_BUFSIZE - sizeof(u64) )
+                // not enough space - return
+                goto out;
+
+        void *addr = &(data->submit_p->buf[data->buf_off ]);
+        int sz = bpf_probe_read(addr, sizeof(u64), (void *)&element);
+        if (sz == 0) {
+            elem_num++;
+            if (data->buf_off > MAX_PERCPU_BUFSIZE )
+                // Satisfy validator
+                goto out;
+
+            data->buf_off += sizeof(u64);
+            continue;
+        } else {
+            goto out;
+        }
+    }
+    if (data->buf_off > MAX_PERCPU_BUFSIZE - sizeof(u64) - sizeof(int))
+        // not enough space - return
+        goto out;
+
+    goto out;
+
+out:
+    // save number of elements in the array
+    data->submit_p->buf[orig_off & (MAX_PERCPU_BUFSIZE-1)] = elem_num;
+    data->context.argnum++;
+
+    return 1;
 }
 
 static __always_inline int save_str_arr_to_buf(event_data_t *data, const char __user *const __user *ptr, u8 index)

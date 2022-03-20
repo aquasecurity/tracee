@@ -6300,4 +6300,26 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "u64", Name: "proc_ops_addr"},
 		},
 	},
+	PrintSyscallTableEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "print_syscall_table",
+		Probes: []probe{
+			{event: "security_file_ioctl", attach: kprobe, fn: "trace_tracee_trigger_event"},
+		},
+		Sets: []string{},
+		Params: []trace.ArgMeta{
+			{Type: "unsigned long[]", Name: "syscalls_addresses"},
+		},
+	},
+	DetectHookedSyscallsEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "detect_hooked_syscalls",
+		Dependencies: []dependency{
+			{eventID: PrintSyscallTableEventID},
+		},
+		Sets: []string{},
+		Params: []trace.ArgMeta{
+			{Type: "HookedSyscallData[]", Name: "hooked_syscalls"},
+		},
+	},
 }

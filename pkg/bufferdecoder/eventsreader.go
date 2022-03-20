@@ -34,6 +34,7 @@ const (
 	u16T
 	credT
 	intArr2T
+	uint64ArrT
 )
 
 // These types don't match the ones defined in the ebpf code since they are not being used by syscalls arguments.
@@ -154,6 +155,14 @@ func ReadArgFromBuff(ebpfMsgDecoder *EbpfDecoder, params []trace.ArgMeta) (trace
 			return argMeta, nil, fmt.Errorf("error reading int elements: %v", err)
 		}
 		res = intArray
+	case uint64ArrT:
+		ulongArray := make([]uint64, 0, 0)
+		err := ebpfMsgDecoder.DecodeUint64Array(&ulongArray)
+		if err != nil {
+			return argMeta, nil, fmt.Errorf("error reading ulong elements: %v", err)
+		}
+		res = ulongArray
+
 	default:
 		// if we don't recognize the arg type, we can't parse the rest of the buffer
 		return argMeta, nil, fmt.Errorf("error unknown arg type %v", argType)
@@ -202,6 +211,8 @@ func GetParamType(paramType string) ArgType {
 		return credT
 	case "umode_t":
 		return u16T
+	case "unsigned long[]":
+		return uint64ArrT
 	default:
 		// Default to pointer (printed as hex) for unsupported types
 		return pointerT

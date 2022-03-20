@@ -221,6 +221,24 @@ func (decoder *EbpfDecoder) DecodeIntArray(msg []int32, size uint32) error {
 	return nil
 }
 
+// DecodeUint64Array translate from the decoder buffer, starting from the decoder cursor, to msg, size * 8 bytes (in order to get int64).
+func (decoder *EbpfDecoder) DecodeUint64Array(msg *[]uint64) error {
+	var arrLen uint8
+	err := decoder.DecodeUint8(&arrLen)
+	if err != nil {
+		return fmt.Errorf("error reading ulong array number of elements: %v", err)
+	}
+	for i := 0; i < int(arrLen); i++ {
+		var element uint64
+		err := decoder.DecodeUint64(&element)
+		if err != nil {
+			return fmt.Errorf("can't read element %d uint64 from buffer: %s", i, err)
+		}
+		*msg = append(*msg, element)
+	}
+	return nil
+}
+
 // DecodeSlimCred translates data from the decoder buffer, starting from the decoder cursor, to SlimCred struct.
 func (decoder *EbpfDecoder) DecodeSlimCred(slimCred *SlimCred) error {
 	offset := decoder.cursor
