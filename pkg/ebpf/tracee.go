@@ -49,6 +49,7 @@ type Config struct {
 	ChanEvents         chan trace.Event
 	ChanErrors         chan error
 	ProcessInfo        bool
+	OsConfig           *helpers.OSInfo
 }
 
 type CaptureConfig struct {
@@ -783,6 +784,32 @@ func (t *Tracee) populateBPFMaps() error {
 				return err
 			}
 		}
+		if e == PrintSyscallTableEventID {
+			hookedSyscallsMap, err := t.bpfModule.GetMap("syscalls_to_check_map")
+			if err != nil {
+				return err
+			}
+			/* the hookedSyscallsMap store first the syscall table address then the syscall numbers, like that:
+			 * [sys_call_table symbol address][syscall num #1][syscall num #2][syscall num #3]...
+			 * with that, we can fetch the syscall address by accessing the syscall table in the syscall number index
+			 */
+			key := int(0)
+			syscallTableSymbol, err := t.kernelSymbols.GetSymbolByName("system", "sys_call_table")
+			syscallTableAddress := syscallTableSymbol.Address
+			errs = append(errs, hookedSyscallsMap.Update(unsafe.Pointer(&key), unsafe.Pointer(&syscallTableAddress)))
+			arch := t.config.OsConfig.GetOSReleaseFieldValue(helpers.OS_ARCH)
+			syscallList := getSyscallList(arch)
+			// the map should look like [syscall_table][syscall number 1][syscall number 2][syscall number 3]...
+			for idx, val := range syscallList {
+				key = idx + 1
+				errs = append(errs, hookedSyscallsMap.Update(unsafe.Pointer(&(key)), unsafe.Pointer(&val)))
+			}
+			for _, err := range errs {
+				if err != nil {
+					return err
+				}
+			}
+		}
 	}
 	if len(t.netInfo.ifaces) > 0 {
 		networkConfingMap, err := t.bpfModule.GetMap("network_config") // u32, int
@@ -800,6 +827,55 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	return nil
+}
+
+var syscallsToCheckX86 = []int{
+	0,   // read
+	1,   // write
+	2,   // open
+	3,   // close
+	41,  // socket
+	44,  // sendto
+	45,  // recvfrom
+	46,  // sendmsg
+	47,  // recvmsg
+	59,  // execve
+	62,  // kill
+	78,  // getdents
+	101, // ptrace
+	217, // getdents64
+	321, // bpf
+	322, // execveat
+	16,  // ioctl
+	257, // openat
+}
+
+var syscallsToCheckArm = []int{
+	63, // read
+	64, // write
+	// open (not present)
+	57,  // close
+	29,  // ioctl
+	198, // socket
+	221, // execve
+	129, // kill
+	// getdents (not present)
+	117, // ptrace
+	61,  // getdents64
+	280, // bpf
+	281, // execveat
+	56,  // openat
+	206, // sendto
+	207, // recvfrom
+	211, // sendmsg
+	212, // recvmsg
+}
+
+func getSyscallList(arch string) []int {
+	if strings.Compare(arch, "x86_64") == 0 {
+		return syscallsToCheckX86
+	}
+	return syscallsToCheckArm
 }
 
 func (t *Tracee) attachTcProg(ifaceName string, attachPoint bpf.TcAttachPoint, progName string) (*bpf.TcHook, error) {
@@ -1135,6 +1211,7 @@ func (t *Tracee) getProcessCtx(hostTid uint32) (procinfo.ProcessCtx, error) {
 // Run starts the trace. it will run until ctx is cancelled
 func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.invokeInitEvents()
+	t.invokeIoctlTriggeredEvents()
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
 	t.netPerfMap.Start()
@@ -1271,4 +1348,18 @@ func findInList(element string, list *[]string) (int, error) {
 		}
 	}
 	return 0, fmt.Errorf("element: %s dosent found\n", element)
+}
+
+const IoctlFetchSyscalls int = 65 // randomly picked number for ioctl cmd
+
+func (t *Tracee) invokeIoctlTriggeredEvents() {
+	// invoke DetectHookedSyscallsEvent
+	if t.eventsToTrace[PrintSyscallTableEventID] {
+		ptmx, err := os.OpenFile(t.config.Capture.OutputPath, os.O_RDONLY, 444)
+		if err != nil {
+			return
+		}
+		syscall.Syscall(syscall.SYS_IOCTL, ptmx.Fd(), uintptr(IoctlFetchSyscalls), 0)
+		ptmx.Close()
+	}
 }

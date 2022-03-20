@@ -201,7 +201,8 @@ Copyright (C) Aqua Security inc.
 #define CALL_USERMODE_HELPER            1037
 #define DIRTY_PIPE_SPLICE               1038
 #define DEBUGFS_CREATE_FILE             1039
-#define MAX_EVENT_ID                    1040
+#define PRINT_SYSCALL_TABLE             1040
+#define MAX_EVENT_ID                    1041
 
 #define NET_PACKET                      4000
 
@@ -299,6 +300,10 @@ Copyright (C) Aqua Security inc.
 #define MAX_PATH_COMPONENTS             20
 #define MAX_BIN_CHUNKS                  110
 #endif
+
+#define IOCTL_FETCH_SYSCALLS            65        // randomly picked number for ioctl cmd
+#define NUMBER_OF_SYSCALLS_X86          18
+#define NUMBER_OF_SYSCALLS_ARM          14
 
 /*================================ eBPF KCONFIGs =============================*/
 
@@ -628,6 +633,7 @@ BPF_HASH(process_tree_map, u32, u32);                   // filter events by the 
 BPF_HASH(process_context_map, u32, process_context_t);  // holds the process_context data for every tid
 BPF_HASH(network_config, u32, int);                     // holds the network config for each iface
 BPF_HASH(ksymbols_map, ksym_name_t, u64)            // holds the addresses of some kernel symbols
+BPF_HASH(syscalls_to_check_map, int, u64);                // syscalls to discover
 BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t);         // socket address to process context
 BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t);   // network identifier to process context
 BPF_ARRAY(config_map, u32, 4);                          // various configurations
@@ -2270,6 +2276,50 @@ static __always_inline struct pipe_inode_info *get_file_pipe_info(struct file *f
     return pipe;
 }
 
+static __always_inline void fetch_syscalls_addresses(event_data_t *data){
+    int key = 0;
+    u64 *table_ptr = bpf_map_lookup_elem(&syscalls_to_check_map, (void *)&key);
+    if (table_ptr == NULL){
+        return ;
+    }
+
+    unsigned long *syscall_table_addr = (unsigned long*) *table_ptr;
+    u64 idx;
+    u64* syscall_num_p;                  // pointer to syscall_number
+    u64 syscall_num;
+    unsigned long syscall_addr = 0;
+    int monitored_syscalls_amount = 0;
+    #if defined(bpf_target_x86)
+        monitored_syscalls_amount = NUMBER_OF_SYSCALLS_X86;
+        u64 syscall_address[NUMBER_OF_SYSCALLS_X86];
+    #elif defined(bpf_target_arm64)
+        monitored_syscalls_amount = NUMBER_OF_SYSCALLS_ARM;
+        u64 syscall_address[NUMBER_OF_SYSCALLS_ARM];
+    #else
+
+        return
+    #endif
+
+    __builtin_memset(syscall_address, 0, sizeof(syscall_address));
+    // the map should look like [syscall_table][syscall number 1][syscall number 2][syscall number 3]...
+    #pragma unroll
+    for(int i =0; i < monitored_syscalls_amount; i++){
+        idx = i+1;
+        syscall_num_p = bpf_map_lookup_elem(&syscalls_to_check_map, (void *)&idx);
+        if (syscall_num_p == NULL){
+            continue;
+        }
+        syscall_num = (u64)*syscall_num_p;
+        syscall_addr = READ_KERN(syscall_table_addr[syscall_num]);
+        if (syscall_addr == 0){
+            return;
+        }
+        syscall_address[i] = syscall_addr;
+    }
+    save_u64_arr_to_buf(data, (const u64 *)syscall_address, monitored_syscalls_amount, 0);
+    events_perf_submit(data, PRINT_SYSCALL_TABLE, 0);
+}
+
 /*============================== SYSCALL HOOKS ===============================*/
 
 // include/trace/events/syscalls.h:
@@ -2875,6 +2925,22 @@ int BPF_KPROBE(trace_do_exit)
     long code = PT_REGS_PARM1(ctx);
 
     return events_perf_submit(&data, DO_EXIT, code);
+}
+
+SEC("kprobe/security_file_ioctl")
+int BPF_KPROBE(trace_tracee_trigger_event )
+{
+    event_data_t data = {};
+
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    unsigned int cmd = PT_REGS_PARM2(ctx);
+
+    if (cmd == IOCTL_FETCH_SYSCALLS && get_config(CONFIG_TRACEE_PID) == data.context.host_pid){
+        fetch_syscalls_addresses(&data);
+    }
+    return 0;
 }
 
 // include/trace/events/cgroup.h:

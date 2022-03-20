@@ -85,6 +85,7 @@ const (
 	CallUsermodeHelperEventID
 	DirtyPipeSpliceEventID
 	DebugfsCreateFile
+	PrintSyscallTableEventID
 	MaxCommonEventID
 )
 
