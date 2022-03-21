@@ -82,6 +82,7 @@ const (
 	__KernelWriteEventID
 	ProcCreateEventID
 	KprobeAttachEventID
+	CallUsermodeHelperEventID
 	MaxCommonEventID
 )
 
@@ -6246,6 +6247,20 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "char*", Name: "symbol_name"},
 			{Type: "u64", Name: "pre_handler_addr"},
 			{Type: "u64", Name: "post_handler_addr"},
+		},
+	},
+	CallUsermodeHelperEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "call_usermodehelper",
+		Probes: []probe{
+			{event: "call_usermodehelper", attach: kprobe, fn: "trace_call_usermodehelper"},
+		},
+		Sets: []string{},
+		Params: []trace.ArgMeta{
+			{Type: "const char*", Name: "pathname"},
+			{Type: "const char*const*", Name: "argv"},
+			{Type: "const char*const*", Name: "envp"},
+			{Type: "int", Name: "wait"},
 		},
 	},
 }

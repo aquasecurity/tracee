@@ -197,7 +197,8 @@ Copyright (C) Aqua Security inc.
 #define __KERNEL_WRITE                  1034
 #define PROC_CREATE                     1035
 #define KPROBE_ATTACH                   1036
-#define MAX_EVENT_ID                    1037
+#define CALL_USERMODE_HELPER            1037
+#define MAX_EVENT_ID                    1038
 
 #define NET_PACKET                      4000
 
@@ -2734,6 +2735,30 @@ int BPF_KPROBE(trace_filldir64)
     }
     return 0;
 }
+
+SEC("kprobe/call_usermodehelper")
+int BPF_KPROBE(trace_call_usermodehelper)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data.context))
+        return 0;
+
+    void * path = (void *)PT_REGS_PARM1(ctx);
+    unsigned long argv = PT_REGS_PARM2(ctx);
+    unsigned long envp = PT_REGS_PARM3(ctx);
+    int wait = PT_REGS_PARM4(ctx);
+
+    save_str_to_buf(&data, path, 0);
+    save_str_arr_to_buf(&data, (const char *const *)argv , 1);
+    save_str_arr_to_buf(&data, (const char *const *)envp , 2);
+    save_to_submit_buf(&data, (void*)&wait, sizeof(int), 3);
+
+    return events_perf_submit(&data, CALL_USERMODE_HELPER, 0);
+}
+
 SEC("kprobe/do_exit")
 int BPF_KPROBE(trace_do_exit)
 {
