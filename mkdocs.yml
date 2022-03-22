@@ -12,9 +12,9 @@ nav:
     - Building Environment: building/environment.md
     - Building Containers: building/containers.md
     - Building non CO-RE: building/nocore-ebpf.md
+    - Linux Headers: building/headers.md
   - Installation:
     - Prerequisites: install/prerequisites.md
-    - Linux Headers: install/headers.md
     - Kubernetes: install/kubernetes.md
     - Docker for Mac: install/docker-mac.md
   - Integrations: integrations.md
