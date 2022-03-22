@@ -285,7 +285,7 @@ $(OUTPUT_DIR)/tracee.bpf: \
 # libbpf
 #
 
-LIBBPF_CFLAGS =
+LIBBPF_CFLAGS = "-fPIC"
 LIBBPF_LDLAGS =
 LIBBPF_SRC = ./3rdparty/libbpf/src
 
