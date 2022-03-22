@@ -52,6 +52,10 @@ CMD_OPA ?= opa # https://github.com/open-policy-agent/opa/releases/download/v0.3
 LIB_ELF ?= libelf
 LIB_ZLIB ?= zlib
 
+define pkg_config
+	$(CMD_PKGCONFIG) --libs $(1)
+endef
+
 .checklib_%: \
 	| .check_$(CMD_PKGCONFIG)
 #
@@ -442,7 +446,7 @@ ifeq ($(STATIC), 1)
 endif
 
 CUSTOM_CGO_CFLAGS = "-I$(abspath $(OUTPUT_DIR)/libbpf)"
-CUSTOM_CGO_LDFLAGS = "-lelf -lz $(abspath $(OUTPUT_DIR)/libbpf/libbpf.a)"
+CUSTOM_CGO_LDFLAGS = "$(shell $(call pkg_config, $(LIB_ELF))) $(shell $(call pkg_config, $(LIB_ZLIB))) $(abspath $(OUTPUT_DIR)/libbpf/libbpf.a)"
 
 GO_ENV_EBPF =
 GO_ENV_EBPF += GOOS=linux
