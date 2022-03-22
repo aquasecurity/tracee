@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"io"
 	"net"
 	"os"
@@ -17,6 +16,8 @@ import (
 	"syscall"
 	"time"
 	"unsafe"
+
+	"github.com/aquasecurity/tracee/pkg/events/queue"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
@@ -50,6 +51,7 @@ type Config struct {
 	ChanEvents         chan trace.Event
 	ChanErrors         chan error
 	ProcessInfo        bool
+	ThrottleEvents     bool
 }
 
 type CaptureConfig struct {
@@ -333,8 +335,10 @@ func New(cfg Config) (*Tracee, error) {
 		}
 	}
 
-	if err = t.installEventThrottle(); err != nil {
-		return nil, fmt.Errorf("couldn't install tracer events throttle: %v", err)
+	if t.config.ThrottleEvents {
+		if err = t.installEventThrottle(); err != nil {
+			return nil, fmt.Errorf("couldn't install tracer events throttle: %v", err)
+		}
 	}
 	return t, nil
 }

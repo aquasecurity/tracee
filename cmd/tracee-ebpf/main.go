@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -31,6 +32,8 @@ var debug bool
 var traceeInstallPath string
 var listenMetrics bool
 var metricsAddr string
+var eventsThrottling bool
+var eventsPriorityConfigFilePath string
 
 var version string
 
@@ -175,6 +178,12 @@ func main() {
 
 			cfg.ChanEvents = make(chan trace.Event)
 			cfg.ChanErrors = make(chan error)
+
+			cfg.ThrottleEvents = eventsThrottling
+
+			if eventsPriorityConfigFilePath != "" {
+				prepareEventsPriority(eventsPriorityConfigFilePath)
+			}
 
 			t, err := tracee.New(cfg)
 			if err != nil {
@@ -334,6 +343,18 @@ func main() {
 				Value:       ":3366",
 				Destination: &metricsAddr,
 			},
+			&cli.BoolFlag{
+				Name:        "events-throttling",
+				Usage:       "enable events throttling mechanics",
+				Destination: &eventsThrottling,
+				Value:       false,
+			},
+			&cli.StringFlag{
+				Name:        "events-priority",
+				Usage:       "json file path defining events priority used by events thorttling engine",
+				Value:       "",
+				Destination: &eventsPriorityConfigFilePath,
+			},
 		},
 	}
 
@@ -341,6 +362,61 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func prepareEventsPriority(priorityConfigFilePath string) error {
+	// check the file exists
+	_, err := os.Stat(priorityConfigFilePath)
+	if err != nil {
+		return err
+	}
+	// check it is a regular json
+	content, err := ioutil.ReadFile(priorityConfigFilePath)
+	if err != nil {
+		return err
+	}
+	/*
+		{
+			"prioPerEventId": [{
+				"EventId": 1,
+				"Prio": 2
+			}, {
+				"EventId": 8,
+				"Prio": 1
+			}]
+		}
+	*/
+	type prioPerEventId struct {
+		EventId int `json:"EventId"`
+		Prio    int `json:"Prio"`
+	}
+	type eventsPriorities struct {
+		Prios []prioPerEventId `json:"prioPerEventId"`
+	}
+	var eventsPrios eventsPriorities
+
+	if err := json.Unmarshal([]byte(content), &eventsPrios); err != nil {
+		return err
+	}
+	// assosciate for every passed event id, its priority
+	for _, prioPerEventId := range eventsPrios.Prios {
+		evtId := int32(prioPerEventId.EventId)
+		evt, ok := tracee.EventsDefinitions[evtId]
+		if !ok {
+			continue
+		}
+		prio := prioPerEventId.Prio
+		// check valid limits. handling over limits values might be changed...
+		if prio > 4 {
+			prio = 4
+		}
+		if prio < 0 {
+			prio = 0
+		}
+		evt.Priority = prio
+		tracee.EventsDefinitions[evtId] = evt
+	}
+	return nil
 }
 
 func prepareBpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSInfo *helpers.OSInfo) error {

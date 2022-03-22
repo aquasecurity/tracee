@@ -37,6 +37,10 @@ func (t *Tracee) handleEvents(ctx gocontext.Context) {
 		errcList = append(errcList, errc)
 	}
 
+	if t.config.ThrottleEvents {
+		go t.ThrottleEvents()
+	}
+
 	// Sink pipeline stage.
 	errc = t.processEvents(ctx, eventsChan)
 	errcList = append(errcList, errc)
@@ -197,80 +201,77 @@ func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *trace.Event, 
 
 func (t *Tracee) processEvents(ctx gocontext.Context, in <-chan *trace.Event) <-chan error {
 	errc := make(chan error, 1)
-	throughputInterval := 60
-	throughputTicker := time.NewTicker(time.Second * time.Duration(throughputInterval))
-	lostEvents := t.stats.LostEvCount.Read()
 	go func() {
 		defer close(errc)
-		for {
-			select {
-			case event := <-in:
-				{
-					err := t.processEvent(event)
+		for event := range in {
+			err := t.processEvent(event)
+			if err != nil {
+				t.handleError(err)
+				continue
+			}
+
+			if (t.config.Filter.ContFilter.Value || t.config.Filter.NewContFilter.Enabled) && event.ContainerID == "" {
+				// Don't trace false container positives -
+				// a container filter is set by the user, but this event wasn't originated in a container.
+				// Although kernel filters shouldn't submit such events, we do this check to be on the safe side.
+				// For example, it might be that a new cgroup was created, and not by a container runtime,
+				// while we still didn't processed the cgroup_mkdir event and removed the cgroupid from the bpf container map.
+				// Note: this check should be placed after processEvent() so cgroup_mkdir event is processed
+				continue
+			}
+
+			// Derive event before parsing its arguments
+			derivatives := t.deriveEvent(*event)
+
+			// Only emit events requested by the user
+			if t.eventsToTrace[int32(event.EventID)] {
+				if t.config.Output.ParseArguments {
+					err = t.parseArgs(event)
 					if err != nil {
 						t.handleError(err)
 						continue
 					}
-
-					if (t.config.Filter.ContFilter.Value || t.config.Filter.NewContFilter.Enabled) && event.ContainerID == "" {
-						// Don't trace false container positives -
-						// a container filter is set by the user, but this event wasn't originated in a container.
-						// Although kernel filters shouldn't submit such events, we do this check to be on the safe side.
-						// For example, it might be that a new cgroup was created, and not by a container runtime,
-						// while we still didn't processed the cgroup_mkdir event and removed the cgroupid from the bpf container map.
-						// Note: this check should be placed after processEvent() so cgroup_mkdir event is processed
-						continue
-					}
-
-					// Derive event before parsing its arguments
-					derivatives := t.deriveEvent(*event)
-
-					// Only emit events requested by the user
-					if t.eventsToTrace[int32(event.EventID)] {
-						if t.config.Output.ParseArguments {
-							err = t.parseArgs(event)
-							if err != nil {
-								t.handleError(err)
-								continue
-							}
-						}
-
-						select {
-						case t.config.ChanEvents <- *event:
-							t.stats.EventCount.Increment()
-						case <-ctx.Done():
-							return
-						}
-					}
-
-					for _, derivative := range derivatives {
-						select {
-						case t.config.ChanEvents <- derivative:
-							t.stats.EventCount.Increment()
-						case <-ctx.Done():
-							return
-						}
-					}
 				}
-			case <-throughputTicker.C: // proportional integral derivative
-				{
-					lostEventsCurrent := t.stats.LostEvCount.Read()
-					delta := lostEventsCurrent - lostEvents
-					lostEvents = lostEventsCurrent
-					if delta > 0 {
-						if d, _ := t.DecreaseLoad(); len(d.ChangeInEvents.AffectedEvents) != 0 {
-							fmt.Fprintf(os.Stderr, "****************** DECREASING LOAD - EVENTS PER SEC ***********************\n")
-						}
-					} else {
-						if d, _ := t.IncreaseLoad(); len(d.ChangeInEvents.AffectedEvents) != 0 {
-							fmt.Fprintf(os.Stderr, "****************** DECREASING LOAD - EVENTS PER SEC ***********************\n")
-						}
-					}
+
+				select {
+				case t.config.ChanEvents <- *event:
+					t.stats.EventCount.Increment()
+				case <-ctx.Done():
+					return
+				}
+			}
+
+			for _, derivative := range derivatives {
+				select {
+				case t.config.ChanEvents <- derivative:
+					t.stats.EventCount.Increment()
+				case <-ctx.Done():
+					return
 				}
 			}
 		}
 	}()
 	return errc
+}
+
+func (t *Tracee) ThrottleEvents() {
+	throughputInterval := 60
+	throughputTicker := time.NewTicker(time.Second * time.Duration(throughputInterval))
+	lostEvents := t.stats.LostEvCount.Read()
+	for range throughputTicker.C {
+		lostEventsCurrent := t.stats.LostEvCount.Read()
+		delta := lostEventsCurrent - lostEvents // always positive or equal to zero
+		lostEvents = lostEventsCurrent
+		if delta > 0 {
+			if d, _ := t.DecreaseLoad(); len(d.ChangeInEvents.AffectedEvents) != 0 {
+				fmt.Fprintf(os.Stderr, "****************** DECREASING LOAD - EVENTS PER SEC ***********************\n")
+			}
+		} else {
+			if d, _ := t.IncreaseLoad(); len(d.ChangeInEvents.AffectedEvents) != 0 {
+				fmt.Fprintf(os.Stderr, "****************** INCREASING LOAD - EVENTS PER SEC ***********************\n")
+			}
+		}
+	}
 }
 
 func (t *Tracee) getStackAddresses(StackID uint32) ([]uint64, error) {
