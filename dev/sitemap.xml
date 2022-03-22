@@ -46,11 +46,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://aquasecurity.github.io/tracee/dev/building/headers/</loc>
-         <lastmod>2022-03-22</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/building/nocore-ebpf/</loc>
          <lastmod>2022-03-22</lastmod>
          <changefreq>daily</changefreq>
@@ -62,6 +57,11 @@
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/install/docker-mac/</loc>
+         <lastmod>2022-03-22</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/install/headers/</loc>
          <lastmod>2022-03-22</lastmod>
          <changefreq>daily</changefreq>
     </url>
