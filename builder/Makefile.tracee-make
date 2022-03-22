@@ -12,6 +12,7 @@ all: help
 .ONESHELL:
 SHELL = /bin/sh
 
+MAKE = make
 MAKEFLAGS += --no-print-directory
 
 #
@@ -176,7 +177,7 @@ alpine-make: \
 ifneq ($(ARG),)
 	$(CMD_DOCKER) \
 		$(DOCKER_RUN_ARGS) \
-		-it $(ALPINE_MAKE_CONTNAME) \
+		$(ALPINE_MAKE_CONTNAME) \
 		$(MAKE) $(ARG)
 endif
 
@@ -188,7 +189,7 @@ ubuntu-make: \
 ifneq ($(ARG),)
 	$(CMD_DOCKER) \
 		$(DOCKER_RUN_ARGS) \
-		-it $(UBUNTU_MAKE_CONTNAME) \
+		$(UBUNTU_MAKE_CONTNAME) \
 		$(MAKE) $(ARG)
 endif
 

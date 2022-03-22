@@ -17,4 +17,5 @@ jobs:
           docker login docker.io --username ${{ secrets.DOCKERHUB_USER }} --password-stdin <<<'${{ secrets.DOCKERHUB_TOKEN }}'
       - name: release
         run: |
-          make -f builder/Makefile.release SNAPSHOT_VERSION=$(git describe --tags --abbrev=0) PUSH_DOCKER_REPO=aquasec/tracee snapshot publish
+          make -f builder/Makefile.release SNAPSHOT_VERSION=$(git describe --tags --abbrev=0) PUSH_DOCKER_REPO=aquasec/tracee snapshot
+          make -f builder/Makefile.release SNAPSHOT_VERSION=$(git describe --tags --abbrev=0) PUSH_DOCKER_REPO=aquasec/tracee publish
