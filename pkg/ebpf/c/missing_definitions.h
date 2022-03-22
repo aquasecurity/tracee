@@ -190,4 +190,6 @@ inet_sk(const struct sock *sk)
 	return (struct inet_sock *)sk;
 }
 
+#define PIPE_BUF_FLAG_CAN_MERGE	0x10	/* can merge buffers */
+
 #endif
