@@ -195,7 +195,8 @@ Copyright (C) Aqua Security inc.
 #define SOCKET_DUP                      1032
 #define HIDDEN_INODES                   1033
 #define __KERNEL_WRITE                  1034
-#define MAX_EVENT_ID                    1035
+#define DIRTY_PIPE_SPLICE               1035
+#define MAX_EVENT_ID                    1036
 
 #define NET_PACKET                      4000
 
@@ -311,6 +312,19 @@ Copyright (C) Aqua Security inc.
 #ifndef CONFIG_ARCH_HAS_SYSCALL_WRAPPER
 #define CONFIG_ARCH_HAS_SYSCALL_WRAPPER 0
 #endif
+
+#endif // CORE
+
+/*================================ eBPF CO-RE SUPPORT =================================*/
+
+#ifdef CORE
+#define get_type_size(x) bpf_core_type_size(x)
+#define __get_node_addr(array, node_type, index) ((node_type *)((void *)array + (index * get_type_size(node_type))))
+#define get_node_addr(array, index) __get_node_addr(array, typeof(*array), index)
+
+#else
+#define get_type_size(x) sizeof(x)
+#define get_node_addr(array, index) &array[index]
 
 #endif // CORE
 
@@ -1147,6 +1161,43 @@ static __always_inline struct sockaddr_un get_unix_sock_addr(struct unix_sock *s
         bpf_probe_read(&sockaddr, len, addr->name);
     }
     return sockaddr;
+}
+
+// Extract the last page buffer used in the pipe for write
+static __always_inline struct pipe_buffer *get_last_write_pipe_buffer(struct pipe_inode_info *pipe)
+{
+    struct pipe_buffer *bufs = READ_KERN(pipe->bufs);
+    unsigned int curbuf;
+
+    #ifndef CORE
+    #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0))
+    unsigned int nrbufs = READ_KERN(pipe->nrbufs);
+    if (nrbufs > 0) {
+        nrbufs--;
+    }
+    curbuf = (READ_KERN(pipe->curbuf) + nrbufs) & (READ_KERN(pipe->buffers) - 1);
+    #else
+    int head = READ_KERN(pipe->head);
+    int ring_size = READ_KERN(pipe->ring_size);
+    curbuf = (head - 1) & (ring_size - 1);
+    #endif
+    #else // CORE
+    struct pipe_inode_info___v54 *legacy_pipe = (struct pipe_inode_info___v54 *)pipe;
+    if (bpf_core_field_exists(legacy_pipe->nrbufs)) {
+        unsigned int nrbufs = READ_KERN(legacy_pipe->nrbufs);
+        if (nrbufs > 0) {
+            nrbufs--;
+        }
+        curbuf = (READ_KERN(legacy_pipe->curbuf) + nrbufs) & (READ_KERN(legacy_pipe->buffers) - 1);
+    } else {
+        int head = READ_KERN(pipe->head);
+        int ring_size = READ_KERN(pipe->ring_size);
+        curbuf = (head - 1) & (ring_size - 1);
+    }
+    #endif
+
+    struct pipe_buffer *current_buffer = get_node_addr(bufs, curbuf);
+    return current_buffer;
 }
 
 /*============================ HELPER FUNCTIONS ==============================*/
@@ -2147,6 +2198,14 @@ static __always_inline unsigned short get_inode_mode_from_fd(u64 fd)
 
     struct inode *f_inode = READ_KERN(f->f_inode);
     return READ_KERN(f_inode->i_mode);
+}
+
+static __always_inline struct pipe_inode_info *get_file_pipe_info(struct file *file) {
+    struct pipe_inode_info *pipe = READ_KERN(file->private_data);
+    if (READ_KERN(file->f_op) != get_symbol_addr("pipefifo_fops")) {
+        return NULL;
+    }
+    return pipe;
 }
 
 /*============================== SYSCALL HOOKS ===============================*/
@@ -4453,6 +4512,91 @@ int BPF_KPROBE(trace_security_inode_mknod)
     save_to_submit_buf(&data, &dev, sizeof(dev_t), 2);
 
     return events_perf_submit(&data, SECURITY_INODE_MKNOD, 0);
+}
+
+SEC("kprobe/do_splice")
+TRACE_ENT_FUNC(do_splice, DIRTY_PIPE_SPLICE);
+
+SEC("kretprobe/do_splice")
+int BPF_KPROBE(trace_ret_do_splice)
+{
+    args_t saved_args;
+    if (load_args(&saved_args, DIRTY_PIPE_SPLICE) != 0) {
+        // missed entry or not traced
+        return 0;
+    }
+
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!event_chosen(DIRTY_PIPE_SPLICE))
+        return 0;
+
+    struct file *out_file = (struct file*)saved_args.args[2];
+    struct pipe_inode_info *out_pipe = get_file_pipe_info(out_file);
+    // Check that output is a pipe
+    if (!out_pipe) {
+        return 0;
+    }
+
+    // dirty_pipe_splice is a splice to a pipe which results that the last page copied could be modified (the
+    // PIPE_BUF_CAN_MERGE flag is on in the pipe_buffer struct).
+    struct pipe_buffer *last_write_page_buffer = get_last_write_pipe_buffer(out_pipe);
+    unsigned int out_pipe_last_buffer_flags = READ_KERN(last_write_page_buffer->flags);
+    if ((out_pipe_last_buffer_flags & PIPE_BUF_FLAG_CAN_MERGE) == 0) {
+        return 0;
+    }
+
+    struct file *in_file = (struct file*)saved_args.args[0];
+    struct inode *in_inode = READ_KERN(in_file->f_inode);
+    u64 in_inode_number = READ_KERN(in_inode->i_ino);
+    unsigned short in_file_type = READ_KERN(in_inode->i_mode) & S_IFMT;
+    void *in_file_path = get_path_str(GET_FIELD_ADDR(in_file->f_path));
+    size_t write_len = (size_t)saved_args.args[4];
+
+    loff_t *off_in_addr = (loff_t *)saved_args.args[1];
+    // In kernel v5.10 the pointer passed was no longer of the user, so flexibility is needed to read it
+    loff_t off_in;
+    #ifndef CORE
+    #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 10, 0)
+    off_in = READ_USER(*off_in_addr);
+    #else
+    off_in = READ_KERN(*off_in_addr);
+    #endif
+    #else // CORE
+    // Check if field of struct exist to determine kernel version - some fields change between versions.
+    // Field 'data' of struct 'public_key_signature' was introduced between v5.9 and v5.10, so its existence could
+    // be used to determine whether the current version is older than 5.9 or newer than 5.10.
+    struct public_key_signature *check;
+    if (!bpf_core_field_exists(check->data)) { // version < v5.10
+        off_in = READ_USER(*off_in_addr);
+    } else { // version >= v5.10
+        off_in = READ_KERN(*off_in_addr);
+    }
+    #endif // CORE
+
+    struct inode *out_inode = READ_KERN(out_file->f_inode);
+    u64 out_inode_number = READ_KERN(out_inode->i_ino);
+
+    // Only last page written to pipe is vulnerable from the end of written data
+    loff_t next_exposed_data_offset_in_out_pipe_last_page = READ_KERN(last_write_page_buffer->offset) + READ_KERN(last_write_page_buffer->len);
+    size_t in_file_size = READ_KERN(in_inode->i_size);
+    size_t exposed_data_len = (PAGE_SIZE - 1) - next_exposed_data_offset_in_out_pipe_last_page;
+    loff_t current_file_offset = off_in + write_len;
+    if (current_file_offset + exposed_data_len > in_file_size) {
+        exposed_data_len = in_file_size - current_file_offset - 1;
+    }
+
+    save_to_submit_buf(&data, &in_inode_number, sizeof(u64), 0);
+    save_to_submit_buf(&data, &in_file_type, sizeof(unsigned short), 1);
+    save_str_to_buf(&data, in_file_path, 2);
+    save_to_submit_buf(&data, &current_file_offset, sizeof(loff_t), 3);
+    save_to_submit_buf(&data, &exposed_data_len, sizeof(size_t), 4);
+    save_to_submit_buf(&data, &out_inode_number, sizeof(u64), 5);
+    save_to_submit_buf(&data, &out_pipe_last_buffer_flags, sizeof(unsigned int), 6);
+
+    return events_perf_submit(&data, DIRTY_PIPE_SPLICE, 0);
 }
 
 static __always_inline bool skb_revalidate_data(struct __sk_buff *skb, uint8_t **head, uint8_t **tail, const u32 offset) {

@@ -172,6 +172,13 @@ func (t *Tracee) parseArgs(event *trace.Event) error {
 				ParseOrEmptyString(modeArg, inodeModeArgument, err)
 			}
 		}
+	case DirtyPipeSpliceEventID:
+		if modeArg := getEventArg(event, "in_file_type"); modeArg != nil {
+			if mode, isUint16 := modeArg.Value.(uint16); isUint16 {
+				inodeModeArgument, err := helpers.ParseInodeMode(uint64(mode))
+				ParseOrEmptyString(modeArg, inodeModeArgument, err)
+			}
+		}
 	}
 
 	return nil

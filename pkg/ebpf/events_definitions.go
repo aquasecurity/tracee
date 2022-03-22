@@ -80,6 +80,7 @@ const (
 	SocketDupEventID
 	HiddenInodesEventID
 	__KernelWriteEventID
+	DirtyPipeSpliceEventID
 	MaxCommonEventID
 )
 
@@ -6172,6 +6173,27 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "unsigned long", Name: "inode"},
 			{Type: "size_t", Name: "count"},
 			{Type: "off_t", Name: "pos"},
+		},
+	},
+	DirtyPipeSpliceEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "dirty_pipe_splice",
+		Probes: []probe{
+			{event: "do_splice", attach: kprobe, fn: "trace_do_splice"},
+			{event: "do_splice", attach: kretprobe, fn: "trace_ret_do_splice"},
+		},
+		Sets: []string{},
+		Dependencies: dependencies{
+			ksymbols: []string{"pipefifo_fops"},
+		},
+		Params: []trace.ArgMeta{
+			{Type: "unsigned long", Name: "inode_in"},
+			{Type: "umode_t", Name: "in_file_type"},
+			{Type: "const char*", Name: "in_file_path"},
+			{Type: "loff_t", Name: "exposed_data_start_offset"},
+			{Type: "size_t", Name: "exposed_data_len"},
+			{Type: "unsigned long", Name: "inode_out"},
+			{Type: "unsigned int", Name: "out_pipe_last_buffer_flags"},
 		},
 	},
 	ContainerCreateEventID: {

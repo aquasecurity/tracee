@@ -417,6 +417,29 @@ struct file {
 	void *private_data;
 };
 
+struct pipe_inode_info {
+    struct pipe_buffer *bufs;
+    int head;
+    int ring_size;
+    unsigned int curbuf;
+};
+
+struct pipe_inode_info___v54 {
+    struct pipe_buffer *bufs;
+    unsigned int nrbufs, curbuf, buffers;
+};
+
+struct pipe_buffer {
+    struct page *page;
+    unsigned int offset;
+    unsigned int len;
+    unsigned int flags;
+};
+
+struct public_key_signature {
+    const void *data;
+};
+
 struct socket {
 	struct sock *sk;
 };
@@ -558,6 +581,7 @@ struct inode {
 	struct super_block *i_sb;
 	long unsigned int i_ino;
 	struct timespec64 i_ctime;
+	loff_t i_size;
 };
 
 struct super_block {
