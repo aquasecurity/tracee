@@ -16,7 +16,7 @@
         
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.2.3+insiders-4.10.0">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.2.5+insiders-4.11.0">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.7db4a7c2.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.589a02ac.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.e6a45f82.min.css">
@@ -35,6 +35,7 @@
     
     
       
+        
         
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
@@ -358,6 +359,25 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../building/headers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Linux Headers
+  </span>
+
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -409,25 +429,6 @@
   
   <span class="md-ellipsis">
     Prerequisites
-  </span>
-
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../install/headers.md" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Linux Headers
   </span>
 
       </a>
@@ -857,7 +858,7 @@
 <li><code>tracee_selected_events</code>: A <em>set</em> rule that defines the event selectors.</li>
 <li><code>tracee_match</code>: A <em>boolean</em> or a <em>document</em> rule that defines the logic of the signature. If bool is "returned", a true evaluation will generate a Finding with no data. If a document is "returned", any non-empty evaluation will generate a Finding with the returned document as the Finding's "Data".</li>
 </ol>
-<p>See <a href="https://github.com/aquasecurity/tracee/tree/tracee/signatures/rego">signatures/rego</a> for example Rego signatures.</p>
+<p>See <a href="https://github.com/aquasecurity/tracee/tree/v0.7.0/signatures/rego">signatures/rego</a> for example Rego signatures.</p>
 <h2 id="golang-rules">Golang Rules<a class="headerlink" href="#golang-rules" title="Permanent link">&para;</a></h2>
 <p>Tracee exports a <code>Signature</code> interface that you can implement. We use <a href="https://golang.org/pkg/plugin/">Go Plugins</a> to load Go signatures.</p>
 <ol>
@@ -867,7 +868,7 @@
 <li>Compile using goplugins <code>go build -buildmode=plugin -o yourplugin.so yoursource.go</code>.</li>
 <li>Place the resulting compiled file in the rules directory, and it will be automatically discovered by Tracee.</li>
 </ol>
-<p>See <a href="https://github.com/aquasecurity/tracee/tree/tracee/signatures/golang/examples">signatures/golang/examples</a> for example Go signatures.</p>
+<p>See <a href="https://github.com/aquasecurity/tracee/tree/v0.7.0/signatures/golang/examples">signatures/golang/examples</a> for example Go signatures.</p>
 
 
 
@@ -936,7 +937,7 @@
     <script id="__config" type="application/json">{"base": "..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.5c9dbbf3.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.a2472400.min.js"></script>
+      <script src="../assets/javascripts/bundle.10bf1588.min.js"></script>
       
     
   </body>

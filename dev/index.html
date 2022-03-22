@@ -16,7 +16,7 @@
         
       
       <link rel="icon" href="assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.2.3+insiders-4.10.0">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.2.5+insiders-4.11.0">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.7db4a7c2.min.css">
+      <link rel="stylesheet" href="assets/stylesheets/main.589a02ac.min.css">
       
         
         <link rel="stylesheet" href="assets/stylesheets/palette.e6a45f82.min.css">
@@ -35,6 +35,7 @@
     
     
       
+        
         
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
@@ -418,6 +419,25 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="building/headers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Linux Headers
+  </span>
+
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -469,25 +489,6 @@
   
   <span class="md-ellipsis">
     Prerequisites
-  </span>
-
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="install/headers.md" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Linux Headers
   </span>
 
       </a>
@@ -877,7 +878,7 @@
 <p>If running on <strong>BTF enabled kernel</strong>:</p>
 <div class="highlight"><pre><span></span><code>docker run --name tracee --rm -it --pid<span class="o">=</span>host --cgroupns<span class="o">=</span>host --privileged <span class="se">\</span>
   -v /tmp/tracee:/tmp/tracee <span class="se">\</span>
-  aquasec/tracee:racee
+  aquasec/tracee:0.7.0
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -888,7 +889,7 @@
   -v /tmp/tracee:/tmp/tracee <span class="se">\</span>
   -v /lib/modules/:/lib/modules/:ro <span class="se">\</span>
   -v /usr/src:/usr/src:ro <span class="se">\</span>
-  aquasec/tracee:racee
+  aquasec/tracee:0.7.0
 </code></pre></div></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -901,8 +902,8 @@ In order to simulate a suspicious behavior, you can run <code>strace ls</code> i
 <h2 id="components">Components<a class="headerlink" href="#components" title="Permanent link">&para;</a></h2>
 <p>Tracee is composed of the following sub-projects, which are hosted in the aquasecurity/tracee repository:</p>
 <ul>
-<li><a href="https://github.com/aquasecurity/tracee/tree/tracee/tracee-ebpf">Tracee-eBPF</a> - Linux Tracing and Forensics using eBPF</li>
-<li><a href="https://github.com/aquasecurity/tracee/tree/tracee/tracee-rules">Tracee-Rules</a> - Runtime Security Detection Engine</li>
+<li><a href="https://github.com/aquasecurity/tracee/tree/v0.7.0/tracee-ebpf">Tracee-eBPF</a> - Linux Tracing and Forensics using eBPF</li>
+<li><a href="https://github.com/aquasecurity/tracee/tree/v0.7.0/tracee-rules">Tracee-Rules</a> - Runtime Security Detection Engine</li>
 </ul>
 <hr />
 <p>Tracee is an <a href="https://aquasec.com">Aqua Security</a> open source project.<br />
@@ -961,7 +962,7 @@ Join the community, and talk to us about any matter in <a href="https://github.c
     <script id="__config" type="application/json">{"base": ".", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "assets/javascripts/workers/search.5c9dbbf3.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="assets/javascripts/bundle.a2472400.min.js"></script>
+      <script src="assets/javascripts/bundle.10bf1588.min.js"></script>
       
     
   </body>

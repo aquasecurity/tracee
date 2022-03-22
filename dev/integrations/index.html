@@ -16,7 +16,7 @@
         
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.2.3+insiders-4.10.0">
+      <meta name="generator" content="mkdocs-1.2.3, mkdocs-material-8.2.5+insiders-4.11.0">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.7db4a7c2.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.589a02ac.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.e6a45f82.min.css">
@@ -35,6 +35,7 @@
     
     
       
+        
         
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
@@ -358,6 +359,25 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../building/headers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Linux Headers
+  </span>
+
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -409,25 +429,6 @@
   
   <span class="md-ellipsis">
     Prerequisites
-  </span>
-
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../install/headers.md" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Linux Headers
   </span>
 
       </a>
@@ -941,13 +942,13 @@
 <td>falcosidekick.tmpl</td>
 <td>For compatibility with <a href="https://github.com/falcosecurity/falcosidekick">falcosidekick</a></td>
 <td><code>application/json</code></td>
-<td><a href="https://github.com/aquasecurity/tracee/blob/tracee/cmd/tracee-rules/templates/falcosidekick.tmpl">source</a></td>
+<td><a href="https://github.com/aquasecurity/tracee/blob/v0.7.0/cmd/tracee-rules/templates/falcosidekick.tmpl">source</a></td>
 </tr>
 <tr>
 <td>rawjson.tmpl</td>
 <td>Dumps the Finding object as raw JSON</td>
 <td><code>application/json</code></td>
-<td><a href="https://github.com/aquasecurity/tracee/blob/tracee/cmd/tracee-rules/templates/rawjson.tmpl">source</a></td>
+<td><a href="https://github.com/aquasecurity/tracee/blob/v0.7.0/cmd/tracee-rules/templates/rawjson.tmpl">source</a></td>
 </tr>
 </tbody>
 </table>
@@ -961,7 +962,7 @@
 <span class="p">}</span><span class="w"></span>
 </code></pre></div>
 <p>The Go template can utilize helper functions from <a href="http://masterminds.github.io/sprig/">Sprig</a>.</p>
-<p>For example templates, see <a href="https://github.com/aquasecurity/tracee/tree/tracee/cmd/tracee-rules/templates">tracee/cmd/tracee-rules/templates</a>.</p>
+<p>For example templates, see <a href="https://github.com/aquasecurity/tracee/tree/v0.7.0/cmd/tracee-rules/templates">tracee/cmd/tracee-rules/templates</a>.</p>
 <h2 id="prometheus">Prometheus<a class="headerlink" href="#prometheus" title="Permanent link">&para;</a></h2>
 <p>Tracee is enabled for prometheus scraping by default. Scraping can be done through the following URLs:1
 1. <code>tracee-ebpf</code> can be scraped through <code>:3366/metrics</code>
@@ -974,7 +975,7 @@
   -v /lib/modules/:/lib/modules/:ro <span class="se">\</span>
   -v /usr/src:/usr/src:ro <span class="se">\</span>
   -v /tmp/tracee:/tmp/tracee <span class="se">\</span>
-  aquasec/tracee:racee <span class="se">\</span>
+  aquasec/tracee:0.7.0 <span class="se">\</span>
   --output-template /tracee/templates/rawjson.tmpl
 </code></pre></div>
 <h3 id="falcosidekick-webhook">falcosidekick webhook<a class="headerlink" href="#falcosidekick-webhook" title="Permanent link">&para;</a></h3>
@@ -1006,7 +1007,7 @@ docker run --name tracee --rm -it --privileged --pid<span class="o">=</span>host
   -v /lib/modules/:/lib/modules/:ro <span class="se">\</span>
   -v /usr/src:/usr/src:ro <span class="se">\</span>
   -v /tmp/tracee:/tmp/tracee <span class="se">\</span>
-  --link falcosidekick aquasec/tracee:racee <span class="se">\</span>
+  --link falcosidekick aquasec/tracee:0.7.0 <span class="se">\</span>
   --webhook-template /tracee/templates/falcosidekick.tmpl <span class="se">\</span>
   --webhook-content-type application/json <span class="se">\</span>
   --webhook http://FALCOSIDEKICK:2801
@@ -1079,7 +1080,7 @@ docker run --name tracee --rm -it --privileged --pid<span class="o">=</span>host
     <script id="__config" type="application/json">{"base": "..", "features": [], "translations": {"clipboard.copy": "Copy to clipboard", "clipboard.copied": "Copied to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.placeholder": "Type to start searching", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "search": "../assets/javascripts/workers/search.5c9dbbf3.min.js", "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.a2472400.min.js"></script>
+      <script src="../assets/javascripts/bundle.10bf1588.min.js"></script>
       
     
   </body>
