@@ -5,7 +5,7 @@
 One of the following:
 
 * BTF available under `/sys/kernel/btf/vmlinux` (see [libbpf CO-RE documentation] for more info).
-* Linux kernel headers available under conventional location (see [Linux Headers](../building/headers.md) section for more info).
+* Linux kernel headers available under conventional location (see [Linux Headers](../install/headers.md) section for more info).
   In this case system libraries libelf and zlib are required as well.
 
 # Permissions
