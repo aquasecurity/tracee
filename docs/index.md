@@ -39,7 +39,7 @@ docker run --name tracee --rm -it --pid=host --cgroupns=host --privileged \
 ```
 
 !!! note
-    You may need to change the volume mounts for the kernel headers based on your setup. See [Linux Headers](./building/headers.md) section for more info.
+    You may need to change the volume mounts for the kernel headers based on your setup. See [Linux Headers](./install/headers.md) section for more info.
 
 This will run Tracee with default settings and start reporting detections to standard output.
 In order to simulate a suspicious behavior, you can run `strace ls` in another terminal, which will trigger the "Anti-Debugging" signature, which is loaded by default.
