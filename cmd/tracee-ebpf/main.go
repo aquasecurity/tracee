@@ -376,6 +376,8 @@ func prepareEventsPriority(priorityConfigFilePath string) error {
 		return err
 	}
 	/*
+		The JSON struct has to be as follows:
+
 		{
 			"prioPerEventId": [{
 				"EventId": 1,

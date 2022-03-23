@@ -1409,3 +1409,18 @@ func Test_getFormattedEventParams(t *testing.T) {
 		assert.Equal(t, tc.output, getFormattedEventParams(tc.input))
 	}
 }
+
+func TestPrepareEventsPriority(t *testing.T) {
+	prioritiesJsonPath := "./priorities_test.json"
+	err := prepareEventsPriority(prioritiesJsonPath)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, tracee.EventsDefinitions[1].Priority, 2)
+	assert.Equal(t, tracee.EventsDefinitions[2].Priority, 1)
+	assert.Equal(t, tracee.EventsDefinitions[3].Priority, 4)
+	assert.Equal(t, tracee.EventsDefinitions[4].Priority, 0)
+	assert.Equal(t, tracee.EventsDefinitions[5].Priority, 0)
+	assert.Equal(t, tracee.EventsDefinitions[6].Priority, 4)
+
+	err = prepareEventsPriority("does/not/exists")
+	assert.NotEqual(t, err, nil)
+}

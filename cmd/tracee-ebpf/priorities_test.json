@@ -1,0 +1,30 @@
+{
+    "prioPerEventId": [{
+        "EventId": 1,
+        "Prio": 2
+    }, {
+        "EventId": 2,
+        "Prio": 1
+    },
+    {
+        "EventId": 3,
+        "Prio": 5
+    },
+    {
+        "EventId": 4,
+        "Prio": -1
+    },
+    {
+        "EventId": 5,
+        "Prio": 0
+    },
+    {
+        "EventId": 6,
+        "Prio": 4
+    },
+    {
+        "EventId": -1,
+        "Prio": 3
+    }
+    ]
+}
