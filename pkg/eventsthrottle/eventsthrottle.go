@@ -20,7 +20,7 @@ type EventsThrottlingState struct {
 
 func NewEventsThrottlingState() EventsThrottlingState {
 	return EventsThrottlingState{
-		currentEventPriorityThreshold: 4,
+		currentEventPriorityThreshold: 0,
 		maxPriorityThreshold:          4,
 		minPriorityThreshold:          0,
 		mtx:                           sync.RWMutex{},

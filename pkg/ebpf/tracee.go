@@ -1060,13 +1060,13 @@ func (t *Tracee) Close() {
 }
 
 func (t *Tracee) dropEvents() ([]int, error) {
-	if t.eventsThrottlingState.PriorityThreshold() < t.eventsThrottlingState.MinPriorityThreshold() {
+	if t.eventsThrottlingState.PriorityThreshold() >= t.eventsThrottlingState.MaxPriorityThreshold() {
 		if t.config.Debug {
-			fmt.Printf("events priority threshold already at minimum - no events to dropped")
+			fmt.Printf("events priority threshold already at maximum - no events to dropped")
 		}
 		return []int{}, nil
 	}
-	t.eventsThrottlingState.DecreasePriorityThreshold()
+	t.eventsThrottlingState.IncreasePriorityThreshold()
 	var droppedEvents []int
 	chosenEventsMap, err := t.bpfModule.GetMap("chosen_events_map") // u32, u32
 	if err != nil {
@@ -1080,7 +1080,7 @@ func (t *Tracee) dropEvents() ([]int, error) {
 			if !ok {
 				continue
 			}
-			if currentPrioThreshold < eventDef.Priority {
+			if currentPrioThreshold > eventDef.Priority {
 				falseU32 := uint32(0)
 				if err := chosenEventsMap.Update(unsafe.Pointer(&eU32), unsafe.Pointer(&falseU32)); err != nil {
 					if t.config.Debug {
@@ -1096,12 +1096,13 @@ func (t *Tracee) dropEvents() ([]int, error) {
 }
 
 func (t *Tracee) restoreEvents() ([]int, error) {
-	if t.eventsThrottlingState.PriorityThreshold() > t.eventsThrottlingState.MaxPriorityThreshold() {
+	if t.eventsThrottlingState.PriorityThreshold() <= t.eventsThrottlingState.MinPriorityThreshold() {
 		if t.config.Debug {
-			fmt.Printf("events priority threshold already at maximum - no events to load")
+			fmt.Printf("events priority threshold already at minimum - no events to load")
 		}
+		return []int{}, nil
 	}
-	t.eventsThrottlingState.IncreasePriorityThreshold()
+	t.eventsThrottlingState.DecreasePriorityThreshold()
 	var restoredEvents []int
 	chosenEventsMap, err := t.bpfModule.GetMap("chosen_events_map") // u32, u32
 	if err != nil {
@@ -1115,7 +1116,7 @@ func (t *Tracee) restoreEvents() ([]int, error) {
 			if !ok {
 				continue
 			}
-			if currentPrioThreshold >= eventDef.Priority {
+			if currentPrioThreshold <= eventDef.Priority {
 				trueU32 := uint32(1)
 				if err := chosenEventsMap.Update(unsafe.Pointer(&eU32), unsafe.Pointer(&trueU32)); err != nil {
 					if t.config.Debug {
@@ -1128,7 +1129,6 @@ func (t *Tracee) restoreEvents() ([]int, error) {
 		}
 	}
 	return restoredEvents, nil
-
 }
 
 func (t *Tracee) DecreaseLoad() (eventsthrottle.LoadChange, error) {

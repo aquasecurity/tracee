@@ -38,7 +38,7 @@ func (t *Tracee) handleEvents(ctx gocontext.Context) {
 	}
 
 	if t.config.ThrottleEvents {
-		go t.ThrottleEvents()
+		go t.ThrottleEvents(ctx)
 	}
 
 	// Sink pipeline stage.
@@ -254,21 +254,35 @@ func (t *Tracee) processEvents(ctx gocontext.Context, in <-chan *trace.Event) <-
 	return errc
 }
 
-func (t *Tracee) ThrottleEvents() {
-	throughputInterval := 60
-	throughputTicker := time.NewTicker(time.Second * time.Duration(throughputInterval))
+func (t *Tracee) ThrottleEvents(ctx gocontext.Context) {
+
+	throughputIntervalMin := 1
+	throughputTicker := time.NewTicker(time.Minute * time.Duration(throughputIntervalMin))
 	lostEvents := t.stats.LostEvCount.Read()
-	for range throughputTicker.C {
-		lostEventsCurrent := t.stats.LostEvCount.Read()
-		delta := lostEventsCurrent - lostEvents // always positive or equal to zero
-		lostEvents = lostEventsCurrent
-		if delta > 0 {
-			if d, _ := t.DecreaseLoad(); len(d.ChangeInEvents.AffectedEvents) != 0 {
-				fmt.Fprintf(os.Stderr, "****************** DECREASING LOAD - EVENTS PER SEC ***********************\n")
-			}
-		} else {
-			if d, _ := t.IncreaseLoad(); len(d.ChangeInEvents.AffectedEvents) != 0 {
-				fmt.Fprintf(os.Stderr, "****************** INCREASING LOAD - EVENTS PER SEC ***********************\n")
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-throughputTicker.C:
+			{
+				fmt.Fprintf(os.Stderr, "Throttle Engine tick\n")
+
+				fmt.Fprintf(os.Stderr, "Current prio threshold is %d!!!\n", t.eventsThrottlingState.PriorityThreshold())
+
+				lostEventsCurrent := t.stats.LostEvCount.Read()
+				delta := lostEventsCurrent - lostEvents // always positive or equal to zero
+				lostEvents = lostEventsCurrent
+				fmt.Fprintf(os.Stderr, "LostEvents Delta is %d!!!\n", delta)
+				if delta > 0 {
+					if d, _ := t.DecreaseLoad(); len(d.ChangeInEvents.AffectedEvents) != 0 {
+						fmt.Fprintf(os.Stderr, "****************** DECREASING LOAD - EVENTS PER SEC ***********************\n")
+					}
+				} else {
+					if d, _ := t.IncreaseLoad(); len(d.ChangeInEvents.AffectedEvents) != 0 {
+						fmt.Fprintf(os.Stderr, "****************** INCREASING LOAD - EVENTS PER SEC ***********************\n")
+					}
+				}
 			}
 		}
 	}

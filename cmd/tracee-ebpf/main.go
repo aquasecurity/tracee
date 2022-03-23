@@ -58,7 +58,9 @@ func main() {
 				PerfBufferSize:     c.Int("perf-buffer-size"),
 				BlobPerfBufferSize: c.Int("blob-perf-buffer-size"),
 				Debug:              c.Bool("debug"),
+				ThrottleEvents:     c.Bool("events-throttling"),
 			}
+			fmt.Println(cfg.ThrottleEvents)
 
 			cacheSlice := c.StringSlice("cache")
 			if checkCommandIsHelp(cacheSlice) {
@@ -179,9 +181,11 @@ func main() {
 			cfg.ChanEvents = make(chan trace.Event)
 			cfg.ChanErrors = make(chan error)
 
-			cfg.ThrottleEvents = eventsThrottling
-
 			if eventsPriorityConfigFilePath != "" {
+				if eventsPriorityConfigFilePath == "help" {
+					fmt.Println(flags.EventsPriorityHelp())
+					return nil
+				}
 				prepareEventsPriority(eventsPriorityConfigFilePath)
 			}
 
@@ -344,14 +348,13 @@ func main() {
 				Destination: &metricsAddr,
 			},
 			&cli.BoolFlag{
-				Name:        "events-throttling",
-				Usage:       "enable events throttling mechanics",
-				Destination: &eventsThrottling,
-				Value:       false,
+				Name:  "events-throttling",
+				Usage: "enable events throttling mechanics",
+				Value: false,
 			},
 			&cli.StringFlag{
 				Name:        "events-priority",
-				Usage:       "json file path defining events priority used by events thorttling engine",
+				Usage:       "json file path defining events priority used by events thorttling engine. run --events-priority help for more info.",
 				Value:       "",
 				Destination: &eventsPriorityConfigFilePath,
 			},
