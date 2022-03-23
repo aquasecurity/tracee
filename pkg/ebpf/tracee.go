@@ -898,6 +898,17 @@ func (t *Tracee) initBPF() error {
 			case rawTracepoint:
 				tpEvent := strings.Split(probe.event, ":")[1]
 				_, err = prog.AttachRawTracepoint(tpEvent)
+			case uprobe:
+				uprobeData := event.Probes[0].uprobeData
+				offset, err := helpers.SymbolToOffset(uprobeData.binary_path, uprobeData.symbolName)
+				if err != nil {
+					fmt.Fprintln(os.Stderr, err)
+				}
+
+				_, err = prog.AttachUprobe(-1, uprobeData.binary_path, offset)
+				if err != nil {
+					fmt.Fprintln(os.Stderr, err)
+				}
 			}
 			if err != nil {
 				return fmt.Errorf("error attaching event %s: %v", probe.event, err)

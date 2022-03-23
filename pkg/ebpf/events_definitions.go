@@ -14,12 +14,18 @@ const (
 	kretprobe
 	tracepoint
 	rawTracepoint
+	uprobe
 )
 
 type probe struct {
-	event  string
-	attach probeType
-	fn     string
+	event      string
+	attach     probeType
+	fn         string
+	uprobeData uprobeData
+}
+type uprobeData struct {
+	binary_path string
+	symbolName  string
 }
 
 type dependency struct {
