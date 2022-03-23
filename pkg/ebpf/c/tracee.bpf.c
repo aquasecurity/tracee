@@ -4387,6 +4387,17 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     return TC_ACT_UNSPEC;
 }
 
+SEC("uprobe/test_function")
+int uprobe__test_function(struct pt_regs *ctx)
+{
+    int pid =000;
+    const char fmt_str[] = "uprobe %d\n";
+    bpf_trace_printk(fmt_str, sizeof(fmt_str), pid);
+    return 0;
+}
+
+
+
 SEC("tc")
 int tc_egress(struct __sk_buff *skb) {
     return tc_probe(skb, false);

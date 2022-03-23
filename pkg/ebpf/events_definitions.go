@@ -80,6 +80,7 @@ const (
 	SecurityInodeSymlinkEventId
 	SocketDupEventID
 	HiddenInodesEventID
+	TestUprobeEventID
 	MaxCommonEventID
 )
 
@@ -6178,6 +6179,17 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit: sys32undefined,
 		Name:    "existing_container",
 		Probes:  []probe{},
+		Sets:    []string{},
+		Params: []trace.ArgMeta{
+			{Type: "const char*", Name: "runtime"},
+			{Type: "const char*", Name: "container_id"},
+			{Type: "unsigned long", Name: "ctime"},
+		},
+	},
+	TestUprobeEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "uprobe",
+		Probes:  []probe{{event: "test_function", fn: "uprobe__test_function", attach: uprobe, uprobeData: uprobeData{symbolName: "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).processNetEvents", binary_path: "./tracee-ebpf"}}},
 		Sets:    []string{},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "runtime"},
