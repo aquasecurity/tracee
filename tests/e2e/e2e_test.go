@@ -1,4 +1,4 @@
-package tests
+package e2e_test
 
 import (
 	"context"
@@ -107,11 +107,14 @@ func parseSignatureIDs() []string {
 // allows us to test different flavors of tracee container image, i.e. CO-RE,
 // non CO-RE, and CO-RE with custom BTFHub support.
 //
-//     go test -v -run "TestTraceeSignatures" ./tests/tracee_test.go \
+//     go test -v -run "TestTraceeSignatures" ./tests/e2e/e2e_test.go \
 //            -tracee-image-ref "tracee:full" \
 //            -tracee-tester-image-ref "aquasec/tracee-tester:latest" \
 //            -tracee-signatures "TRC-2,TRC-3"
 func TestTraceeSignatures(t *testing.T) {
+	if testing.Short() {
+		t.Skip("This is an end-to-end test")
+	}
 	// TODO Normally we should be using tempDir := t.TempDir() but all files
 	// created by tracee-ebpf and entrypoint.sh under /tmp/tracee/ are owned by
 	// the root user and cannot be automatically removed by the test Cleanup

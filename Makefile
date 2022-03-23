@@ -234,9 +234,9 @@ help:
 	@echo ""
 	@echo "# test"
 	@echo ""
-	@echo "    $$ make test                 	# run all go & opa tests"
-	@echo "    $$ make test-tracee-ebpf     	# go test tracee-ebpf"
-	@echo "    $$ make test-tracee-rules    	# go test tracee-rules"
+	@echo "    $$ make test-types           	# run unit tests for types module"
+	@echo "    $$ make test-unit            	# run unit tests"
+	@echo "    $$ make test-integration     	# run integration tests"
 	@echo "    $$ make test-rules           	# opa test (tracee-rules)"
 	@echo ""
 	@echo "# flags"
@@ -488,18 +488,6 @@ clean-tracee-ebpf:
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-ebpf
 	$(CMD_RM) -rf .*.md5
 
-.PHONY: test-tracee-ebpf
-test-tracee-ebpf: \
-	.checkver_$(CMD_GO) \
-	$(OUTPUT_DIR)/tracee.bpf.core.o
-#
-	$(MAKE) $(OUTPUT_DIR)/btfhub
-	$(GO_ENV_EBPF) $(CMD_GO) test \
-		-tags $(GO_TAGS_EBPF) \
-		-v \
-		./cmd/tracee-ebpf/... \
-		./pkg/...
-
 #
 # btfhub (expensive: only run if core obj changed)
 #
@@ -567,17 +555,44 @@ clean-tracee-rules:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-rules
 
-.PHONY: test-tracee-rules
-test-tracee-rules: \
+.PHONY: test-unit
+test-unit: \
+	.checkver_$(CMD_GO) \
+	tracee-ebpf \
+	test-types
+#
+	$(GO_ENV_EBPF) \
+	$(CMD_GO) test \
+		-tags ebpf \
+		-short \
+		-v \
+		-coverprofile=coverage.txt \
+		./...
+
+.PHONY: test-types
+test-types: \
 	.checkver_$(CMD_GO)
 #
-	$(GO_ENV_RULES) $(CMD_GO) test \
-		-tags $(GO_TAGS_RULES) \
+	# Note that we must changed the directory here because types is a standalone Go module.
+	cd ./types && $(CMD_GO) test \
+		-short \
+		-race \
 		-v \
-		./cmd/tracee-rules/... \
-		./pkg/rules/...
-	cd ./types; $(CMD_GO) test -v ./...
-	cd ..
+		-coverprofile=coverage.txt \
+		./...
+
+.PHONY: test-integration
+test-integration: \
+	.checkver_$(CMD_GO) \
+	tracee-ebpf
+#
+	TRC_BIN=$(abspath $(OUTPUT_DIR)/tracee-ebpf) \
+	$(GO_ENV_EBPF) \
+	$(CMD_GO) test \
+		-tags ebpf,integration \
+		-v \
+		-run "Test_Events" ./tests/integration/...
+
 #
 # rules
 #
@@ -625,13 +640,6 @@ test-rules: \
 	| .check_$(CMD_OPA)
 #
 	$(CMD_OPA) test $(REGO_SIGNATURES_DIR) --verbose
-
-#
-# test
-#
-
-.PHONY: test
-test: test-tracee-ebpf test-tracee-rules test-rules
 
 #
 # clean

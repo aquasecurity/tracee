@@ -251,14 +251,14 @@ HostName: foobar.local
 	}
 }
 
-func TestJsonTemplateV1(t *testing.T) {
+func TestOutputTemplates(t *testing.T) {
 	testCases := []struct {
 		testName     string
 		finding      detect.Finding
 		expectedJson string
 	}{
 		{
-			testName: "convert finding to v1",
+			testName: "Should output finding as raw JSON",
 			finding: detect.Finding{
 				Data: map[string]interface{}{
 					"a": 123,
@@ -303,15 +303,13 @@ func TestJsonTemplateV1(t *testing.T) {
 	}
 
 	jsonTemplate, err := setupTemplate("templates/rawjson.tmpl")
-
 	require.NoError(t, err)
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			//pass finding through template and compare to a v1 json
 			var buf bytes.Buffer
-			jsonTemplate.Execute(&buf, tc.finding)
-
+			err := jsonTemplate.Execute(&buf, tc.finding)
+			require.NoError(t, err)
 			assert.JSONEq(t, tc.expectedJson, buf.String())
 		})
 	}

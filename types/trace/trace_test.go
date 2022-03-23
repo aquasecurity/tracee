@@ -115,7 +115,7 @@ func TestArgumentUnmarshalJSON(t *testing.T) {
 	}
 }
 
-func TestEventOrigin(t *testing.T) {
+func TestEvent_Origin(t *testing.T) {
 	type testCase struct {
 		event    Event
 		expected EventOrigin
@@ -152,7 +152,7 @@ func TestEventOrigin(t *testing.T) {
 
 }
 
-func TestToProtocol(t *testing.T) {
+func TestEvent_ToProtocol(t *testing.T) {
 	type testCase struct {
 		payload  Event
 		expected protocol.Event

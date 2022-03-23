@@ -8,7 +8,6 @@ require (
 	github.com/aquasecurity/tracee/types v0.0.0-20220228102148-dffb469aed94
 	github.com/google/gopacket v1.1.19
 	github.com/hashicorp/golang-lru v0.5.4
-	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/mitchellh/go-ps v1.0.0
 	github.com/onsi/gomega v1.17.0
 	github.com/open-policy-agent/opa v0.35.0
