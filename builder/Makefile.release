@@ -13,7 +13,6 @@ release: snapshot publish
 .ONESHELL:
 SHELL = /bin/sh
 
-MAKE = make
 MAKEFLAGS += --no-print-directory
 
 #
