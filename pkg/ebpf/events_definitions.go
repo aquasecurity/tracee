@@ -81,6 +81,7 @@ const (
 	HiddenInodesEventID
 	__KernelWriteEventID
 	ProcCreateEventID
+	KprobeAttachEventID
 	MaxCommonEventID
 )
 
@@ -6232,6 +6233,19 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Params: []trace.ArgMeta{
 			{Type: "char*", Name: "name"},
 			{Type: "u64", Name: "proc_ops_addr"},
+		},
+	},
+	KprobeAttachEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "kprobe_attch",
+		Probes: []probe{
+			{event: "arm_kprobe", attach: kprobe, fn: "trace_arm_kprobe"},
+		},
+		Sets: []string{},
+		Params: []trace.ArgMeta{
+			{Type: "char*", Name: "symbol_name"},
+			{Type: "u64", Name: "pre_handler_addr"},
+			{Type: "u64", Name: "post_handler_addr"},
 		},
 	},
 }
