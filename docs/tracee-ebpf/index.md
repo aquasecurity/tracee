@@ -1,6 +1,10 @@
 # Tracing
 
-In some cases, you might want to leverage Tracee's eBPF event collection capabilities directly, without involving the detection engine. This might be useful for debugging/troubleshooting/analysis/research/education. In this case you can use Tracee's eBPF collector component, which will start dumping raw data directly into standard output.
+In some cases, you might want to leverage Tracee's eBPF event collection
+capabilities directly, without involving the detection engine. This might be
+useful for debugging/troubleshooting/analysis/research/education. In this case
+you can use Tracee's eBPF collector component, which will start dumping raw
+data directly into standard output.
 
 [Watch a quick video demo of Tracee's eBPF tracing capabilities](https://youtu.be/WTqE2ae257o)
 
@@ -9,10 +13,19 @@ In some cases, you might want to leverage Tracee's eBPF event collection capabil
 Before you proceed, make sure you follow the [minimum requirements for running Tracee](../install/prerequisites.md).
 
 ```bash
-docker run --name tracee --rm --pid=host --cgroupns=host --privileged -it aquasec/tracee:{{ git.tag[1:] }} trace
+$ docker run \
+    --name tracee --rm -it \
+    --pid=host --cgroupns=host --privileged \
+    -v /etc/os-release:/etc/os-release-host:ro \
+    -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+    -e TRACEE_EBPF_ONLY=1 \
+    aquasec/tracee:{{ git.tag[1:] }}
 ```
 
-Here we are running the same `aquasec/tracee` container, but with the `trace` sub-command, which will start just a raw trace (Tracee-eBPF), without the detection engine (Tracee-Rules). Here's a sample output of running with no additional arguments:
+Here we are running the same `aquasec/tracee` container, but with the `trace`
+sub-command, which will start just a raw trace (Tracee-eBPF), without the
+detection engine (Tracee-Rules). Here's a sample output of running with no
+additional arguments:
 
 ```
 TIME(s)        UID    COMM             PID     TID     RET             EVENT                ARGS
@@ -23,7 +36,8 @@ TIME(s)        UID    COMM             PID     TID     RET             EVENT    
 ...
 ```
 
-Each line is a single event collected by Tracee-eBPF, with the following information:
+Each line is a single event collected by Tracee-eBPF, with the following
+information:
 
 1. TIME - shows the event time relative to system boot time in seconds
 2. UID - real user id (in host user namespace) of the calling process
@@ -36,11 +50,14 @@ Each line is a single event collected by Tracee-eBPF, with the following informa
 
 ## Getting Tracee-eBPF
 
-You can obtain Tracee-eBPF in any of the following ways:
+You can use Tracee-eBPF in any of the following ways:
 
-1. Download from the [GitHub Releases](https://github.com/aquasecurity/tracee/releases) (`tracee.tar.gz`).
-2. Use the docker image from Docker Hub: `aquasec/tracee:{{ git.tag[1:] }}` with the `trace` sub-command.
-3. Build the executable from source using `make build`. For that you will need additional development tooling.
-4. Build the executable from source in a Docker container which includes all development tooling, using `make build DOCKER=1`.
+1. Use the docker image from Docker Hub: `aquasec/tracee:{{ git.tag[1:] }}` with the `trace` sub-command.
+2. Download from the [GitHub Releases](https://github.com/aquasecurity/tracee/releases) (`tracee.tar.gz`).
+3. Build the executable from source using `make`.
+4. Have a building container and then build tracee with it: `make -f builder/Makefile.tracee-make help`
+5. Build the container images: `make -f builder/Makefile.tracee-container help`
+6. Build OS packages: `make -f builder/Makefile.packaging help`
 
-All of the other setup options and considerations listed under Tracee's Installation section applies to Tracee-eBPF as well.
+All of the other setup options and considerations listed under Tracee's
+Installation section applies to Tracee-eBPF as well.

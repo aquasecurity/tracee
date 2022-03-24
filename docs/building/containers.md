@@ -16,7 +16,7 @@ Tracee containers come in **2 flavors**:
   $ BTFHUB={0,1} make -f builder/Makefile.tracee-container build-tracee
   ```
 
-* `tracee:full` (Contains tracee bpf source code and compiler tool chain) 
+* `tracee:full` (Contains tracee bpf source code and compiler tool chain)
 
   ```
   $ BTFHUB={0,1} make -f builder/Makefile.tracee-container build-tracee-full
@@ -27,9 +27,10 @@ Tracee containers come in **2 flavors**:
 
 ## Running Tracee containers
 
-Containers are supposed to be executed through docker cmdline directly, from the
-official built images. Nevertheless, during the image building process, it may
-be usefull to execute them with correct arguments to see if they're working.
+Containers are supposed to be executed through docker cmdline directly, from
+the official built images. Nevertheless, during the image building process, it
+may be usefull to execute them with correct arguments to see if they're
+working.
 
 User may execute built containers through `Makefile.tracee-container` file with
 the "run" targets:
