@@ -82,6 +82,7 @@
 #define MAX_STR_FILTER_SIZE 16        // bounded to size of the compared values (comm)
 #define FILE_MAGIC_HDR_SIZE 32        // magic_write: bytes to save from a file's header
 #define FILE_MAGIC_MASK     31        // magic_write: mask used for verifier boundaries
+#define NET_SEQ_OPS_SIZE    4         // print_net_seq_ops: struct size
 #define MAX_KSYM_NAME_SIZE  64
 
 enum buf_idx_e
@@ -232,6 +233,7 @@ enum event_id_e
     SOCKET_ACCEPT,
     LOAD_ELF_PHDRS,
     HOOKED_PROC_FOPS,
+    PRINT_NET_SEQ_OPS,
     MAX_EVENT_ID,
 
     // Net events IDs
@@ -346,7 +348,8 @@ enum container_state_e
     #define MAX_BIN_CHUNKS        110
 #endif
 
-#define IOCTL_FETCH_SYSCALLS            65 // randomly picked number for ioctl cmd
+#define IOCTL_FETCH_SYSCALLS            (1 << 0) // bit wise flags
+#define IOCTL_HOOKED_SEQ_OPS            (1 << 1)
 #define NUMBER_OF_SYSCALLS_TO_CHECK_X86 18
 #define NUMBER_OF_SYSCALLS_TO_CHECK_ARM 14
 
@@ -2389,6 +2392,36 @@ static __always_inline int get_local_net_id_from_network_details_v6(struct sock 
     return 0;
 }
 
+static __always_inline void invoke_fetch_network_seq_operations_event(event_data_t *data,
+                                                                      unsigned long struct_address)
+{
+    struct seq_operations *seq_ops = (struct seq_operations *) struct_address;
+
+    u64 show_addr = (u64) READ_KERN(seq_ops->show);
+    if (show_addr == 0) {
+        return;
+    }
+
+    u64 start_addr = (u64) READ_KERN(seq_ops->start);
+    if (start_addr == 0) {
+        return;
+    }
+
+    u64 next_addr = (u64) READ_KERN(seq_ops->next);
+    if (next_addr == 0) {
+        return;
+    }
+
+    u64 stop_addr = (u64) READ_KERN(seq_ops->stop);
+    if (stop_addr == 0) {
+        return;
+    }
+    u64 seq_ops_addresses[NET_SEQ_OPS_SIZE + 1] = {
+        (u64) seq_ops, show_addr, start_addr, next_addr, stop_addr};
+    save_u64_arr_to_buf(data, (const u64 *) seq_ops_addresses, 5, 0);
+    events_perf_submit(data, PRINT_NET_SEQ_OPS, 0);
+}
+
 static __always_inline struct pipe_inode_info *get_file_pipe_info(struct file *file)
 {
     struct pipe_inode_info *pipe = READ_KERN(file->private_data);
@@ -3126,10 +3159,17 @@ int BPF_KPROBE(trace_tracee_trigger_event)
         return 0;
 
     unsigned int cmd = PT_REGS_PARM2(ctx);
-
-    if (cmd == IOCTL_FETCH_SYSCALLS && get_config(CONFIG_TRACEE_PID) == data.context.host_pid) {
+    if ((cmd & IOCTL_FETCH_SYSCALLS) == IOCTL_FETCH_SYSCALLS &&
+        get_config(CONFIG_TRACEE_PID) == data.context.host_pid) {
         invoke_print_syscall_table_event(&data);
     }
+
+    if ((cmd & IOCTL_HOOKED_SEQ_OPS) == IOCTL_HOOKED_SEQ_OPS &&
+        get_config(CONFIG_TRACEE_PID) == data.context.host_pid) {
+        unsigned long struct_address = PT_REGS_PARM3(ctx);
+        invoke_fetch_network_seq_operations_event(&data, struct_address);
+    }
+
     return 0;
 }
 

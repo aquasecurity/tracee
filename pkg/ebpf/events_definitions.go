@@ -103,6 +103,7 @@ const (
 	SocketAcceptEventID
 	LoadElfPhdrsEventID
 	HookedProcFopsEventID
+	PrintNetSeqOpsEventID
 	MaxCommonEventID
 )
 
@@ -113,6 +114,7 @@ const (
 	ContainerRemoveEventID
 	ExistingContainerEventID
 	HookedSyscallsEventID
+	HookedSeqOpsEventID
 	MaxUserSpaceEventID
 )
 
@@ -5737,6 +5739,44 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{},
 		Params: []trace.ArgMeta{
 			{Type: "[]trace.HookedSymbolData", Name: "hooked_fops_pointers"},
+		},
+	},
+	PrintNetSeqOpsEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "print_net_seq_ops",
+		Probes: []probe{
+			{event: "security_file_ioctl", attach: kprobe, fn: "trace_tracee_trigger_event"},
+		},
+		Dependencies: dependencies{
+			ksymbols: []string{
+				"tcp4_seq_ops",
+				"tcp6_seq_ops",
+				"udp_seq_ops",
+				"udp6_seq_ops",
+				"raw_seq_ops",
+				"raw6_seq_ops"},
+		},
+		Internal: true,
+		Sets:     []string{},
+		Params: []trace.ArgMeta{
+			{Type: "unsigned long[]", Name: "net_seq_ops"},
+		},
+	},
+	HookedSeqOpsEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "hooked_seq_ops",
+		Probes:  []probe{},
+		Dependencies: dependencies{
+			events: []eventDependency{
+				{eventID: PrintNetSeqOpsEventID},
+				{eventID: FinitModuleEventID},
+				{eventID: InitModuleEventID},
+			},
+		},
+		Sets: []string{},
+		Params: []trace.ArgMeta{
+			{Type: "string", Name: "struct_name"},
+			{Type: "[]helpers.KernelSymbol", Name: "hooked_seq_ops"},
 		},
 	},
 }

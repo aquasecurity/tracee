@@ -753,9 +753,8 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
-	_, ok1 := t.events[PrintSyscallTableEventID]
-	_, ok2 := t.events[HookedSyscallsEventID]
-	if ok1 || ok2 {
+	_, ok := t.events[HookedSyscallsEventID]
+	if ok {
 		syscallsToCheckMap, err := t.bpfModule.GetMap("syscalls_to_check_map")
 		if err != nil {
 			return err
@@ -1116,7 +1115,7 @@ func (t *Tracee) getProcessCtx(hostTid uint32) (procinfo.ProcessCtx, error) {
 // Run starts the trace. it will run until ctx is cancelled
 func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.invokeInitEvents()
-	t.invokeIoctlTriggeredEvents()
+	t.invokeIoctlTriggeredEvents(IoctlFetchSyscalls | IoctlHookedSeqOps)
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
 	t.netPerfMap.Start()
@@ -1265,20 +1264,56 @@ func (t *Tracee) shouldTraceNetEvents() bool {
 	return false
 }
 
-const IoctlFetchSyscalls int = 65 // randomly picked number for ioctl cmd
+const (
+	IoctlFetchSyscalls int32 = 1 << iota
+	IoctlHookedSeqOps
+)
 
-func (t *Tracee) invokeIoctlTriggeredEvents() {
-	// invoke DetectHookedSyscallsEvent
-	_, ok1 := t.events[PrintSyscallTableEventID]
-	_, ok2 := t.events[HookedSyscallsEventID]
-	if ok1 || ok2 {
-		ptmx, err := os.OpenFile(t.config.Capture.OutputPath, os.O_RDONLY, 0444)
-		if err != nil {
-			return
+// Struct names for the interfaces HookedSeqOpsEventID checks for hooks
+// The show,start,next and stop operation function pointers will be checked for each of those
+var netSeqOps = [6]string{
+	"tcp4_seq_ops",
+	"tcp6_seq_ops",
+	"udp_seq_ops",
+	"udp6_seq_ops",
+	"raw_seq_ops",
+	"raw6_seq_ops",
+}
+
+func (t *Tracee) invokeIoctlTriggeredEvents(cmds int32) error {
+	// invoke HookedSyscallsEvent
+	if cmds&IoctlFetchSyscalls == IoctlFetchSyscalls {
+		_, ok := t.events[HookedSyscallsEventID]
+		if ok {
+			ptmx, err := os.OpenFile(t.config.Capture.OutputPath, os.O_RDONLY, 0444)
+			if err != nil {
+				return err
+			}
+			syscall.Syscall(syscall.SYS_IOCTL, ptmx.Fd(), uintptr(IoctlFetchSyscalls), 0)
+			ptmx.Close()
 		}
-		syscall.Syscall(syscall.SYS_IOCTL, ptmx.Fd(), uintptr(IoctlFetchSyscalls), 0)
-		ptmx.Close()
 	}
+
+	// invoke HookedSeqOps
+	if cmds&IoctlHookedSeqOps == IoctlHookedSeqOps {
+		_, ok := t.events[HookedSeqOpsEventID]
+		if ok {
+			ptmx, err := os.OpenFile(t.config.Capture.OutputPath, os.O_RDONLY, 0444)
+			if err != nil {
+				return err
+			}
+
+			for _, seq_name := range netSeqOps {
+				seqOpsStruct, err := t.kernelSymbols.GetSymbolByName("system", seq_name)
+				if err != nil {
+					continue
+				}
+				syscall.Syscall(syscall.SYS_IOCTL, ptmx.Fd(), uintptr(IoctlHookedSeqOps), uintptr(seqOpsStruct.Address))
+			}
+			ptmx.Close()
+		}
+	}
+	return nil
 }
 
 func (t *Tracee) updateKallsyms() {
