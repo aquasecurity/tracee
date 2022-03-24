@@ -87,7 +87,7 @@ func (tc Config) Validate() error {
 		if _, ok := EventsDefinitions[e]; !ok {
 			return fmt.Errorf("invalid event to trace: %d", e)
 		}
-		if strings.Compare(EventsDefinitions[e].Name, EventsDefinitions[NetPacket].Name) == 0 {
+		if e == NetPacket {
 			if len(tc.Filter.NetFilter.InterfacesToTrace) == 0 {
 				return fmt.Errorf("missing interface for net event: %s, please add -t net=<iface>", EventsDefinitions[e].Name)
 			}

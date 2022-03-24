@@ -94,7 +94,7 @@ const (
 )
 
 const (
-	CaptureIface int32 = iota + 1
+	CaptureIface int32 = 1 << iota
 	TraceIface
 )
 

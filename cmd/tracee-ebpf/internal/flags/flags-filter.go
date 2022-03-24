@@ -130,7 +130,7 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 			PIDs: make(map[uint32]bool),
 		},
 		EventsToTrace: []int32{},
-		NetFilter: &tracee.NetFilter{
+		NetFilter: &tracee.IfaceFilter{
 			InterfacesToTrace: []string{},
 		},
 	}
@@ -216,7 +216,7 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 		}
 
 		if strings.HasPrefix(filterName, "net") {
-			err := filter.NetFilter.Parse(operatorAndValues)
+			err := filter.NetFilter.Parse(strings.TrimPrefix(operatorAndValues, "="))
 			if err != nil {
 				return tracee.Filter{}, err
 			}

@@ -260,7 +260,6 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 					}
 				}
 
-				ifaceName = t.netInfo.ifaces[int(netCaptureData.ConfigIfaceIndex)].Name
 				ifaceIdx, err = t.getCapturedIfaceIdx(ifaceName)
 				if ifaceIdx >= 0 && err == nil {
 					// capture the packet

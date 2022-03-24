@@ -4394,13 +4394,14 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     // host_tid (u32), comm (16 bytes), packet len (u32), and ifindex (u32)
     size_t pkt_size = PACKET_MIN_SIZE;
 
-    if (get_iface_config(skb->ifindex) & TRACE_IFACE){
+    int iface_conf = get_iface_config(skb->ifindex);
+    if (iface_conf & TRACE_IFACE){
         pkt_size = sizeof(pkt);
         pkt.src_port = __bpf_ntohs(pkt.src_port);
         pkt.dst_port = __bpf_ntohs(pkt.dst_port);
     }
 
-    if (get_iface_config(skb->ifindex) & CAPTURE_IFACE){
+    if (iface_conf & CAPTURE_IFACE){
         flags |= (u64)skb->len << 32;
     }
     bpf_perf_event_output(skb, &net_events, flags, &pkt, pkt_size);

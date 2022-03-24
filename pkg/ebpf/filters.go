@@ -56,7 +56,7 @@ type Filter struct {
 	ArgFilter         *ArgFilter
 	ProcessTreeFilter *ProcessTreeFilter
 	Follow            bool
-	NetFilter         *NetFilter
+	NetFilter         *IfaceFilter
 }
 
 type UintFilter struct {
@@ -646,16 +646,16 @@ func (filter *ContIDFilter) FilterOut() bool {
 	}
 }
 
-type NetFilter struct {
+type IfaceFilter struct {
 	InterfacesToTrace []string
 }
 
-func (filter *NetFilter) Parse(operatorAndValues string) error {
+func (filter *IfaceFilter) Parse(operatorAndValues string) error {
 	return ParseIface(operatorAndValues, &filter.InterfacesToTrace)
 }
 
 func ParseIface(operatorAndValues string, ifacesList *[]string) error {
-	ifaces := strings.Split(strings.TrimPrefix(operatorAndValues, "="), ",")
+	ifaces := strings.Split(operatorAndValues, ",")
 	for _, iface := range ifaces {
 		if _, err := net.InterfaceByName(iface); err != nil {
 			return fmt.Errorf("invalid network interface: %s", iface)
