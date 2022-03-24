@@ -597,15 +597,6 @@ const (
 	tailKernelWrite
 )
 
-var netSeqOps = [6]string{
-	"tcp4_seq_ops",
-	"tcp6_seq_ops",
-	"udp_seq_ops",
-	"udp6_seq_ops",
-	"raw_seq_ops",
-	"raw6_seq_ops",
-}
-
 func (t *Tracee) populateBPFMaps() error {
 
 	// Set chosen events map according to events chosen by the user
@@ -810,21 +801,6 @@ func (t *Tracee) populateBPFMaps() error {
 		} else if e == DupEventID || e == Dup2EventID || e == Dup3EventID {
 			if err = t.initTailCall(eU32, "sys_exit_tails", "sys_dup_exit_tail"); err != nil {
 				return err
-			}
-		} else if e == HiddenSocketsEventID || e == FetchNetSeqOpsEventID {
-			hookedSyscallsMap, err := t.bpfModule.GetMap("hidden_sockets")
-			if err != nil {
-				return err
-			}
-			for idx, seq_ops := range netSeqOps {
-				key := int(idx)
-				seqOpsSym, err := t.kernelSymbols.GetSymbolByName("system", seq_ops)
-				if err != nil {
-					idx--
-					continue
-				}
-				seqOpsSymAddress := seqOpsSym.Address
-				errs = append(errs, hookedSyscallsMap.Update(unsafe.Pointer(&key), unsafe.Pointer(&seqOpsSymAddress)))
 			}
 		}
 	}
@@ -1321,6 +1297,16 @@ func findInList(element string, list *[]string) (int, error) {
 const IoctlFetchSyscalls int = 65 // randomly picked number for ioctl cmd
 const IoctlSocketsHook int = 66
 
+//those are the struct names for the interface's HiddenSocketsEventID checks for hooks
+var netSeqOps = [6]string{
+	"tcp4_seq_ops",
+	"tcp6_seq_ops",
+	"udp_seq_ops",
+	"udp6_seq_ops",
+	"raw_seq_ops",
+	"raw6_seq_ops",
+}
+
 func (t *Tracee) invokeIoctlTriggeredEvents() {
 	// invoke DetectHookedSyscallsEvent
 	if t.eventsToTrace[PrintSyscallTableEventID] || t.eventsToTrace[DetectHookedSyscallsEventID] {
@@ -1336,8 +1322,12 @@ func (t *Tracee) invokeIoctlTriggeredEvents() {
 		if err != nil {
 			return
 		}
-		for idx, _ := range netSeqOps {
-			syscall.Syscall(syscall.SYS_IOCTL, ptmx.Fd(), uintptr(IoctlSocketsHook), uintptr(idx))
+		for _, seq_name := range netSeqOps {
+			seqOpsStruct, err := t.kernelSymbols.GetSymbolByName("system", seq_name)
+			if err != nil {
+				continue
+			}
+			syscall.Syscall(syscall.SYS_IOCTL, ptmx.Fd(), uintptr(IoctlSocketsHook), uintptr(seqOpsStruct.Address))
 		}
 		ptmx.Close()
 	}

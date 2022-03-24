@@ -29,6 +29,9 @@ func (t *Tracee) initEventDerivationMap() error {
 		PrintSyscallTableEventID: {
 			DetectHookedSyscallsEventID: deriveDetectHookedSyscall(t),
 		},
+		FetchNetSeqOpsEventID: {
+			HiddenSocketsEventID: deriveHiddenSockets(t),
+		},
 	}
 
 	return nil
@@ -145,8 +148,8 @@ func deriveDetectHookedSyscall(t *Tracee) deriveFn {
 	}
 }
 
-func analyzeHookedAddresses(addresses []uint64, OsConfig *helpers.OSInfo, kernelSymbols *helpers.KernelSymbolTable) ([]bufferdecoder.HookedSyscallData, error) {
-	hookedSyscallData := make([]bufferdecoder.HookedSyscallData, 0, 0)
+func analyzeHookedAddresses(addresses []uint64, OsConfig *helpers.OSInfo, kernelSymbols *helpers.KernelSymbolTable) ([]bufferdecoder.HookedFunctionData, error) {
+	hookedSyscallData := make([]bufferdecoder.HookedFunctionData, 0, 0)
 	for idx, syscallsAdress := range addresses {
 		InTextSegment, err := kernelSymbols.TextSegmentContains(syscallsAdress)
 		if err != nil {
@@ -166,7 +169,7 @@ func analyzeHookedAddresses(addresses []uint64, OsConfig *helpers.OSInfo, kernel
 			} else {
 				hookedSyscallName = fmt.Sprint(syscallNumber)
 			}
-			hookedSyscallData = append(hookedSyscallData, bufferdecoder.HookedSyscallData{hookedSyscallName, hookingFunction.Owner})
+			hookedSyscallData = append(hookedSyscallData, bufferdecoder.HookedFunctionData{hookedSyscallName, hookingFunction.Owner})
 
 		}
 	}
@@ -182,4 +185,44 @@ func parseSymbol(address uint64, table *helpers.KernelSymbolTable) *helpers.Kern
 	hookingFunction.Owner = strings.TrimPrefix(hookingFunction.Owner, "[")
 	hookingFunction.Owner = strings.TrimSuffix(hookingFunction.Owner, "]")
 	return hookingFunction
+}
+
+var seq_ops_functions = [4]string{
+	"seq_show",
+	"seq_open",
+	"seq_close",
+	"seq_next",
+}
+
+func deriveHiddenSockets(t *Tracee) deriveFn {
+	return func(event trace.Event) (trace.Event, bool, error) {
+		seqOpsArr, err := getEventArgUlongArrVal(&event, "net_seq_ops")
+		if err != nil || len(seqOpsArr) < 0 {
+			return trace.Event{}, false, err
+		}
+		def := EventsDefinitions[HiddenSocketsEventID]
+		hookedSecOps := make([]bufferdecoder.HookedFunctionData, 0, 0)
+		for _, addr := range seqOpsArr[1:] {
+			inTextSegment, err := t.kernelSymbols.TextSegmentContains(addr)
+			if err != nil {
+				continue
+			}
+			if !inTextSegment {
+				hookingFunction := parseSymbol(addr, t.kernelSymbols)
+				hookedSecOps = append(hookedSecOps, bufferdecoder.HookedFunctionData{SyscallName: hookingFunction.Name, ModuleOwner: hookingFunction.Owner})
+			}
+		}
+		de := event
+		de.EventID = int(HiddenSocketsEventID)
+		de.EventName = "fetch_net_sec_ops"
+		de.ReturnValue = 0
+		de.StackAddresses = make([]uint64, 1)
+		de.Args = []trace.Argument{
+			{ArgMeta: def.Params[0], Value: hookedSecOps},
+		}
+		de.ArgsNum = 1
+		return de, true, nil
+
+	}
+
 }

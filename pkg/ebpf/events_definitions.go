@@ -6330,10 +6330,34 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FetchNetSeqOpsEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "fetch_net_seq_ops",
-		Probes:  []probe{{event: "security_file_ioctl", attach: kprobe, fn: "trace_security_file_ioctl"}},
-		Sets:    []string{},
+		Probes: []probe{
+			{event: "security_file_ioctl", attach: kprobe, fn: "trace_tracee_fetch_net_seq_ops"},
+		},
+		Dependencies: dependencies{
+			ksymbols: []string{
+				"tcp4_seq_ops",
+				"tcp6_seq_ops",
+				"udp_seq_ops",
+				"udp6_seq_ops",
+				"raw_seq_ops",
+				"raw6_seq_ops"},
+		},
+		Sets: []string{},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned long[]", Name: "net_seq_ops"},
+		},
+	},
+	HiddenSocketsEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "hidden_sockets",
+		Probes:  []probe{},
+		Dependencies: dependencies{
+			events: []eventDependency{{FetchNetSeqOpsEventID}},
+		},
+
+		Sets: []string{},
+		Params: []trace.ArgMeta{
+			{Type: "[]helpers.KernelSymbol", Name: "hooked_seq_ops"},
 		},
 	},
 }

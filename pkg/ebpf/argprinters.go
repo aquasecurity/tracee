@@ -179,6 +179,16 @@ func (t *Tracee) parseArgs(event *trace.Event) error {
 				ParseOrEmptyString(modeArg, inodeModeArgument, err)
 			}
 		}
+	case FetchNetSeqOpsEventID:
+		if netSeqOpsArg := getEventArg(event, "net_seq_ops"); netSeqOpsArg != nil {
+			if netSeqOps, isUint64Arr := netSeqOpsArg.Value.([]uint64); isUint64Arr {
+				hexArr := make([]string, 5)
+				for idx, val := range netSeqOps {
+					hexArr[idx] = fmt.Sprintf("0x%x", val)
+				}
+				netSeqOpsArg.Value = hexArr
+			}
+		}
 	}
 
 	return nil

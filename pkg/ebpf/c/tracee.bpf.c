@@ -280,8 +280,6 @@ Copyright (C) Aqua Security inc.
 
 #define PACKET_MIN_SIZE                 40
 
-#define IOCTL_SOCKETS_HOOK              65 // there is no reason for the number it just for verification between the user space and the kernel space
-
 #ifndef CORE
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 2, 0)  // lower values in old kernels (instr lim is 4096)
 #define MAX_STR_ARR_ELEM                40
@@ -305,6 +303,9 @@ Copyright (C) Aqua Security inc.
 #endif
 
 #define IOCTL_FETCH_SYSCALLS            65        // randomly picked number for ioctl cmd
+#define IOCTL_SOCKETS_HOOK              66 // there is no reason for the number it just for verification between the user space and the kernel space
+
+
 #define NUMBER_OF_SYSCALLS_TO_CHECK_X86 18
 #define NUMBER_OF_SYSCALLS_TO_CHECK_ARM 14
 
@@ -2266,12 +2267,8 @@ static __always_inline unsigned short get_inode_mode_from_fd(u64 fd)
 }
 #define NET_SEQ_OPS_SIZE                4
 
-static __always_inline void fetch_network_seq_operations(event_data_t *data, int key){
-    u64 * seq_opsP = bpf_map_lookup_elem(&hidden_sockets, (void*)&key);
-    if (seq_opsP == NULL){
-        return ;
-    }
-    struct seq_operations * seq_ops = (struct seq_operations *)*seq_opsP;
+static __always_inline void inoke_fetch_network_seq_operations_event(event_data_t *data, unsigned long struct_address){
+    struct seq_operations * seq_ops = (struct seq_operations *)struct_address;
 
     u64 show_addr  = (u64) READ_KERN(seq_ops->show);
     if (show_addr == 0){
@@ -2962,7 +2959,7 @@ static __always_inline void invoke_print_syscall_table_event(event_data_t *data)
 }
 
 SEC("kprobe/security_file_ioctl")
-int BPF_KPROBE(trace_tracee_trigger_event )
+int BPF_KPROBE(trace_tracee_trigger_event)
 {
     event_data_t data = {};
 
@@ -2970,10 +2967,32 @@ int BPF_KPROBE(trace_tracee_trigger_event )
         return 0;
 
     unsigned int cmd = PT_REGS_PARM2(ctx);
-
-    if (cmd == IOCTL_FETCH_SYSCALLS && get_config(CONFIG_TRACEE_PID) == data.context.host_pid){
-        invoke_print_syscall_table_event(&data);
+    if (get_config(CONFIG_TRACEE_PID) == data.context.host_pid){
+        if (cmd == IOCTL_FETCH_SYSCALLS){
+                invoke_print_syscall_table_event(&data);
+        }
+        if (cmd == IOCTL_SOCKETS_HOOK){
+            unsigned long struct_address = PT_REGS_PARM3(ctx);
+            inoke_fetch_network_seq_operations_event(&data, struct_address);
+        }
     }
+
+    return 0;
+}
+SEC("kprobe/security_file_ioctl")
+int BPF_KPROBE(trace_tracee_fetch_net_seq_ops)
+{
+    event_data_t data = {};
+
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    unsigned int cmd = PT_REGS_PARM2(ctx);
+    if (cmd == IOCTL_SOCKETS_HOOK && get_config(CONFIG_TRACEE_PID) == data.context.host_pid){
+        unsigned long struct_address = PT_REGS_PARM3(ctx);
+        inoke_fetch_network_seq_operations_event(&data, struct_address);
+    }
+
     return 0;
 }
 
@@ -3340,26 +3359,6 @@ int BPF_KPROBE(trace_cap_capable)
     }
 
     return events_perf_submit(&data, CAP_CAPABLE, 0);
-}
-
-SEC("kprobe/security_file_ioctl")
-int BPF_KPROBE(trace_security_file_ioctl)
-{
-    event_data_t data = {};
-
-    if (!init_event_data(&data, ctx))
-        return 0;
-
-    unsigned int cmd = PT_REGS_PARM2(ctx);
-
-    if (cmd == IOCTL_SOCKETS_HOOK && get_config(CONFIG_TRACEE_PID) == data.context.host_pid){
-      int key = PT_REGS_PARM3(ctx);
-      const char fmt_str[] = "Hello, world, from BPF! My PID is %d\n";
-
-      bpf_trace_printk(fmt_str, sizeof(fmt_str), key);
-      fetch_network_seq_operations(&data, key);
-    }
-    return 0;
 }
 
 SEC("kprobe/security_socket_create")
