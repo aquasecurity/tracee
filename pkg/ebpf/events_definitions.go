@@ -86,6 +86,7 @@ const (
 	DirtyPipeSpliceEventID
 	DebugfsCreateFile
 	PrintSyscallTableEventID
+	FetchNetSeqOpsEventID
 	MaxCommonEventID
 )
 
@@ -96,6 +97,7 @@ const (
 	ContainerRemoveEventID
 	ExistingContainerEventID
 	DetectHookedSyscallsEventID
+	HiddenSocketsEventID
 	MaxUserSpaceEventID
 )
 
@@ -6323,6 +6325,15 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{},
 		Params: []trace.ArgMeta{
 			{Type: "HookedSyscallData[]", Name: "hooked_syscalls"},
+		},
+	},
+	FetchNetSeqOpsEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "fetch_net_seq_ops",
+		Probes:  []probe{{event: "security_file_ioctl", attach: kprobe, fn: "trace_security_file_ioctl"}},
+		Sets:    []string{},
+		Params: []trace.ArgMeta{
+			{Type: "unsigned long[]", Name: "net_seq_ops"},
 		},
 	},
 }

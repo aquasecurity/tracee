@@ -202,7 +202,8 @@ Copyright (C) Aqua Security inc.
 #define DIRTY_PIPE_SPLICE               1038
 #define DEBUGFS_CREATE_FILE             1039
 #define PRINT_SYSCALL_TABLE             1040
-#define MAX_EVENT_ID                    1041
+#define FETCH_NET_SEQ_OPS               1041
+#define MAX_EVENT_ID                    1042
 
 #define NET_PACKET                      4000
 
@@ -278,6 +279,8 @@ Copyright (C) Aqua Security inc.
 #define CONTAINER_STARTED               3         // a process in the cgroup executed a new binary
 
 #define PACKET_MIN_SIZE                 40
+
+#define IOCTL_SOCKETS_HOOK              65 // there is no reason for the number it just for verification between the user space and the kernel space
 
 #ifndef CORE
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 2, 0)  // lower values in old kernels (instr lim is 4096)
@@ -2261,6 +2264,39 @@ static __always_inline unsigned short get_inode_mode_from_fd(u64 fd)
     struct inode *f_inode = READ_KERN(f->f_inode);
     return READ_KERN(f_inode->i_mode);
 }
+#define NET_SEQ_OPS_SIZE                4
+
+static __always_inline void fetch_network_seq_operations(event_data_t *data, int key){
+    u64 * seq_opsP = bpf_map_lookup_elem(&hidden_sockets, (void*)&key);
+    if (seq_opsP == NULL){
+        return ;
+    }
+    struct seq_operations * seq_ops = (struct seq_operations *)*seq_opsP;
+
+    u64 show_addr  = (u64) READ_KERN(seq_ops->show);
+    if (show_addr == 0){
+        return ;
+    }
+
+    u64 start_addr  = (u64) READ_KERN(seq_ops->start);
+    if (start_addr == 0){
+        return ;
+    }
+
+    u64 next_addr  = (u64) READ_KERN(seq_ops->next);
+    if (next_addr == 0){
+        return ;
+    }
+
+    u64 stop_addr  = (u64) READ_KERN(seq_ops->stop);
+    if (stop_addr == 0){
+        return ;
+    }
+    u64 seq_ops_addresses[NET_SEQ_OPS_SIZE + 1] = {(u64) seq_ops, show_addr, start_addr, next_addr, stop_addr};
+    save_u64_arr_to_buf(data, (const u64 *)seq_ops_addresses, 5, 0);
+    events_perf_submit(data, FETCH_NET_SEQ_OPS, 0);
+}
+
 
 static __always_inline struct pipe_inode_info *get_file_pipe_info(struct file *file) {
     struct pipe_inode_info *pipe = READ_KERN(file->private_data);
@@ -3304,6 +3340,26 @@ int BPF_KPROBE(trace_cap_capable)
     }
 
     return events_perf_submit(&data, CAP_CAPABLE, 0);
+}
+
+SEC("kprobe/security_file_ioctl")
+int BPF_KPROBE(trace_security_file_ioctl)
+{
+    event_data_t data = {};
+
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    unsigned int cmd = PT_REGS_PARM2(ctx);
+
+    if (cmd == IOCTL_SOCKETS_HOOK && get_config(CONFIG_TRACEE_PID) == data.context.host_pid){
+      int key = PT_REGS_PARM3(ctx);
+      const char fmt_str[] = "Hello, world, from BPF! My PID is %d\n";
+
+      bpf_trace_printk(fmt_str, sizeof(fmt_str), key);
+      fetch_network_seq_operations(&data, key);
+    }
+    return 0;
 }
 
 SEC("kprobe/security_socket_create")

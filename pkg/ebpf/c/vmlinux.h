@@ -804,6 +804,15 @@ struct kprobe {
 	kprobe_post_handler_t post_handler;
 };
 
+struct seq_file{};
+
+struct seq_operations {
+	void * (*start) (struct seq_file *m, loff_t *pos);
+	void (*stop) (struct seq_file *m, void *v);
+	void * (*next) (struct seq_file *m, void *v, loff_t *pos);
+	int (*show) (struct seq_file *m, void *v);
+};
+
 #include <struct_flavors.h>
 
 #pragma clang attribute pop

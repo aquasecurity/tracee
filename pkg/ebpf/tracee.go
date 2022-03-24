@@ -597,6 +597,15 @@ const (
 	tailKernelWrite
 )
 
+var netSeqOps = [6]string{
+	"tcp4_seq_ops",
+	"tcp6_seq_ops",
+	"udp_seq_ops",
+	"udp6_seq_ops",
+	"raw_seq_ops",
+	"raw6_seq_ops",
+}
+
 func (t *Tracee) populateBPFMaps() error {
 
 	// Set chosen events map according to events chosen by the user
@@ -801,6 +810,21 @@ func (t *Tracee) populateBPFMaps() error {
 		} else if e == DupEventID || e == Dup2EventID || e == Dup3EventID {
 			if err = t.initTailCall(eU32, "sys_exit_tails", "sys_dup_exit_tail"); err != nil {
 				return err
+			}
+		} else if e == HiddenSocketsEventID || e == FetchNetSeqOpsEventID {
+			hookedSyscallsMap, err := t.bpfModule.GetMap("hidden_sockets")
+			if err != nil {
+				return err
+			}
+			for idx, seq_ops := range netSeqOps {
+				key := int(idx)
+				seqOpsSym, err := t.kernelSymbols.GetSymbolByName("system", seq_ops)
+				if err != nil {
+					idx--
+					continue
+				}
+				seqOpsSymAddress := seqOpsSym.Address
+				errs = append(errs, hookedSyscallsMap.Update(unsafe.Pointer(&key), unsafe.Pointer(&seqOpsSymAddress)))
 			}
 		}
 	}
@@ -1295,6 +1319,7 @@ func findInList(element string, list *[]string) (int, error) {
 }
 
 const IoctlFetchSyscalls int = 65 // randomly picked number for ioctl cmd
+const IoctlSocketsHook int = 66
 
 func (t *Tracee) invokeIoctlTriggeredEvents() {
 	// invoke DetectHookedSyscallsEvent
@@ -1304,6 +1329,16 @@ func (t *Tracee) invokeIoctlTriggeredEvents() {
 			return
 		}
 		syscall.Syscall(syscall.SYS_IOCTL, ptmx.Fd(), uintptr(IoctlFetchSyscalls), 0)
+		ptmx.Close()
+	}
+	if t.eventsToTrace[FetchNetSeqOpsEventID] || t.eventsToTrace[HiddenSocketsEventID] {
+		ptmx, err := os.OpenFile(t.config.Capture.OutputPath, os.O_RDONLY, 444)
+		if err != nil {
+			return
+		}
+		for idx, _ := range netSeqOps {
+			syscall.Syscall(syscall.SYS_IOCTL, ptmx.Fd(), uintptr(IoctlSocketsHook), uintptr(idx))
+		}
 		ptmx.Close()
 	}
 }
