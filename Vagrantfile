@@ -9,6 +9,18 @@ Vagrant.configure("2") do |config|
   # Forward MkDocs dev server to preview documentation on the host at http://localhost:8000/tracee
   config.vm.network :forwarded_port, guest: 8000, host: 8000
 
+  # Forward MicroK8s dashboard to access it on the host at https://localhost:10443
+  #
+  # To access the Kubernetes dashboard from the host run the following command:
+  #     kubectl port-forward --address 0.0.0.0 -n kube-system service/kubernetes-dashboard 10443:443
+  #
+  # To sing in use the token retrieved with
+  #     token=$(microk8s kubectl -n kube-system get secret | grep default-token | cut -d " " -f1)
+  #     kubectl -n kube-system describe secret $token
+  #
+  # TIP For Google Chrome you may allow insecure TLS connections at chrome://flags/#allow-insecure-localhost
+  config.vm.network :forwarded_port, guest: 10443, host: 10443
+
   config.vm.provider "virtualbox" do |vb|
     vb.gui = false
     vb.memory = "2048"
@@ -26,6 +38,21 @@ Vagrant.configure("2") do |config|
       path=$(which $tool-12)
       sudo ln -s $path ${path%-*}
     done
+
+    snap install microk8s --classic
+    microk8s status --wait-ready
+    usermod -a -G microk8s vagrant
+    microk8s enable dashboard
+
+    mkdir -p /home/vagrant/.kube/
+    microk8s kubectl config view --raw > /home/vagrant/.kube/config
+
+    apt-get install --yes apt-transport-https ca-certificates curl
+    curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
+    apt-get update
+    apt-get install --yes kubectl
+    echo 'source <(kubectl completion bash)' >> /home/vagrant/.bashrc
 
     apt-get install --yes linux-tools-$(uname -r)
 

@@ -17,21 +17,21 @@ spec:
       name: tracee
     spec:
       containers:
-      - image: aquasec/tracee:latest
-        imagePullPolicy: Always
+      - name: tracee
+        image: docker.io/aquasec/tracee:v0.7.0-rc-1
+        imagePullPolicy: IfNotPresent
         args:
           - --webhook http://postee-svc:8082 --webhook-template ./templates/rawjson.tmpl --webhook-content-type application/json
-        name: tracee
+        env:
+          - name: LIBBPFGO_OSRELEASE_FILE
+            value: /etc/os-release-host
         securityContext:
           privileged: true
         volumeMounts:
         - name: tmp-tracee
           mountPath: /tmp/tracee
-        - name: usr-src
-          mountPath: /usr/src
-          readOnly: true
-        - name: lib-modules
-          mountPath: /lib/modules/
+        - name: etc-os-release
+          mountPath: /etc/os-release-host
           readOnly: true
         resources:
           limits:
@@ -50,9 +50,5 @@ spec:
           path: /tmp/tracee
         name: tmp-tracee
       - hostPath:
-          path: /usr/src
-        name: usr-src
-      - hostPath:
-          path: /lib/modules
-        name: lib-modules
-
+          path: /etc/os-release
+        name: etc-os-release
