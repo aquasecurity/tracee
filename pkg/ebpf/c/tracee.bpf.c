@@ -85,6 +85,7 @@
 #define NET_SEQ_OPS_SIZE    4         // print_net_seq_ops: struct size
 #define MAX_KSYM_NAME_SIZE  64
 
+
 enum buf_idx_e
 {
     SUBMIT_BUF_IDX,
@@ -349,7 +350,7 @@ enum container_state_e
 #endif
 
 #define IOCTL_FETCH_SYSCALLS            (1 << 0) // bit wise flags
-#define IOCTL_HOOKED_SEQ_OPS            (1 << 1)
+#define IOCTL_SOCKETS_HOOK              (1 << 1)
 #define NUMBER_OF_SYSCALLS_TO_CHECK_X86 18
 #define NUMBER_OF_SYSCALLS_TO_CHECK_ARM 14
 
@@ -3159,13 +3160,25 @@ int BPF_KPROBE(trace_tracee_trigger_event)
         return 0;
 
     unsigned int cmd = PT_REGS_PARM2(ctx);
-    if ((cmd & IOCTL_FETCH_SYSCALLS) == IOCTL_FETCH_SYSCALLS &&
-        get_config(CONFIG_TRACEE_PID) == data.context.host_pid) {
-        invoke_print_syscall_table_event(&data);
+    if (get_config(CONFIG_TRACEE_PID) == data.context.host_pid) {
+        if (cmd == IOCTL_FETCH_SYSCALLS) {
+            invoke_print_syscall_table_event(&data);
+        }
     }
 
-    if ((cmd & IOCTL_HOOKED_SEQ_OPS) == IOCTL_HOOKED_SEQ_OPS &&
-        get_config(CONFIG_TRACEE_PID) == data.context.host_pid) {
+    return 0;
+}
+
+SEC("kprobe/security_file_ioctl")
+int BPF_KPROBE(trace_tracee_print_net_seq_ops)
+{
+    event_data_t data = {};
+
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    unsigned int cmd = PT_REGS_PARM2(ctx);
+    if (cmd == IOCTL_SOCKETS_HOOK && get_config(CONFIG_TRACEE_PID) == data.context.host_pid) {
         unsigned long struct_address = PT_REGS_PARM3(ctx);
         invoke_fetch_network_seq_operations_event(&data, struct_address);
     }

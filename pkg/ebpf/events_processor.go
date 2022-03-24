@@ -345,7 +345,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 	// and we will want to check if it hooked the syscall table and seq_ops
 	case InitModuleEventID, FinitModuleEventID:
 		t.updateKallsyms()
-		err := t.invokeIoctlTriggeredEvents(IoctlFetchSyscalls | IoctlHookedSeqOps)
+		err := t.invokeIoctlTriggeredEvents(IoctlFetchSyscalls | IoctlSocketsHook)
 		if err != nil {
 			return err
 		}

@@ -36,7 +36,7 @@ func (t *Tracee) initEventDerivationMap() error {
 			NetPacket: deriveNetPacket(),
 		},
 		PrintNetSeqOpsEventID: {
-			HookedSeqOpsEventID: deriveHookedSeqOps(t),
+			HookedSeqOpsEventID: deriveHiddenSockets(t),
 		},
 	}
 
@@ -255,14 +255,14 @@ var seq_ops_functions = [4]string{
 	"seq_next",
 }
 
-func deriveHookedSeqOps(t *Tracee) deriveFn {
+func deriveHiddenSockets(t *Tracee) deriveFn {
 	return func(event trace.Event) (trace.Event, bool, error) {
 		seqOpsArr, err := getEventArgUlongArrVal(&event, "net_seq_ops")
 		if err != nil || len(seqOpsArr) < 1 {
 			return trace.Event{}, false, err
 		}
 		seqOpsName := parseSymbol(seqOpsArr[0], t.kernelSymbols).Name
-		hookedSeqOps := make([]trace.HookedSymbolData, 0)
+		hookedSecOps := make([]trace.HookedSymbolData, 0)
 		for _, addr := range seqOpsArr[1:] {
 			inTextSegment, err := t.kernelSymbols.TextSegmentContains(addr)
 			if err != nil {
@@ -270,7 +270,7 @@ func deriveHookedSeqOps(t *Tracee) deriveFn {
 			}
 			if !inTextSegment {
 				hookingFunction := parseSymbol(addr, t.kernelSymbols)
-				hookedSeqOps = append(hookedSeqOps, trace.HookedSymbolData{SymbolName: hookingFunction.Name, ModuleOwner: hookingFunction.Owner})
+				hookedSecOps = append(hookedSecOps, trace.HookedSymbolData{SymbolName: hookingFunction.Name, ModuleOwner: hookingFunction.Owner})
 			}
 		}
 		def := EventsDefinitions[HookedSeqOpsEventID]
@@ -281,7 +281,7 @@ func deriveHookedSeqOps(t *Tracee) deriveFn {
 		de.StackAddresses = make([]uint64, 1)
 		de.Args = []trace.Argument{
 			{ArgMeta: def.Params[0], Value: seqOpsName},
-			{ArgMeta: def.Params[1], Value: hookedSeqOps},
+			{ArgMeta: def.Params[1], Value: hookedSecOps},
 		}
 		de.ArgsNum = 1
 		return de, true, nil

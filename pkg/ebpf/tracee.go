@@ -753,8 +753,9 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
-	_, ok := t.events[HookedSyscallsEventID]
-	if ok {
+	_, ok1 := t.events[PrintSyscallTableEventID]
+	_, ok2 := t.events[HookedSyscallsEventID]
+	if ok1 || ok2 {
 		syscallsToCheckMap, err := t.bpfModule.GetMap("syscalls_to_check_map")
 		if err != nil {
 			return err
@@ -1115,7 +1116,7 @@ func (t *Tracee) getProcessCtx(hostTid uint32) (procinfo.ProcessCtx, error) {
 // Run starts the trace. it will run until ctx is cancelled
 func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.invokeInitEvents()
-	t.invokeIoctlTriggeredEvents(IoctlFetchSyscalls | IoctlHookedSeqOps)
+	t.invokeIoctlTriggeredEvents(IoctlFetchSyscalls | IoctlSocketsHook)
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
 	t.netPerfMap.Start()
@@ -1266,7 +1267,7 @@ func (t *Tracee) shouldTraceNetEvents() bool {
 
 const (
 	IoctlFetchSyscalls int32 = 1 << iota
-	IoctlHookedSeqOps
+	IoctlSocketsHook
 )
 
 // Struct names for the interfaces HookedSeqOpsEventID checks for hooks
@@ -1281,10 +1282,11 @@ var netSeqOps = [6]string{
 }
 
 func (t *Tracee) invokeIoctlTriggeredEvents(cmds int32) error {
-	// invoke HookedSyscallsEvent
+	// invoke DetectHookedSyscallsEvent
 	if cmds&IoctlFetchSyscalls == IoctlFetchSyscalls {
-		_, ok := t.events[HookedSyscallsEventID]
-		if ok {
+		_, ok1 := t.events[PrintSyscallTableEventID]
+		_, ok2 := t.events[HookedSyscallsEventID]
+		if ok1 || ok2 {
 			ptmx, err := os.OpenFile(t.config.Capture.OutputPath, os.O_RDONLY, 0444)
 			if err != nil {
 				return err
@@ -1294,10 +1296,11 @@ func (t *Tracee) invokeIoctlTriggeredEvents(cmds int32) error {
 		}
 	}
 
-	// invoke HookedSeqOps
-	if cmds&IoctlHookedSeqOps == IoctlHookedSeqOps {
-		_, ok := t.events[HookedSeqOpsEventID]
-		if ok {
+	// invoke HiddenSocketsEvent
+	if cmds&IoctlSocketsHook == IoctlSocketsHook {
+		_, ok1 := t.events[PrintNetSeqOpsEventID]
+		_, ok2 := t.events[HookedSeqOpsEventID]
+		if ok1 || ok2 {
 			ptmx, err := os.OpenFile(t.config.Capture.OutputPath, os.O_RDONLY, 0444)
 			if err != nil {
 				return err
@@ -1308,7 +1311,7 @@ func (t *Tracee) invokeIoctlTriggeredEvents(cmds int32) error {
 				if err != nil {
 					continue
 				}
-				syscall.Syscall(syscall.SYS_IOCTL, ptmx.Fd(), uintptr(IoctlHookedSeqOps), uintptr(seqOpsStruct.Address))
+				syscall.Syscall(syscall.SYS_IOCTL, ptmx.Fd(), uintptr(IoctlSocketsHook), uintptr(seqOpsStruct.Address))
 			}
 			ptmx.Close()
 		}

@@ -5745,7 +5745,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit: sys32undefined,
 		Name:    "print_net_seq_ops",
 		Probes: []probe{
-			{event: "security_file_ioctl", attach: kprobe, fn: "trace_tracee_trigger_event"},
+			{event: "security_file_ioctl", attach: kprobe, fn: "trace_tracee_print_net_seq_ops"},
 		},
 		Dependencies: dependencies{
 			ksymbols: []string{
