@@ -272,7 +272,6 @@ func (t *Tracee) ThrottleEvents(ctx gocontext.Context) {
 
 				lostEventsCurrent := t.stats.LostEvCount.Read()
 				delta := lostEventsCurrent - lostEvents // always positive or equal to zero
-				lostEvents = lostEventsCurrent
 				fmt.Fprintf(os.Stderr, "LostEvents Delta is %d!!!\n", delta)
 				if delta > 0 {
 					if d, _ := t.DecreaseLoad(); len(d.ChangeInEvents.AffectedEvents) != 0 {
@@ -283,6 +282,7 @@ func (t *Tracee) ThrottleEvents(ctx gocontext.Context) {
 						fmt.Fprintf(os.Stderr, "****************** INCREASING LOAD - EVENTS PER SEC ***********************\n")
 					}
 				}
+				lostEvents = t.stats.LostEvCount.Read()
 			}
 		}
 	}
