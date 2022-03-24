@@ -765,6 +765,22 @@ enum kernel_read_file_id {
         READING_MAX_ID = 7,
 };
 
+struct kretprobe_instance{};
+typedef int kprobe_opcode_t;
+struct kprobe;
+typedef int (*kprobe_pre_handler_t) (struct kprobe *, struct pt_regs *);
+typedef void (*kprobe_post_handler_t) (struct kprobe *, struct pt_regs *, unsigned long flags);
+typedef int (*kretprobe_handler_t) (struct kretprobe_instance *, struct pt_regs *);
+struct kprobe{
+    kprobe_opcode_t *addr;
+    /* Allow user to indicate symbol name of the probe point */
+    const char *symbol_name;
+    /* Called before addr is executed. */
+    kprobe_pre_handler_t pre_handler;
+    /* Called after addr is executed, unless... */
+    kprobe_post_handler_t post_handler;
+};
+
 #include <struct_flavors.h>
 
 #pragma clang attribute pop

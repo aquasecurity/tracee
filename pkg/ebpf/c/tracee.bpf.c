@@ -196,7 +196,8 @@ Copyright (C) Aqua Security inc.
 #define HIDDEN_INODES                   1033
 #define __KERNEL_WRITE                  1034
 #define PROC_CREATE                     1035
-#define MAX_EVENT_ID                    1036
+#define KPROBE_ATTACH                   1036
+#define MAX_EVENT_ID                    1037
 
 #define NET_PACKET                      4000
 
@@ -577,6 +578,22 @@ struct mount {
     struct dentry *mnt_mountpoint;
     struct vfsmount mnt;
     // ...
+};
+
+struct kretprobe_instance{};
+typedef int kprobe_opcode_t;
+struct kprobe;
+typedef int (*kprobe_pre_handler_t) (struct kprobe *, struct pt_regs *);
+typedef void (*kprobe_post_handler_t) (struct kprobe *, struct pt_regs *, unsigned long flags);
+typedef int (*kretprobe_handler_t) (struct kretprobe_instance *, struct pt_regs *);
+struct kprobe{
+    kprobe_opcode_t *addr;
+    /* Allow user to indicate symbol name of the probe point */
+    const char *symbol_name;
+    /* Called before addr is executed. */
+    kprobe_pre_handler_t pre_handler;
+    /* Called after addr is executed, unless... */
+    kprobe_post_handler_t post_handler;
 };
 #endif
 
@@ -3154,10 +3171,10 @@ int BPF_KPROBE(trace_proc_create)
 
     char * name = (char *)PT_REGS_PARM1(ctx);
     unsigned long proc_ops_addr = (unsigned long) PT_REGS_PARM4(ctx);
-    
+
     save_str_to_buf(&data, name, 0);
     save_to_submit_buf(&data, (void *)&proc_ops_addr, sizeof(u64), 1);
-    
+
     return events_perf_submit(&data, PROC_CREATE, 0);
 }
 
@@ -4353,6 +4370,26 @@ int BPF_KPROBE(trace_security_bpf)
     save_to_submit_buf(&data, (void *)&cmd, sizeof(int), 0);
 
     return events_perf_submit(&data, SECURITY_BPF, 0);
+}
+
+SEC("kprobe/arm_kprobe")
+int BPF_KPROBE(trace_arm_kprobe)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data.context))
+        return 0;
+
+    struct kprobe *kp = (struct kprobe *)PT_REGS_PARM1(ctx);
+    char * symbol_name = (char *)READ_KERN(kp->symbol_name);
+    u64 pre_handler = (u64)READ_KERN(kp->pre_handler);
+    u64 post_handler = (u64)READ_KERN(kp->post_handler);
+    save_str_to_buf(&data, (void *)symbol_name, 0);
+    save_to_submit_buf(&data, (void *)&pre_handler, sizeof(u64), 1);
+    save_to_submit_buf(&data, (void *)&post_handler, sizeof(u64), 2);
+    return events_perf_submit(&data, KPROBE_ATTACH, 0);
 }
 
 SEC("kprobe/security_bpf_map")
