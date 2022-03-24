@@ -35,6 +35,9 @@ func (t *Tracee) initEventDerivationMap() error {
 		DnsResponse: {
 			NetPacket: deriveNetPacket(),
 		},
+		PrintNetSeqOpsEventID: {
+			HookedSeqOpsEventID: deriveHookedSeqOps(t),
+		},
 	}
 
 	return nil
@@ -171,7 +174,7 @@ func deriveDetectHookedSyscall(t *Tracee) deriveFn {
 		}
 		hookedSyscall, err := analyzeHookedAddresses(syscallAddresses, t.kernelSymbols)
 		if err != nil {
-			return trace.Event{}, false, fmt.Errorf("error parsing analyzing hooked syscalls adresses arg: %v", err)
+			return trace.Event{}, false, fmt.Errorf("error parsing analyzing hooked syscalls addresses arg: %v", err)
 		}
 		de := event
 		de.EventID = int(HookedSyscallsEventID)
@@ -208,13 +211,13 @@ func deriveNetPacket() deriveFn {
 
 func analyzeHookedAddresses(addresses []uint64, kernelSymbols *helpers.KernelSymbolTable) ([]trace.HookedSymbolData, error) {
 	hookedSyscalls := make([]trace.HookedSymbolData, 0)
-	for idx, syscallsAdress := range addresses {
-		InTextSegment, err := kernelSymbols.TextSegmentContains(syscallsAdress)
+	for idx, syscallsAddress := range addresses {
+		InTextSegment, err := kernelSymbols.TextSegmentContains(syscallsAddress)
 		if err != nil {
 			continue
 		}
 		if !InTextSegment {
-			hookingFunction := parseSymbol(syscallsAdress, kernelSymbols)
+			hookingFunction := parseSymbol(syscallsAddress, kernelSymbols)
 			var syscallNumber int32
 			if idx > len(syscallsToCheck) {
 				return nil, fmt.Errorf("syscall inedx out of the syscalls to check list %v", err)
@@ -243,4 +246,46 @@ func parseSymbol(address uint64, table *helpers.KernelSymbolTable) *helpers.Kern
 	hookingFunction.Owner = strings.TrimPrefix(hookingFunction.Owner, "[")
 	hookingFunction.Owner = strings.TrimSuffix(hookingFunction.Owner, "]")
 	return hookingFunction
+}
+
+var seq_ops_functions = [4]string{
+	"seq_show",
+	"seq_open",
+	"seq_close",
+	"seq_next",
+}
+
+func deriveHookedSeqOps(t *Tracee) deriveFn {
+	return func(event trace.Event) (trace.Event, bool, error) {
+		seqOpsArr, err := getEventArgUlongArrVal(&event, "net_seq_ops")
+		if err != nil || len(seqOpsArr) < 1 {
+			return trace.Event{}, false, err
+		}
+		seqOpsName := parseSymbol(seqOpsArr[0], t.kernelSymbols).Name
+		hookedSeqOps := make([]trace.HookedSymbolData, 0)
+		for _, addr := range seqOpsArr[1:] {
+			inTextSegment, err := t.kernelSymbols.TextSegmentContains(addr)
+			if err != nil {
+				continue
+			}
+			if !inTextSegment {
+				hookingFunction := parseSymbol(addr, t.kernelSymbols)
+				hookedSeqOps = append(hookedSeqOps, trace.HookedSymbolData{SymbolName: hookingFunction.Name, ModuleOwner: hookingFunction.Owner})
+			}
+		}
+		def := EventsDefinitions[HookedSeqOpsEventID]
+		de := event
+		de.EventID = int(HookedSeqOpsEventID)
+		de.EventName = "hooked_seq_ops"
+		de.ReturnValue = 0
+		de.StackAddresses = make([]uint64, 1)
+		de.Args = []trace.Argument{
+			{ArgMeta: def.Params[0], Value: seqOpsName},
+			{ArgMeta: def.Params[1], Value: hookedSeqOps},
+		}
+		de.ArgsNum = 1
+		return de, true, nil
+
+	}
+
 }

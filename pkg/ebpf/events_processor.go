@@ -341,14 +341,14 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 		t.containers.CgroupRemove(cgroupId, hId)
 
-	// in case FinitModule and IinitModule occurs it means that kernel module loaded, then we will want to check if it hooked the syscall table
-	case FinitModuleEventID:
-		t.invokeIoctlTriggeredEvents()
+	// in case FinitModule and InitModule occurs it means that a kernel module was loaded
+	// and we will want to check if it hooked the syscall table and seq_ops
+	case InitModuleEventID, FinitModuleEventID:
 		t.updateKallsyms()
-
-	case InitModuleEventID:
-		t.invokeIoctlTriggeredEvents()
-		t.updateKallsyms()
+		err := t.invokeIoctlTriggeredEvents(IoctlFetchSyscalls | IoctlHookedSeqOps)
+		if err != nil {
+			return err
+		}
 
 	case HookedProcFopsEventID:
 		fopsAddresses, err := getEventArgUlongArrVal(event, "hooked_fops_pointers")
