@@ -6,7 +6,7 @@ different ways to obtain them.
 
 - Ubuntu/Debian/Arch/Manjaro: install `linux-headers` package.
 - CentOS/Fedora: install `kernel-headers` and `kernel-devel` packages.
-- Docker for Mac: follow the [following guidelines](docker-mac.md)
+- Docker for Mac: follow these [guidelines](docker-mac.md)
 
 Normally the files will be installed in `/lib/modules/${kernel_version}/build`
 which is where Tracee expects them. If you have the headers elsewhere, you can
