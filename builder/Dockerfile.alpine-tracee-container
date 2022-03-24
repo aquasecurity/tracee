@@ -120,6 +120,7 @@ COPY --from=tracee-make /tracee/dist/tracee-ebpf /tracee
 COPY --from=tracee-make /tracee/dist/tracee-rules /tracee
 COPY --from=tracee-make /tracee/dist/rules/ /tracee/rules/
 COPY --from=tracee-make /tracee/builder/entrypoint.sh /tracee/entrypoint.sh
+COPY --from=tracee-make /tracee/cmd/tracee-rules/templates/ /tracee/templates/
 
 ENTRYPOINT ["/tracee/entrypoint.sh"]
 
@@ -138,6 +139,7 @@ COPY --from=tracee-make /tracee/dist/tracee-ebpf /tracee
 COPY --from=tracee-make /tracee/dist/tracee-rules /tracee
 COPY --from=tracee-make /tracee/dist/rules/ /tracee/rules
 COPY --from=tracee-make /tracee/builder/entrypoint.sh /tracee/entrypoint.sh
+COPY --from=tracee-make /tracee/cmd/tracee-rules/templates/ /tracee/templates/
 
 ENTRYPOINT ["/tracee/entrypoint.sh"]
 
