@@ -47,12 +47,11 @@ Before you proceed, make sure you follow the [minimum requirements for running T
    ```
 
 !!! note
-    Default image is **lightweight** and **portable**. It is supposed to
+    The default (latest) image is **lightweight** and **portable**. It is supposed to
     support different kernel versions without having to build source code. If
-    the host kernel does not support BTF, for eBPF CO-RE (portable eBPF code),
-    and most of them do, then you may use the **full** container image: it will
-    compile an eBPF object during startup, if your kernel does not have one
-    already cached in `/tmp/tracee`.
+    the host kernel does not support BTF then you may use the **full** container 
+    image. The full container will compile an eBPF object during startup, if you do 
+    not have one already cached in `/tmp/tracee`.
 
 !!! note
     You may need to change the volume mounts for the kernel headers based on
