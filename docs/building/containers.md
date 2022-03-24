@@ -29,7 +29,7 @@ Tracee containers come in **2 flavors**:
 
 Containers are supposed to be executed through docker cmdline directly, from
 the official built images. Nevertheless, during the image building process, it
-may be usefull to execute them with correct arguments to see if they're
+may be useful to execute them with correct arguments to see if they're
 working.
 
 User may execute built containers through `Makefile.tracee-container` file with
