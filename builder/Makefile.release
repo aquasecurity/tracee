@@ -135,6 +135,7 @@ $(OUTPUT_DIR):
 #
 
 SNAPSHOT_VERSION ?= $(shell git rev-parse HEAD)
+SNAPSHOT_VERSION := $(shell echo $(SNAPSHOT_VERSION) | sed -e "s/^v//")
 
 RELEASE_FILES = LICENSE
 RELEASE_FILES += $(OUTPUT_DIR)/tracee-ebpf
