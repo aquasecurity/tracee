@@ -6,6 +6,9 @@ Vagrant.configure("2") do |config|
   # config.vm.box = "ubuntu/hirsute64"   # Ubuntu 21.04 Hirsute Hippo (CO-RE)
   config.vm.box = "ubuntu/impish64"      # Ubuntu 21.10 Impish Indri (CO-RE)
 
+  # Forward MkDocs dev server to preview documentation on the host at http://localhost:8000/tracee
+  config.vm.network :forwarded_port, guest: 8000, host: 8000
+
   config.vm.provider "virtualbox" do |vb|
     vb.gui = false
     vb.memory = "2048"
