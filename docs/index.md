@@ -13,37 +13,35 @@ collected events to detect suspicious behavioral patterns. It is delivered as a
 Docker image that monitors the OS and detects suspicious behavior based on a
 predefined set of behavioral patterns.
 
-Watch a quick video demo of Tracee: <br>
-<a href="https://youtu.be/x2_iF0KjPKs?t=2971"><img src="https://i2.paste.pics/b755d5ee03048e3782f42da9870630eb.png?trs=a87585fdab9f70820cff773222a23ad3bbbc31d0b579bdc1b0ad91aa0cc19ecf" width="400"></a>
+Watch a quick video demo of Tracee:
 
-Check out the [Tracee video hub](https://info.aquasec.com/ebpf-runtime-security) for more.
+[![Tracee Live Demo AND Q&A](./images/tracee_video_thumbnail.png)](https://youtu.be/x2_iF0KjPKs?t=2971)
+
+Check out the [Tracee video hub](https://info.aquasec.com/ebpf-runtime-security) for more videos.
 
 ## Quickstart
 
 Before you proceed, make sure you follow the [minimum requirements for running Tracee](install/prerequisites.md).
 
 1. Running **tracee:latest**
-
-   ```bash
-   $ docker run \
-        --name tracee --rm -it \
-        --pid=host --cgroupns=host --privileged \
-        -v /etc/os-release:/etc/os-release-host:ro \
-        -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-        aquasec/tracee:{{ git.tag[1:] }}
+   ```shell
+   docker run \
+     --name tracee --rm -it \
+     --pid=host --cgroupns=host --privileged \
+     -v /etc/os-release:/etc/os-release-host:ro \
+     -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+     aquasec/tracee:{{ git.tag[1:] }}
    ```
-
 2. Running **tracee:full**
-
-   ```bash
+   ```shell
    docker run --name tracee --rm -it \
-       --pid=host --cgroupns=host --privileged \
-       -v /etc/os-release:/etc/os-release-host:ro \
-       -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-       -v /usr/src:/usr/src:ro \
-       -v /lib/modules:/lib/modules:ro \
-       -v /tmp/tracee:/tmp/tracee:rw \
-        aquasec/tracee:full-{{ git.tag[1:] }}
+     --pid=host --cgroupns=host --privileged \
+     -v /etc/os-release:/etc/os-release-host:ro \
+     -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+     -v /usr/src:/usr/src:ro \
+     -v /lib/modules:/lib/modules:ro \
+     -v /tmp/tracee:/tmp/tracee:rw \
+     aquasec/tracee:full-{{ git.tag[1:] }}
    ```
 
 !!! note
@@ -59,13 +57,32 @@ Before you proceed, make sure you follow the [minimum requirements for running T
     info.
 
 This will run Tracee with default settings and start reporting detections to
-standart output. In order to simulate a suspicious behavior, you can simply
+standard output. In order to simulate a suspicious behavior, you can simply
 run:
 
-```strace ls```
+```
+strace ls
+```
 
 in another terminal. This will trigger the "Anti-Debugging" signature, which is
-loaded by default AND you will get a warning.
+loaded by default, and you will get a warning:
+
+```
+INFO: probing tracee-ebpf capabilities...
+INFO: starting tracee-ebpf...
+INFO: starting tracee-rules...
+Loaded 14 signature(s): [TRC-1 TRC-13 TRC-2 TRC-14 TRC-3 TRC-11 TRC-9 TRC-4 TRC-5 TRC-12 TRC-8 TRC-6 TRC-10 TRC-7]
+Serving metrics endpoint at :3366
+Serving metrics endpoint at :4466
+
+*** Detection ***
+Time: 2022-03-25T08:04:22Z
+Signature ID: TRC-2
+Signature: Anti-Debugging
+Data: map[]
+Command: strace
+Hostname: ubuntu-impish
+```
 
 ## Trace
 
@@ -74,14 +91,14 @@ capabilities directly, without involving the detection engine. This might be
 useful for debugging/troubleshooting/analysis/research/education. In this case,
 you can run tracee exporting `TRACEE_EBPF_ONLY=1` environment variable.
 
-```bash
-$ docker run \
-    --name tracee --rm -it \
-    --pid=host --cgroupns=host --privileged \
-    -v /etc/os-release:/etc/os-release-host:ro \
-    -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-    -e TRACEE_EBPF_ONLY=1 \
-    aquasec/tracee:{{ git.tag[1:] }}
+```shell
+docker run \
+  --name tracee --rm -it \
+  --pid=host --cgroupns=host --privileged \
+  -v /etc/os-release:/etc/os-release-host:ro \
+  -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+  -e TRACEE_EBPF_ONLY=1 \
+  aquasec/tracee:{{ git.tag[1:] }}
 ```
 
 !!! note
@@ -92,14 +109,17 @@ $ docker run \
 Tracee is composed of the following sub-projects, which are hosted in the
 aquasecurity/tracee repository:
 
-- [Tracee-eBPF](https://github.com/aquasecurity/tracee/tree/{{ git.tag }}/tracee-ebpf) - Linux Tracing and Forensics using eBPF
-- [Tracee-Rules](https://github.com/aquasecurity/tracee/tree/{{ git.tag }}/tracee-rules) - Runtime Security Detection Engine
+- [Tracee-eBPF] - Linux Tracing and Forensics using eBPF
+- [Tracee-Rules] - Runtime Security Detection Engine
 
 ---
 
-Tracee is an [Aqua Security] open source project. Learn about our open source
-work and portfolio [Here]. Join the community, and talk to us about any matter
-in [GitHub Discussion] or [Slack].
+Tracee is an [Aqua Security] open source project.  
+Learn about our open source work and portfolio [Here].  
+Join the community, and talk to us about any matter in [GitHub Discussion] or [Slack].
+
+[Tracee-eBPF]: https://github.com/aquasecurity/tracee/tree/{{ git.tag }}/cmd/tracee-ebpf
+[Tracee-Rules]: https://github.com/aquasecurity/tracee/tree/{{ git.tag }}/cmd/tracee-rules
 
 [Aqua Security]: https://aquasec.com
 [GitHub Discussion]: https://github.com/aquasecurity/tracee/discussions
