@@ -12,6 +12,7 @@ nav:
     - Building Environment: building/environment.md
     - Building Containers: building/containers.md
     - Building non CO-RE: building/nocore-ebpf.md
+    - OS Packaging: building/packaging.md
   - Installation:
     - Prerequisites: install/prerequisites.md
     - Kubernetes: install/kubernetes.md
@@ -28,7 +29,7 @@ nav:
     - Output Options: tracee-ebpf/output.md
     - Trace Options: tracee-ebpf/trace-options.md
     - Capturing Artifacts: tracee-ebpf/capture.md
-    - Overriding OS needed files: tracee-ebpf/override-os-needed-files
+    - Overriding OS needed files: tracee-ebpf/override-os-needed-files.md
 
 theme:
     name: material
