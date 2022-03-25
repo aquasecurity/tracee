@@ -158,7 +158,7 @@ snapshot: \
 	.check_$(CMD_GITHUB)
 #
 	# build binaries (tracee-ebpf (CO-RE + BTFHUB), tracee-rules, rules)
-	$(MAKE) -f builder/Makefile.tracee-make ubuntu-prepare ARG="all"
+	$(MAKE) -f builder/Makefile.tracee-make ubuntu-prepare
 	BTFHUB=1 STATIC=1 $(MAKE) -f builder/Makefile.tracee-make ubuntu-make ARG="all"
 	# create the tar ball and checksum files
 	$(CMD_TAR) --exclude="*.so" -czf $(OUT_ARCHIVE) $(RELEASE_FILES)
