@@ -12,18 +12,18 @@ data directly into standard output.
 
 Before you proceed, make sure you follow the [minimum requirements for running Tracee](../install/prerequisites.md).
 
-```bash
-$ docker run \
-    --name tracee --rm -it \
-    --pid=host --cgroupns=host --privileged \
-    -v /etc/os-release:/etc/os-release-host:ro \
-    -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-    -e TRACEE_EBPF_ONLY=1 \
-    aquasec/tracee:{{ git.tag[1:] }}
+```shell
+docker run \
+  --name tracee --rm -it \
+  --pid=host --cgroupns=host --privileged \
+  -v /etc/os-release:/etc/os-release-host:ro \
+  -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+  -e TRACEE_EBPF_ONLY=1 \
+  aquasec/tracee:{{ git.tag[1:] }}
 ```
 
-Here we are running the same `aquasec/tracee` container, but with the `trace`
-sub-command, which will start just a raw trace (Tracee-eBPF), without the
+Here we are running the same `aquasec/tracee` container, but with the `TRACEE_EBPF_ONLY=1`
+environment variable set, which will start just a raw trace (Tracee-eBPF), without the
 detection engine (Tracee-Rules). Here's a sample output of running with no
 additional arguments:
 
