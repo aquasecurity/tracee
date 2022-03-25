@@ -68,7 +68,7 @@ Copyright (C) Aqua Security inc.
 #if defined(bpf_target_x86)
 #define PT_REGS_PARM6(ctx)  ((ctx)->r9)
 #elif defined(bpf_target_arm64)
-#define PT_REGS_PARM6(x) (((PT_REGS_ARM64 *)(x))->regs[5])
+#define PT_REGS_PARM6(x) ((x)->regs[5])
 #endif
 
 #define MAX_PERCPU_BUFSIZE              (1 << 15) // set by the kernel as an upper bound
