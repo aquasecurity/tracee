@@ -190,7 +190,9 @@ func main() {
 					mux.Handle("/metrics", promhttp.Handler())
 
 					go func() {
-						fmt.Fprintf(os.Stdout, "Serving metrics endpoint at %s\n", metricsAddr)
+						if debug {
+							fmt.Fprintf(os.Stdout, "Serving metrics endpoint at %s\n", metricsAddr)
+						}
 						if err := http.ListenAndServe(metricsAddr, mux); err != http.ErrServerClosed {
 							fmt.Fprintf(os.Stderr, "Error serving metrics endpoint: %v\n", err)
 						}
@@ -313,7 +315,7 @@ func main() {
 			&cli.BoolFlag{
 				Name:        "debug",
 				Value:       false,
-				Usage:       "write verbose debug messages to standard output and retain intermediate artifacts",
+				Usage:       "write verbose debug messages to standard output and retain intermediate artifacts. enabling will output debug messages to stdout, which will likely break consumers which expect to receive machine-readable events from stdout",
 				Destination: &debug,
 			},
 			&cli.StringFlag{
