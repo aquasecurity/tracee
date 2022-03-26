@@ -305,7 +305,6 @@ $(OUTPUT_DIR)/libbpf/libbpf.a: \
 		-C $(LIBBPF_SRC) \
 		BUILD_STATIC_ONLY=1 \
 		DESTDIR=$(abspath ./$(OUTPUT_DIR)/libbpf/) \
-		OBJDIR=$(abspath ./$(OUTPUT_DIR)/libbpf/obj) \
 		INCLUDEDIR= LIBDIR= UAPIDIR= prefix= libdir= \
 		install install_uapi_headers
 
