@@ -7,6 +7,9 @@ import (
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 )
 
+// MaxBpfStrFilterSize value should match MAX_STR_FILTER_SIZE defined in BPF code
+const MaxBpfStrFilterSize = 16
+
 func FilterHelp() string {
 	return `Select which events to trace by defining trace expressions that operate on events or process metadata.
 Only events that match all trace expressions will be traced (trace flags are ANDed).
@@ -105,10 +108,12 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 		UTSFilter: &tracee.StringFilter{
 			Equal:    []string{},
 			NotEqual: []string{},
+			Size:     MaxBpfStrFilterSize,
 		},
 		CommFilter: &tracee.StringFilter{
 			Equal:    []string{},
 			NotEqual: []string{},
+			Size:     MaxBpfStrFilterSize,
 		},
 		ContFilter:    &tracee.BoolFilter{},
 		NewContFilter: &tracee.BoolFilter{},

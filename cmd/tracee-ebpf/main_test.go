@@ -256,10 +256,12 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
@@ -307,10 +309,12 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
@@ -358,10 +362,12 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
@@ -409,10 +415,12 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
@@ -459,11 +467,13 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{"ls"},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 					Enabled:  true,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
@@ -510,10 +520,12 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{"deadbeaf"},
+					Size:     flags.MaxBpfStrFilterSize,
 					Enabled:  true,
 				},
 				ContFilter:    &tracee.BoolFilter{},
@@ -562,10 +574,12 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
@@ -613,10 +627,12 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
@@ -663,10 +679,12 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				ContFilter: &tracee.BoolFilter{
 					Value:   true,
@@ -716,10 +734,12 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				ContFilter: &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{
@@ -769,10 +789,12 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
@@ -827,10 +849,12 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
@@ -891,11 +915,13 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 					Enabled:  false,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 					Enabled:  false,
 				},
 				ContFilter:    &tracee.BoolFilter{},
@@ -948,11 +974,13 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 					Enabled:  false,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 					Enabled:  false,
 				},
 				ContFilter:    &tracee.BoolFilter{},
@@ -1004,11 +1032,13 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{"ps"},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 					Enabled:  true,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{"abc"},
+					Size:     flags.MaxBpfStrFilterSize,
 					Enabled:  true,
 				},
 				ContFilter:    &tracee.BoolFilter{},
