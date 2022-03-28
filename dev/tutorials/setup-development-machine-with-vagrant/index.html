@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/install/docker-mac/">
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/tutorials/setup-development-machine-with-vagrant/">
       
       
         
@@ -20,7 +20,7 @@
     
     
       
-        <title>Docker for Mac - Tracee</title>
+        <title>Setup Development Machine with Vagrant - Tracee</title>
       
     
     
@@ -112,7 +112,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#docker-for-mac" class="md-skip">
+        <a href="#setup-development-machine-with-vagrant" class="md-skip">
           Skip to content
         </a>
       
@@ -148,7 +148,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Docker for Mac
+              Setup Development Machine with Vagrant
             
           </span>
         </div>
@@ -393,14 +393,12 @@
 
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
       
       
       
@@ -428,7 +426,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../prerequisites/" class="md-nav__link">
+      <a href="../../install/prerequisites/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -447,7 +445,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../kubernetes/" class="md-nav__link">
+      <a href="../../install/kubernetes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -466,7 +464,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../headers/" class="md-nav__link">
+      <a href="../../install/headers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -483,18 +481,9 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../install/docker-mac/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -502,7 +491,6 @@
   </span>
 
       </a>
-      
     </li>
   
 
@@ -815,7 +803,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/setup-development-machine-with-vagrant" class="md-nav__link">
+      <a href="." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -854,6 +842,69 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-development-machine" class="md-nav__link">
+    Create Development Machine
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#build-and-run-tracee-ebpf-and-tracee-rules" class="md-nav__link">
+    Build and Run Tracee-eBPF and Tracee-Rules
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#switch-between-co-re-and-non-co-re-linux-distribution" class="md-nav__link">
+    Switch Between CO-RE and non CO-RE Linux Distribution
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deploy-tracee-on-kubernetes" class="md-nav__link">
+    Deploy Tracee on Kubernetes
+  </a>
+  
+    <nav class="md-nav" aria-label="Deploy Tracee on Kubernetes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#access-kubernetes-dashboard" class="md-nav__link">
+    Access Kubernetes Dashboard
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#preview-tracee-documentation" class="md-nav__link">
+    Preview Tracee Documentation
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -866,29 +917,203 @@
                 
 
 
-<h1 id="docker-for-mac">Docker for Mac<a class="headerlink" href="#docker-for-mac" title="Permanent link">&para;</a></h1>
-<p>Docker for Mac does not come with Kernel headers.
-You need to do the following to make Tracee work:</p>
-<ol>
-<li>Identify your docker version:
-   <div class="highlight"><pre><span></span><code>dockerver=$(docker version | grep  Version | head -n 1 | cut -d &#39;:&#39; -f 2 | xargs)
-</code></pre></div></li>
-<li>Run a container with Docker CLI, while mounting to the host path:
-   <div class="highlight"><pre><span></span><code>docker run -it -v /:/host -v /var/run/docker.sock:/var/run/docker.sock docker:$dockerver /bin/sh
-</code></pre></div></li>
-<li>Get the Kernel Header files from the linuxkit Docker image and copy it to the host /usr/src path:
-   <div class="highlight"><pre><span></span><code>mkdir /host/kheader
-cd /host/kheader
-linux_version=&quot;${VERSION:-$(uname -r | cut -d - -f 1)}&quot;
-docker pull &quot;linuxkit/kernel:$linux_version&quot;
-docker save &quot;linuxkit/kernel:$linux_version&quot; &gt; &quot;linuxkit.tar&quot;
-tar -xf &quot;linuxkit.tar&quot;
-layertar=$(find . -name layer.tar)
-tar -xf &quot;$layertar&quot;
-tar -xf &quot;kernel-dev.tar&quot; --directory /host/
-</code></pre></div></li>
-<li>You can now run Tracee on your Docker for Mac</li>
-</ol>
+<h1 id="setup-development-machine-with-vagrant">Setup Development Machine with Vagrant<a class="headerlink" href="#setup-development-machine-with-vagrant" title="Permanent link">&para;</a></h1>
+<p><a href="https://www.vagrantup.com">HashiCorp Vagrant</a> leverages a declarative configuration file, which describes all software requirements, packages,
+operating system configuration, and users to provide the same development environment for everyone.</p>
+<p>The <a href="https://github.com/aquasecurity/tracee/blob/v0.7.0/Vagrantfile">Vagrantfile</a> describes the type of machine required to build Tracee from source and follow the
+<a href="../..">Getting Started</a> guides. This allows developers involved in the project to check out the code, run
+<code>vagrant up</code>, and be on their way.</p>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<ul>
+<li><a href="https://www.vagrantup.com/docs/installation">Vagrant</a></li>
+<li><a href="https://www.vagrantup.com/docs/providers">Hypervisor</a> supported by Vagrant, such as <a href="https://www.virtualbox.org">VirtualBox</a>.</li>
+</ul>
+<h2 id="create-development-machine">Create Development Machine<a class="headerlink" href="#create-development-machine" title="Permanent link">&para;</a></h2>
+<p>Clone and change directory to Tracee Git repository:</p>
+<div class="highlight"><pre><span></span><code>git clone --branch v0.7.0 https://github.com/aquasecurity/tracee.git
+cd tracee
+</code></pre></div>
+<p>Create and configure development machine according to the <code>Vagrantfile</code>:</p>
+<div class="highlight"><pre><span></span><code>vagrant up
+</code></pre></div>
+<p>If everything goes well, you can SSH into a running development machine and access its shell:</p>
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>vagrant ssh
+<span class="go">Welcome to Ubuntu 21.10 (GNU/Linux 5.13.0-35-generic x86_64)</span>
+
+<span class="go"> * Documentation:  https://help.ubuntu.com</span>
+<span class="go"> * Management:     https://landscape.canonical.com</span>
+<span class="go"> * Support:        https://ubuntu.com/advantage</span>
+
+<span class="go">  System information as of Sat Mar 26 18:08:08 UTC 2022</span>
+
+<span class="go">  System load:  0.94               Processes:                153</span>
+<span class="go">  Usage of /:   14.7% of 38.71GB   Users logged in:          1</span>
+<span class="go">  Memory usage: 59%                IPv4 address for docker0: 172.17.0.1</span>
+<span class="go">  Swap usage:   0%                 IPv4 address for enp0s3:  10.0.2.15</span>
+
+
+<span class="go">9 updates can be applied immediately.</span>
+<span class="go">9 of these updates are standard security updates.</span>
+<span class="go">To see these additional updates run: apt list --upgradable</span>
+
+
+<span class="go">Last login: Sat Mar 26 17:14:16 2022 from 10.0.2.2</span>
+<span class="gp">vagrant@ubuntu-impish:~$</span>
+</code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Provisioning from scratch take time, but once created you can reuse the machine with <code>vagrant halt</code> and <code>vagrant up</code>
+commands. If something goes wrong with your machine, there's also the <code>vagrant destroy</code> to destroy it.</p>
+</div>
+<p>Synced folders enable Vagrant to sync a folder on the host machine to the development machine, allowing you to continue
+working on your project's files on your host machine, but use the resources in the development machine to compile or run
+Tracee.</p>
+<p>By default, Vagrant will share Tracee project directory (the directory with the <code>Vagrantfile</code>) to <code>/vagrant</code>.
+To get started, change directory to <code>/vagrant</code> and list files:</p>
+<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:~$ cd /vagrant/
+vagrant@ubuntu-impish:/vagrant$ ls -l
+total 204
+drwxr-xr-x 1 vagrant vagrant    224 Mar 17 14:31 3rdparty
+-rw-r--r-- 1 vagrant vagrant   3474 Mar 17 14:31 CONTRIBUTING.md
+-rw-r--r-- 1 vagrant vagrant  11358 Mar 17 14:31 LICENSE
+-rw-r--r-- 1 vagrant vagrant  16529 Mar 25 07:46 Makefile
+-rw-r--r-- 1 vagrant vagrant    133 Mar 17 14:31 NOTICE
+-rw-r--r-- 1 vagrant vagrant   2116 Mar 26 16:41 RELEASING.md
+-rw-r--r-- 1 vagrant vagrant   4097 Mar 17 14:31 Readme.md
+-rw-r--r-- 1 vagrant vagrant   2732 Mar 26 16:41 Vagrantfile
+drwxr-xr-x 1 vagrant vagrant    384 Mar 26 16:41 builder
+drwxr-xr-x 1 vagrant vagrant    128 Dec 14 15:27 cmd
+drwxr-xr-x 1 vagrant vagrant     96 Dec  8 14:20 deploy
+drwxr-xr-x 1 vagrant vagrant    288 Mar 25 10:51 dist
+drwxr-xr-x 1 vagrant vagrant    448 Mar 26 16:44 docs
+-rw-r--r-- 1 vagrant vagrant    164 Mar 17 14:31 embedded-ebpf.go
+-rw-r--r-- 1 vagrant vagrant    101 Mar 17 14:31 embedded.go
+-rw-r--r-- 1 vagrant vagrant   4382 Mar 24 14:13 go.mod
+-rw-r--r-- 1 vagrant vagrant 129439 Mar 24 14:13 go.sum
+-rw-r--r-- 1 vagrant vagrant   1546 Mar 26 18:20 mkdocs.yml
+drwxr-xr-x 1 vagrant vagrant    256 Mar 22 14:08 packaging
+drwxr-xr-x 1 vagrant vagrant    416 Mar 24 14:13 pkg
+drwxr-xr-x 1 vagrant vagrant    192 Dec 14 13:02 signatures
+drwxr-xr-x 1 vagrant vagrant    160 Mar 24 14:13 tests
+drwxr-xr-x 1 vagrant vagrant    224 Mar 24 11:59 types
+</code></pre></div>
+<p>As you can see the <code>/vagrant</code> directory contains source code of Tracee cloned from GitHub.</p>
+<h2 id="build-and-run-tracee-ebpf-and-tracee-rules">Build and Run Tracee-eBPF and Tracee-Rules<a class="headerlink" href="#build-and-run-tracee-ebpf-and-tracee-rules" title="Permanent link">&para;</a></h2>
+<p>To build <code>tracee-ebpf</code> and <code>tracee-rules</code> executable binaries, run the default Make target:</p>
+<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ make
+</code></pre></div>
+<p>Build targets are saved in the <code>/vagrant/dist</code> directory:</p>
+<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ ls -l dist/
+total 47972
+drwxr-xr-x 1 vagrant vagrant       96 Mar 25 10:45 btfhub
+drwxr-xr-x 1 vagrant vagrant      224 Mar 25 10:45 libbpf
+drwxr-xr-x 1 vagrant vagrant      512 Mar 25 10:46 rules
+-rwxr-xr-x 1 vagrant vagrant 17876784 Mar 26 18:32 tracee-ebpf
+-rwxr-xr-x 1 vagrant vagrant 26982352 Mar 25 10:45 tracee-rules
+drwxr-xr-x 1 vagrant vagrant      544 Mar 26 18:31 tracee.bpf
+-rw-r--r-- 1 vagrant vagrant  4232032 Mar 26 18:31 tracee.bpf.core.o
+</code></pre></div>
+<p>You can now run Tracee-eBPF and see raw events printed to the standard output in a tabular format:</p>
+<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ sudo ./dist/tracee-ebpf
+TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
+18:39:43:781824  0      mkdocs           1       19      0                stat                 pathname: /docs/docs, statbuf: 0x7f851365eb20
+18:39:43:782125  0      mkdocs           1       19      0                security_file_open   pathname: /docs/docs, flags: O_RDONLY|O_LARGEFILE|O_DIRECTORY, dev: 43, inode: 47, ctime: 1648313072000000000
+18:39:43:782008  0      mkdocs           1       19      6                open                 pathname: /docs/docs, flags: O_RDONLY|O_LARGEFILE|O_DIRECTORY|O_CLOEXEC, mode: 0
+18:39:43:783200  0      mkdocs           1       19      464              getdents64           fd: 6, dirp: 0x7f8513d8e0b8, count: 2048
+18:39:43:783232  0      mkdocs           1       19      0                getdents64           fd: 6, dirp: 0x7f8513d8e0b8, count: 2048
+18:39:43:783259  0      mkdocs           1       19      0                close                fd: 6
+18:39:43:783271  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/architecture.md, statbuf: 0x7f851365e9b0
+18:39:43:783734  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/install, statbuf: 0x7f851365e9b0
+18:39:43:784163  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/images, statbuf: 0x7f851365e9b0
+18:39:43:784589  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/integrations.md, statbuf: 0x7f851365e9b0
+18:39:43:784906  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/faq.md, statbuf: 0x7f851365e9b0
+</code></pre></div>
+<p>To analyze collected events and see detections printed to the standard output, run Tracee-eBPF and pipe it with Tracee-Rules:</p>
+<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ sudo ./dist/tracee-ebpf \
+  --output=format:gob \
+  --output=option:parse-arguments \
+  | ./dist/tracee-rules \
+  --input-tracee=file:stdin \
+  --input-tracee=format:gob
+Loaded 14 signature(s): [TRC-1 TRC-13 TRC-2 TRC-14 TRC-3 TRC-11 TRC-9 TRC-4 TRC-5 TRC-12 TRC-8 TRC-6 TRC-10 TRC-7]
+
+*** Detection ***
+Time: 2022-03-26T18:48:00Z
+Signature ID: TRC-2
+Signature: Anti-Debugging
+Data: map[]
+Command: strace
+Hostname: ubuntu-impish
+</code></pre></div>
+<h2 id="switch-between-co-re-and-non-co-re-linux-distribution">Switch Between CO-RE and non CO-RE Linux Distribution<a class="headerlink" href="#switch-between-co-re-and-non-co-re-linux-distribution" title="Permanent link">&para;</a></h2>
+<p>By default, the development machine is running Ubuntu Linux 21.10 Impish Indri. You can see that it has a BTF-enabled
+kernel by checking the existence of the <code>/sys/kernel/btf/vmlinux</code> file.</p>
+<div class="highlight"><pre><span></span><code><span class="no">Vagrant</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="s2">&quot;2&quot;</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">config</span><span class="o">|</span>
+  <span class="c1"># config.vm.box = &quot;ubuntu/focal64&quot;     # Ubuntu 20.04 Focal Fossa (non CO-RE)</span>
+  <span class="c1"># config.vm.box = &quot;ubuntu/hirsute64&quot;   # Ubuntu 21.04 Hirsute Hippo (CO-RE)</span>
+  <span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">box</span> <span class="o">=</span> <span class="s2">&quot;ubuntu/impish64&quot;</span>      <span class="c1"># Ubuntu 21.10 Impish Indri (CO-RE)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>Sometimes you may want to test Tracee with a non CO-RE distribution. You can do that by editing the Vagrantfile and
+modifying the <code>config.vm.box</code> property. For example, you can switch to Ubuntu Linux 20.04 Focal Fossa as follows:</p>
+<div class="highlight"><pre><span></span><code><span class="no">Vagrant</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="s2">&quot;2&quot;</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">config</span><span class="o">|</span>
+  <span class="n">config</span><span class="o">.</span><span class="n">vm</span><span class="o">.</span><span class="n">box</span> <span class="o">=</span> <span class="s2">&quot;ubuntu/focal64&quot;</span>       <span class="c1"># Ubuntu 20.04 Focal Fossa (non CO-RE)</span>
+  <span class="c1"># config.vm.box = &quot;ubuntu/hirsute64&quot;   # Ubuntu 21.04 Hirsute Hippo (CO-RE)</span>
+  <span class="c1"># config.vm.box = &quot;ubuntu/impish64&quot;    # Ubuntu 21.10 Impish Indri (CO-RE)</span>
+<span class="k">end</span>
+</code></pre></div>
+<p>This change requires reprovisioning the development machine:</p>
+<div class="highlight"><pre><span></span><code>vagrant destroy
+vagrant up
+</code></pre></div>
+<h2 id="deploy-tracee-on-kubernetes">Deploy Tracee on Kubernetes<a class="headerlink" href="#deploy-tracee-on-kubernetes" title="Permanent link">&para;</a></h2>
+<p>The development machine described by Vagrantfile preinstalls <a href="https://microk8s.io">MicroK8s</a> Kubernetes cluster, which is suitable for testing
+Tracee.</p>
+<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ microk8s status
+microk8s is running
+high-availability: no
+  datastore master nodes: 127.0.0.1:19001
+  datastore standby nodes: none
+</code></pre></div>
+<p>There's also the <a href="https://kubernetes.io/docs/tasks/tools/#kubectl">kubectl</a> command installed to communicate with the cluster:</p>
+<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ kubectl get nodes -o wide
+NAME            STATUS   ROLES    AGE    VERSION                    INTERNAL-IP   EXTERNAL-IP   OS-IMAGE       KERNEL-VERSION      CONTAINER-RUNTIME
+ubuntu-impish   Ready    &lt;none&gt;   139m   v1.23.4-2+98fc2022f3ad3e   10.0.2.15     &lt;none&gt;        Ubuntu 21.10   5.13.0-35-generic   containerd://1.5.9
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ kubectl create ns tracee-system
+vagrant@ubuntu-impish:/vagrant$ kubectl apply -f deploy/kubernetes/tracee-postee/tracee.yaml -n tracee-system
+daemonset.apps/tracee created
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ kubectl logs -f daemonset/tracee -n tracee-system
+INFO: probing tracee-ebpf capabilities...
+INFO: starting tracee-ebpf...
+INFO: starting tracee-rules...
+Loaded 14 signature(s): [TRC-1 TRC-13 TRC-2 TRC-14 TRC-3 TRC-11 TRC-9 TRC-4 TRC-5 TRC-12 TRC-8 TRC-6 TRC-10 TRC-7]
+Serving metrics endpoint at :3366
+</code></pre></div>
+<h3 id="access-kubernetes-dashboard">Access Kubernetes Dashboard<a class="headerlink" href="#access-kubernetes-dashboard" title="Permanent link">&para;</a></h3>
+<p>Use the following command to get the token required to log in to the <a href="https://github.com/kubernetes/dashboard">Kubernetes Dashboard</a>:</p>
+<div class="highlight"><pre><span></span><code>kubectl -n kube-system describe secret \
+  $(kubectl -n kube-system get secret | grep default-token | cut -d &quot; &quot; -f1)
+</code></pre></div>
+<p>Forward port 10443 in the development machine to the Kubernetes Dashboard's pod:</p>
+<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ kubectl port-forward --address 0.0.0.0 -n kube-system service/kubernetes-dashboard 10443:443
+Forwarding from 0.0.0.0:10443 -&gt; 8443
+</code></pre></div>
+<p>Since port 10443 is forwarded to port 10443 on your host, you can open your browser to
+<a href="https://localhost:10443">https://localhost:10443</a> and access Kubernetes Dashboard.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Modern browser usually block insecure localhost TLS connections. For Google Chrome you may allow insecure TLS
+connections at <a href="chrome://flags/#allow-insecure-localhost">chrome://flags/#allow-insecure-localhost</a>.</p>
+</div>
+<h2 id="preview-tracee-documentation">Preview Tracee Documentation<a class="headerlink" href="#preview-tracee-documentation" title="Permanent link">&para;</a></h2>
+<p>You can run <a href="https://www.mkdocs.org">MkDocs</a> server and preview documentation on your host:</p>
+<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ make -f builder/Makefile.mkdocs
+</code></pre></div>
+<p>The development machine is running the MkDocs server listening on port 8000, which is forwarded to port 8000 on your
+host. Therefore, you can open your browser to <a href="http://localhost:8000">http://localhost:8000</a> and access documentation
+pages.</p>
 
 
 
@@ -902,41 +1127,6 @@ tar -xf &quot;kernel-dev.tar&quot; --directory /host/
       </main>
       
         <footer class="md-footer">
-  
-    <nav class="md-footer__inner md-grid" aria-label="Footer">
-      
-        
-        <a href="../headers/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Linux Headers" rel="prev">
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
-          </div>
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Previous
-              </span>
-              Linux Headers
-            </div>
-          </div>
-        </a>
-      
-      
-        
-        <a href="../../integrations/" class="md-footer__link md-footer__link--next" aria-label="Next: Integrations" rel="next">
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Next
-              </span>
-              Integrations
-            </div>
-          </div>
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
-          </div>
-        </a>
-      
-    </nav>
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
