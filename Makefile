@@ -301,7 +301,7 @@ $(OUTPUT_DIR)/libbpf/libbpf.a: \
 	CC="$(CMD_CLANG)" \
 		CFLAGS="$(LIBBPF_CFLAGS)" \
 		LD_FLAGS="$(LIBBPF_LDFLAGS)" \
-		$(MAKE) -j$(PARALLEL) \
+		$(MAKE) \
 		-C $(LIBBPF_SRC) \
 		BUILD_STATIC_ONLY=1 \
 		DESTDIR=$(abspath ./$(OUTPUT_DIR)/libbpf/) \
