@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -63,45 +62,10 @@ func NewEngine(sigs []detect.Signature, sources EventSources, output chan detect
 	engine.signaturesIndex = make(map[detect.SignatureEventSelector][]detect.Signature)
 	engine.signaturesMutex.Unlock()
 	for _, sig := range sigs {
-		engine.signaturesMutex.Lock()
-		engine.signatures[sig] = make(chan protocol.Event, engine.config.SignatureBufferSize)
-		engine.signaturesMutex.Unlock()
-		meta, err := sig.GetMetadata()
+		_, err := engine.loadSignature(sig)
 		if err != nil {
-			engine.logger.Printf("error getting metadata: %v", err)
-			continue
+			engine.logger.Printf("error loading signature: %v", err)
 		}
-		se, err := sig.GetSelectedEvents()
-		if err != nil {
-			engine.logger.Printf("error getting selected events for signature %s: %v", meta.Name, err)
-			continue
-		}
-		for _, es := range se {
-			if es.Name == "" {
-				es.Name = ALL_EVENT_TYPES
-			}
-			if es.Origin == "" {
-				es.Origin = ALL_EVENT_ORIGINS
-			}
-			if es.Source == "" {
-				engine.logger.Printf("signature %s doesn't declare an input source", meta.Name)
-			} else {
-				engine.signaturesMutex.Lock()
-				engine.signaturesIndex[es] = append(engine.signaturesIndex[es], sig)
-				engine.signaturesMutex.Unlock()
-			}
-		}
-		err = sig.Init(engine.matchHandler)
-		if err != nil {
-			engine.logger.Printf("error initializing signature %s: %v", meta.Name, err)
-			continue
-		}
-	}
-	engine.signaturesMutex.RLock()
-	lenSigs := len(engine.signatures)
-	engine.signaturesMutex.RUnlock()
-	if len(sigs) != lenSigs {
-		return nil, errors.New("one or more signatures are not uniquely identifiable")
 	}
 	return &engine, nil
 }
@@ -221,23 +185,47 @@ func (engine *Engine) dispatchEvent(s detect.Signature, event protocol.Event) {
 	engine.signatures[s] <- event
 }
 
-//LoadSignature will store in Engine data structures the given signature and activate its handling business logics.
+//LoadSignature will call the internal signature loading logic and activate its handling business logics.
 // It will return the signature ID as well as error.
 func (engine *Engine) LoadSignature(signature detect.Signature) (string, error) {
+	id, err := engine.loadSignature(signature)
+	if err != nil {
+		return id, err
+	}
+	engine.signaturesMutex.RLock()
+	go signatureStart(signature, engine.signatures[signature], &engine.waitGroup)
+	engine.signaturesMutex.RUnlock()
+
+	return id, nil
+}
+
+//loadSignature handles storing a signature in the Engine data structures
+// It will return the signature ID as well as error.
+func (engine *Engine) loadSignature(signature detect.Signature) (string, error) {
+	metadata, err := signature.GetMetadata()
+	if err != nil {
+		return "", fmt.Errorf("error getting metadata: %w", err)
+	}
 	selectedEvents, err := signature.GetSelectedEvents()
 	if err != nil {
-		return "", fmt.Errorf("failed to store signature: %w", err)
+		return "", fmt.Errorf("error getting selected events for signature %s: %w", metadata.Name, err)
 	}
-	metadata, _ := signature.GetMetadata()
 	// insert in engine.signatures map
-	engine.signaturesMutex.Lock()
-	defer engine.signaturesMutex.Unlock()
+	engine.signaturesMutex.RLock()
 	if engine.signatures[signature] != nil {
+		engine.signaturesMutex.RUnlock()
 		// signature already exists
-		return metadata.ID, nil
+		return "", fmt.Errorf("failed to store signature: signature \"%s\" already loaded", metadata.Name)
+	}
+	engine.signaturesMutex.RUnlock()
+	if err := signature.Init(engine.matchHandler); err != nil {
+		//failed to initialize
+		return "", fmt.Errorf("error initializing signature %s: %w", metadata.Name, err)
 	}
 	c := make(chan protocol.Event, engine.config.SignatureBufferSize)
+	engine.signaturesMutex.Lock()
 	engine.signatures[signature] = c
+	engine.signaturesMutex.Unlock()
 
 	// insert in engine.signaturesIndex map
 	for _, selectedEvent := range selectedEvents {
@@ -250,15 +238,13 @@ func (engine *Engine) LoadSignature(signature detect.Signature) (string, error) 
 		if selectedEvent.Source == "" {
 			engine.logger.Printf("signature %s doesn't declare an input source", metadata.Name)
 		} else {
+			engine.signaturesMutex.Lock()
 			engine.signaturesIndex[selectedEvent] = append(engine.signaturesIndex[selectedEvent], signature)
+			engine.signaturesMutex.Unlock()
 		}
 	}
-	if err := signature.Init(engine.matchHandler); err != nil {
-		engine.logger.Printf("error initializing signature %s: %v", metadata.Name, err)
 
-	}
 	engine.stats.Signatures.Increment()
-	go signatureStart(signature, c, &engine.waitGroup)
 	return metadata.ID, nil
 }
 
