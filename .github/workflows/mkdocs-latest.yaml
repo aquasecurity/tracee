@@ -1,8 +1,12 @@
+---
 name: Deploy the latest documentation
 on:
   push:
+    # Include tags whose name match release pattern "v*", like v0.7.0 (refs/tags/v0.7.0)
+    # Exclude tags whose name match release candidate pattern "v*-rc*", like v0.7.0-rc-1 (refs/tags/v0.7.0-rc-1)
     tags:
       - "v*"
+      - "!v*-rc*"
   workflow_dispatch:
     inputs:
       tag:
@@ -10,7 +14,7 @@ on:
 jobs:
   deploy:
     name: Deploy the latest documentation
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout main
         uses: actions/checkout@v2
