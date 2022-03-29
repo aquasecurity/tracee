@@ -195,7 +195,8 @@ Copyright (C) Aqua Security inc.
 #define SOCKET_DUP                      1032
 #define HIDDEN_INODES                   1033
 #define __KERNEL_WRITE                  1034
-#define MAX_EVENT_ID                    1035
+#define PROC_CREATE                     1035
+#define MAX_EVENT_ID                    1036
 
 #define NET_PACKET                      4000
 
@@ -3140,6 +3141,23 @@ int BPF_KPROBE(trace_security_inode_symlink)
     save_str_to_buf(&data, (void *)old_name, 1);
 
     return events_perf_submit(&data, SECURITY_INODE_SYMLINK, 0);
+}
+
+SEC("kprobe/proc_create")
+int BPF_KPROBE(trace_proc_create)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+    if (!should_trace((&data.context)))
+        return 0;
+
+    char * name = (char *)PT_REGS_PARM1(ctx);
+    unsigned long proc_ops_addr = (unsigned long) PT_REGS_PARM4(ctx);
+    save_str_to_buf(&data, name, 0);
+    save_to_submit_buf(&data, (void *)&proc_ops_addr, sizeof(u64), 1);
+    return events_perf_submit(&data, PROC_CREATE, 0);
+
 }
 
 SEC("kprobe/security_socket_listen")
