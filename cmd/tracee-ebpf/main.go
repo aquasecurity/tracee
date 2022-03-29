@@ -144,6 +144,13 @@ func main() {
 			}
 			cfg.Output = &output
 
+			// environment capabilities
+
+			err = ensureCapabilities(OSInfo)
+			if err != nil {
+				return err
+			}
+
 			// kernel lockdown check
 			lockdown, err := helpers.Lockdown()
 			if err == nil && lockdown == helpers.CONFIDENTIALITY {
@@ -151,15 +158,6 @@ func main() {
 			}
 			if debug {
 				fmt.Fprintf(os.Stdout, "OSInfo: Security Lockdown is '%v'\n", lockdown)
-			}
-
-			// environment capabilities
-			selfCap, err := capabilities.Self()
-			if err != nil {
-				return err
-			}
-			if err = capabilities.CheckRequired(selfCap, []capability.Cap{capability.CAP_IPC_LOCK, capability.CAP_SYS_ADMIN}); err != nil {
-				return err
 			}
 
 			enabled, err := helpers.FtraceEnabled()
@@ -503,6 +501,51 @@ func checkCommandIsHelp(s []string) bool {
 		return true
 	}
 	return false
+}
+
+const bpfCapabilitiesMinKernelVersion = "5.8"
+
+// ensureCapabilities makes sure the program has just the required capabilities to run
+func ensureCapabilities(OSInfo *helpers.OSInfo) error {
+	selfCap, err := capabilities.Self()
+	if err != nil {
+		return err
+	}
+
+	// Build the set of capabilities required to run
+	rCaps := []capability.Cap{
+		capability.CAP_IPC_LOCK,
+		capability.CAP_SYS_PTRACE,
+		capability.CAP_SYS_RESOURCE,
+		capability.CAP_NET_ADMIN,
+	}
+	if OSInfo.CompareOSBaseKernelRelease(bpfCapabilitiesMinKernelVersion) <= 0 {
+		bpfCaps := []capability.Cap{
+			capability.CAP_BPF,
+			capability.CAP_PERFMON,
+		}
+		if err1 := capabilities.CheckRequired(selfCap, bpfCaps); err1 != nil {
+			bpfCaps = []capability.Cap{
+				capability.CAP_SYS_ADMIN,
+			}
+			if err2 := capabilities.CheckRequired(selfCap, bpfCaps); err2 != nil {
+				return fmt.Errorf("missing capabilites required for eBPF program loading - either CAP_BPF + CAP_PERFMON or CAP_SYS_ADMIN")
+			}
+		}
+		rCaps = append(rCaps, bpfCaps...)
+	} else {
+		rCaps = append(rCaps, []capability.Cap{
+			capability.CAP_SYS_ADMIN,
+		}...)
+	}
+
+	if err = capabilities.CheckRequired(selfCap, rCaps); err != nil {
+		return err
+	}
+	if err = capabilities.DropUnrequired(selfCap, rCaps); err != nil {
+		return err
+	}
+	return nil
 }
 
 func getFormattedEventParams(eventID int32) string {
