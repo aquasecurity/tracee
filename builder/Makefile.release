@@ -135,7 +135,7 @@ $(OUTPUT_DIR):
 #
 
 SNAPSHOT_VERSION ?= $(shell git rev-parse HEAD)
-SNAPSHOT_VERSION := $(shell echo $(SNAPSHOT_VERSION) | sed -e "s/^v//")
+IMAGE_TAG := $(subst v,,$(SNAPSHOT_VERSION))
 
 RELEASE_FILES = LICENSE
 RELEASE_FILES += $(OUTPUT_DIR)/tracee-ebpf
@@ -166,11 +166,11 @@ snapshot: \
 	# build official slim container image (CO-RE + BTFHUB)
 	BTFHUB=1 $(MAKE) -f builder/Makefile.tracee-container build-tracee
 	$(CMD_DOCKER) tag tracee:latest $(PUSH_DOCKER_REPO):latest
-	$(CMD_DOCKER) tag tracee:latest $(PUSH_DOCKER_REPO):$(SNAPSHOT_VERSION)
+	$(CMD_DOCKER) tag tracee:latest $(PUSH_DOCKER_REPO):$(IMAGE_TAG)
 	# build official full container image (CO-RE + BTFHUB + non CO-RE build)
 	BTFHUB=1 $(MAKE) -f builder/Makefile.tracee-container build-tracee-full
 	$(CMD_DOCKER) tag tracee:full $(PUSH_DOCKER_REPO):full
-	$(CMD_DOCKER) tag tracee:full $(PUSH_DOCKER_REPO):full-$(SNAPSHOT_VERSION)
+	$(CMD_DOCKER) tag tracee:full $(PUSH_DOCKER_REPO):full-$(IMAGE_TAG)
 
 .PHONY: publish
 publish: \
@@ -183,13 +183,13 @@ publish: \
 #
 	# pushing container images to docker hub
 	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):latest
-	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):$(SNAPSHOT_VERSION)
+	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):$(IMAGE_TAG)
 	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):full
-	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):full-$(SNAPSHOT_VERSION)
+	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):full-$(IMAGE_TAG)
 	# create release notes
 	echo '## Docker images' >> $(RELEASE_NOTES)
-	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):$(SNAPSHOT_VERSION) (embedded eBPF CO-RE obj with BTFHUB support)`' >> $(RELEASE_NOTES);
-	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):full-$(SNAPSHOT_VERSION) (compiles non CO-RE eBPF object on startup)`' >> $(RELEASE_NOTES);
+	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):$(IMAGE_TAG) (embedded eBPF CO-RE obj with BTFHUB support)`' >> $(RELEASE_NOTES);
+	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):full-$(IMAGE_TAG) (compiles non CO-RE eBPF object on startup)`' >> $(RELEASE_NOTES);
 	# release it!
 	$(CMD_GITHUB) release create $(SNAPSHOT_VERSION) $(OUT_ARCHIVE) $(OUT_CHECKSUMS) --title $(SNAPSHOT_VERSION) --notes-file $(RELEASE_NOTES)
 
