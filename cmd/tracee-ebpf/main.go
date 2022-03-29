@@ -515,6 +515,9 @@ func printList() {
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________\n\n")
 	printEventGroup(&b, int(tracee.SysEnterEventID), int(tracee.MaxCommonEventID))
 	printEventGroup(&b, int(tracee.InitNamespacesEventID), int(tracee.MaxUserSpaceEventID))
+	b.WriteString("\n\nNetwork Events: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
+	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________\n\n")
+	printEventGroup(&b, int(tracee.NetPacket), int(tracee.MaxNetEventID))
 	fmt.Println(b.String())
 }
 

@@ -192,19 +192,23 @@ Copyright (C) Aqua Security inc.
 #define HIDDEN_INODES                   1033
 #define MAX_EVENT_ID                    1034
 
-#define NET_PACKET                      0
-#define DEBUG_NET_SECURITY_BIND         1
-#define DEBUG_NET_UDP_SENDMSG           2
-#define DEBUG_NET_UDP_DISCONNECT        3
-#define DEBUG_NET_UDP_DESTROY_SOCK      4
-#define DEBUG_NET_UDPV6_DESTROY_SOCK    5
-#define DEBUG_NET_INET_SOCK_SET_STATE   6
-#define DEBUG_NET_TCP_CONNECT           7
+#define NET_PACKET                      4000
+
+#define DEBUG_NET_SECURITY_BIND         5000
+#define DEBUG_NET_UDP_SENDMSG           5001
+#define DEBUG_NET_UDP_DISCONNECT        5002
+#define DEBUG_NET_UDP_DESTROY_SOCK      5003
+#define DEBUG_NET_UDPV6_DESTROY_SOCK    5004
+#define DEBUG_NET_INET_SOCK_SET_STATE   5005
+#define DEBUG_NET_TCP_CONNECT           5006
 
 #define CONFIG_TRACEE_PID               0
 #define CONFIG_OPTIONS                  1
 #define CONFIG_FILTERS                  2
 #define CONFIG_CGROUP_V1_HID            3
+
+#define CAPTURE_IFACE                   (1 << 0)
+#define TRACE_IFACE                     (1 << 1)
 
 #define OPT_SHOW_SYSCALL                (1 << 0)
 #define OPT_EXEC_ENV                    (1 << 1)
@@ -260,6 +264,8 @@ Copyright (C) Aqua Security inc.
 #define CONTAINER_EXISTED               1         // container existed before tracee was started
 #define CONTAINER_CREATED               2         // new cgroup path created
 #define CONTAINER_STARTED               3         // a process in the cgroup executed a new binary
+
+#define PACKET_MIN_SIZE                 40
 
 #ifndef CORE
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 2, 0)  // lower values in old kernels (instr lim is 4096)
@@ -586,6 +592,7 @@ BPF_HASH(sys_32_to_64_map, u32, u32);                   // map 32bit to 64bit sy
 BPF_HASH(params_types_map, u32, u64);                   // encoded parameters types for event
 BPF_HASH(process_tree_map, u32, u32);                   // filter events by the ancestry of the traced process
 BPF_HASH(process_context_map, u32, process_context_t);  // holds the process_context data for every tid
+BPF_HASH(network_config, u32, int);                     // holds the network config for each iface
 BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t);         // socket address to process context
 BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t);   // network identifier to process context
 BPF_ARRAY(config_map, u32, 4);                          // various configurations
@@ -1378,6 +1385,15 @@ static __always_inline int event_chosen(u32 key)
 static __always_inline buf_t* get_buf(int idx)
 {
     return bpf_map_lookup_elem(&bufs, &idx);
+}
+
+static __always_inline int get_iface_config(int ifindex)
+{
+    int *config  = bpf_map_lookup_elem(&network_config, &ifindex);
+    if (config == NULL)
+        return 0;
+
+    return *config;
 }
 
 static __always_inline void set_buf_off(int buf_idx, u32 new_off)
@@ -4260,6 +4276,7 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
 
     struct ethhdr *eth = (void *)head;
     net_packet_t pkt = {0};
+    pkt.event_id = NET_PACKET;
     pkt.ts = bpf_ktime_get_ns();
     pkt.len = skb->len;
     pkt.ifindex = skb->ifindex;
@@ -4371,19 +4388,23 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     //
     // See bpf_skb_event_output in net/core/filter.c.
     u64 flags = BPF_F_CURRENT_CPU;
-    flags |= (u64)skb->len << 32;
-    if (get_config(CONFIG_OPTIONS) & OPT_DEBUG_NET){
+
+    // If net_packet event wasn't chosen, only send the minimal required data to save the
+    // packet. This will be the timestamp (u64), net event_id (u32),
+    // host_tid (u32), comm (16 bytes), packet len (u32), and ifindex (u32)
+    size_t pkt_size = PACKET_MIN_SIZE;
+
+    int iface_conf = get_iface_config(skb->ifindex);
+    if (iface_conf & TRACE_IFACE){
+        pkt_size = sizeof(pkt);
         pkt.src_port = __bpf_ntohs(pkt.src_port);
         pkt.dst_port = __bpf_ntohs(pkt.dst_port);
-        bpf_perf_event_output(skb, &net_events, flags, &pkt, sizeof(pkt));
-    }
-    else {
-        // If not debugging, only send the minimal required data to save the
-        // packet. This will be the timestamp (u64), net event_id (u32),
-        // host_tid (u32), comm (16 bytes), packet len (u32), and ifindex (u32)
-        bpf_perf_event_output(skb, &net_events, flags, &pkt, 40);
     }
 
+    if (iface_conf & CAPTURE_IFACE){
+        flags |= (u64)skb->len << 32;
+    }
+    bpf_perf_event_output(skb, &net_events, flags, &pkt, pkt_size);
     return TC_ACT_UNSPEC;
 }
 

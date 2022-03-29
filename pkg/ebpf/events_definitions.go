@@ -86,9 +86,20 @@ const (
 	MaxUserSpaceEventID
 )
 
+const Unique32BitSyscallsStartID = 3000
+
 const (
-	NetPacket uint32 = iota
-	DebugNetSecurityBind
+	NetPacket int32 = iota + 4000
+	MaxNetEventID
+)
+
+const (
+	CaptureIface int32 = 1 << iota
+	TraceIface
+)
+
+const (
+	DebugNetSecurityBind int32 = iota + 5000
 	DebugNetUdpSendmsg
 	DebugNetUdpDisconnect
 	DebugNetUdpDestroySock
@@ -96,8 +107,6 @@ const (
 	DebugNetInetSockSetState
 	DebugNetTcpConnect
 )
-
-const Unique32BitSyscallsStartID = 3000
 
 var EventsDefinitions = map[int32]EventDefinition{
 	ReadEventID: {
@@ -6177,6 +6186,16 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "const char*", Name: "runtime"},
 			{Type: "const char*", Name: "container_id"},
 			{Type: "unsigned long", Name: "ctime"},
+		},
+	},
+	NetPacket: {
+		ID32Bit:      sys32undefined,
+		Name:         "net_packet",
+		Probes:       []probe{},
+		Dependencies: []dependency{},
+		Sets:         []string{},
+		Params: []trace.ArgMeta{
+			{Type: "external.PktMeta", Name: "metadata"},
 		},
 	},
 }
