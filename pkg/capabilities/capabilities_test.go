@@ -14,6 +14,9 @@ type fakeCapability struct {
 
 	newpid2 func(int) (capability.Capabilities, error)
 	get     func(capability.CapType, capability.Cap) bool
+	set     func(capability.CapType, ...capability.Cap)
+	apply   func(capability.CapType) error
+	clear   func(capability.CapType)
 	load    func() error
 }
 
@@ -22,6 +25,25 @@ func (f fakeCapability) Get(which capability.CapType, what capability.Cap) bool 
 		return f.get(which, what)
 	}
 	return true
+}
+
+func (f fakeCapability) Set(which capability.CapType, caps ...capability.Cap) {
+	if f.set != nil {
+		f.set(which, caps...)
+	}
+}
+
+func (f fakeCapability) Apply(kind capability.CapType) error {
+	if f.apply != nil {
+		return f.apply(kind)
+	}
+	return nil
+}
+
+func (f fakeCapability) Clear(kind capability.CapType) {
+	if f.clear != nil {
+		f.clear(kind)
+	}
 }
 
 func (f fakeCapability) Load() error {
@@ -40,7 +62,7 @@ func (f fakeCapability) NewPid2(pid int) (capability.Capabilities, error) {
 
 func TestCheckRequiredCapabilities(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
-		require.NoError(t, CheckRequired(fakeCapability{}, []capability.Cap{capability.CAP_SYS_ADMIN, capability.CAP_IPC_LOCK}))
+		require.NoError(t, CheckRequired(fakeCapability{}, []capability.Cap{capability.CAP_SYS_ADMIN, capability.CAP_IPC_LOCK, capability.CAP_SYS_PTRACE}))
 	})
 
 	t.Run("missing CAP_SYS_ADMIN", func(t *testing.T) {
@@ -104,5 +126,43 @@ func TestLoadSelfCapabilities(t *testing.T) {
 		sc, err := Self()
 		require.EqualError(t, err, "loading capabilities failed: an error occurred")
 		require.Nil(t, sc)
+	})
+}
+
+func TestDropUnrequired(t *testing.T) {
+	requiredCaps := []capability.Cap{capability.CAP_SYS_ADMIN, capability.CAP_IPC_LOCK, capability.CAP_SYS_PTRACE, capability.CAP_SYS_RESOURCE}
+	t.Run("happy path", func(t *testing.T) {
+		var setCaps []capability.Cap
+		fc := fakeCapability{
+			set: func(capType capability.CapType, caps ...capability.Cap) {
+				for _, c := range caps {
+					setCaps = append(setCaps, c)
+				}
+			},
+			apply: func(kind capability.CapType) error {
+				for _, reqCap := range requiredCaps {
+					isFound := false
+					for _, setCap := range setCaps {
+						if reqCap == setCap {
+							isFound = true
+							break
+						}
+					}
+					if isFound == false {
+						return fmt.Errorf("capability %s was not set but was required", reqCap)
+					}
+				}
+				return nil
+			},
+		}
+		require.NoError(t, DropUnrequired(fc, requiredCaps))
+	})
+	t.Run("apply error invoked", func(t *testing.T) {
+		fc := fakeCapability{
+			apply: func(kind capability.CapType) error {
+				return fmt.Errorf("error in apply")
+			},
+		}
+		require.Error(t, DropUnrequired(fc, requiredCaps))
 	})
 }

@@ -34,3 +34,17 @@ func Self() (capability.Capabilities, error) {
 	}
 	return selfCap, nil
 }
+
+// DropUnrequired requires that all capabilities are already set or available in permitted set.
+// The function also tries to drop the capabilities bounding set, but it won't work if CAP_SETPCAP is not available.
+func DropUnrequired(selfCaps capability.Capabilities, reqCaps []capability.Cap) error {
+	selfCaps.Clear(capability.CAPS)
+	for _, rc := range reqCaps {
+		selfCaps.Set(capability.CAPS, rc)
+	}
+	err := selfCaps.Apply(capability.CAPS | capability.BOUNDS)
+	if err != nil {
+		return fmt.Errorf("couldn't drop capabilities: %v", err)
+	}
+	return nil
+}

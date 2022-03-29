@@ -13,11 +13,13 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/rules/engine"
 	"github.com/aquasecurity/tracee/pkg/rules/metrics"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/syndtr/gocapability/capability"
 	"github.com/urfave/cli/v2"
 )
 
@@ -32,6 +34,10 @@ func main() {
 		Name:  "tracee-rules",
 		Usage: "A rule engine for Runtime Security",
 		Action: func(c *cli.Context) error {
+			err := dropCapabilities()
+			if err != nil {
+				return err
+			}
 
 			if c.NumFlags() == 0 {
 				cli.ShowAppHelp(c)
@@ -266,4 +272,19 @@ func sigHandler() chan bool {
 		done <- true
 	}()
 	return done
+}
+
+// dropCapabilities drop all capabilities from the process
+// The function also tries to drop the capabilities bounding set, but it won't work if CAP_SETPCAP is not available.
+func dropCapabilities() error {
+	selfCaps, err := capabilities.Self()
+	if err != nil {
+		return err
+	}
+
+	err = capabilities.DropUnrequired(selfCaps, []capability.Cap{})
+	if err != nil {
+		return err
+	}
+	return nil
 }
