@@ -340,7 +340,12 @@ func New(cfg Config) (*Tracee, error) {
 		t.Close()
 		return nil, fmt.Errorf("error creating output path: %v", err)
 	}
-	t.netInfo.pcapWriters = make(map[processPcapId]netPcap)
+
+	t.netInfo.pcapWriters, err = lru.NewWithEvict(openPcapsLimit, t.netInfo.PcapWriterOnEvict)
+	if err != nil {
+		t.Close()
+		return nil, err
+	}
 
 	// Get reference to stack trace addresses map
 	StackAddressesMap, err := t.bpfModule.GetMap("stack_addresses")

@@ -3,6 +3,7 @@ package ebpf
 import (
 	gocontext "context"
 	"fmt"
+	lru "github.com/hashicorp/golang-lru"
 	"math"
 	"net"
 	"os"
@@ -20,6 +21,8 @@ import (
 	"github.com/google/gopacket/pcapgo"
 )
 
+const openPcapsLimit = 512
+
 type netPcap struct {
 	FileObj os.File
 	Writer  pcapgo.NgWriter
@@ -27,7 +30,7 @@ type netPcap struct {
 
 type netInfo struct {
 	mtx          sync.Mutex
-	pcapWriters  map[processPcapId]netPcap
+	pcapWriters  *lru.Cache
 	ifaces       map[int]*net.Interface
 	ifacesConfig map[string]int32
 }
@@ -45,30 +48,24 @@ func (ni *netInfo) GetPcapWriter(id processPcapId) (netPcap, bool) {
 	ni.mtx.Lock()
 	defer ni.mtx.Unlock()
 
-	pcap, exists := ni.pcapWriters[id]
-	return pcap, exists
-}
-
-func (ni *netInfo) SetPcapWriter(id processPcapId, pcap netPcap) {
-	ni.mtx.Lock()
-	defer ni.mtx.Unlock()
-
-	ni.pcapWriters[id] = pcap
-}
-
-func (ni *netInfo) DeletePcapWriter(id processPcapId) {
-	// close the pcap file
-	pcap, exists := ni.GetPcapWriter(id)
+	pcap, exists := ni.pcapWriters.Get(id)
 	if exists {
-		pcap.Writer.Flush()
-		pcap.FileObj.Close()
+		return pcap.(netPcap), exists
 	}
+	return netPcap{}, exists
+}
 
+func (ni *netInfo) AddPcapWriter(id processPcapId, pcap netPcap) {
 	ni.mtx.Lock()
 	defer ni.mtx.Unlock()
 
-	// delete from map
-	delete(ni.pcapWriters, id)
+	ni.pcapWriters.Add(id, pcap)
+}
+
+func (ni *netInfo) PcapWriterOnEvict(_ interface{}, value interface{}) {
+	pcap := value.(netPcap)
+	pcap.Writer.Flush()
+	pcap.FileObj.Close()
 }
 
 type processPcapId struct {
@@ -150,7 +147,7 @@ func (t *Tracee) createPcapFile(pcapContext processPcapId) (netPcap, error) {
 	}
 
 	pcap := netPcap{*pcapFile, *pcapWriter}
-	t.netInfo.SetPcapWriter(pcapContext, pcap)
+	t.netInfo.AddPcapWriter(pcapContext, pcap)
 
 	return pcap, nil
 }
@@ -158,7 +155,10 @@ func (t *Tracee) createPcapFile(pcapContext processPcapId) (netPcap, error) {
 func (t *Tracee) netExit(pcapContext processPcapId) {
 	// wait a second before deleting from the map - because there might be more packets coming in
 	time.Sleep(time.Second * 1)
-	t.netInfo.DeletePcapWriter(pcapContext)
+
+	t.netInfo.mtx.Lock()
+	defer t.netInfo.mtx.Unlock()
+	t.netInfo.pcapWriters.Remove(pcapContext)
 }
 
 func (t *Tracee) getHostPcapContext() processPcapId {
