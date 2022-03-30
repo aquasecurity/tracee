@@ -225,6 +225,8 @@ enum event_id_e {
 
     // Net events IDs
     NET_PACKET = 4000,
+    DNS_REQUEST,
+    DNS_RESPONSE,
 
     // Debug events IDs
     DEBUG_NET_SECURITY_BIND = 5000,
@@ -5021,6 +5023,22 @@ static __always_inline bool skb_revalidate_data(struct __sk_buff *skb, uint8_t *
     return true;
 }
 
+void set_net_event_id(net_packet_t *pkt){
+    const int dns_port = 53;
+    if (pkt->protocol == IPPROTO_UDP && pkt->dst_port == dns_port){
+        pkt->event_id = DNS_REQUEST;
+    }
+    if (pkt->protocol == IPPROTO_UDP && pkt->src_port == dns_port){
+        pkt->event_id = DNS_RESPONSE;
+    }
+}
+
+bool should_submit_payload(net_packet_t *pkt){
+    if (pkt->event_id == DNS_REQUEST || pkt->event_id == DNS_RESPONSE)
+        return true;
+    return false;
+}
+
 static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     // Note: if we are attaching to docker0 bridge, the ingress bool argument is actually egress
     uint8_t *head = (uint8_t *)(long)skb->data;
@@ -5178,9 +5196,10 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
         pkt_size = sizeof(pkt);
         pkt.src_port = __bpf_ntohs(pkt.src_port);
         pkt.dst_port = __bpf_ntohs(pkt.dst_port);
+        set_net_event_id(&pkt);
     }
 
-    if (iface_conf & CAPTURE_IFACE){
+    if (iface_conf & CAPTURE_IFACE || should_submit_payload(&pkt)){
         flags |= (u64)skb->len << 32;
     }
     bpf_perf_event_output(skb, &net_events, flags, &pkt, pkt_size);

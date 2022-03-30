@@ -35,8 +35,8 @@ type netInfo struct {
 	ifacesConfig map[string]int32
 }
 
-func (n *netInfo) hasIface(ifaceName string) bool {
-	for _, iface := range n.ifaces {
+func (ni *netInfo) hasIface(ifaceName string) bool {
+	for _, iface := range ni.ifaces {
 		if iface.Name == ifaceName {
 			return true
 		}
@@ -211,7 +211,6 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 			}
 
 			netDecoder := bufferdecoder.New(in)
-
 			var netEventMetadata bufferdecoder.NetEventMetadata
 			err := netDecoder.DecodeNetEventMetadata(&netEventMetadata)
 			if err != nil {
@@ -233,7 +232,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 			// continue without checking for error, as packetContext will be valid anyway
 			packetContext, networkThread, _ := t.getPcapContextFromTid(netEventMetadata.HostTid)
 
-			if netEventMetadata.NetEventId == NetPacket {
+			if isNetEvent(netEventMetadata.NetEventId) {
 				var netCaptureData bufferdecoder.NetCaptureData
 				err = netDecoder.DecodeNetCaptureData(&netCaptureData)
 				if err != nil {
@@ -241,15 +240,19 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 					continue
 				}
 
+				// handle net event trace
 				ifaceName := t.netInfo.ifaces[int(netCaptureData.ConfigIfaceIndex)].Name
 				ifaceIdx, err := t.getTracedIfaceIdx(ifaceName)
 				if err == nil && ifaceIdx >= 0 {
+					// this packet should be traced. i.e. output the event if chosen by the user.
+
 					if t.events[netEventMetadata.NetEventId].emit {
-						evt, err := netPacketProtocolHandler(netDecoder, netEventMetadata, networkThread, "net_packet")
+						evt, err := protocolProcessor(networkThread, netEventMetadata, netDecoder)
 						if err != nil {
 							t.handleError(err)
 							continue
 						}
+
 						// output the event
 						select {
 						case t.config.ChanEvents <- evt:
@@ -257,18 +260,29 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 						case <-ctx.Done():
 							return
 						}
+					} else {
+						// the packet structure wasn't fully decoded from the buffer.
+						// update the cursor to the end of the packet structure - so the rest of the buffer could
+						// be decoded properly.
+						err = netDecoder.UpdateCursor(int(bufferdecoder.NetPacketEvent{}.GetSizeBytes()))
+						if err != nil {
+							t.handleError(err)
+							continue
+						}
 					}
 				}
 
+				// handle packet capture
 				ifaceIdx, err = t.getCapturedIfaceIdx(ifaceName)
 				if ifaceIdx >= 0 && err == nil {
-					// capture the packet
+					// this packet should be captured. i.e. save the packet into pcap.
+
 					packetBytes, err := getPacketBytes(netDecoder, netCaptureData.PacketLength)
 					if err != nil {
 						t.handleError(err)
 						continue
 					}
-					if err := t.writePacket(netCaptureData, time.Unix(0, int64(netEventMetadata.TimeStamp)), packetContext, packetBytes); err != nil {
+					if err := t.writePacket(netCaptureData, ifaceIdx, time.Unix(0, int64(netEventMetadata.TimeStamp)), packetContext, packetBytes); err != nil {
 						t.handleError(err)
 						continue
 					}
@@ -328,16 +342,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 	}
 }
 
-func (t *Tracee) writePacket(capData bufferdecoder.NetCaptureData, timeStamp time.Time, packetContext processPcapId, packetBytes []byte) error {
-	iface, ok := t.netInfo.ifaces[int(capData.ConfigIfaceIndex)]
-	if !ok {
-		return fmt.Errorf("cannot get the right interface")
-	}
-
-	ifaceIdx, err := t.getCapturedIfaceIdx(iface.Name)
-	if err != nil {
-		return fmt.Errorf("cannot get the right interface idx in the capture ifaces list")
-	}
+func (t *Tracee) writePacket(capData bufferdecoder.NetCaptureData, ifaceIdx int, timeStamp time.Time, packetContext processPcapId, packetBytes []byte) error {
 	info := gopacket.CaptureInfo{
 		Timestamp:      timeStamp,
 		CaptureLength:  int(capData.PacketLength),
@@ -345,6 +350,7 @@ func (t *Tracee) writePacket(capData bufferdecoder.NetCaptureData, timeStamp tim
 		InterfaceIndex: ifaceIdx,
 	}
 
+	var err error
 	pcap, pcapWriterExists := t.netInfo.GetPcapWriter(packetContext)
 	if !pcapWriterExists {
 		pcap, err = t.createPcapFile(packetContext)
@@ -372,6 +378,31 @@ func getPacketBytes(netDecoder *bufferdecoder.EbpfDecoder, packetLength uint32) 
 	return packetBytes, err
 }
 
+func isNetEvent(eventId int32) bool {
+	if eventId >= NetPacket && eventId < MaxNetEventID {
+		return true
+	}
+	return false
+}
+
+func protocolProcessor(networkThread procinfo.ProcessCtx, evtMeta bufferdecoder.NetEventMetadata, decoder *bufferdecoder.EbpfDecoder) (trace.Event, error) {
+
+	eventName := EventsDefinitions[evtMeta.NetEventId].Name
+	evt, err := netPacketProtocolHandler(decoder, evtMeta, networkThread, eventName)
+	if err != nil {
+		return evt, err
+	}
+
+	switch evtMeta.NetEventId {
+	case DnsRequest:
+		err = dnsRequestProtocolHandler(decoder, &evt)
+	case DnsResponse:
+		err = dnsResponseProtocolHandler(decoder, &evt)
+	}
+
+	return evt, err
+}
+
 // netPacketProtocolHandler parse a given a packet bytes buffer to packetMeta and event
 func netPacketProtocolHandler(netDecoder *bufferdecoder.EbpfDecoder, evtMeta bufferdecoder.NetEventMetadata, ctx procinfo.ProcessCtx, eventName string) (trace.Event, error) {
 	var packetEvent bufferdecoder.NetPacketEvent
@@ -381,7 +412,7 @@ func netPacketProtocolHandler(netDecoder *bufferdecoder.EbpfDecoder, evtMeta buf
 	}
 
 	evt := CreateNetEvent(evtMeta, ctx, eventName)
-	appendPktMetaArg(&evt, packetEvent)
+	appendPktMetadataArg(&evt, packetEvent)
 	return evt, nil
 }
 
@@ -394,21 +425,64 @@ func CreateNetEvent(eventMeta bufferdecoder.NetEventMetadata, ctx procinfo.Proce
 	return evt
 }
 
-//takes the packet metadata and create argument array with that data
-func appendPktMetaArg(event *trace.Event, netPacket bufferdecoder.NetPacketEvent) {
-	event.Args = []trace.Argument{
-		{
-			ArgMeta: trace.ArgMeta{
-				Name: "metadata",
-				Type: "trace.PktMeta"},
-			Value: trace.PktMeta{
-				SrcIP:    netaddr.IPFrom16(netPacket.SrcIP).String(),
-				DstIP:    netaddr.IPFrom16(netPacket.DstIP).String(),
-				SrcPort:  netPacket.SrcPort,
-				DstPort:  netPacket.DstPort,
-				Protocol: netPacket.Protocol,
-			},
+// eventAppendArg append argument to event and increase ArgsNum
+func eventAppendArg(event *trace.Event, arg trace.Argument) {
+	event.Args = append(event.Args, arg)
+	event.ArgsNum++
+}
+
+// appendPktMetadataArg takes the packet metadata and create argument array with that data
+func appendPktMetadataArg(event *trace.Event, netPacket bufferdecoder.NetPacketEvent) {
+	metedataArg := trace.Argument{
+		ArgMeta: trace.ArgMeta{
+			Name: "metadata",
+			Type: "trace.PktMeta",
+		},
+		Value: trace.PktMeta{
+			SrcIP:    netaddr.IPFrom16(netPacket.SrcIP).String(),
+			DstIP:    netaddr.IPFrom16(netPacket.DstIP).String(),
+			SrcPort:  netPacket.SrcPort,
+			DstPort:  netPacket.DstPort,
+			Protocol: netPacket.Protocol,
 		},
 	}
-	event.ArgsNum = 1
+	eventAppendArg(event, metedataArg)
+}
+
+func dnsRequestProtocolHandler(decoder *bufferdecoder.EbpfDecoder, evt *trace.Event) error {
+	requests := make([]bufferdecoder.DnsQueryData, 0, 0)
+	err := decoder.DecodeDnsQueryArray(&requests)
+	if err != nil {
+		return err
+	}
+	appendDnsRequestArgs(evt, &requests)
+	return nil
+}
+
+// appendDnsRequestArgs parse the given buffer to dns questions and adds it to the event
+func appendDnsRequestArgs(event *trace.Event, requests *[]bufferdecoder.DnsQueryData) {
+	questionArg := trace.Argument{
+		ArgMeta: EventsDefinitions[int32(event.EventID)].Params[1],
+		Value:   *requests,
+	}
+	eventAppendArg(event, questionArg)
+}
+
+func dnsResponseProtocolHandler(decoder *bufferdecoder.EbpfDecoder, evt *trace.Event) error {
+	respones := make([]bufferdecoder.DnsResponseData, 0, 0)
+	err := decoder.DecodeDnsResponseData(&respones)
+	if err != nil {
+		return err
+	}
+	appendDnsResponseArgs(evt, &respones)
+	return nil
+}
+
+// appendDnsResponseArgs parse the given buffer to dns replies and adds it to the event
+func appendDnsResponseArgs(event *trace.Event, responses *[]bufferdecoder.DnsResponseData) {
+	responseArg := trace.Argument{
+		ArgMeta: EventsDefinitions[int32(event.EventID)].Params[1],
+		Value:   *responses,
+	}
+	eventAppendArg(event, responseArg)
 }
