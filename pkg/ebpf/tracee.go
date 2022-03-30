@@ -948,20 +948,23 @@ func (t *Tracee) initBPF() error {
 		return fmt.Errorf("couldn't trace %s event, missing interface", EventsDefinitions[NetPacket].Name)
 	}
 	for _, iface := range t.netInfo.ifaces {
+		tcProbe := netProbe{}
+
 		ingressHook, err := t.attachTcProg(iface.Name, bpf.BPFTcIngress, "tc_ingress")
 		if err != nil {
 			return err
 		}
+		tcProbe.ingressHook = ingressHook
 
-		egressHook, err := t.attachTcProg(iface.Name, bpf.BPFTcEgress, "tc_egress")
-		if err != nil {
-			return err
+		// if loopback device - don't capture on egress - because of packet duplication
+		if iface.Flags&net.FlagLoopback != net.FlagLoopback {
+			egressHook, err := t.attachTcProg(iface.Name, bpf.BPFTcEgress, "tc_egress")
+			if err != nil {
+				return err
+			}
+			tcProbe.egressHook = egressHook
 		}
 
-		tcProbe := netProbe{
-			ingressHook: ingressHook,
-			egressHook:  egressHook,
-		}
 		t.tcProbe = append(t.tcProbe, tcProbe)
 	}
 
@@ -1131,7 +1134,9 @@ func (t *Tracee) Close() {
 	for _, tcProbe := range t.tcProbe {
 		// First, delete filters we created
 		tcProbe.ingressHook.Destroy()
-		tcProbe.egressHook.Destroy()
+		if tcProbe.egressHook != nil {
+			tcProbe.egressHook.Destroy()
+		}
 
 		// Todo: Delete the qdisc only if no other filters are installed on it.
 		// There is currently a bug with the libbpf tc API that doesn't allow us to perform this check:
