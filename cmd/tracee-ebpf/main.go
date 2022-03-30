@@ -22,7 +22,6 @@ import (
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	cli "github.com/urfave/cli/v2"
@@ -205,7 +204,7 @@ func main() {
 			}
 
 			if listenMetrics {
-				err := metrics.RegisterPrometheus(t.Stats())
+				err := t.Stats().RegisterPrometheus()
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Error registering prometheus metrics: %v\n", err)
 				} else {
