@@ -95,7 +95,7 @@ func (tc Config) Validate() error {
 		if _, ok := EventsDefinitions[e]; !ok {
 			return fmt.Errorf("invalid event to trace: %d", e)
 		}
-		if e == NetPacket {
+		if isNetEvent(e) {
 			if len(tc.Filter.NetFilter.InterfacesToTrace) == 0 {
 				return fmt.Errorf("missing interface for net event: %s, please add -t net=<iface>", EventsDefinitions[e].Name)
 			}
@@ -1025,7 +1025,7 @@ func (t *Tracee) initBPF() error {
 		return err
 	}
 
-	if t.eventsToTrace[NetPacket] && len(t.config.Filter.NetFilter.InterfacesToTrace) == 0 {
+	if t.netEventChoosen() && len(t.config.Filter.NetFilter.InterfacesToTrace) == 0 {
 		return fmt.Errorf("couldn't trace %s event, missing interface", EventsDefinitions[NetPacket].Name)
 	}
 	for _, iface := range t.netInfo.ifaces {
@@ -1292,6 +1292,14 @@ func findInList(element string, list *[]string) (int, error) {
 		}
 	}
 	return 0, fmt.Errorf("element: %s dosent found\n", element)
+}
+func (t *Tracee) netEventChoosen() bool {
+	for i := NetPacket; i < MaxNetEventID; i++ {
+		if t.eventsToTrace[i] {
+			return true
+		}
+	}
+	return false
 }
 
 const IoctlFetchSyscalls int = 65 // randomly picked number for ioctl cmd

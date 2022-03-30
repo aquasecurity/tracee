@@ -211,7 +211,6 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 			}
 
 			netDecoder := bufferdecoder.New(in)
-
 			var netEventMetadata bufferdecoder.NetEventMetadata
 			err := netDecoder.DecodeNetEventMetadata(&netEventMetadata)
 			if err != nil {
@@ -233,7 +232,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 			// continue without checking for error, as packetContext will be valid anyway
 			packetContext, networkThread, _ := t.getPcapContextFromTid(netEventMetadata.HostTid)
 
-			if netEventMetadata.NetEventId == NetPacket {
+			if isNetEvent(netEventMetadata.NetEventId) {
 				var netCaptureData bufferdecoder.NetCaptureData
 				err = netDecoder.DecodeNetCaptureData(&netCaptureData)
 				if err != nil {
@@ -250,6 +249,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 							t.handleError(err)
 							continue
 						}
+						protocolProcessor(netEventMetadata.NetEventId, &evt, *netDecoder)
 						// output the event
 						select {
 						case t.config.ChanEvents <- evt:
@@ -369,7 +369,26 @@ func (t *Tracee) writePacket(capData bufferdecoder.NetCaptureData, timeStamp tim
 func getPacketBytes(netDecoder *bufferdecoder.EbpfDecoder, packetLength uint32) ([]byte, error) {
 	packetBytes := make([]byte, packetLength)
 	err := netDecoder.DecodeBytes(packetBytes[:], packetLength)
+	//fmt.Println(packetBytes)
 	return packetBytes, err
+}
+
+func isNetEvent(eventId int32) bool {
+	if eventId >= NetPacket && eventId < MaxNetEventID {
+		return true
+	}
+	return false
+
+}
+
+func protocolProcessor(eventID int32, evt *trace.Event, decoder bufferdecoder.EbpfDecoder) {
+	evt.EventName = EventsDefinitions[eventID].Name
+	switch eventID {
+	case DnsRequest:
+		dnsRequestProtocolHandler(decoder, evt)
+	case DnsResponse:
+		dnsResponseProtocolHandler(decoder, evt)
+	}
 }
 
 // netPacketProtocolHandler parse a given a packet bytes buffer to packetMeta and event
@@ -411,4 +430,38 @@ func appendPktMetaArg(event *trace.Event, netPacket bufferdecoder.NetPacketEvent
 		},
 	}
 	event.ArgsNum = 1
+}
+
+func dnsRequestProtocolHandler(decoder bufferdecoder.EbpfDecoder, evt *trace.Event) error {
+	requests := make([]bufferdecoder.DnsQueryData, 0, 0)
+	decoder.DecodeDnsQueryArray(&requests)
+	appendDnsRequestArgs(evt, &requests)
+	return nil
+}
+
+// appendDnsRequestArgs parse the given buffer to dns questions and adds it to the event
+func appendDnsRequestArgs(event *trace.Event, requests *[]bufferdecoder.DnsQueryData) {
+	event.Args = append(event.Args, trace.Argument{
+		ArgMeta: trace.ArgMeta{"dns_questions", "[]bufferdecoder.DnsQueryData"},
+		Value:   *requests,
+	})
+	event.ArgsNum++
+
+}
+
+func dnsResponseProtocolHandler(decoder bufferdecoder.EbpfDecoder, evt *trace.Event) error {
+	respones := make([]bufferdecoder.DnsResponseData, 0, 0)
+	decoder.DecodeDnsResponseData(&respones)
+	appendDnsResponseArgs(evt, &respones)
+	return nil
+}
+
+// appendDnsRequestArgs parse the given buffer to dns questions and adds it to the event
+func appendDnsResponseArgs(event *trace.Event, responses *[]bufferdecoder.DnsResponseData) {
+	event.Args = append(event.Args, trace.Argument{
+		ArgMeta: trace.ArgMeta{"dns_response", "[]bufferdecoder.DnsResponseData"},
+		Value:   *responses,
+	})
+	event.ArgsNum++
+
 }

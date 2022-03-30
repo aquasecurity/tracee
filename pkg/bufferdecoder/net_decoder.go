@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"github.com/google/gopacket"
+	"github.com/google/gopacket/layers"
 )
 
 type NetEventMetadata struct {
@@ -116,5 +118,76 @@ func (decoder *EbpfDecoder) DecodeNetDebugEvent(netDebugEvent *NetDebugEvent) er
 	netDebugEvent.SockPtr = binary.LittleEndian.Uint64(decoder.buffer[offset+52 : offset+60])
 
 	decoder.cursor += int(netDebugEvent.GetSizeBytes())
+	return nil
+}
+
+type DnsQueryData struct {
+	Query      string `json:"query"`
+	QueryType  string `json:"queryType"`
+	QueryClass string `json:"queryClass"`
+}
+
+// parseDnsQuestion parse dns request to DnsQueryData
+func parseDnsQuestion(question layers.DNSQuestion) DnsQueryData {
+	var request DnsQueryData
+	request.Query = string(question.Name)
+	request.QueryType = question.Type.String()
+	request.QueryClass = fmt.Sprint("", question.Class)
+	return request
+}
+
+func (decoder *EbpfDecoder) DecodeDnsQueryArray(questions *[]DnsQueryData) error {
+	offset := decoder.cursor
+	packet := gopacket.NewPacket(decoder.buffer[offset:], layers.LayerTypeEthernet, gopacket.Default)
+	if packet == nil {
+		return fmt.Errorf("couldnt parse the packet")
+	}
+	dnsLayer := packet.Layer(layers.LayerTypeDNS).(*layers.DNS)
+	if dnsLayer == nil {
+		return fmt.Errorf("couldnt find the dns layer")
+	}
+	for _, question := range dnsLayer.Questions {
+		*questions = append(*questions, parseDnsQuestion(question))
+	}
+	return nil
+}
+
+type DnsAnswer struct {
+	Type   string `json:"answer_type"`
+	Ttl    uint32 `json:"ttl"`
+	Answer string `json:"answer"`
+}
+
+type DnsResponseData struct {
+	QueryData DnsQueryData `json:"query_data"`
+	DnsAnswer []DnsAnswer  `json:"dns_answer"`
+}
+
+func (decoder *EbpfDecoder) DecodeDnsResponseData(responses *[]DnsResponseData) error {
+	offset := decoder.cursor
+	packet := gopacket.NewPacket(decoder.buffer[offset:], layers.LayerTypeEthernet, gopacket.Default)
+	if packet == nil {
+		return fmt.Errorf("couldnt find udp layer1")
+	}
+	dnsLayer := packet.Layer(layers.LayerTypeDNS).(*layers.DNS)
+	if dnsLayer == nil {
+		return fmt.Errorf("couldnt find dns layer")
+	}
+
+	for _, question := range dnsLayer.Questions {
+		response := DnsResponseData{}
+		response.QueryData = parseDnsQuestion(question)
+		if int(dnsLayer.ANCount) > 0 {
+			for _, answer := range dnsLayer.Answers {
+				ip := answer.IP.String()
+				if ip != "<nil>" {
+					response.DnsAnswer = append(response.DnsAnswer, DnsAnswer{Type: answer.Type.String(), Ttl: answer.TTL, Answer: ip})
+				} else {
+					response.DnsAnswer = append(response.DnsAnswer, DnsAnswer{Type: answer.Type.String(), Ttl: answer.TTL, Answer: string(answer.Data)})
+				}
+			}
+		}
+		*responses = append(*responses, response)
+	}
 	return nil
 }

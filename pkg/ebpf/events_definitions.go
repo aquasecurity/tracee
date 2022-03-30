@@ -103,6 +103,8 @@ const Unique32BitSyscallsStartID = 3000
 
 const (
 	NetPacket int32 = iota + 4000
+	DnsRequest
+	DnsResponse
 	MaxNetEventID
 )
 
@@ -6241,12 +6243,35 @@ var EventsDefinitions = map[int32]EventDefinition{
 		},
 	},
 	NetPacket: {
-		ID32Bit: sys32undefined,
-		Name:    "net_packet",
-		Probes:  []probe{},
-		Sets:    []string{},
+		ID32Bit:      sys32undefined,
+		Name:         "net_packet",
+		Probes:       []probe{},
+		Dependencies: dependencies{},
+		Sets:         []string{"network_events"},
 		Params: []trace.ArgMeta{
-			{Type: "external.PktMeta", Name: "metadata"},
+			{Type: "trace.PktMeta", Name: "metadata"},
+		},
+	},
+	DnsRequest: {
+		ID32Bit:      sys32undefined,
+		Name:         "dns_request",
+		Probes:       []probe{},
+		Dependencies: dependencies{},
+		Sets:         []string{"network_events"},
+		Params: []trace.ArgMeta{
+			{Type: "trace.PktMeta", Name: "metadata"},
+			{Type: "[]bufferdecoder.DnsQueryData", Name: "dns_questions"},
+		},
+	},
+	DnsResponse: {
+		ID32Bit:      sys32undefined,
+		Name:         "dns_response",
+		Probes:       []probe{},
+		Dependencies: dependencies{},
+		Sets:         []string{"network_events"},
+		Params: []trace.ArgMeta{
+			{Type: "trace.PktMeta", Name: "metadata"},
+			{Type: "[]bufferdecoder.DnsResponseData", Name: "dns_response"},
 		},
 	},
 	ProcCreateEventID: {
