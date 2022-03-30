@@ -49,6 +49,13 @@
 #define sk_flags          __sk_common.skc_flags
 #define sk_rxhash         __sk_common.skc_rxhash
 
+#define IPPROTO_ICMPV6      58
+
+#define ICMP_ECHO           8
+#define ICMP_EXT_ECHO       42
+
+#define ICMPV6_ECHO_REQUEST 128
+
 #define PF_KTHREAD  0x00200000	/* I am a kernel thread */
 
 #define TASK_COMM_LEN 16
