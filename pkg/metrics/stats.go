@@ -29,6 +29,16 @@ func (stats *Stats) RegisterPrometheus() error {
 
 	err = prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
 		Namespace: "tracee_ebpf",
+		Name:      "netevents_total",
+		Help:      "net events collected by tracee-ebpf",
+	}, func() float64 { return float64(stats.NetEvCount.Read()) }))
+
+	if err != nil {
+		return err
+	}
+
+	err = prometheus.Register(prometheus.NewCounterFunc(prometheus.CounterOpts{
+		Namespace: "tracee_ebpf",
 		Name:      "lostevents_total",
 		Help:      "events lost in the submission buffer",
 	}, func() float64 { return float64(stats.LostEvCount.Read()) }))
