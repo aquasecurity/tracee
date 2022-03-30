@@ -42,7 +42,7 @@ func (t *Tracee) deriveEvent(event trace.Event) []trace.Event {
 	deriveFns := t.eventDerivations[int32(event.EventID)]
 	for id, deriveFn := range deriveFns {
 		// Don't derive events which were not requested by the user
-		if !t.eventsToTrace[id] {
+		if !t.events[id].emit {
 			continue
 		}
 

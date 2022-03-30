@@ -218,7 +218,7 @@ func (t *Tracee) processEvents(ctx gocontext.Context, in <-chan *trace.Event) <-
 			derivatives := t.deriveEvent(*event)
 
 			// Only emit events requested by the user
-			if t.eventsToTrace[int32(event.EventID)] {
+			if t.events[int32(event.EventID)].emit {
 				if t.config.Output.ParseArguments {
 					err = t.parseArgs(event)
 					if err != nil {

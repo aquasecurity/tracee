@@ -612,7 +612,7 @@ struct kprobe{
 /*================================= MAPS =====================================*/
 
 BPF_HASH(kconfig_map, u32, u32);                        // kernel config variables
-BPF_HASH(chosen_events_map, u32, u32);                  // events chosen by the user
+BPF_HASH(events_to_submit, u32, u32);                   // events chosen by the user
 BPF_HASH(traced_pids_map, u32, u32);                    // track traced pids
 BPF_HASH(new_pids_map, u32, u32);                       // track processes of newly executed binaries
 BPF_HASH(containers_map, u32, u8);                      // map cgroup id to container status {EXISTED, CREATED, STARTED}
@@ -1463,9 +1463,9 @@ static __always_inline int should_trace(context_t *context)
     return 1;
 }
 
-static __always_inline int event_chosen(u32 key)
+static __always_inline int should_submit(u32 key)
 {
-    u32 *config = bpf_map_lookup_elem(&chosen_events_map, &key);
+    u32 *config = bpf_map_lookup_elem(&events_to_submit, &key);
     if (config == NULL)
         return 0;
 
@@ -2079,7 +2079,7 @@ int trace_ret_##name(void *ctx)                                         \
     if (!init_event_data(&data, ctx))                                   \
         return 0;                                                       \
                                                                         \
-    if (!event_chosen(id))                                              \
+    if (!should_submit(id))                                             \
         return 0;                                                       \
                                                                         \
     save_args_to_submit_buf(&data, types, &args);                       \
@@ -2325,7 +2325,7 @@ if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER)) {
         sys.id = *id_64;
     }
 
-    if (event_chosen(RAW_SYS_ENTER)) {
+    if (should_submit(RAW_SYS_ENTER)) {
         save_to_submit_buf(&data, (void*)&sys.id, sizeof(int), 0);
         events_perf_submit(&data, RAW_SYS_ENTER, 0);
     }
@@ -2378,12 +2378,12 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
     if (sys->id != id)
         return 0;
 
-    if (event_chosen(RAW_SYS_EXIT)) {
+    if (should_submit(RAW_SYS_EXIT)) {
         save_to_submit_buf(&data, (void*)&id, sizeof(int), 0);
         events_perf_submit(&data, RAW_SYS_EXIT, ret);
     }
 
-    if (event_chosen(id)) {
+    if (should_submit(id)) {
         u64 types = 0;
         u64 *saved_types = bpf_map_lookup_elem(&params_types_map, &id);
         if (!saved_types) {
@@ -2423,7 +2423,7 @@ int syscall__execve(void *ctx)
     if (!sys)
         return -1;
 
-    if (!event_chosen(SYS_EXECVE))
+    if (!should_submit(SYS_EXECVE))
         return 0;
 
     save_str_to_buf(&data, (void *)sys->args.args[0] /*filename*/, 0);
@@ -2446,7 +2446,7 @@ int syscall__execveat(void *ctx)
     if (!sys)
         return -1;
 
-    if (!event_chosen(SYS_EXECVEAT))
+    if (!should_submit(SYS_EXECVEAT))
         return 0;
 
     save_to_submit_buf(&data, (void*)&sys->args.args[0] /*dirfd*/, sizeof(int), 0);
@@ -2473,7 +2473,7 @@ static __always_inline int check_fd_type(u64 fd, u16 type)
 
 static __always_inline int send_socket_dup(event_data_t *data, u64 oldfd, u64 newfd)
 {
-    if (!event_chosen(SOCKET_DUP))
+    if (!should_submit(SOCKET_DUP))
         return 0;
 
     if (!check_fd_type(oldfd, S_IFSOCK)) {
@@ -2618,7 +2618,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         bpf_map_update_elem(&new_pids_map, &child_pid, &child_pid, BPF_ANY);
     }
 
-    if (event_chosen(SCHED_PROCESS_FORK) || data.options & OPT_PROCESS_INFO) {
+    if (should_submit(SCHED_PROCESS_FORK) || data.options & OPT_PROCESS_INFO) {
         int parent_ns_pid = get_task_ns_pid(parent);
         int parent_ns_tgid = get_task_ns_tgid(parent);
         int child_ns_pid = get_task_ns_pid(child);
@@ -2724,7 +2724,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     // 2. fdpath                  - generated filename for execveat (after
     //                              resolving dirfd)
 
-    if (event_chosen(SCHED_PROCESS_EXEC) || data.options & OPT_PROCESS_INFO) {
+    if (should_submit(SCHED_PROCESS_EXEC) || data.options & OPT_PROCESS_INFO) {
         save_str_to_buf(&data, (void *)filename, 0);
         save_str_to_buf(&data, file_path, 1);
         save_args_str_arr_to_buf(&data, (void *)arg_start, (void *)arg_end, argc, 2);
@@ -2781,7 +2781,7 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 
     long exit_code = get_task_exit_code(data.task);
 
-    if (event_chosen(SCHED_PROCESS_EXIT) || data.options & OPT_PROCESS_INFO) {
+    if (should_submit(SCHED_PROCESS_EXIT) || data.options & OPT_PROCESS_INFO) {
         save_to_submit_buf(&data, (void*)&exit_code, sizeof(long), 0);
         save_to_submit_buf(&data, (void*)&group_dead, sizeof(bool), 1);
 
@@ -2803,7 +2803,7 @@ int tracepoint__sched__sched_switch(struct bpf_raw_tracepoint_args *ctx)
     if (!should_trace(&data.context))
         return 0;
 
-    if (!event_chosen(SCHED_SWITCH))
+    if (!should_submit(SCHED_SWITCH))
         return 0;
 
     struct task_struct *prev = (struct task_struct*)ctx->args[1];
@@ -4194,7 +4194,7 @@ static __always_inline int do_file_write_operation(struct pt_regs *ctx, u32 even
         return 0;
     }
 
-    if (!event_chosen(VFS_WRITE) && !event_chosen(VFS_WRITEV) && !event_chosen(MAGIC_WRITE)) {
+    if (!should_submit(VFS_WRITE) && !should_submit(VFS_WRITEV) && !should_submit(MAGIC_WRITE)) {
         bpf_tail_call(ctx, &prog_array, tail_call_id);
         return 0;
     }
@@ -4236,7 +4236,7 @@ static __always_inline int do_file_write_operation(struct pt_regs *ctx, u32 even
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (event_chosen(VFS_WRITE) || event_chosen(VFS_WRITEV) || event_chosen(__KERNEL_WRITE)) {
+    if (should_submit(VFS_WRITE) || should_submit(VFS_WRITEV) || should_submit(__KERNEL_WRITE)) {
         save_str_to_buf(&data, file_path, 0);
         save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 1);
         save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 2);
@@ -4252,7 +4252,7 @@ static __always_inline int do_file_write_operation(struct pt_regs *ctx, u32 even
     }
 
     // magic_write event checks if the header of some file is changed
-    if (event_chosen(MAGIC_WRITE) && !char_dev && (start_pos == 0)) {
+    if (should_submit(MAGIC_WRITE) && !char_dev && (start_pos == 0)) {
         data.buf_off = sizeof(context_t);
         data.context.argnum = 0;
 
@@ -4676,7 +4676,7 @@ int BPF_KPROBE(trace_security_kernel_post_read_file)
     enum kernel_read_file_id type_id = (enum kernel_read_file_id)PT_REGS_PARM4(ctx);
 
     // Send event if chosen
-    if (event_chosen(SECURITY_POST_READ_FILE)) {
+    if (should_submit(SECURITY_POST_READ_FILE)) {
         void *file_path = get_path_str(&file->f_path);
         save_str_to_buf(&data, file_path, 0);
         save_to_submit_buf(&data, &size, sizeof(loff_t), 1);
@@ -4744,7 +4744,7 @@ int BPF_KPROBE(trace_ret_do_splice)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!event_chosen(DIRTY_PIPE_SPLICE))
+    if (!should_submit(DIRTY_PIPE_SPLICE))
         return 0;
 
     struct file *out_file = (struct file*)saved_args.args[2];
