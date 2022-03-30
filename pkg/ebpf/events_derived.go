@@ -110,15 +110,21 @@ func deriveContainerCreate(t *Tracee) deriveFn {
 		}
 
 		def := EventsDefinitions[ContainerCreateEventID]
-		if info := t.containers.GetCgroupInfo(cgroupId); info.ContainerId != "" {
+		if info := t.containers.GetCgroupInfo(cgroupId); info.Container.ContainerId != "" {
 			de := event
 			de.EventID = int(ContainerCreateEventID)
+			de.ContainerID = info.Container.ContainerId
+			de.ContainerImage = info.Container.Image
+			de.ContainerName = info.Container.Name
+			de.Pod.Name = info.Container.Pod.Name
+			de.Pod.Namespace = info.Container.Pod.Namespace
+			de.Pod.UID = info.Container.Pod.UID
 			de.EventName = def.Name
 			de.ReturnValue = 0
 			de.StackAddresses = make([]uint64, 1)
 			de.Args = []trace.Argument{
-				{ArgMeta: def.Params[0], Value: info.Runtime},
-				{ArgMeta: def.Params[1], Value: info.ContainerId},
+				{ArgMeta: def.Params[0], Value: info.Runtime.String()},
+				{ArgMeta: def.Params[1], Value: info.Container.ContainerId},
 				{ArgMeta: def.Params[2], Value: info.Ctime.UnixNano()},
 			}
 			de.ArgsNum = len(de.Args)
@@ -140,15 +146,21 @@ func deriveContainerRemoved(t *Tracee) deriveFn {
 		}
 
 		def := EventsDefinitions[ContainerRemoveEventID]
-		if info := t.containers.GetCgroupInfo(cgroupId); info.ContainerId != "" {
+		if info := t.containers.GetCgroupInfo(cgroupId); info.Container.ContainerId != "" {
 			de := event
 			de.EventID = int(ContainerRemoveEventID)
+			de.ContainerID = info.Container.ContainerId
+			de.ContainerImage = info.Container.Image
+			de.ContainerName = info.Container.Name
+			de.Pod.Name = info.Container.Pod.Name
+			de.Pod.Namespace = info.Container.Pod.Namespace
+			de.Pod.UID = info.Container.Pod.UID
 			de.EventName = def.Name
 			de.ReturnValue = 0
 			de.StackAddresses = make([]uint64, 1)
 			de.Args = []trace.Argument{
-				{ArgMeta: def.Params[0], Value: info.Runtime},
-				{ArgMeta: def.Params[1], Value: info.ContainerId},
+				{ArgMeta: def.Params[0], Value: info.Runtime.String()},
+				{ArgMeta: def.Params[1], Value: info.Container.ContainerId},
 			}
 			de.ArgsNum = len(de.Args)
 
