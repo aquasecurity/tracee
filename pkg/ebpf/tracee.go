@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"io"
 	"net"
 	"os"
@@ -24,6 +23,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/ebpf/initialization"
+	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
@@ -184,6 +184,7 @@ type Tracee struct {
 	containers        *containers.Containers
 	procInfo          *procinfo.ProcInfo
 	eventsSorter      *sorting.EventsChronologicalSorter
+	eventDerivations  map[int32]map[int32]deriveFn
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -265,6 +266,12 @@ func New(cfg Config) (*Tracee, error) {
 		if event.EssentialEvent && !t.eventsToTrace[id] {
 			t.eventsToTrace[id] = false
 		}
+	}
+
+	// Initialize event derivation map
+	err = t.initEventDerivationMap()
+	if err != nil {
+		return nil, fmt.Errorf("error intitalizing event derivation map: %w", err)
 	}
 
 	c, err := containers.InitContainers()
