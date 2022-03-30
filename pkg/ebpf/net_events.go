@@ -244,7 +244,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 				ifaceName := t.netInfo.ifaces[int(netCaptureData.ConfigIfaceIndex)].Name
 				ifaceIdx, err := t.getTracedIfaceIdx(ifaceName)
 				if err == nil && ifaceIdx >= 0 {
-					if t.eventsToTrace[netEventMetadata.NetEventId] {
+					if t.events[netEventMetadata.NetEventId].emit {
 						evt, err := netPacketProtocolHandler(netDecoder, netEventMetadata, networkThread, "net_packet")
 						if err != nil {
 							t.handleError(err)

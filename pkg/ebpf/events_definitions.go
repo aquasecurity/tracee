@@ -23,7 +23,8 @@ type probe struct {
 }
 
 type eventDependency struct {
-	eventID int32
+	eventID      int32
+	shouldSubmit bool
 }
 
 type dependencies struct {
@@ -33,13 +34,12 @@ type dependencies struct {
 
 // EventDefinition is a struct describing an event configuration
 type EventDefinition struct {
-	ID32Bit        int32
-	Name           string
-	Probes         []probe
-	Dependencies   dependencies
-	EssentialEvent bool
-	Sets           []string
-	Params         []trace.ArgMeta
+	ID32Bit      int32
+	Name         string
+	Probes       []probe
+	Dependencies dependencies
+	Sets         []string
+	Params       []trace.ArgMeta
 }
 
 // Common events (used by all architectures)
@@ -5685,8 +5685,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Probes: []probe{
 			{event: "raw_syscalls:sys_enter", attach: rawTracepoint, fn: "tracepoint__raw_syscalls__sys_enter"},
 		},
-		EssentialEvent: true,
-		Sets:           []string{},
+		Sets: []string{},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "syscall"},
 		},
@@ -5697,8 +5696,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Probes: []probe{
 			{event: "raw_syscalls:sys_exit", attach: rawTracepoint, fn: "tracepoint__raw_syscalls__sys_exit"},
 		},
-		EssentialEvent: true,
-		Sets:           []string{},
+		Sets: []string{},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "syscall"},
 		},
@@ -5709,8 +5707,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Probes: []probe{
 			{event: "sched:sched_process_fork", attach: rawTracepoint, fn: "tracepoint__sched__sched_process_fork"},
 		},
-		EssentialEvent: true,
-		Sets:           []string{},
+		Sets: []string{},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "parent_tid"},
 			{Type: "int", Name: "parent_ns_tid"},
@@ -5729,8 +5726,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Probes: []probe{
 			{event: "sched:sched_process_exec", attach: rawTracepoint, fn: "tracepoint__sched__sched_process_exec"},
 		},
-		EssentialEvent: true,
-		Sets:           []string{"default", "proc"},
+		Sets: []string{"default", "proc"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "cmdpath"},
 			{Type: "const char*", Name: "pathname"},
@@ -5749,8 +5745,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Probes: []probe{
 			{event: "sched:sched_process_exit", attach: rawTracepoint, fn: "tracepoint__sched__sched_process_exit"},
 		},
-		EssentialEvent: true,
-		Sets:           []string{"default", "proc", "proc_life"},
+		Sets: []string{"default", "proc", "proc_life"},
 		Params: []trace.ArgMeta{
 			{Type: "long", Name: "exit_code"},
 			// The field value represents that all threads exited at the event time.
@@ -5907,8 +5902,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Probes: []probe{
 			{event: "cgroup:cgroup_mkdir", attach: rawTracepoint, fn: "tracepoint__cgroup__cgroup_mkdir"},
 		},
-		EssentialEvent: true,
-		Sets:           []string{},
+		Sets: []string{},
 		Params: []trace.ArgMeta{
 			{Type: "u64", Name: "cgroup_id"},
 			{Type: "const char*", Name: "cgroup_path"},
@@ -5921,8 +5915,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Probes: []probe{
 			{event: "cgroup:cgroup_rmdir", attach: rawTracepoint, fn: "tracepoint__cgroup__cgroup_rmdir"},
 		},
-		EssentialEvent: true,
-		Sets:           []string{},
+		Sets: []string{},
 		Params: []trace.ArgMeta{
 			{Type: "u64", Name: "cgroup_id"},
 			{Type: "const char*", Name: "cgroup_path"},
@@ -6145,7 +6138,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Name:    "socket_dup",
 		Probes:  []probe{},
 		Dependencies: dependencies{
-			events: []eventDependency{{DupEventID}, {Dup2EventID}, {Dup3EventID}},
+			events: []eventDependency{{eventID: DupEventID}, {eventID: Dup2EventID}, {eventID: Dup3EventID}},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -6207,7 +6200,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Name:    "container_create",
 		Probes:  []probe{},
 		Dependencies: dependencies{
-			events: []eventDependency{{CgroupMkdirEventID}},
+			events: []eventDependency{{eventID: CgroupMkdirEventID, shouldSubmit: true}},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -6221,7 +6214,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Name:    "container_remove",
 		Probes:  []probe{},
 		Dependencies: dependencies{
-			events: []eventDependency{{CgroupRmdirEventID}},
+			events: []eventDependency{{eventID: CgroupRmdirEventID, shouldSubmit: true}},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{

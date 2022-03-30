@@ -162,10 +162,15 @@ type fileExecInfo struct {
 	Hash      string
 }
 
+type eventConfig struct {
+	submit bool // event should be submitted to userspace
+	emit   bool // event should be emitted to the user
+}
+
 // Tracee traces system calls and system events using eBPF
 type Tracee struct {
 	config            Config
-	eventsToTrace     map[int32]bool
+	events            map[int32]eventConfig
 	bpfModule         *bpf.Module
 	eventsPerfMap     *bpf.PerfBuffer
 	fileWrPerfMap     *bpf.PerfBuffer
@@ -198,26 +203,19 @@ func (t *Tracee) Stats() *metrics.Stats {
 	return &t.stats
 }
 
-func isEssential(id int32) bool {
-	return EventsDefinitions[id].EssentialEvent
-}
-
-func setEssential(id int32) {
-	event := EventsDefinitions[id]
-	event.EssentialEvent = true
-	EventsDefinitions[id] = event
-}
-
-func handleEventsDependencies(e int32, initReq *RequiredInitValues) {
+func (t *Tracee) handleEventsDependencies(e int32, initReq *RequiredInitValues) {
 	eDependencies := EventsDefinitions[e].Dependencies
 	if len(eDependencies.ksymbols) > 0 {
 		initReq.kallsyms = true
 	}
-	// Some events depend on other events - mark those essential
 	for _, dependentEvent := range eDependencies.events {
-		if !isEssential(dependentEvent.eventID) {
-			setEssential(dependentEvent.eventID)
-			handleEventsDependencies(dependentEvent.eventID, initReq)
+		if _, ok := t.events[dependentEvent.eventID]; !ok {
+			var ec eventConfig
+			if dependentEvent.shouldSubmit {
+				ec.submit = true
+			}
+			t.events[dependentEvent.eventID] = ec
+			t.handleEventsDependencies(dependentEvent.eventID, initReq)
 		}
 	}
 }
@@ -229,28 +227,6 @@ func New(cfg Config) (*Tracee, error) {
 	err = cfg.Validate()
 	if err != nil {
 		return nil, fmt.Errorf("validation error: %v", err)
-	}
-
-	if cfg.Capture.Exec {
-		setEssential(SchedProcessExecEventID)
-	}
-	if cfg.Capture.FileWrite {
-		setEssential(VfsWriteEventID)
-		setEssential(VfsWritevEventID)
-		setEssential(__KernelWriteEventID)
-	}
-	if cfg.Capture.Module {
-		setEssential(SecurityPostReadFileEventID)
-		setEssential(InitModuleEventID)
-	}
-	if cfg.Capture.Mem {
-		setEssential(MmapEventID)
-		setEssential(MprotectEventID)
-		setEssential(MemProtAlertEventID)
-	}
-
-	if cfg.Capture.NetIfaces != nil || cfg.Debug {
-		setEssential(SecuritySocketBindEventID)
 	}
 
 	// Tracee bpf code uses monotonic clock as event timestamp.
@@ -276,25 +252,57 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error creating process tree: %v", err)
 	}
 
-	t.eventsToTrace = make(map[int32]bool, len(t.config.Filter.EventsToTrace))
+	t.events = make(map[int32]eventConfig, len(cfg.Filter.EventsToTrace))
+
+	// Set essential events
+	t.events[SysEnterEventID] = eventConfig{}
+	t.events[SysExitEventID] = eventConfig{}
+	t.events[SchedProcessForkEventID] = eventConfig{}
+	t.events[SchedProcessExecEventID] = eventConfig{}
+	t.events[SchedProcessExitEventID] = eventConfig{}
+	t.events[CgroupMkdirEventID] = eventConfig{submit: true}
+	t.events[CgroupRmdirEventID] = eventConfig{submit: true}
+
+	// Set events used to capture data
+	if t.config.Capture.Exec {
+		t.events[SchedProcessExecEventID] = eventConfig{submit: true}
+	}
+	if t.config.Capture.FileWrite {
+		t.events[VfsWriteEventID] = eventConfig{}
+		t.events[VfsWritevEventID] = eventConfig{}
+		t.events[__KernelWriteEventID] = eventConfig{}
+	}
+	if t.config.Capture.Module {
+		t.events[SecurityPostReadFileEventID] = eventConfig{}
+		t.events[InitModuleEventID] = eventConfig{}
+	}
+	if t.config.Capture.Mem {
+		t.events[MmapEventID] = eventConfig{}
+		t.events[MprotectEventID] = eventConfig{}
+		t.events[MemProtAlertEventID] = eventConfig{}
+	}
+	if t.config.Capture.NetIfaces != nil || cfg.Debug {
+		t.events[SecuritySocketBindEventID] = eventConfig{}
+	}
+
+	// Events chosen by the user
 	for _, e := range t.config.Filter.EventsToTrace {
-		// Map value is true iff events requested by the user
-		t.eventsToTrace[e] = true
+		t.events[e] = eventConfig{submit: true, emit: true}
 	}
 
 	initReq := RequiredInitValues{}
 	// Handles all essential events dependencies
-	for id, event := range EventsDefinitions {
-		if event.EssentialEvent || t.eventsToTrace[id] {
-			handleEventsDependencies(id, &initReq)
-		}
+	for id := range t.events {
+		t.handleEventsDependencies(id, &initReq)
 	}
-
-	// Compile final list of events to trace including essential events
-	for id, event := range EventsDefinitions {
-		// If an essential event was not requested by the user, set its map value to false
-		if event.EssentialEvent && !t.eventsToTrace[id] {
-			t.eventsToTrace[id] = false
+	if initReq.kallsyms {
+		t.kernelSymbols, err = helpers.NewKernelSymbolsMap()
+		if err != nil {
+			t.Close()
+			return nil, fmt.Errorf("error creating symbols map: %v", err)
+		}
+		if !initialization.ValidateKsymbolsTable(t.kernelSymbols) {
+			return nil, fmt.Errorf("kernel symbols were not loaded currectly. Make sure tracee-ebpf has the CAP_SYSLOG capability")
 		}
 	}
 
@@ -312,17 +320,6 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error initializing containers: %w", err)
 	}
 	t.containers = c
-
-	if initReq.kallsyms {
-		t.kernelSymbols, err = helpers.NewKernelSymbolsMap()
-		if err != nil {
-			t.Close()
-			return nil, fmt.Errorf("error creating symbols map: %v", err)
-		}
-		if !initialization.ValidateKsymbolsTable(t.kernelSymbols) {
-			return nil, fmt.Errorf("kernel symbols were not loaded currectly. Make sure tracee-ebpf has the CAP_SYSLOG capability")
-		}
-	}
 
 	t.netInfo.ifaces = make(map[int]*net.Interface)
 	t.netInfo.ifacesConfig = make(map[string]int32)
@@ -600,15 +597,15 @@ const (
 func (t *Tracee) populateBPFMaps() error {
 
 	// Set chosen events map according to events chosen by the user
-	chosenEventsMap, err := t.bpfModule.GetMap("chosen_events_map") // u32, u32
+	eventsToSubmitMap, err := t.bpfModule.GetMap("events_to_submit") // u32, u32
 	if err != nil {
 		return err
 	}
-	for e, chosen := range t.eventsToTrace {
-		if chosen {
-			eU32 := uint32(e) // e is int32
+	for id, e := range t.events {
+		if e.submit {
+			idU32 := uint32(id) // id is int32
 			trueU32 := uint32(1)
-			if err := chosenEventsMap.Update(unsafe.Pointer(&eU32), unsafe.Pointer(&trueU32)); err != nil {
+			if err := eventsToSubmitMap.Update(unsafe.Pointer(&idU32), unsafe.Pointer(&trueU32)); err != nil {
 				return err
 			}
 		}
@@ -635,10 +632,8 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 
 		var reqKsyms []string
-		for id, event := range EventsDefinitions {
-			if event.EssentialEvent || t.eventsToTrace[id] {
-				reqKsyms = append(reqKsyms, event.Dependencies.ksymbols...)
-			}
+		for id := range t.events {
+			reqKsyms = append(reqKsyms, EventsDefinitions[id].Dependencies.ksymbols...)
 		}
 
 		kallsymsValues := initialization.LoadKallsymsValues(t.kernelSymbols, reqKsyms)
@@ -758,7 +753,9 @@ func (t *Tracee) populateBPFMaps() error {
 		return err
 	}
 
-	if t.eventsToTrace[PrintSyscallTableEventID] || t.eventsToTrace[DetectHookedSyscallsEventID] {
+	_, ok1 := t.events[PrintSyscallTableEventID]
+	_, ok2 := t.events[DetectHookedSyscallsEventID]
+	if ok1 || ok2 {
 		syscallsToCheckMap, err := t.bpfModule.GetMap("syscalls_to_check_map")
 		if err != nil {
 			return err
@@ -776,7 +773,7 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
-	for e := range t.eventsToTrace {
+	for e := range t.events {
 		eU32 := uint32(e) // e is int32
 		params := eventsParams[e]
 		var paramsTypes uint64
@@ -989,7 +986,7 @@ func (t *Tracee) initBPF() error {
 			if prog == nil {
 				continue
 			}
-			if _, ok := t.eventsToTrace[id]; !ok {
+			if _, ok := t.events[id]; !ok {
 				// This event is not being traced - set its respective program(s) "autoload" to false
 				err = prog.SetAutoload(false)
 				if err != nil {
@@ -1025,7 +1022,7 @@ func (t *Tracee) initBPF() error {
 		return err
 	}
 
-	if t.eventsToTrace[NetPacket] && len(t.config.Filter.NetFilter.InterfacesToTrace) == 0 {
+	if _, ok := t.events[NetPacket]; ok && len(t.config.Filter.NetFilter.InterfacesToTrace) == 0 {
 		return fmt.Errorf("couldn't trace %s event, missing interface", EventsDefinitions[NetPacket].Name)
 	}
 	for _, iface := range t.netInfo.ifaces {
@@ -1055,7 +1052,7 @@ func (t *Tracee) initBPF() error {
 		}
 	}
 
-	for e := range t.eventsToTrace {
+	for e := range t.events {
 		event, ok := EventsDefinitions[e]
 		if !ok {
 			continue
@@ -1267,12 +1264,12 @@ func (t *Tracee) updateFileSHA() {
 }
 
 func (t *Tracee) invokeInitEvents() {
-	if t.eventsToTrace[InitNamespacesEventID] {
+	if t.events[InitNamespacesEventID].emit {
 		systemInfoEvent, _ := CreateInitNamespacesEvent()
 		t.config.ChanEvents <- systemInfoEvent
 		t.stats.EventCount.Increment()
 	}
-	if t.eventsToTrace[ExistingContainerEventID] {
+	if t.events[ExistingContainerEventID].emit {
 		for _, e := range t.CreateExistingContainersEvents() {
 			t.config.ChanEvents <- e
 			t.stats.EventCount.Increment()
@@ -1298,7 +1295,9 @@ const IoctlFetchSyscalls int = 65 // randomly picked number for ioctl cmd
 
 func (t *Tracee) invokeIoctlTriggeredEvents() {
 	// invoke DetectHookedSyscallsEvent
-	if t.eventsToTrace[PrintSyscallTableEventID] || t.eventsToTrace[DetectHookedSyscallsEventID] {
+	_, ok1 := t.events[PrintSyscallTableEventID]
+	_, ok2 := t.events[DetectHookedSyscallsEventID]
+	if ok1 || ok2 {
 		ptmx, err := os.OpenFile(t.config.Capture.OutputPath, os.O_RDONLY, 444)
 		if err != nil {
 			return
