@@ -15,7 +15,6 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/rules/engine"
-	"github.com/aquasecurity/tracee/pkg/rules/metrics"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -128,7 +127,7 @@ func main() {
 			}
 
 			if c.Bool(metricsFlag) {
-				err := metrics.RegisterPrometheus(e.Stats())
+				err := e.Stats().RegisterPrometheus()
 				if err != nil {
 					fmt.Fprintf(os.Stderr, "Error registering prometheus metrics: %v\n", err)
 				} else {
