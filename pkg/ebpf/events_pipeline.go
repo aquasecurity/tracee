@@ -170,6 +170,8 @@ func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *trace.Event, 
 				ctx.Ts += t.bootTime
 			}
 
+			containerInfo := t.containers.GetCgroupInfo(ctx.CgroupID).Container
+
 			evt := trace.Event{
 				Timestamp:           int(ctx.Ts),
 				ProcessorID:         int(ctx.ProcessorId),
@@ -184,7 +186,12 @@ func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *trace.Event, 
 				PIDNS:               int(ctx.PidID),
 				ProcessName:         string(bytes.TrimRight(ctx.Comm[:], "\x00")),
 				HostName:            string(bytes.TrimRight(ctx.UtsName[:], "\x00")),
-				ContainerID:         t.containers.GetCgroupInfo(ctx.CgroupID).ContainerId,
+				ContainerID:         containerInfo.ContainerId,
+				ContainerImage:      containerInfo.Image,
+				ContainerName:       containerInfo.Name,
+				PodName:             containerInfo.Pod.Name,
+				PodNamespace:        containerInfo.Pod.Namespace,
+				PodUID:              containerInfo.Pod.UID,
 				EventID:             int(ctx.EventID),
 				EventName:           eventDefinition.Name,
 				ArgsNum:             int(ctx.Argnum),
