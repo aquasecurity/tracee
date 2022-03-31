@@ -110,7 +110,7 @@ jobs:
           opa-version: ${{ env.OPA_VERSION }}
       - name: Build
         run: |
-          make -f builder/Makefile.release snapshot
+          make -f builder/Makefile.release SNAPSHOT=1
       - name: Scan Docker Image for Vulnerabilities
         uses: aquasecurity/trivy-action@master
         with:

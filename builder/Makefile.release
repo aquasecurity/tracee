@@ -3,8 +3,7 @@
 #
 
 .PHONY: all
-all: help
-release: snapshot publish
+all: release
 
 #
 # make
@@ -57,8 +56,6 @@ env:
 	@echo ---------------------------------------
 	@echo "PUSH_DOCKER_REPO      $(PUSH_DOCKER_REPO)"
 	@echo ---------------------------------------
-	@echo "SNAPSHOT_VERSION      $(SNAPSHOT_VERSION)"
-	@echo ---------------------------------------
 
 #
 # usage
@@ -71,7 +68,7 @@ help:
 	@echo ""
 	@echo "To generate a release snapshot:"
 	@echo ""
-	@echo "    $$ make -f builder/Makefile.release snapshot"
+	@echo "    $$ make -f builder/Makefile.release SNAPSHOT=1"
 	@echo ""
 	@echo "    - Compiles tracee-ebpf, tracee-rules and rules"
 	@echo "    - Creates an archive of build artifacts along with license"
@@ -85,20 +82,14 @@ help:
 	@echo ""
 	@echo "        To create build artifacts versioned by latest git SHA:"
 	@echo ""
-	@echo "        $$ make -f builder/Makefile.release snapshot"
-	@echo ""
-	@echo "        To create build artifacts with version v1.2.3:"
-	@echo ""
-	@echo "        $$ SNAPSHOT_VERSION=v1.2.3 \ "
-	@echo "                make -f builder/Makefile.release snapshot"
+	@echo "        $$ SNAPSHOT=1 make -f builder/Makefile.release"
 	@echo ""
 	@echo "To publish a release:"
 	@echo ""
-	@echo "    $$ SNAPSHOT_VERSION=v0.9.9 \ "
-	@echo "        PUSH_DOCKER_REPO=aquasec/tracee \ "
-	@echo "        make -f builder/Makefile.release publish"
+	@echo "    $$ PUSH_DOCKER_REPO=aquasec/tracee \ "
+	@echo "        make -f builder/Makefile.release"
 	@echo ""
-	@echo "    - Pushes the snapshot release artifacts found by the tag v0.9.9 to"
+	@echo "    - Pushes the snapshot release artifacts found by the latest git tag to"
 	@echo "      docker.io/aquasec/tracee"
 	@echo ""
 	@echo "Clean leftovers:"
@@ -134,8 +125,13 @@ $(OUTPUT_DIR):
 # Create a release snapshot
 #
 
-SNAPSHOT_VERSION ?= $(shell git rev-parse HEAD)
-SNAPSHOT_VERSION := $(shell echo $(SNAPSHOT_VERSION) | sed -e "s/^v//")
+SNAPSHOT_VERSION = $(shell git describe --tags --abbrev=0)
+IMAGE_TAG = $(subst v,,$(SNAPSHOT_VERSION))
+
+ifeq ("$(SNAPSHOT)", "1")
+	SNAPSHOT_VERSION = $(shell  git rev-parse --short HEAD)
+	IMAGE_TAG = $(SNAPSHOT_VERSION)
+endif
 
 RELEASE_FILES = LICENSE
 RELEASE_FILES += $(OUTPUT_DIR)/tracee-ebpf
@@ -148,8 +144,8 @@ OUT_CHECKSUMS := $(OUTPUT_DIR)/checksum.$(SNAPSHOT_VERSION).txt
 
 PUSH_DOCKER_REPO ?= aquasec/tracee
 
-.PHONY: snapshot
-snapshot: \
+.PHONY: release
+release: \
 	$(OUTPUT_DIR) \
 	| .check_tree \
 	.check_$(CMD_DOCKER) \
@@ -166,32 +162,24 @@ snapshot: \
 	# build official slim container image (CO-RE + BTFHUB)
 	BTFHUB=1 $(MAKE) -f builder/Makefile.tracee-container build-tracee
 	$(CMD_DOCKER) tag tracee:latest $(PUSH_DOCKER_REPO):latest
-	$(CMD_DOCKER) tag tracee:latest $(PUSH_DOCKER_REPO):$(SNAPSHOT_VERSION)
+	$(CMD_DOCKER) tag tracee:latest $(PUSH_DOCKER_REPO):$(IMAGE_TAG)
 	# build official full container image (CO-RE + BTFHUB + non CO-RE build)
 	BTFHUB=1 $(MAKE) -f builder/Makefile.tracee-container build-tracee-full
 	$(CMD_DOCKER) tag tracee:full $(PUSH_DOCKER_REPO):full
-	$(CMD_DOCKER) tag tracee:full $(PUSH_DOCKER_REPO):full-$(SNAPSHOT_VERSION)
-
-.PHONY: publish
-publish: \
-	$(OUTPUT_DIR) \
-	$(OUT_ARCHIVE) \
-	$(OUT_CHECKSUMS) \
-	| .check_tree \
-	.check_$(CMD_DOCKER) \
-	.check_$(CMD_GITHUB)
-#
+	$(CMD_DOCKER) tag tracee:full $(PUSH_DOCKER_REPO):full-$(IMAGE_TAG)
+ifneq ("$(SNAPSHOT)", "1")
 	# pushing container images to docker hub
 	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):latest
-	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):$(SNAPSHOT_VERSION)
+	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):$(IMAGE_TAG)
 	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):full
-	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):full-$(SNAPSHOT_VERSION)
+	$(CMD_DOCKER) push $(PUSH_DOCKER_REPO):full-$(IMAGE_TAG)
 	# create release notes
 	echo '## Docker images' >> $(RELEASE_NOTES)
-	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):$(SNAPSHOT_VERSION) (embedded eBPF CO-RE obj with BTFHUB support)`' >> $(RELEASE_NOTES);
-	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):full-$(SNAPSHOT_VERSION) (compiles non CO-RE eBPF object on startup)`' >> $(RELEASE_NOTES);
+	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):$(IMAGE_TAG) (embedded eBPF CO-RE obj with BTFHUB support)`' >> $(RELEASE_NOTES);
+	echo '- `docker pull docker.io/$(PUSH_DOCKER_REPO):full-$(IMAGE_TAG) (compiles non CO-RE eBPF object on startup)`' >> $(RELEASE_NOTES);
 	# release it!
 	$(CMD_GITHUB) release create $(SNAPSHOT_VERSION) $(OUT_ARCHIVE) $(OUT_CHECKSUMS) --title $(SNAPSHOT_VERSION) --notes-file $(RELEASE_NOTES)
+endif
 
 .PHONY: clean
 clean:
