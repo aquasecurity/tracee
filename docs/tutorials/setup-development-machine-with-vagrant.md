@@ -10,7 +10,7 @@ The [Vagrantfile] describes the type of machine required to build Tracee from so
 ## Prerequisites
 
 - [Vagrant](https://www.vagrantup.com/docs/installation)
-- [Hypervisor](https://www.vagrantup.com/docs/providers) supported by Vagrant, such as [VirtualBox](https://www.virtualbox.org).
+- [Hypervisor] supported by Vagrant, such as [VirtualBox].
 
 ## Create Development Machine
 
@@ -56,7 +56,8 @@ vagrant@ubuntu-impish:~$
 
 !!! tip
     Provisioning from scratch take time, but once created you can reuse the machine with `vagrant halt` and `vagrant up`
-    commands. If something goes wrong with your machine, there's also the `vagrant destroy` to destroy it.
+    commands. If something goes wrong with your machine, there's also the `vagrant destroy` to destroy it and start over
+    again.
 
 Synced folders enable Vagrant to sync a folder on the host machine to the development machine, allowing you to continue
 working on your project's files on your host machine, but use the resources in the development machine to compile or run
@@ -156,6 +157,8 @@ Command: strace
 Hostname: ubuntu-impish
 ```
 
+In this example, we run `strace ls` to trigger Anit-Debugging signature detection.
+
 ## Switch Between CO-RE and non CO-RE Linux Distribution
 
 By default, the development machine is running Ubuntu Linux 21.10 Impish Indri. You can see that it has a BTF-enabled
@@ -187,7 +190,7 @@ vagrant destroy
 vagrant up
 ```
 
-## Deploy Tracee on Kubernetes
+## Deploy Tracee with Postee on Kubernetes
 
 The development machine described by Vagrantfile preinstalls [MicroK8s] Kubernetes cluster, which is suitable for testing
 Tracee.
@@ -200,7 +203,7 @@ high-availability: no
   datastore standby nodes: none
 ```
 
-There's also the [kubectl] command installed to communicate with the cluster:
+There's also the [kubectl] command installed and configured to communicate with the cluster:
 
 ```
 vagrant@ubuntu-impish:/vagrant$ kubectl get nodes -o wide
@@ -208,19 +211,87 @@ NAME            STATUS   ROLES    AGE    VERSION                    INTERNAL-IP 
 ubuntu-impish   Ready    <none>   139m   v1.23.4-2+98fc2022f3ad3e   10.0.2.15     <none>        Ubuntu 21.10   5.13.0-35-generic   containerd://1.5.9
 ```
 
+To integrate Tracee with [Postee] we must enable `storage` and `dns` [MicroK8s add-ons]. The `storage` add-on is used to
+setup [Persistent Volumes] required by Postee to holds its data, whereas the Kubernetes DNS server allows Tracee-Rules
+to send detections over to the Postee HTTP endpoint.
+
 ```
-vagrant@ubuntu-impish:/vagrant$ kubectl create ns tracee-system
-vagrant@ubuntu-impish:/vagrant$ kubectl apply -f deploy/kubernetes/tracee-postee/tracee.yaml -n tracee-system
-daemonset.apps/tracee created
+vagrant@ubuntu-impish:/vagrant$ microk8s enable storage
+Enabling default storage class
+deployment.apps/hostpath-provisioner created
+storageclass.storage.k8s.io/microk8s-hostpath created
+serviceaccount/microk8s-hostpath created
+clusterrole.rbac.authorization.k8s.io/microk8s-hostpath created
+clusterrolebinding.rbac.authorization.k8s.io/microk8s-hostpath created
 ```
 
 ```
-vagrant@ubuntu-impish:/vagrant$ kubectl logs -f daemonset/tracee -n tracee-system
+vagrant@ubuntu-impish:/vagrant$ microk8s enable dns
+Enabling DNS
+Applying manifest
+serviceaccount/coredns created
+configmap/coredns created
+deployment.apps/coredns created
+service/kube-dns created
+clusterrole.rbac.authorization.k8s.io/coredns created
+clusterrolebinding.rbac.authorization.k8s.io/coredns created
+Restarting kubelet
+DNS is enabled
+```
+
+Create a new namespace called `tracee-system`:
+
+```
+vagrant@ubuntu-impish:/vagrant$ kubectl create ns tracee-system
+```
+
+Create Postee Persistent Volumes and StatefulSet in the `tracee-system` namespace:
+
+```
+vagrant@ubuntu-impish:/vagrant$ kubectl apply -n tracee-system \
+  -f https://raw.githubusercontent.com/aquasecurity/postee/v2.2.0/deploy/kubernetes/hostPath/postee-pv.yaml
+vagrant@ubuntu-impish:/vagrant$ kubectl apply -n tracee-system \
+  -f https://raw.githubusercontent.com/aquasecurity/postee/v2.2.0/deploy/kubernetes/postee.yaml
+```
+
+Create Tracee DaemonSet in the `tracee-system`, which is preconfigured to print detections to the standard output and
+send them over to Postee webhook on http://postee-svc:8082:
+
+```
+vagrant@ubuntu-impish:/vagrant$ kubectl apply -n tracee-system -f deploy/kubernetes/tracee-postee/tracee.yaml
+```
+
+While Tracee pod is running, run `strace ls` command and observe detection printed to the standard output.
+
+```
+vagrant@ubuntu-impish:/vagrant$ kubectl logs n tracee-system -f daemonset/tracee
 INFO: probing tracee-ebpf capabilities...
 INFO: starting tracee-ebpf...
 INFO: starting tracee-rules...
 Loaded 14 signature(s): [TRC-1 TRC-13 TRC-2 TRC-14 TRC-3 TRC-11 TRC-9 TRC-4 TRC-5 TRC-12 TRC-8 TRC-6 TRC-10 TRC-7]
 Serving metrics endpoint at :3366
+
+*** Detection ***
+Time: 2022-03-29T08:26:32Z
+Signature ID: TRC-2
+Signature: Anti-Debugging
+Data: map[]
+Command: strace
+Hostname: ubuntu-impish
+```
+
+If everything is configured properly, you can find the same detection in Postee logs:
+
+```
+vagrant@ubuntu-impish:/vagrant$ kubectl -n tracee-system logs -f postee-0
+2022/03/29 08:26:32 {"Data":null,"Context":{"timestamp":1648542392170684298,"processorId":1,"processId":90731,"threadId"
+:90731,"parentProcessId":90729,"hostProcessId":90731,"hostThreadId":90731,"hostParentProcessId":90729,"userId":1000,"mou
+ntNamespace":4026531840,"pidNamespace":4026531836,"processName":"strace","hostName":"ubuntu-impish","containerId":"","ev
+entId":"101","eventName":"ptrace","argsNum":4,"returnValue":0,"stackAddresses":null,"args":[{"name":"request","type":"st
+ring","value":"PTRACE_TRACEME"},{"name":"pid","type":"pid_t","value":0},{"name":"addr","type":"void*","value":"0x0"},{"n
+ame":"data","type":"void*","value":"0x0"}]},"SigMetadata":{"ID":"TRC-2","Version":"0.1.0","Name":"Anti-Debugging","Descr
+iption":"Process uses anti-debugging technique to block debugger","Tags":["linux","container"],"Properties":{"MITRE ATT\
+u0026CK":"Defense Evasion: Execution Guardrails","Severity":3}}}
 ```
 
 ### Access Kubernetes Dashboard
@@ -260,7 +331,12 @@ pages.
 
 [HashiCorp Vagrant]: https://www.vagrantup.com
 [Vagrantfile]: https://github.com/aquasecurity/tracee/blob/{{ git.tag }}/Vagrantfile
+[Hypervisor]: https://www.vagrantup.com/docs/providers
+[VirtualBox]: https://www.virtualbox.org
 [MicroK8s]: https://microk8s.io
+[MicroK8s add-ons]: https://microk8s.io/docs/addons
 [kubectl]: https://kubernetes.io/docs/tasks/tools/#kubectl
 [Kubernetes Dashboard]: https://github.com/kubernetes/dashboard
+[Postee]: https://github.com/aquasecurity/postee
+[Persistent Volumes]: https://kubernetes.io/docs/concepts/storage/persistent-volumes/
 [MkDocs]: https://www.mkdocs.org

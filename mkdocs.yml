@@ -31,7 +31,7 @@ nav:
     - Capturing Artifacts: tracee-ebpf/capture.md
     - Overriding OS needed files: tracee-ebpf/override-os-needed-files.md
   - Tutorials:
-      - Setup Development Machine with Vagrant: tutorials/setup-development-machine-with-vagrant
+      - Setup Development Machine with Vagrant: tutorials/setup-development-machine-with-vagrant.md
       - Deploy Tracee Grafana Dashboard: tutorials/deploy-grafana-dashboard.md
 
 theme:
