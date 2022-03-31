@@ -772,12 +772,14 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_11" type="checkbox" id="__nav_11" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_11" type="checkbox" id="__nav_11" checked>
       
       
       
@@ -803,9 +805,28 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="." class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Setup Development Machine with Vagrant
+  </span>
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -813,6 +834,81 @@
   </span>
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    Prerequisites
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-development-machine" class="md-nav__link">
+    Create Development Machine
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#build-and-run-tracee-ebpf-and-tracee-rules" class="md-nav__link">
+    Build and Run Tracee-eBPF and Tracee-Rules
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#switch-between-co-re-and-non-co-re-linux-distribution" class="md-nav__link">
+    Switch Between CO-RE and non CO-RE Linux Distribution
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deploy-tracee-with-postee-on-kubernetes" class="md-nav__link">
+    Deploy Tracee with Postee on Kubernetes
+  </a>
+  
+    <nav class="md-nav" aria-label="Deploy Tracee with Postee on Kubernetes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#access-kubernetes-dashboard" class="md-nav__link">
+    Access Kubernetes Dashboard
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#preview-tracee-documentation" class="md-nav__link">
+    Preview Tracee Documentation
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -898,11 +994,11 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#deploy-tracee-on-kubernetes" class="md-nav__link">
-    Deploy Tracee on Kubernetes
+  <a href="#deploy-tracee-with-postee-on-kubernetes" class="md-nav__link">
+    Deploy Tracee with Postee on Kubernetes
   </a>
   
-    <nav class="md-nav" aria-label="Deploy Tracee on Kubernetes">
+    <nav class="md-nav" aria-label="Deploy Tracee with Postee on Kubernetes">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -984,7 +1080,8 @@ cd tracee
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
 <p>Provisioning from scratch take time, but once created you can reuse the machine with <code>vagrant halt</code> and <code>vagrant up</code>
-commands. If something goes wrong with your machine, there's also the <code>vagrant destroy</code> to destroy it.</p>
+commands. If something goes wrong with your machine, there's also the <code>vagrant destroy</code> to destroy it and start over
+again.</p>
 </div>
 <p>Synced folders enable Vagrant to sync a folder on the host machine to the development machine, allowing you to continue
 working on your project's files on your host machine, but use the resources in the development machine to compile or run
@@ -1066,6 +1163,7 @@ Data: map[]
 Command: strace
 Hostname: ubuntu-impish
 </code></pre></div>
+<p>In this example, we run <code>strace ls</code> to trigger Anit-Debugging signature detection.</p>
 <h2 id="switch-between-co-re-and-non-co-re-linux-distribution">Switch Between CO-RE and non CO-RE Linux Distribution<a class="headerlink" href="#switch-between-co-re-and-non-co-re-linux-distribution" title="Permanent link">&para;</a></h2>
 <p>By default, the development machine is running Ubuntu Linux 21.10 Impish Indri. You can see that it has a BTF-enabled
 kernel by checking the existence of the <code>/sys/kernel/btf/vmlinux</code> file.</p>
@@ -1087,7 +1185,7 @@ modifying the <code>config.vm.box</code> property. For example, you can switch t
 <div class="highlight"><pre><span></span><code>vagrant destroy
 vagrant up
 </code></pre></div>
-<h2 id="deploy-tracee-on-kubernetes">Deploy Tracee on Kubernetes<a class="headerlink" href="#deploy-tracee-on-kubernetes" title="Permanent link">&para;</a></h2>
+<h2 id="deploy-tracee-with-postee-on-kubernetes">Deploy Tracee with Postee on Kubernetes<a class="headerlink" href="#deploy-tracee-with-postee-on-kubernetes" title="Permanent link">&para;</a></h2>
 <p>The development machine described by Vagrantfile preinstalls <a href="https://microk8s.io">MicroK8s</a> Kubernetes cluster, which is suitable for testing
 Tracee.</p>
 <div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ microk8s status
@@ -1096,21 +1194,73 @@ high-availability: no
   datastore master nodes: 127.0.0.1:19001
   datastore standby nodes: none
 </code></pre></div>
-<p>There's also the <a href="https://kubernetes.io/docs/tasks/tools/#kubectl">kubectl</a> command installed to communicate with the cluster:</p>
+<p>There's also the <a href="https://kubernetes.io/docs/tasks/tools/#kubectl">kubectl</a> command installed and configured to communicate with the cluster:</p>
 <div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ kubectl get nodes -o wide
 NAME            STATUS   ROLES    AGE    VERSION                    INTERNAL-IP   EXTERNAL-IP   OS-IMAGE       KERNEL-VERSION      CONTAINER-RUNTIME
 ubuntu-impish   Ready    &lt;none&gt;   139m   v1.23.4-2+98fc2022f3ad3e   10.0.2.15     &lt;none&gt;        Ubuntu 21.10   5.13.0-35-generic   containerd://1.5.9
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ kubectl create ns tracee-system
-vagrant@ubuntu-impish:/vagrant$ kubectl apply -f deploy/kubernetes/tracee-postee/tracee.yaml -n tracee-system
-daemonset.apps/tracee created
+<p>To integrate Tracee with <a href="https://github.com/aquasecurity/postee">Postee</a> we must enable <code>storage</code> and <code>dns</code> <a href="https://microk8s.io/docs/addons">MicroK8s add-ons</a>. The <code>storage</code> add-on is used to
+setup <a href="https://kubernetes.io/docs/concepts/storage/persistent-volumes/">Persistent Volumes</a> required by Postee to holds its data, whereas the Kubernetes DNS server allows Tracee-Rules
+to send detections over to the Postee HTTP endpoint.</p>
+<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ microk8s enable storage
+Enabling default storage class
+deployment.apps/hostpath-provisioner created
+storageclass.storage.k8s.io/microk8s-hostpath created
+serviceaccount/microk8s-hostpath created
+clusterrole.rbac.authorization.k8s.io/microk8s-hostpath created
+clusterrolebinding.rbac.authorization.k8s.io/microk8s-hostpath created
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ kubectl logs -f daemonset/tracee -n tracee-system
+<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ microk8s enable dns
+Enabling DNS
+Applying manifest
+serviceaccount/coredns created
+configmap/coredns created
+deployment.apps/coredns created
+service/kube-dns created
+clusterrole.rbac.authorization.k8s.io/coredns created
+clusterrolebinding.rbac.authorization.k8s.io/coredns created
+Restarting kubelet
+DNS is enabled
+</code></pre></div>
+<p>Create a new namespace called <code>tracee-system</code>:</p>
+<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ kubectl create ns tracee-system
+</code></pre></div>
+<p>Create Postee Persistent Volumes and StatefulSet in the <code>tracee-system</code> namespace:</p>
+<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ kubectl apply -n tracee-system \
+  -f https://raw.githubusercontent.com/aquasecurity/postee/v2.2.0/deploy/kubernetes/hostPath/postee-pv.yaml
+vagrant@ubuntu-impish:/vagrant$ kubectl apply -n tracee-system \
+  -f https://raw.githubusercontent.com/aquasecurity/postee/v2.2.0/deploy/kubernetes/postee.yaml
+</code></pre></div>
+<p>Create Tracee DaemonSet in the <code>tracee-system</code>, which is preconfigured to print detections to the standard output and
+send them over to Postee webhook on http://postee-svc:8082:</p>
+<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ kubectl apply -n tracee-system -f deploy/kubernetes/tracee-postee/tracee.yaml
+</code></pre></div>
+<p>While Tracee pod is running, run <code>strace ls</code> command and observe detection printed to the standard output.</p>
+<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ kubectl logs n tracee-system -f daemonset/tracee
 INFO: probing tracee-ebpf capabilities...
 INFO: starting tracee-ebpf...
 INFO: starting tracee-rules...
 Loaded 14 signature(s): [TRC-1 TRC-13 TRC-2 TRC-14 TRC-3 TRC-11 TRC-9 TRC-4 TRC-5 TRC-12 TRC-8 TRC-6 TRC-10 TRC-7]
 Serving metrics endpoint at :3366
+
+*** Detection ***
+Time: 2022-03-29T08:26:32Z
+Signature ID: TRC-2
+Signature: Anti-Debugging
+Data: map[]
+Command: strace
+Hostname: ubuntu-impish
+</code></pre></div>
+<p>If everything is configured properly, you can find the same detection in Postee logs:</p>
+<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ kubectl -n tracee-system logs -f postee-0
+2022/03/29 08:26:32 {&quot;Data&quot;:null,&quot;Context&quot;:{&quot;timestamp&quot;:1648542392170684298,&quot;processorId&quot;:1,&quot;processId&quot;:90731,&quot;threadId&quot;
+:90731,&quot;parentProcessId&quot;:90729,&quot;hostProcessId&quot;:90731,&quot;hostThreadId&quot;:90731,&quot;hostParentProcessId&quot;:90729,&quot;userId&quot;:1000,&quot;mou
+ntNamespace&quot;:4026531840,&quot;pidNamespace&quot;:4026531836,&quot;processName&quot;:&quot;strace&quot;,&quot;hostName&quot;:&quot;ubuntu-impish&quot;,&quot;containerId&quot;:&quot;&quot;,&quot;ev
+entId&quot;:&quot;101&quot;,&quot;eventName&quot;:&quot;ptrace&quot;,&quot;argsNum&quot;:4,&quot;returnValue&quot;:0,&quot;stackAddresses&quot;:null,&quot;args&quot;:[{&quot;name&quot;:&quot;request&quot;,&quot;type&quot;:&quot;st
+ring&quot;,&quot;value&quot;:&quot;PTRACE_TRACEME&quot;},{&quot;name&quot;:&quot;pid&quot;,&quot;type&quot;:&quot;pid_t&quot;,&quot;value&quot;:0},{&quot;name&quot;:&quot;addr&quot;,&quot;type&quot;:&quot;void*&quot;,&quot;value&quot;:&quot;0x0&quot;},{&quot;n
+ame&quot;:&quot;data&quot;,&quot;type&quot;:&quot;void*&quot;,&quot;value&quot;:&quot;0x0&quot;}]},&quot;SigMetadata&quot;:{&quot;ID&quot;:&quot;TRC-2&quot;,&quot;Version&quot;:&quot;0.1.0&quot;,&quot;Name&quot;:&quot;Anti-Debugging&quot;,&quot;Descr
+iption&quot;:&quot;Process uses anti-debugging technique to block debugger&quot;,&quot;Tags&quot;:[&quot;linux&quot;,&quot;container&quot;],&quot;Properties&quot;:{&quot;MITRE ATT\
+u0026CK&quot;:&quot;Defense Evasion: Execution Guardrails&quot;,&quot;Severity&quot;:3}}}
 </code></pre></div>
 <h3 id="access-kubernetes-dashboard">Access Kubernetes Dashboard<a class="headerlink" href="#access-kubernetes-dashboard" title="Permanent link">&para;</a></h3>
 <p>Use the following command to get the token required to log in to the <a href="https://github.com/kubernetes/dashboard">Kubernetes Dashboard</a>:</p>
@@ -1148,6 +1298,41 @@ pages.</p>
       </main>
       
         <footer class="md-footer">
+  
+    <nav class="md-footer__inner md-grid" aria-label="Footer">
+      
+        
+        <a href="../../tracee-ebpf/override-os-needed-files/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Overriding OS needed files" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Overriding OS needed files
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../deploy-grafana-dashboard/" class="md-footer__link md-footer__link--next" aria-label="Next: Deploy Tracee Grafana Dashboard" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Deploy Tracee Grafana Dashboard
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
