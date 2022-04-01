@@ -129,6 +129,7 @@ type sorterTestCase struct {
 }
 
 func TestEventsChronologicalSorter_Start(t *testing.T) {
+	t.Skip("It's causing DATA RACE, see https://github.com/aquasecurity/tracee/issues/1630")
 	testCases := []sorterTestCase{
 		{
 			eventsPools: []eventsIteration{

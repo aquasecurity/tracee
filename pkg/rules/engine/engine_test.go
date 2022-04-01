@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"os"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -122,38 +123,6 @@ func TestConsumeSources(t *testing.T) {
 		expectedEvent     interface{}
 		config            Config
 	}{
-		{
-			name: "happy path - with one matching selector, parsed event enabled",
-			inputEvent: trace.Event{
-				EventName:       "test_event",
-				ProcessID:       2,
-				ParentProcessID: 1,
-				Args: []trace.Argument{
-					{
-						ArgMeta: trace.ArgMeta{
-							Name: "pathname",
-						},
-						Value: "/proc/self/mem",
-					},
-				},
-			},
-			inputSignature: regoFakeSignature{
-				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
-					return []detect.SignatureEventSelector{
-						{
-							Name:   "test_event",
-							Source: "tracee",
-						},
-					}, nil
-				},
-			},
-			expectedNumEvents: 1,
-			expectedEvent: trace.Event{
-				ProcessID: 2, ParentProcessID: 1, Args: []trace.Argument{{ArgMeta: trace.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
-				EventName: "test_event",
-			},
-			config: Config{},
-		},
 		{
 			name: "happy path - with one matching selector",
 			inputEvent: trace.Event{
@@ -430,10 +399,15 @@ func TestConsumeSources(t *testing.T) {
 			var sigs []detect.Signature
 			sigs = append(sigs, &tc.inputSignature)
 
-			var gotNumEvents int
+			// FIXME We should use another Go concurrency pattern to make this test logically correct.
+			//       The gotNumEvents variable is causing data race, because it's accessed
+			//       by two goroutines. Temporary workaround is to change from int to uint32 and
+			//       use atomic.AddUint32 and atomic.LoadUint32 methods.
+			//       go test -v -run=TestConsumeSources -race ./pkg/rules/engine/...
+			var gotNumEvents uint32
 			tc.inputSignature.onEvent = func(event protocol.Event) error {
 				assert.Equal(t, tc.expectedEvent, event.Payload.(trace.Event), tc.name)
-				gotNumEvents++
+				atomic.AddUint32(&gotNumEvents, 1)
 				return nil
 			}
 
@@ -450,11 +424,12 @@ func TestConsumeSources(t *testing.T) {
 			var gotEvent protocol.Event
 			time.Sleep(time.Millisecond * 1) // wait for events to propagate
 
+			eventsCount := int(atomic.LoadUint32(&gotNumEvents))
 			if tc.expectedNumEvents <= 0 {
 				assert.Equal(t, emptyEvent, gotEvent, tc.name)
-				assert.Zero(t, gotNumEvents, tc.name)
+				assert.Zero(t, eventsCount, tc.name)
 			} else {
-				assert.Equal(t, tc.expectedNumEvents, gotNumEvents, tc.name)
+				assert.Equal(t, tc.expectedNumEvents, eventsCount, tc.name)
 			}
 
 			if tc.expectedError != "" {
@@ -509,7 +484,7 @@ func TestEventSignatureSelector(t *testing.T) {
 	}
 }
 
-func TestGetSelectedEvents(t *testing.T) {
+func TestEngine_GetSelectedEvents(t *testing.T) {
 	sigs := []detect.Signature{
 		&regoFakeSignature{
 			getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
@@ -563,6 +538,7 @@ func TestGetSelectedEvents(t *testing.T) {
 	}
 	assert.ElementsMatch(t, expected, se)
 }
+
 func TestEngine_LoadSignature(t *testing.T) {
 	testCases := []struct {
 		name          string
