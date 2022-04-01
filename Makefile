@@ -565,6 +565,7 @@ test-unit: \
 	$(CMD_GO) test \
 		-tags ebpf \
 		-short \
+		-race \
 		-v \
 		-coverprofile=coverage.txt \
 		./...

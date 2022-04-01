@@ -41,8 +41,8 @@ type EventSources struct {
 	Tracee chan protocol.Event
 }
 
-func (e *Engine) Stats() *metrics.Stats {
-	return &e.stats
+func (engine *Engine) Stats() *metrics.Stats {
+	return &engine.stats
 }
 
 // NewEngine creates a new rules-engine with the given arguments
