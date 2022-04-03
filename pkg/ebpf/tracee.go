@@ -79,6 +79,11 @@ type netProbe struct {
 	egressHook  *bpf.TcHook
 }
 
+// RequiredInitValues determines if to initialize values that might be needed by eBPF programs
+type RequiredInitValues struct {
+	kallsyms bool
+}
+
 // Validate does static validation of the configuration
 func (tc Config) Validate() error {
 	if tc.Filter == nil || tc.Filter.EventsToTrace == nil {
@@ -185,10 +190,35 @@ type Tracee struct {
 	procInfo          *procinfo.ProcInfo
 	eventsSorter      *sorting.EventsChronologicalSorter
 	eventDerivations  map[int32]map[int32]deriveFn
+	kernelSymbols     *helpers.KernelSymbolTable
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
 	return &t.stats
+}
+
+func isEssential(id int32) bool {
+	return EventsDefinitions[id].EssentialEvent
+}
+
+func setEssential(id int32) {
+	event := EventsDefinitions[id]
+	event.EssentialEvent = true
+	EventsDefinitions[id] = event
+}
+
+func handleEventsDependencies(e int32, initReq *RequiredInitValues) {
+	eDependencies := EventsDefinitions[e].Dependencies
+	if len(eDependencies.ksymbols) > 0 {
+		initReq.kallsyms = true
+	}
+	// Some events depend on other events - mark those essential
+	for _, dependentEvent := range eDependencies.events {
+		if !isEssential(dependentEvent.eventID) {
+			setEssential(dependentEvent.eventID)
+			handleEventsDependencies(dependentEvent.eventID, initReq)
+		}
+	}
 }
 
 // New creates a new Tracee instance based on a given valid Config
@@ -200,11 +230,6 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("validation error: %v", err)
 	}
 
-	setEssential := func(id int32) {
-		event := EventsDefinitions[id]
-		event.EssentialEvent = true
-		EventsDefinitions[id] = event
-	}
 	if cfg.Capture.Exec {
 		setEssential(SchedProcessExecEventID)
 	}
@@ -253,10 +278,13 @@ func New(cfg Config) (*Tracee, error) {
 	for _, e := range t.config.Filter.EventsToTrace {
 		// Map value is true iff events requested by the user
 		t.eventsToTrace[e] = true
+	}
 
-		// Some events depend on other events - mark those essential
-		for _, dependency := range EventsDefinitions[e].Dependencies {
-			setEssential(dependency.eventID)
+	initReq := RequiredInitValues{}
+	// Handles all essential events dependencies
+	for id, event := range EventsDefinitions {
+		if event.EssentialEvent || t.eventsToTrace[id] {
+			handleEventsDependencies(id, &initReq)
 		}
 	}
 
@@ -282,6 +310,17 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error initializing containers: %w", err)
 	}
 	t.containers = c
+
+	if initReq.kallsyms {
+		t.kernelSymbols, err = helpers.NewKernelSymbolsMap()
+		if err != nil {
+			t.Close()
+			return nil, fmt.Errorf("error creating symbols map: %v", err)
+		}
+		if !initialization.ValidateKsymbolsTable(t.kernelSymbols) {
+			return nil, fmt.Errorf("kernel symbols were not loaded currectly. Make sure tracee-ebpf has the CAP_SYSLOG capability")
+		}
+	}
 
 	t.netInfo.ifaces = make(map[int]*net.Interface)
 	t.netInfo.ifacesConfig = make(map[string]int32)
@@ -583,6 +622,25 @@ func (t *Tracee) populateBPFMaps() error {
 		if err := sys32to64BPFMap.Update(unsafe.Pointer(&ID32BitU32), unsafe.Pointer(&IDU32)); err != nil {
 			return err
 		}
+	}
+
+	if t.kernelSymbols != nil {
+		// Initialize map for global symbols of the kernel
+		bpfKsymsMap, err := t.bpfModule.GetMap("ksymbols_map") // u32, u64
+		if err != nil {
+			return err
+		}
+
+		var reqKsyms []string
+		for id, event := range EventsDefinitions {
+			if event.EssentialEvent || t.eventsToTrace[id] {
+				reqKsyms = append(reqKsyms, event.Dependencies.ksymbols...)
+			}
+		}
+
+		kallsymsValues := initialization.LoadKallsymsValues(t.kernelSymbols, reqKsyms)
+
+		initialization.SendKsymbolsToMap(bpfKsymsMap, kallsymsValues)
 	}
 
 	// Initialize kconfig variables (map used instead of relying in libbpf's .kconfig automated maps)

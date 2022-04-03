@@ -29,6 +29,7 @@ capabilities:
 * Load and Attach eBPF programs:
     1. `CAP_BPF`+`CAP_PERFMON` for recent kernels (>=5.8)
     2. or `CAP_SYS_ADMIN` for older kernels
+* `CAP_SYSLOG` (to access kernel symbols through /proc/kallsyms)
 * On some environments (e.g. Ubuntu) `CAP_IPC_LOCK` might be required as well.
 
 > Alternatively, run as `root` or with the `--privileged` flag of Docker.
