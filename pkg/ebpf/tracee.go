@@ -977,7 +977,7 @@ func (t *Tracee) initBPF() error {
 		}
 	}
 
-	if t.config.Capture.NetIfaces == nil && !t.config.Debug && t.config.Filter.NetFilter.InterfacesToTrace == nil {
+	if t.config.Capture.NetIfaces == nil && !t.config.Debug && len(t.config.Filter.NetFilter.InterfacesToTrace) == 0 {
 		// SecuritySocketBindEventID is set as an essentialEvent if 'capture net' or 'debug' were chosen by the user.
 		networkProbes := []string{"tc_ingress", "tc_egress", "trace_udp_sendmsg", "trace_udp_disconnect", "trace_udp_destroy_sock", "trace_udpv6_destroy_sock", "tracepoint__inet_sock_set_state", "trace_icmp_send", "trace_icmp_rcv", "trace_icmp6_send", "trace_icmpv6_rcv", "trace_ping_v4_sendmsg", "trace_ping_v6_sendmsg"}
 		for _, progName := range networkProbes {
@@ -1026,8 +1026,10 @@ func (t *Tracee) initBPF() error {
 		t.tcProbe = append(t.tcProbe, tcProbe)
 	}
 
-	if err = t.attachNetProbes(); err != nil {
-		return err
+	if t.config.Capture.NetIfaces != nil || t.config.Debug || len(t.config.Filter.NetFilter.InterfacesToTrace) != 0 {
+		if err = t.attachNetProbes(); err != nil {
+			return err
+		}
 	}
 
 	for e := range t.eventsToTrace {
