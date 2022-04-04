@@ -23,6 +23,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/ebpf/initialization"
+	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
@@ -36,6 +37,7 @@ type Config struct {
 	Filter             *Filter
 	Capture            *CaptureConfig
 	Output             *OutputConfig
+	Cache              queue.CacheConfig
 	PerfBufferSize     int
 	BlobPerfBufferSize int
 	Debug              bool
@@ -77,6 +79,11 @@ type netProbe struct {
 	egressHook  *bpf.TcHook
 }
 
+// RequiredInitValues determines if to initialize values that might be needed by eBPF programs
+type RequiredInitValues struct {
+	kallsyms bool
+}
+
 // Validate does static validation of the configuration
 func (tc Config) Validate() error {
 	if tc.Filter == nil || tc.Filter.EventsToTrace == nil {
@@ -86,6 +93,11 @@ func (tc Config) Validate() error {
 	for _, e := range tc.Filter.EventsToTrace {
 		if _, ok := EventsDefinitions[e]; !ok {
 			return fmt.Errorf("invalid event to trace: %d", e)
+		}
+		if e == NetPacket {
+			if len(tc.Filter.NetFilter.InterfacesToTrace) == 0 {
+				return fmt.Errorf("missing interface for net event: %s, please add -t net=<iface>", EventsDefinitions[e].Name)
+			}
 		}
 	}
 	for eventID, eventFilters := range tc.Filter.ArgFilter.Filters {
@@ -173,14 +185,40 @@ type Tracee struct {
 	pidsInMntns       bucketscache.BucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
 	tcProbe           []netProbe
-	netCapture        netInfo
+	netInfo           netInfo
 	containers        *containers.Containers
 	procInfo          *procinfo.ProcInfo
 	eventsSorter      *sorting.EventsChronologicalSorter
+	eventDerivations  map[int32]map[int32]deriveFn
+	kernelSymbols     *helpers.KernelSymbolTable
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
 	return &t.stats
+}
+
+func isEssential(id int32) bool {
+	return EventsDefinitions[id].EssentialEvent
+}
+
+func setEssential(id int32) {
+	event := EventsDefinitions[id]
+	event.EssentialEvent = true
+	EventsDefinitions[id] = event
+}
+
+func handleEventsDependencies(e int32, initReq *RequiredInitValues) {
+	eDependencies := EventsDefinitions[e].Dependencies
+	if len(eDependencies.ksymbols) > 0 {
+		initReq.kallsyms = true
+	}
+	// Some events depend on other events - mark those essential
+	for _, dependentEvent := range eDependencies.events {
+		if !isEssential(dependentEvent.eventID) {
+			setEssential(dependentEvent.eventID)
+			handleEventsDependencies(dependentEvent.eventID, initReq)
+		}
+	}
 }
 
 // New creates a new Tracee instance based on a given valid Config
@@ -192,11 +230,6 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("validation error: %v", err)
 	}
 
-	setEssential := func(id int32) {
-		event := EventsDefinitions[id]
-		event.EssentialEvent = true
-		EventsDefinitions[id] = event
-	}
 	if cfg.Capture.Exec {
 		setEssential(SchedProcessExecEventID)
 	}
@@ -246,10 +279,13 @@ func New(cfg Config) (*Tracee, error) {
 	for _, e := range t.config.Filter.EventsToTrace {
 		// Map value is true iff events requested by the user
 		t.eventsToTrace[e] = true
+	}
 
-		// Some events depend on other events - mark those essential
-		for _, dependency := range EventsDefinitions[e].Dependencies {
-			setEssential(dependency.eventID)
+	initReq := RequiredInitValues{}
+	// Handles all essential events dependencies
+	for id, event := range EventsDefinitions {
+		if event.EssentialEvent || t.eventsToTrace[id] {
+			handleEventsDependencies(id, &initReq)
 		}
 	}
 
@@ -261,11 +297,55 @@ func New(cfg Config) (*Tracee, error) {
 		}
 	}
 
-	c := containers.InitContainers()
+	// Initialize event derivation map
+	err = t.initEventDerivationMap()
+	if err != nil {
+		return nil, fmt.Errorf("error intitalizing event derivation map: %w", err)
+	}
+
+	c, err := containers.InitContainers()
+	if err != nil {
+		return nil, fmt.Errorf("error initializing containers: %w", err)
+	}
 	if err := c.Populate(); err != nil {
-		return nil, fmt.Errorf("error initializing containers: %v", err)
+		return nil, fmt.Errorf("error initializing containers: %w", err)
 	}
 	t.containers = c
+
+	if initReq.kallsyms {
+		t.kernelSymbols, err = helpers.NewKernelSymbolsMap()
+		if err != nil {
+			t.Close()
+			return nil, fmt.Errorf("error creating symbols map: %v", err)
+		}
+		if !initialization.ValidateKsymbolsTable(t.kernelSymbols) {
+			return nil, fmt.Errorf("kernel symbols were not loaded currectly. Make sure tracee-ebpf has the CAP_SYSLOG capability")
+		}
+	}
+
+	t.netInfo.ifaces = make(map[int]*net.Interface)
+	t.netInfo.ifacesConfig = make(map[string]int32)
+	for _, iface := range t.config.Filter.NetFilter.InterfacesToTrace {
+		netIface, err := net.InterfaceByName(iface)
+		if err != nil {
+			return nil, fmt.Errorf("invalid network interface: %s", iface)
+		}
+		// Map real network interface index to interface object
+		t.netInfo.ifaces[netIface.Index] = netIface
+		t.netInfo.ifacesConfig[netIface.Name] |= TraceIface
+	}
+
+	for _, iface := range t.config.Capture.NetIfaces {
+		netIface, err := net.InterfaceByName(iface)
+		if err != nil {
+			return nil, fmt.Errorf("invalid network interface: %s", iface)
+		}
+		if !t.netInfo.hasIface(netIface.Name) {
+			// Map real network interface index to interface object
+			t.netInfo.ifaces[netIface.Index] = netIface
+		}
+		t.netInfo.ifacesConfig[netIface.Name] |= CaptureIface
+	}
 
 	err = t.initBPF()
 	if err != nil {
@@ -301,16 +381,11 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error creating output path: %v", err)
 	}
 
-	t.netCapture.ngIfacesIndex = make(map[int]int)
-	for idx, iface := range t.config.Capture.NetIfaces {
-		netIface, err := net.InterfaceByName(iface)
-		if err != nil {
-			return nil, fmt.Errorf("invalid network interface: %s", iface)
-		}
-		// Map real network interface index to NgInterface index
-		t.netCapture.ngIfacesIndex[netIface.Index] = idx
+	t.netInfo.pcapWriters, err = lru.NewWithEvict(openPcapsLimit, t.netInfo.PcapWriterOnEvict)
+	if err != nil {
+		t.Close()
+		return nil, err
 	}
-	t.netCapture.pcapWriters = make(map[processPcapId]netPcap)
 
 	// Get reference to stack trace addresses map
 	StackAddressesMap, err := t.bpfModule.GetMap("stack_addresses")
@@ -358,6 +433,7 @@ const (
 	configTraceePid bpfConfig = iota
 	configOptions
 	configFilters
+	configCgroupV1HID
 )
 
 // options config should match defined values in ebpf code
@@ -550,6 +626,25 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
+	if t.kernelSymbols != nil {
+		// Initialize map for global symbols of the kernel
+		bpfKsymsMap, err := t.bpfModule.GetMap("ksymbols_map") // u32, u64
+		if err != nil {
+			return err
+		}
+
+		var reqKsyms []string
+		for id, event := range EventsDefinitions {
+			if event.EssentialEvent || t.eventsToTrace[id] {
+				reqKsyms = append(reqKsyms, event.Dependencies.ksymbols...)
+			}
+		}
+
+		kallsymsValues := initialization.LoadKallsymsValues(t.kernelSymbols, reqKsyms)
+
+		initialization.SendKsymbolsToMap(bpfKsymsMap, kallsymsValues)
+	}
+
 	// Initialize kconfig variables (map used instead of relying in libbpf's .kconfig automated maps)
 	// Note: this allows libbpf not to rely on the system kconfig file, tracee does the kconfig var identification job
 
@@ -589,6 +684,14 @@ func (t *Tracee) populateBPFMaps() error {
 	cOptVal := t.getOptionsConfig()
 	if err = bpfConfigMap.Update(unsafe.Pointer(&cOpt), unsafe.Pointer(&cOptVal)); err != nil {
 		return err
+	}
+
+	if t.containers.IsCgroupV1() {
+		cHID := uint32(configCgroupV1HID)
+		cHIDVal := t.containers.GetCgroupV1HID()
+		if err = bpfConfigMap.Update(unsafe.Pointer(&cHID), unsafe.Pointer(&cHIDVal)); err != nil {
+			return err
+		}
 	}
 
 	cFilter := uint32(configFilters)
@@ -681,6 +784,20 @@ func (t *Tracee) populateBPFMaps() error {
 			}
 		}
 	}
+	if len(t.netInfo.ifaces) > 0 {
+		networkConfingMap, err := t.bpfModule.GetMap("network_config") // u32, int
+		if err != nil {
+			return err
+		}
+		for _, iface := range t.netInfo.ifaces {
+			ifaceIdx := iface.Index
+			ifaceConf := t.netInfo.ifacesConfig[iface.Name]
+			if err := networkConfingMap.Update(unsafe.Pointer(&ifaceIdx), unsafe.Pointer(&ifaceConf)); err != nil {
+				return err
+			}
+
+		}
+	}
 
 	return nil
 }
@@ -767,6 +884,60 @@ func (t *Tracee) attachNetProbes() error {
 		return fmt.Errorf("error attaching event tcp_connect: %v", err)
 	}
 
+	prog, _ = t.bpfModule.GetProgram("trace_icmp_rcv")
+	if prog == nil {
+		return fmt.Errorf("couldn't find trace_icmp_rcv program")
+	}
+	_, err = prog.AttachKprobe("icmp_rcv")
+	if err != nil {
+		return fmt.Errorf("error attaching event icmp_rcv: %v", err)
+	}
+
+	prog, _ = t.bpfModule.GetProgram("trace_icmp_send")
+	if prog == nil {
+		return fmt.Errorf("couldn't find trace_icmp_send program")
+	}
+	_, err = prog.AttachKprobe("__icmp_send")
+	if err != nil {
+		return fmt.Errorf("error attaching event __icmp_send: %v", err)
+	}
+
+	prog, _ = t.bpfModule.GetProgram("trace_icmpv6_rcv")
+	if prog == nil {
+		return fmt.Errorf("couldn't find trace_icmpv6_rcv program")
+	}
+	_, err = prog.AttachKprobe("icmpv6_rcv")
+	if err != nil {
+		return fmt.Errorf("error attaching event icmpv6_rcv: %v", err)
+	}
+
+	prog, _ = t.bpfModule.GetProgram("trace_icmp6_send")
+	if prog == nil {
+		return fmt.Errorf("couldn't find trace_icmp6_send program")
+	}
+	_, err = prog.AttachKprobe("icmp6_send")
+	if err != nil {
+		return fmt.Errorf("error attaching event icmp6_send: %v", err)
+	}
+
+	prog, _ = t.bpfModule.GetProgram("trace_ping_v4_sendmsg")
+	if prog == nil {
+		return fmt.Errorf("couldn't find trace_ping_v4_sendmsg program")
+	}
+	_, err = prog.AttachKprobe("ping_v4_sendmsg")
+	if err != nil {
+		return fmt.Errorf("error attaching event ping_v4_sendmsg: %v", err)
+	}
+
+	prog, _ = t.bpfModule.GetProgram("trace_ping_v6_sendmsg")
+	if prog == nil {
+		return fmt.Errorf("couldn't find trace_ping_v6_sendmsg program")
+	}
+	_, err = prog.AttachKprobe("ping_v6_sendmsg")
+	if err != nil {
+		return fmt.Errorf("error attaching event ping_v6_sendmsg: %v", err)
+	}
+
 	return nil
 }
 
@@ -809,9 +980,9 @@ func (t *Tracee) initBPF() error {
 		}
 	}
 
-	if t.config.Capture.NetIfaces == nil && !t.config.Debug {
+	if t.config.Capture.NetIfaces == nil && !t.config.Debug && t.config.Filter.NetFilter.InterfacesToTrace == nil {
 		// SecuritySocketBindEventID is set as an essentialEvent if 'capture net' or 'debug' were chosen by the user.
-		networkProbes := []string{"tc_ingress", "tc_egress", "trace_udp_sendmsg", "trace_udp_disconnect", "trace_udp_destroy_sock", "trace_udpv6_destroy_sock", "tracepoint__inet_sock_set_state"}
+		networkProbes := []string{"tc_ingress", "tc_egress", "trace_udp_sendmsg", "trace_udp_disconnect", "trace_udp_destroy_sock", "trace_udpv6_destroy_sock", "tracepoint__inet_sock_set_state", "trace_icmp_send", "trace_icmp_rcv", "trace_icmp6_send", "trace_icmpv6_rcv", "trace_ping_v4_sendmsg", "trace_ping_v6_sendmsg"}
 		for _, progName := range networkProbes {
 			prog, _ := t.bpfModule.GetProgram(progName)
 			if prog == nil {
@@ -834,28 +1005,32 @@ func (t *Tracee) initBPF() error {
 		return err
 	}
 
-	if t.config.Capture.NetIfaces != nil || t.config.Debug {
-		for _, iface := range t.config.Capture.NetIfaces {
-			ingressHook, err := t.attachTcProg(iface, bpf.BPFTcIngress, "tc_ingress")
-			if err != nil {
-				return err
-			}
+	if t.eventsToTrace[NetPacket] && len(t.config.Filter.NetFilter.InterfacesToTrace) == 0 {
+		return fmt.Errorf("couldn't trace %s event, missing interface", EventsDefinitions[NetPacket].Name)
+	}
+	for _, iface := range t.netInfo.ifaces {
+		tcProbe := netProbe{}
 
-			egressHook, err := t.attachTcProg(iface, bpf.BPFTcEgress, "tc_egress")
-			if err != nil {
-				return err
-			}
-
-			tcProbe := netProbe{
-				ingressHook: ingressHook,
-				egressHook:  egressHook,
-			}
-			t.tcProbe = append(t.tcProbe, tcProbe)
-		}
-
-		if err = t.attachNetProbes(); err != nil {
+		ingressHook, err := t.attachTcProg(iface.Name, bpf.BPFTcIngress, "tc_ingress")
+		if err != nil {
 			return err
 		}
+		tcProbe.ingressHook = ingressHook
+
+		// if loopback device - don't capture on egress - because of packet duplication
+		if iface.Flags&net.FlagLoopback != net.FlagLoopback {
+			egressHook, err := t.attachTcProg(iface.Name, bpf.BPFTcEgress, "tc_egress")
+			if err != nil {
+				return err
+			}
+			tcProbe.egressHook = egressHook
+		}
+
+		t.tcProbe = append(t.tcProbe, tcProbe)
+	}
+
+	if err = t.attachNetProbes(); err != nil {
+		return err
 	}
 
 	for e := range t.eventsToTrace {
@@ -1020,7 +1195,9 @@ func (t *Tracee) Close() {
 	for _, tcProbe := range t.tcProbe {
 		// First, delete filters we created
 		tcProbe.ingressHook.Destroy()
-		tcProbe.egressHook.Destroy()
+		if tcProbe.egressHook != nil {
+			tcProbe.egressHook.Destroy()
+		}
 
 		// Todo: Delete the qdisc only if no other filters are installed on it.
 		// There is currently a bug with the libbpf tc API that doesn't allow us to perform this check:
@@ -1078,4 +1255,18 @@ func (t *Tracee) invokeInitEvents() {
 			t.stats.EventCount.Increment()
 		}
 	}
+}
+func (t *Tracee) getTracedIfaceIdx(ifaceName string) (int, error) {
+	return findInList(ifaceName, &t.config.Filter.NetFilter.InterfacesToTrace)
+}
+func (t *Tracee) getCapturedIfaceIdx(ifaceName string) (int, error) {
+	return findInList(ifaceName, &t.config.Capture.NetIfaces)
+}
+func findInList(element string, list *[]string) (int, error) {
+	for idx, name := range *list {
+		if name == element {
+			return idx, nil
+		}
+	}
+	return 0, fmt.Errorf("element: %s dosent found\n", element)
 }

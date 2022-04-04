@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/aquasecurity/tracee/pkg/events/queue"
+
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/flags"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/stretchr/testify/assert"
@@ -254,10 +256,12 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
@@ -305,10 +309,12 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
@@ -356,10 +362,12 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
@@ -407,10 +415,12 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
@@ -457,11 +467,13 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{"ls"},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 					Enabled:  true,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
@@ -508,10 +520,12 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{"deadbeaf"},
+					Size:     flags.MaxBpfStrFilterSize,
 					Enabled:  true,
 				},
 				ContFilter:    &tracee.BoolFilter{},
@@ -560,10 +574,12 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
@@ -611,10 +627,12 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
@@ -661,10 +679,12 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				ContFilter: &tracee.BoolFilter{
 					Value:   true,
@@ -714,10 +734,12 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				ContFilter: &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{
@@ -767,10 +789,12 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
@@ -825,10 +849,12 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 				},
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
@@ -889,11 +915,13 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 					Enabled:  false,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 					Enabled:  false,
 				},
 				ContFilter:    &tracee.BoolFilter{},
@@ -946,11 +974,13 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 					Enabled:  false,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 					Enabled:  false,
 				},
 				ContFilter:    &tracee.BoolFilter{},
@@ -1002,11 +1032,13 @@ func TestPrepareFilter(t *testing.T) {
 				CommFilter: &tracee.StringFilter{
 					Equal:    []string{"ps"},
 					NotEqual: []string{},
+					Size:     flags.MaxBpfStrFilterSize,
 					Enabled:  true,
 				},
 				UTSFilter: &tracee.StringFilter{
 					Equal:    []string{},
 					NotEqual: []string{"abc"},
+					Size:     flags.MaxBpfStrFilterSize,
 					Enabled:  true,
 				},
 				ContFilter:    &tracee.BoolFilter{},
@@ -1300,6 +1332,60 @@ func TestPrepareOutput(t *testing.T) {
 			} else {
 				assert.Equal(t, testcase.expectedOutput, output)
 			}
+		})
+	}
+}
+
+func TestPrepareCache(t *testing.T) {
+	testCases := []struct {
+		testName      string
+		cacheSlice    []string
+		expectedCache queue.CacheConfig
+		expectedError error
+	}{
+		{
+			testName:      "invalid cache option",
+			cacheSlice:    []string{"foo"},
+			expectedCache: nil,
+			expectedError: errors.New("unrecognized cache option format: foo"),
+		},
+		{
+			testName:      "invalid cache-type",
+			cacheSlice:    []string{"cache-type=bleh"},
+			expectedCache: nil,
+			expectedError: errors.New("unrecognized cache-mem option: cache-type=bleh (valid options are: none,mem)"),
+		},
+		{
+			testName:      "cache-type=none",
+			cacheSlice:    []string{"cache-type=none"},
+			expectedCache: nil,
+			expectedError: nil,
+		},
+		{
+			testName:      "cache-type=mem",
+			cacheSlice:    []string{"cache-type=mem"},
+			expectedCache: queue.NewEventQueueMem(0),
+			expectedError: nil,
+		},
+		{
+			testName:      "mem-cache-size=X without cache-type=mem",
+			cacheSlice:    []string{"mem-cache-size=256"},
+			expectedCache: nil,
+			expectedError: errors.New("you need to specify cache-type=mem before setting mem-cache-size"),
+		},
+		{
+			testName:      "cache-type=mem with mem-cache-size=512",
+			cacheSlice:    []string{"cache-type=mem", "mem-cache-size=512"},
+			expectedCache: queue.NewEventQueueMem(512),
+			expectedError: nil,
+		},
+	}
+
+	for _, testcase := range testCases {
+		t.Run(testcase.testName, func(t *testing.T) {
+			cache, err := flags.PrepareCache(testcase.cacheSlice)
+			assert.Equal(t, testcase.expectedError, err)
+			assert.Equal(t, testcase.expectedCache, cache)
 		})
 	}
 }

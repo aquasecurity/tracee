@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
-	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -298,28 +297,28 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 	case CgroupMkdirEventID:
 		cgroupId, err := getEventArgUint64Val(event, "cgroup_id")
 		if err != nil {
-			return fmt.Errorf("error parsing cgroup_mkdir args: %v", err)
+			return fmt.Errorf("error parsing cgroup_mkdir args: %w", err)
 		}
 		path, err := getEventArgStringVal(event, "cgroup_path")
 		if err != nil {
-			return fmt.Errorf("error parsing cgroup_mkdir args: %v", err)
+			return fmt.Errorf("error parsing cgroup_mkdir args: %w", err)
 		}
 		hId, err := getEventArgUint32Val(event, "hierarchy_id")
 		if err != nil {
-			return fmt.Errorf("error parsing cgroup_mkdir args: %v", err)
+			return fmt.Errorf("error parsing cgroup_mkdir args: %w", err)
 		}
 		info, err := t.containers.CgroupMkdir(cgroupId, path, hId)
 		if err == nil && info.ContainerId == "" {
 			// If cgroupId is from a regular cgroup directory, and not the
 			// container base directory (from known runtimes), it should be
 			// removed from the "containers_map".
-			containers.RemoveFromBpfMap(t.bpfModule, cgroupId, "containers_map")
+			t.containers.RemoveFromBpfMap(t.bpfModule, cgroupId, hId, "containers_map")
 		}
 
 	case CgroupRmdirEventID:
 		cgroupId, err := getEventArgUint64Val(event, "cgroup_id")
 		if err != nil {
-			return fmt.Errorf("error parsing cgroup_rmdir args: %v", err)
+			return fmt.Errorf("error parsing cgroup_rmdir args: %w", err)
 		}
 
 		if t.config.Capture.NetPerContainer {
@@ -329,7 +328,11 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			}
 		}
 
-		t.containers.CgroupRemove(cgroupId)
+		hId, err := getEventArgUint32Val(event, "hierarchy_id")
+		if err != nil {
+			return fmt.Errorf("error parsing cgroup_mkdir args: %w", err)
+		}
+		t.containers.CgroupRemove(cgroupId, hId)
 	}
 
 	return nil

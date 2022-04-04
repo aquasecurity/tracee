@@ -57,21 +57,37 @@ func main() {
 				Debug:              c.Bool("debug"),
 			}
 
-			if checkCommandIsHelp(c.StringSlice("capture")) {
+			cacheSlice := c.StringSlice("cache")
+			if checkCommandIsHelp(cacheSlice) {
+				fmt.Print(flags.CacheHelp())
+				return nil
+			}
+			cache, err := flags.PrepareCache(cacheSlice)
+			if err != nil {
+				return err
+			}
+			cfg.Cache = cache
+			if debug && cfg.Cache != nil {
+				fmt.Fprintf(os.Stdout, "Cache: cache type is \"%s\"\n", cfg.Cache)
+			}
+
+			captureSlice := c.StringSlice("capture")
+			if checkCommandIsHelp(captureSlice) {
 				fmt.Print(flags.CaptureHelp())
 				return nil
 			}
-			capture, err := flags.PrepareCapture(c.StringSlice("capture"))
+			capture, err := flags.PrepareCapture(captureSlice)
 			if err != nil {
 				return err
 			}
 			cfg.Capture = &capture
 
-			if checkCommandIsHelp(c.StringSlice("trace")) {
+			traceSlice := c.StringSlice("trace")
+			if checkCommandIsHelp(traceSlice) {
 				fmt.Print(flags.FilterHelp())
 				return nil
 			}
-			filter, err := flags.PrepareFilter(c.StringSlice("trace"))
+			filter, err := flags.PrepareFilter(traceSlice)
 			if err != nil {
 				return err
 			}
@@ -81,11 +97,12 @@ func main() {
 				(cfg.Filter.NewContFilter.Enabled && cfg.Filter.NewContFilter.Value) ||
 				cfg.Filter.ContIDFilter.Enabled
 
-			if checkCommandIsHelp(c.StringSlice("output")) {
+			outputSlice := c.StringSlice("output")
+			if checkCommandIsHelp(outputSlice) {
 				fmt.Print(flags.OutputHelp())
 				return nil
 			}
-			output, printerConfig, err := flags.PrepareOutput(c.StringSlice("output"))
+			output, printerConfig, err := flags.PrepareOutput(outputSlice)
 			if err != nil {
 				return err
 			}
@@ -173,7 +190,9 @@ func main() {
 					mux.Handle("/metrics", promhttp.Handler())
 
 					go func() {
-						fmt.Fprintf(os.Stdout, "Serving metrics endpoint at %s\n", metricsAddr)
+						if debug {
+							fmt.Fprintf(os.Stdout, "Serving metrics endpoint at %s\n", metricsAddr)
+						}
 						if err := http.ListenAndServe(metricsAddr, mux); err != http.ErrServerClosed {
 							fmt.Fprintf(os.Stderr, "Error serving metrics endpoint: %v\n", err)
 						}
@@ -276,21 +295,27 @@ func main() {
 				Value:   cli.NewStringSlice("format:table"),
 				Usage:   "Control how and where output is printed. run '--output help' for more info.",
 			},
+			&cli.StringSliceFlag{
+				Name:    "cache",
+				Aliases: []string{"a"},
+				Value:   cli.NewStringSlice("none"),
+				Usage:   "Control event caching queues. run '--cache help' for more info.",
+			},
 			&cli.IntFlag{
 				Name:    "perf-buffer-size",
 				Aliases: []string{"b"},
-				Value:   1024,
+				Value:   1024, // 4 MB of contigous pages
 				Usage:   "size, in pages, of the internal perf ring buffer used to submit events from the kernel",
 			},
 			&cli.IntFlag{
 				Name:  "blob-perf-buffer-size",
-				Value: 1024,
+				Value: 1024, // 4 MB of contigous pages
 				Usage: "size, in pages, of the internal perf ring buffer used to send blobs from the kernel",
 			},
 			&cli.BoolFlag{
 				Name:        "debug",
 				Value:       false,
-				Usage:       "write verbose debug messages to standard output and retain intermediate artifacts",
+				Usage:       "write verbose debug messages to standard output and retain intermediate artifacts. enabling will output debug messages to stdout, which will likely break consumers which expect to receive machine-readable events from stdout",
 				Destination: &debug,
 			},
 			&cli.StringFlag{
@@ -490,6 +515,9 @@ func printList() {
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________\n\n")
 	printEventGroup(&b, int(tracee.SysEnterEventID), int(tracee.MaxCommonEventID))
 	printEventGroup(&b, int(tracee.InitNamespacesEventID), int(tracee.MaxUserSpaceEventID))
+	b.WriteString("\n\nNetwork Events: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
+	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________\n\n")
+	printEventGroup(&b, int(tracee.NetPacket), int(tracee.MaxNetEventID))
 	fmt.Println(b.String())
 }
 

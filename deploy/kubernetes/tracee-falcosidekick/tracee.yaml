@@ -17,8 +17,8 @@ spec:
       name: tracee
     spec:
       containers:
-      - image: aquasec/tracee:latest
-        imagePullPolicy: Always
+      - image: docker.io/aquasec/tracee:v0.7.0
+        imagePullPolicy: IfNotPresent
         args:
           - --webhook http://tracee-webhook:2801 --webhook-template ./templates/falcosidekick.tmpl --webhook-content-type application/json
         name: tracee
@@ -27,11 +27,8 @@ spec:
         volumeMounts:
         - name: tmp-tracee
           mountPath: /tmp/tracee
-        - name: usr-src
-          mountPath: /usr/src
-          readOnly: true
-        - name: lib-modules
-          mountPath: /lib/modules/
+        - name: etc-os-release
+          mountPath: /etc/os-release-host
           readOnly: true
         resources:
           limits:
@@ -50,9 +47,5 @@ spec:
           path: /tmp/tracee
         name: tmp-tracee
       - hostPath:
-          path: /usr/src
-        name: usr-src
-      - hostPath:
-          path: /lib/modules
-        name: lib-modules
-
+          path: /etc/os-release
+        name: etc-os-release

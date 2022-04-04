@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -55,6 +56,7 @@ type Filter struct {
 	ArgFilter         *ArgFilter
 	ProcessTreeFilter *ProcessTreeFilter
 	Follow            bool
+	NetFilter         *IfaceFilter
 }
 
 type UintFilter struct {
@@ -239,6 +241,7 @@ func (filter *IntFilter) Parse(operatorAndValues string) error {
 type StringFilter struct {
 	Equal    []string
 	NotEqual []string
+	Size     uint
 	Enabled  bool
 }
 
@@ -289,13 +292,15 @@ func (filter *StringFilter) Set(bpfModule *bpf.Module, filterMapName string) err
 		return err
 	}
 	for i := 0; i < len(filter.Equal); i++ {
-		filterEqualBytes := []byte(filter.Equal[i])
+		filterEqualBytes := make([]byte, filter.Size)
+		copy(filterEqualBytes, filter.Equal[i])
 		if err = filterMap.Update(unsafe.Pointer(&filterEqualBytes[0]), unsafe.Pointer(&filterEqualU32)); err != nil {
 			return err
 		}
 	}
 	for i := 0; i < len(filter.NotEqual); i++ {
-		filterNotEqualBytes := []byte(filter.NotEqual[i])
+		filterNotEqualBytes := make([]byte, filter.Size)
+		copy(filterNotEqualBytes, filter.NotEqual[i])
 		if err = filterMap.Update(unsafe.Pointer(&filterNotEqualBytes[0]), unsafe.Pointer(&filterNotEqualU32)); err != nil {
 			return err
 		}
@@ -642,4 +647,28 @@ func (filter *ContIDFilter) FilterOut() bool {
 	} else {
 		return true
 	}
+}
+
+type IfaceFilter struct {
+	InterfacesToTrace []string
+}
+
+func (filter *IfaceFilter) Parse(operatorAndValues string) error {
+	return ParseIface(operatorAndValues, &filter.InterfacesToTrace)
+}
+
+func ParseIface(operatorAndValues string, ifacesList *[]string) error {
+	ifaces := strings.Split(operatorAndValues, ",")
+	for _, iface := range ifaces {
+		if _, err := net.InterfaceByName(iface); err != nil {
+			return fmt.Errorf("invalid network interface: %s", iface)
+		}
+		_, err := findInList(iface, ifacesList)
+		// if the interface is not already in the interface list, we want to add it
+		if err != nil {
+			*ifacesList = append(*ifacesList, iface)
+		}
+	}
+
+	return nil
 }

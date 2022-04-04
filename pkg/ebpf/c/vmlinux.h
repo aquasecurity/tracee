@@ -509,6 +509,36 @@ struct sockaddr_in6 {
 	__u32 sin6_scope_id;
 };
 
+struct msghdr {
+	void *msg_name;
+};
+
+struct sk_buff {
+	__u16 transport_header;
+	__u16 network_header;
+	unsigned char *head;
+};
+
+struct icmphdr {
+	__u8 type;
+    union {
+        struct {
+            __be16	id;
+            __be16	sequence;
+        } echo;
+    } un;
+};
+
+struct icmp6hdr {
+	__u8 icmp6_type;
+	union {
+	    struct icmpv6_echo {
+            __be16		identifier;
+            __be16		sequence;
+        } u_echo;
+	} icmp6_dataun;
+};
+
 struct linux_binprm {
 	struct file *file;
 	int argc;

@@ -39,6 +39,8 @@ Copyright (C) Aqua Security inc.
 #include <net/ipv6.h>
 #include <net/tcp_states.h>
 #include <linux/ipv6.h>
+#include <uapi/linux/icmp.h>
+#include <uapi/linux/icmpv6.h>
 
 #include <uapi/linux/bpf.h>
 #include <linux/bpf.h>
@@ -68,7 +70,7 @@ Copyright (C) Aqua Security inc.
 #if defined(bpf_target_x86)
 #define PT_REGS_PARM6(ctx)  ((ctx)->r9)
 #elif defined(bpf_target_arm64)
-#define PT_REGS_PARM6(x) (((PT_REGS_ARM64 *)(x))->regs[5])
+#define PT_REGS_PARM6(x) ((x)->regs[5])
 #endif
 
 #define MAX_PERCPU_BUFSIZE              (1 << 15) // set by the kernel as an upper bound
@@ -79,6 +81,7 @@ Copyright (C) Aqua Security inc.
 #define MAX_STR_FILTER_SIZE             16        // bounded to size of the compared values (comm)
 #define FILE_MAGIC_HDR_SIZE             32        // magic_write: bytes to save from a file's header
 #define FILE_MAGIC_MASK                 31        // magic_write: mask used for verifier boundaries
+#define MAX_KSYM_NAME_SIZE              64
 
 #define SUBMIT_BUF_IDX                  0
 #define STRING_BUF_IDX                  1
@@ -194,18 +197,23 @@ Copyright (C) Aqua Security inc.
 #define __KERNEL_WRITE                  1034
 #define MAX_EVENT_ID                    1035
 
-#define NET_PACKET                      0
-#define DEBUG_NET_SECURITY_BIND         1
-#define DEBUG_NET_UDP_SENDMSG           2
-#define DEBUG_NET_UDP_DISCONNECT        3
-#define DEBUG_NET_UDP_DESTROY_SOCK      4
-#define DEBUG_NET_UDPV6_DESTROY_SOCK    5
-#define DEBUG_NET_INET_SOCK_SET_STATE   6
-#define DEBUG_NET_TCP_CONNECT           7
+#define NET_PACKET                      4000
+
+#define DEBUG_NET_SECURITY_BIND         5000
+#define DEBUG_NET_UDP_SENDMSG           5001
+#define DEBUG_NET_UDP_DISCONNECT        5002
+#define DEBUG_NET_UDP_DESTROY_SOCK      5003
+#define DEBUG_NET_UDPV6_DESTROY_SOCK    5004
+#define DEBUG_NET_INET_SOCK_SET_STATE   5005
+#define DEBUG_NET_TCP_CONNECT           5006
 
 #define CONFIG_TRACEE_PID               0
 #define CONFIG_OPTIONS                  1
 #define CONFIG_FILTERS                  2
+#define CONFIG_CGROUP_V1_HID            3
+
+#define CAPTURE_IFACE                   (1 << 0)
+#define TRACE_IFACE                     (1 << 1)
 
 #define OPT_SHOW_SYSCALL                (1 << 0)
 #define OPT_EXEC_ENV                    (1 << 1)
@@ -261,6 +269,8 @@ Copyright (C) Aqua Security inc.
 #define CONTAINER_EXISTED               1         // container existed before tracee was started
 #define CONTAINER_CREATED               2         // new cgroup path created
 #define CONTAINER_STARTED               3         // a process in the cgroup executed a new binary
+
+#define PACKET_MIN_SIZE                 40
 
 #ifndef CORE
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 2, 0)  // lower values in old kernels (instr lim is 4096)
@@ -461,6 +471,10 @@ typedef struct string_filter {
     char str[MAX_STR_FILTER_SIZE];
 } string_filter_t;
 
+typedef struct ksym_name {
+    char str[MAX_KSYM_NAME_SIZE];
+} ksym_name_t;
+
 typedef struct event_data {
     struct task_struct *task;
     context_t context;
@@ -587,9 +601,11 @@ BPF_HASH(sys_32_to_64_map, u32, u32);                   // map 32bit to 64bit sy
 BPF_HASH(params_types_map, u32, u64);                   // encoded parameters types for event
 BPF_HASH(process_tree_map, u32, u32);                   // filter events by the ancestry of the traced process
 BPF_HASH(process_context_map, u32, process_context_t);  // holds the process_context data for every tid
+BPF_HASH(network_config, u32, int);                     // holds the network config for each iface
+BPF_HASH(ksymbols_map, ksym_name_t, u64)            // holds the addresses of some kernel symbols
 BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t);         // socket address to process context
 BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t);   // network identifier to process context
-BPF_ARRAY(config_map, u32, 3);                          // various configurations
+BPF_ARRAY(config_map, u32, 4);                          // various configurations
 BPF_ARRAY(file_filter, path_filter_t, 3);               // filter vfs_write events
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);             // percpu global buffer variables
 BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS);           // holds offsets to bufs respectively
@@ -1171,6 +1187,18 @@ static __always_inline int get_kconfig_val(u32 key)
     return *config;
 }
 
+static __always_inline void* get_symbol_addr(char *symbol_name)
+{
+    char new_ksym_name[MAX_KSYM_NAME_SIZE] = {};
+    bpf_probe_read_str(new_ksym_name, MAX_KSYM_NAME_SIZE, symbol_name);
+    void **sym = bpf_map_lookup_elem(&ksymbols_map, (void *)&new_ksym_name);
+
+    if (sym == NULL)
+        return 0;
+
+    return *sym;
+}
+
 static __always_inline int init_context(context_t *context, struct task_struct *task, u32 options)
 {
     u64 id = bpf_get_current_pid_tgid();
@@ -1379,6 +1407,15 @@ static __always_inline int event_chosen(u32 key)
 static __always_inline buf_t* get_buf(int idx)
 {
     return bpf_map_lookup_elem(&bufs, &idx);
+}
+
+static __always_inline int get_iface_config(int ifindex)
+{
+    int *config  = bpf_map_lookup_elem(&network_config, &ifindex);
+    if (config == NULL)
+        return 0;
+
+    return *config;
 }
 
 static __always_inline void set_buf_off(int buf_idx, u32 new_off)
@@ -2737,9 +2774,15 @@ int tracepoint__cgroup__cgroup_mkdir(struct bpf_raw_tracepoint_args *ctx)
     u64 cgroup_id = get_cgroup_id(dst_cgrp);
     u32 cgroup_id_lsb = cgroup_id;
 
-    // Assume this is a new container. If not, userspace code will delete this entry
-    u8 state = CONTAINER_CREATED;
-    bpf_map_update_elem(&containers_map, &cgroup_id_lsb, &state, BPF_ANY);
+    bool should_update = true;
+    if ((data.options & OPT_CGROUP_V1) && (get_config(CONFIG_CGROUP_V1_HID) != hierarchy_id))
+        should_update = false;
+
+    if (should_update) {
+        // Assume this is a new container. If not, userspace code will delete this entry
+        u8 state = CONTAINER_CREATED;
+        bpf_map_update_elem(&containers_map, &cgroup_id_lsb, &state, BPF_ANY);
+    }
 
     save_to_submit_buf(&data, &cgroup_id, sizeof(u64), 0);
     save_str_to_buf(&data, path, 1);
@@ -2761,12 +2804,20 @@ int tracepoint__cgroup__cgroup_rmdir(struct bpf_raw_tracepoint_args *ctx)
     struct cgroup *dst_cgrp = (struct cgroup*)ctx->args[0];
     char *path = (char*)ctx->args[1];
 
+    u32 hierarchy_id = get_cgroup_hierarchy_id(dst_cgrp);
     u64 cgroup_id = get_cgroup_id(dst_cgrp);
     u32 cgroup_id_lsb = cgroup_id;
-    bpf_map_delete_elem(&containers_map, &cgroup_id_lsb);
+
+    bool should_update = true;
+    if ((data.options & OPT_CGROUP_V1) && (get_config(CONFIG_CGROUP_V1_HID) != hierarchy_id))
+        should_update = false;
+
+    if (should_update)
+        bpf_map_delete_elem(&containers_map, &cgroup_id_lsb);
 
     save_to_submit_buf(&data, &cgroup_id, sizeof(u64), 0);
     save_str_to_buf(&data, path, 1);
+    save_to_submit_buf(&data, &hierarchy_id, sizeof(u32), 2);
     events_perf_submit(&data, CGROUP_RMDIR, 0);
 
     return 0;
@@ -3579,6 +3630,176 @@ int BPF_KPROBE(trace_tcp_connect)
     return net_map_update_or_delete_sock(ctx, DEBUG_NET_TCP_CONNECT, sk, data.context.host_tid);
 }
 
+static __always_inline int icmp_delete_network_map(struct sk_buff *skb, int send, int ipv6) {
+
+    local_net_id_t connect_id = {0};
+    __u8 icmp_type;
+
+    if (ipv6) {
+        connect_id.protocol = IPPROTO_ICMPV6;
+
+        struct ipv6hdr *ip_header = (struct ipv6hdr *)(READ_KERN(skb->head) + READ_KERN(skb->network_header));
+        struct in6_addr daddr = READ_KERN(ip_header->daddr);
+        struct in6_addr saddr = READ_KERN(ip_header->saddr);
+
+        struct icmp6hdr *icmph = (struct icmp6hdr *)(READ_KERN(skb->head) + READ_KERN(skb->transport_header));
+        icmp_type = READ_KERN(icmph->icmp6_type);
+
+        connect_id.port = READ_KERN(icmph->icmp6_dataun.u_echo.identifier);
+
+        if (send) {
+            connect_id.address = daddr;
+        }
+        else {
+            if (icmp_type == ICMPV6_ECHO_REQUEST) {
+                return 0;
+            }
+
+            connect_id.address = saddr;
+        }
+    }
+    else {
+        connect_id.protocol = IPPROTO_ICMP;
+
+        struct iphdr *ip_header = (struct iphdr *)(READ_KERN(skb->head) + READ_KERN(skb->network_header));
+        __be32 daddr = READ_KERN(ip_header->daddr);
+        __be32 saddr = READ_KERN(ip_header->saddr);
+
+        struct icmphdr *icmph = (struct icmphdr *)(READ_KERN(skb->head) + READ_KERN(skb->transport_header));
+        icmp_type = READ_KERN(icmph->type);
+
+        connect_id.port = READ_KERN(icmph->un.echo.id);
+
+        if (send) {
+            connect_id.address.s6_addr32[3] = daddr;
+        }
+        else {
+            if (icmp_type == ICMP_ECHO) {
+                return 0;
+            }
+            #ifdef ICMP_EXT_ECHO
+            if (icmp_type == ICMP_EXT_ECHO) {
+                return 0;
+            }
+            #endif
+
+            connect_id.address.s6_addr32[3] = saddr;
+        }
+        connect_id.address.s6_addr16[5] = 0xffff;
+    }
+
+    bpf_map_delete_elem(&network_map, &connect_id);
+
+    return 0;
+}
+
+SEC("kprobe/icmp_send")
+int BPF_KPROBE(trace_icmp_send)
+{
+    struct sk_buff *skb = (struct sk_buff *)PT_REGS_PARM1(ctx);
+    icmp_delete_network_map(skb, 1, 0);
+
+    return 0;
+}
+
+SEC("kprobe/icmp6_send")
+int BPF_KPROBE(trace_icmp6_send)
+{
+    struct sk_buff *skb = (struct sk_buff *)PT_REGS_PARM1(ctx);
+    icmp_delete_network_map(skb, 1, 1);
+
+    return 0;
+}
+
+SEC("kprobe/icmp_rcv")
+int BPF_KPROBE(trace_icmp_rcv)
+{
+    struct sk_buff *skb = (struct sk_buff *)PT_REGS_PARM1(ctx);
+    icmp_delete_network_map(skb, 0, 0);
+
+    return 0;
+}
+
+SEC("kprobe/icmpv6_rcv")
+int BPF_KPROBE(trace_icmpv6_rcv)
+{
+    struct sk_buff *skb = (struct sk_buff *)PT_REGS_PARM1(ctx);
+    icmp_delete_network_map(skb, 0, 1);
+
+    return 0;
+}
+
+SEC("kprobe/ping_v4_sendmsg")
+int BPF_KPROBE(trace_ping_v4_sendmsg)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data.context))
+        return 0;
+
+    local_net_id_t connect_id = {0};
+
+    // this is v4 function
+    connect_id.protocol = IPPROTO_ICMP;
+
+    // get the icmp id
+    struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
+    struct inet_sock *inet = inet_sk(sk);
+    u16 sport = get_inet_sport(inet);
+    connect_id.port = sport;
+
+    // get the address
+    struct msghdr *msg = (struct msghdr *)PT_REGS_PARM2(ctx);
+    struct sockaddr_in *addr = (struct sockaddr_in *)READ_KERN(msg->msg_name);
+    connect_id.address.s6_addr32[3] = READ_KERN(addr->sin_addr).s_addr;
+    connect_id.address.s6_addr16[5] = 0xffff;
+
+    // update the map
+    net_ctx_t net_ctx;
+    net_ctx.host_tid = data.context.host_tid;
+    __builtin_memcpy(net_ctx.comm, data.context.comm, TASK_COMM_LEN);
+    bpf_map_update_elem(&network_map, &connect_id, &net_ctx, BPF_ANY);
+
+    return 0;
+}
+
+SEC("kprobe/ping_v6_sendmsg")
+int BPF_KPROBE(trace_ping_v6_sendmsg)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data.context))
+        return 0;
+
+    local_net_id_t connect_id = {0};
+
+    // this is v6 function
+    connect_id.protocol = IPPROTO_ICMPV6;
+
+    // get the icmp id
+    struct sock *sk = (struct sock *)PT_REGS_PARM1(ctx);
+    struct inet_sock *inet = inet_sk(sk);
+    u16 sport = get_inet_sport(inet);
+    connect_id.port = sport;
+
+    // get the address
+    struct msghdr *msg = (struct msghdr *)PT_REGS_PARM2(ctx);
+    struct sockaddr_in6 *addr = (struct sockaddr_in6 *)READ_KERN(msg->msg_name);
+    connect_id.address = READ_KERN(addr->sin6_addr);
+
+    // update the map
+    net_ctx_t net_ctx;
+    net_ctx.host_tid = data.context.host_tid;
+    __builtin_memcpy(net_ctx.comm, data.context.comm, TASK_COMM_LEN);
+    bpf_map_update_elem(&network_map, &connect_id, &net_ctx, BPF_ANY);
+
+    return 0;
+}
+
 static __always_inline u32 send_bin_helper(void* ctx, void *prog_array, int tail_call)
 {
     // Note: sending the data to the userspace have the following constraints:
@@ -4262,6 +4483,7 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
 
     struct ethhdr *eth = (void *)head;
     net_packet_t pkt = {0};
+    pkt.event_id = NET_PACKET;
     pkt.ts = bpf_ktime_get_ns();
     pkt.len = skb->len;
     pkt.ifindex = skb->ifindex;
@@ -4326,7 +4548,30 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
 
         pkt.src_port = udp->source;
         pkt.dst_port = udp->dest;
-    } else {
+    } else if (pkt.protocol == IPPROTO_ICMP) {
+        if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off + sizeof(struct icmphdr))) {
+            return TC_ACT_UNSPEC;
+        }
+
+        struct icmphdr *icmph = (void *)head + l4_hdr_off;
+        u16 icmp_id = READ_KERN(icmph->un.echo.id);
+
+        // set the ports to icmp_id so that the connect_id could be found
+        pkt.src_port = icmp_id;
+        pkt.dst_port = icmp_id;
+    } else if (pkt.protocol == IPPROTO_ICMPV6) {
+        if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off + sizeof(struct icmp6hdr))) {
+            return TC_ACT_UNSPEC;
+        }
+
+        struct icmp6hdr *icmph = (void *)head + l4_hdr_off;
+        u16 icmp_id = READ_KERN(icmph->icmp6_dataun.u_echo.identifier);
+
+        // set the ports to icmp_id so that the connect_id could be found
+        pkt.src_port = icmp_id;
+        pkt.dst_port = icmp_id;
+    }
+    else {
         //todo: support other transport protocols?
         return TC_ACT_UNSPEC;
     }
@@ -4373,19 +4618,23 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     //
     // See bpf_skb_event_output in net/core/filter.c.
     u64 flags = BPF_F_CURRENT_CPU;
-    flags |= (u64)skb->len << 32;
-    if (get_config(CONFIG_OPTIONS) & OPT_DEBUG_NET){
+
+    // If net_packet event wasn't chosen, only send the minimal required data to save the
+    // packet. This will be the timestamp (u64), net event_id (u32),
+    // host_tid (u32), comm (16 bytes), packet len (u32), and ifindex (u32)
+    size_t pkt_size = PACKET_MIN_SIZE;
+
+    int iface_conf = get_iface_config(skb->ifindex);
+    if (iface_conf & TRACE_IFACE){
+        pkt_size = sizeof(pkt);
         pkt.src_port = __bpf_ntohs(pkt.src_port);
         pkt.dst_port = __bpf_ntohs(pkt.dst_port);
-        bpf_perf_event_output(skb, &net_events, flags, &pkt, sizeof(pkt));
-    }
-    else {
-        // If not debugging, only send the minimal required data to save the
-        // packet. This will be the timestamp (u64), net event_id (u32),
-        // host_tid (u32), comm (16 bytes), packet len (u32), and ifindex (u32)
-        bpf_perf_event_output(skb, &net_events, flags, &pkt, 40);
     }
 
+    if (iface_conf & CAPTURE_IFACE){
+        flags |= (u64)skb->len << 32;
+    }
+    bpf_perf_event_output(skb, &net_events, flags, &pkt, pkt_size);
     return TC_ACT_UNSPEC;
 }
 

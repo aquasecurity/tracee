@@ -25,6 +25,11 @@ func (t *Tracee) handleEvents(ctx gocontext.Context) {
 	eventsChan, errc := t.decodeEvents(ctx)
 	errcList = append(errcList, errc)
 
+	if t.config.Cache != nil {
+		eventsChan, errc = t.queueEvents(ctx, eventsChan)
+		errcList = append(errcList, errc)
+	}
+
 	if t.config.Output.EventsSorting {
 		eventsChan, errc = t.eventsSorter.StartPipeline(ctx, eventsChan)
 		errcList = append(errcList, errc)
@@ -36,6 +41,70 @@ func (t *Tracee) handleEvents(ctx gocontext.Context) {
 
 	// Pipeline started. Waiting for pipeline to complete
 	t.WaitForPipeline(errcList...)
+}
+
+// Under some circumstances, tracee-rules might be slower to consume events
+// than tracee-ebpf is capable of generating them. This requires
+// tracee-ebpf to deal with this possible lag, but, at the same,
+// perf-buffer consumption can't be left behind (or important events coming
+// from the kernel might be loss, causing detection misses).
+//
+// There are 3 variables connected to this issue:
+//
+// 1) perf buffer could be increased to hold very big amount of memory
+//    pages: The problem with this approach is that the requested space,
+//    to perf-buffer, through libbpf, has to be contiguous and it is almost
+//    impossible to get very big contiguous allocations through mmap after
+//    a node is running for some time.
+//
+// 2) raising the events channel buffer to hold a very big amount of
+//    events: The problem with this approach is that the overhead of
+//    dealing with that amount of buffers, in a golang channel, causes
+//    event losses as well. It means this is not enough to relief the
+//    pressure from kernel events into perf-buffer.
+//
+// 3) create an internal, to tracee-ebpf, buffer based on the node size.
+
+// queueEvents implements an internal FIFO queue for caching events
+func (t *Tracee) queueEvents(ctx gocontext.Context, in <-chan *trace.Event) (chan *trace.Event, chan error) {
+	out := make(chan *trace.Event, 10000)
+	errc := make(chan error, 1)
+	done := make(chan struct{}, 1)
+
+	// receive and cache events (release pressure in the pipeline)
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				done <- struct{}{}
+				return
+			case event := <-in:
+				if event != nil {
+					t.config.Cache.Enqueue(event) // may block if queue is full
+				}
+			}
+		}
+	}()
+
+	// de-cache and send events (free cache space)
+	go func() {
+		defer close(out)
+		defer close(errc)
+
+		for {
+			select {
+			case <-done:
+				return
+			default:
+				event := t.config.Cache.Dequeue() // may block if queue is empty
+				if event != nil {
+					out <- event
+				}
+			}
+		}
+	}()
+
+	return out, errc
 }
 
 // decodeEvents read the events received from the BPF programs and parse it into trace.Event type
@@ -161,6 +230,7 @@ func (t *Tracee) processEvents(ctx gocontext.Context, in <-chan *trace.Event) <-
 				select {
 				case t.config.ChanEvents <- *event:
 					t.stats.EventCount.Increment()
+					event = nil
 				case <-ctx.Done():
 					return
 				}

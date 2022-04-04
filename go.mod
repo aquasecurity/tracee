@@ -8,7 +8,6 @@ require (
 	github.com/aquasecurity/tracee/types v0.0.0-20220228102148-dffb469aed94
 	github.com/google/gopacket v1.1.19
 	github.com/hashicorp/golang-lru v0.5.4
-	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/mitchellh/go-ps v1.0.0
 	github.com/onsi/gomega v1.17.0
 	github.com/open-policy-agent/opa v0.35.0
@@ -19,6 +18,7 @@ require (
 	github.com/urfave/cli/v2 v2.3.0
 	golang.org/x/net v0.0.0-20211111083644-e5c967477495
 	golang.org/x/sys v0.0.0-20211205182925-97ca703d548d
+	gotest.tools v2.2.0+incompatible
 	inet.af/netaddr v0.0.0-20211027220019-c74959edd3b6
 )
 
@@ -45,6 +45,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/google/go-cmp v0.5.5 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/huandu/xstrings v1.3.1 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect

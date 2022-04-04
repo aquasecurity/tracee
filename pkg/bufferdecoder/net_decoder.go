@@ -8,7 +8,7 @@ import (
 
 type NetEventMetadata struct {
 	TimeStamp   uint64   `json:"timeStamp"`
-	NetEventId  uint32   `json:"netEventId"`
+	NetEventId  int32    `json:"netEventId"`
 	HostTid     uint32   `json:"hostTid"`
 	ProcessName [16]byte `json:"processName"`
 }
@@ -24,7 +24,7 @@ func (decoder *EbpfDecoder) DecodeNetEventMetadata(eventMetaData *NetEventMetada
 		return fmt.Errorf("can't read NetEventMetadata from buffer: buffer too short")
 	}
 	eventMetaData.TimeStamp = binary.LittleEndian.Uint64(decoder.buffer[offset : offset+8])
-	eventMetaData.NetEventId = binary.LittleEndian.Uint32(decoder.buffer[offset+8 : offset+12])
+	eventMetaData.NetEventId = int32(binary.LittleEndian.Uint32(decoder.buffer[offset+8 : offset+12]))
 	eventMetaData.HostTid = binary.LittleEndian.Uint32(decoder.buffer[offset+12 : offset+16])
 	copy(eventMetaData.ProcessName[:], bytes.TrimRight(decoder.buffer[offset+16:offset+32], "\x00"))
 
@@ -33,8 +33,8 @@ func (decoder *EbpfDecoder) DecodeNetEventMetadata(eventMetaData *NetEventMetada
 }
 
 type NetCaptureData struct {
-	PacketLength   uint32 `json:"pkt_len"`
-	InterfaceIndex uint32 `json:"if_index"`
+	PacketLength     uint32 `json:"pkt_len"`
+	ConfigIfaceIndex uint32 `json:"if_index"`
 }
 
 func (NetCaptureData) GetSizeBytes() uint32 {
@@ -48,7 +48,7 @@ func (decoder *EbpfDecoder) DecodeNetCaptureData(netCaptureData *NetCaptureData)
 		return fmt.Errorf("can't read NetCaptureData from buffer: buffer too short")
 	}
 	netCaptureData.PacketLength = binary.LittleEndian.Uint32(decoder.buffer[offset : offset+4])
-	netCaptureData.InterfaceIndex = binary.LittleEndian.Uint32(decoder.buffer[offset+4 : offset+8])
+	netCaptureData.ConfigIfaceIndex = binary.LittleEndian.Uint32(decoder.buffer[offset+4 : offset+8])
 
 	decoder.cursor += int(netCaptureData.GetSizeBytes())
 	return nil

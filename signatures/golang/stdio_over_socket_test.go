@@ -32,7 +32,7 @@ func TestStdioOverSocket(t *testing.T) {
 		{
 			Name: "A",
 			Events: []trace.Event{
-				trace.Event{
+				{
 					ProcessID: 45,
 					EventName: "security_socket_connect",
 					Args: []trace.Argument{
@@ -50,7 +50,7 @@ func TestStdioOverSocket(t *testing.T) {
 						},
 					},
 				},
-				trace.Event{
+				{
 					ProcessID: 45,
 					EventName: "dup2",
 					Args: []trace.Argument{
@@ -101,7 +101,7 @@ func TestStdioOverSocket(t *testing.T) {
 		{
 			Name: "B",
 			Events: []trace.Event{
-				trace.Event{
+				{
 					ProcessID: 45,
 					EventName: "security_socket_connect",
 					Args: []trace.Argument{
@@ -119,7 +119,7 @@ func TestStdioOverSocket(t *testing.T) {
 						},
 					},
 				},
-				trace.Event{
+				{
 					ProcessID: 45,
 					EventName: "dup2",
 					Args: []trace.Argument{
@@ -170,7 +170,7 @@ func TestStdioOverSocket(t *testing.T) {
 		{
 			Name: "C",
 			Events: []trace.Event{
-				trace.Event{
+				{
 					ProcessID: 45,
 					EventName: "security_socket_connect",
 					Args: []trace.Argument{
@@ -188,7 +188,7 @@ func TestStdioOverSocket(t *testing.T) {
 						},
 					},
 				},
-				trace.Event{
+				{
 					ProcessID:   45,
 					EventName:   "dup",
 					ReturnValue: 1,
@@ -229,7 +229,7 @@ func TestStdioOverSocket(t *testing.T) {
 		{
 			Name: "D",
 			Events: []trace.Event{
-				trace.Event{
+				{
 					ProcessID: 45,
 					EventName: "security_socket_connect",
 					Args: []trace.Argument{
@@ -247,7 +247,7 @@ func TestStdioOverSocket(t *testing.T) {
 						},
 					},
 				},
-				trace.Event{
+				{
 					ProcessID: 45,
 					EventName: "dup3",
 					Args: []trace.Argument{
@@ -310,7 +310,7 @@ func TestStdioOverSocket(t *testing.T) {
 		{
 			Name: "E",
 			Events: []trace.Event{
-				trace.Event{
+				{
 					ProcessID: 45,
 					EventName: "dup2",
 					Args: []trace.Argument{
@@ -334,7 +334,7 @@ func TestStdioOverSocket(t *testing.T) {
 		{
 			Name: "F",
 			Events: []trace.Event{
-				trace.Event{
+				{
 					ProcessID: 45,
 					EventName: "security_socket_connect",
 					Args: []trace.Argument{
@@ -352,7 +352,7 @@ func TestStdioOverSocket(t *testing.T) {
 						},
 					},
 				},
-				trace.Event{
+				{
 					ProcessID: 45,
 					EventName: "close",
 					Args: []trace.Argument{
@@ -364,7 +364,7 @@ func TestStdioOverSocket(t *testing.T) {
 						},
 					},
 				},
-				trace.Event{
+				{
 					ProcessID: 45,
 					EventName: "dup2",
 					Args: []trace.Argument{
@@ -388,7 +388,7 @@ func TestStdioOverSocket(t *testing.T) {
 		{
 			Name: "G",
 			Events: []trace.Event{
-				trace.Event{
+				{
 					ProcessID: 45,
 					EventName: "security_socket_connect",
 					Args: []trace.Argument{
@@ -406,7 +406,7 @@ func TestStdioOverSocket(t *testing.T) {
 						},
 					},
 				},
-				trace.Event{
+				{
 					ProcessID: 22,
 					EventName: "dup2",
 					Args: []trace.Argument{
@@ -430,7 +430,7 @@ func TestStdioOverSocket(t *testing.T) {
 		{
 			Name: "H",
 			Events: []trace.Event{
-				trace.Event{
+				{
 					ProcessID: 45,
 					EventName: "security_socket_connect",
 					Args: []trace.Argument{
@@ -448,7 +448,7 @@ func TestStdioOverSocket(t *testing.T) {
 						},
 					},
 				},
-				trace.Event{
+				{
 					ProcessID: 45,
 					EventName: "dup2",
 					Args: []trace.Argument{

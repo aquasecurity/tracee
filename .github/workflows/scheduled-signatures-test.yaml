@@ -33,6 +33,6 @@ jobs:
       - name: Run tests
         run: |
           docker image pull aquasec/tracee-tester:latest
-          go test -v -run "TestTraceeSignatures" ./tests/tracee_test.go \
+          go test -v -run "TestTraceeSignatures" ./tests/e2e/e2e_test.go \
             -tracee-image-ref "tracee:latest" \
             -tracee-tester-image-ref "aquasec/tracee-tester:latest"

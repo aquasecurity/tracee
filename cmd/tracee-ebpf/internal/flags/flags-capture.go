@@ -2,7 +2,6 @@ package flags
 
 import (
 	"fmt"
-	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,7 +18,7 @@ Possible options:
 [artifact:]exec                    capture executed files.
 [artifact:]module                  capture loaded kernel modules.
 [artifact:]mem                     capture memory regions that had write+execute (w+x) protection, and then changed to execute (x) only.
-[artifact:]net=interface           capture network traffic of the given interface. Only TCP/UDP protocols are currently supported.
+[artifact:]net=interface           capture network traffic of the given interface. Only TCP/UDP/ICMP protocols are currently supported.
 
 dir:/path/to/dir                    path where tracee will save produced artifacts. the artifact will be saved into an 'out' subdirectory. (default: /tmp/tracee).
 profile                             creates a runtime profile of program executions and their metadata for forensics use.
@@ -73,20 +72,9 @@ func PrepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 		} else if cap == "mem" {
 			capture.Mem = true
 		} else if strings.HasPrefix(cap, "net=") {
-			iface := strings.TrimPrefix(cap, "net=")
-			if _, err := net.InterfaceByName(iface); err != nil {
-				return tracee.CaptureConfig{}, fmt.Errorf("invalid network interface: %s", iface)
-			}
-			found := false
-			// Check if we already have this interface
-			for _, item := range capture.NetIfaces {
-				if iface == item {
-					found = true
-					break
-				}
-			}
-			if !found {
-				capture.NetIfaces = append(capture.NetIfaces, iface)
+			err := tracee.ParseIface(strings.TrimPrefix(cap, "net="), &capture.NetIfaces)
+			if err != nil {
+				return tracee.CaptureConfig{}, err
 			}
 		} else if strings.HasPrefix(cap, "pcap:") {
 			netCaptureContext := strings.TrimPrefix(cap, "pcap:")
