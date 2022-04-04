@@ -18,12 +18,10 @@ import (
 	"github.com/aquasecurity/libbpfgo/helpers"
 	embed "github.com/aquasecurity/tracee"
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/flags"
-	"github.com/aquasecurity/tracee/pkg/capabilities"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/syndtr/gocapability/capability"
 	cli "github.com/urfave/cli/v2"
 )
 
@@ -145,8 +143,7 @@ func main() {
 			cfg.Output = &output
 
 			// environment capabilities
-
-			err = ensureCapabilities(OSInfo)
+			err = ensureCapabilities(OSInfo, &cfg)
 			if err != nil {
 				return err
 			}
@@ -501,51 +498,6 @@ func checkCommandIsHelp(s []string) bool {
 		return true
 	}
 	return false
-}
-
-const bpfCapabilitiesMinKernelVersion = "5.8"
-
-// ensureCapabilities makes sure the program has just the required capabilities to run
-func ensureCapabilities(OSInfo *helpers.OSInfo) error {
-	selfCap, err := capabilities.Self()
-	if err != nil {
-		return err
-	}
-
-	// Build the set of capabilities required to run
-	rCaps := []capability.Cap{
-		capability.CAP_IPC_LOCK,
-		capability.CAP_SYS_PTRACE,
-		capability.CAP_SYS_RESOURCE,
-		capability.CAP_NET_ADMIN,
-	}
-	if OSInfo.CompareOSBaseKernelRelease(bpfCapabilitiesMinKernelVersion) <= 0 {
-		bpfCaps := []capability.Cap{
-			capability.CAP_BPF,
-			capability.CAP_PERFMON,
-		}
-		if err1 := capabilities.CheckRequired(selfCap, bpfCaps); err1 != nil {
-			bpfCaps = []capability.Cap{
-				capability.CAP_SYS_ADMIN,
-			}
-			if err2 := capabilities.CheckRequired(selfCap, bpfCaps); err2 != nil {
-				return fmt.Errorf("missing capabilites required for eBPF program loading - either CAP_BPF + CAP_PERFMON or CAP_SYS_ADMIN")
-			}
-		}
-		rCaps = append(rCaps, bpfCaps...)
-	} else {
-		rCaps = append(rCaps, []capability.Cap{
-			capability.CAP_SYS_ADMIN,
-		}...)
-	}
-
-	if err = capabilities.CheckRequired(selfCap, rCaps); err != nil {
-		return err
-	}
-	if err = capabilities.DropUnrequired(selfCap, rCaps); err != nil {
-		return err
-	}
-	return nil
 }
 
 func getFormattedEventParams(eventID int32) string {

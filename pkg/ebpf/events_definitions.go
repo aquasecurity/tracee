@@ -1,6 +1,9 @@
 package ebpf
 
-import "github.com/aquasecurity/tracee/types/trace"
+import (
+	"github.com/aquasecurity/tracee/types/trace"
+	"github.com/syndtr/gocapability/capability"
+)
 
 // ProbeType is an enum that describes the mechanism used to attach the event
 // Kprobes are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#1-kprobes
@@ -22,9 +25,10 @@ type probe struct {
 }
 
 type dependencies struct {
-	events    []eventDependency // Events required to be loaded and/or submitted for the event to happen
-	ksymbols  []string
-	tailCalls []tailCall
+	events       []eventDependency // Events required to be loaded and/or submitted for the event to happen
+	ksymbols     []string
+	tailCalls    []tailCall
+	capabilities []capability.Cap
 }
 
 type eventDependency struct {
@@ -5295,6 +5299,9 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Name:    "init_namespaces",
 		Probes:  []probe{},
 		Sets:    []string{},
+		Dependencies: dependencies{
+			capabilities: []capability.Cap{capability.CAP_SYS_PTRACE},
+		},
 		Params: []trace.ArgMeta{
 			{Type: "u32", Name: "cgroup"},
 			{Type: "u32", Name: "ipc"},
@@ -5418,32 +5425,38 @@ var EventsDefinitions = map[int32]EventDefinition{
 		},
 	},
 	NetPacket: {
-		ID32Bit:      sys32undefined,
-		Name:         "net_packet",
-		Probes:       []probe{},
-		Dependencies: dependencies{},
-		Sets:         []string{"network_events"},
+		ID32Bit: sys32undefined,
+		Name:    "net_packet",
+		Probes:  []probe{},
+		Dependencies: dependencies{
+			capabilities: []capability.Cap{capability.CAP_NET_ADMIN},
+		},
+		Sets: []string{"network_events"},
 		Params: []trace.ArgMeta{
 			{Type: "trace.PktMeta", Name: "metadata"},
 		},
 	},
 	DnsRequest: {
-		ID32Bit:      sys32undefined,
-		Name:         "dns_request",
-		Probes:       []probe{},
-		Dependencies: dependencies{},
-		Sets:         []string{"network_events"},
+		ID32Bit: sys32undefined,
+		Name:    "dns_request",
+		Probes:  []probe{},
+		Dependencies: dependencies{
+			capabilities: []capability.Cap{capability.CAP_NET_ADMIN},
+		},
+		Sets: []string{"network_events"},
 		Params: []trace.ArgMeta{
 			{Type: "trace.PktMeta", Name: "metadata"},
 			{Type: "[]bufferdecoder.DnsQueryData", Name: "dns_questions"},
 		},
 	},
 	DnsResponse: {
-		ID32Bit:      sys32undefined,
-		Name:         "dns_response",
-		Probes:       []probe{},
-		Dependencies: dependencies{},
-		Sets:         []string{"network_events"},
+		ID32Bit: sys32undefined,
+		Name:    "dns_response",
+		Probes:  []probe{},
+		Dependencies: dependencies{
+			capabilities: []capability.Cap{capability.CAP_NET_ADMIN},
+		},
+		Sets: []string{"network_events"},
 		Params: []trace.ArgMeta{
 			{Type: "trace.PktMeta", Name: "metadata"},
 			{Type: "[]bufferdecoder.DnsResponseData", Name: "dns_response"},
@@ -5500,6 +5513,9 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "const char*", Name: "path"},
 			{Type: "mode_t", Name: "mode"},
 			{Type: "u64", Name: "proc_ops_addr"},
+		},
+		Dependencies: dependencies{
+			capabilities: []capability.Cap{capability.CAP_NET_ADMIN},
 		},
 	},
 	PrintSyscallTableEventID: {
@@ -5659,7 +5675,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Internal: true,
 		Probes:   []probe{},
 		Dependencies: dependencies{
-			events: []eventDependency{{eventID: SecuritySocketBindEventID}},
+			events:       []eventDependency{{eventID: SecuritySocketBindEventID}},
+			capabilities: []capability.Cap{capability.CAP_SYS_ADMIN},
 		},
 	},
 	DoInitModuleEventID: {

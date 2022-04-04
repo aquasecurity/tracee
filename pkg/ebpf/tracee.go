@@ -205,6 +205,21 @@ func (t *Tracee) Stats() *metrics.Stats {
 	return &t.stats
 }
 
+func CreateEssentialEventsList(cfg *Config) map[int32]eventConfig {
+	var essentialEvents = make(map[int32]eventConfig)
+
+	// Set essential events
+	essentialEvents[SysEnterEventID] = eventConfig{}
+	essentialEvents[SysExitEventID] = eventConfig{}
+	essentialEvents[SchedProcessForkEventID] = eventConfig{}
+	essentialEvents[SchedProcessExecEventID] = eventConfig{}
+	essentialEvents[SchedProcessExitEventID] = eventConfig{}
+	essentialEvents[CgroupMkdirEventID] = eventConfig{submit: true}
+	essentialEvents[CgroupRmdirEventID] = eventConfig{submit: true}
+
+	return essentialEvents
+}
+
 func (t *Tracee) handleEventsDependencies(e int32, initReq *RequiredInitValues) {
 	eDependencies := EventsDefinitions[e].Dependencies
 	if len(eDependencies.ksymbols) > 0 {
@@ -253,38 +268,10 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error creating process tree: %v", err)
 	}
 
-	t.events = make(map[int32]eventConfig, len(cfg.Filter.EventsToTrace))
+	t.events = CreateEssentialEventsList(&cfg)
 
-	// Set essential events
-	t.events[SysEnterEventID] = eventConfig{}
-	t.events[SysExitEventID] = eventConfig{}
-	t.events[SchedProcessForkEventID] = eventConfig{}
-	t.events[SchedProcessExecEventID] = eventConfig{}
-	t.events[SchedProcessExitEventID] = eventConfig{}
-	t.events[CgroupMkdirEventID] = eventConfig{submit: true}
-	t.events[CgroupRmdirEventID] = eventConfig{submit: true}
-
-	// Set events used to capture data
-	if t.config.Capture.Exec {
-		t.events[CaptureExecEventID] = eventConfig{}
-	}
-	if t.config.Capture.FileWrite {
-		t.events[CaptureFileWriteEventID] = eventConfig{}
-	}
-	if t.config.Capture.Module {
-		t.events[CaptureModuleEventID] = eventConfig{}
-	}
-	if t.config.Capture.Mem {
-		t.events[CaptureMemEventID] = eventConfig{}
-	}
-	if t.config.Capture.Profile {
-		t.events[CaptureProfileEventID] = eventConfig{}
-	}
-	if t.config.Capture.NetIfaces != nil {
-		t.events[CapturePcapEventID] = eventConfig{}
-	}
-	if len(t.config.Filter.NetFilter.InterfacesToTrace) > 0 || cfg.Debug {
-		t.events[SecuritySocketBindEventID] = eventConfig{}
+	for eventID, eCfg := range GetCaptureEventsConfig(&cfg) {
+		t.events[eventID] = eCfg
 	}
 
 	// Events chosen by the user
@@ -1286,4 +1273,33 @@ func (t *Tracee) updateKallsyms() {
 	if err == nil && initialization.ValidateKsymbolsTable(t.kernelSymbols) {
 		t.kernelSymbols = kernelSymbols
 	}
+}
+
+// GetCaptureEventsConfig set events used to capture data
+func GetCaptureEventsConfig(cfg *Config) map[int32]eventConfig {
+	essentialEvents := make(map[int32]eventConfig)
+
+	if cfg.Capture.Exec {
+		essentialEvents[CaptureExecEventID] = eventConfig{}
+	}
+	if cfg.Capture.FileWrite {
+		essentialEvents[CaptureFileWriteEventID] = eventConfig{}
+	}
+	if cfg.Capture.Module {
+		essentialEvents[CaptureModuleEventID] = eventConfig{}
+	}
+	if cfg.Capture.Mem {
+		essentialEvents[CaptureMemEventID] = eventConfig{}
+	}
+	if cfg.Capture.Profile {
+		essentialEvents[CaptureProfileEventID] = eventConfig{}
+	}
+	if cfg.Capture.NetIfaces != nil {
+		essentialEvents[CapturePcapEventID] = eventConfig{}
+	}
+	if len(cfg.Filter.NetFilter.InterfacesToTrace) > 0 || cfg.Debug {
+		essentialEvents[SecuritySocketBindEventID] = eventConfig{}
+	}
+
+	return essentialEvents
 }
