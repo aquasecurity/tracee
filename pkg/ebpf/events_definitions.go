@@ -77,6 +77,8 @@ const (
 	SecurityInodeMknodEventID
 	SecurityPostReadFileEventID
 	SecurityInodeSymlinkEventId
+	SecurityMmapFileEventID
+	SecurityFileMprotectEventID
 	SocketDupEventID
 	HiddenInodesEventID
 	__KernelWriteEventID
@@ -89,6 +91,7 @@ const (
 	DebugfsCreateDirEventID
 	DeviceAddEventID
 	RegisterChrdevEventID
+	SharedObjectLoadedEventID
 	MaxCommonEventID
 )
 
@@ -5830,7 +5833,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Name:    "mem_prot_alert",
 		Probes: []probe{
 			{event: "security_mmap_addr", attach: kprobe, fn: "trace_mmap_alert"},
-			{event: "security_file_mprotect", attach: kprobe, fn: "trace_mprotect_alert"},
+			{event: "security_file_mprotect", attach: kprobe, fn: "trace_security_file_mprotect"},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -6118,6 +6121,37 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "const char*", Name: "target"},
 		},
 	},
+	SecurityMmapFileEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "security_mmap_file",
+		Probes: []probe{
+			{event: "security_mmap_file", attach: kprobe, fn: "trace_security_mmap_file"},
+		},
+		Sets: []string{"lsm_hooks", "fs", "fs_file_ops", "proc", "proc_mem"},
+		Params: []trace.ArgMeta{
+			{Type: "const char*", Name: "pathname"},
+			{Type: "int", Name: "flags"},
+			{Type: "dev_t", Name: "dev"},
+			{Type: "unsigned long", Name: "inode"},
+			{Type: "unsigned long", Name: "ctime"},
+			{Type: "int", Name: "prot"},
+			{Type: "int", Name: "mmap_flags"},
+			{Type: "int", Name: "syscall"},
+		},
+	},
+	SecurityFileMprotectEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "security_file_mprotect",
+		Probes: []probe{
+			{event: "security_file_mprotect", attach: kprobe, fn: "trace_security_file_mprotect"},
+		},
+		Sets: []string{"lsm_hooks", "proc", "proc_mem", "fs", "fs_file_ops"},
+		Params: []trace.ArgMeta{
+			{Type: "const char*", Name: "pathname"},
+			{Type: "int", Name: "prot"},
+			{Type: "unsigned long", Name: "ctime"},
+		},
+	},
 	InitNamespacesEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "init_namespaces",
@@ -6356,6 +6390,22 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "unsigned int", Name: "granted_major_number"},
 			{Type: "const char*", Name: "char_device_name"},
 			{Type: "struct file_operations *", Name: "char_device_fops"},
+		},
+	},
+	SharedObjectLoadedEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "shared_object_loaded",
+		Probes:  []probe{},
+		Dependencies: dependencies{
+			events: []eventDependency{{eventID: SecurityMmapFileEventID}},
+		},
+		Sets: []string{"lsm_hooks", "fs", "fs_file_ops", "proc", "proc_mem"},
+		Params: []trace.ArgMeta{
+			{Type: "const char*", Name: "pathname"},
+			{Type: "int", Name: "flags"},
+			{Type: "dev_t", Name: "dev"},
+			{Type: "unsigned long", Name: "inode"},
+			{Type: "unsigned long", Name: "ctime"},
 		},
 	},
 }

@@ -12,8 +12,8 @@ import (
 
 // deriveFn is a function prototype for a function that receives an event as
 // argument and may produce a new event if relevant.
-// It returns the a derived or empty event, depending on succesful derivation,
-// a bool indicating if an event was derived, and an error if one occured.
+// It returns a derived or empty event, depending on successful derivation,
+// a bool indicating if an event was derived, and an error if one occurred.
 type deriveFn func(trace.Event) (trace.Event, bool, error)
 
 // Initialize the eventDerivations map.
@@ -90,7 +90,7 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 /*
 * Derivation functions:
 * Most derivation functions take tracee as a closure argument to track it's runtime state
-* Tracee builds it's derivation map from these functions and injects itself as an argument to the closures
+* Tracee builds its derivation map from these functions and injects itself as an argument to the closures
 * The derivation map is then built with the returned deriveFn functions, which is used in deriveEvents
  */
 

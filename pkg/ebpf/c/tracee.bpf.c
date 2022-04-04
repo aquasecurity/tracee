@@ -206,6 +206,8 @@ enum event_id_e {
     SECURITY_INODE_MKNOD,
     SECURITY_POST_READ_FILE,
     SECURITY_INODE_SYMLINK,
+    SECURITY_MMAP_FILE,
+    SECURITY_FILE_MPROTECT,
     SOCKET_DUP,
     HIDDEN_INODES,
     __KERNEL_WRITE,
@@ -218,6 +220,7 @@ enum event_id_e {
     DEBUGFS_CREATE_DIR,
     DEVICE_ADD,
     REGISTER_CHRDEV,
+    SHARED_OBJECT_LOADED,
     MAX_EVENT_ID,
 
     // Net events IDs
@@ -4521,8 +4524,61 @@ int BPF_KPROBE(trace_mmap_alert)
     return 0;
 }
 
+SEC("kprobe/security_mmap_file")
+int BPF_KPROBE(trace_security_mmap_file)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data.context))
+        return 0;
+
+    struct file *file = (struct file *)PT_REGS_PARM1(ctx);
+    if (file == 0)
+        return 0;
+    dev_t s_dev = get_dev_from_file(file);
+    unsigned long inode_nr = get_inode_nr_from_file(file);
+    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+    u64 ctime = get_ctime_nanosec_from_file(file);
+    unsigned long prot = (unsigned long)PT_REGS_PARM2(ctx);
+    unsigned long mmap_flags = (unsigned long)PT_REGS_PARM3(ctx);
+
+    save_str_to_buf(&data, file_path, 0);
+    save_to_submit_buf(&data, (void*)GET_FIELD_ADDR(file->f_flags), sizeof(int), 1);
+    save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 2);
+    save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 3);
+    save_to_submit_buf(&data, &ctime, sizeof(u64), 4);
+
+    syscall_data_t *sys;
+    if (should_submit(SHARED_OBJECT_LOADED))
+    {
+        sys = (syscall_data_t*)bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+        if (sys && (prot & VM_EXEC) == VM_EXEC && sys->id == SYS_MMAP)
+        {
+            events_perf_submit(&data, SHARED_OBJECT_LOADED, 0);
+        }
+    }
+
+    if (should_submit(SECURITY_MMAP_FILE))
+    {
+        save_to_submit_buf(&data, &prot, sizeof(int), 5);
+        save_to_submit_buf(&data, &mmap_flags, sizeof(int), 6);
+        if (data.options & OPT_SHOW_SYSCALL) {
+            if (!sys)
+                sys = (syscall_data_t*)bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+            if (sys) {
+                save_to_submit_buf(&data, (void*)&sys->id, sizeof(int), 7);
+            }
+        }
+        return events_perf_submit(&data, SECURITY_MMAP_FILE, 0);
+    }
+
+    return 0;
+}
+
 SEC("kprobe/security_file_mprotect")
-int BPF_KPROBE(trace_mprotect_alert)
+int BPF_KPROBE(trace_security_file_mprotect)
 {
     bin_args_t bin_args = {};
 
@@ -4530,55 +4586,70 @@ int BPF_KPROBE(trace_mprotect_alert)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    // Load the arguments given to the mprotect syscall (which eventually invokes this function)
-    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
-    if (!sys || sys->id != SYS_MPROTECT)
-        return 0;
-
     struct vm_area_struct *vma = (struct vm_area_struct *)PT_REGS_PARM1(ctx);
     unsigned long reqprot = PT_REGS_PARM2(ctx);
-    //unsigned long prot = PT_REGS_PARM3(ctx);
 
-    void *addr = (void*)sys->args.args[0];
-    size_t len = sys->args.args[1];
-    unsigned long prev_prot = get_vma_flags(vma);
-
-    if (addr <= 0)
-        return 0;
-
-    // If length is 0, the current page permissions are changed
-    if (len == 0)
-        len = PAGE_SIZE;
-
-    if ((!(prev_prot & VM_EXEC)) && (reqprot & VM_EXEC)) {
-        u32 alert = ALERT_MPROT_X_ADD;
-        save_to_submit_buf(&data, &alert, sizeof(u32), 0);
-        return events_perf_submit(&data, MEM_PROT_ALERT, 0);
+    if (should_submit(SECURITY_FILE_MPROTECT))
+    {
+        struct file *file = (struct file *)READ_KERN(vma->vm_file);
+        void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+        u64 ctime = get_ctime_nanosec_from_file(file);
+        save_str_to_buf(&data, file_path, 0);
+        save_to_submit_buf(&data, &reqprot, sizeof(int), 1);
+        save_to_submit_buf(&data, &ctime, sizeof(u64), 2);
+        events_perf_submit(&data, SECURITY_FILE_MPROTECT, 0);
     }
 
-    if ((prev_prot & VM_EXEC) && !(prev_prot & VM_WRITE)
-        && ((reqprot & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC))) {
-        u32 alert = ALERT_MPROT_W_ADD;
-        save_to_submit_buf(&data, &alert, sizeof(u32), 0);
-        return events_perf_submit(&data, MEM_PROT_ALERT, 0);
-    }
+    if (should_submit(MEM_PROT_ALERT))
+    {
+        // Load the arguments given to the mprotect syscall (which eventually invokes this function)
+        syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+        if (!sys || sys->id != SYS_MPROTECT)
+            return 0;
 
-    if (((prev_prot & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC))
-        && (reqprot & VM_EXEC) && !(reqprot & VM_WRITE)) {
-        u32 alert = ALERT_MPROT_W_REM;
-        save_to_submit_buf(&data, &alert, sizeof(u32), 0);
-        events_perf_submit(&data, MEM_PROT_ALERT, 0);
+        //unsigned long prot = PT_REGS_PARM3(ctx);
+        unsigned long prev_prot = get_vma_flags(vma);
 
-        if (data.options & OPT_EXTRACT_DYN_CODE) {
-            bin_args.type = SEND_MPROTECT;
-            bpf_probe_read(bin_args.metadata, sizeof(u64), &data.context.ts);
-            bin_args.ptr = (char *)addr;
-            bin_args.start_off = 0;
-            bin_args.full_size = len;
+        void *addr = (void*)sys->args.args[0];
+        size_t len = sys->args.args[1];
 
-            u64 id = bpf_get_current_pid_tgid();
-            bpf_map_update_elem(&bin_args_map, &id, &bin_args, BPF_ANY);
-            bpf_tail_call(ctx, &prog_array, TAIL_SEND_BIN);
+        if (addr <= 0)
+            return 0;
+
+        // If length is 0, the current page permissions are changed
+        if (len == 0)
+            len = PAGE_SIZE;
+
+        if ((!(prev_prot & VM_EXEC)) && (reqprot & VM_EXEC)) {
+            u32 alert = ALERT_MPROT_X_ADD;
+            save_to_submit_buf(&data, &alert, sizeof(u32), 0);
+            return events_perf_submit(&data, MEM_PROT_ALERT, 0);
+        }
+
+        if ((prev_prot & VM_EXEC) && !(prev_prot & VM_WRITE)
+            && ((reqprot & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC))) {
+            u32 alert = ALERT_MPROT_W_ADD;
+            save_to_submit_buf(&data, &alert, sizeof(u32), 0);
+            return events_perf_submit(&data, MEM_PROT_ALERT, 0);
+        }
+
+        if (((prev_prot & (VM_WRITE|VM_EXEC)) == (VM_WRITE|VM_EXEC))
+            && (reqprot & VM_EXEC) && !(reqprot & VM_WRITE)) {
+            u32 alert = ALERT_MPROT_W_REM;
+            save_to_submit_buf(&data, &alert, sizeof(u32), 0);
+            events_perf_submit(&data, MEM_PROT_ALERT, 0);
+
+            if (data.options & OPT_EXTRACT_DYN_CODE) {
+                bin_args.type = SEND_MPROTECT;
+                bpf_probe_read(bin_args.metadata, sizeof(u64), &data.context.ts);
+                bin_args.ptr = (char *)addr;
+                bin_args.start_off = 0;
+                bin_args.full_size = len;
+
+                u64 id = bpf_get_current_pid_tgid();
+                bpf_map_update_elem(&bin_args_map, &id, &bin_args, BPF_ANY);
+                bpf_tail_call(ctx, &prog_array, TAIL_SEND_BIN);
+            }
         }
     }
 
