@@ -103,7 +103,7 @@ func (t *Tracee) deleteProcInfoDelayed(hostTid int) {
 func (t *Tracee) processEvent(event *trace.Event) error {
 	switch int32(event.EventID) {
 
-	case VfsWriteEventID, VfsWritevEventID:
+	case VfsWriteEventID, VfsWritevEventID, __KernelWriteEventID:
 		//capture written files
 		if t.config.Capture.FileWrite {
 			filePath, err := getEventArgStringVal(event, "pathname")
