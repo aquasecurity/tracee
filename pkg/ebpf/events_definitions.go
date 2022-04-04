@@ -5867,10 +5867,12 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Name:    "magic_write",
 		Probes:  []probe{},
 		Sets:    []string{},
-		Dependencies: []dependency{
-			{eventID: VfsWriteEventID},
-			{eventID: VfsWritevEventID},
-			{eventID: __KernelWriteEventID},
+		Dependencies: dependencies{
+			events: []eventDependency{
+				{eventID: VfsWriteEventID},
+				{eventID: VfsWritevEventID},
+				{eventID: __KernelWriteEventID},
+			},
 		},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
