@@ -135,9 +135,7 @@ func TestDropUnrequired(t *testing.T) {
 		var setCaps []capability.Cap
 		fc := fakeCapability{
 			set: func(capType capability.CapType, caps ...capability.Cap) {
-				for _, c := range caps {
-					setCaps = append(setCaps, c)
-				}
+				setCaps = append(setCaps, caps...)
 			},
 			apply: func(kind capability.CapType) error {
 				for _, reqCap := range requiredCaps {
