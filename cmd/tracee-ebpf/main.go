@@ -27,7 +27,6 @@ import (
 	cli "github.com/urfave/cli/v2"
 )
 
-var debug bool
 var traceeInstallPath string
 var listenMetrics bool
 var metricsAddr string
@@ -51,10 +50,21 @@ func main() {
 				return nil
 			}
 
+			// enable debug mode if debug flag is passed
+			if c.Bool("debug") {
+				err := flags.EnableDebugMode()
+				if err != nil {
+					return fmt.Errorf("failed to start debug mode: %v", err)
+				}
+			}
+
+			// for the rest of execution, use this debug mdoe value
+			debug := flags.DebugModeEnabled()
+
 			cfg := tracee.Config{
 				PerfBufferSize:     c.Int("perf-buffer-size"),
 				BlobPerfBufferSize: c.Int("blob-perf-buffer-size"),
-				Debug:              c.Bool("debug"),
+				Debug:              debug,
 			}
 
 			cacheSlice := c.StringSlice("cache")
@@ -313,10 +323,9 @@ func main() {
 				Usage: "size, in pages, of the internal perf ring buffer used to send blobs from the kernel",
 			},
 			&cli.BoolFlag{
-				Name:        "debug",
-				Value:       false,
-				Usage:       "write verbose debug messages to standard output and retain intermediate artifacts. enabling will output debug messages to stdout, which will likely break consumers which expect to receive machine-readable events from stdout",
-				Destination: &debug,
+				Name:  "debug",
+				Value: false,
+				Usage: "write verbose debug messages to standard output and retain intermediate artifacts. enabling will output debug messages to stdout, which will likely break consumers which expect to receive machine-readable events from stdout",
 			},
 			&cli.StringFlag{
 				Name:        "install-path",
@@ -355,6 +364,8 @@ func prepareBpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSIn
 		bpfenv:     false,
 		btfvmlinux: helpers.OSBTFEnabled(),
 	}
+
+	debug := config.Debug
 
 	bpfFilePath, err := checkEnvPath("TRACEE_BPF_FILE")
 	if bpfFilePath != "" {
@@ -555,7 +566,7 @@ func unpackCOREBinary() ([]byte, error) {
 		return nil, err
 	}
 
-	if debug {
+	if flags.DebugModeEnabled() {
 		fmt.Println("unpacked CO:RE bpf object file into memory")
 	}
 
