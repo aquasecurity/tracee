@@ -3,6 +3,7 @@ package engine
 import (
 	"bytes"
 	"errors"
+	"os"
 	"testing"
 	"time"
 
@@ -27,6 +28,7 @@ func (fs regoFakeSignature) GetMetadata() (detect.SignatureMetadata, error) {
 	}
 
 	return detect.SignatureMetadata{
+		ID:   "TRC-FAKE",
 		Name: "Fake Signature",
 	}, nil
 }
@@ -60,6 +62,55 @@ func (fs regoFakeSignature) OnSignal(signal detect.Signal) error {
 	return nil
 }
 func (fs *regoFakeSignature) Close() {}
+
+type fakeSignature struct {
+	getMetadata       func() (detect.SignatureMetadata, error)
+	getSelectedEvents func() ([]detect.SignatureEventSelector, error)
+	init              func(detect.SignatureHandler) error
+	onEvent           func(protocol.Event) error
+	onSignal          func(signal detect.Signal) error
+}
+
+func (fs fakeSignature) GetMetadata() (detect.SignatureMetadata, error) {
+	if fs.getMetadata != nil {
+		return fs.getMetadata()
+	}
+
+	return detect.SignatureMetadata{
+		ID:   "TRC-FAKE2",
+		Name: "Another Fake Signature",
+	}, nil
+}
+
+func (fs fakeSignature) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
+	if fs.getSelectedEvents != nil {
+		return fs.getSelectedEvents()
+	}
+
+	return []detect.SignatureEventSelector{}, nil
+}
+
+func (fs fakeSignature) Init(cb detect.SignatureHandler) error {
+	if fs.init != nil {
+		return fs.init(cb)
+	}
+	return nil
+}
+
+func (fs fakeSignature) OnEvent(event protocol.Event) error {
+	if fs.onEvent != nil {
+		return fs.onEvent(event)
+	}
+	return nil
+}
+
+func (fs fakeSignature) OnSignal(signal detect.Signal) error {
+	if fs.onSignal != nil {
+		return fs.onSignal(signal)
+	}
+	return nil
+}
+func (fs *fakeSignature) Close() {}
 
 func TestConsumeSources(t *testing.T) {
 	testCases := []struct {
@@ -511,4 +562,48 @@ func TestGetSelectedEvents(t *testing.T) {
 		},
 	}
 	assert.ElementsMatch(t, expected, se)
+}
+func TestEngine_LoadSignature(t *testing.T) {
+	testCases := []struct {
+		name          string
+		signatures    []detect.Signature
+		expectedCount int
+	}{
+		{
+			name:          "load one signature",
+			signatures:    []detect.Signature{&regoFakeSignature{}},
+			expectedCount: 1,
+		},
+		{
+			name:          "load two signatures",
+			signatures:    []detect.Signature{&regoFakeSignature{}, &fakeSignature{}},
+			expectedCount: 2,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			input := make(chan protocol.Event)
+			source := EventSources{
+				Tracee: input,
+			}
+			output := make(chan detect.Finding)
+			engine, err := NewEngine([]detect.Signature{}, source, output, os.Stdout, Config{})
+			require.NoError(t, err)
+
+			for _, sig := range tc.signatures {
+				metadata, err := sig.GetMetadata()
+				require.NoError(t, err)
+
+				id, err := engine.LoadSignature(sig)
+				assert.NoError(t, err)
+				assert.Equal(t, metadata.ID, id)
+			}
+
+			//check that signature stats were correctly incremented
+			assert.Equal(t, tc.expectedCount, int(engine.Stats().Signatures.Read()))
+			close(input)
+		})
+	}
+
 }
