@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -112,26 +113,30 @@ HostName: foobar.local
 	}
 
 	for _, tc := range testCases {
-		var actualOutput bytes.Buffer
-		findingCh, err := setupOutput(&actualOutput, "", "", "", tc.outputFormat)
-		require.NoError(t, err, tc.name)
+		t.Run(tc.name, func(t *testing.T) {
+			actualOutput := NewSyncBuffer([]byte{})
+			findingCh, err := setupOutput(actualOutput, "", "", "", tc.outputFormat)
+			require.NoError(t, err, tc.name)
 
-		sm, _ := fakeSignature{}.GetMetadata()
-		findingCh <- detect.Finding{
-			Data: map[string]interface{}{
-				"foo1": "bar1, baz1",
-				"foo2": []string{"bar2", "baz2"},
-			},
-			Event:       tc.inputEvent,
-			SigMetadata: sm,
-		}
+			sm, err := fakeSignature{}.GetMetadata()
+			require.NoError(t, err)
 
-		time.Sleep(time.Millisecond)
-		checkOutput(t, tc.name, actualOutput, tc.expectedOutput)
+			findingCh <- detect.Finding{
+				Data: map[string]interface{}{
+					"foo1": "bar1, baz1",
+					"foo2": []string{"bar2", "baz2"},
+				},
+				Event:       tc.inputEvent,
+				SigMetadata: sm,
+			}
+
+			time.Sleep(time.Millisecond)
+			checkOutput(t, tc.name, actualOutput, tc.expectedOutput)
+		})
 	}
 }
 
-func checkOutput(t *testing.T, testName string, actualOutput bytes.Buffer, expectedOutput string) {
+func checkOutput(t *testing.T, testName string, actualOutput *SyncBuffer, expectedOutput string) {
 	got := strings.Split(actualOutput.String(), "\n")
 	for _, g := range got {
 		switch {
@@ -215,8 +220,9 @@ HostName: foobar.local
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-				got, _ := ioutil.ReadAll(request.Body)
-				checkOutput(t, tc.name, *bytes.NewBuffer(got), tc.expectedOutput)
+				got, err := ioutil.ReadAll(request.Body)
+				require.NoError(t, err)
+				checkOutput(t, tc.name, NewSyncBuffer(got), tc.expectedOutput)
 				assert.Equal(t, tc.contentType, request.Header.Get("content-type"), tc.name)
 			}))
 			defer ts.Close()
@@ -314,4 +320,27 @@ func TestOutputTemplates(t *testing.T) {
 		})
 	}
 
+}
+
+type SyncBuffer struct {
+	b *bytes.Buffer
+	m sync.Mutex
+}
+
+func (b *SyncBuffer) Write(p []byte) (n int, err error) {
+	b.m.Lock()
+	defer b.m.Unlock()
+	return b.b.Write(p)
+}
+
+func (b *SyncBuffer) String() string {
+	b.m.Lock()
+	defer b.m.Unlock()
+	return b.b.String()
+}
+
+func NewSyncBuffer(buf []byte) *SyncBuffer {
+	return &SyncBuffer{
+		b: bytes.NewBuffer(buf),
+	}
 }
