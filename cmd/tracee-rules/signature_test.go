@@ -108,7 +108,7 @@ func copyExampleSig(exampleName, destDir string) error {
 	var exampleDir string
 	extension := filepath.Ext(exampleName)
 	if extension == ".rego" {
-		exampleDir = fmt.Sprint(exampleRulesDir + "/%s")
+		exampleDir = exampleRulesDir + "/%s"
 	} else {
 		return errors.New("unsupported signature type")
 	}
