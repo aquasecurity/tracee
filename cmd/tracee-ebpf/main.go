@@ -58,7 +58,7 @@ func main() {
 				}
 			}
 
-			// for the rest of execution, use this debug mdoe value
+			// for the rest of execution, use this debug mode value
 			debug := flags.DebugModeEnabled()
 
 			cfg := tracee.Config{
