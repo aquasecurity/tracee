@@ -1,7 +1,7 @@
 ---
 # Release snapshot on CRON schedule or on demand. This workflow ensures that
 # the main branch is ready for release and that all build configuration files
-# are valid.
+# are valid. Also scans tracee container images for vulnerabilities.
 name: Release Snapshot
 
 on:
