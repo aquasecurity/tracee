@@ -6237,7 +6237,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 	},
 	KprobeAttachEventID: {
 		ID32Bit: sys32undefined,
-		Name:    "kprobe_attch",
+		Name:    "kprobe_attach",
 		Probes: []probe{
 			{event: "arm_kprobe", attach: kprobe, fn: "trace_arm_kprobe"},
 		},
