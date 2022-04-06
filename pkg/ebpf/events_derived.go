@@ -113,12 +113,6 @@ func deriveContainerCreate(t *Tracee) deriveFn {
 		if info := t.containers.GetCgroupInfo(cgroupId); info.Container.ContainerId != "" {
 			de := event
 			de.EventID = int(ContainerCreateEventID)
-			de.ContainerID = info.Container.ContainerId
-			de.ContainerImage = info.Container.Image
-			de.ContainerName = info.Container.Name
-			de.Pod.Name = info.Container.Pod.Name
-			de.Pod.Namespace = info.Container.Pod.Namespace
-			de.Pod.UID = info.Container.Pod.UID
 			de.EventName = def.Name
 			de.ReturnValue = 0
 			de.StackAddresses = make([]uint64, 1)
@@ -126,6 +120,11 @@ func deriveContainerCreate(t *Tracee) deriveFn {
 				{ArgMeta: def.Params[0], Value: info.Runtime.String()},
 				{ArgMeta: def.Params[1], Value: info.Container.ContainerId},
 				{ArgMeta: def.Params[2], Value: info.Ctime.UnixNano()},
+				{ArgMeta: def.Params[3], Value: info.Container.Image},
+				{ArgMeta: def.Params[4], Value: info.Container.Name},
+				{ArgMeta: def.Params[5], Value: info.Container.Pod.Name},
+				{ArgMeta: def.Params[6], Value: info.Container.Pod.Namespace},
+				{ArgMeta: def.Params[7], Value: info.Container.Pod.UID},
 			}
 			de.ArgsNum = len(de.Args)
 
@@ -149,12 +148,6 @@ func deriveContainerRemoved(t *Tracee) deriveFn {
 		if info := t.containers.GetCgroupInfo(cgroupId); info.Container.ContainerId != "" {
 			de := event
 			de.EventID = int(ContainerRemoveEventID)
-			de.ContainerID = info.Container.ContainerId
-			de.ContainerImage = info.Container.Image
-			de.ContainerName = info.Container.Name
-			de.Pod.Name = info.Container.Pod.Name
-			de.Pod.Namespace = info.Container.Pod.Namespace
-			de.Pod.UID = info.Container.Pod.UID
 			de.EventName = def.Name
 			de.ReturnValue = 0
 			de.StackAddresses = make([]uint64, 1)
