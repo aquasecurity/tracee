@@ -965,3 +965,22 @@ const (
 	sys32fadvise64
 	sys32sync_file_range
 )
+
+var syscallsToCheck = []int{
+	29,  // ioctl
+	56,  // openat
+	57,  // close
+	61,  // getdents64
+	63,  // read
+	64,  // write
+	117, // ptrace
+	129, // kill
+	198, // socket
+	281, // execveat
+	206, // sendto
+	207, // recvfrom
+	211, // sendmsg
+	212, // recvmsg
+	221, // execve
+	280, // bpf
+}

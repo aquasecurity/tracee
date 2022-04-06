@@ -79,8 +79,7 @@ func main() {
 				PerfBufferSize:     c.Int("perf-buffer-size"),
 				BlobPerfBufferSize: c.Int("blob-perf-buffer-size"),
 				Debug:              debug,
-				OsConfig:           OSInfo,
-
+				OSInfo:             OSInfo,
 			}
 
 			cacheSlice := c.StringSlice("cache")

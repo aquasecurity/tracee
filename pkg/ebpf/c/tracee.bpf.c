@@ -302,8 +302,8 @@ Copyright (C) Aqua Security inc.
 #endif
 
 #define IOCTL_FETCH_SYSCALLS            65        // randomly picked number for ioctl cmd
-#define NUMBER_OF_SYSCALLS_X86          18
-#define NUMBER_OF_SYSCALLS_ARM          14
+#define NUMBER_OF_SYSCALLS_TO_CHECK_X86 18
+#define NUMBER_OF_SYSCALLS_TO_CHECK_ARM 14
 
 /*================================ eBPF KCONFIGs =============================*/
 
@@ -1593,10 +1593,7 @@ static __always_inline int save_str_to_buf(event_data_t *data, void *ptr, u8 ind
 }
 
 static __always_inline int save_u64_arr_to_buf(event_data_t *data, const u64 __user *ptr,int len , u8 index){
-
     // Data saved to submit buf: [index][u64 count][u64 1][u64 2][u64 3]...
-
-
     u8 elem_num = 0;
     // Save argument index
     data->submit_p->buf[(data->buf_off) & (MAX_PERCPU_BUFSIZE-1)] = index;
@@ -1629,9 +1626,6 @@ static __always_inline int save_u64_arr_to_buf(event_data_t *data, const u64 __u
             goto out;
         }
     }
-    if (data->buf_off > MAX_PERCPU_BUFSIZE - sizeof(u64) - sizeof(int))
-        // not enough space - return
-        goto out;
 
     goto out;
 
@@ -2276,50 +2270,6 @@ static __always_inline struct pipe_inode_info *get_file_pipe_info(struct file *f
     return pipe;
 }
 
-static __always_inline void fetch_syscalls_addresses(event_data_t *data){
-    int key = 0;
-    u64 *table_ptr = bpf_map_lookup_elem(&syscalls_to_check_map, (void *)&key);
-    if (table_ptr == NULL){
-        return ;
-    }
-
-    unsigned long *syscall_table_addr = (unsigned long*) *table_ptr;
-    u64 idx;
-    u64* syscall_num_p;                  // pointer to syscall_number
-    u64 syscall_num;
-    unsigned long syscall_addr = 0;
-    int monitored_syscalls_amount = 0;
-    #if defined(bpf_target_x86)
-        monitored_syscalls_amount = NUMBER_OF_SYSCALLS_X86;
-        u64 syscall_address[NUMBER_OF_SYSCALLS_X86];
-    #elif defined(bpf_target_arm64)
-        monitored_syscalls_amount = NUMBER_OF_SYSCALLS_ARM;
-        u64 syscall_address[NUMBER_OF_SYSCALLS_ARM];
-    #else
-
-        return
-    #endif
-
-    __builtin_memset(syscall_address, 0, sizeof(syscall_address));
-    // the map should look like [syscall_table][syscall number 1][syscall number 2][syscall number 3]...
-    #pragma unroll
-    for(int i =0; i < monitored_syscalls_amount; i++){
-        idx = i+1;
-        syscall_num_p = bpf_map_lookup_elem(&syscalls_to_check_map, (void *)&idx);
-        if (syscall_num_p == NULL){
-            continue;
-        }
-        syscall_num = (u64)*syscall_num_p;
-        syscall_addr = READ_KERN(syscall_table_addr[syscall_num]);
-        if (syscall_addr == 0){
-            return;
-        }
-        syscall_address[i] = syscall_addr;
-    }
-    save_u64_arr_to_buf(data, (const u64 *)syscall_address, monitored_syscalls_amount, 0);
-    events_perf_submit(data, PRINT_SYSCALL_TABLE, 0);
-}
-
 /*============================== SYSCALL HOOKS ===============================*/
 
 // include/trace/events/syscalls.h:
@@ -2927,6 +2877,54 @@ int BPF_KPROBE(trace_do_exit)
     return events_perf_submit(&data, DO_EXIT, code);
 }
 
+/* invoke_print_syscall_table_event submit to the buff the syscalls function handlers address from the syscall table.
+ * the syscalls are strode in map which is syscalls_to_check_map and the syscall-table address is stored in the kernel_symbols map.
+ */
+static __always_inline void invoke_print_syscall_table_event(event_data_t *data){
+    int key = 0;
+    u64 *table_ptr = bpf_map_lookup_elem(&syscalls_to_check_map, (void *)&key);
+    if (table_ptr == NULL){
+        return ;
+    }
+
+    char syscall_table[15] = "sys_call_table";
+    unsigned long *syscall_table_addr = (unsigned long*) get_symbol_addr(syscall_table);
+    u64 idx;
+    u64* syscall_num_p;                  // pointer to syscall_number
+    u64 syscall_num;
+    unsigned long syscall_addr = 0;
+    int monitored_syscalls_amount = 0;
+    #if defined(bpf_target_x86)
+        monitored_syscalls_amount = NUMBER_OF_SYSCALLS_TO_CHECK_X86;
+        u64 syscall_address[NUMBER_OF_SYSCALLS_TO_CHECK_X86];
+    #elif defined(bpf_target_arm64)
+        monitored_syscalls_amount = NUMBER_OF_SYSCALLS_TO_CHECK_ARM;
+        u64 syscall_address[NUMBER_OF_SYSCALLS_TO_CHECK_ARM];
+    #else
+
+        return
+    #endif
+
+    __builtin_memset(syscall_address, 0, sizeof(syscall_address));
+    // the map should look like [syscall number 1][syscall number 2][syscall number 3]...
+    #pragma unroll
+    for(int i =0; i < monitored_syscalls_amount; i++){
+        idx = i;
+        syscall_num_p = bpf_map_lookup_elem(&syscalls_to_check_map, (void *)&idx);
+        if (syscall_num_p == NULL){
+            continue;
+        }
+        syscall_num = (u64)*syscall_num_p;
+        syscall_addr = READ_KERN(syscall_table_addr[syscall_num]);
+        if (syscall_addr == 0){
+            return;
+        }
+        syscall_address[i] = syscall_addr;
+    }
+    save_u64_arr_to_buf(data, (const u64 *)syscall_address, monitored_syscalls_amount, 0);
+    events_perf_submit(data, PRINT_SYSCALL_TABLE, 0);
+}
+
 SEC("kprobe/security_file_ioctl")
 int BPF_KPROBE(trace_tracee_trigger_event )
 {
@@ -2938,7 +2936,7 @@ int BPF_KPROBE(trace_tracee_trigger_event )
     unsigned int cmd = PT_REGS_PARM2(ctx);
 
     if (cmd == IOCTL_FETCH_SYSCALLS && get_config(CONFIG_TRACEE_PID) == data.context.host_pid){
-        fetch_syscalls_addresses(&data);
+        invoke_print_syscall_table_event(&data);
     }
     return 0;
 }

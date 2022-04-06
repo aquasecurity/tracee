@@ -2,11 +2,11 @@ package ebpf
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/types/trace"
-	"strings"
 )
 
 // deriveFn is a function prototype for a function that receives an event as
@@ -25,6 +25,9 @@ func (t *Tracee) initEventDerivationMap() error {
 		},
 		CgroupRmdirEventID: {
 			ContainerRemoveEventID: deriveContainerRemoved(t),
+		},
+		PrintSyscallTableEventID: {
+			DetectHookedSyscallsEventID: deriveDetectHookedSyscall(t),
 		},
 	}
 
@@ -121,12 +124,15 @@ func deriveContainerRemoved(t *Tracee) deriveFn {
 }
 
 func deriveDetectHookedSyscall(t *Tracee) deriveFn {
-	return func(event trace.Event)  (trace.Event, bool, error) {
+	return func(event trace.Event) (trace.Event, bool, error) {
 		syscallsAdresses, err := getEventArgUlongArrVal(&event, "syscalls_addresses")
 		if err != nil {
 			return trace.Event{}, false, fmt.Errorf("error parsing syscalls_numbers arg: %v", err)
 		}
-		hookedSyscallData := t.ParseHookedAddresses(syscallsAdresses)
+		hookedSyscallData, err := analyzeHookedAddresses(syscallsAdresses, t.config.OSInfo, t.kernelSymbols)
+		if err != nil {
+			return trace.Event{}, false, fmt.Errorf("error parsing analyzing hooked syscalls adresses arg: %v", err)
+		}
 		de := event
 		de.EventID = int(DetectHookedSyscallsEventID)
 		de.EventName = "hooked_syscalls"
@@ -139,43 +145,36 @@ func deriveDetectHookedSyscall(t *Tracee) deriveFn {
 	}
 }
 
-func (t *Tracee) ParseHookedAddresses(addresses []uint64) []bufferdecoder.HookedSyscallData {
+func analyzeHookedAddresses(addresses []uint64, OsConfig *helpers.OSInfo, kernelSymbols *helpers.KernelSymbolTable) ([]bufferdecoder.HookedSyscallData, error) {
 	hookedSyscallData := make([]bufferdecoder.HookedSyscallData, 0, 0)
 	for idx, syscallsAdress := range addresses {
-		InTextSegment, err := t.kernelSymbols.TextSegmentContains(syscallsAdress)
+		InTextSegment, err := kernelSymbols.TextSegmentContains(syscallsAdress)
 		if err != nil {
 			continue
 		}
 		if !InTextSegment {
-			hookingFunction := t.ParseSymbol(syscallsAdress)
-			arch := t.config.OsConfig.GetOSReleaseFieldValue(helpers.OS_ARCH)
+			hookingFunction := parseSymbol(syscallsAdress, kernelSymbols)
 			var syscallNumber int32
-			if strings.Compare(arch, "x86_64") == 0 {
-				if idx > len(syscallsToCheckX86) {
-					continue
-				}
-				syscallNumber = int32(syscallsToCheckX86[idx])
-			} else {
-				if idx > len(syscallsToCheckArm) {
-					continue
-				}
-				syscallNumber = int32(syscallsToCheckArm[idx])
+			if idx > len(syscallsToCheck) {
+				return nil, fmt.Errorf("syscall inedx out of the syscalls to check list %v", err)
 			}
+			syscallNumber = int32(syscallsToCheck[idx])
 			event, found := EventsDefinitions[syscallNumber]
-			var hookedSyscall bufferdecoder.HookedSyscallData
+			var hookedSyscallName string
 			if found {
-				hookedSyscall = bufferdecoder.HookedSyscallData{event.Name, hookingFunction.Owner}
+				hookedSyscallName = event.Name
 			} else {
-				hookedSyscall = bufferdecoder.HookedSyscallData{fmt.Sprint(syscallNumber), hookingFunction.Owner}
+				hookedSyscallName = fmt.Sprint(syscallNumber)
 			}
-			hookedSyscallData = append(hookedSyscallData, hookedSyscall)
+			hookedSyscallData = append(hookedSyscallData, bufferdecoder.HookedSyscallData{hookedSyscallName, hookingFunction.Owner})
+
 		}
 	}
-	return hookedSyscallData
+	return hookedSyscallData, nil
 }
 
-func (t *Tracee) ParseSymbol(address uint64) *helpers.KernelSymbol {
-	hookingFunction, err := t.kernelSymbols.GetSymbolByAddr(address)
+func parseSymbol(address uint64, table *helpers.KernelSymbolTable) *helpers.KernelSymbol {
+	hookingFunction, err := table.GetSymbolByAddr(address)
 	if err != nil {
 		hookingFunction = &helpers.KernelSymbol{}
 		hookingFunction.Owner = "hidden"

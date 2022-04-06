@@ -6308,7 +6308,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Probes: []probe{
 			{event: "security_file_ioctl", attach: kprobe, fn: "trace_tracee_trigger_event"},
 		},
-		Sets: []string{},
+		Dependencies: dependencies{ksymbols: []string{"sys_call_table"}},
+		Sets:         []string{},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned long[]", Name: "syscalls_addresses"},
 		},
@@ -6316,9 +6317,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	DetectHookedSyscallsEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "detect_hooked_syscalls",
-		Dependencies: []dependency{
-			{eventID: FinitModuleEventID},
-			{eventID: PrintSyscallTableEventID},
+		Dependencies: dependencies{
+			events: []eventDependency{{eventID: FinitModuleEventID}, {eventID: PrintSyscallTableEventID}, {eventID: InitModuleEventID}},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
