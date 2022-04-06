@@ -57,8 +57,8 @@ typedef long unsigned int __kernel_ulong_t;
 typedef _Bool bool;
 
 enum {
-    false = 0,
-    true = 1,
+	false = 0,
+	true = 1,
 };
 
 #if defined(__TARGET_ARCH_x86)
@@ -129,89 +129,89 @@ struct pt_regs {
 // common to all architectures
 
 enum {
-        BPF_ANY = 0,
-        BPF_NOEXIST = 1,
-        BPF_EXIST = 2,
-        BPF_F_LOCK = 4,
+	BPF_ANY = 0,
+	BPF_NOEXIST = 1,
+	BPF_EXIST = 2,
+	BPF_F_LOCK = 4,
 };
 
 enum {
-        BPF_F_USER_STACK = 256,
+	BPF_F_USER_STACK = 256,
 };
 
 enum {
-        BPF_F_CURRENT_CPU = 4294967295,
+	BPF_F_CURRENT_CPU = 4294967295,
 };
 
 enum {
-        TCP_ESTABLISHED = 1,
-        TCP_SYN_SENT = 2,
-        TCP_SYN_RECV = 3,
-        TCP_FIN_WAIT1 = 4,
-        TCP_FIN_WAIT2 = 5,
-        TCP_TIME_WAIT = 6,
-        TCP_CLOSE = 7,
-        TCP_CLOSE_WAIT = 8,
-        TCP_LAST_ACK = 9,
-        TCP_LISTEN = 10,
-        TCP_CLOSING = 11,
-        TCP_NEW_SYN_RECV = 12,
-        TCP_MAX_STATES = 13,
+	TCP_ESTABLISHED = 1,
+	TCP_SYN_SENT = 2,
+	TCP_SYN_RECV = 3,
+	TCP_FIN_WAIT1 = 4,
+	TCP_FIN_WAIT2 = 5,
+	TCP_TIME_WAIT = 6,
+	TCP_CLOSE = 7,
+	TCP_CLOSE_WAIT = 8,
+	TCP_LAST_ACK = 9,
+	TCP_LISTEN = 10,
+	TCP_CLOSING = 11,
+	TCP_NEW_SYN_RECV = 12,
+	TCP_MAX_STATES = 13,
 };
 
 enum sock_type {
-        SOCK_STREAM = 1,
-        SOCK_DGRAM = 2,
-        SOCK_RAW = 3,
-        SOCK_RDM = 4,
-        SOCK_SEQPACKET = 5,
-        SOCK_DCCP = 6,
-        SOCK_PACKET = 10,
+	SOCK_STREAM = 1,
+	SOCK_DGRAM = 2,
+	SOCK_RAW = 3,
+	SOCK_RDM = 4,
+	SOCK_SEQPACKET = 5,
+	SOCK_DCCP = 6,
+	SOCK_PACKET = 10,
 };
 
 enum {
-        IPPROTO_IP = 0,
-        IPPROTO_ICMP = 1,
-        IPPROTO_IGMP = 2,
-        IPPROTO_IPIP = 4,
-        IPPROTO_TCP = 6,
-        IPPROTO_EGP = 8,
-        IPPROTO_PUP = 12,
-        IPPROTO_UDP = 17,
-        IPPROTO_IDP = 22,
-        IPPROTO_TP = 29,
-        IPPROTO_DCCP = 33,
-        IPPROTO_IPV6 = 41,
-        IPPROTO_RSVP = 46,
-        IPPROTO_GRE = 47,
-        IPPROTO_ESP = 50,
-        IPPROTO_AH = 51,
-        IPPROTO_MTP = 92,
-        IPPROTO_BEETPH = 94,
-        IPPROTO_ENCAP = 98,
-        IPPROTO_PIM = 103,
-        IPPROTO_COMP = 108,
-        IPPROTO_SCTP = 132,
-        IPPROTO_UDPLITE = 136,
-        IPPROTO_MPLS = 137,
-        IPPROTO_ETHERNET = 143,
-        IPPROTO_RAW = 255,
-        IPPROTO_MPTCP = 262,
-        IPPROTO_MAX = 263,
+	IPPROTO_IP = 0,
+	IPPROTO_ICMP = 1,
+	IPPROTO_IGMP = 2,
+	IPPROTO_IPIP = 4,
+	IPPROTO_TCP = 6,
+	IPPROTO_EGP = 8,
+	IPPROTO_PUP = 12,
+	IPPROTO_UDP = 17,
+	IPPROTO_IDP = 22,
+	IPPROTO_TP = 29,
+	IPPROTO_DCCP = 33,
+	IPPROTO_IPV6 = 41,
+	IPPROTO_RSVP = 46,
+	IPPROTO_GRE = 47,
+	IPPROTO_ESP = 50,
+	IPPROTO_AH = 51,
+	IPPROTO_MTP = 92,
+	IPPROTO_BEETPH = 94,
+	IPPROTO_ENCAP = 98,
+	IPPROTO_PIM = 103,
+	IPPROTO_COMP = 108,
+	IPPROTO_SCTP = 132,
+	IPPROTO_UDPLITE = 136,
+	IPPROTO_MPLS = 137,
+	IPPROTO_ETHERNET = 143,
+	IPPROTO_RAW = 255,
+	IPPROTO_MPTCP = 262,
+	IPPROTO_MAX = 263,
 };
 
 enum {
-        TCPF_ESTABLISHED = 2,
-        TCPF_SYN_SENT = 4,
-        TCPF_FIN_WAIT1 = 16,
-        TCPF_FIN_WAIT2 = 32,
-        TCPF_TIME_WAIT = 64,
-        TCPF_CLOSE = 128,
-        TCPF_CLOSE_WAIT = 256,
-        TCPF_LAST_ACK = 512,
-        TCPF_LISTEN = 1024,
-        TCPF_CLOSING = 2048,
-        TCPF_NEW_SYN_RECV = 4096,
+	TCPF_ESTABLISHED = 2,
+	TCPF_SYN_SENT = 4,
+	TCPF_FIN_WAIT1 = 16,
+	TCPF_FIN_WAIT2 = 32,
+	TCPF_TIME_WAIT = 64,
+	TCPF_CLOSE = 128,
+	TCPF_CLOSE_WAIT = 256,
+	TCPF_LAST_ACK = 512,
+	TCPF_LISTEN = 1024,
+	TCPF_CLOSING = 2048,
+	TCPF_NEW_SYN_RECV = 4096,
 };
 
 struct bpf_raw_tracepoint_args {
@@ -265,11 +265,11 @@ struct task_struct {
 };
 
 typedef struct {
-    int counter;
+	int counter;
 } atomic_t;
 
 struct signal_struct {
-    atomic_t live;
+	atomic_t live;
 };
 
 struct vm_area_struct {
@@ -521,21 +521,21 @@ struct sk_buff {
 
 struct icmphdr {
 	__u8 type;
-    union {
-        struct {
-            __be16	id;
-            __be16	sequence;
-        } echo;
-    } un;
+	union {
+		struct {
+			__be16	id;
+			__be16	sequence;
+		} echo;
+	} un;
 };
 
 struct icmp6hdr {
 	__u8 icmp6_type;
 	union {
-	    struct icmpv6_echo {
-            __be16		identifier;
-            __be16		sequence;
-        } u_echo;
+		struct icmpv6_echo {
+			__be16		identifier;
+			__be16		sequence;
+		} u_echo;
 	} icmp6_dataun;
 };
 
@@ -755,30 +755,29 @@ struct udphdr {
 };
 
 enum kernel_read_file_id {
-        READING_UNKNOWN = 0,
-        READING_FIRMWARE = 1,
-        READING_MODULE = 2,
-        READING_KEXEC_IMAGE = 3,
-        READING_KEXEC_INITRAMFS = 4,
-        READING_POLICY = 5,
-        READING_X509_CERTIFICATE = 6,
-        READING_MAX_ID = 7,
+	READING_UNKNOWN = 0,
+	READING_FIRMWARE = 1,
+	READING_MODULE = 2,
+	READING_KEXEC_IMAGE = 3,
+	READING_KEXEC_INITRAMFS = 4,
+	READING_POLICY = 5,
+	READING_X509_CERTIFICATE = 6,
+	READING_MAX_ID = 7,
 };
 
-struct kretprobe_instance{};
+struct kretprobe_instance {};
 typedef int kprobe_opcode_t;
 struct kprobe;
+
 typedef int (*kprobe_pre_handler_t) (struct kprobe *, struct pt_regs *);
 typedef void (*kprobe_post_handler_t) (struct kprobe *, struct pt_regs *, unsigned long flags);
 typedef int (*kretprobe_handler_t) (struct kretprobe_instance *, struct pt_regs *);
-struct kprobe{
-    kprobe_opcode_t *addr;
-    /* Allow user to indicate symbol name of the probe point */
-    const char *symbol_name;
-    /* Called before addr is executed. */
-    kprobe_pre_handler_t pre_handler;
-    /* Called after addr is executed, unless... */
-    kprobe_post_handler_t post_handler;
+
+struct kprobe {
+	kprobe_opcode_t *addr;
+	const char *symbol_name;
+	kprobe_pre_handler_t pre_handler;
+	kprobe_post_handler_t post_handler;
 };
 
 #include <struct_flavors.h>
