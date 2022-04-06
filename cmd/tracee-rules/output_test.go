@@ -95,8 +95,11 @@ HostName: foobar.local
 			name: "sad path with unknown event",
 			inputEvent: protocol.Event{
 				Headers: protocol.EventHeaders{
-					ContentType: "application/wrong",
-					Origin:      "/untrusted",
+					Selector: protocol.Selector{
+						Name:   "unrecognized_event",
+						Source: "nottrracee",
+						Origin: "somewhere",
+					},
 				},
 				Payload: "something wrong",
 			},

@@ -113,10 +113,10 @@ func (fs fakeSignature) OnSignal(signal detect.Signal) error {
 }
 func (fs *fakeSignature) Close() {}
 
-func TestConsumeSources(t *testing.T) {
+func TestEngine_ConsumeSources(t *testing.T) {
 	testCases := []struct {
 		name              string
-		inputEvent        trace.Event
+		inputEvent        protocol.Event
 		inputSignature    regoFakeSignature
 		expectedNumEvents int
 		expectedError     string
@@ -137,7 +137,7 @@ func TestConsumeSources(t *testing.T) {
 						Value: "/proc/self/mem",
 					},
 				},
-			},
+			}.ToProtocol(),
 			inputSignature: regoFakeSignature{
 				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
@@ -158,7 +158,7 @@ func TestConsumeSources(t *testing.T) {
 			name: "happy path - with no matching event selector",
 			inputEvent: trace.Event{
 				EventName: "execve",
-			},
+			}.ToProtocol(),
 			inputSignature: regoFakeSignature{
 				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
@@ -175,7 +175,7 @@ func TestConsumeSources(t *testing.T) {
 			name: "happy path - with all events selector",
 			inputEvent: trace.Event{
 				EventName: "execve",
-			},
+			}.ToProtocol(),
 			inputSignature: regoFakeSignature{
 				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
@@ -193,7 +193,7 @@ func TestConsumeSources(t *testing.T) {
 		},
 		{
 			name:       "happy path - with all events selector, no name",
-			inputEvent: trace.Event{EventName: "execve"},
+			inputEvent: trace.Event{EventName: "execve"}.ToProtocol(),
 			inputSignature: regoFakeSignature{
 				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
@@ -221,7 +221,7 @@ func TestConsumeSources(t *testing.T) {
 						Value: "/proc/self/mem",
 					},
 				},
-			},
+			}.ToProtocol(),
 			inputSignature: regoFakeSignature{
 				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
@@ -254,7 +254,7 @@ func TestConsumeSources(t *testing.T) {
 						Value: "/proc/self/mem",
 					},
 				},
-			},
+			}.ToProtocol(),
 			inputSignature: regoFakeSignature{
 				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
@@ -282,7 +282,7 @@ func TestConsumeSources(t *testing.T) {
 						Value: "/proc/self/mem",
 					},
 				},
-			},
+			}.ToProtocol(),
 			inputSignature: regoFakeSignature{
 				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
@@ -355,7 +355,7 @@ func TestConsumeSources(t *testing.T) {
 						Value: "/proc/self/mem",
 					},
 				},
-			},
+			}.ToProtocol(),
 			inputSignature: regoFakeSignature{
 				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 					return []detect.SignatureEventSelector{
@@ -372,6 +372,32 @@ func TestConsumeSources(t *testing.T) {
 				ProcessID: 2, ParentProcessID: 1, Args: []trace.Argument{{ArgMeta: trace.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
 				EventName: "test_event",
 			},
+		},
+		{
+			name: "happy path - signature receives a non tracee event",
+			inputEvent: protocol.Event{
+				Headers: protocol.EventHeaders{
+					Selector: protocol.Selector{
+						Name:   "happy_event",
+						Origin: "foo",
+						Source: "system",
+					},
+				},
+				Payload: "a great payload",
+			},
+			inputSignature: regoFakeSignature{
+				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
+					return []detect.SignatureEventSelector{
+						{
+							Name:   "happy_event",
+							Source: "system",
+							Origin: "foo",
+						},
+					}, nil
+				},
+			},
+			expectedNumEvents: 1,
+			expectedEvent:     "a great payload",
 		},
 	}
 
@@ -406,7 +432,7 @@ func TestConsumeSources(t *testing.T) {
 			//       go test -v -run=TestConsumeSources -race ./pkg/rules/engine/...
 			var gotNumEvents uint32
 			tc.inputSignature.onEvent = func(event protocol.Event) error {
-				assert.Equal(t, tc.expectedEvent, event.Payload.(trace.Event), tc.name)
+				assert.Equal(t, tc.expectedEvent, event.Payload, tc.name)
 				atomic.AddUint32(&gotNumEvents, 1)
 				return nil
 			}
@@ -418,7 +444,7 @@ func TestConsumeSources(t *testing.T) {
 			}()
 
 			// send a test event
-			e.inputs.Tracee <- tc.inputEvent.ToProtocol()
+			e.inputs.Tracee <- tc.inputEvent
 
 			// assert
 			var gotEvent protocol.Event
@@ -436,51 +462,6 @@ func TestConsumeSources(t *testing.T) {
 				assert.Contains(t, logger.String(), tc.expectedError, tc.name)
 			}
 		})
-	}
-}
-
-func TestEventSignatureSelector(t *testing.T) {
-	notTraceeEvt := protocol.Event{
-		Headers: protocol.EventHeaders{
-			ContentType: "tracee.notevent.lol",
-			Origin:      "nottracee/*",
-		},
-		Payload: "just some stuff",
-	}
-	_, err := eventSignatureSelector(notTraceeEvt)
-
-	require.Error(t, err)
-
-	testCases := []trace.Event{
-		{
-			EventName:       "test_event",
-			ProcessID:       2,
-			HostProcessID:   2,
-			ParentProcessID: 1,
-			Args: []trace.Argument{
-				{
-					ArgMeta: trace.ArgMeta{
-						Name: "pathname",
-					},
-					Value: "/proc/self/mem",
-				},
-			},
-		},
-		{
-			EventName: "execve",
-		},
-	}
-
-	for _, traceeEvt := range testCases {
-		expected := detect.SignatureEventSelector{
-			Origin: string(trace.HostOrigin),
-			Name:   traceeEvt.EventName,
-			Source: "tracee",
-		}
-
-		selector, _ := eventSignatureSelector(traceeEvt.ToProtocol())
-
-		assert.Equal(t, expected, selector)
 	}
 }
 

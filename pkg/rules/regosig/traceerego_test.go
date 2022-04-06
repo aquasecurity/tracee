@@ -354,8 +354,11 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 
 		notTraceeEvt := protocol.Event{
 			Headers: protocol.EventHeaders{
-				ContentType: "tracee.notevent.lol",
-				Origin:      "nottracee/*",
+				Selector: protocol.Selector{
+					Name:   "unrecognized_event",
+					Source: "nottrracee",
+					Origin: "somewhere",
+				},
 			},
 			Payload: "just some stuff",
 		}

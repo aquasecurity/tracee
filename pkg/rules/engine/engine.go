@@ -4,13 +4,11 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"strings"
 	"sync"
 
 	"github.com/aquasecurity/tracee/pkg/rules/metrics"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 const ALL_EVENT_ORIGINS = "*"
@@ -152,12 +150,10 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 				}
 			} else {
 				engine.signaturesMutex.RLock()
-				signatureSelector, err := eventSignatureSelector(event)
-
-				if err != nil {
-					engine.logger.Printf("invalid event received (should be of type %s)", trace.EventContentType)
-					engine.signaturesMutex.RUnlock()
-					continue
+				signatureSelector := detect.SignatureEventSelector{
+					Origin: event.Headers.Selector.Origin,
+					Name:   event.Headers.Selector.Name,
+					Source: event.Headers.Selector.Source,
 				}
 				engine.stats.Events.Increment()
 
@@ -291,20 +287,6 @@ func (engine *Engine) UnloadSignature(signatureId string) error {
 		}
 	}
 	return nil
-}
-
-func eventSignatureSelector(event protocol.Event) (detect.SignatureEventSelector, error) {
-	origin := event.Origin()
-	contentType := event.ContentType()
-	if !(strings.HasPrefix(origin, trace.EventSource) && strings.HasPrefix(contentType, trace.EventContentType)) {
-		return detect.SignatureEventSelector{}, fmt.Errorf("the signature selector could not be determined since the event isn't a tracee event")
-	}
-
-	return detect.SignatureEventSelector{
-		Origin: strings.TrimPrefix(origin, trace.EventSource+"/"),
-		Name:   strings.TrimPrefix(contentType, trace.EventContentType+"-"),
-		Source: "tracee",
-	}, nil
 }
 
 // GetSelectedEvents returns the event selectors that are relevant to the currently loaded signatures
