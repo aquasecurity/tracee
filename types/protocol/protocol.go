@@ -3,12 +3,21 @@ package protocol
 
 //EventHeaders are headers attached to the Event struct, used to send metadata about the payload
 type EventHeaders struct {
-	// ContentType indicates the content of the Event payload.
-	ContentType string
-	// Origin indicates whether Event originates from host or container.
-	Origin string
+	// Selector is a propriotary header used for filtering event subscriptions in the engin
+	Selector Selector
+
 	// Custom additional custom headers, nil most of the time
 	custom map[string]string
+}
+
+// Selector is a propriotary header used for filtering event subscriptions in the engine
+type Selector struct {
+	// Name indicates the name of the Event payload
+	Name string
+	// Origin indicates where the event was generated (host, container, pod), this may be empty depending on Source
+	Origin string
+	// Source indicates the producer of the Event (example: tracee, CNDR, K8SAuditLog...)
+	Source string
 }
 
 //Event is a generic event that the Engine can process
@@ -17,14 +26,12 @@ type Event struct {
 	Payload interface{}
 }
 
-func (e *Event) ContentType() string {
-	return e.Headers.ContentType
+// Get Event's Selector
+func (e *Event) Selector() Selector {
+	return e.Headers.Selector
 }
 
-func (e *Event) Origin() string {
-	return e.Headers.Origin
-}
-
+// Get a custom header that was set through SetHeader
 func (e *Event) Header(header string) string {
 	if e.Headers.custom != nil {
 		return e.Headers.custom[header]
@@ -32,6 +39,7 @@ func (e *Event) Header(header string) string {
 	return ""
 }
 
+// Set a custom header
 func (e *Event) SetHeader(header string, value string) {
 	if e.Headers.custom == nil {
 		e.Headers.custom = make(map[string]string)
