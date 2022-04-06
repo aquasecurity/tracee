@@ -3154,10 +3154,11 @@ int BPF_KPROBE(trace_proc_create)
 
     char * name = (char *)PT_REGS_PARM1(ctx);
     unsigned long proc_ops_addr = (unsigned long) PT_REGS_PARM4(ctx);
+    
     save_str_to_buf(&data, name, 0);
     save_to_submit_buf(&data, (void *)&proc_ops_addr, sizeof(u64), 1);
+    
     return events_perf_submit(&data, PROC_CREATE, 0);
-
 }
 
 SEC("kprobe/security_socket_listen")
