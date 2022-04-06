@@ -72,6 +72,7 @@ func deriveContainerCreate(t *Tracee) deriveFn {
 			de := event
 			de.EventID = int(ContainerCreateEventID)
 			de.EventName = def.Name
+			de.ContainerID = info.ContainerId
 			de.ReturnValue = 0
 			de.StackAddresses = make([]uint64, 1)
 			de.Args = []trace.Argument{
@@ -102,6 +103,7 @@ func deriveContainerRemoved(t *Tracee) deriveFn {
 			de := event
 			de.EventID = int(ContainerRemoveEventID)
 			de.EventName = def.Name
+			de.ContainerID = info.ContainerId
 			de.ReturnValue = 0
 			de.StackAddresses = make([]uint64, 1)
 			de.Args = []trace.Argument{
