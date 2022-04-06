@@ -202,8 +202,8 @@ Copyright (C) Aqua Security inc.
 #define DIRTY_PIPE_SPLICE               1038
 #define DEBUGFS_CREATE_FILE             1039
 #define PRINT_SYSCALL_TABLE             1040
-#define FETCH_PROC_FOPS                 1035
-#define MAX_EVENT_ID                    1036
+#define FETCH_PROC_FOPS                 1041
+#define MAX_EVENT_ID                    1042
 
 #define NET_PACKET                      4000
 
@@ -2274,32 +2274,6 @@ static __always_inline struct pipe_inode_info *get_file_pipe_info(struct file *f
         return NULL;
     }
     return pipe;
-}
-
-static __always_inline void send_file_operations_struct(event_data_t *data, struct file * called_file)
-{
-    char* top = "top";
-    char* ps = "ps";
-    //check's if the called process is top or ps (to list processes)
-    if ((!has_prefix(data->context.comm, "top ", 4)) && (!has_prefix(data->context.comm, "ps ", 3)))
-        return ;
-    struct inode *file_inode = get_inode_from_file(called_file);
-    struct file_operations *fops = (struct file_operations *)READ_KERN(file_inode->i_fop);
-    if (fops == NULL)
-        return ;
-
-    unsigned long iterate_shared_addr = (unsigned long) READ_KERN(fops->iterate_shared);
-    if (iterate_shared_addr == 0)
-        return ;
-
-    unsigned long fops_addresses[2] ={
-        iterate_shared_addr,
-        (unsigned long) fops
-    };
-
-    save_u64_arr_to_buf(data, (const u64 *)fops_addresses, 2, 0);
-    events_perf_submit(data, FETCH_PROC_FOPS, 0);
-
 }
 
 /*============================== SYSCALL HOOKS ===============================*/
@@ -4851,6 +4825,26 @@ int BPF_KPROBE(trace_ret_do_splice)
     return events_perf_submit(&data, DIRTY_PIPE_SPLICE, 0);
 }
 
+static __always_inline void send_file_operations_struct(event_data_t *data, struct file * called_file)
+{
+    struct inode *file_inode = get_inode_from_file(called_file);
+    struct file_operations *fops = (struct file_operations *)READ_KERN(file_inode->i_fop);
+    if (fops == NULL)
+        return ;
+
+    unsigned long iterate_shared_addr = (unsigned long) READ_KERN(fops->iterate_shared);
+    if (iterate_shared_addr == 0)
+        return ;
+
+    unsigned long fops_addresses[2] ={
+        iterate_shared_addr,
+        (unsigned long) fops
+    };
+
+    save_u64_arr_to_buf(data, (const u64 *)fops_addresses, 2, 0);
+    events_perf_submit(data, FETCH_PROC_FOPS, 0);
+}
+
 SEC("kprobe/security_file_permission")
 int BPF_KPROBE(trace_security_file_permission)
 {
@@ -4863,8 +4857,22 @@ int BPF_KPROBE(trace_security_file_permission)
     struct file *f = (struct file *)PT_REGS_PARM1(ctx);
     if (f == NULL)
         return 0;
-    send_file_operations_struct(&data, f);
 
+    get_path_str(GET_FIELD_ADDR(f->f_path));
+    // Get per-cpu string buffer
+    buf_t *string_p = get_buf(STRING_BUF_IDX);
+    if (string_p == NULL)
+        return -1;
+    u32 *off = get_buf_off(STRING_BUF_IDX);
+    if (off == NULL)
+        return 0;
+
+    if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
+        return 0;
+
+    if (has_prefix("/proc", (char*)&string_p->buf[*off], MAX_PATH_PREF_SIZE)) {
+        send_file_operations_struct(&data, f);
+    }
     return 0;
 }
 

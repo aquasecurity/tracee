@@ -28,7 +28,7 @@ type eventDependency struct {
 
 type dependencies struct {
 	events   []eventDependency // Events required to be loaded and/or submitted for the event to happen
-	ksymbols []string
+	ksymbols []string          // kernel symbols required to the bpf programs
 }
 
 // EventDefinition is a struct describing an event configuration
@@ -6258,7 +6258,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Name:    "detect_hooked_proc_fops",
 		Probes:  []probe{},
 		Dependencies: dependencies{
-			events: []eventDependency{{FetchProcFopsEventID}},
+			events:   []eventDependency{{FetchProcFopsEventID}},
+			ksymbols: []string{"_stext", "_etext"},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{

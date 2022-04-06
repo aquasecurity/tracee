@@ -153,8 +153,8 @@ func deriveDetectHookedSyscall(t *Tracee) deriveFn {
 	}
 }
 
-func analyzeHookedAddresses(addresses []uint64, OsConfig *helpers.OSInfo, kernelSymbols *helpers.KernelSymbolTable) ([]bufferdecoder.HookedSyscallData, error) {
-	hookedSyscallData := make([]bufferdecoder.HookedSyscallData, 0, 0)
+func analyzeHookedAddresses(addresses []uint64, OsConfig *helpers.OSInfo, kernelSymbols *helpers.KernelSymbolTable) ([]bufferdecoder.HookedSymbolData, error) {
+	hookedSyscallData := make([]bufferdecoder.HookedSymbolData, 0, 0)
 	for idx, syscallsAdress := range addresses {
 		InTextSegment, err := kernelSymbols.TextSegmentContains(syscallsAdress)
 		if err != nil {
@@ -174,7 +174,7 @@ func analyzeHookedAddresses(addresses []uint64, OsConfig *helpers.OSInfo, kernel
 			} else {
 				hookedSyscallName = fmt.Sprint(syscallNumber)
 			}
-			hookedSyscallData = append(hookedSyscallData, bufferdecoder.HookedSyscallData{hookedSyscallName, hookingFunction.Owner})
+			hookedSyscallData = append(hookedSyscallData, bufferdecoder.HookedSymbolData{hookedSyscallName, hookingFunction.Owner})
 
 		}
 	}
@@ -192,13 +192,13 @@ func parseSymbol(address uint64, table *helpers.KernelSymbolTable) *helpers.Kern
 	return hookingFunction
 }
 
-func deriveDetectHookedProcFops(t *Tracee) deriveFn{
+func deriveDetectHookedProcFops(t *Tracee) deriveFn {
 	return func(event trace.Event) (trace.Event, bool, error) {
 		fopsAddresses, err := getEventArgUlongArrVal(&event, "fops_address")
 		if err != nil {
 			return trace.Event{}, false, err
 		}
-		hookedFops := make([]bufferdecoder.HookedFunctionData, 0, 0)
+		hookedFops := make([]bufferdecoder.HookedSymbolData, 0, 0)
 		for idx, addr := range fopsAddresses {
 			inTextSeg, err := t.kernelSymbols.TextSegmentContains(addr)
 			if err != nil {
@@ -222,9 +222,10 @@ func deriveDetectHookedProcFops(t *Tracee) deriveFn{
 				case IterateShared:
 					functionName = "iterate_shared"
 				}
-				hookedFops = append(hookedFops, bufferdecoder.HookedFunctionData{functionName, hookingFunction.Owner})
+				hookedFops = append(hookedFops, bufferdecoder.HookedSymbolData{functionName, hookingFunction.Owner})
 			}
 		}
+		def := EventsDefinitions[DetectHookedProcFopsEventID]
 		de := event
 		de.EventID = int(DetectHookedProcFopsEventID)
 		de.EventName = "detect_hooked_proc_fops"
@@ -236,6 +237,5 @@ func deriveDetectHookedProcFops(t *Tracee) deriveFn{
 
 		return de, true, nil
 	}
-
 
 }
