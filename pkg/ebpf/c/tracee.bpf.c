@@ -583,16 +583,15 @@ struct mount {
 struct kretprobe_instance{};
 typedef int kprobe_opcode_t;
 struct kprobe;
+
 typedef int (*kprobe_pre_handler_t) (struct kprobe *, struct pt_regs *);
 typedef void (*kprobe_post_handler_t) (struct kprobe *, struct pt_regs *, unsigned long flags);
 typedef int (*kretprobe_handler_t) (struct kretprobe_instance *, struct pt_regs *);
+
 struct kprobe{
     kprobe_opcode_t *addr;
-    /* Allow user to indicate symbol name of the probe point */
     const char *symbol_name;
-    /* Called before addr is executed. */
     kprobe_pre_handler_t pre_handler;
-    /* Called after addr is executed, unless... */
     kprobe_post_handler_t post_handler;
 };
 #endif
@@ -4383,12 +4382,15 @@ int BPF_KPROBE(trace_arm_kprobe)
         return 0;
 
     struct kprobe *kp = (struct kprobe *)PT_REGS_PARM1(ctx);
-    char * symbol_name = (char *)READ_KERN(kp->symbol_name);
+
+    char *symbol_name = (char *)READ_KERN(kp->symbol_name);
     u64 pre_handler = (u64)READ_KERN(kp->pre_handler);
     u64 post_handler = (u64)READ_KERN(kp->post_handler);
+
     save_str_to_buf(&data, (void *)symbol_name, 0);
     save_to_submit_buf(&data, (void *)&pre_handler, sizeof(u64), 1);
     save_to_submit_buf(&data, (void *)&post_handler, sizeof(u64), 2);
+
     return events_perf_submit(&data, KPROBE_ATTACH, 0);
 }
 
