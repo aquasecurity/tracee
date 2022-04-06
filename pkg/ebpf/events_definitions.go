@@ -80,6 +80,7 @@ const (
 	SocketDupEventID
 	HiddenInodesEventID
 	__KernelWriteEventID
+	ProcCreateEventID
 	MaxCommonEventID
 )
 
@@ -6219,6 +6220,18 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets:    []string{},
 		Params: []trace.ArgMeta{
 			{Type: "external.PktMeta", Name: "metadata"},
+		},
+	},
+	ProcCreateEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "proc_create",
+		Probes: []probe{
+			{event: "proc_create", attach: kprobe, fn: "trace_proc_create"},
+		},
+		Sets: []string{},
+		Params: []trace.ArgMeta{
+			{Type: "char*", Name: "name"},
+			{Type: "u64", Name: "proc_ops_addr"},
 		},
 	},
 }
