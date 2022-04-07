@@ -84,6 +84,7 @@ const (
 	KprobeAttachEventID
 	CallUsermodeHelperEventID
 	DirtyPipeSpliceEventID
+	DebugfsCreateFile
 	MaxCommonEventID
 )
 
@@ -6283,6 +6284,20 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "const char*const*", Name: "argv"},
 			{Type: "const char*const*", Name: "envp"},
 			{Type: "int", Name: "wait"},
+		},
+	},
+	DebugfsCreateFile: {
+		ID32Bit: sys32undefined,
+		Name:    "debugfs_create_file",
+		Probes: []probe{
+			{event: "debugfs_create_file", attach: kprobe, fn: "trace_debugfs_create_file"},
+		},
+		Sets: []string{},
+		Params: []trace.ArgMeta{
+			{Type: "const char*", Name: "file_name"},
+			{Type: "const char*", Name: "path"},
+			{Type: "mode_t", Name: "mode"},
+			{Type: "u64", Name: "proc_ops_addr"},
 		},
 	},
 }
