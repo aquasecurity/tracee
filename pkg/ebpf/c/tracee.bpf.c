@@ -4838,7 +4838,7 @@ static __always_inline bool skb_revalidate_data(struct __sk_buff *skb, uint8_t *
     return true;
 }
 
-void parse_net_protocols(net_packet_t *pkt){
+void set_net_event_id(net_packet_t *pkt){
     if (pkt->protocol == IPPROTO_UDP && pkt->dst_port == 53){
         pkt->event_id = DNS_REQUEST;
     }
@@ -5010,7 +5010,7 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
         pkt_size = sizeof(pkt);
         pkt.src_port = __bpf_ntohs(pkt.src_port);
         pkt.dst_port = __bpf_ntohs(pkt.dst_port);
-        parse_net_protocols(&pkt);
+        set_net_event_id(&pkt);
     }
 
     if (iface_conf & CAPTURE_IFACE || should_send_payload(&pkt)){

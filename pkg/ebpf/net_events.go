@@ -239,10 +239,12 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 					t.handleError(err)
 					continue
 				}
+				PacketStartOff := netEventMetadata.GetSizeBytes() + netCaptureData.GetSizeBytes()
 
 				ifaceName := t.netInfo.ifaces[int(netCaptureData.ConfigIfaceIndex)].Name
 				ifaceIdx, err := t.getTracedIfaceIdx(ifaceName)
 				if err == nil && ifaceIdx >= 0 {
+					PacketStartOff += 40 // the offset to the packet payload the size of the NetEventMetadata + NetPacketEvent
 					if t.eventsToTrace[netEventMetadata.NetEventId] {
 						evt, err := netPacketProtocolHandler(netDecoder, netEventMetadata, networkThread, "net_packet")
 						if err != nil {
@@ -250,6 +252,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 							continue
 						}
 						protocolProcessor(netEventMetadata.NetEventId, &evt, *netDecoder)
+
 						// output the event
 						select {
 						case t.config.ChanEvents <- evt:
@@ -263,7 +266,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 				ifaceIdx, err = t.getCapturedIfaceIdx(ifaceName)
 				if ifaceIdx >= 0 && err == nil {
 					// capture the packet
-					packetBytes, err := getPacketBytes(netDecoder, netCaptureData.PacketLength)
+					packetBytes, err := getPacketBytes(netDecoder, PacketStartOff, netCaptureData.PacketLength)
 					if err != nil {
 						t.handleError(err)
 						continue
@@ -366,10 +369,9 @@ func (t *Tracee) writePacket(capData bufferdecoder.NetCaptureData, timeStamp tim
 	return nil
 }
 
-func getPacketBytes(netDecoder *bufferdecoder.EbpfDecoder, packetLength uint32) ([]byte, error) {
+func getPacketBytes(netDecoder *bufferdecoder.EbpfDecoder, packetStartOffset uint32, packetLength uint32) ([]byte, error) {
 	packetBytes := make([]byte, packetLength)
-	err := netDecoder.DecodeBytes(packetBytes[:], packetLength)
-	//fmt.Println(packetBytes)
+	err := netDecoder.DecodePacketBytes(packetBytes[:], packetStartOffset, packetLength)
 	return packetBytes, err
 }
 

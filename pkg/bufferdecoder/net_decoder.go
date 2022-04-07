@@ -34,6 +34,15 @@ func (decoder *EbpfDecoder) DecodeNetEventMetadata(eventMetaData *NetEventMetada
 	return nil
 }
 
+func (decoder *EbpfDecoder) DecodePacketBytes(packetBytes []byte, packetstartOffset uint32, packetLength uint32) error {
+	if int(packetstartOffset+packetLength) > len(decoder.buffer) {
+		print(packetstartOffset+packetLength, " len is ", decoder.buffer)
+		return fmt.Errorf("offset to the payload to big")
+	}
+	_ = copy(packetBytes[:], decoder.buffer[packetstartOffset:packetstartOffset+packetLength])
+	return nil
+}
+
 type NetCaptureData struct {
 	PacketLength     uint32 `json:"pkt_len"`
 	ConfigIfaceIndex uint32 `json:"if_index"`
