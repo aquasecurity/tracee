@@ -318,19 +318,6 @@ Copyright (C) Aqua Security inc.
 
 #endif // CORE
 
-/*================================ eBPF CO-RE SUPPORT =================================*/
-
-#ifdef CORE
-#define get_type_size(x) bpf_core_type_size(x)
-#define __get_node_addr(array, node_type, index) ((node_type *)((void *)array + (index * get_type_size(node_type))))
-#define get_node_addr(array, index) __get_node_addr(array, typeof(*array), index)
-
-#else
-#define get_type_size(x) sizeof(x)
-#define get_node_addr(array, index) &array[index]
-
-#endif // CORE
-
 /*================================ eBPF MAPS =================================*/
 
 #ifndef CORE
@@ -609,6 +596,10 @@ struct kprobe{
     kprobe_pre_handler_t pre_handler;
     kprobe_post_handler_t post_handler;
 };
+
+#define get_type_size(x) sizeof(x)
+#define get_node_addr(array, index) &array[index]
+
 #endif
 
 /*================================= MAPS =====================================*/
@@ -4648,9 +4639,15 @@ int BPF_KPROBE(trace_ret_do_splice)
     off_in = READ_KERN(*off_in_addr);
     #endif
     #else // CORE
-    // Check if field of struct exist to determine kernel version - some fields change between versions.
-    // Field 'data' of struct 'public_key_signature' was introduced between v5.9 and v5.10, so its existence could
-    // be used to determine whether the current version is older than 5.9 or newer than 5.10.
+    //
+    // Check if field of struct exist to determine kernel version - some fields
+    // change between versions. Field 'data' of struct 'public_key_signature'
+    // was introduced between v5.9 and v5.10, so its existence might be used to
+    // determine whether the current version is older than 5.9 or newer than
+    // 5.10.
+    //
+    // https://lore.kernel.org/stable/20210821203108.215937-1-rafaeldtinoco@gmail.com/
+    //
     struct public_key_signature *check;
     if (!bpf_core_field_exists(check->data)) { // version < v5.10
         off_in = READ_USER(*off_in_addr);
