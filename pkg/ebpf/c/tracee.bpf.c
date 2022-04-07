@@ -3262,13 +3262,13 @@ int BPF_KPROBE(trace_debugfs_create_file)
     if (!should_trace((&data.context)))
         return 0;
 
-    char * name = (char *)PT_REGS_PARM1(ctx);
+    char *name = (char *)PT_REGS_PARM1(ctx);
     mode_t mode = (unsigned short)PT_REGS_PARM2(ctx);
     struct dentry *dentry = (struct dentry *)PT_REGS_PARM3(ctx);
     void *dentry_path = get_dentry_path_str(dentry);
     unsigned long proc_ops_addr = (unsigned long) PT_REGS_PARM5(ctx);
 
-    save_str_to_buf(&data,name, 0);
+    save_str_to_buf(&data, name, 0);
     save_str_to_buf(&data, dentry_path, 1);
     save_to_submit_buf(&data, &mode, sizeof(mode_t), 2);
     save_to_submit_buf(&data, (void *)&proc_ops_addr, sizeof(u64), 3);
