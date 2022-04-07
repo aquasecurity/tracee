@@ -202,7 +202,8 @@ Copyright (C) Aqua Security inc.
 #define DIRTY_PIPE_SPLICE               1038
 #define DEBUGFS_CREATE_FILE             1039
 #define PRINT_SYSCALL_TABLE             1040
-#define MAX_EVENT_ID                    1041
+#define DEBUGFS_CREATE_DIR              1041
+#define MAX_EVENT_ID                    1042
 
 #define NET_PACKET                      4000
 
@@ -3390,6 +3391,25 @@ int BPF_KPROBE(trace_debugfs_create_file)
     save_to_submit_buf(&data, (void *)&proc_ops_addr, sizeof(u64), 3);
 
     return events_perf_submit(&data, DEBUGFS_CREATE_FILE, 0);
+}
+
+SEC("kprobe/debugfs_create_dir")
+int BPF_KPROBE(trace_debugfs_create_dir)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+    if (!should_trace((&data.context)))
+        return 0;
+
+    char * name = (char *)PT_REGS_PARM1(ctx);
+    struct dentry* dentry = (struct dentry*)PT_REGS_PARM2(ctx);
+    void *dentry_path = get_dentry_path_str(dentry);
+
+    save_str_to_buf(&data, name, 0);
+    save_str_to_buf(&data, dentry_path, 1);
+
+    return events_perf_submit(&data, DEBUGFS_CREATE_DIR, 0);
 }
 
 SEC("kprobe/security_socket_listen")
