@@ -88,6 +88,7 @@ const (
 	DebugfsCreateFileEventID
 	PrintSyscallTableEventID
 	DebugfsCreateDirEventID
+	RegisterChrdevEventID
 	MaxCommonEventID
 )
 
@@ -6331,6 +6332,21 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "name"},
 			{Type: "const char*", Name: "path"},
+		},
+	},
+	RegisterChrdevEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "register_chrdev",
+		Probes: []probe{
+			{event: "__register_chrdev", attach: kprobe, fn: "trace___register_chrdev"},
+			{event: "__register_chrdev", attach: kretprobe, fn: "trace_ret__register_chrdev"},
+		},
+		Sets: []string{},
+		Params: []trace.ArgMeta{
+			{Type: "unsigned int", Name: "requested_major_number"},
+			{Type: "unsigned int", Name: "granted_major_number"},
+			{Type: "const char*", Name: "char_device_name"},
+			{Type: "struct file_operations *", Name: "char_device_fops"},
 		},
 	},
 }
