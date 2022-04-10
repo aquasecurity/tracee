@@ -4554,7 +4554,7 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
         }
 
         struct icmphdr *icmph = (void *)head + l4_hdr_off;
-        u16 icmp_id = READ_KERN(icmph->un.echo.id);
+        u16 icmp_id = icmph->un.echo.id;
 
         // set the ports to icmp_id so that the connect_id could be found
         pkt.src_port = icmp_id;
@@ -4565,7 +4565,7 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
         }
 
         struct icmp6hdr *icmph = (void *)head + l4_hdr_off;
-        u16 icmp_id = READ_KERN(icmph->icmp6_dataun.u_echo.identifier);
+        u16 icmp_id = icmph->icmp6_dataun.u_echo.identifier;
 
         // set the ports to icmp_id so that the connect_id could be found
         pkt.src_port = icmp_id;
