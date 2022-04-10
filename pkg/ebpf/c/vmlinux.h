@@ -441,6 +441,14 @@ struct public_key_signature {
     const void *data;
 };
 
+enum zone_type{
+    ZONE_DMA,
+};
+
+struct alloc_context {
+    enum zone_type high_zoneidx;
+};
+
 struct socket {
 	struct sock *sk;
 };
