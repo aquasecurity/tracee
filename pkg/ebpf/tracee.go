@@ -49,6 +49,7 @@ type Config struct {
 	ChanEvents         chan trace.Event
 	ChanErrors         chan error
 	ProcessInfo        bool
+	OSInfo             *helpers.OSInfo
 }
 
 type CaptureConfig struct {
@@ -756,6 +757,25 @@ func (t *Tracee) populateBPFMaps() error {
 	if err != nil {
 		return err
 	}
+
+	if t.eventsToTrace[PrintSyscallTableEventID] || t.eventsToTrace[DetectHookedSyscallsEventID] {
+		syscallsToCheckMap, err := t.bpfModule.GetMap("syscalls_to_check_map")
+		if err != nil {
+			return err
+		}
+		/* the syscallsToCheckMap store the syscall numbers that we are fetching from the syscall table, like that:
+		 * [syscall num #1][syscall num #2][syscall num #3]...
+		 * with that, we can fetch the syscall address by accessing the syscall table in the syscall number index
+		 */
+
+		for idx, val := range syscallsToCheck {
+			err = syscallsToCheckMap.Update(unsafe.Pointer(&(idx)), unsafe.Pointer(&val))
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	for e := range t.eventsToTrace {
 		eU32 := uint32(e) // e is int32
 		params := eventsParams[e]
@@ -1135,6 +1155,7 @@ func (t *Tracee) getProcessCtx(hostTid uint32) (procinfo.ProcessCtx, error) {
 // Run starts the trace. it will run until ctx is cancelled
 func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.invokeInitEvents()
+	t.invokeIoctlTriggeredEvents()
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
 	t.netPerfMap.Start()
@@ -1271,4 +1292,18 @@ func findInList(element string, list *[]string) (int, error) {
 		}
 	}
 	return 0, fmt.Errorf("element: %s dosent found\n", element)
+}
+
+const IoctlFetchSyscalls int = 65 // randomly picked number for ioctl cmd
+
+func (t *Tracee) invokeIoctlTriggeredEvents() {
+	// invoke DetectHookedSyscallsEvent
+	if t.eventsToTrace[PrintSyscallTableEventID] || t.eventsToTrace[DetectHookedSyscallsEventID] {
+		ptmx, err := os.OpenFile(t.config.Capture.OutputPath, os.O_RDONLY, 444)
+		if err != nil {
+			return
+		}
+		syscall.Syscall(syscall.SYS_IOCTL, ptmx.Fd(), uintptr(IoctlFetchSyscalls), 0)
+		ptmx.Close()
+	}
 }

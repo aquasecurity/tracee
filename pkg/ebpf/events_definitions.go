@@ -85,6 +85,7 @@ const (
 	CallUsermodeHelperEventID
 	DirtyPipeSpliceEventID
 	DebugfsCreateFile
+	PrintSyscallTableEventID
 	MaxCommonEventID
 )
 
@@ -94,6 +95,7 @@ const (
 	ContainerCreateEventID
 	ContainerRemoveEventID
 	ExistingContainerEventID
+	DetectHookedSyscallsEventID
 	MaxUserSpaceEventID
 )
 
@@ -6298,6 +6300,29 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "const char*", Name: "path"},
 			{Type: "mode_t", Name: "mode"},
 			{Type: "u64", Name: "proc_ops_addr"},
+		},
+	},
+	PrintSyscallTableEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "print_syscall_table",
+		Probes: []probe{
+			{event: "security_file_ioctl", attach: kprobe, fn: "trace_tracee_trigger_event"},
+		},
+		Dependencies: dependencies{ksymbols: []string{"sys_call_table"}},
+		Sets:         []string{},
+		Params: []trace.ArgMeta{
+			{Type: "unsigned long[]", Name: "syscalls_addresses"},
+		},
+	},
+	DetectHookedSyscallsEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "detect_hooked_syscalls",
+		Dependencies: dependencies{
+			events: []eventDependency{{eventID: FinitModuleEventID}, {eventID: PrintSyscallTableEventID}, {eventID: InitModuleEventID}},
+		},
+		Sets: []string{},
+		Params: []trace.ArgMeta{
+			{Type: "HookedSyscallData[]", Name: "hooked_syscalls"},
 		},
 	},
 }

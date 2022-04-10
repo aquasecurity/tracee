@@ -905,3 +905,24 @@ const (
 	sys32process_mrelease             int32 = 448
 	sys32undefined                    int32 = 10000
 )
+
+var syscallsToCheck = []int{
+	0,   // read
+	1,   // write
+	2,   // open
+	3,   // close
+	16,  // ioctl
+	41,  // socket
+	44,  // sendto
+	45,  // recvfrom
+	46,  // sendmsg
+	47,  // recvmsg
+	59,  // execve
+	62,  // kill
+	78,  // getdents
+	101, // ptrace
+	217, // getdents64
+	257, // openat
+	321, // bpf
+	322, // execveat
+}
