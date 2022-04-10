@@ -88,7 +88,7 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 	testCases := []struct {
 		name     string
 		regoCode string
-		event    trace.Event
+		event    protocol.Event
 
 		finding *detect.Finding
 		error   string
@@ -105,7 +105,7 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 						Value: "ends with yo",
 					},
 				},
-			},
+			}.ToProtocol(),
 			finding: &detect.Finding{
 				Data: nil,
 				Event: trace.Event{
@@ -147,7 +147,7 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 						Value: "ends with yo",
 					},
 				},
-			},
+			}.ToProtocol(),
 			finding: &detect.Finding{
 				Data: nil,
 				Event: trace.Event{
@@ -189,7 +189,7 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 						Value: "doesn't end with yo!",
 					},
 				},
-			},
+			}.ToProtocol(),
 			finding: nil,
 		},
 		{
@@ -210,7 +210,7 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 						Value: 1337,
 					},
 				},
-			},
+			}.ToProtocol(),
 			finding: &detect.Finding{
 				Data: map[string]interface{}{
 					"p1": "test",
@@ -268,7 +268,7 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 						Value: 1337,
 					},
 				},
-			},
+			}.ToProtocol(),
 			finding: &detect.Finding{
 				Data: map[string]interface{}{
 					"p1": "test",
@@ -320,6 +320,21 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 						Value: "yo is not at end",
 					},
 				},
+			}.ToProtocol(),
+			finding: nil,
+		},
+		{
+			name:     "No finding because payload is irrelevant",
+			regoCode: testRegoCodeObject,
+			event: protocol.Event{
+				Headers: protocol.EventHeaders{
+					Selector: protocol.Selector{
+						Name:   "joke",
+						Origin: "nowhere",
+						Source: "system",
+					},
+				},
+				Payload: "just some stuff",
 			},
 			finding: nil,
 		},
@@ -334,10 +349,7 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 			err = sig.Init(holder.OnFinding)
 			require.NoError(t, err)
 
-			event := tc.event.ToProtocol()
-
-			require.NoError(t, err)
-
+			event := tc.event
 			err = sig.OnEvent(event)
 			if tc.error != "" {
 				assert.EqualError(t, err, tc.error)
@@ -347,25 +359,6 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 			}
 		})
 	}
-
-	t.Run("Should return error when event has unrecognized type", func(t *testing.T) {
-		sig, err := regosig.NewRegoSignature(target, partial, testRegoCodeBoolean)
-		require.NoError(t, err)
-
-		notTraceeEvt := protocol.Event{
-			Headers: protocol.EventHeaders{
-				Selector: protocol.Selector{
-					Name:   "unrecognized_event",
-					Source: "nottrracee",
-					Origin: "somewhere",
-				},
-			},
-			Payload: "just some stuff",
-		}
-
-		err = sig.OnEvent(notTraceeEvt)
-		assert.EqualError(t, err, "failed to cast event's payload")
-	})
 }
 
 func TestRegoSignature_OnSignal(t *testing.T) {
