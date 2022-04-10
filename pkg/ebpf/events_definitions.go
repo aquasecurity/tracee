@@ -86,6 +86,7 @@ const (
 	DirtyPipeSpliceEventID
 	DebugfsCreateFile
 	PrintSyscallTableEventID
+	RegisterChardevRegion
 	MaxCommonEventID
 )
 
@@ -6323,6 +6324,19 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{},
 		Params: []trace.ArgMeta{
 			{Type: "HookedSyscallData[]", Name: "hooked_syscalls"},
+		},
+	},
+	RegisterChardevRegion: {
+		ID32Bit: sys32undefined,
+		Name:    "register_chrdev_region",
+		Probes: []probe{
+			{event: "__register_chrdev", attach: kprobe, fn: "trace___register_chrdev"},
+		},
+		Sets: []string{},
+		Params: []trace.ArgMeta{
+			{Type: "unsigned int", Name: "major_number"},
+			{Type: "const char*", Name: "char_device_name"},
+			{Type: "u64", Name: "char_device_fops"},
 		},
 	},
 }

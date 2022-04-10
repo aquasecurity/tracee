@@ -202,7 +202,8 @@ Copyright (C) Aqua Security inc.
 #define DIRTY_PIPE_SPLICE               1038
 #define DEBUGFS_CREATE_FILE             1039
 #define PRINT_SYSCALL_TABLE             1040
-#define MAX_EVENT_ID                    1041
+#define REGISTER_CHARDEV_REGION         1041
+#define MAX_EVENT_ID                    1042
 
 #define NET_PACKET                      4000
 
@@ -4726,6 +4727,27 @@ int BPF_KPROBE(trace_security_inode_mknod)
     save_to_submit_buf(&data, &dev, sizeof(dev_t), 2);
 
     return events_perf_submit(&data, SECURITY_INODE_MKNOD, 0);
+}
+
+SEC("kprobe/__register_chrdev ")
+int BPF_KPROBE(trace___register_chrdev)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data.context))
+        return 0;
+
+    unsigned int major_number = PT_REGS_PARM1(ctx);
+    char* char_device_name = (char*)PT_REGS_PARM4(ctx);
+    unsigned long char_device_fops = PT_REGS_PARM5(ctx);
+
+    save_to_submit_buf(&data, &major_number, sizeof(major_number), 0);
+    save_str_to_buf(&data, char_device_name, 1);
+    save_to_submit_buf(&data, &char_device_fops, sizeof(char_device_fops), 2);
+
+    return events_perf_submit(&data, REGISTER_CHARDEV_REGION, 0);
 }
 
 SEC("kprobe/do_splice")
