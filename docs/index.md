@@ -47,8 +47,8 @@ Before you proceed, make sure you follow the [minimum requirements for running T
 !!! note
     The default (latest) image is **lightweight** and **portable**. It is supposed to
     support different kernel versions without having to build source code. If
-    the host kernel does not support BTF then you may use the **full** container 
-    image. The full container will compile an eBPF object during startup, if you do 
+    the host kernel does not support BTF then you may use the **full** container
+    image. The full container will compile an eBPF object during startup, if you do
     not have one already cached in `/tmp/tracee`.
 
 !!! note
@@ -114,8 +114,8 @@ aquasecurity/tracee repository:
 
 ---
 
-Tracee is an [Aqua Security] open source project.  
-Learn about our open source work and portfolio [Here].  
+Tracee is an [Aqua Security] open source project.
+Learn about our open source work and portfolio [Here].
 Join the community, and talk to us about any matter in [GitHub Discussion] or [Slack].
 
 [Tracee-eBPF]: https://github.com/aquasecurity/tracee/tree/{{ git.tag }}/cmd/tracee-ebpf
