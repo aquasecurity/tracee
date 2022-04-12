@@ -1,12 +1,11 @@
 package sorting
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"testing"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/stretchr/testify/assert"
@@ -129,7 +128,6 @@ type sorterTestCase struct {
 }
 
 func TestEventsChronologicalSorter_Start(t *testing.T) {
-	t.Skip("It's causing DATA RACE, see https://github.com/aquasecurity/tracee/issues/1630")
 	testCases := []sorterTestCase{
 		{
 			eventsPools: []eventsIteration{
@@ -252,10 +250,11 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 			cpuAmount:    1,
 		},
 	}
+
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			inputChan := make(chan *trace.Event, 100)
-			outputChan := make(chan *trace.Event, 100)
+			inputChan := sendTestEvents(testCase.eventsPools)
+			outputChan := make(chan *trace.Event)
 			fatalErrorsChan := make(chan error)
 			errChan := make(chan error)
 			newSorter, err := InitEventSorter()
@@ -264,7 +263,6 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 			ctx := context.Background()
 			ctx, cancel := context.WithCancel(ctx)
 			go newSorter.Start(inputChan, outputChan, ctx, fatalErrorsChan)
-			go sendTestEvents(inputChan, testCase.eventsPools)
 			outputList, sorterErr := retrieveEventsFromSorter(testCase.eventsAmount, outputChan, fatalErrorsChan)
 			cancel()
 			require.NoError(t, sorterErr)
@@ -274,13 +272,16 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 	}
 }
 
-func retrieveEventsFromSorter(expectedEventsAmount int, sorterOutputChan chan *trace.Event, fatalErrorsChan chan error) ([]trace.Event, error) {
+func retrieveEventsFromSorter(expectedEventsAmount int, sorterOutputChan <-chan *trace.Event, fatalErrorsChan chan error) ([]trace.Event, error) {
 	ticker := time.NewTicker(time.Second)
 	outputList := make([]trace.Event, 0)
 	eventsReceived := 0
 	for {
 		select {
-		case event := <-sorterOutputChan:
+		case event, ok := <-sorterOutputChan:
+			if !ok {
+				return outputList, nil
+			}
 			outputList = append(outputList, *event)
 			eventsReceived += 1
 			if eventsReceived > expectedEventsAmount {
@@ -298,13 +299,19 @@ func retrieveEventsFromSorter(expectedEventsAmount int, sorterOutputChan chan *t
 	}
 }
 
-func sendTestEvents(sorterInputChannel chan *trace.Event, eventPool []eventsIteration) {
-	startTime := int(time.Now().UnixNano())
-	for _, eventsIteration := range eventPool {
-		time.Sleep(eventsIteration.delay)
-		for _, event := range eventsIteration.events {
-			event.Timestamp = startTime + (event.Timestamp * int(time.Millisecond.Nanoseconds()))
-			sorterInputChannel <- &event
+func sendTestEvents(eventPool []eventsIteration) <-chan *trace.Event {
+	inputChan := make(chan *trace.Event)
+	go func() {
+		defer close(inputChan)
+		startTime := int(time.Now().UnixNano())
+		for _, eventsIteration := range eventPool {
+			time.Sleep(eventsIteration.delay)
+			for _, event := range eventsIteration.events {
+				event := event
+				event.Timestamp = startTime + (event.Timestamp * int(time.Millisecond.Nanoseconds()))
+				inputChan <- &event
+			}
 		}
-	}
+	}()
+	return inputChan
 }
