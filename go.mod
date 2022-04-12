@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/aquasecurity/libbpfgo v0.2.5-libbpf-0.7.0
-	github.com/aquasecurity/tracee/types v0.0.0-20220228102148-dffb469aed94
+	github.com/aquasecurity/tracee/types v0.0.0-20220412160215-ccc81e5e59cd
 	github.com/google/gopacket v1.1.19
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/mitchellh/go-ps v1.0.0
