@@ -34,6 +34,7 @@ type Event struct {
 	Args                []Argument `json:"args"` //Arguments are ordered according their appearance in the original event
 }
 
+// EventOrigin is where a trace.Event occured, it can either be from the host machine or from a container
 type EventOrigin string
 
 const (
@@ -41,6 +42,7 @@ const (
 	HostOrigin      EventOrigin = "host"
 )
 
+// Derive the EventOrigin of a trace.Event
 func (e Event) Origin() EventOrigin {
 	if e.ContainerID != "" || e.ProcessID != e.HostProcessID {
 		return ContainerOrigin
@@ -50,18 +52,18 @@ func (e Event) Origin() EventOrigin {
 }
 
 const (
-	EventSource      = "tracee"
-	EventContentType = "tracee/event"
+	EventSource = "tracee"
 )
 
+// Converts a trace.Event into a protocol.Event that the rules engine can consume
 func (e Event) ToProtocol() protocol.Event {
-	origin := EventSource + "/" + string(e.Origin())
-	contentType := EventContentType + "-" + e.EventName
-
 	return protocol.Event{
 		Headers: protocol.EventHeaders{
-			ContentType: contentType,
-			Origin:      origin,
+			Selector: protocol.Selector{
+				Name:   e.EventName,
+				Origin: string(e.Origin()),
+				Source: "tracee",
+			},
 		},
 		Payload: e,
 	}

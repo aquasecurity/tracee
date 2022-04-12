@@ -167,8 +167,11 @@ func TestEvent_ToProtocol(t *testing.T) {
 			},
 			expected: protocol.Event{
 				Headers: protocol.EventHeaders{
-					ContentType: "tracee/event-execve",
-					Origin:      "tracee/host",
+					Selector: protocol.Selector{
+						Origin: string(HostOrigin),
+						Source: "tracee",
+						Name:   "execve",
+					},
 				},
 				Payload: Event{
 					EventName:     "execve",
@@ -185,8 +188,11 @@ func TestEvent_ToProtocol(t *testing.T) {
 			},
 			expected: protocol.Event{
 				Headers: protocol.EventHeaders{
-					ContentType: "tracee/event-execve",
-					Origin:      "tracee/container",
+					Selector: protocol.Selector{
+						Origin: string(ContainerOrigin),
+						Source: "tracee",
+						Name:   "execve",
+					},
 				},
 				Payload: Event{
 					EventName:     "execve",
@@ -202,8 +208,11 @@ func TestEvent_ToProtocol(t *testing.T) {
 			},
 			expected: protocol.Event{
 				Headers: protocol.EventHeaders{
-					ContentType: "tracee/event-open",
-					Origin:      "tracee/container",
+					Selector: protocol.Selector{
+						Origin: string(ContainerOrigin),
+						Source: "tracee",
+						Name:   "open",
+					},
 				},
 				Payload: Event{
 					EventName:   "open",
