@@ -3,16 +3,16 @@ package main
 import (
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/external"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
-	"github.com/aquasecurity/tracee/types"
+	"github.com/aquasecurity/tracee/types/detect"
+	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestStdioOverSocket(t *testing.T) {
-	noFindings := map[string]types.Finding{}
-	md := types.SignatureMetadata{
+	noFindings := map[string]detect.Finding{}
+	md := detect.SignatureMetadata{
 		ID:          "TRC-1",
 		Version:     "0.1.0",
 		Name:        "Standard Input/Output Over Socket",
@@ -26,42 +26,42 @@ func TestStdioOverSocket(t *testing.T) {
 
 	testCases := []struct {
 		Name     string
-		Events   []types.Event
-		Findings map[string]types.Finding
+		Events   []trace.Event
+		Findings map[string]detect.Finding
 	}{
 		{
 			Name: "A",
-			Events: []types.Event{
-				external.Event{
+			Events: []trace.Event{
+				{
 					ProcessID: 45,
 					EventName: "security_socket_connect",
-					Args: []external.Argument{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "sockfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "remote_addr",
 							},
 							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
 						},
 					},
 				},
-				external.Event{
+				{
 					ProcessID: 45,
 					EventName: "dup2",
-					Args: []external.Argument{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "oldfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "newfd",
 							},
 							Value: int32(0),
@@ -69,7 +69,7 @@ func TestStdioOverSocket(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]types.Finding{
+			Findings: map[string]detect.Finding{
 				"TRC-1": {
 					Data: map[string]interface{}{
 						"fd":   0,
@@ -77,60 +77,60 @@ func TestStdioOverSocket(t *testing.T) {
 						"port": "53",
 					},
 					SigMetadata: md,
-					Context: external.Event{
+					Event: trace.Event{
 						ProcessID: 45,
 						EventName: "dup2",
-						Args: []external.Argument{
+						Args: []trace.Argument{
 							{
-								ArgMeta: external.ArgMeta{
+								ArgMeta: trace.ArgMeta{
 									Name: "oldfd",
 								},
 								Value: int32(5),
 							},
 							{
-								ArgMeta: external.ArgMeta{
+								ArgMeta: trace.ArgMeta{
 									Name: "newfd",
 								},
 								Value: int32(0),
 							},
 						},
-					},
+					}.ToProtocol(),
 				},
 			},
 		},
 		{
 			Name: "B",
-			Events: []types.Event{
-				external.Event{
+			Events: []trace.Event{
+				{
 					ProcessID: 45,
 					EventName: "security_socket_connect",
-					Args: []external.Argument{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "sockfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "remote_addr",
 							},
 							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
 						},
 					},
 				},
-				external.Event{
+				{
 					ProcessID: 45,
 					EventName: "dup2",
-					Args: []external.Argument{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "oldfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "newfd",
 							},
 							Value: int32(0),
@@ -138,7 +138,7 @@ func TestStdioOverSocket(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]types.Finding{
+			Findings: map[string]detect.Finding{
 				"TRC-1": {
 					Data: map[string]interface{}{
 						"fd":   0,
@@ -146,55 +146,55 @@ func TestStdioOverSocket(t *testing.T) {
 						"port": "53",
 					},
 					SigMetadata: md,
-					Context: external.Event{
+					Event: trace.Event{
 						ProcessID: 45,
 						EventName: "dup2",
-						Args: []external.Argument{
+						Args: []trace.Argument{
 							{
-								ArgMeta: external.ArgMeta{
+								ArgMeta: trace.ArgMeta{
 									Name: "oldfd",
 								},
 								Value: int32(5),
 							},
 							{
-								ArgMeta: external.ArgMeta{
+								ArgMeta: trace.ArgMeta{
 									Name: "newfd",
 								},
 								Value: int32(0),
 							},
 						},
-					},
+					}.ToProtocol(),
 				},
 			},
 		},
 		{
 			Name: "C",
-			Events: []types.Event{
-				external.Event{
+			Events: []trace.Event{
+				{
 					ProcessID: 45,
 					EventName: "security_socket_connect",
-					Args: []external.Argument{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "sockfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "remote_addr",
 							},
 							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
 						},
 					},
 				},
-				external.Event{
+				{
 					ProcessID:   45,
 					EventName:   "dup",
 					ReturnValue: 1,
-					Args: []external.Argument{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "oldfd",
 							},
 							Value: int32(5),
@@ -202,69 +202,69 @@ func TestStdioOverSocket(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]types.Finding{
+			Findings: map[string]detect.Finding{
 				"TRC-1": {
 					Data: map[string]interface{}{
 						"fd":   1,
 						"ip":   "10.225.0.2",
 						"port": "53",
 					},
-					Context: external.Event{
+					Event: trace.Event{
 						ProcessID:   45,
 						EventName:   "dup",
 						ReturnValue: 1,
-						Args: []external.Argument{
+						Args: []trace.Argument{
 							{
-								ArgMeta: external.ArgMeta{
+								ArgMeta: trace.ArgMeta{
 									Name: "oldfd",
 								},
 								Value: int32(5),
 							},
 						},
-					},
+					}.ToProtocol(),
 					SigMetadata: md,
 				},
 			},
 		},
 		{
 			Name: "D",
-			Events: []types.Event{
-				external.Event{
+			Events: []trace.Event{
+				{
 					ProcessID: 45,
 					EventName: "security_socket_connect",
-					Args: []external.Argument{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "sockfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "remote_addr",
 							},
 							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
 						},
 					},
 				},
-				external.Event{
+				{
 					ProcessID: 45,
 					EventName: "dup3",
-					Args: []external.Argument{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "oldfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "newfd",
 							},
 							Value: int32(0),
 						},
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "flags",
 							},
 							Value: "SOMEFLAGS",
@@ -272,56 +272,56 @@ func TestStdioOverSocket(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]types.Finding{
+			Findings: map[string]detect.Finding{
 				"TRC-1": {
 					Data: map[string]interface{}{
 						"fd":   0,
 						"ip":   "10.225.0.2",
 						"port": "53",
 					},
-					Context: external.Event{
+					Event: trace.Event{
 						ProcessID: 45,
 						EventName: "dup3",
-						Args: []external.Argument{
+						Args: []trace.Argument{
 							{
-								ArgMeta: external.ArgMeta{
+								ArgMeta: trace.ArgMeta{
 									Name: "oldfd",
 								},
 								Value: int32(5),
 							},
 							{
-								ArgMeta: external.ArgMeta{
+								ArgMeta: trace.ArgMeta{
 									Name: "newfd",
 								},
 								Value: int32(0),
 							},
 							{
-								ArgMeta: external.ArgMeta{
+								ArgMeta: trace.ArgMeta{
 									Name: "flags",
 								},
 								Value: "SOMEFLAGS",
 							},
 						},
-					},
+					}.ToProtocol(),
 					SigMetadata: md,
 				},
 			},
 		},
 		{
 			Name: "E",
-			Events: []types.Event{
-				external.Event{
+			Events: []trace.Event{
+				{
 					ProcessID: 45,
 					EventName: "dup2",
-					Args: []external.Argument{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "oldfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "newfd",
 							},
 							Value: int32(0),
@@ -333,49 +333,49 @@ func TestStdioOverSocket(t *testing.T) {
 		},
 		{
 			Name: "F",
-			Events: []types.Event{
-				external.Event{
+			Events: []trace.Event{
+				{
 					ProcessID: 45,
 					EventName: "security_socket_connect",
-					Args: []external.Argument{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "sockfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "remote_addr",
 							},
 							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
 						},
 					},
 				},
-				external.Event{
+				{
 					ProcessID: 45,
 					EventName: "close",
-					Args: []external.Argument{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "fd",
 							},
 							Value: int32(5),
 						},
 					},
 				},
-				external.Event{
+				{
 					ProcessID: 45,
 					EventName: "dup2",
-					Args: []external.Argument{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "oldfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "newfd",
 							},
 							Value: int32(0),
@@ -387,37 +387,37 @@ func TestStdioOverSocket(t *testing.T) {
 		},
 		{
 			Name: "G",
-			Events: []types.Event{
-				external.Event{
+			Events: []trace.Event{
+				{
 					ProcessID: 45,
 					EventName: "security_socket_connect",
-					Args: []external.Argument{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "sockfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "remote_addr",
 							},
 							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
 						},
 					},
 				},
-				external.Event{
+				{
 					ProcessID: 22,
 					EventName: "dup2",
-					Args: []external.Argument{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "oldfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "newfd",
 							},
 							Value: int32(0),
@@ -429,37 +429,37 @@ func TestStdioOverSocket(t *testing.T) {
 		},
 		{
 			Name: "H",
-			Events: []types.Event{
-				external.Event{
+			Events: []trace.Event{
+				{
 					ProcessID: 45,
 					EventName: "security_socket_connect",
-					Args: []external.Argument{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "sockfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "remote_addr",
 							},
 							Value: map[string]string{"sa_family": "AF_INET6", "sin6_port": "443", "sin6_addr": "2001:67c:1360:8001::2f", "sin6_scopeid": "0", "sin6_flowinfo": "0"},
 						},
 					},
 				},
-				external.Event{
+				{
 					ProcessID: 45,
 					EventName: "dup2",
-					Args: []external.Argument{
+					Args: []trace.Argument{
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "oldfd",
 							},
 							Value: int32(5),
 						},
 						{
-							ArgMeta: external.ArgMeta{
+							ArgMeta: trace.ArgMeta{
 								Name: "newfd",
 							},
 							Value: int32(0),
@@ -467,31 +467,31 @@ func TestStdioOverSocket(t *testing.T) {
 					},
 				},
 			},
-			Findings: map[string]types.Finding{
+			Findings: map[string]detect.Finding{
 				"TRC-1": {
 					Data: map[string]interface{}{
 						"fd":   0,
 						"ip":   "2001:67c:1360:8001::2f",
 						"port": "443",
 					},
-					Context: external.Event{
+					Event: trace.Event{
 						ProcessID: 45,
 						EventName: "dup2",
-						Args: []external.Argument{
+						Args: []trace.Argument{
 							{
-								ArgMeta: external.ArgMeta{
+								ArgMeta: trace.ArgMeta{
 									Name: "oldfd",
 								},
 								Value: int32(5),
 							},
 							{
-								ArgMeta: external.ArgMeta{
+								ArgMeta: trace.ArgMeta{
 									Name: "newfd",
 								},
 								Value: int32(0),
 							},
 						},
-					},
+					}.ToProtocol(),
 					SigMetadata: md,
 				},
 			},
@@ -505,7 +505,7 @@ func TestStdioOverSocket(t *testing.T) {
 			sig.Init(holder.OnFinding)
 
 			for _, e := range tc.Events {
-				err := sig.OnEvent(e)
+				err := sig.OnEvent(e.ToProtocol())
 				require.NoError(t, err)
 			}
 			assert.Equal(t, tc.Findings, holder.GroupBySigID())

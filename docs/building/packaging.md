@@ -4,19 +4,16 @@
 > packages If you would like to have a local building building and execution
 > environment, [read this](./environment.md) instead.
 
+1. [Ubuntu](#Ubuntu-Linux)
+2. [Fedora](#Fedora-Linux)
+
 ## Ubuntu Linux
 
-Tracee has a directory "packaging" with a skeleton of the needed "debian/"
-directory called "ubuntu". This skeleton is used by "packaging/ubuntu-pkgs.sh"
-script and this script should run from an Ubuntu Linux box.
-
-It is not needed that you have an Ubuntu box to generate the Ubuntu `.deb`
-packages. Instead, you may use the `builder/Makefile.packaging` make script to
-build it for you (by using Docker images).
+You may use `builder/Makefile.packaging` to generate Ubuntu deb packages. It
+will use docker containers to generate appropriate packages, so you don't need
+to install build depencies in your OS.
 
 ### Building
-
-With this make script, you're able to build binary `.deb` packages for:
 
 *  Bionic (LTS)
 
@@ -46,7 +43,7 @@ With this make script, you're able to build binary `.deb` packages for:
 
 The ubuntu `.deb` packages have the following versioning format:
 
-  `tracee-{ebpf,rules}_version~ubuntuver~buildate-lastcommit_arch.deb`
+  `tracee-{ebpf,rules}_version~ubuntuver~builddate-lastcommit_arch.deb`
 
 Examples:
 
@@ -67,5 +64,61 @@ Examples:
 This allows upgrades among future releases of tracee AND ubuntu. It also allows
 you to upgrade to "in between releases" versions if a fix is needed.
 
-The packages will be generated in `dist/` directory, together with the built
-binaries.
+### Location
+
+The packages will be generated in `dist/` directory.
+
+## Fedora Linux
+
+You may use `builder/Makefile.packaging` to generate Fedora rpm packages. It
+will use docker containers to generate appropriate packages, so you don't need
+to install build depencies in your OS.
+
+### Building
+
+* 34 (still maintained)
+
+    ```
+    make -f builder/Makefile.packaging fedora-bin-34
+    ```
+
+* 35 (latest)
+
+    ```
+    make -f builder/Makefile.packaging fedora-bin-35
+    ```
+
+* 36 (devel)
+
+    ```
+    make -f builder/Makefile.packaging fedora-bin-36
+    ```
+
+### Versioning
+
+The fedora `.rpm` packages have the following versioning format:
+
+  `tracee-{ebpf,rules}-version-f{34,35,36}.builddate.lastcommit.arch.rpm`
+
+Examples:
+
+  ```
+  # f34
+  tracee-ebpf-0.6.5.163-f34.2202140510.ef35306d.x86_64.rpm
+  tracee-rules-0.6.5.163-f34.2202140510.ef35306d.x86_64.rpm
+
+  # f35
+  tracee-ebpf-0.6.5.163-f35.2202140512.ef35306d.x86_64.rpm
+  tracee-rules-0.6.5.163-f35.2202140512.ef35306d.x86_64.rpm
+
+  # f36
+  tracee-ebpf-0.6.5.163-f36.2202140514.ef35306d.x86_64.rpm
+  tracee-rules-0.6.5.163-f36.2202140514.ef35306d.x86_64.rpm
+  ```
+
+This allows upgrades among future releases of tracee AND fedora. It also allows
+you to upgrade to "in between releases" versions if a fix is needed.
+
+### Location
+
+The packages will be generated in `dist/` directory.

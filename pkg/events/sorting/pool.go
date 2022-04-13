@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 const poolFreeingPart = 2
@@ -24,7 +24,7 @@ type eventsPool struct {
 // Alloc return an eventNode that contains the event given.
 // The function will try to use stored eventNode if there is one available.
 // If there isn't, it will allocate new one.
-func (p *eventsPool) Alloc(event *external.Event) (*eventNode, error) {
+func (p *eventsPool) Alloc(event *trace.Event) (*eventNode, error) {
 	p.poolMutex.Lock()
 	p.allocationsCount += 1
 	node := p.head

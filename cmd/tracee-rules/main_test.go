@@ -5,16 +5,15 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/aquasecurity/tracee/types"
 )
 
 func Test_listSigs(t *testing.T) {
 	fakeSigs := []fakeSignature{
 		{
-			getMetadata: func() (types.SignatureMetadata, error) {
-				return types.SignatureMetadata{
+			getMetadata: func() (detect.SignatureMetadata, error) {
+				return detect.SignatureMetadata{
 					ID:          "FOO-1",
 					Version:     "1.2.3",
 					Name:        "foo signature",
@@ -23,8 +22,8 @@ func Test_listSigs(t *testing.T) {
 			},
 		},
 		{
-			getMetadata: func() (types.SignatureMetadata, error) {
-				return types.SignatureMetadata{
+			getMetadata: func() (detect.SignatureMetadata, error) {
+				return detect.SignatureMetadata{
 					ID:          "BAR-1",
 					Version:     "4.5.6",
 					Name:        "bar signature",
@@ -33,13 +32,13 @@ func Test_listSigs(t *testing.T) {
 			},
 		},
 		{
-			getMetadata: func() (types.SignatureMetadata, error) {
-				return types.SignatureMetadata{}, errors.New("baz failed")
+			getMetadata: func() (detect.SignatureMetadata, error) {
+				return detect.SignatureMetadata{}, errors.New("baz failed")
 			},
 		},
 	}
 
-	var inputSigs []types.Signature
+	var inputSigs []detect.Signature
 	for _, fs := range fakeSigs {
 		inputSigs = append(inputSigs, fs)
 	}
@@ -55,8 +54,8 @@ BAR-1      bar signature                       4.5.6   bar signature helps with 
 func Test_listEvents(t *testing.T) {
 	fakeSigs := []fakeSignature{
 		{
-			getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
-				return []types.SignatureEventSelector{
+			getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
+				return []detect.SignatureEventSelector{
 					{
 						Source: "tracee",
 						Name:   "execve",
@@ -71,13 +70,13 @@ func Test_listEvents(t *testing.T) {
 			},
 		},
 		{
-			getSelectedEvents: func() ([]types.SignatureEventSelector, error) {
+			getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
 				return nil, errors.New("failed to list sigs")
 			},
 		},
 	}
 
-	var inputSigs []types.Signature
+	var inputSigs []detect.Signature
 	for _, fs := range fakeSigs {
 		inputSigs = append(inputSigs, fs)
 	}

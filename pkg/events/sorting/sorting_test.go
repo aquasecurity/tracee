@@ -1,19 +1,19 @@
 package sorting
 
 import (
+	"context"
 	"fmt"
-	"golang.org/x/net/context"
 	"sort"
 	"testing"
 	"time"
 
-	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 type sortableEventsList struct {
-	eventsList []external.Event
+	eventsList []trace.Event
 }
 
 func (e sortableEventsList) Len() int {
@@ -30,11 +30,11 @@ func (e sortableEventsList) Swap(i, j int) {
 
 func TestEventsChronologicalSorter_addEvent(t *testing.T) {
 	testCases := []struct {
-		events                []external.Event
+		events                []trace.Event
 		expectedCpuQueuesLens map[int]int
 		name                  string
 	}{{
-		events: []external.Event{
+		events: []trace.Event{
 			{ProcessorID: 0, Timestamp: 1},
 			{ProcessorID: 0, Timestamp: 2},
 			{ProcessorID: 0, Timestamp: 3},
@@ -46,7 +46,7 @@ func TestEventsChronologicalSorter_addEvent(t *testing.T) {
 		name: "Sorting chronological order events from 1 CPU",
 	},
 		{
-			events: []external.Event{
+			events: []trace.Event{
 				{ProcessorID: 0, Timestamp: 1},
 				{ProcessorID: 1, Timestamp: 2},
 				{ProcessorID: 0, Timestamp: 3},
@@ -58,7 +58,7 @@ func TestEventsChronologicalSorter_addEvent(t *testing.T) {
 			name: "Sorting chronological order events from multiple CPUs",
 		},
 		{
-			events: []external.Event{
+			events: []trace.Event{
 				{ProcessorID: 0, Timestamp: 2},
 				{ProcessorID: 0, Timestamp: 3},
 				{ProcessorID: 0, Timestamp: 4},
@@ -72,7 +72,7 @@ func TestEventsChronologicalSorter_addEvent(t *testing.T) {
 			name: "Sorting not chronological order events from 1 CPU",
 		},
 		{
-			events: []external.Event{
+			events: []trace.Event{
 				{ProcessorID: 0, Timestamp: 2},
 				{ProcessorID: 0, Timestamp: 3},
 				{ProcessorID: 1, Timestamp: 4},
@@ -116,7 +116,7 @@ func TestEventsChronologicalSorter_addEvent(t *testing.T) {
 }
 
 type eventsIteration struct {
-	events []external.Event
+	events []trace.Event
 	delay  time.Duration // Delay from last iteration
 }
 
@@ -133,7 +133,7 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 			eventsPools: []eventsIteration{
 				{
 					delay: 0,
-					events: []external.Event{
+					events: []trace.Event{
 						{ProcessorID: 0, Timestamp: 1},
 						{ProcessorID: 0, Timestamp: 2},
 						{ProcessorID: 0, Timestamp: 3},
@@ -148,7 +148,7 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 			eventsPools: []eventsIteration{
 				{
 					delay: 0,
-					events: []external.Event{
+					events: []trace.Event{
 						{ProcessorID: 0, Timestamp: 1},
 						{ProcessorID: 1, Timestamp: 2},
 						{ProcessorID: 0, Timestamp: 3},
@@ -163,7 +163,7 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 			eventsPools: []eventsIteration{
 				{
 					delay: 0,
-					events: []external.Event{
+					events: []trace.Event{
 						{ProcessorID: 0, Timestamp: 2},
 						{ProcessorID: 0, Timestamp: 3},
 						{ProcessorID: 0, Timestamp: 4},
@@ -180,7 +180,7 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 			eventsPools: []eventsIteration{
 				{
 					delay: 0,
-					events: []external.Event{
+					events: []trace.Event{
 						{ProcessorID: 0, Timestamp: 2},
 						{ProcessorID: 0, Timestamp: 3},
 						{ProcessorID: 1, Timestamp: 4},
@@ -197,7 +197,7 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 			eventsPools: []eventsIteration{
 				{
 					delay: 0,
-					events: []external.Event{
+					events: []trace.Event{
 						{ProcessorID: 0, Timestamp: 2},
 						{ProcessorID: 0, Timestamp: 3},
 						{ProcessorID: 1, Timestamp: 4},
@@ -207,7 +207,7 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 				},
 				{
 					delay: minDelay - time.Millisecond,
-					events: []external.Event{
+					events: []trace.Event{
 						{ProcessorID: 1, Timestamp: 10},
 						{ProcessorID: 1, Timestamp: 11},
 						{ProcessorID: 1, Timestamp: 6},
@@ -228,19 +228,19 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 			eventsPools: []eventsIteration{
 				{
 					delay: 100 * time.Millisecond,
-					events: []external.Event{
+					events: []trace.Event{
 						{ProcessorID: 0, Timestamp: 1},
 					},
 				},
 				{
 					delay: 300 * time.Millisecond,
-					events: []external.Event{
+					events: []trace.Event{
 						{ProcessorID: 0, Timestamp: 2},
 					},
 				},
 				{
 					delay: 300 * time.Millisecond,
-					events: []external.Event{
+					events: []trace.Event{
 						{ProcessorID: 0, Timestamp: 3},
 					},
 				},
@@ -250,10 +250,11 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 			cpuAmount:    1,
 		},
 	}
+
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			inputChan := make(chan *external.Event, 100)
-			outputChan := make(chan *external.Event, 100)
+			inputChan := sendTestEvents(testCase.eventsPools)
+			outputChan := make(chan *trace.Event)
 			fatalErrorsChan := make(chan error)
 			errChan := make(chan error)
 			newSorter, err := InitEventSorter()
@@ -262,7 +263,6 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 			ctx := context.Background()
 			ctx, cancel := context.WithCancel(ctx)
 			go newSorter.Start(inputChan, outputChan, ctx, fatalErrorsChan)
-			go sendTestEvents(inputChan, testCase.eventsPools)
 			outputList, sorterErr := retrieveEventsFromSorter(testCase.eventsAmount, outputChan, fatalErrorsChan)
 			cancel()
 			require.NoError(t, sorterErr)
@@ -272,13 +272,16 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 	}
 }
 
-func retrieveEventsFromSorter(expectedEventsAmount int, sorterOutputChan chan *external.Event, fatalErrorsChan chan error) ([]external.Event, error) {
+func retrieveEventsFromSorter(expectedEventsAmount int, sorterOutputChan <-chan *trace.Event, fatalErrorsChan chan error) ([]trace.Event, error) {
 	ticker := time.NewTicker(time.Second)
-	outputList := make([]external.Event, 0)
+	outputList := make([]trace.Event, 0)
 	eventsReceived := 0
 	for {
 		select {
-		case event := <-sorterOutputChan:
+		case event, ok := <-sorterOutputChan:
+			if !ok {
+				return outputList, nil
+			}
 			outputList = append(outputList, *event)
 			eventsReceived += 1
 			if eventsReceived > expectedEventsAmount {
@@ -296,13 +299,19 @@ func retrieveEventsFromSorter(expectedEventsAmount int, sorterOutputChan chan *e
 	}
 }
 
-func sendTestEvents(sorterInputChannel chan *external.Event, eventPool []eventsIteration) {
-	startTime := int(time.Now().UnixNano())
-	for _, eventsIteration := range eventPool {
-		time.Sleep(eventsIteration.delay)
-		for _, event := range eventsIteration.events {
-			event.Timestamp = startTime + (event.Timestamp * int(time.Millisecond.Nanoseconds()))
-			sorterInputChannel <- &event
+func sendTestEvents(eventPool []eventsIteration) <-chan *trace.Event {
+	inputChan := make(chan *trace.Event)
+	go func() {
+		defer close(inputChan)
+		startTime := int(time.Now().UnixNano())
+		for _, eventsIteration := range eventPool {
+			time.Sleep(eventsIteration.delay)
+			for _, event := range eventsIteration.events {
+				event := event
+				event.Timestamp = startTime + (event.Timestamp * int(time.Millisecond.Nanoseconds()))
+				inputChan <- &event
+			}
 		}
-	}
+	}()
+	return inputChan
 }

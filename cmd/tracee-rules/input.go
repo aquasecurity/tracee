@@ -11,8 +11,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/external"
-	"github.com/aquasecurity/tracee/types"
+	"github.com/aquasecurity/tracee/types/protocol"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 var errHelp = errors.New("user has requested help text")
@@ -30,7 +30,7 @@ type traceeInputOptions struct {
 	inputFormat inputFormat
 }
 
-func setupTraceeInputSource(opts *traceeInputOptions) (chan types.Event, error) {
+func setupTraceeInputSource(opts *traceeInputOptions) (chan protocol.Event, error) {
 
 	if opts.inputFormat == jsonInputFormat {
 		return setupTraceeJSONInputSource(opts)
@@ -43,15 +43,16 @@ func setupTraceeInputSource(opts *traceeInputOptions) (chan types.Event, error) 
 	return nil, errors.New("could not set up input source")
 }
 
-func setupTraceeGobInputSource(opts *traceeInputOptions) (chan types.Event, error) {
+func setupTraceeGobInputSource(opts *traceeInputOptions) (chan protocol.Event, error) {
 	dec := gob.NewDecoder(opts.inputFile)
-	gob.Register(external.Event{})
-	gob.Register(external.SlimCred{})
+	gob.Register(trace.Event{})
+	gob.Register(trace.SlimCred{})
 	gob.Register(make(map[string]string))
-	res := make(chan types.Event)
+	gob.Register(trace.PktMeta{})
+	res := make(chan protocol.Event)
 	go func() {
 		for {
-			var event external.Event
+			var event trace.Event
 			err := dec.Decode(&event)
 			if err != nil {
 				if err == io.EOF {
@@ -60,7 +61,7 @@ func setupTraceeGobInputSource(opts *traceeInputOptions) (chan types.Event, erro
 					log.Printf("error while decoding event: %v", err)
 				}
 			} else {
-				res <- event
+				res <- event.ToProtocol()
 			}
 		}
 		opts.inputFile.Close()
@@ -69,18 +70,19 @@ func setupTraceeGobInputSource(opts *traceeInputOptions) (chan types.Event, erro
 	return res, nil
 }
 
-func setupTraceeJSONInputSource(opts *traceeInputOptions) (chan types.Event, error) {
-	res := make(chan types.Event)
+func setupTraceeJSONInputSource(opts *traceeInputOptions) (chan protocol.Event, error) {
+	res := make(chan protocol.Event)
 	scanner := bufio.NewScanner(opts.inputFile)
 	go func() {
 		for scanner.Scan() {
 			event := scanner.Bytes()
-			var e external.Event
+			var e trace.Event
 			err := json.Unmarshal(event, &e)
 			if err != nil {
 				log.Printf("invalid json in %s: %v", string(event), err)
+			} else {
+				res <- e.ToProtocol()
 			}
-			res <- e
 		}
 		opts.inputFile.Close()
 		close(res)

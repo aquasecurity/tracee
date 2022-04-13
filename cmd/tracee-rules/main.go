@@ -13,14 +13,18 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/aquasecurity/tracee/tracee-rules/engine"
-	"github.com/aquasecurity/tracee/types"
+	"github.com/aquasecurity/tracee/pkg/rules/engine"
+	"github.com/aquasecurity/tracee/pkg/rules/metrics"
+	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/open-policy-agent/opa/compile"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
 )
 
 const (
 	signatureBufferFlag = "sig-buffer"
+	metricsFlag         = "metrics"
+	metricsAddrFlag     = "metrics-addr"
 )
 
 func main() {
@@ -110,13 +114,32 @@ func main() {
 			}
 
 			config := engine.Config{
-				ParsedEvents:        c.Bool("rego-enable-parsed-events"),
 				SignatureBufferSize: c.Uint(signatureBufferFlag),
 			}
 			e, err := engine.NewEngine(sigs, inputs, output, os.Stderr, config)
 			if err != nil {
 				return fmt.Errorf("constructing engine: %w", err)
 			}
+
+			if c.Bool(metricsFlag) {
+				err := metrics.RegisterPrometheus(e.Stats())
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error registering prometheus metrics: %v\n", err)
+				} else {
+					mux := http.NewServeMux()
+					mux.Handle("/metrics", promhttp.Handler())
+
+					go func() {
+						metricsAddr := c.String(metricsAddrFlag)
+						fmt.Fprintf(os.Stdout, "Serving metrics endpoint at %s\n", metricsAddr)
+						if err := http.ListenAndServe(metricsAddr, mux); err != http.ErrServerClosed {
+							fmt.Fprintf(os.Stderr, "Error serving metrics endpoint: %v\n", err)
+						}
+					}()
+				}
+
+			}
+
 			e.Start(sigHandler())
 			return nil
 		},
@@ -167,10 +190,6 @@ func main() {
 				Value: ":7777",
 			},
 			&cli.BoolFlag{
-				Name:  "rego-enable-parsed-events",
-				Usage: "enables pre parsing of input events to rego prior to evaluation",
-			},
-			&cli.BoolFlag{
 				Name:  "rego-aio",
 				Usage: "compile rego signatures altogether as an aggregate policy. By default each signature is compiled separately.",
 			},
@@ -188,6 +207,16 @@ func main() {
 				Usage: "size of the event channel's buffer consumed by signatures",
 				Value: 1000,
 			},
+			&cli.BoolFlag{
+				Name:  metricsFlag,
+				Usage: "enable metrics endpoint",
+				Value: false,
+			},
+			&cli.StringFlag{
+				Name:  metricsAddrFlag,
+				Usage: "listening address of the metrics endpoint server",
+				Value: ":4466",
+			},
 		},
 	}
 	err := app.Run(os.Args)
@@ -196,7 +225,7 @@ func main() {
 	}
 }
 
-func listSigs(w io.Writer, sigs []types.Signature) error {
+func listSigs(w io.Writer, sigs []detect.Signature) error {
 	fmt.Fprintf(w, "%-10s %-35s %s %s\n", "ID", "NAME", "VERSION", "DESCRIPTION")
 	for _, sig := range sigs {
 		meta, err := sig.GetMetadata()
@@ -208,7 +237,7 @@ func listSigs(w io.Writer, sigs []types.Signature) error {
 	return nil
 }
 
-func listEvents(w io.Writer, sigs []types.Signature) {
+func listEvents(w io.Writer, sigs []detect.Signature) {
 	m := make(map[string]struct{})
 	for _, sig := range sigs {
 		es, _ := sig.GetSelectedEvents()

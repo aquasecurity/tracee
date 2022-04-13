@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
+	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 )
+
+// MaxBpfStrFilterSize value should match MAX_STR_FILTER_SIZE defined in BPF code
+const MaxBpfStrFilterSize = 16
 
 func FilterHelp() string {
 	return `Select which events to trace by defining trace expressions that operate on events or process metadata.
@@ -16,7 +19,7 @@ Numerical expressions which compare numbers and allow the following operators: '
 Available numerical expressions: uid, pid, mntns, pidns.
 
 String expressions which compares text and allow the following operators: '=', '!='.
-Available string expressions: event, set, uts, comm.
+Available string expressions: event, set, uts, comm, container.
 
 Boolean expressions that check if a boolean is true and allow the following operator: '!'.
 Available boolean expressions: container.
@@ -37,11 +40,15 @@ The field 'set' selects a set of events to trace according to predefined sets, w
 
 The special 'follow' expression declares that not only processes that match the criteria will be traced, but also their descendants.
 
+The field 'net' specifies which interfaces to monitor when tracing network events.
+Notice that the 'net' field is mandatory when tracing network events.
+
 Examples:
   --trace pid=new                                              | only trace events from new processes
   --trace pid=510,1709                                         | only trace events from pid 510 or pid 1709
   --trace p=510 --trace p=1709                                 | only trace events from pid 510 or pid 1709 (same as above)
   --trace container=new                                        | only trace events from newly created containers
+  --trace container=ab356bc4dd554                              | only trace events from container id ab356bc4dd554
   --trace container                                            | only trace events from containers
   --trace c                                                    | only trace events from containers (same as above)
   --trace '!container'                                         | only trace events from the host
@@ -65,6 +72,7 @@ Examples:
   --trace openat.pathname=/tmp*                                | only trace 'openat' events that have 'pathname' prefixed by "/tmp"
   --trace openat.pathname!=/tmp/1,/bin/ls                      | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
   --trace comm=bash --trace follow                             | trace all events that originated from bash or from one of the processes spawned by bash
+  --trace net=docker0 			                       | trace the net events over docker0 interface
 
 
 Note: some of the above operators have special meanings in different shells.
@@ -104,10 +112,12 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 		UTSFilter: &tracee.StringFilter{
 			Equal:    []string{},
 			NotEqual: []string{},
+			Size:     MaxBpfStrFilterSize,
 		},
 		CommFilter: &tracee.StringFilter{
 			Equal:    []string{},
 			NotEqual: []string{},
+			Size:     MaxBpfStrFilterSize,
 		},
 		ContFilter:    &tracee.BoolFilter{},
 		NewContFilter: &tracee.BoolFilter{},
@@ -125,6 +135,9 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 			PIDs: make(map[uint32]bool),
 		},
 		EventsToTrace: []int32{},
+		NetFilter: &tracee.IfaceFilter{
+			InterfacesToTrace: []string{},
+		},
 	}
 
 	eventFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}}
@@ -207,6 +220,14 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 			continue
 		}
 
+		if strings.HasPrefix(filterName, "net") {
+			err := filter.NetFilter.Parse(strings.TrimPrefix(operatorAndValues, "="))
+			if err != nil {
+				return tracee.Filter{}, err
+			}
+			continue
+		}
+
 		if filterName == "mntns" {
 			err := filter.MntNSFilter.Parse(operatorAndValues)
 			if err != nil {
@@ -277,7 +298,6 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 			filter.Follow = true
 			continue
 		}
-
 		return tracee.Filter{}, fmt.Errorf("invalid filter option specified, use '--trace help' for more info")
 	}
 

@@ -40,7 +40,7 @@ override_dh_auto_install:
 	ln -s /usr/lib/tracee/tracee-rules ./debian/tracee-rules/usr/bin/tracee-rules
 	# rules
 	mkdir -m 0755 -p ./debian/tracee-rules/usr/lib/tracee/rules/
-	install -m 0755 ./dist/rules/* ./debian/tracee-rules/usr/lib/tracee/rules/
+	install -m 0644 ./dist/rules/* ./debian/tracee-rules/usr/lib/tracee/rules/
 ifeq ($(STATIC),1)
 	rm ./debian/tracee-rules/usr/lib/tracee/rules/*.so
 endif

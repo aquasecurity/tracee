@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"path"
@@ -18,14 +19,17 @@ import (
 	embed "github.com/aquasecurity/tracee"
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/flags"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
-	"github.com/aquasecurity/tracee/pkg/external"
-	"github.com/aquasecurity/tracee/tracee-ebpf/tracee"
+	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/metrics"
+	"github.com/aquasecurity/tracee/types/trace"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/syndtr/gocapability/capability"
 	cli "github.com/urfave/cli/v2"
 )
 
-var debug bool
 var traceeInstallPath string
+var listenMetrics bool
+var metricsAddr string
 
 var version string
 
@@ -46,27 +50,69 @@ func main() {
 				return nil
 			}
 
+			// enable debug mode if debug flag is passed
+			if c.Bool("debug") {
+				err := flags.EnableDebugMode()
+				if err != nil {
+					return fmt.Errorf("failed to start debug mode: %v", err)
+				}
+			}
+
+			// for the rest of execution, use this debug mode value
+			debug := flags.DebugModeEnabled()
+
+			// OS release information
+
+			OSInfo, err := helpers.GetOSInfo()
+			if err != nil {
+				if debug {
+					fmt.Fprintf(os.Stderr, "OSInfo: warning: os-release file could not be found\n(%v)\n", err) // only to be enforced when BTF needs to be downloaded, later on
+					fmt.Fprintf(os.Stdout, "OSInfo: %v: %v\n", helpers.OS_KERNEL_RELEASE, OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE))
+				}
+			} else if debug {
+				for k, v := range OSInfo.GetOSReleaseAllFieldValues() {
+					fmt.Fprintf(os.Stdout, "OSInfo: %v: %v\n", k, v)
+				}
+			}
+
 			cfg := tracee.Config{
 				PerfBufferSize:     c.Int("perf-buffer-size"),
 				BlobPerfBufferSize: c.Int("blob-perf-buffer-size"),
-				Debug:              c.Bool("debug"),
+				Debug:              debug,
+				OSInfo:             OSInfo,
 			}
 
-			if checkCommandIsHelp(c.StringSlice("capture")) {
+			cacheSlice := c.StringSlice("cache")
+			if checkCommandIsHelp(cacheSlice) {
+				fmt.Print(flags.CacheHelp())
+				return nil
+			}
+			cache, err := flags.PrepareCache(cacheSlice)
+			if err != nil {
+				return err
+			}
+			cfg.Cache = cache
+			if debug && cfg.Cache != nil {
+				fmt.Fprintf(os.Stdout, "Cache: cache type is \"%s\"\n", cfg.Cache)
+			}
+
+			captureSlice := c.StringSlice("capture")
+			if checkCommandIsHelp(captureSlice) {
 				fmt.Print(flags.CaptureHelp())
 				return nil
 			}
-			capture, err := flags.PrepareCapture(c.StringSlice("capture"))
+			capture, err := flags.PrepareCapture(captureSlice)
 			if err != nil {
 				return err
 			}
 			cfg.Capture = &capture
 
-			if checkCommandIsHelp(c.StringSlice("trace")) {
+			traceSlice := c.StringSlice("trace")
+			if checkCommandIsHelp(traceSlice) {
 				fmt.Print(flags.FilterHelp())
 				return nil
 			}
-			filter, err := flags.PrepareFilter(c.StringSlice("trace"))
+			filter, err := flags.PrepareFilter(traceSlice)
 			if err != nil {
 				return err
 			}
@@ -76,11 +122,12 @@ func main() {
 				(cfg.Filter.NewContFilter.Enabled && cfg.Filter.NewContFilter.Value) ||
 				cfg.Filter.ContIDFilter.Enabled
 
-			if checkCommandIsHelp(c.StringSlice("output")) {
+			outputSlice := c.StringSlice("output")
+			if checkCommandIsHelp(outputSlice) {
 				fmt.Print(flags.OutputHelp())
 				return nil
 			}
-			output, printerConfig, err := flags.PrepareOutput(c.StringSlice("output"))
+			output, printerConfig, err := flags.PrepareOutput(outputSlice)
 			if err != nil {
 				return err
 			}
@@ -131,32 +178,38 @@ func main() {
 				}
 			}
 
-			// OS release information
-
-			OSInfo, err := helpers.GetOSInfo()
-			if err != nil {
-				if debug {
-					fmt.Fprintf(os.Stderr, "OSInfo: warning: os-release file could not be found\n(%v)\n", err) // only to be enforced when BTF needs to be downloaded, later on
-					fmt.Fprintf(os.Stdout, "OSInfo: %v: %v\n", helpers.OS_KERNEL_RELEASE, OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE))
-				}
-			} else if debug {
-				for k, v := range OSInfo.GetOSReleaseAllFieldValues() {
-					fmt.Fprintf(os.Stdout, "OSInfo: %v: %v\n", k, v)
-				}
-			}
-
 			// decide BTF & BPF files to use based on kconfig, release & environment
 			err = prepareBpfObject(&cfg, kernelConfig, OSInfo)
 			if err != nil {
 				return fmt.Errorf("failed preparing BPF object: %w", err)
 			}
 
-			cfg.ChanEvents = make(chan external.Event)
+			cfg.ChanEvents = make(chan trace.Event)
 			cfg.ChanErrors = make(chan error)
 
 			t, err := tracee.New(cfg)
 			if err != nil {
 				return fmt.Errorf("error creating Tracee: %v", err)
+			}
+
+			if listenMetrics {
+				err := metrics.RegisterPrometheus(t.Stats())
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error registering prometheus metrics: %v\n", err)
+				} else {
+					mux := http.NewServeMux()
+					mux.Handle("/metrics", promhttp.Handler())
+
+					go func() {
+						if debug {
+							fmt.Fprintf(os.Stdout, "Serving metrics endpoint at %s\n", metricsAddr)
+						}
+						if err := http.ListenAndServe(metricsAddr, mux); err != http.ErrServerClosed {
+							fmt.Fprintf(os.Stderr, "Error serving metrics endpoint: %v\n", err)
+						}
+					}()
+				}
+
 			}
 
 			if err := os.MkdirAll(cfg.Capture.OutputPath, 0755); err != nil {
@@ -220,8 +273,8 @@ func main() {
 
 			// always print stats before exiting
 			defer func() {
-				stats := t.GetStats()
-				printer.Epilogue(stats)
+				stats := t.Stats()
+				printer.Epilogue(*stats)
 				printer.Close()
 			}()
 
@@ -253,28 +306,45 @@ func main() {
 				Value:   cli.NewStringSlice("format:table"),
 				Usage:   "Control how and where output is printed. run '--output help' for more info.",
 			},
+			&cli.StringSliceFlag{
+				Name:    "cache",
+				Aliases: []string{"a"},
+				Value:   cli.NewStringSlice("none"),
+				Usage:   "Control event caching queues. run '--cache help' for more info.",
+			},
 			&cli.IntFlag{
 				Name:    "perf-buffer-size",
 				Aliases: []string{"b"},
-				Value:   1024,
+				Value:   1024, // 4 MB of contigous pages
 				Usage:   "size, in pages, of the internal perf ring buffer used to submit events from the kernel",
 			},
 			&cli.IntFlag{
 				Name:  "blob-perf-buffer-size",
-				Value: 1024,
+				Value: 1024, // 4 MB of contigous pages
 				Usage: "size, in pages, of the internal perf ring buffer used to send blobs from the kernel",
 			},
 			&cli.BoolFlag{
-				Name:        "debug",
-				Value:       false,
-				Usage:       "write verbose debug messages to standard output and retain intermediate artifacts",
-				Destination: &debug,
+				Name:  "debug",
+				Value: false,
+				Usage: "write verbose debug messages to standard output and retain intermediate artifacts. enabling will output debug messages to stdout, which will likely break consumers which expect to receive machine-readable events from stdout",
 			},
 			&cli.StringFlag{
 				Name:        "install-path",
 				Value:       "/tmp/tracee",
 				Usage:       "path where tracee will install or lookup it's resources",
 				Destination: &traceeInstallPath,
+			},
+			&cli.BoolFlag{
+				Name:        "metrics",
+				Usage:       "enable metrics endpoint",
+				Destination: &listenMetrics,
+				Value:       false,
+			},
+			&cli.StringFlag{
+				Name:        "metrics-addr",
+				Usage:       "listening address of the metrics endpoint server",
+				Value:       ":3366",
+				Destination: &metricsAddr,
 			},
 		},
 	}
@@ -295,6 +365,8 @@ func prepareBpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSIn
 		bpfenv:     false,
 		btfvmlinux: helpers.OSBTFEnabled(),
 	}
+
+	debug := config.Debug
 
 	bpfFilePath, err := checkEnvPath("TRACEE_BPF_FILE")
 	if bpfFilePath != "" {
@@ -455,6 +527,9 @@ func printList() {
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________\n\n")
 	printEventGroup(&b, int(tracee.SysEnterEventID), int(tracee.MaxCommonEventID))
 	printEventGroup(&b, int(tracee.InitNamespacesEventID), int(tracee.MaxUserSpaceEventID))
+	b.WriteString("\n\nNetwork Events: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
+	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________\n\n")
+	printEventGroup(&b, int(tracee.NetPacket), int(tracee.MaxNetEventID))
 	fmt.Println(b.String())
 }
 
@@ -492,7 +567,7 @@ func unpackCOREBinary() ([]byte, error) {
 		return nil, err
 	}
 
-	if debug {
+	if flags.DebugModeEnabled() {
 		fmt.Println("unpacked CO:RE bpf object file into memory")
 	}
 

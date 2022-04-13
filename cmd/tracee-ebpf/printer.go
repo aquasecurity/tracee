@@ -10,7 +10,8 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/pkg/metrics"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 type eventPrinter interface {
@@ -19,9 +20,9 @@ type eventPrinter interface {
 	// Preamble prints something before event printing begins (one time)
 	Preamble()
 	// Epilogue prints something after event printing ends (one time)
-	Epilogue(stats external.Stats)
+	Epilogue(stats metrics.Stats)
 	// Print prints a single event
-	Print(event external.Event)
+	Print(event trace.Event)
 	// Error prints a single error
 	Error(err error)
 	// dispose of resources
@@ -104,7 +105,7 @@ func (p tableEventPrinter) Preamble() {
 	fmt.Fprintln(p.out)
 }
 
-func (p tableEventPrinter) Print(event external.Event) {
+func (p tableEventPrinter) Print(event trace.Event) {
 	ut := time.Unix(0, int64(event.Timestamp))
 	if p.relativeTS {
 		ut = ut.UTC()
@@ -143,7 +144,7 @@ func (p tableEventPrinter) Error(err error) {
 	fmt.Fprintf(p.err, "%v\n", err)
 }
 
-func (p tableEventPrinter) Epilogue(stats external.Stats) {
+func (p tableEventPrinter) Epilogue(stats metrics.Stats) {
 	fmt.Println()
 	fmt.Fprintf(p.out, "End of events stream\n")
 	fmt.Fprintf(p.out, "Stats: %+v\n", stats)
@@ -180,7 +181,7 @@ func (p templateEventPrinter) Error(err error) {
 	fmt.Fprintf(p.err, "%v\n", err)
 }
 
-func (p templateEventPrinter) Print(event external.Event) {
+func (p templateEventPrinter) Print(event trace.Event) {
 	if p.templateObj != nil {
 		err := (*p.templateObj).Execute(p.out, event)
 		if err != nil {
@@ -191,7 +192,7 @@ func (p templateEventPrinter) Print(event external.Event) {
 	}
 }
 
-func (p templateEventPrinter) Epilogue(stats external.Stats) {}
+func (p templateEventPrinter) Epilogue(stats metrics.Stats) {}
 
 func (p templateEventPrinter) Close() {
 }
@@ -205,7 +206,7 @@ func (p jsonEventPrinter) Init() error { return nil }
 
 func (p jsonEventPrinter) Preamble() {}
 
-func (p jsonEventPrinter) Print(event external.Event) {
+func (p jsonEventPrinter) Print(event trace.Event) {
 	eBytes, err := json.Marshal(event)
 	if err != nil {
 		p.Error(err)
@@ -217,7 +218,7 @@ func (p jsonEventPrinter) Error(err error) {
 	fmt.Fprintf(p.err, "%v\n", err)
 }
 
-func (p jsonEventPrinter) Epilogue(stats external.Stats) {}
+func (p jsonEventPrinter) Epilogue(stats metrics.Stats) {}
 
 func (p jsonEventPrinter) Close() {
 }
@@ -231,15 +232,16 @@ type gobEventPrinter struct {
 
 func (p *gobEventPrinter) Init() error {
 	p.outEnc = gob.NewEncoder(p.out)
-	gob.Register(external.Event{})
-	gob.Register(external.SlimCred{})
+	gob.Register(trace.Event{})
+	gob.Register(trace.SlimCred{})
 	gob.Register(make(map[string]string))
+	gob.Register(trace.PktMeta{})
 	return nil
 }
 
 func (p *gobEventPrinter) Preamble() {}
 
-func (p *gobEventPrinter) Print(event external.Event) {
+func (p *gobEventPrinter) Print(event trace.Event) {
 	err := p.outEnc.Encode(event)
 	if err != nil {
 		p.Error(err)
@@ -250,7 +252,7 @@ func (p *gobEventPrinter) Error(err error) {
 	fmt.Fprintf(p.err, "%v\n", err)
 }
 
-func (p *gobEventPrinter) Epilogue(stats external.Stats) {}
+func (p *gobEventPrinter) Epilogue(stats metrics.Stats) {}
 
 func (p gobEventPrinter) Close() {
 }
@@ -266,12 +268,12 @@ func (p *ignoreEventPrinter) Init() error {
 
 func (p *ignoreEventPrinter) Preamble() {}
 
-func (p *ignoreEventPrinter) Print(event external.Event) {}
+func (p *ignoreEventPrinter) Print(event trace.Event) {}
 
 func (p *ignoreEventPrinter) Error(err error) {
 	fmt.Fprintf(p.err, "%v\n", err)
 }
 
-func (p *ignoreEventPrinter) Epilogue(stats external.Stats) {}
+func (p *ignoreEventPrinter) Epilogue(stats metrics.Stats) {}
 
 func (p ignoreEventPrinter) Close() {}

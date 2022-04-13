@@ -1,18 +1,39 @@
 # Trace Options
 
-Trace output can easily become unwieldy when tracing all of the events from all of the system. Luckily, Tracee has a powerful mechanism to accurately trace just the information that is relevant to you, using the `--trace` flag.
-Using the `--trace` you define expressions that tells Tracee-eBPF what you are interested in by means of event metadata, and process metadata. Only events that match this criteria will be traced.
+Trace output can easily become unwieldy when tracing all of the events from all
+of the system. Luckily, Tracee has a powerful mechanism to accurately trace
+just the information that is relevant to you, using the `--trace` flag.
 
-You can filter by most of the visible fields on a Tracee event. For example to trace only events related to user ID 1000, use `--trace uid=1000`.  
-You can combine trace expressions into more complex criteria. For example, to trace only events related to user ID 1000, which come from process ID 1234, use `--trace uid=1000 --trace pid=1234`.  
+Using the `--trace` you define expressions that tells Tracee-eBPF what you are
+interested in by means of event metadata, and process metadata. Only events
+that match this criteria will be traced.
 
-A special `pid` value is `new` which let's you trace all newly created processes (that were created after Tracee started tracing).  
-Tracee-eBPF lets you easily trace events that originate in containers using `--trace container` or only new containers (that were created after Tracee started) using `--trace container=new`.
+You can filter by most of the visible fields on a Tracee event. For example to
+trace only events related to user ID 1000, use `--trace uid=1000`.
 
-Event metadata can be used in trace expression as well. For example, to trace only `openat` syscalls, use `--trace event:openat`. But you can also filter on a specific argument of the event, e.g `--trace openat.pathname=/bin/ls` which will show only `openat` syscalls that operate on the file `/bin/ls`.
+You can combine trace expressions into more complex criteria. For example, to
+trace only events related to user ID 1000, which come from process ID 1234, use
+`--trace uid=1000 --trace pid=1234`.
 
-A useful trace mode is the `--trace follow` which, if specified, will trace not only processes that match the given trace expressions, but also their child processes.
-For example, the following will trace all the events that originate from zsh shell, including all of the processes that it will spawn: `--trace comm=zsh --trace follow`.
+A special `pid` value is `new` which let's you trace all newly created
+processes (that were created after Tracee started tracing).
+
+Tracee-eBPF lets you easily trace events that originate in containers using
+`--trace container` or only new containers (that were created after Tracee
+started) using `--trace container=new`.
+
+Event metadata can be used in trace expression as well. For example, to trace
+only `openat` syscalls, use `--trace event:openat`. But you can also filter on
+a specific argument of the event, e.g `--trace openat.pathname=/bin/ls` which
+will show only `openat` syscalls that operate on the file `/bin/ls`.
+
+A useful trace mode is the `--trace follow` which, if specified, will trace not
+only processes that match the given trace expressions, but also their child
+processes.
+
+For example, the following will trace all the events that originate from zsh
+shell, including all of the processes that it will spawn: `--trace comm=zsh
+--trace follow`.
 
 ## CLI Options
 
@@ -23,7 +44,7 @@ Numerical expressions which compare numbers and allow the following operators: '
 Available numerical expressions: uid, pid, mntns, pidns.
 
 String expressions which compares text and allow the following operators: '=', '!='.
-Available string expressions: event, set, uts, comm.
+Available string expressions: event, set, uts, comm, container.
 
 Boolean expressions that check if a boolean is true and allow the following operator: '!'.
 Available boolean expressions: container.
@@ -70,6 +91,12 @@ only trace events from newly created containers
 
 ```
 --trace container=new
+```
+
+only trace events from container id ab356bc4dd554
+
+```
+--trace container=ab356bc4dd554
 ```
 
 only trace events from containers
@@ -189,4 +216,10 @@ trace all events that originated from bash or from one of the processes spawned 
 
 ```
 --trace comm=bash --trace follow
+```
+
+trace the network events over a given interface name
+
+```
+-trace net=<iface>
 ```

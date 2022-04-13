@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
-	"github.com/aquasecurity/tracee/pkg/external"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // argType is an enum that encodes the argument types that the BPF program may write to the shared buffer
@@ -34,6 +34,7 @@ const (
 	u16T
 	credT
 	intArr2T
+	uint64ArrT
 )
 
 // These types don't match the ones defined in the ebpf code since they are not being used by syscalls arguments.
@@ -43,11 +44,11 @@ const (
 	boolT
 )
 
-func ReadArgFromBuff(ebpfMsgDecoder *EbpfDecoder, params []external.ArgMeta) (external.ArgMeta, interface{}, error) {
+func ReadArgFromBuff(ebpfMsgDecoder *EbpfDecoder, params []trace.ArgMeta) (trace.ArgMeta, interface{}, error) {
 	var err error
 	var res interface{}
 	var argIdx uint8
-	var argMeta external.ArgMeta
+	var argMeta trace.ArgMeta
 
 	err = ebpfMsgDecoder.DecodeUint8(&argIdx)
 	if err != nil {
@@ -93,7 +94,7 @@ func ReadArgFromBuff(ebpfMsgDecoder *EbpfDecoder, params []external.ArgMeta) (ex
 	case credT:
 		var data SlimCred
 		err = ebpfMsgDecoder.DecodeSlimCred(&data)
-		res = data
+		res = trace.SlimCred(data) //here we cast to trace.SlimCred to ensure we send the public interface and not bufferdecoder.SlimCred
 	case strT:
 		res, err = readStringFromBuff(ebpfMsgDecoder)
 	case strArrT:
@@ -154,6 +155,14 @@ func ReadArgFromBuff(ebpfMsgDecoder *EbpfDecoder, params []external.ArgMeta) (ex
 			return argMeta, nil, fmt.Errorf("error reading int elements: %v", err)
 		}
 		res = intArray
+	case uint64ArrT:
+		ulongArray := make([]uint64, 0, 0)
+		err := ebpfMsgDecoder.DecodeUint64Array(&ulongArray)
+		if err != nil {
+			return argMeta, nil, fmt.Errorf("error reading ulong elements: %v", err)
+		}
+		res = ulongArray
+
 	default:
 		// if we don't recognize the arg type, we can't parse the rest of the buffer
 		return argMeta, nil, fmt.Errorf("error unknown arg type %v", argType)
@@ -202,6 +211,8 @@ func GetParamType(paramType string) ArgType {
 		return credT
 	case "umode_t":
 		return u16T
+	case "unsigned long[]":
+		return uint64ArrT
 	default:
 		// Default to pointer (printed as hex) for unsupported types
 		return pointerT

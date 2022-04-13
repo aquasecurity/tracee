@@ -38,7 +38,7 @@ probe_tracee_ebpf() {
 
         echo "INFO: probing tracee-ebpf capabilities..."
         timeout --preserve-status ${EBPF_PROBE_TIMEOUT} \
-            ${TRACEE_EBPF_EXE} --output=none \
+            ${TRACEE_EBPF_EXE} --metrics --output=none \
             --trace comm="nothing" 2>&1 > /dev/null 2>&1
         TRACEE_RET=$?
     fi
@@ -70,13 +70,20 @@ run_tracee_rules() {
     events=$($TRACEE_RULES_EXE --list-events)
 
     echo "INFO: starting tracee-ebpf..."
-    ${TRACEE_EBPF_EXE} --output=format:gob --output=option:parse-arguments --trace event=${events} --output=out-file:${TRACEE_PIPE} &
+    ${TRACEE_EBPF_EXE} \
+        --metrics \
+        --output=format:gob \
+        --output=option:parse-arguments \
+        --cache cache-type=mem \
+        --cache mem-cache-size=512 \
+        --trace event=${events} \
+        --output=out-file:${TRACEE_PIPE} &
     tracee_ebpf_pid=$!
 
     # start tracee-rules
 
     echo "INFO: starting tracee-rules..."
-    $TRACEE_RULES_EXE --input-tracee=file:${TRACEE_PIPE} --input-tracee=format:gob $@
+    $TRACEE_RULES_EXE --metrics --input-tracee=file:${TRACEE_PIPE} --input-tracee=format:gob $@
     TRACEE_RET=$?
 }
 

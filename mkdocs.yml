@@ -12,10 +12,11 @@ nav:
     - Building Environment: building/environment.md
     - Building Containers: building/containers.md
     - Building non CO-RE: building/nocore-ebpf.md
+    - OS Packaging: building/packaging.md
   - Installation:
     - Prerequisites: install/prerequisites.md
-    - Linux Headers: install/headers.md
     - Kubernetes: install/kubernetes.md
+    - Linux Headers: install/headers.md
     - Docker for Mac: install/docker-mac.md
   - Integrations: integrations.md
   - Configuration Options: config.md
@@ -27,7 +28,10 @@ nav:
     - Output Options: tracee-ebpf/output.md
     - Trace Options: tracee-ebpf/trace-options.md
     - Capturing Artifacts: tracee-ebpf/capture.md
-    - Overriding OS needed files: tracee-ebpf/override-os-needed-files
+    - Overriding OS needed files: tracee-ebpf/override-os-needed-files.md
+  - Tutorials:
+      - Setup Development Machine with Vagrant: tutorials/setup-development-machine-with-vagrant.md
+      - Deploy Tracee Grafana Dashboard: tutorials/deploy-grafana-dashboard.md
   - FAQ: faq.md
   - Reference:
     - Further Reading: further-reading.md

@@ -32,10 +32,9 @@ jobs:
             gofmt -s -d .
             exit 1
           fi
-  verify-tracee-ebpf:
-    name: Verify tracee-ebpf
-    needs:
-      - verify-code
+
+  run-unit-tests:
+    name: "Run Unit Tests"
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Code
@@ -47,16 +46,15 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           opa-version: ${{ env.OPA_VERSION }}
-      - name: Build tracee-ebpf
+      - name: Run Unit Tests
         run: |
-          make tracee-ebpf
-      - name: Test tracee-ebpf
-        run: |
-          make test-tracee-ebpf
-  verify-tracee-rules:
-    name: Verify tracee-rules
+          make test-unit
+
+  run-integration-tests:
+    name: "Run Integration Tests"
     needs:
       - verify-code
+      - run-unit-tests
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Code
@@ -68,16 +66,15 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           opa-version: ${{ env.OPA_VERSION }}
-      - name: Build tracee-rules
+      - name: Run Integration Tests
         run: |
-          make tracee-rules
-      - name: Test tracee-rules
-        run: |
-          make test-tracee-rules
+          make test-integration
+
   verify-signatures:
     name: Verify Signatures
     needs:
       - verify-code
+      - run-unit-tests
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Code
@@ -95,38 +92,6 @@ jobs:
       - name: Test Signatures
         run: |
           make test-rules
-  release-snapshot:
-    name: Release Snapshot
-    needs:
-      - verify-tracee-ebpf
-      - verify-tracee-rules
-      - verify-signatures
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v2
-        with:
-          submodules: true
-      - name: Install Dependencies
-        uses: ./.github/actions/build-dependencies
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          opa-version: ${{ env.OPA_VERSION }}
-      - name: Build
-        run: |
-          make -f builder/Makefile.release snapshot
-      - name: Scan Docker Image for Vulnerabilities
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: "tracee:latest"
-          severity: "CRITICAL"
-          exit-code: "1"
-      - name: Scan Docker Image for Vulnerabilities
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: "tracee:full"
-          severity: "CRITICAL"
-          exit-code: "1"
 
   # smoke-test-noncore job is using TRC-2 (Anti-Debugging) signature and tracee
   # non CO-RE container image to run a quick smoke test on each PR.
@@ -137,8 +102,7 @@ jobs:
   smoke-test-noncore:
     name: "[Smoke] Test non CO-RE"
     needs:
-      - verify-tracee-ebpf
-      - verify-tracee-rules
+      - run-integration-tests
       - verify-signatures
     runs-on: ubuntu-20.04
     steps:
@@ -160,7 +124,7 @@ jobs:
       - name: Run tests
         run: |
           docker image pull aquasec/tracee-tester:latest
-          go test -v -run "TestTraceeSignatures" ./tests/tracee_test.go \
+          go test -v -run "TestTraceeSignatures" ./tests/e2e/e2e_test.go \
             -tracee-image-ref "tracee:full" \
             -tracee-tester-image-ref "aquasec/tracee-tester:latest" \
             -tracee-signatures "TRC-2"
@@ -171,8 +135,7 @@ jobs:
   smoke-test-core:
     name: "[Smoke] Test CO-RE"
     needs:
-      - verify-tracee-ebpf
-      - verify-tracee-rules
+      - run-integration-tests
       - verify-signatures
     runs-on: ubuntu-20.04
     steps:
@@ -194,7 +157,7 @@ jobs:
       - name: Run tests
         run: |
           docker image pull aquasec/tracee-tester:latest
-          go test -v -run "TestTraceeSignatures" ./tests/tracee_test.go \
+          go test -v -run "TestTraceeSignatures" ./tests/e2e/e2e_test.go \
             -tracee-image-ref "tracee:latest" \
             -tracee-tester-image-ref "aquasec/tracee-tester:latest" \
             -tracee-signatures "TRC-2"

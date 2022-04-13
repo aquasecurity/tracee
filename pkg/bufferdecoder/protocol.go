@@ -88,7 +88,7 @@ func (MprotectWriteMeta) GetSizeBytes() uint32 {
 
 // SlimCred struct is a slim version of the kernel's cred struct
 // it is used to unmarshal binary data and therefore should match (bit by bit) to the `slim_cred_t` struct in the ebpf code.
-// ANY CHANGE TO THIS STRUCT WILL BE REQUIRED ALSO TO external.SlimCred
+// ANY CHANGE TO THIS STRUCT WILL BE REQUIRED ALSO TO detect.SlimCred and bufferdecoder.SlimCred
 type SlimCred struct {
 	Uid            uint32 /* real UID of the task */
 	Gid            uint32 /* real GID of the task */
@@ -109,4 +109,13 @@ type SlimCred struct {
 
 func (s SlimCred) GetSizeBytes() uint32 {
 	return 80
+}
+
+type HookedSyscallData struct {
+	SyscallName string
+	ModuleOwner string
+}
+type SymbolData struct {
+	SymbolName    string
+	SymbolAddress string
 }
