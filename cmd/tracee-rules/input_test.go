@@ -9,9 +9,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestParseTraceeInputOptions(t *testing.T) {
@@ -97,27 +97,27 @@ func TestSetupTraceeJSONInputSource(t *testing.T) {
 
 	testCases := []struct {
 		testName      string
-		events        []trace.Event
+		events        []protocol.Event
 		expectedError error
 	}{
 		{
 			testName: "one event",
-			events: []trace.Event{
-				{
+			events: []protocol.Event{
+				trace.Event{
 					EventName: "Yankees are the best team in baseball",
-				},
+				}.ToProtocol(),
 			},
 			expectedError: nil,
 		},
 		{
 			testName: "two events",
-			events: []trace.Event{
-				{
+			events: []protocol.Event{
+				trace.Event{
 					EventName: "Yankees are the best team in baseball",
-				},
-				{
+				}.ToProtocol(),
+				trace.Event{
 					EventName: "I hate the Red Sox",
-				},
+				}.ToProtocol(),
 			},
 			expectedError: nil,
 		},
@@ -155,12 +155,10 @@ func TestSetupTraceeJSONInputSource(t *testing.T) {
 			eventsChan, err := setupTraceeJSONInputSource(opts)
 			assert.Equal(t, testCase.expectedError, err)
 
-			readEvents := []trace.Event{}
+			readEvents := []protocol.Event{}
 
 			for e := range eventsChan {
-				traceeEvt, ok := e.Payload.(trace.Event)
-				require.True(t, ok)
-				readEvents = append(readEvents, traceeEvt)
+				readEvents = append(readEvents, e)
 			}
 
 			assert.Equal(t, testCase.events, readEvents)
@@ -172,42 +170,42 @@ func TestSetupTraceeGobInputSource(t *testing.T) {
 
 	testCases := []struct {
 		testName      string
-		events        []trace.Event
+		events        []protocol.Event
 		expectedError error
 	}{
 		{
 			testName: "one event",
-			events: []trace.Event{
-				{
+			events: []protocol.Event{
+				trace.Event{
 					EventName: "Yankees are the best team in baseball",
-				},
+				}.ToProtocol(),
 			},
 			expectedError: nil,
 		},
 		{
 			testName: "two events",
-			events: []trace.Event{
-				{
+			events: []protocol.Event{
+				trace.Event{
 					EventName: "Yankees are the best team in baseball",
-				},
-				{
+				}.ToProtocol(),
+				trace.Event{
 					EventName: "I hate the Red Sox so much",
-				},
+				}.ToProtocol(),
 			},
 			expectedError: nil,
 		},
 		{
 			testName: "three events",
-			events: []trace.Event{
-				{
+			events: []protocol.Event{
+				trace.Event{
 					EventName: "Yankees are the best team in baseball",
-				},
-				{
+				}.ToProtocol(),
+				trace.Event{
 					EventName: "I hate the Red Sox so much",
-				},
-				{
+				}.ToProtocol(),
+				trace.Event{
 					EventName: "Aaron Judge is my idol",
-				},
+				}.ToProtocol(),
 			},
 			expectedError: nil,
 		},
@@ -240,12 +238,10 @@ func TestSetupTraceeGobInputSource(t *testing.T) {
 			eventsChan, err := setupTraceeGobInputSource(opts)
 			assert.Equal(t, testCase.expectedError, err)
 
-			readEvents := []trace.Event{}
+			readEvents := []protocol.Event{}
 
 			for e := range eventsChan {
-				traceeEvt, ok := e.Payload.(trace.Event)
-				require.True(t, ok)
-				readEvents = append(readEvents, traceeEvt)
+				readEvents = append(readEvents, e)
 			}
 
 			assert.Equal(t, testCase.events, readEvents)

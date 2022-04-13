@@ -1,4 +1,4 @@
-package main
+package printer
 
 import (
 	"encoding/gob"
@@ -10,11 +10,13 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/debug"
 	"github.com/aquasecurity/tracee/pkg/metrics"
+	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-type eventPrinter interface {
+type EventPrinter interface {
 	// Init serves as the initializer method for every event Printer type
 	Init() error
 	// Preamble prints something before event printing begins (one time)
@@ -22,58 +24,68 @@ type eventPrinter interface {
 	// Epilogue prints something after event printing ends (one time)
 	Epilogue(stats metrics.Stats)
 	// Print prints a single event
-	Print(event trace.Event)
+	Print(event protocol.Event)
 	// Error prints a single error
 	Error(err error)
 	// dispose of resources
 	Close()
 }
 
-func newEventPrinter(kind string, containerMode bool, relativeTS bool, out io.WriteCloser, err io.WriteCloser) (eventPrinter, error) {
-	var res eventPrinter
-	var initError error
+type Config struct {
+	Kind          string
+	OutPath       string
+	OutFile       io.WriteCloser
+	ErrPath       string
+	ErrFile       io.WriteCloser
+	ContainerMode bool
+	RelativeTS    bool
+}
+
+func New(config Config) (EventPrinter, error) {
+	var res EventPrinter
+	kind := config.Kind
 	switch {
 	case kind == "ignore":
 		res = &ignoreEventPrinter{
-			err: err,
+			err: config.ErrFile,
 		}
 	case kind == "table":
 		res = &tableEventPrinter{
-			out:           out,
-			err:           err,
+			out:           config.OutFile,
+			err:           config.ErrFile,
 			verbose:       false,
-			containerMode: containerMode,
-			relativeTS:    relativeTS,
+			containerMode: config.ContainerMode,
+			relativeTS:    config.RelativeTS,
 		}
 	case kind == "table-verbose":
 		res = &tableEventPrinter{
-			out:           out,
-			err:           err,
+			out:           config.OutFile,
+			err:           config.ErrFile,
 			verbose:       true,
-			containerMode: containerMode,
-			relativeTS:    relativeTS,
+			containerMode: config.ContainerMode,
+			relativeTS:    config.RelativeTS,
 		}
 	case kind == "json":
 		res = &jsonEventPrinter{
-			out: out,
-			err: err,
+			out: config.OutFile,
+			err: config.ErrFile,
 		}
 	case kind == "gob":
 		res = &gobEventPrinter{
-			out: out,
-			err: err,
+			out: config.OutFile,
+			err: config.ErrFile,
 		}
 	case strings.HasPrefix(kind, "gotemplate="):
 		res = &templateEventPrinter{
-			out:           out,
-			err:           err,
-			containerMode: containerMode,
+			out:           config.OutFile,
+			err:           config.ErrFile,
+			containerMode: config.ContainerMode,
 			templatePath:  strings.Split(kind, "=")[1],
 		}
 	}
-	initError = res.Init()
-	if initError != nil {
-		return nil, initError
+	err := res.Init()
+	if err != nil {
+		return nil, err
 	}
 	return res, nil
 }
@@ -105,32 +117,40 @@ func (p tableEventPrinter) Preamble() {
 	fmt.Fprintln(p.out)
 }
 
-func (p tableEventPrinter) Print(event trace.Event) {
-	ut := time.Unix(0, int64(event.Timestamp))
+func (p tableEventPrinter) Print(event protocol.Event) {
+	evt, ok := event.Payload.(trace.Event)
+
+	if !ok {
+		if debug.Enabled() {
+			fmt.Fprintf(p.out, "received event with unsupported payload type for \"table\" printer (table printer supports %T)", trace.Event{})
+		}
+		return
+	}
+	ut := time.Unix(0, int64(evt.Timestamp))
 	if p.relativeTS {
 		ut = ut.UTC()
 	}
 	timestamp := fmt.Sprintf("%02d:%02d:%02d:%06d", ut.Hour(), ut.Minute(), ut.Second(), ut.Nanosecond()/1000)
 
-	containerId := event.ContainerID
+	containerId := evt.ContainerID
 	if len(containerId) > 12 {
 		containerId = containerId[:12]
 	}
 
 	if p.verbose {
 		if p.containerMode {
-			fmt.Fprintf(p.out, "%-16s %-16s %-13s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, event.HostName, containerId, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ParentProcessID, event.HostParentProcessID, event.ReturnValue, event.EventName)
+			fmt.Fprintf(p.out, "%-16s %-16s %-13s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, evt.HostName, containerId, evt.MountNS, evt.PIDNS, evt.UserID, evt.ProcessName, evt.ProcessID, evt.HostProcessID, evt.ThreadID, evt.HostThreadID, evt.ParentProcessID, evt.HostParentProcessID, evt.ReturnValue, evt.EventName)
 		} else {
-			fmt.Fprintf(p.out, "%-16s %-16s %-13s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-20s ", timestamp, event.HostName, containerId, event.MountNS, event.PIDNS, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ParentProcessID, event.ReturnValue, event.EventName)
+			fmt.Fprintf(p.out, "%-16s %-16s %-13s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-20s ", timestamp, evt.HostName, containerId, evt.MountNS, evt.PIDNS, evt.UserID, evt.ProcessName, evt.ProcessID, evt.ThreadID, evt.ParentProcessID, evt.ReturnValue, evt.EventName)
 		}
 	} else {
 		if p.containerMode {
-			fmt.Fprintf(p.out, "%-16s %-13s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, containerId, event.UserID, event.ProcessName, event.ProcessID, event.HostProcessID, event.ThreadID, event.HostThreadID, event.ReturnValue, event.EventName)
+			fmt.Fprintf(p.out, "%-16s %-13s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-20s ", timestamp, containerId, evt.UserID, evt.ProcessName, evt.ProcessID, evt.HostProcessID, evt.ThreadID, evt.HostThreadID, evt.ReturnValue, evt.EventName)
 		} else {
-			fmt.Fprintf(p.out, "%-16s %-6d %-16s %-7d %-7d %-16d %-20s ", timestamp, event.UserID, event.ProcessName, event.ProcessID, event.ThreadID, event.ReturnValue, event.EventName)
+			fmt.Fprintf(p.out, "%-16s %-6d %-16s %-7d %-7d %-16d %-20s ", timestamp, evt.UserID, evt.ProcessName, evt.ProcessID, evt.ThreadID, evt.ReturnValue, evt.EventName)
 		}
 	}
-	for i, arg := range event.Args {
+	for i, arg := range evt.Args {
 		if i == 0 {
 			fmt.Fprintf(p.out, "%s: %v", arg.Name, arg.Value)
 		} else {
@@ -170,7 +190,7 @@ func (p *templateEventPrinter) Init() error {
 		}
 		p.templateObj = &tmpl
 	} else {
-		return errors.New("Please specify a gotemplate for event-based output")
+		return errors.New("please specify a gotemplate for event-based output")
 	}
 	return nil
 }
@@ -181,7 +201,7 @@ func (p templateEventPrinter) Error(err error) {
 	fmt.Fprintf(p.err, "%v\n", err)
 }
 
-func (p templateEventPrinter) Print(event trace.Event) {
+func (p templateEventPrinter) Print(event protocol.Event) {
 	if p.templateObj != nil {
 		err := (*p.templateObj).Execute(p.out, event)
 		if err != nil {
@@ -206,7 +226,7 @@ func (p jsonEventPrinter) Init() error { return nil }
 
 func (p jsonEventPrinter) Preamble() {}
 
-func (p jsonEventPrinter) Print(event trace.Event) {
+func (p jsonEventPrinter) Print(event protocol.Event) {
 	eBytes, err := json.Marshal(event)
 	if err != nil {
 		p.Error(err)
@@ -241,7 +261,7 @@ func (p *gobEventPrinter) Init() error {
 
 func (p *gobEventPrinter) Preamble() {}
 
-func (p *gobEventPrinter) Print(event trace.Event) {
+func (p *gobEventPrinter) Print(event protocol.Event) {
 	err := p.outEnc.Encode(event)
 	if err != nil {
 		p.Error(err)
@@ -268,7 +288,7 @@ func (p *ignoreEventPrinter) Init() error {
 
 func (p *ignoreEventPrinter) Preamble() {}
 
-func (p *ignoreEventPrinter) Print(event trace.Event) {}
+func (p *ignoreEventPrinter) Print(event protocol.Event) {}
 
 func (p *ignoreEventPrinter) Error(err error) {
 	fmt.Fprintf(p.err, "%v\n", err)

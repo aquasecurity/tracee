@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 )
 
@@ -39,17 +40,9 @@ Use this flag multiple times to choose multiple output options
 `
 }
 
-type printerConfig struct {
-	Kind    string
-	OutPath string
-	OutFile *os.File
-	ErrPath string
-	ErrFile *os.File
-}
-
-func PrepareOutput(outputSlice []string) (tracee.OutputConfig, printerConfig, error) {
+func PrepareOutput(outputSlice []string) (tracee.OutputConfig, printer.Config, error) {
 	outcfg := tracee.OutputConfig{}
-	printcfg := printerConfig{}
+	printcfg := printer.Config{}
 	printerKind := "table"
 	outPath := ""
 	errPath := ""
@@ -71,7 +64,7 @@ func PrepareOutput(outputSlice []string) (tracee.OutputConfig, printerConfig, er
 				printerKind != "json" &&
 				printerKind != "gob" &&
 				!strings.HasPrefix(printerKind, "gotemplate=") {
-				return outcfg, printcfg, fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info.", printerKind)
+				return outcfg, printcfg, fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info", printerKind)
 			}
 		case "out-file":
 			outPath = outputParts[1]
@@ -87,6 +80,7 @@ func PrepareOutput(outputSlice []string) (tracee.OutputConfig, printerConfig, er
 				outcfg.ExecEnv = true
 			case "relative-time":
 				outcfg.RelativeTime = true
+				printcfg.RelativeTS = true
 			case "exec-hash":
 				outcfg.ExecHash = true
 			case "parse-arguments":

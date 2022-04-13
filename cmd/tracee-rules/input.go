@@ -52,7 +52,7 @@ func setupTraceeGobInputSource(opts *traceeInputOptions) (chan protocol.Event, e
 	res := make(chan protocol.Event)
 	go func() {
 		for {
-			var event trace.Event
+			var event protocol.Event
 			err := dec.Decode(&event)
 			if err != nil {
 				if err == io.EOF {
@@ -61,7 +61,7 @@ func setupTraceeGobInputSource(opts *traceeInputOptions) (chan protocol.Event, e
 					log.Printf("error while decoding event: %v", err)
 				}
 			} else {
-				res <- event.ToProtocol()
+				res <- event
 			}
 		}
 		opts.inputFile.Close()
@@ -76,12 +76,12 @@ func setupTraceeJSONInputSource(opts *traceeInputOptions) (chan protocol.Event, 
 	go func() {
 		for scanner.Scan() {
 			event := scanner.Bytes()
-			var e trace.Event
+			var e protocol.Event
 			err := json.Unmarshal(event, &e)
 			if err != nil {
 				log.Printf("invalid json in %s: %v", string(event), err)
 			} else {
-				res <- e.ToProtocol()
+				res <- e
 			}
 		}
 		opts.inputFile.Close()
