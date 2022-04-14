@@ -101,6 +101,12 @@ if [ ! -x ${TRACEE_RULES_EXE} ]; then
     exit 1
 fi
 
+# docker 1st argument might be "trace" only (so tracee-ebpf is executed)
+if [ "${1}" == "trace" ]; then
+    TRACEE_EBPF_ONLY=1
+    shift
+fi
+
 for arg in ${@}; do
     case ${arg} in
     "--help")

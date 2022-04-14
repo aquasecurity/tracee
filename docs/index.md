@@ -88,8 +88,10 @@ Hostname: ubuntu-impish
 
 In some cases, you might want to leverage Tracee's eBPF event collection
 capabilities directly, without involving the detection engine. This might be
-useful for debugging/troubleshooting/analysis/research/education. In this case,
-you can run tracee exporting `TRACEE_EBPF_ONLY=1` environment variable.
+useful for debugging/troubleshooting/analysis/research/education.
+
+Just execute docker with `trace` argument first, and tracee-ebpf will be
+executed, instead of the full tracee detection engine.
 
 ```shell
 docker run \
@@ -97,8 +99,8 @@ docker run \
   --pid=host --cgroupns=host --privileged \
   -v /etc/os-release:/etc/os-release-host:ro \
   -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-  -e TRACEE_EBPF_ONLY=1 \
-  aquasec/tracee:{{ git.tag[1:] }}
+  aquasec/tracee:latest \
+  trace
 ```
 
 !!! note
@@ -114,8 +116,8 @@ aquasecurity/tracee repository:
 
 ---
 
-Tracee is an [Aqua Security] open source project.  
-Learn about our open source work and portfolio [Here].  
+Tracee is an [Aqua Security] open source project.
+Learn about our open source work and portfolio [Here].
 Join the community, and talk to us about any matter in [GitHub Discussion] or [Slack].
 
 [Tracee-eBPF]: https://github.com/aquasecurity/tracee/tree/{{ git.tag }}/cmd/tracee-ebpf
