@@ -4,7 +4,7 @@ Please include a summary of the change and which issue is fixed. Please also
 include relevant motivation and context. List any dependencies that are
 required for this change.
 
-Fixes # (issue)
+Fixes: #issue_number
 
 ## Type of change
 
@@ -36,3 +36,15 @@ your test configuration and enumerate test files being added.
 - [ ] I have added tests that prove my fix is effective or that my feature works.
 - [ ] New and existing unit tests pass locally with my changes.
 - [ ] Any dependent changes have been merged and published already.
+
+## Git Log Checklist:
+
+My commits logs have:
+
+- [ ] Separate subject from body with a blank line.
+- [ ] Limit the subject line to 50 characters.
+- [ ] Capitalize the subject line.
+- [ ] Do not end the subject line with a period.
+- [ ] Use the imperative mood in the subject line.
+- [ ] Wrap the body at 72 characters.
+- [ ] Use the body to explain what and why instead of how.
