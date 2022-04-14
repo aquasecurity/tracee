@@ -2,112 +2,112 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/</loc>
-         <lastmod>2022-03-31</lastmod>
+         <lastmod>2022-04-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/architecture/</loc>
-         <lastmod>2022-03-31</lastmod>
+         <lastmod>2022-04-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/config/</loc>
-         <lastmod>2022-03-31</lastmod>
+         <lastmod>2022-04-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/faq/</loc>
-         <lastmod>2022-03-31</lastmod>
+         <lastmod>2022-04-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/integrations/</loc>
-         <lastmod>2022-03-31</lastmod>
+         <lastmod>2022-04-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/rules-authoring/</loc>
-         <lastmod>2022-03-31</lastmod>
+         <lastmod>2022-04-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/rules-index/</loc>
-         <lastmod>2022-03-31</lastmod>
+         <lastmod>2022-04-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/building/containers/</loc>
-         <lastmod>2022-03-31</lastmod>
+         <lastmod>2022-04-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/building/environment/</loc>
-         <lastmod>2022-03-31</lastmod>
+         <lastmod>2022-04-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/building/nocore-ebpf/</loc>
-         <lastmod>2022-03-31</lastmod>
+         <lastmod>2022-04-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/building/packaging/</loc>
-         <lastmod>2022-03-31</lastmod>
+         <lastmod>2022-04-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/install/docker-mac/</loc>
-         <lastmod>2022-03-31</lastmod>
+         <lastmod>2022-04-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/install/headers/</loc>
-         <lastmod>2022-03-31</lastmod>
+         <lastmod>2022-04-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/install/kubernetes/</loc>
-         <lastmod>2022-03-31</lastmod>
+         <lastmod>2022-04-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/install/prerequisites/</loc>
-         <lastmod>2022-03-31</lastmod>
+         <lastmod>2022-04-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/tracee-ebpf/</loc>
-         <lastmod>2022-03-31</lastmod>
+         <lastmod>2022-04-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/tracee-ebpf/capture/</loc>
-         <lastmod>2022-03-31</lastmod>
+         <lastmod>2022-04-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/tracee-ebpf/output/</loc>
-         <lastmod>2022-03-31</lastmod>
+         <lastmod>2022-04-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/tracee-ebpf/override-os-needed-files/</loc>
-         <lastmod>2022-03-31</lastmod>
+         <lastmod>2022-04-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/tracee-ebpf/trace-options/</loc>
-         <lastmod>2022-03-31</lastmod>
+         <lastmod>2022-04-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/tutorials/deploy-grafana-dashboard/</loc>
-         <lastmod>2022-03-31</lastmod>
+         <lastmod>2022-04-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://aquasecurity.github.io/tracee/dev/tutorials/setup-development-machine-with-vagrant/</loc>
-         <lastmod>2022-03-31</lastmod>
+         <lastmod>2022-04-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
