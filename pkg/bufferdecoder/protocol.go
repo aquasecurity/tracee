@@ -112,10 +112,6 @@ func (s SlimCred) GetSizeBytes() uint32 {
 }
 
 type HookedSymbolData struct {
-	SyscallName string
+	SymbolName  string
 	ModuleOwner string
-}
-type SymbolData struct {
-	SymbolName    string
-	SymbolAddress string
 }

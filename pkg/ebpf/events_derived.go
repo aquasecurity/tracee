@@ -29,18 +29,10 @@ func (t *Tracee) initEventDerivationMap() error {
 		PrintSyscallTableEventID: {
 			DetectHookedSyscallsEventID: deriveDetectHookedSyscall(t),
 		},
-		FetchProcFopsEventID: {
-			DetectHookedProcFopsEventID: deriveDetectHookedProcFops(t),
-		},
 	}
 
 	return nil
 }
-
-const (
-	StructFopsPointer int = iota + 1
-	IterateShared
-)
 
 // deriveEvent takes a trace.Event and checks if it can derive additional events from it
 // as defined by tracee's eventDerivations map.
@@ -190,52 +182,4 @@ func parseSymbol(address uint64, table *helpers.KernelSymbolTable) *helpers.Kern
 	hookingFunction.Owner = strings.TrimPrefix(hookingFunction.Owner, "[")
 	hookingFunction.Owner = strings.TrimSuffix(hookingFunction.Owner, "]")
 	return hookingFunction
-}
-
-func deriveDetectHookedProcFops(t *Tracee) deriveFn {
-	return func(event trace.Event) (trace.Event, bool, error) {
-		fopsAddresses, err := getEventArgUlongArrVal(&event, "fops_address")
-		if err != nil {
-			return trace.Event{}, false, err
-		}
-		hookedFops := make([]bufferdecoder.HookedSymbolData, 0, 0)
-		for idx, addr := range fopsAddresses {
-			inTextSeg, err := t.kernelSymbols.TextSegmentContains(addr)
-			if err != nil {
-				return trace.Event{}, false, fmt.Errorf("error checking kernel address: %v", err)
-			}
-			if !inTextSeg {
-				hookingFunction, err := t.kernelSymbols.GetSymbolByAddr(addr)
-				if hookingFunction.Owner == "system" && err == nil {
-					continue
-				}
-				if err != nil {
-					hookingFunction.Owner = "hidden"
-				} else {
-					hookingFunction.Owner = strings.TrimPrefix(hookingFunction.Owner, "[")
-					hookingFunction.Owner = strings.TrimSuffix(hookingFunction.Owner, "]")
-				}
-				functionName := "unknown"
-				switch idx + 1 {
-				case StructFopsPointer:
-					functionName = "struct file_operations pointer"
-				case IterateShared:
-					functionName = "iterate_shared"
-				}
-				hookedFops = append(hookedFops, bufferdecoder.HookedSymbolData{functionName, hookingFunction.Owner})
-			}
-		}
-		def := EventsDefinitions[DetectHookedProcFopsEventID]
-		de := event
-		de.EventID = int(DetectHookedProcFopsEventID)
-		de.EventName = "detect_hooked_proc_fops"
-		de.ReturnValue = 0
-		de.Args = []trace.Argument{
-			{ArgMeta: def.Params[0], Value: hookedFops},
-		}
-		de.ArgsNum = 1
-
-		return de, true, nil
-	}
-
 }

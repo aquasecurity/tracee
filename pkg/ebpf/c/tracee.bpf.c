@@ -202,7 +202,7 @@ Copyright (C) Aqua Security inc.
 #define DIRTY_PIPE_SPLICE               1038
 #define DEBUGFS_CREATE_FILE             1039
 #define PRINT_SYSCALL_TABLE             1040
-#define FETCH_PROC_FOPS                 1041
+#define DETECT_HOOKED_PROC_FOPS         1041
 #define MAX_EVENT_ID                    1042
 
 #define NET_PACKET                      4000
@@ -4833,16 +4833,18 @@ static __always_inline void send_file_operations_struct(event_data_t *data, stru
         return ;
 
     unsigned long iterate_shared_addr = (unsigned long) READ_KERN(fops->iterate_shared);
-    if (iterate_shared_addr == 0)
+    unsigned long iterate_addr = (unsigned long) READ_KERN(fops->iterate);
+    if (iterate_addr == 0 && iterate_shared_addr == 0)
         return ;
 
-    unsigned long fops_addresses[2] ={
+    unsigned long fops_addresses[3] ={
         iterate_shared_addr,
-        (unsigned long) fops
+        (unsigned long) fops,
+        iterate_addr
     };
 
-    save_u64_arr_to_buf(data, (const u64 *)fops_addresses, 2, 0);
-    events_perf_submit(data, FETCH_PROC_FOPS, 0);
+    save_u64_arr_to_buf(data, (const u64 *)fops_addresses, 3, 0);
+    events_perf_submit(data, DETECT_HOOKED_PROC_FOPS, 0);
 }
 
 SEC("kprobe/security_file_permission")

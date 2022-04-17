@@ -211,7 +211,7 @@ func GetParamType(paramType string) ArgType {
 		return credT
 	case "umode_t":
 		return u16T
-	case "unsigned long[]":
+	case "unsigned long[]", "HookedFunctionData[]":
 		return uint64ArrT
 	default:
 		// Default to pointer (printed as hex) for unsupported types
