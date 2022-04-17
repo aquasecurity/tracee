@@ -99,6 +99,7 @@ const (
 	DeviceAddEventID
 	RegisterChrdevEventID
 	SharedObjectLoadedEventID
+	DoInitModuleEventID
 	MaxCommonEventID
 )
 
@@ -5649,6 +5650,25 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Probes:   []probe{},
 		Dependencies: dependencies{
 			events: []eventDependency{{eventID: SecuritySocketBindEventID}},
+		},
+	},
+	DoInitModuleEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "do_init_module",
+		Probes: []probe{
+			{event: "do_init_module", attach: kprobe, fn: "trace_do_init_module"},
+			{event: "do_init_module", attach: kretprobe, fn: "trace_ret_do_init_module"},
+		},
+		Dependencies: dependencies{},
+		Sets:         []string{},
+		Params: []trace.ArgMeta{
+			{Type: "const char*", Name: "name"},
+			{Type: "const char*", Name: "version"},
+			{Type: "const char*", Name: "src_version"},
+			{Type: "unsigned long", Name: "prev"},
+			{Type: "unsigned long", Name: "next"},
+			{Type: "unsigned long", Name: "prev_next"},
+			{Type: "unsigned long", Name: "next_prev"},
 		},
 	},
 }
