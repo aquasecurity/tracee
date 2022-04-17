@@ -10,6 +10,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -236,6 +237,7 @@ func (p *gobEventPrinter) Init() error {
 	gob.Register(trace.SlimCred{})
 	gob.Register(make(map[string]string))
 	gob.Register(trace.PktMeta{})
+	gob.Register([]bufferdecoder.HookedSyscallData{})
 	return nil
 }
 

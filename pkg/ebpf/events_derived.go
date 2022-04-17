@@ -135,10 +135,10 @@ func deriveDetectHookedSyscall(t *Tracee) deriveFn {
 		}
 		de := event
 		de.EventID = int(DetectHookedSyscallsEventID)
-		de.EventName = "hooked_syscalls"
+		de.EventName = "detect_hooked_syscalls"
 		de.ReturnValue = 0
 		de.Args = []trace.Argument{
-			{ArgMeta: trace.ArgMeta{Name: "hooked_syscalls", Type: "hookedSyscallData[]"}, Value: hookedSyscallData},
+			{ArgMeta: trace.ArgMeta{Name: "hooked_syscalls", Type: "[]bufferdecoder.HookedSyscallData"}, Value: hookedSyscallData},
 		}
 		de.ArgsNum = 1
 		return de, true, nil
