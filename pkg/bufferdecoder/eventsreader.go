@@ -185,7 +185,7 @@ func GetParamType(paramType string) ArgType {
 		return ulongT
 	case "bool":
 		return boolT
-	case "off_t":
+	case "off_t", "loff_t":
 		return offT
 	case "mode_t":
 		return modeT
