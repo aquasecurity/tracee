@@ -5720,7 +5720,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "int", Name: "child_ns_tid"},
 			{Type: "int", Name: "child_pid"},
 			{Type: "int", Name: "child_ns_pid"},
-			{Type: "unsigned long", Name: "start_time"},
+			{Type: "u64", Name: "start_time"},
 		},
 	},
 	SchedProcessExecEventID: {
@@ -5739,7 +5739,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "dev_t", Name: "dev"},
 			{Type: "unsigned long", Name: "inode"},
 			{Type: "int", Name: "invoked_from_kernel"},
-			{Type: "unsigned long", Name: "ctime"},
+			{Type: "u64", Name: "ctime"},
 			{Type: "umode_t", Name: "stdin_type"},
 		},
 	},
@@ -5954,7 +5954,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "int", Name: "flags"},
 			{Type: "dev_t", Name: "dev"},
 			{Type: "unsigned long", Name: "inode"},
-			{Type: "unsigned long", Name: "ctime"},
+			{Type: "u64", Name: "ctime"},
 			{Type: "int", Name: "syscall"},
 		},
 	},
@@ -6081,7 +6081,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "dev_t", Name: "dev"},
 			{Type: "unsigned long", Name: "inode"},
 			{Type: "int", Name: "type"},
-			{Type: "unsigned long", Name: "ctime"},
+			{Type: "u64", Name: "ctime"},
 		},
 	},
 	SecurityPostReadFileEventID: {
@@ -6213,7 +6213,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "runtime"},
 			{Type: "const char*", Name: "container_id"},
-			{Type: "unsigned long", Name: "ctime"},
+			{Type: "u64", Name: "ctime"},
 		},
 	},
 	ContainerRemoveEventID: {
@@ -6237,7 +6237,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "runtime"},
 			{Type: "const char*", Name: "container_id"},
-			{Type: "unsigned long", Name: "ctime"},
+			{Type: "u64", Name: "ctime"},
 		},
 	},
 	NetPacket: {
@@ -6311,7 +6311,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Dependencies: dependencies{ksymbols: []string{"sys_call_table"}},
 		Sets:         []string{},
 		Params: []trace.ArgMeta{
-			{Type: "unsigned long[]", Name: "syscalls_addresses"},
+			{Type: "u64[]", Name: "syscalls_addresses"},
 		},
 	},
 	DetectHookedSyscallsEventID: {

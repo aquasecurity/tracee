@@ -35,6 +35,9 @@ const (
 	credT
 	intArr2T
 	uint64ArrT
+	longLongT
+	ulongLongT
+	loffT
 )
 
 // These types don't match the ones defined in the ebpf code since they are not being used by syscalls arguments.
@@ -65,19 +68,19 @@ func ReadArgFromBuff(ebpfMsgDecoder *EbpfDecoder, params []trace.ArgMeta) (trace
 		var data uint16
 		err = ebpfMsgDecoder.DecodeUint16(&data)
 		res = data
-	case intT:
+	case intT, longT:
 		var data int32
 		err = ebpfMsgDecoder.DecodeInt32(&data)
 		res = data
-	case uintT, devT, modeT:
+	case uintT, devT, modeT, ulongT, offT:
 		var data uint32
 		err = ebpfMsgDecoder.DecodeUint32(&data)
 		res = data
-	case longT:
+	case longLongT:
 		var data int64
 		err = ebpfMsgDecoder.DecodeInt64(&data)
 		res = data
-	case ulongT, offT, sizeT:
+	case ulongLongT, loffT, sizeT:
 		var data uint64
 		err = ebpfMsgDecoder.DecodeUint64(&data)
 		res = data
@@ -181,12 +184,18 @@ func GetParamType(paramType string) ArgType {
 		return uintT
 	case "long":
 		return longT
-	case "unsigned long", "u64":
+	case "unsigned long":
 		return ulongT
+	case "long long":
+		return longLongT
+	case "unsigned long long", "u64":
+		return ulongLongT
 	case "bool":
 		return boolT
 	case "off_t":
 		return offT
+	case "loff_t":
+		return loffT
 	case "mode_t":
 		return modeT
 	case "dev_t":
@@ -211,7 +220,7 @@ func GetParamType(paramType string) ArgType {
 		return credT
 	case "umode_t":
 		return u16T
-	case "unsigned long[]":
+	case "u64[]":
 		return uint64ArrT
 	default:
 		// Default to pointer (printed as hex) for unsupported types

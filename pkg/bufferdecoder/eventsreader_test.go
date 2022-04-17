@@ -35,25 +35,49 @@ func TestReadArgFromBuff(t *testing.T) {
 		{
 			name: "longT",
 			input: []byte{0,
-				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, //-1
+				0xFF, 0xFF, 0xFF, 0xFF, //-1
 			},
 			params:      []trace.ArgMeta{{Type: "long", Name: "long0"}},
-			expectedArg: int64(-1),
+			expectedArg: int32(-1),
 		},
 		{
 			name: "ulongT",
 			input: []byte{0,
-				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, //18446744073709551615
+				0xFF, 0xFF, 0xFF, 0xFF, //4294967295
 			},
 			params:      []trace.ArgMeta{{Type: "unsigned long", Name: "ulong0"}},
+			expectedArg: uint32(4294967295),
+		},
+		{
+			name: "longLongT",
+			input: []byte{0,
+				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, //-1
+			},
+			params:      []trace.ArgMeta{{Type: "long long", Name: "longLong0"}},
+			expectedArg: int64(-1),
+		},
+		{
+			name: "ulongLongT",
+			input: []byte{0,
+				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, //18446744073709551615
+			},
+			params:      []trace.ArgMeta{{Type: "unsigned long long", Name: "ulongLong0"}},
 			expectedArg: uint64(18446744073709551615),
 		},
 		{
 			name: "offT",
 			input: []byte{0,
-				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, //18446744073709551615
+				0xFF, 0xFF, 0xFF, 0xFF, //4294967295
 			},
 			params:      []trace.ArgMeta{{Type: "off_t", Name: "offT0"}},
+			expectedArg: uint32(4294967295),
+		},
+		{
+			name: "loffT",
+			input: []byte{0,
+				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, //18446744073709551615
+			},
+			params:      []trace.ArgMeta{{Type: "loff_t", Name: "loffT0"}},
 			expectedArg: uint64(18446744073709551615),
 		},
 		{
@@ -71,14 +95,6 @@ func TestReadArgFromBuff(t *testing.T) {
 			},
 			params:      []trace.ArgMeta{{Type: "dev_t", Name: "devT0"}},
 			expectedArg: uint32(4294967295),
-		},
-		{
-			name: "offT",
-			input: []byte{0,
-				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, //18446744073709551615
-			},
-			params:      []trace.ArgMeta{{Type: "off_t", Name: "offT0"}},
-			expectedArg: uint64(18446744073709551615),
 		},
 		{ // This is expected to fail. TODO: change pointer parsed type to uint64
 			name: "pointerT",
@@ -158,7 +174,7 @@ func TestReadArgFromBuff(t *testing.T) {
 			input: []byte{1,
 				0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, //18446744073709551615
 			},
-			params:      []trace.ArgMeta{{Type: "const char*", Name: "str0"}, {Type: "off_t", Name: "offT1"}},
+			params:      []trace.ArgMeta{{Type: "const char*", Name: "str0"}, {Type: "loff_t", Name: "loffT1"}},
 			expectedArg: uint64(18446744073709551615),
 		},
 	}
