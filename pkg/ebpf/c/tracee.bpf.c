@@ -83,47 +83,58 @@ Copyright (C) Aqua Security inc.
 #define FILE_MAGIC_MASK                 31        // magic_write: mask used for verifier boundaries
 #define MAX_KSYM_NAME_SIZE              64
 
-#define SUBMIT_BUF_IDX                  0
-#define STRING_BUF_IDX                  1
-#define FILE_BUF_IDX                    2
-#define MAX_BUFFERS                     3
+enum buf_idx_e {
+    SUBMIT_BUF_IDX,
+    STRING_BUF_IDX,
+    FILE_BUF_IDX,
+    MAX_BUFFERS
+};
 
-#define SEND_VFS_WRITE                  1
-#define SEND_MPROTECT                   2
-#define SEND_KERNEL_MODULE              3
-#define SEND_META_SIZE                  24
+enum bin_type_e {
+    SEND_VFS_WRITE = 1,
+    SEND_MPROTECT,
+    SEND_KERNEL_MODULE,
+};
 
-#define ALERT_MMAP_W_X                  1
-#define ALERT_MPROT_X_ADD               2
-#define ALERT_MPROT_W_ADD               3
-#define ALERT_MPROT_W_REM               4
+#define SEND_META_SIZE 24
 
-#define TAIL_VFS_WRITE                  0
-#define TAIL_VFS_WRITEV                 1
-#define TAIL_SEND_BIN                   2
-#define TAIL_SEND_BIN_TP                3
-#define TAIL_KERNEL_WRITE               4
-#define MAX_TAIL_CALL                   5
+enum mem_prot_alert_e {
+    ALERT_MMAP_W_X = 1,
+    ALERT_MPROT_X_ADD,
+    ALERT_MPROT_W_ADD,
+    ALERT_MPROT_W_REM
+};
 
-#define NONE_T                          0UL
-#define INT_T                           1UL
-#define UINT_T                          2UL
-#define LONG_T                          3UL
-#define ULONG_T                         4UL
-#define OFF_T_T                         5UL
-#define MODE_T_T                        6UL
-#define DEV_T_T                         7UL
-#define SIZE_T_T                        8UL
-#define POINTER_T                       9UL
-#define STR_T                           10UL
-#define STR_ARR_T                       11UL
-#define SOCKADDR_T                      12UL
-#define BYTES_T                         13UL
-#define U16_T                           14UL
-#define CRED_T                          15UL
-#define INT_ARR_2_T                     16UL
-#define UINT64_ARR_T                    17UL
-#define TYPE_MAX                        255UL
+enum tail_call_id_e {
+    TAIL_VFS_WRITE,
+    TAIL_VFS_WRITEV,
+    TAIL_SEND_BIN,
+    TAIL_SEND_BIN_TP,
+    TAIL_KERNEL_WRITE,
+    MAX_TAIL_CALL
+};
+
+enum argument_type_e {
+    NONE_T = 0UL,
+    INT_T,
+    UINT_T,
+    LONG_T,
+    ULONG_T,
+    OFF_T_T,
+    MODE_T_T,
+    DEV_T_T,
+    SIZE_T_T,
+    POINTER_T,
+    STR_T,
+    STR_ARR_T,
+    SOCKADDR_T,
+    BYTES_T,
+    U16_T,
+    CRED_T,
+    INT_ARR_2_T,
+    UINT64_ARR_T,
+    TYPE_MAX = 255UL
+};
 
 #if defined(bpf_target_x86)
 #define SYS_MMAP                        9
@@ -161,64 +172,71 @@ Copyright (C) Aqua Security inc.
 #define SYS_DUP3                        24
 #endif
 
-#define RAW_SYS_ENTER                   1000
-#define RAW_SYS_EXIT                    1001
-#define SCHED_PROCESS_FORK              1002
-#define SCHED_PROCESS_EXEC              1003
-#define SCHED_PROCESS_EXIT              1004
-#define SCHED_SWITCH                    1005
-#define DO_EXIT                         1006
-#define CAP_CAPABLE                     1007
-#define VFS_WRITE                       1008
-#define VFS_WRITEV                      1009
-#define MEM_PROT_ALERT                  1010
-#define COMMIT_CREDS                    1011
-#define SWITCH_TASK_NS                  1012
-#define MAGIC_WRITE                     1013
-#define CGROUP_ATTACH_TASK              1014
-#define CGROUP_MKDIR                    1015
-#define CGROUP_RMDIR                    1016
-#define SECURITY_BPRM_CHECK             1017
-#define SECURITY_FILE_OPEN              1018
-#define SECURITY_INODE_UNLINK           1019
-#define SECURITY_SOCKET_CREATE          1020
-#define SECURITY_SOCKET_LISTEN          1021
-#define SECURITY_SOCKET_CONNECT         1022
-#define SECURITY_SOCKET_ACCEPT          1023
-#define SECURITY_SOCKET_BIND            1024
-#define SECURITY_SB_MOUNT               1025
-#define SECURITY_BPF                    1026
-#define SECURITY_BPF_MAP                1027
-#define SECURITY_KERNEL_READ_FILE       1028
-#define SECURITY_INODE_MKNOD            1029
-#define SECURITY_POST_READ_FILE         1030
-#define SECURITY_INODE_SYMLINK          1031
-#define SOCKET_DUP                      1032
-#define HIDDEN_INODES                   1033
-#define __KERNEL_WRITE                  1034
-#define PROC_CREATE                     1035
-#define KPROBE_ATTACH                   1036
-#define CALL_USERMODE_HELPER            1037
-#define DIRTY_PIPE_SPLICE               1038
-#define DEBUGFS_CREATE_FILE             1039
-#define PRINT_SYSCALL_TABLE             1040
-#define DEBUGFS_CREATE_DIR              1041
-#define MAX_EVENT_ID                    1042
+enum event_id_e {
+    // Common event IDs
+    RAW_SYS_ENTER = 1000,
+    RAW_SYS_EXIT,
+    SCHED_PROCESS_FORK,
+    SCHED_PROCESS_EXEC,
+    SCHED_PROCESS_EXIT,
+    SCHED_SWITCH,
+    DO_EXIT,
+    CAP_CAPABLE,
+    VFS_WRITE,
+    VFS_WRITEV,
+    MEM_PROT_ALERT,
+    COMMIT_CREDS,
+    SWITCH_TASK_NS,
+    MAGIC_WRITE,
+    CGROUP_ATTACH_TASK,
+    CGROUP_MKDIR,
+    CGROUP_RMDIR,
+    SECURITY_BPRM_CHECK,
+    SECURITY_FILE_OPEN,
+    SECURITY_INODE_UNLINK,
+    SECURITY_SOCKET_CREATE,
+    SECURITY_SOCKET_LISTEN,
+    SECURITY_SOCKET_CONNECT,
+    SECURITY_SOCKET_ACCEPT,
+    SECURITY_SOCKET_BIND,
+    SECURITY_SB_MOUNT,
+    SECURITY_BPF,
+    SECURITY_BPF_MAP,
+    SECURITY_KERNEL_READ_FILE,
+    SECURITY_INODE_MKNOD,
+    SECURITY_POST_READ_FILE,
+    SECURITY_INODE_SYMLINK,
+    SOCKET_DUP,
+    HIDDEN_INODES,
+    __KERNEL_WRITE,
+    PROC_CREATE,
+    KPROBE_ATTACH,
+    CALL_USERMODE_HELPER,
+    DIRTY_PIPE_SPLICE,
+    DEBUGFS_CREATE_FILE,
+    PRINT_SYSCALL_TABLE,
+    DEBUGFS_CREATE_DIR,
+    MAX_EVENT_ID,
 
-#define NET_PACKET                      4000
+    // Net events IDs
+    NET_PACKET = 4000,
 
-#define DEBUG_NET_SECURITY_BIND         5000
-#define DEBUG_NET_UDP_SENDMSG           5001
-#define DEBUG_NET_UDP_DISCONNECT        5002
-#define DEBUG_NET_UDP_DESTROY_SOCK      5003
-#define DEBUG_NET_UDPV6_DESTROY_SOCK    5004
-#define DEBUG_NET_INET_SOCK_SET_STATE   5005
-#define DEBUG_NET_TCP_CONNECT           5006
+    // Debug events IDs
+    DEBUG_NET_SECURITY_BIND = 5000,
+    DEBUG_NET_UDP_SENDMSG,
+    DEBUG_NET_UDP_DISCONNECT,
+    DEBUG_NET_UDP_DESTROY_SOCK,
+    DEBUG_NET_UDPV6_DESTROY_SOCK,
+    DEBUG_NET_INET_SOCK_SET_STATE,
+    DEBUG_NET_TCP_CONNECT
+};
 
-#define CONFIG_TRACEE_PID               0
-#define CONFIG_OPTIONS                  1
-#define CONFIG_FILTERS                  2
-#define CONFIG_CGROUP_V1_HID            3
+enum bpf_config_e {
+    CONFIG_TRACEE_PID,
+    CONFIG_OPTIONS,
+    CONFIG_FILTERS,
+    CONFIG_CGROUP_V1_HID
+};
 
 #define CAPTURE_IFACE                   (1 << 0)
 #define TRACE_IFACE                     (1 << 1)
@@ -257,14 +275,16 @@ Copyright (C) Aqua Security inc.
 #define FILTER_CGROUP_ID_ENABLED        (1 << 21)
 #define FILTER_CGROUP_ID_OUT            (1 << 22)
 
-#define UID_LESS                        0
-#define UID_GREATER                     1
-#define PID_LESS                        2
-#define PID_GREATER                     3
-#define MNTNS_LESS                      4
-#define MNTNS_GREATER                   5
-#define PIDNS_LESS                      6
-#define PIDNS_GREATER                   7
+enum filter_options_e {
+    UID_LESS,
+    UID_GREATER,
+    PID_LESS,
+    PID_GREATER,
+    MNTNS_LESS,
+    MNTNS_GREATER,
+    PIDNS_LESS,
+    PIDNS_GREATER
+};
 
 #define LESS_NOT_SET                    0
 #define GREATER_NOT_SET                 ULLONG_MAX
@@ -274,9 +294,11 @@ Copyright (C) Aqua Security inc.
 #define CONT_ID_LEN                     12
 #define CONT_ID_MIN_FULL_LEN            64
 
-#define CONTAINER_EXISTED               1         // container existed before tracee was started
-#define CONTAINER_CREATED               2         // new cgroup path created
-#define CONTAINER_STARTED               3         // a process in the cgroup executed a new binary
+enum container_state_e {
+    CONTAINER_EXISTED = 1,              // container existed before tracee was started
+    CONTAINER_CREATED,                  // new cgroup path created
+    CONTAINER_STARTED                   // a process in the cgroup executed a new binary
+};
 
 #define PACKET_MIN_SIZE                 40
 
@@ -316,7 +338,9 @@ Copyright (C) Aqua Security inc.
 
 #ifdef CORE
 
-#define ARCH_HAS_SYSCALL_WRAPPER        1000U
+enum kconfig_key_e {
+    ARCH_HAS_SYSCALL_WRAPPER = 1000U
+};
 
 #else
 
