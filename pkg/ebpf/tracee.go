@@ -1025,7 +1025,7 @@ func (t *Tracee) initBPF() error {
 		return err
 	}
 
-	if t.netEventChoosen() && len(t.config.Filter.NetFilter.InterfacesToTrace) == 0 {
+	if t.shouldTraceNetEvents() && len(t.config.Filter.NetFilter.InterfacesToTrace) == 0 {
 		return fmt.Errorf("couldn't trace %s event, missing interface", EventsDefinitions[NetPacket].Name)
 	}
 	for _, iface := range t.netInfo.ifaces {
@@ -1293,7 +1293,7 @@ func findInList(element string, list *[]string) (int, error) {
 	}
 	return 0, fmt.Errorf("element: %s dosent found\n", element)
 }
-func (t *Tracee) netEventChoosen() bool {
+func (t *Tracee) shouldTraceNetEvents() bool {
 	for i := NetPacket; i < MaxNetEventID; i++ {
 		if t.eventsToTrace[i] {
 			return true

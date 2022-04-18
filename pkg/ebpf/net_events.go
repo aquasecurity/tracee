@@ -202,6 +202,7 @@ func (t *Tracee) getPcapContextFromTid(hostTid uint32) (processPcapId, procinfo.
 
 func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 	// Todo: add stats for network packets (in epilog)
+	netPacketSize := bufferdecoder.NetPacketEvent.GetSizeBytes(bufferdecoder.NetPacketEvent{})
 	for {
 		select {
 		case in := <-t.netChannel:
@@ -239,12 +240,12 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 					t.handleError(err)
 					continue
 				}
-				PacketStartOff := netEventMetadata.GetSizeBytes() + netCaptureData.GetSizeBytes()
+				PacketStartOff := netEventMetadata.GetSizeBytes() + netCaptureData.GetSizeBytes() // packet payload offset is NetEventMetadata + NetCaptureData
 
 				ifaceName := t.netInfo.ifaces[int(netCaptureData.ConfigIfaceIndex)].Name
 				ifaceIdx, err := t.getTracedIfaceIdx(ifaceName)
 				if err == nil && ifaceIdx >= 0 {
-					PacketStartOff += 40 // the offset to the packet payload the size of the NetEventMetadata + NetPacketEvent
+					PacketStartOff += netPacketSize // if the interface's packet should be trace we need to add another the size of NetPacketEvent
 					if t.eventsToTrace[netEventMetadata.NetEventId] {
 						evt, err := netPacketProtocolHandler(netDecoder, netEventMetadata, networkThread, "net_packet")
 						if err != nil {
@@ -444,7 +445,7 @@ func dnsRequestProtocolHandler(decoder bufferdecoder.EbpfDecoder, evt *trace.Eve
 // appendDnsRequestArgs parse the given buffer to dns questions and adds it to the event
 func appendDnsRequestArgs(event *trace.Event, requests *[]bufferdecoder.DnsQueryData) {
 	event.Args = append(event.Args, trace.Argument{
-		ArgMeta: trace.ArgMeta{"dns_questions", "[]bufferdecoder.DnsQueryData"},
+		ArgMeta: EventsDefinitions[int32(event.EventID)].Params[1],
 		Value:   *requests,
 	})
 	event.ArgsNum++

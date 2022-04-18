@@ -4839,15 +4839,16 @@ static __always_inline bool skb_revalidate_data(struct __sk_buff *skb, uint8_t *
 }
 
 void set_net_event_id(net_packet_t *pkt){
-    if (pkt->protocol == IPPROTO_UDP && pkt->dst_port == 53){
+    const int dns_port = 53;
+    if (pkt->protocol == IPPROTO_UDP && pkt->dst_port == dns_port){
         pkt->event_id = DNS_REQUEST;
     }
-    if (pkt->protocol == IPPROTO_UDP && pkt->src_port == 53){
+    if (pkt->protocol == IPPROTO_UDP && pkt->src_port == dns_port){
         pkt->event_id = DNS_RESPONSE;
     }
 }
 
-bool should_send_payload(net_packet_t *pkt){
+bool should_submit_payload(net_packet_t *pkt){
     if (pkt->event_id == DNS_REQUEST || pkt->event_id == DNS_RESPONSE)
         return true;
     return false;
@@ -5013,7 +5014,7 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
         set_net_event_id(&pkt);
     }
 
-    if (iface_conf & CAPTURE_IFACE || should_send_payload(&pkt)){
+    if (iface_conf & CAPTURE_IFACE || should_submit_payload(&pkt)){
         flags |= (u64)skb->len << 32;
     }
     bpf_perf_event_output(skb, &net_events, flags, &pkt, pkt_size);

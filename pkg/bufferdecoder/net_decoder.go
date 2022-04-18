@@ -36,16 +36,15 @@ func (decoder *EbpfDecoder) DecodeNetEventMetadata(eventMetaData *NetEventMetada
 
 func (decoder *EbpfDecoder) DecodePacketBytes(packetBytes []byte, packetstartOffset uint32, packetLength uint32) error {
 	if int(packetstartOffset+packetLength) > len(decoder.buffer) {
-		print(packetstartOffset+packetLength, " len is ", decoder.buffer)
 		return fmt.Errorf("offset to the payload to big")
 	}
-	_ = copy(packetBytes[:], decoder.buffer[packetstartOffset:packetstartOffset+packetLength])
+	_ = copy(packetBytes[:], decoder.buffer[packetstartOffset:(packetstartOffset+packetLength)])
 	return nil
 }
 
 type NetCaptureData struct {
-	PacketLength     uint32 `json:"pkt_len"`
-	ConfigIfaceIndex uint32 `json:"if_index"`
+	PacketLength     uint32 `json:"pktLen"`
+	ConfigIfaceIndex uint32 `json:"ifIndex"`
 }
 
 func (NetCaptureData) GetSizeBytes() uint32 {
@@ -151,8 +150,8 @@ func (decoder *EbpfDecoder) DecodeDnsQueryArray(questions *[]DnsQueryData) error
 	if packet == nil {
 		return fmt.Errorf("couldnt parse the packet")
 	}
-	dnsLayer := packet.Layer(layers.LayerTypeDNS).(*layers.DNS)
-	if dnsLayer == nil {
+	dnsLayer, ok := packet.Layer(layers.LayerTypeDNS).(*layers.DNS)
+	if !ok {
 		return fmt.Errorf("couldnt find the dns layer")
 	}
 	for _, question := range dnsLayer.Questions {
@@ -162,14 +161,14 @@ func (decoder *EbpfDecoder) DecodeDnsQueryArray(questions *[]DnsQueryData) error
 }
 
 type DnsAnswer struct {
-	Type   string `json:"answer_type"`
+	Type   string `json:"answerType"`
 	Ttl    uint32 `json:"ttl"`
 	Answer string `json:"answer"`
 }
 
 type DnsResponseData struct {
-	QueryData DnsQueryData `json:"query_data"`
-	DnsAnswer []DnsAnswer  `json:"dns_answer"`
+	QueryData DnsQueryData `json:"queryData"`
+	DnsAnswer []DnsAnswer  `json:"dnsAnswer"`
 }
 
 func (decoder *EbpfDecoder) DecodeDnsResponseData(responses *[]DnsResponseData) error {
