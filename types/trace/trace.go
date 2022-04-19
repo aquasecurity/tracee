@@ -203,3 +203,8 @@ func (alert MemProtAlert) String() string {
 		return "Unknown alert"
 	}
 }
+
+type HookedSyscallData struct {
+	SyscallName string
+	ModuleOwner string
+}

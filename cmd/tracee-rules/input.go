@@ -11,7 +11,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -50,7 +49,7 @@ func setupTraceeGobInputSource(opts *traceeInputOptions) (chan protocol.Event, e
 	gob.Register(trace.SlimCred{})
 	gob.Register(make(map[string]string))
 	gob.Register(trace.PktMeta{})
-	gob.Register([]bufferdecoder.HookedSyscallData{})
+	gob.Register([]protocol.HookedSyscallData{})
 	res := make(chan protocol.Event)
 	go func() {
 		for {

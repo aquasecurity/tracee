@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
-	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -145,8 +144,8 @@ func deriveDetectHookedSyscall(t *Tracee) deriveFn {
 	}
 }
 
-func analyzeHookedAddresses(addresses []uint64, OsConfig *helpers.OSInfo, kernelSymbols *helpers.KernelSymbolTable) ([]bufferdecoder.HookedSyscallData, error) {
-	hookedSyscallData := make([]bufferdecoder.HookedSyscallData, 0, 0)
+func analyzeHookedAddresses(addresses []uint64, OsConfig *helpers.OSInfo, kernelSymbols *helpers.KernelSymbolTable) ([]trace.HookedSyscallData, error) {
+	hookedSyscallData := make([]trace.HookedSyscallData, 0, 0)
 	for idx, syscallsAdress := range addresses {
 		InTextSegment, err := kernelSymbols.TextSegmentContains(syscallsAdress)
 		if err != nil {
@@ -166,7 +165,7 @@ func analyzeHookedAddresses(addresses []uint64, OsConfig *helpers.OSInfo, kernel
 			} else {
 				hookedSyscallName = fmt.Sprint(syscallNumber)
 			}
-			hookedSyscallData = append(hookedSyscallData, bufferdecoder.HookedSyscallData{hookedSyscallName, hookingFunction.Owner})
+			hookedSyscallData = append(hookedSyscallData, trace.HookedSyscallData{hookedSyscallName, hookingFunction.Owner})
 
 		}
 	}
