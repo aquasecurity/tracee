@@ -202,7 +202,8 @@ Copyright (C) Aqua Security inc.
 #define DIRTY_PIPE_SPLICE               1038
 #define DEBUGFS_CREATE_FILE             1039
 #define PRINT_SYSCALL_TABLE             1040
-#define MAX_EVENT_ID                    1041
+#define DEVICE_CREATE                   1041
+#define MAX_EVENT_ID                    1042
 
 #define NET_PACKET                      4000
 
@@ -4727,6 +4728,27 @@ int BPF_KPROBE(trace_security_inode_mknod)
 
     return events_perf_submit(&data, SECURITY_INODE_MKNOD, 0);
 }
+
+SEC("kprobe/device_create")
+int BPF_KPROBE(trace_device_create)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data.context))
+        return 0;
+
+    struct dentry* parent_dentry = (struct dentry*)PT_REGS_PARM2(ctx);
+    void *device_name = (void *)PT_REGS_PARM5(ctx);
+    void *parent_dentry_path = get_dentry_path_str(parent_dentry);
+
+    save_str_to_buf(&data, device_name, 0);
+    save_str_to_buf(&data, parent_dentry_path, 1);
+
+    return events_perf_submit(&data, DEVICE_CREATE, 0);
+}
+
 
 SEC("kprobe/do_splice")
 TRACE_ENT_FUNC(do_splice, DIRTY_PIPE_SPLICE);

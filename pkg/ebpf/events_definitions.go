@@ -86,6 +86,7 @@ const (
 	DirtyPipeSpliceEventID
 	DebugfsCreateFile
 	PrintSyscallTableEventID
+	DeviceCreateEventID
 	MaxCommonEventID
 )
 
@@ -6323,6 +6324,18 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{},
 		Params: []trace.ArgMeta{
 			{Type: "HookedSyscallData[]", Name: "hooked_syscalls"},
+		},
+	},
+	DeviceCreateEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "device_create",
+		Probes: []probe{
+			{event: "device_create", attach: kprobe, fn: "trace_device_create"},
+		},
+		Sets: []string{},
+		Params: []trace.ArgMeta{
+			{Type: "const char*", Name: "name"},
+			{Type: "const char*", Name: "parent_name"},
 		},
 	},
 }
