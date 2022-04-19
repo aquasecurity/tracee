@@ -476,6 +476,15 @@ struct sock_common {
 	struct in6_addr skc_v6_rcv_saddr;
 };
 
+struct kobject {
+	const char  *name;
+};
+
+struct device {
+	struct device	*parent;
+	struct kobject  kobj;
+};
+
 struct sock {
 	struct sock_common __sk_common;
 	u16 sk_protocol;

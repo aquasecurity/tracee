@@ -88,6 +88,7 @@ const (
 	DebugfsCreateFileEventID
 	PrintSyscallTableEventID
 	DebugfsCreateDirEventID
+	DeviceAddEventID
 	MaxCommonEventID
 )
 
@@ -6331,6 +6332,18 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "name"},
 			{Type: "const char*", Name: "path"},
+		},
+	},
+	DeviceAddEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "device_add",
+		Probes: []probe{
+			{event: "device_add", attach: kprobe, fn: "trace_device_add"},
+		},
+		Sets: []string{},
+		Params: []trace.ArgMeta{
+			{Type: "const char*", Name: "name"},
+			{Type: "const char*", Name: "parent_name"},
 		},
 	},
 }
