@@ -155,18 +155,28 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 					Name:   event.Headers.Selector.Name,
 					Source: event.Headers.Selector.Source,
 				}
+				source := signatureSelector.Source
 				engine.stats.Events.Increment()
 
+				//Check the selector for every case and partial case
+
+				//Match full selector
 				for _, s := range engine.signaturesIndex[signatureSelector] {
 					engine.dispatchEvent(s, event)
 				}
-				for _, s := range engine.signaturesIndex[detect.SignatureEventSelector{Source: "tracee", Name: signatureSelector.Name, Origin: ALL_EVENT_ORIGINS}] {
+
+				//Match partial selector, select for all origins
+				for _, s := range engine.signaturesIndex[detect.SignatureEventSelector{Source: source, Name: signatureSelector.Name, Origin: ALL_EVENT_ORIGINS}] {
 					engine.dispatchEvent(s, event)
 				}
-				for _, s := range engine.signaturesIndex[detect.SignatureEventSelector{Source: "tracee", Name: ALL_EVENT_TYPES, Origin: signatureSelector.Origin}] {
+
+				//Match partial selector, select for event names
+				for _, s := range engine.signaturesIndex[detect.SignatureEventSelector{Source: source, Name: ALL_EVENT_TYPES, Origin: signatureSelector.Origin}] {
 					engine.dispatchEvent(s, event)
 				}
-				for _, s := range engine.signaturesIndex[detect.SignatureEventSelector{Source: "tracee", Name: ALL_EVENT_TYPES, Origin: ALL_EVENT_ORIGINS}] {
+
+				//Match partial selector, select for all origins and event names
+				for _, s := range engine.signaturesIndex[detect.SignatureEventSelector{Source: source, Name: ALL_EVENT_TYPES, Origin: ALL_EVENT_ORIGINS}] {
 					engine.dispatchEvent(s, event)
 				}
 				engine.signaturesMutex.RUnlock()

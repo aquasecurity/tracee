@@ -399,6 +399,30 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			expectedNumEvents: 1,
 			expectedEvent:     "a great payload",
 		},
+		{
+			name: "happy path - signature with partial selector and non tracee source",
+			inputEvent: protocol.Event{
+				Headers: protocol.EventHeaders{
+					Selector: protocol.Selector{
+						Name:   "foobar",
+						Source: "system",
+					},
+				},
+				Payload: "a great payload",
+			},
+			inputSignature: regoFakeSignature{
+				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
+					return []detect.SignatureEventSelector{
+						{
+							Name:   "foobar",
+							Source: "system",
+						},
+					}, nil
+				},
+			},
+			expectedNumEvents: 1,
+			expectedEvent:     "a great payload",
+		},
 	}
 
 	emptyEvent := protocol.Event{}
