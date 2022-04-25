@@ -1,0 +1,1068 @@
+# Runs every week. ALL tests in ALL kernels.
+#
+# TODO: Automate tracee-test-kernels generation through workflows.
+# TODO: Change dockerhub -> github repository once we're sure this is good.
+# 
+name: CO-RE (WEEKLY)
+on:
+  workflow_dispatch: {}
+  schedule:
+    # At 00:00 on Saturdays
+    - cron: '0 0 * * 6'
+jobs:
+  #
+  # TRC-2
+  #
+  run-weekly-core-tests-trc2:
+    name: "TRC-2"
+    runs-on: ubuntu-latest
+    env:
+      TEST_NAME: TRC-2
+    steps:
+      #
+      - name: "Checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "Pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v4.19 (4.19.238-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=4.19.238-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.166-ubuntu+)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.4.166-ubuntu+
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.189-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.4.189-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.8 (5.8.18-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.8.18-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.10 (5.10.111-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.10.111-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-fedora32)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.13 (5.13.19-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.13.19-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.14 (5.14.18-fedora33)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.14.18-fedora33
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.30-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.15.30-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.34-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.15.34-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.18-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.16.18-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.19-fedora34)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.16.19-fedora34
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+  #
+  # TRC-3 (copy & paste from now on)
+  #
+  run-weekly-core-tests-trc3:
+    name: "TRC-3"
+    runs-on: ubuntu-latest
+    env:
+      TEST_NAME: TRC-3
+    steps:
+      #
+      - name: "Checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "Pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v4.19 (4.19.238-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=4.19.238-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.166-ubuntu+)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.4.166-ubuntu+
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.189-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.4.189-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.8 (5.8.18-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.8.18-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.10 (5.10.111-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.10.111-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-fedora32)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.13 (5.13.19-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.13.19-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.14 (5.14.18-fedora33)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.14.18-fedora33
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.30-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.15.30-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.34-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.15.34-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.18-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.16.18-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.19-fedora34)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.16.19-fedora34
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+  #
+  # TRC-4
+  #
+  run-weekly-core-tests-trc4:
+    name: "TRC-4"
+    runs-on: ubuntu-latest
+    env:
+      TEST_NAME: TRC-4
+    steps:
+      #
+      - name: "Checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "Pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v4.19 (4.19.238-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=4.19.238-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.166-ubuntu+)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.4.166-ubuntu+
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.189-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.4.189-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.8 (5.8.18-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.8.18-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.10 (5.10.111-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.10.111-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-fedora32)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.13 (5.13.19-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.13.19-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.14 (5.14.18-fedora33)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.14.18-fedora33
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.30-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.15.30-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.34-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.15.34-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.18-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.16.18-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.19-fedora34)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.16.19-fedora34
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+  #
+  # TRC-5
+  #
+  run-weekly-core-tests-trc5:
+    name: "TRC-5"
+    runs-on: ubuntu-latest
+    env:
+      TEST_NAME: TRC-5
+    steps:
+      #
+      - name: "Checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "Pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v4.19 (4.19.238-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=4.19.238-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.166-ubuntu+)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.4.166-ubuntu+
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.189-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.4.189-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.8 (5.8.18-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.8.18-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.10 (5.10.111-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.10.111-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-fedora32)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.13 (5.13.19-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.13.19-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.14 (5.14.18-fedora33)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.14.18-fedora33
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.30-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.15.30-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.34-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.15.34-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.18-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.16.18-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.19-fedora34)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.16.19-fedora34
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+  #
+  # TRC-7
+  #
+  run-weekly-core-tests-trc7:
+    name: "TRC-7"
+    runs-on: ubuntu-latest
+    env:
+      TEST_NAME: TRC-7
+    steps:
+      #
+      - name: "Checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "Pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v4.19 (4.19.238-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=4.19.238-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.166-ubuntu+)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.4.166-ubuntu+
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.189-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.4.189-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.8 (5.8.18-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.8.18-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.10 (5.10.111-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.10.111-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-fedora32)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.13 (5.13.19-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.13.19-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.14 (5.14.18-fedora33)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.14.18-fedora33
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.30-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.15.30-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.34-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.15.34-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.18-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.16.18-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.19-fedora34)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.16.19-fedora34
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+  #
+  # TRC-8
+  #
+  run-weekly-core-tests-trc8:
+    name: "TRC-8"
+    runs-on: ubuntu-latest
+    env:
+      TEST_NAME: TRC-8
+    steps:
+      #
+      - name: "Checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "Pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v4.19 (4.19.238-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=4.19.238-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.166-ubuntu+)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.4.166-ubuntu+
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.189-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.4.189-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.8 (5.8.18-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.8.18-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.10 (5.10.111-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.10.111-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-fedora32)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.13 (5.13.19-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.13.19-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.14 (5.14.18-fedora33)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.14.18-fedora33
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.30-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.15.30-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.34-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.15.34-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.18-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.16.18-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.19-fedora34)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.16.19-fedora34
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+  #
+  # TRC-9
+  #
+  run-weekly-core-tests-trc9:
+    name: "TRC-9"
+    runs-on: ubuntu-latest
+    env:
+      TEST_NAME: TRC-9
+    steps:
+      #
+      - name: "Checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "Pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v4.19 (4.19.238-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=4.19.238-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.166-ubuntu+)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.4.166-ubuntu+
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.189-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.4.189-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.8 (5.8.18-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.8.18-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.10 (5.10.111-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.10.111-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-fedora32)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.13 (5.13.19-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.13.19-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.14 (5.14.18-fedora33)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.14.18-fedora33
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.30-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.15.30-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.34-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.15.34-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.18-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.16.18-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.19-fedora34)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.16.19-fedora34
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+  #
+  # TRC-10
+  #
+  run-weekly-core-tests-trc10:
+    name: "TRC-10"
+    runs-on: ubuntu-latest
+    env:
+      TEST_NAME: TRC-10
+    steps:
+      #
+      - name: "Checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "Pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v4.19 (4.19.238-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=4.19.238-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.166-ubuntu+)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.4.166-ubuntu+
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.189-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.4.189-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.8 (5.8.18-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.8.18-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.10 (5.10.111-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.10.111-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-fedora32)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.13 (5.13.19-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.13.19-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.14 (5.14.18-fedora33)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.14.18-fedora33
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.30-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.15.30-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.34-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.15.34-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.18-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.16.18-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.19-fedora34)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.16.19-fedora34
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+  #
+  # TRC-11
+  #
+  run-weekly-core-tests-trc11:
+    name: "TRC-11"
+    runs-on: ubuntu-latest
+    env:
+      TEST_NAME: TRC-11
+    steps:
+      #
+      - name: "Checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "Pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v4.19 (4.19.238-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=4.19.238-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.166-ubuntu+)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.4.166-ubuntu+
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.189-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.4.189-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.8 (5.8.18-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.8.18-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.10 (5.10.111-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.10.111-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-fedora32)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.13 (5.13.19-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.13.19-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.14 (5.14.18-fedora33)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.14.18-fedora33
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.30-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.15.30-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.34-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.15.34-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.18-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.16.18-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.19-fedora34)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.16.19-fedora34
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+  #
+  # TRC-12
+  #
+  run-weekly-core-tests-trc12:
+    name: "TRC-12"
+    runs-on: ubuntu-latest
+    env:
+      TEST_NAME: TRC-12
+    steps:
+      #
+      - name: "Checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "Pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v4.19 (4.19.238-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=4.19.238-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.166-ubuntu+)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.4.166-ubuntu+
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.189-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.4.189-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.8 (5.8.18-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.8.18-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.10 (5.10.111-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.10.111-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-fedora32)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.13 (5.13.19-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.13.19-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.14 (5.14.18-fedora33)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.14.18-fedora33
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.30-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.15.30-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.34-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.15.34-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.18-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.16.18-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.19-fedora34)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.16.19-fedora34
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+  #
+  # TRC-14
+  #
+  run-weekly-core-tests-trc14:
+    name: "TRC-14"
+    runs-on: ubuntu-latest
+    env:
+      TEST_NAME: TRC-14
+    steps:
+      #
+      - name: "Checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "Pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v4.19 (4.19.238-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=4.19.238-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.166-ubuntu+)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.4.166-ubuntu+
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.189-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.4.189-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.8 (5.8.18-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.8.18-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.10 (5.10.111-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.10.111-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-fedora32)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.13 (5.13.19-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.13.19-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.14 (5.14.18-fedora33)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.14.18-fedora33
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.30-ubuntu)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.15.30-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.34-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.15.34-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.18-stable)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.16.18-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.19-fedora34)"
+        if: success() || failure()
+        run: |
+          kernel_version=5.16.19-fedora34
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
