@@ -1,0 +1,311 @@
+# Runs every day. Tests TRC-2 in ALL kernels.
+#
+# TODO: Automate tracee-test-kernels generation through workflows.
+# TODO: Change dockerhub -> github repository once we're sure this is good.
+#
+name: CO-RE (DAILY)
+on:
+  workflow_dispatch: {}
+  schedule:
+    # At 00:00 every day
+    - cron: '0 0 * * *'
+jobs:
+  #
+  # TRC-2 v4.19 (stable)
+  #
+  run-core-test-trc2-v419-stable:
+    name: "TRC-2 v4.19 (stable)"
+    runs-on: ubuntu-latest
+    env:
+      TEST_NAME: TRC-2
+    steps:
+      #
+      - name: "Checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "Pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v4.19 (4.19.238-stable)"
+        run: |
+          kernel_version=4.19.238-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+  #
+  # TRC-2 v5.4 (ubuntu)
+  #
+  run-core-test-trc2-v54-ubuntu:
+    name: "TRC-2 v5.4 (ubuntu)"
+    runs-on: ubuntu-latest
+    env:
+      TEST_NAME: TRC-2
+    steps:
+      #
+      - name: "Checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "Pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.166-ubuntu+)"
+        run: |
+          kernel_version=5.4.166-ubuntu+
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+  #
+  # TRC-2 v5.4 (stable)
+  #
+  run-core-test-trc2-v54-stable:
+    name: "TRC-2 v5.4 (stable)"
+    runs-on: ubuntu-latest
+    env:
+      TEST_NAME: TRC-2
+    steps:
+      #
+      - name: "Checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "Pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.4 (5.4.189-stable)"
+        run: |
+          kernel_version=5.4.189-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+  #
+  # TRC-2 v5.8 (ubuntu)
+  #
+  run-core-test-trc2-v58-ubuntu:
+    name: "TRC-2 v5.8 (ubuntu)"
+    runs-on: ubuntu-latest
+    env:
+      TEST_NAME: TRC-2
+    steps:
+      #
+      - name: "Checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "Pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.8 (5.8.18-ubuntu)"
+        run: |
+          kernel_version=5.8.18-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+  #
+  # TRC-2 v5.10 (stable)
+  #
+  run-core-test-trc2-v510-stable:
+    name: "TRC-2 v5.10 (stable)"
+    runs-on: ubuntu-latest
+    env:
+      TEST_NAME: TRC-2
+    steps:
+      #
+      - name: "Checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "Pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.10 (5.10.111-stable)"
+        run: |
+          kernel_version=5.10.111-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+  #
+  # TRC-2 v5.11 (ubuntu)
+  #
+  run-core-test-trc2-v511-ubuntu:
+    name: "TRC-2 v5.11 (ubuntu)"
+    runs-on: ubuntu-latest
+    env:
+      TEST_NAME: TRC-2
+    steps:
+      #
+      - name: "Checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "Pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-ubuntu)"
+        run: |
+          kernel_version=5.11.22-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+  #
+  # TRC-2 v5.11 (fedora32)
+  #
+  run-core-test-trc2-v511-fedora32:
+    name: "TRC-2 v5.11 (fedora32)"
+    runs-on: ubuntu-latest
+    env:
+      TEST_NAME: TRC-2
+    steps:
+      #
+      - name: "Checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "Pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.11 (5.11.22-fedora32)"
+        run: |
+          kernel_version=5.11.22-fedora32
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+  #
+  # TRC-2 v5.13 (ubuntu)
+  #
+  run-core-test-trc2-v513-ubuntu:
+    name: "TRC-2 v5.13 (ubuntu)"
+    runs-on: ubuntu-latest
+    env:
+      TEST_NAME: TRC-2
+    steps:
+      #
+      - name: "Checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "Pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.13 (5.13.19-ubuntu)"
+        run: |
+          kernel_version=5.13.19-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+  #
+  # TRC-2 v5.14 (fedora33)
+  #
+  run-core-test-trc2-v514-fedora33:
+    name: "TRC-2 v5.14 (fedora33)"
+    runs-on: ubuntu-latest
+    env:
+      test_name: TRC-2
+    steps:
+      #
+      - name: "checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.14 (5.14.18-fedora33)"
+        run: |
+          kernel_version=5.14.18-fedora33
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$test_name" -t rafaeldtinoco/tracee-test-kernels:latest
+  #
+  # TRC-2 v5.15 (ubuntu)
+  #
+  run-core-test-trc2-v515-ubuntu:
+    name: "TRC-2 v5.15 (ubuntu)"
+    runs-on: ubuntu-latest
+    env:
+      test_name: TRC-2
+    steps:
+      #
+      - name: "checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.30-ubuntu)"
+        run: |
+          kernel_version=5.15.30-ubuntu
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$test_name" -t rafaeldtinoco/tracee-test-kernels:latest
+  #
+  # TRC-2 v5.15 (stable)
+  #
+  run-core-test-trc2-v515-stable:
+    name: "TRC-2 v5.15 (stable)"
+    runs-on: ubuntu-latest
+    env:
+      test_name: TRC-2
+    steps:
+      #
+      - name: "checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.15 (5.15.34-stable)"
+        run: |
+          kernel_version=5.15.34-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$test_name" -t rafaeldtinoco/tracee-test-kernels:latest
+  #
+  # TRC-2 v5.16 (stable)
+  #
+  run-core-test-trc2-v516-stable:
+    name: "TRC-2 v5.16 (stable)"
+    runs-on: ubuntu-latest
+    env:
+      test_name: TRC-2
+    steps:
+      #
+      - name: "checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "v5.16 (5.16.18-stable)"
+        run: |
+          kernel_version=5.16.18-stable
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$test_name" -t rafaeldtinoco/tracee-test-kernels:latest
+  #
+  # TRC-2 v5.16 (fedora34)
+  #
+  run-core-test-trc2-v516-fedora34:
+    name: "TRC-2 v5.16 (fedora34)"
+    runs-on: ubuntu-latest
+    env:
+      test_name: TRC-2
+    steps:
+      #
+      - name: "checkout"
+        uses: actions/checkout@main
+        with:
+          submodules: true
+      #
+      - name: "pull test container image"
+        run: |
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+      #
+      - name: "5.16 (5.16.19-fedora34)"
+        run: |
+          kernel_version=5.16.19-fedora34
+          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$test_name" -t rafaeldtinoco/tracee-test-kernels:latest
