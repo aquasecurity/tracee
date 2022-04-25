@@ -15,6 +15,7 @@ type Event struct {
 	Timestamp           int        `json:"timestamp"`
 	ProcessorID         int        `json:"processorId"`
 	ProcessID           int        `json:"processId"`
+	CgroupID            uint       `json:"cgroupId"`
 	ThreadID            int        `json:"threadId"`
 	ParentProcessID     int        `json:"parentProcessId"`
 	HostProcessID       int        `json:"hostProcessId"`
