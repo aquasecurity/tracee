@@ -537,7 +537,7 @@ func printEventGroup(b *strings.Builder, firstEventID, lastEventID int) {
 	for i := firstEventID; i < lastEventID; i++ {
 		index := int32(i)
 		event, ok := tracee.EventsDefinitions[index]
-		if !ok {
+		if !ok || event.Internal {
 			continue
 		}
 		if event.Sets != nil {

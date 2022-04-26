@@ -210,6 +210,12 @@ func TestPrepareFilter(t *testing.T) {
 			expectedError:  errors.New("invalid event to trace: bl*ah"),
 		},
 		{
+			testName:       "internal event selection",
+			filters:        []string{"event=print_syscall_table"},
+			expectedFilter: tracee.Filter{},
+			expectedError:  errors.New("invalid event to trace: print_syscall_table"),
+		},
+		{
 			testName:       "invalid not wildcard",
 			filters:        []string{"event!=bl*ah"},
 			expectedFilter: tracee.Filter{},

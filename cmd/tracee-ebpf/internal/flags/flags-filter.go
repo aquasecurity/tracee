@@ -145,7 +145,9 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 
 	eventsNameToID := make(map[string]int32, len(tracee.EventsDefinitions))
 	for id, event := range tracee.EventsDefinitions {
-		eventsNameToID[event.Name] = id
+		if !event.Internal {
+			eventsNameToID[event.Name] = id
+		}
 	}
 
 	for _, f := range filters {

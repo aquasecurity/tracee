@@ -36,6 +36,7 @@ type dependencies struct {
 type EventDefinition struct {
 	ID32Bit      int32
 	Name         string
+	Internal     bool
 	Probes       []probe
 	Dependencies dependencies
 	Sets         []string
@@ -6297,8 +6298,9 @@ var EventsDefinitions = map[int32]EventDefinition{
 		},
 	},
 	PrintSyscallTableEventID: {
-		ID32Bit: sys32undefined,
-		Name:    "print_syscall_table",
+		ID32Bit:  sys32undefined,
+		Name:     "print_syscall_table",
+		Internal: true,
 		Probes: []probe{
 			{event: "security_file_ioctl", attach: kprobe, fn: "trace_tracee_trigger_event"},
 		},
