@@ -35,8 +35,18 @@ func (t *Tracee) handleEvents(ctx gocontext.Context) {
 		errcList = append(errcList, errc)
 	}
 
+	// Process events stage
+	// in this stage we perform event specific logic
+	eventsChan, errc = t.processEvents(ctx, eventsChan)
+	errcList = append(errcList, errc)
+
+	// Derive events stage
+	// In this stage events go through a derivation function
+	eventsChan, errc = t.deriveEvents(ctx, eventsChan)
+	errcList = append(errcList, errc)
+
 	// Sink pipeline stage.
-	errc = t.processEvents(ctx, eventsChan)
+	errc = t.sinkEvents(ctx, eventsChan)
 	errcList = append(errcList, errc)
 
 	// Pipeline started. Waiting for pipeline to complete
@@ -109,7 +119,7 @@ func (t *Tracee) queueEvents(ctx gocontext.Context, in <-chan *trace.Event) (cha
 
 // decodeEvents read the events received from the BPF programs and parse it into trace.Event type
 func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *trace.Event, <-chan error) {
-	out := make(chan *trace.Event)
+	out := make(chan *trace.Event, 10000)
 	errc := make(chan error, 1)
 	go func() {
 		defer close(out)
@@ -193,9 +203,11 @@ func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *trace.Event, 
 	return out, errc
 }
 
-func (t *Tracee) processEvents(ctx gocontext.Context, in <-chan *trace.Event) <-chan error {
+func (t *Tracee) processEvents(ctx gocontext.Context, in <-chan *trace.Event) (<-chan *trace.Event, <-chan error) {
+	out := make(chan *trace.Event, 10000)
 	errc := make(chan error, 1)
 	go func() {
+		defer close(out)
 		defer close(errc)
 		for event := range in {
 			err := t.processEvent(event)
@@ -214,38 +226,42 @@ func (t *Tracee) processEvents(ctx gocontext.Context, in <-chan *trace.Event) <-
 				continue
 			}
 
-			// Derive event before parsing its arguments
-			derivatives := t.deriveEvent(*event)
+			select {
+			case out <- event:
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	return out, errc
+}
 
+func (t *Tracee) sinkEvents(ctx gocontext.Context, in <-chan *trace.Event) <-chan error {
+	errc := make(chan error, 1)
+
+	go func() {
+		for event := range in {
 			// Only emit events requested by the user
 			if t.events[int32(event.EventID)].emit {
 				if t.config.Output.ParseArguments {
-					err = t.parseArgs(event)
+					err := t.parseArgs(event)
 					if err != nil {
 						t.handleError(err)
 						continue
 					}
 				}
-
-				select {
-				case t.config.ChanEvents <- *event:
-					t.stats.EventCount.Increment()
-					event = nil
-				case <-ctx.Done():
-					return
-				}
 			}
 
-			for _, derivative := range derivatives {
-				select {
-				case t.config.ChanEvents <- derivative:
-					t.stats.EventCount.Increment()
-				case <-ctx.Done():
-					return
-				}
+			select {
+			case t.config.ChanEvents <- *event:
+				t.stats.EventCount.Increment()
+				event = nil
+			case <-ctx.Done():
+				return
 			}
 		}
 	}()
+
 	return errc
 }
 

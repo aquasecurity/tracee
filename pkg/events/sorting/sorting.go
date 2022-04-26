@@ -133,7 +133,7 @@ func InitEventSorter() (*EventsChronologicalSorter, error) {
 
 func (sorter *EventsChronologicalSorter) StartPipeline(ctx gocontext.Context, in <-chan *trace.Event) (
 	chan *trace.Event, chan error) {
-	out := make(chan *trace.Event, 1000)
+	out := make(chan *trace.Event, 10000)
 	errc := make(chan error, 1)
 	go sorter.Start(in, out, ctx, errc)
 	return out, errc
