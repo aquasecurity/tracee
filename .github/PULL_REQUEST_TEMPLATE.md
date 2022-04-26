@@ -1,50 +1,57 @@
-## Description
+## Initial Checklist
 
-Please include a summary of the change and which issue is fixed. Please also
-include relevant motivation and context. List any dependencies that are
-required for this change.
+- [ ] There is an issue describing the need for this PR.
+- [ ] Git log contains summary of the change.
+- [ ] Git log contains motivation and context of the change.
+- [ ] If part of an EPIC, PR git log contains EPIC number.
+- [ ] If part of an EPIC, PR was added to EPIC description.
+
+## Description (git log)
+
+Copy and paste the git log here.
 
 Fixes: #issue_number
 
 ## Type of change
 
-Please pick one and delete the others:
-
-- Bug fix (non-breaking change which fixes an issue)
-- New feature (non-breaking change which adds functionality)
-- Breaking change (fix or feature that would cause existing functionality to not work as expected)
+- [ ] Bug fix (non-breaking change fixing an issue).
+- [ ] New feature (non-breaking change adding functionality).
+- [ ] Breaking change (cause existing functionality not to work as expected).
 
 ## How Has This Been Tested?
 
-Please describe the tests that you ran to verify your changes. Provide
-instructions so we can reproduce. Please also list any relevant details for
-your test configuration and enumerate test files being added.
+Tests being included in this PR:
 
 - [ ] Test File A
 - [ ] Test File B
 
-**Manual Test Setup**:
+Reproduce the test by running:
+
+- command 01
+- command 02
 
 ## Final Checklist:
 
+Pick "Bug Fix" or "Feature", delete the other and mark appropriate checks.
+
+- [ ] I have made corresponding changes to the documentation.
 - [ ] My code follows the style guidelines (C and Go) of this project.
 - [ ] I have performed a self-review of my own code.
 - [ ] I have commented all functions/methods created explaining what they do.
 - [ ] I have commented my code, particularly in hard-to-understand areas.
-- [ ] I have made corresponding changes to the documentation.
 - [ ] My changes generate no new warnings.
-- [ ] I have added tests that prove my fix is effective or that my feature works.
+- [ ] I have added tests that prove my fix, or feature, is effective.
 - [ ] New and existing unit tests pass locally with my changes.
-- [ ] Any dependent changes have been merged and published already.
+- [ ] Any dependent changes have been merged and published before.
 
 ## Git Log Checklist:
 
 My commits logs have:
 
-- [ ] Separate subject from body with a blank line.
-- [ ] Limit the subject line to 50 characters.
-- [ ] Capitalize the subject line.
+- [ ] Subject starts with "subsystem|file: description".
 - [ ] Do not end the subject line with a period.
+- [ ] Limit the subject line to 50 characters.
+- [ ] Separate subject from body with a blank line.
 - [ ] Use the imperative mood in the subject line.
 - [ ] Wrap the body at 72 characters.
 - [ ] Use the body to explain what and why instead of how.
