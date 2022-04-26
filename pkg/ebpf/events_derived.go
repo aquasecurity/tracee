@@ -30,6 +30,12 @@ func (t *Tracee) initEventDerivationMap() error {
 		PrintSyscallTableEventID: {
 			DetectHookedSyscallsEventID: deriveDetectHookedSyscall(t),
 		},
+		DnsRequest: {
+			NetPacket: deriveNetPacket(),
+		},
+		DnsResponse: {
+			NetPacket: deriveNetPacket(),
+		},
 	}
 
 	return nil
@@ -169,6 +175,27 @@ func deriveDetectHookedSyscall(t *Tracee) deriveFn {
 		de.ReturnValue = 0
 		de.Args = []trace.Argument{
 			{ArgMeta: trace.ArgMeta{Name: "hooked_syscalls", Type: "hookedSyscallData[]"}, Value: hookedSyscallData},
+		}
+		de.ArgsNum = 1
+		return de, true, nil
+	}
+}
+
+// deriveNetPacket driving net_packet from net events with 'metadata' arg
+func deriveNetPacket() deriveFn {
+	return func(event trace.Event) (trace.Event, bool, error) {
+		metadataArg := getEventArg(&event, "metadata")
+		if metadataArg == nil {
+			return trace.Event{}, false, fmt.Errorf("couldn't find argument name metadata in event %s", event.EventName)
+		}
+
+		def := EventsDefinitions[NetPacket]
+		de := event
+		de.EventID = int(NetPacket)
+		de.EventName = def.Name
+		de.ReturnValue = 0
+		de.Args = []trace.Argument{
+			*metadataArg,
 		}
 		de.ArgsNum = 1
 		return de, true, nil

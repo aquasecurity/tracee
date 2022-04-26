@@ -5023,6 +5023,7 @@ static __always_inline bool skb_revalidate_data(struct __sk_buff *skb, uint8_t *
     return true;
 }
 
+// set protocol appropriate event_id of net_packet_t
 void set_net_event_id(net_packet_t *pkt){
     const int dns_port = 53;
     if (pkt->protocol == IPPROTO_UDP && pkt->dst_port == dns_port){
@@ -5033,6 +5034,7 @@ void set_net_event_id(net_packet_t *pkt){
     }
 }
 
+// decide if payload of packet should be submitted, for traced events
 bool should_submit_payload(net_packet_t *pkt){
     if (pkt->event_id == DNS_REQUEST || pkt->event_id == DNS_RESPONSE)
         return true;

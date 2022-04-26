@@ -246,28 +246,31 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 				if err == nil && ifaceIdx >= 0 {
 					// this packet should be traced. i.e. output the event if chosen by the user.
 
-					if t.events[netEventMetadata.NetEventId].emit {
-						evt, err := protocolProcessor(networkThread, netEventMetadata, netDecoder)
-						if err != nil {
-							t.handleError(err)
-							continue
-						}
+					evt, err := protocolProcessor(networkThread, netEventMetadata, netDecoder)
+					if err != nil {
+						t.handleError(err)
+						continue
+					}
 
-						// output the event
+					// derive events chosen by the user
+					derivatives := t.deriveEvent(evt)
+					for _, derivative := range derivatives {
+						// output derived events
+						select {
+						case t.config.ChanEvents <- derivative:
+							t.stats.NetEvCount.Increment()
+						case <-ctx.Done():
+							return
+						}
+					}
+
+					if t.events[netEventMetadata.NetEventId].emit {
+						// output origin event
 						select {
 						case t.config.ChanEvents <- evt:
 							t.stats.NetEvCount.Increment()
 						case <-ctx.Done():
 							return
-						}
-					} else {
-						// the packet structure wasn't fully decoded from the buffer.
-						// update the cursor to the end of the packet structure - so the rest of the buffer could
-						// be decoded properly.
-						err = netDecoder.UpdateCursor(int(bufferdecoder.NetPacketEvent{}.GetSizeBytes()))
-						if err != nil {
-							t.handleError(err)
-							continue
 						}
 					}
 				}
@@ -378,6 +381,7 @@ func getPacketBytes(netDecoder *bufferdecoder.EbpfDecoder, packetLength uint32) 
 	return packetBytes, err
 }
 
+// isNetEvent checks if eventId is in net events IDs range
 func isNetEvent(eventId int32) bool {
 	if eventId >= NetPacket && eventId < MaxNetEventID {
 		return true
@@ -385,6 +389,7 @@ func isNetEvent(eventId int32) bool {
 	return false
 }
 
+// protocolProcessor calls handlers of the appropriate protocol event
 func protocolProcessor(networkThread procinfo.ProcessCtx, evtMeta bufferdecoder.NetEventMetadata, decoder *bufferdecoder.EbpfDecoder) (trace.Event, error) {
 
 	eventName := EventsDefinitions[evtMeta.NetEventId].Name
@@ -449,6 +454,7 @@ func appendPktMetadataArg(event *trace.Event, netPacket bufferdecoder.NetPacketE
 	eventAppendArg(event, metedataArg)
 }
 
+// dnsRequestProtocolHandler decodes DNS requests from packet and appends the DNS argument to the event
 func dnsRequestProtocolHandler(decoder *bufferdecoder.EbpfDecoder, evt *trace.Event) error {
 	requests := make([]bufferdecoder.DnsQueryData, 0, 0)
 	err := decoder.DecodeDnsQueryArray(&requests)
@@ -468,13 +474,14 @@ func appendDnsRequestArgs(event *trace.Event, requests *[]bufferdecoder.DnsQuery
 	eventAppendArg(event, questionArg)
 }
 
+// dnsResponseProtocolHandler decodes DNS responses from packet and appends the DNS argument to the event
 func dnsResponseProtocolHandler(decoder *bufferdecoder.EbpfDecoder, evt *trace.Event) error {
-	respones := make([]bufferdecoder.DnsResponseData, 0, 0)
-	err := decoder.DecodeDnsResponseData(&respones)
+	responses := make([]bufferdecoder.DnsResponseData, 0, 0)
+	err := decoder.DecodeDnsResponseData(&responses)
 	if err != nil {
 		return err
 	}
-	appendDnsResponseArgs(evt, &respones)
+	appendDnsResponseArgs(evt, &responses)
 	return nil
 }
 

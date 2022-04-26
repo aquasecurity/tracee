@@ -121,6 +121,19 @@ func (decoder *EbpfDecoder) DecodeNetDebugEvent(netDebugEvent *NetDebugEvent) er
 	return nil
 }
 
+// getDnsLayerFromBytes creates a packet from packetBytes and returns DNS layer
+func getDnsLayerFromBytes(packetBytes []byte) (*layers.DNS, error) {
+	packet := gopacket.NewPacket(packetBytes, layers.LayerTypeEthernet, gopacket.Default)
+	if packet == nil {
+		return nil, fmt.Errorf("couldn't parse the packet")
+	}
+	dnsLayer, ok := packet.Layer(layers.LayerTypeDNS).(*layers.DNS)
+	if !ok {
+		return nil, fmt.Errorf("couldn't find the DNS layer in packet")
+	}
+	return dnsLayer, nil
+}
+
 type DnsQueryData struct {
 	Query      string `json:"query"`
 	QueryType  string `json:"queryType"`
@@ -136,16 +149,13 @@ func parseDnsQuestion(question layers.DNSQuestion) DnsQueryData {
 	return request
 }
 
+// DecodeDnsQueryArray gets DNS layer from packet and parses DNS questions from it
 func (decoder *EbpfDecoder) DecodeDnsQueryArray(questions *[]DnsQueryData) error {
-	offset := decoder.cursor
-	packet := gopacket.NewPacket(decoder.buffer[offset:], layers.LayerTypeEthernet, gopacket.Default)
-	if packet == nil {
-		return fmt.Errorf("couldnt parse the packet")
+	dnsLayer, err := getDnsLayerFromBytes(decoder.buffer[decoder.cursor:])
+	if err != nil {
+		return err
 	}
-	dnsLayer, ok := packet.Layer(layers.LayerTypeDNS).(*layers.DNS)
-	if !ok {
-		return fmt.Errorf("couldnt find the dns layer")
-	}
+
 	for _, question := range dnsLayer.Questions {
 		*questions = append(*questions, parseDnsQuestion(question))
 	}
@@ -163,15 +173,11 @@ type DnsResponseData struct {
 	DnsAnswer []DnsAnswer  `json:"dnsAnswer"`
 }
 
+// DecodeDnsResponseData gets DNS layer from packet and parses DNS responses from it
 func (decoder *EbpfDecoder) DecodeDnsResponseData(responses *[]DnsResponseData) error {
-	offset := decoder.cursor
-	packet := gopacket.NewPacket(decoder.buffer[offset:], layers.LayerTypeEthernet, gopacket.Default)
-	if packet == nil {
-		return fmt.Errorf("couldnt find udp layer1")
-	}
-	dnsLayer := packet.Layer(layers.LayerTypeDNS).(*layers.DNS)
-	if dnsLayer == nil {
-		return fmt.Errorf("couldnt find dns layer")
+	dnsLayer, err := getDnsLayerFromBytes(decoder.buffer[decoder.cursor:])
+	if err != nil {
+		return err
 	}
 
 	for _, question := range dnsLayer.Questions {
