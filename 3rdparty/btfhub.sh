@@ -45,7 +45,7 @@ branch_clean() {
     cd ${1} || die "could not change dirs"
 
     # small sanity check
-    [ ! -f ./README.md ] && die "$(basename $(pwd)) not a repo dir"
+    [ ! -d ./.git ] && die "$(basename $(pwd)) not a repo dir"
 
     git fetch -a || die "could not fetch ${1}"  # make sure its updated
     git clean -fdX                              # clean leftovers

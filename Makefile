@@ -462,17 +462,16 @@ TRACEE_EBPF_SRC = $(shell find $(TRACEE_EBPF_SRC_DIRS) -type f -name '*.go' ! -n
 tracee-ebpf: $(OUTPUT_DIR)/tracee-ebpf
 
 $(OUTPUT_DIR)/tracee-ebpf: \
-	.checkver_$(CMD_GO) \
-	.checklib_$(LIB_ELF) \
-	.checklib_$(LIB_ZLIB) \
 	$(OUTPUT_DIR)/tracee.bpf.core.o \
 	$(TRACEE_EBPF_SRC) \
-	./embedded-ebpf.go
+	./embedded-ebpf.go \
+	| .checkver_$(CMD_GO) \
+	.checklib_$(LIB_ELF) \
+	.checklib_$(LIB_ZLIB) \
+	btfhub
 #
 	$(MAKE) $(OUTPUT_DIR)/btfhub
-ifeq ($(BTFHUB), 1)
 	$(MAKE) btfhub
-endif
 	$(GO_ENV_EBPF) $(CMD_GO) build \
 		-tags $(GO_TAGS_EBPF) \
 		-ldflags="-w \
