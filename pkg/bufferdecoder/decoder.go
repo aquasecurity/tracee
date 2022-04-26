@@ -37,15 +37,6 @@ func (decoder *EbpfDecoder) ReadAmountBytes() int {
 	return decoder.cursor
 }
 
-// UpdateCursor increase the cursor value by 'amount', without decoding the buffer.
-func (decoder *EbpfDecoder) UpdateCursor(amount int) error {
-	if len(decoder.buffer[decoder.cursor:]) < amount {
-		return fmt.Errorf("can't update cursor: new value exeeds buffer length")
-	}
-	decoder.cursor += amount
-	return nil
-}
-
 // DecodeContext translates data from the decoder buffer, starting from the decoder cursor, to bufferdecoder.Context struct.
 func (decoder *EbpfDecoder) DecodeContext(ctx *Context) error {
 	offset := decoder.cursor
