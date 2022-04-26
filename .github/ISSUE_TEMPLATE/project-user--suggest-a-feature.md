@@ -1,7 +1,7 @@
 ---
 name: 'Project User: Suggest a Feature'
 about: Feature requests opened by Project Users
-title: ''
+title: "[RFE] "
 labels: potential-feature
 assignees: ''
 
@@ -15,11 +15,11 @@ assignees: ''
 
 ## Feature description
 
-Please describe the feature here. Describe the use case you have that would require the feature as well.
+This feature is about...
 
 ## Context
 
-Please provide any relevant information about your setup. This is important in case the issue is not reproducible except for under certain conditions.
+My current environment, where I would like the feature to work, is:
 
 * Linux version:
 * Linux kernel version:
@@ -27,6 +27,4 @@ Please provide any relevant information about your setup. This is important in c
 * LLVM version:
 * Golang version:
 
-## Additional Information
-
-Please include any other relevant information, files or logs here.
+## Additional Information (feature drawings, files, logs, etc)

@@ -1,7 +1,7 @@
 ---
 name: 'Project User: Open a Bug'
 about: Potential Bugs opened by Project Users
-title: ''
+title: "[BUG] "
 labels: potential-bug
 assignees: ''
 
@@ -9,26 +9,27 @@ assignees: ''
 
 ## Prerequisites
 
+- [ ] I can reproduce the issue in latest released version.
+- [ ] I can reproduce the issue in development version (from source tree).
 - [ ] I checked the documentation and found no answer.
 - [ ] There isn't an issue describing the bug.
-- [ ] I can reproduce the issue in latest released version.
-- [ ] I can reproduce the issue in development version.
 
 ## Bug description
 
-Please describe the bug here. Describe the cmdline you are using and the error you are facing.
+This is how I'm executing tracee (cmdline):
+
+This is the error I'm getting:
 
 ## Steps to reproduce
 
-Please provide detailed steps for reproducing the bug.
+Steps to reproduce the issue:
 
 1. step 1
 2. step 2
-3. you get the following error...
 
 ## Context
 
-Please provide any relevant information about your setup. This is important in case the issue is not reproducible except for under certain conditions.
+Relevant information about my setup:
 
 * Linux version:
 * Linux kernel version:
@@ -36,6 +37,4 @@ Please provide any relevant information about your setup. This is important in c
 * LLVM version:
 * Golang version:
 
-## Additional Information
-
-Please include any other relevant information, files or logs here.
+## Additional Information (files, logs, etc)
