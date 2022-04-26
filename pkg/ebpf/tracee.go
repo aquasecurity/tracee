@@ -1266,6 +1266,8 @@ func findInList(element string, list *[]string) (int, error) {
 	}
 	return 0, fmt.Errorf("element: %s not found", element)
 }
+
+// shouldTraceNetEvents returns true if any net event should be submitted to user-space
 func (t *Tracee) shouldTraceNetEvents() bool {
 	for i := NetPacket; i < MaxNetEventID; i++ {
 		if t.events[i].submit {
