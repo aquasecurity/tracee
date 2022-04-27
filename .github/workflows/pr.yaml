@@ -163,135 +163,35 @@ jobs:
             -tracee-signatures "TRC-2"
 
   #
-  # Tests TRC-2 with selected kernels.
-  # Runs on a PR touching eBPF source codes.
+  # Test: TRC-2 with selected kernels.
   #
-  # TODO: Automate tracee-test-kernels generation through workflows.
-  # TODO: Change dockerhub -> github repository once we're sure this is good.
-  #
-
-  #
-  # TRC-2 v4.19 (stable)
-  #
-  run-core-test-trc2-v419-stable:
-    name: "TRC-2 v4.19 (stable)"
+  CO-RE:
+    runs-on: ubuntu-20.04
     needs:
       - smoke-test-core
-    runs-on: ubuntu-latest
-    env:
-      TEST_NAME: TRC-2
+    strategy:
+      fail-fast: false
+      matrix:
+        signature:
+          - "TRC-2"
+        kernel:
+          - "4.19.238-stable"
+          - "5.4.189-stable"
+          - "5.8.18-ubuntu"
+          - "5.10.111-stable"
+          - "5.13.19-ubuntu"
     steps:
-      #
       - name: "Checkout"
-        uses: actions/checkout@main
+        uses: actions/checkout@v2
         with:
           submodules: true
-      #
       - name: "Pull test container image"
         run: |
           docker image pull rafaeldtinoco/tracee-test-kernels:latest
-      #
-      - name: "v4.19 (4.19.238-stable)"
+      - name: "Run tests"
         run: |
-          kernel_version=4.19.238-stable
-          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
-  #
-  # TRC-2 v5.4 (stable)
-  #
-  run-core-test-trc2-v54-stable:
-    name: "TRC-2 v5.4 (stable)"
-    needs:
-      - smoke-test-core
-    runs-on: ubuntu-latest
-    env:
-      TEST_NAME: TRC-2
-    steps:
-      #
-      - name: "Checkout"
-        uses: actions/checkout@main
-        with:
-          submodules: true
-      #
-      - name: "Pull test container image"
-        run: |
-          docker image pull rafaeldtinoco/tracee-test-kernels:latest
-      #
-      - name: "v5.4 (5.4.189-stable)"
-        run: |
-          kernel_version=5.4.189-stable
-          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
-  #
-  # TRC-2 v5.8 (ubuntu)
-  #
-  run-core-test-trc2-v58-ubuntu:
-    name: "TRC-2 v5.8 (ubuntu)"
-    needs:
-      - smoke-test-core
-    runs-on: ubuntu-latest
-    env:
-      TEST_NAME: TRC-2
-    steps:
-      #
-      - name: "Checkout"
-        uses: actions/checkout@main
-        with:
-          submodules: true
-      #
-      - name: "Pull test container image"
-        run: |
-          docker image pull rafaeldtinoco/tracee-test-kernels:latest
-      #
-      - name: "v5.8 (5.8.18-ubuntu)"
-        run: |
-          kernel_version=5.8.18-ubuntu
-          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
-  #
-  # TRC-2 v5.10 (stable)
-  #
-  run-core-test-trc2-v510-stable:
-    name: "TRC-2 v5.10 (stable)"
-    needs:
-      - smoke-test-core
-    runs-on: ubuntu-latest
-    env:
-      TEST_NAME: TRC-2
-    steps:
-      #
-      - name: "Checkout"
-        uses: actions/checkout@main
-        with:
-          submodules: true
-      #
-      - name: "Pull test container image"
-        run: |
-          docker image pull rafaeldtinoco/tracee-test-kernels:latest
-      #
-      - name: "v5.10 (5.10.111-stable)"
-        run: |
-          kernel_version=5.10.111-stable
-          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
-  #
-  # TRC-2 v5.13 (ubuntu)
-  #
-  run-core-test-trc2-v513-ubuntu:
-    name: "TRC-2 v5.13 (ubuntu)"
-    needs:
-      - smoke-test-core
-    runs-on: ubuntu-latest
-    env:
-      TEST_NAME: TRC-2
-    steps:
-      #
-      - name: "Checkout"
-        uses: actions/checkout@main
-        with:
-          submodules: true
-      #
-      - name: "Pull test container image"
-        run: |
-          docker image pull rafaeldtinoco/tracee-test-kernels:latest
-      #
-      - name: "v5.13 (5.13.19-ubuntu)"
-        run: |
-          kernel_version=5.13.19-ubuntu
-          docker run --rm --privileged -v $(pwd):/tracee:rw -e kvm_accel="tcg" -e kern_version="$kernel_version" -e test_name="$TEST_NAME" -t rafaeldtinoco/tracee-test-kernels:latest
+          docker run --rm --privileged -v $(pwd):/tracee:rw \
+            -e kvm_accel="tcg" \
+            -e kern_version=${{ matrix.kernel }} \
+            -e test_name=${{ matrix.signature }} \
+            -t rafaeldtinoco/tracee-test-kernels:latest
