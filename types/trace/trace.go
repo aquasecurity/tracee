@@ -177,6 +177,11 @@ type SlimCred struct {
 	CapAmbient     uint64 /* Ambient capability set */
 }
 
+type HookedSymbolData struct {
+	SymbolName  string
+	ModuleOwner string
+}
+
 // MemProtAlert is an enum of possible messages that can be sent by an event to pass some extra information about the event.
 type MemProtAlert uint32
 
