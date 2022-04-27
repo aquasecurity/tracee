@@ -281,7 +281,7 @@ func New(cfg Config) (*Tracee, error) {
 		t.events[MprotectEventID] = eventConfig{}
 		t.events[MemProtAlertEventID] = eventConfig{}
 	}
-	if t.config.Capture.NetIfaces != nil || t.config.Filter.NetFilter.InterfacesToTrace != nil || cfg.Debug {
+	if t.config.Capture.NetIfaces != nil || len(t.config.Filter.NetFilter.InterfacesToTrace) > 0 || cfg.Debug {
 		t.events[SecuritySocketBindEventID] = eventConfig{}
 	}
 
@@ -501,7 +501,7 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	if t.containers.IsCgroupV1() {
 		cOptVal = cOptVal | optCgroupV1
 	}
-	if t.config.Capture.NetIfaces != nil || t.config.Filter.NetFilter.InterfacesToTrace != nil || t.config.Debug {
+	if t.config.Capture.NetIfaces != nil || len(t.config.Filter.NetFilter.InterfacesToTrace) > 0 || t.config.Debug {
 		cOptVal = cOptVal | optProcessInfo
 		t.config.ProcessInfo = true
 	}
