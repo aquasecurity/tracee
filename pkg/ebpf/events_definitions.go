@@ -85,9 +85,9 @@ const (
 	KprobeAttachEventID
 	CallUsermodeHelperEventID
 	DirtyPipeSpliceEventID
-	DebugfsCreateFile
+	DebugfsCreateFileEventID
 	PrintSyscallTableEventID
-	DebugfsCreateDir
+	DebugfsCreateDirEventID
 	MaxCommonEventID
 )
 
@@ -6283,7 +6283,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "int", Name: "wait"},
 		},
 	},
-	DebugfsCreateFile: {
+	DebugfsCreateFileEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "debugfs_create_file",
 		Probes: []probe{
@@ -6321,7 +6321,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "HookedSyscallData[]", Name: "hooked_syscalls"},
 		},
 	},
-	DebugfsCreateDir: {
+	DebugfsCreateDirEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "debugfs_create_dir",
 		Probes: []probe{
