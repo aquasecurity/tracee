@@ -18,6 +18,7 @@ jobs:
         kernel:
           - "4.19.238-stable"
           - "5.4.166-ubuntu+"
+          - "5.4.188-amzn2"
           - "5.4.189-stable"
           - "5.8.18-ubuntu"
           - "5.10.111-stable"
@@ -43,4 +44,5 @@ jobs:
             -e kvm_accel="tcg" \
             -e kern_version=${{ matrix.kernel }} \
             -e test_name=${{ matrix.signature }} \
+            -e is_noncore=0 \
             -t rafaeldtinoco/tracee-test-kernels:latest
