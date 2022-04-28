@@ -16,7 +16,7 @@ import (
 // argument and may produce a new event if relevant.
 // It returns a derived or empty event, depending on successful derivation,
 // a bool indicating if an event was derived, and an error if one occurred.
-type deriveFn func(trace.Event) (trace.Event, bool, error)
+type deriveFn func(trace.Event) ([]trace.Event, bool, error)
 
 // Initialize the eventDerivations map.
 // Here we declare for each Event (represented through it's ID)
@@ -62,7 +62,7 @@ func (t *Tracee) deriveEvent(event trace.Event) []trace.Event {
 		if err != nil {
 			t.handleError(fmt.Errorf("failed to derive event %d: %v", id, err))
 		} else if derived {
-			derivatives = append(derivatives, derivative)
+			derivatives = append(derivatives, derivative...)
 		}
 	}
 
@@ -108,10 +108,10 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 //Receives a tracee object as a closure argument to track it's containers
 //If it receives a cgroup_mkdir event, it can derive a container_create event from it
 func deriveContainerCreate(t *Tracee) deriveFn {
-	return func(event trace.Event) (trace.Event, bool, error) {
+	return func(event trace.Event) ([]trace.Event, bool, error) {
 		cgroupId, err := parsing.GetEventArgUint64Val(&event, "cgroup_id")
 		if err != nil {
-			return trace.Event{}, false, err
+			return []trace.Event{}, false, err
 		}
 
 		def := EventsDefinitions[ContainerCreateEventID]
@@ -133,20 +133,20 @@ func deriveContainerCreate(t *Tracee) deriveFn {
 			}
 			de.ArgsNum = len(de.Args)
 
-			return de, true, nil
+			return []trace.Event{de}, true, nil
 		}
 
-		return trace.Event{}, false, nil
+		return []trace.Event{}, false, nil
 	}
 }
 
 //Receives a tracee object as a closure argument to track it's containers
 //If it receives a cgroup_rmdir event, it can derive a container_remove event from it
 func deriveContainerRemoved(t *Tracee) deriveFn {
-	return func(event trace.Event) (trace.Event, bool, error) {
+	return func(event trace.Event) ([]trace.Event, bool, error) {
 		cgroupId, err := parsing.GetEventArgUint64Val(&event, "cgroup_id")
 		if err != nil {
-			return trace.Event{}, false, err
+			return []trace.Event{}, false, err
 		}
 
 		def := EventsDefinitions[ContainerRemoveEventID]
@@ -162,22 +162,22 @@ func deriveContainerRemoved(t *Tracee) deriveFn {
 			}
 			de.ArgsNum = len(de.Args)
 
-			return de, true, nil
+			return []trace.Event{de}, true, nil
 		}
 
-		return trace.Event{}, false, nil
+		return []trace.Event{}, false, nil
 	}
 }
 
 func deriveDetectHookedSyscall(t *Tracee) deriveFn {
-	return func(event trace.Event) (trace.Event, bool, error) {
+	return func(event trace.Event) ([]trace.Event, bool, error) {
 		syscallAddresses, err := parsing.GetEventArgUlongArrVal(&event, "syscalls_addresses")
 		if err != nil {
-			return trace.Event{}, false, fmt.Errorf("error parsing syscalls_numbers arg: %v", err)
+			return []trace.Event{}, false, fmt.Errorf("error parsing syscalls_numbers arg: %v", err)
 		}
 		hookedSyscall, err := analyzeHookedAddresses(syscallAddresses, t.kernelSymbols)
 		if err != nil {
-			return trace.Event{}, false, fmt.Errorf("error parsing analyzing hooked syscalls addresses arg: %v", err)
+			return []trace.Event{}, false, fmt.Errorf("error parsing analyzing hooked syscalls addresses arg: %v", err)
 		}
 		de := event
 		de.EventID = int(HookedSyscallsEventID)
@@ -187,16 +187,16 @@ func deriveDetectHookedSyscall(t *Tracee) deriveFn {
 			{ArgMeta: trace.ArgMeta{Name: "hooked_syscalls", Type: "[]trace.HookedSymbolData"}, Value: hookedSyscall},
 		}
 		de.ArgsNum = 1
-		return de, true, nil
+		return []trace.Event{de}, true, nil
 	}
 }
 
 // deriveNetPacket derives net_packet from net events with 'metadata' arg
 func deriveNetPacket() deriveFn {
-	return func(event trace.Event) (trace.Event, bool, error) {
+	return func(event trace.Event) ([]trace.Event, bool, error) {
 		metadataArg := getEventArg(&event, "metadata")
 		if metadataArg == nil {
-			return trace.Event{}, false, fmt.Errorf("couldn't find argument name metadata in event %s", event.EventName)
+			return nil, false, fmt.Errorf("couldn't find argument name metadata in event %s", event.EventName)
 		}
 
 		def := EventsDefinitions[NetPacket]
@@ -208,7 +208,7 @@ func deriveNetPacket() deriveFn {
 			*metadataArg,
 		}
 		de.ArgsNum = 1
-		return de, true, nil
+		return []trace.Event{de}, true, nil
 	}
 }
 
@@ -258,11 +258,11 @@ var seq_ops_functions = [4]string{
 	"seq_next",
 }
 
-func deriveHookedSeqOps(t *Tracee) deriveFn {
-	return func(event trace.Event) (trace.Event, bool, error) {
+func deriveHookedSeqOps(t *Tracee) derived.DeriveFn {
+	return func(event trace.Event) ([]trace.Event, bool, error) {
 		seqOpsArr, err := parsing.GetEventArgUlongArrVal(&event, "net_seq_ops")
 		if err != nil || len(seqOpsArr) < 1 {
-			return trace.Event{}, false, err
+			return []trace.Event{}, false, err
 		}
 		seqOpsName := parseSymbol(seqOpsArr[0], t.kernelSymbols).Name
 		hookedSeqOps := make([]trace.HookedSymbolData, 0)
