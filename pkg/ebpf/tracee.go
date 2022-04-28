@@ -209,14 +209,15 @@ func (t *Tracee) handleEventsDependencies(e int32, initReq *RequiredInitValues) 
 		initReq.kallsyms = true
 	}
 	for _, dependentEvent := range eDependencies.events {
-		if _, ok := t.events[dependentEvent.eventID]; !ok {
-			var ec eventConfig
-			if dependentEvent.shouldSubmit {
-				ec.submit = true
-			}
-			t.events[dependentEvent.eventID] = ec
+		ec, ok := t.events[dependentEvent.eventID]
+		if !ok {
+			ec = eventConfig{}
 			t.handleEventsDependencies(dependentEvent.eventID, initReq)
 		}
+		if dependentEvent.shouldSubmit {
+			ec.submit = true
+		}
+		t.events[dependentEvent.eventID] = ec
 	}
 }
 
