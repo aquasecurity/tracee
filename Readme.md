@@ -43,7 +43,7 @@ Before you proceed, make sure you follow the [minimum requirements for running T
      -v /usr/src:/usr/src:ro \
      -v /lib/modules:/lib/modules:ro \
      -v /tmp/tracee:/tmp/tracee:rw \
-     aquasec/tracee:full-latest
+     aquasec/tracee:full
    ```
 
 > The default (latest) image is **lightweight** and **portable**. It is
