@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
+	"github.com/aquasecurity/tracee/pkg/events/parsing"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -36,11 +37,11 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 				cgroupId := uint64(event.CgroupID)
 				// cgroup_mkdir event: need the cgroupId from its argument
 				if event.EventID == int(CgroupMkdirEventID) {
-					cgroupId, _ = getEventArgUint64Val(event, "cgroup_id")
+					cgroupId, _ = parsing.GetEventArgUint64Val(event, "cgroup_id")
 				}
 				// cgroup_rmdir: need to clean attempt so cgroupId can be reused
 				if event.EventID == int(CgroupRmdirEventID) {
-					cgroupId, _ = getEventArgUint64Val(event, "cgroup_id")
+					cgroupId, _ = parsing.GetEventArgUint64Val(event, "cgroup_id")
 					attemptedMutex.Lock()
 					delete(attempted, cgroupId)
 					attemptedMutex.Unlock()

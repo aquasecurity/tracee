@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
+	"github.com/aquasecurity/tracee/pkg/events/parsing"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -112,7 +113,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 	case VfsWriteEventID, VfsWritevEventID, __KernelWriteEventID:
 		//capture written files
 		if t.config.Capture.FileWrite {
-			filePath, err := getEventArgStringVal(event, "pathname")
+			filePath, err := parsing.GetEventArgStringVal(event, "pathname")
 			if err != nil {
 				return fmt.Errorf("error parsing vfs_write args: %v", err)
 			}
@@ -120,11 +121,11 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			if filePath == "" || filePath[0] != '/' {
 				return nil
 			}
-			dev, err := getEventArgUint32Val(event, "dev")
+			dev, err := parsing.GetEventArgUint32Val(event, "dev")
 			if err != nil {
 				return fmt.Errorf("error parsing vfs_write args: %v", err)
 			}
-			inode, err := getEventArgUint64Val(event, "inode")
+			inode, err := parsing.GetEventArgUint64Val(event, "inode")
 			if err != nil {
 				return fmt.Errorf("error parsing vfs_write args: %v", err)
 			}
@@ -162,7 +163,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 		//capture executed files
 		if t.config.Capture.Exec || t.config.Output.ExecHash {
-			filePath, err := getEventArgStringVal(event, "pathname")
+			filePath, err := parsing.GetEventArgStringVal(event, "pathname")
 			if err != nil {
 				return fmt.Errorf("error parsing sched_process_exec args: %v", err)
 			}
@@ -176,7 +177,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			for _, pid := range pids { // will break on success
 				err = nil
 				sourceFilePath := fmt.Sprintf("/proc/%s/root%s", strconv.Itoa(int(pid)), filePath)
-				sourceFileCtime, err := getEventArgUint64Val(event, "ctime")
+				sourceFileCtime, err := parsing.GetEventArgUint64Val(event, "ctime")
 				if err != nil {
 					return fmt.Errorf("error parsing sched_process_exec args: %v", err)
 				}
@@ -257,31 +258,31 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 	case SchedProcessForkEventID:
 		if t.config.ProcessInfo {
-			hostTid, err := getEventArgInt32Val(event, "child_tid")
+			hostTid, err := parsing.GetEventArgInt32Val(event, "child_tid")
 			if err != nil {
 				return err
 			}
-			hostPid, err := getEventArgInt32Val(event, "child_pid")
+			hostPid, err := parsing.GetEventArgInt32Val(event, "child_pid")
 			if err != nil {
 				return err
 			}
-			pid, err := getEventArgInt32Val(event, "child_ns_pid")
+			pid, err := parsing.GetEventArgInt32Val(event, "child_ns_pid")
 			if err != nil {
 				return err
 			}
-			ppid, err := getEventArgInt32Val(event, "parent_ns_pid")
+			ppid, err := parsing.GetEventArgInt32Val(event, "parent_ns_pid")
 			if err != nil {
 				return err
 			}
-			hostPpid, err := getEventArgInt32Val(event, "parent_pid")
+			hostPpid, err := parsing.GetEventArgInt32Val(event, "parent_pid")
 			if err != nil {
 				return err
 			}
-			tid, err := getEventArgInt32Val(event, "child_ns_tid")
+			tid, err := parsing.GetEventArgInt32Val(event, "child_ns_tid")
 			if err != nil {
 				return err
 			}
-			startTime, err := getEventArgUint64Val(event, "start_time")
+			startTime, err := parsing.GetEventArgUint64Val(event, "start_time")
 			if err != nil {
 				return err
 			}
@@ -302,15 +303,15 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			t.procInfo.UpdateElement(int(hostTid), processData)
 		}
 	case CgroupMkdirEventID:
-		cgroupId, err := getEventArgUint64Val(event, "cgroup_id")
+		cgroupId, err := parsing.GetEventArgUint64Val(event, "cgroup_id")
 		if err != nil {
 			return fmt.Errorf("error parsing cgroup_mkdir args: %w", err)
 		}
-		path, err := getEventArgStringVal(event, "cgroup_path")
+		path, err := parsing.GetEventArgStringVal(event, "cgroup_path")
 		if err != nil {
 			return fmt.Errorf("error parsing cgroup_mkdir args: %w", err)
 		}
-		hId, err := getEventArgUint32Val(event, "hierarchy_id")
+		hId, err := parsing.GetEventArgUint32Val(event, "hierarchy_id")
 		if err != nil {
 			return fmt.Errorf("error parsing cgroup_mkdir args: %w", err)
 		}
@@ -323,7 +324,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 
 	case CgroupRmdirEventID:
-		cgroupId, err := getEventArgUint64Val(event, "cgroup_id")
+		cgroupId, err := parsing.GetEventArgUint64Val(event, "cgroup_id")
 		if err != nil {
 			return fmt.Errorf("error parsing cgroup_rmdir args: %w", err)
 		}
@@ -335,7 +336,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			}
 		}
 
-		hId, err := getEventArgUint32Val(event, "hierarchy_id")
+		hId, err := parsing.GetEventArgUint32Val(event, "hierarchy_id")
 		if err != nil {
 			return fmt.Errorf("error parsing cgroup_mkdir args: %w", err)
 		}
@@ -351,7 +352,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 
 	case HookedProcFopsEventID:
-		fopsAddresses, err := getEventArgUlongArrVal(event, "hooked_fops_pointers")
+		fopsAddresses, err := parsing.GetEventArgUlongArrVal(event, "hooked_fops_pointers")
 		if err != nil || fopsAddresses == nil {
 			return fmt.Errorf("error parsing hooked_proc_fops args: %w", err)
 		}
@@ -382,71 +383,6 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 	}
 
 	return nil
-}
-
-func getEventArgStringVal(event *trace.Event, argName string) (string, error) {
-	for _, arg := range event.Args {
-		if arg.Name == argName {
-			val, ok := arg.Value.(string)
-			if !ok {
-				return "", fmt.Errorf("argument %s is not of type string", argName)
-			}
-			return val, nil
-		}
-	}
-	return "", fmt.Errorf("argument %s not found", argName)
-}
-
-func getEventArgUint64Val(event *trace.Event, argName string) (uint64, error) {
-	for _, arg := range event.Args {
-		if arg.Name == argName {
-			val, ok := arg.Value.(uint64)
-			if !ok {
-				return 0, fmt.Errorf("argument %s is not of type uint64", argName)
-			}
-			return val, nil
-		}
-	}
-	return 0, fmt.Errorf("argument %s not found", argName)
-}
-
-func getEventArgUlongArrVal(event *trace.Event, argName string) ([]uint64, error) {
-	for _, arg := range event.Args {
-		if arg.Name == argName {
-			val, ok := arg.Value.([]uint64)
-			if !ok {
-				return nil, fmt.Errorf("argument %s is not of type ulong array", argName)
-			}
-			return val, nil
-		}
-	}
-	return nil, fmt.Errorf("argument %s not found", argName)
-}
-
-func getEventArgUint32Val(event *trace.Event, argName string) (uint32, error) {
-	for _, arg := range event.Args {
-		if arg.Name == argName {
-			val, ok := arg.Value.(uint32)
-			if !ok {
-				return 0, fmt.Errorf("argument %s is not of type uint32", argName)
-			}
-			return val, nil
-		}
-	}
-	return 0, fmt.Errorf("argument %s not found", argName)
-}
-
-func getEventArgInt32Val(event *trace.Event, argName string) (int32, error) {
-	for _, arg := range event.Args {
-		if arg.Name == argName {
-			val, ok := arg.Value.(int32)
-			if !ok {
-				return 0, fmt.Errorf("argument %s is not of type int32", argName)
-			}
-			return val, nil
-		}
-	}
-	return 0, fmt.Errorf("argument %s not found", argName)
 }
 
 func (t *Tracee) updateProfile(sourceFilePath string, executionTs uint64) {

@@ -6,6 +6,9 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
+	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/ebpf/events/derived"
+	"github.com/aquasecurity/tracee/pkg/events/parsing"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -106,7 +109,7 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 //If it receives a cgroup_mkdir event, it can derive a container_create event from it
 func deriveContainerCreate(t *Tracee) deriveFn {
 	return func(event trace.Event) (trace.Event, bool, error) {
-		cgroupId, err := getEventArgUint64Val(&event, "cgroup_id")
+		cgroupId, err := parsing.GetEventArgUint64Val(&event, "cgroup_id")
 		if err != nil {
 			return trace.Event{}, false, err
 		}
@@ -141,7 +144,7 @@ func deriveContainerCreate(t *Tracee) deriveFn {
 //If it receives a cgroup_rmdir event, it can derive a container_remove event from it
 func deriveContainerRemoved(t *Tracee) deriveFn {
 	return func(event trace.Event) (trace.Event, bool, error) {
-		cgroupId, err := getEventArgUint64Val(&event, "cgroup_id")
+		cgroupId, err := parsing.GetEventArgUint64Val(&event, "cgroup_id")
 		if err != nil {
 			return trace.Event{}, false, err
 		}
@@ -168,7 +171,7 @@ func deriveContainerRemoved(t *Tracee) deriveFn {
 
 func deriveDetectHookedSyscall(t *Tracee) deriveFn {
 	return func(event trace.Event) (trace.Event, bool, error) {
-		syscallAddresses, err := getEventArgUlongArrVal(&event, "syscalls_addresses")
+		syscallAddresses, err := parsing.GetEventArgUlongArrVal(&event, "syscalls_addresses")
 		if err != nil {
 			return trace.Event{}, false, fmt.Errorf("error parsing syscalls_numbers arg: %v", err)
 		}
@@ -257,7 +260,7 @@ var seq_ops_functions = [4]string{
 
 func deriveHookedSeqOps(t *Tracee) deriveFn {
 	return func(event trace.Event) (trace.Event, bool, error) {
-		seqOpsArr, err := getEventArgUlongArrVal(&event, "net_seq_ops")
+		seqOpsArr, err := parsing.GetEventArgUlongArrVal(&event, "net_seq_ops")
 		if err != nil || len(seqOpsArr) < 1 {
 			return trace.Event{}, false, err
 		}
