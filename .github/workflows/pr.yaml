@@ -176,7 +176,7 @@ jobs:
           - "TRC-2"
         kernel:
           - "4.19.238-stable"
-          - "5.4.189-stable"
+          - "5.4.188-amzn2"
           - "5.8.18-ubuntu"
           - "5.10.111-stable"
           - "5.13.19-ubuntu"
@@ -194,6 +194,7 @@ jobs:
             -e kvm_accel="tcg" \
             -e kern_version=${{ matrix.kernel }} \
             -e test_name=${{ matrix.signature }} \
+            -e is_noncore=0 \
             -t rafaeldtinoco/tracee-test-kernels:latest
   NON-CO-RE:
     runs-on: ubuntu-20.04
@@ -206,7 +207,7 @@ jobs:
           - "TRC-2"
         kernel:
           - "4.19.238-stable"
-          - "5.4.189-stable"
+          - "5.4.188-amzn2"
           - "5.8.18-ubuntu"
           - "5.10.111-stable"
           - "5.13.19-ubuntu"
@@ -217,11 +218,12 @@ jobs:
           submodules: true
       - name: "Pull test container image"
         run: |
-          docker image pull rafaeldtinoco/tracee-test-noncore:latest
+          docker image pull rafaeldtinoco/tracee-test-kernels:latest
       - name: "Run tests"
         run: |
           docker run --rm --privileged -v $(pwd):/tracee:rw \
             -e kvm_accel="tcg" \
             -e kern_version=${{ matrix.kernel }} \
             -e test_name=${{ matrix.signature }} \
-            -t rafaeldtinoco/tracee-test-noncore:latest
+            -e is_noncore=1 \
+            -t rafaeldtinoco/tracee-test-kernels:latest
