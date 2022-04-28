@@ -38,8 +38,8 @@ const (
 	tailKernelWrite
 )
 
-// event is a struct describing an event configuration
-type event struct {
+// Event is a struct describing an event configuration
+type Event struct {
 	ID32Bit      ID
 	Name         string
 	Internal     bool
@@ -51,24 +51,24 @@ type event struct {
 }
 
 type eventDefinitions struct {
-	events map[ID]event
+	events map[ID]Event
 }
 
-// Get without checking for event existance
-func (e *eventDefinitions) Get(eventId ID) event {
+// Get without checking for Event existance
+func (e *eventDefinitions) Get(eventId ID) Event {
 	evt := e.events[eventId]
 	return evt
 }
 
-// GetSafe gets the event and also returns bool to check for existance
-func (e *eventDefinitions) GetSafe(eventId ID) (event, bool) {
+// GetSafe gets the Event and also returns bool to check for existance
+func (e *eventDefinitions) GetSafe(eventId ID) (Event, bool) {
 	evt, ok := e.events[eventId]
 	return evt, ok
 }
 
-// Events returns the underlying event definitions map
+// Events returns the underlying Event definitions map
 // Use at own risk and do not modify the map
-func (e *eventDefinitions) Events() map[ID]event {
+func (e *eventDefinitions) Events() map[ID]Event {
 	return e.events
 }
 
@@ -191,7 +191,7 @@ const (
 )
 
 var Definitions = eventDefinitions{
-	events: map[ID]event{
+	events: map[ID]Event{
 		Read: {
 			ID32Bit: sys32read,
 			Name:    "read",
