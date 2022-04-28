@@ -25,6 +25,7 @@ type probe struct {
 type eventDependency struct {
 	eventID      int32
 	shouldSubmit bool
+	required     bool
 }
 
 type dependencies struct {
@@ -6202,7 +6203,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Name:    "container_create",
 		Probes:  []probe{},
 		Dependencies: dependencies{
-			events: []eventDependency{{eventID: CgroupMkdirEventID, shouldSubmit: true}},
+			events: []eventDependency{{eventID: CgroupMkdirEventID, shouldSubmit: true, required: true}},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -6216,7 +6217,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Name:    "container_remove",
 		Probes:  []probe{},
 		Dependencies: dependencies{
-			events: []eventDependency{{eventID: CgroupRmdirEventID, shouldSubmit: true}},
+			events: []eventDependency{{eventID: CgroupRmdirEventID, shouldSubmit: true, required: true}},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -6314,7 +6315,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit: sys32undefined,
 		Name:    "detect_hooked_syscalls",
 		Dependencies: dependencies{
-			events: []eventDependency{{eventID: FinitModuleEventID}, {eventID: PrintSyscallTableEventID}, {eventID: InitModuleEventID}},
+			events: []eventDependency{{eventID: FinitModuleEventID, required: true}, {eventID: PrintSyscallTableEventID, required: true}, {eventID: InitModuleEventID, required: true}},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{

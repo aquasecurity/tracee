@@ -163,8 +163,9 @@ type fileExecInfo struct {
 }
 
 type eventConfig struct {
-	submit bool // event should be submitted to userspace
-	emit   bool // event should be emitted to the user
+	required bool // event must be attached for tracee to initialize
+	submit   bool // event should be submitted to userspace
+	emit     bool // event should be emitted to the user
 }
 
 // Tracee traces system calls and system events using eBPF
@@ -217,6 +218,9 @@ func (t *Tracee) handleEventsDependencies(e int32, initReq *RequiredInitValues) 
 		if dependentEvent.shouldSubmit {
 			ec.submit = true
 		}
+		if dependentEvent.required {
+			ec.required = true
+		}
 		t.events[dependentEvent.eventID] = ec
 	}
 }
@@ -255,41 +259,8 @@ func New(cfg Config) (*Tracee, error) {
 
 	t.events = make(map[int32]eventConfig, len(cfg.Filter.EventsToTrace))
 
-	// Set essential events
-	t.events[SysEnterEventID] = eventConfig{}
-	t.events[SysExitEventID] = eventConfig{}
-	t.events[SchedProcessForkEventID] = eventConfig{}
-	t.events[SchedProcessExecEventID] = eventConfig{}
-	t.events[SchedProcessExitEventID] = eventConfig{}
-	t.events[CgroupMkdirEventID] = eventConfig{submit: true}
-	t.events[CgroupRmdirEventID] = eventConfig{submit: true}
-
-	// Set events used to capture data
-	if t.config.Capture.Exec {
-		t.events[SchedProcessExecEventID] = eventConfig{submit: true}
-	}
-	if t.config.Capture.FileWrite {
-		t.events[VfsWriteEventID] = eventConfig{}
-		t.events[VfsWritevEventID] = eventConfig{}
-		t.events[__KernelWriteEventID] = eventConfig{}
-	}
-	if t.config.Capture.Module {
-		t.events[SecurityPostReadFileEventID] = eventConfig{}
-		t.events[InitModuleEventID] = eventConfig{}
-	}
-	if t.config.Capture.Mem {
-		t.events[MmapEventID] = eventConfig{}
-		t.events[MprotectEventID] = eventConfig{}
-		t.events[MemProtAlertEventID] = eventConfig{}
-	}
-	if t.config.Capture.NetIfaces != nil || len(t.config.Filter.NetFilter.InterfacesToTrace) > 0 || cfg.Debug {
-		t.events[SecuritySocketBindEventID] = eventConfig{}
-	}
-
-	// Events chosen by the user
-	for _, e := range t.config.Filter.EventsToTrace {
-		t.events[e] = eventConfig{submit: true, emit: true}
-	}
+	// Setup tracee's required events
+	t.initRequiredEvents()
 
 	initReq := RequiredInitValues{}
 	// Handles all essential events dependencies
@@ -402,6 +373,46 @@ func New(cfg Config) (*Tracee, error) {
 	}
 
 	return t, nil
+}
+
+// Initialize all events required by tracee to function
+// Required events which fail to attach will fail loading tracee
+func (t *Tracee) initRequiredEvents() {
+	// Set required events
+	t.events[SysEnterEventID] = eventConfig{required: true}
+	t.events[SysExitEventID] = eventConfig{required: true}
+	t.events[SchedProcessForkEventID] = eventConfig{required: true}
+	t.events[SchedProcessExecEventID] = eventConfig{required: true}
+	t.events[SchedProcessExitEventID] = eventConfig{required: true}
+	t.events[CgroupMkdirEventID] = eventConfig{required: true, submit: true}
+	t.events[CgroupRmdirEventID] = eventConfig{required: true, submit: true}
+
+	// Set events used to capture data
+	if t.config.Capture.Exec {
+		t.events[SchedProcessExecEventID] = eventConfig{required: true, submit: true}
+	}
+	if t.config.Capture.FileWrite {
+		t.events[VfsWriteEventID] = eventConfig{required: true}
+		t.events[VfsWritevEventID] = eventConfig{required: true}
+		t.events[__KernelWriteEventID] = eventConfig{required: true}
+	}
+	if t.config.Capture.Module {
+		t.events[SecurityPostReadFileEventID] = eventConfig{required: true}
+		t.events[InitModuleEventID] = eventConfig{required: true}
+	}
+	if t.config.Capture.Mem {
+		t.events[MmapEventID] = eventConfig{required: true}
+		t.events[MprotectEventID] = eventConfig{required: true}
+		t.events[MemProtAlertEventID] = eventConfig{required: true}
+	}
+	if t.config.Capture.NetIfaces != nil || len(t.config.Filter.NetFilter.InterfacesToTrace) > 0 || t.config.Debug {
+		t.events[SecuritySocketBindEventID] = eventConfig{required: true}
+	}
+
+	// Events chosen by the user
+	for _, e := range t.config.Filter.EventsToTrace {
+		t.events[e] = eventConfig{required: true, submit: true, emit: true}
+	}
 }
 
 // Initialize tail calls program array
@@ -1053,7 +1064,7 @@ func (t *Tracee) initBPF() error {
 		}
 	}
 
-	for e := range t.events {
+	for e, eventConfig := range t.events {
 		event, ok := EventsDefinitions[e]
 		if !ok {
 			continue
@@ -1084,7 +1095,10 @@ func (t *Tracee) initBPF() error {
 				_, err = prog.AttachRawTracepoint(tpEvent)
 			}
 			if err != nil {
-				return fmt.Errorf("error attaching event %s: %v", probe.event, err)
+				if eventConfig.required {
+					return fmt.Errorf("error attaching required event %s: %v", probe.event, err)
+				}
+				t.handleError(fmt.Errorf("error attaching event %s: %v. event was marked as unrequired and tracee will continue to load", probe.event, err))
 			}
 		}
 	}
