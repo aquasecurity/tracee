@@ -23,8 +23,7 @@ type probe struct {
 }
 
 type eventDependency struct {
-	eventID      int32
-	shouldSubmit bool
+	eventID int32
 }
 
 type dependencies struct {
@@ -5869,15 +5868,15 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MagicWriteEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "magic_write",
-		Probes:  []probe{},
-		Sets:    []string{},
-		Dependencies: dependencies{
-			events: []eventDependency{
-				{eventID: VfsWriteEventID},
-				{eventID: VfsWritevEventID},
-				{eventID: __KernelWriteEventID},
-			},
+		Probes: []probe{
+			{event: "vfs_write", attach: kprobe, fn: "trace_vfs_write"},
+			{event: "vfs_write", attach: kretprobe, fn: "trace_ret_vfs_write"},
+			{event: "vfs_writev", attach: kprobe, fn: "trace_vfs_writev"},
+			{event: "vfs_writev", attach: kretprobe, fn: "trace_ret_vfs_writev"},
+			{event: "__kernel_write", attach: kprobe, fn: "trace_kernel_write"},
+			{event: "__kernel_write", attach: kretprobe, fn: "trace_ret_kernel_write"},
 		},
+		Sets: []string{},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "bytes", Name: "bytes"},
@@ -6139,10 +6138,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit: sys32undefined,
 		Name:    "socket_dup",
 		Probes:  []probe{},
-		Dependencies: dependencies{
-			events: []eventDependency{{eventID: DupEventID}, {eventID: Dup2EventID}, {eventID: Dup3EventID}},
-		},
-		Sets: []string{},
+		Sets:    []string{},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "oldfd"},
 			{Type: "int", Name: "newfd"},
@@ -6202,7 +6198,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Name:    "container_create",
 		Probes:  []probe{},
 		Dependencies: dependencies{
-			events: []eventDependency{{eventID: CgroupMkdirEventID, shouldSubmit: true}},
+			events: []eventDependency{{eventID: CgroupMkdirEventID}},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -6216,7 +6212,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Name:    "container_remove",
 		Probes:  []probe{},
 		Dependencies: dependencies{
-			events: []eventDependency{{eventID: CgroupRmdirEventID, shouldSubmit: true}},
+			events: []eventDependency{{eventID: CgroupRmdirEventID}},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
