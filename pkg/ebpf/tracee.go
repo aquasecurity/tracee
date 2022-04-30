@@ -214,9 +214,7 @@ func (t *Tracee) handleEventsDependencies(e int32, initReq *RequiredInitValues) 
 			ec = eventConfig{}
 			t.handleEventsDependencies(dependentEvent.eventID, initReq)
 		}
-		if dependentEvent.shouldSubmit {
-			ec.submit = true
-		}
+		ec.submit = true
 		t.events[dependentEvent.eventID] = ec
 	}
 }
@@ -722,6 +720,9 @@ func (t *Tracee) populateBPFMaps() error {
 	errs = append(errs, t.initTailCall(tailSendBin, "prog_array", "send_bin"))
 	errs = append(errs, t.initTailCall(tailSendBinTP, "prog_array_tp", "send_bin_tp"))
 	errs = append(errs, t.initTailCall(tailKernelWrite, "prog_array", "trace_ret_kernel_write_tail"))
+	errs = append(errs, t.initTailCall(uint32(DupEventID), "sys_exit_tails", "sys_dup_exit_tail"))
+	errs = append(errs, t.initTailCall(uint32(Dup2EventID), "sys_exit_tails", "sys_dup_exit_tail"))
+	errs = append(errs, t.initTailCall(uint32(Dup3EventID), "sys_exit_tails", "sys_dup_exit_tail"))
 	for _, e := range errs {
 		if e != nil {
 			return e
@@ -794,10 +795,6 @@ func (t *Tracee) populateBPFMaps() error {
 			probFnName := fmt.Sprintf("syscall__%s", event.Name)
 			err = t.initTailCall(eU32, "sys_enter_tails", probFnName)
 			if err != nil {
-				return err
-			}
-		} else if e == DupEventID || e == Dup2EventID || e == Dup3EventID {
-			if err = t.initTailCall(eU32, "sys_exit_tails", "sys_dup_exit_tail"); err != nil {
 				return err
 			}
 		}
@@ -974,30 +971,6 @@ func (t *Tracee) initBPF() error {
 		return err
 	}
 
-	// BPFLoadObject() automatically loads ALL BPF programs according to their section type, unless set otherwise
-	// For every BPF program, we need to make sure that:
-	// 1. We disable autoload if the program is not required by any event and is not essential
-	// 2. The correct BPF program type is set
-	for id, event := range EventsDefinitions {
-		for _, probe := range event.Probes {
-			prog, _ := t.bpfModule.GetProgram(probe.fn)
-			if prog == nil && probe.attach == sysCall {
-				prog, _ = t.bpfModule.GetProgram(fmt.Sprintf("syscall__%s", probe.fn))
-			}
-			if prog == nil {
-				continue
-			}
-			if _, ok := t.events[id]; !ok {
-				// This event is not being traced - set its respective program(s) "autoload" to false
-				err = prog.SetAutoload(false)
-				if err != nil {
-					return err
-				}
-				continue
-			}
-		}
-	}
-
 	if t.config.Capture.NetIfaces == nil && !t.config.Debug && len(t.config.Filter.NetFilter.InterfacesToTrace) == 0 {
 		// SecuritySocketBindEventID is set as an essentialEvent if 'capture net' or 'debug' were chosen by the user.
 		networkProbes := []string{"tc_ingress", "tc_egress", "trace_udp_sendmsg", "trace_udp_disconnect", "trace_udp_destroy_sock", "trace_udpv6_destroy_sock", "tracepoint__inet_sock_set_state", "trace_icmp_send", "trace_icmp_rcv", "trace_icmp6_send", "trace_icmpv6_rcv", "trace_ping_v4_sendmsg", "trace_ping_v6_sendmsg"}
@@ -1053,12 +1026,18 @@ func (t *Tracee) initBPF() error {
 		}
 	}
 
+	seenProbes := make(map[probe]bool)
+
 	for e := range t.events {
 		event, ok := EventsDefinitions[e]
 		if !ok {
 			continue
 		}
 		for _, probe := range event.Probes {
+			if seenProbes[probe] {
+				continue
+			}
+			seenProbes[probe] = true
 			if probe.attach == sysCall {
 				// Already handled by raw_syscalls tracepoints
 				continue
