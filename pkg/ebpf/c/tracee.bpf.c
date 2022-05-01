@@ -5051,22 +5051,33 @@ static __always_inline bool skb_revalidate_data(struct __sk_buff *skb, uint8_t *
     return true;
 }
 
-// set protocol appropriate event_id of net_packet_t
-void set_net_event_id(net_packet_t *pkt){
-    const int dns_port = 53;
-    if (pkt->protocol == IPPROTO_UDP && pkt->dst_port == dns_port){
-        pkt->event_id = DNS_REQUEST;
-    }
-    if (pkt->protocol == IPPROTO_UDP && pkt->src_port == dns_port){
-        pkt->event_id = DNS_RESPONSE;
+// decide network event_id based on created net_packet_t
+static __always_inline void set_net_event_id(net_packet_t *pkt) {
+    enum ports {
+        DNS = 53,
+    };
+
+    switch (pkt->protocol) {
+    case IPPROTO_UDP:
+            if (pkt->dst_port == DNS)
+                pkt->event_id = DNS_REQUEST;
+            if (pkt->src_port == DNS)
+                pkt->event_id = DNS_RESPONSE;
+        break;
+    default:
+        pkt->event_id = NET_PACKET;
     }
 }
 
-// decide if payload of packet should be submitted, for traced events
-bool should_submit_payload(net_packet_t *pkt){
-    if (pkt->event_id == DNS_REQUEST || pkt->event_id == DNS_RESPONSE)
+// some network events might need payload (even without capture)
+static __always_inline bool should_submit_payload(net_packet_t *pkt) {
+    switch (pkt->event_id) {
+    case DNS_REQUEST:
+    case DNS_RESPONSE:
         return true;
-    return false;
+    default:
+        return false;
+    }
 }
 
 static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
@@ -5074,9 +5085,8 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     uint8_t *head = (uint8_t *)(long)skb->data;
     uint8_t *tail = (uint8_t *)(long)skb->data_end;
 
-    if (head + sizeof(struct ethhdr) > tail) {
+    if (head + sizeof(struct ethhdr) > tail)
         return TC_ACT_UNSPEC;
-    }
 
     struct ethhdr *eth = (void *)head;
     net_packet_t pkt = {0};
@@ -5091,86 +5101,74 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     switch (bpf_ntohs(eth->h_proto)) {
     case ETH_P_IP:
         l4_hdr_off = sizeof(struct ethhdr) + sizeof(struct iphdr);
-
-        if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off)) {
+        if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off))
             return TC_ACT_UNSPEC;
-        }
 
+        // create a IPv4-Mapped IPv6 Address
         struct iphdr *ip = (void *)head + sizeof(struct ethhdr);
-
-        // Create a IPv4-Mapped IPv6 Address
         pkt.src_addr.s6_addr32[3] = ip->saddr;
         pkt.dst_addr.s6_addr32[3] = ip->daddr;
-
         pkt.src_addr.s6_addr16[5] = 0xffff;
         pkt.dst_addr.s6_addr16[5] = 0xffff;
-
         pkt.protocol = ip->protocol;
-
         break;
+
     case ETH_P_IPV6:
         l4_hdr_off = sizeof(struct ethhdr) + sizeof(struct ipv6hdr);
-
-        if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off)) {
+        if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off))
             return TC_ACT_UNSPEC;
-        }
 
         struct ipv6hdr *ip6 = (void *)head + sizeof(struct ethhdr);
-
         pkt.src_addr = ip6->saddr;
         pkt.dst_addr = ip6->daddr;
-
         pkt.protocol = ip6->nexthdr;
-
         break;
+
     default:
         return TC_ACT_UNSPEC;
     }
 
-    if (pkt.protocol == IPPROTO_TCP) {
-        if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off + sizeof(struct tcphdr))) {
+    switch (pkt.protocol) {
+    case IPPROTO_TCP:
+        if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off + sizeof(struct tcphdr)))
             return TC_ACT_UNSPEC;
-        }
 
         struct tcphdr *tcp = (void *)head + l4_hdr_off;
-
         pkt.src_port = tcp->source;
         pkt.dst_port = tcp->dest;
-    } else if (pkt.protocol == IPPROTO_UDP) {
-        if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off + sizeof(struct udphdr))) {
+        break;
+
+    case IPPROTO_UDP:
+        if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off + sizeof(struct udphdr)))
             return TC_ACT_UNSPEC;
-        }
 
         struct udphdr *udp = (void *)head + l4_hdr_off;
-
         pkt.src_port = udp->source;
         pkt.dst_port = udp->dest;
-    } else if (pkt.protocol == IPPROTO_ICMP) {
-        if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off + sizeof(struct icmphdr))) {
+        break;
+
+    case IPPROTO_ICMP:
+        if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off + sizeof(struct icmphdr)))
             return TC_ACT_UNSPEC;
-        }
 
         struct icmphdr *icmph = (void *)head + l4_hdr_off;
         u16 icmp_id = icmph->un.echo.id;
+        pkt.src_port = icmp_id; // icmp_id so connect_id can be found
+        pkt.dst_port = icmp_id; // icmp_id so connect_id can be found
+        break;
 
-        // set the ports to icmp_id so that the connect_id could be found
-        pkt.src_port = icmp_id;
-        pkt.dst_port = icmp_id;
-    } else if (pkt.protocol == IPPROTO_ICMPV6) {
-        if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off + sizeof(struct icmp6hdr))) {
+    case IPPROTO_ICMPV6:
+        if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off + sizeof(struct icmp6hdr)))
             return TC_ACT_UNSPEC;
-        }
 
-        struct icmp6hdr *icmph = (void *)head + l4_hdr_off;
-        u16 icmp_id = icmph->icmp6_dataun.u_echo.identifier;
+        struct icmp6hdr *icmp6h = (void *)head + l4_hdr_off;
+        u16 icmp6_id = icmp6h->icmp6_dataun.u_echo.identifier;
+        pkt.src_port = icmp6_id; // icmp6_id so connect_id can be found
+        pkt.dst_port = icmp6_id; // icmp6_id so connect_id can be found
+        break;
 
-        // set the ports to icmp_id so that the connect_id could be found
-        pkt.src_port = icmp_id;
-        pkt.dst_port = icmp_id;
-    }
-    else {
-        //todo: support other transport protocols?
-        return TC_ACT_UNSPEC;
+    default:
+        return TC_ACT_UNSPEC; // TODO: support more protocols
     }
 
     connect_id.protocol = pkt.protocol;
@@ -5208,6 +5206,23 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     pkt.host_tid = net_ctx->host_tid;
     __builtin_memcpy(pkt.comm, net_ctx->comm, TASK_COMM_LEN);
 
+    // if net_packet event not chosen, send minimal data only:
+    //     timestamp (u64)      8 bytes
+    //     net event_id (u32)   4 bytes
+    //     host_id (u32)        4 bytes
+    //     comm (char[])       16 bytes
+    //     packet len (u32)     4 bytes
+    //     ifindex (u32)        4 bytes
+    size_t pkt_size = PACKET_MIN_SIZE;
+
+    int iface_conf = get_iface_config(skb->ifindex);
+    if (iface_conf & TRACE_IFACE) {
+        pkt_size = sizeof(pkt);
+        pkt.src_port = __bpf_ntohs(pkt.src_port);
+        pkt.dst_port = __bpf_ntohs(pkt.dst_port);
+        set_net_event_id(&pkt);
+    }
+
     // The tc perf_event_output handler will use the upper 32 bits of the flags
     // argument as a number of bytes to include of the packet payload in the
     // event data. If the size is too big, the call to bpf_perf_event_output
@@ -5216,23 +5231,11 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress) {
     // See bpf_skb_event_output in net/core/filter.c.
     u64 flags = BPF_F_CURRENT_CPU;
 
-    // If net_packet event wasn't chosen, only send the minimal required data to save the
-    // packet. This will be the timestamp (u64), net event_id (u32),
-    // host_tid (u32), comm (16 bytes), packet len (u32), and ifindex (u32)
-    size_t pkt_size = PACKET_MIN_SIZE;
-
-    int iface_conf = get_iface_config(skb->ifindex);
-    if (iface_conf & TRACE_IFACE){
-        pkt_size = sizeof(pkt);
-        pkt.src_port = __bpf_ntohs(pkt.src_port);
-        pkt.dst_port = __bpf_ntohs(pkt.dst_port);
-        set_net_event_id(&pkt);
-    }
-
-    if (iface_conf & CAPTURE_IFACE || should_submit_payload(&pkt)){
+    if (iface_conf & CAPTURE_IFACE || should_submit_payload(&pkt))
         flags |= (u64)skb->len << 32;
-    }
+
     bpf_perf_event_output(skb, &net_events, flags, &pkt, pkt_size);
+
     return TC_ACT_UNSPEC;
 }
 
