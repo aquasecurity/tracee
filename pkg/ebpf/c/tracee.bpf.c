@@ -2577,7 +2577,7 @@ int sys_dup_exit_tail(void *ctx)
 
     if (sys->ret < 0) {
         // dup failed
-        return 0;
+        goto out;
     }
 
     if (sys->id == SYS_DUP) {
@@ -2592,9 +2592,9 @@ int sys_dup_exit_tail(void *ctx)
         send_socket_dup(&data, sys->args.args[0], sys->args.args[1]);
     }
 
+out:
     // delete syscall data before return
     bpf_map_delete_elem(&syscall_data_map, &data.context.host_tid);
-
     return 0;
 }
 
