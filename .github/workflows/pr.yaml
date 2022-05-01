@@ -176,9 +176,11 @@ jobs:
           - "TRC-2"
         kernel:
           - "4.19.238-stable"
+          - "5.4.166-ubuntu+"
           - "5.4.188-amzn2"
           - "5.8.18-ubuntu"
           - "5.10.111-stable"
+          - "5.11.22-fedora32"
           - "5.13.19-ubuntu"
     steps:
       - name: "Checkout"
