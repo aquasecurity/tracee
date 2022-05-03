@@ -217,6 +217,7 @@ enum event_id_e {
     PRINT_SYSCALL_TABLE,
     DEBUGFS_CREATE_DIR,
     DEVICE_ADD,
+    REGISTER_CHRDEV,
     MAX_EVENT_ID,
 
     // Net events IDs
@@ -4801,6 +4802,44 @@ int BPF_KPROBE(trace_device_add)
     return events_perf_submit(&data, DEVICE_ADD, 0);
 }
 
+SEC("kprobe/__register_chrdev")
+TRACE_ENT_FUNC(__register_chrdev, REGISTER_CHRDEV);
+
+SEC("kretprobe/__register_chrdev")
+int BPF_KPROBE(trace_ret__register_chrdev)
+{
+    args_t saved_args;
+    if (load_args(&saved_args, REGISTER_CHRDEV) != 0) {
+        // missed entry or not traced
+        return 0;
+    }
+    del_args(REGISTER_CHRDEV);
+
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data.context))
+        return 0;
+
+    unsigned int major_number = (unsigned int)saved_args.args[0];
+    unsigned int returned_major = PT_REGS_RC(ctx);
+
+    // sets the returned major to the requested one in case of a successful registration
+    if (major_number > 0 && returned_major == 0) {
+        returned_major = major_number;
+    }
+
+    char* char_device_name = (char*)saved_args.args[3];
+    struct file_operations *char_device_fops = (struct file_operations *)saved_args.args[4];
+
+    save_to_submit_buf(&data, &major_number, sizeof(unsigned int), 0);
+    save_to_submit_buf(&data, &returned_major, sizeof(unsigned int), 1);
+    save_str_to_buf(&data, char_device_name, 2);
+    save_to_submit_buf(&data, &char_device_fops, sizeof(void *), 3);
+
+    return events_perf_submit(&data, REGISTER_CHRDEV, 0);
+}
 
 SEC("kprobe/do_splice")
 TRACE_ENT_FUNC(do_splice, DIRTY_PIPE_SPLICE);
@@ -4813,6 +4852,7 @@ int BPF_KPROBE(trace_ret_do_splice)
         // missed entry or not traced
         return 0;
     }
+    del_args(DIRTY_PIPE_SPLICE);
 
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
