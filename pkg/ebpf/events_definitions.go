@@ -108,6 +108,7 @@ const (
 	HookedSeqOpsEventID
 	DetectHookedSyscallsEventID
 	ImportSymbolsCollisionEventID
+	SOExportWatchedSymbolEventID
 	MaxUserSpaceEventID
 )
 
@@ -5578,7 +5579,10 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit: sys32undefined,
 		Name:    "shared_object_loaded",
 		Dependencies: dependencies{
-			events: []eventDependency{{eventID: SecurityMmapFileEventID}},
+			events: []eventDependency{
+				{eventID: SecurityMmapFileEventID},
+				{eventID: SchedProcessExecEventID},
+			},
 		},
 		Sets: []string{"lsm_hooks", "fs", "fs_file_ops", "proc", "proc_mem"},
 		Params: []trace.ArgMeta{
@@ -5604,6 +5608,21 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "const char*", Name: "loaded_object_path"},
 			{Type: "const char*", Name: "collided_object_path"},
 			{Type: "const char*const*", Name: "collision_symbols"},
+		},
+	},
+	SOExportWatchedSymbolEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "so_export_watched_symbols",
+		Probes:  []probeDependency{},
+		Dependencies: dependencies{
+			events: []eventDependency{
+				{eventID: SharedObjectLoadedEventID},
+			},
+		},
+		Sets: []string{"proc", "proc_mem"},
+		Params: []trace.ArgMeta{
+			{Type: "const char*", Name: "loaded_object_path"},
+			{Type: "const char*const*", Name: "watched_exported_symbols"},
 		},
 	},
 	CaptureFileWriteEventID: {

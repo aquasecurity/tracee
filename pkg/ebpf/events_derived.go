@@ -39,6 +39,7 @@ func (t *Tracee) initEventDerivationMap() error {
 		},
 		SharedObjectLoadedEventID: {
 			ImportSymbolsCollisionEventID: soSymbolsCollisionsDeriveFn,
+			SOExportWatchedSymbolEventID:  derivedSharedObjectExportWatchedSymbols(t),
 		},
 		SchedProcessExecEventID: {
 			ImportSymbolsCollisionEventID: soSymbolsCollisionsDeriveFn,
@@ -305,4 +306,17 @@ func deriveSharedObjectLoadedSymbolsCollision(t *Tracee) derived.DeriveFn {
 	soColGen := derived.InitSOCollisionsEventGenerator(defSkel, &soLoader)
 
 	return derived.GenerateDerivedFn(&soColGen)
+}
+
+func derivedSharedObjectExportWatchedSymbols(t *Tracee) derived.DeriveFn {
+	def := EventsDefinitions[SOExportWatchedSymbolEventID]
+	defSkel := derived.EventSkeleton{Name: def.Name,
+		ID:     int(SOExportWatchedSymbolEventID),
+		Params: def.Params,
+	}
+	pathResolver := containers.InitContainersPathReslover(&t.pidsInMntns)
+	soLoader := shared_objects.InitContainersSOSymbolsLoader(&pathResolver)
+	soExSymGen := derived.InitSOExportWatchedSymbolsEventGenerator(defSkel, &soLoader, t.config.Filter.SOExportedSymbols.Equal)
+
+	return derived.GenerateDerivedFn(&soExSymGen)
 }

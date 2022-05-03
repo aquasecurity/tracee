@@ -43,6 +43,9 @@ The special 'follow' expression declares that not only processes that match the 
 The field 'net' specifies which interfaces to monitor when tracing network events.
 Notice that the 'net' field is mandatory when tracing network events.
 
+The field 'so_exported_symbols' specifies for the 'so_export_watched_symbols' which exported symbols of shared objects
+to monitor when loaded to a process.
+
 Examples:
   --trace pid=new                                              | only trace events from new processes
   --trace pid=510,1709                                         | only trace events from pid 510 or pid 1709
@@ -73,6 +76,7 @@ Examples:
   --trace openat.pathname!=/tmp/1,/bin/ls                      | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
   --trace comm=bash --trace follow                             | trace all events that originated from bash or from one of the processes spawned by bash
   --trace net=docker0 			                       | trace the net events over docker0 interface
+  --trace so_exported_symbols=open                             | trace the loading of SO with exported 'open' symbol with the 'so_export_watched_symbols' event
 
 
 Note: some of the above operators have special meanings in different shells.
@@ -137,6 +141,11 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 		EventsToTrace: []int32{},
 		NetFilter: &tracee.IfaceFilter{
 			InterfacesToTrace: []string{},
+		},
+		SOExportedSymbols: &tracee.StringFilter{
+			Equal:    []string{},
+			NotEqual: []string{},
+			Size:     MaxBpfStrFilterSize,
 		},
 	}
 
@@ -298,6 +307,14 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 
 		if strings.HasPrefix("follow", f) {
 			filter.Follow = true
+			continue
+		}
+
+		if filterName == "so_exported_symbols" {
+			err := filter.SOExportedSymbols.Parse(operatorAndValues)
+			if err != nil {
+				return tracee.Filter{}, err
+			}
 			continue
 		}
 		return tracee.Filter{}, fmt.Errorf("invalid filter option specified, use '--trace help' for more info")

@@ -57,6 +57,7 @@ type Filter struct {
 	ProcessTreeFilter *ProcessTreeFilter
 	Follow            bool
 	NetFilter         *IfaceFilter
+	SOExportedSymbols *StringFilter
 }
 
 type UintFilter struct {
