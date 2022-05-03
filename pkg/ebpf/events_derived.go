@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
+	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -17,6 +19,9 @@ func (t *Tracee) initDerivationTable() error {
 	if t.containers == nil {
 		return fmt.Errorf("nil tracee containers")
 	}
+
+	pathResolver := containers.InitPathResolver(&t.pidsInMntns)
+	soLoader := sharedobjs.InitContainersSymbolsLoader(&pathResolver, 1024)
 
 	t.eventDerivations = events.DerivationTable{
 		events.CgroupMkdir: {
@@ -53,6 +58,16 @@ func (t *Tracee) initDerivationTable() error {
 			events.HookedSeqOps: {
 				Enabled:  t.events[events.HookedSeqOps].submit,
 				Function: derive.HookedSeqOps(t.kernelSymbols),
+			},
+		},
+		events.SharedObjectLoaded: {
+			events.SymbolsLoaded: {
+				Enabled: t.events[events.SymbolsLoaded].submit,
+				Function: derive.SymbolsLoaded(
+					soLoader,
+					t.config.Filter.ArgFilter.Filters[events.SymbolsLoaded]["symbols"].Equal,
+					t.config.Filter.ArgFilter.Filters[events.SymbolsLoaded]["library_path"].NotEqual,
+				),
 			},
 		},
 	}
