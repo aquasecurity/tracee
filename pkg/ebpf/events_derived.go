@@ -181,7 +181,7 @@ func deriveDetectHookedSyscall(t *Tracee) deriveFn {
 	}
 }
 
-// deriveNetPacket driving net_packet from net events with 'metadata' arg
+// deriveNetPacket derives net_packet from net events with 'metadata' arg
 func deriveNetPacket() deriveFn {
 	return func(event trace.Event) (trace.Event, bool, error) {
 		metadataArg := getEventArg(&event, "metadata")

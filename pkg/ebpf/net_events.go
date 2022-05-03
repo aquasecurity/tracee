@@ -16,7 +16,6 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
-	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
@@ -389,109 +388,4 @@ func isNetEvent(eventId int32) bool {
 		return true
 	}
 	return false
-}
-
-// protocolProcessor calls handlers of the appropriate protocol event
-func protocolProcessor(networkThread procinfo.ProcessCtx, evtMeta bufferdecoder.NetEventMetadata, decoder *bufferdecoder.EbpfDecoder) (trace.Event, error) {
-
-	eventName := EventsDefinitions[evtMeta.NetEventId].Name
-	evt, err := netPacketProtocolHandler(decoder, evtMeta, networkThread, eventName)
-	if err != nil {
-		return evt, err
-	}
-
-	switch evtMeta.NetEventId {
-	case DnsRequest:
-		err = dnsRequestProtocolHandler(decoder, &evt)
-	case DnsResponse:
-		err = dnsResponseProtocolHandler(decoder, &evt)
-	}
-
-	return evt, err
-}
-
-// netPacketProtocolHandler parse a given a packet bytes buffer to packetMeta and event
-func netPacketProtocolHandler(netDecoder *bufferdecoder.EbpfDecoder, evtMeta bufferdecoder.NetEventMetadata, ctx procinfo.ProcessCtx, eventName string) (trace.Event, error) {
-	var packetEvent bufferdecoder.NetPacketEvent
-	err := netDecoder.DecodeNetPacketEvent(&packetEvent)
-	if err != nil {
-		return trace.Event{}, err
-	}
-
-	evt := CreateNetEvent(evtMeta, ctx, eventName)
-	appendPktMetadataArg(&evt, packetEvent)
-	return evt, nil
-}
-
-func CreateNetEvent(eventMeta bufferdecoder.NetEventMetadata, ctx procinfo.ProcessCtx, eventName string) trace.Event {
-	evt := ctx.GetEventByProcessCtx()
-	evt.Timestamp = int(eventMeta.TimeStamp)
-	evt.ProcessName = string(bytes.TrimRight(eventMeta.ProcessName[:], "\x00"))
-	evt.EventID = int(eventMeta.NetEventId)
-	evt.EventName = eventName
-	return evt
-}
-
-// eventAppendArg append argument to event and increase ArgsNum
-func eventAppendArg(event *trace.Event, arg trace.Argument) {
-	event.Args = append(event.Args, arg)
-	event.ArgsNum++
-}
-
-// appendPktMetadataArg takes the packet metadata and create argument array with that data
-func appendPktMetadataArg(event *trace.Event, netPacket bufferdecoder.NetPacketEvent) {
-	metedataArg := trace.Argument{
-		ArgMeta: trace.ArgMeta{
-			Name: "metadata",
-			Type: "trace.PktMeta",
-		},
-		Value: trace.PktMeta{
-			SrcIP:    netaddr.IPFrom16(netPacket.SrcIP).String(),
-			DstIP:    netaddr.IPFrom16(netPacket.DstIP).String(),
-			SrcPort:  netPacket.SrcPort,
-			DstPort:  netPacket.DstPort,
-			Protocol: netPacket.Protocol,
-		},
-	}
-	eventAppendArg(event, metedataArg)
-}
-
-// dnsRequestProtocolHandler decodes DNS requests from packet and appends the DNS argument to the event
-func dnsRequestProtocolHandler(decoder *bufferdecoder.EbpfDecoder, evt *trace.Event) error {
-	requests := make([]bufferdecoder.DnsQueryData, 0, 0)
-	err := decoder.DecodeDnsQueryArray(&requests)
-	if err != nil {
-		return err
-	}
-	appendDnsRequestArgs(evt, &requests)
-	return nil
-}
-
-// appendDnsRequestArgs parse the given buffer to dns questions and adds it to the event
-func appendDnsRequestArgs(event *trace.Event, requests *[]bufferdecoder.DnsQueryData) {
-	questionArg := trace.Argument{
-		ArgMeta: EventsDefinitions[int32(event.EventID)].Params[1],
-		Value:   *requests,
-	}
-	eventAppendArg(event, questionArg)
-}
-
-// dnsResponseProtocolHandler decodes DNS responses from packet and appends the DNS argument to the event
-func dnsResponseProtocolHandler(decoder *bufferdecoder.EbpfDecoder, evt *trace.Event) error {
-	responses := make([]bufferdecoder.DnsResponseData, 0, 0)
-	err := decoder.DecodeDnsResponseData(&responses)
-	if err != nil {
-		return err
-	}
-	appendDnsResponseArgs(evt, &responses)
-	return nil
-}
-
-// appendDnsResponseArgs parse the given buffer to dns replies and adds it to the event
-func appendDnsResponseArgs(event *trace.Event, responses *[]bufferdecoder.DnsResponseData) {
-	responseArg := trace.Argument{
-		ArgMeta: EventsDefinitions[int32(event.EventID)].Params[1],
-		Value:   *responses,
-	}
-	eventAppendArg(event, responseArg)
 }
