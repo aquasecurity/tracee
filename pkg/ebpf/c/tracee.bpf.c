@@ -4246,7 +4246,7 @@ static __always_inline int do_file_write_operation(struct pt_regs *ctx, u32 even
         return 0;
     }
 
-    if (!should_submit(VFS_WRITE) && !should_submit(VFS_WRITEV) && !should_submit(MAGIC_WRITE)) {
+    if (!should_submit(VFS_WRITE) && !should_submit(VFS_WRITEV) && !should_submit(__KERNEL_WRITE) && !should_submit(MAGIC_WRITE)) {
         bpf_tail_call(ctx, &prog_array, tail_call_id);
         return 0;
     }
@@ -4497,7 +4497,7 @@ int BPF_KPROBE(trace_ret_kernel_write)
 SEC("kretprobe/__kernel_write_tail")
 int BPF_KPROBE(trace_ret_kernel_write_tail)
 {
-    return do_file_write_operation_tail(ctx, TAIL_KERNEL_WRITE);
+    return do_file_write_operation_tail(ctx, __KERNEL_WRITE);
 }
 
 SEC("kprobe/security_mmap_addr")
