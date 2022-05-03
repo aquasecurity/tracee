@@ -172,8 +172,8 @@ type DnsResponseData struct {
 	DnsAnswer []DnsAnswer  `json:"dnsAnswer"`
 }
 
-// DecodeDnsResponseData gets DNS layer from packet and parses DNS responses from it
-func (decoder *EbpfDecoder) DecodeDnsResponseData(responses *[]DnsResponseData) error {
+// DecodeDnsRepliesData gets DNS layer from packet and parses DNS replies from it
+func (decoder *EbpfDecoder) DecodeDnsRepliesData(responses *[]DnsResponseData) error {
 	dnsLayer, err := getDnsLayerFromBytes(decoder.buffer[decoder.cursor:])
 	if err != nil {
 		return err
