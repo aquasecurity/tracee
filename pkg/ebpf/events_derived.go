@@ -1,6 +1,7 @@
 package ebpf
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -55,6 +56,35 @@ func (t *Tracee) deriveEvent(event trace.Event) []trace.Event {
 	}
 
 	return derivatives
+}
+
+// Pipeline function
+func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-chan *trace.Event, <-chan error) {
+	out := make(chan *trace.Event)
+	errc := make(chan error, 1)
+
+	go func() {
+		defer close(out)
+		defer close(errc)
+
+		for {
+			select {
+			case event := <-in:
+				out <- event
+
+				// Derive event before parsing its arguments
+				derivatives := t.deriveEvent(*event)
+
+				for _, derivative := range derivatives {
+					out <- &derivative
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	return out, errc
 }
 
 /*
