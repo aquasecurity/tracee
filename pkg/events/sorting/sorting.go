@@ -241,8 +241,7 @@ func (sorter *EventsChronologicalSorter) getMostDelayedLastCPUEventTimestamp() (
 	for i := 0; i < len(sorter.cpuEventsQueues); i++ {
 		cq := &sorter.cpuEventsQueues[i]
 		queueTail := cq.PeekTail()
-		if queueTail != nil &&
-			cq.IsUpdated == true &&
+		if queueTail != nil && cq.IsUpdated &&
 			(mostDelayingEventQueue == nil ||
 				queueTail.Timestamp < mostDelayingEventQueue.PeekTail().Timestamp) {
 			mostDelayingEventQueue = &sorter.cpuEventsQueues[i]

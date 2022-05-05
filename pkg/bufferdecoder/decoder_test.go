@@ -50,8 +50,7 @@ func TestDecodeContext(t *testing.T) {
 
 func TestDecodeUint8(t *testing.T) {
 	buf := new(bytes.Buffer)
-	var expected uint8
-	expected = 42
+	var expected uint8 = 42
 	err := binary.Write(buf, binary.LittleEndian, expected)
 	// checking no error
 	assert.Equal(t, nil, err)
@@ -71,8 +70,7 @@ func TestDecodeUint8(t *testing.T) {
 
 func TestDecodeInt8(t *testing.T) {
 	buf := new(bytes.Buffer)
-	var expected int8
-	expected = -42
+	var expected int8 = -42
 	err := binary.Write(buf, binary.LittleEndian, expected)
 	// checking no error
 	assert.Equal(t, nil, err)
@@ -92,8 +90,7 @@ func TestDecodeInt8(t *testing.T) {
 
 func TestDecodeUint16(t *testing.T) {
 	buf := new(bytes.Buffer)
-	var expected uint16
-	expected = 5555
+	var expected uint16 = 5555
 	err := binary.Write(buf, binary.LittleEndian, expected)
 	// checking no error
 	assert.Equal(t, nil, err)
@@ -113,8 +110,7 @@ func TestDecodeUint16(t *testing.T) {
 
 func TestDecodeUint16BigEndian(t *testing.T) {
 	buf := new(bytes.Buffer)
-	var expected uint16
-	expected = 5555
+	var expected uint16 = 5555
 	err := binary.Write(buf, binary.BigEndian, expected)
 	// checking no error
 	assert.Equal(t, nil, err)
@@ -133,8 +129,7 @@ func TestDecodeUint16BigEndian(t *testing.T) {
 }
 func TestDecodeInt16(t *testing.T) {
 	buf := new(bytes.Buffer)
-	var expected int16
-	expected = -3456
+	var expected int16 = -3456
 	err := binary.Write(buf, binary.LittleEndian, expected)
 	// checking no error
 	assert.Equal(t, nil, err)
@@ -154,8 +149,7 @@ func TestDecodeInt16(t *testing.T) {
 
 func TestDecodeUint32(t *testing.T) {
 	buf := new(bytes.Buffer)
-	var expected uint32
-	expected = 5555
+	var expected uint32 = 5555
 	err := binary.Write(buf, binary.LittleEndian, expected)
 	// checking no error
 	assert.Equal(t, nil, err)
@@ -175,8 +169,7 @@ func TestDecodeUint32(t *testing.T) {
 
 func TestDecodeUint32BigEndian(t *testing.T) {
 	buf := new(bytes.Buffer)
-	var expected uint32
-	expected = 5555
+	var expected uint32 = 5555
 	err := binary.Write(buf, binary.BigEndian, expected)
 	// checking no error
 	assert.Equal(t, nil, err)
@@ -195,8 +188,7 @@ func TestDecodeUint32BigEndian(t *testing.T) {
 }
 func TestDecodeInt32(t *testing.T) {
 	buf := new(bytes.Buffer)
-	var expected int32
-	expected = -3456
+	var expected int32 = -3456
 	err := binary.Write(buf, binary.LittleEndian, expected)
 	// checking no error
 	assert.Equal(t, nil, err)
@@ -216,8 +208,7 @@ func TestDecodeInt32(t *testing.T) {
 
 func TestDecodeUint64(t *testing.T) {
 	buf := new(bytes.Buffer)
-	var expected uint64
-	expected = 5555
+	var expected uint64 = 5555
 	err := binary.Write(buf, binary.LittleEndian, expected)
 	// checking no error
 	assert.Equal(t, nil, err)
@@ -237,8 +228,7 @@ func TestDecodeUint64(t *testing.T) {
 
 func TestDecodeInt64(t *testing.T) {
 	buf := new(bytes.Buffer)
-	var expected int64
-	expected = -3456
+	var expected int64 = -3456
 	err := binary.Write(buf, binary.LittleEndian, expected)
 	// checking no error
 	assert.Equal(t, nil, err)
@@ -258,8 +248,7 @@ func TestDecodeInt64(t *testing.T) {
 
 func TestDecodeBoolTrue(t *testing.T) {
 	buf := new(bytes.Buffer)
-	var expected bool
-	expected = true
+	var expected bool = true
 	err := binary.Write(buf, binary.LittleEndian, expected)
 	// checking no error
 	assert.Equal(t, nil, err)
@@ -279,8 +268,7 @@ func TestDecodeBoolTrue(t *testing.T) {
 
 func TestDecodeBoolFalse(t *testing.T) {
 	buf := new(bytes.Buffer)
-	var expected bool
-	expected = false
+	var expected bool = false
 	err := binary.Write(buf, binary.LittleEndian, expected)
 	// checking no error
 	assert.Equal(t, nil, err)
@@ -331,8 +319,7 @@ func TestDecodeIntArray(t *testing.T) {
 	var obtained [2]int32
 	err := decoder.DecodeIntArray(obtained[:], 2)
 	assert.Equal(t, nil, err)
-	var rawcp []byte
-	rawcp = append(raw, 1, 2, 3, 4, 5, 6, 7, 8)
+	var rawcp []byte = append(raw, 1, 2, 3, 4, 5, 6, 7, 8)
 	dataBuff := bytes.NewBuffer(rawcp)
 	var expected [2]int32
 	err = binary.Read(dataBuff, binary.LittleEndian, &expected)
@@ -444,32 +431,32 @@ func TestDecodeMprotectWriteMeta(t *testing.T) {
 
 // use this function in case you want to generate buffer representing your structs (in this case Context).
 // Take the output and use it as raw buffer
-func generateContextBytes(t *testing.T) []byte {
-	buf := new(bytes.Buffer)
-	s := Context{
-		Ts:          11,
-		CgroupID:    22,
-		Pid:         543,
-		Tid:         77,
-		Ppid:        4567,
-		HostPid:     5430,
-		HostTid:     124,
-		ProcessorId: 432,
-		HostPpid:    555,
-		Uid:         9876,
-		MntID:       1357,
-		PidID:       3758,
-		Comm:        [16]byte{1, 3, 5, 3, 1, 5, 56, 6, 7, 32, 2, 4},
-		UtsName:     [16]byte{5, 6, 7, 8, 9, 4, 3, 2},
-		EventID:     654,
-		Retval:      6543,
-		StackID:     6,
-		Argnum:      234,
-	}
-	_ = binary.Write(buf, binary.LittleEndian, s)
-	buffer := buf.Bytes()
-	return buffer
-}
+// func generateContextBytes(t *testing.T) []byte {
+// 	buf := new(bytes.Buffer)
+// 	s := Context{
+// 		Ts:          11,
+// 		CgroupID:    22,
+// 		Pid:         543,
+// 		Tid:         77,
+// 		Ppid:        4567,
+// 		HostPid:     5430,
+// 		HostTid:     124,
+// 		ProcessorId: 432,
+// 		HostPpid:    555,
+// 		Uid:         9876,
+// 		MntID:       1357,
+// 		PidID:       3758,
+// 		Comm:        [16]byte{1, 3, 5, 3, 1, 5, 56, 6, 7, 32, 2, 4},
+// 		UtsName:     [16]byte{5, 6, 7, 8, 9, 4, 3, 2},
+// 		EventID:     654,
+// 		Retval:      6543,
+// 		StackID:     6,
+// 		Argnum:      234,
+// 	}
+// 	_ = binary.Write(buf, binary.LittleEndian, s)
+// 	buffer := buf.Bytes()
+// 	return buffer
+// }
 
 func BenchmarkDecodeContext(*testing.B) {
 	var ctx Context

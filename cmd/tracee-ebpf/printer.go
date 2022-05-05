@@ -170,7 +170,7 @@ func (p *templateEventPrinter) Init() error {
 		}
 		p.templateObj = &tmpl
 	} else {
-		return errors.New("Please specify a gotemplate for event-based output")
+		return errors.New("please specify a gotemplate for event-based output")
 	}
 	return nil
 }

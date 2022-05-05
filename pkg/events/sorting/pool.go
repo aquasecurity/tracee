@@ -29,7 +29,7 @@ func (p *eventsPool) Alloc(event *trace.Event) (*eventNode, error) {
 	p.allocationsCount += 1
 	node := p.head
 	if node != nil {
-		if node.isAllocated == true {
+		if node.isAllocated {
 			p.poolMutex.Unlock()
 			return &eventNode{event: event, isAllocated: true}, fmt.Errorf("BUG: alocated node in pool")
 		}

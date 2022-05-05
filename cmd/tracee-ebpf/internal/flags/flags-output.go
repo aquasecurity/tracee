@@ -71,7 +71,7 @@ func PrepareOutput(outputSlice []string) (tracee.OutputConfig, printerConfig, er
 				printerKind != "json" &&
 				printerKind != "gob" &&
 				!strings.HasPrefix(printerKind, "gotemplate=") {
-				return outcfg, printcfg, fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info.", printerKind)
+				return outcfg, printcfg, fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info", printerKind)
 			}
 		case "out-file":
 			outPath = outputParts[1]

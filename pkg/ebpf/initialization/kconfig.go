@@ -31,12 +31,12 @@ func LoadKconfigValues(kc *helpers.KernelConfig, isDebug bool) (map[helpers.Kern
 		if isDebug {
 			fmt.Fprintf(os.Stderr, "KConfig: warning: assuming kconfig values, might have unexpected behavior\n")
 		}
-		for key, _ := range kconfigUsed {
+		for key := range kconfigUsed {
 			values[key] = helpers.UNDEFINED
 		}
 		values[CONFIG_ARCH_HAS_SYSCALL_WRAPPER] = helpers.BUILTIN // assume CONFIG_ARCH_HAS_SYSCALL_WRAPPER is a BUILTIN option
 	} else {
-		for key, _ := range kconfigUsed {
+		for key := range kconfigUsed {
 			values[key] = kc.GetValue(key) // undefined, builtin OR module
 		}
 	}

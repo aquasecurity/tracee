@@ -1268,7 +1268,7 @@ func findInList(element string, list *[]string) (int, error) {
 			return idx, nil
 		}
 	}
-	return 0, fmt.Errorf("element: %s dosent found\n", element)
+	return 0, fmt.Errorf("element: %s dosent found", element)
 }
 
 const IoctlFetchSyscalls int = 65 // randomly picked number for ioctl cmd
@@ -1278,7 +1278,7 @@ func (t *Tracee) invokeIoctlTriggeredEvents() {
 	_, ok1 := t.events[PrintSyscallTableEventID]
 	_, ok2 := t.events[DetectHookedSyscallsEventID]
 	if ok1 || ok2 {
-		ptmx, err := os.OpenFile(t.config.Capture.OutputPath, os.O_RDONLY, 444)
+		ptmx, err := os.OpenFile(t.config.Capture.OutputPath, os.O_RDONLY, 0444)
 		if err != nil {
 			return
 		}

@@ -176,7 +176,7 @@ func deriveDetectHookedSyscall(t *Tracee) deriveFn {
 }
 
 func analyzeHookedAddresses(addresses []uint64, OsConfig *helpers.OSInfo, kernelSymbols *helpers.KernelSymbolTable) ([]bufferdecoder.HookedSyscallData, error) {
-	hookedSyscallData := make([]bufferdecoder.HookedSyscallData, 0, 0)
+	hookedSyscallData := make([]bufferdecoder.HookedSyscallData, 0)
 	for idx, syscallsAdress := range addresses {
 		InTextSegment, err := kernelSymbols.TextSegmentContains(syscallsAdress)
 		if err != nil {
