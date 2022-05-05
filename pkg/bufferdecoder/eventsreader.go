@@ -156,7 +156,7 @@ func ReadArgFromBuff(ebpfMsgDecoder *EbpfDecoder, params []trace.ArgMeta) (trace
 		}
 		res = intArray
 	case uint64ArrT:
-		ulongArray := make([]uint64, 0, 0)
+		ulongArray := make([]uint64, 0)
 		err := ebpfMsgDecoder.DecodeUint64Array(&ulongArray)
 		if err != nil {
 			return argMeta, nil, fmt.Errorf("error reading ulong elements: %v", err)

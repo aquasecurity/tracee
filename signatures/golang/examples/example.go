@@ -10,6 +10,8 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
+//lint:ignore U1000 This is an example file with no real usage
+
 // counter is a simple demo signature that counts towards a target
 type counter struct {
 	cb     detect.SignatureHandler

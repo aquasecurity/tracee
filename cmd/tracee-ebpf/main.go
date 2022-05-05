@@ -136,7 +136,7 @@ func main() {
 			// kernel lockdown check
 			lockdown, err := helpers.Lockdown()
 			if err == nil && lockdown == helpers.CONFIDENTIALITY {
-				return fmt.Errorf("kernel lockdown is set to 'confidentiality', can't load eBPF programs.")
+				return fmt.Errorf("kernel lockdown is set to 'confidentiality', can't load eBPF programs")
 			}
 			if debug {
 				fmt.Fprintf(os.Stdout, "OSInfo: Security Lockdown is '%v'\n", lockdown)
@@ -169,7 +169,7 @@ func main() {
 				kernelConfig.AddNeeded(helpers.CONFIG_BPF_EVENTS, helpers.BUILTIN)
 				missing := kernelConfig.CheckMissing() // do fail if we found os-release file and it is not enough
 				if len(missing) > 0 {
-					return fmt.Errorf("missing kernel configuration options: %s\n", missing)
+					return fmt.Errorf("missing kernel configuration options: %s", missing)
 				}
 			} else {
 				if debug {

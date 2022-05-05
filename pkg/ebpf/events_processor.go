@@ -232,8 +232,9 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 					})
 					event.ArgsNum += 1
 				}
-
-				break
+				if true { // #SA404 static checker
+					break
+				}
 			}
 			return err
 		}
