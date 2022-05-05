@@ -33,6 +33,37 @@ jobs:
             exit 1
           fi
 
+  # static checker needs tracee-ebpf compiled because of golang build check
+  # without tracee-ebpf being built, it fails because of missing CGO prereqs
+  # also: can't use default checker github action because tracee needs env vars
+  check-code:
+    name: "Check Code"
+    needs:
+      - verify-code
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Install Dependencies
+        uses: ./.github/actions/build-dependencies
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          opa-version: ${{ env.OPA_VERSION }}
+      - name: Install Static Checker
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+      - name: Build Tracee for Checker
+        run: |
+          make clean
+          make tracee-ebpf
+      - name: Check Code Statically
+        run: |
+          CGO_CFLAGS="-I$(pwd)/dist/libbpf" \
+          CGO_LDFLAGS="-lelf -lz $(pwd)/dist/libbpf/libbpf.a" \
+          staticcheck -f stylish -tags ebpf,core ./...
+
   run-unit-tests:
     name: "Run Unit Tests"
     runs-on: ubuntu-20.04
@@ -53,7 +84,7 @@ jobs:
   run-integration-tests:
     name: "Run Integration Tests"
     needs:
-      - verify-code
+      - check-code
       - run-unit-tests
     runs-on: ubuntu-20.04
     steps:
@@ -73,7 +104,7 @@ jobs:
   verify-signatures:
     name: Verify Signatures
     needs:
-      - verify-code
+      - check-code
       - run-unit-tests
     runs-on: ubuntu-20.04
     steps:
