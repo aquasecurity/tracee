@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var procNamespaces = [...]string {"mnt", "cgroup", "pid", "pid_for_children", "time", "time_for_children", "user", "ipc", "net", "uts"}
+var procNamespaces = [...]string{"mnt", "cgroup", "pid", "pid_for_children", "time", "time_for_children", "user", "ipc", "net", "uts"}
 
 // FIXME https://github.com/aquasecurity/tracee/issues/1228
 func TestFetchInitNamespaces(t *testing.T) {
