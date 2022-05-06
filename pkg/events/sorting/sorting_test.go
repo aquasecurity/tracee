@@ -97,7 +97,9 @@ func TestEventsChronologicalSorter_addEvent(t *testing.T) {
 				newSorter.addEvent(&testCase.events[i])
 			}
 			assert.Empty(t, errChan)
-			for cpuid, cpuEventsQueue := range newSorter.cpuEventsQueues {
+			// need to use a pointer (instead of range) so mutexes aren't copied
+			for cpuid := 0; cpuid < len(newSorter.cpuEventsQueues); cpuid++ {
+				cpuEventsQueue := &newSorter.cpuEventsQueues[cpuid]
 				require.Contains(t, testCase.expectedCpuQueuesLens, cpuid)
 				eventsCounter := 0
 				if cpuEventsQueue.head != nil {
