@@ -196,8 +196,7 @@ func analyzeHookedAddresses(addresses []uint64, OsConfig *helpers.OSInfo, kernel
 			} else {
 				hookedSyscallName = fmt.Sprint(syscallNumber)
 			}
-			hookedSyscallData = append(hookedSyscallData, bufferdecoder.HookedSyscallData{hookedSyscallName, hookingFunction.Owner})
-
+			hookedSyscallData = append(hookedSyscallData, bufferdecoder.HookedSyscallData{SyscallName: hookedSyscallName, ModuleOwner: hookingFunction.Owner})
 		}
 	}
 	return hookedSyscallData, nil
