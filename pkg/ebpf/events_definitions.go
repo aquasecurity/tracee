@@ -9,8 +9,7 @@ import "github.com/aquasecurity/tracee/types/trace"
 type probeType uint8
 
 const (
-	sysCall probeType = iota
-	kprobe
+	kprobe = iota
 	kretprobe
 	tracepoint
 	rawTracepoint
@@ -36,6 +35,7 @@ type EventDefinition struct {
 	ID32Bit      int32
 	Name         string
 	Internal     bool
+	Syscall      bool
 	Probes       []probe
 	Dependencies dependencies
 	Sets         []string
@@ -128,10 +128,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ReadEventID: {
 		ID32Bit: sys32read,
 		Name:    "read",
-		Probes: []probe{
-			{event: "read", attach: sysCall, fn: "read"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_read_write"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_read_write"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "void*", Name: "buf"},
@@ -141,10 +139,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	WriteEventID: {
 		ID32Bit: sys32write,
 		Name:    "write",
-		Probes: []probe{
-			{event: "write", attach: sysCall, fn: "write"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_read_write"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_read_write"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "void*", Name: "buf"},
@@ -154,10 +150,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	OpenEventID: {
 		ID32Bit: sys32open,
 		Name:    "open",
-		Probes: []probe{
-			{event: "open", attach: sysCall, fn: "open"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_file_ops"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_file_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "int", Name: "flags"},
@@ -167,10 +161,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	CloseEventID: {
 		ID32Bit: sys32close,
 		Name:    "close",
-		Probes: []probe{
-			{event: "close", attach: sysCall, fn: "close"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_file_ops"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_file_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 		},
@@ -178,10 +170,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	StatEventID: {
 		ID32Bit: sys32stat,
 		Name:    "stat",
-		Probes: []probe{
-			{event: "newstat", attach: sysCall, fn: "newstat"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "struct stat*", Name: "statbuf"},
@@ -190,10 +180,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FstatEventID: {
 		ID32Bit: sys32fstat,
 		Name:    "fstat",
-		Probes: []probe{
-			{event: "newfstat", attach: sysCall, fn: "newfstat"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "struct stat*", Name: "statbuf"},
@@ -202,10 +190,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	LstatEventID: {
 		ID32Bit: sys32lstat,
 		Name:    "lstat",
-		Probes: []probe{
-			{event: "newlstat", attach: sysCall, fn: "newlstat"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "struct stat*", Name: "statbuf"},
@@ -214,10 +200,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	PollEventID: {
 		ID32Bit: sys32poll,
 		Name:    "poll",
-		Probes: []probe{
-			{event: "poll", attach: sysCall, fn: "poll"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_mux_io"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		Params: []trace.ArgMeta{
 			{Type: "struct pollfd*", Name: "fds"},
 			{Type: "unsigned int", Name: "nfds"},
@@ -227,10 +211,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	LseekEventID: {
 		ID32Bit: sys32lseek,
 		Name:    "lseek",
-		Probes: []probe{
-			{event: "lseek", attach: sysCall, fn: "lseek"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_read_write"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_read_write"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "off_t", Name: "offset"},
@@ -240,10 +222,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MmapEventID: {
 		ID32Bit: sys32mmap,
 		Name:    "mmap",
-		Probes: []probe{
-			{event: "mmap", attach: sysCall, fn: "mmap"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_mem"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_mem"},
 		Params: []trace.ArgMeta{
 			{Type: "void*", Name: "addr"},
 			{Type: "size_t", Name: "length"},
@@ -256,10 +236,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MprotectEventID: {
 		ID32Bit: sys32mprotect,
 		Name:    "mprotect",
-		Probes: []probe{
-			{event: "mprotect", attach: sysCall, fn: "mprotect"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_mem"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_mem"},
 		Params: []trace.ArgMeta{
 			{Type: "void*", Name: "addr"},
 			{Type: "size_t", Name: "len"},
@@ -269,10 +247,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MunmapEventID: {
 		ID32Bit: sys32munmap,
 		Name:    "munmap",
-		Probes: []probe{
-			{event: "munmap", attach: sysCall, fn: "munmap"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_mem"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_mem"},
 		Params: []trace.ArgMeta{
 			{Type: "void*", Name: "addr"},
 			{Type: "size_t", Name: "length"},
@@ -281,10 +257,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	BrkEventID: {
 		ID32Bit: sys32brk,
 		Name:    "brk",
-		Probes: []probe{
-			{event: "brk", attach: sysCall, fn: "brk"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_mem"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_mem"},
 		Params: []trace.ArgMeta{
 			{Type: "void*", Name: "addr"},
 		},
@@ -292,10 +266,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	RtSigactionEventID: {
 		ID32Bit: sys32rt_sigaction,
 		Name:    "rt_sigaction",
-		Probes: []probe{
-			{event: "rt_sigaction", attach: sysCall, fn: "rt_sigaction"},
-		},
-		Sets: []string{"syscalls", "signals"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "signals"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "signum"},
 			{Type: "const struct sigaction*", Name: "act"},
@@ -306,10 +278,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	RtSigprocmaskEventID: {
 		ID32Bit: sys32rt_sigprocmask,
 		Name:    "rt_sigprocmask",
-		Probes: []probe{
-			{event: "rt_sigprocmask", attach: sysCall, fn: "rt_sigprocmask"},
-		},
-		Sets: []string{"syscalls", "signals"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "signals"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "how"},
 			{Type: "sigset_t*", Name: "set"},
@@ -320,19 +290,15 @@ var EventsDefinitions = map[int32]EventDefinition{
 	RtSigreturnEventID: {
 		ID32Bit: sys32rt_sigreturn,
 		Name:    "rt_sigreturn",
-		Probes: []probe{
-			{event: "rt_sigreturn", attach: sysCall, fn: "rt_sigreturn"},
-		},
-		Sets:   []string{"syscalls", "signals"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "signals"},
+		Params:  []trace.ArgMeta{},
 	},
 	IoctlEventID: {
 		ID32Bit: sys32ioctl,
 		Name:    "ioctl",
-		Probes: []probe{
-			{event: "ioctl", attach: sysCall, fn: "ioctl"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_fd_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_fd_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "unsigned long", Name: "request"},
@@ -342,10 +308,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Pread64EventID: {
 		ID32Bit: sys32pread64,
 		Name:    "pread64",
-		Probes: []probe{
-			{event: "pread64", attach: sysCall, fn: "pread64"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_read_write"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_read_write"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "void*", Name: "buf"},
@@ -356,10 +320,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Pwrite64EventID: {
 		ID32Bit: sys32pwrite64,
 		Name:    "pwrite64",
-		Probes: []probe{
-			{event: "pwrite64", attach: sysCall, fn: "pwrite64"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_read_write"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_read_write"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const void*", Name: "buf"},
@@ -370,10 +332,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ReadvEventID: {
 		ID32Bit: sys32readv,
 		Name:    "readv",
-		Probes: []probe{
-			{event: "readv", attach: sysCall, fn: "readv"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_read_write"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_read_write"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const struct iovec*", Name: "iov"},
@@ -383,10 +343,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	WritevEventID: {
 		ID32Bit: sys32writev,
 		Name:    "writev",
-		Probes: []probe{
-			{event: "writev", attach: sysCall, fn: "writev"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_read_write"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_read_write"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const struct iovec*", Name: "iov"},
@@ -396,10 +354,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	AccessEventID: {
 		ID32Bit: sys32access,
 		Name:    "access",
-		Probes: []probe{
-			{event: "access", attach: sysCall, fn: "access"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "int", Name: "mode"},
@@ -408,10 +364,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	PipeEventID: {
 		ID32Bit: sys32pipe,
 		Name:    "pipe",
-		Probes: []probe{
-			{event: "pipe", attach: sysCall, fn: "pipe"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_pipe"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_pipe"},
 		Params: []trace.ArgMeta{
 			{Type: "int[2]", Name: "pipefd"},
 		},
@@ -419,10 +373,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SelectEventID: {
 		ID32Bit: sys32_newselect,
 		Name:    "select",
-		Probes: []probe{
-			{event: "select", attach: sysCall, fn: "select"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_mux_io"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "nfds"},
 			{Type: "fd_set*", Name: "readfds"},
@@ -434,19 +386,15 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SchedYieldEventID: {
 		ID32Bit: sys32sched_yield,
 		Name:    "sched_yield",
-		Probes: []probe{
-			{event: "sched_yield", attach: sysCall, fn: "sched_yield"},
-		},
-		Sets:   []string{"syscalls", "proc", "proc_sched"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_sched"},
+		Params:  []trace.ArgMeta{},
 	},
 	MremapEventID: {
 		ID32Bit: sys32mremap,
 		Name:    "mremap",
-		Probes: []probe{
-			{event: "mremap", attach: sysCall, fn: "mremap"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_mem"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_mem"},
 		Params: []trace.ArgMeta{
 			{Type: "void*", Name: "old_address"},
 			{Type: "size_t", Name: "old_size"},
@@ -458,10 +406,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MsyncEventID: {
 		ID32Bit: sys32msync,
 		Name:    "msync",
-		Probes: []probe{
-			{event: "msync", attach: sysCall, fn: "msync"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_sync"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_sync"},
 		Params: []trace.ArgMeta{
 			{Type: "void*", Name: "addr"},
 			{Type: "size_t", Name: "length"},
@@ -471,10 +417,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MincoreEventID: {
 		ID32Bit: sys32mincore,
 		Name:    "mincore",
-		Probes: []probe{
-			{event: "mincore", attach: sysCall, fn: "mincore"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_mem"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_mem"},
 		Params: []trace.ArgMeta{
 			{Type: "void*", Name: "addr"},
 			{Type: "size_t", Name: "length"},
@@ -484,10 +428,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MadviseEventID: {
 		ID32Bit: sys32madvise,
 		Name:    "madvise",
-		Probes: []probe{
-			{event: "madvise", attach: sysCall, fn: "madvise"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_mem"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_mem"},
 		Params: []trace.ArgMeta{
 			{Type: "void*", Name: "addr"},
 			{Type: "size_t", Name: "length"},
@@ -497,10 +439,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ShmgetEventID: {
 		ID32Bit: sys32shmget,
 		Name:    "shmget",
-		Probes: []probe{
-			{event: "shmget", attach: sysCall, fn: "shmget"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_shm"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_shm"},
 		Params: []trace.ArgMeta{
 			{Type: "key_t", Name: "key"},
 			{Type: "size_t", Name: "size"},
@@ -510,10 +450,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ShmatEventID: {
 		ID32Bit: sys32shmat,
 		Name:    "shmat",
-		Probes: []probe{
-			{event: "shmat", attach: sysCall, fn: "shmat"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_shm"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_shm"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "shmid"},
 			{Type: "const void*", Name: "shmaddr"},
@@ -523,10 +461,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ShmctlEventID: {
 		ID32Bit: sys32shmctl,
 		Name:    "shmctl",
-		Probes: []probe{
-			{event: "shmctl", attach: sysCall, fn: "shmctl"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_shm"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_shm"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "shmid"},
 			{Type: "int", Name: "cmd"},
@@ -536,10 +472,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	DupEventID: {
 		ID32Bit: sys32dup,
 		Name:    "dup",
-		Probes: []probe{
-			{event: "dup", attach: sysCall, fn: "dup"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_fd_ops"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_fd_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "oldfd"},
 		},
@@ -547,10 +481,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Dup2EventID: {
 		ID32Bit: sys32dup2,
 		Name:    "dup2",
-		Probes: []probe{
-			{event: "dup2", attach: sysCall, fn: "dup2"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_fd_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_fd_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "oldfd"},
 			{Type: "int", Name: "newfd"},
@@ -559,19 +491,15 @@ var EventsDefinitions = map[int32]EventDefinition{
 	PauseEventID: {
 		ID32Bit: sys32pause,
 		Name:    "pause",
-		Probes: []probe{
-			{event: "pause", attach: sysCall, fn: "pause"},
-		},
-		Sets:   []string{"syscalls", "signals"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "signals"},
+		Params:  []trace.ArgMeta{},
 	},
 	NanosleepEventID: {
 		ID32Bit: sys32nanosleep,
 		Name:    "nanosleep",
-		Probes: []probe{
-			{event: "nanosleep", attach: sysCall, fn: "nanosleep"},
-		},
-		Sets: []string{"syscalls", "time", "time_timer"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "time", "time_timer"},
 		Params: []trace.ArgMeta{
 			{Type: "const struct timespec*", Name: "req"},
 			{Type: "struct timespec*", Name: "rem"},
@@ -580,10 +508,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetitimerEventID: {
 		ID32Bit: sys32getitimer,
 		Name:    "getitimer",
-		Probes: []probe{
-			{event: "getitimer", attach: sysCall, fn: "getitimer"},
-		},
-		Sets: []string{"syscalls", "time", "time_timer"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "time", "time_timer"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "which"},
 			{Type: "struct itimerval*", Name: "curr_value"},
@@ -592,10 +518,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	AlarmEventID: {
 		ID32Bit: sys32alarm,
 		Name:    "alarm",
-		Probes: []probe{
-			{event: "alarm", attach: sysCall, fn: "alarm"},
-		},
-		Sets: []string{"syscalls", "time", "time_timer"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "time", "time_timer"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "seconds"},
 		},
@@ -603,10 +527,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SetitimerEventID: {
 		ID32Bit: sys32setitimer,
 		Name:    "setitimer",
-		Probes: []probe{
-			{event: "setitimer", attach: sysCall, fn: "setitimer"},
-		},
-		Sets: []string{"syscalls", "time", "time_timer"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "time", "time_timer"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "which"},
 			{Type: "struct itimerval*", Name: "new_value"},
@@ -616,19 +538,15 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetpidEventID: {
 		ID32Bit: sys32getpid,
 		Name:    "getpid",
-		Probes: []probe{
-			{event: "getpid", attach: sysCall, fn: "getpid"},
-		},
-		Sets:   []string{"syscalls", "proc", "proc_ids"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_ids"},
+		Params:  []trace.ArgMeta{},
 	},
 	SendfileEventID: {
 		ID32Bit: sys32sendfile64,
 		Name:    "sendfile",
-		Probes: []probe{
-			{event: "sendfile", attach: sysCall, fn: "sendfile"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_read_write"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_read_write"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "out_fd"},
 			{Type: "int", Name: "in_fd"},
@@ -639,10 +557,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SocketEventID: {
 		ID32Bit: sys32socket,
 		Name:    "socket",
-		Probes: []probe{
-			{event: "socket", attach: sysCall, fn: "socket"},
-		},
-		Sets: []string{"default", "syscalls", "net", "net_sock"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "net", "net_sock"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "domain"},
 			{Type: "int", Name: "type"},
@@ -652,10 +568,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ConnectEventID: {
 		ID32Bit: sys32connect,
 		Name:    "connect",
-		Probes: []probe{
-			{event: "connect", attach: sysCall, fn: "connect"},
-		},
-		Sets: []string{"default", "syscalls", "net", "net_sock"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "net", "net_sock"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct sockaddr*", Name: "addr"},
@@ -665,10 +579,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	AcceptEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "accept",
-		Probes: []probe{
-			{event: "accept", attach: sysCall, fn: "accept"},
-		},
-		Sets: []string{"default", "syscalls", "net", "net_sock"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "net", "net_sock"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct sockaddr*", Name: "addr"},
@@ -678,10 +590,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SendtoEventID: {
 		ID32Bit: sys32sendto,
 		Name:    "sendto",
-		Probes: []probe{
-			{event: "sendto", attach: sysCall, fn: "sendto"},
-		},
-		Sets: []string{"syscalls", "net", "net_snd_rcv"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "net", "net_snd_rcv"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "void*", Name: "buf"},
@@ -694,10 +604,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	RecvfromEventID: {
 		ID32Bit: sys32recvfrom,
 		Name:    "recvfrom",
-		Probes: []probe{
-			{event: "recvfrom", attach: sysCall, fn: "recvfrom"},
-		},
-		Sets: []string{"syscalls", "net", "net_snd_rcv"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "net", "net_snd_rcv"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "void*", Name: "buf"},
@@ -710,10 +618,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SendmsgEventID: {
 		ID32Bit: sys32sendmsg,
 		Name:    "sendmsg",
-		Probes: []probe{
-			{event: "sendmsg", attach: sysCall, fn: "sendmsg"},
-		},
-		Sets: []string{"syscalls", "net", "net_snd_rcv"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "net", "net_snd_rcv"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct msghdr*", Name: "msg"},
@@ -723,10 +629,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	RecvmsgEventID: {
 		ID32Bit: sys32recvmsg,
 		Name:    "recvmsg",
-		Probes: []probe{
-			{event: "recvmsg", attach: sysCall, fn: "recvmsg"},
-		},
-		Sets: []string{"syscalls", "net", "net_snd_rcv"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "net", "net_snd_rcv"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct msghdr*", Name: "msg"},
@@ -736,10 +640,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ShutdownEventID: {
 		ID32Bit: sys32shutdown,
 		Name:    "shutdown",
-		Probes: []probe{
-			{event: "shutdown", attach: sysCall, fn: "shutdown"},
-		},
-		Sets: []string{"syscalls", "net", "net_sock"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "net", "net_sock"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "int", Name: "how"},
@@ -748,10 +650,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	BindEventID: {
 		ID32Bit: sys32bind,
 		Name:    "bind",
-		Probes: []probe{
-			{event: "bind", attach: sysCall, fn: "bind"},
-		},
-		Sets: []string{"default", "syscalls", "net", "net_sock"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "net", "net_sock"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct sockaddr*", Name: "addr"},
@@ -761,10 +661,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ListenEventID: {
 		ID32Bit: sys32listen,
 		Name:    "listen",
-		Probes: []probe{
-			{event: "listen", attach: sysCall, fn: "listen"},
-		},
-		Sets: []string{"default", "syscalls", "net", "net_sock"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "net", "net_sock"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "int", Name: "backlog"},
@@ -773,10 +671,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetsocknameEventID: {
 		ID32Bit: sys32getsockname,
 		Name:    "getsockname",
-		Probes: []probe{
-			{event: "getsockname", attach: sysCall, fn: "getsockname"},
-		},
-		Sets: []string{"default", "syscalls", "net", "net_sock"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "net", "net_sock"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct sockaddr*", Name: "addr"},
@@ -786,10 +682,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetpeernameEventID: {
 		ID32Bit: sys32getpeername,
 		Name:    "getpeername",
-		Probes: []probe{
-			{event: "getpeername", attach: sysCall, fn: "getpeername"},
-		},
-		Sets: []string{"syscalls", "net", "net_sock"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "net", "net_sock"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct sockaddr*", Name: "addr"},
@@ -799,10 +693,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SocketpairEventID: {
 		ID32Bit: sys32socketpair,
 		Name:    "socketpair",
-		Probes: []probe{
-			{event: "socketpair", attach: sysCall, fn: "socketpair"},
-		},
-		Sets: []string{"syscalls", "net", "net_sock"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "net", "net_sock"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "domain"},
 			{Type: "int", Name: "type"},
@@ -813,10 +705,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SetsockoptEventID: {
 		ID32Bit: sys32setsockopt,
 		Name:    "setsockopt",
-		Probes: []probe{
-			{event: "setsockopt", attach: sysCall, fn: "setsockopt"},
-		},
-		Sets: []string{"syscalls", "net", "net_sock"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "net", "net_sock"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "int", Name: "level"},
@@ -828,10 +718,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetsockoptEventID: {
 		ID32Bit: sys32getsockopt,
 		Name:    "getsockopt",
-		Probes: []probe{
-			{event: "getsockopt", attach: sysCall, fn: "getsockopt"},
-		},
-		Sets: []string{"syscalls", "net", "net_sock"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "net", "net_sock"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "int", Name: "level"},
@@ -843,10 +731,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	CloneEventID: {
 		ID32Bit: sys32clone,
 		Name:    "clone",
-		Probes: []probe{
-			{event: "clone", attach: sysCall, fn: "clone"},
-		},
-		Sets: []string{"default", "syscalls", "proc", "proc_life"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "proc", "proc_life"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned long", Name: "flags"},
 			{Type: "void*", Name: "stack"},
@@ -858,28 +744,22 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ForkEventID: {
 		ID32Bit: sys32fork,
 		Name:    "fork",
-		Probes: []probe{
-			{event: "fork", attach: sysCall, fn: "fork"},
-		},
-		Sets:   []string{"default", "syscalls", "proc", "proc_life"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "proc", "proc_life"},
+		Params:  []trace.ArgMeta{},
 	},
 	VforkEventID: {
 		ID32Bit: sys32vfork,
 		Name:    "vfork",
-		Probes: []probe{
-			{event: "vfork", attach: sysCall, fn: "vfork"},
-		},
-		Sets:   []string{"default", "syscalls", "proc", "proc_life"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "proc", "proc_life"},
+		Params:  []trace.ArgMeta{},
 	},
 	ExecveEventID: {
 		ID32Bit: sys32execve,
 		Name:    "execve",
-		Probes: []probe{
-			{event: "execve", attach: sysCall, fn: "execve"},
-		},
-		Sets: []string{"default", "syscalls", "proc", "proc_life"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "proc", "proc_life"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "const char*const*", Name: "argv"},
@@ -889,10 +769,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ExitEventID: {
 		ID32Bit: sys32exit,
 		Name:    "exit",
-		Probes: []probe{
-			{event: "exit", attach: sysCall, fn: "exit"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_life"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_life"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "status"},
 		},
@@ -900,10 +778,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Wait4EventID: {
 		ID32Bit: sys32wait4,
 		Name:    "wait4",
-		Probes: []probe{
-			{event: "wait4", attach: sysCall, fn: "wait4"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_life"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_life"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "int*", Name: "wstatus"},
@@ -914,10 +790,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	KillEventID: {
 		ID32Bit: sys32kill,
 		Name:    "kill",
-		Probes: []probe{
-			{event: "kill", attach: sysCall, fn: "kill"},
-		},
-		Sets: []string{"default", "syscalls", "signals"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "signals"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "int", Name: "sig"},
@@ -926,10 +800,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	UnameEventID: {
 		ID32Bit: sys32uname,
 		Name:    "uname",
-		Probes: []probe{
-			{event: "uname", attach: sysCall, fn: "uname"},
-		},
-		Sets: []string{"syscalls", "system"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system"},
 		Params: []trace.ArgMeta{
 			{Type: "struct utsname*", Name: "buf"},
 		},
@@ -937,10 +809,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SemgetEventID: {
 		ID32Bit: sys32semget,
 		Name:    "semget",
-		Probes: []probe{
-			{event: "semget", attach: sysCall, fn: "semget"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_sem"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_sem"},
 		Params: []trace.ArgMeta{
 			{Type: "key_t", Name: "key"},
 			{Type: "int", Name: "nsems"},
@@ -950,10 +820,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SemopEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "semop",
-		Probes: []probe{
-			{event: "semop", attach: sysCall, fn: "semop"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_sem"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_sem"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "semid"},
 			{Type: "struct sembuf*", Name: "sops"},
@@ -963,10 +831,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SemctlEventID: {
 		ID32Bit: sys32semctl,
 		Name:    "semctl",
-		Probes: []probe{
-			{event: "semctl", attach: sysCall, fn: "semctl"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_sem"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_sem"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "semid"},
 			{Type: "int", Name: "semnum"},
@@ -977,10 +843,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ShmdtEventID: {
 		ID32Bit: sys32shmdt,
 		Name:    "shmdt",
-		Probes: []probe{
-			{event: "shmdt", attach: sysCall, fn: "shmdt"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_shm"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_shm"},
 		Params: []trace.ArgMeta{
 			{Type: "const void*", Name: "shmaddr"},
 		},
@@ -988,10 +852,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MsggetEventID: {
 		ID32Bit: sys32msgget,
 		Name:    "msgget",
-		Probes: []probe{
-			{event: "msgget", attach: sysCall, fn: "msgget"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_msgq"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_msgq"},
 		Params: []trace.ArgMeta{
 			{Type: "key_t", Name: "key"},
 			{Type: "int", Name: "msgflg"},
@@ -1000,10 +862,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MsgsndEventID: {
 		ID32Bit: sys32msgsnd,
 		Name:    "msgsnd",
-		Probes: []probe{
-			{event: "msgsnd", attach: sysCall, fn: "msgsnd"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_msgq"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_msgq"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "msqid"},
 			{Type: "struct msgbuf*", Name: "msgp"},
@@ -1014,10 +874,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MsgrcvEventID: {
 		ID32Bit: sys32msgrcv,
 		Name:    "msgrcv",
-		Probes: []probe{
-			{event: "msgrcv", attach: sysCall, fn: "msgrcv"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_msgq"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_msgq"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "msqid"},
 			{Type: "struct msgbuf*", Name: "msgp"},
@@ -1029,10 +887,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MsgctlEventID: {
 		ID32Bit: sys32msgctl,
 		Name:    "msgctl",
-		Probes: []probe{
-			{event: "msgctl", attach: sysCall, fn: "msgctl"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_msgq"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_msgq"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "msqid"},
 			{Type: "int", Name: "cmd"},
@@ -1042,10 +898,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FcntlEventID: {
 		ID32Bit: sys32fcntl,
 		Name:    "fcntl",
-		Probes: []probe{
-			{event: "fcntl", attach: sysCall, fn: "fcntl"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_fd_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_fd_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "int", Name: "cmd"},
@@ -1055,10 +909,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FlockEventID: {
 		ID32Bit: sys32flock,
 		Name:    "flock",
-		Probes: []probe{
-			{event: "flock", attach: sysCall, fn: "flock"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_fd_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_fd_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "int", Name: "operation"},
@@ -1067,10 +919,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FsyncEventID: {
 		ID32Bit: sys32fsync,
 		Name:    "fsync",
-		Probes: []probe{
-			{event: "fsync", attach: sysCall, fn: "fsync"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_sync"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_sync"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 		},
@@ -1078,10 +928,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FdatasyncEventID: {
 		ID32Bit: sys32fdatasync,
 		Name:    "fdatasync",
-		Probes: []probe{
-			{event: "fdatasync", attach: sysCall, fn: "fdatasync"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_sync"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_sync"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 		},
@@ -1089,10 +937,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	TruncateEventID: {
 		ID32Bit: sys32truncate,
 		Name:    "truncate",
-		Probes: []probe{
-			{event: "truncate", attach: sysCall, fn: "truncate"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "off_t", Name: "length"},
@@ -1101,10 +947,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FtruncateEventID: {
 		ID32Bit: sys32ftruncate,
 		Name:    "ftruncate",
-		Probes: []probe{
-			{event: "ftruncate", attach: sysCall, fn: "ftruncate"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "off_t", Name: "length"},
@@ -1113,10 +957,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetdentsEventID: {
 		ID32Bit: sys32getdents,
 		Name:    "getdents",
-		Probes: []probe{
-			{event: "getdents", attach: sysCall, fn: "getdents"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_dir_ops"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_dir_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "struct linux_dirent*", Name: "dirp"},
@@ -1126,10 +968,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetcwdEventID: {
 		ID32Bit: sys32getcwd,
 		Name:    "getcwd",
-		Probes: []probe{
-			{event: "getcwd", attach: sysCall, fn: "getcwd"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_dir_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_dir_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "char*", Name: "buf"},
 			{Type: "size_t", Name: "size"},
@@ -1138,10 +978,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ChdirEventID: {
 		ID32Bit: sys32chdir,
 		Name:    "chdir",
-		Probes: []probe{
-			{event: "chdir", attach: sysCall, fn: "chdir"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_dir_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_dir_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 		},
@@ -1149,10 +987,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FchdirEventID: {
 		ID32Bit: sys32fchdir,
 		Name:    "fchdir",
-		Probes: []probe{
-			{event: "fchdir", attach: sysCall, fn: "fchdir"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_dir_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_dir_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 		},
@@ -1160,10 +996,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	RenameEventID: {
 		ID32Bit: sys32rename,
 		Name:    "rename",
-		Probes: []probe{
-			{event: "rename", attach: sysCall, fn: "rename"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "oldpath"},
 			{Type: "const char*", Name: "newpath"},
@@ -1172,10 +1006,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MkdirEventID: {
 		ID32Bit: sys32mkdir,
 		Name:    "mkdir",
-		Probes: []probe{
-			{event: "mkdir", attach: sysCall, fn: "mkdir"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_dir_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_dir_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "mode_t", Name: "mode"},
@@ -1184,10 +1016,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	RmdirEventID: {
 		ID32Bit: sys32rmdir,
 		Name:    "rmdir",
-		Probes: []probe{
-			{event: "rmdir", attach: sysCall, fn: "rmdir"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_dir_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_dir_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 		},
@@ -1195,10 +1025,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	CreatEventID: {
 		ID32Bit: sys32creat,
 		Name:    "creat",
-		Probes: []probe{
-			{event: "creat", attach: sysCall, fn: "creat"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_file_ops"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_file_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "mode_t", Name: "mode"},
@@ -1207,10 +1035,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	LinkEventID: {
 		ID32Bit: sys32link,
 		Name:    "link",
-		Probes: []probe{
-			{event: "link", attach: sysCall, fn: "link"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_link_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_link_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "oldpath"},
 			{Type: "const char*", Name: "newpath"},
@@ -1219,10 +1045,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	UnlinkEventID: {
 		ID32Bit: sys32unlink,
 		Name:    "unlink",
-		Probes: []probe{
-			{event: "unlink", attach: sysCall, fn: "unlink"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_link_ops"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_link_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 		},
@@ -1230,10 +1054,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SymlinkEventID: {
 		ID32Bit: sys32symlink,
 		Name:    "symlink",
-		Probes: []probe{
-			{event: "symlink", attach: sysCall, fn: "symlink"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_link_ops"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_link_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "target"},
 			{Type: "const char*", Name: "linkpath"},
@@ -1242,10 +1064,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ReadlinkEventID: {
 		ID32Bit: sys32readlink,
 		Name:    "readlink",
-		Probes: []probe{
-			{event: "readlink", attach: sysCall, fn: "readlink"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_link_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_link_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "char*", Name: "buf"},
@@ -1255,10 +1075,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ChmodEventID: {
 		ID32Bit: sys32chmod,
 		Name:    "chmod",
-		Probes: []probe{
-			{event: "chmod", attach: sysCall, fn: "chmod"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "mode_t", Name: "mode"},
@@ -1267,10 +1085,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FchmodEventID: {
 		ID32Bit: sys32fchmod,
 		Name:    "fchmod",
-		Probes: []probe{
-			{event: "fchmod", attach: sysCall, fn: "fchmod"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "mode_t", Name: "mode"},
@@ -1279,10 +1095,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ChownEventID: {
 		ID32Bit: sys32chown32,
 		Name:    "chown",
-		Probes: []probe{
-			{event: "chown", attach: sysCall, fn: "chown"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "uid_t", Name: "owner"},
@@ -1292,10 +1106,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FchownEventID: {
 		ID32Bit: sys32fchown32,
 		Name:    "fchown",
-		Probes: []probe{
-			{event: "fchown", attach: sysCall, fn: "fchown"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "uid_t", Name: "owner"},
@@ -1305,10 +1117,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	LchownEventID: {
 		ID32Bit: sys32lchown32,
 		Name:    "lchown",
-		Probes: []probe{
-			{event: "lchown", attach: sysCall, fn: "lchown"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "uid_t", Name: "owner"},
@@ -1318,10 +1128,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	UmaskEventID: {
 		ID32Bit: sys32umask,
 		Name:    "umask",
-		Probes: []probe{
-			{event: "umask", attach: sysCall, fn: "umask"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "mode_t", Name: "mask"},
 		},
@@ -1329,10 +1137,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GettimeofdayEventID: {
 		ID32Bit: sys32gettimeofday,
 		Name:    "gettimeofday",
-		Probes: []probe{
-			{event: "gettimeofday", attach: sysCall, fn: "gettimeofday"},
-		},
-		Sets: []string{"syscalls", "time", "time_tod"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "time", "time_tod"},
 		Params: []trace.ArgMeta{
 			{Type: "struct timeval*", Name: "tv"},
 			{Type: "struct timezone*", Name: "tz"},
@@ -1341,10 +1147,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetrlimitEventID: {
 		ID32Bit: sys32ugetrlimit,
 		Name:    "getrlimit",
-		Probes: []probe{
-			{event: "getrlimit", attach: sysCall, fn: "getrlimit"},
-		},
-		Sets: []string{"syscalls", "proc"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "resource"},
 			{Type: "struct rlimit*", Name: "rlim"},
@@ -1353,10 +1157,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetrusageEventID: {
 		ID32Bit: sys32getrusage,
 		Name:    "getrusage",
-		Probes: []probe{
-			{event: "getrusage", attach: sysCall, fn: "getrusage"},
-		},
-		Sets: []string{"syscalls", "proc"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "who"},
 			{Type: "struct rusage*", Name: "usage"},
@@ -1365,10 +1167,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SysinfoEventID: {
 		ID32Bit: sys32sysinfo,
 		Name:    "sysinfo",
-		Probes: []probe{
-			{event: "sysinfo", attach: sysCall, fn: "sysinfo"},
-		},
-		Sets: []string{"syscalls", "system"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system"},
 		Params: []trace.ArgMeta{
 			{Type: "struct sysinfo*", Name: "info"},
 		},
@@ -1376,10 +1176,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	TimesEventID: {
 		ID32Bit: sys32times,
 		Name:    "times",
-		Probes: []probe{
-			{event: "times", attach: sysCall, fn: "times"},
-		},
-		Sets: []string{"syscalls", "proc"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc"},
 		Params: []trace.ArgMeta{
 			{Type: "struct tms*", Name: "buf"},
 		},
@@ -1387,10 +1185,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	PtraceEventID: {
 		ID32Bit: sys32ptrace,
 		Name:    "ptrace",
-		Probes: []probe{
-			{event: "ptrace", attach: sysCall, fn: "ptrace"},
-		},
-		Sets: []string{"default", "syscalls", "proc"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "proc"},
 		Params: []trace.ArgMeta{
 			{Type: "long", Name: "request"},
 			{Type: "pid_t", Name: "pid"},
@@ -1401,19 +1197,15 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetuidEventID: {
 		ID32Bit: sys32getuid32,
 		Name:    "getuid",
-		Probes: []probe{
-			{event: "getuid", attach: sysCall, fn: "getuid"},
-		},
-		Sets:   []string{"syscalls", "proc", "proc_ids"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_ids"},
+		Params:  []trace.ArgMeta{},
 	},
 	SyslogEventID: {
 		ID32Bit: sys32syslog,
 		Name:    "syslog",
-		Probes: []probe{
-			{event: "syslog", attach: sysCall, fn: "syslog"},
-		},
-		Sets: []string{"syscalls", "system"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "type"},
 			{Type: "char*", Name: "bufp"},
@@ -1423,19 +1215,15 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetgidEventID: {
 		ID32Bit: sys32getgid32,
 		Name:    "getgid",
-		Probes: []probe{
-			{event: "getgid", attach: sysCall, fn: "getgid"},
-		},
-		Sets:   []string{"syscalls", "proc", "proc_ids"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_ids"},
+		Params:  []trace.ArgMeta{},
 	},
 	SetuidEventID: {
 		ID32Bit: sys32setuid32,
 		Name:    "setuid",
-		Probes: []probe{
-			{event: "setuid", attach: sysCall, fn: "setuid"},
-		},
-		Sets: []string{"default", "syscalls", "proc", "proc_ids"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "proc", "proc_ids"},
 		Params: []trace.ArgMeta{
 			{Type: "uid_t", Name: "uid"},
 		},
@@ -1443,10 +1231,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SetgidEventID: {
 		ID32Bit: sys32setgid32,
 		Name:    "setgid",
-		Probes: []probe{
-			{event: "setgid", attach: sysCall, fn: "setgid"},
-		},
-		Sets: []string{"default", "syscalls", "proc", "proc_ids"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "proc", "proc_ids"},
 		Params: []trace.ArgMeta{
 			{Type: "gid_t", Name: "gid"},
 		},
@@ -1454,28 +1240,22 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GeteuidEventID: {
 		ID32Bit: sys32geteuid32,
 		Name:    "geteuid",
-		Probes: []probe{
-			{event: "geteuid", attach: sysCall, fn: "geteuid"},
-		},
-		Sets:   []string{"syscalls", "proc", "proc_ids"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_ids"},
+		Params:  []trace.ArgMeta{},
 	},
 	GetegidEventID: {
 		ID32Bit: sys32getegid32,
 		Name:    "getegid",
-		Probes: []probe{
-			{event: "getegid", attach: sysCall, fn: "getegid"},
-		},
-		Sets:   []string{"syscalls", "proc", "proc_ids"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_ids"},
+		Params:  []trace.ArgMeta{},
 	},
 	SetpgidEventID: {
 		ID32Bit: sys32setpgid,
 		Name:    "setpgid",
-		Probes: []probe{
-			{event: "setpgid", attach: sysCall, fn: "setpgid"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_ids"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_ids"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "pid_t", Name: "pgid"},
@@ -1484,37 +1264,29 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetppidEventID: {
 		ID32Bit: sys32getppid,
 		Name:    "getppid",
-		Probes: []probe{
-			{event: "getppid", attach: sysCall, fn: "getppid"},
-		},
-		Sets:   []string{"syscalls", "proc", "proc_ids"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_ids"},
+		Params:  []trace.ArgMeta{},
 	},
 	GetpgrpEventID: {
 		ID32Bit: sys32getpgrp,
 		Name:    "getpgrp",
-		Probes: []probe{
-			{event: "getpgrp", attach: sysCall, fn: "getpgrp"},
-		},
-		Sets:   []string{"syscalls", "proc", "proc_ids"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_ids"},
+		Params:  []trace.ArgMeta{},
 	},
 	SetsidEventID: {
 		ID32Bit: sys32setsid,
 		Name:    "setsid",
-		Probes: []probe{
-			{event: "setsid", attach: sysCall, fn: "setsid"},
-		},
-		Sets:   []string{"syscalls", "proc", "proc_ids"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_ids"},
+		Params:  []trace.ArgMeta{},
 	},
 	SetreuidEventID: {
 		ID32Bit: sys32setreuid32,
 		Name:    "setreuid",
-		Probes: []probe{
-			{event: "setreuid", attach: sysCall, fn: "setreuid"},
-		},
-		Sets: []string{"default", "syscalls", "proc", "proc_ids"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "proc", "proc_ids"},
 		Params: []trace.ArgMeta{
 			{Type: "uid_t", Name: "ruid"},
 			{Type: "uid_t", Name: "euid"},
@@ -1523,10 +1295,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SetregidEventID: {
 		ID32Bit: sys32setregid32,
 		Name:    "setregid",
-		Probes: []probe{
-			{event: "setregid", attach: sysCall, fn: "setregid"},
-		},
-		Sets: []string{"default", "syscalls", "proc", "proc_ids"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "proc", "proc_ids"},
 		Params: []trace.ArgMeta{
 			{Type: "gid_t", Name: "rgid"},
 			{Type: "gid_t", Name: "egid"},
@@ -1535,10 +1305,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetgroupsEventID: {
 		ID32Bit: sys32getgroups32,
 		Name:    "getgroups",
-		Probes: []probe{
-			{event: "getgroups", attach: sysCall, fn: "getgroups"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_ids"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_ids"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "size"},
 			{Type: "gid_t*", Name: "list"},
@@ -1547,10 +1315,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SetgroupsEventID: {
 		ID32Bit: sys32setgroups32,
 		Name:    "setgroups",
-		Probes: []probe{
-			{event: "setgroups", attach: sysCall, fn: "setgroups"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_ids"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_ids"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "size"},
 			{Type: "gid_t*", Name: "list"},
@@ -1559,10 +1325,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SetresuidEventID: {
 		ID32Bit: sys32setresuid32,
 		Name:    "setresuid",
-		Probes: []probe{
-			{event: "setresuid", attach: sysCall, fn: "setresuid"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_ids"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_ids"},
 		Params: []trace.ArgMeta{
 			{Type: "uid_t", Name: "ruid"},
 			{Type: "uid_t", Name: "euid"},
@@ -1572,10 +1336,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetresuidEventID: {
 		ID32Bit: sys32getresuid32,
 		Name:    "getresuid",
-		Probes: []probe{
-			{event: "getresuid", attach: sysCall, fn: "getresuid"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_ids"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_ids"},
 		Params: []trace.ArgMeta{
 			{Type: "uid_t*", Name: "ruid"},
 			{Type: "uid_t*", Name: "euid"},
@@ -1585,10 +1347,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SetresgidEventID: {
 		ID32Bit: sys32setresgid32,
 		Name:    "setresgid",
-		Probes: []probe{
-			{event: "setresgid", attach: sysCall, fn: "setresgid"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_ids"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_ids"},
 		Params: []trace.ArgMeta{
 			{Type: "gid_t", Name: "rgid"},
 			{Type: "gid_t", Name: "egid"},
@@ -1598,10 +1358,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetresgidEventID: {
 		ID32Bit: sys32getresgid32,
 		Name:    "getresgid",
-		Probes: []probe{
-			{event: "getresgid", attach: sysCall, fn: "getresgid"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_ids"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_ids"},
 		Params: []trace.ArgMeta{
 			{Type: "gid_t*", Name: "rgid"},
 			{Type: "gid_t*", Name: "egid"},
@@ -1611,10 +1369,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetpgidEventID: {
 		ID32Bit: sys32getpgid,
 		Name:    "getpgid",
-		Probes: []probe{
-			{event: "getpgid", attach: sysCall, fn: "getpgid"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_ids"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_ids"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 		},
@@ -1622,10 +1378,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SetfsuidEventID: {
 		ID32Bit: sys32setfsuid32,
 		Name:    "setfsuid",
-		Probes: []probe{
-			{event: "setfsuid", attach: sysCall, fn: "setfsuid"},
-		},
-		Sets: []string{"default", "syscalls", "proc", "proc_ids"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "proc", "proc_ids"},
 		Params: []trace.ArgMeta{
 			{Type: "uid_t", Name: "fsuid"},
 		},
@@ -1633,10 +1387,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SetfsgidEventID: {
 		ID32Bit: sys32setfsgid32,
 		Name:    "setfsgid",
-		Probes: []probe{
-			{event: "setfsgid", attach: sysCall, fn: "setfsgid"},
-		},
-		Sets: []string{"default", "syscalls", "proc", "proc_ids"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "proc", "proc_ids"},
 		Params: []trace.ArgMeta{
 			{Type: "gid_t", Name: "fsgid"},
 		},
@@ -1644,10 +1396,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetsidEventID: {
 		ID32Bit: sys32getsid,
 		Name:    "getsid",
-		Probes: []probe{
-			{event: "getsid", attach: sysCall, fn: "getsid"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_ids"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_ids"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 		},
@@ -1655,10 +1405,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	CapgetEventID: {
 		ID32Bit: sys32capget,
 		Name:    "capget",
-		Probes: []probe{
-			{event: "capget", attach: sysCall, fn: "capget"},
-		},
-		Sets: []string{"syscalls", "proc"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc"},
 		Params: []trace.ArgMeta{
 			{Type: "cap_user_header_t", Name: "hdrp"},
 			{Type: "cap_user_data_t", Name: "datap"},
@@ -1667,10 +1415,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	CapsetEventID: {
 		ID32Bit: sys32capset,
 		Name:    "capset",
-		Probes: []probe{
-			{event: "capset", attach: sysCall, fn: "capset"},
-		},
-		Sets: []string{"syscalls", "proc"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc"},
 		Params: []trace.ArgMeta{
 			{Type: "cap_user_header_t", Name: "hdrp"},
 			{Type: "const cap_user_data_t", Name: "datap"},
@@ -1679,10 +1425,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	RtSigpendingEventID: {
 		ID32Bit: sys32rt_sigpending,
 		Name:    "rt_sigpending",
-		Probes: []probe{
-			{event: "rt_sigpending", attach: sysCall, fn: "rt_sigpending"},
-		},
-		Sets: []string{"syscalls", "signals"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "signals"},
 		Params: []trace.ArgMeta{
 			{Type: "sigset_t*", Name: "set"},
 			{Type: "size_t", Name: "sigsetsize"},
@@ -1691,10 +1435,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	RtSigtimedwaitEventID: {
 		ID32Bit: sys32rt_sigtimedwait_time64,
 		Name:    "rt_sigtimedwait",
-		Probes: []probe{
-			{event: "rt_sigtimedwait", attach: sysCall, fn: "rt_sigtimedwait"},
-		},
-		Sets: []string{"syscalls", "signals"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "signals"},
 		Params: []trace.ArgMeta{
 			{Type: "const sigset_t*", Name: "set"},
 			{Type: "siginfo_t*", Name: "info"},
@@ -1705,10 +1447,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	RtSigqueueinfoEventID: {
 		ID32Bit: sys32rt_sigqueueinfo,
 		Name:    "rt_sigqueueinfo",
-		Probes: []probe{
-			{event: "rt_sigqueueinfo", attach: sysCall, fn: "rt_sigqueueinfo"},
-		},
-		Sets: []string{"syscalls", "signals"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "signals"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "tgid"},
 			{Type: "int", Name: "sig"},
@@ -1718,10 +1458,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	RtSigsuspendEventID: {
 		ID32Bit: sys32rt_sigsuspend,
 		Name:    "rt_sigsuspend",
-		Probes: []probe{
-			{event: "rt_sigsuspend", attach: sysCall, fn: "rt_sigsuspend"},
-		},
-		Sets: []string{"syscalls", "signals"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "signals"},
 		Params: []trace.ArgMeta{
 			{Type: "sigset_t*", Name: "mask"},
 			{Type: "size_t", Name: "sigsetsize"},
@@ -1730,10 +1468,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SigaltstackEventID: {
 		ID32Bit: sys32sigaltstack,
 		Name:    "sigaltstack",
-		Probes: []probe{
-			{event: "sigaltstack", attach: sysCall, fn: "sigaltstack"},
-		},
-		Sets: []string{"syscalls", "signals"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "signals"},
 		Params: []trace.ArgMeta{
 			{Type: "const stack_t*", Name: "ss"},
 			{Type: "stack_t*", Name: "old_ss"},
@@ -1742,10 +1478,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	UtimeEventID: {
 		ID32Bit: sys32utime,
 		Name:    "utime",
-		Probes: []probe{
-			{event: "utime", attach: sysCall, fn: "utime"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "filename"},
 			{Type: "const struct utimbuf*", Name: "times"},
@@ -1754,10 +1488,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MknodEventID: {
 		ID32Bit: sys32mknod,
 		Name:    "mknod",
-		Probes: []probe{
-			{event: "mknod", attach: sysCall, fn: "mknod"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_file_ops"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_file_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "mode_t", Name: "mode"},
@@ -1767,10 +1499,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	UselibEventID: {
 		ID32Bit: sys32uselib,
 		Name:    "uselib",
-		Probes: []probe{
-			{event: "uselib", attach: sysCall, fn: "uselib"},
-		},
-		Sets: []string{"syscalls", "proc"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "library"},
 		},
@@ -1778,10 +1508,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	PersonalityEventID: {
 		ID32Bit: sys32personality,
 		Name:    "personality",
-		Probes: []probe{
-			{event: "personality", attach: sysCall, fn: "personality"},
-		},
-		Sets: []string{"syscalls", "system"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned long", Name: "persona"},
 		},
@@ -1789,10 +1517,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	UstatEventID: {
 		ID32Bit: sys32ustat,
 		Name:    "ustat",
-		Probes: []probe{
-			{event: "ustat", attach: sysCall, fn: "ustat"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_info"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_info"},
 		Params: []trace.ArgMeta{
 			{Type: "dev_t", Name: "dev"},
 			{Type: "struct ustat*", Name: "ubuf"},
@@ -1801,10 +1527,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	StatfsEventID: {
 		ID32Bit: sys32statfs,
 		Name:    "statfs",
-		Probes: []probe{
-			{event: "statfs", attach: sysCall, fn: "statfs"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_info"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_info"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "struct statfs*", Name: "buf"},
@@ -1813,10 +1537,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FstatfsEventID: {
 		ID32Bit: sys32fstatfs,
 		Name:    "fstatfs",
-		Probes: []probe{
-			{event: "fstatfs", attach: sysCall, fn: "fstatfs"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_info"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_info"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "struct statfs*", Name: "buf"},
@@ -1825,10 +1547,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SysfsEventID: {
 		ID32Bit: sys32sysfs,
 		Name:    "sysfs",
-		Probes: []probe{
-			{event: "sysfs", attach: sysCall, fn: "sysfs"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_info"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_info"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "option"},
 		},
@@ -1836,10 +1556,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetpriorityEventID: {
 		ID32Bit: sys32getpriority,
 		Name:    "getpriority",
-		Probes: []probe{
-			{event: "getpriority", attach: sysCall, fn: "getpriority"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_sched"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_sched"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "which"},
 			{Type: "int", Name: "who"},
@@ -1848,10 +1566,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SetpriorityEventID: {
 		ID32Bit: sys32setpriority,
 		Name:    "setpriority",
-		Probes: []probe{
-			{event: "setpriority", attach: sysCall, fn: "setpriority"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_sched"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_sched"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "which"},
 			{Type: "int", Name: "who"},
@@ -1861,10 +1577,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SchedSetparamEventID: {
 		ID32Bit: sys32sched_setparam,
 		Name:    "sched_setparam",
-		Probes: []probe{
-			{event: "sched_setparam", attach: sysCall, fn: "sched_setparam"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_sched"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_sched"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "struct sched_param*", Name: "param"},
@@ -1873,10 +1587,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SchedGetparamEventID: {
 		ID32Bit: sys32sched_getparam,
 		Name:    "sched_getparam",
-		Probes: []probe{
-			{event: "sched_getparam", attach: sysCall, fn: "sched_getparam"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_sched"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_sched"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "struct sched_param*", Name: "param"},
@@ -1885,10 +1597,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SchedSetschedulerEventID: {
 		ID32Bit: sys32sched_setscheduler,
 		Name:    "sched_setscheduler",
-		Probes: []probe{
-			{event: "sched_setscheduler", attach: sysCall, fn: "sched_setscheduler"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_sched"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_sched"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "int", Name: "policy"},
@@ -1898,10 +1608,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SchedGetschedulerEventID: {
 		ID32Bit: sys32sched_getscheduler,
 		Name:    "sched_getscheduler",
-		Probes: []probe{
-			{event: "sched_getscheduler", attach: sysCall, fn: "sched_getscheduler"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_sched"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_sched"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 		},
@@ -1909,10 +1617,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SchedGetPriorityMaxEventID: {
 		ID32Bit: sys32sched_get_priority_max,
 		Name:    "sched_get_priority_max",
-		Probes: []probe{
-			{event: "sched_get_priority_max", attach: sysCall, fn: "sched_get_priority_max"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_sched"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_sched"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "policy"},
 		},
@@ -1920,10 +1626,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SchedGetPriorityMinEventID: {
 		ID32Bit: sys32sched_get_priority_min,
 		Name:    "sched_get_priority_min",
-		Probes: []probe{
-			{event: "sched_get_priority_min", attach: sysCall, fn: "sched_get_priority_min"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_sched"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_sched"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "policy"},
 		},
@@ -1931,10 +1635,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SchedRrGetIntervalEventID: {
 		ID32Bit: sys32sched_rr_get_interval_time64,
 		Name:    "sched_rr_get_interval",
-		Probes: []probe{
-			{event: "sched_rr_get_interval", attach: sysCall, fn: "sched_rr_get_interval"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_sched"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_sched"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "struct timespec*", Name: "tp"},
@@ -1943,10 +1645,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MlockEventID: {
 		ID32Bit: sys32mlock,
 		Name:    "mlock",
-		Probes: []probe{
-			{event: "mlock", attach: sysCall, fn: "mlock"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_mem"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_mem"},
 		Params: []trace.ArgMeta{
 			{Type: "const void*", Name: "addr"},
 			{Type: "size_t", Name: "len"},
@@ -1955,10 +1655,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MunlockEventID: {
 		ID32Bit: sys32munlock,
 		Name:    "munlock",
-		Probes: []probe{
-			{event: "munlock", attach: sysCall, fn: "munlock"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_mem"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_mem"},
 		Params: []trace.ArgMeta{
 			{Type: "const void*", Name: "addr"},
 			{Type: "size_t", Name: "len"},
@@ -1967,10 +1665,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MlockallEventID: {
 		ID32Bit: sys32mlockall,
 		Name:    "mlockall",
-		Probes: []probe{
-			{event: "mlockall", attach: sysCall, fn: "mlockall"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_mem"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_mem"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "flags"},
 		},
@@ -1978,28 +1674,22 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MunlockallEventID: {
 		ID32Bit: sys32munlockall,
 		Name:    "munlockall",
-		Probes: []probe{
-			{event: "munlockall", attach: sysCall, fn: "munlockall"},
-		},
-		Sets:   []string{"syscalls", "proc", "proc_mem"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_mem"},
+		Params:  []trace.ArgMeta{},
 	},
 	VhangupEventID: {
 		ID32Bit: sys32vhangup,
 		Name:    "vhangup",
-		Probes: []probe{
-			{event: "vhangup", attach: sysCall, fn: "vhangup"},
-		},
-		Sets:   []string{"syscalls", "system"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system"},
+		Params:  []trace.ArgMeta{},
 	},
 	ModifyLdtEventID: {
 		ID32Bit: sys32modify_ldt,
 		Name:    "modify_ldt",
-		Probes: []probe{
-			{event: "modify_ldt", attach: sysCall, fn: "modify_ldt"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_mem"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_mem"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "func"},
 			{Type: "void*", Name: "ptr"},
@@ -2009,10 +1699,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	PivotRootEventID: {
 		ID32Bit: sys32pivot_root,
 		Name:    "pivot_root",
-		Probes: []probe{
-			{event: "pivot_root", attach: sysCall, fn: "pivot_root"},
-		},
-		Sets: []string{"syscalls", "fs"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "new_root"},
 			{Type: "const char*", Name: "put_old"},
@@ -2021,10 +1709,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SysctlEventID: {
 		ID32Bit: sys32_sysctl,
 		Name:    "sysctl",
-		Probes: []probe{
-			{event: "sysctl", attach: sysCall, fn: "sysctl"},
-		},
-		Sets: []string{"syscalls", "system"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system"},
 		Params: []trace.ArgMeta{
 			{Type: "struct __sysctl_args*", Name: "args"},
 		},
@@ -2032,10 +1718,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	PrctlEventID: {
 		ID32Bit: sys32prctl,
 		Name:    "prctl",
-		Probes: []probe{
-			{event: "prctl", attach: sysCall, fn: "prctl"},
-		},
-		Sets: []string{"default", "syscalls", "proc"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "proc"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "option"},
 			{Type: "unsigned long", Name: "arg2"},
@@ -2047,10 +1731,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ArchPrctlEventID: {
 		ID32Bit: sys32arch_prctl,
 		Name:    "arch_prctl",
-		Probes: []probe{
-			{event: "arch_prctl", attach: sysCall, fn: "arch_prctl"},
-		},
-		Sets: []string{"syscalls", "proc"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "option"},
 			{Type: "unsigned long", Name: "addr"},
@@ -2059,10 +1741,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	AdjtimexEventID: {
 		ID32Bit: sys32adjtimex,
 		Name:    "adjtimex",
-		Probes: []probe{
-			{event: "adjtimex", attach: sysCall, fn: "adjtimex"},
-		},
-		Sets: []string{"syscalls", "time", "time_clock"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "time", "time_clock"},
 		Params: []trace.ArgMeta{
 			{Type: "struct timex*", Name: "buf"},
 		},
@@ -2070,10 +1750,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SetrlimitEventID: {
 		ID32Bit: sys32setrlimit,
 		Name:    "setrlimit",
-		Probes: []probe{
-			{event: "setrlimit", attach: sysCall, fn: "setrlimit"},
-		},
-		Sets: []string{"syscalls", "proc"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "resource"},
 			{Type: "const struct rlimit*", Name: "rlim"},
@@ -2082,10 +1760,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ChrootEventID: {
 		ID32Bit: sys32chroot,
 		Name:    "chroot",
-		Probes: []probe{
-			{event: "chroot", attach: sysCall, fn: "chroot"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_dir_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_dir_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 		},
@@ -2093,19 +1769,15 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SyncEventID: {
 		ID32Bit: sys32sync,
 		Name:    "sync",
-		Probes: []probe{
-			{event: "sync", attach: sysCall, fn: "sync"},
-		},
-		Sets:   []string{"syscalls", "fs", "fs_sync"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_sync"},
+		Params:  []trace.ArgMeta{},
 	},
 	AcctEventID: {
 		ID32Bit: sys32acct,
 		Name:    "acct",
-		Probes: []probe{
-			{event: "acct", attach: sysCall, fn: "acct"},
-		},
-		Sets: []string{"syscalls", "system"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "filename"},
 		},
@@ -2113,10 +1785,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SettimeofdayEventID: {
 		ID32Bit: sys32settimeofday,
 		Name:    "settimeofday",
-		Probes: []probe{
-			{event: "settimeofday", attach: sysCall, fn: "settimeofday"},
-		},
-		Sets: []string{"syscalls", "time", "time_tod"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "time", "time_tod"},
 		Params: []trace.ArgMeta{
 			{Type: "const struct timeval*", Name: "tv"},
 			{Type: "const struct timezone*", Name: "tz"},
@@ -2125,10 +1795,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MountEventID: {
 		ID32Bit: sys32mount,
 		Name:    "mount",
-		Probes: []probe{
-			{event: "mount", attach: sysCall, fn: "mount"},
-		},
-		Sets: []string{"default", "syscalls", "fs"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "source"},
 			{Type: "const char*", Name: "target"},
@@ -2140,10 +1808,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Umount2EventID: {
 		ID32Bit: sys32umount2,
 		Name:    "umount2",
-		Probes: []probe{
-			{event: "umount2", attach: sysCall, fn: "umount2"},
-		},
-		Sets: []string{"default", "syscalls", "fs"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "target"},
 			{Type: "int", Name: "flags"},
@@ -2152,10 +1818,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SwaponEventID: {
 		ID32Bit: sys32swapon,
 		Name:    "swapon",
-		Probes: []probe{
-			{event: "swapon", attach: sysCall, fn: "swapon"},
-		},
-		Sets: []string{"syscalls", "fs"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "int", Name: "swapflags"},
@@ -2164,10 +1828,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SwapoffEventID: {
 		ID32Bit: sys32swapoff,
 		Name:    "swapoff",
-		Probes: []probe{
-			{event: "swapoff", attach: sysCall, fn: "swapoff"},
-		},
-		Sets: []string{"syscalls", "fs"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 		},
@@ -2175,10 +1837,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	RebootEventID: {
 		ID32Bit: sys32reboot,
 		Name:    "reboot",
-		Probes: []probe{
-			{event: "reboot", attach: sysCall, fn: "reboot"},
-		},
-		Sets: []string{"syscalls", "system"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "magic"},
 			{Type: "int", Name: "magic2"},
@@ -2189,10 +1849,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SethostnameEventID: {
 		ID32Bit: sys32sethostname,
 		Name:    "sethostname",
-		Probes: []probe{
-			{event: "sethostname", attach: sysCall, fn: "sethostname"},
-		},
-		Sets: []string{"syscalls", "net"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "net"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "name"},
 			{Type: "size_t", Name: "len"},
@@ -2201,10 +1859,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SetdomainnameEventID: {
 		ID32Bit: sys32setdomainname,
 		Name:    "setdomainname",
-		Probes: []probe{
-			{event: "setdomainname", attach: sysCall, fn: "setdomainname"},
-		},
-		Sets: []string{"syscalls", "net"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "net"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "name"},
 			{Type: "size_t", Name: "len"},
@@ -2213,10 +1869,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	IoplEventID: {
 		ID32Bit: sys32iopl,
 		Name:    "iopl",
-		Probes: []probe{
-			{event: "iopl", attach: sysCall, fn: "iopl"},
-		},
-		Sets: []string{"syscalls", "system"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "level"},
 		},
@@ -2224,10 +1878,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	IopermEventID: {
 		ID32Bit: sys32ioperm,
 		Name:    "ioperm",
-		Probes: []probe{
-			{event: "ioperm", attach: sysCall, fn: "ioperm"},
-		},
-		Sets: []string{"syscalls", "system"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned long", Name: "from"},
 			{Type: "unsigned long", Name: "num"},
@@ -2237,19 +1889,15 @@ var EventsDefinitions = map[int32]EventDefinition{
 	CreateModuleEventID: {
 		ID32Bit: sys32create_module,
 		Name:    "create_module",
-		Probes: []probe{
-			{event: "create_module", attach: sysCall, fn: "create_module"},
-		},
-		Sets:   []string{"syscalls", "system", "system_module"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system", "system_module"},
+		Params:  []trace.ArgMeta{},
 	},
 	InitModuleEventID: {
 		ID32Bit: sys32init_module,
 		Name:    "init_module",
-		Probes: []probe{
-			{event: "init_module", attach: sysCall, fn: "init_module"},
-		},
-		Sets: []string{"default", "syscalls", "system", "system_module"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "system", "system_module"},
 		Params: []trace.ArgMeta{
 			{Type: "void*", Name: "module_image"},
 			{Type: "unsigned long", Name: "len"},
@@ -2259,10 +1907,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	DeleteModuleEventID: {
 		ID32Bit: sys32delete_module,
 		Name:    "delete_module",
-		Probes: []probe{
-			{event: "delete_module", attach: sysCall, fn: "delete_module"},
-		},
-		Sets: []string{"default", "syscalls", "system", "system_module"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "system", "system_module"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "name"},
 			{Type: "int", Name: "flags"},
@@ -2271,28 +1917,22 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetKernelSymsEventID: {
 		ID32Bit: sys32get_kernel_syms,
 		Name:    "get_kernel_syms",
-		Probes: []probe{
-			{event: "get_kernel_syms", attach: sysCall, fn: "get_kernel_syms"},
-		},
-		Sets:   []string{"syscalls", "system", "system_module"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system", "system_module"},
+		Params:  []trace.ArgMeta{},
 	},
 	QueryModuleEventID: {
 		ID32Bit: sys32query_module,
 		Name:    "query_module",
-		Probes: []probe{
-			{event: "query_module", attach: sysCall, fn: "query_module"},
-		},
-		Sets:   []string{"syscalls", "system", "system_module"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system", "system_module"},
+		Params:  []trace.ArgMeta{},
 	},
 	QuotactlEventID: {
 		ID32Bit: sys32quotactl,
 		Name:    "quotactl",
-		Probes: []probe{
-			{event: "quotactl", attach: sysCall, fn: "quotactl"},
-		},
-		Sets: []string{"syscalls", "system"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "cmd"},
 			{Type: "const char*", Name: "special"},
@@ -2303,73 +1943,57 @@ var EventsDefinitions = map[int32]EventDefinition{
 	NfsservctlEventID: {
 		ID32Bit: sys32nfsservctl,
 		Name:    "nfsservctl",
-		Probes: []probe{
-			{event: "nfsservctl", attach: sysCall, fn: "nfsservctl"},
-		},
-		Sets:   []string{"syscalls", "fs"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs"},
+		Params:  []trace.ArgMeta{},
 	},
 	GetpmsgEventID: {
 		ID32Bit: sys32getpmsg,
 		Name:    "getpmsg",
-		Probes: []probe{
-			{event: "getpmsg", attach: sysCall, fn: "getpmsg"},
-		},
-		Sets:   []string{"syscalls"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls"},
+		Params:  []trace.ArgMeta{},
 	},
 	PutpmsgEventID: {
 		ID32Bit: sys32putpmsg,
 		Name:    "putpmsg",
-		Probes: []probe{
-			{event: "putpmsg", attach: sysCall, fn: "putpmsg"},
-		},
-		Sets:   []string{"syscalls"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls"},
+		Params:  []trace.ArgMeta{},
 	},
 	AfsEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "afs",
-		Probes: []probe{
-			{event: "afs", attach: sysCall, fn: "afs"},
-		},
-		Sets:   []string{"syscalls"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls"},
+		Params:  []trace.ArgMeta{},
 	},
 	TuxcallEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "tuxcall",
-		Probes: []probe{
-			{event: "tuxcall", attach: sysCall, fn: "tuxcall"},
-		},
-		Sets:   []string{"syscalls"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls"},
+		Params:  []trace.ArgMeta{},
 	},
 	SecurityEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "security",
-		Probes: []probe{
-			{event: "security", attach: sysCall, fn: "security"},
-		},
-		Sets:   []string{"syscalls"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls"},
+		Params:  []trace.ArgMeta{},
 	},
 	GettidEventID: {
 		ID32Bit: sys32gettid,
 		Name:    "gettid",
-		Probes: []probe{
-			{event: "gettid", attach: sysCall, fn: "gettid"},
-		},
-		Sets:   []string{"syscalls", "proc", "proc_ids"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_ids"},
+		Params:  []trace.ArgMeta{},
 	},
 	ReadaheadEventID: {
 		ID32Bit: sys32readahead,
 		Name:    "readahead",
-		Probes: []probe{
-			{event: "readahead", attach: sysCall, fn: "readahead"},
-		},
-		Sets: []string{"syscalls", "fs"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "off_t", Name: "offset"},
@@ -2379,10 +2003,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SetxattrEventID: {
 		ID32Bit: sys32setxattr,
 		Name:    "setxattr",
-		Probes: []probe{
-			{event: "setxattr", attach: sysCall, fn: "setxattr"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "const char*", Name: "name"},
@@ -2394,10 +2016,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	LsetxattrEventID: {
 		ID32Bit: sys32lsetxattr,
 		Name:    "lsetxattr",
-		Probes: []probe{
-			{event: "lsetxattr", attach: sysCall, fn: "lsetxattr"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "const char*", Name: "name"},
@@ -2409,10 +2029,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FsetxattrEventID: {
 		ID32Bit: sys32fsetxattr,
 		Name:    "fsetxattr",
-		Probes: []probe{
-			{event: "fsetxattr", attach: sysCall, fn: "fsetxattr"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const char*", Name: "name"},
@@ -2424,10 +2042,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetxattrEventID: {
 		ID32Bit: sys32getxattr,
 		Name:    "getxattr",
-		Probes: []probe{
-			{event: "getxattr", attach: sysCall, fn: "getxattr"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "const char*", Name: "name"},
@@ -2438,10 +2054,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	LgetxattrEventID: {
 		ID32Bit: sys32lgetxattr,
 		Name:    "lgetxattr",
-		Probes: []probe{
-			{event: "lgetxattr", attach: sysCall, fn: "lgetxattr"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "const char*", Name: "name"},
@@ -2452,10 +2066,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FgetxattrEventID: {
 		ID32Bit: sys32fgetxattr,
 		Name:    "fgetxattr",
-		Probes: []probe{
-			{event: "fgetxattr", attach: sysCall, fn: "fgetxattr"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const char*", Name: "name"},
@@ -2466,10 +2078,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ListxattrEventID: {
 		ID32Bit: sys32listxattr,
 		Name:    "listxattr",
-		Probes: []probe{
-			{event: "listxattr", attach: sysCall, fn: "listxattr"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "char*", Name: "list"},
@@ -2479,10 +2089,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	LlistxattrEventID: {
 		ID32Bit: sys32llistxattr,
 		Name:    "llistxattr",
-		Probes: []probe{
-			{event: "llistxattr", attach: sysCall, fn: "llistxattr"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "char*", Name: "list"},
@@ -2492,10 +2100,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FlistxattrEventID: {
 		ID32Bit: sys32flistxattr,
 		Name:    "flistxattr",
-		Probes: []probe{
-			{event: "flistxattr", attach: sysCall, fn: "flistxattr"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "char*", Name: "list"},
@@ -2505,10 +2111,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	RemovexattrEventID: {
 		ID32Bit: sys32removexattr,
 		Name:    "removexattr",
-		Probes: []probe{
-			{event: "removexattr", attach: sysCall, fn: "removexattr"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "const char*", Name: "name"},
@@ -2517,10 +2121,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	LremovexattrEventID: {
 		ID32Bit: sys32lremovexattr,
 		Name:    "lremovexattr",
-		Probes: []probe{
-			{event: "lremovexattr", attach: sysCall, fn: "lremovexattr"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "const char*", Name: "name"},
@@ -2529,10 +2131,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FremovexattrEventID: {
 		ID32Bit: sys32fremovexattr,
 		Name:    "fremovexattr",
-		Probes: []probe{
-			{event: "fremovexattr", attach: sysCall, fn: "fremovexattr"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const char*", Name: "name"},
@@ -2541,10 +2141,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	TkillEventID: {
 		ID32Bit: sys32tkill,
 		Name:    "tkill",
-		Probes: []probe{
-			{event: "tkill", attach: sysCall, fn: "tkill"},
-		},
-		Sets: []string{"syscalls", "signals"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "signals"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "tid"},
 			{Type: "int", Name: "sig"},
@@ -2553,10 +2151,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	TimeEventID: {
 		ID32Bit: sys32time,
 		Name:    "time",
-		Probes: []probe{
-			{event: "time", attach: sysCall, fn: "time"},
-		},
-		Sets: []string{"syscalls", "time", "time_tod"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "time", "time_tod"},
 		Params: []trace.ArgMeta{
 			{Type: "time_t*", Name: "tloc"},
 		},
@@ -2564,10 +2160,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FutexEventID: {
 		ID32Bit: sys32futex_time64,
 		Name:    "futex",
-		Probes: []probe{
-			{event: "futex", attach: sysCall, fn: "futex"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_futex"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_futex"},
 		Params: []trace.ArgMeta{
 			{Type: "int*", Name: "uaddr"},
 			{Type: "int", Name: "futex_op"},
@@ -2580,10 +2174,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SchedSetaffinityEventID: {
 		ID32Bit: sys32sched_setaffinity,
 		Name:    "sched_setaffinity",
-		Probes: []probe{
-			{event: "sched_setaffinity", attach: sysCall, fn: "sched_setaffinity"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_sched"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_sched"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "size_t", Name: "cpusetsize"},
@@ -2593,10 +2185,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SchedGetaffinityEventID: {
 		ID32Bit: sys32sched_getaffinity,
 		Name:    "sched_getaffinity",
-		Probes: []probe{
-			{event: "sched_getaffinity", attach: sysCall, fn: "sched_getaffinity"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_sched"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_sched"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "size_t", Name: "cpusetsize"},
@@ -2606,10 +2196,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SetThreadAreaEventID: {
 		ID32Bit: sys32set_thread_area,
 		Name:    "set_thread_area",
-		Probes: []probe{
-			{event: "set_thread_area", attach: sysCall, fn: "set_thread_area"},
-		},
-		Sets: []string{"syscalls", "proc"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc"},
 		Params: []trace.ArgMeta{
 			{Type: "struct user_desc*", Name: "u_info"},
 		},
@@ -2617,10 +2205,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	IoSetupEventID: {
 		ID32Bit: sys32io_setup,
 		Name:    "io_setup",
-		Probes: []probe{
-			{event: "io_setup", attach: sysCall, fn: "io_setup"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_async_io"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_async_io"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "nr_events"},
 			{Type: "io_context_t*", Name: "ctx_idp"},
@@ -2629,10 +2215,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	IoDestroyEventID: {
 		ID32Bit: sys32io_destroy,
 		Name:    "io_destroy",
-		Probes: []probe{
-			{event: "io_destroy", attach: sysCall, fn: "io_destroy"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_async_io"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_async_io"},
 		Params: []trace.ArgMeta{
 			{Type: "io_context_t", Name: "ctx_id"},
 		},
@@ -2640,10 +2224,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	IoGeteventsEventID: {
 		ID32Bit: sys32io_getevents,
 		Name:    "io_getevents",
-		Probes: []probe{
-			{event: "io_getevents", attach: sysCall, fn: "io_getevents"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_async_io"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_async_io"},
 		Params: []trace.ArgMeta{
 			{Type: "io_context_t", Name: "ctx_id"},
 			{Type: "long", Name: "min_nr"},
@@ -2655,10 +2237,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	IoSubmitEventID: {
 		ID32Bit: sys32io_submit,
 		Name:    "io_submit",
-		Probes: []probe{
-			{event: "io_submit", attach: sysCall, fn: "io_submit"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_async_io"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_async_io"},
 		Params: []trace.ArgMeta{
 			{Type: "io_context_t", Name: "ctx_id"},
 			{Type: "long", Name: "nr"},
@@ -2668,10 +2248,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	IoCancelEventID: {
 		ID32Bit: sys32io_cancel,
 		Name:    "io_cancel",
-		Probes: []probe{
-			{event: "io_cancel", attach: sysCall, fn: "io_cancel"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_async_io"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_async_io"},
 		Params: []trace.ArgMeta{
 			{Type: "io_context_t", Name: "ctx_id"},
 			{Type: "struct iocb*", Name: "iocb"},
@@ -2681,10 +2259,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetThreadAreaEventID: {
 		ID32Bit: sys32get_thread_area,
 		Name:    "get_thread_area",
-		Probes: []probe{
-			{event: "get_thread_area", attach: sysCall, fn: "get_thread_area"},
-		},
-		Sets: []string{"syscalls", "proc"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc"},
 		Params: []trace.ArgMeta{
 			{Type: "struct user_desc*", Name: "u_info"},
 		},
@@ -2692,10 +2268,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	LookupDcookieEventID: {
 		ID32Bit: sys32lookup_dcookie,
 		Name:    "lookup_dcookie",
-		Probes: []probe{
-			{event: "lookup_dcookie", attach: sysCall, fn: "lookup_dcookie"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_dir_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_dir_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "u64", Name: "cookie"},
 			{Type: "char*", Name: "buffer"},
@@ -2705,10 +2279,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	EpollCreateEventID: {
 		ID32Bit: sys32epoll_create,
 		Name:    "epoll_create",
-		Probes: []probe{
-			{event: "epoll_create", attach: sysCall, fn: "epoll_create"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_mux_io"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "size"},
 		},
@@ -2716,28 +2288,22 @@ var EventsDefinitions = map[int32]EventDefinition{
 	EpollCtlOldEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "epoll_ctl_old",
-		Probes: []probe{
-			{event: "epoll_ctl_old", attach: sysCall, fn: "epoll_ctl_old"},
-		},
-		Sets:   []string{"syscalls", "fs", "fs_mux_io"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_mux_io"},
+		Params:  []trace.ArgMeta{},
 	},
 	EpollWaitOldEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "epoll_wait_old",
-		Probes: []probe{
-			{event: "epoll_wait_old", attach: sysCall, fn: "epoll_wait_old"},
-		},
-		Sets:   []string{"syscalls", "fs", "fs_mux_io"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_mux_io"},
+		Params:  []trace.ArgMeta{},
 	},
 	RemapFilePagesEventID: {
 		ID32Bit: sys32remap_file_pages,
 		Name:    "remap_file_pages",
-		Probes: []probe{
-			{event: "remap_file_pages", attach: sysCall, fn: "remap_file_pages"},
-		},
-		Sets: []string{"syscalls"},
+		Syscall: true,
+		Sets:    []string{"syscalls"},
 		Params: []trace.ArgMeta{
 			{Type: "void*", Name: "addr"},
 			{Type: "size_t", Name: "size"},
@@ -2749,10 +2315,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Getdents64EventID: {
 		ID32Bit: sys32getdents64,
 		Name:    "getdents64",
-		Probes: []probe{
-			{event: "getdents64", attach: sysCall, fn: "getdents64"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_dir_ops"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_dir_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "fd"},
 			{Type: "struct linux_dirent64*", Name: "dirp"},
@@ -2762,10 +2326,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SetTidAddressEventID: {
 		ID32Bit: sys32set_tid_address,
 		Name:    "set_tid_address",
-		Probes: []probe{
-			{event: "set_tid_address", attach: sysCall, fn: "set_tid_address"},
-		},
-		Sets: []string{"syscalls", "proc"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc"},
 		Params: []trace.ArgMeta{
 			{Type: "int*", Name: "tidptr"},
 		},
@@ -2773,19 +2335,15 @@ var EventsDefinitions = map[int32]EventDefinition{
 	RestartSyscallEventID: {
 		ID32Bit: sys32restart_syscall,
 		Name:    "restart_syscall",
-		Probes: []probe{
-			{event: "restart_syscall", attach: sysCall, fn: "restart_syscall"},
-		},
-		Sets:   []string{"syscalls", "signals"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "signals"},
+		Params:  []trace.ArgMeta{},
 	},
 	SemtimedopEventID: {
 		ID32Bit: sys32semtimedop_time64,
 		Name:    "semtimedop",
-		Probes: []probe{
-			{event: "semtimedop", attach: sysCall, fn: "semtimedop"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_sem"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_sem"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "semid"},
 			{Type: "struct sembuf*", Name: "sops"},
@@ -2796,10 +2354,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Fadvise64EventID: {
 		ID32Bit: sys32fadvise64,
 		Name:    "fadvise64",
-		Probes: []probe{
-			{event: "fadvise64", attach: sysCall, fn: "fadvise64"},
-		},
-		Sets: []string{"syscalls", "fs"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "off_t", Name: "offset"},
@@ -2810,10 +2366,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	TimerCreateEventID: {
 		ID32Bit: sys32timer_create,
 		Name:    "timer_create",
-		Probes: []probe{
-			{event: "timer_create", attach: sysCall, fn: "timer_create"},
-		},
-		Sets: []string{"syscalls", "time", "time_timer"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "time", "time_timer"},
 		Params: []trace.ArgMeta{
 			{Type: "const clockid_t", Name: "clockid"},
 			{Type: "struct sigevent*", Name: "sevp"},
@@ -2823,10 +2377,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	TimerSettimeEventID: {
 		ID32Bit: sys32timer_settime64,
 		Name:    "timer_settime",
-		Probes: []probe{
-			{event: "timer_settime", attach: sysCall, fn: "timer_settime"},
-		},
-		Sets: []string{"syscalls", "time", "time_timer"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "time", "time_timer"},
 		Params: []trace.ArgMeta{
 			{Type: "timer_t", Name: "timer_id"},
 			{Type: "int", Name: "flags"},
@@ -2837,10 +2389,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	TimerGettimeEventID: {
 		ID32Bit: sys32timer_gettime64,
 		Name:    "timer_gettime",
-		Probes: []probe{
-			{event: "timer_gettime", attach: sysCall, fn: "timer_gettime"},
-		},
-		Sets: []string{"syscalls", "time", "time_timer"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "time", "time_timer"},
 		Params: []trace.ArgMeta{
 			{Type: "timer_t", Name: "timer_id"},
 			{Type: "struct itimerspec*", Name: "curr_value"},
@@ -2849,10 +2399,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	TimerGetoverrunEventID: {
 		ID32Bit: sys32timer_getoverrun,
 		Name:    "timer_getoverrun",
-		Probes: []probe{
-			{event: "timer_getoverrun", attach: sysCall, fn: "timer_getoverrun"},
-		},
-		Sets: []string{"syscalls", "time", "time_timer"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "time", "time_timer"},
 		Params: []trace.ArgMeta{
 			{Type: "timer_t", Name: "timer_id"},
 		},
@@ -2860,10 +2408,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	TimerDeleteEventID: {
 		ID32Bit: sys32timer_delete,
 		Name:    "timer_delete",
-		Probes: []probe{
-			{event: "timer_delete", attach: sysCall, fn: "timer_delete"},
-		},
-		Sets: []string{"syscalls", "time", "time_timer"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "time", "time_timer"},
 		Params: []trace.ArgMeta{
 			{Type: "timer_t", Name: "timer_id"},
 		},
@@ -2871,10 +2417,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ClockSettimeEventID: {
 		ID32Bit: sys32clock_settime64,
 		Name:    "clock_settime",
-		Probes: []probe{
-			{event: "clock_settime", attach: sysCall, fn: "clock_settime"},
-		},
-		Sets: []string{"syscalls", "time", "time_clock"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "time", "time_clock"},
 		Params: []trace.ArgMeta{
 			{Type: "const clockid_t", Name: "clockid"},
 			{Type: "const struct timespec*", Name: "tp"},
@@ -2883,10 +2427,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ClockGettimeEventID: {
 		ID32Bit: sys32clock_gettime64,
 		Name:    "clock_gettime",
-		Probes: []probe{
-			{event: "clock_gettime", attach: sysCall, fn: "clock_gettime"},
-		},
-		Sets: []string{"syscalls", "time", "time_clock"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "time", "time_clock"},
 		Params: []trace.ArgMeta{
 			{Type: "const clockid_t", Name: "clockid"},
 			{Type: "struct timespec*", Name: "tp"},
@@ -2895,10 +2437,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ClockGetresEventID: {
 		ID32Bit: sys32clock_getres_time64,
 		Name:    "clock_getres",
-		Probes: []probe{
-			{event: "clock_getres", attach: sysCall, fn: "clock_getres"},
-		},
-		Sets: []string{"syscalls", "time", "time_clock"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "time", "time_clock"},
 		Params: []trace.ArgMeta{
 			{Type: "const clockid_t", Name: "clockid"},
 			{Type: "struct timespec*", Name: "res"},
@@ -2907,10 +2447,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ClockNanosleepEventID: {
 		ID32Bit: sys32clock_nanosleep_time64,
 		Name:    "clock_nanosleep",
-		Probes: []probe{
-			{event: "clock_nanosleep", attach: sysCall, fn: "clock_nanosleep"},
-		},
-		Sets: []string{"syscalls", "time", "time_clock"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "time", "time_clock"},
 		Params: []trace.ArgMeta{
 			{Type: "const clockid_t", Name: "clockid"},
 			{Type: "int", Name: "flags"},
@@ -2921,10 +2459,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ExitGroupEventID: {
 		ID32Bit: sys32exit_group,
 		Name:    "exit_group",
-		Probes: []probe{
-			{event: "exit_group", attach: sysCall, fn: "exit_group"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_life"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_life"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "status"},
 		},
@@ -2932,10 +2468,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	EpollWaitEventID: {
 		ID32Bit: sys32epoll_wait,
 		Name:    "epoll_wait",
-		Probes: []probe{
-			{event: "epoll_wait", attach: sysCall, fn: "epoll_wait"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_mux_io"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "epfd"},
 			{Type: "struct epoll_event*", Name: "events"},
@@ -2946,10 +2480,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	EpollCtlEventID: {
 		ID32Bit: sys32epoll_ctl,
 		Name:    "epoll_ctl",
-		Probes: []probe{
-			{event: "epoll_ctl", attach: sysCall, fn: "epoll_ctl"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_mux_io"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "epfd"},
 			{Type: "int", Name: "op"},
@@ -2960,10 +2492,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	TgkillEventID: {
 		ID32Bit: sys32tgkill,
 		Name:    "tgkill",
-		Probes: []probe{
-			{event: "tgkill", attach: sysCall, fn: "tgkill"},
-		},
-		Sets: []string{"syscalls", "signals"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "signals"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "tgid"},
 			{Type: "int", Name: "tid"},
@@ -2973,10 +2503,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	UtimesEventID: {
 		ID32Bit: sys32utimes,
 		Name:    "utimes",
-		Probes: []probe{
-			{event: "utimes", attach: sysCall, fn: "utimes"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "char*", Name: "filename"},
 			{Type: "struct timeval*", Name: "times"},
@@ -2985,19 +2513,15 @@ var EventsDefinitions = map[int32]EventDefinition{
 	VserverEventID: {
 		ID32Bit: sys32vserver,
 		Name:    "vserver",
-		Probes: []probe{
-			{event: "vserver", attach: sysCall, fn: "vserver"},
-		},
-		Sets:   []string{"syscalls"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls"},
+		Params:  []trace.ArgMeta{},
 	},
 	MbindEventID: {
 		ID32Bit: sys32mbind,
 		Name:    "mbind",
-		Probes: []probe{
-			{event: "mbind", attach: sysCall, fn: "mbind"},
-		},
-		Sets: []string{"syscalls", "system", "system_numa"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system", "system_numa"},
 		Params: []trace.ArgMeta{
 			{Type: "void*", Name: "addr"},
 			{Type: "unsigned long", Name: "len"},
@@ -3010,10 +2534,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SetMempolicyEventID: {
 		ID32Bit: sys32set_mempolicy,
 		Name:    "set_mempolicy",
-		Probes: []probe{
-			{event: "set_mempolicy", attach: sysCall, fn: "set_mempolicy"},
-		},
-		Sets: []string{"syscalls", "system", "system_numa"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system", "system_numa"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "mode"},
 			{Type: "const unsigned long*", Name: "nodemask"},
@@ -3023,10 +2545,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetMempolicyEventID: {
 		ID32Bit: sys32get_mempolicy,
 		Name:    "get_mempolicy",
-		Probes: []probe{
-			{event: "get_mempolicy", attach: sysCall, fn: "get_mempolicy"},
-		},
-		Sets: []string{"syscalls", "system", "system_numa"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system", "system_numa"},
 		Params: []trace.ArgMeta{
 			{Type: "int*", Name: "mode"},
 			{Type: "unsigned long*", Name: "nodemask"},
@@ -3038,10 +2558,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MqOpenEventID: {
 		ID32Bit: sys32mq_open,
 		Name:    "mq_open",
-		Probes: []probe{
-			{event: "mq_open", attach: sysCall, fn: "mq_open"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_msgq"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_msgq"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "name"},
 			{Type: "int", Name: "oflag"},
@@ -3052,10 +2570,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MqUnlinkEventID: {
 		ID32Bit: sys32mq_unlink,
 		Name:    "mq_unlink",
-		Probes: []probe{
-			{event: "mq_unlink", attach: sysCall, fn: "mq_unlink"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_msgq"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_msgq"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "name"},
 		},
@@ -3063,10 +2579,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MqTimedsendEventID: {
 		ID32Bit: sys32mq_timedsend_time64,
 		Name:    "mq_timedsend",
-		Probes: []probe{
-			{event: "mq_timedsend", attach: sysCall, fn: "mq_timedsend"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_msgq"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_msgq"},
 		Params: []trace.ArgMeta{
 			{Type: "mqd_t", Name: "mqdes"},
 			{Type: "const char*", Name: "msg_ptr"},
@@ -3078,10 +2592,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MqTimedreceiveEventID: {
 		ID32Bit: sys32mq_timedreceive_time64,
 		Name:    "mq_timedreceive",
-		Probes: []probe{
-			{event: "mq_timedreceive", attach: sysCall, fn: "mq_timedreceive"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_msgq"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_msgq"},
 		Params: []trace.ArgMeta{
 			{Type: "mqd_t", Name: "mqdes"},
 			{Type: "char*", Name: "msg_ptr"},
@@ -3093,10 +2605,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MqNotifyEventID: {
 		ID32Bit: sys32mq_notify,
 		Name:    "mq_notify",
-		Probes: []probe{
-			{event: "mq_notify", attach: sysCall, fn: "mq_notify"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_msgq"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_msgq"},
 		Params: []trace.ArgMeta{
 			{Type: "mqd_t", Name: "mqdes"},
 			{Type: "const struct sigevent*", Name: "sevp"},
@@ -3105,10 +2615,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MqGetsetattrEventID: {
 		ID32Bit: sys32mq_getsetattr,
 		Name:    "mq_getsetattr",
-		Probes: []probe{
-			{event: "mq_getsetattr", attach: sysCall, fn: "mq_getsetattr"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_msgq"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_msgq"},
 		Params: []trace.ArgMeta{
 			{Type: "mqd_t", Name: "mqdes"},
 			{Type: "const struct mq_attr*", Name: "newattr"},
@@ -3118,10 +2626,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	KexecLoadEventID: {
 		ID32Bit: sys32kexec_load,
 		Name:    "kexec_load",
-		Probes: []probe{
-			{event: "kexec_load", attach: sysCall, fn: "kexec_load"},
-		},
-		Sets: []string{"syscalls", "system"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned long", Name: "entry"},
 			{Type: "unsigned long", Name: "nr_segments"},
@@ -3132,10 +2638,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	WaitidEventID: {
 		ID32Bit: sys32waitid,
 		Name:    "waitid",
-		Probes: []probe{
-			{event: "waitid", attach: sysCall, fn: "waitid"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_life"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_life"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "idtype"},
 			{Type: "pid_t", Name: "id"},
@@ -3147,10 +2651,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	AddKeyEventID: {
 		ID32Bit: sys32add_key,
 		Name:    "add_key",
-		Probes: []probe{
-			{event: "add_key", attach: sysCall, fn: "add_key"},
-		},
-		Sets: []string{"syscalls", "system", "system_keys"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system", "system_keys"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "type"},
 			{Type: "const char*", Name: "description"},
@@ -3162,10 +2664,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	RequestKeyEventID: {
 		ID32Bit: sys32request_key,
 		Name:    "request_key",
-		Probes: []probe{
-			{event: "request_key", attach: sysCall, fn: "request_key"},
-		},
-		Sets: []string{"syscalls", "system", "system_keys"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system", "system_keys"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "type"},
 			{Type: "const char*", Name: "description"},
@@ -3176,10 +2676,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	KeyctlEventID: {
 		ID32Bit: sys32keyctl,
 		Name:    "keyctl",
-		Probes: []probe{
-			{event: "keyctl", attach: sysCall, fn: "keyctl"},
-		},
-		Sets: []string{"syscalls", "system", "system_keys"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system", "system_keys"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "operation"},
 			{Type: "unsigned long", Name: "arg2"},
@@ -3191,10 +2689,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	IoprioSetEventID: {
 		ID32Bit: sys32ioprio_set,
 		Name:    "ioprio_set",
-		Probes: []probe{
-			{event: "ioprio_set", attach: sysCall, fn: "ioprio_set"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_sched"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_sched"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "which"},
 			{Type: "int", Name: "who"},
@@ -3204,10 +2700,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	IoprioGetEventID: {
 		ID32Bit: sys32ioprio_get,
 		Name:    "ioprio_get",
-		Probes: []probe{
-			{event: "ioprio_get", attach: sysCall, fn: "ioprio_get"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_sched"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_sched"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "which"},
 			{Type: "int", Name: "who"},
@@ -3216,19 +2710,15 @@ var EventsDefinitions = map[int32]EventDefinition{
 	InotifyInitEventID: {
 		ID32Bit: sys32inotify_init,
 		Name:    "inotify_init",
-		Probes: []probe{
-			{event: "inotify_init", attach: sysCall, fn: "inotify_init"},
-		},
-		Sets:   []string{"syscalls", "fs", "fs_monitor"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_monitor"},
+		Params:  []trace.ArgMeta{},
 	},
 	InotifyAddWatchEventID: {
 		ID32Bit: sys32inotify_add_watch,
 		Name:    "inotify_add_watch",
-		Probes: []probe{
-			{event: "inotify_add_watch", attach: sysCall, fn: "inotify_add_watch"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_monitor"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_monitor"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const char*", Name: "pathname"},
@@ -3238,10 +2728,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	InotifyRmWatchEventID: {
 		ID32Bit: sys32inotify_rm_watch,
 		Name:    "inotify_rm_watch",
-		Probes: []probe{
-			{event: "inotify_rm_watch", attach: sysCall, fn: "inotify_rm_watch"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_monitor"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_monitor"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "int", Name: "wd"},
@@ -3250,10 +2738,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MigratePagesEventID: {
 		ID32Bit: sys32migrate_pages,
 		Name:    "migrate_pages",
-		Probes: []probe{
-			{event: "migrate_pages", attach: sysCall, fn: "migrate_pages"},
-		},
-		Sets: []string{"syscalls", "system", "system_numa"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system", "system_numa"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "pid"},
 			{Type: "unsigned long", Name: "maxnode"},
@@ -3264,10 +2750,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	OpenatEventID: {
 		ID32Bit: sys32openat,
 		Name:    "openat",
-		Probes: []probe{
-			{event: "openat", attach: sysCall, fn: "openat"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_file_ops"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_file_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
@@ -3278,10 +2762,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MkdiratEventID: {
 		ID32Bit: sys32mkdirat,
 		Name:    "mkdirat",
-		Probes: []probe{
-			{event: "mkdirat", attach: sysCall, fn: "mkdirat"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_dir_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_dir_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
@@ -3291,10 +2773,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MknodatEventID: {
 		ID32Bit: sys32mknodat,
 		Name:    "mknodat",
-		Probes: []probe{
-			{event: "mknodat", attach: sysCall, fn: "mknodat"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_file_ops"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_file_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
@@ -3305,10 +2785,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FchownatEventID: {
 		ID32Bit: sys32fchownat,
 		Name:    "fchownat",
-		Probes: []probe{
-			{event: "fchownat", attach: sysCall, fn: "fchownat"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
@@ -3320,10 +2798,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FutimesatEventID: {
 		ID32Bit: sys32futimesat,
 		Name:    "futimesat",
-		Probes: []probe{
-			{event: "futimesat", attach: sysCall, fn: "futimesat"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
@@ -3333,10 +2809,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	NewfstatatEventID: {
 		ID32Bit: sys32fstatat64,
 		Name:    "newfstatat",
-		Probes: []probe{
-			{event: "newfstatat", attach: sysCall, fn: "newfstatat"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
@@ -3347,10 +2821,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	UnlinkatEventID: {
 		ID32Bit: sys32unlinkat,
 		Name:    "unlinkat",
-		Probes: []probe{
-			{event: "unlinkat", attach: sysCall, fn: "unlinkat"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_link_ops"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_link_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
@@ -3360,10 +2832,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	RenameatEventID: {
 		ID32Bit: sys32renameat,
 		Name:    "renameat",
-		Probes: []probe{
-			{event: "renameat", attach: sysCall, fn: "renameat"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "olddirfd"},
 			{Type: "const char*", Name: "oldpath"},
@@ -3374,10 +2844,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	LinkatEventID: {
 		ID32Bit: sys32linkat,
 		Name:    "linkat",
-		Probes: []probe{
-			{event: "linkat", attach: sysCall, fn: "linkat"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_link_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_link_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "olddirfd"},
 			{Type: "const char*", Name: "oldpath"},
@@ -3389,10 +2857,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SymlinkatEventID: {
 		ID32Bit: sys32symlinkat,
 		Name:    "symlinkat",
-		Probes: []probe{
-			{event: "symlinkat", attach: sysCall, fn: "symlinkat"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_link_ops"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_link_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "target"},
 			{Type: "int", Name: "newdirfd"},
@@ -3402,10 +2868,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ReadlinkatEventID: {
 		ID32Bit: sys32readlinkat,
 		Name:    "readlinkat",
-		Probes: []probe{
-			{event: "readlinkat", attach: sysCall, fn: "readlinkat"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_link_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_link_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
@@ -3416,10 +2880,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FchmodatEventID: {
 		ID32Bit: sys32fchmodat,
 		Name:    "fchmodat",
-		Probes: []probe{
-			{event: "fchmodat", attach: sysCall, fn: "fchmodat"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
@@ -3430,10 +2892,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FaccessatEventID: {
 		ID32Bit: sys32faccessat,
 		Name:    "faccessat",
-		Probes: []probe{
-			{event: "faccessat", attach: sysCall, fn: "faccessat"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
@@ -3444,10 +2904,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Pselect6EventID: {
 		ID32Bit: sys32pselect6_time64,
 		Name:    "pselect6",
-		Probes: []probe{
-			{event: "pselect6", attach: sysCall, fn: "pselect6"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_mux_io"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "nfds"},
 			{Type: "fd_set*", Name: "readfds"},
@@ -3460,10 +2918,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	PpollEventID: {
 		ID32Bit: sys32ppoll_time64,
 		Name:    "ppoll",
-		Probes: []probe{
-			{event: "ppoll", attach: sysCall, fn: "ppoll"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_mux_io"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		Params: []trace.ArgMeta{
 			{Type: "struct pollfd*", Name: "fds"},
 			{Type: "unsigned int", Name: "nfds"},
@@ -3475,10 +2931,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	UnshareEventID: {
 		ID32Bit: sys32unshare,
 		Name:    "unshare",
-		Probes: []probe{
-			{event: "unshare", attach: sysCall, fn: "unshare"},
-		},
-		Sets: []string{"syscalls", "proc"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "flags"},
 		},
@@ -3486,10 +2940,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SetRobustListEventID: {
 		ID32Bit: sys32set_robust_list,
 		Name:    "set_robust_list",
-		Probes: []probe{
-			{event: "set_robust_list", attach: sysCall, fn: "set_robust_list"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_futex"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_futex"},
 		Params: []trace.ArgMeta{
 			{Type: "struct robust_list_head*", Name: "head"},
 			{Type: "size_t", Name: "len"},
@@ -3498,10 +2950,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetRobustListEventID: {
 		ID32Bit: sys32get_robust_list,
 		Name:    "get_robust_list",
-		Probes: []probe{
-			{event: "get_robust_list", attach: sysCall, fn: "get_robust_list"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_futex"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_futex"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "pid"},
 			{Type: "struct robust_list_head**", Name: "head_ptr"},
@@ -3511,10 +2961,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SpliceEventID: {
 		ID32Bit: sys32splice,
 		Name:    "splice",
-		Probes: []probe{
-			{event: "splice", attach: sysCall, fn: "splice"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_pipe"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_pipe"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd_in"},
 			{Type: "off_t*", Name: "off_in"},
@@ -3527,10 +2975,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	TeeEventID: {
 		ID32Bit: sys32tee,
 		Name:    "tee",
-		Probes: []probe{
-			{event: "tee", attach: sysCall, fn: "tee"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_pipe"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_pipe"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd_in"},
 			{Type: "int", Name: "fd_out"},
@@ -3541,10 +2987,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SyncFileRangeEventID: {
 		ID32Bit: sys32sync_file_range,
 		Name:    "sync_file_range",
-		Probes: []probe{
-			{event: "sync_file_range", attach: sysCall, fn: "sync_file_range"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_sync"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_sync"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "off_t", Name: "offset"},
@@ -3555,10 +2999,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	VmspliceEventID: {
 		ID32Bit: sys32vmsplice,
 		Name:    "vmsplice",
-		Probes: []probe{
-			{event: "vmsplice", attach: sysCall, fn: "vmsplice"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_pipe"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_pipe"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const struct iovec*", Name: "iov"},
@@ -3569,10 +3011,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MovePagesEventID: {
 		ID32Bit: sys32move_pages,
 		Name:    "move_pages",
-		Probes: []probe{
-			{event: "move_pages", attach: sysCall, fn: "move_pages"},
-		},
-		Sets: []string{"syscalls", "system", "system_numa"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system", "system_numa"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "pid"},
 			{Type: "unsigned long", Name: "count"},
@@ -3585,10 +3025,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	UtimensatEventID: {
 		ID32Bit: sys32utimensat_time64,
 		Name:    "utimensat",
-		Probes: []probe{
-			{event: "utimensat", attach: sysCall, fn: "utimensat"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
@@ -3599,10 +3037,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	EpollPwaitEventID: {
 		ID32Bit: sys32epoll_pwait,
 		Name:    "epoll_pwait",
-		Probes: []probe{
-			{event: "epoll_pwait", attach: sysCall, fn: "epoll_pwait"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_mux_io"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "epfd"},
 			{Type: "struct epoll_event*", Name: "events"},
@@ -3615,10 +3051,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SignalfdEventID: {
 		ID32Bit: sys32signalfd,
 		Name:    "signalfd",
-		Probes: []probe{
-			{event: "signalfd", attach: sysCall, fn: "signalfd"},
-		},
-		Sets: []string{"syscalls", "signals"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "signals"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "sigset_t*", Name: "mask"},
@@ -3628,10 +3062,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	TimerfdCreateEventID: {
 		ID32Bit: sys32timerfd_create,
 		Name:    "timerfd_create",
-		Probes: []probe{
-			{event: "timerfd_create", attach: sysCall, fn: "timerfd_create"},
-		},
-		Sets: []string{"syscalls", "time", "time_timer"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "time", "time_timer"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "clockid"},
 			{Type: "int", Name: "flags"},
@@ -3640,10 +3072,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	EventfdEventID: {
 		ID32Bit: sys32eventfd,
 		Name:    "eventfd",
-		Probes: []probe{
-			{event: "eventfd", attach: sysCall, fn: "eventfd"},
-		},
-		Sets: []string{"syscalls", "signals"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "signals"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "initval"},
 			{Type: "int", Name: "flags"},
@@ -3652,10 +3082,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FallocateEventID: {
 		ID32Bit: sys32fallocate,
 		Name:    "fallocate",
-		Probes: []probe{
-			{event: "fallocate", attach: sysCall, fn: "fallocate"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "int", Name: "mode"},
@@ -3666,10 +3094,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	TimerfdSettimeEventID: {
 		ID32Bit: sys32timerfd_settime64,
 		Name:    "timerfd_settime",
-		Probes: []probe{
-			{event: "timerfd_settime", attach: sysCall, fn: "timerfd_settime"},
-		},
-		Sets: []string{"syscalls", "time", "time_timer"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "time", "time_timer"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "int", Name: "flags"},
@@ -3680,10 +3106,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	TimerfdGettimeEventID: {
 		ID32Bit: sys32timerfd_gettime64,
 		Name:    "timerfd_gettime",
-		Probes: []probe{
-			{event: "timerfd_gettime", attach: sysCall, fn: "timerfd_gettime"},
-		},
-		Sets: []string{"syscalls", "time", "time_timer"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "time", "time_timer"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "struct itimerspec*", Name: "curr_value"},
@@ -3692,10 +3116,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Accept4EventID: {
 		ID32Bit: sys32accept4,
 		Name:    "accept4",
-		Probes: []probe{
-			{event: "accept4", attach: sysCall, fn: "accept4"},
-		},
-		Sets: []string{"default", "syscalls", "net", "net_sock"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "net", "net_sock"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct sockaddr*", Name: "addr"},
@@ -3706,10 +3128,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Signalfd4EventID: {
 		ID32Bit: sys32signalfd4,
 		Name:    "signalfd4",
-		Probes: []probe{
-			{event: "signalfd4", attach: sysCall, fn: "signalfd4"},
-		},
-		Sets: []string{"syscalls", "signals"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "signals"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const sigset_t*", Name: "mask"},
@@ -3720,10 +3140,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Eventfd2EventID: {
 		ID32Bit: sys32eventfd2,
 		Name:    "eventfd2",
-		Probes: []probe{
-			{event: "eventfd2", attach: sysCall, fn: "eventfd2"},
-		},
-		Sets: []string{"syscalls", "signals"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "signals"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "initval"},
 			{Type: "int", Name: "flags"},
@@ -3732,10 +3150,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	EpollCreate1EventID: {
 		ID32Bit: sys32epoll_create1,
 		Name:    "epoll_create1",
-		Probes: []probe{
-			{event: "epoll_create1", attach: sysCall, fn: "epoll_create1"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_mux_io"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "flags"},
 		},
@@ -3743,10 +3159,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Dup3EventID: {
 		ID32Bit: sys32dup3,
 		Name:    "dup3",
-		Probes: []probe{
-			{event: "dup3", attach: sysCall, fn: "dup3"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_fd_ops"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_fd_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "oldfd"},
 			{Type: "int", Name: "newfd"},
@@ -3756,10 +3170,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Pipe2EventID: {
 		ID32Bit: sys32pipe2,
 		Name:    "pipe2",
-		Probes: []probe{
-			{event: "pipe2", attach: sysCall, fn: "pipe2"},
-		},
-		Sets: []string{"syscalls", "ipc", "ipc_pipe"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "ipc", "ipc_pipe"},
 		Params: []trace.ArgMeta{
 			{Type: "int[2]", Name: "pipefd"},
 			{Type: "int", Name: "flags"},
@@ -3768,10 +3180,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	InotifyInit1EventID: {
 		ID32Bit: sys32inotify_init1,
 		Name:    "inotify_init1",
-		Probes: []probe{
-			{event: "inotify_init1", attach: sysCall, fn: "inotify_init1"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_monitor"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_monitor"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "flags"},
 		},
@@ -3779,10 +3189,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	PreadvEventID: {
 		ID32Bit: sys32preadv,
 		Name:    "preadv",
-		Probes: []probe{
-			{event: "preadv", attach: sysCall, fn: "preadv"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_read_write"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_read_write"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const struct iovec*", Name: "iov"},
@@ -3794,10 +3202,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	PwritevEventID: {
 		ID32Bit: sys32pwritev,
 		Name:    "pwritev",
-		Probes: []probe{
-			{event: "pwritev", attach: sysCall, fn: "pwritev"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_read_write"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_read_write"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const struct iovec*", Name: "iov"},
@@ -3809,10 +3215,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	RtTgsigqueueinfoEventID: {
 		ID32Bit: sys32rt_tgsigqueueinfo,
 		Name:    "rt_tgsigqueueinfo",
-		Probes: []probe{
-			{event: "rt_tgsigqueueinfo", attach: sysCall, fn: "rt_tgsigqueueinfo"},
-		},
-		Sets: []string{"syscalls", "signals"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "signals"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "tgid"},
 			{Type: "pid_t", Name: "tid"},
@@ -3823,10 +3227,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	PerfEventOpenEventID: {
 		ID32Bit: sys32perf_event_open,
 		Name:    "perf_event_open",
-		Probes: []probe{
-			{event: "perf_event_open", attach: sysCall, fn: "perf_event_open"},
-		},
-		Sets: []string{"syscalls", "system"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system"},
 		Params: []trace.ArgMeta{
 			{Type: "struct perf_event_attr*", Name: "attr"},
 			{Type: "pid_t", Name: "pid"},
@@ -3838,10 +3240,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	RecvmmsgEventID: {
 		ID32Bit: sys32recvmmsg_time64,
 		Name:    "recvmmsg",
-		Probes: []probe{
-			{event: "recvmmsg", attach: sysCall, fn: "recvmmsg"},
-		},
-		Sets: []string{"syscalls", "net", "net_snd_rcv"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "net", "net_snd_rcv"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct mmsghdr*", Name: "msgvec"},
@@ -3853,10 +3253,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FanotifyInitEventID: {
 		ID32Bit: sys32fanotify_init,
 		Name:    "fanotify_init",
-		Probes: []probe{
-			{event: "fanotify_init", attach: sysCall, fn: "fanotify_init"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_monitor"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_monitor"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "flags"},
 			{Type: "unsigned int", Name: "event_f_flags"},
@@ -3865,10 +3263,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FanotifyMarkEventID: {
 		ID32Bit: sys32fanotify_mark,
 		Name:    "fanotify_mark",
-		Probes: []probe{
-			{event: "fanotify_mark", attach: sysCall, fn: "fanotify_mark"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_monitor"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_monitor"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fanotify_fd"},
 			{Type: "unsigned int", Name: "flags"},
@@ -3880,10 +3276,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Prlimit64EventID: {
 		ID32Bit: sys32prlimit64,
 		Name:    "prlimit64",
-		Probes: []probe{
-			{event: "prlimit64", attach: sysCall, fn: "prlimit64"},
-		},
-		Sets: []string{"syscalls", "proc"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "int", Name: "resource"},
@@ -3894,10 +3288,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	NameToHandleAtEventID: {
 		ID32Bit: sys32name_to_handle_at,
 		Name:    "name_to_handle_at",
-		Probes: []probe{
-			{event: "name_to_handle_at", attach: sysCall, fn: "name_to_handle_at"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
@@ -3909,10 +3301,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	OpenByHandleAtEventID: {
 		ID32Bit: sys32open_by_handle_at,
 		Name:    "open_by_handle_at",
-		Probes: []probe{
-			{event: "open_by_handle_at", attach: sysCall, fn: "open_by_handle_at"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "mount_fd"},
 			{Type: "struct file_handle*", Name: "handle"},
@@ -3922,10 +3312,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ClockAdjtimeEventID: {
 		ID32Bit: sys32clock_adjtime,
 		Name:    "clock_adjtime",
-		Probes: []probe{
-			{event: "clock_adjtime", attach: sysCall, fn: "clock_adjtime"},
-		},
-		Sets: []string{"syscalls", "time", "time_clock"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "time", "time_clock"},
 		Params: []trace.ArgMeta{
 			{Type: "const clockid_t", Name: "clk_id"},
 			{Type: "struct timex*", Name: "buf"},
@@ -3934,10 +3322,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SyncfsEventID: {
 		ID32Bit: sys32syncfs,
 		Name:    "syncfs",
-		Probes: []probe{
-			{event: "syncfs", attach: sysCall, fn: "syncfs"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_sync"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_sync"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 		},
@@ -3945,10 +3331,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SendmmsgEventID: {
 		ID32Bit: sys32sendmmsg,
 		Name:    "sendmmsg",
-		Probes: []probe{
-			{event: "sendmmsg", attach: sysCall, fn: "sendmmsg"},
-		},
-		Sets: []string{"syscalls", "net", "net_snd_rcv"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "net", "net_snd_rcv"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct mmsghdr*", Name: "msgvec"},
@@ -3959,10 +3343,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SetnsEventID: {
 		ID32Bit: sys32setns,
 		Name:    "setns",
-		Probes: []probe{
-			{event: "setns", attach: sysCall, fn: "setns"},
-		},
-		Sets: []string{"syscalls", "proc"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "int", Name: "nstype"},
@@ -3971,10 +3353,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetcpuEventID: {
 		ID32Bit: sys32getcpu,
 		Name:    "getcpu",
-		Probes: []probe{
-			{event: "getcpu", attach: sysCall, fn: "getcpu"},
-		},
-		Sets: []string{"syscalls", "system", "system_numa"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system", "system_numa"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned int*", Name: "cpu"},
 			{Type: "unsigned int*", Name: "node"},
@@ -3984,10 +3364,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ProcessVmReadvEventID: {
 		ID32Bit: sys32process_vm_readv,
 		Name:    "process_vm_readv",
-		Probes: []probe{
-			{event: "process_vm_readv", attach: sysCall, fn: "process_vm_readv"},
-		},
-		Sets: []string{"default", "syscalls", "proc"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "proc"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "const struct iovec*", Name: "local_iov"},
@@ -4000,10 +3378,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ProcessVmWritevEventID: {
 		ID32Bit: sys32process_vm_writev,
 		Name:    "process_vm_writev",
-		Probes: []probe{
-			{event: "process_vm_writev", attach: sysCall, fn: "process_vm_writev"},
-		},
-		Sets: []string{"default", "syscalls", "proc"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "proc"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "const struct iovec*", Name: "local_iov"},
@@ -4016,10 +3392,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	KcmpEventID: {
 		ID32Bit: sys32kcmp,
 		Name:    "kcmp",
-		Probes: []probe{
-			{event: "kcmp", attach: sysCall, fn: "kcmp"},
-		},
-		Sets: []string{"syscalls", "proc"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid1"},
 			{Type: "pid_t", Name: "pid2"},
@@ -4031,10 +3405,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FinitModuleEventID: {
 		ID32Bit: sys32finit_module,
 		Name:    "finit_module",
-		Probes: []probe{
-			{event: "finit_module", attach: sysCall, fn: "finit_module"},
-		},
-		Sets: []string{"default", "syscalls", "system", "system_module"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "system", "system_module"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const char*", Name: "param_values"},
@@ -4044,10 +3416,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SchedSetattrEventID: {
 		ID32Bit: sys32sched_setattr,
 		Name:    "sched_setattr",
-		Probes: []probe{
-			{event: "sched_setattr", attach: sysCall, fn: "sched_setattr"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_sched"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_sched"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "struct sched_attr*", Name: "attr"},
@@ -4057,10 +3427,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SchedGetattrEventID: {
 		ID32Bit: sys32sched_getattr,
 		Name:    "sched_getattr",
-		Probes: []probe{
-			{event: "sched_getattr", attach: sysCall, fn: "sched_getattr"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_sched"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_sched"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "struct sched_attr*", Name: "attr"},
@@ -4071,10 +3439,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Renameat2EventID: {
 		ID32Bit: sys32renameat2,
 		Name:    "renameat2",
-		Probes: []probe{
-			{event: "renameat2", attach: sysCall, fn: "renameat2"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_ops"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "olddirfd"},
 			{Type: "const char*", Name: "oldpath"},
@@ -4086,10 +3452,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SeccompEventID: {
 		ID32Bit: sys32seccomp,
 		Name:    "seccomp",
-		Probes: []probe{
-			{event: "seccomp", attach: sysCall, fn: "seccomp"},
-		},
-		Sets: []string{"syscalls", "proc"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "operation"},
 			{Type: "unsigned int", Name: "flags"},
@@ -4099,10 +3463,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	GetrandomEventID: {
 		ID32Bit: sys32getrandom,
 		Name:    "getrandom",
-		Probes: []probe{
-			{event: "getrandom", attach: sysCall, fn: "getrandom"},
-		},
-		Sets: []string{"syscalls", "fs"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs"},
 		Params: []trace.ArgMeta{
 			{Type: "void*", Name: "buf"},
 			{Type: "size_t", Name: "buflen"},
@@ -4112,10 +3474,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MemfdCreateEventID: {
 		ID32Bit: sys32memfd_create,
 		Name:    "memfd_create",
-		Probes: []probe{
-			{event: "memfd_create", attach: sysCall, fn: "memfd_create"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_file_ops"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_file_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "name"},
 			{Type: "unsigned int", Name: "flags"},
@@ -4124,10 +3484,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	KexecFileLoadEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "kexec_file_load",
-		Probes: []probe{
-			{event: "kexec_file_load", attach: sysCall, fn: "kexec_file_load"},
-		},
-		Sets: []string{"syscalls", "system"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "kernel_fd"},
 			{Type: "int", Name: "initrd_fd"},
@@ -4139,10 +3497,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	BpfEventID: {
 		ID32Bit: sys32bpf,
 		Name:    "bpf",
-		Probes: []probe{
-			{event: "bpf", attach: sysCall, fn: "bpf"},
-		},
-		Sets: []string{"default", "syscalls", "system"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "system"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "cmd"},
 			{Type: "union bpf_attr*", Name: "attr"},
@@ -4152,10 +3508,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ExecveatEventID: {
 		ID32Bit: sys32execveat,
 		Name:    "execveat",
-		Probes: []probe{
-			{event: "execveat", attach: sysCall, fn: "execveat"},
-		},
-		Sets: []string{"default", "syscalls", "proc", "proc_life"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "proc", "proc_life"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
@@ -4167,10 +3521,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	UserfaultfdEventID: {
 		ID32Bit: sys32userfaultfd,
 		Name:    "userfaultfd",
-		Probes: []probe{
-			{event: "userfaultfd", attach: sysCall, fn: "userfaultfd"},
-		},
-		Sets: []string{"syscalls", "system"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "system"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "flags"},
 		},
@@ -4178,10 +3530,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MembarrierEventID: {
 		ID32Bit: sys32membarrier,
 		Name:    "membarrier",
-		Probes: []probe{
-			{event: "membarrier", attach: sysCall, fn: "membarrier"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_mem"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_mem"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "cmd"},
 			{Type: "int", Name: "flags"},
@@ -4190,10 +3540,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Mlock2EventID: {
 		ID32Bit: sys32mlock2,
 		Name:    "mlock2",
-		Probes: []probe{
-			{event: "mlock2", attach: sysCall, fn: "mlock2"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_mem"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_mem"},
 		Params: []trace.ArgMeta{
 			{Type: "const void*", Name: "addr"},
 			{Type: "size_t", Name: "len"},
@@ -4203,10 +3551,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	CopyFileRangeEventID: {
 		ID32Bit: sys32copy_file_range,
 		Name:    "copy_file_range",
-		Probes: []probe{
-			{event: "copy_file_range", attach: sysCall, fn: "copy_file_range"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_read_write"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_read_write"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd_in"},
 			{Type: "off_t*", Name: "off_in"},
@@ -4219,10 +3565,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Preadv2EventID: {
 		ID32Bit: sys32preadv2,
 		Name:    "preadv2",
-		Probes: []probe{
-			{event: "preadv2", attach: sysCall, fn: "preadv2"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_read_write"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_read_write"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const struct iovec*", Name: "iov"},
@@ -4235,10 +3579,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Pwritev2EventID: {
 		ID32Bit: sys32pwritev2,
 		Name:    "pwritev2",
-		Probes: []probe{
-			{event: "pwritev2", attach: sysCall, fn: "pwritev2"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_read_write"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_read_write"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const struct iovec*", Name: "iov"},
@@ -4251,10 +3593,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	PkeyMprotectEventID: {
 		ID32Bit: sys32pkey_mprotect,
 		Name:    "pkey_mprotect",
-		Probes: []probe{
-			{event: "pkey_mprotect", attach: sysCall, fn: "pkey_mprotect"},
-		},
-		Sets: []string{"default", "syscalls", "proc", "proc_mem"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "proc", "proc_mem"},
 		Params: []trace.ArgMeta{
 			{Type: "void*", Name: "addr"},
 			{Type: "size_t", Name: "len"},
@@ -4265,10 +3605,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	PkeyAllocEventID: {
 		ID32Bit: sys32pkey_alloc,
 		Name:    "pkey_alloc",
-		Probes: []probe{
-			{event: "pkey_alloc", attach: sysCall, fn: "pkey_alloc"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_mem"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_mem"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "flags"},
 			{Type: "unsigned long", Name: "access_rights"},
@@ -4277,10 +3615,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	PkeyFreeEventID: {
 		ID32Bit: sys32pkey_free,
 		Name:    "pkey_free",
-		Probes: []probe{
-			{event: "pkey_free", attach: sysCall, fn: "pkey_free"},
-		},
-		Sets: []string{"syscalls", "proc", "proc_mem"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "proc_mem"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "pkey"},
 		},
@@ -4288,10 +3624,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	StatxEventID: {
 		ID32Bit: sys32statx,
 		Name:    "statx",
-		Probes: []probe{
-			{event: "statx", attach: sysCall, fn: "statx"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
@@ -4303,10 +3637,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	IoPgeteventsEventID: {
 		ID32Bit: sys32io_pgetevents_time64,
 		Name:    "io_pgetevents",
-		Probes: []probe{
-			{event: "io_pgetevents", attach: sysCall, fn: "io_pgetevents"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_async_io"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_async_io"},
 		Params: []trace.ArgMeta{
 			{Type: "aio_context_t", Name: "ctx_id"},
 			{Type: "long", Name: "min_nr"},
@@ -4319,10 +3651,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	RseqEventID: {
 		ID32Bit: sys32rseq,
 		Name:    "rseq",
-		Probes: []probe{
-			{event: "rseq", attach: sysCall, fn: "rseq"},
-		},
-		Sets: []string{"syscalls"},
+		Syscall: true,
+		Sets:    []string{"syscalls"},
 		Params: []trace.ArgMeta{
 			{Type: "struct rseq*", Name: "rseq"},
 			{Type: "u32", Name: "rseq_len"},
@@ -4333,10 +3663,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	PidfdSendSignalEventID: {
 		ID32Bit: sys32pidfd_send_signal,
 		Name:    "pidfd_send_signal",
-		Probes: []probe{
-			{event: "pidfd_send_signal", attach: sysCall, fn: "pidfd_send_signal"},
-		},
-		Sets: []string{"syscalls", "signals"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "signals"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "pidfd"},
 			{Type: "int", Name: "sig"},
@@ -4347,10 +3675,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	IoUringSetupEventID: {
 		ID32Bit: sys32io_uring_setup,
 		Name:    "io_uring_setup",
-		Probes: []probe{
-			{event: "io_uring_setup", attach: sysCall, fn: "io_uring_setup"},
-		},
-		Sets: []string{"syscalls"},
+		Syscall: true,
+		Sets:    []string{"syscalls"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "entries"},
 			{Type: "struct io_uring_params*", Name: "p"},
@@ -4359,10 +3685,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	IoUringEnterEventID: {
 		ID32Bit: sys32io_uring_enter,
 		Name:    "io_uring_enter",
-		Probes: []probe{
-			{event: "io_uring_enter", attach: sysCall, fn: "io_uring_enter"},
-		},
-		Sets: []string{"syscalls"},
+		Syscall: true,
+		Sets:    []string{"syscalls"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "fd"},
 			{Type: "unsigned int", Name: "to_submit"},
@@ -4374,10 +3698,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	IoUringRegisterEventID: {
 		ID32Bit: sys32io_uring_register,
 		Name:    "io_uring_register",
-		Probes: []probe{
-			{event: "io_uring_register", attach: sysCall, fn: "io_uring_register"},
-		},
-		Sets: []string{"syscalls"},
+		Syscall: true,
+		Sets:    []string{"syscalls"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "fd"},
 			{Type: "unsigned int", Name: "opcode"},
@@ -4388,10 +3710,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	OpenTreeEventID: {
 		ID32Bit: sys32open_tree,
 		Name:    "open_tree",
-		Probes: []probe{
-			{event: "open_tree", attach: sysCall, fn: "open_tree"},
-		},
-		Sets: []string{"syscalls"},
+		Syscall: true,
+		Sets:    []string{"syscalls"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "dfd"},
 			{Type: "const char*", Name: "filename"},
@@ -4401,10 +3721,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MoveMountEventID: {
 		ID32Bit: sys32move_mount,
 		Name:    "move_mount",
-		Probes: []probe{
-			{event: "move_mount", attach: sysCall, fn: "move_mount"},
-		},
-		Sets: []string{"default", "syscalls", "fs"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "from_dfd"},
 			{Type: "const char*", Name: "from_path"},
@@ -4416,10 +3734,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FsopenEventID: {
 		ID32Bit: sys32fsopen,
 		Name:    "fsopen",
-		Probes: []probe{
-			{event: "fsopen", attach: sysCall, fn: "fsopen"},
-		},
-		Sets: []string{"syscalls", "fs"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "fsname"},
 			{Type: "unsigned int", Name: "flags"},
@@ -4428,10 +3744,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FsconfigEventID: {
 		ID32Bit: sys32fsconfig,
 		Name:    "fsconfig",
-		Probes: []probe{
-			{event: "fsconfig", attach: sysCall, fn: "fsconfig"},
-		},
-		Sets: []string{"syscalls", "fs"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs"},
 		Params: []trace.ArgMeta{
 			{Type: "int*", Name: "fs_fd"},
 			{Type: "unsigned int", Name: "cmd"},
@@ -4443,10 +3757,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FsmountEventID: {
 		ID32Bit: sys32fsmount,
 		Name:    "fsmount",
-		Probes: []probe{
-			{event: "fsmount", attach: sysCall, fn: "fsmount"},
-		},
-		Sets: []string{"syscalls", "fs"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fsfd"},
 			{Type: "unsigned int", Name: "flags"},
@@ -4456,10 +3768,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FspickEventID: {
 		ID32Bit: sys32fspick,
 		Name:    "fspick",
-		Probes: []probe{
-			{event: "fspick", attach: sysCall, fn: "fspick"},
-		},
-		Sets: []string{"syscalls", "fs"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
@@ -4469,10 +3779,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	PidfdOpenEventID: {
 		ID32Bit: sys32pidfd_open,
 		Name:    "pidfd_open",
-		Probes: []probe{
-			{event: "pidfd_open", attach: sysCall, fn: "pidfd_open"},
-		},
-		Sets: []string{"syscalls"},
+		Syscall: true,
+		Sets:    []string{"syscalls"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "unsigned int", Name: "flags"},
@@ -4481,10 +3789,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Clone3EventID: {
 		ID32Bit: sys32clone3,
 		Name:    "clone3",
-		Probes: []probe{
-			{event: "clone3", attach: sysCall, fn: "clone3"},
-		},
-		Sets: []string{"default", "syscalls", "proc", "proc_life"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "proc", "proc_life"},
 		Params: []trace.ArgMeta{
 			{Type: "struct clone_args*", Name: "cl_args"},
 			{Type: "size_t", Name: "size"},
@@ -4493,10 +3799,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	CloseRangeEventID: {
 		ID32Bit: sys32close_range,
 		Name:    "close_range",
-		Probes: []probe{
-			{event: "close_range", attach: sysCall, fn: "close_range"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_file_ops"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_file_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "first"},
 			{Type: "unsigned int", Name: "last"},
@@ -4505,10 +3809,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Openat2EventID: {
 		ID32Bit: sys32openat2,
 		Name:    "openat2",
-		Probes: []probe{
-			{event: "openat2", attach: sysCall, fn: "openat2"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_file_ops"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_file_ops"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
@@ -4519,10 +3821,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	PidfdGetfdEventID: {
 		ID32Bit: sys32pidfd_getfd,
 		Name:    "pidfd_getfd",
-		Probes: []probe{
-			{event: "pidfd_getfd", attach: sysCall, fn: "pidfd_getfd"},
-		},
-		Sets: []string{"syscalls"},
+		Syscall: true,
+		Sets:    []string{"syscalls"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "pidfd"},
 			{Type: "int", Name: "targetfd"},
@@ -4532,10 +3832,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Faccessat2EventID: {
 		ID32Bit: sys32faccessat2,
 		Name:    "faccessat2",
-		Probes: []probe{
-			{event: "faccessat2", attach: sysCall, fn: "faccessat2"},
-		},
-		Sets: []string{"default", "syscalls", "fs", "fs_file_attr"},
+		Syscall: true,
+		Sets:    []string{"default", "syscalls", "fs", "fs_file_attr"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "const char*", Name: "path"},
@@ -4546,10 +3844,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ProcessMadviseEventID: {
 		ID32Bit: sys32process_madvise,
 		Name:    "process_madvise",
-		Probes: []probe{
-			{event: "process_madvise", attach: sysCall, fn: "process_madvise"},
-		},
-		Sets: []string{"syscalls"},
+		Syscall: true,
+		Sets:    []string{"syscalls"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "pidfd"},
 			{Type: "void*", Name: "addr"},
@@ -4561,10 +3857,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	EpollPwait2EventID: {
 		ID32Bit: sys32epoll_pwait2,
 		Name:    "epoll_pwait2",
-		Probes: []probe{
-			{event: "epoll_pwait2", attach: sysCall, fn: "epoll_pwait2"},
-		},
-		Sets: []string{"syscalls", "fs", "fs_mux_io"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs", "fs_mux_io"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "struct epoll_event*", Name: "events"},
@@ -4576,10 +3870,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MountSetattEventID: {
 		ID32Bit: sys32mount_setattr,
 		Name:    "mount_setattr",
-		Probes: []probe{
-			{event: "mount_setattr", attach: sysCall, fn: "mount_setattr"},
-		},
-		Sets: []string{"syscalls", "fs"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "dfd"},
 			{Type: "char*", Name: "path"},
@@ -4591,10 +3883,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	QuotactlFdEventID: {
 		ID32Bit: sys32quotactl_fd,
 		Name:    "quotactl_fd",
-		Probes: []probe{
-			{event: "quotactl_fd", attach: sysCall, fn: "quotactl_fd"},
-		},
-		Sets: []string{"syscalls", "fs"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "fs"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "fd"},
 			{Type: "unsigned int", Name: "cmd"},
@@ -4605,10 +3895,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	LandlockCreateRulesetEventID: {
 		ID32Bit: sys32landlock_create_ruleset,
 		Name:    "landlock_create_ruleset",
-		Probes: []probe{
-			{event: "landlock_create_ruleset", attach: sysCall, fn: "landlock_create_ruleset"},
-		},
-		Sets: []string{"syscalls", "proc", "fs"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "fs"},
 		Params: []trace.ArgMeta{
 			{Type: "struct landlock_ruleset_attr*", Name: "attr"},
 			{Type: "size_t", Name: "size"},
@@ -4618,10 +3906,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	LandlockAddRuleEventID: {
 		ID32Bit: sys32landlock_add_rule,
 		Name:    "landlock_add_rule",
-		Probes: []probe{
-			{event: "landlock_add_rule", attach: sysCall, fn: "landlock_add_rule"},
-		},
-		Sets: []string{"syscalls", "proc", "fs"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "fs"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "ruleset_fd"},
 			{Type: "landlock_rule_type", Name: "rule_type"},
@@ -4632,10 +3918,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	LandloclRestrictSetEventID: {
 		ID32Bit: sys32landlock_restrict_self,
 		Name:    "landlock_restrict_self",
-		Probes: []probe{
-			{event: "landlock_restrict_self", attach: sysCall, fn: "landlock_restrict_self"},
-		},
-		Sets: []string{"syscalls", "proc", "fs"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "proc", "fs"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "ruleset_fd"},
 			{Type: "u32", Name: "flags"},
@@ -4644,10 +3928,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MemfdSecretEventID: {
 		ID32Bit: sys32memfd_secret,
 		Name:    "memfd_secret",
-		Probes: []probe{
-			{event: "memfd_secret", attach: sysCall, fn: "memfd_secret"},
-		},
-		Sets: []string{"syscalls"},
+		Syscall: true,
+		Sets:    []string{"syscalls"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "flags"},
 		},
@@ -4655,10 +3937,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ProcessMreleaseEventID: {
 		ID32Bit: sys32process_mrelease,
 		Name:    "process_mrelease",
-		Probes: []probe{
-			{event: "process_mrelease", attach: sysCall, fn: "process_mrelease"},
-		},
-		Sets: []string{"syscalls"},
+		Syscall: true,
+		Sets:    []string{"syscalls"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "pidfd"},
 			{Type: "unsigned int", Name: "flags"},
@@ -4667,10 +3947,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	WaitpidEventID: {
 		ID32Bit: sys32waitpid,
 		Name:    "waitpid",
-		Probes: []probe{
-			{event: "waitpid", attach: sysCall, fn: "waitpid"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "int*", Name: "status"},
@@ -4680,28 +3958,22 @@ var EventsDefinitions = map[int32]EventDefinition{
 	OldfstatEventID: {
 		ID32Bit: sys32oldfstat,
 		Name:    "oldfstat",
-		Probes: []probe{
-			{event: "oldfstat", attach: sysCall, fn: "oldfstat"},
-		},
-		Sets:   []string{"syscalls", "32bit_unique"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
+		Params:  []trace.ArgMeta{},
 	},
 	BreakEventID: {
 		ID32Bit: sys32break,
 		Name:    "break",
-		Probes: []probe{
-			{event: "break", attach: sysCall, fn: "break"},
-		},
-		Sets:   []string{"syscalls", "32bit_unique"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
+		Params:  []trace.ArgMeta{},
 	},
 	OldstatEventID: {
 		ID32Bit: sys32oldstat,
 		Name:    "oldstat",
-		Probes: []probe{
-			{event: "oldstat", attach: sysCall, fn: "oldstat"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "char*", Name: "filename"},
 			{Type: "struct __old_kernel_stat*", Name: "statbuf"},
@@ -4710,10 +3982,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	UmountEventID: {
 		ID32Bit: sys32umount,
 		Name:    "umount",
-		Probes: []probe{
-			{event: "umount", attach: sysCall, fn: "umount"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "target"},
 		},
@@ -4721,10 +3991,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	StimeEventID: {
 		ID32Bit: sys32stime,
 		Name:    "stime",
-		Probes: []probe{
-			{event: "stime", attach: sysCall, fn: "stime"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "const time_t*", Name: "t"},
 		},
@@ -4732,28 +4000,22 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SttyEventID: {
 		ID32Bit: sys32stty,
 		Name:    "stty",
-		Probes: []probe{
-			{event: "stty", attach: sysCall, fn: "stty"},
-		},
-		Sets:   []string{"syscalls", "32bit_unique"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
+		Params:  []trace.ArgMeta{},
 	},
 	GttyEventID: {
 		ID32Bit: sys32gtty,
 		Name:    "gtty",
-		Probes: []probe{
-			{event: "gtty", attach: sysCall, fn: "gtty"},
-		},
-		Sets:   []string{"syscalls", "32bit_unique"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
+		Params:  []trace.ArgMeta{},
 	},
 	NiceEventID: {
 		ID32Bit: sys32nice,
 		Name:    "nice",
-		Probes: []probe{
-			{event: "nice", attach: sysCall, fn: "nice"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "inc"},
 		},
@@ -4761,28 +4023,22 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FtimeEventID: {
 		ID32Bit: sys32ftime,
 		Name:    "ftime",
-		Probes: []probe{
-			{event: "ftime", attach: sysCall, fn: "ftime"},
-		},
-		Sets:   []string{"syscalls", "32bit_unique"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
+		Params:  []trace.ArgMeta{},
 	},
 	ProfEventID: {
 		ID32Bit: sys32prof,
 		Name:    "prof",
-		Probes: []probe{
-			{event: "prof", attach: sysCall, fn: "prof"},
-		},
-		Sets:   []string{"syscalls", "32bit_unique"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
+		Params:  []trace.ArgMeta{},
 	},
 	SignalEventID: {
 		ID32Bit: sys32signal,
 		Name:    "signal",
-		Probes: []probe{
-			{event: "signal", attach: sysCall, fn: "signal"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "signum"},
 			{Type: "sighandler_t", Name: "handler"},
@@ -4791,37 +4047,29 @@ var EventsDefinitions = map[int32]EventDefinition{
 	LockEventID: {
 		ID32Bit: sys32lock,
 		Name:    "lock",
-		Probes: []probe{
-			{event: "lock", attach: sysCall, fn: "lock"},
-		},
-		Sets:   []string{"syscalls", "32bit_unique"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
+		Params:  []trace.ArgMeta{},
 	},
 	MpxEventID: {
 		ID32Bit: sys32mpx,
 		Name:    "mpx",
-		Probes: []probe{
-			{event: "mpx", attach: sysCall, fn: "mpx"},
-		},
-		Sets:   []string{"syscalls", "32bit_unique"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
+		Params:  []trace.ArgMeta{},
 	},
 	UlimitEventID: {
 		ID32Bit: sys32ulimit,
 		Name:    "ulimit",
-		Probes: []probe{
-			{event: "ulimit", attach: sysCall, fn: "ulimit"},
-		},
-		Sets:   []string{"syscalls", "32bit_unique"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
+		Params:  []trace.ArgMeta{},
 	},
 	OldoldunameEventID: {
 		ID32Bit: sys32oldolduname,
 		Name:    "oldolduname",
-		Probes: []probe{
-			{event: "oldolduname", attach: sysCall, fn: "oldolduname"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "struct oldold_utsname*", Name: "name"},
 		},
@@ -4829,10 +4077,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SigactionEventID: {
 		ID32Bit: sys32sigaction,
 		Name:    "sigaction",
-		Probes: []probe{
-			{event: "sigaction", attach: sysCall, fn: "sigaction"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "sig"},
 			{Type: "const struct sigaction*", Name: "act"},
@@ -4842,19 +4088,15 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SgetmaskEventID: {
 		ID32Bit: sys32sgetmask,
 		Name:    "sgetmask",
-		Probes: []probe{
-			{event: "sgetmast", attach: sysCall, fn: "sgetmask"},
-		},
-		Sets:   []string{"syscalls", "32bit_unique"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
+		Params:  []trace.ArgMeta{},
 	},
 	SsetmaskEventID: {
 		ID32Bit: sys32ssetmask,
 		Name:    "ssetmask",
-		Probes: []probe{
-			{event: "ssetmask", attach: sysCall, fn: "ssetmask"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "long", Name: "newmask"},
 		},
@@ -4862,10 +4104,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SigsuspendEventID: {
 		ID32Bit: sys32sigsuspend,
 		Name:    "sigsuspend",
-		Probes: []probe{
-			{event: "sigsuspend", attach: sysCall, fn: "sigsuspend"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "const sigset_t*", Name: "mask"},
 		},
@@ -4873,10 +4113,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SigpendingEventID: {
 		ID32Bit: sys32sigpending,
 		Name:    "sigpending",
-		Probes: []probe{
-			{event: "sigpending", attach: sysCall, fn: "sigpending"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "sigset_t*", Name: "set"},
 		},
@@ -4884,10 +4122,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	OldlstatEventID: {
 		ID32Bit: sys32oldlstat,
 		Name:    "oldlstat",
-		Probes: []probe{
-			{event: "oldlstat", attach: sysCall, fn: "oldlstat"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "struct stat*", Name: "statbuf"},
@@ -4896,10 +4132,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ReaddirEventID: {
 		ID32Bit: sys32readdir,
 		Name:    "readdir",
-		Probes: []probe{
-			{event: "readdir", attach: sysCall, fn: "readdir"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "fd"},
 			{Type: "struct old_linux_dirent*", Name: "dirp"},
@@ -4909,19 +4143,15 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ProfilEventID: {
 		ID32Bit: sys32profil,
 		Name:    "profil",
-		Probes: []probe{
-			{event: "profil", attach: sysCall, fn: "profil"},
-		},
-		Sets:   []string{"syscalls", "32bit_unique"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
+		Params:  []trace.ArgMeta{},
 	},
 	SocketcallEventID: {
 		ID32Bit: sys32socketcall,
 		Name:    "socketcall",
-		Probes: []probe{
-			{event: "socketcall", attach: sysCall, fn: "socketcall"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "call"},
 			{Type: "unsigned long*", Name: "args"},
@@ -4930,10 +4160,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	OldunameEventID: {
 		ID32Bit: sys32olduname,
 		Name:    "olduname",
-		Probes: []probe{
-			{event: "olduname", attach: sysCall, fn: "olduname"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "struct utsname*", Name: "buf"},
 		},
@@ -4941,19 +4169,15 @@ var EventsDefinitions = map[int32]EventDefinition{
 	IdleEventID: {
 		ID32Bit: sys32idle,
 		Name:    "idle",
-		Probes: []probe{
-			{event: "idle", attach: sysCall, fn: "idle"},
-		},
-		Sets:   []string{"syscalls", "32bit_unique"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
+		Params:  []trace.ArgMeta{},
 	},
 	Vm86oldEventID: {
 		ID32Bit: sys32vm86old,
 		Name:    "vm86old",
-		Probes: []probe{
-			{event: "vm86old", attach: sysCall, fn: "vm86old"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "struct vm86_struct*", Name: "info"},
 		},
@@ -4961,10 +4185,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	IpcEventID: {
 		ID32Bit: sys32ipc,
 		Name:    "ipc",
-		Probes: []probe{
-			{event: "ipc", attach: sysCall, fn: "ipc"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "call"},
 			{Type: "int", Name: "first"},
@@ -4977,19 +4199,15 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SigreturnEventID: {
 		ID32Bit: sys32sigreturn,
 		Name:    "sigreturn",
-		Probes: []probe{
-			{event: "sigreturn", attach: sysCall, fn: "sigreturn"},
-		},
-		Sets:   []string{"syscalls", "32bit_unique"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
+		Params:  []trace.ArgMeta{},
 	},
 	SigprocmaskEventID: {
 		ID32Bit: sys32sigprocmask,
 		Name:    "sigprocmask",
-		Probes: []probe{
-			{event: "sigprocmask", attach: sysCall, fn: "sigprocmask"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "how"},
 			{Type: "const sigset_t *restrict", Name: "set"},
@@ -4999,28 +4217,22 @@ var EventsDefinitions = map[int32]EventDefinition{
 	BdflushEventID: {
 		ID32Bit: sys32bdflush,
 		Name:    "bdflush",
-		Probes: []probe{
-			{event: "bdflush", attach: sysCall, fn: "bdflush"},
-		},
-		Sets:   []string{"syscalls", "32bit_unique"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
+		Params:  []trace.ArgMeta{},
 	},
 	Afs_syscallEventID: {
 		ID32Bit: sys32afs_syscall,
 		Name:    "afs_syscall",
-		Probes: []probe{
-			{event: "afs_syscall", attach: sysCall, fn: "afs_syscall"},
-		},
-		Sets:   []string{"syscalls", "32bit_unique"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
+		Params:  []trace.ArgMeta{},
 	},
 	LlseekEventID: {
 		ID32Bit: sys32_llseek,
 		Name:    "llseek",
-		Probes: []probe{
-			{event: "llseek", attach: sysCall, fn: "llseek"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "fd"},
 			{Type: "unsigned long", Name: "offset_high"},
@@ -5032,10 +4244,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	OldSelectEventID: {
 		ID32Bit: sys32select,
 		Name:    "old_select",
-		Probes: []probe{
-			{event: "old_select", attach: sysCall, fn: "old_select"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "nfds"},
 			{Type: "fd_set*", Name: "readfds"},
@@ -5047,10 +4257,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Vm86EventID: {
 		ID32Bit: sys32vm86,
 		Name:    "vm86",
-		Probes: []probe{
-			{event: "vm86", attach: sysCall, fn: "vm86"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned long", Name: "fn"},
 			{Type: "struct vm86plus_struct*", Name: "v86"},
@@ -5059,10 +4267,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	OldGetrlimitEventID: {
 		ID32Bit: sys32getrlimit,
 		Name:    "old_getrlimit",
-		Probes: []probe{
-			{event: "ugetrlimit", attach: sysCall, fn: "ugetrlimit"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "resource"},
 			{Type: "struct rlimit*", Name: "rlim"},
@@ -5071,10 +4277,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Mmap2EventID: {
 		ID32Bit: sys32mmap2,
 		Name:    "mmap2",
-		Probes: []probe{
-			{event: "mmap2", attach: sysCall, fn: "mmap2"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned long", Name: "addr"},
 			{Type: "unsigned long", Name: "length"},
@@ -5087,10 +4291,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Truncate64EventID: {
 		ID32Bit: sys32truncate64,
 		Name:    "truncate64",
-		Probes: []probe{
-			{event: "truncate64", attach: sysCall, fn: "truncate64"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "off_t", Name: "length"},
@@ -5099,10 +4301,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Ftruncate64EventID: {
 		ID32Bit: sys32ftruncate64,
 		Name:    "ftruncate64",
-		Probes: []probe{
-			{event: "ftruncate64", attach: sysCall, fn: "ftruncate64"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "off_t", Name: "length"},
@@ -5111,10 +4311,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Stat64EventID: {
 		ID32Bit: sys32stat64,
 		Name:    "stat64",
-		Probes: []probe{
-			{event: "stat64", attach: sysCall, fn: "stat64"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "struct stat64*", Name: "statbuf"},
@@ -5123,10 +4321,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Lstat64EventID: {
 		ID32Bit: sys32lstat64,
 		Name:    "lstat64",
-		Probes: []probe{
-			{event: "lstat64", attach: sysCall, fn: "lstat64"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "struct stat64*", Name: "statbuf"},
@@ -5135,10 +4331,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Fstat64EventID: {
 		ID32Bit: sys32fstat64,
 		Name:    "fstat64",
-		Probes: []probe{
-			{event: "fstat64", attach: sysCall, fn: "fstat64"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "struct stat64*", Name: "statbuf"},
@@ -5147,10 +4341,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Lchown16EventID: {
 		ID32Bit: sys32lchown,
 		Name:    "lchown16",
-		Probes: []probe{
-			{event: "lchown16", attach: sysCall, fn: "lchown16"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "old_uid_t", Name: "owner"},
@@ -5160,46 +4352,36 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Getuid16EventID: {
 		ID32Bit: sys32getuid,
 		Name:    "getuid16",
-		Probes: []probe{
-			{event: "getuid16", attach: sysCall, fn: "getuid16"},
-		},
-		Sets:   []string{"syscalls", "32bit_unique"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
+		Params:  []trace.ArgMeta{},
 	},
 	Getgid16EventID: {
 		ID32Bit: sys32getgid,
 		Name:    "getgid16",
-		Probes: []probe{
-			{event: "getgid16", attach: sysCall, fn: "getgid16"},
-		},
-		Sets:   []string{"syscalls", "32bit_unique"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
+		Params:  []trace.ArgMeta{},
 	},
 	Geteuid16EventID: {
 		ID32Bit: sys32geteuid,
 		Name:    "geteuid16",
-		Probes: []probe{
-			{event: "geteuid16", attach: sysCall, fn: "geteuid16"},
-		},
-		Sets:   []string{"syscalls", "32bit_unique"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
+		Params:  []trace.ArgMeta{},
 	},
 	Getegid16EventID: {
 		ID32Bit: sys32getegid,
 		Name:    "getegid16",
-		Probes: []probe{
-			{event: "getegid16", attach: sysCall, fn: "getegid16"},
-		},
-		Sets:   []string{"syscalls", "32bit_unique"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
+		Params:  []trace.ArgMeta{},
 	},
 	Setreuid16EventID: {
 		ID32Bit: sys32setreuid,
 		Name:    "setreuid16",
-		Probes: []probe{
-			{event: "setreuid16", attach: sysCall, fn: "setreuid16"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "old_uid_t", Name: "ruid"},
 			{Type: "old_uid_t", Name: "euid"},
@@ -5208,10 +4390,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Setregid16EventID: {
 		ID32Bit: sys32setregid,
 		Name:    "setregid16",
-		Probes: []probe{
-			{event: "setregid16", attach: sysCall, fn: "setregid16"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "old_gid_t", Name: "rgid"},
 			{Type: "old_gid_t", Name: "egid"},
@@ -5220,10 +4400,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Getgroups16EventID: {
 		ID32Bit: sys32getgroups,
 		Name:    "getgroups16",
-		Probes: []probe{
-			{event: "getgroups16", attach: sysCall, fn: "getgroups16"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "size"},
 			{Type: "old_gid_t*", Name: "list"},
@@ -5232,10 +4410,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Setgroups16EventID: {
 		ID32Bit: sys32setgroups,
 		Name:    "setgroups16",
-		Probes: []probe{
-			{event: "setgroups16", attach: sysCall, fn: "setgroups16"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "size_t", Name: "size"},
 			{Type: "const gid_t*", Name: "list"},
@@ -5244,10 +4420,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Fchown16EventID: {
 		ID32Bit: sys32fchown,
 		Name:    "fchown16",
-		Probes: []probe{
-			{event: "fchown16", attach: sysCall, fn: "fchown16"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "fd"},
 			{Type: "old_uid_t", Name: "user"},
@@ -5257,10 +4431,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Setresuid16EventID: {
 		ID32Bit: sys32setresuid,
 		Name:    "setresuid16",
-		Probes: []probe{
-			{event: "setresuid16", attach: sysCall, fn: "setresuid16"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "old_uid_t", Name: "ruid"},
 			{Type: "old_uid_t", Name: "euid"},
@@ -5270,10 +4442,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Getresuid16EventID: {
 		ID32Bit: sys32getresuid,
 		Name:    "getresuid16",
-		Probes: []probe{
-			{event: "getresuid16", attach: sysCall, fn: "getresuid16"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "old_uid_t*", Name: "ruid"},
 			{Type: "old_uid_t*", Name: "euid"},
@@ -5283,10 +4453,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Setresgid16EventID: {
 		ID32Bit: sys32setresgid,
 		Name:    "setresgid16",
-		Probes: []probe{
-			{event: "setresgid16", attach: sysCall, fn: "setresgid16"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "old_uid_t", Name: "rgid"},
 			{Type: "old_uid_t", Name: "euid"},
@@ -5296,10 +4464,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Getresgid16EventID: {
 		ID32Bit: sys32getresgid,
 		Name:    "getresgid16",
-		Probes: []probe{
-			{event: "getresgid16", attach: sysCall, fn: "getresgid16"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "old_gid_t*", Name: "rgid"},
 			{Type: "old_gid_t*", Name: "egid"},
@@ -5309,10 +4475,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Chown16EventID: {
 		ID32Bit: sys32chown,
 		Name:    "chown16",
-		Probes: []probe{
-			{event: "chown16", attach: sysCall, fn: "chown16"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "old_uid_t", Name: "owner"},
@@ -5322,10 +4486,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Setuid16EventID: {
 		ID32Bit: sys32setuid,
 		Name:    "setuid16",
-		Probes: []probe{
-			{event: "setuid16", attach: sysCall, fn: "setuid16"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "old_old_uid_t", Name: "uid"},
 		},
@@ -5333,10 +4495,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Setgid16EventID: {
 		ID32Bit: sys32setgid,
 		Name:    "setgid16",
-		Probes: []probe{
-			{event: "setgid16", attach: sysCall, fn: "setgid16"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "old_gid_t", Name: "gid"},
 		},
@@ -5344,10 +4504,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Setfsuid16EventID: {
 		ID32Bit: sys32setfsuid,
 		Name:    "setfsuid16",
-		Probes: []probe{
-			{event: "setfsuid16", attach: sysCall, fn: "setfsuid16"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "old_uid_t", Name: "fsuid"},
 		},
@@ -5355,10 +4513,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Setfsgid16EventID: {
 		ID32Bit: sys32setfsgid,
 		Name:    "setfsgid16",
-		Probes: []probe{
-			{event: "setfsgid16", attach: sysCall, fn: "setfsgid16"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "old_gid_t", Name: "fsgid"},
 		},
@@ -5366,10 +4522,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Fcntl64EventID: {
 		ID32Bit: sys32fcntl64,
 		Name:    "fcntl64",
-		Probes: []probe{
-			{event: "fcntl64", attach: sysCall, fn: "fcntl64"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "int", Name: "cmd"},
@@ -5379,10 +4533,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Sendfile32EventID: {
 		ID32Bit: sys32sendfile,
 		Name:    "sendfile32",
-		Probes: []probe{
-			{event: "sendfile32", attach: sysCall, fn: "sendfile32"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "out_fd"},
 			{Type: "int", Name: "in_fd"},
@@ -5393,10 +4545,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Statfs64EventID: {
 		ID32Bit: sys32statfs64,
 		Name:    "statfs64",
-		Probes: []probe{
-			{event: "statfs64", attach: sysCall, fn: "statfs64"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "path"},
 			{Type: "size_t", Name: "sz"},
@@ -5406,10 +4556,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Fstatfs64EventID: {
 		ID32Bit: sys32fstatfs64,
 		Name:    "fstatfs64",
-		Probes: []probe{
-			{event: "fstatfs64", attach: sysCall, fn: "fstatfs64"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "size_t", Name: "sz"},
@@ -5419,10 +4567,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Fadvise64_64EventID: {
 		ID32Bit: sys32fadvise64_64,
 		Name:    "fadvise64_64",
-		Probes: []probe{
-			{event: "fadvise64_64", attach: sysCall, fn: "fadvise64_64"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "loff_t", Name: "offset"},
@@ -5433,10 +4579,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ClockGettime32EventID: {
 		ID32Bit: sys32clock_gettime,
 		Name:    "clock_gettime32",
-		Probes: []probe{
-			{event: "clock_gettime32", attach: sysCall, fn: "clock_gettime32"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "clockid_t", Name: "which_clock"},
 			{Type: "struct old_timespec32*", Name: "tp"},
@@ -5445,10 +4589,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ClockSettime32EventID: {
 		ID32Bit: sys32clock_settime,
 		Name:    "clock_settime32",
-		Probes: []probe{
-			{event: "clock_settime32", attach: sysCall, fn: "clock_settime32"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "clockid_t", Name: "which_clock"},
 			{Type: "struct old_timespec32*", Name: "tp"},
@@ -5457,19 +4599,15 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ClockAdjtime64EventID: {
 		ID32Bit: sys32clock_adjtime64,
 		Name:    "clock_adjtime64",
-		Probes: []probe{
-			{event: "clock_adjtime64", attach: sysCall, fn: "clock_adjtime64"},
-		},
-		Sets:   []string{"syscalls", "32bit_unique"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
+		Params:  []trace.ArgMeta{},
 	},
 	ClockGetresTime32EventID: {
 		ID32Bit: sys32clock_getres,
 		Name:    "clock_getres_time32",
-		Probes: []probe{
-			{event: "clock_getres_time32", attach: sysCall, fn: "clock_getres_time32"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "clockid_t", Name: "which_clock"},
 			{Type: "struct old_timespec32*", Name: "tp"},
@@ -5478,10 +4616,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ClockNanosleepTime32EventID: {
 		ID32Bit: sys32clock_nanosleep,
 		Name:    "clock_nanosleep_time32",
-		Probes: []probe{
-			{event: "clock_nanosleep_time32", attach: sysCall, fn: "clock_nanosleep_time32"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "clockid_t", Name: "which_clock"},
 			{Type: "int", Name: "flags"},
@@ -5492,10 +4628,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	TimerGettime32EventID: {
 		ID32Bit: sys32timer_gettime,
 		Name:    "timer_gettime32",
-		Probes: []probe{
-			{event: "timer_gettime32", attach: sysCall, fn: "timer_gettime32"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "timer_t", Name: "timer_id"},
 			{Type: "struct old_itimerspec32*", Name: "setting"},
@@ -5504,10 +4638,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	TimerSettime32EventID: {
 		ID32Bit: sys32timer_settime,
 		Name:    "timer_settime32",
-		Probes: []probe{
-			{event: "timer_settime32", attach: sysCall, fn: "timer_settime32"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "timer_t", Name: "timer_id"},
 			{Type: "int", Name: "flags"},
@@ -5518,10 +4650,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	TimerfdGettime32EventID: {
 		ID32Bit: sys32timerfd_gettime,
 		Name:    "timerfd_gettime32",
-		Probes: []probe{
-			{event: "timerfd_gettime32", attach: sysCall, fn: "timerfd_gettime32"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "ufd"},
 			{Type: "struct old_itimerspec32*", Name: "otmr"},
@@ -5530,10 +4660,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	TimerfdSettime32EventID: {
 		ID32Bit: sys32timerfd_settime,
 		Name:    "timerfd_settime32",
-		Probes: []probe{
-			{event: "timerfd_settime32", attach: sysCall, fn: "timerfd_settime32"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "ufd"},
 			{Type: "int", Name: "flags"},
@@ -5544,10 +4672,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	UtimensatTime32EventID: {
 		ID32Bit: sys32utimensat,
 		Name:    "utimensat_time32",
-		Probes: []probe{
-			{event: "utimensat_time32", attach: sysCall, fn: "utimensat_time32"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned int", Name: "dfd"},
 			{Type: "char*", Name: "filename"},
@@ -5558,10 +4684,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	Pselect6Time32EventID: {
 		ID32Bit: sys32pselect6,
 		Name:    "pselect6_time32",
-		Probes: []probe{
-			{event: "pselect6_time32", attach: sysCall, fn: "pselect6_time32"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "n"},
 			{Type: "fd_set*", Name: "inp"},
@@ -5574,10 +4698,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	PpollTime32EventID: {
 		ID32Bit: sys32ppoll,
 		Name:    "ppoll_time32",
-		Probes: []probe{
-			{event: "ppoll_time32", attach: sysCall, fn: "ppoll_time32"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "struct pollfd*", Name: "ufds"},
 			{Type: "unsigned int", Name: "nfds"},
@@ -5589,19 +4711,15 @@ var EventsDefinitions = map[int32]EventDefinition{
 	IoPgeteventsTime32EventID: {
 		ID32Bit: sys32io_pgetevents,
 		Name:    "io_pgetevents_time32",
-		Probes: []probe{
-			{event: "io_pgetevents_time32", attach: sysCall, fn: "io_pgetevents_time32"},
-		},
-		Sets:   []string{"syscalls", "32bit_unique"},
-		Params: []trace.ArgMeta{},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
+		Params:  []trace.ArgMeta{},
 	},
 	RecvmmsgTime32EventID: {
 		ID32Bit: sys32recvmmsg,
 		Name:    "recvmmsg_time32",
-		Probes: []probe{
-			{event: "recvmmsg_time32", attach: sysCall, fn: "recvmmsg_time32"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "fd"},
 			{Type: "struct mmsghdr*", Name: "mmsg"},
@@ -5613,10 +4731,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MqTimedsendTime32EventID: {
 		ID32Bit: sys32mq_timedsend,
 		Name:    "mq_timedsend_time32",
-		Probes: []probe{
-			{event: "mq_timedsend_time32", attach: sysCall, fn: "mq_timedsend_time32"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "mqd_t", Name: "mqdes"},
 			{Type: "char*", Name: "u_msg_ptr"},
@@ -5628,10 +4744,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MqTimedreceiveTime32EventID: {
 		ID32Bit: sys32mq_timedreceive,
 		Name:    "mq_timedreceive_time32",
-		Probes: []probe{
-			{event: "mq_timedreceive_time32", attach: sysCall, fn: "mq_timedreceive_time32"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "mqd_t", Name: "mqdes"},
 			{Type: "char*", Name: "u_msg_ptr"},
@@ -5643,10 +4757,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	RtSigtimedwaitTime32EventID: {
 		ID32Bit: sys32rt_sigtimedwait,
 		Name:    "rt_sigtimedwait_time32",
-		Probes: []probe{
-			{event: "rt_sigtimedwait_time32", attach: sysCall, fn: "rt_sigtimedwait_time32"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "sigset_t*", Name: "uthese"},
 			{Type: "siginfo_t*", Name: "uinfo"},
@@ -5657,10 +4769,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	FutexTime32EventID: {
 		ID32Bit: sys32futex,
 		Name:    "futex_time32",
-		Probes: []probe{
-			{event: "futex_time32", attach: sysCall, fn: "futex_time32"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "u32*", Name: "uaddr"},
 			{Type: "int", Name: "op"},
@@ -5673,10 +4783,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SchedRrGetInterval32EventID: {
 		ID32Bit: sys32sched_rr_get_interval,
 		Name:    "sched_rr_get_interval_time32",
-		Probes: []probe{
-			{event: "sched_rr_get_interval_time32", attach: sysCall, fn: "sched_rr_get_interval_time32"},
-		},
-		Sets: []string{"syscalls", "32bit_unique"},
+		Syscall: true,
+		Sets:    []string{"syscalls", "32bit_unique"},
 		Params: []trace.ArgMeta{
 			{Type: "pid_t", Name: "pid"},
 			{Type: "struct old_timespec32*", Name: "interval"},

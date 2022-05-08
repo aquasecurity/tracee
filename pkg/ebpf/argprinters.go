@@ -38,8 +38,8 @@ func (t *Tracee) parseArgs(event *trace.Event) error {
 		if syscallArg := getEventArg(event, "syscall"); syscallArg != nil {
 			if id, isInt32 := syscallArg.Value.(int32); isInt32 {
 				if event, isKnown := EventsDefinitions[id]; isKnown {
-					if event.Probes[0].attach == sysCall {
-						syscallArg.Value = event.Probes[0].event
+					if event.Syscall {
+						syscallArg.Value = event.Name
 					}
 				}
 			}

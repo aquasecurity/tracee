@@ -1038,10 +1038,6 @@ func (t *Tracee) initBPF() error {
 				continue
 			}
 			seenProbes[probe] = true
-			if probe.attach == sysCall {
-				// Already handled by raw_syscalls tracepoints
-				continue
-			}
 			prog, err := t.bpfModule.GetProgram(probe.fn)
 			if err != nil {
 				return fmt.Errorf("error getting program %s: %v", probe.fn, err)
