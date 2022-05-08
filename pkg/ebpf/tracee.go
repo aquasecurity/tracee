@@ -264,23 +264,24 @@ func New(cfg Config) (*Tracee, error) {
 
 	// Set events used to capture data
 	if t.config.Capture.Exec {
-		t.events[SchedProcessExecEventID] = eventConfig{submit: true}
+		t.events[CaptureExecEventID] = eventConfig{}
 	}
 	if t.config.Capture.FileWrite {
-		t.events[VfsWriteEventID] = eventConfig{}
-		t.events[VfsWritevEventID] = eventConfig{}
-		t.events[__KernelWriteEventID] = eventConfig{}
+		t.events[CaptureFileWriteEventID] = eventConfig{}
 	}
 	if t.config.Capture.Module {
-		t.events[SecurityPostReadFileEventID] = eventConfig{}
-		t.events[InitModuleEventID] = eventConfig{}
+		t.events[CaptureModuleEventID] = eventConfig{}
 	}
 	if t.config.Capture.Mem {
-		t.events[MmapEventID] = eventConfig{}
-		t.events[MprotectEventID] = eventConfig{}
-		t.events[MemProtAlertEventID] = eventConfig{}
+		t.events[CaptureMemEventID] = eventConfig{}
 	}
-	if t.config.Capture.NetIfaces != nil || len(t.config.Filter.NetFilter.InterfacesToTrace) > 0 || cfg.Debug {
+	if t.config.Capture.Profile {
+		t.events[CaptureProfileEventID] = eventConfig{}
+	}
+	if t.config.Capture.NetIfaces != nil {
+		t.events[CapturePcapEventID] = eventConfig{}
+	}
+	if len(t.config.Filter.NetFilter.InterfacesToTrace) > 0 || cfg.Debug {
 		t.events[SecuritySocketBindEventID] = eventConfig{}
 	}
 
@@ -772,20 +773,6 @@ func (t *Tracee) populateBPFMaps() error {
 
 	// Initialize tail call dependencies
 	tailCalls := make(map[tailCall]bool)
-	if t.config.Capture.FileWrite {
-		tailCalls[tailCall{mapName: "prog_array", mapIdx: tailVfsWrite, progName: "trace_ret_vfs_write_tail"}] = true
-		tailCalls[tailCall{mapName: "prog_array", mapIdx: tailVfsWritev, progName: "trace_ret_vfs_writev_tail"}] = true
-		tailCalls[tailCall{mapName: "prog_array", mapIdx: tailKernelWrite, progName: "trace_ret_kernel_write_tail"}] = true
-		tailCalls[tailCall{mapName: "prog_array", mapIdx: tailSendBin, progName: "send_bin"}] = true
-	}
-	if t.config.Capture.Module {
-		tailCalls[tailCall{mapName: "sys_enter_tails", mapIdx: uint32(InitModuleEventID), progName: "syscall__init_module"}] = true
-		tailCalls[tailCall{mapName: "prog_array_tp", mapIdx: tailSendBinTP, progName: "send_bin_tp"}] = true
-		tailCalls[tailCall{mapName: "prog_array", mapIdx: tailSendBin, progName: "send_bin"}] = true
-	}
-	if t.config.Capture.Mem {
-		tailCalls[tailCall{mapName: "prog_array", mapIdx: tailSendBin, progName: "send_bin"}] = true
-	}
 	for e := range t.events {
 		for _, tailCall := range EventsDefinitions[e].Dependencies.tailCalls {
 			tailCalls[tailCall] = true
