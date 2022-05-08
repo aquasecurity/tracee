@@ -136,6 +136,15 @@ const (
 	DebugNetTcpConnect
 )
 
+const (
+	CaptureFileWriteEventID int32 = iota + 6000
+	CaptureExecEventID
+	CaptureModuleEventID
+	CaptureMemEventID
+	CaptureProfileEventID
+	CapturePcapEventID
+)
+
 var EventsDefinitions = map[int32]EventDefinition{
 	ReadEventID: {
 		ID32Bit: sys32read,
@@ -776,7 +785,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 				{mapName: "sys_enter_tails", mapIdx: uint32(ExecveEventID), progName: "syscall__execve"},
 			},
 		},
-		Sets:    []string{"default", "syscalls", "proc", "proc_life"},
+		Sets: []string{"default", "syscalls", "proc", "proc_life"},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "const char*const*", Name: "argv"},
@@ -3531,7 +3540,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 				{mapName: "sys_enter_tails", mapIdx: uint32(ExecveatEventID), progName: "syscall__execveat"},
 			},
 		},
-		Sets:    []string{"default", "syscalls", "proc", "proc_life"},
+		Sets: []string{"default", "syscalls", "proc", "proc_life"},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "dirfd"},
 			{Type: "const char*", Name: "pathname"},
@@ -5563,6 +5572,83 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "dev_t", Name: "dev"},
 			{Type: "unsigned long", Name: "inode"},
 			{Type: "unsigned long", Name: "ctime"},
+		},
+	},
+	CaptureFileWriteEventID: {
+		ID32Bit:  sys32undefined,
+		Name:     "capture_file_write",
+		Internal: true,
+		Probes: []probe{
+			{event: "vfs_write", attach: kprobe, fn: "trace_vfs_write"},
+			{event: "vfs_write", attach: kretprobe, fn: "trace_ret_vfs_write"},
+			{event: "vfs_writev", attach: kprobe, fn: "trace_vfs_writev"},
+			{event: "vfs_writev", attach: kretprobe, fn: "trace_ret_vfs_writev"},
+			{event: "__kernel_write", attach: kprobe, fn: "trace_kernel_write"},
+			{event: "__kernel_write", attach: kretprobe, fn: "trace_ret_kernel_write"},
+		},
+		Dependencies: dependencies{
+			tailCalls: []tailCall{
+				{mapName: "prog_array", mapIdx: tailVfsWrite, progName: "trace_ret_vfs_write_tail"},
+				{mapName: "prog_array", mapIdx: tailVfsWritev, progName: "trace_ret_vfs_writev_tail"},
+				{mapName: "prog_array", mapIdx: tailKernelWrite, progName: "trace_ret_kernel_write_tail"},
+				{mapName: "prog_array", mapIdx: tailSendBin, progName: "send_bin"},
+			},
+		},
+	},
+	CaptureExecEventID: {
+		ID32Bit:  sys32undefined,
+		Name:     "capture_exec",
+		Internal: true,
+		Probes:   []probe{},
+		Dependencies: dependencies{
+			events: []eventDependency{{eventID: SchedProcessExecEventID}},
+		},
+	},
+	CaptureModuleEventID: {
+		ID32Bit:  sys32undefined,
+		Name:     "capture_module",
+		Internal: true,
+		Probes: []probe{
+			{event: "raw_syscalls:sys_enter", attach: rawTracepoint, fn: "tracepoint__raw_syscalls__sys_enter"},
+			{event: "raw_syscalls:sys_exit", attach: rawTracepoint, fn: "tracepoint__raw_syscalls__sys_exit"},
+			{event: "security_kernel_post_read_file", attach: kprobe, fn: "trace_security_kernel_post_read_file"},
+		},
+		Dependencies: dependencies{
+			events: []eventDependency{{eventID: SchedProcessExecEventID}},
+			tailCalls: []tailCall{
+				{mapName: "sys_enter_tails", mapIdx: uint32(InitModuleEventID), progName: "syscall__init_module"},
+				{mapName: "prog_array_tp", mapIdx: tailSendBinTP, progName: "send_bin_tp"},
+				{mapName: "prog_array", mapIdx: tailSendBin, progName: "send_bin"},
+			},
+		},
+	},
+	CaptureMemEventID: {
+		ID32Bit:  sys32undefined,
+		Name:     "capture_mem",
+		Internal: true,
+		Probes:   []probe{},
+		Dependencies: dependencies{
+			tailCalls: []tailCall{
+				{mapName: "prog_array", mapIdx: tailSendBin, progName: "send_bin"},
+			},
+		},
+	},
+	CaptureProfileEventID: {
+		ID32Bit:  sys32undefined,
+		Name:     "capture_profile",
+		Internal: true,
+		Probes:   []probe{},
+		Dependencies: dependencies{
+			events: []eventDependency{{eventID: SchedProcessExecEventID}},
+		},
+	},
+	CapturePcapEventID: {
+		ID32Bit:  sys32undefined,
+		Name:     "capture_pcap",
+		Internal: true,
+		Probes:   []probe{},
+		Dependencies: dependencies{
+			events: []eventDependency{{eventID: SecuritySocketBindEventID}},
 		},
 	},
 }
