@@ -40,6 +40,14 @@ func (t *Tracee) handleEvents(ctx gocontext.Context) {
 	eventsChan, errc = t.processEvents(ctx, eventsChan)
 	errcList = append(errcList, errc)
 
+	// Enrichment stage
+	// In this stage container events are enriched with additional runtime data
+	// Events may be enriched in the initial decode state if the enrichment data has been stored in the Containers structure
+	// In that case, this pipeline stage will be quickly skipped
+	// This is done in a separate stage to ensure enrichment is non blocking (since container runtime calls may timeout and block the pipeline otherwise)
+	eventsChan, errc = t.enrichContainerEvents(ctx, eventsChan)
+	errcList = append(errcList, errc)
+
 	// Derive events stage
 	// In this stage events go through a derivation function
 	eventsChan, errc = t.deriveEvents(ctx, eventsChan)
@@ -186,6 +194,7 @@ func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *trace.Event, 
 				PIDNS:               int(ctx.PidID),
 				ProcessName:         string(bytes.TrimRight(ctx.Comm[:], "\x00")),
 				HostName:            string(bytes.TrimRight(ctx.UtsName[:], "\x00")),
+				CgroupID:            uint(ctx.CgroupID),
 				ContainerID:         containerInfo.ContainerId,
 				ContainerImage:      containerInfo.Image,
 				ContainerName:       containerInfo.Name,

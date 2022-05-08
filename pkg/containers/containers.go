@@ -218,54 +218,57 @@ func (c *Containers) CgroupUpdate(cgroupId uint64, path string, ctime time.Time)
 	c.cgroups[uint32(cgroupId)] = info
 	c.mtx.Unlock()
 
-	err := c.enrichCgroupInfo(cgroupId)
-
-	//don't fail on enrichment but log to stderr
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to enrich container data: %v", err)
-	}
-
 	return info, nil
 }
 
-// enrichCgroupInfo checks for a given cgroupId if it is relevant to some running container
+// EnrichCgroupInfo checks for a given cgroupId if it is relevant to some running container
 // it then calls the runtime info service to gather additional data from the container's runtime
-func (c *Containers) enrichCgroupInfo(cgroupId uint64) error {
+// it returns the retrieved metadata and a relevant error
+// this function shouldn't be called twice for the same cgroupId unless attempting a retry
+func (c *Containers) EnrichCgroupInfo(cgroupId uint64) (cruntime.ContainerMetadata, error) {
+	var metadata cruntime.ContainerMetadata
+
 	c.mtx.RLock()
 	info, ok := c.cgroups[uint32(cgroupId)]
 	c.mtx.RUnlock()
 
 	//if there is no cgroup anymore for some reason, return early
 	if !ok {
-		return fmt.Errorf("no cgroup to enrich")
+		return metadata, fmt.Errorf("no cgroup to enrich")
 	}
 
 	containerId := info.Container.ContainerId
 	runtime := info.Runtime
 
-	if containerId != "" && runtime != cruntime.Unknown {
-		//There might be a performance overhead with the cancel
-		//But, I think it will be negligable since this code path shouldn't be reached too frequently
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		metadata, err := c.enricher.Get(containerId, runtime, ctx)
-		defer cancel()
-		//if enrichment fails, just return early
-		if err != nil {
-			return err
-		}
-
-		info.Container = metadata
-		c.mtx.Lock()
-		//we read the dictionary again to make sure the cgroup still exists
-		//otherwise we risk reintroducing it despite not existing
-		_, ok = c.cgroups[uint32(cgroupId)]
-		if ok {
-			c.cgroups[uint32(cgroupId)] = info
-		}
-		c.mtx.Unlock()
+	if containerId == "" {
+		return metadata, fmt.Errorf("no containerId")
 	}
 
-	return nil
+	if runtime == cruntime.Unknown {
+		return metadata, fmt.Errorf("unknown runtime")
+	}
+
+	//There might be a performance overhead with the cancel
+	//But, I think it will be negligable since this code path shouldn't be reached too frequently
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	metadata, err := c.enricher.Get(containerId, runtime, ctx)
+	defer cancel()
+	//if enrichment fails, just return early
+	if err != nil {
+		return metadata, err
+	}
+
+	info.Container = metadata
+	c.mtx.Lock()
+	//we read the dictionary again to make sure the cgroup still exists
+	//otherwise we risk reintroducing it despite not existing
+	_, ok = c.cgroups[uint32(cgroupId)]
+	if ok {
+		c.cgroups[uint32(cgroupId)] = info
+	}
+	c.mtx.Unlock()
+
+	return metadata, nil
 }
 
 var (
