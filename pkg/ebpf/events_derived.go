@@ -30,6 +30,15 @@ func (t *Tracee) initEventDerivationMap() error {
 		PrintSyscallTableEventID: {
 			DetectHookedSyscallsEventID: deriveDetectHookedSyscall(t),
 		},
+		SchedProcessExecEventID: {
+			ProcessCreationEventID: deriveHigherLevelEvents(t),
+		},
+		SchedProcessExitEventID: {
+			ProcessTerminationEventID: deriveHigherLevelEvents(t),
+		},
+		SecurityInodeUnlinkEventID: {
+			FileDeletionEventID: deriveHigherLevelEvents(t),
+		},
 	}
 
 	return nil
@@ -212,4 +221,58 @@ func parseSymbol(address uint64, table *helpers.KernelSymbolTable) *helpers.Kern
 	hookingFunction.Owner = strings.TrimPrefix(hookingFunction.Owner, "[")
 	hookingFunction.Owner = strings.TrimSuffix(hookingFunction.Owner, "]")
 	return hookingFunction
+}
+
+func deriveHigherLevelEvents(t *Tracee) deriveFn {
+	return func(event trace.Event) (trace.Event, bool, error) {
+		de := event
+		switch event.EventID {
+		case int(SchedProcessExecEventID):
+			def := EventsDefinitions[ProcessCreationEventID]
+			de.EventID = int(ProcessCreationEventID)
+			de.EventName = def.Name
+			de.ReturnValue = 0
+			newArgs := []trace.Argument{}
+			for _, arg := range de.Args {
+				switch arg.ArgMeta.Name {
+				case "cmdpath":
+					newArgs = append(newArgs, trace.Argument{ArgMeta: trace.ArgMeta{Type: "const char*", Name: "relative_path"}, Value: arg.Value})
+				case "pathname":
+					newArgs = append(newArgs, trace.Argument{ArgMeta: trace.ArgMeta{Type: "const char*", Name: "absolute_path"}, Value: arg.Value})
+				case "argv":
+					newArgs = append(newArgs, trace.Argument{ArgMeta: trace.ArgMeta{Type: "const char**", Name: "arguments"}, Value: arg.Value})
+				case "invoked_from_kernel":
+					newArgs = append(newArgs, trace.Argument{ArgMeta: trace.ArgMeta{Type: "int", Name: "invoked_from_kernel"}, Value: arg.Value})
+				case "ctime":
+					newArgs = append(newArgs, trace.Argument{ArgMeta: trace.ArgMeta{Type: "unsigned long", Name: "last_changed"}, Value: arg.Value})
+				}
+			}
+			de.Args = newArgs
+			de.ArgsNum = len(newArgs)
+
+		case int(SchedProcessExitEventID):
+			def := EventsDefinitions[ProcessTerminationEventID]
+			de.EventID = int(ProcessTerminationEventID)
+			de.EventName = def.Name
+			returnCode, err := getEventArgInt64Val(&event, "exit_code")
+			if err != nil {
+				return trace.Event{}, false, fmt.Errorf("error parsing return_code arg: %v", err)
+			}
+			de.Args = []trace.Argument{{ArgMeta: trace.ArgMeta{Type: "long", Name: "exit_code"}, Value: returnCode}}
+			de.ArgsNum = 1
+
+		case int(SecurityInodeUnlinkEventID):
+			def := EventsDefinitions[FileDeletionEventID]
+			de.EventID = int(FileDeletionEventID)
+			de.EventName = def.Name
+			path, err := getEventArgStringVal(&event, "pathname")
+			if err != nil {
+				return trace.Event{}, false, fmt.Errorf("error parsing pathname arg: %v", err)
+			}
+			de.Args = []trace.Argument{{ArgMeta: trace.ArgMeta{Type: "const char*", Name: "absolute_path"}, Value: path}}
+			de.ArgsNum = 1
+		}
+
+		return de, true, nil
+	}
 }

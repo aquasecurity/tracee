@@ -99,6 +99,13 @@ const (
 	ContainerRemoveEventID
 	ExistingContainerEventID
 	DetectHookedSyscallsEventID
+	ProcessCreationEventID
+	ProcessTerminationEventID
+	NetworkConnectionEventID
+	FileCreationEventID
+	FileDeletionEventID
+	KernelModuleLoadedEventID
+	AuthenticationEventID
 	MaxUserSpaceEventID
 )
 
@@ -6356,6 +6363,46 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "unsigned int", Name: "granted_major_number"},
 			{Type: "const char*", Name: "char_device_name"},
 			{Type: "struct file_operations *", Name: "char_device_fops"},
+		},
+	},
+	ProcessCreationEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "process_creation",
+		Probes:  []probe{},
+		Dependencies: dependencies{
+			events: []eventDependency{{eventID: SchedProcessExecEventID}},
+		},
+		Sets: []string{"higher_events"},
+		Params: []trace.ArgMeta{
+			{Type: "const char*", Name: "relative_path"},
+			{Type: "const char*", Name: "absolute_path"},
+			{Type: "const char**", Name: "arguments"},
+			{Type: "int", Name: "invoked_from_kernel"},
+			{Type: "unsigned long", Name: "last_changed"},
+		},
+	},
+	ProcessTerminationEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "process_termination",
+		Probes:  []probe{},
+		Dependencies: dependencies{
+			events: []eventDependency{{eventID: SchedProcessExitEventID}},
+		},
+		Sets: []string{"higher_events"},
+		Params: []trace.ArgMeta{
+			{Type: "long", Name: "exit_code"},
+		},
+	},
+	FileDeletionEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "file_deletion",
+		Probes:  []probe{},
+		Dependencies: dependencies{
+			events: []eventDependency{{eventID: SecurityInodeUnlinkEventID}},
+		},
+		Sets: []string{"higher_events"},
+		Params: []trace.ArgMeta{
+			{Type: "const char*", Name: "path"},
 		},
 	},
 }

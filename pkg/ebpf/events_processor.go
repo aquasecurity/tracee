@@ -371,6 +371,19 @@ func getEventArgUint64Val(event *trace.Event, argName string) (uint64, error) {
 	return 0, fmt.Errorf("argument %s not found", argName)
 }
 
+func getEventArgInt64Val(event *trace.Event, argName string) (int64, error) {
+	for _, arg := range event.Args {
+		if arg.Name == argName {
+			val, ok := arg.Value.(int64)
+			if !ok {
+				return 0, fmt.Errorf("argument %s is not of type int64", argName)
+			}
+			return val, nil
+		}
+	}
+	return 0, fmt.Errorf("argument %s not found", argName)
+}
+
 func getEventArgUlongArrVal(event *trace.Event, argName string) ([]uint64, error) {
 	for _, arg := range event.Args {
 		if arg.Name == argName {
