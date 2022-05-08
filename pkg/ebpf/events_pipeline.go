@@ -240,6 +240,7 @@ func (t *Tracee) sinkEvents(ctx gocontext.Context, in <-chan *trace.Event) <-cha
 	errc := make(chan error, 1)
 
 	go func() {
+		defer close(errc)
 		for event := range in {
 			// Only emit events requested by the user
 			if t.events[int32(event.EventID)].emit {
@@ -250,14 +251,13 @@ func (t *Tracee) sinkEvents(ctx gocontext.Context, in <-chan *trace.Event) <-cha
 						continue
 					}
 				}
-			}
-
-			select {
-			case t.config.ChanEvents <- *event:
-				t.stats.EventCount.Increment()
-				event = nil
-			case <-ctx.Done():
-				return
+				select {
+				case t.config.ChanEvents <- *event:
+					t.stats.EventCount.Increment()
+					event = nil
+				case <-ctx.Done():
+					return
+				}
 			}
 		}
 	}()
