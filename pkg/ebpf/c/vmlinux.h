@@ -274,6 +274,7 @@ struct signal_struct {
 
 struct vm_area_struct {
 	long unsigned int vm_flags;
+	struct file * vm_file;
 };
 
 typedef unsigned int __kernel_gid32_t;

@@ -60,7 +60,7 @@ func (t *Tracee) parseArgs(event *trace.Event) error {
 				}
 			}
 		}
-	case MmapEventID, MprotectEventID, PkeyMprotectEventID:
+	case MmapEventID, MprotectEventID, PkeyMprotectEventID, SecurityMmapFileEventID, SecurityFileMprotectEventID:
 		if protArg := getEventArg(event, "prot"); protArg != nil {
 			if prot, isInt32 := protArg.Value.(int32); isInt32 {
 				mmapProtArgument := helpers.ParseMmapProt(uint64(prot))
