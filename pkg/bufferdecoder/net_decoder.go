@@ -1,7 +1,6 @@
 package bufferdecoder
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 )
@@ -26,7 +25,7 @@ func (decoder *EbpfDecoder) DecodeNetEventMetadata(eventMetaData *NetEventMetada
 	eventMetaData.TimeStamp = binary.LittleEndian.Uint64(decoder.buffer[offset : offset+8])
 	eventMetaData.NetEventId = int32(binary.LittleEndian.Uint32(decoder.buffer[offset+8 : offset+12]))
 	eventMetaData.HostTid = binary.LittleEndian.Uint32(decoder.buffer[offset+12 : offset+16])
-	copy(eventMetaData.ProcessName[:], bytes.TrimRight(decoder.buffer[offset+16:offset+32], "\x00"))
+	copy(eventMetaData.ProcessName[:], decoder.buffer[offset+16:offset+32])
 
 	decoder.cursor += int(eventMetaData.GetSizeBytes())
 	return nil
