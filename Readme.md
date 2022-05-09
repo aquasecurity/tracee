@@ -21,6 +21,13 @@ Watch a quick video demo of Tracee:
 
 Check out the [Tracee video hub](https://info.aquasec.com/ebpf-runtime-security) for more videos.
 
+## Documentation
+
+The full documentation of Tracee is available at
+[https://aquasecurity.github.io/tracee/dev](https://aquasecurity.github.io/tracee/dev).
+You can use the version selector on top to view documentation for a specific
+version of Tracee.
+
 ## Quickstart
 
 Before you proceed, make sure you follow the [minimum requirements for running Tracee](./docs/install/prerequisites.md).
