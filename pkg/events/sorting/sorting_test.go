@@ -25,7 +25,7 @@ func (e sortableEventsList) Less(i, j int) bool {
 }
 
 func (e sortableEventsList) Swap(i, j int) {
-
+	e.eventsList[i], e.eventsList[j] = e.eventsList[j], e.eventsList[i]
 }
 
 func TestEventsChronologicalSorter_addEvent(t *testing.T) {

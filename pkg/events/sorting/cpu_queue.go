@@ -35,8 +35,7 @@ func (cq *cpuEventsQueue) InsertByTimestamp(newEvent *trace.Event) error {
 			}
 			if insertLocation.next == insertLocation {
 				if err != nil {
-					err2 := "encountered node with self reference at next"
-					err = fmt.Errorf("%s\n%s", err, err2)
+					err = fmt.Errorf("encountered node with self reference at next: %w", err)
 				}
 			}
 			insertLocation = insertLocation.next

@@ -1268,7 +1268,7 @@ func findInList(element string, list *[]string) (int, error) {
 			return idx, nil
 		}
 	}
-	return 0, fmt.Errorf("element: %s dosent found", element)
+	return 0, fmt.Errorf("element: %s not found", element)
 }
 
 const IoctlFetchSyscalls int = 65 // randomly picked number for ioctl cmd
