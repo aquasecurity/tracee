@@ -1,6 +1,7 @@
 package ebpf
 
 import (
+	"bytes"
 	gocontext "context"
 	"fmt"
 	lru "github.com/hashicorp/golang-lru"
@@ -281,26 +282,27 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 					t.handleError(err)
 					continue
 				}
+				procName := string(bytes.TrimRight(netEventMetadata.ProcessName[:], "\x00"))
 				switch netEventMetadata.NetEventId {
 				case DebugNetSecurityBind:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/security_socket_bind LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, netEventMetadata.ProcessName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
+						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
 				case DebugNetUdpSendmsg:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_sendmsg          LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, netEventMetadata.ProcessName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
+						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
 				case DebugNetUdpDisconnect:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/__udp_disconnect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, netEventMetadata.ProcessName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
+						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
 				case DebugNetUdpDestroySock:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_destroy_sock     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, netEventMetadata.ProcessName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
+						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
 				case DebugNetUdpV6DestroySock:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/udpv6_destroy_sock   LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, netEventMetadata.ProcessName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
+						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
 				case DebugNetInetSockSetState:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/inet_sock_set_state  LocalIP: %v, LocalPort: %d, RemoteIP: %v, RemotePort: %d, Protocol: %d, OldState: %d, NewState: %d, SockPtr: 0x%x\n",
 						timeStampObj,
-						netEventMetadata.ProcessName,
+						procName,
 						netEventMetadata.HostTid,
 						netaddr.IPFrom16(netDebugEvent.LocalIP),
 						netDebugEvent.LocalPort,
@@ -312,7 +314,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 						netDebugEvent.SockPtr)
 				case DebugNetTcpConnect:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/tcp_connect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, netEventMetadata.ProcessName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
+						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
 				}
 			}
 
@@ -388,7 +390,7 @@ func netPacketProtocolHandler(netDecoder *bufferdecoder.EbpfDecoder, evtMeta buf
 func CreateNetEvent(eventMeta bufferdecoder.NetEventMetadata, ctx procinfo.ProcessCtx, eventName string) trace.Event {
 	evt := ctx.GetEventByProcessCtx()
 	evt.Timestamp = int(eventMeta.TimeStamp)
-	evt.ProcessName = string(eventMeta.ProcessName[:])
+	evt.ProcessName = string(bytes.TrimRight(eventMeta.ProcessName[:], "\x00"))
 	evt.EventID = int(eventMeta.NetEventId)
 	evt.EventName = eventName
 	return evt
