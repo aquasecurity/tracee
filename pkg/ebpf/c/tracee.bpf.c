@@ -2300,7 +2300,8 @@ static __always_inline unsigned short get_inode_mode_from_fd(u64 fd)
 
 static __always_inline struct pipe_inode_info *get_file_pipe_info(struct file *file) {
     struct pipe_inode_info *pipe = READ_KERN(file->private_data);
-    if (READ_KERN(file->f_op) != get_symbol_addr("pipefifo_fops")) {
+    char pipe_fops_sym[14] = "pipefifo_fops";
+    if (READ_KERN(file->f_op) != get_symbol_addr(pipe_fops_sym)) {
         return NULL;
     }
     return pipe;
@@ -4918,6 +4919,27 @@ TRACE_ENT_FUNC(do_splice, DIRTY_PIPE_SPLICE);
 SEC("kretprobe/do_splice")
 int BPF_KPROBE(trace_ret_do_splice)
 {
+    if (!should_submit(DIRTY_PIPE_SPLICE))
+        return 0;
+
+    // The Dirty Pipe vulnerability exist in the kernel since version 5.8, so there is not use to do logic if version
+    // is too old. In non-CORE, it will even mean using defines which are not available in the kernel headers, which
+    // will cause bugs.
+    #if !defined(CORE) && (LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0))
+    return 0;
+    #else
+    #ifdef CORE
+    // Check if field of struct exist to determine kernel version - some fields
+    // change between versions.
+    // In version 5.8 of the kernel, the field "high_zoneidx" changed its name to "highest_zoneidx".
+    // This means that the existence of the field "high_zoneidx" can indicate that the kernel version is lower
+    // than v5.8
+    struct alloc_context *check_508;
+    if (bpf_core_field_exists(check_508->high_zoneidx)) {
+        return 0;
+    }
+    #endif // CORE
+
     args_t saved_args;
     if (load_args(&saved_args, DIRTY_PIPE_SPLICE) != 0) {
         // missed entry or not traced
@@ -4929,8 +4951,13 @@ int BPF_KPROBE(trace_ret_do_splice)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_submit(DIRTY_PIPE_SPLICE))
+    if (!should_trace(&data.context))
+            return 0;
+
+    // Catch only successful splice
+    if ((int)PT_REGS_RC(ctx) <= 0) {
         return 0;
+    }
 
     struct file *out_file = (struct file*)saved_args.args[2];
     struct pipe_inode_info *out_pipe = get_file_pipe_info(out_file);
@@ -5002,6 +5029,7 @@ int BPF_KPROBE(trace_ret_do_splice)
     save_to_submit_buf(&data, &out_pipe_last_buffer_flags, sizeof(unsigned int), 6);
 
     return events_perf_submit(&data, DIRTY_PIPE_SPLICE, 0);
+    #endif // CORE && Version < 5.8
 }
 
 static __always_inline bool skb_revalidate_data(struct __sk_buff *skb, uint8_t **head, uint8_t **tail, const u32 offset) {
