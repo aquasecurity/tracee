@@ -232,7 +232,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 					})
 					event.ArgsNum += 1
 				}
-				if true { // #SA404 static checker
+				if true { // so loop is conditionally terminated (#SA4044)
 					break
 				}
 			}

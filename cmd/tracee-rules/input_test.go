@@ -145,7 +145,7 @@ func TestSetupTraceeJSONInputSource(t *testing.T) {
 				b = append(b, '\n')
 				allEventBytes = append(allEventBytes, b...)
 			}
-			err = ioutil.WriteFile(f.Name(), []byte(allEventBytes), 0644)
+			err = ioutil.WriteFile(f.Name(), allEventBytes, 0644)
 			if err != nil {
 				t.Error(err)
 			}
