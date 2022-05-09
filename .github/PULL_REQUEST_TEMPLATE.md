@@ -14,7 +14,9 @@ Fixes: #issue_number
 
 ## Type of change
 
-- [ ] Bug fix (non-breaking change fixing an issue).
+- [ ] Bug fix (non-breaking change fixing an issue, preferable).
+- [ ] Quick fix (minor non-breaking change requiring no issue, use with care)
+- [ ] Code refactor (code improvement and/or code removal)
 - [ ] New feature (non-breaking change adding functionality).
 - [ ] Breaking change (cause existing functionality not to work as expected).
 
