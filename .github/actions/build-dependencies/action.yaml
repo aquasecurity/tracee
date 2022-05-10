@@ -20,7 +20,10 @@ runs:
     - name: Install Compilers
       run: |
         sudo apt-get update
-        sudo apt-get install --yes build-essential pkgconf libelf-dev llvm-12 clang-12
+        sudo apt-get install --yes build-essential
+        sudo apt-get install --yes llvm-12 clang-12
+        sudo apt-get install --yes pkgconf libelf-dev
+        sudo apt-get install --yes bsdutils
         for tool in "clang" "llc" "llvm-strip"
         do
           sudo rm -f /usr/bin/$tool
