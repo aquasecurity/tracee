@@ -6,6 +6,7 @@
 [![docker](https://badgen.net/docker/pulls/aquasec/tracee)](https://hub.docker.com/r/aquasec/tracee)
 [![Test Signatures](https://github.com/aquasecurity/tracee/actions/workflows/test-signatures.yaml/badge.svg)](https://github.com/aquasecurity/tracee/actions/workflows/test-signatures.yaml)
 [![Release Snapshot](https://github.com/aquasecurity/tracee/actions/workflows/release-snapshot.yaml/badge.svg)](https://github.com/aquasecurity/tracee/actions/workflows/release-snapshot.yaml)
+[![OS Packages (DAILY)](https://github.com/aquasecurity/tracee/actions/workflows/test-os-packaging-daily.yaml/badge.svg)](https://github.com/aquasecurity/tracee/actions/workflows/test-os-packaging-daily.yaml)
 [![CO-RE (DAILY)](https://github.com/aquasecurity/tracee/actions/workflows/test-core-daily.yaml/badge.svg)](https://github.com/aquasecurity/tracee/actions/workflows/test-core-daily.yaml)
 [![NON CO-RE (DAILY)](https://github.com/aquasecurity/tracee/actions/workflows/test-noncore-daily.yaml/badge.svg)](https://github.com/aquasecurity/tracee/actions/workflows/test-noncore-daily.yaml)
 [![CO-RE (WEEKLY)](https://github.com/aquasecurity/tracee/actions/workflows/test-core-weekly.yaml/badge.svg)](https://github.com/aquasecurity/tracee/actions/workflows/test-core-weekly.yaml)
