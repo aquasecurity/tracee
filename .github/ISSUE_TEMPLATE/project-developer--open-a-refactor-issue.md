@@ -1,7 +1,7 @@
 ---
 name: 'Project Developer: Open a Refactor Issue'
 about: Refactor idea or description opened by Project Developers
-title: "[REFACTOR]"
+title: "[REFAC]"
 labels: refactor
 assignees: ''
 
