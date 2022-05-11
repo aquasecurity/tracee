@@ -8,7 +8,7 @@ on:
     # At 02:00 every day
     - cron: '0 2 * * *'
 jobs:
-  CO-RE:
+  NON-CO-RE:
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
