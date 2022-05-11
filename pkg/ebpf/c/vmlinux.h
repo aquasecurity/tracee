@@ -817,6 +817,16 @@ struct ipv6hdr {
 struct tcphdr {
     __be16 source;
     __be16 dest;
+    __u16 res1 : 4;
+    __u16 doff : 4;
+    __u16 fin : 1;
+    __u16 syn : 1;
+    __u16 rst : 1;
+    __u16 psh : 1;
+    __u16 ack : 1;
+    __u16 urg : 1;
+    __u16 ece : 1;
+    __u16 cwr : 1;
 };
 
 struct udphdr {

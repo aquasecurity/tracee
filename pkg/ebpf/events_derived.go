@@ -35,6 +35,12 @@ func (t *Tracee) initEventDerivationMap() error {
 		DnsResponse: {
 			NetPacket: deriveNetPacket(),
 		},
+		HttpRequest: {
+			NetPacket: deriveNetPacket(),
+		},
+		HttpResponse: {
+			NetPacket: deriveNetPacket(),
+		},
 	}
 
 	return nil

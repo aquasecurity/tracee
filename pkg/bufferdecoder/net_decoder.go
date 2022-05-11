@@ -1,10 +1,13 @@
 package bufferdecoder
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
+	"net/http"
 )
 
 type NetEventMetadata struct {
@@ -201,4 +204,57 @@ func (decoder *EbpfDecoder) DecodeDnsRepliesData(responses *[]DnsResponseData) e
 		*responses = append(*responses, response)
 	}
 	return nil
+}
+
+// getTcpPacketLayerFromBytes creates a packet from packetBytes and returns TCP layer
+func getTcpPacketLayerFromBytes(packetBytes []byte) (*layers.TCP, error) {
+	packet := gopacket.NewPacket(packetBytes, layers.LayerTypeEthernet, gopacket.Default)
+	if packet == nil {
+		return nil, fmt.Errorf("couldn't parse the packet")
+	}
+	tcpLayer, ok := packet.Layer(layers.LayerTypeTCP).(*layers.TCP)
+	if !ok {
+		return nil, fmt.Errorf("couldn't find the TCP layer in packet")
+	}
+	return tcpLayer, nil
+}
+
+// DecodeHttpRequestData parses HTTP request from packet
+func (decoder *EbpfDecoder) DecodeHttpRequestData(r *http.Request) error {
+	tcpLayer, err := getTcpPacketLayerFromBytes(decoder.buffer[decoder.cursor:])
+	if err != nil {
+		return err
+	}
+
+	if len(tcpLayer.Payload) != 0 {
+		reader := bufio.NewReader(bytes.NewReader(tcpLayer.Payload))
+		httpReq, err := http.ReadRequest(reader)
+		if err != nil {
+			return err
+		}
+		*r = *httpReq
+		return nil
+	}
+
+	return fmt.Errorf("couldn't find the HTTP request in packet")
+}
+
+// DecodeHttpResponseData parses HTTP response from packet
+func (decoder *EbpfDecoder) DecodeHttpResponseData(r *http.Response) error {
+	tcpLayer, err := getTcpPacketLayerFromBytes(decoder.buffer[decoder.cursor:])
+	if err != nil {
+		return err
+	}
+
+	if len(tcpLayer.Payload) != 0 {
+		reader := bufio.NewReader(bytes.NewReader(tcpLayer.Payload))
+		httpRes, err := http.ReadResponse(reader, nil)
+		if err != nil {
+			return err
+		}
+		*r = *httpRes
+		return nil
+	}
+
+	return fmt.Errorf("couldn't find the HTTP response in packet")
 }

@@ -238,6 +238,8 @@ enum event_id_e
     NET_PACKET = 4000,
     DNS_REQUEST,
     DNS_RESPONSE,
+    HTTP_REQUEST,
+    HTTP_RESPONSE,
 
     // Debug events IDs
     DEBUG_NET_SECURITY_BIND = 5000,
@@ -397,6 +399,8 @@ enum kconfig_key_e
             _val;                                                                                  \
         })
 
+    #define SIZE_OF(var) ({ sizeof(var); })
+
 #else // CORE
 
     #define GET_FIELD_ADDR(field) __builtin_preserve_access_index(&field)
@@ -416,6 +420,8 @@ enum kconfig_key_e
             bpf_core_read_user((void *) &_val, sizeof(_val), &ptr);                                \
             _val;                                                                                  \
         })
+
+    #define SIZE_OF(var) ({ bpf_core_type_size(var); })
 #endif
 
 // EBPF MAP MACROS ---------------------------------------------------------------------------------
@@ -5370,15 +5376,65 @@ skb_revalidate_data(struct __sk_buff *skb, uint8_t **head, uint8_t **tail, const
     return true;
 }
 
+static __always_inline int
+is_http_protocol(struct __sk_buff *skb, uint8_t *head, uint8_t *tail, u32 l7_off)
+{
+#define http_min_len 7 // longest http command is "DELETE "
+
+    char http_min_str[http_min_len];
+    __builtin_memset((void *) &http_min_str, 0, sizeof(char) * http_min_len);
+
+    // load first http_min_len bytes from layer 7 in packet.
+    if (bpf_skb_load_bytes(skb, l7_off, http_min_str, http_min_len) < 0) {
+        // failed loading data into http_min_str - return.
+        return 0;
+    }
+
+    // check if HTTP response or request command
+    if (has_prefix("HTTP/", http_min_str, 6)) {
+        return HTTP_RESPONSE;
+    } else if (has_prefix("GET ", http_min_str, 5) || has_prefix("POST ", http_min_str, 6) ||
+               has_prefix("PUT ", http_min_str, 5) || has_prefix("DELETE ", http_min_str, 8) ||
+               has_prefix("HEAD ", http_min_str, 6)) {
+        return HTTP_REQUEST;
+    }
+
+    return 0;
+}
+
 // decide network event_id based on created net_packet_t
-static __always_inline void set_net_event_id(net_packet_t *pkt)
+static __always_inline void
+set_net_event_id(net_packet_t *pkt, struct __sk_buff *skb, uint32_t l4_hdr_off)
 {
     enum ports
     {
         DNS = 53,
     };
 
+    uint8_t *head = (uint8_t *) (long) skb->data;
+    uint8_t *tail = (uint8_t *) (long) skb->data_end;
+
+    // define variables for protocol IPPROTO_TCP
+    struct tcphdr *tcp;
+    u32 l7_off;
+    int http_event_id;
+
     switch (pkt->protocol) {
+        case IPPROTO_TCP:
+            if (!skb_revalidate_data(skb, &head, &tail, l4_hdr_off + SIZE_OF(struct tcphdr)))
+                return;
+            tcp = (void *) head + l4_hdr_off;
+
+            // get the layer 7 offset - it is the end of the tcp layer
+            l7_off = l4_hdr_off + (tcp->doff) * 4;
+
+            // check if layer 7 is HTTP
+            http_event_id = is_http_protocol(skb, head, tail, l7_off);
+            if (http_event_id > 0) {
+                pkt->event_id = http_event_id;
+            }
+
+            break;
         case IPPROTO_UDP:
             if (pkt->dst_port == DNS)
                 pkt->event_id = DNS_REQUEST;
@@ -5396,6 +5452,8 @@ static __always_inline bool should_submit_payload(net_packet_t *pkt)
     switch (pkt->event_id) {
         case DNS_REQUEST:
         case DNS_RESPONSE:
+        case HTTP_REQUEST:
+        case HTTP_RESPONSE:
             return true;
         default:
             return false;
@@ -5541,7 +5599,7 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress)
         pkt_size = sizeof(pkt);
         pkt.src_port = __bpf_ntohs(pkt.src_port);
         pkt.dst_port = __bpf_ntohs(pkt.dst_port);
-        set_net_event_id(&pkt);
+        set_net_event_id(&pkt, skb, l4_hdr_off);
     }
 
     // The tc perf_event_output handler will use the upper 32 bits of the flags argument as a number

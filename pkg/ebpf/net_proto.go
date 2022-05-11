@@ -39,8 +39,10 @@ func CreateNetEvent(eventMeta bufferdecoder.NetEventMetadata, ctx procinfo.Proce
 // callProtocolHandler calls protocol handler
 func callProtocolHandler(eventId int32, decoder *bufferdecoder.EbpfDecoder, evt *trace.Event, ifaceName string, packetLen uint32) error {
 	protocolHandlers := map[int32][]protocolHandler{
-		DnsRequest:  {dnsQueryProtocolHandler},
-		DnsResponse: {dnsReplyProtocolHandler},
+		DnsRequest:   {dnsQueryProtocolHandler},
+		DnsResponse:  {dnsReplyProtocolHandler},
+		HttpRequest:  {httpRequestProtocolHandler},
+		HttpResponse: {httpResponseProtocolHandler},
 	}
 
 	// call the generic netPacketHandler

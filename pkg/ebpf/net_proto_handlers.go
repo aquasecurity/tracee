@@ -4,6 +4,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/types/trace"
 	"inet.af/netaddr"
+	"net/http"
 )
 
 // netPacketHandler parse a given a packet bytes buffer to packetMeta and event
@@ -36,6 +37,28 @@ func dnsReplyProtocolHandler(decoder *bufferdecoder.EbpfDecoder, evt *trace.Even
 		return err
 	}
 	appendDnsReplyArgs(evt, &responses)
+	return nil
+}
+
+// httpRequestProtocolHandler decodes an HTTP request from packet and appends the HTTP argument to the event
+func httpRequestProtocolHandler(decoder *bufferdecoder.EbpfDecoder, evt *trace.Event) error {
+	httpReq := http.Request{}
+	err := decoder.DecodeHttpRequestData(&httpReq)
+	if err != nil {
+		return err
+	}
+	appendHttpRequestArgs(evt, &httpReq)
+	return nil
+}
+
+// httpResponseProtocolHandler decodes an HTTP response from packet and appends the HTTP argument to the event
+func httpResponseProtocolHandler(decoder *bufferdecoder.EbpfDecoder, evt *trace.Event) error {
+	httpRes := http.Response{}
+	err := decoder.DecodeHttpResponseData(&httpRes)
+	if err != nil {
+		return err
+	}
+	appendHttpResponseArgs(evt, &httpRes)
 	return nil
 }
 
@@ -81,4 +104,54 @@ func appendDnsReplyArgs(event *trace.Event, responses *[]bufferdecoder.DnsRespon
 		Value:   *responses,
 	}
 	eventAppendArg(event, responseArg)
+}
+
+// appendHttpRequestArgs parses the given http.Request and appends relevant args to the event
+func appendHttpRequestArgs(event *trace.Event, httpReq *http.Request) {
+	for _, param := range EventsDefinitions[int32(event.EventID)].Params {
+		arg := trace.Argument{
+			ArgMeta: param,
+		}
+		switch param.Name {
+		case "method":
+			arg.Value = httpReq.Method
+		case "protocol":
+			arg.Value = httpReq.Proto
+		case "host":
+			arg.Value = httpReq.Host
+		case "uri_path":
+			arg.Value = httpReq.URL
+		case "headers":
+			arg.Value = httpReq.Header
+		case "content_length":
+			arg.Value = httpReq.ContentLength
+		default:
+			continue
+		}
+		eventAppendArg(event, arg)
+	}
+}
+
+// appendHttpResponseArgs parses the given http.Response and appends relevant args to the event
+func appendHttpResponseArgs(event *trace.Event, httpRes *http.Response) {
+	for _, param := range EventsDefinitions[int32(event.EventID)].Params {
+		arg := trace.Argument{
+			ArgMeta: param,
+		}
+		switch param.Name {
+		case "status":
+			arg.Value = httpRes.Status
+		case "status_code":
+			arg.Value = httpRes.StatusCode
+		case "protocol":
+			arg.Value = httpRes.Proto
+		case "headers":
+			arg.Value = httpRes.Header
+		case "content_length":
+			arg.Value = httpRes.ContentLength
+		default:
+			continue
+		}
+		eventAppendArg(event, arg)
+	}
 }

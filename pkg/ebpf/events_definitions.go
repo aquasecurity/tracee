@@ -122,6 +122,8 @@ const (
 	NetPacket int32 = iota + 4000
 	DnsRequest
 	DnsResponse
+	HttpRequest
+	HttpResponse
 	MaxNetEventID
 )
 
@@ -5737,6 +5739,37 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets: []string{},
 		Params: []trace.ArgMeta{
 			{Type: "[]trace.HookedSymbolData", Name: "hooked_fops_pointers"},
+		},
+	},
+	HttpRequest: {
+		ID32Bit:      sys32undefined,
+		Name:         "http_request",
+		Probes:       []probe{},
+		Dependencies: dependencies{},
+		Sets:         []string{"network_events"},
+		Params: []trace.ArgMeta{
+			{Type: "trace.PktMeta", Name: "metadata"},
+			{Type: "string", Name: "method"},
+			{Type: "string", Name: "protocol"},
+			{Type: "string", Name: "host"},
+			{Type: "string", Name: "uri_path"},
+			{Type: "http.Header", Name: "headers"},
+			{Type: "int64", Name: "content_length"},
+		},
+	},
+	HttpResponse: {
+		ID32Bit:      sys32undefined,
+		Name:         "http_response",
+		Probes:       []probe{},
+		Dependencies: dependencies{},
+		Sets:         []string{"network_events"},
+		Params: []trace.ArgMeta{
+			{Type: "trace.PktMeta", Name: "metadata"},
+			{Type: "string", Name: "status"},
+			{Type: "int", Name: "status_code"},
+			{Type: "string", Name: "protocol"},
+			{Type: "http.Header", Name: "headers"},
+			{Type: "int64", Name: "content_length"},
 		},
 	},
 }
