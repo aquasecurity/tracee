@@ -9,20 +9,16 @@ import (
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/ebpf/events/derived"
 	"github.com/aquasecurity/tracee/pkg/events/parsing"
+	"github.com/aquasecurity/tracee/pkg/utils/shared_objects"
 	"github.com/aquasecurity/tracee/types/trace"
 )
-
-// deriveFn is a function prototype for a function that receives an event as
-// argument and may produce a new event if relevant.
-// It returns a derived or empty event, depending on successful derivation,
-// a bool indicating if an event was derived, and an error if one occurred.
-type deriveFn func(trace.Event) ([]trace.Event, bool, error)
 
 // Initialize the eventDerivations map.
 // Here we declare for each Event (represented through it's ID)
 // to which other Events it can be derived and the corresponding function to derive into that Event.
 func (t *Tracee) initEventDerivationMap() error {
-	t.eventDerivations = map[int32]map[int32]deriveFn{
+	soSymbolsCollisionsDeriveFn := deriveSharedObjectLoadedSymbolsCollision(t)
+	t.eventDerivations = map[int32]map[int32]derived.DeriveFn{
 		CgroupMkdirEventID: {
 			ContainerCreateEventID: deriveContainerCreate(t),
 		},
@@ -40,6 +36,12 @@ func (t *Tracee) initEventDerivationMap() error {
 		},
 		PrintNetSeqOpsEventID: {
 			HookedSeqOpsEventID: deriveHookedSeqOps(t),
+		},
+		SharedObjectLoadedEventID: {
+			ImportSymbolsCollisionEventID: soSymbolsCollisionsDeriveFn,
+		},
+		SchedProcessExecEventID: {
+			ImportSymbolsCollisionEventID: soSymbolsCollisionsDeriveFn,
 		},
 	}
 
@@ -102,12 +104,12 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 * Derivation functions:
 * Most derivation functions take tracee as a closure argument to track it's runtime state
 * Tracee builds its derivation map from these functions and injects itself as an argument to the closures
-* The derivation map is then built with the returned deriveFn functions, which is used in deriveEvents
+* The derivation map is then built with the returned DeriveFn functions, which is used in deriveEvents
  */
 
 //Receives a tracee object as a closure argument to track it's containers
 //If it receives a cgroup_mkdir event, it can derive a container_create event from it
-func deriveContainerCreate(t *Tracee) deriveFn {
+func deriveContainerCreate(t *Tracee) derived.DeriveFn {
 	return func(event trace.Event) ([]trace.Event, bool, error) {
 		cgroupId, err := parsing.GetEventArgUint64Val(&event, "cgroup_id")
 		if err != nil {
@@ -142,7 +144,7 @@ func deriveContainerCreate(t *Tracee) deriveFn {
 
 //Receives a tracee object as a closure argument to track it's containers
 //If it receives a cgroup_rmdir event, it can derive a container_remove event from it
-func deriveContainerRemoved(t *Tracee) deriveFn {
+func deriveContainerRemoved(t *Tracee) derived.DeriveFn {
 	return func(event trace.Event) ([]trace.Event, bool, error) {
 		cgroupId, err := parsing.GetEventArgUint64Val(&event, "cgroup_id")
 		if err != nil {
@@ -169,7 +171,7 @@ func deriveContainerRemoved(t *Tracee) deriveFn {
 	}
 }
 
-func deriveDetectHookedSyscall(t *Tracee) deriveFn {
+func deriveDetectHookedSyscall(t *Tracee) derived.DeriveFn {
 	return func(event trace.Event) ([]trace.Event, bool, error) {
 		syscallAddresses, err := parsing.GetEventArgUlongArrVal(&event, "syscalls_addresses")
 		if err != nil {
@@ -192,7 +194,7 @@ func deriveDetectHookedSyscall(t *Tracee) deriveFn {
 }
 
 // deriveNetPacket derives net_packet from net events with 'metadata' arg
-func deriveNetPacket() deriveFn {
+func deriveNetPacket() derived.DeriveFn {
 	return func(event trace.Event) ([]trace.Event, bool, error) {
 		metadataArg := getEventArg(&event, "metadata")
 		if metadataArg == nil {
@@ -287,8 +289,20 @@ func deriveHookedSeqOps(t *Tracee) derived.DeriveFn {
 			{ArgMeta: def.Params[1], Value: hookedSeqOps},
 		}
 		de.ArgsNum = 1
-		return de, true, nil
+		return []trace.Event{de}, true, nil
 
 	}
 
+}
+
+func deriveSharedObjectLoadedSymbolsCollision(t *Tracee) derived.DeriveFn {
+	def := EventsDefinitions[ImportSymbolsCollisionEventID]
+	defSkel := derived.EventSkeleton{Name: def.Name,
+		ID:     int(ImportSymbolsCollisionEventID),
+		Params: def.Params}
+	pathResolver := containers.InitContainersPathReslover(&t.pidsInMntns)
+	soLoader := shared_objects.InitContainersSOSymbolsLoader(&pathResolver)
+	soColGen := derived.InitSOCollisionsEventGenerator(defSkel, &soLoader)
+
+	return derived.GenerateDerivedFn(&soColGen)
 }

@@ -106,6 +106,8 @@ const (
 	ExistingContainerEventID
 	HookedSyscallsEventID
 	HookedSeqOpsEventID
+	DetectHookedSyscallsEventID
+	ImportSymbolsCollisionEventID
 	MaxUserSpaceEventID
 )
 
@@ -5585,6 +5587,23 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "dev_t", Name: "dev"},
 			{Type: "unsigned long", Name: "inode"},
 			{Type: "unsigned long", Name: "ctime"},
+		},
+	},
+	ImportSymbolsCollisionEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "shared_object_export_collision",
+		Probes:  []probeDependency{},
+		Dependencies: dependencies{
+			events: []eventDependency{
+				{eventID: SharedObjectLoadedEventID},
+				{eventID: SchedProcessExecEventID},
+			},
+		},
+		Sets: []string{"lsm_hooks", "fs", "fs_file_ops", "proc", "proc_mem"},
+		Params: []trace.ArgMeta{
+			{Type: "const char*", Name: "loaded_object_path"},
+			{Type: "const char*", Name: "collided_object_path"},
+			{Type: "const char*const*", Name: "collision_symbols"},
 		},
 	},
 	CaptureFileWriteEventID: {
