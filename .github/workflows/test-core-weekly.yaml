@@ -5,8 +5,8 @@ name: CO-RE (WEEKLY)
 on:
   workflow_dispatch: {}
   schedule:
-    # At 00:00 on Saturdays
-    - cron: '0 0 * * 6'
+    # At 04:00 on Saturdays
+    - cron: '0 4 * * 6'
 jobs:
   CO-RE:
     runs-on: ubuntu-20.04
@@ -25,22 +25,15 @@ jobs:
           - "TRC-11"
           - "TRC-12"
           - "TRC-14"
-        kernel:
-          - "4.19.238-stable"
-          - "5.4.166-ubuntu+"
-          - "5.4.188-amzn2"
-          - "5.4.189-stable"
-          - "5.8.18-ubuntu"
-          - "5.10.109-amzn2"
-          - "5.10.111-stable"
-          - "5.11.22-ubuntu"
-          - "5.11.22-fedora32"
-          - "5.13.19-ubuntu"
-          - "5.14.18-fedora33"
-          - "5.15.30-ubuntu"
-          - "5.15.34-stable"
-          - "5.16.18-stable"
-          - "5.16.19-fedora34"
+        distro:
+          - "stream8"
+          - "stream9"
+          - "fedora34"
+          - "fedora35"
+          - "fedora36"
+          - "focal"
+          - "focalhwe"
+          - "jammy"
     steps:
       - name: "Checkout"
         uses: actions/checkout@v2
@@ -48,12 +41,11 @@ jobs:
           submodules: true
       - name: "Pull test container image"
         run: |
-          docker image pull rafaeldtinoco/tracee-test-kernels:latest
+          docker image pull rafaeldtinoco/tracee-distro-tester:${{ matrix.distro }}
       - name: "Run tests"
         run: |
           docker run --rm --privileged -v $(pwd):/tracee:rw \
             -e kvm_accel="tcg" \
-            -e kern_version=${{ matrix.kernel }} \
             -e test_name=${{ matrix.signature }} \
-            -e is_noncore=0 \
-            -t rafaeldtinoco/tracee-test-kernels:latest
+            -e non_core=0 \
+            -t rafaeldtinoco/tracee-distro-tester:${{ matrix.distro }}
