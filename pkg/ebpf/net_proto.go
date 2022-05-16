@@ -1,6 +1,7 @@
 package ebpf
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
@@ -28,7 +29,7 @@ func protocolProcessor(networkThread procinfo.ProcessCtx, evtMeta bufferdecoder.
 func CreateNetEvent(eventMeta bufferdecoder.NetEventMetadata, ctx procinfo.ProcessCtx, eventName string) trace.Event {
 	evt := ctx.GetEventByProcessCtx()
 	evt.Timestamp = int(eventMeta.TimeStamp)
-	evt.ProcessName = string(eventMeta.ProcessName[:])
+	evt.ProcessName = string(bytes.TrimRight(eventMeta.ProcessName[:], "\x00"))
 	evt.EventID = int(eventMeta.NetEventId)
 	evt.EventName = eventName
 	return evt
