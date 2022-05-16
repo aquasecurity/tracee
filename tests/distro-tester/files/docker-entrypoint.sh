@@ -38,6 +38,6 @@ fi
 
 cd /tester
 
-./03-run-qemu.sh $image_name /tracee $test_name $kvm_accel $non_core | tee /tmp/qemu.log
+./03-run-qemu.sh $image_name /tracee $test_name $kvm_accel $non_core $cpus $mem | tee /tmp/qemu.log
 
 # vi:syntax=sh:expandtab:smarttab:tabstop=2:shiftwidth=2:softtabstop=2

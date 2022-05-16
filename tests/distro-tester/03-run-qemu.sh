@@ -1,6 +1,6 @@
 #!/bin/bash -ex
 
-# syntax: ./$0 [image] [tracee_dir] [TRC-X] [kvm|tcg] [0|1]
+# syntax: ./$0 [image] [tracee_dir] [TRC-X] [kvm|tcg] [0|1] [cpus] [memory]
 
 . ./00-config
 
@@ -12,6 +12,8 @@ tracee=$2
 testname=$3
 kvmaccel=$4
 isnoncore=$5
+cpus=$6 # optional
+mem=$7 # optional
 
 qemu-img info images/$image | grep -q raw && format="raw"
 qemu-img info images/$image | grep -q qcow2 && format="qcow2"
@@ -21,7 +23,7 @@ error_syntax() {
   echo -n "ERROR: "
   echo $@
   echo ""
-  echo "syntax: $0 [image] [tracee_dir] [TRC-X] [kvm|tcg]"
+  echo "syntax: $0 [image] [tracee_dir] [TRC-X] [kvm|tcg] [0|1] [cpus] [memory]"
   echo ""
   exit 1
 }
@@ -42,8 +44,18 @@ if [[ $kvmaccel != tcg && $kvmaccel != kvm ]]; then
   error_syntax "acceleration should be tcg or kvm"
 fi
 
-if [[ $isnoncore == "" || ( $isnoncore -ne 0 && $isnoncore -ne 1 ) ]]; then
+if [[ $isnoncore -ne 0 && $isnoncore -ne 1 ]]; then
   error_syntax "non core should be either 0 or 1"
+fi
+
+# amount of vpus
+if [[ $cpus -ne 2 && $cpus -ne 4 && $cpus -ne 6 && $cpus -ne 8 ]]; then
+  error_syntax "should provide amount of cpus"
+fi
+
+# amount of memory
+if [[ $mem -ne 2 && $mem -ne 4 && $mem -ne 6 && $mem -ne 8 ]]; then
+  error_syntax "should provide amount of mem"
 fi
 
 mount -t tmpfs -o rw,nosuid,nodev,inode64 tmpfs /dev/shm
@@ -74,9 +86,9 @@ fi
 qemu-system-x86_64 \
   -name guest=$image \
   -machine accel=$kvmaccel \
-  --cpu max --smp cpus=1 -m 2G \
-  -object memory-backend-file,id=mem,size=2G,mem-path=/dev/shm,share=on \
-  -numa node,nodeid=0,cpus=0,memdev=mem \
+  --cpu max --smp $cpus -m ${mem}G \
+  -object memory-backend-file,id=mem,size=${mem}G,mem-path=/dev/shm,share=on \
+  -numa node,nodeid=0,memdev=mem \
   -rtc base=utc,clock=vm,driftfix=none \
   -boot c \
   -display none \
