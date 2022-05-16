@@ -6,14 +6,14 @@ import (
 	"inet.af/netaddr"
 )
 
-// netPacketProtocolHandler parse a given a packet bytes buffer to packetMeta and event
-func netPacketProtocolHandler(decoder *bufferdecoder.EbpfDecoder, evt *trace.Event) error {
+// netPacketHandler parse a given a packet bytes buffer to packetMeta and event
+func netPacketHandler(decoder *bufferdecoder.EbpfDecoder, evt *trace.Event, ifaceName string, packetLen uint32) error {
 	var packetEvent bufferdecoder.NetPacketEvent
 	err := decoder.DecodeNetPacketEvent(&packetEvent)
 	if err != nil {
 		return err
 	}
-	appendPktMetadataArg(evt, packetEvent)
+	appendPktMetadataArg(evt, packetEvent, ifaceName, packetLen)
 	return nil
 }
 
@@ -46,18 +46,20 @@ func eventAppendArg(event *trace.Event, arg trace.Argument) {
 }
 
 // appendPktMetadataArg takes the packet metadata and create argument array with that data
-func appendPktMetadataArg(event *trace.Event, netPacket bufferdecoder.NetPacketEvent) {
+func appendPktMetadataArg(event *trace.Event, netPacket bufferdecoder.NetPacketEvent, ifaceName string, packetLen uint32) {
 	metedataArg := trace.Argument{
 		ArgMeta: trace.ArgMeta{
 			Name: "metadata",
 			Type: "trace.PktMeta",
 		},
 		Value: trace.PktMeta{
-			SrcIP:    netaddr.IPFrom16(netPacket.SrcIP).String(),
-			DstIP:    netaddr.IPFrom16(netPacket.DstIP).String(),
-			SrcPort:  netPacket.SrcPort,
-			DstPort:  netPacket.DstPort,
-			Protocol: netPacket.Protocol,
+			SrcIP:     netaddr.IPFrom16(netPacket.SrcIP).String(),
+			DstIP:     netaddr.IPFrom16(netPacket.DstIP).String(),
+			SrcPort:   netPacket.SrcPort,
+			DstPort:   netPacket.DstPort,
+			Protocol:  netPacket.Protocol,
+			PacketLen: packetLen,
+			Iface:     ifaceName,
 		},
 	}
 	eventAppendArg(event, metedataArg)

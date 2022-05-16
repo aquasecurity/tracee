@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/aquasecurity/libbpfgo v0.2.5-libbpf-0.7.0
-	github.com/aquasecurity/tracee/types v0.0.0-20220501185220-11d35a849685
+	github.com/aquasecurity/tracee/types v0.0.0-20220517064153-36f21d40e732
 	github.com/containerd/containerd v1.6.1
 	github.com/docker/docker v20.10.13+incompatible
 	github.com/google/gopacket v1.1.19
