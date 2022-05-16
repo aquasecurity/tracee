@@ -9,7 +9,7 @@ on:
     - cron: '0 6 * * 6'
 jobs:
   NON-CO-RE:
-    runs-on: ubuntu-20.04
+    runs-on: self-hosted
     strategy:
       fail-fast: false
       matrix:
@@ -39,15 +39,16 @@ jobs:
         uses: actions/checkout@v2
         with:
           submodules: true
-      - name: "Pull test container image"
-        run: |
-          distro=$(echo ${{ matrix.distro }} | cut -d'-' -f1)
-          docker image pull rafaeldtinoco/tracee-distro-tester:$distro
+      #- name: "Pull test container image"
+      #  run: |
+      #    distro=$(echo ${{ matrix.distro }} | cut -d'-' -f1)
+      #    docker image pull rafaeldtinoco/tracee-distro-tester:$distro
       - name: "Run tests"
         run: |
           distro=$(echo ${{ matrix.distro }} | cut -d'-' -f1)
           docker run --rm --privileged -v $(pwd):/tracee:rw \
-            -e kvm_accel="tcg" \
+            -e kvm_accel="kvm" \
             -e test_name=${{ matrix.signature }} \
             -e non_core=1 \
+            -e cpus=8 -e mem=4 \
             -t rafaeldtinoco/tracee-distro-tester:$distro
