@@ -100,7 +100,7 @@ while true; do
   fi
 done
 
-docker run --rm aquasec/tracee-tester $testname > /dev/null 2>&1
+docker run --cap-add=SYS_PTRACE --rm aquasec/tracee-tester $testname > /dev/null 2>&1
 
 # so event can be processed
 
