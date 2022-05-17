@@ -2,9 +2,9 @@ package ebpf
 
 import (
 	gocontext "context"
-
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/types/trace"
+	"sync"
 )
 
 func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.Event) (chan *trace.Event, chan error) {
@@ -14,9 +14,10 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 		err      error
 	}
 
-	queues := make(map[uint64]chan *trace.Event) //map between cgroupId and queues
-	attempted := make(map[uint64]bool)           //map between cgroupId and enrichment attempt
-	enriches := make(chan enrichResult, 10)      //this channel has a small buffer to reduce chance for blocking
+	queues := make(map[uint64]chan *trace.Event) // cgroupId and queues
+	attempted := make(map[uint64]*sync.Mutex)    // cgroupId and enrichment attempt expressed as transaction lock
+	attemptedMutex := new(sync.RWMutex)          // big lock for attempted map
+	enriches := make(chan enrichResult, 10)      // small buffer to reduce chance for blocking
 	out := make(chan *trace.Event, 10000)
 	errc := make(chan error, 1)
 	done := make(chan struct{}, 1)
@@ -31,21 +32,34 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 				return
 			case event := <-in:
 				cgroupId := uint64(event.CgroupID)
-				//if the event is the cgroup_mkdir event we need the cgroupId from it's argument
+				// cgroup_mkdir event: need the cgroupId from its argument
 				if event.EventID == int(CgroupMkdirEventID) {
 					cgroupId, _ = getEventArgUint64Val(event, "cgroup_id")
 				}
-				//if the event is a cgroup_rmdir we need to clean the attempt entry so the cgroupId can be reused
+				// cgroup_rmdir: need to clean attempt so cgroupId can be reused
 				if event.EventID == int(CgroupRmdirEventID) {
 					cgroupId, _ = getEventArgUint64Val(event, "cgroup_id")
+					attemptedMutex.Lock()
 					delete(attempted, cgroupId)
+					attemptedMutex.Lock()
 				}
-				//if non container event and not cgroup_mkdir or the event is already enriched, skip this stage
-				if (event.ContainerID == "" && event.EventID != int(CgroupMkdirEventID)) || event.ContainerImage != "" || attempted[uint64(cgroupId)] {
-					out <- event
+				// non container event and not cgroup_mkdir (or the event already enriched) skip per cgroupId caching
+				if (event.ContainerID == "" && event.EventID != int(CgroupMkdirEventID)) || event.ContainerImage != "" {
+					// enrichment attempt is being done, or has failed, so do not try it again
+					attemptedMutex.RLock()
+					if _, ok := attempted[cgroupId]; ok {
+						// wait transaction (cache flush) to finish so cached events and this one are ordered
+						attempted[cgroupId].Lock()
+						out <- event
+						attempted[cgroupId].Unlock()
+						attemptedMutex.RUnlock()
+						continue
+					}
+					attemptedMutex.RUnlock()
+					out <- event // some events might not have an attempted map
 					continue
 				} else {
-					//if the container queue has not been created - create the container queue and invoke the enrich query
+					//if the container queue has not been created - create the container queue and invoke to enrich query
 					if _, ok := queues[cgroupId]; !ok {
 						queues[cgroupId] = make(chan *trace.Event, 1000)
 
@@ -63,10 +77,13 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 	go func() {
 		for enrich := range enriches {
 			cgroupId := enrich.cgroupId
-			//mark the query as finished, it should not be attempted again and no new events should enter it's queue
-			attempted[cgroupId] = true
+			mutex := new(sync.Mutex)
+			mutex.Lock() // place already acquired mutex in the attempted map
+			attemptedMutex.Lock()
+			attempted[cgroupId] = mutex // now attempted[cgroupId] is a transaction, only happens once and has begun
+			attemptedMutex.Unlock()
 			if enrich.err != nil {
-				//only send error if it's not a non existing cgroup error
+				//only send error if it's not a non-existing cgroup error
 				if enrich.err.Error() != "no cgroup to enrich" {
 					t.handleError(enrich.err)
 				}
@@ -112,6 +129,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 					}
 				}
 			}
+			mutex.Unlock() // end of transaction
 
 			//after enrichment was done and all events were processed we can close and delete the channel from the map
 			//subsequent events will be enriched during decoding
