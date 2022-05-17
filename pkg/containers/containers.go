@@ -44,7 +44,7 @@ type CgroupInfo struct {
 
 // InitContainers initializes a Containers object and returns a pointer to it.
 // User should further call "Populate" and iterate with Containers data.
-func InitContainers(sockets cruntime.Sockets) (*Containers, error) {
+func InitContainers(sockets cruntime.Sockets, debug bool) (*Containers, error) {
 	cgroupV1 := false
 	if _, err := os.Stat("/sys/fs/cgroup/cgroup.controllers"); os.IsNotExist(err) {
 		cgroupV1 = true
@@ -57,16 +57,16 @@ func InitContainers(sockets cruntime.Sockets) (*Containers, error) {
 
 	//attempt to register for all supported runtimes
 	err := runtimeService.Register(cruntime.Containerd, cruntime.ContainerdEnricher)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to register enricher: %v\n", err)
+	if err != nil && debug {
+		fmt.Fprintf(os.Stderr, "Enricher: %v\n", err)
 	}
 	err = runtimeService.Register(cruntime.Crio, cruntime.CrioEnricher)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to register enricher: %v\n", err)
+	if err != nil && debug {
+		fmt.Fprintf(os.Stderr, "Enricher: %v\n", err)
 	}
 	err = runtimeService.Register(cruntime.Docker, cruntime.DockerEnricher)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to register enricher: %v\n", err)
+	if err != nil && debug {
+		fmt.Fprintf(os.Stderr, "Enricher: %v\n", err)
 	}
 
 	return &Containers{
