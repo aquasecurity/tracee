@@ -314,7 +314,7 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error intitalizing event derivation map: %w", err)
 	}
 
-	c, err := containers.InitContainers(t.config.Sockets)
+	c, err := containers.InitContainers(t.config.Sockets, t.config.Debug)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing containers: %w", err)
 	}
