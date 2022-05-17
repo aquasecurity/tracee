@@ -1,6 +1,7 @@
 package regosig_test
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -366,4 +367,133 @@ func TestRegoSignature_OnSignal(t *testing.T) {
 	require.NoError(t, err)
 	err = sig.OnSignal(os.Kill)
 	assert.EqualError(t, err, "function OnSignal is not implemented")
+}
+
+var (
+	//go:embed testdata/anti_debugging_ptraceme.rego
+	antiDebuggingSignature string
+
+	//go:embed testdata/illegitimate_shell.rego
+	illegitimateShell string
+
+	//go:embed testdata/fileless_execution.rego
+	filelessExecution string
+
+	//go:embed testdata/sockaddr.rego
+	sockaddr string
+
+	//go:embed testdata/helpers.rego
+	helpers string
+)
+
+// go test -run=XXX -bench=. -benchmem -cpu=1
+func BenchmarkSignature_OnEvent(b *testing.B) {
+	benchmarks := []struct {
+		name      string
+		regoCodes []string
+		input     protocol.Event
+	}{
+		{
+			name: "Anti-Debugging",
+			regoCodes: []string{
+				antiDebuggingSignature,
+			},
+			input: protocol.Event{
+				Payload: trace.Event{
+					EventName: "ptrace",
+					Args: []trace.Argument{
+						{
+							ArgMeta: trace.ArgMeta{
+								Name: "request",
+							},
+							Value: "PTRACE_TRACEME",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Illegitimate Shell",
+			regoCodes: []string{
+				helpers,
+				illegitimateShell,
+			},
+			input: protocol.Event{
+				Payload: trace.Event{
+					EventName: "security_bprm_check",
+					Args: []trace.Argument{
+						{
+							ArgMeta: trace.ArgMeta{
+								Name: "pathname",
+							},
+							Value: "/bin/dash",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Fileless Execution",
+			regoCodes: []string{
+				helpers,
+				filelessExecution,
+			},
+			input: protocol.Event{
+				Payload: trace.Event{
+					EventName:   "sched_process_exec",
+					ArgsNum:     1,
+					ContainerID: "someContainer",
+					Args: []trace.Argument{
+						{
+							ArgMeta: trace.ArgMeta{
+								Name: "pathname",
+							},
+							Value: "memfd://something/something",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "SockAddr",
+			regoCodes: []string{
+				helpers,
+				sockaddr,
+			},
+			input: protocol.Event{
+				Payload: trace.Event{
+					EventName: "connect",
+					Args: []trace.Argument{
+						{
+							ArgMeta: trace.ArgMeta{
+								Name: "addr",
+								Type: "struct sockaddr*",
+							},
+							Value: map[string]string{
+								"sa_family": "AF_INET",
+								"sin_addr":  "216.58.209.14",
+								"sin_port":  "80",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			signature, err := regosig.NewRegoSignature(compile.TargetRego, false, bm.regoCodes...)
+			require.NoError(b, err)
+			holder := &signaturestest.FindingsHolder{}
+			err = signature.Init(holder.OnFinding)
+			require.NoError(b, err)
+
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				err = signature.OnEvent(bm.input)
+				require.NoError(b, err)
+			}
+		})
+	}
 }

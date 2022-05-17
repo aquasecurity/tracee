@@ -4,6 +4,7 @@ import (
 	_ "embed"
 
 	"bytes"
+	"fmt"
 	"io/fs"
 	"io/ioutil"
 	"log"
@@ -13,6 +14,7 @@ import (
 	"strings"
 
 	embedded "github.com/aquasecurity/tracee"
+	"github.com/aquasecurity/tracee/pkg/rules/celsig"
 	"github.com/aquasecurity/tracee/pkg/rules/regosig"
 	"github.com/aquasecurity/tracee/types/detect"
 )
@@ -34,6 +36,12 @@ func getSignatures(target string, partialEval bool, rulesDir string, rules []str
 		return nil, err
 	}
 	sigs := append(gosigs, opasigs...)
+	celsigs, err := celsig.NewSignaturesFromDir(rulesDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed loading CEL signatures: %w", err)
+	}
+	sigs = append(sigs, celsigs...)
+
 	var res []detect.Signature
 	if rules == nil {
 		res = sigs
