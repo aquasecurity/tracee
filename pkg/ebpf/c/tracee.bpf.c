@@ -221,6 +221,7 @@ enum event_id_e {
     DEVICE_ADD,
     REGISTER_CHRDEV,
     SHARED_OBJECT_LOADED,
+    DO_INIT_MODULE,
     MAX_EVENT_ID,
 
     // Net events IDs
@@ -604,6 +605,17 @@ typedef struct net_ctx_ext {
     __be16 local_port;
 } net_ctx_ext_t;
 
+#define MODULE_VERSION_MAX_LENGTH 32        // version is not size limited - save only first 32 bytes.
+#define MODULE_SRCVERSION_MAX_LENGTH 25     // srcversion is not size limited - modpost calculates srcversion with size: 25.
+
+typedef struct kernel_module_data {
+    char name[MODULE_NAME_LEN];
+    char version[MODULE_VERSION_MAX_LENGTH];
+    char srcversion[MODULE_SRCVERSION_MAX_LENGTH];
+    u64 prev;
+    u64 next;
+} kernel_module_data_t;
+
 /*=============================== KERNEL STRUCTS =============================*/
 
 #ifndef CORE
@@ -664,8 +676,8 @@ BPF_HASH(params_types_map, u32, u64);                   // encoded parameters ty
 BPF_HASH(process_tree_map, u32, u32);                   // filter events by the ancestry of the traced process
 BPF_HASH(process_context_map, u32, process_context_t);  // holds the process_context data for every tid
 BPF_HASH(network_config, u32, int);                     // holds the network config for each iface
-BPF_HASH(ksymbols_map, ksym_name_t, u64)            // holds the addresses of some kernel symbols
-BPF_HASH(syscalls_to_check_map, int, u64);                // syscalls to discover
+BPF_HASH(ksymbols_map, ksym_name_t, u64);               // holds the addresses of some kernel symbols
+BPF_HASH(syscalls_to_check_map, int, u64);              // syscalls to discover
 BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t);         // socket address to process context
 BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t);   // network identifier to process context
 BPF_ARRAY(config_map, u32, 4);                          // various configurations
@@ -677,6 +689,7 @@ BPF_PROG_ARRAY(prog_array_tp, MAX_TAIL_CALL);           // store programs for ta
 BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);          // store programs for tail calls
 BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID);           // store programs for tail calls
 BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);  // store stack traces
+BPF_HASH(module_init_map, u32, kernel_module_data_t);   // holds module information between
 
 /*================================== EVENTS ==================================*/
 
@@ -5032,6 +5045,70 @@ int BPF_KPROBE(trace_ret_do_splice)
 
     return events_perf_submit(&data, DIRTY_PIPE_SPLICE, 0);
     #endif // CORE && Version < 5.8
+}
+
+SEC("kprobe/do_init_module")
+int BPF_KPROBE(trace_do_init_module) {
+
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data.context))
+        return 0;
+
+    kernel_module_data_t module_data = {0};
+
+    // get pointers before init
+    struct module* mod = (struct module*)PT_REGS_PARM1(ctx);
+    struct list_head ls = READ_KERN(mod->list);
+    struct list_head *prev = ls.prev;
+    struct list_head *next = ls.next;
+
+    module_data.prev = (u64)prev;
+    module_data.next = (u64)next;
+
+    // save string values on buffer for kretprobe
+    bpf_probe_read_str(&module_data.name, MODULE_NAME_LEN, (void *)READ_KERN(mod->name));
+    bpf_probe_read_str(&module_data.version, MODULE_VERSION_MAX_LENGTH, (void *)READ_KERN(mod->version));
+    bpf_probe_read_str(&module_data.srcversion, MODULE_SRCVERSION_MAX_LENGTH, (void *)READ_KERN(mod->srcversion));
+
+    // save module_data for kretprobe
+    bpf_map_update_elem(&module_init_map, &data.context.host_tid, &module_data, BPF_ANY);
+
+    return 0;
+}
+
+SEC("kretprobe/do_init_module")
+int BPF_KPROBE(trace_ret_do_init_module)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    kernel_module_data_t *orig_module_data = bpf_map_lookup_elem(&module_init_map, &data.context.host_tid);
+    if (orig_module_data == NULL) {
+        return 0;
+    }
+
+    // get next of original previous
+    struct list_head *orig_prev_ptr = (struct list_head *)(orig_module_data->prev);
+    u64 orig_prev_next_addr = (u64)READ_KERN(orig_prev_ptr->next);
+    // get previous of original next
+    struct list_head *orig_next_ptr = (struct list_head *)(orig_module_data->next);
+    u64 orig_next_prev_addr = (u64)READ_KERN(orig_next_ptr->prev);
+
+    // save strings to buf
+    save_str_to_buf(&data, &orig_module_data->name, 0);
+    save_str_to_buf(&data, &orig_module_data->version, 1);
+    save_str_to_buf(&data, &orig_module_data->srcversion, 2);
+    // save pointers to buf
+    save_to_submit_buf(&data, &(orig_module_data->prev), sizeof(u64), 3);
+    save_to_submit_buf(&data, &(orig_module_data->next), sizeof(u64), 4);
+    save_to_submit_buf(&data, &orig_prev_next_addr, sizeof(u64), 5);
+    save_to_submit_buf(&data, &orig_next_prev_addr, sizeof(u64), 6);
+
+    return events_perf_submit(&data, DO_INIT_MODULE, 0);
 }
 
 static __always_inline bool skb_revalidate_data(struct __sk_buff *skb, uint8_t **head, uint8_t **tail, const u32 offset) {

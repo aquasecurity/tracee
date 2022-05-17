@@ -641,6 +641,15 @@ struct dentry {
 	struct qstr d_name;
 };
 
+#define MODULE_NAME_LEN (64 - sizeof(unsigned long))
+
+struct module {
+	struct list_head list;
+	char name[MODULE_NAME_LEN];
+	const char *version;
+	const char *srcversion;
+};
+
 struct user_namespace {
 	struct ns_common ns;
 };
