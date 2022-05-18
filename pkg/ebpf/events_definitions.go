@@ -110,7 +110,7 @@ const (
 	ContainerCreateEventID
 	ContainerRemoveEventID
 	ExistingContainerEventID
-	DetectHookedSyscallsEventID
+	HookedSyscallsEventID
 	MaxUserSpaceEventID
 )
 
@@ -5515,15 +5515,19 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "unsigned long[]", Name: "syscalls_addresses"},
 		},
 	},
-	DetectHookedSyscallsEventID: {
+	HookedSyscallsEventID: {
 		ID32Bit: sys32undefined,
-		Name:    "detect_hooked_syscalls",
+		Name:    "hooked_syscalls",
 		Dependencies: dependencies{
-			events: []eventDependency{{eventID: FinitModuleEventID}, {eventID: PrintSyscallTableEventID}, {eventID: InitModuleEventID}},
+			events: []eventDependency{
+				{eventID: FinitModuleEventID},
+				{eventID: InitModuleEventID},
+				{eventID: PrintSyscallTableEventID},
+			},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
-			{Type: "HookedSyscallData[]", Name: "hooked_syscalls"},
+			{Type: "[]trace.HookedSymbolData", Name: "hooked_syscalls"},
 		},
 	},
 	DebugfsCreateDirEventID: {

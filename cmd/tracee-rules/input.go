@@ -49,6 +49,7 @@ func setupTraceeGobInputSource(opts *traceeInputOptions) (chan protocol.Event, e
 	gob.Register(trace.SlimCred{})
 	gob.Register(make(map[string]string))
 	gob.Register(trace.PktMeta{})
+	gob.Register([]trace.HookedSymbolData{})
 	res := make(chan protocol.Event)
 	go func() {
 		for {
