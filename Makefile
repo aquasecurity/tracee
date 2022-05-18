@@ -34,6 +34,7 @@ CMD_GREP ?= grep
 CMD_CAT ?= cat
 CMD_MD5 ?= md5sum
 CMD_OPA ?= opa # https://github.com/open-policy-agent/opa/releases/download/v0.35.0/opa_linux_amd64
+CMD_STATICCHECK ?= staticcheck
 
 .check_%:
 #
@@ -640,6 +641,41 @@ test-rules: \
 	| .check_$(CMD_OPA)
 #
 	$(CMD_OPA) test $(REGO_SIGNATURES_DIR) --verbose
+
+#
+# code checkers (hidden from help on purpose)
+#
+
+.PHONY: check-fmt
+check-fmt::
+#
+	@$(MAKE) -f builder/Makefile.checkers fmt-check
+
+.PHONY: fix-fmt
+fix-fmt::
+#
+	@$(MAKE) -f builder/Makefile.checkers fmt-fix
+
+.PHONY: check-vet
+check-vet: \
+	.checkver_$(CMD_GO) \
+	tracee-ebpf
+#
+	$(GO_ENV_EBPF) \
+	$(CMD_GO) vet \
+		-tags $(GO_TAGS_EBPF) \
+		./...
+
+.PHONY: check-staticcheck
+check-staticcheck: \
+	.checkver_$(CMD_GO) \
+	tracee-ebpf \
+	| .check_$(CMD_STATICCHECK)
+#
+	$(GO_ENV_EBPF) \
+	staticcheck -f stylish \
+		-tags $(GO_TAGS_EBPF) \
+		./...
 
 #
 # clean

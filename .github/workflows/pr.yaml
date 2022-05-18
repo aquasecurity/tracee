@@ -52,23 +52,15 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
           opa-version: ${{ env.OPA_VERSION }}
-      - name: Build Tracee
+      - name: Check Code Style
         run: |
-          make clean
-          make tracee-ebpf
-      - name: Run go-vet
+          make check-fmt
+      - name: Check Golang Vet
         run: |
-          CGO_CFLAGS="-I$(pwd)/dist/libbpf" \
-          CGO_LDFLAGS="-lelf -lz $(pwd)/dist/libbpf/libbpf.a" \
-          go vet -tags ebpf,core ./...
-      - name: Install staticcheck
+          make check-vet
+      - name: Check with StaticCheck
         run: |
-          go install honnef.co/go/tools/cmd/staticcheck@latest
-      - name: Run staticcheck
-        run: |
-          CGO_CFLAGS="-I$(pwd)/dist/libbpf" \
-          CGO_LDFLAGS="-lelf -lz $(pwd)/dist/libbpf/libbpf.a" \
-          staticcheck -f stylish -tags ebpf,core ./...
+          make check-staticcheck
 
   run-unit-tests:
     name: "Run Unit Tests"
