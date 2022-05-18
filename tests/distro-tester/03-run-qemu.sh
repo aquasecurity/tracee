@@ -74,7 +74,7 @@ fi
 qemu-system-x86_64 \
   -name guest=$image \
   -machine accel=$kvmaccel \
-  --cpu max --smp cpus=1,cores=1 -m 2G \
+  --cpu max --smp cpus=1 -m 2G \
   -object memory-backend-file,id=mem,size=2G,mem-path=/dev/shm,share=on \
   -numa node,nodeid=0,cpus=0,memdev=mem \
   -rtc base=utc,clock=vm,driftfix=none \
