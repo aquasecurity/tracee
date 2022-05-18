@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
-	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -28,7 +27,7 @@ func (t *Tracee) initEventDerivationMap() error {
 			ContainerRemoveEventID: deriveContainerRemoved(t),
 		},
 		PrintSyscallTableEventID: {
-			DetectHookedSyscallsEventID: deriveDetectHookedSyscall(t),
+			HookedSyscallsEventID: deriveDetectHookedSyscall(t),
 		},
 		DnsRequest: {
 			NetPacket: deriveNetPacket(),
@@ -166,20 +165,20 @@ func deriveContainerRemoved(t *Tracee) deriveFn {
 
 func deriveDetectHookedSyscall(t *Tracee) deriveFn {
 	return func(event trace.Event) (trace.Event, bool, error) {
-		syscallsAdresses, err := getEventArgUlongArrVal(&event, "syscalls_addresses")
+		syscallAddresses, err := getEventArgUlongArrVal(&event, "syscalls_addresses")
 		if err != nil {
 			return trace.Event{}, false, fmt.Errorf("error parsing syscalls_numbers arg: %v", err)
 		}
-		hookedSyscallData, err := analyzeHookedAddresses(syscallsAdresses, t.config.OSInfo, t.kernelSymbols)
+		hookedSyscall, err := analyzeHookedAddresses(syscallAddresses, t.kernelSymbols)
 		if err != nil {
 			return trace.Event{}, false, fmt.Errorf("error parsing analyzing hooked syscalls adresses arg: %v", err)
 		}
 		de := event
-		de.EventID = int(DetectHookedSyscallsEventID)
+		de.EventID = int(HookedSyscallsEventID)
 		de.EventName = "hooked_syscalls"
 		de.ReturnValue = 0
 		de.Args = []trace.Argument{
-			{ArgMeta: trace.ArgMeta{Name: "hooked_syscalls", Type: "hookedSyscallData[]"}, Value: hookedSyscallData},
+			{ArgMeta: trace.ArgMeta{Name: "hooked_syscalls", Type: "[]trace.HookedSymbolData"}, Value: hookedSyscall},
 		}
 		de.ArgsNum = 1
 		return de, true, nil
@@ -207,8 +206,8 @@ func deriveNetPacket() deriveFn {
 	}
 }
 
-func analyzeHookedAddresses(addresses []uint64, OsConfig *helpers.OSInfo, kernelSymbols *helpers.KernelSymbolTable) ([]bufferdecoder.HookedSyscallData, error) {
-	hookedSyscallData := make([]bufferdecoder.HookedSyscallData, 0)
+func analyzeHookedAddresses(addresses []uint64, kernelSymbols *helpers.KernelSymbolTable) ([]trace.HookedSymbolData, error) {
+	hookedSyscalls := make([]trace.HookedSymbolData, 0)
 	for idx, syscallsAdress := range addresses {
 		InTextSegment, err := kernelSymbols.TextSegmentContains(syscallsAdress)
 		if err != nil {
@@ -228,10 +227,11 @@ func analyzeHookedAddresses(addresses []uint64, OsConfig *helpers.OSInfo, kernel
 			} else {
 				hookedSyscallName = fmt.Sprint(syscallNumber)
 			}
-			hookedSyscallData = append(hookedSyscallData, bufferdecoder.HookedSyscallData{SyscallName: hookedSyscallName, ModuleOwner: hookingFunction.Owner})
+			hookedSyscalls = append(hookedSyscalls, trace.HookedSymbolData{SymbolName: hookedSyscallName, ModuleOwner: hookingFunction.Owner})
+
 		}
 	}
-	return hookedSyscallData, nil
+	return hookedSyscalls, nil
 }
 
 func parseSymbol(address uint64, table *helpers.KernelSymbolTable) *helpers.KernelSymbol {

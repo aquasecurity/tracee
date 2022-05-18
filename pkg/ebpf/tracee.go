@@ -754,7 +754,7 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	_, ok1 := t.events[PrintSyscallTableEventID]
-	_, ok2 := t.events[DetectHookedSyscallsEventID]
+	_, ok2 := t.events[HookedSyscallsEventID]
 	if ok1 || ok2 {
 		syscallsToCheckMap, err := t.bpfModule.GetMap("syscalls_to_check_map")
 		if err != nil {
@@ -1270,7 +1270,7 @@ const IoctlFetchSyscalls int = 65 // randomly picked number for ioctl cmd
 func (t *Tracee) invokeIoctlTriggeredEvents() {
 	// invoke DetectHookedSyscallsEvent
 	_, ok1 := t.events[PrintSyscallTableEventID]
-	_, ok2 := t.events[DetectHookedSyscallsEventID]
+	_, ok2 := t.events[HookedSyscallsEventID]
 	if ok1 || ok2 {
 		ptmx, err := os.OpenFile(t.config.Capture.OutputPath, os.O_RDONLY, 0444)
 		if err != nil {
