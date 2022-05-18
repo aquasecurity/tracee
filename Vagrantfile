@@ -31,7 +31,12 @@ Vagrant.configure("2") do |config|
     OPA_VERSION="v0.35.0"
 
     apt-get update
-    apt-get install --yes build-essential pkgconf libelf-dev llvm-12 clang-12
+    apt-get install --yes bsdutils
+    apt-get install --yes build-essential
+    apt-get install --yes pkgconf
+    apt-get install --yes llvm-12 clang-12
+    apt-get install --yes astyle
+    apt-get install --yes zlib1g-dev libelf-dev
 
     for tool in "clang" "llc" "llvm-strip"
     do

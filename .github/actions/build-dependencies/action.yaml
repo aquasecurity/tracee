@@ -17,13 +17,15 @@ runs:
       uses: actions/setup-go@v2
       with:
         go-version: ${{ inputs.go-version }}
-    - name: Install Compilers
+    - name: Install Compilers & Formatters
       run: |
         sudo apt-get update
-        sudo apt-get install --yes build-essential
-        sudo apt-get install --yes llvm-12 clang-12
-        sudo apt-get install --yes pkgconf libelf-dev
         sudo apt-get install --yes bsdutils
+        sudo apt-get install --yes build-essential
+        sudo apt-get install --yes pkgconf
+        sudo apt-get install --yes llvm-12 clang-12
+        sudo apt-get install --yes astyle
+        sudo apt-get install --yes zlib1g-dev libelf-dev
         for tool in "clang" "llc" "llvm-strip"
         do
           sudo rm -f /usr/bin/$tool
@@ -34,4 +36,8 @@ runs:
       run: |
         sudo curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/${{ inputs.opa-version }}/opa_linux_amd64
         sudo chmod 755 /usr/bin/opa
+      shell: bash
+    - name: Install staticchecker
+      run: |
+        go install honnef.co/go/tools/cmd/staticcheck@latest
       shell: bash
