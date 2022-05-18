@@ -4,6 +4,7 @@
 # commits to the PR branch.
 name: PR
 on:
+  workflow_dispatch: {}
   pull_request:
     branches:
       - main
@@ -211,14 +212,14 @@ jobs:
         signature:
           - "TRC-2"
         distro:
-          - "stream8"
-          - "stream9"
-          - "fedora34"
-          - "fedora35"
-          - "fedora36"
-          - "focal"
-          - "focalhwe"
-          - "jammy"
+          - "stream8-4.18"
+          - "stream9-5.14"
+          - "fedora34-5.11"
+          - "fedora35-5.14"
+          - "fedora36-5.17"
+          - "focal-5.4"
+          - "focalhwe-5.13"
+          - "jammy-5.15"
     steps:
       - name: "Checkout"
         uses: actions/checkout@v2
@@ -226,14 +227,16 @@ jobs:
           submodules: true
       - name: "Pull test container image"
         run: |
-          docker image pull rafaeldtinoco/tracee-distro-tester:${{ matrix.distro }}
+          distro=$(echo ${{ matrix.distro }} | cut -d'-' -f1)
+          docker image pull rafaeldtinoco/tracee-distro-tester:$distro
       - name: "Run tests"
         run: |
+          distro=$(echo ${{ matrix.distro }} | cut -d'-' -f1)
           docker run --rm --privileged -v $(pwd):/tracee:rw \
             -e kvm_accel="tcg" \
             -e test_name=${{ matrix.signature }} \
             -e non_core=0 \
-            -t rafaeldtinoco/tracee-distro-tester:${{ matrix.distro }}
+            -t rafaeldtinoco/tracee-distro-tester:$distro
   NON-CO-RE:
     runs-on: ubuntu-20.04
     needs:
@@ -244,14 +247,14 @@ jobs:
         signature:
           - "TRC-2"
         distro:
-          - "stream8"
-          - "stream9"
-          - "fedora34"
-          - "fedora35"
-          - "fedora36"
-          - "focal"
-          - "focalhwe"
-          - "jammy"
+          - "stream8-4.18"
+          - "stream9-5.14"
+          - "fedora34-5.11"
+          - "fedora35-5.14"
+          - "fedora36-5.17"
+          - "focal-5.4"
+          - "focalhwe-5.13"
+          - "jammy-5.15"
     steps:
       - name: "Checkout"
         uses: actions/checkout@v2
@@ -259,11 +262,13 @@ jobs:
           submodules: true
       - name: "Pull test container image"
         run: |
-          docker image pull rafaeldtinoco/tracee-distro-tester:${{ matrix.distro }}
+          distro=$(echo ${{ matrix.distro }} | cut -d'-' -f1)
+          docker image pull rafaeldtinoco/tracee-distro-tester:$distro
       - name: "Run tests"
         run: |
+          distro=$(echo ${{ matrix.distro }} | cut -d'-' -f1)
           docker run --rm --privileged -v $(pwd):/tracee:rw \
             -e kvm_accel="tcg" \
             -e test_name=${{ matrix.signature }} \
             -e non_core=1 \
-            -t rafaeldtinoco/tracee-distro-tester:${{ matrix.distro }}
+            -t rafaeldtinoco/tracee-distro-tester:$distro
