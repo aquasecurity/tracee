@@ -22,7 +22,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/bucketscache"
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/containers"
-	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/pkg/ebpf/initialization"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
@@ -51,7 +50,6 @@ type Config struct {
 	ChanErrors         chan error
 	ProcessInfo        bool
 	OSInfo             *helpers.OSInfo
-	Sockets            runtime.Sockets
 }
 
 type CaptureConfig struct {
@@ -314,7 +312,7 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error intitalizing event derivation map: %w", err)
 	}
 
-	c, err := containers.InitContainers(t.config.Sockets, t.config.Debug)
+	c, err := containers.InitContainers()
 	if err != nil {
 		return nil, fmt.Errorf("error initializing containers: %w", err)
 	}

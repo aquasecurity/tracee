@@ -48,7 +48,7 @@ func (t *Tracee) processFileWrites() {
 				continue
 			}
 
-			containerId := t.containers.GetCgroupInfo(meta.CgroupID).Container.ContainerId
+			containerId := t.containers.GetCgroupInfo(meta.CgroupID).ContainerId
 			if containerId == "" {
 				containerId = "host"
 			}

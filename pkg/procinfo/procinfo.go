@@ -80,7 +80,7 @@ func ParseProcessContext(ctx []byte, containers *containers.Containers) (Process
 	}
 	procCtx.StartTime = int(binary.LittleEndian.Uint64(ctx[0:8]))
 	cgroupId := binary.LittleEndian.Uint64(ctx[8:16])
-	procCtx.ContainerID = containers.GetCgroupInfo(cgroupId).Container.ContainerId
+	procCtx.ContainerID = containers.GetCgroupInfo(cgroupId).ContainerId
 	procCtx.Pid = binary.LittleEndian.Uint32(ctx[16:20])
 	procCtx.Tid = binary.LittleEndian.Uint32(ctx[20:24])
 	procCtx.Ppid = binary.LittleEndian.Uint32(ctx[24:28])

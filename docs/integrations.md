@@ -99,23 +99,3 @@ docker run --name tracee --rm -it --privileged --pid=host --cgroupns=host \
 [Sprig]: http://masterminds.github.io/sprig/
 [tracee/cmd/tracee-rules/templates]: https://github.com/aquasecurity/tracee/tree/{{ git.tag }}/cmd/tracee-rules/templates
 [falcosidekick]: https://github.com/falcosecurity/falcosidekick
-
-# Container Runtimes
-
-Tracee is capable of extracting information on running containers on your system during runtime through tracking created cgroups in kernel and
-can further enrich the container events from data queried by communicating with the relevant container's runtime and SDK from userspace.
-If running tracer-ebpf directly from binary, it will automatically search for known supported runtimes in their default socket's locations.
-However, when running tracee from a container, the runtime sockets must be manually mounted in order for the enrichment features to work.
-Using containerd as our runtime for example, this can be done by running tracee like so:
-```shell
-   docker run \
-     --name tracee --rm -it \
-     --pid=host --cgroupns=host --privileged \
-     -v /etc/os-release:/etc/os-release-host:ro \
-     -v /var/run/containerd:/var/run/containerd
-     -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-     aquasec/tracee:latest
-```
-
-Most container runtimes have their sockets installed by default in `/var/run` so if your system includes multiple container runtimes, tracee can track
-them all, however one should then mount either all their runtime sockets or `/var/run` in it's entirety.
