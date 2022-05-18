@@ -68,8 +68,8 @@ func (t *Tracee) CreateExistingContainersEvents() []trace.Event {
 	def := EventsDefinitions[ExistingContainerEventID]
 	for _, info := range t.containers.GetContainers() {
 		args := []trace.Argument{
-			{ArgMeta: def.Params[0], Value: info.Runtime.String()},
-			{ArgMeta: def.Params[1], Value: info.Container.ContainerId},
+			{ArgMeta: def.Params[0], Value: info.Runtime},
+			{ArgMeta: def.Params[1], Value: info.ContainerId},
 			{ArgMeta: def.Params[2], Value: info.Ctime.UnixNano()},
 		}
 		existingContainerEvent := trace.Event{

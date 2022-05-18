@@ -82,17 +82,6 @@ func main() {
 				OSInfo:             OSInfo,
 			}
 
-			containerRuntimesSlice := c.StringSlice("crs")
-			if checkCommandIsHelp(containerRuntimesSlice) {
-				fmt.Print(flags.ContainersHelp())
-				return nil
-			}
-			sockets, err := flags.PrepareContainers(containerRuntimesSlice)
-			if err != nil {
-				return err
-			}
-			cfg.Sockets = sockets
-
 			cacheSlice := c.StringSlice("cache")
 			if checkCommandIsHelp(cacheSlice) {
 				fmt.Print(flags.CacheHelp())
@@ -322,11 +311,6 @@ func main() {
 				Aliases: []string{"a"},
 				Value:   cli.NewStringSlice("none"),
 				Usage:   "Control event caching queues. run '--cache help' for more info.",
-			},
-			&cli.StringSliceFlag{
-				Name:  "crs",
-				Usage: "Define connected container runtimes. run '--crs help' for more info.",
-				Value: cli.NewStringSlice(),
 			},
 			&cli.IntFlag{
 				Name:    "perf-buffer-size",

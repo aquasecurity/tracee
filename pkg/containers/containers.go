@@ -2,7 +2,6 @@ package containers
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"io/fs"
 	"os"
@@ -16,7 +15,6 @@ import (
 	"unsafe"
 
 	"github.com/aquasecurity/libbpfgo"
-	cruntime "github.com/aquasecurity/tracee/pkg/containers/runtime"
 )
 
 var cgroupV1HierarchyID int
@@ -30,21 +28,20 @@ type Containers struct {
 	cgroups  map[uint32]CgroupInfo
 	deleted  []uint64
 	mtx      sync.RWMutex // protecting both cgroups and deleted fields
-	enricher runtimeInfoService
 }
 
 // CgroupInfo represents a cgroup dir (might describe a container cgroup dir).
 type CgroupInfo struct {
-	Path      string
-	Container cruntime.ContainerMetadata
-	Runtime   cruntime.RuntimeId
-	Ctime     time.Time
-	expiresAt time.Time
+	Path        string
+	ContainerId string
+	Runtime     string
+	Ctime       time.Time
+	expiresAt   time.Time
 }
 
 // InitContainers initializes a Containers object and returns a pointer to it.
 // User should further call "Populate" and iterate with Containers data.
-func InitContainers(sockets cruntime.Sockets, debug bool) (*Containers, error) {
+func InitContainers() (*Containers, error) {
 	cgroupV1 := false
 	if _, err := os.Stat("/sys/fs/cgroup/cgroup.controllers"); os.IsNotExist(err) {
 		cgroupV1 = true
@@ -53,28 +50,11 @@ func InitContainers(sockets cruntime.Sockets, debug bool) (*Containers, error) {
 		}
 	}
 
-	runtimeService := RuntimeInfoService(sockets)
-
-	//attempt to register for all supported runtimes
-	err := runtimeService.Register(cruntime.Containerd, cruntime.ContainerdEnricher)
-	if err != nil && debug {
-		fmt.Fprintf(os.Stderr, "Enricher: %v\n", err)
-	}
-	err = runtimeService.Register(cruntime.Crio, cruntime.CrioEnricher)
-	if err != nil && debug {
-		fmt.Fprintf(os.Stderr, "Enricher: %v\n", err)
-	}
-	err = runtimeService.Register(cruntime.Docker, cruntime.DockerEnricher)
-	if err != nil && debug {
-		fmt.Fprintf(os.Stderr, "Enricher: %v\n", err)
-	}
-
 	return &Containers{
 		cgroupV1: cgroupV1,
 		cgroupMP: "",
 		cgroups:  make(map[uint32]CgroupInfo),
 		mtx:      sync.RWMutex{},
-		enricher: runtimeService,
 	}, nil
 }
 
@@ -202,16 +182,13 @@ func (c *Containers) populate() error {
 // saving container information in Containers CgroupInfo map.
 // NOTE: ALL given cgroup dir paths are stored in CgroupInfo map.
 func (c *Containers) CgroupUpdate(cgroupId uint64, path string, ctime time.Time) (CgroupInfo, error) {
-	containerId, containerRuntime := getContainerIdFromCgroup(path)
-	container := cruntime.ContainerMetadata{
-		ContainerId: containerId,
-	}
+	containerId, runtime := getContainerIdFromCgroup(path)
 
 	info := CgroupInfo{
-		Path:      path,
-		Container: container,
-		Runtime:   containerRuntime,
-		Ctime:     ctime,
+		Path:        path,
+		ContainerId: containerId,
+		Runtime:     runtime,
+		Ctime:       ctime,
 	}
 
 	c.mtx.Lock()
@@ -221,63 +198,13 @@ func (c *Containers) CgroupUpdate(cgroupId uint64, path string, ctime time.Time)
 	return info, nil
 }
 
-// EnrichCgroupInfo checks for a given cgroupId if it is relevant to some running container
-// it then calls the runtime info service to gather additional data from the container's runtime
-// it returns the retrieved metadata and a relevant error
-// this function shouldn't be called twice for the same cgroupId unless attempting a retry
-func (c *Containers) EnrichCgroupInfo(cgroupId uint64) (cruntime.ContainerMetadata, error) {
-	var metadata cruntime.ContainerMetadata
-
-	c.mtx.RLock()
-	info, ok := c.cgroups[uint32(cgroupId)]
-	c.mtx.RUnlock()
-
-	//if there is no cgroup anymore for some reason, return early
-	if !ok {
-		return metadata, fmt.Errorf("no cgroup to enrich")
-	}
-
-	containerId := info.Container.ContainerId
-	runtime := info.Runtime
-
-	if containerId == "" {
-		return metadata, fmt.Errorf("no containerId")
-	}
-
-	if runtime == cruntime.Unknown {
-		return metadata, fmt.Errorf("unknown runtime")
-	}
-
-	//There might be a performance overhead with the cancel
-	//But, I think it will be negligable since this code path shouldn't be reached too frequently
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	metadata, err := c.enricher.Get(containerId, runtime, ctx)
-	defer cancel()
-	//if enrichment fails, just return early
-	if err != nil {
-		return metadata, err
-	}
-
-	info.Container = metadata
-	c.mtx.Lock()
-	//we read the dictionary again to make sure the cgroup still exists
-	//otherwise we risk reintroducing it despite not existing
-	_, ok = c.cgroups[uint32(cgroupId)]
-	if ok {
-		c.cgroups[uint32(cgroupId)] = info
-	}
-	c.mtx.Unlock()
-
-	return metadata, nil
-}
-
 var (
 	containerIdFromCgroupRegex = regexp.MustCompile(`^[A-Fa-f0-9]{64}$`)
 )
 
 // getContainerIdFromCgroup extracts container id and its runtime from path.
 // It returns (containerId, runtime string).
-func getContainerIdFromCgroup(cgroupPath string) (string, cruntime.RuntimeId) {
+func getContainerIdFromCgroup(cgroupPath string) (string, string) {
 	prevPathComp := ""
 	for _, pc := range strings.Split(cgroupPath, "/") {
 		if len(pc) < 64 {
@@ -285,32 +212,32 @@ func getContainerIdFromCgroup(cgroupPath string) (string, cruntime.RuntimeId) {
 			continue
 		}
 
-		runtime := cruntime.Unknown
+		runtime := "unknown"
 		id := strings.TrimSuffix(pc, ".scope")
 
 		switch {
 		case strings.HasPrefix(id, "docker-"):
-			runtime = cruntime.Docker
+			runtime = "docker"
 			id = strings.TrimPrefix(id, "docker-")
 		case strings.HasPrefix(id, "crio-"):
-			runtime = cruntime.Crio
+			runtime = "crio"
 			id = strings.TrimPrefix(id, "crio-")
 		case strings.HasPrefix(id, "cri-containerd-"):
-			runtime = cruntime.Containerd
+			runtime = "containerd"
 			id = strings.TrimPrefix(id, "cri-containerd-")
 		case strings.Contains(pc, ":cri-containerd:"):
-			runtime = cruntime.Containerd
+			runtime = "containerd"
 			id = pc[strings.LastIndex(pc, ":cri-containerd:")+len(":cri-containerd:"):]
 		case strings.HasPrefix(id, "libpod-"):
-			runtime = cruntime.Podman
+			runtime = "podman"
 			id = strings.TrimPrefix(id, "libpod-")
 		}
 
 		regex := containerIdFromCgroupRegex
 		if matched := regex.MatchString(id); matched {
-			if runtime == cruntime.Unknown && prevPathComp == "docker" {
+			if runtime == "unknown" && prevPathComp == "docker" {
 				// non-systemd docker with format: .../docker/01adbf...f26db7f/
-				runtime = cruntime.Docker
+				runtime = "docker"
 			}
 
 			// return first match: closest to root dir path component
@@ -322,7 +249,7 @@ func getContainerIdFromCgroup(cgroupPath string) (string, cruntime.RuntimeId) {
 	}
 
 	// cgroup dirs unrelated to containers provides empty (containerId, runtime)
-	return "", cruntime.Unknown
+	return "", ""
 }
 
 // CgroupRemove removes cgroupInfo of deleted cgroup dir from Containers struct.
@@ -423,7 +350,7 @@ func (c *Containers) FindContainerCgroupID32LSB(containerID string) []uint32 {
 	c.mtx.RLock()
 	defer c.mtx.RUnlock()
 	for k, v := range c.cgroups {
-		if strings.HasPrefix(v.Container.ContainerId, containerID) {
+		if strings.HasPrefix(v.ContainerId, containerID) {
 			cgroupIDs = append(cgroupIDs, k)
 		}
 	}
@@ -466,7 +393,7 @@ func (c *Containers) GetContainers() []CgroupInfo {
 	c.mtx.RLock()
 	defer c.mtx.RUnlock()
 	for _, v := range c.cgroups {
-		if v.Container.ContainerId != "" && v.expiresAt.IsZero() {
+		if v.ContainerId != "" && v.expiresAt.IsZero() {
 			conts = append(conts, v)
 		}
 	}
@@ -495,7 +422,7 @@ func (c *Containers) PopulateBpfMap(bpfModule *libbpfgo.Module, mapName string) 
 
 	c.mtx.RLock()
 	for cgroupIdLsb, info := range c.cgroups {
-		if info.Container.ContainerId != "" {
+		if info.ContainerId != "" {
 			state := containerExisted
 			err = containersMap.Update(unsafe.Pointer(&cgroupIdLsb), unsafe.Pointer(&state))
 		}
