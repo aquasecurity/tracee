@@ -656,6 +656,11 @@ fix-fmt::
 #
 	@$(MAKE) -f builder/Makefile.checkers fmt-fix
 
+.PHONY: check-code
+check-code::
+#
+	@$(MAKE) -f builder/Makefile.checkers code-check
+
 .PHONY: check-vet
 check-vet: \
 	.checkver_$(CMD_GO) \

@@ -35,7 +35,7 @@ Vagrant.configure("2") do |config|
     apt-get install --yes build-essential
     apt-get install --yes pkgconf
     apt-get install --yes llvm-12 clang-12
-    apt-get install --yes astyle
+    apt-get install --yes clang-format-12
     apt-get install --yes zlib1g-dev libelf-dev
 
     for tool in "clang" "llc" "llvm-strip"
