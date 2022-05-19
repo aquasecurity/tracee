@@ -1,34 +1,21 @@
 package ebpf
 
 import (
+	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/syndtr/gocapability/capability"
 )
-
-// ProbeType is an enum that describes the mechanism used to attach the event
-// Kprobes are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#1-kprobes
-// Tracepoints are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#3-tracepoints
-// Raw tracepoints are explained here: https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md#7-raw-tracepoints
-type probeType uint8
-
-const (
-	kprobe = iota
-	kretprobe
-	tracepoint
-	rawTracepoint
-)
-
-type probe struct {
-	event  string
-	attach probeType
-	fn     string
-}
 
 type dependencies struct {
 	events       []eventDependency // Events required to be loaded and/or submitted for the event to happen
 	ksymbols     []string
 	tailCalls    []tailCall
 	capabilities []capability.Cap
+}
+
+type probeDependency struct {
+	handle   probes.Handle
+	required bool // should tracee fail if probe fails to attach
 }
 
 type eventDependency struct {
@@ -47,7 +34,7 @@ type EventDefinition struct {
 	Name         string
 	Internal     bool
 	Syscall      bool
-	Probes       []probe
+	Probes       []probeDependency
 	Dependencies dependencies
 	Sets         []string
 	Params       []trace.ArgMeta
@@ -4832,8 +4819,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SysEnterEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "sys_enter",
-		Probes: []probe{
-			{event: "raw_syscalls:sys_enter", attach: rawTracepoint, fn: "tracepoint__raw_syscalls__sys_enter"},
+		Probes: []probeDependency{
+			{handle: probes.SysEnter, required: true},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -4843,8 +4830,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SysExitEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "sys_exit",
-		Probes: []probe{
-			{event: "raw_syscalls:sys_exit", attach: rawTracepoint, fn: "tracepoint__raw_syscalls__sys_exit"},
+		Probes: []probeDependency{
+			{handle: probes.SysExit, required: true},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -4854,8 +4841,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SchedProcessForkEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "sched_process_fork",
-		Probes: []probe{
-			{event: "sched:sched_process_fork", attach: rawTracepoint, fn: "tracepoint__sched__sched_process_fork"},
+		Probes: []probeDependency{
+			{handle: probes.SchedProcessFork, required: true},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -4873,9 +4860,9 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SchedProcessExecEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "sched_process_exec",
-		Probes: []probe{
-			{event: "sched:sched_process_exec", attach: rawTracepoint, fn: "tracepoint__sched__sched_process_exec"},
-			{event: "load_elf_phdrs", attach: kprobe, fn: "trace_load_elf_phdrs"},
+		Probes: []probeDependency{
+			{handle: probes.SchedProcessExec, required: true},
+			{handle: probes.LoadElfPhdrs, required: false},
 		},
 		Sets: []string{"default", "proc"},
 		Params: []trace.ArgMeta{
@@ -4896,8 +4883,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SchedProcessExitEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "sched_process_exit",
-		Probes: []probe{
-			{event: "sched:sched_process_exit", attach: rawTracepoint, fn: "tracepoint__sched__sched_process_exit"},
+		Probes: []probeDependency{
+			{handle: probes.SchedProcessExit, required: true},
 		},
 		Sets: []string{"default", "proc", "proc_life"},
 		Params: []trace.ArgMeta{
@@ -4911,8 +4898,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SchedSwitchEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "sched_switch",
-		Probes: []probe{
-			{event: "sched:sched_switch", attach: rawTracepoint, fn: "tracepoint__sched__sched_switch"},
+		Probes: []probeDependency{
+			{handle: probes.SchedSwitch, required: true},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -4926,8 +4913,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	DoExitEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "do_exit",
-		Probes: []probe{
-			{event: "do_exit", attach: kprobe, fn: "trace_do_exit"},
+		Probes: []probeDependency{
+			{handle: probes.DoExit, required: true},
 		},
 		Sets:   []string{"proc", "proc_life"},
 		Params: []trace.ArgMeta{},
@@ -4935,8 +4922,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	CapCapableEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "cap_capable",
-		Probes: []probe{
-			{event: "cap_capable", attach: kprobe, fn: "trace_cap_capable"},
+		Probes: []probeDependency{
+			{handle: probes.CapCapable, required: true},
 		},
 		Sets: []string{"default"},
 		Params: []trace.ArgMeta{
@@ -4947,9 +4934,9 @@ var EventsDefinitions = map[int32]EventDefinition{
 	VfsWriteEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "vfs_write",
-		Probes: []probe{
-			{event: "vfs_write", attach: kprobe, fn: "trace_vfs_write"},
-			{event: "vfs_write", attach: kretprobe, fn: "trace_ret_vfs_write"},
+		Probes: []probeDependency{
+			{handle: probes.VfsWrite, required: true},
+			{handle: probes.VfsWriteRet, required: true},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -4963,9 +4950,9 @@ var EventsDefinitions = map[int32]EventDefinition{
 	VfsWritevEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "vfs_writev",
-		Probes: []probe{
-			{event: "vfs_writev", attach: kprobe, fn: "trace_vfs_writev"},
-			{event: "vfs_writev", attach: kretprobe, fn: "trace_ret_vfs_writev"},
+		Probes: []probeDependency{
+			{handle: probes.VfsWriteV, required: true},
+			{handle: probes.VfsWriteVRet, required: true},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -4979,9 +4966,9 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MemProtAlertEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "mem_prot_alert",
-		Probes: []probe{
-			{event: "security_mmap_addr", attach: kprobe, fn: "trace_mmap_alert"},
-			{event: "security_file_mprotect", attach: kprobe, fn: "trace_security_file_mprotect"},
+		Probes: []probeDependency{
+			{handle: probes.SecurityMmapAddr, required: true},
+			{handle: probes.SecurityFileMProtect, required: true},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -4991,8 +4978,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	CommitCredsEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "commit_creds",
-		Probes: []probe{
-			{event: "commit_creds", attach: kprobe, fn: "trace_commit_creds"},
+		Probes: []probeDependency{
+			{handle: probes.CommitCreds, required: true},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -5004,8 +4991,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SwitchTaskNSEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "switch_task_ns",
-		Probes: []probe{
-			{event: "switch_task_namespaces", attach: kprobe, fn: "trace_switch_task_namespaces"},
+		Probes: []probeDependency{
+			{handle: probes.SwitchTaskNS, required: true},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -5021,13 +5008,13 @@ var EventsDefinitions = map[int32]EventDefinition{
 	MagicWriteEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "magic_write",
-		Probes: []probe{
-			{event: "vfs_write", attach: kprobe, fn: "trace_vfs_write"},
-			{event: "vfs_write", attach: kretprobe, fn: "trace_ret_vfs_write"},
-			{event: "vfs_writev", attach: kprobe, fn: "trace_vfs_writev"},
-			{event: "vfs_writev", attach: kretprobe, fn: "trace_ret_vfs_writev"},
-			{event: "__kernel_write", attach: kprobe, fn: "trace_kernel_write"},
-			{event: "__kernel_write", attach: kretprobe, fn: "trace_ret_kernel_write"},
+		Probes: []probeDependency{
+			{handle: probes.VfsWrite, required: true},
+			{handle: probes.VfsWriteRet, required: true},
+			{handle: probes.VfsWriteV, required: false},
+			{handle: probes.VfsWriteVRet, required: false},
+			{handle: probes.KernelWrite, required: false},
+			{handle: probes.KernelWriteRet, required: false},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -5040,8 +5027,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	CgroupAttachTaskEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "cgroup_attach_task",
-		Probes: []probe{
-			{event: "cgroup:cgroup_attach_task", attach: rawTracepoint, fn: "tracepoint__cgroup__cgroup_attach_task"},
+		Probes: []probeDependency{
+			{handle: probes.CgroupAttachTask, required: true},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -5053,8 +5040,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	CgroupMkdirEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "cgroup_mkdir",
-		Probes: []probe{
-			{event: "cgroup:cgroup_mkdir", attach: rawTracepoint, fn: "tracepoint__cgroup__cgroup_mkdir"},
+		Probes: []probeDependency{
+			{handle: probes.CgroupMkdir, required: true},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -5066,8 +5053,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	CgroupRmdirEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "cgroup_rmdir",
-		Probes: []probe{
-			{event: "cgroup:cgroup_rmdir", attach: rawTracepoint, fn: "tracepoint__cgroup__cgroup_rmdir"},
+		Probes: []probeDependency{
+			{handle: probes.CgroupRmdir, required: true},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -5079,8 +5066,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SecurityBprmCheckEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "security_bprm_check",
-		Probes: []probe{
-			{event: "security_bprm_check", attach: kprobe, fn: "trace_security_bprm_check"},
+		Probes: []probeDependency{
+			{handle: probes.SecurityBPRMCheck, required: true},
 		},
 		Sets: []string{"default", "lsm_hooks", "proc", "proc_life"},
 		Params: []trace.ArgMeta{
@@ -5092,8 +5079,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SecurityFileOpenEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "security_file_open",
-		Probes: []probe{
-			{event: "security_file_open", attach: kprobe, fn: "trace_security_file_open"},
+		Probes: []probeDependency{
+			{handle: probes.SecurityFileOpen, required: true},
 		},
 		Sets: []string{"default", "lsm_hooks", "fs", "fs_file_ops"},
 		Params: []trace.ArgMeta{
@@ -5108,8 +5095,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SecurityInodeUnlinkEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "security_inode_unlink",
-		Probes: []probe{
-			{event: "security_inode_unlink", attach: kprobe, fn: "trace_security_inode_unlink"},
+		Probes: []probeDependency{
+			{handle: probes.SecurityInodeUnlink, required: true},
 		},
 		Sets: []string{"default", "lsm_hooks", "fs", "fs_file_ops"},
 		Params: []trace.ArgMeta{
@@ -5119,8 +5106,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SecuritySocketCreateEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "security_socket_create",
-		Probes: []probe{
-			{event: "security_socket_create", attach: kprobe, fn: "trace_security_socket_create"},
+		Probes: []probeDependency{
+			{handle: probes.SecuritySocketCreate, required: true},
 		},
 		Sets: []string{"default", "lsm_hooks", "net", "net_sock"},
 		Params: []trace.ArgMeta{
@@ -5133,8 +5120,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SecuritySocketListenEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "security_socket_listen",
-		Probes: []probe{
-			{event: "security_socket_listen", attach: kprobe, fn: "trace_security_socket_listen"},
+		Probes: []probeDependency{
+			{handle: probes.SecuritySocketListen, required: true},
 		},
 		Sets: []string{"default", "lsm_hooks", "net", "net_sock"},
 		Params: []trace.ArgMeta{
@@ -5146,8 +5133,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SecuritySocketConnectEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "security_socket_connect",
-		Probes: []probe{
-			{event: "security_socket_connect", attach: kprobe, fn: "trace_security_socket_connect"},
+		Probes: []probeDependency{
+			{handle: probes.SecuritySocketConnect, required: true},
 		},
 		Sets: []string{"default", "lsm_hooks", "net", "net_sock"},
 		Params: []trace.ArgMeta{
@@ -5158,8 +5145,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SecuritySocketAcceptEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "security_socket_accept",
-		Probes: []probe{
-			{event: "security_socket_accept", attach: kprobe, fn: "trace_security_socket_accept"},
+		Probes: []probeDependency{
+			{handle: probes.SecuritySocketAccept, required: true},
 		},
 		Sets: []string{"default", "lsm_hooks", "net", "net_sock"},
 		Params: []trace.ArgMeta{
@@ -5170,8 +5157,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SecuritySocketBindEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "security_socket_bind",
-		Probes: []probe{
-			{event: "security_socket_bind", attach: kprobe, fn: "trace_security_socket_bind"},
+		Probes: []probeDependency{
+			{handle: probes.SecuritySocketBind, required: true},
 		},
 		Sets: []string{"default", "lsm_hooks", "net", "net_sock"},
 		Params: []trace.ArgMeta{
@@ -5182,8 +5169,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SecuritySbMountEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "security_sb_mount",
-		Probes: []probe{
-			{event: "security_sb_mount", attach: kprobe, fn: "trace_security_sb_mount"},
+		Probes: []probeDependency{
+			{handle: probes.SecuritySbMount, required: true},
 		},
 		Sets: []string{"default", "lsm_hooks", "fs"},
 		Params: []trace.ArgMeta{
@@ -5196,8 +5183,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SecurityBPFEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "security_bpf",
-		Probes: []probe{
-			{event: "security_bpf", attach: kprobe, fn: "trace_security_bpf"},
+		Probes: []probeDependency{
+			{handle: probes.SecurityBPF, required: true},
 		},
 		Sets: []string{"lsm_hooks"},
 		Params: []trace.ArgMeta{
@@ -5207,8 +5194,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SecurityBPFMapEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "security_bpf_map",
-		Probes: []probe{
-			{event: "security_bpf_map", attach: kprobe, fn: "trace_security_bpf_map"},
+		Probes: []probeDependency{
+			{handle: probes.SecurityBPFMap, required: true},
 		},
 		Sets: []string{"lsm_hooks"},
 		Params: []trace.ArgMeta{
@@ -5219,8 +5206,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SecurityKernelReadFileEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "security_kernel_read_file",
-		Probes: []probe{
-			{event: "security_kernel_read_file", attach: kprobe, fn: "trace_security_kernel_read_file"},
+		Probes: []probeDependency{
+			{handle: probes.SecurityKernelReadFile, required: true},
 		},
 		Sets: []string{"lsm_hooks"},
 		Params: []trace.ArgMeta{
@@ -5234,8 +5221,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SecurityPostReadFileEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "security_kernel_post_read_file",
-		Probes: []probe{
-			{event: "security_kernel_post_read_file", attach: kprobe, fn: "trace_security_kernel_post_read_file"},
+		Probes: []probeDependency{
+			{handle: probes.SecurityKernelPostReadFile, required: true},
 		},
 		Sets: []string{"lsm_hooks"},
 		Params: []trace.ArgMeta{
@@ -5247,8 +5234,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SecurityInodeMknodEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "security_inode_mknod",
-		Probes: []probe{
-			{event: "security_inode_mknod", attach: kprobe, fn: "trace_security_inode_mknod"},
+		Probes: []probeDependency{
+			{handle: probes.SecurityInodeMknod, required: true},
 		},
 		Sets: []string{"lsm_hooks"},
 		Params: []trace.ArgMeta{
@@ -5260,8 +5247,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SecurityInodeSymlinkEventId: {
 		ID32Bit: sys32undefined,
 		Name:    "security_inode_symlink",
-		Probes: []probe{
-			{event: "security_inode_symlink", attach: kprobe, fn: "trace_security_inode_symlink"},
+		Probes: []probeDependency{
+			{handle: probes.SecurityInodeSymlink, required: true},
 		},
 		Sets: []string{"lsm_hooks", "fs", "fs_file_ops"},
 		Params: []trace.ArgMeta{
@@ -5272,8 +5259,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SecurityMmapFileEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "security_mmap_file",
-		Probes: []probe{
-			{event: "security_mmap_file", attach: kprobe, fn: "trace_security_mmap_file"},
+		Probes: []probeDependency{
+			{handle: probes.SecurityMmapFile, required: true},
 		},
 		Sets: []string{"lsm_hooks", "fs", "fs_file_ops", "proc", "proc_mem"},
 		Params: []trace.ArgMeta{
@@ -5290,8 +5277,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SecurityFileMprotectEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "security_file_mprotect",
-		Probes: []probe{
-			{event: "security_file_mprotect", attach: kprobe, fn: "trace_security_file_mprotect"},
+		Probes: []probeDependency{
+			{handle: probes.SecurityFileMProtect, required: true},
 		},
 		Sets: []string{"lsm_hooks", "proc", "proc_mem", "fs", "fs_file_ops"},
 		Params: []trace.ArgMeta{
@@ -5303,7 +5290,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 	InitNamespacesEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "init_namespaces",
-		Probes:  []probe{},
 		Sets:    []string{},
 		Dependencies: dependencies{
 			capabilities: []capability.Cap{capability.CAP_SYS_PTRACE},
@@ -5324,7 +5310,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SocketDupEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "socket_dup",
-		Probes:  []probe{},
 		Dependencies: dependencies{
 			tailCalls: []tailCall{
 				{mapName: "sys_exit_tails", mapIdx: uint32(DupEventID), progName: "sys_dup_exit_tail"},
@@ -5342,8 +5327,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	HiddenInodesEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "hidden_inodes",
-		Probes: []probe{
-			{event: "filldir64", attach: kprobe, fn: "trace_filldir64"},
+		Probes: []probeDependency{
+			{handle: probes.Filldir64, required: true},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -5353,9 +5338,9 @@ var EventsDefinitions = map[int32]EventDefinition{
 	__KernelWriteEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "__kernel_write",
-		Probes: []probe{
-			{event: "__kernel_write", attach: kprobe, fn: "trace_kernel_write"},
-			{event: "__kernel_write", attach: kretprobe, fn: "trace_ret_kernel_write"},
+		Probes: []probeDependency{
+			{handle: probes.KernelWrite, required: true},
+			{handle: probes.KernelWriteRet, required: true},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -5369,9 +5354,9 @@ var EventsDefinitions = map[int32]EventDefinition{
 	DirtyPipeSpliceEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "dirty_pipe_splice",
-		Probes: []probe{
-			{event: "do_splice", attach: kprobe, fn: "trace_do_splice"},
-			{event: "do_splice", attach: kretprobe, fn: "trace_ret_do_splice"},
+		Probes: []probeDependency{
+			{handle: probes.DoSplice, required: true},
+			{handle: probes.DoSpliceRet, required: true},
 		},
 		Sets: []string{},
 		Dependencies: dependencies{
@@ -5390,7 +5375,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ContainerCreateEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "container_create",
-		Probes:  []probe{},
 		Dependencies: dependencies{
 			events: []eventDependency{{eventID: CgroupMkdirEventID}},
 		},
@@ -5409,7 +5393,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ContainerRemoveEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "container_remove",
-		Probes:  []probe{},
 		Dependencies: dependencies{
 			events: []eventDependency{{eventID: CgroupRmdirEventID}},
 		},
@@ -5422,7 +5405,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ExistingContainerEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "existing_container",
-		Probes:  []probe{},
 		Sets:    []string{},
 		Params: []trace.ArgMeta{
 			{Type: "const char*", Name: "runtime"},
@@ -5433,7 +5415,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 	NetPacket: {
 		ID32Bit: sys32undefined,
 		Name:    "net_packet",
-		Probes:  []probe{},
 		Dependencies: dependencies{
 			capabilities: []capability.Cap{capability.CAP_NET_ADMIN},
 		},
@@ -5445,7 +5426,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 	DnsRequest: {
 		ID32Bit: sys32undefined,
 		Name:    "dns_request",
-		Probes:  []probe{},
 		Dependencies: dependencies{
 			capabilities: []capability.Cap{capability.CAP_NET_ADMIN},
 		},
@@ -5458,7 +5438,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 	DnsResponse: {
 		ID32Bit: sys32undefined,
 		Name:    "dns_response",
-		Probes:  []probe{},
 		Dependencies: dependencies{
 			capabilities: []capability.Cap{capability.CAP_NET_ADMIN},
 		},
@@ -5471,8 +5450,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	ProcCreateEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "proc_create",
-		Probes: []probe{
-			{event: "proc_create", attach: kprobe, fn: "trace_proc_create"},
+		Probes: []probeDependency{
+			{handle: probes.ProcCreate, required: true},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -5483,8 +5462,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	KprobeAttachEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "kprobe_attach",
-		Probes: []probe{
-			{event: "arm_kprobe", attach: kprobe, fn: "trace_arm_kprobe"},
+		Probes: []probeDependency{
+			{handle: probes.ARMKprobe, required: true},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -5496,8 +5475,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	CallUsermodeHelperEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "call_usermodehelper",
-		Probes: []probe{
-			{event: "call_usermodehelper", attach: kprobe, fn: "trace_call_usermodehelper"},
+		Probes: []probeDependency{
+			{handle: probes.CallUsermodeHelper, required: true},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -5510,8 +5489,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	DebugfsCreateFileEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "debugfs_create_file",
-		Probes: []probe{
-			{event: "debugfs_create_file", attach: kprobe, fn: "trace_debugfs_create_file"},
+		Probes: []probeDependency{
+			{handle: probes.DebugfsCreateFile, required: true},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -5528,8 +5507,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit:  sys32undefined,
 		Name:     "print_syscall_table",
 		Internal: true,
-		Probes: []probe{
-			{event: "security_file_ioctl", attach: kprobe, fn: "trace_tracee_trigger_event"},
+		Probes: []probeDependency{
+			{handle: probes.SecurityFileIoctl, required: true},
 		},
 		Dependencies: dependencies{ksymbols: []string{"sys_call_table"}},
 		Sets:         []string{},
@@ -5555,8 +5534,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	DebugfsCreateDirEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "debugfs_create_dir",
-		Probes: []probe{
-			{event: "debugfs_create_dir", attach: kprobe, fn: "trace_debugfs_create_dir"},
+		Probes: []probeDependency{
+			{handle: probes.DebugfsCreateDir, required: true},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -5567,8 +5546,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	DeviceAddEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "device_add",
-		Probes: []probe{
-			{event: "device_add", attach: kprobe, fn: "trace_device_add"},
+		Probes: []probeDependency{
+			{handle: probes.DeviceAdd, required: true},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -5579,9 +5558,9 @@ var EventsDefinitions = map[int32]EventDefinition{
 	RegisterChrdevEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "register_chrdev",
-		Probes: []probe{
-			{event: "__register_chrdev", attach: kprobe, fn: "trace___register_chrdev"},
-			{event: "__register_chrdev", attach: kretprobe, fn: "trace_ret__register_chrdev"},
+		Probes: []probeDependency{
+			{handle: probes.RegisterChrdev, required: true},
+			{handle: probes.RegisterChrdevRet, required: true},
 		},
 		Sets: []string{},
 		Params: []trace.ArgMeta{
@@ -5594,7 +5573,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 	SharedObjectLoadedEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "shared_object_loaded",
-		Probes:  []probe{},
 		Dependencies: dependencies{
 			events: []eventDependency{{eventID: SecurityMmapFileEventID}},
 		},
@@ -5611,13 +5589,13 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit:  sys32undefined,
 		Name:     "capture_file_write",
 		Internal: true,
-		Probes: []probe{
-			{event: "vfs_write", attach: kprobe, fn: "trace_vfs_write"},
-			{event: "vfs_write", attach: kretprobe, fn: "trace_ret_vfs_write"},
-			{event: "vfs_writev", attach: kprobe, fn: "trace_vfs_writev"},
-			{event: "vfs_writev", attach: kretprobe, fn: "trace_ret_vfs_writev"},
-			{event: "__kernel_write", attach: kprobe, fn: "trace_kernel_write"},
-			{event: "__kernel_write", attach: kretprobe, fn: "trace_ret_kernel_write"},
+		Probes: []probeDependency{
+			{handle: probes.VfsWrite, required: true},
+			{handle: probes.VfsWriteRet, required: true},
+			{handle: probes.VfsWriteV, required: false},
+			{handle: probes.VfsWriteVRet, required: false},
+			{handle: probes.KernelWrite, required: false},
+			{handle: probes.KernelWriteRet, required: false},
 		},
 		Dependencies: dependencies{
 			tailCalls: []tailCall{
@@ -5632,7 +5610,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit:  sys32undefined,
 		Name:     "capture_exec",
 		Internal: true,
-		Probes:   []probe{},
 		Dependencies: dependencies{
 			events: []eventDependency{{eventID: SchedProcessExecEventID}},
 		},
@@ -5641,10 +5618,10 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit:  sys32undefined,
 		Name:     "capture_module",
 		Internal: true,
-		Probes: []probe{
-			{event: "raw_syscalls:sys_enter", attach: rawTracepoint, fn: "tracepoint__raw_syscalls__sys_enter"},
-			{event: "raw_syscalls:sys_exit", attach: rawTracepoint, fn: "tracepoint__raw_syscalls__sys_exit"},
-			{event: "security_kernel_post_read_file", attach: kprobe, fn: "trace_security_kernel_post_read_file"},
+		Probes: []probeDependency{
+			{handle: probes.SysEnter, required: true},
+			{handle: probes.SysExit, required: true},
+			{handle: probes.SecurityKernelPostReadFile, required: true},
 		},
 		Dependencies: dependencies{
 			events: []eventDependency{{eventID: SchedProcessExecEventID}},
@@ -5659,7 +5636,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit:  sys32undefined,
 		Name:     "capture_mem",
 		Internal: true,
-		Probes:   []probe{},
 		Dependencies: dependencies{
 			tailCalls: []tailCall{
 				{mapName: "prog_array", mapIdx: tailSendBin, progName: "send_bin"},
@@ -5670,7 +5646,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit:  sys32undefined,
 		Name:     "capture_profile",
 		Internal: true,
-		Probes:   []probe{},
 		Dependencies: dependencies{
 			events: []eventDependency{{eventID: SchedProcessExecEventID}},
 		},
@@ -5679,7 +5654,6 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit:  sys32undefined,
 		Name:     "capture_pcap",
 		Internal: true,
-		Probes:   []probe{},
 		Dependencies: dependencies{
 			events:       []eventDependency{{eventID: SecuritySocketBindEventID}},
 			capabilities: []capability.Cap{capability.CAP_SYS_ADMIN},
@@ -5688,9 +5662,9 @@ var EventsDefinitions = map[int32]EventDefinition{
 	DoInitModuleEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "do_init_module",
-		Probes: []probe{
-			{event: "do_init_module", attach: kprobe, fn: "trace_do_init_module"},
-			{event: "do_init_module", attach: kretprobe, fn: "trace_ret_do_init_module"},
+		Probes: []probeDependency{
+			{handle: probes.DoInitModule, required: true},
+			{handle: probes.DoInitModuleRet, required: true},
 		},
 		Dependencies: dependencies{},
 		Sets:         []string{},
@@ -5708,9 +5682,9 @@ var EventsDefinitions = map[int32]EventDefinition{
 		ID32Bit:  sys32undefined,
 		Name:     "socket_accept",
 		Internal: false,
-		Probes: []probe{
-			{event: "raw_syscalls:sys_enter", attach: rawTracepoint, fn: "tracepoint__raw_syscalls__sys_enter"},
-			{event: "raw_syscalls:sys_exit", attach: rawTracepoint, fn: "tracepoint__raw_syscalls__sys_exit"},
+		Probes: []probeDependency{
+			{handle: probes.SysEnter, required: true},
+			{handle: probes.SysExit, required: true},
 		},
 		Dependencies: dependencies{
 			events: []eventDependency{{eventID: SecuritySocketAcceptEventID}},
@@ -5728,8 +5702,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	LoadElfPhdrsEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "load_elf_phdrs",
-		Probes: []probe{
-			{event: "load_elf_phdrs", attach: kprobe, fn: "trace_load_elf_phdrs"},
+		Probes: []probeDependency{
+			{handle: probes.LoadElfPhdrs, required: true},
 		},
 		Sets: []string{"proc"},
 		Params: []trace.ArgMeta{
@@ -5741,8 +5715,8 @@ var EventsDefinitions = map[int32]EventDefinition{
 	HookedProcFopsEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "hooked_proc_fops",
-		Probes: []probe{
-			{event: "security_file_permission", attach: kprobe, fn: "trace_security_file_permission"},
+		Probes: []probeDependency{
+			{handle: probes.SecurityFilePermission, required: true},
 		},
 		Dependencies: dependencies{
 			ksymbols: []string{"_stext", "_etext"},
