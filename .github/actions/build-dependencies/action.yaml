@@ -26,7 +26,7 @@ runs:
         sudo apt-get install --yes llvm-12 clang-12
         sudo apt-get install --yes astyle
         sudo apt-get install --yes zlib1g-dev libelf-dev
-        for tool in "clang" "llc" "llvm-strip"
+        for tool in "clang" "llc" "llvm-strip" "clang-format"
         do
           sudo rm -f /usr/bin/$tool
           sudo ln -s /usr/bin/$tool-12 /usr/bin/$tool
