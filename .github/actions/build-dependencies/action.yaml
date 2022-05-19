@@ -24,7 +24,7 @@ runs:
         sudo apt-get install --yes build-essential
         sudo apt-get install --yes pkgconf
         sudo apt-get install --yes llvm-12 clang-12
-        sudo apt-get install --yes astyle
+        sudo apt-get install --yes clang-format-12
         sudo apt-get install --yes zlib1g-dev libelf-dev
         for tool in "clang" "llc" "llvm-strip" "clang-format"
         do

@@ -64,56 +64,22 @@ help:
 	fi
 
 #
-# check formatting (astyle, gofmt)
+# check formatting (clang-format, gofmt)
 #
-
-astyle_opts = --style=kr
-astyle_opts += --indent=spaces=4
-astyle_opts += --attach-inlines
-astyle_opts += --attach-closing-while
-astyle_opts += --indent-modifiers
-astyle_opts += --indent-switches
-astyle_opts += --indent-cases
-astyle_opts += --indent-preproc-block
-astyle_opts += --indent-preproc-define
-astyle_opts += --indent-preproc-cond
-astyle_opts += --indent-col1-comments
-astyle_opts += --break-blocks=all
-astyle_opts += --pad-oper
-astyle_opts += --pad-comma
-astyle_opts += --pad-header
-astyle_opts += --unpad-paren
-astyle_opts += --delete-empty-lines
-astyle_opts += --align-pointer=name
-astyle_opts += --align-reference=name
-astyle_opts += --break-one-line-headers
-astyle_opts += --remove-braces
-astyle_opts += --break-return-type
-astyle_opts += --convert-tabs
-astyle_opts += --remove-comment-prefix
-astyle_opts += --max-code-length=100
-astyle_opts += --break-after-logical
-astyle_opts += --mode=c
-astyle_opts += --preserve-date
-astyle_opts += --formatted
 
 .PHONY: fmt-check
 fmt-check: | \
 	.check_tree \
-	.check_astyle
+	.check_clang-format
 #
 	@errors=0
 	echo "Checking C and eBPF files and headers formatting..."
-	astyle $(astyle_opts) ./pkg/ebpf/c/*
-	files=$$(find . -name "*.orig" | tee /tmp/check-c-fmt | xargs)
-	astyleamount=$$(cat /tmp/check-c-fmt | wc -l)
-	if [[ $$astyleamount -ne 0 ]]; then
+	clang-format --dry-run -i ./pkg/ebpf/c/* > /tmp/check-c-fmt 2>&1
+	clangfmtamount=$$(cat /tmp/check-c-fmt | wc -l)
+	if [[ $$clangfmtamount -ne 0 ]]; then
+		head -n30 /tmp/check-c-fmt
 		errors=1
 	fi
-	for orig in $$files; do
-		diff -u $$orig $${orig/\.orig}
-		mv $$orig $${orig/\.orig}
-	done
 	rm -f /tmp/check-c-fmt
 #
 	echo "Checking golang files formatting..."
@@ -132,17 +98,16 @@ fmt-check: | \
 	rm -f /tmp/check-go-fmt
 
 #
-# fix formatting (astyle, gofmt)
+# fix formatting (clang-format, gofmt)
 #
 
 .PHONY: fmt-fix
 fmt-fix: | \
 	.check_tree \
-	.check_astyle
+	.check_clang-format
 #
 	@echo "Fixing C and eBPF files and headers formatting..."
-	astyle $(astyle_opts) ./pkg/ebpf/c/*
-	find ./ -name '*.orig' -exec rm {} \; # we use git, don't need them
+	clang-format -i --verbose ./pkg/ebpf/c/*
 #
 	echo "Fixing golang files formatting..."
 	gofmt -l -s -d . > /tmp/patch.$$
@@ -155,12 +120,12 @@ fmt-fix: | \
 
 .PHONY: code-check
 code-check: | \
-	.check_tree \
-	.check_astyle
+	.check_tree
 #
-	echo "Checking golang vet..."
-	$(GENERAL_MAKE) test-vet
-
+	@echo "Checking Golang vet..."
+	$(GENERAL_MAKE) check-vet
+	echo "Checking Golang with StaticChecker..."
+	$(GENERAL_MAKE) check-staticcheck
 
 #
 # clean
@@ -168,4 +133,5 @@ code-check: | \
 
 .PHONY: clean
 clean:
-	rm -f .check_astyles
+	rm -f .check_tree
+	rm -f .check_clang-format
