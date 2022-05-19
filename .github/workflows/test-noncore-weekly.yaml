@@ -7,6 +7,9 @@ on:
   schedule:
     # At 06:00 on Saturdays
     - cron: '0 6 * * 6'
+  pull_request:
+    branches:
+      - main
 jobs:
   NON-CO-RE:
     runs-on: self-hosted
