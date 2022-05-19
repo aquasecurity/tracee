@@ -309,7 +309,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			return fmt.Errorf("error parsing cgroup_mkdir args: %w", err)
 		}
 		info, err := t.containers.CgroupMkdir(cgroupId, path, hId)
-		if err == nil && info.ContainerId == "" {
+		if err == nil && info.Container.ContainerId == "" {
 			// If cgroupId is from a regular cgroup directory, and not the
 			// container base directory (from known runtimes), it should be
 			// removed from the "containers_map".
@@ -323,8 +323,8 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 
 		if t.config.Capture.NetPerContainer {
-			if info := t.containers.GetCgroupInfo(cgroupId); info.ContainerId != "" {
-				pcapContext := t.getContainerPcapContext(info.ContainerId)
+			if info := t.containers.GetCgroupInfo(cgroupId); info.Container.ContainerId != "" {
+				pcapContext := t.getContainerPcapContext(info.Container.ContainerId)
 				go t.netExit(pcapContext)
 			}
 		}
