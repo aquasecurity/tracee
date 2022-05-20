@@ -33,6 +33,8 @@ nav:
   - Tutorials:
       - Setup Development Machine with Vagrant: tutorials/setup-development-machine-with-vagrant.md
       - Deploy Tracee Grafana Dashboard: tutorials/deploy-grafana-dashboard.md
+  - Contributing:
+      - Source Code Guidelines: contributing/guidelines.md
 
 theme:
     name: material
