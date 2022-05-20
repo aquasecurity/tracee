@@ -19,8 +19,9 @@ AllowShortFunctionsOnASingleLine: Empty
 AllowShortLambdasOnASingleLine: Empty
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
-AlwaysBreakAfterDefinitionReturnType: TopLevel
+AlwaysBreakAfterDefinitionReturnType: None
 AlwaysBreakAfterReturnType: None
+PenaltyReturnTypeOnItsOwnLine: 1000000
 AlwaysBreakBeforeMultilineStrings: false
 AlwaysBreakTemplateDeclarations: MultiLine
 AttributeMacros:

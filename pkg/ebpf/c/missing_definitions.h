@@ -182,15 +182,13 @@
 #define CAP_OPT_NOAUDIT 0b10
 #define CAP_OPT_INSETID 0b100
 
-static inline bool
-ipv6_addr_any(const struct in6_addr *a)
+static inline bool ipv6_addr_any(const struct in6_addr *a)
 {
     return (a->in6_u.u6_addr32[0] | a->in6_u.u6_addr32[1] | a->in6_u.u6_addr32[2] |
             a->in6_u.u6_addr32[3]) == 0;
 }
 
-static inline struct inet_sock *
-inet_sk(const struct sock *sk)
+static inline struct inet_sock *inet_sk(const struct sock *sk)
 {
     return (struct inet_sock *) sk;
 }
