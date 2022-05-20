@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/tracee-ebpf/capture/">
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/contributing/guidelines/">
       
       
         
@@ -20,7 +20,7 @@
     
     
       
-        <title>Capturing Artifacts - Tracee</title>
+        <title>Source Code Guidelines - Tracee</title>
       
     
     
@@ -117,7 +117,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#capturing-artifacts" class="md-skip">
+        <a href="#style-guide-for-contributors" class="md-skip">
           Skip to content
         </a>
       
@@ -153,7 +153,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Capturing Artifacts
+              Source Code Guidelines
             
           </span>
         </div>
@@ -640,14 +640,12 @@
 
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_10" type="checkbox" id="__nav_10" checked>
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_10" type="checkbox" id="__nav_10" >
       
       
       
@@ -675,7 +673,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../" class="md-nav__link">
+      <a href="../../tracee-ebpf/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -694,7 +692,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../output/" class="md-nav__link">
+      <a href="../../tracee-ebpf/output/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -713,7 +711,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../trace-options/" class="md-nav__link">
+      <a href="../../tracee-ebpf/trace-options/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -730,28 +728,9 @@
               
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Capturing Artifacts
-  </span>
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../tracee-ebpf/capture/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -759,44 +738,6 @@
   </span>
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#cli-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      CLI Options
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      Examples
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -808,7 +749,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../override-os-needed-files/" class="md-nav__link">
+      <a href="../../tracee-ebpf/override-os-needed-files/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -912,12 +853,14 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_12" type="checkbox" id="__nav_12" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_12" type="checkbox" id="__nav_12" checked>
       
       
       
@@ -943,9 +886,26 @@
               
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../../contributing/guidelines/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Source Code Guidelines
+  </span>
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -953,6 +913,66 @@
   </span>
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#style-guide-for-contributors" class="md-nav__link">
+    <span class="md-ellipsis">
+      Style Guide for Contributors
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Style Guide for Contributors">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#check-if-there-are-formatting-issues-before-trying-to-fix" class="md-nav__link">
+    <span class="md-ellipsis">
+      Check if there are formatting issues before trying to fix
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fix-formatting-of-go-and-c-source-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fix formatting of Go and C source files
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-static-checkers-for-both-go-and-c-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run static checkers for both Go and C code
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -981,8 +1001,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -991,20 +1009,44 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#cli-options" class="md-nav__link">
+  <a href="#style-guide-for-contributors" class="md-nav__link">
     <span class="md-ellipsis">
-      CLI Options
+      Style Guide for Contributors
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Style Guide for Contributors">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#check-if-there-are-formatting-issues-before-trying-to-fix" class="md-nav__link">
+    <span class="md-ellipsis">
+      Check if there are formatting issues before trying to fix
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#fix-formatting-of-go-and-c-source-files" class="md-nav__link">
     <span class="md-ellipsis">
-      Examples
+      Fix formatting of Go and C source files
     </span>
   </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#run-static-checkers-for-both-go-and-c-code" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run static checkers for both Go and C code
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1022,85 +1064,57 @@
                 
 
 
-<h1 id="capturing-artifacts">Capturing Artifacts<a class="headerlink" href="#capturing-artifacts" title="Permanent link">&para;</a></h1>
-<p>Tracee has a unique feature that lets you capture interesting artifacts from running applications, using the <code>--capture</code> flag.</p>
-<p>All captured artifacts are saved in Tracee's "output directory" which can be configured using <code>--capture dir:/path/to/dir</code>.</p>
-<p>Tracee can capture the following types of artifacts:</p>
-<ol>
-<li>Written files: Anytime a file is being written to, the contents of the file will be captured. Written files can be filtered using an optional path prefix.</li>
-<li>Executed files: Anytime a binary is being executed, the binary file will be captured. If the same binary is executed multiple times, it will be captured just once.</li>
-<li>Memory files: Anytime a "memory unpacker" is detected, the suspicious memory region will be captured. This is triggered when memory protection changes from Write+Execute to Write.</li>
-<li>Network pcap files: Anytime a packet goes through the network interface, the packet is captured into the pcap file. only packets that are generated by traced processes are being captured.</li>
-<li>Loaded kernel modules: Anytime a kernel module is being loaded, the binary file will be captured. If the same binary is executed multiple times, it will be captured just once.</li>
-</ol>
-<h2 id="cli-options">CLI Options<a class="headerlink" href="#cli-options" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>CLI Option</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>[artifact:]write[=/path/prefix*]</code></td>
-<td>capture written files. A filter can be given to only capture file writes whose path starts with some prefix (up to 50 characters). Up to 3 filters can be given.</td>
-</tr>
-<tr>
-<td><code>[artifact:]exec</code></td>
-<td>capture executed files.</td>
-</tr>
-<tr>
-<td><code>[artifact:]mem</code></td>
-<td>capture memory regions that had write+execute (w+x) protection, and then changed to execute (x) only.</td>
-</tr>
-<tr>
-<td><code>[artifact:]net=&lt;network_interface&gt;</code></td>
-<td>capture network packets generated by traced processes, that goes through <network_interface>. Only TCP/UDP/ICMP protocols are currently supported.</td>
-</tr>
-<tr>
-<td><code>profile</code></td>
-<td>creates a runtime profile of program executions and their metadata for forensics use.</td>
-</tr>
-<tr>
-<td><code>dir:/path/to/dir</code></td>
-<td>path where tracee will save produced artifacts. the artifact will be saved into an 'out' subdirectory. (default: /tmp/tracee).</td>
-</tr>
-<tr>
-<td><code>clear-dir</code></td>
-<td>clear the captured artifacts output dir before starting (default: false).</td>
-</tr>
-<tr>
-<td><code>pcap:per-container</code></td>
-<td>when capturing network packets, save pcap per container</td>
-</tr>
-<tr>
-<td><code>pcap:per-process</code></td>
-<td>when capturing network packets, save pcap per process</td>
-</tr>
-</tbody>
-</table>
-<p>(Use this flag multiple times to choose multiple capture options)</p>
-<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
-<p>Capture executed files into the default output directory</p>
-<div class="highlight"><pre><span></span><code>--capture exec
+  <h1>Source Code Guidelines</h1>
+
+<h2 id="style-guide-for-contributors">Style Guide for Contributors<a class="headerlink" href="#style-guide-for-contributors" title="Permanent link">&para;</a></h2>
+<p>For those willing to contribute to Tracee, this repository has code formatting
+guidelines being enforced. It is recommended that, before commiting your
+changes, you run the following command:</p>
+<h3 id="check-if-there-are-formatting-issues-before-trying-to-fix">Check if there are formatting issues before trying to fix<a class="headerlink" href="#check-if-there-are-formatting-issues-before-trying-to-fix" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>$ make check-fmt
+Checking C and eBPF files and headers formatting...
+Checking golang files formatting...
 </code></pre></div>
-<p>Capture kernel modules into the default output directory</p>
-<div class="highlight"><pre><span></span><code>--capture module
+<blockquote>
+<p>This will make sure PRs won't fail due to same checks being enforced.</p>
+</blockquote>
+<h3 id="fix-formatting-of-go-and-c-source-files">Fix formatting of Go and C source files<a class="headerlink" href="#fix-formatting-of-go-and-c-source-files" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>$ make fix-fmt
+
+Fixing C and eBPF files and headers formatting...
+Formatting ./pkg/ebpf/c/missing_definitions.h
+Formatting ./pkg/ebpf/c/struct_flavors.h
+Formatting ./pkg/ebpf/c/tracee.bpf.c
+Formatting ./pkg/ebpf/c/vmlinux.h
+
+Fixing golang files formatting...
+patching file pkg/ebpf/tracee.go
+
+$ git status -s
+ M Makefile
+ M builder/Makefile.checkers
+ M pkg/ebpf/c/missing_definitions.h
+ M pkg/ebpf/c/struct_flavors.h
+ M pkg/ebpf/c/tracee.bpf.c
+ M pkg/ebpf/c/vmlinux.h
 </code></pre></div>
-<p>Delete /my/dir/out and then capture executed files into it</p>
-<div class="highlight"><pre><span></span><code>--capture exec --capture dir:/my/dir --capture clear-dir
-</code></pre></div>
-<p>Capture files that were written into anywhere under <code>/usr/bin/</code> or <code>/etc/</code></p>
-<div class="highlight"><pre><span></span><code>--capture write=/usr/bin/* --capture write=/etc/* 
-</code></pre></div>
-<p>Capture pcap files</p>
-<div class="highlight"><pre><span></span><code>--capture net=enp0s3
---capture net=enp0s3 --capture pcap:per-container
-</code></pre></div>
-<p>Creates a runtime profile of program executions and their metadata for forensics use. The profiles created can be compared among executions to identify if there is any difference. For example, <a href="https://github.com/aquasecurity/tracee-action">use it as a github action to identify if any new process was executed since the last pipeline</a>, useful for supply chain security.</p>
-<div class="highlight"><pre><span></span><code>--capture profile
-</code></pre></div>
+<h3 id="run-static-checkers-for-both-go-and-c-code">Run static checkers for both Go and C code<a class="headerlink" href="#run-static-checkers-for-both-go-and-c-code" title="Permanent link">&para;</a></h3>
+<p>```
+$ make code-check</p>
+<p>Checking Golang vet...
+make[2]: warning: jobserver unavailable: using -j1.  Add '+' to parent make rule.
+GOOS=linux CC=clang GOARCH=amd64 CGO_CFLAGS="-I/home/rafaeldtinoco/work/ebpf/tracee-review/dist/libbpf" CGO_LDFLAGS="-lelf -lz /home/rafaeldtinoco/work/ebpf/tracee-review/dist/libbpf/libbpf.a" \
+go vet \
+    -tags core,ebpf \
+    ./...</p>
+<p>Checking Golang with StaticChecker...
+make[2]: warning: jobserver unavailable: using -j1.  Add '+' to parent make rule.
+GOOS=linux CC=clang GOARCH=amd64 CGO_CFLAGS="-I/home/rafaeldtinoco/work/ebpf/tracee-review/dist/libbpf" CGO_LDFLAGS="-lelf -lz /home/rafaeldtinoco/work/ebpf/tracee-review/dist/libbpf/libbpf.a" \
+staticcheck -f stylish \
+    -tags core,ebpf \
+    ./...
+ ✖ 0 problems (0 errors, 0 warnings, 0 ignored)
+ ```</p>
 
 
 
@@ -1118,7 +1132,7 @@
     <nav class="md-footer__inner md-grid" aria-label="Footer">
       
         
-        <a href="../trace-options/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Trace Options" rel="prev">
+        <a href="../../tutorials/deploy-grafana-dashboard/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Deploy Tracee Grafana Dashboard" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -1127,26 +1141,11 @@
               <span class="md-footer__direction">
                 Previous
               </span>
-              Trace Options
+              Deploy Tracee Grafana Dashboard
             </div>
           </div>
         </a>
       
-      
-        
-        <a href="../override-os-needed-files/" class="md-footer__link md-footer__link--next" aria-label="Next: Overriding OS needed files" rel="next">
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Next
-              </span>
-              Overriding OS needed files
-            </div>
-          </div>
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
-          </div>
-        </a>
       
     </nav>
   

@@ -56,6 +56,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/contributing/guidelines/</loc>
+         <lastmod>2022-05-20</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/install/docker-mac/</loc>
          <lastmod>2022-05-20</lastmod>
          <changefreq>daily</changefreq>
