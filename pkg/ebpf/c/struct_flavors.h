@@ -32,13 +32,22 @@ struct kernfs_node___rh8 {
 
 // commit bf9765145b85 ("sock: Make sk_protocol a 16-bit value")
 
+// clang-format off
+
 struct sock___old {
-    struct sock_common __sk_common;
-    unsigned int __sk_flags_offset[0];
-    unsigned int sk_padding : 1, sk_kern_sock : 1, sk_no_check_tx : 1, sk_no_check_rx : 1,
-        sk_userlocks : 4, sk_protocol : 8, sk_type : 16;
-    u16 sk_gso_max_segs;
+    struct sock_common  __sk_common;
+    unsigned int        __sk_flags_offset[0];
+    unsigned int        sk_padding : 1,
+                        sk_kern_sock : 1,
+                        sk_no_check_tx : 1,
+                        sk_no_check_rx : 1,
+                        sk_userlocks : 4,
+                        sk_protocol  : 8,
+                        sk_type      : 16;
+    u16                 sk_gso_max_segs;
 };
+
+// clang-format on
 
 // support bpf_core_type_exists((task struct)->pids) for kernels < 5.0
 
