@@ -719,8 +719,7 @@ BPF_PERF_OUTPUT(net_events);  // network events submission
 
 // HELPERS: DEVICES --------------------------------------------------------------------------------
 
-static __always_inline const char *
-get_device_name(struct device *dev)
+static __always_inline const char *get_device_name(struct device *dev)
 {
     struct kobject kobj = READ_KERN(dev->kobj);
     return kobj.name;
@@ -728,86 +727,73 @@ get_device_name(struct device *dev)
 
 // HELPERS: NAMESPACES -----------------------------------------------------------------------------
 
-static __always_inline u32
-get_mnt_ns_id(struct nsproxy *ns)
+static __always_inline u32 get_mnt_ns_id(struct nsproxy *ns)
 {
     struct mnt_namespace *mntns = READ_KERN(ns->mnt_ns);
     return READ_KERN(mntns->ns.inum);
 }
 
-static __always_inline u32
-get_pid_ns_id(struct nsproxy *ns)
+static __always_inline u32 get_pid_ns_id(struct nsproxy *ns)
 {
     struct pid_namespace *pidns = READ_KERN(ns->pid_ns_for_children);
     return READ_KERN(pidns->ns.inum);
 }
 
-static __always_inline u32
-get_uts_ns_id(struct nsproxy *ns)
+static __always_inline u32 get_uts_ns_id(struct nsproxy *ns)
 {
     struct uts_namespace *uts_ns = READ_KERN(ns->uts_ns);
     return READ_KERN(uts_ns->ns.inum);
 }
 
-static __always_inline u32
-get_ipc_ns_id(struct nsproxy *ns)
+static __always_inline u32 get_ipc_ns_id(struct nsproxy *ns)
 {
     struct ipc_namespace *ipc_ns = READ_KERN(ns->ipc_ns);
     return READ_KERN(ipc_ns->ns.inum);
 }
 
-static __always_inline u32
-get_net_ns_id(struct nsproxy *ns)
+static __always_inline u32 get_net_ns_id(struct nsproxy *ns)
 {
     struct net *net_ns = READ_KERN(ns->net_ns);
     return READ_KERN(net_ns->ns.inum);
 }
 
-static __always_inline u32
-get_cgroup_ns_id(struct nsproxy *ns)
+static __always_inline u32 get_cgroup_ns_id(struct nsproxy *ns)
 {
     struct cgroup_namespace *cgroup_ns = READ_KERN(ns->cgroup_ns);
     return READ_KERN(cgroup_ns->ns.inum);
 }
 
-static __always_inline u32
-get_task_mnt_ns_id(struct task_struct *task)
+static __always_inline u32 get_task_mnt_ns_id(struct task_struct *task)
 {
     return get_mnt_ns_id(READ_KERN(task->nsproxy));
 }
 
-static __always_inline u32
-get_task_pid_ns_id(struct task_struct *task)
+static __always_inline u32 get_task_pid_ns_id(struct task_struct *task)
 {
     return get_pid_ns_id(READ_KERN(task->nsproxy));
 }
 
-static __always_inline u32
-get_task_uts_ns_id(struct task_struct *task)
+static __always_inline u32 get_task_uts_ns_id(struct task_struct *task)
 {
     return get_uts_ns_id(READ_KERN(task->nsproxy));
 }
 
-static __always_inline u32
-get_task_ipc_ns_id(struct task_struct *task)
+static __always_inline u32 get_task_ipc_ns_id(struct task_struct *task)
 {
     return get_ipc_ns_id(READ_KERN(task->nsproxy));
 }
 
-static __always_inline u32
-get_task_net_ns_id(struct task_struct *task)
+static __always_inline u32 get_task_net_ns_id(struct task_struct *task)
 {
     return get_net_ns_id(READ_KERN(task->nsproxy));
 }
 
-static __always_inline u32
-get_task_cgroup_ns_id(struct task_struct *task)
+static __always_inline u32 get_task_cgroup_ns_id(struct task_struct *task)
 {
     return get_cgroup_ns_id(READ_KERN(task->nsproxy));
 }
 
-static __always_inline u32
-get_task_ns_pid(struct task_struct *task)
+static __always_inline u32 get_task_ns_pid(struct task_struct *task)
 {
     int nr = 0;
     struct nsproxy *namespaceproxy = READ_KERN(task->nsproxy);
@@ -838,8 +824,7 @@ get_task_ns_pid(struct task_struct *task)
     return nr;
 }
 
-static __always_inline u32
-get_task_ns_tgid(struct task_struct *task)
+static __always_inline u32 get_task_ns_tgid(struct task_struct *task)
 {
     int nr = 0;
     struct nsproxy *namespaceproxy = READ_KERN(task->nsproxy);
@@ -871,8 +856,7 @@ get_task_ns_tgid(struct task_struct *task)
     return nr;
 }
 
-static __always_inline u32
-get_task_ns_ppid(struct task_struct *task)
+static __always_inline u32 get_task_ns_ppid(struct task_struct *task)
 {
     int nr = 0;
     struct task_struct *real_parent = READ_KERN(task->real_parent);
@@ -907,94 +891,80 @@ get_task_ns_ppid(struct task_struct *task)
 
 // HELPERS: TASKS ----------------------------------------------------------------------------------
 
-static __always_inline char *
-get_task_uts_name(struct task_struct *task)
+static __always_inline char *get_task_uts_name(struct task_struct *task)
 {
     struct nsproxy *np = READ_KERN(task->nsproxy);
     struct uts_namespace *uts_ns = READ_KERN(np->uts_ns);
     return READ_KERN(uts_ns->name.nodename);
 }
 
-static __always_inline u32
-get_task_ppid(struct task_struct *task)
+static __always_inline u32 get_task_ppid(struct task_struct *task)
 {
     struct task_struct *parent = READ_KERN(task->real_parent);
     return READ_KERN(parent->tgid);
 }
 
-static __always_inline u64
-get_task_start_time(struct task_struct *task)
+static __always_inline u64 get_task_start_time(struct task_struct *task)
 {
     return READ_KERN(task->start_time);
 }
 
-static __always_inline u32
-get_task_host_pid(struct task_struct *task)
+static __always_inline u32 get_task_host_pid(struct task_struct *task)
 {
     return READ_KERN(task->pid);
 }
 
-static __always_inline u32
-get_task_host_tgid(struct task_struct *task)
+static __always_inline u32 get_task_host_tgid(struct task_struct *task)
 {
     return READ_KERN(task->tgid);
 }
 
-static __always_inline struct task_struct *
-get_parent_task(struct task_struct *task)
+static __always_inline struct task_struct *get_parent_task(struct task_struct *task)
 {
     return READ_KERN(task->real_parent);
 }
 
-static __always_inline u32
-get_task_exit_code(struct task_struct *task)
+static __always_inline u32 get_task_exit_code(struct task_struct *task)
 {
     return READ_KERN(task->exit_code);
 }
 
-static __always_inline int
-get_task_parent_flags(struct task_struct *task)
+static __always_inline int get_task_parent_flags(struct task_struct *task)
 {
     struct task_struct *parent = READ_KERN(task->real_parent);
     return READ_KERN(parent->flags);
 }
 
-static __always_inline const struct cred *
-get_task_real_cred(struct task_struct *task)
+static __always_inline const struct cred *get_task_real_cred(struct task_struct *task)
 {
     return READ_KERN(task->real_cred);
 }
 
 // HELPERS: BINRPM ---------------------------------------------------------------------------------
 
-static __always_inline const char *
-get_binprm_filename(struct linux_binprm *bprm)
+static __always_inline const char *get_binprm_filename(struct linux_binprm *bprm)
 {
     return READ_KERN(bprm->filename);
 }
 
-static __always_inline struct file *
-get_file_ptr_from_bprm(struct linux_binprm *bprm)
+static __always_inline struct file *get_file_ptr_from_bprm(struct linux_binprm *bprm)
 {
     return READ_KERN(bprm->file);
 }
 
-static __always_inline int
-get_argc_from_bprm(struct linux_binprm *bprm)
+static __always_inline int get_argc_from_bprm(struct linux_binprm *bprm)
 {
     return READ_KERN(bprm->argc);
 }
 
-static __always_inline int
-get_envc_from_bprm(struct linux_binprm *bprm)
+static __always_inline int get_envc_from_bprm(struct linux_binprm *bprm)
 {
     return READ_KERN(bprm->envc);
 }
 
 // HELPERS: CGROUPS --------------------------------------------------------------------------------
 
-static __always_inline const char *
-get_cgroup_dirname(struct cgroup *cgrp)
+static __always_inline const char *get_cgroup_dirname(struct cgroup *cgrp)
 {
     struct kernfs_node *kn = READ_KERN(cgrp->kn);
 
@@ -1004,8 +974,7 @@ get_cgroup_dirname(struct cgroup *cgrp)
     return READ_KERN(kn->name);
 }
 
-static __always_inline const u64
-get_cgroup_id(struct cgroup *cgrp)
+static __always_inline const u64 get_cgroup_id(struct cgroup *cgrp)
 {
     struct kernfs_node *kn = READ_KERN(cgrp->kn);
 
@@ -1041,15 +1010,13 @@ get_cgroup_id(struct cgroup *cgrp)
     return id;
 }
 
-static __always_inline const u32
-get_cgroup_hierarchy_id(struct cgroup *cgrp)
+static __always_inline const u32 get_cgroup_hierarchy_id(struct cgroup *cgrp)
 {
     struct cgroup_root *root = READ_KERN(cgrp->root);
     return READ_KERN(root->hierarchy_id);
 }
 
-static __always_inline const u64
-get_cgroup_v1_subsys0_id(struct task_struct *task)
+static __always_inline const u64 get_cgroup_v1_subsys0_id(struct task_struct *task)
 {
     struct css_set *cgroups = READ_KERN(task->cgroups);
     struct cgroup_subsys_state *subsys0 = READ_KERN(cgroups->subsys[0]);
@@ -1057,8 +1024,7 @@ get_cgroup_v1_subsys0_id(struct task_struct *task)
     return get_cgroup_id(cgroup);
 }
 
-static __always_inline bool
-is_x86_compat(struct task_struct *task)
+static __always_inline bool is_x86_compat(struct task_struct *task)
 {
 #if defined(bpf_target_x86)
     return READ_KERN(task->thread_info.status) & TS_COMPAT;
@@ -1069,8 +1035,7 @@ is_x86_compat(struct task_struct *task)
 
 // ARCHITECTURE ------------------------------------------------------------------------------------
 
-static __always_inline bool
-is_arm64_compat(struct task_struct *task)
+static __always_inline bool is_arm64_compat(struct task_struct *task)
 {
 #if defined(bpf_target_arm64)
     return READ_KERN(task->thread_info.flags) & _TIF_32BIT;
@@ -1079,8 +1044,7 @@ is_arm64_compat(struct task_struct *task)
 #endif
 }
 
-static __always_inline bool
-is_compat(struct task_struct *task)
+static __always_inline bool is_compat(struct task_struct *task)
 {
 #if defined(bpf_target_x86)
     return is_x86_compat(task);
@@ -1093,41 +1057,35 @@ is_compat(struct task_struct *task)
 
 // HELPERS: VFS ------------------------------------------------------------------------------------
 
-static __always_inline struct dentry *
-get_mnt_root_ptr_from_vfsmnt(struct vfsmount *vfsmnt)
+static __always_inline struct dentry *get_mnt_root_ptr_from_vfsmnt(struct vfsmount *vfsmnt)
 {
     return READ_KERN(vfsmnt->mnt_root);
 }
 
-static __always_inline struct dentry *
-get_d_parent_ptr_from_dentry(struct dentry *dentry)
+static __always_inline struct dentry *get_d_parent_ptr_from_dentry(struct dentry *dentry)
 {
     return READ_KERN(dentry->d_parent);
 }
 
-static __always_inline struct qstr
-get_d_name_from_dentry(struct dentry *dentry)
+static __always_inline struct qstr get_d_name_from_dentry(struct dentry *dentry)
 {
     return READ_KERN(dentry->d_name);
 }
 
-static __always_inline dev_t
-get_dev_from_file(struct file *file)
+static __always_inline dev_t get_dev_from_file(struct file *file)
 {
     struct inode *f_inode = READ_KERN(file->f_inode);
     struct super_block *i_sb = READ_KERN(f_inode->i_sb);
     return READ_KERN(i_sb->s_dev);
 }
 
-static __always_inline unsigned long
-get_inode_nr_from_file(struct file *file)
+static __always_inline unsigned long get_inode_nr_from_file(struct file *file)
 {
     struct inode *f_inode = READ_KERN(file->f_inode);
     return READ_KERN(f_inode->i_ino);
 }
 
-static __always_inline u64
-get_ctime_nanosec_from_file(struct file *file)
+static __always_inline u64 get_ctime_nanosec_from_file(struct file *file)
 {
     struct inode *f_inode = READ_KERN(file->f_inode);
     struct timespec64 ts = READ_KERN(f_inode->i_ctime);
@@ -1138,21 +1096,18 @@ get_ctime_nanosec_from_file(struct file *file)
     return (sec * 1000000000L) + ns;
 }
 
-static __always_inline unsigned short
-get_inode_mode_from_file(struct file *file)
+static __always_inline unsigned short get_inode_mode_from_file(struct file *file)
 {
     struct inode *f_inode = READ_KERN(file->f_inode);
     return READ_KERN(f_inode->i_mode);
 }
 
-static __always_inline struct path
-get_path_from_file(struct file *file)
+static __always_inline struct path get_path_from_file(struct file *file)
 {
     return READ_KERN(file->f_path);
 }
 
-static __always_inline struct file *
-get_struct_file_from_fd(u64 fd_num)
+static __always_inline struct file *get_struct_file_from_fd(u64 fd_num)
 {
     struct task_struct *task = (struct task_struct *) bpf_get_current_task();
     if (task == NULL) {
@@ -1178,8 +1133,7 @@ get_struct_file_from_fd(u64 fd_num)
     return f;
 }
 
-static __always_inline unsigned short
-get_inode_mode_from_fd(u64 fd)
+static __always_inline unsigned short get_inode_mode_from_fd(u64 fd)
 {
     struct file *f = get_struct_file_from_fd(fd);
     if (f == NULL) {
@@ -1190,8 +1144,7 @@ get_inode_mode_from_fd(u64 fd)
     return READ_KERN(f_inode->i_mode);
 }
 
-static __always_inline int
-check_fd_type(u64 fd, u16 type)
+static __always_inline int check_fd_type(u64 fd, u16 type)
 {
     unsigned short i_mode = get_inode_mode_from_fd(fd);
 
@@ -1204,100 +1157,84 @@ check_fd_type(u64 fd, u16 type)
 
 // HELPERS: MEMORY ---------------------------------------------------------------------------------
 
-static __always_inline struct mm_struct *
-get_mm_from_task(struct task_struct *task)
+static __always_inline struct mm_struct *get_mm_from_task(struct task_struct *task)
 {
     return READ_KERN(task->mm);
 }
 
-static __always_inline unsigned long
-get_arg_start_from_mm(struct mm_struct *mm)
+static __always_inline unsigned long get_arg_start_from_mm(struct mm_struct *mm)
 {
     return READ_KERN(mm->arg_start);
 }
 
-static __always_inline unsigned long
-get_arg_end_from_mm(struct mm_struct *mm)
+static __always_inline unsigned long get_arg_end_from_mm(struct mm_struct *mm)
 {
     return READ_KERN(mm->arg_end);
 }
 
-static __always_inline unsigned long
-get_env_start_from_mm(struct mm_struct *mm)
+static __always_inline unsigned long get_env_start_from_mm(struct mm_struct *mm)
 {
     return READ_KERN(mm->env_start);
 }
 
-static __always_inline unsigned long
-get_env_end_from_mm(struct mm_struct *mm)
+static __always_inline unsigned long get_env_end_from_mm(struct mm_struct *mm)
 {
     return READ_KERN(mm->env_end);
 }
 
-static __always_inline unsigned long
-get_vma_flags(struct vm_area_struct *vma)
+static __always_inline unsigned long get_vma_flags(struct vm_area_struct *vma)
 {
     return READ_KERN(vma->vm_flags);
 }
 
-static inline struct mount *
-real_mount(struct vfsmount *mnt)
+static inline struct mount *real_mount(struct vfsmount *mnt)
 {
     return container_of(mnt, struct mount, mnt);
 }
 
 // HELPERS: NETWORK --------------------------------------------------------------------------------
 
-static __always_inline u32
-get_inet_rcv_saddr(struct inet_sock *inet)
+static __always_inline u32 get_inet_rcv_saddr(struct inet_sock *inet)
 {
     return READ_KERN(inet->inet_rcv_saddr);
 }
 
-static __always_inline u32
-get_inet_saddr(struct inet_sock *inet)
+static __always_inline u32 get_inet_saddr(struct inet_sock *inet)
 {
     return READ_KERN(inet->inet_saddr);
 }
 
-static __always_inline u32
-get_inet_daddr(struct inet_sock *inet)
+static __always_inline u32 get_inet_daddr(struct inet_sock *inet)
 {
     return READ_KERN(inet->inet_daddr);
 }
 
-static __always_inline u16
-get_inet_sport(struct inet_sock *inet)
+static __always_inline u16 get_inet_sport(struct inet_sock *inet)
 {
     return READ_KERN(inet->inet_sport);
 }
 
-static __always_inline u16
-get_inet_num(struct inet_sock *inet)
+static __always_inline u16 get_inet_num(struct inet_sock *inet)
 {
     return READ_KERN(inet->inet_num);
 }
 
-static __always_inline u16
-get_inet_dport(struct inet_sock *inet)
+static __always_inline u16 get_inet_dport(struct inet_sock *inet)
 {
     return READ_KERN(inet->inet_dport);
 }
 
-static __always_inline struct sock *
-get_socket_sock(struct socket *socket)
+static __always_inline struct sock *get_socket_sock(struct socket *socket)
 {
     return READ_KERN(socket->sk);
 }
 
-static __always_inline u16
-get_sock_family(struct sock *sock)
+static __always_inline u16 get_sock_family(struct sock *sock)
 {
     return READ_KERN(sock->sk_family);
 }
 
-static __always_inline u16
-get_sock_protocol(struct sock *sock)
+static __always_inline u16 get_sock_protocol(struct sock *sock)
 {
     u16 protocol = 0;
 
@@ -1324,44 +1261,37 @@ get_sock_protocol(struct sock *sock)
     return protocol;
 }
 
-static __always_inline u16
-get_sockaddr_family(struct sockaddr *address)
+static __always_inline u16 get_sockaddr_family(struct sockaddr *address)
 {
     return READ_KERN(address->sa_family);
 }
 
-static __always_inline struct in6_addr
-get_sock_v6_rcv_saddr(struct sock *sock)
+static __always_inline struct in6_addr get_sock_v6_rcv_saddr(struct sock *sock)
 {
     return READ_KERN(sock->sk_v6_rcv_saddr);
 }
 
-static __always_inline struct in6_addr
-get_ipv6_pinfo_saddr(struct ipv6_pinfo *np)
+static __always_inline struct in6_addr get_ipv6_pinfo_saddr(struct ipv6_pinfo *np)
 {
     return READ_KERN(np->saddr);
 }
 
-static __always_inline u32
-get_ipv6_pinfo_flow_label(struct ipv6_pinfo *np)
+static __always_inline u32 get_ipv6_pinfo_flow_label(struct ipv6_pinfo *np)
 {
     return READ_KERN(np->flow_label);
 }
 
-static __always_inline struct in6_addr
-get_sock_v6_daddr(struct sock *sock)
+static __always_inline struct in6_addr get_sock_v6_daddr(struct sock *sock)
 {
     return READ_KERN(sock->sk_v6_daddr);
 }
 
-static __always_inline int
-get_sock_bound_dev_if(struct sock *sock)
+static __always_inline int get_sock_bound_dev_if(struct sock *sock)
 {
     return READ_KERN(sock->sk_bound_dev_if);
 }
 
-static __always_inline volatile unsigned char
-get_sock_state(struct sock *sock)
+static __always_inline volatile unsigned char get_sock_state(struct sock *sock)
 {
     volatile unsigned char sk_state_own_impl;
     bpf_probe_read(
@@ -1369,16 +1299,14 @@ get_sock_state(struct sock *sock)
     return sk_state_own_impl;
 }
 
-static __always_inline struct ipv6_pinfo *
-get_inet_pinet6(struct inet_sock *inet)
+static __always_inline struct ipv6_pinfo *get_inet_pinet6(struct inet_sock *inet)
 {
     struct ipv6_pinfo *pinet6_own_impl;
     bpf_probe_read(&pinet6_own_impl, sizeof(pinet6_own_impl), &inet->pinet6);
     return pinet6_own_impl;
 }
 
-static __always_inline struct sockaddr_un
-get_unix_sock_addr(struct unix_sock *sock)
+static __always_inline struct sockaddr_un get_unix_sock_addr(struct unix_sock *sock)
 {
     struct unix_address *addr = READ_KERN(sock->addr);
     int len = READ_KERN(addr->len);
@@ -1391,8 +1319,7 @@ get_unix_sock_addr(struct unix_sock *sock)
 
 // INTERNAL: CONFIG --------------------------------------------------------------------------------
 
-static __always_inline int
-get_config(u32 key)
+static __always_inline int get_config(u32 key)
 {
     u32 *config = bpf_map_lookup_elem(&config_map, &key);
 
@@ -1402,8 +1329,7 @@ get_config(u32 key)
     return *config;
 }
 
-static __always_inline int
-get_kconfig_val(u32 key)
+static __always_inline int get_kconfig_val(u32 key)
 {
     u32 *config = bpf_map_lookup_elem(&kconfig_map, &key);
 
@@ -1413,8 +1339,7 @@ get_kconfig_val(u32 key)
     return *config;
 }
 
-static __always_inline void *
-get_symbol_addr(char *symbol_name)
+static __always_inline void *get_symbol_addr(char *symbol_name)
 {
     char new_ksym_name[MAX_KSYM_NAME_SIZE] = {};
     bpf_probe_read_str(new_ksym_name, MAX_KSYM_NAME_SIZE, symbol_name);
@@ -1426,8 +1351,7 @@ get_symbol_addr(char *symbol_name)
     return *sym;
 }
 
-static __always_inline int
-get_iface_config(int ifindex)
+static __always_inline int get_iface_config(int ifindex)
 {
     int *config = bpf_map_lookup_elem(&network_config, &ifindex);
     if (config == NULL)
@@ -1438,8 +1362,7 @@ get_iface_config(int ifindex)
 
 // INTERNAL: CONTEXT -------------------------------------------------------------------------------
 
-static __always_inline int
-init_context(context_t *context, struct task_struct *task, u32 options)
+static __always_inline int init_context(context_t *context, struct task_struct *task, u32 options)
 {
     u64 id = bpf_get_current_pid_tgid();
     context->host_tid = id;
@@ -1472,8 +1395,7 @@ init_context(context_t *context, struct task_struct *task, u32 options)
     return 0;
 }
 
-static __always_inline int
-init_event_data(event_data_t *data, void *ctx)
+static __always_inline int init_event_data(event_data_t *data, void *ctx)
 {
     data->task = (struct task_struct *) bpf_get_current_task();
     data->options = get_config(CONFIG_OPTIONS);
@@ -1517,8 +1439,7 @@ uint_filter_matches(bool filter_out, void *filter_map, u64 key, u32 less_idx, u3
     return 1; // 1 means trace
 }
 
-static __always_inline int
-equality_filter_matches(bool filter_out, void *filter_map, void *key)
+static __always_inline int equality_filter_matches(bool filter_out, void *filter_map, void *key)
 {
     u32 *equality = bpf_map_lookup_elem(filter_map, key);
     if (equality != NULL)
@@ -1530,8 +1451,7 @@ equality_filter_matches(bool filter_out, void *filter_map, void *key)
     return 1;
 }
 
-static __always_inline int
-bool_filter_matches(bool filter_out, bool val)
+static __always_inline int bool_filter_matches(bool filter_out, bool val)
 {
     if (!filter_out && val)
         return 1;
@@ -1542,8 +1462,7 @@ bool_filter_matches(bool filter_out, bool val)
     return 0;
 }
 
-static __always_inline int
-should_trace(context_t *context)
+static __always_inline int should_trace(context_t *context)
 {
     int config = get_config(CONFIG_FILTERS);
 
@@ -1643,8 +1562,7 @@ should_trace(context_t *context)
     return 1;
 }
 
-static __always_inline int
-should_submit(u32 key)
+static __always_inline int should_submit(u32 key)
 {
     u32 *config = bpf_map_lookup_elem(&events_to_submit, &key);
     if (config == NULL)
@@ -1655,20 +1573,17 @@ should_submit(u32 key)
 
 // INTERNAL: BUFFERS -------------------------------------------------------------------------------
 
-static __always_inline buf_t *
-get_buf(int idx)
+static __always_inline buf_t *get_buf(int idx)
 {
     return bpf_map_lookup_elem(&bufs, &idx);
 }
 
-static __always_inline void
-set_buf_off(int buf_idx, u32 new_off)
+static __always_inline void set_buf_off(int buf_idx, u32 new_off)
 {
     bpf_map_update_elem(&bufs_off, &buf_idx, &new_off, BPF_ANY);
 }
 
-static __always_inline u32 *
-get_buf_off(int buf_idx)
+static __always_inline u32 *get_buf_off(int buf_idx)
 {
     return bpf_map_lookup_elem(&bufs_off, &buf_idx);
 }
@@ -1676,8 +1591,7 @@ get_buf_off(int buf_idx)
 // The biggest element that can be saved with this function should be defined here
 #define MAX_ELEMENT_SIZE sizeof(struct sockaddr_un)
 
-static __always_inline int
-save_to_submit_buf(event_data_t *data, void *ptr, u32 size, u8 index)
+static __always_inline int save_to_submit_buf(event_data_t *data, void *ptr, u32 size, u8 index)
 {
     // Data saved to submit buf: [index][ ... buffer[size] ... ]
 
@@ -1706,8 +1620,7 @@ save_to_submit_buf(event_data_t *data, void *ptr, u32 size, u8 index)
     return 0;
 }
 
-static __always_inline int
-save_bytes_to_buf(event_data_t *data, void *ptr, u32 size, u8 index)
+static __always_inline int save_bytes_to_buf(event_data_t *data, void *ptr, u32 size, u8 index)
 {
     // Data saved to submit buf: [index][size][ ... bytes ... ]
 
@@ -1743,8 +1656,7 @@ save_bytes_to_buf(event_data_t *data, void *ptr, u32 size, u8 index)
     return 0;
 }
 
-static __always_inline int
-save_str_to_buf(event_data_t *data, void *ptr, u8 index)
+static __always_inline int save_str_to_buf(event_data_t *data, void *ptr, u8 index)
 {
     // Data saved to submit buf: [index][size][ ... string ... ]
     // Note: If we don't have enough space - return
@@ -1887,8 +1799,7 @@ out:
 
 #define MAX_ARR_LEN 8192
 
-static __always_inline int
-save_args_str_arr_to_buf(
+static __always_inline int save_args_str_arr_to_buf(
     event_data_t *data, const char *start, const char *end, int elem_num, u8 index)
 {
     // Data saved to submit buf: [index][len][arg #][null delimited string array]
@@ -1936,8 +1847,7 @@ save_args_str_arr_to_buf(
 
 // INTERNAL: PERF BUFFER ---------------------------------------------------------------------------
 
-static __always_inline int
-events_perf_submit(event_data_t *data, u32 id, long ret)
+static __always_inline int events_perf_submit(event_data_t *data, u32 id, long ret)
 {
     data->context.eventid = id;
     data->context.retval = ret;
@@ -1960,8 +1870,7 @@ events_perf_submit(event_data_t *data, u32 id, long ret)
 
 // INTERNAL: STRINGS -------------------------------------------------------------------------------
 
-static __inline int
-has_prefix(char *prefix, char *str, int n)
+static __inline int has_prefix(char *prefix, char *str, int n)
 {
     int i;
 #pragma unroll
@@ -1979,8 +1888,7 @@ has_prefix(char *prefix, char *str, int n)
 
 // HELPERS: VFS ------------------------------------------------------------------------------------
 
-static __always_inline void *
-get_path_str(struct path *path)
+static __always_inline void *get_path_str(struct path *path)
 {
     struct path f_path;
     bpf_probe_read(&f_path, sizeof(struct path), path);
@@ -2067,8 +1975,7 @@ get_path_str(struct path *path)
     return &string_p->buf[buf_off];
 }
 
-static __always_inline void *
-get_dentry_path_str(struct dentry *dentry)
+static __always_inline void *get_dentry_path_str(struct dentry *dentry)
 {
     char slash = '/';
     int zero = 0;
@@ -2128,8 +2035,7 @@ get_dentry_path_str(struct dentry *dentry)
 
 // INTERNAL: ARGUMENTS -----------------------------------------------------------------------------
 
-static __always_inline int
-save_args(args_t *args, u32 event_id)
+static __always_inline int save_args(args_t *args, u32 event_id)
 {
     u64 id = event_id;
     u32 tid = bpf_get_current_pid_tgid();
@@ -2139,8 +2045,7 @@ save_args(args_t *args, u32 event_id)
     return 0;
 }
 
-static __always_inline int
-load_args(args_t *args, u32 event_id)
+static __always_inline int load_args(args_t *args, u32 event_id)
 {
     args_t *saved_args;
     u32 tid = bpf_get_current_pid_tgid();
@@ -2163,8 +2068,7 @@ load_args(args_t *args, u32 event_id)
     return 0;
 }
 
-static __always_inline int
-del_args(u32 event_id)
+static __always_inline int del_args(u32 event_id)
 {
     u32 tid = bpf_get_current_pid_tgid();
     u64 id = event_id;
@@ -2177,8 +2081,7 @@ del_args(u32 event_id)
 
 #define DEC_ARG(n, enc_arg) ((enc_arg >> (8 * n)) & 0xFF)
 
-static __always_inline int
-save_args_to_submit_buf(event_data_t *data, u64 types, args_t *args)
+static __always_inline int save_args_to_submit_buf(event_data_t *data, u64 types, args_t *args)
 {
     unsigned int i;
     unsigned int rc = 0;
@@ -2330,8 +2233,8 @@ get_network_details_from_sock_v4(struct sock *sk, net_conn_v4_t *net_details, in
     return 0;
 }
 
-static __always_inline struct ipv6_pinfo *
-inet6_sk_own_impl(struct sock *__sk, struct inet_sock *inet)
+static __always_inline struct ipv6_pinfo *inet6_sk_own_impl(struct sock *__sk,
+                                                            struct inet_sock *inet)
 {
     volatile unsigned char sk_state_own_impl;
     sk_state_own_impl = get_sock_state(__sk);
@@ -2386,10 +2289,9 @@ get_network_details_from_sock_v6(struct sock *sk, net_conn_v6_t *net_details, in
     return 0;
 }
 
-static __always_inline int
-get_local_sockaddr_in_from_network_details(struct sockaddr_in *addr,
-                                           net_conn_v4_t *net_details,
-                                           u16 family)
+static __always_inline int get_local_sockaddr_in_from_network_details(struct sockaddr_in *addr,
+                                                                      net_conn_v4_t *net_details,
+                                                                      u16 family)
 {
     addr->sin_family = family;
     addr->sin_port = net_details->local_port;
@@ -2398,10 +2300,9 @@ get_local_sockaddr_in_from_network_details(struct sockaddr_in *addr,
     return 0;
 }
 
-static __always_inline int
-get_remote_sockaddr_in_from_network_details(struct sockaddr_in *addr,
-                                            net_conn_v4_t *net_details,
-                                            u16 family)
+static __always_inline int get_remote_sockaddr_in_from_network_details(struct sockaddr_in *addr,
+                                                                       net_conn_v4_t *net_details,
+                                                                       u16 family)
 {
     addr->sin_family = family;
     addr->sin_port = net_details->remote_port;
@@ -2410,10 +2311,9 @@ get_remote_sockaddr_in_from_network_details(struct sockaddr_in *addr,
     return 0;
 }
 
-static __always_inline int
-get_local_sockaddr_in6_from_network_details(struct sockaddr_in6 *addr,
-                                            net_conn_v6_t *net_details,
-                                            u16 family)
+static __always_inline int get_local_sockaddr_in6_from_network_details(struct sockaddr_in6 *addr,
+                                                                       net_conn_v6_t *net_details,
+                                                                       u16 family)
 {
     addr->sin6_family = family;
     addr->sin6_port = net_details->local_port;
@@ -2424,10 +2324,9 @@ get_local_sockaddr_in6_from_network_details(struct sockaddr_in6 *addr,
     return 0;
 }
 
-static __always_inline int
-get_remote_sockaddr_in6_from_network_details(struct sockaddr_in6 *addr,
-                                             net_conn_v6_t *net_details,
-                                             u16 family)
+static __always_inline int get_remote_sockaddr_in6_from_network_details(struct sockaddr_in6 *addr,
+                                                                        net_conn_v6_t *net_details,
+                                                                        u16 family)
 {
     addr->sin6_family = family;
     addr->sin6_port = net_details->remote_port;
@@ -2438,11 +2337,10 @@ get_remote_sockaddr_in6_from_network_details(struct sockaddr_in6 *addr,
     return 0;
 }
 
-static __always_inline int
-get_local_net_id_from_network_details_v4(struct sock *sk,
-                                         local_net_id_t *connect_id,
-                                         net_conn_v4_t *net_details,
-                                         u16 family)
+static __always_inline int get_local_net_id_from_network_details_v4(struct sock *sk,
+                                                                    local_net_id_t *connect_id,
+                                                                    net_conn_v4_t *net_details,
+                                                                    u16 family)
 {
     connect_id->address.s6_addr32[3] = net_details->local_address;
     connect_id->address.s6_addr16[5] = 0xffff;
@@ -2452,11 +2350,10 @@ get_local_net_id_from_network_details_v4(struct sock *sk,
     return 0;
 }
 
-static __always_inline int
-get_local_net_id_from_network_details_v6(struct sock *sk,
-                                         local_net_id_t *connect_id,
-                                         net_conn_v6_t *net_details,
-                                         u16 family)
+static __always_inline int get_local_net_id_from_network_details_v6(struct sock *sk,
+                                                                    local_net_id_t *connect_id,
+                                                                    net_conn_v6_t *net_details,
+                                                                    u16 family)
 {
     connect_id->address = net_details->local_address;
     connect_id->port = net_details->local_port;
@@ -2465,8 +2362,7 @@ get_local_net_id_from_network_details_v6(struct sock *sk,
     return 0;
 }
 
-static __always_inline struct pipe_inode_info *
-get_file_pipe_info(struct file *file)
+static __always_inline struct pipe_inode_info *get_file_pipe_info(struct file *file)
 {
     struct pipe_inode_info *pipe = READ_KERN(file->private_data);
     char pipe_fops_sym[14] = "pipefifo_fops";
@@ -2480,8 +2376,7 @@ get_file_pipe_info(struct file *file)
 
 // trace/events/syscalls.h: TP_PROTO(struct pt_regs *regs, long id)
 SEC("raw_tracepoint/sys_enter")
-int
-tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
+int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
 {
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
@@ -2550,8 +2445,7 @@ tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
 
 // trace/events/syscalls.h: TP_PROTO(struct pt_regs *regs, long ret)
 SEC("raw_tracepoint/sys_exit")
-int
-tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
+int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
 {
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
@@ -2620,8 +2514,7 @@ out:
 // PROBES AND HELPERS ------------------------------------------------------------------------------
 
 SEC("raw_tracepoint/sys_execve")
-int
-syscall__execve(void *ctx)
+int syscall__execve(void *ctx)
 {
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
@@ -2644,8 +2537,7 @@ syscall__execve(void *ctx)
 }
 
 SEC("raw_tracepoint/sys_execveat")
-int
-syscall__execveat(void *ctx)
+int syscall__execveat(void *ctx)
 {
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
@@ -2669,8 +2561,7 @@ syscall__execveat(void *ctx)
     return events_perf_submit(&data, SYS_EXECVEAT, 0);
 }
 
-static __always_inline int
-send_socket_dup(event_data_t *data, u64 oldfd, u64 newfd)
+static __always_inline int send_socket_dup(event_data_t *data, u64 oldfd, u64 newfd)
 {
     if (!should_submit(SOCKET_DUP))
         return 0;
@@ -2728,8 +2619,7 @@ send_socket_dup(event_data_t *data, u64 oldfd, u64 newfd)
 }
 
 SEC("raw_tracepoint/sys_dup")
-int
-sys_dup_exit_tail(void *ctx)
+int sys_dup_exit_tail(void *ctx)
 {
     event_data_t data = {};
     if (!init_event_data(&data, ctx)) {
@@ -2765,8 +2655,7 @@ out:
 
 // trace/events/sched.h: TP_PROTO(struct task_struct *parent, struct task_struct *child)
 SEC("raw_tracepoint/sched_process_fork")
-int
-tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
+int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
 {
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
@@ -2837,8 +2726,7 @@ tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
 
 // trace/events/sched.h: TP_PROTO(struct task_struct *p, pid_t old_pid, struct linux_binprm *bprm)
 SEC("raw_tracepoint/sched_process_exec")
-int
-tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
+int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 {
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
@@ -2936,8 +2824,7 @@ tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 
 // trace/events/sched.h: TP_PROTO(struct task_struct *p)
 SEC("raw_tracepoint/sched_process_exit")
-int
-tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
+int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 {
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
@@ -2984,8 +2871,7 @@ tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 }
 
 SEC("raw_tracepoint/syscall__accept4")
-int
-syscall__accept4(void *ctx)
+int syscall__accept4(void *ctx)
 {
     args_t saved_args;
     if (load_args(&saved_args, SOCKET_ACCEPT) != 0) {
@@ -3060,8 +2946,7 @@ syscall__accept4(void *ctx)
 
 // trace/events/sched.h: TP_PROTO(bool preempt, struct task_struct *prev, struct task_struct *next)
 SEC("raw_tracepoint/sched_switch")
-int
-tracepoint__sched__sched_switch(struct bpf_raw_tracepoint_args *ctx)
+int tracepoint__sched__sched_switch(struct bpf_raw_tracepoint_args *ctx)
 {
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
@@ -3148,8 +3033,7 @@ int BPF_KPROBE(trace_do_exit)
  * the syscall table. the syscalls are strode in map which is syscalls_to_check_map and the
  * syscall-table address is stored in the kernel_symbols map.
  */
-static __always_inline void
-invoke_print_syscall_table_event(event_data_t *data)
+static __always_inline void invoke_print_syscall_table_event(event_data_t *data)
 {
     int key = 0;
     u64 *table_ptr = bpf_map_lookup_elem(&syscalls_to_check_map, (void *) &key);
@@ -3214,8 +3098,7 @@ int BPF_KPROBE(trace_tracee_trigger_event)
 // trace/events/cgroup.h:
 // TP_PROTO(struct cgroup *dst_cgrp, const char *path, struct task_struct *task, bool threadgroup)
 SEC("raw_tracepoint/cgroup_attach_task")
-int
-tracepoint__cgroup__cgroup_attach_task(struct bpf_raw_tracepoint_args *ctx)
+int tracepoint__cgroup__cgroup_attach_task(struct bpf_raw_tracepoint_args *ctx)
 {
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
@@ -3240,8 +3123,7 @@ tracepoint__cgroup__cgroup_attach_task(struct bpf_raw_tracepoint_args *ctx)
 
 // trace/events/cgroup.h: TP_PROTO(struct cgroup *cgrp, const char *path)
 SEC("raw_tracepoint/cgroup_mkdir")
-int
-tracepoint__cgroup__cgroup_mkdir(struct bpf_raw_tracepoint_args *ctx)
+int tracepoint__cgroup__cgroup_mkdir(struct bpf_raw_tracepoint_args *ctx)
 {
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
@@ -3274,8 +3156,7 @@ tracepoint__cgroup__cgroup_mkdir(struct bpf_raw_tracepoint_args *ctx)
 
 // trace/events/cgroup.h: TP_PROTO(struct cgroup *cgrp, const char *path)
 SEC("raw_tracepoint/cgroup_rmdir")
-int
-tracepoint__cgroup__cgroup_rmdir(struct bpf_raw_tracepoint_args *ctx)
+int tracepoint__cgroup__cgroup_rmdir(struct bpf_raw_tracepoint_args *ctx)
 {
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
@@ -4027,8 +3908,7 @@ int BPF_KPROBE(trace_udpv6_destroy_sock)
 
 // trace/events/sock.h: TP_PROTO(const struct sock *sk, const int oldstate, const int newstate)
 SEC("raw_tracepoint/inet_sock_set_state")
-int
-tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
+int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
 {
     local_net_id_t connect_id = {0};
     net_debug_t debug_event = {0};
@@ -4165,8 +4045,7 @@ int BPF_KPROBE(trace_tcp_connect)
     return net_map_update_or_delete_sock(ctx, DEBUG_NET_TCP_CONNECT, sk, data.context.host_tid);
 }
 
-static __always_inline int
-icmp_delete_network_map(struct sk_buff *skb, int send, int ipv6)
+static __always_inline int icmp_delete_network_map(struct sk_buff *skb, int send, int ipv6)
 {
     local_net_id_t connect_id = {0};
     __u8 icmp_type;
@@ -4337,8 +4216,7 @@ int BPF_KPROBE(trace_ping_v6_sendmsg)
     return 0;
 }
 
-static __always_inline u32
-send_bin_helper(void *ctx, void *prog_array, int tail_call)
+static __always_inline u32 send_bin_helper(void *ctx, void *prog_array, int tail_call)
 {
     // Note: sending the data to the userspace have the following constraints:
     //
@@ -4473,8 +4351,7 @@ int BPF_KPROBE(send_bin)
 }
 
 SEC("raw_tracepoint/send_bin_tp")
-int
-send_bin_tp(void *ctx)
+int send_bin_tp(void *ctx)
 {
     return send_bin_helper(ctx, &prog_array_tp, TAIL_SEND_BIN_TP);
 }
@@ -4581,8 +4458,7 @@ do_file_write_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id)
     return 0;
 }
 
-static __always_inline int
-do_file_write_operation_tail(struct pt_regs *ctx, u32 event_id)
+static __always_inline int do_file_write_operation_tail(struct pt_regs *ctx, u32 event_id)
 {
     args_t saved_args;
     bin_args_t bin_args = {};
@@ -4892,8 +4768,7 @@ int BPF_KPROBE(trace_security_file_mprotect)
 }
 
 SEC("raw_tracepoint/sys_init_module")
-int
-syscall__init_module(void *ctx)
+int syscall__init_module(void *ctx)
 {
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
@@ -5148,8 +5023,7 @@ int BPF_KPROBE(trace_ret__register_chrdev)
     return events_perf_submit(&data, REGISTER_CHRDEV, 0);
 }
 
-static __always_inline struct pipe_buffer *
-get_last_write_pipe_buffer(struct pipe_inode_info *pipe)
+static __always_inline struct pipe_buffer *get_last_write_pipe_buffer(struct pipe_inode_info *pipe)
 {
     // Extract the last page buffer used in the pipe for write
     struct pipe_buffer *bufs = READ_KERN(pipe->bufs);
@@ -5392,8 +5266,7 @@ skb_revalidate_data(struct __sk_buff *skb, uint8_t **head, uint8_t **tail, const
 }
 
 // decide network event_id based on created net_packet_t
-static __always_inline void
-set_net_event_id(net_packet_t *pkt)
+static __always_inline void set_net_event_id(net_packet_t *pkt)
 {
     enum ports
     {
@@ -5413,8 +5286,7 @@ set_net_event_id(net_packet_t *pkt)
 }
 
 // some network events might need payload (even without capture)
-static __always_inline bool
-should_submit_payload(net_packet_t *pkt)
+static __always_inline bool should_submit_payload(net_packet_t *pkt)
 {
     switch (pkt->event_id) {
         case DNS_REQUEST:
@@ -5425,8 +5297,7 @@ should_submit_payload(net_packet_t *pkt)
     }
 }
 
-static __always_inline int
-tc_probe(struct __sk_buff *skb, bool ingress)
+static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress)
 {
     // Note: if we are attaching to docker0 bridge, the ingress bool argument is actually egress
     uint8_t *head = (uint8_t *) (long) skb->data;
@@ -5584,15 +5455,13 @@ tc_probe(struct __sk_buff *skb, bool ingress)
 }
 
 SEC("tc")
-int
-tc_egress(struct __sk_buff *skb)
+int tc_egress(struct __sk_buff *skb)
 {
     return tc_probe(skb, false);
 }
 
 SEC("tc")
-int
-tc_ingress(struct __sk_buff *skb)
+int tc_ingress(struct __sk_buff *skb)
 {
     return tc_probe(skb, true);
 }
