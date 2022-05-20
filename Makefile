@@ -336,7 +336,7 @@ $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o: \
 	$(OUTPUT_DIR)/libbpf/libbpf.a \
 	$(TRACEE_EBPF_OBJ_SRC)
 #
-	$(MAKE) $(OUTPUT_DIR)/tracee.bpf
+	MAKEFLAGS="--no-print-directory -j $(nproc)" $(MAKE) $(OUTPUT_DIR)/tracee.bpf
 	$(CMD_CLANG) -S -nostdinc \
 		-D__TARGET_ARCH_$(LINUX_ARCH) \
 		-D__BPF_TRACING__ \
@@ -657,7 +657,8 @@ fix-fmt::
 	@$(MAKE) -f builder/Makefile.checkers fmt-fix
 
 .PHONY: check-code
-check-code::
+check-code:: \
+	tracee-ebpf
 #
 	@$(MAKE) -f builder/Makefile.checkers code-check
 
@@ -666,7 +667,7 @@ check-vet: \
 	.checkver_$(CMD_GO) \
 	tracee-ebpf
 #
-	$(GO_ENV_EBPF) \
+	@$(GO_ENV_EBPF) \
 	$(CMD_GO) vet \
 		-tags $(GO_TAGS_EBPF) \
 		./...
@@ -677,7 +678,7 @@ check-staticcheck: \
 	tracee-ebpf \
 	| .check_$(CMD_STATICCHECK)
 #
-	$(GO_ENV_EBPF) \
+	@$(GO_ENV_EBPF) \
 	staticcheck -f stylish \
 		-tags $(GO_TAGS_EBPF) \
 		./...

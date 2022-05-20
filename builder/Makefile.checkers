@@ -10,7 +10,7 @@ all:
 SHELL = /bin/bash
 
 MAKE = make -f $(shell find . -name Makefile.checkers)
-GENERAL_MAKE = make
+GENERAL_MAKE = MAKEFLAGS="-j1 --no-print-directory" make
 MAKEFLAGS += --no-print-directory
 
 #
@@ -120,12 +120,14 @@ fmt-fix: | \
 
 .PHONY: code-check
 code-check: | \
-	.check_tree
+	.check_tree \
 #
+	@echo "Checking with clang-tidy..."
+	clang-tidy -header-filter=.* pkg/ebpf/c/tracee.bpf.c
 	@echo "Checking Golang vet..."
 	$(GENERAL_MAKE) check-vet
 	echo "Checking Golang with StaticChecker..."
-	$(GENERAL_MAKE) check-staticcheck
+	$(GENERAL_MAKE) -j1 check-staticcheck
 
 #
 # clean
