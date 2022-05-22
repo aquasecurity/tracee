@@ -1,4 +1,4 @@
-package flags
+package debug
 
 var (
 	debug bool
@@ -9,19 +9,19 @@ func init() {
 }
 
 // returns if the internal debug variable has been enabled
-func DebugModeEnabled() bool {
+func Enabled() bool {
 	return debug
 }
 
 // enable debug mode
-func EnableDebugMode() error {
+func Enable() error {
 	debug = true
 
 	return nil
 }
 
 // disable debug mode
-func DisableDebugMode() error {
+func Disable() error {
 	debug = false
 
 	return nil

@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/debug"
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 )
 
@@ -40,7 +41,7 @@ func contains(s []string, val string) bool {
 
 func PrepareContainers(containerFlags []string) (runtime.Sockets, error) {
 	if len(containerFlags) == 0 {
-		return autoDiscoverSockets(debug), nil
+		return autoDiscoverSockets(), nil
 	}
 
 	supportedRuntimes := []string{"crio", "cri-o", "containerd", "docker"}
@@ -70,7 +71,7 @@ func PrepareContainers(containerFlags []string) (runtime.Sockets, error) {
 }
 
 //check default paths for all supported container runtimes and aggregate them
-func autoDiscoverSockets(debug bool) runtime.Sockets {
+func autoDiscoverSockets() runtime.Sockets {
 	sockets := runtime.Sockets{}
 	const (
 		defaultContainerd = "/var/run/containerd/containerd.sock"
@@ -89,7 +90,7 @@ func autoDiscoverSockets(debug bool) runtime.Sockets {
 
 func registerSocket(sockets *runtime.Sockets, runtime string, socket string) {
 	err := sockets.Register(runtimeStringToRuntimeId(runtime), socket)
-	if DebugModeEnabled() {
+	if debug.Enabled() {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "RuntimeSockets: failed to register default %s socket:\n%v\n", runtime, err)
 		} else {
