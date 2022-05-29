@@ -5692,6 +5692,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 				{mapName: "sys_exit_tails", mapIdx: uint32(Accept4EventID), progName: "syscall__accept4"},
 			},
 		},
+		Sets: []string{},
 		Params: []trace.ArgMeta{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct sockaddr*", Name: "local_addr"},
