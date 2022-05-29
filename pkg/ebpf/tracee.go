@@ -1280,3 +1280,10 @@ func (t *Tracee) invokeIoctlTriggeredEvents() {
 		ptmx.Close()
 	}
 }
+
+func (t *Tracee) updateKallsyms() {
+	kernelSymbols, err := helpers.NewKernelSymbolsMap()
+	if err == nil && initialization.ValidateKsymbolsTable(t.kernelSymbols) {
+		t.kernelSymbols = kernelSymbols
+	}
+}

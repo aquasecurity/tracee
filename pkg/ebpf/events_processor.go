@@ -338,9 +338,11 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 	// in case FinitModule and IinitModule occurs it means that kernel module loaded, then we will want to check if it hooked the syscall table
 	case FinitModuleEventID:
 		t.invokeIoctlTriggeredEvents()
+		t.updateKallsyms()
 
 	case InitModuleEventID:
 		t.invokeIoctlTriggeredEvents()
+		t.updateKallsyms()
 	}
 
 	return nil
