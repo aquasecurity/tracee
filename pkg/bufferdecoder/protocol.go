@@ -22,6 +22,7 @@ const (
 // keep the 1-byte 'Argnum' as the final parameter before the padding (if padding is needed).
 type Context struct {
 	Ts          uint64
+	StartTime   uint64
 	CgroupID    uint64
 	Pid         uint32
 	Tid         uint32
@@ -34,7 +35,9 @@ type Context struct {
 	PidID       uint32
 	Comm        [16]byte
 	UtsName     [16]byte
+	Pad1        [4]byte
 	EventID     events.ID //int32
+	Pad2        [4]byte
 	Retval      int64
 	StackID     uint32
 	ProcessorId uint16
@@ -43,7 +46,7 @@ type Context struct {
 }
 
 func (Context) GetSizeBytes() uint32 {
-	return 104
+	return 120
 }
 
 type ChunkMeta struct {

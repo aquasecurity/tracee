@@ -42,27 +42,30 @@ func (decoder *EbpfDecoder) ReadAmountBytes() int {
 // DecodeContext translates data from the decoder buffer, starting from the decoder cursor, to bufferdecoder.Context struct.
 func (decoder *EbpfDecoder) DecodeContext(ctx *Context) error {
 	offset := decoder.cursor
-	if len(decoder.buffer[offset:]) < 104 {
+	if len(decoder.buffer[offset:]) < 120 {
 		return fmt.Errorf("can't read context from buffer: buffer too short")
 	}
 	ctx.Ts = binary.LittleEndian.Uint64(decoder.buffer[offset : offset+8])
-	ctx.CgroupID = binary.LittleEndian.Uint64(decoder.buffer[offset+8 : offset+16])
-	ctx.Pid = binary.LittleEndian.Uint32(decoder.buffer[offset+16 : offset+20])
-	ctx.Tid = binary.LittleEndian.Uint32(decoder.buffer[offset+20 : offset+24])
-	ctx.Ppid = binary.LittleEndian.Uint32(decoder.buffer[offset+24 : offset+28])
-	ctx.HostPid = binary.LittleEndian.Uint32(decoder.buffer[offset+28 : offset+32])
-	ctx.HostTid = binary.LittleEndian.Uint32(decoder.buffer[offset+32 : offset+36])
-	ctx.HostPpid = binary.LittleEndian.Uint32(decoder.buffer[offset+36 : offset+40])
-	ctx.Uid = binary.LittleEndian.Uint32(decoder.buffer[offset+40 : offset+44])
-	ctx.MntID = binary.LittleEndian.Uint32(decoder.buffer[offset+44 : offset+48])
-	ctx.PidID = binary.LittleEndian.Uint32(decoder.buffer[offset+48 : offset+52])
-	_ = copy(ctx.Comm[:], decoder.buffer[offset+52:offset+68])
-	_ = copy(ctx.UtsName[:], decoder.buffer[offset+68:offset+84])
-	ctx.EventID = events.ID(int32(binary.LittleEndian.Uint32(decoder.buffer[offset+84 : offset+88])))
-	ctx.Retval = int64(binary.LittleEndian.Uint64(decoder.buffer[offset+88 : offset+96]))
-	ctx.StackID = binary.LittleEndian.Uint32(decoder.buffer[offset+96 : offset+100])
-	ctx.ProcessorId = binary.LittleEndian.Uint16(decoder.buffer[offset+100 : offset+102])
-	ctx.Argnum = uint8(binary.LittleEndian.Uint16(decoder.buffer[offset+102 : offset+104]))
+	ctx.StartTime = binary.LittleEndian.Uint64(decoder.buffer[offset+8 : offset+16])
+	ctx.CgroupID = binary.LittleEndian.Uint64(decoder.buffer[offset+16 : offset+24])
+	ctx.Pid = binary.LittleEndian.Uint32(decoder.buffer[offset+24 : offset+28])
+	ctx.Tid = binary.LittleEndian.Uint32(decoder.buffer[offset+28 : offset+32])
+	ctx.Ppid = binary.LittleEndian.Uint32(decoder.buffer[offset+32 : offset+36])
+	ctx.HostPid = binary.LittleEndian.Uint32(decoder.buffer[offset+36 : offset+40])
+	ctx.HostTid = binary.LittleEndian.Uint32(decoder.buffer[offset+40 : offset+44])
+	ctx.HostPpid = binary.LittleEndian.Uint32(decoder.buffer[offset+44 : offset+48])
+	ctx.Uid = binary.LittleEndian.Uint32(decoder.buffer[offset+48 : offset+52])
+	ctx.MntID = binary.LittleEndian.Uint32(decoder.buffer[offset+52 : offset+56])
+	ctx.PidID = binary.LittleEndian.Uint32(decoder.buffer[offset+56 : offset+60])
+	_ = copy(ctx.Comm[:], decoder.buffer[offset+60:offset+76])
+	_ = copy(ctx.UtsName[:], decoder.buffer[offset+76:offset+92])
+	// offset 92:95 is used for padding
+	ctx.EventID = events.ID(int32(binary.LittleEndian.Uint32(decoder.buffer[offset+96 : offset+100])))
+	// offset 100:103 is used for padding
+	ctx.Retval = int64(binary.LittleEndian.Uint64(decoder.buffer[offset+104 : offset+112]))
+	ctx.StackID = binary.LittleEndian.Uint32(decoder.buffer[offset+112 : offset+116])
+	ctx.ProcessorId = binary.LittleEndian.Uint16(decoder.buffer[offset+116 : offset+118])
+	ctx.Argnum = uint8(binary.LittleEndian.Uint16(decoder.buffer[offset+118 : offset+120]))
 	decoder.cursor += int(ctx.GetSizeBytes())
 	return nil
 }

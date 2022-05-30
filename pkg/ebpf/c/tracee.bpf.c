@@ -467,28 +467,8 @@ typedef __u64 stack_trace_t[MAX_STACK_DEPTH];
 
 // INTERNAL STRUCTS --------------------------------------------------------------------------------
 
-typedef struct event_context {
-    u64 ts; // Timestamp
-    u64 cgroup_id;
-    u32 pid;       // PID as in the userspace term
-    u32 tid;       // TID as in the userspace term
-    u32 ppid;      // Parent PID as in the userspace term
-    u32 host_pid;  // PID in host pid namespace
-    u32 host_tid;  // TID in host pid namespace
-    u32 host_ppid; // Parent PID in host pid namespace
-    u32 uid;
-    u32 mnt_id;
-    u32 pid_id;
-    char comm[TASK_COMM_LEN];
-    char uts_name[TASK_COMM_LEN];
-    u32 eventid;
-    s64 retval;
-    u32 stack_id;
-    u16 processor_id; // The ID of the processor which processed the event
-    u8 argnum;
-} context_t;
-
-typedef struct process_context {
+// todo: check network context after this change
+typedef struct task_context {
     u64 start_time; // thread's start time
     u64 cgroup_id;
     u32 pid;       // PID as in the userspace term
@@ -501,7 +481,20 @@ typedef struct process_context {
     u32 mnt_id;
     u32 pid_id;
     char comm[TASK_COMM_LEN];
-} process_context_t;
+    char uts_name[TASK_COMM_LEN];
+    u32 padding;
+} task_context_t;
+
+typedef struct event_context {
+    u64 ts; // Timestamp
+    task_context_t task;
+    u32 eventid;
+    u32 padding;
+    s64 retval;
+    u32 stack_id;
+    u16 processor_id; // The ID of the processor which processed the event
+    u8 argnum;
+} event_context_t;
 
 typedef struct args {
     unsigned long args[6];
@@ -513,6 +506,12 @@ typedef struct syscall_data {
     unsigned long ts;  // Timestamp of syscall entry
     unsigned long ret; // Syscall ret val. May be used by syscall exit tail calls.
 } syscall_data_t;
+
+typedef struct task_info {
+    task_context_t context;
+    bool recompute_scope;   // a re-computation of should_trace is required (new task/context changed/policy changed)
+    int should_trace;       // last decision of should_trace()
+} task_info_t;
 
 typedef struct bin_args {
     u8 type;
@@ -543,7 +542,8 @@ typedef struct ksym_name {
 
 typedef struct event_data {
     struct task_struct *task;
-    context_t context;
+    event_context_t context;
+    task_info_t *task_info;
     void *ctx;
     buf_t *submit_p;
     u32 buf_off;
@@ -708,7 +708,7 @@ BPF_HASH(bin_args_map, u64, bin_args_t);                // persist args for send
 BPF_HASH(sys_32_to_64_map, u32, u32);                   // map 32bit to 64bit syscalls
 BPF_HASH(params_types_map, u32, u64);                   // encoded parameters types for event
 BPF_HASH(process_tree_map, u32, u32);                   // filter events by the ancestry of the traced process
-BPF_HASH(process_context_map, u32, process_context_t);  // holds the process_context data for every tid
+BPF_LRU_HASH(task_info_map, u32, task_info_t);          // holds data for every task
 BPF_HASH(network_config, u32, int);                     // holds the network config for each iface
 BPF_HASH(ksymbols_map, ksym_name_t, u64);               // holds the addresses of some kernel symbols
 BPF_HASH(syscalls_to_check_map, int, u64);              // syscalls to discover
@@ -1398,26 +1398,27 @@ static __always_inline int get_iface_config(int ifindex)
 
 // INTERNAL: CONTEXT -------------------------------------------------------------------------------
 
-static __always_inline int init_context(context_t *context, struct task_struct *task, u32 options)
+static __always_inline int init_context(event_context_t *context, struct task_struct *task, u32 options)
 {
     u64 id = bpf_get_current_pid_tgid();
-    context->host_tid = id;
-    context->host_pid = id >> 32;
-    context->host_ppid = get_task_ppid(task);
-    context->tid = get_task_ns_pid(task);
-    context->pid = get_task_ns_tgid(task);
-    context->ppid = get_task_ns_ppid(task);
-    context->mnt_id = get_task_mnt_ns_id(task);
-    context->pid_id = get_task_pid_ns_id(task);
-    context->uid = bpf_get_current_uid_gid();
-    bpf_get_current_comm(&context->comm, sizeof(context->comm));
+    context->task.start_time = get_task_start_time(task);
+    context->task.host_tid = id;
+    context->task.host_pid = id >> 32;
+    context->task.host_ppid = get_task_ppid(task);
+    context->task.tid = get_task_ns_pid(task);
+    context->task.pid = get_task_ns_tgid(task);
+    context->task.ppid = get_task_ns_ppid(task);
+    context->task.mnt_id = get_task_mnt_ns_id(task);
+    context->task.pid_id = get_task_pid_ns_id(task);
+    context->task.uid = bpf_get_current_uid_gid();
+    bpf_get_current_comm(&context->task.comm, sizeof(context->task.comm));
     char *uts_name = get_task_uts_name(task);
     if (uts_name)
-        bpf_probe_read_str(&context->uts_name, TASK_COMM_LEN, uts_name);
+        bpf_probe_read_str(&context->task.uts_name, TASK_COMM_LEN, uts_name);
     if (options & OPT_CGROUP_V1) {
-        context->cgroup_id = get_cgroup_v1_subsys0_id(task);
+        context->task.cgroup_id = get_cgroup_v1_subsys0_id(task);
     } else {
-        context->cgroup_id = bpf_get_current_cgroup_id();
+        context->task.cgroup_id = bpf_get_current_cgroup_id();
     }
 
     context->ts = bpf_ktime_get_ns();
@@ -1437,11 +1438,38 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
     data->options = get_config(CONFIG_OPTIONS);
     init_context(&data->context, data->task, data->options);
     data->ctx = ctx;
-    data->buf_off = sizeof(context_t);
+    data->buf_off = sizeof(event_context_t);
     int buf_idx = SUBMIT_BUF_IDX;
     data->submit_p = bpf_map_lookup_elem(&bufs, &buf_idx);
     if (data->submit_p == NULL)
         return 0;
+
+    // try updating task_info_map with noexist flag. If successful, we will need to initialize it later.
+    // to save stack space (of size task_info_t) update the map with garbage data using the submit buffer.
+    int exist = bpf_map_update_elem(&task_info_map, &data->context.task.host_tid, data->submit_p, BPF_NOEXIST);
+    data->task_info = bpf_map_lookup_elem(&task_info_map, &data->context.task.host_tid);
+    if (data->task_info == NULL) {
+        return 0;
+    }
+    if (!exist) {
+        data->task_info->recompute_scope = true;
+    } else {
+        // check if we need to recompute scope due to context change
+        task_context_t *old_context = &data->task_info->context;
+        task_context_t *new_context = &data->context.task;
+
+        if ((old_context->cgroup_id != new_context->cgroup_id) ||
+            old_context->uid != new_context->uid || old_context->mnt_id != new_context->mnt_id ||
+            old_context->pid_id != new_context->pid_id ||
+            *(u64 *) old_context->comm != *(u64 *) new_context->comm ||
+            *(u64 *) &old_context->comm[8] != *(u64 *) &new_context->comm[8] ||
+            *(u64 *) old_context->uts_name != *(u64 *) new_context->uts_name ||
+            *(u64 *) &old_context->uts_name[8] != *(u64 *) &new_context->uts_name[8])
+            data->task_info->recompute_scope = true;
+    }
+
+    // update task_info with the new context
+    bpf_probe_read(&data->task_info->context, sizeof(task_context_t), &data->context.task);
 
     return 1;
 }
@@ -1498,8 +1526,9 @@ static __always_inline int bool_filter_matches(bool filter_out, bool val)
     return 0;
 }
 
-static __always_inline int should_trace(context_t *context)
+static __always_inline int do_should_trace(event_data_t *data)
 {
+    task_context_t *context = &data->context.task;
     int config = get_config(CONFIG_FILTERS);
 
     if (config & FILTER_FOLLOW_ENABLED) {
@@ -1596,6 +1625,17 @@ static __always_inline int should_trace(context_t *context)
 
     // We passed all filters successfully
     return 1;
+}
+
+static __always_inline int should_trace(event_data_t *data)
+{
+    // use cache whenever possible
+    if (data->task_info->recompute_scope) {
+        data->task_info->should_trace = do_should_trace(data);
+        data->task_info->recompute_scope = false;
+    }
+
+    return data->task_info->should_trace;
 }
 
 static __always_inline int should_submit(u32 key)
@@ -1896,7 +1936,7 @@ static __always_inline int events_perf_submit(event_data_t *data, u32 id, long r
         }
     }
 
-    bpf_probe_read(&(data->submit_p->buf[0]), sizeof(context_t), &data->context);
+    bpf_probe_read(&(data->submit_p->buf[0]), sizeof(event_context_t), &data->context);
 
     // satisfy validator by setting buffer bounds
     int size = data->buf_off & (MAX_PERCPU_BUFSIZE - 1);
@@ -2213,7 +2253,7 @@ static __always_inline int save_args_to_submit_buf(event_data_t *data, u64 types
         if (!init_event_data(&data, ctx))                                                          \
             return 0;                                                                              \
                                                                                                    \
-        if (!should_trace(&data.context))                                                          \
+        if (!should_trace(&data))                                                                  \
             return 0;                                                                              \
                                                                                                    \
         args_t args = {};                                                                          \
@@ -2448,7 +2488,7 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     syscall_data_t sys = {};
@@ -2501,7 +2541,7 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
     if (sys.id != SYS_EXIT && sys.id != SYS_EXIT_GROUP && sys.id != SYS_RT_SIGRETURN) {
         // save syscall data
         sys.ts = data.context.ts;
-        bpf_map_update_elem(&syscall_data_map, &data.context.host_tid, &sys, BPF_ANY);
+        bpf_map_update_elem(&syscall_data_map, &data.context.task.host_tid, &sys, BPF_ANY);
     }
 
     // call syscall handler, if exists enter tail calls should never delete saved args
@@ -2518,7 +2558,7 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
         return 0;
 
     // Successfully loading syscall data also means we should trace this event
-    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.task.host_tid);
     if (!sys)
         return 0;
 
@@ -2560,7 +2600,7 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
             // We can't use saved args after execve syscall, as pointers are
             // invalid To avoid showing execve event both on entry and exit, we
             // only output failed execs
-            data.buf_off = sizeof(context_t);
+            data.buf_off = sizeof(event_context_t);
             data.context.argnum = 0;
             save_args_to_submit_buf(&data, types, &sys->args);
             data.context.ts = sys->ts;
@@ -2573,7 +2613,7 @@ out:
     sys->ret = ret;
     // exit tail calls should always delete args and retval before return
     bpf_tail_call(ctx, &sys_exit_tails, id);
-    bpf_map_delete_elem(&syscall_data_map, &data.context.host_tid);
+    bpf_map_delete_elem(&syscall_data_map, &data.context.task.host_tid);
     return 0;
 }
 
@@ -2586,7 +2626,7 @@ int syscall__execve(void *ctx)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.task.host_tid);
     if (!sys)
         return -1;
 
@@ -2609,7 +2649,7 @@ int syscall__execveat(void *ctx)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.task.host_tid);
     if (!sys)
         return -1;
 
@@ -2692,7 +2732,7 @@ int sys_dup_exit_tail(void *ctx)
         return 0;
     }
 
-    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.task.host_tid);
     if (!sys) {
         return -1;
     }
@@ -2715,7 +2755,7 @@ int sys_dup_exit_tail(void *ctx)
 
 out:
     // delete syscall data before return
-    bpf_map_delete_elem(&syscall_data_map, &data.context.host_tid);
+    bpf_map_delete_elem(&syscall_data_map, &data.context.task.host_tid);
     return 0;
 }
 
@@ -2733,15 +2773,13 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
 
     u64 start_time = get_task_start_time(child);
 
-    // note: v5.4 verifier does not like using (process_context_t *) from &data->context
-    if (data.options & OPT_PROCESS_INFO) {
-        process_context_t process = {};
-        __builtin_memcpy(&process, &data.context, sizeof(process_context_t));
-        process.tid = get_task_ns_pid(child);
-        process.host_tid = get_task_host_pid(child);
-        process.start_time = start_time;
-        bpf_map_update_elem(&process_context_map, &process.host_tid, &process, BPF_ANY);
-    }
+    task_info_t task = {};
+    __builtin_memcpy(&task, data.task_info, sizeof(task_info_t));
+    task.recompute_scope = true;
+    task.context.tid = get_task_ns_pid(child);
+    task.context.host_tid = get_task_host_pid(child);
+    task.context.start_time = start_time;
+    bpf_map_update_elem(&task_info_map, &task.context.host_tid, &task, BPF_ANY);
 
     int parent_pid = get_task_host_pid(parent);
     int child_pid = get_task_host_pid(child);
@@ -2758,11 +2796,11 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         }
     }
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
-    // fork events may add new pids to the traced pids set perform this check after should_trace()
-    // to only add forked childs of a traced parent
+    // fork events may add new pids to the traced pids set.
+    // perform this check after should_trace() to only add forked childs of a traced parent
     bpf_map_update_elem(&traced_pids_map, &child_pid, &child_pid, BPF_ANY);
     if (filters_config & FILTER_NEW_PID_ENABLED) {
         bpf_map_update_elem(&new_pids_map, &child_pid, &child_pid, BPF_ANY);
@@ -2801,7 +2839,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     // Perform the following checks before should_trace() so we can filter by newly created
     // containers/processes.  We assume that a new container/pod has started when a process of a
     // newly created cgroup and mount ns executed a binary
-    u32 cgroup_id_lsb = data.context.cgroup_id;
+    u32 cgroup_id_lsb = data.context.task.cgroup_id;
     u8 *state = bpf_map_lookup_elem(&containers_map, &cgroup_id_lsb);
     if (state != NULL && *state == CONTAINER_CREATED) {
         u32 mntns = get_task_mnt_ns_id(data.task);
@@ -2812,21 +2850,13 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     }
 
     if (get_config(CONFIG_FILTERS) & FILTER_NEW_PID_ENABLED)
-        bpf_map_update_elem(&new_pids_map, &data.context.host_tid, &data.context.host_tid, BPF_ANY);
+        bpf_map_update_elem(&new_pids_map, &data.context.task.host_tid, &data.context.task.host_tid, BPF_ANY);
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     // We passed all filters (in should_trace()) - add this pid to traced pids set
-    bpf_map_update_elem(&traced_pids_map, &data.context.host_tid, &data.context.host_tid, BPF_ANY);
-
-    if (data.options & OPT_PROCESS_INFO) {
-        process_context_t *process =
-            bpf_map_lookup_elem(&process_context_map, &data.context.host_tid);
-        if (process != NULL) {
-            __builtin_memcpy(process->comm, data.context.comm, TASK_COMM_LEN);
-        }
-    }
+    bpf_map_update_elem(&traced_pids_map, &data.context.task.host_tid, &data.context.task.host_tid, BPF_ANY);
 
     struct task_struct *task = (struct task_struct *) ctx->args[0];
     struct linux_binprm *bprm = (struct linux_binprm *) ctx->args[2];
@@ -2867,7 +2897,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     // The map of the interpreter will be updated for any loading of an elf, both for the elf and
     // for the interpreter. Because the interpreter is loaded only after the executed elf is loaded,
     // the map value of the executed elf should be overridden by the interpreter.
-    file_id_t *elf_interpreter = bpf_map_lookup_elem(&interpreter_map, &data.context.host_tid);
+    file_id_t *elf_interpreter = bpf_map_lookup_elem(&interpreter_map, &data.context.task.host_tid);
 
     unsigned short stdin_type = get_inode_mode_from_fd(0) & S_IFMT;
 
@@ -2910,14 +2940,14 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
         return 0;
 
     // evaluate should_trace before removing this pid from the maps
-    bool traced = should_trace(&data.context);
+    bool traced = should_trace(&data);
 
     // Remove this pid from all maps
-    bpf_map_delete_elem(&traced_pids_map, &data.context.host_tid);
-    bpf_map_delete_elem(&new_pids_map, &data.context.host_tid);
-    bpf_map_delete_elem(&syscall_data_map, &data.context.host_tid);
-    bpf_map_delete_elem(&process_context_map, &data.context.host_tid);
-    bpf_map_delete_elem(&interpreter_map, &data.context.host_tid);
+    bpf_map_delete_elem(&traced_pids_map, &data.context.task.host_tid);
+    bpf_map_delete_elem(&new_pids_map, &data.context.task.host_tid);
+    bpf_map_delete_elem(&syscall_data_map, &data.context.task.host_tid);
+    bpf_map_delete_elem(&task_info_map, &data.context.task.host_tid);
+    bpf_map_delete_elem(&interpreter_map, &data.context.task.host_tid);
 
     int proc_tree_filter_set = get_config(CONFIG_FILTERS) & FILTER_PROC_TREE_ENABLED;
 
@@ -2931,7 +2961,7 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     if (live.counter == 0) {
         group_dead = true;
         if (proc_tree_filter_set) {
-            bpf_map_delete_elem(&process_tree_map, &data.context.host_pid);
+            bpf_map_delete_elem(&process_tree_map, &data.context.task.host_pid);
         }
     }
 
@@ -3032,7 +3062,7 @@ int tracepoint__sched__sched_switch(struct bpf_raw_tracepoint_args *ctx)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     if (!should_submit(SCHED_SWITCH))
@@ -3059,7 +3089,7 @@ int BPF_KPROBE(trace_filldir64)
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
-    if (!should_trace((&data.context)))
+    if (!should_trace((&data)))
         return 0;
 
     char *process_name = (char *) PT_REGS_PARM2(ctx);
@@ -3078,7 +3108,7 @@ int BPF_KPROBE(trace_call_usermodehelper)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     void *path = (void *) PT_REGS_PARM1(ctx);
@@ -3101,7 +3131,7 @@ int BPF_KPROBE(trace_do_exit)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     long code = PT_REGS_PARM1(ctx);
@@ -3169,12 +3199,12 @@ int BPF_KPROBE(trace_tracee_trigger_event)
 
     unsigned int cmd = PT_REGS_PARM2(ctx);
     if ((cmd & IOCTL_FETCH_SYSCALLS) == IOCTL_FETCH_SYSCALLS &&
-        get_config(CONFIG_TRACEE_PID) == data.context.host_pid) {
+        get_config(CONFIG_TRACEE_PID) == data.context.task.host_pid) {
         invoke_print_syscall_table_event(&data);
     }
 
     if ((cmd & IOCTL_HOOKED_SEQ_OPS) == IOCTL_HOOKED_SEQ_OPS &&
-        get_config(CONFIG_TRACEE_PID) == data.context.host_pid) {
+        get_config(CONFIG_TRACEE_PID) == data.context.task.host_pid) {
         unsigned long struct_address = PT_REGS_PARM3(ctx);
         invoke_fetch_network_seq_operations_event(&data, struct_address);
     }
@@ -3191,7 +3221,7 @@ int tracepoint__cgroup__cgroup_attach_task(struct bpf_raw_tracepoint_args *ctx)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     char *path = (char *) ctx->args[1];
@@ -3278,7 +3308,7 @@ int BPF_KPROBE(trace_security_bprm_check)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     struct linux_binprm *bprm = (struct linux_binprm *) PT_REGS_PARM1(ctx);
@@ -3301,7 +3331,7 @@ int BPF_KPROBE(trace_security_file_open)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     struct file *file = (struct file *) PT_REGS_PARM1(ctx);
@@ -3316,7 +3346,7 @@ int BPF_KPROBE(trace_security_file_open)
     save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 3);
     save_to_submit_buf(&data, &ctime, sizeof(u64), 4);
     if (data.options & OPT_SHOW_SYSCALL) {
-        syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+        syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.task.host_tid);
         if (sys) {
             save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 5);
         }
@@ -3332,7 +3362,7 @@ int BPF_KPROBE(trace_security_sb_mount)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     const char *dev_name = (const char *) PT_REGS_PARM1(ctx);
@@ -3357,7 +3387,7 @@ int BPF_KPROBE(trace_security_inode_unlink)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     // struct inode *dir = (struct inode *)PT_REGS_PARM1(ctx);
@@ -3376,7 +3406,7 @@ int BPF_KPROBE(trace_commit_creds)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     struct cred *new = (struct cred *) PT_REGS_PARM1(ctx);
@@ -3450,7 +3480,7 @@ int BPF_KPROBE(trace_commit_creds)
         (old_slim.cap_bset != new_slim.cap_bset) ||
         (old_slim.cap_ambient != new_slim.cap_ambient)) {
         if (data.options & OPT_SHOW_SYSCALL) {
-            syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+            syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.task.host_tid);
             if (sys) {
                 save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 2);
             }
@@ -3469,7 +3499,7 @@ int BPF_KPROBE(trace_switch_task_namespaces)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     struct task_struct *task = (struct task_struct *) PT_REGS_PARM1(ctx);
@@ -3479,9 +3509,9 @@ int BPF_KPROBE(trace_switch_task_namespaces)
         return 0;
 
     pid_t pid = READ_KERN(task->pid);
-    u32 old_mnt = data.context.mnt_id;
+    u32 old_mnt = data.context.task.mnt_id;
     u32 new_mnt = get_mnt_ns_id(new);
-    u32 old_pid = data.context.pid_id;
+    u32 old_pid = data.context.task.pid_id;
     u32 new_pid = get_pid_ns_id(new);
     u32 old_uts = get_task_uts_ns_id(task);
     u32 new_uts = get_uts_ns_id(new);
@@ -3519,7 +3549,7 @@ int BPF_KPROBE(trace_cap_capable)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     int cap = PT_REGS_PARM3(ctx);
@@ -3530,7 +3560,7 @@ int BPF_KPROBE(trace_cap_capable)
 
     save_to_submit_buf(&data, (void *) &cap, sizeof(int), 0);
     if (data.options & OPT_SHOW_SYSCALL) {
-        syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+        syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.task.host_tid);
         if (sys) {
             save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 1);
         }
@@ -3546,7 +3576,7 @@ int BPF_KPROBE(trace_security_socket_create)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     int family = (int) PT_REGS_PARM1(ctx);
@@ -3569,7 +3599,7 @@ int BPF_KPROBE(trace_security_inode_symlink)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     // struct inode *dir = (struct inode *)PT_REGS_PARM1(ctx);
@@ -3590,7 +3620,7 @@ int BPF_KPROBE(trace_proc_create)
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
-    if (!should_trace((&data.context)))
+    if (!should_trace((&data)))
         return 0;
 
     char *name = (char *) PT_REGS_PARM1(ctx);
@@ -3608,7 +3638,7 @@ int BPF_KPROBE(trace_debugfs_create_file)
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
-    if (!should_trace((&data.context)))
+    if (!should_trace((&data)))
         return 0;
 
     char *name = (char *) PT_REGS_PARM1(ctx);
@@ -3631,7 +3661,7 @@ int BPF_KPROBE(trace_debugfs_create_dir)
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
-    if (!should_trace((&data.context)))
+    if (!should_trace((&data)))
         return 0;
 
     char *name = (char *) PT_REGS_PARM1(ctx);
@@ -3651,7 +3681,7 @@ int BPF_KPROBE(trace_security_socket_listen)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     struct socket *sock = (struct socket *) PT_REGS_PARM1(ctx);
@@ -3665,7 +3695,7 @@ int BPF_KPROBE(trace_security_socket_listen)
     }
 
     // Load the arguments given to the listen syscall (which eventually invokes this function)
-    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.task.host_tid);
     if (!sys || sys->id != SYSCALL_LISTEN)
         return 0;
 
@@ -3705,7 +3735,7 @@ int BPF_KPROBE(trace_security_socket_connect)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     struct sockaddr *address = (struct sockaddr *) PT_REGS_PARM2(ctx);
@@ -3717,7 +3747,7 @@ int BPF_KPROBE(trace_security_socket_connect)
     }
 
     // Load the arguments given to the connect syscall (which eventually invokes this function)
-    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.task.host_tid);
     if (!sys || sys->id != SYSCALL_CONNECT)
         return 0;
 
@@ -3748,7 +3778,7 @@ int BPF_KPROBE(trace_security_socket_accept)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     struct socket *sock = (struct socket *) PT_REGS_PARM1(ctx);
@@ -3769,7 +3799,7 @@ int BPF_KPROBE(trace_security_socket_accept)
     }
 
     // Load the arguments given to the accept syscall (which eventually invokes this function)
-    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.task.host_tid);
     if (!sys || (sys->id != SYSCALL_ACCEPT && sys->id != SYSCALL_ACCEPT4))
         return 0;
 
@@ -3807,7 +3837,7 @@ int BPF_KPROBE(trace_security_socket_bind)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     struct socket *sock = (struct socket *) PT_REGS_PARM1(ctx);
@@ -3822,7 +3852,7 @@ int BPF_KPROBE(trace_security_socket_bind)
     }
 
     // Load the arguments given to the bind syscall (which eventually invokes this function)
-    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.task.host_tid);
     if (!sys || sys->id != SYSCALL_BIND)
         return 0;
 
@@ -3864,8 +3894,8 @@ int BPF_KPROBE(trace_security_socket_bind)
 
     if (connect_id.port) {
         net_ctx_t net_ctx;
-        net_ctx.host_tid = data.context.host_tid;
-        __builtin_memcpy(net_ctx.comm, data.context.comm, TASK_COMM_LEN);
+        net_ctx.host_tid = data.context.task.host_tid;
+        __builtin_memcpy(net_ctx.comm, data.context.task.comm, TASK_COMM_LEN);
         bpf_map_update_elem(&network_map, &connect_id, &net_ctx, BPF_ANY);
     }
 
@@ -3873,8 +3903,8 @@ int BPF_KPROBE(trace_security_socket_bind)
     if ((data.options & OPT_DEBUG_NET) && (sa_fam != AF_UNIX)) {
         net_debug_t debug_event = {0};
         debug_event.ts = data.context.ts;
-        debug_event.host_tid = data.context.host_tid;
-        __builtin_memcpy(debug_event.comm, data.context.comm, TASK_COMM_LEN);
+        debug_event.host_tid = data.context.task.host_tid;
+        __builtin_memcpy(debug_event.comm, data.context.task.comm, TASK_COMM_LEN);
         debug_event.event_id = DEBUG_NET_SECURITY_BIND;
         debug_event.local_addr = connect_id.address;
         debug_event.local_port = __bpf_ntohs(connect_id.port);
@@ -3940,12 +3970,12 @@ int BPF_KPROBE(trace_udp_sendmsg)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     struct sock *sk = (struct sock *) PT_REGS_PARM1(ctx);
 
-    return net_map_update_or_delete_sock(ctx, DEBUG_NET_UDP_SENDMSG, sk, data.context.host_tid);
+    return net_map_update_or_delete_sock(ctx, DEBUG_NET_UDP_SENDMSG, sk, data.context.task.host_tid);
 }
 
 SEC("kprobe/__udp_disconnect")
@@ -3955,7 +3985,7 @@ int BPF_KPROBE(trace_udp_disconnect)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     struct sock *sk = (struct sock *) PT_REGS_PARM1(ctx);
@@ -3970,7 +4000,7 @@ int BPF_KPROBE(trace_udp_destroy_sock)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     struct sock *sk = (struct sock *) PT_REGS_PARM1(ctx);
@@ -3985,7 +4015,7 @@ int BPF_KPROBE(trace_udpv6_destroy_sock)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     struct sock *sk = (struct sock *) PT_REGS_PARM1(ctx);
@@ -4017,7 +4047,7 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
 
     net_ctx_ext_t *sock_ctx_p = bpf_map_lookup_elem(&sock_ctx_map, &sk);
     if (!sock_ctx_p) {
-        if (!should_trace(&data.context)) {
+        if (!should_trace(&data)) {
             return 0;
         }
     }
@@ -4052,7 +4082,7 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
         case TCP_LISTEN:
             if (connect_id.port) {
                 if (!sock_ctx_p) {
-                    net_ctx_ext.host_tid = data.context.host_tid;
+                    net_ctx_ext.host_tid = data.context.task.host_tid;
                     bpf_get_current_comm(&net_ctx_ext.comm, sizeof(net_ctx_ext.comm));
                     net_ctx_ext.local_port = connect_id.port;
                     bpf_map_update_elem(&sock_ctx_map, &sk, &net_ctx_ext, BPF_ANY);
@@ -4078,7 +4108,7 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
     if (data.options & OPT_DEBUG_NET) {
         debug_event.ts = data.context.ts;
         if (!sock_ctx_p) {
-            debug_event.host_tid = data.context.host_tid;
+            debug_event.host_tid = data.context.task.host_tid;
             bpf_get_current_comm(&debug_event.comm, sizeof(debug_event.comm));
         } else {
             debug_event.host_tid = sock_ctx_p->host_tid;
@@ -4103,7 +4133,7 @@ int BPF_KPROBE(trace_tcp_connect)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     local_net_id_t connect_id = {0};
@@ -4124,12 +4154,12 @@ int BPF_KPROBE(trace_tcp_connect)
         return 0;
     }
 
-    net_ctx_ext.host_tid = data.context.host_tid;
+    net_ctx_ext.host_tid = data.context.task.host_tid;
     bpf_get_current_comm(&net_ctx_ext.comm, sizeof(net_ctx_ext.comm));
     net_ctx_ext.local_port = connect_id.port;
     bpf_map_update_elem(&sock_ctx_map, &sk, &net_ctx_ext, BPF_ANY);
 
-    return net_map_update_or_delete_sock(ctx, DEBUG_NET_TCP_CONNECT, sk, data.context.host_tid);
+    return net_map_update_or_delete_sock(ctx, DEBUG_NET_TCP_CONNECT, sk, data.context.task.host_tid);
 }
 
 static __always_inline int icmp_delete_network_map(struct sk_buff *skb, int send, int ipv6)
@@ -4239,7 +4269,7 @@ int BPF_KPROBE(trace_ping_v4_sendmsg)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     local_net_id_t connect_id = {0};
@@ -4261,8 +4291,8 @@ int BPF_KPROBE(trace_ping_v4_sendmsg)
 
     // update the map
     net_ctx_t net_ctx;
-    net_ctx.host_tid = data.context.host_tid;
-    __builtin_memcpy(net_ctx.comm, data.context.comm, TASK_COMM_LEN);
+    net_ctx.host_tid = data.context.task.host_tid;
+    __builtin_memcpy(net_ctx.comm, data.context.task.comm, TASK_COMM_LEN);
     bpf_map_update_elem(&network_map, &connect_id, &net_ctx, BPF_ANY);
 
     return 0;
@@ -4275,7 +4305,7 @@ int BPF_KPROBE(trace_ping_v6_sendmsg)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     local_net_id_t connect_id = {0};
@@ -4296,8 +4326,8 @@ int BPF_KPROBE(trace_ping_v6_sendmsg)
 
     // update the map
     net_ctx_t net_ctx;
-    net_ctx.host_tid = data.context.host_tid;
-    __builtin_memcpy(net_ctx.comm, data.context.comm, TASK_COMM_LEN);
+    net_ctx.host_tid = data.context.task.host_tid;
+    __builtin_memcpy(net_ctx.comm, data.context.task.comm, TASK_COMM_LEN);
     bpf_map_update_elem(&network_map, &connect_id, &net_ctx, BPF_ANY);
 
     return 0;
@@ -4512,7 +4542,7 @@ do_file_write_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id)
 
     // magic_write event checks if the header of some file is changed
     if (should_submit(MAGIC_WRITE) && !char_dev && (start_pos == 0)) {
-        data.buf_off = sizeof(context_t);
+        data.buf_off = sizeof(event_context_t);
         data.context.argnum = 0;
 
         u8 header[FILE_MAGIC_HDR_SIZE];
@@ -4623,7 +4653,7 @@ static __always_inline int do_file_write_operation_tail(struct pt_regs *ctx, u32
         start_pos -= PT_REGS_RC(ctx);
 
     u64 id = bpf_get_current_pid_tgid();
-    u32 pid = data.context.pid;
+    u32 pid = data.context.task.pid;
 
     if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
         return -1;
@@ -4713,7 +4743,7 @@ int BPF_KPROBE(trace_mmap_alert)
         return 0;
 
     // Load the arguments given to the mmap syscall (which eventually invokes this function)
-    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.task.host_tid);
     if (!sys || sys->id != SYS_MMAP)
         return 0;
 
@@ -4733,7 +4763,7 @@ int BPF_KPROBE(trace_security_mmap_file)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     struct file *file = (struct file *) PT_REGS_PARM1(ctx);
@@ -4754,7 +4784,7 @@ int BPF_KPROBE(trace_security_mmap_file)
 
     syscall_data_t *sys;
     if (should_submit(SHARED_OBJECT_LOADED)) {
-        sys = (syscall_data_t *) bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+        sys = (syscall_data_t *) bpf_map_lookup_elem(&syscall_data_map, &data.context.task.host_tid);
         if (sys && (prot & VM_EXEC) == VM_EXEC && sys->id == SYS_MMAP) {
             events_perf_submit(&data, SHARED_OBJECT_LOADED, 0);
         }
@@ -4766,7 +4796,7 @@ int BPF_KPROBE(trace_security_mmap_file)
         if (data.options & OPT_SHOW_SYSCALL) {
             if (!sys)
                 sys = (syscall_data_t *) bpf_map_lookup_elem(&syscall_data_map,
-                                                             &data.context.host_tid);
+                                                             &data.context.task.host_tid);
             if (sys) {
                 save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 7);
             }
@@ -4790,7 +4820,7 @@ int BPF_KPROBE(trace_security_file_mprotect)
     unsigned long reqprot = PT_REGS_PARM2(ctx);
 
     if (should_submit(SECURITY_FILE_MPROTECT)) {
-        if (!should_trace(&data.context))
+        if (!should_trace(&data))
             return 0;
 
         struct file *file = (struct file *) READ_KERN(vma->vm_file);
@@ -4804,7 +4834,7 @@ int BPF_KPROBE(trace_security_file_mprotect)
 
     if (should_submit(MEM_PROT_ALERT)) {
         // Load the arguments given to the mprotect syscall (which eventually invokes this function)
-        syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+        syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.task.host_tid);
         if (!sys || sys->id != SYS_MPROTECT)
             return 0;
 
@@ -4864,13 +4894,13 @@ int syscall__init_module(void *ctx)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.task.host_tid);
     if (!sys)
         return -1;
 
     bin_args_t bin_args = {};
 
-    u32 pid = data.context.host_pid;
+    u32 pid = data.context.task.host_pid;
     u64 dummy = 0;
     void *addr = (void *) sys->args.args[0];
     unsigned long len = (unsigned long) sys->args.args[1];
@@ -4899,7 +4929,7 @@ int BPF_KPROBE(trace_security_bpf)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     int cmd = (int) PT_REGS_PARM1(ctx);
@@ -4917,7 +4947,7 @@ int BPF_KPROBE(trace_arm_kprobe)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     struct kprobe *kp = (struct kprobe *) PT_REGS_PARM1(ctx);
@@ -4940,7 +4970,7 @@ int BPF_KPROBE(trace_security_bpf_map)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     struct bpf_map *map = (struct bpf_map *) PT_REGS_PARM1(ctx);
@@ -4960,7 +4990,7 @@ int BPF_KPROBE(trace_security_kernel_read_file)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     struct file *file = (struct file *) PT_REGS_PARM1(ctx);
@@ -4986,14 +5016,14 @@ int BPF_KPROBE(trace_security_kernel_post_read_file)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     bin_args_t bin_args = {};
     u64 id = bpf_get_current_pid_tgid();
 
     struct file *file = (struct file *) PT_REGS_PARM1(ctx);
-    u32 pid = data.context.host_pid;
+    u32 pid = data.context.task.host_pid;
 
     char *buf = (char *) PT_REGS_PARM2(ctx);
     loff_t size = (loff_t) PT_REGS_PARM3(ctx);
@@ -5037,7 +5067,7 @@ int BPF_KPROBE(trace_security_inode_mknod)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     struct dentry *dentry = (struct dentry *) PT_REGS_PARM2(ctx);
@@ -5059,7 +5089,7 @@ int BPF_KPROBE(trace_device_add)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     struct device *dev = (struct device *) PT_REGS_PARM1(ctx);
@@ -5091,7 +5121,7 @@ int BPF_KPROBE(trace_ret__register_chrdev)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     unsigned int major_number = (unsigned int) saved_args.args[0];
@@ -5187,7 +5217,7 @@ int BPF_KPROBE(trace_ret_do_splice)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     // Catch only successful splice
@@ -5276,7 +5306,7 @@ int BPF_KPROBE(trace_do_init_module)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     kernel_module_data_t module_data = {0};
@@ -5298,7 +5328,7 @@ int BPF_KPROBE(trace_do_init_module)
         &module_data.srcversion, MODULE_SRCVERSION_MAX_LENGTH, (void *) READ_KERN(mod->srcversion));
 
     // save module_data for kretprobe
-    bpf_map_update_elem(&module_init_map, &data.context.host_tid, &module_data, BPF_ANY);
+    bpf_map_update_elem(&module_init_map, &data.context.task.host_tid, &module_data, BPF_ANY);
 
     return 0;
 }
@@ -5311,7 +5341,7 @@ int BPF_KPROBE(trace_ret_do_init_module)
         return 0;
 
     kernel_module_data_t *orig_module_data =
-        bpf_map_lookup_elem(&module_init_map, &data.context.host_tid);
+        bpf_map_lookup_elem(&module_init_map, &data.context.task.host_tid);
     if (orig_module_data == NULL) {
         return 0;
     }
@@ -5342,7 +5372,8 @@ int BPF_KPROBE(trace_load_elf_phdrs)
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
-    if (!should_trace((&data.context)))
+
+    if (!should_trace((&data)))
         return 0;
 
     file_id_t elf = {};
@@ -5352,7 +5383,7 @@ int BPF_KPROBE(trace_load_elf_phdrs)
     elf.device = get_dev_from_file(loaded_elf);
     elf.inode = get_inode_nr_from_file(loaded_elf);
 
-    bpf_map_update_elem(&interpreter_map, &data.context.host_tid, &elf, BPF_ANY);
+    bpf_map_update_elem(&interpreter_map, &data.context.task.host_tid, &elf, BPF_ANY);
 
     if (should_submit(LOAD_ELF_PHDRS)) {
         save_str_to_buf(&data, (void *) elf_pathname, 0);
@@ -5384,7 +5415,7 @@ int BPF_KPROBE(trace_security_file_permission)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (!should_trace(&data.context))
+    if (!should_trace(&data))
         return 0;
 
     struct file_operations *fops = (struct file_operations *) READ_KERN(f_inode->i_fop);
@@ -5409,7 +5440,7 @@ int tracepoint__task__task_rename(struct bpf_raw_tracepoint_args *ctx)
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
-    if (!should_trace((&data.context)))
+    if (!should_trace((&data)))
         return 0;
 
     struct task_struct *tsk = (struct task_struct *) ctx->args[0];
@@ -5420,7 +5451,7 @@ int tracepoint__task__task_rename(struct bpf_raw_tracepoint_args *ctx)
     save_str_to_buf(&data, (void *) old_name, 0);
     save_str_to_buf(&data, (void *) new_name, 1);
     if (data.options & OPT_SHOW_SYSCALL) {
-        syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+        syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.task.host_tid);
         if (sys) {
             save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 2);
         }
