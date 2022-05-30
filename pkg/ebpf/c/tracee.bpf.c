@@ -348,7 +348,7 @@ enum container_state_e
 #define NUMBER_OF_SYSCALLS_TO_CHECK_X86 18
 #define NUMBER_OF_SYSCALLS_TO_CHECK_ARM 14
 
-#define MAX_CACHED_PATH_SIZE            64
+#define MAX_CACHED_PATH_SIZE 64
 
 // EBPF KCONFIGS -----------------------------------------------------------------------------------
 
@@ -2806,9 +2806,9 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 
     void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
 
-    // The map of the interpreter will be updated for any loading of an elf, both for the elf and for the interpreter.
-    // Because the interpreter is loaded only after the executed elf is loaded, the map value of the executed elf should
-    // be overridden by the interpreter.
+    // The map of the interpreter will be updated for any loading of an elf, both for the elf and
+    // for the interpreter. Because the interpreter is loaded only after the executed elf is loaded,
+    // the map value of the executed elf should be overridden by the interpreter.
     file_id_t *elf_interpreter = bpf_map_lookup_elem(&interpreter_map, &data.context.host_tid);
 
     unsigned short stdin_type = get_inode_mode_from_fd(0) & S_IFMT;
@@ -5277,8 +5277,8 @@ int BPF_KPROBE(trace_load_elf_phdrs)
         return 0;
 
     file_id_t elf = {};
-    struct file *loaded_elf = (struct file*)PT_REGS_PARM2(ctx);
-    const char *elf_pathname = (char *)get_path_str(GET_FIELD_ADDR(loaded_elf->f_path));
+    struct file *loaded_elf = (struct file *) PT_REGS_PARM2(ctx);
+    const char *elf_pathname = (char *) get_path_str(GET_FIELD_ADDR(loaded_elf->f_path));
     bpf_probe_read_str(elf.pathname, sizeof(elf.pathname), elf_pathname);
     elf.device = get_dev_from_file(loaded_elf);
     elf.inode = get_inode_nr_from_file(loaded_elf);
@@ -5286,7 +5286,7 @@ int BPF_KPROBE(trace_load_elf_phdrs)
     bpf_map_update_elem(&interpreter_map, &data.context.host_tid, &elf, BPF_ANY);
 
     if (should_submit(LOAD_ELF_PHDRS)) {
-        save_str_to_buf(&data, (void *)elf_pathname, 0);
+        save_str_to_buf(&data, (void *) elf_pathname, 0);
         save_to_submit_buf(&data, &elf.device, sizeof(dev_t), 1);
         save_to_submit_buf(&data, &elf.inode, sizeof(unsigned long), 2);
 
