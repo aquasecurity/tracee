@@ -1096,7 +1096,7 @@ func (t *Tracee) getProcessCtx(hostTid uint32) (procinfo.ProcessCtx, error) {
 	if err == nil {
 		return processCtx, nil
 	} else {
-		processContextMap, err := t.bpfModule.GetMap("process_context_map")
+		processContextMap, err := t.bpfModule.GetMap("task_info_map")
 		if err != nil {
 			return processCtx, err
 		}
