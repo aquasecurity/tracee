@@ -17,7 +17,13 @@ MAKEFLAGS += --no-print-directory
 # tools
 #
 
+CMD_HEAD ?= head
+CMD_CUT ?= cut
+CMD_SED ?= sed
+CMD_TR ?= tr
 CMD_CLANG ?= clang
+CMD_CLANG_TIDY ?= clang-tidy
+CMD_CLANG_FMT ?= clang-format
 
 .check_%:
 #
@@ -28,6 +34,39 @@ CMD_CLANG ?= clang
 	else
 		touch $@ # avoid target rebuilds due to inexistent file
 	fi
+
+#
+# tools version
+#
+
+CLANG_FMT_VERSION = $(shell $(CMD_CLANG_FMT) --version 2>/dev/null | $(CMD_HEAD) -1 | $(CMD_TR) -d '[:alpha:]' | $(CMD_TR) -d '[:space:]' | $(CMD_SED) 's:^[-]::g' | $(CMD_CUT) -d'.' -f1)
+
+.checkver_$(CMD_CLANG_FMT): \
+	| .check_$(CMD_CLANG_FMT)
+#
+	@if [ ${CLANG_FMT_VERSION} -ne 12 ]; then
+		echo -n "you MUST use clang-format 12, "
+		echo "your current clang-format version is ${CLANG_FMT_VERSION}"
+		echo "Try using 'CMD_CLANG_FMT=clang-format-12 make -f builder/Makefile.checkers <target>'"
+		exit 1
+	fi
+	touch $@ # avoid target rebuilds over and over due to inexistent file
+
+GO_VERSION = $(shell $(CMD_GO) version 2>/dev/null | $(CMD_AWK) '{print $$3}' | $(CMD_SED) 's:go::g' | $(CMD_CUT) -d. -f1,2)
+GO_VERSION_MAJ = $(shell echo $(GO_VERSION) | $(CMD_CUT) -d'.' -f1)
+GO_VERSION_MIN = $(shell echo $(GO_VERSION) | $(CMD_CUT) -d'.' -f2)
+
+.checkver_$(CMD_GO): \
+	| .check_$(CMD_GO)
+#
+	@if [ ${GO_VERSION_MAJ} -eq 1 ]; then
+		if [ ${GO_VERSION_MIN} -lt 17 ]; then
+			echo -n "you MUST use golang 1.17 or newer, "
+			echo "your current golang version is ${GO_VERSION}"
+			exit 1
+		fi
+	fi
+	touch $@
 
 #
 # usage
@@ -70,7 +109,7 @@ help:
 .PHONY: fmt-check
 fmt-check: | \
 	.check_tree \
-	.check_clang-format
+	.checkver_$(CMD_CLANG_FMT)
 #
 	@errors=0
 	echo "Checking C and eBPF files and headers formatting..."
@@ -104,7 +143,7 @@ fmt-check: | \
 .PHONY: fmt-fix
 fmt-fix: | \
 	.check_tree \
-	.check_clang-format
+	.checkver_$(CMD_CLANG_FMT)
 #
 	@echo "Fixing C and eBPF files and headers formatting..."
 	clang-format -i --verbose ./pkg/ebpf/c/*
@@ -121,9 +160,10 @@ fmt-fix: | \
 .PHONY: code-check
 code-check: | \
 	.check_tree \
+	.check_$(CMD_CLANG_TIDY)
 #
 	@echo "Checking with clang-tidy..."
-	clang-tidy -header-filter=.* pkg/ebpf/c/tracee.bpf.c
+	$(CMD_CLANG_TIDY) -header-filter=.* pkg/ebpf/c/tracee.bpf.c
 	@echo "Checking Golang vet..."
 	$(GENERAL_MAKE) check-vet
 	echo "Checking Golang with StaticChecker..."
