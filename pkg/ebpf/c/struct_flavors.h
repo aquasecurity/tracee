@@ -51,14 +51,7 @@ struct sock___old {
 
 // support bpf_core_type_exists((task struct)->pids) for kernels < 5.0
 
-enum pid_type
-{
-    PIDTYPE_PID,
-    PIDTYPE_PGID,
-    PIDTYPE_SID,
-    PIDTYPE_MAX,
-    __PIDTYPE_TGID
-};
+enum pid_type { PIDTYPE_PID, PIDTYPE_PGID, PIDTYPE_SID, PIDTYPE_MAX, __PIDTYPE_TGID };
 
 struct pid_link {
     struct hlist_node node;

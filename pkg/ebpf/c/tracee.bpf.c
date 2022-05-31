@@ -83,16 +83,9 @@
 #define FILE_MAGIC_MASK     31        // magic_write: mask used for verifier boundaries
 #define MAX_KSYM_NAME_SIZE  64
 
-enum buf_idx_e
-{
-    SUBMIT_BUF_IDX,
-    STRING_BUF_IDX,
-    FILE_BUF_IDX,
-    MAX_BUFFERS
-};
+enum buf_idx_e { SUBMIT_BUF_IDX, STRING_BUF_IDX, FILE_BUF_IDX, MAX_BUFFERS };
 
-enum bin_type_e
-{
+enum bin_type_e {
     SEND_VFS_WRITE = 1,
     SEND_MPROTECT,
     SEND_KERNEL_MODULE,
@@ -100,16 +93,14 @@ enum bin_type_e
 
 #define SEND_META_SIZE 24
 
-enum mem_prot_alert_e
-{
+enum mem_prot_alert_e {
     ALERT_MMAP_W_X = 1,
     ALERT_MPROT_X_ADD,
     ALERT_MPROT_W_ADD,
     ALERT_MPROT_W_REM
 };
 
-enum tail_call_id_e
-{
+enum tail_call_id_e {
     TAIL_VFS_WRITE,
     TAIL_VFS_WRITEV,
     TAIL_SEND_BIN,
@@ -118,8 +109,7 @@ enum tail_call_id_e
     MAX_TAIL_CALL
 };
 
-enum argument_type_e
-{
+enum argument_type_e {
     NONE_T = 0UL,
     INT_T,
     UINT_T,
@@ -177,8 +167,7 @@ enum argument_type_e
     #define SYS_DUP3         24
 #endif
 
-enum event_id_e
-{
+enum event_id_e {
     // Common event IDs
     RAW_SYS_ENTER = 1000,
     RAW_SYS_EXIT,
@@ -246,13 +235,7 @@ enum event_id_e
     DEBUG_NET_TCP_CONNECT
 };
 
-enum bpf_config_e
-{
-    CONFIG_TRACEE_PID,
-    CONFIG_OPTIONS,
-    CONFIG_FILTERS,
-    CONFIG_CGROUP_V1_HID
-};
+enum bpf_config_e { CONFIG_TRACEE_PID, CONFIG_OPTIONS, CONFIG_FILTERS, CONFIG_CGROUP_V1_HID };
 
 #define CAPTURE_IFACE (1 << 0)
 #define TRACE_IFACE   (1 << 1)
@@ -291,8 +274,7 @@ enum bpf_config_e
 #define FILTER_CGROUP_ID_ENABLED (1 << 21)
 #define FILTER_CGROUP_ID_OUT     (1 << 22)
 
-enum filter_options_e
-{
+enum filter_options_e {
     UID_LESS,
     UID_GREATER,
     PID_LESS,
@@ -311,8 +293,7 @@ enum filter_options_e
 #define CONT_ID_LEN          12
 #define CONT_ID_MIN_FULL_LEN 64
 
-enum container_state_e
-{
+enum container_state_e {
     CONTAINER_EXISTED = 1, // container existed before tracee was started
     CONTAINER_CREATED,     // new cgroup path created
     CONTAINER_STARTED      // a process in the cgroup executed a new binary
@@ -357,10 +338,7 @@ enum container_state_e
 
 #ifdef CORE
 
-enum kconfig_key_e
-{
-    ARCH_HAS_SYSCALL_WRAPPER = 1000U
-};
+enum kconfig_key_e { ARCH_HAS_SYSCALL_WRAPPER = 1000U };
 
 #else
 
@@ -5268,8 +5246,7 @@ skb_revalidate_data(struct __sk_buff *skb, uint8_t **head, uint8_t **tail, const
 // decide network event_id based on created net_packet_t
 static __always_inline void set_net_event_id(net_packet_t *pkt)
 {
-    enum ports
-    {
+    enum ports {
         DNS = 53,
     };
 
