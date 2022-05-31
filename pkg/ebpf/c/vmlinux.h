@@ -56,8 +56,7 @@ typedef long unsigned int __kernel_ulong_t;
 
 typedef _Bool bool;
 
-enum
-{
+enum {
     false = 0,
     true = 1,
 };
@@ -129,26 +128,22 @@ struct pt_regs {
 
 // common to all architectures
 
-enum
-{
+enum {
     BPF_ANY = 0,
     BPF_NOEXIST = 1,
     BPF_EXIST = 2,
     BPF_F_LOCK = 4,
 };
 
-enum
-{
+enum {
     BPF_F_USER_STACK = 256,
 };
 
-enum
-{
+enum {
     BPF_F_CURRENT_CPU = 4294967295,
 };
 
-enum
-{
+enum {
     TCP_ESTABLISHED = 1,
     TCP_SYN_SENT = 2,
     TCP_SYN_RECV = 3,
@@ -164,8 +159,7 @@ enum
     TCP_MAX_STATES = 13,
 };
 
-enum sock_type
-{
+enum sock_type {
     SOCK_STREAM = 1,
     SOCK_DGRAM = 2,
     SOCK_RAW = 3,
@@ -175,8 +169,7 @@ enum sock_type
     SOCK_PACKET = 10,
 };
 
-enum
-{
+enum {
     IPPROTO_IP = 0,
     IPPROTO_ICMP = 1,
     IPPROTO_IGMP = 2,
@@ -207,8 +200,7 @@ enum
     IPPROTO_MAX = 263,
 };
 
-enum
-{
+enum {
     TCPF_ESTABLISHED = 2,
     TCPF_SYN_SENT = 4,
     TCPF_FIN_WAIT1 = 16,
@@ -449,8 +441,7 @@ struct public_key_signature {
     const void *data;
 };
 
-enum zone_type
-{
+enum zone_type {
     ZONE_DMA,
 };
 
@@ -688,8 +679,7 @@ struct iovec {
     __kernel_size_t iov_len;
 };
 
-enum bpf_map_type
-{
+enum bpf_map_type {
     BPF_MAP_TYPE_UNSPEC = 0,
     BPF_MAP_TYPE_HASH = 1,
     BPF_MAP_TYPE_ARRAY = 2,
@@ -815,8 +805,7 @@ struct udphdr {
     __be16 dest;
 };
 
-enum kernel_read_file_id
-{
+enum kernel_read_file_id {
     READING_UNKNOWN = 0,
     READING_FIRMWARE = 1,
     READING_MODULE = 2,

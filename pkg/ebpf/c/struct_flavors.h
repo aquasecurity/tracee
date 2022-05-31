@@ -51,8 +51,7 @@ struct sock___old {
 
 // support bpf_core_type_exists((task struct)->pids) for kernels < 5.0
 
-enum pid_type
-{
+enum pid_type {
     PIDTYPE_PID,
     PIDTYPE_PGID,
     PIDTYPE_SID,
