@@ -17,7 +17,14 @@ MAKEFLAGS += --no-print-directory
 # tools
 #
 
+CMD_HEAD ?= head
+CMD_CUT ?= cut
+CMD_SED ?= sed
+CMD_TR ?= tr
 CMD_CLANG ?= clang
+CMD_CLANG_TIDY ?= clang-tidy
+# clang-format-12 is mandatory for now (enum declarations incompatibilities w/ 13 and newer)
+CMD_CLANG_FMT ?= clang-format-12
 
 .check_%:
 #
@@ -49,6 +56,7 @@ help:
 	@echo "    $$ make -f builder/Makefile.checkers code-check"
 	@echo ""
 	@echo "Note: you should run fmt-fix before doing a git commmit."
+	@echo "Note: clang-format-12 is needed for eBPF code checks/fixes."
 	@echo ""
 
 #
@@ -70,11 +78,11 @@ help:
 .PHONY: fmt-check
 fmt-check: | \
 	.check_tree \
-	.check_clang-format
+	.check_$(CMD_CLANG_FMT)
 #
 	@errors=0
 	echo "Checking C and eBPF files and headers formatting..."
-	clang-format --dry-run -i ./pkg/ebpf/c/* > /tmp/check-c-fmt 2>&1
+	$(CMD_CLANG_FMT) --dry-run -i ./pkg/ebpf/c/* > /tmp/check-c-fmt 2>&1
 	clangfmtamount=$$(cat /tmp/check-c-fmt | wc -l)
 	if [[ $$clangfmtamount -ne 0 ]]; then
 		head -n30 /tmp/check-c-fmt
@@ -104,10 +112,10 @@ fmt-check: | \
 .PHONY: fmt-fix
 fmt-fix: | \
 	.check_tree \
-	.check_clang-format
+	.check_$(CMD_CLANG_FMT)
 #
 	@echo "Fixing C and eBPF files and headers formatting..."
-	clang-format -i --verbose ./pkg/ebpf/c/*
+	$(CMD_CLANG_FMT) -i --verbose ./pkg/ebpf/c/*
 #
 	echo "Fixing golang files formatting..."
 	gofmt -l -s -d . > /tmp/patch.$$
@@ -121,9 +129,10 @@ fmt-fix: | \
 .PHONY: code-check
 code-check: | \
 	.check_tree \
+	.check_$(CMD_CLANG_TIDY)
 #
 	@echo "Checking with clang-tidy..."
-	clang-tidy -header-filter=.* pkg/ebpf/c/tracee.bpf.c
+	$(CMD_CLANG_TIDY) -header-filter=.* pkg/ebpf/c/tracee.bpf.c
 	@echo "Checking Golang vet..."
 	$(GENERAL_MAKE) check-vet
 	echo "Checking Golang with StaticChecker..."
@@ -136,4 +145,4 @@ code-check: | \
 .PHONY: clean
 clean:
 	rm -f .check_tree
-	rm -f .check_clang-format
+	rm -f .check_$(CMD_CLANG_FMT)
