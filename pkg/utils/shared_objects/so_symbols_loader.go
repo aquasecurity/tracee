@@ -5,21 +5,22 @@ import (
 	"github.com/hashicorp/golang-lru/simplelru"
 )
 
-// SharedObjectExSymbolsLoader is responsible for efficient reading of shared object's exported symbols.
-type SharedObjectExSymbolsLoader struct {
+// HostSharedObjectExSymbolsLoader is responsible for efficient reading of shared object's exported symbols.
+// The logic of the loader here is used on absolute paths, so container relative paths won't work here.
+type HostSharedObjectExSymbolsLoader struct {
 	soCache sharedObjectsInfoCache
 }
 
-func InitSOExSymbolsLoader(cacheSize int) *SharedObjectExSymbolsLoader {
-	lruCallback := simplelru.EvictCallback(func(key interface{}, value interface{}) { return })
+func InitSOExSymbolsLoader(cacheSize int) *HostSharedObjectExSymbolsLoader {
+	lruCallback := simplelru.EvictCallback(func(key interface{}, value interface{}) {})
 	sharedObjectsLRU, _ := simplelru.NewLRU(cacheSize, lruCallback)
 	soCache := sharedObjectsInfoCache{sharedObjectsLRU}
-	return &SharedObjectExSymbolsLoader{soCache: soCache}
+	return &HostSharedObjectExSymbolsLoader{soCache: soCache}
 }
 
 // GetSOExSymbols try to get shared objects exported symbols from cache, and if fails read needed information.
 // from ELF file.
-func (soLoader *SharedObjectExSymbolsLoader) GetSOExSymbols(soInfo SoExaminationInfo) (map[string]bool, error) {
+func (soLoader *HostSharedObjectExSymbolsLoader) GetSOExSymbols(soInfo SoExaminationInfo) (map[string]bool, error) {
 	syms, ok := soLoader.soCache.getSharedObjectSymbols(soInfo.Id)
 	if ok {
 		return syms, nil

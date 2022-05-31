@@ -9,8 +9,9 @@ type SharedObjectIdentification struct {
 
 // SoExaminationInfo is the information of an SO needed to examine it
 type SoExaminationInfo struct {
-	Id   SharedObjectIdentification
-	Path string
+	Id      SharedObjectIdentification
+	Path    string
+	MountNS int
 }
 
 type ISOExportSymbolsLoader interface {
