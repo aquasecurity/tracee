@@ -46,6 +46,10 @@ Notice that the 'net' field is mandatory when tracing network events.
 The field 'so_exported_symbols' specifies for the 'so_export_watched_symbols' which exported symbols of shared objects
 to monitor when loaded to a process.
 
+The field 'libraries_prefix_whitelist' specifies for the 'so_export_watched_symbols' which shared objects to not monitor
+when loaded to a process. The values can be either absolute path prefix, or a prefix of the library name.
+If a name prefix is given, the prefix will be checked under all known libraries directories.
+
 Examples:
   --trace pid=new                                              | only trace events from new processes
   --trace pid=510,1709                                         | only trace events from pid 510 or pid 1709
@@ -143,6 +147,11 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 			InterfacesToTrace: []string{},
 		},
 		SOExportedSymbols: &tracee.StringFilter{
+			Equal:    []string{},
+			NotEqual: []string{},
+			Size:     MaxBpfStrFilterSize,
+		},
+		LibrariesPrefixWhitelist: &tracee.StringFilter{
 			Equal:    []string{},
 			NotEqual: []string{},
 			Size:     MaxBpfStrFilterSize,
@@ -312,6 +321,13 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 
 		if filterName == "so_exported_symbols" {
 			err := filter.SOExportedSymbols.Parse(operatorAndValues)
+			if err != nil {
+				return tracee.Filter{}, err
+			}
+			continue
+		}
+		if filterName == "libraries_prefix_whitelist" {
+			err := filter.LibrariesPrefixWhitelist.Parse(operatorAndValues)
 			if err != nil {
 				return tracee.Filter{}, err
 			}

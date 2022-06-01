@@ -41,23 +41,24 @@ const (
 )
 
 type Filter struct {
-	EventsToTrace     []int32
-	UIDFilter         *UintFilter
-	PIDFilter         *UintFilter
-	NewPidFilter      *BoolFilter
-	MntNSFilter       *UintFilter
-	PidNSFilter       *UintFilter
-	UTSFilter         *StringFilter
-	CommFilter        *StringFilter
-	ContFilter        *BoolFilter
-	NewContFilter     *BoolFilter
-	ContIDFilter      *ContIDFilter
-	RetFilter         *RetFilter
-	ArgFilter         *ArgFilter
-	ProcessTreeFilter *ProcessTreeFilter
-	Follow            bool
-	NetFilter         *IfaceFilter
-	SOExportedSymbols *StringFilter
+	EventsToTrace            []int32
+	UIDFilter                *UintFilter
+	PIDFilter                *UintFilter
+	NewPidFilter             *BoolFilter
+	MntNSFilter              *UintFilter
+	PidNSFilter              *UintFilter
+	UTSFilter                *StringFilter
+	CommFilter               *StringFilter
+	ContFilter               *BoolFilter
+	NewContFilter            *BoolFilter
+	ContIDFilter             *ContIDFilter
+	RetFilter                *RetFilter
+	ArgFilter                *ArgFilter
+	ProcessTreeFilter        *ProcessTreeFilter
+	Follow                   bool
+	NetFilter                *IfaceFilter
+	SOExportedSymbols        *StringFilter
+	LibrariesPrefixWhitelist *StringFilter
 }
 
 type UintFilter struct {

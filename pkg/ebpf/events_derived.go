@@ -316,7 +316,11 @@ func derivedSharedObjectExportWatchedSymbols(t *Tracee) derived.DeriveFn {
 	}
 	pathResolver := containers.InitContainersPathReslover(&t.pidsInMntns)
 	soLoader := shared_objects.InitContainersSOSymbolsLoader(&pathResolver)
-	soExSymGen := derived.InitSOExportWatchedSymbolsEventGenerator(defSkel, &soLoader, t.config.Filter.SOExportedSymbols.Equal)
+	soExSymGen := derived.InitSOExportWatchedSymbolsEventGenerator(
+		defSkel,
+		&soLoader,
+		t.config.Filter.SOExportedSymbols.Equal,
+		t.config.Filter.LibrariesPrefixWhitelist.Equal)
 
 	return derived.GenerateDerivedFn(&soExSymGen)
 }
