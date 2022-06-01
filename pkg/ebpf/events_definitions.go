@@ -101,6 +101,7 @@ const (
 	SharedObjectLoadedEventID
 	DoInitModuleEventID
 	SocketAcceptEventID
+	LoadElfPhdrsEventID
 	MaxCommonEventID
 )
 
@@ -4869,6 +4870,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Name:    "sched_process_exec",
 		Probes: []probe{
 			{event: "sched:sched_process_exec", attach: rawTracepoint, fn: "tracepoint__sched__sched_process_exec"},
+			{event: "load_elf_phdrs", attach: kprobe, fn: "trace_load_elf_phdrs"},
 		},
 		Sets: []string{"default", "proc"},
 		Params: []trace.ArgMeta{
@@ -4881,6 +4883,9 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "int", Name: "invoked_from_kernel"},
 			{Type: "unsigned long", Name: "ctime"},
 			{Type: "umode_t", Name: "stdin_type"},
+			{Type: "const char*", Name: "interpreter_pathname"},
+			{Type: "dev_t", Name: "interpreter_dev"},
+			{Type: "unsigned long", Name: "ineterpreter_inode"},
 		},
 	},
 	SchedProcessExitEventID: {
@@ -5701,5 +5706,18 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "int", Name: "sockfd"},
 			{Type: "struct sockaddr*", Name: "local_addr"},
 			{Type: "struct sockaddr*", Name: "remote_addr"}},
+	},
+	LoadElfPhdrsEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "load_elf_phdrs",
+		Probes: []probe{
+			{event: "load_elf_phdrs", attach: kprobe, fn: "trace_load_elf_phdrs"},
+		},
+		Sets: []string{"proc"},
+		Params: []trace.ArgMeta{
+			{Type: "const char*", Name: "pathname"},
+			{Type: "dev_t", Name: "dev"},
+			{Type: "unsigned long", Name: "inode"},
+		},
 	},
 }

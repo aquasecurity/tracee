@@ -229,6 +229,7 @@ enum event_id_e
     SHARED_OBJECT_LOADED,
     DO_INIT_MODULE,
     SOCKET_ACCEPT,
+    LOAD_ELF_PHDRS,
     MAX_EVENT_ID,
 
     // Net events IDs
@@ -346,6 +347,8 @@ enum container_state_e
 #define IOCTL_FETCH_SYSCALLS            65 // randomly picked number for ioctl cmd
 #define NUMBER_OF_SYSCALLS_TO_CHECK_X86 18
 #define NUMBER_OF_SYSCALLS_TO_CHECK_ARM 14
+
+#define MAX_CACHED_PATH_SIZE 64
 
 // EBPF KCONFIGS -----------------------------------------------------------------------------------
 
@@ -631,6 +634,12 @@ typedef struct kernel_module_data {
     u64 next;
 } kernel_module_data_t;
 
+typedef struct file_id {
+    char pathname[MAX_CACHED_PATH_SIZE];
+    dev_t device;
+    unsigned long inode;
+} file_id_t;
+
 // KERNEL STRUCTS ----------------------------------------------------------------------------------
 
 #ifndef CORE
@@ -674,6 +683,7 @@ struct kprobe {
 // clang-format off
 
 BPF_HASH(kconfig_map, u32, u32);                        // kernel config variables
+BPF_HASH(interpreter_map, u32, file_id_t);              // interpreter file used for each process
 BPF_HASH(events_to_submit, u32, u32);                   // events chosen by the user
 BPF_HASH(traced_pids_map, u32, u32);                    // track traced pids
 BPF_HASH(new_pids_map, u32, u32);                       // track processes of newly executed binaries
@@ -2796,6 +2806,11 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 
     void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
 
+    // The map of the interpreter will be updated for any loading of an elf, both for the elf and
+    // for the interpreter. Because the interpreter is loaded only after the executed elf is loaded,
+    // the map value of the executed elf should be overridden by the interpreter.
+    file_id_t *elf_interpreter = bpf_map_lookup_elem(&interpreter_map, &data.context.host_tid);
+
     unsigned short stdin_type = get_inode_mode_from_fd(0) & S_IFMT;
 
     // Note: Starting from kernel 5.9, there are two new interesting fields in bprm that we should
@@ -2815,6 +2830,11 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
         save_to_submit_buf(&data, &invoked_from_kernel, sizeof(int), 6);
         save_to_submit_buf(&data, &ctime, sizeof(u64), 7);
         save_to_submit_buf(&data, &stdin_type, sizeof(unsigned short), 8);
+        if (elf_interpreter != NULL) {
+            save_str_to_buf(&data, &elf_interpreter->pathname, 9);
+            save_to_submit_buf(&data, &elf_interpreter->device, sizeof(dev_t), 10);
+            save_to_submit_buf(&data, &elf_interpreter->inode, sizeof(unsigned long), 11);
+        }
 
         events_perf_submit(&data, SCHED_PROCESS_EXEC, 0);
     }
@@ -2838,6 +2858,7 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     bpf_map_delete_elem(&new_pids_map, &data.context.host_tid);
     bpf_map_delete_elem(&syscall_data_map, &data.context.host_tid);
     bpf_map_delete_elem(&process_context_map, &data.context.host_tid);
+    bpf_map_delete_elem(&interpreter_map, &data.context.host_tid);
 
     int proc_tree_filter_set = get_config(CONFIG_FILTERS) & FILTER_PROC_TREE_ENABLED;
 
@@ -5244,6 +5265,35 @@ int BPF_KPROBE(trace_ret_do_init_module)
     save_to_submit_buf(&data, &orig_next_prev_addr, sizeof(u64), 6);
 
     return events_perf_submit(&data, DO_INIT_MODULE, 0);
+}
+
+SEC("kprobe/load_elf_phdrs")
+int BPF_KPROBE(trace_load_elf_phdrs)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+    if (!should_trace((&data.context)))
+        return 0;
+
+    file_id_t elf = {};
+    struct file *loaded_elf = (struct file *) PT_REGS_PARM2(ctx);
+    const char *elf_pathname = (char *) get_path_str(GET_FIELD_ADDR(loaded_elf->f_path));
+    bpf_probe_read_str(elf.pathname, sizeof(elf.pathname), elf_pathname);
+    elf.device = get_dev_from_file(loaded_elf);
+    elf.inode = get_inode_nr_from_file(loaded_elf);
+
+    bpf_map_update_elem(&interpreter_map, &data.context.host_tid, &elf, BPF_ANY);
+
+    if (should_submit(LOAD_ELF_PHDRS)) {
+        save_str_to_buf(&data, (void *) elf_pathname, 0);
+        save_to_submit_buf(&data, &elf.device, sizeof(dev_t), 1);
+        save_to_submit_buf(&data, &elf.inode, sizeof(unsigned long), 2);
+
+        events_perf_submit(&data, LOAD_ELF_PHDRS, 0);
+    }
+
+    return 0;
 }
 
 static __always_inline bool
