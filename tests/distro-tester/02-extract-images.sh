@@ -53,11 +53,11 @@ for image in $IMAGES; do
   mount $un_ext4 $tempdir
   mount $un_fat $tempdir/boot/efi
 
-  rsync -av --delete $tempdir/ $destdir/
+  #rsync -av --delete $tempdir/ $destdir/
   #rsync -av $tempdir/ $destdir/
 
   # fstab fix
-  echo "/dev/vda / ext4 errors=remount-ro 0 1" > $destdir/etc/fstab
+  echo "/dev/sda / ext4 errors=remount-ro 0 1" > $destdir/etc/fstab
 
   # qemu entrypoint execution at ttyS0
   mkdir -p $destdir/etc/systemd/system/serial-getty@ttyS0.service.d/

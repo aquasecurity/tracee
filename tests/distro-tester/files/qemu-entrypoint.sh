@@ -24,7 +24,7 @@ beginhook() {
   mkdir -p /tracee
   dmesg --console-off
   trap cleanup EXIT
-  mount -t virtiofs /tracee /tracee
+  mount /dev/sdb /tracee
 }
 
 ## main
@@ -51,7 +51,7 @@ info "GO: $(go version)"
 info "pulling aquasec/tracee-tester:latest docker image"
 docker image pull aquasec/tracee-tester:latest
 
-git config --global --add safe.directory /tracee
+git config --global --add safe.directory "*"
 
 rm -rf /tmp/tracee/*
 cd /tracee

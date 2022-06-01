@@ -6,6 +6,10 @@
 
 command -v qemu-system-x86_64 || exit 1
 command -v qemu-img || exit 1
+command -v truncate || exit 1
+command -v mount || exit 1
+command -v rsync || exit 1
+command -v stat || exit 1
 
 image=$1
 tracee=$2
@@ -14,9 +18,6 @@ kvmaccel=$4
 isnoncore=$5
 cpus=$6 # optional
 mem=$7 # optional
-
-qemu-img info images/$image | grep -q raw && format="raw"
-qemu-img info images/$image | grep -q qcow2 && format="qcow2"
 
 error_syntax() {
   echo ""
@@ -28,8 +29,38 @@ error_syntax() {
   exit 1
 }
 
-if [[ ! -f images/$image ]]; then
+# check where the image is coming from (if inside container)
+
+if [[ -f ./kernels/$image.vmlinuz ]]; then
+  vmlinuz=./kernels/$image.vmlinuz
+  initrd=./kernels/$image.initrd
+else
+  vmlinuz=./kernels-copy/$image.vmlinuz
+  initrd=./kernels-copy/$image.initrd
+fi
+
+if [[ -f ./images-copy/$image ]]; then
+  image=./images-copy/$image
+else
+  image=./images/$image
+fi
+
+qemu-img info $image | grep -q raw && format="raw"
+qemu-img info $image | grep -q qcow2 && format="qcow2"
+
+# check if kernel needs initrd
+
+cmd_initrd=""
+[[ -f $initrd ]] && cmd_initrd="-initrd $initrd"
+
+# regular checks
+
+if [[ ! -f $image ]]; then
   error_syntax "image file $image does not exist"
+fi
+
+if [[ ! -f $vmlinuz ]]; then
+  error_syntax "vmlinuz file $vmlinuz does not exist"
 fi
 
 if [[ ! -d $tracee && ! -f $tracee/go.mod ]]; then
@@ -58,48 +89,75 @@ if [[ $mem -ne 2 && $mem -ne 4 && $mem -ne 6 && $mem -ne 8 ]]; then
   error_syntax "should provide amount of mem"
 fi
 
-mount -t tmpfs -o rw,nosuid,nodev,inode64 tmpfs /dev/shm
+# create tracee source directory filesystem (as a 2nd disk)
+# NOTE: idea here is to avoid using virtiofs and/or p9 filesystems
 
-rm -f "/tmp/vhostqemu-$image"
+tempfile=$(mktemp)
+tempdir=$(mktemp -d)
+truncate -s 300M $tempfile
+mkfs.ext4 $tempfile
 
-/usr/lib/qemu/virtiofsd \
-  -o cache=always \
-  -o no_flock \
-  -o log_level=err \
-  -o no_posix_lock \
-  -o sandbox=chroot \
-  -o no_writeback \
-  -o no_xattr \
-  -o no_allow_direct_io \
-  -o source=$tracee \
-  -o allow_root \
-  --socket-path="/tmp/vhostqemu-$image" &
+mount $tempfile $tempdir
+rm -rf $tempdir/load+found
 
-if [[ -f ./kernels/$image.vmlinuz ]]; then
-  vmlinuz="./kernels/$image.vmlinuz"
-  initrd="./kernels/$image.initrd"
-else
-  vmlinuz="./kernels-copy/$image.vmlinuz"
-  initrd="./kernels-copy/$image.initrd"
-fi
+rsync -avz \
+  $tracee/ \
+  --exclude=3rdparty/btfhub/* \
+  --exclude=3rdparty/btfhub-archive/* \
+  --exclude=tests/distro* \
+  $tempdir/
 
+ouid=$(stat -c %u $tracee/LICENSE)
+ogid=$(stat -c %g $tracee/LICENSE)
+
+umount $tempdir
+rmdir $tempdir
+
+# kernel cmdline
+cmd_kernel=$cmd_kernel"root=/dev/sda "
+cmd_kernel=$cmd_kernel"console=ttyS0 "
+cmd_kernel=$cmd_kernel"testname=$testname "
+cmd_kernel=$cmd_kernel"isnoncore=$isnoncore "
+cmd_kernel=$cmd_kernel"selinux=0 "
+cmd_kernel=$cmd_kernel"apparmor=0 "
+cmd_kernel=$cmd_kernel"systemd.unified_cgroup_hierarchy=false "
+cmd_kernel=$cmd_kernel"net.ifnames=0"
+
+# qemu cmdline
 qemu-system-x86_64 \
   -name guest=$image \
   -machine accel=$kvmaccel \
   --cpu max --smp $cpus -m ${mem}G \
-  -object memory-backend-file,id=mem,size=${mem}G,mem-path=/dev/shm,share=on \
-  -numa node,nodeid=0,memdev=mem \
   -rtc base=utc,clock=vm,driftfix=none \
   -boot c \
   -display none \
   -serial stdio \
   -kernel $vmlinuz \
-  -initrd $initrd \
-  -append "root=/dev/vda console=ttyS0 testname=$testname isnoncore=$isnoncore selinux=0 apparmor=0 systemd.unified_cgroup_hierarchy=false net.ifnames=0" \
+  $cmd_initrd \
+  -append "$cmd_kernel" \
   -netdev user,id=mynet,net=192.168.76.0/24,dhcpstart=192.168.76.9 \
   -device virtio-net-pci,netdev=mynet \
-  -drive file="./images/$image",if=virtio,format=$format \
-  -chardev socket,id=char0,path="/tmp/vhostqemu-$image" \
-  -device vhost-user-fs-pci,queue-size=1024,chardev=char0,tag=/tracee
+  -device virtio-scsi-pci,id=scsi \
+  -device scsi-hd,drive=hd0 \
+  -drive if=none,id=hd0,file=$image,format=$format,index=0 \
+  -device scsi-hd,drive=hd1 \
+  -drive if=none,id=hd1,file=$tempfile,format=raw,index=1
+
+tempdir=$(mktemp -d)
+mount $tempfile $tempdir
+chown -R $ouid:$ogid $tempdir/
+
+# clean up tracee source directory filesystem
+
+rsync -avz --delete \
+  $tempdir/ \
+  --exclude=3rdparty/btfhub/* \
+  --exclude=3rdparty/btfhub-archive/* \
+  --exclude=tests/distro* \
+  $tracee/
+
+umount $tempdir
+rmdir $tempdir
+rm -rf $tempfile
 
 # vi:syntax=sh:expandtab:smarttab:tabstop=2:shiftwidth=2:softtabstop=2
