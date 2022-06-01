@@ -352,6 +352,5 @@ func MergeErrors(cs ...<-chan error) <-chan error {
 }
 
 func (t *Tracee) handleError(err error) {
-	t.stats.ErrorCount.Increment()
-	t.config.ChanErrors <- err
+	t.logger.Error(err.Error())
 }

@@ -26,6 +26,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/ebpf/initialization"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -199,6 +200,7 @@ type Tracee struct {
 	eventsSorter      *sorting.EventsChronologicalSorter
 	eventDerivations  map[int32]map[int32]deriveFn
 	kernelSymbols     *helpers.KernelSymbolTable
+	logger            logger.ILogger
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -245,6 +247,7 @@ func New(cfg Config) (*Tracee, error) {
 		startTime: uint64(startTime),
 		bootTime:  uint64(bootTime),
 	}
+	t.logger = InitTraceeLogger(t.config.Debug, &t.stats, t.config.ChanErrors)
 
 	// the process-tree initialize must be before we start receiving events to ensure we already have the needed data for the events that use that tree
 	t.procInfo, err = procinfo.NewProcessInfo()
