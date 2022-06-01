@@ -55,6 +55,8 @@
 
 #define TASK_COMM_LEN 16
 
+#define PROC_SUPER_MAGIC 0x9fa0
+
 // include/uapi/linux/const.h
 #define __AC(X, Y) (X##Y)
 #define _AC(X, Y)  __AC(X, Y)

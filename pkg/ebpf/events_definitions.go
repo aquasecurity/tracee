@@ -102,6 +102,7 @@ const (
 	DoInitModuleEventID
 	SocketAcceptEventID
 	LoadElfPhdrsEventID
+	HookedProcFopsEventID
 	MaxCommonEventID
 )
 
@@ -5718,6 +5719,24 @@ var EventsDefinitions = map[int32]EventDefinition{
 			{Type: "const char*", Name: "pathname"},
 			{Type: "dev_t", Name: "dev"},
 			{Type: "unsigned long", Name: "inode"},
+		},
+	},
+	HookedProcFopsEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "hooked_proc_fops",
+		Probes: []probe{
+			{event: "security_file_permission", attach: kprobe, fn: "trace_security_file_permission"},
+		},
+		Dependencies: dependencies{
+			ksymbols: []string{"_stext", "_etext"},
+			events: []eventDependency{
+				{eventID: FinitModuleEventID},
+				{eventID: InitModuleEventID},
+			},
+		},
+		Sets: []string{},
+		Params: []trace.ArgMeta{
+			{Type: "[]trace.HookedSymbolData", Name: "hooked_fops_pointers"},
 		},
 	},
 }

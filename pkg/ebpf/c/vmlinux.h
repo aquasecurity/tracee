@@ -418,6 +418,13 @@ struct path {
 
 typedef unsigned int fmode_t;
 
+struct dir_context {
+};
+struct file_operations {
+    int (*iterate_shared)(struct file *, struct dir_context *);
+    int (*iterate)(struct file *, struct dir_context *);
+};
+
 struct file {
     struct path f_path;
     struct inode *f_inode;
@@ -609,10 +616,12 @@ struct inode {
     long unsigned int i_ino;
     struct timespec64 i_ctime;
     loff_t i_size;
+    struct file_operations *i_fop;
 };
 
 struct super_block {
     dev_t s_dev;
+    unsigned long s_magic;
 };
 
 struct mm_struct {
