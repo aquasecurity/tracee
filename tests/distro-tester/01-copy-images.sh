@@ -5,7 +5,11 @@
 [[ ! -d ./images-full ]] && mkdir ./images-full
 
 for image in $IMAGES; do
-  cp ${LXD_STORAGE}/$image/root.img ./images-full/${image/vm-/}
+  if [[ -f ${LXD_STORAGE}/$image/root.img ]]; then
+    cp ${LXD_STORAGE}/$image/root.img ./images-full/${image/vm-/}
+  else
+    echo "skipping non-existent $image..."
+  fi
 done
 
 chown -R $(whoami): ./images*

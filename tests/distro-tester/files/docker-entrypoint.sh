@@ -36,6 +36,16 @@ if [[ ! -f /tracee/go.mod ]]; then
   error_exit "/tracee doesn't seem to be tracee source directory"
 fi
 
+# create loop devices if running in LXD guest
+
+for seq in $(echo {150..170}); do
+  if [[ ! -f /dev/loop$seq ]]; then
+    mknod -m 660 /dev/loop$seq b 7 $seq
+  fi
+done
+
+# run qemu
+
 cd /tester
 
 ./03-run-qemu.sh $image_name /tracee $test_name $kvm_accel $non_core $cpus $mem | tee /tmp/qemu.log
