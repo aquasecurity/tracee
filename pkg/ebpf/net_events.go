@@ -246,7 +246,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 				if err == nil && ifaceIdx >= 0 {
 					// this packet should be traced. i.e. output the event if chosen by the user.
 
-					evt, err := protocolProcessor(networkThread, netEventMetadata, netDecoder)
+					evt, err := protocolProcessor(networkThread, netEventMetadata, netDecoder, ifaceName, netCaptureData.PacketLength)
 					if err != nil {
 						t.handleError(err)
 						continue

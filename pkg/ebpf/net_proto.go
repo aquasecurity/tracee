@@ -15,13 +15,14 @@ import (
 type protocolHandler func(*bufferdecoder.EbpfDecoder, *trace.Event) error
 
 // protocolProcessor calls handlers of the appropriate protocol event
-func protocolProcessor(networkThread procinfo.ProcessCtx, evtMeta bufferdecoder.NetEventMetadata, decoder *bufferdecoder.EbpfDecoder) (trace.Event, error) {
+func protocolProcessor(networkThread procinfo.ProcessCtx, evtMeta bufferdecoder.NetEventMetadata, decoder *bufferdecoder.EbpfDecoder, ifaceName string, packetLen uint32) (trace.Event, error) {
 
 	// create network event without any args
 	evt := CreateNetEvent(evtMeta, networkThread, EventsDefinitions[evtMeta.NetEventId].Name)
 
 	// handle specific protocol data
-	err := callProtocolHandler(evtMeta.NetEventId, decoder, &evt)
+	err := callProtocolHandler(evtMeta.NetEventId, decoder, &evt, ifaceName, packetLen)
+
 	return evt, err
 }
 
@@ -36,19 +37,23 @@ func CreateNetEvent(eventMeta bufferdecoder.NetEventMetadata, ctx procinfo.Proce
 }
 
 // callProtocolHandler calls protocol handler
-func callProtocolHandler(eventId int32, decoder *bufferdecoder.EbpfDecoder, evt *trace.Event) error {
+func callProtocolHandler(eventId int32, decoder *bufferdecoder.EbpfDecoder, evt *trace.Event, ifaceName string, packetLen uint32) error {
 	protocolHandlers := map[int32][]protocolHandler{
-		NetPacket:   {netPacketProtocolHandler},
-		DnsRequest:  {netPacketProtocolHandler, dnsQueryProtocolHandler},
-		DnsResponse: {netPacketProtocolHandler, dnsReplyProtocolHandler},
+		DnsRequest:  {dnsQueryProtocolHandler},
+		DnsResponse: {dnsReplyProtocolHandler},
 	}
 
+	// call the generic netPacketHandler
+	err := netPacketHandler(decoder, evt, ifaceName, packetLen)
+	if err != nil {
+		return err
+	}
+
+	// call the specific protocol handlers
 	handlers, handlerExists := protocolHandlers[eventId]
-	if !handlerExists {
+	if handlerExists && len(handlers) == 0 {
 		return fmt.Errorf("no protocol handler for event id %d", eventId)
 	}
-
-	var err error
 	for _, handler := range handlers {
 		err = handler(decoder, evt)
 		if err != nil {
