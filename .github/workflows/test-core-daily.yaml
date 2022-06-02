@@ -1,12 +1,12 @@
 #
-# Weekly Test: TRC-2 with selected kernels.
+# Daily CO-RE tests with all the signatures.
 #
-name: CO-RE (WEEKLY)
+name: CO-RE (DAILY)
 on:
   workflow_dispatch: {}
   schedule:
-    # At 04:00 on Saturdays
-    - cron: '0 4 * * 6'
+    # At 04:00 every day
+    - cron: '0 4 * * *'
 jobs:
   CO-RE:
     runs-on: self-hosted
@@ -34,6 +34,7 @@ jobs:
           - "focal-5.4"
           - "focalhwe-5.13"
           - "jammy-5.15"
+          - "gkekernel1.21.11-5.4"
     steps:
       - name: "Checkout"
         uses: actions/checkout@v2
@@ -50,5 +51,5 @@ jobs:
             -e kvm_accel="kvm" \
             -e test_name=${{ matrix.signature }} \
             -e non_core=0 \
-            -e cpus=8 -e mem=4 \
+            -e cpus=4 -e mem=4 \
             -t rafaeldtinoco/tracee-distro-tester:$distro
