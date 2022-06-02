@@ -9,7 +9,7 @@ __rego_metadoc__ := {
     "description": "Usage of kernel module to hooks system calls",
     "tags": ["linux"],
     "properties": {
-        "Severity": 5,
+        "Severity": 4,
         "MITRE ATT&CK": "Persistence: Hooking system calls entries in the system-call table",
     }
 }
