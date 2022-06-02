@@ -212,11 +212,13 @@ jobs:
           - "focal-5.4"
           - "focalhwe-5.13"
           - "jammy-5.15"
+          - "gkekernel1.21.11-5.4"
     steps:
       - name: "Checkout"
         uses: actions/checkout@v2
         with:
           submodules: true
+      # Needed when running in github actions runners (kvm_accel=tcg)
       #- name: "Pull test container image"
       #  run: |
       #    distro=$(echo ${{ matrix.distro }} | cut -d'-' -f1)
@@ -228,7 +230,7 @@ jobs:
             -e kvm_accel="kvm" \
             -e test_name=${{ matrix.signature }} \
             -e non_core=0 \
-            -e cpus=8 -e mem=4 \
+            -e cpus=4 -e mem=4 \
             -t rafaeldtinoco/tracee-distro-tester:$distro
   NON-CO-RE:
     runs-on: self-hosted
@@ -248,11 +250,13 @@ jobs:
           - "focal-5.4"
           - "focalhwe-5.13"
           - "jammy-5.15"
+          # "gkekernel1.21.11-5.4" is CO-RE only
     steps:
       - name: "Checkout"
         uses: actions/checkout@v2
         with:
           submodules: true
+      # Needed when running in github actions runners (kvm_accel=tcg)
       #- name: "Pull test container image"
       #  run: |
       #    distro=$(echo ${{ matrix.distro }} | cut -d'-' -f1)
@@ -264,6 +268,6 @@ jobs:
             -e kvm_accel="kvm" \
             -e test_name=${{ matrix.signature }} \
             -e non_core=1 \
-            -e cpus=8 -e mem=4 \
+            -e cpus=4 -e mem=4 \
             -t rafaeldtinoco/tracee-distro-tester:$distro
           
