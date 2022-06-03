@@ -195,8 +195,8 @@ vagrant up
 The development machine described by Vagrantfile preinstalls [MicroK8s] Kubernetes cluster, which is suitable for testing
 Tracee.
 
-```
-vagrant@ubuntu-impish:/vagrant$ microk8s status
+```console
+$ microk8s status
 microk8s is running
 high-availability: no
   datastore master nodes: 127.0.0.1:19001
@@ -205,28 +205,24 @@ high-availability: no
 
 There's also the [kubectl] command installed and configured to communicate with the cluster:
 
-```
-vagrant@ubuntu-impish:/vagrant$ kubectl get nodes -o wide
+```console
+$ kubectl get nodes -o wide
 NAME            STATUS   ROLES    AGE    VERSION                    INTERNAL-IP   EXTERNAL-IP   OS-IMAGE       KERNEL-VERSION      CONTAINER-RUNTIME
 ubuntu-impish   Ready    <none>   139m   v1.23.4-2+98fc2022f3ad3e   10.0.2.15     <none>        Ubuntu 21.10   5.13.0-35-generic   containerd://1.5.9
 ```
 
-To integrate Tracee with [Postee] we must enable `storage` and `dns` [MicroK8s add-ons]. The `storage` add-on is used to
-setup [Persistent Volumes] required by Postee to holds its data, whereas the Kubernetes DNS server allows Tracee-Rules
-to send detections over to the Postee HTTP endpoint.
+To integrate Tracee with [Postee] we must enable `hostpath-storage` and `dns` [MicroK8s add-ons]. The `hostpath-storage`
+add-on is used to setup [Persistent Volumes] required by Postee to holds its data, whereas the Kubernetes DNS server
+allows Tracee-Rules to send detections over to the Postee HTTP endpoint.
 
-```
-vagrant@ubuntu-impish:/vagrant$ microk8s enable storage
+```console
+$ microk8s enable hostpath-storage dns
 Enabling default storage class
 deployment.apps/hostpath-provisioner created
 storageclass.storage.k8s.io/microk8s-hostpath created
 serviceaccount/microk8s-hostpath created
 clusterrole.rbac.authorization.k8s.io/microk8s-hostpath created
 clusterrolebinding.rbac.authorization.k8s.io/microk8s-hostpath created
-```
-
-```
-vagrant@ubuntu-impish:/vagrant$ microk8s enable dns
 Enabling DNS
 Applying manifest
 serviceaccount/coredns created
@@ -241,16 +237,15 @@ DNS is enabled
 
 Create a new namespace called `tracee-system`:
 
-```
-vagrant@ubuntu-impish:/vagrant$ kubectl create ns tracee-system
+```console
+kubectl create ns tracee-system
 ```
 
 Create Postee Persistent Volumes and StatefulSet in the `tracee-system` namespace:
 
 ```
-vagrant@ubuntu-impish:/vagrant$ kubectl apply -n tracee-system \
-  -f https://raw.githubusercontent.com/aquasecurity/postee/v2.2.0/deploy/kubernetes/hostPath/postee-pv.yaml
-vagrant@ubuntu-impish:/vagrant$ kubectl apply -n tracee-system \
+kubectl apply -n tracee-system \
+  -f https://raw.githubusercontent.com/aquasecurity/postee/v2.2.0/deploy/kubernetes/hostPath/postee-pv.yaml \
   -f https://raw.githubusercontent.com/aquasecurity/postee/v2.2.0/deploy/kubernetes/postee.yaml
 ```
 
@@ -258,13 +253,31 @@ Create Tracee DaemonSet in the `tracee-system`, which is preconfigured to print 
 send them over to Postee webhook on http://postee-svc:8082:
 
 ```
-vagrant@ubuntu-impish:/vagrant$ kubectl apply -n tracee-system -f deploy/kubernetes/tracee-postee/tracee.yaml
+kubectl apply -n tracee-system -f deploy/kubernetes/tracee-postee/tracee.yaml
 ```
+
+!!! tip
+    To test code that hasn't been released yet do the following:
+
+    1. Build the `tracee:latest` container image from the current Git revision:
+       ```
+       make -f builder/Makefile.tracee-container build-tracee
+       ```
+    2. Import the container image to MicroK8s registry:
+       ```
+       docker image save -o /tmp/tracee-latest.tar tracee:latest
+       microk8s ctr images import /tmp/tracee-latest.tar
+       rm /tmp/tracee-latest.tar
+       ```
+    3. Create Tracee DaemonSet using `tracee:latest` as container image:
+       ```
+       kubectl apply -n tracee-system -k deploy/kubernetes/tracee-postee
+       ```
 
 While Tracee pod is running, run `strace ls` command and observe detection printed to the standard output.
 
-```
-vagrant@ubuntu-impish:/vagrant$ kubectl logs n tracee-system -f daemonset/tracee
+```console
+$ kubectl logs n tracee-system -f daemonset/tracee
 INFO: probing tracee-ebpf capabilities...
 INFO: starting tracee-ebpf...
 INFO: starting tracee-rules...
@@ -282,8 +295,8 @@ Hostname: ubuntu-impish
 
 If everything is configured properly, you can find the same detection in Postee logs:
 
-```
-vagrant@ubuntu-impish:/vagrant$ kubectl -n tracee-system logs -f postee-0
+```console
+$ kubectl -n tracee-system logs -f postee-0
 2022/03/29 08:26:32 {"Data":null,"Context":{"timestamp":1648542392170684298,"processorId":1,"processId":90731,"threadId"
 :90731,"parentProcessId":90729,"hostProcessId":90731,"hostThreadId":90731,"hostParentProcessId":90729,"userId":1000,"mou
 ntNamespace":4026531840,"pidNamespace":4026531836,"processName":"strace","hostName":"ubuntu-impish","containerId":"","ev
@@ -306,8 +319,7 @@ kubectl -n kube-system describe secret \
 Forward port 10443 in the development machine to the Kubernetes Dashboard's pod:
 
 ```
-vagrant@ubuntu-impish:/vagrant$ kubectl port-forward --address 0.0.0.0 -n kube-system service/kubernetes-dashboard 10443:443
-Forwarding from 0.0.0.0:10443 -> 8443
+kubectl port-forward --address 0.0.0.0 -n kube-system service/kubernetes-dashboard 10443:443
 ```
 
 Since port 10443 is forwarded to port 10443 on your host, you can open your browser to
@@ -322,7 +334,7 @@ Since port 10443 is forwarded to port 10443 on your host, you can open your brow
 You can run [MkDocs] server and preview documentation on your host:
 
 ```
-vagrant@ubuntu-impish:/vagrant$ make -f builder/Makefile.mkdocs
+make -f builder/Makefile.mkdocs
 ```
 
 The development machine is running the MkDocs server listening on port 8000, which is forwarded to port 8000 on your

@@ -1,0 +1,6 @@
+resources:
+  - tracee.yaml
+images:
+  - name: docker.io/aquasec/tracee:v0.7.0
+    newName: tracee
+    newTag: latest
