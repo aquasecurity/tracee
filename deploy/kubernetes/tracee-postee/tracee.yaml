@@ -1,3 +1,4 @@
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -21,7 +22,9 @@ spec:
         image: docker.io/aquasec/tracee:v0.7.0
         imagePullPolicy: IfNotPresent
         args:
-          - --webhook http://postee-svc:8082 --webhook-template ./templates/rawjson.tmpl --webhook-content-type application/json
+          - --webhook=http://postee-svc:8082
+          - --webhook-template=./templates/rawjson.tmpl
+          - --webhook-content-type=application/json
         env:
           - name: LIBBPFGO_OSRELEASE_FILE
             value: /etc/os-release-host

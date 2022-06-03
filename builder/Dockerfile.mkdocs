@@ -1,4 +1,4 @@
-FROM squidfunk/mkdocs-material:8.2.7
+FROM squidfunk/mkdocs-material:8.3.0
 
 RUN pip install --upgrade pip && \
     pip install mike && \
