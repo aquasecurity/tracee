@@ -16,7 +16,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/rules/engine"
 	"github.com/aquasecurity/tracee/pkg/rules/metrics"
 	"github.com/aquasecurity/tracee/types/detect"
-	"github.com/open-policy-agent/opa/compile"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
 )
@@ -58,17 +57,7 @@ func main() {
 				}()
 			}
 
-			var target string
-			switch strings.ToLower(c.String("rego-runtime-target")) {
-			case "wasm":
-				return errors.New("target unsupported: " + target)
-			case "rego":
-				target = compile.TargetRego
-			default:
-				return errors.New("invalid target specified " + target)
-			}
-
-			sigs, err := getSignatures(target, c.Bool("rego-partial-eval"), c.String("rules-dir"), c.StringSlice("rules"), c.Bool("rego-aio"))
+			sigs, err := getSignatures(c.Bool("rego-partial-eval"), c.String("rules-dir"), c.StringSlice("rules"), c.Bool("rego-aio"))
 			if err != nil {
 				return err
 			}
@@ -192,11 +181,6 @@ func main() {
 			&cli.BoolFlag{
 				Name:  "rego-aio",
 				Usage: "compile rego signatures altogether as an aggregate policy. By default each signature is compiled separately.",
-			},
-			&cli.StringFlag{
-				Name:  "rego-runtime-target",
-				Usage: "select which runtime target to use for evaluation of rego rules: rego, wasm",
-				Value: "rego",
 			},
 			&cli.BoolFlag{
 				Name:  "list-events",

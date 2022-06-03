@@ -17,7 +17,7 @@ import (
 	"github.com/aquasecurity/tracee/types/detect"
 )
 
-func getSignatures(target string, partialEval bool, rulesDir string, rules []string, aioEnabled bool) ([]detect.Signature, error) {
+func getSignatures(partialEval bool, rulesDir string, rules []string, aioEnabled bool) ([]detect.Signature, error) {
 	if rulesDir == "" {
 		exePath, err := os.Executable()
 		if err != nil {
@@ -29,7 +29,7 @@ func getSignatures(target string, partialEval bool, rulesDir string, rules []str
 	if err != nil {
 		return nil, err
 	}
-	opasigs, err := findRegoSigs(target, partialEval, rulesDir, aioEnabled)
+	opasigs, err := findRegoSigs(partialEval, rulesDir, aioEnabled)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func findGoSigs(dir string) ([]detect.Signature, error) {
 	return res, nil
 }
 
-func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) ([]detect.Signature, error) {
+func findRegoSigs(partialEval bool, dir string, aioEnabled bool) ([]detect.Signature, error) {
 	modules := make(map[string]string)
 	modules["helper.rego"] = embedded.RegoHelpersCode
 
@@ -125,7 +125,7 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 		if aioEnabled {
 			return nil
 		}
-		sig, err := regosig.NewRegoSignature(target, partialEval, append(regoHelpers, string(regoCode))...)
+		sig, err := regosig.NewRegoSignature(partialEval, append(regoHelpers, string(regoCode))...)
 		if err != nil {
 			newlineOffset := bytes.Index(regoCode, []byte("\n"))
 			if newlineOffset == -1 {
@@ -144,7 +144,6 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 	})
 	if aioEnabled {
 		aio, err := regosig.NewAIO(modules,
-			regosig.OPATarget(target),
 			regosig.OPAPartial(partialEval))
 		if err != nil {
 			return nil, err

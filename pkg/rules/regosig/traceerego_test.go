@@ -17,7 +17,7 @@ import (
 )
 
 func TestRegoSignature_GetMetadata(t *testing.T) {
-	sig, err := regosig.NewRegoSignature(compile.TargetRego, false, testRegoCodeBoolean)
+	sig, err := regosig.NewRegoSignature(false, testRegoCodeBoolean)
 	require.NoError(t, err)
 
 	metadata, err := sig.GetMetadata()
@@ -40,7 +40,7 @@ func TestRegoSignature_GetMetadata(t *testing.T) {
 }
 
 func TestRegoSignature_GetSelectedEvents(t *testing.T) {
-	sig, err := regosig.NewRegoSignature(compile.TargetRego, false, testRegoCodeBoolean)
+	sig, err := regosig.NewRegoSignature(false, testRegoCodeBoolean)
 	require.NoError(t, err)
 	events, err := sig.GetSelectedEvents()
 	require.NoError(t, err)
@@ -342,7 +342,7 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			sig, err := regosig.NewRegoSignature(target, partial, tc.regoCode)
+			sig, err := regosig.NewRegoSignature(partial, tc.regoCode)
 			require.NoError(t, err)
 
 			holder := &signaturestest.FindingsHolder{}
@@ -362,7 +362,7 @@ func OnEventSpec(t *testing.T, target string, partial bool) {
 }
 
 func TestRegoSignature_OnSignal(t *testing.T) {
-	sig, err := regosig.NewRegoSignature(compile.TargetRego, false, testRegoCodeBoolean)
+	sig, err := regosig.NewRegoSignature(false, testRegoCodeBoolean)
 	require.NoError(t, err)
 	err = sig.OnSignal(os.Kill)
 	assert.EqualError(t, err, "function OnSignal is not implemented")

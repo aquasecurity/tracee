@@ -5,7 +5,6 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/rules/regosig"
 	"github.com/aquasecurity/tracee/types/detect"
-	"github.com/open-policy-agent/opa/compile"
 )
 
 var (
@@ -20,9 +19,9 @@ var (
 )
 
 func NewCodeInjectionSignature() (detect.Signature, error) {
-	return regosig.NewRegoSignature(compile.TargetRego, false, codeInjectionRego, helpersRego)
+	return regosig.NewRegoSignature(false, codeInjectionRego, helpersRego)
 }
 
 func NewAntiDebuggingSignature() (detect.Signature, error) {
-	return regosig.NewRegoSignature(compile.TargetRego, false, antiDebuggingPtracemeRego, helpersRego)
+	return regosig.NewRegoSignature(false, antiDebuggingPtracemeRego, helpersRego)
 }
