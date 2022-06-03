@@ -336,7 +336,7 @@ $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o: \
 	$(OUTPUT_DIR)/libbpf/libbpf.a \
 	$(TRACEE_EBPF_OBJ_SRC)
 #
-	MAKEFLAGS="--no-print-directory -j $(nproc)" $(MAKE) $(OUTPUT_DIR)/tracee.bpf
+	MAKEFLAGS="--no-print-directory" $(MAKE) $(OUTPUT_DIR)/tracee.bpf
 	$(CMD_CLANG) -S -nostdinc \
 		-D__TARGET_ARCH_$(LINUX_ARCH) \
 		-D__BPF_TRACING__ \
