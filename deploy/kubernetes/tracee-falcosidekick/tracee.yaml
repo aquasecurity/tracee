@@ -30,13 +30,19 @@ spec:
         - name: etc-os-release
           mountPath: /etc/os-release-host
           readOnly: true
-        resources:
-          limits:
-            cpu: 500m
-            memory: 300Mi
-          requests:
-            cpu: 350m
-            memory: 50Mi
+        # NOTE: Resource consumption will vary between different use cases and
+        # workload characteristics. User should monitor tracee for resource
+        # consumption before enabling resource limits. Capping tracee
+        # resources may cause loss of events and miss detections. Golang
+        # signatures outperforms REGO signatures, use less HW resources,
+        # and are preferred if that is an option.
+        # resources:
+        #   limits:
+        #     cpu: "1"
+        #     memory: 1Gi # tracee has a 512MB in-memory events cache enabled by default
+        #   requests:
+        #     cpu: "1"
+        #     memory: 1Gi
       tolerations:
         - effect: NoSchedule
           operator: Exists
