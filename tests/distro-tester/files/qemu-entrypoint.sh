@@ -24,7 +24,7 @@ beginhook() {
   mkdir -p /tracee
   dmesg --console-off
   trap cleanup EXIT
-  mount /dev/sdb /tracee
+  mount LABEL=tracee /tracee
 }
 
 ## main
@@ -47,6 +47,11 @@ info "SELECTED TEST: $testname"
 info "NON CO-RE: $isnoncore"
 info "CLANG: $(clang --version)"
 info "GO: $(go version)"
+
+# debug (if needed)
+
+# bash
+# exit
 
 info "pulling aquasec/tracee-tester:latest docker image"
 docker image pull aquasec/tracee-tester:latest

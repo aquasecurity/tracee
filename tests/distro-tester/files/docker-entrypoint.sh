@@ -39,10 +39,14 @@ fi
 # create loop devices if running in LXD guest
 
 for seq in $(echo {150..170}); do
-  if [[ ! -f /dev/loop$seq ]]; then
-    mknod -m 660 /dev/loop$seq b 7 $seq
-  fi
+  mknod -m 660 /dev/loop$seq b 7 $seq > /dev/null 2>&1 || true
 done
+
+# sleep for random time not to start all jobs at once
+
+rand=$(( $RANDOM % 30 ))
+info "sleeping for $rand seconds"
+sleep $rand
 
 # run qemu
 
