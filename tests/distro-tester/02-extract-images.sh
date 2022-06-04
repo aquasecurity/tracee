@@ -18,6 +18,9 @@ cleanup() {
   [[ $un_fat != "" ]] && losetup -d $un_fat || true
   [[ $un_ext4 != "" ]] && losetup -d $un_ext4 || true
   [[ $tempdir != "" ]] && rmdir $tempdir || true
+
+  chown -R $(whoami): ./images
+  chown -R $(whoami): ./kernels
 }
 trap cleanup EXIT
 
@@ -34,6 +37,8 @@ for image in $IMAGES; do
   #else
       #rm -f ./images/$(basename $image)
   fi
+
+  tune2fs -L$image_name ./images/$image_name
 
   tempdir=$(mktemp -d)
   destdir=$(mktemp -d)
@@ -53,11 +58,12 @@ for image in $IMAGES; do
   mount $un_ext4 $tempdir
   mount $un_fat $tempdir/boot/efi
 
+  # ATTENTION: Uncomment this for real effects (commented as a safe guard)
   #rsync -av --delete $tempdir/ $destdir/
   #rsync -av $tempdir/ $destdir/
 
   # fstab fix
-  echo "/dev/sda / ext4 errors=remount-ro 0 1" > $destdir/etc/fstab
+  echo "LABEL=$image_name / ext4 errors=remount-ro 0 1" > $destdir/etc/fstab
 
   # qemu entrypoint execution at ttyS0
   mkdir -p $destdir/etc/systemd/system/serial-getty@ttyS0.service.d/
@@ -80,9 +86,9 @@ WantedBy=getty.target
   chmod +x $destdir/init
 
   # bring kernel outside
-  cp $tempdir/boot/*init* ./kernels/$image_name.initrd
+  cp $tempdir/boot/*config* ./kernels/$image_name.config || true
+  cp $tempdir/boot/*init* ./kernels/$image_name.initrd || true
   cp $tempdir/boot/*vmlinuz* ./kernels/$image_name.vmlinuz
-  cp $tempdir/boot/*config* ./kernels/$image_name.config
 
   echo waiting to cleanup; sleep 5
   [[ $destdir != "" ]] && umount $destdir || true
@@ -92,9 +98,6 @@ WantedBy=getty.target
   [[ $un_ext4 != "" ]] && losetup -d $un_ext4 || true
   [[ $tempdir != "" ]] && rmdir $tempdir || true
 done
-
-chown -R $(whoami): ./images
-chown -R $(whoami): ./kernels
 
 # cleanup at EXIT
 

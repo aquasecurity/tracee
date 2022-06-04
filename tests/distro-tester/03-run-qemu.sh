@@ -31,6 +31,8 @@ error_syntax() {
 
 # check where the image is coming from (if inside container)
 
+image_name=$image
+
 if [[ -f ./kernels/$image.vmlinuz ]]; then
   vmlinuz=./kernels/$image.vmlinuz
   initrd=./kernels/$image.initrd
@@ -95,7 +97,7 @@ fi
 tempfile=$(mktemp)
 tempdir=$(mktemp -d)
 truncate -s 300M $tempfile
-mkfs.ext4 $tempfile
+mkfs.ext4 -Ltracee $tempfile
 
 mount $tempfile $tempdir
 rm -rf $tempdir/load+found
@@ -114,7 +116,11 @@ umount $tempdir
 rmdir $tempdir
 
 # kernel cmdline
-cmd_kernel=$cmd_kernel"root=/dev/sda "
+if [[ $image_name != *gke* ]]; then
+  cmd_kernel=$cmd_kernel"root=LABEL=$image_name "
+else
+  cmd_kernel=$cmd_kernel"root=/dev/sda "
+fi
 cmd_kernel=$cmd_kernel"console=ttyS0 "
 cmd_kernel=$cmd_kernel"testname=$testname "
 cmd_kernel=$cmd_kernel"isnoncore=$isnoncore "
@@ -123,9 +129,11 @@ cmd_kernel=$cmd_kernel"apparmor=0 "
 cmd_kernel=$cmd_kernel"systemd.unified_cgroup_hierarchy=false "
 cmd_kernel=$cmd_kernel"net.ifnames=0"
 
-# qemu cmdline
+# run qemu with 20 minutes timeout (needed because of kernel soft/hard lockups)
+
+timeout --preserve-status --foreground --signal=9 20m \
 qemu-system-x86_64 \
-  -name guest=$image \
+  -name guest=$image_name \
   -machine accel=$kvmaccel \
   --cpu max --smp $cpus -m ${mem}G \
   -rtc base=utc,clock=vm,driftfix=none \
