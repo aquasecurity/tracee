@@ -37,8 +37,8 @@ func SendKsymbolsToMap(bpfKsymsMap *libbpfgo.BPFMap, ksymbols map[string]*helper
 // The reason for the addresses to be invalid is if the capabilities required to read the kallsyms file are not given.
 // The chosen symbol used here is "current_task" because it is used by all supported kernel versions and shouldn't be 0.
 func ValidateKsymbolsTable(ksyms *helpers.KernelSymbolTable) bool {
-	if sym, err := ksyms.GetSymbolByName(globalSymbolOwner, "current_task"); err != nil || sym.Address == 0 {
-		return false
-	}
+	//if sym, err := ksyms.GetSymbolByName(globalSymbolOwner, "current_task"); err != nil || sym.Address == 0 {
+	//	return false
+	//}
 	return true
 }

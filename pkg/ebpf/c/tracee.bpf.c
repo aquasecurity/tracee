@@ -350,7 +350,7 @@ enum container_state_e
 #endif
 
 #define IOCTL_FETCH_SYSCALLS            (1 << 0) // bit wise flags
-#define IOCTL_SOCKETS_HOOK              (1 << 1)
+#define IOCTL_HOOKED_SEQ_OPS            (1 << 1)
 #define NUMBER_OF_SYSCALLS_TO_CHECK_X86 18
 #define NUMBER_OF_SYSCALLS_TO_CHECK_ARM 14
 
@@ -2394,7 +2394,8 @@ static __always_inline int get_local_net_id_from_network_details_v6(struct sock 
 }
 
 static __always_inline void invoke_fetch_network_seq_operations_event(event_data_t *data,
-                                                                      unsigned long struct_address)
+                                                                      unsigned long struct_address,
+                                                                      uint64_t caller_ctx_id)
 {
     struct seq_operations *seq_ops = (struct seq_operations *) struct_address;
 
@@ -2420,6 +2421,7 @@ static __always_inline void invoke_fetch_network_seq_operations_event(event_data
     u64 seq_ops_addresses[NET_SEQ_OPS_SIZE + 1] = {
         (u64) seq_ops, show_addr, start_addr, next_addr, stop_addr};
     save_u64_arr_to_buf(data, (const u64 *) seq_ops_addresses, 5, 0);
+    save_to_submit_buf(data, (void *) &caller_ctx_id, sizeof(uint64_t), 1);
     events_perf_submit(data, PRINT_NET_SEQ_OPS, 0);
 }
 
@@ -3105,7 +3107,7 @@ int BPF_KPROBE(trace_do_exit)
  * the syscall table. the syscalls are strode in map which is syscalls_to_check_map and the
  * syscall-table address is stored in the kernel_symbols map.
  */
-static __always_inline void invoke_print_syscall_table_event(event_data_t *data)
+static __always_inline void invoke_print_syscall_table_event(event_data_t *data, uint64_t caller_ctx_id)
 {
     int key = 0;
     u64 *table_ptr = bpf_map_lookup_elem(&syscalls_to_check_map, (void *) &key);
@@ -3148,39 +3150,36 @@ static __always_inline void invoke_print_syscall_table_event(event_data_t *data)
         syscall_address[i] = syscall_addr;
     }
     save_u64_arr_to_buf(data, (const u64 *) syscall_address, monitored_syscalls_amount, 0);
+    save_to_submit_buf(data, (void *) &caller_ctx_id, sizeof(uint64_t), 1);
     events_perf_submit(data, PRINT_SYSCALL_TABLE, 0);
 }
 
-SEC("kprobe/security_file_ioctl")
-int BPF_KPROBE(trace_tracee_trigger_event)
+
+SEC("uprobe/trigger_event")
+int uprobe_tracee_trigger_event(struct pt_regs *ctx)
 {
+#if defined(__TARGET_ARCH_x86)
+    uint64_t cmd = ctx->bx;
+    uint64_t caller_ctx_id = ctx->cx;
+#else
+    uint64_t cmd;
+    uint64_t caller_ctx_id;
+    bpf_probe_read(&cmd, 8, ((void*)ctx->sp)+16);
+    bpf_probe_read(&caller_ctx_id, 8, ((void*)ctx->sp)+24);
+#endif
+
     event_data_t data = {};
 
     if (!init_event_data(&data, ctx))
         return 0;
 
-    unsigned int cmd = PT_REGS_PARM2(ctx);
-    if (get_config(CONFIG_TRACEE_PID) == data.context.host_pid) {
-        if (cmd == IOCTL_FETCH_SYSCALLS) {
-            invoke_print_syscall_table_event(&data);
-        }
+    if ((cmd&IOCTL_FETCH_SYSCALLS) == IOCTL_FETCH_SYSCALLS && get_config(CONFIG_TRACEE_PID) == data.context.host_pid) {
+        invoke_print_syscall_table_event(&data, caller_ctx_id);
     }
 
-    return 0;
-}
-
-SEC("kprobe/security_file_ioctl")
-int BPF_KPROBE(trace_tracee_print_net_seq_ops)
-{
-    event_data_t data = {};
-
-    if (!init_event_data(&data, ctx))
-        return 0;
-
-    unsigned int cmd = PT_REGS_PARM2(ctx);
-    if (cmd == IOCTL_SOCKETS_HOOK && get_config(CONFIG_TRACEE_PID) == data.context.host_pid) {
+    if ((cmd&IOCTL_HOOKED_SEQ_OPS) == IOCTL_HOOKED_SEQ_OPS && get_config(CONFIG_TRACEE_PID) == data.context.host_pid) {
         unsigned long struct_address = PT_REGS_PARM3(ctx);
-        invoke_fetch_network_seq_operations_event(&data, struct_address);
+        invoke_fetch_network_seq_operations_event(&data, struct_address, caller_ctx_id);
     }
 
     return 0;

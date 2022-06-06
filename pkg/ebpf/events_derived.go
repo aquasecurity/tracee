@@ -36,7 +36,7 @@ func (t *Tracee) initEventDerivationMap() error {
 			NetPacket: deriveNetPacket(),
 		},
 		PrintNetSeqOpsEventID: {
-			HookedSeqOpsEventID: deriveHiddenSockets(t),
+			HookedSeqOpsEventID: deriveHookedSeqOps(t),
 		},
 	}
 
@@ -176,7 +176,10 @@ func deriveDetectHookedSyscall(t *Tracee) deriveFn {
 		if err != nil {
 			return trace.Event{}, false, fmt.Errorf("error parsing analyzing hooked syscalls addresses arg: %v", err)
 		}
-		de := event
+		de, err := getInvokingEventContext(t, event)
+		if err != nil {
+			return trace.Event{}, false, err
+		}
 		de.EventID = int(HookedSyscallsEventID)
 		de.EventName = "hooked_syscalls"
 		de.ReturnValue = 0
@@ -237,6 +240,22 @@ func analyzeHookedAddresses(addresses []uint64, kernelSymbols *helpers.KernelSym
 	return hookedSyscalls, nil
 }
 
+func getInvokingEventContext(t *Tracee, event trace.Event) (trace.Event, error) {
+	contextID, err := getEventArgUint64Val(&event, "caller_context_id")
+	if err != nil {
+		return trace.Event{}, fmt.Errorf("error parsing caller_context_id arg: %v", err)
+	}
+	if contextID > 0 {
+		contextEvent, ok := t.invokedContext[contextID]
+		if !ok {
+			return trace.Event{}, fmt.Errorf("error parsing caller_context_id arg: %v", err)
+		}
+		return contextEvent, nil
+	} else {
+		return event, nil
+	}
+}
+
 func parseSymbol(address uint64, table *helpers.KernelSymbolTable) *helpers.KernelSymbol {
 	hookingFunction, err := table.GetSymbolByAddr(address)
 	if err != nil {
@@ -255,14 +274,14 @@ var seq_ops_functions = [4]string{
 	"seq_next",
 }
 
-func deriveHiddenSockets(t *Tracee) deriveFn {
+func deriveHookedSeqOps(t *Tracee) deriveFn {
 	return func(event trace.Event) (trace.Event, bool, error) {
 		seqOpsArr, err := getEventArgUlongArrVal(&event, "net_seq_ops")
 		if err != nil || len(seqOpsArr) < 1 {
 			return trace.Event{}, false, err
 		}
 		seqOpsName := parseSymbol(seqOpsArr[0], t.kernelSymbols).Name
-		hookedSecOps := make([]trace.HookedSymbolData, 0)
+		hookedSeqOps := make([]trace.HookedSymbolData, 0)
 		for _, addr := range seqOpsArr[1:] {
 			inTextSegment, err := t.kernelSymbols.TextSegmentContains(addr)
 			if err != nil {
@@ -270,18 +289,21 @@ func deriveHiddenSockets(t *Tracee) deriveFn {
 			}
 			if !inTextSegment {
 				hookingFunction := parseSymbol(addr, t.kernelSymbols)
-				hookedSecOps = append(hookedSecOps, trace.HookedSymbolData{SymbolName: hookingFunction.Name, ModuleOwner: hookingFunction.Owner})
+				hookedSeqOps = append(hookedSeqOps, trace.HookedSymbolData{SymbolName: hookingFunction.Name, ModuleOwner: hookingFunction.Owner})
 			}
 		}
 		def := EventsDefinitions[HookedSeqOpsEventID]
-		de := event
+		de, err := getInvokingEventContext(t, event)
+		if err != nil {
+			return trace.Event{}, false, err
+		}
 		de.EventID = int(HookedSeqOpsEventID)
 		de.EventName = "hooked_seq_ops"
 		de.ReturnValue = 0
 		de.StackAddresses = make([]uint64, 1)
 		de.Args = []trace.Argument{
 			{ArgMeta: def.Params[0], Value: seqOpsName},
-			{ArgMeta: def.Params[1], Value: hookedSecOps},
+			{ArgMeta: def.Params[1], Value: hookedSeqOps},
 		}
 		de.ArgsNum = 1
 		return de, true, nil

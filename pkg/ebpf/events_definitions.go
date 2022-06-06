@@ -5511,16 +5511,15 @@ var EventsDefinitions = map[int32]EventDefinition{
 		},
 	},
 	PrintSyscallTableEventID: {
-		ID32Bit:  sys32undefined,
-		Name:     "print_syscall_table",
-		Internal: true,
-		Probes: []probe{
-			{event: "security_file_ioctl", attach: kprobe, fn: "trace_tracee_trigger_event"},
-		},
+		ID32Bit:      sys32undefined,
+		Name:         "print_syscall_table",
+		Internal:     true,
+		Probes:       []probe{},
 		Dependencies: dependencies{ksymbols: []string{"sys_call_table"}},
 		Sets:         []string{},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned long[]", Name: "syscalls_addresses"},
+			{Type: "unsigned long", Name: "caller_context_id"},
 		},
 	},
 	HookedSyscallsEventID: {
@@ -5744,9 +5743,9 @@ var EventsDefinitions = map[int32]EventDefinition{
 	PrintNetSeqOpsEventID: {
 		ID32Bit: sys32undefined,
 		Name:    "print_net_seq_ops",
-		Probes: []probe{
-			{event: "security_file_ioctl", attach: kprobe, fn: "trace_tracee_print_net_seq_ops"},
-		},
+		//Probes:  []probe{
+		//	{event: "security_file_ioctl", attach: kprobe, fn: "trace_tracee_trigger_event"},
+		//},
 		Dependencies: dependencies{
 			ksymbols: []string{
 				"tcp4_seq_ops",
@@ -5760,6 +5759,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Sets:     []string{},
 		Params: []trace.ArgMeta{
 			{Type: "unsigned long[]", Name: "net_seq_ops"},
+			{Type: "unsigned long", Name: "caller_context_id"},
 		},
 	},
 	HookedSeqOpsEventID: {

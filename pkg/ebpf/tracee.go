@@ -199,6 +199,7 @@ type Tracee struct {
 	eventsSorter      *sorting.EventsChronologicalSorter
 	eventDerivations  map[int32]map[int32]deriveFn
 	kernelSymbols     *helpers.KernelSymbolTable
+	invokedContext    map[uint64]trace.Event
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -253,6 +254,7 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error creating process tree: %v", err)
 	}
 
+	t.invokedContext = make(map[uint64]trace.Event, len(cfg.Filter.EventsToTrace))
 	t.events = make(map[int32]eventConfig, len(cfg.Filter.EventsToTrace))
 
 	// Set essential events
@@ -753,9 +755,8 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
-	_, ok1 := t.events[PrintSyscallTableEventID]
-	_, ok2 := t.events[HookedSyscallsEventID]
-	if ok1 || ok2 {
+	_, ok := t.events[HookedSyscallsEventID]
+	if ok {
 		syscallsToCheckMap, err := t.bpfModule.GetMap("syscalls_to_check_map")
 		if err != nil {
 			return err
@@ -1052,6 +1053,29 @@ func (t *Tracee) initBPF() error {
 		}
 	}
 
+	//Attach uprobe to trigger events from tracee usermode
+	progFn := "uprobe_tracee_trigger_event"
+	prog, err := t.bpfModule.GetProgram(progFn)
+	if err != nil {
+		return fmt.Errorf("error getting program %s: %v", progFn, err)
+	}
+
+	symbolName := "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).invokeTriggeredEvents"
+	binaryPath, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("error getting tracee-ebpf path: %v", err)
+	}
+	offset, err := helpers.SymbolToOffset(binaryPath, symbolName)
+	if err != nil {
+		return fmt.Errorf("error finding %s function offset: %v", symbolName, err)
+	}
+	fmt.Println(offset, binaryPath)
+
+	_, err = prog.AttachUprobe(-1, binaryPath, offset)
+	if err != nil {
+		return fmt.Errorf("error attaching uprobe on %s: %v", symbolName, err)
+	}
+
 	err = t.config.Filter.ProcessTreeFilter.Set(t.bpfModule)
 	if err != nil {
 		return fmt.Errorf("error building process tree: %v", err)
@@ -1116,7 +1140,7 @@ func (t *Tracee) getProcessCtx(hostTid uint32) (procinfo.ProcessCtx, error) {
 // Run starts the trace. it will run until ctx is cancelled
 func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.invokeInitEvents()
-	t.invokeIoctlTriggeredEvents(IoctlFetchSyscalls | IoctlSocketsHook)
+	t.invokeTriggeredEvents(FetchSyscalls|HookedSeqOps, 0)
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
 	t.netPerfMap.Start()
@@ -1266,8 +1290,8 @@ func (t *Tracee) shouldTraceNetEvents() bool {
 }
 
 const (
-	IoctlFetchSyscalls int32 = 1 << iota
-	IoctlSocketsHook
+	FetchSyscalls uint64 = 1 << iota
+	HookedSeqOps
 )
 
 // Struct names for the interfaces HookedSeqOpsEventID checks for hooks
@@ -1281,41 +1305,9 @@ var netSeqOps = [6]string{
 	"raw6_seq_ops",
 }
 
-func (t *Tracee) invokeIoctlTriggeredEvents(cmds int32) error {
-	// invoke DetectHookedSyscallsEvent
-	if cmds&IoctlFetchSyscalls == IoctlFetchSyscalls {
-		_, ok1 := t.events[PrintSyscallTableEventID]
-		_, ok2 := t.events[HookedSyscallsEventID]
-		if ok1 || ok2 {
-			ptmx, err := os.OpenFile(t.config.Capture.OutputPath, os.O_RDONLY, 0444)
-			if err != nil {
-				return err
-			}
-			syscall.Syscall(syscall.SYS_IOCTL, ptmx.Fd(), uintptr(IoctlFetchSyscalls), 0)
-			ptmx.Close()
-		}
-	}
-
-	// invoke HiddenSocketsEvent
-	if cmds&IoctlSocketsHook == IoctlSocketsHook {
-		_, ok1 := t.events[PrintNetSeqOpsEventID]
-		_, ok2 := t.events[HookedSeqOpsEventID]
-		if ok1 || ok2 {
-			ptmx, err := os.OpenFile(t.config.Capture.OutputPath, os.O_RDONLY, 0444)
-			if err != nil {
-				return err
-			}
-
-			for _, seq_name := range netSeqOps {
-				seqOpsStruct, err := t.kernelSymbols.GetSymbolByName("system", seq_name)
-				if err != nil {
-					continue
-				}
-				syscall.Syscall(syscall.SYS_IOCTL, ptmx.Fd(), uintptr(IoctlSocketsHook), uintptr(seqOpsStruct.Address))
-			}
-			ptmx.Close()
-		}
-	}
+// invokeTriggeredEvents is used by a Uprobe to trigger an eBPF program
+//go:noinline
+func (t *Tracee) invokeTriggeredEvents(cmds uint64, contextMapID uint64) error {
 	return nil
 }
 
