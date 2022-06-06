@@ -83,6 +83,7 @@
 #define FILE_MAGIC_HDR_SIZE 32        // magic_write: bytes to save from a file's header
 #define FILE_MAGIC_MASK     31        // magic_write: mask used for verifier boundaries
 #define NET_SEQ_OPS_SIZE    4         // print_net_seq_ops: struct size
+#define NET_SEQ_OPS_TYPES   6         // print_net_seq_ops: argument size
 #define MAX_KSYM_NAME_SIZE  64
 
 enum buf_idx_e
@@ -345,8 +346,6 @@ enum container_state_e
     #define MAX_BIN_CHUNKS        110
 #endif
 
-#define IOCTL_FETCH_SYSCALLS            (1 << 0) // bit wise flags
-#define IOCTL_HOOKED_SEQ_OPS            (1 << 1)
 #define NUMBER_OF_SYSCALLS_TO_CHECK_X86 18
 #define NUMBER_OF_SYSCALLS_TO_CHECK_ARM 14
 
@@ -2426,36 +2425,6 @@ static __always_inline int get_local_net_id_from_network_details_v6(struct sock 
     return 0;
 }
 
-static __always_inline void invoke_fetch_network_seq_operations_event(event_data_t *data,
-                                                                      unsigned long struct_address)
-{
-    struct seq_operations *seq_ops = (struct seq_operations *) struct_address;
-
-    u64 show_addr = (u64) READ_KERN(seq_ops->show);
-    if (show_addr == 0) {
-        return;
-    }
-
-    u64 start_addr = (u64) READ_KERN(seq_ops->start);
-    if (start_addr == 0) {
-        return;
-    }
-
-    u64 next_addr = (u64) READ_KERN(seq_ops->next);
-    if (next_addr == 0) {
-        return;
-    }
-
-    u64 stop_addr = (u64) READ_KERN(seq_ops->stop);
-    if (stop_addr == 0) {
-        return;
-    }
-    u64 seq_ops_addresses[NET_SEQ_OPS_SIZE + 1] = {
-        (u64) seq_ops, show_addr, start_addr, next_addr, stop_addr};
-    save_u64_arr_to_buf(data, (const u64 *) seq_ops_addresses, 5, 0);
-    events_perf_submit(data, PRINT_NET_SEQ_OPS, 0);
-}
-
 static __always_inline int save_sockaddr_to_buf(event_data_t *data, struct socket *sock, u8 index)
 {
     struct sock *sk = get_socket_sock(sock);
@@ -3162,16 +3131,21 @@ int BPF_KPROBE(trace_do_exit)
     return events_perf_submit(&data, DO_EXIT, code);
 }
 
-/* invoke_print_syscall_table_event submit to the buff the syscalls function handlers address from
- * the syscall table. the syscalls are strode in map which is syscalls_to_check_map and the
+/* uprobe_syscall_trigger submit to the buff the syscalls function handlers address from
+ * the syscall table. the syscalls are stored in map which is syscalls_to_check_map and the
  * syscall-table address is stored in the kernel_symbols map.
  */
-static __always_inline void invoke_print_syscall_table_event(event_data_t *data)
+SEC("uprobe/trigger_syscall_event")
+int uprobe_syscall_trigger(struct pt_regs *ctx)
 {
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
     int key = 0;
     u64 *table_ptr = bpf_map_lookup_elem(&syscalls_to_check_map, (void *) &key);
     if (table_ptr == NULL) {
-        return;
+        return 0;
     }
 
     char syscall_table[15] = "sys_call_table";
@@ -3189,7 +3163,7 @@ static __always_inline void invoke_print_syscall_table_event(event_data_t *data)
     u64 syscall_address[NUMBER_OF_SYSCALLS_TO_CHECK_ARM];
 #else
 
-    return
+    return 0;
 #endif
 
     __builtin_memset(syscall_address, 0, sizeof(syscall_address));
@@ -3204,34 +3178,63 @@ static __always_inline void invoke_print_syscall_table_event(event_data_t *data)
         syscall_num = (u64) *syscall_num_p;
         syscall_addr = READ_KERN(syscall_table_addr[syscall_num]);
         if (syscall_addr == 0) {
-            return;
+            return 0;
         }
         syscall_address[i] = syscall_addr;
     }
-    save_u64_arr_to_buf(data, (const u64 *) syscall_address, monitored_syscalls_amount, 0);
-    events_perf_submit(data, PRINT_SYSCALL_TABLE, 0);
+    save_u64_arr_to_buf(&data, (const u64 *) syscall_address, monitored_syscalls_amount, 0);
+    return events_perf_submit(&data, PRINT_SYSCALL_TABLE, 0);
 }
 
-SEC("kprobe/security_file_ioctl")
-int BPF_KPROBE(trace_tracee_trigger_event)
+static __always_inline void invoke_fetch_network_seq_operations_event(struct pt_regs *ctx,
+                                                                      unsigned long struct_address)
 {
     event_data_t data = {};
-
     if (!init_event_data(&data, ctx))
-        return 0;
+        return;
 
-    unsigned int cmd = PT_REGS_PARM2(ctx);
-    if ((cmd & IOCTL_FETCH_SYSCALLS) == IOCTL_FETCH_SYSCALLS &&
-        data.config->tracee_pid == data.context.task.host_pid) {
-        invoke_print_syscall_table_event(&data);
+    struct seq_operations *seq_ops = (struct seq_operations *) struct_address;
+    u64 show_addr = (u64) READ_KERN(seq_ops->show);
+    if (show_addr == 0) {
+        return;
     }
 
-    if ((cmd & IOCTL_HOOKED_SEQ_OPS) == IOCTL_HOOKED_SEQ_OPS &&
-        data.config->tracee_pid == data.context.task.host_pid) {
-        unsigned long struct_address = PT_REGS_PARM3(ctx);
-        invoke_fetch_network_seq_operations_event(&data, struct_address);
+    u64 start_addr = (u64) READ_KERN(seq_ops->start);
+    if (start_addr == 0) {
+        return;
     }
 
+    u64 next_addr = (u64) READ_KERN(seq_ops->next);
+    if (next_addr == 0) {
+        return;
+    }
+
+    u64 stop_addr = (u64) READ_KERN(seq_ops->stop);
+    if (stop_addr == 0) {
+        return;
+    }
+    u64 seq_ops_addresses[NET_SEQ_OPS_SIZE + 1] = {
+        (u64) seq_ops, show_addr, start_addr, next_addr, stop_addr};
+    save_u64_arr_to_buf(&data, (const u64 *) seq_ops_addresses, 5, 0);
+    events_perf_submit(&data, PRINT_NET_SEQ_OPS, 0);
+}
+
+SEC("uprobe/trigger_seq_ops_event")
+int uprobe_seq_ops_trigger(struct pt_regs *ctx)
+{
+#if defined(bpf_target_x86)
+    uint64_t *address_array = ((void *) ctx->sp);
+#elif defined(bpf_target_arm64)
+    uint64_t *address_array = ((void *) ctx->sp) + 16;
+#else
+    return 0;
+#endif
+
+    uint64_t struct_address;
+    for (int i = 0; i < NET_SEQ_OPS_TYPES; i++) {
+        bpf_probe_read(&struct_address, 8, (address_array + i));
+        invoke_fetch_network_seq_operations_event(ctx, struct_address);
+    }
     return 0;
 }
 

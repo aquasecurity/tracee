@@ -16,7 +16,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 	"unsafe"
 
@@ -978,7 +977,8 @@ func (t *Tracee) getProcessCtx(hostTid uint32) (procinfo.ProcessCtx, error) {
 // Run starts the trace. it will run until ctx is cancelled
 func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.invokeInitEvents()
-	t.invokeIoctlTriggeredEvents(IoctlFetchSyscalls | IoctlHookedSeqOps)
+	t.triggerSyscallsIntegrityCheck()
+	t.triggerSeqOpsIntegrityCheck()
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
 	t.netPerfMap.Start()
@@ -1108,11 +1108,6 @@ func (t *Tracee) getCapturedIfaceIdx(ifaceName string) (int, bool) {
 	return t.config.Capture.NetIfaces.Find(ifaceName)
 }
 
-const (
-	IoctlFetchSyscalls int32 = 1 << iota
-	IoctlHookedSeqOps
-)
-
 // Struct names for the interfaces HookedSeqOpsEventID checks for hooks
 // The show,start,next and stop operation function pointers will be checked for each of those
 var netSeqOps = [6]string{
@@ -1124,39 +1119,38 @@ var netSeqOps = [6]string{
 	"raw6_seq_ops",
 }
 
-func (t *Tracee) invokeIoctlTriggeredEvents(cmds int32) error {
-	// invoke HookedSyscallsEvent
-	if cmds&IoctlFetchSyscalls == IoctlFetchSyscalls {
-		_, ok := t.events[events.HookedSyscalls]
-		if ok {
-			ptmx, err := os.OpenFile(t.config.Capture.OutputPath, os.O_RDONLY, 0444)
-			if err != nil {
-				return err
-			}
-			syscall.Syscall(syscall.SYS_IOCTL, ptmx.Fd(), uintptr(IoctlFetchSyscalls), 0)
-			ptmx.Close()
-		}
+func (t *Tracee) triggerSyscallsIntegrityCheck() {
+	_, ok := t.events[events.HookedSyscalls]
+	if !ok {
+		return
 	}
+	t.triggerSyscallsIntegrityCheckCall()
+}
 
-	// invoke HookedSeqOps
-	if cmds&IoctlHookedSeqOps == IoctlHookedSeqOps {
-		_, ok := t.events[events.HookedSeqOps]
-		if ok {
-			ptmx, err := os.OpenFile(t.config.Capture.OutputPath, os.O_RDONLY, 0444)
-			if err != nil {
-				return err
-			}
+// triggerSyscallsIntegrityCheck is used by a Uprobe to trigger an eBPF program that prints the syscall table
+//go:noinline
+func (t *Tracee) triggerSyscallsIntegrityCheckCall() {
+}
 
-			for _, seq_name := range netSeqOps {
-				seqOpsStruct, err := t.kernelSymbols.GetSymbolByName("system", seq_name)
-				if err != nil {
-					continue
-				}
-				syscall.Syscall(syscall.SYS_IOCTL, ptmx.Fd(), uintptr(IoctlHookedSeqOps), uintptr(seqOpsStruct.Address))
-			}
-			ptmx.Close()
-		}
+func (t *Tracee) triggerSeqOpsIntegrityCheck() {
+	_, ok := t.events[events.HookedSeqOps]
+	if !ok {
+		return
 	}
+	var seqOpsPointers [len(netSeqOps)]uint64
+	for i, seq_name := range netSeqOps {
+		seqOpsStruct, err := t.kernelSymbols.GetSymbolByName("system", seq_name)
+		if err != nil {
+			continue
+		}
+		seqOpsPointers[i] = seqOpsStruct.Address
+	}
+	t.triggerSeqOpsIntegrityCheckCall(seqOpsPointers)
+}
+
+// triggerSeqOpsIntegrityCheck is used by a Uprobe to trigger an eBPF program that prints the seq ops pointers
+//go:noinline
+func (t *Tracee) triggerSeqOpsIntegrityCheckCall(seqOpsStruct [len(netSeqOps)]uint64) error {
 	return nil
 }
 
