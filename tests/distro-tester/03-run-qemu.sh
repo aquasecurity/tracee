@@ -116,7 +116,11 @@ umount $tempdir
 rmdir $tempdir
 
 # kernel cmdline
-cmd_kernel=$cmd_kernel"root=LABEL=$image_name "
+if [[ $image_name != *gke* ]]; then
+  cmd_kernel=$cmd_kernel"root=LABEL=$image_name "
+else
+  cmd_kernel=$cmd_kernel"root=/dev/sda "
+fi
 cmd_kernel=$cmd_kernel"console=ttyS0 "
 cmd_kernel=$cmd_kernel"testname=$testname "
 cmd_kernel=$cmd_kernel"isnoncore=$isnoncore "
@@ -129,7 +133,7 @@ cmd_kernel=$cmd_kernel"net.ifnames=0"
 
 timeout --preserve-status --foreground --signal=9 20m \
 qemu-system-x86_64 \
-  -name guest=$image \
+  -name guest=$image_name \
   -machine accel=$kvmaccel \
   --cpu max --smp $cpus -m ${mem}G \
   -rtc base=utc,clock=vm,driftfix=none \
