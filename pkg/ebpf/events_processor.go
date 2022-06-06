@@ -371,10 +371,8 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			if err != nil {
 				return err
 			}
-			err = t.invokeIoctlTriggeredEvents(IoctlFetchSyscalls | IoctlHookedSeqOps)
-			if err != nil {
-				return err
-			}
+			t.triggerSyscallsIntegrityCheck()
+			t.triggerSeqOpsIntegrityCheck()
 		}
 
 	case events.HookedProcFops:

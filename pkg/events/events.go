@@ -5614,10 +5614,12 @@ var Definitions = eventDefinitions{
 			Name:     "print_syscall_table",
 			Internal: true,
 			Probes: []probeDependency{
-				{Handle: probes.SecurityFileIoctl, Required: true},
+				{Handle: probes.PrintSyscallTable, Required: true},
 			},
-			Dependencies: dependencies{KSymbols: []string{"sys_call_table"}},
-			Sets:         []string{},
+			Dependencies: dependencies{
+				KSymbols: []string{"sys_call_table"},
+			},
+			Sets: []string{},
 			Params: []trace.ArgMeta{
 				{Type: "unsigned long[]", Name: "syscalls_addresses"},
 			},
@@ -5860,7 +5862,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32undefined,
 			Name:    "print_net_seq_ops",
 			Probes: []probeDependency{
-				{Handle: probes.SecurityFileIoctl, Required: true},
+				{Handle: probes.PrintNetSeqOps, Required: true},
 			},
 			Dependencies: dependencies{
 				KSymbols: []string{
