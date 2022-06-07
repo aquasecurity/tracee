@@ -17,7 +17,9 @@ import (
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 	embed "github.com/aquasecurity/tracee"
+	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/debug"
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/flags"
+	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -50,14 +52,14 @@ func main() {
 
 			// enable debug mode if debug flag is passed
 			if c.Bool("debug") {
-				err := flags.EnableDebugMode()
+				err := debug.Enable()
 				if err != nil {
 					return fmt.Errorf("failed to start debug mode: %v", err)
 				}
 			}
 
 			// for the rest of execution, use this debug mode value
-			debug := flags.DebugModeEnabled()
+			debug := debug.Enabled()
 
 			// OS release information
 
@@ -140,6 +142,8 @@ func main() {
 			if err != nil {
 				return err
 			}
+
+			printerConfig.ContainerMode = containerMode
 			cfg.Output = &output
 
 			// environment capabilities
@@ -242,7 +246,7 @@ func main() {
 				}
 			}
 
-			printer, err := newEventPrinter(printerConfig.Kind, containerMode, cfg.Output.RelativeTime, printerConfig.OutFile, printerConfig.ErrFile)
+			printer, err := printer.New(printerConfig)
 			if err != nil {
 				return err
 			}
@@ -579,7 +583,7 @@ func unpackCOREBinary() ([]byte, error) {
 		return nil, err
 	}
 
-	if flags.DebugModeEnabled() {
+	if debug.Enabled() {
 		fmt.Println("unpacked CO:RE bpf object file into memory")
 	}
 

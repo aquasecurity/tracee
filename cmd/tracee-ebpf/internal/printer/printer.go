@@ -1,4 +1,4 @@
-package main
+package printer
 
 import (
 	"encoding/gob"
@@ -14,7 +14,7 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-type eventPrinter interface {
+type EventPrinter interface {
 	// Init serves as the initializer method for every event Printer type
 	Init() error
 	// Preamble prints something before event printing begins (one time)
@@ -29,51 +29,61 @@ type eventPrinter interface {
 	Close()
 }
 
-func newEventPrinter(kind string, containerMode bool, relativeTS bool, out io.WriteCloser, err io.WriteCloser) (eventPrinter, error) {
-	var res eventPrinter
-	var initError error
+type Config struct {
+	Kind          string
+	OutPath       string
+	OutFile       io.WriteCloser
+	ErrPath       string
+	ErrFile       io.WriteCloser
+	ContainerMode bool
+	RelativeTS    bool
+}
+
+func New(config Config) (EventPrinter, error) {
+	var res EventPrinter
+	kind := config.Kind
 	switch {
 	case kind == "ignore":
 		res = &ignoreEventPrinter{
-			err: err,
+			err: config.ErrFile,
 		}
 	case kind == "table":
 		res = &tableEventPrinter{
-			out:           out,
-			err:           err,
+			out:           config.OutFile,
+			err:           config.ErrFile,
 			verbose:       false,
-			containerMode: containerMode,
-			relativeTS:    relativeTS,
+			containerMode: config.ContainerMode,
+			relativeTS:    config.RelativeTS,
 		}
 	case kind == "table-verbose":
 		res = &tableEventPrinter{
-			out:           out,
-			err:           err,
+			out:           config.OutFile,
+			err:           config.ErrFile,
 			verbose:       true,
-			containerMode: containerMode,
-			relativeTS:    relativeTS,
+			containerMode: config.ContainerMode,
+			relativeTS:    config.RelativeTS,
 		}
 	case kind == "json":
 		res = &jsonEventPrinter{
-			out: out,
-			err: err,
+			out: config.OutFile,
+			err: config.ErrFile,
 		}
 	case kind == "gob":
 		res = &gobEventPrinter{
-			out: out,
-			err: err,
+			out: config.OutFile,
+			err: config.ErrFile,
 		}
 	case strings.HasPrefix(kind, "gotemplate="):
 		res = &templateEventPrinter{
-			out:           out,
-			err:           err,
-			containerMode: containerMode,
+			out:           config.OutFile,
+			err:           config.ErrFile,
+			containerMode: config.ContainerMode,
 			templatePath:  strings.Split(kind, "=")[1],
 		}
 	}
-	initError = res.Init()
-	if initError != nil {
-		return nil, initError
+	err := res.Init()
+	if err != nil {
+		return nil, err
 	}
 	return res, nil
 }
