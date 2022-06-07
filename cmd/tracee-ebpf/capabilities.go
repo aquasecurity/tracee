@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/syndtr/gocapability/capability"
@@ -54,10 +55,10 @@ func generateTraceeEbpfRequiredCapabilities(OSInfo IKernelVersionInfo, cfg *trac
 
 func getCapabilitiesRequiredByTraceeEvents(cfg *tracee.Config) []capability.Cap {
 	usedEvents := cfg.Filter.EventsToTrace
-	for eventID := range tracee.CreateEssentialEventsList(cfg) {
+	for eventID := range tracee.GetEssentialEventsList(cfg) {
 		usedEvents = append(usedEvents, eventID)
 	}
-	for eventID := range tracee.GetCaptureEventsConfig(cfg) {
+	for eventID := range tracee.GetCaptureEventsList(cfg) {
 		usedEvents = append(usedEvents, eventID)
 	}
 	caps := tracee.GetCapabilitiesRequiredByEvents(usedEvents)

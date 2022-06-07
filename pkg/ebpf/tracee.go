@@ -24,6 +24,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/pkg/ebpf/initialization"
+	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
 	"github.com/aquasecurity/tracee/pkg/metrics"
@@ -172,6 +173,7 @@ type eventConfig struct {
 // Tracee traces system calls and system events using eBPF
 type Tracee struct {
 	config            Config
+	probes            probes.Probes
 	events            map[int32]eventConfig
 	bpfModule         *bpf.Module
 	eventsPerfMap     *bpf.PerfBuffer
@@ -205,7 +207,8 @@ func (t *Tracee) Stats() *metrics.Stats {
 	return &t.stats
 }
 
-func CreateEssentialEventsList(cfg *Config) map[int32]eventConfig {
+// GetEssentialEventsList sets the default events used by tracee
+func GetEssentialEventsList(cfg *Config) map[int32]eventConfig {
 	var essentialEvents = make(map[int32]eventConfig)
 
 	// Set essential events
@@ -216,6 +219,35 @@ func CreateEssentialEventsList(cfg *Config) map[int32]eventConfig {
 	essentialEvents[SchedProcessExitEventID] = eventConfig{}
 	essentialEvents[CgroupMkdirEventID] = eventConfig{submit: true}
 	essentialEvents[CgroupRmdirEventID] = eventConfig{submit: true}
+
+	return essentialEvents
+}
+
+// GetCaptureEventsList sets events used to capture data
+func GetCaptureEventsList(cfg *Config) map[int32]eventConfig {
+	essentialEvents := make(map[int32]eventConfig)
+
+	if cfg.Capture.Exec {
+		essentialEvents[CaptureExecEventID] = eventConfig{}
+	}
+	if cfg.Capture.FileWrite {
+		essentialEvents[CaptureFileWriteEventID] = eventConfig{}
+	}
+	if cfg.Capture.Module {
+		essentialEvents[CaptureModuleEventID] = eventConfig{}
+	}
+	if cfg.Capture.Mem {
+		essentialEvents[CaptureMemEventID] = eventConfig{}
+	}
+	if cfg.Capture.Profile {
+		essentialEvents[CaptureProfileEventID] = eventConfig{}
+	}
+	if cfg.Capture.NetIfaces != nil {
+		essentialEvents[CapturePcapEventID] = eventConfig{}
+	}
+	if len(cfg.Filter.NetFilter.InterfacesToTrace) > 0 || cfg.Debug {
+		essentialEvents[SecuritySocketBindEventID] = eventConfig{}
+	}
 
 	return essentialEvents
 }
@@ -268,9 +300,9 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error creating process tree: %v", err)
 	}
 
-	t.events = CreateEssentialEventsList(&cfg)
+	t.events = GetEssentialEventsList(&cfg)
 
-	for eventID, eCfg := range GetCaptureEventsConfig(&cfg) {
+	for eventID, eCfg := range GetCaptureEventsList(&cfg) {
 		t.events[eventID] = eCfg
 	}
 
@@ -946,6 +978,13 @@ func (t *Tracee) initBPF() error {
 		return err
 	}
 
+	// Initialize probes
+	t.probes, err = probes.Init(t.bpfModule)
+
+	if err != nil {
+		return fmt.Errorf("failed to initialize probes: %s", err.Error())
+	}
+
 	if t.config.Capture.NetIfaces == nil && !t.config.Debug && len(t.config.Filter.NetFilter.InterfacesToTrace) == 0 {
 		// SecuritySocketBindEventID is set as an essentialEvent if 'capture net' or 'debug' were chosen by the user.
 		networkProbes := []string{"tc_ingress", "tc_egress", "trace_udp_sendmsg", "trace_udp_disconnect", "trace_udp_destroy_sock", "trace_udpv6_destroy_sock", "tracepoint__inet_sock_set_state", "trace_icmp_send", "trace_icmp_rcv", "trace_icmp6_send", "trace_icmpv6_rcv", "trace_ping_v4_sendmsg", "trace_ping_v6_sendmsg"}
@@ -1001,40 +1040,20 @@ func (t *Tracee) initBPF() error {
 		}
 	}
 
-	seenProbes := make(map[probe]bool)
-
 	for e := range t.events {
 		event, ok := EventsDefinitions[e]
 		if !ok {
 			continue
 		}
-		for _, probe := range event.Probes {
-			if seenProbes[probe] {
-				continue
-			}
-			seenProbes[probe] = true
-			prog, err := t.bpfModule.GetProgram(probe.fn)
+		for _, dep := range event.Probes {
+			err = t.probes.Attach(dep.handle)
 			if err != nil {
-				return fmt.Errorf("error getting program %s: %v", probe.fn, err)
-			}
-			switch probe.attach {
-			case kprobe:
-				_, err = prog.AttachKprobe(probe.event)
-			case kretprobe:
-				_, err = prog.AttachKretprobe(probe.event)
-			case tracepoint:
-				tpEvent := strings.Split(probe.event, ":")
-				if len(tpEvent) != 2 {
-					err = fmt.Errorf("tracepoint must be in 'category:name' format")
+				if dep.required {
+					return fmt.Errorf("failed to attach required probe: %v", err)
 				} else {
-					_, err = prog.AttachTracepoint(probe.event, probe.event)
+					// TODO: Use a logger here instead (https://github.com/aquasecurity/tracee/issues/1787)
+					t.handleError(fmt.Errorf("failed to attach unrequired probe: %v. tracee will continue to load", err))
 				}
-			case rawTracepoint:
-				tpEvent := strings.Split(probe.event, ":")[1]
-				_, err = prog.AttachRawTracepoint(tpEvent)
-			}
-			if err != nil {
-				return fmt.Errorf("error attaching event %s: %v", probe.event, err)
 			}
 		}
 	}
@@ -1273,33 +1292,4 @@ func (t *Tracee) updateKallsyms() {
 	if err == nil && initialization.ValidateKsymbolsTable(t.kernelSymbols) {
 		t.kernelSymbols = kernelSymbols
 	}
-}
-
-// GetCaptureEventsConfig set events used to capture data
-func GetCaptureEventsConfig(cfg *Config) map[int32]eventConfig {
-	essentialEvents := make(map[int32]eventConfig)
-
-	if cfg.Capture.Exec {
-		essentialEvents[CaptureExecEventID] = eventConfig{}
-	}
-	if cfg.Capture.FileWrite {
-		essentialEvents[CaptureFileWriteEventID] = eventConfig{}
-	}
-	if cfg.Capture.Module {
-		essentialEvents[CaptureModuleEventID] = eventConfig{}
-	}
-	if cfg.Capture.Mem {
-		essentialEvents[CaptureMemEventID] = eventConfig{}
-	}
-	if cfg.Capture.Profile {
-		essentialEvents[CaptureProfileEventID] = eventConfig{}
-	}
-	if cfg.Capture.NetIfaces != nil {
-		essentialEvents[CapturePcapEventID] = eventConfig{}
-	}
-	if len(cfg.Filter.NetFilter.InterfacesToTrace) > 0 || cfg.Debug {
-		essentialEvents[SecuritySocketBindEventID] = eventConfig{}
-	}
-
-	return essentialEvents
 }
