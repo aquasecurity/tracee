@@ -35,10 +35,33 @@ func (e *runtimeInfoService) Register(runtime runtime.RuntimeId, enricherBuilder
 }
 
 // Get calls the inner enricher's Get, based on the containerRuntime parameter if a relevant enricher was registered
-func (e *runtimeInfoService) Get(conainterId string, containerRuntime runtime.RuntimeId, ctx context.Context) (runtime.ContainerMetadata, error) {
+// If an unknown runtime is received, enrichment will be attempted through all registered enrichers
+func (e *runtimeInfoService) Get(containerId string, containerRuntime runtime.RuntimeId, ctx context.Context) (runtime.ContainerMetadata, error) {
+	if containerRuntime == runtime.Unknown {
+		return e.getFromUnknownRuntime(containerId, ctx)
+	}
+
+	return e.getFromKnownRuntime(containerId, containerRuntime, ctx)
+}
+
+// standard case when we can query the known runtime from the get go
+func (e *runtimeInfoService) getFromKnownRuntime(containerId string, containerRuntime runtime.RuntimeId, ctx context.Context) (runtime.ContainerMetadata, error) {
 	enricher := e.enrichers[containerRuntime]
 	if enricher != nil {
-		return enricher.Get(conainterId, ctx)
+		return enricher.Get(containerId, ctx)
 	}
 	return runtime.ContainerMetadata{}, fmt.Errorf("unsupported runtime")
+}
+
+// in case where we don't know the container's runtime, we query through all the registered enrichers
+func (e *runtimeInfoService) getFromUnknownRuntime(containerId string, ctx context.Context) (runtime.ContainerMetadata, error) {
+	for _, enricher := range e.enrichers {
+		metadata, err := enricher.Get(containerId, ctx)
+
+		if err == nil {
+			return metadata, nil
+		}
+	}
+
+	return runtime.ContainerMetadata{}, fmt.Errorf("no runtime found for container")
 }

@@ -244,10 +244,6 @@ func (c *Containers) EnrichCgroupInfo(cgroupId uint64) (cruntime.ContainerMetada
 		return metadata, fmt.Errorf("no containerId")
 	}
 
-	if runtime == cruntime.Unknown {
-		return metadata, fmt.Errorf("unknown runtime")
-	}
-
 	//There might be a performance overhead with the cancel
 	//But, I think it will be negligable since this code path shouldn't be reached too frequently
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
