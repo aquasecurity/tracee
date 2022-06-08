@@ -225,31 +225,31 @@ func GetEssentialEventsList(cfg *Config) map[int32]eventConfig {
 
 // GetCaptureEventsList sets events used to capture data
 func GetCaptureEventsList(cfg *Config) map[int32]eventConfig {
-	essentialEvents := make(map[int32]eventConfig)
+	captureEvents := make(map[int32]eventConfig)
 
 	if cfg.Capture.Exec {
-		essentialEvents[CaptureExecEventID] = eventConfig{}
+		captureEvents[CaptureExecEventID] = eventConfig{}
 	}
 	if cfg.Capture.FileWrite {
-		essentialEvents[CaptureFileWriteEventID] = eventConfig{}
+		captureEvents[CaptureFileWriteEventID] = eventConfig{}
 	}
 	if cfg.Capture.Module {
-		essentialEvents[CaptureModuleEventID] = eventConfig{}
+		captureEvents[CaptureModuleEventID] = eventConfig{}
 	}
 	if cfg.Capture.Mem {
-		essentialEvents[CaptureMemEventID] = eventConfig{}
+		captureEvents[CaptureMemEventID] = eventConfig{}
 	}
 	if cfg.Capture.Profile {
-		essentialEvents[CaptureProfileEventID] = eventConfig{}
+		captureEvents[CaptureProfileEventID] = eventConfig{}
 	}
 	if cfg.Capture.NetIfaces != nil {
-		essentialEvents[CapturePcapEventID] = eventConfig{}
+		captureEvents[CapturePcapEventID] = eventConfig{}
 	}
 	if len(cfg.Filter.NetFilter.InterfacesToTrace) > 0 || cfg.Debug {
-		essentialEvents[SecuritySocketBindEventID] = eventConfig{}
+		captureEvents[SecuritySocketBindEventID] = eventConfig{}
 	}
 
-	return essentialEvents
+	return captureEvents
 }
 
 func (t *Tracee) handleEventsDependencies(e int32, initReq *RequiredInitValues) {

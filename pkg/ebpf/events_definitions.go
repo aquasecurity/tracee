@@ -5656,7 +5656,7 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Internal: true,
 		Dependencies: dependencies{
 			events:       []eventDependency{{eventID: SecuritySocketBindEventID}},
-			capabilities: []capability.Cap{capability.CAP_SYS_ADMIN},
+			capabilities: []capability.Cap{capability.CAP_NET_ADMIN},
 		},
 	},
 	DoInitModuleEventID: {
