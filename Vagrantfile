@@ -50,17 +50,22 @@ Vagrant.configure("2") do |config|
     snap install microk8s --classic
     microk8s status --wait-ready
     usermod -a -G microk8s vagrant
-    microk8s enable dashboard
+    microk8s enable hostpath-storage dns dashboard
 
-    mkdir -p /home/vagrant/.kube/
+    mkdir -p $VAGRANT_HOME/.kube/
     microk8s kubectl config view --raw > $VAGRANT_HOME/.kube/config
+    chmod 600 $VAGRANT_HOME/.kube/config
+    chown vagrant:vagrant $VAGRANT_HOME/.kube/config
 
     apt-get install --yes apt-transport-https ca-certificates curl
     curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
     echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
     apt-get update
     apt-get install --yes kubectl
-    echo 'source <(kubectl completion bash)' >> $VAGRANT_HOME/.bashrc
+    echo 'source <(kubectl completion bash)' >> $VAGRANT_HOME/.profile
+
+    snap install helm --classic
+    echo 'source <(helm completion bash)' >> $VAGRANT_HOME/.profile
 
     apt-get install --yes linux-tools-$(uname -r)
 
