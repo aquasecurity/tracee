@@ -89,8 +89,7 @@ func TestGenerateTraceeEbpfRequiredCapabilities(t *testing.T) {
 			expectedCapabilities: []capability.Cap{
 				capability.CAP_IPC_LOCK,
 				capability.CAP_SYS_RESOURCE,
-				capability.CAP_BPF,
-				capability.CAP_PERFMON,
+				capability.CAP_SYS_ADMIN,
 			},
 		},
 		{
