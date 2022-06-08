@@ -95,6 +95,7 @@ const (
 	LoadElfPhdrsEventID
 	HookedProcFopsEventID
 	PrintNetSeqOpsEventID
+	TaskRenameEventID
 	MaxCommonEventID
 )
 
@@ -5767,6 +5768,19 @@ var EventsDefinitions = map[int32]EventDefinition{
 		Params: []trace.ArgMeta{
 			{Type: "string", Name: "struct_name"},
 			{Type: "[]helpers.KernelSymbol", Name: "hooked_seq_ops"},
+		},
+	},
+	TaskRenameEventID: {
+		ID32Bit: sys32undefined,
+		Name:    "task_rename",
+		Probes: []probeDependency{
+			{handle: probes.TaskRename, required: true},
+		},
+		Sets: []string{"proc"},
+		Params: []trace.ArgMeta{
+			{Type: "const char*", Name: "old_name"},
+			{Type: "const char*", Name: "new_name"},
+			{Type: "int", Name: "syscall"},
 		},
 	},
 }

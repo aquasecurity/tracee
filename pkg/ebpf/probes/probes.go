@@ -81,6 +81,7 @@ func Init(module *bpf.Module) (Probes, error) {
 			DoInitModuleRet:            {event: "do_init_module", probeType: kretprobe, fn: "trace_ret_do_init_module"},
 			LoadElfPhdrs:               {event: "load_elf_phdrs", probeType: kprobe, fn: "trace_load_elf_phdrs"},
 			Filldir64:                  {event: "filldir64", probeType: kprobe, fn: "trace_filldir64"},
+			TaskRename:                 {event: "task:task_rename", probeType: rawTracepoint, fn: "tracepoint__task__task_rename"},
 		},
 		module: module,
 	}, nil
@@ -225,4 +226,5 @@ const (
 	LoadElfPhdrs
 	Filldir64
 	SecurityFilePermission
+	TaskRename
 )

@@ -34,7 +34,7 @@ func (t *Tracee) parseArgs(event *trace.Event) error {
 				alertArg.Value = trace.MemProtAlert(alert).String()
 			}
 		}
-	case SysEnterEventID, SysExitEventID, CapCapableEventID, CommitCredsEventID, SecurityFileOpenEventID:
+	case SysEnterEventID, SysExitEventID, CapCapableEventID, CommitCredsEventID, SecurityFileOpenEventID, TaskRenameEventID:
 		if syscallArg := getEventArg(event, "syscall"); syscallArg != nil {
 			if id, isInt32 := syscallArg.Value.(int32); isInt32 {
 				if event, isKnown := EventsDefinitions[id]; isKnown {
