@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/events"
 )
 
 // MaxBpfStrFilterSize value should match MAX_STR_FILTER_SIZE defined in BPF code
@@ -126,15 +127,15 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 			NotEqual: []string{},
 		},
 		RetFilter: &tracee.RetFilter{
-			Filters: make(map[int32]tracee.IntFilter),
+			Filters: make(map[events.ID]tracee.IntFilter),
 		},
 		ArgFilter: &tracee.ArgFilter{
-			Filters: make(map[int32]map[string]tracee.ArgFilterVal),
+			Filters: make(map[events.ID]map[string]tracee.ArgFilterVal),
 		},
 		ProcessTreeFilter: &tracee.ProcessTreeFilter{
 			PIDs: make(map[uint32]bool),
 		},
-		EventsToTrace: []int32{},
+		EventsToTrace: []events.ID{},
 		NetFilter: &tracee.IfaceFilter{
 			InterfacesToTrace: []string{},
 		},
@@ -143,10 +144,11 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 	eventFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}}
 	setFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}}
 
-	eventsNameToID := make(map[string]int32, len(tracee.EventsDefinitions))
-	for id, event := range tracee.EventsDefinitions {
-		if !event.Internal {
-			eventsNameToID[event.Name] = id
+	eventsNameToID := events.Definitions.NamesToIDs()
+	// remove internal events since they shouldn't be accesible by users
+	for event, id := range eventsNameToID {
+		if events.Definitions.Get(id).Internal {
+			delete(eventsNameToID, event)
 		}
 	}
 
@@ -312,16 +314,16 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 	return filter, nil
 }
 
-func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.StringFilter, eventsNameToID map[string]int32) ([]int32, error) {
+func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.StringFilter, eventsNameToID map[string]events.ID) ([]events.ID, error) {
 	eventFilter.Enabled = true
 	eventsToTrace := eventFilter.Equal
 	excludeEvents := eventFilter.NotEqual
 	setsToTrace := setFilter.Equal
 
-	var res []int32
-	setsToEvents := make(map[string][]int32)
-	isExcluded := make(map[int32]bool)
-	for id, event := range tracee.EventsDefinitions {
+	var res []events.ID
+	setsToEvents := make(map[string][]events.ID)
+	isExcluded := make(map[events.ID]bool)
+	for id, event := range events.Definitions.Events() {
 		for _, set := range event.Sets {
 			setsToEvents[set] = append(setsToEvents[set], id)
 		}
@@ -352,11 +354,11 @@ func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.St
 		setsToTrace = append(setsToTrace, "default")
 	}
 
-	res = make([]int32, 0, len(tracee.EventsDefinitions))
+	res = make([]events.ID, 0, events.Definitions.Length())
 	for _, name := range eventsToTrace {
 		// Handle event prefixes with wildcards
 		if strings.HasSuffix(name, "*") {
-			var ids []int32
+			var ids []events.ID
 			found := false
 			prefix := name[:len(name)-1]
 			for event, id := range eventsNameToID {

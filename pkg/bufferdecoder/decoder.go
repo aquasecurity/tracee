@@ -9,6 +9,8 @@ package bufferdecoder
 import (
 	"encoding/binary"
 	"fmt"
+
+	"github.com/aquasecurity/tracee/pkg/events"
 )
 
 type EbpfDecoder struct {
@@ -56,7 +58,7 @@ func (decoder *EbpfDecoder) DecodeContext(ctx *Context) error {
 	ctx.PidID = binary.LittleEndian.Uint32(decoder.buffer[offset+48 : offset+52])
 	_ = copy(ctx.Comm[:], decoder.buffer[offset+52:offset+68])
 	_ = copy(ctx.UtsName[:], decoder.buffer[offset+68:offset+84])
-	ctx.EventID = int32(binary.LittleEndian.Uint32(decoder.buffer[offset+84 : offset+88]))
+	ctx.EventID = events.ID(int32(binary.LittleEndian.Uint32(decoder.buffer[offset+84 : offset+88])))
 	ctx.Retval = int64(binary.LittleEndian.Uint64(decoder.buffer[offset+88 : offset+96]))
 	ctx.StackID = binary.LittleEndian.Uint32(decoder.buffer[offset+96 : offset+100])
 	ctx.ProcessorId = binary.LittleEndian.Uint16(decoder.buffer[offset+100 : offset+102])

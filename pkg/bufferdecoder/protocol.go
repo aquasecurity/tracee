@@ -2,6 +2,8 @@
 // between code eBPF running in the Kernel and the Tracee-eBPF user-space application.
 package bufferdecoder
 
+import "github.com/aquasecurity/tracee/pkg/events"
+
 // BinType is an enum that specifies the type of binary data sent in the file perf map
 // binary types should match defined values in ebpf code
 type BinType uint8
@@ -32,7 +34,7 @@ type Context struct {
 	PidID       uint32
 	Comm        [16]byte
 	UtsName     [16]byte
-	EventID     int32
+	EventID     events.ID //int32
 	Retval      int64
 	StackID     uint32
 	ProcessorId uint16

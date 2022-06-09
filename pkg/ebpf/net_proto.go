@@ -3,7 +3,9 @@ package ebpf
 import (
 	"bytes"
 	"fmt"
+
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -16,9 +18,10 @@ type protocolHandler func(*bufferdecoder.EbpfDecoder, *trace.Event) error
 
 // protocolProcessor calls handlers of the appropriate protocol event
 func protocolProcessor(networkThread procinfo.ProcessCtx, evtMeta bufferdecoder.NetEventMetadata, decoder *bufferdecoder.EbpfDecoder, ifaceName string, packetLen uint32) (trace.Event, error) {
+	eventDefinition := events.Definitions.Get(evtMeta.NetEventId)
 
 	// create network event without any args
-	evt := CreateNetEvent(evtMeta, networkThread, EventsDefinitions[evtMeta.NetEventId].Name)
+	evt := CreateNetEvent(evtMeta, networkThread, eventDefinition.Name)
 
 	// handle specific protocol data
 	err := callProtocolHandler(evtMeta.NetEventId, decoder, &evt, ifaceName, packetLen)
@@ -37,10 +40,10 @@ func CreateNetEvent(eventMeta bufferdecoder.NetEventMetadata, ctx procinfo.Proce
 }
 
 // callProtocolHandler calls protocol handler
-func callProtocolHandler(eventId int32, decoder *bufferdecoder.EbpfDecoder, evt *trace.Event, ifaceName string, packetLen uint32) error {
-	protocolHandlers := map[int32][]protocolHandler{
-		DnsRequest:  {dnsQueryProtocolHandler},
-		DnsResponse: {dnsReplyProtocolHandler},
+func callProtocolHandler(eventId events.ID, decoder *bufferdecoder.EbpfDecoder, evt *trace.Event, ifaceName string, packetLen uint32) error {
+	protocolHandlers := map[events.ID][]protocolHandler{
+		events.DnsRequest:  {dnsQueryProtocolHandler},
+		events.DnsResponse: {dnsReplyProtocolHandler},
 	}
 
 	// call the generic netPacketHandler

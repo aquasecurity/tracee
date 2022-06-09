@@ -3,15 +3,17 @@ package bufferdecoder
 import (
 	"encoding/binary"
 	"fmt"
+
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 )
 
 type NetEventMetadata struct {
-	TimeStamp   uint64   `json:"timeStamp"`
-	NetEventId  int32    `json:"netEventId"`
-	HostTid     uint32   `json:"hostTid"`
-	ProcessName [16]byte `json:"processName"`
+	TimeStamp   uint64    `json:"timeStamp"`
+	NetEventId  events.ID `json:"netEventId"` //int32
+	HostTid     uint32    `json:"hostTid"`
+	ProcessName [16]byte  `json:"processName"`
 }
 
 func (NetEventMetadata) GetSizeBytes() uint32 {
@@ -25,7 +27,7 @@ func (decoder *EbpfDecoder) DecodeNetEventMetadata(eventMetaData *NetEventMetada
 		return fmt.Errorf("can't read NetEventMetadata from buffer: buffer too short")
 	}
 	eventMetaData.TimeStamp = binary.LittleEndian.Uint64(decoder.buffer[offset : offset+8])
-	eventMetaData.NetEventId = int32(binary.LittleEndian.Uint32(decoder.buffer[offset+8 : offset+12]))
+	eventMetaData.NetEventId = events.ID(binary.LittleEndian.Uint32(decoder.buffer[offset+8 : offset+12]))
 	eventMetaData.HostTid = binary.LittleEndian.Uint32(decoder.buffer[offset+12 : offset+16])
 	copy(eventMetaData.ProcessName[:], decoder.buffer[offset+16:offset+32])
 

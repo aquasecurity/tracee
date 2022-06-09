@@ -10,6 +10,7 @@ import (
 	"unsafe"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -139,9 +140,10 @@ func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *trace.Event, 
 				t.handleError(err)
 				continue
 			}
-			eventDefinition, ok := EventsDefinitions[ctx.EventID]
+			eventId := events.ID(ctx.EventID)
+			eventDefinition, ok := events.Definitions.GetSafe(eventId)
 			if !ok {
-				t.handleError(fmt.Errorf("failed to get configuration of event %d", ctx.EventID))
+				t.handleError(fmt.Errorf("failed to get configuration of event %d", eventId))
 				continue
 			}
 
@@ -259,9 +261,10 @@ func (t *Tracee) sinkEvents(ctx gocontext.Context, in <-chan *trace.Event) <-cha
 		defer close(errc)
 		for event := range in {
 			// Only emit events requested by the user
-			if t.events[int32(event.EventID)].emit {
+			id := events.ID(event.EventID)
+			if t.events[id].emit {
 				if t.config.Output.ParseArguments {
-					err := t.parseArgs(event)
+					err := events.ParseArgs(event)
 					if err != nil {
 						t.handleError(err)
 						continue

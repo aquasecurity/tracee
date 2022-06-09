@@ -25,6 +25,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/pkg/ebpf/initialization"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
 	"github.com/aquasecurity/tracee/pkg/metrics"
@@ -95,18 +96,19 @@ func (tc Config) Validate() error {
 	}
 
 	for _, e := range tc.Filter.EventsToTrace {
-		if _, ok := EventsDefinitions[e]; !ok {
+		def, exists := events.Definitions.GetSafe(e)
+		if !exists {
 			return fmt.Errorf("invalid event to trace: %d", e)
 		}
 		if isNetEvent(e) {
 			if len(tc.Filter.NetFilter.InterfacesToTrace) == 0 {
-				return fmt.Errorf("missing interface for net event: %s, please add -t net=<iface>", EventsDefinitions[e].Name)
+				return fmt.Errorf("missing interface for net event: %s, please add -t net=<iface>", def.Name)
 			}
 		}
 	}
 	for eventID, eventFilters := range tc.Filter.ArgFilter.Filters {
 		for argName := range eventFilters {
-			eventDefinition, ok := EventsDefinitions[eventID]
+			eventDefinition, ok := events.Definitions.GetSafe(eventID)
 			if !ok {
 				return fmt.Errorf("invalid argument filter event id: %d", eventID)
 			}
@@ -174,7 +176,7 @@ type eventConfig struct {
 type Tracee struct {
 	config            Config
 	probes            probes.Probes
-	events            map[int32]eventConfig
+	events            map[events.ID]eventConfig
 	bpfModule         *bpf.Module
 	eventsPerfMap     *bpf.PerfBuffer
 	fileWrPerfMap     *bpf.PerfBuffer
@@ -199,7 +201,7 @@ type Tracee struct {
 	containers        *containers.Containers
 	procInfo          *procinfo.ProcInfo
 	eventsSorter      *sorting.EventsChronologicalSorter
-	eventDerivations  map[int32]map[int32]deriveFn
+	eventDerivations  events.DerivationTable
 	kernelSymbols     *helpers.KernelSymbolTable
 }
 
@@ -208,63 +210,62 @@ func (t *Tracee) Stats() *metrics.Stats {
 }
 
 // GetEssentialEventsList sets the default events used by tracee
-func GetEssentialEventsList(cfg *Config) map[int32]eventConfig {
-	var essentialEvents = make(map[int32]eventConfig)
-
+func GetEssentialEventsList(cfg *Config) map[events.ID]eventConfig {
 	// Set essential events
-	essentialEvents[SysEnterEventID] = eventConfig{}
-	essentialEvents[SysExitEventID] = eventConfig{}
-	essentialEvents[SchedProcessForkEventID] = eventConfig{}
-	essentialEvents[SchedProcessExecEventID] = eventConfig{}
-	essentialEvents[SchedProcessExitEventID] = eventConfig{}
-	essentialEvents[CgroupMkdirEventID] = eventConfig{submit: true}
-	essentialEvents[CgroupRmdirEventID] = eventConfig{submit: true}
-
-	return essentialEvents
+	return map[events.ID]eventConfig{
+		events.SysEnter:         {},
+		events.SysExit:          {},
+		events.SchedProcessExec: {},
+		events.SchedProcessExit: {},
+		events.SchedProcessFork: {},
+		events.CgroupMkdir:      {submit: true},
+		events.CgroupRmdir:      {submit: true},
+	}
 }
 
 // GetCaptureEventsList sets events used to capture data
-func GetCaptureEventsList(cfg *Config) map[int32]eventConfig {
-	captureEvents := make(map[int32]eventConfig)
+func GetCaptureEventsList(cfg *Config) map[events.ID]eventConfig {
+	captureEvents := make(map[events.ID]eventConfig)
 
 	if cfg.Capture.Exec {
-		captureEvents[CaptureExecEventID] = eventConfig{}
+		captureEvents[events.CaptureExec] = eventConfig{}
 	}
 	if cfg.Capture.FileWrite {
-		captureEvents[CaptureFileWriteEventID] = eventConfig{}
+		captureEvents[events.CaptureFileWrite] = eventConfig{}
 	}
 	if cfg.Capture.Module {
-		captureEvents[CaptureModuleEventID] = eventConfig{}
+		captureEvents[events.CaptureModule] = eventConfig{}
 	}
 	if cfg.Capture.Mem {
-		captureEvents[CaptureMemEventID] = eventConfig{}
+		captureEvents[events.CaptureMem] = eventConfig{}
 	}
 	if cfg.Capture.Profile {
-		captureEvents[CaptureProfileEventID] = eventConfig{}
+		captureEvents[events.CaptureProfile] = eventConfig{}
 	}
 	if cfg.Capture.NetIfaces != nil {
-		captureEvents[CapturePcapEventID] = eventConfig{}
+		captureEvents[events.CapturePcap] = eventConfig{}
 	}
 	if len(cfg.Filter.NetFilter.InterfacesToTrace) > 0 || cfg.Debug {
-		captureEvents[SecuritySocketBindEventID] = eventConfig{}
+		captureEvents[events.SecuritySocketBind] = eventConfig{}
 	}
 
 	return captureEvents
 }
 
-func (t *Tracee) handleEventsDependencies(e int32, initReq *RequiredInitValues) {
-	eDependencies := EventsDefinitions[e].Dependencies
-	if len(eDependencies.ksymbols) > 0 {
+func (t *Tracee) handleEventsDependencies(eventId events.ID, initReq *RequiredInitValues) {
+	definition := events.Definitions.Get(eventId)
+	eDependencies := definition.Dependencies
+	if len(eDependencies.KSymbols) > 0 {
 		initReq.kallsyms = true
 	}
-	for _, dependentEvent := range eDependencies.events {
-		ec, ok := t.events[dependentEvent.eventID]
+	for _, dependentEvent := range eDependencies.Events {
+		ec, ok := t.events[dependentEvent.EventID]
 		if !ok {
 			ec = eventConfig{}
-			t.handleEventsDependencies(dependentEvent.eventID, initReq)
+			t.handleEventsDependencies(dependentEvent.EventID, initReq)
 		}
 		ec.submit = true
-		t.events[dependentEvent.eventID] = ec
+		t.events[dependentEvent.EventID] = ec
 	}
 }
 
@@ -327,12 +328,6 @@ func New(cfg Config) (*Tracee, error) {
 		}
 	}
 
-	// Initialize event derivation map
-	err = t.initEventDerivationMap()
-	if err != nil {
-		return nil, fmt.Errorf("error intitalizing event derivation map: %w", err)
-	}
-
 	c, err := containers.InitContainers(t.config.Sockets, t.config.Debug)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing containers: %w", err)
@@ -341,6 +336,12 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error initializing containers: %w", err)
 	}
 	t.containers = c
+
+	// Initialize event derivation map
+	err = t.initDerivationTable()
+	if err != nil {
+		return nil, fmt.Errorf("error intitalizing event derivation map: %w", err)
+	}
 
 	t.netInfo.ifaces = make(map[int]*net.Interface)
 	t.netInfo.ifacesConfig = make(map[string]int32)
@@ -351,7 +352,7 @@ func New(cfg Config) (*Tracee, error) {
 		}
 		// Map real network interface index to interface object
 		t.netInfo.ifaces[netIface.Index] = netIface
-		t.netInfo.ifacesConfig[netIface.Name] |= TraceIface
+		t.netInfo.ifacesConfig[netIface.Name] |= events.TraceIface
 	}
 
 	for _, iface := range t.config.Capture.NetIfaces {
@@ -363,7 +364,7 @@ func New(cfg Config) (*Tracee, error) {
 			// Map real network interface index to interface object
 			t.netInfo.ifaces[netIface.Index] = netIface
 		}
-		t.netInfo.ifacesConfig[netIface.Name] |= CaptureIface
+		t.netInfo.ifacesConfig[netIface.Name] |= events.CaptureIface
 	}
 
 	err = t.initBPF()
@@ -605,16 +606,6 @@ func (t *Tracee) getFiltersConfig() uint32 {
 	return cFilterVal
 }
 
-// an enum that specifies the index of a function to be used in a bpf tail call
-// tail function indexes should match defined values in ebpf code for prog_array map
-const (
-	tailVfsWrite uint32 = iota
-	tailVfsWritev
-	tailSendBin
-	tailSendBinTP
-	tailKernelWrite
-)
-
 func (t *Tracee) populateBPFMaps() error {
 
 	// Set chosen events map according to events chosen by the user
@@ -637,7 +628,7 @@ func (t *Tracee) populateBPFMaps() error {
 	if err != nil {
 		return err
 	}
-	for id, event := range EventsDefinitions {
+	for id, event := range events.Definitions.Events() {
 		ID32BitU32 := uint32(event.ID32Bit) // ID32Bit is int32
 		IDU32 := uint32(id)                 // ID is int32
 		if err := sys32to64BPFMap.Update(unsafe.Pointer(&ID32BitU32), unsafe.Pointer(&IDU32)); err != nil {
@@ -654,7 +645,8 @@ func (t *Tracee) populateBPFMaps() error {
 
 		var reqKsyms []string
 		for id := range t.events {
-			reqKsyms = append(reqKsyms, EventsDefinitions[id].Dependencies.ksymbols...)
+			event := events.Definitions.Get(id)
+			reqKsyms = append(reqKsyms, event.Dependencies.KSymbols...)
 		}
 
 		kallsymsValues := initialization.LoadKallsymsValues(t.kernelSymbols, reqKsyms)
@@ -749,8 +741,8 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Initialize param types map
-	eventsParams := make(map[int32][]bufferdecoder.ArgType)
-	for id, eventDefinition := range EventsDefinitions {
+	eventsParams := make(map[events.ID][]bufferdecoder.ArgType)
+	for id, eventDefinition := range events.Definitions.Events() {
 		params := eventDefinition.Params
 		for _, param := range params {
 			eventsParams[id] = append(eventsParams[id], bufferdecoder.GetParamType(param.Type))
@@ -772,7 +764,7 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
-	_, ok := t.events[HookedSyscallsEventID]
+	_, ok := t.events[events.HookedSyscalls]
 	if ok {
 		syscallsToCheckMap, err := t.bpfModule.GetMap("syscalls_to_check_map")
 		if err != nil {
@@ -783,7 +775,7 @@ func (t *Tracee) populateBPFMaps() error {
 		 * with that, we can fetch the syscall address by accessing the syscall table in the syscall number index
 		 */
 
-		for idx, val := range syscallsToCheck {
+		for idx, val := range events.SyscallsToCheck() {
 			err = syscallsToCheckMap.Update(unsafe.Pointer(&(idx)), unsafe.Pointer(&val))
 			if err != nil {
 				return err
@@ -792,14 +784,14 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Initialize tail call dependencies
-	tailCalls := make(map[tailCall]bool)
+	tailCalls := make(map[events.TailCall]bool)
 	for e := range t.events {
-		for _, tailCall := range EventsDefinitions[e].Dependencies.tailCalls {
+		for _, tailCall := range events.Definitions.Get(e).Dependencies.TailCalls {
 			tailCalls[tailCall] = true
 		}
 	}
 	for tailCall := range tailCalls {
-		err := t.initTailCall(tailCall.mapName, tailCall.mapIdx, tailCall.progName)
+		err := t.initTailCall(tailCall.MapName, tailCall.MapIdx, tailCall.ProgName)
 		if err != nil {
 			return fmt.Errorf("failed to initialize tail call: %w", err)
 		}
@@ -985,7 +977,7 @@ func (t *Tracee) initBPF() error {
 	}
 
 	if t.config.Capture.NetIfaces == nil && !t.config.Debug && len(t.config.Filter.NetFilter.InterfacesToTrace) == 0 {
-		// SecuritySocketBindEventID is set as an essentialEvent if 'capture net' or 'debug' were chosen by the user.
+		// events.SecuritySocketBind is set as an essentialEvent if 'capture net' or 'debug' were chosen by the user.
 		networkProbes := []string{"tc_ingress", "tc_egress", "trace_udp_sendmsg", "trace_udp_disconnect", "trace_udp_destroy_sock", "trace_udpv6_destroy_sock", "tracepoint__inet_sock_set_state", "trace_icmp_send", "trace_icmp_rcv", "trace_icmp6_send", "trace_icmpv6_rcv", "trace_ping_v4_sendmsg", "trace_ping_v6_sendmsg"}
 		for _, progName := range networkProbes {
 			prog, _ := t.bpfModule.GetProgram(progName)
@@ -1040,14 +1032,14 @@ func (t *Tracee) initBPF() error {
 	}
 
 	for e := range t.events {
-		event, ok := EventsDefinitions[e]
+		event, ok := events.Definitions.GetSafe(e)
 		if !ok {
 			continue
 		}
 		for _, dep := range event.Probes {
-			err = t.probes.Attach(dep.handle)
+			err = t.probes.Attach(dep.Handle)
 			if err != nil {
-				if dep.required {
+				if dep.Required {
 					return fmt.Errorf("failed to attach required probe: %v", err)
 				} else {
 					// TODO: Use a logger here instead (https://github.com/aquasecurity/tracee/issues/1787)
@@ -1233,13 +1225,13 @@ func (t *Tracee) updateFileSHA() {
 }
 
 func (t *Tracee) invokeInitEvents() {
-	if t.events[InitNamespacesEventID].emit {
-		systemInfoEvent, _ := CreateInitNamespacesEvent()
+	if t.events[events.InitNamespaces].emit {
+		systemInfoEvent, _ := events.InitNamespacesEvent()
 		t.config.ChanEvents <- systemInfoEvent
 		t.stats.EventCount.Increment()
 	}
-	if t.events[ExistingContainerEventID].emit {
-		for _, e := range t.CreateExistingContainersEvents() {
+	if t.events[events.ExistingContainer].emit {
+		for _, e := range events.ExistingContainersEvents(t.containers) {
 			t.config.ChanEvents <- e
 			t.stats.EventCount.Increment()
 		}
@@ -1262,7 +1254,7 @@ func findInList(element string, list *[]string) (int, error) {
 
 // shouldTraceNetEvents returns true if any net event should be submitted to user-space
 func (t *Tracee) shouldTraceNetEvents() bool {
-	for i := NetPacket; i < MaxNetEventID; i++ {
+	for i := events.NetPacket; i < events.MaxNetID; i++ {
 		if t.events[i].submit {
 			return true
 		}
@@ -1289,7 +1281,7 @@ var netSeqOps = [6]string{
 func (t *Tracee) invokeIoctlTriggeredEvents(cmds int32) error {
 	// invoke HookedSyscallsEvent
 	if cmds&IoctlFetchSyscalls == IoctlFetchSyscalls {
-		_, ok := t.events[HookedSyscallsEventID]
+		_, ok := t.events[events.HookedSyscalls]
 		if ok {
 			ptmx, err := os.OpenFile(t.config.Capture.OutputPath, os.O_RDONLY, 0444)
 			if err != nil {
@@ -1302,7 +1294,7 @@ func (t *Tracee) invokeIoctlTriggeredEvents(cmds int32) error {
 
 	// invoke HookedSeqOps
 	if cmds&IoctlHookedSeqOps == IoctlHookedSeqOps {
-		_, ok := t.events[HookedSeqOpsEventID]
+		_, ok := t.events[events.HookedSeqOps]
 		if ok {
 			ptmx, err := os.OpenFile(t.config.Capture.OutputPath, os.O_RDONLY, 0444)
 			if err != nil {

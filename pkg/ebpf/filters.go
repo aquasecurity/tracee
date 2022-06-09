@@ -13,6 +13,7 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/events"
 )
 
 const (
@@ -41,7 +42,7 @@ const (
 )
 
 type Filter struct {
-	EventsToTrace     []int32
+	EventsToTrace     []events.ID
 	UIDFilter         *UintFilter
 	PIDFilter         *UintFilter
 	NewPidFilter      *BoolFilter
@@ -341,11 +342,11 @@ func (filter *BoolFilter) FilterOut() bool {
 }
 
 type RetFilter struct {
-	Filters map[int32]IntFilter
+	Filters map[events.ID]IntFilter
 	Enabled bool
 }
 
-func (filter *RetFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]int32) error {
+func (filter *RetFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]events.ID) error {
 	filter.Enabled = true
 	// Ret filter has the following format: "event.ret=val"
 	// filterName have the format event.retval, and operatorAndValues have the format "=val"
@@ -383,7 +384,7 @@ func (filter *RetFilter) Parse(filterName string, operatorAndValues string, even
 }
 
 type ArgFilter struct {
-	Filters map[int32]map[string]ArgFilterVal // key to the first map is event id, and to the second map the argument name
+	Filters map[events.ID]map[string]ArgFilterVal // key to the first map is event id, and to the second map the argument name
 	Enabled bool
 }
 
@@ -392,7 +393,7 @@ type ArgFilterVal struct {
 	NotEqual []string
 }
 
-func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]int32) error {
+func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]events.ID) error {
 	filter.Enabled = true
 	// Event argument filter has the following format: "event.argname=argval"
 	// filterName have the format event.argname, and operatorAndValues have the format "=argval"
@@ -408,7 +409,7 @@ func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, even
 		return fmt.Errorf("invalid argument filter event name: %s", eventName)
 	}
 
-	eventDefinition, ok := EventsDefinitions[id]
+	eventDefinition, ok := events.Definitions.GetSafe(id)
 	if !ok {
 		return fmt.Errorf("invalid argument filter event name: %s", eventName)
 	}

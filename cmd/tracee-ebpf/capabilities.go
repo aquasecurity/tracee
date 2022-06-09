@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/syndtr/gocapability/capability"
 )
 
@@ -57,7 +58,7 @@ func getCapabilitiesRequiredByTraceeEvents(cfg *tracee.Config) []capability.Cap 
 	for eventID := range tracee.GetCaptureEventsList(cfg) {
 		usedEvents = append(usedEvents, eventID)
 	}
-	caps := tracee.GetCapabilitiesRequiredByEvents(usedEvents)
+	caps := events.RequiredCapabilities(usedEvents)
 
 	return removeDupCaps(caps)
 }

@@ -2,6 +2,7 @@ package ebpf
 
 import (
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
 	"inet.af/netaddr"
 )
@@ -67,8 +68,10 @@ func appendPktMetadataArg(event *trace.Event, netPacket bufferdecoder.NetPacketE
 
 // appendDnsQueryArgs parse the given buffer to dns queries and adds it to the event
 func appendDnsQueryArgs(event *trace.Event, requests *[]bufferdecoder.DnsQueryData) {
+	eventId := events.ID(event.EventID)
+	eventDef := events.Definitions.Get(eventId)
 	questionArg := trace.Argument{
-		ArgMeta: EventsDefinitions[int32(event.EventID)].Params[1],
+		ArgMeta: eventDef.Params[1],
 		Value:   *requests,
 	}
 	eventAppendArg(event, questionArg)
@@ -76,8 +79,10 @@ func appendDnsQueryArgs(event *trace.Event, requests *[]bufferdecoder.DnsQueryDa
 
 // appendDnsReplyArgs parse the given buffer to dns replies and adds it to the event
 func appendDnsReplyArgs(event *trace.Event, responses *[]bufferdecoder.DnsResponseData) {
+	eventId := events.ID(event.EventID)
+	eventDef := events.Definitions.Get(eventId)
 	responseArg := trace.Argument{
-		ArgMeta: EventsDefinitions[int32(event.EventID)].Params[1],
+		ArgMeta: eventDef.Params[1],
 		Value:   *responses,
 	}
 	eventAppendArg(event, responseArg)

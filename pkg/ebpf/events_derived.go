@@ -6,67 +6,63 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
+	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-// deriveFn is a function prototype for a function that receives an event as
-// argument and may produce a new event if relevant.
-// It returns a derived or empty event, depending on successful derivation,
-// a bool indicating if an event was derived, and an error if one occurred.
-type deriveFn func(trace.Event) (trace.Event, bool, error)
+// initDerivationTable initializes tracee's events.DerivationTable.
+// we declare for each Event (represented through it's ID) to which other
+// events it can be derived and the corresponding function to derive into that Event.
+func (t *Tracee) initDerivationTable() error {
+	// sanity check for containers dependency
+	if t.containers == nil {
+		return fmt.Errorf("nil tracee containers")
+	}
 
-// Initialize the eventDerivations map.
-// Here we declare for each Event (represented through it's ID)
-// to which other Events it can be derived and the corresponding function to derive into that Event.
-func (t *Tracee) initEventDerivationMap() error {
-	t.eventDerivations = map[int32]map[int32]deriveFn{
-		CgroupMkdirEventID: {
-			ContainerCreateEventID: deriveContainerCreate(t),
+	t.eventDerivations = events.DerivationTable{
+		events.CgroupMkdir: {
+			events.ContainerCreate: {
+				Enabled:  t.events[events.ContainerCreate].emit,
+				Function: deriveContainerCreate(t.containers),
+			},
 		},
-		CgroupRmdirEventID: {
-			ContainerRemoveEventID: deriveContainerRemoved(t),
+		events.CgroupRmdir: {
+			events.ContainerRemove: {
+				Enabled:  t.events[events.ContainerRemove].emit,
+				Function: deriveContainerRemoved(t.containers),
+			},
 		},
-		PrintSyscallTableEventID: {
-			HookedSyscallsEventID: deriveDetectHookedSyscall(t),
+		events.PrintSyscallTable: {
+			events.HookedSyscalls: {
+				Enabled:  t.events[events.PrintSyscallTable].emit,
+				Function: deriveDetectHookedSyscall(t.kernelSymbols),
+			},
 		},
-		DnsRequest: {
-			NetPacket: deriveNetPacket(),
+		events.DnsRequest: {
+			events.NetPacket: {
+				Enabled:  t.events[events.NetPacket].emit,
+				Function: deriveNetPacket(),
+			},
 		},
-		DnsResponse: {
-			NetPacket: deriveNetPacket(),
+		events.DnsResponse: {
+			events.NetPacket: {
+				Enabled:  t.events[events.NetPacket].emit,
+				Function: deriveNetPacket(),
+			},
 		},
-		PrintNetSeqOpsEventID: {
-			HookedSeqOpsEventID: deriveHookedSeqOps(t),
+		events.PrintNetSeqOps: {
+			events.HookedSeqOps: {
+				Enabled:  t.events[events.HookedSeqOps].emit,
+				Function: deriveHookedSeqOps(t.kernelSymbols),
+			},
 		},
 	}
 
 	return nil
 }
 
-// deriveEvent takes a trace.Event and checks if it can derive additional events from it
-// as defined by tracee's eventDerivations map.
-// The map is initialized in the above function
-func (t *Tracee) deriveEvent(event trace.Event) []trace.Event {
-	derivatives := []trace.Event{}
-	deriveFns := t.eventDerivations[int32(event.EventID)]
-	for id, deriveFn := range deriveFns {
-		// Don't derive events which were not requested by the user
-		if !t.events[id].emit {
-			continue
-		}
-
-		derivative, derived, err := deriveFn(event)
-		if err != nil {
-			t.handleError(fmt.Errorf("failed to derive event %d: %v", id, err))
-		} else if derived {
-			derivatives = append(derivatives, derivative)
-		}
-	}
-
-	return derivatives
-}
-
-// Pipeline function
+// deriveEvents is the derivation pipeline stage
 func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-chan *trace.Event, <-chan error) {
 	out := make(chan *trace.Event)
 	errc := make(chan error, 1)
@@ -81,11 +77,16 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 				out <- event
 
 				// Derive event before parsing its arguments
-				derivatives := t.deriveEvent(*event)
+				derivatives, errors := events.Derive(*event, t.eventDerivations)
+
+				for _, err := range errors {
+					t.handleError(err)
+				}
 
 				for _, derivative := range derivatives {
 					out <- &derivative
 				}
+
 			case <-ctx.Done():
 				return
 			}
@@ -99,22 +100,22 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 * Derivation functions:
 * Most derivation functions take tracee as a closure argument to track it's runtime state
 * Tracee builds its derivation map from these functions and injects itself as an argument to the closures
-* The derivation map is then built with the returned deriveFn functions, which is used in deriveEvents
+* The derivation map is then built with the returned events.DeriveFunction functions, which is used in deriveEvents
  */
 
-//Receives a tracee object as a closure argument to track it's containers
-//If it receives a cgroup_mkdir event, it can derive a container_create event from it
-func deriveContainerCreate(t *Tracee) deriveFn {
+// deriveContainerCreate receives a containers as a closure argument to track it's containers.
+// If it receives a cgroup_mkdir event, it can derive a container_create event from it.
+func deriveContainerCreate(containers *containers.Containers) events.DeriveFunction {
 	return func(event trace.Event) (trace.Event, bool, error) {
 		cgroupId, err := getEventArgUint64Val(&event, "cgroup_id")
 		if err != nil {
 			return trace.Event{}, false, err
 		}
 
-		def := EventsDefinitions[ContainerCreateEventID]
-		if info := t.containers.GetCgroupInfo(cgroupId); info.Container.ContainerId != "" {
+		def := events.Definitions.Get(events.ContainerCreate)
+		if info := containers.GetCgroupInfo(cgroupId); info.Container.ContainerId != "" {
 			de := event
-			de.EventID = int(ContainerCreateEventID)
+			de.EventID = int(events.ContainerCreate)
 			de.EventName = def.Name
 			de.ReturnValue = 0
 			de.StackAddresses = make([]uint64, 1)
@@ -137,19 +138,19 @@ func deriveContainerCreate(t *Tracee) deriveFn {
 	}
 }
 
-//Receives a tracee object as a closure argument to track it's containers
-//If it receives a cgroup_rmdir event, it can derive a container_remove event from it
-func deriveContainerRemoved(t *Tracee) deriveFn {
+// deriveContainerRemoved receives a containers.Containers object as a closure argument to track it's containers.
+// If it receives a cgroup_rmdir event, it can derive a container_remove event from it.
+func deriveContainerRemoved(containers *containers.Containers) events.DeriveFunction {
 	return func(event trace.Event) (trace.Event, bool, error) {
 		cgroupId, err := getEventArgUint64Val(&event, "cgroup_id")
 		if err != nil {
 			return trace.Event{}, false, err
 		}
 
-		def := EventsDefinitions[ContainerRemoveEventID]
-		if info := t.containers.GetCgroupInfo(cgroupId); info.Container.ContainerId != "" {
+		def := events.Definitions.Get(events.ContainerRemove)
+		if info := containers.GetCgroupInfo(cgroupId); info.Container.ContainerId != "" {
 			de := event
-			de.EventID = int(ContainerRemoveEventID)
+			de.EventID = int(events.ContainerRemove)
 			de.EventName = def.Name
 			de.ReturnValue = 0
 			de.StackAddresses = make([]uint64, 1)
@@ -166,18 +167,18 @@ func deriveContainerRemoved(t *Tracee) deriveFn {
 	}
 }
 
-func deriveDetectHookedSyscall(t *Tracee) deriveFn {
+func deriveDetectHookedSyscall(kernelSymbols *helpers.KernelSymbolTable) events.DeriveFunction {
 	return func(event trace.Event) (trace.Event, bool, error) {
 		syscallAddresses, err := getEventArgUlongArrVal(&event, "syscalls_addresses")
 		if err != nil {
 			return trace.Event{}, false, fmt.Errorf("error parsing syscalls_numbers arg: %v", err)
 		}
-		hookedSyscall, err := analyzeHookedAddresses(syscallAddresses, t.kernelSymbols)
+		hookedSyscall, err := analyzeHookedAddresses(syscallAddresses, kernelSymbols)
 		if err != nil {
 			return trace.Event{}, false, fmt.Errorf("error parsing analyzing hooked syscalls addresses arg: %v", err)
 		}
 		de := event
-		de.EventID = int(HookedSyscallsEventID)
+		de.EventID = int(events.HookedSyscalls)
 		de.EventName = "hooked_syscalls"
 		de.ReturnValue = 0
 		de.Args = []trace.Argument{
@@ -189,16 +190,16 @@ func deriveDetectHookedSyscall(t *Tracee) deriveFn {
 }
 
 // deriveNetPacket derives net_packet from net events with 'metadata' arg
-func deriveNetPacket() deriveFn {
+func deriveNetPacket() events.DeriveFunction {
 	return func(event trace.Event) (trace.Event, bool, error) {
-		metadataArg := getEventArg(&event, "metadata")
+		metadataArg := events.GetArg(&event, "metadata")
 		if metadataArg == nil {
 			return trace.Event{}, false, fmt.Errorf("couldn't find argument name metadata in event %s", event.EventName)
 		}
 
-		def := EventsDefinitions[NetPacket]
+		def := events.Definitions.Get(events.NetPacket)
 		de := event
-		de.EventID = int(NetPacket)
+		de.EventID = int(events.NetPacket)
 		de.EventName = def.Name
 		de.ReturnValue = 0
 		de.Args = []trace.Argument{
@@ -217,13 +218,13 @@ func analyzeHookedAddresses(addresses []uint64, kernelSymbols *helpers.KernelSym
 			continue
 		}
 		if !InTextSegment {
+			syscallsToCheck := events.SyscallsToCheck()
 			hookingFunction := parseSymbol(syscallsAddress, kernelSymbols)
-			var syscallNumber int32
 			if idx > len(syscallsToCheck) {
 				return nil, fmt.Errorf("syscall inedx out of the syscalls to check list %v", err)
 			}
-			syscallNumber = int32(syscallsToCheck[idx])
-			event, found := EventsDefinitions[syscallNumber]
+			syscallNumber := syscallsToCheck[idx]
+			event, found := events.Definitions.GetSafe(syscallNumber)
 			var hookedSyscallName string
 			if found {
 				hookedSyscallName = event.Name
@@ -255,27 +256,27 @@ var seq_ops_functions = [4]string{
 	"seq_next",
 }
 
-func deriveHookedSeqOps(t *Tracee) deriveFn {
+func deriveHookedSeqOps(kernelSymbols *helpers.KernelSymbolTable) events.DeriveFunction {
 	return func(event trace.Event) (trace.Event, bool, error) {
 		seqOpsArr, err := getEventArgUlongArrVal(&event, "net_seq_ops")
 		if err != nil || len(seqOpsArr) < 1 {
 			return trace.Event{}, false, err
 		}
-		seqOpsName := parseSymbol(seqOpsArr[0], t.kernelSymbols).Name
+		seqOpsName := parseSymbol(seqOpsArr[0], kernelSymbols).Name
 		hookedSeqOps := make([]trace.HookedSymbolData, 0)
 		for _, addr := range seqOpsArr[1:] {
-			inTextSegment, err := t.kernelSymbols.TextSegmentContains(addr)
+			inTextSegment, err := kernelSymbols.TextSegmentContains(addr)
 			if err != nil {
 				continue
 			}
 			if !inTextSegment {
-				hookingFunction := parseSymbol(addr, t.kernelSymbols)
+				hookingFunction := parseSymbol(addr, kernelSymbols)
 				hookedSeqOps = append(hookedSeqOps, trace.HookedSymbolData{SymbolName: hookingFunction.Name, ModuleOwner: hookingFunction.Owner})
 			}
 		}
-		def := EventsDefinitions[HookedSeqOpsEventID]
+		def := events.Definitions.Get(events.HookedSeqOps)
 		de := event
-		de.EventID = int(HookedSeqOpsEventID)
+		de.EventID = int(events.HookedSeqOps)
 		de.EventName = "hooked_seq_ops"
 		de.ReturnValue = 0
 		de.StackAddresses = make([]uint64, 1)

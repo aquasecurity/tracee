@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/mitchellh/go-ps"
 	"github.com/onsi/gomega/gexec"
 	"github.com/stretchr/testify/assert"
@@ -202,7 +202,7 @@ func checkSetFs(t *testing.T, gotOutput *bytes.Buffer) {
 
 func getAllSyscallsInSet(set string) []string {
 	var syscallsInSet []string
-	for _, v := range tracee.EventsDefinitions {
+	for _, v := range events.Definitions.Events() {
 		for _, c := range v.Sets {
 			if c == set {
 				syscallsInSet = append(syscallsInSet, v.Name)

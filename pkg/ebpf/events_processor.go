@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -57,7 +58,7 @@ func (t *Tracee) shouldProcessEvent(ctx *bufferdecoder.Context, args []trace.Arg
 	}
 
 	if t.config.Filter.ArgFilter.Enabled {
-		for argName, filter := range t.config.Filter.ArgFilter.Filters[ctx.EventID] {
+		for argName, filter := range t.config.Filter.ArgFilter.Filters[events.ID(ctx.EventID)] {
 			var argVal interface{}
 			ok := false
 			for _, arg := range args {
@@ -107,9 +108,10 @@ const (
 )
 
 func (t *Tracee) processEvent(event *trace.Event) error {
-	switch int32(event.EventID) {
+	eventId := events.ID(event.EventID)
+	switch eventId {
 
-	case VfsWriteEventID, VfsWritevEventID, __KernelWriteEventID:
+	case events.VfsWrite, events.VfsWritev, events.KernelWrite:
 		//capture written files
 		if t.config.Capture.FileWrite {
 			filePath, err := getEventArgStringVal(event, "pathname")
@@ -144,7 +146,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			t.writtenFiles[fileName] = filePath
 		}
 
-	case SchedProcessExecEventID:
+	case events.SchedProcessExec:
 		//update the process tree with correct comm name
 		if t.config.ProcessInfo {
 			processData, err := t.procInfo.GetElement(event.HostProcessID)
@@ -244,7 +246,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			}
 			return err
 		}
-	case SchedProcessExitEventID:
+	case events.SchedProcessExit:
 		if t.config.ProcessInfo {
 			if t.config.Capture.NetPerProcess {
 				pcapContext, _, err := t.getPcapContextFromTid(uint32(event.HostThreadID))
@@ -255,7 +257,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 
 			go t.deleteProcInfoDelayed(event.HostThreadID)
 		}
-	case SchedProcessForkEventID:
+	case events.SchedProcessFork:
 		if t.config.ProcessInfo {
 			hostTid, err := getEventArgInt32Val(event, "child_tid")
 			if err != nil {
@@ -301,7 +303,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			}
 			t.procInfo.UpdateElement(int(hostTid), processData)
 		}
-	case CgroupMkdirEventID:
+	case events.CgroupMkdir:
 		cgroupId, err := getEventArgUint64Val(event, "cgroup_id")
 		if err != nil {
 			return fmt.Errorf("error parsing cgroup_mkdir args: %w", err)
@@ -322,7 +324,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			t.containers.RemoveFromBpfMap(t.bpfModule, cgroupId, hId, "containers_map")
 		}
 
-	case CgroupRmdirEventID:
+	case events.CgroupRmdir:
 		cgroupId, err := getEventArgUint64Val(event, "cgroup_id")
 		if err != nil {
 			return fmt.Errorf("error parsing cgroup_rmdir args: %w", err)
@@ -343,14 +345,14 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 
 	// in case FinitModule and InitModule occurs it means that a kernel module was loaded
 	// and we will want to check if it hooked the syscall table and seq_ops
-	case InitModuleEventID, FinitModuleEventID:
+	case events.InitModule, events.FinitModule:
 		t.updateKallsyms()
 		err := t.invokeIoctlTriggeredEvents(IoctlFetchSyscalls | IoctlHookedSeqOps)
 		if err != nil {
 			return err
 		}
 
-	case HookedProcFopsEventID:
+	case events.HookedProcFops:
 		fopsAddresses, err := getEventArgUlongArrVal(event, "hooked_fops_pointers")
 		if err != nil || fopsAddresses == nil {
 			return fmt.Errorf("error parsing hooked_proc_fops args: %w", err)
