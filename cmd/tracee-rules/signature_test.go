@@ -16,8 +16,7 @@ import (
 )
 
 const (
-	// FIXME Don't relay on Git project structure to run unit tests.
-	exampleRulesDir = "../../signatures/rego"
+	exampleRulesDir = "testdata/signatures"
 )
 
 func Test_getSignatures(t *testing.T) {
