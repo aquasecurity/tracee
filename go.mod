@@ -23,6 +23,7 @@ require (
 	google.golang.org/grpc v1.47.0
 	gotest.tools v2.2.0+incompatible
 	inet.af/netaddr v0.0.0-20211027220019-c74959edd3b6
+	kernel.org/pub/linux/libs/security/libcap/cap v1.2.64
 )
 
 require (
@@ -136,6 +137,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	oras.land/oras-go v1.1.1 // indirect
+	kernel.org/pub/linux/libs/security/libcap/psx v1.2.64 // indirect
 )
 
 replace github.com/kubernetes/cri-api => k8s.io/cri-api v0.23.5-rc.0

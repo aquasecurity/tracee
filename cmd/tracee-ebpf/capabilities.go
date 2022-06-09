@@ -4,7 +4,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/syndtr/gocapability/capability"
+	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
 // IKernelVersionInfo is an interface to check kernel version
@@ -38,8 +38,8 @@ func ensureCapabilities(OSInfo IKernelVersionInfo, cfg *tracee.Config) error {
 }
 
 // Get all capabilities required to run tracee-ebpf for current run
-func generateTraceeEbpfRequiredCapabilities(OSInfo IKernelVersionInfo, cfg *tracee.Config, selfCap capability.Capabilities) (
-	[]capability.Cap, error) {
+func generateTraceeEbpfRequiredCapabilities(OSInfo IKernelVersionInfo, cfg *tracee.Config, selfCap capabilities.ICapabilitiesSet) (
+	[]cap.Value, error) {
 	rCaps, err := getCapabilitiesRequiredByEBPF(selfCap, OSInfo)
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func generateTraceeEbpfRequiredCapabilities(OSInfo IKernelVersionInfo, cfg *trac
 	return rCaps, nil
 }
 
-func getCapabilitiesRequiredByTraceeEvents(cfg *tracee.Config) []capability.Cap {
+func getCapabilitiesRequiredByTraceeEvents(cfg *tracee.Config) []cap.Value {
 	usedEvents := cfg.Filter.EventsToTrace
 	for eventID := range tracee.GetEssentialEventsList(cfg) {
 		usedEvents = append(usedEvents, eventID)
@@ -64,25 +64,25 @@ func getCapabilitiesRequiredByTraceeEvents(cfg *tracee.Config) []capability.Cap 
 }
 
 // Get all capabilities required for eBPF usage (including perf buffers maps management)
-func getCapabilitiesRequiredByEBPF(selfCap capability.Capabilities, OSInfo IKernelVersionInfo) ([]capability.Cap, error) {
+func getCapabilitiesRequiredByEBPF(selfCap capabilities.ICapabilitiesSet, OSInfo IKernelVersionInfo) ([]cap.Value, error) {
 	// In kernel 5.8, CAP_BPF and CAP_PERFMON capabilities were introduced in order to replace CAP_SYS_ADMIN when
 	// loading eBPF programs.
 	// For some reasons, some distributions using new kernels still need CAP_SYS_ADMIN,
 	// so tracee still use it instead of the new capabilities.
-	caps := []capability.Cap{
-		capability.CAP_IPC_LOCK,
-		capability.CAP_SYS_RESOURCE,
-		capability.CAP_SYS_ADMIN,
+	caps := []cap.Value{
+		cap.IPC_LOCK,
+		cap.SYS_RESOURCE,
+		cap.SYS_ADMIN,
 	}
 	return caps, nil
 }
 
-func removeDupCaps(dupCaps []capability.Cap) []capability.Cap {
-	capsMap := make(map[capability.Cap]bool)
+func removeDupCaps(dupCaps []cap.Value) []cap.Value {
+	capsMap := make(map[cap.Value]bool)
 	for _, c := range dupCaps {
 		capsMap[c] = true
 	}
-	caps := make([]capability.Cap, len(capsMap))
+	caps := make([]cap.Value, len(capsMap))
 	i := 0
 	for c := range capsMap {
 		caps[i] = c

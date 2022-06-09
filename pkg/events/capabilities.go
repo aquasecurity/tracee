@@ -1,16 +1,16 @@
 package events
 
 import (
-	"github.com/syndtr/gocapability/capability"
+	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
-func RequiredCapabilities(events []ID) []capability.Cap {
-	reqCapabilities := make(map[capability.Cap]bool)
+func RequiredCapabilities(events []ID) []cap.Value {
+	reqCapabilities := make(map[cap.Value]bool)
 	for _, e := range events {
 		addEventAndDependenciesCapabilities(e, reqCapabilities)
 	}
 
-	capList := make([]capability.Cap, len(reqCapabilities))
+	capList := make([]cap.Value, len(reqCapabilities))
 	i := 0
 	for reqCap := range reqCapabilities {
 		capList[i] = reqCap
@@ -19,7 +19,7 @@ func RequiredCapabilities(events []ID) []capability.Cap {
 	return capList
 }
 
-func addEventAndDependenciesCapabilities(event ID, reqCapabilities map[capability.Cap]bool) {
+func addEventAndDependenciesCapabilities(event ID, reqCapabilities map[cap.Value]bool) {
 	eDef, ok := Definitions.GetSafe(event)
 	if !ok {
 		return
@@ -28,7 +28,7 @@ func addEventAndDependenciesCapabilities(event ID, reqCapabilities map[capabilit
 		reqCapabilities[reqCap] = true
 	}
 	if len(eDef.Dependencies.KSymbols) > 0 {
-		reqCapabilities[capability.CAP_SYSLOG] = true
+		reqCapabilities[cap.SYSLOG] = true
 	}
 
 	for _, d := range eDef.Dependencies.Events {
