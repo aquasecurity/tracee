@@ -1,17 +1,18 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/syndtr/gocapability/capability"
+	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
-// IKernelVersionInfo is an interface to check kernel version
-type IKernelVersionInfo interface {
+// KernelVersionInfo is an interface to check kernel version
+type KernelVersionInfo interface {
 	// CompareOSBaseKernelRelease compare given kernel version to current one.
 	// The return value is -1, 0 or 1 if given version is less,
 	// equal or bigger, respectively, than running one.
@@ -19,21 +20,22 @@ type IKernelVersionInfo interface {
 }
 
 // ensureCapabilities makes sure program runs with required capabilities only
-func ensureCapabilities(OSInfo IKernelVersionInfo, cfg *tracee.Config, allowHighCapabilities bool) error {
-	selfCap, err := capabilities.Self()
+func ensureCapabilities(OSInfo KernelVersionInfo, cfg *tracee.Config, allowHighCapabilities bool) error {
+	rCaps, err := generateTraceeEbpfRequiredCapabilities(OSInfo, cfg)
 	if err != nil {
 		return err
 	}
 
-	rCaps, err := generateTraceeEbpfRequiredCapabilities(OSInfo, cfg, selfCap)
-	if err != nil {
-		return err
+	if err := capabilities.CheckRequired(rCaps); err != nil {
+		if errors.Is(err, &capabilities.MissingCapabilitiesError{}) {
+			return err
+		} else {
+			// This is not fatal, because the drop capabilities function will just fail if some capabilities are missing
+			fmt.Fprintln(os.Stderr, err.Error())
+		}
 	}
 
-	if err = capabilities.CheckRequired(selfCap, rCaps); err != nil {
-		return err
-	}
-	if err = capabilities.DropUnrequired(selfCap, rCaps); err != nil {
+	if err = capabilities.DropUnrequired(rCaps); err != nil {
 		if !allowHighCapabilities {
 			return fmt.Errorf("%w - to avoid this error use the --%s flag", err, allowHighCapabilitiesFlag)
 		} else if cfg.Debug {
@@ -46,9 +48,9 @@ func ensureCapabilities(OSInfo IKernelVersionInfo, cfg *tracee.Config, allowHigh
 }
 
 // Get all capabilities required to run tracee-ebpf for current run
-func generateTraceeEbpfRequiredCapabilities(OSInfo IKernelVersionInfo, cfg *tracee.Config, selfCap capability.Capabilities) (
-	[]capability.Cap, error) {
-	rCaps, err := getCapabilitiesRequiredByEBPF(selfCap, OSInfo)
+func generateTraceeEbpfRequiredCapabilities(OSInfo KernelVersionInfo, cfg *tracee.Config) (
+	[]cap.Value, error) {
+	rCaps, err := getCapabilitiesRequiredByEBPF(OSInfo)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +60,7 @@ func generateTraceeEbpfRequiredCapabilities(OSInfo IKernelVersionInfo, cfg *trac
 	return rCaps, nil
 }
 
-func getCapabilitiesRequiredByTraceeEvents(cfg *tracee.Config) []capability.Cap {
+func getCapabilitiesRequiredByTraceeEvents(cfg *tracee.Config) []cap.Value {
 	usedEvents := cfg.Filter.EventsToTrace
 	for eventID := range tracee.GetEssentialEventsList(cfg) {
 		usedEvents = append(usedEvents, eventID)
@@ -72,25 +74,25 @@ func getCapabilitiesRequiredByTraceeEvents(cfg *tracee.Config) []capability.Cap 
 }
 
 // Get all capabilities required for eBPF usage (including perf buffers maps management)
-func getCapabilitiesRequiredByEBPF(selfCap capability.Capabilities, OSInfo IKernelVersionInfo) ([]capability.Cap, error) {
+func getCapabilitiesRequiredByEBPF(OSInfo KernelVersionInfo) ([]cap.Value, error) {
 	// In kernel 5.8, CAP_BPF and CAP_PERFMON capabilities were introduced in order to replace CAP_SYS_ADMIN when
 	// loading eBPF programs.
 	// For some reasons, some distributions using new kernels still need CAP_SYS_ADMIN,
 	// so tracee still use it instead of the new capabilities.
-	caps := []capability.Cap{
-		capability.CAP_IPC_LOCK,
-		capability.CAP_SYS_RESOURCE,
-		capability.CAP_SYS_ADMIN,
+	caps := []cap.Value{
+		cap.IPC_LOCK,
+		cap.SYS_RESOURCE,
+		cap.SYS_ADMIN,
 	}
 	return caps, nil
 }
 
-func removeDupCaps(dupCaps []capability.Cap) []capability.Cap {
-	capsMap := make(map[capability.Cap]bool)
+func removeDupCaps(dupCaps []cap.Value) []cap.Value {
+	capsMap := make(map[cap.Value]bool)
 	for _, c := range dupCaps {
 		capsMap[c] = true
 	}
-	caps := make([]capability.Cap, len(capsMap))
+	caps := make([]cap.Value, len(capsMap))
 	i := 0
 	for c := range capsMap {
 		caps[i] = c

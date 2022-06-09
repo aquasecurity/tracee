@@ -6,138 +6,95 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/syndtr/gocapability/capability"
+	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
 type fakeCapability struct {
-	capability.Capabilities
+	cap.Value
 
-	newpid2 func(int) (capability.Capabilities, error)
-	get     func(capability.CapType, capability.Cap) bool
-	set     func(capability.CapType, ...capability.Cap)
-	apply   func(capability.CapType) error
-	clear   func(capability.CapType)
-	load    func() error
+	clear   func() error
+	getFlag func(vec cap.Flag, val cap.Value) (bool, error)
+	setFlag func(vec cap.Flag, enabled bool, val ...cap.Value) error
+	setProc func() error
 }
 
-func (f fakeCapability) Get(which capability.CapType, what capability.Cap) bool {
-	if f.get != nil {
-		return f.get(which, what)
+func (f fakeCapability) GetFlag(vec cap.Flag, val cap.Value) (bool, error) {
+	if f.getFlag != nil {
+		return f.getFlag(vec, val)
 	}
-	return true
+	return true, nil
 }
 
-func (f fakeCapability) Set(which capability.CapType, caps ...capability.Cap) {
-	if f.set != nil {
-		f.set(which, caps...)
-	}
-}
-
-func (f fakeCapability) Apply(kind capability.CapType) error {
-	if f.apply != nil {
-		return f.apply(kind)
+func (f fakeCapability) SetFlag(vec cap.Flag, enabled bool, val ...cap.Value) error {
+	if f.setFlag != nil {
+		return f.setFlag(vec, enabled, val...)
 	}
 	return nil
 }
 
-func (f fakeCapability) Clear(kind capability.CapType) {
+func (f fakeCapability) SetProc() error {
+	if f.setProc != nil {
+		return f.setProc()
+	}
+	return nil
+}
+
+func (f fakeCapability) Clear() error {
 	if f.clear != nil {
-		f.clear(kind)
-	}
-}
-
-func (f fakeCapability) Load() error {
-	if f.load != nil {
-		return f.load()
+		return f.clear()
 	}
 	return nil
-}
-
-func (f fakeCapability) NewPid2(pid int) (capability.Capabilities, error) {
-	if f.newpid2 != nil {
-		return f.newpid2(pid)
-	}
-	return nil, nil
 }
 
 func TestCheckRequiredCapabilities(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
-		require.NoError(t, CheckRequired(fakeCapability{}, []capability.Cap{capability.CAP_SYS_ADMIN, capability.CAP_IPC_LOCK, capability.CAP_SYS_PTRACE}))
+		err := checkRequired(fakeCapability{}, []cap.Value{cap.SYS_ADMIN, cap.IPC_LOCK, cap.SYS_PTRACE})
+		assert.NoError(t, err)
 	})
 
-	t.Run("missing CAP_SYS_ADMIN", func(t *testing.T) {
-		err := CheckRequired(fakeCapability{get: func(capType capability.CapType, c capability.Cap) bool {
-			assert.Equal(t, capability.EFFECTIVE, capType)
-			assert.Equal(t, capability.CAP_SYS_ADMIN, c)
-			return false
-		}}, []capability.Cap{capability.CAP_SYS_ADMIN})
-		assert.Equal(t, "insufficient privileges to run: missing CAP_SYS_ADMIN", err.Error())
-	})
-}
-
-func TestLoadSelfCapabilities(t *testing.T) {
-	t.Run("happy path", func(t *testing.T) {
-		oldNewPid2 := NewPid2
-		defer func() {
-			NewPid2 = oldNewPid2
-		}()
-
-		var orderOfFuncs []string
-		NewPid2 = fakeCapability{newpid2: func(i int) (capability.Capabilities, error) {
-			orderOfFuncs = append(orderOfFuncs, "NewPid2")
-			return fakeCapability{
-				load: func() error {
-					orderOfFuncs = append(orderOfFuncs, "Load")
-					return nil
-				},
-			}, nil
-		}}.newpid2
-		sc, err := Self()
-		require.NoError(t, err)
-		require.NotNil(t, sc)
-		require.Equal(t, []string{"NewPid2", "Load"}, orderOfFuncs)
+	t.Run("missing single capability", func(t *testing.T) {
+		err := checkRequired(fakeCapability{getFlag: func(vec cap.Flag, val cap.Value) (bool, error) {
+			assert.Equal(t, cap.Effective, vec)
+			assert.Equal(t, cap.SYS_ADMIN, val)
+			return false, nil
+		}}, []cap.Value{cap.SYS_ADMIN})
+		require.IsType(t, &MissingCapabilitiesError{}, err)
+		assert.ElementsMatch(t, []cap.Value{cap.SYS_ADMIN}, err.(*MissingCapabilitiesError).MissingCaps)
 	})
 
-	t.Run("sad path - NewPid2 fails", func(t *testing.T) {
-		oldNewPid2 := NewPid2
-		defer func() {
-			NewPid2 = oldNewPid2
-		}()
-
-		NewPid2 = fakeCapability{newpid2: func(i int) (capability.Capabilities, error) {
-			return nil, fmt.Errorf("newPid2 failed")
-		}}.newpid2
-		sc, err := Self()
-		require.EqualError(t, err, "newPid2 failed")
-		require.Nil(t, sc)
+	t.Run("missing multiple capabilities", func(t *testing.T) {
+		reqCaps := []cap.Value{cap.SYS_ADMIN, cap.IPC_LOCK, cap.SYS_PTRACE}
+		err := checkRequired(fakeCapability{getFlag: func(vec cap.Flag, val cap.Value) (bool, error) {
+			assert.Equal(t, cap.Effective, vec)
+			return false, nil
+		}}, reqCaps)
+		require.IsType(t, &MissingCapabilitiesError{}, err)
+		assert.ElementsMatch(t, reqCaps, err.(*MissingCapabilitiesError).MissingCaps)
 	})
 
-	t.Run("sad path - loading capabilities fails", func(t *testing.T) {
-		oldNewPid2 := NewPid2
-		defer func() {
-			NewPid2 = oldNewPid2
-		}()
-
-		NewPid2 = fakeCapability{newpid2: func(i int) (capability.Capabilities, error) {
-			return fakeCapability{load: func() error {
-				return fmt.Errorf("an error occurred")
-			}}, nil
-		}}.newpid2
-		sc, err := Self()
-		require.EqualError(t, err, "loading capabilities failed: an error occurred")
-		require.Nil(t, sc)
+	t.Run("error with 'cap' library", func(t *testing.T) {
+		err := checkRequired(fakeCapability{getFlag: func(vec cap.Flag, val cap.Value) (bool, error) {
+			return false, cap.ErrBadSet
+		}}, []cap.Value{cap.SYS_ADMIN})
+		assert.ErrorIs(t, err, cap.ErrBadSet)
 	})
 }
 
 func TestDropUnrequired(t *testing.T) {
-	requiredCaps := []capability.Cap{capability.CAP_SYS_ADMIN, capability.CAP_IPC_LOCK, capability.CAP_SYS_PTRACE, capability.CAP_SYS_RESOURCE}
+	requiredCaps := []cap.Value{cap.SYS_ADMIN, cap.IPC_LOCK, cap.SYS_PTRACE, cap.SYS_RESOURCE}
 	t.Run("happy path", func(t *testing.T) {
-		var setCaps []capability.Cap
+		var setCaps []cap.Value
 		fc := fakeCapability{
-			set: func(capType capability.CapType, caps ...capability.Cap) {
-				setCaps = append(setCaps, caps...)
+			setFlag: func(vec cap.Flag, enabled bool, val ...cap.Value) error {
+				if enabled == true && vec == cap.Effective {
+					setCaps = append(setCaps, val...)
+				}
+				return nil
 			},
-			apply: func(kind capability.CapType) error {
+			setProc: func() error {
+				if len(setCaps) != len(requiredCaps) {
+					return fmt.Errorf("%d capabilities were set, but %d was required", len(setCaps), len(requiredCaps))
+				}
 				for _, reqCap := range requiredCaps {
 					isFound := false
 					for _, setCap := range setCaps {
@@ -153,14 +110,29 @@ func TestDropUnrequired(t *testing.T) {
 				return nil
 			},
 		}
-		require.NoError(t, DropUnrequired(fc, requiredCaps))
+		require.NoError(t, dropUnrequired(fc, requiredCaps))
 	})
-	t.Run("apply error invoked", func(t *testing.T) {
-		fc := fakeCapability{
-			apply: func(kind capability.CapType) error {
-				return fmt.Errorf("error in apply")
-			},
-		}
-		require.Error(t, DropUnrequired(fc, requiredCaps))
+	t.Run("Sad flow", func(t *testing.T) {
+		t.Run("setProc error invoked", func(t *testing.T) {
+			fc := fakeCapability{
+				setProc: func() error {
+					return fmt.Errorf("error in setProc")
+				},
+			}
+			err := dropUnrequired(fc, requiredCaps)
+			require.Error(t, err)
+			assert.IsType(t, &DropCapabilitiesError{}, err)
+		})
+		t.Run("setFlag error invoked", func(t *testing.T) {
+			fc := fakeCapability{
+				setFlag: func(vec cap.Flag, enabled bool, val ...cap.Value) error {
+					return cap.ErrBadSet
+				},
+			}
+			err := dropUnrequired(fc, requiredCaps)
+			require.Error(t, err)
+			assert.IsType(t, cap.ErrBadSet, err)
+			assert.ErrorIs(t, err, cap.ErrBadSet)
+		})
 	})
 }
