@@ -111,7 +111,7 @@ HostName: foobar.local
 				ProcessName: "foobar.exe",
 				HostName:    "foobar.local",
 			}.ToProtocol(),
-			outputFormat: "goldens/broken.tmpl",
+			outputFormat: "testdata/goldens/broken.tmpl",
 		},
 	}
 
@@ -211,7 +211,7 @@ HostName: foobar.local
 		{
 			name:              "sad path, with an invalid template",
 			contentType:       "application/foo",
-			inputTemplateFile: "goldens/broken.tmpl",
+			inputTemplateFile: "testdata/goldens/broken.tmpl",
 			expectedError:     `error writing to the template: template: broken.tmpl:1:3: executing "broken.tmpl" at <.InvalidField>: can't evaluate field InvalidField in type detect.Finding`,
 		},
 		{
