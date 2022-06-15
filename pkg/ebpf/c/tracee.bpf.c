@@ -4781,6 +4781,9 @@ int BPF_KPROBE(trace_security_file_mprotect)
     unsigned long reqprot = PT_REGS_PARM2(ctx);
 
     if (should_submit(SECURITY_FILE_MPROTECT)) {
+        if (!should_trace(&data.context))
+            return 0;
+
         struct file *file = (struct file *) READ_KERN(vma->vm_file);
         void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
         u64 ctime = get_ctime_nanosec_from_file(file);
