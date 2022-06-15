@@ -246,6 +246,7 @@ func (p *gobEventPrinter) Init() error {
 	gob.Register(trace.SlimCred{})
 	gob.Register(make(map[string]string))
 	gob.Register(trace.PktMeta{})
+	gob.Register([]trace.HookedSymbolData{})
 	return nil
 }
 
