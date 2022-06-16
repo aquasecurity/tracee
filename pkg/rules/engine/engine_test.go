@@ -590,3 +590,80 @@ func TestEngine_LoadSignature(t *testing.T) {
 	}
 
 }
+
+func TestMediateFilters(t *testing.T) {
+	testCases := []struct {
+		name     string
+		filters  []detect.Filter
+		expected []detect.Filter
+	}{
+		{
+			name: "one filter - no mediation needed",
+			filters: []detect.Filter{
+				{Field: "test", Operator: detect.Equal, Value: []interface{}{1}},
+			},
+			expected: []detect.Filter{
+				{Field: "test", Operator: detect.Equal, Value: []interface{}{1}},
+			},
+		},
+		{
+			name: "two of the same filters - should output one value",
+			filters: []detect.Filter{
+				{Field: "test", Operator: detect.Equal, Value: []interface{}{1}},
+				{Field: "test", Operator: detect.Equal, Value: []interface{}{1}},
+			},
+			expected: []detect.Filter{
+				{Field: "test", Operator: detect.Equal, Value: []interface{}{1}},
+			},
+		},
+		{
+			name: "two filters on same field - should combine",
+			filters: []detect.Filter{
+				{Field: "test", Operator: detect.Equal, Value: []interface{}{1}},
+				{Field: "test", Operator: detect.Equal, Value: []interface{}{2}},
+			},
+			expected: []detect.Filter{
+				{Field: "test", Operator: detect.Equal, Value: []interface{}{1, 2}},
+			},
+		},
+		{
+			name: "sanity - three filters on same field with duplicate - should combine",
+			filters: []detect.Filter{
+				{Field: "test", Operator: detect.Equal, Value: []interface{}{1}},
+				{Field: "test", Operator: detect.Equal, Value: []interface{}{2}},
+				{Field: "test", Operator: detect.Equal, Value: []interface{}{1}},
+			},
+			expected: []detect.Filter{
+				{Field: "test", Operator: detect.Equal, Value: []interface{}{1, 2}},
+			},
+		},
+		{
+			name: "three filters with different fields - should combine",
+			filters: []detect.Filter{
+				{Field: "test", Operator: detect.Equal, Value: []interface{}{1}},
+				{Field: "test", Operator: detect.Equal, Value: []interface{}{2}},
+				{Field: "test2", Operator: detect.Equal, Value: []interface{}{1}},
+			},
+			expected: []detect.Filter{
+				{Field: "test", Operator: detect.Equal, Value: []interface{}{1, 2}},
+				{Field: "test2", Operator: detect.Equal, Value: []interface{}{1}},
+			},
+		},
+		{
+			name: "real case - security_file_open.context.processName",
+			filters: []detect.Filter{
+				detect.NotEqualFilter("security_file_open.context.processName", "flanneld", "kube-proxy", "etcd", "kube-apiserver", "coredns", "kube-controller", "kubectl"),
+				detect.NotEqualFilter("security_file_open.context.processName", "kube-apiserver", "kubelet", "kube-controller", "etcd"),
+			},
+			expected: []detect.Filter{
+				detect.NotEqualFilter("security_file_open.context.processName", "flanneld", "kube-proxy", "etcd", "kube-apiserver", "coredns", "kube-controller", "kubectl", "kubelet"),
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			assert.ElementsMatch(t, tc.expected, mediateFilters(tc.filters))
+		})
+	}
+}

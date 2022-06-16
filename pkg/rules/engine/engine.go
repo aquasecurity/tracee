@@ -306,3 +306,102 @@ func (engine *Engine) GetSelectedEvents() []detect.SignatureEventSelector {
 	}
 	return res
 }
+
+// GetFilters returns a mediated array of all signature's filters
+func GetFilters(signatures []detect.Signature) ([]detect.Filter, error) {
+	filters := make([]detect.Filter, 0)
+	for _, sig := range signatures {
+		sigFilters, err := getSignatureFilters(sig)
+		if err != nil {
+			return []detect.Filter{}, fmt.Errorf("error getting filters from signature: %s", err)
+		}
+		filters = append(filters, sigFilters...)
+	}
+	res := mediateFilters(filters)
+	return res, nil
+}
+
+// GetFilters returns a mediated array of all engine loaded signatures filters
+func (engine *Engine) GetFilters() ([]detect.Filter, error) {
+	sigs := []detect.Signature{}
+	engine.signaturesMutex.RLock()
+	defer engine.signaturesMutex.RUnlock()
+	for sig := range engine.signatures {
+		sigs = append(sigs, sig)
+	}
+	return GetFilters(sigs)
+}
+
+// getSignatureFilters get all filters from a signature, including base filters from selectors
+func getSignatureFilters(sig detect.Signature) ([]detect.Filter, error) {
+	res := []detect.Filter{}
+	metadata, _ := sig.GetMetadata()
+	selectors, err := sig.GetSelectedEvents()
+	if err != nil {
+		return []detect.Filter{}, fmt.Errorf("missing selectors for base filters from signature %s", metadata.Name)
+	}
+	for _, s := range selectors {
+		res = append(res, selectorToFilter(s)...)
+	}
+	filters, err := sig.GetFilters()
+	if err != nil {
+		return []detect.Filter{}, fmt.Errorf("error getting filter from signature %s: %s", metadata.Name, err)
+	}
+	res = append(res, filters...)
+
+	return res, nil
+}
+
+// selectorToFilter generates default initial filters from the signature's event selectors
+func selectorToFilter(selector detect.SignatureEventSelector) []detect.Filter {
+	eventFilter := detect.EqualFilter("event", []interface{}{selector.Name})
+	res := []detect.Filter{eventFilter}
+	if selector.Origin != "" && selector.Origin != "*" {
+		originFilter := detect.EqualFilter(fmt.Sprintf("%s.context.%s", selector.Name, selector.Origin), []interface{}{true})
+		res = append(res, originFilter)
+	}
+	return res
+}
+
+// mediateFilters performs mediation logics on a list of filters
+func mediateFilters(filters []detect.Filter) []detect.Filter {
+	type filterHeader struct {
+		field    string
+		operator detect.FilterOperator
+	}
+
+	filterGroups := make(map[filterHeader]*detect.Filter)
+	// For now - mediation should be like a SQL GROUP BY clause, with no value duplications
+	for _, filter := range filters {
+		// Get the filter "header"
+		header := filterHeader{field: filter.Field, operator: filter.Operator}
+
+		// create the group if needed
+		if filterGroups[header] == nil {
+			filterGroups[header] = &detect.Filter{
+				Field:    header.field,
+				Operator: header.operator,
+			}
+		}
+
+		// Append non existing filter values to the group
+		for _, filterVal := range filter.Value {
+			found := false
+			for _, fgVal := range filterGroups[header].Value {
+				if filterVal == fgVal {
+					found = true
+					break
+				}
+			}
+			if !found {
+				filterGroups[header].Value = append(filterGroups[header].Value, filterVal)
+			}
+		}
+	}
+
+	res := make([]detect.Filter, 0)
+	for _, filter := range filterGroups {
+		res = append(res, *filter)
+	}
+	return res
+}
