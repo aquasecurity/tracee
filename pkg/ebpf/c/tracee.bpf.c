@@ -234,6 +234,7 @@ enum event_id_e
     LOAD_ELF_PHDRS,
     HOOKED_PROC_FOPS,
     PRINT_NET_SEQ_OPS,
+    TASK_RENAME,
     MAX_EVENT_ID,
 
     // Net events IDs
@@ -5392,6 +5393,32 @@ int BPF_KPROBE(trace_security_file_permission)
     save_u64_arr_to_buf(&data, (const u64 *) fops_addresses, 3, 0);
     events_perf_submit(&data, HOOKED_PROC_FOPS, 0);
     return 0;
+}
+
+SEC("raw_tracepoint/task_rename")
+int tracepoint__task__task_rename(struct bpf_raw_tracepoint_args *ctx)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+    if (!should_trace((&data.context)))
+        return 0;
+
+    struct task_struct *tsk = (struct task_struct *) ctx->args[0];
+    char old_name[TASK_COMM_LEN];
+    bpf_probe_read_str(&old_name, TASK_COMM_LEN, tsk->comm);
+    const char *new_name = (const char *) ctx->args[1];
+
+    save_str_to_buf(&data, (void *) old_name, 0);
+    save_str_to_buf(&data, (void *) new_name, 1);
+    if (data.options & OPT_SHOW_SYSCALL) {
+        syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+        if (sys) {
+            save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 2);
+        }
+    }
+
+    return events_perf_submit(&data, TASK_RENAME, 0);
 }
 
 static __always_inline bool
