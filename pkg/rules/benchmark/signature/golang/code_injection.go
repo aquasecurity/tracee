@@ -53,6 +53,10 @@ func (sig *codeInjection) GetSelectedEvents() ([]detect.SignatureEventSelector, 
 	}, nil
 }
 
+func (sig *codeInjection) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{}, nil
+}
+
 func (sig *codeInjection) OnEvent(event protocol.Event) error {
 	// event example:
 	// { "eventName": "ptrace", "args": [{"name": "request", "value": "PTRACE_POKETEXT" }]}

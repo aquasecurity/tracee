@@ -44,6 +44,14 @@ func (sig *DiskMount) GetSelectedEvents() ([]detect.SignatureEventSelector, erro
 	}, nil
 }
 
+func (sig *DiskMount) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		detect.EqualFilter("security_sb_mount.context.tid", 1).Not(),
+		detect.PrefixFilter("security_sb_mount.context.processName", "runc:").Not(),
+		detect.PrefixFilter("security_sb_mount.args.dev_name", sig.devDir),
+	}, nil
+}
+
 func (sig *DiskMount) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

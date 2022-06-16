@@ -44,6 +44,12 @@ func (sig *CorePatternModification) GetSelectedEvents() ([]detect.SignatureEvent
 	}, nil
 }
 
+func (sig *CorePatternModification) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		detect.SuffixFilter("security_file_open.args.pathname", sig.corePattern),
+	}, nil
+}
+
 func (sig *CorePatternModification) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

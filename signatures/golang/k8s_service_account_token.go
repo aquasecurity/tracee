@@ -49,6 +49,12 @@ func (sig *K8SServiceAccountToken) GetSelectedEvents() ([]detect.SignatureEventS
 	}, nil
 }
 
+func (sig *K8SServiceAccountToken) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		detect.ContainsFilter("security_file_open.args.pathname", "secrets/kubernetes.io/serviceaccount"),
+	}, nil
+}
+
 func (sig *K8SServiceAccountToken) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

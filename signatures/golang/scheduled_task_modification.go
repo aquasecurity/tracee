@@ -51,6 +51,15 @@ func (sig *ScheduledTaskModification) GetSelectedEvents() ([]detect.SignatureEve
 	}, nil
 }
 
+func (sig *ScheduledTaskModification) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		detect.EqualFilter("security_file_open.args.pathname", sig.cronFiles),
+		detect.EqualFilter("security_inode_rename.args.new_path", sig.cronFiles),
+		detect.PrefixFilter("security_file_open.args.pathname", sig.cronDirs...),
+		detect.PrefixFilter("security_inode_rename.args.new_path", sig.cronDirs...),
+	}, nil
+}
+
 func (sig *ScheduledTaskModification) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

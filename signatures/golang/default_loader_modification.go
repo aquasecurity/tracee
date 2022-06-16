@@ -48,6 +48,13 @@ func (sig *DefaultLoaderModification) GetSelectedEvents() ([]detect.SignatureEve
 	}, nil
 }
 
+func (sig *DefaultLoaderModification) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		detect.PrefixFilter("security_file_open.args.pathname", "/lib/usr/", "/lib/"),
+		detect.PrefixFilter("security_inode_rename.args.new_path", "/lib/usr/", "/lib/"),
+	}, nil
+}
+
 func (sig *DefaultLoaderModification) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

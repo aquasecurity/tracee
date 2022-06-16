@@ -48,6 +48,13 @@ func (sig *LdPreload) GetSelectedEvents() ([]detect.SignatureEventSelector, erro
 	}, nil
 }
 
+func (sig *LdPreload) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		detect.SuffixFilter("security_file_open.args.pathname", sig.preloadPath),
+		detect.SuffixFilter("security_inode_rename.args.new_path", sig.preloadPath),
+	}, nil
+}
+
 func (sig *LdPreload) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

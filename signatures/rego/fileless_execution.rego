@@ -23,6 +23,14 @@ tracee_selected_events[eventSelector] {
 	eventSelector := eventSelectors[_]
 }
 
+signature_filters := [
+	{
+		"field": "sched_process_exec.args.pathname",
+		"operator": helpers.filter_equal,
+		"value": ["memfd:*", "/dev/shm*", "/run/shm*"]
+	}
+]
+
 tracee_match {
 	input.eventName == "sched_process_exec"
 	pathname = helpers.get_tracee_argument("pathname")

@@ -26,11 +26,13 @@ type RegoSignature struct {
 	matchPQ        rego.PreparedEvalQuery
 	metadata       detect.SignatureMetadata
 	selectedEvents []detect.SignatureEventSelector
+	filters        []detect.Filter
 }
 
 const queryMatch string = "data.%s.tracee_match"
 const querySelectedEvents string = "data.%s.tracee_selected_events"
 const queryMetadata string = "data.%s.__rego_metadoc__"
+const queryFilters string = "data.%s.signature_filters"
 const packageNameRegex string = `package\s.*`
 
 // NewRegoSignature creates a new RegoSignature with the provided rego code string
@@ -95,6 +97,10 @@ func NewRegoSignature(target string, partialEval bool, regoCodes ...string) (det
 	if err != nil {
 		return nil, err
 	}
+	res.filters, err = res.getFilters(pkgName)
+	if err != nil {
+		return nil, err
+	}
 	return &res, nil
 }
 
@@ -146,6 +152,30 @@ func (sig *RegoSignature) getSelectedEvents(pkgName string) ([]detect.SignatureE
 		return nil, err
 	}
 	var res []detect.SignatureEventSelector
+	err = json.Unmarshal(resJSON, &res)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+// GetFilters implements the Signature interface by evaluating the Rego policy's signature_filters rule
+// this is a *set* rule that defines the rule's Filters
+
+func (sig *RegoSignature) GetFilters() ([]detect.Filter, error) {
+	return sig.filters, nil
+}
+
+func (sig *RegoSignature) getFilters(pkgName string) ([]detect.Filter, error) {
+	evalRes, err := sig.evalQuery(fmt.Sprintf(queryFilters, pkgName))
+	if err != nil {
+		return nil, err
+	}
+	resJSON, err := json.Marshal(evalRes)
+	if err != nil {
+		return nil, err
+	}
+	var res []detect.Filter
 	err = json.Unmarshal(resJSON, &res)
 	if err != nil {
 		return nil, err

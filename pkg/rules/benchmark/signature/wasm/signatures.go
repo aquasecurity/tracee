@@ -49,35 +49,46 @@ func compileRego(regoCodes []string) (*ast.Compiler, string) {
 }
 
 func NewCodeInjectionSignature() (detect.Signature, error) {
-	return NewSignature(detect.SignatureMetadata{
-		ID:   "TRC_WASM_CODE_INJECTION",
-		Name: "Code Injection WASM",
-	}, []detect.SignatureEventSelector{
-		{Source: "tracee", Name: "ptrace"},
-		{Source: "tracee", Name: "open"},
-		{Source: "tracee", Name: "openat"},
-		{Source: "tracee", Name: "execve"},
-	}, []string{codeInjectionRego, helpersRego})
+	return NewSignature(
+		detect.SignatureMetadata{
+			ID:   "TRC_WASM_CODE_INJECTION",
+			Name: "Code Injection WASM",
+		},
+		[]detect.SignatureEventSelector{
+			{Source: "tracee", Name: "ptrace"},
+			{Source: "tracee", Name: "open"},
+			{Source: "tracee", Name: "openat"},
+			{Source: "tracee", Name: "execve"},
+		},
+		[]detect.Filter{},
+		[]string{codeInjectionRego, helpersRego},
+	)
 }
 
 func NewAntiDebuggingSignature() (detect.Signature, error) {
-	return NewSignature(detect.SignatureMetadata{
-		ID:   "TRC_WASM_ANTI_DEBUGGING",
-		Name: "Anti Debugging WASM",
-	}, []detect.SignatureEventSelector{
-		{Source: "tracee", Name: "ptrace"},
-	}, []string{antiDebuggingPtracemeRego, helpersRego})
+	return NewSignature(
+		detect.SignatureMetadata{
+			ID:   "TRC_WASM_ANTI_DEBUGGING",
+			Name: "Anti Debugging WASM",
+		},
+		[]detect.SignatureEventSelector{
+			{Source: "tracee", Name: "ptrace"},
+		},
+		[]detect.Filter{},
+		[]string{antiDebuggingPtracemeRego, helpersRego},
+	)
 }
 
 type signature struct {
 	metadata detect.SignatureMetadata
 	selector []detect.SignatureEventSelector
+	filters  []detect.Filter
 	cb       detect.SignatureHandler
 	rego     *rego.Rego
 	pq       rego.PreparedEvalQuery
 }
 
-func NewSignature(metadata detect.SignatureMetadata, selector []detect.SignatureEventSelector, regoCodes []string) (detect.Signature, error) {
+func NewSignature(metadata detect.SignatureMetadata, selector []detect.SignatureEventSelector, filters []detect.Filter, regoCodes []string) (detect.Signature, error) {
 	compiledRego, pkgName := compileRego(regoCodes)
 	rego := rego.New(
 		rego.Compiler(compiledRego),
@@ -91,6 +102,7 @@ func NewSignature(metadata detect.SignatureMetadata, selector []detect.Signature
 	return &signature{
 		metadata: metadata,
 		selector: selector,
+		filters:  filters,
 		rego:     rego,
 		pq:       pq,
 	}, nil
@@ -107,6 +119,10 @@ func (s *signature) GetMetadata() (detect.SignatureMetadata, error) {
 
 func (s *signature) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
 	return s.selector, nil
+}
+
+func (s *signature) GetFilters() ([]detect.Filter, error) {
+	return s.filters, nil
 }
 
 func (s *signature) OnEvent(event protocol.Event) error {

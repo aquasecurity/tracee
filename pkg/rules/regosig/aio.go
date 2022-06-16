@@ -25,6 +25,7 @@ const (
 	moduleMain             = "main.rego"
 	queryMetadataAll       = "data.main.__rego_metadoc_all__"
 	querySelectedEventsAll = "data.main.tracee_selected_events_all"
+	queryFiltersAll        = "data.main.tracee_filters_all"
 	queryMatchAll          = "data.main.tracee_match_all"
 )
 
@@ -186,6 +187,10 @@ func (a *aio) GetMetadata() (detect.SignatureMetadata, error) {
 
 func (a *aio) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
 	return a.selectedEvents, nil
+}
+
+func (a *aio) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{}, nil
 }
 
 func (a *aio) OnEvent(event protocol.Event) error {

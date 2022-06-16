@@ -43,6 +43,12 @@ func (sig *SchedDebugRecon) GetSelectedEvents() ([]detect.SignatureEventSelector
 	}, nil
 }
 
+func (sig *SchedDebugRecon) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		detect.EqualFilter("security_file_open.args.pathname", sig.schedDebugPaths),
+	}, nil
+}
+
 func (sig *SchedDebugRecon) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

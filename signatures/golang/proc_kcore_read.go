@@ -44,6 +44,12 @@ func (sig *ProcKcoreRead) GetSelectedEvents() ([]detect.SignatureEventSelector, 
 	}, nil
 }
 
+func (sig *ProcKcoreRead) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		detect.SuffixFilter("security_file_open.args.pathname", sig.kcorePath),
+	}, nil
+}
+
 func (sig *ProcKcoreRead) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

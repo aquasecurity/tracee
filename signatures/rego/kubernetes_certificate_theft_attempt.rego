@@ -24,6 +24,24 @@ tracee_selected_events[eventSelector] {
 	eventSelector := eventSelectors[_]
 }
 
+signature_filters := [
+	{
+		"field": "security_file_open.args.pathname",
+		"operator": helpers.filter_equal,
+		"value": ["/etc/kubernetes/pki/*"]
+	},
+	{
+		"field": "security_file_open.context.processName",
+		"operator": helpers.filter_notequal,
+		"value": ["kube-apiserver", "kubelet", "kube-controller", "etcd"]
+	},
+	{
+		"field": "security_file_open.args.flags",
+		"operator": helpers.filter_equal,
+		"value": ["*O_RDONLY*", "*o_rdonly*", "*o_rdwr*", "*O_RDWR*"]
+	}
+]
+
 tracee_match {
 	input.eventName == "security_file_open"
 

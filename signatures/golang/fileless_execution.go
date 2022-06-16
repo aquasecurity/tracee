@@ -41,6 +41,10 @@ func (sig *FilelessExecution) GetSelectedEvents() ([]detect.SignatureEventSelect
 	}, nil
 }
 
+func (sig *FilelessExecution) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{}, nil
+}
+
 func (sig *FilelessExecution) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

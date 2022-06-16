@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -39,6 +40,12 @@ func (sig *DynamicCodeLoading) GetMetadata() (detect.SignatureMetadata, error) {
 func (sig *DynamicCodeLoading) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
 	return []detect.SignatureEventSelector{
 		{Source: "tracee", Name: "mem_prot_alert", Origin: "*"},
+	}, nil
+}
+
+func (sig *DynamicCodeLoading) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		detect.EqualFilter("mem_prot_alert.args.alert", int(trace.ProtAlertMprotectWXToX)),
 	}, nil
 }
 

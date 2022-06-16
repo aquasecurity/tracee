@@ -23,6 +23,14 @@ tracee_selected_events[eventSelector] {
 	eventSelector := eventSelectors[_]
 }
 
+signature_filters := [
+	{
+		"field": "security_file_open.args.pathname",
+		"operator": helpers.filter_equal,
+		"value": ["*/release_agent"]
+	}
+]
+
 tracee_match = res {
 	input.eventName == "security_file_open"
 	flags = helpers.get_tracee_argument("flags")

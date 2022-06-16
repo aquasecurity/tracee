@@ -23,6 +23,15 @@ tracee_selected_events[eventSelector] {
 	eventSelector := eventSelectors[_]
 }
 
+signature_filters := [
+	{
+		#test for hooked_syscalls != [] so non empty
+		"field": "hooked_syscalls.args.hooked_syscalls",
+		"operator": helpers.filter_notequal,
+		"value": ["[]"]
+	},
+]
+
 tracee_match = res {
 	input.eventName == "hooked_syscalls"
 	hooked_syscalls_arr := helpers.get_tracee_argument("hooked_syscalls")

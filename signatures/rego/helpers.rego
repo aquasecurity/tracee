@@ -33,3 +33,10 @@ is_elf_file(string) {
 	sub_string := substring(decoded_string, 1, 3)
 	lower(sub_string) == "elf"
 }
+
+filter_equal = 0
+filter_notequal = 1
+filter_lesser = 2
+filter_lesseq = 3
+filter_greater = 4
+filter_greateq = 5

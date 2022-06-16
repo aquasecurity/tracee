@@ -41,6 +41,13 @@ func (sig *DroppedExecutable) GetSelectedEvents() ([]detect.SignatureEventSelect
 	}, nil
 }
 
+func (sig *DroppedExecutable) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		helpers.MemoryPathFilter("magic_write.args.pathname").Not(),
+		helpers.IsElfFilter("magic_write.args.bytes"),
+	}, nil
+}
+
 func (sig *DroppedExecutable) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

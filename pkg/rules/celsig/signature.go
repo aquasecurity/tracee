@@ -13,6 +13,7 @@ import (
 type signature struct {
 	metadata       detect.SignatureMetadata
 	selectedEvents []detect.SignatureEventSelector
+	filter         []detect.Filter
 	program        cel.Program
 	cb             detect.SignatureHandler
 }
@@ -38,6 +39,7 @@ func NewSignature(config SignatureConfig) (detect.Signature, error) {
 		program:        program,
 		selectedEvents: config.EventSelectors,
 		metadata:       config.Metadata,
+		filter:         config.Filters,
 	}, nil
 }
 
@@ -47,6 +49,10 @@ func (s *signature) GetMetadata() (detect.SignatureMetadata, error) {
 
 func (s *signature) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
 	return s.selectedEvents, nil
+}
+
+func (s *signature) GetFilters() ([]detect.Filter, error) {
+	return s.filter, nil
 }
 
 func (s *signature) Init(cb detect.SignatureHandler) error {

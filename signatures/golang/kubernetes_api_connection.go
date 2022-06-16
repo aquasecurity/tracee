@@ -43,6 +43,12 @@ func (sig *K8sApiConnection) GetSelectedEvents() ([]detect.SignatureEventSelecto
 	}, nil
 }
 
+func (sig *K8sApiConnection) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		detect.ContainsFilter("security_socket_connect.args.remote_addr", "sa_family:AF_INET", "sa_family:AF_INET6"), //maps parse as strings to "map[key1:value1 key2:value2 ...]"
+	}, nil
+}
+
 func (sig *K8sApiConnection) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

@@ -3,6 +3,8 @@ package helpers
 import (
 	"fmt"
 	"strings"
+
+	"github.com/aquasecurity/tracee/types/detect"
 )
 
 // IsFileWrite returns whether the passed file permissions string contains
@@ -35,6 +37,10 @@ func IsMemoryPath(pathname string) bool {
 	return false
 }
 
+func MemoryPathFilter(field string) detect.Filter {
+	return detect.PrefixFilter(field, "memfd:", "/run/shm/", "/dev/shm/")
+}
+
 // IsElf checks if the file starts with an ELF magic.
 func IsElf(bytesArray []byte) bool {
 	if len(bytesArray) >= 4 {
@@ -44,6 +50,10 @@ func IsElf(bytesArray []byte) bool {
 	}
 
 	return false
+}
+
+func IsElfFilter(field string) detect.Filter {
+	return detect.PrefixFilter(field, "[127 69 76 70")
 }
 
 func GetFamilyFromRawAddr(addr map[string]string) (string, error) {

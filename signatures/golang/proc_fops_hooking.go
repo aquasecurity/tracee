@@ -41,6 +41,12 @@ func (sig *ProcFopsHooking) GetSelectedEvents() ([]detect.SignatureEventSelector
 	}, nil
 }
 
+func (sig *ProcFopsHooking) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		detect.NotEqualFilter("hooked_proc_fops.args.hooked_fops_pointers", "[]"),
+	}, nil
+}
+
 func (sig *ProcFopsHooking) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

@@ -19,6 +19,15 @@ eventSelectors := [{
 	"name": "hooked_proc_fops",
 }]
 
+signature_filters := [
+	{
+		#test for hooked_fops_pointers != [] so non empty
+		"field": "hooked_proc_fops.args.hooked_fops_pointers",
+		"operator": helpers.filter_notequal,
+		"value": ["[]"]
+	},
+]
+
 tracee_selected_events[eventSelector] {
 	eventSelector := eventSelectors[_]
 }

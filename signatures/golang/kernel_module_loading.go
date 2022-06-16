@@ -42,6 +42,10 @@ func (sig *KernelModuleLoading) GetSelectedEvents() ([]detect.SignatureEventSele
 	}, nil
 }
 
+func (sig *KernelModuleLoading) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{}, nil
+}
+
 func (sig *KernelModuleLoading) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

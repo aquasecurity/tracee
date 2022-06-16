@@ -47,6 +47,12 @@ func (sig *ProcMemCodeInjection) GetSelectedEvents() ([]detect.SignatureEventSel
 	}, nil
 }
 
+func (sig *ProcMemCodeInjection) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		detect.PrefixFilter("security_file_open.args.pathname", "/proc/"),
+	}, nil
+}
+
 func (sig *ProcMemCodeInjection) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

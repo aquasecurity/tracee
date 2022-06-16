@@ -42,6 +42,10 @@ func (sig *ProcessVmWriteCodeInjection) GetSelectedEvents() ([]detect.SignatureE
 	}, nil
 }
 
+func (sig *ProcessVmWriteCodeInjection) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{}, nil
+}
+
 func (sig *ProcessVmWriteCodeInjection) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

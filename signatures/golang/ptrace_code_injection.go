@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 
+	args "github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -40,6 +41,12 @@ func (sig *PtraceCodeInjection) GetMetadata() (detect.SignatureMetadata, error) 
 func (sig *PtraceCodeInjection) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
 	return []detect.SignatureEventSelector{
 		{Source: "tracee", Name: "ptrace", Origin: "*"},
+	}, nil
+}
+
+func (sig *PtraceCodeInjection) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		detect.EqualFilter("ptrace.args.request", args.PTRACE_POKETEXT.Value()),
 	}, nil
 }
 

@@ -51,6 +51,15 @@ func (sig *RcdModification) GetSelectedEvents() ([]detect.SignatureEventSelector
 	}, nil
 }
 
+func (sig *RcdModification) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		detect.EqualFilter("security_file_open.args.pathname", sig.rcdFiles),
+		detect.EqualFilter("security_inode_rename.args.new_path", sig.rcdFiles),
+		detect.PrefixFilter("security_file_open.args.pathname", sig.rcdDirs...),
+		detect.PrefixFilter("security_inode_rename.args.new_path", sig.rcdDirs...),
+	}, nil
+}
+
 func (sig *RcdModification) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

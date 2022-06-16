@@ -23,6 +23,14 @@ tracee_selected_events[eventSelector] {
 	eventSelector := eventSelectors[_]
 }
 
+signature_filters := [
+	{
+		"field": "mem_prot_alert.args.alert",
+		"operator": helpers.filter_equal,
+		"value": ["\"Protection changed from W+E to E!\""]
+	}
+]
+
 tracee_match {
 	input.eventName == "mem_prot_alert"
 	message := helpers.get_tracee_argument("alert")

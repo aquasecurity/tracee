@@ -44,9 +44,15 @@ func (sig *StdioOverSocket) GetSelectedEvents() ([]detect.SignatureEventSelector
 	}, nil
 }
 
-func (sig *StdioOverSocket) OnEvent(event protocol.Event) error {
+func (sig *StdioOverSocket) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		detect.ContainsFilter("security_socket_connect.args.remote_addr", "sa_family:AF_INET", "sa_family:AF_INET6"), //maps parse as strings to "map[key1:value1 key2:value2 ...]"
+	}, nil
+}
 
+func (sig *StdioOverSocket) OnEvent(event protocol.Event) error {
 	eventObj, ok := event.Payload.(trace.Event)
+
 	if !ok {
 		return fmt.Errorf("invalid event")
 	}

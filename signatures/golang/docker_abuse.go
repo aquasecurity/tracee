@@ -45,6 +45,13 @@ func (sig *DockerAbuse) GetSelectedEvents() ([]detect.SignatureEventSelector, er
 	}, nil
 }
 
+func (sig *DockerAbuse) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		detect.ContainsFilter("security_socket_connect.args.remote_addr", sig.dockerSock), //maps parse as strings to "map[key1:value1 key2:value2 ...]"
+		detect.SuffixFilter("security_file_open.args.pathname", sig.dockerSock),
+	}, nil
+}
+
 func (sig *DockerAbuse) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

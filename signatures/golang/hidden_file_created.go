@@ -44,6 +44,13 @@ func (sig *HiddenFileCreated) GetSelectedEvents() ([]detect.SignatureEventSelect
 	}, nil
 }
 
+func (sig *HiddenFileCreated) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		detect.EqualFilter("magic_write.args.pathname", sig.hiddenPathPattern),
+		helpers.IsElfFilter("magic_write.args.bytes"),
+	}, nil
+}
+
 func (sig *HiddenFileCreated) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

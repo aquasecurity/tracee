@@ -46,6 +46,13 @@ func (sig *IllegitimateShell) GetSelectedEvents() ([]detect.SignatureEventSelect
 	}, nil
 }
 
+func (sig *IllegitimateShell) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		detect.EqualFilter("security_bprm_check.context.processName", sig.webServersProcessNames),
+		detect.SuffixFilter("security_bprm_check.context.pathname", sig.shellNames...),
+	}, nil
+}
+
 func (sig *IllegitimateShell) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

@@ -47,6 +47,15 @@ func (sig *SudoersModification) GetSelectedEvents() ([]detect.SignatureEventSele
 	}, nil
 }
 
+func (sig *SudoersModification) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		detect.EqualFilter("security_file_open.args.pathname", sig.sudoersFiles),
+		detect.EqualFilter("security_inode_rename.args.new_path", sig.sudoersFiles),
+		detect.PrefixFilter("security_file_open.args.pathname", sig.sudoersDirs...),
+		detect.PrefixFilter("security_inode_rename.args.new_path", sig.sudoersDirs...),
+	}, nil
+}
+
 func (sig *SudoersModification) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

@@ -44,6 +44,12 @@ func (sig *CgroupNotifyOnReleaseModification) GetSelectedEvents() ([]detect.Sign
 	}, nil
 }
 
+func (sig *CgroupNotifyOnReleaseModification) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		detect.SuffixFilter("security_file_open.args.pathname", sig.notifyFileName),
+	}, nil
+}
+
 func (sig *CgroupNotifyOnReleaseModification) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

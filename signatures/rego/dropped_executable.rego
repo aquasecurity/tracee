@@ -24,6 +24,8 @@ tracee_selected_events[eventSelector] {
 	eventSelector := eventSelectors[_]
 }
 
+signature_filters := []
+
 tracee_match = res {
 	input.eventName == "magic_write"
 

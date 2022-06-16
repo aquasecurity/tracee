@@ -47,6 +47,13 @@ func (sig *KubernetesCertificateTheftAttempt) GetSelectedEvents() ([]detect.Sign
 	}, nil
 }
 
+func (sig *KubernetesCertificateTheftAttempt) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		detect.PrefixFilter("security_file_open.args.pathname", sig.k8sCertificatesDir),
+		detect.PrefixFilter("security_inode_rename.args.old_path", sig.k8sCertificatesDir),
+	}, nil
+}
+
 func (sig *KubernetesCertificateTheftAttempt) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

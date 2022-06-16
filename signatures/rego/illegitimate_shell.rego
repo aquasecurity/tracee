@@ -24,6 +24,19 @@ tracee_selected_events[eventSelector] {
 	eventSelector := eventSelectors[_]
 }
 
+signature_filters := [
+	{
+		"field": "security_bprm_check.args.pathname",
+		"operator": helpers.filter_equal,
+		"value": ["*/ash", "*/bash", "*/csh", "*/ksh", "*/sh", "*/tcsh", "*/zsh", "*/dash"]
+	},
+	{
+		"field": "security_bprm_check.context.processName",
+		"operator": helpers.filter_equal,
+		"value": ["nginx", "httpd", "httpd-foregroun", "lighttpd", "apache", "apache2"]
+	}
+]
+
 tracee_match {
 	input.eventName == "security_bprm_check"
 

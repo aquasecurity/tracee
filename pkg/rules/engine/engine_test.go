@@ -18,6 +18,7 @@ import (
 type regoFakeSignature struct {
 	getMetadata       func() (detect.SignatureMetadata, error)
 	getSelectedEvents func() ([]detect.SignatureEventSelector, error)
+	getFilter         func() ([]detect.Filter, error)
 	init              func(detect.SignatureHandler) error
 	onEvent           func(protocol.Event) error
 	onSignal          func(signal detect.Signal) error
@@ -40,6 +41,14 @@ func (fs regoFakeSignature) GetSelectedEvents() ([]detect.SignatureEventSelector
 	}
 
 	return []detect.SignatureEventSelector{}, nil
+}
+
+func (fs regoFakeSignature) GetFilters() ([]detect.Filter, error) {
+	if fs.getFilter != nil {
+		return fs.getFilter()
+	}
+
+	return []detect.Filter{}, nil
 }
 
 func (fs regoFakeSignature) Init(cb detect.SignatureHandler) error {
@@ -67,6 +76,7 @@ func (fs *regoFakeSignature) Close() {}
 type fakeSignature struct {
 	getMetadata       func() (detect.SignatureMetadata, error)
 	getSelectedEvents func() ([]detect.SignatureEventSelector, error)
+	getFilter         func() ([]detect.Filter, error)
 	init              func(detect.SignatureHandler) error
 	onEvent           func(protocol.Event) error
 	onSignal          func(signal detect.Signal) error
@@ -89,6 +99,14 @@ func (fs fakeSignature) GetSelectedEvents() ([]detect.SignatureEventSelector, er
 	}
 
 	return []detect.SignatureEventSelector{}, nil
+}
+
+func (fs fakeSignature) GetFilters() ([]detect.Filter, error) {
+	if fs.getFilter != nil {
+		return fs.getFilter()
+	}
+
+	return []detect.Filter{}, nil
 }
 
 func (fs fakeSignature) Init(cb detect.SignatureHandler) error {

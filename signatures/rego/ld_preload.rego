@@ -29,6 +29,24 @@ tracee_selected_events[eventSelector] {
 	eventSelector := eventSelectors[_]
 }
 
+signature_filters := [
+	{
+		"field": "security_file_open.args.pathname",
+		"operator": helpers.filter_equal,
+		"value": ["/etc/ld.so.preload"]
+	},
+	{
+		"field": "security_file_open.args.flags",
+		"operator": helpers.filter_equal,
+		"value": ["*O_WRONLY*", "*o_wronly*", "*o_rdwr*", "*O_RDWR*"]
+	},
+	{
+		"field": "execve.args.envp",
+		"operator": helpers.filter_equal,
+		"value": ["*LD_PRELOAD*", "*LD_LIBRARY_PATH*"]
+	}
+]
+
 tracee_match {
 	input.eventName == "execve"
 	envp = helpers.get_tracee_argument("envp")

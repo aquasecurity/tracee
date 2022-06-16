@@ -21,6 +21,10 @@ func (n *noop) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
 	return []detect.SignatureEventSelector{}, nil
 }
 
+func (n *noop) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{}, nil
+}
+
 func (n *noop) Init(cb detect.SignatureHandler) error {
 	n.cb = cb
 	return nil

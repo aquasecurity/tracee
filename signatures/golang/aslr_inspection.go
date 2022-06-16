@@ -43,6 +43,12 @@ func (sig *AslrInspection) GetSelectedEvents() ([]detect.SignatureEventSelector,
 	}, nil
 }
 
+func (sig *AslrInspection) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{
+		detect.EqualFilter("security_file_open.args.pathname", sig.aslrPath),
+	}, nil
+}
+
 func (sig *AslrInspection) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)

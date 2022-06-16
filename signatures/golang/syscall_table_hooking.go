@@ -41,6 +41,10 @@ func (sig *SyscallTableHooking) GetSelectedEvents() ([]detect.SignatureEventSele
 	}, nil
 }
 
+func (sig *SyscallTableHooking) GetFilters() ([]detect.Filter, error) {
+	return []detect.Filter{}, nil
+}
+
 func (sig *SyscallTableHooking) OnEvent(event protocol.Event) error {
 
 	eventObj, ok := event.Payload.(trace.Event)
