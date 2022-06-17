@@ -4,13 +4,55 @@
 // SPDX-License-Identifier: GPL-2.0
 // Copyright (C) Aqua Security inc.
 
-#undef container_of
-#include <vmlinux.h>
-#include <missing_definitions.h>
-#include <macros.h>
-#include <internal_types.h>
-#include <maps.h>
+#include <uapi/linux/magic.h>
+#include <uapi/linux/ptrace.h>
+#include <uapi/linux/in.h>
+#include <uapi/linux/in6.h>
+#include <uapi/linux/uio.h>
+#include <uapi/linux/un.h>
+#include <uapi/linux/utsname.h>
+#include <uapi/linux/stat.h>
+#include <linux/binfmts.h>
+#include <linux/cred.h>
+#include <linux/sched.h>
+#include <linux/signal.h>
+#include <linux/fs.h>
+#include <linux/mm_types.h>
+#include <linux/mount.h>
+#include <linux/nsproxy.h>
+#include <linux/ns_common.h>
+#include <linux/pid_namespace.h>
+#include <linux/ipc_namespace.h>
+#include <net/net_namespace.h>
+#include <linux/utsname.h>
+#include <linux/cgroup.h>
+#include <linux/security.h>
+#include <linux/socket.h>
+#include <linux/version.h>
+#include <linux/fdtable.h>
+#define KBUILD_MODNAME "tracee"
+#include <net/af_unix.h>
+#include <net/sock.h>
+#include <net/inet_sock.h>
+#include <net/ipv6.h>
+#include <net/tcp_states.h>
+#include <linux/ipv6.h>
+#include <uapi/linux/icmp.h>
+#include <uapi/linux/icmpv6.h>
 
+#include <uapi/linux/bpf.h>
+#include <linux/bpf.h>
+#include <linux/kconfig.h>
+#include <linux/version.h>
+
+#include <linux/if_ether.h>
+#include <linux/in.h>
+#include <linux/ip.h>
+#include <linux/ipv6.h>
+#include <linux/pkt_cls.h>
+#include <linux/tcp.h>
+
+#undef container_of
 #include <bpf_core_read.h>
 #include <bpf_helpers.h>
 #include <bpf_tracing.h>
@@ -21,6 +63,617 @@
 #elif defined(bpf_target_arm64)
     #define PT_REGS_PARM6(x) ((x)->regs[5])
 #endif
+
+// INTERNAL ----------------------------------------------------------------------------------------
+
+#define MAX_PERCPU_BUFSIZE  (1 << 15) // set by the kernel as an upper bound
+#define MAX_STRING_SIZE     4096      // same as PATH_MAX
+#define MAX_BYTES_ARR_SIZE  4096      // max size of bytes array (arbitrarily chosen)
+#define MAX_STACK_ADDRESSES 1024      // max amount of diff stack trace addrs to buffer
+#define MAX_STACK_DEPTH     20        // max depth of each stack trace to track
+#define MAX_STR_FILTER_SIZE 16        // bounded to size of the compared values (comm)
+#define FILE_MAGIC_HDR_SIZE 32        // magic_write: bytes to save from a file's header
+#define FILE_MAGIC_MASK     31        // magic_write: mask used for verifier boundaries
+#define NET_SEQ_OPS_SIZE    4         // print_net_seq_ops: struct size
+#define MAX_KSYM_NAME_SIZE  64
+
+enum buf_idx_e
+{
+    SUBMIT_BUF_IDX,
+    STRING_BUF_IDX,
+    FILE_BUF_IDX,
+    MAX_BUFFERS
+};
+
+enum bin_type_e
+{
+    SEND_VFS_WRITE = 1,
+    SEND_MPROTECT,
+    SEND_KERNEL_MODULE,
+};
+
+#define SEND_META_SIZE 24
+
+enum mem_prot_alert_e
+{
+    ALERT_MMAP_W_X = 1,
+    ALERT_MPROT_X_ADD,
+    ALERT_MPROT_W_ADD,
+    ALERT_MPROT_W_REM
+};
+
+enum tail_call_id_e
+{
+    TAIL_VFS_WRITE,
+    TAIL_VFS_WRITEV,
+    TAIL_SEND_BIN,
+    TAIL_SEND_BIN_TP,
+    TAIL_KERNEL_WRITE,
+    MAX_TAIL_CALL
+};
+
+enum argument_type_e
+{
+    NONE_T = 0UL,
+    INT_T,
+    UINT_T,
+    LONG_T,
+    ULONG_T,
+    OFF_T_T,
+    MODE_T_T,
+    DEV_T_T,
+    SIZE_T_T,
+    POINTER_T,
+    STR_T,
+    STR_ARR_T,
+    SOCKADDR_T,
+    BYTES_T,
+    U16_T,
+    CRED_T,
+    INT_ARR_2_T,
+    UINT64_ARR_T,
+    TYPE_MAX = 255UL
+};
+
+#if defined(bpf_target_x86)
+    #define SYS_MMAP         9
+    #define SYS_MPROTECT     10
+    #define SYS_RT_SIGRETURN 15
+    #define SYS_EXECVE       59
+    #define SYS_EXIT         60
+    #define SYS_EXIT_GROUP   231
+    #define SYS_EXECVEAT     322
+    #define SYSCALL_CONNECT  42
+    #define SYSCALL_ACCEPT   43
+    #define SYSCALL_ACCEPT4  288
+    #define SYSCALL_LISTEN   50
+    #define SYSCALL_BIND     49
+    #define SYSCALL_SOCKET   41
+    #define SYS_DUP          32
+    #define SYS_DUP2         33
+    #define SYS_DUP3         292
+#elif defined(bpf_target_arm64)
+    #define SYS_MMAP         222
+    #define SYS_MPROTECT     226
+    #define SYS_RT_SIGRETURN 139
+    #define SYS_EXECVE       221
+    #define SYS_EXIT         93
+    #define SYS_EXIT_GROUP   94
+    #define SYS_EXECVEAT     281
+    #define SYSCALL_CONNECT  203
+    #define SYSCALL_ACCEPT   202
+    #define SYSCALL_ACCEPT4  242
+    #define SYSCALL_LISTEN   201
+    #define SYSCALL_BIND     200
+    #define SYSCALL_SOCKET   198
+    #define SYS_DUP          23
+    #define SYS_DUP2         1000 // undefined in arm64
+    #define SYS_DUP3         24
+#endif
+
+enum event_id_e
+{
+    // Common event IDs
+    RAW_SYS_ENTER = 1000,
+    RAW_SYS_EXIT,
+    SCHED_PROCESS_FORK,
+    SCHED_PROCESS_EXEC,
+    SCHED_PROCESS_EXIT,
+    SCHED_SWITCH,
+    DO_EXIT,
+    CAP_CAPABLE,
+    VFS_WRITE,
+    VFS_WRITEV,
+    MEM_PROT_ALERT,
+    COMMIT_CREDS,
+    SWITCH_TASK_NS,
+    MAGIC_WRITE,
+    CGROUP_ATTACH_TASK,
+    CGROUP_MKDIR,
+    CGROUP_RMDIR,
+    SECURITY_BPRM_CHECK,
+    SECURITY_FILE_OPEN,
+    SECURITY_INODE_UNLINK,
+    SECURITY_SOCKET_CREATE,
+    SECURITY_SOCKET_LISTEN,
+    SECURITY_SOCKET_CONNECT,
+    SECURITY_SOCKET_ACCEPT,
+    SECURITY_SOCKET_BIND,
+    SECURITY_SB_MOUNT,
+    SECURITY_BPF,
+    SECURITY_BPF_MAP,
+    SECURITY_KERNEL_READ_FILE,
+    SECURITY_INODE_MKNOD,
+    SECURITY_POST_READ_FILE,
+    SECURITY_INODE_SYMLINK,
+    SECURITY_MMAP_FILE,
+    SECURITY_FILE_MPROTECT,
+    SOCKET_DUP,
+    HIDDEN_INODES,
+    __KERNEL_WRITE,
+    PROC_CREATE,
+    KPROBE_ATTACH,
+    CALL_USERMODE_HELPER,
+    DIRTY_PIPE_SPLICE,
+    DEBUGFS_CREATE_FILE,
+    PRINT_SYSCALL_TABLE,
+    DEBUGFS_CREATE_DIR,
+    DEVICE_ADD,
+    REGISTER_CHRDEV,
+    SHARED_OBJECT_LOADED,
+    DO_INIT_MODULE,
+    SOCKET_ACCEPT,
+    LOAD_ELF_PHDRS,
+    HOOKED_PROC_FOPS,
+    PRINT_NET_SEQ_OPS,
+    MAX_EVENT_ID,
+
+    // Net events IDs
+    NET_PACKET = 4000,
+    DNS_REQUEST,
+    DNS_RESPONSE,
+
+    // Debug events IDs
+    DEBUG_NET_SECURITY_BIND = 5000,
+    DEBUG_NET_UDP_SENDMSG,
+    DEBUG_NET_UDP_DISCONNECT,
+    DEBUG_NET_UDP_DESTROY_SOCK,
+    DEBUG_NET_UDPV6_DESTROY_SOCK,
+    DEBUG_NET_INET_SOCK_SET_STATE,
+    DEBUG_NET_TCP_CONNECT
+};
+
+enum bpf_config_e
+{
+    CONFIG_TRACEE_PID,
+    CONFIG_OPTIONS,
+    CONFIG_FILTERS,
+    CONFIG_CGROUP_V1_HID
+};
+
+#define CAPTURE_IFACE (1 << 0)
+#define TRACE_IFACE   (1 << 1)
+
+#define OPT_SHOW_SYSCALL         (1 << 0)
+#define OPT_EXEC_ENV             (1 << 1)
+#define OPT_CAPTURE_FILES        (1 << 2)
+#define OPT_EXTRACT_DYN_CODE     (1 << 3)
+#define OPT_CAPTURE_STACK_TRACES (1 << 4)
+#define OPT_DEBUG_NET            (1 << 5)
+#define OPT_CAPTURE_MODULES      (1 << 6)
+#define OPT_CGROUP_V1            (1 << 7)
+#define OPT_PROCESS_INFO         (1 << 8)
+
+#define FILTER_UID_ENABLED       (1 << 0)
+#define FILTER_UID_OUT           (1 << 1)
+#define FILTER_MNT_NS_ENABLED    (1 << 2)
+#define FILTER_MNT_NS_OUT        (1 << 3)
+#define FILTER_PID_NS_ENABLED    (1 << 4)
+#define FILTER_PID_NS_OUT        (1 << 5)
+#define FILTER_UTS_NS_ENABLED    (1 << 6)
+#define FILTER_UTS_NS_OUT        (1 << 7)
+#define FILTER_COMM_ENABLED      (1 << 8)
+#define FILTER_COMM_OUT          (1 << 9)
+#define FILTER_PID_ENABLED       (1 << 10)
+#define FILTER_PID_OUT           (1 << 11)
+#define FILTER_CONT_ENABLED      (1 << 12)
+#define FILTER_CONT_OUT          (1 << 13)
+#define FILTER_FOLLOW_ENABLED    (1 << 14)
+#define FILTER_NEW_PID_ENABLED   (1 << 15)
+#define FILTER_NEW_PID_OUT       (1 << 16)
+#define FILTER_NEW_CONT_ENABLED  (1 << 17)
+#define FILTER_NEW_CONT_OUT      (1 << 18)
+#define FILTER_PROC_TREE_ENABLED (1 << 19)
+#define FILTER_PROC_TREE_OUT     (1 << 20)
+#define FILTER_CGROUP_ID_ENABLED (1 << 21)
+#define FILTER_CGROUP_ID_OUT     (1 << 22)
+
+enum filter_options_e
+{
+    UID_LESS,
+    UID_GREATER,
+    PID_LESS,
+    PID_GREATER,
+    MNTNS_LESS,
+    MNTNS_GREATER,
+    PIDNS_LESS,
+    PIDNS_GREATER
+};
+
+#define LESS_NOT_SET    0
+#define GREATER_NOT_SET ULLONG_MAX
+
+#define DEV_NULL_STR 0
+
+#define CONT_ID_LEN          12
+#define CONT_ID_MIN_FULL_LEN 64
+
+enum container_state_e
+{
+    CONTAINER_EXISTED = 1, // container existed before tracee was started
+    CONTAINER_CREATED,     // new cgroup path created
+    CONTAINER_STARTED      // a process in the cgroup executed a new binary
+};
+
+#define PACKET_MIN_SIZE 40
+
+#if LINUX_VERSION_CODE <                                                                       \
+    KERNEL_VERSION(5, 2, 0) // lower values in old kernels (instr lim is 4096)
+    #define MAX_STR_ARR_ELEM      40
+    #define MAX_ARGS_STR_ARR_ELEM 15
+    #define MAX_PATH_PREF_SIZE    64
+    #define MAX_PATH_COMPONENTS   20
+    #define MAX_BIN_CHUNKS        110
+#else // complexity limit of 1M verified instructions
+    #define MAX_STR_ARR_ELEM      128
+    #define MAX_ARGS_STR_ARR_ELEM 128
+    #define MAX_PATH_PREF_SIZE    128
+    #define MAX_PATH_COMPONENTS   48
+    #define MAX_BIN_CHUNKS        256
+#endif
+
+#define IOCTL_FETCH_SYSCALLS            (1 << 0) // bit wise flags
+#define IOCTL_HOOKED_SEQ_OPS            (1 << 1)
+#define NUMBER_OF_SYSCALLS_TO_CHECK_X86 18
+#define NUMBER_OF_SYSCALLS_TO_CHECK_ARM 14
+
+#define MAX_CACHED_PATH_SIZE 64
+
+// EBPF KCONFIGS -----------------------------------------------------------------------------------
+
+
+#define get_kconfig(x) CONFIG_##x
+
+#ifndef CONFIG_ARCH_HAS_SYSCALL_WRAPPER
+    #define CONFIG_ARCH_HAS_SYSCALL_WRAPPER 0
+#endif
+
+
+// EBPF MACRO HELPERS ------------------------------------------------------------------------------
+
+#define GET_FIELD_ADDR(field) &field
+
+#define READ_KERN(ptr)                                                                         \
+    ({                                                                                         \
+        typeof(ptr) _val;                                                                      \
+        __builtin_memset((void *) &_val, 0, sizeof(_val));                                     \
+        bpf_probe_read((void *) &_val, sizeof(_val), &ptr);                                    \
+        _val;                                                                                  \
+    })
+
+#define READ_USER(ptr)                                                                         \
+    ({                                                                                         \
+        typeof(ptr) _val;                                                                      \
+        __builtin_memset((void *) &_val, 0, sizeof(_val));                                     \
+        bpf_probe_read_user((void *) &_val, sizeof(_val), &ptr);                               \
+        _val;                                                                                  \
+    })
+
+// EBPF MAP MACROS ---------------------------------------------------------------------------------
+
+#define BPF_MAP(_name, _type, _key_type, _value_type, _max_entries)                                \
+    struct {                                                                                       \
+        __uint(type, _type);                                                                       \
+        __uint(max_entries, _max_entries);                                                         \
+        __type(key, _key_type);                                                                    \
+        __type(value, _value_type);                                                                \
+    } _name SEC(".maps");
+
+#define BPF_HASH(_name, _key_type, _value_type)                                                    \
+    BPF_MAP(_name, BPF_MAP_TYPE_HASH, _key_type, _value_type, 10240)
+
+#define BPF_LRU_HASH(_name, _key_type, _value_type)                                                \
+    BPF_MAP(_name, BPF_MAP_TYPE_LRU_HASH, _key_type, _value_type, 10240)
+
+#define BPF_ARRAY(_name, _value_type, _max_entries)                                                \
+    BPF_MAP(_name, BPF_MAP_TYPE_ARRAY, u32, _value_type, _max_entries)
+
+#define BPF_PERCPU_ARRAY(_name, _value_type, _max_entries)                                         \
+    BPF_MAP(_name, BPF_MAP_TYPE_PERCPU_ARRAY, u32, _value_type, _max_entries)
+
+#define BPF_PROG_ARRAY(_name, _max_entries)                                                        \
+    BPF_MAP(_name, BPF_MAP_TYPE_PROG_ARRAY, u32, u32, _max_entries)
+
+#define BPF_PERF_OUTPUT(_name) BPF_MAP(_name, BPF_MAP_TYPE_PERF_EVENT_ARRAY, int, __u32, 1024)
+
+// stack traces: the value is 1 big byte array of the stack addresses
+typedef __u64 stack_trace_t[MAX_STACK_DEPTH];
+#define BPF_STACK_TRACE(_name, _max_entries)                                                       \
+    BPF_MAP(_name, BPF_MAP_TYPE_STACK_TRACE, u32, stack_trace_t, _max_entries)
+
+#ifdef RHEL_RELEASE_CODE
+    #if (RHEL_RELEASE_CODE >= RHEL_RELEASE_VERSION(8, 0))
+        #define RHEL_RELEASE_GT_8_0
+    #endif
+#endif
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 18, 0)
+    #error Minimal required kernel version is 4.18
+#endif
+
+// INTERNAL STRUCTS --------------------------------------------------------------------------------
+
+typedef struct event_context {
+    u64 ts; // Timestamp
+    u64 cgroup_id;
+    u32 pid;       // PID as in the userspace term
+    u32 tid;       // TID as in the userspace term
+    u32 ppid;      // Parent PID as in the userspace term
+    u32 host_pid;  // PID in host pid namespace
+    u32 host_tid;  // TID in host pid namespace
+    u32 host_ppid; // Parent PID in host pid namespace
+    u32 uid;
+    u32 mnt_id;
+    u32 pid_id;
+    char comm[TASK_COMM_LEN];
+    char uts_name[TASK_COMM_LEN];
+    u32 eventid;
+    s64 retval;
+    u32 stack_id;
+    u16 processor_id; // The ID of the processor which processed the event
+    u8 argnum;
+} context_t;
+
+typedef struct process_context {
+    u64 start_time; // thread's start time
+    u64 cgroup_id;
+    u32 pid;       // PID as in the userspace term
+    u32 tid;       // TID as in the userspace term
+    u32 ppid;      // Parent PID as in the userspace term
+    u32 host_pid;  // PID in host pid namespace
+    u32 host_tid;  // TID in host pid namespace
+    u32 host_ppid; // Parent PID in host pid namespace
+    u32 uid;
+    u32 mnt_id;
+    u32 pid_id;
+    char comm[TASK_COMM_LEN];
+} process_context_t;
+
+typedef struct args {
+    unsigned long args[6];
+} args_t;
+
+typedef struct syscall_data {
+    uint id;           // Current syscall id
+    args_t args;       // Syscall arguments
+    unsigned long ts;  // Timestamp of syscall entry
+    unsigned long ret; // Syscall ret val. May be used by syscall exit tail calls.
+} syscall_data_t;
+
+typedef struct bin_args {
+    u8 type;
+    u8 metadata[SEND_META_SIZE];
+    char *ptr;
+    loff_t start_off;
+    unsigned int full_size;
+    u8 iov_idx;
+    u8 iov_len;
+    struct iovec *vec;
+} bin_args_t;
+
+typedef struct simple_buf {
+    u8 buf[MAX_PERCPU_BUFSIZE];
+} buf_t;
+
+typedef struct path_filter {
+    char path[MAX_PATH_PREF_SIZE];
+} path_filter_t;
+
+typedef struct string_filter {
+    char str[MAX_STR_FILTER_SIZE];
+} string_filter_t;
+
+typedef struct ksym_name {
+    char str[MAX_KSYM_NAME_SIZE];
+} ksym_name_t;
+
+typedef struct event_data {
+    struct task_struct *task;
+    context_t context;
+    void *ctx;
+    buf_t *submit_p;
+    u32 buf_off;
+    u32 options;
+} event_data_t;
+
+// For a good summary about capabilities, see https://lwn.net/Articles/636533/
+typedef struct slim_cred {
+    uid_t uid;           // real UID of the task
+    gid_t gid;           // real GID of the task
+    uid_t suid;          // saved UID of the task
+    gid_t sgid;          // saved GID of the task
+    uid_t euid;          // effective UID of the task
+    gid_t egid;          // effective GID of the task
+    uid_t fsuid;         // UID for VFS ops
+    gid_t fsgid;         // GID for VFS ops
+    u32 user_ns;         // User Namespace of the event
+    u32 securebits;      // SUID-less security management
+    u64 cap_inheritable; // caps our children can inherit
+    u64 cap_permitted;   // caps we're permitted
+    u64 cap_effective;   // caps we can actually use
+    u64 cap_bset;        // capability bounding set
+    u64 cap_ambient;     // Ambient capability set
+} slim_cred_t;
+
+typedef struct network_connection_v4 {
+    u32 local_address;
+    u16 local_port;
+    u32 remote_address;
+    u16 remote_port;
+} net_conn_v4_t;
+
+typedef struct network_connection_v6 {
+    struct in6_addr local_address;
+    u16 local_port;
+    struct in6_addr remote_address;
+    u16 remote_port;
+    u32 flowinfo;
+    u32 scope_id;
+} net_conn_v6_t;
+
+typedef struct local_net_id {
+    struct in6_addr address;
+    u16 port;
+    u16 protocol;
+} local_net_id_t;
+
+typedef struct net_packet {
+    uint64_t ts;
+    u32 event_id;
+    u32 host_tid;
+    char comm[TASK_COMM_LEN];
+    u32 len;
+    u32 ifindex;
+    struct in6_addr src_addr, dst_addr;
+    __be16 src_port, dst_port;
+    u8 protocol;
+} net_packet_t;
+
+typedef struct net_debug {
+    uint64_t ts;
+    u32 event_id;
+    u32 host_tid;
+    char comm[TASK_COMM_LEN];
+    struct in6_addr local_addr, remote_addr;
+    __be16 local_port, remote_port;
+    u8 protocol;
+    int old_state;
+    int new_state;
+    u64 sk_ptr;
+} net_debug_t;
+
+typedef struct net_ctx {
+    u32 host_tid;
+    char comm[TASK_COMM_LEN];
+} net_ctx_t;
+
+typedef struct net_ctx_ext {
+    u32 host_tid;
+    char comm[TASK_COMM_LEN];
+    __be16 local_port;
+} net_ctx_ext_t;
+
+// version is not size limited - save only first 32 bytes.
+// srcversion is not size limited - modpost calculates srcversion with size: 25.
+#define MODULE_VERSION_MAX_LENGTH    32
+#define MODULE_SRCVERSION_MAX_LENGTH 25
+
+typedef struct kernel_module_data {
+    char name[MODULE_NAME_LEN];
+    char version[MODULE_VERSION_MAX_LENGTH];
+    char srcversion[MODULE_SRCVERSION_MAX_LENGTH];
+    u64 prev;
+    u64 next;
+} kernel_module_data_t;
+
+typedef struct file_id {
+    char pathname[MAX_CACHED_PATH_SIZE];
+    dev_t device;
+    unsigned long inode;
+} file_id_t;
+
+// KERNEL STRUCTS ----------------------------------------------------------------------------------
+
+struct mnt_namespace {
+    atomic_t count;
+    struct ns_common ns;
+    // ...
+};
+
+struct mount {
+    struct hlist_node mnt_hash;
+    struct mount *mnt_parent;
+    struct dentry *mnt_mountpoint;
+    struct vfsmount mnt;
+    // ...
+};
+
+struct kretprobe_instance {
+};
+typedef int kprobe_opcode_t;
+struct kprobe;
+
+typedef int (*kprobe_pre_handler_t)(struct kprobe *, struct pt_regs *);
+typedef void (*kprobe_post_handler_t)(struct kprobe *, struct pt_regs *, unsigned long flags);
+typedef int (*kretprobe_handler_t)(struct kretprobe_instance *, struct pt_regs *);
+
+struct kprobe {
+    kprobe_opcode_t *addr;
+    const char *symbol_name;
+    kprobe_pre_handler_t pre_handler;
+    kprobe_post_handler_t post_handler;
+};
+
+    #define get_type_size(x)            sizeof(x)
+    #define get_node_addr(array, index) &array[index]
+
+// EBPF MAPS DECLARATIONS --------------------------------------------------------------------------
+
+// clang-format off
+
+BPF_HASH(kconfig_map, u32, u32);                        // kernel config variables
+BPF_HASH(interpreter_map, u32, file_id_t);              // interpreter file used for each process
+BPF_HASH(events_to_submit, u32, u32);                   // events chosen by the user
+BPF_HASH(traced_pids_map, u32, u32);                    // track traced pids
+BPF_HASH(new_pids_map, u32, u32);                       // track processes of newly executed binaries
+BPF_HASH(containers_map, u32, u8);                      // map cgroup id to container status {EXISTED, CREATED, STARTED}
+BPF_HASH(args_map, u64, args_t);                        // persist args between function entry and return
+BPF_HASH(syscall_data_map, u32, syscall_data_t);        // persist data during syscall execution
+BPF_HASH(inequality_filter, u32, u64);                  // filter events by some uint field either by < or >
+BPF_HASH(uid_filter, u32, u32);                         // filter events by UID, for specific UIDs either by == or !=
+BPF_HASH(pid_filter, u32, u32);                         // filter events by PID
+BPF_HASH(mnt_ns_filter, u64, u32);                      // filter events by mount namespace id
+BPF_HASH(pid_ns_filter, u64, u32);                      // filter events by pid namespace id
+BPF_HASH(uts_ns_filter, string_filter_t, u32);          // filter events by uts namespace name
+BPF_HASH(comm_filter, string_filter_t, u32);            // filter events by command name
+BPF_HASH(cgroup_id_filter, u32, u32);                   // filter events by cgroup id
+BPF_HASH(bin_args_map, u64, bin_args_t);                // persist args for send_bin funtion
+BPF_HASH(sys_32_to_64_map, u32, u32);                   // map 32bit to 64bit syscalls
+BPF_HASH(params_types_map, u32, u64);                   // encoded parameters types for event
+BPF_HASH(process_tree_map, u32, u32);                   // filter events by the ancestry of the traced process
+BPF_HASH(process_context_map, u32, process_context_t);  // holds the process_context data for every tid
+BPF_HASH(network_config, u32, int);                     // holds the network config for each iface
+BPF_HASH(ksymbols_map, ksym_name_t, u64);               // holds the addresses of some kernel symbols
+BPF_HASH(syscalls_to_check_map, int, u64);              // syscalls to discover
+BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t);         // socket address to process context
+BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t);   // network identifier to process context
+BPF_ARRAY(config_map, u32, 4);                          // various configurations
+BPF_ARRAY(file_filter, path_filter_t, 3);               // filter vfs_write events
+BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);             // percpu global buffer variables
+BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS);           // holds offsets to bufs respectively
+BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);              // store programs for tail calls
+BPF_PROG_ARRAY(prog_array_tp, MAX_TAIL_CALL);           // store programs for tail calls
+BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);          // store programs for tail calls
+BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID);           // store programs for tail calls
+BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);  // store stack traces
+BPF_HASH(module_init_map, u32, kernel_module_data_t);   // holds module information between
+
+// clang-format on
+
+// EBPF PERF BUFFERS -------------------------------------------------------------------------------
+
+BPF_PERF_OUTPUT(events);      // events submission
+BPF_PERF_OUTPUT(file_writes); // file writes events submission
+BPF_PERF_OUTPUT(net_events);  // network events submission
 
 // HELPERS: DEVICES --------------------------------------------------------------------------------
 
@@ -105,15 +758,15 @@ static __always_inline u32 get_task_ns_pid(struct task_struct *task)
     struct pid_namespace *pid_ns_children = READ_KERN(namespaceproxy->pid_ns_for_children);
     unsigned int level = READ_KERN(pid_ns_children->level);
 
-    if (bpf_core_type_exists(struct pid_link)) {
-        struct task_struct___older_v50 *t = (void *) task;
-        struct pid_link *pl = READ_KERN(t->pids);
-        struct pid *p = READ_KERN(pl[PIDTYPE_MAX].pid);
-        nr = READ_KERN(p->numbers[level].nr);
-    } else {
-        struct pid *tpid = READ_KERN(task->thread_pid);
-        nr = READ_KERN(tpid->numbers[level].nr);
-    }
+
+    #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && !defined(RHEL_RELEASE_GT_8_0))
+    // kernel 4.14-4.18
+    nr = READ_KERN(READ_KERN(task->pids[PIDTYPE_PID].pid)->numbers[level].nr);
+    #else
+    // kernel 4.19 onwards
+    struct pid *tpid = READ_KERN(task->thread_pid);
+    nr = READ_KERN(tpid->numbers[level].nr);
+    #endif
 
     return nr;
 }
@@ -126,15 +779,14 @@ static __always_inline u32 get_task_ns_tgid(struct task_struct *task)
     unsigned int level = READ_KERN(pid_ns_children->level);
     struct task_struct *group_leader = READ_KERN(task->group_leader);
 
-    if (bpf_core_type_exists(struct pid_link)) {
-        struct task_struct___older_v50 *gl = (void *) group_leader;
-        struct pid_link *pl = READ_KERN(gl->pids);
-        struct pid *p = READ_KERN(pl[PIDTYPE_MAX].pid);
-        nr = READ_KERN(p->numbers[level].nr);
-    } else {
-        struct pid *tpid = READ_KERN(group_leader->thread_pid);
-        nr = READ_KERN(tpid->numbers[level].nr);
-    }
+    #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && !defined(RHEL_RELEASE_GT_8_0))
+    // kernel 4.14-4.18
+    nr = READ_KERN(READ_KERN(group_leader->pids[PIDTYPE_PID].pid)->numbers[level].nr);
+    #else
+    // kernel 4.19 onwards
+    struct pid *tpid = READ_KERN(group_leader->thread_pid);
+    nr = READ_KERN(tpid->numbers[level].nr);
+    #endif
 
     return nr;
 }
@@ -147,15 +799,14 @@ static __always_inline u32 get_task_ns_ppid(struct task_struct *task)
     struct pid_namespace *pid_ns_children = READ_KERN(namespaceproxy->pid_ns_for_children);
     unsigned int level = READ_KERN(pid_ns_children->level);
 
-    if (bpf_core_type_exists(struct pid_link)) {
-        struct task_struct___older_v50 *rp = (void *) real_parent;
-        struct pid_link *pl = READ_KERN(rp->pids);
-        struct pid *p = READ_KERN(pl[PIDTYPE_MAX].pid);
-        nr = READ_KERN(p->numbers[level].nr);
-    } else {
-        struct pid *tpid = READ_KERN(real_parent->thread_pid);
-        nr = READ_KERN(tpid->numbers[level].nr);
-    }
+    #if (LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0) && !defined(RHEL_RELEASE_GT_8_0))
+    // kernel 4.14-4.18
+    nr = (READ_KERN(real_parent->pids[PIDTYPE_PID].pid)->numbers[level].nr);
+    #else
+    // kernel 4.19 onwards
+    struct pid *tpid = READ_KERN(real_parent->thread_pid);
+    nr = READ_KERN(tpid->numbers[level].nr);
+    #endif
 
     return nr;
 }
@@ -254,26 +905,7 @@ static __always_inline const u64 get_cgroup_id(struct cgroup *cgrp)
 
     u64 id; // was union kernfs_node_id before 5.5, can read it as u64 in both situations
 
-    if (bpf_core_type_exists(union kernfs_node_id)) {
-        struct kernfs_node___older_v55 *kn_old = (void *) kn;
-        struct kernfs_node___rh8 *kn_rh8 = (void *) kn;
-
-        if (bpf_core_field_exists(kn_rh8->id)) {
-            // RHEL8 has both types declared: union and u64:
-            //     kn->id
-            //     rh->rh_kabi_hidden_172->id
-            // pointing to the same data
-            bpf_core_read(&id, sizeof(u64), &kn_rh8->id);
-        } else {
-            // all other regular kernels bellow v5.5
-            bpf_core_read(&id, sizeof(u64), &kn_old->id);
-        }
-
-    } else {
-        // kernel v5.5 and above
-        bpf_core_read(&id, sizeof(u64), &kn->id);
-    }
-
+    bpf_probe_read(&id, sizeof(u64), &kn->id);
 
     return id;
 }
@@ -506,14 +1138,14 @@ static __always_inline u16 get_sock_protocol(struct sock *sock)
 {
     u16 protocol = 0;
 
-    // commit bf9765145b85 ("sock: Make sk_protocol a 16-bit value")
-    struct sock___old *check = NULL;
-    if (bpf_core_field_exists(check->__sk_flags_offset)) {
-        check = (struct sock___old *) sock;
-        bpf_core_read(&protocol, 1, (void *) (&check->sk_gso_max_segs) - 3);
-    } else {
-        protocol = READ_KERN(sock->sk_protocol);
-    }
+    #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0))
+    // kernel 4.18-5.5: sk_protocol bit-field: use sk_gso_max_segs field and go
+    // back 24 bits to reach sk_protocol field index.
+    bpf_probe_read(&protocol, 1, (void *) (&sock->sk_gso_max_segs) - 3);
+    #else
+    // kernel 5.6
+    protocol = READ_KERN(sock->sk_protocol);
+    #endif
 
     return protocol;
 }
@@ -4352,18 +4984,17 @@ static __always_inline struct pipe_buffer *get_last_write_pipe_buffer(struct pip
     struct pipe_buffer *bufs = READ_KERN(pipe->bufs);
     unsigned int curbuf;
 
-    struct pipe_inode_info___v54 *legacy_pipe = (struct pipe_inode_info___v54 *) pipe;
-    if (bpf_core_field_exists(legacy_pipe->nrbufs)) {
-        unsigned int nrbufs = READ_KERN(legacy_pipe->nrbufs);
-        if (nrbufs > 0) {
-            nrbufs--;
-        }
-        curbuf = (READ_KERN(legacy_pipe->curbuf) + nrbufs) & (READ_KERN(legacy_pipe->buffers) - 1);
-    } else {
-        int head = READ_KERN(pipe->head);
-        int ring_size = READ_KERN(pipe->ring_size);
-        curbuf = (head - 1) & (ring_size - 1);
+    #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 5, 0))
+    unsigned int nrbufs = READ_KERN(pipe->nrbufs);
+    if (nrbufs > 0) {
+        nrbufs--;
     }
+    curbuf = (READ_KERN(pipe->curbuf) + nrbufs) & (READ_KERN(pipe->buffers) - 1);
+    #else
+    int head = READ_KERN(pipe->head);
+    int ring_size = READ_KERN(pipe->ring_size);
+    curbuf = (head - 1) & (ring_size - 1);
+    #endif
 
     struct pipe_buffer *current_buffer = get_node_addr(bufs, curbuf);
     return current_buffer;
@@ -4371,106 +5002,6 @@ static __always_inline struct pipe_buffer *get_last_write_pipe_buffer(struct pip
 
 SEC("kprobe/do_splice")
 TRACE_ENT_FUNC(do_splice, DIRTY_PIPE_SPLICE);
-
-SEC("kretprobe/do_splice")
-int BPF_KPROBE(trace_ret_do_splice)
-{
-    if (!should_submit(DIRTY_PIPE_SPLICE))
-        return 0;
-
-    // Check if field of struct exist to determine kernel version - some fields change between
-    // versions. In version 5.8 of the kernel, the field "high_zoneidx" changed its name to
-    // "highest_zoneidx". This means that the existence of the field "high_zoneidx" can indicate
-    // that the kernel version is lower than v5.8
-    struct alloc_context *check_508;
-    if (bpf_core_field_exists(check_508->high_zoneidx)) {
-        return 0;
-    }
-
-    args_t saved_args;
-    if (load_args(&saved_args, DIRTY_PIPE_SPLICE) != 0) {
-        // missed entry or not traced
-        return 0;
-    }
-    del_args(DIRTY_PIPE_SPLICE);
-
-    event_data_t data = {};
-    if (!init_event_data(&data, ctx))
-        return 0;
-
-    if (!should_trace(&data.context))
-        return 0;
-
-    // Catch only successful splice
-    if ((int) PT_REGS_RC(ctx) <= 0) {
-        return 0;
-    }
-
-    struct file *out_file = (struct file *) saved_args.args[2];
-    struct pipe_inode_info *out_pipe = get_file_pipe_info(out_file);
-    // Check that output is a pipe
-    if (!out_pipe) {
-        return 0;
-    }
-
-    // dirty_pipe_splice is a splice to a pipe which results that the last page copied could be
-    // modified (the PIPE_BUF_CAN_MERGE flag is on in the pipe_buffer struct).
-    struct pipe_buffer *last_write_page_buffer = get_last_write_pipe_buffer(out_pipe);
-    unsigned int out_pipe_last_buffer_flags = READ_KERN(last_write_page_buffer->flags);
-    if ((out_pipe_last_buffer_flags & PIPE_BUF_FLAG_CAN_MERGE) == 0) {
-        return 0;
-    }
-
-    struct file *in_file = (struct file *) saved_args.args[0];
-    struct inode *in_inode = READ_KERN(in_file->f_inode);
-    u64 in_inode_number = READ_KERN(in_inode->i_ino);
-    unsigned short in_file_type = READ_KERN(in_inode->i_mode) & S_IFMT;
-    void *in_file_path = get_path_str(GET_FIELD_ADDR(in_file->f_path));
-    size_t write_len = (size_t) saved_args.args[4];
-
-    loff_t *off_in_addr = (loff_t *) saved_args.args[1];
-    // In kernel v5.10 the pointer passed was no longer of the user, so flexibility is needed to
-    // read it
-    loff_t off_in;
-
-    //
-    // Check if field of struct exist to determine kernel version - some fields change between
-    // versions. Field 'data' of struct 'public_key_signature' was introduced between v5.9 and
-    // v5.10, so its existence might be used to determine whether the current version is older than
-    // 5.9 or newer than 5.10.
-    //
-    // https://lore.kernel.org/stable/20210821203108.215937-1-rafaeldtinoco@gmail.com/
-    //
-    struct public_key_signature *check;
-    if (!bpf_core_field_exists(check->data)) { // version < v5.10
-        off_in = READ_USER(*off_in_addr);
-    } else { // version >= v5.10
-        off_in = READ_KERN(*off_in_addr);
-    }
-
-    struct inode *out_inode = READ_KERN(out_file->f_inode);
-    u64 out_inode_number = READ_KERN(out_inode->i_ino);
-
-    // Only last page written to pipe is vulnerable from the end of written data
-    loff_t next_exposed_data_offset_in_out_pipe_last_page =
-        READ_KERN(last_write_page_buffer->offset) + READ_KERN(last_write_page_buffer->len);
-    size_t in_file_size = READ_KERN(in_inode->i_size);
-    size_t exposed_data_len = (PAGE_SIZE - 1) - next_exposed_data_offset_in_out_pipe_last_page;
-    loff_t current_file_offset = off_in + write_len;
-    if (current_file_offset + exposed_data_len > in_file_size) {
-        exposed_data_len = in_file_size - current_file_offset - 1;
-    }
-
-    save_to_submit_buf(&data, &in_inode_number, sizeof(u64), 0);
-    save_to_submit_buf(&data, &in_file_type, sizeof(unsigned short), 1);
-    save_str_to_buf(&data, in_file_path, 2);
-    save_to_submit_buf(&data, &current_file_offset, sizeof(loff_t), 3);
-    save_to_submit_buf(&data, &exposed_data_len, sizeof(size_t), 4);
-    save_to_submit_buf(&data, &out_inode_number, sizeof(u64), 5);
-    save_to_submit_buf(&data, &out_pipe_last_buffer_flags, sizeof(unsigned int), 6);
-
-    return events_perf_submit(&data, DIRTY_PIPE_SPLICE, 0);
-}
 
 SEC("kprobe/do_init_module")
 int BPF_KPROBE(trace_do_init_module)
@@ -4821,3 +5352,4 @@ int tc_ingress(struct __sk_buff *skb)
 }
 
 char LICENSE[] SEC("license") = "GPL";
+int KERNEL_VERSION SEC("version") = LINUX_VERSION_CODE;

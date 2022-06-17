@@ -132,71 +132,72 @@ env:
 	@echo ---------------------------------------
 	@echo "Makefile Environment:"
 	@echo ---------------------------------------
-	@echo "PARALLEL                 $(PARALLEL)"
+	@echo "PARALLEL                      $(PARALLEL)"
 	@echo ---------------------------------------
-	@echo "CLANG_VERSION            $(CLANG_VERSION)"
-	@echo "GO_VERSION               $(GO_VERSION)"
+	@echo "CLANG_VERSION                 $(CLANG_VERSION)"
+	@echo "GO_VERSION                    $(GO_VERSION)"
 	@echo ---------------------------------------
-	@echo "CMD_CLANG                $(CMD_CLANG)"
-	@echo "CMD_GIT                  $(CMD_GIT)"
-	@echo "CMD_GO                   $(CMD_GO)"
-	@echo "CMD_INSTALL              $(CMD_INSTALL)"
-	@echo "CMD_LLC                  $(CMD_LLC)"
-	@echo "CMD_MD5                  $(CMD_MD5)"
-	@echo "CMD_OPA                  $(CMD_OPA)"
-	@echo "CMD_PKGCONFIG            $(CMD_PKGCONFIG)"
-	@echo "CMD_STRIP                $(CMD_STRIP)"
+	@echo "CMD_CLANG                     $(CMD_CLANG)"
+	@echo "CMD_GIT                       $(CMD_GIT)"
+	@echo "CMD_GO                        $(CMD_GO)"
+	@echo "CMD_INSTALL                   $(CMD_INSTALL)"
+	@echo "CMD_LLC                       $(CMD_LLC)"
+	@echo "CMD_MD5                       $(CMD_MD5)"
+	@echo "CMD_OPA                       $(CMD_OPA)"
+	@echo "CMD_PKGCONFIG                 $(CMD_PKGCONFIG)"
+	@echo "CMD_STRIP                     $(CMD_STRIP)"
 	@echo ---------------------------------------
-	@echo "LIB_ELF                  $(LIB_ELF)"
-	@echo "LIB_ZLIB                 $(LIB_ZLIB)"
+	@echo "LIB_ELF                       $(LIB_ELF)"
+	@echo "LIB_ZLIB                      $(LIB_ZLIB)"
 	@echo ---------------------------------------
-	@echo "VERSION                  $(VERSION)"
-	@echo "LAST_GIT_TAG             $(LAST_GIT_TAG)"
-	@echo "BPF_NOCORE_TAG           $(BPF_NOCORE_TAG)"
+	@echo "VERSION                       $(VERSION)"
+	@echo "LAST_GIT_TAG                  $(LAST_GIT_TAG)"
+	@echo "BPF_NOCORE_TAG                $(BPF_NOCORE_TAG)"
 	@echo ---------------------------------------
-	@echo "UNAME_M                  $(UNAME_M)"
-	@echo "UNAME_R                  $(UNAME_R)"
-	@echo "ARCH                     $(ARCH)"
-	@echo "LINUX_ARCH               $(LINUX_ARCH)"
+	@echo "UNAME_M                       $(UNAME_M)"
+	@echo "UNAME_R                       $(UNAME_R)"
+	@echo "ARCH                          $(ARCH)"
+	@echo "LINUX_ARCH                    $(LINUX_ARCH)"
 	@echo ---------------------------------------
-	@echo "OUTPUT_DIR               $(OUTPUT_DIR)"
+	@echo "OUTPUT_DIR                    $(OUTPUT_DIR)"
 	@echo ---------------------------------------
-	@echo "KERN_RELEASE             $(KERN_RELEASE)"
-	@echo "KERN_BUILD_PATH          $(KERN_BUILD_PATH)"
-	@echo "KERN_SRC_PATH            $(KERN_SRC_PATH)"
+	@echo "KERN_RELEASE                  $(KERN_RELEASE)"
+	@echo "KERN_BUILD_PATH               $(KERN_BUILD_PATH)"
+	@echo "KERN_SRC_PATH                 $(KERN_SRC_PATH)"
 	@echo ---------------------------------------
-	@echo "LIBBPF_CFLAGS            $(LIBBPF_CFLAGS)"
-	@echo "LIBBPF_LDLAGS            $(LIBBPF_LDFLAGS)"
-	@echo "LIBBPF_SRC               $(LIBBPF_SRC)"
+	@echo "LIBBPF_CFLAGS                 $(LIBBPF_CFLAGS)"
+	@echo "LIBBPF_LDLAGS                 $(LIBBPF_LDFLAGS)"
+	@echo "LIBBPF_SRC                    $(LIBBPF_SRC)"
 	@echo ---------------------------------------
-	@echo "STATIC                   $(STATIC)"
+	@echo "STATIC                        $(STATIC)"
 	@echo ---------------------------------------
-	@echo "BPF_VCPU                 $(BPF_VCPU)"
-	@echo "TRACEE_EBPF_OBJ_SRC      $(TRACEE_EBPF_OBJ_SRC)"
+	@echo "BPF_VCPU                      $(BPF_VCPU)"
+	@echo "TRACEE_CORE_EBPF_OBJ_SRC      $(TRACEE_CORE_EBPF_OBJ_SRC)"
+	@echo "TRACEE_NON_CORE_EBPF_OBJ_SRC  $(TRACEE_NON_CORE_EBPF_OBJ_SRC)"
 	@echo ---------------------------------------
-	@echo "GO_ARCH                  $(GO_ARCH)"
-	@echo "GO_TAGS_EBPF             $(GO_TAGS_EBPF)"
-	@echo "GO_TAGS_RULES            $(GO_TAGS_RULES)"
+	@echo "GO_ARCH                       $(GO_ARCH)"
+	@echo "GO_TAGS_EBPF                  $(GO_TAGS_EBPF)"
+	@echo "GO_TAGS_RULES                 $(GO_TAGS_RULES)"
 	@echo ---------------------------------------
-	@echo "CUSTOM_CGO_CFLAGS        $(CUSTOM_CGO_CFLAGS)"
-	@echo "CUSTOM_CGO_LDFLAGS       $(CUSTOM_CGO_LDFLAGS)"
-	@echo "CGO_EXT_LDFLAGS_EBPF     $(CGO_EXT_LDFLAGS_EBPF)"
-	@echo "CGO_EXT_LDFLAGS_RULES    $(CGO_EXT_LDFLAGS_RULES)"
+	@echo "CUSTOM_CGO_CFLAGS             $(CUSTOM_CGO_CFLAGS)"
+	@echo "CUSTOM_CGO_LDFLAGS            $(CUSTOM_CGO_LDFLAGS)"
+	@echo "CGO_EXT_LDFLAGS_EBPF          $(CGO_EXT_LDFLAGS_EBPF)"
+	@echo "CGO_EXT_LDFLAGS_RULES         $(CGO_EXT_LDFLAGS_RULES)"
 	@echo ---------------------------------------
-	@echo "GO_ENV_EBPF              $(GO_ENV_EBPF)"
-	@echo "GO_ENV_RULES             $(GO_ENV_RULES)"
+	@echo "GO_ENV_EBPF                   $(GO_ENV_EBPF)"
+	@echo "GO_ENV_RULES                  $(GO_ENV_RULES)"
 	@echo ---------------------------------------
-	@echo "TRACEE_EBPF_SRC          $(TRACEE_EBPF_SRC)"
-	@echo "TRACEE_EBPF_SRC_DIRS     $(TRACEE_EBPF_SRC_DIRS)"
+	@echo "TRACEE_EBPF_SRC               $(TRACEE_EBPF_SRC)"
+	@echo "TRACEE_EBPF_SRC_DIRS          $(TRACEE_EBPF_SRC_DIRS)"
 	@echo ---------------------------------------
-	@echo "TRACEE_RULES_SRC         $(TRACEE_RULES_SRC)"
-	@echo "TRACEE_RULES_SRC_DIRS    $(TRACEE_RULES_SRC_DIRS)"
+	@echo "TRACEE_RULES_SRC              $(TRACEE_RULES_SRC)"
+	@echo "TRACEE_RULES_SRC_DIRS         $(TRACEE_RULES_SRC_DIRS)"
 	@echo ---------------------------------------
-	@echo "GOSIGNATURES_DIR         $(GOSIGNATURES_DIR)"
-	@echo "GOSIGNATURES_SRC         $(GOSIGNATURES_SRC)"
+	@echo "GOSIGNATURES_DIR              $(GOSIGNATURES_DIR)"
+	@echo "GOSIGNATURES_SRC              $(GOSIGNATURES_SRC)"
 	@echo ---------------------------------------
-	@echo "REGO_SIGNATURES_DIR      $(REGO_SIGNATURES_DIR)"
-	@echo "REGO_SIGNATURES_SRC      $(REGO_SIGNATURES_SRC)"
+	@echo "REGO_SIGNATURES_DIR           $(REGO_SIGNATURES_DIR)"
+	@echo "REGO_SIGNATURES_SRC           $(REGO_SIGNATURES_SRC)"
 	@echo ---------------------------------------
 
 #
@@ -284,7 +285,8 @@ $(OUTPUT_DIR)/tracee.bpf: \
 	@$(CMD_MKDIR) -p $@
 	$(CMD_INSTALL) -m 0640 ./3rdparty/include/* $@
 	$(CMD_INSTALL) -m 0640 $(OUTPUT_DIR)/libbpf/bpf/*.h $@
-	$(CMD_INSTALL) -m 0640 $(TRACEE_EBPF_OBJ_SRC) $@
+	$(CMD_INSTALL) -m 0640 $(TRACEE_CORE_EBPF_OBJ_SRC) $@
+	$(CMD_INSTALL) -m 0640 $(TRACEE_NON_CORE_EBPF_OBJ_SRC) $@
 
 #
 # libbpf
@@ -321,7 +323,7 @@ endif
 # non co-re ebpf
 #
 
-TRACEE_EBPF_OBJ_SRC = ./pkg/ebpf/c/tracee.bpf.c
+TRACEE_NON_CORE_EBPF_OBJ_SRC = ./pkg/ebpf/c/no-core.bpf.c
 
 KERN_RELEASE ?= $(UNAME_R)
 KERN_BUILD_PATH ?= $(if $(KERN_HEADERS),$(KERN_HEADERS),/lib/modules/$(KERN_RELEASE)/build)
@@ -334,7 +336,7 @@ bpf-nocore: $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o
 
 $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o: \
 	$(OUTPUT_DIR)/libbpf/libbpf.a \
-	$(TRACEE_EBPF_OBJ_SRC)
+	$(TRACEE_NON_CORE_EBPF_OBJ_SRC)
 #
 	MAKEFLAGS="--no-print-directory" $(MAKE) $(OUTPUT_DIR)/tracee.bpf
 	$(CMD_CLANG) -S -nostdinc \
@@ -368,7 +370,7 @@ $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o: \
 		-fno-unwind-tables \
 		-fno-asynchronous-unwind-tables \
 		-xc -O2 -g -emit-llvm \
-		-c $(TRACEE_EBPF_OBJ_SRC) \
+		-c $(TRACEE_NON_CORE_EBPF_OBJ_SRC) \
 		-o $(@:.o=.ll)
 	$(CMD_LLC) \
 		-march=bpf -mcpu=$(BPF_VCPU) \
@@ -404,7 +406,7 @@ uninstall-bpf-nocore: \
 #
 # co-re ebpf
 #
-
+TRACEE_CORE_EBPF_OBJ_SRC = ./pkg/ebpf/c/tracee.bpf.c
 TRACEE_EBPF_OBJ_CORE_HEADERS = $(shell find pkg/ebpf/c -name *.h)
 
 .PHONY: bpf-core
@@ -412,7 +414,7 @@ bpf-core: $(OUTPUT_DIR)/tracee.bpf.core.o
 
 $(OUTPUT_DIR)/tracee.bpf.core.o: \
 	$(OUTPUT_DIR)/libbpf/libbpf.a \
-	$(TRACEE_EBPF_OBJ_SRC) \
+	$(TRACEE_CORE_EBPF_OBJ_SRC) \
 	$(TRACEE_EBPF_OBJ_CORE_HEADERS)
 #
 	$(MAKE) $(OUTPUT_DIR)/tracee.bpf
@@ -425,7 +427,7 @@ $(OUTPUT_DIR)/tracee.bpf.core.o: \
 		-target bpf \
 		-O2 -g \
 		-march=bpf -mcpu=$(BPF_VCPU) \
-		-c $(TRACEE_EBPF_OBJ_SRC) \
+		-c $(TRACEE_CORE_EBPF_OBJ_SRC) \
 		-o $@
 
 .PHONY: clean-bpf-core
