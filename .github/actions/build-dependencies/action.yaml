@@ -9,7 +9,7 @@ inputs:
   opa-version:
     description: Version of OPA
     required: true
-    default: "v0.35.0"
+    default: "v0.41.0"
 runs:
   using: composite
   steps:
