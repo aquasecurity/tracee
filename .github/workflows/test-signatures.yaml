@@ -9,7 +9,7 @@ on:
 
 env:
   GO_VERSION: "1.17"
-  OPA_VERSION: "v0.35.0"
+  OPA_VERSION: "v0.41.0"
 
 jobs:
   e2e-test-signatures:
