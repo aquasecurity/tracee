@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -24,6 +23,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	log "github.com/sirupsen/logrus"
 	cli "github.com/urfave/cli/v2"
 )
 
@@ -61,17 +61,21 @@ func main() {
 			// for the rest of execution, use this debug mode value
 			debug := debug.Enabled()
 
+			if debug {
+				log.SetLevel(log.DebugLevel)
+			} else {
+				log.SetLevel(log.ErrorLevel)
+			}
+
 			// OS release information
 
 			OSInfo, err := helpers.GetOSInfo()
 			if err != nil {
-				if debug {
-					fmt.Fprintf(os.Stderr, "OSInfo: warning: os-release file could not be found\n(%v)\n", err) // only to be enforced when BTF needs to be downloaded, later on
-					fmt.Fprintf(os.Stdout, "OSInfo: %v: %v\n", helpers.OS_KERNEL_RELEASE, OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE))
-				}
-			} else if debug {
+				log.Debugf("OSInfo: warning: os-release file could not be found\n(%v)\n", err) // only to be enforced when BTF needs to be downloaded, later on
+				log.Debugf("OSInfo: %v: %v\n", helpers.OS_KERNEL_RELEASE, OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE))
+			} else {
 				for k, v := range OSInfo.GetOSReleaseAllFieldValues() {
-					fmt.Fprintf(os.Stdout, "OSInfo: %v: %v\n", k, v)
+					log.Debugf("OSInfo: %v: %v\n", k, v)
 				}
 			}
 
@@ -103,8 +107,8 @@ func main() {
 				return err
 			}
 			cfg.Cache = cache
-			if debug && cfg.Cache != nil {
-				fmt.Fprintf(os.Stdout, "Cache: cache type is \"%s\"\n", cfg.Cache)
+			if cfg.Cache != nil {
+				log.Debugf("Cache: cache type is \"%s\"\n", cfg.Cache)
 			}
 
 			captureSlice := c.StringSlice("capture")
@@ -157,16 +161,14 @@ func main() {
 			if err == nil && lockdown == helpers.CONFIDENTIALITY {
 				return fmt.Errorf("kernel lockdown is set to 'confidentiality', can't load eBPF programs")
 			}
-			if debug {
-				fmt.Fprintf(os.Stdout, "OSInfo: Security Lockdown is '%v'\n", lockdown)
-			}
+			log.Debugf("OSInfo: Security Lockdown is '%v'\n", lockdown)
 
 			enabled, err := helpers.FtraceEnabled()
 			if err != nil {
 				return err
 			}
 			if !enabled {
-				fmt.Fprintf(os.Stderr, "ftrace_enabled: warning: ftrace is not enabled, kernel events won't be caught, make sure to enable it by executing echo 1 | sudo tee /proc/sys/kernel/ftrace_enabled")
+				log.Warningf("ftrace_enabled: warning: ftrace is not enabled, kernel events won't be caught, make sure to enable it by executing echo 1 | sudo tee /proc/sys/kernel/ftrace_enabled")
 			}
 
 			// OS kconfig information
@@ -182,10 +184,8 @@ func main() {
 					return fmt.Errorf("missing kernel configuration options: %s", missing)
 				}
 			} else {
-				if debug {
-					fmt.Fprintf(os.Stderr, "KConfig: warning: could not check enabled kconfig features\n(%v)\n", err)
-					fmt.Fprintf(os.Stderr, "KConfig: warning: assuming kconfig values, might have unexpected behavior\n")
-				}
+				log.Debugf("KConfig: warning: could not check enabled kconfig features\n(%v)\n", err)
+				log.Debugf("KConfig: warning: assuming kconfig values, might have unexpected behavior\n")
 			}
 
 			// decide BTF & BPF files to use based on kconfig, release & environment
@@ -206,17 +206,15 @@ func main() {
 			if listenMetrics {
 				err := metrics.RegisterPrometheus(t.Stats())
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error registering prometheus metrics: %v\n", err)
+					log.Warningf("Error registering prometheus metrics: %v\n", err)
 				} else {
 					mux := http.NewServeMux()
 					mux.Handle("/metrics", promhttp.Handler())
 
 					go func() {
-						if debug {
-							fmt.Fprintf(os.Stdout, "Serving metrics endpoint at %s\n", metricsAddr)
-						}
+						log.Debugf("Serving metrics endpoint at %s\n", metricsAddr)
 						if err := http.ListenAndServe(metricsAddr, mux); err != http.ErrServerClosed {
-							fmt.Fprintf(os.Stderr, "Error serving metrics endpoint: %v\n", err)
+							log.Warningf("Error serving metrics endpoint: %v\n", err)
 						}
 					}()
 				}
@@ -382,8 +380,6 @@ func prepareBpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSIn
 		btfvmlinux: helpers.OSBTFEnabled(),
 	}
 
-	debug := config.Debug
-
 	bpfFilePath, err := checkEnvPath("TRACEE_BPF_FILE")
 	if bpfFilePath != "" {
 		d.bpfenv = true
@@ -396,9 +392,7 @@ func prepareBpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSIn
 	} else if btfFilePath == "" && err != nil {
 		return err
 	}
-	if debug {
-		fmt.Printf("BTF: bpfenv = %v, btfenv = %v, vmlinux = %v\n", d.bpfenv, d.btfenv, d.btfvmlinux)
-	}
+	log.Debugf("BTF: bpfenv = %v, btfenv = %v, vmlinux = %v\n", d.bpfenv, d.btfenv, d.btfvmlinux)
 
 	var tVersion, kVersion string
 	var bpfBytes []byte
@@ -410,14 +404,10 @@ func prepareBpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSIn
 	// (2) BPF file given & if no BTF exists: it is a non CO-RE BPF
 
 	if d.bpfenv {
-		if debug {
-			fmt.Printf("BPF: using BPF object from environment: %v\n", bpfFilePath)
-		}
+		log.Debugf("BPF: using BPF object from environment: %v\n", bpfFilePath)
 		if d.btfvmlinux || d.btfenv { // (1)
 			if d.btfenv {
-				if debug {
-					fmt.Printf("BTF: using BTF file from environment: %v\n", btfFilePath)
-				}
+				log.Debugf("BTF: using BTF file from environment: %v\n", btfFilePath)
 				config.BTFObjPath = btfFilePath
 			}
 		} // else {} (2)
@@ -431,13 +421,9 @@ func prepareBpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSIn
 	// (3) no BPF file given & BTF (vmlinux or env) exists: load embedded BPF as CO-RE
 
 	if d.btfvmlinux || d.btfenv { // (3)
-		if debug {
-			fmt.Println("BPF: using embedded BPF object")
-		}
+		log.Debugf("BPF: using embedded BPF object")
 		if d.btfenv {
-			if debug {
-				fmt.Printf("BTF: using BTF file from environment: %v\n", btfFilePath)
-			}
+			log.Debugf("BTF: using BTF file from environment: %v\n", btfFilePath)
 			config.BTFObjPath = btfFilePath
 		}
 		bpfFilePath = "embedded-core"
@@ -455,9 +441,7 @@ func prepareBpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSIn
 	err = unpackBTFHub(unpackBTFFile, OSInfo)
 
 	if err == nil {
-		if debug {
-			fmt.Printf("BTF: using BTF file from embedded btfhub: %v\n", unpackBTFFile)
-		}
+		log.Debugf("BTF: using BTF file from embedded btfhub: %v\n", unpackBTFFile)
 		config.BTFObjPath = unpackBTFFile
 		bpfFilePath = "embedded-core"
 		bpfBytes, err = unpackCOREBinary()
@@ -476,18 +460,19 @@ func prepareBpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSIn
 	kVersion = strings.ReplaceAll(kVersion, ".", "_")
 
 	bpfFilePath = fmt.Sprintf("%s/tracee.bpf.%s.%s.o", traceeInstallPath, kVersion, tVersion)
-	if debug {
-		fmt.Printf("BPF: no BTF file was found or provided\n")
-		fmt.Printf("BPF: trying non CO-RE eBPF at %s\n", bpfFilePath)
-	}
+	log.Debugf("BPF: no BTF file was found or provided\n")
+	log.Debugf("BPF: trying non CO-RE eBPF at %s\n", bpfFilePath)
 	if bpfBytes, err = ioutil.ReadFile(bpfFilePath); err != nil {
+		log.RegisterExitHandler(func() {
+			os.Exit(2)
+		})
 		// tell entrypoint that eBPF non CO-RE obj compilation is needed
-		fmt.Printf("BPF: %v\n", err)
-		fmt.Printf("BPF: ATTENTION:\n")
-		fmt.Printf("BPF: It seems tracee-ebpf can't load CO-RE eBPF obj and could not find\n")
-		fmt.Printf("BPF: the non CO-RE object in %s. You may build a non CO-RE eBPF\n", traceeInstallPath)
-		fmt.Printf("BPF: obj by using the source tree and executing \"make install-bpf-nocore\".\n")
-		os.Exit(2)
+		log.Fatalf(
+			"BPF: %v\n"+
+				"BPF: ATTENTION:\n"+
+				"BPF: It seems tracee-ebpf can't load CO-RE eBPF obj and could not find\n"+
+				"BPF: the non CO-RE object in %s. You may build a non CO-RE eBPF\n"+
+				"BPF: obj by using the source tree and executing \"make install-bpf-nocore\".\n", err, traceeInstallPath)
 	}
 
 out:
@@ -583,9 +568,7 @@ func unpackCOREBinary() ([]byte, error) {
 		return nil, err
 	}
 
-	if debug.Enabled() {
-		fmt.Println("unpacked CO:RE bpf object file into memory")
-	}
+	log.Debugf("unpacked CO:RE bpf object file into memory")
 
 	return b, nil
 }

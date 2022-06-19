@@ -293,6 +293,8 @@ func New(cfg Config) (*Tracee, error) {
 		bootTime:  uint64(bootTime),
 	}
 
+	t.ConfigureLogger()
+
 	// the process-tree initialize must be before we start receiving events to ensure we already have the needed data for the events that use that tree
 	t.procInfo, err = procinfo.NewProcessInfo()
 	if err != nil {
@@ -333,7 +335,7 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("error intitalizing event derivation map: %w", err)
 	}
 
-	c, err := containers.InitContainers(t.config.Sockets, t.config.Debug)
+	c, err := containers.InitContainers(t.config.Sockets)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing containers: %w", err)
 	}

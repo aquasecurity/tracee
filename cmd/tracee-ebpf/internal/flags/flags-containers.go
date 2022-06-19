@@ -2,11 +2,10 @@ package flags
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
-	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/debug"
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
+	log "github.com/sirupsen/logrus"
 )
 
 func ContainersHelp() string {
@@ -90,12 +89,10 @@ func autoDiscoverSockets() runtime.Sockets {
 
 func registerSocket(sockets *runtime.Sockets, runtime string, socket string) {
 	err := sockets.Register(runtimeStringToRuntimeId(runtime), socket)
-	if debug.Enabled() {
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "RuntimeSockets: failed to register default %s socket:\n%v\n", runtime, err)
-		} else {
-			fmt.Fprintf(os.Stdout, "RuntimeSockets: registered default %s runtime socket from %s\n", runtime, socket)
-		}
+	if err != nil {
+		log.Debugf("RuntimeSockets: failed to register default %s socket:\n%v\n", runtime, err)
+	} else {
+		log.Debugf("RuntimeSockets: registered default %s runtime socket from %s\n", runtime, socket)
 	}
 }
 

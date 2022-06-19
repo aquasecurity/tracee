@@ -11,6 +11,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/types/trace"
+	log "github.com/sirupsen/logrus"
 )
 
 // Max depth of each stack trace to track
@@ -352,6 +353,5 @@ func MergeErrors(cs ...<-chan error) <-chan error {
 }
 
 func (t *Tracee) handleError(err error) {
-	t.stats.ErrorCount.Increment()
-	t.config.ChanErrors <- err
+	log.Error(err.Error())
 }
