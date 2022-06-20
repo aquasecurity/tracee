@@ -531,6 +531,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#with-helm" class="md-nav__link">
+    <span class="md-ellipsis">
+      With Helm
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1125,6 +1134,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#with-helm" class="md-nav__link">
+    <span class="md-ellipsis">
+      With Helm
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1173,6 +1191,21 @@ a message routing application that will help you consume the detections in your 
   -f https://raw.githubusercontent.com/aquasecurity/tracee/v0.7.0/deploy/kubernetes/tracee-falcosidekick/tracee.yaml
 </code></pre></div>
 <p>You can edit the configMap <code>falcosidekick-config</code> the was created, see an example configuration here: https://github.com/falcosecurity/falcosidekick/blob/master/config_example.yaml</p>
+<h3 id="with-helm">With Helm<a class="headerlink" href="#with-helm" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Clone the Helm chart:
+   <div class="highlight"><pre><span></span><code>git clone --depth 1 --branch v0.7.0 https://github.com/aquasecurity/tracee.git
+cd tracee
+</code></pre></div></li>
+<li>Install the Helm chart from a local directory:
+   <div class="highlight"><pre><span></span><code>helm repo add aqua-charts https://aquasecurity.github.io/helm-charts
+helm dependency update ./deploy/helm/tracee
+helm install tracee ./deploy/helm/tracee \
+  --namespace tracee-system --create-namespace \
+  --set hostPID=true \
+  --set postee.enabled=true
+</code></pre></div></li>
+</ol>
 <h2 id="platform-support">Platform Support<a class="headerlink" href="#platform-support" title="Permanent link">&para;</a></h2>
 <p>This approach assumes that host nodes have either BTF available or kernel headers available under conventional location.
 See Tracee's <a href="../prerequisites/">prerequisites</a> for more info. For the major Kubernetes platforms this should

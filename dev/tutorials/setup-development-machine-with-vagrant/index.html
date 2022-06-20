@@ -1261,80 +1261,79 @@ working on your project's files on your host machine, but use the resources in t
 Tracee.</p>
 <p>By default, Vagrant will share Tracee project directory (the directory with the <code>Vagrantfile</code>) to <code>/vagrant</code>.
 To get started, change directory to <code>/vagrant</code> and list files:</p>
-<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:~$ cd /vagrant/
-vagrant@ubuntu-impish:/vagrant$ ls -l
-total 204
-drwxr-xr-x 1 vagrant vagrant    224 Mar 17 14:31 3rdparty
--rw-r--r-- 1 vagrant vagrant   3474 Mar 17 14:31 CONTRIBUTING.md
--rw-r--r-- 1 vagrant vagrant  11358 Mar 17 14:31 LICENSE
--rw-r--r-- 1 vagrant vagrant  16529 Mar 25 07:46 Makefile
--rw-r--r-- 1 vagrant vagrant    133 Mar 17 14:31 NOTICE
--rw-r--r-- 1 vagrant vagrant   2116 Mar 26 16:41 RELEASING.md
--rw-r--r-- 1 vagrant vagrant   4097 Mar 17 14:31 Readme.md
--rw-r--r-- 1 vagrant vagrant   2732 Mar 26 16:41 Vagrantfile
-drwxr-xr-x 1 vagrant vagrant    384 Mar 26 16:41 builder
-drwxr-xr-x 1 vagrant vagrant    128 Dec 14 15:27 cmd
-drwxr-xr-x 1 vagrant vagrant     96 Dec  8 14:20 deploy
-drwxr-xr-x 1 vagrant vagrant    288 Mar 25 10:51 dist
-drwxr-xr-x 1 vagrant vagrant    448 Mar 26 16:44 docs
--rw-r--r-- 1 vagrant vagrant    164 Mar 17 14:31 embedded-ebpf.go
--rw-r--r-- 1 vagrant vagrant    101 Mar 17 14:31 embedded.go
--rw-r--r-- 1 vagrant vagrant   4382 Mar 24 14:13 go.mod
--rw-r--r-- 1 vagrant vagrant 129439 Mar 24 14:13 go.sum
--rw-r--r-- 1 vagrant vagrant   1546 Mar 26 18:20 mkdocs.yml
-drwxr-xr-x 1 vagrant vagrant    256 Mar 22 14:08 packaging
-drwxr-xr-x 1 vagrant vagrant    416 Mar 24 14:13 pkg
-drwxr-xr-x 1 vagrant vagrant    192 Dec 14 13:02 signatures
-drwxr-xr-x 1 vagrant vagrant    160 Mar 24 14:13 tests
-drwxr-xr-x 1 vagrant vagrant    224 Mar 24 11:59 types
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>ls -l
+<span class="go">total 204</span>
+<span class="go">drwxr-xr-x 1 vagrant vagrant    224 Mar 17 14:31 3rdparty</span>
+<span class="go">-rw-r--r-- 1 vagrant vagrant   3474 Mar 17 14:31 CONTRIBUTING.md</span>
+<span class="go">-rw-r--r-- 1 vagrant vagrant  11358 Mar 17 14:31 LICENSE</span>
+<span class="go">-rw-r--r-- 1 vagrant vagrant  16529 Mar 25 07:46 Makefile</span>
+<span class="go">-rw-r--r-- 1 vagrant vagrant    133 Mar 17 14:31 NOTICE</span>
+<span class="go">-rw-r--r-- 1 vagrant vagrant   2116 Mar 26 16:41 RELEASING.md</span>
+<span class="go">-rw-r--r-- 1 vagrant vagrant   4097 Mar 17 14:31 Readme.md</span>
+<span class="go">-rw-r--r-- 1 vagrant vagrant   2732 Mar 26 16:41 Vagrantfile</span>
+<span class="go">drwxr-xr-x 1 vagrant vagrant    384 Mar 26 16:41 builder</span>
+<span class="go">drwxr-xr-x 1 vagrant vagrant    128 Dec 14 15:27 cmd</span>
+<span class="go">drwxr-xr-x 1 vagrant vagrant     96 Dec  8 14:20 deploy</span>
+<span class="go">drwxr-xr-x 1 vagrant vagrant    288 Mar 25 10:51 dist</span>
+<span class="go">drwxr-xr-x 1 vagrant vagrant    448 Mar 26 16:44 docs</span>
+<span class="go">-rw-r--r-- 1 vagrant vagrant    164 Mar 17 14:31 embedded-ebpf.go</span>
+<span class="go">-rw-r--r-- 1 vagrant vagrant    101 Mar 17 14:31 embedded.go</span>
+<span class="go">-rw-r--r-- 1 vagrant vagrant   4382 Mar 24 14:13 go.mod</span>
+<span class="go">-rw-r--r-- 1 vagrant vagrant 129439 Mar 24 14:13 go.sum</span>
+<span class="go">-rw-r--r-- 1 vagrant vagrant   1546 Mar 26 18:20 mkdocs.yml</span>
+<span class="go">drwxr-xr-x 1 vagrant vagrant    256 Mar 22 14:08 packaging</span>
+<span class="go">drwxr-xr-x 1 vagrant vagrant    416 Mar 24 14:13 pkg</span>
+<span class="go">drwxr-xr-x 1 vagrant vagrant    192 Dec 14 13:02 signatures</span>
+<span class="go">drwxr-xr-x 1 vagrant vagrant    160 Mar 24 14:13 tests</span>
+<span class="go">drwxr-xr-x 1 vagrant vagrant    224 Mar 24 11:59 types</span>
 </code></pre></div>
 <p>As you can see the <code>/vagrant</code> directory contains source code of Tracee cloned from GitHub.</p>
 <h2 id="build-and-run-tracee-ebpf-and-tracee-rules">Build and Run Tracee-eBPF and Tracee-Rules<a class="headerlink" href="#build-and-run-tracee-ebpf-and-tracee-rules" title="Permanent link">&para;</a></h2>
 <p>To build <code>tracee-ebpf</code> and <code>tracee-rules</code> executable binaries, run the default Make target:</p>
-<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ make
+<div class="highlight"><pre><span></span><code>make
 </code></pre></div>
 <p>Build targets are saved in the <code>/vagrant/dist</code> directory:</p>
-<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ ls -l dist/
-total 47972
-drwxr-xr-x 1 vagrant vagrant       96 Mar 25 10:45 btfhub
-drwxr-xr-x 1 vagrant vagrant      224 Mar 25 10:45 libbpf
-drwxr-xr-x 1 vagrant vagrant      512 Mar 25 10:46 rules
--rwxr-xr-x 1 vagrant vagrant 17876784 Mar 26 18:32 tracee-ebpf
--rwxr-xr-x 1 vagrant vagrant 26982352 Mar 25 10:45 tracee-rules
-drwxr-xr-x 1 vagrant vagrant      544 Mar 26 18:31 tracee.bpf
--rw-r--r-- 1 vagrant vagrant  4232032 Mar 26 18:31 tracee.bpf.core.o
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>ls -l dist/
+<span class="go">total 47972</span>
+<span class="go">drwxr-xr-x 1 vagrant vagrant       96 Mar 25 10:45 btfhub</span>
+<span class="go">drwxr-xr-x 1 vagrant vagrant      224 Mar 25 10:45 libbpf</span>
+<span class="go">drwxr-xr-x 1 vagrant vagrant      512 Mar 25 10:46 rules</span>
+<span class="go">-rwxr-xr-x 1 vagrant vagrant 17876784 Mar 26 18:32 tracee-ebpf</span>
+<span class="go">-rwxr-xr-x 1 vagrant vagrant 26982352 Mar 25 10:45 tracee-rules</span>
+<span class="go">drwxr-xr-x 1 vagrant vagrant      544 Mar 26 18:31 tracee.bpf</span>
+<span class="go">-rw-r--r-- 1 vagrant vagrant  4232032 Mar 26 18:31 tracee.bpf.core.o</span>
 </code></pre></div>
 <p>You can now run Tracee-eBPF and see raw events printed to the standard output in a tabular format:</p>
-<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ sudo ./dist/tracee-ebpf
-TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
-18:39:43:781824  0      mkdocs           1       19      0                stat                 pathname: /docs/docs, statbuf: 0x7f851365eb20
-18:39:43:782125  0      mkdocs           1       19      0                security_file_open   pathname: /docs/docs, flags: O_RDONLY|O_LARGEFILE|O_DIRECTORY, dev: 43, inode: 47, ctime: 1648313072000000000
-18:39:43:782008  0      mkdocs           1       19      6                open                 pathname: /docs/docs, flags: O_RDONLY|O_LARGEFILE|O_DIRECTORY|O_CLOEXEC, mode: 0
-18:39:43:783200  0      mkdocs           1       19      464              getdents64           fd: 6, dirp: 0x7f8513d8e0b8, count: 2048
-18:39:43:783232  0      mkdocs           1       19      0                getdents64           fd: 6, dirp: 0x7f8513d8e0b8, count: 2048
-18:39:43:783259  0      mkdocs           1       19      0                close                fd: 6
-18:39:43:783271  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/architecture.md, statbuf: 0x7f851365e9b0
-18:39:43:783734  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/install, statbuf: 0x7f851365e9b0
-18:39:43:784163  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/images, statbuf: 0x7f851365e9b0
-18:39:43:784589  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/integrations.md, statbuf: 0x7f851365e9b0
-18:39:43:784906  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/faq.md, statbuf: 0x7f851365e9b0
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>sudo ./dist/tracee-ebpf
+<span class="go">TIME             UID    COMM             PID     TID     RET              EVENT                ARGS</span>
+<span class="go">18:39:43:781824  0      mkdocs           1       19      0                stat                 pathname: /docs/docs, statbuf: 0x7f851365eb20</span>
+<span class="go">18:39:43:782125  0      mkdocs           1       19      0                security_file_open   pathname: /docs/docs, flags: O_RDONLY|O_LARGEFILE|O_DIRECTORY, dev: 43, inode: 47, ctime: 1648313072000000000</span>
+<span class="go">18:39:43:782008  0      mkdocs           1       19      6                open                 pathname: /docs/docs, flags: O_RDONLY|O_LARGEFILE|O_DIRECTORY|O_CLOEXEC, mode: 0</span>
+<span class="go">18:39:43:783200  0      mkdocs           1       19      464              getdents64           fd: 6, dirp: 0x7f8513d8e0b8, count: 2048</span>
+<span class="go">18:39:43:783232  0      mkdocs           1       19      0                getdents64           fd: 6, dirp: 0x7f8513d8e0b8, count: 2048</span>
+<span class="go">18:39:43:783259  0      mkdocs           1       19      0                close                fd: 6</span>
+<span class="go">18:39:43:783271  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/architecture.md, statbuf: 0x7f851365e9b0</span>
+<span class="go">18:39:43:783734  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/install, statbuf: 0x7f851365e9b0</span>
+<span class="go">18:39:43:784163  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/images, statbuf: 0x7f851365e9b0</span>
+<span class="go">18:39:43:784589  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/integrations.md, statbuf: 0x7f851365e9b0</span>
+<span class="go">18:39:43:784906  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/faq.md, statbuf: 0x7f851365e9b0</span>
 </code></pre></div>
 <p>To analyze collected events and see detections printed to the standard output, run Tracee-eBPF and pipe it with Tracee-Rules:</p>
-<div class="highlight"><pre><span></span><code>vagrant@ubuntu-impish:/vagrant$ sudo ./dist/tracee-ebpf \
-  --output=format:gob \
-  --output=option:parse-arguments \
-  | ./dist/tracee-rules \
-  --input-tracee=file:stdin \
-  --input-tracee=format:gob
-Loaded 14 signature(s): [TRC-1 TRC-13 TRC-2 TRC-14 TRC-3 TRC-11 TRC-9 TRC-4 TRC-5 TRC-12 TRC-8 TRC-6 TRC-10 TRC-7]
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>sudo ./dist/tracee-ebpf <span class="se">\</span>
+  --output<span class="o">=</span>format:gob <span class="se">\</span>
+  --output<span class="o">=</span>option:parse-arguments <span class="se">\</span>
+  <span class="p">|</span> ./dist/tracee-rules <span class="se">\</span>
+  --input-tracee<span class="o">=</span>file:stdin <span class="se">\</span>
+  --input-tracee<span class="o">=</span>format:gob
+<span class="go">Loaded 14 signature(s): [TRC-1 TRC-13 TRC-2 TRC-14 TRC-3 TRC-11 TRC-9 TRC-4 TRC-5 TRC-12 TRC-8 TRC-6 TRC-10 TRC-7]</span>
 
-*** Detection ***
-Time: 2022-03-26T18:48:00Z
-Signature ID: TRC-2
-Signature: Anti-Debugging
-Data: map[]
-Command: strace
-Hostname: ubuntu-impish
+<span class="go">*** Detection ***</span>
+<span class="go">Time: 2022-03-26T18:48:00Z</span>
+<span class="go">Signature ID: TRC-2</span>
+<span class="go">Signature: Anti-Debugging</span>
+<span class="go">Data: map[]</span>
+<span class="go">Command: strace</span>
+<span class="go">Hostname: ubuntu-impish</span>
 </code></pre></div>
 <p>In this example, we run <code>strace ls</code> to trigger Anit-Debugging signature detection.</p>
 <h2 id="switch-between-co-re-and-non-co-re-linux-distribution">Switch Between CO-RE and non CO-RE Linux Distribution<a class="headerlink" href="#switch-between-co-re-and-non-co-re-linux-distribution" title="Permanent link">&para;</a></h2>
@@ -1372,29 +1371,8 @@ Tracee.</p>
 <span class="go">NAME            STATUS   ROLES    AGE    VERSION                    INTERNAL-IP   EXTERNAL-IP   OS-IMAGE       KERNEL-VERSION      CONTAINER-RUNTIME</span>
 <span class="go">ubuntu-impish   Ready    &lt;none&gt;   139m   v1.23.4-2+98fc2022f3ad3e   10.0.2.15     &lt;none&gt;        Ubuntu 21.10   5.13.0-35-generic   containerd://1.5.9</span>
 </code></pre></div>
-<p>To integrate Tracee with <a href="https://github.com/aquasecurity/postee">Postee</a> we must enable <code>hostpath-storage</code> and <code>dns</code> <a href="https://microk8s.io/docs/addons">MicroK8s add-ons</a>. The <code>hostpath-storage</code>
-add-on is used to setup <a href="https://kubernetes.io/docs/concepts/storage/persistent-volumes/">Persistent Volumes</a> required by Postee to holds its data, whereas the Kubernetes DNS server
-allows Tracee-Rules to send detections over to the Postee HTTP endpoint.</p>
-<div class="highlight"><pre><span></span><code><span class="gp">$ </span>microk8s <span class="nb">enable</span> hostpath-storage dns
-<span class="go">Enabling default storage class</span>
-<span class="go">deployment.apps/hostpath-provisioner created</span>
-<span class="go">storageclass.storage.k8s.io/microk8s-hostpath created</span>
-<span class="go">serviceaccount/microk8s-hostpath created</span>
-<span class="go">clusterrole.rbac.authorization.k8s.io/microk8s-hostpath created</span>
-<span class="go">clusterrolebinding.rbac.authorization.k8s.io/microk8s-hostpath created</span>
-<span class="go">Enabling DNS</span>
-<span class="go">Applying manifest</span>
-<span class="go">serviceaccount/coredns created</span>
-<span class="go">configmap/coredns created</span>
-<span class="go">deployment.apps/coredns created</span>
-<span class="go">service/kube-dns created</span>
-<span class="go">clusterrole.rbac.authorization.k8s.io/coredns created</span>
-<span class="go">clusterrolebinding.rbac.authorization.k8s.io/coredns created</span>
-<span class="go">Restarting kubelet</span>
-<span class="go">DNS is enabled</span>
-</code></pre></div>
 <p>Create a new namespace called <code>tracee-system</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="go">kubectl create ns tracee-system</span>
+<div class="highlight"><pre><span></span><code>kubectl create ns tracee-system
 </code></pre></div>
 <p>Create Postee Persistent Volumes and StatefulSet in the <code>tracee-system</code> namespace:</p>
 <div class="highlight"><pre><span></span><code>kubectl apply -n tracee-system \
@@ -1448,6 +1426,14 @@ rm /tmp/tracee-latest.tar
 <span class="go">ame&quot;:&quot;data&quot;,&quot;type&quot;:&quot;void*&quot;,&quot;value&quot;:&quot;0x0&quot;}]},&quot;SigMetadata&quot;:{&quot;ID&quot;:&quot;TRC-2&quot;,&quot;Version&quot;:&quot;0.1.0&quot;,&quot;Name&quot;:&quot;Anti-Debugging&quot;,&quot;Descr</span>
 <span class="go">iption&quot;:&quot;Process uses anti-debugging technique to block debugger&quot;,&quot;Tags&quot;:[&quot;linux&quot;,&quot;container&quot;],&quot;Properties&quot;:{&quot;MITRE ATT\</span>
 <span class="go">u0026CK&quot;:&quot;Defense Evasion: Execution Guardrails&quot;,&quot;Severity&quot;:3}}}</span>
+</code></pre></div>
+<p>As an alternative to static deployment descriptors you can install Tracee and Postee with Helm:</p>
+<div class="highlight"><pre><span></span><code>helm repo add aqua-charts https://aquasecurity.github.io/helm-charts
+helm dependency update ./deploy/helm/tracee
+helm install tracee ./deploy/helm/tracee \
+  --namespace tracee-system --create-namespace \
+  --set hostPID=true \
+  --set postee.enabled=true
 </code></pre></div>
 <h3 id="access-kubernetes-dashboard">Access Kubernetes Dashboard<a class="headerlink" href="#access-kubernetes-dashboard" title="Permanent link">&para;</a></h3>
 <p>Use the following command to get the token required to log in to the <a href="https://github.com/kubernetes/dashboard">Kubernetes Dashboard</a>:</p>
