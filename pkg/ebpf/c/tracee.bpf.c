@@ -963,6 +963,11 @@ static __always_inline const char *get_binprm_filename(struct linux_binprm *bprm
     return READ_KERN(bprm->filename);
 }
 
+static __always_inline const char *get_binprm_interp(struct linux_binprm *bprm)
+{
+    return READ_KERN(bprm->interp);
+}
+
 static __always_inline struct file *get_file_ptr_from_bprm(struct linux_binprm *bprm)
 {
     return READ_KERN(bprm->file);
@@ -2835,6 +2840,8 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
         invoked_from_kernel = 1;
     }
 
+    const char *interp = get_binprm_interp(bprm);
+
     const char *filename = get_binprm_filename(bprm);
 
     struct file *file = get_file_ptr_from_bprm(bprm);
@@ -2881,10 +2888,11 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
         save_to_submit_buf(&data, &invoked_from_kernel, sizeof(int), 6);
         save_to_submit_buf(&data, &ctime, sizeof(u64), 7);
         save_to_submit_buf(&data, &stdin_type, sizeof(unsigned short), 8);
+        save_str_to_buf(&data, (void *) interp, 9);
         if (elf_interpreter != NULL) {
-            save_str_to_buf(&data, &elf_interpreter->pathname, 9);
-            save_to_submit_buf(&data, &elf_interpreter->device, sizeof(dev_t), 10);
-            save_to_submit_buf(&data, &elf_interpreter->inode, sizeof(unsigned long), 11);
+            save_str_to_buf(&data, &elf_interpreter->pathname, 10);
+            save_to_submit_buf(&data, &elf_interpreter->device, sizeof(dev_t), 11);
+            save_to_submit_buf(&data, &elf_interpreter->inode, sizeof(unsigned long), 12);
         }
 
         events_perf_submit(&data, SCHED_PROCESS_EXEC, 0);
