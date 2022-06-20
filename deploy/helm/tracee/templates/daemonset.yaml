@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ include "tracee.fullname" . }}
+  labels:
+    {{- include "tracee.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "tracee.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "tracee.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "tracee.serviceAccountName" . }}
+      hostPID: {{ .Values.hostPID }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: tracee
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.postee.enabled }}
+          args:
+            - --webhook=http://{{ include "tracee.fullname" . }}-postee:8082
+            - --webhook-template=./templates/rawjson.tmpl
+            - --webhook-content-type=application/json
+          {{- end }}
+          env:
+            - name: LIBBPFGO_OSRELEASE_FILE
+              value: /etc/os-release-host
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: tmp-tracee
+              mountPath: /tmp/tracee
+            - name: etc-os-release
+              mountPath: /etc/os-release-host
+              readOnly: true
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - hostPath:
+            path: /tmp/tracee
+          name: tmp-tracee
+        - hostPath:
+            path: /etc/os-release
+          name: etc-os-release

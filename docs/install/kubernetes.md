@@ -32,6 +32,23 @@ kubectl create \
 
 You can edit the configMap `falcosidekick-config` the was created, see an example configuration here: https://github.com/falcosecurity/falcosidekick/blob/master/config_example.yaml
 
+### With Helm
+
+1. Clone the Helm chart:
+   ```
+   git clone --depth 1 --branch {{ git.tag }} https://github.com/aquasecurity/tracee.git
+   cd tracee
+   ```
+2. Install the Helm chart from a local directory:
+   ```
+   helm repo add aqua-charts https://aquasecurity.github.io/helm-charts
+   helm dependency update ./deploy/helm/tracee
+   helm install tracee ./deploy/helm/tracee \
+     --namespace tracee-system --create-namespace \
+     --set hostPID=true \
+     --set postee.enabled=true
+   ```
+
 ## Platform Support
 
 This approach assumes that host nodes have either BTF available or kernel headers available under conventional location.

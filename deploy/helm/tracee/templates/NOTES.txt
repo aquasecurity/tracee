@@ -1,0 +1,24 @@
+Tracee has been successfully installed as a set of pods scheduled on each Kubernetes cluster
+node controlled by the `{{ include "tracee.fullname" . }}` DaemonSet in the `{{ .Release.Namespace}}` namespace.
+By default, threat detections are printed to the standard output of each pod:
+
+$ kubectl logs -f daemonset/{{ include "tracee.fullname" . }} -n {{ .Release.Namespace }}
+
+*** Detection ***
+Time: 2022-06-08T13:59:01Z
+Signature ID: TRC-9
+Signature: New Executable Was Dropped During Runtime
+Data: map[file path:/bin/apache]
+Command: cp
+Hostname: attacker
+
+{{- if .Values.postee.enabled }}
+
+Detections are also sent to the webhook endpoint exposed by Postee:
+
+$ kubectl logs -f statefulset/{{ include "tracee.fullname" . }}-postee -n {{ .Release.Namespace }}
+
+You can integrate Postee with email server, Slack channel, and any other supported
+data sink to forward threat alerts for forensic auditing. For more details on Postee,
+see its documentation on https://aquasecurity.github.io/postee/latest.
+{{- end }}

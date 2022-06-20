@@ -16,10 +16,11 @@
    ```
 1. Prepare release by creating the PR with the following changes
    1. Update the libbpfgo module
-   1. Update the types module
-   1. Update the container image tag in the following files:
+   2. Update the types module
+   3. Update the container image tag in the following files:
       1. `deploy/kubernetes/tracee-falcosidekick/falcosidekick.yaml`
-      1. `deploy/kubernetes/tracee-postee/tracee.yaml`
+      2. `deploy/kubernetes/tracee-postee/tracee.yaml`
+   4. Update `home`, `version` and `appVersion` properties in `deploy/helm/tracee/Chart.yaml`
 1. Run tests and checks
    1. Check that there are no verifier issues when choosing all events in tracee-ebpf (using `--trace e=*`)
    1. Check both CO-RE and non CO-RE builds

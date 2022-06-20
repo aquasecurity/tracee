@@ -66,9 +66,8 @@ Tracee.
 By default, Vagrant will share Tracee project directory (the directory with the `Vagrantfile`) to `/vagrant`.
 To get started, change directory to `/vagrant` and list files:
 
-```
-vagrant@ubuntu-impish:~$ cd /vagrant/
-vagrant@ubuntu-impish:/vagrant$ ls -l
+```console
+$ ls -l
 total 204
 drwxr-xr-x 1 vagrant vagrant    224 Mar 17 14:31 3rdparty
 -rw-r--r-- 1 vagrant vagrant   3474 Mar 17 14:31 CONTRIBUTING.md
@@ -102,13 +101,13 @@ As you can see the `/vagrant` directory contains source code of Tracee cloned fr
 To build `tracee-ebpf` and `tracee-rules` executable binaries, run the default Make target:
 
 ```
-vagrant@ubuntu-impish:/vagrant$ make
+make
 ```
 
 Build targets are saved in the `/vagrant/dist` directory:
 
-```
-vagrant@ubuntu-impish:/vagrant$ ls -l dist/
+```console
+$ ls -l dist/
 total 47972
 drwxr-xr-x 1 vagrant vagrant       96 Mar 25 10:45 btfhub
 drwxr-xr-x 1 vagrant vagrant      224 Mar 25 10:45 libbpf
@@ -121,8 +120,8 @@ drwxr-xr-x 1 vagrant vagrant      544 Mar 26 18:31 tracee.bpf
 
 You can now run Tracee-eBPF and see raw events printed to the standard output in a tabular format:
 
-```
-vagrant@ubuntu-impish:/vagrant$ sudo ./dist/tracee-ebpf
+```console
+$ sudo ./dist/tracee-ebpf
 TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
 18:39:43:781824  0      mkdocs           1       19      0                stat                 pathname: /docs/docs, statbuf: 0x7f851365eb20
 18:39:43:782125  0      mkdocs           1       19      0                security_file_open   pathname: /docs/docs, flags: O_RDONLY|O_LARGEFILE|O_DIRECTORY, dev: 43, inode: 47, ctime: 1648313072000000000
@@ -139,8 +138,8 @@ TIME             UID    COMM             PID     TID     RET              EVENT 
 
 To analyze collected events and see detections printed to the standard output, run Tracee-eBPF and pipe it with Tracee-Rules:
 
-```
-vagrant@ubuntu-impish:/vagrant$ sudo ./dist/tracee-ebpf \
+```console
+$ sudo ./dist/tracee-ebpf \
   --output=format:gob \
   --output=option:parse-arguments \
   | ./dist/tracee-rules \
@@ -211,33 +210,9 @@ NAME            STATUS   ROLES    AGE    VERSION                    INTERNAL-IP 
 ubuntu-impish   Ready    <none>   139m   v1.23.4-2+98fc2022f3ad3e   10.0.2.15     <none>        Ubuntu 21.10   5.13.0-35-generic   containerd://1.5.9
 ```
 
-To integrate Tracee with [Postee] we must enable `hostpath-storage` and `dns` [MicroK8s add-ons]. The `hostpath-storage`
-add-on is used to setup [Persistent Volumes] required by Postee to holds its data, whereas the Kubernetes DNS server
-allows Tracee-Rules to send detections over to the Postee HTTP endpoint.
-
-```console
-$ microk8s enable hostpath-storage dns
-Enabling default storage class
-deployment.apps/hostpath-provisioner created
-storageclass.storage.k8s.io/microk8s-hostpath created
-serviceaccount/microk8s-hostpath created
-clusterrole.rbac.authorization.k8s.io/microk8s-hostpath created
-clusterrolebinding.rbac.authorization.k8s.io/microk8s-hostpath created
-Enabling DNS
-Applying manifest
-serviceaccount/coredns created
-configmap/coredns created
-deployment.apps/coredns created
-service/kube-dns created
-clusterrole.rbac.authorization.k8s.io/coredns created
-clusterrolebinding.rbac.authorization.k8s.io/coredns created
-Restarting kubelet
-DNS is enabled
-```
-
 Create a new namespace called `tracee-system`:
 
-```console
+```
 kubectl create ns tracee-system
 ```
 
@@ -305,6 +280,17 @@ ring","value":"PTRACE_TRACEME"},{"name":"pid","type":"pid_t","value":0},{"name":
 ame":"data","type":"void*","value":"0x0"}]},"SigMetadata":{"ID":"TRC-2","Version":"0.1.0","Name":"Anti-Debugging","Descr
 iption":"Process uses anti-debugging technique to block debugger","Tags":["linux","container"],"Properties":{"MITRE ATT\
 u0026CK":"Defense Evasion: Execution Guardrails","Severity":3}}}
+```
+
+As an alternative to static deployment descriptors you can install Tracee and Postee with Helm:
+
+```
+helm repo add aqua-charts https://aquasecurity.github.io/helm-charts
+helm dependency update ./deploy/helm/tracee
+helm install tracee ./deploy/helm/tracee \
+  --namespace tracee-system --create-namespace \
+  --set hostPID=true \
+  --set postee.enabled=true
 ```
 
 ### Access Kubernetes Dashboard
