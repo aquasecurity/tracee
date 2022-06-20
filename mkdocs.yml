@@ -18,6 +18,8 @@ nav:
     - Kubernetes: install/kubernetes.md
     - Linux Headers: install/headers.md
     - Docker for Mac: install/docker-mac.md
+    - Linux Distributions:
+      - NixOS: install/distros/nix-nixos.md
   - Integrations: integrations.md
   - Configuration Options: config.md
   - Authoring Rules: rules-authoring.md
