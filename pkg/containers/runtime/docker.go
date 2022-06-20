@@ -35,6 +35,12 @@ func (e *dockerEnricher) Get(containerId string, ctx context.Context) (Container
 	container := (*resp.ContainerJSONBase)
 	metadata.Name = container.Name
 
+	// Docker prefixes a '/' token to local containers.
+	// This can cause some confusion so we remove it if relevant.
+	if strings.HasPrefix(metadata.Name, "/") {
+		metadata.Name = container.Name[1:]
+	}
+
 	//get initial image name from docker's container config
 	if resp.Config != nil {
 		metadata.Image = resp.Config.Image
