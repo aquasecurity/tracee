@@ -4,7 +4,6 @@ import (
 	"bytes"
 	gocontext "context"
 	"fmt"
-	lru "github.com/hashicorp/golang-lru"
 	"math"
 	"net"
 	"os"
@@ -12,9 +11,12 @@ import (
 	"sync"
 	"time"
 
+	lru "github.com/hashicorp/golang-lru"
+
 	"inet.af/netaddr"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -253,7 +255,12 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 					}
 
 					// derive events chosen by the user
-					derivatives := t.deriveEvent(evt)
+					derivatives, errors := events.Derive(evt, t.eventDerivations)
+
+					for _, err := range errors {
+						t.handleError(err)
+					}
+
 					for _, derivative := range derivatives {
 						// output derived events
 						select {
@@ -300,22 +307,22 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 				}
 				procName := string(bytes.TrimRight(netEventMetadata.ProcessName[:], "\x00"))
 				switch netEventMetadata.NetEventId {
-				case DebugNetSecurityBind:
+				case events.DebugNetSecurityBind:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/security_socket_bind LocalIP: %v, LocalPort: %d, Protocol: %d\n",
 						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
-				case DebugNetUdpSendmsg:
+				case events.DebugNetUdpSendmsg:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_sendmsg          LocalIP: %v, LocalPort: %d, Protocol: %d\n",
 						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
-				case DebugNetUdpDisconnect:
+				case events.DebugNetUdpDisconnect:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/__udp_disconnect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
 						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
-				case DebugNetUdpDestroySock:
+				case events.DebugNetUdpDestroySock:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_destroy_sock     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
 						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
-				case DebugNetUdpV6DestroySock:
+				case events.DebugNetUdpV6DestroySock:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/udpv6_destroy_sock   LocalIP: %v, LocalPort: %d, Protocol: %d\n",
 						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
-				case DebugNetInetSockSetState:
+				case events.DebugNetInetSockSetState:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/inet_sock_set_state  LocalIP: %v, LocalPort: %d, RemoteIP: %v, RemotePort: %d, Protocol: %d, OldState: %d, NewState: %d, SockPtr: 0x%x\n",
 						timeStampObj,
 						procName,
@@ -328,7 +335,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 						netDebugEvent.TcpOldState,
 						netDebugEvent.TcpNewState,
 						netDebugEvent.SockPtr)
-				case DebugNetTcpConnect:
+				case events.DebugNetTcpConnect:
 					fmt.Printf("%v  %-16s  %-7d  debug_net/tcp_connect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
 						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
 				}
@@ -383,8 +390,8 @@ func getPacketBytes(netDecoder *bufferdecoder.EbpfDecoder, packetLength uint32) 
 }
 
 // isNetEvent checks if eventId is in net events IDs range
-func isNetEvent(eventId int32) bool {
-	if eventId >= NetPacket && eventId < MaxNetEventID {
+func isNetEvent(eventId events.ID) bool {
+	if eventId >= events.NetPacket && eventId < events.MaxNetID {
 		return true
 	}
 	return false

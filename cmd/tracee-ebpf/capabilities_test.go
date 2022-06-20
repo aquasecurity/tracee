@@ -5,6 +5,7 @@ import (
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/syndtr/gocapability/capability"
@@ -104,11 +105,6 @@ func TestGenerateTraceeEbpfRequiredCapabilities(t *testing.T) {
 		},
 	}
 
-	eventsNameToID := make(map[string]int32, len(tracee.EventsDefinitions))
-	for id, event := range tracee.EventsDefinitions {
-		eventsNameToID[event.Name] = id
-	}
-
 	for _, envTest := range environmentTestCases {
 		t.Run(envTest.name, func(t *testing.T) {
 			// Generate environment mockers
@@ -118,7 +114,8 @@ func TestGenerateTraceeEbpfRequiredCapabilities(t *testing.T) {
 			for _, traceTest := range traceTestCases {
 				t.Run(traceTest.name, func(t *testing.T) {
 					// Create configuration for given tracing
-					var eventsToTrace []int32
+					eventsToTrace := make([]events.ID, len(traceTest.chosenEvents))
+					eventsNameToID := events.Definitions.NamesToIDs()
 					for _, eventName := range traceTest.chosenEvents {
 						eventsToTrace = append(eventsToTrace, eventsNameToID[eventName])
 					}

@@ -6,7 +6,7 @@
 // This is critical because tracee-rules is independent, and doesn't have to run on the same machine as tracee-ebpf.
 // This means that tracee-rules might lack basic information of the operating machine needed for some signatures.
 // By creating user mode events this information could be intentionally collected and passed to tracee-ebpf afterwards.
-package ebpf
+package events
 
 import (
 	"io/ioutil"
@@ -17,19 +17,21 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 const InitProcNsDir = "/proc/1/ns"
 
-// CreateInitNamespacesEvent collect the init process namespaces and create event from them.
-func CreateInitNamespacesEvent() (trace.Event, error) {
+// InitNamespacesEvent collect the init process namespaces and create event from them.
+func InitNamespacesEvent() (trace.Event, error) {
+	initNamespacesDef := Definitions.Get(InitNamespaces)
 	initNamespacesArgs := getInitNamespaceArguments()
 	initNamespacesEvent := trace.Event{
 		Timestamp:   int(time.Now().UnixNano()),
 		ProcessName: "tracee-ebpf",
-		EventID:     int(InitNamespacesEventID),
-		EventName:   EventsDefinitions[InitNamespacesEventID].Name,
+		EventID:     int(InitNamespaces),
+		EventName:   initNamespacesDef.Name,
 		ArgsNum:     len(initNamespacesArgs),
 		Args:        initNamespacesArgs,
 	}
@@ -39,7 +41,7 @@ func CreateInitNamespacesEvent() (trace.Event, error) {
 // getInitNamespaceArguments Fetch the namespaces of the init process and parse them into event arguments.
 func getInitNamespaceArguments() []trace.Argument {
 	initNamespaces := fetchInitNamespaces()
-	eventDefinition := EventsDefinitions[InitNamespacesEventID]
+	eventDefinition := Definitions.Get(InitNamespaces)
 	initNamespacesArgs := make([]trace.Argument, len(eventDefinition.Params))
 	for i, arg := range initNamespacesArgs {
 		arg.ArgMeta = eventDefinition.Params[i]
@@ -63,10 +65,11 @@ func fetchInitNamespaces() map[string]uint32 {
 	return initNamespacesMap
 }
 
-func (t *Tracee) CreateExistingContainersEvents() []trace.Event {
+// ExistingContainersEvents returns a list of events for each existing container
+func ExistingContainersEvents(containers *containers.Containers) []trace.Event {
 	var events []trace.Event
-	def := EventsDefinitions[ExistingContainerEventID]
-	for _, info := range t.containers.GetContainers() {
+	def := Definitions.Get(ExistingContainer)
+	for _, info := range containers.GetContainers() {
 		args := []trace.Argument{
 			{ArgMeta: def.Params[0], Value: info.Runtime.String()},
 			{ArgMeta: def.Params[1], Value: info.Container.ContainerId},
@@ -75,8 +78,8 @@ func (t *Tracee) CreateExistingContainersEvents() []trace.Event {
 		existingContainerEvent := trace.Event{
 			Timestamp:   int(time.Now().UnixNano()),
 			ProcessName: "tracee-ebpf",
-			EventID:     int(ExistingContainerEventID),
-			EventName:   EventsDefinitions[ExistingContainerEventID].Name,
+			EventID:     int(ExistingContainer),
+			EventName:   def.Name,
 			ArgsNum:     len(args),
 			Args:        args,
 		}

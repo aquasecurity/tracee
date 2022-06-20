@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/flags"
@@ -272,10 +273,10 @@ func TestPrepareFilter(t *testing.T) {
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
 				ArgFilter: &tracee.ArgFilter{
-					Filters: map[int32]map[string]tracee.ArgFilterVal{},
+					Filters: map[events.ID]map[string]tracee.ArgFilterVal{},
 				},
 				RetFilter: &tracee.RetFilter{
-					Filters: map[int32]tracee.IntFilter{},
+					Filters: map[events.ID]tracee.IntFilter{},
 				},
 			},
 			expectedError: nil,
@@ -325,10 +326,10 @@ func TestPrepareFilter(t *testing.T) {
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
 				ArgFilter: &tracee.ArgFilter{
-					Filters: map[int32]map[string]tracee.ArgFilterVal{},
+					Filters: map[events.ID]map[string]tracee.ArgFilterVal{},
 				},
 				RetFilter: &tracee.RetFilter{
-					Filters: map[int32]tracee.IntFilter{},
+					Filters: map[events.ID]tracee.IntFilter{},
 				},
 			},
 			expectedError: nil,
@@ -378,10 +379,10 @@ func TestPrepareFilter(t *testing.T) {
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
 				ArgFilter: &tracee.ArgFilter{
-					Filters: map[int32]map[string]tracee.ArgFilterVal{},
+					Filters: map[events.ID]map[string]tracee.ArgFilterVal{},
 				},
 				RetFilter: &tracee.RetFilter{
-					Filters: map[int32]tracee.IntFilter{},
+					Filters: map[events.ID]tracee.IntFilter{},
 				},
 			},
 			expectedError: nil,
@@ -431,10 +432,10 @@ func TestPrepareFilter(t *testing.T) {
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
 				ArgFilter: &tracee.ArgFilter{
-					Filters: map[int32]map[string]tracee.ArgFilterVal{},
+					Filters: map[events.ID]map[string]tracee.ArgFilterVal{},
 				},
 				RetFilter: &tracee.RetFilter{
-					Filters: map[int32]tracee.IntFilter{},
+					Filters: map[events.ID]tracee.IntFilter{},
 				},
 			},
 			expectedError: nil,
@@ -484,10 +485,10 @@ func TestPrepareFilter(t *testing.T) {
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
 				ArgFilter: &tracee.ArgFilter{
-					Filters: map[int32]map[string]tracee.ArgFilterVal{},
+					Filters: map[events.ID]map[string]tracee.ArgFilterVal{},
 				},
 				RetFilter: &tracee.RetFilter{
-					Filters: map[int32]tracee.IntFilter{},
+					Filters: map[events.ID]tracee.IntFilter{},
 				},
 			},
 			expectedError: nil,
@@ -537,10 +538,10 @@ func TestPrepareFilter(t *testing.T) {
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
 				ArgFilter: &tracee.ArgFilter{
-					Filters: map[int32]map[string]tracee.ArgFilterVal{},
+					Filters: map[events.ID]map[string]tracee.ArgFilterVal{},
 				},
 				RetFilter: &tracee.RetFilter{
-					Filters: map[int32]tracee.IntFilter{},
+					Filters: map[events.ID]tracee.IntFilter{},
 				},
 			},
 			expectedError: nil,
@@ -590,10 +591,10 @@ func TestPrepareFilter(t *testing.T) {
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
 				ArgFilter: &tracee.ArgFilter{
-					Filters: map[int32]map[string]tracee.ArgFilterVal{},
+					Filters: map[events.ID]map[string]tracee.ArgFilterVal{},
 				},
 				RetFilter: &tracee.RetFilter{
-					Filters: map[int32]tracee.IntFilter{},
+					Filters: map[events.ID]tracee.IntFilter{},
 				},
 			},
 			expectedError: nil,
@@ -643,10 +644,10 @@ func TestPrepareFilter(t *testing.T) {
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
 				ArgFilter: &tracee.ArgFilter{
-					Filters: map[int32]map[string]tracee.ArgFilterVal{},
+					Filters: map[events.ID]map[string]tracee.ArgFilterVal{},
 				},
 				RetFilter: &tracee.RetFilter{
-					Filters: map[int32]tracee.IntFilter{},
+					Filters: map[events.ID]tracee.IntFilter{},
 				},
 			},
 			expectedError: nil,
@@ -698,10 +699,10 @@ func TestPrepareFilter(t *testing.T) {
 				},
 				NewContFilter: &tracee.BoolFilter{},
 				ArgFilter: &tracee.ArgFilter{
-					Filters: map[int32]map[string]tracee.ArgFilterVal{},
+					Filters: map[events.ID]map[string]tracee.ArgFilterVal{},
 				},
 				RetFilter: &tracee.RetFilter{
-					Filters: map[int32]tracee.IntFilter{},
+					Filters: map[events.ID]tracee.IntFilter{},
 				},
 			},
 			expectedError: nil,
@@ -753,10 +754,10 @@ func TestPrepareFilter(t *testing.T) {
 					Enabled: true,
 				},
 				ArgFilter: &tracee.ArgFilter{
-					Filters: map[int32]map[string]tracee.ArgFilterVal{},
+					Filters: map[events.ID]map[string]tracee.ArgFilterVal{},
 				},
 				RetFilter: &tracee.RetFilter{
-					Filters: map[int32]tracee.IntFilter{},
+					Filters: map[events.ID]tracee.IntFilter{},
 				},
 			},
 			expectedError: nil,
@@ -805,8 +806,8 @@ func TestPrepareFilter(t *testing.T) {
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
 				ArgFilter: &tracee.ArgFilter{
-					Filters: map[int32]map[string]tracee.ArgFilterVal{
-						tracee.OpenatEventID: {
+					Filters: map[events.ID]map[string]tracee.ArgFilterVal{
+						events.Openat: {
 							"pathname": tracee.ArgFilterVal{
 								Equal:    []string{"/bin/ls", "/tmp/tracee"},
 								NotEqual: []string{"/etc/passwd"},
@@ -816,7 +817,7 @@ func TestPrepareFilter(t *testing.T) {
 					Enabled: true,
 				},
 				RetFilter: &tracee.RetFilter{
-					Filters: map[int32]tracee.IntFilter{},
+					Filters: map[events.ID]tracee.IntFilter{},
 				},
 			},
 			expectedError: nil,
@@ -865,11 +866,11 @@ func TestPrepareFilter(t *testing.T) {
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
 				ArgFilter: &tracee.ArgFilter{
-					Filters: map[int32]map[string]tracee.ArgFilterVal{},
+					Filters: map[events.ID]map[string]tracee.ArgFilterVal{},
 				},
 				RetFilter: &tracee.RetFilter{
-					Filters: map[int32]tracee.IntFilter{
-						tracee.OpenatEventID: {
+					Filters: map[events.ID]tracee.IntFilter{
+						events.Openat: {
 							Equal:    []int64{2},
 							NotEqual: []int64{},
 							Less:     tracee.LessNotSetInt,
@@ -886,7 +887,7 @@ func TestPrepareFilter(t *testing.T) {
 			testName: "wildcard filter",
 			filters:  []string{"event=open*"},
 			expectedFilter: tracee.Filter{
-				EventsToTrace: []int32{tracee.OpenEventID, tracee.OpenatEventID},
+				EventsToTrace: []events.ID{events.Open, events.Openat},
 				UIDFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
@@ -933,10 +934,10 @@ func TestPrepareFilter(t *testing.T) {
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
 				ArgFilter: &tracee.ArgFilter{
-					Filters: map[int32]map[string]tracee.ArgFilterVal{},
+					Filters: map[events.ID]map[string]tracee.ArgFilterVal{},
 				},
 				RetFilter: &tracee.RetFilter{
-					Filters: map[int32]tracee.IntFilter{},
+					Filters: map[events.ID]tracee.IntFilter{},
 				},
 			},
 			expectedError: nil,
@@ -945,7 +946,7 @@ func TestPrepareFilter(t *testing.T) {
 			testName: "wildcard not filter",
 			filters:  []string{"event!=*"},
 			expectedFilter: tracee.Filter{
-				EventsToTrace: []int32{},
+				EventsToTrace: []events.ID{},
 				UIDFilter: &tracee.UintFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
@@ -992,10 +993,10 @@ func TestPrepareFilter(t *testing.T) {
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
 				ArgFilter: &tracee.ArgFilter{
-					Filters: map[int32]map[string]tracee.ArgFilterVal{},
+					Filters: map[events.ID]map[string]tracee.ArgFilterVal{},
 				},
 				RetFilter: &tracee.RetFilter{
-					Filters: map[int32]tracee.IntFilter{},
+					Filters: map[events.ID]tracee.IntFilter{},
 				},
 			},
 			expectedError: nil,
@@ -1050,10 +1051,10 @@ func TestPrepareFilter(t *testing.T) {
 				ContFilter:    &tracee.BoolFilter{},
 				NewContFilter: &tracee.BoolFilter{},
 				ArgFilter: &tracee.ArgFilter{
-					Filters: map[int32]map[string]tracee.ArgFilterVal{},
+					Filters: map[events.ID]map[string]tracee.ArgFilterVal{},
 				},
 				RetFilter: &tracee.RetFilter{
-					Filters: map[int32]tracee.IntFilter{},
+					Filters: map[events.ID]tracee.IntFilter{},
 				},
 			},
 			expectedError: nil,
@@ -1420,19 +1421,19 @@ func Test_checkCommandIsHelp(t *testing.T) {
 
 func Test_getFormattedEventParams(t *testing.T) {
 	testCases := []struct {
-		input  int32
+		input  events.ID
 		output string
 	}{
 		{
-			input:  tracee.WriteEventID,
+			input:  events.Write,
 			output: "(int fd, void* buf, size_t count)",
 		},
 		{
-			input:  tracee.RtSigreturnEventID,
+			input:  events.RtSigreturn,
 			output: "()",
 		},
 		{
-			input:  tracee.RtSigtimedwaitEventID,
+			input:  events.RtSigtimedwait,
 			output: "(const sigset_t* set, siginfo_t* info, const struct timespec* timeout, size_t sigsetsize)",
 		},
 		{

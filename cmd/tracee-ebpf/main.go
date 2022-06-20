@@ -21,6 +21,7 @@ import (
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/flags"
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -505,8 +506,12 @@ func checkCommandIsHelp(s []string) bool {
 	return false
 }
 
-func getFormattedEventParams(eventID int32) string {
-	eventParams := tracee.EventsDefinitions[eventID].Params
+func getFormattedEventParams(eventID events.ID) string {
+	evtDef, exists := events.Definitions.GetSafe(eventID)
+	if !exists {
+		return "()"
+	}
+	eventParams := evtDef.Params
 	var verboseEventParams string
 	verboseEventParams += "("
 	prefix := ""
@@ -537,27 +542,26 @@ func printList() {
 	var b strings.Builder
 	b.WriteString("System Calls: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________" + "\n\n")
-	printEventGroup(&b, 0, int(tracee.SysEnterEventID))
-	printEventGroup(&b, tracee.Unique32BitSyscallsStartID, int(tracee.Unique32BitSyscallsEndID))
+	printEventGroup(&b, 0, events.SysEnter)
+	printEventGroup(&b, events.Unique32BitSyscallsStartID, events.Unique32BitSyscallsEndID)
 	b.WriteString("\n\nOther Events: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________\n\n")
-	printEventGroup(&b, int(tracee.SysEnterEventID), int(tracee.MaxCommonEventID))
-	printEventGroup(&b, int(tracee.InitNamespacesEventID), int(tracee.MaxUserSpaceEventID))
+	printEventGroup(&b, events.SysEnter, events.MaxCommon)
+	printEventGroup(&b, events.InitNamespaces, events.MaxUserSpace)
 	b.WriteString("\n\nNetwork Events: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________\n\n")
-	printEventGroup(&b, int(tracee.NetPacket), int(tracee.MaxNetEventID))
+	printEventGroup(&b, events.NetPacket, events.MaxNetID)
 	fmt.Println(b.String())
 }
 
-func printEventGroup(b *strings.Builder, firstEventID, lastEventID int) {
+func printEventGroup(b *strings.Builder, firstEventID, lastEventID events.ID) {
 	for i := firstEventID; i < lastEventID; i++ {
-		index := int32(i)
-		event, ok := tracee.EventsDefinitions[index]
+		event, ok := events.Definitions.GetSafe(i)
 		if !ok || event.Internal {
 			continue
 		}
 		if event.Sets != nil {
-			eventSets := fmt.Sprintf("%-22s %-40s %s\n", event.Name, fmt.Sprintf("%v", event.Sets), getFormattedEventParams(index))
+			eventSets := fmt.Sprintf("%-22s %-40s %s\n", event.Name, fmt.Sprintf("%v", event.Sets), getFormattedEventParams(i))
 			b.WriteString(eventSets)
 		} else {
 			b.WriteString(event.Name + "\n")
