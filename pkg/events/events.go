@@ -5143,6 +5143,7 @@ var Definitions = eventDefinitions{
 				{Type: "dev_t", Name: "dev"},
 				{Type: "unsigned long", Name: "inode"},
 				{Type: "unsigned long", Name: "ctime"},
+				{Type: "const char*", Name: "syscall_pathname"},
 				{Type: "int", Name: "syscall"},
 			},
 		},
