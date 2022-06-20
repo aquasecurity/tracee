@@ -601,6 +601,7 @@ struct linux_binprm {
     int argc;
     int envc;
     const char *filename;
+    const char *interp;
 };
 
 typedef __s64 time64_t;
