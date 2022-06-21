@@ -424,11 +424,11 @@ enum kconfig_key_e
         __type(value, _value_type);                                                                \
     } _name SEC(".maps");
 
-#define BPF_HASH(_name, _key_type, _value_type)                                                    \
-    BPF_MAP(_name, BPF_MAP_TYPE_HASH, _key_type, _value_type, 10240)
+#define BPF_HASH(_name, _key_type, _value_type, _max_entries)                                      \
+    BPF_MAP(_name, BPF_MAP_TYPE_HASH, _key_type, _value_type, _max_entries)
 
-#define BPF_LRU_HASH(_name, _key_type, _value_type)                                                \
-    BPF_MAP(_name, BPF_MAP_TYPE_LRU_HASH, _key_type, _value_type, 10240)
+#define BPF_LRU_HASH(_name, _key_type, _value_type, _max_entries)                                  \
+    BPF_MAP(_name, BPF_MAP_TYPE_LRU_HASH, _key_type, _value_type, _max_entries)
 
 #define BPF_ARRAY(_name, _value_type, _max_entries)                                                \
     BPF_MAP(_name, BPF_MAP_TYPE_ARRAY, u32, _value_type, _max_entries)
@@ -439,7 +439,8 @@ enum kconfig_key_e
 #define BPF_PROG_ARRAY(_name, _max_entries)                                                        \
     BPF_MAP(_name, BPF_MAP_TYPE_PROG_ARRAY, u32, u32, _max_entries)
 
-#define BPF_PERF_OUTPUT(_name) BPF_MAP(_name, BPF_MAP_TYPE_PERF_EVENT_ARRAY, int, __u32, 1024)
+#define BPF_PERF_OUTPUT(_name, _max_entries)                                                       \
+    BPF_MAP(_name, BPF_MAP_TYPE_PERF_EVENT_ARRAY, int, __u32, _max_entries)
 
 // stack traces: the value is 1 big byte array of the stack addresses
 typedef __u64 stack_trace_t[MAX_STACK_DEPTH];
@@ -588,11 +589,11 @@ typedef struct network_connection_v6 {
     u32 scope_id;
 } net_conn_v6_t;
 
-typedef struct local_net_id {
+typedef struct net_id {
     struct in6_addr address;
     u16 port;
     u16 protocol;
-} local_net_id_t;
+} net_id_t;
 
 typedef struct net_packet {
     uint64_t ts;
@@ -635,13 +636,13 @@ typedef struct net_ctx_ext {
 #define MODULE_VERSION_MAX_LENGTH    32
 #define MODULE_SRCVERSION_MAX_LENGTH 25
 
-typedef struct kernel_module_data {
+typedef struct kmod_data {
     char name[MODULE_NAME_LEN];
     char version[MODULE_VERSION_MAX_LENGTH];
     char srcversion[MODULE_SRCVERSION_MAX_LENGTH];
     u64 prev;
     u64 next;
-} kernel_module_data_t;
+} kmod_data_t;
 
 typedef struct file_id {
     char pathname[MAX_CACHED_PATH_SIZE];
@@ -691,29 +692,29 @@ struct kprobe {
 
 // clang-format off
 
-BPF_HASH(kconfig_map, u32, u32);                        // kernel config variables
-BPF_HASH(interpreter_map, u32, file_id_t);              // interpreter file used for each process
-BPF_HASH(events_to_submit, u32, u32);                   // events chosen by the user
-BPF_HASH(containers_map, u32, u8);                      // map cgroup id to container status {EXISTED, CREATED, STARTED}
-BPF_HASH(args_map, u64, args_t);                        // persist args between function entry and return
-BPF_HASH(inequality_filter, u32, u64);                  // filter events by some uint field either by < or >
-BPF_HASH(uid_filter, u32, u32);                         // filter events by UID, for specific UIDs either by == or !=
-BPF_HASH(pid_filter, u32, u32);                         // filter events by PID
-BPF_HASH(mnt_ns_filter, u64, u32);                      // filter events by mount namespace id
-BPF_HASH(pid_ns_filter, u64, u32);                      // filter events by pid namespace id
-BPF_HASH(uts_ns_filter, string_filter_t, u32);          // filter events by uts namespace name
-BPF_HASH(comm_filter, string_filter_t, u32);            // filter events by command name
-BPF_HASH(cgroup_id_filter, u32, u32);                   // filter events by cgroup id
-BPF_HASH(bin_args_map, u64, bin_args_t);                // persist args for send_bin funtion
-BPF_HASH(sys_32_to_64_map, u32, u32);                   // map 32bit to 64bit syscalls
-BPF_HASH(params_types_map, u32, u64);                   // encoded parameters types for event
-BPF_HASH(process_tree_map, u32, u32);                   // filter events by the ancestry of the traced process
-BPF_LRU_HASH(task_info_map, u32, task_info_t);          // holds data for every task
-BPF_HASH(network_config, u32, int);                     // holds the network config for each iface
-BPF_HASH(ksymbols_map, ksym_name_t, u64);               // holds the addresses of some kernel symbols
-BPF_HASH(syscalls_to_check_map, int, u64);              // syscalls to discover
-BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t);         // socket address to process context
-BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t);   // network identifier to process context
+BPF_HASH(kconfig_map, u32, u32, 10240);                 // kernel config variables
+BPF_HASH(interpreter_map, u32, file_id_t, 10240);       // interpreter file used for each process
+BPF_HASH(events_to_submit, u32, u32, 4096);             // events chosen by the user
+BPF_HASH(containers_map, u32, u8, 10240);               // map cgroup id to container status {EXISTED, CREATED, STARTED}
+BPF_HASH(args_map, u64, args_t, 1024);                  // persist args between function entry and return
+BPF_HASH(inequality_filter, u32, u64, 256);             // filter events by some uint field either by < or >
+BPF_HASH(uid_filter, u32, u32, 256);                    // filter events by UID, for specific UIDs either by == or !=
+BPF_HASH(pid_filter, u32, u32, 256);                    // filter events by PID
+BPF_HASH(mnt_ns_filter, u64, u32, 256);                 // filter events by mount namespace id
+BPF_HASH(pid_ns_filter, u64, u32, 256);                 // filter events by pid namespace id
+BPF_HASH(uts_ns_filter, string_filter_t, u32, 256);     // filter events by uts namespace name
+BPF_HASH(comm_filter, string_filter_t, u32, 256);       // filter events by command name
+BPF_HASH(cgroup_id_filter, u32, u32, 256);              // filter events by cgroup id
+BPF_HASH(bin_args_map, u64, bin_args_t, 256);           // persist args for send_bin funtion
+BPF_HASH(sys_32_to_64_map, u32, u32, 1024);             // map 32bit to 64bit syscalls
+BPF_HASH(params_types_map, u32, u64, 1024);             // encoded parameters types for event
+BPF_HASH(process_tree_map, u32, u32, 10240);            // filter events by the ancestry of the traced process
+BPF_LRU_HASH(task_info_map, u32, task_info_t, 10240);   // holds data for every task
+BPF_HASH(network_config, u32, int, 1024);               // holds the network config for each iface
+BPF_HASH(ksymbols_map, ksym_name_t, u64, 1024);         // holds the addresses of some kernel symbols
+BPF_HASH(syscalls_to_check_map, int, u64, 256);         // syscalls to discover
+BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t, 10240);  // socket address to process context
+BPF_LRU_HASH(network_map, net_id_t, net_ctx_t, 10240);  // network identifier to process context
 BPF_ARRAY(config_map, config_entry_t, 1);               // various configurations
 BPF_ARRAY(file_filter, path_filter_t, 3);               // filter vfs_write events
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);             // percpu global buffer variables
@@ -723,15 +724,15 @@ BPF_PROG_ARRAY(prog_array_tp, MAX_TAIL_CALL);           // store programs for ta
 BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);          // store programs for tail calls
 BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID);           // store programs for tail calls
 BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);  // store stack traces
-BPF_HASH(module_init_map, u32, kernel_module_data_t);   // holds module information between
+BPF_HASH(module_init_map, u32, kmod_data_t, 256);       // holds module information between
 
 // clang-format on
 
 // EBPF PERF BUFFERS -------------------------------------------------------------------------------
 
-BPF_PERF_OUTPUT(events);      // events submission
-BPF_PERF_OUTPUT(file_writes); // file writes events submission
-BPF_PERF_OUTPUT(net_events);  // network events submission
+BPF_PERF_OUTPUT(events, 1024);      // events submission
+BPF_PERF_OUTPUT(file_writes, 1024); // file writes events submission
+BPF_PERF_OUTPUT(net_events, 1024);  // network events submission
 
 // HELPERS: DEVICES --------------------------------------------------------------------------------
 
@@ -2411,7 +2412,7 @@ static __always_inline int get_remote_sockaddr_in6_from_network_details(struct s
 }
 
 static __always_inline int get_local_net_id_from_network_details_v4(struct sock *sk,
-                                                                    local_net_id_t *connect_id,
+                                                                    net_id_t *connect_id,
                                                                     net_conn_v4_t *net_details,
                                                                     u16 family)
 {
@@ -2424,7 +2425,7 @@ static __always_inline int get_local_net_id_from_network_details_v4(struct sock 
 }
 
 static __always_inline int get_local_net_id_from_network_details_v6(struct sock *sk,
-                                                                    local_net_id_t *connect_id,
+                                                                    net_id_t *connect_id,
                                                                     net_conn_v6_t *net_details,
                                                                     u16 family)
 {
@@ -3843,7 +3844,7 @@ int BPF_KPROBE(trace_security_socket_bind)
     save_to_submit_buf(&data, (void *) &sys->args.args[0], sizeof(u32), 0);
 
     u16 protocol = get_sock_protocol(sk);
-    local_net_id_t connect_id = {0};
+    net_id_t connect_id = {0};
     connect_id.protocol = protocol;
 
     if (sa_fam == AF_INET) {
@@ -3904,7 +3905,7 @@ int BPF_KPROBE(trace_security_socket_bind)
 static __always_inline int
 net_map_update_or_delete_sock(void *ctx, int event_id, struct sock *sk, u32 tid)
 {
-    local_net_id_t connect_id = {0};
+    net_id_t connect_id = {0};
     u16 family = get_sock_family(sk);
 
     if (family == AF_INET) {
@@ -4017,7 +4018,7 @@ int BPF_KPROBE(trace_udpv6_destroy_sock)
 SEC("raw_tracepoint/inet_sock_set_state")
 int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
 {
-    local_net_id_t connect_id = {0};
+    net_id_t connect_id = {0};
     net_debug_t debug_event = {0};
     net_ctx_ext_t net_ctx_ext = {0};
 
@@ -4126,7 +4127,7 @@ int BPF_KPROBE(trace_tcp_connect)
     if (!should_trace(&data))
         return 0;
 
-    local_net_id_t connect_id = {0};
+    net_id_t connect_id = {0};
     net_ctx_ext_t net_ctx_ext = {0};
 
     struct sock *sk = (struct sock *) PT_REGS_PARM1(ctx);
@@ -4155,7 +4156,7 @@ int BPF_KPROBE(trace_tcp_connect)
 
 static __always_inline int icmp_delete_network_map(struct sk_buff *skb, int send, int ipv6)
 {
-    local_net_id_t connect_id = {0};
+    net_id_t connect_id = {0};
     __u8 icmp_type;
 
     if (ipv6) {
@@ -4263,7 +4264,7 @@ int BPF_KPROBE(trace_ping_v4_sendmsg)
     if (!should_trace(&data))
         return 0;
 
-    local_net_id_t connect_id = {0};
+    net_id_t connect_id = {0};
 
     // this is v4 function
     connect_id.protocol = IPPROTO_ICMP;
@@ -4299,7 +4300,7 @@ int BPF_KPROBE(trace_ping_v6_sendmsg)
     if (!should_trace(&data))
         return 0;
 
-    local_net_id_t connect_id = {0};
+    net_id_t connect_id = {0};
 
     // this is v6 function
     connect_id.protocol = IPPROTO_ICMPV6;
@@ -5301,7 +5302,7 @@ int BPF_KPROBE(trace_do_init_module)
     if (!should_trace(&data))
         return 0;
 
-    kernel_module_data_t module_data = {0};
+    kmod_data_t module_data = {0};
 
     // get pointers before init
     struct module *mod = (struct module *) PT_REGS_PARM1(ctx);
@@ -5332,7 +5333,7 @@ int BPF_KPROBE(trace_ret_do_init_module)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    kernel_module_data_t *orig_module_data =
+    kmod_data_t *orig_module_data =
         bpf_map_lookup_elem(&module_init_map, &data.context.task.host_tid);
     if (orig_module_data == NULL) {
         return 0;
@@ -5510,7 +5511,7 @@ static __always_inline int tc_probe(struct __sk_buff *skb, bool ingress)
     pkt.ts = bpf_ktime_get_ns();
     pkt.len = skb->len;
     pkt.ifindex = skb->ifindex;
-    local_net_id_t connect_id = {0};
+    net_id_t connect_id = {0};
 
     uint32_t l4_hdr_off;
 
