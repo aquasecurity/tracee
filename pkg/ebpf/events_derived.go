@@ -23,37 +23,37 @@ func (t *Tracee) initDerivationTable() error {
 	t.eventDerivations = events.DerivationTable{
 		events.CgroupMkdir: {
 			events.ContainerCreate: {
-				Enabled:  t.events[events.ContainerCreate].emit,
+				Enabled:  t.events[events.ContainerCreate].submit,
 				Function: deriveContainerCreate(t.containers),
 			},
 		},
 		events.CgroupRmdir: {
 			events.ContainerRemove: {
-				Enabled:  t.events[events.ContainerRemove].emit,
+				Enabled:  t.events[events.ContainerRemove].submit,
 				Function: deriveContainerRemoved(t.containers),
 			},
 		},
 		events.PrintSyscallTable: {
 			events.HookedSyscalls: {
-				Enabled:  t.events[events.PrintSyscallTable].emit,
+				Enabled:  t.events[events.PrintSyscallTable].submit,
 				Function: deriveDetectHookedSyscall(t.kernelSymbols),
 			},
 		},
 		events.DnsRequest: {
 			events.NetPacket: {
-				Enabled:  t.events[events.NetPacket].emit,
+				Enabled:  t.events[events.NetPacket].submit,
 				Function: deriveNetPacket(),
 			},
 		},
 		events.DnsResponse: {
 			events.NetPacket: {
-				Enabled:  t.events[events.NetPacket].emit,
+				Enabled:  t.events[events.NetPacket].submit,
 				Function: deriveNetPacket(),
 			},
 		},
 		events.PrintNetSeqOps: {
 			events.HookedSeqOps: {
-				Enabled:  t.events[events.HookedSeqOps].emit,
+				Enabled:  t.events[events.HookedSeqOps].submit,
 				Function: deriveHookedSeqOps(t.kernelSymbols),
 			},
 		},
