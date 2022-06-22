@@ -3,6 +3,7 @@ package ebpf
 import (
 	gocontext "context"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -445,17 +446,6 @@ func (t *Tracee) initTailCall(mapName string, mapIdx uint32, progName string) er
 	return err
 }
 
-// bpfConfig is an enum that include various configurations that can be passed to bpf code
-// config should match defined values in ebpf code
-type bpfConfig uint32
-
-const (
-	configTraceePid bpfConfig = iota
-	configOptions
-	configFilters
-	configCgroupV1HID
-)
-
 // options config should match defined values in ebpf code
 const (
 	optDetectOrigSyscall uint32 = 1 << iota
@@ -676,36 +666,19 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
-	// Initialize config and pids maps
-
+	// Initialize config map
 	bpfConfigMap, err := t.bpfModule.GetMap("config_map") // u32, u32
 	if err != nil {
 		return err
 	}
 
-	cTP := uint32(configTraceePid)
-	thisPid := uint32(os.Getpid())
-	if err = bpfConfigMap.Update(unsafe.Pointer(&cTP), unsafe.Pointer(&thisPid)); err != nil {
-		return err
-	}
-
-	cOpt := uint32(configOptions)
-	cOptVal := t.getOptionsConfig()
-	if err = bpfConfigMap.Update(unsafe.Pointer(&cOpt), unsafe.Pointer(&cOptVal)); err != nil {
-		return err
-	}
-
-	if t.containers.IsCgroupV1() {
-		cHID := uint32(configCgroupV1HID)
-		cHIDVal := t.containers.GetCgroupV1HID()
-		if err = bpfConfigMap.Update(unsafe.Pointer(&cHID), unsafe.Pointer(&cHIDVal)); err != nil {
-			return err
-		}
-	}
-
-	cFilter := uint32(configFilters)
-	cFilterVal := t.getFiltersConfig()
-	if err = bpfConfigMap.Update(unsafe.Pointer(&cFilter), unsafe.Pointer(&cFilterVal)); err != nil {
+	cZero := uint32(0)
+	configVal := make([]byte, 16)
+	binary.LittleEndian.PutUint32(configVal[0:4], uint32(os.Getpid()))
+	binary.LittleEndian.PutUint32(configVal[4:8], t.getOptionsConfig())
+	binary.LittleEndian.PutUint32(configVal[8:12], t.getFiltersConfig())
+	binary.LittleEndian.PutUint32(configVal[12:16], uint32(t.containers.GetCgroupV1HID()))
+	if err = bpfConfigMap.Update(unsafe.Pointer(&cZero), unsafe.Pointer(&configVal[0])); err != nil {
 		return err
 	}
 

@@ -252,14 +252,6 @@ enum event_id_e
     DEBUG_NET_TCP_CONNECT
 };
 
-enum bpf_config_e
-{
-    CONFIG_TRACEE_PID,
-    CONFIG_OPTIONS,
-    CONFIG_FILTERS,
-    CONFIG_CGROUP_V1_HID
-};
-
 #define CAPTURE_IFACE (1 << 0)
 #define TRACE_IFACE   (1 << 1)
 
@@ -544,14 +536,21 @@ typedef struct ksym_name {
     char str[MAX_KSYM_NAME_SIZE];
 } ksym_name_t;
 
+typedef struct config_entry {
+    u32 tracee_pid;
+    u32 options;
+    u32 filters;
+    u32 cgroup_v1_hid;
+} config_entry_t;
+
 typedef struct event_data {
     struct task_struct *task;
     event_context_t context;
     task_info_t *task_info;
     void *ctx;
+    config_entry_t *config;
     buf_t *submit_p;
     u32 buf_off;
-    u32 options;
 } event_data_t;
 
 // For a good summary about capabilities, see https://lwn.net/Articles/636533/
@@ -715,7 +714,7 @@ BPF_HASH(ksymbols_map, ksym_name_t, u64);               // holds the addresses o
 BPF_HASH(syscalls_to_check_map, int, u64);              // syscalls to discover
 BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t);         // socket address to process context
 BPF_LRU_HASH(network_map, local_net_id_t, net_ctx_t);   // network identifier to process context
-BPF_ARRAY(config_map, u32, 4);                          // various configurations
+BPF_ARRAY(config_map, config_entry_t, 1);               // various configurations
 BPF_ARRAY(file_filter, path_filter_t, 3);               // filter vfs_write events
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);             // percpu global buffer variables
 BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS);           // holds offsets to bufs respectively
@@ -1356,16 +1355,6 @@ static __always_inline unsigned long get_s_magic_from_super_block(struct super_b
     return READ_KERN(i_sb->s_magic);
 }
 
-static __always_inline int get_config(u32 key)
-{
-    u32 *config = bpf_map_lookup_elem(&config_map, &key);
-
-    if (config == NULL)
-        return 0;
-
-    return *config;
-}
-
 static __always_inline int get_kconfig_val(u32 key)
 {
     u32 *config = bpf_map_lookup_elem(&kconfig_map, &key);
@@ -1436,9 +1425,13 @@ init_context(event_context_t *context, struct task_struct *task, u32 options)
 
 static __always_inline int init_event_data(event_data_t *data, void *ctx)
 {
+    int zero = 0;
+    data->config = bpf_map_lookup_elem(&config_map, &zero);
+    if (data->config == NULL)
+        return 0;
+
     data->task = (struct task_struct *) bpf_get_current_task();
-    data->options = get_config(CONFIG_OPTIONS);
-    init_context(&data->context, data->task, data->options);
+    init_context(&data->context, data->task, data->config->options);
     data->ctx = ctx;
     data->buf_off = sizeof(event_context_t);
     int buf_idx = SUBMIT_BUF_IDX;
@@ -1536,7 +1529,7 @@ static __always_inline int bool_filter_matches(bool filter_out, bool val)
 static __always_inline int do_should_trace(event_data_t *data)
 {
     task_context_t *context = &data->context.task;
-    int config = get_config(CONFIG_FILTERS);
+    u32 config = data->config->filters;
 
     if ((config & FILTER_FOLLOW_ENABLED) && (data->task_info->follow)) {
         // don't check the other filters if follow is set
@@ -1544,7 +1537,7 @@ static __always_inline int do_should_trace(event_data_t *data)
     }
 
     // Don't monitor self
-    if (get_config(CONFIG_TRACEE_PID) == context->host_pid) {
+    if (data->config->tracee_pid == context->host_pid) {
         return 0;
     }
 
@@ -1933,7 +1926,7 @@ static __always_inline int events_perf_submit(event_data_t *data, u32 id, long r
     data->context.retval = ret;
 
     // Get Stack trace
-    if (data->options & OPT_CAPTURE_STACK_TRACES) {
+    if (data->config->options & OPT_CAPTURE_STACK_TRACES) {
         int stack_id = bpf_get_stackid(data->ctx, &stack_addresses, BPF_F_USER_STACK);
         if (stack_id >= 0) {
             data->context.stack_id = stack_id;
@@ -2638,7 +2631,7 @@ int syscall__execve(void *ctx)
 
     save_str_to_buf(&data, (void *) sys->args.args[0] /*filename*/, 0);
     save_str_arr_to_buf(&data, (const char *const *) sys->args.args[1] /*argv*/, 1);
-    if (data.options & OPT_EXEC_ENV) {
+    if (data.config->options & OPT_EXEC_ENV) {
         save_str_arr_to_buf(&data, (const char *const *) sys->args.args[2] /*envp*/, 2);
     }
 
@@ -2662,7 +2655,7 @@ int syscall__execveat(void *ctx)
     save_to_submit_buf(&data, (void *) &sys->args.args[0] /*dirfd*/, sizeof(int), 0);
     save_str_to_buf(&data, (void *) sys->args.args[1] /*pathname*/, 1);
     save_str_arr_to_buf(&data, (const char *const *) sys->args.args[2] /*argv*/, 2);
-    if (data.options & OPT_EXEC_ENV) {
+    if (data.config->options & OPT_EXEC_ENV) {
         save_str_arr_to_buf(&data, (const char *const *) sys->args.args[3] /*envp*/, 3);
     }
     save_to_submit_buf(&data, (void *) &sys->args.args[4] /*flags*/, sizeof(int), 4);
@@ -2787,8 +2780,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     int child_tgid = get_task_host_tgid(child);
 
     // update process tree map if the parent has an entry
-    u32 filters_config = get_config(CONFIG_FILTERS);
-    if (filters_config & FILTER_PROC_TREE_ENABLED) {
+    if (data.config->filters & FILTER_PROC_TREE_ENABLED) {
         u32 *tgid_filtered = bpf_map_lookup_elem(&process_tree_map, &parent_tgid);
         if (tgid_filtered) {
             bpf_map_update_elem(&process_tree_map, &child_tgid, tgid_filtered, BPF_ANY);
@@ -2804,7 +2796,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     task.new_task = true;
     bpf_map_update_elem(&task_info_map, &child_pid, &task, BPF_ANY);
 
-    if (should_submit(SCHED_PROCESS_FORK) || data.options & OPT_PROCESS_INFO) {
+    if (should_submit(SCHED_PROCESS_FORK) || data.config->options & OPT_PROCESS_INFO) {
         int parent_ns_pid = get_task_ns_pid(parent);
         int parent_ns_tgid = get_task_ns_tgid(parent);
         int child_ns_pid = get_task_ns_pid(child);
@@ -2904,11 +2896,11 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     // 1. struct file *executable - can be used to get the executable name passed to an interpreter
     // 2. fdpath                  - generated filename for execveat (after resolving dirfd)
 
-    if (should_submit(SCHED_PROCESS_EXEC) || data.options & OPT_PROCESS_INFO) {
+    if (should_submit(SCHED_PROCESS_EXEC) || data.config->options & OPT_PROCESS_INFO) {
         save_str_to_buf(&data, (void *) filename, 0);
         save_str_to_buf(&data, file_path, 1);
         save_args_str_arr_to_buf(&data, (void *) arg_start, (void *) arg_end, argc, 2);
-        if (data.options & OPT_EXEC_ENV) {
+        if (data.config->options & OPT_EXEC_ENV) {
             save_args_str_arr_to_buf(&data, (void *) env_start, (void *) env_end, envc, 3);
         }
         save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 4);
@@ -2944,7 +2936,7 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     bpf_map_delete_elem(&task_info_map, &data.context.task.host_tid);
     bpf_map_delete_elem(&interpreter_map, &data.context.task.host_tid);
 
-    int proc_tree_filter_set = get_config(CONFIG_FILTERS) & FILTER_PROC_TREE_ENABLED;
+    int proc_tree_filter_set = data.config->filters & FILTER_PROC_TREE_ENABLED;
 
     bool group_dead = false;
     struct task_struct *task = data.task;
@@ -2965,7 +2957,7 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 
     long exit_code = get_task_exit_code(data.task);
 
-    if (should_submit(SCHED_PROCESS_EXIT) || data.options & OPT_PROCESS_INFO) {
+    if (should_submit(SCHED_PROCESS_EXIT) || data.config->options & OPT_PROCESS_INFO) {
         save_to_submit_buf(&data, (void *) &exit_code, sizeof(long), 0);
         save_to_submit_buf(&data, (void *) &group_dead, sizeof(bool), 1);
 
@@ -3190,12 +3182,12 @@ int BPF_KPROBE(trace_tracee_trigger_event)
 
     unsigned int cmd = PT_REGS_PARM2(ctx);
     if ((cmd & IOCTL_FETCH_SYSCALLS) == IOCTL_FETCH_SYSCALLS &&
-        get_config(CONFIG_TRACEE_PID) == data.context.task.host_pid) {
+        data.config->tracee_pid == data.context.task.host_pid) {
         invoke_print_syscall_table_event(&data);
     }
 
     if ((cmd & IOCTL_HOOKED_SEQ_OPS) == IOCTL_HOOKED_SEQ_OPS &&
-        get_config(CONFIG_TRACEE_PID) == data.context.task.host_pid) {
+        data.config->tracee_pid == data.context.task.host_pid) {
         unsigned long struct_address = PT_REGS_PARM3(ctx);
         invoke_fetch_network_seq_operations_event(&data, struct_address);
     }
@@ -3245,7 +3237,7 @@ int tracepoint__cgroup__cgroup_mkdir(struct bpf_raw_tracepoint_args *ctx)
     u32 cgroup_id_lsb = cgroup_id;
 
     bool should_update = true;
-    if ((data.options & OPT_CGROUP_V1) && (get_config(CONFIG_CGROUP_V1_HID) != hierarchy_id))
+    if ((data.config->options & OPT_CGROUP_V1) && (data.config->cgroup_v1_hid != hierarchy_id))
         should_update = false;
 
     if (should_update) {
@@ -3278,7 +3270,7 @@ int tracepoint__cgroup__cgroup_rmdir(struct bpf_raw_tracepoint_args *ctx)
     u32 cgroup_id_lsb = cgroup_id;
 
     bool should_update = true;
-    if ((data.options & OPT_CGROUP_V1) && (get_config(CONFIG_CGROUP_V1_HID) != hierarchy_id))
+    if ((data.config->options & OPT_CGROUP_V1) && (data.config->cgroup_v1_hid != hierarchy_id))
         should_update = false;
 
     if (should_update)
@@ -3336,7 +3328,7 @@ int BPF_KPROBE(trace_security_file_open)
     save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 2);
     save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 3);
     save_to_submit_buf(&data, &ctime, sizeof(u64), 4);
-    if (data.options & OPT_SHOW_SYSCALL) {
+    if (data.config->options & OPT_SHOW_SYSCALL) {
         syscall_data_t *sys = &data.task_info->syscall_data;
         if (data.task_info->syscall_traced) {
             save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 5);
@@ -3470,7 +3462,7 @@ int BPF_KPROBE(trace_commit_creds)
         (old_slim.cap_effective != new_slim.cap_effective) ||
         (old_slim.cap_bset != new_slim.cap_bset) ||
         (old_slim.cap_ambient != new_slim.cap_ambient)) {
-        if (data.options & OPT_SHOW_SYSCALL) {
+        if (data.config->options & OPT_SHOW_SYSCALL) {
             syscall_data_t *sys = &data.task_info->syscall_data;
             if (data.task_info->syscall_traced) {
                 save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 2);
@@ -3550,7 +3542,7 @@ int BPF_KPROBE(trace_cap_capable)
         return 0;
 
     save_to_submit_buf(&data, (void *) &cap, sizeof(int), 0);
-    if (data.options & OPT_SHOW_SYSCALL) {
+    if (data.config->options & OPT_SHOW_SYSCALL) {
         syscall_data_t *sys = &data.task_info->syscall_data;
         if (data.task_info->syscall_traced) {
             save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 1);
@@ -3892,7 +3884,7 @@ int BPF_KPROBE(trace_security_socket_bind)
     }
 
     // netDebug event
-    if ((data.options & OPT_DEBUG_NET) && (sa_fam != AF_UNIX)) {
+    if ((data.config->options & OPT_DEBUG_NET) && (sa_fam != AF_UNIX)) {
         net_debug_t debug_event = {0};
         debug_event.ts = data.context.ts;
         debug_event.host_tid = data.context.task.host_tid;
@@ -3938,8 +3930,13 @@ net_map_update_or_delete_sock(void *ctx, int event_id, struct sock *sk, u32 tid)
         }
     }
 
+    int zero = 0;
+    config_entry_t *config = bpf_map_lookup_elem(&config_map, &zero);
+    if (config == NULL)
+        return 0;
+
     // netDebug event
-    if (get_config(CONFIG_OPTIONS) & OPT_DEBUG_NET) {
+    if (config->options & OPT_DEBUG_NET) {
         net_debug_t debug_event = {0};
         debug_event.ts = bpf_ktime_get_ns();
         debug_event.host_tid = bpf_get_current_pid_tgid();
@@ -4098,7 +4095,7 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
     }
 
     // netDebug event
-    if (data.options & OPT_DEBUG_NET) {
+    if (data.config->options & OPT_DEBUG_NET) {
         debug_event.ts = data.context.ts;
         if (!sock_ctx_p) {
             debug_event.host_tid = data.context.task.host_tid;
@@ -4379,8 +4376,13 @@ static __always_inline u32 send_bin_helper(void *ctx, void *prog_array, int tail
 
     bpf_probe_read((void **) &(file_buf_p->buf[F_SEND_TYPE]), sizeof(u8), &bin_args->type);
 
+    int zero = 0;
+    config_entry_t *config = bpf_map_lookup_elem(&config_map, &zero);
+    if (config == NULL)
+        return 0;
+
     u64 cgroup_id;
-    if (get_config(CONFIG_OPTIONS) & OPT_CGROUP_V1) {
+    if (config->options & OPT_CGROUP_V1) {
         cgroup_id = get_cgroup_v1_subsys0_id((struct task_struct *) bpf_get_current_task());
     } else {
         cgroup_id = bpf_get_current_cgroup_id();
@@ -4655,7 +4657,7 @@ static __always_inline int do_file_write_operation_tail(struct pt_regs *ctx, u32
     if (!has_prefix("/dev/null", (char *) &string_p->buf[*off], 10))
         pid = 0;
 
-    if (data.options & OPT_CAPTURE_FILES) {
+    if (data.config->options & OPT_CAPTURE_FILES) {
         bin_args.type = SEND_VFS_WRITE;
         bpf_probe_read(bin_args.metadata, 4, &s_dev);
         bpf_probe_read(&bin_args.metadata[4], 8, &inode_nr);
@@ -4786,7 +4788,7 @@ int BPF_KPROBE(trace_security_mmap_file)
     if (should_submit(SECURITY_MMAP_FILE)) {
         save_to_submit_buf(&data, &prot, sizeof(int), 5);
         save_to_submit_buf(&data, &mmap_flags, sizeof(int), 6);
-        if (data.options & OPT_SHOW_SYSCALL) {
+        if (data.config->options & OPT_SHOW_SYSCALL) {
             if (data.task_info->syscall_traced) {
                 save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 7);
             }
@@ -4860,7 +4862,7 @@ int BPF_KPROBE(trace_security_file_mprotect)
             save_to_submit_buf(&data, &alert, sizeof(u32), 0);
             events_perf_submit(&data, MEM_PROT_ALERT, 0);
 
-            if (data.options & OPT_EXTRACT_DYN_CODE) {
+            if (data.config->options & OPT_EXTRACT_DYN_CODE) {
                 bin_args.type = SEND_MPROTECT;
                 bpf_probe_read(bin_args.metadata, sizeof(u64), &data.context.ts);
                 bin_args.ptr = (char *) addr;
@@ -4895,7 +4897,7 @@ int syscall__init_module(void *ctx)
     void *addr = (void *) sys->args.args[0];
     unsigned long len = (unsigned long) sys->args.args[1];
 
-    if (data.options & OPT_CAPTURE_MODULES) {
+    if (data.config->options & OPT_CAPTURE_MODULES) {
         bin_args.type = SEND_KERNEL_MODULE;
         bpf_probe_read(bin_args.metadata, 4, &dummy);
         bpf_probe_read(&bin_args.metadata[4], 8, &dummy);
@@ -5028,7 +5030,7 @@ int BPF_KPROBE(trace_security_kernel_post_read_file)
         events_perf_submit(&data, SECURITY_POST_READ_FILE, 0);
     }
 
-    if (data.options & OPT_CAPTURE_MODULES) {
+    if (data.config->options & OPT_CAPTURE_MODULES) {
         // Extract device id, inode number for file name
         dev_t s_dev = get_dev_from_file(file);
         unsigned long inode_nr = get_inode_nr_from_file(file);
@@ -5440,7 +5442,7 @@ int tracepoint__task__task_rename(struct bpf_raw_tracepoint_args *ctx)
 
     save_str_to_buf(&data, (void *) old_name, 0);
     save_str_to_buf(&data, (void *) new_name, 1);
-    if ((data.options & OPT_SHOW_SYSCALL) && (data.task_info->syscall_traced)) {
+    if ((data.config->options & OPT_SHOW_SYSCALL) && (data.task_info->syscall_traced)) {
         syscall_data_t *sys = &data.task_info->syscall_data;
         save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 2);
     }
