@@ -3039,10 +3039,6 @@ int syscall__accept4(void *ctx)
         struct unix_sock *unix_sk_new = (struct unix_sock *) sk_new;
         struct sockaddr_un sockaddr_new = get_unix_sock_addr(unix_sk_new);
         save_to_submit_buf(&data, (void *) &sockaddr_new, sizeof(struct sockaddr_un), 1);
-
-        struct unix_sock *unix_sk_old = (struct unix_sock *) sk_old;
-        struct sockaddr_un sockaddr_old = get_unix_sock_addr(unix_sk_old);
-        save_to_submit_buf(&data, (void *) &sockaddr_old, sizeof(struct sockaddr_un), 2);
     } else {
         return 0;
     }
