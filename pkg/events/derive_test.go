@@ -2,9 +2,9 @@ package events_test
 
 import (
 	"fmt"
+	"github.com/aquasecurity/tracee/pkg/events"
 	"testing"
 
-	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/stretchr/testify/assert"
 )
@@ -14,38 +14,36 @@ func deriveError(id events.ID, errMsg string) error {
 }
 
 func Test_DeriveEvent(t *testing.T) {
+	testEventID := events.ID(1)
+	failEventID := events.ID(11)
+	deriveEventID := events.ID(12)
+	noDerivationEventID := events.ID(13)
 	alwaysDeriveError := func() events.DeriveFunction {
-		return func(e trace.Event) (trace.Event, bool, error) {
-			return trace.Event{}, false, fmt.Errorf("derive error")
+		return func(e trace.Event) ([]trace.Event, []error) {
+			return []trace.Event{}, []error{fmt.Errorf("derive error")}
 		}
 	}
 	mockDerivationTable := events.DerivationTable{
-		events.Open: {
-			events.Eventfd: {
-				Enabled:  true,
+		testEventID: {
+			failEventID: {
 				Function: alwaysDeriveError(),
+				Enabled:  true,
 			},
-			events.EpollCreate: {
-				Enabled: false,
-				Function: func(e trace.Event) (trace.Event, bool, error) {
-					return trace.Event{
-						EventID: int(events.EpollCreate),
-					}, true, nil
+			deriveEventID: {
+				Function: func(e trace.Event) ([]trace.Event, []error) {
+					return []trace.Event{
+						{
+							EventID: int(deriveEventID),
+						},
+					}, nil
 				},
-			},
-			events.Close: {
 				Enabled: true,
-				Function: func(e trace.Event) (trace.Event, bool, error) {
-					return trace.Event{
-						EventID: int(events.Close),
-					}, true, nil
-				},
 			},
-			events.CgroupMkdir: {
-				Enabled: true,
-				Function: func(e trace.Event) (trace.Event, bool, error) {
-					return trace.Event{}, false, nil
+			noDerivationEventID: {
+				Function: func(e trace.Event) ([]trace.Event, []error) {
+					return []trace.Event{}, nil
 				},
+				Enabled: true,
 			},
 		},
 	}
@@ -57,16 +55,16 @@ func Test_DeriveEvent(t *testing.T) {
 		expectedErrors  []error
 	}{
 		{
-			name: "derive open check for all cases",
+			name: "derive test event check for all cases",
 			event: trace.Event{
-				EventID: int(events.Open),
+				EventID: int(testEventID),
 			},
 			expectedDerived: []trace.Event{
 				{
-					EventID: int(events.Close),
+					EventID: int(deriveEventID),
 				},
 			},
-			expectedErrors: []error{deriveError(events.Eventfd, "derive error")},
+			expectedErrors: []error{deriveError(failEventID, "derive error")},
 		},
 	}
 
