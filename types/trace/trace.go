@@ -13,6 +13,7 @@ import (
 // Event is a single result of an ebpf event process. It is used as a payload later delivered to tracee-rules.
 type Event struct {
 	Timestamp           int        `json:"timestamp"`
+	ThreadStartTime     int        `json:"threadStartTime"`
 	ProcessorID         int        `json:"processorId"`
 	ProcessID           int        `json:"processId"`
 	CgroupID            uint       `json:"cgroupId"`
