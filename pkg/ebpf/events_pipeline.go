@@ -184,6 +184,7 @@ func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *trace.Event, 
 
 			evt := trace.Event{
 				Timestamp:           int(ctx.Ts),
+				ThreadStartTime:     int(ctx.StartTime),
 				ProcessorID:         int(ctx.ProcessorId),
 				ProcessID:           int(ctx.Pid),
 				ThreadID:            int(ctx.Tid),
