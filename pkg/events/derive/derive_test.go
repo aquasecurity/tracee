@@ -35,8 +35,11 @@ func TestSingleEventDeriveFunc(t *testing.T) {
 
 	baseEvent := getTestEvent()
 
-	happyFlowDeriveArgsFunc := func(event trace.Event) ([]interface{}, error) {
+	successfulDeriveEventDeriveArgsFunc := func(event trace.Event) ([]interface{}, error) {
 		return []interface{}{1, 2}, nil
+	}
+	noDeriveEventDeriveArgsFunc := func(event trace.Event) ([]interface{}, error) {
+		return nil, nil
 	}
 	deriveArgsError := "fail derive args"
 	failDeriveArgsFunc := func(event trace.Event) ([]interface{}, error) {
@@ -47,24 +50,34 @@ func TestSingleEventDeriveFunc(t *testing.T) {
 	}
 
 	testCases := []struct {
-		Name           string
-		ExpectedError  string
-		ArgsDeriveFunc deriveArgsFunction
+		Name                string
+		ExpectedError       string
+		ArgsDeriveFunc      deriveArgsFunction
+		DerivedEventsAmount int
 	}{
 		{
-			Name:           "Happy flow",
-			ExpectedError:  "",
-			ArgsDeriveFunc: happyFlowDeriveArgsFunc,
+			Name:                "Hapfapy flow - derive event",
+			ExpectedError:       "",
+			ArgsDeriveFunc:      successfulDeriveEventDeriveArgsFunc,
+			DerivedEventsAmount: 1,
 		},
 		{
-			Name:           "Fail derive argument function",
-			ExpectedError:  deriveArgsError,
-			ArgsDeriveFunc: failDeriveArgsFunc,
+			Name:                "Happy flow - don't derive event",
+			ExpectedError:       "",
+			ArgsDeriveFunc:      noDeriveEventDeriveArgsFunc,
+			DerivedEventsAmount: 0,
 		},
 		{
-			Name:           "Fail new event creation",
-			ExpectedError:  fmt.Sprintf("error while building derived event '%s' - expected %d arguments but given %d", def.Name, len(def.Params), 3),
-			ArgsDeriveFunc: illegalDeriveArgsFunc,
+			Name:                "Fail derive argument function",
+			ExpectedError:       deriveArgsError,
+			ArgsDeriveFunc:      failDeriveArgsFunc,
+			DerivedEventsAmount: 0,
+		},
+		{
+			Name:                "Fail new event creation",
+			ExpectedError:       fmt.Sprintf("error while building derived event '%s' - expected %d arguments but given %d", def.Name, len(def.Params), 3),
+			ArgsDeriveFunc:      illegalDeriveArgsFunc,
+			DerivedEventsAmount: 0,
 		},
 	}
 
@@ -72,12 +85,12 @@ func TestSingleEventDeriveFunc(t *testing.T) {
 		t.Run(testCase.Name, func(t *testing.T) {
 			deriveFunc := singleEventDeriveFunc(testEventID, testCase.ArgsDeriveFunc)
 			derivedEvents, errs := deriveFunc(baseEvent)
+			assert.Len(t, derivedEvents, testCase.DerivedEventsAmount)
 			if testCase.ExpectedError != "" {
 				assert.ErrorContains(t, errs[0], testCase.ExpectedError)
 				return
 			}
 			require.Empty(t, errs)
-			assert.Len(t, derivedEvents, 1)
 		})
 	}
 }

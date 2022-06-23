@@ -17,18 +17,25 @@ type eventSkeleton struct {
 	Params []trace.ArgMeta
 }
 
+// deriveArgsFunction is the main logic of the derived event.
+// It checks the event and produce the arguments of the derived event.
+// If no event is derived, then the returned args should equal `nil`.
 type deriveArgsFunction func(event trace.Event) ([]interface{}, error)
 
 // singleEventDeriveFunc create an events.DeriveFunction to generate a single derive trace.Event.
 // The event will be created using the original event information, the ID given and the arguments given.
 // The order of the arguments given will match the order in the event definition, so make sure the order match
 // the order of the params in the events.event struct of the event under events.Definitions.
+// If the arguments given is nil, than no event will be derived.
 func singleEventDeriveFunc(id events.ID, deriveArgsFunc deriveArgsFunction) events.DeriveFunction {
 	skeleton := makeEventSkeleton(id)
 	return func(event trace.Event) ([]trace.Event, []error) {
 		args, err := deriveArgsFunc(event)
 		if err != nil {
 			return nil, []error{err}
+		}
+		if args == nil {
+			return []trace.Event{}, nil
 		}
 		de, err := newEvent(&event, skeleton, args)
 		if err != nil {
