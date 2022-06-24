@@ -201,6 +201,7 @@ func NewProcessInfo() (*ProcInfo, error) {
 		if err != nil {
 			continue
 		}
+		defer taskDir.Close()
 		processTasks, err := taskDir.Readdirnames(-1)
 		if err != nil {
 			continue
