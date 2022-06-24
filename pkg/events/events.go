@@ -42,6 +42,7 @@ const (
 type Event struct {
 	ID32Bit      ID
 	Name         string
+	DocPath      string // Relative to the 'doc/events' directory
 	Internal     bool
 	Syscall      bool
 	Probes       []probeDependency
@@ -5060,6 +5061,7 @@ var Definitions = eventDefinitions{
 		MagicWrite: {
 			ID32Bit: sys32undefined,
 			Name:    "magic_write",
+			DocPath: "security_alerts/magic_write.md",
 			Probes: []probeDependency{
 				{Handle: probes.VfsWrite, Required: true},
 				{Handle: probes.VfsWriteRet, Required: true},
