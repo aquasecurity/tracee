@@ -348,6 +348,7 @@ const (
 	LandloclRestrictSet      ID = 446
 	MemfdSecret              ID = 447
 	ProcessMrelease          ID = 448
+	MaxSyscallID             ID = 449
 )
 
 // TODO: There isnt a Unique32BitSyscalls list for arm64

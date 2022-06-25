@@ -368,6 +368,7 @@ const (
 	LandloclRestrictSet   ID = 446
 	MemfdSecret           ID = 447
 	ProcessMrelease       ID = 448
+	MaxSyscallID          ID = 449
 )
 
 // Set of events IDs for 32bit syscalls which have no parallel 64bit syscall

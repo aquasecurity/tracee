@@ -91,7 +91,11 @@ type ID int32
 // Common events (used by all architectures)
 // events should match defined values in ebpf code
 const (
-	SysEnter ID = iota + 1000
+	NetPacket ID = iota + 700
+	DnsRequest
+	DnsResponse
+	MaxNetID
+	SysEnter
 	SysExit
 	SchedProcessFork
 	SchedProcessExec
@@ -144,7 +148,15 @@ const (
 	HookedProcFops
 	PrintNetSeqOps
 	TaskRename
-	MaxCommon
+	MaxCommonID
+	DebugNetSecurityBind
+	DebugNetUdpSendmsg
+	DebugNetUdpDisconnect
+	DebugNetUdpDestroySock
+	DebugNetUdpV6DestroySock
+	DebugNetInetSockSetState
+	DebugNetTcpConnect
+	MaxDebugID
 )
 
 // Events originated from user-space
@@ -160,35 +172,19 @@ const (
 
 const Unique32BitSyscallsStartID = 3000
 
+// Capture meta-events
 const (
-	NetPacket ID = iota + 4000
-	DnsRequest
-	DnsResponse
-	MaxNetID
-)
-
-const (
-	CaptureIface int32 = 1 << iota
-	TraceIface
-)
-
-const (
-	DebugNetSecurityBind ID = iota + 5000
-	DebugNetUdpSendmsg
-	DebugNetUdpDisconnect
-	DebugNetUdpDestroySock
-	DebugNetUdpV6DestroySock
-	DebugNetInetSockSetState
-	DebugNetTcpConnect
-)
-
-const (
-	CaptureFileWrite ID = iota + 6000
+	CaptureFileWrite ID = iota + 4000
 	CaptureExec
 	CaptureModule
 	CaptureMem
 	CaptureProfile
 	CapturePcap
+)
+
+const (
+	CaptureIface int32 = 1 << iota
+	TraceIface
 )
 
 var Definitions = eventDefinitions{

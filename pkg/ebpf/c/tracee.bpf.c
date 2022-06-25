@@ -181,8 +181,13 @@ enum argument_type_e
 
 enum event_id_e
 {
+    // Net events IDs
+    NET_PACKET = 700,
+    DNS_REQUEST,
+    DNS_RESPONSE,
+    MAX_NET_EVENT_ID,
     // Common event IDs
-    RAW_SYS_ENTER = 1000,
+    RAW_SYS_ENTER,
     RAW_SYS_EXIT,
     SCHED_PROCESS_FORK,
     SCHED_PROCESS_EXEC,
@@ -236,14 +241,8 @@ enum event_id_e
     PRINT_NET_SEQ_OPS,
     TASK_RENAME,
     MAX_EVENT_ID,
-
-    // Net events IDs
-    NET_PACKET = 4000,
-    DNS_REQUEST,
-    DNS_RESPONSE,
-
     // Debug events IDs
-    DEBUG_NET_SECURITY_BIND = 5000,
+    DEBUG_NET_SECURITY_BIND,
     DEBUG_NET_UDP_SENDMSG,
     DEBUG_NET_UDP_DISCONNECT,
     DEBUG_NET_UDP_DESTROY_SOCK,
@@ -545,8 +544,8 @@ typedef struct config_entry {
 } config_entry_t;
 
 typedef struct event_data {
-    struct task_struct *task;
     event_context_t context;
+    struct task_struct *task;
     task_info_t *task_info;
     void *ctx;
     config_entry_t *config;
