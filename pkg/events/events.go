@@ -5487,6 +5487,20 @@ var Definitions = eventDefinitions{
 		NetPacket: {
 			ID32Bit: sys32undefined,
 			Name:    "net_packet",
+			Probes: []probeDependency{
+				{Handle: probes.UDPSendmsg, Required: true},
+				{Handle: probes.UDPDisconnect, Required: true},
+				{Handle: probes.UDPDestroySock, Required: true},
+				{Handle: probes.UDPv6DestroySock, Required: true},
+				{Handle: probes.InetSockSetState, Required: true},
+				{Handle: probes.TCPConnect, Required: true},
+				{Handle: probes.ICMPRecv, Required: true},
+				{Handle: probes.ICMPSend, Required: true},
+				{Handle: probes.ICMPv6Recv, Required: true},
+				{Handle: probes.ICMPv6Send, Required: true},
+				{Handle: probes.Pingv4Sendmsg, Required: true},
+				{Handle: probes.Pingv6Sendmsg, Required: true},
+			},
 			Dependencies: dependencies{
 				Capabilities: []capability.Cap{capability.CAP_NET_ADMIN},
 			},
@@ -5498,6 +5512,14 @@ var Definitions = eventDefinitions{
 		DnsRequest: {
 			ID32Bit: sys32undefined,
 			Name:    "dns_request",
+			Probes: []probeDependency{
+				{Handle: probes.UDPSendmsg, Required: true},
+				{Handle: probes.UDPDisconnect, Required: true},
+				{Handle: probes.UDPDestroySock, Required: true},
+				{Handle: probes.UDPv6DestroySock, Required: true},
+				{Handle: probes.InetSockSetState, Required: true},
+				{Handle: probes.TCPConnect, Required: true},
+			},
 			Dependencies: dependencies{
 				Capabilities: []capability.Cap{capability.CAP_NET_ADMIN},
 			},
@@ -5510,6 +5532,14 @@ var Definitions = eventDefinitions{
 		DnsResponse: {
 			ID32Bit: sys32undefined,
 			Name:    "dns_response",
+			Probes: []probeDependency{
+				{Handle: probes.UDPSendmsg, Required: true},
+				{Handle: probes.UDPDisconnect, Required: true},
+				{Handle: probes.UDPDestroySock, Required: true},
+				{Handle: probes.UDPv6DestroySock, Required: true},
+				{Handle: probes.InetSockSetState, Required: true},
+				{Handle: probes.TCPConnect, Required: true},
+			},
 			Dependencies: dependencies{
 				Capabilities: []capability.Cap{capability.CAP_NET_ADMIN},
 			},
