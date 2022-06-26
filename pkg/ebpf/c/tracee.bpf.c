@@ -552,6 +552,7 @@ typedef struct config_entry {
     u32 options;
     u32 filters;
     u32 cgroup_v1_hid;
+    u8 events_to_submit[128]; // use 8*128 bits to describe up to 1024 events
 } config_entry_t;
 
 typedef struct event_data {
@@ -704,7 +705,6 @@ struct kprobe {
 
 BPF_HASH(kconfig_map, u32, u32, 10240);                 // kernel config variables
 BPF_HASH(interpreter_map, u32, file_id_t, 10240);       // interpreter file used for each process
-BPF_HASH(events_to_submit, u32, u32, 4096);             // events chosen by the user
 BPF_HASH(containers_map, u32, u8, 10240);               // map cgroup id to container status {EXISTED, CREATED, STARTED}
 BPF_HASH(args_map, u64, args_t, 1024);                  // persist args between function entry and return
 BPF_HASH(inequality_filter, u32, u64, 256);             // filter events by some uint field either by < or >
@@ -1646,13 +1646,13 @@ static __always_inline int should_trace(event_data_t *data)
     return data->task_info->should_trace;
 }
 
-static __always_inline int should_submit(u32 key)
+static __always_inline int should_submit(u32 event_id, config_entry_t *config)
 {
-    u32 *config = bpf_map_lookup_elem(&events_to_submit, &key);
-    if (config == NULL)
-        return 0;
+    unsigned int index = event_id / 8;
+    unsigned int offset = event_id % 8;
+    u8 bitmap = config->events_to_submit[index % 128];
 
-    return *config;
+    return bitmap & (1 << offset);
 }
 
 // INTERNAL: BUFFERS -------------------------------------------------------------------------------
@@ -2287,7 +2287,7 @@ static __always_inline int save_args_to_submit_buf(event_data_t *data, u64 types
         if (!init_event_data(&data, ctx))                                                          \
             return 0;                                                                              \
                                                                                                    \
-        if (!should_submit(id))                                                                    \
+        if (!should_submit(id, data.config))                                                       \
             return 0;                                                                              \
                                                                                                    \
         save_args_to_submit_buf(&data, types, &args);                                              \
@@ -2573,7 +2573,7 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
         sys->id = *id_64;
     }
 
-    if (should_submit(RAW_SYS_ENTER)) {
+    if (should_submit(RAW_SYS_ENTER, data.config)) {
         save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 0);
         events_perf_submit(&data, RAW_SYS_ENTER, 0);
     }
@@ -2625,12 +2625,12 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
     if (sys->id != id)
         return 0;
 
-    if (should_submit(RAW_SYS_EXIT)) {
+    if (should_submit(RAW_SYS_EXIT, data.config)) {
         save_to_submit_buf(&data, (void *) &id, sizeof(int), 0);
         events_perf_submit(&data, RAW_SYS_EXIT, ret);
     }
 
-    if (should_submit(id)) {
+    if (should_submit(id, data.config)) {
         u64 types = 0;
         u64 *saved_types = bpf_map_lookup_elem(&params_types_map, &id);
         if (!saved_types) {
@@ -2670,7 +2670,7 @@ int syscall__execve(void *ctx)
         return -1;
     syscall_data_t *sys = &data.task_info->syscall_data;
 
-    if (!should_submit(SYS_EXECVE))
+    if (!should_submit(SYS_EXECVE, data.config))
         return 0;
 
     save_str_to_buf(&data, (void *) sys->args.args[0] /*filename*/, 0);
@@ -2693,7 +2693,7 @@ int syscall__execveat(void *ctx)
         return -1;
     syscall_data_t *sys = &data.task_info->syscall_data;
 
-    if (!should_submit(SYS_EXECVEAT))
+    if (!should_submit(SYS_EXECVEAT, data.config))
         return 0;
 
     save_to_submit_buf(&data, (void *) &sys->args.args[0] /*dirfd*/, sizeof(int), 0);
@@ -2709,7 +2709,7 @@ int syscall__execveat(void *ctx)
 
 static __always_inline int send_socket_dup(event_data_t *data, u64 oldfd, u64 newfd)
 {
-    if (!should_submit(SOCKET_DUP))
+    if (!should_submit(SOCKET_DUP, data->config))
         return 0;
 
     if (!check_fd_type(oldfd, S_IFSOCK)) {
@@ -2838,7 +2838,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     task.new_task = true;
     bpf_map_update_elem(&task_info_map, &child_pid, &task, BPF_ANY);
 
-    if (should_submit(SCHED_PROCESS_FORK) || data.config->options & OPT_PROCESS_INFO) {
+    if (should_submit(SCHED_PROCESS_FORK, data.config) || data.config->options & OPT_PROCESS_INFO) {
         int parent_ns_pid = get_task_ns_pid(parent);
         int parent_ns_tgid = get_task_ns_tgid(parent);
         int child_ns_pid = get_task_ns_pid(child);
@@ -2939,7 +2939,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     // 1. struct file *executable - can be used to get the executable name passed to an interpreter
     // 2. fdpath                  - generated filename for execveat (after resolving dirfd)
 
-    if (should_submit(SCHED_PROCESS_EXEC) || data.config->options & OPT_PROCESS_INFO) {
+    if (should_submit(SCHED_PROCESS_EXEC, data.config) || data.config->options & OPT_PROCESS_INFO) {
         save_str_to_buf(&data, (void *) filename, 0);
         save_str_to_buf(&data, file_path, 1);
         save_args_str_arr_to_buf(&data, (void *) arg_start, (void *) arg_end, argc, 2);
@@ -3001,7 +3001,7 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 
     long exit_code = get_task_exit_code(data.task);
 
-    if (should_submit(SCHED_PROCESS_EXIT) || data.config->options & OPT_PROCESS_INFO) {
+    if (should_submit(SCHED_PROCESS_EXIT, data.config) || data.config->options & OPT_PROCESS_INFO) {
         save_to_submit_buf(&data, (void *) &exit_code, sizeof(long), 0);
         save_to_submit_buf(&data, (void *) &group_dead, sizeof(bool), 1);
 
@@ -3092,7 +3092,7 @@ int tracepoint__sched__sched_switch(struct bpf_raw_tracepoint_args *ctx)
     if (!should_trace(&data))
         return 0;
 
-    if (!should_submit(SCHED_SWITCH))
+    if (!should_submit(SCHED_SWITCH, data.config))
         return 0;
 
     struct task_struct *prev = (struct task_struct *) ctx->args[1];
@@ -3799,7 +3799,7 @@ int BPF_KPROBE(trace_security_socket_accept)
     struct socket *new_sock = (struct socket *) PT_REGS_PARM2(ctx);
 
     // save sockets for "socket_accept event"
-    if (should_submit(SOCKET_ACCEPT)) {
+    if (should_submit(SOCKET_ACCEPT, data.config)) {
         args_t args = {};
         args.args[0] = (unsigned long) sock;
         args.args[1] = (unsigned long) new_sock;
@@ -4513,8 +4513,13 @@ do_file_write_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id)
         return 0;
     }
 
-    if (!should_submit(VFS_WRITE) && !should_submit(VFS_WRITEV) && !should_submit(__KERNEL_WRITE) &&
-        !should_submit(MAGIC_WRITE)) {
+    int zero = 0;
+    config_entry_t *config = bpf_map_lookup_elem(&config_map, &zero);
+    if (config == NULL)
+        return 0;
+
+    if (!should_submit(VFS_WRITE, config) && !should_submit(VFS_WRITEV, config) &&
+        !should_submit(__KERNEL_WRITE, config) && !should_submit(MAGIC_WRITE, config)) {
         bpf_tail_call(ctx, &prog_array, tail_call_id);
         return 0;
     }
@@ -4556,7 +4561,8 @@ do_file_write_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id)
     if (!init_event_data(&data, ctx))
         return 0;
 
-    if (should_submit(VFS_WRITE) || should_submit(VFS_WRITEV) || should_submit(__KERNEL_WRITE)) {
+    if (should_submit(VFS_WRITE, data.config) || should_submit(VFS_WRITEV, data.config) ||
+        should_submit(__KERNEL_WRITE, data.config)) {
         save_str_to_buf(&data, file_path, 0);
         save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 1);
         save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 2);
@@ -4572,7 +4578,7 @@ do_file_write_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id)
     }
 
     // magic_write event checks if the header of some file is changed
-    if (should_submit(MAGIC_WRITE) && !char_dev && (start_pos == 0)) {
+    if (should_submit(MAGIC_WRITE, data.config) && !char_dev && (start_pos == 0)) {
         data.buf_off = sizeof(event_context_t);
         data.context.argnum = 0;
 
@@ -4814,13 +4820,13 @@ int BPF_KPROBE(trace_security_mmap_file)
     save_to_submit_buf(&data, &ctime, sizeof(u64), 4);
 
     syscall_data_t *sys = &data.task_info->syscall_data;
-    if (should_submit(SHARED_OBJECT_LOADED)) {
+    if (should_submit(SHARED_OBJECT_LOADED, data.config)) {
         if (data.task_info->syscall_traced && (prot & VM_EXEC) == VM_EXEC && sys->id == SYS_MMAP) {
             events_perf_submit(&data, SHARED_OBJECT_LOADED, 0);
         }
     }
 
-    if (should_submit(SECURITY_MMAP_FILE)) {
+    if (should_submit(SECURITY_MMAP_FILE, data.config)) {
         save_to_submit_buf(&data, &prot, sizeof(int), 5);
         save_to_submit_buf(&data, &mmap_flags, sizeof(int), 6);
         if (data.config->options & OPT_SHOW_SYSCALL) {
@@ -4846,7 +4852,7 @@ int BPF_KPROBE(trace_security_file_mprotect)
     struct vm_area_struct *vma = (struct vm_area_struct *) PT_REGS_PARM1(ctx);
     unsigned long reqprot = PT_REGS_PARM2(ctx);
 
-    if (should_submit(SECURITY_FILE_MPROTECT)) {
+    if (should_submit(SECURITY_FILE_MPROTECT, data.config)) {
         if (!should_trace(&data))
             return 0;
 
@@ -4859,7 +4865,7 @@ int BPF_KPROBE(trace_security_file_mprotect)
         events_perf_submit(&data, SECURITY_FILE_MPROTECT, 0);
     }
 
-    if (should_submit(MEM_PROT_ALERT)) {
+    if (should_submit(MEM_PROT_ALERT, data.config)) {
         // Load the arguments given to the mprotect syscall (which eventually invokes this function)
         syscall_data_t *sys = &data.task_info->syscall_data;
         if (!data.task_info->syscall_traced || sys->id != SYS_MPROTECT)
@@ -5057,7 +5063,7 @@ int BPF_KPROBE(trace_security_kernel_post_read_file)
     enum kernel_read_file_id type_id = (enum kernel_read_file_id) PT_REGS_PARM4(ctx);
 
     // Send event if chosen
-    if (should_submit(SECURITY_POST_READ_FILE)) {
+    if (should_submit(SECURITY_POST_READ_FILE, data.config)) {
         void *file_path = get_path_str(&file->f_path);
         save_str_to_buf(&data, file_path, 0);
         save_to_submit_buf(&data, &size, sizeof(loff_t), 1);
@@ -5213,9 +5219,6 @@ TRACE_ENT_FUNC(do_splice, DIRTY_PIPE_SPLICE);
 SEC("kretprobe/do_splice")
 int BPF_KPROBE(trace_ret_do_splice)
 {
-    if (!should_submit(DIRTY_PIPE_SPLICE))
-        return 0;
-
 // The Dirty Pipe vulnerability exist in the kernel since version 5.8, so there is not use to do
 // logic if version is too old. In non-CORE, it will even mean using defines which are not available
 // in the kernel headers, which will cause bugs.
@@ -5245,6 +5248,9 @@ int BPF_KPROBE(trace_ret_do_splice)
         return 0;
 
     if (!should_trace(&data))
+        return 0;
+
+    if (!should_submit(DIRTY_PIPE_SPLICE, data.config))
         return 0;
 
     // Catch only successful splice
@@ -5417,7 +5423,7 @@ int BPF_KPROBE(trace_load_elf_phdrs)
 
     bpf_map_update_elem(&interpreter_map, &data.context.task.host_tid, &elf, BPF_ANY);
 
-    if (should_submit(LOAD_ELF_PHDRS)) {
+    if (should_submit(LOAD_ELF_PHDRS, data.config)) {
         save_str_to_buf(&data, (void *) elf_pathname, 0);
         save_to_submit_buf(&data, &elf.device, sizeof(dev_t), 1);
         save_to_submit_buf(&data, &elf.inode, sizeof(unsigned long), 2);
