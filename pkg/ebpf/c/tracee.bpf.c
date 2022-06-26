@@ -5356,7 +5356,12 @@ int BPF_KPROBE(trace_ret_do_init_module)
     save_to_submit_buf(&data, &orig_prev_next_addr, sizeof(u64), 5);
     save_to_submit_buf(&data, &orig_next_prev_addr, sizeof(u64), 6);
 
-    return events_perf_submit(&data, DO_INIT_MODULE, 0);
+    events_perf_submit(&data, DO_INIT_MODULE, 0);
+
+    // delete module data from map after it was used
+    bpf_map_delete_elem(&module_init_map, &data.context.task.host_tid);
+
+    return 0;
 }
 
 SEC("kprobe/load_elf_phdrs")
