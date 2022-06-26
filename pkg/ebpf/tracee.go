@@ -597,22 +597,6 @@ func (t *Tracee) getFiltersConfig() uint32 {
 }
 
 func (t *Tracee) populateBPFMaps() error {
-
-	// Set chosen events map according to events chosen by the user
-	eventsToSubmitMap, err := t.bpfModule.GetMap("events_to_submit") // u32, u32
-	if err != nil {
-		return err
-	}
-	for id, e := range t.events {
-		if e.submit {
-			idU32 := uint32(id) // id is int32
-			trueU32 := uint32(1)
-			if err := eventsToSubmitMap.Update(unsafe.Pointer(&idU32), unsafe.Pointer(&trueU32)); err != nil {
-				return err
-			}
-		}
-	}
-
 	// Prepare 32bit to 64bit syscall number mapping
 	sys32to64BPFMap, err := t.bpfModule.GetMap("sys_32_to_64_map") // u32, u32
 	if err != nil {
@@ -673,11 +657,24 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	cZero := uint32(0)
-	configVal := make([]byte, 16)
+	configVal := make([]byte, 144)
 	binary.LittleEndian.PutUint32(configVal[0:4], uint32(os.Getpid()))
 	binary.LittleEndian.PutUint32(configVal[4:8], t.getOptionsConfig())
 	binary.LittleEndian.PutUint32(configVal[8:12], t.getFiltersConfig())
 	binary.LittleEndian.PutUint32(configVal[12:16], uint32(t.containers.GetCgroupV1HID()))
+	// Next 128 bytes (1024 bits) are used for events_to_submit configuration
+	// Set according to events chosen by the user
+	for id, e := range t.events {
+		if id >= 1024 {
+			// we support up to 1024 events shared with bpf code
+			continue
+		}
+		if e.submit {
+			index := id / 8
+			offset := id % 8
+			configVal[16+index] = configVal[16+index] | (1 << offset)
+		}
+	}
 	if err = bpfConfigMap.Update(unsafe.Pointer(&cZero), unsafe.Pointer(&configVal[0])); err != nil {
 		return err
 	}
