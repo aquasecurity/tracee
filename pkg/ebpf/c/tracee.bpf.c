@@ -724,7 +724,6 @@ BPF_LRU_HASH(network_map, net_id_t, net_ctx_t, 10240);  // network identifier to
 BPF_ARRAY(config_map, config_entry_t, 1);               // various configurations
 BPF_ARRAY(file_filter, path_filter_t, 3);               // filter vfs_write events
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);             // percpu global buffer variables
-BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS);           // holds offsets to bufs respectively
 BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);              // store programs for tail calls
 BPF_PROG_ARRAY(prog_array_tp, MAX_TAIL_CALL);           // store programs for tail calls
 BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);          // store programs for tail calls
@@ -1615,16 +1614,6 @@ static __always_inline buf_t *get_buf(int idx)
     return bpf_map_lookup_elem(&bufs, &idx);
 }
 
-static __always_inline void set_buf_off(int buf_idx, u32 new_off)
-{
-    bpf_map_update_elem(&bufs_off, &buf_idx, &new_off, BPF_ANY);
-}
-
-static __always_inline u32 *get_buf_off(int buf_idx)
-{
-    return bpf_map_lookup_elem(&bufs_off, &buf_idx);
-}
-
 // The biggest element that can be saved with this function should be defined here
 #define MAX_ELEMENT_SIZE sizeof(struct sockaddr_un)
 
@@ -2008,7 +1997,6 @@ static __always_inline void *get_path_str(struct path *path)
         bpf_probe_read(&(string_p->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1]), 1, &zero);
     }
 
-    set_buf_off(STRING_BUF_IDX, buf_off);
     return &string_p->buf[buf_off];
 }
 
@@ -2066,7 +2054,6 @@ static __always_inline void *get_dentry_path_str(struct dentry *dentry)
         bpf_probe_read(&(string_p->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1]), 1, &zero);
     }
 
-    set_buf_off(STRING_BUF_IDX, buf_off);
     return &string_p->buf[buf_off];
 }
 
@@ -4605,14 +4592,10 @@ static __always_inline int do_file_write_operation_tail(struct pt_regs *ctx, u32
     }
     loff_t *pos = (loff_t *) saved_args.args[3];
 
-    // Get per-cpu string buffer
-    buf_t *string_p = get_buf(STRING_BUF_IDX);
-    if (string_p == NULL)
+    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+    if (data.buf_off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
         return -1;
-    get_path_str(GET_FIELD_ADDR(file->f_path));
-    u32 *off = get_buf_off(STRING_BUF_IDX);
-    if (off == NULL)
-        return -1;
+    bpf_probe_read_str(&(data.submit_p->buf[data.buf_off]), MAX_STRING_SIZE, file_path);
 
 // Check if capture write was requested for this path
 #pragma unroll
@@ -4627,10 +4610,11 @@ static __always_inline int do_file_write_operation_tail(struct pt_regs *ctx, u32
 
         has_filter = true;
 
-        if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
+        if (data.buf_off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
             break;
 
-        if (has_prefix(filter_p->path, (char *) &string_p->buf[*off], MAX_PATH_PREF_SIZE)) {
+        if (has_prefix(
+                filter_p->path, (char *) &data.submit_p->buf[data.buf_off], MAX_PATH_PREF_SIZE)) {
             filter_match = true;
             break;
         }
@@ -4656,10 +4640,10 @@ static __always_inline int do_file_write_operation_tail(struct pt_regs *ctx, u32
     u64 id = bpf_get_current_pid_tgid();
     u32 pid = data.context.task.pid;
 
-    if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
+    if (data.buf_off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
         return -1;
 
-    if (!has_prefix("/dev/null", (char *) &string_p->buf[*off], 10))
+    if (!has_prefix("/dev/null", (char *) &data.submit_p->buf[data.buf_off], 10))
         pid = 0;
 
     if (data.config->options & OPT_CAPTURE_FILES) {
