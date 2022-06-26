@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
-	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/types/protocol"
 )
 
 // MaxBpfStrFilterSize value should match MAX_STR_FILTER_SIZE defined in BPF code
@@ -18,6 +18,7 @@ The following types of expressions are supported:
 
 Numerical expressions which compare numbers and allow the following operators: '=', '!=', '<', '>'.
 Available numerical expressions: uid, pid, mntns, pidns.
+NOTE: expressions using '<' or '>' must be escaped to work.
 
 String expressions which compares text and allow the following operators: '=', '!='.
 Available string expressions: event, set, uts, comm, container.
@@ -81,314 +82,139 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 `
 }
 
-func PrepareFilter(filters []string) (tracee.Filter, error) {
-	filter := tracee.Filter{
-		UIDFilter: &tracee.UintFilter{
-			Equal:    []uint64{},
-			NotEqual: []uint64{},
-			Less:     tracee.LessNotSetUint,
-			Greater:  tracee.GreaterNotSetUint,
-			Is32Bit:  true,
-		},
-		PIDFilter: &tracee.UintFilter{
-			Equal:    []uint64{},
-			NotEqual: []uint64{},
-			Less:     tracee.LessNotSetUint,
-			Greater:  tracee.GreaterNotSetUint,
-			Is32Bit:  true,
-		},
-		NewPidFilter: &tracee.BoolFilter{},
-		MntNSFilter: &tracee.UintFilter{
-			Equal:    []uint64{},
-			NotEqual: []uint64{},
-			Less:     tracee.LessNotSetUint,
-			Greater:  tracee.GreaterNotSetUint,
-		},
-		PidNSFilter: &tracee.UintFilter{
-			Equal:    []uint64{},
-			NotEqual: []uint64{},
-			Less:     tracee.LessNotSetUint,
-			Greater:  tracee.GreaterNotSetUint,
-		},
-		UTSFilter: &tracee.StringFilter{
-			Equal:    []string{},
-			NotEqual: []string{},
-			Size:     MaxBpfStrFilterSize,
-		},
-		CommFilter: &tracee.StringFilter{
-			Equal:    []string{},
-			NotEqual: []string{},
-			Size:     MaxBpfStrFilterSize,
-		},
-		ContFilter:    &tracee.BoolFilter{},
-		NewContFilter: &tracee.BoolFilter{},
-		ContIDFilter: &tracee.ContIDFilter{
-			Equal:    []string{},
-			NotEqual: []string{},
-		},
-		RetFilter: &tracee.RetFilter{
-			Filters: make(map[events.ID]tracee.IntFilter),
-		},
-		ArgFilter: &tracee.ArgFilter{
-			Filters: make(map[events.ID]map[string]tracee.ArgFilterVal),
-		},
-		ProcessTreeFilter: &tracee.ProcessTreeFilter{
-			PIDs: make(map[uint32]bool),
-		},
-		EventsToTrace: []events.ID{},
-		NetFilter: &tracee.IfaceFilter{
-			InterfacesToTrace: []string{},
-		},
-	}
-
-	eventFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}}
-	setFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}}
-
-	eventsNameToID := events.Definitions.NamesToIDs()
-	// remove internal events since they shouldn't be accesible by users
-	for event, id := range eventsNameToID {
-		if events.Definitions.Get(id).Internal {
-			delete(eventsNameToID, event)
-		}
-	}
-
-	for _, f := range filters {
-		filterName := f
-		operatorAndValues := ""
-		operatorIndex := strings.IndexAny(f, "=!<>")
-		if operatorIndex > 0 {
-			filterName = f[0:operatorIndex]
-			operatorAndValues = f[operatorIndex:]
-		}
-
-		if strings.Contains(f, ".retval") {
-			err := filter.RetFilter.Parse(filterName, operatorAndValues, eventsNameToID)
-			if err != nil {
-				return tracee.Filter{}, err
-			}
-			continue
-		}
-
-		if strings.Contains(f, ".") {
-			err := filter.ArgFilter.Parse(filterName, operatorAndValues, eventsNameToID)
-			if err != nil {
-				return tracee.Filter{}, err
-			}
-			continue
-		}
-
-		// The filters which are more common (container, event, pid, set, uid) can be given using a prefix of them.
-		// Other filters should be given using their full name.
-		// To avoid collisions between filters that share the same prefix, put the filters which should have an exact match first!
-		if filterName == "comm" {
-			err := filter.CommFilter.Parse(operatorAndValues)
-			if err != nil {
-				return tracee.Filter{}, err
-			}
-			continue
-		}
-
-		if strings.HasPrefix("container", f) || (strings.HasPrefix("!container", f) && len(f) > 1) {
-			err := filter.ContFilter.Parse(f)
-			if err != nil {
-				return tracee.Filter{}, err
-			}
-			continue
-		}
-
-		if strings.HasPrefix("container", filterName) {
-			if operatorAndValues == "=new" {
-				filter.NewContFilter.Enabled = true
-				filter.NewContFilter.Value = true
-				continue
-			}
-			if operatorAndValues == "!=new" {
-				filter.ContFilter.Enabled = true
-				filter.ContFilter.Value = true
-				filter.NewContFilter.Enabled = true
-				filter.NewContFilter.Value = false
-				continue
-			}
-			err := filter.ContIDFilter.Parse(operatorAndValues)
-			if err != nil {
-				return tracee.Filter{}, err
-			}
-			continue
-		}
-
-		if strings.HasPrefix("event", filterName) {
-			err := eventFilter.Parse(operatorAndValues)
-			if err != nil {
-				return tracee.Filter{}, err
-			}
-			continue
-		}
-
-		if strings.HasPrefix(filterName, "net") {
-			err := filter.NetFilter.Parse(strings.TrimPrefix(operatorAndValues, "="))
-			if err != nil {
-				return tracee.Filter{}, err
-			}
-			continue
-		}
-
-		if filterName == "mntns" {
-			err := filter.MntNSFilter.Parse(operatorAndValues)
-			if err != nil {
-				return tracee.Filter{}, err
-			}
-			continue
-		}
-
-		if filterName == "pidns" {
-			err := filter.PidNSFilter.Parse(operatorAndValues)
-			if err != nil {
-				return tracee.Filter{}, err
-			}
-			continue
-		}
-
-		if filterName == "tree" {
-			err := filter.ProcessTreeFilter.Parse(operatorAndValues)
-			if err != nil {
-				return tracee.Filter{}, err
-			}
-			continue
-		}
-
-		if strings.HasPrefix("pid", filterName) {
-			if operatorAndValues == "=new" {
-				filter.NewPidFilter.Enabled = true
-				filter.NewPidFilter.Value = true
-				continue
-			}
-			if operatorAndValues == "!=new" {
-				filter.NewPidFilter.Enabled = true
-				filter.NewPidFilter.Value = false
-				continue
-			}
-			err := filter.PIDFilter.Parse(operatorAndValues)
-			if err != nil {
-				return tracee.Filter{}, err
-			}
-			continue
-		}
-
-		if strings.HasPrefix("set", filterName) {
-			err := setFilter.Parse(operatorAndValues)
-			if err != nil {
-				return tracee.Filter{}, err
-			}
-			continue
-		}
-
-		if filterName == "uts" {
-			err := filter.UTSFilter.Parse(operatorAndValues)
-			if err != nil {
-				return tracee.Filter{}, err
-			}
-			continue
-		}
-
-		if strings.HasPrefix("uid", filterName) {
-			err := filter.UIDFilter.Parse(operatorAndValues)
-			if err != nil {
-				return tracee.Filter{}, err
-			}
-			continue
-		}
-
-		if strings.HasPrefix("follow", f) {
-			filter.Follow = true
-			continue
-		}
-		return tracee.Filter{}, fmt.Errorf("invalid filter option specified, use '--trace help' for more info")
-	}
-
-	var err error
-	filter.EventsToTrace, err = prepareEventsToTrace(eventFilter, setFilter, eventsNameToID)
-	if err != nil {
-		return tracee.Filter{}, err
-	}
-
-	return filter, nil
+func InvalidFilter(input string) error {
+	return fmt.Errorf("invalid filter option \"%s\" specified, use '--trace help' for more info", input)
+}
+func ErrorParsingFilter(input string, err error) error {
+	return fmt.Errorf("error parsing filter option \"%s\": %s, use '--trace help' for more info", input, err)
+}
+func InvalidArgFilter() error {
+	return fmt.Errorf("invalid filter field: no value after '.' token")
+}
+func InvalidEventName(event string) error {
+	return fmt.Errorf("invalid filter field: no event called %s", event)
+}
+func EmptyValueFilter() error {
+	return fmt.Errorf("invalid value for filter: empty")
 }
 
-func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.StringFilter, eventsNameToID map[string]events.ID) ([]events.ID, error) {
-	eventFilter.Enabled = true
-	eventsToTrace := eventFilter.Equal
-	excludeEvents := eventFilter.NotEqual
-	setsToTrace := setFilter.Equal
+func PrepareFilter(filtersInput []string) ([]protocol.Filter, error) {
+	res := []protocol.Filter{}
 
-	var res []events.ID
-	setsToEvents := make(map[string][]events.ID)
-	isExcluded := make(map[events.ID]bool)
-	for id, event := range events.Definitions.Events() {
-		for _, set := range event.Sets {
-			setsToEvents[set] = append(setsToEvents[set], id)
+	for _, f := range filtersInput {
+		filter, err := parseFilterString(f)
+		if err != nil {
+			return nil, ErrorParsingFilter(f, err)
 		}
-	}
-	for _, name := range excludeEvents {
-		// Handle event prefixes with wildcards
-		if strings.HasSuffix(name, "*") {
-			found := false
-			prefix := name[:len(name)-1]
-			for event, id := range eventsNameToID {
-				if strings.HasPrefix(event, prefix) {
-					isExcluded[id] = true
-					found = true
-				}
-			}
-			if !found {
-				return nil, fmt.Errorf("invalid event to exclude: %s", name)
-			}
-		} else {
-			id, ok := eventsNameToID[name]
-			if !ok {
-				return nil, fmt.Errorf("invalid event to exclude: %s", name)
-			}
-			isExcluded[id] = true
+		if !tracee.IsValidFilterField(filter.Field) {
+			return nil, InvalidFilter(f)
 		}
-	}
-	if len(eventsToTrace) == 0 && len(setsToTrace) == 0 {
-		setsToTrace = append(setsToTrace, "default")
+		res = append(res, filter)
 	}
 
-	res = make([]events.ID, 0, events.Definitions.Length())
-	for _, name := range eventsToTrace {
-		// Handle event prefixes with wildcards
-		if strings.HasSuffix(name, "*") {
-			var ids []events.ID
-			found := false
-			prefix := name[:len(name)-1]
-			for event, id := range eventsNameToID {
-				if strings.HasPrefix(event, prefix) {
-					ids = append(ids, id)
-					found = true
-				}
-			}
-			if !found {
-				return nil, fmt.Errorf("invalid event to trace: %s", name)
-			}
-			res = append(res, ids...)
-		} else {
-			id, ok := eventsNameToID[name]
-			if !ok {
-				return nil, fmt.Errorf("invalid event to trace: %s", name)
-			}
-			res = append(res, id)
-		}
-	}
-	for _, set := range setsToTrace {
-		setEvents, ok := setsToEvents[set]
-		if !ok {
-			return nil, fmt.Errorf("invalid set to trace: %s", set)
-		}
-		for _, id := range setEvents {
-			if !isExcluded[id] {
-				res = append(res, id)
-			}
-		}
-	}
 	return res, nil
+}
+
+func parseFilterString(filterStr string) (protocol.Filter, error) {
+	operatorStr := ""
+	valuesStr := ""
+	operatorIndex := strings.IndexAny(filterStr, "=!<>")
+	filterName := ""
+
+	//no operator found means  a bool filter
+	if operatorIndex < 0 {
+		filterName = filterStr
+		err := validateFilterName(filterName)
+		if err != nil {
+			return protocol.Filter{}, err
+		}
+		return protocol.EqualFilter(filterName, true), nil
+	}
+	if operatorIndex == 0 && filterStr[0] == '!' {
+		filterName = filterStr[1:]
+		err := validateFilterName(filterName)
+		if err != nil {
+			return protocol.Filter{}, err
+		}
+		return protocol.EqualFilter(filterName, false), nil
+	}
+	if operatorIndex+1 == len(filterStr) {
+		return protocol.Filter{}, EmptyValueFilter()
+	}
+
+	filterName = filterStr[0:operatorIndex]
+	err := validateFilterName(filterName)
+	if err != nil {
+		return protocol.Filter{}, err
+	}
+	operatorStr = string(filterStr[operatorIndex])
+	valuesStr = filterStr[operatorIndex+1:]
+
+	//check for <= and >=
+	if (filterStr[operatorIndex] == '>' || filterStr[operatorIndex] == '<') && filterStr[operatorIndex+1] == '=' {
+		operatorStr = filterStr[operatorIndex : operatorIndex+2]
+		valuesStr = filterStr[operatorIndex+2:]
+	}
+	//check for !=
+	if filterStr[operatorIndex] == '!' && filterStr[operatorIndex+1] == '=' {
+		operatorStr = filterStr[operatorIndex : operatorIndex+2]
+		valuesStr = filterStr[operatorIndex+2:]
+	}
+
+	operator, err := operatorFromString(operatorStr)
+	if err != nil {
+		return protocol.Filter{}, err
+	}
+
+	// handle new value filters
+	if valuesStr == "new" {
+		switch operator {
+		case protocol.Equal:
+			return protocol.EqualFilter(fmt.Sprintf("%s.new", filterName), true), nil
+		case protocol.NotEqual:
+			return protocol.NotEqualFilter(fmt.Sprintf("%s.new", filterName), true), nil
+		default:
+			return protocol.Filter{}, fmt.Errorf("invalid operator %s for \"new\" valued filter", operator.String())
+		}
+	}
+	valuesStr = strings.TrimSpace(valuesStr)
+	if valuesStr == "" {
+		return protocol.Filter{}, EmptyValueFilter()
+	}
+	splitVals := strings.Split(valuesStr, ",")
+	values := []interface{}{}
+
+	//parse vals to actual types
+	for _, val := range splitVals {
+		values = append(values, val)
+	}
+
+	return protocol.Filter{Field: filterName, Operator: operator, Value: values}, nil
+}
+
+func validateFilterName(filterName string) error {
+	//if filter starts or ends with a '.' terminate for invalid syntax
+	if strings.HasSuffix(filterName, ".") || strings.HasPrefix(filterName, ".") {
+		return InvalidArgFilter()
+	}
+	return nil
+}
+
+func operatorFromString(opStr string) (protocol.FilterOperator, error) {
+	switch opStr {
+	case "=":
+		return protocol.Equal, nil
+	case "!=":
+		return protocol.NotEqual, nil
+	case ">":
+		return protocol.Greater, nil
+	case "<":
+		return protocol.Lesser, nil
+	case ">=":
+		return protocol.GreaterEqual, nil
+	case "<=":
+		return protocol.LesserEqual, nil
+	}
+	//sanity
+	return protocol.Equal, fmt.Errorf("invalid operator %s", opStr)
 }

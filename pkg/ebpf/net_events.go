@@ -115,7 +115,7 @@ func (t *Tracee) createPcapFile(pcapContext processPcapId) (netPcap, error) {
 	}
 
 	ngIface := pcapgo.NgInterface{
-		Name:       t.config.Capture.NetIfaces[0],
+		Name:       t.config.Capture.NetIfaces.Interfaces()[0],
 		Comment:    "tracee tc capture",
 		Filter:     "",
 		LinkType:   layers.LinkTypeEthernet,
@@ -127,7 +127,7 @@ func (t *Tracee) createPcapFile(pcapContext processPcapId) (netPcap, error) {
 		return netPcap{}, err
 	}
 
-	for _, iface := range t.config.Capture.NetIfaces[1:] {
+	for _, iface := range t.config.Capture.NetIfaces.Interfaces()[1:] {
 		ngIface = pcapgo.NgInterface{
 			Name:       iface,
 			Comment:    "tracee tc capture",
@@ -244,8 +244,8 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 
 				// handle net event trace
 				ifaceName := t.netInfo.ifaces[int(netCaptureData.ConfigIfaceIndex)].Name
-				ifaceIdx, err := t.getTracedIfaceIdx(ifaceName)
-				if err == nil && ifaceIdx >= 0 {
+				_, found := t.getTracedIfaceIdx(ifaceName)
+				if found {
 					// this packet should be traced. i.e. output the event if chosen by the user.
 
 					evt, err := protocolProcessor(networkThread, netEventMetadata, netDecoder, ifaceName, netCaptureData.PacketLength)
@@ -283,8 +283,8 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 				}
 
 				// handle packet capture
-				ifaceIdx, err = t.getCapturedIfaceIdx(ifaceName)
-				if ifaceIdx >= 0 && err == nil {
+				ifaceIdx, found := t.getCapturedIfaceIdx(ifaceName)
+				if found {
 					// this packet should be captured. i.e. save the packet into pcap.
 
 					packetBytes, err := getPacketBytes(netDecoder, netCaptureData.PacketLength)

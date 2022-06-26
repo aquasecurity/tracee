@@ -66,7 +66,7 @@ type CaptureConfig struct {
 	Exec            bool
 	Mem             bool
 	Profile         bool
-	NetIfaces       []string
+	NetIfaces       *NetIfaces
 	NetPerContainer bool
 	NetPerProcess   bool
 }
@@ -98,7 +98,7 @@ func (tc Config) Validate() error {
 			return fmt.Errorf("invalid event to trace: %d", e)
 		}
 		if isNetEvent(e) {
-			if len(tc.Filter.NetFilter.InterfacesToTrace) == 0 {
+			if len(tc.Filter.NetFilter.Interfaces()) == 0 {
 				return fmt.Errorf("missing interface for net event: %s, please add -t net=<iface>", def.Name)
 			}
 		}
@@ -241,7 +241,7 @@ func GetCaptureEventsList(cfg *Config) map[events.ID]eventConfig {
 	if cfg.Capture.NetIfaces != nil {
 		captureEvents[events.CapturePcap] = eventConfig{}
 	}
-	if len(cfg.Filter.NetFilter.InterfacesToTrace) > 0 || cfg.Debug {
+	if len(cfg.Filter.NetFilter.Interfaces()) > 0 || cfg.Debug {
 		captureEvents[events.SecuritySocketBind] = eventConfig{}
 	}
 
@@ -341,7 +341,7 @@ func New(cfg Config) (*Tracee, error) {
 
 	t.netInfo.ifaces = make(map[int]*net.Interface)
 	t.netInfo.ifacesConfig = make(map[string]int32)
-	for _, iface := range t.config.Filter.NetFilter.InterfacesToTrace {
+	for _, iface := range t.config.Filter.NetFilter.Interfaces() {
 		netIface, err := net.InterfaceByName(iface)
 		if err != nil {
 			return nil, fmt.Errorf("invalid network interface: %s", iface)
@@ -351,16 +351,18 @@ func New(cfg Config) (*Tracee, error) {
 		t.netInfo.ifacesConfig[netIface.Name] |= events.TraceIface
 	}
 
-	for _, iface := range t.config.Capture.NetIfaces {
-		netIface, err := net.InterfaceByName(iface)
-		if err != nil {
-			return nil, fmt.Errorf("invalid network interface: %s", iface)
+	if t.config.Capture.NetIfaces != nil {
+		for _, iface := range t.config.Capture.NetIfaces.Interfaces() {
+			netIface, err := net.InterfaceByName(iface)
+			if err != nil {
+				return nil, fmt.Errorf("invalid network interface: %s", iface)
+			}
+			if !t.netInfo.hasIface(netIface.Name) {
+				// Map real network interface index to interface object
+				t.netInfo.ifaces[netIface.Index] = netIface
+			}
+			t.netInfo.ifacesConfig[netIface.Name] |= events.CaptureIface
 		}
-		if !t.netInfo.hasIface(netIface.Name) {
-			// Map real network interface index to interface object
-			t.netInfo.ifaces[netIface.Index] = netIface
-		}
-		t.netInfo.ifacesConfig[netIface.Name] |= events.CaptureIface
 	}
 
 	err = t.initBPF()
@@ -508,7 +510,7 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	if t.containers.IsCgroupV1() {
 		cOptVal = cOptVal | optCgroupV1
 	}
-	if t.config.Capture.NetIfaces != nil || len(t.config.Filter.NetFilter.InterfacesToTrace) > 0 || t.config.Debug {
+	if t.config.Capture.NetIfaces != nil || len(t.config.Filter.NetFilter.Interfaces()) > 0 || t.config.Debug {
 		cOptVal = cOptVal | optProcessInfo
 		t.config.ProcessInfo = true
 	}
@@ -518,61 +520,61 @@ func (t *Tracee) getOptionsConfig() uint32 {
 
 func (t *Tracee) getFiltersConfig() uint32 {
 	var cFilterVal uint32
-	if t.config.Filter.UIDFilter.Enabled {
+	if t.config.Filter.UIDFilter.Enabled() {
 		cFilterVal = cFilterVal | filterUIDEnabled
 		if t.config.Filter.UIDFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterUIDOut
 		}
 	}
-	if t.config.Filter.PIDFilter.Enabled {
+	if t.config.Filter.PIDFilter.Enabled() {
 		cFilterVal = cFilterVal | filterPidEnabled
 		if t.config.Filter.PIDFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterPidOut
 		}
 	}
-	if t.config.Filter.NewPidFilter.Enabled {
+	if t.config.Filter.NewPidFilter.Enabled() {
 		cFilterVal = cFilterVal | filterNewPidEnabled
 		if t.config.Filter.NewPidFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterNewPidOut
 		}
 	}
-	if t.config.Filter.MntNSFilter.Enabled {
+	if t.config.Filter.MntNSFilter.Enabled() {
 		cFilterVal = cFilterVal | filterMntNsEnabled
 		if t.config.Filter.MntNSFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterMntNsOut
 		}
 	}
-	if t.config.Filter.PidNSFilter.Enabled {
+	if t.config.Filter.PidNSFilter.Enabled() {
 		cFilterVal = cFilterVal | filterPidNsEnabled
 		if t.config.Filter.PidNSFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterPidNsOut
 		}
 	}
-	if t.config.Filter.UTSFilter.Enabled {
+	if t.config.Filter.UTSFilter.Enabled() {
 		cFilterVal = cFilterVal | filterUTSNsEnabled
 		if t.config.Filter.UTSFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterUTSNsOut
 		}
 	}
-	if t.config.Filter.CommFilter.Enabled {
+	if t.config.Filter.CommFilter.Enabled() {
 		cFilterVal = cFilterVal | filterCommEnabled
 		if t.config.Filter.CommFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterCommOut
 		}
 	}
-	if t.config.Filter.ContFilter.Enabled {
+	if t.config.Filter.ContFilter.Enabled() {
 		cFilterVal = cFilterVal | filterContEnabled
 		if t.config.Filter.ContFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterContOut
 		}
 	}
-	if t.config.Filter.NewContFilter.Enabled {
+	if t.config.Filter.NewContFilter.Enabled() {
 		cFilterVal = cFilterVal | filterNewContEnabled
 		if t.config.Filter.NewContFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterNewContOut
 		}
 	}
-	if t.config.Filter.ContIDFilter.Enabled {
+	if t.config.Filter.ContIDFilter.Enabled() {
 		cFilterVal = cFilterVal | filterCgroupIdEnabled
 		if t.config.Filter.ContIDFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterCgroupIdOut
@@ -584,7 +586,7 @@ func (t *Tracee) getFiltersConfig() uint32 {
 			cFilterVal = cFilterVal | filterProcTreeOut
 		}
 	}
-	if t.config.Filter.Follow {
+	if t.config.Filter.Follow.Value() {
 		cFilterVal = cFilterVal | filterFollowEnabled
 	}
 
@@ -674,14 +676,16 @@ func (t *Tracee) populateBPFMaps() error {
 		return err
 	}
 
+	const inequalityFilterMap = "inequality_filter"
+
 	errmap := make(map[string]error, 0)
-	errmap["uid_filter"] = t.config.Filter.UIDFilter.Set(t.bpfModule, "uid_filter", uidLess)
-	errmap["pid_filter"] = t.config.Filter.PIDFilter.Set(t.bpfModule, "pid_filter", pidLess)
-	errmap["mnt_ns_filter"] = t.config.Filter.MntNSFilter.Set(t.bpfModule, "mnt_ns_filter", mntNsLess)
-	errmap["pid_ns_filter"] = t.config.Filter.PidNSFilter.Set(t.bpfModule, "pid_ns_filter", pidNsLess)
-	errmap["uts_ns_filter"] = t.config.Filter.UTSFilter.Set(t.bpfModule, "uts_ns_filter")
-	errmap["comm_filter"] = t.config.Filter.CommFilter.Set(t.bpfModule, "comm_filter")
-	errmap["cont_id_filter"] = t.config.Filter.ContIDFilter.Set(t.bpfModule, t.containers, "cgroup_id_filter")
+	errmap["uid_filter"] = t.config.Filter.UIDFilter.InitBpf(t.bpfModule, "uid_filter", inequalityFilterMap, uidLess)
+	errmap["pid_filter"] = t.config.Filter.PIDFilter.InitBpf(t.bpfModule, "pid_filter", inequalityFilterMap, pidLess)
+	errmap["mnt_ns_filter"] = t.config.Filter.MntNSFilter.InitBpf(t.bpfModule, "mnt_ns_filter", inequalityFilterMap, mntNsLess)
+	errmap["pid_ns_filter"] = t.config.Filter.PidNSFilter.InitBpf(t.bpfModule, "pid_ns_filter", inequalityFilterMap, pidNsLess)
+	errmap["uts_ns_filter"] = t.config.Filter.UTSFilter.InitBpf(t.bpfModule, "uts_ns_filter")
+	errmap["comm_filter"] = t.config.Filter.CommFilter.InitBpf(t.bpfModule, "comm_filter")
+	errmap["cont_id_filter"] = t.config.Filter.ContIDFilter.InitBpf(t.bpfModule, "cgroup_id_filter", t.containers)
 
 	for k, v := range errmap {
 		if v != nil {
@@ -827,7 +831,7 @@ func (t *Tracee) initBPF() error {
 	var err error
 	isDebugSet := t.config.Debug
 	isCaptureNetSet := t.config.Capture.NetIfaces != nil
-	isFilterNetSet := len(t.config.Filter.NetFilter.InterfacesToTrace) != 0
+	isFilterNetSet := len(t.config.Filter.NetFilter.Interfaces()) != 0
 
 	newModuleArgs := bpf.NewModuleArgs{
 		KConfigFilePath: t.config.KernelConfig.GetKernelConfigFilePath(),
@@ -873,7 +877,7 @@ func (t *Tracee) initBPF() error {
 		return err
 	}
 
-	err = t.config.Filter.ProcessTreeFilter.Set(t.bpfModule)
+	err = t.config.Filter.ProcessTreeFilter.InitBpf(t.bpfModule)
 	if err != nil {
 		return fmt.Errorf("error building process tree: %v", err)
 	}
@@ -1052,19 +1056,11 @@ func (t *Tracee) invokeInitEvents() {
 		}
 	}
 }
-func (t *Tracee) getTracedIfaceIdx(ifaceName string) (int, error) {
-	return findInList(ifaceName, &t.config.Filter.NetFilter.InterfacesToTrace)
+func (t *Tracee) getTracedIfaceIdx(ifaceName string) (int, bool) {
+	return t.config.Filter.NetFilter.Find(ifaceName)
 }
-func (t *Tracee) getCapturedIfaceIdx(ifaceName string) (int, error) {
-	return findInList(ifaceName, &t.config.Capture.NetIfaces)
-}
-func findInList(element string, list *[]string) (int, error) {
-	for idx, name := range *list {
-		if name == element {
-			return idx, nil
-		}
-	}
-	return 0, fmt.Errorf("element: %s not found", element)
+func (t *Tracee) getCapturedIfaceIdx(ifaceName string) (int, bool) {
+	return t.config.Capture.NetIfaces.Find(ifaceName)
 }
 
 const (

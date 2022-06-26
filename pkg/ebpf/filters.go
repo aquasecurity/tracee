@@ -12,13 +12,10 @@ import (
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
-	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/events"
-)
-
-const (
-	filterNotEqual uint32 = iota
-	filterEqual
+	"github.com/aquasecurity/tracee/pkg/filters"
+	"github.com/aquasecurity/tracee/types/protocol"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 const (
@@ -43,376 +40,417 @@ const (
 
 type Filter struct {
 	EventsToTrace     []events.ID
-	UIDFilter         *UintFilter
-	PIDFilter         *UintFilter
-	NewPidFilter      *BoolFilter
-	MntNSFilter       *UintFilter
-	PidNSFilter       *UintFilter
-	UTSFilter         *StringFilter
-	CommFilter        *StringFilter
-	ContFilter        *BoolFilter
-	NewContFilter     *BoolFilter
-	ContIDFilter      *ContIDFilter
+	UIDFilter         *filters.BPFUintFilter
+	PIDFilter         *filters.BPFUintFilter
+	NewPidFilter      *filters.BoolFilter
+	MntNSFilter       *filters.BPFUintFilter
+	PidNSFilter       *filters.BPFUintFilter
+	UTSFilter         *filters.BPFStringFilter
+	CommFilter        *filters.BPFStringFilter
+	ContFilter        *filters.BoolFilter
+	NewContFilter     *filters.BoolFilter
+	ContIDFilter      *filters.ContainersFilter
 	RetFilter         *RetFilter
 	ArgFilter         *ArgFilter
 	ProcessTreeFilter *ProcessTreeFilter
-	Follow            bool
-	NetFilter         *IfaceFilter
+	Follow            *filters.BoolFilter
+	NetFilter         *NetIfaces
 }
 
-type UintFilter struct {
-	Equal    []uint64
-	NotEqual []uint64
-	Greater  uint64
-	Less     uint64
-	Is32Bit  bool
-	Enabled  bool
+func IsValidFilterField(field string) bool {
+	if strings.Contains(field, ".") {
+		return true
+	}
+
+	switch field {
+	case "comm", "processName", "container", "container.new", "event", "set", "pid", "pid.new", "uts", "uid", "follow", "mntns", "pidns", "net":
+		return true
+	}
+
+	return false
 }
 
-func (filter *UintFilter) Parse(operatorAndValues string) error {
-	filter.Enabled = true
-	if len(operatorAndValues) < 2 {
-		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
+func buildFilterError(filterName string, err error) error {
+	return fmt.Errorf("failed to build %s filter: %s", filterName, err)
+}
+
+func ParseProtocolFilters(filterRequests []protocol.Filter) (Filter, error) {
+	filter := Filter{
+		UIDFilter:     &filters.BPFUintFilter{UIntFilter: filters.NewUIntFilter(true)},
+		PIDFilter:     &filters.BPFUintFilter{UIntFilter: filters.NewUIntFilter(true)},
+		NewPidFilter:  filters.NewBoolFilter(),
+		MntNSFilter:   &filters.BPFUintFilter{UIntFilter: filters.NewUIntFilter(false)},
+		PidNSFilter:   &filters.BPFUintFilter{UIntFilter: filters.NewUIntFilter(false)},
+		UTSFilter:     &filters.BPFStringFilter{StringFilter: filters.NewStringFilter()},
+		CommFilter:    &filters.BPFStringFilter{StringFilter: filters.NewStringFilter()},
+		ContFilter:    filters.NewBoolFilter(),
+		NewContFilter: filters.NewBoolFilter(),
+		ContIDFilter:  &filters.ContainersFilter{StringFilter: filters.NewStringFilter()},
+		RetFilter: &RetFilter{
+			Filters: make(map[events.ID]*filters.IntFilter),
+		},
+		ArgFilter: &ArgFilter{
+			Filters: make(map[events.ID]map[string]*filters.StringFilter),
+		},
+		ProcessTreeFilter: &ProcessTreeFilter{
+			PIDs: make(map[uint32]bool),
+		},
+		EventsToTrace: []events.ID{},
+		NetFilter:     &NetIfaces{},
+		Follow:        filters.NewBoolFilter(),
 	}
-	valuesString := string(operatorAndValues[1:])
-	operatorString := string(operatorAndValues[0])
 
-	if operatorString == "!" {
-		if len(operatorAndValues) < 3 {
-			return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
-		}
-		operatorString = operatorAndValues[0:2]
-		valuesString = operatorAndValues[2:]
-	}
+	eventFilter := filters.NewStringFilter()
+	setFilter := filters.NewStringFilter()
 
-	values := strings.Split(valuesString, ",")
-
-	for i := range values {
-		val, err := strconv.ParseUint(values[i], 10, 64)
-		if err != nil {
-			return fmt.Errorf("invalid filter value: %s", values[i])
-		}
-		if filter.Is32Bit && (val > math.MaxUint32) {
-			return fmt.Errorf("filter value is too big: %s", values[i])
-		}
-		switch operatorString {
-		case "=":
-			filter.Equal = append(filter.Equal, val)
-		case "!=":
-			filter.NotEqual = append(filter.NotEqual, val)
-		case ">":
-			if (filter.Greater == GreaterNotSetUint) || (val > filter.Greater) {
-				filter.Greater = val
+	for _, filterReq := range filterRequests {
+		field := filterReq.Field
+		if strings.HasSuffix(field, ".retval") {
+			err := filter.RetFilter.Add(filterReq)
+			if err != nil {
+				return Filter{}, buildFilterError("ret", err)
 			}
-		case "<":
-			if (filter.Less == LessNotSetUint) || (val < filter.Less) {
-				filter.Less = val
+			defer filter.RetFilter.Enable()
+			continue
+		}
+
+		if strings.Contains(field, ".") {
+			err := filter.ArgFilter.Add(filterReq)
+			if err != nil {
+				return Filter{}, buildFilterError("arg", err)
 			}
-		default:
-			return fmt.Errorf("invalid filter operator: %s", operatorString)
+			defer filter.ArgFilter.Enable()
+			continue
+		}
+
+		switch field {
+		case "comm", "processName":
+			err := filter.CommFilter.Add(filterReq)
+			if err != nil {
+				return Filter{}, buildFilterError("com", err)
+			}
+			defer filter.CommFilter.Enable()
+			continue
+		case "container":
+			err := filter.ContFilter.Add(filterReq)
+			if err != nil {
+				return Filter{}, buildFilterError("container", err)
+			}
+			defer filter.ContFilter.Enable()
+
+			continue
+		case "container.new":
+			err := filter.NewContFilter.Add(filterReq)
+			if err != nil {
+				return Filter{}, buildFilterError("new container", err)
+			}
+			defer filter.NewContFilter.Enable()
+
+			continue
+		case "event":
+			err := eventFilter.Add(filterReq)
+			if err != nil {
+				return Filter{}, buildFilterError("event", err)
+			}
+			continue
+		case "set":
+			err := setFilter.Add(filterReq)
+			if err != nil {
+				return Filter{}, buildFilterError("set", err)
+			}
+			continue
+		case "pid":
+			err := filter.PIDFilter.Add(filterReq)
+			if err != nil {
+				return Filter{}, buildFilterError("pid", err)
+			}
+			defer filter.PIDFilter.Enable()
+			continue
+		case "pid.new":
+			err := filter.NewPidFilter.Add(filterReq)
+			if err != nil {
+				return Filter{}, buildFilterError("new pid", err)
+			}
+			defer filter.NewPidFilter.Enable()
+			continue
+		case "uts":
+			err := filter.UTSFilter.Add(filterReq)
+			if err != nil {
+				return Filter{}, buildFilterError("uts", err)
+			}
+			defer filter.UTSFilter.Enable()
+			continue
+		case "uid":
+			err := filter.UIDFilter.Add(filterReq)
+			if err != nil {
+				return Filter{}, buildFilterError("uid", err)
+			}
+			defer filter.UIDFilter.Enable()
+			continue
+		case "follow":
+			err := filter.Follow.Add(filterReq)
+			if err != nil {
+				return Filter{}, buildFilterError("follow", err)
+			}
+			continue
+		case "mntns":
+			err := filter.MntNSFilter.Add(filterReq)
+			if err != nil {
+				return Filter{}, buildFilterError("mntns", err)
+			}
+			defer filter.MntNSFilter.Enable()
+			continue
+		case "pidns":
+			err := filter.PidNSFilter.Add(filterReq)
+			if err != nil {
+				return Filter{}, buildFilterError("pidns", err)
+			}
+			defer filter.PidNSFilter.Enable()
+			continue
+		case "net":
+			err := filter.NetFilter.Add(filterReq)
+			if err != nil {
+				return Filter{}, buildFilterError("net", err)
+			}
+		}
+
+	}
+
+	eventsNameToID := events.Definitions.NamesToIDs()
+	// remove internal events since they shouldn't be accesible by users
+	for event, id := range eventsNameToID {
+		if events.Definitions.Get(id).Internal {
+			delete(eventsNameToID, event)
 		}
 	}
 
-	return nil
-}
+	eventsToTrace, err := prepareEventsToTrace(eventFilter, setFilter, eventsNameToID)
 
-func (filter *UintFilter) Set(bpfModule *bpf.Module, filterMapName string, lessIdx uint32) error {
-	if !filter.Enabled {
-		return nil
-	}
-
-	filterEqualU32 := uint32(filterEqual) // const need local var for bpfMap.Update()
-	filterNotEqualU32 := uint32(filterNotEqual)
-
-	// equalityFilter filters events for given maps:
-	// 1. uid_filter        u32, u32
-	// 2. pid_filter        u32, u32
-	// 3. mnt_ns_filter     u64, u32
-	// 4. pid_ns_filter     u64, u32
-	equalityFilter, err := bpfModule.GetMap(filterMapName)
 	if err != nil {
-		return err
+		return Filter{}, err
 	}
-	for i := 0; i < len(filter.Equal); i++ {
-		if filter.Is32Bit {
-			EqualU32 := uint32(filter.Equal[i])
-			err = equalityFilter.Update(unsafe.Pointer(&EqualU32), unsafe.Pointer(&filterEqualU32))
+
+	filter.EventsToTrace = eventsToTrace
+
+	return filter, nil
+
+}
+
+func prepareEventsToTrace(eventFilter *filters.StringFilter, setFilter *filters.StringFilter, eventsNameToID map[string]events.ID) ([]events.ID, error) {
+	res := []events.ID{}
+	setsToTrace := []string{}
+
+	setFilter.Enable()
+
+	setsToEvents := make(map[string][]events.ID)
+	for id, event := range events.Definitions.Events() {
+		for _, set := range event.Sets {
+			setsToEvents[set] = append(setsToEvents[set], id)
+		}
+	}
+
+	for set := range setsToEvents {
+		if setFilter.Filter(set) {
+			setsToTrace = append(setsToTrace, set)
+		}
+	}
+
+	eventsToTrace := eventFilter.Equals()
+	excludeEvents := eventFilter.NotEquals()
+	isExcluded := make(map[events.ID]bool)
+
+	for _, name := range excludeEvents {
+		// Handle event prefixes with wildcards
+		if strings.HasSuffix(name, "*") {
+			found := false
+			prefix := name[:len(name)-1]
+			for event, id := range eventsNameToID {
+				if strings.HasPrefix(event, prefix) {
+					isExcluded[id] = true
+					found = true
+				}
+			}
+			if !found {
+				return nil, fmt.Errorf("invalid event to exclude: %s", name)
+			}
 		} else {
-			err = equalityFilter.Update(unsafe.Pointer(&filter.Equal[i]), unsafe.Pointer(&filterEqualU32))
-		}
-		if err != nil {
-			return err
+			id, ok := eventsNameToID[name]
+			if !ok {
+				return nil, fmt.Errorf("invalid event to exclude: %s", name)
+			}
+			isExcluded[id] = true
 		}
 	}
-	for i := 0; i < len(filter.NotEqual); i++ {
-		if filter.Is32Bit {
-			NotEqualU32 := uint32(filter.NotEqual[i])
-			err = equalityFilter.Update(unsafe.Pointer(&NotEqualU32), unsafe.Pointer(&filterNotEqualU32))
+
+	for _, name := range eventsToTrace {
+		// Handle event prefixes with wildcards
+		if strings.HasSuffix(name, "*") {
+			var ids []events.ID
+			found := false
+			prefix := name[:len(name)-1]
+			for event, id := range eventsNameToID {
+				if strings.HasPrefix(event, prefix) {
+					ids = append(ids, id)
+					found = true
+				}
+			}
+			if !found {
+				return nil, fmt.Errorf("invalid event to trace: %s", name)
+			}
+			res = append(res, ids...)
 		} else {
-			err = equalityFilter.Update(unsafe.Pointer(&filter.NotEqual[i]), unsafe.Pointer(&filterNotEqualU32))
-		}
-		if err != nil {
-			return err
-		}
-	}
-
-	filterLess := filter.Less
-	filterGreater := filter.Greater
-
-	// inequalityFilter filters events by some uint field either by < or >
-	inequalityFilter, err := bpfModule.GetMap("inequality_filter") // u32, u64
-	if err != nil {
-		return err
-	}
-	if err = inequalityFilter.Update(unsafe.Pointer(&lessIdx), unsafe.Pointer(&filterLess)); err != nil {
-		return err
-	}
-	lessIdxPlus := uint32(lessIdx + 1)
-	if err = inequalityFilter.Update(unsafe.Pointer(&lessIdxPlus), unsafe.Pointer(&filterGreater)); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (filter *UintFilter) FilterOut() bool {
-	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 && filter.Greater == GreaterNotSetUint && filter.Less == LessNotSetUint {
-		return false
-	} else {
-		return true
-	}
-}
-
-type IntFilter struct {
-	Equal    []int64
-	NotEqual []int64
-	Greater  int64
-	Less     int64
-	Is32Bit  bool
-	Enabled  bool
-}
-
-func (filter *IntFilter) Parse(operatorAndValues string) error {
-	filter.Enabled = true
-	if len(operatorAndValues) < 2 {
-		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
-	}
-	valuesString := string(operatorAndValues[1:])
-	operatorString := string(operatorAndValues[0])
-
-	if operatorString == "!" {
-		if len(operatorAndValues) < 3 {
-			return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
-		}
-		operatorString = operatorAndValues[0:2]
-		valuesString = operatorAndValues[2:]
-	}
-
-	values := strings.Split(valuesString, ",")
-
-	for i := range values {
-		val, err := strconv.ParseInt(values[i], 10, 64)
-		if err != nil {
-			return fmt.Errorf("invalid filter value: %s", values[i])
-		}
-		if filter.Is32Bit && (val > math.MaxInt32) {
-			return fmt.Errorf("filter value is too big: %s", values[i])
-		}
-		switch operatorString {
-		case "=":
-			filter.Equal = append(filter.Equal, val)
-		case "!=":
-			filter.NotEqual = append(filter.NotEqual, val)
-		case ">":
-			if (filter.Greater == GreaterNotSetInt) || (val > filter.Greater) {
-				filter.Greater = val
+			id, ok := eventsNameToID[name]
+			if !ok {
+				return nil, fmt.Errorf("invalid event to trace: %s", name)
 			}
-		case "<":
-			if (filter.Less == LessNotSetInt) || (val < filter.Less) {
-				filter.Less = val
-			}
-		default:
-			return fmt.Errorf("invalid filter operator: %s", operatorString)
+			res = append(res, id)
 		}
 	}
 
-	return nil
-}
-
-type StringFilter struct {
-	Equal    []string
-	NotEqual []string
-	Size     uint
-	Enabled  bool
-}
-
-func (filter *StringFilter) Parse(operatorAndValues string) error {
-	filter.Enabled = true
-	if len(operatorAndValues) < 2 {
-		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
+	if len(eventsToTrace) == 0 && len(setsToTrace) == 0 {
+		setsToTrace = append(setsToTrace, "default")
 	}
-	valuesString := string(operatorAndValues[1:])
-	operatorString := string(operatorAndValues[0])
 
-	if operatorString == "!" {
-		if len(operatorAndValues) < 3 {
-			return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
+	for _, set := range setsToTrace {
+		setEvents, ok := setsToEvents[set]
+		if !ok {
+			return nil, fmt.Errorf("invalid set to trace: %s", set)
 		}
-		operatorString = operatorAndValues[0:2]
-		valuesString = operatorAndValues[2:]
+		res = append(res, setEvents...)
 	}
-
-	values := strings.Split(valuesString, ",")
-
-	for i := range values {
-		switch operatorString {
-		case "=":
-			filter.Equal = append(filter.Equal, values[i])
-		case "!=":
-			filter.NotEqual = append(filter.NotEqual, values[i])
-		default:
-			return fmt.Errorf("invalid filter operator: %s", operatorString)
-		}
-	}
-
-	return nil
-}
-
-func (filter *StringFilter) Set(bpfModule *bpf.Module, filterMapName string) error {
-	if !filter.Enabled {
-		return nil
-	}
-
-	filterEqualU32 := uint32(filterEqual) // const need local var for bpfMap.Update()
-	filterNotEqualU32 := uint32(filterNotEqual)
-
-	// 1. uts_ns_filter     string[MAX_STR_FILTER_SIZE], u32    // filter events by uts namespace name
-	// 2. comm_filter       string[MAX_STR_FILTER_SIZE], u32    // filter events by command name
-	filterMap, err := bpfModule.GetMap(filterMapName)
-	if err != nil {
-		return err
-	}
-	for i := 0; i < len(filter.Equal); i++ {
-		filterEqualBytes := make([]byte, filter.Size)
-		copy(filterEqualBytes, filter.Equal[i])
-		if err = filterMap.Update(unsafe.Pointer(&filterEqualBytes[0]), unsafe.Pointer(&filterEqualU32)); err != nil {
-			return err
-		}
-	}
-	for i := 0; i < len(filter.NotEqual); i++ {
-		filterNotEqualBytes := make([]byte, filter.Size)
-		copy(filterNotEqualBytes, filter.NotEqual[i])
-		if err = filterMap.Update(unsafe.Pointer(&filterNotEqualBytes[0]), unsafe.Pointer(&filterNotEqualU32)); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (filter *StringFilter) FilterOut() bool {
-	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 {
-		return false
-	} else {
-		return true
-	}
-}
-
-type BoolFilter struct {
-	Value   bool
-	Enabled bool
-}
-
-func (filter *BoolFilter) Parse(value string) error {
-	filter.Enabled = true
-	filter.Value = false
-	if value[0] != '!' {
-		filter.Value = true
-	}
-
-	return nil
-}
-
-func (filter *BoolFilter) FilterOut() bool {
-	if filter.Value {
-		return false
-	} else {
-		return true
-	}
+	return res, nil
 }
 
 type RetFilter struct {
-	Filters map[events.ID]IntFilter
-	Enabled bool
+	Filters map[events.ID]*filters.IntFilter
+	enabled bool
 }
 
-func (filter *RetFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]events.ID) error {
-	filter.Enabled = true
-	// Ret filter has the following format: "event.ret=val"
-	// filterName have the format event.retval, and operatorAndValues have the format "=val"
-	splitFilter := strings.Split(filterName, ".")
-	if len(splitFilter) != 2 || splitFilter[1] != "retval" {
-		return fmt.Errorf("invalid retval filter format %s%s", filterName, operatorAndValues)
+func (filter *RetFilter) Enable() {
+	filter.enabled = true
+	for _, f := range filter.Filters {
+		f.Enable()
 	}
-	eventName := splitFilter[0]
+}
 
-	id, ok := eventsNameToID[eventName]
+func (filter *RetFilter) Disable() {
+	filter.enabled = false
+	for _, f := range filter.Filters {
+		f.Disable()
+	}
+}
+
+func (filter *RetFilter) Enabled() bool {
+	return filter.enabled
+}
+
+func (filter *RetFilter) Filter(eventID events.ID, retval int64) bool {
+	if !filter.enabled {
+		return true
+	}
+	if filter, ok := filter.Filters[eventID]; ok {
+		if !filter.Filter(retval) {
+			return false
+		}
+	}
+	return true
+}
+
+func (filter *RetFilter) Add(filterReq protocol.Filter) error {
+	field := filterReq.Field
+	parts := strings.Split(field, ".")
+	if len(parts) != 2 {
+		return fmt.Errorf("invalid retval filter format: %s", field)
+	}
+	eventName := parts[0]
+
+	id, ok := events.Definitions.NamesToIDs()[eventName]
 	if !ok {
 		return fmt.Errorf("invalid retval filter event name: %s", eventName)
 	}
-
-	if _, ok := filter.Filters[id]; !ok {
-		filter.Filters[id] = IntFilter{
-			Equal:    []int64{},
-			NotEqual: []int64{},
-			Less:     LessNotSetInt,
-			Greater:  GreaterNotSetInt,
-		}
+	eventFilter := filter.Filters[id]
+	if eventFilter == nil {
+		eventFilter = filters.NewIntFilter(false)
 	}
 
-	intFilter := filter.Filters[id]
-
-	// Treat operatorAndValues as an int filter to avoid code duplication
-	err := (&intFilter).Parse(operatorAndValues)
+	err := eventFilter.Add(filterReq)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to set ret filter: %s", err)
 	}
-
-	filter.Filters[id] = intFilter
-
 	return nil
 }
 
 type ArgFilter struct {
-	Filters map[events.ID]map[string]ArgFilterVal // key to the first map is event id, and to the second map the argument name
-	Enabled bool
+	Filters map[events.ID]map[string]*filters.StringFilter // key to the first map is event id, and to the second map the argument name
+	enabled bool
 }
 
-type ArgFilterVal struct {
-	Equal    []string
-	NotEqual []string
+func (filter *ArgFilter) Enable() {
+	filter.enabled = true
+	for _, filterMap := range filter.Filters {
+		for _, f := range filterMap {
+			f.Enable()
+		}
+	}
 }
 
-func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]events.ID) error {
-	filter.Enabled = true
+func (filter *ArgFilter) Disable() {
+	filter.enabled = false
+	for _, filterMap := range filter.Filters {
+		for _, f := range filterMap {
+			f.Disable()
+		}
+	}
+}
+
+func (filter *ArgFilter) Enabled() bool {
+	return filter.enabled
+}
+
+func (filter *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
+	if !filter.enabled {
+		return true
+	}
+	for argName, filter := range filter.Filters[eventID] {
+		var argVal interface{}
+		ok := false
+		for _, arg := range args {
+			if arg.Name == argName {
+				argVal = arg.Value
+				ok = true
+				break
+			}
+		}
+		if !ok {
+			continue
+		}
+		// TODO: use type assertion instead of string conversion
+		argValStr := fmt.Sprint(argVal)
+		if !filter.Filter(argValStr) {
+			return false
+		}
+	}
+	return true
+}
+
+func (filter *ArgFilter) Add(filterReq protocol.Filter) error {
 	// Event argument filter has the following format: "event.argname=argval"
 	// filterName have the format event.argname, and operatorAndValues have the format "=argval"
-	splitFilter := strings.Split(filterName, ".")
-	if len(splitFilter) != 2 {
-		return fmt.Errorf("invalid argument filter format %s%s", filterName, operatorAndValues)
-	}
-	eventName := splitFilter[0]
-	argName := splitFilter[1]
 
-	id, ok := eventsNameToID[eventName]
+	field := filterReq.Field
+	parts := strings.Split(field, ".")
+	if len(parts) != 2 {
+		return fmt.Errorf("invalid format for arg filter: %s", field)
+	}
+	eventName := parts[0]
+	argName := parts[1]
+
+	id, ok := events.Definitions.NamesToIDs()[eventName]
 	if !ok {
 		return fmt.Errorf("invalid argument filter event name: %s", eventName)
 	}
 
-	eventDefinition, ok := events.Definitions.GetSafe(id)
-	if !ok {
-		return fmt.Errorf("invalid argument filter event name: %s", eventName)
-	}
+	eventDefinition := events.Definitions.Get(id)
 	eventParams := eventDefinition.Params
 
 	// check if argument name exists for this event
@@ -428,31 +466,17 @@ func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, even
 		return fmt.Errorf("invalid argument filter argument name: %s", argName)
 	}
 
-	strFilter := &StringFilter{
-		Equal:    []string{},
-		NotEqual: []string{},
-	}
-
 	// Treat operatorAndValues as a string filter to avoid code duplication
-	err := strFilter.Parse(operatorAndValues)
-	if err != nil {
-		return err
-	}
+	strFilter := filters.NewStringFilter()
+	strFilter.Add(filterReq)
 
 	if _, ok := filter.Filters[id]; !ok {
-		filter.Filters[id] = make(map[string]ArgFilterVal)
+		filter.Filters[id] = make(map[string]*filters.StringFilter)
 	}
 
 	if _, ok := filter.Filters[id][argName]; !ok {
-		filter.Filters[id][argName] = ArgFilterVal{}
+		filter.Filters[id][argName] = strFilter
 	}
-
-	val := filter.Filters[id][argName]
-
-	val.Equal = append(val.Equal, strFilter.Equal...)
-	val.NotEqual = append(val.NotEqual, strFilter.NotEqual...)
-
-	filter.Filters[id][argName] = val
 
 	return nil
 }
@@ -462,44 +486,28 @@ type ProcessTreeFilter struct {
 	Enabled bool
 }
 
-func (filter *ProcessTreeFilter) Parse(operatorAndValues string) error {
+func (filter *ProcessTreeFilter) Add(filterReq protocol.Filter) error {
 	filter.Enabled = true
 
-	if len(operatorAndValues) < 2 {
-		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
-	}
-
-	var (
-		equalityOperator bool
-		valuesString     string
-	)
-
-	if strings.HasPrefix(operatorAndValues, "=") {
-		valuesString = operatorAndValues[1:]
-		equalityOperator = true
-	} else if strings.HasPrefix(operatorAndValues, "!=") {
-		valuesString = operatorAndValues[2:]
-		if len(valuesString) == 0 {
-			return fmt.Errorf("no value passed with operator in process tree filter")
-		}
-		equalityOperator = false
-	} else {
-		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
-	}
-
-	values := strings.Split(valuesString, ",")
-	for _, value := range values {
-		pid, err := strconv.ParseUint(value, 10, 32)
+	for _, value := range filterReq.Value {
+		pid, err := strconv.ParseUint(fmt.Sprint(value), 10, 32)
 		if err != nil {
-			return fmt.Errorf("invalid PID given to filter: %s", valuesString)
+			return fmt.Errorf("invalid PID given to filter: %s", value)
 		}
-		filter.PIDs[uint32(pid)] = equalityOperator
+		switch filterReq.Operator {
+		case protocol.Equal:
+			filter.PIDs[uint32(pid)] = true
+		case protocol.NotEqual:
+			filter.PIDs[uint32(pid)] = false
+		default:
+			return fmt.Errorf("invalid operator given to tree filter %s", filterReq.Operator.String())
+		}
 	}
 
 	return nil
 }
 
-func (filter *ProcessTreeFilter) Set(bpfModule *bpf.Module) error {
+func (filter *ProcessTreeFilter) InitBpf(bpfModule *bpf.Module) error {
 	if !filter.Enabled {
 		return nil
 	}
@@ -575,99 +583,68 @@ func (filter *ProcessTreeFilter) FilterOut() bool {
 	return !filterIn
 }
 
-type ContIDFilter struct {
-	Equal    []string
-	NotEqual []string
-	Enabled  bool
+type NetIfaces struct {
+	Ifaces []string
 }
 
-func (filter *ContIDFilter) Parse(operatorAndValues string) error {
-	filter.Enabled = true
-
-	strFilter := &StringFilter{
-		Equal:    []string{},
-		NotEqual: []string{},
+func (ifaces *NetIfaces) Add(filterReq protocol.Filter) error {
+	arr := filterReq.Value
+	vals := make([]string, len(filterReq.Value))
+	for i := 0; i < len(arr); i++ {
+		val := arr[i]
+		valStr, ok := val.(string)
+		if !ok {
+			return fmt.Errorf("failed to add to filter: invalid value")
+		}
+		vals[i] = valStr
 	}
-
-	// Treat operatorAndValues as a string filter to avoid code duplication
-	err := strFilter.Parse(operatorAndValues)
-	if err != nil {
-		return err
+	for _, val := range vals {
+		err := ifaces.add(val, filters.Operator(filterReq.Operator))
+		if err != nil {
+			return fmt.Errorf("failed to add to filter: %s", err)
+		}
 	}
-
-	filter.Equal = strFilter.Equal
-	filter.NotEqual = strFilter.NotEqual
-
 	return nil
 }
 
-func (filter *ContIDFilter) Set(bpfModule *bpf.Module, conts *containers.Containers, filterMapName string) error {
-	if !filter.Enabled {
+func (ifaces *NetIfaces) add(val string, op filters.Operator) error {
+	if op == filters.Equal {
+		if _, err := net.InterfaceByName(val); err != nil {
+			return fmt.Errorf("invalid network interface: %s", val)
+		}
+		if _, found := ifaces.Find(val); found {
+			return nil
+		}
+		ifaces.Ifaces = append(ifaces.Ifaces, val)
 		return nil
 	}
+	return filters.UnsupportedOperator(op)
+}
 
-	filterEqualU32 := uint32(filterEqual) // const need local var for bpfMap.Update()
-	filterNotEqualU32 := uint32(filterNotEqual)
-
-	filterMap, err := bpfModule.GetMap(filterMapName)
-	if err != nil {
-		return err
-	}
-
-	for i := 0; i < len(filter.Equal); i++ {
-		cgroupIDs := conts.FindContainerCgroupID32LSB(filter.Equal[i])
-		if cgroupIDs == nil {
-			return fmt.Errorf("container id not found: %s", filter.Equal[i])
-		}
-		if len(cgroupIDs) > 1 {
-			return fmt.Errorf("container id is ambiguous: %s", filter.Equal[i])
-		}
-		if err = filterMap.Update(unsafe.Pointer(&cgroupIDs[0]), unsafe.Pointer(&filterEqualU32)); err != nil {
-			return err
-		}
-	}
-	for i := 0; i < len(filter.NotEqual); i++ {
-		cgroupIDs := conts.FindContainerCgroupID32LSB(filter.NotEqual[i])
-		if cgroupIDs == nil {
-			return fmt.Errorf("container id not found: %s", filter.NotEqual[i])
-		}
-		if len(cgroupIDs) > 1 {
-			return fmt.Errorf("container id is ambiguous: %s", filter.Equal[i])
-		}
-		if err = filterMap.Update(unsafe.Pointer(&cgroupIDs[0]), unsafe.Pointer(&filterNotEqualU32)); err != nil {
-			return err
+func (ifaces *NetIfaces) Find(iface string) (int, bool) {
+	for idx, currIface := range ifaces.Ifaces {
+		if currIface == iface {
+			return idx, true
 		}
 	}
 
-	return nil
+	return -1, false
 }
 
-func (filter *ContIDFilter) FilterOut() bool {
-	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 {
-		return false
-	} else {
-		return true
+func (ifaces *NetIfaces) Interfaces() []string {
+	if ifaces.Ifaces == nil {
+		ifaces.Ifaces = []string{}
 	}
+	return ifaces.Ifaces
 }
 
-type IfaceFilter struct {
-	InterfacesToTrace []string
-}
-
-func (filter *IfaceFilter) Parse(operatorAndValues string) error {
-	return ParseIface(operatorAndValues, &filter.InterfacesToTrace)
-}
-
-func ParseIface(operatorAndValues string, ifacesList *[]string) error {
-	ifaces := strings.Split(operatorAndValues, ",")
-	for _, iface := range ifaces {
-		if _, err := net.InterfaceByName(iface); err != nil {
-			return fmt.Errorf("invalid network interface: %s", iface)
-		}
-		_, err := findInList(iface, ifacesList)
-		// if the interface is not already in the interface list, we want to add it
+//for backwards compat
+func (ifaces *NetIfaces) Parse(operatorAndValues string) error {
+	ifaceList := strings.Split(operatorAndValues, ",")
+	for _, iface := range ifaceList {
+		err := ifaces.add(iface, filters.Equal)
 		if err != nil {
-			*ifacesList = append(*ifacesList, iface)
+			return err
 		}
 	}
 
