@@ -9,7 +9,7 @@ import (
 )
 
 func HookedSeqOps(kernelSymbols *helpers.KernelSymbolTable) events.DeriveFunction {
-	return singleEventDeriveFunc(events.HookedSyscalls, deriveHookedSeqOpsArgs(kernelSymbols))
+	return singleEventDeriveFunc(events.HookedSeqOps, deriveHookedSeqOpsArgs(kernelSymbols))
 
 }
 
