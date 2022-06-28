@@ -4927,6 +4927,7 @@ var Definitions = eventDefinitions{
 				{Type: "int", Name: "invoked_from_kernel"},
 				{Type: "unsigned long", Name: "ctime"},
 				{Type: "umode_t", Name: "stdin_type"},
+				{Type: "umode_t", Name: "inode_mode"},
 				{Type: "const char*", Name: "interp"},
 				{Type: "const char*", Name: "interpreter_pathname"},
 				{Type: "dev_t", Name: "interpreter_dev"},
