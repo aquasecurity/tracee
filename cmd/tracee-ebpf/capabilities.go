@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -14,6 +16,8 @@ type IKernelVersionInfo interface {
 	// equal or bigger, respectively, than running one.
 	CompareOSBaseKernelRelease(string) int
 }
+
+const bpfCapabilitiesMinKernelVersion = "5.8"
 
 // ensureCapabilities makes sure program runs with required capabilities only
 func ensureCapabilities(OSInfo IKernelVersionInfo, cfg *tracee.Config) error {
@@ -65,15 +69,30 @@ func getCapabilitiesRequiredByTraceeEvents(cfg *tracee.Config) []capability.Cap 
 
 // Get all capabilities required for eBPF usage (including perf buffers maps management)
 func getCapabilitiesRequiredByEBPF(selfCap capability.Capabilities, OSInfo IKernelVersionInfo) ([]capability.Cap, error) {
-	// In kernel 5.8, CAP_BPF and CAP_PERFMON capabilities were introduced in order to replace CAP_SYS_ADMIN when
-	// loading eBPF programs.
-	// For some reasons, some distributions using new kernels still need CAP_SYS_ADMIN,
-	// so tracee still use it instead of the new capabilities.
 	caps := []capability.Cap{
 		capability.CAP_IPC_LOCK,
 		capability.CAP_SYS_RESOURCE,
-		capability.CAP_SYS_ADMIN,
 	}
+	var versCaps []capability.Cap
+	if OSInfo.CompareOSBaseKernelRelease(bpfCapabilitiesMinKernelVersion) <= 0 {
+		versCaps = []capability.Cap{
+			capability.CAP_BPF,
+			capability.CAP_PERFMON,
+		}
+		if err1 := capabilities.CheckRequired(selfCap, versCaps); err1 != nil {
+			versCaps = []capability.Cap{
+				capability.CAP_SYS_ADMIN,
+			}
+			if err2 := capabilities.CheckRequired(selfCap, versCaps); err2 != nil {
+				return nil, fmt.Errorf("missing capabilites required for eBPF program loading - either CAP_BPF + CAP_PERFMON or CAP_SYS_ADMIN")
+			}
+		}
+	} else {
+		versCaps = []capability.Cap{
+			capability.CAP_SYS_ADMIN,
+		}
+	}
+	caps = append(caps, versCaps...)
 	return caps, nil
 }
 
