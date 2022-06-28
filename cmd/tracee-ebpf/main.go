@@ -133,11 +133,11 @@ func main() {
 			if err != nil {
 				return err
 			}
-			cfg.Filter = &filter
+			cfg.Filter[0] = &filter
 
-			containerMode := (cfg.Filter.ContFilter.Enabled && cfg.Filter.ContFilter.Value) ||
-				(cfg.Filter.NewContFilter.Enabled && cfg.Filter.NewContFilter.Value) ||
-				cfg.Filter.ContIDFilter.Enabled
+			containerMode := (cfg.Filter[0].ContFilter.Enabled && cfg.Filter[0].ContFilter.Value) ||
+				(cfg.Filter[0].NewContFilter.Enabled && cfg.Filter[0].NewContFilter.Value) ||
+				cfg.Filter[0].ContIDFilter.Enabled
 
 			outputSlice := c.StringSlice("output")
 			if checkCommandIsHelp(outputSlice) {

@@ -1,6 +1,7 @@
 package filters
 
 import (
+	"encoding/binary"
 	"fmt"
 	"math"
 	"strconv"
@@ -71,9 +72,6 @@ func (filter *UIntFilter) InitBPF(bpfModule *bpf.Module, filterMapName string) e
 		return nil
 	}
 
-	filterEqualU32 := uint32(filterEqual) // const need local var for bpfMap.Update()
-	filterNotEqualU32 := uint32(filterNotEqual)
-
 	// equalityFilter filters events for given maps:
 	// 1. uid_filter        u32, u32
 	// 2. pid_filter        u32, u32
@@ -84,22 +82,29 @@ func (filter *UIntFilter) InitBPF(bpfModule *bpf.Module, filterMapName string) e
 		return err
 	}
 	for i := 0; i < len(filter.Equal); i++ {
+		// todo: prepare for ALL filters on a local map, then update in tracee.go
+		filterVal := make([]byte, 8)
+		binary.LittleEndian.PutUint32(filterVal[0:4], uint32(filterEqual))
+		binary.LittleEndian.PutUint32(filterVal[4:8], uint32(1))
 		if filter.Is32Bit {
 			EqualU32 := uint32(filter.Equal[i])
-			err = equalityFilter.Update(unsafe.Pointer(&EqualU32), unsafe.Pointer(&filterEqualU32))
+			err = equalityFilter.Update(unsafe.Pointer(&EqualU32), unsafe.Pointer(&filterVal[0]))
 		} else {
-			err = equalityFilter.Update(unsafe.Pointer(&filter.Equal[i]), unsafe.Pointer(&filterEqualU32))
+			err = equalityFilter.Update(unsafe.Pointer(&filter.Equal[i]), unsafe.Pointer(&filterVal[0]))
 		}
 		if err != nil {
 			return err
 		}
 	}
 	for i := 0; i < len(filter.NotEqual); i++ {
+		filterVal := make([]byte, 8)
+		binary.LittleEndian.PutUint32(filterVal[0:4], uint32(filterNotEqual))
+		binary.LittleEndian.PutUint32(filterVal[4:8], uint32(1))
 		if filter.Is32Bit {
 			NotEqualU32 := uint32(filter.NotEqual[i])
-			err = equalityFilter.Update(unsafe.Pointer(&NotEqualU32), unsafe.Pointer(&filterNotEqualU32))
+			err = equalityFilter.Update(unsafe.Pointer(&NotEqualU32), unsafe.Pointer(&filterVal[0]))
 		} else {
-			err = equalityFilter.Update(unsafe.Pointer(&filter.NotEqual[i]), unsafe.Pointer(&filterNotEqualU32))
+			err = equalityFilter.Update(unsafe.Pointer(&filter.NotEqual[i]), unsafe.Pointer(&filterVal[0]))
 		}
 		if err != nil {
 			return err

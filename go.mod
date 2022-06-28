@@ -2,6 +2,8 @@ module github.com/aquasecurity/tracee
 
 go 1.17
 
+replace github.com/aquasecurity/tracee/types => ./types
+
 require (
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/aquasecurity/libbpfgo v0.4.0-libbpf-1.0.0.0.20220919160735-14c6bc9b8a05

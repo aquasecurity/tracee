@@ -458,30 +458,6 @@ enum event_id_e
 #define OPT_PROCESS_INFO          (1 << 7)
 #define OPT_TRANSLATE_FD_FILEPATH (1 << 8)
 
-#define FILTER_UID_ENABLED       (1 << 0)
-#define FILTER_UID_OUT           (1 << 1)
-#define FILTER_MNT_NS_ENABLED    (1 << 2)
-#define FILTER_MNT_NS_OUT        (1 << 3)
-#define FILTER_PID_NS_ENABLED    (1 << 4)
-#define FILTER_PID_NS_OUT        (1 << 5)
-#define FILTER_UTS_NS_ENABLED    (1 << 6)
-#define FILTER_UTS_NS_OUT        (1 << 7)
-#define FILTER_COMM_ENABLED      (1 << 8)
-#define FILTER_COMM_OUT          (1 << 9)
-#define FILTER_PID_ENABLED       (1 << 10)
-#define FILTER_PID_OUT           (1 << 11)
-#define FILTER_CONT_ENABLED      (1 << 12)
-#define FILTER_CONT_OUT          (1 << 13)
-#define FILTER_FOLLOW_ENABLED    (1 << 14)
-#define FILTER_NEW_PID_ENABLED   (1 << 15)
-#define FILTER_NEW_PID_OUT       (1 << 16)
-#define FILTER_NEW_CONT_ENABLED  (1 << 17)
-#define FILTER_NEW_CONT_OUT      (1 << 18)
-#define FILTER_PROC_TREE_ENABLED (1 << 19)
-#define FILTER_PROC_TREE_OUT     (1 << 20)
-#define FILTER_CGROUP_ID_ENABLED (1 << 21)
-#define FILTER_CGROUP_ID_OUT     (1 << 22)
-
 #define FILTER_MAX_NOT_SET 0
 #define FILTER_MIN_NOT_SET ULLONG_MAX
 
@@ -650,7 +626,6 @@ typedef __u64 stack_trace_t[MAX_STACK_DEPTH];
 
 // INTERNAL STRUCTS --------------------------------------------------------------------------------
 
-// todo: check network context after this change
 typedef struct task_context {
     u64 start_time; // thread's start time
     u64 cgroup_id;
@@ -672,7 +647,7 @@ typedef struct event_context {
     u64 ts; // Timestamp
     task_context_t task;
     u32 eventid;
-    u32 padding;
+    u32 matched_scopes;
     s64 retval;
     u32 stack_id;
     u16 processor_id; // The ID of the processor which processed the event
@@ -704,10 +679,10 @@ typedef struct task_info {
     task_context_t context;
     syscall_data_t syscall_data;
     bool syscall_traced;  // indicates that syscall_data is valid
-    bool recompute_scope; // recompute should_trace (new task/context changed/policy changed)
+    bool recompute_scope; // recompute matched_scopes (new task/context changed/policy changed)
     bool new_task;        // set if this task was started after tracee. Used with new_pid filter
-    bool follow;          // set if this task was traced before. Used with the follow filter
-    int should_trace;     // last decision of should_trace()
+    u32 follow_in_scopes; // bitmap of scopes for which this task should be followed
+    u32 matched_scopes;   // cached bitmap of scopes this task matched
     u8 container_state;   // the state of the container the task resides in
 } task_info_t;
 
@@ -738,11 +713,34 @@ typedef struct ksym_name {
     char str[MAX_KSYM_NAME_SIZE];
 } ksym_name_t;
 
+// todo: add filter_enabled configs in userspace
 typedef struct config_entry {
     u32 tracee_pid;
     u32 options;
-    u32 filters;
     u32 cgroup_v1_hid;
+    u32 uid_filter_enabled;
+    u32 pid_filter_enabled;
+    u32 mnt_ns_filter_enabled;
+    u32 pid_ns_filter_enabled;
+    u32 uts_ns_filter_enabled;
+    u32 comm_filter_enabled;
+    u32 cgroup_id_filter_enabled;
+    u32 cont_filter_enabled;
+    u32 new_cont_filter_enabled;
+    u32 new_pid_filter_enabled;
+    u32 proc_tree_filter_enabled;
+    u32 follow_filter_enabled;
+    u32 uid_filter_out;
+    u32 pid_filter_out;
+    u32 mnt_ns_filter_out;
+    u32 pid_ns_filter_out;
+    u32 uts_ns_filter_out;
+    u32 comm_filter_out;
+    u32 cgroup_id_filter_out;
+    u32 cont_filter_out;
+    u32 new_cont_filter_out;
+    u32 new_pid_filter_out;
+    u32 proc_tree_filter_out;
     u64 uid_max;
     u64 uid_min;
     u64 pid_max;
@@ -751,6 +749,7 @@ typedef struct config_entry {
     u64 mnt_ns_min;
     u64 pid_ns_max;
     u64 pid_ns_min;
+    u32 valid_scopes;
     u8 events_to_submit[128]; // use 8*128 bits to describe up to 1024 events
 } config_entry_t;
 
@@ -848,6 +847,11 @@ typedef struct file_info {
     u64 ctime;
 } file_info_t;
 
+typedef struct equality {
+    u32 bitmask;
+    u32 valid_bits;
+} eq_t;
+
 // KERNEL STRUCTS ----------------------------------------------------------------------------------
 
 #ifndef CORE
@@ -889,21 +893,22 @@ struct kprobe {
 // EBPF MAPS DECLARATIONS --------------------------------------------------------------------------
 
 // clang-format off
+
 BPF_HASH(kconfig_map, u32, u32, 10240);                            // kernel config variables
 BPF_HASH(interpreter_map, u32, file_info_t, 10240);                // interpreter file used for each process
 BPF_HASH(containers_map, u32, u8, 10240);                          // map cgroup id to container status {EXISTED, CREATED, STARTED}
 BPF_HASH(args_map, u64, args_t, 1024);                             // persist args between function entry and return
-BPF_HASH(uid_filter, u32, u32, 256);                               // filter events by UID, for specific UIDs either by == or !=
-BPF_HASH(pid_filter, u32, u32, 256);                               // filter events by PID
-BPF_HASH(mnt_ns_filter, u64, u32, 256);                            // filter events by mount namespace id
-BPF_HASH(pid_ns_filter, u64, u32, 256);                            // filter events by pid namespace id
-BPF_HASH(uts_ns_filter, string_filter_t, u32, 256);                // filter events by uts namespace name
-BPF_HASH(comm_filter, string_filter_t, u32, 256);                  // filter events by command name
-BPF_HASH(cgroup_id_filter, u32, u32, 256);                         // filter events by cgroup id
+BPF_HASH(uid_filter, u32, eq_t, 256);                              // filter events by UID, for specific UIDs either by == or !=
+BPF_HASH(pid_filter, u32, eq_t, 256);                              // filter events by PID
+BPF_HASH(mnt_ns_filter, u64, eq_t, 256);                           // filter events by mount namespace id
+BPF_HASH(pid_ns_filter, u64, eq_t, 256);                           // filter events by pid namespace id
+BPF_HASH(uts_ns_filter, string_filter_t, eq_t, 256);               // filter events by uts namespace name
+BPF_HASH(comm_filter, string_filter_t, eq_t, 256);                 // filter events by command name
+BPF_HASH(cgroup_id_filter, u32, eq_t, 256);                        // filter events by cgroup id
 BPF_HASH(bin_args_map, u64, bin_args_t, 256);                      // persist args for send_bin funtion
 BPF_HASH(sys_32_to_64_map, u32, u32, 1024);                        // map 32bit to 64bit syscalls
 BPF_HASH(params_types_map, u32, u64, 1024);                        // encoded parameters types for event
-BPF_HASH(process_tree_map, u32, u32, 10240);                       // filter events by the ancestry of the traced process
+BPF_HASH(process_tree_map, u32, eq_t, 10240);                      // filter events by the ancestry of the traced process
 BPF_LRU_HASH(task_info_map, u32, task_info_t, 10240);              // holds data for every task
 BPF_HASH(network_config, u32, int, 1024);                          // holds the network config for each iface
 BPF_HASH(ksymbols_map, ksym_name_t, u64, 1024);                    // holds the addresses of some kernel symbols
@@ -924,6 +929,7 @@ BPF_PROG_ARRAY(sys_exit_init_tail, MAX_EVENT_ID);                  // store prog
 BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);             // store stack traces
 BPF_HASH(module_init_map, u32, kmod_data_t, 256);                  // holds module information between
 BPF_LRU_HASH(fd_arg_path_map, fd_arg_task_t, fd_arg_path_t, 1024); // store fds paths by task
+
 // clang-format on
 
 // EBPF PERF BUFFERS -------------------------------------------------------------------------------
@@ -1670,7 +1676,7 @@ static __always_inline task_info_t *init_task_info(u32 key, bool *initialized)
         }
         task_info->syscall_traced = false;
         task_info->new_task = false;
-        task_info->follow = false;
+        task_info->follow_in_scopes = 0;
         task_info->recompute_scope = true;
         task_info->container_state = CONTAINER_UNKNOWN;
     }
@@ -1700,7 +1706,11 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
         return 0;
     }
     bool container_lookup_required = true;
-    if (!task_info_initalized) {
+    if (task_info_initalized) {
+        // in some places we don't call should_trace() (e.g. sys_exit) which also initializes
+        // matched_scopes. Use previously found scopes then to initialize it.
+        data->context.matched_scopes = data->task_info->matched_scopes;
+    } else {
         // check if we need to recompute scope due to context change
         task_context_t *old_context = &data->task_info->context;
         task_context_t *new_context = &data->context.task;
@@ -1741,146 +1751,160 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
 
 // INTERNAL: FILTERING -----------------------------------------------------------------------------
 
-static __always_inline int
-uint_filter_matches(bool filter_out, void *filter_map, u64 value, u64 max, u64 min)
+static __always_inline u32
+uint_filter_matches(u32 filter_out, void *filter_map, u64 value, u64 max, u64 min)
 {
-    u8 *equality = bpf_map_lookup_elem(filter_map, &value);
-    if (equality != NULL)
-        return *equality;
+    u32 equality_bitmask = 0;
+    u32 equality_valid_bits = 0;
+    eq_t *equality = bpf_map_lookup_elem(filter_map, &value);
+    if (equality != NULL) {
+        equality_bitmask = equality->bitmask;
+        equality_valid_bits = equality->valid_bits;
+    }
 
+    // we can keep this logic by having one global lessThan and greaterThan per each context filter type
+    // if there is more than one filter used, it can be checked in userspace. (very unlikely).
+    // there will always be a valid (scope) bitmap in addition to the returned value.
     if ((max != FILTER_MAX_NOT_SET) && (value >= max))
-        return 0;
+        return equality_bitmask;
 
     if ((min != FILTER_MIN_NOT_SET) && (value <= min))
-        return 0; // 0 means do not trace
+        return equality_bitmask;
 
-    return filter_out;
+    return equality_bitmask | (filter_out & ~equality_valid_bits);
 }
 
-static __always_inline int equality_filter_matches(bool filter_out, void *filter_map, void *key)
+static __always_inline u32 equality_filter_matches(u32 filter_out, void *filter_map, void *key)
 {
-    u32 *equality = bpf_map_lookup_elem(filter_map, key);
-    if (equality != NULL)
-        return *equality;
+    u32 equality_bitmask = 0;
+    u32 equality_valid_bits = 0;
+    eq_t *equality = bpf_map_lookup_elem(filter_map, key);
+    if (equality != NULL) {
+        equality_bitmask = equality->bitmask;
+        equality_valid_bits = equality->valid_bits;
+    }
 
-    return filter_out;
+    return equality_bitmask | (filter_out & ~equality_valid_bits);
 }
 
-static __always_inline int bool_filter_matches(bool filter_out, bool val)
+static __always_inline u32 bool_filter_matches(u32 filter_out, bool val)
 {
-    return filter_out ^ val;
+    return filter_out ^ (val ? 0xFFFFFFFF : 0);
 }
 
-static __always_inline int do_should_trace(event_data_t *data)
+static __always_inline u32 do_should_trace(event_data_t *data)
 {
     task_context_t *context = &data->context.task;
-    u32 config = data->config->filters;
-
-    if ((config & FILTER_FOLLOW_ENABLED) && (data->task_info->follow)) {
-        // don't check the other filters if follow is set
-        return 1;
-    }
+    u32 res = 0xFFFFFFFF;
 
     // Don't monitor self
     if (data->config->tracee_pid == context->host_pid) {
         return 0;
     }
 
-    if (config & FILTER_CONT_ENABLED) {
+    if (data->config->cont_filter_enabled) {
         bool is_container = false;
         u8 state = data->task_info->container_state;
         if (state == CONTAINER_STARTED || state == CONTAINER_EXISTED)
             is_container = true;
-        bool filter_out = (config & FILTER_CONT_OUT) == FILTER_CONT_OUT;
-        if (!bool_filter_matches(filter_out, is_container))
-            return 0;
+        u32 filter_out = data->config->cont_filter_out;
+        u32 mask = ~data->config->cont_filter_enabled;
+        res &= bool_filter_matches(filter_out, is_container) | mask;
     }
 
-    if (config & FILTER_NEW_CONT_ENABLED) {
+    if (data->config->new_cont_filter_enabled) {
         bool is_new_container = false;
         if (data->task_info->container_state == CONTAINER_STARTED)
             is_new_container = true;
-        bool filter_out = (config & FILTER_NEW_CONT_OUT) == FILTER_NEW_CONT_OUT;
-        if (!bool_filter_matches(filter_out, is_new_container))
-            return 0;
+        u32 filter_out = data->config->new_cont_filter_out;
+        u32 mask = ~data->config->new_cont_filter_enabled;
+        res &= bool_filter_matches(filter_out, is_new_container) | mask;
     }
 
-    if (config & FILTER_PID_ENABLED) {
-        bool filter_out = (config & FILTER_PID_OUT) == FILTER_PID_OUT;
+    if (data->config->pid_filter_enabled) {
+        // todo: rename filter_out to default_filter, here and in userspace (for equality/int filters)
+        u32 filter_out = data->config->pid_filter_out;
+        u32 mask = ~data->config->pid_filter_enabled;
         u64 max = data->config->pid_max;
         u64 min = data->config->pid_min;
-        if (!uint_filter_matches(filter_out, &pid_filter, context->host_tid, max, min))
-            return 0;
+        res &= uint_filter_matches(filter_out, &pid_filter, context->host_tid, max, min) | mask;
     }
 
-    if (config & FILTER_NEW_PID_ENABLED) {
-        bool filter_out = (config & FILTER_NEW_PID_OUT) == FILTER_NEW_PID_OUT;
-        if (!bool_filter_matches(filter_out, data->task_info->new_task))
-            return 0;
+    if (data->config->new_pid_filter_enabled) {
+        u32 filter_out = data->config->new_pid_filter_out;
+        u32 mask = ~data->config->new_pid_filter_enabled;
+        res &= bool_filter_matches(filter_out, data->task_info->new_task) | mask;
     }
 
-    if (config & FILTER_UID_ENABLED) {
-        bool filter_out = (config & FILTER_UID_OUT) == FILTER_UID_OUT;
+    if (data->config->uid_filter_enabled) {
+        u32 filter_out = data->config->uid_filter_out;
+        u32 mask = ~data->config->uid_filter_enabled;
         u64 max = data->config->uid_max;
         u64 min = data->config->uid_min;
-        if (!uint_filter_matches(filter_out, &uid_filter, context->uid, max, min))
-            return 0;
+        res &= uint_filter_matches(filter_out, &uid_filter, context->uid, max, min) | mask;
     }
 
-    if (config & FILTER_MNT_NS_ENABLED) {
-        bool filter_out = (config & FILTER_MNT_NS_OUT) == FILTER_MNT_NS_OUT;
+    if (data->config->mnt_ns_filter_enabled) {
+        u32 filter_out = data->config->mnt_ns_filter_out;
+        u32 mask = ~data->config->mnt_ns_filter_enabled;
         u64 max = data->config->mnt_ns_max;
         u64 min = data->config->mnt_ns_min;
-        if (!uint_filter_matches(filter_out, &mnt_ns_filter, context->mnt_id, max, min))
-            return 0;
+        res &= uint_filter_matches(filter_out, &mnt_ns_filter, context->mnt_id, max, min) | mask;
     }
 
-    if (config & FILTER_PID_NS_ENABLED) {
-        bool filter_out = (config & FILTER_PID_NS_OUT) == FILTER_PID_NS_OUT;
+    if (data->config->pid_ns_filter_enabled) {
+        u32 filter_out = data->config->pid_ns_filter_out;
+        u32 mask = ~data->config->pid_ns_filter_enabled;
         u64 max = data->config->pid_ns_max;
         u64 min = data->config->pid_ns_min;
-        if (!uint_filter_matches(filter_out, &pid_ns_filter, context->pid_id, max, min))
-            return 0;
+        res &= uint_filter_matches(filter_out, &pid_ns_filter, context->pid_id, max, min) | mask;
     }
 
-    if (config & FILTER_UTS_NS_ENABLED) {
-        bool filter_out = (config & FILTER_UTS_NS_OUT) == FILTER_UTS_NS_OUT;
-        if (!equality_filter_matches(filter_out, &uts_ns_filter, &context->uts_name))
-            return 0;
+    if (data->config->uts_ns_filter_enabled) {
+        u32 filter_out = data->config->uts_ns_filter_out;
+        u32 mask = ~data->config->uts_ns_filter_enabled;
+        res &= equality_filter_matches(filter_out, &uts_ns_filter, &context->uts_name) | mask;
     }
 
-    if (config & FILTER_COMM_ENABLED) {
-        bool filter_out = (config & FILTER_COMM_OUT) == FILTER_COMM_OUT;
-        if (!equality_filter_matches(filter_out, &comm_filter, &context->comm))
-            return 0;
+    if (data->config->comm_filter_enabled) {
+        u32 filter_out = data->config->comm_filter_out;
+        u32 mask = ~data->config->comm_filter_enabled;
+        res &= equality_filter_matches(filter_out, &comm_filter, &context->comm) | mask;
     }
 
-    if (config & FILTER_PROC_TREE_ENABLED) {
-        bool filter_out = (config & FILTER_PROC_TREE_OUT) == FILTER_PROC_TREE_OUT;
-        if (!equality_filter_matches(filter_out, &process_tree_map, &context->pid))
-            return 0;
+    if (data->config->proc_tree_filter_enabled) {
+        u32 filter_out = data->config->proc_tree_filter_out;
+        u32 mask = ~data->config->proc_tree_filter_enabled;
+        res &= equality_filter_matches(filter_out, &process_tree_map, &context->pid) | mask;
     }
 
-    if (config & FILTER_CGROUP_ID_ENABLED) {
-        bool filter_out = (config & FILTER_CGROUP_ID_OUT) == FILTER_CGROUP_ID_OUT;
+    if (data->config->cgroup_id_filter_enabled) {
+        u32 filter_out = data->config->cgroup_id_filter_out;
+        u32 mask = ~data->config->cgroup_id_filter_enabled;
         u32 cgroup_id_lsb = context->cgroup_id;
-        if (!equality_filter_matches(filter_out, &cgroup_id_filter, &cgroup_id_lsb))
-            return 0;
+        res &= equality_filter_matches(filter_out, &cgroup_id_filter, &cgroup_id_lsb) | mask;
     }
 
-    // We passed all filters successfully
-    return 1;
+    if (data->config->follow_filter_enabled) {
+        // trace this task anyway if follow was set by a scope
+        u32 mask = ~data->config->follow_filter_enabled;
+        res |= data->task_info->follow_in_scopes | mask;
+    }
+
+    return res & data->config->valid_scopes;
 }
 
-static __always_inline int should_trace(event_data_t *data)
+static __always_inline u32 should_trace(event_data_t *data)
 {
     // use cache whenever possible
     if (data->task_info->recompute_scope) {
-        data->task_info->should_trace = do_should_trace(data);
+        data->task_info->matched_scopes = do_should_trace(data);
         data->task_info->recompute_scope = false;
     }
 
-    return data->task_info->should_trace;
+    data->context.matched_scopes = data->task_info->matched_scopes;
+
+    return data->task_info->matched_scopes;
 }
 
 static __always_inline int should_submit(u32 event_id, config_entry_t *config)
@@ -3308,7 +3332,7 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     int child_tgid = get_task_host_tgid(child);
 
     // update process tree map if the parent has an entry
-    if (data.config->filters & FILTER_PROC_TREE_ENABLED) {
+    if (data.config->proc_tree_filter_enabled) {
         u32 *tgid_filtered = bpf_map_lookup_elem(&process_tree_map, &parent_tgid);
         if (tgid_filtered) {
             bpf_map_update_elem(&process_tree_map, &child_tgid, tgid_filtered, BPF_ANY);
@@ -3318,9 +3342,8 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     if (!should_trace(&data))
         return 0;
 
-    // fork events may add new pids to the traced pids set.
-    // perform this check after should_trace() to only add forked childs of a traced parent
-    task.follow = true;
+    // follow tasks which were forked by a traced parent
+    task.follow_in_scopes = data.task_info->matched_scopes;
     task.new_task = true;
     bpf_map_update_elem(&task_info_map, &child_pid, &task, BPF_ANY);
 
@@ -3378,8 +3401,8 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     if (!should_trace(&data))
         return 0;
 
-    // We passed all filters (in should_trace()) - add this pid to traced pids set
-    data.task_info->follow = true;
+    // follow this task for matched scopes
+    data.task_info->follow_in_scopes = data.task_info->matched_scopes;
 
     struct task_struct *task = (struct task_struct *) ctx->args[0];
     struct linux_binprm *bprm = (struct linux_binprm *) ctx->args[2];
@@ -3477,8 +3500,6 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     bpf_map_delete_elem(&task_info_map, &data.context.task.host_tid);
     bpf_map_delete_elem(&interpreter_map, &data.context.task.host_tid);
 
-    int proc_tree_filter_set = data.config->filters & FILTER_PROC_TREE_ENABLED;
-
     bool group_dead = false;
     struct task_struct *task = data.task;
     struct signal_struct *signal = READ_KERN(task->signal);
@@ -3488,7 +3509,7 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     // simultaneously.
     if (live.counter == 0) {
         group_dead = true;
-        if (proc_tree_filter_set) {
+        if (data.config->proc_tree_filter_enabled) {
             bpf_map_delete_elem(&process_tree_map, &data.context.task.host_pid);
         }
     }

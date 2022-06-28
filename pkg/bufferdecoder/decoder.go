@@ -61,7 +61,7 @@ func (decoder *EbpfDecoder) DecodeContext(ctx *Context) error {
 	_ = copy(ctx.UtsName[:], decoder.buffer[offset+76:offset+92])
 	ctx.Flags = binary.LittleEndian.Uint32(decoder.buffer[offset+92 : offset+96])
 	ctx.EventID = events.ID(int32(binary.LittleEndian.Uint32(decoder.buffer[offset+96 : offset+100])))
-	// offset 100:103 is used for padding
+	ctx.MatchedScopes = binary.LittleEndian.Uint32(decoder.buffer[offset+100 : offset+104])
 	ctx.Retval = int64(binary.LittleEndian.Uint64(decoder.buffer[offset+104 : offset+112]))
 	ctx.StackID = binary.LittleEndian.Uint32(decoder.buffer[offset+112 : offset+116])
 	ctx.ProcessorId = binary.LittleEndian.Uint16(decoder.buffer[offset+116 : offset+118])

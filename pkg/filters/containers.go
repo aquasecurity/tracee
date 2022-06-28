@@ -1,6 +1,7 @@
 package filters
 
 import (
+	"encoding/binary"
 	"fmt"
 	"unsafe"
 
@@ -39,9 +40,6 @@ func (filter *ContIDFilter) InitBPF(bpfModule *bpf.Module, conts *containers.Con
 		return nil
 	}
 
-	filterEqualU32 := uint32(filterEqual) // const need local var for bpfMap.Update()
-	filterNotEqualU32 := uint32(filterNotEqual)
-
 	filterMap, err := bpfModule.GetMap(filterMapName)
 	if err != nil {
 		return err
@@ -55,7 +53,10 @@ func (filter *ContIDFilter) InitBPF(bpfModule *bpf.Module, conts *containers.Con
 		if len(cgroupIDs) > 1 {
 			return fmt.Errorf("container id is ambiguous: %s", filter.Equal[i])
 		}
-		if err = filterMap.Update(unsafe.Pointer(&cgroupIDs[0]), unsafe.Pointer(&filterEqualU32)); err != nil {
+		filterVal := make([]byte, 8)
+		binary.LittleEndian.PutUint32(filterVal[0:4], uint32(filterEqual))
+		binary.LittleEndian.PutUint32(filterVal[4:8], uint32(1))
+		if err = filterMap.Update(unsafe.Pointer(&cgroupIDs[0]), unsafe.Pointer(&filterVal[0])); err != nil {
 			return err
 		}
 	}
@@ -67,7 +68,10 @@ func (filter *ContIDFilter) InitBPF(bpfModule *bpf.Module, conts *containers.Con
 		if len(cgroupIDs) > 1 {
 			return fmt.Errorf("container id is ambiguous: %s", filter.Equal[i])
 		}
-		if err = filterMap.Update(unsafe.Pointer(&cgroupIDs[0]), unsafe.Pointer(&filterNotEqualU32)); err != nil {
+		filterVal := make([]byte, 8)
+		binary.LittleEndian.PutUint32(filterVal[0:4], uint32(filterNotEqual))
+		binary.LittleEndian.PutUint32(filterVal[4:8], uint32(1))
+		if err = filterMap.Update(unsafe.Pointer(&cgroupIDs[0]), unsafe.Pointer(&filterVal[0])); err != nil {
 			return err
 		}
 	}

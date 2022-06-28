@@ -1,6 +1,7 @@
 package filters
 
 import (
+	"encoding/binary"
 	"fmt"
 	"strings"
 	"unsafe"
@@ -52,9 +53,6 @@ func (filter *StringFilter) InitBPF(bpfModule *bpf.Module, filterMapName string)
 		return nil
 	}
 
-	filterEqualU32 := uint32(filterEqual) // const need local var for bpfMap.Update()
-	filterNotEqualU32 := uint32(filterNotEqual)
-
 	// 1. uts_ns_filter     string[MAX_STR_FILTER_SIZE], u32    // filter events by uts namespace name
 	// 2. comm_filter       string[MAX_STR_FILTER_SIZE], u32    // filter events by command name
 	filterMap, err := bpfModule.GetMap(filterMapName)
@@ -64,14 +62,20 @@ func (filter *StringFilter) InitBPF(bpfModule *bpf.Module, filterMapName string)
 	for i := 0; i < len(filter.Equal); i++ {
 		filterEqualBytes := make([]byte, filter.Size)
 		copy(filterEqualBytes, filter.Equal[i])
-		if err = filterMap.Update(unsafe.Pointer(&filterEqualBytes[0]), unsafe.Pointer(&filterEqualU32)); err != nil {
+		filterVal := make([]byte, 8)
+		binary.LittleEndian.PutUint32(filterVal[0:4], uint32(filterEqual))
+		binary.LittleEndian.PutUint32(filterVal[4:8], uint32(1))
+		if err = filterMap.Update(unsafe.Pointer(&filterEqualBytes[0]), unsafe.Pointer(&filterVal[0])); err != nil {
 			return err
 		}
 	}
 	for i := 0; i < len(filter.NotEqual); i++ {
 		filterNotEqualBytes := make([]byte, filter.Size)
 		copy(filterNotEqualBytes, filter.NotEqual[i])
-		if err = filterMap.Update(unsafe.Pointer(&filterNotEqualBytes[0]), unsafe.Pointer(&filterNotEqualU32)); err != nil {
+		filterVal := make([]byte, 8)
+		binary.LittleEndian.PutUint32(filterVal[0:4], uint32(filterNotEqual))
+		binary.LittleEndian.PutUint32(filterVal[4:8], uint32(1))
+		if err = filterMap.Update(unsafe.Pointer(&filterNotEqualBytes[0]), unsafe.Pointer(&filterVal[0])); err != nil {
 			return err
 		}
 	}

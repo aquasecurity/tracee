@@ -210,6 +210,7 @@ func (t *Tracee) decodeEvents(outerCtx context.Context) (<-chan *trace.Event, <-
 				PodUID:              containerInfo.Pod.UID,
 				EventID:             int(ctx.EventID),
 				EventName:           eventDefinition.Name,
+				MatchedScopes:       uint(ctx.MatchedScopes),
 				ArgsNum:             int(ctx.Argnum),
 				ReturnValue:         int(ctx.Retval),
 				Args:                args,
@@ -249,7 +250,10 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (<-c
 				continue
 			}
 
-			if (t.config.Filter.ContFilter.Value || t.config.Filter.NewContFilter.Enabled) && event.ContainerID == "" {
+			if (t.config.Filter[0].ContFilter.Value || t.config.Filter[0].NewContFilter.Enabled) && event.ContainerID == "" {
+				// todo: do this check for every initialized scope.
+				// remove scopes that don't match the above criteria. If we left with no scopes - continue (like now)
+				// todo 2: add such events to log debug when we will have a logger
 				// Don't trace false container positives -
 				// a container filter is set by the user, but this event wasn't originated in a container.
 				// Although kernel filters shouldn't submit such events, we do this check to be on the safe side.

@@ -52,8 +52,8 @@ func (t *Tracee) processLostEvents() {
 
 // shouldProcessEvent decides whether or not to drop an event before further processing it
 func (t *Tracee) shouldProcessEvent(ctx *bufferdecoder.Context, args []trace.Argument) bool {
-	if t.config.Filter.RetFilter.Enabled {
-		if filter, ok := t.config.Filter.RetFilter.Filters[ctx.EventID]; ok {
+	if t.config.Filter[0].RetFilter.Enabled {
+		if filter, ok := t.config.Filter[0].RetFilter.Filters[ctx.EventID]; ok {
 			retVal := ctx.Retval
 			match := false
 			for _, f := range filter.Equal {
@@ -79,8 +79,8 @@ func (t *Tracee) shouldProcessEvent(ctx *bufferdecoder.Context, args []trace.Arg
 		}
 	}
 
-	if t.config.Filter.ArgFilter.Enabled {
-		for argName, filter := range t.config.Filter.ArgFilter.Filters[events.ID(ctx.EventID)] {
+	if t.config.Filter[0].ArgFilter.Enabled {
+		for argName, filter := range t.config.Filter[0].ArgFilter.Filters[events.ID(ctx.EventID)] {
 			var argVal interface{}
 			ok := false
 			for _, arg := range args {

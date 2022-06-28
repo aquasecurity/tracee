@@ -2,6 +2,7 @@ package filters
 
 import (
 	"bytes"
+	"encoding/binary"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -101,8 +102,10 @@ func (filter *ProcessTreeFilter) Set(bpfModule *bpf.Module) error {
 			}
 
 			if shouldBeTraced, ok := filter.PIDs[uint32(ppid)]; ok {
-				trace := boolToUInt32(shouldBeTraced)
-				processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&trace))
+				filterVal := make([]byte, 8)
+				binary.LittleEndian.PutUint32(filterVal[0:4], boolToUInt32(shouldBeTraced))
+				binary.LittleEndian.PutUint32(filterVal[4:8], uint32(1))
+				processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&filterVal[0]))
 				return
 			}
 			fn(uint32(ppid))
@@ -111,8 +114,10 @@ func (filter *ProcessTreeFilter) Set(bpfModule *bpf.Module) error {
 	}
 
 	for pid, shouldBeTraced := range filter.PIDs {
-		trace := boolToUInt32(shouldBeTraced)
-		processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&trace))
+		filterVal := make([]byte, 8)
+		binary.LittleEndian.PutUint32(filterVal[0:4], boolToUInt32(shouldBeTraced))
+		binary.LittleEndian.PutUint32(filterVal[4:8], uint32(1))
+		processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&filterVal[0]))
 	}
 
 	return nil
