@@ -3,6 +3,9 @@
 #
 name: CO-RE (DAILY)
 on:
+  pull_request:
+    branches:
+      - main
   workflow_dispatch: {}
   schedule:
     # At 04:00 every day
