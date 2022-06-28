@@ -145,6 +145,7 @@ func parseTraceeInputFile(option *traceeInputOptions, fileOpt string) error {
 	if err != nil {
 		return fmt.Errorf("invalid file: %s", fileOpt)
 	}
+	defer f.Close()
 	option.inputFile = f
 	return nil
 }
