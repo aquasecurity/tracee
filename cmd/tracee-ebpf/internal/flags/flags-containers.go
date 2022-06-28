@@ -26,7 +26,7 @@ Supported runtimes are:
 3. Docker     (docker)
 
 Example:
-  --containers crio:/var/run/crio/crio.sock
+  --crs crio:/var/run/crio/crio.sock
 `
 }
 
@@ -56,7 +56,7 @@ func PrepareContainers(containerFlags []string) (runtime.Sockets, error) {
 		containerRuntime := parts[0]
 
 		if !contains(supportedRuntimes, containerRuntime) {
-			return sockets, fmt.Errorf("provided unsupported container runtime (see --containers help for supported runtimes)")
+			return sockets, fmt.Errorf("provided unsupported container runtime (see --crs help for supported runtimes)")
 		}
 
 		socket := parts[1]
