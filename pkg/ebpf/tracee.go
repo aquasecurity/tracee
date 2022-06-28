@@ -55,6 +55,7 @@ type Config struct {
 	ProcessInfo        bool
 	OSInfo             *helpers.OSInfo
 	Sockets            runtime.Sockets
+	ContainersEnrich   bool
 }
 
 type CaptureConfig struct {
