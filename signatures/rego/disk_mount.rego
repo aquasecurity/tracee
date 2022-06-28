@@ -30,5 +30,13 @@ tracee_match = res {
 	devname := helpers.get_tracee_argument("dev_name")
 	startswith(devname, "/dev/")
 
+	# exclude runc
+	not runc_process with input as input
+
 	res := {"mounted device": devname}
+}
+
+runc_process {
+	startswith(input.processName, "runc:")
+	input.threadId == 1
 }
