@@ -540,7 +540,8 @@ tracee-rules: $(OUTPUT_DIR)/tracee-rules
 $(OUTPUT_DIR)/tracee-rules: \
 	.checkver_$(CMD_GO) \
 	$(TRACEE_RULES_SRC) \
-	| $(OUTPUT_DIR)
+	| $(OUTPUT_DIR) \
+	rules
 #
 	$(GO_ENV_RULES) $(CMD_GO) build \
 		-tags $(GO_TAGS_RULES) \
