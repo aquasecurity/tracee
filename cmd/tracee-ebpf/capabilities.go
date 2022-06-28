@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -16,7 +19,7 @@ type IKernelVersionInfo interface {
 }
 
 // ensureCapabilities makes sure program runs with required capabilities only
-func ensureCapabilities(OSInfo IKernelVersionInfo, cfg *tracee.Config) error {
+func ensureCapabilities(OSInfo IKernelVersionInfo, cfg *tracee.Config, allowHighCapabilities bool) error {
 	selfCap, err := capabilities.Self()
 	if err != nil {
 		return err
@@ -31,7 +34,12 @@ func ensureCapabilities(OSInfo IKernelVersionInfo, cfg *tracee.Config) error {
 		return err
 	}
 	if err = capabilities.DropUnrequired(selfCap, rCaps); err != nil {
-		return err
+		if !allowHighCapabilities {
+			return fmt.Errorf("%w - to avoid this error use the --%s flag", err, allowHighCapabilitiesFlag)
+		} else if cfg.Debug {
+			fmt.Fprintf(os.Stderr, "Failed in dropping capabilities - %v\n", err)
+			fmt.Fprintf(os.Stderr, "Continue with high capabilities accoridng to the configuration\n")
+		}
 	}
 
 	return nil

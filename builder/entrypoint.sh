@@ -77,6 +77,7 @@ run_tracee_rules() {
         --cache cache-type=mem \
         --cache mem-cache-size=512 \
         --containers=${CONTAINERS_ENRICHMENT:="0"}\
+        --allow-high-capabilities=${ALLOW_HIGH_CAPABILITIES:="0"}\
         --trace event=${events} \
         --output=out-file:${TRACEE_PIPE} &
     tracee_ebpf_pid=$!
@@ -84,7 +85,11 @@ run_tracee_rules() {
     # start tracee-rules
 
     echo "INFO: starting tracee-rules..."
-    $TRACEE_RULES_EXE --metrics --input-tracee=file:${TRACEE_PIPE} --input-tracee=format:gob $@
+    $TRACEE_RULES_EXE\
+        --metrics --input-tracee=file:${TRACEE_PIPE}\
+        --input-tracee=format:gob\
+        --allow-high-capabilities=${ALLOW_HIGH_CAPABILITIES:="0"}\
+        $@
     TRACEE_RET=$?
 }
 

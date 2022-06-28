@@ -34,6 +34,10 @@ var enrich bool
 
 var version string
 
+const (
+	allowHighCapabilitiesFlag = "allow-high-capabilities"
+)
+
 func main() {
 	app := &cli.App{
 		Name:    "Tracee",
@@ -149,7 +153,7 @@ func main() {
 			cfg.Output = &output
 
 			// environment capabilities
-			err = ensureCapabilities(OSInfo, &cfg)
+			err = ensureCapabilities(OSInfo, &cfg, c.Bool(allowHighCapabilitiesFlag))
 			if err != nil {
 				return err
 			}
@@ -368,6 +372,12 @@ func main() {
 				Name:        "containers",
 				Usage:       "enable container info enrichment to events. this feature is experimental and may cause unexpected behavior in the pipeline",
 				Destination: &enrich,
+			},
+			&cli.BoolFlag{
+				Name:    allowHighCapabilitiesFlag,
+				Aliases: []string{"ahc"},
+				Usage:   "allow tracee-ebpf to run with high capabilities, in case that capabilities dropping fails",
+				Value:   false,
 			},
 		},
 	}

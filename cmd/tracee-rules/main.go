@@ -23,9 +23,10 @@ import (
 )
 
 const (
-	signatureBufferFlag = "sig-buffer"
-	metricsFlag         = "metrics"
-	metricsAddrFlag     = "metrics-addr"
+	signatureBufferFlag       = "sig-buffer"
+	metricsFlag               = "metrics"
+	metricsAddrFlag           = "metrics-addr"
+	allowHighCapabilitiesFlag = "allow-high-capabilities"
 )
 
 func main() {
@@ -35,7 +36,12 @@ func main() {
 		Action: func(c *cli.Context) error {
 			err := dropCapabilities()
 			if err != nil {
-				return err
+				if !c.Bool(allowHighCapabilitiesFlag) {
+					return fmt.Errorf("%w - to avoid this error use the --%s flag", err, allowHighCapabilitiesFlag)
+				} else {
+					fmt.Fprintf(os.Stdout, "Capabilities dropping failed - %v\n", err)
+					fmt.Fprintf(os.Stdout, "Continue with high capabilities according to the configuration\n")
+				}
 			}
 
 			if c.NumFlags() == 0 {
@@ -221,6 +227,12 @@ func main() {
 				Name:  metricsAddrFlag,
 				Usage: "listening address of the metrics endpoint server",
 				Value: ":4466",
+			},
+			&cli.BoolFlag{
+				Name:    allowHighCapabilitiesFlag,
+				Aliases: []string{"ahc"},
+				Usage:   "allow tracee-rules to run with high capabilities, in case that capabilities dropping fails",
+				Value:   false,
 			},
 		},
 	}
