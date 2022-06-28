@@ -72,7 +72,7 @@ func appendDnsQueryArgs(event *trace.Event, requests *[]bufferdecoder.DnsQueryDa
 	eventDef := events.Definitions.Get(eventId)
 	questionArg := trace.Argument{
 		ArgMeta: eventDef.Params[1],
-		Value:   *requests,
+		Value:   getTraceDnsQueryDataArrFromDecoded(requests),
 	}
 	eventAppendArg(event, questionArg)
 }
@@ -83,7 +83,57 @@ func appendDnsReplyArgs(event *trace.Event, responses *[]bufferdecoder.DnsRespon
 	eventDef := events.Definitions.Get(eventId)
 	responseArg := trace.Argument{
 		ArgMeta: eventDef.Params[1],
-		Value:   *responses,
+		Value:   getTraceDnsResponseDataFromDecoded(responses),
 	}
 	eventAppendArg(event, responseArg)
+}
+
+// getTraceDnsResponseDataFromDecoded returns []trace.DnsResponseData from *[]bufferdecoder.DnsResponseData
+func getTraceDnsResponseDataFromDecoded(decodedResponseData *[]bufferdecoder.DnsResponseData) []trace.DnsResponseData {
+	var responseData []trace.DnsResponseData
+	for _, decodedResponse := range *decodedResponseData {
+		response := trace.DnsResponseData{
+			QueryData: getTraceDnsQueryDataFromDecoded(&decodedResponse.QueryData),
+			DnsAnswer: getTraceDnsAnswersFromDecoded(&decodedResponse.DnsAnswer),
+		}
+		responseData = append(responseData, response)
+	}
+
+	return responseData
+}
+
+// getTraceDnsAnswersFromDecoded returns []trace.DnsAnswer from *[]bufferdecoder.DnsAnswer
+func getTraceDnsAnswersFromDecoded(decodedAnswers *[]bufferdecoder.DnsAnswer) []trace.DnsAnswer {
+	var answers []trace.DnsAnswer
+	for _, decodedAnswer := range *decodedAnswers {
+		answer := trace.DnsAnswer{
+			Type:   decodedAnswer.Type,
+			Ttl:    decodedAnswer.Ttl,
+			Answer: decodedAnswer.Answer,
+		}
+		answers = append(answers, answer)
+	}
+
+	return answers
+}
+
+// getTraceDnsQueryDataArrFromDecoded returns []trace.DnsQueryData from *[]bufferdecoder.DnsQueryData
+func getTraceDnsQueryDataArrFromDecoded(decodedQueryDataArr *[]bufferdecoder.DnsQueryData) []trace.DnsQueryData {
+	var queryData []trace.DnsQueryData
+	for _, decodedqueryData := range *decodedQueryDataArr {
+		queryData = append(queryData, getTraceDnsQueryDataFromDecoded(&decodedqueryData))
+	}
+
+	return queryData
+}
+
+// getTraceDnsQueryDataFromDecoded returns trace.DnsQueryData from *bufferdecoder.DnsQueryData
+func getTraceDnsQueryDataFromDecoded(decodedQueryData *bufferdecoder.DnsQueryData) trace.DnsQueryData {
+	queryData := trace.DnsQueryData{
+		Query:      decodedQueryData.Query,
+		QueryType:  decodedQueryData.QueryType,
+		QueryClass: decodedQueryData.QueryClass,
+	}
+
+	return queryData
 }
