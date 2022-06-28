@@ -143,6 +143,8 @@ enum argument_type_e
     TYPE_MAX = 255UL
 };
 
+#define UNDEFINED_SYSCALL 1000
+
 #if defined(bpf_target_x86)
     #define SYS_MMAP         9
     #define SYS_MPROTECT     10
@@ -160,6 +162,9 @@ enum argument_type_e
     #define SYS_DUP          32
     #define SYS_DUP2         33
     #define SYS_DUP3         292
+    #define SYS_OPEN         2
+    #define SYS_OPENAT       257
+    #define SYS_OPENAT2      437
 #elif defined(bpf_target_arm64)
     #define SYS_MMAP         222
     #define SYS_MPROTECT     226
@@ -175,8 +180,11 @@ enum argument_type_e
     #define SYSCALL_BIND     200
     #define SYSCALL_SOCKET   198
     #define SYS_DUP          23
-    #define SYS_DUP2         1000 // undefined in arm64
+    #define SYS_DUP2         UNDEFINED_SYSCALL
     #define SYS_DUP3         24
+    #define SYS_OPEN         UNDEFINED_SYSCALL
+    #define SYS_OPENAT       56
+    #define SYS_OPENAT2      437
 #endif
 
 enum event_id_e
@@ -3324,16 +3332,31 @@ int BPF_KPROBE(trace_security_file_open)
     void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
     u64 ctime = get_ctime_nanosec_from_file(file);
 
+    // Load the arguments given to the open syscall (which eventually invokes this function)
+    void *syscall_pathname = "";
+    syscall_data_t *sys;
+    bool syscall_traced = data.task_info->syscall_traced;
+    if (syscall_traced) {
+        sys = &data.task_info->syscall_data;
+        switch (sys->id) {
+            case SYS_OPEN:
+                syscall_pathname = (void *) sys->args.args[0];
+                break;
+            case SYS_OPENAT:
+            case SYS_OPENAT2:
+                syscall_pathname = (void *) sys->args.args[1];
+                break;
+        }
+    }
+
     save_str_to_buf(&data, file_path, 0);
     save_to_submit_buf(&data, (void *) GET_FIELD_ADDR(file->f_flags), sizeof(int), 1);
     save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 2);
     save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 3);
     save_to_submit_buf(&data, &ctime, sizeof(u64), 4);
-    if (data.config->options & OPT_SHOW_SYSCALL) {
-        syscall_data_t *sys = &data.task_info->syscall_data;
-        if (data.task_info->syscall_traced) {
-            save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 5);
-        }
+    save_str_to_buf(&data, syscall_pathname, 5);
+    if (syscall_traced && (data.config->options & OPT_SHOW_SYSCALL)) {
+        save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 6);
     }
 
     return events_perf_submit(&data, SECURITY_FILE_OPEN, 0);
