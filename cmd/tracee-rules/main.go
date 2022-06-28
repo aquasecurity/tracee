@@ -19,8 +19,8 @@ import (
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/syndtr/gocapability/capability"
 	"github.com/urfave/cli/v2"
-	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
 const (
@@ -282,7 +282,7 @@ func dropCapabilities() error {
 		return err
 	}
 
-	err = capabilities.DropUnrequired(selfCaps, []cap.Value{})
+	err = capabilities.DropUnrequired(selfCaps, []capability.Cap{})
 	if err != nil {
 		return err
 	}

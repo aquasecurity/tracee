@@ -3,14 +3,14 @@ package events
 import (
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 	"github.com/aquasecurity/tracee/types/trace"
-	"kernel.org/pub/linux/libs/security/libcap/cap"
+	"github.com/syndtr/gocapability/capability"
 )
 
 type dependencies struct {
 	Events       []eventDependency // Events required to be loaded and/or submitted for the event to happen
 	KSymbols     []string
 	TailCalls    []TailCall
-	Capabilities []cap.Value
+	Capabilities []capability.Cap
 }
 
 type probeDependency struct {
@@ -5343,7 +5343,7 @@ var Definitions = eventDefinitions{
 			Name:    "init_namespaces",
 			Sets:    []string{},
 			Dependencies: dependencies{
-				Capabilities: []cap.Value{cap.SYS_PTRACE},
+				Capabilities: []capability.Cap{capability.CAP_SYS_PTRACE},
 			},
 			Params: []trace.ArgMeta{
 				{Type: "u32", Name: "cgroup"},
@@ -5467,7 +5467,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32undefined,
 			Name:    "net_packet",
 			Dependencies: dependencies{
-				Capabilities: []cap.Value{cap.NET_ADMIN},
+				Capabilities: []capability.Cap{capability.CAP_NET_ADMIN},
 			},
 			Sets: []string{"network_events"},
 			Params: []trace.ArgMeta{
@@ -5478,7 +5478,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32undefined,
 			Name:    "dns_request",
 			Dependencies: dependencies{
-				Capabilities: []cap.Value{cap.NET_ADMIN},
+				Capabilities: []capability.Cap{capability.CAP_NET_ADMIN},
 			},
 			Sets: []string{"network_events"},
 			Params: []trace.ArgMeta{
@@ -5490,7 +5490,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32undefined,
 			Name:    "dns_response",
 			Dependencies: dependencies{
-				Capabilities: []cap.Value{cap.NET_ADMIN},
+				Capabilities: []capability.Cap{capability.CAP_NET_ADMIN},
 			},
 			Sets: []string{"network_events"},
 			Params: []trace.ArgMeta{
@@ -5551,7 +5551,7 @@ var Definitions = eventDefinitions{
 				{Type: "u64", Name: "proc_ops_addr"},
 			},
 			Dependencies: dependencies{
-				Capabilities: []cap.Value{cap.NET_ADMIN},
+				Capabilities: []capability.Cap{capability.CAP_NET_ADMIN},
 			},
 		},
 		PrintSyscallTable: {
@@ -5707,7 +5707,7 @@ var Definitions = eventDefinitions{
 			Internal: true,
 			Dependencies: dependencies{
 				Events:       []eventDependency{{EventID: SecuritySocketBind}},
-				Capabilities: []cap.Value{cap.SYS_ADMIN},
+				Capabilities: []capability.Cap{capability.CAP_SYS_ADMIN},
 			},
 		},
 		DoInitModule: {

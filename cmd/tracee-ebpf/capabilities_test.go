@@ -8,7 +8,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"kernel.org/pub/linux/libs/security/libcap/cap"
+	"github.com/syndtr/gocapability/capability"
 )
 
 type mockOSInfo struct {
@@ -20,82 +20,87 @@ func (mOSInfo mockOSInfo) CompareOSBaseKernelRelease(version string) int {
 }
 
 type mockCapabilities struct {
-	missingCaps []cap.Value
+	missingCaps []capability.Cap
 }
 
-func (mockCaps *mockCapabilities) GetFlag(vec cap.Flag, val cap.Value) (bool, error) {
+func (mockCaps *mockCapabilities) Get(which capability.CapType, what capability.Cap) bool {
 	for _, mcap := range mockCaps.missingCaps {
-		if val == mcap {
-			return false, nil
+		if what == mcap {
+			return false
 		}
 	}
-	return true, nil
+	return true
 }
-func (mockCaps *mockCapabilities) Clear() error { return nil }
-func (mockCaps *mockCapabilities) SetFlag(vec cap.Flag, enabled bool, val ...cap.Value) error {
-	return nil
-}
-func (mockCaps *mockCapabilities) SetProc() error { return nil }
+func (mockCaps *mockCapabilities) Empty(which capability.CapType) bool                    { return true }
+func (mockCaps *mockCapabilities) Full(which capability.CapType) bool                     { return true }
+func (mockCaps *mockCapabilities) Set(which capability.CapType, caps ...capability.Cap)   {}
+func (mockCaps *mockCapabilities) Unset(which capability.CapType, caps ...capability.Cap) {}
+func (mockCaps *mockCapabilities) Fill(kind capability.CapType)                           {}
+func (mockCaps *mockCapabilities) Clear(kind capability.CapType)                          {}
+func (mockCaps *mockCapabilities) StringCap(which capability.CapType) string              { return "" }
+func (mockCaps *mockCapabilities) String() string                                         { return "" }
+func (mockCaps *mockCapabilities) Load() error                                            { return nil }
+func (mockCaps *mockCapabilities) Apply(kind capability.CapType) error                    { return nil }
 
 func TestGenerateTraceeEbpfRequiredCapabilities(t *testing.T) {
 	traceTestCases := []struct {
 		name                 string
 		chosenEvents         []string
 		ifaces               []string
-		expectedCapabilities []cap.Value
+		expectedCapabilities []capability.Cap
 	}{
 		{
 			name:                 "No events chosen",
 			chosenEvents:         []string{},
-			expectedCapabilities: []cap.Value{},
+			expectedCapabilities: []capability.Cap{},
 		},
 		{
 			name:                 "Net event chosen",
 			chosenEvents:         []string{"net_packet"},
 			ifaces:               []string{"enp0s3"},
-			expectedCapabilities: []cap.Value{cap.NET_ADMIN},
+			expectedCapabilities: []capability.Cap{capability.CAP_NET_ADMIN},
 		},
 		{
 			name:                 "Init namespaces event chosen",
 			chosenEvents:         []string{"init_namespaces"},
-			expectedCapabilities: []cap.Value{cap.SYS_PTRACE},
+			expectedCapabilities: []capability.Cap{capability.CAP_SYS_PTRACE},
 		},
 	}
 
 	environmentTestCases := []struct {
 		name                 string
 		kernelVersion        string
-		missingCapabilities  []cap.Value
-		expectedCapabilities []cap.Value
+		missingCapabilities  []capability.Cap
+		expectedCapabilities []capability.Cap
 	}{
 		{
 			name:                "Version 4.19 with all capabilities",
 			kernelVersion:       "4.19.0",
-			missingCapabilities: []cap.Value{},
-			expectedCapabilities: []cap.Value{
-				cap.IPC_LOCK,
-				cap.SYS_RESOURCE,
-				cap.SYS_ADMIN,
+			missingCapabilities: []capability.Cap{},
+			expectedCapabilities: []capability.Cap{
+				capability.CAP_IPC_LOCK,
+				capability.CAP_SYS_RESOURCE,
+				capability.CAP_SYS_ADMIN,
 			},
 		},
 		{
 			name:                "Version 5.17 with all capabilities",
 			kernelVersion:       "5.17.0",
-			missingCapabilities: []cap.Value{},
-			expectedCapabilities: []cap.Value{
-				cap.IPC_LOCK,
-				cap.SYS_RESOURCE,
-				cap.SYS_ADMIN,
+			missingCapabilities: []capability.Cap{},
+			expectedCapabilities: []capability.Cap{
+				capability.CAP_IPC_LOCK,
+				capability.CAP_SYS_RESOURCE,
+				capability.CAP_SYS_ADMIN,
 			},
 		},
 		{
 			name:                "Version 5.17 without CAP_BPF",
 			kernelVersion:       "5.17.0",
-			missingCapabilities: []cap.Value{cap.BPF},
-			expectedCapabilities: []cap.Value{
-				cap.IPC_LOCK,
-				cap.SYS_RESOURCE,
-				cap.SYS_ADMIN,
+			missingCapabilities: []capability.Cap{capability.CAP_BPF},
+			expectedCapabilities: []capability.Cap{
+				capability.CAP_IPC_LOCK,
+				capability.CAP_SYS_RESOURCE,
+				capability.CAP_SYS_ADMIN,
 			},
 		},
 	}
