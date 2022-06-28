@@ -69,7 +69,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 					queuesMutex.RUnlock()
 					if !exists {
 						queuesMutex.Lock()
-						queues[cgroupId] = make(chan *trace.Event, 1000)
+						queues[cgroupId] = make(chan *trace.Event, 2500)
 						queuesMutex.Unlock()
 
 						go func() {
@@ -78,8 +78,9 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 						}()
 					}
 					queuesMutex.RLock()
-					queues[cgroupId] <- event
+					queue := queues[cgroupId]
 					queuesMutex.RUnlock()
+					queue <- event
 				}
 			}
 		}
@@ -93,15 +94,16 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 			attemptedMutex.Lock()
 			attempted[cgroupId] = mutex // now attempted[cgroupId] is a transaction, only happens once and has begun
 			attemptedMutex.Unlock()
+			queuesMutex.RLock()
+			queue := queues[cgroupId]
+			queuesMutex.RUnlock()
 			if enrich.err != nil {
 				//only send error if it's not a non-existing cgroup error
 				if enrich.err.Error() != "no cgroup to enrich" {
 					t.handleError(enrich.err)
 				}
-				queuesMutex.RLock()
-				queue := queues[cgroupId]
-				queuesMutex.RUnlock()
-				for evt := range queues[cgroupId] {
+
+				for evt := range queue {
 					select {
 					case out <- evt:
 					case <-done:
@@ -122,9 +124,6 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 				podUid := enrich.result.Pod.UID
 
 				//go through the queue and inject the enrichment data that was missing during decoding
-				queuesMutex.RLock()
-				queue := queues[cgroupId]
-				queuesMutex.RUnlock()
 				for evt := range queue {
 					if evt.ContainerID != "" {
 						evt.ContainerImage = containerImage
@@ -150,8 +149,8 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 
 			//after enrichment was done and all events were processed we can close and delete the channel from the map
 			//subsequent events will be enriched during decoding
+			close(queue)
 			queuesMutex.Lock()
-			close(queues[cgroupId])
 			delete(queues, cgroupId)
 			queuesMutex.Unlock()
 		}
