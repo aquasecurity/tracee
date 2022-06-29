@@ -179,6 +179,19 @@ func ParseArgs(event *trace.Event) error {
 				ParseOrEmptyString(modeArg, inodeModeArgument, err)
 			}
 		}
+	case SecuritySocketSetsockopt, Setsockopt, Getsockopt:
+		if levelArg := GetArg(event, "level"); levelArg != nil {
+			if level, isInt := levelArg.Value.(int32); isInt {
+				levelArgument, err := helpers.ParseSocketLevel(uint64(level))
+				ParseOrEmptyString(levelArg, levelArgument, err)
+			}
+		}
+		if optionNameArg := GetArg(event, "optname"); optionNameArg != nil {
+			if opt, isInt := optionNameArg.Value.(int32); isInt {
+				optionNameArgument, err := helpers.ParseSocketOption(uint64(opt))
+				ParseOrEmptyString(optionNameArg, optionNameArgument, err)
+			}
+		}
 	}
 
 	return nil

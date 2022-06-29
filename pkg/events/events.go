@@ -116,6 +116,7 @@ const (
 	SecuritySocketConnect
 	SecuritySocketAccept
 	SecuritySocketBind
+	SecuritySocketSetsockopt
 	SecuritySbMount
 	SecurityBPF
 	SecurityBPFMap
@@ -773,6 +774,7 @@ var Definitions = eventDefinitions{
 		Setsockopt: {
 			ID32Bit: sys32setsockopt,
 			Name:    "setsockopt",
+			DocPath: "lsm_hooks/security_socket_setsockopt.md",
 			Syscall: true,
 			Sets:    []string{"syscalls", "net", "net_sock"},
 			Params: []trace.ArgMeta{
@@ -5218,6 +5220,20 @@ var Definitions = eventDefinitions{
 			Sets: []string{"default", "lsm_hooks", "net", "net_sock"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "sockfd"},
+				{Type: "struct sockaddr*", Name: "local_addr"},
+			},
+		},
+		SecuritySocketSetsockopt: {
+			ID32Bit: sys32undefined,
+			Name:    "security_socket_setsockopt",
+			Probes: []probeDependency{
+				{Handle: probes.SecuritySocketSetsockopt, Required: true},
+			},
+			Sets: []string{"default", "lsm_hooks", "net", "net_sock"},
+			Params: []trace.ArgMeta{
+				{Type: "int", Name: "sockfd"},
+				{Type: "int", Name: "level"},
+				{Type: "int", Name: "optname"},
 				{Type: "struct sockaddr*", Name: "local_addr"},
 			},
 		},
