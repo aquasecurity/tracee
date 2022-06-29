@@ -5488,7 +5488,7 @@ var Definitions = eventDefinitions{
 			Sets: []string{"network_events"},
 			Params: []trace.ArgMeta{
 				{Type: "trace.PktMeta", Name: "metadata"},
-				{Type: "[]bufferdecoder.DnsQueryData", Name: "dns_questions"},
+				{Type: "[]trace.DnsQueryData", Name: "dns_questions"},
 			},
 		},
 		DnsResponse: {
@@ -5500,7 +5500,7 @@ var Definitions = eventDefinitions{
 			Sets: []string{"network_events"},
 			Params: []trace.ArgMeta{
 				{Type: "trace.PktMeta", Name: "metadata"},
-				{Type: "[]bufferdecoder.DnsResponseData", Name: "dns_response"},
+				{Type: "[]trace.DnsResponseData", Name: "dns_response"},
 			},
 		},
 		ProcCreate: {
