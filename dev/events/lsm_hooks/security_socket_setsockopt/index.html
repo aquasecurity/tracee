@@ -10,24 +10,24 @@
       
       
       
-        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/tracee-ebpf/capture/">
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/events/lsm_hooks/security_socket_setsockopt/">
       
       
         
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+      <link rel="icon" href="../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.3.0, mkdocs-material-8.3.8+insiders-4.19.1">
     
     
       
-        <title>Capturing Artifacts - Tracee</title>
+        <title>security_socket_setsockopt - Tracee</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.485cfce5.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.485cfce5.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.cbb835fc.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.cbb835fc.min.css">
         
       
       
@@ -44,7 +44,7 @@
       
     
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -124,7 +124,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#capturing-artifacts" class="md-skip">
+        <a href="#security_socket_setsockopt" class="md-skip">
           Skip to content
         </a>
       
@@ -142,9 +142,9 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
+    <a href="../../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
       
-  <img src="../../images/tracee_logo_only.png" alt="logo">
+  <img src="../../../images/tracee_logo_only.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -160,7 +160,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Capturing Artifacts
+              security_socket_setsockopt
             
           </span>
         </div>
@@ -240,9 +240,9 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
+    <a href="../../.." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
       
-  <img src="../../images/tracee_logo_only.png" alt="logo">
+  <img src="../../../images/tracee_logo_only.png" alt="logo">
 
     </a>
     Tracee
@@ -272,7 +272,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -326,7 +326,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../building/environment/" class="md-nav__link">
+      <a href="../../../building/environment/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -345,7 +345,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../building/containers/" class="md-nav__link">
+      <a href="../../../building/containers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -364,7 +364,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../building/nocore-ebpf/" class="md-nav__link">
+      <a href="../../../building/nocore-ebpf/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -383,7 +383,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../building/packaging/" class="md-nav__link">
+      <a href="../../../building/packaging/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -445,7 +445,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/prerequisites/" class="md-nav__link">
+      <a href="../../../install/prerequisites/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -464,7 +464,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/kubernetes/" class="md-nav__link">
+      <a href="../../../install/kubernetes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -483,7 +483,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/headers/" class="md-nav__link">
+      <a href="../../../install/headers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -502,7 +502,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/docker-mac/" class="md-nav__link">
+      <a href="../../../install/docker-mac/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -553,7 +553,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/distros/nix-nixos/" class="md-nav__link">
+      <a href="../../../install/distros/nix-nixos/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -591,7 +591,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../integrations/" class="md-nav__link">
+      <a href="../../../integrations/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -613,7 +613,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../config/" class="md-nav__link">
+      <a href="../../../config/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -635,7 +635,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rules-authoring/" class="md-nav__link">
+      <a href="../../../rules-authoring/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -657,7 +657,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../rules-index/" class="md-nav__link">
+      <a href="../../../rules-index/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -679,7 +679,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../faq/" class="md-nav__link">
+      <a href="../../../faq/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -701,7 +701,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../architecture/" class="md-nav__link">
+      <a href="../../../architecture/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -721,17 +721,15 @@
 
   
   
-    
-  
   
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_10" type="checkbox" id="__nav_10" checked>
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_10" type="checkbox" id="__nav_10" >
         
         
           <label class="md-nav__link" for="__nav_10">
@@ -757,7 +755,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../" class="md-nav__link">
+      <a href="../../../tracee-ebpf/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -776,7 +774,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../output/" class="md-nav__link">
+      <a href="../../../tracee-ebpf/output/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -795,7 +793,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../trace-options/" class="md-nav__link">
+      <a href="../../../tracee-ebpf/trace-options/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -812,28 +810,9 @@
                 
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Capturing Artifacts
-  </span>
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../tracee-ebpf/capture/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -841,44 +820,6 @@
   </span>
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#cli-options" class="md-nav__link">
-    <span class="md-ellipsis">
-      CLI Options
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      Examples
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -890,7 +831,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../override-os-needed-files/" class="md-nav__link">
+      <a href="../../../tracee-ebpf/override-os-needed-files/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -952,7 +893,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/setup-development-machine-with-vagrant/" class="md-nav__link">
+      <a href="../../../tutorials/setup-development-machine-with-vagrant/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -971,7 +912,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../tutorials/deploy-grafana-dashboard/" class="md-nav__link">
+      <a href="../../../tutorials/deploy-grafana-dashboard/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1033,7 +974,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../contributing/guidelines/" class="md-nav__link">
+      <a href="../../../contributing/guidelines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1080,18 +1021,84 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#cli-options" class="md-nav__link">
+  <a href="#intro" class="md-nav__link">
     <span class="md-ellipsis">
-      CLI Options
+      Intro
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
+  <a href="#description" class="md-nav__link">
     <span class="md-ellipsis">
-      Examples
+      Description
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      Arguments
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hooks
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Hooks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#security_socket_setsockopt_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      security_socket_setsockopt
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="security_socket_setsockopt">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#type" class="md-nav__link">
+    <span class="md-ellipsis">
+      Type
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      Purpose
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      Related Events
     </span>
   </a>
   
@@ -1111,85 +1118,29 @@
                 
 
 
-<h1 id="capturing-artifacts">Capturing Artifacts<a class="headerlink" href="#capturing-artifacts" title="Permanent link">&para;</a></h1>
-<p>Tracee has a unique feature that lets you capture interesting artifacts from running applications, using the <code>--capture</code> flag.</p>
-<p>All captured artifacts are saved in Tracee's "output directory" which can be configured using <code>--capture dir:/path/to/dir</code>.</p>
-<p>Tracee can capture the following types of artifacts:</p>
-<ol>
-<li>Written files: Anytime a file is being written to, the contents of the file will be captured. Written files can be filtered using an optional path prefix.</li>
-<li>Executed files: Anytime a binary is being executed, the binary file will be captured. If the same binary is executed multiple times, it will be captured just once.</li>
-<li>Memory files: Anytime a "memory unpacker" is detected, the suspicious memory region will be captured. This is triggered when memory protection changes from Write+Execute to Write.</li>
-<li>Network pcap files: Anytime a packet goes through the network interface, the packet is captured into the pcap file. only packets that are generated by traced processes are being captured.</li>
-<li>Loaded kernel modules: Anytime a kernel module is being loaded, the binary file will be captured. If the same binary is executed multiple times, it will be captured just once.</li>
-</ol>
-<h2 id="cli-options">CLI Options<a class="headerlink" href="#cli-options" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>CLI Option</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>[artifact:]write[=/path/prefix*]</code></td>
-<td>capture written files. A filter can be given to only capture file writes whose path starts with some prefix (up to 50 characters). Up to 3 filters can be given.</td>
-</tr>
-<tr>
-<td><code>[artifact:]exec</code></td>
-<td>capture executed files.</td>
-</tr>
-<tr>
-<td><code>[artifact:]mem</code></td>
-<td>capture memory regions that had write+execute (w+x) protection, and then changed to execute (x) only.</td>
-</tr>
-<tr>
-<td><code>[artifact:]net=&lt;network_interface&gt;</code></td>
-<td>capture network packets generated by traced processes, that goes through <network_interface>. Only TCP/UDP/ICMP protocols are currently supported.</td>
-</tr>
-<tr>
-<td><code>profile</code></td>
-<td>creates a runtime profile of program executions and their metadata for forensics use.</td>
-</tr>
-<tr>
-<td><code>dir:/path/to/dir</code></td>
-<td>path where tracee will save produced artifacts. the artifact will be saved into an 'out' subdirectory. (default: /tmp/tracee).</td>
-</tr>
-<tr>
-<td><code>clear-dir</code></td>
-<td>clear the captured artifacts output dir before starting (default: false).</td>
-</tr>
-<tr>
-<td><code>pcap:per-container</code></td>
-<td>when capturing network packets, save pcap per container</td>
-</tr>
-<tr>
-<td><code>pcap:per-process</code></td>
-<td>when capturing network packets, save pcap per process</td>
-</tr>
-</tbody>
-</table>
-<p>(Use this flag multiple times to choose multiple capture options)</p>
-<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h2>
-<p>Capture executed files into the default output directory</p>
-<div class="highlight"><pre><span></span><code>--capture exec
-</code></pre></div>
-<p>Capture kernel modules into the default output directory</p>
-<div class="highlight"><pre><span></span><code>--capture module
-</code></pre></div>
-<p>Delete /my/dir/out and then capture executed files into it</p>
-<div class="highlight"><pre><span></span><code>--capture exec --capture dir:/my/dir --capture clear-dir
-</code></pre></div>
-<p>Capture files that were written into anywhere under <code>/usr/bin/</code> or <code>/etc/</code></p>
-<div class="highlight"><pre><span></span><code>--capture write=/usr/bin/* --capture write=/etc/* 
-</code></pre></div>
-<p>Capture pcap files</p>
-<div class="highlight"><pre><span></span><code>--capture net=enp0s3
---capture net=enp0s3 --capture pcap:per-container
-</code></pre></div>
-<p>Creates a runtime profile of program executions and their metadata for forensics use. The profiles created can be compared among executions to identify if there is any difference. For example, <a href="https://github.com/aquasecurity/tracee-action">use it as a github action to identify if any new process was executed since the last pipeline</a>, useful for supply chain security.</p>
-<div class="highlight"><pre><span></span><code>--capture profile
-</code></pre></div>
+<h1 id="security_socket_setsockopt">security_socket_setsockopt<a class="headerlink" href="#security_socket_setsockopt" title="Permanent link">&para;</a></h1>
+<h2 id="intro">Intro<a class="headerlink" href="#intro" title="Permanent link">&para;</a></h2>
+<p>security_socket_setsockopt - check permissions before setting the options associated with socket</p>
+<h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
+<p>The event marks that an attempt to set a socket option occurred, probably by the <code>setsockopt</code> syscall.
+The event is triggered by the permissions check for the operation, as LSM hook.
+The event gives insight to the socket details (which differs from the <code>setsockopt</code> syscall event, that only pass the socket fd).
+However, unlike the <code>setsockopt</code> syscall event, the option value isn't passed.</p>
+<h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>sockfd</code>:<code>int</code>[K] - the file descriptor of the socket.</li>
+<li><code>level</code>:<code>int</code>[K] - the level that the option should apply to. If the <code>parse-arguments</code> option is on, will be transformed to a string with the level name.</li>
+<li><code>optname</code>:<code>int</code>[K] - the option that is set. If the <code>parse-arguments</code> option is on, will be transformed to a string with the option name.</li>
+<li><code>local_addr</code>:<code>struct socketaddr*</code>[K] - the details of the socket (like socket type, local IP and port for TCP/UDP sockets, etc.).</li>
+</ul>
+<h2 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h2>
+<h3 id="security_socket_setsockopt_1">security_socket_setsockopt<a class="headerlink" href="#security_socket_setsockopt_1" title="Permanent link">&para;</a></h3>
+<h4 id="type">Type<a class="headerlink" href="#type" title="Permanent link">&para;</a></h4>
+<p>LSM Hook</p>
+<h4 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h4>
+<p>The LSM hook of the <code>setsockopt</code> syscall implementation.</p>
+<h2 id="related-events">Related Events<a class="headerlink" href="#related-events" title="Permanent link">&para;</a></h2>
+<p><code>setsockopt</code>, <code>getsockopt</code></p>
 
 
 
@@ -1205,42 +1156,6 @@
       </main>
       
         <footer class="md-footer">
-  
-    
-    <nav class="md-footer__inner md-grid" aria-label="Footer" >
-      
-        
-        <a href="../trace-options/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Trace Options" rel="prev">
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
-          </div>
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Previous
-              </span>
-              Trace Options
-            </div>
-          </div>
-        </a>
-      
-      
-        
-        <a href="../override-os-needed-files/" class="md-footer__link md-footer__link--next" aria-label="Next: Overriding OS needed files" rel="next">
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Next
-              </span>
-              Overriding OS needed files
-            </div>
-          </div>
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
-          </div>
-        </a>
-      
-    </nav>
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
@@ -1258,10 +1173,10 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.720157f5.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../../..", "features": [], "search": "../../../assets/javascripts/workers/search.720157f5.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.2131bdac.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.2131bdac.min.js"></script>
       
     
   </body>
