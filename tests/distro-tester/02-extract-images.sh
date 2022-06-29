@@ -1,6 +1,6 @@
 #!/bin/bash -ex
 
-. ./00-config
+. $(pwd)/00-config
 
 command -v parted || exit 1
 command -v losetup || exit 1
@@ -19,23 +19,23 @@ cleanup() {
   [[ $un_ext4 != "" ]] && losetup -d $un_ext4 || true
   [[ $tempdir != "" ]] && rmdir $tempdir || true
 
-  chown -R $(whoami): ./images
-  chown -R $(whoami): ./kernels
+  chmod -x $(pwd)/images/* $(pwd)/kernels/*
+  chown -R $(stat -c %u:%g ./00-readme) $(pwd)/images $(pwd)/kernels
 }
 trap cleanup EXIT
 
-[[ ! -d ./images ]] && mkdir ./images
-[[ ! -d ./kernels ]] && mkdir ./kernels
+[[ ! -d $(pwd)/images ]] && mkdir $(pwd)/images
+[[ ! -d $(pwd)/kernels ]] && mkdir $(pwd)/kernels
 
 for image in $IMAGES; do
   image_name=${image/vm-/}
 
   # destination ext4 loop file
-  if [[ ! -f ./images/$image_name ]]; then
-      truncate -s 5G ./images/$image_name
-      mkfs.ext4 ./images/$image_name
+  if [[ ! -f $(pwd)/images/$image_name ]]; then
+    truncate -s 5G $(pwd)/images/$image_name
+    mkfs.ext4 $(pwd)/images/$image_name
   #else
-      #rm -f ./images/$(basename $image)
+    #rm -f ./images/$(basename $image)
   fi
 
   tune2fs -L$image_name ./images/$image_name
@@ -46,17 +46,17 @@ for image in $IMAGES; do
   # ext4 partition from image
   sec_ext4=$(parted ./images-full/$image_name UNIT b print 2>&1 | grep ext4 | awk '{print $2}' | sed 's:B$::g')
   un_ext4=$(losetup -f)
-  losetup -f ./images-full/$image_name -o $sec_ext4
+  [[ $sec_ext4 != "" ]] && losetup -f $(pwd)/images-full/$image_name -o $sec_ext4
 
   # efi partition from image
   sec_fat=$(parted ./images-full/$image_name UNIT b print 2>&1 | grep fat32 | awk '{print $2}' | sed 's:B$::g')
   un_fat=$(losetup -f)
-  losetup -f ./images-full/$image_name -o $sec_fat
+  [[ $sec_fat != "" ]] && losetup -f $(pwd)/images-full/$image_name -o $sec_fat
 
   # mount them for the copy
-  mount ./images/$image_name $destdir
-  mount $un_ext4 $tempdir
-  mount $un_fat $tempdir/boot/efi
+  mount $(pwd)/images/$image_name $destdir
+  [[ $sec_ext4 != "" ]] && mount $un_ext4 $tempdir
+  [[ $sec_fat != "" ]] && mount $un_fat $tempdir/boot/efi
 
   # ATTENTION: Uncomment this for real effects (commented as a safe guard)
   #rsync -av --delete $tempdir/ $destdir/
@@ -82,13 +82,13 @@ WantedBy=getty.target
 | tee $destdir/etc/systemd/system/serial-getty@ttyS0.service.d/override.conf
 
   # take entrypoint inside
-  cp ./files/qemu-entrypoint.sh $destdir/init
+  cp $(pwd)/files/qemu-entrypoint.sh $destdir/init
   chmod +x $destdir/init
 
   # bring kernel outside
-  cp $tempdir/boot/*config* ./kernels/$image_name.config || true
-  cp $tempdir/boot/*init* ./kernels/$image_name.initrd || true
-  cp $tempdir/boot/*vmlinuz* ./kernels/$image_name.vmlinuz
+  cp $tempdir/boot/*config* $(pwd)/kernels/$image_name.config || true
+  cp $tempdir/boot/*init* $(pwd)/kernels/$image_name.initrd || true
+  cp $tempdir/boot/*vmlinuz* $(pwd)/kernels/$image_name.vmlinuz
 
   echo waiting to cleanup; sleep 5
   [[ $destdir != "" ]] && umount $destdir || true

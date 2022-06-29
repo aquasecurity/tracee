@@ -105,7 +105,22 @@ while true; do
   fi
 done
 
-docker run --cap-add=SYS_PTRACE --rm aquasec/tracee-tester $testname > /dev/null 2>&1
+# special capabilities needed for some tests
+
+case $testname in
+  TRC-2 | TRC-3)
+  docker_extra_arg="--cap-add=SYS_PTRACE"
+    ;;
+  TRC-11)
+  docker_extra_arg="--cap-add=SYS_ADMIN"
+    ;;
+  *)
+    ;;
+esac
+
+# run docker
+
+docker run $docker_extra_arg --rm aquasec/tracee-tester $testname > /dev/null 2>&1
 
 # so event can be processed
 
