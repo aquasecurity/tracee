@@ -1288,9 +1288,15 @@ func (t *Tracee) invokeIoctlTriggeredEvents(cmds int32) error {
 	return nil
 }
 
-func (t *Tracee) updateKallsyms() {
+func (t *Tracee) updateKallsyms() error {
 	kernelSymbols, err := helpers.NewKernelSymbolsMap()
-	if err == nil && initialization.ValidateKsymbolsTable(t.kernelSymbols) {
-		t.kernelSymbols = kernelSymbols
+	if err != nil {
+		return err
 	}
+	if !initialization.ValidateKsymbolsTable(kernelSymbols) {
+		return errors.New("invalid ksymbol table")
+	}
+
+	t.kernelSymbols = kernelSymbols
+	return nil
 }

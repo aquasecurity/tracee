@@ -2,13 +2,14 @@ package ebpf
 
 import (
 	"fmt"
-	"github.com/aquasecurity/tracee/pkg/utils"
 	"io"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/aquasecurity/tracee/pkg/utils"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -348,8 +349,11 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 	// in case FinitModule and InitModule occurs it means that a kernel module was loaded
 	// and we will want to check if it hooked the syscall table and seq_ops
 	case events.InitModule, events.FinitModule:
-		t.updateKallsyms()
-		err := t.invokeIoctlTriggeredEvents(IoctlFetchSyscalls | IoctlHookedSeqOps)
+		err := t.updateKallsyms()
+		if err != nil {
+			return err
+		}
+		err = t.invokeIoctlTriggeredEvents(IoctlFetchSyscalls | IoctlHookedSeqOps)
 		if err != nil {
 			return err
 		}
