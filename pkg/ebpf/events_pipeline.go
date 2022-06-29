@@ -46,8 +46,10 @@ func (t *Tracee) handleEvents(ctx gocontext.Context) {
 	// Events may be enriched in the initial decode state if the enrichment data has been stored in the Containers structure
 	// In that case, this pipeline stage will be quickly skipped
 	// This is done in a separate stage to ensure enrichment is non blocking (since container runtime calls may timeout and block the pipeline otherwise)
-	eventsChan, errc = t.enrichContainerEvents(ctx, eventsChan)
-	errcList = append(errcList, errc)
+	if t.config.ContainersEnrich {
+		eventsChan, errc = t.enrichContainerEvents(ctx, eventsChan)
+		errcList = append(errcList, errc)
+	}
 
 	// Derive events stage
 	// In this stage events go through a derivation function

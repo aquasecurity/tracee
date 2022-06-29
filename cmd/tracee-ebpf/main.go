@@ -30,6 +30,7 @@ import (
 var traceeInstallPath string
 var listenMetrics bool
 var metricsAddr string
+var enrich bool
 
 var version string
 
@@ -80,6 +81,7 @@ func main() {
 				BlobPerfBufferSize: c.Int("blob-perf-buffer-size"),
 				Debug:              debug,
 				OSInfo:             OSInfo,
+				ContainersEnrich:   enrich,
 			}
 
 			containerRuntimesSlice := c.StringSlice("crs")
@@ -361,6 +363,11 @@ func main() {
 				Usage:       "listening address of the metrics endpoint server",
 				Value:       ":3366",
 				Destination: &metricsAddr,
+			},
+			&cli.BoolFlag{
+				Name:        "containers",
+				Usage:       "enable container info enrichment to events. this feature is experimental and may cause unexpected behavior in the pipeline",
+				Destination: &enrich,
 			},
 		},
 	}

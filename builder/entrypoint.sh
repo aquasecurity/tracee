@@ -76,6 +76,7 @@ run_tracee_rules() {
         --output=option:parse-arguments \
         --cache cache-type=mem \
         --cache mem-cache-size=512 \
+        --containers=${CONTAINERS_ENRICHMENT:="0"}\
         --trace event=${events} \
         --output=out-file:${TRACEE_PIPE} &
     tracee_ebpf_pid=$!
