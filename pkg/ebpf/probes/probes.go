@@ -54,6 +54,7 @@ func Init(module *bpf.Module) (Probes, error) {
 			SecuritySocketConnect:      {event: "security_socket_connect", probeType: kprobe, fn: "trace_security_socket_connect"},
 			SecuritySocketAccept:       {event: "security_socket_accept", probeType: kprobe, fn: "trace_security_socket_accept"},
 			SecuritySocketBind:         {event: "security_socket_bind", probeType: kprobe, fn: "trace_security_socket_bind"},
+			SecuritySocketSetsockopt:   {event: "security_socket_setsockopt", probeType: kprobe, fn: "trace_security_socket_setsockopt"},
 			SecuritySbMount:            {event: "security_sb_mount", probeType: kprobe, fn: "trace_security_sb_mount"},
 			SecurityBPF:                {event: "security_bpf", probeType: kprobe, fn: "trace_security_bpf"},
 			SecurityBPFMap:             {event: "security_bpf_map", probeType: kprobe, fn: "trace_security_bpf_map"},
@@ -205,6 +206,7 @@ const (
 	SecuritySocketConnect
 	SecuritySocketAccept
 	SecuritySocketBind
+	SecuritySocketSetsockopt
 	SecuritySbMount
 	SecurityBPF
 	SecurityBPFMap

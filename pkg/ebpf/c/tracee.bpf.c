@@ -159,6 +159,7 @@ enum argument_type_e
     #define SYSCALL_LISTEN   50
     #define SYSCALL_BIND     49
     #define SYSCALL_SOCKET   41
+    #define SYS_SETSOCKOPT   54
     #define SYS_DUP          32
     #define SYS_DUP2         33
     #define SYS_DUP3         292
@@ -179,6 +180,7 @@ enum argument_type_e
     #define SYSCALL_LISTEN   201
     #define SYSCALL_BIND     200
     #define SYSCALL_SOCKET   198
+    #define SYS_SETSOCKOPT   208
     #define SYS_DUP          23
     #define SYS_DUP2         UNDEFINED_SYSCALL
     #define SYS_DUP3         24
@@ -215,6 +217,7 @@ enum event_id_e
     SECURITY_SOCKET_CONNECT,
     SECURITY_SOCKET_ACCEPT,
     SECURITY_SOCKET_BIND,
+    SECURITY_SOCKET_SETSOCKOPT,
     SECURITY_SB_MOUNT,
     SECURITY_BPF,
     SECURITY_BPF_MAP,
@@ -2474,6 +2477,39 @@ static __always_inline void invoke_fetch_network_seq_operations_event(event_data
     events_perf_submit(data, PRINT_NET_SEQ_OPS, 0);
 }
 
+static __always_inline int save_sockaddr_to_buf(event_data_t *data, struct socket *sock, u8 index)
+{
+    struct sock *sk = get_socket_sock(sock);
+
+    u16 family = get_sock_family(sk);
+    if ((family != AF_INET) && (family != AF_INET6) && (family != AF_UNIX)) {
+        return 0;
+    }
+
+    if (family == AF_INET) {
+        net_conn_v4_t net_details = {};
+        struct sockaddr_in local;
+
+        get_network_details_from_sock_v4(sk, &net_details, 0);
+        get_local_sockaddr_in_from_network_details(&local, &net_details, family);
+
+        save_to_submit_buf(data, (void *) &local, sizeof(struct sockaddr_in), index);
+    } else if (family == AF_INET6) {
+        net_conn_v6_t net_details = {};
+        struct sockaddr_in6 local;
+
+        get_network_details_from_sock_v6(sk, &net_details, 0);
+        get_local_sockaddr_in6_from_network_details(&local, &net_details, family);
+
+        save_to_submit_buf(data, (void *) &local, sizeof(struct sockaddr_in6), index);
+    } else if (family == AF_UNIX) {
+        struct unix_sock *unix_sk = (struct unix_sock *) sk;
+        struct sockaddr_un sockaddr = get_unix_sock_addr(unix_sk);
+        save_to_submit_buf(data, (void *) &sockaddr, sizeof(struct sockaddr_un), index);
+    }
+    return 0;
+}
+
 static __always_inline struct pipe_inode_info *get_file_pipe_info(struct file *file)
 {
     struct pipe_inode_info *pipe = READ_KERN(file->private_data);
@@ -3696,42 +3732,13 @@ int BPF_KPROBE(trace_security_socket_listen)
     struct socket *sock = (struct socket *) PT_REGS_PARM1(ctx);
     int backlog = (int) PT_REGS_PARM2(ctx);
 
-    struct sock *sk = get_socket_sock(sock);
-
-    u16 family = get_sock_family(sk);
-    if ((family != AF_INET) && (family != AF_INET6) && (family != AF_UNIX)) {
-        return 0;
-    }
-
     // Load the arguments given to the listen syscall (which eventually invokes this function)
     syscall_data_t *sys = &data.task_info->syscall_data;
     if (!data.task_info->syscall_traced || sys->id != SYSCALL_LISTEN)
         return 0;
 
     save_to_submit_buf(&data, (void *) &sys->args.args[0], sizeof(u32), 0);
-
-    if (family == AF_INET) {
-        net_conn_v4_t net_details = {};
-        struct sockaddr_in local;
-
-        get_network_details_from_sock_v4(sk, &net_details, 0);
-        get_local_sockaddr_in_from_network_details(&local, &net_details, family);
-
-        save_to_submit_buf(&data, (void *) &local, sizeof(struct sockaddr_in), 1);
-    } else if (family == AF_INET6) {
-        net_conn_v6_t net_details = {};
-        struct sockaddr_in6 local;
-
-        get_network_details_from_sock_v6(sk, &net_details, 0);
-        get_local_sockaddr_in6_from_network_details(&local, &net_details, family);
-
-        save_to_submit_buf(&data, (void *) &local, sizeof(struct sockaddr_in6), 1);
-    } else if (family == AF_UNIX) {
-        struct unix_sock *unix_sk = (struct unix_sock *) sk;
-        struct sockaddr_un sockaddr = get_unix_sock_addr(unix_sk);
-        save_to_submit_buf(&data, (void *) &sockaddr, sizeof(struct sockaddr_un), 1);
-    }
-
+    save_sockaddr_to_buf(&data, sock, 1);
     save_to_submit_buf(&data, (void *) &backlog, sizeof(int), 2);
 
     return events_perf_submit(&data, SECURITY_SOCKET_LISTEN, 0);
@@ -3791,7 +3798,6 @@ int BPF_KPROBE(trace_security_socket_accept)
         return 0;
 
     struct socket *sock = (struct socket *) PT_REGS_PARM1(ctx);
-    struct sock *sk = get_socket_sock(sock);
 
     struct socket *new_sock = (struct socket *) PT_REGS_PARM2(ctx);
 
@@ -3802,10 +3808,6 @@ int BPF_KPROBE(trace_security_socket_accept)
         args.args[1] = (unsigned long) new_sock;
         save_args(&args, SOCKET_ACCEPT);
     }
-    u16 family = get_sock_family(sk);
-    if ((family != AF_INET) && (family != AF_INET6) && (family != AF_UNIX)) {
-        return 0;
-    }
 
     // Load the arguments given to the accept syscall (which eventually invokes this function)
     syscall_data_t *sys = &data.task_info->syscall_data;
@@ -3814,28 +3816,7 @@ int BPF_KPROBE(trace_security_socket_accept)
         return 0;
 
     save_to_submit_buf(&data, (void *) &sys->args.args[0], sizeof(u32), 0);
-
-    if (family == AF_INET) {
-        net_conn_v4_t net_details = {};
-        struct sockaddr_in local;
-
-        get_network_details_from_sock_v4(sk, &net_details, 0);
-        get_local_sockaddr_in_from_network_details(&local, &net_details, family);
-
-        save_to_submit_buf(&data, (void *) &local, sizeof(struct sockaddr_in), 1);
-    } else if (family == AF_INET6) {
-        net_conn_v6_t net_details = {};
-        struct sockaddr_in6 local;
-
-        get_network_details_from_sock_v6(sk, &net_details, 0);
-        get_local_sockaddr_in6_from_network_details(&local, &net_details, family);
-
-        save_to_submit_buf(&data, (void *) &local, sizeof(struct sockaddr_in6), 1);
-    } else if (family == AF_UNIX) {
-        struct unix_sock *unix_sk = (struct unix_sock *) sk;
-        struct sockaddr_un sockaddr = get_unix_sock_addr(unix_sk);
-        save_to_submit_buf(&data, (void *) &sockaddr, sizeof(struct sockaddr_un), 1);
-    }
+    save_sockaddr_to_buf(&data, sock, 1);
 
     return events_perf_submit(&data, SECURITY_SOCKET_ACCEPT, 0);
 }
@@ -3924,6 +3905,37 @@ int BPF_KPROBE(trace_security_socket_bind)
     }
 
     return events_perf_submit(&data, SECURITY_SOCKET_BIND, 0);
+}
+
+SEC("kprobe/security_socket_setsockopt")
+int BPF_KPROBE(trace_security_socket_setsockopt)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data))
+        return 0;
+
+    struct socket *sock = (struct socket *) PT_REGS_PARM1(ctx);
+    int level = (int) PT_REGS_PARM2(ctx);
+    int optname = (int) PT_REGS_PARM3(ctx);
+
+    // Load the arguments given to the setsockopt syscall (which eventually invokes this function)
+    syscall_data_t *sys = &data.task_info->syscall_data;
+    if (sys == NULL) {
+        return -1;
+    }
+
+    if (!data.task_info->syscall_traced || sys->id != SYS_SETSOCKOPT)
+        return 0;
+
+    save_to_submit_buf(&data, (void *) &sys->args.args[0], sizeof(u32), 0);
+    save_to_submit_buf(&data, (void *) &level, sizeof(int), 1);
+    save_to_submit_buf(&data, (void *) &optname, sizeof(int), 2);
+    save_sockaddr_to_buf(&data, sock, 3);
+
+    return events_perf_submit(&data, SECURITY_SOCKET_SETSOCKOPT, 0);
 }
 
 // To delete socket from net map use tid==0, otherwise, update
