@@ -159,7 +159,7 @@ enum argument_type_e
     #define SYSCALL_LISTEN   50
     #define SYSCALL_BIND     49
     #define SYSCALL_SOCKET   41
-    #define SYS_SETSOCKOPT   54
+    #define SYSC_SETSOCKOPT  54
     #define SYS_DUP          32
     #define SYS_DUP2         33
     #define SYS_DUP3         292
@@ -180,7 +180,7 @@ enum argument_type_e
     #define SYSCALL_LISTEN   201
     #define SYSCALL_BIND     200
     #define SYSCALL_SOCKET   198
-    #define SYS_SETSOCKOPT   208
+    #define SYSC_SETSOCKOPT  208
     #define SYS_DUP          23
     #define SYS_DUP2         UNDEFINED_SYSCALL
     #define SYS_DUP3         24
@@ -3927,7 +3927,7 @@ int BPF_KPROBE(trace_security_socket_setsockopt)
         return -1;
     }
 
-    if (!data.task_info->syscall_traced || sys->id != SYS_SETSOCKOPT)
+    if (!data.task_info->syscall_traced || sys->id != SYSC_SETSOCKOPT)
         return 0;
 
     save_to_submit_buf(&data, (void *) &sys->args.args[0], sizeof(u32), 0);
