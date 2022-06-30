@@ -428,7 +428,7 @@ func (c *Containers) FindContainerCgroupID32LSB(containerID string) []uint32 {
 
 // GetCgroupInfo returns the Containers struct cgroupInfo data of a given cgroupId.
 func (c *Containers) GetCgroupInfo(cgroupId uint64) CgroupInfo {
-	if !c.CgroupExists(cgroupId) {
+	if !c.CgroupExists(cgroupId) && cgroupId != 1 {
 		// There should be a cgroupInfo for the given cgroupId but there isn't.
 		// Tracee might be processing an event for an already created container
 		// before the CgroupMkdirEventID logic was executed, for example.
