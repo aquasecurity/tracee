@@ -28,7 +28,7 @@ func (t *Tracee) initDerivationTable() error {
 		events.CgroupRmdir: {
 			events.ContainerRemove: {
 				Enabled:  t.events[events.ContainerRemove].submit,
-				Function: derive.ContainerRemoved(t.containers),
+				Function: derive.ContainerRemove(t.containers),
 			},
 		},
 		events.PrintSyscallTable: {
