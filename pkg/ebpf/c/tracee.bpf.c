@@ -3354,6 +3354,29 @@ int BPF_KPROBE(trace_security_bprm_check)
     return events_perf_submit(&data, SECURITY_BPRM_CHECK, 0);
 }
 
+SEC("fentry/security_bprm_check")
+int fentry_security_bprm_check(struct pt_regs *ctx)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data.context))
+        return 0;
+
+    struct linux_binprm *bprm = (struct linux_binprm *) PT_REGS_PARM1(ctx);
+    struct file *file = get_file_ptr_from_bprm(bprm);
+    dev_t s_dev = get_dev_from_file(file);
+    unsigned long inode_nr = get_inode_nr_from_file(file);
+    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+
+    save_str_to_buf(&data, file_path, 0);
+    save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 1);
+    save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 2);
+
+    return events_perf_submit(&data, SECURITY_BPRM_CHECK, 0);
+}
+
 SEC("kprobe/security_file_open")
 int BPF_KPROBE(trace_security_file_open)
 {
