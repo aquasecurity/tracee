@@ -10,6 +10,11 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
+const (
+	enrichResultQueueSize = 1000
+	enrichmentQueueSize   = 10000
+)
+
 func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.Event) (chan *trace.Event, chan error) {
 	type enrichResult struct {
 		cgroupId uint64
@@ -19,9 +24,11 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 
 	queues := make(map[uint64]chan *trace.Event) // cgroupId and queues
 	queuesMutex := sync.RWMutex{}
-	attempted := make(map[uint64]*sync.Mutex) // cgroupId and enrichment attempt expressed as transaction lock
-	attemptedMutex := sync.RWMutex{}          // big lock for attempted map
-	enriches := make(chan enrichResult, 10)   // small buffer to reduce chance for blocking
+	attempted := make(map[uint64]*sync.Mutex)                  // cgroupId and enrichment attempt expressed as transaction lock
+	attemptedMutex := sync.RWMutex{}                           // big lock for attempted map
+	enriches := make(chan enrichResult, enrichResultQueueSize) // small buffer to reduce chance for blocking
+	//queues that are no longer used. we don't want to close on receiving side so it will mark queues as stale and sender can close
+	staleQueues := make(map[uint64]chan *trace.Event)
 	out := make(chan *trace.Event, 10000)
 	errc := make(chan error, 1)
 	done := make(chan struct{}, 1)
@@ -69,7 +76,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 					queuesMutex.RUnlock()
 					if !exists {
 						queuesMutex.Lock()
-						queues[cgroupId] = make(chan *trace.Event, 2500)
+						queues[cgroupId] = make(chan *trace.Event, enrichmentQueueSize)
 						queuesMutex.Unlock()
 
 						go func() {
@@ -78,9 +85,32 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 						}()
 					}
 					queuesMutex.RLock()
-					queue := queues[cgroupId]
+					queue, ok := queues[cgroupId]
 					queuesMutex.RUnlock()
-					queue <- event
+					if ok {
+						//if queue still exists send as usual
+						queue <- event
+					} else {
+						//if not, get the enriched data and handle the stale queue
+						info := t.containers.GetCgroupInfo(cgroupId)
+						queuesMutex.RLock()
+						queue = staleQueues[cgroupId]
+						queuesMutex.RUnlock()
+
+						//probably empty but just to make sure
+						for evt := range queue {
+							enrichEvent(evt, info.Container)
+							out <- evt
+						}
+
+						enrichEvent(event, info.Container)
+
+						close(queue)
+						queuesMutex.Lock()
+						delete(staleQueues, cgroupId)
+						queuesMutex.Unlock()
+						out <- event
+					}
 				}
 			}
 		}
@@ -117,20 +147,10 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 					}
 				}
 			} else {
-				containerImage := enrich.result.Image
-				containerName := enrich.result.Name
-				podName := enrich.result.Pod.Name
-				podNamespace := enrich.result.Pod.Namespace
-				podUid := enrich.result.Pod.UID
-
 				//go through the queue and inject the enrichment data that was missing during decoding
 				for evt := range queue {
 					if evt.ContainerID != "" {
-						evt.ContainerImage = containerImage
-						evt.ContainerName = containerName
-						evt.PodName = podName
-						evt.PodNamespace = podNamespace
-						evt.PodUID = podUid
+						enrichEvent(evt, enrich.result)
 					}
 					select {
 					case out <- evt:
@@ -149,12 +169,21 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 
 			//after enrichment was done and all events were processed we can close and delete the channel from the map
 			//subsequent events will be enriched during decoding
-			close(queue)
+
 			queuesMutex.Lock()
 			delete(queues, cgroupId)
+			staleQueues[cgroupId] = queue
 			queuesMutex.Unlock()
 		}
 	}()
 
 	return out, errc
+}
+
+func enrichEvent(evt *trace.Event, enrichData runtime.ContainerMetadata) {
+	evt.ContainerImage = enrichData.Image
+	evt.ContainerName = enrichData.Name
+	evt.PodName = enrichData.Pod.Name
+	evt.PodNamespace = enrichData.Pod.Namespace
+	evt.PodUID = enrichData.Pod.UID
 }
