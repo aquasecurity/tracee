@@ -282,9 +282,9 @@ $(OUTPUT_DIR)/tracee.bpf: \
 	.check_$(CMD_INSTALL)
 #
 	@$(CMD_MKDIR) -p $@
-	$(CMD_INSTALL) -m 0640 ./3rdparty/include/* $@
-	$(CMD_INSTALL) -m 0640 $(OUTPUT_DIR)/libbpf/bpf/*.h $@
-	$(CMD_INSTALL) -m 0640 $(TRACEE_EBPF_OBJ_SRC) $@
+	$(CMD_INSTALL) -m 0644 ./3rdparty/include/* $@
+	$(CMD_INSTALL) -m 0644 $(OUTPUT_DIR)/libbpf/bpf/*.h $@
+	$(CMD_INSTALL) -m 0644 $(TRACEE_EBPF_OBJ_SRC) $@
 
 #
 # libbpf
@@ -393,7 +393,7 @@ install-bpf-nocore: \
 #
 	@$(CMD_MKDIR) -p $(TMP_DIR)
 	$(CMD_RM) -f $(TMP_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o
-	$(CMD_INSTALL) -m 0640 $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o $(TMP_DIR)
+	$(CMD_INSTALL) -m 0644 $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o $(TMP_DIR)
 
 .PHONY: uninstall-bpf-nocore
 uninstall-bpf-nocore: \
@@ -630,7 +630,7 @@ $(OUTPUT_DIR)/rules: \
 		--buildmode=plugin \
 		-o $@/builtin.so \
 		$(GOSIGNATURES_SRC)
-	$(CMD_INSTALL) -m 0640 $(REGO_SIGNATURES_SRC) $@
+	$(CMD_INSTALL) -m 0644 $(REGO_SIGNATURES_SRC) $@
 
 .PHONY: clean-rules
 clean-rules:
