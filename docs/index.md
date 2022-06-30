@@ -56,7 +56,7 @@ Before you proceed, make sure you follow the [minimum requirements for running T
     your setup. See [Linux Headers](./install/headers.md) section for more
     info.
 !!! note
-    Tracee supports enriching additional data from running containers into it's events.
+    Tracee supports enriching events with additional data from running containers.
     In order to enable this capability please look [here](./integrations.md#container-enrichment).
 
 This will run Tracee with default settings and start reporting detections to

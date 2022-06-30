@@ -42,14 +42,14 @@ For example templates, see [tracee/cmd/tracee-rules/templates].
 
 ## Container Enrichment
 
-Tracee is capable of extracting information on running containers on your system during runtime through tracking created cgroups in kernel and can further enrich the container events from data queried by communicating with the relevant container's runtime and SDK from userspace.
+Tracee is capable of extracting information about running containers through tracking created cgroups in kernel. Tracee can further enrich the container events by communicating with the relevant container's runtime and SDK.
 
-Since this feature is still experimental, it is disabled by default and must be explicitely enabled.
+Since this feature is still experimental, it is disabled by default and must be explicitly enabled.
 
-In order to enable this capability in the container's trace mode or with tracee-ebpf's binary, use the `--containers` flag.
+In order to enable this capability in the tracee container's trace mode or with tracee-ebpf's binary, use the `--containers` flag.
 If running tracee with tracee-rules, set the environment flag `CONTAINERS_ENRICHMENT` (example below).
 
-If running tracer-ebpf directly from binary, it will automatically search for known supported runtimes in their default socket's locations.
+If running tracee-ebpf directly (not in a container), it will automatically search for known supported runtimes in their socket's default locations.
 
 However, when running tracee from a container, the runtime sockets must be manually mounted in order for the enrichment features to work.
 
@@ -65,7 +65,7 @@ Using containerd as our runtime for example, this can be done by running tracee 
      aquasec/tracee:latest
 ```
 
-Most container runtimes have their sockets installed by default in `/var/run` so if your system includes multiple container runtimes, tracee can track them all, however one should then mount either all their runtime sockets or `/var/run` in it's entirety.
+Most container runtimes have their sockets installed by default in `/var/run`. If your system includes multiple container runtimes, tracee can track them all, however one should mount either all their runtime sockets or `/var/run` in it's entirety to do so.
 
 Currently, tracee will look in the following paths for autodiscovering the listed runtimes:
 
