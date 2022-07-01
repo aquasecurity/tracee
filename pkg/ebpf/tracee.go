@@ -81,11 +81,6 @@ type OutputConfig struct {
 	EventsSorting  bool
 }
 
-type netProbe struct {
-	ingressHook *bpf.TcHook
-	egressHook  *bpf.TcHook
-}
-
 // RequiredInitValues determines if to initialize values that might be needed by eBPF programs
 type RequiredInitValues struct {
 	kallsyms bool
@@ -198,7 +193,6 @@ type Tracee struct {
 	writtenFiles      map[string]string
 	pidsInMntns       bucketscache.BucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
-	tcProbe           []netProbe
 	netInfo           netInfo
 	containers        *containers.Containers
 	procInfo          *procinfo.ProcInfo
@@ -789,147 +783,54 @@ func (t *Tracee) populateBPFMaps() error {
 	return nil
 }
 
-func (t *Tracee) attachTcProg(ifaceName string, attachPoint bpf.TcAttachPoint, progName string) (*bpf.TcHook, error) {
-	hook := t.bpfModule.TcHookInit()
-	err := hook.SetInterfaceByName(ifaceName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to set tc hook interface: %v", err)
-	}
-	hook.SetAttachPoint(attachPoint)
-	err = hook.Create()
-	if err != nil {
-		if errno, ok := err.(syscall.Errno); ok && errno != syscall.EEXIST {
-			return nil, fmt.Errorf("tc hook create: %v", err)
+// attachProbes attaches selected events probes to their respective eBPF progs
+func (t *Tracee) attachProbes() error {
+	var err error
+
+	// attach selected tracing events
+
+	for tr := range t.events {
+		event, ok := events.Definitions.GetSafe(tr)
+		if !ok {
+			continue
+		}
+		for _, dep := range event.Probes {
+			err = t.probes.Attach(dep.Handle)
+			if err != nil && dep.Required {
+				// TODO: https://github.com/aquasecurity/tracee/issues/1787
+				return fmt.Errorf("failed to attach required probe: %v", err)
+			}
 		}
 	}
-	prog, _ := t.bpfModule.GetProgram(progName)
-	if prog == nil {
-		return nil, fmt.Errorf("couldn't find tc program %s", progName)
-	}
-	var tcOpts bpf.TcOpts
-	tcOpts.ProgFd = int(prog.GetFd())
-	err = hook.Attach(&tcOpts)
-	if err != nil {
-		return nil, fmt.Errorf("tc attach: %v", err)
+
+	// attach all tc programs to given interfaces
+
+	for _, iface := range t.netInfo.ifaces {
+		for _, tc := range []probes.Handle{
+			probes.DefaultTcIngress,
+			probes.DefaultTcEgress,
+		} {
+			err = t.probes.Attach(tc, iface)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
-	return hook, nil
-}
-
-func (t *Tracee) attachNetProbes() error {
-	prog, _ := t.bpfModule.GetProgram("trace_udp_sendmsg")
-	if prog == nil {
-		return fmt.Errorf("couldn't find trace_udp_sendmsg program")
-	}
-	_, err := prog.AttachKprobe("udp_sendmsg")
-	if err != nil {
-		return fmt.Errorf("error attaching event udp_sendmsg: %v", err)
-	}
-
-	prog, _ = t.bpfModule.GetProgram("trace_udp_disconnect")
-	if prog == nil {
-		return fmt.Errorf("couldn't find trace_udp_disconnect program")
-	}
-	_, err = prog.AttachKprobe("__udp_disconnect")
-	if err != nil {
-		return fmt.Errorf("error attaching event __udp_disconnect: %v", err)
-	}
-
-	prog, _ = t.bpfModule.GetProgram("trace_udp_destroy_sock")
-	if prog == nil {
-		return fmt.Errorf("couldn't find trace_udp_destroy_sock program")
-	}
-	_, err = prog.AttachKprobe("udp_destroy_sock")
-	if err != nil {
-		return fmt.Errorf("error attaching event udp_destroy_sock: %v", err)
-	}
-
-	prog, _ = t.bpfModule.GetProgram("trace_udpv6_destroy_sock")
-	if prog == nil {
-		return fmt.Errorf("couldn't find trace_udpv6_destroy_sock program")
-	}
-	_, err = prog.AttachKprobe("udpv6_destroy_sock")
-	if err != nil {
-		return fmt.Errorf("error attaching event udpv6_destroy_sock: %v", err)
-	}
-
-	prog, _ = t.bpfModule.GetProgram("tracepoint__inet_sock_set_state")
-	if prog == nil {
-		return fmt.Errorf("couldn't find tracepoint__inet_sock_set_state program")
-	}
-	_, err = prog.AttachRawTracepoint("inet_sock_set_state")
-	if err != nil {
-		return fmt.Errorf("error attaching event sock:inet_sock_set_state: %v", err)
-	}
-
-	prog, _ = t.bpfModule.GetProgram("trace_tcp_connect")
-	if prog == nil {
-		return fmt.Errorf("couldn't find trace_tcp_connect program")
-	}
-	_, err = prog.AttachKprobe("tcp_connect")
-	if err != nil {
-		return fmt.Errorf("error attaching event tcp_connect: %v", err)
-	}
-
-	prog, _ = t.bpfModule.GetProgram("trace_icmp_rcv")
-	if prog == nil {
-		return fmt.Errorf("couldn't find trace_icmp_rcv program")
-	}
-	_, err = prog.AttachKprobe("icmp_rcv")
-	if err != nil {
-		return fmt.Errorf("error attaching event icmp_rcv: %v", err)
-	}
-
-	prog, _ = t.bpfModule.GetProgram("trace_icmp_send")
-	if prog == nil {
-		return fmt.Errorf("couldn't find trace_icmp_send program")
-	}
-	_, err = prog.AttachKprobe("__icmp_send")
-	if err != nil {
-		return fmt.Errorf("error attaching event __icmp_send: %v", err)
-	}
-
-	prog, _ = t.bpfModule.GetProgram("trace_icmpv6_rcv")
-	if prog == nil {
-		return fmt.Errorf("couldn't find trace_icmpv6_rcv program")
-	}
-	_, err = prog.AttachKprobe("icmpv6_rcv")
-	if err != nil {
-		return fmt.Errorf("error attaching event icmpv6_rcv: %v", err)
-	}
-
-	prog, _ = t.bpfModule.GetProgram("trace_icmp6_send")
-	if prog == nil {
-		return fmt.Errorf("couldn't find trace_icmp6_send program")
-	}
-	_, err = prog.AttachKprobe("icmp6_send")
-	if err != nil {
-		return fmt.Errorf("error attaching event icmp6_send: %v", err)
-	}
-
-	prog, _ = t.bpfModule.GetProgram("trace_ping_v4_sendmsg")
-	if prog == nil {
-		return fmt.Errorf("couldn't find trace_ping_v4_sendmsg program")
-	}
-	_, err = prog.AttachKprobe("ping_v4_sendmsg")
-	if err != nil {
-		return fmt.Errorf("error attaching event ping_v4_sendmsg: %v", err)
-	}
-
-	prog, _ = t.bpfModule.GetProgram("trace_ping_v6_sendmsg")
-	if prog == nil {
-		return fmt.Errorf("couldn't find trace_ping_v6_sendmsg program")
-	}
-	_, err = prog.AttachKprobe("ping_v6_sendmsg")
-	if err != nil {
-		return fmt.Errorf("error attaching event ping_v6_sendmsg: %v", err)
-	}
+	// TODO: instead of manually attaching tc programs to given interfaces,
+	// in a near future tc probes will be just events probeDependency and
+	// attached to given interfaces (or all of them). If attached to all
+	// existing interfaces, the tc programs will be constantly attached
+	// to new network interface.
 
 	return nil
 }
 
 func (t *Tracee) initBPF() error {
 	var err error
+	isDebugSet := t.config.Debug
+	isCaptureNetSet := t.config.Capture.NetIfaces != nil
+	isFilterNetSet := len(t.config.Filter.NetFilter.InterfacesToTrace) != 0
 
 	newModuleArgs := bpf.NewModuleArgs{
 		KConfigFilePath: t.config.KernelConfig.GetKernelConfigFilePath(),
@@ -938,89 +839,41 @@ func (t *Tracee) initBPF() error {
 		BPFObjName:      t.config.BPFObjPath,
 	}
 
+	// Open the eBPF object file (create a new module)
+
 	t.bpfModule, err = bpf.NewModuleFromBufferArgs(newModuleArgs)
 	if err != nil {
 		return err
 	}
 
 	// Initialize probes
-	t.probes, err = probes.Init(t.bpfModule)
 
+	netEnabled := isDebugSet || isCaptureNetSet || isFilterNetSet
+
+	t.probes, err = probes.Init(t.bpfModule, netEnabled)
 	if err != nil {
-		return fmt.Errorf("failed to initialize probes: %s", err.Error())
+		return err
 	}
 
-	if t.config.Capture.NetIfaces == nil && !t.config.Debug && len(t.config.Filter.NetFilter.InterfacesToTrace) == 0 {
-		// events.SecuritySocketBind is set as an essentialEvent if 'capture net' or 'debug' were chosen by the user.
-		networkProbes := []string{"tc_ingress", "tc_egress", "trace_udp_sendmsg", "trace_udp_disconnect", "trace_udp_destroy_sock", "trace_udpv6_destroy_sock", "tracepoint__inet_sock_set_state", "trace_icmp_send", "trace_icmp_rcv", "trace_icmp6_send", "trace_icmpv6_rcv", "trace_ping_v4_sendmsg", "trace_ping_v6_sendmsg"}
-		for _, progName := range networkProbes {
-			prog, _ := t.bpfModule.GetProgram(progName)
-			if prog == nil {
-				return fmt.Errorf("couldn't find %s program", progName)
-			}
-			err = prog.SetAutoload(false)
-			if err != nil {
-				return err
-			}
-		}
-	}
+	// Load the eBPF object into kernel
 
 	err = t.bpfModule.BPFLoadObject()
 	if err != nil {
 		return err
 	}
 
+	// Populate eBPF maps with initial data
+
 	err = t.populateBPFMaps()
 	if err != nil {
 		return err
 	}
 
-	if t.shouldTraceNetEvents() && len(t.config.Filter.NetFilter.InterfacesToTrace) == 0 {
-		return fmt.Errorf("can't trace net event, missing interface")
-	}
-	for _, iface := range t.netInfo.ifaces {
-		tcProbe := netProbe{}
+	// Attach eBPF programs to selected event's probes
 
-		ingressHook, err := t.attachTcProg(iface.Name, bpf.BPFTcIngress, "tc_ingress")
-		if err != nil {
-			return err
-		}
-		tcProbe.ingressHook = ingressHook
-
-		// if loopback device - don't capture on egress - because of packet duplication
-		if iface.Flags&net.FlagLoopback != net.FlagLoopback {
-			egressHook, err := t.attachTcProg(iface.Name, bpf.BPFTcEgress, "tc_egress")
-			if err != nil {
-				return err
-			}
-			tcProbe.egressHook = egressHook
-		}
-
-		t.tcProbe = append(t.tcProbe, tcProbe)
-	}
-
-	if t.config.Capture.NetIfaces != nil || t.config.Debug || len(t.config.Filter.NetFilter.InterfacesToTrace) != 0 {
-		if err = t.attachNetProbes(); err != nil {
-			return err
-		}
-	}
-
-	for e := range t.events {
-		event, ok := events.Definitions.GetSafe(e)
-		if !ok {
-			continue
-		}
-		for _, dep := range event.Probes {
-			err = t.probes.Attach(dep.Handle)
-			if err != nil {
-				if dep.Required {
-					return fmt.Errorf("failed to attach required probe: %v", err)
-				} else {
-					// TODO: Use a logger here instead (https://github.com/aquasecurity/tracee/issues/1787)
-					t.handleError(fmt.Errorf("failed to attach unrequired probe: %v. tracee will continue to load", err))
-				}
-			}
-		}
+	err = t.attachProbes()
+	if err != nil {
+		return err
 	}
 
 	err = t.config.Filter.ProcessTreeFilter.Set(t.bpfModule)
@@ -1147,18 +1000,9 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 
 // Close cleans up created resources
 func (t *Tracee) Close() {
-	for _, tcProbe := range t.tcProbe {
-		// First, delete filters we created
-		tcProbe.ingressHook.Destroy()
-		if tcProbe.egressHook != nil {
-			tcProbe.egressHook.Destroy()
-		}
 
-		// Todo: Delete the qdisc only if no other filters are installed on it.
-		// There is currently a bug with the libbpf tc API that doesn't allow us to perform this check:
-		// https://lore.kernel.org/bpf/CAMy7=ZULTCoSCcjxw=MdhaKmNM9DXKc=t7QScf9smKKUB+L_fQ@mail.gmail.com/T/#t
-		tcProbe.ingressHook.SetAttachPoint(bpf.BPFTcIngressEgress)
-		tcProbe.ingressHook.Destroy()
+	if t.probes != nil {
+		t.probes.DetachAll()
 	}
 
 	if t.bpfModule != nil {
@@ -1224,16 +1068,6 @@ func findInList(element string, list *[]string) (int, error) {
 		}
 	}
 	return 0, fmt.Errorf("element: %s not found", element)
-}
-
-// shouldTraceNetEvents returns true if any net event should be submitted to user-space
-func (t *Tracee) shouldTraceNetEvents() bool {
-	for i := events.NetPacket; i < events.MaxNetID; i++ {
-		if t.events[i].submit {
-			return true
-		}
-	}
-	return false
 }
 
 const (
