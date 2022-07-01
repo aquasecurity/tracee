@@ -44,9 +44,11 @@ done
 
 # sleep for random time not to start all jobs at once
 
-rand=$(( $RANDOM % 30 ))
-info "sleeping for $rand seconds"
-sleep $rand
+if [[ $skip_sleep -ne 1 ]]; then
+  rand=$(( $RANDOM % 30 ))
+  info "sleeping for $rand seconds"
+  sleep $rand
+fi
 
 # run qemu
 
