@@ -5518,10 +5518,16 @@ static __always_inline void set_net_event_id(net_packet_t *pkt)
         DNS = 53,
     };
 
-    if (pkt->dst_port == DNS)
-        pkt->event_id = DNS_REQUEST;
-    if (pkt->src_port == DNS)
-        pkt->event_id = DNS_RESPONSE;
+    switch (pkt->protocol) {
+        case IPPROTO_UDP:
+            if (pkt->dst_port == DNS)
+                pkt->event_id = DNS_REQUEST;
+            if (pkt->src_port == DNS)
+                pkt->event_id = DNS_RESPONSE;
+            break;
+        default:
+            pkt->event_id = NET_PACKET;
+    }
 }
 
 // some network events might need payload (even without capture)
