@@ -299,20 +299,8 @@ enum event_id_e
 #define FILTER_CGROUP_ID_ENABLED (1 << 21)
 #define FILTER_CGROUP_ID_OUT     (1 << 22)
 
-enum filter_options_e
-{
-    UID_LESS,
-    UID_GREATER,
-    PID_LESS,
-    PID_GREATER,
-    MNTNS_LESS,
-    MNTNS_GREATER,
-    PIDNS_LESS,
-    PIDNS_GREATER
-};
-
-#define LESS_NOT_SET    0
-#define GREATER_NOT_SET ULLONG_MAX
+#define FILTER_MAX_NOT_SET 0
+#define FILTER_MIN_NOT_SET ULLONG_MAX
 
 #define DEV_NULL_STR 0
 
@@ -552,6 +540,14 @@ typedef struct config_entry {
     u32 options;
     u32 filters;
     u32 cgroup_v1_hid;
+    u64 uid_max;
+    u64 uid_min;
+    u64 pid_max;
+    u64 pid_min;
+    u64 mnt_ns_max;
+    u64 mnt_ns_min;
+    u64 pid_ns_max;
+    u64 pid_ns_min;
     u8 events_to_submit[128]; // use 8*128 bits to describe up to 1024 events
 } config_entry_t;
 
@@ -707,7 +703,6 @@ BPF_HASH(kconfig_map, u32, u32, 10240);                 // kernel config variabl
 BPF_HASH(interpreter_map, u32, file_id_t, 10240);       // interpreter file used for each process
 BPF_HASH(containers_map, u32, u8, 10240);               // map cgroup id to container status {EXISTED, CREATED, STARTED}
 BPF_HASH(args_map, u64, args_t, 1024);                  // persist args between function entry and return
-BPF_HASH(inequality_filter, u32, u64, 256);             // filter events by some uint field either by < or >
 BPF_HASH(uid_filter, u32, u32, 256);                    // filter events by UID, for specific UIDs either by == or !=
 BPF_HASH(pid_filter, u32, u32, 256);                    // filter events by PID
 BPF_HASH(mnt_ns_filter, u64, u32, 256);                 // filter events by mount namespace id
@@ -1454,30 +1449,19 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
 // INTERNAL: FILTERING -----------------------------------------------------------------------------
 
 static __always_inline int
-uint_filter_matches(bool filter_out, void *filter_map, u64 key, u32 less_idx, u32 greater_idx)
+uint_filter_matches(bool filter_out, void *filter_map, u64 value, u64 max, u64 min)
 {
-    u8 *equality = bpf_map_lookup_elem(filter_map, &key);
+    u8 *equality = bpf_map_lookup_elem(filter_map, &value);
     if (equality != NULL)
         return *equality;
 
-    if (!filter_out)
+    if ((max != FILTER_MAX_NOT_SET) && (value >= max))
         return 0;
 
-    u64 *lessThan = bpf_map_lookup_elem(&inequality_filter, &less_idx);
-    if (lessThan == NULL)
-        return 1;
-
-    if ((*lessThan != LESS_NOT_SET) && (key >= *lessThan))
-        return 0;
-
-    u64 *greaterThan = bpf_map_lookup_elem(&inequality_filter, &greater_idx);
-    if (greaterThan == NULL)
-        return 1;
-
-    if ((*greaterThan != GREATER_NOT_SET) && (key <= *greaterThan))
+    if ((min != FILTER_MIN_NOT_SET) && (value <= min))
         return 0; // 0 means do not trace
 
-    return 1; // 1 means trace
+    return filter_out;
 }
 
 static __always_inline int equality_filter_matches(bool filter_out, void *filter_map, void *key)
@@ -1486,21 +1470,12 @@ static __always_inline int equality_filter_matches(bool filter_out, void *filter
     if (equality != NULL)
         return *equality;
 
-    if (!filter_out)
-        return 0;
-
-    return 1;
+    return filter_out;
 }
 
 static __always_inline int bool_filter_matches(bool filter_out, bool val)
 {
-    if (!filter_out && val)
-        return 1;
-
-    if (filter_out && !val)
-        return 1;
-
-    return 0;
+    return filter_out ^ val;
 }
 
 static __always_inline int do_should_trace(event_data_t *data)
@@ -1542,7 +1517,9 @@ static __always_inline int do_should_trace(event_data_t *data)
 
     if (config & FILTER_PID_ENABLED) {
         bool filter_out = (config & FILTER_PID_OUT) == FILTER_PID_OUT;
-        if (!uint_filter_matches(filter_out, &pid_filter, context->host_tid, PID_LESS, PID_GREATER))
+        u64 max = data->config->pid_max;
+        u64 min = data->config->pid_min;
+        if (!uint_filter_matches(filter_out, &pid_filter, context->host_tid, max, min))
             return 0;
     }
 
@@ -1554,21 +1531,25 @@ static __always_inline int do_should_trace(event_data_t *data)
 
     if (config & FILTER_UID_ENABLED) {
         bool filter_out = (config & FILTER_UID_OUT) == FILTER_UID_OUT;
-        if (!uint_filter_matches(filter_out, &uid_filter, context->uid, UID_LESS, UID_GREATER))
+        u64 max = data->config->uid_max;
+        u64 min = data->config->uid_min;
+        if (!uint_filter_matches(filter_out, &uid_filter, context->uid, max, min))
             return 0;
     }
 
     if (config & FILTER_MNT_NS_ENABLED) {
         bool filter_out = (config & FILTER_MNT_NS_OUT) == FILTER_MNT_NS_OUT;
-        if (!uint_filter_matches(
-                filter_out, &mnt_ns_filter, context->mnt_id, MNTNS_LESS, MNTNS_GREATER))
+        u64 max = data->config->mnt_ns_max;
+        u64 min = data->config->mnt_ns_min;
+        if (!uint_filter_matches(filter_out, &mnt_ns_filter, context->mnt_id, max, min))
             return 0;
     }
 
     if (config & FILTER_PID_NS_ENABLED) {
         bool filter_out = (config & FILTER_PID_NS_OUT) == FILTER_PID_NS_OUT;
-        if (!uint_filter_matches(
-                filter_out, &pid_ns_filter, context->pid_id, PIDNS_LESS, PIDNS_GREATER))
+        u64 max = data->config->pid_ns_max;
+        u64 min = data->config->pid_ns_min;
+        if (!uint_filter_matches(filter_out, &pid_ns_filter, context->pid_id, max, min))
             return 0;
     }
 

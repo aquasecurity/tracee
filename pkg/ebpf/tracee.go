@@ -652,11 +652,19 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	cZero := uint32(0)
-	configVal := make([]byte, 144)
+	configVal := make([]byte, 208)
 	binary.LittleEndian.PutUint32(configVal[0:4], uint32(os.Getpid()))
 	binary.LittleEndian.PutUint32(configVal[4:8], t.getOptionsConfig())
 	binary.LittleEndian.PutUint32(configVal[8:12], t.getFiltersConfig())
 	binary.LittleEndian.PutUint32(configVal[12:16], uint32(t.containers.GetCgroupV1HID()))
+	binary.LittleEndian.PutUint64(configVal[16:24], t.config.Filter.UIDFilter.Less)
+	binary.LittleEndian.PutUint64(configVal[24:32], t.config.Filter.UIDFilter.Greater)
+	binary.LittleEndian.PutUint64(configVal[32:40], t.config.Filter.PIDFilter.Less)
+	binary.LittleEndian.PutUint64(configVal[40:48], t.config.Filter.PIDFilter.Greater)
+	binary.LittleEndian.PutUint64(configVal[48:56], t.config.Filter.MntNSFilter.Less)
+	binary.LittleEndian.PutUint64(configVal[56:64], t.config.Filter.MntNSFilter.Greater)
+	binary.LittleEndian.PutUint64(configVal[64:72], t.config.Filter.PidNSFilter.Less)
+	binary.LittleEndian.PutUint64(configVal[72:80], t.config.Filter.PidNSFilter.Greater)
 	// Next 128 bytes (1024 bits) are used for events_to_submit configuration
 	// Set according to events chosen by the user
 	for id, e := range t.events {
@@ -667,7 +675,7 @@ func (t *Tracee) populateBPFMaps() error {
 		if e.submit {
 			index := id / 8
 			offset := id % 8
-			configVal[16+index] = configVal[16+index] | (1 << offset)
+			configVal[80+index] = configVal[80+index] | (1 << offset)
 		}
 	}
 	if err = bpfConfigMap.Update(unsafe.Pointer(&cZero), unsafe.Pointer(&configVal[0])); err != nil {
@@ -675,10 +683,10 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	errmap := make(map[string]error, 0)
-	errmap["uid_filter"] = t.config.Filter.UIDFilter.Set(t.bpfModule, "uid_filter", uidLess)
-	errmap["pid_filter"] = t.config.Filter.PIDFilter.Set(t.bpfModule, "pid_filter", pidLess)
-	errmap["mnt_ns_filter"] = t.config.Filter.MntNSFilter.Set(t.bpfModule, "mnt_ns_filter", mntNsLess)
-	errmap["pid_ns_filter"] = t.config.Filter.PidNSFilter.Set(t.bpfModule, "pid_ns_filter", pidNsLess)
+	errmap["uid_filter"] = t.config.Filter.UIDFilter.Set(t.bpfModule, "uid_filter")
+	errmap["pid_filter"] = t.config.Filter.PIDFilter.Set(t.bpfModule, "pid_filter")
+	errmap["mnt_ns_filter"] = t.config.Filter.MntNSFilter.Set(t.bpfModule, "mnt_ns_filter")
+	errmap["pid_ns_filter"] = t.config.Filter.PidNSFilter.Set(t.bpfModule, "pid_ns_filter")
 	errmap["uts_ns_filter"] = t.config.Filter.UTSFilter.Set(t.bpfModule, "uts_ns_filter")
 	errmap["comm_filter"] = t.config.Filter.CommFilter.Set(t.bpfModule, "comm_filter")
 	errmap["cont_id_filter"] = t.config.Filter.ContIDFilter.Set(t.bpfModule, t.containers, "cgroup_id_filter")

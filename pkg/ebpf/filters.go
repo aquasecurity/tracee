@@ -21,17 +21,6 @@ const (
 	filterEqual
 )
 
-const (
-	uidLess uint32 = iota
-	uidGreater
-	pidLess
-	pidGreater
-	mntNsLess
-	mntNsGreater
-	pidNsLess
-	pidNsGreater
-)
-
 // Set default inequality values
 // val<0 and val>math.MaxUint64 should never be used by the user as they give an empty set
 const (
@@ -116,7 +105,7 @@ func (filter *UintFilter) Parse(operatorAndValues string) error {
 	return nil
 }
 
-func (filter *UintFilter) Set(bpfModule *bpf.Module, filterMapName string, lessIdx uint32) error {
+func (filter *UintFilter) Set(bpfModule *bpf.Module, filterMapName string) error {
 	if !filter.Enabled {
 		return nil
 	}
@@ -154,22 +143,6 @@ func (filter *UintFilter) Set(bpfModule *bpf.Module, filterMapName string, lessI
 		if err != nil {
 			return err
 		}
-	}
-
-	filterLess := filter.Less
-	filterGreater := filter.Greater
-
-	// inequalityFilter filters events by some uint field either by < or >
-	inequalityFilter, err := bpfModule.GetMap("inequality_filter") // u32, u64
-	if err != nil {
-		return err
-	}
-	if err = inequalityFilter.Update(unsafe.Pointer(&lessIdx), unsafe.Pointer(&filterLess)); err != nil {
-		return err
-	}
-	lessIdxPlus := uint32(lessIdx + 1)
-	if err = inequalityFilter.Update(unsafe.Pointer(&lessIdxPlus), unsafe.Pointer(&filterGreater)); err != nil {
-		return err
 	}
 
 	return nil
