@@ -55,6 +55,9 @@ Before you proceed, make sure you follow the [minimum requirements for running T
     You may need to change the volume mounts for the kernel headers based on
     your setup. See [Linux Headers](./install/headers.md) section for more
     info.
+!!! note
+    Tracee supports enriching events with additional data from running containers.
+    In order to enable this capability please look [here](./integrations.md#container-enrichment).
 
 This will run Tracee with default settings and start reporting detections to
 standard output. In order to simulate a suspicious behavior, you can simply
