@@ -9,6 +9,8 @@ type Signature interface {
 	GetMetadata() (SignatureMetadata, error)
 	//GetSelectedEvents allows the signature to declare which events it subscribes to
 	GetSelectedEvents() ([]SignatureEventSelector, error)
+	//GetFilters declares filtering option for event sources
+	GetFilters() ([]Filter, error)
 	//Init allows the signature to initialize its internal state
 	Init(cb SignatureHandler) error
 	//Close cleans the signature after Init operation
