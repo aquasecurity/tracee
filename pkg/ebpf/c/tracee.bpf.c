@@ -2773,8 +2773,6 @@ int sys_dup_exit_tail(void *ctx)
         return 0;
     }
 
-    if (!data.task_info->syscall_traced)
-        return -1;
     syscall_data_t *sys = &data.task_info->syscall_data;
 
     if (sys->ret < 0) {
