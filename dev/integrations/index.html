@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.485cfce5.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.6661e186.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.cbb835fc.min.css">
@@ -653,6 +653,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#container-enrichment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Container Enrichment
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#prometheus" class="md-nav__link">
     <span class="md-ellipsis">
       Prometheus
@@ -1138,6 +1147,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#container-enrichment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Container Enrichment
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#prometheus" class="md-nav__link">
     <span class="md-ellipsis">
       Prometheus
@@ -1239,6 +1257,42 @@
 </code></pre></div>
 <p>The Go template can utilize helper functions from <a href="http://masterminds.github.io/sprig/">Sprig</a>.</p>
 <p>For example templates, see <a href="https://github.com/aquasecurity/tracee/tree/v0.7.0/cmd/tracee-rules/templates">tracee/cmd/tracee-rules/templates</a>.</p>
+<h2 id="container-enrichment">Container Enrichment<a class="headerlink" href="#container-enrichment" title="Permanent link">&para;</a></h2>
+<p>Tracee is capable of extracting information about running containers through tracking created cgroups in kernel. Tracee can further enrich the container events by communicating with the relevant container's runtime and SDK.</p>
+<p>Since this feature is still experimental, it is disabled by default and must be explicitly enabled.</p>
+<p>In order to enable this capability in the tracee container's trace mode or with tracee-ebpf's binary, use the <code>--containers</code> flag.
+If running tracee with tracee-rules, set the environment flag <code>CONTAINERS_ENRICHMENT</code> (example below).</p>
+<p>If running tracee-ebpf directly (not in a container), it will automatically search for known supported runtimes in their socket's default locations.</p>
+<p>However, when running tracee from a container, the runtime sockets must be manually mounted in order for the enrichment features to work.</p>
+<p>Using containerd as our runtime for example, this can be done by running tracee like so:
+<div class="highlight"><pre><span></span><code>   docker run <span class="se">\</span>
+     --name tracee --rm -it <span class="se">\</span>
+     --pid<span class="o">=</span>host --cgroupns<span class="o">=</span>host --privileged <span class="se">\</span>
+     -v /etc/os-release:/etc/os-release-host:ro <span class="se">\</span>
+     -v /var/run/containerd:/var/run/containerd
+     -e <span class="nv">LIBBPFGO_OSRELEASE_FILE</span><span class="o">=</span>/etc/os-release-host <span class="se">\</span>
+     -e <span class="nv">CONTAINERS_ENRICHMENT</span><span class="o">=</span><span class="m">1</span> <span class="se">\</span>
+     aquasec/tracee:latest
+</code></pre></div></p>
+<p>Most container runtimes have their sockets installed by default in <code>/var/run</code>. If your system includes multiple container runtimes, tracee can track them all, however one should mount either all their runtime sockets or <code>/var/run</code> in it's entirety to do so.</p>
+<p>Currently, tracee will look in the following paths for autodiscovering the listed runtimes:</p>
+<ol>
+<li>
+<p>Docker:     <code>/var/run/docker.sock</code></p>
+</li>
+<li>
+<p>Containerd: <code>/var/run/containerd/containerd.sock</code></p>
+</li>
+<li>
+<p>CRI-O:      <code>/var/run/crio/crio.sock</code></p>
+</li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Nested environments are somewhat tricky with this feature as evidenced by the docker mounting instructions.
+Tracee does not auto-discover this nesting and so sockets must be appropriately mounted and set up for tracee to enrich all
+containers correctly.</p>
+</div>
 <h2 id="prometheus">Prometheus<a class="headerlink" href="#prometheus" title="Permanent link">&para;</a></h2>
 <p>Tracee is enabled for prometheus scraping by default. Scraping can be done through the following URLs:1
 1. <code>tracee-ebpf</code> can be scraped through <code>:3366/metrics</code>
@@ -1288,22 +1342,6 @@ docker run --name tracee --rm -it --privileged --pid<span class="o">=</span>host
   --webhook-content-type application/json <span class="se">\</span>
   --webhook http://FALCOSIDEKICK:2801
 </code></pre></div>
-<h1 id="container-runtimes">Container Runtimes<a class="headerlink" href="#container-runtimes" title="Permanent link">&para;</a></h1>
-<p>Tracee is capable of extracting information on running containers on your system during runtime through tracking created cgroups in kernel and
-can further enrich the container events from data queried by communicating with the relevant container's runtime and SDK from userspace.
-If running tracer-ebpf directly from binary, it will automatically search for known supported runtimes in their default socket's locations.
-However, when running tracee from a container, the runtime sockets must be manually mounted in order for the enrichment features to work.
-Using containerd as our runtime for example, this can be done by running tracee like so:
-<div class="highlight"><pre><span></span><code>   docker run <span class="se">\</span>
-     --name tracee --rm -it <span class="se">\</span>
-     --pid<span class="o">=</span>host --cgroupns<span class="o">=</span>host --privileged <span class="se">\</span>
-     -v /etc/os-release:/etc/os-release-host:ro <span class="se">\</span>
-     -v /var/run/containerd:/var/run/containerd
-     -e <span class="nv">LIBBPFGO_OSRELEASE_FILE</span><span class="o">=</span>/etc/os-release-host <span class="se">\</span>
-     aquasec/tracee:latest
-</code></pre></div></p>
-<p>Most container runtimes have their sockets installed by default in <code>/var/run</code> so if your system includes multiple container runtimes, tracee can track
-them all, however one should then mount either all their runtime sockets or <code>/var/run</code> in it's entirety.</p>
 
 
 
