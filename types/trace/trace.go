@@ -137,7 +137,7 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 				return err
 			}
 			arg.Value = tmp
-		case "unsigned short", "old_uid_t", "old_gid_t":
+		case "unsigned short", "old_uid_t", "old_gid_t", "umode_t":
 			tmp, err := strconv.ParseUint(num.String(), 10, 16)
 			if err != nil {
 				return err
