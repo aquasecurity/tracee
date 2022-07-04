@@ -19,7 +19,7 @@ jobs:
           - "TRC-4"
           - "TRC-5"
           - "TRC-7"
-          - "TRC-8"
+          #- "TRC-8" (issue: #1483)
           - "TRC-9"
           - "TRC-10"
           - "TRC-11"
