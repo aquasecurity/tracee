@@ -16,7 +16,7 @@
         
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.3.0, mkdocs-material-8.3.8+insiders-4.19.1">
+      <meta name="generator" content="mkdocs-1.3.0, mkdocs-material-8.3.9+insiders-4.19.2">
     
     
       
@@ -1178,7 +1178,7 @@
 
 
 <h1 id="deploy-on-kubernetes">Deploy on Kubernetes<a class="headerlink" href="#deploy-on-kubernetes" title="Permanent link">&para;</a></h1>
-<p>In the <a href="https://github.com/aquasecurity/tracee/blob/v0.7.0/deploy/kubernetes">deploy/kubernetes</a> directory you
+<p>In the <a href="https://github.com/aquasecurity/tracee/blob/v0.8.0/deploy/kubernetes">deploy/kubernetes</a> directory you
 can find Yaml files to deploy Tracee in a Kubernetes environment. This will deploy Tracee as a DaemonSet, alongside
 a message routing application that will help you consume the detections in your preferred way (e.g. slack, email, JIRA and more).</p>
 <h2 id="install-tracee">Install Tracee<a class="headerlink" href="#install-tracee" title="Permanent link">&para;</a></h2>
@@ -1186,21 +1186,21 @@ a message routing application that will help you consume the detections in your 
 <p>To install Tracee with <a href="https://github.com/aquasecurity/postee">Postee</a>, simply run:</p>
 <div class="highlight"><pre><span></span><code>kubectl create <span class="se">\</span>
   -f https://raw.githubusercontent.com/aquasecurity/postee/main/deploy/kubernetes/postee.yaml <span class="se">\</span>
-  -f https://raw.githubusercontent.com/aquasecurity/tracee/v0.7.0/deploy/kubernetes/tracee-postee/tracee.yaml
+  -f https://raw.githubusercontent.com/aquasecurity/tracee/v0.8.0/deploy/kubernetes/tracee-postee/tracee.yaml
 </code></pre></div>
 <p>You can edit the configMap <code>postee-config</code> the was created, see an example configuration here: https://github.com/aquasecurity/postee/blob/main/cfg.yaml.</p>
 <p>You can also use the <a href="https://github.com/aquasecurity/postee#postee-ui">Postee UI</a> to configure integrations.</p>
 <h3 id="with-falcosidekick">With Falcosidekick<a class="headerlink" href="#with-falcosidekick" title="Permanent link">&para;</a></h3>
 <p>To install Tracee with <a href="https://github.com/falcosecurity/falcosidekick">Falcosidekick</a>, simply run:</p>
 <div class="highlight"><pre><span></span><code>kubectl create <span class="se">\</span>
-  -f https://raw.githubusercontent.com/aquasecurity/tracee/v0.7.0/deploy/kubernetes/tracee-falcosidekick/falcosidekick.yaml <span class="se">\</span>
-  -f https://raw.githubusercontent.com/aquasecurity/tracee/v0.7.0/deploy/kubernetes/tracee-falcosidekick/tracee.yaml
+  -f https://raw.githubusercontent.com/aquasecurity/tracee/v0.8.0/deploy/kubernetes/tracee-falcosidekick/falcosidekick.yaml <span class="se">\</span>
+  -f https://raw.githubusercontent.com/aquasecurity/tracee/v0.8.0/deploy/kubernetes/tracee-falcosidekick/tracee.yaml
 </code></pre></div>
 <p>You can edit the configMap <code>falcosidekick-config</code> the was created, see an example configuration here: https://github.com/falcosecurity/falcosidekick/blob/master/config_example.yaml</p>
 <h3 id="with-helm">With Helm<a class="headerlink" href="#with-helm" title="Permanent link">&para;</a></h3>
 <ol>
 <li>Clone the Helm chart:
-   <div class="highlight"><pre><span></span><code>git clone --depth 1 --branch v0.7.0 https://github.com/aquasecurity/tracee.git
+   <div class="highlight"><pre><span></span><code>git clone --depth 1 --branch v0.8.0 https://github.com/aquasecurity/tracee.git
 cd tracee
 </code></pre></div></li>
 <li>Install the Helm chart from a local directory:
@@ -1287,7 +1287,7 @@ work out-of-the-box, including GKE, EKS, AKS, minikube.</p>
     <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.720157f5.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.2131bdac.min.js"></script>
+      <script src="../../assets/javascripts/bundle.c2e1238c.min.js"></script>
       
     
   </body>

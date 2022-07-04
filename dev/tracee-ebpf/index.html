@@ -16,7 +16,7 @@
         
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.3.0, mkdocs-material-8.3.8+insiders-4.19.1">
+      <meta name="generator" content="mkdocs-1.3.0, mkdocs-material-8.3.9+insiders-4.19.2">
     
     
       
@@ -1126,7 +1126,7 @@ data directly into standard output.</p>
   -v /etc/os-release:/etc/os-release-host:ro <span class="se">\</span>
   -e <span class="nv">LIBBPFGO_OSRELEASE_FILE</span><span class="o">=</span>/etc/os-release-host <span class="se">\</span>
   -e <span class="nv">TRACEE_EBPF_ONLY</span><span class="o">=</span><span class="m">1</span> <span class="se">\</span>
-  aquasec/tracee:0.7.0
+  aquasec/tracee:0.8.0
 </code></pre></div>
 <p>Here we are running the same <code>aquasec/tracee</code> container, but with the <code>TRACEE_EBPF_ONLY=1</code>
 environment variable set, which will start just a raw trace (Tracee-eBPF), without the
@@ -1154,7 +1154,7 @@ information:</p>
 <h2 id="getting-tracee-ebpf">Getting Tracee-eBPF<a class="headerlink" href="#getting-tracee-ebpf" title="Permanent link">&para;</a></h2>
 <p>You can use Tracee-eBPF in any of the following ways:</p>
 <ol>
-<li>Use the docker image from Docker Hub: <code>aquasec/tracee:0.7.0</code> with the <code>trace</code> sub-command.</li>
+<li>Use the docker image from Docker Hub: <code>aquasec/tracee:0.8.0</code> with the <code>trace</code> sub-command.</li>
 <li>Download from the <a href="https://github.com/aquasecurity/tracee/releases">GitHub Releases</a> (<code>tracee.tar.gz</code>).</li>
 <li>Build the executable from source using <code>make</code>.</li>
 <li>Have a building container and then build tracee with it: <code>make -f builder/Makefile.tracee-make help</code></li>
@@ -1234,7 +1234,7 @@ Installation section applies to Tracee-eBPF as well.</p>
     <script id="__config" type="application/json">{"base": "..", "features": [], "search": "../assets/javascripts/workers/search.720157f5.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.2131bdac.min.js"></script>
+      <script src="../assets/javascripts/bundle.c2e1238c.min.js"></script>
       
     
   </body>
