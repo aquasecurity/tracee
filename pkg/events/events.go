@@ -5758,7 +5758,7 @@ var Definitions = eventDefinitions{
 			Internal: true,
 			Dependencies: dependencies{
 				Events:       []eventDependency{{EventID: SecuritySocketBind}},
-				Capabilities: []capability.Cap{capability.CAP_SYS_ADMIN},
+				Capabilities: []capability.Cap{capability.CAP_NET_ADMIN},
 			},
 		},
 		DoInitModule: {
