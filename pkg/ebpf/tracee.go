@@ -1046,7 +1046,7 @@ func (t *Tracee) invokeInitEvents() {
 		t.stats.EventCount.Increment()
 	}
 	if t.events[events.ExistingContainer].emit {
-		for _, e := range events.ExistingContainersEvents(t.containers) {
+		for _, e := range events.ExistingContainersEvents(t.containers, t.config.ContainersEnrich) {
 			t.config.ChanEvents <- e
 			t.stats.EventCount.Increment()
 		}
