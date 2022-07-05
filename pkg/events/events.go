@@ -774,7 +774,6 @@ var Definitions = eventDefinitions{
 		Setsockopt: {
 			ID32Bit: sys32setsockopt,
 			Name:    "setsockopt",
-			DocPath: "lsm_hooks/security_socket_setsockopt.md",
 			Syscall: true,
 			Sets:    []string{"syscalls", "net", "net_sock"},
 			Params: []trace.ArgMeta{
@@ -5227,6 +5226,7 @@ var Definitions = eventDefinitions{
 		SecuritySocketSetsockopt: {
 			ID32Bit: sys32undefined,
 			Name:    "security_socket_setsockopt",
+			DocPath: "lsm_hooks/security_socket_setsockopt.md",
 			Probes: []probeDependency{
 				{Handle: probes.SecuritySocketSetsockopt, Required: true},
 			},
