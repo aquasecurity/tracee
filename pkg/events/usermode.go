@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -66,14 +67,23 @@ func fetchInitNamespaces() map[string]uint32 {
 }
 
 // ExistingContainersEvents returns a list of events for each existing container
-func ExistingContainersEvents(containers *containers.Containers) []trace.Event {
+func ExistingContainersEvents(containers *containers.Containers, enrich bool) []trace.Event {
 	var events []trace.Event
 	def := Definitions.Get(ExistingContainer)
-	for _, info := range containers.GetContainers() {
+	for id, info := range containers.GetContainers() {
+		container := runtime.ContainerMetadata{}
+		if enrich {
+			container, _ = containers.EnrichCgroupInfo(uint64(id))
+		}
 		args := []trace.Argument{
 			{ArgMeta: def.Params[0], Value: info.Runtime.String()},
 			{ArgMeta: def.Params[1], Value: info.Container.ContainerId},
 			{ArgMeta: def.Params[2], Value: info.Ctime.UnixNano()},
+			{ArgMeta: def.Params[3], Value: container.Image},
+			{ArgMeta: def.Params[4], Value: container.Name},
+			{ArgMeta: def.Params[5], Value: container.Pod.Name},
+			{ArgMeta: def.Params[6], Value: container.Pod.Namespace},
+			{ArgMeta: def.Params[7], Value: container.Pod.UID},
 		}
 		existingContainerEvent := trace.Event{
 			Timestamp:   int(time.Now().UnixNano()),

@@ -457,13 +457,13 @@ func (c *Containers) GetCgroupInfo(cgroupId uint64) CgroupInfo {
 }
 
 // GetContainers provides a list of all existing containers.
-func (c *Containers) GetContainers() []CgroupInfo {
-	var conts []CgroupInfo
+func (c *Containers) GetContainers() map[uint32]CgroupInfo {
+	conts := map[uint32]CgroupInfo{}
 	c.mtx.RLock()
 	defer c.mtx.RUnlock()
-	for _, v := range c.cgroups {
+	for id, v := range c.cgroups {
 		if v.Container.ContainerId != "" && v.expiresAt.IsZero() {
-			conts = append(conts, v)
+			conts[id] = v
 		}
 	}
 	return conts
