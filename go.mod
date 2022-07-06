@@ -18,7 +18,6 @@ require (
 	github.com/open-policy-agent/opa v0.41.0
 	github.com/prometheus/client_golang v1.12.1
 	github.com/stretchr/testify v1.7.1
-	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
 	github.com/testcontainers/testcontainers-go v0.12.0
 	github.com/urfave/cli/v2 v2.3.0
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad
@@ -28,6 +27,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	gotest.tools v2.2.0+incompatible
 	inet.af/netaddr v0.0.0-20211027220019-c74959edd3b6
+	kernel.org/pub/linux/libs/security/libcap/cap v1.2.64
 )
 
 require (
@@ -101,6 +101,7 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	kernel.org/pub/linux/libs/security/libcap/psx v1.2.64 // indirect
 )
 
 replace github.com/kubernetes/cri-api => k8s.io/cri-api v0.23.5-rc.0

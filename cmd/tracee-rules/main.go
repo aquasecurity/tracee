@@ -18,8 +18,8 @@ import (
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/syndtr/gocapability/capability"
 	"github.com/urfave/cli/v2"
+	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
 const (
@@ -288,12 +288,7 @@ func sigHandler() chan bool {
 // dropCapabilities drop all capabilities from the process
 // The function also tries to drop the capabilities bounding set, but it won't work if CAP_SETPCAP is not available.
 func dropCapabilities() error {
-	selfCaps, err := capabilities.Self()
-	if err != nil {
-		return err
-	}
-
-	err = capabilities.DropUnrequired(selfCaps, []capability.Cap{})
+	err := capabilities.DropUnrequired([]cap.Value{})
 	if err != nil {
 		return err
 	}
