@@ -1075,6 +1075,8 @@ capabilities:</p>
 <li><code>CAP_SETPCAP</code> (if given - used to reduce bounding set capabilities)</li>
 <li><code>CAP_SYSLOG</code> (to access kernel symbols through /proc/kallsyms)</li>
 <li>On some environments (e.g. Ubuntu) <code>CAP_IPC_LOCK</code> might be required as well.</li>
+<li>On cgroup v1 environments, <code>CAP_SYS_ADMIN</code> is recommended if running from a container in 
+order to allow tracee to mount the cpuset cgroup controller.</li>
 </ul>
 <blockquote>
 <p>Alternatively, run as <code>root</code> or with the <code>--privileged</code> flag of Docker.</p>
