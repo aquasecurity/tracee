@@ -139,11 +139,13 @@ func (c *Containers) initCgroupV1() error {
 // findCgroupMounts finds cgroups v1 and v2 mountpoints.
 func (c *Containers) findCgroupMounts() error {
 	fsType := cgroupV2FsType
+	search := ""
 	if c.cgroupV1 {
 		fsType = cgroupV1FsType
+		search = "cpuset"
 	}
 
-	mp, err := findMountpoint(fsType)
+	mp, err := searchMountpoint(fsType, search)
 
 	if err != nil {
 		return err

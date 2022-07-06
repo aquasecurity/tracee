@@ -95,8 +95,9 @@ func isMountpoint(path string, fstype string) (bool, error) {
 	return false, nil
 }
 
-// findMountpoint finds the last mountpoint for the given fstype
-func findMountpoint(fstype string) (string, error) {
+// searchMountpoint finds the last mountpoint for the given fstype which includes the search string
+// if the search string is empty the function will return the last found path
+func searchMountpoint(fstype string, search string) (string, error) {
 	mountsFile := "/proc/mounts"
 	file, err := os.Open(mountsFile)
 	if err != nil {
@@ -111,7 +112,7 @@ func findMountpoint(fstype string) (string, error) {
 		mountpoint := sline[1]
 		currFstype := sline[2]
 
-		if fstype == currFstype {
+		if fstype == currFstype && strings.Contains(mountpoint, search) {
 			mp = mountpoint
 		}
 	}
