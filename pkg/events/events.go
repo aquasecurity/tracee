@@ -5501,6 +5501,7 @@ var Definitions = eventDefinitions{
 				{Handle: probes.ICMPv6Send, Required: true},
 				{Handle: probes.Pingv4Sendmsg, Required: true},
 				{Handle: probes.Pingv6Sendmsg, Required: true},
+				{Handle: probes.SecuritySocketBind, Required: true},
 			},
 			Dependencies: dependencies{
 				Capabilities: []cap.Value{cap.NET_ADMIN},
@@ -5758,7 +5759,7 @@ var Definitions = eventDefinitions{
 			Name:     "capture_pcap",
 			Internal: true,
 			Dependencies: dependencies{
-				Events:       []eventDependency{{EventID: SecuritySocketBind}},
+				Events:       []eventDependency{{EventID: NetPacket}},
 				Capabilities: []cap.Value{cap.NET_ADMIN},
 			},
 		},
