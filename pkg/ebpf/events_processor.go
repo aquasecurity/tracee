@@ -18,6 +18,26 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
+func MatchFilter(filters []string, argValStr string) bool {
+	for _, f := range filters {
+		prefixCheck := f[len(f)-1] == '*'
+		if prefixCheck {
+			f = f[0 : len(f)-1]
+		}
+		suffixCheck := f[0] == '*'
+		if suffixCheck {
+			f = f[1:]
+		}
+		if argValStr == f ||
+			(prefixCheck && !suffixCheck && strings.HasPrefix(argValStr, f)) ||
+			(suffixCheck && !prefixCheck && strings.HasSuffix(argValStr, f)) ||
+			(prefixCheck && suffixCheck && strings.Contains(argValStr, f)) {
+			return true
+		}
+	}
+	return false
+}
+
 func (t *Tracee) processLostEvents() {
 	for {
 		lost := <-t.lostEvChannel
@@ -75,20 +95,13 @@ func (t *Tracee) shouldProcessEvent(ctx *bufferdecoder.Context, args []trace.Arg
 			}
 			// TODO: use type assertion instead of string conversion
 			argValStr := fmt.Sprint(argVal)
-			match := false
-			for _, f := range filter.Equal {
-				if argValStr == f || (f[len(f)-1] == '*' && strings.HasPrefix(argValStr, f[0:len(f)-1])) {
-					match = true
-					break
-				}
-			}
+			match := MatchFilter(filter.Equal, argValStr)
 			if !match && len(filter.Equal) > 0 {
 				return false
 			}
-			for _, f := range filter.NotEqual {
-				if argValStr == f || (f[len(f)-1] == '*' && strings.HasPrefix(argValStr, f[0:len(f)-1])) {
-					return false
-				}
+			matchExclude := MatchFilter(filter.NotEqual, argValStr)
+			if matchExclude {
+				return false
 			}
 		}
 	}
