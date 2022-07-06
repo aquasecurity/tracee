@@ -289,6 +289,24 @@ func Test_Events(t *testing.T) {
 			eventFunc:  checkSetFs,
 			goTemplate: "{{ .EventName }}\n",
 		},
+		{
+			name:       "trace only execve events that ends with ls",
+			args:       []string{"--trace", "event=execve", "--trace", "execve.pathname=*ls"},
+			eventFunc:  checkExeccommand,
+			goTemplate: "{{ .EventName }}\n",
+		},
+		{
+			name:       "trace only execve events that starts with /bin",
+			args:       []string{"--trace", "event=execve", "--trace", "execve.pathname=/bin*"},
+			eventFunc:  checkExeccommand,
+			goTemplate: "{{ .EventName }}\n",
+		},
+		{
+			name:       "trace only execve events that contains l",
+			args:       []string{"--trace", "event=execve", "--trace", "execve.pathname=*l*"},
+			eventFunc:  checkExeccommand,
+			goTemplate: "{{ .EventName }}\n",
+		},
 		// TODO: Add --capture tests
 	}
 

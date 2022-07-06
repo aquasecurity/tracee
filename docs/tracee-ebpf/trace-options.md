@@ -51,7 +51,7 @@ Available boolean expressions: container.
 
 Event arguments can be accessed using 'event_name.event_arg' and provide a way to filter an event by its arguments.
 Event arguments allow the following operators: '=', '!='.
-Strings can be compared as a prefix if ending with '*'.
+Strings can be compared as a prefix if ending with '*' or as suffix if starting with '*'.
 
 Event return value can be accessed using 'event_name.retval' and provide a way to filter an event by its return value.
 Event return value expression has the same syntax as a numerical expression.
