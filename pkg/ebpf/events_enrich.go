@@ -75,18 +75,19 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 		for { // enqueue events
 			select {
 			case event := <-in:
-				// send out irrelevant events
-				if event.ContainerID == "" {
+				eventID := events.ID(event.EventID)
+				// send out irrelevant events, don't skip the cgroup lifecycle events
+				if event.ContainerID == "" && eventID != events.CgroupMkdir && eventID != events.CgroupRmdir {
 					out <- event
 					continue
 				}
 				cgroupId := uint64(event.CgroupID)
 				// CgroupMkdir: pick EventID from the event itself
-				if event.EventID == int(events.CgroupMkdir) {
+				if eventID == events.CgroupMkdir {
 					cgroupId, _ = parse.ArgUint64Val(event, "cgroup_id")
 				}
 				// CgroupRmdir: clean up remaining events and maps
-				if event.EventID == int(events.CgroupRmdir) {
+				if eventID == events.CgroupRmdir {
 					var eInfo *enrichResult
 					cgroupId, _ = parse.ArgUint64Val(event, "cgroup_id")
 					bLock.RLock()
@@ -147,7 +148,9 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 					// de-queue event if queue is enriched
 					if _, ok := queues[cgroupId]; ok {
 						event := <-queues[cgroupId]
-						if event.ContainerImage == "" {
+						eventID := events.ID(event.EventID)
+						// check if not enrich, and only enrich regular non cgroup related events
+						if event.ContainerImage == "" && eventID != events.CgroupMkdir && eventID != events.CgroupRmdir {
 							// event is not enriched: enrich if enrichment worked
 							i := enrichInfo[cgroupId]
 							if i.err == nil {
