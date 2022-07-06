@@ -71,7 +71,6 @@
 #elif defined(bpf_target_arm64)
     #define PT_REGS_PARM6(x) ((x)->regs[5])
 #endif
-#define PT_REGS_PARM6_SYSCALL(x) PT_REGS_PARM6(x)
 
 // INTERNAL ----------------------------------------------------------------------------------------
 
@@ -2549,12 +2548,17 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
             sys->args.args[5] = READ_KERN(regs->bp);
 #endif // bpf_target_x86
         } else {
-            sys->args.args[0] = READ_KERN(PT_REGS_PARM1_SYSCALL(regs));
-            sys->args.args[1] = READ_KERN(PT_REGS_PARM2_SYSCALL(regs));
-            sys->args.args[2] = READ_KERN(PT_REGS_PARM3_SYSCALL(regs));
-            sys->args.args[3] = READ_KERN(PT_REGS_PARM4_SYSCALL(regs));
-            sys->args.args[4] = READ_KERN(PT_REGS_PARM5_SYSCALL(regs));
-            sys->args.args[5] = READ_KERN(PT_REGS_PARM6_SYSCALL(regs));
+            sys->args.args[0] = READ_KERN(PT_REGS_PARM1(regs));
+            sys->args.args[1] = READ_KERN(PT_REGS_PARM2(regs));
+            sys->args.args[2] = READ_KERN(PT_REGS_PARM3(regs));
+#if defined(bpf_target_x86)
+            // x86-64: r10 used instead of rcx (4th param to a syscall)
+            sys->args.args[3] = READ_KERN(regs->r10);
+#else
+            sys->args.args[3] = READ_KERN(PT_REGS_PARM4(regs));
+#endif
+            sys->args.args[4] = READ_KERN(PT_REGS_PARM5(regs));
+            sys->args.args[5] = READ_KERN(PT_REGS_PARM6(regs));
         }
     } else {
         bpf_probe_read(sys->args.args, sizeof(6 * sizeof(u64)), (void *) ctx->args);
