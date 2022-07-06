@@ -2582,6 +2582,11 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
     if (sys->id != SYS_EXIT && sys->id != SYS_EXIT_GROUP && sys->id != SYS_RT_SIGRETURN) {
         sys->ts = data.context.ts;
         data.task_info->syscall_traced = true;
+    } else if (sys->id != SYS_RT_SIGRETURN) {
+        data.buf_off = sizeof(event_context_t);
+        data.context.argnum = 0;
+        save_to_submit_buf(&data, &sys->args.args[0], sizeof(int), 0);
+        events_perf_submit(&data, sys->id, 0);
     }
 
     // call syscall handler, if exists
