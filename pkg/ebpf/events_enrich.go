@@ -10,170 +10,158 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-const (
-	enrichResultQueueSize = 1000
-	enrichmentQueueSize   = 10000
-)
+//
+// Producer:
+//
+// Each cgroupId gets its own channel of events. Events are enqueued and only
+// de-dequed once the cgroupId was enriched OR has failed enrichment.
+//
+// [cgroupId #A]: queue of trace events for container described by cgroupId #A
+// [cgroupId #B]: queue of trace events for container described by cgroupId #B
+// [cgroupId #C]: queue of trace events for container described by cgroupId #C
+// ...
+//
+// If the cgroupId channel does not exist it is created and an enrichment phase
+// is triggered for that cgroupId. If the cgroup channel is not used after a
+// specific period, it is removed.
+//
+// Consumer:
+//
+// In order to de-queue an event from its queue there is a scheduled operation
+// to each queued event.
+//
+// queueReady: it is a simple scheduler of events using their cgroupId as index
+//
+// [cgroupId #A][cgroupId #B][cgroupId #C][#cgroupId #B][cgroupId #C]...
+//
+// One event is de-queued from queueReady only if its respective cgroupId has
+// been enriched OR has failed enrichment.
+//
+// Observation:
+//
+// With this model, the pipeline will only block when one of these channels is
+// full. In this case, pipeline will be blocked until this channel's cgroupId
+// is enriched and its enqueued events are de-queued.
+//
 
 func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.Event) (chan *trace.Event, chan error) {
+	const (
+		contQueueSize  = 10000  // max num of events queued per container
+		queueReadySize = 100000 // max num of events queued in total
+	)
+
 	type enrichResult struct {
-		cgroupId uint64
-		result   runtime.ContainerMetadata
-		err      error
+		result runtime.ContainerMetadata
+		err    error
 	}
 
-	queues := make(map[uint64]chan *trace.Event) // cgroupId and queues
-	queuesMutex := sync.RWMutex{}
-	attempted := make(map[uint64]*sync.Mutex)                  // cgroupId and enrichment attempt expressed as transaction lock
-	attemptedMutex := sync.RWMutex{}                           // big lock for attempted map
-	enriches := make(chan enrichResult, enrichResultQueueSize) // small buffer to reduce chance for blocking
-	//queues that are no longer used. we don't want to close on receiving side so it will mark queues as stale and sender can close
-	staleQueues := make(map[uint64]chan *trace.Event)
+	// big lock
+	bLock := sync.RWMutex{}
+	// pipeline channels
 	out := make(chan *trace.Event, 10000)
 	errc := make(chan error, 1)
-	done := make(chan struct{}, 1)
+	// state machine for enrichment
+	enrichDone := make(map[uint64]bool)
+	enrichInfo := make(map[uint64]*enrichResult)
+	// 1 queue per cgroupId
+	queues := make(map[uint64]chan *trace.Event)
+	// scheduler queue
+	queueReady := make(chan uint64, queueReadySize)
 
+	// queues map writer
 	go func() {
 		defer close(out)
 		defer close(errc)
-		for {
+		for { // enqueue events
 			select {
-			case <-ctx.Done():
-				done <- struct{}{}
-				return
 			case event := <-in:
+				// send out irrelevant events
+				if event.ContainerID == "" {
+					out <- event
+					continue
+				}
 				cgroupId := uint64(event.CgroupID)
-				// cgroup_mkdir event: need the cgroupId from its argument
+				// CgroupMkdir: pick EventID from the event itself
 				if event.EventID == int(events.CgroupMkdir) {
 					cgroupId, _ = parse.ArgUint64Val(event, "cgroup_id")
 				}
-				// cgroup_rmdir: need to clean attempt so cgroupId can be reused
+				// CgroupRmdir: clean up remaining events and maps
 				if event.EventID == int(events.CgroupRmdir) {
+					var eInfo *enrichResult
 					cgroupId, _ = parse.ArgUint64Val(event, "cgroup_id")
-					attemptedMutex.Lock()
-					delete(attempted, cgroupId)
-					attemptedMutex.Unlock()
-				}
-				// non container event and not cgroup_mkdir (or the event already enriched) skip per cgroupId caching
-				if (event.ContainerID == "" && event.EventID != int(events.CgroupMkdir)) || event.ContainerImage != "" {
-					// enrichment attempt is being done, or has failed, so do not try it again
-					attemptedMutex.RLock()
-					if _, ok := attempted[cgroupId]; ok {
-						// wait transaction (cache flush) to finish so cached events and this one are ordered
-						attempted[cgroupId].Lock()
-						out <- event
-						attempted[cgroupId].Unlock()
-						attemptedMutex.RUnlock()
-						continue
+					bLock.RLock()
+					if i, ok := enrichInfo[cgroupId]; ok {
+						eInfo = i
 					}
-					attemptedMutex.RUnlock()
-					out <- event // some events might not have an attempted map
-					continue
-				} else {
-					//if the container queue has not been created - create the container queue and invoke to enrich query
-					queuesMutex.RLock()
-					_, exists := queues[cgroupId]
-					queuesMutex.RUnlock()
-					if !exists {
-						queuesMutex.Lock()
-						queues[cgroupId] = make(chan *trace.Event, enrichmentQueueSize)
-						queuesMutex.Unlock()
-
-						go func() {
-							metadata, err := t.containers.EnrichCgroupInfo(cgroupId)
-							enriches <- enrichResult{cgroupId, metadata, err}
-						}()
-					}
-					queuesMutex.RLock()
-					queue, ok := queues[cgroupId]
-					queuesMutex.RUnlock()
-					if ok {
-						//if queue still exists send as usual
-						queue <- event
-					} else {
-						//if not, get the enriched data and handle the stale queue
-						info := t.containers.GetCgroupInfo(cgroupId)
-						queuesMutex.RLock()
-						queue = staleQueues[cgroupId]
-						queuesMutex.RUnlock()
-
-						//probably empty but just to make sure
-						for evt := range queue {
-							enrichEvent(evt, info.Container)
-							out <- evt
+					for evt := range queues[cgroupId] {
+						if evt.ContainerImage == "" && eInfo != nil {
+							bLock.RUnlock()
+							enrichEvent(evt, eInfo.result)
+							bLock.RLock()
 						}
-
-						enrichEvent(event, info.Container)
-
-						close(queue)
-						queuesMutex.Lock()
-						delete(staleQueues, cgroupId)
-						queuesMutex.Unlock()
-						out <- event
+						out <- evt
 					}
+					bLock.RUnlock()
+					bLock.Lock()
+					delete(enrichDone, cgroupId)
+					delete(enrichInfo, cgroupId)
+					delete(queues, cgroupId)
+					bLock.Unlock()
+					continue
 				}
+				// make sure a queue channel exists for this cgroupId
+				bLock.Lock()
+				if _, ok := queues[cgroupId]; !ok {
+					queues[cgroupId] = make(chan *trace.Event, contQueueSize)
+
+					go func(cgroupId uint64) {
+						metadata, err := t.containers.EnrichCgroupInfo(cgroupId)
+						bLock.Lock()
+						enrichInfo[cgroupId] = &enrichResult{metadata, err}
+						enrichDone[cgroupId] = true
+						bLock.Unlock()
+					}(cgroupId)
+				}
+				bLock.Unlock() // give parallel enrichment routine a chance!
+				bLock.RLock()
+				// enqueue the event and schedule the operation
+				queues[cgroupId] <- event
+				bLock.RUnlock()
+				queueReady <- cgroupId
+			case <-ctx.Done():
+				return
 			}
 		}
 	}()
 
+	// queues map reader
 	go func() {
-		for enrich := range enriches {
-			cgroupId := enrich.cgroupId
-			mutex := &sync.Mutex{}
-			mutex.Lock() // place already acquired mutex in the attempted map
-			attemptedMutex.Lock()
-			attempted[cgroupId] = mutex // now attempted[cgroupId] is a transaction, only happens once and has begun
-			attemptedMutex.Unlock()
-			queuesMutex.RLock()
-			queue := queues[cgroupId]
-			queuesMutex.RUnlock()
-			if enrich.err != nil {
-				//only send error if it's not a non-existing cgroup error
-				if enrich.err.Error() != "no cgroup to enrich" {
-					t.handleError(enrich.err)
+		for { // de-queue events
+			select {
+			case cgroupId := <-queueReady: // queue for received cgroupId is ready
+				bLock.RLock()
+				if !enrichDone[cgroupId] {
+					// re-schedule the operation if queue is not enriched
+					queueReady <- cgroupId
+				} else {
+					// de-queue event if queue is enriched
+					if _, ok := queues[cgroupId]; ok {
+						event := <-queues[cgroupId]
+						if event.ContainerImage == "" {
+							// event is not enriched: enrich if enrichment worked
+							i := enrichInfo[cgroupId]
+							if i.err == nil {
+								enrichEvent(event, i.result)
+							}
+						}
+						out <- event
+					} // TODO: place a unlikely to happen error in the printer
 				}
-
-				for evt := range queue {
-					select {
-					case out <- evt:
-					case <-done:
-						return
-					}
-
-					//at this point no new events should enter this queue, since the attempt was marked
-					//we need this break condition, otherwise we will wait for new events forever
-					if len(queue) < 1 {
-						break
-					}
-				}
-			} else {
-				//go through the queue and inject the enrichment data that was missing during decoding
-				for evt := range queue {
-					if evt.ContainerID != "" {
-						enrichEvent(evt, enrich.result)
-					}
-					select {
-					case out <- evt:
-					case <-done:
-						return
-					}
-
-					//at this point no new events should enter this queue, since the attempt was marked
-					//we need this break condition, otherwise we will wait for new events forever
-					if len(queue) < 1 {
-						break
-					}
-				}
+				bLock.RUnlock()
+			// cleanup
+			case <-ctx.Done():
+				return
 			}
-			mutex.Unlock() // end of transaction
-
-			//after enrichment was done and all events were processed we can close and delete the channel from the map
-			//subsequent events will be enriched during decoding
-
-			queuesMutex.Lock()
-			delete(queues, cgroupId)
-			staleQueues[cgroupId] = queue
-			queuesMutex.Unlock()
 		}
 	}()
 
