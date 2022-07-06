@@ -2954,7 +2954,11 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
         save_to_submit_buf(&data, &stdin_type, sizeof(unsigned short), 8);
         save_to_submit_buf(&data, &inode_mode, sizeof(umode_t), 9);
         save_str_to_buf(&data, (void *) interp, 10);
-        if (elf_interpreter != NULL) {
+
+        // If the interpreter file is the same as executed one, it means that there is no
+        // interpreter. For more information, look at how the 'interpreter_map' works.
+        if (elf_interpreter != NULL &&
+            (elf_interpreter->device != s_dev || elf_interpreter->inode != inode_nr)) {
             save_str_to_buf(&data, &elf_interpreter->pathname, 11);
             save_to_submit_buf(&data, &elf_interpreter->device, sizeof(dev_t), 12);
             save_to_submit_buf(&data, &elf_interpreter->inode, sizeof(unsigned long), 13);
