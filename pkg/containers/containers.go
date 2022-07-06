@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -22,6 +21,8 @@ import (
 var cgroupV1HierarchyID int
 
 const cgroupV1Controller = "cpuset"
+const cgroupV1FsType = "cgroup"
+const cgroupV2FsType = "cgroup2"
 
 // Containers contains information about running containers in the host.
 type Containers struct {
@@ -45,10 +46,15 @@ type CgroupInfo struct {
 // InitContainers initializes a Containers object and returns a pointer to it.
 // User should further call "Populate" and iterate with Containers data.
 func InitContainers(sockets cruntime.Sockets, debug bool) (*Containers, error) {
-	cgroupV1 := false
+	containers := &Containers{
+		cgroupV1: false,
+		cgroupMP: "",
+		cgroups:  make(map[uint32]CgroupInfo),
+		mtx:      sync.RWMutex{},
+	}
+
 	if _, err := os.Stat("/sys/fs/cgroup/cgroup.controllers"); os.IsNotExist(err) {
-		cgroupV1 = true
-		if err := initCgroupV1(); err != nil {
+		if err := containers.initCgroupV1(); err != nil {
 			return nil, err
 		}
 	}
@@ -69,13 +75,9 @@ func InitContainers(sockets cruntime.Sockets, debug bool) (*Containers, error) {
 		fmt.Fprintf(os.Stderr, "Enricher: %v\n", err)
 	}
 
-	return &Containers{
-		cgroupV1: cgroupV1,
-		cgroupMP: "",
-		cgroups:  make(map[uint32]CgroupInfo),
-		mtx:      sync.RWMutex{},
-		enricher: runtimeService,
-	}, nil
+	containers.enricher = runtimeService
+
+	return containers, nil
 }
 
 func (c *Containers) IsCgroupV1() bool {
@@ -88,63 +90,66 @@ func (c *Containers) GetCgroupV1HID() int {
 
 // Populate populates Containers struct by reading mounted proc and cgroups fs.
 func (c *Containers) Populate() error {
-	err := c.procMountsCgroups()
-	if err != nil {
-		return err
+	if c.cgroupMP == "" {
+		err := c.findCgroupMounts()
+		if err != nil {
+			return err
+		}
 	}
 
 	return c.populate()
 }
 
 // getCgroupV1SSID finds cgroup v1 hierarchy ID.
-func initCgroupV1() error {
-	cgroupsFile := "/proc/cgroups"
-	file, err := os.Open(cgroupsFile)
-	if err != nil {
-		return fmt.Errorf("could not open cgroups file %s: %w", cgroupsFile, err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for i := 1; scanner.Scan(); i++ {
-		sline := strings.Fields(scanner.Text())
-		if len(sline) < 2 || sline[0] != cgroupV1Controller {
-			continue
-		}
-		intID, err := strconv.Atoi(sline[1])
-		if err != nil || intID < 0 {
-			return fmt.Errorf("error parsing %s: %w", cgroupsFile, err)
-		}
-		cgroupV1HierarchyID = intID
-		return nil
-	}
-
-	return fmt.Errorf("couldn't determine cgroup v1 hierarchy id")
-}
-
-// procMountsCgroups finds cgroups v1 and v2 mountpoints.
-func (c *Containers) procMountsCgroups() error {
-	mountsFile := "/proc/mounts"
-	file, err := os.Open(mountsFile)
+func (c *Containers) initCgroupV1() error {
+	c.cgroupV1 = true
+	hierarchyId, err := getCgroupV1HierarchyId()
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	cgroupV1HierarchyID = hierarchyId
 
-	scanner := bufio.NewScanner(file)
-	for i := 1; scanner.Scan(); i++ {
-		sline := strings.Split(scanner.Text(), " ")
-		mountpoint := sline[1]
-		fstype := sline[2]
-		if c.cgroupV1 {
-			if fstype == "cgroup" && strings.Contains(mountpoint, cgroupV1Controller) {
-				c.cgroupMP = mountpoint
-			}
-		} else if fstype == "cgroup2" {
-			c.cgroupMP = mountpoint
-		}
+	inContainer, err := runsOnContainerV1()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "containers: failed to detect if running on a cgroupv1 container: %s", err)
+		return nil
 	}
 
+	if inContainer {
+		os.Mkdir("./cpuset", 0644)
+		mountPath, err := filepath.Abs("./cpuset")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to get absolute path of cputset mountpoint %s\n", mountPath)
+			return nil
+		}
+
+		err = mountCpuset(mountPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "containers: failed to mount cgroupv1 controller: %s\n", err)
+			return nil
+		}
+
+		// now that we know what the mountPath is we can just set it
+		c.cgroupMP = mountPath
+	}
+
+	return nil
+}
+
+// findCgroupMounts finds cgroups v1 and v2 mountpoints.
+func (c *Containers) findCgroupMounts() error {
+	fsType := cgroupV2FsType
+	if c.cgroupV1 {
+		fsType = cgroupV1FsType
+	}
+
+	mp, err := findMountpoint(fsType)
+
+	if err != nil {
+		return err
+	}
+
+	c.cgroupMP = mp
 	return nil
 }
 
