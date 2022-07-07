@@ -115,11 +115,20 @@ fi
 
 for arg in ${@}; do
     case ${arg} in
-    "--help")
+    "-h" | "--help")
         if [ ${TRACEE_EBPF_ONLY} -eq 1 ]; then
             ${TRACEE_EBPF_EXE} --help
         else
             ${TRACEE_RULES_EXE} --help
+        fi
+
+        exit $?
+        ;;
+    "-l" | "--list")
+        if [ ${TRACEE_EBPF_ONLY} -eq 1 ]; then
+            ${TRACEE_EBPF_EXE} --list
+        else
+            ${TRACEE_RULES_EXE} --list
         fi
 
         exit $?
