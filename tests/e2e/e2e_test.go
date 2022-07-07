@@ -83,7 +83,7 @@ var (
 		"tracee tester container image reference")
 	traceeImageRef = flag.String("tracee-image-ref", "tracee:full",
 		"tracee container image reference")
-	signatureIDs = flag.String("tracee-signatures", "TRC-2,TRC-3,TRC-4,TRC-5,TRC-7,TRC-8,TRC-9,TRC-10,TRC-11,TRC-12,TRC-14",
+	signatureIDs = flag.String("tracee-signatures", "TRC-2,TRC-3,TRC-4,TRC-5,TRC-7,TRC-9,TRC-10,TRC-11,TRC-12,TRC-14",
 		"comma-separated list of tracee signature identifiers")
 )
 
