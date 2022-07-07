@@ -9,7 +9,7 @@ The [Vagrantfile] describes the type of machine required to build Tracee from so
 
 ## Prerequisites
 
-- [Vagrant](https://www.vagrantup.com/docs/installation)
+- [Vagrant]
 - [Hypervisor] supported by Vagrant, such as [VirtualBox].
 
 ## Create Development Machine
@@ -327,6 +327,7 @@ The development machine is running the MkDocs server listening on port 8000, whi
 host. Therefore, you can open your browser to [http://localhost:8000](http://localhost:8000) and access documentation
 pages.
 
+[Vagrant]: https://www.vagrantup.com/docs/installation
 [HashiCorp Vagrant]: https://www.vagrantup.com
 [Vagrantfile]: https://github.com/aquasecurity/tracee/blob/{{ git.tag }}/Vagrantfile
 [Hypervisor]: https://www.vagrantup.com/docs/providers

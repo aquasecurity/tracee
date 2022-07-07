@@ -6,7 +6,7 @@ __rego_metadoc__ := {
 	"id": "TRC-14",
 	"version": "0.1.0",
 	"name": "CGroups Release Agent File Modification",
-	"description": "An Attempt to modify CGroups release agent file was detected. CGroups are a Linux kernel feature which allows process's resources limitations. Adversaries may use this feature for container escaping.",
+	"description": "An Attempt to modify CGroups release agent file was detected. CGroups are a Linux kernel feature which can change a process's resource limitations. Adversaries may use this feature for container escaping.",
 	"properties": {
 		"Severity": 3,
 		"MITRE ATT&CK": "Privilege Escalation: Escape to Host",
