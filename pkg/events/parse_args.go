@@ -34,7 +34,7 @@ func ParseArgs(event *trace.Event) error {
 				alertArg.Value = trace.MemProtAlert(alert).String()
 			}
 		}
-	case SysEnter, SysExit, CapCapable, CommitCreds, SecurityFileOpen, TaskRename:
+	case SysEnter, SysExit, CapCapable, CommitCreds, SecurityFileOpen, TaskRename, SecurityMmapFile:
 		if syscallArg := GetArg(event, "syscall"); syscallArg != nil {
 			if id, isInt32 := syscallArg.Value.(int32); isInt32 {
 				if event, isKnown := Definitions.GetSafe(ID(id)); isKnown {
@@ -60,7 +60,15 @@ func ParseArgs(event *trace.Event) error {
 				}
 			}
 		}
-	case Mmap, Mprotect, PkeyMprotect, SecurityMmapFile, SecurityFileMprotect:
+		if ID(event.EventID) == SecurityMmapFile {
+			if protArg := GetArg(event, "prot"); protArg != nil {
+				if prot, isInt32 := protArg.Value.(int32); isInt32 {
+					mmapProtArgument := helpers.ParseMmapProt(uint64(prot))
+					ParseOrEmptyString(protArg, mmapProtArgument, nil)
+				}
+			}
+		}
+	case Mmap, Mprotect, PkeyMprotect, SecurityFileMprotect:
 		if protArg := GetArg(event, "prot"); protArg != nil {
 			if prot, isInt32 := protArg.Value.(int32); isInt32 {
 				mmapProtArgument := helpers.ParseMmapProt(uint64(prot))
