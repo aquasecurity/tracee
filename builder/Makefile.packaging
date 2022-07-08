@@ -51,22 +51,19 @@ help:
 	@echo "  * Focal (LTS)"
 	@echo "    $ make -f builder/Makefile.packaging ubuntu-bin-focal"
 	@echo ""
-	@echo "  * Impish (latest)"
-	@echo "    $ make -f builder/Makefile.packaging ubuntu-bin-impish"
-	@echo ""
 	@echo "  * Jammy (devel)"
 	@echo "    $ make -f builder/Makefile.packaging ubuntu-bin-jammy"
 	@echo ""
 	@echo "FEDORA:"
 	@echo ""
-	@echo "  * 34 (still maintained)"
-	@echo "    $ make -f builder/Makefile.packaging fedora-bin-34"
-	@echo ""
-	@echo "  * 35 (latest)"
+	@echo "  * 35 (still maintained)"
 	@echo "    $ make -f builder/Makefile.packaging fedora-bin-35"
 	@echo ""
-	@echo "  * 36 (devel)"
+	@echo "  * 36 (latest)"
 	@echo "    $ make -f builder/Makefile.packaging fedora-bin-36"
+	@echo ""
+	@echo "  * 37 (devel)"
+	@echo "    $ make -f builder/Makefile.packaging fedora-bin-37"
 	@echo ""
 
 #
@@ -144,7 +141,7 @@ ifneq ($(ARG),)
 endif
 
 #
-# UBUNTU: binary pkg (ubuntu-pkgs-bin-focal, ubuntu-pkgs-bin-impish, ...)
+# UBUNTU: binary pkg (ubuntu-pkgs-bin-focal, ubuntu-pkgs-bin-jammy, ...)
 #
 
 .PHONY: ubuntu-bin-%
@@ -195,7 +192,7 @@ ifneq ($(ARG),)
 endif
 
 #
-# FEDORA: binary pkg (fedora-pkgs-bin-34, fedora-pkgs-bin-35, ...)
+# FEDORA: binary pkg (fedora-pkgs-bin-35, fedora-pkgs-bin-36, ...)
 #
 
 .PHONY: fedora-bin-%
