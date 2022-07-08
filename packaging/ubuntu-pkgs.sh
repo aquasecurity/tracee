@@ -54,9 +54,8 @@ export DEB_BUILD_OPTIONS="nocheck nostrip noudeb doc"
 
 #
 # TODO: add src cmd to generate source packages. src packages will only work
-#       from impish and beyond (due to build depends). with src packages we're
-#	able to submit them to ubuntu builders and have them added to universe
-#	archive.
+# from impish and beyond (due to build depends). with src packages we're able
+# to submit them to ubuntu builders and have them added to universe archive.
 #
 
 if [ "${KEY}" == "" ]; then
