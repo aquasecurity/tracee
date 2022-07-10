@@ -1,12 +1,16 @@
-// This wrapper is a quick win for the POC to integrate trace.Event with cel-go without implementing ref.TypeProvider
-// for Go structs.
+// This wrapper is a quick win for the POC to integrate trace.Event with cel-go
+// without implementing ref.TypeProvider for Go structs.
 //
 // TODO Add make target to generate Go structs from event.proto.
 //
 // $ sudo apt-get install --yes protobuf-compiler
 // $ go install github.com/golang/protobuf/protoc-gen-go
 // $ export PATH=$PATH:$(go env GOPATH)/bin
-// $ protoc pkg/rules/celsig/wrapper/event.proto --go_out=plugins=grpc:/vagrant --experimental_allow_proto3_optional
+// $ protoc \
+//    pkg/rules/celsig/wrapper/event.proto \
+//    --go_out=plugins=grpc:/vagrant \
+//    --experimental_allow_proto3_optional
+//
 syntax = "proto3";
 
 import "google/protobuf/timestamp.proto";
@@ -53,14 +57,14 @@ enum ValueType {
   UINT64 = 4;
   INT32 = 5;
   INT64 = 6;
-  // SOCKADDR is just an example of a complex type wrapped from trace.Event to Protocol Buffer message to demonstrate
-  // CEL capabilities with more complex expressions.
+  // SOCKADDR is just an example of a complex type wrapped from trace.Event to
+  // Protocol Buffer message to demonstrate CEL capabilities with more complex
+  // expressions.
   SOCKADDR = 7;
 }
 
 // Argument represents an argument associated with the given Event.
 message Argument {
-
   // name is the name of this argument.
   string name = 1;
 
@@ -71,13 +75,16 @@ message Argument {
   Value value = 3;
 }
 
-// Value is a union-like structure that wraps the value of a given Argument.
-// We are not using Oneof nor Any type because of their limitations. The Oneof
-// type does not allow repeated values, whereas Any is not convenient to unpack
+//
+// Value is a union-like structure that wraps the value of a given Argument. We
+// are not using Oneof nor Any type because of their limitations. The Oneof type
+// does not allow repeated values, whereas Any is not convenient to unpack
 // structured values.
+//
 // A similar approach is taken by Kubernetes APIs. For example,
 // PersistentVolumeSource holds mutually exclusive volume definitions.
 // See https://github.com/kubernetes/api/blob/master/core/v1/generated.proto
+//
 message Value {
 
   optional string stringValue = 1;
@@ -91,8 +98,8 @@ message Value {
 
 enum sa_family_t {
   SA_FAMILY_T_UNSPEC = 0;
-  // POSIX.1g used the name AF_LOCAL as a synonym for AF_UNIX, but this
-  // name is not used in SUSv3.
+  // POSIX.1g used the name AF_LOCAL as a synonym for AF_UNIX,
+  // but this name is not used in SUSv3.
   AF_UNIX = 1;
   AF_INET = 2;
   AF_INET6 = 10;
