@@ -16,18 +16,24 @@ import (
 )
 
 type ProcessCtx struct {
-	StartTime   int // start time of the thread
-	ContainerID string
-	Pid         uint32
-	Tid         uint32
-	Ppid        uint32
-	HostTid     uint32
-	HostPid     uint32
-	HostPpid    uint32
-	Uid         uint32
-	MntId       uint32
-	PidId       uint32
-	Comm        string
+	StartTime      int // start time of the thread
+	CgroupID       uint64
+	ContainerID    string
+	ContainerImage string
+	ContainerName  string
+	PodName        string
+	PodNamespace   string
+	PodUID         string
+	Pid            uint32
+	Tid            uint32
+	Ppid           uint32
+	HostTid        uint32
+	HostPid        uint32
+	HostPpid       uint32
+	Uid            uint32
+	MntId          uint32
+	PidId          uint32
+	Comm           string
 }
 
 type ProcInfo struct {
@@ -59,7 +65,13 @@ func (p *ProcInfo) GetElement(hostTid int) (ProcessCtx, error) {
 
 func (ctx *ProcessCtx) GetEventByProcessCtx() trace.Event {
 	return trace.Event{
+		CgroupID:            uint(ctx.CgroupID),
 		ContainerID:         ctx.ContainerID,
+		ContainerImage:      ctx.ContainerImage,
+		ContainerName:       ctx.ContainerName,
+		PodName:             ctx.PodName,
+		PodNamespace:        ctx.PodNamespace,
+		PodUID:              ctx.PodUID,
 		ProcessID:           int(ctx.Pid),
 		ThreadID:            int(ctx.Tid),
 		ParentProcessID:     int(ctx.Ppid),
@@ -79,8 +91,15 @@ func ParseProcessContext(ctx []byte, containers *containers.Containers) (Process
 		return procCtx, fmt.Errorf("can't read process context: buffer too short")
 	}
 	procCtx.StartTime = int(binary.LittleEndian.Uint64(ctx[0:8]))
-	cgroupId := binary.LittleEndian.Uint64(ctx[8:16])
-	procCtx.ContainerID = containers.GetCgroupInfo(cgroupId).Container.ContainerId
+	procCtx.CgroupID = binary.LittleEndian.Uint64(ctx[8:16])
+	container := containers.GetCgroupInfo(procCtx.CgroupID).Container
+	procCtx.ContainerID = container.ContainerId
+	procCtx.ContainerName = container.Name
+	procCtx.ContainerName = container.Name
+	procCtx.ContainerImage = container.Image
+	procCtx.PodName = container.Pod.Name
+	procCtx.PodNamespace = container.Pod.Namespace
+	procCtx.PodUID = container.Pod.UID
 	procCtx.Pid = binary.LittleEndian.Uint32(ctx[16:20])
 	procCtx.Tid = binary.LittleEndian.Uint32(ctx[20:24])
 	procCtx.Ppid = binary.LittleEndian.Uint32(ctx[24:28])

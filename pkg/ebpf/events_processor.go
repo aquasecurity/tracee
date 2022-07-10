@@ -304,18 +304,24 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 				return err
 			}
 			processData := procinfo.ProcessCtx{
-				StartTime:   int(startTime),
-				ContainerID: event.ContainerID,
-				Pid:         uint32(pid),
-				Tid:         uint32(tid),
-				Ppid:        uint32(ppid),
-				HostTid:     uint32(hostTid),
-				HostPid:     uint32(hostPid),
-				HostPpid:    uint32(hostPpid),
-				Uid:         uint32(event.UserID),
-				MntId:       uint32(event.MountNS),
-				PidId:       uint32(event.PIDNS),
-				Comm:        event.ProcessName,
+				StartTime:      int(startTime),
+				CgroupID:       uint64(event.CgroupID),
+				ContainerID:    event.ContainerID,
+				ContainerImage: event.ContainerImage,
+				ContainerName:  event.ContainerName,
+				PodName:        event.PodName,
+				PodNamespace:   event.PodNamespace,
+				PodUID:         event.PodUID,
+				Pid:            uint32(pid),
+				Tid:            uint32(tid),
+				Ppid:           uint32(ppid),
+				HostTid:        uint32(hostTid),
+				HostPid:        uint32(hostPid),
+				HostPpid:       uint32(hostPpid),
+				Uid:            uint32(event.UserID),
+				MntId:          uint32(event.MountNS),
+				PidId:          uint32(event.PIDNS),
+				Comm:           event.ProcessName,
 			}
 			t.procInfo.UpdateElement(int(hostTid), processData)
 		}
