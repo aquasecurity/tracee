@@ -18,6 +18,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
+	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
@@ -202,155 +203,140 @@ func (t *Tracee) getPcapContextFromTid(hostTid uint32) (processPcapId, procinfo.
 	return pcapContext, networkThread, nil
 }
 
-func (t *Tracee) processNetEvents(ctx gocontext.Context) {
-	// Todo: add stats for network packets (in epilog)
-	for {
-		select {
-		case in := <-t.netChannel:
-			// Sanity check - timestamp, event id, host tid and comm must exist in all net events
-			if len(in) < 32 {
-				continue
-			}
+// sourceNetEvents reads the events received from the netowrk BPF programs and parses them into trace.Event type
+// it enriches these network events with procInfo data
+func (t *Tracee) sourceNetEvents(ctx gocontext.Context) (<-chan *trace.Event, <-chan error) {
+	out := make(chan *trace.Event, 10000)
+	errc := make(chan error, 1)
+	go func() {
+		defer close(out)
+		defer close(errc)
+		for {
+			select {
+			case in := <-t.netChannel:
+				// Sanity check - timestamp, event id, host tid and comm must exist in all net events
+				if len(in) < 32 {
+					continue
+				}
 
-			netDecoder := bufferdecoder.New(in)
-			var netEventMetadata bufferdecoder.NetEventMetadata
-			err := netDecoder.DecodeNetEventMetadata(&netEventMetadata)
-			if err != nil {
-				t.handleError(err)
-				continue
-			}
-
-			timeStampObj := time.Unix(0, int64(netEventMetadata.TimeStamp+t.bootTime))
-
-			if t.config.Output.RelativeTime {
-				// To get the current ("wall") time, we add the boot time into it.
-				netEventMetadata.TimeStamp -= t.startTime
-			} else {
-				// timeStamp is nanoseconds since system boot time
-				// To get the monotonic time since tracee was started, we have to subtract the start time from the timestamp.
-				netEventMetadata.TimeStamp += t.bootTime
-			}
-
-			// continue without checking for error, as packetContext will be valid anyway
-			packetContext, networkThread, _ := t.getPcapContextFromTid(netEventMetadata.HostTid)
-
-			if isNetEvent(netEventMetadata.NetEventId) {
-				var netCaptureData bufferdecoder.NetCaptureData
-				err = netDecoder.DecodeNetCaptureData(&netCaptureData)
+				netDecoder := bufferdecoder.New(in)
+				var netEventMetadata bufferdecoder.NetEventMetadata
+				err := netDecoder.DecodeNetEventMetadata(&netEventMetadata)
 				if err != nil {
 					t.handleError(err)
 					continue
 				}
 
-				// handle net event trace
-				ifaceName := t.netInfo.ifaces[int(netCaptureData.ConfigIfaceIndex)].Name
-				ifaceIdx, err := t.getTracedIfaceIdx(ifaceName)
-				if err == nil && ifaceIdx >= 0 {
-					// this packet should be traced. i.e. output the event if chosen by the user.
+				timeStampObj := time.Unix(0, int64(netEventMetadata.TimeStamp+t.bootTime))
 
-					evt, err := protocolProcessor(networkThread, netEventMetadata, netDecoder, ifaceName, netCaptureData.PacketLength)
+				if t.config.Output.RelativeTime {
+					// To get the current ("wall") time, we add the boot time into it.
+					netEventMetadata.TimeStamp -= t.startTime
+				} else {
+					// timeStamp is nanoseconds since system boot time
+					// To get the monotonic time since tracee was started, we have to subtract the start time from the timestamp.
+					netEventMetadata.TimeStamp += t.bootTime
+				}
+
+				// continue without checking for error, as packetContext will be valid anyway
+				packetContext, networkThread, _ := t.getPcapContextFromTid(netEventMetadata.HostTid)
+
+				if isNetEvent(netEventMetadata.NetEventId) {
+					var netCaptureData bufferdecoder.NetCaptureData
+					err = netDecoder.DecodeNetCaptureData(&netCaptureData)
 					if err != nil {
 						t.handleError(err)
 						continue
 					}
 
-					// derive events chosen by the user
-					derivatives, errors := events.Derive(evt, t.eventDerivations)
+					// handle net event trace
+					ifaceName := t.netInfo.ifaces[int(netCaptureData.ConfigIfaceIndex)].Name
+					ifaceIdx, err := t.getTracedIfaceIdx(ifaceName)
+					if err == nil && ifaceIdx >= 0 {
+						// this packet should be traced. i.e. output the event if chosen by the user.
 
-					for _, err := range errors {
-						t.handleError(err)
+						evt, err := protocolProcessor(networkThread, netEventMetadata, netDecoder, ifaceName, netCaptureData.PacketLength)
+						if err != nil {
+							t.handleError(err)
+							continue
+						}
+						out <- evt
 					}
 
-					for _, derivative := range derivatives {
-						// output derived events
-						select {
-						case t.config.ChanEvents <- derivative:
-							t.stats.NetEvCount.Increment()
-						case <-ctx.Done():
-							return
+					// handle packet capture
+					ifaceIdx, err = t.getCapturedIfaceIdx(ifaceName)
+					if ifaceIdx >= 0 && err == nil {
+						// this packet should be captured. i.e. save the packet into pcap.
+
+						packetBytes, err := getPacketBytes(netDecoder, netCaptureData.PacketLength)
+						if err != nil {
+							t.handleError(err)
+							continue
+						}
+						if err := t.writePacket(netCaptureData, ifaceIdx, time.Unix(0, int64(netEventMetadata.TimeStamp)), packetContext, packetBytes); err != nil {
+							t.handleError(err)
+							continue
 						}
 					}
 
-					if t.events[netEventMetadata.NetEventId].emit {
-						// output origin event
-						select {
-						case t.config.ChanEvents <- evt:
-							t.stats.NetEvCount.Increment()
-						case <-ctx.Done():
-							return
-						}
-					}
 				}
-
-				// handle packet capture
-				ifaceIdx, err = t.getCapturedIfaceIdx(ifaceName)
-				if ifaceIdx >= 0 && err == nil {
-					// this packet should be captured. i.e. save the packet into pcap.
-
-					packetBytes, err := getPacketBytes(netDecoder, netCaptureData.PacketLength)
+				if t.config.Debug && isDebugNetEvent(netEventMetadata.NetEventId) {
+					var netDebugEvent bufferdecoder.NetDebugEvent
+					err = netDecoder.DecodeNetDebugEvent(&netDebugEvent)
 					if err != nil {
 						t.handleError(err)
 						continue
 					}
-					if err := t.writePacket(netCaptureData, ifaceIdx, time.Unix(0, int64(netEventMetadata.TimeStamp)), packetContext, packetBytes); err != nil {
-						t.handleError(err)
-						continue
+					procName := string(bytes.TrimRight(netEventMetadata.ProcessName[:], "\x00"))
+					switch netEventMetadata.NetEventId {
+					case events.DebugNetSecurityBind:
+						fmt.Printf("%v  %-16s  %-7d  debug_net/security_socket_bind LocalIP: %v, LocalPort: %d, Protocol: %d\n",
+							timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
+					case events.DebugNetUdpSendmsg:
+						fmt.Printf("%v  %-16s  %-7d  debug_net/udp_sendmsg          LocalIP: %v, LocalPort: %d, Protocol: %d\n",
+							timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
+					case events.DebugNetUdpDisconnect:
+						fmt.Printf("%v  %-16s  %-7d  debug_net/__udp_disconnect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
+							timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
+					case events.DebugNetUdpDestroySock:
+						fmt.Printf("%v  %-16s  %-7d  debug_net/udp_destroy_sock     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
+							timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
+					case events.DebugNetUdpV6DestroySock:
+						fmt.Printf("%v  %-16s  %-7d  debug_net/udpv6_destroy_sock   LocalIP: %v, LocalPort: %d, Protocol: %d\n",
+							timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
+					case events.DebugNetInetSockSetState:
+						fmt.Printf("%v  %-16s  %-7d  debug_net/inet_sock_set_state  LocalIP: %v, LocalPort: %d, RemoteIP: %v, RemotePort: %d, Protocol: %d, OldState: %d, NewState: %d, SockPtr: 0x%x\n",
+							timeStampObj,
+							procName,
+							netEventMetadata.HostTid,
+							netaddr.IPFrom16(netDebugEvent.LocalIP),
+							netDebugEvent.LocalPort,
+							netaddr.IPFrom16(netDebugEvent.RemoteIP),
+							netDebugEvent.RemotePort,
+							netDebugEvent.Protocol,
+							netDebugEvent.TcpOldState,
+							netDebugEvent.TcpNewState,
+							netDebugEvent.SockPtr)
+					case events.DebugNetTcpConnect:
+						fmt.Printf("%v  %-16s  %-7d  debug_net/tcp_connect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
+							timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
 					}
 				}
 
-			} else if t.config.Debug {
-				var netDebugEvent bufferdecoder.NetDebugEvent
-				err = netDecoder.DecodeNetDebugEvent(&netDebugEvent)
-				if err != nil {
-					t.handleError(err)
-					continue
+			case lost := <-t.lostNetChannel:
+				// When terminating tracee-ebpf the lost channel receives multiple "0 lost events" events.
+				// This check prevents those 0 lost events messages to be written to stderr until the bug is fixed:
+				// https://github.com/aquasecurity/libbpfgo/issues/122
+				if lost > 0 {
+					t.stats.LostNtCount.Increment(int(lost))
+					t.config.ChanErrors <- fmt.Errorf("lost %d network events", lost)
 				}
-				procName := string(bytes.TrimRight(netEventMetadata.ProcessName[:], "\x00"))
-				switch netEventMetadata.NetEventId {
-				case events.DebugNetSecurityBind:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/security_socket_bind LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
-				case events.DebugNetUdpSendmsg:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_sendmsg          LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
-				case events.DebugNetUdpDisconnect:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/__udp_disconnect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
-				case events.DebugNetUdpDestroySock:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_destroy_sock     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
-				case events.DebugNetUdpV6DestroySock:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/udpv6_destroy_sock   LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
-				case events.DebugNetInetSockSetState:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/inet_sock_set_state  LocalIP: %v, LocalPort: %d, RemoteIP: %v, RemotePort: %d, Protocol: %d, OldState: %d, NewState: %d, SockPtr: 0x%x\n",
-						timeStampObj,
-						procName,
-						netEventMetadata.HostTid,
-						netaddr.IPFrom16(netDebugEvent.LocalIP),
-						netDebugEvent.LocalPort,
-						netaddr.IPFrom16(netDebugEvent.RemoteIP),
-						netDebugEvent.RemotePort,
-						netDebugEvent.Protocol,
-						netDebugEvent.TcpOldState,
-						netDebugEvent.TcpNewState,
-						netDebugEvent.SockPtr)
-				case events.DebugNetTcpConnect:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/tcp_connect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
-				}
-			}
-
-		case lost := <-t.lostNetChannel:
-			// When terminating tracee-ebpf the lost channel receives multiple "0 lost events" events.
-			// This check prevents those 0 lost events messages to be written to stderr until the bug is fixed:
-			// https://github.com/aquasecurity/libbpfgo/issues/122
-			if lost > 0 {
-				t.stats.LostNtCount.Increment(int(lost))
-				t.config.ChanErrors <- fmt.Errorf("lost %d network events", lost)
+			case <-ctx.Done():
+				return
 			}
 		}
-	}
+	}()
+	return out, errc
 }
 
 func (t *Tracee) writePacket(capData bufferdecoder.NetCaptureData, ifaceIdx int, timeStamp time.Time, packetContext processPcapId, packetBytes []byte) error {
@@ -392,6 +378,14 @@ func getPacketBytes(netDecoder *bufferdecoder.EbpfDecoder, packetLength uint32) 
 // isNetEvent checks if eventId is in net events IDs range
 func isNetEvent(eventId events.ID) bool {
 	if eventId >= events.NetPacket && eventId < events.MaxNetID {
+		return true
+	}
+	return false
+}
+
+// isDebugNetEvent checks if eventId is in net debug events IDs range
+func isDebugNetEvent(eventId events.ID) bool {
+	if eventId > events.MaxCommonID && eventId < events.MaxDebugID {
 		return true
 	}
 	return false

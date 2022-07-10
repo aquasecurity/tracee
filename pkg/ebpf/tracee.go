@@ -211,9 +211,9 @@ func GetEssentialEventsList(cfg *Config) map[events.ID]eventConfig {
 	return map[events.ID]eventConfig{
 		events.SysEnter:         {},
 		events.SysExit:          {},
-		events.SchedProcessExec: {},
-		events.SchedProcessExit: {},
-		events.SchedProcessFork: {},
+		events.SchedProcessExec: {submit: true},
+		events.SchedProcessExit: {submit: true},
+		events.SchedProcessFork: {submit: true},
 		events.CgroupMkdir:      {submit: true},
 		events.CgroupRmdir:      {submit: true},
 	}
@@ -944,7 +944,6 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	go t.processLostEvents()
 	go t.handleEvents(ctx)
 	go t.processFileWrites()
-	go t.processNetEvents(ctx)
 	// block until ctx is cancelled elsewhere
 	<-ctx.Done()
 	t.eventsPerfMap.Stop()

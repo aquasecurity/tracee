@@ -22,9 +22,14 @@ const maxStackDepth int = 20
 func (t *Tracee) handleEvents(ctx gocontext.Context) {
 	var errcList []<-chan error
 
-	// Source pipeline stage.
-	eventsChan, errc := t.decodeEvents(ctx)
+	// get event sources
+	ebpfSource, errc := t.sourceEvents(ctx)
 	errcList = append(errcList, errc)
+
+	netSource, errc := t.sourceNetEvents(ctx)
+	errcList = append(errcList, errc)
+
+	eventsChan := t.sourcePipeline(ctx, ebpfSource, netSource)
 
 	if t.config.Cache != nil {
 		eventsChan, errc = t.queueEvents(ctx, eventsChan)
@@ -128,8 +133,8 @@ func (t *Tracee) queueEvents(ctx gocontext.Context, in <-chan *trace.Event) (cha
 	return out, errc
 }
 
-// decodeEvents read the events received from the BPF programs and parse it into trace.Event type
-func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *trace.Event, <-chan error) {
+// sourceEvents reads the events received from the BPF programs and parse it into trace.Event type
+func (t *Tracee) sourceEvents(outerCtx gocontext.Context) (<-chan *trace.Event, <-chan error) {
 	out := make(chan *trace.Event, 10000)
 	errc := make(chan error, 1)
 	go func() {
@@ -315,6 +320,23 @@ func (t *Tracee) getStackAddresses(StackID uint32) ([]uint64, error) {
 	_ = t.StackAddressesMap.DeleteKey(unsafe.Pointer(&StackID))
 
 	return StackAddresses[0:stackCounter], nil
+}
+
+// sourcePipeline aggregates initial sources of trace.Event into one channel
+func (t *Tracee) sourcePipeline(ctx gocontext.Context, sources ...<-chan *trace.Event) <-chan *trace.Event {
+	eventsChan := make(chan *trace.Event, 10000*len(sources)) // 10000 * source channels
+
+	addSource := func(source <-chan *trace.Event) {
+		for evt := range source {
+			eventsChan <- evt
+		}
+	}
+
+	for _, source := range sources {
+		go addSource(source)
+	}
+
+	return eventsChan
 }
 
 // WaitForPipeline waits for results from all error channels.

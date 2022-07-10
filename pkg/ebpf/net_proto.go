@@ -17,7 +17,7 @@ import (
 type protocolHandler func(*bufferdecoder.EbpfDecoder, *trace.Event) error
 
 // protocolProcessor calls handlers of the appropriate protocol event
-func protocolProcessor(networkThread procinfo.ProcessCtx, evtMeta bufferdecoder.NetEventMetadata, decoder *bufferdecoder.EbpfDecoder, ifaceName string, packetLen uint32) (trace.Event, error) {
+func protocolProcessor(networkThread procinfo.ProcessCtx, evtMeta bufferdecoder.NetEventMetadata, decoder *bufferdecoder.EbpfDecoder, ifaceName string, packetLen uint32) (*trace.Event, error) {
 	eventDefinition := events.Definitions.Get(evtMeta.NetEventId)
 
 	// create network event without any args
@@ -26,7 +26,7 @@ func protocolProcessor(networkThread procinfo.ProcessCtx, evtMeta bufferdecoder.
 	// handle specific protocol data
 	err := callProtocolHandler(evtMeta.NetEventId, decoder, &evt, ifaceName, packetLen)
 
-	return evt, err
+	return &evt, err
 }
 
 // CreateNetEvent creates and returns event 'eventName'
