@@ -7,7 +7,7 @@ require (
 	github.com/aquasecurity/libbpfgo v0.3.0-libbpf-0.8.0
 	github.com/aquasecurity/tracee/types v0.0.0-20220704142452-9d0319c36c52
 	github.com/containerd/containerd v1.6.6
-	github.com/docker/docker v20.10.13+incompatible
+	github.com/docker/docker v20.10.17+incompatible
 	github.com/golang/protobuf v1.5.2
 	github.com/google/cel-go v0.11.4
 	github.com/google/gopacket v1.1.19
@@ -15,9 +15,9 @@ require (
 	github.com/kubernetes/cri-api v0.0.0-00010101000000-000000000000
 	github.com/mitchellh/go-ps v1.0.0
 	github.com/onsi/gomega v1.17.0
-	github.com/open-policy-agent/opa v0.41.0
-	github.com/prometheus/client_golang v1.12.1
-	github.com/stretchr/testify v1.7.1
+	github.com/open-policy-agent/opa v0.42.0
+	github.com/prometheus/client_golang v1.12.2
+	github.com/stretchr/testify v1.8.0
 	github.com/testcontainers/testcontainers-go v0.12.0
 	github.com/urfave/cli/v2 v2.3.0
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad
@@ -47,7 +47,7 @@ require (
 	github.com/containerd/fifo v1.0.0 // indirect
 	github.com/containerd/ttrpc v1.1.0 // indirect
 	github.com/containerd/typeurl v1.0.2 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
@@ -89,18 +89,18 @@ require (
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/stoewer/go-strcase v1.2.0 // indirect
-	github.com/vektah/gqlparser/v2 v2.4.4 // indirect
+	github.com/vektah/gqlparser/v2 v2.4.5 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/yashtewari/glob-intersection v0.1.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go4.org/intern v0.0.0-20211027215823-ae77deb06f29 // indirect
 	go4.org/unsafe/assume-no-moving-gc v0.0.0-20211027215541-db492cf91b37 // indirect
-	golang.org/x/crypto v0.0.0-20211117183948-ae814b36b871 // indirect
-	golang.org/x/net v0.0.0-20220107192237-5cfca573fb4d // indirect
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
+	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
+	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
+	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f // indirect
 	golang.org/x/text v0.3.7 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	kernel.org/pub/linux/libs/security/libcap/psx v1.2.64 // indirect
 )
 
