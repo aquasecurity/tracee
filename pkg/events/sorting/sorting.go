@@ -115,10 +115,12 @@ const intervalsAmountThresholdForDelay = int(minDelay / eventsPassingInterval)
 // EventsChronologicalSorter is an object responsible for sorting arriving events from perf buffer according to their
 // chronological order - the time they were invoked in the kernel.
 type EventsChronologicalSorter struct {
-	cpuEventsQueues           []cpuEventsQueue // Each CPU has its own events queue because events per CPU arrive in almost chronological order
-	outputChanMutex           sync.Mutex
-	extractionSavedTimestamps []int // Buffer to store timestamps of events for delayed extraction
-	errorChan                 chan<- error
+	cpuEventsQueues                  []cpuEventsQueue // Each CPU has its own events queue because events per CPU arrive in almost chronological order
+	outputChanMutex                  sync.Mutex
+	extractionSavedTimestamps        []int // Buffer to store timestamps of events for delayed extraction
+	errorChan                        chan<- error
+	eventsPassingInterval            time.Duration
+	intervalsAmountThresholdForDelay int
 }
 
 func InitEventSorter() (*EventsChronologicalSorter, error) {
@@ -126,8 +128,11 @@ func InitEventSorter() (*EventsChronologicalSorter, error) {
 	if err != nil {
 		return nil, err
 	}
-	newSorter := EventsChronologicalSorter{}
-	newSorter.cpuEventsQueues = make([]cpuEventsQueue, cpusAmount)
+	newSorter := EventsChronologicalSorter{
+		cpuEventsQueues:                  make([]cpuEventsQueue, cpusAmount),
+		eventsPassingInterval:            eventsPassingInterval,
+		intervalsAmountThresholdForDelay: intervalsAmountThresholdForDelay,
+	}
 	return &newSorter, nil
 }
 
@@ -147,7 +152,7 @@ func (sorter *EventsChronologicalSorter) Start(in <-chan *trace.Event, out chan<
 	sorter.errorChan = errc
 	defer close(out)
 	defer close(errc)
-	ticker := time.NewTicker(eventsPassingInterval)
+	ticker := time.NewTicker(sorter.eventsPassingInterval)
 	for {
 		select {
 		case newEvent := <-in:
@@ -158,7 +163,7 @@ func (sorter *EventsChronologicalSorter) Start(in <-chan *trace.Event, out chan<
 			sorter.addEvent(newEvent)
 		case <-ticker.C:
 			sorter.updateSavedTimestamps()
-			if len(sorter.extractionSavedTimestamps) > intervalsAmountThresholdForDelay {
+			if len(sorter.extractionSavedTimestamps) > sorter.intervalsAmountThresholdForDelay {
 				extractionTimestamp := sorter.extractionSavedTimestamps[0]
 				sorter.extractionSavedTimestamps = sorter.extractionSavedTimestamps[1:]
 				go sorter.sendEvents(out, extractionTimestamp)
@@ -204,12 +209,17 @@ func (sorter *EventsChronologicalSorter) sendEvents(outputChan chan<- *trace.Eve
 
 // updateSavedTimestamps add current most delaying timestamp to saved list
 func (sorter *EventsChronologicalSorter) updateSavedTimestamps() {
-	mostDelayingLastEventTimestamp, err := sorter.getMostDelayedLastCPUEventTimestamp()
+	mostDelayingLastEventTimestamp, err := sorter.getUpdatedMostDelayedLastCPUEventTimestamp()
 	if err != nil { // An error means no new event was received since last update
-		if len(sorter.extractionSavedTimestamps) > 0 {
-			mostDelayingLastEventTimestamp = sorter.extractionSavedTimestamps[len(sorter.extractionSavedTimestamps)-1]
-		} else {
-			mostDelayingLastEventTimestamp = 0
+		// If no CPU was updated, it means that all of the CPUs are fully updated and we can
+		// send all cached events received till this moment.
+		mostDelayingLastEventTimestamp, err = sorter.getMostRecentEventTimestamp()
+		if err != nil {
+			if len(sorter.extractionSavedTimestamps) > 0 {
+				mostDelayingLastEventTimestamp = sorter.extractionSavedTimestamps[len(sorter.extractionSavedTimestamps)-1]
+			} else {
+				mostDelayingLastEventTimestamp = 0
+			}
 		}
 	}
 	sorter.extractionSavedTimestamps = append(sorter.extractionSavedTimestamps, mostDelayingLastEventTimestamp)
@@ -233,10 +243,10 @@ func (sorter *EventsChronologicalSorter) getMostDelayingEventCPUQueue() (*cpuEve
 	return mostDelayingEventQueue, nil
 }
 
-// getMostDelayedLastCPUEventTimestamp search for the CPU queue with the oldest last inserted event which was updated since
+// getUpdatedMostDelayedLastCPUEventTimestamp search for the CPU queue with the oldest last inserted event which was updated since
 // last check
 // Queues which were not updated since last check are ignored to prevent events starvation if a CPU is not active
-func (sorter *EventsChronologicalSorter) getMostDelayedLastCPUEventTimestamp() (int, error) {
+func (sorter *EventsChronologicalSorter) getUpdatedMostDelayedLastCPUEventTimestamp() (int, error) {
 	var mostDelayingEventQueue *cpuEventsQueue = nil
 	for i := 0; i < len(sorter.cpuEventsQueues); i++ {
 		cq := &sorter.cpuEventsQueues[i]
@@ -252,4 +262,21 @@ func (sorter *EventsChronologicalSorter) getMostDelayedLastCPUEventTimestamp() (
 		return 0, fmt.Errorf("no valid CPU events queue was updated since last interval")
 	}
 	return mostDelayingEventQueue.PeekTail().Timestamp, nil
+}
+
+// getMostRecentEventTimestamp get the timestamp of the most recent event received from all CPUs.
+func (sorter *EventsChronologicalSorter) getMostRecentEventTimestamp() (int, error) {
+	mostRecentEventTimestamp := 0
+	for i := 0; i < len(sorter.cpuEventsQueues); i++ {
+		cq := &sorter.cpuEventsQueues[i]
+		queueTail := cq.PeekTail()
+		if queueTail != nil &&
+			queueTail.Timestamp > mostRecentEventTimestamp {
+			mostRecentEventTimestamp = queueTail.Timestamp
+		}
+	}
+	if mostRecentEventTimestamp == 0 {
+		return 0, fmt.Errorf("all CPU queques are empty")
+	}
+	return mostRecentEventTimestamp, nil
 }
