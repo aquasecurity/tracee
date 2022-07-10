@@ -78,6 +78,7 @@ var (
 		"dev_t":   ValueType_UINT32,
 		"pid_t":   ValueType_INT32,
 		"umode_t": ValueType_UINT32,
+		"mode_t":  ValueType_UINT32,
 
 		"void*":            ValueType_STRING,
 		"struct sockaddr*": ValueType_SOCKADDR,
