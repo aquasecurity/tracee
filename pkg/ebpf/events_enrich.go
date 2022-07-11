@@ -90,24 +90,35 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 				if eventID == events.CgroupRmdir {
 					var eInfo *enrichResult
 					cgroupId, _ = parse.ArgUint64Val(event, "cgroup_id")
+
 					bLock.RLock()
 					if i, ok := enrichInfo[cgroupId]; ok {
 						eInfo = i
 					}
-					for evt := range queues[cgroupId] {
-						if evt.ContainerImage == "" && eInfo != nil {
-							bLock.RUnlock()
-							enrichEvent(evt, eInfo.result)
-							bLock.RLock()
+					if queue, ok := queues[cgroupId]; ok {
+						// clean up queue if needed
+						if len(queue) > 0 {
+							for evt := range queue {
+								if evt.ContainerImage == "" && eInfo != nil {
+									enrichEvent(evt, eInfo.result)
+								}
+								out <- evt
+								// break here if queue is empty otherwise this loop waits forever
+								if len(queue) < 1 {
+									break
+								}
+							}
 						}
-						out <- evt
 					}
 					bLock.RUnlock()
+
 					bLock.Lock()
 					delete(enrichDone, cgroupId)
 					delete(enrichInfo, cgroupId)
+					close(queues[cgroupId])
 					delete(queues, cgroupId)
 					bLock.Unlock()
+
 					continue
 				}
 				// make sure a queue channel exists for this cgroupId
