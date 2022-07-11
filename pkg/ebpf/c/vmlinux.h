@@ -341,6 +341,7 @@ struct upid {
 };
 
 struct pid {
+    unsigned int level;
     struct upid numbers[1];
 };
 
