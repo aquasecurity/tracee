@@ -130,6 +130,7 @@ type sorterTestCase struct {
 }
 
 func TestEventsChronologicalSorter_Start(t *testing.T) {
+	sendingInterval := 100 * time.Millisecond
 	testCases := []sorterTestCase{
 		{
 			eventsPools: []eventsIteration{
@@ -208,7 +209,7 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 					},
 				},
 				{
-					delay: minDelay - time.Millisecond,
+					delay: sendingInterval - time.Millisecond,
 					events: []trace.Event{
 						{ProcessorID: 1, Timestamp: 10},
 						{ProcessorID: 1, Timestamp: 11},
@@ -229,19 +230,19 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 		{
 			eventsPools: []eventsIteration{
 				{
-					delay: 100 * time.Millisecond,
+					delay: sendingInterval,
 					events: []trace.Event{
 						{ProcessorID: 0, Timestamp: 1},
 					},
 				},
 				{
-					delay: 300 * time.Millisecond,
+					delay: 3 * sendingInterval,
 					events: []trace.Event{
 						{ProcessorID: 0, Timestamp: 2},
 					},
 				},
 				{
-					delay: 300 * time.Millisecond,
+					delay: 3 * sendingInterval,
 					events: []trace.Event{
 						{ProcessorID: 0, Timestamp: 3},
 					},
@@ -255,18 +256,20 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.name, func(t *testing.T) {
-			inputChan := sendTestEvents(testCase.eventsPools)
 			outputChan := make(chan *trace.Event)
 			fatalErrorsChan := make(chan error)
 			errChan := make(chan error)
 			newSorter, err := InitEventSorter()
 			require.NoError(t, err)
 			newSorter.cpuEventsQueues = make([]cpuEventsQueue, testCase.cpuAmount)
+			newSorter.eventsPassingInterval = sendingInterval // Make sure that interval high enough for test
 			ctx := context.Background()
 			ctx, cancel := context.WithCancel(ctx)
+			inputChan := sendTestEvents(testCase.eventsPools)
 			go newSorter.Start(inputChan, outputChan, ctx, fatalErrorsChan)
 			outputList, sorterErr := retrieveEventsFromSorter(testCase.eventsAmount, outputChan, fatalErrorsChan)
 			cancel()
+			close(inputChan)
 			require.NoError(t, sorterErr)
 			assert.Empty(t, errChan)
 			assert.True(t, sort.IsSorted(sortableEventsList{outputList}))
@@ -275,7 +278,7 @@ func TestEventsChronologicalSorter_Start(t *testing.T) {
 }
 
 func retrieveEventsFromSorter(expectedEventsAmount int, sorterOutputChan <-chan *trace.Event, fatalErrorsChan chan error) ([]trace.Event, error) {
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(2 * time.Second)
 	outputList := make([]trace.Event, 0)
 	eventsReceived := 0
 	for {
@@ -301,10 +304,9 @@ func retrieveEventsFromSorter(expectedEventsAmount int, sorterOutputChan <-chan 
 	}
 }
 
-func sendTestEvents(eventPool []eventsIteration) <-chan *trace.Event {
+func sendTestEvents(eventPool []eventsIteration) chan *trace.Event {
 	inputChan := make(chan *trace.Event)
 	go func() {
-		defer close(inputChan)
 		startTime := int(time.Now().UnixNano())
 		for _, eventsIteration := range eventPool {
 			time.Sleep(eventsIteration.delay)
