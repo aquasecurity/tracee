@@ -391,7 +391,7 @@ enum kconfig_key_e
         ({                                                                                         \
             typeof(ptr) _val;                                                                      \
             __builtin_memset((void *) &_val, 0, sizeof(_val));                                     \
-            bpf_probe_read((void *) &_val, sizeof(_val), &ptr);                                    \
+            bpf_probe_read_kernel((void *) &_val, sizeof(_val), &ptr);                             \
             _val;                                                                                  \
         })
 
@@ -1036,7 +1036,7 @@ static __always_inline const u64 get_cgroup_id(struct cgroup *cgrp)
         bpf_core_read(&id, sizeof(u64), &kn->id);
     }
 #else
-    bpf_probe_read(&id, sizeof(u64), &kn->id);
+    bpf_probe_read_kernel(&id, sizeof(u64), &kn->id);
 #endif
 
     return id;
@@ -1274,7 +1274,7 @@ static __always_inline u16 get_sock_protocol(struct sock *sock)
     #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0))
     // kernel 4.18-5.5: sk_protocol bit-field: use sk_gso_max_segs field and go
     // back 24 bits to reach sk_protocol field index.
-    bpf_probe_read(&protocol, 1, (void *) (&sock->sk_gso_max_segs) - 3);
+    bpf_probe_read_kernel(&protocol, 1, (void *) (&sock->sk_gso_max_segs) - 3);
     #else
     // kernel 5.6
     protocol = READ_KERN(sock->sk_protocol);
@@ -1326,7 +1326,7 @@ static __always_inline int get_sock_bound_dev_if(struct sock *sock)
 static __always_inline volatile unsigned char get_sock_state(struct sock *sock)
 {
     volatile unsigned char sk_state_own_impl;
-    bpf_probe_read(
+    bpf_probe_read_kernel(
         (void *) &sk_state_own_impl, sizeof(sk_state_own_impl), (const void *) &sock->sk_state);
     return sk_state_own_impl;
 }
@@ -1334,7 +1334,7 @@ static __always_inline volatile unsigned char get_sock_state(struct sock *sock)
 static __always_inline struct ipv6_pinfo *get_inet_pinet6(struct inet_sock *inet)
 {
     struct ipv6_pinfo *pinet6_own_impl;
-    bpf_probe_read(&pinet6_own_impl, sizeof(pinet6_own_impl), &inet->pinet6);
+    bpf_probe_read_kernel(&pinet6_own_impl, sizeof(pinet6_own_impl), &inet->pinet6);
     return pinet6_own_impl;
 }
 
@@ -1344,7 +1344,7 @@ static __always_inline struct sockaddr_un get_unix_sock_addr(struct unix_sock *s
     int len = READ_KERN(addr->len);
     struct sockaddr_un sockaddr = {};
     if (len <= sizeof(struct sockaddr_un)) {
-        bpf_probe_read(&sockaddr, len, addr->name);
+        bpf_probe_read_kernel(&sockaddr, len, addr->name);
     }
     return sockaddr;
 }
@@ -1376,10 +1376,10 @@ static __always_inline int get_kconfig_val(u32 key)
     return *config;
 }
 
-static __always_inline void *get_symbol_addr(char *symbol_name)
+static __always_inline void *get_symbol_addr_kernel(char *symbol_name)
 {
     char new_ksym_name[MAX_KSYM_NAME_SIZE] = {};
-    bpf_probe_read_str(new_ksym_name, MAX_KSYM_NAME_SIZE, symbol_name);
+    bpf_probe_read_kernel_str(new_ksym_name, MAX_KSYM_NAME_SIZE, symbol_name);
     void **sym = bpf_map_lookup_elem(&ksymbols_map, (void *) &new_ksym_name);
 
     if (sym == NULL)
@@ -1416,7 +1416,7 @@ init_context(event_context_t *context, struct task_struct *task, u32 options)
     bpf_get_current_comm(&context->task.comm, sizeof(context->task.comm));
     char *uts_name = get_task_uts_name(task);
     if (uts_name)
-        bpf_probe_read_str(&context->task.uts_name, TASK_COMM_LEN, uts_name);
+        bpf_probe_read_kernel_str(&context->task.uts_name, TASK_COMM_LEN, uts_name);
     if (options & OPT_CGROUP_V1) {
         context->task.cgroup_id = get_cgroup_v1_subsys0_id(task);
     } else {
@@ -1480,7 +1480,7 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
     }
 
     // update task_info with the new context
-    bpf_probe_read(&data->task_info->context, sizeof(task_context_t), &data->context.task);
+    bpf_probe_read_kernel(&data->task_info->context, sizeof(task_context_t), &data->context.task);
 
     return 1;
 }
@@ -1675,7 +1675,8 @@ static __always_inline u32 *get_buf_off(int buf_idx)
 // The biggest element that can be saved with this function should be defined here
 #define MAX_ELEMENT_SIZE sizeof(struct sockaddr_un)
 
-static __always_inline int save_to_submit_buf(event_data_t *data, void *ptr, u32 size, u8 index)
+static __always_inline int
+save_to_submit_buf_user(event_data_t *data, void *ptr, u32 size, u8 index)
 {
     // Data saved to submit buf: [index][ ... buffer[size] ... ]
 
@@ -1693,7 +1694,37 @@ static __always_inline int save_to_submit_buf(event_data_t *data, void *ptr, u32
     // Satisfy validator for probe read
     if ((data->buf_off + 1) <= MAX_PERCPU_BUFSIZE - MAX_ELEMENT_SIZE) {
         // Read into buffer
-        if (bpf_probe_read(&(data->submit_p->buf[data->buf_off + 1]), size, ptr) == 0) {
+        if (bpf_probe_read_user(&(data->submit_p->buf[data->buf_off + 1]), size, ptr) == 0) {
+            // We update buf_off only if all writes were successful
+            data->buf_off += size + 1;
+            data->context.argnum++;
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static __always_inline int
+save_to_submit_buf_kernel(event_data_t *data, void *ptr, u32 size, u8 index)
+{
+    // Data saved to submit buf: [index][ ... buffer[size] ... ]
+
+    if (size == 0)
+        return 0;
+
+    // If we don't have enough space - return
+    if (data->buf_off > MAX_PERCPU_BUFSIZE - (size + 1))
+        return 0;
+
+    // Save argument index
+    volatile int buf_off = data->buf_off;
+    data->submit_p->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)] = index;
+
+    // Satisfy validator for probe read
+    if ((data->buf_off + 1) <= MAX_PERCPU_BUFSIZE - MAX_ELEMENT_SIZE) {
+        // Read into buffer
+        if (bpf_probe_read_kernel(&(data->submit_p->buf[data->buf_off + 1]), size, ptr) == 0) {
             // We update buf_off only if all writes were successful
             data->buf_off += size + 1;
             data->context.argnum++;
@@ -1720,16 +1751,17 @@ static __always_inline int save_bytes_to_buf(event_data_t *data, void *ptr, u32 
 
     if ((data->buf_off + 1) <= MAX_PERCPU_BUFSIZE - MAX_BYTES_ARR_SIZE - sizeof(int)) {
         // Save size to buffer
-        if (bpf_probe_read(&(data->submit_p->buf[data->buf_off + 1]), sizeof(int), &size) != 0) {
+        if (bpf_probe_read_kernel(&(data->submit_p->buf[data->buf_off + 1]), sizeof(int), &size) !=
+            0) {
             return 0;
         }
     }
 
     if ((data->buf_off + 1 + sizeof(int)) <= MAX_PERCPU_BUFSIZE - MAX_BYTES_ARR_SIZE) {
         // Read bytes into buffer
-        if (bpf_probe_read(&(data->submit_p->buf[data->buf_off + 1 + sizeof(int)]),
-                           size & (MAX_BYTES_ARR_SIZE - 1),
-                           ptr) == 0) {
+        if (bpf_probe_read_kernel(&(data->submit_p->buf[data->buf_off + 1 + sizeof(int)]),
+                                  size & (MAX_BYTES_ARR_SIZE - 1),
+                                  ptr) == 0) {
             // We update buf_off only if all writes were successful
             data->buf_off += size + 1 + sizeof(int);
             data->context.argnum++;
@@ -1740,7 +1772,7 @@ static __always_inline int save_bytes_to_buf(event_data_t *data, void *ptr, u32 
     return 0;
 }
 
-static __always_inline int save_str_to_buf(event_data_t *data, void *ptr, u8 index)
+static __always_inline int save_str_to_buf_kernel(event_data_t *data, void *ptr, u8 index)
 {
     // Data saved to submit buf: [index][size][ ... string ... ]
     // Note: If we don't have enough space - return
@@ -1753,7 +1785,37 @@ static __always_inline int save_str_to_buf(event_data_t *data, void *ptr, u8 ind
     // Satisfy validator for probe read
     if ((data->buf_off + 1) <= MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int)) {
         // Read into buffer
-        int sz = bpf_probe_read_str(
+        int sz = bpf_probe_read_kernel_str(
+            &(data->submit_p->buf[data->buf_off + 1 + sizeof(int)]), MAX_STRING_SIZE, ptr);
+        if (sz > 0) {
+            // Satisfy validator for probe read
+            if ((data->buf_off + 1) > MAX_PERCPU_BUFSIZE - sizeof(int)) {
+                return 0;
+            }
+            __builtin_memcpy(&(data->submit_p->buf[data->buf_off + 1]), &sz, sizeof(int));
+            data->buf_off += sz + sizeof(int) + 1;
+            data->context.argnum++;
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+static __always_inline int save_str_to_buf_user(event_data_t *data, void *ptr, u8 index)
+{
+    // Data saved to submit buf: [index][size][ ... string ... ]
+    // Note: If we don't have enough space - return
+    if (data->buf_off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int))
+        return 0;
+
+    // Save argument index
+    data->submit_p->buf[(data->buf_off) & (MAX_PERCPU_BUFSIZE - 1)] = index;
+
+    // Satisfy validator for probe read
+    if ((data->buf_off + 1) <= MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int)) {
+        // Read into buffer
+        int sz = bpf_probe_read_user_str(
             &(data->submit_p->buf[data->buf_off + 1 + sizeof(int)]), MAX_STRING_SIZE, ptr);
         if (sz > 0) {
             // Satisfy validator for probe read
@@ -1785,7 +1847,7 @@ save_u64_arr_to_buf(event_data_t *data, const u64 __user *ptr, int len, u8 index
 #pragma unroll
     for (int i = 0; i < len; i++) {
         u64 element = 0;
-        int err = bpf_probe_read(&element, sizeof(u64), &ptr[i]);
+        int err = bpf_probe_read_user(&element, sizeof(u64), &ptr[i]);
         if (err != 0)
             goto out;
         if (data->buf_off > MAX_PERCPU_BUFSIZE - sizeof(u64))
@@ -1793,7 +1855,7 @@ save_u64_arr_to_buf(event_data_t *data, const u64 __user *ptr, int len, u8 index
             goto out;
 
         void *addr = &(data->submit_p->buf[data->buf_off]);
-        int sz = bpf_probe_read(addr, sizeof(u64), (void *) &element);
+        int sz = bpf_probe_read_user(addr, sizeof(u64), (void *) &element);
         if (sz == 0) {
             elem_num++;
             if (data->buf_off > MAX_PERCPU_BUFSIZE)
@@ -1818,7 +1880,7 @@ out:
 }
 
 static __always_inline int
-save_str_arr_to_buf(event_data_t *data, const char __user *const __user *ptr, u8 index)
+save_str_arr_to_buf_user(event_data_t *data, const char __user *const __user *ptr, u8 index)
 {
     // Data saved to submit buf: [index][string count][str1 size][str1][str2 size][str2]...
 
@@ -1834,7 +1896,7 @@ save_str_arr_to_buf(event_data_t *data, const char __user *const __user *ptr, u8
 #pragma unroll
     for (int i = 0; i < MAX_STR_ARR_ELEM; i++) {
         const char *argp = NULL;
-        bpf_probe_read(&argp, sizeof(argp), &ptr[i]);
+        bpf_probe_read_user(&argp, sizeof(argp), &ptr[i]);
         if (!argp)
             goto out;
 
@@ -1843,13 +1905,13 @@ save_str_arr_to_buf(event_data_t *data, const char __user *const __user *ptr, u8
             goto out;
 
         // Read into buffer
-        int sz = bpf_probe_read_str(
+        int sz = bpf_probe_read_user_str(
             &(data->submit_p->buf[data->buf_off + sizeof(int)]), MAX_STRING_SIZE, argp);
         if (sz > 0) {
             if (data->buf_off > MAX_PERCPU_BUFSIZE - sizeof(int))
                 // Satisfy validator
                 goto out;
-            bpf_probe_read(&(data->submit_p->buf[data->buf_off]), sizeof(int), &sz);
+            bpf_probe_read_kernel(&(data->submit_p->buf[data->buf_off]), sizeof(int), &sz);
             data->buf_off += sz + sizeof(int);
             elem_num++;
             continue;
@@ -1864,13 +1926,77 @@ save_str_arr_to_buf(event_data_t *data, const char __user *const __user *ptr, u8
         goto out;
 
     // Read into buffer
-    int sz = bpf_probe_read_str(
+    int sz = bpf_probe_read_user_str(
         &(data->submit_p->buf[data->buf_off + sizeof(int)]), MAX_STRING_SIZE, ellipsis);
     if (sz > 0) {
         if (data->buf_off > MAX_PERCPU_BUFSIZE - sizeof(int))
             // Satisfy validator
             goto out;
-        bpf_probe_read(&(data->submit_p->buf[data->buf_off]), sizeof(int), &sz);
+        bpf_probe_read_user(&(data->submit_p->buf[data->buf_off]), sizeof(int), &sz);
+        data->buf_off += sz + sizeof(int);
+        elem_num++;
+    }
+out:
+    // save number of elements in the array
+    data->submit_p->buf[orig_off & (MAX_PERCPU_BUFSIZE - 1)] = elem_num;
+    data->context.argnum++;
+    return 1;
+}
+
+static __always_inline int
+save_str_arr_to_buf_kernel(event_data_t *data, const char __user *const __user *ptr, u8 index)
+{
+    // Data saved to submit buf: [index][string count][str1 size][str1][str2 size][str2]...
+
+    u8 elem_num = 0;
+
+    // Save argument index
+    data->submit_p->buf[(data->buf_off) & (MAX_PERCPU_BUFSIZE - 1)] = index;
+
+    // Save space for number of elements (1 byte)
+    u32 orig_off = data->buf_off + 1;
+    data->buf_off += 2;
+
+#pragma unroll
+    for (int i = 0; i < MAX_STR_ARR_ELEM; i++) {
+        const char *argp = NULL;
+        bpf_probe_read_kernel(&argp, sizeof(argp), &ptr[i]);
+        if (!argp)
+            goto out;
+
+        if (data->buf_off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int))
+            // not enough space - return
+            goto out;
+
+        // Read into buffer
+        int sz = bpf_probe_read_kernel_str(
+            &(data->submit_p->buf[data->buf_off + sizeof(int)]), MAX_STRING_SIZE, argp);
+        if (sz > 0) {
+            if (data->buf_off > MAX_PERCPU_BUFSIZE - sizeof(int))
+                // Satisfy validator
+                goto out;
+            bpf_probe_read_kernel(&(data->submit_p->buf[data->buf_off]), sizeof(int), &sz);
+            data->buf_off += sz + sizeof(int);
+            elem_num++;
+            continue;
+        } else {
+            goto out;
+        }
+    }
+    // handle truncated argument list
+    char ellipsis[] = "...";
+    if (data->buf_off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE - sizeof(int))
+        // not enough space - return
+        goto out;
+
+    // Read into buffer
+    int sz = bpf_probe_read_kernel_str(
+        &(data->submit_p->buf[data->buf_off + sizeof(int)]), MAX_STRING_SIZE, ellipsis);
+    if (sz > 0) {
+        if (data->buf_off > MAX_PERCPU_BUFSIZE - sizeof(int))
+            // Satisfy validator
+            goto out;
+        bpf_probe_read_kernel(&(data->submit_p->buf[data->buf_off]), sizeof(int), &sz);
         data->buf_off += sz + sizeof(int);
         elem_num++;
     }
@@ -1904,22 +2030,22 @@ static __always_inline int save_args_str_arr_to_buf(
         return 0;
 
     // Save array length
-    bpf_probe_read(&(data->submit_p->buf[data->buf_off + 1]), sizeof(int), &len);
+    bpf_probe_read_kernel(&(data->submit_p->buf[data->buf_off + 1]), sizeof(int), &len);
 
     // Satisfy validator for probe read
     if ((data->buf_off + 5) > MAX_PERCPU_BUFSIZE - sizeof(int))
         return 0;
 
     // Save number of arguments
-    bpf_probe_read(&(data->submit_p->buf[data->buf_off + 5]), sizeof(int), &elem_num);
+    bpf_probe_read_kernel(&(data->submit_p->buf[data->buf_off + 5]), sizeof(int), &elem_num);
 
     // Satisfy validator for probe read
     if ((data->buf_off + 9) > MAX_PERCPU_BUFSIZE - MAX_ARR_LEN)
         return 0;
 
     // Read into buffer
-    if (bpf_probe_read(&(data->submit_p->buf[data->buf_off + 9]), len & (MAX_ARR_LEN - 1), start) ==
-        0) {
+    if (bpf_probe_read_kernel(
+            &(data->submit_p->buf[data->buf_off + 9]), len & (MAX_ARR_LEN - 1), start) == 0) {
         // We update buf_off only if all writes were successful
         data->buf_off += len + 9;
         data->context.argnum++;
@@ -1944,7 +2070,7 @@ static __always_inline int events_perf_submit(event_data_t *data, u32 id, long r
         }
     }
 
-    bpf_probe_read(&(data->submit_p->buf[0]), sizeof(event_context_t), &data->context);
+    bpf_probe_read_kernel(&(data->submit_p->buf[0]), sizeof(event_context_t), &data->context);
 
     // satisfy validator by setting buffer bounds
     int size = data->buf_off & (MAX_PERCPU_BUFSIZE - 1);
@@ -1975,7 +2101,7 @@ static __inline int has_prefix(char *prefix, char *str, int n)
 static __always_inline void *get_path_str(struct path *path)
 {
     struct path f_path;
-    bpf_probe_read(&f_path, sizeof(struct path), path);
+    bpf_probe_read_kernel(&f_path, sizeof(struct path), path);
     char slash = '/';
     int zero = 0;
     struct dentry *dentry = f_path.dentry;
@@ -1983,7 +2109,7 @@ static __always_inline void *get_path_str(struct path *path)
     struct mount *mnt_parent_p;
 
     struct mount *mnt_p = real_mount(vfsmnt);
-    bpf_probe_read(&mnt_parent_p, sizeof(struct mount *), &mnt_p->mnt_parent);
+    bpf_probe_read_kernel(&mnt_parent_p, sizeof(struct mount *), &mnt_p->mnt_parent);
 
     u32 buf_off = (MAX_PERCPU_BUFSIZE >> 1);
     struct dentry *mnt_root;
@@ -2009,9 +2135,9 @@ static __always_inline void *get_path_str(struct path *path)
             }
             if (mnt_p != mnt_parent_p) {
                 // We reached root, but not global root - continue with mount point path
-                bpf_probe_read(&dentry, sizeof(struct dentry *), &mnt_p->mnt_mountpoint);
-                bpf_probe_read(&mnt_p, sizeof(struct mount *), &mnt_p->mnt_parent);
-                bpf_probe_read(&mnt_parent_p, sizeof(struct mount *), &mnt_p->mnt_parent);
+                bpf_probe_read_kernel(&dentry, sizeof(struct dentry *), &mnt_p->mnt_mountpoint);
+                bpf_probe_read_kernel(&mnt_p, sizeof(struct mount *), &mnt_p->mnt_parent);
+                bpf_probe_read_kernel(&mnt_parent_p, sizeof(struct mount *), &mnt_p->mnt_parent);
                 vfsmnt = &mnt_p->mnt;
                 continue;
             }
@@ -2027,13 +2153,13 @@ static __always_inline void *get_path_str(struct path *path)
         sz = 0;
         if (off <= buf_off) { // verify no wrap occurred
             len = len & ((MAX_PERCPU_BUFSIZE >> 1) - 1);
-            sz = bpf_probe_read_str(
+            sz = bpf_probe_read_kernel_str(
                 &(string_p->buf[off & ((MAX_PERCPU_BUFSIZE >> 1) - 1)]), len, (void *) d_name.name);
         } else
             break;
         if (sz > 1) {
             buf_off -= 1; // remove null byte termination with slash sign
-            bpf_probe_read(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
+            bpf_probe_read_kernel(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
             buf_off -= sz - 1;
         } else {
             // If sz is 0 or 1 we have an error (path can't be null nor an empty string)
@@ -2046,13 +2172,13 @@ static __always_inline void *get_path_str(struct path *path)
         // memfd files have no path in the filesystem -> extract their name
         buf_off = 0;
         d_name = get_d_name_from_dentry(dentry);
-        bpf_probe_read_str(&(string_p->buf[0]), MAX_STRING_SIZE, (void *) d_name.name);
+        bpf_probe_read_kernel_str(&(string_p->buf[0]), MAX_STRING_SIZE, (void *) d_name.name);
     } else {
         // Add leading slash
         buf_off -= 1;
-        bpf_probe_read(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
+        bpf_probe_read_kernel(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
         // Null terminate the path string
-        bpf_probe_read(&(string_p->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1]), 1, &zero);
+        bpf_probe_read_kernel(&(string_p->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1]), 1, &zero);
     }
 
     set_buf_off(STRING_BUF_IDX, buf_off);
@@ -2085,13 +2211,13 @@ static __always_inline void *get_dentry_path_str(struct dentry *dentry)
         int sz = 0;
         if (off <= buf_off) { // verify no wrap occurred
             len = len & ((MAX_PERCPU_BUFSIZE >> 1) - 1);
-            sz = bpf_probe_read_str(
+            sz = bpf_probe_read_kernel_str(
                 &(string_p->buf[off & ((MAX_PERCPU_BUFSIZE >> 1) - 1)]), len, (void *) d_name.name);
         } else
             break;
         if (sz > 1) {
             buf_off -= 1; // remove null byte termination with slash sign
-            bpf_probe_read(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
+            bpf_probe_read_kernel(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
             buf_off -= sz - 1;
         } else {
             // If sz is 0 or 1 we have an error (path can't be null nor an empty string)
@@ -2104,13 +2230,13 @@ static __always_inline void *get_dentry_path_str(struct dentry *dentry)
         // memfd files have no path in the filesystem -> extract their name
         buf_off = 0;
         struct qstr d_name = get_d_name_from_dentry(dentry);
-        bpf_probe_read_str(&(string_p->buf[0]), MAX_STRING_SIZE, (void *) d_name.name);
+        bpf_probe_read_kernel_str(&(string_p->buf[0]), MAX_STRING_SIZE, (void *) d_name.name);
     } else {
         // Add leading slash
         buf_off -= 1;
-        bpf_probe_read(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
+        bpf_probe_read_kernel(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
         // Null terminate the path string
-        bpf_probe_read(&(string_p->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1]), 1, &zero);
+        bpf_probe_read_kernel(&(string_p->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1]), 1, &zero);
     }
 
     set_buf_off(STRING_BUF_IDX, buf_off);
@@ -2211,11 +2337,11 @@ static __always_inline int save_args_to_submit_buf(event_data_t *data, u64 types
                 size = sizeof(void *);
                 break;
             case STR_T:
-                rc = save_str_to_buf(data, (void *) args->args[i], index);
+                rc = save_str_to_buf_user(data, (void *) args->args[i], index);
                 break;
             case SOCKADDR_T:
                 if (args->args[i]) {
-                    bpf_probe_read(&family, sizeof(short), (void *) args->args[i]);
+                    bpf_probe_read_kernel(&family, sizeof(short), (void *) args->args[i]);
                     switch (family) {
                         case AF_UNIX:
                             size = sizeof(struct sockaddr_un);
@@ -2229,18 +2355,18 @@ static __always_inline int save_args_to_submit_buf(event_data_t *data, u64 types
                         default:
                             size = sizeof(short);
                     }
-                    rc = save_to_submit_buf(data, (void *) (args->args[i]), size, index);
+                    rc = save_to_submit_buf_kernel(data, (void *) (args->args[i]), size, index);
                 } else {
-                    rc = save_to_submit_buf(data, &family, sizeof(short), index);
+                    rc = save_to_submit_buf_kernel(data, &family, sizeof(short), index);
                 }
                 break;
             case INT_ARR_2_T:
                 size = sizeof(int[2]);
-                rc = save_to_submit_buf(data, (void *) (args->args[i]), size, index);
+                rc = save_to_submit_buf_kernel(data, (void *) (args->args[i]), size, index);
                 break;
         }
         if ((type != NONE_T) && (type != STR_T) && (type != SOCKADDR_T) && (type != INT_ARR_2_T)) {
-            rc = save_to_submit_buf(data, (void *) &(args->args[i]), size, index);
+            rc = save_to_submit_buf_kernel(data, (void *) &(args->args[i]), size, index);
         }
 
         if (rc > 0) {
@@ -2492,7 +2618,7 @@ static __always_inline int save_sockaddr_to_buf(event_data_t *data, struct socke
         get_network_details_from_sock_v4(sk, &net_details, 0);
         get_local_sockaddr_in_from_network_details(&local, &net_details, family);
 
-        save_to_submit_buf(data, (void *) &local, sizeof(struct sockaddr_in), index);
+        save_to_submit_buf_kernel(data, (void *) &local, sizeof(struct sockaddr_in), index);
     } else if (family == AF_INET6) {
         net_conn_v6_t net_details = {};
         struct sockaddr_in6 local;
@@ -2500,11 +2626,11 @@ static __always_inline int save_sockaddr_to_buf(event_data_t *data, struct socke
         get_network_details_from_sock_v6(sk, &net_details, 0);
         get_local_sockaddr_in6_from_network_details(&local, &net_details, family);
 
-        save_to_submit_buf(data, (void *) &local, sizeof(struct sockaddr_in6), index);
+        save_to_submit_buf_kernel(data, (void *) &local, sizeof(struct sockaddr_in6), index);
     } else if (family == AF_UNIX) {
         struct unix_sock *unix_sk = (struct unix_sock *) sk;
         struct sockaddr_un sockaddr = get_unix_sock_addr(unix_sk);
-        save_to_submit_buf(data, (void *) &sockaddr, sizeof(struct sockaddr_un), index);
+        save_to_submit_buf_kernel(data, (void *) &sockaddr, sizeof(struct sockaddr_un), index);
     }
     return 0;
 }
@@ -2513,7 +2639,7 @@ static __always_inline struct pipe_inode_info *get_file_pipe_info(struct file *f
 {
     struct pipe_inode_info *pipe = READ_KERN(file->private_data);
     char pipe_fops_sym[14] = "pipefifo_fops";
-    if (READ_KERN(file->f_op) != get_symbol_addr(pipe_fops_sym)) {
+    if (READ_KERN(file->f_op) != get_symbol_addr_kernel(pipe_fops_sym)) {
         return NULL;
     }
     return pipe;
@@ -2561,7 +2687,7 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
             sys->args.args[5] = READ_KERN(PT_REGS_PARM6(regs));
         }
     } else {
-        bpf_probe_read(sys->args.args, sizeof(6 * sizeof(u64)), (void *) ctx->args);
+        bpf_probe_read_kernel(sys->args.args, sizeof(6 * sizeof(u64)), (void *) ctx->args);
     }
 
     if (is_compat(data.task)) {
@@ -2574,7 +2700,7 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
     }
 
     if (should_submit(RAW_SYS_ENTER, data.config)) {
-        save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 0);
+        save_to_submit_buf_kernel(&data, (void *) &sys->id, sizeof(int), 0);
         events_perf_submit(&data, RAW_SYS_ENTER, 0);
     }
 
@@ -2585,7 +2711,7 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
     } else if (sys->id != SYS_RT_SIGRETURN) {
         data.buf_off = sizeof(event_context_t);
         data.context.argnum = 0;
-        save_to_submit_buf(&data, &sys->args.args[0], sizeof(int), 0);
+        save_to_submit_buf_kernel(&data, &sys->args.args[0], sizeof(int), 0);
         events_perf_submit(&data, sys->id, 0);
     }
 
@@ -2631,7 +2757,7 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
         return 0;
 
     if (should_submit(RAW_SYS_EXIT, data.config)) {
-        save_to_submit_buf(&data, (void *) &id, sizeof(int), 0);
+        save_to_submit_buf_kernel(&data, (void *) &id, sizeof(int), 0);
         events_perf_submit(&data, RAW_SYS_EXIT, ret);
     }
 
@@ -2678,10 +2804,10 @@ int syscall__execve(void *ctx)
     if (!should_submit(SYS_EXECVE, data.config))
         return 0;
 
-    save_str_to_buf(&data, (void *) sys->args.args[0] /*filename*/, 0);
-    save_str_arr_to_buf(&data, (const char *const *) sys->args.args[1] /*argv*/, 1);
+    save_str_to_buf_user(&data, (void *) sys->args.args[0] /*filename*/, 0);
+    save_str_arr_to_buf_user(&data, (const char *const *) sys->args.args[1] /*argv*/, 1);
     if (data.config->options & OPT_EXEC_ENV) {
-        save_str_arr_to_buf(&data, (const char *const *) sys->args.args[2] /*envp*/, 2);
+        save_str_arr_to_buf_user(&data, (const char *const *) sys->args.args[2] /*envp*/, 2);
     }
 
     return events_perf_submit(&data, SYS_EXECVE, 0);
@@ -2701,13 +2827,13 @@ int syscall__execveat(void *ctx)
     if (!should_submit(SYS_EXECVEAT, data.config))
         return 0;
 
-    save_to_submit_buf(&data, (void *) &sys->args.args[0] /*dirfd*/, sizeof(int), 0);
-    save_str_to_buf(&data, (void *) sys->args.args[1] /*pathname*/, 1);
-    save_str_arr_to_buf(&data, (const char *const *) sys->args.args[2] /*argv*/, 2);
+    save_to_submit_buf_user(&data, (void *) &sys->args.args[0] /*dirfd*/, sizeof(int), 0);
+    save_str_to_buf_user(&data, (void *) sys->args.args[1] /*pathname*/, 1);
+    save_str_arr_to_buf_user(&data, (const char *const *) sys->args.args[2] /*argv*/, 2);
     if (data.config->options & OPT_EXEC_ENV) {
-        save_str_arr_to_buf(&data, (const char *const *) sys->args.args[3] /*envp*/, 3);
+        save_str_arr_to_buf_user(&data, (const char *const *) sys->args.args[3] /*envp*/, 3);
     }
-    save_to_submit_buf(&data, (void *) &sys->args.args[4] /*flags*/, sizeof(int), 4);
+    save_to_submit_buf_user(&data, (void *) &sys->args.args[4] /*flags*/, sizeof(int), 4);
 
     return events_perf_submit(&data, SYS_EXECVEAT, 0);
 }
@@ -2728,8 +2854,8 @@ static __always_inline int send_socket_dup(event_data_t *data, u64 oldfd, u64 ne
 
     // this is a socket - submit the SOCKET_DUP event
 
-    save_to_submit_buf(data, &oldfd, sizeof(u32), 0);
-    save_to_submit_buf(data, &newfd, sizeof(u32), 1);
+    save_to_submit_buf_user(data, &oldfd, sizeof(u32), 0);
+    save_to_submit_buf_user(data, &newfd, sizeof(u32), 1);
 
     // get the address
     struct socket *socket_from_file = (struct socket *) READ_KERN(f->private_data);
@@ -2750,7 +2876,7 @@ static __always_inline int send_socket_dup(event_data_t *data, u64 oldfd, u64 ne
         get_network_details_from_sock_v4(sk, &net_details, 0);
         get_remote_sockaddr_in_from_network_details(&remote, &net_details, family);
 
-        save_to_submit_buf(data, &remote, sizeof(struct sockaddr_in), 2);
+        save_to_submit_buf_kernel(data, &remote, sizeof(struct sockaddr_in), 2);
     } else if (family == AF_INET6) {
         net_conn_v6_t net_details = {};
         struct sockaddr_in6 remote;
@@ -2758,12 +2884,12 @@ static __always_inline int send_socket_dup(event_data_t *data, u64 oldfd, u64 ne
         get_network_details_from_sock_v6(sk, &net_details, 0);
         get_remote_sockaddr_in6_from_network_details(&remote, &net_details, family);
 
-        save_to_submit_buf(data, &remote, sizeof(struct sockaddr_in6), 2);
+        save_to_submit_buf_kernel(data, &remote, sizeof(struct sockaddr_in6), 2);
     } else if (family == AF_UNIX) {
         struct unix_sock *unix_sk = (struct unix_sock *) sk;
         struct sockaddr_un sockaddr = get_unix_sock_addr(unix_sk);
 
-        save_to_submit_buf(data, &sockaddr, sizeof(struct sockaddr_un), 2);
+        save_to_submit_buf_kernel(data, &sockaddr, sizeof(struct sockaddr_un), 2);
     }
 
     return events_perf_submit(data, SOCKET_DUP, 0);
@@ -2849,15 +2975,15 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
         int child_ns_pid = get_task_ns_pid(child);
         int child_ns_tgid = get_task_ns_tgid(child);
 
-        save_to_submit_buf(&data, (void *) &parent_pid, sizeof(int), 0);
-        save_to_submit_buf(&data, (void *) &parent_ns_pid, sizeof(int), 1);
-        save_to_submit_buf(&data, (void *) &parent_tgid, sizeof(int), 2);
-        save_to_submit_buf(&data, (void *) &parent_ns_tgid, sizeof(int), 3);
-        save_to_submit_buf(&data, (void *) &child_pid, sizeof(int), 4);
-        save_to_submit_buf(&data, (void *) &child_ns_pid, sizeof(int), 5);
-        save_to_submit_buf(&data, (void *) &child_tgid, sizeof(int), 6);
-        save_to_submit_buf(&data, (void *) &child_ns_tgid, sizeof(int), 7);
-        save_to_submit_buf(&data, (void *) &start_time, sizeof(u64), 8);
+        save_to_submit_buf_kernel(&data, (void *) &parent_pid, sizeof(int), 0);
+        save_to_submit_buf_kernel(&data, (void *) &parent_ns_pid, sizeof(int), 1);
+        save_to_submit_buf_kernel(&data, (void *) &parent_tgid, sizeof(int), 2);
+        save_to_submit_buf_kernel(&data, (void *) &parent_ns_tgid, sizeof(int), 3);
+        save_to_submit_buf_kernel(&data, (void *) &child_pid, sizeof(int), 4);
+        save_to_submit_buf_kernel(&data, (void *) &child_ns_pid, sizeof(int), 5);
+        save_to_submit_buf_kernel(&data, (void *) &child_tgid, sizeof(int), 6);
+        save_to_submit_buf_kernel(&data, (void *) &child_ns_tgid, sizeof(int), 7);
+        save_to_submit_buf_kernel(&data, (void *) &start_time, sizeof(u64), 8);
 
         events_perf_submit(&data, SCHED_PROCESS_FORK, 0);
     }
@@ -2945,27 +3071,27 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     // 2. fdpath                  - generated filename for execveat (after resolving dirfd)
 
     if (should_submit(SCHED_PROCESS_EXEC, data.config) || data.config->options & OPT_PROCESS_INFO) {
-        save_str_to_buf(&data, (void *) filename, 0);
-        save_str_to_buf(&data, file_path, 1);
+        save_str_to_buf_kernel(&data, (void *) filename, 0);
+        save_str_to_buf_kernel(&data, file_path, 1);
         save_args_str_arr_to_buf(&data, (void *) arg_start, (void *) arg_end, argc, 2);
         if (data.config->options & OPT_EXEC_ENV) {
             save_args_str_arr_to_buf(&data, (void *) env_start, (void *) env_end, envc, 3);
         }
-        save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 4);
-        save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 5);
-        save_to_submit_buf(&data, &invoked_from_kernel, sizeof(int), 6);
-        save_to_submit_buf(&data, &ctime, sizeof(u64), 7);
-        save_to_submit_buf(&data, &stdin_type, sizeof(unsigned short), 8);
-        save_to_submit_buf(&data, &inode_mode, sizeof(umode_t), 9);
-        save_str_to_buf(&data, (void *) interp, 10);
+        save_to_submit_buf_kernel(&data, &s_dev, sizeof(dev_t), 4);
+        save_to_submit_buf_kernel(&data, &inode_nr, sizeof(unsigned long), 5);
+        save_to_submit_buf_kernel(&data, &invoked_from_kernel, sizeof(int), 6);
+        save_to_submit_buf_kernel(&data, &ctime, sizeof(u64), 7);
+        save_to_submit_buf_kernel(&data, &stdin_type, sizeof(unsigned short), 8);
+        save_to_submit_buf_kernel(&data, &inode_mode, sizeof(umode_t), 9);
+        save_str_to_buf_kernel(&data, (void *) interp, 10);
 
         // If the interpreter file is the same as executed one, it means that there is no
         // interpreter. For more information, look at how the 'interpreter_map' works.
         if (elf_interpreter != NULL &&
             (elf_interpreter->device != s_dev || elf_interpreter->inode != inode_nr)) {
-            save_str_to_buf(&data, &elf_interpreter->pathname, 11);
-            save_to_submit_buf(&data, &elf_interpreter->device, sizeof(dev_t), 12);
-            save_to_submit_buf(&data, &elf_interpreter->inode, sizeof(unsigned long), 13);
+            save_str_to_buf_kernel(&data, &elf_interpreter->pathname, 11);
+            save_to_submit_buf_kernel(&data, &elf_interpreter->device, sizeof(dev_t), 12);
+            save_to_submit_buf_kernel(&data, &elf_interpreter->inode, sizeof(unsigned long), 13);
         }
 
         events_perf_submit(&data, SCHED_PROCESS_EXEC, 0);
@@ -3011,8 +3137,8 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     long exit_code = get_task_exit_code(data.task);
 
     if (should_submit(SCHED_PROCESS_EXIT, data.config) || data.config->options & OPT_PROCESS_INFO) {
-        save_to_submit_buf(&data, (void *) &exit_code, sizeof(long), 0);
-        save_to_submit_buf(&data, (void *) &group_dead, sizeof(bool), 1);
+        save_to_submit_buf_kernel(&data, (void *) &exit_code, sizeof(long), 0);
+        save_to_submit_buf_kernel(&data, (void *) &group_dead, sizeof(bool), 1);
 
         events_perf_submit(&data, SCHED_PROCESS_EXIT, 0);
     }
@@ -3057,21 +3183,21 @@ int syscall__accept4(void *ctx)
         get_network_details_from_sock_v4(sk_old, &net_details_old, 0);
         get_local_sockaddr_in_from_network_details(&local, &net_details_old, family_old);
 
-        save_to_submit_buf(&data, (void *) &local, sizeof(struct sockaddr_in), 1);
+        save_to_submit_buf_kernel(&data, (void *) &local, sizeof(struct sockaddr_in), 1);
 
         net_conn_v4_t net_details_new = {};
         struct sockaddr_in remote;
         get_network_details_from_sock_v4(sk_new, &net_details_new, 0);
         get_remote_sockaddr_in_from_network_details(&remote, &net_details_new, family_new);
 
-        save_to_submit_buf(&data, (void *) &remote, sizeof(struct sockaddr_in), 2);
+        save_to_submit_buf_kernel(&data, (void *) &remote, sizeof(struct sockaddr_in), 2);
     } else if (family_old == AF_INET6 && family_new == AF_INET6) {
         net_conn_v6_t net_details_old = {};
         struct sockaddr_in6 local;
         get_network_details_from_sock_v6(sk_old, &net_details_old, 0);
         get_local_sockaddr_in6_from_network_details(&local, &net_details_old, family_old);
 
-        save_to_submit_buf(&data, (void *) &local, sizeof(struct sockaddr_in6), 1);
+        save_to_submit_buf_kernel(&data, (void *) &local, sizeof(struct sockaddr_in6), 1);
 
         net_conn_v6_t net_details_new = {};
 
@@ -3079,11 +3205,11 @@ int syscall__accept4(void *ctx)
         get_network_details_from_sock_v6(sk_new, &net_details_new, 0);
         get_remote_sockaddr_in6_from_network_details(&remote, &net_details_new, family_new);
 
-        save_to_submit_buf(&data, (void *) &remote, sizeof(struct sockaddr_in6), 2);
+        save_to_submit_buf_kernel(&data, (void *) &remote, sizeof(struct sockaddr_in6), 2);
     } else if (family_old == AF_UNIX && family_new == AF_UNIX) {
         struct unix_sock *unix_sk_new = (struct unix_sock *) sk_new;
         struct sockaddr_un sockaddr_new = get_unix_sock_addr(unix_sk_new);
-        save_to_submit_buf(&data, (void *) &sockaddr_new, sizeof(struct sockaddr_un), 1);
+        save_to_submit_buf_kernel(&data, (void *) &sockaddr_new, sizeof(struct sockaddr_un), 1);
     } else {
         return 0;
     }
@@ -3110,11 +3236,11 @@ int tracepoint__sched__sched_switch(struct bpf_raw_tracepoint_args *ctx)
     int next_pid = get_task_host_pid(next);
     int cpu = bpf_get_smp_processor_id();
 
-    save_to_submit_buf(&data, (void *) &cpu, sizeof(int), 0);
-    save_to_submit_buf(&data, (void *) &prev_pid, sizeof(int), 1);
-    save_str_to_buf(&data, prev->comm, 2);
-    save_to_submit_buf(&data, (void *) &next_pid, sizeof(int), 3);
-    save_str_to_buf(&data, next->comm, 4);
+    save_to_submit_buf_kernel(&data, (void *) &cpu, sizeof(int), 0);
+    save_to_submit_buf_kernel(&data, (void *) &prev_pid, sizeof(int), 1);
+    save_str_to_buf_kernel(&data, prev->comm, 2);
+    save_to_submit_buf_kernel(&data, (void *) &next_pid, sizeof(int), 3);
+    save_str_to_buf_kernel(&data, next->comm, 4);
 
     return events_perf_submit(&data, SCHED_SWITCH, 0);
 }
@@ -3131,7 +3257,7 @@ int BPF_KPROBE(trace_filldir64)
     char *process_name = (char *) PT_REGS_PARM2(ctx);
     unsigned long process_inode_number = (unsigned long) PT_REGS_PARM5(ctx);
     if (process_inode_number == 0) {
-        save_str_to_buf(&data, process_name, 0);
+        save_str_to_buf_kernel(&data, process_name, 0);
         return events_perf_submit(&data, HIDDEN_INODES, 0);
     }
     return 0;
@@ -3152,10 +3278,10 @@ int BPF_KPROBE(trace_call_usermodehelper)
     unsigned long envp = PT_REGS_PARM3(ctx);
     int wait = PT_REGS_PARM4(ctx);
 
-    save_str_to_buf(&data, path, 0);
-    save_str_arr_to_buf(&data, (const char *const *) argv, 1);
-    save_str_arr_to_buf(&data, (const char *const *) envp, 2);
-    save_to_submit_buf(&data, (void *) &wait, sizeof(int), 3);
+    save_str_to_buf_kernel(&data, path, 0);
+    save_str_arr_to_buf_kernel(&data, (const char *const *) argv, 1);
+    save_str_arr_to_buf_kernel(&data, (const char *const *) envp, 2);
+    save_to_submit_buf_kernel(&data, (void *) &wait, sizeof(int), 3);
 
     return events_perf_submit(&data, CALL_USERMODE_HELPER, 0);
 }
@@ -3188,7 +3314,7 @@ static __always_inline void invoke_print_syscall_table_event(event_data_t *data)
     }
 
     char syscall_table[15] = "sys_call_table";
-    unsigned long *syscall_table_addr = (unsigned long *) get_symbol_addr(syscall_table);
+    unsigned long *syscall_table_addr = (unsigned long *) get_symbol_addr_kernel(syscall_table);
     u64 idx;
     u64 *syscall_num_p; // pointer to syscall_number
     u64 syscall_num;
@@ -3266,9 +3392,9 @@ int tracepoint__cgroup__cgroup_attach_task(struct bpf_raw_tracepoint_args *ctx)
     int pid = get_task_host_pid(task);
     char *comm = READ_KERN(task->comm);
 
-    save_str_to_buf(&data, path, 0);
-    save_str_to_buf(&data, comm, 1);
-    save_to_submit_buf(&data, (void *) &pid, sizeof(int), 2);
+    save_str_to_buf_kernel(&data, path, 0);
+    save_str_to_buf_kernel(&data, comm, 1);
+    save_to_submit_buf_kernel(&data, (void *) &pid, sizeof(int), 2);
     events_perf_submit(&data, CGROUP_ATTACH_TASK, 0);
 
     return 0;
@@ -3299,9 +3425,9 @@ int tracepoint__cgroup__cgroup_mkdir(struct bpf_raw_tracepoint_args *ctx)
         bpf_map_update_elem(&containers_map, &cgroup_id_lsb, &state, BPF_ANY);
     }
 
-    save_to_submit_buf(&data, &cgroup_id, sizeof(u64), 0);
-    save_str_to_buf(&data, path, 1);
-    save_to_submit_buf(&data, &hierarchy_id, sizeof(u32), 2);
+    save_to_submit_buf_kernel(&data, &cgroup_id, sizeof(u64), 0);
+    save_str_to_buf_kernel(&data, path, 1);
+    save_to_submit_buf_kernel(&data, &hierarchy_id, sizeof(u32), 2);
     events_perf_submit(&data, CGROUP_MKDIR, 0);
 
     return 0;
@@ -3329,9 +3455,9 @@ int tracepoint__cgroup__cgroup_rmdir(struct bpf_raw_tracepoint_args *ctx)
     if (should_update)
         bpf_map_delete_elem(&containers_map, &cgroup_id_lsb);
 
-    save_to_submit_buf(&data, &cgroup_id, sizeof(u64), 0);
-    save_str_to_buf(&data, path, 1);
-    save_to_submit_buf(&data, &hierarchy_id, sizeof(u32), 2);
+    save_to_submit_buf_kernel(&data, &cgroup_id, sizeof(u64), 0);
+    save_str_to_buf_kernel(&data, path, 1);
+    save_to_submit_buf_kernel(&data, &hierarchy_id, sizeof(u32), 2);
     events_perf_submit(&data, CGROUP_RMDIR, 0);
 
     return 0;
@@ -3353,9 +3479,9 @@ int BPF_KPROBE(trace_security_bprm_check)
     unsigned long inode_nr = get_inode_nr_from_file(file);
     void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
 
-    save_str_to_buf(&data, file_path, 0);
-    save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 1);
-    save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 2);
+    save_str_to_buf_kernel(&data, file_path, 0);
+    save_to_submit_buf_kernel(&data, &s_dev, sizeof(dev_t), 1);
+    save_to_submit_buf_kernel(&data, &inode_nr, sizeof(unsigned long), 2);
 
     return events_perf_submit(&data, SECURITY_BPRM_CHECK, 0);
 }
@@ -3393,14 +3519,14 @@ int BPF_KPROBE(trace_security_file_open)
         }
     }
 
-    save_str_to_buf(&data, file_path, 0);
-    save_to_submit_buf(&data, (void *) GET_FIELD_ADDR(file->f_flags), sizeof(int), 1);
-    save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 2);
-    save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 3);
-    save_to_submit_buf(&data, &ctime, sizeof(u64), 4);
-    save_str_to_buf(&data, syscall_pathname, 5);
+    save_str_to_buf_kernel(&data, file_path, 0);
+    save_to_submit_buf_kernel(&data, (void *) GET_FIELD_ADDR(file->f_flags), sizeof(int), 1);
+    save_to_submit_buf_kernel(&data, &s_dev, sizeof(dev_t), 2);
+    save_to_submit_buf_kernel(&data, &inode_nr, sizeof(unsigned long), 3);
+    save_to_submit_buf_kernel(&data, &ctime, sizeof(u64), 4);
+    save_str_to_buf_kernel(&data, syscall_pathname, 5);
     if (syscall_traced && (data.config->options & OPT_SHOW_SYSCALL)) {
-        save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 6);
+        save_to_submit_buf_kernel(&data, (void *) &sys->id, sizeof(int), 6);
     }
 
     return events_perf_submit(&data, SECURITY_FILE_OPEN, 0);
@@ -3423,10 +3549,10 @@ int BPF_KPROBE(trace_security_sb_mount)
 
     void *path_str = get_path_str(path);
 
-    save_str_to_buf(&data, (void *) dev_name, 0);
-    save_str_to_buf(&data, path_str, 1);
-    save_str_to_buf(&data, (void *) type, 2);
-    save_to_submit_buf(&data, &flags, sizeof(unsigned long), 3);
+    save_str_to_buf_kernel(&data, (void *) dev_name, 0);
+    save_str_to_buf_kernel(&data, path_str, 1);
+    save_str_to_buf_kernel(&data, (void *) type, 2);
+    save_to_submit_buf_kernel(&data, &flags, sizeof(unsigned long), 3);
 
     return events_perf_submit(&data, SECURITY_SB_MOUNT, 0);
 }
@@ -3445,7 +3571,7 @@ int BPF_KPROBE(trace_security_inode_unlink)
     struct dentry *dentry = (struct dentry *) PT_REGS_PARM2(ctx);
     void *dentry_path = get_dentry_path_str(dentry);
 
-    save_str_to_buf(&data, dentry_path, 0);
+    save_str_to_buf_kernel(&data, dentry_path, 0);
 
     return events_perf_submit(&data, SECURITY_INODE_UNLINK, 0);
 }
@@ -3518,8 +3644,8 @@ int BPF_KPROBE(trace_commit_creds)
     caps = READ_KERN(new->cap_ambient);
     new_slim.cap_ambient = ((caps.cap[1] + 0ULL) << 32) + caps.cap[0];
 
-    save_to_submit_buf(&data, (void *) &old_slim, sizeof(slim_cred_t), 0);
-    save_to_submit_buf(&data, (void *) &new_slim, sizeof(slim_cred_t), 1);
+    save_to_submit_buf_kernel(&data, (void *) &old_slim, sizeof(slim_cred_t), 0);
+    save_to_submit_buf_kernel(&data, (void *) &new_slim, sizeof(slim_cred_t), 1);
 
     if ((old_slim.uid != new_slim.uid) || (old_slim.gid != new_slim.gid) ||
         (old_slim.suid != new_slim.suid) || (old_slim.sgid != new_slim.sgid) ||
@@ -3533,7 +3659,7 @@ int BPF_KPROBE(trace_commit_creds)
         if (data.config->options & OPT_SHOW_SYSCALL) {
             syscall_data_t *sys = &data.task_info->syscall_data;
             if (data.task_info->syscall_traced) {
-                save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 2);
+                save_to_submit_buf_user(&data, (void *) &sys->id, sizeof(int), 2);
             }
         }
 
@@ -3573,20 +3699,20 @@ int BPF_KPROBE(trace_switch_task_namespaces)
     u32 old_cgroup = get_task_cgroup_ns_id(task);
     u32 new_cgroup = get_cgroup_ns_id(new);
 
-    save_to_submit_buf(&data, (void *) &pid, sizeof(int), 0);
+    save_to_submit_buf_kernel(&data, (void *) &pid, sizeof(int), 0);
 
     if (old_mnt != new_mnt)
-        save_to_submit_buf(&data, (void *) &new_mnt, sizeof(u32), 1);
+        save_to_submit_buf_kernel(&data, (void *) &new_mnt, sizeof(u32), 1);
     if (old_pid != new_pid)
-        save_to_submit_buf(&data, (void *) &new_pid, sizeof(u32), 2);
+        save_to_submit_buf_kernel(&data, (void *) &new_pid, sizeof(u32), 2);
     if (old_uts != new_uts)
-        save_to_submit_buf(&data, (void *) &new_uts, sizeof(u32), 3);
+        save_to_submit_buf_kernel(&data, (void *) &new_uts, sizeof(u32), 3);
     if (old_ipc != new_ipc)
-        save_to_submit_buf(&data, (void *) &new_ipc, sizeof(u32), 4);
+        save_to_submit_buf_kernel(&data, (void *) &new_ipc, sizeof(u32), 4);
     if (old_net != new_net)
-        save_to_submit_buf(&data, (void *) &new_net, sizeof(u32), 5);
+        save_to_submit_buf_kernel(&data, (void *) &new_net, sizeof(u32), 5);
     if (old_cgroup != new_cgroup)
-        save_to_submit_buf(&data, (void *) &new_cgroup, sizeof(u32), 6);
+        save_to_submit_buf_kernel(&data, (void *) &new_cgroup, sizeof(u32), 6);
     if (data.context.argnum > 1)
         events_perf_submit(&data, SWITCH_TASK_NS, 0);
 
@@ -3609,11 +3735,11 @@ int BPF_KPROBE(trace_cap_capable)
     if (cap_opt & CAP_OPT_NOAUDIT)
         return 0;
 
-    save_to_submit_buf(&data, (void *) &cap, sizeof(int), 0);
+    save_to_submit_buf_kernel(&data, (void *) &cap, sizeof(int), 0);
     if (data.config->options & OPT_SHOW_SYSCALL) {
         syscall_data_t *sys = &data.task_info->syscall_data;
         if (data.task_info->syscall_traced) {
-            save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 1);
+            save_to_submit_buf_user(&data, (void *) &sys->id, sizeof(int), 1);
         }
     }
 
@@ -3635,10 +3761,10 @@ int BPF_KPROBE(trace_security_socket_create)
     int protocol = (int) PT_REGS_PARM3(ctx);
     int kern = (int) PT_REGS_PARM4(ctx);
 
-    save_to_submit_buf(&data, (void *) &family, sizeof(int), 0);
-    save_to_submit_buf(&data, (void *) &type, sizeof(int), 1);
-    save_to_submit_buf(&data, (void *) &protocol, sizeof(int), 2);
-    save_to_submit_buf(&data, (void *) &kern, sizeof(int), 3);
+    save_to_submit_buf_kernel(&data, (void *) &family, sizeof(int), 0);
+    save_to_submit_buf_kernel(&data, (void *) &type, sizeof(int), 1);
+    save_to_submit_buf_kernel(&data, (void *) &protocol, sizeof(int), 2);
+    save_to_submit_buf_kernel(&data, (void *) &kern, sizeof(int), 3);
 
     return events_perf_submit(&data, SECURITY_SOCKET_CREATE, 0);
 }
@@ -3659,8 +3785,8 @@ int BPF_KPROBE(trace_security_inode_symlink)
 
     void *dentry_path = get_dentry_path_str(dentry);
 
-    save_str_to_buf(&data, dentry_path, 0);
-    save_str_to_buf(&data, (void *) old_name, 1);
+    save_str_to_buf_kernel(&data, dentry_path, 0);
+    save_str_to_buf_kernel(&data, (void *) old_name, 1);
 
     return events_perf_submit(&data, SECURITY_INODE_SYMLINK, 0);
 }
@@ -3677,8 +3803,8 @@ int BPF_KPROBE(trace_proc_create)
     char *name = (char *) PT_REGS_PARM1(ctx);
     unsigned long proc_ops_addr = (unsigned long) PT_REGS_PARM4(ctx);
 
-    save_str_to_buf(&data, name, 0);
-    save_to_submit_buf(&data, (void *) &proc_ops_addr, sizeof(u64), 1);
+    save_str_to_buf_kernel(&data, name, 0);
+    save_to_submit_buf_kernel(&data, (void *) &proc_ops_addr, sizeof(u64), 1);
 
     return events_perf_submit(&data, PROC_CREATE, 0);
 }
@@ -3698,10 +3824,10 @@ int BPF_KPROBE(trace_debugfs_create_file)
     void *dentry_path = get_dentry_path_str(dentry);
     unsigned long proc_ops_addr = (unsigned long) PT_REGS_PARM5(ctx);
 
-    save_str_to_buf(&data, name, 0);
-    save_str_to_buf(&data, dentry_path, 1);
-    save_to_submit_buf(&data, &mode, sizeof(mode_t), 2);
-    save_to_submit_buf(&data, (void *) &proc_ops_addr, sizeof(u64), 3);
+    save_str_to_buf_kernel(&data, name, 0);
+    save_str_to_buf_kernel(&data, dentry_path, 1);
+    save_to_submit_buf_kernel(&data, &mode, sizeof(mode_t), 2);
+    save_to_submit_buf_kernel(&data, (void *) &proc_ops_addr, sizeof(u64), 3);
 
     return events_perf_submit(&data, DEBUGFS_CREATE_FILE, 0);
 }
@@ -3719,8 +3845,8 @@ int BPF_KPROBE(trace_debugfs_create_dir)
     struct dentry *dentry = (struct dentry *) PT_REGS_PARM2(ctx);
     void *dentry_path = get_dentry_path_str(dentry);
 
-    save_str_to_buf(&data, name, 0);
-    save_str_to_buf(&data, dentry_path, 1);
+    save_str_to_buf_kernel(&data, name, 0);
+    save_str_to_buf_kernel(&data, dentry_path, 1);
 
     return events_perf_submit(&data, DEBUGFS_CREATE_DIR, 0);
 }
@@ -3743,9 +3869,9 @@ int BPF_KPROBE(trace_security_socket_listen)
     if (!data.task_info->syscall_traced || sys->id != SYSCALL_LISTEN)
         return 0;
 
-    save_to_submit_buf(&data, (void *) &sys->args.args[0], sizeof(u32), 0);
+    save_to_submit_buf_user(&data, (void *) &sys->args.args[0], sizeof(u32), 0);
     save_sockaddr_to_buf(&data, sock, 1);
-    save_to_submit_buf(&data, (void *) &backlog, sizeof(int), 2);
+    save_to_submit_buf_user(&data, (void *) &backlog, sizeof(int), 2);
 
     return events_perf_submit(&data, SECURITY_SOCKET_LISTEN, 0);
 }
@@ -3773,21 +3899,21 @@ int BPF_KPROBE(trace_security_socket_connect)
     if (!data.task_info->syscall_traced || sys->id != SYSCALL_CONNECT)
         return 0;
 
-    save_to_submit_buf(&data, (void *) &sys->args.args[0], sizeof(u32), 0);
+    save_to_submit_buf_user(&data, (void *) &sys->args.args[0], sizeof(u32), 0);
 
     if (sa_fam == AF_INET) {
-        save_to_submit_buf(&data, (void *) address, sizeof(struct sockaddr_in), 1);
+        save_to_submit_buf_kernel(&data, (void *) address, sizeof(struct sockaddr_in), 1);
     } else if (sa_fam == AF_INET6) {
-        save_to_submit_buf(&data, (void *) address, sizeof(struct sockaddr_in6), 1);
+        save_to_submit_buf_kernel(&data, (void *) address, sizeof(struct sockaddr_in6), 1);
     } else if (sa_fam == AF_UNIX) {
 #if defined(__TARGET_ARCH_x86) // TODO: this is broken in arm64 (issue: #1129)
         if (addr_len <= sizeof(struct sockaddr_un)) {
             struct sockaddr_un sockaddr = {};
-            bpf_probe_read(&sockaddr, addr_len, (void *) address);
-            save_to_submit_buf(&data, (void *) &sockaddr, sizeof(struct sockaddr_un), 1);
+            bpf_probe_read_kernel(&sockaddr, addr_len, (void *) address);
+            save_to_submit_buf_kernel(&data, (void *) &sockaddr, sizeof(struct sockaddr_un), 1);
         } else
 #endif
-            save_to_submit_buf(&data, (void *) address, sizeof(struct sockaddr_un), 1);
+            save_to_submit_buf_kernel(&data, (void *) address, sizeof(struct sockaddr_un), 1);
     }
 
     return events_perf_submit(&data, SECURITY_SOCKET_CONNECT, 0);
@@ -3821,7 +3947,7 @@ int BPF_KPROBE(trace_security_socket_accept)
         (sys->id != SYSCALL_ACCEPT && sys->id != SYSCALL_ACCEPT4))
         return 0;
 
-    save_to_submit_buf(&data, (void *) &sys->args.args[0], sizeof(u32), 0);
+    save_to_submit_buf_user(&data, (void *) &sys->args.args[0], sizeof(u32), 0);
     save_sockaddr_to_buf(&data, sock, 1);
 
     return events_perf_submit(&data, SECURITY_SOCKET_ACCEPT, 0);
@@ -3853,14 +3979,14 @@ int BPF_KPROBE(trace_security_socket_bind)
     if (!data.task_info->syscall_traced || sys->id != SYSCALL_BIND)
         return 0;
 
-    save_to_submit_buf(&data, (void *) &sys->args.args[0], sizeof(u32), 0);
+    save_to_submit_buf_user(&data, (void *) &sys->args.args[0], sizeof(u32), 0);
 
     u16 protocol = get_sock_protocol(sk);
     net_id_t connect_id = {0};
     connect_id.protocol = protocol;
 
     if (sa_fam == AF_INET) {
-        save_to_submit_buf(&data, (void *) address, sizeof(struct sockaddr_in), 1);
+        save_to_submit_buf_kernel(&data, (void *) address, sizeof(struct sockaddr_in), 1);
 
         struct sockaddr_in *addr = (struct sockaddr_in *) address;
 
@@ -3870,7 +3996,7 @@ int BPF_KPROBE(trace_security_socket_bind)
             connect_id.port = READ_KERN(addr->sin_port);
         }
     } else if (sa_fam == AF_INET6) {
-        save_to_submit_buf(&data, (void *) address, sizeof(struct sockaddr_in6), 1);
+        save_to_submit_buf_kernel(&data, (void *) address, sizeof(struct sockaddr_in6), 1);
 
         struct sockaddr_in6 *addr = (struct sockaddr_in6 *) address;
 
@@ -3882,11 +4008,11 @@ int BPF_KPROBE(trace_security_socket_bind)
 #if defined(__TARGET_ARCH_x86) // TODO: this is broken in arm64 (issue: #1129)
         if (addr_len <= sizeof(struct sockaddr_un)) {
             struct sockaddr_un sockaddr = {};
-            bpf_probe_read(&sockaddr, addr_len, (void *) address);
-            save_to_submit_buf(&data, (void *) &sockaddr, sizeof(struct sockaddr_un), 1);
+            bpf_probe_read_kernel(&sockaddr, addr_len, (void *) address);
+            save_to_submit_buf_kernel(&data, (void *) &sockaddr, sizeof(struct sockaddr_un), 1);
         } else
 #endif
-            save_to_submit_buf(&data, (void *) address, sizeof(struct sockaddr_un), 1);
+            save_to_submit_buf_kernel(&data, (void *) address, sizeof(struct sockaddr_un), 1);
     }
 
     if (connect_id.port) {
@@ -3936,9 +4062,9 @@ int BPF_KPROBE(trace_security_socket_setsockopt)
     if (!data.task_info->syscall_traced || sys->id != SYSC_SETSOCKOPT)
         return 0;
 
-    save_to_submit_buf(&data, (void *) &sys->args.args[0], sizeof(u32), 0);
-    save_to_submit_buf(&data, (void *) &level, sizeof(int), 1);
-    save_to_submit_buf(&data, (void *) &optname, sizeof(int), 2);
+    save_to_submit_buf_user(&data, (void *) &sys->args.args[0], sizeof(u32), 0);
+    save_to_submit_buf_kernel(&data, (void *) &level, sizeof(int), 1);
+    save_to_submit_buf_kernel(&data, (void *) &optname, sizeof(int), 2);
     save_sockaddr_to_buf(&data, sock, 3);
 
     return events_perf_submit(&data, SECURITY_SOCKET_SETSOCKOPT, 0);
@@ -4395,7 +4521,7 @@ static __always_inline u32 send_bin_helper(void *ctx, void *prog_array, int tail
         if (bin_args->iov_idx < bin_args->iov_len) {
             // Handle the rest of write recursively
             struct iovec io_vec;
-            bpf_probe_read(&io_vec, sizeof(struct iovec), &bin_args->vec[bin_args->iov_idx]);
+            bpf_probe_read_kernel(&io_vec, sizeof(struct iovec), &bin_args->vec[bin_args->iov_idx]);
             bin_args->ptr = io_vec.iov_base;
             bin_args->full_size = io_vec.iov_len;
             bpf_tail_call(ctx, prog_array, tail_call);
@@ -4418,7 +4544,7 @@ static __always_inline u32 send_bin_helper(void *ctx, void *prog_array, int tail
 #define F_CHUNK_OFF  (F_POS_OFF + sizeof(off_t))
 #define F_CHUNK_SIZE (MAX_PERCPU_BUFSIZE >> 1)
 
-    bpf_probe_read((void **) &(file_buf_p->buf[F_SEND_TYPE]), sizeof(u8), &bin_args->type);
+    bpf_probe_read_kernel((void **) &(file_buf_p->buf[F_SEND_TYPE]), sizeof(u8), &bin_args->type);
 
     int zero = 0;
     config_entry_t *config = bpf_map_lookup_elem(&config_map, &zero);
@@ -4431,14 +4557,16 @@ static __always_inline u32 send_bin_helper(void *ctx, void *prog_array, int tail
     } else {
         cgroup_id = bpf_get_current_cgroup_id();
     }
-    bpf_probe_read((void **) &(file_buf_p->buf[F_CGROUP_ID]), sizeof(u64), &cgroup_id);
+    bpf_probe_read_kernel((void **) &(file_buf_p->buf[F_CGROUP_ID]), sizeof(u64), &cgroup_id);
 
     // Save metadata to be used in filename
-    bpf_probe_read((void **) &(file_buf_p->buf[F_META_OFF]), SEND_META_SIZE, bin_args->metadata);
+    bpf_probe_read_kernel(
+        (void **) &(file_buf_p->buf[F_META_OFF]), SEND_META_SIZE, bin_args->metadata);
 
     // Save number of written bytes. Set this to CHUNK_SIZE for full chunks
     chunk_size = F_CHUNK_SIZE;
-    bpf_probe_read((void **) &(file_buf_p->buf[F_SZ_OFF]), sizeof(unsigned int), &chunk_size);
+    bpf_probe_read_kernel(
+        (void **) &(file_buf_p->buf[F_SZ_OFF]), sizeof(unsigned int), &chunk_size);
 
     unsigned int full_chunk_num = bin_args->full_size / F_CHUNK_SIZE;
     void *data = file_buf_p->buf;
@@ -4453,9 +4581,10 @@ static __always_inline u32 send_bin_helper(void *ctx, void *prog_array, int tail
             break;
 
         // Save binary chunk and file position of write
-        bpf_probe_read(
+        bpf_probe_read_kernel(
             (void **) &(file_buf_p->buf[F_POS_OFF]), sizeof(off_t), &bin_args->start_off);
-        bpf_probe_read((void **) &(file_buf_p->buf[F_CHUNK_OFF]), F_CHUNK_SIZE, bin_args->ptr);
+        bpf_probe_read_kernel(
+            (void **) &(file_buf_p->buf[F_CHUNK_OFF]), F_CHUNK_SIZE, bin_args->ptr);
         bin_args->ptr += F_CHUNK_SIZE;
         bin_args->start_off += F_CHUNK_SIZE;
 
@@ -4476,9 +4605,10 @@ static __always_inline u32 send_bin_helper(void *ctx, void *prog_array, int tail
     if (chunk_size) {
         // Save last chunk
         chunk_size = chunk_size & ((MAX_PERCPU_BUFSIZE >> 1) - 1);
-        bpf_probe_read((void **) &(file_buf_p->buf[F_CHUNK_OFF]), chunk_size, bin_args->ptr);
-        bpf_probe_read((void **) &(file_buf_p->buf[F_SZ_OFF]), sizeof(unsigned int), &chunk_size);
-        bpf_probe_read(
+        bpf_probe_read_kernel((void **) &(file_buf_p->buf[F_CHUNK_OFF]), chunk_size, bin_args->ptr);
+        bpf_probe_read_kernel(
+            (void **) &(file_buf_p->buf[F_SZ_OFF]), sizeof(unsigned int), &chunk_size);
+        bpf_probe_read_kernel(
             (void **) &(file_buf_p->buf[F_POS_OFF]), sizeof(off_t), &bin_args->start_off);
 
         // Satisfy validator by setting buffer bounds
@@ -4491,7 +4621,7 @@ static __always_inline u32 send_bin_helper(void *ctx, void *prog_array, int tail
     if (bin_args->iov_idx < bin_args->iov_len) {
         // Handle the rest of write recursively
         struct iovec io_vec;
-        bpf_probe_read(&io_vec, sizeof(struct iovec), &bin_args->vec[bin_args->iov_idx]);
+        bpf_probe_read_kernel(&io_vec, sizeof(struct iovec), &bin_args->vec[bin_args->iov_idx]);
         bin_args->ptr = io_vec.iov_base;
         bin_args->full_size = io_vec.iov_len;
         bpf_tail_call(ctx, prog_array, tail_call);
@@ -4554,7 +4684,7 @@ do_file_write_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id)
     // Extract device id, inode number, and pos (offset)
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
-    bpf_probe_read(&start_pos, sizeof(off_t), pos);
+    bpf_probe_read_kernel(&start_pos, sizeof(off_t), pos);
 
     bool char_dev = (start_pos == 0);
     u32 bytes_written = PT_REGS_RC(ctx);
@@ -4572,15 +4702,15 @@ do_file_write_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id)
 
     if (should_submit(VFS_WRITE, data.config) || should_submit(VFS_WRITEV, data.config) ||
         should_submit(__KERNEL_WRITE, data.config)) {
-        save_str_to_buf(&data, file_path, 0);
-        save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 1);
-        save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 2);
+        save_str_to_buf_kernel(&data, file_path, 0);
+        save_to_submit_buf_kernel(&data, &s_dev, sizeof(dev_t), 1);
+        save_to_submit_buf_kernel(&data, &inode_nr, sizeof(unsigned long), 2);
 
         if (event_id == VFS_WRITE || event_id == __KERNEL_WRITE)
-            save_to_submit_buf(&data, &count, sizeof(size_t), 3);
+            save_to_submit_buf_kernel(&data, &count, sizeof(size_t), 3);
         else
-            save_to_submit_buf(&data, &vlen, sizeof(unsigned long), 3);
-        save_to_submit_buf(&data, &start_pos, sizeof(off_t), 4);
+            save_to_submit_buf_kernel(&data, &vlen, sizeof(unsigned long), 3);
+        save_to_submit_buf_kernel(&data, &start_pos, sizeof(off_t), 4);
 
         // Submit vfs_write(v) event
         events_perf_submit(&data, event_id, PT_REGS_RC(ctx));
@@ -4593,25 +4723,25 @@ do_file_write_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id)
 
         u8 header[FILE_MAGIC_HDR_SIZE];
 
-        save_str_to_buf(&data, file_path, 0);
+        save_str_to_buf_kernel(&data, file_path, 0);
 
         if (event_id == VFS_WRITE || event_id == __KERNEL_WRITE) {
             if (header_bytes < FILE_MAGIC_HDR_SIZE)
-                bpf_probe_read(header, header_bytes & FILE_MAGIC_MASK, ptr);
+                bpf_probe_read_kernel(header, header_bytes & FILE_MAGIC_MASK, ptr);
             else
-                bpf_probe_read(header, FILE_MAGIC_HDR_SIZE, ptr);
+                bpf_probe_read_kernel(header, FILE_MAGIC_HDR_SIZE, ptr);
         } else {
             struct iovec io_vec;
-            bpf_probe_read(&io_vec, sizeof(struct iovec), &vec[0]);
+            bpf_probe_read_kernel(&io_vec, sizeof(struct iovec), &vec[0]);
             if (header_bytes < FILE_MAGIC_HDR_SIZE)
-                bpf_probe_read(header, header_bytes & FILE_MAGIC_MASK, io_vec.iov_base);
+                bpf_probe_read_kernel(header, header_bytes & FILE_MAGIC_MASK, io_vec.iov_base);
             else
-                bpf_probe_read(header, FILE_MAGIC_HDR_SIZE, io_vec.iov_base);
+                bpf_probe_read_kernel(header, FILE_MAGIC_HDR_SIZE, io_vec.iov_base);
         }
 
         save_bytes_to_buf(&data, header, header_bytes, 1);
-        save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 2);
-        save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 3);
+        save_to_submit_buf_kernel(&data, &s_dev, sizeof(dev_t), 2);
+        save_to_submit_buf_kernel(&data, &inode_nr, sizeof(unsigned long), 3);
 
         // Submit magic_write event
         events_perf_submit(&data, MAGIC_WRITE, PT_REGS_RC(ctx));
@@ -4692,7 +4822,7 @@ static __always_inline int do_file_write_operation_tail(struct pt_regs *ctx, u32
     dev_t s_dev = get_dev_from_file(file);
     unsigned long inode_nr = get_inode_nr_from_file(file);
     unsigned short i_mode = get_inode_mode_from_file(file);
-    bpf_probe_read(&start_pos, sizeof(off_t), pos);
+    bpf_probe_read_kernel(&start_pos, sizeof(off_t), pos);
 
     // Calculate write start offset
     if (start_pos != 0)
@@ -4709,10 +4839,10 @@ static __always_inline int do_file_write_operation_tail(struct pt_regs *ctx, u32
 
     if (data.config->options & OPT_CAPTURE_FILES) {
         bin_args.type = SEND_VFS_WRITE;
-        bpf_probe_read(bin_args.metadata, 4, &s_dev);
-        bpf_probe_read(&bin_args.metadata[4], 8, &inode_nr);
-        bpf_probe_read(&bin_args.metadata[12], 4, &i_mode);
-        bpf_probe_read(&bin_args.metadata[16], 4, &pid);
+        bpf_probe_read_kernel(bin_args.metadata, 4, &s_dev);
+        bpf_probe_read_kernel(&bin_args.metadata[4], 8, &inode_nr);
+        bpf_probe_read_kernel(&bin_args.metadata[12], 4, &i_mode);
+        bpf_probe_read_kernel(&bin_args.metadata[16], 4, &pid);
         bin_args.start_off = start_pos;
         if (event_id == VFS_WRITE || event_id == __KERNEL_WRITE) {
             bin_args.ptr = ptr;
@@ -4723,7 +4853,7 @@ static __always_inline int do_file_write_operation_tail(struct pt_regs *ctx, u32
             bin_args.iov_len = vlen;
             if (vlen > 0) {
                 struct iovec io_vec;
-                bpf_probe_read(&io_vec, sizeof(struct iovec), &vec[0]);
+                bpf_probe_read_kernel(&io_vec, sizeof(struct iovec), &vec[0]);
                 bin_args.ptr = io_vec.iov_base;
                 bin_args.full_size = io_vec.iov_len;
             }
@@ -4795,7 +4925,7 @@ int BPF_KPROBE(trace_mmap_alert)
 
     if ((sys->args.args[2] & (VM_WRITE | VM_EXEC)) == (VM_WRITE | VM_EXEC)) {
         u32 alert = ALERT_MMAP_W_X;
-        save_to_submit_buf(&data, &alert, sizeof(u32), 0);
+        save_to_submit_buf_kernel(&data, &alert, sizeof(u32), 0);
         events_perf_submit(&data, MEM_PROT_ALERT, 0);
     }
 
@@ -4822,11 +4952,11 @@ int BPF_KPROBE(trace_security_mmap_file)
     unsigned long prot = (unsigned long) PT_REGS_PARM2(ctx);
     unsigned long mmap_flags = (unsigned long) PT_REGS_PARM3(ctx);
 
-    save_str_to_buf(&data, file_path, 0);
-    save_to_submit_buf(&data, (void *) GET_FIELD_ADDR(file->f_flags), sizeof(int), 1);
-    save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 2);
-    save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 3);
-    save_to_submit_buf(&data, &ctime, sizeof(u64), 4);
+    save_str_to_buf_kernel(&data, file_path, 0);
+    save_to_submit_buf_kernel(&data, (void *) GET_FIELD_ADDR(file->f_flags), sizeof(int), 1);
+    save_to_submit_buf_kernel(&data, &s_dev, sizeof(dev_t), 2);
+    save_to_submit_buf_kernel(&data, &inode_nr, sizeof(unsigned long), 3);
+    save_to_submit_buf_kernel(&data, &ctime, sizeof(u64), 4);
 
     syscall_data_t *sys = &data.task_info->syscall_data;
     if (should_submit(SHARED_OBJECT_LOADED, data.config)) {
@@ -4836,11 +4966,11 @@ int BPF_KPROBE(trace_security_mmap_file)
     }
 
     if (should_submit(SECURITY_MMAP_FILE, data.config)) {
-        save_to_submit_buf(&data, &prot, sizeof(int), 5);
-        save_to_submit_buf(&data, &mmap_flags, sizeof(int), 6);
+        save_to_submit_buf_kernel(&data, &prot, sizeof(int), 5);
+        save_to_submit_buf_kernel(&data, &mmap_flags, sizeof(int), 6);
         if (data.config->options & OPT_SHOW_SYSCALL) {
             if (data.task_info->syscall_traced) {
-                save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 7);
+                save_to_submit_buf_user(&data, (void *) &sys->id, sizeof(int), 7);
             }
         }
         return events_perf_submit(&data, SECURITY_MMAP_FILE, 0);
@@ -4868,9 +4998,9 @@ int BPF_KPROBE(trace_security_file_mprotect)
         struct file *file = (struct file *) READ_KERN(vma->vm_file);
         void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
         u64 ctime = get_ctime_nanosec_from_file(file);
-        save_str_to_buf(&data, file_path, 0);
-        save_to_submit_buf(&data, &reqprot, sizeof(int), 1);
-        save_to_submit_buf(&data, &ctime, sizeof(u64), 2);
+        save_str_to_buf_kernel(&data, file_path, 0);
+        save_to_submit_buf_kernel(&data, &reqprot, sizeof(int), 1);
+        save_to_submit_buf_kernel(&data, &ctime, sizeof(u64), 2);
         events_perf_submit(&data, SECURITY_FILE_MPROTECT, 0);
     }
 
@@ -4895,26 +5025,26 @@ int BPF_KPROBE(trace_security_file_mprotect)
 
         if ((!(prev_prot & VM_EXEC)) && (reqprot & VM_EXEC)) {
             u32 alert = ALERT_MPROT_X_ADD;
-            save_to_submit_buf(&data, &alert, sizeof(u32), 0);
+            save_to_submit_buf_kernel(&data, &alert, sizeof(u32), 0);
             return events_perf_submit(&data, MEM_PROT_ALERT, 0);
         }
 
         if ((prev_prot & VM_EXEC) && !(prev_prot & VM_WRITE) &&
             ((reqprot & (VM_WRITE | VM_EXEC)) == (VM_WRITE | VM_EXEC))) {
             u32 alert = ALERT_MPROT_W_ADD;
-            save_to_submit_buf(&data, &alert, sizeof(u32), 0);
+            save_to_submit_buf_kernel(&data, &alert, sizeof(u32), 0);
             return events_perf_submit(&data, MEM_PROT_ALERT, 0);
         }
 
         if (((prev_prot & (VM_WRITE | VM_EXEC)) == (VM_WRITE | VM_EXEC)) && (reqprot & VM_EXEC) &&
             !(reqprot & VM_WRITE)) {
             u32 alert = ALERT_MPROT_W_REM;
-            save_to_submit_buf(&data, &alert, sizeof(u32), 0);
+            save_to_submit_buf_kernel(&data, &alert, sizeof(u32), 0);
             events_perf_submit(&data, MEM_PROT_ALERT, 0);
 
             if (data.config->options & OPT_EXTRACT_DYN_CODE) {
                 bin_args.type = SEND_MPROTECT;
-                bpf_probe_read(bin_args.metadata, sizeof(u64), &data.context.ts);
+                bpf_probe_read_kernel(bin_args.metadata, sizeof(u64), &data.context.ts);
                 bin_args.ptr = (char *) addr;
                 bin_args.start_off = 0;
                 bin_args.full_size = len;
@@ -4949,10 +5079,10 @@ int syscall__init_module(void *ctx)
 
     if (data.config->options & OPT_CAPTURE_MODULES) {
         bin_args.type = SEND_KERNEL_MODULE;
-        bpf_probe_read(bin_args.metadata, 4, &dummy);
-        bpf_probe_read(&bin_args.metadata[4], 8, &dummy);
-        bpf_probe_read(&bin_args.metadata[12], 4, &pid);
-        bpf_probe_read(&bin_args.metadata[16], 8, &len);
+        bpf_probe_read_kernel(bin_args.metadata, 4, &dummy);
+        bpf_probe_read_kernel(&bin_args.metadata[4], 8, &dummy);
+        bpf_probe_read_kernel(&bin_args.metadata[12], 4, &pid);
+        bpf_probe_read_kernel(&bin_args.metadata[16], 8, &len);
         bin_args.ptr = (char *) addr;
         bin_args.start_off = 0;
         bin_args.full_size = (unsigned int) len;
@@ -4977,7 +5107,7 @@ int BPF_KPROBE(trace_security_bpf)
     int cmd = (int) PT_REGS_PARM1(ctx);
 
     // 1st argument == cmd (int)
-    save_to_submit_buf(&data, (void *) &cmd, sizeof(int), 0);
+    save_to_submit_buf_kernel(&data, (void *) &cmd, sizeof(int), 0);
 
     return events_perf_submit(&data, SECURITY_BPF, 0);
 }
@@ -4998,9 +5128,9 @@ int BPF_KPROBE(trace_arm_kprobe)
     u64 pre_handler = (u64) READ_KERN(kp->pre_handler);
     u64 post_handler = (u64) READ_KERN(kp->post_handler);
 
-    save_str_to_buf(&data, (void *) symbol_name, 0);
-    save_to_submit_buf(&data, (void *) &pre_handler, sizeof(u64), 1);
-    save_to_submit_buf(&data, (void *) &post_handler, sizeof(u64), 2);
+    save_str_to_buf_kernel(&data, (void *) symbol_name, 0);
+    save_to_submit_buf_kernel(&data, (void *) &pre_handler, sizeof(u64), 1);
+    save_to_submit_buf_kernel(&data, (void *) &post_handler, sizeof(u64), 2);
 
     return events_perf_submit(&data, KPROBE_ATTACH, 0);
 }
@@ -5018,9 +5148,9 @@ int BPF_KPROBE(trace_security_bpf_map)
     struct bpf_map *map = (struct bpf_map *) PT_REGS_PARM1(ctx);
 
     // 1st argument == map_id (u32)
-    save_to_submit_buf(&data, (void *) GET_FIELD_ADDR(map->id), sizeof(int), 0);
+    save_to_submit_buf_kernel(&data, (void *) GET_FIELD_ADDR(map->id), sizeof(int), 0);
     // 2nd argument == map_name (const char *)
-    save_str_to_buf(&data, (void *) GET_FIELD_ADDR(map->name), 1);
+    save_str_to_buf_kernel(&data, (void *) GET_FIELD_ADDR(map->name), 1);
 
     return events_perf_submit(&data, SECURITY_BPF_MAP, 0);
 }
@@ -5042,11 +5172,11 @@ int BPF_KPROBE(trace_security_kernel_read_file)
     void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
     u64 ctime = get_ctime_nanosec_from_file(file);
 
-    save_str_to_buf(&data, file_path, 0);
-    save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 1);
-    save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 2);
-    save_to_submit_buf(&data, &type_id, sizeof(int), 3);
-    save_to_submit_buf(&data, &ctime, sizeof(u64), 4);
+    save_str_to_buf_kernel(&data, file_path, 0);
+    save_to_submit_buf_kernel(&data, &s_dev, sizeof(dev_t), 1);
+    save_to_submit_buf_kernel(&data, &inode_nr, sizeof(unsigned long), 2);
+    save_to_submit_buf_kernel(&data, &type_id, sizeof(int), 3);
+    save_to_submit_buf_kernel(&data, &ctime, sizeof(u64), 4);
 
     return events_perf_submit(&data, SECURITY_KERNEL_READ_FILE, 0);
 }
@@ -5074,9 +5204,9 @@ int BPF_KPROBE(trace_security_kernel_post_read_file)
     // Send event if chosen
     if (should_submit(SECURITY_POST_READ_FILE, data.config)) {
         void *file_path = get_path_str(&file->f_path);
-        save_str_to_buf(&data, file_path, 0);
-        save_to_submit_buf(&data, &size, sizeof(loff_t), 1);
-        save_to_submit_buf(&data, &type_id, sizeof(int), 2);
+        save_str_to_buf_kernel(&data, file_path, 0);
+        save_to_submit_buf_kernel(&data, &size, sizeof(loff_t), 1);
+        save_to_submit_buf_kernel(&data, &type_id, sizeof(int), 2);
         events_perf_submit(&data, SECURITY_POST_READ_FILE, 0);
     }
 
@@ -5086,10 +5216,10 @@ int BPF_KPROBE(trace_security_kernel_post_read_file)
         unsigned long inode_nr = get_inode_nr_from_file(file);
 
         bin_args.type = SEND_KERNEL_MODULE;
-        bpf_probe_read(bin_args.metadata, 4, &s_dev);
-        bpf_probe_read(&bin_args.metadata[4], 8, &inode_nr);
-        bpf_probe_read(&bin_args.metadata[12], 4, &pid);
-        bpf_probe_read(&bin_args.metadata[16], 8, &size);
+        bpf_probe_read_kernel(bin_args.metadata, 4, &s_dev);
+        bpf_probe_read_kernel(&bin_args.metadata[4], 8, &inode_nr);
+        bpf_probe_read_kernel(&bin_args.metadata[12], 4, &pid);
+        bpf_probe_read_kernel(&bin_args.metadata[16], 8, &size);
         bin_args.start_off = 0;
         bin_args.ptr = buf;
         bin_args.full_size = size;
@@ -5117,9 +5247,9 @@ int BPF_KPROBE(trace_security_inode_mknod)
     unsigned int dev = (unsigned int) PT_REGS_PARM4(ctx);
     void *dentry_path = get_dentry_path_str(dentry);
 
-    save_str_to_buf(&data, dentry_path, 0);
-    save_to_submit_buf(&data, &mode, sizeof(unsigned short), 1);
-    save_to_submit_buf(&data, &dev, sizeof(dev_t), 2);
+    save_str_to_buf_kernel(&data, dentry_path, 0);
+    save_to_submit_buf_kernel(&data, &mode, sizeof(unsigned short), 1);
+    save_to_submit_buf_kernel(&data, &dev, sizeof(dev_t), 2);
 
     return events_perf_submit(&data, SECURITY_INODE_MKNOD, 0);
 }
@@ -5140,8 +5270,8 @@ int BPF_KPROBE(trace_device_add)
     struct device *parent_dev = READ_KERN(dev->parent);
     const char *parent_name = get_device_name(parent_dev);
 
-    save_str_to_buf(&data, (void *) name, 0);
-    save_str_to_buf(&data, (void *) parent_name, 1);
+    save_str_to_buf_kernel(&data, (void *) name, 0);
+    save_str_to_buf_kernel(&data, (void *) parent_name, 1);
 
     return events_perf_submit(&data, DEVICE_ADD, 0);
 }
@@ -5177,10 +5307,10 @@ int BPF_KPROBE(trace_ret__register_chrdev)
     char *char_device_name = (char *) saved_args.args[3];
     struct file_operations *char_device_fops = (struct file_operations *) saved_args.args[4];
 
-    save_to_submit_buf(&data, &major_number, sizeof(unsigned int), 0);
-    save_to_submit_buf(&data, &returned_major, sizeof(unsigned int), 1);
-    save_str_to_buf(&data, char_device_name, 2);
-    save_to_submit_buf(&data, &char_device_fops, sizeof(void *), 3);
+    save_to_submit_buf_kernel(&data, &major_number, sizeof(unsigned int), 0);
+    save_to_submit_buf_kernel(&data, &returned_major, sizeof(unsigned int), 1);
+    save_str_to_buf_kernel(&data, char_device_name, 2);
+    save_to_submit_buf_kernel(&data, &char_device_fops, sizeof(void *), 3);
 
     return events_perf_submit(&data, REGISTER_CHRDEV, 0);
 }
@@ -5329,13 +5459,13 @@ int BPF_KPROBE(trace_ret_do_splice)
         exposed_data_len = in_file_size - current_file_offset - 1;
     }
 
-    save_to_submit_buf(&data, &in_inode_number, sizeof(u64), 0);
-    save_to_submit_buf(&data, &in_file_type, sizeof(unsigned short), 1);
-    save_str_to_buf(&data, in_file_path, 2);
-    save_to_submit_buf(&data, &current_file_offset, sizeof(loff_t), 3);
-    save_to_submit_buf(&data, &exposed_data_len, sizeof(size_t), 4);
-    save_to_submit_buf(&data, &out_inode_number, sizeof(u64), 5);
-    save_to_submit_buf(&data, &out_pipe_last_buffer_flags, sizeof(unsigned int), 6);
+    save_to_submit_buf_kernel(&data, &in_inode_number, sizeof(u64), 0);
+    save_to_submit_buf_kernel(&data, &in_file_type, sizeof(unsigned short), 1);
+    save_str_to_buf_kernel(&data, in_file_path, 2);
+    save_to_submit_buf_kernel(&data, &current_file_offset, sizeof(loff_t), 3);
+    save_to_submit_buf_kernel(&data, &exposed_data_len, sizeof(size_t), 4);
+    save_to_submit_buf_kernel(&data, &out_inode_number, sizeof(u64), 5);
+    save_to_submit_buf_kernel(&data, &out_pipe_last_buffer_flags, sizeof(unsigned int), 6);
 
     return events_perf_submit(&data, DIRTY_PIPE_SPLICE, 0);
 #endif     // CORE && Version < 5.8
@@ -5363,10 +5493,10 @@ int BPF_KPROBE(trace_do_init_module)
     module_data.next = (u64) next;
 
     // save string values on buffer for kretprobe
-    bpf_probe_read_str(&module_data.name, MODULE_NAME_LEN, (void *) READ_KERN(mod->name));
-    bpf_probe_read_str(
+    bpf_probe_read_kernel_str(&module_data.name, MODULE_NAME_LEN, (void *) READ_KERN(mod->name));
+    bpf_probe_read_kernel_str(
         &module_data.version, MODULE_VERSION_MAX_LENGTH, (void *) READ_KERN(mod->version));
-    bpf_probe_read_str(
+    bpf_probe_read_kernel_str(
         &module_data.srcversion, MODULE_SRCVERSION_MAX_LENGTH, (void *) READ_KERN(mod->srcversion));
 
     // save module_data for kretprobe
@@ -5396,14 +5526,14 @@ int BPF_KPROBE(trace_ret_do_init_module)
     u64 orig_next_prev_addr = (u64) READ_KERN(orig_next_ptr->prev);
 
     // save strings to buf
-    save_str_to_buf(&data, &orig_module_data->name, 0);
-    save_str_to_buf(&data, &orig_module_data->version, 1);
-    save_str_to_buf(&data, &orig_module_data->srcversion, 2);
+    save_str_to_buf_kernel(&data, &orig_module_data->name, 0);
+    save_str_to_buf_kernel(&data, &orig_module_data->version, 1);
+    save_str_to_buf_kernel(&data, &orig_module_data->srcversion, 2);
     // save pointers to buf
-    save_to_submit_buf(&data, &(orig_module_data->prev), sizeof(u64), 3);
-    save_to_submit_buf(&data, &(orig_module_data->next), sizeof(u64), 4);
-    save_to_submit_buf(&data, &orig_prev_next_addr, sizeof(u64), 5);
-    save_to_submit_buf(&data, &orig_next_prev_addr, sizeof(u64), 6);
+    save_to_submit_buf_kernel(&data, &(orig_module_data->prev), sizeof(u64), 3);
+    save_to_submit_buf_kernel(&data, &(orig_module_data->next), sizeof(u64), 4);
+    save_to_submit_buf_kernel(&data, &orig_prev_next_addr, sizeof(u64), 5);
+    save_to_submit_buf_kernel(&data, &orig_next_prev_addr, sizeof(u64), 6);
 
     events_perf_submit(&data, DO_INIT_MODULE, 0);
 
@@ -5426,16 +5556,16 @@ int BPF_KPROBE(trace_load_elf_phdrs)
     file_id_t elf = {};
     struct file *loaded_elf = (struct file *) PT_REGS_PARM2(ctx);
     const char *elf_pathname = (char *) get_path_str(GET_FIELD_ADDR(loaded_elf->f_path));
-    bpf_probe_read_str(elf.pathname, sizeof(elf.pathname), elf_pathname);
+    bpf_probe_read_kernel_str(elf.pathname, sizeof(elf.pathname), elf_pathname);
     elf.device = get_dev_from_file(loaded_elf);
     elf.inode = get_inode_nr_from_file(loaded_elf);
 
     bpf_map_update_elem(&interpreter_map, &data.context.task.host_tid, &elf, BPF_ANY);
 
     if (should_submit(LOAD_ELF_PHDRS, data.config)) {
-        save_str_to_buf(&data, (void *) elf_pathname, 0);
-        save_to_submit_buf(&data, &elf.device, sizeof(dev_t), 1);
-        save_to_submit_buf(&data, &elf.inode, sizeof(unsigned long), 2);
+        save_str_to_buf_kernel(&data, (void *) elf_pathname, 0);
+        save_to_submit_buf_kernel(&data, &elf.device, sizeof(dev_t), 1);
+        save_to_submit_buf_kernel(&data, &elf.inode, sizeof(unsigned long), 2);
 
         events_perf_submit(&data, LOAD_ELF_PHDRS, 0);
     }
@@ -5492,14 +5622,14 @@ int tracepoint__task__task_rename(struct bpf_raw_tracepoint_args *ctx)
 
     struct task_struct *tsk = (struct task_struct *) ctx->args[0];
     char old_name[TASK_COMM_LEN];
-    bpf_probe_read_str(&old_name, TASK_COMM_LEN, tsk->comm);
+    bpf_probe_read_kernel_str(&old_name, TASK_COMM_LEN, tsk->comm);
     const char *new_name = (const char *) ctx->args[1];
 
-    save_str_to_buf(&data, (void *) old_name, 0);
-    save_str_to_buf(&data, (void *) new_name, 1);
+    save_str_to_buf_kernel(&data, (void *) old_name, 0);
+    save_str_to_buf_kernel(&data, (void *) new_name, 1);
     if ((data.config->options & OPT_SHOW_SYSCALL) && (data.task_info->syscall_traced)) {
         syscall_data_t *sys = &data.task_info->syscall_data;
-        save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 2);
+        save_to_submit_buf_user(&data, (void *) &sys->id, sizeof(int), 2);
     }
 
     return events_perf_submit(&data, TASK_RENAME, 0);
