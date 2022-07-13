@@ -116,13 +116,13 @@ func (c *Containers) initCgroupV1() error {
 	}
 
 	if inContainer {
-		err = os.Mkdir("./cpuset", 0644)
-		if err != nil && !os.IsExist(err) {
+		path, err := os.MkdirTemp("/tmp", "tracee-cpuset")
+		if err != nil {
 			fmt.Fprintf(os.Stderr, "failed to create cpuset directory %s\n", err)
 			return nil
 		}
 
-		mountPath, err := filepath.Abs("./cpuset")
+		mountPath, err := filepath.Abs(path)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "failed to get absolute path of cputset mountpoint %s\n", mountPath)
 			return nil
