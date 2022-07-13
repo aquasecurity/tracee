@@ -214,6 +214,10 @@ func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *trace.Event, 
 				StackAddresses:      StackAddresses,
 			}
 
+			if !t.config.Filter.ContextFilter.Filter(evt) {
+				continue
+			}
+
 			select {
 			case out <- &evt:
 			case <-outerCtx.Done():

@@ -18,7 +18,7 @@ func TestIntFilter(t *testing.T) {
 	}{
 		{
 			name:   "simple equality checks",
-			filter: filters.NewIntFilter(false),
+			filter: filters.NewIntFilter(),
 			filterInputs: []protocol.Filter{
 				{
 					Field:    "test",
@@ -31,7 +31,7 @@ func TestIntFilter(t *testing.T) {
 		},
 		{
 			name:   "conflict - same equal and non equal",
-			filter: filters.NewIntFilter(false),
+			filter: filters.NewIntFilter(),
 			filterInputs: []protocol.Filter{
 				{
 					Field:    "test",
@@ -49,7 +49,7 @@ func TestIntFilter(t *testing.T) {
 		},
 		{
 			name:   "excluding greater and lesser, with equals in between",
-			filter: filters.NewIntFilter(false),
+			filter: filters.NewIntFilter(),
 			filterInputs: []protocol.Filter{
 				{
 					Field:    "test",

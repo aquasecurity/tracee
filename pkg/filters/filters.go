@@ -2,6 +2,8 @@ package filters
 
 import (
 	"fmt"
+
+	"github.com/aquasecurity/tracee/types/protocol"
 )
 
 type Operator uint
@@ -37,10 +39,10 @@ func (o Operator) String() string {
 // With generics this may be a viable interface, with T replacing interface{}
 // Filters can be enabled or disabled - if a filter is enabled it will be skipped
 type Filter interface {
-	Filter(val interface{}) bool
-	Add(val interface{}, operator Operator) error
-	Enable() error
-	Disable() error
+	// Filter(val interface{}) bool
+	Add(req protocol.Filter) error
+	Enable()
+	Disable()
 	Enabled() bool
 	Operators() []Operator
 }

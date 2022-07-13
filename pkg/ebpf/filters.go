@@ -1,21 +1,14 @@
 package ebpf
 
 import (
-	"bytes"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"net"
-	"os"
-	"strconv"
 	"strings"
-	"unsafe"
 
-	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/types/protocol"
-	"github.com/aquasecurity/tracee/types/trace"
 )
 
 const (
@@ -50,15 +43,21 @@ type Filter struct {
 	ContFilter        *filters.BoolFilter
 	NewContFilter     *filters.BoolFilter
 	ContIDFilter      *filters.ContainersFilter
-	RetFilter         *RetFilter
-	ArgFilter         *ArgFilter
-	ProcessTreeFilter *ProcessTreeFilter
+	RetFilter         *filters.RetFilter
+	ArgFilter         *filters.ArgFilter
+	ContextFilter     *filters.ContextFilter
+	ProcessTreeFilter *filters.ProcessTreeFilter
 	Follow            *filters.BoolFilter
 	NetFilter         *NetIfaces
 }
 
 func IsValidFilterField(field string) bool {
 	if strings.Contains(field, ".") {
+		parts := strings.Split(field, ".")
+		first := parts[0]
+		if _, ok := events.Definitions.GetID(first); !ok && first != "container" && first != "pid" {
+			return false
+		}
 		return true
 	}
 
@@ -76,23 +75,24 @@ func buildFilterError(filterName string, err error) error {
 
 func ParseProtocolFilters(filterRequests []protocol.Filter) (Filter, error) {
 	filter := Filter{
-		UIDFilter:     &filters.BPFUintFilter{UIntFilter: filters.NewUIntFilter(true)},
-		PIDFilter:     &filters.BPFUintFilter{UIntFilter: filters.NewUIntFilter(true)},
+		UIDFilter:     &filters.BPFUintFilter{UIntFilter: filters.NewUInt32Filter()},
+		PIDFilter:     &filters.BPFUintFilter{UIntFilter: filters.NewUInt32Filter()},
 		NewPidFilter:  filters.NewBoolFilter(),
-		MntNSFilter:   &filters.BPFUintFilter{UIntFilter: filters.NewUIntFilter(false)},
-		PidNSFilter:   &filters.BPFUintFilter{UIntFilter: filters.NewUIntFilter(false)},
+		MntNSFilter:   &filters.BPFUintFilter{UIntFilter: filters.NewUIntFilter()},
+		PidNSFilter:   &filters.BPFUintFilter{UIntFilter: filters.NewUIntFilter()},
 		UTSFilter:     &filters.BPFStringFilter{StringFilter: filters.NewStringFilter()},
 		CommFilter:    &filters.BPFStringFilter{StringFilter: filters.NewStringFilter()},
 		ContFilter:    filters.NewBoolFilter(),
 		NewContFilter: filters.NewBoolFilter(),
 		ContIDFilter:  &filters.ContainersFilter{StringFilter: filters.NewStringFilter()},
-		RetFilter: &RetFilter{
+		RetFilter: &filters.RetFilter{
 			Filters: make(map[events.ID]*filters.IntFilter),
 		},
-		ArgFilter: &ArgFilter{
+		ArgFilter: &filters.ArgFilter{
 			Filters: make(map[events.ID]map[string]*filters.StringFilter),
 		},
-		ProcessTreeFilter: &ProcessTreeFilter{
+		ContextFilter: filters.NewContextFilter(),
+		ProcessTreeFilter: &filters.ProcessTreeFilter{
 			PIDs: make(map[uint32]bool),
 		},
 		EventsToTrace: []events.ID{},
@@ -111,6 +111,14 @@ func ParseProtocolFilters(filterRequests []protocol.Filter) (Filter, error) {
 				return Filter{}, buildFilterError("ret", err)
 			}
 			defer filter.RetFilter.Enable()
+			continue
+		}
+		if strings.Contains(field, ".context") {
+			err := filter.ContextFilter.Add(filterReq)
+			if err != nil {
+				return Filter{}, buildFilterError("context", err)
+			}
+			defer filter.ContextFilter.Enable()
 			continue
 		}
 
@@ -319,268 +327,6 @@ func prepareEventsToTrace(eventFilter *filters.StringFilter, setFilter *filters.
 		res = append(res, setEvents...)
 	}
 	return res, nil
-}
-
-type RetFilter struct {
-	Filters map[events.ID]*filters.IntFilter
-	enabled bool
-}
-
-func (filter *RetFilter) Enable() {
-	filter.enabled = true
-	for _, f := range filter.Filters {
-		f.Enable()
-	}
-}
-
-func (filter *RetFilter) Disable() {
-	filter.enabled = false
-	for _, f := range filter.Filters {
-		f.Disable()
-	}
-}
-
-func (filter *RetFilter) Enabled() bool {
-	return filter.enabled
-}
-
-func (filter *RetFilter) Filter(eventID events.ID, retval int64) bool {
-	if !filter.enabled {
-		return true
-	}
-	if filter, ok := filter.Filters[eventID]; ok {
-		if !filter.Filter(retval) {
-			return false
-		}
-	}
-	return true
-}
-
-func (filter *RetFilter) Add(filterReq protocol.Filter) error {
-	field := filterReq.Field
-	parts := strings.Split(field, ".")
-	if len(parts) != 2 {
-		return fmt.Errorf("invalid retval filter format: %s", field)
-	}
-	eventName := parts[0]
-
-	id, ok := events.Definitions.NamesToIDs()[eventName]
-	if !ok {
-		return fmt.Errorf("invalid retval filter event name: %s", eventName)
-	}
-	eventFilter := filter.Filters[id]
-	if eventFilter == nil {
-		eventFilter = filters.NewIntFilter(false)
-	}
-
-	err := eventFilter.Add(filterReq)
-	if err != nil {
-		return fmt.Errorf("failed to set ret filter: %s", err)
-	}
-	return nil
-}
-
-type ArgFilter struct {
-	Filters map[events.ID]map[string]*filters.StringFilter // key to the first map is event id, and to the second map the argument name
-	enabled bool
-}
-
-func (filter *ArgFilter) Enable() {
-	filter.enabled = true
-	for _, filterMap := range filter.Filters {
-		for _, f := range filterMap {
-			f.Enable()
-		}
-	}
-}
-
-func (filter *ArgFilter) Disable() {
-	filter.enabled = false
-	for _, filterMap := range filter.Filters {
-		for _, f := range filterMap {
-			f.Disable()
-		}
-	}
-}
-
-func (filter *ArgFilter) Enabled() bool {
-	return filter.enabled
-}
-
-func (filter *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
-	if !filter.enabled {
-		return true
-	}
-	for argName, filter := range filter.Filters[eventID] {
-		var argVal interface{}
-		ok := false
-		for _, arg := range args {
-			if arg.Name == argName {
-				argVal = arg.Value
-				ok = true
-				break
-			}
-		}
-		if !ok {
-			continue
-		}
-		// TODO: use type assertion instead of string conversion
-		argValStr := fmt.Sprint(argVal)
-		if !filter.Filter(argValStr) {
-			return false
-		}
-	}
-	return true
-}
-
-func (filter *ArgFilter) Add(filterReq protocol.Filter) error {
-	// Event argument filter has the following format: "event.argname=argval"
-	// filterName have the format event.argname, and operatorAndValues have the format "=argval"
-
-	field := filterReq.Field
-	parts := strings.Split(field, ".")
-	if len(parts) != 2 {
-		return fmt.Errorf("invalid format for arg filter: %s", field)
-	}
-	eventName := parts[0]
-	argName := parts[1]
-
-	id, ok := events.Definitions.NamesToIDs()[eventName]
-	if !ok {
-		return fmt.Errorf("invalid argument filter event name: %s", eventName)
-	}
-
-	eventDefinition := events.Definitions.Get(id)
-	eventParams := eventDefinition.Params
-
-	// check if argument name exists for this event
-	argFound := false
-	for i := range eventParams {
-		if eventParams[i].Name == argName {
-			argFound = true
-			break
-		}
-	}
-
-	if !argFound {
-		return fmt.Errorf("invalid argument filter argument name: %s", argName)
-	}
-
-	// Treat operatorAndValues as a string filter to avoid code duplication
-	strFilter := filters.NewStringFilter()
-	strFilter.Add(filterReq)
-
-	if _, ok := filter.Filters[id]; !ok {
-		filter.Filters[id] = make(map[string]*filters.StringFilter)
-	}
-
-	if _, ok := filter.Filters[id][argName]; !ok {
-		filter.Filters[id][argName] = strFilter
-	}
-
-	return nil
-}
-
-type ProcessTreeFilter struct {
-	PIDs    map[uint32]bool // PIDs is a map where k=pid and v represents whether it and its descendents should be traced or not
-	Enabled bool
-}
-
-func (filter *ProcessTreeFilter) Add(filterReq protocol.Filter) error {
-	filter.Enabled = true
-
-	for _, value := range filterReq.Value {
-		pid, err := strconv.ParseUint(fmt.Sprint(value), 10, 32)
-		if err != nil {
-			return fmt.Errorf("invalid PID given to filter: %s", value)
-		}
-		switch filterReq.Operator {
-		case protocol.Equal:
-			filter.PIDs[uint32(pid)] = true
-		case protocol.NotEqual:
-			filter.PIDs[uint32(pid)] = false
-		default:
-			return fmt.Errorf("invalid operator given to tree filter %s", filterReq.Operator.String())
-		}
-	}
-
-	return nil
-}
-
-func (filter *ProcessTreeFilter) InitBpf(bpfModule *bpf.Module) error {
-	if !filter.Enabled {
-		return nil
-	}
-
-	processTreeBPFMap, err := bpfModule.GetMap("process_tree_map")
-	if err != nil {
-		return fmt.Errorf("could not find bpf process_tree_map: %v", err)
-	}
-
-	procDir, err := os.Open("/proc")
-	if err != nil {
-		return fmt.Errorf("could not open proc dir: %v", err)
-	}
-	defer procDir.Close()
-
-	entries, err := procDir.Readdirnames(-1)
-	if err != nil {
-		return fmt.Errorf("could not read proc dir: %v", err)
-	}
-
-	// Iterate over each pid
-	for _, entry := range entries {
-		pid, err := strconv.ParseUint(entry, 10, 32)
-		if err != nil {
-			continue
-		}
-		var fn func(uint32)
-		fn = func(curPid uint32) {
-			stat, err := ioutil.ReadFile(fmt.Sprintf("/proc/%d/stat", curPid))
-			if err != nil {
-				return
-			}
-			// see https://man7.org/linux/man-pages/man5/proc.5.html for how to read /proc/pid/stat
-			splitStat := bytes.SplitN(stat, []byte{' '}, 5)
-			if len(splitStat) != 5 {
-				return
-			}
-			ppid, err := strconv.Atoi(string(splitStat[3]))
-			if err != nil {
-				return
-			}
-			if ppid == 1 {
-				return
-			}
-
-			if shouldBeTraced, ok := filter.PIDs[uint32(ppid)]; ok {
-				trace := boolToUInt32(shouldBeTraced)
-				processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&trace))
-				return
-			}
-			fn(uint32(ppid))
-		}
-		fn(uint32(pid))
-	}
-
-	for pid, shouldBeTraced := range filter.PIDs {
-		trace := boolToUInt32(shouldBeTraced)
-		processTreeBPFMap.Update(unsafe.Pointer(&pid), unsafe.Pointer(&trace))
-	}
-
-	return nil
-}
-
-func (filter *ProcessTreeFilter) FilterOut() bool {
-	// Determine the default filter for PIDs that aren't specified with a proc tree filter
-	// - If one or more '=' filters, default is '!='
-	// - If one or more '!=' filters, default is '='
-	// - If a mix of filters, the default is '='
-	var filterIn = true
-	for _, v := range filter.PIDs {
-		filterIn = filterIn && v
-	}
-	return !filterIn
 }
 
 type NetIfaces struct {

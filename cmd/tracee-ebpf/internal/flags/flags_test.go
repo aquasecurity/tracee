@@ -140,6 +140,12 @@ func TestPrepareFilter(t *testing.T) {
 			expectedError:   nil,
 		},
 		{
+			testName:        "pid=new",
+			filters:         []string{"pid=new"},
+			expectedFilters: []protocol.Filter{protocol.EqualFilter("pid.new", true)},
+			expectedError:   nil,
+		},
+		{
 			testName:        "container=abcd123",
 			filters:         []string{"container=abcd123"},
 			expectedFilters: []protocol.Filter{protocol.EqualFilter("container", "abcd123")},

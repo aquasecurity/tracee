@@ -26,8 +26,16 @@ type IntFilter struct {
 	mutex         sync.RWMutex
 }
 
+func NewIntFilter() *IntFilter {
+	return newIntFilter(false)
+}
+
+func NewInt32Filter() *IntFilter {
+	return newIntFilter(true)
+}
+
 // int filter implements a thread safe Filter for int64 values
-func NewIntFilter(is32Bit bool) *IntFilter {
+func newIntFilter(is32Bit bool) *IntFilter {
 	min := int64(minIntVal)
 	max := int64(maxIntVal)
 
