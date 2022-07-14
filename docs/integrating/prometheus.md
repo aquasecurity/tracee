@@ -13,3 +13,8 @@ through the following URLs:
 
 > Metrics addresses can be changed through **tracee-ebpf** command line
 > arguments `metrics` and `metrics-addr`, check `--help` for more information.
+
+!!! Tip
+    Check [this tutorial] for more information as well.
+
+[this tutorial]: ../tutorials/deploy-grafana-dashboard.md

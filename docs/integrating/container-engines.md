@@ -23,15 +23,15 @@ those events by communicating with the relevant container's runtime and SDK.
     Using containerd as our runtime for example, this can be done by running
     tracee like:
     
-    ```shell
-       docker run \
-         --name tracee --rm -it \
-         --pid=host --cgroupns=host --privileged \
-         -v /etc/os-release:/etc/os-release-host:ro \
-         -v /var/run/containerd:/var/run/containerd
-         -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-         -e CONTAINERS_ENRICHMENT=1 \
-         aquasec/tracee:latest
+    ```text
+    $ docker run \
+        --name tracee --rm -it \
+        --pid=host --cgroupns=host --privileged \
+        -v /etc/os-release:/etc/os-release-host:ro \
+        -v /var/run/containerd:/var/run/containerd
+        -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+        -e CONTAINERS_ENRICHMENT=1 \
+        aquasec/tracee:{{ git.tag }}
     ```
 
     Most container runtimes have their sockets installed by default in

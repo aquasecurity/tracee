@@ -7,7 +7,7 @@ A longterm supported kernel: 5.4, 5.10, 5.15, 5.18, 5.19. Check
     Most distributions longterm supported kernels are supported as well,
     including CentOS8 4.18 kernel.
 
-1. For **tracee:latest** docker image, you should have one of the two:
+1. For **tracee:{{ git.tag }}** docker image, you should have one of the two:
 
     1. A kernel that has `/sys/kernel/btf/vmlinux` file available
     2. A kernel supported through [BTFHUB]

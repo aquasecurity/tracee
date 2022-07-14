@@ -72,17 +72,18 @@ as an introspection tool.
 1. To run the `tracee:latest` container with **tracee-ebpf** only:
 
    ```text
-   make -f builder/Makefile.tracee-container run-tracee-ebpf
+   $ make -f builder/Makefile.tracee-container run-tracee-ebpf
    ```
 
 2. To run the `tracee:full` container with **tracee-ebpf** only:
 
    ```text
-   make -f builder/Makefile.tracee-container run-tracee-ebpf-full
+   $ make -f builder/Makefile.tracee-container run-tracee-ebpf-full
    ```
 
 !!! note
     Tracee-ebpf arguments are passed through the `ARG` variable:
+
     ```text
-    make -f builder/Makefile.tracee-container run-tracee-ebpf ARG="--debug"
+    $ make -f builder/Makefile.tracee-container run-tracee-ebpf ARG="--debug"
     ```

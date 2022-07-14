@@ -1,11 +1,14 @@
 # Linux Headers
 
 !!! Note
-    The default (latest) image is lightweight and portable. It is supposed to
-    support different kernel versions without having to build source code. If
-    the host kernel does not support BTF then you may use the full container
-    image. The full container will compile an eBPF object during startup, if you
-    do not have one already cached in /tmp/tracee.
+    The **default image** is **lightweight and portable**. It is supposed to
+    **support different kernel versions** without having to build source code.
+    If the host kernel [does not support BTF] then you may use the full container
+    image. The full container will compile an eBPF object during startup, if
+    you do not have one already cached in /tmp/tracee.
+
+[does not support BTF]: ../building/nocore-ebpf.md#the-need-for-a-non-co-re-ebpf-object-build
+
 
 When running `tracee:full` container image, in order to compile the kernel
 version specific eBPF object, Tracee needs some Linux kernel headers. Depending
