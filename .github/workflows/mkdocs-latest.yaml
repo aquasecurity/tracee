@@ -1,6 +1,7 @@
 ---
 name: Deploy the latest documentation
 on:
+  workflow_dispatch: {}
   push:
     # Include tags whose name match release pattern "v*", like v0.7.0 (refs/tags/v0.7.0)
     # Exclude tags whose name match release candidate pattern "v*-rc*", like v0.7.0-rc-1 (refs/tags/v0.7.0-rc-1)
