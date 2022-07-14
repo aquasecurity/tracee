@@ -1,11 +1,13 @@
 # Setup Development Machine with Vagrant
 
-[HashiCorp Vagrant] leverages a declarative configuration file, which describes all software requirements, packages,
-operating system configuration, and users to provide the same development environment for everyone.
+[HashiCorp Vagrant] leverages a declarative configuration file, which describes
+all software requirements, packages, operating system configuration, and users
+to provide the same development environment for everyone.
 
-The [Vagrantfile] describes the type of machine required to build Tracee from source and follow the
-[Getting Started](./../index.md) guides. This allows developers involved in the project to check out the code, run
-`vagrant up`, and be on their way.
+The [Vagrantfile] describes the type of machine required to build Tracee from
+source and follow the [Getting Started](../index.md) guides. This allows
+developers involved in the project to check out the code, run `vagrant up`, and
+be on their way.
 
 ## Prerequisites
 
@@ -27,7 +29,8 @@ Create and configure development machine according to the `Vagrantfile`:
 vagrant up
 ```
 
-If everything goes well, you can SSH into a running development machine and access its shell:
+If everything goes well, you can SSH into a running development machine and
+access its shell:
 
 ```console
 $ vagrant ssh
@@ -55,16 +58,19 @@ vagrant@ubuntu-impish:~$
 ```
 
 !!! tip
-    Provisioning from scratch take time, but once created you can reuse the machine with `vagrant halt` and `vagrant up`
-    commands. If something goes wrong with your machine, there's also the `vagrant destroy` to destroy it and start over
-    again.
+    Provisioning from scratch take time, but once created you can reuse the
+    machine with `vagrant halt` and `vagrant up` commands. If something goes
+    wrong with your machine, there's also the `vagrant destroy` to destroy it
+    and start over again.
 
-Synced folders enable Vagrant to sync a folder on the host machine to the development machine, allowing you to continue
-working on your project's files on your host machine, but use the resources in the development machine to compile or run
-Tracee.
+Synced folders enable Vagrant to sync a folder on the host machine to the
+development machine, allowing you to continue working on your project's files
+on your host machine, but use the resources in the development machine to
+compile or run Tracee.
 
-By default, Vagrant will share Tracee project directory (the directory with the `Vagrantfile`) to `/vagrant`.
-To get started, change directory to `/vagrant` and list files:
+By default, Vagrant will share Tracee project directory (the directory with the
+`Vagrantfile`) to `/vagrant`. To get started, change directory to `/vagrant`
+and list files:
 
 ```console
 $ ls -l
@@ -94,11 +100,13 @@ drwxr-xr-x 1 vagrant vagrant    160 Mar 24 14:13 tests
 drwxr-xr-x 1 vagrant vagrant    224 Mar 24 11:59 types
 ```
 
-As you can see the `/vagrant` directory contains source code of Tracee cloned from GitHub.
+As you can see the `/vagrant` directory contains source code of Tracee cloned
+from GitHub.
 
 ## Build and Run Tracee-eBPF and Tracee-Rules
 
-To build `tracee-ebpf` and `tracee-rules` executable binaries, run the default Make target:
+To build **tracee-ebpf** and **tracee-rules** executable binaries, run the
+default make target:
 
 ```
 make
@@ -136,7 +144,8 @@ TIME             UID    COMM             PID     TID     RET              EVENT 
 18:39:43:784906  0      mkdocs           1       19      0                stat                 pathname: /docs/docs/faq.md, statbuf: 0x7f851365e9b0
 ```
 
-To analyze collected events and see detections printed to the standard output, run Tracee-eBPF and pipe it with Tracee-Rules:
+To analyze collected events and see detections printed to the standard output,
+run **tracee-ebpf** and pipe it with **tracee-rules**:
 
 ```console
 $ sudo ./dist/tracee-ebpf \
@@ -156,12 +165,14 @@ Command: strace
 Hostname: ubuntu-impish
 ```
 
-In this example, we run `strace ls` to trigger Anit-Debugging signature detection.
+In this example, we run `strace ls` to trigger Anit-Debugging signature
+detection.
 
 ## Switch Between CO-RE and non CO-RE Linux Distribution
 
-By default, the development machine is running Ubuntu Linux 21.10 Impish Indri. You can see that it has a BTF-enabled
-kernel by checking the existence of the `/sys/kernel/btf/vmlinux` file.
+By default, the development machine is running Ubuntu Linux 21.10 Impish Indri.
+You can see that it has a BTF-enabled kernel by checking the existence of the
+`/sys/kernel/btf/vmlinux` file.
 
 ```ruby
 Vagrant.configure("2") do |config|
@@ -171,8 +182,9 @@ Vagrant.configure("2") do |config|
 end
 ```
 
-Sometimes you may want to test Tracee with a non CO-RE distribution. You can do that by editing the Vagrantfile and
-modifying the `config.vm.box` property. For example, you can switch to Ubuntu Linux 20.04 Focal Fossa as follows:
+Sometimes you may want to test Tracee with a non CO-RE distribution. You can do
+that by editing the Vagrantfile and modifying the `config.vm.box` property. For
+example, you can switch to Ubuntu Linux 20.04 Focal Fossa as follows:
 
 ```ruby
 Vagrant.configure("2") do |config|
@@ -189,10 +201,16 @@ vagrant destroy
 vagrant up
 ```
 
+!!! Attention
+    Ubuntu Focal distribution has introduced BTF information to their recent
+    kernels, allowing eBPF CO-RE capable code to run. If you're willing to test
+    non CO-RE kernels, make sure to use an older kernel that does not provide
+    the `/sys/kernel/btf/vmlinux` file.
+
 ## Deploy Tracee with Postee on Kubernetes
 
-The development machine described by Vagrantfile preinstalls [MicroK8s] Kubernetes cluster, which is suitable for testing
-Tracee.
+The development machine described by Vagrantfile preinstalls [MicroK8s]
+Kubernetes cluster, which is suitable for testing Tracee.
 
 ```console
 $ microk8s status
@@ -202,7 +220,8 @@ high-availability: no
   datastore standby nodes: none
 ```
 
-There's also the [kubectl] command installed and configured to communicate with the cluster:
+There's also the [kubectl] command installed and configured to communicate with
+the cluster:
 
 ```console
 $ kubectl get nodes -o wide
@@ -216,7 +235,8 @@ Create a new namespace called `tracee-system`:
 kubectl create ns tracee-system
 ```
 
-Create Postee Persistent Volumes and StatefulSet in the `tracee-system` namespace:
+Create Postee Persistent Volumes and StatefulSet in the `tracee-system`
+namespace:
 
 ```
 kubectl apply -n tracee-system \
@@ -224,8 +244,9 @@ kubectl apply -n tracee-system \
   -f https://raw.githubusercontent.com/aquasecurity/postee/v2.2.0/deploy/kubernetes/postee.yaml
 ```
 
-Create Tracee DaemonSet in the `tracee-system`, which is preconfigured to print detections to the standard output and
-send them over to Postee webhook on http://postee-svc:8082:
+Create Tracee DaemonSet in the `tracee-system`, which is preconfigured to print
+detections to the standard output and send them over to Postee webhook on
+http://postee-svc:8082:
 
 ```
 kubectl apply -n tracee-system -f deploy/kubernetes/tracee-postee/tracee.yaml
@@ -249,7 +270,8 @@ kubectl apply -n tracee-system -f deploy/kubernetes/tracee-postee/tracee.yaml
        kubectl apply -n tracee-system -k deploy/kubernetes/tracee-postee
        ```
 
-While Tracee pod is running, run `strace ls` command and observe detection printed to the standard output.
+While Tracee pod is running, run `strace ls` command and observe detection
+printed to the standard output.
 
 ```console
 $ kubectl logs n tracee-system -f daemonset/tracee
@@ -268,7 +290,8 @@ Command: strace
 Hostname: ubuntu-impish
 ```
 
-If everything is configured properly, you can find the same detection in Postee logs:
+If everything is configured properly, you can find the same detection in Postee
+logs:
 
 ```console
 $ kubectl -n tracee-system logs -f postee-0
@@ -282,7 +305,8 @@ iption":"Process uses anti-debugging technique to block debugger","Tags":["linux
 u0026CK":"Defense Evasion: Execution Guardrails","Severity":3}}}
 ```
 
-As an alternative to static deployment descriptors you can install Tracee and Postee with Helm:
+As an alternative to static deployment descriptors you can install Tracee and
+Postee with Helm:
 
 ```
 helm repo add aqua-charts https://aquasecurity.github.io/helm-charts
@@ -295,25 +319,29 @@ helm install tracee ./deploy/helm/tracee \
 
 ### Access Kubernetes Dashboard
 
-Use the following command to get the token required to log in to the [Kubernetes Dashboard]:
+Use the following command to get the token required to log in to the
+[Kubernetes Dashboard]:
 
 ```
 kubectl -n kube-system describe secret \
   $(kubectl -n kube-system get secret | grep default-token | cut -d " " -f1)
 ```
 
-Forward port 10443 in the development machine to the Kubernetes Dashboard's pod:
+Forward port 10443 in the development machine to the Kubernetes Dashboard's
+pod:
 
 ```
 kubectl port-forward --address 0.0.0.0 -n kube-system service/kubernetes-dashboard 10443:443
 ```
 
-Since port 10443 is forwarded to port 10443 on your host, you can open your browser to
-[https://localhost:10443](https://localhost:10443) and access Kubernetes Dashboard.
+Since port 10443 is forwarded to port 10443 on your host, you can open your
+browser to [https://localhost:10443](https://localhost:10443) and access
+Kubernetes Dashboard.
 
 !!! warning
-    Modern browser usually block insecure localhost TLS connections. For Google Chrome you may allow insecure TLS
-    connections at [chrome://flags/#allow-insecure-localhost](chrome://flags/#allow-insecure-localhost).
+    Modern browser usually block insecure localhost TLS connections. For Google
+    Chrome you may allow insecure TLS connections at
+    [chrome://flags/#allow-insecure-localhost](chrome://flags/#allow-insecure-localhost).
 
 ## Preview Tracee Documentation
 
@@ -323,9 +351,10 @@ You can run [MkDocs] server and preview documentation on your host:
 make -f builder/Makefile.mkdocs
 ```
 
-The development machine is running the MkDocs server listening on port 8000, which is forwarded to port 8000 on your
-host. Therefore, you can open your browser to [http://localhost:8000](http://localhost:8000) and access documentation
-pages.
+The development machine is running the MkDocs server listening on port 8000,
+which is forwarded to port 8000 on your host. Therefore, you can open your
+browser to [http://localhost:8000](http://localhost:8000) and access
+documentation pages.
 
 [Vagrant]: https://www.vagrantup.com/docs/installation
 [HashiCorp Vagrant]: https://www.vagrantup.com

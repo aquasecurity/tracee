@@ -1,8 +1,12 @@
 # Nix/NixOS (Community)
 
-If installing `tracee` via `nix` please ensure you're running a kernel with libbpf CO-RE support, see Tracee's [prerequisites](./../install/prerequisites.md) for more info
+If installing **tracee** via **nix** please ensure you're running a kernel with
+libbpf CO-RE support, see Tracee's [prerequisites] for more info.
 
-Direct issues installing `tracee` via `nix` through the channels mentioned [here](https://nixos.wiki/wiki/Support) (**non-CO-RE not supported**)
+[prerequisites]: ../../installing/prerequisites.md
+
+Direct issues installing **tracee** via **nix** through the channels mentioned
+[here](https://nixos.wiki/wiki/Support) (**non-CO-RE not supported**)
 
 `nix-env --install -A nixpkgs.tracee`
 

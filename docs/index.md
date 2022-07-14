@@ -1,5 +1,9 @@
 ![Tracee Logo](images/tracee.png)
 
+> Before moving on, make sure to give us a star at the
+> [GitHub Project](https://github.com/aquasecurity/tracee/)
+> if you liked it. That is important for us. Thank you!
+
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/aquasecurity/tracee)](https://github.com/aquasecurity/tracee/releases)
 [![Go Report Card](https://goreportcard.com/badge/github.com/aquasecurity/tracee)](https://goreportcard.com/report/github.com/aquasecurity/tracee)
 [![License](https://img.shields.io/github/license/aquasecurity/tracee)](https://github.com/aquasecurity/tracee/blob/main/LICENSE)
@@ -21,7 +25,9 @@ Check out the [Tracee video hub](https://info.aquasec.com/ebpf-runtime-security)
 
 ## Quickstart
 
-Before you proceed, make sure you follow the [minimum requirements for running Tracee](install/prerequisites.md).
+Before you proceed, make sure you follow the [prerequiresites].
+
+[pre-requiresites]: ./installing/prerequisites.md
 
 1. Running **tracee:latest**
    ```shell
@@ -53,11 +59,12 @@ Before you proceed, make sure you follow the [minimum requirements for running T
 
 !!! note
     You may need to change the volume mounts for the kernel headers based on
-    your setup. See [Linux Headers](./install/headers.md) section for more
+    your setup. See [Linux Headers](./installing/headers.md) section for more
     info.
+
 !!! note
     Tracee supports enriching events with additional data from running containers.
-    In order to enable this capability please look [here](./integrations.md#container-enrichment).
+    In order to enable this capability please look [here](./integrating/container-engines.md).
 
 This will run Tracee with default settings and start reporting detections to
 standard output. In order to simulate a suspicious behavior, you can simply
@@ -123,8 +130,8 @@ Tracee is an [Aqua Security] open source project.
 Learn about our open source work and portfolio [Here].
 Join the community, and talk to us about any matter in [GitHub Discussion] or [Slack].
 
-[Tracee-eBPF]: https://github.com/aquasecurity/tracee/tree/{{ git.tag }}/cmd/tracee-ebpf
-[Tracee-Rules]: https://github.com/aquasecurity/tracee/tree/{{ git.tag }}/cmd/tracee-rules
+[Tracee-eBPF]: ./tracing/index.md
+[Tracee-Rules]: ./detecting/index.md
 
 [Aqua Security]: https://aquasec.com
 [GitHub Discussion]: https://github.com/aquasecurity/tracee/discussions

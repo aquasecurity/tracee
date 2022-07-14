@@ -8,30 +8,54 @@ edit_uri: ""
 
 nav:
   - Getting Started: index.md
+  - Architecture: architecture.md
+  - Installation:
+    - Getting Tracee: installing/getting.md
+    - Prerequisites: installing/prerequisites.md
+    - Docker: installing/docker.md
+    - Kubernetes: installing/kubernetes.md
+    - Packages:
+      - Ubuntu: installing/distros/ubuntu.md
+      - Fedora: installing/distros/fedora.md
+      - NixOS: installing/distros/nix-nixos.md
+    - Linux Headers: installing/headers.md
   - Building:
+    - Building Tracee: building/building.md
     - Building Environment: building/environment.md
     - Building Containers: building/containers.md
     - Building non CO-RE: building/nocore-ebpf.md
     - OS Packaging: building/packaging.md
-  - Installation:
-    - Prerequisites: install/prerequisites.md
-    - Kubernetes: install/kubernetes.md
-    - Linux Headers: install/headers.md
-    - Docker for Mac: install/docker-mac.md
-    - Linux Distributions:
-      - NixOS: install/distros/nix-nixos.md
-  - Integrations: integrations.md
-  - Configuration Options: config.md
-  - Authoring Rules: rules-authoring.md
-  - Available Rules: rules-index.md
-  - FAQ: faq.md
-  - Architecture: architecture.md
+    - Building on OSX: building/macosx.md
   - Tracing:
-    - Getting Started: tracee-ebpf/index.md
-    - Output Options: tracee-ebpf/output.md
-    - Trace Options: tracee-ebpf/trace-options.md
-    - Capturing Artifacts: tracee-ebpf/capture.md
-    - Overriding OS needed files: tracee-ebpf/override-os-needed-files.md
+    - Getting Started: tracing/index.md
+    - Output Formats: tracing/output-formats.md
+    - Output Options: tracing/output-options.md
+    - Event Filtering: tracing/event-filtering.md
+  - Capturing:
+    - Getting Started: capturing/index.md
+  - Detecting:
+    - Getting Started: detecting/index.md
+    - Creating Rules:
+      - Golang: detecting/golang.md
+      - Rego: detecting/rego.md
+      - Go-Cel: detecting/go-cel.md
+    - Available Rules: detecting/rules.md
+  - Integrating:
+      - Container Engines: integrating/container-engines.md
+      - Detected Events:
+        - Go-template: integrating/go-templates.md
+        - Deliver:
+          - Webhook: integrating/webhook.md
+          - Postee: integrating/postee.md
+          - Falcosidekick: integrating/falcosidekick.md
+      - Prometheus: integrating/prometheus.md
+  - Deep Dive:
+    - Secure Tracing: deep-dive/secure-tracing.md
+    - Performance: deep-dive/performance.md
+    - Caching Events: deep-dive/caching-events.md
+    - Ordering Events: deep-dive/ordering-events.md
+    - Dropping Capabilities: deep-dive/dropping-capabilities.md
+    - Override OS files: deep-dive/override-os-files.md
   - Tutorials:
       - Setup Development Machine with Vagrant: tutorials/setup-development-machine-with-vagrant.md
       - Deploy Tracee Grafana Dashboard: tutorials/deploy-grafana-dashboard.md
@@ -42,6 +66,9 @@ theme:
     name: material
     language: 'en'
     logo: images/tracee_logo_only.png
+    features:
+      # - navigation.expand
+      - navigation.instant
 
 markdown_extensions:
   - pymdownx.highlight
