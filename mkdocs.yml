@@ -67,7 +67,7 @@ theme:
     language: 'en'
     logo: images/tracee_logo_only.png
     features:
-      # - navigation.expand
+      - navigation.expand
       - navigation.instant
 
 markdown_extensions:
