@@ -39,7 +39,7 @@ scrape_configs:
     # Override the global default and scrape targets from this job every 5 seconds.
     scrape_interval: 5s
 
-    #Scrape Tracee-Ebpf's and Tracee-Rules's default metrics hosts.
+    #Scrape tracee-ebpf's and tracee-rules's default metrics hosts.
     #If forwarding different ports make sure to change these addresses.
     static_configs:
       - targets: ['localhost:3366', 'localhost:4466']

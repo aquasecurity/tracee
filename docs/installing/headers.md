@@ -1,12 +1,19 @@
 # Linux Headers
 
-In order to compile the kernel version specific eBPF object, Tracee needs some
-Linux kernel headers. Depending on your Linux distribution, there may be
-different ways to obtain them.  
+!!! Note
+    The default (latest) image is lightweight and portable. It is supposed to
+    support different kernel versions without having to build source code. If
+    the host kernel does not support BTF then you may use the full container
+    image. The full container will compile an eBPF object during startup, if you
+    do not have one already cached in /tmp/tracee.
+
+When running `tracee:full` container image, in order to compile the kernel
+version specific eBPF object, Tracee needs some Linux kernel headers. Depending
+on your Linux distribution, there may be different ways to obtain them.  
 
 - Ubuntu/Debian/Arch/Manjaro: install `linux-headers` package.
 - CentOS/Fedora: install `kernel-headers` and `kernel-devel` packages.
-- macOS: follow the [Docker for Mac](./docker-mac.md) guidelines.
+- macOS: follow the [Building on OSX](../building/macosx.md) guidelines.
 
 Normally the files will be installed in `/lib/modules/${kernel_version}/build`
 which is where Tracee expects them. If you have the headers elsewhere, you can
