@@ -11,11 +11,11 @@
 
 # Tracee: Runtime Security and Forensics using eBPF
 
-Tracee is a Runtime Security and forensics tool for Linux. It is using Linux
-eBPF technology to trace your system and applications at runtime, and analyze
-collected events to detect suspicious behavioral patterns. It is delivered as a
-Docker image that monitors the OS and detects suspicious behavior based on a
-predefined set of behavioral patterns.
+Tracee is a Runtime Security and forensics tool for Linux. It uses Linux **eBPF
+technology** to trace your system and applications **at runtime**, and analyzes
+collected events in order to detect **suspicious behavioral patterns**. It is
+usually delivered as a docker container, but there are other ways you can use
+it (even create your own customized tracee container).
 
 Watch a quick video demo of Tracee:
 
@@ -29,53 +29,58 @@ Before you proceed, make sure you follow the [prerequiresites].
 
 [pre-requiresites]: ./installing/prerequisites.md
 
-1. Running **tracee:latest**
-   ```shell
-   docker run \
-     --name tracee --rm -it \
-     --pid=host --cgroupns=host --privileged \
-     -v /etc/os-release:/etc/os-release-host:ro \
-     -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-     aquasec/tracee:{{ git.tag[1:] }}
+1. Running **tracee:{{ git.tag }}**
+
+   ```text
+   $ docker run \
+        --name tracee --rm -it \
+        --pid=host --cgroupns=host --privileged \
+        -v /etc/os-release:/etc/os-release-host:ro \
+        -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+        aquasec/tracee:{{ git.tag[1:] }}
    ```
+
 2. Running **tracee:full**
-   ```shell
-   docker run --name tracee --rm -it \
-     --pid=host --cgroupns=host --privileged \
-     -v /etc/os-release:/etc/os-release-host:ro \
-     -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-     -v /usr/src:/usr/src:ro \
-     -v /lib/modules:/lib/modules:ro \
-     -v /tmp/tracee:/tmp/tracee:rw \
-     aquasec/tracee:full-{{ git.tag[1:] }}
+
+   ```text
+   $ docker run \
+        --name tracee --rm -it \
+        --pid=host --cgroupns=host --privileged \
+        -v /etc/os-release:/etc/os-release-host:ro \
+        -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+        -v /usr/src:/usr/src:ro \
+        -v /lib/modules:/lib/modules:ro \
+        -v /tmp/tracee:/tmp/tracee:rw \
+        aquasec/tracee:full-{{ git.tag[1:] }}
    ```
 
-!!! note
-    The default (latest) image is **lightweight** and **portable**. It is supposed to
-    support different kernel versions without having to build source code. If
-    the host kernel does not support BTF then you may use the **full** container 
-    image. The full container will compile an eBPF object during startup, if you do 
-    not have one already cached in `/tmp/tracee`.
+!!! Notes
 
-!!! note
-    You may need to change the volume mounts for the kernel headers based on
-    your setup. See [Linux Headers](./installing/headers.md) section for more
-    info.
+    1. The default (latest) image is **lightweight** and **portable**. It is
+       supposed to support different kernel versions without having to build
+       source code. If the host kernel does not support BTF then you may use
+       the **full** container image. The full container will compile an eBPF
+       object during startup, if you do not have one already cached in
+       `/tmp/tracee`.
 
-!!! note
-    Tracee supports enriching events with additional data from running containers.
-    In order to enable this capability please look [here](./integrating/container-engines.md).
+    2. You may need to change the volume mounts for the kernel headers based on
+       your setup. See [Linux Headers](./installing/headers.md) section for
+       more info.
 
-This will run Tracee with default settings and start reporting detections to
-standard output. In order to simulate a suspicious behavior, you can simply
-run:
+    3. Tracee supports enriching events with additional data from running
+       containers. In order to enable this capability please look
+       [here](./integrating/container-engines.md).
 
+These docker commands run Tracee with **default settings** and start
+**reporting detections** to **standard output**. In order to simulate a
+suspicious behavior, you can simply run:
+
+```text
+$ strace ls
 ```
-strace ls
-```
 
-in another terminal. This will trigger the "Anti-Debugging" signature, which is
-loaded by default, and you will get a warning:
+in another terminal. This will trigger the **Anti-Debugging** signature, which
+is loaded by default, and you will get a warning:
 
 ```
 INFO: probing tracee-ebpf capabilities...
@@ -96,21 +101,22 @@ Hostname: ubuntu-impish
 
 ## Trace
 
-In some cases, you might want to leverage Tracee's eBPF event collection
-capabilities directly, without involving the detection engine. This might be
-useful for debugging/troubleshooting/analysis/research/education.
+In some cases, you might want to **leverage Tracee's eBPF event collection
+capabilities** directly, without involving the **detection engine**. This might
+be useful for debugging, troubleshooting, analysising, researching OR
+education.
 
-Just execute docker with `trace` argument first, and tracee-ebpf will be
-executed, instead of the full tracee detection engine.
+Execute docker container with the word `trace` as an initial argument, and
+**tracee-ebpf** will be executed, instead of the full tracee detection engine.
 
-```shell
-docker run \
-  --name tracee --rm -it \
-  --pid=host --cgroupns=host --privileged \
-  -v /etc/os-release:/etc/os-release-host:ro \
-  -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-  aquasec/tracee:latest \
-  trace
+```text
+$ docker run \
+    --name tracee --rm -it \
+    --pid=host --cgroupns=host --privileged \
+    -v /etc/os-release:/etc/os-release-host:ro \
+    -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+    aquasec/tracee:{{ git.tag[1:] }}
+    trace
 ```
 
 !!! note

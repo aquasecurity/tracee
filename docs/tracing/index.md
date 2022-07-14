@@ -30,14 +30,14 @@ Before you proceed, make sure you follow the [prerequisites].
 
 [prerequisites]:../installing/prerequisites.md
 
-```shell
-docker run \
-  --name tracee --rm -it \
-  --pid=host --cgroupns=host --privileged \
-  -v /etc/os-release:/etc/os-release-host:ro \
-  -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-  -e TRACEE_EBPF_ONLY=1 \
-  aquasec/tracee:{{ git.tag[1:] }}
+```text
+$ docker run \
+    --name tracee --rm -it \
+    --pid=host --cgroupns=host --privileged \
+    -v /etc/os-release:/etc/os-release-host:ro \
+    -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+    -e TRACEE_EBPF_ONLY=1 \
+    aquasec/tracee:{{ git.tag[1:] }}
 ```
 
 Here, we are running the `aquasec/tracee` container, but with the

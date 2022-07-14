@@ -47,10 +47,10 @@ Tracee supports different output options for detected events:
     (syscall 59 in amd64 architecture).
 
     !!! tip
-    If you pay attention to previous outputs, we have raw event data in many
-    places. Like the syscall example above, where we have to find out which
-    syscall it was referring to. Check **parse-arguments** option below to
-    improve your experience.
+        If you pay attention to previous outputs, we have raw event data in
+        many places. Like the syscall example above, where we have to find out
+        which syscall it was referring to. Check **parse-arguments** option
+        below to improve your experience.
 
 3. **option:parse-arguments**
 
