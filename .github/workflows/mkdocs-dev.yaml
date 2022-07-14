@@ -1,5 +1,6 @@
 name: Deploy the dev documentation
 on:
+  workflow_dispatch: {}
   push:
     paths:
       - 'docs/**'
