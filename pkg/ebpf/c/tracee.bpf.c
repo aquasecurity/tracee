@@ -147,47 +147,220 @@ enum argument_type_e
 #define UNDEFINED_SYSCALL 1000
 
 #if defined(bpf_target_x86)
-    #define SYS_MMAP         9
-    #define SYS_MPROTECT     10
-    #define SYS_RT_SIGRETURN 15
-    #define SYS_EXECVE       59
-    #define SYS_EXIT         60
-    #define SYS_EXIT_GROUP   231
-    #define SYS_EXECVEAT     322
-    #define SYSCALL_CONNECT  42
-    #define SYSCALL_ACCEPT   43
-    #define SYSCALL_ACCEPT4  288
-    #define SYSCALL_LISTEN   50
-    #define SYSCALL_BIND     49
-    #define SYSCALL_SOCKET   41
-    #define SYSC_SETSOCKOPT  54
-    #define SYS_DUP          32
-    #define SYS_DUP2         33
-    #define SYS_DUP3         292
-    #define SYS_OPEN         2
-    #define SYS_OPENAT       257
-    #define SYS_OPENAT2      437
+    #define SYSCALL_READ                   0
+    #define SYSCALL_WRITE                  1
+    #define SYSCALL_OPEN                   2
+    #define SYSCALL_CLOSE                  3
+    #define SYSCALL_FSTAT                  5
+    #define SYSCALL_LSEEK                  8
+    #define SYSCALL_MMAP                   9
+    #define SYSCALL_MPROTECT               10
+    #define SYSCALL_RT_SIGRETURN           15
+    #define SYSCALL_IOCTL                  16
+    #define SYSCALL_PREAD64                17
+    #define SYSCALL_PWRITE64               18
+    #define SYSCALL_READV                  19
+    #define SYSCALL_WRITEV                 20
+    #define SYSCALL_DUP                    32
+    #define SYSCALL_DUP2                   33
+    #define SYSCALL_SOCKET                 41
+    #define SYSCALL_CONNECT                42
+    #define SYSCALL_ACCEPT                 43
+    #define SYSCALL_SENDTO                 44
+    #define SYSCALL_RECVFROM               45
+    #define SYSCALL_SENDMSG                46
+    #define SYSCALL_RECVMSG                47
+    #define SYSCALL_SHUTDOWN               48
+    #define SYSCALL_BIND                   49
+    #define SYSCALL_LISTEN                 50
+    #define SYSCALL_GETSOCKNAME            51
+    #define SYSCALL_GETPEERNAME            52
+    #define SYSCALL_SETSOCKOPT             54
+    #define SYSCALL_GETSOCKOPT             55
+    #define SYSCALL_EXECVE                 59
+    #define SYSCALL_EXIT                   60
+    #define SYSCALL_FCNTL                  72
+    #define SYSCALL_FLOCK                  73
+    #define SYSCALL_FSYNC                  74
+    #define SYSCALL_FDATASYNC              75
+    #define SYSCALL_FTRUNCATE              77
+    #define SYSCALL_GETDENTS               78
+    #define SYSCALL_FCHDIR                 81
+    #define SYSCALL_FCHMOD                 91
+    #define SYSCALL_FCHOWN                 93
+    #define SYSCALL_FSTATFS                138
+    #define SYSCALL_READAHEAD              187
+    #define SYSCALL_FSETXATTR              190
+    #define SYSCALL_FGETXATTR              193
+    #define SYSCALL_FLISTXATTR             196
+    #define SYSCALL_FREMOVEXATTR           199
+    #define SYSCALL_GETDENTS64             217
+    #define SYSCALL_FADVISE64              221
+    #define SYSCALL_EXIT_GROUP             231
+    #define SYSCALL_EPOLL_WAIT             232
+    #define SYSCALL_EPOLL_CTL              233
+    #define SYSCALL_INOTIFY_ADD_WATCH      254
+    #define SYSCALL_INOTIFY_RM_WATCH       255
+    #define SYSCALL_OPENAT                 257
+    #define SYSCALL_MKDIRAT                258
+    #define SYSCALL_MKNODAT                259
+    #define SYSCALL_FCHOWNAT               260
+    #define SYSCALL_FUTIMESAT              261
+    #define SYSCALL_NEWFSTATAT             262
+    #define SYSCALL_UNLINKAT               263
+    #define SYSCALL_SYMLINKAT              266
+    #define SYSCALL_READLINKAT             267
+    #define SYSCALL_FCHMODAT               268
+    #define SYSCALL_FACCESSAT              269
+    #define SYSCALL_SYNC_FILE_RANGE        277
+    #define SYSCALL_VMSPLICE               278
+    #define SYSCALL_UTIMENSAT              280
+    #define SYSCALL_EPOLL_PWAIT            281
+    #define SYSCALL_SIGNALFD               282
+    #define SYSCALL_FALLOCATE              285
+    #define SYSCALL_TIMERFD_SETTIME        286
+    #define SYSCALL_TIMERFD_GETTIME        287
+    #define SYSCALL_ACCEPT4                288
+    #define SYSCALL_SIGNALFD4              289
+    #define SYSCALL_DUP3                   292
+    #define SYSCALL_PREADV                 295
+    #define SYSCALL_PWRITEV                296
+    #define SYSCALL_PERF_EVENT_OPEN        298
+    #define SYSCALL_RECVMMSG               299
+    #define SYSCALL_NAME_TO_HANDLE_AT      303
+    #define SYSCALL_OPEN_BY_HANDLE_AT      304
+    #define SYSCALL_SYNCFS                 306
+    #define SYSCALL_SENDMMSG               307
+    #define SYSCALL_SETNS                  308
+    #define SYSCALL_FINIT_MODULE           313
+    #define SYSCALL_EXECVEAT               322
+    #define SYSCALL_PREADV2                327
+    #define SYSCALL_PWRITEV2               328
+    #define SYSCALL_STATX                  332
+    #define SYSCALL_PIDFD_SEND_SIGNAL      424
+    #define SYSCALL_IO_URING_ENTER         426
+    #define SYSCALL_IO_URING_REGISTER      427
+    #define SYSCALL_OPEN_TREE              428
+    #define SYSCALL_FSCONFIG               431
+    #define SYSCALL_FSMOUNT                432
+    #define SYSCALL_FSPICK                 433
+    #define SYSCALL_OPENAT2                437
+    #define SYSCALL_FACCESSAT2             439
+    #define SYSCALL_PROCESS_MADVISE        440
+    #define SYSCALL_EPOLL_PWAIT2           441
+    #define SYSCALL_MOUNT_SETATTR          442
+    #define SYSCALL_QUOTACTL_FD            443
+    #define SYSCALL_LANDLOCK_ADD_RULE      445
+    #define SYSCALL_LANDLOCK_RESTRICT_SELF 446
+    #define SYSCALL_PROCESS_MRELEASE       448
+
 #elif defined(bpf_target_arm64)
-    #define SYS_MMAP         222
-    #define SYS_MPROTECT     226
-    #define SYS_RT_SIGRETURN 139
-    #define SYS_EXECVE       221
-    #define SYS_EXIT         93
-    #define SYS_EXIT_GROUP   94
-    #define SYS_EXECVEAT     281
-    #define SYSCALL_CONNECT  203
-    #define SYSCALL_ACCEPT   202
-    #define SYSCALL_ACCEPT4  242
-    #define SYSCALL_LISTEN   201
-    #define SYSCALL_BIND     200
-    #define SYSCALL_SOCKET   198
-    #define SYSC_SETSOCKOPT  208
-    #define SYS_DUP          23
-    #define SYS_DUP2         UNDEFINED_SYSCALL
-    #define SYS_DUP3         24
-    #define SYS_OPEN         UNDEFINED_SYSCALL
-    #define SYS_OPENAT       56
-    #define SYS_OPENAT2      437
+    #define SYSCALL_READ                   63
+    #define SYSCALL_WRITE                  64
+    #define SYSCALL_OPEN                   UNDEFINED_SYSCALL
+    #define SYSCALL_CLOSE                  57
+    #define SYSCALL_FSTAT                  80
+    #define SYSCALL_LSEEK                  62
+    #define SYSCALL_MMAP                   222
+    #define SYSCALL_MPROTECT               226
+    #define SYSCALL_RT_SIGRETURN           139
+    #define SYSCALL_IOCTL                  29
+    #define SYSCALL_PREAD64                67
+    #define SYSCALL_PWRITE64               68
+    #define SYSCALL_READV                  65
+    #define SYSCALL_WRITEV                 66
+    #define SYSCALL_DUP                    23
+    #define SYSCALL_DUP2                   UNDEFINED_SYSCALL
+    #define SYSCALL_SOCKET                 198
+    #define SYSCALL_CONNECT                203
+    #define SYSCALL_ACCEPT                 202
+    #define SYSCALL_SENDTO                 206
+    #define SYSCALL_RECVFROM               207
+    #define SYSCALL_SENDMSG                211
+    #define SYSCALL_RECVMSG                212
+    #define SYSCALL_SHUTDOWN               210
+    #define SYSCALL_BIND                   200
+    #define SYSCALL_LISTEN                 201
+    #define SYSCALL_GETSOCKNAME            204
+    #define SYSCALL_GETPEERNAME            205
+    #define SYSCALL_SETSOCKOPT             208
+    #define SYSCALL_GETSOCKOPT             209
+    #define SYSCALL_EXECVE                 221
+    #define SYSCALL_EXIT                   93
+    #define SYSCALL_FCNTL                  25
+    #define SYSCALL_FLOCK                  32
+    #define SYSCALL_FSYNC                  82
+    #define SYSCALL_FDATASYNC              83
+    #define SYSCALL_FTRUNCATE              46
+    #define SYSCALL_GETDENTS               UNDEFINED_SYSCALL
+    #define SYSCALL_FCHDIR                 50
+    #define SYSCALL_FCHMOD                 52
+    #define SYSCALL_FCHOWN                 55
+    #define SYSCALL_FSTATFS                44
+    #define SYSCALL_READAHEAD              213
+    #define SYSCALL_FSETXATTR              7
+    #define SYSCALL_FGETXATTR              10
+    #define SYSCALL_FLISTXATTR             13
+    #define SYSCALL_FREMOVEXATTR           16
+    #define SYSCALL_GETDENTS64             61
+    #define SYSCALL_FADVISE64              223
+    #define SYSCALL_EXIT_GROUP             94
+    #define SYSCALL_EPOLL_WAIT             UNDEFINED_SYSCALL
+    #define SYSCALL_EPOLL_CTL              21
+    #define SYSCALL_INOTIFY_ADD_WATCH      27
+    #define SYSCALL_INOTIFY_RM_WATCH       28
+    #define SYSCALL_OPENAT                 56
+    #define SYSCALL_MKDIRAT                34
+    #define SYSCALL_MKNODAT                33
+    #define SYSCALL_FCHOWNAT               54
+    #define SYSCALL_FUTIMESAT              UNDEFINED_SYSCALL
+    #define SYSCALL_NEWFSTATAT             UNDEFINED_SYSCALL
+    #define SYSCALL_UNLINKAT               35
+    #define SYSCALL_SYMLINKAT              36
+    #define SYSCALL_READLINKAT             78
+    #define SYSCALL_FCHMODAT               53
+    #define SYSCALL_FACCESSAT              48
+    #define SYSCALL_SYNC_FILE_RANGE        84
+    #define SYSCALL_VMSPLICE               75
+    #define SYSCALL_UTIMENSAT              88
+    #define SYSCALL_EPOLL_PWAIT            22
+    #define SYSCALL_SIGNALFD               UNDEFINED_SYSCALL
+    #define SYSCALL_FALLOCATE              47
+    #define SYSCALL_TIMERFD_SETTIME        86
+    #define SYSCALL_TIMERFD_GETTIME        87
+    #define SYSCALL_ACCEPT4                242
+    #define SYSCALL_SIGNALFD4              74
+    #define SYSCALL_DUP3                   24
+    #define SYSCALL_PREADV                 69
+    #define SYSCALL_PWRITEV                70
+    #define SYSCALL_PERF_EVENT_OPEN        241
+    #define SYSCALL_RECVMMSG               243
+    #define SYSCALL_NAME_TO_HANDLE_AT      264
+    #define SYSCALL_OPEN_BY_HANDLE_AT      265
+    #define SYSCALL_SYNCFS                 267
+    #define SYSCALL_SENDMMSG               269
+    #define SYSCALL_SETNS                  268
+    #define SYSCALL_FINIT_MODULE           273
+    #define SYSCALL_EXECVEAT               281
+    #define SYSCALL_PREADV2                286
+    #define SYSCALL_PWRITEV2               287
+    #define SYSCALL_STATX                  291
+    #define SYSCALL_PIDFD_SEND_SIGNAL      424
+    #define SYSCALL_IO_URING_ENTER         426
+    #define SYSCALL_IO_URING_REGISTER      427
+    #define SYSCALL_OPEN_TREE              428
+    #define SYSCALL_FSCONFIG               431
+    #define SYSCALL_FSMOUNT                432
+    #define SYSCALL_FSPICK                 433
+    #define SYSCALL_OPENAT2                437
+    #define SYSCALL_FACCESSAT2             439
+    #define SYSCALL_PROCESS_MADVISE        440
+    #define SYSCALL_EPOLL_PWAIT2           441
+    #define SYSCALL_MOUNT_SETATTR          442
+    #define SYSCALL_QUOTACTL_FD            443
+    #define SYSCALL_LANDLOCK_ADD_RULE      445
+    #define SYSCALL_LANDLOCK_RESTRICT_SELF 446
+    #define SYSCALL_PROCESS_MRELEASE       448
 #endif
 
 enum event_id_e
@@ -2517,10 +2690,11 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
     }
 
     // exit, exit_group and rt_sigreturn syscalls don't return
-    if (sys->id != SYS_EXIT && sys->id != SYS_EXIT_GROUP && sys->id != SYS_RT_SIGRETURN) {
+    if (sys->id != SYSCALL_EXIT && sys->id != SYSCALL_EXIT_GROUP &&
+        sys->id != SYSCALL_RT_SIGRETURN) {
         sys->ts = data.context.ts;
         data.task_info->syscall_traced = true;
-    } else if ((sys->id != SYS_RT_SIGRETURN) && (should_submit(sys->id, data.config))) {
+    } else if ((sys->id != SYSCALL_RT_SIGRETURN) && (should_submit(sys->id, data.config))) {
         data.buf_off = sizeof(event_context_t);
         data.context.argnum = 0;
         save_to_submit_buf(&data, &sys->args.args[0], sizeof(int), 0);
@@ -2580,8 +2754,8 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
             goto out;
         }
         types = *saved_types;
-        if ((id != SYS_EXECVE && id != SYS_EXECVEAT) ||
-            ((id == SYS_EXECVE || id == SYS_EXECVEAT) && (ret != 0))) {
+        if ((id != SYSCALL_EXECVE && id != SYSCALL_EXECVEAT) ||
+            ((id == SYSCALL_EXECVE || id == SYSCALL_EXECVEAT) && (ret != 0))) {
             // We can't use saved args after execve syscall, as pointers are
             // invalid To avoid showing execve event both on entry and exit, we
             // only output failed execs
@@ -2613,7 +2787,7 @@ int syscall__execve(void *ctx)
         return -1;
     syscall_data_t *sys = &data.task_info->syscall_data;
 
-    if (!should_submit(SYS_EXECVE, data.config))
+    if (!should_submit(SYSCALL_EXECVE, data.config))
         return 0;
 
     save_str_to_buf(&data, (void *) sys->args.args[0] /*filename*/, 0);
@@ -2622,7 +2796,7 @@ int syscall__execve(void *ctx)
         save_str_arr_to_buf(&data, (const char *const *) sys->args.args[2] /*envp*/, 2);
     }
 
-    return events_perf_submit(&data, SYS_EXECVE, 0);
+    return events_perf_submit(&data, SYSCALL_EXECVE, 0);
 }
 
 SEC("raw_tracepoint/sys_execveat")
@@ -2636,7 +2810,7 @@ int syscall__execveat(void *ctx)
         return -1;
     syscall_data_t *sys = &data.task_info->syscall_data;
 
-    if (!should_submit(SYS_EXECVEAT, data.config))
+    if (!should_submit(SYSCALL_EXECVEAT, data.config))
         return 0;
 
     save_to_submit_buf(&data, (void *) &sys->args.args[0] /*dirfd*/, sizeof(int), 0);
@@ -2647,7 +2821,7 @@ int syscall__execveat(void *ctx)
     }
     save_to_submit_buf(&data, (void *) &sys->args.args[4] /*flags*/, sizeof(int), 4);
 
-    return events_perf_submit(&data, SYS_EXECVEAT, 0);
+    return events_perf_submit(&data, SYSCALL_EXECVEAT, 0);
 }
 
 static __always_inline int send_socket_dup(event_data_t *data, u64 oldfd, u64 newfd)
@@ -2722,11 +2896,11 @@ int sys_dup_exit_tail(void *ctx)
         return 0;
     }
 
-    if (sys->id == SYS_DUP) {
+    if (sys->id == SYSCALL_DUP) {
         // args.args[0]: oldfd
         // retval: newfd
         send_socket_dup(&data, sys->args.args[0], sys->ret);
-    } else if (sys->id == SYS_DUP2 || sys->id == SYS_DUP3) {
+    } else if (sys->id == SYSCALL_DUP2 || sys->id == SYSCALL_DUP3) {
         // args.args[0]: oldfd
         // args.args[1]: newfd
         // retval: retval
@@ -3367,11 +3541,11 @@ int BPF_KPROBE(trace_security_file_open)
     if (syscall_traced) {
         sys = &data.task_info->syscall_data;
         switch (sys->id) {
-            case SYS_OPEN:
+            case SYSCALL_OPEN:
                 syscall_pathname = (void *) sys->args.args[0];
                 break;
-            case SYS_OPENAT:
-            case SYS_OPENAT2:
+            case SYSCALL_OPENAT:
+            case SYSCALL_OPENAT2:
                 syscall_pathname = (void *) sys->args.args[1];
                 break;
         }
@@ -3917,7 +4091,7 @@ int BPF_KPROBE(trace_security_socket_setsockopt)
         return -1;
     }
 
-    if (!data.task_info->syscall_traced || sys->id != SYSC_SETSOCKOPT)
+    if (!data.task_info->syscall_traced || sys->id != SYSCALL_SETSOCKOPT)
         return 0;
 
     save_to_submit_buf(&data, (void *) &sys->args.args[0], sizeof(u32), 0);
@@ -4771,7 +4945,7 @@ int BPF_KPROBE(trace_mmap_alert)
 
     // Load the arguments given to the mmap syscall (which eventually invokes this function)
     syscall_data_t *sys = &data.task_info->syscall_data;
-    if (!data.task_info->syscall_traced || sys->id != SYS_MMAP)
+    if (!data.task_info->syscall_traced || sys->id != SYSCALL_MMAP)
         return 0;
 
     if ((sys->args.args[2] & (VM_WRITE | VM_EXEC)) == (VM_WRITE | VM_EXEC)) {
@@ -4811,7 +4985,8 @@ int BPF_KPROBE(trace_security_mmap_file)
 
     syscall_data_t *sys = &data.task_info->syscall_data;
     if (should_submit(SHARED_OBJECT_LOADED, data.config)) {
-        if (data.task_info->syscall_traced && (prot & VM_EXEC) == VM_EXEC && sys->id == SYS_MMAP) {
+        if (data.task_info->syscall_traced && (prot & VM_EXEC) == VM_EXEC &&
+            sys->id == SYSCALL_MMAP) {
             events_perf_submit(&data, SHARED_OBJECT_LOADED, 0);
         }
     }
@@ -4858,7 +5033,7 @@ int BPF_KPROBE(trace_security_file_mprotect)
     if (should_submit(MEM_PROT_ALERT, data.config)) {
         // Load the arguments given to the mprotect syscall (which eventually invokes this function)
         syscall_data_t *sys = &data.task_info->syscall_data;
-        if (!data.task_info->syscall_traced || sys->id != SYS_MPROTECT)
+        if (!data.task_info->syscall_traced || sys->id != SYSCALL_MPROTECT)
             return 0;
 
         // unsigned long prot = PT_REGS_PARM3(ctx);
