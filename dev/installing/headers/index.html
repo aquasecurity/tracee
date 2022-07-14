@@ -1675,11 +1675,11 @@
 <h1 id="linux-headers">Linux Headers<a class="headerlink" href="#linux-headers" title="Permanent link">&para;</a></h1>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The default (latest) image is lightweight and portable. It is supposed to
-support different kernel versions without having to build source code. If
-the host kernel does not support BTF then you may use the full container
-image. The full container will compile an eBPF object during startup, if you
-do not have one already cached in /tmp/tracee.</p>
+<p>The <strong>default image</strong> is <strong>lightweight and portable</strong>. It is supposed to
+<strong>support different kernel versions</strong> without having to build source code.
+If the host kernel <a href="../../building/nocore-ebpf/#the-need-for-a-non-co-re-ebpf-object-build">does not support BTF</a> then you may use the full container
+image. The full container will compile an eBPF object during startup, if
+you do not have one already cached in /tmp/tracee.</p>
 </div>
 <p>When running <code>tracee:full</code> container image, in order to compile the kernel
 version specific eBPF object, Tracee needs some Linux kernel headers. Depending

@@ -1848,28 +1848,28 @@ to execute non CO-RE Tracee:</p>
 <ol>
 <li>
 <p>Identify your docker version:</p>
-<div class="highlight"><pre><span></span><code>dockerver=$(docker version | grep  Version | head -n 1 | cut -d &#39;:&#39; -f 2 | xargs)
+<div class="highlight"><pre><span></span><code>$ dockerver=$(docker version | grep  Version | head -n 1 | cut -d &#39;:&#39; -f 2 | xargs)
 </code></pre></div>
 </li>
 <li>
 <p>Run a container with Docker CLI, while mounting to the host path:</p>
-<div class="highlight"><pre><span></span><code>docker run -it -v /:/host \
-   -v /var/run/docker.sock:/var/run/docker.sock \
-   docker:$dockerver /bin/sh
+<div class="highlight"><pre><span></span><code>$ docker run -it -v /:/host \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    docker:$dockerver /bin/sh
 </code></pre></div>
 </li>
 <li>
 <p>Get the Kernel Header files from the linuxkit Docker image and copy it to the
    host /usr/src path:</p>
-<div class="highlight"><pre><span></span><code>mkdir /host/kheader
-cd /host/kheader
-linux_version=&quot;${VERSION:-$(uname -r | cut -d - -f 1)}&quot;
-docker pull &quot;linuxkit/kernel:$linux_version&quot;
-docker save &quot;linuxkit/kernel:$linux_version&quot; &gt; &quot;linuxkit.tar&quot;
-tar -xf &quot;linuxkit.tar&quot;
-layertar=$(find . -name layer.tar)
-tar -xf &quot;$layertar&quot;
-tar -xf &quot;kernel-dev.tar&quot; --directory /host/
+<div class="highlight"><pre><span></span><code>$ mkdir /host/kheader
+$ cd /host/kheader
+$ linux_version=&quot;${VERSION:-$(uname -r | cut -d - -f 1)}&quot;
+$ docker pull &quot;linuxkit/kernel:$linux_version&quot;
+$ docker save &quot;linuxkit/kernel:$linux_version&quot; &gt; &quot;linuxkit.tar&quot;
+$ tar -xf &quot;linuxkit.tar&quot;
+$ layertar=$(find . -name layer.tar)
+$ tar -xf &quot;$layertar&quot;
+$ tar -xf &quot;kernel-dev.tar&quot; --directory /host/
 </code></pre></div>
 </li>
 <li>

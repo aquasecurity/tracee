@@ -1828,18 +1828,18 @@ as an introspection tool.</p>
 <ol>
 <li>To run the <code>tracee:latest</code> container with <strong>tracee-ebpf</strong> only:</li>
 </ol>
-<div class="highlight"><pre><span></span><code>make -f builder/Makefile.tracee-container run-tracee-ebpf
+<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-tracee-ebpf
 </code></pre></div>
 <ol>
 <li>To run the <code>tracee:full</code> container with <strong>tracee-ebpf</strong> only:</li>
 </ol>
-<div class="highlight"><pre><span></span><code>make -f builder/Makefile.tracee-container run-tracee-ebpf-full
+<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-tracee-ebpf-full
 </code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Tracee-ebpf arguments are passed through the <code>ARG</code> variable:
-<div class="highlight"><pre><span></span><code>make -f builder/Makefile.tracee-container run-tracee-ebpf ARG=&quot;--debug&quot;
-</code></pre></div></p>
+<p>Tracee-ebpf arguments are passed through the <code>ARG</code> variable:</p>
+<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-container run-tracee-ebpf ARG=&quot;--debug&quot;
+</code></pre></div>
 </div>
 
 

@@ -1557,6 +1557,16 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Deploy Tracee Grafana Dashboard
+  </span>
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -1565,6 +1575,70 @@
   </span>
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prequisites
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-tracee-with-metrics-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run Tracee with Metrics Enabled
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-prometheus-and-configure-it-to-scrape-tracee" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run Prometheus and Configure it to Scrape Tracee
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-grafana-to-display-tracees-prometheus-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run Grafana to display Tracee's Prometheus Metrics
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#import-tracees-default-dashboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      Import Tracee's Default Dashboard
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1660,6 +1734,59 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prequisites
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-tracee-with-metrics-enabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run Tracee with Metrics Enabled
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-prometheus-and-configure-it-to-scrape-tracee" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run Prometheus and Configure it to Scrape Tracee
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-grafana-to-display-tracees-prometheus-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run Grafana to display Tracee's Prometheus Metrics
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#import-tracees-default-dashboard" class="md-nav__link">
+    <span class="md-ellipsis">
+      Import Tracee's Default Dashboard
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1673,25 +1800,39 @@
 
 
 <h1 id="deploy-grafana-dashboard">Deploy Grafana Dashboard<a class="headerlink" href="#deploy-grafana-dashboard" title="Permanent link">&para;</a></h1>
-<p>Grafana is a visualization tools for exported metrics and logs, most commomly used alongside prometheus.</p>
-<p>Since version 0.7.0, tracee exports useful runtime metrics to prometheus.
-These metrics exports are enabled by default in all docker images and can be enabled using the <code>--metrics</code> flag in both <a href="https://github.com/aquasecurity/tracee/tree/main/cmd/tracee-ebpf">tracee-ebpf</a> and <a href="https://github.com/aquasecurity/tracee/tree/main/cmd/tracee-rules">tracee-rules</a>.</p>
-<p>By using grafana and the new metrics from tracee, we can deploy a simple dashboard which tracks your tracee's instance performance and outputs.</p>
-<h1 id="prequisites">Prequisites<a class="headerlink" href="#prequisites" title="Permanent link">&para;</a></h1>
-<p>The following tools must be available for use, they can all be installed either through docker or installed/built on your machine.</p>
+<p>Grafana is a visualization tools for exported metrics and logs, most commomly
+used alongside prometheus.</p>
+<p>Since version 0.7.0, tracee exports useful runtime metrics to prometheus.</p>
+<p>These metrics exports are enabled by default in all docker images and can be
+enabled using the <code>--metrics</code> flag in both <a href="https://github.com/aquasecurity/tracee/tree/v0.8.0/cmd/tracee-ebpf">tracee-ebpf</a> and <a href="https://github.com/aquasecurity/tracee/tree/v0.8.0/cmd/tracee-rules">tracee-rules</a>.</p>
+<p>By using grafana and the new metrics from tracee, we can deploy a simple
+dashboard which tracks your tracee's instance performance and outputs.</p>
+<h2 id="prequisites">Prequisites<a class="headerlink" href="#prequisites" title="Permanent link">&para;</a></h2>
+<p>The following tools must be available for use, they can all be installed either
+through docker or installed/built on your machine.</p>
 <ul>
 <li><a href="https://github.com/aquasecurity/tracee/">Tracee</a></li>
 <li><a href="https://prometheus.io/download/">Prometheus</a></li>
 <li><a href="https://grafana.com/docs/grafana/latest/getting-started/getting-started">Grafana</a></li>
 </ul>
-<h1 id="run-tracee-with-metrics-enabled">Run Tracee with Metrics Enabled<a class="headerlink" href="#run-tracee-with-metrics-enabled" title="Permanent link">&para;</a></h1>
-<p>Tracee can be most easily deployed with metrics enabled by default and port forwarded through the following commands:</p>
-<p><code>docker run --name tracee --rm --pid=host --cgroupns=host --privileged -v /tmp/tracee:/tmp/tracee  -v /etc/os-release:/etc/os-release-host:ro  -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host -it -p 3366:3366 -p 4466:4466 aquasec/tracee:latest</code></p>
-<p>Of course, the forwarded metrics ports can be changed, but you should note that some of the later instructions depend on these ports.</p>
-<p>If running Tracee locally through built binaries, the metrics address may be overriden with the <code>--metrics-addr</code> flag in both tracee-ebpf and tracee-rules.</p>
-<h1 id="run-prometheus-and-configure-it-to-scrape-tracee">Run Prometheus and Configure it to Scrape Tracee<a class="headerlink" href="#run-prometheus-and-configure-it-to-scrape-tracee" title="Permanent link">&para;</a></h1>
-<p>Install prometheus or pull it's docker image.
-Then create the following configuration file, call it <code>prometheus.yml</code> to scrape Tracee:
+<h2 id="run-tracee-with-metrics-enabled">Run Tracee with Metrics Enabled<a class="headerlink" href="#run-tracee-with-metrics-enabled" title="Permanent link">&para;</a></h2>
+<p>Tracee can be most easily deployed with metrics enabled by default and port
+forwarded through the following commands:</p>
+<div class="highlight"><pre><span></span><code>$ docker run \
+    --name tracee --rm --pid=host \
+    --cgroupns=host --privileged \
+    -v /tmp/tracee:/tmp/tracee  \
+    -v /etc/os-release:/etc/os-release-host:ro \
+    -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+    -it -p 3366:3366 -p 4466:4466 aquasec/tracee:v0.8.0
+</code></pre></div>
+<p>Of course, the forwarded metrics ports can be changed, but you should note that
+some of the later instructions depend on these ports.</p>
+<p>If running Tracee locally through built binaries, the metrics address may be
+overriden with the <code>--metrics-addr</code> flag in both tracee-ebpf and tracee-rules.</p>
+<h2 id="run-prometheus-and-configure-it-to-scrape-tracee">Run Prometheus and Configure it to Scrape Tracee<a class="headerlink" href="#run-prometheus-and-configure-it-to-scrape-tracee" title="Permanent link">&para;</a></h2>
+<p>Install prometheus or pull it's docker image. Then create the following
+configuration file, call it <code>prometheus.yml</code> to scrape Tracee:</p>
 <div class="highlight"><pre><span></span><code># A scrape configuration containing exactly one endpoint to scrape:
 # Here it&#39;s Tracee.
 scrape_configs:
@@ -1705,23 +1846,34 @@ scrape_configs:
     #If forwarding different ports make sure to change these addresses.
     static_configs:
       - targets: [&#39;localhost:3366&#39;, &#39;localhost:4466&#39;]
-</code></pre></div></p>
-<p>We must then start prometheus with the following command:
-<code>prometheus --config.file=/path/to/prometheus.yml</code>
-Or alternatively with docker:
-<code>docker run -p 9090:9090 -v /path/to/config:/etc/prometheus prom/prometheus</code></p>
-<p>Then, try to access prometheus through http://localhost:9090. If succesful, move to the next step, otherwise consult with prometheus documentation.</p>
-<h1 id="run-grafana-to-display-tracees-prometheus-metrics">Run Grafana to display Tracee's Prometheus Metrics<a class="headerlink" href="#run-grafana-to-display-tracees-prometheus-metrics" title="Permanent link">&para;</a></h1>
-<p>After succesfuly deploying Tracee and Prometheus we may now run Grafana to visualize it's metrics.</p>
-<p>Install grafana using their instructions and enter the now available grafana website (by default it's usually through http://localhost:3000).</p>
-<p>After entering the website, logging in with username and password <code>admin</code> (and changing your password if you wish), you should see the homepage:</p>
+</code></pre></div>
+<p>We must then start prometheus with the following command:</p>
+<div class="highlight"><pre><span></span><code>prometheus --config.file=/path/to/prometheus.yml
+</code></pre></div>
+<p>Or alternatively with docker:</p>
+<div class="highlight"><pre><span></span><code>docker run -p 9090:9090 -v /path/to/config:/etc/prometheus prom/prometheus
+</code></pre></div>
+<p>Then, try to access prometheus through <code>http://localhost:9090</code>. If succesful,
+move to the next step, otherwise consult with prometheus documentation.</p>
+<h2 id="run-grafana-to-display-tracees-prometheus-metrics">Run Grafana to display Tracee's Prometheus Metrics<a class="headerlink" href="#run-grafana-to-display-tracees-prometheus-metrics" title="Permanent link">&para;</a></h2>
+<p>After succesfuly deploying Tracee and Prometheus we may now run Grafana to
+visualize it's metrics.</p>
+<p>Install grafana using their instructions and enter the now available grafana
+website (by default it's usually through http://localhost:3000).</p>
+<p>After entering the website, logging in with username and password <code>admin</code> (and
+changing your password if you wish), you should see the homepage:</p>
 <p><img alt="image" src="https://user-images.githubusercontent.com/22661609/160572543-771d4a0e-d7d8-46d2-bf51-7c9f64487bf8.png" /></p>
-<p>Add your data source by hovering the configuration tab (the gear icon), selecting "Data Sources" and pressing "Add Data Source" at the top left.
-Create a Prometheus Data Source and point it's URL to the relevant location (usually http://localhost:9090)</p>
+<p>Add your data source by hovering the configuration tab (the gear icon),
+selecting "Data Sources" and pressing "Add Data Source" at the top left. Create
+a Prometheus Data Source and point it's URL to the relevant location (usually
+http://localhost:9090)</p>
 <p>You may now either create your own Dashboard or import our default dashboard.</p>
-<h1 id="import-tracees-default-dashboard">Import Tracee's Default Dashboard<a class="headerlink" href="#import-tracees-default-dashboard" title="Permanent link">&para;</a></h1>
+<h2 id="import-tracees-default-dashboard">Import Tracee's Default Dashboard<a class="headerlink" href="#import-tracees-default-dashboard" title="Permanent link">&para;</a></h2>
 <p>First download our Grafana Dashboard's json <a href="https://github.com/aquasecurity/tracee/tree/main/deploy/grafana/tracee.json">here</a>.</p>
-<p>After adding the data source hover on the plus icon in the sidebar and select "Import". Press "Upload JSON File" at the top of the page and select the downloaded json from your file browser. Change the name and Dashboard UID if you wish and press "Import" to finish. </p>
+<p>After adding the data source hover on the plus icon in the sidebar and select
+"Import". Press "Upload JSON File" at the top of the page and select the
+downloaded json from your file browser. Change the name and Dashboard UID if
+you wish and press "Import" to finish. </p>
 <p>Finally you will be redirected to the dashboard 🥳</p>
 
 

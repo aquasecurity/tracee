@@ -1769,17 +1769,17 @@
 <li>
 <p><strong><a href="../detecting/">DETECT</a></strong> patterns based on existing signatures:</p>
 <ol>
-<li><a href="https://github.com/open-policy-agent/opa">OPA/Rego signatures</a></li>
-<li><a href="https://github.com/aquasecurity/tracee/blob/0.8.0/signatures/golang/examples/example.go">Golang signatures</a></li>
-<li><a href="https://github.com/google/cel-go/">Go-CEL signatures</a> (tech-preview/experimental)</li>
+<li><a href="../detecting/rego/">OPA/Rego signatures</a></li>
+<li><a href="../detecting/golang/">Golang signatures</a></li>
+<li><a href="../detecting/go-cel/">Go-CEL signatures</a> (Proof-of-Concept / Experimental)</li>
 </ol>
 </li>
 <li>
 <p>Let other tools to <strong>CONSUME</strong> detection events:</p>
 <ol>
 <li><a href="../capturing/">Capture Artifacts</a></li>
-<li><a href="https://github.com/aquasecurity/postee">Postee</a></li>
-<li><a href="https://github.com/falcosecurity/falcosidekick">Falco Sidekick</a></li>
+<li><a href="../integrating/postee/">Postee</a></li>
+<li><a href="../integrating/falcosidekick/">Falco Sidekick</a></li>
 </ol>
 </li>
 <li>
@@ -1808,7 +1808,7 @@
    <strong>tracee-ebpf</strong> or not, based on given filters.</p>
 </li>
 <li>
-<p>Those events are sent to <strong>libbpfgo</strong> through a shared memory ring buffer
+<p>Those events are sent to <strong>libbpfgo</strong> through a <a href="../deep-dive/performance/">shared memory ring buffer</a>
    mechanism (called <strong>perfbuffer</strong>).</p>
 </li>
 <li>
@@ -1818,9 +1818,9 @@
 <li>
 <p><strong>tracee-ebpf</strong> parses received events and does multiple things:</p>
 <ol>
-<li>parse events for argument type conversions if requested</li>
-<li>enriches the events that need enrichment (containers, network, processes)</li>
-<li>capture artifacts from collected events into external files</li>
+<li><a href="../tracing/output-options/">parse events for argument type</a> conversions if requested</li>
+<li><a href="../integrating/container-engines/">enriches the events</a> that need enrichment (containers, network, processes)</li>
+<li><a href="../capturing/">capture artifacts</a> from collected events into external files</li>
 </ol>
 </li>
 <li>
@@ -1828,8 +1828,8 @@
    called <strong>printer</strong>.</p>
 </li>
 <li>
-<p><strong>tracee-rules</strong> receives events and evaluate them using either golang
-   or rego (or go-cel, as a proof-of-concept) signatures.</p>
+<p><strong>tracee-rules</strong> receives events and evaluate them using either <a href="../detecting/golang/">golang</a>
+   or <a href="../detecting/rego/">rego</a> (or <a href="../detecting/go-cel/">go-cel</a>, as a proof-of-concept) signatures.</p>
 <ol>
 <li>Golang signatures are faster and do pretty much anything the language
    allows. They might connect (or have cached) external data sources to
@@ -1837,7 +1837,7 @@
 </ol>
 </li>
 <li>
-<p>Detections are spit out from <strong>tracee-rules</strong> if evaluations are
+<p>Detections are <a href="../integrating/webhook/">spit out</a> from <strong>tracee-rules</strong> if evaluations are
    positive.</p>
 </li>
 </ol>
