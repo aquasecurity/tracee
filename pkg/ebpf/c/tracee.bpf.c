@@ -760,7 +760,7 @@ static __always_inline u32 get_mnt_ns_id(struct nsproxy *ns)
     return READ_KERN(mntns->ns.inum);
 }
 
-static __always_inline u32 get_pid_ns_id(struct nsproxy *ns)
+static __always_inline u32 get_pid_ns_for_children_id(struct nsproxy *ns)
 {
     struct pid_namespace *pidns = READ_KERN(ns->pid_ns_for_children);
     return READ_KERN(pidns->ns.inum);
@@ -793,6 +793,11 @@ static __always_inline u32 get_cgroup_ns_id(struct nsproxy *ns)
 static __always_inline u32 get_task_mnt_ns_id(struct task_struct *task)
 {
     return get_mnt_ns_id(READ_KERN(task->nsproxy));
+}
+
+static __always_inline u32 get_task_pid_ns_for_children_id(struct task_struct *task)
+{
+    return get_pid_ns_for_children_id(READ_KERN(task->nsproxy));
 }
 
 static __always_inline u32 get_task_pid_ns_id(struct task_struct *task)
@@ -3528,8 +3533,8 @@ int BPF_KPROBE(trace_switch_task_namespaces)
     pid_t pid = READ_KERN(task->pid);
     u32 old_mnt = data.context.task.mnt_id;
     u32 new_mnt = get_mnt_ns_id(new);
-    u32 old_pid = data.context.task.pid_id;
-    u32 new_pid = get_pid_ns_id(new);
+    u32 old_pid = get_task_pid_ns_for_children_id(task);
+    u32 new_pid = get_pid_ns_for_children_id(new);
     u32 old_uts = get_task_uts_ns_id(task);
     u32 new_uts = get_uts_ns_id(new);
     u32 old_ipc = get_task_ipc_ns_id(task);
