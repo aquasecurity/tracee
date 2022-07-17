@@ -322,3 +322,22 @@ func (decoder *EbpfDecoder) DecodeMprotectWriteMeta(mprotectWriteMeta *MprotectW
 	decoder.cursor += int(mprotectWriteMeta.GetSizeBytes())
 	return nil
 }
+
+func (decoder *EbpfDecoder) DecodeFileInfo(fileInfo *FileInfo) error {
+	offset := decoder.cursor
+	pathnameLen := int(fileInfo.GetPathnameSizeBytes())
+	if len(decoder.buffer[offset:]) < int(fileInfo.GetSizeBytes()) {
+		return fmt.Errorf("can't read context from buffer: buffer too short")
+	}
+	pathname, err := ReadByteSliceFromBuff(decoder, pathnameLen)
+	if err != nil {
+		return fmt.Errorf("error reading string for file information arg: %w", err)
+	}
+	offset = decoder.cursor
+	fileInfo.Pathname = string(pathname)
+	fileInfo.Inode = binary.LittleEndian.Uint64(decoder.buffer[offset : offset+8])
+	fileInfo.Ctime = binary.LittleEndian.Uint64(decoder.buffer[offset+8 : offset+16])
+	fileInfo.DevID = binary.LittleEndian.Uint32(decoder.buffer[offset+16 : offset+20])
+	decoder.cursor += int(fileInfo.GetSizeBytes() - fileInfo.GetPathnameSizeBytes())
+	return nil
+}

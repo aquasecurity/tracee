@@ -115,3 +115,18 @@ type SlimCred struct {
 func (s SlimCred) GetSizeBytes() uint32 {
 	return 80
 }
+
+type FileInfo struct {
+	Pathname string
+	DevID    uint32
+	Inode    uint64
+	Ctime    uint64
+}
+
+func (fid FileInfo) GetSizeBytes() uint32 {
+	return 88
+}
+
+func (fid FileInfo) GetPathnameSizeBytes() uint32 {
+	return 64
+}

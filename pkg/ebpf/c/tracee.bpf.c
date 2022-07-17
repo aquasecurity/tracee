@@ -655,11 +655,13 @@ typedef struct kmod_data {
     u64 next;
 } kmod_data_t;
 
-typedef struct file_id {
+typedef struct file_information {
     char pathname[MAX_CACHED_PATH_SIZE];
-    dev_t device;
     unsigned long inode;
-} file_id_t;
+    u64 ctime;
+    dev_t device;
+    u32 padding;
+} file_information_t;
 
 // KERNEL STRUCTS ----------------------------------------------------------------------------------
 
@@ -704,7 +706,7 @@ struct kprobe {
 // clang-format off
 
 BPF_HASH(kconfig_map, u32, u32, 10240);                 // kernel config variables
-BPF_HASH(interpreter_map, u32, file_id_t, 10240);       // interpreter file used for each process
+BPF_HASH(interpreter_map, u32, file_information_t, 10240);       // interpreter file used for each process
 BPF_HASH(containers_map, u32, u8, 10240);               // map cgroup id to container status {EXISTED, CREATED, STARTED}
 BPF_HASH(args_map, u64, args_t, 1024);                  // persist args between function entry and return
 BPF_HASH(inequality_filter, u32, u64, 256);             // filter events by some uint field either by < or >
@@ -2117,6 +2119,16 @@ static __always_inline void *get_dentry_path_str(struct dentry *dentry)
     return &string_p->buf[buf_off];
 }
 
+static __always_inline file_information_t get_file_information(struct file *file) {
+    file_information_t file_information = {};
+    const char *file_path = (char *) get_path_str(GET_FIELD_ADDR(file->f_path));
+    bpf_probe_read_str(file_information.pathname, sizeof(file_information.pathname), file_path);
+    file_information.device = get_dev_from_file(file);
+    file_information.inode = get_inode_nr_from_file(file);
+    file_information.ctime = get_ctime_nanosec_from_file(file);
+    return file_information;
+}
+
 // INTERNAL: ARGUMENTS -----------------------------------------------------------------------------
 
 static __always_inline int save_args(args_t *args, u32 event_id)
@@ -2912,9 +2924,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     const char *filename = get_binprm_filename(bprm);
 
     struct file *file = get_file_ptr_from_bprm(bprm);
-    dev_t s_dev = get_dev_from_file(file);
-    unsigned long inode_nr = get_inode_nr_from_file(file);
-    u64 ctime = get_ctime_nanosec_from_file(file);
+    file_information_t executed_file_information = get_file_information(file);
     umode_t inode_mode = get_inode_mode_from_file(file);
 
     // bprm->mm is null at this point (set by begin_new_exec()), and task->mm is already initialized
@@ -2930,12 +2940,10 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     env_end = get_env_end_from_mm(mm);
     int envc = get_envc_from_bprm(bprm);
 
-    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
-
     // The map of the interpreter will be updated for any loading of an elf, both for the elf and
     // for the interpreter. Because the interpreter is loaded only after the executed elf is loaded,
     // the map value of the executed elf should be overridden by the interpreter.
-    file_id_t *elf_interpreter = bpf_map_lookup_elem(&interpreter_map, &data.context.task.host_tid);
+    file_information_t *elf_interpreter = bpf_map_lookup_elem(&interpreter_map, &data.context.task.host_tid);
 
     unsigned short stdin_type = get_inode_mode_from_fd(0) & S_IFMT;
 
@@ -2946,26 +2954,21 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 
     if (should_submit(SCHED_PROCESS_EXEC, data.config) || data.config->options & OPT_PROCESS_INFO) {
         save_str_to_buf(&data, (void *) filename, 0);
-        save_str_to_buf(&data, file_path, 1);
+        save_to_submit_buf(&data, &executed_file_information, sizeof(file_information_t), 1);
         save_args_str_arr_to_buf(&data, (void *) arg_start, (void *) arg_end, argc, 2);
         if (data.config->options & OPT_EXEC_ENV) {
             save_args_str_arr_to_buf(&data, (void *) env_start, (void *) env_end, envc, 3);
         }
-        save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 4);
-        save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 5);
-        save_to_submit_buf(&data, &invoked_from_kernel, sizeof(int), 6);
-        save_to_submit_buf(&data, &ctime, sizeof(u64), 7);
-        save_to_submit_buf(&data, &stdin_type, sizeof(unsigned short), 8);
-        save_to_submit_buf(&data, &inode_mode, sizeof(umode_t), 9);
-        save_str_to_buf(&data, (void *) interp, 10);
+        save_to_submit_buf(&data, &invoked_from_kernel, sizeof(int), 4);
+        save_to_submit_buf(&data, &stdin_type, sizeof(unsigned short), 5);
+        save_to_submit_buf(&data, &inode_mode, sizeof(umode_t), 6);
+        save_str_to_buf(&data, (void *) interp, 7);
 
         // If the interpreter file is the same as executed one, it means that there is no
         // interpreter. For more information, look at how the 'interpreter_map' works.
         if (elf_interpreter != NULL &&
-            (elf_interpreter->device != s_dev || elf_interpreter->inode != inode_nr)) {
-            save_str_to_buf(&data, &elf_interpreter->pathname, 11);
-            save_to_submit_buf(&data, &elf_interpreter->device, sizeof(dev_t), 12);
-            save_to_submit_buf(&data, &elf_interpreter->inode, sizeof(unsigned long), 13);
+            (elf_interpreter->device != executed_file_information.device || elf_interpreter->inode != executed_file_information.inode)) {
+            save_to_submit_buf(&data, elf_interpreter, sizeof(file_information_t), 8);
         }
 
         events_perf_submit(&data, SCHED_PROCESS_EXEC, 0);
@@ -3371,10 +3374,7 @@ int BPF_KPROBE(trace_security_file_open)
         return 0;
 
     struct file *file = (struct file *) PT_REGS_PARM1(ctx);
-    dev_t s_dev = get_dev_from_file(file);
-    unsigned long inode_nr = get_inode_nr_from_file(file);
-    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
-    u64 ctime = get_ctime_nanosec_from_file(file);
+    file_information_t file_information = get_file_information(file);
 
     // Load the arguments given to the open syscall (which eventually invokes this function)
     void *syscall_pathname = "";
@@ -3393,14 +3393,11 @@ int BPF_KPROBE(trace_security_file_open)
         }
     }
 
-    save_str_to_buf(&data, file_path, 0);
+    save_to_submit_buf(&data, &file_information, sizeof(file_information_t), 0);
     save_to_submit_buf(&data, (void *) GET_FIELD_ADDR(file->f_flags), sizeof(int), 1);
-    save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 2);
-    save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 3);
-    save_to_submit_buf(&data, &ctime, sizeof(u64), 4);
-    save_str_to_buf(&data, syscall_pathname, 5);
+    save_str_to_buf(&data, syscall_pathname, 2);
     if (syscall_traced && (data.config->options & OPT_SHOW_SYSCALL)) {
-        save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 6);
+        save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 3);
     }
 
     return events_perf_submit(&data, SECURITY_FILE_OPEN, 0);
@@ -4815,18 +4812,12 @@ int BPF_KPROBE(trace_security_mmap_file)
     struct file *file = (struct file *) PT_REGS_PARM1(ctx);
     if (file == 0)
         return 0;
-    dev_t s_dev = get_dev_from_file(file);
-    unsigned long inode_nr = get_inode_nr_from_file(file);
-    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
-    u64 ctime = get_ctime_nanosec_from_file(file);
+    file_information_t file_information = get_file_information(file);
     unsigned long prot = (unsigned long) PT_REGS_PARM2(ctx);
     unsigned long mmap_flags = (unsigned long) PT_REGS_PARM3(ctx);
 
-    save_str_to_buf(&data, file_path, 0);
+    save_to_submit_buf(&data, &file_information, sizeof(file_information_t), 0);
     save_to_submit_buf(&data, (void *) GET_FIELD_ADDR(file->f_flags), sizeof(int), 1);
-    save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 2);
-    save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 3);
-    save_to_submit_buf(&data, &ctime, sizeof(u64), 4);
 
     syscall_data_t *sys = &data.task_info->syscall_data;
     if (should_submit(SHARED_OBJECT_LOADED, data.config)) {
@@ -4836,11 +4827,11 @@ int BPF_KPROBE(trace_security_mmap_file)
     }
 
     if (should_submit(SECURITY_MMAP_FILE, data.config)) {
-        save_to_submit_buf(&data, &prot, sizeof(int), 5);
-        save_to_submit_buf(&data, &mmap_flags, sizeof(int), 6);
+        save_to_submit_buf(&data, &prot, sizeof(int), 2);
+        save_to_submit_buf(&data, &mmap_flags, sizeof(int), 3);
         if (data.config->options & OPT_SHOW_SYSCALL) {
             if (data.task_info->syscall_traced) {
-                save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 7);
+                save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 4);
             }
         }
         return events_perf_submit(&data, SECURITY_MMAP_FILE, 0);
@@ -5036,17 +5027,12 @@ int BPF_KPROBE(trace_security_kernel_read_file)
         return 0;
 
     struct file *file = (struct file *) PT_REGS_PARM1(ctx);
-    dev_t s_dev = get_dev_from_file(file);
-    unsigned long inode_nr = get_inode_nr_from_file(file);
+    file_information_t file_information = get_file_information(file);
     enum kernel_read_file_id type_id = (enum kernel_read_file_id) PT_REGS_PARM2(ctx);
     void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
-    u64 ctime = get_ctime_nanosec_from_file(file);
 
-    save_str_to_buf(&data, file_path, 0);
-    save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 1);
-    save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 2);
-    save_to_submit_buf(&data, &type_id, sizeof(int), 3);
-    save_to_submit_buf(&data, &ctime, sizeof(u64), 4);
+    save_to_submit_buf(&data, &file_information, sizeof(file_information_t), 0);
+    save_to_submit_buf(&data, &type_id, sizeof(int), 1);
 
     return events_perf_submit(&data, SECURITY_KERNEL_READ_FILE, 0);
 }
@@ -5423,19 +5409,13 @@ int BPF_KPROBE(trace_load_elf_phdrs)
     if (!should_trace((&data)))
         return 0;
 
-    file_id_t elf = {};
     struct file *loaded_elf = (struct file *) PT_REGS_PARM2(ctx);
-    const char *elf_pathname = (char *) get_path_str(GET_FIELD_ADDR(loaded_elf->f_path));
-    bpf_probe_read_str(elf.pathname, sizeof(elf.pathname), elf_pathname);
-    elf.device = get_dev_from_file(loaded_elf);
-    elf.inode = get_inode_nr_from_file(loaded_elf);
+    file_information_t elf = get_file_information(loaded_elf);
 
     bpf_map_update_elem(&interpreter_map, &data.context.task.host_tid, &elf, BPF_ANY);
 
     if (should_submit(LOAD_ELF_PHDRS, data.config)) {
-        save_str_to_buf(&data, (void *) elf_pathname, 0);
-        save_to_submit_buf(&data, &elf.device, sizeof(dev_t), 1);
-        save_to_submit_buf(&data, &elf.inode, sizeof(unsigned long), 2);
+        save_to_submit_buf(&data, &elf, sizeof(file_information_t), 0);
 
         events_perf_submit(&data, LOAD_ELF_PHDRS, 0);
     }

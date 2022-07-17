@@ -35,6 +35,7 @@ const (
 	credT
 	intArr2T
 	uint64ArrT
+	fileInfoT
 )
 
 // These types don't match the ones defined in the ebpf code since they are not being used by syscalls arguments.
@@ -162,6 +163,13 @@ func ReadArgFromBuff(ebpfMsgDecoder *EbpfDecoder, params []trace.ArgMeta) (trace
 			return argMeta, nil, fmt.Errorf("error reading ulong elements: %v", err)
 		}
 		res = ulongArray
+	case fileInfoT:
+		var fileID FileInfo
+		err := ebpfMsgDecoder.DecodeFileInfo(&fileID)
+		if err != nil {
+			return argMeta, nil, fmt.Errorf("error reading file ID struct elements: %w", err)
+		}
+		res = fileID
 
 	default:
 		// if we don't recognize the arg type, we can't parse the rest of the buffer
@@ -213,6 +221,8 @@ func GetParamType(paramType string) ArgType {
 		return u16T
 	case "unsigned long[]", "[]trace.HookedSymbolData":
 		return uint64ArrT
+	case "trace.FileInfo":
+		return fileInfoT
 	default:
 		// Default to pointer (printed as hex) for unsupported types
 		return pointerT

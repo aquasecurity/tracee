@@ -184,6 +184,13 @@ type HookedSymbolData struct {
 	ModuleOwner string
 }
 
+type FileInfo struct {
+	Pathname string `json:"pathname"`
+	DevID    uint32 `json:"devID"`
+	Inode    uint64 `json:"inode"`
+	Ctime    uint64 `json:"ctime"`
+}
+
 // MemProtAlert is an enum of possible messages that can be sent by an event to pass some extra information about the event.
 type MemProtAlert uint32
 
