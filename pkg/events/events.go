@@ -4928,7 +4928,8 @@ var Definitions = eventDefinitions{
 				{Type: "const char*", Name: "interp"},
 				{Type: "const char*", Name: "interpreter_pathname"},
 				{Type: "dev_t", Name: "interpreter_dev"},
-				{Type: "unsigned long", Name: "ineterpreter_inode"},
+				{Type: "unsigned long", Name: "interpreter_inode"},
+				{Type: "unsigned long", Name: "interpreter_ctime"},
 			},
 		},
 		SchedProcessExit: {

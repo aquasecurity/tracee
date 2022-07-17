@@ -655,11 +655,12 @@ typedef struct kmod_data {
     u64 next;
 } kmod_data_t;
 
-typedef struct file_id {
+typedef struct file_info {
     char pathname[MAX_CACHED_PATH_SIZE];
     dev_t device;
     unsigned long inode;
-} file_id_t;
+    u64 ctime;
+} file_info_t;
 
 // KERNEL STRUCTS ----------------------------------------------------------------------------------
 
@@ -704,7 +705,7 @@ struct kprobe {
 // clang-format off
 
 BPF_HASH(kconfig_map, u32, u32, 10240);                 // kernel config variables
-BPF_HASH(interpreter_map, u32, file_id_t, 10240);       // interpreter file used for each process
+BPF_HASH(interpreter_map, u32, file_info_t, 10240);       // interpreter file used for each process
 BPF_HASH(containers_map, u32, u8, 10240);               // map cgroup id to container status {EXISTED, CREATED, STARTED}
 BPF_HASH(args_map, u64, args_t, 1024);                  // persist args between function entry and return
 BPF_HASH(inequality_filter, u32, u64, 256);             // filter events by some uint field either by < or >
@@ -2906,7 +2907,8 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     // The map of the interpreter will be updated for any loading of an elf, both for the elf and
     // for the interpreter. Because the interpreter is loaded only after the executed elf is loaded,
     // the map value of the executed elf should be overridden by the interpreter.
-    file_id_t *elf_interpreter = bpf_map_lookup_elem(&interpreter_map, &data.context.task.host_tid);
+    file_info_t *elf_interpreter =
+        bpf_map_lookup_elem(&interpreter_map, &data.context.task.host_tid);
 
     unsigned short stdin_type = get_inode_mode_from_fd(0) & S_IFMT;
 
@@ -2937,6 +2939,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
             save_str_to_buf(&data, &elf_interpreter->pathname, 11);
             save_to_submit_buf(&data, &elf_interpreter->device, sizeof(dev_t), 12);
             save_to_submit_buf(&data, &elf_interpreter->inode, sizeof(unsigned long), 13);
+            save_to_submit_buf(&data, &elf_interpreter->ctime, sizeof(u64), 14);
         }
 
         events_perf_submit(&data, SCHED_PROCESS_EXEC, 0);
@@ -5394,12 +5397,13 @@ int BPF_KPROBE(trace_load_elf_phdrs)
     if (!should_trace((&data)))
         return 0;
 
-    file_id_t elf = {};
+    file_info_t elf = {};
     struct file *loaded_elf = (struct file *) PT_REGS_PARM2(ctx);
     const char *elf_pathname = (char *) get_path_str(GET_FIELD_ADDR(loaded_elf->f_path));
     bpf_probe_read_str(elf.pathname, sizeof(elf.pathname), elf_pathname);
     elf.device = get_dev_from_file(loaded_elf);
     elf.inode = get_inode_nr_from_file(loaded_elf);
+    elf.ctime = get_ctime_nanosec_from_file(loaded_elf);
 
     bpf_map_update_elem(&interpreter_map, &data.context.task.host_tid, &elf, BPF_ANY);
 
