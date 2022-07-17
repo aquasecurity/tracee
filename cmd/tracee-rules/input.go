@@ -52,6 +52,7 @@ func setupTraceeGobInputSource(opts *traceeInputOptions) (chan protocol.Event, e
 	gob.Register([]trace.HookedSymbolData{})
 	gob.Register([]trace.DnsQueryData{})
 	gob.Register([]trace.DnsResponseData{})
+	gob.Register(trace.FileInfo{})
 	res := make(chan protocol.Event)
 	go func() {
 		for {
