@@ -324,7 +324,7 @@ func New(cfg Config) (*Tracee, error) {
 		}
 	}
 
-	c, err := containers.InitContainers(t.config.Sockets, t.config.Debug)
+	c, err := containers.New(t.config.Sockets, t.config.Debug)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing containers: %w", err)
 	}
@@ -997,13 +997,22 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 
 // Close cleans up created resources
 func (t *Tracee) Close() {
-
 	if t.probes != nil {
-		t.probes.DetachAll()
+		err := t.probes.DetachAll()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to detach probes when closing tracee: %s", err)
+		}
 	}
 
 	if t.bpfModule != nil {
 		t.bpfModule.Close()
+	}
+
+	if t.containers != nil {
+		err := t.containers.Close()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to clean containers module when closing tracee: %s", err)
+		}
 	}
 }
 
