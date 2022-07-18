@@ -361,14 +361,19 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 
 	// in case FinitModule and InitModule occurs it means that a kernel module was loaded
 	// and we will want to check if it hooked the syscall table and seq_ops
-	case events.InitModule, events.FinitModule:
-		err := t.updateKallsyms()
-		if err != nil {
-			return err
-		}
-		err = t.invokeIoctlTriggeredEvents(IoctlFetchSyscalls | IoctlHookedSeqOps)
-		if err != nil {
-			return err
+	case events.DoInitModule:
+		_, ok1 := t.events[events.HookedSyscalls]
+		_, ok2 := t.events[events.HookedSeqOps]
+		_, ok3 := t.events[events.HookedProcFops]
+		if ok1 || ok2 || ok3 {
+			err := t.updateKallsyms()
+			if err != nil {
+				return err
+			}
+			err = t.invokeIoctlTriggeredEvents(IoctlFetchSyscalls | IoctlHookedSeqOps)
+			if err != nil {
+				return err
+			}
 		}
 
 	case events.HookedProcFops:
