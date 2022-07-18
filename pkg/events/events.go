@@ -5625,8 +5625,7 @@ var Definitions = eventDefinitions{
 			Name:    "hooked_syscalls",
 			Dependencies: dependencies{
 				Events: []eventDependency{
-					{EventID: FinitModule},
-					{EventID: InitModule},
+					{EventID: DoInitModule},
 					{EventID: PrintSyscallTable},
 				},
 			},
@@ -5826,8 +5825,7 @@ var Definitions = eventDefinitions{
 			Dependencies: dependencies{
 				KSymbols: []string{"_stext", "_etext"},
 				Events: []eventDependency{
-					{EventID: FinitModule},
-					{EventID: InitModule},
+					{EventID: DoInitModule},
 				},
 			},
 			Sets: []string{},
@@ -5862,8 +5860,7 @@ var Definitions = eventDefinitions{
 			Dependencies: dependencies{
 				Events: []eventDependency{
 					{EventID: PrintNetSeqOps},
-					{EventID: FinitModule},
-					{EventID: InitModule},
+					{EventID: DoInitModule},
 				},
 			},
 			Sets: []string{},
