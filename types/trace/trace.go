@@ -12,50 +12,59 @@ import (
 
 // Event is a single result of an ebpf event process. It is used as a payload later delivered to tracee-rules.
 type Event struct {
-	Timestamp           int        `json:"timestamp"`
-	ThreadStartTime     int        `json:"threadStartTime"`
-	ProcessorID         int        `json:"processorId"`
-	ProcessID           int        `json:"processId"`
-	CgroupID            uint       `json:"cgroupId"`
-	ThreadID            int        `json:"threadId"`
-	ParentProcessID     int        `json:"parentProcessId"`
-	HostProcessID       int        `json:"hostProcessId"`
-	HostThreadID        int        `json:"hostThreadId"`
-	HostParentProcessID int        `json:"hostParentProcessId"`
-	UserID              int        `json:"userId"`
-	MountNS             int        `json:"mountNamespace"`
-	PIDNS               int        `json:"pidNamespace"`
-	ProcessName         string     `json:"processName"`
-	HostName            string     `json:"hostName"`
-	ContainerID         string     `json:"containerId"`
-	ContainerImage      string     `json:"containerImage"`
-	ContainerName       string     `json:"containerName"`
-	PodName             string     `json:"podName"`
-	PodNamespace        string     `json:"podNamespace"`
-	PodUID              string     `json:"podUID"`
-	EventID             int        `json:"eventId,string"`
-	EventName           string     `json:"eventName"`
-	ArgsNum             int        `json:"argsNum"`
-	ReturnValue         int        `json:"returnValue"`
-	StackAddresses      []uint64   `json:"stackAddresses"`
-	Args                []Argument `json:"args"` //Arguments are ordered according their appearance in the original event
+	Timestamp           int          `json:"timestamp"`
+	ThreadStartTime     int          `json:"threadStartTime"`
+	ProcessorID         int          `json:"processorId"`
+	ProcessID           int          `json:"processId"`
+	CgroupID            uint         `json:"cgroupId"`
+	ThreadID            int          `json:"threadId"`
+	ParentProcessID     int          `json:"parentProcessId"`
+	HostProcessID       int          `json:"hostProcessId"`
+	HostThreadID        int          `json:"hostThreadId"`
+	HostParentProcessID int          `json:"hostParentProcessId"`
+	UserID              int          `json:"userId"`
+	MountNS             int          `json:"mountNamespace"`
+	PIDNS               int          `json:"pidNamespace"`
+	ProcessName         string       `json:"processName"`
+	HostName            string       `json:"hostName"`
+	ContainerID         string       `json:"containerId"`
+	ContainerImage      string       `json:"containerImage"`
+	ContainerName       string       `json:"containerName"`
+	PodName             string       `json:"podName"`
+	PodNamespace        string       `json:"podNamespace"`
+	PodUID              string       `json:"podUID"`
+	EventID             int          `json:"eventId,string"`
+	EventName           string       `json:"eventName"`
+	ArgsNum             int          `json:"argsNum"`
+	ReturnValue         int          `json:"returnValue"`
+	StackAddresses      []uint64     `json:"stackAddresses"`
+	ContextFlags        ContextFlags `json:"contextFlags"`
+	Args                []Argument   `json:"args"` //Arguments are ordered according their appearance in the original event
+}
+
+// ContextFlags are flags representing event context
+type ContextFlags struct {
+	ContainerStarted bool `json:"containerStarted"`
 }
 
 // EventOrigin is where a trace.Event occured, it can either be from the host machine or from a container
 type EventOrigin string
 
 const (
-	ContainerOrigin EventOrigin = "container"
-	HostOrigin      EventOrigin = "host"
+	ContainerOrigin     EventOrigin = "container"      // Events originated from within a container, starting with the entry-point execution
+	HostOrigin          EventOrigin = "host"           // Events originated from the host
+	ContainerInitOrigin EventOrigin = "container-init" // Events originated from within container, before entry-point execution
 )
 
-// Derive the EventOrigin of a trace.Event
+// Origin derive the EventOrigin of a trace.Event
 func (e Event) Origin() EventOrigin {
-	if e.ContainerID != "" || e.ProcessID != e.HostProcessID {
+	if e.ContextFlags.ContainerStarted {
 		return ContainerOrigin
-	} else {
-		return HostOrigin
 	}
+	if e.ContainerID != "" {
+		return ContainerInitOrigin
+	}
+	return HostOrigin
 }
 
 const (
