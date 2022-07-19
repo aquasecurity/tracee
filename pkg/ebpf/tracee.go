@@ -1024,13 +1024,6 @@ func (t *Tracee) Close() {
 	}
 }
 
-func boolToUInt32(b bool) uint32 {
-	if b {
-		return uint32(1)
-	}
-	return uint32(0)
-}
-
 func computeFileHash(fileName string) (string, error) {
 	f, err := os.Open(fileName)
 	if err != nil {
