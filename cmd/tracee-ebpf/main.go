@@ -9,9 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"path"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"syscall"
 
@@ -229,16 +227,6 @@ func main() {
 
 			}
 
-			if err := os.MkdirAll(cfg.Capture.OutputPath, 0755); err != nil {
-				t.Close()
-				return fmt.Errorf("error creating output path: %v", err)
-			}
-			err = ioutil.WriteFile(path.Join(cfg.Capture.OutputPath, "tracee.pid"), []byte(strconv.Itoa(os.Getpid())+"\n"), 0640)
-			if err != nil {
-				t.Close()
-				return fmt.Errorf("error creating readiness file: %v", err)
-			}
-
 			if printerConfig.OutFile == nil {
 				printerConfig.OutFile, err = os.OpenFile(printerConfig.OutPath, os.O_WRONLY, 0755)
 				if err != nil {
@@ -294,6 +282,12 @@ func main() {
 				printer.Epilogue(*stats)
 				printer.Close()
 			}()
+
+			// initialize tracee for running
+			err = t.Init()
+			if err != nil {
+				return fmt.Errorf("error initializing Tracee: %v", err)
+			}
 
 			// run until ctx is cancelled by signal
 			return t.Run(ctx)
