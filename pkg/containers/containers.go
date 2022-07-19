@@ -43,9 +43,9 @@ type CgroupInfo struct {
 	expiresAt time.Time
 }
 
-// InitContainers initializes a Containers object and returns a pointer to it.
+// New initializes a Containers object and returns a pointer to it.
 // User should further call "Populate" and iterate with Containers data.
-func InitContainers(sockets cruntime.Sockets, debug bool) (*Containers, error) {
+func New(sockets cruntime.Sockets, debug bool) (*Containers, error) {
 	containers := &Containers{
 		cgroupV1: false,
 		cgroupMP: "",
@@ -78,6 +78,26 @@ func InitContainers(sockets cruntime.Sockets, debug bool) (*Containers, error) {
 	containers.enricher = runtimeService
 
 	return containers, nil
+}
+
+// Close executes cleanup logic for Containers object
+func (c *Containers) Close() error {
+	// if we are on cgroupv1 and previously executed cpuset mounting logic (see function initCgroupV1)
+	if c.IsCgroupV1() && strings.HasPrefix(c.cgroupMP, "/tmp") {
+		// first unmount the temporary cpuset mount
+		err := syscall.Unmount(c.cgroupMP, 0)
+		if err != nil {
+			return err
+		}
+
+		// then remove the dir
+		err = os.RemoveAll(c.cgroupMP)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (c *Containers) IsCgroupV1() bool {
