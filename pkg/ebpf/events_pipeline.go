@@ -212,6 +212,7 @@ func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *trace.Event, 
 				ReturnValue:         int(ctx.Retval),
 				Args:                args,
 				StackAddresses:      StackAddresses,
+				ContextFlags:        parseContextFlags(ctx.Flags),
 			}
 
 			select {
@@ -222,6 +223,15 @@ func (t *Tracee) decodeEvents(outerCtx gocontext.Context) (<-chan *trace.Event, 
 		}
 	}()
 	return out, errc
+}
+
+func parseContextFlags(flags uint32) trace.ContextFlags {
+	const (
+		ContainerStartFlag = 1 << iota
+	)
+	return trace.ContextFlags{
+		ContainerStarted: (flags & ContainerStartFlag) != 0,
+	}
 }
 
 func (t *Tracee) processEvents(ctx gocontext.Context, in <-chan *trace.Event) (<-chan *trace.Event, <-chan error) {
