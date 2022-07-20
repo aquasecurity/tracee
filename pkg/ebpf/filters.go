@@ -24,6 +24,7 @@ type Filter struct {
 	ContIDFilter      *filters.ContainersFilter
 	RetFilter         *filters.RetFilter
 	ArgFilter         *filters.ArgFilter
+	ContextFilter     *filters.ContextFilter
 	ProcessTreeFilter *filters.ProcessTreeFilter
 	Follow            *filters.BoolFilter
 	NetFilter         *NetIfaces
@@ -69,6 +70,7 @@ func ParseProtocolFilters(filterRequests []protocol.Filter) (Filter, error) {
 		ArgFilter: &filters.ArgFilter{
 			Filters: make(map[events.ID]map[string]*filters.StringFilter),
 		},
+		ContextFilter: filters.NewContextFilter(),
 		ProcessTreeFilter: &filters.ProcessTreeFilter{
 			PIDs: make(map[uint32]bool),
 		},
@@ -88,6 +90,14 @@ func ParseProtocolFilters(filterRequests []protocol.Filter) (Filter, error) {
 				return Filter{}, buildFilterError("ret", err)
 			}
 			defer filter.RetFilter.Enable()
+			continue
+		}
+		if strings.Contains(field, ".context") {
+			err := filter.ContextFilter.Add(filterReq)
+			if err != nil {
+				return Filter{}, buildFilterError("context", err)
+			}
+			defer filter.ContextFilter.Enable()
 			continue
 		}
 
