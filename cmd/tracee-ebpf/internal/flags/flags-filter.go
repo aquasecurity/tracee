@@ -6,6 +6,7 @@ import (
 
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/filters"
 )
 
 // MaxBpfStrFilterSize value should match MAX_STR_FILTER_SIZE defined in BPF code
@@ -81,58 +82,58 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 `
 }
 
-func PrepareFilter(filters []string) (tracee.Filter, error) {
+func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 	filter := tracee.Filter{
-		UIDFilter: &tracee.UintFilter{
+		UIDFilter: &filters.UIntFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
-			Less:     tracee.LessNotSetUint,
-			Greater:  tracee.GreaterNotSetUint,
+			Less:     filters.LessNotSetUint,
+			Greater:  filters.GreaterNotSetUint,
 			Is32Bit:  true,
 		},
-		PIDFilter: &tracee.UintFilter{
+		PIDFilter: &filters.UIntFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
-			Less:     tracee.LessNotSetUint,
-			Greater:  tracee.GreaterNotSetUint,
+			Less:     filters.LessNotSetUint,
+			Greater:  filters.GreaterNotSetUint,
 			Is32Bit:  true,
 		},
-		NewPidFilter: &tracee.BoolFilter{},
-		MntNSFilter: &tracee.UintFilter{
+		NewPidFilter: &filters.BoolFilter{},
+		MntNSFilter: &filters.UIntFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
-			Less:     tracee.LessNotSetUint,
-			Greater:  tracee.GreaterNotSetUint,
+			Less:     filters.LessNotSetUint,
+			Greater:  filters.GreaterNotSetUint,
 		},
-		PidNSFilter: &tracee.UintFilter{
+		PidNSFilter: &filters.UIntFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
-			Less:     tracee.LessNotSetUint,
-			Greater:  tracee.GreaterNotSetUint,
+			Less:     filters.LessNotSetUint,
+			Greater:  filters.GreaterNotSetUint,
 		},
-		UTSFilter: &tracee.StringFilter{
+		UTSFilter: &filters.StringFilter{
 			Equal:    []string{},
 			NotEqual: []string{},
 			Size:     MaxBpfStrFilterSize,
 		},
-		CommFilter: &tracee.StringFilter{
+		CommFilter: &filters.StringFilter{
 			Equal:    []string{},
 			NotEqual: []string{},
 			Size:     MaxBpfStrFilterSize,
 		},
-		ContFilter:    &tracee.BoolFilter{},
-		NewContFilter: &tracee.BoolFilter{},
-		ContIDFilter: &tracee.ContIDFilter{
+		ContFilter:    &filters.BoolFilter{},
+		NewContFilter: &filters.BoolFilter{},
+		ContIDFilter: &filters.ContIDFilter{
 			Equal:    []string{},
 			NotEqual: []string{},
 		},
-		RetFilter: &tracee.RetFilter{
-			Filters: make(map[events.ID]tracee.IntFilter),
+		RetFilter: &filters.RetFilter{
+			Filters: make(map[events.ID]filters.IntFilter),
 		},
-		ArgFilter: &tracee.ArgFilter{
-			Filters: make(map[events.ID]map[string]tracee.ArgFilterVal),
+		ArgFilter: &filters.ArgFilter{
+			Filters: make(map[events.ID]map[string]filters.ArgFilterVal),
 		},
-		ProcessTreeFilter: &tracee.ProcessTreeFilter{
+		ProcessTreeFilter: &filters.ProcessTreeFilter{
 			PIDs: make(map[uint32]bool),
 		},
 		EventsToTrace: []events.ID{},
@@ -141,8 +142,8 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 		},
 	}
 
-	eventFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}}
-	setFilter := &tracee.StringFilter{Equal: []string{}, NotEqual: []string{}}
+	eventFilter := &filters.StringFilter{Equal: []string{}, NotEqual: []string{}}
+	setFilter := &filters.StringFilter{Equal: []string{}, NotEqual: []string{}}
 
 	eventsNameToID := events.Definitions.NamesToIDs()
 	// remove internal events since they shouldn't be accesible by users
@@ -152,7 +153,7 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 		}
 	}
 
-	for _, f := range filters {
+	for _, f := range filtersArr {
 		filterName := f
 		operatorAndValues := ""
 		operatorIndex := strings.IndexAny(f, "=!<>")
@@ -314,7 +315,7 @@ func PrepareFilter(filters []string) (tracee.Filter, error) {
 	return filter, nil
 }
 
-func prepareEventsToTrace(eventFilter *tracee.StringFilter, setFilter *tracee.StringFilter, eventsNameToID map[string]events.ID) ([]events.ID, error) {
+func prepareEventsToTrace(eventFilter *filters.StringFilter, setFilter *filters.StringFilter, eventsNameToID map[string]events.ID) ([]events.ID, error) {
 	eventFilter.Enabled = true
 	eventsToTrace := eventFilter.Equal
 	excludeEvents := eventFilter.NotEqual

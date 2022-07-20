@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/utils"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
@@ -71,10 +72,10 @@ func (t *Tracee) shouldProcessEvent(ctx *bufferdecoder.Context, args []trace.Arg
 					return false
 				}
 			}
-			if (filter.Greater != GreaterNotSetInt) && retVal <= filter.Greater {
+			if (filter.Greater != filters.GreaterNotSetInt) && retVal <= filter.Greater {
 				return false
 			}
-			if (filter.Less != LessNotSetInt) && retVal >= filter.Less {
+			if (filter.Less != filters.LessNotSetInt) && retVal >= filter.Less {
 				return false
 			}
 		}
