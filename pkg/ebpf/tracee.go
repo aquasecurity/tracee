@@ -685,13 +685,13 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	errmap := make(map[string]error, 0)
-	errmap["uid_filter"] = t.config.Filter.UIDFilter.Set(t.bpfModule, "uid_filter")
-	errmap["pid_filter"] = t.config.Filter.PIDFilter.Set(t.bpfModule, "pid_filter")
-	errmap["mnt_ns_filter"] = t.config.Filter.MntNSFilter.Set(t.bpfModule, "mnt_ns_filter")
-	errmap["pid_ns_filter"] = t.config.Filter.PidNSFilter.Set(t.bpfModule, "pid_ns_filter")
-	errmap["uts_ns_filter"] = t.config.Filter.UTSFilter.Set(t.bpfModule, "uts_ns_filter")
-	errmap["comm_filter"] = t.config.Filter.CommFilter.Set(t.bpfModule, "comm_filter")
-	errmap["cont_id_filter"] = t.config.Filter.ContIDFilter.Set(t.bpfModule, t.containers, "cgroup_id_filter")
+	errmap["uid_filter"] = t.config.Filter.UIDFilter.InitBPF(t.bpfModule, "uid_filter")
+	errmap["pid_filter"] = t.config.Filter.PIDFilter.InitBPF(t.bpfModule, "pid_filter")
+	errmap["mnt_ns_filter"] = t.config.Filter.MntNSFilter.InitBPF(t.bpfModule, "mnt_ns_filter")
+	errmap["pid_ns_filter"] = t.config.Filter.PidNSFilter.InitBPF(t.bpfModule, "pid_ns_filter")
+	errmap["uts_ns_filter"] = t.config.Filter.UTSFilter.InitBPF(t.bpfModule, "uts_ns_filter")
+	errmap["comm_filter"] = t.config.Filter.CommFilter.InitBPF(t.bpfModule, "comm_filter")
+	errmap["cont_id_filter"] = t.config.Filter.ContIDFilter.InitBPF(t.bpfModule, t.containers, "cgroup_id_filter")
 
 	for k, v := range errmap {
 		if v != nil {

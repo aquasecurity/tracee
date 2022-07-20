@@ -47,7 +47,7 @@ func (filter *StringFilter) Parse(operatorAndValues string) error {
 	return nil
 }
 
-func (filter *StringFilter) Set(bpfModule *bpf.Module, filterMapName string) error {
+func (filter *StringFilter) InitBPF(bpfModule *bpf.Module, filterMapName string) error {
 	if !filter.Enabled {
 		return nil
 	}
