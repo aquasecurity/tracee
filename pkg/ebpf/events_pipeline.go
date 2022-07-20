@@ -285,6 +285,13 @@ func (t *Tracee) sinkEvents(ctx gocontext.Context, in <-chan *trace.Event) <-cha
 						t.handleError(err)
 						continue
 					}
+					if t.config.Output.ParseArgumentsFDs {
+						err := events.ParseArgsFDs(event, t.FDArgPathMap)
+						if err != nil {
+							t.handleError(err)
+							continue
+						}
+					}
 				}
 				select {
 				case t.config.ChanEvents <- *event:

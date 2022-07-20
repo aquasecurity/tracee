@@ -74,13 +74,14 @@ type CaptureConfig struct {
 }
 
 type OutputConfig struct {
-	StackAddresses bool
-	DetectSyscall  bool
-	ExecEnv        bool
-	RelativeTime   bool
-	ExecHash       bool
-	ParseArguments bool
-	EventsSorting  bool
+	StackAddresses    bool
+	DetectSyscall     bool
+	ExecEnv           bool
+	RelativeTime      bool
+	ExecHash          bool
+	ParseArguments    bool
+	ParseArgumentsFDs bool
+	EventsSorting     bool
 }
 
 // InitValues determines if to initialize values that might be needed by eBPF programs
@@ -195,6 +196,7 @@ type Tracee struct {
 	writtenFiles      map[string]string
 	pidsInMntns       bucketscache.BucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
+	FDArgPathMap      *bpf.BPFMap
 	netInfo           netInfo
 	containers        *containers.Containers
 	procInfo          *procinfo.ProcInfo
@@ -414,6 +416,14 @@ func (t *Tracee) Init() error {
 	}
 	t.StackAddressesMap = StackAddressesMap
 
+	// Get reference to fd arg path map
+	FDArgPathMap, err := t.bpfModule.GetMap("fd_arg_path_map")
+	if err != nil {
+		t.Close()
+		return fmt.Errorf("error getting access to 'fd_arg_path_map' eBPF Map %v", err)
+	}
+	t.FDArgPathMap = FDArgPathMap
+
 	if t.config.Output.EventsSorting {
 		t.eventsSorter, err = sorting.InitEventSorter()
 		if err != nil {
@@ -482,6 +492,7 @@ const (
 	optCaptureModules
 	optCgroupV1
 	optProcessInfo
+	optTranslateFDFilePath
 )
 
 // filters config should match defined values in ebpf code
@@ -541,6 +552,9 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	if t.config.Capture.NetIfaces != nil || len(t.config.Filter.NetFilter.Interfaces()) > 0 || t.config.Debug {
 		cOptVal = cOptVal | optProcessInfo
 		t.config.ProcessInfo = true
+	}
+	if t.config.Output.ParseArgumentsFDs {
+		cOptVal = cOptVal | optTranslateFDFilePath
 	}
 
 	return cOptVal

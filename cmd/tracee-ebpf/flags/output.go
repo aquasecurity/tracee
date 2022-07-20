@@ -29,6 +29,7 @@ option:{stack-addresses,detect-syscall,exec-env,relative-time,exec-hash,parse-ar
   relative-time                                    use relative timestamp instead of wall timestamp for events
   exec-hash                                        when tracing sched_process_exec, show the file hash(sha256) and ctime
   parse-arguments                                  do not show raw machine-readable values for event arguments, instead parse into human readable strings
+  parse-arguments-fds                              enable parse-arguments and enrich fd with its file path translation. This can cause pipeline slowdowns.
   sort-events                                      enable sorting events before passing to them output. This will decrease the overall program efficiency.
   cache-events                                     enable caching events to release perf-buffer pressure. This will decrease amount of event loss until cache is full.
 Examples:
@@ -85,6 +86,9 @@ func PrepareOutput(outputSlice []string) (tracee.OutputConfig, printer.Config, e
 				outcfg.ExecHash = true
 			case "parse-arguments":
 				outcfg.ParseArguments = true
+			case "parse-arguments-fds":
+				outcfg.ParseArgumentsFDs = true
+				outcfg.ParseArguments = true // no point in parsing file descriptor args only
 			case "sort-events":
 				outcfg.EventsSorting = true
 			default:
