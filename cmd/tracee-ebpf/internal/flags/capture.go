@@ -72,7 +72,8 @@ func PrepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 		} else if cap == "mem" {
 			capture.Mem = true
 		} else if strings.HasPrefix(cap, "net=") {
-			err := tracee.ParseIface(strings.TrimPrefix(cap, "net="), &capture.NetIfaces)
+			capture.NetIfaces = &tracee.NetIfaces{}
+			err := capture.NetIfaces.Parse(strings.TrimPrefix(cap, "net="))
 			if err != nil {
 				return tracee.CaptureConfig{}, err
 			}

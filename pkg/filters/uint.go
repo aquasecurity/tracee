@@ -66,7 +66,7 @@ func (filter *UIntFilter) Parse(operatorAndValues string) error {
 	return nil
 }
 
-func (filter *UIntFilter) Set(bpfModule *bpf.Module, filterMapName string) error {
+func (filter *UIntFilter) InitBPF(bpfModule *bpf.Module, filterMapName string) error {
 	if !filter.Enabled {
 		return nil
 	}

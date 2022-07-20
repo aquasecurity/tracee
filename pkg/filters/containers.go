@@ -34,7 +34,7 @@ func (filter *ContIDFilter) Parse(operatorAndValues string) error {
 	return nil
 }
 
-func (filter *ContIDFilter) Set(bpfModule *bpf.Module, conts *containers.Containers, filterMapName string) error {
+func (filter *ContIDFilter) InitBPF(bpfModule *bpf.Module, conts *containers.Containers, filterMapName string) error {
 	if !filter.Enabled {
 		return nil
 	}
