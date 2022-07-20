@@ -73,7 +73,36 @@ Tracee supports different output options for detected events:
     {"name":"syscall","type":"int","value":"execve"}
     ```
 
-4. **option:exec-env**
+4. **option:parse-arguments-fds**
+
+    In order to have a better experience with the output provided by
+    **tracee-ebpf**, you may opt to parse event fd arguments to be
+    enriched with **file paths**. This option also enables `parse-arguments`.
+
+    ```text
+    $ sudo ./dist/tracee-ebpf --output json --trace comm=bash --trace follow --trace event=read --output option:detect-syscall --output option:parse-arguments-fds
+    ```
+
+    ```text
+    $ cat /etc/passwd
+    ```
+
+    ```json
+    {"timestamp":1658356809979365547,"threadStartTime":11570447751601,"processorId":1,"processId":239413,"cgroupId":10575,"threadId":239413,"parentProcessId":91515,"hostProcessId":239413,"hostThreadId":239413,"hostParentProcessId":91515,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"cat","hostName":"ubuntu-impish","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"0","eventName":"read","argsNum":3,"returnValue":0,"stackAddresses":null,"args":[{"name":"fd","type":"int","value":"3=/etc/locale.alias"},{"name":"buf","type":"void*","value":93921853269152},{"name":"count","type":"size_t","value":4096}]}
+    {"timestamp":1658356809979748006,"threadStartTime":11570447751601,"processorId":1,"processId":239413,"cgroupId":10575,"threadId":239413,"parentProcessId":91515,"hostProcessId":239413,"hostThreadId":239413,"hostParentProcessId":91515,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"cat","hostName":"ubuntu-impish","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"0","eventName":"read","argsNum":3,"returnValue":1867,"stackAddresses":null,"args":[{"name":"fd","type":"int","value":"3=/etc/passwd"},{"name":"buf","type":"void*","value":139658814046208},{"name":"count","type":"size_t","value":131072}]}
+
+    ```
+
+    As you can see now, the value of fd is enriched with its file path following the `"fd=filepath"` format (string type in JSON).
+
+    ```json
+    {"name":"fd","type":"int","value":"3=/etc/locale.alias"}
+    ...
+    {"name":"fd","type":"int","value":"3=/etc/passwd"}
+    ```
+
+
+5. **option:exec-env**
 
     Sometimes it is also important to know the execution environment variables
     whenever an event is detected, specially when deteting **execve** event.
@@ -93,7 +122,7 @@ Tracee supports different output options for detected events:
     {"name":"envp","type":"const char*const*","value":["SHELL=/bin/bash","COLORTERM=truecolor","LESS=-RF --mouse","HISTCONTROL=ignoreboth","HISTSIZE=1000000","DEBFULLNAME=Rafael David Tinoco","EDITOR=nvim","PWD=/home/rafaeldtinoco/work/ebpf/tracee","LOGNAME=rafaeldtinoco","DEB_BUILD_PROFILES=parallel=36 nocheck nostrip noudeb doc","LINES=82","HOME=/home/rafaeldtinoco","LANG=C.UTF-8","COLUMNS=106","MANROFFOPT=-c","DEBEMAIL=rafaeldtinoco@ubuntu.com","LC_TERMINAL=iTerm2","PROMPT_COMMAND=echo -ne \"\\033]0;$what\\007\"; history -a","BAT_THEME=GitHub","TERM=screen-256color","USER=rafaeldtinoco","GIT_PAGER=batcat --theme=\"GitHub\" -p --pager=less --tabs 0","MANPAGER=bash -c 'col -bx | batcat --theme=\"GitHub\" -l man -p'","LC_TERMINAL_VERSION=3.5.0beta5","DEB_BUILD_OPTIONS=parallel=36 nocheck nostrip noudeb doc","SHLVL=2","PAGER=batcat --theme=\"GitHub\" -p --pager=less --tabs 0","BAT_STYLE=plain","PROMPT_DIRTRIM=2","SYSTEMD_PAGER=batcat --theme=\"GitHub\" -p --pager=less --tabs 0","LC_CTYPE=C.UTF-8","LESS_HISTFILE=/dev/null","PS1=\\u@\\h \\w $ ","PATH=/home/rafaeldtinoco/bin:/home/rafaeldtinoco/go/bin:.:/sbin:/bin:/usr/sbin:/usr/bin:/snap/bin:/snap/sbin:/usr/local/bin:/usr/local/sbin:/usr/games/","HISTFILESIZE=1000000","DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus","SSH_TTY=/dev/pts/3","OLDPWD=/home/rafaeldtinoco","_=/bin/ls"]}
     ```
 
-5. **option:exec-hash**
+6. **option:exec-hash**
 
     This is a special output option for **sched_process_exec** so user can get
     the **file hash** and **process ctime** (particularly interesting if you
