@@ -109,13 +109,12 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 								}
 							}
 						}
+						close(queues[cgroupId])
 					}
-					bLock.RUnlock()
-
+					bLock.RUnlock() // give de-queue events a chance
 					bLock.Lock()
 					delete(enrichDone, cgroupId)
 					delete(enrichInfo, cgroupId)
-					close(queues[cgroupId])
 					delete(queues, cgroupId)
 					bLock.Unlock()
 
