@@ -91,6 +91,15 @@ func (e *eventDefinitions) NamesToIDs() map[string]ID {
 	return namesToIds
 }
 
+func (e *eventDefinitions) GetID(eventName string) (ID, bool) {
+	for id, evt := range e.events {
+		if evt.Name == eventName {
+			return id, true
+		}
+	}
+	return -1, false
+}
+
 type ID int32
 
 // Common events (used by all architectures)
