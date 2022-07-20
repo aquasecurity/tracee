@@ -1,17 +1,57 @@
 package filters
 
-import "math"
+import (
+	"fmt"
 
-const (
-	filterNotEqual uint32 = iota
-	filterEqual
+	"github.com/aquasecurity/tracee/types/protocol"
 )
 
-// Set default inequality values
-// val<0 and val>math.MaxUint64 should never be used by the user as they give an empty set
+type Operator uint
+
 const (
-	LessNotSetUint    uint64 = 0
-	GreaterNotSetUint uint64 = math.MaxUint64
-	LessNotSetInt     int64  = math.MinInt64
-	GreaterNotSetInt  int64  = math.MaxInt64
+	Equal Operator = iota
+	NotEqual
+	Lesser
+	LesserEqual
+	Greater
+	GreaterEqual
+)
+
+func (o Operator) String() string {
+	switch o {
+	case Equal:
+		return "=="
+	case NotEqual:
+		return "!="
+	case Greater:
+		return ">"
+	case Lesser:
+		return "<"
+	case GreaterEqual:
+		return ">="
+	case LesserEqual:
+		return "<="
+	}
+	return ""
+}
+
+// This is a generic represantation which cannot be implemented
+// With generics this may be a viable interface, with T replacing interface{}
+// Filters can be enabled or disabled - if a filter is enabled it will be skipped
+type Filter interface {
+	// Filter(val interface{}) bool
+	Add(req protocol.Filter) error
+	Enable()
+	Disable()
+	Enabled() bool
+	Operators() []Operator
+}
+
+func UnsupportedOperator(op Operator) error {
+	return fmt.Errorf("failed to add filter: unsupported operator %s", op.String())
+}
+
+var (
+	bpfFilterNotEqual uint32 = 0
+	bpfFilterEqual    uint32 = 1
 )

@@ -241,7 +241,7 @@ func GetCaptureEventsList(cfg *Config) map[events.ID]eventConfig {
 	if cfg.Capture.NetIfaces != nil {
 		captureEvents[events.CapturePcap] = eventConfig{}
 	}
-	if len(cfg.Filter.NetFilter.Ifaces) > 0 || cfg.Debug {
+	if len(cfg.Filter.NetFilter.Interfaces()) > 0 || cfg.Debug {
 		captureEvents[events.SecuritySocketBind] = eventConfig{}
 	}
 
@@ -341,7 +341,7 @@ func New(cfg Config) (*Tracee, error) {
 
 	t.netInfo.ifaces = make(map[int]*net.Interface)
 	t.netInfo.ifacesConfig = make(map[string]int32)
-	for _, iface := range t.config.Filter.NetFilter.Ifaces {
+	for _, iface := range t.config.Filter.NetFilter.Interfaces() {
 		netIface, err := net.InterfaceByName(iface)
 		if err != nil {
 			return nil, fmt.Errorf("invalid network interface: %s", iface)
@@ -520,61 +520,61 @@ func (t *Tracee) getOptionsConfig() uint32 {
 
 func (t *Tracee) getFiltersConfig() uint32 {
 	var cFilterVal uint32
-	if t.config.Filter.UIDFilter.Enabled {
+	if t.config.Filter.UIDFilter.Enabled() {
 		cFilterVal = cFilterVal | filterUIDEnabled
 		if t.config.Filter.UIDFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterUIDOut
 		}
 	}
-	if t.config.Filter.PIDFilter.Enabled {
+	if t.config.Filter.PIDFilter.Enabled() {
 		cFilterVal = cFilterVal | filterPidEnabled
 		if t.config.Filter.PIDFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterPidOut
 		}
 	}
-	if t.config.Filter.NewPidFilter.Enabled {
+	if t.config.Filter.NewPidFilter.Enabled() {
 		cFilterVal = cFilterVal | filterNewPidEnabled
 		if t.config.Filter.NewPidFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterNewPidOut
 		}
 	}
-	if t.config.Filter.MntNSFilter.Enabled {
+	if t.config.Filter.MntNSFilter.Enabled() {
 		cFilterVal = cFilterVal | filterMntNsEnabled
 		if t.config.Filter.MntNSFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterMntNsOut
 		}
 	}
-	if t.config.Filter.PidNSFilter.Enabled {
+	if t.config.Filter.PidNSFilter.Enabled() {
 		cFilterVal = cFilterVal | filterPidNsEnabled
 		if t.config.Filter.PidNSFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterPidNsOut
 		}
 	}
-	if t.config.Filter.UTSFilter.Enabled {
+	if t.config.Filter.UTSFilter.Enabled() {
 		cFilterVal = cFilterVal | filterUTSNsEnabled
 		if t.config.Filter.UTSFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterUTSNsOut
 		}
 	}
-	if t.config.Filter.CommFilter.Enabled {
+	if t.config.Filter.CommFilter.Enabled() {
 		cFilterVal = cFilterVal | filterCommEnabled
 		if t.config.Filter.CommFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterCommOut
 		}
 	}
-	if t.config.Filter.ContFilter.Enabled {
+	if t.config.Filter.ContFilter.Enabled() {
 		cFilterVal = cFilterVal | filterContEnabled
 		if t.config.Filter.ContFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterContOut
 		}
 	}
-	if t.config.Filter.NewContFilter.Enabled {
+	if t.config.Filter.NewContFilter.Enabled() {
 		cFilterVal = cFilterVal | filterNewContEnabled
 		if t.config.Filter.NewContFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterNewContOut
 		}
 	}
-	if t.config.Filter.ContIDFilter.Enabled {
+	if t.config.Filter.ContIDFilter.Enabled() {
 		cFilterVal = cFilterVal | filterCgroupIdEnabled
 		if t.config.Filter.ContIDFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterCgroupIdOut
@@ -586,7 +586,7 @@ func (t *Tracee) getFiltersConfig() uint32 {
 			cFilterVal = cFilterVal | filterProcTreeOut
 		}
 	}
-	if t.config.Filter.Follow {
+	if t.config.Filter.Follow.Value() {
 		cFilterVal = cFilterVal | filterFollowEnabled
 	}
 
@@ -659,14 +659,14 @@ func (t *Tracee) populateBPFMaps() error {
 	binary.LittleEndian.PutUint32(configVal[4:8], t.getOptionsConfig())
 	binary.LittleEndian.PutUint32(configVal[8:12], t.getFiltersConfig())
 	binary.LittleEndian.PutUint32(configVal[12:16], uint32(t.containers.GetCgroupV1HID()))
-	binary.LittleEndian.PutUint64(configVal[16:24], t.config.Filter.UIDFilter.Less)
-	binary.LittleEndian.PutUint64(configVal[24:32], t.config.Filter.UIDFilter.Greater)
-	binary.LittleEndian.PutUint64(configVal[32:40], t.config.Filter.PIDFilter.Less)
-	binary.LittleEndian.PutUint64(configVal[40:48], t.config.Filter.PIDFilter.Greater)
-	binary.LittleEndian.PutUint64(configVal[48:56], t.config.Filter.MntNSFilter.Less)
-	binary.LittleEndian.PutUint64(configVal[56:64], t.config.Filter.MntNSFilter.Greater)
-	binary.LittleEndian.PutUint64(configVal[64:72], t.config.Filter.PidNSFilter.Less)
-	binary.LittleEndian.PutUint64(configVal[72:80], t.config.Filter.PidNSFilter.Greater)
+	binary.LittleEndian.PutUint64(configVal[16:24], t.config.Filter.UIDFilter.Maximum())
+	binary.LittleEndian.PutUint64(configVal[24:32], t.config.Filter.UIDFilter.Minimum())
+	binary.LittleEndian.PutUint64(configVal[32:40], t.config.Filter.PIDFilter.Maximum())
+	binary.LittleEndian.PutUint64(configVal[40:48], t.config.Filter.PIDFilter.Minimum())
+	binary.LittleEndian.PutUint64(configVal[48:56], t.config.Filter.MntNSFilter.Maximum())
+	binary.LittleEndian.PutUint64(configVal[56:64], t.config.Filter.MntNSFilter.Minimum())
+	binary.LittleEndian.PutUint64(configVal[64:72], t.config.Filter.PidNSFilter.Maximum())
+	binary.LittleEndian.PutUint64(configVal[72:80], t.config.Filter.PidNSFilter.Minimum())
 	// Next 128 bytes (1024 bits) are used for events_to_submit configuration
 	// Set according to events chosen by the user
 	for id, e := range t.events {
@@ -685,13 +685,13 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	errmap := make(map[string]error, 0)
-	errmap["uid_filter"] = t.config.Filter.UIDFilter.InitBPF(t.bpfModule, "uid_filter")
-	errmap["pid_filter"] = t.config.Filter.PIDFilter.InitBPF(t.bpfModule, "pid_filter")
-	errmap["mnt_ns_filter"] = t.config.Filter.MntNSFilter.InitBPF(t.bpfModule, "mnt_ns_filter")
-	errmap["pid_ns_filter"] = t.config.Filter.PidNSFilter.InitBPF(t.bpfModule, "pid_ns_filter")
-	errmap["uts_ns_filter"] = t.config.Filter.UTSFilter.InitBPF(t.bpfModule, "uts_ns_filter")
-	errmap["comm_filter"] = t.config.Filter.CommFilter.InitBPF(t.bpfModule, "comm_filter")
-	errmap["cont_id_filter"] = t.config.Filter.ContIDFilter.InitBPF(t.bpfModule, t.containers, "cgroup_id_filter")
+	errmap["uid_filter"] = t.config.Filter.UIDFilter.InitBpf(t.bpfModule, "uid_filter")
+	errmap["pid_filter"] = t.config.Filter.PIDFilter.InitBpf(t.bpfModule, "pid_filter")
+	errmap["mnt_ns_filter"] = t.config.Filter.MntNSFilter.InitBpf(t.bpfModule, "mnt_ns_filter")
+	errmap["pid_ns_filter"] = t.config.Filter.PidNSFilter.InitBpf(t.bpfModule, "pid_ns_filter")
+	errmap["uts_ns_filter"] = t.config.Filter.UTSFilter.InitBpf(t.bpfModule, "uts_ns_filter")
+	errmap["comm_filter"] = t.config.Filter.CommFilter.InitBpf(t.bpfModule, "comm_filter")
+	errmap["cont_id_filter"] = t.config.Filter.ContIDFilter.InitBpf(t.bpfModule, t.containers, "cgroup_id_filter")
 
 	for k, v := range errmap {
 		if v != nil {
@@ -883,7 +883,7 @@ func (t *Tracee) initBPF() error {
 		return err
 	}
 
-	err = t.config.Filter.ProcessTreeFilter.Set(t.bpfModule)
+	err = t.config.Filter.ProcessTreeFilter.InitBpf(t.bpfModule)
 	if err != nil {
 		return fmt.Errorf("error building process tree: %v", err)
 	}

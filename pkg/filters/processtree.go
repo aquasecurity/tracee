@@ -6,10 +6,10 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
-	"strings"
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/tracee/types/protocol"
 )
 
 type ProcessTreeFilter struct {
@@ -17,44 +17,28 @@ type ProcessTreeFilter struct {
 	Enabled bool
 }
 
-func (filter *ProcessTreeFilter) Parse(operatorAndValues string) error {
+func (filter *ProcessTreeFilter) Add(filterReq protocol.Filter) error {
 	filter.Enabled = true
 
-	if len(operatorAndValues) < 2 {
-		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
-	}
-
-	var (
-		equalityOperator bool
-		valuesString     string
-	)
-
-	if strings.HasPrefix(operatorAndValues, "=") {
-		valuesString = operatorAndValues[1:]
-		equalityOperator = true
-	} else if strings.HasPrefix(operatorAndValues, "!=") {
-		valuesString = operatorAndValues[2:]
-		if len(valuesString) == 0 {
-			return fmt.Errorf("no value passed with operator in process tree filter")
-		}
-		equalityOperator = false
-	} else {
-		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
-	}
-
-	values := strings.Split(valuesString, ",")
-	for _, value := range values {
-		pid, err := strconv.ParseUint(value, 10, 32)
+	for _, value := range filterReq.Value {
+		pid, err := strconv.ParseUint(fmt.Sprint(value), 10, 32)
 		if err != nil {
-			return fmt.Errorf("invalid PID given to filter: %s", valuesString)
+			return fmt.Errorf("invalid PID given to filter: %s", value)
 		}
-		filter.PIDs[uint32(pid)] = equalityOperator
+		switch filterReq.Operator {
+		case protocol.Equal:
+			filter.PIDs[uint32(pid)] = true
+		case protocol.NotEqual:
+			filter.PIDs[uint32(pid)] = false
+		default:
+			return fmt.Errorf("invalid operator given to tree filter %s", filterReq.Operator.String())
+		}
 	}
 
 	return nil
 }
 
-func (filter *ProcessTreeFilter) Set(bpfModule *bpf.Module) error {
+func (filter *ProcessTreeFilter) InitBpf(bpfModule *bpf.Module) error {
 	if !filter.Enabled {
 		return nil
 	}

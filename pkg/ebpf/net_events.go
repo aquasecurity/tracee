@@ -244,8 +244,8 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 
 				// handle net event trace
 				ifaceName := t.netInfo.ifaces[int(netCaptureData.ConfigIfaceIndex)].Name
-				ifaceIdx, found := t.getTracedIfaceIdx(ifaceName)
-				if found && ifaceIdx >= 0 {
+				_, found := t.getTracedIfaceIdx(ifaceName)
+				if found {
 					// this packet should be traced. i.e. output the event if chosen by the user.
 
 					evt, err := protocolProcessor(networkThread, netEventMetadata, netDecoder, ifaceName, netCaptureData.PacketLength)
@@ -283,8 +283,8 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 				}
 
 				// handle packet capture
-				ifaceIdx, found = t.getCapturedIfaceIdx(ifaceName)
-				if ifaceIdx >= 0 && found {
+				ifaceIdx, found := t.getCapturedIfaceIdx(ifaceName)
+				if found {
 					// this packet should be captured. i.e. save the packet into pcap.
 
 					packetBytes, err := getPacketBytes(netDecoder, netCaptureData.PacketLength)
