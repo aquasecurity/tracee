@@ -25,29 +25,43 @@ type Filter struct {
 	ArgFilter         *filters.ArgFilter
 	ProcessTreeFilter *filters.ProcessTreeFilter
 	Follow            bool
-	NetFilter         *IfaceFilter
+	NetFilter         *NetIfaces
 }
 
-type IfaceFilter struct {
-	InterfacesToTrace []string
+type NetIfaces struct {
+	Ifaces []string
 }
 
-func (filter *IfaceFilter) Parse(operatorAndValues string) error {
-	return ParseIface(operatorAndValues, &filter.InterfacesToTrace)
-}
-
-func ParseIface(operatorAndValues string, ifacesList *[]string) error {
+func (filter *NetIfaces) Parse(operatorAndValues string) error {
 	ifaces := strings.Split(operatorAndValues, ",")
+	filter.Ifaces = ifaces
 	for _, iface := range ifaces {
 		if _, err := net.InterfaceByName(iface); err != nil {
 			return fmt.Errorf("invalid network interface: %s", iface)
 		}
-		_, err := findInList(iface, ifacesList)
+		_, found := filter.Find(iface)
 		// if the interface is not already in the interface list, we want to add it
-		if err != nil {
-			*ifacesList = append(*ifacesList, iface)
+		if !found {
+			filter.Ifaces = append(filter.Ifaces, iface)
 		}
 	}
 
 	return nil
+}
+
+func (ifaces *NetIfaces) Find(iface string) (int, bool) {
+	for idx, currIface := range ifaces.Ifaces {
+		if currIface == iface {
+			return idx, true
+		}
+	}
+
+	return -1, false
+}
+
+func (ifaces *NetIfaces) Interfaces() []string {
+	if ifaces.Ifaces == nil {
+		ifaces.Ifaces = []string{}
+	}
+	return ifaces.Ifaces
 }

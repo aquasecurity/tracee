@@ -138,8 +138,8 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 			PIDs: make(map[uint32]bool),
 		},
 		EventsToTrace: []events.ID{},
-		NetFilter: &tracee.IfaceFilter{
-			InterfacesToTrace: []string{},
+		NetFilter: &tracee.NetIfaces{
+			Ifaces: []string{},
 		},
 	}
 

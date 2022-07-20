@@ -98,8 +98,8 @@ func TestGenerateTraceeEbpfRequiredCapabilities(t *testing.T) {
 					cfg := tracee.Config{
 						Filter: &tracee.Filter{
 							EventsToTrace: eventsToTrace,
-							NetFilter: &tracee.IfaceFilter{
-								InterfacesToTrace: traceTest.ifaces,
+							NetFilter: &tracee.NetIfaces{
+								Ifaces: traceTest.ifaces,
 							},
 						},
 						Capture: &tracee.CaptureConfig{},

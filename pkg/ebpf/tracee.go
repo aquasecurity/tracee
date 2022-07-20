@@ -66,7 +66,7 @@ type CaptureConfig struct {
 	Exec            bool
 	Mem             bool
 	Profile         bool
-	NetIfaces       []string
+	NetIfaces       *NetIfaces
 	NetPerContainer bool
 	NetPerProcess   bool
 }
@@ -98,7 +98,7 @@ func (tc Config) Validate() error {
 			return fmt.Errorf("invalid event to trace: %d", e)
 		}
 		if isNetEvent(e) {
-			if len(tc.Filter.NetFilter.InterfacesToTrace) == 0 {
+			if len(tc.Filter.NetFilter.Interfaces()) == 0 {
 				return fmt.Errorf("missing interface for net event: %s, please add -t net=<iface>", def.Name)
 			}
 		}
@@ -241,7 +241,7 @@ func GetCaptureEventsList(cfg *Config) map[events.ID]eventConfig {
 	if cfg.Capture.NetIfaces != nil {
 		captureEvents[events.CapturePcap] = eventConfig{}
 	}
-	if len(cfg.Filter.NetFilter.InterfacesToTrace) > 0 || cfg.Debug {
+	if len(cfg.Filter.NetFilter.Ifaces) > 0 || cfg.Debug {
 		captureEvents[events.SecuritySocketBind] = eventConfig{}
 	}
 
@@ -341,7 +341,7 @@ func New(cfg Config) (*Tracee, error) {
 
 	t.netInfo.ifaces = make(map[int]*net.Interface)
 	t.netInfo.ifacesConfig = make(map[string]int32)
-	for _, iface := range t.config.Filter.NetFilter.InterfacesToTrace {
+	for _, iface := range t.config.Filter.NetFilter.Ifaces {
 		netIface, err := net.InterfaceByName(iface)
 		if err != nil {
 			return nil, fmt.Errorf("invalid network interface: %s", iface)
@@ -351,16 +351,18 @@ func New(cfg Config) (*Tracee, error) {
 		t.netInfo.ifacesConfig[netIface.Name] |= events.TraceIface
 	}
 
-	for _, iface := range t.config.Capture.NetIfaces {
-		netIface, err := net.InterfaceByName(iface)
-		if err != nil {
-			return nil, fmt.Errorf("invalid network interface: %s", iface)
+	if t.config.Capture.NetIfaces != nil {
+		for _, iface := range t.config.Capture.NetIfaces.Interfaces() {
+			netIface, err := net.InterfaceByName(iface)
+			if err != nil {
+				return nil, fmt.Errorf("invalid network interface: %s", iface)
+			}
+			if !t.netInfo.hasIface(netIface.Name) {
+				// Map real network interface index to interface object
+				t.netInfo.ifaces[netIface.Index] = netIface
+			}
+			t.netInfo.ifacesConfig[netIface.Name] |= events.CaptureIface
 		}
-		if !t.netInfo.hasIface(netIface.Name) {
-			// Map real network interface index to interface object
-			t.netInfo.ifaces[netIface.Index] = netIface
-		}
-		t.netInfo.ifacesConfig[netIface.Name] |= events.CaptureIface
 	}
 
 	err = t.initBPF()
@@ -508,7 +510,7 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	if t.containers.IsCgroupV1() {
 		cOptVal = cOptVal | optCgroupV1
 	}
-	if t.config.Capture.NetIfaces != nil || len(t.config.Filter.NetFilter.InterfacesToTrace) > 0 || t.config.Debug {
+	if t.config.Capture.NetIfaces != nil || len(t.config.Filter.NetFilter.Interfaces()) > 0 || t.config.Debug {
 		cOptVal = cOptVal | optProcessInfo
 		t.config.ProcessInfo = true
 	}
@@ -835,7 +837,7 @@ func (t *Tracee) initBPF() error {
 	var err error
 	isDebugSet := t.config.Debug
 	isCaptureNetSet := t.config.Capture.NetIfaces != nil
-	isFilterNetSet := len(t.config.Filter.NetFilter.InterfacesToTrace) != 0
+	isFilterNetSet := len(t.config.Filter.NetFilter.Interfaces()) != 0
 
 	newModuleArgs := bpf.NewModuleArgs{
 		KConfigFilePath: t.config.KernelConfig.GetKernelConfigFilePath(),
@@ -1062,19 +1064,11 @@ func (t *Tracee) invokeInitEvents() {
 		}
 	}
 }
-func (t *Tracee) getTracedIfaceIdx(ifaceName string) (int, error) {
-	return findInList(ifaceName, &t.config.Filter.NetFilter.InterfacesToTrace)
+func (t *Tracee) getTracedIfaceIdx(ifaceName string) (int, bool) {
+	return t.config.Filter.NetFilter.Find(ifaceName)
 }
-func (t *Tracee) getCapturedIfaceIdx(ifaceName string) (int, error) {
-	return findInList(ifaceName, &t.config.Capture.NetIfaces)
-}
-func findInList(element string, list *[]string) (int, error) {
-	for idx, name := range *list {
-		if name == element {
-			return idx, nil
-		}
-	}
-	return 0, fmt.Errorf("element: %s not found", element)
+func (t *Tracee) getCapturedIfaceIdx(ifaceName string) (int, bool) {
+	return t.config.Capture.NetIfaces.Find(ifaceName)
 }
 
 const (

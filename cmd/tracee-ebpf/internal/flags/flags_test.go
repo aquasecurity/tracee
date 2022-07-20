@@ -1204,7 +1204,9 @@ func TestPrepareCapture(t *testing.T) {
 				captureSlice: []string{"net=lo"},
 				expectedCapture: tracee.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
-					NetIfaces:  []string{"lo"},
+					NetIfaces: &tracee.NetIfaces{
+						Ifaces: []string{"lo"},
+					},
 				},
 			},
 			{
@@ -1212,7 +1214,9 @@ func TestPrepareCapture(t *testing.T) {
 				captureSlice: []string{"net=lo", "net=lo"},
 				expectedCapture: tracee.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
-					NetIfaces:  []string{"lo"},
+					NetIfaces: &tracee.NetIfaces{
+						Ifaces: []string{"lo"},
+					},
 				},
 			},
 		}
