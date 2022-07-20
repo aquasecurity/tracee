@@ -1,12 +1,21 @@
 package events
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
+	"unsafe"
 
+	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/types/trace"
 )
+
+type fdArgTask struct {
+	PID uint32
+	TID uint32
+	FD  int32
+}
 
 func ParseArgs(event *trace.Event) error {
 	for i := range event.Args {
@@ -201,6 +210,27 @@ func ParseArgs(event *trace.Event) error {
 				optionNameArgument, err := helpers.ParseSocketOption(uint64(opt))
 				ParseOrEmptyString(optionNameArg, optionNameArgument, err)
 			}
+		}
+	}
+
+	return nil
+}
+
+func ParseArgsFDs(event *trace.Event, fdArgPathMap *bpf.BPFMap) error {
+	if fdArg := GetArg(event, "fd"); fdArg != nil {
+		if fd, isInt32 := fdArg.Value.(int32); isInt32 {
+			fdArgTask := &fdArgTask{
+				PID: uint32(event.ProcessID),
+				TID: uint32(event.ThreadID),
+				FD:  fd,
+			}
+			bs, err := fdArgPathMap.GetValue(unsafe.Pointer(fdArgTask))
+			if err != nil {
+				return err
+			}
+
+			fpath := string(bytes.Trim(bs, "\x00"))
+			fdArg.Value = fmt.Sprintf("%d=%s", fd, fpath)
 		}
 	}
 
