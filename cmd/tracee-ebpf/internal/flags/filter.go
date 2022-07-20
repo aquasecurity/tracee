@@ -19,6 +19,7 @@ The following types of expressions are supported:
 
 Numerical expressions which compare numbers and allow the following operators: '=', '!=', '<', '>'.
 Available numerical expressions: uid, pid, mntns, pidns.
+NOTE: Expressions containing '<' or '>' token must be escaped! This is also shown in the examples below.
 
 String expressions which compares text and allow the following operators: '=', '!='.
 Available string expressions: event, set, uts, comm, container.
