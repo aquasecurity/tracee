@@ -62,10 +62,10 @@ func generateTraceeEbpfRequiredCapabilities(OSInfo KernelVersionInfo, cfg *trace
 
 func getCapabilitiesRequiredByTraceeEvents(cfg *tracee.Config) []cap.Value {
 	usedEvents := cfg.Filter.EventsToTrace
-	for eventID := range tracee.GetEssentialEventsList(cfg) {
+	for eventID := range tracee.GetEssentialEventsList() {
 		usedEvents = append(usedEvents, eventID)
 	}
-	for eventID := range tracee.GetCaptureEventsList(cfg) {
+	for eventID := range tracee.GetCaptureEventsList(*cfg) {
 		usedEvents = append(usedEvents, eventID)
 	}
 	caps := events.RequiredCapabilities(usedEvents)

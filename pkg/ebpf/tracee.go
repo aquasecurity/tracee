@@ -9,8 +9,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -81,8 +83,8 @@ type OutputConfig struct {
 	EventsSorting  bool
 }
 
-// RequiredInitValues determines if to initialize values that might be needed by eBPF programs
-type RequiredInitValues struct {
+// InitValues determines if to initialize values that might be needed by eBPF programs
+type InitValues struct {
 	kallsyms bool
 }
 
@@ -206,7 +208,7 @@ func (t *Tracee) Stats() *metrics.Stats {
 }
 
 // GetEssentialEventsList sets the default events used by tracee
-func GetEssentialEventsList(cfg *Config) map[events.ID]eventConfig {
+func GetEssentialEventsList() map[events.ID]eventConfig {
 	// Set essential events
 	return map[events.ID]eventConfig{
 		events.SysEnter:         {},
@@ -220,7 +222,7 @@ func GetEssentialEventsList(cfg *Config) map[events.ID]eventConfig {
 }
 
 // GetCaptureEventsList sets events used to capture data
-func GetCaptureEventsList(cfg *Config) map[events.ID]eventConfig {
+func GetCaptureEventsList(cfg Config) map[events.ID]eventConfig {
 	captureEvents := make(map[events.ID]eventConfig)
 
 	if cfg.Capture.Exec {
@@ -248,17 +250,14 @@ func GetCaptureEventsList(cfg *Config) map[events.ID]eventConfig {
 	return captureEvents
 }
 
-func (t *Tracee) handleEventsDependencies(eventId events.ID, initReq *RequiredInitValues) {
+func (t *Tracee) handleEventsDependencies(eventId events.ID) {
 	definition := events.Definitions.Get(eventId)
 	eDependencies := definition.Dependencies
-	if len(eDependencies.KSymbols) > 0 {
-		initReq.kallsyms = true
-	}
 	for _, dependentEvent := range eDependencies.Events {
 		ec, ok := t.events[dependentEvent.EventID]
 		if !ok {
 			ec = eventConfig{}
-			t.handleEventsDependencies(dependentEvent.EventID, initReq)
+			t.handleEventsDependencies(dependentEvent.EventID)
 		}
 		ec.submit = true
 		t.events[dependentEvent.EventID] = ec
@@ -266,40 +265,22 @@ func (t *Tracee) handleEventsDependencies(eventId events.ID, initReq *RequiredIn
 }
 
 // New creates a new Tracee instance based on a given valid Config
+// It is expected that New will not cause external system side effects (reads, writes, etc.)
 func New(cfg Config) (*Tracee, error) {
-	var err error
-
-	err = cfg.Validate()
+	err := cfg.Validate()
 	if err != nil {
 		return nil, fmt.Errorf("validation error: %v", err)
 	}
 
-	// Tracee bpf code uses monotonic clock as event timestamp.
-	// Get current monotonic clock so we can calculate event timestamps relative to it.
-	var ts unix.Timespec
-	unix.ClockGettime(unix.CLOCK_MONOTONIC, &ts)
-	startTime := ts.Nano()
-	// Calculate the boot time using the monotonic time (since this is the clock we're using as a timestamp)
-	// Note: this is NOT the real boot time, as the monotonic clock doesn't take into account system sleeps.
-	bootTime := time.Now().UnixNano() - startTime
-
 	// create tracee
 	t := &Tracee{
-		config:    cfg,
-		startTime: uint64(startTime),
-		bootTime:  uint64(bootTime),
+		config:        cfg,
+		writtenFiles:  make(map[string]string),
+		capturedFiles: make(map[string]int64),
+		events:        GetEssentialEventsList(),
 	}
 
-	// the process-tree initialize must be before we start receiving events to ensure we already have the needed data for the events that use that tree
-	t.procInfo, err = procinfo.NewProcessInfo()
-	if err != nil {
-		t.Close()
-		return nil, fmt.Errorf("error creating process tree: %v", err)
-	}
-
-	t.events = GetEssentialEventsList(&cfg)
-
-	for eventID, eCfg := range GetCaptureEventsList(&cfg) {
+	for eventID, eCfg := range GetCaptureEventsList(cfg) {
 		t.events[eventID] = eCfg
 	}
 
@@ -308,35 +289,9 @@ func New(cfg Config) (*Tracee, error) {
 		t.events[e] = eventConfig{submit: true, emit: true}
 	}
 
-	initReq := RequiredInitValues{}
 	// Handles all essential events dependencies
 	for id := range t.events {
-		t.handleEventsDependencies(id, &initReq)
-	}
-	if initReq.kallsyms {
-		t.kernelSymbols, err = helpers.NewKernelSymbolsMap()
-		if err != nil {
-			t.Close()
-			return nil, fmt.Errorf("error creating symbols map: %v", err)
-		}
-		if !initialization.ValidateKsymbolsTable(t.kernelSymbols) {
-			return nil, fmt.Errorf("kernel symbols were not loaded currectly. Make sure tracee-ebpf has the CAP_SYSLOG capability")
-		}
-	}
-
-	c, err := containers.New(t.config.Sockets, t.config.Debug)
-	if err != nil {
-		return nil, fmt.Errorf("error initializing containers: %w", err)
-	}
-	if err := c.Populate(); err != nil {
-		return nil, fmt.Errorf("error initializing containers: %w", err)
-	}
-	t.containers = c
-
-	// Initialize event derivation map
-	err = t.initDerivationTable()
-	if err != nil {
-		return nil, fmt.Errorf("error intitalizing event derivation map: %w", err)
+		t.handleEventsDependencies(id)
 	}
 
 	t.netInfo.ifaces = make(map[int]*net.Interface)
@@ -364,19 +319,59 @@ func New(cfg Config) (*Tracee, error) {
 			t.netInfo.ifacesConfig[netIface.Name] |= events.CaptureIface
 		}
 	}
+	return t, nil
+}
+
+// Initialize tracee instance and it's various subsystems, potentially performing external system operations to initialize them
+// NOTE: any initialization logic, especially one that causes side effects, should go here and not New().
+func (t *Tracee) Init() error {
+	initReq, err := t.generateInitValues()
+	if err != nil {
+		return fmt.Errorf("failed to generate required init values: %s", err)
+	}
+
+	if initReq.kallsyms {
+		t.kernelSymbols, err = helpers.NewKernelSymbolsMap()
+		if err != nil {
+			t.Close()
+			return fmt.Errorf("error creating symbols map: %v", err)
+		}
+		if !initialization.ValidateKsymbolsTable(t.kernelSymbols) {
+			return fmt.Errorf("kernel symbols were not loaded currectly. Make sure tracee-ebpf has the CAP_SYSLOG capability")
+		}
+	}
+
+	// the process-tree initialize must be before we start receiving events to ensure we already have the needed data for the events that use that tree
+	t.procInfo, err = procinfo.NewProcessInfo()
+	if err != nil {
+		t.Close()
+		return fmt.Errorf("error creating process tree: %v", err)
+	}
+
+	t.containers, err = containers.New(t.config.Sockets, t.config.Debug)
+	if err != nil {
+		return fmt.Errorf("error initializing containers: %w", err)
+	}
+	if err := t.containers.Populate(); err != nil {
+		return fmt.Errorf("error initializing containers: %w", err)
+	}
+
+	// Initialize event derivation map
+	err = t.initDerivationTable()
+	if err != nil {
+		return fmt.Errorf("error intitalizing event derivation map: %w", err)
+	}
 
 	err = t.initBPF()
 	if err != nil {
 		t.Close()
-		return nil, err
+		return err
 	}
 
-	t.writtenFiles = make(map[string]string)
-	t.capturedFiles = make(map[string]int64)
 	t.fileHashes, err = lru.New(1024)
 	if err != nil {
 		t.Close()
-		return nil, err
+		return err
 	}
 	t.profiledFiles = make(map[string]profilerInfo)
 	//set a default value for config.maxPidsCache
@@ -396,31 +391,63 @@ func New(cfg Config) (*Tracee, error) {
 
 	if err := os.MkdirAll(t.config.Capture.OutputPath, 0755); err != nil {
 		t.Close()
-		return nil, fmt.Errorf("error creating output path: %v", err)
+		return fmt.Errorf("error creating output path: %v", err)
+	}
+	err = ioutil.WriteFile(path.Join(t.config.Capture.OutputPath, "tracee.pid"), []byte(strconv.Itoa(os.Getpid())+"\n"), 0640)
+	if err != nil {
+		t.Close()
+		return fmt.Errorf("error creating readiness file: %v", err)
 	}
 
 	t.netInfo.pcapWriters, err = lru.NewWithEvict(openPcapsLimit, t.netInfo.PcapWriterOnEvict)
 	if err != nil {
 		t.Close()
-		return nil, err
+		return err
 	}
 
 	// Get reference to stack trace addresses map
 	StackAddressesMap, err := t.bpfModule.GetMap("stack_addresses")
 	if err != nil {
 		t.Close()
-		return nil, fmt.Errorf("error getting acces to 'stack_addresses' eBPF Map %v", err)
+		return fmt.Errorf("error getting acces to 'stack_addresses' eBPF Map %v", err)
 	}
 	t.StackAddressesMap = StackAddressesMap
 
 	if t.config.Output.EventsSorting {
 		t.eventsSorter, err = sorting.InitEventSorter()
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	return t, nil
+	// Tracee bpf code uses monotonic clock as event timestamp.
+	// Get current monotonic clock so we can calculate event timestamps relative to it.
+	var ts unix.Timespec
+	unix.ClockGettime(unix.CLOCK_MONOTONIC, &ts)
+	startTime := ts.Nano()
+	// Calculate the boot time using the monotonic time (since this is the clock we're using as a timestamp)
+	// Note: this is NOT the real boot time, as the monotonic clock doesn't take into account system sleeps.
+	bootTime := time.Now().UnixNano() - startTime
+
+	t.startTime = uint64(startTime)
+	t.bootTime = uint64(bootTime)
+
+	return nil
+}
+
+func (t *Tracee) generateInitValues() (InitValues, error) {
+	initVals := InitValues{}
+	for evt := range t.events {
+		def, exists := events.Definitions.GetSafe(evt)
+		if !exists {
+			return initVals, fmt.Errorf("event with id %d doesn't exist", evt)
+		}
+		if len(def.Dependencies.KSymbols) > 0 {
+			initVals.kallsyms = true
+		}
+	}
+
+	return initVals, nil
 }
 
 // Initialize tail calls program array
