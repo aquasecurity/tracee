@@ -201,6 +201,7 @@ type Tracee struct {
 	eventsSorter      *sorting.EventsChronologicalSorter
 	eventDerivations  events.DerivationTable
 	kernelSymbols     *helpers.KernelSymbolTable
+	running           bool
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -985,6 +986,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	go t.handleEvents(ctx)
 	go t.processFileWrites()
 	go t.processNetEvents(ctx)
+	t.running = true
 	// block until ctx is cancelled elsewhere
 	<-ctx.Done()
 	t.eventsPerfMap.Stop()
@@ -1054,6 +1056,11 @@ func (t *Tracee) Close() {
 			fmt.Fprintf(os.Stderr, "failed to clean containers module when closing tracee: %s", err)
 		}
 	}
+	t.running = false
+}
+
+func (t *Tracee) Running() bool {
+	return t.running
 }
 
 func computeFileHash(fileName string) (string, error) {
