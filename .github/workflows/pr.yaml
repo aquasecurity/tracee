@@ -89,7 +89,7 @@ jobs:
           opa-version: ${{ env.OPA_VERSION }}
       - name: Run Integration Tests
         run: |
-          make test-integration
+          sudo env "PATH=$PATH" make test-integration
   VERIFY-SIGNATURES:
     name: Verify Signatures
     needs:

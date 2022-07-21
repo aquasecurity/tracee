@@ -235,8 +235,8 @@ help:
 	@echo ""
 	@echo "# test"
 	@echo ""
-	@echo "    $$ make test-types           	# run unit tests for types module"
 	@echo "    $$ make test-unit            	# run unit tests"
+	@echo "    $$ make test-types           	# run unit tests for types module"
 	@echo "    $$ make test-integration     	# run integration tests"
 	@echo "    $$ make test-rules           	# opa test (tracee-rules)"
 	@echo ""
@@ -556,45 +556,6 @@ clean-tracee-rules:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-rules
 
-.PHONY: test-unit
-test-unit: \
-	.checkver_$(CMD_GO) \
-	tracee-ebpf \
-	test-types
-#
-	$(GO_ENV_EBPF) \
-	$(CMD_GO) test \
-		-tags ebpf \
-		-short \
-		-race \
-		-v \
-		-coverprofile=coverage.txt \
-		./...
-
-.PHONY: test-types
-test-types: \
-	.checkver_$(CMD_GO)
-#
-	# Note that we must changed the directory here because types is a standalone Go module.
-	cd ./types && $(CMD_GO) test \
-		-short \
-		-race \
-		-v \
-		-coverprofile=coverage.txt \
-		./...
-
-.PHONY: test-integration
-test-integration: \
-	.checkver_$(CMD_GO) \
-	tracee-ebpf
-#
-	TRC_BIN=$(abspath $(OUTPUT_DIR)/tracee-ebpf) \
-	$(GO_ENV_EBPF) \
-	$(CMD_GO) test \
-		-tags ebpf,integration \
-		-v \
-		-run "Test_Events" ./tests/integration/...
-
 #
 # rules
 #
@@ -636,6 +597,55 @@ $(OUTPUT_DIR)/rules: \
 clean-rules:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/rules
+
+#
+# tests
+#
+
+.PHONY: test-unit
+test-unit: \
+	.checkver_$(CMD_GO) \
+	tracee-ebpf \
+	test-types
+#
+	$(GO_ENV_EBPF) \
+	$(CMD_GO) test \
+		-tags ebpf \
+		-short \
+		-race \
+		-v \
+		-coverprofile=coverage.txt \
+		./cmd/... \
+		./pkg/... \
+		./signatures/... \
+
+.PHONY: test-types
+test-types: \
+	.checkver_$(CMD_GO)
+#
+	# Note that we must changed the directory here because types is a standalone Go module.
+	cd ./types && $(CMD_GO) test \
+		-short \
+		-race \
+		-v \
+		-coverprofile=coverage.txt \
+		./...
+
+.PHONY: test-integration
+test-integration: \
+	.checkver_$(CMD_GO) \
+	tracee-ebpf
+#
+	$(GO_ENV_EBPF) \
+	$(CMD_GO) test \
+		-tags $(GO_TAGS_EBPF) \
+		-ldflags="-w \
+			-extldflags \"$(CGO_EXT_LDFLAGS_EBPF)\" \
+			-X main.version=\"$(VERSION)\" \
+			" \
+		-v \
+		-p 1 \
+		./tests/integration/... \
 
 .PHONY: test-rules
 test-rules: \

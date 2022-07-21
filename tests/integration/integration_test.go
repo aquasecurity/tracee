@@ -1,80 +1,26 @@
-//go:build integration
-// +build integration
-
-package integration_test
+package integration
 
 import (
-	"bytes"
-	"errors"
+	"context"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/flags"
+	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
-	"github.com/mitchellh/go-ps"
-	"github.com/onsi/gomega/gexec"
+	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	CheckTimeout = time.Second * 2
-)
-
-func getTraceeBinaryPath() (string, error) {
-	traceePath, ok := os.LookupEnv("TRC_BIN")
-	if !ok {
-		return "", errors.New("tracee-ebpf path is not set with TRC_BIN env")
-	}
-
-	if _, err := os.Stat(traceePath); os.IsNotExist(err) {
-		return "", fmt.Errorf("tracee-ebpf binary does not exist: %s: %w", traceePath, err)
-	}
-	return traceePath, nil
-}
-
-// load tracee into memory with args
-func loadTracee(t *testing.T, traceeBinPath string, w io.Writer, done chan bool, args ...string) {
-	cmd := exec.Command(traceeBinPath, args...)
-	t.Logf("running command: %s\n", cmd.String())
-
-	session, err := gexec.Start(cmd, w, w)
-	require.NoError(t, err)
-	<-done
-	session.Interrupt()
-}
-
-// get pid by process name
-func getPidByName(t *testing.T, name string) int {
-	processes, err := ps.Processes()
-	require.NoError(t, err)
-
-	for _, p := range processes {
-		if strings.Contains(p.Executable(), name) {
-			return p.Pid()
-		}
-	}
-	return -1
-}
-
-// wait for tracee buffer to fill or timeout to occur, whichever comes first
-func waitForTraceeOutput(gotOutput *bytes.Buffer, now time.Time) {
-	for {
-		if len(gotOutput.String()) > 0 || (time.Since(now) > CheckTimeout) {
-			break
-		}
-	}
-}
-
 // small set of actions to trigger a magic write event
-func checkMagicwrite(t *testing.T, gotOutput *bytes.Buffer) {
+func checkMagicwrite(t *testing.T, gotOutput *[]trace.Event) {
 	// create a temp dir for testing
 	d, err := ioutil.TempDir("", "Test_MagicWrite-dir-*")
 	require.NoError(t, err)
@@ -94,87 +40,110 @@ func checkMagicwrite(t *testing.T, gotOutput *bytes.Buffer) {
 	cpCmd.Stdout = os.Stdout
 	assert.NoError(t, cpCmd.Run())
 
-	waitForTraceeOutput(gotOutput, time.Now())
+	waitForTraceeOutput(t, gotOutput, time.Now(), true)
 
 	// check tracee output
-	assert.Contains(t, gotOutput.String(), `[102 111 111 46 98 97 114 46 98 97 122]`)
+	expect := []byte{102, 111, 111, 46, 98, 97, 114, 46, 98, 97, 122}
+	fail := true
+	for _, evt := range *gotOutput {
+		arg := events.GetArg(&evt, "bytes")
+		argVal, ok := arg.Value.([]byte)
+		require.Equal(t, true, ok)
+		ok = assert.ElementsMatch(t, argVal, expect)
+		if ok {
+			fail = false
+		}
+	}
+	if fail {
+		t.Fail()
+	}
 }
 
 // execute a ls command
-func checkExeccommand(t *testing.T, gotOutput *bytes.Buffer) {
-	_, _ = exec.Command("ls").CombinedOutput()
+func checkExeccommand(t *testing.T, gotOutput *[]trace.Event) {
+	err := exec.Command("ls").Run()
+	require.NoError(t, err)
 
-	waitForTraceeOutput(gotOutput, time.Now())
+	waitForTraceeOutput(t, gotOutput, time.Now(), true)
 
 	// check tracee output
-	processNames := strings.Split(strings.TrimSpace(gotOutput.String()), "\n")
+	processNames := []string{}
+	for _, evt := range *gotOutput {
+		processNames = append(processNames, evt.ProcessName)
+	}
 	for _, pname := range processNames {
 		assert.Equal(t, "ls", pname)
 	}
 }
 
 // only capture new pids after tracee
-func checkPidnew(t *testing.T, gotOutput *bytes.Buffer) {
-	traceePid := getPidByName(t, "tracee")
+func checkPidnew(t *testing.T, gotOutput *[]trace.Event) {
+	traceePid := os.Getpid()
 
 	// run a command
-	_, _ = exec.Command("ls").CombinedOutput()
+	err := exec.Command("ls").Run()
+	require.NoError(t, err)
 
-	waitForTraceeOutput(gotOutput, time.Now())
+	waitForTraceeOutput(t, gotOutput, time.Now(), true)
 
 	// output should only have events with pids greater (newer) than tracee
-	pids := strings.Split(strings.TrimSpace(gotOutput.String()), "\n")
-	for _, p := range pids {
-		pid, _ := strconv.Atoi(p)
+	pids := []int{}
+	for _, evt := range *gotOutput {
+		if evt.ProcessName == "ls" {
+			pids = append(pids, evt.ProcessID)
+		}
+	}
+	for _, pid := range pids {
 		assert.Greater(t, pid, traceePid)
 	}
 }
 
 // only capture uids of 0 that are run by comm ls
-func checkUidzero(t *testing.T, gotOutput *bytes.Buffer) {
-	_, _ = exec.Command("ls").CombinedOutput()
+func checkUidZero(t *testing.T, gotOutput *[]trace.Event) {
+	err := exec.Command("ls").Run()
+	require.NoError(t, err)
 
-	waitForTraceeOutput(gotOutput, time.Now())
+	waitForTraceeOutput(t, gotOutput, time.Now(), true)
 
 	// check output length
-	require.NotEmpty(t, gotOutput.String())
+	require.NotEmpty(t, gotOutput)
 
 	// output should only have events with uids of 0
-	uids := strings.Split(strings.TrimSpace(gotOutput.String()), "\n")
-	for _, u := range uids {
-		uid, _ := strconv.Atoi(u)
+	uids := []int{}
+	for _, evt := range *gotOutput {
+		uids = append(uids, evt.UserID)
+	}
+	for _, uid := range uids {
 		require.Zero(t, uid)
 	}
 }
 
-// only capture pids of 1
-func checkPidOne(t *testing.T, gotOutput *bytes.Buffer) {
-	_, _ = exec.Command("init", "q").CombinedOutput()
+// trigger ls from uid 0 (tests run as root) and check if empty
+func checkUidNonZero(t *testing.T, gotOutput *[]trace.Event) {
+	err := exec.Command("ls").Run()
+	require.NoError(t, err)
 
-	waitForTraceeOutput(gotOutput, time.Now())
+	waitForTraceeOutput(t, gotOutput, time.Now(), false)
 
 	// check output length
-	require.NotEmpty(t, gotOutput.String())
-
-	// output should only have events with pids of 1
-	pids := strings.Split(strings.TrimSpace(gotOutput.String()), "\n")
-	for _, p := range pids {
-		pid, _ := strconv.Atoi(p)
-		require.Equal(t, 1, pid)
-	}
+	assert.Empty(t, gotOutput)
 }
 
 // check that execve event is called
-func checkExecve(t *testing.T, gotOutput *bytes.Buffer) {
-	_, _ = exec.Command("ls").CombinedOutput()
+func checkExecve(t *testing.T, gotOutput *[]trace.Event) {
+	err := exec.Command("ls").Run()
+	require.NoError(t, err)
 
-	waitForTraceeOutput(gotOutput, time.Now())
+	waitForTraceeOutput(t, gotOutput, time.Now(), true)
 
 	// check output length
-	require.NotEmpty(t, gotOutput.String())
+	require.NotEmpty(t, gotOutput)
 
 	// output should only have events with event name of execve
-	eventNames := strings.Split(strings.TrimSpace(gotOutput.String()), "\n")
+	eventNames := []string{}
+	for _, evt := range *gotOutput {
+		eventNames = append(eventNames, evt.EventName)
+	}
 	for _, en := range eventNames {
 		if len(en) > 0 {
 			require.Equal(t, "execve", en)
@@ -183,18 +152,22 @@ func checkExecve(t *testing.T, gotOutput *bytes.Buffer) {
 }
 
 // check for filesystem set when ls is invoked
-func checkSetFs(t *testing.T, gotOutput *bytes.Buffer) {
-	_, _ = exec.Command("ls").CombinedOutput()
+func checkSetFs(t *testing.T, gotOutput *[]trace.Event) {
+	err := exec.Command("ls").Run()
+	require.NoError(t, err)
 
-	waitForTraceeOutput(gotOutput, time.Now())
+	waitForTraceeOutput(t, gotOutput, time.Now(), true)
 
 	// check output length
-	require.NotEmpty(t, gotOutput.String())
+	require.NotEmpty(t, gotOutput)
 
 	expectedSyscalls := getAllSyscallsInSet("fs")
 
 	// output should only have events with events in the set of filesystem syscalls
-	eventNames := strings.Split(strings.TrimSpace(gotOutput.String()), "\n")
+	eventNames := []string{}
+	for _, evt := range *gotOutput {
+		eventNames = append(eventNames, evt.EventName)
+	}
 	for _, en := range eventNames {
 		require.Contains(t, expectedSyscalls, en)
 	}
@@ -211,66 +184,36 @@ func getAllSyscallsInSet(set string) []string {
 	}
 	return syscallsInSet
 }
-
-// This test is nice, but very hard to run in CI pipeline because it requires
-// root privileges. It also requires the path to the tracee-ebpf executable to
-// be set with the TRC_BIN environment variable.
-//
-// To run this test manually you can do the following:
-//    make tracee-ebpf
-//
-//    sudo -i
-//    export PATH=$PATH:/usr/local/go/bin
-//
-//    TRC_BIN=$PWD/dist/tracee-ebpf \
-//    GOOS=linux GOARCH=amd64 \
-//    CC=clang \
-//    CGO_CFLAGS="-I$PWD/dist/libbpf" \
-//    CGO_LDFLAGS="-lelf -lz $PWD/dist/libbpf/libbpf.a" \
-//    go test \
-//      -tags ebpf,integration \
-//      -v \
-//      -run "Test_Events" ./tests/integration/...
-//
-// Remember to comment out t.Skip statement.
-func Test_Events(t *testing.T) {
-	t.Skip("This test requires root privileges")
-
-	var testCases = []struct {
+func Test_EventFilters(t *testing.T) {
+	testCases := []struct {
 		name       string
-		args       []string
-		eventFunc  func(*testing.T, *bytes.Buffer)
-		goTemplate string
+		filterArgs []string
+		eventFunc  func(*testing.T, *[]trace.Event)
 	}{
 		{
 			name:       "do a file write",
-			args:       []string{"--trace", "event=magic_write"},
+			filterArgs: []string{"event=magic_write"},
 			eventFunc:  checkMagicwrite,
-			goTemplate: "{{ .Args }}\n",
 		},
 		{
 			name:       "execute a command",
-			args:       []string{"--trace", "comm=ls"},
+			filterArgs: []string{"comm=ls"},
 			eventFunc:  checkExeccommand,
-			goTemplate: "{{ .ProcessName }}\n",
 		},
 		{
 			name:       "trace new pids",
-			args:       []string{"--trace", "pid=new"},
+			filterArgs: []string{"pid=new"},
 			eventFunc:  checkPidnew,
-			goTemplate: "{{ .ProcessID }}\n",
 		},
 		{
 			name:       "trace uid 0 with comm ls",
-			args:       []string{"--trace", "uid=0", "--trace", "comm=ls"},
-			eventFunc:  checkUidzero,
-			goTemplate: "{{ .UserID }}\n",
+			filterArgs: []string{"uid=0", "comm=ls"},
+			eventFunc:  checkUidZero,
 		},
 		{
-			name:       "trace pid 1",
-			args:       []string{"--trace", "pid=1"},
-			eventFunc:  checkPidOne,
-			goTemplate: "{{ .ProcessID }}\n",
+			name:       "trace only ls comms from uid>0 (should be empty)",
+			filterArgs: []string{"uid>0", "comm=ls"},
+			eventFunc:  checkUidNonZero,
 		},
 		//TODO: Add pid=0,1
 		//TODO: Add pid=0 pid=1
@@ -278,61 +221,52 @@ func Test_Events(t *testing.T) {
 		//TODO: Add pid>0 pid<1000
 		//TODO: Add u>0 u!=1000
 		{
-			name:       "trace only execve events from comm ls",
-			args:       []string{"--trace", "event=execve"},
-			eventFunc:  checkExecve,
-			goTemplate: "{{ .EventName }}\n",
-		},
-		{
 			name:       "trace filesystem events from comm ls",
-			args:       []string{"--trace", "s=fs", "--trace", "comm=ls"},
+			filterArgs: []string{"s=fs", "comm=ls"},
 			eventFunc:  checkSetFs,
-			goTemplate: "{{ .EventName }}\n",
 		},
 		{
-			name:       "trace only execve events that ends with ls",
-			args:       []string{"--trace", "event=execve", "--trace", "execve.pathname=*ls"},
-			eventFunc:  checkExeccommand,
-			goTemplate: "{{ .EventName }}\n",
+			name:       "trace only execve events from comm ls",
+			filterArgs: []string{"event=execve", "execve.pathname=*ls"},
+			eventFunc:  checkExecve,
 		},
 		{
-			name:       "trace only execve events that starts with /bin",
-			args:       []string{"--trace", "event=execve", "--trace", "execve.pathname=/bin*"},
-			eventFunc:  checkExeccommand,
-			goTemplate: "{{ .EventName }}\n",
+			name:       "trace only execve events that starts with /usr/bin",
+			filterArgs: []string{"event=execve", "execve.pathname=/usr/bin*"},
+			eventFunc:  checkExecve,
 		},
 		{
 			name:       "trace only execve events that contains l",
-			args:       []string{"--trace", "event=execve", "--trace", "execve.pathname=*l*"},
-			eventFunc:  checkExeccommand,
-			goTemplate: "{{ .EventName }}\n",
+			filterArgs: []string{"event=execve", "execve.pathname=*l*"},
+			eventFunc:  checkExecve,
 		},
-		// TODO: Add --capture tests
 	}
 
-	bin, err := getTraceeBinaryPath()
-	require.NoError(t, err)
-
 	for _, tc := range testCases {
-		t.Run(tc.name, func(st *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			filter, err := flags.PrepareFilter(tc.filterArgs)
+			require.NoError(t, err)
 
-			if tc.goTemplate != "" {
-				f, _ := ioutil.TempFile("", fmt.Sprintf("%s-*", tc.name))
-				_, _ = f.WriteString(tc.goTemplate)
-				defer func() {
-					_ = os.Remove(f.Name())
-				}()
-
-				tc.args = append(tc.args, "--output", fmt.Sprintf("gotemplate=%s", f.Name()))
+			eventChan := make(chan trace.Event, 1000)
+			config := tracee.Config{
+				Filter:     &filter,
+				ChanEvents: eventChan,
 			}
+			eventOutput := []trace.Event{}
 
-			var gotOutput bytes.Buffer
-			done := make(chan bool, 1)
-			go loadTracee(st, bin, &gotOutput, done, tc.args...)
-			time.Sleep(time.Second) // wait for tracee init
+			go func() {
+				for evt := range eventChan {
+					eventOutput = append(eventOutput, evt)
+				}
+			}()
 
-			tc.eventFunc(st, &gotOutput)
-			done <- true
+			trc := startTracee(t, config, nil, nil, ctx)
+
+			waitforTraceeStart(t, trc, time.Now())
+
+			tc.eventFunc(t, &eventOutput)
+			cancel()
 		})
 	}
 }
