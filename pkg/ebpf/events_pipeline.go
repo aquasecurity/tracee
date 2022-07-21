@@ -243,8 +243,11 @@ func (t *Tracee) processEvents(ctx gocontext.Context, in <-chan *trace.Event) (<
 				// Although kernel filters shouldn't submit such events, we do this check to be on the safe side.
 				// For example, it might be that a new cgroup was created, and not by a container runtime,
 				// while we still didn't processed the cgroup_mkdir event and removed the cgroupid from the bpf container map.
-				// Note: this check should be placed after processEvent() so cgroup_mkdir event is processed
-				continue
+				id := events.ID(event.EventID)
+				// don't skip cgroup_mkdir and cgroup_rmdir so we can derive container_create and container_remove events
+				if id != events.CgroupMkdir && id != events.CgroupRmdir {
+					continue
+				}
 			}
 
 			select {
