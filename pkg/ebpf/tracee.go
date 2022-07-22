@@ -348,7 +348,7 @@ func (t *Tracee) Init() error {
 		return fmt.Errorf("error creating process tree: %v", err)
 	}
 
-	t.containers, err = containers.New(t.config.Sockets, t.config.Debug)
+	t.containers, err = containers.New(t.config.Sockets, "containers_map", t.config.Debug)
 	if err != nil {
 		return fmt.Errorf("error initializing containers: %w", err)
 	}
@@ -726,8 +726,11 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
-	// Populate containers_map with existing containers
-	t.containers.PopulateBpfMap(t.bpfModule, "containers_map")
+	// Populate containers map with existing containers
+	err = t.containers.PopulateBpfMap(t.bpfModule)
+	if err != nil {
+		return err
+	}
 
 	// Set filters given by the user to filter file write events
 	fileFilterMap, err := t.bpfModule.GetMap("file_filter") // u32, u32
