@@ -2,6 +2,7 @@ package initialize
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 )
@@ -9,10 +10,12 @@ import (
 func KernelConfig() (*helpers.KernelConfig, error) {
 	kernelConfig, err := helpers.InitKernelConfig()
 	if err != nil {
-		return nil, err
+		// do not fail if we cannot init kconfig - print out warning messages
+		fmt.Fprintf(os.Stderr, "KConfig: warning: could not check enabled kconfig features\n(%v)\n", err)
+		fmt.Fprintf(os.Stderr, "KConfig: warning: assuming kconfig values, might have unexpected behavior\n")
+		return kernelConfig, nil
 	}
 
-	// do not fail (yet ?) if we cannot init kconfig
 	kernelConfig.AddNeeded(helpers.CONFIG_BPF, helpers.BUILTIN)
 	kernelConfig.AddNeeded(helpers.CONFIG_BPF_SYSCALL, helpers.BUILTIN)
 	kernelConfig.AddNeeded(helpers.CONFIG_KPROBE_EVENTS, helpers.BUILTIN)

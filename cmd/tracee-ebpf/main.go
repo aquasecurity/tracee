@@ -11,9 +11,9 @@ import (
 	"syscall"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
+	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/flags"
+	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/initialize"
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/debug"
-	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/flags"
-	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/initialize"
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -174,10 +174,7 @@ func main() {
 
 			kernelConfig, err := initialize.KernelConfig()
 			if err != nil {
-				if debug {
-					fmt.Fprintf(os.Stderr, "KConfig: warning: could not check enabled kconfig features\n(%v)\n", err)
-					fmt.Fprintf(os.Stderr, "KConfig: warning: assuming kconfig values, might have unexpected behavior\n")
-				}
+				return err
 			}
 
 			// decide BTF & BPF files to use based on kconfig, release & environment
