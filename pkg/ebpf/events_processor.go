@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
-	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/utils"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
@@ -16,26 +14,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/types/trace"
 )
-
-func MatchFilter(filters []string, argValStr string) bool {
-	for _, f := range filters {
-		prefixCheck := f[len(f)-1] == '*'
-		if prefixCheck {
-			f = f[0 : len(f)-1]
-		}
-		suffixCheck := f[0] == '*'
-		if suffixCheck {
-			f = f[1:]
-		}
-		if argValStr == f ||
-			(prefixCheck && !suffixCheck && strings.HasPrefix(argValStr, f)) ||
-			(suffixCheck && !prefixCheck && strings.HasSuffix(argValStr, f)) ||
-			(prefixCheck && suffixCheck && strings.Contains(argValStr, f)) {
-			return true
-		}
-	}
-	return false
-}
 
 func (t *Tracee) processLostEvents() {
 	for {
@@ -52,60 +30,10 @@ func (t *Tracee) processLostEvents() {
 
 // shouldProcessEvent decides whether or not to drop an event before further processing it
 func (t *Tracee) shouldProcessEvent(ctx *bufferdecoder.Context, args []trace.Argument) bool {
-	if t.config.Filter.RetFilter.Enabled {
-		if filter, ok := t.config.Filter.RetFilter.Filters[ctx.EventID]; ok {
-			retVal := ctx.Retval
-			match := false
-			for _, f := range filter.Equal {
-				if retVal == f {
-					match = true
-					break
-				}
-			}
-			if !match && len(filter.Equal) > 0 {
-				return false
-			}
-			for _, f := range filter.NotEqual {
-				if retVal == f {
-					return false
-				}
-			}
-			if (filter.Greater != filters.GreaterNotSetInt) && retVal <= filter.Greater {
-				return false
-			}
-			if (filter.Less != filters.LessNotSetInt) && retVal >= filter.Less {
-				return false
-			}
-		}
-	}
+	retPassed := t.config.Filter.RetFilter.Filter(ctx.EventID, ctx.Retval)
+	argPassed := t.config.Filter.ArgFilter.Filter(ctx.EventID, args)
 
-	if t.config.Filter.ArgFilter.Enabled {
-		for argName, filter := range t.config.Filter.ArgFilter.Filters[events.ID(ctx.EventID)] {
-			var argVal interface{}
-			ok := false
-			for _, arg := range args {
-				if arg.Name == argName {
-					argVal = arg.Value
-					ok = true
-				}
-			}
-			if !ok {
-				continue
-			}
-			// TODO: use type assertion instead of string conversion
-			argValStr := fmt.Sprint(argVal)
-			match := MatchFilter(filter.Equal, argValStr)
-			if !match && len(filter.Equal) > 0 {
-				return false
-			}
-			matchExclude := MatchFilter(filter.NotEqual, argValStr)
-			if matchExclude {
-				return false
-			}
-		}
-	}
-
-	return true
+	return retPassed && argPassed
 }
 
 func (t *Tracee) deleteProcInfoDelayed(hostTid int) {

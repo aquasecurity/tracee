@@ -19,6 +19,35 @@ func NewRetFilter() *RetFilter {
 	}
 }
 
+func (filter *RetFilter) Filter(eventID events.ID, retVal int64) bool {
+	if filter.Enabled {
+		if filter, ok := filter.Filters[eventID]; ok {
+			match := false
+			for _, f := range filter.Equal {
+				if retVal == f {
+					match = true
+					break
+				}
+			}
+			if !match && len(filter.Equal) > 0 {
+				return false
+			}
+			for _, f := range filter.NotEqual {
+				if retVal == f {
+					return false
+				}
+			}
+			if (filter.Greater != maxIntVal) && retVal <= filter.Greater {
+				return false
+			}
+			if (filter.Less != minIntVal) && retVal >= filter.Less {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 func (filter *RetFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]events.ID) error {
 	filter.Enabled = true
 	// Ret filter has the following format: "event.ret=val"
@@ -35,12 +64,7 @@ func (filter *RetFilter) Parse(filterName string, operatorAndValues string, even
 	}
 
 	if _, ok := filter.Filters[id]; !ok {
-		filter.Filters[id] = &IntFilter{
-			Equal:    []int64{},
-			NotEqual: []int64{},
-			Less:     LessNotSetInt,
-			Greater:  GreaterNotSetInt,
-		}
+		filter.Filters[id] = NewIntFilter()
 	}
 
 	intFilter := filter.Filters[id]
