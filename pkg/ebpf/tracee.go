@@ -793,14 +793,14 @@ func (t *Tracee) populateBPFMaps() error {
 	binary.LittleEndian.PutUint32(configVal[4:8], t.getOptionsConfig())
 	binary.LittleEndian.PutUint32(configVal[8:12], t.getFiltersConfig())
 	binary.LittleEndian.PutUint32(configVal[12:16], uint32(t.containers.GetCgroupV1HID()))
-	binary.LittleEndian.PutUint64(configVal[16:24], t.config.Filter.UIDFilter.Less)
-	binary.LittleEndian.PutUint64(configVal[24:32], t.config.Filter.UIDFilter.Greater)
-	binary.LittleEndian.PutUint64(configVal[32:40], t.config.Filter.PIDFilter.Less)
-	binary.LittleEndian.PutUint64(configVal[40:48], t.config.Filter.PIDFilter.Greater)
-	binary.LittleEndian.PutUint64(configVal[48:56], t.config.Filter.MntNSFilter.Less)
-	binary.LittleEndian.PutUint64(configVal[56:64], t.config.Filter.MntNSFilter.Greater)
-	binary.LittleEndian.PutUint64(configVal[64:72], t.config.Filter.PidNSFilter.Less)
-	binary.LittleEndian.PutUint64(configVal[72:80], t.config.Filter.PidNSFilter.Greater)
+	binary.LittleEndian.PutUint64(configVal[16:24], t.config.Filter.UIDFilter.Maximum())
+	binary.LittleEndian.PutUint64(configVal[24:32], t.config.Filter.UIDFilter.Minimum())
+	binary.LittleEndian.PutUint64(configVal[32:40], t.config.Filter.PIDFilter.Maximum())
+	binary.LittleEndian.PutUint64(configVal[40:48], t.config.Filter.PIDFilter.Minimum())
+	binary.LittleEndian.PutUint64(configVal[48:56], t.config.Filter.MntNSFilter.Maximum())
+	binary.LittleEndian.PutUint64(configVal[56:64], t.config.Filter.MntNSFilter.Minimum())
+	binary.LittleEndian.PutUint64(configVal[64:72], t.config.Filter.PidNSFilter.Maximum())
+	binary.LittleEndian.PutUint64(configVal[72:80], t.config.Filter.PidNSFilter.Minimum())
 	// Next 128 bytes (1024 bits) are used for events_to_submit configuration
 	// Set according to events chosen by the user
 	for id, e := range t.events {
