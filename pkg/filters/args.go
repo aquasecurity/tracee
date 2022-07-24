@@ -10,13 +10,13 @@ import (
 
 type ArgFilter struct {
 	Filters map[events.ID]map[string]*StringFilter // key to the first map is event id, and to the second map the argument name
-	Enabled bool
+	enabled bool
 }
 
 func NewArgFilter() *ArgFilter {
 	return &ArgFilter{
 		Filters: map[events.ID]map[string]*StringFilter{},
-		Enabled: false,
+		enabled: false,
 	}
 }
 
@@ -41,7 +41,7 @@ func matchFilter(filters []string, argValStr string) bool {
 }
 
 func (filter *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
-	if filter.Enabled {
+	if filter.Enabled() {
 		for argName, filter := range filter.Filters[events.ID(eventID)] {
 			var argVal interface{}
 			ok := false
@@ -70,7 +70,6 @@ func (filter *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
 }
 
 func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]events.ID) error {
-	filter.Enabled = true
 	// Event argument filter has the following format: "event.argname=argval"
 	// filterName have the format event.argname, and operatorAndValues have the format "=argval"
 	splitFilter := strings.Split(filterName, ".")
@@ -130,5 +129,29 @@ func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, even
 
 	filter.Filters[id][argName] = val
 
+	filter.Enable()
+
 	return nil
+}
+
+func (filter *ArgFilter) Enable() {
+	filter.enabled = true
+	for _, filterMap := range filter.Filters {
+		for _, f := range filterMap {
+			f.Enable()
+		}
+	}
+}
+
+func (filter *ArgFilter) Disable() {
+	filter.enabled = false
+	for _, filterMap := range filter.Filters {
+		for _, f := range filterMap {
+			f.Disable()
+		}
+	}
+}
+
+func (filter *ArgFilter) Enabled() bool {
+	return filter.enabled
 }

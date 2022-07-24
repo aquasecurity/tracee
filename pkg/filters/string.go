@@ -11,19 +11,18 @@ import (
 type StringFilter struct {
 	Equal    []string
 	NotEqual []string
-	Enabled  bool
+	enabled  bool
 }
 
 func NewStringFilter() *StringFilter {
 	return &StringFilter{
 		Equal:    []string{},
 		NotEqual: []string{},
-		Enabled:  false,
+		enabled:  false,
 	}
 }
 
 func (filter *StringFilter) Parse(operatorAndValues string) error {
-	filter.Enabled = true
 	if len(operatorAndValues) < 2 {
 		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
 	}
@@ -51,7 +50,21 @@ func (filter *StringFilter) Parse(operatorAndValues string) error {
 		}
 	}
 
+	filter.Enable()
+
 	return nil
+}
+
+func (f *StringFilter) Enable() {
+	f.enabled = true
+}
+
+func (f *StringFilter) Disable() {
+	f.enabled = false
+}
+
+func (f *StringFilter) Enabled() bool {
+	return f.enabled
 }
 
 type BPFStringFilter struct {
@@ -70,7 +83,7 @@ func (filter *BPFStringFilter) InitBPF(bpfModule *bpf.Module) error {
 	// MaxBpfStrFilterSize value should match MAX_STR_FILTER_SIZE defined in BPF code
 	const maxBpfStrFilterSize = 16
 
-	if !filter.Enabled {
+	if !filter.Enabled() {
 		return nil
 	}
 
