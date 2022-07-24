@@ -9,9 +9,205 @@ import (
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/flags"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
+	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestPrepareFilter(t *testing.T) {
+	testCases := []struct {
+		testName        string
+		filters         []string
+		expectedFilters []protocol.Filter
+		expectedError   error
+	}{
+		{
+			testName:      "invalid argfilter 1",
+			filters:       []string{"open."},
+			expectedError: flags.ErrorParsingFilter("open.", flags.InvalidArgFilter()),
+		},
+		{
+			testName:      "invalid retfilter 1",
+			filters:       []string{".retval"},
+			expectedError: flags.ErrorParsingFilter(".retval", flags.InvalidArgFilter()),
+		},
+		{
+			testName:      "invalid operator",
+			filters:       []string{"uid\t0"},
+			expectedError: flags.InvalidFilter("uid\t0"),
+		},
+		{
+			testName:      "invalid operator",
+			filters:       []string{"mntns\t0"},
+			expectedError: flags.InvalidFilter("mntns\t0"),
+		},
+		{
+			testName:      "invalid filter type",
+			filters:       []string{"UID>0"},
+			expectedError: flags.InvalidFilter("UID>0"),
+		},
+		{
+			testName:      "invalid filter type",
+			filters:       []string{"test=0"},
+			expectedError: flags.InvalidFilter("test=0"),
+		},
+		{
+			testName:      "invalid filter type",
+			filters:       []string{"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=0"},
+			expectedError: flags.InvalidFilter("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=0"),
+		},
+		{
+			testName:      "invalid mntns",
+			filters:       []string{"mntns="},
+			expectedError: flags.InvalidFilter("mntns="),
+		},
+		{
+			testName: "invalid uid",
+			filters: []string{"uid=	"},
+			expectedError: flags.InvalidFilter("uid= "),
+		},
+		{
+			testName:        "large uid filter",
+			filters:         []string{"uid=4294967296"},
+			expectedFilters: []protocol.Filter{protocol.EqualFilter("uid", "4294967296")},
+		},
+		{
+			testName:        "pid greater or large",
+			filters:         []string{"pid>=12"},
+			expectedFilters: []protocol.Filter{protocol.GreatEqFilter("pid", "12")},
+		},
+		{
+			testName:        "uid=0",
+			filters:         []string{"uid=0"},
+			expectedFilters: []protocol.Filter{protocol.EqualFilter("uid", "0")},
+			expectedError:   nil,
+		},
+		{
+			testName:        "uid!=0",
+			filters:         []string{"uid!=0"},
+			expectedFilters: []protocol.Filter{protocol.NotEqualFilter("uid", "0")},
+			expectedError:   nil,
+		},
+		{
+			testName:        "mntns=0",
+			filters:         []string{"mntns=0"},
+			expectedFilters: []protocol.Filter{protocol.EqualFilter("mntns", "0")},
+			expectedError:   nil,
+		},
+		{
+			testName:        "pidns!=0",
+			filters:         []string{"pidns!=0"},
+			expectedFilters: []protocol.Filter{protocol.NotEqualFilter("pidns", "0")},
+			expectedError:   nil,
+		},
+		{
+			testName:        "comm=ls",
+			filters:         []string{"comm=ls"},
+			expectedFilters: []protocol.Filter{protocol.EqualFilter("comm", "ls")},
+			expectedError:   nil,
+		},
+		{
+			testName:        "uts!=deadbeaf",
+			filters:         []string{"uts!=deadbeaf"},
+			expectedFilters: []protocol.Filter{protocol.NotEqualFilter("uts", "deadbeaf")},
+			expectedError:   nil,
+		},
+		{
+			testName:        "uid>0",
+			filters:         []string{"uid>0"},
+			expectedFilters: []protocol.Filter{protocol.GreaterFilter("uid", "0")},
+			expectedError:   nil,
+		},
+		{
+			testName:        "uid<0",
+			filters:         []string{"uid<0"},
+			expectedFilters: []protocol.Filter{protocol.LowerFilter("uid", "0")},
+			expectedError:   nil,
+		},
+		{
+			testName:      "invalid - uid>=",
+			filters:       []string{"uid>="},
+			expectedError: flags.InvalidFilter("uid>="),
+		},
+		{
+			testName:        "container",
+			filters:         []string{"container"},
+			expectedFilters: []protocol.Filter{protocol.EqualFilter("container", true)},
+			expectedError:   nil,
+		},
+		{
+			testName:        "container=new",
+			filters:         []string{"container=new"},
+			expectedFilters: []protocol.Filter{protocol.EqualFilter("container/new", true)},
+			expectedError:   nil,
+		},
+		{
+			testName:        "pid=new",
+			filters:         []string{"pid=new"},
+			expectedFilters: []protocol.Filter{protocol.EqualFilter("pid/new", true)},
+			expectedError:   nil,
+		},
+		{
+			testName:        "container=abcd123",
+			filters:         []string{"container=abcd123"},
+			expectedFilters: []protocol.Filter{protocol.EqualFilter("container", "abcd123")},
+			expectedError:   nil,
+		},
+		{
+			testName: "argfilter",
+			filters:  []string{"openat.pathname=/bin/ls,/tmp/tracee", "openat.pathname!=/etc/passwd"},
+			expectedFilters: []protocol.Filter{
+				protocol.EqualFilter("openat.pathname", "/bin/ls", "/tmp/tracee"),
+				protocol.NotEqualFilter("openat.pathname", "/etc/passwd"),
+			},
+			expectedError: nil,
+		},
+		{
+			testName: "retfilter",
+			filters:  []string{"openat.retval=2", "openat.retval>1"},
+			expectedFilters: []protocol.Filter{
+				protocol.EqualFilter("openat.retval", "2"),
+				protocol.GreaterFilter("openat.retval", "1"),
+			},
+			expectedError: nil,
+		},
+		{
+			testName:        "wildcard filter",
+			filters:         []string{"event=open*"},
+			expectedFilters: []protocol.Filter{protocol.EqualFilter("event", "open*")},
+			expectedError:   nil,
+		},
+		{
+			testName:        "wildcard not filter",
+			filters:         []string{"event!=*"},
+			expectedFilters: []protocol.Filter{protocol.NotEqualFilter("event", "*")},
+			expectedError:   nil,
+		},
+		{
+			testName: "multiple filters",
+			filters:  []string{"uid<1", "mntns=5", "pidns!=3", "pid!=10", "comm=ps", "uts!=abc"},
+			expectedFilters: []protocol.Filter{
+				protocol.LowerFilter("uid", "1"),
+				protocol.EqualFilter("mntns", "5"),
+				protocol.NotEqualFilter("pidns", "3"),
+				protocol.NotEqualFilter("pid", "10"),
+				protocol.EqualFilter("comm", "ps"),
+				protocol.NotEqualFilter("uts", "abc"),
+			},
+			expectedError: nil,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
+			filters, err := flags.PrepareFilter(tc.filters)
+			if tc.expectedFilters != nil {
+				assert.ElementsMatch(t, tc.expectedFilters, filters)
+			} else if tc.expectedError != nil {
+				assert.Error(t, err)
+			}
+		})
+	}
+}
 
 func TestPrepareCapture(t *testing.T) {
 	t.Run("various capture options", func(t *testing.T) {
@@ -138,9 +334,7 @@ func TestPrepareCapture(t *testing.T) {
 				captureSlice: []string{"net=lo"},
 				expectedCapture: tracee.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
-					NetIfaces: &tracee.NetIfaces{
-						Ifaces: []string{"lo"},
-					},
+					NetIfaces:  &tracee.NetIfaces{Ifaces: []string{"lo"}},
 				},
 			},
 			{
@@ -148,9 +342,7 @@ func TestPrepareCapture(t *testing.T) {
 				captureSlice: []string{"net=lo", "net=lo"},
 				expectedCapture: tracee.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
-					NetIfaces: &tracee.NetIfaces{
-						Ifaces: []string{"lo"},
-					},
+					NetIfaces:  &tracee.NetIfaces{Ifaces: []string{"lo"}},
 				},
 			},
 		}
