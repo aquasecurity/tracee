@@ -20,7 +20,7 @@ type Filter struct {
 	CommFilter        *filters.StringFilter
 	ContFilter        *filters.BoolFilter
 	NewContFilter     *filters.BoolFilter
-	ContIDFilter      *filters.ContIDFilter
+	ContIDFilter      *filters.ContainerFilter
 	RetFilter         *filters.RetFilter
 	ArgFilter         *filters.ArgFilter
 	ProcessTreeFilter *filters.ProcessTreeFilter

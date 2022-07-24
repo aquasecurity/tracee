@@ -5,6 +5,10 @@ type BoolFilter struct {
 	Enabled bool
 }
 
+func NewBoolFilter() *BoolFilter {
+	return &BoolFilter{}
+}
+
 func (filter *BoolFilter) Parse(value string) error {
 	filter.Enabled = true
 	filter.Value = false

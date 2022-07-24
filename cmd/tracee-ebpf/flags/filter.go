@@ -9,9 +9,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/filters"
 )
 
-// MaxBpfStrFilterSize value should match MAX_STR_FILTER_SIZE defined in BPF code
-const MaxBpfStrFilterSize = 16
-
 func FilterHelp() string {
 	return `Select which events to trace by defining trace expressions that operate on events or process metadata.
 Only events that match all trace expressions will be traced (trace flags are ANDed).
@@ -85,66 +82,27 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 
 func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 	filter := tracee.Filter{
-		UIDFilter: &filters.UIntFilter{
-			Equal:    []uint64{},
-			NotEqual: []uint64{},
-			Less:     filters.LessNotSetUint,
-			Greater:  filters.GreaterNotSetUint,
-			Is32Bit:  true,
-		},
-		PIDFilter: &filters.UIntFilter{
-			Equal:    []uint64{},
-			NotEqual: []uint64{},
-			Less:     filters.LessNotSetUint,
-			Greater:  filters.GreaterNotSetUint,
-			Is32Bit:  true,
-		},
-		NewPidFilter: &filters.BoolFilter{},
-		MntNSFilter: &filters.UIntFilter{
-			Equal:    []uint64{},
-			NotEqual: []uint64{},
-			Less:     filters.LessNotSetUint,
-			Greater:  filters.GreaterNotSetUint,
-		},
-		PidNSFilter: &filters.UIntFilter{
-			Equal:    []uint64{},
-			NotEqual: []uint64{},
-			Less:     filters.LessNotSetUint,
-			Greater:  filters.GreaterNotSetUint,
-		},
-		UTSFilter: &filters.StringFilter{
-			Equal:    []string{},
-			NotEqual: []string{},
-			Size:     MaxBpfStrFilterSize,
-		},
-		CommFilter: &filters.StringFilter{
-			Equal:    []string{},
-			NotEqual: []string{},
-			Size:     MaxBpfStrFilterSize,
-		},
-		ContFilter:    &filters.BoolFilter{},
-		NewContFilter: &filters.BoolFilter{},
-		ContIDFilter: &filters.ContIDFilter{
-			Equal:    []string{},
-			NotEqual: []string{},
-		},
-		RetFilter: &filters.RetFilter{
-			Filters: make(map[events.ID]filters.IntFilter),
-		},
-		ArgFilter: &filters.ArgFilter{
-			Filters: make(map[events.ID]map[string]filters.StringFilter),
-		},
-		ProcessTreeFilter: &filters.ProcessTreeFilter{
-			PIDs: make(map[uint32]bool),
-		},
-		EventsToTrace: []events.ID{},
+		UIDFilter:         filters.NewUInt32Filter(),
+		PIDFilter:         filters.NewUInt32Filter(),
+		NewPidFilter:      filters.NewBoolFilter(),
+		MntNSFilter:       filters.NewUIntFilter(),
+		PidNSFilter:       filters.NewUIntFilter(),
+		UTSFilter:         filters.NewStringFilter(),
+		CommFilter:        filters.NewStringFilter(),
+		ContFilter:        filters.NewBoolFilter(),
+		NewContFilter:     filters.NewBoolFilter(),
+		ContIDFilter:      filters.NewContainerFilter("cgroup_id_filter"),
+		RetFilter:         filters.NewRetFilter(),
+		ArgFilter:         filters.NewArgFilter(),
+		ProcessTreeFilter: filters.NewProcessTreeFilter(),
+		EventsToTrace:     []events.ID{},
 		NetFilter: &tracee.NetIfaces{
 			Ifaces: []string{},
 		},
 	}
 
-	eventFilter := &filters.StringFilter{Equal: []string{}, NotEqual: []string{}}
-	setFilter := &filters.StringFilter{Equal: []string{}, NotEqual: []string{}}
+	eventFilter := filters.NewStringFilter()
+	setFilter := filters.NewStringFilter()
 
 	eventsNameToID := events.Definitions.NamesToIDs()
 	// remove internal events since they shouldn't be accesible by users
