@@ -265,7 +265,9 @@ func Test_EventFilters(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
-			filter, err := flags.PrepareFilter(tc.filterArgs)
+			filterReqs, err := flags.PrepareFilter(tc.filterArgs)
+			require.NoError(t, err)
+			filter, err := tracee.ParseProtocolFilters(filterReqs)
 			require.NoError(t, err)
 
 			eventChan := make(chan trace.Event, 1000)

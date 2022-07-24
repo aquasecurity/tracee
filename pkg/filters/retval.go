@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/types/protocol"
 )
 
 type RetFilter struct {
@@ -12,37 +13,30 @@ type RetFilter struct {
 	enabled bool
 }
 
-func NewRetFilter() *RetFilter {
-	return &RetFilter{
+func NewRetFilter(filters ...protocol.Filter) (*RetFilter, error) {
+	filter := &RetFilter{
 		Filters: map[events.ID]*IntFilter{},
 		enabled: false,
 	}
+
+	for _, f := range filters {
+		err := filter.parse(f)
+		if err != nil {
+			return filter, err
+		}
+	}
+
+	if len(filters) > 0 {
+		filter.Enable()
+	}
+
+	return filter, nil
 }
 
 func (filter *RetFilter) Filter(eventID events.ID, retVal int64) bool {
 	if filter.Enabled() {
 		if filter, ok := filter.Filters[eventID]; ok {
-			match := false
-			for _, f := range filter.Equal {
-				if retVal == f {
-					match = true
-					break
-				}
-			}
-			if !match && len(filter.Equal) > 0 {
-				return false
-			}
-			for _, f := range filter.NotEqual {
-				if retVal == f {
-					return false
-				}
-			}
-			if (filter.GreaterThan != maxIntVal) && retVal <= filter.GreaterThan {
-				return false
-			}
-			if (filter.LessThan != minIntVal) && retVal >= filter.LessThan {
-				return false
-			}
+			return filter.Filter(retVal)
 		}
 	}
 	return true
@@ -66,35 +60,26 @@ func (filter *RetFilter) Enabled() bool {
 	return filter.enabled
 }
 
-func (filter *RetFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]events.ID) error {
-	// Ret filter has the following format: "event.ret=val"
-	// filterName have the format event.retval, and operatorAndValues have the format "=val"
-	splitFilter := strings.Split(filterName, ".")
-	if len(splitFilter) != 2 || splitFilter[1] != "retval" {
-		return fmt.Errorf("invalid retval filter format %s%s", filterName, operatorAndValues)
+func (filter *RetFilter) parse(filterReq protocol.Filter) error {
+	field := filterReq.Field
+	parts := strings.Split(field, ".")
+	if len(parts) != 2 {
+		return fmt.Errorf("invalid retval filter format: %s", field)
 	}
-	eventName := splitFilter[0]
+	eventName := parts[0]
 
-	id, ok := eventsNameToID[eventName]
+	id, ok := events.Definitions.GetID(eventName)
 	if !ok {
 		return fmt.Errorf("invalid retval filter event name: %s", eventName)
 	}
-
-	if _, ok := filter.Filters[id]; !ok {
-		filter.Filters[id] = NewIntFilter()
+	eventFilter := filter.Filters[id]
+	if eventFilter == nil {
+		eventFilter, err := NewIntFilter(filterReq)
+		if err != nil {
+			return fmt.Errorf("failed to set ret filter: %s", err)
+		}
+		filter.Filters[id] = eventFilter
 	}
-
-	intFilter := filter.Filters[id]
-
-	// Treat operatorAndValues as an int filter to avoid code duplication
-	err := intFilter.Parse(operatorAndValues)
-	if err != nil {
-		return err
-	}
-
-	filter.Filters[id] = intFilter
-
-	filter.Enable()
 
 	return nil
 }

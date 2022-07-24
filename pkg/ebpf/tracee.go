@@ -105,26 +105,6 @@ func (tc Config) Validate() error {
 			}
 		}
 	}
-	for eventID, eventFilters := range tc.Filter.ArgFilter.Filters {
-		for argName := range eventFilters {
-			eventDefinition, ok := events.Definitions.GetSafe(eventID)
-			if !ok {
-				return fmt.Errorf("invalid argument filter event id: %d", eventID)
-			}
-			eventParams := eventDefinition.Params
-			// check if argument name exists for this event
-			argFound := false
-			for i := range eventParams {
-				if eventParams[i].Name == argName {
-					argFound = true
-					break
-				}
-			}
-			if !argFound {
-				return fmt.Errorf("invalid argument filter argument name: %s", argName)
-			}
-		}
-	}
 	if (tc.PerfBufferSize & (tc.PerfBufferSize - 1)) != 0 {
 		return fmt.Errorf("invalid perf buffer size - must be a power of 2")
 	}

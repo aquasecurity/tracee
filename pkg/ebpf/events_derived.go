@@ -23,6 +23,15 @@ func (t *Tracee) initDerivationTable() error {
 	pathResolver := containers.InitPathResolver(&t.pidsInMntns)
 	soLoader := sharedobjs.InitContainersSymbolsLoader(&pathResolver, 1024)
 
+	symbolsLoadedFilter := t.config.Filter.ArgFilter.GetEventFilters(events.SymbolsLoaded)
+	watchedSymbols := []string{}
+	whitelistedLibs := []string{}
+
+	if symbolsLoadedFilter != nil {
+		watchedSymbols = symbolsLoadedFilter["symbols"].Equals()
+		whitelistedLibs = symbolsLoadedFilter["library_path"].NotEquals()
+	}
+
 	t.eventDerivations = events.DerivationTable{
 		events.CgroupMkdir: {
 			events.ContainerCreate: {
@@ -65,8 +74,8 @@ func (t *Tracee) initDerivationTable() error {
 				Enabled: t.events[events.SymbolsLoaded].submit,
 				Function: derive.SymbolsLoaded(
 					soLoader,
-					t.config.Filter.ArgFilter.Filters[events.SymbolsLoaded]["symbols"].Equal,
-					t.config.Filter.ArgFilter.Filters[events.SymbolsLoaded]["library_path"].NotEqual,
+					watchedSymbols,
+					whitelistedLibs,
 				),
 			},
 		},

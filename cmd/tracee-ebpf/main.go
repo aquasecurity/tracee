@@ -124,14 +124,18 @@ func main() {
 				fmt.Print(flags.FilterHelp())
 				return nil
 			}
-			filter, err := flags.PrepareFilter(traceSlice)
+			filterReqs, err := flags.PrepareFilter(traceSlice)
+			if err != nil {
+				return err
+			}
+			filter, err := tracee.ParseProtocolFilters(filterReqs)
 			if err != nil {
 				return err
 			}
 			cfg.Filter = &filter
 
-			containerMode := (cfg.Filter.ContFilter.Enabled() && cfg.Filter.ContFilter.Value) ||
-				(cfg.Filter.NewContFilter.Enabled() && cfg.Filter.NewContFilter.Value) ||
+			containerMode := (cfg.Filter.ContFilter.Enabled() && cfg.Filter.ContFilter.Value()) ||
+				(cfg.Filter.NewContFilter.Enabled() && cfg.Filter.NewContFilter.Value()) ||
 				cfg.Filter.ContIDFilter.Enabled()
 
 			outputSlice := c.StringSlice("output")
