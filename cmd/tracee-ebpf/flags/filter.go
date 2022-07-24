@@ -132,7 +132,7 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 			Filters: make(map[events.ID]filters.IntFilter),
 		},
 		ArgFilter: &filters.ArgFilter{
-			Filters: make(map[events.ID]map[string]filters.ArgFilterVal),
+			Filters: make(map[events.ID]map[string]filters.StringFilter),
 		},
 		ProcessTreeFilter: &filters.ProcessTreeFilter{
 			PIDs: make(map[uint32]bool),
