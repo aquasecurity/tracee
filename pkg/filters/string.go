@@ -54,7 +54,19 @@ func (filter *StringFilter) Parse(operatorAndValues string) error {
 	return nil
 }
 
-func (filter *StringFilter) InitBPF(bpfModule *bpf.Module, filterMapName string) error {
+type BPFStringFilter struct {
+	StringFilter
+	mapName string
+}
+
+func NewBPFStringFilter(mapName string) *BPFStringFilter {
+	return &BPFStringFilter{
+		StringFilter: *NewStringFilter(),
+		mapName:      mapName,
+	}
+}
+
+func (filter *BPFStringFilter) InitBPF(bpfModule *bpf.Module) error {
 	// MaxBpfStrFilterSize value should match MAX_STR_FILTER_SIZE defined in BPF code
 	const maxBpfStrFilterSize = 16
 
@@ -67,7 +79,7 @@ func (filter *StringFilter) InitBPF(bpfModule *bpf.Module, filterMapName string)
 
 	// 1. uts_ns_filter     string[MAX_STR_FILTER_SIZE], u32    // filter events by uts namespace name
 	// 2. comm_filter       string[MAX_STR_FILTER_SIZE], u32    // filter events by command name
-	filterMap, err := bpfModule.GetMap(filterMapName)
+	filterMap, err := bpfModule.GetMap(filter.mapName)
 	if err != nil {
 		return err
 	}

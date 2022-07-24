@@ -82,19 +82,19 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 
 func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 	filter := tracee.Filter{
-		UIDFilter:         filters.NewUInt32Filter(),
-		PIDFilter:         filters.NewUInt32Filter(),
+		UIDFilter:         filters.NewBPFUInt32Filter(tracee.UIDFilterMap),
+		PIDFilter:         filters.NewBPFUInt32Filter(tracee.PIDFilterMap),
 		NewPidFilter:      filters.NewBoolFilter(),
-		MntNSFilter:       filters.NewUIntFilter(),
-		PidNSFilter:       filters.NewUIntFilter(),
-		UTSFilter:         filters.NewStringFilter(),
-		CommFilter:        filters.NewStringFilter(),
+		MntNSFilter:       filters.NewBPFUIntFilter(tracee.MntNSFilterMap),
+		PidNSFilter:       filters.NewBPFUIntFilter(tracee.PidNSFilterMap),
+		UTSFilter:         filters.NewBPFStringFilter(tracee.UTSFilterMap),
+		CommFilter:        filters.NewBPFStringFilter(tracee.CommFilterMap),
 		ContFilter:        filters.NewBoolFilter(),
 		NewContFilter:     filters.NewBoolFilter(),
-		ContIDFilter:      filters.NewContainerFilter("cgroup_id_filter"),
+		ContIDFilter:      filters.NewContainerFilter(tracee.CgroupIdFilterMap),
 		RetFilter:         filters.NewRetFilter(),
 		ArgFilter:         filters.NewArgFilter(),
-		ProcessTreeFilter: filters.NewProcessTreeFilter(),
+		ProcessTreeFilter: filters.NewProcessTreeFilter(tracee.ProcessTreeFilterMap),
 		EventsToTrace:     []events.ID{},
 		NetFilter: &tracee.NetIfaces{
 			Ifaces: []string{},
