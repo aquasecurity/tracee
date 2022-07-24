@@ -21,7 +21,7 @@ type UIntFilter struct {
 	Greater  uint64
 	Less     uint64
 	Is32Bit  bool
-	Enabled  bool
+	enabled  bool
 }
 
 func NewUIntFilter() *UIntFilter {
@@ -39,12 +39,23 @@ func newUIntFilter(is32Bit bool) *UIntFilter {
 		Greater:  maxUIntVal,
 		Less:     minUIntVal,
 		Is32Bit:  is32Bit,
-		Enabled:  false,
+		enabled:  false,
 	}
 }
 
+func (f *UIntFilter) Enable() {
+	f.enabled = true
+}
+
+func (f *UIntFilter) Disable() {
+	f.enabled = false
+}
+
+func (f *UIntFilter) Enabled() bool {
+	return f.enabled
+}
+
 func (filter *UIntFilter) Parse(operatorAndValues string) error {
-	filter.Enabled = true
 	if len(operatorAndValues) < 2 {
 		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
 	}
@@ -87,6 +98,8 @@ func (filter *UIntFilter) Parse(operatorAndValues string) error {
 		}
 	}
 
+	filter.Enable()
+
 	return nil
 }
 
@@ -110,7 +123,7 @@ func NewBPFUInt32Filter(mapName string) *BPFUIntFilter {
 }
 
 func (filter *BPFUIntFilter) InitBPF(bpfModule *bpf.Module) error {
-	if !filter.Enabled {
+	if !filter.Enabled() {
 		return nil
 	}
 

@@ -18,7 +18,7 @@ type IntFilter struct {
 	Greater  int64
 	Less     int64
 	Is32Bit  bool
-	Enabled  bool
+	enabled  bool
 }
 
 func NewIntFilter() *IntFilter {
@@ -36,12 +36,23 @@ func newIntFilter(is32Bit bool) *IntFilter {
 		Greater:  maxIntVal,
 		Less:     minIntVal,
 		Is32Bit:  is32Bit,
-		Enabled:  false,
+		enabled:  false,
 	}
 }
 
+func (f *IntFilter) Enable() {
+	f.enabled = true
+}
+
+func (f *IntFilter) Disable() {
+	f.enabled = false
+}
+
+func (f *IntFilter) Enabled() bool {
+	return f.enabled
+}
+
 func (filter *IntFilter) Parse(operatorAndValues string) error {
-	filter.Enabled = true
 	if len(operatorAndValues) < 2 {
 		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
 	}
@@ -83,6 +94,8 @@ func (filter *IntFilter) Parse(operatorAndValues string) error {
 			return fmt.Errorf("invalid filter operator: %s", operatorString)
 		}
 	}
+
+	filter.Enable()
 
 	return nil
 }

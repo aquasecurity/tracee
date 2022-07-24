@@ -19,7 +19,7 @@ func NewContainerFilter(mapName string) *ContainerFilter {
 }
 
 func (filter *ContainerFilter) InitBPF(bpfModule *bpf.Module, conts *containers.Containers) error {
-	if !filter.Enabled {
+	if !filter.Enabled() {
 		return nil
 	}
 
