@@ -570,9 +570,9 @@ func (t *Tracee) getFiltersConfig() uint32 {
 			cFilterVal = cFilterVal | filterCommOut
 		}
 	}
-	if t.config.Filter.ContFilter.Enabled() {
+	if t.config.Filter.ContainerFilter.ModeFilter.Enabled() {
 		cFilterVal = cFilterVal | filterContEnabled
-		if t.config.Filter.ContFilter.FilterOut() {
+		if t.config.Filter.ContainerFilter.ModeFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterContOut
 		}
 	}
@@ -582,9 +582,9 @@ func (t *Tracee) getFiltersConfig() uint32 {
 			cFilterVal = cFilterVal | filterNewContOut
 		}
 	}
-	if t.config.Filter.ContIDFilter.Enabled() {
+	if t.config.Filter.ContainerFilter.IdFilter.Enabled() {
 		cFilterVal = cFilterVal | filterCgroupIdEnabled
-		if t.config.Filter.ContIDFilter.FilterOut() {
+		if t.config.Filter.ContainerFilter.IdFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterCgroupIdOut
 		}
 	}
@@ -699,7 +699,7 @@ func (t *Tracee) populateBPFMaps() error {
 	errmap[PidNSFilterMap] = t.config.Filter.PidNSFilter.InitBPF(t.bpfModule)
 	errmap[UTSFilterMap] = t.config.Filter.UTSFilter.InitBPF(t.bpfModule)
 	errmap[CommFilterMap] = t.config.Filter.CommFilter.InitBPF(t.bpfModule)
-	errmap[ContIdFilter] = t.config.Filter.ContIDFilter.InitBPF(t.bpfModule, t.containers)
+	errmap[ContIdFilter] = t.config.Filter.ContainerFilter.InitBPF(t.bpfModule, t.containers)
 
 	for k, v := range errmap {
 		if v != nil {

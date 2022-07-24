@@ -31,9 +31,8 @@ type Filter struct {
 	PidNSFilter       *filters.BPFUIntFilter
 	UTSFilter         *filters.BPFStringFilter
 	CommFilter        *filters.BPFStringFilter
-	ContFilter        *filters.BoolFilter
+	ContainerFilter   *filters.ContainerFilter
 	NewContFilter     *filters.BoolFilter
-	ContIDFilter      *filters.ContainerFilter
 	RetFilter         *filters.RetFilter
 	ArgFilter         *filters.ArgFilter
 	ProcessTreeFilter *filters.ProcessTreeFilter
@@ -203,15 +202,11 @@ func ParseProtocolFilters(filterRequests []protocol.Filter) (Filter, error) {
 	if err != nil {
 		return Filter{}, buildFilterError(comm, err)
 	}
-	contFilter, err := filters.NewBoolFilter(filterMap[container]...)
-	if err != nil {
-		return Filter{}, buildFilterError(container, err)
-	}
 	newContFilter, err := filters.NewBoolFilter(filterMap[newcont]...)
 	if err != nil {
 		return Filter{}, buildFilterError(newcont, err)
 	}
-	contIdFilter, err := filters.NewContainerFilter(CgroupIdFilterMap)
+	containerFilter, err := filters.NewContainerFilter(CgroupIdFilterMap, filterMap[container]...)
 	if err != nil {
 		return Filter{}, buildFilterError(containerid, err)
 	}
@@ -241,9 +236,8 @@ func ParseProtocolFilters(filterRequests []protocol.Filter) (Filter, error) {
 		PidNSFilter:       pidnsFilter,
 		UTSFilter:         utsFilter,
 		CommFilter:        commFilter,
-		ContFilter:        contFilter,
+		ContainerFilter:   containerFilter,
 		NewContFilter:     newContFilter,
-		ContIDFilter:      contIdFilter,
 		RetFilter:         retFilter,
 		ArgFilter:         argFilter,
 		ProcessTreeFilter: filters.NewProcessTreeFilter(ProcessTreeFilterMap),
