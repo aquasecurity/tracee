@@ -16,12 +16,12 @@ const (
 )
 
 type UIntFilter struct {
-	Equal    []uint64
-	NotEqual []uint64
-	Greater  uint64
-	Less     uint64
-	Is32Bit  bool
-	enabled  bool
+	Equal       []uint64
+	NotEqual    []uint64
+	GreaterThan uint64
+	LessThan    uint64
+	Is32Bit     bool
+	enabled     bool
 }
 
 func NewUIntFilter() *UIntFilter {
@@ -34,12 +34,12 @@ func NewUInt32Filter() *UIntFilter {
 
 func newUIntFilter(is32Bit bool) *UIntFilter {
 	return &UIntFilter{
-		Equal:    []uint64{},
-		NotEqual: []uint64{},
-		Greater:  maxUIntVal,
-		Less:     minUIntVal,
-		Is32Bit:  is32Bit,
-		enabled:  false,
+		Equal:       []uint64{},
+		NotEqual:    []uint64{},
+		GreaterThan: maxUIntVal,
+		LessThan:    minUIntVal,
+		Is32Bit:     is32Bit,
+		enabled:     false,
 	}
 }
 
@@ -53,6 +53,14 @@ func (f *UIntFilter) Disable() {
 
 func (f *UIntFilter) Enabled() bool {
 	return f.enabled
+}
+
+func (f *UIntFilter) Minimum() uint64 {
+	return f.GreaterThan
+}
+
+func (f *UIntFilter) Maximum() uint64 {
+	return f.LessThan
 }
 
 func (filter *UIntFilter) Parse(operatorAndValues string) error {
@@ -86,12 +94,12 @@ func (filter *UIntFilter) Parse(operatorAndValues string) error {
 		case "!=":
 			filter.NotEqual = append(filter.NotEqual, val)
 		case ">":
-			if (filter.Greater == maxUIntVal) || (val > filter.Greater) {
-				filter.Greater = val
+			if (filter.GreaterThan == maxUIntVal) || (val > filter.GreaterThan) {
+				filter.GreaterThan = val
 			}
 		case "<":
-			if (filter.Less == minUIntVal) || (val < filter.Less) {
-				filter.Less = val
+			if (filter.LessThan == minUIntVal) || (val < filter.LessThan) {
+				filter.LessThan = val
 			}
 		default:
 			return fmt.Errorf("invalid filter operator: %s", operatorString)
@@ -166,7 +174,7 @@ func (filter *BPFUIntFilter) InitBPF(bpfModule *bpf.Module) error {
 }
 
 func (filter *UIntFilter) FilterOut() bool {
-	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 && filter.Greater == maxUIntVal && filter.Less == minUIntVal {
+	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 && filter.GreaterThan == maxUIntVal && filter.LessThan == minUIntVal {
 		return false
 	} else {
 		return true

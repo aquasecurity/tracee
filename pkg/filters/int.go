@@ -13,12 +13,12 @@ const (
 )
 
 type IntFilter struct {
-	Equal    []int64
-	NotEqual []int64
-	Greater  int64
-	Less     int64
-	Is32Bit  bool
-	enabled  bool
+	Equal       []int64
+	NotEqual    []int64
+	GreaterThan int64
+	LessThan    int64
+	Is32Bit     bool
+	enabled     bool
 }
 
 func NewIntFilter() *IntFilter {
@@ -31,12 +31,12 @@ func NewInt32Filter() *IntFilter {
 
 func newIntFilter(is32Bit bool) *IntFilter {
 	return &IntFilter{
-		Equal:    []int64{},
-		NotEqual: []int64{},
-		Greater:  maxIntVal,
-		Less:     minIntVal,
-		Is32Bit:  is32Bit,
-		enabled:  false,
+		Equal:       []int64{},
+		NotEqual:    []int64{},
+		GreaterThan: maxIntVal,
+		LessThan:    minIntVal,
+		Is32Bit:     is32Bit,
+		enabled:     false,
 	}
 }
 
@@ -50,6 +50,14 @@ func (f *IntFilter) Disable() {
 
 func (f *IntFilter) Enabled() bool {
 	return f.enabled
+}
+
+func (f *IntFilter) Minimum() int64 {
+	return f.GreaterThan
+}
+
+func (f *IntFilter) Maximum() int64 {
+	return f.LessThan
 }
 
 func (filter *IntFilter) Parse(operatorAndValues string) error {
@@ -83,12 +91,12 @@ func (filter *IntFilter) Parse(operatorAndValues string) error {
 		case "!=":
 			filter.NotEqual = append(filter.NotEqual, val)
 		case ">":
-			if (filter.Greater == maxIntVal) || (val > filter.Greater) {
-				filter.Greater = val
+			if (filter.GreaterThan == maxIntVal) || (val > filter.GreaterThan) {
+				filter.GreaterThan = val
 			}
 		case "<":
-			if (filter.Less == minIntVal) || (val < filter.Less) {
-				filter.Less = val
+			if (filter.LessThan == minIntVal) || (val < filter.LessThan) {
+				filter.LessThan = val
 			}
 		default:
 			return fmt.Errorf("invalid filter operator: %s", operatorString)

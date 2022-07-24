@@ -37,10 +37,10 @@ func (filter *RetFilter) Filter(eventID events.ID, retVal int64) bool {
 					return false
 				}
 			}
-			if (filter.Greater != maxIntVal) && retVal <= filter.Greater {
+			if (filter.GreaterThan != maxIntVal) && retVal <= filter.GreaterThan {
 				return false
 			}
-			if (filter.Less != minIntVal) && retVal >= filter.Less {
+			if (filter.LessThan != minIntVal) && retVal >= filter.LessThan {
 				return false
 			}
 		}
