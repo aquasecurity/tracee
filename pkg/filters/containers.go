@@ -9,39 +9,13 @@ import (
 )
 
 type ContainerFilter struct {
-	Equal      []string
-	NotEqual   []string
-	Enabled    bool
-	bpfMapName string
+	*BPFStringFilter
 }
 
 func NewContainerFilter(mapName string) *ContainerFilter {
 	return &ContainerFilter{
-		Equal:      []string{},
-		NotEqual:   []string{},
-		Enabled:    false,
-		bpfMapName: mapName,
+		BPFStringFilter: NewBPFStringFilter(mapName),
 	}
-}
-
-func (filter *ContainerFilter) Parse(operatorAndValues string) error {
-	filter.Enabled = true
-
-	strFilter := &StringFilter{
-		Equal:    []string{},
-		NotEqual: []string{},
-	}
-
-	// Treat operatorAndValues as a string filter to avoid code duplication
-	err := strFilter.Parse(operatorAndValues)
-	if err != nil {
-		return err
-	}
-
-	filter.Equal = strFilter.Equal
-	filter.NotEqual = strFilter.NotEqual
-
-	return nil
 }
 
 func (filter *ContainerFilter) InitBPF(bpfModule *bpf.Module, conts *containers.Containers) error {
@@ -52,7 +26,7 @@ func (filter *ContainerFilter) InitBPF(bpfModule *bpf.Module, conts *containers.
 	filterEqualU32 := uint32(filterEqual) // const need local var for bpfMap.Update()
 	filterNotEqualU32 := uint32(filterNotEqual)
 
-	filterMap, err := bpfModule.GetMap(filter.bpfMapName)
+	filterMap, err := bpfModule.GetMap(filter.mapName)
 	if err != nil {
 		return err
 	}
@@ -83,12 +57,4 @@ func (filter *ContainerFilter) InitBPF(bpfModule *bpf.Module, conts *containers.
 	}
 
 	return nil
-}
-
-func (filter *ContainerFilter) FilterOut() bool {
-	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 {
-		return false
-	} else {
-		return true
-	}
 }

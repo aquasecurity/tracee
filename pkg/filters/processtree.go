@@ -15,12 +15,14 @@ import (
 type ProcessTreeFilter struct {
 	PIDs    map[uint32]bool // PIDs is a map where k=pid and v represents whether it and its descendents should be traced or not
 	Enabled bool
+	mapName string
 }
 
-func NewProcessTreeFilter() *ProcessTreeFilter {
+func NewProcessTreeFilter(mapName string) *ProcessTreeFilter {
 	return &ProcessTreeFilter{
 		PIDs:    map[uint32]bool{},
 		Enabled: false,
+		mapName: mapName,
 	}
 }
 
@@ -66,7 +68,7 @@ func (filter *ProcessTreeFilter) Set(bpfModule *bpf.Module) error {
 		return nil
 	}
 
-	processTreeBPFMap, err := bpfModule.GetMap("process_tree_map")
+	processTreeBPFMap, err := bpfModule.GetMap(filter.mapName)
 	if err != nil {
 		return fmt.Errorf("could not find bpf process_tree_map: %v", err)
 	}
