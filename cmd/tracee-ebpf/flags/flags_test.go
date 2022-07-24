@@ -9,9 +9,244 @@ import (
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/flags"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
+	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// This will only test failure cases since success cases are covered in the filter tests themselves
+func TestPrepareFilter(t *testing.T) {
+	testCases := []struct {
+		testName      string
+		filters       []string
+		expectedError error
+	}{
+		{
+			testName:      "invalid argfilter 1",
+			filters:       []string{"open."},
+			expectedError: filters.InvalidExpression("open."),
+		},
+		{
+			testName:      "invalid argfilter 2",
+			filters:       []string{"open.bla=5"},
+			expectedError: filters.InvalidEventArgument("bla"),
+		},
+		{
+			testName:      "invalid filter",
+			filters:       []string{"blabla=5"},
+			expectedError: flags.InvalidFilterOptionError("blabla=5"),
+		},
+		{
+			testName:      "invalid retfilter 1",
+			filters:       []string{".retval"},
+			expectedError: filters.InvalidExpression(".retval"),
+		},
+		{
+			testName:      "invalid retfilter 2",
+			filters:       []string{"open.retvall=5"},
+			expectedError: filters.InvalidExpression("open.retvall=5"),
+		},
+		{
+			testName:      "invalid operator",
+			filters:       []string{"uid\t0"},
+			expectedError: flags.InvalidFilterOptionError("uid\t0"),
+		},
+		{
+			testName:      "invalid operator",
+			filters:       []string{"mntns\t0"},
+			expectedError: flags.InvalidFilterOptionError("mntns\t0"),
+		},
+		{
+			testName:      "invalid filter type",
+			filters:       []string{"UID>0"},
+			expectedError: flags.InvalidFilterOptionError("UID>0"),
+		},
+		{
+			testName:      "invalid filter type",
+			filters:       []string{"test=0"},
+			expectedError: flags.InvalidFilterOptionError("test=0"),
+		},
+		{
+			testName:      "invalid filter type",
+			filters:       []string{"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=0"},
+			expectedError: flags.InvalidFilterOptionError("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=0"),
+		},
+		{
+			testName:      "invalid mntns 1",
+			filters:       []string{"mntns="},
+			expectedError: filters.InvalidExpression("mntns="),
+		},
+		{
+			testName:      "invalid mntns 2",
+			filters:       []string{"mntns=-1"},
+			expectedError: filters.InvalidValue("-1"),
+		},
+		{
+			testName: "invalid uid 1",
+			filters: []string{"uid=	"},
+			expectedError: filters.InvalidValue("\t"),
+		},
+		{
+			testName:      "invalid uid 2",
+			filters:       []string{"uid=4294967296"},
+			expectedError: filters.InvalidValue("4294967296"),
+		},
+		{
+			testName:      "invalid uid 3",
+			filters:       []string{"uid=-1"},
+			expectedError: filters.InvalidValue("-1"),
+		},
+		{
+			testName:      "invalid uid 4",
+			filters:       []string{"uid=-1\t"},
+			expectedError: filters.InvalidValue("-1\t"),
+		},
+		{
+			testName: "success - large uid filter",
+			filters:  []string{"uid=4294967296"},
+		},
+		{
+			testName: "success - pid greater or large",
+			filters:  []string{"pid>=12"},
+		},
+		{
+			testName: "success - uid=0",
+			filters:  []string{"uid=0"},
+		},
+		{
+			testName: "success - uid!=0",
+			filters:  []string{"uid!=0"},
+		},
+		{
+			testName: "success - mntns=0",
+			filters:  []string{"mntns=0"},
+		},
+		{
+			testName: "success - pidns!=0",
+			filters:  []string{"pidns!=0"},
+		},
+		{
+			testName: "success - comm=ls",
+			filters:  []string{"comm=ls"},
+		},
+		{
+			testName: "success - uts!=deadbeaf",
+			filters:  []string{"uts!=deadbeaf"},
+		},
+		{
+			testName: "success - uid>0",
+			filters:  []string{"uid>0"},
+		},
+		{
+			testName: "success - uid<0",
+			filters:  []string{"uid<0"},
+		},
+		{
+			testName:      "invalid - uid>=",
+			filters:       []string{"uid>="},
+			expectedError: filters.InvalidExpression("uid>="),
+		},
+		{
+			testName: "container",
+			filters:  []string{"container"},
+		},
+		{
+			testName: "container=new",
+			filters:  []string{"container=new"},
+		},
+		{
+			testName: "pid=new",
+			filters:  []string{"pid=new"},
+		},
+		{
+			testName: "container=abcd123",
+			filters:  []string{"container=abcd123"},
+		},
+		{
+			testName: "argfilter",
+			filters:  []string{"openat.pathname=/bin/ls,/tmp/tracee", "openat.pathname!=/etc/passwd"},
+		},
+		{
+			testName: "retfilter",
+			filters:  []string{"openat.retval=2", "openat.retval>1"},
+		},
+		{
+			testName: "wildcard filter",
+			filters:  []string{"event=open*"},
+		},
+		{
+			testName: "wildcard not filter",
+			filters:  []string{"event!=*"},
+		},
+		{
+			testName: "multiple filters",
+			filters:  []string{"uid<1", "mntns=5", "pidns!=3", "pid!=10", "comm=ps", "uts!=abc"},
+		},
+		{
+			testName:      "invalid value - extra operator",
+			filters:       []string{"uid==0"},
+			expectedError: filters.InvalidValue("=0"),
+		},
+		{
+			testName:      "invalid value - extra operator",
+			filters:       []string{"uid>>>>>>>>>>>>>>>>>>>>>>>>>>>>>0"},
+			expectedError: filters.InvalidValue(">>>>>>>>>>>>>>>>>>>>>>>>>>>>0"),
+		},
+		{
+			testName:      "invalid value - string in numeric filter",
+			filters:       []string{"uid=a"},
+			expectedError: filters.InvalidValue("a"),
+		},
+		{
+			testName:      "invalid pidns",
+			filters:       []string{"pidns=a"},
+			expectedError: filters.InvalidValue("a"),
+		},
+
+		{
+			testName: "valid pid",
+			filters:  []string{"pid>12"},
+		},
+		{
+			testName: "adding retval filter then argfilter",
+			filters:  []string{"open.retval=5", "security_file_open.pathname=/etc/shadow"},
+		},
+		{
+			testName:      "invalid wildcard",
+			filters:       []string{"event=blah*"},
+			expectedError: errors.New("invalid event to trace: blah"),
+		},
+		{
+			testName:      "invalid wildcard 2",
+			filters:       []string{"event=bl*ah"},
+			expectedError: errors.New("invalid event to trace: bl*ah"),
+		},
+		{
+			testName:      "internal event selection",
+			filters:       []string{"event=print_syscall_table"},
+			expectedError: errors.New("invalid event to trace: print_syscall_table"),
+		},
+		{
+			testName:      "invalid not wildcard",
+			filters:       []string{"event!=blah*"},
+			expectedError: errors.New("invalid event to exclude: blah"),
+		},
+		{
+			testName:      "invalid not wildcard 2",
+			filters:       []string{"event!=bl*ah"},
+			expectedError: errors.New("invalid event to exclude: bl*ah"),
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
+			_, err := flags.PrepareFilter(tc.filters)
+			if tc.expectedError != nil {
+				require.Error(t, err)
+				assert.ErrorContains(t, err, tc.expectedError.Error())
+			}
+		})
+	}
+}
 
 func TestPrepareCapture(t *testing.T) {
 	t.Run("various capture options", func(t *testing.T) {
@@ -62,7 +297,6 @@ func TestPrepareCapture(t *testing.T) {
 					OutputPath: "/tmp/tracee/out",
 					Mem:        true,
 				},
-				expectedError: nil,
 			},
 			{
 				testName:     "capture exec",
@@ -71,7 +305,6 @@ func TestPrepareCapture(t *testing.T) {
 					OutputPath: "/tmp/tracee/out",
 					Exec:       true,
 				},
-				expectedError: nil,
 			},
 			{
 				testName:     "capture module",
@@ -80,7 +313,6 @@ func TestPrepareCapture(t *testing.T) {
 					OutputPath: "/tmp/tracee/out",
 					Module:     true,
 				},
-				expectedError: nil,
 			},
 			{
 				testName:     "capture write",
@@ -89,7 +321,6 @@ func TestPrepareCapture(t *testing.T) {
 					OutputPath: "/tmp/tracee/out",
 					FileWrite:  true,
 				},
-				expectedError: nil,
 			},
 			{
 				testName:     "capture write filtered",
@@ -99,7 +330,6 @@ func TestPrepareCapture(t *testing.T) {
 					FileWrite:       true,
 					FilterFileWrite: []string{"/tmp"},
 				},
-				expectedError: nil,
 			},
 			{
 				testName:     "multiple capture options",
@@ -111,7 +341,6 @@ func TestPrepareCapture(t *testing.T) {
 					Exec:       true,
 					Module:     true,
 				},
-				expectedError: nil,
 			},
 			{
 				testName:     "capture exec and enable profile",
@@ -121,7 +350,6 @@ func TestPrepareCapture(t *testing.T) {
 					Exec:       true,
 					Profile:    true,
 				},
-				expectedError: nil,
 			},
 			{
 				testName:     "just enable profile",
@@ -131,16 +359,13 @@ func TestPrepareCapture(t *testing.T) {
 					Exec:       true,
 					Profile:    true,
 				},
-				expectedError: nil,
 			},
 			{
 				testName:     "network interface",
 				captureSlice: []string{"net=lo"},
 				expectedCapture: tracee.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
-					NetIfaces: &tracee.NetIfaces{
-						Ifaces: []string{"lo"},
-					},
+					NetIfaces:  &tracee.NetIfaces{Ifaces: []string{"lo"}},
 				},
 			},
 			{
@@ -148,9 +373,7 @@ func TestPrepareCapture(t *testing.T) {
 				captureSlice: []string{"net=lo", "net=lo"},
 				expectedCapture: tracee.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
-					NetIfaces: &tracee.NetIfaces{
-						Ifaces: []string{"lo"},
-					},
+					NetIfaces:  &tracee.NetIfaces{Ifaces: []string{"lo"}},
 				},
 			},
 		}
@@ -217,7 +440,6 @@ func TestPrepareOutput(t *testing.T) {
 				StackAddresses: true,
 				ParseArguments: true,
 			},
-			expectedError: nil,
 		},
 		{
 			testName:    "option detect-syscall",
@@ -226,7 +448,6 @@ func TestPrepareOutput(t *testing.T) {
 				DetectSyscall:  true,
 				ParseArguments: true,
 			},
-			expectedError: nil,
 		},
 		{
 			testName:    "option exec-env",
@@ -235,7 +456,6 @@ func TestPrepareOutput(t *testing.T) {
 				ExecEnv:        true,
 				ParseArguments: true,
 			},
-			expectedError: nil,
 		},
 		{
 			testName:    "option exec-hash",
@@ -244,7 +464,6 @@ func TestPrepareOutput(t *testing.T) {
 				ExecHash:       true,
 				ParseArguments: true,
 			},
-			expectedError: nil,
 		},
 		{
 			testName:    "option sort-events",
@@ -253,7 +472,6 @@ func TestPrepareOutput(t *testing.T) {
 				ParseArguments: true,
 				EventsSorting:  true,
 			},
-			expectedError: nil,
 		},
 		{
 			testName:    "all options",
@@ -266,7 +484,6 @@ func TestPrepareOutput(t *testing.T) {
 				ParseArguments: true,
 				EventsSorting:  true,
 			},
-			expectedError: nil,
 		},
 	}
 	for _, testcase := range testCases {
@@ -304,13 +521,11 @@ func TestPrepareCache(t *testing.T) {
 			testName:      "cache-type=none",
 			cacheSlice:    []string{"cache-type=none"},
 			expectedCache: nil,
-			expectedError: nil,
 		},
 		{
 			testName:      "cache-type=mem",
 			cacheSlice:    []string{"cache-type=mem"},
 			expectedCache: queue.NewEventQueueMem(0),
-			expectedError: nil,
 		},
 		{
 			testName:      "mem-cache-size=X without cache-type=mem",
@@ -322,7 +537,6 @@ func TestPrepareCache(t *testing.T) {
 			testName:      "cache-type=mem with mem-cache-size=512",
 			cacheSlice:    []string{"cache-type=mem", "mem-cache-size=512"},
 			expectedCache: queue.NewEventQueueMem(512),
-			expectedError: nil,
 		},
 	}
 
