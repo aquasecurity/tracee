@@ -8,13 +8,23 @@ import (
 	"github.com/aquasecurity/tracee/pkg/containers"
 )
 
-type ContIDFilter struct {
-	Equal    []string
-	NotEqual []string
-	Enabled  bool
+type ContainerFilter struct {
+	Equal      []string
+	NotEqual   []string
+	Enabled    bool
+	bpfMapName string
 }
 
-func (filter *ContIDFilter) Parse(operatorAndValues string) error {
+func NewContainerFilter(mapName string) *ContainerFilter {
+	return &ContainerFilter{
+		Equal:      []string{},
+		NotEqual:   []string{},
+		Enabled:    false,
+		bpfMapName: mapName,
+	}
+}
+
+func (filter *ContainerFilter) Parse(operatorAndValues string) error {
 	filter.Enabled = true
 
 	strFilter := &StringFilter{
@@ -34,7 +44,7 @@ func (filter *ContIDFilter) Parse(operatorAndValues string) error {
 	return nil
 }
 
-func (filter *ContIDFilter) InitBPF(bpfModule *bpf.Module, conts *containers.Containers, filterMapName string) error {
+func (filter *ContainerFilter) InitBPF(bpfModule *bpf.Module, conts *containers.Containers) error {
 	if !filter.Enabled {
 		return nil
 	}
@@ -42,7 +52,7 @@ func (filter *ContIDFilter) InitBPF(bpfModule *bpf.Module, conts *containers.Con
 	filterEqualU32 := uint32(filterEqual) // const need local var for bpfMap.Update()
 	filterNotEqualU32 := uint32(filterNotEqual)
 
-	filterMap, err := bpfModule.GetMap(filterMapName)
+	filterMap, err := bpfModule.GetMap(filter.bpfMapName)
 	if err != nil {
 		return err
 	}
@@ -75,7 +85,7 @@ func (filter *ContIDFilter) InitBPF(bpfModule *bpf.Module, conts *containers.Con
 	return nil
 }
 
-func (filter *ContIDFilter) FilterOut() bool {
+func (filter *ContainerFilter) FilterOut() bool {
 	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 {
 		return false
 	} else {

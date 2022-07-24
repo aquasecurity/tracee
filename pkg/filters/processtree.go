@@ -17,6 +17,13 @@ type ProcessTreeFilter struct {
 	Enabled bool
 }
 
+func NewProcessTreeFilter() *ProcessTreeFilter {
+	return &ProcessTreeFilter{
+		PIDs:    map[uint32]bool{},
+		Enabled: false,
+	}
+}
+
 func (filter *ProcessTreeFilter) Parse(operatorAndValues string) error {
 	filter.Enabled = true
 

@@ -19,6 +19,25 @@ type UIntFilter struct {
 	Enabled  bool
 }
 
+func NewUIntFilter() *UIntFilter {
+	return newUIntFilter(false)
+}
+
+func NewUInt32Filter() *UIntFilter {
+	return newUIntFilter(true)
+}
+
+func newUIntFilter(is32Bit bool) *UIntFilter {
+	return &UIntFilter{
+		Equal:    []uint64{},
+		NotEqual: []uint64{},
+		Greater:  GreaterNotSetUint,
+		Less:     LessNotSetUint,
+		Is32Bit:  is32Bit,
+		Enabled:  false,
+	}
+}
+
 func (filter *UIntFilter) Parse(operatorAndValues string) error {
 	filter.Enabled = true
 	if len(operatorAndValues) < 2 {

@@ -16,6 +16,25 @@ type IntFilter struct {
 	Enabled  bool
 }
 
+func NewIntFilter() *IntFilter {
+	return newIntFilter(false)
+}
+
+func NewInt32Filter() *IntFilter {
+	return newIntFilter(true)
+}
+
+func newIntFilter(is32Bit bool) *IntFilter {
+	return &IntFilter{
+		Equal:    []int64{},
+		NotEqual: []int64{},
+		Greater:  GreaterNotSetInt,
+		Less:     LessNotSetInt,
+		Is32Bit:  is32Bit,
+		Enabled:  false,
+	}
+}
+
 func (filter *IntFilter) Parse(operatorAndValues string) error {
 	filter.Enabled = true
 	if len(operatorAndValues) < 2 {
