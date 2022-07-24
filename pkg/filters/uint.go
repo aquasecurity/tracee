@@ -85,7 +85,26 @@ func (filter *UIntFilter) Parse(operatorAndValues string) error {
 	return nil
 }
 
-func (filter *UIntFilter) InitBPF(bpfModule *bpf.Module, filterMapName string) error {
+type BPFUIntFilter struct {
+	UIntFilter
+	mapName string
+}
+
+func NewBPFUIntFilter(mapName string) *BPFUIntFilter {
+	return &BPFUIntFilter{
+		UIntFilter: *NewUIntFilter(),
+		mapName:    mapName,
+	}
+}
+
+func NewBPFUInt32Filter(mapName string) *BPFUIntFilter {
+	return &BPFUIntFilter{
+		UIntFilter: *NewUInt32Filter(),
+		mapName:    mapName,
+	}
+}
+
+func (filter *BPFUIntFilter) InitBPF(bpfModule *bpf.Module) error {
 	if !filter.Enabled {
 		return nil
 	}
@@ -98,7 +117,7 @@ func (filter *UIntFilter) InitBPF(bpfModule *bpf.Module, filterMapName string) e
 	// 2. pid_filter        u32, u32
 	// 3. mnt_ns_filter     u64, u32
 	// 4. pid_ns_filter     u64, u32
-	equalityFilter, err := bpfModule.GetMap(filterMapName)
+	equalityFilter, err := bpfModule.GetMap(filter.mapName)
 	if err != nil {
 		return err
 	}
