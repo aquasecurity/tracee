@@ -14,21 +14,31 @@ import (
 
 type ProcessTreeFilter struct {
 	PIDs    map[uint32]bool // PIDs is a map where k=pid and v represents whether it and its descendents should be traced or not
-	Enabled bool
+	enabled bool
 	mapName string
 }
 
 func NewProcessTreeFilter(mapName string) *ProcessTreeFilter {
 	return &ProcessTreeFilter{
 		PIDs:    map[uint32]bool{},
-		Enabled: false,
+		enabled: false,
 		mapName: mapName,
 	}
 }
 
-func (filter *ProcessTreeFilter) Parse(operatorAndValues string) error {
-	filter.Enabled = true
+func (f *ProcessTreeFilter) Enable() {
+	f.enabled = true
+}
 
+func (f *ProcessTreeFilter) Disable() {
+	f.enabled = false
+}
+
+func (f *ProcessTreeFilter) Enabled() bool {
+	return f.enabled
+}
+
+func (filter *ProcessTreeFilter) Parse(operatorAndValues string) error {
 	if len(operatorAndValues) < 2 {
 		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
 	}
@@ -60,11 +70,13 @@ func (filter *ProcessTreeFilter) Parse(operatorAndValues string) error {
 		filter.PIDs[uint32(pid)] = equalityOperator
 	}
 
+	filter.Enable()
+
 	return nil
 }
 
-func (filter *ProcessTreeFilter) Set(bpfModule *bpf.Module) error {
-	if !filter.Enabled {
+func (filter *ProcessTreeFilter) InitBPF(bpfModule *bpf.Module) error {
+	if !filter.Enabled() {
 		return nil
 	}
 

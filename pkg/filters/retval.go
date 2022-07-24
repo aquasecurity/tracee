@@ -9,18 +9,18 @@ import (
 
 type RetFilter struct {
 	Filters map[events.ID]*IntFilter
-	Enabled bool
+	enabled bool
 }
 
 func NewRetFilter() *RetFilter {
 	return &RetFilter{
 		Filters: map[events.ID]*IntFilter{},
-		Enabled: false,
+		enabled: false,
 	}
 }
 
 func (filter *RetFilter) Filter(eventID events.ID, retVal int64) bool {
-	if filter.Enabled {
+	if filter.Enabled() {
 		if filter, ok := filter.Filters[eventID]; ok {
 			match := false
 			for _, f := range filter.Equal {
@@ -48,8 +48,25 @@ func (filter *RetFilter) Filter(eventID events.ID, retVal int64) bool {
 	return true
 }
 
+func (filter *RetFilter) Enable() {
+	filter.enabled = true
+	for _, f := range filter.Filters {
+		f.Enable()
+	}
+}
+
+func (filter *RetFilter) Disable() {
+	filter.enabled = false
+	for _, f := range filter.Filters {
+		f.Disable()
+	}
+}
+
+func (filter *RetFilter) Enabled() bool {
+	return filter.enabled
+}
+
 func (filter *RetFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]events.ID) error {
-	filter.Enabled = true
 	// Ret filter has the following format: "event.ret=val"
 	// filterName have the format event.retval, and operatorAndValues have the format "=val"
 	splitFilter := strings.Split(filterName, ".")
@@ -76,6 +93,8 @@ func (filter *RetFilter) Parse(filterName string, operatorAndValues string, even
 	}
 
 	filter.Filters[id] = intFilter
+
+	filter.Enable()
 
 	return nil
 }

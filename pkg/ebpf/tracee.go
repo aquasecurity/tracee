@@ -654,67 +654,67 @@ func (t *Tracee) getOptionsConfig() uint32 {
 
 func (t *Tracee) getFiltersConfig() uint32 {
 	var cFilterVal uint32
-	if t.config.Filter.UIDFilter.Enabled {
+	if t.config.Filter.UIDFilter.Enabled() {
 		cFilterVal = cFilterVal | filterUIDEnabled
 		if t.config.Filter.UIDFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterUIDOut
 		}
 	}
-	if t.config.Filter.PIDFilter.Enabled {
+	if t.config.Filter.PIDFilter.Enabled() {
 		cFilterVal = cFilterVal | filterPidEnabled
 		if t.config.Filter.PIDFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterPidOut
 		}
 	}
-	if t.config.Filter.NewPidFilter.Enabled {
+	if t.config.Filter.NewPidFilter.Enabled() {
 		cFilterVal = cFilterVal | filterNewPidEnabled
 		if t.config.Filter.NewPidFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterNewPidOut
 		}
 	}
-	if t.config.Filter.MntNSFilter.Enabled {
+	if t.config.Filter.MntNSFilter.Enabled() {
 		cFilterVal = cFilterVal | filterMntNsEnabled
 		if t.config.Filter.MntNSFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterMntNsOut
 		}
 	}
-	if t.config.Filter.PidNSFilter.Enabled {
+	if t.config.Filter.PidNSFilter.Enabled() {
 		cFilterVal = cFilterVal | filterPidNsEnabled
 		if t.config.Filter.PidNSFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterPidNsOut
 		}
 	}
-	if t.config.Filter.UTSFilter.Enabled {
+	if t.config.Filter.UTSFilter.Enabled() {
 		cFilterVal = cFilterVal | filterUTSNsEnabled
 		if t.config.Filter.UTSFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterUTSNsOut
 		}
 	}
-	if t.config.Filter.CommFilter.Enabled {
+	if t.config.Filter.CommFilter.Enabled() {
 		cFilterVal = cFilterVal | filterCommEnabled
 		if t.config.Filter.CommFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterCommOut
 		}
 	}
-	if t.config.Filter.ContFilter.Enabled {
+	if t.config.Filter.ContFilter.Enabled() {
 		cFilterVal = cFilterVal | filterContEnabled
 		if t.config.Filter.ContFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterContOut
 		}
 	}
-	if t.config.Filter.NewContFilter.Enabled {
+	if t.config.Filter.NewContFilter.Enabled() {
 		cFilterVal = cFilterVal | filterNewContEnabled
 		if t.config.Filter.NewContFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterNewContOut
 		}
 	}
-	if t.config.Filter.ContIDFilter.Enabled {
+	if t.config.Filter.ContIDFilter.Enabled() {
 		cFilterVal = cFilterVal | filterCgroupIdEnabled
 		if t.config.Filter.ContIDFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterCgroupIdOut
 		}
 	}
-	if t.config.Filter.ProcessTreeFilter.Enabled {
+	if t.config.Filter.ProcessTreeFilter.Enabled() {
 		cFilterVal = cFilterVal | filterProcTreeEnabled
 		if t.config.Filter.ProcessTreeFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterProcTreeOut
@@ -1083,7 +1083,7 @@ func (t *Tracee) initBPF() error {
 		return err
 	}
 
-	err = t.config.Filter.ProcessTreeFilter.Set(t.bpfModule)
+	err = t.config.Filter.ProcessTreeFilter.InitBPF(t.bpfModule)
 	if err != nil {
 		return fmt.Errorf("error building process tree: %v", err)
 	}
