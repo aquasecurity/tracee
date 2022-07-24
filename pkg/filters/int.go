@@ -7,6 +7,11 @@ import (
 	"strings"
 )
 
+const (
+	minIntVal int64 = math.MinInt64
+	maxIntVal int64 = math.MaxInt64
+)
+
 type IntFilter struct {
 	Equal    []int64
 	NotEqual []int64
@@ -28,8 +33,8 @@ func newIntFilter(is32Bit bool) *IntFilter {
 	return &IntFilter{
 		Equal:    []int64{},
 		NotEqual: []int64{},
-		Greater:  GreaterNotSetInt,
-		Less:     LessNotSetInt,
+		Greater:  maxIntVal,
+		Less:     minIntVal,
 		Is32Bit:  is32Bit,
 		Enabled:  false,
 	}
@@ -67,11 +72,11 @@ func (filter *IntFilter) Parse(operatorAndValues string) error {
 		case "!=":
 			filter.NotEqual = append(filter.NotEqual, val)
 		case ">":
-			if (filter.Greater == GreaterNotSetInt) || (val > filter.Greater) {
+			if (filter.Greater == maxIntVal) || (val > filter.Greater) {
 				filter.Greater = val
 			}
 		case "<":
-			if (filter.Less == LessNotSetInt) || (val < filter.Less) {
+			if (filter.Less == minIntVal) || (val < filter.Less) {
 				filter.Less = val
 			}
 		default:

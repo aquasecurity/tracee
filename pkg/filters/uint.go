@@ -10,6 +10,11 @@ import (
 	bpf "github.com/aquasecurity/libbpfgo"
 )
 
+const (
+	minUIntVal uint64 = 0
+	maxUIntVal uint64 = math.MaxUint64
+)
+
 type UIntFilter struct {
 	Equal    []uint64
 	NotEqual []uint64
@@ -31,8 +36,8 @@ func newUIntFilter(is32Bit bool) *UIntFilter {
 	return &UIntFilter{
 		Equal:    []uint64{},
 		NotEqual: []uint64{},
-		Greater:  GreaterNotSetUint,
-		Less:     LessNotSetUint,
+		Greater:  maxUIntVal,
+		Less:     minUIntVal,
 		Is32Bit:  is32Bit,
 		Enabled:  false,
 	}
@@ -70,11 +75,11 @@ func (filter *UIntFilter) Parse(operatorAndValues string) error {
 		case "!=":
 			filter.NotEqual = append(filter.NotEqual, val)
 		case ">":
-			if (filter.Greater == GreaterNotSetUint) || (val > filter.Greater) {
+			if (filter.Greater == maxUIntVal) || (val > filter.Greater) {
 				filter.Greater = val
 			}
 		case "<":
-			if (filter.Less == LessNotSetUint) || (val < filter.Less) {
+			if (filter.Less == minUIntVal) || (val < filter.Less) {
 				filter.Less = val
 			}
 		default:
@@ -148,7 +153,7 @@ func (filter *BPFUIntFilter) InitBPF(bpfModule *bpf.Module) error {
 }
 
 func (filter *UIntFilter) FilterOut() bool {
-	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 && filter.Greater == GreaterNotSetUint && filter.Less == LessNotSetUint {
+	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 && filter.Greater == maxUIntVal && filter.Less == minUIntVal {
 		return false
 	} else {
 		return true

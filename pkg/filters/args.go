@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/types/trace"
 )
 
 type ArgFilter struct {
@@ -17,6 +18,55 @@ func NewArgFilter() *ArgFilter {
 		Filters: map[events.ID]map[string]*StringFilter{},
 		Enabled: false,
 	}
+}
+
+func matchFilter(filters []string, argValStr string) bool {
+	for _, f := range filters {
+		prefixCheck := f[len(f)-1] == '*'
+		if prefixCheck {
+			f = f[0 : len(f)-1]
+		}
+		suffixCheck := f[0] == '*'
+		if suffixCheck {
+			f = f[1:]
+		}
+		if argValStr == f ||
+			(prefixCheck && !suffixCheck && strings.HasPrefix(argValStr, f)) ||
+			(suffixCheck && !prefixCheck && strings.HasSuffix(argValStr, f)) ||
+			(prefixCheck && suffixCheck && strings.Contains(argValStr, f)) {
+			return true
+		}
+	}
+	return false
+}
+
+func (filter *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
+	if filter.Enabled {
+		for argName, filter := range filter.Filters[events.ID(eventID)] {
+			var argVal interface{}
+			ok := false
+			for _, arg := range args {
+				if arg.Name == argName {
+					argVal = arg.Value
+					ok = true
+				}
+			}
+			if !ok {
+				continue
+			}
+			// TODO: use type assertion instead of string conversion
+			argValStr := fmt.Sprint(argVal)
+			match := matchFilter(filter.Equal, argValStr)
+			if !match && len(filter.Equal) > 0 {
+				return false
+			}
+			matchExclude := matchFilter(filter.NotEqual, argValStr)
+			if matchExclude {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]events.ID) error {
