@@ -8,13 +8,8 @@ import (
 )
 
 type ArgFilter struct {
-	Filters map[events.ID]map[string]ArgFilterVal // key to the first map is event id, and to the second map the argument name
+	Filters map[events.ID]map[string]StringFilter // key to the first map is event id, and to the second map the argument name
 	Enabled bool
-}
-
-type ArgFilterVal struct {
-	Equal    []string
-	NotEqual []string
 }
 
 func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]events.ID) error {
@@ -64,11 +59,11 @@ func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, even
 	}
 
 	if _, ok := filter.Filters[id]; !ok {
-		filter.Filters[id] = make(map[string]ArgFilterVal)
+		filter.Filters[id] = make(map[string]StringFilter)
 	}
 
 	if _, ok := filter.Filters[id][argName]; !ok {
-		filter.Filters[id][argName] = ArgFilterVal{}
+		filter.Filters[id][argName] = StringFilter{}
 	}
 
 	val := filter.Filters[id][argName]
