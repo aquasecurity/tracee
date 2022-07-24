@@ -16,7 +16,6 @@ jobs:
         flavor: [
           {distro: ubuntu, version: bionic},
           {distro: ubuntu, version: focal},
-          {distro: ubuntu, version: impish},
           {distro: ubuntu, version: jammy},
           {distro: fedora, version: 34},
           {distro: fedora, version: 35},
