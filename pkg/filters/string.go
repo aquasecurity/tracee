@@ -11,8 +11,15 @@ import (
 type StringFilter struct {
 	Equal    []string
 	NotEqual []string
-	Size     uint
 	Enabled  bool
+}
+
+func NewStringFilter() *StringFilter {
+	return &StringFilter{
+		Equal:    []string{},
+		NotEqual: []string{},
+		Enabled:  false,
+	}
 }
 
 func (filter *StringFilter) Parse(operatorAndValues string) error {
@@ -48,6 +55,9 @@ func (filter *StringFilter) Parse(operatorAndValues string) error {
 }
 
 func (filter *StringFilter) InitBPF(bpfModule *bpf.Module, filterMapName string) error {
+	// MaxBpfStrFilterSize value should match MAX_STR_FILTER_SIZE defined in BPF code
+	const maxBpfStrFilterSize = 16
+
 	if !filter.Enabled {
 		return nil
 	}
@@ -62,14 +72,14 @@ func (filter *StringFilter) InitBPF(bpfModule *bpf.Module, filterMapName string)
 		return err
 	}
 	for i := 0; i < len(filter.Equal); i++ {
-		filterEqualBytes := make([]byte, filter.Size)
+		filterEqualBytes := make([]byte, maxBpfStrFilterSize)
 		copy(filterEqualBytes, filter.Equal[i])
 		if err = filterMap.Update(unsafe.Pointer(&filterEqualBytes[0]), unsafe.Pointer(&filterEqualU32)); err != nil {
 			return err
 		}
 	}
 	for i := 0; i < len(filter.NotEqual); i++ {
-		filterNotEqualBytes := make([]byte, filter.Size)
+		filterNotEqualBytes := make([]byte, maxBpfStrFilterSize)
 		copy(filterNotEqualBytes, filter.NotEqual[i])
 		if err = filterMap.Update(unsafe.Pointer(&filterNotEqualBytes[0]), unsafe.Pointer(&filterNotEqualU32)); err != nil {
 			return err

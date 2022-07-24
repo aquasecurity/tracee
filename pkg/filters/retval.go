@@ -8,8 +8,15 @@ import (
 )
 
 type RetFilter struct {
-	Filters map[events.ID]IntFilter
+	Filters map[events.ID]*IntFilter
 	Enabled bool
+}
+
+func NewRetFilter() *RetFilter {
+	return &RetFilter{
+		Filters: map[events.ID]*IntFilter{},
+		Enabled: false,
+	}
 }
 
 func (filter *RetFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]events.ID) error {
@@ -28,7 +35,7 @@ func (filter *RetFilter) Parse(filterName string, operatorAndValues string, even
 	}
 
 	if _, ok := filter.Filters[id]; !ok {
-		filter.Filters[id] = IntFilter{
+		filter.Filters[id] = &IntFilter{
 			Equal:    []int64{},
 			NotEqual: []int64{},
 			Less:     LessNotSetInt,
@@ -39,7 +46,7 @@ func (filter *RetFilter) Parse(filterName string, operatorAndValues string, even
 	intFilter := filter.Filters[id]
 
 	// Treat operatorAndValues as an int filter to avoid code duplication
-	err := (&intFilter).Parse(operatorAndValues)
+	err := intFilter.Parse(operatorAndValues)
 	if err != nil {
 		return err
 	}
