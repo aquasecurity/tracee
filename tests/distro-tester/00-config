@@ -1,2 +1,0 @@
-LXD_STORAGE="/home/rafaeldtinoco/space/lxd/virtual-machines"
-IMAGES="vm-stream8 vm-stream9 vm-fedora34 vm-fedora35 vm-fedora36 vm-focal vm-focalhwe vm-jammy gkekernel1.21.11"
