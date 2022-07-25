@@ -26,12 +26,13 @@ const cgroupV2FsType = "cgroup2"
 
 // Containers contains information about running containers in the host.
 type Containers struct {
-	cgroupV1 bool
-	cgroupMP string
-	cgroups  map[uint32]CgroupInfo
-	deleted  []uint64
-	mtx      sync.RWMutex // protecting both cgroups and deleted fields
-	enricher runtimeInfoService
+	cgroupV1   bool
+	cgroupMP   string
+	cgroups    map[uint32]CgroupInfo
+	deleted    []uint64
+	mtx        sync.RWMutex // protecting both cgroups and deleted fields
+	enricher   runtimeInfoService
+	bpfMapName string
 }
 
 // CgroupInfo represents a cgroup dir (might describe a container cgroup dir).
@@ -45,12 +46,13 @@ type CgroupInfo struct {
 
 // New initializes a Containers object and returns a pointer to it.
 // User should further call "Populate" and iterate with Containers data.
-func New(sockets cruntime.Sockets, debug bool) (*Containers, error) {
+func New(sockets cruntime.Sockets, mapName string, debug bool) (*Containers, error) {
 	containers := &Containers{
-		cgroupV1: false,
-		cgroupMP: "",
-		cgroups:  make(map[uint32]CgroupInfo),
-		mtx:      sync.RWMutex{},
+		cgroupV1:   false,
+		cgroupMP:   "",
+		cgroups:    make(map[uint32]CgroupInfo),
+		mtx:        sync.RWMutex{},
+		bpfMapName: mapName,
 	}
 
 	if _, err := os.Stat("/sys/fs/cgroup/cgroup.controllers"); os.IsNotExist(err) {
@@ -515,8 +517,8 @@ const (
 	containerStarted
 )
 
-func (c *Containers) PopulateBpfMap(bpfModule *libbpfgo.Module, mapName string) error {
-	containersMap, err := bpfModule.GetMap(mapName)
+func (c *Containers) PopulateBpfMap(bpfModule *libbpfgo.Module) error {
+	containersMap, err := bpfModule.GetMap(c.bpfMapName)
 	if err != nil {
 		return err
 	}
@@ -533,13 +535,13 @@ func (c *Containers) PopulateBpfMap(bpfModule *libbpfgo.Module, mapName string) 
 	return err
 }
 
-func (c *Containers) RemoveFromBpfMap(bpfModule *libbpfgo.Module, cgroupId uint64, hierarchyID uint32, mapName string) error {
+func (c *Containers) RemoveFromBpfMap(bpfModule *libbpfgo.Module, cgroupId uint64, hierarchyID uint32) error {
 	if c.cgroupV1 && int(hierarchyID) != cgroupV1HierarchyID {
 		// For cgroup v1, we only need to look at one controller
 		return nil
 	}
 
-	containersMap, err := bpfModule.GetMap(mapName)
+	containersMap, err := bpfModule.GetMap(c.bpfMapName)
 	if err != nil {
 		return err
 	}

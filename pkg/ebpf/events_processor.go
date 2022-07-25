@@ -337,8 +337,8 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		if err == nil && info.Container.ContainerId == "" {
 			// If cgroupId is from a regular cgroup directory, and not the
 			// container base directory (from known runtimes), it should be
-			// removed from the "containers_map".
-			t.containers.RemoveFromBpfMap(t.bpfModule, cgroupId, hId, "containers_map")
+			// removed from the containers bpf map.
+			t.containers.RemoveFromBpfMap(t.bpfModule, cgroupId, hId)
 		}
 
 	case events.CgroupRmdir:
