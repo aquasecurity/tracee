@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/flags"
+	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/flags"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
