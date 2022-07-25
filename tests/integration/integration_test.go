@@ -173,6 +173,21 @@ func checkSetFs(t *testing.T, gotOutput *[]trace.Event) {
 	}
 }
 
+func checkNewContainers(t *testing.T, gotOutput *[]trace.Event) {
+	containerIdBytes, err := exec.Command("docker", "run", "-d", "--rm", "alpine").Output()
+	require.NoError(t, err)
+
+	containerId := strings.TrimSuffix(string(containerIdBytes), "\n")
+
+	containerIds := []string{}
+	for _, evt := range *gotOutput {
+		containerIds = append(containerIds, evt.ContainerID)
+	}
+	for _, id := range containerIds {
+		assert.Equal(t, containerId, id)
+	}
+}
+
 func getAllSyscallsInSet(set string) []string {
 	var syscallsInSet []string
 	for _, v := range events.Definitions.Events() {
@@ -239,6 +254,11 @@ func Test_EventFilters(t *testing.T) {
 			name:       "trace only execve events that contains l",
 			filterArgs: []string{"event=execve", "execve.pathname=*l*"},
 			eventFunc:  checkExecve,
+		},
+		{
+			name:       "trace only events from new containers",
+			filterArgs: []string{"container=new"},
+			eventFunc:  checkNewContainers,
 		},
 	}
 
