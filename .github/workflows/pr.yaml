@@ -1,7 +1,4 @@
 ---
-# The PR workflow is triggered automatically whenever a pull request (PR) is
-# opened to the main branch. It's also triggered when a PR is updated by adding
-# commits to the PR branch.
 name: PR
 on:
   workflow_dispatch: {}
@@ -11,8 +8,9 @@ on:
 env:
   GO_VERSION: "1.17"
   OPA_VERSION: "v0.41.0"
+  TESTS: "TRC-2 TRC-3 TRC-4 TRC-5 TRC-7 TRC-9 TRC-10 TRC-11 TRC-12 TRC-14"
 jobs:
-  verify-code:
+  VERIFY-CODE:
     name: Verify Code
     runs-on: ubuntu-20.04
     steps:
@@ -33,14 +31,10 @@ jobs:
             gofmt -s -d .
             exit 1
           fi
-
-  # static checker needs tracee-ebpf compiled because of golang build check
-  # without tracee-ebpf being built, it fails because of missing CGO prereqs
-  # also: can't use default checker github action because tracee needs env vars
-  analyze-code:
-    name: "Analyze Code"
+  ANALYZE-CODE:
+    name: Analyze Code
     needs:
-      - verify-code
+      - VERIFY-CODE
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Code
@@ -61,9 +55,8 @@ jobs:
       - name: Check with StaticCheck
         run: |
           make check-staticcheck
-
-  run-unit-tests:
-    name: "Run Unit Tests"
+  UNIT-TESTS:
+    name: Unit Tests
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Code
@@ -78,12 +71,11 @@ jobs:
       - name: Run Unit Tests
         run: |
           make test-unit
-
-  run-integration-tests:
-    name: "Run Integration Tests"
+  INTEGRATION-TESTS:
+    name: Integration Tests
     needs:
-      - analyze-code
-      - run-unit-tests
+      - ANALYZE-CODE
+      - UNIT-TESTS
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Code
@@ -98,12 +90,11 @@ jobs:
       - name: Run Integration Tests
         run: |
           make test-integration
-
-  verify-signatures:
+  VERIFY-SIGNATURES:
     name: Verify Signatures
     needs:
-      - analyze-code
-      - run-unit-tests
+      - ANALYZE-CODE
+      - UNIT-TESTS
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout Code
@@ -121,72 +112,35 @@ jobs:
       - name: Test Signatures
         run: |
           make test-rules
-
-  # smoke-test-noncore job is using TRC-2 (Anti-Debugging) signature and tracee
-  # non CO-RE container image to run a quick smoke test on each PR.
-  #
-  # NB: Ubuntu 20.04 provided by GitHub Actions runner does not support CO-RE.
-  # Thus, we are running end-to-end signatures tests using tracee non CO-RE
-  # container image.
-  smoke-test-noncore:
-    name: "[Smoke] Test non CO-RE"
+  CORE:
     needs:
-      - run-integration-tests
-      - verify-signatures
-    runs-on: ubuntu-20.04
+      - ANALYZE-CODE
+      - UNIT-TESTS
+    strategy:
+      matrix:
+        os: [stream8, stream9, fedora34, fedora35, fedora36, focal, focalhwe, jammy]
+    runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout main
+      - name: "Checkout"
         uses: actions/checkout@v2
         with:
           submodules: true
-      - name: Install Dependencies
-        uses: ./.github/actions/build-dependencies
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          opa-version: ${{ env.OPA_VERSION }}
-      - name: Build tracee image (full w/out BTFHUB)
+      - name: "CORE"
         run: |
-          BTFHUB=0 make -f builder/Makefile.tracee-container build-tracee-full
-      - name: Install BPF
-        run: |
-          make install-bpf-nocore
-      - name: Run tests
-        run: |
-          docker image pull aquasec/tracee-tester:latest
-          go test -v -run "TestTraceeSignatures" ./tests/e2e/e2e_test.go \
-            -tracee-image-ref "tracee:full" \
-            -tracee-tester-image-ref "aquasec/tracee-tester:latest" \
-            -tracee-signatures "TRC-2"
-
-  # smoke-test-core job is using TRC-2 (Anti-Debugging) signature and tracee
-  # CO-RE container image with embedded BTF info objects to run a quick smoke
-  # test on each PR.
-  smoke-test-core:
-    name: "[Smoke] Test CO-RE"
+          DONTSLEEP=0 ISNONCORE=0 ./tests/kerneltest.sh
+  NONCORE:
     needs:
-      - run-integration-tests
-      - verify-signatures
-    runs-on: ubuntu-20.04
+      - ANALYZE-CODE
+      - UNIT-TESTS
+    strategy:
+      matrix:
+        os: [stream8, stream9, fedora34, fedora35, fedora36, focal, focalhwe, jammy]
+    runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout main
+      - name: "Checkout"
         uses: actions/checkout@v2
         with:
           submodules: true
-      - name: Install Dependencies
-        uses: ./.github/actions/build-dependencies
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          opa-version: ${{ env.OPA_VERSION }}
-      - name: Built tracee BPF
+      - name: "NONCORE"
         run: |
-          make bpf-core
-      - name: Build tracee image (slim w/ BTFHUB)
-        run: |
-          BTFHUB=0 make -f builder/Makefile.tracee-container build-tracee
-      - name: Run tests
-        run: |
-          docker image pull aquasec/tracee-tester:latest
-          go test -v -run "TestTraceeSignatures" ./tests/e2e/e2e_test.go \
-            -tracee-image-ref "tracee:latest" \
-            -tracee-tester-image-ref "aquasec/tracee-tester:latest" \
-            -tracee-signatures "TRC-2"
+          DONTSLEEP=0 ISNONCORE=1 ./tests/kerneltest.sh
