@@ -52,6 +52,7 @@ Examples:
   --trace c                                                    | only trace events from containers (same as above)
   --trace '!container'                                         | only trace events from the host
   --trace uid=0                                                | only trace events from uid 0
+  --trace u=0                                                  | only trace events from uid 0 (same as above)
   --trace mntns=4026531840                                     | only trace events from mntns id 4026531840
   --trace pidns!=4026531836                                    | only trace events from pidns id not equal to 4026531840
   --trace tree=476165                                          | only trace events that descend from the process with pid 476165
@@ -64,6 +65,7 @@ Examples:
   --trace event=open*                                          | only trace events prefixed by "open"
   --trace event!=open*,dup*                                    | don't trace events prefixed by "open" or "dup"
   --trace set=fs                                               | trace all file-system related events
+  --trace s=fs                                                 | trace all file-system related events (same as above)
   --trace s=fs --trace e!=open,openat                          | trace all file-system related events, but not open(at)
   --trace uts!=ab356bc4dd554                                   | don't trace events from uts name ab356bc4dd554
   --trace comm=ls                                              | only trace events from ls command
@@ -71,7 +73,8 @@ Examples:
   --trace openat.pathname=/tmp*                                | only trace 'openat' events that have 'pathname' prefixed by "/tmp"
   --trace openat.pathname!=/tmp/1,/bin/ls                      | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
   --trace comm=bash --trace follow                             | trace all events that originated from bash or from one of the processes spawned by bash
-  --trace net=docker0 			                               | trace the net events over docker0 interface
+  --trace comm=bash --trace f                                  | trace all events that originated from bash or from one of the processes spawned by bash
+  --trace net=docker0                                          | trace the net events over docker0 interface
 
 
 Note: some of the above operators have special meanings in different shells.
