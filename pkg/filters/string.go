@@ -40,7 +40,6 @@ func NewStringFilter(filters ...protocol.Filter) (*StringFilter, error) {
 		},
 		contains:    map[string]bool{},
 		notContains: map[string]bool{},
-		enabled:     false,
 	}
 
 	for _, f := range filters {

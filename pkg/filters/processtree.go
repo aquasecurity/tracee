@@ -21,7 +21,6 @@ type ProcessTreeFilter struct {
 func NewProcessTreeFilter(mapName string) *ProcessTreeFilter {
 	return &ProcessTreeFilter{
 		PIDs:    map[uint32]bool{},
-		enabled: false,
 		mapName: mapName,
 	}
 }

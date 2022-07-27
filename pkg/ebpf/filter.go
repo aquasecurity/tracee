@@ -11,15 +11,14 @@ import (
 )
 
 const (
-	UIDFilterMap         = "uid_filter"
-	PIDFilterMap         = "pid_filter"
-	MntNSFilterMap       = "mnt_ns_filter"
-	PidNSFilterMap       = "pid_ns_filter"
-	UTSFilterMap         = "uts_ns_filter"
-	CommFilterMap        = "comm_filter"
-	ProcessTreeFilterMap = "process_tree_map"
-	CgroupIdFilterMap    = "cgroup_id_filter"
-	ContIdFilter         = "cont_id_filter"
+	UIDFilterBPFMap         = "uid_filter"
+	PIDFilterBPFMap         = "pid_filter"
+	MntNSFilterBPFMap       = "mnt_ns_filter"
+	PidNSFilterBPFMap       = "pid_ns_filter"
+	UTSFilterBPFMap         = "uts_ns_filter"
+	CommFilterBPFMap        = "comm_filter"
+	ProcessTreeFilterBPFMap = "process_tree_map"
+	CgroupIdFilterBPFMap    = "cgroup_id_filter"
 )
 
 type Filter struct {
@@ -174,11 +173,11 @@ func ParseProtocolFilters(filterRequests []protocol.Filter) (Filter, error) {
 	}
 
 	// setup the other filters
-	uidFilter, err := filters.NewBPFUInt32Filter(UIDFilterMap, filterMap[uid]...)
+	uidFilter, err := filters.NewBPFUInt32Filter(UIDFilterBPFMap, filterMap[uid]...)
 	if err != nil {
 		return Filter{}, buildFilterError(uid, err)
 	}
-	pidFilter, err := filters.NewBPFUInt32Filter(PIDFilterMap, filterMap[pid]...)
+	pidFilter, err := filters.NewBPFUInt32Filter(PIDFilterBPFMap, filterMap[pid]...)
 	if err != nil {
 		return Filter{}, buildFilterError(pid, err)
 	}
@@ -186,19 +185,19 @@ func ParseProtocolFilters(filterRequests []protocol.Filter) (Filter, error) {
 	if err != nil {
 		return Filter{}, buildFilterError(newpid, err)
 	}
-	mntnsFilter, err := filters.NewBPFUInt32Filter(MntNSFilterMap, filterMap[mntns]...)
+	mntnsFilter, err := filters.NewBPFUInt32Filter(MntNSFilterBPFMap, filterMap[mntns]...)
 	if err != nil {
 		return Filter{}, buildFilterError(mntns, err)
 	}
-	pidnsFilter, err := filters.NewBPFUInt32Filter(PidNSFilterMap, filterMap[pidns]...)
+	pidnsFilter, err := filters.NewBPFUInt32Filter(PidNSFilterBPFMap, filterMap[pidns]...)
 	if err != nil {
 		return Filter{}, buildFilterError(pidns, err)
 	}
-	utsFilter, err := filters.NewBPFStringFilter(UTSFilterMap, filterMap[uts]...)
+	utsFilter, err := filters.NewBPFStringFilter(UTSFilterBPFMap, filterMap[uts]...)
 	if err != nil {
 		return Filter{}, buildFilterError(uts, err)
 	}
-	commFilter, err := filters.NewBPFStringFilter(CommFilterMap, filterMap[comm]...)
+	commFilter, err := filters.NewBPFStringFilter(CommFilterBPFMap, filterMap[comm]...)
 	if err != nil {
 		return Filter{}, buildFilterError(comm, err)
 	}
@@ -206,7 +205,7 @@ func ParseProtocolFilters(filterRequests []protocol.Filter) (Filter, error) {
 	if err != nil {
 		return Filter{}, buildFilterError(newcont, err)
 	}
-	containerFilter, err := filters.NewContainerFilter(CgroupIdFilterMap, filterMap[container]...)
+	containerFilter, err := filters.NewContainerFilter(CgroupIdFilterBPFMap, filterMap[container]...)
 	if err != nil {
 		return Filter{}, buildFilterError(containerid, err)
 	}
@@ -240,7 +239,7 @@ func ParseProtocolFilters(filterRequests []protocol.Filter) (Filter, error) {
 		NewContFilter:     newContFilter,
 		RetFilter:         retFilter,
 		ArgFilter:         argFilter,
-		ProcessTreeFilter: filters.NewProcessTreeFilter(ProcessTreeFilterMap),
+		ProcessTreeFilter: filters.NewProcessTreeFilter(ProcessTreeFilterBPFMap),
 		Follow:            followFilter.Value(),
 		NetFilter:         netFilter,
 	}

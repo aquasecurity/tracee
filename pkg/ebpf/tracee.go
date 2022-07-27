@@ -693,13 +693,13 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	errmap := make(map[string]error, 0)
-	errmap[UIDFilterMap] = t.config.Filter.UIDFilter.InitBPF(t.bpfModule)
-	errmap[PIDFilterMap] = t.config.Filter.PIDFilter.InitBPF(t.bpfModule)
-	errmap[MntNSFilterMap] = t.config.Filter.MntNSFilter.InitBPF(t.bpfModule)
-	errmap[PidNSFilterMap] = t.config.Filter.PidNSFilter.InitBPF(t.bpfModule)
-	errmap[UTSFilterMap] = t.config.Filter.UTSFilter.InitBPF(t.bpfModule)
-	errmap[CommFilterMap] = t.config.Filter.CommFilter.InitBPF(t.bpfModule)
-	errmap[ContIdFilter] = t.config.Filter.ContainerFilter.InitBPF(t.bpfModule, t.containers)
+	errmap[UIDFilterBPFMap] = t.config.Filter.UIDFilter.InitBPF(t.bpfModule)
+	errmap[PIDFilterBPFMap] = t.config.Filter.PIDFilter.InitBPF(t.bpfModule)
+	errmap[MntNSFilterBPFMap] = t.config.Filter.MntNSFilter.InitBPF(t.bpfModule)
+	errmap[PidNSFilterBPFMap] = t.config.Filter.PidNSFilter.InitBPF(t.bpfModule)
+	errmap[UTSFilterBPFMap] = t.config.Filter.UTSFilter.InitBPF(t.bpfModule)
+	errmap[CommFilterBPFMap] = t.config.Filter.CommFilter.InitBPF(t.bpfModule)
+	errmap[CgroupIdFilterBPFMap] = t.config.Filter.ContainerFilter.InitBPF(t.bpfModule, t.containers)
 
 	for k, v := range errmap {
 		if v != nil {

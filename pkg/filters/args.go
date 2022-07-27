@@ -10,14 +10,17 @@ import (
 )
 
 type ArgFilter struct {
-	filters map[events.ID]map[string]*StringFilter // key to the first map is event id, and to the second map the argument name
+	filters map[events.ID]map[string]*eventArgFilter // key to the first map is event id, and to the second map the argument name
 	enabled bool
+}
+
+type eventArgFilter struct {
+	*StringFilter
 }
 
 func NewArgFilter(filters ...protocol.Filter) (*ArgFilter, error) {
 	filter := &ArgFilter{
-		filters: map[events.ID]map[string]*StringFilter{},
-		enabled: false,
+		filters: map[events.ID]map[string]*eventArgFilter{},
 	}
 
 	for _, f := range filters {
@@ -35,31 +38,33 @@ func NewArgFilter(filters ...protocol.Filter) (*ArgFilter, error) {
 }
 
 func (filter *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
-	if filter.Enabled() {
-		for argName, filter := range filter.filters[events.ID(eventID)] {
-			var argVal interface{}
-			ok := false
-			for _, arg := range args {
-				if arg.Name == argName {
-					argVal = arg.Value
-					ok = true
-					break
-				}
+	if !filter.Enabled() {
+		return true
+	}
+
+	for argName, filter := range filter.filters[events.ID(eventID)] {
+		var argVal interface{}
+		ok := false
+		for _, arg := range args {
+			if arg.Name == argName {
+				argVal = arg.Value
+				ok = true
+				break
 			}
-			if !ok {
-				continue
-			}
-			// TODO: use type assertion instead of string conversion
-			argValStr := fmt.Sprint(argVal)
-			return filter.Filter(argValStr)
 		}
+		if !ok {
+			continue
+		}
+		// TODO: use type assertion instead of string conversion
+		argValStr := fmt.Sprint(argVal)
+		return filter.Filter(argValStr)
 	}
 	return true
 }
 
 // GetEventFilters returns the argument filters map for a specific event
 // writing to the map may have unintentional consenquences, avoid doing so
-func (filter *ArgFilter) GetEventFilters(eventID events.ID) map[string]*StringFilter {
+func (filter *ArgFilter) GetEventFilters(eventID events.ID) map[string]*eventArgFilter {
 	return filter.filters[eventID]
 }
 
@@ -96,18 +101,19 @@ func (filter *ArgFilter) parse(filterReq protocol.Filter) error {
 		return fmt.Errorf("invalid argument filter argument name: %s", argName)
 	}
 
-	// Treat operatorAndValues as a string filter to avoid code duplication
-	strFilter, err := NewStringFilter(filterReq)
-	if err != nil {
-		return err
-	}
-
 	if _, ok := filter.filters[id]; !ok {
-		filter.filters[id] = make(map[string]*StringFilter)
+		filter.filters[id] = make(map[string]*eventArgFilter)
 	}
 
 	if _, ok := filter.filters[id][argName]; !ok {
-		filter.filters[id][argName] = strFilter
+		strFilter, err := NewStringFilter(filterReq)
+		if err != nil {
+			return err
+		}
+		eventFilter := &eventArgFilter{
+			StringFilter: strFilter,
+		}
+		filter.filters[id][argName] = eventFilter
 	}
 
 	return nil

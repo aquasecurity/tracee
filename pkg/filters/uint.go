@@ -11,17 +11,17 @@ import (
 )
 
 const (
-	minUIntVal uint64 = 0
-	maxUIntVal uint64 = math.MaxUint64
+	maxNotSetUInt uint64 = 0
+	minNotSetUInt uint64 = math.MaxUint64
 )
 
 type UIntFilter struct {
-	equal       map[uint64]bool
-	notEqual    map[uint64]bool
-	greaterThan uint64
-	lessThan    uint64
-	is32Bit     bool
-	enabled     bool
+	equal    map[uint64]bool
+	notEqual map[uint64]bool
+	min      uint64
+	max      uint64
+	is32Bit  bool
+	enabled  bool
 }
 
 func NewUIntFilter(filters ...protocol.Filter) (*UIntFilter, error) {
@@ -34,12 +34,11 @@ func NewUInt32Filter(filters ...protocol.Filter) (*UIntFilter, error) {
 
 func newUIntFilter(is32Bit bool, filters ...protocol.Filter) (*UIntFilter, error) {
 	filter := &UIntFilter{
-		equal:       map[uint64]bool{},
-		notEqual:    map[uint64]bool{},
-		greaterThan: maxUIntVal,
-		lessThan:    minUIntVal,
-		is32Bit:     is32Bit,
-		enabled:     false,
+		equal:    map[uint64]bool{},
+		notEqual: map[uint64]bool{},
+		min:      minNotSetUInt,
+		max:      maxNotSetUInt,
+		is32Bit:  is32Bit,
 	}
 
 	for _, f := range filters {
@@ -62,7 +61,7 @@ func newUIntFilter(is32Bit bool, filters ...protocol.Filter) (*UIntFilter, error
 // 3. lesser
 // 4. non equality
 func (f *UIntFilter) Filter(val uint64) bool {
-	result := !f.Enabled() || f.equal[val] || val > f.greaterThan || val < f.lessThan
+	result := !f.Enabled() || f.equal[val] || val > f.min || val < f.max
 	if !result && f.notEqual[val] {
 		return false
 	}
@@ -85,15 +84,17 @@ func (f *UIntFilter) addNotEqual(val uint64) {
 	f.notEqual[val] = true
 }
 
-func (f *UIntFilter) addLesser(val uint64) {
-	if val > f.lessThan {
-		f.lessThan = val
+func (f *UIntFilter) addLessThan(val uint64) {
+	// we want to have the highest max input
+	if val > f.max {
+		f.max = val
 	}
 }
 
-func (f *UIntFilter) addGreater(val uint64) {
-	if val < f.greaterThan {
-		f.greaterThan = val
+func (f *UIntFilter) addGreaterThan(val uint64) {
+	// we want to have the lowest min input
+	if val < f.min {
+		f.min = val
 	}
 }
 
@@ -122,15 +123,15 @@ func (f *UIntFilter) add(val uint64, operator Operator) error {
 	case NotEqual:
 		f.addNotEqual(val)
 	case Lesser:
-		f.addLesser(val)
+		f.addLessThan(val)
 	case Greater:
-		f.addGreater(val)
+		f.addGreaterThan(val)
 	case LesserEqual:
 		f.addEqual(val)
-		f.addLesser(val)
+		f.addLessThan(val)
 	case GreaterEqual:
 		f.addEqual(val)
-		f.addGreater(val)
+		f.addGreaterThan(val)
 	}
 	return nil
 }
@@ -148,11 +149,11 @@ func (filter *UIntFilter) Enabled() bool {
 }
 
 func (filter *UIntFilter) Minimum() uint64 {
-	return filter.greaterThan
+	return filter.min
 }
 
 func (filter *UIntFilter) Maximum() uint64 {
-	return filter.lessThan
+	return filter.max
 }
 
 type BPFUIntFilter struct {
@@ -221,7 +222,7 @@ func (filter *BPFUIntFilter) InitBPF(bpfModule *bpf.Module) error {
 }
 
 func (filter *UIntFilter) FilterOut() bool {
-	if len(filter.equal) > 0 && len(filter.notEqual) == 0 && filter.greaterThan == maxUIntVal && filter.lessThan == minUIntVal {
+	if len(filter.equal) > 0 && len(filter.notEqual) == 0 && filter.min == minNotSetUInt && filter.max == maxNotSetUInt {
 		return false
 	} else {
 		return true

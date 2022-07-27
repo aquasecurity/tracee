@@ -16,7 +16,6 @@ type RetFilter struct {
 func NewRetFilter(filters ...protocol.Filter) (*RetFilter, error) {
 	filter := &RetFilter{
 		Filters: map[events.ID]*IntFilter{},
-		enabled: false,
 	}
 
 	for _, f := range filters {
@@ -34,10 +33,11 @@ func NewRetFilter(filters ...protocol.Filter) (*RetFilter, error) {
 }
 
 func (filter *RetFilter) Filter(eventID events.ID, retVal int64) bool {
-	if filter.Enabled() {
-		if filter, ok := filter.Filters[eventID]; ok {
-			return filter.Filter(retVal)
-		}
+	if !filter.Enabled() {
+		return true
+	}
+	if filter, ok := filter.Filters[eventID]; ok {
+		return filter.Filter(retVal)
 	}
 	return true
 }

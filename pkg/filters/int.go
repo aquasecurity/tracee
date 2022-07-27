@@ -9,17 +9,17 @@ import (
 )
 
 const (
-	minIntVal int64 = math.MinInt64
-	maxIntVal int64 = math.MaxInt64
+	maxNotSetInt int64 = math.MinInt64
+	minNotSetInt int64 = math.MaxInt64
 )
 
 type IntFilter struct {
-	equal       map[int64]bool
-	notEqual    map[int64]bool
-	greaterThan int64
-	lessThan    int64
-	is32Bit     bool
-	enabled     bool
+	equal    map[int64]bool
+	notEqual map[int64]bool
+	min      int64
+	max      int64
+	is32Bit  bool
+	enabled  bool
 }
 
 func NewIntFilter(filters ...protocol.Filter) (*IntFilter, error) {
@@ -32,12 +32,11 @@ func NewInt32Filter(filters ...protocol.Filter) (*IntFilter, error) {
 
 func newIntFilter(is32Bit bool, filters ...protocol.Filter) (*IntFilter, error) {
 	filter := &IntFilter{
-		equal:       map[int64]bool{},
-		notEqual:    map[int64]bool{},
-		greaterThan: maxIntVal,
-		lessThan:    minIntVal,
-		is32Bit:     is32Bit,
-		enabled:     false,
+		equal:    map[int64]bool{},
+		notEqual: map[int64]bool{},
+		min:      minNotSetInt,
+		max:      maxNotSetInt,
+		is32Bit:  is32Bit,
 	}
 
 	for _, f := range filters {
@@ -67,11 +66,11 @@ func (f *IntFilter) Enabled() bool {
 }
 
 func (f *IntFilter) Minimum() int64 {
-	return f.greaterThan
+	return f.min
 }
 
 func (f *IntFilter) Maximum() int64 {
-	return f.lessThan
+	return f.max
 }
 
 // priority goes by (from most significant):
@@ -80,7 +79,7 @@ func (f *IntFilter) Maximum() int64 {
 // 3. lesser
 // 4. non equality
 func (f *IntFilter) Filter(val int64) bool {
-	result := !f.enabled || f.equal[val] || val > f.greaterThan || val < f.lessThan
+	result := !f.enabled || f.equal[val] || val > f.min || val < f.max
 	if !result && f.notEqual[val] {
 		return false
 	}
@@ -102,15 +101,17 @@ func (f *IntFilter) addNotEqual(val int64) {
 	f.notEqual[val] = true
 }
 
-func (f *IntFilter) addLesser(val int64) {
-	if val > f.lessThan {
-		f.lessThan = val
+func (f *IntFilter) addLesserThan(val int64) {
+	// we want to have the highest max input
+	if val > f.max {
+		f.max = val
 	}
 }
 
-func (f *IntFilter) addGreater(val int64) {
-	if val < f.greaterThan {
-		f.greaterThan = val
+func (f *IntFilter) addGreaterThan(val int64) {
+	// we want to have the lowest min input
+	if val < f.min {
+		f.min = val
 	}
 }
 
@@ -124,15 +125,15 @@ func (f *IntFilter) add(val int64, operator Operator) error {
 	case NotEqual:
 		f.addNotEqual(val)
 	case Lesser:
-		f.addLesser(val)
+		f.addLesserThan(val)
 	case Greater:
-		f.addGreater(val)
+		f.addGreaterThan(val)
 	case LesserEqual:
 		f.addEqual(val)
-		f.addLesser(val)
+		f.addLesserThan(val)
 	case GreaterEqual:
 		f.addEqual(val)
-		f.addGreater(val)
+		f.addGreaterThan(val)
 	}
 	return nil
 }
