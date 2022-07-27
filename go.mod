@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/aquasecurity/libbpfgo v0.3.0-libbpf-0.8.0
-	github.com/aquasecurity/tracee/types v0.0.0-20220704142452-9d0319c36c52
+	github.com/aquasecurity/tracee/types v0.0.0-20220804074749-e785ea989919
 	github.com/containerd/containerd v1.6.6
 	github.com/docker/docker v20.10.17+incompatible
 	github.com/golang/protobuf v1.5.2
@@ -13,8 +13,6 @@ require (
 	github.com/google/gopacket v1.1.19
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/kubernetes/cri-api v0.0.0-00010101000000-000000000000
-	github.com/mitchellh/go-ps v1.0.0
-	github.com/onsi/gomega v1.17.0
 	github.com/open-policy-agent/opa v0.42.0
 	github.com/prometheus/client_golang v1.12.2
 	github.com/stretchr/testify v1.8.0
