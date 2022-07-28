@@ -135,18 +135,15 @@ func TestEvent_Origin(t *testing.T) {
 				EventName:     "execve",
 				HostProcessID: 321,
 				ProcessID:     123,
-				ContainerID:   "ab123",
-				ContextFlags:  ContextFlags{ContainerStarted: true},
 			},
 			expected: ContainerOrigin,
 		},
 		{
 			event: Event{
-				EventName:    "runc",
-				ContainerID:  "ab123",
-				ContextFlags: ContextFlags{ContainerStarted: false},
+				EventName:   "execve",
+				ContainerID: "ab123",
 			},
-			expected: ContainerInitOrigin,
+			expected: ContainerOrigin,
 		},
 	}
 
@@ -168,7 +165,6 @@ func TestEvent_ToProtocol(t *testing.T) {
 				EventName:     "execve",
 				HostProcessID: 123,
 				ProcessID:     123,
-				ContextFlags:  ContextFlags{ContainerStarted: false},
 			},
 			expected: protocol.Event{
 				Headers: protocol.EventHeaders{
@@ -182,7 +178,6 @@ func TestEvent_ToProtocol(t *testing.T) {
 					EventName:     "execve",
 					HostProcessID: 123,
 					ProcessID:     123,
-					ContextFlags:  ContextFlags{ContainerStarted: false},
 				},
 			},
 		},
@@ -191,7 +186,6 @@ func TestEvent_ToProtocol(t *testing.T) {
 				EventName:     "execve",
 				HostProcessID: 123,
 				ProcessID:     321,
-				ContextFlags:  ContextFlags{ContainerStarted: true},
 			},
 			expected: protocol.Event{
 				Headers: protocol.EventHeaders{
@@ -205,28 +199,25 @@ func TestEvent_ToProtocol(t *testing.T) {
 					EventName:     "execve",
 					HostProcessID: 123,
 					ProcessID:     321,
-					ContextFlags:  ContextFlags{ContainerStarted: true},
 				},
 			},
 		},
 		{
 			payload: Event{
-				EventName:    "open",
-				ContainerID:  "abc123",
-				ContextFlags: ContextFlags{ContainerStarted: false},
+				EventName:   "open",
+				ContainerID: "abc123",
 			},
 			expected: protocol.Event{
 				Headers: protocol.EventHeaders{
 					Selector: protocol.Selector{
-						Origin: string(ContainerInitOrigin),
+						Origin: string(ContainerOrigin),
 						Source: "tracee",
 						Name:   "open",
 					},
 				},
 				Payload: Event{
-					EventName:    "open",
-					ContainerID:  "abc123",
-					ContextFlags: ContextFlags{ContainerStarted: false},
+					EventName:   "open",
+					ContainerID: "abc123",
 				},
 			},
 		},
