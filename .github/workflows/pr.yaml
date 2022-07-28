@@ -117,6 +117,7 @@ jobs:
       - ANALYZE-CODE
       - UNIT-TESTS
     strategy:
+      fail-fast: false
       matrix:
         os: [stream8, stream9, fedora34, fedora35, fedora36, focal, focalhwe, jammy]
     runs-on: ${{ matrix.os }}
@@ -133,6 +134,7 @@ jobs:
       - ANALYZE-CODE
       - UNIT-TESTS
     strategy:
+      fail-fast: false
       matrix:
         os: [stream8, stream9, fedora34, fedora35, fedora36, focal, focalhwe, jammy]
     runs-on: ${{ matrix.os }}
