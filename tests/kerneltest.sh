@@ -79,6 +79,11 @@ for TEST in $TESTS; do
     # file containing tracee-event output (to check for detection)
     rm -f /tmp/build-$$
 
+    TRACEE_TMP="/tmp/tracee"
+    ERROR_FILE="${TRACEE_TMP}/${TEST}_stderr"
+    touch ${ERROR_FILE}
+    chmod +w ${ERROR_FILE}
+
     events=$(./dist/tracee-rules --rules $TEST --list-events)
 
     ./dist/tracee-ebpf \
@@ -87,8 +92,9 @@ for TEST in $TESTS; do
       -o format:gob \
       -o option:parse-arguments \
       -o option:detect-syscall \
-      -trace container \
-      -trace event=$events \
+      -o err-file:${ERROR_FILE} \
+      --trace container=new \
+      --trace event=$events \
       | \
     ./dist/tracee-rules \
       --input-tracee=file:stdin \
@@ -148,6 +154,11 @@ for TEST in $TESTS; do
 
     kill -9 $(pidof tracee-rules)
     kill -9 $(pidof tracee-ebpf)
+
+    info "=== STDERR: $TEST ==="
+    echo "$(cat ${ERROR_FILE})"
+
+    rm ${ERROR_FILE}
 
     # give a little break
     sleep 5
