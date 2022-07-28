@@ -1628,7 +1628,7 @@ static __always_inline int should_trace(event_data_t *data)
 
 static __always_inline int should_submit(u32 event_id, config_entry_t *config)
 {
-    unsigned int index = event_id / 8;
+    volatile unsigned int index = event_id / 8;
     unsigned int offset = event_id % 8;
     u8 bitmap = config->events_to_submit[index % 128];
 
