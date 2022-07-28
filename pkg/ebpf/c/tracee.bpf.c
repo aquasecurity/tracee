@@ -1468,7 +1468,7 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
         u8 *state = bpf_map_lookup_elem(&containers_map, &cgroup_id_lsb);
         if (state != NULL) {
             data->task_info->container_state = *state;
-            if (*state == CONTAINER_CREATED || *state == CONTAINER_EXISTED) {
+            if (*state == CONTAINER_STARTED || *state == CONTAINER_EXISTED) {
                 data->context.task.flags |= CONTAINER_STARTED_FLAG;
             }
         }
