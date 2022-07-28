@@ -121,6 +121,9 @@ for TEST in $TESTS; do
             ;;
     esac
 
+    # so tracee can settle
+    sleep 5
+
     # run tracee-tester (triggering the signature) many times
     for i in 1 2 3; do
         docker run $docker_extra_arg --rm aquasec/tracee-tester $TEST > /dev/null 2>&1
