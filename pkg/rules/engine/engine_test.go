@@ -211,10 +211,8 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			inputEvent: trace.Event{
 				EventName:       "test_event",
 				ProcessID:       2,
-				HostProcessID:   1002,
 				ParentProcessID: 1,
 				ContainerID:     "container ID",
-				ContextFlags:    trace.ContextFlags{ContainerStarted: true},
 				Args: []trace.Argument{
 					{
 						ArgMeta: trace.ArgMeta{
@@ -237,7 +235,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			},
 			expectedNumEvents: 1,
 			expectedEvent: trace.Event{
-				ProcessID: 2, ParentProcessID: 1, HostProcessID: 1002, ContainerID: "container ID", ContextFlags: trace.ContextFlags{ContainerStarted: true}, Args: []trace.Argument{{ArgMeta: trace.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
+				ProcessID: 2, ParentProcessID: 1, ContainerID: "container ID", Args: []trace.Argument{{ArgMeta: trace.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
 				EventName: "test_event",
 			},
 		},
@@ -246,10 +244,8 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			inputEvent: trace.Event{
 				EventName:       "test_event",
 				ProcessID:       2,
-				HostProcessID:   1002,
 				ParentProcessID: 1,
 				ContainerID:     "container ID",
-				ContextFlags:    trace.ContextFlags{ContainerStarted: true},
 				Args: []trace.Argument{
 					{
 						ArgMeta: trace.ArgMeta{
@@ -277,9 +273,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			inputEvent: trace.Event{
 				EventName:       "test_event",
 				ProcessID:       2,
-				HostProcessID:   2,
 				ParentProcessID: 2,
-				ContextFlags:    trace.ContextFlags{ContainerStarted: false},
 				Args: []trace.Argument{
 					{
 						ArgMeta: trace.ArgMeta{
@@ -295,14 +289,14 @@ func TestEngine_ConsumeSources(t *testing.T) {
 						{
 							Name:   "test_event",
 							Source: "tracee",
-							Origin: "host",
+							Origin: "container",
 						},
 					}, nil
 				},
 			},
 			expectedNumEvents: 1,
 			expectedEvent: trace.Event{
-				ProcessID: 2, ParentProcessID: 2, HostProcessID: 2, Args: []trace.Argument{{ArgMeta: trace.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
+				ProcessID: 2, ParentProcessID: 2, Args: []trace.Argument{{ArgMeta: trace.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
 				EventName: "test_event",
 			},
 		},
@@ -346,6 +340,38 @@ func TestEngine_ConsumeSources(t *testing.T) {
 				},
 			},
 			expectedError: "error getting metadata: getMetadata error\n",
+		},
+		{
+			name: "sad path - event ContainerID was not parsed but event is from container",
+			inputEvent: trace.Event{
+				EventName:       "test_event",
+				ProcessID:       2,
+				ParentProcessID: 1,
+				Args: []trace.Argument{
+					{
+						ArgMeta: trace.ArgMeta{
+							Name: "pathname",
+						},
+						Value: "/proc/self/mem",
+					},
+				},
+			}.ToProtocol(),
+			inputSignature: regoFakeSignature{
+				getSelectedEvents: func() ([]detect.SignatureEventSelector, error) {
+					return []detect.SignatureEventSelector{
+						{
+							Name:   "test_event",
+							Source: "tracee",
+							Origin: "container",
+						},
+					}, nil
+				},
+			},
+			expectedNumEvents: 1,
+			expectedEvent: trace.Event{
+				ProcessID: 2, ParentProcessID: 1, Args: []trace.Argument{{ArgMeta: trace.ArgMeta{Name: "pathname", Type: ""}, Value: "/proc/self/mem"}},
+				EventName: "test_event",
+			},
 		},
 		{
 			name: "happy path - signature receives a non tracee event",

@@ -35,7 +35,7 @@ type Context struct {
 	PidID       uint32
 	Comm        [16]byte
 	UtsName     [16]byte
-	Flags       uint32
+	Pad1        [4]byte
 	EventID     events.ID //int32
 	Pad2        [4]byte
 	Retval      int64
