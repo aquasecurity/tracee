@@ -146,7 +146,7 @@ func (p *probes) Attach(handle Handle, args ...interface{}) error {
 	return p.probes[handle].attach(p.module, args...)
 }
 
-// Attach detaches given handle's program from its hook
+// Detach detaches given handle's program from its hook
 func (p *probes) Detach(handle Handle, args ...interface{}) error {
 	if _, ok := p.probes[handle]; !ok {
 		return fmt.Errorf("probe handle (%d) does not exist", handle)
