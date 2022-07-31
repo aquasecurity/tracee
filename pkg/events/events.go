@@ -149,6 +149,7 @@ const (
 	HookedProcFops
 	PrintNetSeqOps
 	TaskRename
+	SymbolsLoaded
 	MaxCommonID
 	DebugNetSecurityBind
 	DebugNetUdpSendmsg
@@ -5687,6 +5688,27 @@ var Definitions = eventDefinitions{
 				{Type: "dev_t", Name: "dev"},
 				{Type: "unsigned long", Name: "inode"},
 				{Type: "unsigned long", Name: "ctime"},
+			},
+		},
+		SymbolsLoaded: {
+			ID32Bit: sys32undefined,
+			Name:    "symbols_loaded",
+			DocPath: "security_alerts/symbols_load.md",
+			Probes:  []probeDependency{},
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: SharedObjectLoaded},
+					{EventID: SchedProcessExec}, // Used to get mount namespace cache
+				},
+				Capabilities: []cap.Value{
+					cap.SYS_PTRACE,   // Used to get host mount NS for bucket cache
+					cap.DAC_OVERRIDE, // Used to open files across the system
+				},
+			},
+			Sets: []string{"derived", "fs", "security_alert"},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "library_path"},
+				{Type: "const char*const*", Name: "symbols"},
 			},
 		},
 		CaptureFileWrite: {
