@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
@@ -50,7 +52,7 @@ func ensureCapabilities(OSInfo KernelVersionInfo, cfg *tracee.Config, allowHighC
 // Get all capabilities required to run tracee-ebpf for current run
 func generateTraceeEbpfRequiredCapabilities(OSInfo KernelVersionInfo, cfg *tracee.Config) (
 	[]cap.Value, error) {
-	rCaps, err := getCapabilitiesRequiredByEBPF(OSInfo)
+	rCaps, err := getCapabilitiesRequiredByEBPF(OSInfo, cfg.Debug)
 	if err != nil {
 		return nil, err
 	}
@@ -73,18 +75,69 @@ func getCapabilitiesRequiredByTraceeEvents(cfg *tracee.Config) []cap.Value {
 	return removeDupCaps(caps)
 }
 
-// Get all capabilities required for eBPF usage (including perf buffers maps management)
-func getCapabilitiesRequiredByEBPF(OSInfo KernelVersionInfo) ([]cap.Value, error) {
-	// In kernel 5.8, CAP_BPF and CAP_PERFMON capabilities were introduced in order to replace CAP_SYS_ADMIN when
-	// loading eBPF programs.
-	// For some reasons, some distributions using new kernels still need CAP_SYS_ADMIN,
-	// so tracee still use it instead of the new capabilities.
-	caps := []cap.Value{
+// Retrieve the value of the kernel parameter perf_event_paranoid
+func getKernelPerfEventParanoidValue() (int, error) {
+	/*
+	* perf event paranoia level:
+	*  -1 - not paranoid at all
+	*   0 - disallow raw tracepoint access for unpriv
+	*   1 - disallow cpu events for unpriv
+	*   2 - disallow kernel profiling for unpriv
+	*   4 - disallow all unpriv perf event use (Only on some particular distributions)
+	 */
+	const MaxParanoiaLevel = 4
+	value, err := os.ReadFile("/proc/sys/kernel/perf_event_paranoid")
+	if err != nil {
+		return MaxParanoiaLevel, errors.New("cannot read kernel paranoia")
+	}
+	intVal, err := strconv.ParseInt(strings.TrimSuffix(string(value), "\n"), 0, 16)
+	if err != nil {
+		return MaxParanoiaLevel, errors.New("cannot handle kernel paranoia")
+	}
+	return int(intVal), nil
+}
+
+// getCapabilitiesRequiredByEBPF gets all capabilities required for eBPF usage (including perf buffers maps management)
+func getCapabilitiesRequiredByEBPF(OSInfo KernelVersionInfo, debug bool) ([]cap.Value, error) {
+	// In kernel 5.8, CAP_BPF and CAP_PERFMON capabilities were introduced in
+	// order to replace CAP_SYS_ADMIN when loading eBPF programs.
+	privilegedCaps := []cap.Value{
 		cap.IPC_LOCK,
 		cap.SYS_RESOURCE,
 		cap.SYS_ADMIN,
 	}
-	return caps, nil
+	unprivilegedCaps := []cap.Value{
+		cap.IPC_LOCK,
+		cap.SYS_RESOURCE,
+		cap.BPF,
+		cap.PERFMON,
+	}
+	kernelParanoidValue, err := getKernelPerfEventParanoidValue()
+	if err != nil {
+		if debug {
+			fmt.Println("Paranoid: could not read /proc/sys/kernel/perf_event_paranoid: ", err.Error())
+		}
+		return privilegedCaps, nil
+	}
+	const BpfCapabilitiesMinKernelVersion = "5.8"
+	if OSInfo.CompareOSBaseKernelRelease(BpfCapabilitiesMinKernelVersion) < 0 {
+		// if kernelParanoidValue is too high, CAP_SYS_ADMIN is required
+		if kernelParanoidValue > 3 {
+			if debug {
+				fmt.Println("Paranoid: Value in /proc/sys/kernel/perf_event_paranoid is > 3")
+				fmt.Println("Paranoid: Tracee needs CAP_SYS_ADMIN instead of CAP_BPF + CAP_PERFMON")
+				fmt.Println("Paranoid: To change that behavior set perf_event_paranoid to 3 or less.")
+			}
+			return privilegedCaps, nil
+		} else {
+			err := capabilities.CheckRequired(unprivilegedCaps)
+			if err != nil {
+				return privilegedCaps, nil
+			}
+			return unprivilegedCaps, nil
+		}
+	}
+	return privilegedCaps, nil
 }
 
 func removeDupCaps(dupCaps []cap.Value) []cap.Value {
