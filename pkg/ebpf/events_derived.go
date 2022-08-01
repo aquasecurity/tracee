@@ -67,6 +67,7 @@ func (t *Tracee) initDerivationTable() error {
 					soLoader,
 					t.config.Filter.ArgFilter.Filters[events.SymbolsLoaded]["symbols"].Equal,
 					t.config.Filter.ArgFilter.Filters[events.SymbolsLoaded]["library_path"].NotEqual,
+					t.config.Debug,
 				),
 			},
 		},
