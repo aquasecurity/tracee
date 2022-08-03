@@ -31,7 +31,7 @@ version of Tracee.
 
 ## Quickstart
 
-Before you proceed, make sure you follow the [minimum requirements for running Tracee](./docs/install/prerequisites.md).
+Before you proceed, make sure you follow the [minimum requirements for running Tracee](./docs/installing/prerequisites.md).
 
 1. Running **tracee:latest**
 
