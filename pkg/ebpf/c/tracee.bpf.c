@@ -2865,7 +2865,9 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
             u8 state = CONTAINER_STARTED;
             bpf_map_update_elem(&containers_map, &cgroup_id_lsb, &state, BPF_ANY);
             data.task_info->container_state = state;
-            data.task_info->context.flags &= CONTAINER_STARTED_FLAG;
+            data.context.task.flags |= CONTAINER_STARTED_FLAG; // Change for current event
+            data.task_info->context.flags |=
+                CONTAINER_STARTED_FLAG; // Change for future task events
         }
     }
 
