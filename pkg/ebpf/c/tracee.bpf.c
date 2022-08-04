@@ -251,6 +251,8 @@ enum event_id_e
     HOOKED_PROC_FOPS,
     PRINT_NET_SEQ_OPS,
     TASK_RENAME,
+    SYMBOLS_LOADED,
+    SECURITY_INODE_RENAME,
     MAX_EVENT_ID,
     // Debug events IDs
     DEBUG_NET_SECURITY_BIND,
@@ -5459,6 +5461,32 @@ int tracepoint__task__task_rename(struct bpf_raw_tracepoint_args *ctx)
     }
 
     return events_perf_submit(&data, TASK_RENAME, 0);
+}
+
+SEC("kprobe/security_inode_rename")
+int BPF_KPROBE(trace_security_inode_rename)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data))
+        return 0;
+
+    struct dentry *old_dentry = (struct dentry *) PT_REGS_PARM2(ctx);
+    struct dentry *new_dentry = (struct dentry *) PT_REGS_PARM4(ctx);
+
+    if (should_submit(SECURITY_INODE_RENAME, data.config)) {
+        void *old_dentry_path = get_dentry_path_str(old_dentry);
+        save_str_to_buf(&data, old_dentry_path, 0);
+
+        void *new_dentry_path = get_dentry_path_str(new_dentry);
+        save_str_to_buf(&data, new_dentry_path, 1);
+
+        events_perf_submit(&data, SECURITY_INODE_RENAME, 0);
+    }
+
+    return 0;
 }
 
 static __always_inline bool

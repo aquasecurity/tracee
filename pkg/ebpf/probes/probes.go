@@ -120,6 +120,7 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		Pingv6Sendmsg:              &traceProbe{eventName: "ping_v6_sendmsg", probeType: kprobe, programName: "trace_ping_v6_sendmsg"},
 		DefaultTcIngress:           &tcProbe{programName: "tc_ingress", tcAttachPoint: bpf.BPFTcIngress},
 		DefaultTcEgress:            &tcProbe{programName: "tc_egress", tcAttachPoint: bpf.BPFTcEgress, skipLoopback: true},
+		SecurityInodeRename:        &traceProbe{eventName: "security_inode_rename", probeType: kprobe, programName: "trace_security_inode_rename"},
 	}
 
 	// disable autoload for network related eBPF programs in network is disabled
@@ -511,4 +512,5 @@ const (
 	Pingv6Sendmsg
 	DefaultTcIngress
 	DefaultTcEgress
+	SecurityInodeRename
 )
