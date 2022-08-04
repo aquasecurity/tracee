@@ -307,9 +307,15 @@ enum event_id_e
 #define CONT_ID_LEN          12
 #define CONT_ID_MIN_FULL_LEN 64
 
+enum context_flags_e
+{
+    CONTAINER_STARTED_FLAG = (1 << 0)
+};
+
 enum container_state_e
 {
-    CONTAINER_EXISTED = 1, // container existed before tracee was started
+    CONTAINER_UNKNOWN = 0, // mark that container state is unknown
+    CONTAINER_EXISTED,     // container existed before tracee was started
     CONTAINER_CREATED,     // new cgroup path created
     CONTAINER_STARTED      // a process in the cgroup executed a new binary
 };
@@ -473,7 +479,7 @@ typedef struct task_context {
     u32 pid_id;
     char comm[TASK_COMM_LEN];
     char uts_name[TASK_COMM_LEN];
-    u32 padding;
+    u32 flags;
 } task_context_t;
 
 typedef struct event_context {
@@ -506,6 +512,7 @@ typedef struct task_info {
     bool new_task;        // set if this task was started after tracee. Used with new_pid filter
     bool follow;          // set if this task was traced before. Used with the follow filter
     int should_trace;     // last decision of should_trace()
+    u8 container_state;   // the state of the container the task resides in
 } task_info_t;
 
 typedef struct bin_args {
@@ -1380,6 +1387,7 @@ init_context(event_context_t *context, struct task_struct *task, u32 options)
     context->task.mnt_id = get_task_mnt_ns_id(task);
     context->task.pid_id = get_task_pid_ns_id(task);
     context->task.uid = bpf_get_current_uid_gid();
+    context->task.flags = 0;
     bpf_get_current_comm(&context->task.comm, sizeof(context->task.comm));
     char *uts_name = get_task_uts_name(task);
     if (uts_name)
@@ -1426,11 +1434,13 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
     if (data->task_info == NULL) {
         return 0;
     }
+    bool container_lookup_required = true;
     if (!exist) {
         data->task_info->syscall_traced = false;
         data->task_info->new_task = false;
         data->task_info->follow = false;
         data->task_info->recompute_scope = true;
+        data->task_info->container_state = CONTAINER_UNKNOWN;
     } else {
         // check if we need to recompute scope due to context change
         task_context_t *old_context = &data->task_info->context;
@@ -1444,6 +1454,24 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
             *(u64 *) old_context->uts_name != *(u64 *) new_context->uts_name ||
             *(u64 *) &old_context->uts_name[8] != *(u64 *) &new_context->uts_name[8])
             data->task_info->recompute_scope = true;
+
+        // If task is already part of a container, there is no need to check if state changed
+        if (data->task_info->container_state == CONTAINER_STARTED ||
+            data->task_info->container_state == CONTAINER_EXISTED) {
+            data->context.task.flags |= CONTAINER_STARTED_FLAG;
+            container_lookup_required = false;
+        }
+    }
+
+    if (container_lookup_required) {
+        u32 cgroup_id_lsb = data->context.task.cgroup_id;
+        u8 *state = bpf_map_lookup_elem(&containers_map, &cgroup_id_lsb);
+        if (state != NULL) {
+            data->task_info->container_state = *state;
+            if (*state == CONTAINER_STARTED || *state == CONTAINER_EXISTED) {
+                data->context.task.flags |= CONTAINER_STARTED_FLAG;
+            }
+        }
     }
 
     // update task_info with the new context
@@ -1502,8 +1530,8 @@ static __always_inline int do_should_trace(event_data_t *data)
     if (config & FILTER_CONT_ENABLED) {
         bool is_container = false;
         u32 cgroup_id_lsb = context->cgroup_id;
-        u8 *state = bpf_map_lookup_elem(&containers_map, &cgroup_id_lsb);
-        if ((state != NULL) && (*state != CONTAINER_CREATED))
+        u8 state = data->task_info->container_state;
+        if (state == CONTAINER_STARTED || state == CONTAINER_EXISTED)
             is_container = true;
         bool filter_out = (config & FILTER_CONT_OUT) == FILTER_CONT_OUT;
         if (!bool_filter_matches(filter_out, is_container))
@@ -1513,8 +1541,7 @@ static __always_inline int do_should_trace(event_data_t *data)
     if (config & FILTER_NEW_CONT_ENABLED) {
         bool is_new_container = false;
         u32 cgroup_id_lsb = context->cgroup_id;
-        u8 *state = bpf_map_lookup_elem(&containers_map, &cgroup_id_lsb);
-        if ((state != NULL) && (*state == CONTAINER_STARTED))
+        if (data->task_info->container_state == CONTAINER_STARTED)
             is_new_container = true;
         bool filter_out = (config & FILTER_NEW_CONT_OUT) == FILTER_NEW_CONT_OUT;
         if (!bool_filter_matches(filter_out, is_new_container))
@@ -2829,14 +2856,17 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     // Perform the following checks before should_trace() so we can filter by newly created
     // containers/processes.  We assume that a new container/pod has started when a process of a
     // newly created cgroup and mount ns executed a binary
-    u32 cgroup_id_lsb = data.context.task.cgroup_id;
-    u8 *state = bpf_map_lookup_elem(&containers_map, &cgroup_id_lsb);
-    if (state != NULL && *state == CONTAINER_CREATED) {
+    if (data.task_info->container_state == CONTAINER_CREATED) {
         u32 mntns = get_task_mnt_ns_id(data.task);
         struct task_struct *parent = get_parent_task(data.task);
         u32 parent_mntns = get_task_mnt_ns_id(parent);
-        if (mntns != parent_mntns)
-            *state = CONTAINER_STARTED;
+        if (mntns != parent_mntns) {
+            u32 cgroup_id_lsb = data.context.task.cgroup_id;
+            u8 state = CONTAINER_STARTED;
+            bpf_map_update_elem(&containers_map, &cgroup_id_lsb, &state, BPF_ANY);
+            data.task_info->container_state = state;
+            data.task_info->context.flags &= CONTAINER_STARTED_FLAG;
+        }
     }
 
     data.task_info->new_task = true;
@@ -3252,6 +3282,7 @@ int tracepoint__cgroup__cgroup_mkdir(struct bpf_raw_tracepoint_args *ctx)
         // Assume this is a new container. If not, userspace code will delete this entry
         u8 state = CONTAINER_CREATED;
         bpf_map_update_elem(&containers_map, &cgroup_id_lsb, &state, BPF_ANY);
+        data.task_info->container_state = state;
     }
 
     save_to_submit_buf(&data, &cgroup_id, sizeof(u64), 0);

@@ -279,11 +279,12 @@ func TestOutputTemplates(t *testing.T) {
 					},
 				},
 				Event: trace.Event{
-					ProcessID:   21312,
-					Timestamp:   1321321,
-					UserID:      0,
-					ContainerID: "abbc123",
-					EventName:   "execve",
+					ProcessID:    21312,
+					Timestamp:    1321321,
+					UserID:       0,
+					ContainerID:  "abbc123",
+					EventName:    "execve",
+					ContextFlags: trace.ContextFlags{ContainerStarted: true},
 				}.ToProtocol(),
 				SigMetadata: detect.SignatureMetadata{
 					ID:          "TRC-1",
@@ -302,7 +303,7 @@ func TestOutputTemplates(t *testing.T) {
 					"a":123,"b":"c","d":true,"f":{"123":"456","foo":"bar"}
 				},
 				"Context":{
-					"timestamp":1321321,"processorId":0,"processId":21312,"threadId":0,"threadStartTime":0,"parentProcessId":0,"hostProcessId":0,"hostThreadId":0,"hostParentProcessId":0,"userId":0,"mountNamespace":0,"pidNamespace":0,"processName":"","hostName":"","cgroupId":0,"containerId":"abbc123","containerImage":"", "containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"0","eventName":"execve","argsNum":0,"returnValue":0,"stackAddresses":null,"args":null
+					"timestamp":1321321,"processorId":0,"processId":21312,"threadId":0,"threadStartTime":0,"parentProcessId":0,"hostProcessId":0,"hostThreadId":0,"hostParentProcessId":0,"userId":0,"mountNamespace":0,"pidNamespace":0,"processName":"","hostName":"","cgroupId":0,"containerId":"abbc123","containerImage":"", "containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"0","eventName":"execve","argsNum":0,"returnValue":0,"stackAddresses":null,"args":null,"contextFlags":{"containerStarted":true}
 				},
 				"SigMetadata":{
 					"ID":"TRC-1","Version":"0.1.0","Name":"Standard Input/Output Over Socket","Description":"Redirection of process's standard input/output to socket","Tags":["linux","container"],"Properties":{"MITRE ATT\u0026CK":"Persistence: Server Software Component","Severity":3}
