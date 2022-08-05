@@ -701,15 +701,22 @@ check-staticcheck: \
 #
 
 TRACEE_BENCH_SRC_DIRS = ./cmd/tracee-bench/
-TRACEE_BENCH_SRC = $(shell find $(TRACEE_BENCH_SRC_DIRS) -type f -name '*.go')
+TRACEE_BENCH_SRC = $(shell find $(TRACEE_BENCH_SRC_DIRS) \
+		   -type f \
+		   -name '*.go' \
+		   ! -name '*_test.go' \
+		   )
+
 .PHONY: tracee-bench
-tracee-bench: \
+tracee-bench: $(OUTPUT_DIR)/tracee-bench
+
+$(OUTPUT_DIR)/tracee-bench: \
 	.checkver_$(CMD_GO) \
 	$(TRACEE_BENCH_SRC) \
 	| $(OUTPUT_DIR)
 #
 	$(CMD_GO) build \
-		-v -o $(OUTPUT_DIR)/tracee-bench \
+		-v -o $@ \
 		./cmd/tracee-bench
 
 .PHONY: clean-tracee-bench
