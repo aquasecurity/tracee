@@ -1727,7 +1727,7 @@ add_u64_elements_to_buf(event_data_t *data, const u64 __user *ptr, int len, u32 
 {
     u8 elem_num = 0;
     u8 current_elem_num;
-    #pragma unroll
+#pragma unroll
     for (int i = 0; i < len; i++) {
         void *addr = &(data->submit_p->buf[data->buf_off]);
         if (data->buf_off > MAX_PERCPU_BUFSIZE - sizeof(u64))
@@ -3148,44 +3148,11 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
     return events_perf_submit(&data, PRINT_SYSCALL_TABLE, 0);
 }
 
-static __always_inline void invoke_fetch_network_seq_operations_event(struct pt_regs *ctx,
-                                                                      unsigned long struct_address)
-{
-    event_data_t data = {};
-    if (!init_event_data(&data, ctx))
-        return;
-
-    struct seq_operations *seq_ops = (struct seq_operations *) struct_address;
-    u64 show_addr = (u64) READ_KERN(seq_ops->show);
-    if (show_addr == 0) {
-        return;
-    }
-
-    u64 start_addr = (u64) READ_KERN(seq_ops->start);
-    if (start_addr == 0) {
-        return;
-    }
-
-    u64 next_addr = (u64) READ_KERN(seq_ops->next);
-    if (next_addr == 0) {
-        return;
-    }
-
-    u64 stop_addr = (u64) READ_KERN(seq_ops->stop);
-    if (stop_addr == 0) {
-        return;
-    }
-    u64 seq_ops_addresses[NET_SEQ_OPS_SIZE + 1] = {
-        (u64) seq_ops, show_addr, start_addr, next_addr, stop_addr};
-    save_u64_arr_to_buf(&data, (const u64 *) seq_ops_addresses, 5, 0);
-    events_perf_submit(&data, PRINT_NET_SEQ_OPS, 0);
-}
-
 SEC("uprobe/trigger_seq_ops_event")
 int uprobe_seq_ops_trigger(struct pt_regs *ctx)
 {
 #if defined(bpf_target_x86)
-    uint64_t *address_array = ((void *) ctx->sp);
+    uint64_t *address_array = ((void *) ctx->sp + 8);
 #elif defined(bpf_target_arm64)
     uint64_t *address_array = ((void *) ctx->sp) + 16;
 #else
@@ -3193,10 +3160,40 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
 #endif
 
     uint64_t struct_address;
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+    u32 count_off = data.buf_off + 1;
+    // Init u64 arr with size 0 before adding elements in loop
+    save_u64_arr_to_buf(&data, NULL, 0, 0);
+#pragma unroll
     for (int i = 0; i < NET_SEQ_OPS_TYPES; i++) {
         bpf_probe_read(&struct_address, 8, (address_array + i));
-        invoke_fetch_network_seq_operations_event(ctx, struct_address);
+        struct seq_operations *seq_ops = (struct seq_operations *) struct_address;
+        u64 show_addr = (u64) READ_KERN(seq_ops->show);
+        if (show_addr == 0) {
+            return 0;
+        }
+
+        u64 start_addr = (u64) READ_KERN(seq_ops->start);
+        if (start_addr == 0) {
+            return 0;
+        }
+
+        u64 next_addr = (u64) READ_KERN(seq_ops->next);
+        if (next_addr == 0) {
+            return 0;
+        }
+
+        u64 stop_addr = (u64) READ_KERN(seq_ops->stop);
+        if (stop_addr == 0) {
+            return 0;
+        }
+        u64 seq_ops_addresses[NET_SEQ_OPS_SIZE + 1] = {show_addr, start_addr, next_addr, stop_addr};
+
+        add_u64_elements_to_buf(&data, (const u64 *) seq_ops_addresses, 4, count_off);
     }
+    events_perf_submit(&data, PRINT_NET_SEQ_OPS, 0);
     return 0;
 }
 

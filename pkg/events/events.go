@@ -5890,7 +5890,6 @@ var Definitions = eventDefinitions{
 			},
 			Sets: []string{},
 			Params: []trace.ArgMeta{
-				{Type: "string", Name: "struct_name"},
 				{Type: "[]helpers.KernelSymbol", Name: "hooked_seq_ops"},
 			},
 		},
