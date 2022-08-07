@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aquasecurity/tracee/pkg/events/derive"
 	"io"
 	"io/ioutil"
 	"net"
@@ -1108,17 +1109,6 @@ func (t *Tracee) getCapturedIfaceIdx(ifaceName string) (int, bool) {
 	return t.config.Capture.NetIfaces.Find(ifaceName)
 }
 
-// Struct names for the interfaces HookedSeqOpsEventID checks for hooks
-// The show,start,next and stop operation function pointers will be checked for each of those
-var netSeqOps = [6]string{
-	"tcp4_seq_ops",
-	"tcp6_seq_ops",
-	"udp_seq_ops",
-	"udp6_seq_ops",
-	"raw_seq_ops",
-	"raw6_seq_ops",
-}
-
 func (t *Tracee) triggerSyscallsIntegrityCheck() {
 	_, ok := t.events[events.HookedSyscalls]
 	if !ok {
@@ -1137,9 +1127,9 @@ func (t *Tracee) triggerSeqOpsIntegrityCheck() {
 	if !ok {
 		return
 	}
-	var seqOpsPointers [len(netSeqOps)]uint64
-	for i, seq_name := range netSeqOps {
-		seqOpsStruct, err := t.kernelSymbols.GetSymbolByName("system", seq_name)
+	var seqOpsPointers [len(derive.NetSeqOps)]uint64
+	for i, seqName := range derive.NetSeqOps {
+		seqOpsStruct, err := t.kernelSymbols.GetSymbolByName("system", seqName)
 		if err != nil {
 			continue
 		}
@@ -1150,7 +1140,7 @@ func (t *Tracee) triggerSeqOpsIntegrityCheck() {
 
 // triggerSeqOpsIntegrityCheck is used by a Uprobe to trigger an eBPF program that prints the seq ops pointers
 //go:noinline
-func (t *Tracee) triggerSeqOpsIntegrityCheckCall(seqOpsStruct [len(netSeqOps)]uint64) error {
+func (t *Tracee) triggerSeqOpsIntegrityCheckCall(seqOpsStruct [len(derive.NetSeqOps)]uint64) error {
 	return nil
 }
 
