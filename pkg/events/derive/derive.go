@@ -2,7 +2,6 @@ package derive
 
 import (
 	"fmt"
-
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -27,7 +26,7 @@ type deriveArgsFunction func(event trace.Event) ([]interface{}, error)
 // The order of the arguments given will match the order in the event definition, so make sure the order match
 // the order of the params in the events.event struct of the event under events.Definitions.
 // If the arguments given is nil, than no event will be derived.
-func singleEventDeriveFunc(id events.ID, deriveArgsFunc deriveArgsFunction) events.DeriveFunction {
+func singleEventDeriveFunc(id events.ID, deriveArgsFunc deriveArgsFunction, eventBuilder func(*trace.Event) (trace.Event, error)) events.DeriveFunction {
 	skeleton := makeEventSkeleton(id)
 	return func(event trace.Event) ([]trace.Event, []error) {
 		args, err := deriveArgsFunc(event)
@@ -37,7 +36,11 @@ func singleEventDeriveFunc(id events.ID, deriveArgsFunc deriveArgsFunction) even
 		if args == nil {
 			return []trace.Event{}, nil
 		}
-		de, err := newEvent(&event, skeleton, args)
+		baseEvent, err := eventBuilder(&event)
+		if err != nil {
+			return []trace.Event{}, []error{err}
+		}
+		de, err := newEvent(&baseEvent, skeleton, args)
 		if err != nil {
 			return []trace.Event{}, []error{err}
 		}
@@ -71,4 +74,8 @@ func makeEventSkeleton(eventID events.ID) eventSkeleton {
 		ID:     int(eventID),
 		Params: def.Params,
 	}
+}
+
+func withOriginalContext(event *trace.Event) (trace.Event, error) {
+	return *event, nil
 }

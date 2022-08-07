@@ -27,7 +27,7 @@ var NetSeqOpsFuncs = [4]string{
 }
 
 func HookedSeqOps(kernelSymbols *helpers.KernelSymbolTable) events.DeriveFunction {
-	return singleEventDeriveFunc(events.HookedSeqOps, deriveHookedSeqOpsArgs(kernelSymbols))
+	return singleEventDeriveFunc(events.HookedSeqOps, deriveHookedSeqOpsArgs(kernelSymbols), withInvokingContext)
 
 }
 

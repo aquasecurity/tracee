@@ -3137,6 +3137,12 @@ int BPF_KPROBE(trace_do_exit)
 SEC("uprobe/trigger_syscall_event")
 int uprobe_syscall_trigger(struct pt_regs *ctx)
 {
+#if defined(__TARGET_ARCH_x86)
+    uint64_t caller_ctx_id = ctx->bx;
+#else
+    uint64_t caller_ctx_id;
+    bpf_probe_read(&caller_ctx_id, 8, ((void *) ctx->sp) + 16);
+#endif
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
@@ -3184,6 +3190,7 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
         syscall_address[i] = syscall_addr;
     }
     save_u64_arr_to_buf(&data, (const u64 *) syscall_address, monitored_syscalls_amount, 0);
+    save_to_submit_buf(&data, (void *) &caller_ctx_id, sizeof(uint64_t), 1);
     return events_perf_submit(&data, PRINT_SYSCALL_TABLE, 0);
 }
 
@@ -3193,9 +3200,12 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
 // Argument extraction of go functions is different between x86 and arm
 // https://go.googlesource.com/go/+/refs/heads/dev.regabi/src/cmd/compile/internal-abi.md
 #if defined(bpf_target_x86)
-    uint64_t *address_array = ((void *) ctx->sp + 8);
+    uint64_t caller_ctx_id = ctx->bx;
+    uint64_t *address_array = ((void *) ctx->sp) + 8;
 #elif defined(bpf_target_arm64)
-    uint64_t *address_array = ((void *) ctx->sp) + 16;
+    uint64_t caller_ctx_id;
+    bpf_probe_read(&caller_ctx_id, 8, ((void *) ctx->sp) + 16);
+    uint64_t *address_array = ((void *) ctx->sp) + 24;
 #else
     return 0;
 #endif
@@ -3234,6 +3244,7 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
 
         add_u64_elements_to_buf(&data, (const u64 *) seq_ops_addresses, 4, count_off);
     }
+    save_to_submit_buf(&data, (void *) &caller_ctx_id, sizeof(uint64_t), 1);
     events_perf_submit(&data, PRINT_NET_SEQ_OPS, 0);
     return 0;
 }

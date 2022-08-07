@@ -978,8 +978,8 @@ func (t *Tracee) getProcessCtx(hostTid uint32) (procinfo.ProcessCtx, error) {
 // Run starts the trace. it will run until ctx is cancelled
 func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.invokeInitEvents()
-	t.triggerSyscallsIntegrityCheck()
-	t.triggerSeqOpsIntegrityCheck()
+	t.triggerSyscallsIntegrityCheck(trace.Event{})
+	t.triggerSeqOpsIntegrityCheck(trace.Event{})
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
 	t.netPerfMap.Start()
@@ -1110,22 +1110,23 @@ func (t *Tracee) getCapturedIfaceIdx(ifaceName string) (int, bool) {
 }
 
 // TODO: move to triggerEvents package
-func (t *Tracee) triggerSyscallsIntegrityCheck() {
+func (t *Tracee) triggerSyscallsIntegrityCheck(event trace.Event) {
 	_, ok := t.events[events.HookedSyscalls]
 	if !ok {
 		return
 	}
-	t.triggerSyscallsIntegrityCheckCall()
+	contextMapID := derive.StoreEventContext(event)
+	t.triggerSyscallsIntegrityCheckCall(contextMapID)
 }
 
 // triggerSyscallsIntegrityCheck is used by a Uprobe to trigger an eBPF program that prints the syscall table
 // TODO: move to triggerEvents package
 //go:noinline
-func (t *Tracee) triggerSyscallsIntegrityCheckCall() {
+func (t *Tracee) triggerSyscallsIntegrityCheckCall(contextMapID uint64) {
 }
 
 // TODO: move to triggerEvents package
-func (t *Tracee) triggerSeqOpsIntegrityCheck() {
+func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
 	_, ok := t.events[events.HookedSeqOps]
 	if !ok {
 		return
@@ -1138,13 +1139,14 @@ func (t *Tracee) triggerSeqOpsIntegrityCheck() {
 		}
 		seqOpsPointers[i] = seqOpsStruct.Address
 	}
-	t.triggerSeqOpsIntegrityCheckCall(seqOpsPointers)
+	contextMapID := derive.StoreEventContext(event)
+	t.triggerSeqOpsIntegrityCheckCall(contextMapID, seqOpsPointers)
 }
 
 // triggerSeqOpsIntegrityCheck is used by a Uprobe to trigger an eBPF program that prints the seq ops pointers
 // TODO: move to triggerEvents package
 //go:noinline
-func (t *Tracee) triggerSeqOpsIntegrityCheckCall(seqOpsStruct [len(derive.NetSeqOps)]uint64) error {
+func (t *Tracee) triggerSeqOpsIntegrityCheckCall(contextMapID uint64, seqOpsStruct [len(derive.NetSeqOps)]uint64) error {
 	return nil
 }
 
