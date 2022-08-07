@@ -1723,50 +1723,44 @@ static __always_inline int save_str_to_buf(event_data_t *data, void *ptr, u8 ind
 }
 
 static __always_inline int
+add_u64_elements_to_buf(event_data_t *data, const u64 __user *ptr, int len, u32 count_off)
+{
+    u8 elem_num = 0;
+    u8 current_elem_num;
+    #pragma unroll
+    for (int i = 0; i < len; i++) {
+        void *addr = &(data->submit_p->buf[data->buf_off]);
+        if (data->buf_off > MAX_PERCPU_BUFSIZE - sizeof(u64))
+            // not enough space - return
+            goto out;
+        if (bpf_probe_read(addr, sizeof(u64), (void *) &ptr[i]) != 0)
+            goto out;
+        elem_num++;
+        data->buf_off += sizeof(u64);
+    }
+out:
+    // save number of elements in the array
+    current_elem_num = data->submit_p->buf[count_off & (MAX_PERCPU_BUFSIZE - 1)];
+    data->submit_p->buf[count_off & (MAX_PERCPU_BUFSIZE - 1)] = current_elem_num + elem_num;
+
+    return 1;
+}
+
+static __always_inline int
 save_u64_arr_to_buf(event_data_t *data, const u64 __user *ptr, int len, u8 index)
 {
-    // Data saved to submit buf: [index][u64 count][u64 1][u64 2][u64 3]...
-    u8 elem_num = 0;
+    // Data saved to submit buf: [index][u8 count][u64 1][u64 2][u64 3]...
     // Save argument index
     data->submit_p->buf[(data->buf_off) & (MAX_PERCPU_BUFSIZE - 1)] = index;
 
     // Save space for number of elements (1 byte)
-    u32 orig_off = data->buf_off + 1;
-    data->buf_off += 2;
-
-#pragma unroll
-    for (int i = 0; i < len; i++) {
-        u64 element = 0;
-        int err = bpf_probe_read(&element, sizeof(u64), &ptr[i]);
-        if (err != 0)
-            goto out;
-        if (data->buf_off > MAX_PERCPU_BUFSIZE - sizeof(u64))
-            // not enough space - return
-            goto out;
-
-        void *addr = &(data->submit_p->buf[data->buf_off]);
-        int sz = bpf_probe_read(addr, sizeof(u64), (void *) &element);
-        if (sz == 0) {
-            elem_num++;
-            if (data->buf_off > MAX_PERCPU_BUFSIZE)
-                // Satisfy validator
-                goto out;
-
-            data->buf_off += sizeof(u64);
-            continue;
-        } else {
-            goto out;
-        }
-    }
-
-    goto out;
-
-out:
-    // save number of elements in the array
-    data->submit_p->buf[orig_off & (MAX_PERCPU_BUFSIZE - 1)] = elem_num;
+    data->buf_off += 1;
+    u32 orig_off = data->buf_off;
+    data->submit_p->buf[(data->buf_off) & (MAX_PERCPU_BUFSIZE - 1)] = 0;
+    data->buf_off += 1;
     data->context.argnum++;
 
-    return 1;
+    return add_u64_elements_to_buf(data, ptr, len, orig_off);
 }
 
 static __always_inline int
