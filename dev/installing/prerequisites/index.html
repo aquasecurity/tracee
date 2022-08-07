@@ -1765,8 +1765,8 @@ capabilities:</p>
 <ul>
 <li>Manage eBPF maps limits (<code>CAP_SYS_RESOURCE</code>)</li>
 <li>Load and Attach eBPF programs:<ol>
-<li><code>CAP_BPF</code>+<code>CAP_PERFMON</code> for recent kernels (&gt;=5.8)</li>
-<li>or <code>CAP_SYS_ADMIN</code> for older kernels</li>
+<li><code>CAP_BPF</code>+<code>CAP_PERFMON</code> for recent kernels (&gt;=5.8) where the kernel perf paranoid value in <code>/proc/sys/kernel/perf_event_paranoid</code> is equal to 3 or less</li>
+<li>or <code>CAP_SYS_ADMIN</code> otherwise</li>
 </ol>
 </li>
 <li><code>CAP_SYS_PTRACE</code> (to collect information about processes upon startup)</li>
