@@ -1723,10 +1723,9 @@ static __always_inline int save_str_to_buf(event_data_t *data, void *ptr, u8 ind
 }
 
 static __always_inline int
-add_u64_elements_to_buf(event_data_t *data, const u64 __user *ptr, int len, u32 count_off)
+add_u64_elements_to_buf(event_data_t *data, const u64 __user *ptr, int len, volatile u32 count_off)
 {
     u8 elem_num = 0;
-    u8 current_elem_num;
 #pragma unroll
     for (int i = 0; i < len; i++) {
         void *addr = &(data->submit_p->buf[data->buf_off]);
@@ -1740,7 +1739,11 @@ add_u64_elements_to_buf(event_data_t *data, const u64 __user *ptr, int len, u32 
     }
 out:
     // save number of elements in the array
-    current_elem_num = data->submit_p->buf[count_off & (MAX_PERCPU_BUFSIZE - 1)];
+    if (count_off > (MAX_PERCPU_BUFSIZE - 1))
+        return 0;
+    if (count_off < 0)
+        return 0;
+    u8 current_elem_num = data->submit_p->buf[count_off & (MAX_PERCPU_BUFSIZE - 1)];
     data->submit_p->buf[count_off & (MAX_PERCPU_BUFSIZE - 1)] = current_elem_num + elem_num;
 
     return 1;
@@ -1755,7 +1758,7 @@ save_u64_arr_to_buf(event_data_t *data, const u64 __user *ptr, int len, u8 index
 
     // Save space for number of elements (1 byte)
     data->buf_off += 1;
-    u32 orig_off = data->buf_off;
+    volatile u32 orig_off = data->buf_off;
     data->submit_p->buf[(data->buf_off) & (MAX_PERCPU_BUFSIZE - 1)] = 0;
     data->buf_off += 1;
     data->context.argnum++;
