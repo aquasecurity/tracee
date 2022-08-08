@@ -24,8 +24,8 @@ starts with the prefix will be whitelisted.
 The use is only with the `!=` operator, and wildcards aren't supported.
 
 ## Arguments
-* `library_path`:`const char*`[K] - the path of the file written.
-* `symbols`:`const char*const*`[U,TOCTOU] - the first 20 bytes of the file.
+* `library_path`:`const char*`[K] - the path of the shared object file loaded.
+* `symbols`:`const char*const*`[U,TOCTOU] - the watched symbols exported by the shared object.
 
 ## Dependency Events
 ### shared_object_loaded
@@ -38,6 +38,7 @@ Used by tracee to maintain mount NS cache, used in this event to get to processe
 ## Example Use Case
 To catch SO which tries to override the `fopen` function of `libc`, we can use the event in
 the following way:
+
 `./dist/tracee-ebpf -t e=symbols_load -t symbols_load.symbols=fopen symbols_load.library_path!=libc`
 
 ## Issues
