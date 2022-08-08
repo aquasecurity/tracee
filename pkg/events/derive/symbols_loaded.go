@@ -16,11 +16,18 @@ func SymbolsLoaded(soLoader sharedobjs.DynamicSymbolsLoader, watchedSymbols []st
 
 // Most specific paths should be at the top, to prevent bugs with iterations over the list
 var knownLibrariesDirs = []string{
-	"/usr/lib/x86_64-linux-gnu/",
 	"/usr/lib64/",
 	"/usr/lib/",
 	"/lib64/",
 	"/lib/",
+}
+
+var knownArchitectureDirs = []string{
+	"x86_64-linux-gnu",
+	"aarch64-linux-gnu",
+	"i386-linux-gnu",
+	"i686-linux-gnu",
+	"", // non-specific architecture dir
 }
 
 // symbolsLoadedEventGenerator is responsible of generating event if shared object loaded to a process
@@ -98,9 +105,15 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) isWhitelist(soPath string) bo
 	if len(symbsLoadedGen.librariesWhitelist) > 0 {
 		for _, libsDirectory := range knownLibrariesDirs {
 			if strings.HasPrefix(soPath, libsDirectory) {
-				for _, wlLib := range symbsLoadedGen.librariesWhitelist {
-					if strings.HasPrefix(soPath, path.Join(libsDirectory, wlLib)) {
-						return true
+				for _, archDir := range knownArchitectureDirs {
+					archLibDir := path.Join(libsDirectory, archDir)
+					if strings.HasPrefix(soPath, archLibDir) {
+						for _, wlLib := range symbsLoadedGen.librariesWhitelist {
+							if strings.HasPrefix(soPath, path.Join(archLibDir, wlLib)) {
+								return true
+							}
+						}
+						break
 					}
 				}
 				break
