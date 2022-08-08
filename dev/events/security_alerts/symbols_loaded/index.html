@@ -1819,8 +1819,8 @@ starts with the prefix will be whitelisted.
 The use is only with the <code>!=</code> operator, and wildcards aren't supported.</p>
 <h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
 <ul>
-<li><code>library_path</code>:<code>const char*</code>[K] - the path of the file written.</li>
-<li><code>symbols</code>:<code>const char*const*</code>[U,TOCTOU] - the first 20 bytes of the file.</li>
+<li><code>library_path</code>:<code>const char*</code>[K] - the path of the shared object file loaded.</li>
+<li><code>symbols</code>:<code>const char*const*</code>[U,TOCTOU] - the watched symbols exported by the shared object.</li>
 </ul>
 <h2 id="dependency-events">Dependency Events<a class="headerlink" href="#dependency-events" title="Permanent link">&para;</a></h2>
 <h3 id="shared_object_loaded">shared_object_loaded<a class="headerlink" href="#shared_object_loaded" title="Permanent link">&para;</a></h3>
@@ -1830,8 +1830,8 @@ shared object necessary to examine its shared objects.</p>
 <p>Used by tracee to maintain mount NS cache, used in this event to get to processes file system</p>
 <h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
 <p>To catch SO which tries to override the <code>fopen</code> function of <code>libc</code>, we can use the event in
-the following way:
-<code>./dist/tracee-ebpf -t e=symbols_load -t symbols_load.symbols=fopen symbols_load.library_path!=libc</code></p>
+the following way:</p>
+<p><code>./dist/tracee-ebpf -t e=symbols_load -t symbols_load.symbols=fopen symbols_load.library_path!=libc</code></p>
 <h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
 <p>Because the event is implemented in uesr-mode, it needs to open and read files.
 This means that the event is not very performance efficient (although it uses some optimizations).
