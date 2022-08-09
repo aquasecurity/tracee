@@ -1109,6 +1109,7 @@ func (t *Tracee) getCapturedIfaceIdx(ifaceName string) (int, bool) {
 	return t.config.Capture.NetIfaces.Find(ifaceName)
 }
 
+// TODO: move to triggerEvents package
 func (t *Tracee) triggerSyscallsIntegrityCheck() {
 	_, ok := t.events[events.HookedSyscalls]
 	if !ok {
@@ -1118,10 +1119,12 @@ func (t *Tracee) triggerSyscallsIntegrityCheck() {
 }
 
 // triggerSyscallsIntegrityCheck is used by a Uprobe to trigger an eBPF program that prints the syscall table
+// TODO: move to triggerEvents package
 //go:noinline
 func (t *Tracee) triggerSyscallsIntegrityCheckCall() {
 }
 
+// TODO: move to triggerEvents package
 func (t *Tracee) triggerSeqOpsIntegrityCheck() {
 	_, ok := t.events[events.HookedSeqOps]
 	if !ok {
@@ -1139,6 +1142,7 @@ func (t *Tracee) triggerSeqOpsIntegrityCheck() {
 }
 
 // triggerSeqOpsIntegrityCheck is used by a Uprobe to trigger an eBPF program that prints the seq ops pointers
+// TODO: move to triggerEvents package
 //go:noinline
 func (t *Tracee) triggerSeqOpsIntegrityCheckCall(seqOpsStruct [len(derive.NetSeqOps)]uint64) error {
 	return nil
