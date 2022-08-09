@@ -82,9 +82,11 @@
 #define MAX_STR_FILTER_SIZE 16        // bounded to size of the compared values (comm)
 #define FILE_MAGIC_HDR_SIZE 32        // magic_write: bytes to save from a file's header
 #define FILE_MAGIC_MASK     31        // magic_write: mask used for verifier boundaries
-#define NET_SEQ_OPS_SIZE    4         // print_net_seq_ops: struct size
-#define NET_SEQ_OPS_TYPES   6         // print_net_seq_ops: argument size
-#define MAX_KSYM_NAME_SIZE  64
+#define NET_SEQ_OPS_SIZE                                                                           \
+    4 // print_net_seq_ops: struct size - TODO: pass this variable as uprobe argument
+#define NET_SEQ_OPS_TYPES                                                                          \
+    6 // print_net_seq_ops: argument size - TODO: pass this variable as uprobe argument
+#define MAX_KSYM_NAME_SIZE 64
 
 enum buf_idx_e
 {
@@ -3140,6 +3142,8 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
         return 0;
 
     int key = 0;
+    // TODO: replace the map for storing the syscalls to check and the syscall table pointer with a
+    // uprobe argument
     u64 *table_ptr = bpf_map_lookup_elem(&syscalls_to_check_map, (void *) &key);
     if (table_ptr == NULL) {
         return 0;
@@ -3186,6 +3190,8 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
 SEC("uprobe/trigger_seq_ops_event")
 int uprobe_seq_ops_trigger(struct pt_regs *ctx)
 {
+// Argument extraction of go functions is different between x86 and arm
+// https://go.googlesource.com/go/+/refs/heads/dev.regabi/src/cmd/compile/internal-abi.md
 #if defined(bpf_target_x86)
     uint64_t *address_array = ((void *) ctx->sp + 8);
 #elif defined(bpf_target_arm64)

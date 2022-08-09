@@ -45,7 +45,9 @@ func deriveHookedSeqOpsArgs(kernelSymbols *helpers.KernelSymbolTable) deriveArgs
 			}
 			if !inTextSegment {
 				hookingFunction := utils.ParseSymbol(addr, kernelSymbols)
-				hookedSeqOps[NetSeqOps[i/4]+"_"+NetSeqOpsFuncs[i%4]] =
+				seqOpsStruct := NetSeqOps[i/4]
+				seqOpsFunc := NetSeqOpsFuncs[i%4]
+				hookedSeqOps[seqOpsStruct+"_"+seqOpsFunc] =
 					trace.HookedSymbolData{SymbolName: hookingFunction.Name, ModuleOwner: hookingFunction.Owner}
 			}
 		}
