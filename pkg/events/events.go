@@ -5890,7 +5890,7 @@ var Definitions = eventDefinitions{
 			},
 			Sets: []string{},
 			Params: []trace.ArgMeta{
-				{Type: "[]helpers.KernelSymbol", Name: "hooked_seq_ops"},
+				{Type: "map[string]trace.HookedSymbolData", Name: "hooked_seq_ops"},
 			},
 		},
 		TaskRename: {
