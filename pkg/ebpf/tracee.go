@@ -1115,14 +1115,14 @@ func (t *Tracee) triggerSyscallsIntegrityCheck(event trace.Event) {
 	if !ok {
 		return
 	}
-	contextMapID := derive.StoreEventContext(event)
-	t.triggerSyscallsIntegrityCheckCall(contextMapID)
+	eventHandle := derive.StoreEventContext(event)
+	t.triggerSyscallsIntegrityCheckCall(eventHandle)
 }
 
 // triggerSyscallsIntegrityCheck is used by a Uprobe to trigger an eBPF program that prints the syscall table
 // TODO: move to triggerEvents package
 //go:noinline
-func (t *Tracee) triggerSyscallsIntegrityCheckCall(contextMapID uint64) {
+func (t *Tracee) triggerSyscallsIntegrityCheckCall(eventHandle uint64) {
 }
 
 // TODO: move to triggerEvents package
@@ -1139,14 +1139,14 @@ func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
 		}
 		seqOpsPointers[i] = seqOpsStruct.Address
 	}
-	contextMapID := derive.StoreEventContext(event)
-	t.triggerSeqOpsIntegrityCheckCall(contextMapID, seqOpsPointers)
+	eventHandle := derive.StoreEventContext(event)
+	t.triggerSeqOpsIntegrityCheckCall(eventHandle, seqOpsPointers)
 }
 
 // triggerSeqOpsIntegrityCheck is used by a Uprobe to trigger an eBPF program that prints the seq ops pointers
 // TODO: move to triggerEvents package
 //go:noinline
-func (t *Tracee) triggerSeqOpsIntegrityCheckCall(contextMapID uint64, seqOpsStruct [len(derive.NetSeqOps)]uint64) error {
+func (t *Tracee) triggerSeqOpsIntegrityCheckCall(eventHandle uint64, seqOpsStruct [len(derive.NetSeqOps)]uint64) error {
 	return nil
 }
 

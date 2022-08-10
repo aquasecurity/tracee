@@ -76,6 +76,8 @@ func makeEventSkeleton(eventID events.ID) eventSkeleton {
 	}
 }
 
+// withOriginalContext is used to create the derived event with the event skeleton provided
+// compared to withInvokingContext which is used to create the derived event with the triggering event context
 func withOriginalContext(event *trace.Event) (trace.Event, error) {
 	return *event, nil
 }

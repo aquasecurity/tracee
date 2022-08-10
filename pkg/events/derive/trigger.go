@@ -22,33 +22,34 @@ func StoreEventContext(event trace.Event) uint64 {
 	if event.Timestamp == 0 {
 		return 0
 	}
-	contextMapID := uint64(invokedContext.Counter.Read())
+	eventHandle := uint64(invokedContext.Counter.Read())
 	invokedContext.Counter.Increment(1)
 	invokedContext.Mutex.Lock()
-	invokedContext.Map[contextMapID] = event
+	invokedContext.Map[eventHandle] = event
 	invokedContext.Mutex.Unlock()
-	return contextMapID
+	return eventHandle
 }
 
-func GetEventContext(contextID uint64) (trace.Event, error) {
+func GetEventContext(eventHandle uint64) (trace.Event, error) {
 	invokedContext.Mutex.RLock()
-	contextEvent, ok := invokedContext.Map[contextID]
+	contextEvent, ok := invokedContext.Map[eventHandle]
 	invokedContext.Mutex.RUnlock()
 	if !ok {
 		return trace.Event{}, fmt.Errorf("caller_context_id arg not in context map")
 	}
-	// Remove from map to avoid memory leak
-	delete(invokedContext.Map, contextID)
+	delete(invokedContext.Map, eventHandle)
 	return contextEvent, nil
 }
 
+// withInvokingContext is used to create the derived event with the triggering event context
+// compared to withOriginalContext which is used to create the derived event with the event skeleton provided
 func withInvokingContext(event *trace.Event) (trace.Event, error) {
-	contextID, err := parse.ArgUint64Val(event, "caller_context_id")
+	eventHandle, err := parse.ArgUint64Val(event, "caller_context_id")
 	if err != nil {
 		return trace.Event{}, fmt.Errorf("error parsing caller_context_id arg: %v", err)
 	}
-	if contextID > 0 {
-		return GetEventContext(contextID)
+	if eventHandle > 0 {
+		return GetEventContext(eventHandle)
 	} else {
 		return *event, nil
 	}

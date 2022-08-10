@@ -82,11 +82,9 @@
 #define MAX_STR_FILTER_SIZE 16        // bounded to size of the compared values (comm)
 #define FILE_MAGIC_HDR_SIZE 32        // magic_write: bytes to save from a file's header
 #define FILE_MAGIC_MASK     31        // magic_write: mask used for verifier boundaries
-#define NET_SEQ_OPS_SIZE                                                                           \
-    4 // print_net_seq_ops: struct size - TODO: pass this variable as uprobe argument
-#define NET_SEQ_OPS_TYPES                                                                          \
-    6 // print_net_seq_ops: argument size - TODO: pass this variable as uprobe argument
-#define MAX_KSYM_NAME_SIZE 64
+#define NET_SEQ_OPS_SIZE    4 // print_net_seq_ops: struct size - TODO: replace with uprobe argument
+#define NET_SEQ_OPS_TYPES   6 // print_net_seq_ops: argument size - TODO: replace with uprobe argument
+#define MAX_KSYM_NAME_SIZE  64
 
 enum buf_idx_e
 {
@@ -348,8 +346,13 @@ enum container_state_e
     #define MAX_BIN_CHUNKS        110
 #endif
 
-#define NUMBER_OF_SYSCALLS_TO_CHECK_X86 18
-#define NUMBER_OF_SYSCALLS_TO_CHECK_ARM 14
+#if defined(bpf_target_x86)
+    #define NUMBER_OF_SYSCALLS_TO_CHECK 18
+#elif defined(bpf_target_arm64)
+    #define NUMBER_OF_SYSCALLS_TO_CHECK 14
+#else
+    #define NUMBER_OF_SYSCALLS_TO_CHECK 0
+#endif
 
 #define MAX_CACHED_PATH_SIZE 64
 
@@ -3130,66 +3133,58 @@ int BPF_KPROBE(trace_do_exit)
     return events_perf_submit(&data, DO_EXIT, code);
 }
 
-/* uprobe_syscall_trigger submit to the buff the syscalls function handlers address from
- * the syscall table. the syscalls are stored in map which is syscalls_to_check_map and the
- * syscall-table address is stored in the kernel_symbols map.
+/* uprobe_syscall_trigger submit to the buff the syscalls function handlers
+ * address from the syscall table. the syscalls are stored in map which is
+ * syscalls_to_check_map and the syscall-table address is stored in the
+ * kernel_symbols map.
  */
 SEC("uprobe/trigger_syscall_event")
 int uprobe_syscall_trigger(struct pt_regs *ctx)
 {
-#if defined(__TARGET_ARCH_x86)
-    uint64_t caller_ctx_id = ctx->bx;
-#else
-    uint64_t caller_ctx_id;
+    u64 caller_ctx_id;
+#if defined(bpf_target_x86)
+    caller_ctx_id = ctx->bx;
+#elif defined(bpf_target_arm64)
     bpf_probe_read(&caller_ctx_id, 8, ((void *) ctx->sp) + 16);
+#else
+    return 0;
 #endif
+
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
 
     int key = 0;
-    // TODO: replace the map for storing the syscalls to check and the syscall table pointer with a
-    // uprobe argument
-    u64 *table_ptr = bpf_map_lookup_elem(&syscalls_to_check_map, (void *) &key);
-    if (table_ptr == NULL) {
+    // TODO: https://github.com/aquasecurity/tracee/issues/2055
+    if (bpf_map_lookup_elem(&syscalls_to_check_map, (void *) &key) == NULL)
         return 0;
-    }
 
-    char syscall_table[15] = "sys_call_table";
-    unsigned long *syscall_table_addr = (unsigned long *) get_symbol_addr(syscall_table);
+    u64 *syscall_table_addr = (u64 *) get_symbol_addr("sys_call_table");
+    if (syscall_table_addr == 0)
+        return 0;
+
     u64 idx;
-    u64 *syscall_num_p; // pointer to syscall_number
-    u64 syscall_num;
     unsigned long syscall_addr = 0;
-    int monitored_syscalls_amount = 0;
-#if defined(bpf_target_x86)
-    monitored_syscalls_amount = NUMBER_OF_SYSCALLS_TO_CHECK_X86;
-    u64 syscall_address[NUMBER_OF_SYSCALLS_TO_CHECK_X86];
-#elif defined(bpf_target_arm64)
-    monitored_syscalls_amount = NUMBER_OF_SYSCALLS_TO_CHECK_ARM;
-    u64 syscall_address[NUMBER_OF_SYSCALLS_TO_CHECK_ARM];
-#else
+    u64 syscall_address[NUMBER_OF_SYSCALLS_TO_CHECK];
 
-    return 0;
-#endif
-
-    __builtin_memset(syscall_address, 0, sizeof(syscall_address));
-// the map should look like [syscall number 1][syscall number 2][syscall number 3]...
 #pragma unroll
-    for (int i = 0; i < monitored_syscalls_amount; i++) {
+    for (int i = 0; i < NUMBER_OF_SYSCALLS_TO_CHECK; i++) {
         idx = i;
-        syscall_num_p = bpf_map_lookup_elem(&syscalls_to_check_map, (void *) &idx);
+        // syscalls_to_check_map format: [syscall#][syscall#][syscall#]
+        u64 *syscall_num_p = bpf_map_lookup_elem(&syscalls_to_check_map, (void *) &idx);
         if (syscall_num_p == NULL) {
+            syscall_address[i] = 0;
             continue;
         }
-        syscall_num = (u64) *syscall_num_p;
-        syscall_addr = READ_KERN(syscall_table_addr[syscall_num]);
+
+        syscall_addr = READ_KERN(syscall_table_addr[*syscall_num_p]);
         if (syscall_addr == 0) {
             return 0;
         }
+
         syscall_address[i] = syscall_addr;
     }
-    save_u64_arr_to_buf(&data, (const u64 *) syscall_address, monitored_syscalls_amount, 0);
+    save_u64_arr_to_buf(&data, (const u64 *) syscall_address, NUMBER_OF_SYSCALLS_TO_CHECK, 0);
     save_to_submit_buf(&data, (void *) &caller_ctx_id, sizeof(uint64_t), 1);
     return events_perf_submit(&data, PRINT_SYSCALL_TABLE, 0);
 }
