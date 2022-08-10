@@ -45,11 +45,6 @@ probe_tracee_ebpf() {
 }
 
 run_tracee_ebpf() {
-    probe_tracee_ebpf
-    if [ ${TRACEE_RET} -eq 2 ]; then
-        return
-    fi
-
     ${TRACEE_EBPF_EXE} $@
     TRACEE_RET=$?
 }
