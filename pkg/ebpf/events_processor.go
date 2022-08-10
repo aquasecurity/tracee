@@ -371,8 +371,8 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			if err != nil {
 				return err
 			}
-			t.triggerSyscallsIntegrityCheck()
-			t.triggerSeqOpsIntegrityCheck()
+			t.triggerSyscallsIntegrityCheck(*event)
+			t.triggerSeqOpsIntegrityCheck(*event)
 		}
 
 	case events.HookedProcFops:

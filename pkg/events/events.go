@@ -5622,6 +5622,7 @@ var Definitions = eventDefinitions{
 			Sets: []string{},
 			Params: []trace.ArgMeta{
 				{Type: "unsigned long[]", Name: "syscalls_addresses"},
+				{Type: "unsigned long", Name: "caller_context_id"},
 			},
 		},
 		HookedSyscalls: {
@@ -5877,6 +5878,7 @@ var Definitions = eventDefinitions{
 			Sets:     []string{},
 			Params: []trace.ArgMeta{
 				{Type: "unsigned long[]", Name: "net_seq_ops"},
+				{Type: "unsigned long", Name: "caller_context_id"},
 			},
 		},
 		HookedSeqOps: {

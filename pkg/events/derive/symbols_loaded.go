@@ -11,7 +11,7 @@ import (
 
 func SymbolsLoaded(soLoader sharedobjs.DynamicSymbolsLoader, watchedSymbols []string, whitelistedLibsPrefixes []string) events.DeriveFunction {
 	gen := initSymbolsLoadedEventGenerator(soLoader, watchedSymbols, whitelistedLibsPrefixes)
-	return singleEventDeriveFunc(events.SymbolsLoaded, gen.deriveArgs)
+	return singleEventDeriveFunc(events.SymbolsLoaded, gen.deriveArgs, withOriginalContext)
 }
 
 // Most specific paths should be at the top, to prevent bugs with iterations over the list

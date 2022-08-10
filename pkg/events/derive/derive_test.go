@@ -83,7 +83,7 @@ func TestSingleEventDeriveFunc(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(t *testing.T) {
-			deriveFunc := singleEventDeriveFunc(testEventID, testCase.ArgsDeriveFunc)
+			deriveFunc := singleEventDeriveFunc(testEventID, testCase.ArgsDeriveFunc, withOriginalContext)
 			derivedEvents, errs := deriveFunc(baseEvent)
 			assert.Len(t, derivedEvents, testCase.DerivedEventsAmount)
 			if testCase.ExpectedError != "" {
