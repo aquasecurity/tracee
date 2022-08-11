@@ -8,62 +8,56 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
+type eventArgFilter struct {
+	StringFilter
+}
 type ArgFilter struct {
-	Filters map[events.ID]map[string]*StringFilter // key to the first map is event id, and to the second map the argument name
+	filters map[events.ID]map[string]*eventArgFilter // key to the first map is event id, and to the second map the argument name
 	enabled bool
+}
+
+func newEventArgFilter() *eventArgFilter {
+	return &eventArgFilter{
+		StringFilter: *NewStringFilter(),
+	}
 }
 
 func NewArgFilter() *ArgFilter {
 	return &ArgFilter{
-		Filters: map[events.ID]map[string]*StringFilter{},
+		filters: map[events.ID]map[string]*eventArgFilter{},
 		enabled: false,
 	}
 }
 
-func matchFilter(filters []string, argValStr string) bool {
-	for _, f := range filters {
-		prefixCheck := f[len(f)-1] == '*'
-		if prefixCheck {
-			f = f[0 : len(f)-1]
-		}
-		suffixCheck := f[0] == '*'
-		if suffixCheck {
-			f = f[1:]
-		}
-		if argValStr == f ||
-			(prefixCheck && !suffixCheck && strings.HasPrefix(argValStr, f)) ||
-			(suffixCheck && !prefixCheck && strings.HasSuffix(argValStr, f)) ||
-			(prefixCheck && suffixCheck && strings.Contains(argValStr, f)) {
-			return true
-		}
-	}
-	return false
+// GetEventFilters returns the argument filters map for a specific event
+// writing to the map may have unintentional consenquences, avoid doing so
+func (filter *ArgFilter) GetEventFilters(eventID events.ID) map[string]*eventArgFilter {
+	return filter.filters[eventID]
 }
 
 func (filter *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
-	if filter.Enabled() {
-		for argName, filter := range filter.Filters[events.ID(eventID)] {
-			var argVal interface{}
-			ok := false
-			for _, arg := range args {
-				if arg.Name == argName {
-					argVal = arg.Value
-					ok = true
-				}
+	if !filter.Enabled() {
+		return true
+	}
+
+	for argName, filter := range filter.filters[eventID] {
+		found := false
+		var argVal interface{}
+		for _, arg := range args {
+			if arg.Name == argName {
+				found = true
+				argVal = arg.Value
+				break
 			}
-			if !ok {
-				continue
-			}
-			// TODO: use type assertion instead of string conversion
-			argValStr := fmt.Sprint(argVal)
-			match := matchFilter(filter.Equal, argValStr)
-			if !match && len(filter.Equal) > 0 {
-				return false
-			}
-			matchExclude := matchFilter(filter.NotEqual, argValStr)
-			if matchExclude {
-				return false
-			}
+		}
+		if !found {
+			return true
+		}
+		// TODO: use type assertion instead of string conversion
+		argValStr := fmt.Sprint(argVal)
+		res := filter.Filter(argValStr)
+		if !res {
+			return false
 		}
 	}
 	return true
@@ -74,19 +68,23 @@ func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, even
 	// filterName have the format event.argname, and operatorAndValues have the format "=argval"
 	splitFilter := strings.Split(filterName, ".")
 	if len(splitFilter) != 2 {
-		return fmt.Errorf("invalid argument filter format %s%s", filterName, operatorAndValues)
+		return InvalidExpression(filterName + operatorAndValues)
 	}
 	eventName := splitFilter[0]
 	argName := splitFilter[1]
 
+	if eventName == "" || argName == "" {
+		return InvalidExpression(filterName + operatorAndValues)
+	}
+
 	id, ok := eventsNameToID[eventName]
 	if !ok {
-		return fmt.Errorf("invalid argument filter event name: %s", eventName)
+		return InvalidEventName(eventName)
 	}
 
 	eventDefinition, ok := events.Definitions.GetSafe(id)
 	if !ok {
-		return fmt.Errorf("invalid argument filter event name: %s", eventName)
+		return InvalidEventName(eventName)
 	}
 	eventParams := eventDefinition.Params
 
@@ -100,34 +98,28 @@ func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, even
 	}
 
 	if !argFound {
-		return fmt.Errorf("invalid argument filter argument name: %s", argName)
+		return InvalidEventArgument(argName)
 	}
 
-	strFilter := &StringFilter{
-		Equal:    []string{},
-		NotEqual: []string{},
+	if _, ok := filter.filters[id]; !ok {
+		filter.filters[id] = map[string]*eventArgFilter{}
 	}
 
-	// Treat operatorAndValues as a string filter to avoid code duplication
-	err := strFilter.Parse(operatorAndValues)
+	if _, ok := filter.filters[id][argName]; !ok {
+		// store new event arg filter if missing
+		argFilter := newEventArgFilter()
+		filter.filters[id][argName] = argFilter
+	}
+
+	// extract the arg filter and parse expression into it
+	argFilter := filter.filters[id][argName]
+	err := argFilter.Parse(operatorAndValues)
 	if err != nil {
 		return err
 	}
 
-	if _, ok := filter.Filters[id]; !ok {
-		filter.Filters[id] = map[string]*StringFilter{}
-	}
-
-	if _, ok := filter.Filters[id][argName]; !ok {
-		filter.Filters[id][argName] = &StringFilter{}
-	}
-
-	val := filter.Filters[id][argName]
-
-	val.Equal = append(val.Equal, strFilter.Equal...)
-	val.NotEqual = append(val.NotEqual, strFilter.NotEqual...)
-
-	filter.Filters[id][argName] = val
+	// store the arg filter again
+	filter.filters[id][argName] = argFilter
 
 	filter.Enable()
 
@@ -136,7 +128,7 @@ func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, even
 
 func (filter *ArgFilter) Enable() {
 	filter.enabled = true
-	for _, filterMap := range filter.Filters {
+	for _, filterMap := range filter.filters {
 		for _, f := range filterMap {
 			f.Enable()
 		}
@@ -145,7 +137,7 @@ func (filter *ArgFilter) Enable() {
 
 func (filter *ArgFilter) Disable() {
 	filter.enabled = false
-	for _, filterMap := range filter.Filters {
+	for _, filterMap := range filter.filters {
 		for _, f := range filterMap {
 			f.Disable()
 		}

@@ -11,17 +11,17 @@ import (
 )
 
 const (
-	minUIntVal uint64 = 0
-	maxUIntVal uint64 = math.MaxUint64
+	maxNotSetUInt uint64 = 0
+	minNotSetUInt uint64 = math.MaxUint64
 )
 
 type UIntFilter struct {
-	Equal       []uint64
-	NotEqual    []uint64
-	GreaterThan uint64
-	LessThan    uint64
-	Is32Bit     bool
-	enabled     bool
+	equal    map[uint64]bool
+	notEqual map[uint64]bool
+	min      uint64
+	max      uint64
+	is32Bit  bool
+	enabled  bool
 }
 
 func NewUIntFilter() *UIntFilter {
@@ -34,12 +34,11 @@ func NewUInt32Filter() *UIntFilter {
 
 func newUIntFilter(is32Bit bool) *UIntFilter {
 	return &UIntFilter{
-		Equal:       []uint64{},
-		NotEqual:    []uint64{},
-		GreaterThan: maxUIntVal,
-		LessThan:    minUIntVal,
-		Is32Bit:     is32Bit,
-		enabled:     false,
+		equal:    map[uint64]bool{},
+		notEqual: map[uint64]bool{},
+		min:      minNotSetUInt,
+		max:      maxNotSetUInt,
+		is32Bit:  is32Bit,
 	}
 }
 
@@ -56,53 +55,115 @@ func (f *UIntFilter) Enabled() bool {
 }
 
 func (f *UIntFilter) Minimum() uint64 {
-	return f.GreaterThan
+	return f.min
 }
 
 func (f *UIntFilter) Maximum() uint64 {
-	return f.LessThan
+	return f.max
+}
+
+// priority goes by (from most significant):
+// 1. equality
+// 2. greater
+// 3. lesser
+// 4. non equality
+func (f *UIntFilter) Filter(val uint64) bool {
+	result := !f.Enabled() || f.equal[val] || val > f.min || val < f.max
+	if !result && f.notEqual[val] {
+		return false
+	}
+	return result
+}
+
+func (f *UIntFilter) validate(val uint64) bool {
+	const maxUIntVal32Bit = math.MaxUint32
+	if f.is32Bit {
+		return val <= maxUIntVal32Bit
+	}
+	return true
+}
+
+func (f *UIntFilter) addEqual(val uint64) {
+	f.equal[val] = true
+}
+
+func (f *UIntFilter) addNotEqual(val uint64) {
+	f.notEqual[val] = true
+}
+
+func (f *UIntFilter) addLessThan(val uint64) {
+	// we want to have the highest max input
+	if val > f.max {
+		f.max = val
+	}
+}
+
+func (f *UIntFilter) addGreaterThan(val uint64) {
+	// we want to have the lowest min input
+	if val < f.min {
+		f.min = val
+	}
+}
+
+func (f *UIntFilter) add(val uint64, operator Operator) error {
+	if !f.validate(val) {
+		return InvalidValue(fmt.Sprint(val))
+	}
+	switch operator {
+	case Equal:
+		f.addEqual(val)
+	case NotEqual:
+		f.addNotEqual(val)
+	case Lower:
+		f.addLessThan(val)
+	case Greater:
+		f.addGreaterThan(val)
+	case LowerEqual:
+		f.addEqual(val)
+		f.addLessThan(val)
+	case GreaterEqual:
+		f.addEqual(val)
+		f.addGreaterThan(val)
+	}
+	return nil
 }
 
 func (filter *UIntFilter) Parse(operatorAndValues string) error {
 	if len(operatorAndValues) < 2 {
-		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
+		return InvalidExpression(operatorAndValues)
 	}
 	valuesString := string(operatorAndValues[1:])
 	operatorString := string(operatorAndValues[0])
 
+	// check for !=
 	if operatorString == "!" {
 		if len(operatorAndValues) < 3 {
-			return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
+			return InvalidExpression(operatorAndValues)
+		}
+		operatorString = operatorAndValues[0:2]
+		valuesString = operatorAndValues[2:]
+	}
+
+	// check for >= and <=
+	if (operatorString == ">" || operatorString == "<") && operatorAndValues[1] == '=' {
+		if len(operatorAndValues) < 3 {
+			return InvalidExpression(operatorAndValues)
 		}
 		operatorString = operatorAndValues[0:2]
 		valuesString = operatorAndValues[2:]
 	}
 
 	values := strings.Split(valuesString, ",")
+	operator := stringToOperator(operatorString)
 
-	for i := range values {
-		val, err := strconv.ParseUint(values[i], 10, 64)
+	for _, val := range values {
+		valInt, err := strconv.ParseUint(val, 10, 64)
 		if err != nil {
-			return fmt.Errorf("invalid filter value: %s", values[i])
+			return InvalidValue(val)
 		}
-		if filter.Is32Bit && (val > math.MaxUint32) {
-			return fmt.Errorf("filter value is too big: %s", values[i])
-		}
-		switch operatorString {
-		case "=":
-			filter.Equal = append(filter.Equal, val)
-		case "!=":
-			filter.NotEqual = append(filter.NotEqual, val)
-		case ">":
-			if (filter.GreaterThan == maxUIntVal) || (val > filter.GreaterThan) {
-				filter.GreaterThan = val
-			}
-		case "<":
-			if (filter.LessThan == minUIntVal) || (val < filter.LessThan) {
-				filter.LessThan = val
-			}
-		default:
-			return fmt.Errorf("invalid filter operator: %s", operatorString)
+		err = filter.add(valInt, operator)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -135,35 +196,36 @@ func (filter *BPFUIntFilter) InitBPF(bpfModule *bpf.Module) error {
 		return nil
 	}
 
-	filterEqualU32 := uint32(filterEqual) // const need local var for bpfMap.Update()
-	filterNotEqualU32 := uint32(filterNotEqual)
+	bpfFilterEqual := uint32(filterEqual) // const need local var for bpfMap.Update()
+	bpfFilterNotEqual := uint32(filterNotEqual)
 
 	// equalityFilter filters events for given maps:
 	// 1. uid_filter        u32, u32
 	// 2. pid_filter        u32, u32
 	// 3. mnt_ns_filter     u64, u32
 	// 4. pid_ns_filter     u64, u32
-	equalityFilter, err := bpfModule.GetMap(filter.mapName)
+	equalityFilterMap, err := bpfModule.GetMap(filter.mapName)
 	if err != nil {
 		return err
 	}
-	for i := 0; i < len(filter.Equal); i++ {
-		if filter.Is32Bit {
-			EqualU32 := uint32(filter.Equal[i])
-			err = equalityFilter.Update(unsafe.Pointer(&EqualU32), unsafe.Pointer(&filterEqualU32))
+
+	for equalFilter := range filter.equal {
+		if filter.is32Bit {
+			equalU32 := uint32(equalFilter)
+			err = equalityFilterMap.Update(unsafe.Pointer(&equalU32), unsafe.Pointer(&bpfFilterEqual))
 		} else {
-			err = equalityFilter.Update(unsafe.Pointer(&filter.Equal[i]), unsafe.Pointer(&filterEqualU32))
+			err = equalityFilterMap.Update(unsafe.Pointer(&equalFilter), unsafe.Pointer(&bpfFilterEqual))
 		}
 		if err != nil {
 			return err
 		}
 	}
-	for i := 0; i < len(filter.NotEqual); i++ {
-		if filter.Is32Bit {
-			NotEqualU32 := uint32(filter.NotEqual[i])
-			err = equalityFilter.Update(unsafe.Pointer(&NotEqualU32), unsafe.Pointer(&filterNotEqualU32))
+	for notEqualFilter := range filter.notEqual {
+		if filter.is32Bit {
+			notEqualU32 := uint32(notEqualFilter)
+			err = equalityFilterMap.Update(unsafe.Pointer(&notEqualU32), unsafe.Pointer(&bpfFilterNotEqual))
 		} else {
-			err = equalityFilter.Update(unsafe.Pointer(&filter.NotEqual[i]), unsafe.Pointer(&filterNotEqualU32))
+			err = equalityFilterMap.Update(unsafe.Pointer(&notEqualFilter), unsafe.Pointer(&bpfFilterNotEqual))
 		}
 		if err != nil {
 			return err
@@ -174,7 +236,7 @@ func (filter *BPFUIntFilter) InitBPF(bpfModule *bpf.Module) error {
 }
 
 func (filter *UIntFilter) FilterOut() bool {
-	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 && filter.GreaterThan == maxUIntVal && filter.LessThan == minUIntVal {
+	if len(filter.equal) > 0 && len(filter.notEqual) == 0 && filter.min == minNotSetUInt && filter.max == maxNotSetUInt {
 		return false
 	} else {
 		return true

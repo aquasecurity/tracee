@@ -18,40 +18,41 @@ func NewContainerFilter(mapName string) *ContainerFilter {
 	}
 }
 
-func (filter *ContainerFilter) InitBPF(bpfModule *bpf.Module, conts *containers.Containers) error {
-	if !filter.Enabled() {
+func (f *ContainerFilter) InitBPF(bpfModule *bpf.Module, containers *containers.Containers) error {
+	if !f.Enabled() {
 		return nil
 	}
 
-	filterEqualU32 := uint32(filterEqual) // const need local var for bpfMap.Update()
-	filterNotEqualU32 := uint32(filterNotEqual)
+	bpfFilterEqual := uint32(filterEqual) // const need local var for bpfMap.Update()
+	bpfFilterNotEqual := uint32(filterNotEqual)
 
-	filterMap, err := bpfModule.GetMap(filter.mapName)
+	filterMap, err := bpfModule.GetMap(f.mapName)
 	if err != nil {
 		return err
 	}
 
-	for i := 0; i < len(filter.Equal); i++ {
-		cgroupIDs := conts.FindContainerCgroupID32LSB(filter.Equal[i])
+	for _, equalFilter := range f.Equal() {
+		cgroupIDs := containers.FindContainerCgroupID32LSB(equalFilter)
 		if cgroupIDs == nil {
-			return fmt.Errorf("container id not found: %s", filter.Equal[i])
+			return fmt.Errorf("container id not found: %s", equalFilter)
 		}
 		if len(cgroupIDs) > 1 {
-			return fmt.Errorf("container id is ambiguous: %s", filter.Equal[i])
+			return fmt.Errorf("container id is ambiguous: %s", equalFilter)
 		}
-		if err = filterMap.Update(unsafe.Pointer(&cgroupIDs[0]), unsafe.Pointer(&filterEqualU32)); err != nil {
+		if err = filterMap.Update(unsafe.Pointer(&cgroupIDs[0]), unsafe.Pointer(&bpfFilterEqual)); err != nil {
 			return err
 		}
 	}
-	for i := 0; i < len(filter.NotEqual); i++ {
-		cgroupIDs := conts.FindContainerCgroupID32LSB(filter.NotEqual[i])
+
+	for _, notEqualFilter := range f.NotEqual() {
+		cgroupIDs := containers.FindContainerCgroupID32LSB(notEqualFilter)
 		if cgroupIDs == nil {
-			return fmt.Errorf("container id not found: %s", filter.NotEqual[i])
+			return fmt.Errorf("container id not found: %s", notEqualFilter)
 		}
 		if len(cgroupIDs) > 1 {
-			return fmt.Errorf("container id is ambiguous: %s", filter.Equal[i])
+			return fmt.Errorf("container id is ambiguous: %s", notEqualFilter)
 		}
-		if err = filterMap.Update(unsafe.Pointer(&cgroupIDs[0]), unsafe.Pointer(&filterNotEqualU32)); err != nil {
+		if err = filterMap.Update(unsafe.Pointer(&cgroupIDs[0]), unsafe.Pointer(&bpfFilterNotEqual)); err != nil {
 			return err
 		}
 	}
