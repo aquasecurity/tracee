@@ -1,7 +1,6 @@
 package flags
 
 import (
-	"fmt"
 	"strings"
 
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
@@ -119,6 +118,10 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 		if operatorIndex > 0 {
 			filterName = f[0:operatorIndex]
 			operatorAndValues = f[operatorIndex:]
+		}
+
+		if len(operatorAndValues) == 1 || operatorAndValues == "!=" || operatorAndValues == "<=" || operatorAndValues == ">=" {
+			return tracee.Filter{}, filters.InvalidExpression(f)
 		}
 
 		if strings.Contains(f, ".retval") {
@@ -262,7 +265,7 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 			filter.Follow = true
 			continue
 		}
-		return tracee.Filter{}, fmt.Errorf("invalid filter option specified, use '--trace help' for more info")
+		return tracee.Filter{}, InvalidFilterOptionError(f)
 	}
 
 	var err error
@@ -300,12 +303,12 @@ func prepareEventsToTrace(eventFilter *filters.StringFilter, setFilter *filters.
 				}
 			}
 			if !found {
-				return nil, fmt.Errorf("invalid event to exclude: %s", name)
+				return nil, InvalidEventExcludeError(name)
 			}
 		} else {
 			id, ok := eventsNameToID[name]
 			if !ok {
-				return nil, fmt.Errorf("invalid event to exclude: %s", name)
+				return nil, InvalidEventExcludeError(name)
 			}
 			isExcluded[id] = true
 		}
@@ -328,13 +331,13 @@ func prepareEventsToTrace(eventFilter *filters.StringFilter, setFilter *filters.
 				}
 			}
 			if !found {
-				return nil, fmt.Errorf("invalid event to trace: %s", name)
+				return nil, InvalidEventError(name)
 			}
 			res = append(res, ids...)
 		} else {
 			id, ok := eventsNameToID[name]
 			if !ok {
-				return nil, fmt.Errorf("invalid event to trace: %s", name)
+				return nil, InvalidEventError(name)
 			}
 			res = append(res, id)
 		}
@@ -342,7 +345,7 @@ func prepareEventsToTrace(eventFilter *filters.StringFilter, setFilter *filters.
 	for _, set := range setsToTrace {
 		setEvents, ok := setsToEvents[set]
 		if !ok {
-			return nil, fmt.Errorf("invalid set to trace: %s", set)
+			return nil, InvalidSetError(set)
 		}
 		for _, id := range setEvents {
 			if !isExcluded[id] {
