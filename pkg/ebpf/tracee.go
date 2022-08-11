@@ -107,26 +107,6 @@ func (tc Config) Validate() error {
 			}
 		}
 	}
-	for eventID, eventFilters := range tc.Filter.ArgFilter.Filters {
-		for argName := range eventFilters {
-			eventDefinition, ok := events.Definitions.GetSafe(eventID)
-			if !ok {
-				return fmt.Errorf("invalid argument filter event id: %d", eventID)
-			}
-			eventParams := eventDefinition.Params
-			// check if argument name exists for this event
-			argFound := false
-			for i := range eventParams {
-				if eventParams[i].Name == argName {
-					argFound = true
-					break
-				}
-			}
-			if !argFound {
-				return fmt.Errorf("invalid argument filter argument name: %s", argName)
-			}
-		}
-	}
 	if (tc.PerfBufferSize & (tc.PerfBufferSize - 1)) != 0 {
 		return fmt.Errorf("invalid perf buffer size - must be a power of 2")
 	}
@@ -524,6 +504,15 @@ func (t *Tracee) initDerivationTable() error {
 	pathResolver := containers.InitPathResolver(&t.pidsInMntns)
 	soLoader := sharedobjs.InitContainersSymbolsLoader(&pathResolver, 1024)
 
+	symbolsLoadedFilter := t.config.Filter.ArgFilter.GetEventFilters(events.SymbolsLoaded)
+	watchedSymbols := []string{}
+	whitelistedLibs := []string{}
+
+	if symbolsLoadedFilter != nil {
+		watchedSymbols = symbolsLoadedFilter["symbols"].Equal()
+		whitelistedLibs = symbolsLoadedFilter["library_path"].NotEqual()
+	}
+
 	t.eventDerivations = derive.Table{
 		events.CgroupMkdir: {
 			events.ContainerCreate: {
@@ -566,8 +555,8 @@ func (t *Tracee) initDerivationTable() error {
 				Enabled: t.events[events.SymbolsLoaded].submit,
 				DeriveFunction: derive.SymbolsLoaded(
 					soLoader,
-					t.config.Filter.ArgFilter.Filters[events.SymbolsLoaded]["symbols"].Equal,
-					t.config.Filter.ArgFilter.Filters[events.SymbolsLoaded]["library_path"].NotEqual,
+					watchedSymbols,
+					whitelistedLibs,
 					t.config.Debug,
 				),
 			},

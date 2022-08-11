@@ -40,7 +40,7 @@ func (f *ProcessTreeFilter) Enabled() bool {
 
 func (filter *ProcessTreeFilter) Parse(operatorAndValues string) error {
 	if len(operatorAndValues) < 2 {
-		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
+		return InvalidExpression(operatorAndValues)
 	}
 
 	var (
@@ -58,7 +58,7 @@ func (filter *ProcessTreeFilter) Parse(operatorAndValues string) error {
 		}
 		equalityOperator = false
 	} else {
-		return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
+		return InvalidExpression(operatorAndValues)
 	}
 
 	values := strings.Split(valuesString, ",")

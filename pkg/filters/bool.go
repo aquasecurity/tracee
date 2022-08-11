@@ -1,21 +1,113 @@
 package filters
 
+import (
+	"strconv"
+	"strings"
+)
+
 type BoolFilter struct {
-	Value   bool
-	enabled bool
+	trueEnabled  bool
+	falseEnabled bool
+	enabled      bool
 }
 
 func NewBoolFilter() *BoolFilter {
 	return &BoolFilter{}
 }
 
-func (filter *BoolFilter) Parse(value string) error {
-	filter.Enable()
-	filter.Value = false
-	if value[0] != '!' {
-		filter.Value = true
+func (filter *BoolFilter) Filter(val bool) bool {
+	if !filter.Enabled() {
+		return true
+	}
+	trueEnabled := filter.trueEnabled
+	falseEnabled := filter.falseEnabled
+	if trueEnabled && falseEnabled {
+		return true
+	}
+	if trueEnabled && !falseEnabled {
+		return val
+	}
+	if !trueEnabled && falseEnabled {
+		return !val
+	}
+	return false //last case is !trueEnabled && !falseEnabled which means no filter was added
+}
+
+// BoolFilter can support the following expressions
+// values in <> are ignored
+// field -> field=true
+// !field -> field=false
+// field=true
+// field=false
+// field!=true
+// field!=false
+func (filter *BoolFilter) Parse(operatorAndValues string) error {
+	if len(operatorAndValues) < 1 {
+		return InvalidExpression(operatorAndValues)
 	}
 
+	filter.Enable()
+
+	// case of =bools...
+	if operatorAndValues[0] == '=' {
+		valuesString := operatorAndValues[1:]
+		vals := strings.Split(valuesString, ",")
+		for _, val := range vals {
+			boolVal, err := strconv.ParseBool(val)
+			if err != nil {
+				return InvalidValue(val)
+			}
+			filter.add(boolVal, Equal)
+		}
+		return nil
+	}
+
+	// case of !=bools...
+	if operatorAndValues[0] == '!' && operatorAndValues[1] == '=' {
+		if len(operatorAndValues) < 2+len("true") {
+			return InvalidExpression(operatorAndValues)
+		}
+		valuesString := operatorAndValues[2:]
+		vals := strings.Split(valuesString, ",")
+		for _, val := range vals {
+			boolVal, err := strconv.ParseBool(val)
+			if err != nil {
+				return InvalidValue(val)
+			}
+			filter.add(boolVal, NotEqual)
+		}
+		return nil
+	}
+
+	// case of !field
+	if operatorAndValues[0] == '!' {
+		filter.falseEnabled = true
+		return nil
+	}
+
+	// final case just field
+	filter.trueEnabled = true
+
+	return nil
+}
+
+func (filter *BoolFilter) add(val bool, operator Operator) error {
+	switch operator {
+	case Equal:
+		if val {
+			filter.trueEnabled = true
+		} else {
+			filter.falseEnabled = true
+		}
+	case NotEqual:
+		if val {
+			filter.falseEnabled = true
+		} else {
+			filter.trueEnabled = true
+		}
+	default:
+		return UnsupportedOperator(operator)
+	}
 	return nil
 }
 
@@ -31,8 +123,12 @@ func (f *BoolFilter) Enabled() bool {
 	return f.enabled
 }
 
+func (filter *BoolFilter) Value() bool {
+	return filter.trueEnabled
+}
+
 func (filter *BoolFilter) FilterOut() bool {
-	if filter.Value {
+	if filter.Value() {
 		return false
 	} else {
 		return true

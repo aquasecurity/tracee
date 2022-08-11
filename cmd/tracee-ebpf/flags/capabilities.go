@@ -68,13 +68,13 @@ func PrepareCapsConfig(capsCfgArray []string) (CapsConfig, error) {
 		case CancelDropFlag:
 			cfg.CancelCapsDrop = true
 		case AddReqCapsFlag:
-			addedCapsFilter := filters.StringFilter{}
+			addedCapsFilter := filters.NewStringFilter()
 			err := addedCapsFilter.Parse(operatorAndValues)
 			if err != nil {
 				return cfg, err
 			}
 			if addedCapsFilter.FilterOut() {
-				capsFilteredOut, err := capsStringSliceToValues(addedCapsFilter.NotEqual)
+				capsFilteredOut, err := capsStringSliceToValues(addedCapsFilter.NotEqual())
 				if err != nil {
 					return cfg, err
 				}
@@ -84,7 +84,7 @@ func PrepareCapsConfig(capsCfgArray []string) (CapsConfig, error) {
 				}
 				cfg.CapsToPreserve = rcaps
 			} else {
-				cfg.CapsToPreserve, err = capsStringSliceToValues(addedCapsFilter.Equal)
+				cfg.CapsToPreserve, err = capsStringSliceToValues(addedCapsFilter.Equal())
 				if err != nil {
 					return cfg, err
 				}

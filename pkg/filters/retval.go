@@ -1,63 +1,43 @@
 package filters
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/events"
 )
 
 type RetFilter struct {
-	Filters map[events.ID]*IntFilter
+	filters map[events.ID]*IntFilter
 	enabled bool
 }
 
 func NewRetFilter() *RetFilter {
 	return &RetFilter{
-		Filters: map[events.ID]*IntFilter{},
+		filters: map[events.ID]*IntFilter{},
 		enabled: false,
 	}
 }
 
 func (filter *RetFilter) Filter(eventID events.ID, retVal int64) bool {
-	if filter.Enabled() {
-		if filter, ok := filter.Filters[eventID]; ok {
-			match := false
-			for _, f := range filter.Equal {
-				if retVal == f {
-					match = true
-					break
-				}
-			}
-			if !match && len(filter.Equal) > 0 {
-				return false
-			}
-			for _, f := range filter.NotEqual {
-				if retVal == f {
-					return false
-				}
-			}
-			if (filter.GreaterThan != maxIntVal) && retVal <= filter.GreaterThan {
-				return false
-			}
-			if (filter.LessThan != minIntVal) && retVal >= filter.LessThan {
-				return false
-			}
-		}
+	if !filter.Enabled() {
+		return true
+	}
+	if filter, ok := filter.filters[eventID]; ok {
+		return filter.Filter(retVal)
 	}
 	return true
 }
 
 func (filter *RetFilter) Enable() {
 	filter.enabled = true
-	for _, f := range filter.Filters {
+	for _, f := range filter.filters {
 		f.Enable()
 	}
 }
 
 func (filter *RetFilter) Disable() {
 	filter.enabled = false
-	for _, f := range filter.Filters {
+	for _, f := range filter.filters {
 		f.Disable()
 	}
 }
@@ -67,24 +47,28 @@ func (filter *RetFilter) Enabled() bool {
 }
 
 func (filter *RetFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]events.ID) error {
-	// Ret filter has the following format: "event.ret=val"
+	// Ret filter has the following format: "event.retval=val"
 	// filterName have the format event.retval, and operatorAndValues have the format "=val"
 	splitFilter := strings.Split(filterName, ".")
 	if len(splitFilter) != 2 || splitFilter[1] != "retval" {
-		return fmt.Errorf("invalid retval filter format %s%s", filterName, operatorAndValues)
+		return InvalidExpression(filterName + operatorAndValues)
 	}
+
 	eventName := splitFilter[0]
+	if eventName == "" {
+		return InvalidExpression(filterName + operatorAndValues)
+	}
 
 	id, ok := eventsNameToID[eventName]
 	if !ok {
-		return fmt.Errorf("invalid retval filter event name: %s", eventName)
+		return InvalidEventName(eventName)
 	}
 
-	if _, ok := filter.Filters[id]; !ok {
-		filter.Filters[id] = NewIntFilter()
+	if _, ok := filter.filters[id]; !ok {
+		filter.filters[id] = NewIntFilter()
 	}
 
-	intFilter := filter.Filters[id]
+	intFilter := filter.filters[id]
 
 	// Treat operatorAndValues as an int filter to avoid code duplication
 	err := intFilter.Parse(operatorAndValues)
@@ -92,7 +76,7 @@ func (filter *RetFilter) Parse(filterName string, operatorAndValues string, even
 		return err
 	}
 
-	filter.Filters[id] = intFilter
+	filter.filters[id] = intFilter
 
 	filter.Enable()
 

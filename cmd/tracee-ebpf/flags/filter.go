@@ -47,7 +47,7 @@ Examples:
   --trace pid=510,1709                                         | only trace events from pid 510 or pid 1709
   --trace p=510 --trace p=1709                                 | only trace events from pid 510 or pid 1709 (same as above)
   --trace container=new                                        | only trace events from newly created containers
-  --trace container=ab356bc4dd554                              | only trace events from container id ab356bc4dd554
+  --trace container_id=ab356bc4dd554                           | only trace events from container id ab356bc4dd554
   --trace container                                            | only trace events from containers
   --trace c                                                    | only trace events from containers (same as above)
   --trace '!container'                                         | only trace events from the host
@@ -111,20 +111,20 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 		}
 	}
 
-	for _, f := range filtersArr {
-		filterName := f
+	for _, filterFlag := range filtersArr {
+		filterName := filterFlag
 		operatorAndValues := ""
-		operatorIndex := strings.IndexAny(f, "=!<>")
+		operatorIndex := strings.IndexAny(filterFlag, "=!<>")
 		if operatorIndex > 0 {
-			filterName = f[0:operatorIndex]
-			operatorAndValues = f[operatorIndex:]
+			filterName = filterFlag[0:operatorIndex]
+			operatorAndValues = filterFlag[operatorIndex:]
 		}
 
 		if len(operatorAndValues) == 1 || operatorAndValues == "!=" || operatorAndValues == "<=" || operatorAndValues == ">=" {
-			return tracee.Filter{}, filters.InvalidExpression(f)
+			return tracee.Filter{}, filters.InvalidExpression(filterFlag)
 		}
 
-		if strings.Contains(f, ".retval") {
+		if strings.Contains(filterFlag, ".retval") {
 			err := filter.RetFilter.Parse(filterName, operatorAndValues, eventsNameToID)
 			if err != nil {
 				return tracee.Filter{}, err
@@ -132,7 +132,7 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 			continue
 		}
 
-		if strings.Contains(f, ".") {
+		if strings.Contains(filterFlag, ".") {
 			err := filter.ArgFilter.Parse(filterName, operatorAndValues, eventsNameToID)
 			if err != nil {
 				return tracee.Filter{}, err
@@ -151,28 +151,41 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 			continue
 		}
 
-		if strings.HasPrefix("container", f) || (strings.HasPrefix("!container", f) && len(f) > 1) {
-			err := filter.ContFilter.Parse(f)
+		if strings.HasPrefix("container", filterName) {
+			if operatorAndValues == "=new" {
+				err := filter.NewContFilter.Parse("new")
+				if err != nil {
+					return tracee.Filter{}, err
+				}
+				continue
+			}
+			if operatorAndValues == "!=new" {
+				err := filter.ContFilter.Parse(filterName)
+				if err != nil {
+					return tracee.Filter{}, err
+				}
+				err = filter.NewContFilter.Parse("!new")
+				if err != nil {
+					return tracee.Filter{}, err
+				}
+				continue
+			}
+			if strings.Contains(operatorAndValues, "=") {
+				err := filter.ContIDFilter.Parse(operatorAndValues)
+				if err != nil {
+					return tracee.Filter{}, err
+				}
+				continue
+			}
+			err := filter.ContFilter.Parse(filterName)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
 			continue
 		}
 
-		if strings.HasPrefix("container", filterName) {
-			if operatorAndValues == "=new" {
-				filter.NewContFilter.Enable()
-				filter.NewContFilter.Value = true
-				continue
-			}
-			if operatorAndValues == "!=new" {
-				filter.ContFilter.Enable()
-				filter.ContFilter.Value = true
-				filter.NewContFilter.Enable()
-				filter.NewContFilter.Value = false
-				continue
-			}
-			err := filter.ContIDFilter.Parse(operatorAndValues)
+		if strings.HasPrefix("!container", filterName) {
+			err := filter.ContFilter.Parse(filterName)
 			if err != nil {
 				return tracee.Filter{}, err
 			}
@@ -221,13 +234,11 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 
 		if strings.HasPrefix("pid", filterName) {
 			if operatorAndValues == "=new" {
-				filter.NewPidFilter.Enable()
-				filter.NewPidFilter.Value = true
+				filter.NewPidFilter.Parse("new")
 				continue
 			}
 			if operatorAndValues == "!=new" {
-				filter.NewPidFilter.Enable()
-				filter.NewPidFilter.Value = false
+				filter.NewPidFilter.Parse("!new")
 				continue
 			}
 			err := filter.PIDFilter.Parse(operatorAndValues)
@@ -261,11 +272,11 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 			continue
 		}
 
-		if strings.HasPrefix("follow", f) {
+		if strings.HasPrefix("follow", filterFlag) {
 			filter.Follow = true
 			continue
 		}
-		return tracee.Filter{}, InvalidFilterOptionError(f)
+		return tracee.Filter{}, InvalidFilterOptionError(filterFlag)
 	}
 
 	var err error
@@ -279,9 +290,9 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 
 func prepareEventsToTrace(eventFilter *filters.StringFilter, setFilter *filters.StringFilter, eventsNameToID map[string]events.ID) ([]events.ID, error) {
 	eventFilter.Enable()
-	eventsToTrace := eventFilter.Equal
-	excludeEvents := eventFilter.NotEqual
-	setsToTrace := setFilter.Equal
+	eventsToTrace := eventFilter.Equal()
+	excludeEvents := eventFilter.NotEqual()
+	setsToTrace := setFilter.Equal()
 
 	var res []events.ID
 	setsToEvents := make(map[string][]events.ID)
