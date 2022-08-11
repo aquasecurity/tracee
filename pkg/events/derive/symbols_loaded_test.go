@@ -1,6 +1,7 @@
 package derive
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
@@ -15,19 +16,28 @@ type soInstance struct {
 }
 
 type symbolsLoaderMock struct {
-	cache map[sharedobjs.ObjInfo]map[string]bool
+	cache      map[sharedobjs.ObjInfo]map[string]bool
+	shouldFail bool
 }
 
-func initLoaderMock() symbolsLoaderMock {
-	return symbolsLoaderMock{cache: make(map[sharedobjs.ObjInfo]map[string]bool)}
+func initLoaderMock(shouldFail bool) symbolsLoaderMock {
+	return symbolsLoaderMock{cache: make(map[sharedobjs.ObjInfo]map[string]bool), shouldFail: shouldFail}
 }
 
 func (loader symbolsLoaderMock) GetDynamicSymbols(info sharedobjs.ObjInfo) (map[string]bool, error) {
-	return loader.cache[info], nil
+	if loader.shouldFail {
+		return nil, errors.New("loading error")
+	} else {
+		return loader.cache[info], nil
+	}
 }
 
 func (loader symbolsLoaderMock) GetExportedSymbols(info sharedobjs.ObjInfo) (map[string]bool, error) {
-	return loader.cache[info], nil
+	if loader.shouldFail {
+		return nil, errors.New("loading error")
+	} else {
+		return loader.cache[info], nil
+	}
 }
 
 func (loader symbolsLoaderMock) GetImportedSymbols(info sharedobjs.ObjInfo) (map[string]bool, error) {
@@ -59,7 +69,7 @@ func generateSOLoadedEvent(pid int, so sharedobjs.ObjInfo) trace.Event {
 }
 
 func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
-	testCases := []struct {
+	happyFlowTestCases := []struct {
 		name            string
 		watchedSymbols  []string
 		whitelistedLibs []string
@@ -151,12 +161,12 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 	}
 	pid := 1
 
-	t.Run("UT", func(t *testing.T) {
-		for _, testCase := range testCases {
+	t.Run("Happy flow", func(t *testing.T) {
+		for _, testCase := range happyFlowTestCases {
 			t.Run(testCase.name, func(t *testing.T) {
-				mockLoader := initLoaderMock()
+				mockLoader := initLoaderMock(false)
 				mockLoader.addSOSymbols(testCase.loadingSO)
-				gen := initSymbolsLoadedEventGenerator(mockLoader, testCase.watchedSymbols, testCase.whitelistedLibs)
+				gen := initSymbolsLoadedEventGenerator(mockLoader, testCase.watchedSymbols, testCase.whitelistedLibs, true)
 				eventArgs, err := gen.deriveArgs(generateSOLoadedEvent(pid, testCase.loadingSO.info))
 				require.NoError(t, err)
 				if len(testCase.expectedSymbols) > 0 {
@@ -172,5 +182,36 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 				}
 			})
 		}
+	})
+
+	t.Run("Errors flow", func(t *testing.T) {
+		t.Run("Debug", func(t *testing.T) {
+			mockLoader := initLoaderMock(true)
+			gen := initSymbolsLoadedEventGenerator(mockLoader, nil, nil, true)
+
+			// First error should be always returned
+			eventArgs, err := gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))
+			assert.Error(t, err)
+			assert.Nil(t, eventArgs)
+
+			// Debug mode should return errors always
+			eventArgs, err = gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))
+			assert.Error(t, err)
+			assert.Nil(t, eventArgs)
+		})
+		t.Run("No debug", func(t *testing.T) {
+			mockLoader := initLoaderMock(true)
+			gen := initSymbolsLoadedEventGenerator(mockLoader, nil, nil, false)
+
+			// First error should be always returned
+			eventArgs, err := gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))
+			assert.Error(t, err)
+			assert.Nil(t, eventArgs)
+
+			// Error should be suppressed
+			eventArgs, err = gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))
+			assert.NoError(t, err)
+			assert.Nil(t, eventArgs)
+		})
 	})
 }
