@@ -1730,7 +1730,7 @@ many more.</p>
     --pid=host --cgroupns=host --privileged \
     -v /etc/os-release:/etc/os-release-host:ro \
     -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-    --link falcosidekick aquasec/tracee:0.8.0 \
+    --link falcosidekick aquasec/tracee:0.8.1 \
     --webhook-template /tracee/templates/falcosidekick.tmpl \
     --webhook-content-type application/json \
     --webhook http://FALCOSIDEKICK:2801

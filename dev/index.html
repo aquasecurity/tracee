@@ -1785,14 +1785,14 @@ it (even create your own customized tracee container).</p>
 <h2 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h2>
 <p>Before you proceed, make sure you follow the [prerequiresites].</p>
 <ol>
-<li>Running <strong>tracee:v0.8.0</strong></li>
+<li>Running <strong>tracee:v0.8.1</strong></li>
 </ol>
 <div class="highlight"><pre><span></span><code>$ docker run \
      --name tracee --rm -it \
      --pid=host --cgroupns=host --privileged \
      -v /etc/os-release:/etc/os-release-host:ro \
      -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-     aquasec/tracee:0.8.0
+     aquasec/tracee:0.8.1
 </code></pre></div>
 <ol>
 <li>Running <strong>tracee:full</strong></li>
@@ -1805,7 +1805,7 @@ it (even create your own customized tracee container).</p>
      -v /usr/src:/usr/src:ro \
      -v /lib/modules:/lib/modules:ro \
      -v /tmp/tracee:/tmp/tracee:rw \
-     aquasec/tracee:full-0.8.0
+     aquasec/tracee:full-0.8.1
 </code></pre></div>
 <div class="admonition notes">
 <p class="admonition-title">Notes</p>
@@ -1864,7 +1864,7 @@ education.</p>
     --pid=host --cgroupns=host --privileged \
     -v /etc/os-release:/etc/os-release-host:ro \
     -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-    aquasec/tracee:0.8.0
+    aquasec/tracee:0.8.1
     trace
 </code></pre></div>
 <div class="admonition note">
