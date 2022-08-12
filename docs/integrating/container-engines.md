@@ -28,7 +28,7 @@ those events by communicating with the relevant container's runtime and SDK.
         --name tracee --rm -it \
         --pid=host --cgroupns=host --privileged \
         -v /etc/os-release:/etc/os-release-host:ro \
-        -v /var/run/containerd:/var/run/containerd
+        -v /var/run/containerd:/var/run/containerd \
         -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
         -e CONTAINERS_ENRICHMENT=1 \
         aquasec/tracee:{{ git.tag }}
