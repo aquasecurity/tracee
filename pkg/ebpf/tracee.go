@@ -1106,6 +1106,9 @@ func (t *Tracee) getTracedIfaceIdx(ifaceName string) (int, bool) {
 	return t.config.Filter.NetFilter.Find(ifaceName)
 }
 func (t *Tracee) getCapturedIfaceIdx(ifaceName string) (int, bool) {
+	if t.config.Capture.NetIfaces == nil {
+		return -1, false
+	}
 	return t.config.Capture.NetIfaces.Find(ifaceName)
 }
 
