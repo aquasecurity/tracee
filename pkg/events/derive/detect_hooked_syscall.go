@@ -2,6 +2,7 @@ package derive
 
 import (
 	"fmt"
+
 	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
@@ -10,7 +11,7 @@ import (
 )
 
 func DetectHookedSyscall(kernelSymbols *helpers.KernelSymbolTable) events.DeriveFunction {
-	return singleEventDeriveFunc(events.HookedSyscalls, deriveDetectHookedSyscallArgs(kernelSymbols), withInvokingContext)
+	return singleEventDeriveFunc(events.HookedSyscalls, deriveDetectHookedSyscallArgs(kernelSymbols))
 }
 
 func deriveDetectHookedSyscallArgs(kernelSymbols *helpers.KernelSymbolTable) deriveArgsFunction {

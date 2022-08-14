@@ -1,17 +1,18 @@
 package derive
 
 import (
+	"path"
+	"strings"
+
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 	"github.com/aquasecurity/tracee/types/trace"
-	"path"
-	"strings"
 )
 
 func SymbolsLoaded(soLoader sharedobjs.DynamicSymbolsLoader, watchedSymbols []string, whitelistedLibsPrefixes []string, isDebug bool) events.DeriveFunction {
 	gen := initSymbolsLoadedEventGenerator(soLoader, watchedSymbols, whitelistedLibsPrefixes, isDebug)
-	return singleEventDeriveFunc(events.SymbolsLoaded, gen.deriveArgs, withOriginalContext)
+	return singleEventDeriveFunc(events.SymbolsLoaded, gen.deriveArgs)
 }
 
 // Most specific paths should be at the top, to prevent bugs with iterations over the list

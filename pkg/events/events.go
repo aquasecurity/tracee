@@ -2,6 +2,7 @@ package events
 
 import (
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
+	"github.com/aquasecurity/tracee/pkg/events/trigger"
 	"github.com/aquasecurity/tracee/types/trace"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
@@ -5622,7 +5623,7 @@ var Definitions = eventDefinitions{
 			Sets: []string{},
 			Params: []trace.ArgMeta{
 				{Type: "unsigned long[]", Name: "syscalls_addresses"},
-				{Type: "unsigned long", Name: "caller_context_id"},
+				{Type: "unsigned long", Name: trigger.ContextArgName},
 			},
 		},
 		HookedSyscalls: {
@@ -5878,7 +5879,7 @@ var Definitions = eventDefinitions{
 			Sets:     []string{},
 			Params: []trace.ArgMeta{
 				{Type: "unsigned long[]", Name: "net_seq_ops"},
-				{Type: "unsigned long", Name: "caller_context_id"},
+				{Type: "unsigned long", Name: trigger.ContextArgName},
 			},
 		},
 		HookedSeqOps: {
