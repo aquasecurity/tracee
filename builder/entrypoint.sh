@@ -67,7 +67,7 @@ run_tracee_rules() {
     echo "INFO: starting tracee-ebpf..."
     ${TRACEE_EBPF_EXE} \
         --metrics \
-        --output=format:gob \
+        --output=format:protobuf \
         --output=option:parse-arguments \
         --cache cache-type=mem \
         --cache mem-cache-size=512 \
@@ -84,7 +84,7 @@ run_tracee_rules() {
     echo "INFO: starting tracee-rules..."
     $TRACEE_RULES_EXE\
         --metrics --input-tracee=file:${TRACEE_PIPE}\
-        --input-tracee=format:gob\
+        --input-tracee=format:protobuf\
         --allow-high-capabilities=${ALLOW_HIGH_CAPABILITIES:="0"}\
         $@
     TRACEE_RET=$?
