@@ -3,7 +3,7 @@ package celsig
 import (
 	"fmt"
 
-	"github.com/aquasecurity/tracee/pkg/rules/celsig/wrapper"
+	"github.com/aquasecurity/tracee/pkg/proto"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/google/cel-go/cel"
@@ -55,7 +55,7 @@ func (s *signature) Init(cb detect.SignatureHandler) error {
 }
 
 func (s *signature) OnEvent(event protocol.Event) error {
-	input, err := wrapper.Wrap(event)
+	input, err := proto.Wrap(event)
 	if err != nil {
 		return err
 	}

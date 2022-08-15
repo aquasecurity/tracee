@@ -14,7 +14,7 @@
 // 	protoc        v3.12.4
 // source: pkg/rules/celsig/wrapper/event.proto
 
-package wrapper
+package proto
 
 import (
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
