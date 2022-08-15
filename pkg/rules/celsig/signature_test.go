@@ -3,6 +3,7 @@ package celsig_test
 import (
 	"testing"
 
+	"github.com/aquasecurity/tracee/pkg/proto"
 	"github.com/aquasecurity/tracee/pkg/rules/celsig"
 	"github.com/aquasecurity/tracee/signatures/signaturestest"
 	"github.com/aquasecurity/tracee/types/detect"
@@ -24,7 +25,7 @@ func TestSignature_GetSelectedEvents(t *testing.T) {
 				Name:   "ptrace",
 			},
 		},
-		Expression: `input.eventName == 'ptrace' && input.stringArg('request') == 'PTRACE_TRACEME'`,
+		Expression: `input.event_name == 'ptrace' && input.stringArg('request') == 'PTRACE_TRACEME'`,
 	})
 	require.NoError(t, err)
 	selectedEvents, err := signature.GetSelectedEvents()
@@ -39,10 +40,11 @@ func TestSignature_GetSelectedEvents(t *testing.T) {
 
 func TestSignature_OnEvent(t *testing.T) {
 	testCases := []struct {
-		name    string
-		config  celsig.SignatureConfig
-		input   protocol.Event
-		finding *detect.Finding
+		name        string
+		config      celsig.SignatureConfig
+		input       protocol.Event
+		finding     *detect.Finding
+		expectedErr error
 	}{
 		{
 			name: "Should trigger finding when string arg matches expression",
@@ -51,7 +53,7 @@ func TestSignature_OnEvent(t *testing.T) {
 					ID:   "TRC-2",
 					Name: "Anti-Debugging",
 				},
-				Expression: `input.eventName == 'ptrace' && input.stringArg('request') == 'PTRACE_TRACEME'`,
+				Expression: `input.event_name == 'ptrace' && input.stringArg('request') == 'PTRACE_TRACEME'`,
 			},
 			input: protocol.Event{
 				Payload: trace.Event{
@@ -97,9 +99,9 @@ func TestSignature_OnEvent(t *testing.T) {
 					Version: "0.1.0",
 					Name:    "Test sockaddr Args",
 				},
-				Expression: `input.eventName == 'connect' &&
-input.sockaddrArg('addr') == wrapper.sockaddr{
-  sa_family: wrapper.sa_family_t.AF_INET,
+				Expression: `input.event_name == 'connect' &&
+input.sockaddrArg('addr') == proto.sockaddr{
+  sa_family: proto.sa_family_t.AF_INET,
   sin_addr: '216.58.215.110',
   sin_port: 80u
 }
@@ -157,7 +159,7 @@ input.sockaddrArg('addr') == wrapper.sockaddr{
 					Version: "0.1.0",
 					Name:    "Test SocketAddr Args",
 				},
-				Expression: `input.eventName == 'connect' &&
+				Expression: `input.event_name == 'connect' &&
 input.sockaddrArg('addr').sin_addr == "216.58.215.110"`,
 			},
 			input: protocol.Event{
@@ -177,14 +179,14 @@ input.sockaddrArg('addr').sin_addr == "216.58.215.110"`,
 			finding: nil,
 		},
 		{
-			name: "Should not trigger finding when sockaddr arg is undefined",
+			name: "Should fail finding when no arg is found",
 			config: celsig.SignatureConfig{
 				Metadata: detect.SignatureMetadata{
 					ID:      "CEL-TEST-SOCKET-ADDR-ARGS",
 					Version: "0.1.0",
 					Name:    "Test SocketAddr Args",
 				},
-				Expression: `input.eventName == 'connect' &&
+				Expression: `input.event_name == 'connect' &&
 input.sockaddrArg('addr').sin_addr == "216.58.215.110"`,
 			},
 			input: protocol.Event{
@@ -195,7 +197,8 @@ input.sockaddrArg('addr').sin_addr == "216.58.215.110"`,
 					},
 				},
 			},
-			finding: nil,
+			finding:     nil,
+			expectedErr: proto.ErrInvalidArgument,
 		},
 	}
 
@@ -207,8 +210,12 @@ input.sockaddrArg('addr').sin_addr == "216.58.215.110"`,
 			err = signature.Init(holder.OnFinding)
 			require.NoError(t, err)
 			err = signature.OnEvent(tc.input)
-			require.NoError(t, err)
-			assert.Equal(t, tc.finding, holder.FirstValue())
+			if tc.expectedErr == nil {
+				require.NoError(t, err)
+				assert.Equal(t, tc.finding, holder.FirstValue())
+			} else {
+				assert.ErrorIs(t, err, tc.expectedErr)
+			}
 		})
 	}
 
@@ -225,7 +232,7 @@ func BenchmarkSignature_OnEvent(b *testing.B) {
 				Metadata: detect.SignatureMetadata{
 					Name: "Anti-Debugging",
 				},
-				Expression: `input.eventName == 'ptrace' && input.stringArg('request') == 'PTRACE_TRACEME'`,
+				Expression: `input.event_name == 'ptrace' && input.stringArg('request') == 'PTRACE_TRACEME'`,
 			},
 			input: protocol.Event{
 				Payload: trace.Event{
@@ -247,8 +254,8 @@ func BenchmarkSignature_OnEvent(b *testing.B) {
 				Metadata: detect.SignatureMetadata{
 					Name: "Illegitimate Shell",
 				},
-				Expression: `input.eventName == 'security_bprm_check' &&
-input.processName in ['nginx', 'httpd', 'httpd-foregroun', 'lighttpd', 'apache', 'apache2'] &&
+				Expression: `input.event_name == 'security_bprm_check' &&
+input.process_name in ['nginx', 'httpd', 'httpd-foregroun', 'lighttpd', 'apache', 'apache2'] &&
 ['/ash', '/bash', '/csh', '/ksh', '/sh', '/tcsh', '/zsh', '/dash'].exists(e, input.stringArg('pathname').endsWith(e))`,
 			},
 			input: protocol.Event{
@@ -273,22 +280,22 @@ input.processName in ['nginx', 'httpd', 'httpd-foregroun', 'lighttpd', 'apache',
 					Name: "Fileless Execution",
 				},
 				Expression: `(
-        input.eventName == 'sched_process_exec' &&
+        input.event_name == 'sched_process_exec' &&
         input.stringArg('pathname').startsWith('memfd:') &&
-        input.containerID == '' &&
+        input.container_id == '' &&
         !input.stringArg('pathname').startsWith('memfd:runc')
       ) ||
       (
-        input.eventName == 'sched_process_exec' &&
-        input.containerID != '' &&
+        input.event_name == 'sched_process_exec' &&
+        input.container_id != '' &&
         input.stringArg('pathname').startsWith('memfd:')
       ) ||
       (
-        input.eventName == 'sched_process_exec' &&
+        input.event_name == 'sched_process_exec' &&
         input.stringArg('pathname').startsWith('/dev/shm')
       ) ||
       (
-        input.eventName == 'sched_process_exec' &&
+        input.event_name == 'sched_process_exec' &&
         input.stringArg('pathname').startsWith('/run/shm')
       )`,
 			},
@@ -314,9 +321,9 @@ input.processName in ['nginx', 'httpd', 'httpd-foregroun', 'lighttpd', 'apache',
 				Metadata: detect.SignatureMetadata{
 					Name: "SockAddr",
 				},
-				Expression: `input.eventName == 'connect' &&
-input.sockaddrArg('addr') == wrapper.sockaddr{
-  sa_family: wrapper.sa_family_t.AF_INET,
+				Expression: `input.event_name == 'connect' &&
+input.sockaddrArg('addr') == proto.sockaddr{
+  sa_family: proto.sa_family_t.AF_INET,
   sin_addr: '216.58.209.14',
   sin_port: 80u
 }`,

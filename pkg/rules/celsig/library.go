@@ -10,8 +10,18 @@ import (
 	exprpb "google.golang.org/genproto/googleapis/api/expr/v1alpha1"
 )
 
+/*
+*	This package defines how cel expressions are parsed with respect to our .proto definitions
+*	Objects are initially declared according to the following format: <protobuf_package>.<message_name>
+*   Accessing the 'input' object's arguments is done either throw the simple fields defined in the proto message
+*   (for example, event.EventName is accessed as input.event_name)
+*   Arguments have no easy access so custom programs are written to define event argument access.
+*   Each argument value type needs it's own program, in this library we currently have string and sockaddr values defined.
+*   Please update this comment if anything changes.
+ */
+
 var (
-	wrapperEvent  = decls.NewObjectType("proto.Event")
+	wrapperEvent  = decls.NewObjectType("proto.Event") // format should be <protobuf_package>.<message_name>
 	sockaddrEvent = decls.NewObjectType("proto.sockaddr")
 )
 

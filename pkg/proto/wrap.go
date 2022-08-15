@@ -4,50 +4,48 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"time"
+	"sync"
 
-	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Wrap the specified protocol.Event as Event so we can use cel-go without implementing custom ref.TypeProvider.
-func Wrap(envelope protocol.Event) (*Event, error) {
-	event, ok := envelope.Payload.(trace.Event)
-	if !ok {
-		return nil, fmt.Errorf("unexpected event payload %T", envelope.Payload)
-	}
+func Wrap(event trace.Event) (*Event, error) {
 	args, err := toArgs(event)
 	if err != nil {
 		return nil, err
 	}
 	return &Event{
-		Timestamp:           timestamppb.New(time.Unix(int64(event.Timestamp), 0)),
-		ProcessorID:         int64(event.ProcessorID),
-		ProcessID:           int64(event.ProcessID),
-		CgroupID:            uint64(event.CgroupID),
-		ThreadID:            int64(event.ThreadID),
-		ParentProcessID:     int64(event.ParentProcessID),
-		HostProcessID:       int64(event.HostProcessID),
-		HostThreadID:        int64(event.HostThreadID),
-		HostParentProcessID: int64(event.HostParentProcessID),
-		UserID:              int64(event.UserID),
-		MountNS:             int64(event.MountNS),
-		PIDNS:               int64(event.PIDNS),
+		Timestamp:           int64(event.Timestamp),
+		ThreadStartTime:     int64(event.ThreadStartTime),
+		ProcessorId:         int64(event.ProcessorID),
+		ProcessId:           int64(event.ProcessID),
+		CgroupId:            uint64(event.CgroupID),
+		ThreadId:            int64(event.ThreadID),
+		ParentProcessId:     int64(event.ParentProcessID),
+		HostProcessId:       int64(event.HostProcessID),
+		HostThreadId:        int64(event.HostThreadID),
+		HostParentProcessId: int64(event.HostParentProcessID),
+		UserId:              int64(event.UserID),
+		MountNs:             int64(event.MountNS),
+		Pidns:               int64(event.PIDNS),
 		ProcessName:         event.ProcessName,
 		HostName:            event.HostName,
-		ContainerID:         event.ContainerID,
+		ContainerId:         event.ContainerID,
 		ContainerImage:      event.ContainerImage,
 		ContainerName:       event.ContainerName,
 		PodName:             event.PodName,
 		PodNamespace:        event.PodNamespace,
-		PodUID:              event.PodUID,
-		EventID:             int64(event.EventID),
+		PodUid:              event.PodUID,
+		EventId:             int64(event.EventID),
 		EventName:           event.EventName,
 		ArgsNum:             int64(event.ArgsNum),
 		ReturnValue:         int64(event.ReturnValue),
 		StackAddresses:      event.StackAddresses,
-		Args:                args,
+		ContextFlags: &ContextFlags{
+			ContainerStarted: event.ContextFlags.ContainerStarted,
+		},
+		Args: args,
 	}, nil
 }
 
@@ -58,7 +56,7 @@ func toArgs(event trace.Event) ([]*Argument, error) {
 	args := make([]*Argument, len(event.Args))
 	for index, source := range event.Args {
 		var err error
-		args[index], err = toArg(event, source)
+		args[index], err = newArg(event, source)
 		if err != nil {
 			return nil, err
 		}
@@ -66,80 +64,166 @@ func toArgs(event trace.Event) ([]*Argument, error) {
 	return args, nil
 }
 
-var (
-	typesMapping = map[string]ValueType{
-		"string":       ValueType_STRING,
-		"const char*":  ValueType_STRING,
-		"const char**": ValueType_STRING_ARRAY,
+func mapType(str string) ValueType {
+	switch str {
+	case "string", "const char*":
+		return ValueType_STRING
+	case "const char**", "const char*const*":
+		return ValueType_STRING_ARRAY
+	case "bool":
+		return ValueType_BOOL
 
-		"unsigned long": ValueType_UINT64,
-		"int":           ValueType_INT32,
+	case "bytes":
+		return ValueType_BYTES
 
-		"dev_t":   ValueType_UINT32,
-		"pid_t":   ValueType_INT32,
-		"umode_t": ValueType_UINT32,
-		"mode_t":  ValueType_UINT32,
+	case "unsigned long":
+		return ValueType_UINT64
 
-		"void*":            ValueType_STRING,
-		"struct sockaddr*": ValueType_SOCKADDR,
+	case "long":
+		return ValueType_INT64
+
+	case "unsigned int", "u32", "dev_t", "umode_t", "mode_t":
+		return ValueType_UINT32
+
+	case "int", "pid_t":
+		return ValueType_INT32
+
+	// pointer types (see eventsreader.go)
+	// these types either are specifically pointers OR undefined
+	case "void*", "const void*", "struct stat*", "int*", "usigned int*", "unsigned long*":
+		return ValueType_POINTER
+
+	case "struct sockaddr*", "const struct sockaddr*":
+		return ValueType_SOCKADDR
+	case "slim_cred_t":
+		return ValueType_SLIM_CRED
+	case "[]trace.HookedSymbolData":
+		return ValueType_HOOKED_SYMBOL_ARRAY
+	case "map[string]trace.HookedSymbolData":
+		return ValueType_HOOKED_SYMBOL_MAP
 	}
-)
+	return ValueType_UNKNOWN_VALUE_TYPE
+}
 
 // NOTE There might be cases where casting Go types to Protocol Buffer will panic
 // because we don't implement safe type mapping for all available argument types.
 // See https://github.com/aquasecurity/tracee/pull/1766
-func toArg(event trace.Event, source trace.Argument) (*Argument, error) {
-	valueType, ok := typesMapping[source.Type]
-	if !ok {
-		fmt.Fprintf(os.Stderr, "\tUnrecognized event arg: eventName: %q name: %q type: %q valueType: %T value: %v\n", event.EventName, source.Name, source.Type, source.Value, source.Value)
-		valueType = ValueType_UNKNOWN_VALUE_TYPE
+
+var (
+	unrecognizedTypes = sync.Map{}
+)
+
+func newArg(event trace.Event, source trace.Argument) (*Argument, error) {
+	if source.Type == "" || source.Value == nil {
+		return nil, ErrInvalidArgument
+	}
+	valueType := mapType(source.Type)
+	if valueType == ValueType_UNKNOWN_VALUE_TYPE {
+		// Since we now handle unrecognized types as pointers by default, this print can spam stderr
+		// As such this silenced with a sync.Map check (similar to what's done in loaded_symbols event)
+		// This should be moved to debug log once we have a logger enabled
+		_, known := unrecognizedTypes.LoadOrStore(source.Type, true)
+		if !known {
+			fmt.Fprintf(os.Stderr, "\tUnrecognized event arg: eventName: %q name: %q type: %q valueType: %T value: %v\n", event.EventName, source.Name, source.Type, source.Value, source.Value)
+		}
 	}
 
 	var value Value
 
 	switch valueType {
 	case ValueType_STRING:
-		v := source.Value.(string)
+		v, ok := source.Value.(string)
+		if !ok {
+			return nil, FailArgWrapError(source.Type)
+		}
 		value = Value{
 			StringValue: &v,
 		}
 	case ValueType_STRING_ARRAY:
-		v := source.Value.([]string)
+		v, ok := source.Value.([]string)
+		if !ok {
+			return nil, FailArgWrapError(source.Type)
+		}
 		value = Value{
 			StringArrayValue: v,
+		}
+	case ValueType_BOOL:
+		v, ok := source.Value.(bool)
+		if !ok {
+			return nil, FailArgWrapError(source.Type)
+		}
+		value = Value{
+			BoolValue: &v,
+		}
+	case ValueType_BYTES:
+		v, ok := source.Value.([]byte)
+		if !ok {
+			return nil, FailArgWrapError(source.Type)
+		}
+		value = Value{
+			BytesValue: v,
 		}
 	case ValueType_UINT32:
 		switch source.Value.(type) {
 		case uint32:
-			v := source.Value.(uint32)
+			v, ok := source.Value.(uint32)
+			if !ok {
+				return nil, FailArgWrapError(source.Type)
+			}
 			value = Value{
 				Uint32Value: &v,
 			}
 		case uint16:
-			v := uint32(source.Value.(uint16))
+			v, ok := source.Value.(uint16)
+			if !ok {
+				return nil, FailArgWrapError(source.Type)
+			}
+			v32 := uint32(v)
 			value = Value{
-				Uint32Value: &v,
+				Uint32Value: &v32,
 			}
 		default:
 			fmt.Fprintf(os.Stderr, "Unhandled unsigned integer type: %T", source.Value)
 		}
 	case ValueType_UINT64:
-		v := source.Value.(uint64)
+		v, ok := source.Value.(uint64)
+		if !ok {
+			return nil, FailArgWrapError(source.Type)
+		}
 		value = Value{
 			Uint64Value: &v,
 		}
 	case ValueType_INT32:
-		v := source.Value.(int32)
+		v, ok := source.Value.(int32)
+		if !ok {
+			return nil, FailArgWrapError(source.Type)
+		}
 		value = Value{
 			Int32Value: &v,
 		}
 	case ValueType_INT64:
-		v := source.Value.(int64)
+		v, ok := source.Value.(int64)
+		if !ok {
+			return nil, FailArgWrapError(source.Type)
+		}
 		value = Value{
 			Int64Value: &v,
 		}
+	// equivalent to default logic in eventsreader.go
+	case ValueType_POINTER, ValueType_UNKNOWN_VALUE_TYPE:
+		v, ok := source.Value.(uintptr)
+		if !ok {
+			return nil, FailArgWrapError(source.Type)
+		}
+		v64 := uint64(v)
+		value = Value{
+			PointerValue: &v64,
+		}
 	case ValueType_SOCKADDR:
-		v := source.Value.(map[string]string)
+		v, ok := source.Value.(map[string]string)
+		if !ok {
+			return nil, FailArgWrapError(source.Type)
+		}
 		sockaddr, err := newSockaddr(v)
 		if err != nil {
 			return nil, err
@@ -147,14 +231,39 @@ func toArg(event trace.Event, source trace.Argument) (*Argument, error) {
 		value = Value{
 			SockaddrValue: sockaddr,
 		}
+	case ValueType_SLIM_CRED:
+		v, ok := source.Value.(trace.SlimCred)
+		if !ok {
+			return nil, FailArgWrapError(source.Type)
+		}
+		value = Value{
+			SlimcredValue: newSlimcred(v),
+		}
+	case ValueType_HOOKED_SYMBOL_ARRAY:
+		v, ok := source.Value.([]trace.HookedSymbolData)
+		if !ok {
+			return nil, FailArgWrapError(source.Type)
+		}
+		value = Value{
+			HookedSymbolArrayValue: newHookedSymbolArr(v),
+		}
+	case ValueType_HOOKED_SYMBOL_MAP:
+		v, ok := source.Value.(map[string]trace.HookedSymbolData)
+		if !ok {
+			return nil, FailArgWrapError(source.Type)
+		}
+		value = Value{
+			HookedSymbolMapValue: newHookedSymbolMap(v),
+		}
 	default:
 		value = Value{}
 	}
 
 	return &Argument{
-		Name:      source.Name,
-		ValueType: valueType,
-		Value:     &value,
+		Name:          source.Name,
+		ValueType:     valueType,
+		ValueTypeName: source.Type,
+		Value:         &value,
 	}, nil
 }
 
@@ -199,4 +308,48 @@ func parsePort(value string) (uint32, error) {
 		return 0, err
 	}
 	return uint32(i), nil
+}
+
+func newSlimcred(v trace.SlimCred) *Slimcred {
+	return &Slimcred{
+		Uid:            v.Uid,
+		Gid:            v.Gid,
+		Suid:           v.Suid,
+		Sgid:           v.Sgid,
+		Euid:           v.Euid,
+		Egid:           v.Egid,
+		Fsuid:          v.Fsuid,
+		Fsgid:          v.Fsgid,
+		UserNamespace:  v.UserNamespace,
+		SecureBits:     v.SecureBits,
+		CapInheritable: v.CapInheritable,
+		CapPermitted:   v.CapPermitted,
+		CapEffective:   v.CapEffective,
+		CapBounding:    v.CapBounding,
+		CapAmbient:     v.CapAmbient,
+	}
+}
+
+func newHookedSymbolArr(v []trace.HookedSymbolData) []*Hookedsymbol {
+	res := make([]*Hookedsymbol, len(v))
+	for i := range v {
+		res[i] = &Hookedsymbol{
+			SymbolName:  v[i].SymbolName,
+			ModuleOwner: v[i].ModuleOwner,
+		}
+	}
+
+	return res
+}
+
+func newHookedSymbolMap(v map[string]trace.HookedSymbolData) map[string]*Hookedsymbol {
+	res := map[string]*Hookedsymbol{}
+	for key, val := range v {
+		res[key] = &Hookedsymbol{
+			SymbolName:  val.SymbolName,
+			ModuleOwner: val.ModuleOwner,
+		}
+	}
+
+	return res
 }

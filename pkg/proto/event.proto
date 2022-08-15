@@ -1,5 +1,5 @@
 // This wrapper is a quick win for the POC to integrate trace.Event with cel-go
-// without implementing ref.TypeProvider for Go structs.
+// without implementing ref.TypeProv_ider for Go structs.
 //
 // TODO Add make target to generate Go structs from event.proto.
 //
@@ -13,39 +13,43 @@
 //
 syntax = "proto3";
 
-import "google/protobuf/timestamp.proto";
+package proto;
 
-package wrapper;
-
-option go_package = "pkg/rules/celsig/wrapper";
+option go_package = "pkg/proto";
 
 message Event {
-  google.protobuf.Timestamp timestamp = 1;
-  int64 processorID = 2;
-  int64 processID = 3;
-  uint64 cgroupID = 4;
-  int64 threadID = 5;
-  int64 parentProcessID = 6;
-  int64 hostProcessID = 7;
-  int64 hostThreadID = 8;
-  int64 hostParentProcessID = 9;
-  int64 userID = 10;
-  int64 mountNS = 11;
-  int64 PIDNS = 12;
-  string processName = 13;
-  string hostName = 14;
-  string containerID = 15;
-  string containerImage = 16;
-  string containerName = 17;
-  string podName = 18;
-  string podNamespace = 19;
-  string podUID = 20;
-  int64 eventID = 21;
-  string eventName = 22;
-  int64 argsNum = 23;
-  int64 returnValue = 24;
-  repeated uint64 stackAddresses = 25;
-  repeated Argument args = 26;
+  int64 timestamp = 1;
+  int64 thread_start_time = 2;
+  int64 processor_id = 3;
+  int64 process_id = 4;
+  uint64 cgroup_id = 5;
+  int64 thread_id = 6;
+  int64 parent_process_id = 7;
+  int64 host_process_id = 8;
+  int64 host_thread_id = 9;
+  int64 host_parent_process_id = 10;
+  int64 user_id = 11;
+  int64 mount_ns = 12;
+  int64 pidns = 13;
+  string process_name = 14;
+  string host_name = 15;
+  string container_id = 16;
+  string container_image = 17;
+  string container_name = 18;
+  string pod_name = 19;
+  string pod_namespace = 20;
+  string pod_uid = 21;
+  int64 event_id = 22;
+  string event_name = 23;
+  int64 args_num = 24;
+  int64 return_value = 25;
+  ContextFlags context_flags = 26;
+  repeated uint64 stack_addresses = 27;
+  repeated Argument args = 28;
+}
+
+message ContextFlags {
+  bool container_started = 1;
 }
 
 // ValueType enumerates types of Argument values.
@@ -57,10 +61,16 @@ enum ValueType {
   UINT64 = 4;
   INT32 = 5;
   INT64 = 6;
+  BOOL = 7;
+  BYTES = 8;
+  POINTER = 9;
   // SOCKADDR is just an example of a complex type wrapped from trace.Event to
   // Protocol Buffer message to demonstrate CEL capabilities with more complex
   // expressions.
-  SOCKADDR = 7;
+  SOCKADDR = 10;
+  SLIM_CRED = 11;
+  HOOKED_SYMBOL_ARRAY = 12;
+  HOOKED_SYMBOL_MAP = 13;
 }
 
 // Argument represents an argument associated with the given Event.
@@ -68,11 +78,15 @@ message Argument {
   // name is the name of this argument.
   string name = 1;
 
-  // valueType the type of the value held by this argument.
-  ValueType valueType = 2;
+  // value_type the type of the value held by this argument.
+  ValueType value_type = 2;
+  
+  // value_type_name is the original name of the type
+  // used to keep data between wrapping and unwrapping
+  string value_type_name = 3;
 
   // value the value held by this argument.
-  Value value = 3;
+  Value value = 4;
 }
 
 //
@@ -86,14 +100,19 @@ message Argument {
 // See https://github.com/kubernetes/api/blob/master/core/v1/generated.proto
 //
 message Value {
-
-  optional string stringValue = 1;
-  repeated string stringArrayValue = 2;
-  optional uint32 uint32Value = 3;
-  optional uint64 uint64Value = 4;
-  optional int32 int32Value = 5;
-  optional int64 int64Value = 6;
-  optional sockaddr sockaddrValue = 7;
+  optional string string_value = 1;
+  repeated string string_array_value = 2;
+  optional bool bool_value = 3;
+  optional uint32 uint32_value = 4;
+  optional uint64 uint64_value = 5;
+  optional int32 int32_value = 6;
+  optional int64 int64_value = 7;
+  optional bytes bytes_value = 8;
+  optional uint64 pointer_value = 9;
+  optional sockaddr sockaddr_value = 10;
+  optional slimcred slimcred_value = 11;
+  map<string, hookedsymbol> hooked_symbol_map_value = 12;
+  repeated hookedsymbol hooked_symbol_array_value = 13;
 }
 
 enum sa_family_t {
@@ -113,5 +132,28 @@ message sockaddr {
   string sin6_addr = 5;
   uint32 sin6_port = 6;
   uint32 sin6_flowinfo = 7;
-  uint32 sin6_scopeid = 8;
+  uint32 sin6_scope_id = 8;
+}
+
+message slimcred {
+  uint32 uid = 1;              /* real U_id of the task */
+	uint32 gid = 2;              /* real G_id of the task */
+	uint32 suid = 3;             /* saved U_id of the task */
+	uint32 sgid = 4;             /* saved G_id of the task */
+	uint32 euid = 5;             /* effective U_id of the task */
+	uint32 egid = 6;             /* effective G_id of the task */
+	uint32 fsuid = 7;            /* U_id for VFS ops */
+	uint32 fsgid = 8;            /* G_id for VFS ops */
+	uint32 user_namespace = 9;    /* User Namespace of the of the event */
+	uint32 secure_bits = 10;      /* SU_id-less security management */
+	uint64 cap_inheritable = 11;  /* caps our children can inherit */
+	uint64 cap_permitted = 12;    /* caps we're permitted */
+	uint64 cap_effective = 13;    /* caps we can actually use */
+	uint64 cap_bounding = 14;     /* capability bounding set */
+	uint64 cap_ambient = 15;      /* Ambient capability set */
+}
+
+message hookedsymbol {
+  string symbol_name = 1;
+  string module_owner = 2;
 }

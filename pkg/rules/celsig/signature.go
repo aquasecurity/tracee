@@ -6,6 +6,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/proto"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
+	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/google/cel-go/cel"
 	"github.com/google/cel-go/common/types"
 )
@@ -55,7 +56,11 @@ func (s *signature) Init(cb detect.SignatureHandler) error {
 }
 
 func (s *signature) OnEvent(event protocol.Event) error {
-	input, err := proto.Wrap(event)
+	traceEvt, ok := event.Payload.(trace.Event)
+	if !ok {
+		return fmt.Errorf("unexpected event payload %T", event.Payload)
+	}
+	input, err := proto.Wrap(traceEvt)
 	if err != nil {
 		return err
 	}
