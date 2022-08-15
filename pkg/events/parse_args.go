@@ -32,6 +32,7 @@ func ParseArgs(event *trace.Event) error {
 		if alertArg := GetArg(event, "alert"); alertArg != nil {
 			if alert, isUint32 := alertArg.Value.(uint32); isUint32 {
 				alertArg.Value = trace.MemProtAlert(alert).String()
+				alertArg.Type = "string"
 			}
 		}
 	case SysEnter, SysExit, CapCapable, CommitCreds, SecurityFileOpen, TaskRename, SecurityMmapFile:
@@ -40,6 +41,7 @@ func ParseArgs(event *trace.Event) error {
 				if event, isKnown := Definitions.GetSafe(ID(id)); isKnown {
 					if event.Syscall {
 						syscallArg.Value = event.Name
+						syscallArg.Type = "string"
 					}
 				}
 			}
