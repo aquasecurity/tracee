@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/base64"
 	"encoding/gob"
 	"encoding/json"
 	"errors"
@@ -11,11 +12,14 @@ import (
 	"os"
 	"strings"
 
+	"github.com/aquasecurity/tracee/pkg/proto"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
+	protoenc "google.golang.org/protobuf/proto"
 )
 
 var errHelp = errors.New("user has requested help text")
+var errSetupInput = errors.New("could not set up input source")
 
 type inputFormat uint8
 
@@ -23,6 +27,7 @@ const (
 	invalidInputFormat inputFormat = iota
 	jsonInputFormat
 	gobInputFormat
+	protobufInputFormat
 )
 
 type traceeInputOptions struct {
@@ -40,7 +45,11 @@ func setupTraceeInputSource(opts *traceeInputOptions) (chan protocol.Event, erro
 		return setupTraceeGobInputSource(opts)
 	}
 
-	return nil, errors.New("could not set up input source")
+	if opts.inputFormat == protobufInputFormat {
+		return setupTraceeProtobufInputSource(opts)
+	}
+
+	return nil, errSetupInput
 }
 
 func setupTraceeGobInputSource(opts *traceeInputOptions) (chan protocol.Event, error) {
@@ -62,7 +71,7 @@ func setupTraceeGobInputSource(opts *traceeInputOptions) (chan protocol.Event, e
 				if err == io.EOF {
 					break
 				} else {
-					log.Printf("error while decoding event: %v", err)
+					log.Printf("error while decoding event (gob): %v\n", err)
 				}
 			} else {
 				res <- event.ToProtocol()
@@ -83,10 +92,39 @@ func setupTraceeJSONInputSource(opts *traceeInputOptions) (chan protocol.Event, 
 			var e trace.Event
 			err := json.Unmarshal(event, &e)
 			if err != nil {
-				log.Printf("invalid json in %s: %v", string(event), err)
+				log.Printf("invalid json in %s: %v\n", string(event), err)
 			} else {
 				res <- e.ToProtocol()
 			}
+		}
+		opts.inputFile.Close()
+		close(res)
+	}()
+	return res, nil
+}
+
+func setupTraceeProtobufInputSource(opts *traceeInputOptions) (chan protocol.Event, error) {
+	res := make(chan protocol.Event)
+	scanner := bufio.NewScanner(opts.inputFile)
+	go func() {
+		for scanner.Scan() {
+			b64encodedEvent := scanner.Bytes()
+			event, err := base64.StdEncoding.DecodeString(string(b64encodedEvent))
+			if err != nil {
+				log.Printf("failed to decode base64 encoded event: %v\n", err)
+			}
+			var protobufEvt proto.Event
+			err = protoenc.Unmarshal(event, &protobufEvt)
+			if err != nil {
+				log.Printf("error while decoding event (protobuf): %v data was %v\n", err, string(event))
+				continue
+			}
+			e, err := proto.Unwrap(&protobufEvt)
+			if err != nil {
+				log.Printf("error while unwrapping event: %v\n", err)
+				continue
+			}
+			res <- e
 		}
 		opts.inputFile.Close()
 		close(res)
@@ -159,6 +197,8 @@ func parseTraceeInputFormat(option *traceeInputOptions, formatString string) err
 		option.inputFormat = jsonInputFormat
 	} else if formatString == "GOB" {
 		option.inputFormat = gobInputFormat
+	} else if formatString == "PROTOBUF" {
+		option.inputFormat = protobufInputFormat
 	} else {
 		option.inputFormat = invalidInputFormat
 		return fmt.Errorf("invalid tracee input format specified: %s", formatString)
@@ -173,12 +213,13 @@ tracee-rules --input-tracee <key:value>,<key:value> --input-tracee <key:value>
 Specify various key value pairs for input options tracee-ebpf. The following key options are available:
 
 'file'   - Input file source. You can specify a relative or absolute path. You may also specify 'stdin' for standard input.
-'format' - Input format. Options currently include 'JSON' and 'GOB'. Both can be specified as output formats from tracee-ebpf.
+'format' - Input format. Options are 'json', 'gob' and 'protobuf'. Either can be specified as output formats from tracee-ebpf.
 
 Examples:
 
 'tracee-rules --input-tracee file:./events.json --input-tracee format:json'
 'tracee-rules --input-tracee file:./events.gob --input-tracee format:gob'
+'tracee-rules --input-tracee file:./events.protobuf --input-tracee format:protobuf'
 'sudo tracee-ebpf -o format:gob | tracee-rules --input-tracee file:stdin --input-tracee format:gob'
 `
 

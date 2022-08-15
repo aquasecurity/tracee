@@ -1,6 +1,7 @@
 package printer
 
 import (
+	"encoding/base64"
 	"encoding/gob"
 	"encoding/json"
 	"errors"
@@ -11,7 +12,9 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/metrics"
+	"github.com/aquasecurity/tracee/pkg/proto"
 	"github.com/aquasecurity/tracee/types/trace"
+	protoenc "google.golang.org/protobuf/proto"
 )
 
 type EventPrinter interface {
@@ -78,6 +81,11 @@ func New(config Config) (EventPrinter, error) {
 		}
 	case kind == "gob":
 		res = &gobEventPrinter{
+			out: config.OutFile,
+			err: config.ErrFile,
+		}
+	case kind == "protobuf":
+		res = &protobufPrinter{
 			out: config.OutFile,
 			err: config.ErrFile,
 		}
@@ -228,6 +236,7 @@ func (p jsonEventPrinter) Print(event trace.Event) {
 	eBytes, err := json.Marshal(event)
 	if err != nil {
 		p.Error(err)
+		return
 	}
 	fmt.Fprintln(p.out, string(eBytes))
 }
@@ -277,6 +286,44 @@ func (p *gobEventPrinter) Error(err error) {
 func (p *gobEventPrinter) Epilogue(stats metrics.Stats) {}
 
 func (p gobEventPrinter) Close() {
+}
+
+// protobufPrinter is printing events serialized through a protobuf definition
+type protobufPrinter struct {
+	out     io.WriteCloser
+	err     io.WriteCloser
+	encoder *base64.Encoding
+}
+
+func (p *protobufPrinter) Init() error {
+	p.encoder = base64.StdEncoding
+	return nil
+}
+
+func (p *protobufPrinter) Preamble() {}
+
+func (p *protobufPrinter) Print(event trace.Event) {
+	protoEvt, err := proto.Wrap(event)
+	if err != nil {
+		p.Error(err)
+	}
+
+	eBytes, err := protoenc.Marshal(protoEvt)
+	if err != nil {
+		p.Error(err)
+		return
+	}
+	str := p.encoder.EncodeToString(eBytes) // we send encoded base64 messages because protobuf bytes may contain \n token, breaking the input stream
+	fmt.Fprintln(p.out, str)
+}
+
+func (p *protobufPrinter) Error(err error) {
+	fmt.Fprintf(p.err, "%v\n", err)
+}
+
+func (p *protobufPrinter) Epilogue(stats metrics.Stats) {}
+
+func (p protobufPrinter) Close() {
 }
 
 // ignoreEventPrinter ignores events

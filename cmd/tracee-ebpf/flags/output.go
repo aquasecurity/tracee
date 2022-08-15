@@ -64,6 +64,7 @@ func PrepareOutput(outputSlice []string) (tracee.OutputConfig, printer.Config, e
 				printerKind != "table-verbose" &&
 				printerKind != "json" &&
 				printerKind != "gob" &&
+				printerKind != "protobuf" &&
 				!strings.HasPrefix(printerKind, "gotemplate=") {
 				return outcfg, printcfg, fmt.Errorf("unrecognized output format: %s. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info", printerKind)
 			}
