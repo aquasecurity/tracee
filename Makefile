@@ -730,6 +730,19 @@ clean-tracee-bench:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-bench
 
+
+#
+# protobuf
+#
+
+.PHONY: protobuf
+protobuf:
+	protoc \
+	--proto_path=pkg/proto \
+	--go_out=pkg/proto \
+	--experimental_allow_proto3_optional \
+	--go_opt=paths=source_relative event.proto
+
 #
 # clean
 #
