@@ -655,6 +655,13 @@ test-rules: \
 #
 	$(CMD_OPA) test $(REGO_SIGNATURES_DIR) --verbose
 
+.PHONY: test-upstream-libbpfgo
+test-upstream-libbpfgo: \
+	.checkver_$(CMD_GO) \
+	$(OUTPUT_DIR)/libbpf/libbpf.a
+#
+	./tests/libbpfgo.sh $(GO_ENV_EBPF)
+
 #
 # code checkers (hidden from help on purpose)
 #
