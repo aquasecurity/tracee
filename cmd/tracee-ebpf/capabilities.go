@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/flags"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -22,11 +23,14 @@ type KernelVersionInfo interface {
 }
 
 // ensureCapabilities makes sure program runs with required capabilities only
-func ensureCapabilities(OSInfo KernelVersionInfo, cfg *tracee.Config, allowHighCapabilities bool) error {
+func ensureCapabilities(OSInfo KernelVersionInfo, cfg *tracee.Config, capsCfg *flags.CapsConfig) error {
 	rCaps, err := generateTraceeEbpfRequiredCapabilities(OSInfo, cfg)
 	if err != nil {
 		return err
 	}
+
+	rCaps = append(rCaps, capsCfg.CapsToPreserve...)
+	removeDupCaps(rCaps)
 
 	if err := capabilities.CheckRequired(rCaps); err != nil {
 		if errors.Is(err, &capabilities.MissingCapabilitiesError{}) {
@@ -37,12 +41,19 @@ func ensureCapabilities(OSInfo KernelVersionInfo, cfg *tracee.Config, allowHighC
 		}
 	}
 
-	if err = capabilities.DropUnrequired(rCaps); err != nil {
-		if !allowHighCapabilities {
-			return fmt.Errorf("%w - to avoid this error use the --%s flag", err, allowHighCapabilitiesFlag)
-		} else if cfg.Debug {
-			fmt.Fprintf(os.Stderr, "Failed in dropping capabilities - %v\n", err)
-			fmt.Fprintf(os.Stderr, "Continue with high capabilities accoridng to the configuration\n")
+	if !capsCfg.CancelCapsDrop {
+		if err = capabilities.DropUnrequired(rCaps); err != nil {
+			if !capsCfg.AllowHighCaps {
+				return fmt.Errorf("%w - to avoid this error use the '--%[2]s %[3]s' or '--%[2]s %[4]s' flags",
+					err,
+					flags.CapsMainFlag,
+					flags.AllowFailedDropFlag,
+					flags.CancelDropFlag,
+				)
+			} else if cfg.Debug {
+				fmt.Fprintf(os.Stderr, "Failed in dropping capabilities - %v\n", err)
+				fmt.Fprintf(os.Stderr, "Continue with high capabilities accoridng to the configuration\n")
+			}
 		}
 	}
 
