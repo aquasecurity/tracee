@@ -154,7 +154,7 @@ func main() {
 			}
 
 			// environment capabilities
-			err = ensureCapabilities(OSInfo, &cfg, &capsCfg)
+			err = ensureInitCapabilities(OSInfo, &cfg, &capsCfg)
 			if err != nil {
 				return err
 			}
@@ -279,6 +279,8 @@ func main() {
 			if err != nil {
 				return fmt.Errorf("error initializing Tracee: %v", err)
 			}
+
+			ensureRuntimeCapabilities(OSInfo, &cfg, &capsCfg)
 
 			// run until ctx is cancelled by signal
 			return t.Run(ctx)
