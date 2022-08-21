@@ -2,8 +2,6 @@ package ebpf
 
 import (
 	"fmt"
-	"io"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -207,8 +205,8 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 				}
 				capturedFileID := fmt.Sprintf("%s:%s", containerId, sourceFilePath)
 				if t.config.Capture.Exec {
-					destinationDirPath := filepath.Join(t.config.Capture.OutputPath, containerId)
-					if err := os.MkdirAll(destinationDirPath, 0755); err != nil {
+					destinationDirPath := containerId
+					if err := utils.MkdirAtExist(t.outDir, destinationDirPath, 0755); err != nil {
 						return err
 					}
 					destinationFilePath := filepath.Join(destinationDirPath, fmt.Sprintf("exec.%d.%s", event.Timestamp, filepath.Base(filePath)))
@@ -222,7 +220,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 					lastCtime, ok := t.capturedFiles[capturedFileID]
 					if !ok || lastCtime != castedSourceFileCtime {
 						//capture
-						err = CopyFileByPath(sourceFilePath, destinationFilePath)
+						err = utils.CopyRegularFileByRelativePath(sourceFilePath, t.outDir, destinationFilePath)
 						if err != nil {
 							return err
 						}
@@ -244,7 +242,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 					if ok && hashInfoObj.LastCtime == castedSourceFileCtime {
 						currentHash = hashInfoObj.Hash
 					} else {
-						currentHash, err = computeFileHash(sourceFilePath)
+						currentHash, err = computeFileHashAtPath(sourceFilePath)
 						if err == nil {
 							hashInfoObj = fileExecInfo{castedSourceFileCtime, currentHash}
 							t.fileHashes.Add(capturedFileID, hashInfoObj)
@@ -433,30 +431,4 @@ func (t *Tracee) updateProfile(sourceFilePath string, executionTs uint64) {
 		pf.Times = pf.Times + 1              // bump execution count
 		t.profiledFiles[sourceFilePath] = pf // update
 	}
-}
-
-// CopyFileByPath copies a file from src to dst
-func CopyFileByPath(src, dst string) error {
-	sourceFileStat, err := os.Stat(src)
-	if err != nil {
-		return err
-	}
-	if !sourceFileStat.Mode().IsRegular() {
-		return fmt.Errorf("%s is not a regular file", src)
-	}
-	source, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer source.Close()
-	destination, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer destination.Close()
-	_, err = io.Copy(destination, source)
-	if err != nil {
-		return err
-	}
-	return nil
 }

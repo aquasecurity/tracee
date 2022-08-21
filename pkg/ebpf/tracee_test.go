@@ -88,6 +88,10 @@ func Test_updateFileSHA(t *testing.T) {
 	d, err := ioutil.TempDir("", "Test_updateFileSHA-dir-*")
 	require.NoError(t, err)
 
+	dFd, err := os.Open(d)
+	require.NoError(t, err)
+	defer dFd.Close()
+
 	ts := 456
 	f, _ := ioutil.TempFile(d, fmt.Sprintf(".%d.Test_updateFileSHA-*", ts))
 	f.WriteString("foo bar baz")
@@ -103,6 +107,7 @@ func Test_updateFileSHA(t *testing.T) {
 				// no file sha
 			},
 		},
+		outDir: dFd,
 	}
 
 	// file sha is updated

@@ -9,18 +9,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"os"
-	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 	"unsafe"
-
-	"github.com/aquasecurity/tracee/pkg/events/derive"
-	"github.com/aquasecurity/tracee/pkg/events/trigger"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
@@ -31,10 +26,13 @@ import (
 	"github.com/aquasecurity/tracee/pkg/ebpf/initialization"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/derive"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
+	"github.com/aquasecurity/tracee/pkg/events/trigger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
+	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/aquasecurity/tracee/types/trace"
 	lru "github.com/hashicorp/golang-lru"
 	"golang.org/x/sys/unix"
@@ -207,6 +205,7 @@ type Tracee struct {
 	kernelSymbols     *helpers.KernelSymbolTable
 	triggerContexts   trigger.Context
 	running           bool
+	outDir            *os.File // All file operations to output dir should be through the utils package file operations (like utils.OpenAt) using this directory file.
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -400,12 +399,23 @@ func (t *Tracee) Init() error {
 
 	if err := os.MkdirAll(t.config.Capture.OutputPath, 0755); err != nil {
 		t.Close()
-		return fmt.Errorf("error creating output path: %v", err)
+		return fmt.Errorf("error creating output path: %w", err)
 	}
-	err = ioutil.WriteFile(path.Join(t.config.Capture.OutputPath, "tracee.pid"), []byte(strconv.Itoa(os.Getpid())+"\n"), 0640)
+
+	t.outDir, err = utils.OpenExistingDir(t.config.Capture.OutputPath)
 	if err != nil {
 		t.Close()
-		return fmt.Errorf("error creating readiness file: %v", err)
+		return fmt.Errorf("error opening out directory: %w", err)
+	}
+	pidFile, err := utils.OpenAt(t.outDir, "tracee.pid", syscall.O_WRONLY|syscall.O_CREAT, 0640)
+	if err != nil {
+		t.Close()
+		return fmt.Errorf("error creating readiness file: %w", err)
+	}
+	_, err = pidFile.Write([]byte(strconv.Itoa(os.Getpid()) + "\n"))
+	if err != nil {
+		t.Close()
+		return fmt.Errorf("error writing to readiness file: %w", err)
 	}
 
 	t.netInfo.pcapWriters, err = lru.NewWithEvict(openPcapsLimit, t.netInfo.PcapWriterOnEvict)
@@ -1013,7 +1023,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.netPerfMap.Stop()
 	// capture profiler stats
 	if t.config.Capture.Profile {
-		f, err := os.Create(filepath.Join(t.config.Capture.OutputPath, "tracee.profile"))
+		f, err := utils.CreateAt(t.outDir, "tracee.profile")
 		if err != nil {
 			return fmt.Errorf("unable to open tracee.profile for writing: %s", err)
 		}
@@ -1028,8 +1038,8 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 
 	// record index of written files
 	if t.config.Capture.FileWrite {
-		destinationFilePath := filepath.Join(t.config.Capture.OutputPath, "written_files")
-		f, err := os.OpenFile(destinationFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		destinationFilePath := "written_files"
+		f, err := utils.OpenAt(t.outDir, destinationFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			return fmt.Errorf("error logging written files")
 		}
@@ -1082,14 +1092,27 @@ func (t *Tracee) Running() bool {
 	return t.running
 }
 
-func computeFileHash(fileName string) (string, error) {
+func (t *Tracee) computeOutFileHash(fileName string) (string, error) {
+	f, err := utils.OpenAt(t.outDir, fileName, os.O_RDONLY, 0)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	return computeFileHash(f)
+}
+
+func computeFileHashAtPath(fileName string) (string, error) {
 	f, err := os.Open(fileName)
 	if err != nil {
 		return "", err
 	}
 	defer f.Close()
+	return computeFileHash(f)
+}
+
+func computeFileHash(file *os.File) (string, error) {
 	h := sha256.New()
-	_, err = io.Copy(h, f)
+	_, err := io.Copy(h, file)
 	if err != nil {
 		return "", err
 	}
@@ -1101,7 +1124,7 @@ func (t *Tracee) updateFileSHA() {
 		s := strings.Split(k, ".")
 		exeName := strings.Split(s[1], ":")[0]
 		filePath := fmt.Sprintf("%s.%d.%s", s[0], v.FirstExecutionTs, exeName)
-		fileSHA, _ := computeFileHash(filePath)
+		fileSHA, _ := t.computeOutFileHash(filePath)
 		v.FileHash = fileSHA
 		t.profiledFiles[k] = v
 	}

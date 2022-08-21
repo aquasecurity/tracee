@@ -4,6 +4,7 @@ import (
 	"bytes"
 	gocontext "context"
 	"fmt"
+	"inet.af/netaddr"
 	"math"
 	"net"
 	"os"
@@ -11,16 +12,14 @@ import (
 	"sync"
 	"time"
 
-	lru "github.com/hashicorp/golang-lru"
-
-	"inet.af/netaddr"
-
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
+	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
+	lru "github.com/hashicorp/golang-lru"
 )
 
 const openPcapsLimit = 512
@@ -77,16 +76,17 @@ type processPcapId struct {
 	contID        string
 }
 
+// createPcapsDirPath create the pcap output directory and return its relative path in the output directory.
 func (t *Tracee) createPcapsDirPath(pcapContext processPcapId) (string, error) {
-	pcapsDirPath := path.Join(t.config.Capture.OutputPath, pcapContext.contID)
-	err := os.MkdirAll(pcapsDirPath, os.ModePerm)
+	err := utils.MkdirAtExist(t.outDir, pcapContext.contID, os.ModePerm)
 	if err != nil {
 		return "", err
 	}
 
-	return pcapsDirPath, nil
+	return pcapContext.contID, nil
 }
 
+// getPcapFilePath return the matching relative path of a pcap file for a give pcap context
 func (t *Tracee) getPcapFilePath(pcapContext processPcapId) (string, error) {
 	pcapsDirPath, err := t.createPcapsDirPath(pcapContext)
 	if err != nil {
@@ -109,7 +109,7 @@ func (t *Tracee) createPcapFile(pcapContext processPcapId) (netPcap, error) {
 		return netPcap{}, fmt.Errorf("error getting pcap file path: %v", err)
 	}
 
-	pcapFile, err := os.OpenFile(pcapFilePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+	pcapFile, err := utils.OpenAt(t.outDir, pcapFilePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return netPcap{}, fmt.Errorf("error creating pcap file: %v", err)
 	}
