@@ -133,11 +133,11 @@ func getCapabilitiesRequiredByEBPF(OSInfo KernelVersionInfo, debug bool) ([]cap.
 	const BpfCapabilitiesMinKernelVersion = "5.8"
 	if OSInfo.CompareOSBaseKernelRelease(BpfCapabilitiesMinKernelVersion) < 0 {
 		// if kernelParanoidValue is too high, CAP_SYS_ADMIN is required
-		if kernelParanoidValue > 3 {
+		if kernelParanoidValue > 2 {
 			if debug {
-				fmt.Println("Paranoid: Value in /proc/sys/kernel/perf_event_paranoid is > 3")
+				fmt.Println("Paranoid: Value in /proc/sys/kernel/perf_event_paranoid is > 2")
 				fmt.Println("Paranoid: Tracee needs CAP_SYS_ADMIN instead of CAP_BPF + CAP_PERFMON")
-				fmt.Println("Paranoid: To change that behavior set perf_event_paranoid to 3 or less.")
+				fmt.Println("Paranoid: To change that behavior set perf_event_paranoid to 2 or less.")
 			}
 			return privilegedCaps, nil
 		} else {
