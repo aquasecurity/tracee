@@ -25,22 +25,34 @@ func TestGenerateTraceeEbpfRequiredCapabilities(t *testing.T) {
 		chosenEvents         []string
 		ifaces               []string
 		expectedCapabilities []cap.Value
+		outCfg               tracee.OutputConfig
 	}{
 		{
 			name:                 "No events chosen",
 			chosenEvents:         []string{},
+			outCfg:               tracee.OutputConfig{},
 			expectedCapabilities: []cap.Value{},
 		},
 		{
 			name:                 "Net event chosen",
 			chosenEvents:         []string{"net_packet"},
 			ifaces:               []string{"enp0s3"},
+			outCfg:               tracee.OutputConfig{},
 			expectedCapabilities: []cap.Value{cap.NET_ADMIN},
 		},
 		{
 			name:                 "Init namespaces event chosen",
 			chosenEvents:         []string{"init_namespaces"},
+			outCfg:               tracee.OutputConfig{},
 			expectedCapabilities: []cap.Value{cap.SYS_PTRACE},
+		},
+		{
+			name:         "Executed files hash chosen",
+			chosenEvents: []string{"sched_process_exec"},
+			outCfg: tracee.OutputConfig{
+				ExecHash: true,
+			},
+			expectedCapabilities: []cap.Value{cap.DAC_OVERRIDE},
 		},
 	}
 
@@ -104,6 +116,7 @@ func TestGenerateTraceeEbpfRequiredCapabilities(t *testing.T) {
 						},
 						Capture: &tracee.CaptureConfig{},
 						Debug:   false,
+						Output:  &traceTest.outCfg,
 					}
 
 					neededCaps, err := generateTraceeEbpfRequiredCapabilities(osInfo, &cfg)

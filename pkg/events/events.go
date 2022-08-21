@@ -5742,8 +5742,11 @@ var Definitions = eventDefinitions{
 			Name:     "capture_exec",
 			Internal: true,
 			Dependencies: dependencies{
-				Events:       []eventDependency{{EventID: SchedProcessExec}},
-				Capabilities: []cap.Value{cap.SYS_PTRACE},
+				Events: []eventDependency{{EventID: SchedProcessExec}},
+				Capabilities: []cap.Value{
+					cap.SYS_PTRACE,
+					cap.DAC_OVERRIDE,
+				},
 			},
 		},
 		CaptureModule: {
