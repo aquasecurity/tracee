@@ -22,8 +22,24 @@ type KernelVersionInfo interface {
 	CompareOSBaseKernelRelease(string) int
 }
 
-// ensureCapabilities makes sure program runs with required capabilities only
-func ensureCapabilities(OSInfo KernelVersionInfo, cfg *tracee.Config, capsCfg *flags.CapsConfig) error {
+// ensureInitCapabilities makes sure program initialize with required capabilities only.
+// This is the wider version of ensureRuntimeCapabilities because all runtime capabilities have to be preserved
+// for after initialization.
+func ensureInitCapabilities(OSInfo KernelVersionInfo, cfg *tracee.Config, capsCfg *flags.CapsConfig) error {
+	rCaps, err := generateTraceeEbpfRequiredCapabilities(OSInfo, cfg)
+	if err != nil {
+		return err
+	}
+	rCaps = append(rCaps, capsCfg.CapsToPreserve...)
+	rCaps = append(rCaps, getInitRequiredCapabilities()...)
+	removeDupCaps(rCaps)
+
+	return checkAndDropToCapabilities(rCaps, capsCfg, cfg.Debug)
+}
+
+// ensureRuntimeCapabilities makes sure program run with required capabilities only.
+// This is the slimmer version of ensureInitCapabilities.
+func ensureRuntimeCapabilities(OSInfo KernelVersionInfo, cfg *tracee.Config, capsCfg *flags.CapsConfig) error {
 	rCaps, err := generateTraceeEbpfRequiredCapabilities(OSInfo, cfg)
 	if err != nil {
 		return err
@@ -32,7 +48,13 @@ func ensureCapabilities(OSInfo KernelVersionInfo, cfg *tracee.Config, capsCfg *f
 	rCaps = append(rCaps, capsCfg.CapsToPreserve...)
 	removeDupCaps(rCaps)
 
-	if err := capabilities.CheckRequired(rCaps); err != nil {
+	return checkAndDropToCapabilities(rCaps, capsCfg, cfg.Debug)
+}
+
+// checkAndDropToCapabilities make sure that there are all required capabilities, and drop so only they stay.
+// Will also produce meaningful errors.
+func checkAndDropToCapabilities(caps []cap.Value, capsCfg *flags.CapsConfig, isDebug bool) error {
+	if err := capabilities.CheckRequired(caps); err != nil {
 		if errors.Is(err, &capabilities.MissingCapabilitiesError{}) {
 			return err
 		} else {
@@ -42,7 +64,7 @@ func ensureCapabilities(OSInfo KernelVersionInfo, cfg *tracee.Config, capsCfg *f
 	}
 
 	if !capsCfg.CancelCapsDrop {
-		if err = capabilities.DropUnrequired(rCaps); err != nil {
+		if err := capabilities.DropUnrequired(caps); err != nil {
 			if !capsCfg.AllowHighCaps {
 				return fmt.Errorf("%w - to avoid this error use the '--%[2]s %[3]s' or '--%[2]s %[4]s' flags",
 					err,
@@ -50,13 +72,12 @@ func ensureCapabilities(OSInfo KernelVersionInfo, cfg *tracee.Config, capsCfg *f
 					flags.AllowFailedDropFlag,
 					flags.CancelDropFlag,
 				)
-			} else if cfg.Debug {
+			} else if isDebug {
 				fmt.Fprintf(os.Stderr, "Failed in dropping capabilities - %v\n", err)
 				fmt.Fprintf(os.Stderr, "Continue with high capabilities accoridng to the configuration\n")
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -68,6 +89,7 @@ func generateTraceeEbpfRequiredCapabilities(OSInfo KernelVersionInfo, cfg *trace
 		return nil, err
 	}
 	rCaps = append(rCaps, getCapabilitiesRequiredByTraceeEvents(cfg)...)
+	rCaps = append(rCaps, getConfigRequiredCapabilities(cfg)...)
 
 	rCaps = removeDupCaps(rCaps)
 	return rCaps, nil
@@ -149,6 +171,21 @@ func getCapabilitiesRequiredByEBPF(OSInfo KernelVersionInfo, debug bool) ([]cap.
 		}
 	}
 	return privilegedCaps, nil
+}
+
+// getConfigRequiredCapabilities get the capabilities required by the configuration which are not related to events chosen
+func getConfigRequiredCapabilities(cfg *tracee.Config) []cap.Value {
+	var caps []cap.Value
+	if cfg.Output.ExecHash {
+		caps = append(caps, cap.DAC_OVERRIDE)
+	}
+	return caps
+}
+
+func getInitRequiredCapabilities() []cap.Value {
+	return []cap.Value{
+		cap.DAC_OVERRIDE,
+	}
 }
 
 func removeDupCaps(dupCaps []cap.Value) []cap.Value {
