@@ -41,7 +41,15 @@ func contains(s []string, val string) bool {
 
 func PrepareContainers(containerFlags []string) (runtime.Sockets, error) {
 	if len(containerFlags) == 0 {
-		return autoDiscoverSockets(), nil
+		return runtime.Autodiscover(func(err error, runtime runtime.RuntimeId, socket string) {
+			if debug.Enabled() {
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "RuntimeSockets: failed to register default %s socket:\n%v\n", runtime.String(), err)
+				} else {
+					fmt.Fprintf(os.Stdout, "RuntimeSockets: registered default %s runtime socket from %s\n", runtime.String(), socket)
+				}
+			}
+		}), nil
 	}
 
 	supportedRuntimes := []string{"crio", "cri-o", "containerd", "docker"}
@@ -60,7 +68,7 @@ func PrepareContainers(containerFlags []string) (runtime.Sockets, error) {
 		}
 
 		socket := parts[1]
-		err := sockets.Register(runtimeStringToRuntimeId(containerRuntime), socket)
+		err := sockets.Register(runtime.FromString(containerRuntime), socket)
 
 		if err != nil {
 			return sockets, fmt.Errorf("failed to register runtime socket, %s", err.Error())
@@ -68,50 +76,4 @@ func PrepareContainers(containerFlags []string) (runtime.Sockets, error) {
 	}
 
 	return sockets, nil
-}
-
-//check default paths for all supported container runtimes and aggregate them
-func autoDiscoverSockets() runtime.Sockets {
-	sockets := runtime.Sockets{}
-	const (
-		defaultContainerd = "/var/run/containerd/containerd.sock"
-		defaultDocker     = "/var/run/docker.sock"
-		defaultCrio       = "/var/run/crio/crio.sock"
-		defaultPodman     = "/var/run/podman/podman.sock"
-	)
-
-	registerSocket(&sockets, "containerd", defaultContainerd)
-	registerSocket(&sockets, "docker", defaultDocker)
-	registerSocket(&sockets, "crio", defaultCrio)
-	registerSocket(&sockets, "podman", defaultPodman)
-
-	return sockets
-}
-
-func registerSocket(sockets *runtime.Sockets, runtime string, socket string) {
-	err := sockets.Register(runtimeStringToRuntimeId(runtime), socket)
-	if debug.Enabled() {
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "RuntimeSockets: failed to register default %s socket:\n%v\n", runtime, err)
-		} else {
-			fmt.Fprintf(os.Stdout, "RuntimeSockets: registered default %s runtime socket from %s\n", runtime, socket)
-		}
-	}
-}
-
-func runtimeStringToRuntimeId(containerRuntime string) runtime.RuntimeId {
-	switch containerRuntime {
-	case "docker":
-		return runtime.Docker
-	case "crio":
-		return runtime.Crio
-	case "cri-o":
-		return runtime.Crio
-	case "podman":
-		return runtime.Podman
-	case "containerd":
-		return runtime.Containerd
-	default:
-		return runtime.Unknown
-	}
 }
