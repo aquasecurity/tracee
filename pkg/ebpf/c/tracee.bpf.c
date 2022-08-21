@@ -425,8 +425,8 @@ enum event_id_e
     HOOKED_PROC_FOPS,
     PRINT_NET_SEQ_OPS,
     TASK_RENAME,
-    SYMBOLS_LOADED,
     SECURITY_INODE_RENAME,
+    RAW_PTRACE,
     MAX_EVENT_ID,
     // Debug events IDs
     DEBUG_NET_SECURITY_BIND,
@@ -3392,6 +3392,37 @@ int tracepoint__sched__sched_switch(struct bpf_raw_tracepoint_args *ctx)
     save_str_to_buf(&data, next->comm, 4);
 
     return events_perf_submit(&data, SCHED_SWITCH, 0);
+}
+
+// based on /sys/kernel/tracing/events/syscalls/sys_enter_ptrace/format
+struct ptrace_args {
+    u64 __unused__[2]; // 16 bytes buffer
+    long request;
+    long pid;
+    unsigned long addr;
+    unsigned long data;
+};
+SEC("tracepoint/sys_enter_ptrace")
+int tracepoint__syscalls__raw_ptrace(struct ptrace_args *ctx)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data))
+        return 0;
+
+    long request = (long) ctx->request;
+    pid_t pid = (pid_t) ctx->pid;
+    void *addr = (void *) ctx->addr;
+    void *ptrace_data = (void *) ctx->data;
+
+    save_to_submit_buf(&data, (void *) &request, sizeof(long), 0);
+    save_to_submit_buf(&data, (void *) &pid, sizeof(pid_t), 1);
+    save_to_submit_buf(&data, &addr, sizeof(void *), 2);
+    save_to_submit_buf(&data, &ptrace_data, sizeof(void *), 3);
+
+    return events_perf_submit(&data, RAW_PTRACE, 0);
 }
 
 SEC("kprobe/filldir64")

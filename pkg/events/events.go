@@ -150,8 +150,8 @@ const (
 	HookedProcFops
 	PrintNetSeqOps
 	TaskRename
-	SymbolsLoaded
 	SecurityInodeRename
+	RawPtrace
 	MaxCommonID
 	DebugNetSecurityBind
 	DebugNetUdpSendmsg
@@ -171,6 +171,7 @@ const (
 	ExistingContainer
 	HookedSyscalls
 	HookedSeqOps
+	SymbolsLoaded
 	MaxUserSpace
 )
 
@@ -5920,6 +5921,20 @@ var Definitions = eventDefinitions{
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "old_path"},
 				{Type: "const char*", Name: "new_path"},
+			},
+		},
+		RawPtrace: {
+			ID32Bit: sys32undefined,
+			Name:    "raw_ptrace",
+			Probes: []probeDependency{
+				{Handle: probes.RawPtrace, Required: true},
+			},
+			Sets: []string{"proc"},
+			Params: []trace.ArgMeta{
+				{Type: "long", Name: "request"},
+				{Type: "pid_t", Name: "pid"},
+				{Type: "void*", Name: "addr"},
+				{Type: "void*", Name: "data"},
 			},
 		},
 	},

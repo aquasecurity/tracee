@@ -64,6 +64,7 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		SchedProcessExec:           &traceProbe{eventName: "sched:sched_process_exec", probeType: rawTracepoint, programName: "tracepoint__sched__sched_process_exec"},
 		SchedProcessExit:           &traceProbe{eventName: "sched:sched_process_exit", probeType: rawTracepoint, programName: "tracepoint__sched__sched_process_exit"},
 		SchedSwitch:                &traceProbe{eventName: "sched:sched_switch", probeType: rawTracepoint, programName: "tracepoint__sched__sched_switch"},
+		RawPtrace:                  &traceProbe{eventName: "syscalls:sys_enter_ptrace", probeType: tracepoint, programName: "tracepoint__syscalls__raw_ptrace"},
 		DoExit:                     &traceProbe{eventName: "do_exit", probeType: kprobe, programName: "trace_do_exit"},
 		CapCapable:                 &traceProbe{eventName: "cap_capable", probeType: kprobe, programName: "trace_cap_capable"},
 		VfsWrite:                   &traceProbe{eventName: "vfs_write", probeType: kprobe, programName: "trace_vfs_write"},
@@ -589,4 +590,5 @@ const (
 	PrintSyscallTable
 	PrintNetSeqOps
 	SecurityInodeRename
+	RawPtrace
 )
