@@ -7,6 +7,7 @@ import (
 	"path"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
+	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
 func (t *Tracee) processFileWrites() {
@@ -52,8 +53,8 @@ func (t *Tracee) processFileWrites() {
 			if containerId == "" {
 				containerId = "host"
 			}
-			pathname := path.Join(t.config.Capture.OutputPath, containerId)
-			if err := os.MkdirAll(pathname, 0755); err != nil {
+			pathname := containerId
+			if err := utils.MkdirAtExist(t.outDir, pathname, 0755); err != nil {
 				t.handleError(err)
 				continue
 			}
@@ -107,7 +108,7 @@ func (t *Tracee) processFileWrites() {
 
 			fullname := path.Join(pathname, filename)
 
-			f, err := os.OpenFile(fullname, os.O_CREATE|os.O_WRONLY, 0640)
+			f, err := utils.OpenAt(t.outDir, fullname, os.O_CREATE|os.O_WRONLY, 0640)
 			if err != nil {
 				t.handleError(err)
 				continue
@@ -144,8 +145,8 @@ func (t *Tracee) processFileWrites() {
 			// Rename the file to add hash when last chunk was received
 			if meta.BinType == bufferdecoder.SendKernelModule {
 				if uint64(meta.Size)+meta.Off == kernelModuleMeta.Size {
-					fileHash, _ := computeFileHash(fullname)
-					os.Rename(fullname, fullname+"."+fileHash)
+					fileHash, _ := t.computeOutFileHash(fullname)
+					utils.RenameAt(t.outDir, fullname, t.outDir, fullname+"."+fileHash)
 				}
 			}
 		case lost := <-t.lostWrChannel:
