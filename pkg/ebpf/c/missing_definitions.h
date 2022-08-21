@@ -62,6 +62,45 @@
 #define _AC(X, Y)  __AC(X, Y)
 #define _UL(x)     (_AC(x, UL))
 
+// ioctl
+#define _IOC_NRBITS   8
+#define _IOC_TYPEBITS 8
+
+#ifndef _IOC_SIZEBITS
+    #define _IOC_SIZEBITS 14
+#endif
+
+#define _IOC_NRSHIFT   0
+#define _IOC_TYPESHIFT (_IOC_NRSHIFT + _IOC_NRBITS)
+#define _IOC_SIZESHIFT (_IOC_TYPESHIFT + _IOC_TYPEBITS)
+#define _IOC_DIRSHIFT  (_IOC_SIZESHIFT + _IOC_SIZEBITS)
+
+#ifndef _IOC_WRITE
+    #define _IOC_WRITE 1U
+#endif
+
+#define _IOC(dir, type, nr, size)                                                                  \
+    (((dir) << _IOC_DIRSHIFT) | ((type) << _IOC_TYPESHIFT) | ((nr) << _IOC_NRSHIFT) |              \
+     ((size) << _IOC_SIZESHIFT))
+
+#define _IOC_TYPECHECK(t)      (sizeof(t))
+#define _IOW(type, nr, size)   _IOC(_IOC_WRITE, (type), (nr), (_IOC_TYPECHECK(size)))
+#define PERF_EVENT_IOC_SET_BPF _IOW('$', 8, __u32)
+
+#define BPF_FUNC_probe_write_user 36
+
+enum perf_type_id
+{
+    PERF_TYPE_HARDWARE = 0,
+    PERF_TYPE_SOFTWARE = 1,
+    PERF_TYPE_TRACEPOINT = 2,
+    PERF_TYPE_HW_CACHE = 3,
+    PERF_TYPE_RAW = 4,
+    PERF_TYPE_BREAKPOINT = 5,
+
+    PERF_TYPE_MAX, /* non-ABI */
+};
+
 /*=============================== ARCH SPECIFIC ===========================*/
 #if defined(__TARGET_ARCH_x86)
 

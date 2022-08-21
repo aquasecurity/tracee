@@ -53,6 +53,18 @@
     #include <linux/pkt_cls.h>
     #include <linux/tcp.h>
 
+    #if defined(CONFIG_FUNCTION_TRACER)
+        #define CC_USING_FENTRY
+    #endif
+
+    #include <linux/perf_event.h>
+    #include <linux/kprobes.h>
+    #include <linux/uprobes.h>
+    #include <linux/trace_events.h>
+    #include <linux/bpf_verifier.h>
+
+    #include "missing_noncore_definitions.h"
+
 #else
     // CO:RE is enabled
     #include <vmlinux.h>
@@ -444,6 +456,7 @@ enum event_id_e
     TASK_RENAME,
     SECURITY_INODE_RENAME,
     DO_SIGACTION,
+    BPF_ATTACH,
     MAX_EVENT_ID,
 };
 
@@ -548,6 +561,22 @@ enum signal_handling_method_e
 #endif
     SIG_HND = 2 // Doesn't exist in the kernel, but signifies that the method is through
                 // user-defined handler
+};
+
+enum bpf_write_user_e
+{
+    WRITE_USER_FALSE,
+    WRITE_USER_TRUE,
+    WRITE_USER_UNKNOWN
+};
+
+enum perf_type_e
+{
+    PERF_TRACEPOINT,
+    PERF_KPROBE,
+    PERF_KRETPROBE,
+    PERF_UPROBE,
+    PERF_URETPROBE
 };
 
 // EBPF KCONFIGS -----------------------------------------------------------------------------------
@@ -860,6 +889,15 @@ typedef struct file_info {
     u64 ctime;
 } file_info_t;
 
+typedef struct bpf_attach_key {
+    u32 host_tid;
+    u32 prog_id;
+} bpf_attach_key_t;
+
+typedef struct bpf_attach {
+    enum bpf_write_user_e write_user;
+} bpf_attach_t;
+
 // KERNEL STRUCTS ----------------------------------------------------------------------------------
 
 #ifndef CORE
@@ -875,22 +913,6 @@ struct mount {
     struct dentry *mnt_mountpoint;
     struct vfsmount mnt;
     // ...
-};
-
-struct kretprobe_instance {
-};
-typedef int kprobe_opcode_t;
-struct kprobe;
-
-typedef int (*kprobe_pre_handler_t)(struct kprobe *, struct pt_regs *);
-typedef void (*kprobe_post_handler_t)(struct kprobe *, struct pt_regs *, unsigned long flags);
-typedef int (*kretprobe_handler_t)(struct kretprobe_instance *, struct pt_regs *);
-
-struct kprobe {
-    kprobe_opcode_t *addr;
-    const char *symbol_name;
-    kprobe_pre_handler_t pre_handler;
-    kprobe_post_handler_t post_handler;
 };
 
     #define get_type_size(x)            sizeof(x)
@@ -936,6 +958,8 @@ BPF_PROG_ARRAY(sys_exit_init_tail, MAX_EVENT_ID);                  // store prog
 BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);             // store stack traces
 BPF_HASH(module_init_map, u32, kmod_data_t, 256);                  // holds module information between
 BPF_LRU_HASH(fd_arg_path_map, fd_arg_task_t, fd_arg_path_t, 1024); // store fds paths by task
+BPF_LRU_HASH(bpf_attach_map, bpf_attach_key_t, bpf_attach_t, 256); // holds bpf prog info
+BPF_LRU_HASH(bpf_attach_tmp_map, u32, bpf_attach_t, 256);          // temporarily hold bpf_attach_t
 // clang-format on
 
 // EBPF PERF BUFFERS -------------------------------------------------------------------------------
@@ -3839,6 +3863,222 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
     return 0;
 }
 
+static __always_inline struct trace_kprobe *get_trace_kprobe_from_trace_probe(void *tracep)
+{
+    struct trace_kprobe *tracekp =
+        (struct trace_kprobe *) container_of(tracep, struct trace_kprobe, tp);
+
+    return tracekp;
+}
+
+static __always_inline struct trace_uprobe *get_trace_uprobe_from_trace_probe(void *tracep)
+{
+    struct trace_uprobe *traceup =
+        (struct trace_uprobe *) container_of(tracep, struct trace_uprobe, tp);
+
+    return traceup;
+}
+
+// This function returns a pointer to struct trace_probe from struct trace_event_call.
+static __always_inline void *get_trace_probe_from_trace_event_call(struct trace_event_call *call)
+{
+    void *tracep_ptr;
+
+#ifndef CORE
+    #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 0))
+    tracep_ptr = container_of(call, struct trace_probe, call);
+    #else
+    struct trace_probe_event *tpe = container_of(call, struct trace_probe_event, call);
+    struct list_head probes = READ_KERN(tpe->probes);
+    tracep_ptr = container_of(probes.next, struct trace_probe, list);
+    #endif
+#else
+    struct trace_probe___v53 *legacy_tracep;
+    if (bpf_core_field_exists(legacy_tracep->call)) {
+        tracep_ptr = container_of(call, struct trace_probe___v53, call);
+    } else {
+        struct trace_probe_event *tpe = container_of(call, struct trace_probe_event, call);
+        struct list_head probes = READ_KERN(tpe->probes);
+        tracep_ptr = container_of(probes.next, struct trace_probe, list);
+    }
+#endif
+
+    return tracep_ptr;
+}
+
+// Inspired by bpf_get_perf_event_info() kernel func.
+// https://elixir.bootlin.com/linux/v5.19.2/source/kernel/trace/bpf_trace.c#L2123
+static __always_inline int
+send_bpf_attach(event_data_t *data, struct file *bpf_prog_file, struct file *perf_event_file)
+{
+    if (!should_submit(BPF_ATTACH, data->config)) {
+        return 0;
+    }
+
+// get real values of TRACE_EVENT_FL_KPROBE and TRACE_EVENT_FL_UPROBE.
+// these values were changed in kernels >= 5.15.
+#ifdef CORE
+    int TRACE_EVENT_FL_KPROBE_BIT;
+    int TRACE_EVENT_FL_UPROBE_BIT;
+    if (bpf_core_field_exists(((struct trace_event_call *) 0)->module)) { // kernel >= 5.15
+        TRACE_EVENT_FL_KPROBE_BIT = 6;
+        TRACE_EVENT_FL_UPROBE_BIT = 7;
+    } else { // kernel < 5.15
+        TRACE_EVENT_FL_KPROBE_BIT = 5;
+        TRACE_EVENT_FL_UPROBE_BIT = 6;
+    }
+    int TRACE_EVENT_FL_KPROBE = (1 << TRACE_EVENT_FL_KPROBE_BIT);
+    int TRACE_EVENT_FL_UPROBE = (1 << TRACE_EVENT_FL_UPROBE_BIT);
+#endif
+
+    // get perf event details
+
+// clang-format off
+#define MAX_PERF_EVENT_NAME ((MAX_PATH_PREF_SIZE > MAX_KSYM_NAME_SIZE) ? \
+    MAX_PATH_PREF_SIZE : MAX_KSYM_NAME_SIZE)
+// clang-format on
+#define REQUIRED_SYSTEM_LENGTH 9
+
+    struct perf_event *event = (struct perf_event *) READ_KERN(perf_event_file->private_data);
+    struct trace_event_call *tp_event = READ_KERN(event->tp_event);
+    char event_name[MAX_PERF_EVENT_NAME];
+    u64 probe_addr = 0;
+    int perf_type;
+
+    int flags = READ_KERN(tp_event->flags);
+
+    // check if syscall_tracepoint
+    bool is_syscall_tracepoint = false;
+    struct trace_event_class *tp_class = READ_KERN(tp_event->class);
+    char class_system[REQUIRED_SYSTEM_LENGTH];
+    bpf_probe_read_str(&class_system, REQUIRED_SYSTEM_LENGTH, READ_KERN(tp_class->system));
+    class_system[REQUIRED_SYSTEM_LENGTH - 1] = '\0';
+    if (has_prefix("syscalls", class_system, REQUIRED_SYSTEM_LENGTH)) {
+        is_syscall_tracepoint = true;
+    }
+
+    if (flags & TRACE_EVENT_FL_TRACEPOINT) { // event is tracepoint
+
+        perf_type = PERF_TRACEPOINT;
+        struct tracepoint *tp = READ_KERN(tp_event->tp);
+        bpf_probe_read_str(&event_name, MAX_KSYM_NAME_SIZE, READ_KERN(tp->name));
+
+    } else if (is_syscall_tracepoint) { // event is syscall tracepoint
+
+        perf_type = PERF_TRACEPOINT;
+        bpf_probe_read_str(&event_name, MAX_KSYM_NAME_SIZE, READ_KERN(tp_event->name));
+
+    } else {
+        bool is_ret_probe = false;
+        void *tracep_ptr = get_trace_probe_from_trace_event_call(tp_event);
+
+        if (flags & TRACE_EVENT_FL_KPROBE) { // event is kprobe
+
+            struct trace_kprobe *tracekp = get_trace_kprobe_from_trace_probe(tracep_ptr);
+
+            // check if probe is a kretprobe
+            struct kretprobe *krp = &tracekp->rp;
+            kretprobe_handler_t handler_f = READ_KERN(krp->handler);
+            if (handler_f != NULL)
+                is_ret_probe = true;
+
+            if (is_ret_probe)
+                perf_type = PERF_KRETPROBE;
+            else
+                perf_type = PERF_KPROBE;
+
+            // get symbol name
+            bpf_probe_read_str(&event_name, MAX_KSYM_NAME_SIZE, READ_KERN(tracekp->symbol));
+
+            // get symbol address
+            if (!event_name[0])
+                probe_addr = (unsigned long) READ_KERN(krp->kp.addr);
+
+        } else if (flags & TRACE_EVENT_FL_UPROBE) { // event is uprobe
+
+            struct trace_uprobe *traceup = get_trace_uprobe_from_trace_probe(tracep_ptr);
+
+            // determine if ret probe
+            struct uprobe_consumer *upc = &traceup->consumer;
+            void *handler_f = READ_KERN(upc->ret_handler);
+            if (handler_f != NULL)
+                is_ret_probe = true;
+
+            if (is_ret_probe)
+                perf_type = PERF_URETPROBE;
+            else
+                perf_type = PERF_UPROBE;
+
+            // get binary path
+            bpf_probe_read_str(&event_name, MAX_PATH_PREF_SIZE, READ_KERN(traceup->filename));
+
+            // get symbol offset
+            probe_addr = READ_KERN(traceup->offset);
+
+        } else {
+            // unsupported perf type
+            return 0;
+        }
+    }
+
+    // get bpf prog details
+
+    struct bpf_prog *prog = (struct bpf_prog *) READ_KERN(bpf_prog_file->private_data);
+    int prog_type = READ_KERN(prog->type);
+    struct bpf_prog_aux *prog_aux = READ_KERN(prog->aux);
+    u32 prog_id = READ_KERN(prog_aux->id);
+    char prog_name[BPF_OBJ_NAME_LEN];
+    bpf_probe_read_str(&prog_name, BPF_OBJ_NAME_LEN, READ_KERN(prog_aux->name));
+
+    // get usage of helper bpf_probe_write_user
+    bpf_attach_key_t key = {0};
+    key.host_tid = data->context.task.host_tid;
+    key.prog_id = prog_id;
+
+    bpf_attach_t *val = bpf_map_lookup_elem(&bpf_attach_map, &key);
+    if (val == NULL)
+        return 0;
+
+    // submit the event
+
+    save_to_submit_buf(data, &prog_type, sizeof(int), 0);
+    save_str_to_buf(data, (void *) &prog_name, 1);
+    save_str_to_buf(data, (void *) &event_name, 2);
+    save_to_submit_buf(data, &probe_addr, sizeof(u64), 3);
+    save_to_submit_buf(data, &val->write_user, sizeof(int), 4);
+    save_to_submit_buf(data, &perf_type, sizeof(int), 5);
+
+    events_perf_submit(data, BPF_ATTACH, 0);
+
+    // delete from map
+    bpf_map_delete_elem(&bpf_attach_map, &key);
+
+    return 0;
+}
+
+SEC("kprobe/security_file_ioctl")
+int BPF_KPROBE(trace_security_file_ioctl)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data))
+        return 0;
+
+    unsigned int cmd = PT_REGS_PARM2(ctx);
+
+    if (cmd == PERF_EVENT_IOC_SET_BPF) {
+        struct file *perf_event_file = (struct file *) PT_REGS_PARM1(ctx);
+        unsigned long fd = PT_REGS_PARM3(ctx);
+        struct file *bpf_prog_file = get_struct_file_from_fd(fd);
+
+        send_bpf_attach(&data, bpf_prog_file, perf_event_file);
+    }
+
+    return 0;
+}
+
 // trace/events/cgroup.h:
 // TP_PROTO(struct cgroup *dst_cgrp, const char *path, struct task_struct *task, bool threadgroup)
 SEC("raw_tracepoint/cgroup_attach_task")
@@ -5502,6 +5742,42 @@ int syscall__init_module(void *ctx)
     return 0;
 }
 
+// Check (CORE || (!CORE && kernel >= 5.7)) to compile successfully.
+// (compiler will try to compile the func even if no execution path leads to it).
+#if defined(CORE) || (!defined(CORE) && (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 0)))
+static __always_inline int do_check_bpf_link(event_data_t *data, union bpf_attr *attr, int cmd)
+{
+    if (cmd == BPF_LINK_CREATE) {
+        u32 prog_fd = READ_KERN(attr->link_create.prog_fd);
+        u32 perf_fd = READ_KERN(attr->link_create.target_fd);
+
+        struct file *bpf_prog_file = get_struct_file_from_fd(prog_fd);
+        struct file *perf_event_file = get_struct_file_from_fd(perf_fd);
+
+        send_bpf_attach(data, bpf_prog_file, perf_event_file);
+    }
+
+    return 0;
+}
+#endif
+
+static __always_inline int check_bpf_link(event_data_t *data, union bpf_attr *attr, int cmd)
+{
+// BPF_LINK_CREATE command was only introduced in kernel 5.7.
+// nothing to check for kernels < 5.7.
+#ifdef CORE
+    if (bpf_core_field_exists(attr->link_create)) {
+        do_check_bpf_link(data, attr, cmd);
+    }
+#else
+    #if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 0))
+    do_check_bpf_link(data, attr, cmd);
+    #endif
+#endif
+
+    return 0;
+}
+
 SEC("kprobe/security_bpf")
 int BPF_KPROBE(trace_security_bpf)
 {
@@ -5514,10 +5790,18 @@ int BPF_KPROBE(trace_security_bpf)
 
     int cmd = (int) PT_REGS_PARM1(ctx);
 
-    // 1st argument == cmd (int)
-    save_to_submit_buf(&data, (void *) &cmd, sizeof(int), 0);
+    if (should_submit(SECURITY_BPF, data.config)) {
+        // 1st argument == cmd (int)
+        save_to_submit_buf(&data, (void *) &cmd, sizeof(int), 0);
 
-    return events_perf_submit(&data, SECURITY_BPF, 0);
+        events_perf_submit(&data, SECURITY_BPF, 0);
+    }
+
+    union bpf_attr *attr = (union bpf_attr *) PT_REGS_PARM2(ctx);
+
+    check_bpf_link(&data, attr, cmd);
+
+    return 0;
 }
 
 // arm_kprobe can't be hooked in arm64 architecture, use enable logic instead
@@ -5587,6 +5871,106 @@ int BPF_KPROBE(trace_security_bpf_map)
     save_str_to_buf(&data, (void *) GET_FIELD_ADDR(map->name), 1);
 
     return events_perf_submit(&data, SECURITY_BPF_MAP, 0);
+}
+
+SEC("kprobe/security_bpf_prog")
+int BPF_KPROBE(trace_security_bpf_prog)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data))
+        return 0;
+
+    struct bpf_prog *prog = (struct bpf_prog *) PT_REGS_PARM1(ctx);
+    struct bpf_prog_aux *prog_aux = READ_KERN(prog->aux);
+    u32 prog_id = READ_KERN(prog_aux->id);
+
+    bpf_attach_t val = {};
+    // In some systems, the 'check_map_func_compatibility' and 'check_helper_call' symbols are not
+    // available. For these cases, the temporary map 'bpf_attach_tmp_map' will not hold any
+    // information (WRITE_USER_FALSE/WRITE_USER_TRUE). nevertheless, we always want to output the
+    // 'bpf_attach' event to the user, so using the WRITE_USER_UNKNOWN value instead of returning,
+    // just so the map would be filled.
+    val.write_user = WRITE_USER_UNKNOWN;
+
+    bpf_attach_t *existing_val;
+    existing_val = bpf_map_lookup_elem(&bpf_attach_tmp_map, &data.context.task.host_tid);
+    if (existing_val != NULL)
+        val.write_user = existing_val->write_user;
+
+    bpf_attach_key_t key = {0};
+    key.host_tid = data.context.task.host_tid;
+    key.prog_id = prog_id;
+
+    bpf_map_update_elem(&bpf_attach_map, &key, &val, BPF_ANY);
+
+    bpf_map_delete_elem(&bpf_attach_tmp_map, &data.context.task.host_tid);
+
+    return 0;
+}
+
+// Save in the temporary map 'bpf_attach_tmp_map' whether or not bpf_probe_write_user is used in the
+// bpf program. Get this information in the verifier phase of the bpf program load lifecycle, before
+// a prog_id is set for the bpf program. Save this information in a temporary map which includes the
+// host_tid as key instead of the prog_id.
+//
+// Later on, in security_bpf_prog, save this information in the stable map 'bpf_attach_map', which
+// contains the prog_id in its key.
+
+static __always_inline int handle_bpf_helper_func_id(u32 host_tid, int func_id)
+{
+    bpf_attach_t val = {};
+    val.write_user = WRITE_USER_FALSE;
+
+    bpf_attach_t *existing_val = bpf_map_lookup_elem(&bpf_attach_tmp_map, &host_tid);
+    if (existing_val == NULL)
+        bpf_map_update_elem(&bpf_attach_tmp_map, &host_tid, &val, BPF_ANY);
+
+    if (func_id == BPF_FUNC_probe_write_user) {
+        val.write_user = WRITE_USER_TRUE;
+        bpf_map_update_elem(&bpf_attach_tmp_map, &host_tid, &val, BPF_ANY);
+    }
+
+    return 0;
+}
+
+SEC("kprobe/check_map_func_compatibility")
+int BPF_KPROBE(trace_check_map_func_compatibility)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data))
+        return 0;
+
+    int func_id = (int) PT_REGS_PARM3(ctx);
+
+    return handle_bpf_helper_func_id(data.context.task.host_tid, func_id);
+}
+
+SEC("kprobe/check_helper_call")
+int BPF_KPROBE(trace_check_helper_call)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data))
+        return 0;
+
+    int func_id;
+
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 13, 0))
+    func_id = (int) PT_REGS_PARM2(ctx);
+#else
+    struct bpf_insn *insn = (struct bpf_insn *) PT_REGS_PARM2(ctx);
+    func_id = READ_KERN(insn->imm);
+#endif
+
+    return handle_bpf_helper_func_id(data.context.task.host_tid, func_id);
 }
 
 SEC("kprobe/security_kernel_read_file")

@@ -217,6 +217,31 @@ func ParseArgs(event *trace.Event) error {
 				ParseOrEmptyString(optionNameArg, optionNameArgument, err)
 			}
 		}
+	case BpfAttach:
+		if progTypeArg := GetArg(event, "prog_type"); progTypeArg != nil {
+			if progType, isInt := progTypeArg.Value.(int32); isInt {
+				progTypeArgument, err := helpers.ParseBPFProgType(uint64(progType))
+				ParseOrEmptyString(progTypeArg, progTypeArgument, err)
+			}
+		}
+		if writeUserArg := GetArg(event, "prog_write_user"); writeUserArg != nil {
+			if writeUser, isInt := writeUserArg.Value.(int32); isInt {
+				perfTypestr, err := parseBpfAttachWriteUser(writeUser)
+				EmptyString(writeUserArg)
+				if err == nil {
+					writeUserArg.Value = perfTypestr
+				}
+			}
+		}
+		if perfTypeArg := GetArg(event, "perf_type"); perfTypeArg != nil {
+			if perfType, isInt := perfTypeArg.Value.(int32); isInt {
+				perfTypestr, err := parseBpfAttachPerfType(perfType)
+				EmptyString(perfTypeArg)
+				if err == nil {
+					perfTypeArg.Value = perfTypestr
+				}
+			}
+		}
 	}
 
 	return nil
@@ -343,4 +368,34 @@ func (arg CustomFunctionArgument) String() string {
 }
 func (arg CustomFunctionArgument) Value() uint64 {
 	return arg.val
+}
+
+func parseBpfAttachWriteUser(writeUser int32) (string, error) {
+	switch writeUser {
+	case 0:
+		return "false", nil
+	case 1:
+		return "true", nil
+	case 2:
+		return "unknown", nil
+	default:
+		return "", fmt.Errorf("unknown prog_write_user value got from bpf_attach event")
+	}
+}
+
+func parseBpfAttachPerfType(perfType int32) (string, error) {
+	switch perfType {
+	case 0:
+		return "tracepoint", nil
+	case 1:
+		return "kprobe", nil
+	case 2:
+		return "kretprobe", nil
+	case 3:
+		return "uprobe", nil
+	case 4:
+		return "uretprobe", nil
+	default:
+		return "", fmt.Errorf("unknown perf_type got from bpf_attach event")
+	}
 }

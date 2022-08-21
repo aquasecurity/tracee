@@ -889,6 +889,168 @@ struct sighand_struct {
     struct k_sigaction action[_NSIG];
 };
 
+enum bpf_cmd
+{
+    BPF_MAP_CREATE,
+    BPF_MAP_LOOKUP_ELEM,
+    BPF_MAP_UPDATE_ELEM,
+    BPF_MAP_DELETE_ELEM,
+    BPF_MAP_GET_NEXT_KEY,
+    BPF_PROG_LOAD,
+    BPF_OBJ_PIN,
+    BPF_OBJ_GET,
+    BPF_PROG_ATTACH,
+    BPF_PROG_DETACH,
+    BPF_PROG_TEST_RUN,
+    BPF_PROG_RUN = BPF_PROG_TEST_RUN,
+    BPF_PROG_GET_NEXT_ID,
+    BPF_MAP_GET_NEXT_ID,
+    BPF_PROG_GET_FD_BY_ID,
+    BPF_MAP_GET_FD_BY_ID,
+    BPF_OBJ_GET_INFO_BY_FD,
+    BPF_PROG_QUERY,
+    BPF_RAW_TRACEPOINT_OPEN,
+    BPF_BTF_LOAD,
+    BPF_BTF_GET_FD_BY_ID,
+    BPF_TASK_FD_QUERY,
+    BPF_MAP_LOOKUP_AND_DELETE_ELEM,
+    BPF_MAP_FREEZE,
+    BPF_BTF_GET_NEXT_ID,
+    BPF_MAP_LOOKUP_BATCH,
+    BPF_MAP_LOOKUP_AND_DELETE_BATCH,
+    BPF_MAP_UPDATE_BATCH,
+    BPF_MAP_DELETE_BATCH,
+    BPF_LINK_CREATE,
+    BPF_LINK_UPDATE,
+    BPF_LINK_GET_FD_BY_ID,
+    BPF_LINK_GET_NEXT_ID,
+    BPF_ENABLE_STATS,
+    BPF_ITER_CREATE,
+    BPF_LINK_DETACH,
+    BPF_PROG_BIND_MAP,
+};
+
+union bpf_attr {
+    struct {
+        __u32 prog_fd;
+        union {
+            __u32 target_fd;
+        };
+    } link_create;
+};
+
+enum bpf_prog_type
+{
+    BPF_PROG_TYPE_UNSPEC,
+    BPF_PROG_TYPE_SOCKET_FILTER,
+    BPF_PROG_TYPE_KPROBE,
+    BPF_PROG_TYPE_SCHED_CLS,
+    BPF_PROG_TYPE_SCHED_ACT,
+    BPF_PROG_TYPE_TRACEPOINT,
+    BPF_PROG_TYPE_XDP,
+    BPF_PROG_TYPE_PERF_EVENT,
+    BPF_PROG_TYPE_CGROUP_SKB,
+    BPF_PROG_TYPE_CGROUP_SOCK,
+    BPF_PROG_TYPE_LWT_IN,
+    BPF_PROG_TYPE_LWT_OUT,
+    BPF_PROG_TYPE_LWT_XMIT,
+    BPF_PROG_TYPE_SOCK_OPS,
+    BPF_PROG_TYPE_SK_SKB,
+    BPF_PROG_TYPE_CGROUP_DEVICE,
+    BPF_PROG_TYPE_SK_MSG,
+    BPF_PROG_TYPE_RAW_TRACEPOINT,
+    BPF_PROG_TYPE_CGROUP_SOCK_ADDR,
+    BPF_PROG_TYPE_LWT_SEG6LOCAL,
+    BPF_PROG_TYPE_LIRC_MODE2,
+    BPF_PROG_TYPE_SK_REUSEPORT,
+    BPF_PROG_TYPE_FLOW_DISSECTOR,
+    BPF_PROG_TYPE_CGROUP_SYSCTL,
+    BPF_PROG_TYPE_RAW_TRACEPOINT_WRITABLE,
+    BPF_PROG_TYPE_CGROUP_SOCKOPT,
+    BPF_PROG_TYPE_TRACING,
+    BPF_PROG_TYPE_STRUCT_OPS,
+    BPF_PROG_TYPE_EXT,
+    BPF_PROG_TYPE_LSM,
+    BPF_PROG_TYPE_SK_LOOKUP,
+    BPF_PROG_TYPE_SYSCALL, /* a program that can execute syscalls */
+};
+
+#define BPF_OBJ_NAME_LEN 16U
+
+struct bpf_prog_aux {
+    u32 id;
+    char name[BPF_OBJ_NAME_LEN];
+};
+
+struct bpf_prog {
+    enum bpf_prog_type type;
+    struct bpf_prog_aux *aux;
+};
+
+struct tracepoint {
+    const char *name;
+};
+
+struct trace_event_class {
+    const char *system;
+};
+
+struct trace_event_call {
+    struct trace_event_class *class;
+    union {
+        char *name;
+        struct tracepoint *tp;
+    };
+    void *module; // only from 5.15
+    int flags;
+};
+
+struct trace_probe {
+    struct list_head list;
+};
+
+struct trace_probe_event {
+    struct trace_event_call call;
+    struct list_head probes;
+};
+
+struct uprobe_consumer {
+    int (*ret_handler)(struct uprobe_consumer *self, unsigned long func, struct pt_regs *regs);
+};
+
+struct trace_uprobe {
+    struct uprobe_consumer consumer;
+    char *filename;
+    unsigned long offset;
+    struct trace_probe tp;
+};
+
+struct kretprobe {
+    struct kprobe kp;
+    kretprobe_handler_t handler;
+};
+
+struct trace_kprobe {
+    struct kretprobe rp;
+    const char *symbol;
+    struct trace_probe tp;
+};
+
+struct perf_event {
+    struct trace_event_call *tp_event;
+};
+
+struct bpf_verifier_env {
+    struct bpf_prog *prog;
+};
+
+struct bpf_insn {
+    __s32 imm;
+};
+
+const int TRACE_EVENT_FL_TRACEPOINT_BIT = 4;
+const int TRACE_EVENT_FL_TRACEPOINT = (1 << TRACE_EVENT_FL_TRACEPOINT_BIT);
+
 #include <struct_flavors.h>
 
 #pragma clang attribute pop
