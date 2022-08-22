@@ -2,13 +2,14 @@ package derive
 
 import (
 	"fmt"
+
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
 // NetPacket derives net_packet from net events with 'metadata' arg
 func NetPacket() events.DeriveFunction {
-	return singleEventDeriveFunc(events.NetPacket, deriveNetPacketArgs(), withOriginalContext)
+	return singleEventDeriveFunc(events.NetPacket, deriveNetPacketArgs())
 }
 
 func deriveNetPacketArgs() deriveArgsFunction {

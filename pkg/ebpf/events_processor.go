@@ -404,6 +404,16 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			}
 		}
 		event.Args[0].Value = hookedFops
+	case events.PrintNetSeqOps, events.PrintSyscallTable:
+		// Initial event - no need to process
+		if event.Timestamp == 0 {
+			return nil
+		}
+		withInvokingContext, err := t.triggerContexts.Apply(*event)
+		if err != nil {
+			return fmt.Errorf("failed to apply invoke context on %s event: %s", event.EventName, err)
+		}
+		event = &withInvokingContext
 	}
 
 	return nil

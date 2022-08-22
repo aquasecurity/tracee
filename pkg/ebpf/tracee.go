@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/aquasecurity/tracee/pkg/events/derive"
 	"io"
 	"io/ioutil"
 	"net"
@@ -19,6 +18,9 @@ import (
 	"strings"
 	"time"
 	"unsafe"
+
+	"github.com/aquasecurity/tracee/pkg/events/derive"
+	"github.com/aquasecurity/tracee/pkg/events/trigger"
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
@@ -203,6 +205,7 @@ type Tracee struct {
 	eventsSorter      *sorting.EventsChronologicalSorter
 	eventDerivations  events.DerivationTable
 	kernelSymbols     *helpers.KernelSymbolTable
+	triggerContexts   trigger.Context
 	running           bool
 }
 
@@ -322,6 +325,9 @@ func New(cfg Config) (*Tracee, error) {
 			t.netInfo.ifacesConfig[netIface.Name] |= events.CaptureIface
 		}
 	}
+
+	t.triggerContexts = trigger.NewContext()
+
 	return t, nil
 }
 
@@ -1132,8 +1138,8 @@ func (t *Tracee) triggerSyscallsIntegrityCheck(event trace.Event) {
 	if !ok {
 		return
 	}
-	eventHandle := derive.StoreEventContext(event)
-	t.triggerSyscallsIntegrityCheckCall(eventHandle)
+	eventHandle := t.triggerContexts.Store(event)
+	t.triggerSyscallsIntegrityCheckCall(uint64(eventHandle))
 }
 
 // triggerSyscallsIntegrityCheck is used by a Uprobe to trigger an eBPF program that prints the syscall table
@@ -1156,8 +1162,8 @@ func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
 		}
 		seqOpsPointers[i] = seqOpsStruct.Address
 	}
-	eventHandle := derive.StoreEventContext(event)
-	t.triggerSeqOpsIntegrityCheckCall(eventHandle, seqOpsPointers)
+	eventHandle := t.triggerContexts.Store(event)
+	t.triggerSeqOpsIntegrityCheckCall(uint64(eventHandle), seqOpsPointers)
 }
 
 // triggerSeqOpsIntegrityCheck is used by a Uprobe to trigger an eBPF program that prints the seq ops pointers
