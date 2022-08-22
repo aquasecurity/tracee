@@ -8,7 +8,7 @@ import (
 
 // NetPacket derives net_packet from net events with 'metadata' arg
 func NetPacket() events.DeriveFunction {
-	return singleEventDeriveFunc(events.NetPacket, deriveNetPacketArgs())
+	return singleEventDeriveFunc(events.NetPacket, deriveNetPacketArgs(), withOriginalContext)
 }
 
 func deriveNetPacketArgs() deriveArgsFunction {

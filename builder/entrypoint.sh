@@ -45,11 +45,6 @@ probe_tracee_ebpf() {
 }
 
 run_tracee_ebpf() {
-    probe_tracee_ebpf
-    if [ ${TRACEE_RET} -eq 2 ]; then
-        return
-    fi
-
     ${TRACEE_EBPF_EXE} $@
     TRACEE_RET=$?
 }
@@ -77,7 +72,9 @@ run_tracee_rules() {
         --cache cache-type=mem \
         --cache mem-cache-size=512 \
         --containers=${CONTAINERS_ENRICHMENT:="0"}\
-        --allow-high-capabilities=${ALLOW_HIGH_CAPABILITIES:="0"}\
+        --caps allow-failed-drop=${ALLOW_HIGH_CAPABILITIES:="0"}\
+        --caps cancel-drop=${CANCEL_CAPS_DROP:="0"}\
+        ${CAPS_TO_PRESERVE:+--caps} ${CAPS_TO_PRESERVE:+ add=$CAPS_TO_PRESERVE}\
         --trace event=${events} \
         --output=out-file:${TRACEE_PIPE} &
     tracee_ebpf_pid=$!

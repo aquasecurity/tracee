@@ -10,7 +10,7 @@ import (
 )
 
 func DetectHookedSyscall(kernelSymbols *helpers.KernelSymbolTable) events.DeriveFunction {
-	return singleEventDeriveFunc(events.HookedSyscalls, deriveDetectHookedSyscallArgs(kernelSymbols))
+	return singleEventDeriveFunc(events.HookedSyscalls, deriveDetectHookedSyscallArgs(kernelSymbols), withInvokingContext)
 }
 
 func deriveDetectHookedSyscallArgs(kernelSymbols *helpers.KernelSymbolTable) deriveArgsFunction {

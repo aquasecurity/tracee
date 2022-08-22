@@ -7,6 +7,7 @@
 [![Test Signatures](https://github.com/aquasecurity/tracee/actions/workflows/test-signatures.yaml/badge.svg)](https://github.com/aquasecurity/tracee/actions/workflows/test-signatures.yaml)
 [![Release Snapshot](https://github.com/aquasecurity/tracee/actions/workflows/release-snapshot.yaml/badge.svg)](https://github.com/aquasecurity/tracee/actions/workflows/release-snapshot.yaml)
 [![OS Packages (DAILY)](https://github.com/aquasecurity/tracee/actions/workflows/test-os-packaging-daily.yaml/badge.svg)](https://github.com/aquasecurity/tracee/actions/workflows/test-os-packaging-daily.yaml)
+[![Tests (DAILY)](https://github.com/aquasecurity/tracee/actions/workflows/test-daily.yaml/badge.svg)](https://github.com/aquasecurity/tracee/actions/workflows/test-daily.yaml)
 
 # Tracee: Runtime Security and Forensics using eBPF
 

@@ -217,6 +217,7 @@ help:
 	@echo "    $$ make bpf-nocore           	# build ./dist/tracee.bpf.XXX.o"
 	@echo "    $$ make tracee-ebpf          	# build ./dist/tracee-ebpf"
 	@echo "    $$ make tracee-rules         	# build ./dist/tracee-rules"
+	@echo "    $$ make tracee-bench         	# build ./dist/tracee-bench"
 	@echo "    $$ make rules                	# build ./dist/rules"
 	@echo ""
 	@echo "# install"
@@ -231,6 +232,7 @@ help:
 	@echo "    $$ make clean-bpf-nocore     	# wipe ./dist/tracee.bpf.XXX.o"
 	@echo "    $$ make clean-tracee-ebpf    	# wipe ./dist/tracee-ebpf"
 	@echo "    $$ make clean-tracee-rules   	# wipe ./dist/tracee-rules"
+	@echo "    $$ make clean-tracee-bench   	# wipe ./dist/tracee-bench"
 	@echo "    $$ make clean-rules          	# wipe ./dist/rules"
 	@echo ""
 	@echo "# test"
@@ -653,6 +655,13 @@ test-rules: \
 #
 	$(CMD_OPA) test $(REGO_SIGNATURES_DIR) --verbose
 
+.PHONY: test-upstream-libbpfgo
+test-upstream-libbpfgo: \
+	.checkver_$(CMD_GO) \
+	$(OUTPUT_DIR)/libbpf/libbpf.a
+#
+	./tests/libbpfgo.sh $(GO_ENV_EBPF)
+
 #
 # code checkers (hidden from help on purpose)
 #
@@ -693,6 +702,34 @@ check-staticcheck: \
 	staticcheck -f stylish \
 		-tags $(GO_TAGS_EBPF) \
 		./...
+
+#
+# tracee-bench
+#
+
+TRACEE_BENCH_SRC_DIRS = ./cmd/tracee-bench/
+TRACEE_BENCH_SRC = $(shell find $(TRACEE_BENCH_SRC_DIRS) \
+		   -type f \
+		   -name '*.go' \
+		   ! -name '*_test.go' \
+		   )
+
+.PHONY: tracee-bench
+tracee-bench: $(OUTPUT_DIR)/tracee-bench
+
+$(OUTPUT_DIR)/tracee-bench: \
+	.checkver_$(CMD_GO) \
+	$(TRACEE_BENCH_SRC) \
+	| $(OUTPUT_DIR)
+#
+	$(CMD_GO) build \
+		-v -o $@ \
+		./cmd/tracee-bench
+
+.PHONY: clean-tracee-bench
+clean-tracee-bench:
+#
+	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-bench
 
 #
 # clean

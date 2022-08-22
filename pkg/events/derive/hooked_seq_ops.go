@@ -8,8 +8,26 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
+// Struct names for the interfaces HookedSeqOpsEventID checks for hooks
+// The show,start,next and stop operation function pointers will be checked for each of those
+var NetSeqOps = [6]string{
+	"tcp4_seq_ops",
+	"tcp6_seq_ops",
+	"udp_seq_ops",
+	"udp6_seq_ops",
+	"raw_seq_ops",
+	"raw6_seq_ops",
+}
+
+var NetSeqOpsFuncs = [4]string{
+	"show",
+	"start",
+	"next",
+	"stop",
+}
+
 func HookedSeqOps(kernelSymbols *helpers.KernelSymbolTable) events.DeriveFunction {
-	return singleEventDeriveFunc(events.HookedSeqOps, deriveHookedSeqOpsArgs(kernelSymbols))
+	return singleEventDeriveFunc(events.HookedSeqOps, deriveHookedSeqOpsArgs(kernelSymbols), withInvokingContext)
 
 }
 
@@ -19,18 +37,20 @@ func deriveHookedSeqOpsArgs(kernelSymbols *helpers.KernelSymbolTable) deriveArgs
 		if err != nil || len(seqOpsArr) < 1 {
 			return nil, err
 		}
-		seqOpsName := utils.ParseSymbol(seqOpsArr[0], kernelSymbols).Name
-		hookedSeqOps := make([]trace.HookedSymbolData, 0)
-		for _, addr := range seqOpsArr[1:] {
+		hookedSeqOps := make(map[string]trace.HookedSymbolData, 0)
+		for i, addr := range seqOpsArr {
 			inTextSegment, err := kernelSymbols.TextSegmentContains(addr)
 			if err != nil {
 				continue
 			}
 			if !inTextSegment {
 				hookingFunction := utils.ParseSymbol(addr, kernelSymbols)
-				hookedSeqOps = append(hookedSeqOps, trace.HookedSymbolData{SymbolName: hookingFunction.Name, ModuleOwner: hookingFunction.Owner})
+				seqOpsStruct := NetSeqOps[i/4]
+				seqOpsFunc := NetSeqOpsFuncs[i%4]
+				hookedSeqOps[seqOpsStruct+"_"+seqOpsFunc] =
+					trace.HookedSymbolData{SymbolName: hookingFunction.Name, ModuleOwner: hookingFunction.Owner}
 			}
 		}
-		return []interface{}{seqOpsName, hookedSeqOps}, nil
+		return []interface{}{hookedSeqOps}, nil
 	}
 }

@@ -9,18 +9,25 @@ import (
 	"strings"
 )
 
-func SymbolsLoaded(soLoader sharedobjs.DynamicSymbolsLoader, watchedSymbols []string, whitelistedLibsPrefixes []string) events.DeriveFunction {
-	gen := initSymbolsLoadedEventGenerator(soLoader, watchedSymbols, whitelistedLibsPrefixes)
-	return singleEventDeriveFunc(events.SymbolsLoaded, gen.deriveArgs)
+func SymbolsLoaded(soLoader sharedobjs.DynamicSymbolsLoader, watchedSymbols []string, whitelistedLibsPrefixes []string, isDebug bool) events.DeriveFunction {
+	gen := initSymbolsLoadedEventGenerator(soLoader, watchedSymbols, whitelistedLibsPrefixes, isDebug)
+	return singleEventDeriveFunc(events.SymbolsLoaded, gen.deriveArgs, withOriginalContext)
 }
 
 // Most specific paths should be at the top, to prevent bugs with iterations over the list
 var knownLibrariesDirs = []string{
-	"/usr/lib/x86_64-linux-gnu/",
 	"/usr/lib64/",
 	"/usr/lib/",
 	"/lib64/",
 	"/lib/",
+}
+
+var knownArchitectureDirs = []string{
+	"x86_64-linux-gnu",
+	"aarch64-linux-gnu",
+	"i386-linux-gnu",
+	"i686-linux-gnu",
+	"", // non-specific architecture dir
 }
 
 // symbolsLoadedEventGenerator is responsible of generating event if shared object loaded to a process
@@ -30,12 +37,15 @@ type symbolsLoadedEventGenerator struct {
 	watchedSymbols      map[string]bool
 	pathPrefixWhitelist []string
 	librariesWhitelist  []string
+	isDebug             bool
+	returnedErrors      map[string]bool
 }
 
 func initSymbolsLoadedEventGenerator(
 	soLoader sharedobjs.DynamicSymbolsLoader,
 	watchedSymbols []string,
-	whitelistedLibsPrefixes []string) *symbolsLoadedEventGenerator {
+	whitelistedLibsPrefixes []string,
+	isDebug bool) *symbolsLoadedEventGenerator {
 	watchedSymbolsMap := make(map[string]bool)
 	for _, sym := range watchedSymbols {
 		watchedSymbolsMap[sym] = true
@@ -53,6 +63,8 @@ func initSymbolsLoadedEventGenerator(
 		watchedSymbols:      watchedSymbolsMap,
 		pathPrefixWhitelist: prefixes,
 		librariesWhitelist:  libraries,
+		isDebug:             isDebug,
+		returnedErrors:      make(map[string]bool),
 	}
 }
 
@@ -68,7 +80,17 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(event trace.Event)
 
 	soSyms, err := symbsLoadedGen.soLoader.GetExportedSymbols(loadingObjectInfo)
 	if err != nil {
-		return nil, err
+		_, ok := symbsLoadedGen.returnedErrors[err.Error()]
+		if !ok {
+			symbsLoadedGen.returnedErrors[err.Error()] = true
+			return nil, err
+		}
+		// This error happens frequently in some environments, so we need to silence it to reduce spam.
+		if symbsLoadedGen.isDebug {
+			return nil, err
+		} else {
+			return nil, nil
+		}
 	}
 
 	var exportedWatchSymbols []string
@@ -98,9 +120,15 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) isWhitelist(soPath string) bo
 	if len(symbsLoadedGen.librariesWhitelist) > 0 {
 		for _, libsDirectory := range knownLibrariesDirs {
 			if strings.HasPrefix(soPath, libsDirectory) {
-				for _, wlLib := range symbsLoadedGen.librariesWhitelist {
-					if strings.HasPrefix(soPath, path.Join(libsDirectory, wlLib)) {
-						return true
+				for _, archDir := range knownArchitectureDirs {
+					archLibDir := path.Join(libsDirectory, archDir)
+					if strings.HasPrefix(soPath, archLibDir) {
+						for _, wlLib := range symbsLoadedGen.librariesWhitelist {
+							if strings.HasPrefix(soPath, path.Join(archLibDir, wlLib)) {
+								return true
+							}
+						}
+						break
 					}
 				}
 				break

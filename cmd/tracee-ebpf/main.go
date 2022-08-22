@@ -29,10 +29,6 @@ var enrich bool
 
 var version string
 
-const (
-	allowHighCapabilitiesFlag = "allow-high-capabilities"
-)
-
 func main() {
 	app := &cli.App{
 		Name:    "Tracee",
@@ -147,8 +143,18 @@ func main() {
 			printerConfig.ContainerMode = containerMode
 			cfg.Output = &output
 
+			capsCfgSlice := c.StringSlice("caps")
+			if checkCommandIsHelp(capsCfgSlice) {
+				fmt.Print(flags.CapabilitiesHelp())
+				return nil
+			}
+			capsCfg, err := flags.PrepareCapsConfig(capsCfgSlice)
+			if err != nil {
+				return err
+			}
+
 			// environment capabilities
-			err = ensureCapabilities(OSInfo, &cfg, c.Bool(allowHighCapabilitiesFlag))
+			err = ensureCapabilities(OSInfo, &cfg, &capsCfg)
 			if err != nil {
 				return err
 			}
@@ -352,11 +358,10 @@ func main() {
 				Usage:       "enable container info enrichment to events. this feature is experimental and may cause unexpected behavior in the pipeline",
 				Destination: &enrich,
 			},
-			&cli.BoolFlag{
-				Name:    allowHighCapabilitiesFlag,
-				Aliases: []string{"ahc"},
-				Usage:   "allow tracee-ebpf to run with high capabilities, in case that capabilities dropping fails",
-				Value:   false,
+			&cli.StringSliceFlag{
+				Name:  flags.CapsMainFlag,
+				Usage: fmt.Sprintf("control tracee capabilities dropping functionality. Run '--%s help' for more info", flags.CapsMainFlag),
+				Value: cli.NewStringSlice(),
 			},
 		},
 	}

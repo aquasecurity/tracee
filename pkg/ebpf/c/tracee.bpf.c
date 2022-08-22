@@ -82,7 +82,8 @@
 #define MAX_STR_FILTER_SIZE 16        // bounded to size of the compared values (comm)
 #define FILE_MAGIC_HDR_SIZE 32        // magic_write: bytes to save from a file's header
 #define FILE_MAGIC_MASK     31        // magic_write: mask used for verifier boundaries
-#define NET_SEQ_OPS_SIZE    4         // print_net_seq_ops: struct size
+#define NET_SEQ_OPS_SIZE    4 // print_net_seq_ops: struct size - TODO: replace with uprobe argument
+#define NET_SEQ_OPS_TYPES   6 // print_net_seq_ops: argument size - TODO: replace with uprobe argument
 #define MAX_KSYM_NAME_SIZE  64
 
 enum buf_idx_e
@@ -146,47 +147,220 @@ enum argument_type_e
 #define UNDEFINED_SYSCALL 1000
 
 #if defined(bpf_target_x86)
-    #define SYS_MMAP         9
-    #define SYS_MPROTECT     10
-    #define SYS_RT_SIGRETURN 15
-    #define SYS_EXECVE       59
-    #define SYS_EXIT         60
-    #define SYS_EXIT_GROUP   231
-    #define SYS_EXECVEAT     322
-    #define SYSCALL_CONNECT  42
-    #define SYSCALL_ACCEPT   43
-    #define SYSCALL_ACCEPT4  288
-    #define SYSCALL_LISTEN   50
-    #define SYSCALL_BIND     49
-    #define SYSCALL_SOCKET   41
-    #define SYSC_SETSOCKOPT  54
-    #define SYS_DUP          32
-    #define SYS_DUP2         33
-    #define SYS_DUP3         292
-    #define SYS_OPEN         2
-    #define SYS_OPENAT       257
-    #define SYS_OPENAT2      437
+    #define SYSCALL_READ                   0
+    #define SYSCALL_WRITE                  1
+    #define SYSCALL_OPEN                   2
+    #define SYSCALL_CLOSE                  3
+    #define SYSCALL_FSTAT                  5
+    #define SYSCALL_LSEEK                  8
+    #define SYSCALL_MMAP                   9
+    #define SYSCALL_MPROTECT               10
+    #define SYSCALL_RT_SIGRETURN           15
+    #define SYSCALL_IOCTL                  16
+    #define SYSCALL_PREAD64                17
+    #define SYSCALL_PWRITE64               18
+    #define SYSCALL_READV                  19
+    #define SYSCALL_WRITEV                 20
+    #define SYSCALL_DUP                    32
+    #define SYSCALL_DUP2                   33
+    #define SYSCALL_SOCKET                 41
+    #define SYSCALL_CONNECT                42
+    #define SYSCALL_ACCEPT                 43
+    #define SYSCALL_SENDTO                 44
+    #define SYSCALL_RECVFROM               45
+    #define SYSCALL_SENDMSG                46
+    #define SYSCALL_RECVMSG                47
+    #define SYSCALL_SHUTDOWN               48
+    #define SYSCALL_BIND                   49
+    #define SYSCALL_LISTEN                 50
+    #define SYSCALL_GETSOCKNAME            51
+    #define SYSCALL_GETPEERNAME            52
+    #define SYSCALL_SETSOCKOPT             54
+    #define SYSCALL_GETSOCKOPT             55
+    #define SYSCALL_EXECVE                 59
+    #define SYSCALL_EXIT                   60
+    #define SYSCALL_FCNTL                  72
+    #define SYSCALL_FLOCK                  73
+    #define SYSCALL_FSYNC                  74
+    #define SYSCALL_FDATASYNC              75
+    #define SYSCALL_FTRUNCATE              77
+    #define SYSCALL_GETDENTS               78
+    #define SYSCALL_FCHDIR                 81
+    #define SYSCALL_FCHMOD                 91
+    #define SYSCALL_FCHOWN                 93
+    #define SYSCALL_FSTATFS                138
+    #define SYSCALL_READAHEAD              187
+    #define SYSCALL_FSETXATTR              190
+    #define SYSCALL_FGETXATTR              193
+    #define SYSCALL_FLISTXATTR             196
+    #define SYSCALL_FREMOVEXATTR           199
+    #define SYSCALL_GETDENTS64             217
+    #define SYSCALL_FADVISE64              221
+    #define SYSCALL_EXIT_GROUP             231
+    #define SYSCALL_EPOLL_WAIT             232
+    #define SYSCALL_EPOLL_CTL              233
+    #define SYSCALL_INOTIFY_ADD_WATCH      254
+    #define SYSCALL_INOTIFY_RM_WATCH       255
+    #define SYSCALL_OPENAT                 257
+    #define SYSCALL_MKDIRAT                258
+    #define SYSCALL_MKNODAT                259
+    #define SYSCALL_FCHOWNAT               260
+    #define SYSCALL_FUTIMESAT              261
+    #define SYSCALL_NEWFSTATAT             262
+    #define SYSCALL_UNLINKAT               263
+    #define SYSCALL_SYMLINKAT              266
+    #define SYSCALL_READLINKAT             267
+    #define SYSCALL_FCHMODAT               268
+    #define SYSCALL_FACCESSAT              269
+    #define SYSCALL_SYNC_FILE_RANGE        277
+    #define SYSCALL_VMSPLICE               278
+    #define SYSCALL_UTIMENSAT              280
+    #define SYSCALL_EPOLL_PWAIT            281
+    #define SYSCALL_SIGNALFD               282
+    #define SYSCALL_FALLOCATE              285
+    #define SYSCALL_TIMERFD_SETTIME        286
+    #define SYSCALL_TIMERFD_GETTIME        287
+    #define SYSCALL_ACCEPT4                288
+    #define SYSCALL_SIGNALFD4              289
+    #define SYSCALL_DUP3                   292
+    #define SYSCALL_PREADV                 295
+    #define SYSCALL_PWRITEV                296
+    #define SYSCALL_PERF_EVENT_OPEN        298
+    #define SYSCALL_RECVMMSG               299
+    #define SYSCALL_NAME_TO_HANDLE_AT      303
+    #define SYSCALL_OPEN_BY_HANDLE_AT      304
+    #define SYSCALL_SYNCFS                 306
+    #define SYSCALL_SENDMMSG               307
+    #define SYSCALL_SETNS                  308
+    #define SYSCALL_FINIT_MODULE           313
+    #define SYSCALL_EXECVEAT               322
+    #define SYSCALL_PREADV2                327
+    #define SYSCALL_PWRITEV2               328
+    #define SYSCALL_STATX                  332
+    #define SYSCALL_PIDFD_SEND_SIGNAL      424
+    #define SYSCALL_IO_URING_ENTER         426
+    #define SYSCALL_IO_URING_REGISTER      427
+    #define SYSCALL_OPEN_TREE              428
+    #define SYSCALL_FSCONFIG               431
+    #define SYSCALL_FSMOUNT                432
+    #define SYSCALL_FSPICK                 433
+    #define SYSCALL_OPENAT2                437
+    #define SYSCALL_FACCESSAT2             439
+    #define SYSCALL_PROCESS_MADVISE        440
+    #define SYSCALL_EPOLL_PWAIT2           441
+    #define SYSCALL_MOUNT_SETATTR          442
+    #define SYSCALL_QUOTACTL_FD            443
+    #define SYSCALL_LANDLOCK_ADD_RULE      445
+    #define SYSCALL_LANDLOCK_RESTRICT_SELF 446
+    #define SYSCALL_PROCESS_MRELEASE       448
+
 #elif defined(bpf_target_arm64)
-    #define SYS_MMAP         222
-    #define SYS_MPROTECT     226
-    #define SYS_RT_SIGRETURN 139
-    #define SYS_EXECVE       221
-    #define SYS_EXIT         93
-    #define SYS_EXIT_GROUP   94
-    #define SYS_EXECVEAT     281
-    #define SYSCALL_CONNECT  203
-    #define SYSCALL_ACCEPT   202
-    #define SYSCALL_ACCEPT4  242
-    #define SYSCALL_LISTEN   201
-    #define SYSCALL_BIND     200
-    #define SYSCALL_SOCKET   198
-    #define SYSC_SETSOCKOPT  208
-    #define SYS_DUP          23
-    #define SYS_DUP2         UNDEFINED_SYSCALL
-    #define SYS_DUP3         24
-    #define SYS_OPEN         UNDEFINED_SYSCALL
-    #define SYS_OPENAT       56
-    #define SYS_OPENAT2      437
+    #define SYSCALL_READ                   63
+    #define SYSCALL_WRITE                  64
+    #define SYSCALL_OPEN                   UNDEFINED_SYSCALL
+    #define SYSCALL_CLOSE                  57
+    #define SYSCALL_FSTAT                  80
+    #define SYSCALL_LSEEK                  62
+    #define SYSCALL_MMAP                   222
+    #define SYSCALL_MPROTECT               226
+    #define SYSCALL_RT_SIGRETURN           139
+    #define SYSCALL_IOCTL                  29
+    #define SYSCALL_PREAD64                67
+    #define SYSCALL_PWRITE64               68
+    #define SYSCALL_READV                  65
+    #define SYSCALL_WRITEV                 66
+    #define SYSCALL_DUP                    23
+    #define SYSCALL_DUP2                   UNDEFINED_SYSCALL
+    #define SYSCALL_SOCKET                 198
+    #define SYSCALL_CONNECT                203
+    #define SYSCALL_ACCEPT                 202
+    #define SYSCALL_SENDTO                 206
+    #define SYSCALL_RECVFROM               207
+    #define SYSCALL_SENDMSG                211
+    #define SYSCALL_RECVMSG                212
+    #define SYSCALL_SHUTDOWN               210
+    #define SYSCALL_BIND                   200
+    #define SYSCALL_LISTEN                 201
+    #define SYSCALL_GETSOCKNAME            204
+    #define SYSCALL_GETPEERNAME            205
+    #define SYSCALL_SETSOCKOPT             208
+    #define SYSCALL_GETSOCKOPT             209
+    #define SYSCALL_EXECVE                 221
+    #define SYSCALL_EXIT                   93
+    #define SYSCALL_FCNTL                  25
+    #define SYSCALL_FLOCK                  32
+    #define SYSCALL_FSYNC                  82
+    #define SYSCALL_FDATASYNC              83
+    #define SYSCALL_FTRUNCATE              46
+    #define SYSCALL_GETDENTS               UNDEFINED_SYSCALL
+    #define SYSCALL_FCHDIR                 50
+    #define SYSCALL_FCHMOD                 52
+    #define SYSCALL_FCHOWN                 55
+    #define SYSCALL_FSTATFS                44
+    #define SYSCALL_READAHEAD              213
+    #define SYSCALL_FSETXATTR              7
+    #define SYSCALL_FGETXATTR              10
+    #define SYSCALL_FLISTXATTR             13
+    #define SYSCALL_FREMOVEXATTR           16
+    #define SYSCALL_GETDENTS64             61
+    #define SYSCALL_FADVISE64              223
+    #define SYSCALL_EXIT_GROUP             94
+    #define SYSCALL_EPOLL_WAIT             UNDEFINED_SYSCALL
+    #define SYSCALL_EPOLL_CTL              21
+    #define SYSCALL_INOTIFY_ADD_WATCH      27
+    #define SYSCALL_INOTIFY_RM_WATCH       28
+    #define SYSCALL_OPENAT                 56
+    #define SYSCALL_MKDIRAT                34
+    #define SYSCALL_MKNODAT                33
+    #define SYSCALL_FCHOWNAT               54
+    #define SYSCALL_FUTIMESAT              UNDEFINED_SYSCALL
+    #define SYSCALL_NEWFSTATAT             UNDEFINED_SYSCALL
+    #define SYSCALL_UNLINKAT               35
+    #define SYSCALL_SYMLINKAT              36
+    #define SYSCALL_READLINKAT             78
+    #define SYSCALL_FCHMODAT               53
+    #define SYSCALL_FACCESSAT              48
+    #define SYSCALL_SYNC_FILE_RANGE        84
+    #define SYSCALL_VMSPLICE               75
+    #define SYSCALL_UTIMENSAT              88
+    #define SYSCALL_EPOLL_PWAIT            22
+    #define SYSCALL_SIGNALFD               UNDEFINED_SYSCALL
+    #define SYSCALL_FALLOCATE              47
+    #define SYSCALL_TIMERFD_SETTIME        86
+    #define SYSCALL_TIMERFD_GETTIME        87
+    #define SYSCALL_ACCEPT4                242
+    #define SYSCALL_SIGNALFD4              74
+    #define SYSCALL_DUP3                   24
+    #define SYSCALL_PREADV                 69
+    #define SYSCALL_PWRITEV                70
+    #define SYSCALL_PERF_EVENT_OPEN        241
+    #define SYSCALL_RECVMMSG               243
+    #define SYSCALL_NAME_TO_HANDLE_AT      264
+    #define SYSCALL_OPEN_BY_HANDLE_AT      265
+    #define SYSCALL_SYNCFS                 267
+    #define SYSCALL_SENDMMSG               269
+    #define SYSCALL_SETNS                  268
+    #define SYSCALL_FINIT_MODULE           273
+    #define SYSCALL_EXECVEAT               281
+    #define SYSCALL_PREADV2                286
+    #define SYSCALL_PWRITEV2               287
+    #define SYSCALL_STATX                  291
+    #define SYSCALL_PIDFD_SEND_SIGNAL      424
+    #define SYSCALL_IO_URING_ENTER         426
+    #define SYSCALL_IO_URING_REGISTER      427
+    #define SYSCALL_OPEN_TREE              428
+    #define SYSCALL_FSCONFIG               431
+    #define SYSCALL_FSMOUNT                432
+    #define SYSCALL_FSPICK                 433
+    #define SYSCALL_OPENAT2                437
+    #define SYSCALL_FACCESSAT2             439
+    #define SYSCALL_PROCESS_MADVISE        440
+    #define SYSCALL_EPOLL_PWAIT2           441
+    #define SYSCALL_MOUNT_SETATTR          442
+    #define SYSCALL_QUOTACTL_FD            443
+    #define SYSCALL_LANDLOCK_ADD_RULE      445
+    #define SYSCALL_LANDLOCK_RESTRICT_SELF 446
+    #define SYSCALL_PROCESS_MRELEASE       448
 #endif
 
 enum event_id_e
@@ -267,15 +441,16 @@ enum event_id_e
 #define CAPTURE_IFACE (1 << 0)
 #define TRACE_IFACE   (1 << 1)
 
-#define OPT_SHOW_SYSCALL         (1 << 0)
-#define OPT_EXEC_ENV             (1 << 1)
-#define OPT_CAPTURE_FILES        (1 << 2)
-#define OPT_EXTRACT_DYN_CODE     (1 << 3)
-#define OPT_CAPTURE_STACK_TRACES (1 << 4)
-#define OPT_DEBUG_NET            (1 << 5)
-#define OPT_CAPTURE_MODULES      (1 << 6)
-#define OPT_CGROUP_V1            (1 << 7)
-#define OPT_PROCESS_INFO         (1 << 8)
+#define OPT_SHOW_SYSCALL          (1 << 0)
+#define OPT_EXEC_ENV              (1 << 1)
+#define OPT_CAPTURE_FILES         (1 << 2)
+#define OPT_EXTRACT_DYN_CODE      (1 << 3)
+#define OPT_CAPTURE_STACK_TRACES  (1 << 4)
+#define OPT_DEBUG_NET             (1 << 5)
+#define OPT_CAPTURE_MODULES       (1 << 6)
+#define OPT_CGROUP_V1             (1 << 7)
+#define OPT_PROCESS_INFO          (1 << 8)
+#define OPT_TRANSLATE_FD_FILEPATH (1 << 9)
 
 #define FILTER_UID_ENABLED       (1 << 0)
 #define FILTER_UID_OUT           (1 << 1)
@@ -309,9 +484,15 @@ enum event_id_e
 #define CONT_ID_LEN          12
 #define CONT_ID_MIN_FULL_LEN 64
 
+enum context_flags_e
+{
+    CONTAINER_STARTED_FLAG = (1 << 0)
+};
+
 enum container_state_e
 {
-    CONTAINER_EXISTED = 1, // container existed before tracee was started
+    CONTAINER_UNKNOWN = 0, // mark that container state is unknown
+    CONTAINER_EXISTED,     // container existed before tracee was started
     CONTAINER_CREATED,     // new cgroup path created
     CONTAINER_STARTED      // a process in the cgroup executed a new binary
 };
@@ -341,10 +522,13 @@ enum container_state_e
     #define MAX_BIN_CHUNKS        110
 #endif
 
-#define IOCTL_FETCH_SYSCALLS            (1 << 0) // bit wise flags
-#define IOCTL_HOOKED_SEQ_OPS            (1 << 1)
-#define NUMBER_OF_SYSCALLS_TO_CHECK_X86 18
-#define NUMBER_OF_SYSCALLS_TO_CHECK_ARM 14
+#if defined(bpf_target_x86)
+    #define NUMBER_OF_SYSCALLS_TO_CHECK 18
+#elif defined(bpf_target_arm64)
+    #define NUMBER_OF_SYSCALLS_TO_CHECK 14
+#else
+    #define NUMBER_OF_SYSCALLS_TO_CHECK 0
+#endif
 
 #define MAX_CACHED_PATH_SIZE 64
 
@@ -475,7 +659,7 @@ typedef struct task_context {
     u32 pid_id;
     char comm[TASK_COMM_LEN];
     char uts_name[TASK_COMM_LEN];
-    u32 padding;
+    u32 flags;
 } task_context_t;
 
 typedef struct event_context {
@@ -500,6 +684,16 @@ typedef struct syscall_data {
     unsigned long ret; // Syscall ret val. May be used by syscall exit tail calls.
 } syscall_data_t;
 
+typedef struct fd_arg_task {
+    u32 pid;
+    u32 tid;
+    int fd;
+} fd_arg_task_t;
+
+typedef struct fd_arg_path {
+    char path[MAX_CACHED_PATH_SIZE];
+} fd_arg_path_t;
+
 typedef struct task_info {
     task_context_t context;
     syscall_data_t syscall_data;
@@ -508,6 +702,7 @@ typedef struct task_info {
     bool new_task;        // set if this task was started after tracee. Used with new_pid filter
     bool follow;          // set if this task was traced before. Used with the follow filter
     int should_trace;     // last decision of should_trace()
+    u8 container_state;   // the state of the container the task resides in
 } task_info_t;
 
 typedef struct bin_args {
@@ -701,39 +896,37 @@ struct kprobe {
 // EBPF MAPS DECLARATIONS --------------------------------------------------------------------------
 
 // clang-format off
-
-BPF_HASH(kconfig_map, u32, u32, 10240);                 // kernel config variables
-BPF_HASH(interpreter_map, u32, file_info_t, 10240);       // interpreter file used for each process
-BPF_HASH(containers_map, u32, u8, 10240);               // map cgroup id to container status {EXISTED, CREATED, STARTED}
-BPF_HASH(args_map, u64, args_t, 1024);                  // persist args between function entry and return
-BPF_HASH(uid_filter, u32, u32, 256);                    // filter events by UID, for specific UIDs either by == or !=
-BPF_HASH(pid_filter, u32, u32, 256);                    // filter events by PID
-BPF_HASH(mnt_ns_filter, u64, u32, 256);                 // filter events by mount namespace id
-BPF_HASH(pid_ns_filter, u64, u32, 256);                 // filter events by pid namespace id
-BPF_HASH(uts_ns_filter, string_filter_t, u32, 256);     // filter events by uts namespace name
-BPF_HASH(comm_filter, string_filter_t, u32, 256);       // filter events by command name
-BPF_HASH(cgroup_id_filter, u32, u32, 256);              // filter events by cgroup id
-BPF_HASH(bin_args_map, u64, bin_args_t, 256);           // persist args for send_bin funtion
-BPF_HASH(sys_32_to_64_map, u32, u32, 1024);             // map 32bit to 64bit syscalls
-BPF_HASH(params_types_map, u32, u64, 1024);             // encoded parameters types for event
-BPF_HASH(process_tree_map, u32, u32, 10240);            // filter events by the ancestry of the traced process
-BPF_LRU_HASH(task_info_map, u32, task_info_t, 10240);   // holds data for every task
-BPF_HASH(network_config, u32, int, 1024);               // holds the network config for each iface
-BPF_HASH(ksymbols_map, ksym_name_t, u64, 1024);         // holds the addresses of some kernel symbols
-BPF_HASH(syscalls_to_check_map, int, u64, 256);         // syscalls to discover
-BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t, 10240);  // socket address to process context
-BPF_LRU_HASH(network_map, net_id_t, net_ctx_t, 10240);  // network identifier to process context
-BPF_ARRAY(config_map, config_entry_t, 1);               // various configurations
-BPF_ARRAY(file_filter, path_filter_t, 3);               // filter vfs_write events
-BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);             // percpu global buffer variables
-BPF_PERCPU_ARRAY(bufs_off, u32, MAX_BUFFERS);           // holds offsets to bufs respectively
-BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);              // store programs for tail calls
-BPF_PROG_ARRAY(prog_array_tp, MAX_TAIL_CALL);           // store programs for tail calls
-BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);          // store programs for tail calls
-BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID);           // store programs for tail calls
-BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);  // store stack traces
-BPF_HASH(module_init_map, u32, kmod_data_t, 256);       // holds module information between
-
+BPF_HASH(kconfig_map, u32, u32, 10240);                            // kernel config variables
+BPF_HASH(interpreter_map, u32, file_info_t, 10240);                // interpreter file used for each process
+BPF_HASH(containers_map, u32, u8, 10240);                          // map cgroup id to container status {EXISTED, CREATED, STARTED}
+BPF_HASH(args_map, u64, args_t, 1024);                             // persist args between function entry and return
+BPF_HASH(uid_filter, u32, u32, 256);                               // filter events by UID, for specific UIDs either by == or !=
+BPF_HASH(pid_filter, u32, u32, 256);                               // filter events by PID
+BPF_HASH(mnt_ns_filter, u64, u32, 256);                            // filter events by mount namespace id
+BPF_HASH(pid_ns_filter, u64, u32, 256);                            // filter events by pid namespace id
+BPF_HASH(uts_ns_filter, string_filter_t, u32, 256);                // filter events by uts namespace name
+BPF_HASH(comm_filter, string_filter_t, u32, 256);                  // filter events by command name
+BPF_HASH(cgroup_id_filter, u32, u32, 256);                         // filter events by cgroup id
+BPF_HASH(bin_args_map, u64, bin_args_t, 256);                      // persist args for send_bin funtion
+BPF_HASH(sys_32_to_64_map, u32, u32, 1024);                        // map 32bit to 64bit syscalls
+BPF_HASH(params_types_map, u32, u64, 1024);                        // encoded parameters types for event
+BPF_HASH(process_tree_map, u32, u32, 10240);                       // filter events by the ancestry of the traced process
+BPF_LRU_HASH(task_info_map, u32, task_info_t, 10240);              // holds data for every task
+BPF_HASH(network_config, u32, int, 1024);                          // holds the network config for each iface
+BPF_HASH(ksymbols_map, ksym_name_t, u64, 1024);                    // holds the addresses of some kernel symbols
+BPF_HASH(syscalls_to_check_map, int, u64, 256);                    // syscalls to discover
+BPF_LRU_HASH(sock_ctx_map, u64, net_ctx_ext_t, 10240);             // socket address to process context
+BPF_LRU_HASH(network_map, net_id_t, net_ctx_t, 10240);             // network identifier to process context
+BPF_ARRAY(config_map, config_entry_t, 1);                          // various configurations
+BPF_ARRAY(file_filter, path_filter_t, 3);                          // filter vfs_write events
+BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);                        // percpu global buffer variables
+BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);                         // store programs for tail calls
+BPF_PROG_ARRAY(prog_array_tp, MAX_TAIL_CALL);                      // store programs for tail calls
+BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);                     // store programs for tail calls
+BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID);                      // store programs for tail calls
+BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);             // store stack traces
+BPF_HASH(module_init_map, u32, kmod_data_t, 256);                  // holds module information between
+BPF_LRU_HASH(fd_arg_path_map, fd_arg_task_t, fd_arg_path_t, 1024); // store fds paths by task
 // clang-format on
 
 // EBPF PERF BUFFERS -------------------------------------------------------------------------------
@@ -1382,6 +1575,7 @@ init_context(event_context_t *context, struct task_struct *task, u32 options)
     context->task.mnt_id = get_task_mnt_ns_id(task);
     context->task.pid_id = get_task_pid_ns_id(task);
     context->task.uid = bpf_get_current_uid_gid();
+    context->task.flags = 0;
     bpf_get_current_comm(&context->task.comm, sizeof(context->task.comm));
     char *uts_name = get_task_uts_name(task);
     if (uts_name)
@@ -1428,11 +1622,13 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
     if (data->task_info == NULL) {
         return 0;
     }
+    bool container_lookup_required = true;
     if (!exist) {
         data->task_info->syscall_traced = false;
         data->task_info->new_task = false;
         data->task_info->follow = false;
         data->task_info->recompute_scope = true;
+        data->task_info->container_state = CONTAINER_UNKNOWN;
     } else {
         // check if we need to recompute scope due to context change
         task_context_t *old_context = &data->task_info->context;
@@ -1446,6 +1642,24 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
             *(u64 *) old_context->uts_name != *(u64 *) new_context->uts_name ||
             *(u64 *) &old_context->uts_name[8] != *(u64 *) &new_context->uts_name[8])
             data->task_info->recompute_scope = true;
+
+        // If task is already part of a container, there is no need to check if state changed
+        if (data->task_info->container_state == CONTAINER_STARTED ||
+            data->task_info->container_state == CONTAINER_EXISTED) {
+            data->context.task.flags |= CONTAINER_STARTED_FLAG;
+            container_lookup_required = false;
+        }
+    }
+
+    if (container_lookup_required) {
+        u32 cgroup_id_lsb = data->context.task.cgroup_id;
+        u8 *state = bpf_map_lookup_elem(&containers_map, &cgroup_id_lsb);
+        if (state != NULL) {
+            data->task_info->container_state = *state;
+            if (*state == CONTAINER_STARTED || *state == CONTAINER_EXISTED) {
+                data->context.task.flags |= CONTAINER_STARTED_FLAG;
+            }
+        }
     }
 
     // update task_info with the new context
@@ -1504,8 +1718,8 @@ static __always_inline int do_should_trace(event_data_t *data)
     if (config & FILTER_CONT_ENABLED) {
         bool is_container = false;
         u32 cgroup_id_lsb = context->cgroup_id;
-        u8 *state = bpf_map_lookup_elem(&containers_map, &cgroup_id_lsb);
-        if ((state != NULL) && (*state != CONTAINER_CREATED))
+        u8 state = data->task_info->container_state;
+        if (state == CONTAINER_STARTED || state == CONTAINER_EXISTED)
             is_container = true;
         bool filter_out = (config & FILTER_CONT_OUT) == FILTER_CONT_OUT;
         if (!bool_filter_matches(filter_out, is_container))
@@ -1515,8 +1729,7 @@ static __always_inline int do_should_trace(event_data_t *data)
     if (config & FILTER_NEW_CONT_ENABLED) {
         bool is_new_container = false;
         u32 cgroup_id_lsb = context->cgroup_id;
-        u8 *state = bpf_map_lookup_elem(&containers_map, &cgroup_id_lsb);
-        if ((state != NULL) && (*state == CONTAINER_STARTED))
+        if (data->task_info->container_state == CONTAINER_STARTED)
             is_new_container = true;
         bool filter_out = (config & FILTER_NEW_CONT_OUT) == FILTER_NEW_CONT_OUT;
         if (!bool_filter_matches(filter_out, is_new_container))
@@ -1615,16 +1828,6 @@ static __always_inline int should_submit(u32 event_id, config_entry_t *config)
 static __always_inline buf_t *get_buf(int idx)
 {
     return bpf_map_lookup_elem(&bufs, &idx);
-}
-
-static __always_inline void set_buf_off(int buf_idx, u32 new_off)
-{
-    bpf_map_update_elem(&bufs_off, &buf_idx, &new_off, BPF_ANY);
-}
-
-static __always_inline u32 *get_buf_off(int buf_idx)
-{
-    return bpf_map_lookup_elem(&bufs_off, &buf_idx);
 }
 
 // The biggest element that can be saved with this function should be defined here
@@ -1726,50 +1929,47 @@ static __always_inline int save_str_to_buf(event_data_t *data, void *ptr, u8 ind
 }
 
 static __always_inline int
+add_u64_elements_to_buf(event_data_t *data, const u64 __user *ptr, int len, volatile u32 count_off)
+{
+    u8 elem_num = 0;
+#pragma unroll
+    for (int i = 0; i < len; i++) {
+        void *addr = &(data->submit_p->buf[data->buf_off]);
+        if (data->buf_off > MAX_PERCPU_BUFSIZE - sizeof(u64))
+            // not enough space - return
+            goto out;
+        if (bpf_probe_read(addr, sizeof(u64), (void *) &ptr[i]) != 0)
+            goto out;
+        elem_num++;
+        data->buf_off += sizeof(u64);
+    }
+out:
+    // save number of elements in the array
+    if (count_off > (MAX_PERCPU_BUFSIZE - 1))
+        return 0;
+    if (count_off < 0)
+        return 0;
+    u8 current_elem_num = data->submit_p->buf[count_off & (MAX_PERCPU_BUFSIZE - 1)];
+    data->submit_p->buf[count_off & (MAX_PERCPU_BUFSIZE - 1)] = current_elem_num + elem_num;
+
+    return 1;
+}
+
+static __always_inline int
 save_u64_arr_to_buf(event_data_t *data, const u64 __user *ptr, int len, u8 index)
 {
-    // Data saved to submit buf: [index][u64 count][u64 1][u64 2][u64 3]...
-    u8 elem_num = 0;
+    // Data saved to submit buf: [index][u8 count][u64 1][u64 2][u64 3]...
     // Save argument index
     data->submit_p->buf[(data->buf_off) & (MAX_PERCPU_BUFSIZE - 1)] = index;
 
     // Save space for number of elements (1 byte)
-    u32 orig_off = data->buf_off + 1;
-    data->buf_off += 2;
-
-#pragma unroll
-    for (int i = 0; i < len; i++) {
-        u64 element = 0;
-        int err = bpf_probe_read(&element, sizeof(u64), &ptr[i]);
-        if (err != 0)
-            goto out;
-        if (data->buf_off > MAX_PERCPU_BUFSIZE - sizeof(u64))
-            // not enough space - return
-            goto out;
-
-        void *addr = &(data->submit_p->buf[data->buf_off]);
-        int sz = bpf_probe_read(addr, sizeof(u64), (void *) &element);
-        if (sz == 0) {
-            elem_num++;
-            if (data->buf_off > MAX_PERCPU_BUFSIZE)
-                // Satisfy validator
-                goto out;
-
-            data->buf_off += sizeof(u64);
-            continue;
-        } else {
-            goto out;
-        }
-    }
-
-    goto out;
-
-out:
-    // save number of elements in the array
-    data->submit_p->buf[orig_off & (MAX_PERCPU_BUFSIZE - 1)] = elem_num;
+    data->buf_off += 1;
+    volatile u32 orig_off = data->buf_off;
+    data->submit_p->buf[(data->buf_off) & (MAX_PERCPU_BUFSIZE - 1)] = 0;
+    data->buf_off += 1;
     data->context.argnum++;
 
-    return 1;
+    return add_u64_elements_to_buf(data, ptr, len, orig_off);
 }
 
 static __always_inline int
@@ -2010,7 +2210,6 @@ static __always_inline void *get_path_str(struct path *path)
         bpf_probe_read(&(string_p->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1]), 1, &zero);
     }
 
-    set_buf_off(STRING_BUF_IDX, buf_off);
     return &string_p->buf[buf_off];
 }
 
@@ -2068,7 +2267,6 @@ static __always_inline void *get_dentry_path_str(struct dentry *dentry)
         bpf_probe_read(&(string_p->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1]), 1, &zero);
     }
 
-    set_buf_off(STRING_BUF_IDX, buf_off);
     return &string_p->buf[buf_off];
 }
 
@@ -2205,6 +2403,128 @@ static __always_inline int save_args_to_submit_buf(event_data_t *data, u64 types
     }
 
     return arg_num;
+}
+
+// INTERNAL: SYSCALLS ------------------------------------------------------------------------------
+
+static __always_inline bool has_syscall_fd_arg(uint syscall_id)
+{
+    // Only syscalls with one fd argument so far
+    switch (syscall_id) {
+        case SYSCALL_READ:
+        case SYSCALL_WRITE:
+        case SYSCALL_CLOSE:
+        case SYSCALL_FSTAT:
+        case SYSCALL_LSEEK:
+        case SYSCALL_MMAP:
+        case SYSCALL_IOCTL:
+        case SYSCALL_PREAD64:
+        case SYSCALL_PWRITE64:
+        case SYSCALL_READV:
+        case SYSCALL_WRITEV:
+        case SYSCALL_DUP:
+        case SYSCALL_CONNECT:
+        case SYSCALL_ACCEPT:
+        case SYSCALL_SENDTO:
+        case SYSCALL_RECVFROM:
+        case SYSCALL_SENDMSG:
+        case SYSCALL_RECVMSG:
+        case SYSCALL_SHUTDOWN:
+        case SYSCALL_BIND:
+        case SYSCALL_LISTEN:
+        case SYSCALL_GETSOCKNAME:
+        case SYSCALL_GETPEERNAME:
+        case SYSCALL_SETSOCKOPT:
+        case SYSCALL_GETSOCKOPT:
+        case SYSCALL_FCNTL:
+        case SYSCALL_FLOCK:
+        case SYSCALL_FSYNC:
+        case SYSCALL_FDATASYNC:
+        case SYSCALL_FTRUNCATE:
+        case SYSCALL_GETDENTS:
+        case SYSCALL_FCHDIR:
+        case SYSCALL_FCHMOD:
+        case SYSCALL_FCHOWN:
+        case SYSCALL_FSTATFS:
+        case SYSCALL_READAHEAD:
+        case SYSCALL_FSETXATTR:
+        case SYSCALL_FGETXATTR:
+        case SYSCALL_FLISTXATTR:
+        case SYSCALL_FREMOVEXATTR:
+        case SYSCALL_GETDENTS64:
+        case SYSCALL_FADVISE64:
+        case SYSCALL_EPOLL_WAIT:
+        case SYSCALL_INOTIFY_ADD_WATCH:
+        case SYSCALL_INOTIFY_RM_WATCH:
+        case SYSCALL_OPENAT:
+        case SYSCALL_MKDIRAT:
+        case SYSCALL_MKNODAT:
+        case SYSCALL_FCHOWNAT:
+        case SYSCALL_FUTIMESAT:
+        case SYSCALL_NEWFSTATAT:
+        case SYSCALL_UNLINKAT:
+        case SYSCALL_SYMLINKAT:
+        case SYSCALL_READLINKAT:
+        case SYSCALL_FCHMODAT:
+        case SYSCALL_FACCESSAT:
+        case SYSCALL_SYNC_FILE_RANGE:
+        case SYSCALL_VMSPLICE:
+        case SYSCALL_UTIMENSAT:
+        case SYSCALL_EPOLL_PWAIT:
+        case SYSCALL_SIGNALFD:
+        case SYSCALL_FALLOCATE:
+        case SYSCALL_TIMERFD_SETTIME:
+        case SYSCALL_TIMERFD_GETTIME:
+        case SYSCALL_ACCEPT4:
+        case SYSCALL_SIGNALFD4:
+        case SYSCALL_PREADV:
+        case SYSCALL_PWRITEV:
+        case SYSCALL_PERF_EVENT_OPEN:
+        case SYSCALL_RECVMMSG:
+        case SYSCALL_NAME_TO_HANDLE_AT:
+        case SYSCALL_OPEN_BY_HANDLE_AT:
+        case SYSCALL_SYNCFS:
+        case SYSCALL_SENDMMSG:
+        case SYSCALL_SETNS:
+        case SYSCALL_FINIT_MODULE:
+        case SYSCALL_EXECVEAT:
+        case SYSCALL_PREADV2:
+        case SYSCALL_PWRITEV2:
+        case SYSCALL_STATX:
+        case SYSCALL_PIDFD_SEND_SIGNAL:
+        case SYSCALL_IO_URING_ENTER:
+        case SYSCALL_IO_URING_REGISTER:
+        case SYSCALL_OPEN_TREE:
+        case SYSCALL_FSCONFIG:
+        case SYSCALL_FSMOUNT:
+        case SYSCALL_FSPICK:
+        case SYSCALL_OPENAT2:
+        case SYSCALL_FACCESSAT2:
+        case SYSCALL_PROCESS_MADVISE:
+        case SYSCALL_EPOLL_PWAIT2:
+        case SYSCALL_MOUNT_SETATTR:
+        case SYSCALL_QUOTACTL_FD:
+        case SYSCALL_LANDLOCK_ADD_RULE:
+        case SYSCALL_LANDLOCK_RESTRICT_SELF:
+        case SYSCALL_PROCESS_MRELEASE:
+            return true;
+    }
+
+    return false;
+}
+
+static __always_inline uint get_syscall_fd_num_from_arg(uint syscall_id, args_t *args)
+{
+    switch (syscall_id) {
+        case SYSCALL_SYMLINKAT:
+            return args->args[1];
+        case SYSCALL_PERF_EVENT_OPEN:
+            return args->args[3];
+        case SYSCALL_MMAP:
+            return args->args[4];
+    }
+
+    return args->args[0];
 }
 
 // GENERIC PROBE MACROS ----------------------------------------------------------------------------
@@ -2401,36 +2721,6 @@ static __always_inline int get_local_net_id_from_network_details_v6(struct sock 
     return 0;
 }
 
-static __always_inline void invoke_fetch_network_seq_operations_event(event_data_t *data,
-                                                                      unsigned long struct_address)
-{
-    struct seq_operations *seq_ops = (struct seq_operations *) struct_address;
-
-    u64 show_addr = (u64) READ_KERN(seq_ops->show);
-    if (show_addr == 0) {
-        return;
-    }
-
-    u64 start_addr = (u64) READ_KERN(seq_ops->start);
-    if (start_addr == 0) {
-        return;
-    }
-
-    u64 next_addr = (u64) READ_KERN(seq_ops->next);
-    if (next_addr == 0) {
-        return;
-    }
-
-    u64 stop_addr = (u64) READ_KERN(seq_ops->stop);
-    if (stop_addr == 0) {
-        return;
-    }
-    u64 seq_ops_addresses[NET_SEQ_OPS_SIZE + 1] = {
-        (u64) seq_ops, show_addr, start_addr, next_addr, stop_addr};
-    save_u64_arr_to_buf(data, (const u64 *) seq_ops_addresses, 5, 0);
-    events_perf_submit(data, PRINT_NET_SEQ_OPS, 0);
-}
-
 static __always_inline int save_sockaddr_to_buf(event_data_t *data, struct socket *sock, u8 index)
 {
     struct sock *sk = get_socket_sock(sock);
@@ -2528,16 +2818,39 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
         sys->id = *id_64;
     }
 
+    // TODO: make this a tailcall (userland might place it if option is given)
+    if (data.config->options & OPT_TRANSLATE_FD_FILEPATH && should_submit(sys->id, data.config) &&
+        has_syscall_fd_arg(sys->id)) {
+        // Process filepath related to fd argument
+        uint fd_num = get_syscall_fd_num_from_arg(sys->id, &sys->args);
+        struct file *file = get_struct_file_from_fd(fd_num);
+
+        if (file) {
+            fd_arg_task_t fd_arg_task = {
+                .pid = data.context.task.pid,
+                .tid = data.context.task.tid,
+                .fd = fd_num,
+            };
+
+            fd_arg_path_t fd_arg_path = {};
+            void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+
+            bpf_probe_read_str(&fd_arg_path.path, sizeof(fd_arg_path.path), file_path);
+            bpf_map_update_elem(&fd_arg_path_map, &fd_arg_task, &fd_arg_path, BPF_ANY);
+        }
+    }
+
     if (should_submit(RAW_SYS_ENTER, data.config)) {
         save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 0);
         events_perf_submit(&data, RAW_SYS_ENTER, 0);
     }
 
     // exit, exit_group and rt_sigreturn syscalls don't return
-    if (sys->id != SYS_EXIT && sys->id != SYS_EXIT_GROUP && sys->id != SYS_RT_SIGRETURN) {
+    if (sys->id != SYSCALL_EXIT && sys->id != SYSCALL_EXIT_GROUP &&
+        sys->id != SYSCALL_RT_SIGRETURN) {
         sys->ts = data.context.ts;
         data.task_info->syscall_traced = true;
-    } else if ((sys->id != SYS_RT_SIGRETURN) && (should_submit(sys->id, data.config))) {
+    } else if ((sys->id != SYSCALL_RT_SIGRETURN) && (should_submit(sys->id, data.config))) {
         data.buf_off = sizeof(event_context_t);
         data.context.argnum = 0;
         save_to_submit_buf(&data, &sys->args.args[0], sizeof(int), 0);
@@ -2597,8 +2910,8 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
             goto out;
         }
         types = *saved_types;
-        if ((id != SYS_EXECVE && id != SYS_EXECVEAT) ||
-            ((id == SYS_EXECVE || id == SYS_EXECVEAT) && (ret != 0))) {
+        if ((id != SYSCALL_EXECVE && id != SYSCALL_EXECVEAT) ||
+            ((id == SYSCALL_EXECVE || id == SYSCALL_EXECVEAT) && (ret != 0))) {
             // We can't use saved args after execve syscall, as pointers are
             // invalid To avoid showing execve event both on entry and exit, we
             // only output failed execs
@@ -2630,7 +2943,7 @@ int syscall__execve(void *ctx)
         return -1;
     syscall_data_t *sys = &data.task_info->syscall_data;
 
-    if (!should_submit(SYS_EXECVE, data.config))
+    if (!should_submit(SYSCALL_EXECVE, data.config))
         return 0;
 
     save_str_to_buf(&data, (void *) sys->args.args[0] /*filename*/, 0);
@@ -2639,7 +2952,7 @@ int syscall__execve(void *ctx)
         save_str_arr_to_buf(&data, (const char *const *) sys->args.args[2] /*envp*/, 2);
     }
 
-    return events_perf_submit(&data, SYS_EXECVE, 0);
+    return events_perf_submit(&data, SYSCALL_EXECVE, 0);
 }
 
 SEC("raw_tracepoint/sys_execveat")
@@ -2653,7 +2966,7 @@ int syscall__execveat(void *ctx)
         return -1;
     syscall_data_t *sys = &data.task_info->syscall_data;
 
-    if (!should_submit(SYS_EXECVEAT, data.config))
+    if (!should_submit(SYSCALL_EXECVEAT, data.config))
         return 0;
 
     save_to_submit_buf(&data, (void *) &sys->args.args[0] /*dirfd*/, sizeof(int), 0);
@@ -2664,7 +2977,7 @@ int syscall__execveat(void *ctx)
     }
     save_to_submit_buf(&data, (void *) &sys->args.args[4] /*flags*/, sizeof(int), 4);
 
-    return events_perf_submit(&data, SYS_EXECVEAT, 0);
+    return events_perf_submit(&data, SYSCALL_EXECVEAT, 0);
 }
 
 static __always_inline int send_socket_dup(event_data_t *data, u64 oldfd, u64 newfd)
@@ -2739,11 +3052,11 @@ int sys_dup_exit_tail(void *ctx)
         return 0;
     }
 
-    if (sys->id == SYS_DUP) {
+    if (sys->id == SYSCALL_DUP) {
         // args.args[0]: oldfd
         // retval: newfd
         send_socket_dup(&data, sys->args.args[0], sys->ret);
-    } else if (sys->id == SYS_DUP2 || sys->id == SYS_DUP3) {
+    } else if (sys->id == SYSCALL_DUP2 || sys->id == SYSCALL_DUP3) {
         // args.args[0]: oldfd
         // args.args[1]: newfd
         // retval: retval
@@ -2831,14 +3144,19 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     // Perform the following checks before should_trace() so we can filter by newly created
     // containers/processes.  We assume that a new container/pod has started when a process of a
     // newly created cgroup and mount ns executed a binary
-    u32 cgroup_id_lsb = data.context.task.cgroup_id;
-    u8 *state = bpf_map_lookup_elem(&containers_map, &cgroup_id_lsb);
-    if (state != NULL && *state == CONTAINER_CREATED) {
+    if (data.task_info->container_state == CONTAINER_CREATED) {
         u32 mntns = get_task_mnt_ns_id(data.task);
         struct task_struct *parent = get_parent_task(data.task);
         u32 parent_mntns = get_task_mnt_ns_id(parent);
-        if (mntns != parent_mntns)
-            *state = CONTAINER_STARTED;
+        if (mntns != parent_mntns) {
+            u32 cgroup_id_lsb = data.context.task.cgroup_id;
+            u8 state = CONTAINER_STARTED;
+            bpf_map_update_elem(&containers_map, &cgroup_id_lsb, &state, BPF_ANY);
+            data.task_info->container_state = state;
+            data.context.task.flags |= CONTAINER_STARTED_FLAG; // Change for current event
+            data.task_info->context.flags |=
+                CONTAINER_STARTED_FLAG; // Change for future task events
+        }
     }
 
     data.task_info->new_task = true;
@@ -3132,76 +3450,114 @@ int BPF_KPROBE(trace_do_exit)
     return events_perf_submit(&data, DO_EXIT, code);
 }
 
-/* invoke_print_syscall_table_event submit to the buff the syscalls function handlers address from
- * the syscall table. the syscalls are strode in map which is syscalls_to_check_map and the
- * syscall-table address is stored in the kernel_symbols map.
+/* uprobe_syscall_trigger submit to the buff the syscalls function handlers
+ * address from the syscall table. the syscalls are stored in map which is
+ * syscalls_to_check_map and the syscall-table address is stored in the
+ * kernel_symbols map.
  */
-static __always_inline void invoke_print_syscall_table_event(event_data_t *data)
+SEC("uprobe/trigger_syscall_event")
+int uprobe_syscall_trigger(struct pt_regs *ctx)
 {
-    int key = 0;
-    u64 *table_ptr = bpf_map_lookup_elem(&syscalls_to_check_map, (void *) &key);
-    if (table_ptr == NULL) {
-        return;
-    }
-
-    char syscall_table[15] = "sys_call_table";
-    unsigned long *syscall_table_addr = (unsigned long *) get_symbol_addr(syscall_table);
-    u64 idx;
-    u64 *syscall_num_p; // pointer to syscall_number
-    u64 syscall_num;
-    unsigned long syscall_addr = 0;
-    int monitored_syscalls_amount = 0;
+    u64 caller_ctx_id;
 #if defined(bpf_target_x86)
-    monitored_syscalls_amount = NUMBER_OF_SYSCALLS_TO_CHECK_X86;
-    u64 syscall_address[NUMBER_OF_SYSCALLS_TO_CHECK_X86];
+    caller_ctx_id = ctx->bx;
 #elif defined(bpf_target_arm64)
-    monitored_syscalls_amount = NUMBER_OF_SYSCALLS_TO_CHECK_ARM;
-    u64 syscall_address[NUMBER_OF_SYSCALLS_TO_CHECK_ARM];
+    bpf_probe_read(&caller_ctx_id, 8, ((void *) ctx->sp) + 16);
 #else
-
-    return
+    return 0;
 #endif
 
-    __builtin_memset(syscall_address, 0, sizeof(syscall_address));
-// the map should look like [syscall number 1][syscall number 2][syscall number 3]...
-#pragma unroll
-    for (int i = 0; i < monitored_syscalls_amount; i++) {
-        idx = i;
-        syscall_num_p = bpf_map_lookup_elem(&syscalls_to_check_map, (void *) &idx);
-        if (syscall_num_p == NULL) {
-            continue;
-        }
-        syscall_num = (u64) *syscall_num_p;
-        syscall_addr = READ_KERN(syscall_table_addr[syscall_num]);
-        if (syscall_addr == 0) {
-            return;
-        }
-        syscall_address[i] = syscall_addr;
-    }
-    save_u64_arr_to_buf(data, (const u64 *) syscall_address, monitored_syscalls_amount, 0);
-    events_perf_submit(data, PRINT_SYSCALL_TABLE, 0);
-}
-
-SEC("kprobe/security_file_ioctl")
-int BPF_KPROBE(trace_tracee_trigger_event)
-{
     event_data_t data = {};
-
     if (!init_event_data(&data, ctx))
         return 0;
 
-    unsigned int cmd = PT_REGS_PARM2(ctx);
-    if ((cmd & IOCTL_FETCH_SYSCALLS) == IOCTL_FETCH_SYSCALLS &&
-        data.config->tracee_pid == data.context.task.host_pid) {
-        invoke_print_syscall_table_event(&data);
-    }
+    int key = 0;
+    // TODO: https://github.com/aquasecurity/tracee/issues/2055
+    if (bpf_map_lookup_elem(&syscalls_to_check_map, (void *) &key) == NULL)
+        return 0;
 
-    if ((cmd & IOCTL_HOOKED_SEQ_OPS) == IOCTL_HOOKED_SEQ_OPS &&
-        data.config->tracee_pid == data.context.task.host_pid) {
-        unsigned long struct_address = PT_REGS_PARM3(ctx);
-        invoke_fetch_network_seq_operations_event(&data, struct_address);
-    }
+    u64 *syscall_table_addr = (u64 *) get_symbol_addr("sys_call_table");
+    if (syscall_table_addr == 0)
+        return 0;
 
+    u64 idx;
+    unsigned long syscall_addr = 0;
+    u64 syscall_address[NUMBER_OF_SYSCALLS_TO_CHECK];
+
+#pragma unroll
+    for (int i = 0; i < NUMBER_OF_SYSCALLS_TO_CHECK; i++) {
+        idx = i;
+        // syscalls_to_check_map format: [syscall#][syscall#][syscall#]
+        u64 *syscall_num_p = bpf_map_lookup_elem(&syscalls_to_check_map, (void *) &idx);
+        if (syscall_num_p == NULL) {
+            syscall_address[i] = 0;
+            continue;
+        }
+
+        syscall_addr = READ_KERN(syscall_table_addr[*syscall_num_p]);
+        if (syscall_addr == 0) {
+            return 0;
+        }
+
+        syscall_address[i] = syscall_addr;
+    }
+    save_u64_arr_to_buf(&data, (const u64 *) syscall_address, NUMBER_OF_SYSCALLS_TO_CHECK, 0);
+    save_to_submit_buf(&data, (void *) &caller_ctx_id, sizeof(uint64_t), 1);
+    return events_perf_submit(&data, PRINT_SYSCALL_TABLE, 0);
+}
+
+SEC("uprobe/trigger_seq_ops_event")
+int uprobe_seq_ops_trigger(struct pt_regs *ctx)
+{
+// Argument extraction of go functions is different between x86 and arm
+// https://go.googlesource.com/go/+/refs/heads/dev.regabi/src/cmd/compile/internal-abi.md
+#if defined(bpf_target_x86)
+    uint64_t caller_ctx_id = ctx->bx;
+    uint64_t *address_array = ((void *) ctx->sp) + 8;
+#elif defined(bpf_target_arm64)
+    uint64_t caller_ctx_id;
+    bpf_probe_read(&caller_ctx_id, 8, ((void *) ctx->sp) + 16);
+    uint64_t *address_array = ((void *) ctx->sp) + 24;
+#else
+    return 0;
+#endif
+
+    uint64_t struct_address;
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+    u32 count_off = data.buf_off + 1;
+    // Init u64 arr with size 0 before adding elements in loop
+    save_u64_arr_to_buf(&data, NULL, 0, 0);
+#pragma unroll
+    for (int i = 0; i < NET_SEQ_OPS_TYPES; i++) {
+        bpf_probe_read(&struct_address, 8, (address_array + i));
+        struct seq_operations *seq_ops = (struct seq_operations *) struct_address;
+        u64 show_addr = (u64) READ_KERN(seq_ops->show);
+        if (show_addr == 0) {
+            return 0;
+        }
+
+        u64 start_addr = (u64) READ_KERN(seq_ops->start);
+        if (start_addr == 0) {
+            return 0;
+        }
+
+        u64 next_addr = (u64) READ_KERN(seq_ops->next);
+        if (next_addr == 0) {
+            return 0;
+        }
+
+        u64 stop_addr = (u64) READ_KERN(seq_ops->stop);
+        if (stop_addr == 0) {
+            return 0;
+        }
+        u64 seq_ops_addresses[NET_SEQ_OPS_SIZE + 1] = {show_addr, start_addr, next_addr, stop_addr};
+
+        add_u64_elements_to_buf(&data, (const u64 *) seq_ops_addresses, 4, count_off);
+    }
+    save_to_submit_buf(&data, (void *) &caller_ctx_id, sizeof(uint64_t), 1);
+    events_perf_submit(&data, PRINT_NET_SEQ_OPS, 0);
     return 0;
 }
 
@@ -3254,6 +3610,7 @@ int tracepoint__cgroup__cgroup_mkdir(struct bpf_raw_tracepoint_args *ctx)
         // Assume this is a new container. If not, userspace code will delete this entry
         u8 state = CONTAINER_CREATED;
         bpf_map_update_elem(&containers_map, &cgroup_id_lsb, &state, BPF_ANY);
+        data.task_info->container_state = state;
     }
 
     save_to_submit_buf(&data, &cgroup_id, sizeof(u64), 0);
@@ -3340,11 +3697,11 @@ int BPF_KPROBE(trace_security_file_open)
     if (syscall_traced) {
         sys = &data.task_info->syscall_data;
         switch (sys->id) {
-            case SYS_OPEN:
+            case SYSCALL_OPEN:
                 syscall_pathname = (void *) sys->args.args[0];
                 break;
-            case SYS_OPENAT:
-            case SYS_OPENAT2:
+            case SYSCALL_OPENAT:
+            case SYSCALL_OPENAT2:
                 syscall_pathname = (void *) sys->args.args[1];
                 break;
         }
@@ -3890,7 +4247,7 @@ int BPF_KPROBE(trace_security_socket_setsockopt)
         return -1;
     }
 
-    if (!data.task_info->syscall_traced || sys->id != SYSC_SETSOCKOPT)
+    if (!data.task_info->syscall_traced || sys->id != SYSCALL_SETSOCKOPT)
         return 0;
 
     save_to_submit_buf(&data, (void *) &sys->args.args[0], sizeof(u32), 0);
@@ -4607,14 +4964,10 @@ static __always_inline int do_file_write_operation_tail(struct pt_regs *ctx, u32
     }
     loff_t *pos = (loff_t *) saved_args.args[3];
 
-    // Get per-cpu string buffer
-    buf_t *string_p = get_buf(STRING_BUF_IDX);
-    if (string_p == NULL)
+    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+    if (data.buf_off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
         return -1;
-    get_path_str(GET_FIELD_ADDR(file->f_path));
-    u32 *off = get_buf_off(STRING_BUF_IDX);
-    if (off == NULL)
-        return -1;
+    bpf_probe_read_str(&(data.submit_p->buf[data.buf_off]), MAX_STRING_SIZE, file_path);
 
 // Check if capture write was requested for this path
 #pragma unroll
@@ -4629,10 +4982,11 @@ static __always_inline int do_file_write_operation_tail(struct pt_regs *ctx, u32
 
         has_filter = true;
 
-        if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
+        if (data.buf_off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
             break;
 
-        if (has_prefix(filter_p->path, (char *) &string_p->buf[*off], MAX_PATH_PREF_SIZE)) {
+        if (has_prefix(
+                filter_p->path, (char *) &data.submit_p->buf[data.buf_off], MAX_PATH_PREF_SIZE)) {
             filter_match = true;
             break;
         }
@@ -4658,10 +5012,10 @@ static __always_inline int do_file_write_operation_tail(struct pt_regs *ctx, u32
     u64 id = bpf_get_current_pid_tgid();
     u32 pid = data.context.task.pid;
 
-    if (*off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
+    if (data.buf_off > MAX_PERCPU_BUFSIZE - MAX_STRING_SIZE)
         return -1;
 
-    if (!has_prefix("/dev/null", (char *) &string_p->buf[*off], 10))
+    if (!has_prefix("/dev/null", (char *) &data.submit_p->buf[data.buf_off], 10))
         pid = 0;
 
     if (data.config->options & OPT_CAPTURE_FILES) {
@@ -4747,7 +5101,7 @@ int BPF_KPROBE(trace_mmap_alert)
 
     // Load the arguments given to the mmap syscall (which eventually invokes this function)
     syscall_data_t *sys = &data.task_info->syscall_data;
-    if (!data.task_info->syscall_traced || sys->id != SYS_MMAP)
+    if (!data.task_info->syscall_traced || sys->id != SYSCALL_MMAP)
         return 0;
 
     if ((sys->args.args[2] & (VM_WRITE | VM_EXEC)) == (VM_WRITE | VM_EXEC)) {
@@ -4787,7 +5141,8 @@ int BPF_KPROBE(trace_security_mmap_file)
 
     syscall_data_t *sys = &data.task_info->syscall_data;
     if (should_submit(SHARED_OBJECT_LOADED, data.config)) {
-        if (data.task_info->syscall_traced && (prot & VM_EXEC) == VM_EXEC && sys->id == SYS_MMAP) {
+        if (data.task_info->syscall_traced && (prot & VM_EXEC) == VM_EXEC &&
+            sys->id == SYSCALL_MMAP) {
             events_perf_submit(&data, SHARED_OBJECT_LOADED, 0);
         }
     }
@@ -4834,7 +5189,7 @@ int BPF_KPROBE(trace_security_file_mprotect)
     if (should_submit(MEM_PROT_ALERT, data.config)) {
         // Load the arguments given to the mprotect syscall (which eventually invokes this function)
         syscall_data_t *sys = &data.task_info->syscall_data;
-        if (!data.task_info->syscall_traced || sys->id != SYS_MPROTECT)
+        if (!data.task_info->syscall_traced || sys->id != SYSCALL_MPROTECT)
             return 0;
 
         // unsigned long prot = PT_REGS_PARM3(ctx);

@@ -97,7 +97,6 @@ func waitforTraceeStart(t *testing.T, trc *tracee.Tracee, now time.Time) {
 		if time.Since(now) > CheckTimeout {
 			t.Logf("timed out on running tracee\n")
 			t.FailNow()
-			break
 		}
 	}
 }

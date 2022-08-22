@@ -46,7 +46,7 @@ func DropUnrequired(reqCaps []cap.Value) error {
 
 func dropUnrequired(selfCaps set, reqCaps []cap.Value) error {
 	// Dropping the bounding set is a best effort, so we ignore any error resulted from doing it.
-	cap.DropBound(getAllCapabilities()...)
+	cap.DropBound(GetAllCapabilities()...)
 	err := selfCaps.Clear()
 	if err != nil {
 		return err
@@ -67,7 +67,7 @@ func dropUnrequired(selfCaps set, reqCaps []cap.Value) error {
 	return nil
 }
 
-func getAllCapabilities() []cap.Value {
+func GetAllCapabilities() []cap.Value {
 	var allCaps []cap.Value
 	for capVal := cap.CHOWN; capVal < cap.MaxBits(); capVal++ {
 		allCaps = append(allCaps, capVal)

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/aquasecurity/tracee/pkg/events/derive"
 	"io"
 	"io/ioutil"
 	"net"
@@ -16,7 +17,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 	"unsafe"
 
@@ -74,13 +74,14 @@ type CaptureConfig struct {
 }
 
 type OutputConfig struct {
-	StackAddresses bool
-	DetectSyscall  bool
-	ExecEnv        bool
-	RelativeTime   bool
-	ExecHash       bool
-	ParseArguments bool
-	EventsSorting  bool
+	StackAddresses    bool
+	DetectSyscall     bool
+	ExecEnv           bool
+	RelativeTime      bool
+	ExecHash          bool
+	ParseArguments    bool
+	ParseArgumentsFDs bool
+	EventsSorting     bool
 }
 
 // InitValues determines if to initialize values that might be needed by eBPF programs
@@ -195,6 +196,7 @@ type Tracee struct {
 	writtenFiles      map[string]string
 	pidsInMntns       bucketscache.BucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
+	FDArgPathMap      *bpf.BPFMap
 	netInfo           netInfo
 	containers        *containers.Containers
 	procInfo          *procinfo.ProcInfo
@@ -414,6 +416,14 @@ func (t *Tracee) Init() error {
 	}
 	t.StackAddressesMap = StackAddressesMap
 
+	// Get reference to fd arg path map
+	FDArgPathMap, err := t.bpfModule.GetMap("fd_arg_path_map")
+	if err != nil {
+		t.Close()
+		return fmt.Errorf("error getting access to 'fd_arg_path_map' eBPF Map %v", err)
+	}
+	t.FDArgPathMap = FDArgPathMap
+
 	if t.config.Output.EventsSorting {
 		t.eventsSorter, err = sorting.InitEventSorter()
 		if err != nil {
@@ -482,6 +492,7 @@ const (
 	optCaptureModules
 	optCgroupV1
 	optProcessInfo
+	optTranslateFDFilePath
 )
 
 // filters config should match defined values in ebpf code
@@ -541,6 +552,9 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	if t.config.Capture.NetIfaces != nil || len(t.config.Filter.NetFilter.Interfaces()) > 0 || t.config.Debug {
 		cOptVal = cOptVal | optProcessInfo
 		t.config.ProcessInfo = true
+	}
+	if t.config.Output.ParseArgumentsFDs {
+		cOptVal = cOptVal | optTranslateFDFilePath
 	}
 
 	return cOptVal
@@ -978,7 +992,8 @@ func (t *Tracee) getProcessCtx(hostTid uint32) (procinfo.ProcessCtx, error) {
 // Run starts the trace. it will run until ctx is cancelled
 func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.invokeInitEvents()
-	t.invokeIoctlTriggeredEvents(IoctlFetchSyscalls | IoctlHookedSeqOps)
+	t.triggerSyscallsIntegrityCheck(trace.Event{})
+	t.triggerSeqOpsIntegrityCheck(trace.Event{})
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
 	t.netPerfMap.Start()
@@ -1105,58 +1120,50 @@ func (t *Tracee) getTracedIfaceIdx(ifaceName string) (int, bool) {
 	return t.config.Filter.NetFilter.Find(ifaceName)
 }
 func (t *Tracee) getCapturedIfaceIdx(ifaceName string) (int, bool) {
+	if t.config.Capture.NetIfaces == nil {
+		return -1, false
+	}
 	return t.config.Capture.NetIfaces.Find(ifaceName)
 }
 
-const (
-	IoctlFetchSyscalls int32 = 1 << iota
-	IoctlHookedSeqOps
-)
-
-// Struct names for the interfaces HookedSeqOpsEventID checks for hooks
-// The show,start,next and stop operation function pointers will be checked for each of those
-var netSeqOps = [6]string{
-	"tcp4_seq_ops",
-	"tcp6_seq_ops",
-	"udp_seq_ops",
-	"udp6_seq_ops",
-	"raw_seq_ops",
-	"raw6_seq_ops",
+// TODO: move to triggerEvents package
+func (t *Tracee) triggerSyscallsIntegrityCheck(event trace.Event) {
+	_, ok := t.events[events.HookedSyscalls]
+	if !ok {
+		return
+	}
+	eventHandle := derive.StoreEventContext(event)
+	t.triggerSyscallsIntegrityCheckCall(eventHandle)
 }
 
-func (t *Tracee) invokeIoctlTriggeredEvents(cmds int32) error {
-	// invoke HookedSyscallsEvent
-	if cmds&IoctlFetchSyscalls == IoctlFetchSyscalls {
-		_, ok := t.events[events.HookedSyscalls]
-		if ok {
-			ptmx, err := os.OpenFile(t.config.Capture.OutputPath, os.O_RDONLY, 0444)
-			if err != nil {
-				return err
-			}
-			syscall.Syscall(syscall.SYS_IOCTL, ptmx.Fd(), uintptr(IoctlFetchSyscalls), 0)
-			ptmx.Close()
-		}
-	}
+// triggerSyscallsIntegrityCheck is used by a Uprobe to trigger an eBPF program that prints the syscall table
+// TODO: move to triggerEvents package
+//go:noinline
+func (t *Tracee) triggerSyscallsIntegrityCheckCall(eventHandle uint64) {
+}
 
-	// invoke HookedSeqOps
-	if cmds&IoctlHookedSeqOps == IoctlHookedSeqOps {
-		_, ok := t.events[events.HookedSeqOps]
-		if ok {
-			ptmx, err := os.OpenFile(t.config.Capture.OutputPath, os.O_RDONLY, 0444)
-			if err != nil {
-				return err
-			}
-
-			for _, seq_name := range netSeqOps {
-				seqOpsStruct, err := t.kernelSymbols.GetSymbolByName("system", seq_name)
-				if err != nil {
-					continue
-				}
-				syscall.Syscall(syscall.SYS_IOCTL, ptmx.Fd(), uintptr(IoctlHookedSeqOps), uintptr(seqOpsStruct.Address))
-			}
-			ptmx.Close()
-		}
+// TODO: move to triggerEvents package
+func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
+	_, ok := t.events[events.HookedSeqOps]
+	if !ok {
+		return
 	}
+	var seqOpsPointers [len(derive.NetSeqOps)]uint64
+	for i, seqName := range derive.NetSeqOps {
+		seqOpsStruct, err := t.kernelSymbols.GetSymbolByName("system", seqName)
+		if err != nil {
+			continue
+		}
+		seqOpsPointers[i] = seqOpsStruct.Address
+	}
+	eventHandle := derive.StoreEventContext(event)
+	t.triggerSeqOpsIntegrityCheckCall(eventHandle, seqOpsPointers)
+}
+
+// triggerSeqOpsIntegrityCheck is used by a Uprobe to trigger an eBPF program that prints the seq ops pointers
+// TODO: move to triggerEvents package
+//go:noinline
+func (t *Tracee) triggerSeqOpsIntegrityCheckCall(eventHandle uint64, seqOpsStruct [len(derive.NetSeqOps)]uint64) error {
 	return nil
 }
 

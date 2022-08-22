@@ -5615,12 +5615,15 @@ var Definitions = eventDefinitions{
 			Name:     "print_syscall_table",
 			Internal: true,
 			Probes: []probeDependency{
-				{Handle: probes.SecurityFileIoctl, Required: true},
+				{Handle: probes.PrintSyscallTable, Required: true},
 			},
-			Dependencies: dependencies{KSymbols: []string{"sys_call_table"}},
-			Sets:         []string{},
+			Dependencies: dependencies{
+				KSymbols: []string{"sys_call_table"},
+			},
+			Sets: []string{},
 			Params: []trace.ArgMeta{
 				{Type: "unsigned long[]", Name: "syscalls_addresses"},
+				{Type: "unsigned long", Name: "caller_context_id"},
 			},
 		},
 		HookedSyscalls: {
@@ -5861,7 +5864,7 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32undefined,
 			Name:    "print_net_seq_ops",
 			Probes: []probeDependency{
-				{Handle: probes.SecurityFileIoctl, Required: true},
+				{Handle: probes.PrintNetSeqOps, Required: true},
 			},
 			Dependencies: dependencies{
 				KSymbols: []string{
@@ -5876,6 +5879,7 @@ var Definitions = eventDefinitions{
 			Sets:     []string{},
 			Params: []trace.ArgMeta{
 				{Type: "unsigned long[]", Name: "net_seq_ops"},
+				{Type: "unsigned long", Name: "caller_context_id"},
 			},
 		},
 		HookedSeqOps: {
@@ -5889,8 +5893,7 @@ var Definitions = eventDefinitions{
 			},
 			Sets: []string{},
 			Params: []trace.ArgMeta{
-				{Type: "string", Name: "struct_name"},
-				{Type: "[]helpers.KernelSymbol", Name: "hooked_seq_ops"},
+				{Type: "map[string]trace.HookedSymbolData", Name: "hooked_seq_ops"},
 			},
 		},
 		TaskRename: {

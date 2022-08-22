@@ -3,10 +3,12 @@ package probes
 import (
 	"fmt"
 	"net"
+	"os"
 	"strings"
 	"syscall"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/libbpfgo/helpers"
 )
 
 //
@@ -50,6 +52,11 @@ type probes struct {
 // Init initializes a Probes interface
 func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 
+	binaryPath, err := os.Executable()
+	if err != nil {
+		return &probes{}, fmt.Errorf("error getting tracee-ebpf path: %v", err)
+	}
+
 	allProbes := map[Handle]Probe{
 		SysEnter:                   &traceProbe{eventName: "raw_syscalls:sys_enter", probeType: rawTracepoint, programName: "tracepoint__raw_syscalls__sys_enter"},
 		SysExit:                    &traceProbe{eventName: "raw_syscalls:sys_exit", probeType: rawTracepoint, programName: "tracepoint__raw_syscalls__sys_exit"},
@@ -70,7 +77,6 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		CgroupRmdir:                &traceProbe{eventName: "cgroup:cgroup_rmdir", probeType: rawTracepoint, programName: "tracepoint__cgroup__cgroup_rmdir"},
 		SecurityBPRMCheck:          &traceProbe{eventName: "security_bprm_check", probeType: kprobe, programName: "trace_security_bprm_check"},
 		SecurityFileOpen:           &traceProbe{eventName: "security_file_open", probeType: kprobe, programName: "trace_security_file_open"},
-		SecurityFileIoctl:          &traceProbe{eventName: "security_file_ioctl", probeType: kprobe, programName: "trace_tracee_trigger_event"},
 		SecurityFilePermission:     &traceProbe{eventName: "security_file_permission", probeType: kprobe, programName: "trace_security_file_permission"},
 		SecuritySocketCreate:       &traceProbe{eventName: "security_socket_create", probeType: kprobe, programName: "trace_security_socket_create"},
 		SecuritySocketListen:       &traceProbe{eventName: "security_socket_listen", probeType: kprobe, programName: "trace_security_socket_listen"},
@@ -121,6 +127,8 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		DefaultTcIngress:           &tcProbe{programName: "tc_ingress", tcAttachPoint: bpf.BPFTcIngress},
 		DefaultTcEgress:            &tcProbe{programName: "tc_egress", tcAttachPoint: bpf.BPFTcEgress, skipLoopback: true},
 		SecurityInodeRename:        &traceProbe{eventName: "security_inode_rename", probeType: kprobe, programName: "trace_security_inode_rename"},
+		PrintSyscallTable:          &uProbe{eventName: "print_syscall_table", binaryPath: binaryPath, symbolName: "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerSyscallsIntegrityCheckCall", programName: "uprobe_syscall_trigger"},
+		PrintNetSeqOps:             &uProbe{eventName: "print_net_seq_ops", binaryPath: binaryPath, symbolName: "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerSeqOpsIntegrityCheckCall", programName: "uprobe_seq_ops_trigger"},
 	}
 
 	// disable autoload for network related eBPF programs in network is disabled
@@ -264,6 +272,73 @@ func (p *traceProbe) detach(args ...interface{}) error {
 
 // autoload sets an eBPF program to autoload (true|false)
 func (p *traceProbe) autoload(module *bpf.Module, autoload bool) error {
+	return enableDisableAutoload(module, p.programName, autoload)
+}
+
+//
+// uProbe
+//
+
+type uProbe struct {
+	eventName   string
+	programName string // eBPF program to execute when uprobe triggered
+	binaryPath  string // ELF file path to attach uprobe to
+	symbolName  string // ELF binary symbol to attach uprobe to
+	bpfLink     *bpf.BPFLink
+}
+
+// attach attaches an eBPF program to its probe
+func (p *uProbe) attach(module *bpf.Module, args ...interface{}) error {
+	var link *bpf.BPFLink
+
+	if p.bpfLink != nil {
+		return nil // already attached, it is ok to call attach again
+	}
+
+	if module == nil {
+		return fmt.Errorf("incorrect arguments for event: %s", p.eventName)
+	}
+
+	prog, err := module.GetProgram(p.programName)
+	if err != nil {
+		return err
+	}
+
+	offset, err := helpers.SymbolToOffset(p.binaryPath, p.symbolName)
+	if err != nil {
+		return fmt.Errorf("error finding %s function offset: %v", p.symbolName, err)
+	}
+
+	link, err = prog.AttachUprobe(-1, p.binaryPath, offset)
+	if err != nil {
+		return fmt.Errorf("error attaching uprobe on %s: %v", p.symbolName, err)
+	}
+
+	p.bpfLink = link
+
+	return nil
+}
+
+// detach detaches an eBPF program from its probe
+func (p *uProbe) detach(args ...interface{}) error {
+	var err error
+
+	if p.bpfLink == nil {
+		return nil // already detached, it is ok to call detach again
+	}
+
+	err = p.bpfLink.Destroy()
+	if err != nil {
+		return fmt.Errorf("failed to detach event: %s (%v)", p.eventName, err)
+	}
+
+	p.bpfLink = nil // NOTE: needed so a new call to bpf_link__destroy() works
+
+	return nil
+}
+
+// autoload sets an eBPF program to autoload (true|false)
+func (p *uProbe) autoload(module *bpf.Module, autoload bool) error {
 	return enableDisableAutoload(module, p.programName, autoload)
 }
 
@@ -488,7 +563,6 @@ const (
 	CallUsermodeHelper
 	DebugfsCreateFile
 	DebugfsCreateDir
-	SecurityFileIoctl
 	DeviceAdd
 	RegisterChrdev
 	RegisterChrdevRet
@@ -512,5 +586,7 @@ const (
 	Pingv6Sendmsg
 	DefaultTcIngress
 	DefaultTcEgress
+	PrintSyscallTable
+	PrintNetSeqOps
 	SecurityInodeRename
 )
