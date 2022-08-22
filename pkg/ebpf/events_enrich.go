@@ -65,8 +65,9 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 	enrichInfo := make(map[uint64]*enrichResult)
 	// 1 queue per cgroupId
 	queues := make(map[uint64]chan *trace.Event)
-	// scheduler queue
+	// scheduler queues
 	queueReady := make(chan uint64, queueReadySize)
+	queueClean := make(chan uint64, queueReadySize)
 
 	// queues map writer
 	go func() {
@@ -88,36 +89,8 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 				}
 				// CgroupRmdir: clean up remaining events and maps
 				if eventID == events.CgroupRmdir {
-					var eInfo *enrichResult
 					cgroupId, _ = parse.ArgUint64Val(event, "cgroup_id")
-
-					bLock.RLock()
-					if i, ok := enrichInfo[cgroupId]; ok {
-						eInfo = i
-					}
-					if queue, ok := queues[cgroupId]; ok {
-						// clean up queue if needed
-						if len(queue) > 0 {
-							for evt := range queue {
-								if evt.ContainerImage == "" && eInfo != nil {
-									enrichEvent(evt, eInfo.result)
-								}
-								out <- evt
-								// break here if queue is empty otherwise this loop waits forever
-								if len(queue) < 1 {
-									break
-								}
-							}
-						}
-						close(queues[cgroupId])
-					}
-					bLock.RUnlock() // give de-queue events a chance
-					bLock.Lock()
-					delete(enrichDone, cgroupId)
-					delete(enrichInfo, cgroupId)
-					delete(queues, cgroupId)
-					bLock.Unlock()
-
+					queueClean <- cgroupId
 					continue
 				}
 				// make sure a queue channel exists for this cgroupId
@@ -172,6 +145,32 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 				}
 				bLock.RUnlock()
 			// cleanup
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	// queues cleaner
+	go func() {
+		for {
+			select {
+			case cgroupId := <-queueClean:
+				bLock.Lock()
+				if queue, ok := queues[cgroupId]; ok {
+					// if queue is still full reschedule cleanup
+					if len(queue) > 0 {
+						queueClean <- cgroupId
+					} else {
+						close(queue)
+						// start queue cleanup
+						delete(enrichDone, cgroupId)
+						delete(enrichInfo, cgroupId)
+						delete(queues, cgroupId)
+					}
+				}
+				bLock.Unlock()
+
 			case <-ctx.Done():
 				return
 			}
