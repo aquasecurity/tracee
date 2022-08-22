@@ -15,12 +15,12 @@ __rego_metadoc__ := {
 tracee_selected_events[eventSelector] {
 	eventSelector := {
 		"source": "tracee",
-		"name": "ptrace",
+		"name": "raw_ptrace",
 	}
 }
 
 tracee_match {
-	input.eventName == "ptrace"
+	input.eventName == "raw_ptrace"
 	arg := input.args[_]
 	arg.name == "request"
 	arg.value == "PTRACE_TRACEME"
