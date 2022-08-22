@@ -150,6 +150,7 @@ const (
 	PrintNetSeqOps
 	TaskRename
 	SymbolsLoaded
+	SecurityInodeRename
 	MaxCommonID
 	DebugNetSecurityBind
 	DebugNetUdpSendmsg
@@ -5906,6 +5907,18 @@ var Definitions = eventDefinitions{
 				{Type: "const char*", Name: "old_name"},
 				{Type: "const char*", Name: "new_name"},
 				{Type: "int", Name: "syscall"},
+			},
+		},
+		SecurityInodeRename: {
+			ID32Bit: sys32undefined,
+			Name:    "security_inode_rename",
+			Probes: []probeDependency{
+				{Handle: probes.SecurityInodeRename, Required: true},
+			},
+			Sets: []string{},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "old_path"},
+				{Type: "const char*", Name: "new_path"},
 			},
 		},
 	},
