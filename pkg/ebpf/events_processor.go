@@ -413,7 +413,11 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		if err != nil {
 			return fmt.Errorf("failed to apply invoke context on %s event: %s", event.EventName, err)
 		}
-		event = &withInvokingContext
+
+		// this was previously event = &withInvokingContext
+		// however, if applied as such, withInvokingContext will go out of scope and the reference will be moved back
+		// as such we apply the value internally and not through a referene switch
+		(*event) = withInvokingContext
 	}
 
 	return nil

@@ -25,14 +25,18 @@ func TestContext_Apply(t *testing.T) {
 				EventName:   "open",
 				Timestamp:   123,
 				ProcessID:   5,
+				ContainerID: "abc123",
+				ProcessName: "insmod",
 				ReturnValue: 2,
 			},
 			inputEvent: trace.Event{
-				EventID:   int(events.PrintNetSeqOps),
-				EventName: "print_net_seq_ops",
-				Timestamp: 187,
-				ProcessID: 0,
-				ArgsNum:   3,
+				EventID:     int(events.PrintNetSeqOps),
+				EventName:   "print_net_seq_ops",
+				Timestamp:   187,
+				ProcessID:   0,
+				ArgsNum:     3,
+				ContainerID: "",
+				ProcessName: "tracee-ebpf",
 				Args: []trace.Argument{
 					{
 						ArgMeta: trace.ArgMeta{
@@ -63,6 +67,8 @@ func TestContext_Apply(t *testing.T) {
 				Timestamp:   123,
 				ProcessID:   5,
 				ReturnValue: 0,
+				ContainerID: "abc123",
+				ProcessName: "insmod",
 				ArgsNum:     3,
 				Args: []trace.Argument{
 					{
