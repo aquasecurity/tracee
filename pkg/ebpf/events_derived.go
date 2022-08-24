@@ -23,47 +23,47 @@ func (t *Tracee) initDerivationTable() error {
 	pathResolver := containers.InitPathResolver(&t.pidsInMntns)
 	soLoader := sharedobjs.InitContainersSymbolsLoader(&pathResolver, 1024)
 
-	t.eventDerivations = events.DerivationTable{
+	t.eventDerivations = derive.Table{
 		events.CgroupMkdir: {
 			events.ContainerCreate: {
-				Enabled:  t.events[events.ContainerCreate].submit,
-				Function: derive.ContainerCreate(t.containers),
+				Enabled:        t.events[events.ContainerCreate].submit,
+				DeriveFunction: derive.ContainerCreate(t.containers),
 			},
 		},
 		events.CgroupRmdir: {
 			events.ContainerRemove: {
-				Enabled:  t.events[events.ContainerRemove].submit,
-				Function: derive.ContainerRemove(t.containers),
+				Enabled:        t.events[events.ContainerRemove].submit,
+				DeriveFunction: derive.ContainerRemove(t.containers),
 			},
 		},
 		events.PrintSyscallTable: {
 			events.HookedSyscalls: {
-				Enabled:  t.events[events.PrintSyscallTable].submit,
-				Function: derive.DetectHookedSyscall(t.kernelSymbols),
+				Enabled:        t.events[events.PrintSyscallTable].submit,
+				DeriveFunction: derive.DetectHookedSyscall(t.kernelSymbols),
 			},
 		},
 		events.DnsRequest: {
 			events.NetPacket: {
-				Enabled:  t.events[events.NetPacket].submit,
-				Function: derive.NetPacket(),
+				Enabled:        t.events[events.NetPacket].submit,
+				DeriveFunction: derive.NetPacket(),
 			},
 		},
 		events.DnsResponse: {
 			events.NetPacket: {
-				Enabled:  t.events[events.NetPacket].submit,
-				Function: derive.NetPacket(),
+				Enabled:        t.events[events.NetPacket].submit,
+				DeriveFunction: derive.NetPacket(),
 			},
 		},
 		events.PrintNetSeqOps: {
 			events.HookedSeqOps: {
-				Enabled:  t.events[events.HookedSeqOps].submit,
-				Function: derive.HookedSeqOps(t.kernelSymbols),
+				Enabled:        t.events[events.HookedSeqOps].submit,
+				DeriveFunction: derive.HookedSeqOps(t.kernelSymbols),
 			},
 		},
 		events.SharedObjectLoaded: {
 			events.SymbolsLoaded: {
 				Enabled: t.events[events.SymbolsLoaded].submit,
-				Function: derive.SymbolsLoaded(
+				DeriveFunction: derive.SymbolsLoaded(
 					soLoader,
 					t.config.Filter.ArgFilter.Filters[events.SymbolsLoaded]["symbols"].Equal,
 					t.config.Filter.ArgFilter.Filters[events.SymbolsLoaded]["library_path"].NotEqual,
@@ -91,7 +91,7 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 				out <- event
 
 				// Derive event before parse its arguments
-				derivatives, errors := events.Derive(*event, t.eventDerivations)
+				derivatives, errors := derive.DeriveEvent(*event, t.eventDerivations)
 
 				for _, err := range errors {
 					t.handleError(err)

@@ -9,8 +9,8 @@ import (
 
 // ContainerCreate receives a containers as a closure argument to track it's containers.
 // If it receives a cgroup_mkdir event, it can derive a container_create event from it.
-func ContainerCreate(containers *containers.Containers) events.DeriveFunction {
-	return singleEventDeriveFunc(events.ContainerCreate, deriveContainerCreateArgs(containers))
+func ContainerCreate(containers *containers.Containers) deriveFunction {
+	return deriveSingleEvent(events.ContainerCreate, deriveContainerCreateArgs(containers))
 }
 
 func deriveContainerCreateArgs(containers *containers.Containers) func(event trace.Event) ([]interface{}, error) {

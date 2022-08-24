@@ -14,6 +14,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/events/derive"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/pkg/utils"
 	"github.com/google/gopacket"
@@ -255,7 +256,7 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 					}
 
 					// derive events chosen by the user
-					derivatives, errors := events.Derive(evt, t.eventDerivations)
+					derivatives, errors := derive.DeriveEvent(evt, t.eventDerivations)
 
 					for _, err := range errors {
 						t.handleError(err)

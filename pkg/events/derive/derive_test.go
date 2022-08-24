@@ -10,7 +10,71 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestSingleEventDeriveFunc(t *testing.T) {
+func Test_DeriveEvent(t *testing.T) {
+	testEventID := events.ID(1)
+	failEventID := events.ID(11)
+	deriveEventID := events.ID(12)
+	noDerivationEventID := events.ID(13)
+	alwaysDeriveError := func() deriveFunction {
+		return func(e trace.Event) ([]trace.Event, []error) {
+			return []trace.Event{}, []error{fmt.Errorf("derive error")}
+		}
+	}
+	mockDerivationTable := Table{
+		testEventID: {
+			failEventID: {
+				DeriveFunction: alwaysDeriveError(),
+				Enabled:        true,
+			},
+			deriveEventID: {
+				DeriveFunction: func(e trace.Event) ([]trace.Event, []error) {
+					return []trace.Event{
+						{
+							EventID: int(deriveEventID),
+						},
+					}, nil
+				},
+				Enabled: true,
+			},
+			noDerivationEventID: {
+				DeriveFunction: func(e trace.Event) ([]trace.Event, []error) {
+					return []trace.Event{}, nil
+				},
+				Enabled: true,
+			},
+		},
+	}
+
+	testCases := []struct {
+		name            string
+		event           trace.Event
+		expectedDerived []trace.Event
+		expectedErrors  []error
+	}{
+		{
+			name: "derive test event check for all cases",
+			event: trace.Event{
+				EventID: int(testEventID),
+			},
+			expectedDerived: []trace.Event{
+				{
+					EventID: int(deriveEventID),
+				},
+			},
+			expectedErrors: []error{deriveError(failEventID, fmt.Errorf("derive error"))},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			derived, errors := DeriveEvent(tc.event, mockDerivationTable)
+			assert.Equal(t, tc.expectedDerived, derived)
+			assert.Equal(t, tc.expectedErrors, errors)
+		})
+	}
+}
+
+func Test_DeriveSingleEvent(t *testing.T) {
 	testEventID := events.ID(0)
 
 	// Change getter of the events.Event to give the test definition
@@ -25,69 +89,72 @@ func TestSingleEventDeriveFunc(t *testing.T) {
 			Type: "int",
 		},
 	}
-	savedEventDefFunc := getEventDefFunc
+
+	// store the original getEventDefinition function
+	savedEventDefFunc := getEventDefinition
+	// switch it back after test is over
 	defer func() {
-		getEventDefFunc = savedEventDefFunc
+		getEventDefinition = savedEventDefFunc
 	}()
-	getEventDefFunc = func(id events.ID) events.Event {
+
+	// mock the getEventDefinition function
+	getEventDefinition = func(id events.ID) events.Event {
 		return def
 	}
 
 	baseEvent := getTestEvent()
 
-	successfulDeriveEventDeriveArgsFunc := func(event trace.Event) ([]interface{}, error) {
+	successfulDeriveEventArgs := func(event trace.Event) ([]interface{}, error) {
 		return []interface{}{1, 2}, nil
 	}
-	noDeriveEventDeriveArgsFunc := func(event trace.Event) ([]interface{}, error) {
+	noDeriveEventArgs := func(event trace.Event) ([]interface{}, error) {
 		return nil, nil
 	}
-	deriveArgsError := "fail derive args"
-	failDeriveArgsFunc := func(event trace.Event) ([]interface{}, error) {
-		return nil, fmt.Errorf(deriveArgsError)
+	deriveArgsError := fmt.Errorf("fail derive args")
+	failDeriveEventArgs := func(event trace.Event) ([]interface{}, error) {
+		return nil, deriveArgsError
 	}
-	illegalDeriveArgsFunc := func(event trace.Event) ([]interface{}, error) {
+	illegalDeriveEventArgs := func(event trace.Event) ([]interface{}, error) {
 		return []interface{}{1, 2, 3}, nil
 	}
 
 	testCases := []struct {
 		Name                string
-		ExpectedError       string
+		ExpectedError       error
 		ArgsDeriveFunc      deriveArgsFunction
 		DerivedEventsAmount int
 	}{
 		{
-			Name:                "Hapfapy flow - derive event",
-			ExpectedError:       "",
-			ArgsDeriveFunc:      successfulDeriveEventDeriveArgsFunc,
+			Name:                "happy flow - derive event",
+			ArgsDeriveFunc:      successfulDeriveEventArgs,
 			DerivedEventsAmount: 1,
 		},
 		{
-			Name:                "Happy flow - don't derive event",
-			ExpectedError:       "",
-			ArgsDeriveFunc:      noDeriveEventDeriveArgsFunc,
+			Name:                "happy flow - don't derive event",
+			ArgsDeriveFunc:      noDeriveEventArgs,
 			DerivedEventsAmount: 0,
 		},
 		{
-			Name:                "Fail derive argument function",
+			Name:                "sad flow - derive arguments fails",
 			ExpectedError:       deriveArgsError,
-			ArgsDeriveFunc:      failDeriveArgsFunc,
+			ArgsDeriveFunc:      failDeriveEventArgs,
 			DerivedEventsAmount: 0,
 		},
 		{
-			Name:                "Fail new event creation",
-			ExpectedError:       fmt.Sprintf("error while building derived event '%s' - expected %d arguments but given %d", def.Name, len(def.Params), 3),
-			ArgsDeriveFunc:      illegalDeriveArgsFunc,
+			Name:                "sad flow - unexpected argument count",
+			ExpectedError:       unexpectedArgCountError(def.Name, len(def.Params), 3),
+			ArgsDeriveFunc:      illegalDeriveEventArgs,
 			DerivedEventsAmount: 0,
 		},
 	}
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(t *testing.T) {
-			deriveFunc := singleEventDeriveFunc(testEventID, testCase.ArgsDeriveFunc)
+			deriveFunc := deriveSingleEvent(testEventID, testCase.ArgsDeriveFunc)
 			derivedEvents, errs := deriveFunc(baseEvent)
 			assert.Len(t, derivedEvents, testCase.DerivedEventsAmount)
-			if testCase.ExpectedError != "" {
-				assert.ErrorContains(t, errs[0], testCase.ExpectedError)
+			if testCase.ExpectedError != nil {
+				assert.Error(t, errs[0], testCase.ExpectedError)
 				return
 			}
 			require.Empty(t, errs)
@@ -97,7 +164,7 @@ func TestSingleEventDeriveFunc(t *testing.T) {
 
 func TestNewEvent(t *testing.T) {
 	baseEvent := getTestEvent()
-	skeleton := eventSkeleton{
+	skeleton := deriveBase{
 		Name: "test_derive",
 		ID:   124,
 		Params: []trace.ArgMeta{
@@ -136,7 +203,7 @@ func TestNewEvent(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(t *testing.T) {
-			evt, err := newEvent(&baseEvent, skeleton, testCase.Args)
+			evt, err := buildDerivedEvent(&baseEvent, skeleton, testCase.Args)
 			if testCase.ExpectError {
 				assert.Error(t, err)
 				return
