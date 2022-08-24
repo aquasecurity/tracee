@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+
+	//"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,7 +19,9 @@ import (
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
+
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	cli "github.com/urfave/cli/v2"
 )
@@ -26,6 +30,8 @@ var traceeInstallPath string
 var listenMetrics bool
 var metricsAddr string
 var enrich bool
+var logStdout = logger.Default()
+var logStderr = logger.New(os.Stderr, logger.InfoLevel)
 
 var version string
 
@@ -56,18 +62,20 @@ func main() {
 
 			// for the rest of execution, use this debug mode value
 			debug := debug.Enabled()
+			if debug {
+				logStdout = logger.New(os.Stdout, logger.DebugLevel)
+				logStderr = logger.New(os.Stderr, logger.DebugLevel)
+			}
 
 			// OS release information
 
 			OSInfo, err := helpers.GetOSInfo()
-			if debug {
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "OSInfo: warning: os-release file could not be found\n(%v)\n", err) // only to be enforced when BTF needs to be downloaded, later on
-					fmt.Fprintf(os.Stdout, "OSInfo: %v: %v\n", helpers.OS_KERNEL_RELEASE, OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE))
-				} else {
-					for k, v := range OSInfo.GetOSReleaseAllFieldValues() {
-						fmt.Fprintf(os.Stdout, "OSInfo: %v: %v\n", k, v)
-					}
+			if err != nil {
+				logStderr.Debug("OSInfo: warning: os-release file could not be found", logger.ErrorField(err)) // only to be enforced when BTF needs to be downloaded, later on
+				logStdout.Debug("OSInfo", logger.Uint32("OSReleaseField", uint32(helpers.OS_KERNEL_RELEASE)), logger.String("OS_KERNEL_RELEASE", OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE)))
+			} else {
+				for k, v := range OSInfo.GetOSReleaseAllFieldValues() {
+					logStdout.Debug("OSInfo", logger.Uint32("OSReleaseField", uint32(k)), logger.String("OS_KERNEL_RELEASE", v))
 				}
 			}
 
@@ -100,8 +108,8 @@ func main() {
 				return err
 			}
 			cfg.Cache = cache
-			if debug && cfg.Cache != nil {
-				fmt.Fprintf(os.Stdout, "Cache: cache type is \"%s\"\n", cfg.Cache)
+			if cfg.Cache != nil {
+				logStdout.Debug("Cache", logger.String("type", cfg.Cache.String()))
 			}
 
 			captureSlice := c.StringSlice("capture")
@@ -164,16 +172,14 @@ func main() {
 			if err == nil && lockdown == helpers.CONFIDENTIALITY {
 				return fmt.Errorf("kernel lockdown is set to 'confidentiality', can't load eBPF programs")
 			}
-			if debug {
-				fmt.Fprintf(os.Stdout, "OSInfo: Security Lockdown is '%v'\n", lockdown)
-			}
+			logStdout.Debug("OSInfo", logger.Any("security lockdown", lockdown))
 
 			enabled, err := helpers.FtraceEnabled()
 			if err != nil {
 				return err
 			}
 			if !enabled {
-				fmt.Fprintf(os.Stderr, "ftrace_enabled: warning: ftrace is not enabled, kernel events won't be caught, make sure to enable it by executing echo 1 | sudo tee /proc/sys/kernel/ftrace_enabled")
+				logStderr.Warn("ftrace_enabled: ftrace is not enabled, kernel events won't be caught, make sure to enable it by executing echo 1 | sudo tee /proc/sys/kernel/ftrace_enabled")
 			}
 
 			// OS kconfig information
@@ -201,17 +207,15 @@ func main() {
 			if listenMetrics {
 				err := t.Stats().RegisterPrometheus()
 				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error registering prometheus metrics: %v\n", err)
+					logStderr.Error("Registering prometheus metrics", logger.ErrorField(err))
 				} else {
 					mux := http.NewServeMux()
 					mux.Handle("/metrics", promhttp.Handler())
 
 					go func() {
-						if debug {
-							fmt.Fprintf(os.Stdout, "Serving metrics endpoint at %s\n", metricsAddr)
-						}
+						logStdout.Debug("Serving metrics endpoint at", logger.String("metricsAddr", metricsAddr))
 						if err := http.ListenAndServe(metricsAddr, mux); err != http.ErrServerClosed {
-							fmt.Fprintf(os.Stderr, "Error serving metrics endpoint: %v\n", err)
+							logStderr.Error("Serving metrics endpoint", logger.ErrorField(err))
 						}
 					}()
 				}
