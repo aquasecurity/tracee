@@ -35,6 +35,7 @@ type Filter struct {
 	ContIDFilter      *filters.ContainerFilter
 	RetFilter         *filters.RetFilter
 	ArgFilter         *filters.ArgFilter
+	ContextFilter     *filters.ContextFilter
 	ProcessTreeFilter *filters.ProcessTreeFilter
 	Follow            bool
 	NetFilter         *NetIfaces
