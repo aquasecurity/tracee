@@ -1,10 +1,8 @@
 package ebpf
 
 import (
-	"bytes"
 	gocontext "context"
 	"fmt"
-	"inet.af/netaddr"
 	"math"
 	"net"
 	"os"
@@ -220,8 +218,6 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 				continue
 			}
 
-			timeStampObj := time.Unix(0, int64(netEventMetadata.TimeStamp+t.bootTime))
-
 			if t.config.Output.RelativeTime {
 				// To get the current ("wall") time, we add the boot time into it.
 				netEventMetadata.TimeStamp -= t.startTime
@@ -298,47 +294,6 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 					}
 				}
 
-			} else if t.config.Debug {
-				var netDebugEvent bufferdecoder.NetDebugEvent
-				err = netDecoder.DecodeNetDebugEvent(&netDebugEvent)
-				if err != nil {
-					t.handleError(err)
-					continue
-				}
-				procName := string(bytes.TrimRight(netEventMetadata.ProcessName[:], "\x00"))
-				switch netEventMetadata.NetEventId {
-				case events.DebugNetSecurityBind:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/security_socket_bind LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
-				case events.DebugNetUdpSendmsg:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_sendmsg          LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
-				case events.DebugNetUdpDisconnect:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/__udp_disconnect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
-				case events.DebugNetUdpDestroySock:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/udp_destroy_sock     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
-				case events.DebugNetUdpV6DestroySock:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/udpv6_destroy_sock   LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
-				case events.DebugNetInetSockSetState:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/inet_sock_set_state  LocalIP: %v, LocalPort: %d, RemoteIP: %v, RemotePort: %d, Protocol: %d, OldState: %d, NewState: %d, SockPtr: 0x%x\n",
-						timeStampObj,
-						procName,
-						netEventMetadata.HostTid,
-						netaddr.IPFrom16(netDebugEvent.LocalIP),
-						netDebugEvent.LocalPort,
-						netaddr.IPFrom16(netDebugEvent.RemoteIP),
-						netDebugEvent.RemotePort,
-						netDebugEvent.Protocol,
-						netDebugEvent.TcpOldState,
-						netDebugEvent.TcpNewState,
-						netDebugEvent.SockPtr)
-				case events.DebugNetTcpConnect:
-					fmt.Printf("%v  %-16s  %-7d  debug_net/tcp_connect     LocalIP: %v, LocalPort: %d, Protocol: %d\n",
-						timeStampObj, procName, netEventMetadata.HostTid, netaddr.IPFrom16(netDebugEvent.LocalIP), netDebugEvent.LocalPort, netDebugEvent.Protocol)
-				}
 			}
 
 		case lost := <-t.lostNetChannel:

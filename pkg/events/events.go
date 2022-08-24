@@ -157,14 +157,6 @@ const (
 	SymbolsLoaded
 	SecurityInodeRename
 	MaxCommonID
-	DebugNetSecurityBind
-	DebugNetUdpSendmsg
-	DebugNetUdpDisconnect
-	DebugNetUdpDestroySock
-	DebugNetUdpV6DestroySock
-	DebugNetInetSockSetState
-	DebugNetTcpConnect
-	MaxDebugID
 )
 
 // Events originated from user-space

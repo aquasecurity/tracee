@@ -518,7 +518,6 @@ const (
 	optCaptureFiles
 	optExtractDynCode
 	optStackAddresses
-	optDebugNet
 	optCaptureModules
 	optCgroupV1
 	optProcessInfo
@@ -572,9 +571,6 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	}
 	if t.config.Capture.Mem {
 		cOptVal = cOptVal | optExtractDynCode
-	}
-	if t.config.Debug {
-		cOptVal = cOptVal | optDebugNet
 	}
 	if t.containers.IsCgroupV1() {
 		cOptVal = cOptVal | optCgroupV1
