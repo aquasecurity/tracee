@@ -10,9 +10,9 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-func SymbolsLoaded(soLoader sharedobjs.DynamicSymbolsLoader, watchedSymbols []string, whitelistedLibsPrefixes []string, isDebug bool) events.DeriveFunction {
+func SymbolsLoaded(soLoader sharedobjs.DynamicSymbolsLoader, watchedSymbols []string, whitelistedLibsPrefixes []string, isDebug bool) deriveFunction {
 	gen := initSymbolsLoadedEventGenerator(soLoader, watchedSymbols, whitelistedLibsPrefixes, isDebug)
-	return singleEventDeriveFunc(events.SymbolsLoaded, gen.deriveArgs)
+	return deriveSingleEvent(events.SymbolsLoaded, gen.deriveArgs)
 }
 
 // Most specific paths should be at the top, to prevent bugs with iterations over the list

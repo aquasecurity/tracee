@@ -10,8 +10,8 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-func DetectHookedSyscall(kernelSymbols *helpers.KernelSymbolTable) events.DeriveFunction {
-	return singleEventDeriveFunc(events.HookedSyscalls, deriveDetectHookedSyscallArgs(kernelSymbols))
+func DetectHookedSyscall(kernelSymbols *helpers.KernelSymbolTable) deriveFunction {
+	return deriveSingleEvent(events.HookedSyscalls, deriveDetectHookedSyscallArgs(kernelSymbols))
 }
 
 func deriveDetectHookedSyscallArgs(kernelSymbols *helpers.KernelSymbolTable) deriveArgsFunction {

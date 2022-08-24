@@ -201,7 +201,7 @@ type Tracee struct {
 	containers        *containers.Containers
 	procInfo          *procinfo.ProcInfo
 	eventsSorter      *sorting.EventsChronologicalSorter
-	eventDerivations  events.DerivationTable
+	eventDerivations  derive.Table
 	kernelSymbols     *helpers.KernelSymbolTable
 	triggerContexts   trigger.Context
 	running           bool
