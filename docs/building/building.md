@@ -12,7 +12,7 @@
     3. **golang** (1.17)
     4. **libelf** and **libelf-dev**  
        (or elfutils-libelf and elfutils-libelf-devel)
-    5. **zlib1g** and **lib1g-dev**  
+    5. **zlib1g** and **zlib1g-dev**  
        (or zlib and zlib-devel)
 
 2. **Clone** [tracee repository](https://github.com/aquasecurity/tracee/)
