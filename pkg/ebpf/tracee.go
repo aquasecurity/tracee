@@ -822,6 +822,9 @@ func (t *Tracee) populateBPFMaps() error {
 	tailCalls := make(map[events.TailCall]bool)
 	for e := range t.events {
 		for _, tailCall := range events.Definitions.Get(e).Dependencies.TailCalls {
+			if tailCall.MapIdx > 10000 { // undefined syscalls (check arm64.go)
+				continue
+			}
 			tailCalls[tailCall] = true
 		}
 	}
