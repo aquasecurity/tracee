@@ -5296,9 +5296,16 @@ int BPF_KPROBE(trace_security_bpf)
     return events_perf_submit(&data, SECURITY_BPF, 0);
 }
 
-SEC("kprobe/arm_kprobe")
-int BPF_KPROBE(trace_arm_kprobe)
+// arm_kprobe can't be hooked in arm64 architecture, use enable logic instead
+
+static __always_inline int arm_kprobe_handler(struct pt_regs *ctx)
 {
+    args_t saved_args;
+    if (load_args(&saved_args, KPROBE_ATTACH) != 0) {
+        return 0;
+    }
+    del_args(KPROBE_ATTACH);
+
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
@@ -5306,7 +5313,11 @@ int BPF_KPROBE(trace_arm_kprobe)
     if (!should_trace(&data))
         return 0;
 
-    struct kprobe *kp = (struct kprobe *) PT_REGS_PARM1(ctx);
+    struct kprobe *kp = (struct kprobe *) saved_args.args[0];
+    unsigned int retcode = PT_REGS_RC(ctx);
+
+    if (retcode)
+        return 0; // register_kprobe() failed
 
     char *symbol_name = (char *) READ_KERN(kp->symbol_name);
     u64 pre_handler = (u64) READ_KERN(kp->pre_handler);
@@ -5317,6 +5328,21 @@ int BPF_KPROBE(trace_arm_kprobe)
     save_to_submit_buf(&data, (void *) &post_handler, sizeof(u64), 2);
 
     return events_perf_submit(&data, KPROBE_ATTACH, 0);
+}
+
+// register_kprobe and enable_kprobe have same execution path, and both call
+// arm_kprobe, which is the function we are interested in. Nevertheless, there
+// is also another function, register_aggr_kprobes, that might be able to call
+// arm_kprobe so, instead of hooking into enable_kprobe, we hook into
+// register_kprobe covering all execution paths.
+
+SEC("kprobe/register_kprobe")
+TRACE_ENT_FUNC(register_kprobe, KPROBE_ATTACH);
+
+SEC("kretprobe/register_kprobe")
+int BPF_KPROBE(trace_ret_register_kprobe)
+{
+    return arm_kprobe_handler(ctx);
 }
 
 SEC("kprobe/security_bpf_map")

@@ -5571,7 +5571,8 @@ var Definitions = eventDefinitions{
 			ID32Bit: sys32undefined,
 			Name:    "kprobe_attach",
 			Probes: []probeDependency{
-				{Handle: probes.ARMKprobe, Required: true},
+				{Handle: probes.RegisterKprobe, Required: true},
+				{Handle: probes.RegisterKprobeRet, Required: true},
 			},
 			Sets: []string{},
 			Params: []trace.ArgMeta{
