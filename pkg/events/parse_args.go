@@ -207,7 +207,13 @@ func ParseArgs(event *trace.Event) error {
 		}
 		if optionNameArg := GetArg(event, "optname"); optionNameArg != nil {
 			if opt, isInt := optionNameArg.Value.(int32); isInt {
-				optionNameArgument, err := helpers.ParseSocketOption(uint64(opt))
+				var optionNameArgument helpers.SocketOptionArgument
+				var err error
+				if ID(event.EventID) == Getsockopt {
+					optionNameArgument, err = helpers.ParseGetSocketOption(uint64(opt))
+				} else {
+					optionNameArgument, err = helpers.ParseSetSocketOption(uint64(opt))
+				}
 				ParseOrEmptyString(optionNameArg, optionNameArgument, err)
 			}
 		}
