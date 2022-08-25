@@ -100,7 +100,8 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		SecurityFileMProtect:       &traceProbe{eventName: "security_file_mprotect", probeType: kprobe, programName: "trace_security_file_mprotect"},
 		CommitCreds:                &traceProbe{eventName: "commit_creds", probeType: kprobe, programName: "trace_commit_creds"},
 		SwitchTaskNS:               &traceProbe{eventName: "switch_task_namespaces", probeType: kprobe, programName: "trace_switch_task_namespaces"},
-		ARMKprobe:                  &traceProbe{eventName: "arm_kprobe", probeType: kprobe, programName: "trace_arm_kprobe"},
+		RegisterKprobe:             &traceProbe{eventName: "register_kprobe", probeType: kprobe, programName: "trace_register_kprobe"},
+		RegisterKprobeRet:          &traceProbe{eventName: "register_kprobe", probeType: kretprobe, programName: "trace_ret_register_kprobe"},
 		CallUsermodeHelper:         &traceProbe{eventName: "call_usermodehelper", probeType: kprobe, programName: "trace_call_usermodehelper"},
 		DebugfsCreateFile:          &traceProbe{eventName: "debugfs_create_file", probeType: kprobe, programName: "trace_debugfs_create_file"},
 		DebugfsCreateDir:           &traceProbe{eventName: "debugfs_create_dir", probeType: kprobe, programName: "trace_debugfs_create_dir"},
@@ -559,7 +560,8 @@ const (
 	DoSplice
 	DoSpliceRet
 	ProcCreate
-	ARMKprobe
+	RegisterKprobe
+	RegisterKprobeRet
 	CallUsermodeHelper
 	DebugfsCreateFile
 	DebugfsCreateDir
