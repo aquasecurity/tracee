@@ -2441,7 +2441,6 @@ static __always_inline bool has_syscall_fd_arg(uint syscall_id)
         case SYSCALL_FSYNC:
         case SYSCALL_FDATASYNC:
         case SYSCALL_FTRUNCATE:
-        case SYSCALL_GETDENTS:
         case SYSCALL_FCHDIR:
         case SYSCALL_FCHMOD:
         case SYSCALL_FCHOWN:
@@ -2453,15 +2452,12 @@ static __always_inline bool has_syscall_fd_arg(uint syscall_id)
         case SYSCALL_FREMOVEXATTR:
         case SYSCALL_GETDENTS64:
         case SYSCALL_FADVISE64:
-        case SYSCALL_EPOLL_WAIT:
         case SYSCALL_INOTIFY_ADD_WATCH:
         case SYSCALL_INOTIFY_RM_WATCH:
         case SYSCALL_OPENAT:
         case SYSCALL_MKDIRAT:
         case SYSCALL_MKNODAT:
         case SYSCALL_FCHOWNAT:
-        case SYSCALL_FUTIMESAT:
-        case SYSCALL_NEWFSTATAT:
         case SYSCALL_UNLINKAT:
         case SYSCALL_SYMLINKAT:
         case SYSCALL_READLINKAT:
@@ -2470,8 +2466,6 @@ static __always_inline bool has_syscall_fd_arg(uint syscall_id)
         case SYSCALL_SYNC_FILE_RANGE:
         case SYSCALL_VMSPLICE:
         case SYSCALL_UTIMENSAT:
-        case SYSCALL_EPOLL_PWAIT:
-        case SYSCALL_SIGNALFD:
         case SYSCALL_FALLOCATE:
         case SYSCALL_TIMERFD_SETTIME:
         case SYSCALL_TIMERFD_GETTIME:
@@ -2507,6 +2501,14 @@ static __always_inline bool has_syscall_fd_arg(uint syscall_id)
         case SYSCALL_LANDLOCK_ADD_RULE:
         case SYSCALL_LANDLOCK_RESTRICT_SELF:
         case SYSCALL_PROCESS_MRELEASE:
+#if !defined(bpf_target_arm64)
+        case SYSCALL_GETDENTS:
+        case SYSCALL_EPOLL_WAIT:
+        case SYSCALL_FUTIMESAT:
+        case SYSCALL_NEWFSTATAT:
+        case SYSCALL_EPOLL_PWAIT:
+        case SYSCALL_SIGNALFD:
+#endif
             return true;
     }
 
