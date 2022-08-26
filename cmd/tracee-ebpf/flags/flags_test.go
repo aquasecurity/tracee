@@ -127,10 +127,10 @@ func TestPrepareFilter(t *testing.T) {
 			expectedError:  errors.New("invalid operator and/or values given to filter: ="),
 		},
 		{
-			testName: "invalid uid",
-			filters: []string{"uid=	"},
+			testName:       "invalid uid",
+			filters:        []string{"uid=	"},
 			expectedFilter: tracee.Filter{},
-			expectedError: errors.New("invalid filter value: 	"),
+			expectedError:  errors.New("invalid filter value: 	"),
 		},
 		{
 			testName:       "invalid uid",

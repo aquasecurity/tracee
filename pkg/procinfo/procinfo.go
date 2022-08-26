@@ -93,8 +93,8 @@ func ParseProcessContext(ctx []byte, containers *containers.Containers) (Process
 	return procCtx, nil
 }
 
-//returns the file creation time
-//Note: this is not the real process start time because it's based on the file creation time, but it is a close approximation
+// returns the file creation time
+// Note: this is not the real process start time because it's based on the file creation time, but it is a close approximation
 func getFileCtime(path string) (int, error) {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
@@ -105,7 +105,7 @@ func getFileCtime(path string) (int, error) {
 	return int(ts.Sec)*int(time.Second) + int(ts.Nsec)*int(time.Nanosecond), nil
 }
 
-//parse the status file of a process or given task and returns process context struct
+// parse the status file of a process or given task and returns process context struct
 func parseProcStatus(status []byte, taskStatusPath string) (ProcessCtx, error) {
 	var processName string
 	processVals := make(map[string]uint32)
@@ -149,7 +149,7 @@ func parseProcStatus(status []byte, taskStatusPath string) (ProcessCtx, error) {
 	return process, nil
 }
 
-//gets the namespace data for the process Context struct by parsing the /proc/<Pid>/task directory
+// gets the namespace data for the process Context struct by parsing the /proc/<Pid>/task directory
 func getNsIdData(taskStatusPath string) (uint32, uint32, error) {
 	path := fmt.Sprintf("%s/ns/mnt", taskStatusPath[:len(taskStatusPath)-7])
 	processMntId, err := os.Readlink(path)
@@ -177,7 +177,7 @@ func getNsIdData(taskStatusPath string) (uint32, uint32, error) {
 	return uint32(mntId), uint32(pidId), nil
 }
 
-//initialize new process-tree
+// initialize new process-tree
 func NewProcessInfo() (*ProcInfo, error) {
 	p := ProcInfo{make(map[int]ProcessCtx), sync.RWMutex{}}
 	procDir, err := os.Open("/proc")

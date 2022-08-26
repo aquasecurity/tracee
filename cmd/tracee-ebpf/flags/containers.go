@@ -70,7 +70,7 @@ func PrepareContainers(containerFlags []string) (runtime.Sockets, error) {
 	return sockets, nil
 }
 
-//check default paths for all supported container runtimes and aggregate them
+// check default paths for all supported container runtimes and aggregate them
 func autoDiscoverSockets() runtime.Sockets {
 	sockets := runtime.Sockets{}
 	const (

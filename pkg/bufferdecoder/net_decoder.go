@@ -20,7 +20,7 @@ func (NetEventMetadata) GetSizeBytes() uint32 {
 	return 32
 }
 
-//DecodeNetEventMetadata parsing the NetEventMetadata struct from byte array
+// DecodeNetEventMetadata parsing the NetEventMetadata struct from byte array
 func (decoder *EbpfDecoder) DecodeNetEventMetadata(eventMetaData *NetEventMetadata) error {
 	offset := decoder.cursor
 	if len(decoder.buffer[offset:]) < int(eventMetaData.GetSizeBytes()) {
@@ -44,7 +44,7 @@ func (NetCaptureData) GetSizeBytes() uint32 {
 	return 8
 }
 
-//DecodeNetCaptureData parsing the NetCaptureData struct from byte array
+// DecodeNetCaptureData parsing the NetCaptureData struct from byte array
 func (decoder *EbpfDecoder) DecodeNetCaptureData(netCaptureData *NetCaptureData) error {
 	offset := decoder.cursor
 	if len(decoder.buffer[offset:]) < int(netCaptureData.GetSizeBytes()) {
@@ -70,7 +70,7 @@ func (NetPacketEvent) GetSizeBytes() uint32 {
 	return 40
 }
 
-//DecodeNetPacketEvent parsing the NetPacketEvent struct from byte array
+// DecodeNetPacketEvent parsing the NetPacketEvent struct from byte array
 func (decoder *EbpfDecoder) DecodeNetPacketEvent(netPacketEvent *NetPacketEvent) error {
 	offset := decoder.cursor
 	if len(decoder.buffer[offset:]) < int(netPacketEvent.GetSizeBytes()) {
@@ -103,7 +103,7 @@ func (NetDebugEvent) GetSizeBytes() uint32 {
 	return 60
 }
 
-//DecodeNetDebugEvent parsing the NetDebugEvent struct from byte array
+// DecodeNetDebugEvent parsing the NetDebugEvent struct from byte array
 func (decoder *EbpfDecoder) DecodeNetDebugEvent(netDebugEvent *NetDebugEvent) error {
 	offset := decoder.cursor
 	if len(decoder.buffer[offset:]) < int(netDebugEvent.GetSizeBytes()) {

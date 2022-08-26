@@ -1144,6 +1144,7 @@ func (t *Tracee) triggerSyscallsIntegrityCheck(event trace.Event) {
 
 // triggerSyscallsIntegrityCheck is used by a Uprobe to trigger an eBPF program that prints the syscall table
 // TODO: move to triggerEvents package
+//
 //go:noinline
 func (t *Tracee) triggerSyscallsIntegrityCheckCall(eventHandle uint64) {
 }
@@ -1168,6 +1169,7 @@ func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
 
 // triggerSeqOpsIntegrityCheck is used by a Uprobe to trigger an eBPF program that prints the seq ops pointers
 // TODO: move to triggerEvents package
+//
 //go:noinline
 func (t *Tracee) triggerSeqOpsIntegrityCheckCall(eventHandle uint64, seqOpsStruct [len(derive.NetSeqOps)]uint64) error {
 	return nil

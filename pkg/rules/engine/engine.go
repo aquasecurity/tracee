@@ -34,7 +34,7 @@ type Engine struct {
 	stats           metrics.Stats
 }
 
-//EventSources is a bundle of input sources used to configure the Engine
+// EventSources is a bundle of input sources used to configure the Engine
 type EventSources struct {
 	Tracee chan protocol.Event
 }
@@ -191,7 +191,7 @@ func (engine *Engine) dispatchEvent(s detect.Signature, event protocol.Event) {
 	engine.signatures[s] <- event
 }
 
-//LoadSignature will call the internal signature loading logic and activate its handling business logics.
+// LoadSignature will call the internal signature loading logic and activate its handling business logics.
 // It will return the signature ID as well as error.
 func (engine *Engine) LoadSignature(signature detect.Signature) (string, error) {
 	id, err := engine.loadSignature(signature)
@@ -205,7 +205,7 @@ func (engine *Engine) LoadSignature(signature detect.Signature) (string, error) 
 	return id, nil
 }
 
-//loadSignature handles storing a signature in the Engine data structures
+// loadSignature handles storing a signature in the Engine data structures
 // It will return the signature ID as well as error.
 func (engine *Engine) loadSignature(signature detect.Signature) (string, error) {
 	metadata, err := signature.GetMetadata()
@@ -254,7 +254,7 @@ func (engine *Engine) loadSignature(signature detect.Signature) (string, error) 
 	return metadata.ID, nil
 }
 
-//UnloadSignature will remove from Engine data structures the given signature and stop its handling goroutine
+// UnloadSignature will remove from Engine data structures the given signature and stop its handling goroutine
 func (engine *Engine) UnloadSignature(signatureId string) error {
 	var signature detect.Signature
 	engine.signaturesMutex.RLock()

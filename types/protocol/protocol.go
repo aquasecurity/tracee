@@ -1,7 +1,7 @@
 // Package protocol includes the "API" of events the rule-engine can consume. All producers who intend to add support for tracee need to support this protocol.
 package protocol
 
-//EventHeaders are headers attached to the Event struct, used to send metadata about the payload
+// EventHeaders are headers attached to the Event struct, used to send metadata about the payload
 type EventHeaders struct {
 	// Selector is a propriotary header used for filtering event subscriptions in the engin
 	Selector Selector
@@ -20,7 +20,7 @@ type Selector struct {
 	Source string
 }
 
-//Event is a generic event that the Engine can process
+// Event is a generic event that the Engine can process
 type Event struct {
 	Headers EventHeaders
 	Payload interface{}
