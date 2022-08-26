@@ -4,7 +4,6 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/aquasecurity/tracee)](https://goreportcard.com/report/github.com/aquasecurity/tracee)
 [![License](https://img.shields.io/github/license/aquasecurity/tracee)](https://github.com/aquasecurity/tracee/blob/main/LICENSE)
 [![docker](https://badgen.net/docker/pulls/aquasec/tracee)](https://hub.docker.com/r/aquasec/tracee)
-[![Test Signatures](https://github.com/aquasecurity/tracee/actions/workflows/test-signatures.yaml/badge.svg)](https://github.com/aquasecurity/tracee/actions/workflows/test-signatures.yaml)
 [![Release Snapshot](https://github.com/aquasecurity/tracee/actions/workflows/release-snapshot.yaml/badge.svg)](https://github.com/aquasecurity/tracee/actions/workflows/release-snapshot.yaml)
 [![OS Packages (DAILY)](https://github.com/aquasecurity/tracee/actions/workflows/test-os-packaging-daily.yaml/badge.svg)](https://github.com/aquasecurity/tracee/actions/workflows/test-os-packaging-daily.yaml)
 [![Tests (DAILY)](https://github.com/aquasecurity/tracee/actions/workflows/test-daily.yaml/badge.svg)](https://github.com/aquasecurity/tracee/actions/workflows/test-daily.yaml)
