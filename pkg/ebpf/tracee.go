@@ -415,20 +415,20 @@ func (t *Tracee) Init() error {
 	}
 
 	// Get reference to stack trace addresses map
-	StackAddressesMap, err := t.bpfModule.GetMap("stack_addresses")
+	stackAddressesMap, err := t.bpfModule.GetMap("stack_addresses")
 	if err != nil {
 		t.Close()
 		return fmt.Errorf("error getting acces to 'stack_addresses' eBPF Map %v", err)
 	}
-	t.StackAddressesMap = StackAddressesMap
+	t.StackAddressesMap = stackAddressesMap
 
 	// Get reference to fd arg path map
-	FDArgPathMap, err := t.bpfModule.GetMap("fd_arg_path_map")
+	fdArgPathMap, err := t.bpfModule.GetMap("fd_arg_path_map")
 	if err != nil {
 		t.Close()
 		return fmt.Errorf("error getting access to 'fd_arg_path_map' eBPF Map %v", err)
 	}
-	t.FDArgPathMap = FDArgPathMap
+	t.FDArgPathMap = fdArgPathMap
 
 	if t.config.Output.EventsSorting {
 		t.eventsSorter, err = sorting.InitEventSorter()
@@ -476,15 +476,14 @@ func (t *Tracee) initTailCall(mapName string, mapIdx uint32, progName string) er
 	}
 	bpfProg, err := t.bpfModule.GetProgram(progName)
 	if err != nil {
-		return fmt.Errorf("could not get BPF program "+progName+": %v", err)
+		return fmt.Errorf("could not get BPF program %s: %v", progName, err)
 	}
 	fd := bpfProg.GetFd()
 	if fd < 0 {
-		return fmt.Errorf("could not get BPF program FD for "+progName+": %v", err)
+		return fmt.Errorf("could not get BPF program FD for %s: %v", progName, err)
 	}
-	err = bpfMap.Update(unsafe.Pointer(&mapIdx), unsafe.Pointer(&fd))
 
-	return err
+	return bpfMap.Update(unsafe.Pointer(&mapIdx), unsafe.Pointer(&fd))
 }
 
 // options config should match defined values in ebpf code
@@ -969,11 +968,10 @@ func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 	if err != nil {
 		return err
 	}
+
 	_, err = wr.Write(b)
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return err
 }
 
 func (t *Tracee) getProcessCtx(hostTid uint32) (procinfo.ProcessCtx, error) {
@@ -1122,9 +1120,11 @@ func (t *Tracee) invokeInitEvents() {
 		}
 	}
 }
+
 func (t *Tracee) getTracedIfaceIdx(ifaceName string) (int, bool) {
 	return t.config.Filter.NetFilter.Find(ifaceName)
 }
+
 func (t *Tracee) getCapturedIfaceIdx(ifaceName string) (int, bool) {
 	if t.config.Capture.NetIfaces == nil {
 		return -1, false

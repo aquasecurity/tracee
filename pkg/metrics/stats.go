@@ -73,9 +73,5 @@ func (stats *Stats) RegisterPrometheus() error {
 		Help:      "errors accumulated by tracee-ebpf",
 	}, func() float64 { return float64(stats.ErrorCount.Read()) }))
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
