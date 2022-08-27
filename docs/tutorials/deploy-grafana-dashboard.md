@@ -42,7 +42,7 @@ Of course, the forwarded metrics ports can be changed, but you should note that
 some of the later instructions depend on these ports.
 
 If running Tracee locally through built binaries, the metrics address may be
-overriden with the `--metrics-addr` flag in both tracee-ebpf and tracee-rules.
+overriden with the `--listen-addr` flag in both tracee-ebpf and tracee-rules.
 
 ## Run Prometheus and Configure it to Scrape Tracee
 
