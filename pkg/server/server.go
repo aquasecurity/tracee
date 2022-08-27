@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/aquasecurity/tracee/pkg/logger"
+
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
 )

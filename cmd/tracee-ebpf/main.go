@@ -211,6 +211,7 @@ func main() {
 				if c.Bool(server.PProfEndpointFlag) {
 					httpServer.EnablePProfEndpoint()
 				}
+
 				go httpServer.Start()
 			}
 
