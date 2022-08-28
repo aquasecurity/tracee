@@ -165,6 +165,7 @@ const (
 	TaskRename
 	SecurityInodeRename
 	DoSigaction
+	KallsymsLookupName
 	MaxCommonID
 )
 
@@ -6002,6 +6003,21 @@ var Definitions = eventDefinitions{
 				{Type: "unsigned long", Name: "old_sa_mask"},
 				{Type: "u8", Name: "old_sa_handle_method"},
 				{Type: "void*", Name: "old_sa_handler"},
+			},
+		},
+		KallsymsLookupName: {
+			ID32Bit: sys32undefined,
+			Name:    "kallsyms_lookup_name",
+			DocPath: "kprobes/kallsyms_lookup_name.md",
+			Probes: []probeDependency{
+				{Handle: probes.KallsymsLookupName, Required: true},
+				{Handle: probes.KallsymsLookupNameRet, Required: true},
+			},
+			Sets: []string{},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "symbol_name"},
+				{Type: "void*", Name: "symbol_address"},
+				{Type: "int", Name: "syscall"},
 			},
 		},
 	},

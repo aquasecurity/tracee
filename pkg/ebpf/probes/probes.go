@@ -129,6 +129,8 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		PrintNetSeqOps:             &uProbe{eventName: "print_net_seq_ops", binaryPath: binaryPath, symbolName: "github.com/aquasecurity/tracee/pkg/ebpf.(*Tracee).triggerSeqOpsIntegrityCheckCall", programName: "uprobe_seq_ops_trigger"},
 		SecurityInodeRename:        &traceProbe{eventName: "security_inode_rename", probeType: kprobe, programName: "trace_security_inode_rename"},
 		DoSigaction:                &traceProbe{eventName: "do_sigaction", probeType: kprobe, programName: "trace_do_sigaction"},
+		KallsymsLookupName:         &traceProbe{eventName: "kallsyms_lookup_name", probeType: kprobe, programName: "trace_kallsyms_lookup_name"},
+		KallsymsLookupNameRet:      &traceProbe{eventName: "kallsyms_lookup_name", probeType: kretprobe, programName: "trace_ret_kallsyms_lookup_name"},
 	}
 
 	// disable autoload for network related eBPF programs in network is disabled
@@ -593,4 +595,6 @@ const (
 	PrintNetSeqOps
 	SecurityInodeRename
 	DoSigaction
+	KallsymsLookupName
+	KallsymsLookupNameRet
 )
