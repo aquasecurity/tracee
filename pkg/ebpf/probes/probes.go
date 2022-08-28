@@ -3,7 +3,6 @@ package probes
 import (
 	"fmt"
 	"net"
-	"os"
 	"strings"
 	"syscall"
 
@@ -52,10 +51,7 @@ type probes struct {
 // Init initializes a Probes interface
 func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 
-	binaryPath, err := os.Executable()
-	if err != nil {
-		return &probes{}, fmt.Errorf("error getting tracee-ebpf path: %v", err)
-	}
+	binaryPath := "/proc/self/exe"
 
 	allProbes := map[Handle]Probe{
 		SysEnter:                   &traceProbe{eventName: "raw_syscalls:sys_enter", probeType: rawTracepoint, programName: "tracepoint__raw_syscalls__sys_enter"},
