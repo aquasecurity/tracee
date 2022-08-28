@@ -457,6 +457,7 @@ enum event_id_e
     SECURITY_INODE_RENAME,
     DO_SIGACTION,
     BPF_ATTACH,
+    KALLSYMS_LOOKUP_NAME,
     MAX_EVENT_ID,
 };
 
@@ -6477,6 +6478,41 @@ int BPF_KPROBE(trace_security_inode_rename)
         save_str_to_buf(&data, new_dentry_path, 1);
 
         events_perf_submit(&data, SECURITY_INODE_RENAME, 0);
+    }
+
+    return 0;
+}
+
+SEC("kprobe/kallsyms_lookup_name")
+TRACE_ENT_FUNC(kallsyms_lookup_name, KALLSYMS_LOOKUP_NAME);
+
+SEC("kretprobe/kallsyms_lookup_name")
+int BPF_KPROBE(trace_ret_kallsyms_lookup_name)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data))
+        return 0;
+
+    args_t saved_args;
+    if (load_args(&saved_args, KALLSYMS_LOOKUP_NAME) != 0)
+        return 0;
+    del_args(KALLSYMS_LOOKUP_NAME);
+
+    char *name = (char *) saved_args.args[0];
+    unsigned long address = PT_REGS_RC(ctx);
+
+    if (should_submit(KALLSYMS_LOOKUP_NAME, data.config)) {
+        save_str_to_buf(&data, name, 0);
+        save_to_submit_buf(&data, &address, sizeof(unsigned long), 1);
+        if (data.config->options & OPT_SHOW_SYSCALL) {
+            int id = get_task_syscall_id(data.task);
+            save_to_submit_buf(&data, &id, sizeof(int), 2);
+        }
+
+        events_perf_submit(&data, KALLSYMS_LOOKUP_NAME, 0);
     }
 
     return 0;

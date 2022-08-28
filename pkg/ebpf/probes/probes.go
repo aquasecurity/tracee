@@ -133,6 +133,8 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		SecurityFileIoctl:          &traceProbe{eventName: "security_file_ioctl", probeType: kprobe, programName: "trace_security_file_ioctl"},
 		CheckHelperCall:            &traceProbe{eventName: "check_helper_call", probeType: kprobe, programName: "trace_check_helper_call"},
 		CheckMapFuncCompatibility:  &traceProbe{eventName: "check_map_func_compatibility", probeType: kprobe, programName: "trace_check_map_func_compatibility"},
+		KallsymsLookupName:         &traceProbe{eventName: "kallsyms_lookup_name", probeType: kprobe, programName: "trace_kallsyms_lookup_name"},
+		KallsymsLookupNameRet:      &traceProbe{eventName: "kallsyms_lookup_name", probeType: kretprobe, programName: "trace_ret_kallsyms_lookup_name"},
 	}
 
 	// disable autoload for network related eBPF programs in network is disabled
@@ -601,4 +603,6 @@ const (
 	SecurityFileIoctl
 	CheckHelperCall
 	CheckMapFuncCompatibility
+	KallsymsLookupName
+	KallsymsLookupNameRet
 )

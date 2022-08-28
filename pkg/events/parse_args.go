@@ -44,7 +44,7 @@ func ParseArgs(event *trace.Event) error {
 				alertArg.Type = "string"
 			}
 		}
-	case SysEnter, SysExit, CapCapable, CommitCreds, SecurityFileOpen, TaskRename, SecurityMmapFile:
+	case SysEnter, SysExit, CapCapable, CommitCreds, SecurityFileOpen, TaskRename, SecurityMmapFile, KallsymsLookupName:
 		if syscallArg := GetArg(event, "syscall"); syscallArg != nil {
 			if id, isInt32 := syscallArg.Value.(int32); isInt32 {
 				if event, isKnown := Definitions.GetSafe(ID(id)); isKnown {
