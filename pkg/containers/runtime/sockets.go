@@ -36,3 +36,27 @@ func (s *Sockets) Socket(runtime RuntimeId) string {
 	}
 	return s.sockets[runtime]
 }
+
+//check default paths for all supported container runtimes and aggregate them
+func Autodiscover(onRegisterFail func(err error, runtime RuntimeId, socket string)) Sockets {
+	register := func(sockets *Sockets, runtime RuntimeId, socket string) {
+		err := sockets.Register(runtime, socket)
+		if err != nil {
+			onRegisterFail(err, runtime, socket)
+		}
+	}
+	sockets := Sockets{}
+	const (
+		defaultContainerd = "/var/run/containerd/containerd.sock"
+		defaultDocker     = "/var/run/docker.sock"
+		defaultCrio       = "/var/run/crio/crio.sock"
+		defaultPodman     = "/var/run/podman/podman.sock"
+	)
+
+	register(&sockets, Containerd, defaultContainerd)
+	register(&sockets, Docker, defaultDocker)
+	register(&sockets, Crio, defaultCrio)
+	register(&sockets, Podman, defaultPodman)
+
+	return sockets
+}

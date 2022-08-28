@@ -51,3 +51,20 @@ var runtimeStringMap = map[RuntimeId]string{
 func (runtime RuntimeId) String() string {
 	return runtimeStringMap[runtime]
 }
+
+func FromString(str string) RuntimeId {
+	switch str {
+	case "docker":
+		return Docker
+	case "crio":
+		return Crio
+	case "cri-o":
+		return Crio
+	case "podman":
+		return Podman
+	case "containerd":
+		return Containerd
+	default:
+		return Unknown
+	}
+}
