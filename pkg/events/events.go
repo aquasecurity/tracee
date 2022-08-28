@@ -166,6 +166,7 @@ const (
 	SecurityInodeRename
 	DoSigaction
 	BpfAttach
+	KallsymsLookupName
 	MaxCommonID
 )
 
@@ -6023,6 +6024,21 @@ var Definitions = eventDefinitions{
 				{Type: "u64", Name: "perf_addr"},
 				{Type: "int", Name: "prog_write_user"},
 				{Type: "int", Name: "perf_type"},
+			},
+		},
+		KallsymsLookupName: {
+			ID32Bit: sys32undefined,
+			Name:    "kallsyms_lookup_name",
+			DocPath: "kprobes/kallsyms_lookup_name.md",
+			Probes: []probeDependency{
+				{Handle: probes.KallsymsLookupName, Required: true},
+				{Handle: probes.KallsymsLookupNameRet, Required: true},
+			},
+			Sets: []string{},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "symbol_name"},
+				{Type: "void*", Name: "symbol_address"},
+				{Type: "int", Name: "syscall"},
 			},
 		},
 	},
