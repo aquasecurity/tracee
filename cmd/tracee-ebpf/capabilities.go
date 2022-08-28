@@ -130,7 +130,7 @@ func getCapabilitiesRequiredByEBPF(OSInfo KernelVersionInfo, debug bool) ([]cap.
 		}
 		return privilegedCaps, nil
 	}
-	const BpfCapabilitiesMinKernelVersion = "5.8"
+	const BpfCapabilitiesMinKernelVersion = "5.8.0-0"
 	if OSInfo.CompareOSBaseKernelRelease(BpfCapabilitiesMinKernelVersion) < 0 {
 		// if kernelParanoidValue is too high, CAP_SYS_ADMIN is required
 		if kernelParanoidValue > 2 {
