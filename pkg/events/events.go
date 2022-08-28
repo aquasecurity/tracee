@@ -4874,6 +4874,11 @@ var Definitions = eventDefinitions{
 			Probes: []probeDependency{
 				{Handle: probes.SysEnter, Required: true},
 			},
+			Dependencies: dependencies{
+				TailCalls: []TailCall{
+					{MapName: "sys_enter_submit_tail", MapIdx: 0, ProgName: "sys_enter_submit"},
+				},
+			},
 			Sets: []string{},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "syscall"},
@@ -4884,6 +4889,11 @@ var Definitions = eventDefinitions{
 			Name:    "sys_exit",
 			Probes: []probeDependency{
 				{Handle: probes.SysExit, Required: true},
+			},
+			Dependencies: dependencies{
+				TailCalls: []TailCall{
+					{MapName: "sys_exit_submit_tail", MapIdx: 0, ProgName: "sys_exit_submit"},
+				},
 			},
 			Sets: []string{},
 			Params: []trace.ArgMeta{

@@ -922,8 +922,10 @@ BPF_ARRAY(file_filter, path_filter_t, 3);                          // filter vfs
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);                        // percpu global buffer variables
 BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);                         // store programs for tail calls
 BPF_PROG_ARRAY(prog_array_tp, MAX_TAIL_CALL);                      // store programs for tail calls
-BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);                     // store programs for tail calls
-BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID);                      // store programs for tail calls
+BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);                     // store syscall specific programs for tail calls from sys_enter
+BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID);                      // store syscall specific programs for tail calls from sys_exit
+BPF_PROG_ARRAY(sys_enter_submit_tail, 1);                          // store program for submitting syscalls from sys_enter
+BPF_PROG_ARRAY(sys_exit_submit_tail, 1);                           // store program for submitting syscalls from sys_exit
 BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);             // store stack traces
 BPF_HASH(module_init_map, u32, kmod_data_t, 256);                  // holds module information between
 BPF_LRU_HASH(fd_arg_path_map, fd_arg_task_t, fd_arg_path_t, 1024); // store fds paths by task
@@ -1597,6 +1599,38 @@ init_context(event_context_t *context, struct task_struct *task, u32 options)
     return 0;
 }
 
+static __always_inline task_info_t *init_task_info(u32 key, bool *initialized)
+{
+    task_info_t *task_info = bpf_map_lookup_elem(&task_info_map, &key);
+    if (initialized != NULL) {
+        *initialized = task_info == NULL;
+    }
+    if (task_info == NULL) {
+        // unlikely code path - possibly optimize with unlikely macro later
+
+        // get the submit buffer to fill the task_info_t in the map
+        // this is done because allocating the stack space for task_info_t usually
+        // crosses the verifier limit.
+        int buf_idx = SUBMIT_BUF_IDX;
+        void *submit_buffer = bpf_map_lookup_elem(&bufs, &buf_idx);
+        if (submit_buffer == NULL)
+            return NULL;
+
+        bpf_map_update_elem(&task_info_map, &key, submit_buffer, BPF_NOEXIST);
+        task_info = bpf_map_lookup_elem(&task_info_map, &key);
+        // appease the verifier
+        if (task_info == NULL) {
+            return NULL;
+        }
+        task_info->syscall_traced = false;
+        task_info->new_task = false;
+        task_info->follow = false;
+        task_info->recompute_scope = true;
+        task_info->container_state = CONTAINER_UNKNOWN;
+    }
+    return task_info;
+}
+
 static __always_inline int init_event_data(event_data_t *data, void *ctx)
 {
     int zero = 0;
@@ -1613,23 +1647,14 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
     if (data->submit_p == NULL)
         return 0;
 
-    // try updating task_info_map with noexist flag. If successful, we will need to initialize it
-    // later. to save stack space (of size task_info_t) update the map with garbage data using the
-    // submit buffer.
-    int exist = bpf_map_update_elem(
-        &task_info_map, &data->context.task.host_tid, data->submit_p, BPF_NOEXIST);
-    data->task_info = bpf_map_lookup_elem(&task_info_map, &data->context.task.host_tid);
+    // check if task_info was initialized in this call
+    bool task_info_initalized = false;
+    data->task_info = init_task_info(data->context.task.host_tid, &task_info_initalized);
     if (data->task_info == NULL) {
         return 0;
     }
     bool container_lookup_required = true;
-    if (!exist) {
-        data->task_info->syscall_traced = false;
-        data->task_info->new_task = false;
-        data->task_info->follow = false;
-        data->task_info->recompute_scope = true;
-        data->task_info->container_state = CONTAINER_UNKNOWN;
-    } else {
+    if (!task_info_initalized) {
         // check if we need to recompute scope due to context change
         task_context_t *old_context = &data->task_info->context;
         task_context_t *new_context = &data->context.task;
@@ -2770,20 +2795,22 @@ static __always_inline struct pipe_inode_info *get_file_pipe_info(struct file *f
 SEC("raw_tracepoint/sys_enter")
 int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
 {
-    event_data_t data = {};
-    if (!init_event_data(&data, ctx))
-        return 0;
+    struct task_struct *task = (struct task_struct *) bpf_get_current_task();
 
-    if (!should_trace(&data))
+    u32 task_id = bpf_get_current_pid_tgid(); // get the tid only
+    // use config as garbage value here
+    task_info_t *task_info = init_task_info(task_id, NULL);
+    if (task_info == NULL) {
         return 0;
+    }
 
-    syscall_data_t *sys = &data.task_info->syscall_data;
+    syscall_data_t *sys = &(task_info->syscall_data);
     sys->id = ctx->args[1];
 
     if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER)) {
         struct pt_regs *regs = (struct pt_regs *) ctx->args[0];
 
-        if (is_x86_compat(data.task)) {
+        if (is_x86_compat(task)) {
 #if defined(bpf_target_x86)
             sys->args.args[0] = READ_KERN(regs->bx);
             sys->args.args[1] = READ_KERN(regs->cx);
@@ -2809,7 +2836,7 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
         bpf_probe_read(sys->args.args, sizeof(6 * sizeof(u64)), (void *) ctx->args);
     }
 
-    if (is_compat(data.task)) {
+    if (is_compat(task)) {
         // Translate 32bit syscalls to 64bit syscalls, so we can send to the correct handler
         u32 *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &sys->id);
         if (id_64 == 0)
@@ -2818,43 +2845,72 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
         sys->id = *id_64;
     }
 
-    // TODO: make this a tailcall (userland might place it if option is given)
-    if (data.config->options & OPT_TRANSLATE_FD_FILEPATH && should_submit(sys->id, data.config) &&
-        has_syscall_fd_arg(sys->id)) {
-        // Process filepath related to fd argument
-        uint fd_num = get_syscall_fd_num_from_arg(sys->id, &sys->args);
-        struct file *file = get_struct_file_from_fd(fd_num);
-
-        if (file) {
-            fd_arg_task_t fd_arg_task = {
-                .pid = data.context.task.pid,
-                .tid = data.context.task.tid,
-                .fd = fd_num,
-            };
-
-            fd_arg_path_t fd_arg_path = {};
-            void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
-
-            bpf_probe_read_str(&fd_arg_path.path, sizeof(fd_arg_path.path), file_path);
-            bpf_map_update_elem(&fd_arg_path_map, &fd_arg_task, &fd_arg_path, BPF_ANY);
-        }
-    }
-
-    if (should_submit(RAW_SYS_ENTER, data.config)) {
-        save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 0);
-        events_perf_submit(&data, RAW_SYS_ENTER, 0);
-    }
-
     // exit, exit_group and rt_sigreturn syscalls don't return
     if (sys->id != SYSCALL_EXIT && sys->id != SYSCALL_EXIT_GROUP &&
         sys->id != SYSCALL_RT_SIGRETURN) {
-        sys->ts = data.context.ts;
-        data.task_info->syscall_traced = true;
-    } else if ((sys->id != SYSCALL_RT_SIGRETURN) && (should_submit(sys->id, data.config))) {
-        data.buf_off = sizeof(event_context_t);
-        data.context.argnum = 0;
-        save_to_submit_buf(&data, &sys->args.args[0], sizeof(int), 0);
-        events_perf_submit(&data, sys->id, 0);
+        sys->ts = bpf_ktime_get_ns();
+        task_info->syscall_traced = true;
+    }
+
+    int zero = 0;
+    config_entry_t *config = (config_entry_t *) bpf_map_lookup_elem(&config_map, &zero);
+    if (config == NULL)
+        return 0;
+
+    bool submitEnter = should_submit(RAW_SYS_ENTER, config);
+    bool submitSyscall = should_submit(sys->id, config);
+
+    if (submitEnter || submitSyscall) {
+        bpf_tail_call(ctx, &sys_enter_submit_tail, 0);
+    }
+
+    // call syscall handler, if exists
+    bpf_tail_call(ctx, &sys_enter_tails, sys->id);
+    return 0;
+}
+
+SEC("raw_tracepoint/sys_enter_submit")
+int sys_enter_submit(struct bpf_raw_tracepoint_args *ctx)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+    if (!should_trace(&data))
+        return 0;
+
+    syscall_data_t *sys = &data.task_info->syscall_data;
+
+    if (should_submit(RAW_SYS_ENTER, data.config)) {
+        save_to_submit_buf(&data, (void *) &(sys->id), sizeof(int), 0);
+        events_perf_submit(&data, RAW_SYS_ENTER, 0);
+    }
+
+    if (should_submit(sys->id, data.config)) {
+        if (data.config->options & OPT_TRANSLATE_FD_FILEPATH && has_syscall_fd_arg(sys->id)) {
+            // Process filepath related to fd argument
+            uint fd_num = get_syscall_fd_num_from_arg(sys->id, &sys->args);
+            struct file *file = get_struct_file_from_fd(fd_num);
+
+            if (file) {
+                fd_arg_task_t fd_arg_task = {
+                    .pid = data.context.task.pid,
+                    .tid = data.context.task.tid,
+                    .fd = fd_num,
+                };
+
+                fd_arg_path_t fd_arg_path = {};
+                void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+
+                bpf_probe_read_str(&fd_arg_path.path, sizeof(fd_arg_path.path), file_path);
+                bpf_map_update_elem(&fd_arg_path_map, &fd_arg_task, &fd_arg_path, BPF_ANY);
+            }
+        }
+        if (sys->id != SYSCALL_RT_SIGRETURN && !data.task_info->syscall_traced) {
+            data.buf_off = sizeof(event_context_t);
+            data.context.argnum = 0;
+            save_to_submit_buf(&data, (void *) &(sys->args.args[0]), sizeof(int), 0);
+            events_perf_submit(&data, sys->id, 0);
+        }
     }
 
     // call syscall handler, if exists
@@ -2866,16 +2922,20 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
 SEC("raw_tracepoint/sys_exit")
 int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
 {
-    event_data_t data = {};
-    if (!init_event_data(&data, ctx))
+    struct task_struct *task = (struct task_struct *) bpf_get_current_task();
+
+    u32 task_id = bpf_get_current_pid_tgid(); // get tid
+    task_info_t *task_info = init_task_info(task_id, NULL);
+    if (task_info == NULL) {
         return 0;
+    }
 
     // check if syscall is being traced and mark that it finished
-    if (!data.task_info->syscall_traced)
+    if (!task_info->syscall_traced)
         return 0;
-    data.task_info->syscall_traced = false;
+    task_info->syscall_traced = false;
 
-    syscall_data_t *sys = &data.task_info->syscall_data;
+    syscall_data_t *sys = &task_info->syscall_data;
 
     long ret = ctx->args[1];
     struct pt_regs *regs = (struct pt_regs *) ctx->args[0];
@@ -2885,7 +2945,7 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
     int id = READ_KERN(regs->syscallno);
 #endif
 
-    if (is_compat(data.task)) {
+    if (is_compat(task)) {
         // Translate 32bit syscalls to 64bit syscalls, so we can send to the correct handler
         u32 *id_64 = bpf_map_lookup_elem(&sys_32_to_64_map, &id);
         if (id_64 == 0)
@@ -2898,34 +2958,61 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
     if (sys->id != id)
         return 0;
 
+    sys->ret = ret;
+
+    int zero = 0;
+    config_entry_t *config = (config_entry_t *) bpf_map_lookup_elem(&config_map, &zero);
+    if (config == NULL)
+        return 0;
+
+    bool submitExit = should_submit(RAW_SYS_EXIT, config);
+    bool submitSyscall = should_submit(sys->id, config);
+
+    if (submitExit || submitSyscall) {
+        bpf_tail_call(ctx, &sys_exit_submit_tail, 0);
+    }
+
+    bpf_tail_call(ctx, &sys_exit_tails, id);
+    return 0;
+}
+
+SEC("raw_tracepoint/sys_exit_submit")
+int sys_exit_submit(struct bpf_raw_tracepoint_args *ctx)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+    if (!should_trace(&data))
+        return 0;
+
+    syscall_data_t *sys = &data.task_info->syscall_data;
+    uint id = sys->id;
+    long ret = ctx->args[1];
+
     if (should_submit(RAW_SYS_EXIT, data.config)) {
         save_to_submit_buf(&data, (void *) &id, sizeof(int), 0);
         events_perf_submit(&data, RAW_SYS_EXIT, ret);
     }
 
-    if (should_submit(id, data.config)) {
+    if (should_submit(id, data.config) && (id != SYSCALL_EXECVE && id != SYSCALL_EXECVEAT) ||
+        ((id == SYSCALL_EXECVE || id == SYSCALL_EXECVEAT) && (ret != 0))) {
+        // We can't use saved args after execve syscall, as pointers are
+        // invalid To avoid showing execve event both on entry and exit, we
+        // only output failed execs
         u64 types = 0;
         u64 *saved_types = bpf_map_lookup_elem(&params_types_map, &id);
         if (!saved_types) {
-            goto out;
+            bpf_tail_call(ctx, &sys_exit_tails, id);
+            return 0;
         }
         types = *saved_types;
-        if ((id != SYSCALL_EXECVE && id != SYSCALL_EXECVEAT) ||
-            ((id == SYSCALL_EXECVE || id == SYSCALL_EXECVEAT) && (ret != 0))) {
-            // We can't use saved args after execve syscall, as pointers are
-            // invalid To avoid showing execve event both on entry and exit, we
-            // only output failed execs
-            data.buf_off = sizeof(event_context_t);
-            data.context.argnum = 0;
-            save_args_to_submit_buf(&data, types, &sys->args);
-            data.context.ts = sys->ts;
-            events_perf_submit(&data, id, ret);
-        }
+        data.buf_off = sizeof(event_context_t);
+        data.context.argnum = 0;
+        save_args_to_submit_buf(&data, types, &sys->args);
+        data.context.ts = sys->ts;
+        events_perf_submit(&data, id, ret);
     }
 
-out:
-    sys->ret = ret;
-    // call syscall handler, if exists
     bpf_tail_call(ctx, &sys_exit_tails, id);
     return 0;
 }
