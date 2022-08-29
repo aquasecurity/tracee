@@ -74,6 +74,7 @@
 
 // INTERNAL ----------------------------------------------------------------------------------------
 
+// clang-format off
 #define MAX_PERCPU_BUFSIZE  (1 << 15) // set by the kernel as an upper bound
 #define MAX_STRING_SIZE     4096      // same as PATH_MAX
 #define MAX_BYTES_ARR_SIZE  4096      // max size of bytes array (arbitrarily chosen)
@@ -82,9 +83,11 @@
 #define MAX_STR_FILTER_SIZE 16        // bounded to size of the compared values (comm)
 #define FILE_MAGIC_HDR_SIZE 32        // magic_write: bytes to save from a file's header
 #define FILE_MAGIC_MASK     31        // magic_write: mask used for verifier boundaries
-#define NET_SEQ_OPS_SIZE    4 // print_net_seq_ops: struct size - TODO: replace with uprobe argument
-#define NET_SEQ_OPS_TYPES   6 // print_net_seq_ops: argument size - TODO: replace with uprobe argument
+#define NET_SEQ_OPS_SIZE    4         // print_net_seq_ops: struct size - TODO: replace with uprobe argument
+#define NET_SEQ_OPS_TYPES   6         // print_net_seq_ops: argument size - TODO: replace with uprobe argument
 #define MAX_KSYM_NAME_SIZE  64
+#define UPROBE_MAGIC_NUMBER 20220829
+// clang-format on
 
 enum buf_idx_e
 {
@@ -3452,22 +3455,42 @@ int BPF_KPROBE(trace_do_exit)
     return events_perf_submit(&data, DO_EXIT, code);
 }
 
-/* uprobe_syscall_trigger submit to the buff the syscalls function handlers
- * address from the syscall table. the syscalls are stored in map which is
- * syscalls_to_check_map and the syscall-table address is stored in the
- * kernel_symbols map.
- */
+// uprobe_syscall_trigger submit to the buff the syscalls function handlers
+// address from the syscall table. the syscalls are stored in map which is
+// syscalls_to_check_map and the syscall-table address is stored in the
+// kernel_symbols map.
+
 SEC("uprobe/trigger_syscall_event")
 int uprobe_syscall_trigger(struct pt_regs *ctx)
 {
-    u64 caller_ctx_id;
-#if defined(bpf_target_x86)
-    caller_ctx_id = ctx->bx;
-#elif defined(bpf_target_arm64)
-    bpf_probe_read(&caller_ctx_id, 8, ((void *) ctx->sp) + 16);
-#else
-    return 0;
-#endif
+    u64 magic_num = 0;
+    u64 caller_ctx_id = 0;
+
+    // clang-format off
+    //
+    // Golang calling convention is being changed from a stack based argument
+    // passing (plan9 like) to register based argument passing whenever
+    // possible. In arm64, this change happened from go1.17 to go1.18. Use a
+    // magic number argument to allow uprobe handler to recognize the calling
+    // convention in a simple way.
+
+    #if defined(bpf_target_x86)
+        // go1.17, go1.18, go 1.19
+        magic_num = ctx->bx;                                          // 1st arg
+        caller_ctx_id = ctx->cx;                                      // 2nd arg
+    #elif defined(bpf_target_arm64)
+        // go1.17
+        bpf_probe_read(&magic_num, 8, ((void *) ctx->sp) + 16);       // 1st arg
+        bpf_probe_read(&caller_ctx_id, 8, ((void *) ctx->sp) + 24);   // 2nd arg
+        if (magic_num != UPROBE_MAGIC_NUMBER) {
+            // go1.18, go 1.19
+            magic_num = ctx->user_regs.regs[1];                       // 1st arg
+            caller_ctx_id = ctx->user_regs.regs[2];                   // 2nd arg
+        }
+    #else
+        return 0;
+    #endif
+    // clang-format on
 
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
@@ -3511,53 +3534,73 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
 SEC("uprobe/trigger_seq_ops_event")
 int uprobe_seq_ops_trigger(struct pt_regs *ctx)
 {
-// Argument extraction of go functions is different between x86 and arm
-// https://go.googlesource.com/go/+/refs/heads/dev.regabi/src/cmd/compile/internal-abi.md
-#if defined(bpf_target_x86)
-    uint64_t caller_ctx_id = ctx->bx;
-    uint64_t *address_array = ((void *) ctx->sp) + 8;
-#elif defined(bpf_target_arm64)
-    uint64_t caller_ctx_id;
-    bpf_probe_read(&caller_ctx_id, 8, ((void *) ctx->sp) + 16);
-    uint64_t *address_array = ((void *) ctx->sp) + 24;
-#else
-    return 0;
-#endif
+    u64 magic_num = 0;
+    u64 caller_ctx_id = 0;
+    u64 *address_array = NULL;
+    u64 struct_address;
 
-    uint64_t struct_address;
+    // clang-format off
+    //
+    // Golang calling convention is being changed from a stack based argument
+    // passing (plan9 like) to register based argument passing whenever
+    // possible. In arm64, this change happened from go1.17 to go1.18. Use a
+    // magic number argument to allow uprobe handler to recognize the calling
+    // convention in a simple way.
+
+    #if defined(bpf_target_x86)
+        // go1.17, go1.18, go 1.19
+        magic_num = ctx->bx;                                          // 1st arg
+        caller_ctx_id = ctx->cx;                                      // 2nd arg
+        address_array = ((void *) ctx->sp + 8);                       // 3rd arg
+    #elif defined(bpf_target_arm64)
+        // go1.17
+        bpf_probe_read(&magic_num, 8, ((void *) ctx->sp) + 16);       // 1st arg
+        bpf_probe_read(&caller_ctx_id, 8, ((void *) ctx->sp) + 24);   // 2nd arg
+        address_array = ((void *) ctx->sp + 32);                      // 3rd arg
+        if (magic_num != UPROBE_MAGIC_NUMBER) {
+            // go1.18 and go1.19
+            magic_num = ctx->user_regs.regs[1];                       // 1st arg
+            caller_ctx_id = ctx->user_regs.regs[2];                   // 2nd arg
+            address_array = ((void *) ctx->sp + 8);                   // 3rd arg
+        }
+    #else
+        return 0;
+    #endif
+    // clang-format on
+
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
+
     u32 count_off = data.buf_off + 1;
-    // Init u64 arr with size 0 before adding elements in loop
-    save_u64_arr_to_buf(&data, NULL, 0, 0);
+    save_u64_arr_to_buf(&data, NULL, 0, 0); // init u64 array with size 0
+
 #pragma unroll
     for (int i = 0; i < NET_SEQ_OPS_TYPES; i++) {
         bpf_probe_read(&struct_address, 8, (address_array + i));
         struct seq_operations *seq_ops = (struct seq_operations *) struct_address;
+
         u64 show_addr = (u64) READ_KERN(seq_ops->show);
-        if (show_addr == 0) {
+        if (show_addr == 0)
             return 0;
-        }
 
         u64 start_addr = (u64) READ_KERN(seq_ops->start);
-        if (start_addr == 0) {
+        if (start_addr == 0)
             return 0;
-        }
 
         u64 next_addr = (u64) READ_KERN(seq_ops->next);
-        if (next_addr == 0) {
+        if (next_addr == 0)
             return 0;
-        }
 
         u64 stop_addr = (u64) READ_KERN(seq_ops->stop);
-        if (stop_addr == 0) {
+        if (stop_addr == 0)
             return 0;
-        }
+
         u64 seq_ops_addresses[NET_SEQ_OPS_SIZE + 1] = {show_addr, start_addr, next_addr, stop_addr};
 
         add_u64_elements_to_buf(&data, (const u64 *) seq_ops_addresses, 4, count_off);
     }
+
     save_to_submit_buf(&data, (void *) &caller_ctx_id, sizeof(uint64_t), 1);
     events_perf_submit(&data, PRINT_NET_SEQ_OPS, 0);
     return 0;

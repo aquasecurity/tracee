@@ -1158,23 +1158,34 @@ func (t *Tracee) getCapturedIfaceIdx(ifaceName string) (int, bool) {
 	return t.config.Capture.NetIfaces.Find(ifaceName)
 }
 
+//
 // TODO: move to triggerEvents package
+//
+
+const uProbeMagicNumber uint64 = 20220829
+
+// triggerSyscallsIntegrityCheck is used by a Uprobe to trigger an eBPF program
+// that prints the syscall table
 func (t *Tracee) triggerSyscallsIntegrityCheck(event trace.Event) {
 	_, ok := t.events[events.HookedSyscalls]
 	if !ok {
 		return
 	}
 	eventHandle := t.triggerContexts.Store(event)
-	t.triggerSyscallsIntegrityCheckCall(uint64(eventHandle))
+	t.triggerSyscallsIntegrityCheckCall(
+		uProbeMagicNumber,
+		uint64(eventHandle),
+	)
 }
 
-// triggerSyscallsIntegrityCheck is used by a Uprobe to trigger an eBPF program that prints the syscall table
-// TODO: move to triggerEvents package
 //go:noinline
-func (t *Tracee) triggerSyscallsIntegrityCheckCall(eventHandle uint64) {
+func (t *Tracee) triggerSyscallsIntegrityCheckCall(
+	magicNumber uint64, // 1st arg: allow handler to detect calling convention
+	eventHandle uint64) {
 }
 
-// TODO: move to triggerEvents package
+// triggerSeqOpsIntegrityCheck is used by a Uprobe to trigger an eBPF program
+// that prints the seq ops pointers
 func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
 	_, ok := t.events[events.HookedSeqOps]
 	if !ok {
@@ -1189,13 +1200,18 @@ func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
 		seqOpsPointers[i] = seqOpsStruct.Address
 	}
 	eventHandle := t.triggerContexts.Store(event)
-	t.triggerSeqOpsIntegrityCheckCall(uint64(eventHandle), seqOpsPointers)
+	t.triggerSeqOpsIntegrityCheckCall(
+		uProbeMagicNumber,
+		uint64(eventHandle),
+		seqOpsPointers,
+	)
 }
 
-// triggerSeqOpsIntegrityCheck is used by a Uprobe to trigger an eBPF program that prints the seq ops pointers
-// TODO: move to triggerEvents package
 //go:noinline
-func (t *Tracee) triggerSeqOpsIntegrityCheckCall(eventHandle uint64, seqOpsStruct [len(derive.NetSeqOps)]uint64) error {
+func (t *Tracee) triggerSeqOpsIntegrityCheckCall(
+	magicNumber uint64, // 1st arg: allow handler to detect calling convention
+	eventHandle uint64,
+	seqOpsStruct [len(derive.NetSeqOps)]uint64) error {
 	return nil
 }
 
