@@ -4,13 +4,16 @@ import (
 	"bytes"
 	gocontext "context"
 	"fmt"
-	"inet.af/netaddr"
 	"math"
 	"net"
 	"os"
 	"path"
 	"sync"
 	"time"
+
+	"inet.af/netaddr"
+
+	lru "github.com/hashicorp/golang-lru"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -19,7 +22,6 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcapgo"
-	lru "github.com/hashicorp/golang-lru"
 )
 
 const openPcapsLimit = 512
