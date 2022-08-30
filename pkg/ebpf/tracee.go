@@ -1135,7 +1135,7 @@ func (t *Tracee) updateFileSHA() {
 
 func (t *Tracee) invokeInitEvents() {
 	if t.events[events.InitNamespaces].emit {
-		systemInfoEvent, _ := events.InitNamespacesEvent()
+		systemInfoEvent := events.InitNamespacesEvent()
 		t.config.ChanEvents <- systemInfoEvent
 		t.stats.EventCount.Increment()
 	}
