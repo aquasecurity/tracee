@@ -5564,7 +5564,7 @@ var Definitions = eventDefinitions{
 			Sets: []string{},
 			Params: []trace.ArgMeta{
 				{Type: "char*", Name: "name"},
-				{Type: "u64", Name: "proc_ops_addr"},
+				{Type: "void*", Name: "proc_ops_addr"},
 			},
 		},
 		KprobeAttach: {
@@ -5576,8 +5576,8 @@ var Definitions = eventDefinitions{
 			Sets: []string{},
 			Params: []trace.ArgMeta{
 				{Type: "char*", Name: "symbol_name"},
-				{Type: "u64", Name: "pre_handler_addr"},
-				{Type: "u64", Name: "post_handler_addr"},
+				{Type: "void*", Name: "pre_handler_addr"},
+				{Type: "void*", Name: "post_handler_addr"},
 			},
 		},
 		CallUsermodeHelper: {
@@ -5605,7 +5605,7 @@ var Definitions = eventDefinitions{
 				{Type: "const char*", Name: "file_name"},
 				{Type: "const char*", Name: "path"},
 				{Type: "mode_t", Name: "mode"},
-				{Type: "u64", Name: "proc_ops_addr"},
+				{Type: "void*", Name: "proc_ops_addr"},
 			},
 			Dependencies: dependencies{
 				Capabilities: []cap.Value{cap.NET_ADMIN},
@@ -5807,10 +5807,10 @@ var Definitions = eventDefinitions{
 				{Type: "const char*", Name: "name"},
 				{Type: "const char*", Name: "version"},
 				{Type: "const char*", Name: "src_version"},
-				{Type: "unsigned long", Name: "prev"},
-				{Type: "unsigned long", Name: "next"},
-				{Type: "unsigned long", Name: "prev_next"},
-				{Type: "unsigned long", Name: "next_prev"},
+				{Type: "void*", Name: "prev"},
+				{Type: "void*", Name: "next"},
+				{Type: "void*", Name: "prev_next"},
+				{Type: "void*", Name: "next_prev"},
 			},
 		},
 		SocketAccept: {
