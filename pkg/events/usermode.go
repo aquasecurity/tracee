@@ -25,7 +25,7 @@ import (
 const InitProcNsDir = "/proc/1/ns"
 
 // InitNamespacesEvent collect the init process namespaces and create event from them.
-func InitNamespacesEvent() (trace.Event, error) {
+func InitNamespacesEvent() trace.Event {
 	initNamespacesDef := Definitions.Get(InitNamespaces)
 	initNamespacesArgs := getInitNamespaceArguments()
 	initNamespacesEvent := trace.Event{
@@ -36,7 +36,7 @@ func InitNamespacesEvent() (trace.Event, error) {
 		ArgsNum:     len(initNamespacesArgs),
 		Args:        initNamespacesArgs,
 	}
-	return initNamespacesEvent, nil
+	return initNamespacesEvent
 }
 
 // getInitNamespaceArguments Fetch the namespaces of the init process and parse them into event arguments.
