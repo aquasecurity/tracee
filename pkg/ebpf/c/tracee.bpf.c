@@ -89,6 +89,10 @@
 #define UPROBE_MAGIC_NUMBER 20220829
 // clang-format on
 
+// helper macros for branch prediction
+#define likely(x)   __builtin_expect((x), 1)
+#define unlikely(x) __builtin_expect((x), 0)
+
 enum buf_idx_e
 {
     SUBMIT_BUF_IDX,
@@ -1608,7 +1612,7 @@ static __always_inline task_info_t *init_task_info(u32 key, bool *initialized)
     if (initialized != NULL) {
         *initialized = task_info == NULL;
     }
-    if (task_info == NULL) {
+    if (unlikely(task_info == NULL)) {
         // unlikely code path - possibly optimize with unlikely macro later
 
         // get the submit buffer to fill the task_info_t in the map
@@ -1616,13 +1620,13 @@ static __always_inline task_info_t *init_task_info(u32 key, bool *initialized)
         // crosses the verifier limit.
         int buf_idx = SUBMIT_BUF_IDX;
         void *submit_buffer = bpf_map_lookup_elem(&bufs, &buf_idx);
-        if (submit_buffer == NULL)
+        if (unlikely(submit_buffer == NULL))
             return NULL;
 
         bpf_map_update_elem(&task_info_map, &key, submit_buffer, BPF_NOEXIST);
         task_info = bpf_map_lookup_elem(&task_info_map, &key);
         // appease the verifier
-        if (task_info == NULL) {
+        if (unlikely(task_info == NULL)) {
             return NULL;
         }
         task_info->syscall_traced = false;
@@ -1638,7 +1642,7 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
 {
     int zero = 0;
     data->config = bpf_map_lookup_elem(&config_map, &zero);
-    if (data->config == NULL)
+    if (unlikely(data->config == NULL))
         return 0;
 
     data->task = (struct task_struct *) bpf_get_current_task();
@@ -1647,13 +1651,13 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
     data->buf_off = sizeof(event_context_t);
     int buf_idx = SUBMIT_BUF_IDX;
     data->submit_p = bpf_map_lookup_elem(&bufs, &buf_idx);
-    if (data->submit_p == NULL)
+    if (unlikely(data->submit_p == NULL))
         return 0;
 
     // check if task_info was initialized in this call
     bool task_info_initalized = false;
     data->task_info = init_task_info(data->context.task.host_tid, &task_info_initalized);
-    if (data->task_info == NULL) {
+    if (unlikely(data->task_info == NULL)) {
         return 0;
     }
     bool container_lookup_required = true;
@@ -2805,7 +2809,7 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
     u32 task_id = bpf_get_current_pid_tgid(); // get the tid only
     // use config as garbage value here
     task_info_t *task_info = init_task_info(task_id, NULL);
-    if (task_info == NULL) {
+    if (unlikely(task_info == NULL)) {
         return 0;
     }
 
@@ -2931,7 +2935,7 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
 
     u32 task_id = bpf_get_current_pid_tgid(); // get tid
     task_info_t *task_info = init_task_info(task_id, NULL);
-    if (task_info == NULL) {
+    if (unlikely(task_info == NULL)) {
         return 0;
     }
 
