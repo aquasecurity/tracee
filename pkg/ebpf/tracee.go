@@ -269,6 +269,19 @@ func (t *Tracee) handleEventsDependencies(eventId events.ID) {
 	}
 }
 
+// set tailcalls according to event configurations
+func (t *Tracee) setTailCalls() {
+	for id, cfg := range t.events {
+		if cfg.submit {
+			def := events.Definitions.Get(id)
+			if def.Syscall {
+				events.Definitions.AddTailCallIndex(events.SysEnter, "sys_enter_submit", uint32(id))
+				events.Definitions.AddTailCallIndex(events.SysExit, "sys_exit_submit", uint32(id))
+			}
+		}
+	}
+}
+
 // New creates a new Tracee instance based on a given valid Config
 // It is expected that New will not cause external system side effects (reads, writes, etc.)
 func New(cfg Config) (*Tracee, error) {
@@ -298,6 +311,8 @@ func New(cfg Config) (*Tracee, error) {
 	for id := range t.events {
 		t.handleEventsDependencies(id)
 	}
+
+	t.setTailCalls()
 
 	t.netInfo.ifaces = make(map[int]*net.Interface)
 	t.netInfo.ifacesConfig = make(map[string]int32)

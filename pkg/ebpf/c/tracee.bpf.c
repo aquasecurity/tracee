@@ -927,8 +927,8 @@ BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);                         // store prog
 BPF_PROG_ARRAY(prog_array_tp, MAX_TAIL_CALL);                      // store programs for tail calls
 BPF_PROG_ARRAY(sys_enter_tails, MAX_EVENT_ID);                     // store syscall specific programs for tail calls from sys_enter
 BPF_PROG_ARRAY(sys_exit_tails, MAX_EVENT_ID);                      // store syscall specific programs for tail calls from sys_exit
-BPF_PROG_ARRAY(sys_enter_submit_tail, 1);                          // store program for submitting syscalls from sys_enter
-BPF_PROG_ARRAY(sys_exit_submit_tail, 1);                           // store program for submitting syscalls from sys_exit
+BPF_PROG_ARRAY(sys_enter_submit_tail, MAX_EVENT_ID);                          // store program for submitting syscalls from sys_enter
+BPF_PROG_ARRAY(sys_exit_submit_tail, MAX_EVENT_ID);                           // store program for submitting syscalls from sys_exit
 BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);             // store stack traces
 BPF_HASH(module_init_map, u32, kmod_data_t, 256);                  // holds module information between
 BPF_LRU_HASH(fd_arg_path_map, fd_arg_task_t, fd_arg_path_t, 1024); // store fds paths by task
@@ -2857,17 +2857,8 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
         task_info->syscall_traced = true;
     }
 
-    int zero = 0;
-    config_entry_t *config = (config_entry_t *) bpf_map_lookup_elem(&config_map, &zero);
-    if (config == NULL)
-        return 0;
-
-    bool submitEnter = should_submit(RAW_SYS_ENTER, config);
-    bool submitSyscall = should_submit(sys->id, config);
-
-    if (submitEnter || submitSyscall) {
-        bpf_tail_call(ctx, &sys_enter_submit_tail, 0);
-    }
+    // if id is irrelevant continue to next tail call
+    bpf_tail_call(ctx, &sys_enter_submit_tail, sys->id);
 
     // call syscall handler, if exists
     bpf_tail_call(ctx, &sys_enter_tails, sys->id);
@@ -2965,17 +2956,7 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
 
     sys->ret = ret;
 
-    int zero = 0;
-    config_entry_t *config = (config_entry_t *) bpf_map_lookup_elem(&config_map, &zero);
-    if (config == NULL)
-        return 0;
-
-    bool submitExit = should_submit(RAW_SYS_EXIT, config);
-    bool submitSyscall = should_submit(sys->id, config);
-
-    if (submitExit || submitSyscall) {
-        bpf_tail_call(ctx, &sys_exit_submit_tail, 0);
-    }
+    bpf_tail_call(ctx, &sys_exit_submit_tail, id);
 
     bpf_tail_call(ctx, &sys_exit_tails, id);
     return 0;
