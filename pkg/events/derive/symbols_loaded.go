@@ -39,7 +39,6 @@ type symbolsLoadedEventGenerator struct {
 	pathPrefixWhitelist []string
 	librariesWhitelist  []string
 	isDebug             bool
-	returnedErrors      map[string]bool
 }
 
 func initSymbolsLoadedEventGenerator(
@@ -65,7 +64,6 @@ func initSymbolsLoadedEventGenerator(
 		pathPrefixWhitelist: prefixes,
 		librariesWhitelist:  libraries,
 		isDebug:             isDebug,
-		returnedErrors:      make(map[string]bool),
 	}
 }
 
@@ -81,11 +79,8 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(event trace.Event)
 
 	soSyms, err := symbsLoadedGen.soLoader.GetExportedSymbols(loadingObjectInfo)
 	if err != nil {
-		_, ok := symbsLoadedGen.returnedErrors[err.Error()]
-		if !ok {
-			symbsLoadedGen.returnedErrors[err.Error()] = true
-			return nil, err
-		}
+		// TODO: Create a warning upon this error when logger is available
+
 		// This error happens frequently in some environments, so we need to silence it to reduce spam.
 		if symbsLoadedGen.isDebug {
 			return nil, err
