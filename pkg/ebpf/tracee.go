@@ -478,7 +478,7 @@ func (t *Tracee) generateInitValues() (InitValues, error) {
 }
 
 // Initialize tail calls program array
-func (t *Tracee) initTailCall(mapName string, mapIdx uint32, progName string) error {
+func (t *Tracee) initTailCall(mapName string, mapIndexes []uint32, progName string) error {
 
 	bpfMap, err := t.bpfModule.GetMap(mapName)
 	if err != nil {
@@ -493,7 +493,13 @@ func (t *Tracee) initTailCall(mapName string, mapIdx uint32, progName string) er
 		return fmt.Errorf("could not get BPF program FD for %s: %v", progName, err)
 	}
 
-	return bpfMap.Update(unsafe.Pointer(&mapIdx), unsafe.Pointer(&fd))
+	for _, index := range mapIndexes {
+		err := bpfMap.Update(unsafe.Pointer(&index), unsafe.Pointer(&fd))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // options config should match defined values in ebpf code
@@ -819,17 +825,12 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Initialize tail call dependencies
-	tailCalls := make(map[events.TailCall]bool)
-	for e := range t.events {
-		for _, tailCall := range events.Definitions.Get(e).Dependencies.TailCalls {
-			if tailCall.MapIdx > 10000 { // undefined syscalls (check arm64.go)
-				continue
-			}
-			tailCalls[tailCall] = true
-		}
+	tailCalls, err := t.GetTailCalls()
+	if err != nil {
+		return err
 	}
-	for tailCall := range tailCalls {
-		err := t.initTailCall(tailCall.MapName, tailCall.MapIdx, tailCall.ProgName)
+	for _, tailCall := range tailCalls {
+		err := t.initTailCall(tailCall.MapName, tailCall.MapIndexes, tailCall.ProgName)
 		if err != nil {
 			return fmt.Errorf("failed to initialize tail call: %w", err)
 		}
@@ -851,6 +852,33 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	return nil
+}
+
+func getTailCalls(eventConfigs map[events.ID]eventConfig) ([]events.TailCall, error) {
+	// Since tail calls with an array map index is incomprable type, it can't be the map key.
+	// Therefore we use a map of the tail call struct string forms and only append a tail call
+	// if it's program wasn't already set.
+	tailCallProgs := map[string]bool{}
+	tailCalls := []events.TailCall{}
+	for e := range eventConfigs {
+		for _, tailCall := range events.Definitions.Get(e).Dependencies.TailCalls {
+			for _, index := range tailCall.MapIndexes {
+				if index > 10000 { // undefined syscalls (check arm64.go)
+					return []events.TailCall{}, fmt.Errorf("cannot set tail call with invalid map index (over 10000)")
+				}
+			}
+			tailCallStr := fmt.Sprint(tailCall)
+			if !tailCallProgs[tailCallStr] {
+				tailCalls = append(tailCalls, tailCall)
+			}
+			tailCallProgs[tailCallStr] = true
+		}
+	}
+	return tailCalls, nil
+}
+
+func (t *Tracee) GetTailCalls() ([]events.TailCall, error) {
+	return getTailCalls(t.events)
 }
 
 // attachProbes attaches selected events probes to their respective eBPF progs

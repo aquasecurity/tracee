@@ -24,9 +24,13 @@ type eventDependency struct {
 }
 
 type TailCall struct {
-	MapName  string
-	MapIdx   uint32
-	ProgName string
+	MapName    string
+	MapIndexes []uint32
+	ProgName   string
+}
+
+func (tc *TailCall) addIndex(i uint32) {
+	tc.MapIndexes = append(tc.MapIndexes, i)
 }
 
 // an enum that specifies the index of a function to be used in a bpf tail call
@@ -85,6 +89,15 @@ func (e *eventDefinitions) NamesToIDs() map[string]ID {
 		namesToIds[evt.Name] = id
 	}
 	return namesToIds
+}
+
+func (e *eventDefinitions) AddTailCallIndex(event ID, progName string, index uint32) {
+	tailCalls := e.events[event].Dependencies.TailCalls
+	for i := range tailCalls {
+		if tailCalls[i].ProgName == progName {
+			tailCalls[i].addIndex(index)
+		}
+	}
 }
 
 type ID int32
@@ -829,7 +842,7 @@ var Definitions = eventDefinitions{
 			Syscall: true,
 			Dependencies: dependencies{
 				TailCalls: []TailCall{
-					{MapName: "sys_enter_tails", MapIdx: uint32(Execve), ProgName: "syscall__execve"},
+					{MapName: "sys_enter_tails", MapIndexes: []uint32{uint32(Execve)}, ProgName: "syscall__execve"},
 				},
 			},
 			Sets: []string{"default", "syscalls", "proc", "proc_life"},
@@ -3584,7 +3597,7 @@ var Definitions = eventDefinitions{
 			Syscall: true,
 			Dependencies: dependencies{
 				TailCalls: []TailCall{
-					{MapName: "sys_enter_tails", MapIdx: uint32(Execveat), ProgName: "syscall__execveat"},
+					{MapName: "sys_enter_tails", MapIndexes: []uint32{uint32(Execveat)}, ProgName: "syscall__execveat"},
 				},
 			},
 			Sets: []string{"default", "syscalls", "proc", "proc_life"},
@@ -4876,7 +4889,7 @@ var Definitions = eventDefinitions{
 			},
 			Dependencies: dependencies{
 				TailCalls: []TailCall{
-					{MapName: "sys_enter_submit_tail", MapIdx: 0, ProgName: "sys_enter_submit"},
+					{MapName: "sys_enter_submit_tail", MapIndexes: []uint32{}, ProgName: "sys_enter_submit"},
 				},
 			},
 			Sets: []string{},
@@ -4892,7 +4905,7 @@ var Definitions = eventDefinitions{
 			},
 			Dependencies: dependencies{
 				TailCalls: []TailCall{
-					{MapName: "sys_exit_submit_tail", MapIdx: 0, ProgName: "sys_exit_submit"},
+					{MapName: "sys_exit_submit_tail", MapIndexes: []uint32{}, ProgName: "sys_exit_submit"},
 				},
 			},
 			Sets: []string{},
@@ -5394,9 +5407,7 @@ var Definitions = eventDefinitions{
 			Name:    "socket_dup",
 			Dependencies: dependencies{
 				TailCalls: []TailCall{
-					{MapName: "sys_exit_tails", MapIdx: uint32(Dup), ProgName: "sys_dup_exit_tail"},
-					{MapName: "sys_exit_tails", MapIdx: uint32(Dup2), ProgName: "sys_dup_exit_tail"},
-					{MapName: "sys_exit_tails", MapIdx: uint32(Dup3), ProgName: "sys_dup_exit_tail"},
+					{MapName: "sys_exit_tails", MapIndexes: []uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)}, ProgName: "sys_dup_exit_tail"},
 				},
 			},
 			Sets: []string{},
@@ -5741,10 +5752,10 @@ var Definitions = eventDefinitions{
 			},
 			Dependencies: dependencies{
 				TailCalls: []TailCall{
-					{MapName: "prog_array", MapIdx: tailVfsWrite, ProgName: "trace_ret_vfs_write_tail"},
-					{MapName: "prog_array", MapIdx: tailVfsWritev, ProgName: "trace_ret_vfs_writev_tail"},
-					{MapName: "prog_array", MapIdx: tailKernelWrite, ProgName: "trace_ret_kernel_write_tail"},
-					{MapName: "prog_array", MapIdx: tailSendBin, ProgName: "send_bin"},
+					{MapName: "prog_array", MapIndexes: []uint32{tailVfsWrite}, ProgName: "trace_ret_vfs_write_tail"},
+					{MapName: "prog_array", MapIndexes: []uint32{tailVfsWritev}, ProgName: "trace_ret_vfs_writev_tail"},
+					{MapName: "prog_array", MapIndexes: []uint32{tailKernelWrite}, ProgName: "trace_ret_kernel_write_tail"},
+					{MapName: "prog_array", MapIndexes: []uint32{tailSendBin}, ProgName: "send_bin"},
 				},
 			},
 		},
@@ -5772,9 +5783,9 @@ var Definitions = eventDefinitions{
 			Dependencies: dependencies{
 				Events: []eventDependency{{EventID: SchedProcessExec}},
 				TailCalls: []TailCall{
-					{MapName: "sys_enter_tails", MapIdx: uint32(InitModule), ProgName: "syscall__init_module"},
-					{MapName: "prog_array_tp", MapIdx: tailSendBinTP, ProgName: "send_bin_tp"},
-					{MapName: "prog_array", MapIdx: tailSendBin, ProgName: "send_bin"},
+					{MapName: "sys_enter_tails", MapIndexes: []uint32{uint32(InitModule)}, ProgName: "syscall__init_module"},
+					{MapName: "prog_array_tp", MapIndexes: []uint32{tailSendBinTP}, ProgName: "send_bin_tp"},
+					{MapName: "prog_array", MapIndexes: []uint32{tailSendBin}, ProgName: "send_bin"},
 				},
 			},
 		},
@@ -5784,7 +5795,7 @@ var Definitions = eventDefinitions{
 			Internal: true,
 			Dependencies: dependencies{
 				TailCalls: []TailCall{
-					{MapName: "prog_array", MapIdx: tailSendBin, ProgName: "send_bin"},
+					{MapName: "prog_array", MapIndexes: []uint32{tailSendBin}, ProgName: "send_bin"},
 				},
 			},
 		},
@@ -5835,8 +5846,7 @@ var Definitions = eventDefinitions{
 			Dependencies: dependencies{
 				Events: []eventDependency{{EventID: SecuritySocketAccept}},
 				TailCalls: []TailCall{
-					{MapName: "sys_exit_tails", MapIdx: uint32(Accept), ProgName: "syscall__accept4"},
-					{MapName: "sys_exit_tails", MapIdx: uint32(Accept4), ProgName: "syscall__accept4"},
+					{MapName: "sys_exit_tails", MapIndexes: []uint32{uint32(Accept), uint32(Accept4)}, ProgName: "syscall__accept4"},
 				},
 			},
 			Sets: []string{},

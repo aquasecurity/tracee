@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -121,4 +122,24 @@ func Test_updateFileSHA(t *testing.T) {
 			FileHash:         "dbd318c1c462aee872f41109a4dfd3048871a03dedd0fe0e757ced57dad6f2d7",
 		},
 	}, trc.profiledFiles)
+}
+
+func Test_getTailCalls(t *testing.T) {
+	testCases := []struct {
+		name              string
+		events            map[events.ID]eventConfig
+		expectedTailCalls []events.TailCall
+		expectedErr       error
+	}{}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tailCalls, err := getTailCalls(tc.events)
+			if tc.expectedErr != nil {
+				assert.ErrorIs(t, err, tc.expectedErr)
+			} else {
+				require.NoError(t, err)
+				assert.ElementsMatch(t, tailCalls, tc.expectedTailCalls)
+			}
+		})
+	}
 }
