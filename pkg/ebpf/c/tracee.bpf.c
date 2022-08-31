@@ -66,6 +66,11 @@
 #include <bpf/bpf_tracing.h>
 #include <bpf/bpf_endian.h>
 
+char LICENSE[] SEC("license") = "GPL";
+#ifndef CORE
+int KERNEL_VERSION SEC("version") = LINUX_VERSION_CODE;
+#endif
+
 #if defined(bpf_target_x86)
     #define PT_REGS_PARM6(ctx) ((ctx)->r9)
 #elif defined(bpf_target_arm64)
@@ -6359,8 +6364,3 @@ int tc_ingress(struct __sk_buff *skb)
 {
     return tc_probe(skb, true);
 }
-
-char LICENSE[] SEC("license") = "GPL";
-#ifndef CORE
-int KERNEL_VERSION SEC("version") = LINUX_VERSION_CODE;
-#endif
