@@ -1254,6 +1254,33 @@ static __always_inline bool is_compat(struct task_struct *task)
 #endif
 }
 
+static __always_inline int get_syscall_id_from_regs(struct pt_regs *regs)
+{
+#if defined(bpf_target_x86)
+    int id = READ_KERN(regs->orig_ax);
+#elif defined(bpf_target_arm64)
+    int id = READ_KERN(regs->syscallno);
+#endif
+    return id;
+}
+
+static __always_inline struct pt_regs *get_task_pt_regs(struct task_struct *task)
+{
+// THREAD_SIZE here is statistically defined and assumed to work for 4k page sizes.
+#if defined(bpf_target_x86)
+    void *__ptr = READ_KERN(task->stack) + THREAD_SIZE - TOP_OF_KERNEL_STACK_PADDING;
+    return ((struct pt_regs *) __ptr) - 1;
+#elif defined(bpf_target_arm64)
+    return ((struct pt_regs *) (THREAD_SIZE + READ_KERN(task->stack)) - 1);
+#endif
+}
+
+static __always_inline int get_task_syscall_id(struct task_struct *task)
+{
+    struct pt_regs *regs = get_task_pt_regs(task);
+    return get_syscall_id_from_regs(regs);
+}
+
 // HELPERS: VFS ------------------------------------------------------------------------------------
 
 static __always_inline struct dentry *get_mnt_root_ptr_from_vfsmnt(struct vfsmount *vfsmnt)
@@ -2803,7 +2830,6 @@ int tracepoint__raw_syscalls__sys_enter(struct bpf_raw_tracepoint_args *ctx)
     struct task_struct *task = (struct task_struct *) bpf_get_current_task();
 
     u32 task_id = bpf_get_current_pid_tgid(); // get the tid only
-    // use config as garbage value here
     task_info_t *task_info = init_task_info(task_id, NULL);
     if (task_info == NULL) {
         return 0;
@@ -2944,11 +2970,7 @@ int tracepoint__raw_syscalls__sys_exit(struct bpf_raw_tracepoint_args *ctx)
 
     long ret = ctx->args[1];
     struct pt_regs *regs = (struct pt_regs *) ctx->args[0];
-#if defined(bpf_target_x86)
-    int id = READ_KERN(regs->orig_ax);
-#elif defined(bpf_target_arm64)
-    int id = READ_KERN(regs->syscallno);
-#endif
+    int id = get_syscall_id_from_regs(regs);
 
     if (is_compat(task)) {
         // Translate 32bit syscalls to 64bit syscalls, so we can send to the correct handler
@@ -3977,10 +3999,8 @@ int BPF_KPROBE(trace_commit_creds)
         (old_slim.cap_bset != new_slim.cap_bset) ||
         (old_slim.cap_ambient != new_slim.cap_ambient)) {
         if (data.config->options & OPT_SHOW_SYSCALL) {
-            syscall_data_t *sys = &data.task_info->syscall_data;
-            if (data.task_info->syscall_traced) {
-                save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 2);
-            }
+            int id = get_task_syscall_id(data.task);
+            save_to_submit_buf(&data, (void *) &id, sizeof(int), 2);
         }
 
         events_perf_submit(&data, COMMIT_CREDS, 0);
@@ -4057,10 +4077,8 @@ int BPF_KPROBE(trace_cap_capable)
 
     save_to_submit_buf(&data, (void *) &cap, sizeof(int), 0);
     if (data.config->options & OPT_SHOW_SYSCALL) {
-        syscall_data_t *sys = &data.task_info->syscall_data;
-        if (data.task_info->syscall_traced) {
-            save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 1);
-        }
+        int id = get_task_syscall_id(data.task);
+        save_to_submit_buf(&data, (void *) &id, sizeof(int), 1);
     }
 
     return events_perf_submit(&data, CAP_CAPABLE, 0);
@@ -5283,9 +5301,8 @@ int BPF_KPROBE(trace_security_mmap_file)
         save_to_submit_buf(&data, &prot, sizeof(int), 5);
         save_to_submit_buf(&data, &mmap_flags, sizeof(int), 6);
         if (data.config->options & OPT_SHOW_SYSCALL) {
-            if (data.task_info->syscall_traced) {
-                save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 7);
-            }
+            int id = get_task_syscall_id(data.task);
+            save_to_submit_buf(&data, (void *) &id, sizeof(int), 7);
         }
         return events_perf_submit(&data, SECURITY_MMAP_FILE, 0);
     }
@@ -5968,9 +5985,9 @@ int tracepoint__task__task_rename(struct bpf_raw_tracepoint_args *ctx)
 
     save_str_to_buf(&data, (void *) old_name, 0);
     save_str_to_buf(&data, (void *) new_name, 1);
-    if ((data.config->options & OPT_SHOW_SYSCALL) && (data.task_info->syscall_traced)) {
-        syscall_data_t *sys = &data.task_info->syscall_data;
-        save_to_submit_buf(&data, (void *) &sys->id, sizeof(int), 2);
+    if ((data.config->options & OPT_SHOW_SYSCALL)) {
+        int id = get_task_syscall_id(tsk);
+        save_to_submit_buf(&data, (void *) &id, sizeof(int), 2);
     }
 
     return events_perf_submit(&data, TASK_RENAME, 0);
