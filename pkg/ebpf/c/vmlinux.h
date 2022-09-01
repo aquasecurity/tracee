@@ -270,6 +270,7 @@ struct task_struct {
     struct nsproxy *nsproxy;
     struct css_set *cgroups;
     struct signal_struct *signal;
+    void *stack;
 };
 
 typedef struct {

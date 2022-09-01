@@ -60,6 +60,7 @@
 // include/uapi/linux/const.h
 #define __AC(X, Y) (X##Y)
 #define _AC(X, Y)  __AC(X, Y)
+#define _UL(x)     (_AC(x, UL))
 
 /*=============================== ARCH SPECIFIC ===========================*/
 #if defined(__TARGET_ARCH_x86)
@@ -83,11 +84,20 @@
     //  arch/arm64/include/asm/page-def.h
     //#define PAGE_SHIFT        CONFIG_ARM64_PAGE_SHIFT
     //  as a temporary workaround for failing builds, use the default value of PAGE_SHIFT
-    #define PAGE_SHIFT 12
-    #define PAGE_SIZE  (_AC(1, UL) << PAGE_SHIFT)
+    #define PAGE_SHIFT       12
+    #define PAGE_SIZE        (_AC(1, UL) << PAGE_SHIFT)
 
     // arch/arm64/include/asm/thread_info.h
-    #define _TIF_32BIT (1 << 22)
+    #define _TIF_32BIT       (1 << 22)
+
+    // arch/arm64/include/asm/memory.h
+    //#define MIN_THREAD_SHIFT	(14 + KASAN_THREAD_SHIFT)
+    #define MIN_THREAD_SHIFT 14 // default value if KASAN is disabled (which it should be usually)
+
+    // this can also be PAGE_SHIFT if (MIN_THREAD_SHIFT < PAGE_SHIFT) however here 14 > 12
+    // so we choose MIN_THREAD_SHIFT
+    #define THREAD_SHIFT     MIN_THREAD_SHIFT
+    #define THREAD_SIZE      (_UL(1) << THREAD_SHIFT)
 #endif
 /*=============================== ARCH SPECIFIC ===========================*/
 
