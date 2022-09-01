@@ -21,6 +21,9 @@ spec:
         imagePullPolicy: IfNotPresent
         args:
           - --webhook http://tracee-webhook:2801 --webhook-template ./templates/falcosidekick.tmpl --webhook-content-type application/json
+        env:
+          - name: LIBBPFGO_OSRELEASE_FILE
+            value: /etc/os-release-host
         name: tracee
         securityContext:
           privileged: true
