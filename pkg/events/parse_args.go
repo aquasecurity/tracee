@@ -262,8 +262,29 @@ func init() {
 		return
 	}
 
-	if osInfo.CompareOSBaseKernelRelease("5.9.3") != 1 {
-		// kernel version: >=5.9.3
+	kernel593ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("5.9.3")
+	if err != nil {
+		return
+	}
+	kernel570ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("5.7.0")
+	if err != nil {
+		return
+	}
+	kernel592ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("5.9.2")
+	if err != nil {
+		return
+	}
+	kernel5818ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("5.8.18")
+	if err != nil {
+		return
+	}
+	kernel4180ComparedToRunningKernel, err := osInfo.CompareOSBaseKernelRelease("4.18.0")
+	if err != nil {
+		return
+	}
+
+	if kernel593ComparedToRunningKernel == helpers.KernelVersionOlder {
+		// running kernel version: >=5.9.3
 		kernelReadFileIdStrs = map[int32]string{
 			0: "unknown",
 			1: "firmware",
@@ -273,8 +294,10 @@ func init() {
 			5: "security-policy",
 			6: "x509-certificate",
 		}
-	} else if osInfo.CompareOSBaseKernelRelease("5.7.0") != 1 && osInfo.CompareOSBaseKernelRelease("5.9.2") != -1 && osInfo.CompareOSBaseKernelRelease("5.8.18") != 0 {
-		// kernel version: >=5.7 && <=5.9.2 && !=5.8.18
+	} else if kernel570ComparedToRunningKernel == helpers.KernelVersionOlder /* Running kernel is newer than 5.7.0 */ &&
+		kernel592ComparedToRunningKernel != helpers.KernelVersionOlder /* Running kernel is equal or older than 5.9.2*/ &&
+		kernel5818ComparedToRunningKernel != helpers.KernelVersionEqual /* Running kernel is not 5.8.18 */ {
+		// running kernel version: >=5.7 && <=5.9.2 && !=5.8.18
 		kernelReadFileIdStrs = map[int32]string{
 			0: "unknown",
 			1: "firmware",
@@ -286,8 +309,10 @@ func init() {
 			7: "security-policy",
 			8: "x509-certificate",
 		}
-	} else if osInfo.CompareOSBaseKernelRelease("5.8.18") == 0 || (osInfo.CompareOSBaseKernelRelease("4.18.0") != 1 && osInfo.CompareOSBaseKernelRelease("5.7.0") == 1) {
-		// kernel version: ==5.8.18 || (<5.7 && >=4.18)
+	} else if kernel5818ComparedToRunningKernel == helpers.KernelVersionEqual /* Running kernel is 5.8.18*/ &&
+		(kernel570ComparedToRunningKernel == helpers.KernelVersionNewer && /* Running kernel is older than 5.7.0*/
+			kernel4180ComparedToRunningKernel != helpers.KernelVersionOlder) /* Running kernel is 4.18 or newer */ {
+		// running kernel version: ==5.8.18 || (<5.7 && >=4.18)
 		kernelReadFileIdStrs = map[int32]string{
 			0: "unknown",
 			1: "firmware",
@@ -299,6 +324,7 @@ func init() {
 			7: "x509-certificate",
 		}
 	}
+
 }
 
 func parseKernelReadFileId(id int32) (string, error) {

@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/flags"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
@@ -14,18 +15,10 @@ import (
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
-// KernelVersionInfo is an interface to check kernel version
-type KernelVersionInfo interface {
-	// CompareOSBaseKernelRelease compare given kernel version to current one.
-	// The return value is -1, 0 or 1 if given version is less,
-	// equal or bigger, respectively, than running one.
-	CompareOSBaseKernelRelease(string) int
-}
-
 // ensureInitCapabilities makes sure program initialize with required capabilities only.
 // This is the wider version of ensureRuntimeCapabilities because all runtime capabilities have to be preserved
 // for after initialization.
-func ensureInitCapabilities(OSInfo KernelVersionInfo, cfg *tracee.Config, capsCfg *flags.CapsConfig) error {
+func ensureInitCapabilities(OSInfo *helpers.OSInfo, cfg *tracee.Config, capsCfg *flags.CapsConfig) error {
 	rCaps, err := generateTraceeEbpfRequiredCapabilities(OSInfo, cfg)
 	if err != nil {
 		return err
@@ -39,7 +32,7 @@ func ensureInitCapabilities(OSInfo KernelVersionInfo, cfg *tracee.Config, capsCf
 
 // ensureRuntimeCapabilities makes sure program run with required capabilities only.
 // This is the slimmer version of ensureInitCapabilities.
-func ensureRuntimeCapabilities(OSInfo KernelVersionInfo, cfg *tracee.Config, capsCfg *flags.CapsConfig) error {
+func ensureRuntimeCapabilities(OSInfo *helpers.OSInfo, cfg *tracee.Config, capsCfg *flags.CapsConfig) error {
 	rCaps, err := generateTraceeEbpfRequiredCapabilities(OSInfo, cfg)
 	if err != nil {
 		return err
@@ -82,7 +75,7 @@ func checkAndDropToCapabilities(caps []cap.Value, capsCfg *flags.CapsConfig, isD
 }
 
 // Get all capabilities required to run tracee-ebpf for current run
-func generateTraceeEbpfRequiredCapabilities(OSInfo KernelVersionInfo, cfg *tracee.Config) (
+func generateTraceeEbpfRequiredCapabilities(OSInfo *helpers.OSInfo, cfg *tracee.Config) (
 	[]cap.Value, error) {
 	rCaps, err := getCapabilitiesRequiredByEBPF(OSInfo, cfg.Debug)
 	if err != nil {
@@ -131,7 +124,7 @@ func getKernelPerfEventParanoidValue() (int, error) {
 }
 
 // getCapabilitiesRequiredByEBPF gets all capabilities required for eBPF usage (including perf buffers maps management)
-func getCapabilitiesRequiredByEBPF(OSInfo KernelVersionInfo, debug bool) ([]cap.Value, error) {
+func getCapabilitiesRequiredByEBPF(OSInfo *helpers.OSInfo, debug bool) ([]cap.Value, error) {
 	// In kernel 5.8, CAP_BPF and CAP_PERFMON capabilities were introduced in
 	// order to replace CAP_SYS_ADMIN when loading eBPF programs.
 	privilegedCaps := []cap.Value{
@@ -152,8 +145,13 @@ func getCapabilitiesRequiredByEBPF(OSInfo KernelVersionInfo, debug bool) ([]cap.
 		}
 		return privilegedCaps, nil
 	}
-	const BpfCapabilitiesMinKernelVersion = "5.8"
-	if OSInfo.CompareOSBaseKernelRelease(BpfCapabilitiesMinKernelVersion) < 0 {
+
+	const BpfCapabilitiesMinKernelVersion = "5.8.0"
+	kernelComparison, err := OSInfo.CompareOSBaseKernelRelease(BpfCapabilitiesMinKernelVersion)
+	if err != nil {
+		return privilegedCaps, fmt.Errorf("could not compare kernel versions: %w", err)
+	}
+	if kernelComparison == helpers.KernelVersionOlder {
 		// if kernelParanoidValue is too high, CAP_SYS_ADMIN is required
 		if kernelParanoidValue > 2 {
 			if debug {
