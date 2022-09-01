@@ -39,6 +39,8 @@ spec:
           env:
             - name: LIBBPFGO_OSRELEASE_FILE
               value: /etc/os-release-host
+            - name: LIBBPFGO_OSRELEASE_FILE
+              value: "true"
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           volumeMounts:

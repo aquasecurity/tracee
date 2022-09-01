@@ -343,9 +343,10 @@ func main() {
 				Value: false,
 			},
 			&cli.BoolFlag{
-				Name:  server.HealthzEndpointFlag,
-				Usage: "enable healthz endpoint",
-				Value: false,
+				Name:    server.HealthzEndpointFlag,
+				Usage:   "enable healthz endpoint",
+				Value:   false,
+				EnvVars: []string{"TRACEE_HEALTHZ"},
 			},
 			&cli.BoolFlag{
 				Name:  server.PProfEndpointFlag,

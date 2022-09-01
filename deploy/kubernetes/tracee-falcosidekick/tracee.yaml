@@ -24,6 +24,8 @@ spec:
         env:
           - name: LIBBPFGO_OSRELEASE_FILE
             value: /etc/os-release-host
+          - name: TRACEE_HEALTHZ
+            value: "true"
         name: tracee
         securityContext:
           privileged: true
