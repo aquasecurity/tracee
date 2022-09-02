@@ -22,7 +22,6 @@ CMD_CUT ?= cut
 CMD_SED ?= sed
 CMD_TR ?= tr
 CMD_CLANG ?= clang
-CMD_CLANG_TIDY ?= clang-tidy
 # clang-format-12 is mandatory for now (enum declarations incompatibilities w/ 13 and newer)
 CMD_CLANG_FMT ?= clang-format-12
 
@@ -128,11 +127,8 @@ fmt-fix: | \
 
 .PHONY: code-check
 code-check: | \
-	.check_tree \
-	.check_$(CMD_CLANG_TIDY)
+	.check_tree
 #
-	@echo "Checking with clang-tidy..."
-	$(CMD_CLANG_TIDY) -header-filter=.* pkg/ebpf/c/tracee.bpf.c
 	@echo "Checking Golang vet..."
 	$(GENERAL_MAKE) check-vet
 	echo "Checking Golang with StaticChecker..."
