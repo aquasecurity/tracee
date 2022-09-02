@@ -276,19 +276,6 @@ $(OUTPUT_DIR)/btfhub:
 	@$(CMD_TOUCH) $@/.place-holder # needed for embed.FS
 
 #
-# bundle
-#
-
-.PHONY: $(OUTPUT_DIR)/tracee.bpf
-$(OUTPUT_DIR)/tracee.bpf: \
-	.check_$(CMD_INSTALL)
-#
-	@$(CMD_MKDIR) -p $@
-	$(CMD_INSTALL) -m 0644 ./3rdparty/include/* $@
-	$(CMD_INSTALL) -m 0644 $(OUTPUT_DIR)/libbpf/bpf/*.h $@
-	$(CMD_INSTALL) -m 0644 $(TRACEE_EBPF_OBJ_SRC) $@
-
-#
 # libbpf
 #
 
@@ -338,7 +325,7 @@ $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o: \
 	$(OUTPUT_DIR)/libbpf/libbpf.a \
 	$(TRACEE_EBPF_OBJ_SRC)
 #
-	MAKEFLAGS="--no-print-directory" $(MAKE) $(OUTPUT_DIR)/tracee.bpf
+	MAKEFLAGS="--no-print-directory"
 	$(CMD_CLANG) -S -nostdinc \
 		-D__TARGET_ARCH_$(LINUX_ARCH) \
 		-D__BPF_TRACING__ \
@@ -353,7 +340,8 @@ $(OUTPUT_DIR)/tracee.bpf.$(BPF_NOCORE_TAG).o: \
 		-I $(KERN_SRC_PATH)/include/uapi \
 		-I $(KERN_BUILD_PATH)/include/generated \
 		-I $(KERN_BUILD_PATH)/include/generated/uapi \
-		-I$(OUTPUT_DIR)/tracee.bpf \
+		-I $(OUTPUT_DIR)/libbpf \
+		-I ./3rdparty/include \
 		-Wunused \
 		-Wall \
 		-Wno-frame-address \
@@ -417,13 +405,13 @@ $(OUTPUT_DIR)/tracee.bpf.core.o: \
 	$(TRACEE_EBPF_OBJ_SRC) \
 	$(TRACEE_EBPF_OBJ_CORE_HEADERS)
 #
-	$(MAKE) $(OUTPUT_DIR)/tracee.bpf
 	$(CMD_CLANG) \
 		-D__TARGET_ARCH_$(LINUX_ARCH) \
 		-D__BPF_TRACING__ \
 		-DCORE \
 		-I./pkg/ebpf/c/ \
-		-I$(OUTPUT_DIR)/tracee.bpf \
+		-I$(OUTPUT_DIR)/libbpf/ \
+		-I ./3rdparty/include \
 		-target bpf \
 		-O2 -g \
 		-march=bpf -mcpu=$(BPF_VCPU) \
