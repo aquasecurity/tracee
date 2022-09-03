@@ -486,7 +486,7 @@ func (t *Tracee) initTailCall(mapName string, mapIndexes []uint32, progName stri
 	if err != nil {
 		return fmt.Errorf("could not get BPF program %s: %v", progName, err)
 	}
-	fd := bpfProg.GetFd()
+	fd := bpfProg.FileDescriptor()
 	if fd < 0 {
 		return fmt.Errorf("could not get BPF program FD for %s: %v", progName, err)
 	}
