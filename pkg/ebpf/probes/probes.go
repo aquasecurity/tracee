@@ -54,8 +54,10 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 	binaryPath := "/proc/self/exe"
 
 	allProbes := map[Handle]Probe{
-		SysEnter:                   &traceProbe{eventName: "raw_syscalls:sys_enter", probeType: rawTracepoint, programName: "tracepoint__raw_syscalls__sys_enter"},
-		SysExit:                    &traceProbe{eventName: "raw_syscalls:sys_exit", probeType: rawTracepoint, programName: "tracepoint__raw_syscalls__sys_exit"},
+		SysEnter:                   &traceProbe{eventName: "raw_syscalls:sys_enter", probeType: rawTracepoint, programName: "trace_sys_enter"},
+		SyscallEnter__Internal:     &traceProbe{eventName: "raw_syscalls:sys_enter", probeType: rawTracepoint, programName: "tracepoint__raw_syscalls__sys_enter"},
+		SysExit:                    &traceProbe{eventName: "raw_syscalls:sys_exit", probeType: rawTracepoint, programName: "trace_sys_exit"},
+		SyscallExit__Internal:      &traceProbe{eventName: "raw_syscalls:sys_exit", probeType: rawTracepoint, programName: "tracepoint__raw_syscalls__sys_exit"},
 		SchedProcessFork:           &traceProbe{eventName: "sched:sched_process_fork", probeType: rawTracepoint, programName: "tracepoint__sched__sched_process_fork"},
 		SchedProcessExec:           &traceProbe{eventName: "sched:sched_process_exec", probeType: rawTracepoint, programName: "tracepoint__sched__sched_process_exec"},
 		SchedProcessExit:           &traceProbe{eventName: "sched:sched_process_exit", probeType: rawTracepoint, programName: "tracepoint__sched__sched_process_exit"},
@@ -517,6 +519,8 @@ type Handle int32
 const (
 	SysEnter Handle = iota
 	SysExit
+	SyscallEnter__Internal
+	SyscallExit__Internal
 	SchedProcessFork
 	SchedProcessExec
 	SchedProcessExit
