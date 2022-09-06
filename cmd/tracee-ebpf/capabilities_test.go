@@ -15,7 +15,7 @@ type mockOSInfo struct {
 	version string
 }
 
-func (mOSInfo mockOSInfo) CompareOSBaseKernelRelease(version string) (helpers.KernelVersionComparison, error) {
+func (mOSInfo mockOSInfo) CompareOSBaseKernelRelease(version string) int {
 	return helpers.CompareKernelRelease(mOSInfo.version, version)
 }
 

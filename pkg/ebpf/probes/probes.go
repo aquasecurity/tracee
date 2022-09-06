@@ -425,7 +425,7 @@ func (p *tcProbe) attachTc(module *bpf.Module, netIface *net.Interface) error {
 		return fmt.Errorf("could not find tc program %s", p.programName)
 	}
 
-	tcOpts := bpf.TcOpts{ProgFd: int(prog.FileDescriptor())}
+	tcOpts := bpf.TcOpts{ProgFd: int(prog.GetFd())}
 
 	err = hook.Attach(&tcOpts)
 	if err != nil {
