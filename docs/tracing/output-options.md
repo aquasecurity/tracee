@@ -26,7 +26,7 @@ Tracee supports different output options for detected events:
     If you are filtering for an event that is not a syscall
     ("security_file_open", for example), which sometimes is needed to avoid
     [TOCTOU](https://blog.aquasec.com/linux-vulnerabilitie-tracee), you may
-    opt to also detect which syscal has generated that event.
+    opt to also detect which syscall has generated that event.
 
     ```text
     $ sudo ./dist/tracee-ebpf --output json --trace comm=bash --trace follow --trace event=security_file_open --output option:detect-syscall
