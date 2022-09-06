@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/flags"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
@@ -20,7 +19,7 @@ type KernelVersionInfo interface {
 	// CompareOSBaseKernelRelease compare given kernel version to current one.
 	// The return value is -1, 0 or 1 if given version is less,
 	// equal or bigger, respectively, than running one.
-	CompareOSBaseKernelRelease(string) (helpers.KernelVersionComparison, error)
+	CompareOSBaseKernelRelease(string) int
 }
 
 // ensureInitCapabilities makes sure program initialize with required capabilities only.
@@ -153,14 +152,8 @@ func getCapabilitiesRequiredByEBPF(OSInfo KernelVersionInfo, debug bool) ([]cap.
 		}
 		return privilegedCaps, nil
 	}
-
 	const BpfCapabilitiesMinKernelVersion = "5.8"
-	kernel58CompareToRunningKernel, err := OSInfo.CompareOSBaseKernelRelease(BpfCapabilitiesMinKernelVersion)
-	if err != nil {
-		return privilegedCaps, fmt.Errorf("could not determine kernel version requirements: %w", err)
-	}
-
-	if kernel58CompareToRunningKernel == helpers.KernelVersionNewer {
+	if OSInfo.CompareOSBaseKernelRelease(BpfCapabilitiesMinKernelVersion) < 0 {
 		// if kernelParanoidValue is too high, CAP_SYS_ADMIN is required
 		if kernelParanoidValue > 2 {
 			if debug {
