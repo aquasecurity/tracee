@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -121,4 +122,44 @@ func Test_updateFileSHA(t *testing.T) {
 			FileHash:         "dbd318c1c462aee872f41109a4dfd3048871a03dedd0fe0e757ced57dad6f2d7",
 		},
 	}, trc.profiledFiles)
+}
+
+func Test_getTailCalls(t *testing.T) {
+	testCases := []struct {
+		name              string
+		events            map[events.ID]eventConfig
+		expectedTailCalls []events.TailCall
+		expectedErr       error
+	}{
+		{
+			name: "happy path - some direct syscalls and syscall requiring events",
+			events: map[events.ID]eventConfig{
+				events.Ptrace:           {submit: true, emit: true},
+				events.ClockSettime:     {submit: true, emit: true},
+				events.SecurityFileOpen: {submit: true, emit: true},
+				events.MemProtAlert:     {submit: true, emit: true},
+				events.SocketDup:        {submit: true, emit: true},
+			},
+			expectedTailCalls: []events.TailCall{
+				{MapName: "sys_exit_tails", MapIndexes: []uint32{uint32(events.Dup), uint32(events.Dup2), uint32(events.Dup3)}, ProgName: "sys_dup_exit_tail"},
+				{MapName: "sys_enter_init_tail", MapIndexes: []uint32{uint32(events.Open), uint32(events.Openat), uint32(events.Openat2)}, ProgName: "sys_enter_init"},
+				{MapName: "sys_enter_init_tail", MapIndexes: []uint32{uint32(events.Mmap), uint32(events.Mprotect)}, ProgName: "sys_enter_init"},
+				{MapName: "sys_enter_init_tail", MapIndexes: []uint32{uint32(events.Ptrace), uint32(events.ClockSettime)}, ProgName: "sys_enter_init"},
+				{MapName: "sys_enter_submit_tail", MapIndexes: []uint32{uint32(events.Ptrace), uint32(events.ClockSettime)}, ProgName: "sys_enter_submit"},
+				{MapName: "sys_exit_init_tail", MapIndexes: []uint32{uint32(events.Ptrace), uint32(events.ClockSettime)}, ProgName: "sys_exit_init"},
+				{MapName: "sys_exit_submit_tail", MapIndexes: []uint32{uint32(events.Ptrace), uint32(events.ClockSettime)}, ProgName: "sys_exit_submit"},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tailCalls, err := getTailCalls(tc.events)
+			if tc.expectedErr != nil {
+				assert.ErrorIs(t, err, tc.expectedErr)
+			} else {
+				require.NoError(t, err)
+				assert.ElementsMatch(t, tailCalls, tc.expectedTailCalls)
+			}
+		})
+	}
 }
