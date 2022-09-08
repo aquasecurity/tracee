@@ -5151,7 +5151,7 @@ var Definitions = eventDefinitions{
 			},
 			Dependencies: dependencies{
 				TailCalls: []TailCall{
-					{MapName: "sys_enter_init_tail", MapIndexes: []uint32{uint32(Open), uint32(Openat), uint32(Openat2)}, ProgName: "sys_enter_init"},
+					{MapName: "sys_enter_init_tail", MapIndexes: []uint32{uint32(Open), uint32(Openat), uint32(Openat2), uint32(OpenByHandleAt)}, ProgName: "sys_enter_init"},
 				},
 			},
 			Sets: []string{"default", "lsm_hooks", "fs", "fs_file_ops"},
@@ -5436,6 +5436,8 @@ var Definitions = eventDefinitions{
 			Name:    "socket_dup",
 			Dependencies: dependencies{
 				TailCalls: []TailCall{
+					{MapName: "sys_enter_init_tail", MapIndexes: []uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)}, ProgName: "sys_enter_init"},
+					{MapName: "sys_exit_init_tail", MapIndexes: []uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)}, ProgName: "sys_exit_init"},
 					{MapName: "sys_exit_tails", MapIndexes: []uint32{uint32(Dup), uint32(Dup2), uint32(Dup3)}, ProgName: "sys_dup_exit_tail"},
 				},
 			},
