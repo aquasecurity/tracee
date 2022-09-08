@@ -83,21 +83,24 @@ cd ${BTFHUB_DIR}
 # - centos7 & v4.15 kernels: unsupported eBPF features
 # - fedora 29 & 30 (from 5.3 and on) and newer: already have BTF embedded
 # - amzn2: older than 4.19
+# - ol7: older than 5.4
 #
 
 rsync -avz \
-    ${BTFHUB_ARCH_DIR}/                 \
-    --exclude=.git*                     \
-    --exclude=README.md                 \
-    --exclude="centos/7*"               \
-    --exclude="fedora/29/*/5.3*"        \
-    --exclude="fedora/30/*/5.6*"        \
-    --exclude="fedora/31*"              \
-    --exclude="fedora/32*"              \
-    --exclude="fedora/33*"              \
-    --exclude="fedora/34*"              \
-    --exclude="4.15*"                   \
-    --exclude="amzn*"			\
+    ${BTFHUB_ARCH_DIR}/                   \
+    --exclude=.git*                       \
+    --exclude=README.md                   \
+    --exclude="centos/7*"                 \
+    --exclude="fedora/29/*/5.3*"          \
+    --exclude="fedora/30/*/5.6*"          \
+    --exclude="fedora/31*"                \
+    --exclude="fedora/32*"                \
+    --exclude="fedora/33*"                \
+    --exclude="fedora/34*"                \
+    --exclude="4.15*"                     \
+    --exclude="amzn*"                     \
+    --exclude="oracle-linux/ol7/*/4.14*"  \
+    --exclude="oracle-linux/ol7/*/3.10*"  \
     ./archive/
 
 # cleanup unneeded architectures
