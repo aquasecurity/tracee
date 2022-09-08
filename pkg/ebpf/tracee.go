@@ -491,6 +491,18 @@ func (t *Tracee) initTailCall(mapName string, mapIndexes []uint32, progName stri
 	}
 
 	for _, index := range mapIndexes {
+		def := events.Definitions.Get(events.ID(index))
+		// attach internal syscall probes if needed from tailcalls
+		if def.Syscall {
+			err := t.probes.Attach(probes.SyscallEnter__Internal)
+			if err != nil {
+				return err
+			}
+			err = t.probes.Attach(probes.SyscallExit__Internal)
+			if err != nil {
+				return err
+			}
+		}
 		err := bpfMap.Update(unsafe.Pointer(&index), unsafe.Pointer(&fd))
 		if err != nil {
 			return err
