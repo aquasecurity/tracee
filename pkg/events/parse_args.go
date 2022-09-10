@@ -198,7 +198,7 @@ func ParseArgs(event *trace.Event) error {
 				ParseOrEmptyString(modeArg, inodeModeArgument, err)
 			}
 		}
-	case SecuritySocketSetsockopt, Setsockopt, Getsockopt:
+	case SecuritySocketSetsockopt, Setsockopt:
 		if levelArg := GetArg(event, "level"); levelArg != nil {
 			if level, isInt := levelArg.Value.(int32); isInt {
 				levelArgument, err := helpers.ParseSocketLevel(uint64(level))
@@ -208,7 +208,37 @@ func ParseArgs(event *trace.Event) error {
 		if optionNameArg := GetArg(event, "optname"); optionNameArg != nil {
 			if opt, isInt := optionNameArg.Value.(int32); isInt {
 				optionNameArgument, err := helpers.ParseSocketOption(uint64(opt))
-				ParseOrEmptyString(optionNameArg, optionNameArgument, err)
+				customString, ok := setSocketOptionsCustomNamesMap[optionNameArgument.Value()]
+				if err == nil && ok {
+					customArgument := CustomFunctionArgument{
+						val: optionNameArgument.Value(),
+						str: customString,
+					}
+					ParseOrEmptyString(optionNameArg, customArgument, err)
+				} else {
+					ParseOrEmptyString(optionNameArg, optionNameArgument, err)
+				}
+			}
+		}
+	case Getsockopt:
+		if levelArg := GetArg(event, "level"); levelArg != nil {
+			if level, isInt := levelArg.Value.(int32); isInt {
+				levelArgument, err := helpers.ParseSocketLevel(uint64(level))
+				ParseOrEmptyString(levelArg, levelArgument, err)
+			}
+		}
+		if optionNameArg := GetArg(event, "optname"); optionNameArg != nil {
+			if opt, isInt := optionNameArg.Value.(int32); isInt {
+				optionNameArgument, err := helpers.ParseSocketOption(uint64(opt))
+				if err == nil && optionNameArgument.Value() == helpers.SO_ATTACH_OR_GET_FILTER.Value() {
+					customArgument := CustomFunctionArgument{
+						val: optionNameArgument.Value(),
+						str: "SO_GET_FILTER",
+					}
+					ParseOrEmptyString(optionNameArg, customArgument, err)
+				} else {
+					ParseOrEmptyString(optionNameArg, optionNameArgument, err)
+				}
 			}
 		}
 	}
@@ -301,4 +331,21 @@ func parseKernelReadFileId(id int32) (string, error) {
 		return "", fmt.Errorf("kernelReadFileId doesn't exist in kernelReadFileIdStrs map")
 	}
 	return kernelReadFileIdStr, nil
+}
+
+var setSocketOptionsCustomNamesMap = map[uint64]string{
+	helpers.SO_ATTACH_OR_GET_FILTER.Value(): "SO_ATTACH_FILTER",
+	helpers.SO_DETACH_FILTER_OR_BPF.Value(): "SO_DETACH_FILTER",
+}
+
+type CustomFunctionArgument struct {
+	val uint64
+	str string
+}
+
+func (arg CustomFunctionArgument) String() string {
+	return arg.str
+}
+func (arg CustomFunctionArgument) Value() uint64 {
+	return arg.val
 }
