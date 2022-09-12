@@ -42,6 +42,14 @@ type Config struct {
 func New(config Config) (EventPrinter, error) {
 	var res EventPrinter
 	kind := config.Kind
+
+	if config.OutFile == nil {
+		return res, fmt.Errorf("out file is not set")
+	}
+	if config.ErrFile == nil {
+		return res, fmt.Errorf("err file is not set")
+	}
+
 	switch {
 	case kind == "ignore":
 		res = &ignoreEventPrinter{
