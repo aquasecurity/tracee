@@ -218,19 +218,6 @@ func main() {
 
 			}
 
-			if printerConfig.OutFile == nil {
-				printerConfig.OutFile, err = os.OpenFile(printerConfig.OutPath, os.O_WRONLY, 0755)
-				if err != nil {
-					return err
-				}
-			}
-			if printerConfig.ErrFile == nil {
-				printerConfig.ErrFile, err = os.OpenFile(printerConfig.ErrPath, os.O_WRONLY, 0755)
-				if err != nil {
-					return err
-				}
-			}
-
 			printer, err := printer.New(printerConfig)
 			if err != nil {
 				return err

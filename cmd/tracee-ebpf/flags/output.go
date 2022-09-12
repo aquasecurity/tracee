@@ -110,17 +110,14 @@ func PrepareOutput(outputSlice []string) (tracee.OutputConfig, printer.Config, e
 	} else {
 		printcfg.OutPath = outPath
 		fileInfo, err := os.Stat(outPath)
-		if err == nil {
-			if fileInfo.IsDir() {
-				return outcfg, printcfg, fmt.Errorf("cannot use a path of existing directory %s", outPath)
-			}
-		} else {
-			dir := filepath.Dir(outPath)
-			os.MkdirAll(dir, 0755)
-			printcfg.OutFile, err = os.Create(outPath)
-			if err != nil {
-				return outcfg, printcfg, fmt.Errorf("failed to create output path: %v", err)
-			}
+		if err == nil && fileInfo.IsDir() {
+			return outcfg, printcfg, fmt.Errorf("cannot use a path of existing directory %s", outPath)
+		}
+		dir := filepath.Dir(outPath)
+		os.MkdirAll(dir, 0755)
+		printcfg.OutFile, err = os.Create(outPath)
+		if err != nil {
+			return outcfg, printcfg, fmt.Errorf("failed to create output path: %v", err)
 		}
 	}
 
@@ -129,17 +126,14 @@ func PrepareOutput(outputSlice []string) (tracee.OutputConfig, printer.Config, e
 	} else {
 		printcfg.ErrPath = errPath
 		fileInfo, err := os.Stat(errPath)
-		if err == nil {
-			if fileInfo.IsDir() {
-				return outcfg, printcfg, fmt.Errorf("cannot use a path of existing directory %s", errPath)
-			}
-		} else {
-			dir := filepath.Dir(errPath)
-			os.MkdirAll(dir, 0755)
-			printcfg.ErrFile, err = os.Create(errPath)
-			if err != nil {
-				return outcfg, printcfg, fmt.Errorf("failed to create output path: %v", err)
-			}
+		if err == nil && fileInfo.IsDir() {
+			return outcfg, printcfg, fmt.Errorf("cannot use a path of existing directory %s", errPath)
+		}
+		dir := filepath.Dir(errPath)
+		os.MkdirAll(dir, 0755)
+		printcfg.ErrFile, err = os.Create(errPath)
+		if err != nil {
+			return outcfg, printcfg, fmt.Errorf("failed to create output path: %v", err)
 		}
 	}
 
