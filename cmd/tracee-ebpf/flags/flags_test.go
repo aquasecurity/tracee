@@ -23,13 +23,33 @@ func TestPrepareFilter(t *testing.T) {
 	}{
 		{
 			testName:      "invalid argfilter 1",
-			filters:       []string{"open."},
+			filters:       []string{"open.args"},
 			expectedError: filters.InvalidExpression("open."),
 		},
 		{
 			testName:      "invalid argfilter 2",
-			filters:       []string{"open.bla=5"},
+			filters:       []string{"open.args.bla=5"},
 			expectedError: filters.InvalidEventArgument("bla"),
+		},
+		{
+			testName:      "invalid argfilter 3",
+			filters:       []string{"open.bla=5"},
+			expectedError: flags.InvalidFilterOptionError("open.bla=5"),
+		},
+		{
+			testName:      "invalud context filter 1",
+			filters:       []string{"open.context"},
+			expectedError: filters.InvalidExpression("open.context"),
+		},
+		{
+			testName:      "invalud context filter 2",
+			filters:       []string{"bla.context.processName=ls"},
+			expectedError: filters.InvalidEventName("bla"),
+		},
+		{
+			testName:      "invalud context filter 3",
+			filters:       []string{"openat.context.procName=ls"},
+			expectedError: filters.InvalidContextField("procName"),
 		},
 		{
 			testName:      "invalid filter",

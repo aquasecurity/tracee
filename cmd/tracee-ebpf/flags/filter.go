@@ -74,8 +74,8 @@ Examples:
   --trace uts!=ab356bc4dd554                                   | don't trace events from uts name ab356bc4dd554
   --trace comm=ls                                              | only trace events from ls command
   --trace close.fd=5                                           | only trace 'close' events that have 'fd' equals 5
-  --trace openat.pathname=/tmp*                                | only trace 'openat' events that have 'pathname' prefixed by "/tmp"
-  --trace openat.pathname!=/tmp/1,/bin/ls                      | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
+  --trace openat.args.pathname=/tmp*                           | only trace 'openat' events that have 'pathname' prefixed by "/tmp"
+  --trace openat.args.pathname!=/tmp/1,/bin/ls                 | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
   --trace openat.context.processName=ls                        | only trace 'openat' events that have 'processName' equal to 'ls'
   --trace security_file_open.context.container                 | only trace 'security_file_open' events coming from a container
   --trace comm=bash --trace follow                             | trace all events that originated from bash or from one of the processes spawned by bash
@@ -155,7 +155,7 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 			continue
 		}
 
-		if strings.Contains(filterFlag, ".") {
+		if strings.Contains(filterFlag, ".args") {
 			err := filter.ArgFilter.Parse(filterName, operatorAndValues, eventsNameToID)
 			if err != nil {
 				return tracee.Filter{}, err

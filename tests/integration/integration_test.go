@@ -227,17 +227,17 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name:       "trace only execve events from comm ls",
-			filterArgs: []string{"event=execve", "execve.pathname=*ls"},
+			filterArgs: []string{"event=execve", "execve.args.pathname=*ls"},
 			eventFunc:  checkExecve,
 		},
 		{
 			name:       "trace only execve events that starts with /usr/bin",
-			filterArgs: []string{"event=execve", "execve.pathname=/usr/bin*"},
+			filterArgs: []string{"event=execve", "execve.args.pathname=/usr/bin*"},
 			eventFunc:  checkExecve,
 		},
 		{
 			name:       "trace only execve events that contains l",
-			filterArgs: []string{"event=execve", "execve.pathname=*l*"},
+			filterArgs: []string{"event=execve", "execve.args.pathname=*l*"},
 			eventFunc:  checkExecve,
 		},
 		{
@@ -247,7 +247,7 @@ func Test_EventFilters(t *testing.T) {
 		},
 		{
 			name:       "trace only security_file_open from \"execve\" syscall",
-			filterArgs: []string{"event=security_file_open", "security_file_open.syscall=execve"},
+			filterArgs: []string{"event=security_file_open", "security_file_open.args.syscall=execve"},
 			eventFunc:  checkSecurityFileOpenExecve,
 		},
 	}
