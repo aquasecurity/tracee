@@ -660,6 +660,7 @@ struct qstr {
 struct dentry {
     struct dentry *d_parent;
     struct qstr d_name;
+    struct inode *d_inode;
 };
 
 #define MODULE_NAME_LEN (64 - sizeof(unsigned long))

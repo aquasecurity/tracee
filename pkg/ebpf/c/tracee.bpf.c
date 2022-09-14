@@ -1289,6 +1289,16 @@ static __always_inline int get_task_syscall_id(struct task_struct *task)
 
 // HELPERS: VFS ------------------------------------------------------------------------------------
 
+static __always_inline u64 get_ctime_nanosec_from_inode(struct inode *inode)
+{
+    struct timespec64 ts = READ_KERN(inode->i_ctime);
+    time64_t sec = READ_KERN(ts.tv_sec);
+    if (sec < 0)
+        return 0;
+    long ns = READ_KERN(ts.tv_nsec);
+    return (sec * 1000000000L) + ns;
+}
+
 static __always_inline struct dentry *get_mnt_root_ptr_from_vfsmnt(struct vfsmount *vfsmnt)
 {
     return READ_KERN(vfsmnt->mnt_root);
@@ -1320,12 +1330,7 @@ static __always_inline unsigned long get_inode_nr_from_file(struct file *file)
 static __always_inline u64 get_ctime_nanosec_from_file(struct file *file)
 {
     struct inode *f_inode = READ_KERN(file->f_inode);
-    struct timespec64 ts = READ_KERN(f_inode->i_ctime);
-    time64_t sec = READ_KERN(ts.tv_sec);
-    if (sec < 0)
-        return 0;
-    long ns = READ_KERN(ts.tv_nsec);
-    return (sec * 1000000000L) + ns;
+    return get_ctime_nanosec_from_inode(f_inode);
 }
 
 static __always_inline unsigned short get_inode_mode_from_file(struct file *file)
@@ -1385,6 +1390,25 @@ static __always_inline int check_fd_type(u64 fd, u16 type)
     }
 
     return 0;
+}
+
+static __always_inline unsigned long get_inode_nr_from_dentry(struct dentry *dentry)
+{
+    struct inode *d_inode = READ_KERN(dentry->d_inode);
+    return READ_KERN(d_inode->i_ino);
+}
+
+static __always_inline dev_t get_dev_from_dentry(struct dentry *dentry)
+{
+    struct inode *d_inode = READ_KERN(dentry->d_inode);
+    struct super_block *i_sb = READ_KERN(d_inode->i_sb);
+    return READ_KERN(i_sb->s_dev);
+}
+
+static __always_inline u64 get_ctime_nanosec_from_dentry(struct dentry *dentry)
+{
+    struct inode *d_inode = READ_KERN(dentry->d_inode);
+    return get_ctime_nanosec_from_inode(d_inode);
 }
 
 // HELPERS: MEMORY ---------------------------------------------------------------------------------
@@ -4003,8 +4027,14 @@ int BPF_KPROBE(trace_security_inode_unlink)
     // struct inode *dir = (struct inode *)PT_REGS_PARM1(ctx);
     struct dentry *dentry = (struct dentry *) PT_REGS_PARM2(ctx);
     void *dentry_path = get_dentry_path_str(dentry);
+    unsigned long inode_nr = get_inode_nr_from_dentry(dentry);
+    dev_t dev = get_dev_from_dentry(dentry);
+    u64 ctime = get_ctime_nanosec_from_dentry(dentry);
 
     save_str_to_buf(&data, dentry_path, 0);
+    save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 1);
+    save_to_submit_buf(&data, &dev, sizeof(dev_t), 2);
+    save_to_submit_buf(&data, &ctime, sizeof(u64), 3);
 
     return events_perf_submit(&data, SECURITY_INODE_UNLINK, 0);
 }
