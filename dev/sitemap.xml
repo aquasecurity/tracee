@@ -61,6 +61,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://aquasecurity.github.io/tracee/dev/deep-dive/healthz/</loc>
+         <lastmod>2022-09-14</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://aquasecurity.github.io/tracee/dev/deep-dive/ordering-events/</loc>
          <lastmod>2022-09-14</lastmod>
          <changefreq>daily</changefreq>
