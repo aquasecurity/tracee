@@ -21,3 +21,7 @@ func InvalidEventName(event string) error {
 func InvalidEventArgument(argument string) error {
 	return fmt.Errorf("invalid filter event argument: %s", argument)
 }
+
+func InvalidContextField(field string) error {
+	return fmt.Errorf("invalid event context field: %s", field)
+}

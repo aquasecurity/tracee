@@ -1,7 +1,6 @@
 package filters
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -100,7 +99,7 @@ func (filter *ContextFilter) Parse(filterName string, operatorAndValues string) 
 
 	err := eventFilter.Parse(eventField, operatorAndValues)
 	if err != nil {
-		return fmt.Errorf("failed to set context filter: %s", err)
+		return err
 	}
 
 	filter.Enable()
@@ -242,7 +241,7 @@ func (f *eventCtxFilter) Parse(field string, operatorAndValues string) error {
 		filter := f.podUIDFilter
 		return f.addContainer(filter, operatorAndValues)
 	}
-	return nil
+	return InvalidContextField(field)
 }
 
 func (f *eventCtxFilter) addContainer(filter Filter, operatorAndValues string) error {

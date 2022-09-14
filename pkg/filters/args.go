@@ -58,14 +58,19 @@ func (filter *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
 }
 
 func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, eventsNameToID map[string]events.ID) error {
-	// Event argument filter has the following format: "event.argname=argval"
+	// Event argument filter has the following format: "event.args.argname=argval"
 	// filterName have the format event.argname, and operatorAndValues have the format "=argval"
-	splitFilter := strings.Split(filterName, ".")
-	if len(splitFilter) != 2 {
+	parts := strings.Split(filterName, ".")
+	if len(parts) != 3 {
+		return InvalidExpression(filterName + operatorAndValues)
+
+	}
+	if parts[1] != "args" {
 		return InvalidExpression(filterName + operatorAndValues)
 	}
-	eventName := splitFilter[0]
-	argName := splitFilter[1]
+
+	eventName := parts[0]
+	argName := parts[2]
 
 	if eventName == "" || argName == "" {
 		return InvalidExpression(filterName + operatorAndValues)
