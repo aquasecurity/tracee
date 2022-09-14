@@ -8,11 +8,11 @@ the detections in your preferred way (e.g. Slack, E-mail, JIRA and more).
 [Postee]: https://github.com/aquasecurity/postee
 
 !!! Note
-    Although not optimal, you may consume **tracee** detections through
-    daemonset/tracee logs with `kubectl logs -f daemonset/tracee`.
+    Although not optimal, you may consume **Tracee** detections through
+    daemonset/tracee logs with `kubectl logs -f daemonset/tracee -n tracee-system`.
 
 !!! Tip
-    The **preferred** way to deploy **tracee** is through its [Helm] chart!
+    The **preferred** way to deploy **Tracee** is through its [Helm] chart!
 
 [Helm]: https://helm.sh
 
@@ -42,7 +42,8 @@ the detections in your preferred way (e.g. Slack, E-mail, JIRA and more).
     simply run:
     
     ```text
-    $ kubectl create \
+    $ kubectl create namespace tracee-system
+    $ kubectl create -n tracee-system \
         -f https://raw.githubusercontent.com/aquasecurity/postee/main/deploy/kubernetes/postee.yaml \
         -f https://raw.githubusercontent.com/aquasecurity/tracee/{{ git.tag }}/deploy/kubernetes/tracee-postee/tracee.yaml
     ```
