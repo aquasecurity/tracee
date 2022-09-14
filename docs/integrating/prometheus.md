@@ -12,7 +12,7 @@ through the following URLs:
 2. **tracee-rules** can be scraped through `:4466/metrics`
 
 > Metrics addresses can be changed through **tracee-ebpf** command line
-> arguments `metrics` and `metrics-addr`, check `--help` for more information.
+> arguments `metrics` and `listen-addr`, check `--help` for more information.
 
 !!! Tip
     Check [this tutorial] for more information as well.

@@ -56,6 +56,7 @@ nav:
     - Ordering Events: deep-dive/ordering-events.md
     - Dropping Capabilities: deep-dive/dropping-capabilities.md
     - Override OS files: deep-dive/override-os-files.md
+    - Healthz: deep-dive/healthz.md
   - Tutorials:
       - Setup Development Machine with Vagrant: tutorials/setup-development-machine-with-vagrant.md
       - Deploy Tracee Grafana Dashboard: tutorials/deploy-grafana-dashboard.md

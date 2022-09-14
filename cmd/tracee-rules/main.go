@@ -15,17 +15,15 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/rules/engine"
+	"github.com/aquasecurity/tracee/pkg/server"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/open-policy-agent/opa/compile"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
 const (
 	signatureBufferFlag       = "sig-buffer"
-	metricsFlag               = "metrics"
-	metricsAddrFlag           = "metrics-addr"
 	allowHighCapabilitiesFlag = "allow-high-capabilities"
 )
 
@@ -132,26 +130,27 @@ func main() {
 				return fmt.Errorf("constructing engine: %w", err)
 			}
 
-			if c.Bool(metricsFlag) {
-				err := e.Stats().RegisterPrometheus()
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error registering prometheus metrics: %v\n", err)
-				} else {
-					mux := http.NewServeMux()
-					mux.Handle("/metrics", promhttp.Handler())
+			if server.ShouldStart(c) {
+				httpServer := server.New(c.String(server.ListenEndpointFlag), false)
 
-					go func() {
-						metricsAddr := c.String(metricsAddrFlag)
-						fmt.Fprintf(os.Stdout, "Serving metrics endpoint at %s\n", metricsAddr)
-						if err := http.ListenAndServe(metricsAddr, mux); err != http.ErrServerClosed {
-							fmt.Fprintf(os.Stderr, "Error serving metrics endpoint: %v\n", err)
-						}
-					}()
+				if c.Bool(server.MetricsEndpointFlag) {
+					err := e.Stats().RegisterPrometheus()
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "Error registering prometheus metrics: %v\n", err)
+					} else {
+						httpServer.EnableMetricsEndpoint()
+					}
 				}
 
+				if c.Bool(server.HealthzEndpointFlag) {
+					httpServer.EnableHealthzEndpoint()
+				}
+
+				go httpServer.Start()
 			}
 
 			e.Start(sigHandler())
+
 			return nil
 		},
 		Flags: []cli.Flag{
@@ -219,12 +218,17 @@ func main() {
 				Value: 1000,
 			},
 			&cli.BoolFlag{
-				Name:  metricsFlag,
+				Name:  server.MetricsEndpointFlag,
 				Usage: "enable metrics endpoint",
 				Value: false,
 			},
+			&cli.BoolFlag{
+				Name:  server.HealthzEndpointFlag,
+				Usage: "enable healthz endpoint",
+				Value: false,
+			},
 			&cli.StringFlag{
-				Name:  metricsAddrFlag,
+				Name:  server.ListenEndpointFlag,
 				Usage: "listening address of the metrics endpoint server",
 				Value: ":4466",
 			},
