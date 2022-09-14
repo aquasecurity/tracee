@@ -5151,7 +5151,10 @@ var Definitions = eventDefinitions{
 			},
 			Dependencies: dependencies{
 				TailCalls: []TailCall{
-					{MapName: "sys_enter_init_tail", MapIndexes: []uint32{uint32(Open), uint32(Openat), uint32(Openat2), uint32(OpenByHandleAt)}, ProgName: "sys_enter_init"},
+					{MapName: "sys_enter_init_tail", MapIndexes: []uint32{
+						uint32(Open), uint32(Openat), uint32(Openat2), uint32(OpenByHandleAt),
+						uint32(Execve), uint32(Execveat),
+					}, ProgName: "sys_enter_init"},
 				},
 			},
 			Sets: []string{"default", "lsm_hooks", "fs", "fs_file_ops"},
