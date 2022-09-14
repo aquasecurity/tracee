@@ -112,8 +112,15 @@ VERSION ?= $(if $(RELEASE_TAG),$(RELEASE_TAG),$(LAST_GIT_TAG))
 # environment
 #
 
+DEBUG ?= 0
 UNAME_M := $(shell uname -m)
 UNAME_R := $(shell uname -r)
+
+ifeq ($(DEBUG),1)
+	GO_DEBUG_FLAG =
+else
+	GO_DEBUG_FLAG = -w
+endif
 
 ifeq ($(UNAME_M),x86_64)
    ARCH = x86_64
@@ -177,6 +184,9 @@ env:
 	@echo "GO_ARCH                  $(GO_ARCH)"
 	@echo "GO_TAGS_EBPF             $(GO_TAGS_EBPF)"
 	@echo "GO_TAGS_RULES            $(GO_TAGS_RULES)"
+	@echo ---------------------------------------
+	@echo "DEBUG                    $(DEBUG)"
+	@echo "GO_DEBUG_FLAG            $(GO_DEBUG_FLAG)"
 	@echo ---------------------------------------
 	@echo "CUSTOM_CGO_CFLAGS        $(CUSTOM_CGO_CFLAGS)"
 	@echo "CUSTOM_CGO_LDFLAGS       $(CUSTOM_CGO_LDFLAGS)"
@@ -246,6 +256,7 @@ help:
 	@echo ""
 	@echo "    $$ STATIC=1 make ...                 # build static binaries"
 	@echo "    $$ BTFHUB=1 STATIC=1 make ...        # build static binaries, embed BTF"
+	@echo "    $$ DEBUG=1 make ...                  # build binaries with debug symbols"
 	@echo ""
 
 #
@@ -465,7 +476,7 @@ $(OUTPUT_DIR)/tracee-ebpf: \
 	$(MAKE) btfhub
 	$(GO_ENV_EBPF) $(CMD_GO) build \
 		-tags $(GO_TAGS_EBPF) \
-		-ldflags="-w \
+		-ldflags="$(GO_DEBUG_FLAG) \
 			-extldflags \"$(CGO_EXT_LDFLAGS_EBPF)\" \
 			-X main.version=\"$(VERSION)\" \
 			" \
@@ -535,7 +546,7 @@ $(OUTPUT_DIR)/tracee-rules: \
 #
 	$(GO_ENV_RULES) $(CMD_GO) build \
 		-tags $(GO_TAGS_RULES) \
-		-ldflags="-w \
+		-ldflags="$(GO_DEBUG_FLAG) \
 			-extldflags \"$(CGO_EXT_LDFLAGS_RULES)\" \
 			" \
 		-v -o $@ \
@@ -629,7 +640,7 @@ test-integration: \
 	$(GO_ENV_EBPF) \
 	$(CMD_GO) test \
 		-tags $(GO_TAGS_EBPF) \
-		-ldflags="-w \
+		-ldflags="$(GO_DEBUG_FLAG) \
 			-extldflags \"$(CGO_EXT_LDFLAGS_EBPF)\" \
 			-X main.version=\"$(VERSION)\" \
 			" \

@@ -71,6 +71,7 @@
     
         $ STATIC=1 make ...                 # build static binaries
         $ BTFHUB=1 STATIC=1 make ...        # build static binaries, embed BTF
+        $ DEBUG=1 make ...                  # build binaries with debug symbols
     ```
 
 4. Build **all** targets at once (but bpf-nocore)
@@ -134,3 +135,18 @@
         >2021/12/13 13:27:21 error opening plugin /tracee/dist/rules/builtin.so:
         >plugin.Open("/tracee/dist/rules/builtin.so"): Dynamic loading not supported
         >```
+
+7. Build a **debuggable binary** with DWARF generation by setting `DEBUG=1`
+
+    ```text
+    $ DEBUG=1 make
+    ...
+    GOOS=linux CC=clang GOARCH=amd64 CGO_CFLAGS="-I/home/gg/code/tracee/dist/libbpf" CGO_LDFLAGS="-lelf  -lz  /home/gg/code/tracee/dist/libbpf/libbpf.a" go build \
+	-tags core,ebpf \
+	-ldflags=" \
+		-extldflags \"\" \
+		-X main.version=\"v0.8.0-107-g121efeb\" \
+		" \
+	-v -o dist/tracee-ebpf \
+	./cmd/tracee-ebpf
+    ```
