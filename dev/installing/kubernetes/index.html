@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.5.0+insiders-4.23.3">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.5.0+insiders-4.23.4">
     
     
       
@@ -1734,12 +1734,12 @@ alongside a message routing application (<a href="https://github.com/aquasecurit
 the detections in your preferred way (e.g. Slack, E-mail, JIRA and more). </p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Although not optimal, you may consume <strong>tracee</strong> detections through
-daemonset/tracee logs with <code>kubectl logs -f daemonset/tracee</code>.</p>
+<p>Although not optimal, you may consume <strong>Tracee</strong> detections through
+daemonset/tracee logs with <code>kubectl logs -f daemonset/tracee -n tracee-system</code>.</p>
 </div>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
-<p>The <strong>preferred</strong> way to deploy <strong>tracee</strong> is through its <a href="https://helm.sh">Helm</a> chart!</p>
+<p>The <strong>preferred</strong> way to deploy <strong>Tracee</strong> is through its <a href="https://helm.sh">Helm</a> chart!</p>
 </div>
 <ol>
 <li>
@@ -1767,7 +1767,8 @@ $ helm install tracee ./deploy/helm/tracee \
 <p>Install <strong>Tracee</strong> <strong>Manually</strong></p>
 <p>To install Tracee with <a href="https://github.com/aquasecurity/postee">Postee</a>,
 simply run:</p>
-<div class="highlight"><pre><span></span><code>$ kubectl create \
+<div class="highlight"><pre><span></span><code>$ kubectl create namespace tracee-system
+$ kubectl create -n tracee-system \
     -f https://raw.githubusercontent.com/aquasecurity/postee/main/deploy/kubernetes/postee.yaml \
     -f https://raw.githubusercontent.com/aquasecurity/tracee/v0.8.2/deploy/kubernetes/tracee-postee/tracee.yaml
 </code></pre></div>
