@@ -970,7 +970,6 @@ func (t *Tracee) attachProbes() error {
 
 func (t *Tracee) initBPF() error {
 	var err error
-	isDebugSet := t.config.Debug
 	isCaptureNetSet := t.config.Capture.NetIfaces != nil
 	isFilterNetSet := len(t.config.Filter.NetFilter.Interfaces()) != 0
 
@@ -990,7 +989,7 @@ func (t *Tracee) initBPF() error {
 
 	// Initialize probes
 
-	netEnabled := isDebugSet || isCaptureNetSet || isFilterNetSet
+	netEnabled := isCaptureNetSet || isFilterNetSet
 
 	t.probes, err = probes.Init(t.bpfModule, netEnabled)
 	if err != nil {
