@@ -33,6 +33,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/pkg/utils"
+	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 	"github.com/aquasecurity/tracee/types/trace"
 	lru "github.com/hashicorp/golang-lru"
 	"golang.org/x/sys/unix"
@@ -508,6 +509,71 @@ func (t *Tracee) initTailCall(mapName string, mapIndexes []uint32, progName stri
 			return err
 		}
 	}
+	return nil
+}
+
+// initDerivationTable initializes tracee's events.DerivationTable.
+// we declare for each Event (represented through it's ID) to which other
+// events it can be derived and the corresponding function to derive into that Event.
+func (t *Tracee) initDerivationTable() error {
+	// sanity check for containers dependency
+	if t.containers == nil {
+		return fmt.Errorf("nil tracee containers")
+	}
+
+	pathResolver := containers.InitPathResolver(&t.pidsInMntns)
+	soLoader := sharedobjs.InitContainersSymbolsLoader(&pathResolver, 1024)
+
+	t.eventDerivations = derive.Table{
+		events.CgroupMkdir: {
+			events.ContainerCreate: {
+				Enabled:        t.events[events.ContainerCreate].submit,
+				DeriveFunction: derive.ContainerCreate(t.containers),
+			},
+		},
+		events.CgroupRmdir: {
+			events.ContainerRemove: {
+				Enabled:        t.events[events.ContainerRemove].submit,
+				DeriveFunction: derive.ContainerRemove(t.containers),
+			},
+		},
+		events.PrintSyscallTable: {
+			events.HookedSyscalls: {
+				Enabled:        t.events[events.PrintSyscallTable].submit,
+				DeriveFunction: derive.DetectHookedSyscall(t.kernelSymbols),
+			},
+		},
+		events.DnsRequest: {
+			events.NetPacket: {
+				Enabled:        t.events[events.NetPacket].submit,
+				DeriveFunction: derive.NetPacket(),
+			},
+		},
+		events.DnsResponse: {
+			events.NetPacket: {
+				Enabled:        t.events[events.NetPacket].submit,
+				DeriveFunction: derive.NetPacket(),
+			},
+		},
+		events.PrintNetSeqOps: {
+			events.HookedSeqOps: {
+				Enabled:        t.events[events.HookedSeqOps].submit,
+				DeriveFunction: derive.HookedSeqOps(t.kernelSymbols),
+			},
+		},
+		events.SharedObjectLoaded: {
+			events.SymbolsLoaded: {
+				Enabled: t.events[events.SymbolsLoaded].submit,
+				DeriveFunction: derive.SymbolsLoaded(
+					soLoader,
+					t.config.Filter.ArgFilter.Filters[events.SymbolsLoaded]["symbols"].Equal,
+					t.config.Filter.ArgFilter.Filters[events.SymbolsLoaded]["library_path"].NotEqual,
+					t.config.Debug,
+				),
+			},
+		},
+	}
+
 	return nil
 }
 
