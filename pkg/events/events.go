@@ -156,6 +156,9 @@ const (
 	TaskRename
 	SymbolsLoaded
 	SecurityInodeRename
+	NewNetPacketBase
+	NewNetPacket
+	NewDnsPacket
 	MaxCommonID
 )
 
@@ -167,6 +170,8 @@ const (
 	ExistingContainer
 	HookedSyscalls
 	HookedSeqOps
+	NewDnsRequest
+	NewDnsResponse
 	MaxUserSpace
 )
 
@@ -5970,6 +5975,73 @@ var Definitions = eventDefinitions{
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "old_path"},
 				{Type: "const char*", Name: "new_path"},
+			},
+		},
+		NewNetPacketBase: {
+			ID32Bit:  sys32undefined,
+			Name:     "new_net_packet_base",
+			Internal: true,
+			Dependencies: dependencies{
+				Capabilities: []cap.Value{cap.NET_ADMIN},
+			},
+			Probes: []probeDependency{
+				{Handle: probes.SockAllocFile, Required: true},
+				{Handle: probes.SockAllocFileRet, Required: true},
+				{Handle: probes.CgroupBPFRunFilterSKB, Required: true},
+				{Handle: probes.CgroupBPFRunFilterSKBRet, Required: true},
+			},
+			Sets: []string{""},
+		},
+		NewNetPacket: { // payload: packet headers only
+			ID32Bit: sys32undefined,
+			Name:    "new_net_packet",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NewNetPacketBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "int", Name: "nothing"},
+			},
+		},
+		NewDnsPacket: { // payload: full packet
+			ID32Bit: sys32undefined,
+			Name:    "new_dns_packet",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NewNetPacketBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "int", Name: "nothing"},
+			},
+		},
+		NewDnsRequest: { // derived from NewDnsPacket (parsed payload)
+			ID32Bit: sys32undefined,
+			Name:    "new_dns_request",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NewDnsPacket},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "int", Name: "nothing"},
+			},
+		},
+		NewDnsResponse: { // derived from NewDnsPacket (parsed payload)
+			ID32Bit: sys32undefined,
+			Name:    "new_dns_response",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NewDnsPacket},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "int", Name: "nothing"},
 			},
 		},
 	},

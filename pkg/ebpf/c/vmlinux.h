@@ -469,6 +469,7 @@ struct alloc_context {
 
 struct socket {
     struct sock *sk;
+    struct file *file;
 };
 
 typedef struct {
@@ -514,7 +515,9 @@ struct device {
 
 struct sock {
     struct sock_common __sk_common;
+    u16 sk_type;
     u16 sk_protocol;
+    struct socket *sk_socket;
 };
 
 typedef u32 __kernel_dev_t;
@@ -572,10 +575,16 @@ struct msghdr {
     void *msg_name;
 };
 
+typedef s64 ktime_t;
+
 struct sk_buff {
     __u16 transport_header;
     __u16 network_header;
     unsigned char *head;
+    union {
+        ktime_t tstamp;
+        u64 skb_mstamp_ns;
+    };
 };
 
 struct icmphdr {
@@ -863,6 +872,28 @@ struct seq_operations {
     void (*stop)(struct seq_file *m, void *v);
     void *(*next)(struct seq_file *m, void *v, loff_t *pos);
     int (*show)(struct seq_file *m, void *v);
+};
+
+enum bpf_attach_type
+{
+    BPF_CGROUP_INET_INGRESS = 0,
+    BPF_CGROUP_INET_EGRESS = 1,
+};
+
+enum event_type
+{
+    EVENT_CGROUP_SKB_INGRESS = 1,
+    EVENT_CGROUP_SKB_EGRESS,
+    EVENT_KPROBE_SOCK_ALLOC_FILE,
+    EVENT_KRETPROBE_SOCK_ALLOC_FILE,
+    EVENT_KPROBE_CGROUP_BPF_FILTER_SKB,
+    EVENT_KRETPROBE_CGROUP_BPF_FILTER_SKB,
+};
+
+enum bpf_hdr_start_off
+{
+    BPF_HDR_START_MAC = 0,
+    BPF_HDR_START_NET = 1,
 };
 
 #include <struct_flavors.h>
