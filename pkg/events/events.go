@@ -5169,9 +5169,6 @@ var Definitions = eventDefinitions{
 			Sets: []string{"default", "lsm_hooks", "fs", "fs_file_ops"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "pathname"},
-				{Type: "unsigned long", Name: "inode"},
-				{Type: "dev_t", Name: "device"},
-				{Type: "u64", Name: "ctime"},
 			},
 		},
 		SecuritySocketCreate: {
