@@ -28,7 +28,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get install -y build-essential devscripts ubuntu-dev-tools && \
     apt-get install -y debhelper dh-exec dpkg-dev pkg-config && \
     apt-get install -y software-properties-common && \
-    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.42.0/opa_linux_amd64_static && \
+    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.44.0/opa_linux_amd64_static && \
     chmod 755 /usr/bin/opa
 
 # allow TRACEE* and LIBBPFGO* environment variables through sudo

@@ -32,7 +32,7 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell", inline: <<-SHELL
     VAGRANT_HOME="/home/vagrant"
     GO_VERSION="1.17"
-    OPA_VERSION="v0.42.0"
+    OPA_VERSION="v0.44.0"
 
     apt-get update
     apt-get install --yes bsdutils
