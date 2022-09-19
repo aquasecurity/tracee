@@ -21,7 +21,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     apt-get install -y linux-headers-generic && \
     apt-get install -y libelf-dev && \
     apt-get install -y zlib1g-dev && \
-    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.42.0/opa_linux_amd64_static && \
+    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.44.0/opa_linux_amd64_static && \
     chmod 755 /usr/bin/opa
 
 # allow TRACEE* and LIBBPFGO* environment variables through sudo

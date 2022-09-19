@@ -63,7 +63,7 @@ RUN apk --no-cache update && \
     apk --no-cache add sudo curl && \
     apk --no-cache add libelf zlib && \
     apk --no-cache add libc6-compat && \
-    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.42.0/opa_linux_amd64_static && \
+    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.44.0/opa_linux_amd64_static && \
     chmod 755 /usr/bin/opa
 
 #

@@ -25,7 +25,7 @@ RUN yum update -y && \
     yum install -y elfutils-libelf-devel && \
     yum install -y zlib-devel && \
     yum install -y rpm-build && \
-    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.42.0/opa_linux_amd64_static && \
+    curl -L -o /usr/bin/opa https://github.com/open-policy-agent/opa/releases/download/v0.44.0/opa_linux_amd64_static && \
     chmod 755 /usr/bin/opa
 
 # allow TRACEE* and LIBBPFGO* environment variables through sudo
