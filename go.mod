@@ -140,3 +140,6 @@ require (
 )
 
 replace github.com/kubernetes/cri-api => k8s.io/cri-api v0.23.5-rc.0
+replace github.com/aquasecurity/libbpfgo => ./3rdparty/libbpfgo/
+replace github.com/aquasecurity/tracee/types => ./types
+replace github.com/aquasecurity/tracee => ./
