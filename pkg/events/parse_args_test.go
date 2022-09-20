@@ -1,11 +1,12 @@
 package events
 
 import (
+	"testing"
+
 	"github.com/aquasecurity/libbpfgo/helpers"
 	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 func TestParseArgs(t *testing.T) {
@@ -58,7 +59,7 @@ func TestParseArgs(t *testing.T) {
 							Name: "optname",
 							Type: "int",
 						},
-						Value: int32(helpers.SO_ATTACH_OR_GET_FILTER.Value()),
+						Value: int32(helpers.SO_ATTACH_FILTER.Value()),
 					},
 				},
 				expectedArgs: []trace.Argument{
@@ -157,7 +158,7 @@ func TestParseArgs(t *testing.T) {
 							Name: "optname",
 							Type: "int",
 						},
-						Value: int32(helpers.SO_ATTACH_OR_GET_FILTER.Value()),
+						Value: int32(helpers.SO_GET_FILTER.Value()),
 					},
 				},
 				expectedArgs: []trace.Argument{

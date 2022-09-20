@@ -198,7 +198,7 @@ func ParseArgs(event *trace.Event) error {
 				ParseOrEmptyString(modeArg, inodeModeArgument, err)
 			}
 		}
-	case SecuritySocketSetsockopt, Setsockopt:
+	case SecuritySocketSetsockopt, Setsockopt, Getsockopt:
 		if levelArg := GetArg(event, "level"); levelArg != nil {
 			if level, isInt := levelArg.Value.(int32); isInt {
 				levelArgument, err := helpers.ParseSocketLevel(uint64(level))
@@ -207,38 +207,14 @@ func ParseArgs(event *trace.Event) error {
 		}
 		if optionNameArg := GetArg(event, "optname"); optionNameArg != nil {
 			if opt, isInt := optionNameArg.Value.(int32); isInt {
-				optionNameArgument, err := helpers.ParseSocketOption(uint64(opt))
-				customString, ok := setSocketOptionsCustomNamesMap[optionNameArgument.Value()]
-				if err == nil && ok {
-					customArgument := CustomFunctionArgument{
-						val: optionNameArgument.Value(),
-						str: customString,
-					}
-					ParseOrEmptyString(optionNameArg, customArgument, err)
+				var optionNameArgument helpers.SocketOptionArgument
+				var err error
+				if ID(event.EventID) == Getsockopt {
+					optionNameArgument, err = helpers.ParseGetSocketOption(uint64(opt))
 				} else {
-					ParseOrEmptyString(optionNameArg, optionNameArgument, err)
+					optionNameArgument, err = helpers.ParseSetSocketOption(uint64(opt))
 				}
-			}
-		}
-	case Getsockopt:
-		if levelArg := GetArg(event, "level"); levelArg != nil {
-			if level, isInt := levelArg.Value.(int32); isInt {
-				levelArgument, err := helpers.ParseSocketLevel(uint64(level))
-				ParseOrEmptyString(levelArg, levelArgument, err)
-			}
-		}
-		if optionNameArg := GetArg(event, "optname"); optionNameArg != nil {
-			if opt, isInt := optionNameArg.Value.(int32); isInt {
-				optionNameArgument, err := helpers.ParseSocketOption(uint64(opt))
-				if err == nil && optionNameArgument.Value() == helpers.SO_ATTACH_OR_GET_FILTER.Value() {
-					customArgument := CustomFunctionArgument{
-						val: optionNameArgument.Value(),
-						str: "SO_GET_FILTER",
-					}
-					ParseOrEmptyString(optionNameArg, customArgument, err)
-				} else {
-					ParseOrEmptyString(optionNameArg, optionNameArgument, err)
-				}
+				ParseOrEmptyString(optionNameArg, optionNameArgument, err)
 			}
 		}
 	}
@@ -280,7 +256,6 @@ func GetArg(event *trace.Event, argName string) *trace.Argument {
 var kernelReadFileIdStrs map[int32]string
 
 func init() {
-
 	osInfo, err := helpers.GetOSInfo()
 	if err != nil {
 		return
@@ -348,7 +323,6 @@ func init() {
 			7: "x509-certificate",
 		}
 	}
-
 }
 
 func parseKernelReadFileId(id int32) (string, error) {
@@ -357,11 +331,6 @@ func parseKernelReadFileId(id int32) (string, error) {
 		return "", fmt.Errorf("kernelReadFileId doesn't exist in kernelReadFileIdStrs map")
 	}
 	return kernelReadFileIdStr, nil
-}
-
-var setSocketOptionsCustomNamesMap = map[uint64]string{
-	helpers.SO_ATTACH_OR_GET_FILTER.Value(): "SO_ATTACH_FILTER",
-	helpers.SO_DETACH_FILTER_OR_BPF.Value(): "SO_DETACH_FILTER",
 }
 
 type CustomFunctionArgument struct {
