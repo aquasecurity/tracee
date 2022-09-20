@@ -125,6 +125,8 @@ github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20220418222510-f25a4f6275ed h1:u
 github.com/antlr/antlr4/runtime/Go/antlr v0.0.0-20220418222510-f25a4f6275ed/go.mod h1:F7bn7fEU90QkQ3tnmaTx3LTKLEDqnwWODIYppRQ5hnY=
 github.com/aquasecurity/libbpfgo v0.3.0-libbpf-0.8.0 h1:NQEf484vQOshZwZOLTE7kzo62TvYrM906gUjlVg4D2k=
 github.com/aquasecurity/libbpfgo v0.3.0-libbpf-0.8.0/go.mod h1:qu0TVGRvtNMFkuKLscJkY1FwmageNBLqeImAFslqPPc=
+github.com/aquasecurity/libbpfgo v0.4.0-libbpf-1.0.0.0.20220919160735-14c6bc9b8a05 h1:5Tz5ByTwy5kWiKfYOA9WNyZvQkHK/hxysg2Ls8zd6OA=
+github.com/aquasecurity/libbpfgo v0.4.0-libbpf-1.0.0.0.20220919160735-14c6bc9b8a05/go.mod h1:qu0TVGRvtNMFkuKLscJkY1FwmageNBLqeImAFslqPPc=
 github.com/aquasecurity/tracee/types v0.0.0-20220804074749-e785ea989919 h1:1tvaIwXjjSciTa1JNqw3W4iofSONLX/GORWL8ee5Ocw=
 github.com/aquasecurity/tracee/types v0.0.0-20220804074749-e785ea989919/go.mod h1:l8MikK8yNCxoFVFq+WqvRg3kiDUX4wDTQwo7oD7YnWM=
 github.com/arbovm/levenshtein v0.0.0-20160628152529-48b4e1c0c4d0/go.mod h1:t2tdKJDJF9BV14lnkjHmOQgcvEKgtqs5a1N3LNdJhGE=
