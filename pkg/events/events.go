@@ -5170,7 +5170,7 @@ var Definitions = eventDefinitions{
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "unsigned long", Name: "inode"},
-				{Type: "dev_t", Name: "device"},
+				{Type: "dev_t", Name: "dev"},
 				{Type: "u64", Name: "ctime"},
 			},
 		},
