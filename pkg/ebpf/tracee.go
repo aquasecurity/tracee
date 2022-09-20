@@ -572,6 +572,22 @@ func (t *Tracee) initDerivationTable() error {
 				),
 			},
 		},
+		events.NewNetPacketBase: {
+			events.NewNetPacket: {
+				Enabled:        t.events[events.NewNetPacketBase].submit,
+				DeriveFunction: derive.NewNetPacket(),
+			},
+		},
+		events.NewDnsPacketBase: {
+			events.NewDnsRequest: {
+				Enabled:        t.events[events.NewDnsPacketBase].submit,
+				DeriveFunction: derive.NewDnsRequest(),
+			},
+			events.NewDnsResponse: {
+				Enabled:        t.events[events.NewDnsPacketBase].submit,
+				DeriveFunction: derive.NewDnsResponse(),
+			},
+		},
 	}
 
 	return nil

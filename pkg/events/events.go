@@ -157,8 +157,7 @@ const (
 	SymbolsLoaded
 	SecurityInodeRename
 	NewNetPacketBase
-	NewNetPacket
-	NewDnsPacket
+	NewDnsPacketBase
 	MaxCommonID
 )
 
@@ -170,6 +169,7 @@ const (
 	ExistingContainer
 	HookedSyscalls
 	HookedSeqOps
+	NewNetPacket
 	NewDnsRequest
 	NewDnsResponse
 	MaxUserSpace
@@ -5977,7 +5977,10 @@ var Definitions = eventDefinitions{
 				{Type: "const char*", Name: "new_path"},
 			},
 		},
-		NewNetPacketBase: {
+		//
+		// WIP
+		//
+		NewNetPacketBase: { // payload: packet headers only
 			ID32Bit:  sys32undefined,
 			Name:     "new_net_packet_base",
 			Internal: true,
@@ -5990,9 +5993,12 @@ var Definitions = eventDefinitions{
 				{Handle: probes.CgroupBPFRunFilterSKB, Required: true},
 				{Handle: probes.CgroupBPFRunFilterSKBRet, Required: true},
 			},
-			Sets: []string{""},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "int", Name: "nothing"},
+			},
 		},
-		NewNetPacket: { // payload: packet headers only
+		NewNetPacket: { // derived from NewNetPacketBase (parsed headers)
 			ID32Bit: sys32undefined,
 			Name:    "new_net_packet",
 			Dependencies: dependencies{
@@ -6003,11 +6009,18 @@ var Definitions = eventDefinitions{
 			Sets: []string{"network_events"},
 			Params: []trace.ArgMeta{
 				{Type: "int", Name: "nothing"},
+				// {Type: "const char*", Name: "src"},
+				// {Type: "const char*", Name: "dst"},
+				// {Type: "u16", Name: "sport"},
+				// {Type: "u16", Name: "dport"},
+				// {Type: "u8", Name: "proto"},
+				// {Type: "u32", Name: "length"},
 			},
 		},
-		NewDnsPacket: { // payload: full packet
-			ID32Bit: sys32undefined,
-			Name:    "new_dns_packet",
+		NewDnsPacketBase: { // payload: full packet
+			ID32Bit:  sys32undefined,
+			Name:     "new_dns_packet_base",
+			Internal: true,
 			Dependencies: dependencies{
 				Events: []eventDependency{
 					{EventID: NewNetPacketBase},
@@ -6023,7 +6036,7 @@ var Definitions = eventDefinitions{
 			Name:    "new_dns_request",
 			Dependencies: dependencies{
 				Events: []eventDependency{
-					{EventID: NewDnsPacket},
+					{EventID: NewDnsPacketBase},
 				},
 			},
 			Sets: []string{"network_events"},
@@ -6036,7 +6049,7 @@ var Definitions = eventDefinitions{
 			Name:    "new_dns_response",
 			Dependencies: dependencies{
 				Events: []eventDependency{
-					{EventID: NewDnsPacket},
+					{EventID: NewDnsPacketBase},
 				},
 			},
 			Sets: []string{"network_events"},

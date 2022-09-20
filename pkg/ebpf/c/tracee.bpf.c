@@ -440,8 +440,7 @@ enum event_id_e
     SYMBOLS_LOADED,
     SECURITY_INODE_RENAME,
     NEW_NET_PACKET_BASE,
-    NEW_NET_PACKET,
-    NEW_DNS_PACKET,
+    NEW_DNS_PACKET_BASE,
     MAX_EVENT_ID,
 };
 
@@ -6340,8 +6339,8 @@ static __always_inline bool is_socket_supported(struct socket *sock)
 
 // cgroupctxmap
 
-#define SHOULD_SUBMIT_NEW_NET_PACKET (1 << 0)
-#define SHOULD_SUBMIT_NEW_DNS_PACKET (1 << 1)
+#define SHOULD_SUBMIT_NEW_NET_PACKET_BASE (1 << 0)
+#define SHOULD_SUBMIT_NEW_DNS_PACKET_BASE (1 << 1)
 
 typedef struct net_event_context {
     event_context_t eventctx;
@@ -6638,11 +6637,11 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
 
     neteventctx.nothing = 2022; // DEBUG
 
-    if (should_submit(NEW_NET_PACKET, data.config)) {
-        neteventctx.should_submit |= SHOULD_SUBMIT_NEW_NET_PACKET;
+    if (should_submit(NEW_NET_PACKET_BASE, data.config)) {
+        neteventctx.should_submit |= SHOULD_SUBMIT_NEW_NET_PACKET_BASE;
     }
-    if (should_submit(NEW_DNS_PACKET, data.config)) {
-        neteventctx.should_submit |= SHOULD_SUBMIT_NEW_DNS_PACKET;
+    if (should_submit(NEW_DNS_PACKET_BASE, data.config)) {
+        neteventctx.should_submit |= SHOULD_SUBMIT_NEW_DNS_PACKET_BASE;
     }
 
     // switch (type) {
@@ -6944,15 +6943,15 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
 
     // submit the new_net_packet event if needed
 
-    if (neteventctx->should_submit & SHOULD_SUBMIT_NEW_NET_PACKET)
-        cgroup_skb_submit_event(ctx, neteventctx, NEW_NET_PACKET, ONLY_HEADERS);
+    if (neteventctx->should_submit & SHOULD_SUBMIT_NEW_NET_PACKET_BASE)
+        cgroup_skb_submit_event(ctx, neteventctx, NEW_NET_PACKET_BASE, ONLY_HEADERS);
 
     // TODO: if capturing, submit net packet with FULL_PACKET
 
     // FASTPATH: only filtering net_packet (no other network events)
 
-    u8 rest_of_submissions = SHOULD_SUBMIT_NEW_DNS_PACKET | 0; // OR more events
-    if (!(neteventctx->should_submit & rest_of_submissions))
+    u8 rest = SHOULD_SUBMIT_NEW_DNS_PACKET_BASE | 0; // OR more events
+    if (!(neteventctx->should_submit & rest))
         return 1;
 
     // SLOWPATH: call appropriate protocol handler (only if needed)
@@ -7025,7 +7024,7 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_dns)
 {
     // NOTE: might block DNS here if needed (return 0)
 
-    cgroup_skb_submit_event(ctx, neteventctx, NEW_DNS_PACKET, FULL_PACKET);
+    cgroup_skb_submit_event(ctx, neteventctx, NEW_DNS_PACKET_BASE, FULL_PACKET);
     return 1;
 }
 
@@ -7033,6 +7032,6 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_udp_dns)
 {
     // NOTE: might block DNS here if needed (return 0)
 
-    cgroup_skb_submit_event(ctx, neteventctx, NEW_DNS_PACKET, FULL_PACKET);
+    cgroup_skb_submit_event(ctx, neteventctx, NEW_DNS_PACKET_BASE, FULL_PACKET);
     return 1;
 }
