@@ -3517,6 +3517,7 @@ int syscall__accept4(void *ctx)
         // missed entry or not traced
         return 0;
     }
+    del_args(SOCKET_ACCEPT);
 
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
@@ -3524,8 +3525,6 @@ int syscall__accept4(void *ctx)
 
     struct socket *old_sock = (struct socket *) saved_args.args[0];
     struct socket *new_sock = (struct socket *) saved_args.args[1];
-
-    del_args(SOCKET_ACCEPT);
 
     if (new_sock == NULL) {
         return -1;
@@ -5029,12 +5028,15 @@ do_file_write_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id)
 
     int zero = 0;
     config_entry_t *config = bpf_map_lookup_elem(&config_map, &zero);
-    if (config == NULL)
+    if (config == NULL) {
+        del_args(event_id);
         return 0;
+    }
 
     if (!should_submit(VFS_WRITE, config) && !should_submit(VFS_WRITEV, config) &&
         !should_submit(__KERNEL_WRITE, config) && !should_submit(MAGIC_WRITE, config)) {
         bpf_tail_call(ctx, &prog_array, tail_call_id);
+        del_args(event_id);
         return 0;
     }
 
@@ -5072,8 +5074,10 @@ do_file_write_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id)
         start_pos -= bytes_written;
 
     event_data_t data = {};
-    if (!init_event_data(&data, ctx))
+    if (!init_event_data(&data, ctx)) {
+        del_args(event_id);
         return 0;
+    }
 
     if (should_submit(VFS_WRITE, data.config) || should_submit(VFS_WRITEV, data.config) ||
         should_submit(__KERNEL_WRITE, data.config)) {
@@ -5123,6 +5127,7 @@ do_file_write_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id)
     }
 
     bpf_tail_call(ctx, &prog_array, tail_call_id);
+    del_args(event_id);
     return 0;
 }
 
@@ -5139,8 +5144,10 @@ static __always_inline int do_file_write_operation_tail(struct pt_regs *ctx, u32
     bool filter_match = false;
 
     event_data_t data = {};
-    if (!init_event_data(&data, ctx))
+    if (!init_event_data(&data, ctx)) {
+        del_args(event_id);
         return 0;
+    }
 
     if (load_args(&saved_args, event_id) != 0)
         return 0;
@@ -5760,6 +5767,7 @@ int BPF_KPROBE(trace_ret_do_splice)
 // logic if version is too old. In non-CORE, it will even mean using defines which are not available
 // in the kernel headers, which will cause bugs.
 #if !defined(CORE) && (LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0))
+    del_args(DIRTY_PIPE_SPLICE);
     return 0;
 #else
     #ifdef CORE
@@ -5769,6 +5777,7 @@ int BPF_KPROBE(trace_ret_do_splice)
     // that the kernel version is lower than v5.8
     struct alloc_context *check_508;
     if (bpf_core_field_exists(check_508->high_zoneidx)) {
+        del_args(DIRTY_PIPE_SPLICE);
         return 0;
     }
     #endif // CORE
