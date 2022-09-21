@@ -177,6 +177,9 @@ const (
 	HookedSyscalls
 	HookedSeqOps
 	SymbolsLoaded
+	ProcessExecution
+	ProcessTermination
+	FileDeletion
 	MaxUserSpace
 )
 
@@ -5745,7 +5748,7 @@ var Definitions = eventDefinitions{
 			Dependencies: dependencies{
 				Events: []eventDependency{{EventID: SecurityMmapFile}},
 			},
-			Sets: []string{"lsm_hooks", "fs", "fs_file_ops", "proc", "proc_mem"},
+			Sets: []string{"lsm_hooks", "fs", "fs_file_ops", "proc", "proc_mem", "user_friendly"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "int", Name: "flags"},
@@ -6002,6 +6005,45 @@ var Definitions = eventDefinitions{
 				{Type: "unsigned long", Name: "old_sa_mask"},
 				{Type: "u8", Name: "old_sa_handle_method"},
 				{Type: "void*", Name: "old_sa_handler"},
+			},
+		},
+		ProcessExecution: {
+			ID32Bit: sys32undefined,
+			Name:    "process_execution",
+			Dependencies: dependencies{
+				Events: []eventDependency{{EventID: SchedProcessExec}},
+			},
+			Sets: []string{"user_friendly"},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "relative_path"},
+				{Type: "const char*", Name: "absolute_path"},
+				{Type: "const char**", Name: "arguments"},
+				{Type: "int", Name: "invoked_from_kernel"},
+				{Type: "unsigned long", Name: "last_changed"},
+				{Type: "const char*", Name: "sha256"},
+			},
+		},
+		ProcessTermination: {
+			ID32Bit: sys32undefined,
+			Name:    "process_termination",
+			Dependencies: dependencies{
+				Events: []eventDependency{{EventID: SchedProcessExit}},
+			},
+			Sets: []string{"user_friendly"},
+			Params: []trace.ArgMeta{
+				{Type: "long", Name: "exit_code"},
+			},
+		},
+		FileDeletion: {
+			ID32Bit: sys32undefined,
+			Name:    "file_deletion",
+			Dependencies: dependencies{
+				Events: []eventDependency{{EventID: SecurityInodeUnlink}},
+			},
+			Sets: []string{"user_friendly"},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "absolute_path"},
+				{Type: "unsigned long", Name: "last_changed"},
 			},
 		},
 	},

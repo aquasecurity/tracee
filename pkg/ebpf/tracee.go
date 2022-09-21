@@ -561,6 +561,24 @@ func (t *Tracee) initDerivationTable() error {
 				),
 			},
 		},
+		events.SchedProcessExec: {
+			events.ProcessExecution: {
+				Enabled:        t.events[events.ProcessExecution].submit,
+				DeriveFunction: derive.ProcessExecution(),
+			},
+		},
+		events.SchedProcessExit: {
+			events.ProcessTermination: {
+				Enabled:        t.events[events.ProcessTermination].submit,
+				DeriveFunction: derive.ProcessTermination(),
+			},
+		},
+		events.SecurityInodeUnlink: {
+			events.FileDeletion: {
+				Enabled:        t.events[events.FileDeletion].submit,
+				DeriveFunction: derive.FileDeletion(),
+			},
+		},
 	}
 
 	return nil

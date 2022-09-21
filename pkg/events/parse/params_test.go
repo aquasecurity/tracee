@@ -352,3 +352,61 @@ func TestArgUlongArrVal(t *testing.T) {
 		})
 	}
 }
+
+func TestArgInt64Val(t *testing.T) {
+	tests := []struct {
+		name          string
+		arg           trace.Argument
+		expectedValue int64
+		errorMessage  string
+	}{
+		{
+			name: "valid_val",
+			arg: trace.Argument{
+				ArgMeta: trace.ArgMeta{
+					Name: "valid_val",
+					Type: "int",
+				},
+				Value: int64(1878),
+			},
+			expectedValue: int64(1878),
+		},
+		{
+			name: "invalid_val",
+			arg: trace.Argument{
+				ArgMeta: trace.ArgMeta{
+					Name: "invalid_val",
+					Type: "int",
+				},
+				Value: uint32(1878),
+			},
+			errorMessage: "argument invalid_val is not of type int64",
+		},
+		{
+			name: "no_val",
+			arg: trace.Argument{
+				ArgMeta: trace.ArgMeta{
+					Name: "does_not_exist_val",
+					Type: "int",
+				},
+				Value: int64(1878),
+			},
+			errorMessage: "argument no_val not found",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := trace.Event{Args: []trace.Argument{tt.arg}}
+			val, err := ArgInt64Val(&e, tt.name)
+			if tt.errorMessage != "" {
+				assert.Error(t, err)
+				assert.Equal(t, tt.errorMessage, err.Error())
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedValue, val)
+			}
+		})
+	}
+
+}

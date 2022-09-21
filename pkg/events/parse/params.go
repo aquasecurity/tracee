@@ -45,6 +45,19 @@ func ArgUint64Val(event *trace.Event, argName string) (uint64, error) {
 	return 0, fmt.Errorf("argument %s not found", argName)
 }
 
+func ArgInt64Val(event *trace.Event, argName string) (int64, error) {
+	for _, arg := range event.Args {
+		if arg.Name == argName {
+			val, ok := arg.Value.(int64)
+			if !ok {
+				return 0, fmt.Errorf("argument %s is not of type int64", argName)
+			}
+			return val, nil
+		}
+	}
+	return 0, fmt.Errorf("argument %s not found", argName)
+}
+
 func ArgUint32Val(event *trace.Event, argName string) (uint32, error) {
 	for _, arg := range event.Args {
 		if arg.Name == argName {
@@ -82,4 +95,17 @@ func ArgUlongArrVal(event *trace.Event, argName string) ([]uint64, error) {
 		}
 	}
 	return nil, fmt.Errorf("argument %s not found", argName)
+}
+
+func ArgBoolVal(event *trace.Event, argName string) (bool, error) {
+	for _, arg := range event.Args {
+		if arg.Name == argName {
+			val, ok := arg.Value.(bool)
+			if !ok {
+				return false, fmt.Errorf("argument %s is not of type bool", argName)
+			}
+			return val, nil
+		}
+	}
+	return false, fmt.Errorf("argument %s not found", argName)
 }
