@@ -20,11 +20,11 @@
 !!! Example
 
     * Build and execute **tracee-ebpf**:
-    
+
         ```text
         $ make -f builder/Makefile.tracee-make alpine-prepare
         $ make -f builder/Makefile.tracee-make alpine-shell
-        
+
         tracee@f64bb4a2f0b1[/tracee]$ make clean
         tracee@f64bb4a2f0b1[/tracee]$ make tracee-ebpf
         tracee@f64bb4a2f0b1[/tracee]$ sudo ./dist/tracee-ebpf \
@@ -32,16 +32,16 @@
             --trace comm=bash \
             --trace follow
         ```
-    
+
     Now, in your host's bash shell, execute a command. You will see all events
     (except scheduler ones) being printed, in "table format", to stdout.
-    
+
     * Build and execute **tracee**:
-    
+
         ```text
         $ make -f builder/Makefile.tracee-make alpine-prepare
         $ make -f builder/Makefile.tracee-make alpine-shell
-        
+
         tracee@f64bb4a2f0b1[/tracee]$ make clean
         tracee@f64bb4a2f0b1[/tracee]$ make all
         tracee@f64bb4a2f0b1[/tracee]$ sudo ./dist/tracee-ebpf \
@@ -53,7 +53,7 @@
             --input-tracee file:stdin \
             --input-tracee format:json
         ```
-    
+
     Now, in your host's bash shell, execute: `sudo strace /bin/ls` and observe
     tracee warning you about a possible risk (with its Anti-Debugging signature).
 
@@ -117,18 +117,18 @@ Instead of executing a builder shell, you may use `alpine-tracee-make`, or
 `ubuntu-tracee-make`, as a replacement for the `make` command:
 
 ```text
-$ make -f builder/Makefile.tracee-make ubuntu-prepare
-$ make -f builder/Makefile.tracee-make ubuntu-make ARG="help"
-$ make -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
-$ make -f builder/Makefile.tracee-make ubuntu-make ARG="bpf-core"
-$ make -f builder/Makefile.tracee-make ubuntu-make ARG="tracee-ebpf"
-$ make -f builder/Makefile.tracee-make ubuntu-make ARG="all"
+make -f builder/Makefile.tracee-make ubuntu-prepare
+make -f builder/Makefile.tracee-make ubuntu-make ARG="help"
+make -f builder/Makefile.tracee-make ubuntu-make ARG="clean"
+make -f builder/Makefile.tracee-make ubuntu-make ARG="bpf-core"
+make -f builder/Makefile.tracee-make ubuntu-make ARG="tracee-ebpf"
+make -f builder/Makefile.tracee-make ubuntu-make ARG="all"
 ```
 
 And, after the compilation, run the commands directly in your host:
 
 ```text
-$ sudo ./dist/tracee-ebpf \
+sudo ./dist/tracee-ebpf \
     -o option:parse-arguments \
     --trace comm=bash \
     --trace follow
@@ -143,15 +143,15 @@ is not an **Alpine Linux**, then you may set `STATIC=1` variable so you can run
 compiled binaries in your host:
 
 ```text
-$ make -f builder/Makefile.tracee-make alpine-prepare
-$ make -f builder/Makefile.tracee-make alpine-make ARG="help"
-$ STATIC=1 make -f builder/Makefile.tracee-make alpine-make ARG="all"
+make -f builder/Makefile.tracee-make alpine-prepare
+make -f builder/Makefile.tracee-make alpine-make ARG="help"
+STATIC=1 make -f builder/Makefile.tracee-make alpine-make ARG="all"
 ```
 
 and execute the static binary from your host:
 
 ```text
-$ ldd dist/tracee-ebpf
+ldd dist/tracee-ebpf
   not a dynamic executable
 ```
 

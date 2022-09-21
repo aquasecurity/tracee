@@ -27,9 +27,9 @@ this context, rules are Rego's language constructs):
 !!! Signature Example
     ```opa
     package tracee.Mine
-    
+
     import data.tracee.helpers
-    
+
     __rego_metadoc__ := {
         "id": "Mine-0.1.0",
         "version": "0.1.0",
@@ -37,7 +37,7 @@ this context, rules are Rego's language constructs):
         "description": "My Own Signature Detects Stuff",
         "tags": ["linux"],
     }
-    
+
     eventSelectors := [
         {
             "source": "tracee",
@@ -48,17 +48,17 @@ this context, rules are Rego's language constructs):
             "name": "execve",
         },
     ]
-    
+
     tracee_selected_events[eventSelector] {
     	eventSelector := eventSelectors[_]
     }
-    
+
     tracee_match {
         input.eventName == "openat"
         arg_value = helpers.get_tracee_argument("pathname")
         startswith(arg_value, "/etc/passwd")
     }
-    
+
     tracee_match {
         input.eventName == "execve"
         arg_value = helpers.get_tracee_argument("pathname")
@@ -71,7 +71,7 @@ may execute **tracee** selecting only the event you just created, if that is
 what you want:
 
 ```text
-$ sudo ./dist/tracee-ebpf \
+sudo ./dist/tracee-ebpf \
     --output json \
     --trace comm=bash \
     --trace follow \

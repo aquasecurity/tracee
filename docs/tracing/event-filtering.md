@@ -1,8 +1,8 @@
 # Tracing Event Filtering
 
 ```
-$ sudo ./dist/tracee-ebpf --trace help
-$ sudo ./dist/tracee-ebpf --trace xxx
+sudo ./dist/tracee-ebpf --trace help
+sudo ./dist/tracee-ebpf --trace xxx
 ```
 
 Tracing output might become too hard to consume when tracing all the events from
@@ -22,7 +22,7 @@ All the examples bellow this item can be executed with the following tracee-ebpf
 prefix command:
 
 ```text
-$ sudo ./dist/tracee-ebpf \
+sudo ./dist/tracee-ebpf \
     --output json \
     --trace comm=bash \
     --trace follow
@@ -59,7 +59,7 @@ expected.
      ```
 
     !!! Note
-        Multiple values are ORed if used with = operator  
+        Multiple values are ORed if used with = operator
         But ANDed if used with any other operator.
 
 1. **Event Return Code** `(Operators: =, !=, <, >)`
@@ -94,7 +94,7 @@ expected.
     ```
 
     !!! Note
-        The **new** flag allows to trace newly created containers only.  
+        The **new** flag allows to trace newly created containers only.
 
 1. **Command** `(Operators: =, !=)`
 
@@ -144,7 +144,7 @@ expected.
 1. **UTS Namespace (hostnames)** `(Operators: =, !=)`
 
     ```text
-    1) --trace uts!=ab356bc4dd554 
+    1) --trace uts!=ab356bc4dd554
     ```
 
 1. **PID Namespace** `(Operators: =, !=, <, >)`

@@ -76,7 +76,7 @@ These docker commands run Tracee with **default settings** and start
 suspicious behavior, you can simply run:
 
 ```text
-$ strace ls
+strace ls
 ```
 
 in another terminal. This will trigger the **Anti-Debugging** signature, which
@@ -110,7 +110,7 @@ Execute docker container with the word `trace` as an initial argument, and
 **tracee-ebpf** will be executed, instead of the full tracee detection engine.
 
 ```text
-$ docker run \
+docker run \
     --name tracee --rm -it \
     --pid=host --cgroupns=host --privileged \
     -v /etc/os-release:/etc/os-release-host:ro \

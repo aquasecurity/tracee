@@ -33,7 +33,7 @@ If everything goes well, you can SSH into a running development machine and
 access its shell:
 
 ```console
-$ vagrant ssh
+vagrant ssh
 Welcome to Ubuntu 21.10 (GNU/Linux 5.13.0-35-generic x86_64)
 
  * Documentation:  https://help.ubuntu.com
@@ -73,7 +73,7 @@ By default, Vagrant will share Tracee project directory (the directory with the
 and list files:
 
 ```console
-$ ls -l
+ls -l
 total 204
 drwxr-xr-x 1 vagrant vagrant    224 Mar 17 14:31 3rdparty
 -rw-r--r-- 1 vagrant vagrant   3474 Mar 17 14:31 CONTRIBUTING.md
@@ -115,7 +115,7 @@ make
 Build targets are saved in the `/vagrant/dist` directory:
 
 ```console
-$ ls -l dist/
+ls -l dist/
 total 47972
 drwxr-xr-x 1 vagrant vagrant       96 Mar 25 10:45 btfhub
 drwxr-xr-x 1 vagrant vagrant      224 Mar 25 10:45 libbpf
@@ -129,7 +129,7 @@ drwxr-xr-x 1 vagrant vagrant      544 Mar 26 18:31 tracee.bpf
 You can now run Tracee-eBPF and see raw events printed to the standard output in a tabular format:
 
 ```console
-$ sudo ./dist/tracee-ebpf
+sudo ./dist/tracee-ebpf
 TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
 18:39:43:781824  0      mkdocs           1       19      0                stat                 pathname: /docs/docs, statbuf: 0x7f851365eb20
 18:39:43:782125  0      mkdocs           1       19      0                security_file_open   pathname: /docs/docs, flags: O_RDONLY|O_LARGEFILE|O_DIRECTORY, dev: 43, inode: 47, ctime: 1648313072000000000
@@ -148,7 +148,7 @@ To analyze collected events and see detections printed to the standard output,
 run **tracee-ebpf** and pipe it with **tracee-rules**:
 
 ```console
-$ sudo ./dist/tracee-ebpf \
+sudo ./dist/tracee-ebpf \
   --output=format:gob \
   --output=option:parse-arguments \
   | ./dist/tracee-rules \
@@ -213,7 +213,7 @@ The development machine described by Vagrantfile preinstalls [MicroK8s]
 Kubernetes cluster, which is suitable for testing Tracee.
 
 ```console
-$ microk8s status
+microk8s status
 microk8s is running
 high-availability: no
   datastore master nodes: 127.0.0.1:19001
@@ -224,7 +224,7 @@ There's also the [kubectl] command installed and configured to communicate with
 the cluster:
 
 ```console
-$ kubectl get nodes -o wide
+kubectl get nodes -o wide
 NAME            STATUS   ROLES    AGE    VERSION                    INTERNAL-IP   EXTERNAL-IP   OS-IMAGE       KERNEL-VERSION      CONTAINER-RUNTIME
 ubuntu-impish   Ready    <none>   139m   v1.23.4-2+98fc2022f3ad3e   10.0.2.15     <none>        Ubuntu 21.10   5.13.0-35-generic   containerd://1.5.9
 ```
@@ -274,7 +274,7 @@ While Tracee pod is running, run `strace ls` command and observe detection
 printed to the standard output.
 
 ```console
-$ kubectl logs n tracee-system -f daemonset/tracee
+kubectl logs n tracee-system -f daemonset/tracee
 INFO: probing tracee-ebpf capabilities...
 INFO: starting tracee-ebpf...
 INFO: starting tracee-rules...
@@ -294,7 +294,7 @@ If everything is configured properly, you can find the same detection in Postee
 logs:
 
 ```console
-$ kubectl -n tracee-system logs -f postee-0
+kubectl -n tracee-system logs -f postee-0
 2022/03/29 08:26:32 {"Data":null,"Context":{"timestamp":1648542392170684298,"processorId":1,"processId":90731,"threadId"
 :90731,"parentProcessId":90729,"hostProcessId":90731,"hostThreadId":90731,"hostParentProcessId":90729,"userId":1000,"mou
 ntNamespace":4026531840,"pidNamespace":4026531836,"processName":"strace","hostName":"ubuntu-impish","containerId":"","ev

@@ -47,7 +47,7 @@ may execute **tracee** selecting only the event you just created, if that is
 what you want:
 
 ```text
-$ sudo ./dist/tracee-ebpf \
+sudo ./dist/tracee-ebpf \
     --output json \
     --trace comm=bash \
     --trace follow \

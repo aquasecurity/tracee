@@ -18,13 +18,13 @@ under OSX you may create your local building environment by using the same
 make targets:
 
 ```text
-$ gmake -f builder/Makefile.tracee-make alpine-prepare
-$ gmake -f builder/Makefile.tracee-make alpine-shell
+gmake -f builder/Makefile.tracee-make alpine-prepare
+gmake -f builder/Makefile.tracee-make alpine-shell
 ```
-    
+
 ```text
-$ gmake -f builder/Makefile.tracee-make ubuntu-prepare
-$ gmake -f builder/Makefile.tracee-make ubuntu-shell
+gmake -f builder/Makefile.tracee-make ubuntu-prepare
+gmake -f builder/Makefile.tracee-make ubuntu-shell
 ```
 
 ## Executing tracee in the building environment

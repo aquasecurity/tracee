@@ -29,7 +29,7 @@ Tracee can be most easily deployed with metrics enabled by default and port
 forwarded through the following commands:
 
 ```text
-$ docker run \
+docker run \
     --name tracee --rm --pid=host \
     --cgroupns=host --privileged \
     -v /tmp/tracee:/tmp/tracee  \
@@ -109,6 +109,6 @@ First download our Grafana Dashboard's json [here].
 After adding the data source hover on the plus icon in the sidebar and select
 "Import". Press "Upload JSON File" at the top of the page and select the
 downloaded json from your file browser. Change the name and Dashboard UID if
-you wish and press "Import" to finish. 
+you wish and press "Import" to finish.
 
 Finally you will be redirected to the dashboard 🥳

@@ -3,13 +3,13 @@
 In order to check latest output options you may execute:
 
 ```text
-$ sudo ./dist/tracee-ebpf --output help
-$ sudo ./dist/tracee-ebpf --output option:xxx
+sudo ./dist/tracee-ebpf --output help
+sudo ./dist/tracee-ebpf --output option:xxx
 ```
 
 Tracee supports different output options for detected events:
 
-1. **option:stack-addresses**  
+1. **option:stack-addresses**
 
     Pick stack memory address from each event
 
@@ -137,4 +137,4 @@ Tracee supports different output options for detected events:
     {"timestamp":1657295236470126167,"threadStartTime":620317257297855,"processorId":3,"processId":2578324,"cgroupId":1,"threadId":2578324,"parentProcessId":2578238,"hostProcessId":2578324,"hostThreadId":2578324,"hostParentProcessId":2578238,"userId":1000,"mountNamespace":4026531840,"pidNamespace":4026531836,"processName":"exa","hostName":"fujitsu","containerId":"","containerImage":"","containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"707","eventName":"sched_process_exec","argsNum":14,"returnValue":0,"stackAddresses":null,"args":[{"name":"cmdpath","type":"const char*","value":"/bin/exa"},{"name":"pathname","type":"const char*","value":"/usr/bin/exa"},{"name":"argv","type":"const char**","value":["exa","--color=auto"]},{"name":"dev","type":"dev_t","value":271581185},{"name":"inode","type":"unsigned long","value":2493759},{"name":"invoked_from_kernel","type":"int","value":0},{"name":"ctime","type":"unsigned long","value":1653730234432691496},{"name":"stdin_type","type":"string","value":"S_IFCHR"},{"name":"inode_mode","type":"umode_t","value":33261},{"name":"interp","type":"const char*","value":"/bin/exa"},{"name":"interpreter_pathname","type":"const char*","value":"/usr/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2"},{"name":"interpreter_dev","type":"dev_t","value":271581185},{"name":"ineterpreter_inode","type":"unsigned long","value":2752590},{"name":"sha256","type":"const char*","value":""}]}
     ```
 
-    At the end of the event, you will also get information about the loader 
+    At the end of the event, you will also get information about the loader

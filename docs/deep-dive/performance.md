@@ -66,7 +66,7 @@ arguments are formatted in a human consumable way, **detecting** syscall that
 generated the event:
 
 ```text
-$ sudo ./dist/tracee-ebpf \
+sudo ./dist/tracee-ebpf \
     --containers -o format:json \
     -o option:parse-arguments \
     -o option:detect-syscall \

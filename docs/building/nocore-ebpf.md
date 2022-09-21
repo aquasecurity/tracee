@@ -8,15 +8,15 @@
 
 !!! Introduction
     As you are probably already aware, **Tracee** consists of:
-    
+
     !!! tracee-ebpf Tip
 
-        - Userspace agent  
-            1. Handles lifecycle of ebpf programs  
-            1. Receives events from eBPF programs  
-        - eBPF code  
+        - Userspace agent
+            1. Handles lifecycle of ebpf programs
+            1. Receives events from eBPF programs
+        - eBPF code
             1. Programs loaded in the kernel for event collection
-    
+
     !!! tracee-rules Tip
 
         - OPA signatures
@@ -90,16 +90,16 @@ through the Makefile).
 By running:
 
 ```text
-$ make clean
-$ make all
-$ make install-bpf-nocore
+make clean
+make all
+make install-bpf-nocore
 ```
 
 make installs an eBPF object file under `/tmp/tracee` for the current running
 kernel. Example:
 
 ```text
-$ find /tmp/tracee
+find /tmp/tracee
 /tmp/tracee
 /tmp/tracee/tracee.bpf.5_4_0-91-generic.v0_6_5-80-ge723a22.o
 ```
@@ -118,7 +118,7 @@ If you install the non CO-RE eBPF object and run **tracee-ebpf** in an
 environment that needs it, then the debug output will look like:
 
 ```text
-$ sudo ./dist/tracee-ebpf --debug
+sudo ./dist/tracee-ebpf --debug
 
 OSInfo: ARCH: x86_64
 OSInfo: VERSION: "20.04.3 LTS (Focal Fossa)"
@@ -137,7 +137,7 @@ One way of forcing **tracee-ebpf** to use non CO-RE eBPF object, even in a kerne
 that supports CO-RE, is by setting the `TRACEE_BPF_FILE` environment, like this:
 
 ```
-$ sudo TRACEE_BPF_FILE=/tmp/tracee/tracee.bpf.5_4_0-91-generic.v0_6_5-80-ge723a22.o ./dist/tracee-ebpf --debug -o option:parse-arguments --trace comm=bash --trace follow
+sudo TRACEE_BPF_FILE=/tmp/tracee/tracee.bpf.5_4_0-91-generic.v0_6_5-80-ge723a22.o ./dist/tracee-ebpf --debug -o option:parse-arguments --trace comm=bash --trace follow
 OSInfo: PRETTY_NAME: "Ubuntu 20.04.3 LTS"
 OSInfo: VERSION_ID: "20.04"
 OSInfo: VERSION_CODENAME: focal
@@ -158,13 +158,13 @@ If you're willing to generate the non CO-RE eBPF object using the `tracee-make`
 building environment container, you're able to by doing:
 
 ```text
-$ make -f builder/Makefile.tracee-make alpine-prepare
-$ make -f builder/Makefile.tracee-make alpine-shell
+make -f builder/Makefile.tracee-make alpine-prepare
+make -f builder/Makefile.tracee-make alpine-shell
 ```
 or
 ```text
-$ make -f builder/Makefile.tracee-make ubuntu-prepare
-$ make -f builder/Makefile.tracee-make ubuntu-shell
+make -f builder/Makefile.tracee-make ubuntu-prepare
+make -f builder/Makefile.tracee-make ubuntu-shell
 ```
 
 and then, inside the docker container:

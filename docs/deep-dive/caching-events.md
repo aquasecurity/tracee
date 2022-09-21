@@ -4,7 +4,7 @@ Tracee has an events caching (in-memory) mechanism. In order to check latest
 caching options you may execute:
 
 ```
-$ ./dist/tracee-ebpf --cache help
+./dist/tracee-ebpf --cache help
 ```
 
 !!! Read Important
@@ -43,7 +43,7 @@ Example using **1GB cache**, container **enrichment** in the pipeline, argument
 syscall that generated the event:
 
 ```text
-$ sudo ./dist/tracee-ebpf \
+sudo ./dist/tracee-ebpf \
     --cache cache-type=mem \
     --cache mem-cache-size=1024 \
     --containers -o format:json \

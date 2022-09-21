@@ -9,8 +9,8 @@ Tracee has a unique feature that lets you capture interesting artifacts from
 running applications, using the `--capture` flag.
 
 ```text
-$ sudo ./dist/tracee-ebpf --capture help
-$ sudo ./dist/tracee-ebpf --capture xxx
+sudo ./dist/tracee-ebpf --capture help
+sudo ./dist/tracee-ebpf --capture xxx
 ```
 !!! Tip
     All captured artifacts are saved in Tracee's "output directory", which can
@@ -65,7 +65,7 @@ Tracee can capture the following types of artifacts:
         --output option:parse-arguments \
         --capture dir:/tmp/tracee/ \
         --capture exec
-    
+
      $ /bin/ls
      ```
 
@@ -132,16 +132,16 @@ Tracee can capture the following types of artifacts:
      ```
 
      and execute on the host:
-     
+
      ```text
      $ ping 127.0.0.1
      ```
-     
+
      and observe **pcap file**:
-     
+
      ```text
      $ tcpdump -n -r /tmp/tracee/out/host/capture.pcap
-     
+
      15:48:33.109392 IP 127.0.0.1 > 127.0.0.1: ICMP echo request, id 74, seq 1, length 64
      15:48:33.109440 IP 127.0.0.1 > 127.0.0.1: ICMP echo reply, id 74, seq 1, length 64
      15:48:34.138680 IP 127.0.0.1 > 127.0.0.1: ICMP echo request, id 74, seq 2, length 64
@@ -198,7 +198,7 @@ Tracee can capture the following types of artifacts:
         because command is tracing docker0 interface).
 
         !!! Attention
-            For now **Tracee** only supports: **ETH**, **IP/IPv6** and 
+            For now **Tracee** only supports: **ETH**, **IP/IPv6** and
             **ICMP/UDP/TCP** protocols.
 
 1. **Loaded Kernel Modules**

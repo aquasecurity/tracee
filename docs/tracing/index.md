@@ -31,7 +31,7 @@ Before you proceed, make sure you follow the [prerequisites].
 [prerequisites]:../installing/prerequisites.md
 
 ```text
-$ docker run \
+docker run \
     --name tracee --rm -it \
     --pid=host --cgroupns=host --privileged \
     -v /etc/os-release:/etc/os-release-host:ro \
@@ -56,28 +56,28 @@ TIME(s)        UID    COMM             PID     TID     RET             EVENT    
 ```
 
 !!! Note
-    There are 2 ways to enable tracing only:  
-    1. To export a TRACEE_EBPF_ONLY=1 env variable to docker.  
-    2. To provide a `trace` 1st argument to docker container.  
+    There are 2 ways to enable tracing only:
+    1. To export a TRACEE_EBPF_ONLY=1 env variable to docker.
+    2. To provide a `trace` 1st argument to docker container.
 
 Each line is a single event collected by Tracee-eBPF, with the following
 information:
 
-1. **TIME**  
+1. **TIME**
    event time relative to system boot time in seconds
-2. **UID**  
+2. **UID**
    real user id of the calling process (in host userns)
-3. **COMM**  
+3. **COMM**
    name of the calling process
-4. **PID**  
+4. **PID**
    pid of the calling process
-5. **TID**  
+5. **TID**
    tid of the calling thread
-6. **RET**  
+6. **RET**
    value returned by the function
-7. **EVENT**  
+7. **EVENT**
    identifies the event (e.g. syscall name)
-8. **ARGS**  
+8. **ARGS**
    list of arguments given to the function
 
 !!! Note

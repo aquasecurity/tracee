@@ -6,7 +6,7 @@ When a detection is made by any of the loaded signatures, it will always be
 printed to stdout. You can customize this output format using a [go template].
 
 ```bash
-$ ./dist/tracee-rules --output-template /path/to/my.tmpl
+./dist/tracee-rules --output-template /path/to/my.tmpl
 ```
 
 [go template]: https://golang.org/pkg/text/template
@@ -15,7 +15,7 @@ $ ./dist/tracee-rules --output-template /path/to/my.tmpl
 
     The following Go templates are included in the Tracee container image and are
     available for use under the `/tracee/templates/` directory in the container:
-    
+
     | File name          | Description                            | Content-Type       | Source                                                                                                            |
     |--------------------|----------------------------------------|--------------------|-------------------------------------------------------------------------------------------------------------------|
     | rawjson.tmpl       | Dumps the Finding object as raw JSON   | `application/json` | [source](https://github.com/aquasecurity/tracee/blob/{{ git.tag }}/cmd/tracee-rules/templates/rawjson.tmpl)       |
