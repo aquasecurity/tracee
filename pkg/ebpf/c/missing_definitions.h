@@ -209,7 +209,9 @@ static inline struct inet_sock *inet_sk(const struct sock *sk)
 
 #define get_type_size(x) bpf_core_type_size(x)
 #define __get_node_addr(array, node_type, index)                                                   \
-    ((node_type *) ((void *) (array) + ((index) * get_type_size(node_type))))
+    ((node_type *) ((void *) (array) + ((index) *get_type_size(node_type))))
 #define get_node_addr(array, index) __get_node_addr(array, typeof(*(array)), index)
+
+#define SA_SIGINFO 0x00000004
 
 #endif
