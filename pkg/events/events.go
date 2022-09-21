@@ -156,6 +156,7 @@ const (
 	TaskRename
 	SymbolsLoaded
 	SecurityInodeRename
+	DoSigaction
 	MaxCommonID
 )
 
@@ -5973,6 +5974,27 @@ var Definitions = eventDefinitions{
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "old_path"},
 				{Type: "const char*", Name: "new_path"},
+			},
+		},
+		DoSigaction: {
+			ID32Bit: sys32undefined,
+			Name:    "do_sigaction",
+			Probes: []probeDependency{
+				{Handle: probes.DoSigaction, Required: true},
+			},
+			Sets: []string{"proc"},
+			Params: []trace.ArgMeta{
+				{Type: "int", Name: "sig"},
+				{Type: "bool", Name: "is_sa_initialized"},
+				{Type: "unsigned long", Name: "sa_flags"},
+				{Type: "unsigned long", Name: "sa_mask"},
+				{Type: "u8", Name: "sa_handle_method"},
+				{Type: "void*", Name: "sa_handler"},
+				{Type: "bool", Name: "is_old_sa_initialized"},
+				{Type: "unsigned long", Name: "old_sa_flags"},
+				{Type: "unsigned long", Name: "old_sa_mask"},
+				{Type: "u8", Name: "old_sa_handle_method"},
+				{Type: "void*", Name: "old_sa_handler"},
 			},
 		},
 	},
