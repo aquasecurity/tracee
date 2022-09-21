@@ -36,12 +36,12 @@ $ docker run \
     --pid=host --cgroupns=host --privileged \
     -v /etc/os-release:/etc/os-release-host:ro \
     -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-    -e TRACEE_EBPF_ONLY=1 \
-    aquasec/tracee:{{ git.tag[1:] }}
+    aquasec/tracee:{{ git.tag[1:] }} \
+    trace
 ```
 
 Here, we are running the `aquasec/tracee` container, but with the
-`TRACEE_EBPF_ONLY=1` environment variable set, which will start just a raw
+`trace` sub-command, which will start just a raw
 trace (Tracee-eBPF), without the detection engine **tracee-rules**. Here's a
 sample output of running with no additional arguments:
 
