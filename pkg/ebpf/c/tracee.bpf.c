@@ -95,8 +95,12 @@ int KERNEL_VERSION SEC("version") = LINUX_VERSION_CODE;
 // clang-format on
 
 // helper macros for branch prediction
-#define likely(x)   __builtin_expect((x), 1)
-#define unlikely(x) __builtin_expect((x), 0)
+#ifndef likely
+    #define likely(x) __builtin_expect((x), 1)
+#endif
+#ifndef unlikely
+    #define unlikely(x) __builtin_expect((x), 0)
+#endif
 
 enum buf_idx_e
 {
@@ -1785,7 +1789,6 @@ static __always_inline int do_should_trace(event_data_t *data)
 
     if (config & FILTER_CONT_ENABLED) {
         bool is_container = false;
-        u32 cgroup_id_lsb = context->cgroup_id;
         u8 state = data->task_info->container_state;
         if (state == CONTAINER_STARTED || state == CONTAINER_EXISTED)
             is_container = true;
@@ -1796,7 +1799,6 @@ static __always_inline int do_should_trace(event_data_t *data)
 
     if (config & FILTER_NEW_CONT_ENABLED) {
         bool is_new_container = false;
-        u32 cgroup_id_lsb = context->cgroup_id;
         if (data->task_info->container_state == CONTAINER_STARTED)
             is_new_container = true;
         bool filter_out = (config & FILTER_NEW_CONT_OUT) == FILTER_NEW_CONT_OUT;
@@ -3670,7 +3672,6 @@ int BPF_KPROBE(trace_do_exit)
 SEC("uprobe/trigger_syscall_event")
 int uprobe_syscall_trigger(struct pt_regs *ctx)
 {
-    u64 magic_num = 0;
     u64 caller_ctx_id = 0;
 
     // clang-format off
@@ -3683,10 +3684,10 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
 
     #if defined(bpf_target_x86)
         // go1.17, go1.18, go 1.19
-        magic_num = ctx->bx;                                          // 1st arg
         caller_ctx_id = ctx->cx;                                      // 2nd arg
     #elif defined(bpf_target_arm64)
         // go1.17
+        u64 magic_num = 0;
         bpf_probe_read(&magic_num, 8, ((void *) ctx->sp) + 16);       // 1st arg
         bpf_probe_read(&caller_ctx_id, 8, ((void *) ctx->sp) + 24);   // 2nd arg
         if (magic_num != UPROBE_MAGIC_NUMBER) {
@@ -3741,7 +3742,6 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
 SEC("uprobe/trigger_seq_ops_event")
 int uprobe_seq_ops_trigger(struct pt_regs *ctx)
 {
-    u64 magic_num = 0;
     u64 caller_ctx_id = 0;
     u64 *address_array = NULL;
     u64 struct_address;
@@ -3756,11 +3756,11 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
 
     #if defined(bpf_target_x86)
         // go1.17, go1.18, go 1.19
-        magic_num = ctx->bx;                                          // 1st arg
         caller_ctx_id = ctx->cx;                                      // 2nd arg
         address_array = ((void *) ctx->sp + 8);                       // 3rd arg
     #elif defined(bpf_target_arm64)
         // go1.17
+        u64 magic_num = 0;
         bpf_probe_read(&magic_num, 8, ((void *) ctx->sp) + 16);       // 1st arg
         bpf_probe_read(&caller_ctx_id, 8, ((void *) ctx->sp) + 24);   // 2nd arg
         address_array = ((void *) ctx->sp + 32);                      // 3rd arg
@@ -4607,7 +4607,7 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
         return 0;
 
     struct sock *sk = (struct sock *) ctx->args[0];
-    int old_state = ctx->args[1];
+    // int old_state = ctx->args[1];
     int new_state = ctx->args[2];
 
     // Sometimes the socket state may be changed by other contexts that handle the tcp network stack
