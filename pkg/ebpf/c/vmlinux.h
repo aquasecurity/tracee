@@ -587,26 +587,6 @@ struct sk_buff {
     };
 };
 
-struct icmphdr {
-    __u8 type;
-    union {
-        struct {
-            __be16 id;
-            __be16 sequence;
-        } echo;
-    } un;
-};
-
-struct icmp6hdr {
-    __u8 icmp6_type;
-    union {
-        struct icmpv6_echo {
-            __be16 identifier;
-            __be16 sequence;
-        } u_echo;
-    } icmp6_dataun;
-};
-
 struct linux_binprm {
     struct file *file;
     int argc;
@@ -799,42 +779,178 @@ struct ethhdr {
 
 typedef __u16 __sum16;
 
-// TODO: can't CO-RE iphdr (check)
+//
+// COMPLETE NETWORK TYPES
+//
+// NOTE: It is not required that types are complete in this file, as tracee uses
+//       CO-RE for calculating struct field offsets. The thing is: for protocol
+//       headers, sometimes, the type is an exact copy of the header that will
+//       received a payload copy. This makes it impossible not to have the full
+//       types declared. Also, something else to note: protocol header types are
+//       or, at least, should be, immutable among different kernel versions.
+//
 
 struct iphdr {
-    __u8 ihl : 4;
-    __u8 version : 4;
-    __u8 tos;
-    __be16 tot_len;
-    __be16 id;
-    __be16 frag_off;
-    __u8 ttl;
-    __u8 protocol;
-    __sum16 check;
-    __be32 saddr;
-    __be32 daddr;
+	__u8 ihl: 4;
+	__u8 version: 4;
+	__u8 tos;
+	__be16 tot_len;
+	__be16 id;
+	__be16 frag_off;
+	__u8 ttl;
+	__u8 protocol;
+	__sum16 check;
+	__be32 saddr;
+	__be32 daddr;
 };
 
 struct ipv6hdr {
-    __u8 priority : 4;
-    __u8 version : 4;
-    __u8 flow_lbl[3];
-    __be16 payload_len;
-    __u8 nexthdr;
-    __u8 hop_limit;
-    struct in6_addr saddr;
-    struct in6_addr daddr;
+	__u8 priority: 4;
+	__u8 version: 4;
+	__u8 flow_lbl[3];
+	__be16 payload_len;
+	__u8 nexthdr;
+	__u8 hop_limit;
+	struct in6_addr saddr;
+	struct in6_addr daddr;
 };
 
 struct tcphdr {
-    __be16 source;
-    __be16 dest;
+	__be16 source;
+	__be16 dest;
+	__be32 seq;
+	__be32 ack_seq;
+	__u16 res1: 4;
+	__u16 doff: 4;
+	__u16 fin: 1;
+	__u16 syn: 1;
+	__u16 rst: 1;
+	__u16 psh: 1;
+	__u16 ack: 1;
+	__u16 urg: 1;
+	__u16 ece: 1;
+	__u16 cwr: 1;
+	__be16 window;
+	__sum16 check;
+	__be16 urg_ptr;
 };
 
 struct udphdr {
-    __be16 source;
-    __be16 dest;
+	__be16 source;
+	__be16 dest;
+	__be16 len;
+	__sum16 check;
 };
+
+struct icmphdr {
+	__u8 type;
+	__u8 code;
+	__sum16 checksum;
+	union {
+		struct {
+			__be16 id;
+			__be16 sequence;
+		} echo;
+		__be32 gateway;
+		struct {
+			__be16 __unused;
+			__be16 mtu;
+		} frag;
+		__u8 reserved[4];
+	} un;
+};
+
+struct icmpv6_echo {
+	__be16 identifier;
+	__be16 sequence;
+};
+
+struct icmpv6_nd_advt {
+	__u32 reserved: 5;
+	__u32 override: 1;
+	__u32 solicited: 1;
+	__u32 router: 1;
+	__u32 reserved2: 24;
+};
+
+struct icmpv6_nd_ra {
+	__u8 hop_limit;
+	__u8 reserved: 3;
+	__u8 router_pref: 2;
+	__u8 home_agent: 1;
+	__u8 other: 1;
+	__u8 managed: 1;
+	__be16 rt_lifetime;
+};
+
+struct icmp6hdr {
+	__u8 icmp6_type;
+	__u8 icmp6_code;
+	__sum16 icmp6_cksum;
+	union {
+		__be32 un_data32[1];
+		__be16 un_data16[2];
+		__u8 un_data8[4];
+		struct icmpv6_echo u_echo;
+		struct icmpv6_nd_advt u_nd_advt;
+		struct icmpv6_nd_ra u_nd_ra;
+	} icmp6_dataun;
+};
+
+// struct iphdr {
+//     __u8 ihl : 4;
+//     __u8 version : 4;
+//     __u8 tos;
+//     __be16 tot_len;
+//     __be16 id;
+//     __be16 frag_off;
+//     __u8 ttl;
+//     __u8 protocol;
+//     __sum16 check;
+//     __be32 saddr;
+//     __be32 daddr;
+// };
+//
+// struct ipv6hdr {
+//     __u8 priority : 4;
+//     __u8 version : 4;
+//     __u8 flow_lbl[3];
+//     __be16 payload_len;
+//     __u8 nexthdr;
+//     __u8 hop_limit;
+//     struct in6_addr saddr;
+//     struct in6_addr daddr;
+// };
+//
+// struct tcphdr {
+//     __be16 source;
+//     __be16 dest;
+// };
+//
+// struct udphdr {
+//     __be16 source;
+//     __be16 dest;
+// };
+//
+// struct icmphdr {
+//     __u8 type;
+//     union {
+//         struct {
+//             __be16 id;
+//             __be16 sequence;
+//         } echo;
+//     } un;
+// };
+//
+// struct icmp6hdr {
+//     __u8 icmp6_type;
+//     union {
+//         struct icmpv6_echo {
+//             __be16 identifier;
+//             __be16 sequence;
+//         } u_echo;
+//     } icmp6_dataun;
+// };
 
 enum kernel_read_file_id
 {

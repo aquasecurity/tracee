@@ -129,20 +129,25 @@ func (t *Tracee) queueEvents(ctx context.Context, in <-chan *trace.Event) (chan 
 	return out, errc
 }
 
-// decodeEvents read the events received from the BPF programs and parse it into trace.Event type
+// decodeEvents read the events received from kernel and parse it into trace.Event type
 func (t *Tracee) decodeEvents(outerCtx context.Context) (<-chan *trace.Event, <-chan error) {
-	out := make(chan *trace.Event, 10000)
+
+	out := make(chan *trace.Event, 10000) // create the channel to be returned
 	errc := make(chan error, 1)
+
 	go func() {
 		defer close(out)
 		defer close(errc)
-		for dataRaw := range t.eventsChannel {
-			ebpfMsgDecoder := bufferdecoder.New(dataRaw)
+
+		for dataRaw := range t.eventsChannel { // each event from eventsChannel
+
+			ebpfMsgDecoder := bufferdecoder.New(dataRaw) // "event_context_t"
 			var ctx bufferdecoder.Context
 			if err := ebpfMsgDecoder.DecodeContext(&ctx); err != nil {
 				t.handleError(err)
 				continue
 			}
+
 			eventId := events.ID(ctx.EventID)
 			eventDefinition, ok := events.Definitions.GetSafe(eventId)
 			if !ok {
@@ -172,14 +177,17 @@ func (t *Tracee) decodeEvents(outerCtx context.Context) (<-chan *trace.Event, <-
 				StackAddresses, _ = t.getStackAddresses(ctx.StackID)
 			}
 
-			// Currently, the timestamp received from the bpf code is of the monotonic clock.
-			// Todo: The monotonic clock doesn't take into account system sleep time.
-			// Starting from kernel 5.7, we can get the timestamp relative to the system boot time instead which is preferable.
+			// Currently, the timestamp received from the bpf code is of the
+			// monotonic clock.  TODO: The monotonic clock doesn't take into
+			// account system sleep time. Starting from kernel 5.7, we can get
+			// the timestamp relative to the system boot time instead which is
+			// preferable.
+
 			if t.config.Output.RelativeTime {
-				// To get the monotonic time since tracee was started, we have to subtract the start time from the timestamp.
+				// monotonic time since started: substract start time from ts
 				ctx.Ts -= t.startTime
 			} else {
-				// To get the current ("wall") time, we add the boot time into it.
+				// wall time: add boot time to ts
 				ctx.Ts += t.bootTime
 			}
 
@@ -216,6 +224,11 @@ func (t *Tracee) decodeEvents(outerCtx context.Context) (<-chan *trace.Event, <-
 				ContextFlags:        parseContextFlags(ctx.Flags),
 			}
 
+			// TODO: decode network events headers for further derivations
+			// NOTE: saved in temporary (LRU ?)
+			// OR, BETTER? submit the packet header through Args and have it
+			// in the pipeline together with the event.
+
 			select {
 			case out <- &evt:
 			case <-outerCtx.Done():
@@ -223,6 +236,7 @@ func (t *Tracee) decodeEvents(outerCtx context.Context) (<-chan *trace.Event, <-
 			}
 		}
 	}()
+
 	return out, errc
 }
 

@@ -558,6 +558,10 @@ func (p *cgroupProbe) attach(module *bpf.Module, args ...interface{}) error {
 		return fmt.Errorf("failed to attach program %s to cgroup %s", p.programName, cgroupDir)
 	}
 
+	if link == nil {
+		fmt.Printf("PUTA MERDA")
+	}
+
 	p.bpfLink = link
 
 	return nil

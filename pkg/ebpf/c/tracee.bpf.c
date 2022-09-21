@@ -439,8 +439,8 @@ enum event_id_e
     TASK_RENAME,
     SYMBOLS_LOADED,
     SECURITY_INODE_RENAME,
-    NEW_NET_PACKET_BASE,
-    NEW_DNS_PACKET_BASE,
+    NET_PACKET_IPV4_BASE,
+    NET_PACKET_DNS_BASE,
     MAX_EVENT_ID,
 };
 
@@ -6339,14 +6339,19 @@ static __always_inline bool is_socket_supported(struct socket *sock)
 
 // cgroupctxmap
 
-#define SHOULD_SUBMIT_NEW_NET_PACKET_BASE (1 << 0)
-#define SHOULD_SUBMIT_NEW_DNS_PACKET_BASE (1 << 1)
+#define SHOULD_SUBMIT_NET_PACKET_IPV4_BASE (1 << 0)
+#define SHOULD_SUBMIT_NET_PACKET_DNS_BASE  (1 << 1)
 
 typedef struct net_event_context {
     event_context_t eventctx;
     struct { // event arguments (needs packing), use anonymous struct to ...
         u8 index0;
-        u32 nothing;
+        u32 arg0; // u32
+        u8 index1;
+        u32 arg1; // u32
+        u8 index2;
+        u32 bytes;
+        // ... (payload sent by bpf_perf_event_output)
     } __attribute__((__packed__)); // ... avoid address-of-packed-member warns
     // members bellow this point are metadata (not part of event to be sent)
     u8 should_submit;
@@ -6528,7 +6533,7 @@ int BPF_KRETPROBE(ret_sock_alloc_file)
     // update inodemap correlating inode <=> task
     bpf_map_update_elem(&inodemap, &inode, &netctx, BPF_ANY);
 
-    debug_net_task_context("SOCK_ALLOC_FILE", &netctx);
+    //debug_net_task_context("SOCK_ALLOC_FILE", &netctx);
 
     return 0;
 }
@@ -6619,14 +6624,18 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     // buffer helpers because the time in between this kprobe fires and the
     // cgroup/skb program runs might be preempted.
 
-    net_event_context_t neteventctx = {0}; // to be sent by cgroup/skb program
+    net_event_context_t neteventctx = {
+        .index0 = 0,
+        .index1 = 1,
+        .index2 = 2,
+    }; // to be sent by cgroup/skb program
     event_context_t *eventctx = &neteventctx.eventctx;
 
     // copy orig task ctx (from the netctx) to event ctx and build the rest
     __builtin_memcpy(&eventctx->task, &netctx->taskctx, sizeof(task_context_t));
-    eventctx->ts = data.context.ts;          // copy timestamp from current ctx
-    eventctx->argnum = 1;                    // DEBUG for now (single event)
-    eventctx->eventid = NEW_NET_PACKET_BASE; // will be changed in skb program
+    eventctx->ts = data.context.ts;           // copy timestamp from current ctx
+    eventctx->argnum = 3;                     // 3 arguments
+    eventctx->eventid = NET_PACKET_IPV4_BASE; // will be changed in skb program
     eventctx->stack_id = 0;
     eventctx->processor_id = data.context.processor_id; // copy from current ctx
 
@@ -6635,13 +6644,18 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     u8 family = BPF_CORE_READ_BITFIELD_PROBED(common, skc_family);
     eventctx->retval = family; // ... through event ctx ret val
 
-    neteventctx.nothing = 2022; // DEBUG
+    // DEBUG
+    neteventctx.arg0 = 2022;
+    neteventctx.arg1 = 2011;
+    neteventctx.bytes = 0; // no payload by default (changed inside skb prog)
 
-    if (should_submit(NEW_NET_PACKET_BASE, data.config)) {
-        neteventctx.should_submit |= SHOULD_SUBMIT_NEW_NET_PACKET_BASE;
+    if (should_submit(NET_PACKET_IPV4_BASE, data.config)) {
+        bpf_printk("EH IPV4 BASE SIM");
+        neteventctx.should_submit |= SHOULD_SUBMIT_NET_PACKET_IPV4_BASE;
     }
-    if (should_submit(NEW_DNS_PACKET_BASE, data.config)) {
-        neteventctx.should_submit |= SHOULD_SUBMIT_NEW_DNS_PACKET_BASE;
+    if (should_submit(NET_PACKET_DNS_BASE, data.config)) {
+        bpf_printk("EH DNS BASE AGORA");
+        neteventctx.should_submit |= SHOULD_SUBMIT_NET_PACKET_DNS_BASE;
     }
 
     // switch (type) {
@@ -6670,7 +6684,7 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
 
     bpf_map_update_elem(&cgrpctxmap, &skbts, &neteventctx, BPF_NOEXIST);
 
-    debug_net_task_context("BPF_RUN_FILTER_SKB (ENTRY)", netctx);
+    // debug_net_task_context("BPF_RUN_FILTER_SKB (ENTRY)", netctx);
 
     return 0;
 }
@@ -6723,8 +6737,10 @@ int BPF_KRETPROBE(ret_cgroup_bpf_run_filter_skb)
 }
 
 //
-// Type definitions and prototypes for protocol parsing:
+// Type definitions and prototypes for protocol parsing
 //
+
+// NOTE: proto header structs need full type in vmlinux.h (for correct skb copy)
 
 typedef union iphdrs_t {
     struct iphdr iphdr;
@@ -6775,11 +6791,22 @@ static __always_inline u32 cgroup_skb_submit_event(struct __sk_buff *ctx,
                                                    u32 event_type,
                                                    bool full)
 {
-    // full sends entire packet payload to userland (default is headers only)
     u64 flags = BPF_F_CURRENT_CPU;
-    flags |= full ? (u64) ctx->len << 32 : (u64) neteventctx->header_size << 32;
 
+    if (full) { // submit full packet to userland
+
+        flags |= (u64) ctx->len << 32; // size of payload as a flag
+        neteventctx->bytes = ctx->len + sizeof(u32); // [u32 size][payload]
+
+    } else { // submit only protocol headers
+
+        flags |= (u64) neteventctx->header_size << 32;
+        neteventctx->bytes = neteventctx->header_size + sizeof(u32);
+    }
+
+    // set the event type before submitting event
     neteventctx->eventctx.eventid = event_type;
+
     return bpf_perf_event_output(ctx,
                                  &events,
                                  flags,
@@ -6803,7 +6830,7 @@ static __always_inline u32 cgroup_skb_generic(struct __sk_buff *ctx)
     if (!neteventctx)
         return 1;
 
-    debug_net_event_context("NEW_NET_PACKET_BASE", neteventctx);
+    // debug_net_event_context("NEW_NET_PACKET_BASE", neteventctx);
 
     struct bpf_sock *sk = ctx->sk;
     if (!sk) {
@@ -6818,8 +6845,6 @@ static __always_inline u32 cgroup_skb_generic(struct __sk_buff *ctx)
     }
 
     nethdrs hdrs = {0}, *nethdrs = &hdrs;
-    iphdrs *iphdrs = &nethdrs->iphdrs;
-    protohdrs *protohdrs = &nethdrs->protohdrs;
 
     return CGROUP_SKB_HANDLE(family);
 }
@@ -6852,40 +6877,30 @@ CGROUP_SKB_HANDLE_FUNCTION(family)
     char *fmt = "ERROR: family: could not load relative packet bytes";
 
     void *dest;
-    u32 size;
+    u32 size = 0;
 
     switch (ctx->family) {
         case PF_INET:
             dest = &nethdrs->iphdrs.iphdr;
-            size = sizeof(struct iphdr);
+            // size of IP header when IHL flag < 5 (TODO: IFL flag)
+            size = bpf_core_type_size(struct iphdr);
             break;
         case PF_INET6:
             dest = &nethdrs->iphdrs.ipv6hdr;
-            size = sizeof(struct ipv6hdr);
+            size = bpf_core_type_size(struct ipv6hdr);
             break;
         default:
             return 1; // other families are not an error
     }
 
-    // load IP header into its buffer
+    // load layer 3 protocol headers
+
     if (bpf_skb_load_bytes_relative(ctx, 0, dest, size, BPF_HDR_START_NET)) {
         bpf_trace_printk(fmt, sizeof(fmt));
         return 1;
     }
 
-    neteventctx->header_size += size; // add header size to offset
-
-    // sanity checks for supported protocol families
-    switch (ctx->family) {
-        case PF_INET:
-            if (nethdrs->iphdrs.iphdr.version != 4) // IPv4
-                return 1;
-            break;
-        case PF_INET6:
-            if (nethdrs->iphdrs.ipv6hdr.version != 6) // IPv6
-                return 1;
-            break;
-    }
+    neteventctx->header_size = size; // add header size to offset
 
     return CGROUP_SKB_HANDLE(proto);
 }
@@ -6901,70 +6916,106 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
     char *fmt = "ERROR: proto: could not load relative packet bytes";
 
     void *dest;
-    u32 iphdr_size = neteventctx->header_size;
-    u32 protohdr_size;
+    u32 prev_hdr_size = neteventctx->header_size;
+    u32 size = 0;
 
     // NOTE: might block IP and IPv6 here if needed (return 0)
 
-    // load specific protocol headers
-    switch (nethdrs->iphdrs.iphdr.protocol) {
-        case IPPROTO_TCP:
-            dest = &nethdrs->protohdrs.tcphdr;
-            protohdr_size = sizeof(struct tcphdr);
+    switch (ctx->family) {
+
+        case PF_INET:
+            bpf_printk("INET");
+
+            if (nethdrs->iphdrs.iphdr.version != 4) // IPv4
+                return 1;
+
+            switch (nethdrs->iphdrs.iphdr.protocol) {
+                case IPPROTO_TCP:
+                    bpf_printk("TCPv4");
+                    dest = &nethdrs->protohdrs.tcphdr;
+                     // size of TCP header w/out data offset (TODO: data offset flag)
+                    size = bpf_core_type_size(struct tcphdr);
+                    break;
+                case IPPROTO_UDP:
+                    bpf_printk("UDPv4");
+                    dest = &nethdrs->protohdrs.udphdr;
+                    size = bpf_core_type_size(struct udphdr);
+                    break;
+                case IPPROTO_ICMP:
+                    bpf_printk("ICMPv4");
+                    dest = &nethdrs->protohdrs.icmphdr;
+                    size = bpf_core_type_size(struct icmphdr);
+                    break;
+                default:
+                    return 1; // other protocols are not an error
+            }
             break;
-        case IPPROTO_UDP:
-            dest = &nethdrs->protohdrs.udphdr;
-            protohdr_size = sizeof(struct udphdr);
+
+        case PF_INET6:
+            bpf_printk("INET6");
+
+            if (nethdrs->iphdrs.ipv6hdr.version != 6) // IPv6
+                return 1;
+
+            switch (nethdrs->iphdrs.ipv6hdr.nexthdr) {
+                case IPPROTO_TCP:
+                    bpf_printk("TCPv6");
+                    dest = &nethdrs->protohdrs.tcphdr;
+                        // size of TCP header w/out data offset (TODO: data offset flag)
+                    size = bpf_core_type_size(struct tcphdr);
+                    break;
+                case IPPROTO_UDP:
+                    bpf_printk("UDPv6");
+                    dest = &nethdrs->protohdrs.udphdr;
+                    size = bpf_core_type_size(struct udphdr);
+                    break;
+                case IPPROTO_ICMPV6:
+                    bpf_printk("ICMPv6");
+                    dest = &nethdrs->protohdrs.icmp6hdr;
+                    size = bpf_core_type_size(struct icmp6hdr);
+                    break;
+                default:
+                    return 1; // other protocols are not an error
+            }
+
             break;
-        case IPPROTO_ICMP:
-            dest = &nethdrs->protohdrs.icmphdr;
-            protohdr_size = sizeof(struct icmphdr);
-            break;
-        case IPPROTO_ICMPV6:
-            dest = &nethdrs->protohdrs.icmp6hdr;
-            protohdr_size = sizeof(struct icmp6hdr);
-            break;
-        default:
-            return 1; // other protocols are not an error
     }
 
-    // load protocol (tcp, udp, icmp) header into its buffer
+    // load layer 4 protocol headers
 
-    if (bpf_skb_load_bytes_relative(ctx,
-                                    iphdr_size,
-                                    dest,
-                                    protohdr_size,
-                                    BPF_HDR_START_NET)) {
+    if (bpf_skb_load_bytes_relative(ctx, prev_hdr_size, dest, size, BPF_HDR_START_NET)) {
         bpf_trace_printk(fmt, sizeof(fmt));
         return 1;
     }
 
-    neteventctx->header_size += protohdr_size; // add header size to offset
-
     // submit the new_net_packet event if needed
 
-    if (neteventctx->should_submit & SHOULD_SUBMIT_NEW_NET_PACKET_BASE)
-        cgroup_skb_submit_event(ctx, neteventctx, NEW_NET_PACKET_BASE, ONLY_HEADERS);
+    if (neteventctx->should_submit & SHOULD_SUBMIT_NET_PACKET_IPV4_BASE)
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_IPV4_BASE, ONLY_HEADERS);
 
-    // TODO: if capturing, submit net packet with FULL_PACKET
+    // call protocol handlers
 
-    // FASTPATH: only filtering net_packet (no other network events)
-
-    u8 rest = SHOULD_SUBMIT_NEW_DNS_PACKET_BASE | 0; // OR more events
-    if (!(neteventctx->should_submit & rest))
-        return 1;
-
-    // SLOWPATH: call appropriate protocol handler (only if needed)
-
-    switch (nethdrs->iphdrs.iphdr.protocol) {
-        case IPPROTO_TCP:
-            return CGROUP_SKB_HANDLE(proto_tcp);
-        case IPPROTO_UDP:
-            return CGROUP_SKB_HANDLE(proto_udp);
-        case IPPROTO_ICMP:
-            return CGROUP_SKB_HANDLE(proto_icmp);
-        case IPPROTO_ICMPV6:
-            return CGROUP_SKB_HANDLE(proto_icmpv6);
+    switch (ctx->family) {
+        case PF_INET:
+            switch (nethdrs->iphdrs.iphdr.protocol) {
+                case IPPROTO_TCP:
+                    return CGROUP_SKB_HANDLE(proto_tcp);
+                case IPPROTO_UDP:
+                    return CGROUP_SKB_HANDLE(proto_udp);
+                case IPPROTO_ICMP:
+                    return CGROUP_SKB_HANDLE(proto_icmp);
+            }
+            break;
+        case PF_INET6:
+            switch (nethdrs->iphdrs.ipv6hdr.nexthdr) {
+                case IPPROTO_TCP:
+                    return CGROUP_SKB_HANDLE(proto_tcp);
+                case IPPROTO_UDP:
+                    return CGROUP_SKB_HANDLE(proto_udp);
+                case IPPROTO_ICMPV6:
+                    return CGROUP_SKB_HANDLE(proto_icmpv6);
+            }
+            break;
     }
 
     return 1;
@@ -7024,7 +7075,11 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_dns)
 {
     // NOTE: might block DNS here if needed (return 0)
 
-    cgroup_skb_submit_event(ctx, neteventctx, NEW_DNS_PACKET_BASE, FULL_PACKET);
+    if (neteventctx->should_submit & SHOULD_SUBMIT_NET_PACKET_DNS_BASE) {
+        bpf_printk("SUBMIT_PROTO_TCP_DNS");
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_DNS_BASE, FULL_PACKET);
+    }
+
     return 1;
 }
 
@@ -7032,6 +7087,15 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_udp_dns)
 {
     // NOTE: might block DNS here if needed (return 0)
 
-    cgroup_skb_submit_event(ctx, neteventctx, NEW_DNS_PACKET_BASE, FULL_PACKET);
+    // if (should_submit(NET_PACKET_DNS_BASE, data.config)) {
+    //     bpf_printk("EH DNS BASE AGORA");
+    //     neteventctx.should_submit |= SHOULD_SUBMIT_NET_PACKET_DNS_BASE;
+    // }
+
+    if (neteventctx->should_submit & SHOULD_SUBMIT_NET_PACKET_DNS_BASE) {
+        bpf_printk("SUBMIT_PROTO_UDP_DNS");
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_DNS_BASE, FULL_PACKET);
+    }
+
     return 1;
 }

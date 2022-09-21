@@ -156,8 +156,8 @@ const (
 	TaskRename
 	SymbolsLoaded
 	SecurityInodeRename
-	NewNetPacketBase
-	NewDnsPacketBase
+	NetPacketIPv4Base
+	NetPacketDNSBase
 	MaxCommonID
 )
 
@@ -169,9 +169,9 @@ const (
 	ExistingContainer
 	HookedSyscalls
 	HookedSeqOps
-	NewNetPacket
-	NewDnsRequest
-	NewDnsResponse
+	NetPacketIPv4
+	NetPacketDNSRequest
+	NetPacketDNSResponse
 	MaxUserSpace
 )
 
@@ -5980,9 +5980,53 @@ var Definitions = eventDefinitions{
 		//
 		// WIP
 		//
-		NewNetPacketBase: { // payload: packet headers only
+		NetPacketIPv4Base: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_ipv4_base",
+			//Internal: true,
+			Dependencies: dependencies{
+				Capabilities: []cap.Value{cap.NET_ADMIN},
+			},
+			Probes: []probeDependency{
+				{Handle: probes.SockAllocFile, Required: true},
+				{Handle: probes.SockAllocFileRet, Required: true},
+				{Handle: probes.CgroupBPFRunFilterSKB, Required: true},
+				{Handle: probes.CgroupBPFRunFilterSKBRet, Required: true},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "int", Name: "arg0"},
+				{Type: "int", Name: "arg1"},
+				{Type: "bytes", Name: "payload"}, // headers only payload
+			},
+		},
+		NetPacketIPv4: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_ipv4",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketIPv4Base},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "u8", Name: "version"},
+				{Type: "u8", Name: "ihl"},
+				{Type: "u8", Name: "tos"},
+				{Type: "u16", Name: "length"},
+				{Type: "u16", Name: "id"},
+				{Type: "u8", Name: "flags"},
+				{Type: "u16", Name: "fragoffset"},
+				{Type: "u8", Name: "ttl"},
+				{Type: "u8", Name: "protocol"},
+				{Type: "u16", Name: "checksum"},
+				{Type: "const char*", Name: "src"},
+				{Type: "const char*", Name: "dst"},
+			},
+		},
+		NetPacketDNSBase: { // payload: full packet
 			ID32Bit:  sys32undefined,
-			Name:     "new_net_packet_base",
+			Name:     "net_packet_dns_base",
 			Internal: true,
 			Dependencies: dependencies{
 				Capabilities: []cap.Value{cap.NET_ADMIN},
@@ -5995,66 +6039,35 @@ var Definitions = eventDefinitions{
 			},
 			Sets: []string{"network_events"},
 			Params: []trace.ArgMeta{
-				{Type: "int", Name: "nothing"},
+				{Type: "int", Name: "arg0"},
+				{Type: "int", Name: "arg1"},
+				{Type: "bytes", Name: "payload"}, // full payload for L4 parse
 			},
 		},
-		NewNetPacket: { // derived from NewNetPacketBase (parsed headers)
+		NetPacketDNSRequest: {
 			ID32Bit: sys32undefined,
-			Name:    "new_net_packet",
+			Name:    "net_packet_dns_request",
 			Dependencies: dependencies{
 				Events: []eventDependency{
-					{EventID: NewNetPacketBase},
+					{EventID: NetPacketDNSBase},
 				},
 			},
 			Sets: []string{"network_events"},
 			Params: []trace.ArgMeta{
-				{Type: "int", Name: "nothing"},
-				// {Type: "const char*", Name: "src"},
-				// {Type: "const char*", Name: "dst"},
-				// {Type: "u16", Name: "sport"},
-				// {Type: "u16", Name: "dport"},
-				// {Type: "u8", Name: "proto"},
-				// {Type: "u32", Name: "length"},
+				{Type: "int", Name: "arg0"},
 			},
 		},
-		NewDnsPacketBase: { // payload: full packet
-			ID32Bit:  sys32undefined,
-			Name:     "new_dns_packet_base",
-			Internal: true,
-			Dependencies: dependencies{
-				Events: []eventDependency{
-					{EventID: NewNetPacketBase},
-				},
-			},
-			Sets: []string{"network_events"},
-			Params: []trace.ArgMeta{
-				{Type: "int", Name: "nothing"},
-			},
-		},
-		NewDnsRequest: { // derived from NewDnsPacket (parsed payload)
+		NetPacketDNSResponse: {
 			ID32Bit: sys32undefined,
-			Name:    "new_dns_request",
+			Name:    "net_packet_dns_response",
 			Dependencies: dependencies{
 				Events: []eventDependency{
-					{EventID: NewDnsPacketBase},
+					{EventID: NetPacketDNSBase},
 				},
 			},
 			Sets: []string{"network_events"},
 			Params: []trace.ArgMeta{
-				{Type: "int", Name: "nothing"},
-			},
-		},
-		NewDnsResponse: { // derived from NewDnsPacket (parsed payload)
-			ID32Bit: sys32undefined,
-			Name:    "new_dns_response",
-			Dependencies: dependencies{
-				Events: []eventDependency{
-					{EventID: NewDnsPacketBase},
-				},
-			},
-			Sets: []string{"network_events"},
-			Params: []trace.ArgMeta{
-				{Type: "int", Name: "nothing"},
+				{Type: "int", Name: "arg0"},
 			},
 		},
 	},

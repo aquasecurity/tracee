@@ -572,20 +572,20 @@ func (t *Tracee) initDerivationTable() error {
 				),
 			},
 		},
-		events.NewNetPacketBase: {
-			events.NewNetPacket: {
-				Enabled:        t.events[events.NewNetPacketBase].submit,
-				DeriveFunction: derive.NewNetPacket(),
+		events.NetPacketIPv4Base: {
+			events.NetPacketIPv4: {
+				Enabled:        t.events[events.NetPacketIPv4Base].submit,
+				DeriveFunction: derive.NewNetPacketIPv4(),
 			},
 		},
-		events.NewDnsPacketBase: {
-			events.NewDnsRequest: {
-				Enabled:        t.events[events.NewDnsPacketBase].submit,
-				DeriveFunction: derive.NewDnsRequest(),
+		events.NetPacketDNSBase: {
+			events.NetPacketDNSRequest: {
+				Enabled:        t.events[events.NetPacketDNSBase].submit,
+				DeriveFunction: derive.NewNetPacketDNSRequest(),
 			},
-			events.NewDnsResponse: {
-				Enabled:        t.events[events.NewDnsPacketBase].submit,
-				DeriveFunction: derive.NewDnsResponse(),
+			events.NetPacketDNSResponse: {
+				Enabled:        t.events[events.NetPacketDNSBase].submit,
+				DeriveFunction: derive.NewNetPacketDNSResponse(),
 			},
 		},
 	}
