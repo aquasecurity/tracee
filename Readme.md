@@ -36,25 +36,25 @@ Before you proceed, make sure you follow the [minimum requirements for running T
 1. Running **tracee:latest**
 
     ```text
-    $ docker run \
-        --name tracee --rm -it \
-        --pid=host --cgroupns=host --privileged \
-        -v /etc/os-release:/etc/os-release-host:ro \
-        -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-        aquasec/tracee:latest
+docker run \
+  --name tracee --rm -it \
+  --pid=host --cgroupns=host --privileged \
+  -v /etc/os-release:/etc/os-release-host:ro \
+  -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+  aquasec/tracee:latest
     ```
 
 2. Running **tracee:full**
 
    ```text
-    $ docker run --name tracee --rm -it \
-        --pid=host --cgroupns=host --privileged \
-        -v /etc/os-release:/etc/os-release-host:ro \
-        -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-        -v /usr/src:/usr/src:ro \
-        -v /lib/modules:/lib/modules:ro \
-        -v /tmp/tracee:/tmp/tracee:rw \
-        aquasec/tracee:full
+docker run --name tracee --rm -it \
+  --pid=host --cgroupns=host --privileged \
+  -v /etc/os-release:/etc/os-release-host:ro \
+  -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+  -v /usr/src:/usr/src:ro \
+  -v /lib/modules:/lib/modules:ro \
+  -v /tmp/tracee:/tmp/tracee:rw \
+  aquasec/tracee:full
    ```
 
 > 1. The default (latest) image is **lightweight** and **portable**. It is
@@ -77,7 +77,7 @@ These docker commands run Tracee with **default settings** and start
 suspicious behavior, you can simply run:
 
 ```
-$ strace ls
+strace ls
 ```
 
 in another terminal. This will trigger the **Anti-Debugging** signature, which
@@ -111,13 +111,13 @@ Execute docker container with the word `trace` as an initial argument, and
 **tracee-ebpf** will be executed, instead of the full tracee detection engine.
 
 ```text
-$ docker run \
-    --name tracee --rm -it \
-    --pid=host --cgroupns=host --privileged \
-    -v /etc/os-release:/etc/os-release-host:ro \
-    -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-    aquasec/tracee:{{ git.tag[1:] }}
-    trace
+docker run \
+  --name tracee --rm -it \
+  --pid=host --cgroupns=host --privileged \
+  -v /etc/os-release:/etc/os-release-host:ro \
+  -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
+  aquasec/tracee:latest \
+  trace
 ```
 
 > See documentation or add the `--help` flag for more.
