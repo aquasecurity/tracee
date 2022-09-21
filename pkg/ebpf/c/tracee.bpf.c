@@ -439,7 +439,8 @@ enum event_id_e
     TASK_RENAME,
     SYMBOLS_LOADED,
     SECURITY_INODE_RENAME,
-    NET_PACKET_IPV4_BASE,
+    NET_PACKET_IP_BASE,
+    NET_PACKET_TCP_BASE,
     NET_PACKET_DNS_BASE,
     MAX_EVENT_ID,
 };
@@ -6289,7 +6290,7 @@ int tc_ingress(struct __sk_buff *skb)
 static __always_inline bool is_socket_supported(struct socket *sock)
 {
     struct sock *sk = (void *) BPF_CORE_READ(sock, sk);
-    struct sock_common *common = (void *) sk;
+    struct sock_common *common = (void *) BPF_CORE_READ(sock, sk);
 
     u8 family = BPF_CORE_READ_BITFIELD_PROBED(common, skc_family);
     switch (family) {
@@ -6301,17 +6302,16 @@ static __always_inline bool is_socket_supported(struct socket *sock)
             bpf_printk("DEBUG: skipping socket family: %d", family);
             return 0;
     }
-
-    u16 type = BPF_CORE_READ_BITFIELD_PROBED(sk, sk_type);
-    switch (type) {
-        case SOCK_STREAM:
-        case SOCK_DGRAM:
-            break;
-        default:
-            bpf_printk("DEBUG: skipping socket type: %d", family);
-            return 0;
-    }
-
+    // TODO: kernel 5.4 checks/problems (wrong relocation ?)
+    // u16 type = BPF_CORE_READ_BITFIELD_PROBED(sk, sk_type);
+    // switch (type) {
+    //     case SOCK_STREAM:
+    //     case SOCK_DGRAM:
+    //         break;
+    //     default:
+    //         bpf_printk("DEBUG: skipping socket type: %d", type);
+    //         return 0;
+    // }
     u16 protocol = BPF_CORE_READ_BITFIELD_PROBED(sk, sk_protocol);
     switch (protocol) {
         // case IPPROTO_IPV6:
@@ -6326,7 +6326,7 @@ static __always_inline bool is_socket_supported(struct socket *sock)
         case IPPROTO_ICMPV6:
             break;
         default:
-            bpf_printk("DEBUG: skipping socket protocol: %d", family);
+            bpf_printk("DEBUG: skipping socket protocol: %d", protocol);
             return 0;
     }
 
@@ -6339,8 +6339,9 @@ static __always_inline bool is_socket_supported(struct socket *sock)
 
 // cgroupctxmap
 
-#define SHOULD_SUBMIT_NET_PACKET_IPV4_BASE (1 << 0)
-#define SHOULD_SUBMIT_NET_PACKET_DNS_BASE  (1 << 1)
+#define SUB_NET_PACKET_IP_BASE   (1 << 0)
+#define SUB_NET_PACKET_TCP_BASE  (1 << 1)
+#define SUB_NET_PACKET_DNS_BASE  (1 << 2)
 
 typedef struct net_event_context {
     event_context_t eventctx;
@@ -6635,7 +6636,7 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     __builtin_memcpy(&eventctx->task, &netctx->taskctx, sizeof(task_context_t));
     eventctx->ts = data.context.ts;           // copy timestamp from current ctx
     eventctx->argnum = 3;                     // 3 arguments
-    eventctx->eventid = NET_PACKET_IPV4_BASE; // will be changed in skb program
+    eventctx->eventid = NET_PACKET_IP_BASE;   // will be changed in skb program
     eventctx->stack_id = 0;
     eventctx->processor_id = data.context.processor_id; // copy from current ctx
 
@@ -6649,13 +6650,14 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     neteventctx.arg1 = 2011;
     neteventctx.bytes = 0; // no payload by default (changed inside skb prog)
 
-    if (should_submit(NET_PACKET_IPV4_BASE, data.config)) {
-        bpf_printk("EH IPV4 BASE SIM");
-        neteventctx.should_submit |= SHOULD_SUBMIT_NET_PACKET_IPV4_BASE;
+    if (should_submit(NET_PACKET_IP_BASE, data.config)) {
+        neteventctx.should_submit |= SUB_NET_PACKET_IP_BASE;
+    }
+    if (should_submit(NET_PACKET_TCP_BASE, data.config)) {
+        neteventctx.should_submit |= SUB_NET_PACKET_TCP_BASE;
     }
     if (should_submit(NET_PACKET_DNS_BASE, data.config)) {
-        bpf_printk("EH DNS BASE AGORA");
-        neteventctx.should_submit |= SHOULD_SUBMIT_NET_PACKET_DNS_BASE;
+        neteventctx.should_submit |= SUB_NET_PACKET_DNS_BASE;
     }
 
     // switch (type) {
@@ -6783,8 +6785,8 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_icmpv6);
 // Network submission functions
 //
 
-#define FULL_PACKET  1
-#define ONLY_HEADERS 0
+#define FULL    1
+#define HEADERS 0
 
 static __always_inline u32 cgroup_skb_submit_event(struct __sk_buff *ctx,
                                                    net_event_context_t *neteventctx,
@@ -6981,6 +6983,8 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
             break;
     }
 
+    neteventctx->header_size += size; // add header size to offset
+
     // load layer 4 protocol headers
 
     if (bpf_skb_load_bytes_relative(ctx, prev_hdr_size, dest, size, BPF_HDR_START_NET)) {
@@ -6988,12 +6992,12 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
         return 1;
     }
 
-    // submit the new_net_packet event if needed
+    // submit the base IP packet event if needed (will derive protocol events)
 
-    if (neteventctx->should_submit & SHOULD_SUBMIT_NET_PACKET_IPV4_BASE)
-        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_IPV4_BASE, ONLY_HEADERS);
+    if (neteventctx->should_submit & SUB_NET_PACKET_IP_BASE)
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_IP_BASE, HEADERS);
 
-    // call protocol handlers
+    // call protocol handlers (for more base events to be sent)
 
     switch (ctx->family) {
         case PF_INET:
@@ -7029,6 +7033,13 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
 
 CGROUP_SKB_HANDLE_FUNCTION(proto_tcp)
 {
+    // submit tcp base event if needed
+
+    if (neteventctx->should_submit & SUB_NET_PACKET_TCP_BASE)
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_TCP_BASE, HEADERS);
+
+    // guess layer 7 protocols from service ports
+
     u16 source = bpf_ntohs(nethdrs->protohdrs.tcphdr.source);
     u16 dest = bpf_ntohs(nethdrs->protohdrs.tcphdr.dest);
 
@@ -7075,9 +7086,9 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_dns)
 {
     // NOTE: might block DNS here if needed (return 0)
 
-    if (neteventctx->should_submit & SHOULD_SUBMIT_NET_PACKET_DNS_BASE) {
+    if (neteventctx->should_submit & SUB_NET_PACKET_DNS_BASE) {
         bpf_printk("SUBMIT_PROTO_TCP_DNS");
-        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_DNS_BASE, FULL_PACKET);
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_DNS_BASE, FULL);
     }
 
     return 1;
@@ -7087,14 +7098,9 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_udp_dns)
 {
     // NOTE: might block DNS here if needed (return 0)
 
-    // if (should_submit(NET_PACKET_DNS_BASE, data.config)) {
-    //     bpf_printk("EH DNS BASE AGORA");
-    //     neteventctx.should_submit |= SHOULD_SUBMIT_NET_PACKET_DNS_BASE;
-    // }
-
-    if (neteventctx->should_submit & SHOULD_SUBMIT_NET_PACKET_DNS_BASE) {
+    if (neteventctx->should_submit & SUB_NET_PACKET_DNS_BASE) {
         bpf_printk("SUBMIT_PROTO_UDP_DNS");
-        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_DNS_BASE, FULL_PACKET);
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_DNS_BASE, FULL);
     }
 
     return 1;

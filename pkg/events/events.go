@@ -156,7 +156,8 @@ const (
 	TaskRename
 	SymbolsLoaded
 	SecurityInodeRename
-	NetPacketIPv4Base
+	NetPacketIPBase
+	NetPacketTCPBase
 	NetPacketDNSBase
 	MaxCommonID
 )
@@ -170,6 +171,8 @@ const (
 	HookedSyscalls
 	HookedSeqOps
 	NetPacketIPv4
+	NetPacketIPv6
+	NetPacketTCP
 	NetPacketDNSRequest
 	NetPacketDNSResponse
 	MaxUserSpace
@@ -5980,9 +5983,9 @@ var Definitions = eventDefinitions{
 		//
 		// WIP
 		//
-		NetPacketIPv4Base: {
+		NetPacketIPBase: {
 			ID32Bit: sys32undefined,
-			Name:    "net_packet_ipv4_base",
+			Name:    "net_packet_ip_base",
 			//Internal: true,
 			Dependencies: dependencies{
 				Capabilities: []cap.Value{cap.NET_ADMIN},
@@ -6005,7 +6008,7 @@ var Definitions = eventDefinitions{
 			Name:    "net_packet_ipv4",
 			Dependencies: dependencies{
 				Events: []eventDependency{
-					{EventID: NetPacketIPv4Base},
+					{EventID: NetPacketIPBase},
 				},
 			},
 			Sets: []string{"network_events"},
@@ -6016,12 +6019,83 @@ var Definitions = eventDefinitions{
 				{Type: "u16", Name: "length"},
 				{Type: "u16", Name: "id"},
 				{Type: "u8", Name: "flags"},
-				{Type: "u16", Name: "fragoffset"},
+				{Type: "u16", Name: "frag_offset"},
 				{Type: "u8", Name: "ttl"},
 				{Type: "u8", Name: "protocol"},
 				{Type: "u16", Name: "checksum"},
 				{Type: "const char*", Name: "src"},
 				{Type: "const char*", Name: "dst"},
+			},
+		},
+		NetPacketIPv6: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_ipv6",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketIPBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "u8", Name: "version"},
+				{Type: "u8", Name: "traffic_class"},
+				{Type: "u32", Name: "flow_label"},
+				{Type: "u16", Name: "length"},
+				{Type: "u8", Name: "next_header"},
+				{Type: "u8", Name: "hop_limit"},
+				{Type: "const char*", Name: "src"},
+				{Type: "const char*", Name: "dst"},
+			},
+		},
+		NetPacketTCPBase: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_tcp_base",
+			//Internal: true,
+			Dependencies: dependencies{
+				Capabilities: []cap.Value{cap.NET_ADMIN},
+			},
+			Probes: []probeDependency{
+				{Handle: probes.SockAllocFile, Required: true},
+				{Handle: probes.SockAllocFileRet, Required: true},
+				{Handle: probes.CgroupBPFRunFilterSKB, Required: true},
+				{Handle: probes.CgroupBPFRunFilterSKBRet, Required: true},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "int", Name: "arg0"},
+				{Type: "int", Name: "arg1"},
+				{Type: "bytes", Name: "payload"}, // headers only payload
+			},
+		},
+		NetPacketTCP: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_tcp",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketTCPBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "src"},
+				{Type: "const char*", Name: "dst"},
+				{Type: "u16", Name: "src_port"},
+				{Type: "u16", Name: "dst_port"},
+				{Type: "u32", Name: "seq"},
+				{Type: "u32", Name: "ack_num"},
+				{Type: "u8", Name: "data_offset"},
+				{Type: "u8", Name: "fin"},
+				{Type: "u8", Name: "syn"},
+				{Type: "u8", Name: "rst"},
+				{Type: "u8", Name: "psh"},
+				{Type: "u8", Name: "ack"},
+				{Type: "u8", Name: "urg"},
+				{Type: "u8", Name: "ece"},
+				{Type: "u8", Name: "cwr"},
+				{Type: "u8", Name: "ns"},
+				{Type: "u16", Name: "window"},
+				{Type: "u16", Name: "checksum"},
+				{Type: "u16", Name: "urgent"},
 			},
 		},
 		NetPacketDNSBase: { // payload: full packet

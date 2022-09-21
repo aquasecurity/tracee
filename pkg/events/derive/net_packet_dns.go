@@ -7,7 +7,7 @@ import (
 
 // DNS Requests
 
-func NewNetPacketDNSRequest() deriveFunction {
+func NetPacketDNSRequest() deriveFunction {
 	return deriveSingleEvent(events.NetPacketDNSRequest, deriveNetPacketDNSRequest())
 }
 
@@ -19,7 +19,7 @@ func deriveNetPacketDNSRequest() deriveArgsFunction {
 
 // DNS Requests
 
-func NewNetPacketDNSResponse() deriveFunction {
+func NetPacketDNSResponse() deriveFunction {
 	return deriveSingleEvent(events.NetPacketDNSResponse, deriveNetPacketDNSResponse())
 }
 
