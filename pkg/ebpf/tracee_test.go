@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 
@@ -163,6 +164,16 @@ func Test_getTailCalls(t *testing.T) {
 				assert.ErrorIs(t, err, tc.expectedErr)
 			} else {
 				require.NoError(t, err)
+				for n := range tailCalls {
+					sort.Slice(tailCalls[n].MapIndexes, func(i, j int) bool {
+						return tailCalls[n].MapIndexes[i] < tailCalls[n].MapIndexes[j]
+					})
+				}
+				for n := range tc.expectedTailCalls {
+					sort.Slice(tc.expectedTailCalls[n].MapIndexes, func(i, j int) bool {
+						return tc.expectedTailCalls[n].MapIndexes[i] < tc.expectedTailCalls[n].MapIndexes[j]
+					})
+				}
 				assert.ElementsMatch(t, tailCalls, tc.expectedTailCalls)
 			}
 		})
