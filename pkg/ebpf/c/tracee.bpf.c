@@ -6778,6 +6778,9 @@ typedef union protohdrs_t {
     struct udphdr udphdr;
     struct icmphdr icmphdr;
     struct icmp6hdr icmp6hdr;
+    union {
+        u8 tcp_extra[40]; // data offset might set it up to 60 bytes
+    };
 } protohdrs;
 
 typedef struct nethdrs_t {
@@ -6891,8 +6894,8 @@ int cgroup_skb_egress(struct __sk_buff *ctx)
 // WIP: new network code (no interface hooking)
 //
 
-#define UDP_PORT_DNS 8090 // TODO: change to 53 (testing only)
-#define TCP_PORT_DNS 8090 // TODO: change to 53 (testing only)
+#define UDP_PORT_DNS 53
+#define TCP_PORT_DNS 53
 
 //
 // SUPPORTED SOCKET FAMILY TYPES (inet, inet6)
@@ -7066,6 +7069,17 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
 
 CGROUP_SKB_HANDLE_FUNCTION(proto_tcp)
 {
+    char *fmt = "ERROR: proto: could not load relative packet bytes (tcp)";
+
+    // check flag for dynamic header size (TCP: data offset flag)
+
+    // if (nethdrs->protohdrs.tcphdr.doff > 5) { // offset flag set
+    //     bpf_printk("TCP (data offset flag)");
+    //     u32 doff = nethdrs->protohdrs.tcphdr.doff * (32 / 8);
+    //     neteventctx->header_size -= 20;
+    //     neteventctx->header_size += doff;
+    // }
+
     // submit TCP base event if needed (only headers)
 
     if (neteventctx->should_submit & SUB_NET_PACKET_TCP)
@@ -7131,7 +7145,6 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_icmpv6)
     // submit ICMPv6 base event if needed (full packet)
 
     if (neteventctx->should_submit & SUB_NET_PACKET_ICMPV6) {
-        bpf_printk("TO AQUI SIM");
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_ICMPV6, FULL);
     }
 

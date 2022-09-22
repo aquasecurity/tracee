@@ -2,7 +2,6 @@ package derive
 
 import (
 	"fmt"
-	"net"
 
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -10,17 +9,14 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-func NetPacketTCP() deriveFunction {
-	return deriveSingleEvent(events.NetPacketTCP, deriveNetPacketTCPArgs())
+func NetPacketIPv6() deriveFunction {
+	return deriveSingleEvent(events.NetPacketIPv6, deriveNetPacketIPv6Args())
 }
 
-func deriveNetPacketTCPArgs() deriveArgsFunction {
+func deriveNetPacketIPv6Args() deriveArgsFunction {
 	return func(event trace.Event) ([]interface{}, error) {
 		var ok bool
 		var payload []byte
-		var layerType gopacket.LayerType
-		var srcIP net.IP
-		var dstIP net.IP
 
 		// sanity checks
 
@@ -38,12 +34,7 @@ func deriveNetPacketTCPArgs() deriveArgsFunction {
 
 		// initial header type
 
-		switch event.ReturnValue { // event retval tells layer type
-		case 2:
-			layerType = layers.LayerTypeIPv4
-		case 10:
-			layerType = layers.LayerTypeIPv6
-		default:
+		if event.ReturnValue != 10 { // AF_INET6
 			return nil, nil
 		}
 
@@ -51,7 +42,7 @@ func deriveNetPacketTCPArgs() deriveArgsFunction {
 
 		packet := gopacket.NewPacket(
 			payload[4:payloadSize],
-			layerType,
+			layers.LayerTypeIPv6,
 			gopacket.Default,
 		)
 		if packet == nil {
@@ -60,44 +51,20 @@ func deriveNetPacketTCPArgs() deriveArgsFunction {
 
 		layer3 := packet.NetworkLayer()
 
-		switch v := layer3.(type) {
-		case (*layers.IPv4):
-			srcIP = v.SrcIP
-			dstIP = v.DstIP
+		switch l3 := layer3.(type) {
 		case (*layers.IPv6):
-			srcIP = v.SrcIP
-			dstIP = v.DstIP
-		default:
-			return nil, nil
-		}
-
-		layer4 := packet.TransportLayer()
-
-		switch l4 := layer4.(type) {
-		case (*layers.TCP):
 			return []interface{}{
-				srcIP,
-				dstIP,
-				l4.SrcPort,
-				l4.DstPort,
-				l4.Seq,
-				l4.Ack,
-				l4.DataOffset,
-				l4.FIN,
-				l4.SYN,
-				l4.RST,
-				l4.PSH,
-				l4.ACK,
-				l4.URG,
-				l4.ECE,
-				l4.CWR,
-				l4.NS,
-				l4.Window,
-				l4.Checksum,
-				l4.Urgent,
+				l3.Version,
+				l3.TrafficClass,
+				l3.FlowLabel,
+				l3.Length,
+				l3.NextHeader,
+				l3.HopLimit,
+				l3.SrcIP,
+				l3.DstIP,
 			}, nil
 		}
 
-		return nil, fmt.Errorf("not a TCP packet")
+		return nil, fmt.Errorf("not an IPv6 packet")
 	}
 }

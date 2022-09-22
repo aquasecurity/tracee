@@ -16,12 +16,28 @@ func NetPacketUDP() deriveFunction {
 
 func deriveNetPacketUDPArgs() deriveArgsFunction {
 	return func(event trace.Event) ([]interface{}, error) {
+		var ok bool
+		var payload []byte
+		var layerType gopacket.LayerType
+		var srcIP net.IP
+		var dstIP net.IP
+
+		// sanity checks
+
 		payloadArg := events.GetArg(&event, "payload")
 		if payloadArg == nil {
 			return nil, fmt.Errorf("no payload ?")
 		}
+		if payload, ok = payloadArg.Value.([]byte); !ok {
+			return nil, fmt.Errorf("non []byte argument ?")
+		}
+		payloadSize := len(payload)
+		if payloadSize < 1 {
+			return nil, fmt.Errorf("empty payload ?")
+		}
 
-		var layerType gopacket.LayerType
+		// initial header type
+
 		switch event.ReturnValue { // event retval tells layer type
 		case 2:
 			layerType = layers.LayerTypeIPv4
@@ -31,54 +47,44 @@ func deriveNetPacketUDPArgs() deriveArgsFunction {
 			return nil, nil
 		}
 
-		var ok bool
-		var payload []byte
-
-		if payload, ok = payloadArg.Value.([]byte); !ok {
-			return nil, fmt.Errorf("non []byte argument ?")
-		}
-
-		payloadSize := len(payload)
-		if payloadSize < 1 {
-			return nil, fmt.Errorf("empty payload ?")
-		}
+		// parse packet
 
 		packet := gopacket.NewPacket(
 			payload[4:payloadSize],
 			layerType,
 			gopacket.Default,
 		)
-
 		if packet == nil {
-			return []interface{}{}, fmt.Errorf("could not parse IP packet")
+			return []interface{}{}, fmt.Errorf("could not parse the packet")
 		}
 
-		udpLayer, ok := packet.Layer(layers.LayerTypeUDP).(*layers.UDP)
-		if !ok {
-			return nil, fmt.Errorf("could not parse UDP packet")
-		}
+		layer3 := packet.NetworkLayer()
 
-		ipLayer := packet.Layer(layerType)
-
-		var srcIP net.IP
-		var dstIP net.IP
-
-		switch v := ipLayer.(type) {
+		switch v := layer3.(type) {
 		case (*layers.IPv4):
 			srcIP = v.SrcIP
 			dstIP = v.DstIP
 		case (*layers.IPv6):
 			srcIP = v.SrcIP
 			dstIP = v.DstIP
+		default:
+			return nil, nil
 		}
 
-		return []interface{}{
-			srcIP,
-			dstIP,
-			udpLayer.SrcPort,
-			udpLayer.DstPort,
-			udpLayer.Length,
-			udpLayer.Checksum,
-		}, nil
+		layer4 := packet.TransportLayer()
+
+		switch l4 := layer4.(type) {
+		case (*layers.UDP):
+			return []interface{}{
+				srcIP,
+				dstIP,
+				l4.SrcPort,
+				l4.DstPort,
+				l4.Length,
+				l4.Checksum,
+			}, nil
+		}
+
+		return nil, fmt.Errorf("not an UDP packet")
 	}
 }

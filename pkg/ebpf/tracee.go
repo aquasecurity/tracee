@@ -610,13 +610,9 @@ func (t *Tracee) initDerivationTable() error {
 			},
 		},
 		events.NetPacketDNSBase: {
-			events.NetPacketDNSRequest: {
+			events.NetPacketDNS: {
 				Enabled:        t.events[events.NetPacketDNSBase].submit,
-				DeriveFunction: derive.NetPacketDNSRequest(),
-			},
-			events.NetPacketDNSResponse: {
-				Enabled:        t.events[events.NetPacketDNSBase].submit,
-				DeriveFunction: derive.NetPacketDNSResponse(),
+				DeriveFunction: derive.NetPacketDNS(),
 			},
 		},
 	}

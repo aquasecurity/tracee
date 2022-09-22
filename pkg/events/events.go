@@ -179,8 +179,7 @@ const (
 	NetPacketUDP
 	NetPacketICMP
 	NetPacketICMPv6
-	NetPacketDNSRequest
-	NetPacketDNSResponse
+	NetPacketDNS
 	MaxUserSpace
 )
 
@@ -6217,9 +6216,9 @@ var Definitions = eventDefinitions{
 			},
 		},
 		NetPacketDNSBase: { // payload: full packet
-			ID32Bit:  sys32undefined,
-			Name:     "net_packet_dns_base",
-			Internal: true,
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_dns_base",
+			//Internal: true,
 			Dependencies: dependencies{
 				Capabilities: []cap.Value{cap.NET_ADMIN},
 			},
@@ -6236,9 +6235,9 @@ var Definitions = eventDefinitions{
 				{Type: "bytes", Name: "payload"}, // full payload for L4 parse
 			},
 		},
-		NetPacketDNSRequest: {
+		NetPacketDNS: {
 			ID32Bit: sys32undefined,
-			Name:    "net_packet_dns_request",
+			Name:    "net_packet_dns",
 			Dependencies: dependencies{
 				Events: []eventDependency{
 					{EventID: NetPacketDNSBase},
@@ -6246,20 +6245,13 @@ var Definitions = eventDefinitions{
 			},
 			Sets: []string{"network_events"},
 			Params: []trace.ArgMeta{
-				{Type: "int", Name: "arg0"},
-			},
-		},
-		NetPacketDNSResponse: {
-			ID32Bit: sys32undefined,
-			Name:    "net_packet_dns_response",
-			Dependencies: dependencies{
-				Events: []eventDependency{
-					{EventID: NetPacketDNSBase},
-				},
-			},
-			Sets: []string{"network_events"},
-			Params: []trace.ArgMeta{
-				{Type: "int", Name: "arg0"},
+				{Type: "const char*", Name: "src"},
+				{Type: "const char*", Name: "dst"},
+				{Type: "u16", Name: "src_port"},
+				{Type: "u16", Name: "dst_port"},
+				{Type: "u16", Name: "id"},
+				{Type: "u8", Name: "query"},
+				{Type: "const char*", Name: "opcode"},
 			},
 		},
 	},

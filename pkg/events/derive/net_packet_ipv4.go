@@ -2,7 +2,6 @@ package derive
 
 import (
 	"fmt"
-	"net"
 
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -10,16 +9,20 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-func NetPacketICMP() deriveFunction {
-	return deriveSingleEvent(events.NetPacketICMP, deriveNetPacketICMPArgs())
+func NetPacketIPv4() deriveFunction {
+	return deriveSingleEvent(events.NetPacketIPv4, deriveNetPacketIPv4Args())
 }
 
-func deriveNetPacketICMPArgs() deriveArgsFunction {
+func deriveNetPacketIPv4Args() deriveArgsFunction {
 	return func(event trace.Event) ([]interface{}, error) {
 		var ok bool
 		var payload []byte
-		var srcIP net.IP
-		var dstIP net.IP
+
+		// initial header type
+
+		if event.ReturnValue != 2 { // AF_INET
+			return nil, nil
+		}
 
 		// sanity checks
 
@@ -35,12 +38,6 @@ func deriveNetPacketICMPArgs() deriveArgsFunction {
 			return nil, fmt.Errorf("empty payload ?")
 		}
 
-		// initial header type
-
-		if event.ReturnValue != 2 { // AF_INET
-			return nil, nil
-		}
-
 		// parse packet
 
 		packet := gopacket.NewPacket(
@@ -48,36 +45,31 @@ func deriveNetPacketICMPArgs() deriveArgsFunction {
 			layers.LayerTypeIPv4,
 			gopacket.Default,
 		)
+
 		if packet == nil {
 			return []interface{}{}, fmt.Errorf("could not parse the packet")
 		}
 
 		layer3 := packet.NetworkLayer()
 
-		switch v := layer3.(type) {
+		switch l3 := layer3.(type) {
 		case (*layers.IPv4):
-			srcIP = v.SrcIP
-			dstIP = v.DstIP
-		default:
-			return nil, nil
-		}
-
-		// some people says layer 4 (but icmp is a network layer in practice)
-
-		layer4 := packet.Layer(layers.LayerTypeICMPv4)
-
-		switch l4 := layer4.(type) {
-		case (*layers.ICMPv4):
 			return []interface{}{
-				srcIP,
-				dstIP,
-				l4.TypeCode.String(),
-				l4.Checksum,
-				l4.Id,
-				l4.Seq,
+				l3.Version,
+				l3.IHL,
+				l3.TOS,
+				l3.Length,
+				l3.Id,
+				l3.Flags,
+				l3.FragOffset,
+				l3.TTL,
+				l3.Protocol,
+				l3.Checksum,
+				l3.SrcIP,
+				l3.DstIP,
 			}, nil
 		}
 
-		return nil, fmt.Errorf("not an ICMP packet")
+		return nil, fmt.Errorf("not an IPv4 packet")
 	}
 }
