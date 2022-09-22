@@ -10,24 +10,18 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-func NetPacketTCP() deriveFunction {
-	return deriveSingleEvent(events.NetPacketTCP, deriveNetPacketTCPArgs())
+func NetPacketICMPv6() deriveFunction {
+	return deriveSingleEvent(events.NetPacketICMPv6, deriveNetPacketICMPv6Args())
 }
 
-func deriveNetPacketTCPArgs() deriveArgsFunction {
+func deriveNetPacketICMPv6Args() deriveArgsFunction {
 	return func(event trace.Event) ([]interface{}, error) {
 		payloadArg := events.GetArg(&event, "payload")
 		if payloadArg == nil {
 			return nil, fmt.Errorf("no payload ?")
 		}
 
-		var layerType gopacket.LayerType
-		switch event.ReturnValue { // event retval tells layer type
-		case 2:
-			layerType = layers.LayerTypeIPv4
-		case 10:
-			layerType = layers.LayerTypeIPv6
-		default:
+		if event.ReturnValue != 10 { // discard non IPv6 packets quickly
 			return nil, nil
 		}
 
@@ -45,7 +39,7 @@ func deriveNetPacketTCPArgs() deriveArgsFunction {
 
 		packet := gopacket.NewPacket(
 			payload[4:payloadSize],
-			layerType,
+			layers.LayerTypeIPv6,
 			gopacket.Default,
 		)
 
@@ -53,45 +47,31 @@ func deriveNetPacketTCPArgs() deriveArgsFunction {
 			return []interface{}{}, fmt.Errorf("could not parse IP packet")
 		}
 
-		tcpLayer, ok := packet.Layer(layers.LayerTypeTCP).(*layers.TCP)
+		icmpLayer, ok := packet.Layer(layers.LayerTypeICMPv6).(*layers.ICMPv6)
 		if !ok {
-			return nil, fmt.Errorf("could not parse TCP packet")
+			return nil, fmt.Errorf("could not parse ICMPv6 packet")
 		}
 
-		ipLayer := packet.Layer(layerType)
+		// TODO: icmpLayer next layers might be processed (depends on type)
+
+		ipLayer := packet.Layer(layers.LayerTypeIPv6)
 
 		var srcIP net.IP
 		var dstIP net.IP
 
 		switch v := ipLayer.(type) {
-		case (*layers.IPv4):
-			srcIP = v.SrcIP
-			dstIP = v.DstIP
 		case (*layers.IPv6):
 			srcIP = v.SrcIP
 			dstIP = v.DstIP
+		default:
+			return nil, nil
 		}
 
 		return []interface{}{
 			srcIP,
 			dstIP,
-			tcpLayer.SrcPort,
-			tcpLayer.DstPort,
-			tcpLayer.Seq,
-			tcpLayer.Ack,
-			tcpLayer.DataOffset,
-			tcpLayer.FIN,
-			tcpLayer.SYN,
-			tcpLayer.RST,
-			tcpLayer.PSH,
-			tcpLayer.ACK,
-			tcpLayer.URG,
-			tcpLayer.ECE,
-			tcpLayer.CWR,
-			tcpLayer.NS,
-			tcpLayer.Window,
-			tcpLayer.Checksum,
-			tcpLayer.Urgent,
+			icmpLayer.TypeCode.String(),
+			icmpLayer.Checksum,
 		}, nil
 	}
 }

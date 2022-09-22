@@ -10,11 +10,11 @@ import (
 	"github.com/google/gopacket/layers"
 )
 
-func NetPacketTCP() deriveFunction {
-	return deriveSingleEvent(events.NetPacketTCP, deriveNetPacketTCPArgs())
+func NetPacketUDP() deriveFunction {
+	return deriveSingleEvent(events.NetPacketUDP, deriveNetPacketUDPArgs())
 }
 
-func deriveNetPacketTCPArgs() deriveArgsFunction {
+func deriveNetPacketUDPArgs() deriveArgsFunction {
 	return func(event trace.Event) ([]interface{}, error) {
 		payloadArg := events.GetArg(&event, "payload")
 		if payloadArg == nil {
@@ -53,9 +53,9 @@ func deriveNetPacketTCPArgs() deriveArgsFunction {
 			return []interface{}{}, fmt.Errorf("could not parse IP packet")
 		}
 
-		tcpLayer, ok := packet.Layer(layers.LayerTypeTCP).(*layers.TCP)
+		udpLayer, ok := packet.Layer(layers.LayerTypeUDP).(*layers.UDP)
 		if !ok {
-			return nil, fmt.Errorf("could not parse TCP packet")
+			return nil, fmt.Errorf("could not parse UDP packet")
 		}
 
 		ipLayer := packet.Layer(layerType)
@@ -75,23 +75,10 @@ func deriveNetPacketTCPArgs() deriveArgsFunction {
 		return []interface{}{
 			srcIP,
 			dstIP,
-			tcpLayer.SrcPort,
-			tcpLayer.DstPort,
-			tcpLayer.Seq,
-			tcpLayer.Ack,
-			tcpLayer.DataOffset,
-			tcpLayer.FIN,
-			tcpLayer.SYN,
-			tcpLayer.RST,
-			tcpLayer.PSH,
-			tcpLayer.ACK,
-			tcpLayer.URG,
-			tcpLayer.ECE,
-			tcpLayer.CWR,
-			tcpLayer.NS,
-			tcpLayer.Window,
-			tcpLayer.Checksum,
-			tcpLayer.Urgent,
+			udpLayer.SrcPort,
+			udpLayer.DstPort,
+			udpLayer.Length,
+			udpLayer.Checksum,
 		}, nil
 	}
 }

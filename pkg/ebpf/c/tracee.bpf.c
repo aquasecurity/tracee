@@ -439,9 +439,12 @@ enum event_id_e
     TASK_RENAME,
     SYMBOLS_LOADED,
     SECURITY_INODE_RENAME,
-    NET_PACKET_IP_BASE,
-    NET_PACKET_TCP_BASE,
-    NET_PACKET_DNS_BASE,
+    NET_PACKET_IP,
+    NET_PACKET_TCP,
+    NET_PACKET_UDP,
+    NET_PACKET_ICMP,
+    NET_PACKET_ICMPV6,
+    NET_PACKET_DNS,
     MAX_EVENT_ID,
 };
 
@@ -6339,9 +6342,12 @@ static __always_inline bool is_socket_supported(struct socket *sock)
 
 // cgroupctxmap
 
-#define SUB_NET_PACKET_IP_BASE   (1 << 0)
-#define SUB_NET_PACKET_TCP_BASE  (1 << 1)
-#define SUB_NET_PACKET_DNS_BASE  (1 << 2)
+#define SUB_NET_PACKET_IP      (1 << 0) // submit net_packet_ip_base
+#define SUB_NET_PACKET_TCP     (1 << 1) // submit net_packet_tcp_base
+#define SUB_NET_PACKET_UDP     (1 << 2) // submit net_packet_udp_base
+#define SUB_NET_PACKET_ICMP    (1 << 3) // submit net_packet_icmp_base
+#define SUB_NET_PACKET_ICMPV6  (1 << 4) // submit net_packet_icmpv6_base
+#define SUB_NET_PACKET_DNS     (1 << 5) // submit net_packet_dns_base
 
 typedef struct net_event_context {
     event_context_t eventctx;
@@ -6413,10 +6419,35 @@ static __always_inline u64 sizeof_net_event_context_t(void)
     return sizeof(net_event_context_t) - 5; // 40 bytes == neteventctx metadata
 }
 
-static __always_inline void get_net_task_context(event_data_t *data, net_task_context_t *netctx)
+static __always_inline void get_net_task_context(event_data_t *data,
+                                                 net_task_context_t *netctx)
 {
     netctx->task = data->task;
     __builtin_memcpy(&netctx->taskctx, &data->context.task, sizeof(task_context_t));
+}
+
+static __always_inline void should_submit_net_event(net_event_context_t *neteventctx,
+                                                    config_entry_t *config)
+{
+    // configure network events that should be sent to userland
+
+    if (should_submit(NET_PACKET_IP, config))
+        neteventctx->should_submit |= SUB_NET_PACKET_IP;
+
+    if (should_submit(NET_PACKET_TCP, config))
+        neteventctx->should_submit |= SUB_NET_PACKET_TCP;
+
+    if (should_submit(NET_PACKET_UDP, config))
+        neteventctx->should_submit |= SUB_NET_PACKET_UDP;
+
+    if (should_submit(NET_PACKET_ICMP, config))
+        neteventctx->should_submit |= SUB_NET_PACKET_ICMP;
+
+    if (should_submit(NET_PACKET_ICMPV6, config))
+        neteventctx->should_submit |= SUB_NET_PACKET_ICMPV6;
+
+    if (should_submit(NET_PACKET_DNS, config))
+        neteventctx->should_submit |= SUB_NET_PACKET_DNS;
 }
 
 // keep debug functions just until the new network code is stable (please ?)
@@ -6636,7 +6667,7 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     __builtin_memcpy(&eventctx->task, &netctx->taskctx, sizeof(task_context_t));
     eventctx->ts = data.context.ts;           // copy timestamp from current ctx
     eventctx->argnum = 3;                     // 3 arguments
-    eventctx->eventid = NET_PACKET_IP_BASE;   // will be changed in skb program
+    eventctx->eventid = NET_PACKET_IP;   // will be changed in skb program
     eventctx->stack_id = 0;
     eventctx->processor_id = data.context.processor_id; // copy from current ctx
 
@@ -6650,15 +6681,8 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     neteventctx.arg1 = 2011;
     neteventctx.bytes = 0; // no payload by default (changed inside skb prog)
 
-    if (should_submit(NET_PACKET_IP_BASE, data.config)) {
-        neteventctx.should_submit |= SUB_NET_PACKET_IP_BASE;
-    }
-    if (should_submit(NET_PACKET_TCP_BASE, data.config)) {
-        neteventctx.should_submit |= SUB_NET_PACKET_TCP_BASE;
-    }
-    if (should_submit(NET_PACKET_DNS_BASE, data.config)) {
-        neteventctx.should_submit |= SUB_NET_PACKET_DNS_BASE;
-    }
+    // mark network events to be submitted to userland
+    should_submit_net_event(&neteventctx, data.config);
 
     // switch (type) {
     //     case BPF_CGROUP_INET_INGRESS:
@@ -6904,6 +6928,20 @@ CGROUP_SKB_HANDLE_FUNCTION(family)
 
     neteventctx->header_size = size; // add header size to offset
 
+    // submit the IP base event
+
+    if (neteventctx->should_submit & SUB_NET_PACKET_IP)
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_IP, HEADERS);
+
+    // fastpath: return if no other L4 or L7 network events
+
+    if (!(neteventctx->should_submit & (SUB_NET_PACKET_TCP |
+                                        SUB_NET_PACKET_UDP |
+                                        SUB_NET_PACKET_ICMP |
+                                        SUB_NET_PACKET_ICMPV6 |
+                                        SUB_NET_PACKET_DNS)))
+        return 1;
+
     return CGROUP_SKB_HANDLE(proto);
 }
 
@@ -6992,12 +7030,7 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
         return 1;
     }
 
-    // submit the base IP packet event if needed (will derive protocol events)
-
-    if (neteventctx->should_submit & SUB_NET_PACKET_IP_BASE)
-        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_IP_BASE, HEADERS);
-
-    // call protocol handlers (for more base events to be sent)
+   // call protocol handlers (for more base events to be sent)
 
     switch (ctx->family) {
         case PF_INET:
@@ -7033,10 +7066,15 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
 
 CGROUP_SKB_HANDLE_FUNCTION(proto_tcp)
 {
-    // submit tcp base event if needed
+    // submit TCP base event if needed (only headers)
 
-    if (neteventctx->should_submit & SUB_NET_PACKET_TCP_BASE)
-        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_TCP_BASE, HEADERS);
+    if (neteventctx->should_submit & SUB_NET_PACKET_TCP)
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_TCP, HEADERS);
+
+    // fastpath: return if no other L7 network events
+
+    if (!(neteventctx->should_submit & (SUB_NET_PACKET_DNS)))
+        return 1;
 
     // guess layer 7 protocols from service ports
 
@@ -7055,6 +7093,16 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp)
 
 CGROUP_SKB_HANDLE_FUNCTION(proto_udp)
 {
+    // submit UDP base event if needed (only headers)
+
+    if (neteventctx->should_submit & SUB_NET_PACKET_UDP)
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_UDP, HEADERS);
+
+    // fastpath: return if no other L7 network events
+
+    if (!(neteventctx->should_submit & (SUB_NET_PACKET_DNS)))
+        return 1;
+
     u16 source = bpf_ntohs(nethdrs->protohdrs.udphdr.source);
     u16 dest = bpf_ntohs(nethdrs->protohdrs.udphdr.dest);
 
@@ -7070,11 +7118,23 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_udp)
 
 CGROUP_SKB_HANDLE_FUNCTION(proto_icmp)
 {
+    // submit ICMP base event if needed (full packet)
+
+    if (neteventctx->should_submit & SUB_NET_PACKET_ICMP)
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_ICMP, FULL);
+
     return 1; // NOTE: might block ICMP here if needed (return 0)
 }
 
 CGROUP_SKB_HANDLE_FUNCTION(proto_icmpv6)
 {
+    // submit ICMPv6 base event if needed (full packet)
+
+    if (neteventctx->should_submit & SUB_NET_PACKET_ICMPV6) {
+        bpf_printk("TO AQUI SIM");
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_ICMPV6, FULL);
+    }
+
     return 1; // NOTE: might block ICMPv6 here if needed (return 0)
 }
 
@@ -7084,24 +7144,20 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_icmpv6)
 
 CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_dns)
 {
-    // NOTE: might block DNS here if needed (return 0)
+    // submit DNS base event if needed (full packet)
 
-    if (neteventctx->should_submit & SUB_NET_PACKET_DNS_BASE) {
-        bpf_printk("SUBMIT_PROTO_TCP_DNS");
-        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_DNS_BASE, FULL);
-    }
+    if (neteventctx->should_submit & SUB_NET_PACKET_DNS)
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_DNS, FULL);
 
-    return 1;
+    return 1; // NOTE: might block DNS here if needed (return 0)
 }
 
 CGROUP_SKB_HANDLE_FUNCTION(proto_udp_dns)
 {
-    // NOTE: might block DNS here if needed (return 0)
+    // submit DNS base event if needed (full packet)
 
-    if (neteventctx->should_submit & SUB_NET_PACKET_DNS_BASE) {
-        bpf_printk("SUBMIT_PROTO_UDP_DNS");
-        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_DNS_BASE, FULL);
-    }
+    if (neteventctx->should_submit & SUB_NET_PACKET_DNS)
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_DNS, FULL);
 
-    return 1;
+    return 1; // NOTE: might block DNS here if needed (return 0)
 }

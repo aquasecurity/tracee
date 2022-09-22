@@ -572,6 +572,9 @@ func (t *Tracee) initDerivationTable() error {
 				),
 			},
 		},
+		//
+		// Network Derivations
+		//
 		events.NetPacketIPBase: {
 			events.NetPacketIPv4: {
 				Enabled:        t.events[events.NetPacketIPBase].submit,
@@ -586,6 +589,24 @@ func (t *Tracee) initDerivationTable() error {
 			events.NetPacketTCP: {
 				Enabled:        t.events[events.NetPacketTCPBase].submit,
 				DeriveFunction: derive.NetPacketTCP(),
+			},
+		},
+		events.NetPacketUDPBase: {
+			events.NetPacketUDP: {
+				Enabled:        t.events[events.NetPacketUDPBase].submit,
+				DeriveFunction: derive.NetPacketUDP(),
+			},
+		},
+		events.NetPacketICMPBase: {
+			events.NetPacketICMP: {
+				Enabled:        t.events[events.NetPacketICMPBase].submit,
+				DeriveFunction: derive.NetPacketICMP(),
+			},
+		},
+		events.NetPacketICMPv6Base: {
+			events.NetPacketICMPv6: {
+				Enabled:        t.events[events.NetPacketICMPv6Base].submit,
+				DeriveFunction: derive.NetPacketICMPv6(),
 			},
 		},
 		events.NetPacketDNSBase: {

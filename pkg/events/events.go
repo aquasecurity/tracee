@@ -158,6 +158,9 @@ const (
 	SecurityInodeRename
 	NetPacketIPBase
 	NetPacketTCPBase
+	NetPacketUDPBase
+	NetPacketICMPBase
+	NetPacketICMPv6Base
 	NetPacketDNSBase
 	MaxCommonID
 )
@@ -173,6 +176,9 @@ const (
 	NetPacketIPv4
 	NetPacketIPv6
 	NetPacketTCP
+	NetPacketUDP
+	NetPacketICMP
+	NetPacketICMPv6
 	NetPacketDNSRequest
 	NetPacketDNSResponse
 	MaxUserSpace
@@ -6096,6 +6102,118 @@ var Definitions = eventDefinitions{
 				{Type: "u16", Name: "window"},
 				{Type: "u16", Name: "checksum"},
 				{Type: "u16", Name: "urgent"},
+			},
+		},
+		NetPacketUDPBase: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_udp_base",
+			//Internal: true,
+			Dependencies: dependencies{
+				Capabilities: []cap.Value{cap.NET_ADMIN},
+			},
+			Probes: []probeDependency{
+				{Handle: probes.SockAllocFile, Required: true},
+				{Handle: probes.SockAllocFileRet, Required: true},
+				{Handle: probes.CgroupBPFRunFilterSKB, Required: true},
+				{Handle: probes.CgroupBPFRunFilterSKBRet, Required: true},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "int", Name: "arg0"},
+				{Type: "int", Name: "arg1"},
+				{Type: "bytes", Name: "payload"}, // headers only payload
+			},
+		},
+		NetPacketUDP: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_udp",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketUDPBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "src"},
+				{Type: "const char*", Name: "dst"},
+				{Type: "u16", Name: "src_port"},
+				{Type: "u16", Name: "dst_port"},
+				{Type: "u16", Name: "length"},
+				{Type: "u16", Name: "checksum"},
+			},
+		},
+		NetPacketICMPBase: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_icmp_base",
+			//Internal: true,
+			Dependencies: dependencies{
+				Capabilities: []cap.Value{cap.NET_ADMIN},
+			},
+			Probes: []probeDependency{
+				{Handle: probes.SockAllocFile, Required: true},
+				{Handle: probes.SockAllocFileRet, Required: true},
+				{Handle: probes.CgroupBPFRunFilterSKB, Required: true},
+				{Handle: probes.CgroupBPFRunFilterSKBRet, Required: true},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "int", Name: "arg0"},
+				{Type: "int", Name: "arg1"},
+				{Type: "bytes", Name: "payload"}, // headers only payload
+			},
+		},
+		NetPacketICMP: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_icmp",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketICMPBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "src"},
+				{Type: "const char*", Name: "dst"},
+				{Type: "const char*", Name: "type"},
+				{Type: "u16", Name: "checksum"},
+				{Type: "u16", Name: "id"},
+				{Type: "u16", Name: "seq"},
+			},
+		},
+		NetPacketICMPv6Base: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_icmpv6_base",
+			//Internal: true,
+			Dependencies: dependencies{
+				Capabilities: []cap.Value{cap.NET_ADMIN},
+			},
+			Probes: []probeDependency{
+				{Handle: probes.SockAllocFile, Required: true},
+				{Handle: probes.SockAllocFileRet, Required: true},
+				{Handle: probes.CgroupBPFRunFilterSKB, Required: true},
+				{Handle: probes.CgroupBPFRunFilterSKBRet, Required: true},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "int", Name: "arg0"},
+				{Type: "int", Name: "arg1"},
+				{Type: "bytes", Name: "payload"}, // headers only payload
+			},
+		},
+		NetPacketICMPv6: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_icmpv6",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketICMPv6Base},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "src"},
+				{Type: "const char*", Name: "dst"},
+				{Type: "const char*", Name: "type"},
+				{Type: "u16", Name: "checksum"},
 			},
 		},
 		NetPacketDNSBase: { // payload: full packet
