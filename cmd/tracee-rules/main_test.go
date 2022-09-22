@@ -44,7 +44,7 @@ func Test_listSigs(t *testing.T) {
 	}
 
 	buf := bytes.Buffer{}
-	assert.NoError(t, listSigs(&buf, inputSigs))
+	listSigs(&buf, inputSigs)
 	assert.Equal(t, `ID         NAME                                VERSION DESCRIPTION
 FOO-1      foo signature                       1.2.3   foo signature helps with foo
 BAR-1      bar signature                       4.5.6   bar signature helps with bar
