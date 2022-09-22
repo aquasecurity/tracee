@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net/http"
-	"net/http/pprof"
 	"os"
 	"os/signal"
 	"sort"
@@ -45,26 +43,6 @@ func main() {
 			if c.NumFlags() == 0 {
 				cli.ShowAppHelp(c)
 				return errors.New("no flags specified")
-			}
-
-			if c.Bool("pprof") {
-				mux := http.NewServeMux()
-				mux.HandleFunc("/debug/pprof/", pprof.Index)
-				mux.Handle("/debug/pprof/allocs", pprof.Handler("allocs"))
-				mux.Handle("/debug/pprof/block", pprof.Handler("block"))
-				mux.Handle("/debug/pprof/heap", pprof.Handler("heap"))
-				mux.Handle("/debug/pprof/mutex", pprof.Handler("mutex"))
-				mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-				mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
-				mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-				mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
-				go func() {
-					addr := c.String("pprof-addr")
-					fmt.Fprintf(os.Stdout, "Serving pprof endpoints at %s\n", addr)
-					if err := http.ListenAndServe(addr, mux); err != http.ErrServerClosed {
-						fmt.Fprintf(os.Stderr, "Error serving pprof endpoints: %v\n", err)
-					}
-				}()
 			}
 
 			var target string
@@ -146,6 +124,10 @@ func main() {
 					httpServer.EnableHealthzEndpoint()
 				}
 
+				if c.Bool(server.PProfEndpointFlag) {
+					httpServer.EnablePProfEndpoint()
+				}
+
 				go httpServer.Start()
 			}
 
@@ -191,13 +173,9 @@ func main() {
 				Usage: "configure output format via templates. Usage: --output-template=path/to/my.tmpl",
 			},
 			&cli.BoolFlag{
-				Name:  "pprof",
+				Name:  server.PProfEndpointFlag,
 				Usage: "enables pprof endpoints",
-			},
-			&cli.StringFlag{
-				Name:  "pprof-addr",
-				Usage: "listening address of the pprof endpoints server",
-				Value: ":7777",
+				Value: false,
 			},
 			&cli.BoolFlag{
 				Name:  "rego-aio",

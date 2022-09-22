@@ -14,6 +14,7 @@ func TestServer(t *testing.T) {
 
 	httpServer.EnableMetricsEndpoint()
 	httpServer.EnableHealthzEndpoint()
+	httpServer.EnablePProfEndpoint()
 
 	server := httptest.NewServer(httpServer.mux)
 	defer server.Close()
@@ -25,6 +26,7 @@ func TestServer(t *testing.T) {
 	}{
 		{name: "TestHealthzEndpoint", endpoint: "/healthz", status: 200},
 		{name: "TestMetricsEndpoint", endpoint: "/metrics", status: 200},
+		{name: "TestPProfEndpoint", endpoint: "/debug/pprof", status: 200},
 		{name: "TestIndexEndpoint", endpoint: "", status: 404},
 	}
 

@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"net/http/pprof"
 	"os"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -12,6 +13,7 @@ import (
 const (
 	MetricsEndpointFlag = "metrics"
 	HealthzEndpointFlag = "healthz"
+	PProfEndpointFlag   = "pprof"
 	ListenEndpointFlag  = "listen-addr"
 )
 
@@ -54,6 +56,18 @@ func (s *Server) Start() {
 	}
 }
 
+func (s *Server) EnablePProfEndpoint() {
+	s.mux.HandleFunc("/debug/pprof/", pprof.Index)
+	s.mux.Handle("/debug/pprof/allocs", pprof.Handler("allocs"))
+	s.mux.Handle("/debug/pprof/block", pprof.Handler("block"))
+	s.mux.Handle("/debug/pprof/heap", pprof.Handler("heap"))
+	s.mux.Handle("/debug/pprof/mutex", pprof.Handler("mutex"))
+	s.mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	s.mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	s.mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	s.mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+}
+
 func ShouldStart(c *cli.Context) bool {
-	return c.Bool(MetricsEndpointFlag) || c.Bool(HealthzEndpointFlag)
+	return c.Bool(MetricsEndpointFlag) || c.Bool(HealthzEndpointFlag) || c.Bool(PProfEndpointFlag)
 }

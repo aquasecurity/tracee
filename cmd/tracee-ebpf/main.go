@@ -211,6 +211,10 @@ func main() {
 					httpServer.EnableHealthzEndpoint()
 				}
 
+				if c.Bool(server.PProfEndpointFlag) {
+					httpServer.EnablePProfEndpoint()
+				}
+
 				go httpServer.Start()
 			}
 
@@ -334,6 +338,11 @@ func main() {
 			&cli.BoolFlag{
 				Name:  server.HealthzEndpointFlag,
 				Usage: "enable healthz endpoint",
+				Value: false,
+			},
+			&cli.BoolFlag{
+				Name:  server.PProfEndpointFlag,
+				Usage: "enables pprof endpoints",
 				Value: false,
 			},
 			&cli.StringFlag{
