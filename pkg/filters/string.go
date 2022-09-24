@@ -48,7 +48,7 @@ func (filter *StringFilter) Parse(operatorAndValues string) error {
 	return nil
 }
 
-func (filter *StringFilter) InitBPF(bpfModule *bpf.Module, filterMapName string) error {
+func (filter *StringFilter) InitBPF(bpfModule *bpf.Module, filterMapName string, filterScopeID uint32) error {
 	if !filter.Enabled {
 		return nil
 	}
@@ -59,12 +59,19 @@ func (filter *StringFilter) InitBPF(bpfModule *bpf.Module, filterMapName string)
 	if err != nil {
 		return err
 	}
+	filterVal := make([]byte, 8)
+
 	for i := 0; i < len(filter.Equal); i++ {
 		filterEqualBytes := make([]byte, filter.Size)
 		copy(filterEqualBytes, filter.Equal[i])
-		filterVal := make([]byte, 8)
-		binary.LittleEndian.PutUint32(filterVal[0:4], uint32(filterEqual))
-		binary.LittleEndian.PutUint32(filterVal[4:8], uint32(1))
+
+		var validBits uint32
+		curVal, err := filterMap.GetValue(unsafe.Pointer(&filterEqualBytes[0]))
+		if err == nil {
+			validBits = binary.LittleEndian.Uint32(curVal[4:8])
+		}
+		binary.LittleEndian.PutUint32(filterVal[0:4], uint32(filterEqual))          // bitmask
+		binary.LittleEndian.PutUint32(filterVal[4:8], validBits|(1<<filterScopeID)) // valid_bits
 		if err = filterMap.Update(unsafe.Pointer(&filterEqualBytes[0]), unsafe.Pointer(&filterVal[0])); err != nil {
 			return err
 		}
@@ -72,9 +79,14 @@ func (filter *StringFilter) InitBPF(bpfModule *bpf.Module, filterMapName string)
 	for i := 0; i < len(filter.NotEqual); i++ {
 		filterNotEqualBytes := make([]byte, filter.Size)
 		copy(filterNotEqualBytes, filter.NotEqual[i])
-		filterVal := make([]byte, 8)
-		binary.LittleEndian.PutUint32(filterVal[0:4], uint32(filterNotEqual))
-		binary.LittleEndian.PutUint32(filterVal[4:8], uint32(1))
+
+		var validBits uint32
+		curVal, err := filterMap.GetValue(unsafe.Pointer(&filterNotEqualBytes[0]))
+		if err == nil {
+			validBits = binary.LittleEndian.Uint32(curVal[4:8])
+		}
+		binary.LittleEndian.PutUint32(filterVal[0:4], uint32(filterNotEqual))       // bitmask
+		binary.LittleEndian.PutUint32(filterVal[4:8], validBits|(1<<filterScopeID)) // valid_bits
 		if err = filterMap.Update(unsafe.Pointer(&filterNotEqualBytes[0]), unsafe.Pointer(&filterVal[0])); err != nil {
 			return err
 		}

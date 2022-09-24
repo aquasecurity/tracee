@@ -241,7 +241,8 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 
 				// handle net event trace
 				ifaceName := t.netInfo.ifaces[int(netCaptureData.ConfigIfaceIndex)].Name
-				ifaceIdx, found := t.getTracedIfaceIdx(ifaceName)
+				filterScopeIdx, ifaceIdx, found := t.getTracedIfaceIdx(ifaceName)
+				_ = filterScopeIdx
 				if found && ifaceIdx >= 0 {
 					// this packet should be traced. i.e. output the event if chosen by the user.
 

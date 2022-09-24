@@ -1792,6 +1792,7 @@ static __always_inline u32 bool_filter_matches(u32 filter_out, bool val)
     return filter_out ^ (val ? 0xFFFFFFFF : 0);
 }
 
+// TODO: rename this to do_compute_scopes?
 static __always_inline u32 do_should_trace(event_data_t *data)
 {
     task_context_t *context = &data->context.task;

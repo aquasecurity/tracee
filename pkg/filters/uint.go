@@ -67,7 +67,7 @@ func (filter *UIntFilter) Parse(operatorAndValues string) error {
 	return nil
 }
 
-func (filter *UIntFilter) InitBPF(bpfModule *bpf.Module, filterMapName string) error {
+func (filter *UIntFilter) InitBPF(bpfModule *bpf.Module, filterMapName string, filterScopeID uint32) error {
 	if !filter.Enabled {
 		return nil
 	}
@@ -81,31 +81,43 @@ func (filter *UIntFilter) InitBPF(bpfModule *bpf.Module, filterMapName string) e
 	if err != nil {
 		return err
 	}
+	var keyPointer unsafe.Pointer
+	filterVal := make([]byte, 8)
+
 	for i := 0; i < len(filter.Equal); i++ {
-		// todo: prepare for ALL filters on a local map, then update in tracee.go
-		filterVal := make([]byte, 8)
-		binary.LittleEndian.PutUint32(filterVal[0:4], uint32(filterEqual))
-		binary.LittleEndian.PutUint32(filterVal[4:8], uint32(1))
+		EqualU32 := uint32(filter.Equal[i])
 		if filter.Is32Bit {
-			EqualU32 := uint32(filter.Equal[i])
-			err = equalityFilter.Update(unsafe.Pointer(&EqualU32), unsafe.Pointer(&filterVal[0]))
+			keyPointer = unsafe.Pointer(&EqualU32)
 		} else {
-			err = equalityFilter.Update(unsafe.Pointer(&filter.Equal[i]), unsafe.Pointer(&filterVal[0]))
+			keyPointer = unsafe.Pointer(&filter.Equal[i])
 		}
+		var validBits uint32
+		curVal, err := equalityFilter.GetValue(keyPointer)
+		if err == nil {
+			validBits = binary.LittleEndian.Uint32(curVal[4:8])
+		}
+		binary.LittleEndian.PutUint32(filterVal[0:4], uint32(filterEqual))          // bitmask
+		binary.LittleEndian.PutUint32(filterVal[4:8], validBits|(1<<filterScopeID)) // valid_bits
+		err = equalityFilter.Update(unsafe.Pointer(keyPointer), unsafe.Pointer(&filterVal[0]))
 		if err != nil {
 			return err
 		}
 	}
 	for i := 0; i < len(filter.NotEqual); i++ {
-		filterVal := make([]byte, 8)
-		binary.LittleEndian.PutUint32(filterVal[0:4], uint32(filterNotEqual))
-		binary.LittleEndian.PutUint32(filterVal[4:8], uint32(1))
+		NotEqualU32 := uint32(filter.NotEqual[i])
 		if filter.Is32Bit {
-			NotEqualU32 := uint32(filter.NotEqual[i])
-			err = equalityFilter.Update(unsafe.Pointer(&NotEqualU32), unsafe.Pointer(&filterVal[0]))
+			keyPointer = unsafe.Pointer(&NotEqualU32)
 		} else {
-			err = equalityFilter.Update(unsafe.Pointer(&filter.NotEqual[i]), unsafe.Pointer(&filterVal[0]))
+			keyPointer = unsafe.Pointer(&filter.NotEqual[i])
 		}
+		var validBits uint32
+		curVal, err := equalityFilter.GetValue(keyPointer)
+		if err == nil {
+			validBits = binary.LittleEndian.Uint32(curVal[4:8])
+		}
+		binary.LittleEndian.PutUint32(filterVal[0:4], uint32(filterNotEqual))       // bitmask
+		binary.LittleEndian.PutUint32(filterVal[4:8], validBits|(1<<filterScopeID)) // valid_bits
+		err = equalityFilter.Update(keyPointer, unsafe.Pointer(&filterVal[0]))
 		if err != nil {
 			return err
 		}

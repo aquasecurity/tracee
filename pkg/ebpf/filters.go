@@ -9,7 +9,10 @@ import (
 	"github.com/aquasecurity/tracee/pkg/filters"
 )
 
-type Filter struct {
+const MaxFilterScopes = 32
+
+type FilterScope struct {
+	ID                uint32
 	EventsToTrace     []events.ID
 	UIDFilter         *filters.UIntFilter
 	PIDFilter         *filters.UIntFilter
@@ -26,6 +29,12 @@ type Filter struct {
 	ProcessTreeFilter *filters.ProcessTreeFilter
 	Follow            bool
 	NetFilter         *NetIfaces
+}
+
+func (fs *FilterScope) HasContainerFilterEnabled() bool {
+	return (fs.ContFilter.Enabled && fs.ContFilter.Value) ||
+		(fs.NewContFilter.Enabled && fs.NewContFilter.Value) ||
+		fs.ContIDFilter.Enabled
 }
 
 type NetIfaces struct {

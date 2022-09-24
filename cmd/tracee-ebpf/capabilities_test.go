@@ -108,10 +108,12 @@ func TestGenerateTraceeEbpfRequiredCapabilities(t *testing.T) {
 						eventsToTrace = append(eventsToTrace, eventsNameToID[eventName])
 					}
 					cfg := tracee.Config{
-						Filter: &tracee.Filter{
-							EventsToTrace: eventsToTrace,
-							NetFilter: &tracee.NetIfaces{
-								Ifaces: traceTest.ifaces,
+						FilterScopes: [32]*tracee.FilterScope{
+							{
+								EventsToTrace: eventsToTrace,
+								NetFilter: &tracee.NetIfaces{
+									Ifaces: traceTest.ifaces,
+								},
 							},
 						},
 						Capture: &tracee.CaptureConfig{},

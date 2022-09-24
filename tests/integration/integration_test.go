@@ -270,8 +270,8 @@ func Test_EventFilters(t *testing.T) {
 
 			eventChan := make(chan trace.Event, 1000)
 			config := tracee.Config{
-				Filter:     &filter,
-				ChanEvents: eventChan,
+				FilterScopes: [32]*tracee.FilterScope{&filter},
+				ChanEvents:   eventChan,
 			}
 			eventOutput := []trace.Event{}
 

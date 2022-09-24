@@ -20,218 +20,218 @@ func TestPrepareFilter(t *testing.T) {
 	testCases := []struct {
 		testName       string
 		filters        []string
-		expectedFilter tracee.Filter
+		expectedFilter tracee.FilterScope
 		expectedError  error
 	}{
 
 		{
 			testName:       "invalid operator",
 			filters:        []string{"uid==0"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid filter value: =0"),
 		},
 		{
 			testName:       "invalid operator",
 			filters:        []string{"mntns==0"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid filter value: =0"),
 		},
 		{
 			testName:       "invalid operator",
 			filters:        []string{"uid<=0"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid filter value: =0"),
 		},
 		{
 			testName:       "invalid operator",
 			filters:        []string{"uid\t0"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid filter option specified, use '--trace help' for more info"),
 		},
 		{
 			testName:       "invalid operator",
 			filters:        []string{"mntns\t0"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid filter option specified, use '--trace help' for more info"),
 		},
 		{
 			testName:       "invalid filter type",
 			filters:        []string{"UID>0"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid filter option specified, use '--trace help' for more info"),
 		},
 		{
 			testName:       "invalid filter type",
 			filters:        []string{"test=0"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid filter option specified, use '--trace help' for more info"),
 		},
 		{
 			testName:       "invalid filter type",
 			filters:        []string{"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=0"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid filter option specified, use '--trace help' for more info"),
 		},
 		{
 			testName:       "invalid uid",
 			filters:        []string{"uid>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>0"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid filter value: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>0"),
 		},
 		{
 			testName:       "invalid uid",
 			filters:        []string{"uid=a"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid filter value: a"),
 		},
 		{
 			testName:       "invalid pidns",
 			filters:        []string{"pidns=a"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid filter value: a"),
 		},
 		{
 			testName:       "invalid uid",
 			filters:        []string{"uid=4294967296"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("filter value is too big: 4294967296"),
 		},
 		{
 			testName:       "invalid uid",
 			filters:        []string{"uid=-1"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid filter value: -1"),
 		},
 		{
 			testName:       "invalid mntns",
 			filters:        []string{"mntns=-1"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid filter value: -1"),
 		},
 		{
 			testName:       "invalid uid",
 			filters:        []string{"uid=1 1"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid filter value: 1 1"),
 		},
 		{
 			testName:       "invalid uid",
 			filters:        []string{"uid="},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid operator and/or values given to filter: ="),
 		},
 		{
 			testName:       "invalid mntns",
 			filters:        []string{"mntns="},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid operator and/or values given to filter: ="),
 		},
 		{
-			testName: "invalid uid",
-			filters: []string{"uid=	"},
-			expectedFilter: tracee.Filter{},
-			expectedError: errors.New("invalid filter value: 	"),
+			testName:       "invalid uid",
+			filters:        []string{"uid=	"},
+			expectedFilter: tracee.FilterScope{},
+			expectedError:  errors.New("invalid filter value: 	"),
 		},
 		{
 			testName:       "invalid uid",
 			filters:        []string{"uid=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid filter value: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"),
 		},
 		{
 			testName:       "invalid uid",
 			filters:        []string{"uid=%s"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid filter value: %s"),
 		},
 		{
 			testName:       "invalid uid",
 			filters:        []string{"uid=\t\t\t"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid filter value: \t\t\t"),
 		},
 		{
 			testName:       "invalid uid",
 			filters:        []string{"uid=0\t"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid filter value: 0\t"),
 		},
 		{
 			testName:       "invalid pidns",
 			filters:        []string{"pidns=0\t"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid filter value: 0\t"),
 		},
 		{
 			testName:       "invalid argfilter 1",
 			filters:        []string{"open."},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid argument filter argument name: "),
 		},
 		{
 			testName:       "invalid argfilter 2",
 			filters:        []string{"blabla.bla"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid argument filter event name: blabla"),
 		},
 		{
 			testName:       "invalid argfilter 3",
 			filters:        []string{"blabla.bla=5"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid argument filter event name: blabla"),
 		},
 		{
 			testName:       "invalid argfilter 4",
 			filters:        []string{"open.bla=5"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid argument filter argument name: bla"),
 		},
 		{
 			testName:       "invalid retfilter 1",
 			filters:        []string{".retval"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid retval filter event name: "),
 		},
 		{
 			testName:       "invalid retfilter 2",
 			filters:        []string{"open.retvall"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid retval filter format open.retvall"),
 		},
 		{
 			testName:       "invalid wildcard",
 			filters:        []string{"event=blah*"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid event to trace: blah*"),
 		},
 		{
 			testName:       "invalid wildcard 2",
 			filters:        []string{"event=bl*ah"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid event to trace: bl*ah"),
 		},
 		{
 			testName:       "internal event selection",
 			filters:        []string{"event=print_syscall_table"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid event to trace: print_syscall_table"),
 		},
 		{
 			testName:       "invalid not wildcard",
 			filters:        []string{"event!=bl*ah"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid event to exclude: bl*ah"),
 		},
 		{
 			testName:       "invalid not wildcard 2",
 			filters:        []string{"event!=bl*ah"},
-			expectedFilter: tracee.Filter{},
+			expectedFilter: tracee.FilterScope{},
 			expectedError:  errors.New("invalid event to exclude: bl*ah"),
 		},
 		{
 			testName: "uid=0",
 			filters:  []string{"uid=0"},
-			expectedFilter: tracee.Filter{
+			expectedFilter: tracee.FilterScope{
 				UIDFilter: &filters.UIntFilter{
 					Equal:    []uint64{0},
 					NotEqual: []uint64{},
@@ -284,7 +284,7 @@ func TestPrepareFilter(t *testing.T) {
 		{
 			testName: "uid!=0",
 			filters:  []string{"uid!=0"},
-			expectedFilter: tracee.Filter{
+			expectedFilter: tracee.FilterScope{
 				UIDFilter: &filters.UIntFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{0},
@@ -337,7 +337,7 @@ func TestPrepareFilter(t *testing.T) {
 		{
 			testName: "mntns=0",
 			filters:  []string{"mntns=0"},
-			expectedFilter: tracee.Filter{
+			expectedFilter: tracee.FilterScope{
 				UIDFilter: &filters.UIntFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
@@ -390,7 +390,7 @@ func TestPrepareFilter(t *testing.T) {
 		{
 			testName: "pidns!=0",
 			filters:  []string{"pidns!=0"},
-			expectedFilter: tracee.Filter{
+			expectedFilter: tracee.FilterScope{
 				UIDFilter: &filters.UIntFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
@@ -443,7 +443,7 @@ func TestPrepareFilter(t *testing.T) {
 		{
 			testName: "comm=ls",
 			filters:  []string{"comm=ls"},
-			expectedFilter: tracee.Filter{
+			expectedFilter: tracee.FilterScope{
 				UIDFilter: &filters.UIntFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
@@ -496,7 +496,7 @@ func TestPrepareFilter(t *testing.T) {
 		{
 			testName: "uts!=deadbeaf",
 			filters:  []string{"uts!=deadbeaf"},
-			expectedFilter: tracee.Filter{
+			expectedFilter: tracee.FilterScope{
 				UIDFilter: &filters.UIntFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
@@ -549,7 +549,7 @@ func TestPrepareFilter(t *testing.T) {
 		{
 			testName: "uid>0",
 			filters:  []string{"uid>0"},
-			expectedFilter: tracee.Filter{
+			expectedFilter: tracee.FilterScope{
 				UIDFilter: &filters.UIntFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
@@ -602,7 +602,7 @@ func TestPrepareFilter(t *testing.T) {
 		{
 			testName: "uid<0",
 			filters:  []string{"uid<0"},
-			expectedFilter: tracee.Filter{
+			expectedFilter: tracee.FilterScope{
 				UIDFilter: &filters.UIntFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
@@ -655,7 +655,7 @@ func TestPrepareFilter(t *testing.T) {
 		{
 			testName: "container",
 			filters:  []string{"container"},
-			expectedFilter: tracee.Filter{
+			expectedFilter: tracee.FilterScope{
 				UIDFilter: &filters.UIntFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
@@ -710,7 +710,7 @@ func TestPrepareFilter(t *testing.T) {
 		{
 			testName: "container=new",
 			filters:  []string{"container=new"},
-			expectedFilter: tracee.Filter{
+			expectedFilter: tracee.FilterScope{
 				UIDFilter: &filters.UIntFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
@@ -765,7 +765,7 @@ func TestPrepareFilter(t *testing.T) {
 		{
 			testName: "argfilter",
 			filters:  []string{"openat.pathname=/bin/ls,/tmp/tracee", "openat.pathname!=/etc/passwd"},
-			expectedFilter: tracee.Filter{
+			expectedFilter: tracee.FilterScope{
 				UIDFilter: &filters.UIntFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
@@ -825,7 +825,7 @@ func TestPrepareFilter(t *testing.T) {
 		{
 			testName: "retfilter",
 			filters:  []string{"openat.retval=2", "openat.retval>1"},
-			expectedFilter: tracee.Filter{
+			expectedFilter: tracee.FilterScope{
 				UIDFilter: &filters.UIntFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},
@@ -886,7 +886,7 @@ func TestPrepareFilter(t *testing.T) {
 		{
 			testName: "wildcard filter",
 			filters:  []string{"event=open*"},
-			expectedFilter: tracee.Filter{
+			expectedFilter: tracee.FilterScope{
 				EventsToTrace: []events.ID{events.Open, events.Openat},
 				UIDFilter: &filters.UIntFilter{
 					Equal:    []uint64{},
@@ -945,7 +945,7 @@ func TestPrepareFilter(t *testing.T) {
 		{
 			testName: "wildcard not filter",
 			filters:  []string{"event!=*"},
-			expectedFilter: tracee.Filter{
+			expectedFilter: tracee.FilterScope{
 				EventsToTrace: []events.ID{},
 				UIDFilter: &filters.UIntFilter{
 					Equal:    []uint64{},
@@ -1004,7 +1004,7 @@ func TestPrepareFilter(t *testing.T) {
 		{
 			testName: "multiple filters",
 			filters:  []string{"uid<1", "mntns=5", "pidns!=3", "pid!=10", "comm=ps", "uts!=abc"},
-			expectedFilter: tracee.Filter{
+			expectedFilter: tracee.FilterScope{
 				UIDFilter: &filters.UIntFilter{
 					Equal:    []uint64{},
 					NotEqual: []uint64{},

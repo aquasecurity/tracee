@@ -35,7 +35,7 @@ func (filter *ContIDFilter) Parse(operatorAndValues string) error {
 	return nil
 }
 
-func (filter *ContIDFilter) InitBPF(bpfModule *bpf.Module, conts *containers.Containers, filterMapName string) error {
+func (filter *ContIDFilter) InitBPF(bpfModule *bpf.Module, conts *containers.Containers, filterMapName string, filterScopeID uint32) error {
 	if !filter.Enabled {
 		return nil
 	}
@@ -44,6 +44,7 @@ func (filter *ContIDFilter) InitBPF(bpfModule *bpf.Module, conts *containers.Con
 	if err != nil {
 		return err
 	}
+	filterVal := make([]byte, 8)
 
 	for i := 0; i < len(filter.Equal); i++ {
 		cgroupIDs := conts.FindContainerCgroupID32LSB(filter.Equal[i])
@@ -53,9 +54,14 @@ func (filter *ContIDFilter) InitBPF(bpfModule *bpf.Module, conts *containers.Con
 		if len(cgroupIDs) > 1 {
 			return fmt.Errorf("container id is ambiguous: %s", filter.Equal[i])
 		}
-		filterVal := make([]byte, 8)
-		binary.LittleEndian.PutUint32(filterVal[0:4], uint32(filterEqual))
-		binary.LittleEndian.PutUint32(filterVal[4:8], uint32(1))
+
+		var validBits uint32
+		curVal, err := filterMap.GetValue(unsafe.Pointer(&cgroupIDs[0]))
+		if err == nil {
+			validBits = binary.LittleEndian.Uint32(curVal[4:8])
+		}
+		binary.LittleEndian.PutUint32(filterVal[0:4], uint32(filterEqual))          // bitmask
+		binary.LittleEndian.PutUint32(filterVal[4:8], validBits|(1<<filterScopeID)) // valid_bits
 		if err = filterMap.Update(unsafe.Pointer(&cgroupIDs[0]), unsafe.Pointer(&filterVal[0])); err != nil {
 			return err
 		}
@@ -68,9 +74,14 @@ func (filter *ContIDFilter) InitBPF(bpfModule *bpf.Module, conts *containers.Con
 		if len(cgroupIDs) > 1 {
 			return fmt.Errorf("container id is ambiguous: %s", filter.Equal[i])
 		}
-		filterVal := make([]byte, 8)
-		binary.LittleEndian.PutUint32(filterVal[0:4], uint32(filterNotEqual))
-		binary.LittleEndian.PutUint32(filterVal[4:8], uint32(1))
+
+		var validBits uint32
+		curVal, err := filterMap.GetValue(unsafe.Pointer(&cgroupIDs[0]))
+		if err == nil {
+			validBits = binary.LittleEndian.Uint32(curVal[4:8])
+		}
+		binary.LittleEndian.PutUint32(filterVal[0:4], uint32(filterNotEqual))       // bitmask
+		binary.LittleEndian.PutUint32(filterVal[4:8], validBits|(1<<filterScopeID)) // valid_bits
 		if err = filterMap.Update(unsafe.Pointer(&cgroupIDs[0]), unsafe.Pointer(&filterVal[0])); err != nil {
 			return err
 		}

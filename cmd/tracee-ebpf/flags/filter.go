@@ -83,8 +83,8 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 `
 }
 
-func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
-	filter := tracee.Filter{
+func PrepareFilter(filtersArr []string) (tracee.FilterScope, error) {
+	filterScope := tracee.FilterScope{
 		UIDFilter: &filters.UIntFilter{
 			Equal:    []uint64{},
 			NotEqual: []uint64{},
@@ -164,17 +164,17 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 		}
 
 		if strings.Contains(f, ".retval") {
-			err := filter.RetFilter.Parse(filterName, operatorAndValues, eventsNameToID)
+			err := filterScope.RetFilter.Parse(filterName, operatorAndValues, eventsNameToID)
 			if err != nil {
-				return tracee.Filter{}, err
+				return tracee.FilterScope{}, err
 			}
 			continue
 		}
 
 		if strings.Contains(f, ".") {
-			err := filter.ArgFilter.Parse(filterName, operatorAndValues, eventsNameToID)
+			err := filterScope.ArgFilter.Parse(filterName, operatorAndValues, eventsNameToID)
 			if err != nil {
-				return tracee.Filter{}, err
+				return tracee.FilterScope{}, err
 			}
 			continue
 		}
@@ -183,37 +183,37 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 		// Other filters should be given using their full name.
 		// To avoid collisions between filters that share the same prefix, put the filters which should have an exact match first!
 		if filterName == "comm" {
-			err := filter.CommFilter.Parse(operatorAndValues)
+			err := filterScope.CommFilter.Parse(operatorAndValues)
 			if err != nil {
-				return tracee.Filter{}, err
+				return tracee.FilterScope{}, err
 			}
 			continue
 		}
 
 		if strings.HasPrefix("container", f) || (strings.HasPrefix("!container", f) && len(f) > 1) {
-			err := filter.ContFilter.Parse(f)
+			err := filterScope.ContFilter.Parse(f)
 			if err != nil {
-				return tracee.Filter{}, err
+				return tracee.FilterScope{}, err
 			}
 			continue
 		}
 
 		if strings.HasPrefix("container", filterName) {
 			if operatorAndValues == "=new" {
-				filter.NewContFilter.Enabled = true
-				filter.NewContFilter.Value = true
+				filterScope.NewContFilter.Enabled = true
+				filterScope.NewContFilter.Value = true
 				continue
 			}
 			if operatorAndValues == "!=new" {
-				filter.ContFilter.Enabled = true
-				filter.ContFilter.Value = true
-				filter.NewContFilter.Enabled = true
-				filter.NewContFilter.Value = false
+				filterScope.ContFilter.Enabled = true
+				filterScope.ContFilter.Value = true
+				filterScope.NewContFilter.Enabled = true
+				filterScope.NewContFilter.Value = false
 				continue
 			}
-			err := filter.ContIDFilter.Parse(operatorAndValues)
+			err := filterScope.ContIDFilter.Parse(operatorAndValues)
 			if err != nil {
-				return tracee.Filter{}, err
+				return tracee.FilterScope{}, err
 			}
 			continue
 		}
@@ -221,57 +221,57 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 		if strings.HasPrefix("event", filterName) {
 			err := eventFilter.Parse(operatorAndValues)
 			if err != nil {
-				return tracee.Filter{}, err
+				return tracee.FilterScope{}, err
 			}
 			continue
 		}
 
 		if strings.HasPrefix(filterName, "net") {
-			err := filter.NetFilter.Parse(strings.TrimPrefix(operatorAndValues, "="))
+			err := filterScope.NetFilter.Parse(strings.TrimPrefix(operatorAndValues, "="))
 			if err != nil {
-				return tracee.Filter{}, err
+				return tracee.FilterScope{}, err
 			}
 			continue
 		}
 
 		if filterName == "mntns" {
-			err := filter.MntNSFilter.Parse(operatorAndValues)
+			err := filterScope.MntNSFilter.Parse(operatorAndValues)
 			if err != nil {
-				return tracee.Filter{}, err
+				return tracee.FilterScope{}, err
 			}
 			continue
 		}
 
 		if filterName == "pidns" {
-			err := filter.PidNSFilter.Parse(operatorAndValues)
+			err := filterScope.PidNSFilter.Parse(operatorAndValues)
 			if err != nil {
-				return tracee.Filter{}, err
+				return tracee.FilterScope{}, err
 			}
 			continue
 		}
 
 		if filterName == "tree" {
-			err := filter.ProcessTreeFilter.Parse(operatorAndValues)
+			err := filterScope.ProcessTreeFilter.Parse(operatorAndValues)
 			if err != nil {
-				return tracee.Filter{}, err
+				return tracee.FilterScope{}, err
 			}
 			continue
 		}
 
 		if strings.HasPrefix("pid", filterName) {
 			if operatorAndValues == "=new" {
-				filter.NewPidFilter.Enabled = true
-				filter.NewPidFilter.Value = true
+				filterScope.NewPidFilter.Enabled = true
+				filterScope.NewPidFilter.Value = true
 				continue
 			}
 			if operatorAndValues == "!=new" {
-				filter.NewPidFilter.Enabled = true
-				filter.NewPidFilter.Value = false
+				filterScope.NewPidFilter.Enabled = true
+				filterScope.NewPidFilter.Value = false
 				continue
 			}
-			err := filter.PIDFilter.Parse(operatorAndValues)
+			err := filterScope.PIDFilter.Parse(operatorAndValues)
 			if err != nil {
-				return tracee.Filter{}, err
+				return tracee.FilterScope{}, err
 			}
 			continue
 		}
@@ -279,41 +279,41 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 		if strings.HasPrefix("set", filterName) {
 			err := setFilter.Parse(operatorAndValues)
 			if err != nil {
-				return tracee.Filter{}, err
+				return tracee.FilterScope{}, err
 			}
 			continue
 		}
 
 		if filterName == "uts" {
-			err := filter.UTSFilter.Parse(operatorAndValues)
+			err := filterScope.UTSFilter.Parse(operatorAndValues)
 			if err != nil {
-				return tracee.Filter{}, err
+				return tracee.FilterScope{}, err
 			}
 			continue
 		}
 
 		if strings.HasPrefix("uid", filterName) {
-			err := filter.UIDFilter.Parse(operatorAndValues)
+			err := filterScope.UIDFilter.Parse(operatorAndValues)
 			if err != nil {
-				return tracee.Filter{}, err
+				return tracee.FilterScope{}, err
 			}
 			continue
 		}
 
 		if strings.HasPrefix("follow", f) {
-			filter.Follow = true
+			filterScope.Follow = true
 			continue
 		}
-		return tracee.Filter{}, fmt.Errorf("invalid filter option specified, use '--trace help' for more info")
+		return tracee.FilterScope{}, fmt.Errorf("invalid filter option specified, use '--trace help' for more info")
 	}
 
 	var err error
-	filter.EventsToTrace, err = prepareEventsToTrace(eventFilter, setFilter, eventsNameToID)
+	filterScope.EventsToTrace, err = prepareEventsToTrace(eventFilter, setFilter, eventsNameToID)
 	if err != nil {
-		return tracee.Filter{}, err
+		return tracee.FilterScope{}, err
 	}
 
-	return filter, nil
+	return filterScope, nil
 }
 
 func prepareEventsToTrace(eventFilter *filters.StringFilter, setFilter *filters.StringFilter, eventsNameToID map[string]events.ID) ([]events.ID, error) {

@@ -50,62 +50,84 @@ func (t *Tracee) processLostEvents() {
 	}
 }
 
+// TODO: change this return to MatchedScopes bitmap
 // shouldProcessEvent decides whether or not to drop an event before further processing it
 func (t *Tracee) shouldProcessEvent(ctx *bufferdecoder.Context, args []trace.Argument) bool {
-	if t.config.Filter[0].RetFilter.Enabled {
-		if filter, ok := t.config.Filter[0].RetFilter.Filters[ctx.EventID]; ok {
-			retVal := ctx.Retval
-			match := false
-			for _, f := range filter.Equal {
-				if retVal == f {
-					match = true
-					break
+	var enabledScopes uint
+	var skippedScopes uint
+
+	for _, filterScope := range t.config.FilterScopes {
+		if filterScope == nil {
+			continue
+		}
+		enabledScopes++
+
+		if filterScope.RetFilter.Enabled {
+			if filter, ok := filterScope.RetFilter.Filters[ctx.EventID]; ok {
+				retVal := ctx.Retval
+				match := false
+				for _, f := range filter.Equal {
+					if retVal == f {
+						match = true
+						break
+					}
+				}
+				if !match && len(filter.Equal) > 0 {
+					skippedScopes++
+					continue
+				}
+				notEqual := false
+				for _, f := range filter.NotEqual {
+					if retVal == f {
+						notEqual = true
+						break
+					}
+				}
+				if notEqual {
+					skippedScopes++
+					continue
+				}
+				if (filter.Greater != filters.GreaterNotSetInt) && retVal <= filter.Greater {
+					skippedScopes++
+					continue
+				}
+				if (filter.Less != filters.LessNotSetInt) && retVal >= filter.Less {
+					skippedScopes++
+					continue
 				}
 			}
-			if !match && len(filter.Equal) > 0 {
-				return false
-			}
-			for _, f := range filter.NotEqual {
-				if retVal == f {
-					return false
+		}
+
+		if filterScope.ArgFilter.Enabled {
+			for argName, filter := range filterScope.ArgFilter.Filters[events.ID(ctx.EventID)] {
+				var argVal interface{}
+				ok := false
+				for _, arg := range args {
+					if arg.Name == argName {
+						argVal = arg.Value
+						ok = true
+					}
 				}
-			}
-			if (filter.Greater != filters.GreaterNotSetInt) && retVal <= filter.Greater {
-				return false
-			}
-			if (filter.Less != filters.LessNotSetInt) && retVal >= filter.Less {
-				return false
+				if !ok {
+					continue
+				}
+				// TODO: use type assertion instead of string conversion
+				argValStr := fmt.Sprint(argVal)
+				match := MatchFilter(filter.Equal, argValStr)
+				if !match && len(filter.Equal) > 0 {
+					skippedScopes++
+					continue
+				}
+				matchExclude := MatchFilter(filter.NotEqual, argValStr)
+				if matchExclude {
+					skippedScopes++
+					continue
+				}
 			}
 		}
 	}
 
-	if t.config.Filter[0].ArgFilter.Enabled {
-		for argName, filter := range t.config.Filter[0].ArgFilter.Filters[events.ID(ctx.EventID)] {
-			var argVal interface{}
-			ok := false
-			for _, arg := range args {
-				if arg.Name == argName {
-					argVal = arg.Value
-					ok = true
-				}
-			}
-			if !ok {
-				continue
-			}
-			// TODO: use type assertion instead of string conversion
-			argValStr := fmt.Sprint(argVal)
-			match := MatchFilter(filter.Equal, argValStr)
-			if !match && len(filter.Equal) > 0 {
-				return false
-			}
-			matchExclude := MatchFilter(filter.NotEqual, argValStr)
-			if matchExclude {
-				return false
-			}
-		}
-	}
-
-	return true
+	return skippedScopes < enabledScopes
 }
 
 func (t *Tracee) deleteProcInfoDelayed(hostTid int) {

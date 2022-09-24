@@ -88,6 +88,17 @@ func main() {
 				ContainersEnrich:   enrich,
 			}
 
+			outputSlice := c.StringSlice("output")
+			if checkCommandIsHelp(outputSlice) {
+				fmt.Print(flags.OutputHelp())
+				return nil
+			}
+			output, printerConfig, err := flags.PrepareOutput(outputSlice)
+			if err != nil {
+				return err
+			}
+			cfg.Output = &output
+
 			containerRuntimesSlice := c.StringSlice("crs")
 			if checkCommandIsHelp(containerRuntimesSlice) {
 				fmt.Print(flags.ContainersHelp())
@@ -129,28 +140,28 @@ func main() {
 				fmt.Print(flags.FilterHelp())
 				return nil
 			}
-			filter, err := flags.PrepareFilter(traceSlice)
-			if err != nil {
-				return err
+			if len(traceSlice) > tracee.MaxFilterScopes {
+				return fmt.Errorf("filter scopes exceeded maximum of %d", tracee.MaxFilterScopes)
 			}
-			cfg.Filter[0] = &filter
+			// TODO: define flags syntax for scope filters
+			// NOTE: cli can be replaced with cobra.
+			// NOTE: meanwhile, for testing, the syntax is to trace different scopes is:
+			// trace-ebpf -t "comm=ls uts=hb" -t "comm=cat uts=hb"
+			for i, trace := range traceSlice {
+				scopeFlags := strings.Split(trace, " ")
+				filterScope, err := flags.PrepareFilter(scopeFlags)
+				if err != nil {
+					return err
+				}
+				filterScope.ID = uint32(i)
 
-			containerMode := (cfg.Filter[0].ContFilter.Enabled && cfg.Filter[0].ContFilter.Value) ||
-				(cfg.Filter[0].NewContFilter.Enabled && cfg.Filter[0].NewContFilter.Value) ||
-				cfg.Filter[0].ContIDFilter.Enabled
-
-			outputSlice := c.StringSlice("output")
-			if checkCommandIsHelp(outputSlice) {
-				fmt.Print(flags.OutputHelp())
-				return nil
+				// TODO: rename this flag
+				// enable printer container mode only if requested
+				if c.Bool("container") && !printerConfig.ContainerMode {
+					printerConfig.ContainerMode = filterScope.HasContainerFilterEnabled()
+				}
+				cfg.FilterScopes[i] = &filterScope
 			}
-			output, printerConfig, err := flags.PrepareOutput(outputSlice)
-			if err != nil {
-				return err
-			}
-
-			printerConfig.ContainerMode = containerMode
-			cfg.Output = &output
 
 			capsCfgSlice := c.StringSlice("caps")
 			if checkCommandIsHelp(capsCfgSlice) {
@@ -333,6 +344,12 @@ func main() {
 				Name:  "debug",
 				Value: false,
 				Usage: "write verbose debug messages to standard output and retain intermediate artifacts. enabling will output debug messages to stdout, which will likely break consumers which expect to receive machine-readable events from stdout",
+			},
+			// TODO: rename this flag
+			&cli.BoolFlag{
+				Name:  "container",
+				Value: false,
+				Usage: "TODO:",
 			},
 			&cli.StringFlag{
 				Name:        "install-path",

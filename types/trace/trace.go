@@ -36,7 +36,7 @@ type Event struct {
 	PodUID              string       `json:"podUID"`
 	EventID             int          `json:"eventId,string"`
 	EventName           string       `json:"eventName"`
-	MatchedScopes       uint         `json:"matchedScopes"`  // todo: change type from uint to something else
+	MatchedScopes       uint         `json:"matchedScopes"` // todo: change type from uint to something else
 	ArgsNum             int          `json:"argsNum"`
 	ReturnValue         int          `json:"returnValue"`
 	StackAddresses      []uint64     `json:"stackAddresses"`
