@@ -6293,9 +6293,8 @@ int tc_ingress(struct __sk_buff *skb)
 static __always_inline bool is_socket_supported(struct socket *sock)
 {
     struct sock *sk = (void *) BPF_CORE_READ(sock, sk);
-    struct sock_common *common = (void *) BPF_CORE_READ(sock, sk);
 
-    u8 family = BPF_CORE_READ_BITFIELD_PROBED(common, skc_family);
+    u8 family = BPF_CORE_READ(sk, __sk_common.skc_family);
     switch (family) {
         // case PF_IB:
         case PF_INET:

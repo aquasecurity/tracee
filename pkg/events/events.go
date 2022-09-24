@@ -6249,9 +6249,7 @@ var Definitions = eventDefinitions{
 				{Type: "const char*", Name: "dst"},
 				{Type: "u16", Name: "src_port"},
 				{Type: "u16", Name: "dst_port"},
-				{Type: "u16", Name: "id"},
-				{Type: "u8", Name: "query"},
-				{Type: "const char*", Name: "opcode"},
+				{Type: "const char*", Name: "dns"}, // TODO: create types
 			},
 		},
 	},
