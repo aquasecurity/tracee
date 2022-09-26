@@ -5989,9 +5989,9 @@ var Definitions = eventDefinitions{
 		// WIP
 		//
 		NetPacketIPBase: {
-			ID32Bit: sys32undefined,
-			Name:    "net_packet_ip_base",
-			//Internal: true,
+			ID32Bit:  sys32undefined,
+			Name:     "net_packet_ip_base",
+			Internal: true,
 			Dependencies: dependencies{
 				Capabilities: []cap.Value{cap.NET_ADMIN},
 			},
@@ -6003,9 +6003,7 @@ var Definitions = eventDefinitions{
 			},
 			Sets: []string{"network_events"},
 			Params: []trace.ArgMeta{
-				{Type: "int", Name: "arg0"},
-				{Type: "int", Name: "arg1"},
-				{Type: "bytes", Name: "payload"}, // headers only payload
+				{Type: "bytes", Name: "payload"},
 			},
 		},
 		NetPacketIPv4: {
@@ -6018,18 +6016,9 @@ var Definitions = eventDefinitions{
 			},
 			Sets: []string{"network_events"},
 			Params: []trace.ArgMeta{
-				{Type: "u8", Name: "version"},
-				{Type: "u8", Name: "ihl"},
-				{Type: "u8", Name: "tos"},
-				{Type: "u16", Name: "length"},
-				{Type: "u16", Name: "id"},
-				{Type: "u8", Name: "flags"},
-				{Type: "u16", Name: "frag_offset"},
-				{Type: "u8", Name: "ttl"},
-				{Type: "u8", Name: "protocol"},
-				{Type: "u16", Name: "checksum"},
 				{Type: "const char*", Name: "src"},
 				{Type: "const char*", Name: "dst"},
+				{Type: "trace.ProtoIPv4", Name: "proto_ipv4"},
 			},
 		},
 		NetPacketIPv6: {
@@ -6042,20 +6031,15 @@ var Definitions = eventDefinitions{
 			},
 			Sets: []string{"network_events"},
 			Params: []trace.ArgMeta{
-				{Type: "u8", Name: "version"},
-				{Type: "u8", Name: "traffic_class"},
-				{Type: "u32", Name: "flow_label"},
-				{Type: "u16", Name: "length"},
-				{Type: "u8", Name: "next_header"},
-				{Type: "u8", Name: "hop_limit"},
 				{Type: "const char*", Name: "src"},
 				{Type: "const char*", Name: "dst"},
+				{Type: "trace.ProtoIPv6", Name: "proto_ipv6"},
 			},
 		},
 		NetPacketTCPBase: {
-			ID32Bit: sys32undefined,
-			Name:    "net_packet_tcp_base",
-			//Internal: true,
+			ID32Bit:  sys32undefined,
+			Name:     "net_packet_tcp_base",
+			Internal: true,
 			Dependencies: dependencies{
 				Capabilities: []cap.Value{cap.NET_ADMIN},
 			},
@@ -6067,9 +6051,7 @@ var Definitions = eventDefinitions{
 			},
 			Sets: []string{"network_events"},
 			Params: []trace.ArgMeta{
-				{Type: "int", Name: "arg0"},
-				{Type: "int", Name: "arg1"},
-				{Type: "bytes", Name: "payload"}, // headers only payload
+				{Type: "bytes", Name: "payload"},
 			},
 		},
 		NetPacketTCP: {
@@ -6084,29 +6066,13 @@ var Definitions = eventDefinitions{
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "src"},
 				{Type: "const char*", Name: "dst"},
-				{Type: "u16", Name: "src_port"},
-				{Type: "u16", Name: "dst_port"},
-				{Type: "u32", Name: "seq"},
-				{Type: "u32", Name: "ack_num"},
-				{Type: "u8", Name: "data_offset"},
-				{Type: "u8", Name: "fin"},
-				{Type: "u8", Name: "syn"},
-				{Type: "u8", Name: "rst"},
-				{Type: "u8", Name: "psh"},
-				{Type: "u8", Name: "ack"},
-				{Type: "u8", Name: "urg"},
-				{Type: "u8", Name: "ece"},
-				{Type: "u8", Name: "cwr"},
-				{Type: "u8", Name: "ns"},
-				{Type: "u16", Name: "window"},
-				{Type: "u16", Name: "checksum"},
-				{Type: "u16", Name: "urgent"},
+				{Type: "trace.ProtoTCP", Name: "proto_tcp"},
 			},
 		},
 		NetPacketUDPBase: {
-			ID32Bit: sys32undefined,
-			Name:    "net_packet_udp_base",
-			//Internal: true,
+			ID32Bit:  sys32undefined,
+			Name:     "net_packet_udp_base",
+			Internal: true,
 			Dependencies: dependencies{
 				Capabilities: []cap.Value{cap.NET_ADMIN},
 			},
@@ -6118,9 +6084,7 @@ var Definitions = eventDefinitions{
 			},
 			Sets: []string{"network_events"},
 			Params: []trace.ArgMeta{
-				{Type: "int", Name: "arg0"},
-				{Type: "int", Name: "arg1"},
-				{Type: "bytes", Name: "payload"}, // headers only payload
+				{Type: "bytes", Name: "payload"},
 			},
 		},
 		NetPacketUDP: {
@@ -6135,16 +6099,13 @@ var Definitions = eventDefinitions{
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "src"},
 				{Type: "const char*", Name: "dst"},
-				{Type: "u16", Name: "src_port"},
-				{Type: "u16", Name: "dst_port"},
-				{Type: "u16", Name: "length"},
-				{Type: "u16", Name: "checksum"},
+				{Type: "trace.ProtoUDP", Name: "proto_udp"},
 			},
 		},
 		NetPacketICMPBase: {
-			ID32Bit: sys32undefined,
-			Name:    "net_packet_icmp_base",
-			//Internal: true,
+			ID32Bit:  sys32undefined,
+			Name:     "net_packet_icmp_base",
+			Internal: true,
 			Dependencies: dependencies{
 				Capabilities: []cap.Value{cap.NET_ADMIN},
 			},
@@ -6156,9 +6117,7 @@ var Definitions = eventDefinitions{
 			},
 			Sets: []string{"network_events"},
 			Params: []trace.ArgMeta{
-				{Type: "int", Name: "arg0"},
-				{Type: "int", Name: "arg1"},
-				{Type: "bytes", Name: "payload"}, // headers only payload
+				{Type: "bytes", Name: "payload"},
 			},
 		},
 		NetPacketICMP: {
@@ -6173,16 +6132,13 @@ var Definitions = eventDefinitions{
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "src"},
 				{Type: "const char*", Name: "dst"},
-				{Type: "const char*", Name: "type"},
-				{Type: "u16", Name: "checksum"},
-				{Type: "u16", Name: "id"},
-				{Type: "u16", Name: "seq"},
+				{Type: "trace.ProtoICMP", Name: "proto_icmp"},
 			},
 		},
 		NetPacketICMPv6Base: {
-			ID32Bit: sys32undefined,
-			Name:    "net_packet_icmpv6_base",
-			//Internal: true,
+			ID32Bit:  sys32undefined,
+			Name:     "net_packet_icmpv6_base",
+			Internal: true,
 			Dependencies: dependencies{
 				Capabilities: []cap.Value{cap.NET_ADMIN},
 			},
@@ -6194,9 +6150,7 @@ var Definitions = eventDefinitions{
 			},
 			Sets: []string{"network_events"},
 			Params: []trace.ArgMeta{
-				{Type: "int", Name: "arg0"},
-				{Type: "int", Name: "arg1"},
-				{Type: "bytes", Name: "payload"}, // headers only payload
+				{Type: "bytes", Name: "payload"},
 			},
 		},
 		NetPacketICMPv6: {
@@ -6211,14 +6165,13 @@ var Definitions = eventDefinitions{
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "src"},
 				{Type: "const char*", Name: "dst"},
-				{Type: "const char*", Name: "type"},
-				{Type: "u16", Name: "checksum"},
+				{Type: "trace.ProtoICMPv6", Name: "proto_icmpv6"},
 			},
 		},
-		NetPacketDNSBase: { // payload: full packet
-			ID32Bit: sys32undefined,
-			Name:    "net_packet_dns_base",
-			//Internal: true,
+		NetPacketDNSBase: {
+			ID32Bit:  sys32undefined,
+			Name:     "net_packet_dns_base",
+			Internal: true,
 			Dependencies: dependencies{
 				Capabilities: []cap.Value{cap.NET_ADMIN},
 			},
@@ -6230,9 +6183,7 @@ var Definitions = eventDefinitions{
 			},
 			Sets: []string{"network_events"},
 			Params: []trace.ArgMeta{
-				{Type: "int", Name: "arg0"},
-				{Type: "int", Name: "arg1"},
-				{Type: "bytes", Name: "payload"}, // full payload for L4 parse
+				{Type: "bytes", Name: "payload"},
 			},
 		},
 		NetPacketDNS: {
@@ -6249,7 +6200,7 @@ var Definitions = eventDefinitions{
 				{Type: "const char*", Name: "dst"},
 				{Type: "u16", Name: "src_port"},
 				{Type: "u16", Name: "dst_port"},
-				{Type: "const char*", Name: "dns"}, // TODO: create types
+				{Type: "trace.ProtoDNS", Name: "proto_dns"},
 			},
 		},
 	},

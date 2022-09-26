@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net"
 	"strconv"
 
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -224,4 +225,181 @@ func (alert MemProtAlert) String() string {
 	default:
 		return "Unknown alert"
 	}
+}
+
+//
+// Network Protocol Event Types
+//
+
+// IPv4
+
+type ProtoIPv4 struct {
+	Version    uint8             `json:"Version"`
+	IHL        uint8             `json:"IHL"`
+	TOS        uint8             `json:"TOS"`
+	Length     uint16            `json:"Length"`
+	Id         uint16            `json:"Id"`
+	Flags      uint8             `json:"Flags"`
+	FragOffset uint16            `json:"FragOffset"`
+	TTL        uint8             `json:"TTL"`
+	Protocol   string            `json:"Protocol"`
+	Checksum   uint16            `json:"Checksum"`
+	SrcIP      net.IP            `json:"SrcIP"`
+	DstIP      net.IP            `json:"DstIP"`
+	Options    []ProtoIPv4Option `json:"Options"`
+}
+
+type ProtoIPv4Flag struct {
+	OptionType   uint8 `json:"OptionType"`
+	OptionLength uint8 `json:"OptionLength"`
+}
+
+type ProtoIPv4Option struct {
+	OptionType   uint8 `json:"OptionType"`
+	OptionLength uint8 `json:"OptionLength"`
+}
+
+// IPv6
+
+type ProtoIPv6 struct {
+	Version      uint8  `json:"Version"`
+	TrafficClass uint8  `json:"TrafficClass"`
+	FlowLabel    uint32 `json:"FlowLabel"`
+	Length       uint16 `json:"Length"`
+	NextHeader   string `json:"NextHeader"`
+	HopLimit     uint8  `json:"HopLimit"`
+	SrcIP        net.IP `json:"SrcIP"`
+	DstIP        net.IP `json:"DstIP"`
+}
+
+// TCP
+
+type ProtoTCP struct {
+	SrcPort    uint16           `json:"SrcPort"`
+	DstPort    uint16           `json:"DstPort"`
+	Seq        uint32           `json:"Seq"`
+	Ack        uint32           `json:"Ack"`
+	DataOffset uint8            `json:"DataOffset"`
+	FIN        uint8            `json:"FIN"`
+	SYN        uint8            `json:"SYN"`
+	RST        uint8            `json:"RST"`
+	PSH        uint8            `json:"PSH"`
+	ACK        uint8            `json:"ACK"`
+	URG        uint8            `json:"URG"`
+	ECE        uint8            `json:"ECE"`
+	CWR        uint8            `json:"CWR"`
+	NS         uint8            `json:"NS"`
+	Window     uint16           `json:"Window"`
+	Checksum   uint16           `json:"Checksum"`
+	Urgent     uint16           `json:"Urgent"`
+	Options    []ProtoTCPOption `json:"Options"`
+}
+
+type ProtoTCPOption struct {
+	OptionType   string `json:"OptionType"`
+	OptionLength uint8  `json:"OptionLength"`
+}
+
+// UDP
+
+type ProtoUDP struct {
+	SrcPort  uint16 `json:"SrcPort"`
+	DstPort  uint16 `json:"DstPort"`
+	Length   uint16 `json:"Length"`
+	Checksum uint16 `json:"Checksum"`
+}
+
+// ICMP
+
+type ProtoICMP struct {
+	TypeCode string `json:"TypeCode"`
+	Checksum uint16 `json:"Checksum"`
+	Id       uint16 `json:"Id"`
+	Seq      uint16 `json:"Seq"`
+}
+
+// ICMPv6
+
+type ProtoICMPv6 struct {
+	TypeCode string `json:"TypeCode"`
+	Checksum uint16 `json:"Checksum"`
+}
+
+// DNS
+
+type ProtoDNS struct {
+	ID           uint16                   `json:"ID"`
+	QR           uint8                    `json:"QR"`
+	OpCode       string                   `json:"OpCode"`
+	AA           uint8                    `json:"AA"`
+	TC           uint8                    `json:"TC"`
+	RD           uint8                    `json:"RD"`
+	RA           uint8                    `json:"RA"`
+	Z            uint8                    `json:"Z"`
+	ResponseCode string                   `json:"ResponseCode"`
+	QDCount      uint16                   `json:"QDCount"`
+	ANCount      uint16                   `json:"ANCount"`
+	NSCount      uint16                   `json:"NSCount"`
+	ARCount      uint16                   `json:"ARCount"`
+	Questions    []ProtoDNSQuestion       `json:"Questions"`
+	Answers      []ProtoDNSResourceRecord `json:"Answers"`
+	Authorities  []ProtoDNSResourceRecord `json:"Authorities"`
+	Additionals  []ProtoDNSResourceRecord `json:"Additionals"`
+}
+
+type ProtoDNSQuestion struct {
+	Name  string `json:"Name"`
+	Type  string `json:"Type"`
+	Class string `json:"Class"`
+}
+
+type ProtoDNSResourceRecord struct {
+	Name  string        `json:"Name"`
+	Type  string        `json:"Type"`
+	Class string        `json:"Class"`
+	TTL   uint32        `json:"TTL"`
+	IP    string        `json:"IP"`
+	NS    string        `json:"NS"`
+	CNAME string        `json:"CNAME"`
+	PTR   string        `json:"PTR"`
+	TXTs  []string      `json:"TXTs"`
+	SOA   ProtoDNSSOA   `json:"SOA"`
+	SRV   ProtoDNSSRV   `json:"SRV"`
+	MX    ProtoDNSMX    `json:"MX"`
+	OPT   []ProtoDNSOPT `json:"OPT"`
+	URI   ProtoDNSURI   `json:"URI"`
+	TXT   string        `json:"TXT"`
+}
+
+type ProtoDNSSOA struct {
+	MName   string `json:"MName"`
+	RName   string `json:"RName"`
+	Serial  uint32 `json:"Serial"`
+	Refresh uint32 `json:"Refresh"`
+	Retry   uint32 `json:"Retry"`
+	Expire  uint32 `json:"Expire"`
+	Minimum uint32 `json:"Minimum"`
+}
+
+type ProtoDNSSRV struct {
+	Priority uint16 `json:"Priority"`
+	Weight   uint16 `json:"Weight"`
+	Port     uint16 `json:"Port"`
+	Name     string `json:"Name"`
+}
+
+type ProtoDNSMX struct {
+	Preference uint16 `json:"Preference"`
+	Name       string `json:"Name"`
+}
+
+type ProtoDNSURI struct {
+	Priority uint16 `json:"Priority"`
+	Weight   uint16 `json:"Weight"`
+	Target   string `json:"Target"`
+}
+
+type ProtoDNSOPT struct {
+	Code string `json:"Code"`
+	Data string `json:"Data"`
 }

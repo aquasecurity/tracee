@@ -53,18 +53,30 @@ func deriveNetPacketIPv6Args() deriveArgsFunction {
 
 		switch l3 := layer3.(type) {
 		case (*layers.IPv6):
+			var ipv6 trace.ProtoIPv6
+			copyIPv6ToProtoIPv6(l3, &ipv6)
+
 			return []interface{}{
-				l3.Version,
-				l3.TrafficClass,
-				l3.FlowLabel,
-				l3.Length,
-				l3.NextHeader,
-				l3.HopLimit,
 				l3.SrcIP,
 				l3.DstIP,
+				ipv6,
 			}, nil
 		}
 
 		return nil, fmt.Errorf("not an IPv6 packet")
 	}
+}
+
+//
+// IPv6 protocol type conversion (from gopacket layer to trace type)
+//
+
+func copyIPv6ToProtoIPv6(l3 *layers.IPv6, proto *trace.ProtoIPv6) {
+	proto.Version = l3.Version
+	proto.DstIP = l3.DstIP
+	proto.TrafficClass = l3.TrafficClass
+	proto.FlowLabel = l3.FlowLabel
+	proto.Length = l3.Length
+	proto.NextHeader = l3.NextHeader.String()
+	proto.HopLimit = l3.HopLimit
 }

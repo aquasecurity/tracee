@@ -141,7 +141,6 @@ func ReadArgFromBuff(ebpfMsgDecoder *EbpfDecoder, params []trace.ArgMeta) (trace
 	case bytesT:
 		var size uint32
 		err = ebpfMsgDecoder.DecodeUint32(&size)
-		// fmt.Printf("DEBUG: SIZE: %d\n", size)
 		if err != nil {
 			return argMeta, nil, fmt.Errorf("error reading byte array size: %v", err)
 		}

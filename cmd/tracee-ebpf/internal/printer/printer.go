@@ -250,6 +250,7 @@ type gobEventPrinter struct {
 
 func (p *gobEventPrinter) Init() error {
 	p.outEnc = gob.NewEncoder(p.out)
+
 	gob.Register(trace.Event{})
 	gob.Register(trace.SlimCred{})
 	gob.Register(make(map[string]string))
@@ -258,6 +259,42 @@ func (p *gobEventPrinter) Init() error {
 	gob.Register(map[string]trace.HookedSymbolData{})
 	gob.Register([]trace.DnsQueryData{})
 	gob.Register([]trace.DnsResponseData{})
+
+	//
+	// Network Protocol Event Types
+	//
+
+	// IPv4
+	gob.Register(trace.ProtoIPv4{})
+	gob.Register(trace.ProtoIPv4Flag{})
+	gob.Register(trace.ProtoIPv4Option{})
+
+	// IPv6
+	gob.Register(trace.ProtoIPv6{})
+
+	// TCP
+	gob.Register(trace.ProtoTCP{})
+	gob.Register(trace.ProtoTCPOption{})
+
+	// UDP
+	gob.Register(trace.ProtoUDP{})
+
+	// ICMP
+	gob.Register(trace.ProtoICMP{})
+
+	// ICMPv6
+	gob.Register(trace.ProtoICMPv6{})
+
+	// DNS
+	gob.Register(trace.ProtoDNS{})
+	gob.Register(trace.ProtoDNSQuestion{})
+	gob.Register(trace.ProtoDNSResourceRecord{})
+	gob.Register(trace.ProtoDNSSOA{})
+	gob.Register(trace.ProtoDNSSRV{})
+	gob.Register(trace.ProtoDNSMX{})
+	gob.Register(trace.ProtoDNSURI{})
+	gob.Register(trace.ProtoDNSOPT{})
+
 	return nil
 }
 

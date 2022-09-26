@@ -68,16 +68,30 @@ func deriveNetPacketICMPArgs() deriveArgsFunction {
 
 		switch l4 := layer4.(type) {
 		case (*layers.ICMPv4):
+			var icmp trace.ProtoICMP
+
+			copyICMPToProtoICMP(l4, &icmp)
+
+			// TODO: parse subsequent ICMP type layers
+
 			return []interface{}{
 				srcIP,
 				dstIP,
-				l4.TypeCode.String(),
-				l4.Checksum,
-				l4.Id,
-				l4.Seq,
+				icmp,
 			}, nil
 		}
 
 		return nil, fmt.Errorf("not an ICMP packet")
 	}
+}
+
+//
+// ICMP protocol type conversion (from gopacket layer to trace type)
+//
+
+func copyICMPToProtoICMP(l4 *layers.ICMPv4, proto *trace.ProtoICMP) {
+	proto.TypeCode = l4.TypeCode.String()
+	proto.Checksum = l4.Checksum
+	proto.Id = l4.Id
+	proto.Seq = l4.Seq
 }

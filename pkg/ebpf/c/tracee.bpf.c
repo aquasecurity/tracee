@@ -6352,10 +6352,6 @@ typedef struct net_event_context {
     event_context_t eventctx;
     struct { // event arguments (needs packing), use anonymous struct to ...
         u8 index0;
-        u32 arg0; // u32
-        u8 index1;
-        u32 arg1; // u32
-        u8 index2;
         u32 bytes;
         // ... (payload sent by bpf_perf_event_output)
     } __attribute__((__packed__)); // ... avoid address-of-packed-member warns
@@ -6387,17 +6383,6 @@ struct {
 
 // entrymap
 
-enum net_internal_events
-{
-    internal_event_sock_alloc_file = 0,
-    internal_event_cgroup_bpf_run_filter_skb = 1,
-};
-
-typedef struct net_host_tid_evt {
-    u8 net_event_id;
-    u32 host_tid;
-} net_host_tid_evt_t;
-
 typedef struct entry {
     long unsigned int args[6];
 } entry_t;
@@ -6405,7 +6390,7 @@ typedef struct entry {
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
     __uint(max_entries, 1024);       // simultaneous tasks being traced for entry/exit
-    __type(key, net_host_tid_evt_t); // host thread group id (tgid or tid) ...
+    __type(key, u32);                // host thread group id (tgid or tid) ...
     __type(value, struct entry);     // ... linked to entry ctx->args
 } entrymap SEC(".maps");             // can't use args_map (indexed by existing events only)
 
@@ -6415,7 +6400,7 @@ struct {
 
 static __always_inline u64 sizeof_net_event_context_t(void)
 {
-    return sizeof(net_event_context_t) - 5; // 40 bytes == neteventctx metadata
+    return sizeof(net_event_context_t) - 7; // neteventctx metadata & padding
 }
 
 static __always_inline void get_net_task_context(event_data_t *data,
@@ -6510,10 +6495,8 @@ int BPF_KPROBE(sock_alloc_file)
     entry.args[2] = PT_REGS_PARM2(ctx); // char *dname
 
     // prepare for kretprobe using entrymap
-    net_host_tid_evt_t tid = {0};
-    tid.host_tid = data.context.task.host_tid;
-    tid.net_event_id = internal_event_sock_alloc_file;
-    bpf_map_update_elem(&entrymap, &tid, &entry, BPF_ANY);
+    u32 pid = data.context.task.host_pid;
+    bpf_map_update_elem(&entrymap, &pid, &entry, BPF_ANY);
 
     return 0;
 }
@@ -6531,10 +6514,8 @@ int BPF_KRETPROBE(ret_sock_alloc_file)
         return 0;
 
     // pick from entry from entrymap
-    net_host_tid_evt_t tid = {0};
-    tid.host_tid = data.context.task.host_tid;
-    tid.net_event_id = internal_event_sock_alloc_file;
-    struct entry *entry = bpf_map_lookup_elem(&entrymap, &tid);
+    u32 pid = data.context.task.host_pid;
+    struct entry *entry = bpf_map_lookup_elem(&entrymap, &pid);
     if (!entry) // no entry == no tracing
         return 0;
 
@@ -6545,7 +6526,7 @@ int BPF_KRETPROBE(ret_sock_alloc_file)
     struct file *sock_file = (void *) PT_REGS_RC(ctx);
 
     // cleanup entrymap
-    bpf_map_delete_elem(&entrymap, &tid);
+    bpf_map_delete_elem(&entrymap, &pid);
 
     if (!sock_file)
         return 0; // socket() failed ?
@@ -6613,10 +6594,8 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     entry.args[1] = PT_REGS_PARM2(ctx); // struct sk_buff *skb
 
     // prepare for kretprobe using entrymap
-    net_host_tid_evt_t tid = {0};
-    tid.host_tid = data.context.task.host_tid;
-    tid.net_event_id = internal_event_cgroup_bpf_run_filter_skb;
-    bpf_map_update_elem(&entrymap, &tid, &entry, BPF_ANY);
+    u32 pid = data.context.task.host_pid;
+    bpf_map_update_elem(&entrymap, &pid, &entry, BPF_ANY);
 
     // pick original task from socket inode
     struct net_task_context *netctx = bpf_map_lookup_elem(&inodemap, &inode);
@@ -6657,16 +6636,14 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
 
     net_event_context_t neteventctx = {
         .index0 = 0,
-        .index1 = 1,
-        .index2 = 2,
     }; // to be sent by cgroup/skb program
     event_context_t *eventctx = &neteventctx.eventctx;
 
     // copy orig task ctx (from the netctx) to event ctx and build the rest
     __builtin_memcpy(&eventctx->task, &netctx->taskctx, sizeof(task_context_t));
     eventctx->ts = data.context.ts;           // copy timestamp from current ctx
-    eventctx->argnum = 3;                     // 3 arguments
-    eventctx->eventid = NET_PACKET_IP;   // will be changed in skb program
+    eventctx->argnum = 1;                     // 1 argument (add more if needed)
+    eventctx->eventid = NET_PACKET_IP;        // will be changed in skb program
     eventctx->stack_id = 0;
     eventctx->processor_id = data.context.processor_id; // copy from current ctx
 
@@ -6675,9 +6652,7 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     u8 family = BPF_CORE_READ_BITFIELD_PROBED(common, skc_family);
     eventctx->retval = family; // ... through event ctx ret val
 
-    // DEBUG
-    neteventctx.arg0 = 2022;
-    neteventctx.arg1 = 2011;
+    // set event arguments
     neteventctx.bytes = 0; // no payload by default (changed inside skb prog)
 
     // mark network events to be submitted to userland
@@ -6724,17 +6699,12 @@ int BPF_KRETPROBE(ret_cgroup_bpf_run_filter_skb)
         return 0;
 
     // Both ingress & egress (mostly ingress) might run from a kthread and still
-    // need processing. Instead of "should_trace", check if there is a current
-    // skb timestamp entry (added by the entry) and delete it.
-
-    // if (!should_trace(&data))
-    // return 0;
+    // need processing. Instead of "should_trace" here, check if there is a
+    // current skb timestamp entry (added by the entry) and delete it.
 
     // pick from entry from entrymap
-    net_host_tid_evt_t tid = {0};
-    tid.host_tid = data.context.task.host_tid;
-    tid.net_event_id = internal_event_cgroup_bpf_run_filter_skb;
-    struct entry *entry = bpf_map_lookup_elem(&entrymap, &tid);
+    u32 pid = data.context.task.host_pid;
+    struct entry *entry = bpf_map_lookup_elem(&entrymap, &pid);
     if (!entry) // no entry == no tracing
         return 0;
 
@@ -6743,7 +6713,7 @@ int BPF_KRETPROBE(ret_cgroup_bpf_run_filter_skb)
     struct sk_buff *skb = (void *) entry->args[1];
 
     // cleanup entrymap
-    bpf_map_delete_elem(&entrymap, &tid);
+    bpf_map_delete_elem(&entrymap, &pid);
 
     // use skb timestamp as the key for cgroup/skb
     u64 skbts = BPF_CORE_READ(skb, tstamp);
@@ -6975,7 +6945,6 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
                 case IPPROTO_TCP:
                     bpf_printk("TCPv4");
                     dest = &nethdrs->protohdrs.tcphdr;
-                     // size of TCP header w/out data offset (TODO: data offset flag)
                     size = bpf_core_type_size(struct tcphdr);
                     break;
                 case IPPROTO_UDP:
@@ -7003,7 +6972,6 @@ CGROUP_SKB_HANDLE_FUNCTION(proto)
                 case IPPROTO_TCP:
                     bpf_printk("TCPv6");
                     dest = &nethdrs->protohdrs.tcphdr;
-                        // size of TCP header w/out data offset (TODO: data offset flag)
                     size = bpf_core_type_size(struct tcphdr);
                     break;
                 case IPPROTO_UDP:
@@ -7072,12 +7040,12 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_tcp)
 
     // check flag for dynamic header size (TCP: data offset flag)
 
-    // if (nethdrs->protohdrs.tcphdr.doff > 5) { // offset flag set
-    //     bpf_printk("TCP (data offset flag)");
-    //     u32 doff = nethdrs->protohdrs.tcphdr.doff * (32 / 8);
-    //     neteventctx->header_size -= 20;
-    //     neteventctx->header_size += doff;
-    // }
+    if (nethdrs->protohdrs.tcphdr.doff > 5) { // offset flag set
+        u32 doff = nethdrs->protohdrs.tcphdr.doff * (32 / 8);
+        bpf_printk("TCP (data offset flag) set to %d", doff);
+        neteventctx->header_size -= bpf_core_type_size(struct tcphdr);
+        neteventctx->header_size += doff;
+    }
 
     // submit TCP base event if needed (only headers)
 

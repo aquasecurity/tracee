@@ -75,16 +75,27 @@ func deriveNetPacketUDPArgs() deriveArgsFunction {
 
 		switch l4 := layer4.(type) {
 		case (*layers.UDP):
+			var udp trace.ProtoUDP
+			copyUDPToProtoUDP(l4, &udp)
+
 			return []interface{}{
 				srcIP,
 				dstIP,
-				l4.SrcPort,
-				l4.DstPort,
-				l4.Length,
-				l4.Checksum,
+				udp,
 			}, nil
 		}
 
 		return nil, fmt.Errorf("not an UDP packet")
 	}
+}
+
+//
+// UDP protocol type conversion (from gopacket layer to trace type)
+//
+
+func copyUDPToProtoUDP(l4 *layers.UDP, proto *trace.ProtoUDP) {
+	proto.SrcPort = uint16(l4.SrcPort)
+	proto.DstPort = uint16(l4.DstPort)
+	proto.Length = l4.Length
+	proto.Checksum = l4.Checksum
 }

@@ -75,29 +75,48 @@ func deriveNetPacketTCPArgs() deriveArgsFunction {
 
 		switch l4 := layer4.(type) {
 		case (*layers.TCP):
+			var tcp trace.ProtoTCP
+			copyTCPToProtoTCP(l4, &tcp)
+
 			return []interface{}{
 				srcIP,
 				dstIP,
-				l4.SrcPort,
-				l4.DstPort,
-				l4.Seq,
-				l4.Ack,
-				l4.DataOffset,
-				l4.FIN,
-				l4.SYN,
-				l4.RST,
-				l4.PSH,
-				l4.ACK,
-				l4.URG,
-				l4.ECE,
-				l4.CWR,
-				l4.NS,
-				l4.Window,
-				l4.Checksum,
-				l4.Urgent,
+				tcp,
 			}, nil
 		}
 
 		return nil, fmt.Errorf("not a TCP packet")
+	}
+}
+
+//
+// TCP protocol type conversion (from gopacket layer to trace type)
+//
+
+func copyTCPToProtoTCP(l4 *layers.TCP, proto *trace.ProtoTCP) {
+	proto.SrcPort = uint16(l4.SrcPort)
+	proto.DstPort = uint16(l4.DstPort)
+	proto.Seq = l4.Seq
+	proto.Ack = l4.Ack
+	proto.DataOffset = l4.DataOffset
+	proto.FIN = boolToUint8(l4.FIN)
+	proto.SYN = boolToUint8(l4.SYN)
+	proto.RST = boolToUint8(l4.RST)
+	proto.PSH = boolToUint8(l4.PSH)
+	proto.ACK = boolToUint8(l4.ACK)
+	proto.URG = boolToUint8(l4.URG)
+	proto.ECE = boolToUint8(l4.ECE)
+	proto.NS = boolToUint8(l4.NS)
+	proto.Window = l4.Window
+	proto.Checksum = l4.Checksum
+	proto.Urgent = l4.Urgent
+
+	// process all existing TCP options (if any)
+	for _, i := range l4.Options {
+		proto.Options = append(proto.Options,
+			trace.ProtoTCPOption{
+				OptionType:   i.OptionType.String(),
+				OptionLength: i.OptionLength,
+			})
 	}
 }
