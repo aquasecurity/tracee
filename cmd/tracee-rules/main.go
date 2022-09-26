@@ -30,32 +30,38 @@ func main() {
 		Name:  "tracee-rules",
 		Usage: "A rule engine for Runtime Security",
 		Action: func(c *cli.Context) error {
-			err := dropCapabilities()
-			if err != nil {
-				if !c.Bool(allowHighCapabilitiesFlag) {
-					return fmt.Errorf("%w - to avoid this error use the --%s flag", err, allowHighCapabilitiesFlag)
-				} else {
-					fmt.Fprintf(os.Stdout, "Capabilities dropping failed - %v\n", err)
-					fmt.Fprintf(os.Stdout, "Continue with high capabilities according to the configuration\n")
-				}
-			}
-
 			if c.NumFlags() == 0 {
 				cli.ShowAppHelp(c)
 				return errors.New("no flags specified")
 			}
 
+			err := dropCapabilities()
+			if err != nil {
+				if !c.Bool(allowHighCapabilitiesFlag) {
+					return fmt.Errorf("%w - to avoid this error use the --%s flag", err, allowHighCapabilitiesFlag)
+				}
+
+				fmt.Fprintf(os.Stdout, "Capabilities dropping failed - %v\n", err)
+				fmt.Fprintf(os.Stdout, "Continue with high capabilities according to the configuration\n")
+			}
+
 			var target string
 			switch strings.ToLower(c.String("rego-runtime-target")) {
 			case "wasm":
-				return errors.New("target unsupported: " + target)
+				return errors.New("target unsupported: wasm")
 			case "rego":
 				target = compile.TargetRego
 			default:
-				return errors.New("invalid target specified " + target)
+				return fmt.Errorf("invalid target specified: %s", strings.ToLower(c.String("rego-runtime-target")))
 			}
 
-			sigs, err := getSignatures(target, c.Bool("rego-partial-eval"), c.String("rules-dir"), c.StringSlice("rules"), c.Bool("rego-aio"))
+			sigs, err := getSignatures(
+				target,
+				c.Bool("rego-partial-eval"),
+				c.String("rules-dir"),
+				c.StringSlice("rules"),
+				c.Bool("rego-aio"),
+			)
 			if err != nil {
 				return err
 			}
@@ -78,10 +84,12 @@ func main() {
 			fmt.Printf("Loaded %d signature(s): %s\n", len(loadedSigIDs), loadedSigIDs)
 
 			if c.Bool("list") {
-				return listSigs(os.Stdout, sigs)
+				listSigs(os.Stdout, sigs)
+				return nil
 			}
 
 			var inputs engine.EventSources
+
 			opts, err := parseTraceeInputOptions(c.StringSlice("input-tracee"))
 			if err == errHelp {
 				printHelp()
@@ -90,12 +98,19 @@ func main() {
 			if err != nil {
 				return err
 			}
+
 			inputs.Tracee, err = setupTraceeInputSource(opts)
 			if err != nil {
 				return err
 			}
 
-			output, err := setupOutput(os.Stdout, c.String("webhook"), c.String("webhook-template"), c.String("webhook-content-type"), c.String("output-template"))
+			output, err := setupOutput(
+				os.Stdout,
+				c.String("webhook"),
+				c.String("webhook-template"),
+				c.String("webhook-content-type"),
+				c.String("output-template"),
+			)
 			if err != nil {
 				return err
 			}
@@ -224,7 +239,7 @@ func main() {
 	}
 }
 
-func listSigs(w io.Writer, sigs []detect.Signature) error {
+func listSigs(w io.Writer, sigs []detect.Signature) {
 	fmt.Fprintf(w, "%-10s %-35s %s %s\n", "ID", "NAME", "VERSION", "DESCRIPTION")
 	for _, sig := range sigs {
 		meta, err := sig.GetMetadata()
@@ -233,7 +248,6 @@ func listSigs(w io.Writer, sigs []detect.Signature) error {
 		}
 		fmt.Fprintf(w, "%-10s %-35s %-7s %s\n", meta.ID, meta.Name, meta.Version, meta.Description)
 	}
-	return nil
 }
 
 func listEvents(w io.Writer, sigs []detect.Signature) {
@@ -270,9 +284,5 @@ func sigHandler() chan bool {
 // dropCapabilities drop all capabilities from the process
 // The function also tries to drop the capabilities bounding set, but it won't work if CAP_SETPCAP is not available.
 func dropCapabilities() error {
-	err := capabilities.DropUnrequired([]cap.Value{})
-	if err != nil {
-		return err
-	}
-	return nil
+	return capabilities.DropUnrequired([]cap.Value{})
 }
