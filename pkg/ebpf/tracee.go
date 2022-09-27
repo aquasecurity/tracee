@@ -1166,6 +1166,13 @@ func (t *Tracee) GetTailCalls() ([]events.TailCall, error) {
 func (t *Tracee) attachProbes() error {
 	var err error
 
+	// cgroup attachments root directory
+
+	cgroupRootDir := "/sys/fs/cgroup/unified"
+	if _, err := os.Stat(cgroupRootDir); os.IsNotExist(err) {
+		cgroupRootDir = "/sys/fs/cgroup"
+	}
+
 	// attach selected tracing events
 
 	for tr := range t.events {
@@ -1192,7 +1199,7 @@ func (t *Tracee) attachProbes() error {
 		}
 	}
 
-	// attach all tc programs to given interfaces
+	// TODO: remove all tc programs (being attached to specific interfaces)
 
 	for _, iface := range t.netInfo.ifaces {
 		for _, tc := range []probes.Handle{
@@ -1206,11 +1213,17 @@ func (t *Tracee) attachProbes() error {
 		}
 	}
 
-	// TODO: instead of manually attaching tc programs to given interfaces,
-	// in a near future tc probes will be just events probeDependency and
-	// attached to given interfaces (or all of them). If attached to all
-	// existing interfaces, the tc programs will be constantly attached
-	// to new network interface.
+	// attach all cgroup programs to cgroupv2 root directory
+
+	for _, tc := range []probes.Handle{
+		probes.CgroupSKBIngress,
+		probes.CgroupSKBEgress,
+	} {
+		err = t.probes.Attach(tc, cgroupRootDir)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
