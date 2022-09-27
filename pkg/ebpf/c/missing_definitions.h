@@ -44,8 +44,6 @@
 #define sk_flags          __sk_common.skc_flags
 #define sk_rxhash         __sk_common.skc_rxhash
 
-#define IPPROTO_ICMPV6 58
-
 #define ICMP_ECHO     8
 #define ICMP_EXT_ECHO 42
 
@@ -140,58 +138,6 @@ enum perf_type_id
 #endif
 /*=============================== ARCH SPECIFIC ===========================*/
 
-// clang-format off
-
-/* Supported address families. */
-#define AF_UNSPEC     0
-#define AF_UNIX       1           /* Unix domain sockets */
-#define AF_LOCAL      1           /* POSIX name for AF_UNIX */
-#define AF_INET       2           /* Internet IP Protocol */
-#define AF_AX25       3           /* Amateur Radio AX.25 */
-#define AF_IPX        4           /* Novell IPX */
-#define AF_APPLETALK  5           /* AppleTalk DDP */
-#define AF_NETROM     6           /* Amateur Radio NET/ROM */
-#define AF_BRIDGE     7           /* Multiprotocol bridge */
-#define AF_ATMPVC     8           /* ATM PVCs */
-#define AF_X25        9           /* Reserved for X.25 project */
-#define AF_INET6      10          /* IP version 6 */
-#define AF_ROSE       11          /* Amateur Radio X.25 PLP */
-#define AF_DECnet     12          /* Reserved for DECnet project */
-#define AF_NETBEUI    13          /* Reserved for 802.2LLC project */
-#define AF_SECURITY   14          /* Security callback pseudo AF */
-#define AF_KEY        15          /* PF_KEY key management API */
-#define AF_NETLINK    16
-#define AF_ROUTE      AF_NETLINK  /* Alias to emulate 4.4BSD */
-#define AF_PACKET     17          /* Packet family */
-#define AF_ASH        18          /* Ash */
-#define AF_ECONET     19          /* Acorn Econet */
-#define AF_ATMSVC     20          /* ATM SVCs */
-#define AF_RDS        21          /* RDS sockets */
-#define AF_SNA        22          /* Linux SNA Project (nutters!) */
-#define AF_IRDA       23          /* IRDA sockets */
-#define AF_PPPOX      24          /* PPPoX sockets */
-#define AF_WANPIPE    25          /* Wanpipe API Sockets */
-#define AF_LLC        26          /* Linux LLC */
-#define AF_IB         27          /* Native InfiniBand address */
-#define AF_MPLS       28          /* MPLS */
-#define AF_CAN        29          /* Controller Area Network */
-#define AF_TIPC       30          /* TIPC sockets */
-#define AF_BLUETOOTH  31          /* Bluetooth sockets */
-#define AF_IUCV       32          /* IUCV sockets */
-#define AF_RXRPC      33          /* RxRPC sockets */
-#define AF_ISDN       34          /* mISDN sockets */
-#define AF_PHONET     35          /* Phonet sockets */
-#define AF_IEEE802154 36          /* IEEE802154 sockets */
-#define AF_CAIF       37          /* CAIF sockets */
-#define AF_ALG        38          /* Algorithm sockets */
-#define AF_NFC        39          /* NFC sockets */
-#define AF_VSOCK      40          /* vSockets */
-#define AF_KCM        41          /* Kernel Connection Multiplexor */
-#define AF_QIPCRTR    42          /* Qualcomm IPC Router */
-#define AF_SMC        43          /* smc sockets: reserve number for PF_SMC protocol family */
-
-// clang-format on
-
 #define VM_NONE   0x00000000
 #define VM_READ   0x00000001
 #define VM_WRITE  0x00000002
@@ -248,9 +194,68 @@ static inline struct inet_sock *inet_sk(const struct sock *sk)
 
 #define get_type_size(x) bpf_core_type_size(x)
 #define __get_node_addr(array, node_type, index)                                                   \
-    ((node_type *) ((void *) (array) + ((index) *get_type_size(node_type))))
-#define get_node_addr(array, index) __get_node_addr(array, typeof(*(array)), index)
+    ((node_type *) ((void *) array + (index * get_type_size(node_type))))
+#define get_node_addr(array, index) __get_node_addr(array, typeof(*array), index)
 
-#define SA_SIGINFO 0x00000004
+#endif
 
+// NOTE: new network code
+
+// Protocol families
+#define PF_UNSPEC    0
+#define PF_LOCAL     1
+#define PF_UNIX      PF_LOCAL
+#define PF_FILE      PF_LOCAL
+#define PF_INET      2
+#define PF_BRIDGE    7
+#define PF_INET6     10
+#define PF_KEY       15
+#define PF_NETLINK   16
+#define PF_ROUTE     PF_NETLINK
+#define PF_PACKET    17
+#define PF_IB        27
+#define PF_MPLS      28
+#define PF_BLUETOOTH 31
+#define PF_VSOCK     40
+#define PF_XDP       44
+
+/* Address families.  */
+#define AF_UNSPEC    PF_UNSPEC
+#define AF_LOCAL     PF_LOCAL
+#define AF_UNIX      PF_UNIX
+#define AF_FILE      PF_FILE
+#define AF_INET      PF_INET
+#define AF_INET6     PF_INET6
+#define AF_KEY       PF_KEY
+#define AF_NETLINK   PF_NETLINK
+#define AF_ROUTE     PF_ROUTE
+#define AF_PACKET    PF_PACKET
+#define AF_IB        PF_IB
+#define AF_MPLS      PF_MPLS
+#define AF_BLUETOOTH PF_BLUETOOTH
+#define AF_VSOCK     PF_VSOCK
+#define AF_XDP       PF_XDP
+
+#ifndef IPPROTO_IPIP
+#define IPPROTO_IPIP 4
+#endif
+
+#ifndef IPPROTO_DCCP
+#define IPPROTO_DCCP 33
+#endif
+
+#ifndef IPPROTO_IPV6
+#define IPPROTO_IPV6 41
+#endif
+
+#ifndef IPPROTO_ICMPV6
+#define IPPROTO_ICMPV6 58
+#endif
+
+#ifndef IPPROTO_SCTP
+#define IPPROTO_SCTP 132
+#endif
+
+#ifndef IPPROTO_UDPLITE
+#define IPPROTO_UDPLITE 136
 #endif
