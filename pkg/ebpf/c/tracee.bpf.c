@@ -460,6 +460,12 @@ enum event_id_e
     DO_SIGACTION,
     BPF_ATTACH,
     KALLSYMS_LOOKUP_NAME,
+    NET_PACKET_IP,
+    NET_PACKET_TCP,
+    NET_PACKET_UDP,
+    NET_PACKET_ICMP,
+    NET_PACKET_ICMPV6,
+    NET_PACKET_DNS,
     MAX_EVENT_ID,
 };
 
@@ -627,6 +633,13 @@ enum kconfig_key_e
             _val;                                                                                  \
         })
 
+    #define BPF_READ(src, a, ...)                                                                  \
+        ({                                                                                         \
+            ___type((src), a, ##__VA_ARGS__) __r;                                                  \
+            BPF_PROBE_READ_INTO(&__r, (src), a, ##__VA_ARGS__);                                    \
+            __r;                                                                                   \
+        })
+
 #else // CORE
 
     #define GET_FIELD_ADDR(field) __builtin_preserve_access_index(&field)
@@ -646,6 +659,14 @@ enum kconfig_key_e
             bpf_core_read_user((void *) &_val, sizeof(_val), &ptr);                                \
             _val;                                                                                  \
         })
+
+    #define BPF_READ(src, a, ...)                                                                  \
+        ({                                                                                         \
+            ___type((src), a, ##__VA_ARGS__) __r;                                                  \
+            BPF_CORE_READ_INTO(&__r, (src), a, ##__VA_ARGS__);                                     \
+            __r;                                                                                   \
+        })
+
 #endif
 
 // EBPF MAP MACROS ---------------------------------------------------------------------------------
@@ -926,6 +947,7 @@ struct mount {
 // EBPF MAPS DECLARATIONS --------------------------------------------------------------------------
 
 // clang-format off
+
 BPF_HASH(kconfig_map, u32, u32, 10240);                            // kernel config variables
 BPF_HASH(interpreter_map, u32, file_info_t, 10240);                // interpreter file used for each process
 BPF_HASH(containers_map, u32, u8, 10240);                          // map cgroup id to container status {EXISTED, CREATED, STARTED}
@@ -963,6 +985,7 @@ BPF_HASH(module_init_map, u32, kmod_data_t, 256);                  // holds modu
 BPF_LRU_HASH(fd_arg_path_map, fd_arg_task_t, fd_arg_path_t, 1024); // store fds paths by task
 BPF_LRU_HASH(bpf_attach_map, u32, bpf_attach_t, 1024);             // holds bpf prog info
 BPF_LRU_HASH(bpf_attach_tmp_map, u32, bpf_attach_t, 1024);         // temporarily hold bpf_attach_t
+
 // clang-format on
 
 // EBPF PERF BUFFERS -------------------------------------------------------------------------------
@@ -1724,7 +1747,9 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
         return 0;
 
     data->task = (struct task_struct *) bpf_get_current_task();
+
     init_context(&data->context, data->task, data->config->options);
+
     data->ctx = ctx;
     data->buf_off = sizeof(event_context_t);
     int buf_idx = SUBMIT_BUF_IDX;
@@ -6858,4 +6883,795 @@ SEC("tc")
 int tc_ingress(struct __sk_buff *skb)
 {
     return tc_probe(skb, true);
+}
+
+// NOTE: new network code (works in <= 5.6 as well)
+
+// There are multiple ways to follow ingress/egress for a task. One way is to
+// try to track all flows within network interfaces and keep a map of addresses
+// tuples and translations. OR, sk_storage and socket cookies might help in
+// understanding which sock/sk_buff context the bpf program is dealing with but,
+// at the end, the need is always to tie a flow to a task (specially when
+// hooking ingress skb bpf programs, when the current task is a kernel thread
+// most of the times).
+
+// Unfortunately that gets even more complicated in older kernels: the cgroup
+// skb programs have almost no bpf helpers to use, and most of common code
+// causes verifier to fail. With that in mind, this approach uses a technique of
+// kprobing the function responsible for calling the cgroup/skb programs.
+
+// All the work, that should be done by the cgroup/skb programs in the common
+// case, in this case is done by this kprobe/kretprobe hook logic (right before
+// and right after the cgroup/skb program runs). By doing that, all the data
+// that cgroup/skb programs need to use is already placed in a map.
+
+// Obviously this has some cons: this kprobe->cgroup/skb->kretprobe execution
+// flow does not have preemption disabled, so the map used in between the 3
+// hooks need to use something that is available to all 3 of them.
+
+// At the end, the logic is simple: every time a socket is created an inode is
+// also created. The task owning the socket is indexed by the socket inode so
+// everytime this socket is used we know which task it belongs to (specially
+// during ingress hook).
+
+//
+// network helper functions
+//
+
+static __always_inline bool is_socket_supported(struct socket *sock)
+{
+    // clang-format off
+    struct sock *sk = (void *) BPF_READ(sock, sk);
+    u16 protocol = get_sock_protocol(sk);
+    switch (protocol) {
+        // case IPPROTO_IPV6:
+        // case IPPROTO_IPIP:
+        // case IPPROTO_DCCP:
+        // case IPPROTO_SCTP:
+        // case IPPROTO_UDPLITE:
+        case IPPROTO_IP:
+        case IPPROTO_TCP:
+        case IPPROTO_UDP:
+        case IPPROTO_ICMP:
+        case IPPROTO_ICMPV6:
+            break;
+        default:
+            return 0;
+    }
+
+    return 1;
+    // clang-format on
+}
+
+//
+// network related maps
+//
+
+// clang-format off
+
+// cgroupctxmap
+
+#define SUB_NET_PACKET_IP      (1 << 0) // submit net_packet_ip_base
+#define SUB_NET_PACKET_TCP     (1 << 1) // submit net_packet_tcp_base
+#define SUB_NET_PACKET_UDP     (1 << 2) // submit net_packet_udp_base
+#define SUB_NET_PACKET_ICMP    (1 << 3) // submit net_packet_icmp_base
+#define SUB_NET_PACKET_ICMPV6  (1 << 4) // submit net_packet_icmpv6_base
+#define SUB_NET_PACKET_DNS     (1 << 5) // submit net_packet_dns_base
+
+#define SUB_NET_PACKET_L3      (SUB_NET_PACKET_IP)
+#define SUB_NET_PACKET_L4      (SUB_NET_PACKET_TCP | SUB_NET_PACKET_UDP | \
+                                SUB_NET_PACKET_ICMP | SUB_NET_PACKET_ICMPV6)
+#define SUB_NET_PACKET_L7      (SUB_NET_PACKET_DNS)
+
+typedef struct net_event_contextmd {
+    u8 submit;
+    u32 header_size;
+    u16 padding;
+} __attribute__((__packed__)) net_event_contextmd_t;
+
+typedef struct net_event_context {
+    event_context_t eventctx;
+    struct { // event arguments (needs packing), use anonymous struct to ...
+        u8 index0;
+        u32 bytes;
+        // ... (payload sent by bpf_perf_event_output)
+    } __attribute__((__packed__)); // ... avoid address-of-packed-member warns
+    // members bellow this point are metadata (not part of event to be sent)
+    net_event_contextmd_t md;
+} net_event_context_t;
+
+struct {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 1024);          // simultaneous cgroup/skb ingress/eggress progs
+    __type(key, u64);                   // sk_buff timestamp
+    __type(value, net_event_context_t); // event context built so cgroup/skb can use
+} cgrpctxmap SEC(".maps");              // saved info between SKB caller and SKB program
+
+// inodemap
+
+typedef struct net_task_context {
+    struct task_struct *task;
+    task_context_t taskctx;
+} net_task_context_t;
+
+struct {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 10240);             // simultaneous sockets being traced
+    __type(key, u64);                       // socket inode number ...
+    __type(value, struct net_task_context); // ... linked to a task context
+} inodemap SEC(".maps");                    // relate sockets and tasks
+
+// entrymap
+
+typedef struct entry {
+    long unsigned int args[6];
+} entry_t;
+
+struct {
+    __uint(type, BPF_MAP_TYPE_LRU_HASH);
+    __uint(max_entries, 1024);       // simultaneous tasks being traced for entry/exit
+    __type(key, u32);                // host thread group id (tgid or tid) ...
+    __type(value, struct entry);     // ... linked to entry ctx->args
+} entrymap SEC(".maps");             // can't use args_map (indexed by existing events only)
+
+// clang-format on
+
+//
+// support functions for network code
+//
+
+static __always_inline u64 sizeof_net_event_context_t(void)
+{
+    return sizeof(net_event_context_t) - sizeof(net_event_contextmd_t);
+}
+
+static __always_inline void set_net_task_context(event_data_t *data, net_task_context_t *netctx)
+{
+    netctx->task = data->task;
+    __builtin_memcpy(&netctx->taskctx, &data->context.task, sizeof(task_context_t));
+}
+
+static __always_inline void should_submit_net_event(net_event_context_t *neteventctx,
+                                                    config_entry_t *config)
+{
+    // configure network events that should be sent to userland
+
+    if (should_submit(NET_PACKET_IP, config))
+        neteventctx->md.submit |= SUB_NET_PACKET_IP;
+
+    if (should_submit(NET_PACKET_TCP, config))
+        neteventctx->md.submit |= SUB_NET_PACKET_TCP;
+
+    if (should_submit(NET_PACKET_UDP, config))
+        neteventctx->md.submit |= SUB_NET_PACKET_UDP;
+
+    if (should_submit(NET_PACKET_ICMP, config))
+        neteventctx->md.submit |= SUB_NET_PACKET_ICMP;
+
+    if (should_submit(NET_PACKET_ICMPV6, config))
+        neteventctx->md.submit |= SUB_NET_PACKET_ICMPV6;
+
+    if (should_submit(NET_PACKET_DNS, config))
+        neteventctx->md.submit |= SUB_NET_PACKET_DNS;
+}
+
+//
+// Socket Creation: keep track of created socket inodes per traced task
+//
+
+SEC("kprobe/sock_alloc_file")
+int BPF_KPROBE(trace_sock_alloc_file)
+{
+    // runs every time a socket is created (entry)
+
+    event_data_t data = {};
+
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data))
+        return 0;
+
+    struct entry entry = {0};
+
+    // save args for retprobe
+    entry.args[0] = PT_REGS_PARM1(ctx); // struct socket *sock
+    struct socket *sock = (void *) PT_REGS_PARM1(ctx);
+
+    if (!is_socket_supported(sock))
+        return 0;
+
+    entry.args[1] = PT_REGS_PARM2(ctx); // int flags
+    entry.args[2] = PT_REGS_PARM2(ctx); // char *dname
+
+    // prepare for kretprobe using entrymap
+    u32 host_tid = data.context.task.host_tid;
+    bpf_map_update_elem(&entrymap, &host_tid, &entry, BPF_ANY);
+
+    return 0;
+}
+
+SEC("kretprobe/sock_alloc_file")
+int BPF_KRETPROBE(trace_ret_sock_alloc_file)
+{
+    // runs every time a socket is created (return)
+
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    // pick from entry from entrymap
+    u32 host_tid = data.context.task.host_tid;
+    struct entry *entry = bpf_map_lookup_elem(&entrymap, &host_tid);
+    if (!entry) // no entry == no tracing
+        return 0;
+
+    // pick args from entry point's entry
+    // struct socket *sock = (void *) entry->args[0];
+    // int flags = entry->args[1];
+    // char *dname = (void *) entry->args[2];
+    struct file *sock_file = (void *) PT_REGS_RC(ctx);
+
+    // cleanup entrymap
+    bpf_map_delete_elem(&entrymap, &host_tid);
+
+    if (!sock_file)
+        return 0; // socket() failed ?
+
+    u64 inode = BPF_READ(sock_file, f_inode, i_ino);
+    if (inode == 0)
+        return 0;
+
+    // save context to further create an event when no context exists
+    net_task_context_t netctx = {0};
+    set_net_task_context(&data, &netctx);
+
+    // update inodemap correlating inode <=> task
+    bpf_map_update_elem(&inodemap, &inode, &netctx, BPF_ANY);
+
+    return 0;
+}
+
+//
+// Socket Ingress/Egress eBPF program loader (right before and right after eBPF)
+//
+
+SEC("kprobe/__cgroup_bpf_run_filter_skb")
+int BPF_KPROBE(cgroup_bpf_run_filter_skb)
+{
+    // runs BEFORE the CGROUP/SKB eBPF program
+
+    event_data_t data = {};
+
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    int type = PT_REGS_PARM3(ctx);
+
+    switch (type) {
+        case BPF_CGROUP_INET_INGRESS:
+        case BPF_CGROUP_INET_EGRESS:
+            break;
+        default:
+            return 0; // wrong attachment type, return fast
+    }
+
+    struct sock *sk = (void *) PT_REGS_PARM1(ctx);
+    struct sk_buff *skb = (void *) PT_REGS_PARM2(ctx);
+
+    // obtain socket inode
+    u64 inode = BPF_READ(sk, sk_socket, file, f_inode, i_ino);
+    if (inode == 0)
+        return 0;
+
+    // save args for kretprobe
+    struct entry entry = {0};
+    entry.args[0] = PT_REGS_PARM1(ctx); // struct sock *sk
+    entry.args[1] = PT_REGS_PARM2(ctx); // struct sk_buff *skb
+
+    // prepare for kretprobe using entrymap
+    u32 host_tid = data.context.task.host_tid;
+    bpf_map_update_elem(&entrymap, &host_tid, &entry, BPF_ANY);
+
+    // NOTE: The net_task_context is the event_context's "task_context" when the
+    //       socket was created. This could take tracee to situations which the
+    //       event being submited by the cgroup skb ingress/egress eBPF program
+    //       has outdated information (host_ppid, ppid, comm, cgroup_id, uid,
+    //       mnt_id, pid_id, uts_name). One possible way to solve this is
+    //       to hook to (*file)->fops() functions so, each time a socket is
+    //       poll'ed(), written(), read(), sendmsg'ed(), the task reading or
+    //       writing to the socket will have its task_info updated with correct
+    //       "should_trace" metadata (and then its net_task_context counter part
+    //       could also be updated).
+    //
+    //       Hooking into a socket file's file operations handlers might be
+    //       expensive in terms of performance, and it is fair to assume long
+    //       lasting sockets would be traced with old task context (from the
+    //       time the socket was created). So, for now, this is A DECISION and
+    //       not a lack of support.
+    //
+    //       TODO: https://github.com/aquasecurity/tracee/issues/2221
+    //
+    //       Current mitigation: When a task has an opened socket (or "long
+    //       lasting" socket), and it is migrated to a container that is
+    //       currently being traced, for example, whenever its "task_info" is
+    //       updated, the should_trace logic will allow the cgroup skb egress
+    //       (not ingress, since it runs in a kernel thread context) ebpf
+    //       programs to start tracing those sockets. This is the same technique
+    //       used for existing sockets of tasks that does not have their
+    //       "task_info" updated.
+
+    // pick original task from socket inode
+    net_task_context_t *netctx = bpf_map_lookup_elem(&inodemap, &inode);
+    if (!netctx) {
+        // ignore if this is a kernel thread (can't map inode <=> task)
+        struct task_struct *task = data.task;
+        if (BPF_READ(task, flags) & PF_KTHREAD)
+            return 0;
+
+        // if not a traced inode: check if task should be traced ...
+        if (should_trace(&data)) {
+            // ... then update inodemap correlating inode <=> task
+            net_task_context_t netctx2 = {0};
+            set_net_task_context(&data, &netctx2);
+            bpf_map_update_elem(&inodemap, &inode, &netctx2, BPF_ANY);
+            netctx = &netctx2;
+        } else
+            return 0;
+    }
+
+    // use skb timestamp as the key for cgroup/skb (*)
+    u64 skbts = BPF_READ(skb, tstamp);
+
+    // Prepare [event_context_t][args1,arg2,arg3...] to be sent by cgroup/skb
+    // program. The [...] part of the event can't use existing per-cpu submit
+    // buffer helpers because the time in between this kprobe fires and the
+    // cgroup/skb program runs might be suffer a preemption.
+
+    net_event_context_t neteventctx = {0}; // to be sent by cgroup/skb program
+    event_context_t *eventctx = &neteventctx.eventctx;
+
+    // copy orig task ctx (from the netctx) to event ctx and build the rest
+    __builtin_memcpy(&eventctx->task, &netctx->taskctx, sizeof(task_context_t));
+    eventctx->ts = data.context.ts;                     // copy timestamp from current ctx
+    eventctx->argnum = 1;                               // 1 argument (add more if needed)
+    eventctx->eventid = NET_PACKET_IP;                  // will be changed in skb program
+    eventctx->stack_id = 0;                             // no stack trace
+    eventctx->processor_id = data.context.processor_id; // copy from current ctx
+
+    // inform userland about protocol family (for correct L3 header parsing)...
+    struct sock_common *common = (void *) sk;
+    u8 family = BPF_READ(common, skc_family);
+    eventctx->retval = family; // ... through event ctx ret val
+
+    // set event arguments
+    neteventctx.bytes = 0; // no payload by default (changed inside skb prog)
+
+    // mark network events to be submitted to userland
+    should_submit_net_event(&neteventctx, data.config);
+
+    // (*) Use skb timestamp as the key for a map shared between this kprobe and
+    // the skb ebpf program: this is **NOT SUPER** BUT, for older kernels, that
+    // provide ABSOLUTE NO eBPF helpers in cgroup/skb programs context, it does
+    // its job: pre-process everything HERE so cgroup/skb programs can use.
+    //
+    // Explanation: The cgroup/skb eBPF program is called right after this
+    //              kprobe, but preemption is enabled. If preemption wasn't
+    //              enabled, we could simply populate a single item map and pick
+    //              pointer inside cgroup/skb. Instead, we index map items
+    //              using the skb timestamp, which is a value that is shared
+    //              among this kprobe AND the cgroup/skb program context
+    //              (through its skbuf copy).
+    //
+    // Theoretically, map collisions might occur, BUT very unlikely due to:
+    //
+    // kprobe (map update) -> cgroup/skb (consume) -> kretprobe (map delete)
+
+    bpf_map_update_elem(&cgrpctxmap, &skbts, &neteventctx, BPF_NOEXIST);
+
+    return 0;
+}
+
+SEC("kretprobe/__cgroup_bpf_run_filter_skb")
+int BPF_KRETPROBE(ret_cgroup_bpf_run_filter_skb)
+{
+    // runs AFTER the CGROUP/SKB eBPF program
+
+    // pick from entry from entrymap
+    u32 host_tid = bpf_get_current_pid_tgid();
+    struct entry *entry = bpf_map_lookup_elem(&entrymap, &host_tid);
+    if (!entry) // no entry == no tracing
+        return 0;
+
+    // pick args from entry point's entry
+    // struct sock *sk = (void *) entry->args[0];
+    struct sk_buff *skb = (void *) entry->args[1];
+
+    // cleanup entrymap
+    bpf_map_delete_elem(&entrymap, &host_tid);
+
+    // use skb timestamp as the key for cgroup/skb
+    u64 skbts = BPF_READ(skb, tstamp);
+
+    // delete netctx after cgroup ebpf program runs
+    bpf_map_delete_elem(&cgrpctxmap, &skbts);
+
+    return 0;
+}
+
+//
+// Type definitions and prototypes for protocol parsing
+//
+
+// NOTE: proto header structs need full type in vmlinux.h (for correct skb copy)
+
+typedef union iphdrs_t {
+    struct iphdr iphdr;
+    struct ipv6hdr ipv6hdr;
+} iphdrs;
+
+typedef union protohdrs_t {
+    struct tcphdr tcphdr;
+    struct udphdr udphdr;
+    struct icmphdr icmphdr;
+    struct icmp6hdr icmp6hdr;
+    union {
+        u8 tcp_extra[40]; // data offset might set it up to 60 bytes
+    };
+} protohdrs;
+
+typedef struct nethdrs_t {
+    iphdrs iphdrs;
+    protohdrs protohdrs;
+} nethdrs;
+
+// clang-format off
+
+#define CGROUP_SKB_HANDLE_FUNCTION(name)                                       \
+static __always_inline u32 cgroup_skb_handle_##name(                           \
+    struct __sk_buff *ctx,                                                     \
+    net_event_context_t *neteventctx,                                          \
+    nethdrs *nethdrs                                                           \
+)
+
+CGROUP_SKB_HANDLE_FUNCTION(family);
+CGROUP_SKB_HANDLE_FUNCTION(proto);
+CGROUP_SKB_HANDLE_FUNCTION(proto_tcp);
+CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_dns);
+CGROUP_SKB_HANDLE_FUNCTION(proto_udp);
+CGROUP_SKB_HANDLE_FUNCTION(proto_udp_dns);
+CGROUP_SKB_HANDLE_FUNCTION(proto_icmp);
+CGROUP_SKB_HANDLE_FUNCTION(proto_icmpv6);
+
+#define CGROUP_SKB_HANDLE(name) cgroup_skb_handle_##name(ctx, neteventctx, nethdrs);
+
+//
+// Network submission functions
+//
+
+#define FULL    1
+#define HEADERS 0
+
+static __always_inline u32 cgroup_skb_submit_event(struct __sk_buff *ctx,
+                                                   net_event_context_t *neteventctx,
+                                                   u32 event_type,
+                                                   bool full)
+{
+    u64 flags = BPF_F_CURRENT_CPU;
+
+    if (full) { // submit full packet to userland
+
+        flags |= (u64) ctx->len << 32; // size of payload as a flag
+        neteventctx->bytes = ctx->len + sizeof(u32); // [u32 size][payload]
+
+    } else { // submit only protocol headers
+
+        flags |= (u64) neteventctx->md.header_size << 32;
+        neteventctx->bytes = neteventctx->md.header_size + sizeof(u32);
+    }
+
+    // set the event type before submitting event
+    neteventctx->eventctx.eventid = event_type;
+
+    return bpf_perf_event_output(ctx,
+                                 &events,
+                                 flags,
+                                 neteventctx,
+                                 sizeof_net_event_context_t());
+}
+
+// clang-format on
+
+//
+// SKB eBPF programs
+//
+
+static __always_inline u32 cgroup_skb_generic(struct __sk_buff *ctx)
+{
+    // IMPORTANT: runs for EVERY packet of tasks belonging to root cgroup
+
+    u64 skbts = ctx->tstamp; // use skb timestamp as key for cgroup/skb program
+
+    net_event_context_t *neteventctx = bpf_map_lookup_elem(&cgrpctxmap, &skbts);
+    if (!neteventctx)
+        return 1;
+
+    struct bpf_sock *sk = ctx->sk;
+    if (!sk)
+        return 1;
+
+    sk = bpf_sk_fullsock(sk);
+    if (!sk)
+        return 1;
+
+    nethdrs hdrs = {0}, *nethdrs = &hdrs;
+
+    return CGROUP_SKB_HANDLE(family);
+}
+
+SEC("cgroup_skb/ingress")
+int cgroup_skb_ingress(struct __sk_buff *ctx)
+{
+    return cgroup_skb_generic(ctx);
+}
+
+SEC("cgroup_skb/egress")
+int cgroup_skb_egress(struct __sk_buff *ctx)
+{
+    return cgroup_skb_generic(ctx);
+}
+
+//
+// Network Protocol Events Logic
+//
+
+#define UDP_PORT_DNS 53
+#define TCP_PORT_DNS 53
+
+//
+// SUPPORTED SOCKET FAMILY TYPES (inet, inet6)
+//
+
+CGROUP_SKB_HANDLE_FUNCTION(family)
+{
+    void *dest;
+    u32 size = 0;
+
+    switch (ctx->family) {
+        case PF_INET:
+            dest = &nethdrs->iphdrs.iphdr;
+            // size of IP header when IHL flag < 5 (TODO: IFL flag)
+            size = get_type_size(struct iphdr);
+            break;
+        case PF_INET6:
+            dest = &nethdrs->iphdrs.ipv6hdr;
+            size = get_type_size(struct ipv6hdr);
+            break;
+        default:
+            return 1; // other families are not an error
+    }
+
+    // load layer 3 protocol headers
+
+    if (bpf_skb_load_bytes_relative(ctx, 0, dest, size, BPF_HDR_START_NET))
+        return 1;
+
+    neteventctx->md.header_size = size; // add header size to offset
+
+    // submit the IP base event
+
+    if (neteventctx->md.submit & SUB_NET_PACKET_IP)
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_IP, HEADERS);
+
+    // fastpath: return if no other L4 or L7 network events
+
+    if (!(neteventctx->md.submit & (SUB_NET_PACKET_L4 | SUB_NET_PACKET_L7)))
+        return 1;
+
+    return CGROUP_SKB_HANDLE(proto);
+}
+
+//
+// SUPPORTED L3 NETWORK PROTOCOLS (ip, ipv6) HANDLERS
+//
+
+// clang-format off
+
+CGROUP_SKB_HANDLE_FUNCTION(proto)
+{
+    void *dest = NULL;
+    u32 prev_hdr_size = neteventctx->md.header_size;
+    u32 size = 0;
+    u8 next_proto = 0;
+
+    // NOTE: might block IP and IPv6 here if needed (return 0)
+
+    switch (ctx->family) {
+
+        case PF_INET:
+
+            if (nethdrs->iphdrs.iphdr.version != 4) // IPv4
+                return 1;
+
+            next_proto = nethdrs->iphdrs.iphdr.protocol;
+
+            switch (nethdrs->iphdrs.iphdr.protocol) {
+                case IPPROTO_TCP:
+                    dest = &nethdrs->protohdrs.tcphdr;
+                    size = get_type_size(struct tcphdr);
+                    break;
+                case IPPROTO_UDP:
+                    dest = &nethdrs->protohdrs.udphdr;
+                    size = get_type_size(struct udphdr);
+                    break;
+                case IPPROTO_ICMP:
+                    dest = &nethdrs->protohdrs.icmphdr;
+                    size = get_type_size(struct icmphdr);
+                    break;
+                default:
+                    return 1; // other protocols are not an error
+            }
+            break;
+
+        case PF_INET6:
+
+            if (nethdrs->iphdrs.ipv6hdr.version != 6) // IPv6
+                return 1;
+
+            next_proto = nethdrs->iphdrs.ipv6hdr.nexthdr;
+
+            switch (nethdrs->iphdrs.ipv6hdr.nexthdr) {
+                case IPPROTO_TCP:
+                    dest = &nethdrs->protohdrs.tcphdr;
+                    size = get_type_size(struct tcphdr);
+                    break;
+                case IPPROTO_UDP:
+                    dest = &nethdrs->protohdrs.udphdr;
+                    size = get_type_size(struct udphdr);
+                    break;
+                case IPPROTO_ICMPV6:
+                    dest = &nethdrs->protohdrs.icmp6hdr;
+                    size = get_type_size(struct icmp6hdr);
+                    break;
+                default:
+                    return 1; // other protocols are not an error
+            }
+
+            break;
+    }
+
+    if (!dest)
+        return 1; // satisfy verifier for clang-12 generated binaries
+
+    neteventctx->md.header_size += size; // add header size to offset
+
+    // load layer 4 protocol headers
+
+    if (bpf_skb_load_bytes_relative(ctx, prev_hdr_size, dest, size, BPF_HDR_START_NET))
+        return 1;
+
+   // call protocol handlers (for more base events to be sent)
+
+    switch (next_proto) {
+        case IPPROTO_TCP:
+            return CGROUP_SKB_HANDLE(proto_tcp);
+        case IPPROTO_UDP:
+            return CGROUP_SKB_HANDLE(proto_udp);
+        case IPPROTO_ICMP:
+            return CGROUP_SKB_HANDLE(proto_icmp);
+        case IPPROTO_ICMPV6:
+            return CGROUP_SKB_HANDLE(proto_icmpv6);
+    }
+
+    return 1;
+}
+
+// clang-format on
+
+//
+// SUPPORTED L4 NETWORK PROTOCOL (tcp, udp, icmp) HANDLERS
+//
+
+CGROUP_SKB_HANDLE_FUNCTION(proto_tcp)
+{
+    // check flag for dynamic header size (TCP: data offset flag)
+
+    if (nethdrs->protohdrs.tcphdr.doff > 5) { // offset flag set
+        u32 doff = nethdrs->protohdrs.tcphdr.doff * (32 / 8);
+        neteventctx->md.header_size -= get_type_size(struct tcphdr);
+        neteventctx->md.header_size += doff;
+    }
+
+    // submit TCP base event if needed (only headers)
+
+    if (neteventctx->md.submit & SUB_NET_PACKET_TCP)
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_TCP, HEADERS);
+
+    // fastpath: return if no other L7 network events
+
+    if (!(neteventctx->md.submit & (SUB_NET_PACKET_DNS)))
+        return 1;
+
+    // guess layer 7 protocols from service ports
+
+    u16 source = bpf_ntohs(nethdrs->protohdrs.tcphdr.source);
+    u16 dest = bpf_ntohs(nethdrs->protohdrs.tcphdr.dest);
+
+    switch (source < dest ? source : dest) {
+        case TCP_PORT_DNS:
+            return CGROUP_SKB_HANDLE(proto_tcp_dns);
+    }
+
+    // NOTE: might block TCP here if needed (return 0)
+
+    return 1;
+}
+
+CGROUP_SKB_HANDLE_FUNCTION(proto_udp)
+{
+    // submit UDP base event if needed (only headers)
+
+    if (neteventctx->md.submit & SUB_NET_PACKET_UDP)
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_UDP, HEADERS);
+
+    // fastpath: return if no other L7 network events
+
+    if (!(neteventctx->md.submit & (SUB_NET_PACKET_DNS)))
+        return 1;
+
+    u16 source = bpf_ntohs(nethdrs->protohdrs.udphdr.source);
+    u16 dest = bpf_ntohs(nethdrs->protohdrs.udphdr.dest);
+
+    switch (source < dest ? source : dest) {
+        case UDP_PORT_DNS:
+            return CGROUP_SKB_HANDLE(proto_udp_dns);
+    }
+
+    // NOTE: might block UDP here if needed (return 0)
+
+    return 1;
+}
+
+CGROUP_SKB_HANDLE_FUNCTION(proto_icmp)
+{
+    // submit ICMP base event if needed (full packet)
+
+    if (neteventctx->md.submit & SUB_NET_PACKET_ICMP)
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_ICMP, FULL);
+
+    return 1; // NOTE: might block ICMP here if needed (return 0)
+}
+
+CGROUP_SKB_HANDLE_FUNCTION(proto_icmpv6)
+{
+    // submit ICMPv6 base event if needed (full packet)
+
+    if (neteventctx->md.submit & SUB_NET_PACKET_ICMPV6)
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_ICMPV6, FULL);
+
+    return 1; // NOTE: might block ICMPv6 here if needed (return 0)
+}
+
+//
+// SUPPORTED L7 NETWORK PROTOCOL (dns) HANDLERS
+//
+
+CGROUP_SKB_HANDLE_FUNCTION(proto_tcp_dns)
+{
+    // submit DNS base event if needed (full packet)
+
+    if (neteventctx->md.submit & SUB_NET_PACKET_DNS)
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_DNS, FULL);
+
+    return 1; // NOTE: might block DNS here if needed (return 0)
+}
+
+CGROUP_SKB_HANDLE_FUNCTION(proto_udp_dns)
+{
+    // submit DNS base event if needed (full packet)
+
+    if (neteventctx->md.submit & SUB_NET_PACKET_DNS)
+        cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_DNS, FULL);
+
+    return 1; // NOTE: might block DNS here if needed (return 0)
 }

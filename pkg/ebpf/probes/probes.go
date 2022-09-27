@@ -113,6 +113,12 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		CheckMapFuncCompatibility:  &traceProbe{eventName: "check_map_func_compatibility", probeType: kprobe, programName: "trace_check_map_func_compatibility"},
 		KallsymsLookupName:         &traceProbe{eventName: "kallsyms_lookup_name", probeType: kprobe, programName: "trace_kallsyms_lookup_name"},
 		KallsymsLookupNameRet:      &traceProbe{eventName: "kallsyms_lookup_name", probeType: kretprobe, programName: "trace_ret_kallsyms_lookup_name"},
+		SockAllocFile:              &traceProbe{eventName: "sock_alloc_file", probeType: kprobe, programName: "trace_sock_alloc_file"},
+		SockAllocFileRet:           &traceProbe{eventName: "sock_alloc_file", probeType: kretprobe, programName: "trace_ret_sock_alloc_file"},
+		CgroupBPFRunFilterSKB:      &traceProbe{eventName: "__cgroup_bpf_run_filter_skb", probeType: kprobe, programName: "cgroup_bpf_run_filter_skb"},
+		CgroupBPFRunFilterSKBRet:   &traceProbe{eventName: "__cgroup_bpf_run_filter_skb", probeType: kretprobe, programName: "ret_cgroup_bpf_run_filter_skb"},
+		CgroupSKBIngress:           &cgroupProbe{programName: "cgroup_skb_ingress", attachType: bpf.BPFAttachTypeCgroupInetIngress},
+		CgroupSKBEgress:            &cgroupProbe{programName: "cgroup_skb_egress", attachType: bpf.BPFAttachTypeCgroupInetEgress},
 	}
 
 	// disable autoload for network related eBPF programs in network is disabled
@@ -274,4 +280,10 @@ const (
 	CheckMapFuncCompatibility
 	KallsymsLookupName
 	KallsymsLookupNameRet
+	SockAllocFile
+	SockAllocFileRet
+	CgroupBPFRunFilterSKB
+	CgroupBPFRunFilterSKBRet
+	CgroupSKBIngress
+	CgroupSKBEgress
 )
