@@ -699,6 +699,49 @@ func (t *Tracee) initDerivationTable() error {
 				),
 			},
 		},
+		//
+		// Network Derivations
+		//
+		events.NetPacketIPBase: {
+			events.NetPacketIPv4: {
+				Enabled:        t.events[events.NetPacketIPv4].submit,
+				DeriveFunction: derive.NetPacketIPv4(),
+			},
+			events.NetPacketIPv6: {
+				Enabled:        t.events[events.NetPacketIPv6].submit,
+				DeriveFunction: derive.NetPacketIPv6(),
+			},
+		},
+		events.NetPacketTCPBase: {
+			events.NetPacketTCP: {
+				Enabled:        t.events[events.NetPacketTCP].submit,
+				DeriveFunction: derive.NetPacketTCP(),
+			},
+		},
+		events.NetPacketUDPBase: {
+			events.NetPacketUDP: {
+				Enabled:        t.events[events.NetPacketUDP].submit,
+				DeriveFunction: derive.NetPacketUDP(),
+			},
+		},
+		events.NetPacketICMPBase: {
+			events.NetPacketICMP: {
+				Enabled:        t.events[events.NetPacketICMP].submit,
+				DeriveFunction: derive.NetPacketICMP(),
+			},
+		},
+		events.NetPacketICMPv6Base: {
+			events.NetPacketICMPv6: {
+				Enabled:        t.events[events.NetPacketICMPv6].submit,
+				DeriveFunction: derive.NetPacketICMPv6(),
+			},
+		},
+		events.NetPacketDNSBase: {
+			events.NetPacketDNS: {
+				Enabled:        t.events[events.NetPacketDNS].submit,
+				DeriveFunction: derive.NetPacketDNS(),
+			},
+		},
 	}
 
 	return nil
@@ -1191,7 +1234,11 @@ func (t *Tracee) attachProbes() error {
 			}
 		}
 		for _, dep := range event.Probes {
-			err = t.probes.Attach(dep.Handle)
+			if !dep.RootCgroup {
+				err = t.probes.Attach(dep.Handle)
+			} else {
+				err = t.probes.Attach(dep.Handle, cgroupRootDir)
+			}
 			if err != nil && dep.Required {
 				// TODO: https://github.com/aquasecurity/tracee/issues/1787
 				return fmt.Errorf("failed to attach required probe: %v", err)
@@ -1210,18 +1257,6 @@ func (t *Tracee) attachProbes() error {
 			if err != nil {
 				return err
 			}
-		}
-	}
-
-	// attach all cgroup programs to cgroupv2 root directory
-
-	for _, tc := range []probes.Handle{
-		probes.CgroupSKBIngress,
-		probes.CgroupSKBEgress,
-	} {
-		err = t.probes.Attach(tc, cgroupRootDir)
-		if err != nil {
-			return err
 		}
 	}
 

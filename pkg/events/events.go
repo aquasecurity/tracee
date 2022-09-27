@@ -15,8 +15,9 @@ type dependencies struct {
 }
 
 type probeDependency struct {
-	Handle   probes.Handle
-	Required bool // should tracee fail if probe fails to attach
+	Handle     probes.Handle
+	Required   bool // should tracee fail if probe fails to attach
+	RootCgroup bool // cgroup probe to be attached to root cgroup hierarchy
 }
 
 type kSymbolDependency struct {
@@ -185,6 +186,13 @@ const (
 	DoSigaction
 	BpfAttach
 	KallsymsLookupName
+	NetPacketBase
+	NetPacketIPBase
+	NetPacketTCPBase
+	NetPacketUDPBase
+	NetPacketICMPBase
+	NetPacketICMPv6Base
+	NetPacketDNSBase
 	MaxCommonID
 )
 
@@ -197,6 +205,13 @@ const (
 	HookedSyscalls
 	HookedSeqOps
 	SymbolsLoaded
+	NetPacketIPv4
+	NetPacketIPv6
+	NetPacketTCP
+	NetPacketUDP
+	NetPacketICMP
+	NetPacketICMPv6
+	NetPacketDNS
 	MaxUserSpace
 )
 
@@ -6079,6 +6094,218 @@ var Definitions = eventDefinitions{
 				{Type: "const char*", Name: "symbol_name"},
 				{Type: "void*", Name: "symbol_address"},
 				{Type: "int", Name: "syscall"},
+			},
+		},
+		//
+		// Network Protocol Event Types
+		//
+		NetPacketBase: {
+			ID32Bit:  sys32undefined,
+			Name:     "net_packet_base",
+			Internal: true,
+			Dependencies: dependencies{
+				Capabilities: []cap.Value{cap.NET_ADMIN},
+			},
+			Probes: []probeDependency{
+				{Handle: probes.CgroupSKBIngress, Required: true, RootCgroup: true},
+				{Handle: probes.CgroupSKBEgress, Required: true, RootCgroup: true},
+				{Handle: probes.SockAllocFile, Required: true},
+				{Handle: probes.SockAllocFileRet, Required: true},
+				{Handle: probes.CgroupBPFRunFilterSKB, Required: true},
+				{Handle: probes.CgroupBPFRunFilterSKBRet, Required: true},
+			},
+			Sets:   []string{"network_events"},
+			Params: []trace.ArgMeta{},
+		},
+		NetPacketIPBase: {
+			ID32Bit:  sys32undefined,
+			Name:     "net_packet_ip_base",
+			Internal: true,
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "bytes", Name: "payload"},
+			},
+		},
+		NetPacketIPv4: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_ipv4",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketIPBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "src"},
+				{Type: "const char*", Name: "dst"},
+				{Type: "trace.ProtoIPv4", Name: "proto_ipv4"},
+			},
+		},
+		NetPacketIPv6: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_ipv6",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketIPBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "src"},
+				{Type: "const char*", Name: "dst"},
+				{Type: "trace.ProtoIPv6", Name: "proto_ipv6"},
+			},
+		},
+		NetPacketTCPBase: {
+			ID32Bit:  sys32undefined,
+			Name:     "net_packet_tcp_base",
+			Internal: true,
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "bytes", Name: "payload"},
+			},
+		},
+		NetPacketTCP: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_tcp",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketTCPBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "src"},
+				{Type: "const char*", Name: "dst"},
+				{Type: "trace.ProtoTCP", Name: "proto_tcp"},
+			},
+		},
+		NetPacketUDPBase: {
+			ID32Bit:  sys32undefined,
+			Name:     "net_packet_udp_base",
+			Internal: true,
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "bytes", Name: "payload"},
+			},
+		},
+		NetPacketUDP: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_udp",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketUDPBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "src"},
+				{Type: "const char*", Name: "dst"},
+				{Type: "trace.ProtoUDP", Name: "proto_udp"},
+			},
+		},
+		NetPacketICMPBase: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_icmp_base",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketBase},
+				},
+			},
+			Internal: true,
+			Sets:     []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "bytes", Name: "payload"},
+			},
+		},
+		NetPacketICMP: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_icmp",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketICMPBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "src"},
+				{Type: "const char*", Name: "dst"},
+				{Type: "trace.ProtoICMP", Name: "proto_icmp"},
+			},
+		},
+		NetPacketICMPv6Base: {
+			ID32Bit:  sys32undefined,
+			Name:     "net_packet_icmpv6_base",
+			Internal: true,
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketICMPBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "bytes", Name: "payload"},
+			},
+		},
+		NetPacketICMPv6: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_icmpv6",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketICMPv6Base},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "src"},
+				{Type: "const char*", Name: "dst"},
+				{Type: "trace.ProtoICMPv6", Name: "proto_icmpv6"},
+			},
+		},
+		NetPacketDNSBase: {
+			ID32Bit:  sys32undefined,
+			Name:     "net_packet_dns_base",
+			Internal: true,
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "bytes", Name: "payload"},
+			},
+		},
+		NetPacketDNS: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_dns",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketDNSBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "src"},
+				{Type: "const char*", Name: "dst"},
+				{Type: "u16", Name: "src_port"},
+				{Type: "u16", Name: "dst_port"},
+				{Type: "trace.ProtoDNS", Name: "proto_dns"},
 			},
 		},
 	},
