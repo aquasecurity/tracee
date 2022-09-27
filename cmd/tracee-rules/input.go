@@ -45,6 +45,9 @@ func setupTraceeInputSource(opts *traceeInputOptions) (chan protocol.Event, erro
 
 func setupTraceeGobInputSource(opts *traceeInputOptions) (chan protocol.Event, error) {
 	dec := gob.NewDecoder(opts.inputFile)
+
+	// Event Types
+
 	gob.Register(trace.Event{})
 	gob.Register(trace.SlimCred{})
 	gob.Register(make(map[string]string))
@@ -53,6 +56,31 @@ func setupTraceeGobInputSource(opts *traceeInputOptions) (chan protocol.Event, e
 	gob.Register(map[string]trace.HookedSymbolData{})
 	gob.Register([]trace.DnsQueryData{})
 	gob.Register([]trace.DnsResponseData{})
+
+	// Network Protocol Event Types
+
+	// IPv4
+	gob.Register(trace.ProtoIPv4{})
+	// IPv6
+	gob.Register(trace.ProtoIPv6{})
+	// TCP
+	gob.Register(trace.ProtoTCP{})
+	// UDP
+	gob.Register(trace.ProtoUDP{})
+	// ICMP
+	gob.Register(trace.ProtoICMP{})
+	// ICMPv6
+	gob.Register(trace.ProtoICMPv6{})
+	// DNS
+	gob.Register(trace.ProtoDNS{})
+	gob.Register(trace.ProtoDNSQuestion{})
+	gob.Register(trace.ProtoDNSResourceRecord{})
+	gob.Register(trace.ProtoDNSSOA{})
+	gob.Register(trace.ProtoDNSSRV{})
+	gob.Register(trace.ProtoDNSMX{})
+	gob.Register(trace.ProtoDNSURI{})
+	gob.Register(trace.ProtoDNSOPT{})
+
 	res := make(chan protocol.Event)
 	go func() {
 		for {
