@@ -154,7 +154,6 @@ const (
 	HookedProcFops
 	PrintNetSeqOps
 	TaskRename
-	SymbolsLoaded
 	SecurityInodeRename
 	MaxCommonID
 )
@@ -167,6 +166,7 @@ const (
 	ExistingContainer
 	HookedSyscalls
 	HookedSeqOps
+	SymbolsLoaded
 	MaxUserSpace
 )
 
