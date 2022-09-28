@@ -52,22 +52,14 @@ func TestArgInt32Val(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := trace.Event{Args: []trace.Argument{
-				{
-					ArgMeta: trace.ArgMeta{
-						Name: tt.arg.Name,
-						Type: tt.arg.Type,
-					},
-					Value: tt.arg.Value,
-				},
-			}}
+			e := trace.Event{Args: []trace.Argument{tt.arg}}
 			val, err := ArgInt32Val(&e, tt.name)
 			if tt.errorMessage != "" {
-				assert.Equal(t, tt.errorMessage, err.Error())
 				assert.Error(t, err)
+				assert.Equal(t, tt.errorMessage, err.Error())
 			} else {
-				assert.Equal(t, tt.expectedValue, val)
 				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedValue, val)
 			}
 		})
 	}
@@ -117,22 +109,14 @@ func TestArgStringVal(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := trace.Event{Args: []trace.Argument{
-				{
-					ArgMeta: trace.ArgMeta{
-						Name: tt.arg.Name,
-						Type: tt.arg.Type,
-					},
-					Value: tt.arg.Value,
-				},
-			}}
+			e := trace.Event{Args: []trace.Argument{tt.arg}}
 			val, err := ArgStringVal(&e, tt.name)
 			if tt.errorMessage != "" {
-				assert.Equal(t, tt.errorMessage, err.Error())
 				assert.Error(t, err)
+				assert.Equal(t, tt.errorMessage, err.Error())
 			} else {
-				assert.Equal(t, tt.expectedValue, val)
 				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedValue, val)
 			}
 		})
 	}
@@ -183,22 +167,14 @@ func TestArgUint64Val(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := trace.Event{Args: []trace.Argument{
-				{
-					ArgMeta: trace.ArgMeta{
-						Name: tt.arg.Name,
-						Type: tt.arg.Type,
-					},
-					Value: tt.arg.Value,
-				},
-			}}
+			e := trace.Event{Args: []trace.Argument{tt.arg}}
 			val, err := ArgUint64Val(&e, tt.name)
 			if tt.errorMessage != "" {
-				assert.Equal(t, tt.errorMessage, err.Error())
 				assert.Error(t, err)
+				assert.Equal(t, tt.errorMessage, err.Error())
 			} else {
-				assert.Equal(t, tt.expectedValue, val)
 				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedValue, val)
 			}
 		})
 	}
@@ -249,22 +225,14 @@ func TestArgUint32Val(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := trace.Event{Args: []trace.Argument{
-				{
-					ArgMeta: trace.ArgMeta{
-						Name: tt.arg.Name,
-						Type: tt.arg.Type,
-					},
-					Value: tt.arg.Value,
-				},
-			}}
+			e := trace.Event{Args: []trace.Argument{tt.arg}}
 			val, err := ArgUint32Val(&e, tt.name)
 			if tt.errorMessage != "" {
-				assert.Equal(t, tt.errorMessage, err.Error())
 				assert.Error(t, err)
+				assert.Equal(t, tt.errorMessage, err.Error())
 			} else {
-				assert.Equal(t, tt.expectedValue, val)
 				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedValue, val)
 			}
 		})
 	}
@@ -315,22 +283,14 @@ func TestArgStringArrVal(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := trace.Event{Args: []trace.Argument{
-				{
-					ArgMeta: trace.ArgMeta{
-						Name: tt.arg.Name,
-						Type: tt.arg.Type,
-					},
-					Value: tt.arg.Value,
-				},
-			}}
+			e := trace.Event{Args: []trace.Argument{tt.arg}}
 			val, err := ArgStringArrVal(&e, tt.name)
 			if tt.errorMessage != "" {
-				assert.Equal(t, tt.errorMessage, err.Error())
 				assert.Error(t, err)
+				assert.Equal(t, tt.errorMessage, err.Error())
 			} else {
-				assert.Equal(t, tt.expectedValue, val)
 				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedValue, val)
 			}
 		})
 	}
@@ -380,22 +340,14 @@ func TestArgUlongArrVal(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := trace.Event{Args: []trace.Argument{
-				{
-					ArgMeta: trace.ArgMeta{
-						Name: tt.arg.Name,
-						Type: tt.arg.Type,
-					},
-					Value: tt.arg.Value,
-				},
-			}}
+			e := trace.Event{Args: []trace.Argument{tt.arg}}
 			val, err := ArgUlongArrVal(&e, tt.name)
 			if tt.errorMessage != "" {
-				assert.Equal(t, tt.errorMessage, err.Error())
 				assert.Error(t, err)
+				assert.Equal(t, tt.errorMessage, err.Error())
 			} else {
-				assert.Equal(t, tt.expectedValue, val)
 				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedValue, val)
 			}
 		})
 	}
