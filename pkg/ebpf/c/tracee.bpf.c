@@ -5330,10 +5330,10 @@ int BPF_KPROBE(trace_security_mmap_file)
     save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 3);
     save_to_submit_buf(&data, &ctime, sizeof(u64), 4);
 
-    syscall_data_t *sys = &data.task_info->syscall_data;
+    int id = -1;
     if (should_submit(SHARED_OBJECT_LOADED, data.config)) {
-        if (data.task_info->syscall_traced && (prot & VM_EXEC) == VM_EXEC &&
-            sys->id == SYSCALL_MMAP) {
+        id = get_task_syscall_id(data.task);
+        if ((prot & VM_EXEC) == VM_EXEC && id == SYSCALL_MMAP) {
             events_perf_submit(&data, SHARED_OBJECT_LOADED, 0);
         }
     }
@@ -5342,7 +5342,9 @@ int BPF_KPROBE(trace_security_mmap_file)
         save_to_submit_buf(&data, &prot, sizeof(int), 5);
         save_to_submit_buf(&data, &mmap_flags, sizeof(int), 6);
         if (data.config->options & OPT_SHOW_SYSCALL) {
-            int id = get_task_syscall_id(data.task);
+            if (id == -1) { // if id wasn't checked yet, do so now.
+                id = get_task_syscall_id(data.task);
+            }
             save_to_submit_buf(&data, (void *) &id, sizeof(int), 7);
         }
         return events_perf_submit(&data, SECURITY_MMAP_FILE, 0);
