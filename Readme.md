@@ -104,7 +104,7 @@ Hostname: ubuntu-impish
 
 In some cases, you might want to **leverage Tracee's eBPF event collection
 capabilities** directly, without involving the **detection engine**. This might
-be useful for debugging, troubleshooting, analysising, researching OR
+be useful for debugging, troubleshooting, analysing, researching OR
 education.
 
 Execute docker container with the word `trace` as an initial argument, and
