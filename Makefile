@@ -229,6 +229,7 @@ help:
 	@echo "    $$ make tracee-rules         	# build ./dist/tracee-rules"
 	@echo "    $$ make tracee-bench         	# build ./dist/tracee-bench"
 	@echo "    $$ make rules                	# build ./dist/rules"
+	@echo "    $$ make e2e-net-rules                # build ./dist/e2e-net-rules"
 	@echo ""
 	@echo "# install"
 	@echo ""
@@ -599,6 +600,37 @@ $(OUTPUT_DIR)/rules: \
 clean-rules:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/rules
+
+#
+# e2e rules
+#
+
+E2E_DIR ?= tests/e2e-net-rules
+E2E_SRC := $(shell find $(E2E_DIR) \
+		-type f \
+		-name '*.go' \
+		! -name '*_test.go' \
+		)
+
+.PHONY: e2e-net-rules
+e2e-net-rules: $(OUTPUT_DIR)/e2e-net-rules
+
+$(OUTPUT_DIR)/e2e-net-rules: \
+	$(E2E_SRC) \
+	| .checkver_$(CMD_GO) \
+	.check_$(CMD_INSTALL) \
+	$(OUTPUT_DIR)
+#
+	$(CMD_MKDIR) -p $@
+	$(GO_ENV_RULES) $(CMD_GO) build \
+		--buildmode=plugin \
+		-o $@/builtin.so \
+		$(E2E_SRC)
+
+.PHONY: clean-e2e-net-rules
+clean-e2e-net-rules:
+#
+	$(CMD_RM) -rf $(OUTPUT_DIR)/e2e-net-rules
 
 #
 # tests
