@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -16,6 +15,7 @@ import (
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/server"
 	"github.com/aquasecurity/tracee/types/trace"
 
@@ -54,17 +54,29 @@ func main() {
 			// for the rest of execution, use this debug mode value
 			debug := debug.Enabled()
 
+			// Avoiding to override package-level logger
+			// when it's already set by logger environment variables
+			if !logger.IsSetFromEnv() {
+				// Logger Setup
+				logger.Init(
+					&logger.LoggerConfig{
+						Writer:    os.Stderr,
+						Level:     logger.InfoLevel,
+						Encoder:   logger.NewJSONEncoder(logger.NewProductionConfig().EncoderConfig),
+						Aggregate: false,
+					},
+				)
+			}
+
 			// OS release information
 
 			OSInfo, err := helpers.GetOSInfo()
-			if debug {
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "OSInfo: warning: os-release file could not be found\n(%v)\n", err) // only to be enforced when BTF needs to be downloaded, later on
-					fmt.Fprintf(os.Stdout, "OSInfo: %v: %v\n", helpers.OS_KERNEL_RELEASE, OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE))
-				} else {
-					for k, v := range OSInfo.GetOSReleaseAllFieldValues() {
-						fmt.Fprintf(os.Stdout, "OSInfo: %v: %v\n", k, v)
-					}
+			if err != nil {
+				logger.Debugw("osinfo: warning: os-release file could not be found", "error", err) // only to be enforced when BTF needs to be downloaded, later on
+				logger.Debugw("osinfo", "os_realease_field", helpers.OS_KERNEL_RELEASE, "OS_KERNEL_RELEASE", OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE))
+			} else {
+				for k, v := range OSInfo.GetOSReleaseAllFieldValues() {
+					logger.Debugw("osinfo", "OSReleaseField", k, "OS_KERNEL_RELEASE", v)
 				}
 			}
 
@@ -97,8 +109,8 @@ func main() {
 				return err
 			}
 			cfg.Cache = cache
-			if debug && cfg.Cache != nil {
-				fmt.Fprintf(os.Stdout, "Cache: cache type is \"%s\"\n", cfg.Cache)
+			if cfg.Cache != nil {
+				logger.Debugw("cache", "type", cfg.Cache.String())
 			}
 
 			captureSlice := c.StringSlice("capture")
@@ -161,16 +173,14 @@ func main() {
 			if err == nil && lockdown == helpers.CONFIDENTIALITY {
 				return fmt.Errorf("kernel lockdown is set to 'confidentiality', can't load eBPF programs")
 			}
-			if debug {
-				fmt.Fprintf(os.Stdout, "OSInfo: Security Lockdown is '%v'\n", lockdown)
-			}
+			logger.Debugw("osinfo", "security_lockdown", lockdown)
 
 			enabled, err := helpers.FtraceEnabled()
 			if err != nil {
 				return err
 			}
 			if !enabled {
-				fmt.Fprintf(os.Stderr, "ftrace_enabled: warning: ftrace is not enabled, kernel events won't be caught, make sure to enable it by executing echo 1 | sudo tee /proc/sys/kernel/ftrace_enabled")
+				logger.Errorw("ftrace_enabled: ftrace is not enabled, kernel events won't be caught, make sure to enable it by executing echo 1 | sudo tee /proc/sys/kernel/ftrace_enabled")
 			}
 
 			// OS kconfig information
@@ -201,7 +211,7 @@ func main() {
 				if c.Bool(server.MetricsEndpointFlag) {
 					err := t.Stats().RegisterPrometheus()
 					if err != nil {
-						fmt.Fprintf(os.Stderr, "Error registering prometheus metrics: %v\n", err)
+						logger.Errorw("registering prometheus metrics", "error", err)
 					} else {
 						httpServer.EnableMetricsEndpoint()
 					}
@@ -365,7 +375,7 @@ func main() {
 
 	err := app.Run(os.Args)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatalw("app", "error", err)
 	}
 }
 

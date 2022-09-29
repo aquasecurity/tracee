@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/signal"
 	"sort"
@@ -12,9 +11,11 @@ import (
 	"syscall"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/rules/engine"
 	"github.com/aquasecurity/tracee/pkg/server"
 	"github.com/aquasecurity/tracee/types/detect"
+
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/urfave/cli/v2"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
@@ -35,14 +36,28 @@ func main() {
 				return errors.New("no flags specified")
 			}
 
+			// Avoiding to override package-level logger
+			// when it's already set by logger environment variables
+			if !logger.IsSetFromEnv() {
+				// Logger Setup
+				logger.Init(
+					&logger.LoggerConfig{
+						Writer:    os.Stderr,
+						Level:     logger.InfoLevel,
+						Encoder:   logger.NewJSONEncoder(logger.NewProductionConfig().EncoderConfig),
+						Aggregate: false,
+					},
+				)
+			}
+
 			err := dropCapabilities()
 			if err != nil {
 				if !c.Bool(allowHighCapabilitiesFlag) {
 					return fmt.Errorf("%w - to avoid this error use the --%s flag", err, allowHighCapabilitiesFlag)
 				}
 
-				fmt.Fprintf(os.Stdout, "Capabilities dropping failed - %v\n", err)
-				fmt.Fprintf(os.Stdout, "Continue with high capabilities according to the configuration\n")
+				logger.Errorw("capabilities dropping failed", "error", err)
+				logger.Infow("continue with high capabilities according to the configuration")
 			}
 
 			var target string
@@ -70,7 +85,7 @@ func main() {
 			for _, s := range sigs {
 				m, err := s.GetMetadata()
 				if err != nil {
-					log.Printf("failed to load signature: %v", err)
+					logger.Errorw("failed to load signature", "error", err)
 					continue
 				}
 				loadedSigIDs = append(loadedSigIDs, m.ID)
@@ -129,7 +144,7 @@ func main() {
 				if c.Bool(server.MetricsEndpointFlag) {
 					err := e.Stats().RegisterPrometheus()
 					if err != nil {
-						fmt.Fprintf(os.Stderr, "Error registering prometheus metrics: %v\n", err)
+						logger.Errorw("registering prometheus metrics", "error", err)
 					} else {
 						httpServer.EnableMetricsEndpoint()
 					}
@@ -235,7 +250,7 @@ func main() {
 	}
 	err := app.Run(os.Args)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatalw("app", "error", err)
 	}
 }
 
