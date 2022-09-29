@@ -187,7 +187,7 @@ func isAggregateSetAndIsLogNotNew(skip int, l *Logger) bool {
 
 // Log functions
 
-// Debugw
+// Debug
 func debugw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 	if l.cfg.Level > DebugLevel {
 		return
@@ -200,15 +200,15 @@ func debugw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 	l.l.Debugw(msg, keysAndValues...)
 }
 
-func Debugw(msg string, keysAndValues ...interface{}) {
+func Debug(msg string, keysAndValues ...interface{}) {
 	debugw(1, pkgLogger, msg, keysAndValues...)
 }
 
-func (l *Logger) Debugw(msg string, keysAndValues ...interface{}) {
+func (l *Logger) Debug(msg string, keysAndValues ...interface{}) {
 	debugw(1, l, msg, keysAndValues...)
 }
 
-// Infow
+// Info
 func infow(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 	if isAggregateSetAndIsLogNotNew(skip+1, l) {
 		return
@@ -217,15 +217,15 @@ func infow(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 	l.l.Infow(msg, keysAndValues...)
 }
 
-func Infow(msg string, keysAndValues ...interface{}) {
+func Info(msg string, keysAndValues ...interface{}) {
 	infow(1, pkgLogger, msg, keysAndValues...)
 }
 
-func (l *Logger) Infow(msg string, keysAndValues ...interface{}) {
+func (l *Logger) Info(msg string, keysAndValues ...interface{}) {
 	infow(1, l, msg, keysAndValues...)
 }
 
-// Warnw
+// Warn
 func warnw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 	if l.cfg.Aggregate {
 		_, file, line := getCallerInfo(skip + 1)
@@ -237,15 +237,15 @@ func warnw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 	l.l.Warnw(msg, keysAndValues...)
 }
 
-func Warnw(msg string, keysAndValues ...interface{}) {
+func Warn(msg string, keysAndValues ...interface{}) {
 	warnw(1, pkgLogger, msg, keysAndValues...)
 }
 
-func (l *Logger) Warnw(msg string, keysAndValues ...interface{}) {
+func (l *Logger) Warn(msg string, keysAndValues ...interface{}) {
 	warnw(1, l, msg, keysAndValues...)
 }
 
-// Errorw
+// Error
 func errorw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 	if isAggregateSetAndIsLogNotNew(skip+1, l) {
 		return
@@ -254,15 +254,15 @@ func errorw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 	l.l.Errorw(msg, keysAndValues...)
 }
 
-func Errorw(msg string, keysAndValues ...interface{}) {
+func Error(msg string, keysAndValues ...interface{}) {
 	errorw(1, pkgLogger, msg, keysAndValues...)
 }
 
-func (l *Logger) Errorw(msg string, keysAndValues ...interface{}) {
+func (l *Logger) Error(msg string, keysAndValues ...interface{}) {
 	errorw(1, l, msg, keysAndValues...)
 }
 
-// Fatalw
+// Fatal
 func fatalw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 	if isAggregateSetAndIsLogNotNew(skip+1, l) {
 		return
@@ -271,11 +271,11 @@ func fatalw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 	l.l.Fatalw(msg, keysAndValues...)
 }
 
-func Fatalw(msg string, keysAndValues ...interface{}) {
+func Fatal(msg string, keysAndValues ...interface{}) {
 	fatalw(1, pkgLogger, msg, keysAndValues...)
 }
 
-func (l *Logger) Fatalw(msg string, keysAndValues ...interface{}) {
+func (l *Logger) Fatal(msg string, keysAndValues ...interface{}) {
 	fatalw(1, l, msg, keysAndValues...)
 }
 
