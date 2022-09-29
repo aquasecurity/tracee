@@ -72,11 +72,11 @@ func main() {
 
 			OSInfo, err := helpers.GetOSInfo()
 			if err != nil {
-				logger.Debugw("osinfo: warning: os-release file could not be found", "error", err) // only to be enforced when BTF needs to be downloaded, later on
-				logger.Debugw("osinfo", "os_realease_field", helpers.OS_KERNEL_RELEASE, "OS_KERNEL_RELEASE", OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE))
+				logger.Debug("osinfo: warning: os-release file could not be found", "error", err) // only to be enforced when BTF needs to be downloaded, later on
+				logger.Debug("osinfo", "os_realease_field", helpers.OS_KERNEL_RELEASE, "OS_KERNEL_RELEASE", OSInfo.GetOSReleaseFieldValue(helpers.OS_KERNEL_RELEASE))
 			} else {
 				for k, v := range OSInfo.GetOSReleaseAllFieldValues() {
-					logger.Debugw("osinfo", "OSReleaseField", k, "OS_KERNEL_RELEASE", v)
+					logger.Debug("osinfo", "OSReleaseField", k, "OS_KERNEL_RELEASE", v)
 				}
 			}
 
@@ -110,7 +110,7 @@ func main() {
 			}
 			cfg.Cache = cache
 			if cfg.Cache != nil {
-				logger.Debugw("cache", "type", cfg.Cache.String())
+				logger.Debug("cache", "type", cfg.Cache.String())
 			}
 
 			captureSlice := c.StringSlice("capture")
@@ -173,14 +173,14 @@ func main() {
 			if err == nil && lockdown == helpers.CONFIDENTIALITY {
 				return fmt.Errorf("kernel lockdown is set to 'confidentiality', can't load eBPF programs")
 			}
-			logger.Debugw("osinfo", "security_lockdown", lockdown)
+			logger.Debug("osinfo", "security_lockdown", lockdown)
 
 			enabled, err := helpers.FtraceEnabled()
 			if err != nil {
 				return err
 			}
 			if !enabled {
-				logger.Errorw("ftrace_enabled: ftrace is not enabled, kernel events won't be caught, make sure to enable it by executing echo 1 | sudo tee /proc/sys/kernel/ftrace_enabled")
+				logger.Error("ftrace_enabled: ftrace is not enabled, kernel events won't be caught, make sure to enable it by executing echo 1 | sudo tee /proc/sys/kernel/ftrace_enabled")
 			}
 
 			// OS kconfig information
@@ -211,7 +211,7 @@ func main() {
 				if c.Bool(server.MetricsEndpointFlag) {
 					err := t.Stats().RegisterPrometheus()
 					if err != nil {
-						logger.Errorw("registering prometheus metrics", "error", err)
+						logger.Error("registering prometheus metrics", "error", err)
 					} else {
 						httpServer.EnableMetricsEndpoint()
 					}
@@ -375,7 +375,7 @@ func main() {
 
 	err := app.Run(os.Args)
 	if err != nil {
-		logger.Fatalw("app", "error", err)
+		logger.Fatal("app", "error", err)
 	}
 }
 

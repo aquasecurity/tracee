@@ -56,8 +56,8 @@ func main() {
 					return fmt.Errorf("%w - to avoid this error use the --%s flag", err, allowHighCapabilitiesFlag)
 				}
 
-				logger.Errorw("capabilities dropping failed", "error", err)
-				logger.Infow("continue with high capabilities according to the configuration")
+				logger.Error("capabilities dropping failed", "error", err)
+				logger.Info("continue with high capabilities according to the configuration")
 			}
 
 			var target string
@@ -85,7 +85,7 @@ func main() {
 			for _, s := range sigs {
 				m, err := s.GetMetadata()
 				if err != nil {
-					logger.Errorw("failed to load signature", "error", err)
+					logger.Error("failed to load signature", "error", err)
 					continue
 				}
 				loadedSigIDs = append(loadedSigIDs, m.ID)
@@ -144,7 +144,7 @@ func main() {
 				if c.Bool(server.MetricsEndpointFlag) {
 					err := e.Stats().RegisterPrometheus()
 					if err != nil {
-						logger.Errorw("registering prometheus metrics", "error", err)
+						logger.Error("registering prometheus metrics", "error", err)
 					} else {
 						httpServer.EnableMetricsEndpoint()
 					}
@@ -250,7 +250,7 @@ func main() {
 	}
 	err := app.Run(os.Args)
 	if err != nil {
-		logger.Fatalw("app", "error", err)
+		logger.Fatal("app", "error", err)
 	}
 }
 
