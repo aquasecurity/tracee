@@ -39,10 +39,10 @@ Used by tracee to maintain mount NS cache, used in this event to get to processe
 To catch SO which tries to override the `fopen` function of `libc`, we can use the event in
 the following way:
 
-`./dist/tracee-ebpf -t e=symbols_load -t symbols_load.symbols=fopen symbols_load.library_path!=libc`
+`./dist/tracee-ebpf -t e=symbols_loaded -t symbols_loaded.symbols=fopen symbols_loaded.library_path!=libc`
 
 ## Issues
-Because the event is implemented in uesr-mode, it needs to open and read files.
+Because the event is implemented in user-mode, it needs to open and read files.
 This means that the event is not very performance efficient (although it uses some optimizations).
 It also means that until the SO file is opened, it could be altered or removed.
 
