@@ -77,6 +77,8 @@ int KERNEL_VERSION SEC("version") = LINUX_VERSION_CODE;
     #define PT_REGS_PARM6(x) ((x)->regs[5])
 #endif
 
+extern bool LINUX_HAS_SYSCALL_WRAPPER __kconfig;
+
 // INTERNAL ----------------------------------------------------------------------------------------
 
 // clang-format off
@@ -2875,7 +2877,7 @@ int sys_enter_init(struct bpf_raw_tracepoint_args *ctx)
     syscall_data_t *sys = &(task_info->syscall_data);
     sys->id = ctx->args[1];
 
-    if (get_kconfig(ARCH_HAS_SYSCALL_WRAPPER)) {
+    if (LINUX_HAS_SYSCALL_WRAPPER) {
         struct pt_regs *regs = (struct pt_regs *) ctx->args[0];
 
         if (is_x86_compat(task)) {
