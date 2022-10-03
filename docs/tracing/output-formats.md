@@ -19,7 +19,7 @@ Tracee supports different output formats for detected events:
     11:21:51:254418  1000   exa              1639459 1639459 3                openat               dirfd: -100, pathname: /lib/x86_64-linux-gnu/libm.so.6, flags: O_RDONLY|O_CLOEXEC, mode: 0
     
     End of events stream
-    Stats: {EventCount:6 NetEvCount:0 ErrorCount:0 LostEvCount:0 LostWrCount:0 LostNtCount:0}
+    Stats: {EventCount:6 EventsFiltered:0 NetEvCount:0 ErrorCount:0 LostEvCount:0 LostWrCount:0 LostNtCount:0}
     ```
 
 2. **Table (Verbose)**
@@ -32,7 +32,7 @@ Tracee supports different output formats for detected events:
     11:22:16:970913  fujitsu                        4026531840   4026531836   1000   exa              1643836 1643836 3795408 3                openat               dirfd: -100, pathname: /lib/x86_64-linux-gnu/libm.so.6, flags: 524288, mode: 0
     
     End of events stream
-    Stats: {EventCount:6 NetEvCount:0 ErrorCount:0 LostEvCount:0 LostWrCount:0 LostNtCount:0}
+    Stats: {EventCount:6 EventsFiltered:0 NetEvCount:0 ErrorCount:0 LostEvCount:0 LostWrCount:0 LostNtCount:0}
     ```
 
 3. **JSON**
