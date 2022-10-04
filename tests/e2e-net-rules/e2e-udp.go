@@ -54,7 +54,7 @@ func (sig *e2eUDP) OnEvent(event protocol.Event) error {
 			return err
 		}
 
-		udp, err := GetTraceeProtoUDPByName(eventObj, "proto_udp")
+		udp, err := helpers.GetProtoUDPByName(eventObj, "proto_udp")
 		if err != nil {
 			return err
 		}

@@ -54,7 +54,7 @@ func (sig *e2eIPv4) OnEvent(event protocol.Event) error {
 			return err
 		}
 
-		ipv4, err := GetTraceeProtoIPv4ByName(eventObj, "proto_ipv4")
+		ipv4, err := helpers.GetProtoIPv4ByName(eventObj, "proto_ipv4")
 		if err != nil {
 			return err
 		}

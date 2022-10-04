@@ -54,7 +54,7 @@ func (sig *e2eTCP) OnEvent(event protocol.Event) error {
 			return err
 		}
 
-		tcp, err := GetTraceeProtoTCPByName(eventObj, "proto_tcp")
+		tcp, err := helpers.GetProtoTCPByName(eventObj, "proto_tcp")
 		if err != nil {
 			return err
 		}
