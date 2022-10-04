@@ -54,7 +54,7 @@ func (sig *e2eICMPv6) OnEvent(event protocol.Event) error {
 			return err
 		}
 
-		icmpv6, err := GetTraceeProtoICMPv6ByName(eventObj, "proto_icmpv6")
+		icmpv6, err := helpers.GetProtoICMPv6ByName(eventObj, "proto_icmpv6")
 		if err != nil {
 			return err
 		}

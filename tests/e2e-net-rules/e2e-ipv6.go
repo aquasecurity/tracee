@@ -54,7 +54,7 @@ func (sig *e2eIPv6) OnEvent(event protocol.Event) error {
 			return err
 		}
 
-		ipv6, err := GetTraceeProtoIPv6ByName(eventObj, "proto_ipv6")
+		ipv6, err := helpers.GetProtoIPv6ByName(eventObj, "proto_ipv6")
 		if err != nil {
 			return err
 		}

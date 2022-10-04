@@ -54,7 +54,7 @@ func (sig *e2eICMP) OnEvent(event protocol.Event) error {
 			return err
 		}
 
-		icmp, err := GetTraceeProtoICMPByName(eventObj, "proto_icmp")
+		icmp, err := helpers.GetProtoICMPByName(eventObj, "proto_icmp")
 		if err != nil {
 			return err
 		}
