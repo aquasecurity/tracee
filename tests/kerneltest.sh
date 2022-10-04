@@ -167,9 +167,8 @@ for TEST in $TESTS; do
 
     ## cleanup at EXIT
 
-    success=1
     found=0
-    cat $SCRIPT_TMP_DIR/build-$$ | grep "Signature ID: $test_name" -B2 | head -3 | grep -q "\*\*\* Detection" && found=1
+    cat $SCRIPT_TMP_DIR/build-$$ | grep "Signature ID: $TEST" -B2 | head -3 | grep -q "\*\*\* Detection" && found=1
     info
     if [[ $found -eq 1 ]]
     then
