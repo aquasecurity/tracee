@@ -77,8 +77,8 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 			select {
 			case event := <-in:
 				eventID := events.ID(event.EventID)
-				// send out irrelevant events, don't skip the cgroup lifecycle events
-				if event.ContainerID == "" && eventID != events.CgroupMkdir && eventID != events.CgroupRmdir {
+				// send out irrelevant events (non container or already enriched), don't skip the cgroup lifecycle events
+				if (event.ContainerID == "" || event.ContainerImage != "") && eventID != events.CgroupMkdir && eventID != events.CgroupRmdir {
 					out <- event
 					continue
 				}
