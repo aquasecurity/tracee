@@ -163,6 +163,7 @@ func (t *Tracee) decodeEvents(outerCtx context.Context) (<-chan *trace.Event, <-
 			}
 
 			if !t.shouldProcessEvent(&ctx, args) {
+				t.stats.EventsFiltered.Increment()
 				continue
 			}
 
