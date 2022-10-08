@@ -7,11 +7,12 @@ import (
 	"fmt"
 	"io/fs"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"plugin"
 	"strings"
+
+	"github.com/aquasecurity/tracee/pkg/logger"
 
 	embedded "github.com/aquasecurity/tracee"
 	"github.com/aquasecurity/tracee/pkg/rules/celsig"
@@ -23,7 +24,7 @@ func getSignatures(target string, partialEval bool, rulesDir string, rules []str
 	if rulesDir == "" {
 		exePath, err := os.Executable()
 		if err != nil {
-			log.Printf("error getting executable path: %v", err)
+			logger.Error("getting executable path: " + err.Error())
 		}
 		rulesDir = filepath.Join(filepath.Dir(exePath), "rules")
 	}
@@ -70,12 +71,12 @@ func findGoSigs(dir string) ([]detect.Signature, error) {
 
 		p, err := plugin.Open(path)
 		if err != nil {
-			log.Printf("error opening plugin %s: %v", path, err)
+			logger.Error("opening plugin " + path + ": " + err.Error())
 			return err
 		}
 		export, err := p.Lookup("ExportedSignatures")
 		if err != nil {
-			log.Printf("missing Export symbol in plugin %s", d.Name())
+			logger.Error("missing Export symbol in plugin " + d.Name())
 			return err
 		}
 		sigs := *export.(*[]detect.Signature)
@@ -105,7 +106,7 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 
 		helperCode, err := ioutil.ReadFile(path)
 		if err != nil {
-			log.Printf("error reading file %s: %v", path, err)
+			logger.Error("reading file " + path + ": " + err.Error())
 			return nil
 		}
 
@@ -126,7 +127,7 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 
 		regoCode, err := ioutil.ReadFile(path)
 		if err != nil {
-			log.Printf("error reading file %s: %v", path, err)
+			logger.Error("reading file " + path + ": " + err.Error())
 			return nil
 		}
 		modules[path] = string(regoCode)
@@ -144,7 +145,7 @@ func findRegoSigs(target string, partialEval bool, dir string, aioEnabled bool) 
 					newlineOffset = 22
 				}
 			}
-			log.Printf("error creating rego signature with: %s: %v ", regoCode[0:newlineOffset], err)
+			logger.Error("creating rego signature with: " + string(regoCode[0:newlineOffset]) + ": " + err.Error())
 			return nil
 		}
 		res = append(res, sig)
