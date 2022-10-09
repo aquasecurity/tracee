@@ -423,7 +423,6 @@ func printList() {
 	b.WriteString("System Calls: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________" + "\n\n")
 	printEventGroup(&b, 0, events.MaxSyscallID)
-	printEventGroup(&b, events.Unique32BitSyscallsStartID, events.Unique32BitSyscallsEndID)
 	b.WriteString("\n\nOther Events: " + titleHeaderPadFirst + "Sets:" + titleHeaderPadSecond + "Arguments:\n")
 	b.WriteString("____________  " + titleHeaderPadFirst + "____ " + titleHeaderPadSecond + "_________\n\n")
 	printEventGroup(&b, events.SysEnter, events.MaxCommonID)
@@ -441,7 +440,7 @@ func printEventGroup(b *strings.Builder, firstEventID, lastEventID events.ID) {
 			continue
 		}
 		if event.Sets != nil {
-			eventSets := fmt.Sprintf("%-22s %-40s %s\n", event.Name, fmt.Sprintf("%v", event.Sets), getFormattedEventParams(i))
+			eventSets := fmt.Sprintf("%-28s %-40s %s\n", event.Name, fmt.Sprintf("%v", event.Sets), getFormattedEventParams(i))
 			b.WriteString(eventSets)
 		} else {
 			b.WriteString(event.Name + "\n")
