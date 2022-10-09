@@ -30,6 +30,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
 	"github.com/aquasecurity/tracee/pkg/events/trigger"
+	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -117,11 +118,52 @@ func (tc Config) isFilterNetSet() bool {
 // SetFiltersLessGreaterMinMax sets the minimum and maximum of
 // the Less and Greater enabled filters
 func (tc *Config) SetFiltersLessGreaterMinMax() {
+	hasUIDEqualFilter := false
+	hasUIDNotEqualFilter := false
+	hasPIDEqualFilter := false
+	hasPIDNotEqualFilter := false
+	hasMntNSEqualFilter := false
+	hasMntNSNotEqualFilter := false
+	hasPIDNSEqualFilter := false
+	hasPIDNSNotEqualFilter := false
+	for _, filterScope := range tc.FilterScopes {
+		if filterScope == nil {
+			continue
+		}
+
+		if !hasUIDEqualFilter {
+			hasUIDEqualFilter = len(filterScope.UIDFilter.Equal) > 0
+		}
+		if !hasUIDNotEqualFilter {
+			hasUIDNotEqualFilter = len(filterScope.UIDFilter.NotEqual) > 0
+		}
+
+		if !hasPIDEqualFilter {
+			hasPIDEqualFilter = len(filterScope.PIDFilter.Equal) > 0
+		}
+		if !hasPIDNotEqualFilter {
+			hasPIDNotEqualFilter = len(filterScope.PIDFilter.NotEqual) > 0
+		}
+
+		if !hasMntNSEqualFilter {
+			hasMntNSEqualFilter = len(filterScope.MntNSFilter.Equal) > 0
+		}
+		if !hasMntNSNotEqualFilter {
+			hasMntNSNotEqualFilter = len(filterScope.MntNSFilter.NotEqual) > 0
+		}
+
+		if !hasPIDNSEqualFilter {
+			hasPIDNSEqualFilter = len(filterScope.PidNSFilter.Equal) > 0
+		}
+		if !hasPIDNSNotEqualFilter {
+			hasPIDNSNotEqualFilter = len(filterScope.PidNSFilter.NotEqual) > 0
+		}
+	}
+
 	uidInitialized := false
 	pidInitialized := false
-	mntNSFInitialized := false
-	pidNSFInitialized := false
-
+	mntNSInitialized := false
+	pidNSInitialized := false
 	for _, filterScope := range tc.FilterScopes {
 		if filterScope == nil {
 			continue
@@ -141,39 +183,42 @@ func (tc *Config) SetFiltersLessGreaterMinMax() {
 			return y
 		}
 
-		if filterScope.UIDFilter.Enabled {
-			if !uidInitialized {
-				tc.UIDFilterLess = filterScope.UIDFilter.Less
-				tc.UIDFilterGreater = filterScope.UIDFilter.Greater
-				uidInitialized = true
-			}
+		if !uidInitialized {
+			tc.UIDFilterLess = filters.LessNotSetUint
+			tc.UIDFilterGreater = filters.GreaterNotSetUint
+			uidInitialized = true
+		}
+		if filterScope.UIDFilter.Enabled && !hasUIDEqualFilter && !hasUIDNotEqualFilter {
 			tc.UIDFilterLess = max(tc.UIDFilterLess, filterScope.UIDFilter.Less)
 			tc.UIDFilterGreater = min(tc.UIDFilterGreater, filterScope.UIDFilter.Greater)
 		}
-		if filterScope.PIDFilter.Enabled {
-			if !pidInitialized {
-				tc.PIDFilterLess = filterScope.PIDFilter.Less
-				tc.PIDFilterGreater = filterScope.PIDFilter.Greater
-				pidInitialized = true
-			}
+
+		if !pidInitialized {
+			tc.PIDFilterLess = filters.LessNotSetUint
+			tc.PIDFilterGreater = filters.GreaterNotSetUint
+			pidInitialized = true
+		}
+		if filterScope.PIDFilter.Enabled && !hasPIDEqualFilter && !hasPIDNSNotEqualFilter {
 			tc.PIDFilterLess = max(tc.PIDFilterLess, filterScope.PIDFilter.Less)
 			tc.PIDFilterGreater = min(tc.PIDFilterGreater, filterScope.PIDFilter.Greater)
 		}
-		if filterScope.MntNSFilter.Enabled {
-			if !mntNSFInitialized {
-				tc.MntNSFilterLess = filterScope.MntNSFilter.Less
-				tc.MntNSFilterGreater = filterScope.MntNSFilter.Greater
-				mntNSFInitialized = true
-			}
+
+		if !mntNSInitialized {
+			tc.MntNSFilterLess = filters.LessNotSetUint
+			tc.MntNSFilterGreater = filters.GreaterNotSetUint
+			mntNSInitialized = true
+		}
+		if filterScope.MntNSFilter.Enabled && !hasMntNSEqualFilter && !hasMntNSNotEqualFilter {
 			tc.MntNSFilterLess = max(tc.MntNSFilterLess, filterScope.MntNSFilter.Less)
 			tc.MntNSFilterGreater = min(tc.MntNSFilterGreater, filterScope.MntNSFilter.Greater)
 		}
-		if filterScope.PidNSFilter.Enabled {
-			if !pidNSFInitialized {
-				tc.PidNSFilterLess = filterScope.PidNSFilter.Less
-				tc.PidNSFilterGreater = filterScope.PidNSFilter.Greater
-				pidNSFInitialized = true
-			}
+
+		if !pidNSInitialized {
+			tc.PidNSFilterLess = filters.LessNotSetUint
+			tc.PidNSFilterGreater = filters.GreaterNotSetUint
+			pidNSInitialized = true
+		}
+		if filterScope.PidNSFilter.Enabled && !hasPIDNSEqualFilter && !hasPIDNotEqualFilter {
 			tc.PidNSFilterLess = max(tc.PidNSFilterLess, filterScope.PidNSFilter.Less)
 			tc.PidNSFilterGreater = min(tc.PidNSFilterGreater, filterScope.PidNSFilter.Greater)
 		}

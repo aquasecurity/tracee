@@ -91,13 +91,15 @@ func (filter *UIntFilter) InitBPF(bpfModule *bpf.Module, filterMapName string, f
 		} else {
 			keyPointer = unsafe.Pointer(&filter.Equal[i])
 		}
-		var validBits uint32
+		var bitmask, validBits uint32
 		curVal, err := equalityFilter.GetValue(keyPointer)
 		if err == nil {
+			bitmask = binary.LittleEndian.Uint32(curVal[0:4])
 			validBits = binary.LittleEndian.Uint32(curVal[4:8])
 		}
-		binary.LittleEndian.PutUint32(filterVal[0:4], uint32(filterEqual))          // bitmask
-		binary.LittleEndian.PutUint32(filterVal[4:8], validBits|(1<<filterScopeID)) // valid_bits
+		// filterEqual == 1, so set n bitmask bit
+		binary.LittleEndian.PutUint32(filterVal[0:4], bitmask|(filterEqual<<filterScopeID))
+		binary.LittleEndian.PutUint32(filterVal[4:8], validBits|(1<<filterScopeID))
 		err = equalityFilter.Update(unsafe.Pointer(keyPointer), unsafe.Pointer(&filterVal[0]))
 		if err != nil {
 			return err
@@ -110,13 +112,15 @@ func (filter *UIntFilter) InitBPF(bpfModule *bpf.Module, filterMapName string, f
 		} else {
 			keyPointer = unsafe.Pointer(&filter.NotEqual[i])
 		}
-		var validBits uint32
+		var bitmask, validBits uint32
 		curVal, err := equalityFilter.GetValue(keyPointer)
 		if err == nil {
+			bitmask = binary.LittleEndian.Uint32(curVal[0:4])
 			validBits = binary.LittleEndian.Uint32(curVal[4:8])
 		}
-		binary.LittleEndian.PutUint32(filterVal[0:4], uint32(filterNotEqual))       // bitmask
-		binary.LittleEndian.PutUint32(filterVal[4:8], validBits|(1<<filterScopeID)) // valid_bits
+		// filterNotEqual == 0, so clear n bitmask bit
+		binary.LittleEndian.PutUint32(filterVal[0:4], bitmask&(^(1 << filterScopeID)))
+		binary.LittleEndian.PutUint32(filterVal[4:8], validBits|(1<<filterScopeID))
 		err = equalityFilter.Update(keyPointer, unsafe.Pointer(&filterVal[0]))
 		if err != nil {
 			return err
