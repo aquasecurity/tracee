@@ -170,8 +170,6 @@ const (
 	MaxUserSpace
 )
 
-const Unique32BitSyscallsStartID = 3000
-
 // Capture meta-events
 const (
 	CaptureFileWrite ID = iota + 4000

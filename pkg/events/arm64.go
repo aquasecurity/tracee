@@ -348,10 +348,8 @@ const (
 	MemfdSecret              ID = 447
 	ProcessMrelease          ID = 448
 	MaxSyscallID             ID = 449
+	// TODO: Compile list of unique 32bit syscalls for arm64
 )
-
-// TODO: There isnt a Unique32BitSyscalls list for arm64
-const Unique32BitSyscallsEndID ID = Unique32BitSyscallsStartID
 
 // following syscalls are undefined on arm64
 const (

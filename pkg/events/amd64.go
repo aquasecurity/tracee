@@ -343,37 +343,33 @@ const (
 	IoPgetevents        ID = 333
 	Rseq                ID = 334
 	// 335 through 423 are unassigned to sync up with generic numbers
-	PidfdSendSignal       ID = 424
-	IoUringSetup          ID = 425
-	IoUringEnter          ID = 426
-	IoUringRegister       ID = 427
-	OpenTree              ID = 428
-	MoveMount             ID = 429
-	Fsopen                ID = 430
-	Fsconfig              ID = 431
-	Fsmount               ID = 432
-	Fspick                ID = 433
-	PidfdOpen             ID = 434
-	Clone3                ID = 435
-	CloseRange            ID = 436
-	Openat2               ID = 437
-	PidfdGetfd            ID = 438
-	Faccessat2            ID = 439
-	ProcessMadvise        ID = 440
-	EpollPwait2           ID = 441
-	MountSetatt           ID = 442
-	QuotactlFd            ID = 443
-	LandlockCreateRuleset ID = 444
-	LandlockAddRule       ID = 445
-	LandloclRestrictSet   ID = 446
-	MemfdSecret           ID = 447
-	ProcessMrelease       ID = 448
-	MaxSyscallID          ID = 449
-)
-
-// Set of events IDs for 32bit syscalls which have no parallel 64bit syscall
-const (
-	Waitpid ID = iota + Unique32BitSyscallsStartID
+	PidfdSendSignal ID = iota + 89 // iota = 335 here 335 + 89 = 424
+	IoUringSetup
+	IoUringEnter
+	IoUringRegister
+	OpenTree
+	MoveMount
+	Fsopen
+	Fsconfig
+	Fsmount
+	Fspick
+	PidfdOpen
+	Clone3
+	CloseRange
+	Openat2
+	PidfdGetfd
+	Faccessat2
+	ProcessMadvise
+	EpollPwait2
+	MountSetatt
+	QuotactlFd
+	LandlockCreateRuleset
+	LandlockAddRule
+	LandloclRestrictSet
+	MemfdSecret
+	ProcessMrelease
+	// Set of events IDs for 32bit syscalls which have no parallel 64bit syscall
+	Waitpid
 	Oldfstat
 	Break
 	Oldstat
@@ -459,7 +455,7 @@ const (
 	RtSigtimedwaitTime32
 	FutexTime32
 	SchedRrGetInterval32
-	Unique32BitSyscallsEndID
+	MaxSyscallID
 )
 
 // x86 32bit syscall numbers
