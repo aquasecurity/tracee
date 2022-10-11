@@ -162,11 +162,6 @@ func (t *Tracee) decodeEvents(outerCtx context.Context) (<-chan *trace.Event, <-
 				args = append(args, trace.Argument{ArgMeta: argMeta, Value: argVal})
 			}
 
-			if !t.shouldProcessEvent(&ctx, args) {
-				t.stats.EventsFiltered.Increment()
-				continue
-			}
-
 			// Add stack trace if needed
 			var StackAddresses []uint64
 			if t.config.Output.StackAddresses {
@@ -217,7 +212,7 @@ func (t *Tracee) decodeEvents(outerCtx context.Context) (<-chan *trace.Event, <-
 				ContextFlags:        parseContextFlags(ctx.Flags),
 			}
 
-			if !t.config.Filter.ContextFilter.Filter(evt) {
+			if !t.shouldProcessEvent(evt) {
 				t.stats.EventsFiltered.Increment()
 				continue
 			}
@@ -230,6 +225,16 @@ func (t *Tracee) decodeEvents(outerCtx context.Context) (<-chan *trace.Event, <-
 		}
 	}()
 	return out, errc
+}
+
+// shouldProcessEvent decides whether or not to drop an event before further processing it
+func (t *Tracee) shouldProcessEvent(event trace.Event) bool {
+	eventID := events.ID(event.EventID)
+
+	// short circuit by most performant and critical
+	return t.config.Filter.ContextFilter.Filter(event) &&
+		t.config.Filter.RetFilter.Filter(eventID, int64(event.ReturnValue)) &&
+		t.config.Filter.ArgFilter.Filter(eventID, event.Args)
 }
 
 func parseContextFlags(flags uint32) trace.ContextFlags {
