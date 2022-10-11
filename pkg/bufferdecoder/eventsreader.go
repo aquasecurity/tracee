@@ -18,7 +18,6 @@ type ArgType uint8
 
 const (
 	noneT ArgType = iota
-	u8T
 	intT
 	uintT
 	longT
@@ -36,6 +35,7 @@ const (
 	credT
 	intArr2T
 	uint64ArrT
+	u8T
 )
 
 // These types don't match the ones defined in the ebpf code since they are not being used by syscalls arguments.
