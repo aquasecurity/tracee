@@ -9,7 +9,6 @@ import (
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/utils"
 
-	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
@@ -27,14 +26,6 @@ func (t *Tracee) processLostEvents() {
 			t.config.ChanErrors <- fmt.Errorf("lost %d events", lost)
 		}
 	}
-}
-
-// shouldProcessEvent decides whether or not to drop an event before further processing it
-func (t *Tracee) shouldProcessEvent(ctx *bufferdecoder.Context, args []trace.Argument) bool {
-	retPassed := t.config.Filter.RetFilter.Filter(ctx.EventID, ctx.Retval)
-	argPassed := t.config.Filter.ArgFilter.Filter(ctx.EventID, args)
-
-	return retPassed && argPassed
 }
 
 func (t *Tracee) deleteProcInfoDelayed(hostTid int) {
