@@ -193,9 +193,9 @@ func (p tableEventPrinter) Print(event trace.Event) {
 	if p.verbose {
 		if p.containerMode {
 			fmt.Fprintf(p.out,
-				"%-16s %032b  %-16s %-13s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ",
+				"%-16s %-33s %-16s %-13s %-12d %-12d %-6d %-16s %-7d/%-7d %-7d/%-7d %-7d/%-7d %-16d %-20s ",
 				timestamp,
-				event.MatchedScopes,
+				strings.ReplaceAll(fmt.Sprintf("%032b", event.MatchedScopes), "0", "."),
 				event.HostName,
 				containerId,
 				event.MountNS,
@@ -213,9 +213,9 @@ func (p tableEventPrinter) Print(event trace.Event) {
 			)
 		} else {
 			fmt.Fprintf(p.out,
-				"%-16s %032b  %-16s %-13s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-20s ",
+				"%-16s %-33s %-16s %-13s %-12d %-12d %-6d %-16s %-7d %-7d %-7d %-16d %-20s ",
 				timestamp,
-				event.MatchedScopes,
+				strings.ReplaceAll(fmt.Sprintf("%032b", event.MatchedScopes), "0", "."),
 				event.HostName,
 				containerId,
 				event.MountNS,
@@ -232,9 +232,9 @@ func (p tableEventPrinter) Print(event trace.Event) {
 	} else {
 		if p.containerMode {
 			fmt.Fprintf(p.out,
-				"%-16s %032b  %-13s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-20s ",
+				"%-16s %-33s %-13s %-6d %-16s %-7d/%-7d %-7d/%-7d %-16d %-20s ",
 				timestamp,
-				event.MatchedScopes,
+				strings.ReplaceAll(fmt.Sprintf("%032b", event.MatchedScopes), "0", "."),
 				containerId,
 				event.UserID,
 				event.ProcessName,
@@ -247,9 +247,9 @@ func (p tableEventPrinter) Print(event trace.Event) {
 			)
 		} else {
 			fmt.Fprintf(p.out,
-				"%-16s %032b  %-6d %-16s %-7d %-7d %-16d %-20s ",
+				"%-16s %-33s %-6d %-16s %-7d %-7d %-16d %-20s ",
 				timestamp,
-				event.MatchedScopes,
+				strings.ReplaceAll(fmt.Sprintf("%032b", event.MatchedScopes), "0", "."),
 				event.UserID,
 				event.ProcessName,
 				event.ProcessID,

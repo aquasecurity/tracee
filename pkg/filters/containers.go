@@ -90,7 +90,7 @@ func (filter *ContIDFilter) InitBPF(bpfModule *bpf.Module, conts *containers.Con
 	return nil
 }
 
-func (filter *ContIDFilter) FilterOut() bool {
+func (filter *ContIDFilter) DefaultFilter() bool {
 	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 {
 		return false
 	} else {

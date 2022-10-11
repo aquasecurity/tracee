@@ -15,7 +15,7 @@ func (filter *BoolFilter) Parse(value string) error {
 	return nil
 }
 
-func (filter *BoolFilter) FilterOut() bool {
+func (filter *BoolFilter) DefaultFilter() bool {
 	if filter.Value {
 		return false
 	} else {

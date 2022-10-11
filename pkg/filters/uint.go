@@ -54,10 +54,16 @@ func (filter *UIntFilter) Parse(operatorAndValues string) error {
 		case ">":
 			if (filter.Greater == GreaterNotSetUint) || (val > filter.Greater) {
 				filter.Greater = val
+				if filter.Less == LessNotSetUint {
+					filter.Less = GreaterNotSetUint
+				}
 			}
 		case "<":
 			if (filter.Less == LessNotSetUint) || (val < filter.Less) {
 				filter.Less = val
+				if filter.Greater == GreaterNotSetUint {
+					filter.Greater = LessNotSetUint
+				}
 			}
 		default:
 			return fmt.Errorf("invalid filter operator: %s", operatorString)
@@ -130,7 +136,7 @@ func (filter *UIntFilter) InitBPF(bpfModule *bpf.Module, filterMapName string, f
 	return nil
 }
 
-func (filter *UIntFilter) FilterOut() bool {
+func (filter *UIntFilter) DefaultFilter() bool {
 	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 && filter.Greater == GreaterNotSetUint && filter.Less == LessNotSetUint {
 		return false
 	} else {

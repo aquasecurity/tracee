@@ -123,7 +123,7 @@ func (filter *ProcessTreeFilter) Set(bpfModule *bpf.Module) error {
 	return nil
 }
 
-func (filter *ProcessTreeFilter) FilterOut() bool {
+func (filter *ProcessTreeFilter) DefaultFilter() bool {
 	// Determine the default filter for PIDs that aren't specified with a proc tree filter
 	// - If one or more '=' filters, default is '!='
 	// - If one or more '!=' filters, default is '='

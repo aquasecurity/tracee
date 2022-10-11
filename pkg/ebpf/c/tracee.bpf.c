@@ -730,17 +730,17 @@ typedef struct config_entry {
     u32 new_pid_filter_enabled;
     u32 proc_tree_filter_enabled;
     u32 follow_filter_enabled;
-    u32 uid_filter_out;
-    u32 pid_filter_out;
-    u32 mnt_ns_filter_out;
-    u32 pid_ns_filter_out;
-    u32 uts_ns_filter_out;
-    u32 comm_filter_out;
-    u32 cgroup_id_filter_out;
-    u32 cont_filter_out;
-    u32 new_cont_filter_out;
-    u32 new_pid_filter_out;
-    u32 proc_tree_filter_out;
+    u32 uid_default_filter;
+    u32 pid_default_filter;
+    u32 mnt_ns_default_filter;
+    u32 pid_ns_default_filter;
+    u32 uts_ns_default_filter;
+    u32 comm_default_filter;
+    u32 cgroup_id_default_filter;
+    u32 cont_default_filter;
+    u32 new_cont_default_filter;
+    u32 new_pid_default_filter;
+    u32 proc_tree_default_filter;
     u64 uid_max;
     u64 uid_min;
     u64 pid_max;
@@ -1752,7 +1752,7 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
 // INTERNAL: FILTERING -----------------------------------------------------------------------------
 
 static __always_inline u32
-uint_filter_matches(u32 filter_out, void *filter_map, u64 value, u64 max, u64 min)
+uint_filter_matches(u32 default_filter, void *filter_map, u64 value, u64 max, u64 min)
 {
     u32 equality_bitmask = 0;
     u32 equality_valid_bits = 0;
@@ -1771,10 +1771,10 @@ uint_filter_matches(u32 filter_out, void *filter_map, u64 value, u64 max, u64 mi
     if ((min != FILTER_MIN_NOT_SET) && (value <= min))
         return equality_bitmask;
 
-    return equality_bitmask | (filter_out & ~equality_valid_bits);
+    return equality_bitmask | (default_filter & ~equality_valid_bits);
 }
 
-static __always_inline u32 equality_filter_matches(u32 filter_out, void *filter_map, void *key)
+static __always_inline u32 equality_filter_matches(u32 default_filter, void *filter_map, void *key)
 {
     u32 equality_bitmask = 0;
     u32 equality_valid_bits = 0;
@@ -1784,15 +1784,15 @@ static __always_inline u32 equality_filter_matches(u32 filter_out, void *filter_
         equality_valid_bits = equality->valid_bits;
     }
 
-    return equality_bitmask | (filter_out & ~equality_valid_bits);
+    return equality_bitmask | (default_filter & ~equality_valid_bits);
 }
 
-static __always_inline u32 bool_filter_matches(u32 filter_out, bool val)
+static __always_inline u32 bool_filter_matches(u32 default_filter, bool val)
 {
-    return filter_out ^ (val ? 0xFFFFFFFF : 0);
+    return default_filter ^ (val ? 0xFFFFFFFF : 0);
 }
 
-// TODO: rename this to do_compute_scopes?
+// TODO: rename this to do_compute_scopes
 static __always_inline u32 do_should_trace(event_data_t *data)
 {
     task_context_t *context = &data->context.task;
@@ -1808,82 +1808,81 @@ static __always_inline u32 do_should_trace(event_data_t *data)
         u8 state = data->task_info->container_state;
         if (state == CONTAINER_STARTED || state == CONTAINER_EXISTED)
             is_container = true;
-        u32 filter_out = data->config->cont_filter_out;
+        u32 default_filter = data->config->cont_default_filter;
         u32 mask = ~data->config->cont_filter_enabled;
-        res &= bool_filter_matches(filter_out, is_container) | mask;
+        res &= bool_filter_matches(default_filter, is_container) | mask;
     }
 
     if (data->config->new_cont_filter_enabled) {
         bool is_new_container = false;
         if (data->task_info->container_state == CONTAINER_STARTED)
             is_new_container = true;
-        u32 filter_out = data->config->new_cont_filter_out;
+        u32 default_filter = data->config->new_cont_default_filter;
         u32 mask = ~data->config->new_cont_filter_enabled;
-        res &= bool_filter_matches(filter_out, is_new_container) | mask;
+        res &= bool_filter_matches(default_filter, is_new_container) | mask;
     }
 
     if (data->config->pid_filter_enabled) {
-        // todo: rename filter_out to default_filter, here and in userspace (for equality/int filters)
-        u32 filter_out = data->config->pid_filter_out;
+        u32 default_filter = data->config->pid_default_filter;
         u32 mask = ~data->config->pid_filter_enabled;
         u64 max = data->config->pid_max;
         u64 min = data->config->pid_min;
-        res &= uint_filter_matches(filter_out, &pid_filter, context->host_tid, max, min) | mask;
+        res &= uint_filter_matches(default_filter, &pid_filter, context->host_tid, max, min) | mask;
     }
 
     if (data->config->new_pid_filter_enabled) {
-        u32 filter_out = data->config->new_pid_filter_out;
+        u32 default_filter = data->config->new_pid_default_filter;
         u32 mask = ~data->config->new_pid_filter_enabled;
-        res &= bool_filter_matches(filter_out, data->task_info->new_task) | mask;
+        res &= bool_filter_matches(default_filter, data->task_info->new_task) | mask;
     }
 
     if (data->config->uid_filter_enabled) {
-        u32 filter_out = data->config->uid_filter_out;
+        u32 default_filter = data->config->uid_default_filter;
         u32 mask = ~data->config->uid_filter_enabled;
         u64 max = data->config->uid_max;
         u64 min = data->config->uid_min;
-        res &= uint_filter_matches(filter_out, &uid_filter, context->uid, max, min) | mask;
+        res &= uint_filter_matches(default_filter, &uid_filter, context->uid, max, min) | mask;
     }
 
     if (data->config->mnt_ns_filter_enabled) {
-        u32 filter_out = data->config->mnt_ns_filter_out;
+        u32 default_filter = data->config->mnt_ns_default_filter;
         u32 mask = ~data->config->mnt_ns_filter_enabled;
         u64 max = data->config->mnt_ns_max;
         u64 min = data->config->mnt_ns_min;
-        res &= uint_filter_matches(filter_out, &mnt_ns_filter, context->mnt_id, max, min) | mask;
+        res &= uint_filter_matches(default_filter, &mnt_ns_filter, context->mnt_id, max, min) | mask;
     }
 
     if (data->config->pid_ns_filter_enabled) {
-        u32 filter_out = data->config->pid_ns_filter_out;
+        u32 default_filter = data->config->pid_ns_default_filter;
         u32 mask = ~data->config->pid_ns_filter_enabled;
         u64 max = data->config->pid_ns_max;
         u64 min = data->config->pid_ns_min;
-        res &= uint_filter_matches(filter_out, &pid_ns_filter, context->pid_id, max, min) | mask;
+        res &= uint_filter_matches(default_filter, &pid_ns_filter, context->pid_id, max, min) | mask;
     }
 
     if (data->config->uts_ns_filter_enabled) {
-        u32 filter_out = data->config->uts_ns_filter_out;
+        u32 default_filter = data->config->uts_ns_default_filter;
         u32 mask = ~data->config->uts_ns_filter_enabled;
-        res &= equality_filter_matches(filter_out, &uts_ns_filter, &context->uts_name) | mask;
+        res &= equality_filter_matches(default_filter, &uts_ns_filter, &context->uts_name) | mask;
     }
 
     if (data->config->comm_filter_enabled) {
-        u32 filter_out = data->config->comm_filter_out;
+        u32 default_filter = data->config->comm_default_filter;
         u32 mask = ~data->config->comm_filter_enabled;
-        res &= equality_filter_matches(filter_out, &comm_filter, &context->comm) | mask;
+        res &= equality_filter_matches(default_filter, &comm_filter, &context->comm) | mask;
     }
 
     if (data->config->proc_tree_filter_enabled) {
-        u32 filter_out = data->config->proc_tree_filter_out;
+        u32 default_filter = data->config->proc_tree_default_filter;
         u32 mask = ~data->config->proc_tree_filter_enabled;
-        res &= equality_filter_matches(filter_out, &process_tree_map, &context->pid) | mask;
+        res &= equality_filter_matches(default_filter, &process_tree_map, &context->pid) | mask;
     }
 
     if (data->config->cgroup_id_filter_enabled) {
-        u32 filter_out = data->config->cgroup_id_filter_out;
+        u32 default_filter = data->config->cgroup_id_default_filter;
         u32 mask = ~data->config->cgroup_id_filter_enabled;
         u32 cgroup_id_lsb = context->cgroup_id;
-        res &= equality_filter_matches(filter_out, &cgroup_id_filter, &cgroup_id_lsb) | mask;
+        res &= equality_filter_matches(default_filter, &cgroup_id_filter, &cgroup_id_lsb) | mask;
     }
 
     if (data->config->follow_filter_enabled) {

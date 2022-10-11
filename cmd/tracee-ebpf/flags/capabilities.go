@@ -73,7 +73,7 @@ func PrepareCapsConfig(capsCfgArray []string) (CapsConfig, error) {
 			if err != nil {
 				return cfg, err
 			}
-			if addedCapsFilter.FilterOut() {
+			if addedCapsFilter.DefaultFilter() {
 				capsFilteredOut, err := capsStringSliceToValues(addedCapsFilter.NotEqual)
 				if err != nil {
 					return cfg, err

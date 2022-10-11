@@ -53,6 +53,11 @@ type Config struct {
 	PidNSFilterLess    uint64
 	PidNSFilterGreater uint64
 
+	IsUIDFilterableInUserSpace   bool
+	IsPIDFilterableInUserSpace   bool
+	IsMntNSFilterableInUserSpace bool
+	IsPidNSFilterableInUserSpace bool
+
 	Capture            *CaptureConfig
 	Output             *OutputConfig
 	Cache              queue.CacheConfig
@@ -115,55 +120,76 @@ func (tc Config) isFilterNetSet() bool {
 	return false
 }
 
-// SetFiltersLessGreaterMinMax sets the minimum and maximum of
-// the Less and Greater enabled filters
-func (tc *Config) SetFiltersLessGreaterMinMax() {
-	hasUIDEqualFilter := false
-	hasUIDNotEqualFilter := false
-	hasPIDEqualFilter := false
-	hasPIDNotEqualFilter := false
-	hasMntNSEqualFilter := false
-	hasMntNSNotEqualFilter := false
-	hasPIDNSEqualFilter := false
-	hasPIDNSNotEqualFilter := false
+// SetUintFiltersMinMax sets the global min and max, to be checked in kernel space,
+// of the Less and Greater enabled filters only if all context filter types (e.g. UIDFilter)
+// from all scopes have both Less and Greater values set.
+// Config user space filter flags are also set (e.g. IsUIDFilterableInUserSpace).
+func (tc *Config) SetUintFiltersMinMax() {
+	var (
+		filterScopeCount int
+
+		uidLessFilterCount      int
+		uidGreaterFilterCount   int
+		pidLessFilterCount      int
+		pidGreaterFilterCount   int
+		mntNSLessFilterCount    int
+		mntNSGreaterFilterCount int
+		pidNSLessFilterCount    int
+		pidNSGreaterFilterCount int
+	)
+
 	for _, filterScope := range tc.FilterScopes {
 		if filterScope == nil {
 			continue
 		}
+		filterScopeCount++
 
-		if !hasUIDEqualFilter {
-			hasUIDEqualFilter = len(filterScope.UIDFilter.Equal) > 0
+		if filterScope.UIDFilter.Enabled && filterScope.UIDFilter.Less != filters.LessNotSetUint {
+			uidLessFilterCount++
 		}
-		if !hasUIDNotEqualFilter {
-			hasUIDNotEqualFilter = len(filterScope.UIDFilter.NotEqual) > 0
+		if filterScope.UIDFilter.Enabled && filterScope.UIDFilter.Greater != filters.GreaterNotSetUint {
+			uidGreaterFilterCount++
 		}
-
-		if !hasPIDEqualFilter {
-			hasPIDEqualFilter = len(filterScope.PIDFilter.Equal) > 0
+		if filterScope.PIDFilter.Enabled && filterScope.PIDFilter.Less != filters.LessNotSetUint {
+			pidLessFilterCount++
 		}
-		if !hasPIDNotEqualFilter {
-			hasPIDNotEqualFilter = len(filterScope.PIDFilter.NotEqual) > 0
+		if filterScope.PIDFilter.Enabled && filterScope.PIDFilter.Greater != filters.GreaterNotSetUint {
+			pidGreaterFilterCount++
 		}
-
-		if !hasMntNSEqualFilter {
-			hasMntNSEqualFilter = len(filterScope.MntNSFilter.Equal) > 0
+		if filterScope.MntNSFilter.Enabled && filterScope.MntNSFilter.Less != filters.LessNotSetUint {
+			mntNSLessFilterCount++
 		}
-		if !hasMntNSNotEqualFilter {
-			hasMntNSNotEqualFilter = len(filterScope.MntNSFilter.NotEqual) > 0
+		if filterScope.MntNSFilter.Enabled && filterScope.MntNSFilter.Greater != filters.GreaterNotSetUint {
+			mntNSGreaterFilterCount++
 		}
-
-		if !hasPIDNSEqualFilter {
-			hasPIDNSEqualFilter = len(filterScope.PidNSFilter.Equal) > 0
+		if filterScope.PidNSFilter.Enabled && filterScope.PidNSFilter.Less != filters.LessNotSetUint {
+			pidNSLessFilterCount++
 		}
-		if !hasPIDNSNotEqualFilter {
-			hasPIDNSNotEqualFilter = len(filterScope.PidNSFilter.NotEqual) > 0
+		if filterScope.PidNSFilter.Enabled && filterScope.PidNSFilter.Greater != filters.GreaterNotSetUint {
+			pidNSGreaterFilterCount++
 		}
 	}
+	tc.UIDFilterGreater = filters.GreaterNotSetUint
+	tc.UIDFilterLess = filters.LessNotSetUint
+	tc.PIDFilterGreater = filters.GreaterNotSetUint
+	tc.PIDFilterLess = filters.LessNotSetUint
+	tc.MntNSFilterGreater = filters.GreaterNotSetUint
+	tc.MntNSFilterLess = filters.LessNotSetUint
+	tc.PidNSFilterGreater = filters.GreaterNotSetUint
+	tc.PidNSFilterLess = filters.LessNotSetUint
 
-	uidInitialized := false
-	pidInitialized := false
-	mntNSInitialized := false
-	pidNSInitialized := false
+	tc.IsUIDFilterableInUserSpace = filterScopeCount != uidLessFilterCount || filterScopeCount != uidGreaterFilterCount
+	tc.IsPIDFilterableInUserSpace = filterScopeCount != pidLessFilterCount || filterScopeCount != pidGreaterFilterCount
+	tc.IsMntNSFilterableInUserSpace = filterScopeCount != mntNSLessFilterCount || filterScopeCount != mntNSGreaterFilterCount
+	tc.IsPidNSFilterableInUserSpace = filterScopeCount != pidNSLessFilterCount || filterScopeCount != pidNSGreaterFilterCount
+
+	if tc.IsUIDFilterableInUserSpace &&
+		tc.IsPIDFilterableInUserSpace &&
+		tc.IsMntNSFilterableInUserSpace &&
+		tc.IsPidNSFilterableInUserSpace {
+		return
+	}
+
 	for _, filterScope := range tc.FilterScopes {
 		if filterScope == nil {
 			continue
@@ -183,42 +209,22 @@ func (tc *Config) SetFiltersLessGreaterMinMax() {
 			return y
 		}
 
-		if !uidInitialized {
-			tc.UIDFilterLess = filters.LessNotSetUint
-			tc.UIDFilterGreater = filters.GreaterNotSetUint
-			uidInitialized = true
-		}
-		if filterScope.UIDFilter.Enabled && !hasUIDEqualFilter && !hasUIDNotEqualFilter {
+		if filterScope.UIDFilter.Enabled && !tc.IsUIDFilterableInUserSpace {
 			tc.UIDFilterLess = max(tc.UIDFilterLess, filterScope.UIDFilter.Less)
 			tc.UIDFilterGreater = min(tc.UIDFilterGreater, filterScope.UIDFilter.Greater)
 		}
 
-		if !pidInitialized {
-			tc.PIDFilterLess = filters.LessNotSetUint
-			tc.PIDFilterGreater = filters.GreaterNotSetUint
-			pidInitialized = true
-		}
-		if filterScope.PIDFilter.Enabled && !hasPIDEqualFilter && !hasPIDNSNotEqualFilter {
+		if filterScope.PIDFilter.Enabled && !tc.IsPIDFilterableInUserSpace {
 			tc.PIDFilterLess = max(tc.PIDFilterLess, filterScope.PIDFilter.Less)
 			tc.PIDFilterGreater = min(tc.PIDFilterGreater, filterScope.PIDFilter.Greater)
 		}
 
-		if !mntNSInitialized {
-			tc.MntNSFilterLess = filters.LessNotSetUint
-			tc.MntNSFilterGreater = filters.GreaterNotSetUint
-			mntNSInitialized = true
-		}
-		if filterScope.MntNSFilter.Enabled && !hasMntNSEqualFilter && !hasMntNSNotEqualFilter {
+		if filterScope.MntNSFilter.Enabled && !tc.IsMntNSFilterableInUserSpace {
 			tc.MntNSFilterLess = max(tc.MntNSFilterLess, filterScope.MntNSFilter.Less)
 			tc.MntNSFilterGreater = min(tc.MntNSFilterGreater, filterScope.MntNSFilter.Greater)
 		}
 
-		if !pidNSInitialized {
-			tc.PidNSFilterLess = filters.LessNotSetUint
-			tc.PidNSFilterGreater = filters.GreaterNotSetUint
-			pidNSInitialized = true
-		}
-		if filterScope.PidNSFilter.Enabled && !hasPIDNSEqualFilter && !hasPIDNotEqualFilter {
+		if filterScope.PidNSFilter.Enabled && !tc.IsPidNSFilterableInUserSpace {
 			tc.PidNSFilterLess = max(tc.PidNSFilterLess, filterScope.PidNSFilter.Less)
 			tc.PidNSFilterGreater = min(tc.PidNSFilterGreater, filterScope.PidNSFilter.Greater)
 		}
@@ -898,37 +904,37 @@ func (t *Tracee) populateBPFMaps() error {
 		if filterScope.Follow {
 			configVal[56+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.UIDFilter.FilterOut() {
+		if filterScope.UIDFilter.DefaultFilter() {
 			configVal[60+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.PIDFilter.FilterOut() {
+		if filterScope.PIDFilter.DefaultFilter() {
 			configVal[64+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.MntNSFilter.FilterOut() {
+		if filterScope.MntNSFilter.DefaultFilter() {
 			configVal[68+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.PidNSFilter.FilterOut() {
+		if filterScope.PidNSFilter.DefaultFilter() {
 			configVal[72+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.UTSFilter.FilterOut() {
+		if filterScope.UTSFilter.DefaultFilter() {
 			configVal[76+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.CommFilter.FilterOut() {
+		if filterScope.CommFilter.DefaultFilter() {
 			configVal[80+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.ContIDFilter.FilterOut() {
+		if filterScope.ContIDFilter.DefaultFilter() {
 			configVal[84+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.ContFilter.FilterOut() {
+		if filterScope.ContFilter.DefaultFilter() {
 			configVal[88+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.NewContFilter.FilterOut() {
+		if filterScope.NewContFilter.DefaultFilter() {
 			configVal[92+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.NewPidFilter.FilterOut() {
+		if filterScope.NewPidFilter.DefaultFilter() {
 			configVal[96+byteIndex] |= 1 << bitOffset
 		}
-		if filterScope.ProcessTreeFilter.FilterOut() {
+		if filterScope.ProcessTreeFilter.DefaultFilter() {
 			configVal[100+byteIndex] |= 1 << bitOffset
 		}
 
@@ -936,7 +942,7 @@ func (t *Tracee) populateBPFMaps() error {
 		configVal[168+byteIndex] |= 1 << bitOffset
 	}
 
-	t.config.SetFiltersLessGreaterMinMax()
+	t.config.SetUintFiltersMinMax()
 	binary.LittleEndian.PutUint64(configVal[104:112], t.config.UIDFilterLess)
 	binary.LittleEndian.PutUint64(configVal[112:120], t.config.UIDFilterGreater)
 	binary.LittleEndian.PutUint64(configVal[120:128], t.config.PIDFilterLess)

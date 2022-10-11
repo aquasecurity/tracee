@@ -50,17 +50,80 @@ func (t *Tracee) processLostEvents() {
 	}
 }
 
-// TODO: change this return to MatchedScopes bitmap
 // shouldProcessEvent decides whether or not to drop an event before further processing it
-func (t *Tracee) shouldProcessEvent(ctx *bufferdecoder.Context, args []trace.Argument) bool {
-	var enabledScopes uint
-	var skippedScopes uint
+// It also updates pre computed (kernel space) ctx.MatchedScopes checking against user space filters
+func (t *Tracee) shouldProcessEvent(ctx *bufferdecoder.Context, args []trace.Argument) (bool, error) {
+	if ctx.MatchedScopes == 0 {
+		return false, nil
+	}
 
-	for _, filterScope := range t.config.FilterScopes {
-		if filterScope == nil {
+	hasBit := func(n uint32, pos int) bool {
+		return (n & (1 << pos)) > 0
+	}
+
+	clearBit := func(n *uint32, pos int) {
+		*n = *n & ^(1 << pos)
+	}
+
+	matchedScopes := ctx.MatchedScopes
+	for i := 0; i < MaxFilterScopes; i++ {
+		if matchedScopes == 0 {
+			ctx.MatchedScopes = 0
+			return false, nil
+		}
+
+		if !hasBit(matchedScopes, i) {
 			continue
 		}
-		enabledScopes++
+
+		isUintInRange := func(value, start, end uint64) bool {
+			return value > start && value < end
+		}
+
+		filterScope := t.config.FilterScopes[i]
+		if filterScope == nil {
+			return false, fmt.Errorf("filter scope index %d not found", i)
+		}
+		if filterScope.UIDFilter.Enabled &&
+			len(filterScope.UIDFilter.Equal) == 0 &&
+			len(filterScope.UIDFilter.NotEqual) == 0 &&
+			t.config.IsUIDFilterableInUserSpace {
+
+			if !isUintInRange(uint64(ctx.Uid), filterScope.UIDFilter.Greater, filterScope.UIDFilter.Less) {
+				clearBit(&matchedScopes, i)
+				continue
+			}
+		}
+		if filterScope.PIDFilter.Enabled &&
+			len(filterScope.PIDFilter.Equal) == 0 &&
+			len(filterScope.PIDFilter.NotEqual) == 0 &&
+			t.config.IsPIDFilterableInUserSpace {
+
+			if !isUintInRange(uint64(ctx.HostTid), filterScope.PIDFilter.Greater, filterScope.PIDFilter.Less) {
+				clearBit(&matchedScopes, i)
+				continue
+			}
+		}
+		if filterScope.MntNSFilter.Enabled &&
+			len(filterScope.MntNSFilter.Equal) == 0 &&
+			len(filterScope.MntNSFilter.NotEqual) == 0 &&
+			t.config.IsMntNSFilterableInUserSpace {
+
+			if !isUintInRange(uint64(ctx.MntID), filterScope.MntNSFilter.Greater, filterScope.MntNSFilter.Less) {
+				clearBit(&matchedScopes, i)
+				continue
+			}
+		}
+		if filterScope.PidNSFilter.Enabled &&
+			len(filterScope.PidNSFilter.Equal) == 0 &&
+			len(filterScope.PidNSFilter.NotEqual) == 0 &&
+			t.config.IsPidNSFilterableInUserSpace {
+
+			if !isUintInRange(uint64(ctx.PidID), filterScope.PidNSFilter.Greater, filterScope.PidNSFilter.Less) {
+				clearBit(&matchedScopes, i)
+				continue
+			}
+		}
 
 		if filterScope.RetFilter.Enabled {
 			if filter, ok := filterScope.RetFilter.Filters[ctx.EventID]; ok {
@@ -73,7 +136,7 @@ func (t *Tracee) shouldProcessEvent(ctx *bufferdecoder.Context, args []trace.Arg
 					}
 				}
 				if !match && len(filter.Equal) > 0 {
-					skippedScopes++
+					clearBit(&matchedScopes, i)
 					continue
 				}
 				notEqual := false
@@ -84,15 +147,15 @@ func (t *Tracee) shouldProcessEvent(ctx *bufferdecoder.Context, args []trace.Arg
 					}
 				}
 				if notEqual {
-					skippedScopes++
+					clearBit(&matchedScopes, i)
 					continue
 				}
 				if (filter.Greater != filters.GreaterNotSetInt) && retVal <= filter.Greater {
-					skippedScopes++
+					clearBit(&matchedScopes, i)
 					continue
 				}
 				if (filter.Less != filters.LessNotSetInt) && retVal >= filter.Less {
-					skippedScopes++
+					clearBit(&matchedScopes, i)
 					continue
 				}
 			}
@@ -109,25 +172,26 @@ func (t *Tracee) shouldProcessEvent(ctx *bufferdecoder.Context, args []trace.Arg
 					}
 				}
 				if !ok {
+					clearBit(&matchedScopes, i)
 					continue
 				}
 				// TODO: use type assertion instead of string conversion
 				argValStr := fmt.Sprint(argVal)
 				match := MatchFilter(filter.Equal, argValStr)
 				if !match && len(filter.Equal) > 0 {
-					skippedScopes++
+					clearBit(&matchedScopes, i)
 					continue
 				}
-				matchExclude := MatchFilter(filter.NotEqual, argValStr)
-				if matchExclude {
-					skippedScopes++
+				if MatchFilter(filter.NotEqual, argValStr) {
+					clearBit(&matchedScopes, i)
 					continue
 				}
 			}
 		}
 	}
+	ctx.MatchedScopes = matchedScopes
 
-	return skippedScopes < enabledScopes
+	return true, nil
 }
 
 func (t *Tracee) deleteProcInfoDelayed(hostTid int) {

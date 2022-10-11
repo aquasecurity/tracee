@@ -65,13 +65,15 @@ func (filter *StringFilter) InitBPF(bpfModule *bpf.Module, filterMapName string,
 		filterEqualBytes := make([]byte, filter.Size)
 		copy(filterEqualBytes, filter.Equal[i])
 
-		var validBits uint32
+		var bitmask, validBits uint32
 		curVal, err := filterMap.GetValue(unsafe.Pointer(&filterEqualBytes[0]))
 		if err == nil {
+			bitmask = binary.LittleEndian.Uint32(curVal[0:4])
 			validBits = binary.LittleEndian.Uint32(curVal[4:8])
 		}
-		binary.LittleEndian.PutUint32(filterVal[0:4], uint32(filterEqual))          // bitmask
-		binary.LittleEndian.PutUint32(filterVal[4:8], validBits|(1<<filterScopeID)) // valid_bits
+		// filterEqual == 1, so set n bitmask bit
+		binary.LittleEndian.PutUint32(filterVal[0:4], bitmask|(filterEqual<<filterScopeID))
+		binary.LittleEndian.PutUint32(filterVal[4:8], validBits|(1<<filterScopeID))
 		if err = filterMap.Update(unsafe.Pointer(&filterEqualBytes[0]), unsafe.Pointer(&filterVal[0])); err != nil {
 			return err
 		}
@@ -80,13 +82,15 @@ func (filter *StringFilter) InitBPF(bpfModule *bpf.Module, filterMapName string,
 		filterNotEqualBytes := make([]byte, filter.Size)
 		copy(filterNotEqualBytes, filter.NotEqual[i])
 
-		var validBits uint32
+		var bitmask, validBits uint32
 		curVal, err := filterMap.GetValue(unsafe.Pointer(&filterNotEqualBytes[0]))
 		if err == nil {
+			bitmask = binary.LittleEndian.Uint32(curVal[0:4])
 			validBits = binary.LittleEndian.Uint32(curVal[4:8])
 		}
-		binary.LittleEndian.PutUint32(filterVal[0:4], uint32(filterNotEqual))       // bitmask
-		binary.LittleEndian.PutUint32(filterVal[4:8], validBits|(1<<filterScopeID)) // valid_bits
+		// filterNotEqual == 0, so clear n bitmask bit
+		binary.LittleEndian.PutUint32(filterVal[0:4], bitmask&(^(1 << filterScopeID)))
+		binary.LittleEndian.PutUint32(filterVal[4:8], validBits|(1<<filterScopeID))
 		if err = filterMap.Update(unsafe.Pointer(&filterNotEqualBytes[0]), unsafe.Pointer(&filterVal[0])); err != nil {
 			return err
 		}
@@ -95,7 +99,7 @@ func (filter *StringFilter) InitBPF(bpfModule *bpf.Module, filterMapName string,
 	return nil
 }
 
-func (filter *StringFilter) FilterOut() bool {
+func (filter *StringFilter) DefaultFilter() bool {
 	if len(filter.Equal) > 0 && len(filter.NotEqual) == 0 {
 		return false
 	} else {
