@@ -157,6 +157,7 @@ enum argument_type_e
     CRED_T,
     INT_ARR_2_T,
     UINT64_ARR_T,
+    U8_T,
     TYPE_MAX = 255UL
 };
 
@@ -2442,6 +2443,12 @@ static __always_inline int save_args_to_submit_buf(event_data_t *data, u64 types
                 break;
             case POINTER_T:
                 size = sizeof(void *);
+                break;
+            case U8_T:
+                size = sizeof(u8);
+                break;
+            case U16_T:
+                size = sizeof(u16);
                 break;
             case STR_T:
                 rc = save_str_to_buf(data, (void *) args->args[i], index);
