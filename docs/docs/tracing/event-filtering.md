@@ -72,6 +72,39 @@ expected.
     !!! Tip
         Try `cat /etc/shadow` as a regular use and filter for `retval<0`.
 
+1. **Event Context** `(Operators: vary by field)`
+
+    ```text
+    1) --trace openat.context.container --trace openat.pathname=/etc/shadow
+    2) --trace event=openat --trace openat.context.container --trace openat.pathname=/etc/shadow
+    ```
+
+    !!! Note
+        The following is a list of available context fields:  
+        1)  "timestamp"  
+        2)  "processorId"  
+        3)  "p", "pid", "processId"  
+        4)  "tid", "threadId"  
+        5)  "ppid", "parentProcessId"  
+        6)  "hostTid", "hostThreadId"  
+        7)  "hostPid", "hostParentProcessId"  
+        8)  "uid", "userId"  
+        9)  "mntns", "mountNamespace"  
+        10) "pidns", "pidNamespace"  
+        11) "processName", "comm"  
+        12) "hostName"  
+        13) "cgroupId"  
+        14) "host" (inversion of "container")  
+        15) "container"  
+        16) "containerId"  
+        17) "containerImage"  
+        18) "containerName"  
+        19) "podName"  
+        20) "podNamespace"  
+        21) "podUid"  
+    !!! Tip
+        Open a container and try `cat /etc/shadow`.
+
 1. **Event Sets** `(Operators: =, !=)`
 
     ```text
