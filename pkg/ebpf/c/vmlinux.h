@@ -271,7 +271,6 @@ struct task_struct {
     struct css_set *cgroups;
     struct signal_struct *signal;
     void *stack;
-    struct sighand_struct *sighand;
 };
 
 typedef struct {
@@ -865,28 +864,6 @@ struct seq_operations {
     void (*stop)(struct seq_file *m, void *v);
     void *(*next)(struct seq_file *m, void *v, loff_t *pos);
     int (*show)(struct seq_file *m, void *v);
-};
-
-#define _NSIG       64
-#define _NSIG_BPW   64
-#define _NSIG_WORDS (_NSIG / _NSIG_BPW)
-
-typedef struct {
-    unsigned long sig[_NSIG_WORDS];
-} sigset_t;
-
-struct sigaction {
-    void *sa_handler;
-    unsigned long sa_flags;
-    sigset_t sa_mask;
-};
-
-struct k_sigaction {
-    struct sigaction sa;
-};
-
-struct sighand_struct {
-    struct k_sigaction action[_NSIG];
 };
 
 #include <struct_flavors.h>

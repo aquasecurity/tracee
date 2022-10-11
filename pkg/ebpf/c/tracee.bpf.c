@@ -442,7 +442,6 @@ enum event_id_e
     PRINT_NET_SEQ_OPS,
     TASK_RENAME,
     SECURITY_INODE_RENAME,
-    DO_SIGACTION,
     MAX_EVENT_ID,
 };
 
@@ -538,16 +537,6 @@ enum container_state_e
 #endif
 
 #define MAX_CACHED_PATH_SIZE 64
-
-enum signal_handling_method_e
-{
-#ifdef CORE
-    SIG_DFL,
-    SIG_IGN,
-#endif
-    SIG_HND = 2 // Doesn't exist in the kernel, but signifies that the method is through
-                // user-defined handler
-};
 
 // EBPF KCONFIGS -----------------------------------------------------------------------------------
 
@@ -6079,79 +6068,6 @@ int BPF_KPROBE(trace_security_inode_rename)
     }
 
     return 0;
-}
-
-SEC("kprobe/do_sigaction")
-int BPF_KPROBE(trace_do_sigaction)
-{
-    event_data_t data = {};
-    if (!init_event_data(&data, ctx))
-        return 0;
-
-    if (!should_trace(&data))
-        return 0;
-
-    // Initialize all relevant arguments values
-    int sig = (int) PT_REGS_PARM1(ctx);
-    u8 old_handle_method = 0, new_handle_method = 0;
-    unsigned long new_sa_flags, old_sa_flags;
-    void *new_sa_handler, *old_sa_handler;
-    unsigned long new_sa_mask, old_sa_mask;
-
-    // Extract old signal handler values
-    struct task_struct *task = data.task;
-    struct sighand_struct *sighand = READ_KERN(task->sighand);
-    struct k_sigaction *sig_actions = &(sighand->action[0]);
-    if (sig > 0 && sig < _NSIG) {
-        struct k_sigaction *old_act = get_node_addr(sig_actions, sig - 1);
-        old_sa_flags = READ_KERN(old_act->sa.sa_flags);
-        // In 64-bit system there is only 1 node in the mask array
-        old_sa_mask = READ_KERN(old_act->sa.sa_mask.sig[0]);
-        old_sa_handler = READ_KERN(old_act->sa.sa_handler);
-        if (old_sa_handler >= (void *) SIG_HND)
-            old_handle_method = SIG_HND;
-        else {
-            old_handle_method = (u8) (old_sa_handler && 0xFF);
-            old_sa_handler = NULL;
-        }
-    }
-
-    // Check if a pointer for storing old signal handler is given
-    struct k_sigaction *recv_old_act = (struct k_sigaction *) PT_REGS_PARM3(ctx);
-    bool old_act_initialized = recv_old_act != NULL;
-
-    // Extract new signal handler values if initialized
-    struct k_sigaction *new_act = (struct k_sigaction *) PT_REGS_PARM2(ctx);
-    bool new_act_initialized = new_act != NULL;
-    if (new_act_initialized) {
-        struct sigaction *new_sigaction = &new_act->sa;
-        new_sa_flags = READ_KERN(new_sigaction->sa_flags);
-        // In 64-bit system there is only 1 node in the mask array
-        new_sa_mask = READ_KERN(new_sigaction->sa_mask.sig[0]);
-        new_sa_handler = READ_KERN(new_sigaction->sa_handler);
-        if (new_sa_handler >= (void *) SIG_HND)
-            new_handle_method = SIG_HND;
-        else {
-            new_handle_method = (u8) (new_sa_handler && 0xFF);
-            new_sa_handler = NULL;
-        }
-    }
-
-    save_to_submit_buf(&data, &sig, sizeof(int), 0);
-    save_to_submit_buf(&data, &new_act_initialized, sizeof(bool), 1);
-    if (new_act_initialized) {
-        save_to_submit_buf(&data, &new_sa_flags, sizeof(unsigned long), 2);
-        save_to_submit_buf(&data, &new_sa_mask, sizeof(unsigned long), 3);
-        save_to_submit_buf(&data, &new_handle_method, sizeof(u8), 4);
-        save_to_submit_buf(&data, &new_sa_handler, sizeof(void *), 5);
-    }
-    save_to_submit_buf(&data, &old_act_initialized, sizeof(bool), 6);
-    save_to_submit_buf(&data, &old_sa_flags, sizeof(unsigned long), 7);
-    save_to_submit_buf(&data, &old_sa_mask, sizeof(unsigned long), 8);
-    save_to_submit_buf(&data, &old_handle_method, sizeof(u8), 9);
-    save_to_submit_buf(&data, &old_sa_handler, sizeof(void *), 10);
-
-    return events_perf_submit(&data, DO_SIGACTION, 0);
 }
 
 static __always_inline bool

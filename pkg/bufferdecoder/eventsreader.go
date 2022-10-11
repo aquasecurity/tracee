@@ -18,7 +18,6 @@ type ArgType uint8
 
 const (
 	noneT ArgType = iota
-	u8T
 	intT
 	uintT
 	longT
@@ -62,10 +61,6 @@ func ReadArgFromBuff(ebpfMsgDecoder *EbpfDecoder, params []trace.ArgMeta) (trace
 	argType := GetParamType(argMeta.Type)
 
 	switch argType {
-	case u8T:
-		var data uint8
-		err = ebpfMsgDecoder.DecodeUint8(&data)
-		res = data
 	case u16T:
 		var data uint16
 		err = ebpfMsgDecoder.DecodeUint16(&data)
@@ -216,8 +211,6 @@ func GetParamType(paramType string) ArgType {
 		return credT
 	case "umode_t":
 		return u16T
-	case "u8":
-		return u8T
 	case "unsigned long[]", "[]trace.HookedSymbolData":
 		return uint64ArrT
 	default:
