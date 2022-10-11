@@ -317,7 +317,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 					}, nil
 				},
 			},
-			expectedError: "signature Fake Signature doesn't declare an input source\n",
+			expectedError: "signature Fake Signature doesn't declare an input source",
 		},
 		{
 			name: "sad path - signature init fails",
@@ -327,7 +327,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 				},
 			},
 			expectedNumEvents: 0,
-			expectedError:     "error initializing signature Fake Signature: init failed\n",
+			expectedError:     "error initializing signature Fake Signature: init failed",
 		},
 		{
 			name: "sad path - getSelectedEvents returns an error",
@@ -336,7 +336,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 					return nil, errors.New("getSelectedEvents error")
 				},
 			},
-			expectedError: "error getting selected events for signature Fake Signature: getSelectedEvents error\n",
+			expectedError: "error getting selected events for signature Fake Signature: getSelectedEvents error",
 		},
 		{
 			name: "sad path - getMetadata returns an error",
@@ -345,7 +345,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 					return detect.SignatureMetadata{}, errors.New("getMetadata error")
 				},
 			},
-			expectedError: "error getting metadata: getMetadata error\n",
+			expectedError: "error getting metadata: getMetadata error",
 		},
 		{
 			name: "happy path - signature receives a non tracee event",

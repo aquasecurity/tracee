@@ -3,8 +3,9 @@ package engine
 import (
 	"fmt"
 	"io"
-	"log"
 	"sync"
+
+	"github.com/aquasecurity/tracee/pkg/logger"
 
 	"github.com/aquasecurity/tracee/pkg/rules/metrics"
 	"github.com/aquasecurity/tracee/types/detect"
@@ -23,7 +24,7 @@ type Config struct {
 
 // Engine is a rule-engine that can process events coming from a set of input sources against a set of loaded signatures, and report the signatures' findings
 type Engine struct {
-	logger          log.Logger
+	logger          logger.Logger
 	signatures      map[detect.Signature]chan protocol.Event
 	signaturesIndex map[detect.SignatureEventSelector][]detect.Signature
 	signaturesMutex sync.RWMutex
@@ -34,7 +35,7 @@ type Engine struct {
 	stats           metrics.Stats
 }
 
-//EventSources is a bundle of input sources used to configure the Engine
+// EventSources is a bundle of input sources used to configure the Engine
 type EventSources struct {
 	Tracee chan protocol.Event
 }
@@ -51,7 +52,15 @@ func NewEngine(sigs []detect.Signature, sources EventSources, output chan detect
 	}
 	engine := Engine{}
 	engine.waitGroup = sync.WaitGroup{}
-	engine.logger = *log.New(logWriter, "", 0)
+	engine.logger = *logger.NewLogger(
+		&logger.LoggerConfig{
+			Writer:    logWriter,
+			Level:     logger.InfoLevel,
+			Encoder:   logger.NewJSONEncoder(logger.NewProductionConfig().EncoderConfig),
+			Aggregate: false,
+		},
+	)
+
 	engine.inputs = sources
 	engine.output = output
 	engine.config = config
@@ -62,7 +71,7 @@ func NewEngine(sigs []detect.Signature, sources EventSources, output chan detect
 	for _, sig := range sigs {
 		_, err := engine.loadSignature(sig)
 		if err != nil {
-			engine.logger.Printf("error loading signature: %v", err)
+			engine.logger.Error("loading signature: " + err.Error())
 		}
 	}
 	return &engine, nil
@@ -74,7 +83,7 @@ func signatureStart(signature detect.Signature, c chan protocol.Event, wg *sync.
 	for e := range c {
 		if err := signature.OnEvent(e); err != nil {
 			meta, _ := signature.GetMetadata()
-			log.Printf("error handling event by signature %s: %v", meta.Name, err)
+			logger.Error("handling event by signature " + meta.Name + ": " + err.Error())
 		}
 	}
 	wg.Done()
@@ -133,7 +142,7 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 				for sig := range engine.signatures {
 					se, err := sig.GetSelectedEvents()
 					if err != nil {
-						engine.logger.Printf("error getting selected events: %v", err)
+						engine.logger.Error("getting selected events: " + err.Error())
 						continue
 					}
 					for _, sel := range se {
@@ -191,7 +200,7 @@ func (engine *Engine) dispatchEvent(s detect.Signature, event protocol.Event) {
 	engine.signatures[s] <- event
 }
 
-//LoadSignature will call the internal signature loading logic and activate its handling business logics.
+// LoadSignature will call the internal signature loading logic and activate its handling business logics.
 // It will return the signature ID as well as error.
 func (engine *Engine) LoadSignature(signature detect.Signature) (string, error) {
 	id, err := engine.loadSignature(signature)
@@ -205,7 +214,7 @@ func (engine *Engine) LoadSignature(signature detect.Signature) (string, error) 
 	return id, nil
 }
 
-//loadSignature handles storing a signature in the Engine data structures
+// loadSignature handles storing a signature in the Engine data structures
 // It will return the signature ID as well as error.
 func (engine *Engine) loadSignature(signature detect.Signature) (string, error) {
 	metadata, err := signature.GetMetadata()
@@ -242,7 +251,7 @@ func (engine *Engine) loadSignature(signature detect.Signature) (string, error) 
 			selectedEvent.Origin = ALL_EVENT_ORIGINS
 		}
 		if selectedEvent.Source == "" {
-			engine.logger.Printf("signature %s doesn't declare an input source", metadata.Name)
+			engine.logger.Error("signature " + metadata.Name + " doesn't declare an input source")
 		} else {
 			engine.signaturesMutex.Lock()
 			engine.signaturesIndex[selectedEvent] = append(engine.signaturesIndex[selectedEvent], signature)
@@ -254,7 +263,7 @@ func (engine *Engine) loadSignature(signature detect.Signature) (string, error) 
 	return metadata.ID, nil
 }
 
-//UnloadSignature will remove from Engine data structures the given signature and stop its handling goroutine
+// UnloadSignature will remove from Engine data structures the given signature and stop its handling goroutine
 func (engine *Engine) UnloadSignature(signatureId string) error {
 	var signature detect.Signature
 	engine.signaturesMutex.RLock()
