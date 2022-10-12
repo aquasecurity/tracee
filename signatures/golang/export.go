@@ -11,4 +11,5 @@ var ExportedSignatures = []detect.Signature{
 	&DroppedExecutable{},
 	&ProcMemCodeInjection{},
 	&DockerAbuse{},
+	&ScheduledTaskModification{},
 }
