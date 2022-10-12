@@ -92,12 +92,6 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 	}
 	cfg.Filter = &filter
 
-	// Check if container mode is enabled
-
-	containerMode := (cfg.Filter.ContFilter.Enabled() && cfg.Filter.ContFilter.Value()) ||
-		(cfg.Filter.NewContFilter.Enabled() && cfg.Filter.NewContFilter.Value()) ||
-		cfg.Filter.ContIDFilter.Enabled()
-
 	// Output command line flags
 
 	output, printerConfig, err := flags.PrepareOutput(c.StringSlice("output"))
@@ -105,7 +99,7 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 		return runner, err
 	}
 
-	printerConfig.ContainerMode = containerMode
+	printerConfig.ContainerMode = cmd.GetContainerMode(cfg)
 	cfg.Output = &output
 
 	// Check kernel lockdown
