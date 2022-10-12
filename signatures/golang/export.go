@@ -7,4 +7,5 @@ import "github.com/aquasecurity/tracee/types/detect"
 var ExportedSignatures = []detect.Signature{
 	&stdioOverSocket{},
 	&K8sApiConnection{},
+	&AslrInspection{},
 }
