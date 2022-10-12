@@ -8,4 +8,5 @@ var ExportedSignatures = []detect.Signature{
 	&stdioOverSocket{},
 	&K8sApiConnection{},
 	&AslrInspection{},
+	&DroppedExecutable{},
 }
