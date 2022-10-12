@@ -53,3 +53,28 @@ func GetTraceeBytesSliceArgumentByName(event trace.Event, argName string) ([]byt
 
 	return nil, fmt.Errorf("can't convert argument %v to []bytes", argName)
 }
+
+// GetRawAddrArgumentByName returns map[string]string of addr argument
+func GetRawAddrArgumentByName(event trace.Event, argName string) (map[string]string, error) {
+	arg, err := GetTraceeArgumentByName(event, argName)
+	if err != nil {
+		return nil, err
+	}
+	addr, isOk := arg.Value.(map[string]string)
+	if !isOk {
+		addr = make(map[string]string)
+		stringInterMap, isStringInterMap := arg.Value.(map[string]interface{})
+		if !isStringInterMap {
+			return addr, fmt.Errorf("couldn't convert arg to addr")
+		}
+		for k, v := range stringInterMap {
+			s, isString := v.(string)
+			if !isString {
+				return addr, fmt.Errorf("couldn't convert arg to addr")
+			}
+			addr[k] = s
+		}
+	}
+
+	return addr, nil
+}
