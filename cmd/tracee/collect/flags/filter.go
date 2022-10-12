@@ -2,6 +2,7 @@ package flags
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
@@ -12,7 +13,7 @@ import (
 // MaxBpfStrFilterSize value should match MAX_STR_FILTER_SIZE defined in BPF code
 const MaxBpfStrFilterSize = 16
 
-func FilterHelp() string {
+func filterHelp() string {
 	return `Select which events to trace by defining trace expressions that operate on events or process metadata.
 Only events that match all trace expressions will be traced (trace flags are ANDed).
 The following types of expressions are supported:
@@ -83,7 +84,12 @@ To 'escape' those operators, please use single quotes, e.g.: 'uid>0'
 `
 }
 
-func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
+func ParseFilter(filtersArr []string) (tracee.Filter, error) {
+	if checkCommandIsHelp(filtersArr) {
+		fmt.Print(filterHelp())
+		os.Exit(0)
+	}
+
 	filter := tracee.Filter{
 		UIDFilter: &filters.UIntFilter{
 			Equal:    []uint64{},

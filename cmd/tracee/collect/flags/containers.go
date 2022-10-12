@@ -5,11 +5,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/debug"
+	"github.com/aquasecurity/tracee/cmd/tracee/collect/internal/debug"
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 )
 
-func ContainersHelp() string {
+func containersHelp() string {
 	return `Select which container runtimes to connect to for container events enrichment.
 By default, if no flag is passed, tracee will automatically detect installed runtimes by going through known runtime socket paths.
 
@@ -39,7 +39,12 @@ func contains(s []string, val string) bool {
 	return false
 }
 
-func PrepareContainers(containerFlags []string) (runtime.Sockets, error) {
+func ParseContainers(containerFlags []string) (runtime.Sockets, error) {
+	if checkCommandIsHelp(containerFlags) {
+		fmt.Print(containersHelp())
+		os.Exit(0)
+	}
+
 	if len(containerFlags) == 0 {
 		return runtime.Autodiscover(func(err error, runtime runtime.RuntimeId, socket string) {
 			if debug.Enabled() {

@@ -1,4 +1,4 @@
-package main
+package collect
 
 import (
 	"errors"
@@ -8,10 +8,11 @@ import (
 	"strings"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
-	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/flags"
+	"github.com/aquasecurity/tracee/cmd/tracee/collect/flags"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
+
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 

@@ -2,13 +2,14 @@ package flags
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 )
 
-func CacheHelp() string {
+func cacheHelp() string {
 	return `Select different cache types for the event pipeline queueing.
 Possible options:
 cache-type={none,mem}                              pick the appropriate cache type.
@@ -21,7 +22,12 @@ Use this flag multiple times to choose multiple output options
 `
 }
 
-func PrepareCache(cacheSlice []string) (queue.CacheConfig, error) {
+func ParseCache(cacheSlice []string) (queue.CacheConfig, error) {
+	if checkCommandIsHelp(cacheSlice) {
+		fmt.Print(cacheHelp())
+		os.Exit(0)
+	}
+
 	var cache queue.CacheConfig
 	var err error
 	cacheTypeMem := false

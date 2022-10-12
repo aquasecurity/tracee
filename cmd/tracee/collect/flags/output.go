@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/printer"
+	"github.com/aquasecurity/tracee/cmd/tracee/collect/internal/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 )
 
-func OutputHelp() string {
+func outputHelp() string {
 	return `Control how and where output is printed.
 Possible options:
 [format:]table                                     output events in table format
@@ -41,7 +41,12 @@ Use this flag multiple times to choose multiple output options
 `
 }
 
-func PrepareOutput(outputSlice []string) (tracee.OutputConfig, printer.Config, error) {
+func ParseOutput(outputSlice []string) (tracee.OutputConfig, printer.Config, error) {
+	if checkCommandIsHelp(outputSlice) {
+		fmt.Print(outputHelp())
+		os.Exit(0)
+	}
+
 	outcfg := tracee.OutputConfig{}
 	printcfg := printer.Config{}
 	printerKind := "table"

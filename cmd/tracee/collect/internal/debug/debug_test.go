@@ -3,7 +3,8 @@ package debug_test
 import (
 	"testing"
 
-	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/debug"
+	"github.com/aquasecurity/tracee/cmd/tracee/collect/internal/debug"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

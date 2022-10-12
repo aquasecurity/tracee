@@ -2,6 +2,7 @@ package flags
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
@@ -16,7 +17,7 @@ const (
 	AddReqCapsFlag      = "add"
 )
 
-func CapabilitiesHelp() string {
+func capabilitiesHelp() string {
 	mainHelp := fmt.Sprintf(`Manage the capabilities and capabilities-related operations of tracee-ebpf
 Normally, tracee will drop all capabilities not required to its operations.
 
@@ -51,7 +52,12 @@ type CapsConfig struct {
 	CapsToPreserve []cap.Value
 }
 
-func PrepareCapsConfig(capsCfgArray []string) (CapsConfig, error) {
+func ParseCapsConfig(capsCfgArray []string) (CapsConfig, error) {
+	if checkCommandIsHelp(capsCfgArray) {
+		fmt.Print(capabilitiesHelp())
+		os.Exit(0)
+	}
+
 	var cfg CapsConfig
 	for _, opt := range capsCfgArray {
 		optName := opt

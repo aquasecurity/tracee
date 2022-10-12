@@ -1,4 +1,4 @@
-package main
+package signatures
 
 import (
 	_ "embed"
@@ -19,7 +19,7 @@ import (
 	"github.com/aquasecurity/tracee/types/detect"
 )
 
-func getSignatures(target string, partialEval bool, rulesDir string, rules []string, aioEnabled bool) ([]detect.Signature, error) {
+func GetSignatures(target string, partialEval bool, rulesDir string, rules []string, aioEnabled bool) ([]detect.Signature, error) {
 	if rulesDir == "" {
 		exePath, err := os.Executable()
 		if err != nil {

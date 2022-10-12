@@ -6,11 +6,12 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/flags"
+	"github.com/aquasecurity/tracee/cmd/tracee/collect/flags"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/filters"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

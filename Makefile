@@ -1,5 +1,5 @@
 .PHONY: all | env
-all: tracee-ebpf tracee-rules rules
+all: tracee-ebpf tracee-rules tracee-trace rules
 
 #
 # make
@@ -228,6 +228,7 @@ help:
 	@echo "    $$ make tracee-ebpf          	# build ./dist/tracee-ebpf"
 	@echo "    $$ make tracee-rules         	# build ./dist/tracee-rules"
 	@echo "    $$ make tracee-bench         	# build ./dist/tracee-bench"
+	@echo "    $$ make tracee-trace						# build ./dist/tracee-trace"
 	@echo "    $$ make rules                	# build ./dist/rules"
 	@echo ""
 	@echo "# install"
@@ -243,6 +244,7 @@ help:
 	@echo "    $$ make clean-tracee-ebpf    	# wipe ./dist/tracee-ebpf"
 	@echo "    $$ make clean-tracee-rules   	# wipe ./dist/tracee-rules"
 	@echo "    $$ make clean-tracee-bench   	# wipe ./dist/tracee-bench"
+	@echo "    $$ make clean-tracee-trace 		# wipe ./dist/tracee-trace"
 	@echo "    $$ make clean-rules          	# wipe ./dist/rules"
 	@echo ""
 	@echo "# test"
@@ -511,6 +513,33 @@ ifeq ($(BTFHUB), 1)
 		$(SH_BTFHUB) && echo $$new > .$(notdir $<).md5
 	fi
 endif
+
+#
+# tracee-trace
+#
+
+.PHONY: tracee-trace
+tracee-trace: $(OUTPUT_DIR)/tracee-trace
+
+$(OUTPUT_DIR)/tracee-trace: \
+	.checkver_$(CMD_GO) \
+	$(TRACEE_RULES_SRC) \
+	| $(OUTPUT_DIR) \
+	rules
+#
+	$(GO_ENV_RULES) $(CMD_GO) build \
+		-tags $(GO_TAGS_RULES) \
+		-ldflags="$(GO_DEBUG_FLAG) \
+			-extldflags \"$(CGO_EXT_LDFLAGS_RULES)\" \
+			" \
+		-v -o $@ \
+		./cmd/trace
+
+.PHONY: clean-tracee-trace
+clean-tracee-trace:
+#
+	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-trace
+
 
 #
 # tracee-rules

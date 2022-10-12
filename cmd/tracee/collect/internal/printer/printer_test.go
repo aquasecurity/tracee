@@ -5,8 +5,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/flags"
-	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/printer"
+	"github.com/aquasecurity/tracee/cmd/tracee/collect/flags"
+	"github.com/aquasecurity/tracee/cmd/tracee/collect/internal/printer"
+
 	"github.com/stretchr/testify/assert"
 )
 
