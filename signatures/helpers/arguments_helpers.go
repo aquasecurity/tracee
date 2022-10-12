@@ -82,26 +82,15 @@ func GetTraceeBytesSliceArgumentByName(event trace.Event, argName string) ([]byt
 	return nil, fmt.Errorf("can't convert argument %v to []bytes", argName)
 }
 
-// GetRawAddrArgumentByName returns map[string]string of addr argument
-func GetRawAddrArgumentByName(event trace.Event, argName string) (map[string]string, error) {
+// GetRawAddrArgumentByName returns trace.SockAddr of addr argument
+func GetSockAddrArgumentByName(event trace.Event, argName string) (trace.SockAddr, error) {
 	arg, err := GetTraceeArgumentByName(event, argName)
 	if err != nil {
 		return nil, err
 	}
-	addr, isOk := arg.Value.(map[string]string)
+	addr, isOk := arg.Value.(trace.SockAddr)
 	if !isOk {
-		addr = make(map[string]string)
-		stringInterMap, isStringInterMap := arg.Value.(map[string]interface{})
-		if !isStringInterMap {
-			return addr, fmt.Errorf("couldn't convert arg to addr")
-		}
-		for k, v := range stringInterMap {
-			s, isString := v.(string)
-			if !isString {
-				return addr, fmt.Errorf("couldn't convert arg to addr")
-			}
-			addr[k] = s
-		}
+		return nil, fmt.Errorf("can't convert argument %v to trace.SockAddr", argName)
 	}
 
 	return addr, nil

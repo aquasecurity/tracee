@@ -3,7 +3,6 @@ package wrapper
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/aquasecurity/tracee/types/protocol"
@@ -139,7 +138,7 @@ func toArg(event trace.Event, source trace.Argument) (*Argument, error) {
 			Int64Value: &v,
 		}
 	case ValueType_SOCKADDR:
-		v := source.Value.(map[string]string)
+		v := source.Value.(trace.SockAddr)
 		sockaddr, err := newSockaddr(v)
 		if err != nil {
 			return nil, err
@@ -158,23 +157,31 @@ func toArg(event trace.Event, source trace.Argument) (*Argument, error) {
 	}, nil
 }
 
-func newSockaddr(v map[string]string) (*Sockaddr, error) {
-	sinPort, err := parsePort(v["sin_port"])
-	if err != nil {
-		return nil, err
+func newSockaddr(v trace.SockAddr) (*Sockaddr, error) {
+	// go-cel comparisons include unspecified fields in a struct equality check
+	// as such we need to set only the exact fields required in the wrapper.Sockaddr struct
+	parsedFamily := parseSaFamily(v.Family())
+	switch parsedFamily {
+	case SaFamilyT_AF_INET:
+		return &Sockaddr{
+			SaFamily: parsedFamily,
+			SinAddr:  v.Address(),
+			SinPort:  uint32(v.Port()),
+		}, nil
+	case SaFamilyT_AF_INET6:
+		return &Sockaddr{
+			SaFamily: parsedFamily,
+			Sin6Addr: v.Address(),
+			Sin6Port: uint32(v.Port()),
+		}, nil
+	case SaFamilyT_AF_UNIX:
+		return &Sockaddr{
+			SaFamily: parsedFamily,
+			SunPath:  v.Address(),
+		}, nil
+	default:
+		return nil, fmt.Errorf("unspecified family")
 	}
-	sin6Port, err := parsePort(v["sin6_port"])
-	if err != nil {
-		return nil, err
-	}
-	return &Sockaddr{
-		SaFamily: parseSaFamily(v["sa_family"]),
-		SunPath:  v["sun_path"],
-		SinAddr:  v["sin_addr"],
-		SinPort:  sinPort,
-		Sin6Addr: v["sin6_addr"],
-		Sin6Port: sin6Port,
-	}, nil
 }
 
 func parseSaFamily(value string) SaFamilyT {
@@ -188,15 +195,4 @@ func parseSaFamily(value string) SaFamilyT {
 	default:
 		return SaFamilyT_SA_FAMILY_T_UNSPEC
 	}
-}
-
-func parsePort(value string) (uint32, error) {
-	if value == "" {
-		return 0, nil
-	}
-	i, err := strconv.ParseInt(value, 10, 32)
-	if err != nil {
-		return 0, err
-	}
-	return uint32(i), nil
 }

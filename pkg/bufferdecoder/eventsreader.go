@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
-	"strconv"
 	"strings"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
@@ -226,8 +225,8 @@ func GetParamType(paramType string) ArgType {
 	}
 }
 
-func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error) {
-	res := make(map[string]string, 5)
+func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (trace.SockAddr, error) {
+	var res trace.SockAddr
 	var family int16
 	err := ebpfMsgDecoder.DecodeInt16(&family)
 	if err != nil {
@@ -235,9 +234,8 @@ func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error
 	}
 	socketDomainArg, err := helpers.ParseSocketDomainArgument(uint64(family))
 	if err != nil {
-		socketDomainArg = helpers.AF_UNSPEC
+		return nil, fmt.Errorf("unspecified socket domain: %s", socketDomainArg.String())
 	}
-	res["sa_family"] = socketDomainArg.String()
 	switch family {
 	case 1: // AF_UNIX
 		/*
@@ -261,7 +259,9 @@ func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_un: %v", err)
 		}
-		res["sun_path"] = sunPath
+		res = &trace.SockAddrUnix{
+			Socket: sunPath,
+		}
 	case 2: // AF_INET
 		/*
 			http://man7.org/linux/man-pages/man7/ip.7.html
@@ -280,16 +280,19 @@ func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_in: %v", err)
 		}
-		res["sin_port"] = strconv.Itoa(int(port))
 		var addr uint32
 		err = ebpfMsgDecoder.DecodeUint32BigEndian(&addr)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_in: %v", err)
 		}
-		res["sin_addr"] = PrintUint32IP(addr)
+		ipAddr := PrintUint32IP(addr)
 		_, err := ReadByteSliceFromBuff(ebpfMsgDecoder, 8)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_in: %v", err)
+		}
+		res = &trace.SockAddrInet{
+			Port_: int(port),
+			Ip:    ipAddr,
 		}
 	case 10: // AF_INET6
 		/*
@@ -310,25 +313,27 @@ func readSockaddrFromBuff(ebpfMsgDecoder *EbpfDecoder) (map[string]string, error
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_in6: %v", err)
 		}
-		res["sin6_port"] = strconv.Itoa(int(port))
-
 		var flowinfo uint32
 		err = ebpfMsgDecoder.DecodeUint32BigEndian(&flowinfo)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_in6: %v", err)
 		}
-		res["sin6_flowinfo"] = strconv.Itoa(int(flowinfo))
 		addr, err := ReadByteSliceFromBuff(ebpfMsgDecoder, 16)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_in6: %v", err)
 		}
-		res["sin6_addr"] = Print16BytesSliceIP(addr)
+		ipAddr := Print16BytesSliceIP(addr)
 		var scopeid uint32
 		err = ebpfMsgDecoder.DecodeUint32BigEndian(&scopeid)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing sockaddr_in6: %v", err)
 		}
-		res["sin6_scopeid"] = strconv.Itoa(int(scopeid))
+		res = &trace.SockAddrInet6{
+			Port_:    int(port),
+			Ip:       ipAddr,
+			FlowInfo: int(flowinfo),
+			ScopeID:  int(scopeid),
+		}
 	}
 	return res, nil
 }

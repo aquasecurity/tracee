@@ -74,22 +74,14 @@ func (sig *DockerAbuse) OnEvent(event protocol.Event) error {
 
 	case "security_socket_connect":
 
-		addr, err := helpers.GetRawAddrArgumentByName(eventObj, "remote_addr")
+		addr, err := helpers.GetSockAddrArgumentByName(eventObj, "remote_addr")
 		if err != nil {
 			return err
-		}
-
-		supportedFamily, err := helpers.IsUnixFamily(addr)
-		if err != nil {
-			return err
-		}
-		if !supportedFamily {
-			return nil
 		}
 
 		sunPath, err := helpers.GetPathFromRawAddr(addr)
 		if err != nil {
-			return err
+			return nil
 		}
 
 		path = sunPath

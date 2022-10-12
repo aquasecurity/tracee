@@ -45,10 +45,9 @@ func TestK8sApiConnection(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "remote_addr",
 							},
-							Value: map[string]string{
-								"sa_family": "AF_INET",
-								"sin_port":  "80",
-								"sin_addr":  "1.1.1.1",
+							Value: &trace.SockAddrInet{
+								Port_: 80,
+								Ip:    "1.1.1.1",
 							},
 						},
 					},
@@ -67,10 +66,9 @@ func TestK8sApiConnection(t *testing.T) {
 								ArgMeta: trace.ArgMeta{
 									Name: "remote_addr",
 								},
-								Value: map[string]string{
-									"sa_family": "AF_INET",
-									"sin_port":  "80",
-									"sin_addr":  "1.1.1.1",
+								Value: &trace.SockAddrInet{
+									Port_: 80,
+									Ip:    "1.1.1.1",
 								},
 							},
 						},
@@ -118,7 +116,7 @@ func TestK8sApiConnection(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "remote_addr",
 							},
-							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "80", "sin_addr": "169.254.169.254"},
+							Value: &trace.SockAddrInet{Port_: 80, Ip: "169.254.169.254"},
 						},
 					},
 				},

@@ -32,7 +32,7 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "remote_addr",
 							},
-							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
+							Value: &trace.SockAddrInet{Port_: 53, Ip: "10.225.0.2"},
 						},
 					},
 				},
@@ -57,7 +57,7 @@ func TestStdioOverSocket(t *testing.T) {
 								ArgMeta: trace.ArgMeta{
 									Name: "remote_addr",
 								},
-								Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
+								Value: &trace.SockAddrInet{Port_: 53, Ip: "10.225.0.2"},
 							},
 						},
 					}.ToProtocol(),
@@ -94,7 +94,7 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "remote_addr",
 							},
-							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
+							Value: &trace.SockAddrInet{Port_: 53, Ip: "10.225.0.2"},
 						},
 					},
 				},
@@ -119,7 +119,7 @@ func TestStdioOverSocket(t *testing.T) {
 								ArgMeta: trace.ArgMeta{
 									Name: "remote_addr",
 								},
-								Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
+								Value: &trace.SockAddrInet{Port_: 53, Ip: "10.225.0.2"},
 							},
 						},
 					}.ToProtocol(),
@@ -156,7 +156,7 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "remote_addr",
 							},
-							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
+							Value: &trace.SockAddrInet{Port_: 53, Ip: "10.225.0.2"},
 						},
 					},
 				},
@@ -179,7 +179,7 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "remote_addr",
 							},
-							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "0", "sin_addr": ""},
+							Value: &trace.SockAddrInet{},
 						},
 					},
 				},
@@ -202,7 +202,7 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "remote_addr",
 							},
-							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
+							Value: &trace.SockAddrInet{Port_: 53, Ip: "10.225.0.2"},
 						},
 					},
 				},
@@ -225,7 +225,7 @@ func TestStdioOverSocket(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "remote_addr",
 							},
-							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "0", "sin_addr": ""},
+							Value: &trace.SockAddrInet{},
 						},
 					},
 				},

@@ -76,22 +76,14 @@ func (sig *StdioOverSocket) OnEvent(event protocol.Event) error {
 		return nil
 	}
 
-	remoteAddr, err := helpers.GetRawAddrArgumentByName(eventObj, "remote_addr")
+	remoteAddr, err := helpers.GetSockAddrArgumentByName(eventObj, "remote_addr")
 	if err != nil {
 		return err
-	}
-
-	supportedFamily, err := helpers.IsInternetFamily(remoteAddr)
-	if err != nil {
-		return err
-	}
-	if !supportedFamily {
-		return nil
 	}
 
 	port, err := helpers.GetPortFromRawAddr(remoteAddr)
 	if err != nil {
-		return err
+		return nil
 	}
 
 	for _, legitPort := range sig.legitPorts {
@@ -100,10 +92,8 @@ func (sig *StdioOverSocket) OnEvent(event protocol.Event) error {
 		}
 	}
 
-	ip, err := helpers.GetIPFromRawAddr(remoteAddr)
-	if err != nil {
-		return err
-	}
+	// by now we know it's internet family
+	ip := remoteAddr.Address()
 
 	metadata, err := sig.GetMetadata()
 	if err != nil {

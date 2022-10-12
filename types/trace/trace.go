@@ -182,6 +182,64 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+type SockAddr interface {
+	Port() int
+	Address() string
+	Family() string
+}
+
+type SockAddrUnix struct {
+	Socket string
+}
+
+func (SockAddrUnix) Port() int {
+	return -1
+}
+
+func (SockAddrUnix) Family() string {
+	return "AF_UNIX"
+}
+
+func (s *SockAddrUnix) Address() string {
+	return s.Socket
+}
+
+type SockAddrInet struct {
+	Port_ int
+	Ip    string
+}
+
+func (s *SockAddrInet) Port() int {
+	return s.Port_
+}
+
+func (SockAddrInet) Family() string {
+	return "AF_INET"
+}
+
+func (s *SockAddrInet) Address() string {
+	return s.Ip
+}
+
+type SockAddrInet6 struct {
+	Port_    int
+	Ip       string
+	FlowInfo int
+	ScopeID  int
+}
+
+func (s *SockAddrInet6) Port() int {
+	return s.Port_
+}
+
+func (SockAddrInet6) Family() string {
+	return "AF_INET6"
+}
+
+func (s *SockAddrInet6) Address() string {
+	return s.Ip
+}
+
 // SlimCred struct is a slim version of the kernel's cred struct
 // it is used to unmarshal binary data and therefore should match (bit by bit) to the `slim_cred_t` struct in the ebpf code.
 // ANY CHANGE TO THIS STRUCT WILL BE REQUIRED ALSO TO bufferdecoder.SlimCred

@@ -76,22 +76,18 @@ func (sig *K8sApiConnection) OnEvent(event protocol.Event) error {
 			return nil
 		}
 
-		remoteAddr, err := helpers.GetRawAddrArgumentByName(eventObj, "remote_addr")
+		remoteAddr, err := helpers.GetTraceeArgumentByName(eventObj, "remote_addr")
 		if err != nil {
 			return err
+		}
+		sockAddr, ok := remoteAddr.Value.(trace.SockAddr)
+		if !ok {
+			return fmt.Errorf("failed to extract trace.SockAddr argument")
 		}
 
-		supportedFamily, err := helpers.IsInternetFamily(remoteAddr)
+		ip, err := helpers.GetIPFromRawAddr(sockAddr)
 		if err != nil {
-			return err
-		}
-		if !supportedFamily {
 			return nil
-		}
-
-		ip, err := helpers.GetIPFromRawAddr(remoteAddr)
-		if err != nil {
-			return err
 		}
 
 		if ip == apiAddress {

@@ -129,7 +129,7 @@ func TestReadArgFromBuff(t *testing.T) {
 				0, 0, 0, 0, 0, 0, 0, 0, //padding[8]
 			},
 			params:      []trace.ArgMeta{{Type: "struct sockaddr*", Name: "sockAddr0"}},
-			expectedArg: map[string]string(map[string]string{"sa_family": "AF_INET", "sin_addr": "255.255.255.255", "sin_port": "65535"}),
+			expectedArg: &trace.SockAddrInet{Ip: "255.255.255.255", Port_: 65535},
 		},
 		{
 			name: "sockAddrT - AF_UNIX",
@@ -138,7 +138,7 @@ func TestReadArgFromBuff(t *testing.T) {
 				47, 116, 109, 112, 47, 115, 111, 99, 107, 101, 116, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 101, 110, 0, 0, 0, // sun_path=/tmp/socket
 			},
 			params:      []trace.ArgMeta{{Type: "struct sockaddr*", Name: "sockAddr0"}},
-			expectedArg: map[string]string{"sa_family": "AF_UNIX", "sun_path": "/tmp/socket"},
+			expectedArg: &trace.SockAddrUnix{Socket: "/tmp/socket"},
 		},
 		{
 			name:          "unknown",

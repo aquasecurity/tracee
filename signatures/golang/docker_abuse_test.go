@@ -87,7 +87,7 @@ func TestDockerAbuse(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "remote_addr",
 							},
-							Value: map[string]string{"sa_family": "AF_UNIX", "sun_path": "/var/run/docker.sock"},
+							Value: &trace.SockAddrUnix{Socket: "/var/run/docker.sock"},
 						},
 					},
 				},
@@ -103,7 +103,7 @@ func TestDockerAbuse(t *testing.T) {
 								ArgMeta: trace.ArgMeta{
 									Name: "remote_addr",
 								},
-								Value: map[string]string{"sa_family": "AF_UNIX", "sun_path": "/var/run/docker.sock"},
+								Value: &trace.SockAddrUnix{Socket: "/var/run/docker.sock"},
 							},
 						},
 					}.ToProtocol(),
@@ -183,7 +183,7 @@ func TestDockerAbuse(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "remote_addr",
 							},
-							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
+							Value: &trace.SockAddrInet{Port_: 53, Ip: "10.225.0.2"},
 						},
 					},
 				},
