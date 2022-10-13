@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"strconv"
@@ -12,7 +13,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/prometheus/client_golang/api"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/urfave/cli/v2"
@@ -31,7 +31,7 @@ type measurement struct {
 }
 
 func (m measurement) Print() {
-	fmt.Printf("\n")
+	log.Printf("\n")
 	fmt.Printf("Events/Sec:     %f\n", m.AvgEbpfRate)
 	fmt.Printf("EventsLost/Sec: %f\n", m.AvgLostEventsRate)
 	fmt.Printf("Events Lost:    %d\n", m.LostEvents)
@@ -127,13 +127,13 @@ func main() {
 									defer wg.Done()
 									res, _, err := prom.Query(context.Background(), query, now)
 									if err != nil {
-										logger.Error("failed to fetch " + queryName + ": " + err.Error())
+										log.Printf("failed to fetch %s: %v\n", queryName, err)
 										return
 									}
 
 									queryResString := res.String()
 									if queryResString == "" {
-										logger.Error("failed to fetch " + queryName + ": empty")
+										log.Printf("failed to fetch %s: empty\n", queryName)
 										return
 									}
 									val, _ := parseQueryResString(queryResString)
@@ -164,7 +164,7 @@ func main() {
 	}
 	err := app.Run(os.Args)
 	if err != nil {
-		logger.Error(err.Error())
+		log.Fatal(err)
 	}
 }
 
