@@ -3689,6 +3689,7 @@ SEC("uprobe/trigger_syscall_event")
 int uprobe_syscall_trigger(struct pt_regs *ctx)
 {
     u64 caller_ctx_id = 0;
+    u32 trigger_pid = bpf_get_current_pid_tgid() >> 32;
 
     // clang-format off
     //
@@ -3718,6 +3719,10 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
 
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
+        return 0;
+
+    // uprobe was triggered from other tracee instance
+    if (data.config->tracee_pid != trigger_pid)
         return 0;
 
     int key = 0;
@@ -3761,6 +3766,7 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
     u64 caller_ctx_id = 0;
     u64 *address_array = NULL;
     u64 struct_address;
+    u32 trigger_pid = bpf_get_current_pid_tgid() >> 32;
 
     // clang-format off
     //
@@ -3793,6 +3799,10 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
 
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
+        return 0;
+
+    // uprobe was triggered from other tracee instance
+    if (data.config->tracee_pid != trigger_pid)
         return 0;
 
     u32 count_off = data.buf_off + 1;
