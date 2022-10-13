@@ -184,16 +184,19 @@ for TEST in $TESTS; do
     rm -f $SCRIPT_TMP_DIR/build-$$
     rm -f $SCRIPT_TMP_DIR/ebpf-$$
 
-    # make sure we exit both to start them again
+    rules_pid=$(pidof tracee-rules)
+    tracee_pid=$(pidof tracee-ebpf)
 
-    kill -19 $(pidof tracee-rules)
-    kill -19 $(pidof tracee-ebpf)
-
-    kill -9 $(pidof tracee-rules)
-    kill -9 $(pidof tracee-ebpf)
+    # cleanup tracee with SIGINT
+    kill -2 $rules_pid
+    kill -2 $tracee_pid
 
     # give a little break for OS noise to reduce
     sleep 5
+
+    # make sure tracee is exited with SIGKILL
+    kill -9 $rules_pid > /dev/null 2>&1
+    kill -9 $tracee_pid > /dev/null 2>&1
 done
 
 info
