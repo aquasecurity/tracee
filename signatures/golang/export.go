@@ -14,4 +14,5 @@ var ExportedSignatures = []detect.Signature{
 	&ScheduledTaskModification{},
 	&LdPreload{},
 	&CgroupNotifyOnReleaseModification{},
+	&DefaultLoaderModification{},
 }
