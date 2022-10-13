@@ -15,4 +15,5 @@ var ExportedSignatures = []detect.Signature{
 	&LdPreload{},
 	&CgroupNotifyOnReleaseModification{},
 	&DefaultLoaderModification{},
+	&SudoersModification{},
 }
