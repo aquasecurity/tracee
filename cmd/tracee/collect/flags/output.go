@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/printer"
+	"github.com/aquasecurity/tracee/cmd/tracee/collect/internal/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 )
 

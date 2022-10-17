@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/debug"
+	"github.com/aquasecurity/tracee/cmd/tracee/collect/internal/debug"
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 )
 

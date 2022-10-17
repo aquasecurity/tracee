@@ -1,5 +1,5 @@
 .PHONY: all | env
-all: tracee-ebpf tracee-rules rules
+all: tracee tracee-ebpf tracee-rules rules
 
 #
 # make
@@ -222,13 +222,14 @@ help:
 	@echo ""
 	@echo "# build"
 	@echo ""
-	@echo "    $$ make all                  	# build tracee-ebpf, tracee-rules & rules"
+	@echo "    $$ make all                  	# build tracee, tracee-ebpf, tracee-rules & rules"
 	@echo "    $$ make bpf-core             	# build ./dist/tracee.bpf.core.o"
 	@echo "    $$ make bpf-nocore           	# build ./dist/tracee.bpf.XXX.o"
 	@echo "    $$ make tracee-ebpf          	# build ./dist/tracee-ebpf"
 	@echo "    $$ make tracee-rules         	# build ./dist/tracee-rules"
 	@echo "    $$ make tracee-bench         	# build ./dist/tracee-bench"
 	@echo "    $$ make rules                	# build ./dist/rules"
+	@echo "    $$ make tracee									# build ./dist/tracee"
 	@echo ""
 	@echo "# install"
 	@echo ""
@@ -243,6 +244,7 @@ help:
 	@echo "    $$ make clean-tracee-ebpf    	# wipe ./dist/tracee-ebpf"
 	@echo "    $$ make clean-tracee-rules   	# wipe ./dist/tracee-rules"
 	@echo "    $$ make clean-tracee-bench   	# wipe ./dist/tracee-bench"
+	@echo "    $$ make clean-tracee						# wipe ./dist/tracee"
 	@echo "    $$ make clean-rules          	# wipe ./dist/rules"
 	@echo ""
 	@echo "# test"
@@ -556,6 +558,44 @@ $(OUTPUT_DIR)/tracee-rules: \
 clean-tracee-rules:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee-rules
+
+#
+# tracee
+#
+#
+#.PHONY: tracee
+tracee: $(OUTPUT_DIR)/tracee
+
+$(OUTPUT_DIR)/tracee: \
+	$(OUTPUT_DIR) \
+	$(OUTPUT_DIR)/tracee.bpf.core.o \
+	$(TRACEE_EBPF_SRC) \
+	$(TRACEE_RULES_SRC) \
+	./embedded-ebpf.go \
+	| .checkver_$(CMD_GO) \
+	.checklib_$(LIB_ELF) \
+	.checklib_$(LIB_ZLIB) \
+	btfhub \
+	rules
+#
+	$(MAKE) $(OUTPUT_DIR)/btfhub
+	$(MAKE) btfhub
+	$(GO_ENV_EBPF) $(CMD_GO) build \
+		-tags $(GO_TAGS_EBPF) \
+		-ldflags="$(GO_DEBUG_FLAG) \
+			-extldflags \"$(CGO_EXT_LDFLAGS_EBPF)\" \
+			-X main.version=\"$(VERSION)\" \
+			" \
+		-v -o $@ \
+		./cmd/tracee
+
+
+
+.PHONY: clean-tracee
+clean-tracee:
+#
+	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee
+	$(CMD_RM) -rf .*.md5
 
 #
 # rules

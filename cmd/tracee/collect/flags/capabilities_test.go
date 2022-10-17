@@ -3,7 +3,7 @@ package flags_test
 import (
 	"testing"
 
-	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/flags"
+	"github.com/aquasecurity/tracee/cmd/tracee/collect/flags"
 	"github.com/stretchr/testify/assert"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 )

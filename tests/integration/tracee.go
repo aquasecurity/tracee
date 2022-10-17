@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/libbpfgo/helpers"
-	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/initialize"
+	"github.com/aquasecurity/tracee/cmd/tracee/collect/initialize"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/stretchr/testify/require"

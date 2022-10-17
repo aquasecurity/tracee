@@ -10,7 +10,7 @@ import (
 
 	"github.com/aquasecurity/libbpfgo/helpers"
 	embed "github.com/aquasecurity/tracee"
-	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/debug"
+	"github.com/aquasecurity/tracee/cmd/tracee/collect/internal/debug"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 )
 
