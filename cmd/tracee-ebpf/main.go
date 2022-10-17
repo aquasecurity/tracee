@@ -206,7 +206,7 @@ func main() {
 			}
 
 			if server.ShouldStart(c) {
-				httpServer := server.New(c.String(server.ListenEndpointFlag), debug)
+				httpServer := server.New(c.String(server.ListenEndpointFlag))
 
 				if c.Bool(server.MetricsEndpointFlag) {
 					err := t.Stats().RegisterPrometheus()

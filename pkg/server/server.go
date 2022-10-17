@@ -6,6 +6,7 @@ import (
 	"net/http/pprof"
 	"os"
 
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/cli/v2"
 )
@@ -21,15 +22,13 @@ const (
 type Server struct {
 	mux        *http.ServeMux
 	listenAddr string
-	debug      bool
 }
 
 // New creates a new server
-func New(listenAddr string, debug bool) *Server {
+func New(listenAddr string) *Server {
 	return &Server{
 		mux:        http.NewServeMux(),
 		listenAddr: listenAddr,
-		debug:      debug,
 	}
 }
 
@@ -47,9 +46,7 @@ func (s *Server) EnableHealthzEndpoint() {
 
 // Start starts the http server on the listen addr
 func (s *Server) Start() {
-	if s.debug {
-		fmt.Fprintf(os.Stdout, "Serving metrics endpoint at %s\n", s.listenAddr)
-	}
+	logger.Debug(fmt.Sprintf("Serving metrics endpoint at %s\n", s.listenAddr))
 
 	if err := http.ListenAndServe(s.listenAddr, s.mux); err != http.ErrServerClosed {
 		fmt.Fprintf(os.Stderr, "Error serving metrics endpoint: %v\n", err)
