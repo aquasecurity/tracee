@@ -23,4 +23,5 @@ var ExportedSignatures = []detect.Signature{
 	&CorePatternModification{},
 	&ProcKcoreRead{},
 	&ProcMemAccess{},
+	&HiddenFileCreated{},
 }
