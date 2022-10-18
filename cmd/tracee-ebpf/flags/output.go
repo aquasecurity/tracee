@@ -10,7 +10,7 @@ import (
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 )
 
-func OutputHelp() string {
+func outputHelp() string {
 	return `Control how and where output is printed.
 Possible options:
 [format:]table                                     output events in table format

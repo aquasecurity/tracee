@@ -38,6 +38,8 @@ func main() {
 				return cli.ShowAppHelp(c)
 			}
 
+			flags.PrintAndExitIfHelp(c)
+
 			if c.Bool("list") {
 				printList()
 				return nil
@@ -88,23 +90,13 @@ func main() {
 				ContainersEnrich:   enrich,
 			}
 
-			containerRuntimesSlice := c.StringSlice("crs")
-			if checkCommandIsHelp(containerRuntimesSlice) {
-				fmt.Print(flags.ContainersHelp())
-				return nil
-			}
-			sockets, err := flags.PrepareContainers(containerRuntimesSlice)
+			sockets, err := flags.PrepareContainers(c.StringSlice("crs"))
 			if err != nil {
 				return err
 			}
 			cfg.Sockets = sockets
 
-			cacheSlice := c.StringSlice("cache")
-			if checkCommandIsHelp(cacheSlice) {
-				fmt.Print(flags.CacheHelp())
-				return nil
-			}
-			cache, err := flags.PrepareCache(cacheSlice)
+			cache, err := flags.PrepareCache(c.StringSlice("cache"))
 			if err != nil {
 				return err
 			}
@@ -113,23 +105,13 @@ func main() {
 				logger.Debug("cache", "type", cfg.Cache.String())
 			}
 
-			captureSlice := c.StringSlice("capture")
-			if checkCommandIsHelp(captureSlice) {
-				fmt.Print(flags.CaptureHelp())
-				return nil
-			}
-			capture, err := flags.PrepareCapture(captureSlice)
+			capture, err := flags.PrepareCapture(c.StringSlice("capture"))
 			if err != nil {
 				return err
 			}
 			cfg.Capture = &capture
 
-			traceSlice := c.StringSlice("trace")
-			if checkCommandIsHelp(traceSlice) {
-				fmt.Print(flags.FilterHelp())
-				return nil
-			}
-			filter, err := flags.PrepareFilter(traceSlice)
+			filter, err := flags.PrepareFilter(c.StringSlice("trace"))
 			if err != nil {
 				return err
 			}
@@ -139,12 +121,7 @@ func main() {
 				(cfg.Filter.NewContFilter.Enabled() && cfg.Filter.NewContFilter.Value()) ||
 				cfg.Filter.ContIDFilter.Enabled()
 
-			outputSlice := c.StringSlice("output")
-			if checkCommandIsHelp(outputSlice) {
-				fmt.Print(flags.OutputHelp())
-				return nil
-			}
-			output, printerConfig, err := flags.PrepareOutput(outputSlice)
+			output, printerConfig, err := flags.PrepareOutput(c.StringSlice("output"))
 			if err != nil {
 				return err
 			}
@@ -152,12 +129,7 @@ func main() {
 			printerConfig.ContainerMode = containerMode
 			cfg.Output = &output
 
-			capsCfgSlice := c.StringSlice("caps")
-			if checkCommandIsHelp(capsCfgSlice) {
-				fmt.Print(flags.CapabilitiesHelp())
-				return nil
-			}
-			capsCfg, err := flags.PrepareCapsConfig(capsCfgSlice)
+			capsCfg, err := flags.PrepareCapsConfig(c.StringSlice("caps"))
 			if err != nil {
 				return err
 			}
@@ -377,13 +349,6 @@ func main() {
 	if err != nil {
 		logger.Fatal("app", "error", err)
 	}
-}
-
-func checkCommandIsHelp(s []string) bool {
-	if len(s) == 1 && s[0] == "help" {
-		return true
-	}
-	return false
 }
 
 func getFormattedEventParams(eventID events.ID) string {

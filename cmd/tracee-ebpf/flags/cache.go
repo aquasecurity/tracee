@@ -8,7 +8,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 )
 
-func CacheHelp() string {
+func cacheHelp() string {
 	return `Select different cache types for the event pipeline queueing.
 Possible options:
 cache-type={none,mem}                              pick the appropriate cache type.

@@ -9,7 +9,7 @@ import (
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 )
 
-func CaptureHelp() string {
+func captureHelp() string {
 	return `Capture artifacts that were written, executed or found to be suspicious.
 Captured artifacts will appear in the 'output-path' directory.
 Possible options:
