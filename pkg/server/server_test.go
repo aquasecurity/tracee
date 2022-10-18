@@ -10,7 +10,7 @@ import (
 )
 
 func TestServer(t *testing.T) {
-	httpServer := New("", false)
+	httpServer := New("")
 
 	httpServer.EnableMetricsEndpoint()
 	httpServer.EnableHealthzEndpoint()
