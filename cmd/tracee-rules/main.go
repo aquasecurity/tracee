@@ -10,7 +10,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/rules/engine"
 	"github.com/aquasecurity/tracee/pkg/server"
@@ -18,12 +17,10 @@ import (
 
 	"github.com/open-policy-agent/opa/compile"
 	"github.com/urfave/cli/v2"
-	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
 const (
-	signatureBufferFlag       = "sig-buffer"
-	allowHighCapabilitiesFlag = "allow-high-capabilities"
+	signatureBufferFlag = "sig-buffer"
 )
 
 func main() {
@@ -48,16 +45,6 @@ func main() {
 						Aggregate: false,
 					},
 				)
-			}
-
-			err := dropCapabilities()
-			if err != nil {
-				if !c.Bool(allowHighCapabilitiesFlag) {
-					return fmt.Errorf("%w - to avoid this error use the --%s flag", err, allowHighCapabilitiesFlag)
-				}
-
-				logger.Error("capabilities dropping failed", "error", err)
-				logger.Info("continue with high capabilities according to the configuration")
 			}
 
 			var target string
@@ -240,12 +227,6 @@ func main() {
 				Usage: "listening address of the metrics endpoint server",
 				Value: ":4466",
 			},
-			&cli.BoolFlag{
-				Name:    allowHighCapabilitiesFlag,
-				Aliases: []string{"ahc"},
-				Usage:   "allow tracee-rules to run with high capabilities, in case that capabilities dropping fails",
-				Value:   false,
-			},
 		},
 	}
 	err := app.Run(os.Args)
@@ -294,10 +275,4 @@ func sigHandler() chan bool {
 		done <- true
 	}()
 	return done
-}
-
-// dropCapabilities drop all capabilities from the process
-// The function also tries to drop the capabilities bounding set, but it won't work if CAP_SETPCAP is not available.
-func dropCapabilities() error {
-	return capabilities.DropUnrequired([]cap.Value{})
 }

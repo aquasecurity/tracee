@@ -129,17 +129,6 @@ func main() {
 			printerConfig.ContainerMode = containerMode
 			cfg.Output = &output
 
-			capsCfg, err := flags.PrepareCapsConfig(c.StringSlice("caps"))
-			if err != nil {
-				return err
-			}
-
-			// environment capabilities
-			err = ensureInitCapabilities(OSInfo, &cfg, &capsCfg)
-			if err != nil {
-				return err
-			}
-
 			// kernel lockdown check
 			lockdown, err := helpers.Lockdown()
 			if err == nil && lockdown == helpers.CONFIDENTIALITY {
@@ -249,8 +238,6 @@ func main() {
 				return fmt.Errorf("error initializing Tracee: %v", err)
 			}
 
-			ensureRuntimeCapabilities(OSInfo, &cfg, &capsCfg)
-
 			// run until ctx is cancelled by signal
 			return t.Run(ctx)
 		},
@@ -336,11 +323,6 @@ func main() {
 				Name:        "containers",
 				Usage:       "enable container info enrichment to events. this feature is experimental and may cause unexpected behavior in the pipeline",
 				Destination: &enrich,
-			},
-			&cli.StringSliceFlag{
-				Name:  flags.CapsMainFlag,
-				Usage: fmt.Sprintf("control tracee capabilities dropping functionality. Run '--%s help' for more info", flags.CapsMainFlag),
-				Value: cli.NewStringSlice(),
 			},
 		},
 	}
