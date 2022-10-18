@@ -269,6 +269,9 @@ func Test_EventFilters(t *testing.T) {
 			config := tracee.Config{
 				Filter:     &filter,
 				ChanEvents: eventChan,
+				Capabilities: &tracee.CapabilitiesConfig{
+					BypassCaps: true,
+				},
 			}
 			eventOutput := []trace.Event{}
 

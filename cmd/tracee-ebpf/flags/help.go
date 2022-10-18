@@ -14,7 +14,7 @@ func PrintAndExitIfHelp(ctx *cli.Context) {
 		"capture",
 		"trace",
 		"output",
-		"caps",
+		"capabilities",
 	}
 
 	for _, k := range keys {
@@ -45,6 +45,8 @@ func getHelpString(key string) string {
 		return filterHelp()
 	case "output":
 		return outputHelp()
+	case "capabilities":
+		return capabilitiesHelp()
 	}
 	return ""
 }

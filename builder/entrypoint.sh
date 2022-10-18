@@ -72,20 +72,25 @@ run_tracee_rules() {
         --cache cache-type=mem \
         --cache mem-cache-size=512 \
         --containers=${CONTAINERS_ENRICHMENT:="0"}\
-        --caps allow-failed-drop=${ALLOW_HIGH_CAPABILITIES:="0"}\
-        --caps cancel-drop=${CANCEL_CAPS_DROP:="0"}\
-        ${CAPS_TO_PRESERVE:+--caps} ${CAPS_TO_PRESERVE:+ add=$CAPS_TO_PRESERVE}\
+        --capabilities bypass=${CAPABILITIES_BYPASS:="0"}\
+        --capabilities add=${CAPABILITIES_ADD:=""}\
+        --capabilities drop=${CAPABILITIES_DROP:=""}\
         --trace event=${events} \
         --output=out-file:${TRACEE_PIPE} &
     tracee_ebpf_pid=$!
 
     # start tracee-rules
 
+    allcaps=""
+    if [[ ${CAPABILITIES_BYPASS:="0"} == "1" ]]; then
+        allcaps="--allcaps"
+    fi
+
     echo "INFO: starting tracee-rules..."
     $TRACEE_RULES_EXE\
         --metrics --input-tracee=file:${TRACEE_PIPE}\
         --input-tracee=format:gob\
-        --allow-high-capabilities=${ALLOW_HIGH_CAPABILITIES:="0"}\
+        $allcaps \
         $@
     TRACEE_RET=$?
 }

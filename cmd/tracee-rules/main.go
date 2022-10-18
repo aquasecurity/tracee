@@ -10,6 +10,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/rules/engine"
 	"github.com/aquasecurity/tracee/pkg/server"
@@ -33,8 +34,9 @@ func main() {
 				return errors.New("no flags specified")
 			}
 
-			// Avoiding to override package-level logger
-			// when it's already set by logger environment variables
+			// Avoid overriding package-level logger when it is already set by
+			// logger environment variables
+
 			if !logger.IsSetFromEnv() {
 				// Logger Setup
 				logger.Init(
@@ -45,6 +47,13 @@ func main() {
 						Aggregate: false,
 					},
 				)
+			}
+
+			// Capabilities command line flags
+
+			_, err := capabilities.NewCapabilities(c.Bool("allcaps"))
+			if err != nil {
+				return err
 			}
 
 			var target string
@@ -226,6 +235,11 @@ func main() {
 				Name:  server.ListenEndpointFlag,
 				Usage: "listening address of the metrics endpoint server",
 				Value: ":4466",
+			},
+			&cli.BoolFlag{
+				Name:  "allcaps",
+				Value: false,
+				Usage: "allow tracee-rules to run with all capabilities (use with caution)",
 			},
 		},
 	}
