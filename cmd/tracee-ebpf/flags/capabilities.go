@@ -16,7 +16,7 @@ const (
 	AddReqCapsFlag      = "add"
 )
 
-func CapabilitiesHelp() string {
+func capabilitiesHelp() string {
 	mainHelp := fmt.Sprintf(`Manage the capabilities and capabilities-related operations of tracee-ebpf
 Normally, tracee will drop all capabilities not required to its operations.
 

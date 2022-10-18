@@ -8,7 +8,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/filters"
 )
 
-func FilterHelp() string {
+func filterHelp() string {
 	return `Select which events to trace by defining trace expressions that operate on events or process metadata.
 Only events that match all trace expressions will be traced (trace flags are ANDed).
 The following types of expressions are supported:
