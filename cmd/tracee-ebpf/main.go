@@ -33,19 +33,17 @@ func main() {
 		Version: version,
 		Action: func(c *cli.Context) error {
 
-			// tracee-ebpf does not support arguments, only flags
 			if c.NArg() > 0 {
-				return cli.ShowAppHelp(c)
+				return cli.ShowAppHelp(c) // no args, only flags supported
 			}
 
 			flags.PrintAndExitIfHelp(c)
 
 			if c.Bool("list") {
-				printList()
+				printList() // list events
 				return nil
 			}
 
-			// enable debug mode if debug flag is passed
 			if c.Bool("debug") {
 				err := debug.Enable()
 				if err != nil {
@@ -53,13 +51,12 @@ func main() {
 				}
 			}
 
-			// for the rest of execution, use this debug mode value
 			debug := debug.Enabled()
 
-			// Avoiding to override package-level logger
-			// when it's already set by logger environment variables
+			// Avoid overriding package-level logger when it is already set by
+			// logger environment variables
+
 			if !logger.IsSetFromEnv() {
-				// Logger Setup
 				logger.Init(
 					&logger.LoggerConfig{
 						Writer:    os.Stderr,
@@ -82,6 +79,8 @@ func main() {
 				}
 			}
 
+			// Initialize a tracee config structure
+
 			cfg := tracee.Config{
 				PerfBufferSize:     c.Int("perf-buffer-size"),
 				BlobPerfBufferSize: c.Int("blob-perf-buffer-size"),
@@ -90,11 +89,15 @@ func main() {
 				ContainersEnrich:   enrich,
 			}
 
+			// Container Runtime command line flags
+
 			sockets, err := flags.PrepareContainers(c.StringSlice("crs"))
 			if err != nil {
 				return err
 			}
 			cfg.Sockets = sockets
+
+			// Cache command line flags
 
 			cache, err := flags.PrepareCache(c.StringSlice("cache"))
 			if err != nil {
@@ -105,11 +108,23 @@ func main() {
 				logger.Debug("cache", "type", cfg.Cache.String())
 			}
 
+			// Capture command line flags
+
 			capture, err := flags.PrepareCapture(c.StringSlice("capture"))
 			if err != nil {
 				return err
 			}
 			cfg.Capture = &capture
+
+			// Capabilities command line flags
+
+			capsCfg, err := flags.PrepareCapabilities(c.StringSlice("capabilities"))
+			if err != nil {
+				return err
+			}
+			cfg.Capabilities = &capsCfg
+
+			// Filtering (trace) command line flags
 
 			filter, err := flags.PrepareFilter(c.StringSlice("trace"))
 			if err != nil {
@@ -117,9 +132,13 @@ func main() {
 			}
 			cfg.Filter = &filter
 
+			// Check if container mode is enabled
+
 			containerMode := (cfg.Filter.ContFilter.Enabled() && cfg.Filter.ContFilter.Value()) ||
 				(cfg.Filter.NewContFilter.Enabled() && cfg.Filter.NewContFilter.Value()) ||
 				cfg.Filter.ContIDFilter.Enabled()
+
+			// Output command line flags
 
 			output, printerConfig, err := flags.PrepareOutput(c.StringSlice("output"))
 			if err != nil {
@@ -129,12 +148,15 @@ func main() {
 			printerConfig.ContainerMode = containerMode
 			cfg.Output = &output
 
-			// kernel lockdown check
+			// Check kernel lockdown
+
 			lockdown, err := helpers.Lockdown()
 			if err == nil && lockdown == helpers.CONFIDENTIALITY {
 				return fmt.Errorf("kernel lockdown is set to 'confidentiality', can't load eBPF programs")
 			}
 			logger.Debug("osinfo", "security_lockdown", lockdown)
+
+			// Check if ftrace is enabled
 
 			enabled, err := helpers.FtraceEnabled()
 			if err != nil {
@@ -144,27 +166,31 @@ func main() {
 				logger.Error("ftrace_enabled: ftrace is not enabled, kernel events won't be caught, make sure to enable it by executing echo 1 | sudo tee /proc/sys/kernel/ftrace_enabled")
 			}
 
-			// OS kconfig information
+			// Pick OS information
 
 			kernelConfig, err := initialize.KernelConfig()
 			if err != nil {
 				return err
 			}
 
-			// decide BTF & BPF files to use based on kconfig, release & environment
+			// Decide BTF & BPF files to use (based in the kconfig, release & environment info)
+
 			err = initialize.BpfObject(&cfg, kernelConfig, OSInfo, traceeInstallPath, version)
 			if err != nil {
 				return fmt.Errorf("failed preparing BPF object: %w", err)
 			}
 
 			cfg.ChanEvents = make(chan trace.Event, 1000)
-			// We buffer the error channel because we may want to publish errors before we start flusing this channel
-			cfg.ChanErrors = make(chan error, 10)
+			cfg.ChanErrors = make(chan error, 10) // buffer to allow next errors without blocking
+
+			// Create Tracee Singleton
 
 			t, err := tracee.New(cfg)
 			if err != nil {
 				return fmt.Errorf("error creating Tracee: %v", err)
 			}
+
+			// Decide if HTTP server should be started
 
 			if server.ShouldStart(c) {
 				httpServer := server.New(c.String(server.ListenEndpointFlag))
@@ -177,24 +203,24 @@ func main() {
 						httpServer.EnableMetricsEndpoint()
 					}
 				}
-
 				if c.Bool(server.HealthzEndpointFlag) {
 					httpServer.EnableHealthzEndpoint()
 				}
-
 				if c.Bool(server.PProfEndpointFlag) {
 					httpServer.EnablePProfEndpoint()
 				}
-
 				go httpServer.Start()
 			}
+
+			// Configure the events printer
 
 			printer, err := printer.New(printerConfig)
 			if err != nil {
 				return err
 			}
 
-			// create a context that is cancelled by SIGINT/SIGTERM
+			// Create a context (cancelled by SIGINT/SIGTERM)
+
 			ctx := context.Background()
 			ctx, cancel := context.WithCancel(ctx)
 			sig := make(chan os.Signal, 1)
@@ -211,6 +237,8 @@ func main() {
 				}
 			}()
 
+			// Print the preamble
+
 			go func() {
 				printer.Preamble()
 				for {
@@ -225,21 +253,22 @@ func main() {
 				}
 			}()
 
-			// always print stats before exiting
+			// Print statistics at the end
+
 			defer func() {
 				stats := t.Stats()
 				printer.Epilogue(*stats)
 				printer.Close()
 			}()
 
-			// initialize tracee for running
+			// Initialize tracee
+
 			err = t.Init()
 			if err != nil {
 				return fmt.Errorf("error initializing Tracee: %v", err)
 			}
 
-			// run until ctx is cancelled by signal
-			return t.Run(ctx)
+			return t.Run(ctx) // return when context is cancelled by signal
 		},
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
@@ -259,6 +288,12 @@ func main() {
 				Aliases: []string{"c"},
 				Value:   nil,
 				Usage:   "capture artifacts that were written, executed or found to be suspicious. run '--capture help' for more info.",
+			},
+			&cli.StringSliceFlag{
+				Name:    "capabilities",
+				Aliases: []string{"caps"},
+				Value:   nil,
+				Usage:   "define capabilities for tracee to run with. run '--capabilities help' for more info.",
 			},
 			&cli.StringSliceFlag{
 				Name:    "output",
