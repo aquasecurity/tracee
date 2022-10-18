@@ -33,6 +33,9 @@ jobs:
         uses: actions/setup-python@98f2ad02fd48d057ee3b4d4f66525b231c3e52b6
         with:
           python-version: 3.7
+      - name: Set up aqua-charts
+        run: |
+           helm repo add aqua-charts https://aquasecurity.github.io/helm-charts
       - name: Setup Chart Linting
         id: lint
         uses: helm/chart-testing-action@dae259e86a35ff09145c0805e2d7dd3f7207064a
