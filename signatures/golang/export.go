@@ -21,4 +21,5 @@ var ExportedSignatures = []detect.Signature{
 	&CgroupReleaseAgentModification{},
 	&RcdModification{},
 	&CorePatternModification{},
+	&ProcKcoreRead{},
 }
