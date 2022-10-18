@@ -38,6 +38,7 @@ type Filter struct {
 	ProcessTreeFilter *filters.ProcessTreeFilter
 	Follow            bool
 	NetFilter         *NetIfaces
+	TraceSelf         bool
 }
 
 type NetIfaces struct {

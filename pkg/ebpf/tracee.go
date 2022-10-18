@@ -778,7 +778,11 @@ func (t *Tracee) populateBPFMaps() error {
 
 	cZero := uint32(0)
 	configVal := make([]byte, 208)
-	binary.LittleEndian.PutUint32(configVal[0:4], uint32(os.Getpid()))
+	selfPid := 0
+	if !t.config.Filter.TraceSelf {
+		selfPid = os.Getpid()
+	}
+	binary.LittleEndian.PutUint32(configVal[0:4], uint32(selfPid))
 	binary.LittleEndian.PutUint32(configVal[4:8], t.getOptionsConfig())
 	binary.LittleEndian.PutUint32(configVal[8:12], t.getFiltersConfig())
 	binary.LittleEndian.PutUint32(configVal[12:16], uint32(t.containers.GetCgroupV1HID()))

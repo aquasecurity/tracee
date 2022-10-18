@@ -71,7 +71,8 @@ Examples:
   --trace openat.pathname=/tmp*                                | only trace 'openat' events that have 'pathname' prefixed by "/tmp"
   --trace openat.pathname!=/tmp/1,/bin/ls                      | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
   --trace comm=bash --trace follow                             | trace all events that originated from bash or from one of the processes spawned by bash
-  --trace net=docker0 			                       | trace the net events over docker0 interface
+  --trace self                                                 | trace all events that originated from the running tracee process
+  --trace net=docker0                                          | trace the net events over docker0 interface
 
 
 Note: some of the above operators have special meanings in different shells.
@@ -274,6 +275,11 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 
 		if strings.HasPrefix("follow", filterFlag) {
 			filter.Follow = true
+			continue
+		}
+
+		if strings.HasPrefix("self", filterFlag) {
+			filter.TraceSelf = true
 			continue
 		}
 		return tracee.Filter{}, InvalidFilterOptionError(filterFlag)
