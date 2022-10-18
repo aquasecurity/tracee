@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestProcMemCodeInjection(t *testing.T) {
+func TestProcMemAccess(t *testing.T) {
 	testCases := []struct {
 		Name     string
 		Events   []trace.Event
@@ -26,7 +26,7 @@ func TestProcMemCodeInjection(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "flags",
 							},
-							Value: interface{}("O_WRONLY"),
+							Value: interface{}("O_RDONLY"),
 						},
 						{
 							ArgMeta: trace.ArgMeta{
@@ -38,7 +38,7 @@ func TestProcMemCodeInjection(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-111": {
+				"TRC-128": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_file_open",
@@ -47,7 +47,7 @@ func TestProcMemCodeInjection(t *testing.T) {
 								ArgMeta: trace.ArgMeta{
 									Name: "flags",
 								},
-								Value: interface{}("O_WRONLY"),
+								Value: interface{}("O_RDONLY"),
 							},
 							{
 								ArgMeta: trace.ArgMeta{
@@ -58,17 +58,17 @@ func TestProcMemCodeInjection(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-111",
+						ID:          "TRC-128",
 						Version:     "1",
-						Name:        "Code injection detected through /proc/<pid>/mem file",
-						Description: "Possible code injection into another process was detected. Code injection is an exploitation technique used to run malicious code, adversaries may use it in order to execute their malware.",
+						Name:        "Process memory access detected",
+						Description: "Process memory access detected. Adversaries may access other processes memory to steal credentials and secrets.",
 						Properties: map[string]interface{}{
 							"Severity":             3,
-							"Category":             "defense-evasion",
-							"Technique":            "Proc Memory",
+							"Category":             "credential-access",
+							"Technique":            "Proc Filesystem",
 							"Kubernetes_Technique": "",
-							"id":                   "attack-pattern--d201d4cc-214d-4a74-a1ba-b3fa09fd4591",
-							"external_id":          "T1055.009",
+							"id":                   "attack-pattern--3120b9fa-23b8-4500-ae73-09494f607b7d",
+							"external_id":          "T1003.007",
 						},
 					},
 				},
@@ -84,7 +84,7 @@ func TestProcMemCodeInjection(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "flags",
 							},
-							Value: interface{}("O_RDONLY"),
+							Value: interface{}("O_WRONLY"),
 						},
 						{
 							ArgMeta: trace.ArgMeta{
@@ -107,7 +107,7 @@ func TestProcMemCodeInjection(t *testing.T) {
 							ArgMeta: trace.ArgMeta{
 								Name: "flags",
 							},
-							Value: interface{}("O_WRONLY"),
+							Value: interface{}("O_RDONLY"),
 						},
 						{
 							ArgMeta: trace.ArgMeta{
@@ -125,7 +125,7 @@ func TestProcMemCodeInjection(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
 			holder := signaturestest.FindingsHolder{}
-			sig := ProcMemCodeInjection{}
+			sig := ProcMemAccess{}
 			sig.Init(holder.OnFinding)
 
 			for _, e := range tc.Events {

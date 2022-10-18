@@ -22,4 +22,5 @@ var ExportedSignatures = []detect.Signature{
 	&RcdModification{},
 	&CorePatternModification{},
 	&ProcKcoreRead{},
+	&ProcMemAccess{},
 }
