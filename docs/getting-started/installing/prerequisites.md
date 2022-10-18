@@ -40,11 +40,5 @@ capabilities:
 
 > Alternatively, run as `root` or with the `--privileged` flag of Docker.
 
-!!! Attention
-    Check [how to override capabilities drop] if you're facing errors.
-
 [libbpf CO-RE documentation]: https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere
 [BTFHUB]: https://github.com/aquasecurity/btfhub-archive
-[how to override capabilities drop]: ../../contributing/deep-dive/dropping-capabilities.md
-
-

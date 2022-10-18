@@ -65,7 +65,6 @@ nav:
       - Performance: contributing/deep-dive/performance.md
       - Caching Events: contributing/deep-dive/caching-events.md
       - Ordering Events: contributing/deep-dive/ordering-events.md
-      - Dropping Capabilities: contributing/deep-dive/dropping-capabilities.md
       - Override OS files: contributing/deep-dive/override-os-files.md
       - Healthz: contributing/deep-dive/healthz.md
       

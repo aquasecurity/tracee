@@ -45,8 +45,6 @@ func getHelpString(key string) string {
 		return filterHelp()
 	case "output":
 		return outputHelp()
-	case "caps":
-		return capabilitiesHelp()
 	}
 	return ""
 }
