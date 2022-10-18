@@ -2,8 +2,11 @@ package integration
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -16,45 +19,40 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// // small set of actions to trigger a magic write event
-// func checkMagicwrite(t *testing.T, gotOutput *[]trace.Event) {
-// 	// create a temp dir for testing
-// 	d, err := ioutil.TempDir("", "Test_MagicWrite-dir-*")
-// 	require.NoError(t, err)
+// small set of actions to trigger a magic write event
+func checkMagicwrite(t *testing.T, gotOutput *[]trace.Event) {
+	// create a temp dir for testing
+	d, err := ioutil.TempDir("", "Test_MagicWrite-dir-*")
+	require.NoError(t, err)
 
-// 	// cp a file to trigger
-// 	f, err := os.CreateTemp(d, "Test_MagicWrite-file-*")
-// 	require.NoError(t, err)
-// 	defer func() {
-// 		os.Remove(d)
-// 	}()
+	// cp a file to trigger
+	f, err := os.CreateTemp(d, "Test_MagicWrite-file-*")
+	require.NoError(t, err)
+	defer func() {
+		os.Remove(d)
+	}()
 
-// 	f.WriteString(`foo.bar.baz`)
-// 	f.Close()
+	f.WriteString(`foo.bar.baz`)
+	f.Close()
 
-// 	cpCmd := exec.Command("cp", f.Name(), filepath.Join(d+filepath.Base(f.Name())+"-new"))
-// 	fmt.Println("executing: ", cpCmd.String())
-// 	cpCmd.Stdout = os.Stdout
-// 	assert.NoError(t, cpCmd.Run())
+	cpCmd := exec.Command("cp", f.Name(), filepath.Join(d+filepath.Base(f.Name())+"-new"))
+	fmt.Println("executing: ", cpCmd.String())
+	cpCmd.Stdout = os.Stdout
+	assert.NoError(t, cpCmd.Run())
 
-// 	waitForTraceeOutput(t, gotOutput, time.Now(), true)
+	waitForTraceeOutput(t, gotOutput, time.Now(), true)
 
-// 	// check tracee output
-// 	expect := []byte{102, 111, 111, 46, 98, 97, 114, 46, 98, 97, 122}
-// 	fail := true
-// 	for _, evt := range *gotOutput {
-// 		arg := events.GetArg(&evt, "bytes")
-// 		argVal, ok := arg.Value.([]byte)
-// 		require.Equal(t, true, ok)
-// 		ok = assert.ElementsMatch(t, argVal, expect)
-// 		if ok {
-// 			fail = false
-// 		}
-// 	}
-// 	if fail {
-// 		t.Fail()
-// 	}
-// }
+	// check tracee output
+	fail := true
+	for _, evt := range *gotOutput {
+		if evt.EventName == "magic_write" {
+			fail = false
+		}
+	}
+	if fail {
+		t.Fail()
+	}
+}
 
 // execute a ls command
 func checkExeccommand(t *testing.T, gotOutput *[]trace.Event) {
@@ -202,11 +200,11 @@ func Test_EventFilters(t *testing.T) {
 		filterArgs []string
 		eventFunc  func(*testing.T, *[]trace.Event)
 	}{
-		// {
-		// 	name:       "do a file write",
-		// 	filterArgs: []string{"event=magic_write"},
-		// 	eventFunc:  checkMagicwrite,
-		// },
+		{
+			name:       "do a file write",
+			filterArgs: []string{"event=magic_write"},
+			eventFunc:  checkMagicwrite,
+		},
 		{
 			name:       "execute a command",
 			filterArgs: []string{"comm=ls"},
@@ -264,7 +262,7 @@ func Test_EventFilters(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			filter, err := flags.PrepareFilter(tc.filterArgs)
 			require.NoError(t, err)
-
+			filter.TraceSelf = true
 			eventChan := make(chan trace.Event, 1000)
 			config := tracee.Config{
 				Filter:     &filter,
