@@ -29,8 +29,8 @@ the detections in your preferred way (e.g. Slack, E-mail, JIRA and more).
 
         ```text
         $ helm repo add aqua-charts https://aquasecurity.github.io/helm-charts
-        $ helm dependency update ./deploy/helm/tracee
-        $ helm install tracee ./deploy/helm/tracee \
+        $ helm dependency update
+        $ helm install tracee aqua/tracee \
             --namespace tracee-system --create-namespace \
             --set hostPID=true \
             --set postee.enabled=true

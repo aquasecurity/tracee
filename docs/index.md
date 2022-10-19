@@ -11,11 +11,17 @@
 
 # Tracee: Runtime Security and Forensics using eBPF
 
-Tracee is a Runtime Security and forensics tool for Linux. It uses Linux **eBPF
-technology** to trace your system and applications **at runtime**, and analyzes
-collected events in order to detect **suspicious behavioral patterns**. It is
-usually delivered as a docker container, but there are other ways you can use
-it (even create your own customized tracee container).
+Tracee is a runtime security and forensics tool for Linux based cloud deployments.
+It uses **eBPF** to trace the host OS and applications **at runtime**, and analyzes
+collected events in order to detect **suspicious behavioral patterns**. It can be
+run as a daemon-set in your kubernetes environment, but is flexible to be run for
+many purposes any Linux based hosts. It can be delivered via helm, as a docker
+container, or as a small set of static binaries.
+
+The goal of Tracee is to serve as an easy to use and effective solution for learning 
+when cloud native attacks occur in your environment. By leveraging Aqua's advanced 
+security research, performant eBPF based detection, and cloud native first
+approach Tracee makes runtime detection accesible, powerful, and effective.
 
 Watch a quick video demo of Tracee:
 
@@ -23,7 +29,9 @@ Watch a quick video demo of Tracee:
 
 Check out the [Tracee video hub](https://info.aquasec.com/ebpf-runtime-security) for more videos.
 
-## Quickstart
+## Quickstart (docker)
+
+To get a feel for what tracee accomplishes, let's take a look at running the tracee container at the commanad line.
 
 Before you proceed, make sure you follow the [prerequiresites].
 
@@ -122,6 +130,21 @@ $ docker run \
 !!! note
     See documentation or add the `--help` flag for more.
 
+## Quickstart (kubernetes)
+
+Tracee is designed for use in Kubernetes deployments so the process for doing so is straightforward.
+
+1. Install tracee via helm.
+
+See the kubernetes [installation guide].
+
+2. FIXME:
+
+- How are users interacting with Tracee via Kubernetes?
+  - Are signature alerts printed to stderr and then collected via logs?
+  - Is Postee enabled by default and if so how is it configured?
+  - How are signatures configured?
+
 ## Components
 
 Tracee is composed of the following sub-projects, which are hosted in the
@@ -138,6 +161,7 @@ Join the community, and talk to us about any matter in [GitHub Discussion] or [S
 
 [Tracee-eBPF]: ./tracing/index.md
 [Tracee-Rules]: ./detecting/index.md
+[installation guide] ./installing/kubernetes.md
 
 [Aqua Security]: https://aquasec.com
 [GitHub Discussion]: https://github.com/aquasecurity/tracee/discussions
