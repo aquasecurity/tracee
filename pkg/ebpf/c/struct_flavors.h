@@ -69,6 +69,10 @@ struct task_struct___older_v50 {
     struct pid_link pids[PIDTYPE_MAX];
 };
 
+struct trace_probe___v53 {
+    struct trace_event_call call;
+};
+
 #pragma clang attribute pop
 
 #endif

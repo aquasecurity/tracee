@@ -165,6 +165,7 @@ const (
 	TaskRename
 	SecurityInodeRename
 	DoSigaction
+	BpfAttach
 	MaxCommonID
 )
 
@@ -6002,6 +6003,26 @@ var Definitions = eventDefinitions{
 				{Type: "unsigned long", Name: "old_sa_mask"},
 				{Type: "u8", Name: "old_sa_handle_method"},
 				{Type: "void*", Name: "old_sa_handler"},
+			},
+		},
+		BpfAttach: {
+			ID32Bit: sys32undefined,
+			Name:    "bpf_attach",
+			Probes: []probeDependency{
+				{Handle: probes.SecurityFileIoctl, Required: true},
+				{Handle: probes.SecurityBpfProg, Required: true},
+				{Handle: probes.SecurityBPF, Required: true},
+				{Handle: probes.CheckHelperCall, Required: false},
+				{Handle: probes.CheckMapFuncCompatibility, Required: false},
+			},
+			Sets: []string{},
+			Params: []trace.ArgMeta{
+				{Type: "int", Name: "prog_type"},
+				{Type: "const char*", Name: "prog_name"},
+				{Type: "const char*", Name: "perf_symbol"},
+				{Type: "u64", Name: "perf_addr"},
+				{Type: "int", Name: "prog_write_user"},
+				{Type: "int", Name: "perf_type"},
 			},
 		},
 	},
