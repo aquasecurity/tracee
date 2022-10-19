@@ -15,6 +15,10 @@ do_docker_run() {
     $(echo $output > $outputFileName)
 }
 
+do_file_open() {
+    cat /proc/self/comm
+}
+
 # $1 is the function to call
 # $2 is the temp file to optionally output to
 $1 $2

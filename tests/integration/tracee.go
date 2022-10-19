@@ -45,7 +45,9 @@ func startTracee(t *testing.T, config tracee.Config, output *tracee.OutputConfig
 	}()
 
 	if output == nil {
-		output = &tracee.OutputConfig{}
+		output = &tracee.OutputConfig{
+			DetectSyscall: true,
+		}
 	}
 
 	config.Output = output
