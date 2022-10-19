@@ -29,4 +29,5 @@ var ExportedSignatures = []detect.Signature{
 	&ProcessVmWriteCodeInjection{},
 	&DiskMount{},
 	&DynamicCodeLoading{},
+	&FilelessExecution{},
 }
