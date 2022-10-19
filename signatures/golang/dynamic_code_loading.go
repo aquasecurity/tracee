@@ -1,0 +1,81 @@
+package main
+
+import (
+	"fmt"
+	"github.com/aquasecurity/tracee/signatures/helpers"
+	"github.com/aquasecurity/tracee/types/detect"
+	"github.com/aquasecurity/tracee/types/protocol"
+	"github.com/aquasecurity/tracee/types/trace"
+)
+
+type DynamicCodeLoading struct {
+	cb        detect.SignatureHandler
+	alertText string
+}
+
+func (sig *DynamicCodeLoading) Init(cb detect.SignatureHandler) error {
+	sig.cb = cb
+	sig.alertText = "Protection changed from W+E to E!"
+	return nil
+}
+
+func (sig *DynamicCodeLoading) GetMetadata() (detect.SignatureMetadata, error) {
+	return detect.SignatureMetadata{
+		ID:          "TRC-4",
+		Version:     "1",
+		Name:        "Dynamic code loading detected",
+		Description: "Possible dynamic code loading was detected as the binary's memory is both writable and executable. Writing to an executable allocated memory region could be a technique used by adversaries to run code undetected and without dropping executables.",
+		Properties: map[string]interface{}{
+			"Severity":             2,
+			"Category":             "defense-evasion",
+			"Technique":            "Software Packing",
+			"Kubernetes_Technique": "",
+			"id":                   "attack-pattern--deb98323-e13f-4b0c-8d94-175379069062",
+			"external_id":          "T1027.002",
+		},
+	}, nil
+}
+
+func (sig *DynamicCodeLoading) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
+	return []detect.SignatureEventSelector{
+		{Source: "tracee", Name: "mem_prot_alert", Origin: "*"},
+	}, nil
+}
+
+func (sig *DynamicCodeLoading) OnEvent(event protocol.Event) error {
+
+	eventObj, ok := event.Payload.(trace.Event)
+	if !ok {
+		return fmt.Errorf("invalid event")
+	}
+
+	switch eventObj.EventName {
+
+	case "mem_prot_alert":
+
+		alert, err := helpers.GetTraceeStringArgumentByName(eventObj, "alert")
+		if err != nil {
+			return err
+		}
+
+		if alert == sig.alertText {
+			metadata, err := sig.GetMetadata()
+			if err != nil {
+				return err
+			}
+			sig.cb(detect.Finding{
+				SigMetadata: metadata,
+				Event:       event,
+				Data:        nil,
+			})
+		}
+
+	}
+
+	return nil
+}
+
+func (sig *DynamicCodeLoading) OnSignal(s detect.Signal) error {
+	return nil
+}
+func (sig *DynamicCodeLoading) Close() {}
