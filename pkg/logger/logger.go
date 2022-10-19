@@ -3,6 +3,7 @@ package logger
 import (
 	"io"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -192,6 +193,11 @@ func debugw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
 	if isAggregateSetAndIsLogNotNew(skip+1, l) {
 		return
 	}
+
+	pkg, file, line := getCallerInfo(skip + 1)
+	var originInfoKVs []interface{}
+	originInfoKVs = append(originInfoKVs, "pkg", pkg, "file", filepath.Base(file), "line", line)
+	keysAndValues = append(originInfoKVs, keysAndValues...)
 
 	l.l.Debugw(msg, keysAndValues...)
 }
