@@ -22,6 +22,22 @@ import (
 	cli "github.com/urfave/cli/v2"
 )
 
+func init() {
+	// Avoiding to override package-level logger
+	// when it's already set by logger environment variables
+	if !logger.IsSetFromEnv() {
+		// Logger Setup
+		logger.Init(
+			&logger.LoggerConfig{
+				Writer:    os.Stderr,
+				Level:     logger.InfoLevel,
+				Encoder:   logger.NewJSONEncoder(logger.NewProductionConfig().EncoderConfig),
+				Aggregate: false,
+			},
+		)
+	}
+}
+
 var traceeInstallPath string
 var enrich bool
 var version string
@@ -52,20 +68,6 @@ func main() {
 			}
 
 			debug := debug.Enabled()
-
-			// Avoid overriding package-level logger when it is already set by
-			// logger environment variables
-
-			if !logger.IsSetFromEnv() {
-				logger.Init(
-					&logger.LoggerConfig{
-						Writer:    os.Stderr,
-						Level:     logger.InfoLevel,
-						Encoder:   logger.NewJSONEncoder(logger.NewProductionConfig().EncoderConfig),
-						Aggregate: false,
-					},
-				)
-			}
 
 			// OS release information
 

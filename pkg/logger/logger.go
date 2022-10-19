@@ -390,7 +390,13 @@ func IsSetFromEnv() bool {
 	return setFromEnv
 }
 
+// NOTE: init() functions are executed in the lexical order (package names).
 func init() {
+	// It may have already been initialized from another package
+	if pkgLogger != nil {
+		return
+	}
+
 	lvl := getLoggerLevelFromEnv()
 	enc := getLoggerEncoderFromEnv(lvl)
 	agg := getLoggerAggregateFromEnv()
