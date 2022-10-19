@@ -30,4 +30,5 @@ var ExportedSignatures = []detect.Signature{
 	&DiskMount{},
 	&DynamicCodeLoading{},
 	&FilelessExecution{},
+	&IllegitimateShell{},
 }
