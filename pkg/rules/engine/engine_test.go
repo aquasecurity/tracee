@@ -3,11 +3,11 @@ package engine
 import (
 	"bytes"
 	"errors"
-	"os"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/detect"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
@@ -407,7 +407,17 @@ func TestEngine_ConsumeSources(t *testing.T) {
 		outputChan := make(chan detect.Finding, 1)
 		done := make(chan bool, 1)
 		var logBuf []byte
-		logger := bytes.NewBuffer(logBuf)
+		loggerBuf := bytes.NewBuffer(logBuf)
+		if !logger.IsSetFromEnv() {
+			logger.Init(
+				&logger.LoggerConfig{
+					Writer:    loggerBuf,
+					Level:     logger.InfoLevel,
+					Encoder:   logger.NewJSONEncoder(logger.NewProductionConfig().EncoderConfig),
+					Aggregate: false,
+				},
+			)
+		}
 
 		t.Run(tc.name, func(t *testing.T) {
 			defer func() {
@@ -435,7 +445,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 				return nil
 			}
 
-			e, err := NewEngine(sigs, inputs, outputChan, logger, tc.config)
+			e, err := NewEngine(sigs, inputs, outputChan, tc.config)
 			require.NoError(t, err, "constructing engine")
 			go func() {
 				e.Start(done)
@@ -457,7 +467,7 @@ func TestEngine_ConsumeSources(t *testing.T) {
 			}
 
 			if tc.expectedError != "" {
-				assert.Contains(t, logger.String(), tc.expectedError, tc.name)
+				assert.Contains(t, loggerBuf.String(), tc.expectedError, tc.name)
 			}
 		})
 	}
@@ -495,7 +505,7 @@ func TestEngine_GetSelectedEvents(t *testing.T) {
 			},
 		},
 	}
-	e, err := NewEngine(sigs, EventSources{Tracee: make(chan protocol.Event)}, make(chan detect.Finding), &bytes.Buffer{}, Config{})
+	e, err := NewEngine(sigs, EventSources{Tracee: make(chan protocol.Event)}, make(chan detect.Finding), Config{})
 	require.NoError(t, err, "constructing engine")
 	se := e.GetSelectedEvents()
 	expected := []detect.SignatureEventSelector{
@@ -543,7 +553,7 @@ func TestEngine_LoadSignature(t *testing.T) {
 				Tracee: input,
 			}
 			output := make(chan detect.Finding)
-			engine, err := NewEngine([]detect.Signature{}, source, output, os.Stdout, Config{})
+			engine, err := NewEngine([]detect.Signature{}, source, output, Config{})
 			require.NoError(t, err)
 
 			for _, sig := range tc.signatures {

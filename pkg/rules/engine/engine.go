@@ -2,7 +2,6 @@ package engine
 
 import (
 	"fmt"
-	"io"
 	"sync"
 
 	"github.com/aquasecurity/tracee/pkg/logger"
@@ -24,7 +23,6 @@ type Config struct {
 
 // Engine is a rule-engine that can process events coming from a set of input sources against a set of loaded signatures, and report the signatures' findings
 type Engine struct {
-	logger          logger.Logger
 	signatures      map[detect.Signature]chan protocol.Event
 	signaturesIndex map[detect.SignatureEventSelector][]detect.Signature
 	signaturesMutex sync.RWMutex
@@ -46,20 +44,12 @@ func (engine *Engine) Stats() *metrics.Stats {
 
 // NewEngine creates a new rules-engine with the given arguments
 // inputs and outputs are given as channels created by the consumer
-func NewEngine(sigs []detect.Signature, sources EventSources, output chan detect.Finding, logWriter io.Writer, config Config) (*Engine, error) {
-	if sources.Tracee == nil || output == nil || logWriter == nil {
+func NewEngine(sigs []detect.Signature, sources EventSources, output chan detect.Finding, config Config) (*Engine, error) {
+	if sources.Tracee == nil || output == nil {
 		return nil, fmt.Errorf("nil input received")
 	}
 	engine := Engine{}
 	engine.waitGroup = sync.WaitGroup{}
-	engine.logger = *logger.NewLogger(
-		&logger.LoggerConfig{
-			Writer:    logWriter,
-			Level:     logger.InfoLevel,
-			Encoder:   logger.NewJSONEncoder(logger.NewProductionConfig().EncoderConfig),
-			Aggregate: false,
-		},
-	)
 
 	engine.inputs = sources
 	engine.output = output
@@ -71,7 +61,7 @@ func NewEngine(sigs []detect.Signature, sources EventSources, output chan detect
 	for _, sig := range sigs {
 		_, err := engine.loadSignature(sig)
 		if err != nil {
-			engine.logger.Error("loading signature: " + err.Error())
+			logger.Error("loading signature: " + err.Error())
 		}
 	}
 	return &engine, nil
@@ -142,7 +132,7 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 				for sig := range engine.signatures {
 					se, err := sig.GetSelectedEvents()
 					if err != nil {
-						engine.logger.Error("getting selected events: " + err.Error())
+						logger.Error("getting selected events: " + err.Error())
 						continue
 					}
 					for _, sel := range se {
@@ -251,7 +241,7 @@ func (engine *Engine) loadSignature(signature detect.Signature) (string, error) 
 			selectedEvent.Origin = ALL_EVENT_ORIGINS
 		}
 		if selectedEvent.Source == "" {
-			engine.logger.Error("signature " + metadata.Name + " doesn't declare an input source")
+			logger.Error("signature " + metadata.Name + " doesn't declare an input source")
 		} else {
 			engine.signaturesMutex.Lock()
 			engine.signaturesIndex[selectedEvent] = append(engine.signaturesIndex[selectedEvent], signature)

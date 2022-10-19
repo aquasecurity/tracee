@@ -2,7 +2,6 @@ package benchmark
 
 import (
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -100,7 +99,7 @@ func BenchmarkEngineWithCodeInjectionSignature(b *testing.B) {
 				s, err := bc.sigFunc()
 				require.NoError(b, err, bc.name)
 
-				e, err := engine.NewEngine([]detect.Signature{s}, inputs, output, os.Stderr, engine.Config{})
+				e, err := engine.NewEngine([]detect.Signature{s}, inputs, output, engine.Config{})
 				require.NoError(b, err, "constructing engine")
 				b.StartTimer()
 
@@ -155,7 +154,7 @@ func BenchmarkEngineWithMultipleSignatures(b *testing.B) {
 				inputs := ProduceEventsInMemory(inputEventsCount)
 				output := make(chan detect.Finding, inputEventsCount*len(sigs))
 
-				e, err := engine.NewEngine(sigs, inputs, output, os.Stderr, engine.Config{})
+				e, err := engine.NewEngine(sigs, inputs, output, engine.Config{})
 				require.NoError(b, err, "constructing engine")
 				b.StartTimer()
 
@@ -215,7 +214,7 @@ func BenchmarkEngineWithNSignatures(b *testing.B) {
 					b.StopTimer()
 					inputs := ProduceEventsInMemory(inputEventsCount)
 					output := make(chan detect.Finding, inputEventsCount*len(sigs))
-					e, err := engine.NewEngine(sigs, inputs, output, os.Stderr, engine.Config{})
+					e, err := engine.NewEngine(sigs, inputs, output, engine.Config{})
 					require.NoError(b, err, "constructing engine")
 					b.StartTimer()
 
