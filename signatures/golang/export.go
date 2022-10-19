@@ -25,4 +25,5 @@ var ExportedSignatures = []detect.Signature{
 	&ProcMemAccess{},
 	&HiddenFileCreated{},
 	&AntiDebuggingPtraceme{},
+	&PtraceCodeInjection{},
 }
