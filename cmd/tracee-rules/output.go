@@ -5,11 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/aquasecurity/tracee/pkg/logger"
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/aquasecurity/tracee/types/detect"
@@ -60,16 +61,16 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 			switch res.Event.Payload.(type) {
 			case trace.Event:
 				if err := tOutput.Execute(w, res); err != nil {
-					log.Printf("error writing to output: %v", err)
+					logger.Error("writing to output: " + err.Error())
 				}
 			default:
-				log.Printf("unsupported event detected: %T\n", res.Event.Payload)
+				logger.Warn("unsupported event detected: " + res.Event.Payload.(string))
 				continue
 			}
 
 			if webhook != "" {
 				if err := sendToWebhook(tWebhook, res, webhook, webhookTemplate, contentType); err != nil {
-					log.Printf("error sending to webhook: %v", err)
+					logger.Error("sending to webhook: " + err.Error())
 				}
 			}
 		}
@@ -86,7 +87,7 @@ func sendToWebhook(t *template.Template, res detect.Finding, webhook string, web
 			return fmt.Errorf("error writing to template: template not initialized")
 		}
 		if contentType == "" {
-			log.Println("content-type was not set for the custom template: ", webhookTemplate)
+			logger.Warn("content-type was not set for the custom template: " + webhookTemplate)
 		}
 		buf := bytes.Buffer{}
 		if err := t.Execute(&buf, res); err != nil {

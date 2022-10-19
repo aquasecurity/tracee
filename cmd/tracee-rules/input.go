@@ -7,10 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strings"
 
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/protocol"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -62,7 +62,7 @@ func setupTraceeGobInputSource(opts *traceeInputOptions) (chan protocol.Event, e
 				if err == io.EOF {
 					break
 				} else {
-					log.Printf("error while decoding event: %v", err)
+					logger.Error("decoding event: " + err.Error())
 				}
 			} else {
 				res <- event.ToProtocol()
@@ -83,7 +83,7 @@ func setupTraceeJSONInputSource(opts *traceeInputOptions) (chan protocol.Event, 
 			var e trace.Event
 			err := json.Unmarshal(event, &e)
 			if err != nil {
-				log.Printf("invalid json in %s: %v", string(event), err)
+				logger.Error("invalid json in " + string(event) + ": " + err.Error())
 			} else {
 				res <- e.ToProtocol()
 			}
