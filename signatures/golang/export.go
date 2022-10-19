@@ -31,4 +31,5 @@ var ExportedSignatures = []detect.Signature{
 	&DynamicCodeLoading{},
 	&FilelessExecution{},
 	&IllegitimateShell{},
+	&KernelModuleLoading{},
 }
