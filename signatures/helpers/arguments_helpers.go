@@ -31,6 +31,20 @@ func GetTraceeStringArgumentByName(event trace.Event, argName string) (string, e
 	return "", fmt.Errorf("can't convert argument %v to string", argName)
 }
 
+// GetTraceeIntArgumentByName gets the argument matching the "argName" given from the event "argv" field, casted as int.
+func GetTraceeIntArgumentByName(event trace.Event, argName string) (int, error) {
+	arg, err := GetTraceeArgumentByName(event, argName)
+	if err != nil {
+		return 0, err
+	}
+	argInt, ok := arg.Value.(int32)
+	if ok {
+		return int(argInt), nil
+	}
+
+	return 0, fmt.Errorf("can't convert argument %v to int", argName)
+}
+
 // GetTraceeSliceStringArgumentByName gets the argument matching the "argName" given from the event "argv" field, casted as []string.
 func GetTraceeSliceStringArgumentByName(event trace.Event, argName string) ([]string, error) {
 	arg, err := GetTraceeArgumentByName(event, argName)
