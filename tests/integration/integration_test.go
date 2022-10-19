@@ -12,6 +12,7 @@ import (
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/flags"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/signatures/helpers"
 	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -168,6 +169,21 @@ func getAllSyscallsInSet(set string) []string {
 	}
 	return syscallsInSet
 }
+
+func checkSecurityFileOpenExecve(t *testing.T, gotOutput *[]trace.Event) {
+	_, err := forkAndExecFunction(doFileOpen)
+	require.NoError(t, err)
+
+	syscallArgs := []events.ID{}
+	for _, evt := range *gotOutput {
+		arg, err := helpers.GetTraceeArgumentByName(evt, "syscall")
+		require.NoError(t, err)
+		syscallArgs = append(syscallArgs, events.ID(arg.Value.(int32)))
+	}
+	for _, syscall := range syscallArgs {
+		assert.Equal(t, events.Execve, syscall)
+	}
+}
 func Test_EventFilters(t *testing.T) {
 	testCases := []struct {
 		name       string
@@ -229,6 +245,11 @@ func Test_EventFilters(t *testing.T) {
 			filterArgs: []string{"container=new"},
 			eventFunc:  checkNewContainers,
 		},
+		{
+			name:       "trace only security_file_open from \"execve\" syscall",
+			filterArgs: []string{"event=security_file_open", "security_file_open.syscall=execve"},
+			eventFunc:  checkSecurityFileOpenExecve,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -270,6 +291,7 @@ const (
 	doMagicWrite testFunc = "do_magic_write"
 	doLs         testFunc = "do_ls"
 	doDockerRun  testFunc = "do_docker_run"
+	doFileOpen   testFunc = "do_file_open"
 )
 
 // forkAndExecFunction runs a function in `tester.sh` in it's own system process.
