@@ -39,7 +39,7 @@ func TestKubernetesCertificateTheftAttempt(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-35": {
+				"TRC-1018": {
 					Data: nil,
 					Event: trace.Event{
 						ProcessName: "malware",
@@ -60,7 +60,7 @@ func TestKubernetesCertificateTheftAttempt(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-35",
+						ID:          "TRC-1018",
 						Version:     "1",
 						Name:        "K8s TLS certificate theft detected",
 						Description: "Theft of Kubernetes TLS certificates was detected. TLS certificates are used to establish trust between systems. The Kubernetes certificate is used to to enable secure communication between Kubernetes components, such as kubelet scheduler controller and API Server. An adversary may steal a Kubernetes certificate on a compromised system to impersonate Kubernetes components within the cluster.",
@@ -92,7 +92,7 @@ func TestKubernetesCertificateTheftAttempt(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-35": {
+				"TRC-1018": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_inode_rename",
@@ -106,7 +106,7 @@ func TestKubernetesCertificateTheftAttempt(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-35",
+						ID:          "TRC-1018",
 						Version:     "1",
 						Name:        "K8s TLS certificate theft detected",
 						Description: "Theft of Kubernetes TLS certificates was detected. TLS certificates are used to establish trust between systems. The Kubernetes certificate is used to to enable secure communication between Kubernetes components, such as kubelet scheduler controller and API Server. An adversary may steal a Kubernetes certificate on a compromised system to impersonate Kubernetes components within the cluster.",

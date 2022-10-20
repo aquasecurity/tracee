@@ -20,7 +20,7 @@ func (sig *FilelessExecution) Init(cb detect.SignatureHandler) error {
 
 func (sig *FilelessExecution) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "TRC-5",
+		ID:          "TRC-105",
 		Version:     "1",
 		Name:        "Fileless execution detected",
 		Description: "Fileless execution was detected. Executing a process from memory instead from a file in the filesystem may indicate that an adversary is trying to avoid execution detection.",

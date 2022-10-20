@@ -23,7 +23,7 @@ func (sig *ProcKcoreRead) Init(cb detect.SignatureHandler) error {
 
 func (sig *ProcKcoreRead) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "TRC-96",
+		ID:          "TRC-1021",
 		Version:     "1",
 		Name:        "Kcore memory file read",
 		Description: "An attempt to read /proc/kcore file was detected. KCore provides a full dump of the physical memory of the system in the core file format. Adversaries may read this file to get all of the host memory and use this information for container escape.",

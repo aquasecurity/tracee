@@ -55,7 +55,7 @@ func TestK8sApiConnection(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-13": {
+				"TRC-1013": {
 					Data: map[string]interface{}{
 						"ip": "1.1.1.1",
 					},
@@ -76,7 +76,7 @@ func TestK8sApiConnection(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-13",
+						ID:          "TRC-1013",
 						Version:     "0.1.0",
 						Name:        "Kubernetes API server connection detected",
 						Description: "A connection to the kubernetes API server was detected. The K8S API server is the brain of your K8S cluster, adversaries may try and communicate with the K8S API server to gather information/credentials, or even run more containers and laterally expand their grip on your systems.",

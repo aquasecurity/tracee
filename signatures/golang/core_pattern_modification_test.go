@@ -38,7 +38,7 @@ func TestCorePatternModification(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-28": {
+				"TRC-1011": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_file_open",
@@ -58,7 +58,7 @@ func TestCorePatternModification(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-28",
+						ID:          "TRC-1011",
 						Version:     "1",
 						Name:        "Core dumps configuration file modification detected",
 						Description: "Modification of the core dump configuration file (core_pattern) detected. Core dumps are usually written to disk when a program crashes. Certain modifications enable container escaping through the kernel core_pattern feature.",

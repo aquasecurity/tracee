@@ -38,7 +38,7 @@ func TestLdPreload(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-7": {
+				"TRC-107": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_file_open",
@@ -58,7 +58,7 @@ func TestLdPreload(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-7",
+						ID:          "TRC-107",
 						Version:     "1",
 						Name:        "LD_PRELOAD code injection detected",
 						Description: "LD_PRELOAD usage was detected. LD_PRELOAD lets you load your library before any other library, allowing you to hook functions in a process. Adversaries may use this technique to change your applications' behavior or load their own programs.",
@@ -90,7 +90,7 @@ func TestLdPreload(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-7": {
+				"TRC-107": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_inode_rename",
@@ -104,7 +104,7 @@ func TestLdPreload(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-7",
+						ID:          "TRC-107",
 						Version:     "1",
 						Name:        "LD_PRELOAD code injection detected",
 						Description: "LD_PRELOAD usage was detected. LD_PRELOAD lets you load your library before any other library, allowing you to hook functions in a process. Adversaries may use this technique to change your applications' behavior or load their own programs.",
@@ -142,7 +142,7 @@ func TestLdPreload(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-7": {
+				"TRC-107": {
 					Data: map[string]interface{}{"LD_PRELOAD": "LD_PRELOAD=/something"},
 					Event: trace.Event{
 						EventName: "sched_process_exec",
@@ -162,7 +162,7 @@ func TestLdPreload(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-7",
+						ID:          "TRC-107",
 						Version:     "1",
 						Name:        "LD_PRELOAD code injection detected",
 						Description: "LD_PRELOAD usage was detected. LD_PRELOAD lets you load your library before any other library, allowing you to hook functions in a process. Adversaries may use this technique to change your applications' behavior or load their own programs.",

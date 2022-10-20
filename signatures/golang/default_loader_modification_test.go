@@ -38,7 +38,7 @@ func TestDefaultLoaderModification(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-169": {
+				"TRC-1012": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_file_open",
@@ -58,7 +58,7 @@ func TestDefaultLoaderModification(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-169",
+						ID:          "TRC-1012",
 						Version:     "1",
 						Name:        "Default dynamic loader modification detected",
 						Description: "The default dynamic loader has been modified. The dynamic loader is an executable file loaded to process memory and run before the executable to load dynamic libraries to the process. An attacker might use this technique to hijack the execution context of each new process and bypass defenses.",
@@ -90,7 +90,7 @@ func TestDefaultLoaderModification(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-169": {
+				"TRC-1012": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_inode_rename",
@@ -104,7 +104,7 @@ func TestDefaultLoaderModification(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-169",
+						ID:          "TRC-1012",
 						Version:     "1",
 						Name:        "Default dynamic loader modification detected",
 						Description: "The default dynamic loader has been modified. The dynamic loader is an executable file loaded to process memory and run before the executable to load dynamic libraries to the process. An attacker might use this technique to hijack the execution context of each new process and bypass defenses.",

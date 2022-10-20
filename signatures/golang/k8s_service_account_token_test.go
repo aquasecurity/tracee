@@ -39,7 +39,7 @@ func TestK8SServiceAccountToken(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-8": {
+				"TRC-108": {
 					Data: nil,
 					Event: trace.Event{
 						ProcessName: "test",
@@ -60,7 +60,7 @@ func TestK8SServiceAccountToken(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-8",
+						ID:          "TRC-108",
 						Version:     "1",
 						Name:        "K8s service account token file read",
 						Description: "The Kubernetes service account token file was read on your container. This token is used to communicate with the Kubernetes API Server. Adversaries may try to communicate with the API Server to steal information and/or credentials, or even run more containers and laterally extend their grip on the systems.",

@@ -33,7 +33,7 @@ func TestProcessVmWriteCodeInjection(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-25": {
+				"TRC-1025": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "process_vm_writev",
@@ -48,7 +48,7 @@ func TestProcessVmWriteCodeInjection(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-25",
+						ID:          "TRC-1025",
 						Version:     "1",
 						Name:        "Code injection detected using process_vm_writev syscall",
 						Description: "Possible code injection into another process was detected. Code injection is an exploitation technique used to run malicious code, adversaries may use it in order to execute their malware.",

@@ -33,7 +33,7 @@ func TestIllegitimateShell(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-78": {
+				"TRC-1016": {
 					Data: nil,
 					Event: trace.Event{
 						EventName:   "security_bprm_check",
@@ -48,7 +48,7 @@ func TestIllegitimateShell(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-78",
+						ID:          "TRC-1016",
 						Version:     "1",
 						Name:        "Web server spawned a shell",
 						Description: "A web-server program on your server spawned a shell program. Shell is the linux command-line program, web servers usually don't run shell programs, so this alert might indicate an adversary is exploiting a web server program to gain command execution on the server.",

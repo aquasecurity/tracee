@@ -32,7 +32,7 @@ func TestFilelessExecution(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-5": {
+				"TRC-105": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "sched_process_exec",
@@ -46,7 +46,7 @@ func TestFilelessExecution(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-5",
+						ID:          "TRC-105",
 						Version:     "1",
 						Name:        "Fileless execution detected",
 						Description: "Fileless execution was detected. Executing a process from memory instead from a file in the filesystem may indicate that an adversary is trying to avoid execution detection.",

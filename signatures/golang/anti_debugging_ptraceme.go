@@ -22,7 +22,7 @@ func (sig *AntiDebuggingPtraceme) Init(cb detect.SignatureHandler) error {
 
 func (sig *AntiDebuggingPtraceme) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "TRC-2",
+		ID:          "TRC-102",
 		Version:     "1",
 		Name:        "Anti-Debugging detected",
 		Description: "A process used anti-debugging techniques to block a debugger. Malware use anti-debugging to stay invisible and inhibit analysis of their behavior.",

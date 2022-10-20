@@ -35,7 +35,7 @@ func TestProcFopsHooking(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-154": {
+				"TRC-1020": {
 					Data: map[string]interface{}{"Hooked proc file operations": []trace.HookedSymbolData{
 						{SymbolName: "struct file_operations pointer", ModuleOwner: "hidden"},
 						{SymbolName: "iterate_shared", ModuleOwner: "phide"},
@@ -55,7 +55,7 @@ func TestProcFopsHooking(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-154",
+						ID:          "TRC-1020",
 						Version:     "1",
 						Name:        "File operations hooking on proc filesystem detected",
 						Description: "File operations hooking on proc filesystem detected. The proc filesystem is an interface for the running processes as files. This allows programs like `ps` and `top` to check what are the running processes. File operations are the functions defined on a file or directory. File operations hooking includes replacing the default function used to perform a basic task on files and directories like enumerating files. By hooking the file operations of /proc an adversary gains control on certain system function, such as file listing or other basic function performed by the operation system. The adversary may also hijack the execution flow and execute it's own code. File operation hooking is considered a malicious behavior that is performed by rootkits and may indicate that the host's kernel has been compromised. Hidden modules are marked as hidden symbol owners and indicate further malicious activity of an adversary.",

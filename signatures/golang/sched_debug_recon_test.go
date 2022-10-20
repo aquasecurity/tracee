@@ -38,7 +38,7 @@ func TestSchedDebugRecon(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-29": {
+				"TRC-1029": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_file_open",
@@ -58,7 +58,7 @@ func TestSchedDebugRecon(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-29",
+						ID:          "TRC-1029",
 						Version:     "1",
 						Name:        "sched_debug CPU file was read",
 						Description: "The sched_debug file was read. This file contains information about your CPU and processes. Adversaries may read this file in order to gather that information for their use.",

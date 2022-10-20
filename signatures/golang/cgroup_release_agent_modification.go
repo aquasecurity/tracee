@@ -23,7 +23,7 @@ func (sig *CgroupReleaseAgentModification) Init(cb detect.SignatureHandler) erro
 
 func (sig *CgroupReleaseAgentModification) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "TRC-95",
+		ID:          "TRC-1010",
 		Version:     "1",
 		Name:        "Cgroups release agent file modification",
 		Description: "An attempt to modify Cgroup release agent file was detected. Cgroups are a Linux kernel feature which limits the resource usage of a set of processes. Adversaries may use this feature for container escaping.",

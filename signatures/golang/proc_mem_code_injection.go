@@ -26,7 +26,7 @@ func (sig *ProcMemCodeInjection) Init(cb detect.SignatureHandler) error {
 
 func (sig *ProcMemCodeInjection) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "TRC-111",
+		ID:          "TRC-1024",
 		Version:     "1",
 		Name:        "Code injection detected through /proc/<pid>/mem file",
 		Description: "Possible code injection into another process was detected. Code injection is an exploitation technique used to run malicious code, adversaries may use it in order to execute their malware.",
