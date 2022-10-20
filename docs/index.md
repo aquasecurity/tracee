@@ -64,12 +64,12 @@ Before you proceed, make sure you follow the [prerequiresites].
        `/tmp/tracee`.
 
     2. You may need to change the volume mounts for the kernel headers based on
-       your setup. See [Linux Headers](./installing/headers.md) section for
+       your setup. See [Linux Headers](./getting-started/installing/headers.md) section for
        more info.
 
     3. Tracee supports enriching events with additional data from running
        containers. In order to enable this capability please look
-       [here](./integrating/container-engines.md).
+       [here](./docs/integrating/container-engines.md).
 
 These docker commands run Tracee with **default settings** and start
 **reporting detections** to **standard output**. In order to simulate a
@@ -136,8 +136,8 @@ Tracee is an [Aqua Security] open source project.
 Learn about our open source work and portfolio [Here].
 Join the community, and talk to us about any matter in [GitHub Discussion] or [Slack].
 
-[Tracee-eBPF]: ./tracing/index.md
-[Tracee-Rules]: ./detecting/index.md
+[Tracee-eBPF]: ./docs/tracing/index.md
+[Tracee-Rules]: ./docs/detecting/index.md
 
 [Aqua Security]: https://aquasec.com
 [GitHub Discussion]: https://github.com/aquasecurity/tracee/discussions
