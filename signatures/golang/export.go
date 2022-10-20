@@ -32,4 +32,5 @@ var ExportedSignatures = []detect.Signature{
 	&FilelessExecution{},
 	&IllegitimateShell{},
 	&KernelModuleLoading{},
+	&KubernetesCertificateTheftAttempt{},
 }
