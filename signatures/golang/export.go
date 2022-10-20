@@ -34,4 +34,5 @@ var ExportedSignatures = []detect.Signature{
 	&KernelModuleLoading{},
 	&KubernetesCertificateTheftAttempt{},
 	&ProcFopsHooking{},
+	&SyscallTableHooking{},
 }
