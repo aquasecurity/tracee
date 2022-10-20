@@ -41,4 +41,4 @@ jobs:
           if [ -z $VERSION ]; then
             VERSION=$(echo ${{ github.ref }} | sed -e "s#refs/tags/##g")
           fi
-          mike deploy --push --update-aliases $VERSION latest
+          mike deploy --push --update-aliases ${VERSION%.*} latest
