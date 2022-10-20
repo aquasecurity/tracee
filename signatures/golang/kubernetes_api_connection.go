@@ -38,17 +38,18 @@ func (sig *K8sApiConnection) GetMetadata() (detect.SignatureMetadata, error) {
 
 func (sig *K8sApiConnection) GetSelectedEvents() ([]detect.SignatureEventSelector, error) {
 	return []detect.SignatureEventSelector{
-		{Source: "tracee", Name: "execve", Origin: "container"},
+		{Source: "tracee", Name: "sched_process_exec", Origin: "container"},
 		{Source: "tracee", Name: "security_socket_connect", Origin: "container"},
 	}, nil
 }
 
 func (sig *K8sApiConnection) OnEvent(event protocol.Event) error {
-	eventObj, ok := event.Payload.(trace.Event)
 
+	eventObj, ok := event.Payload.(trace.Event)
 	if !ok {
 		return fmt.Errorf("failed to cast event's payload")
 	}
+
 	containerID := eventObj.ContainerID
 	if containerID == "" {
 		return nil
@@ -56,17 +57,14 @@ func (sig *K8sApiConnection) OnEvent(event protocol.Event) error {
 
 	switch eventObj.EventName {
 
-	case "execve":
-		// the usage of 'envp' argument of the execve event is vulnerable to TOCTOU attack.
-		// in the future we plan to add 'envp' argument to sched_process_exec, and when it'll happen, we should start
-		// using sched_process_exec instead of execve in this signature.
-		envpArg, err := helpers.GetTraceeArgumentByName(eventObj, "envp")
+	case "sched_process_exec":
+
+		envVars, err := helpers.GetTraceeSliceStringArgumentByName(eventObj, "env")
 		if err != nil {
 			return nil
 		}
-		envs := envpArg.Value.([]string)
 
-		apiIPAddress := getApiAddressFromEnvs(envs)
+		apiIPAddress := getApiAddressFromEnvs(envVars)
 		if apiIPAddress != "" {
 			sig.apiAddressContainerId[containerID] = apiIPAddress
 		}

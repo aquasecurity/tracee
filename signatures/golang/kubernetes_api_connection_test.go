@@ -20,7 +20,7 @@ func TestK8sApiConnection(t *testing.T) {
 			Name: "should trigger detection",
 			Events: []trace.Event{
 				{
-					EventName:   "execve",
+					EventName:   "sched_process_exec",
 					ContainerID: "0907ef86d7be",
 					Args: []trace.Argument{
 						{
@@ -31,7 +31,7 @@ func TestK8sApiConnection(t *testing.T) {
 						},
 						{
 							ArgMeta: trace.ArgMeta{
-								Name: "envp",
+								Name: "env",
 							},
 							Value: []string{"CURL_CA_BUNDLE=/cacert.pem", "HOSTNAME=3c5f9dbcb5da", "CURL_RELEASE_TAG=curl-7_76_1", "CURL_GIT_REPO=https://github.com/curl/curl.git", "SHLVL=2", "HOME=/home/curl_user", "TERM=xterm", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "PWD=/", "KUBERNETES_SERVICE_HOST=1.1.1.1", "CURL_VERSION=7_76_1"},
 						},
@@ -93,7 +93,7 @@ func TestK8sApiConnection(t *testing.T) {
 			Name: "should not trigger detection",
 			Events: []trace.Event{
 				{
-					EventName:   "execve",
+					EventName:   "sched_process_exec",
 					ContainerID: "0907ef86d7be",
 					Args: []trace.Argument{
 						{
@@ -104,7 +104,7 @@ func TestK8sApiConnection(t *testing.T) {
 						},
 						{
 							ArgMeta: trace.ArgMeta{
-								Name: "envp",
+								Name: "env",
 							},
 							Value: []string{"CURL_CA_BUNDLE=/cacert.pem", "HOSTNAME=3c5f9dbcb5da", "CURL_RELEASE_TAG=curl-7_76_1", "CURL_GIT_REPO=https://github.com/curl/curl.git", "SHLVL=2", "HOME=/home/curl_user", "TERM=xterm", "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "PWD=/", "KUBERNETES_SERVICE_HOST=1.1.1.1", "CURL_VERSION=7_76_1"},
 						},
