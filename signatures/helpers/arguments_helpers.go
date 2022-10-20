@@ -106,3 +106,58 @@ func GetRawAddrArgumentByName(event trace.Event, argName string) (map[string]str
 
 	return addr, nil
 }
+
+// GetTraceeHookedSymbolDataArgumentByName returns []trace.HookedSymbolData of hooked symbols for arg
+func GetTraceeHookedSymbolDataArgumentByName(event trace.Event, argName string) ([]trace.HookedSymbolData, error) {
+	hookedSymbolsPtr, err := GetTraceeArgumentByName(event, argName)
+	if err != nil {
+		return []trace.HookedSymbolData{}, err
+	}
+
+	var hookedSymbols []trace.HookedSymbolData
+
+	hookedSymbols, ok := hookedSymbolsPtr.Value.([]trace.HookedSymbolData)
+	if ok {
+		return hookedSymbols, nil
+	} else {
+		argSlice, ok := hookedSymbolsPtr.Value.([]interface{})
+		if ok {
+			for _, v := range argSlice {
+				hookedSymbol, err := getHookedSymbolData(v)
+				if err != nil {
+					continue
+				}
+				hookedSymbols = append(hookedSymbols, hookedSymbol)
+			}
+			return hookedSymbols, nil
+		}
+	}
+
+	return hookedSymbols, fmt.Errorf("can't convert argument %v to []trace.HookedSymbolData", argName)
+}
+
+// getHookedSymbolData generates a trace.HookedSymbolData from interface{} got from event arg
+func getHookedSymbolData(v interface{}) (trace.HookedSymbolData, error) {
+	symbol := trace.HookedSymbolData{}
+
+	hookedSymbolMap, ok := v.(map[string]interface{})
+	if !ok {
+		return symbol, fmt.Errorf("can't convert hooked symbol to map[string]interface{}")
+	}
+
+	for key, value := range hookedSymbolMap {
+		strValue, ok := value.(string)
+		if !ok {
+			continue
+		}
+		switch key {
+		case "ModuleOwner":
+			symbol.ModuleOwner = strValue
+
+		case "SymbolName":
+			symbol.SymbolName = strValue
+		}
+	}
+
+	return symbol, nil
+}
