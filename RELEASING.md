@@ -17,10 +17,10 @@
 1. Prepare release by creating the PR with the following changes
    1. Update the libbpfgo module
    2. Update the types module
-   3. Update the container image tag in the following files:
+   3. Update the container image tag in the following files [example](https://github.com/aquasecurity/tracee/pull/2195):
       1. `deploy/kubernetes/tracee-falcosidekick/falcosidekick.yaml`
       2. `deploy/kubernetes/tracee-postee/tracee.yaml`
-   4. Update `home`, `version` and `appVersion` properties in `deploy/helm/tracee/Chart.yaml`
+   4. Update `home`, `version` and `appVersion` properties in [`deploy/helm/tracee/Chart.yaml`] - [example](https://github.com/aquasecurity/tracee/pull/2195)
 1. Run tests and checks
    1. Check that there are no verifier issues when choosing all events in tracee-ebpf (using `--trace e=*`)
    1. Check both CO-RE and non CO-RE builds
@@ -48,3 +48,8 @@
    1. Tracee binaries (tracee-ebpf, tracee-rules, rules) in the form of a tar archive `tracee.<VERSION>.tar.gz`
    1. Source code zip and tar files
    1. Docker images pushed to the aquasec/tracee repository (`docker.io/aquasec/tracee:<VERSION>` and `docker.io/aquasec/tracee:full-<VERSION>`)
+1. Publish the Helm chart by manually triggering the [`.github/workflows/publish-helm.yaml`] workflow
+
+[`.github/workflows/release.yaml`]: ./.github/workflows/release.yaml
+[`.github/workflows/publish-helm.yaml`]: ./.github/workflows/publish-helm.yaml
+[`deploy/helm/tracee/Chart.yaml`]: ./deploy/helm/tracee/Chart.yaml
