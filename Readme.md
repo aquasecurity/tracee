@@ -10,11 +10,17 @@
 
 # Tracee: Runtime Security and Forensics using eBPF
 
-Tracee is a Runtime Security and forensics tool for Linux. It uses Linux **eBPF
-technology** to trace your system and applications **at runtime**, and analyzes
-collected events in order to detect **suspicious behavioral patterns**. It is
-usually delivered as a docker container, but there are other ways you can use
-it (even create your own customized tracee container).
+Tracee is a runtime security and forensics tool for Linux based cloud deployments.
+It uses **eBPF** to trace the host OS and applications **at runtime**, and analyzes
+collected events in order to detect **suspicious behavioral patterns**. It can be
+run as a daemon-set in your kubernetes environment, but is flexible to be run for
+many purposes on any Linux based hosts. It can be delivered via Helm, as a docker
+container, or as a small set of static binaries.
+
+The goal of Tracee is to serve as an easy to use and effective solution for learning 
+when cloud native attacks occur in your environment. By leveraging Aqua's advanced 
+security research, performant eBPF based detection, and cloud native first
+approach Tracee makes runtime detection accesible, powerful, and effective.
 
 Watch a quick video demo of Tracee:
 
@@ -29,83 +35,13 @@ The full documentation of Tracee is available at
 You can use the version selector on top to view documentation for a specific
 version of Tracee.
 
-## Quickstart
+## Quickstart (Kubernetes)
 
-Before you proceed, make sure you follow the [minimum requirements for running Tracee](./docs/installing/prerequisites.md).
+Tracee is designed to monitor hosts in kubernetes clusters. To see this in action check out the quickstart [here](./docs/getting-started/kubernetes-quickstart.md).
 
-1. Running **tracee:latest**
+## Quickstart (docker)
 
-  ```text
-  docker run \
-    --name tracee --rm -it \
-    --pid=host --cgroupns=host --privileged \
-    -v /etc/os-release:/etc/os-release-host:ro \
-    -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-    aquasec/tracee:latest
-  ```
-
-2. Running **tracee:full**
-
-  ```text
-  docker run --name tracee --rm -it \
-    --pid=host --cgroupns=host --privileged \
-    -v /etc/os-release:/etc/os-release-host:ro \
-    -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-    -v /usr/src:/usr/src:ro \
-    -v /lib/modules:/lib/modules:ro \
-    -v /tmp/tracee:/tmp/tracee:rw \
-    aquasec/tracee:full
-  ```
-
-> 1. The default (latest) image is **lightweight** and **portable**. It is
->    supposed to support different kernel versions without having to build
->    source code. If the host kernel does not support BTF then you may use the
->    **full** container image. The full container will compile an eBPF object
->    during startup, if you do not have one already cached in
->    /tmp/tracee.
->
-> 2. You may need to change the volume mounts for the kernel headers based on
->    your setup. See [Linux Headers](./docs/installing/headers.md) section for
->    more info.
->
-> 3. Tracee supports enriching events with additional data from running
->    containers. In order to enable this capability please look
->    [here](./docs/integrating/container-engines.md).
-
-These docker commands run Tracee with **default settings** and start
-**reporting detections** to **standard output**. In order to simulate a
-suspicious behavior, you can simply run:
-
-```
-strace ls
-```
-
-in another terminal. This will trigger the **Anti-Debugging** signature, which
-is loaded by default, and you will get a warning:
-
-```
-INFO: probing tracee-ebpf capabilities...
-INFO: starting tracee-ebpf...
-INFO: starting tracee-rules...
-Loaded 14 signature(s): [TRC-1 TRC-13 TRC-2 TRC-14 TRC-3 TRC-11 TRC-9 TRC-4 TRC-5 TRC-12 TRC-8 TRC-6 TRC-10 TRC-7]
-Serving metrics endpoint at :3366
-Serving metrics endpoint at :4466
-
-*** Detection ***
-Time: 2022-03-25T08:04:22Z
-Signature ID: TRC-2
-Signature: Anti-Debugging
-Data: map[]
-Command: strace
-Hostname: ubuntu-impish
-```
-
-## Trace
-
-In some cases, you might want to **leverage Tracee's eBPF event collection
-capabilities** directly, without involving the **detection engine**. This might
-be useful for debugging, troubleshooting, analysing, researching OR
-education.
+To get a closer feel for what tracee accomplishes, you can run tracee on your local machine. Follow along to the quickstart [here](./docs/getting-started/docker-quickstart.md)
 
 Execute docker container with the word `trace` as an initial argument, and
 **tracee-ebpf** will be executed, instead of the full tracee detection engine.
@@ -119,8 +55,6 @@ docker run \
   aquasec/tracee:latest \
   trace
 ```
-
-> See documentation or add the `--help` flag for more.
 
 ## Components
 
