@@ -146,10 +146,10 @@ for TEST in $TESTS; do
 
     # special capabilities needed for some tests
     case $TEST in
-        TRC-2 | TRC-3)
+        TRC-2 | TRC-102 | TRC-3 | TRC-103)
             docker_extra_arg="--cap-add=SYS_PTRACE"
             ;;
-        TRC-11)
+        TRC-11 | TRC-1014)
             docker_extra_arg="--cap-add=SYS_ADMIN"
             ;;
         *)
