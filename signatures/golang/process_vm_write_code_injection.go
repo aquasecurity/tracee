@@ -21,7 +21,7 @@ func (sig *ProcessVmWriteCodeInjection) Init(cb detect.SignatureHandler) error {
 
 func (sig *ProcessVmWriteCodeInjection) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "TRC-25",
+		ID:          "TRC-1025",
 		Version:     "1",
 		Name:        "Code injection detected using process_vm_writev syscall",
 		Description: "Possible code injection into another process was detected. Code injection is an exploitation technique used to run malicious code, adversaries may use it in order to execute their malware.",

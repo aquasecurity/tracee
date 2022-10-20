@@ -38,7 +38,7 @@ func TestProcMemCodeInjection(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-111": {
+				"TRC-1024": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_file_open",
@@ -58,7 +58,7 @@ func TestProcMemCodeInjection(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-111",
+						ID:          "TRC-1024",
 						Version:     "1",
 						Name:        "Code injection detected through /proc/<pid>/mem file",
 						Description: "Possible code injection into another process was detected. Code injection is an exploitation technique used to run malicious code, adversaries may use it in order to execute their malware.",

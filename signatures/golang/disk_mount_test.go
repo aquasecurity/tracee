@@ -34,7 +34,7 @@ func TestDiskMount(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-27": {
+				"TRC-1014": {
 					Data: nil,
 					Event: trace.Event{
 						ProcessName: "mal",
@@ -50,7 +50,7 @@ func TestDiskMount(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-27",
+						ID:          "TRC-1014",
 						Version:     "1",
 						Name:        "Container device mount detected",
 						Description: "Container device filesystem mount detected. A mount of a host device filesystem can be exploited by adversaries to perform container escape.",

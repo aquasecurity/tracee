@@ -23,7 +23,7 @@ func (sig *DiskMount) Init(cb detect.SignatureHandler) error {
 
 func (sig *DiskMount) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "TRC-27",
+		ID:          "TRC-1014",
 		Version:     "1",
 		Name:        "Container device mount detected",
 		Description: "Container device filesystem mount detected. A mount of a host device filesystem can be exploited by adversaries to perform container escape.",

@@ -26,7 +26,7 @@ func (sig *ProcMemAccess) Init(cb detect.SignatureHandler) error {
 
 func (sig *ProcMemAccess) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "TRC-128",
+		ID:          "TRC-1023",
 		Version:     "1",
 		Name:        "Process memory access detected",
 		Description: "Process memory access detected. Adversaries may access other processes memory to steal credentials and secrets.",

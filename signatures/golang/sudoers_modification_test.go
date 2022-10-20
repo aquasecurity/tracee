@@ -38,7 +38,7 @@ func TestSudoersModification(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-116": {
+				"TRC-1028": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_file_open",
@@ -58,7 +58,7 @@ func TestSudoersModification(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-116",
+						ID:          "TRC-1028",
 						Version:     "1",
 						Name:        "Sudoers file modification detected",
 						Description: "The sudoers file was modified. The sudoers file is a configuration file which controls the permissions and options of the sudo feature. Adversaries may alter the sudoers file to elevate privileges, execute commands as other users or spawn processes with higher privileges.",
@@ -96,7 +96,7 @@ func TestSudoersModification(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-116": {
+				"TRC-1028": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_file_open",
@@ -116,7 +116,7 @@ func TestSudoersModification(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-116",
+						ID:          "TRC-1028",
 						Version:     "1",
 						Name:        "Sudoers file modification detected",
 						Description: "The sudoers file was modified. The sudoers file is a configuration file which controls the permissions and options of the sudo feature. Adversaries may alter the sudoers file to elevate privileges, execute commands as other users or spawn processes with higher privileges.",
@@ -148,7 +148,7 @@ func TestSudoersModification(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-116": {
+				"TRC-1028": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_inode_rename",
@@ -162,7 +162,7 @@ func TestSudoersModification(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-116",
+						ID:          "TRC-1028",
 						Version:     "1",
 						Name:        "Sudoers file modification detected",
 						Description: "The sudoers file was modified. The sudoers file is a configuration file which controls the permissions and options of the sudo feature. Adversaries may alter the sudoers file to elevate privileges, execute commands as other users or spawn processes with higher privileges.",
@@ -194,7 +194,7 @@ func TestSudoersModification(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-116": {
+				"TRC-1028": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_inode_rename",
@@ -208,7 +208,7 @@ func TestSudoersModification(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-116",
+						ID:          "TRC-1028",
 						Version:     "1",
 						Name:        "Sudoers file modification detected",
 						Description: "The sudoers file was modified. The sudoers file is a configuration file which controls the permissions and options of the sudo feature. Adversaries may alter the sudoers file to elevate privileges, execute commands as other users or spawn processes with higher privileges.",

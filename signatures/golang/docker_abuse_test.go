@@ -39,7 +39,7 @@ func TestDockerAbuse(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-19": {
+				"TRC-1019": {
 					Data: nil,
 					Event: trace.Event{
 						EventName:   "security_file_open",
@@ -60,7 +60,7 @@ func TestDockerAbuse(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-19",
+						ID:          "TRC-1019",
 						Version:     "1",
 						Name:        "Docker socket abuse detected",
 						Description: "An attempt to abuse the Docker UNIX socket inside a container was detected. docker.sock is the UNIX socket that Docker uses as the entry point to the Docker API. Adversaries may attempt to abuse this socket to compromise the system.",
@@ -93,7 +93,7 @@ func TestDockerAbuse(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-19": {
+				"TRC-1019": {
 					Data: nil,
 					Event: trace.Event{
 						EventName:   "security_socket_connect",
@@ -108,7 +108,7 @@ func TestDockerAbuse(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-19",
+						ID:          "TRC-1019",
 						Version:     "1",
 						Name:        "Docker socket abuse detected",
 						Description: "An attempt to abuse the Docker UNIX socket inside a container was detected. docker.sock is the UNIX socket that Docker uses as the entry point to the Docker API. Adversaries may attempt to abuse this socket to compromise the system.",

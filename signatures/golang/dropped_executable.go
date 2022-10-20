@@ -20,7 +20,7 @@ func (sig *DroppedExecutable) Init(cb detect.SignatureHandler) error {
 
 func (sig *DroppedExecutable) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "TRC-22",
+		ID:          "TRC-1022",
 		Version:     "1",
 		Name:        "New executable dropped",
 		Description: "An Executable file was dropped in the system during runtime. Container images are usually built with all binaries needed inside. A dropped binary may indicate that an adversary infiltrated your container.",

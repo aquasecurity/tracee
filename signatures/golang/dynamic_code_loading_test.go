@@ -32,7 +32,7 @@ func TestDynamicCodeLoading(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-4": {
+				"TRC-104": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "mem_prot_alert",
@@ -46,7 +46,7 @@ func TestDynamicCodeLoading(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-4",
+						ID:          "TRC-104",
 						Version:     "1",
 						Name:        "Dynamic code loading detected",
 						Description: "Possible dynamic code loading was detected as the binary's memory is both writable and executable. Writing to an executable allocated memory region could be a technique used by adversaries to run code undetected and without dropping executables.",

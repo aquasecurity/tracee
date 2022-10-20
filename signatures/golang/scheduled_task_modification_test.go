@@ -38,7 +38,7 @@ func TestScheduledTaskModification(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-113": {
+				"TRC-1027": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_file_open",
@@ -58,7 +58,7 @@ func TestScheduledTaskModification(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-113",
+						ID:          "TRC-1027",
 						Version:     "1",
 						Name:        "Scheduled tasks modification detected",
 						Description: "The task scheduling functionality or files were modified. Crontab schedules task execution or enables task execution at boot time. Adversaries may add or modify scheduled tasks in order to persist a reboot, thus maintaining malicious execution on the affected host.",
@@ -96,7 +96,7 @@ func TestScheduledTaskModification(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-113": {
+				"TRC-1027": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_file_open",
@@ -116,7 +116,7 @@ func TestScheduledTaskModification(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-113",
+						ID:          "TRC-1027",
 						Version:     "1",
 						Name:        "Scheduled tasks modification detected",
 						Description: "The task scheduling functionality or files were modified. Crontab schedules task execution or enables task execution at boot time. Adversaries may add or modify scheduled tasks in order to persist a reboot, thus maintaining malicious execution on the affected host.",
@@ -148,7 +148,7 @@ func TestScheduledTaskModification(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-113": {
+				"TRC-1027": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_inode_rename",
@@ -162,7 +162,7 @@ func TestScheduledTaskModification(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-113",
+						ID:          "TRC-1027",
 						Version:     "1",
 						Name:        "Scheduled tasks modification detected",
 						Description: "The task scheduling functionality or files were modified. Crontab schedules task execution or enables task execution at boot time. Adversaries may add or modify scheduled tasks in order to persist a reboot, thus maintaining malicious execution on the affected host.",
@@ -194,7 +194,7 @@ func TestScheduledTaskModification(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-113": {
+				"TRC-1027": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_inode_rename",
@@ -208,7 +208,7 @@ func TestScheduledTaskModification(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-113",
+						ID:          "TRC-1027",
 						Version:     "1",
 						Name:        "Scheduled tasks modification detected",
 						Description: "The task scheduling functionality or files were modified. Crontab schedules task execution or enables task execution at boot time. Adversaries may add or modify scheduled tasks in order to persist a reboot, thus maintaining malicious execution on the affected host.",
@@ -240,7 +240,7 @@ func TestScheduledTaskModification(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-113": {
+				"TRC-1027": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "sched_process_exec",
@@ -254,7 +254,7 @@ func TestScheduledTaskModification(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-113",
+						ID:          "TRC-1027",
 						Version:     "1",
 						Name:        "Scheduled tasks modification detected",
 						Description: "The task scheduling functionality or files were modified. Crontab schedules task execution or enables task execution at boot time. Adversaries may add or modify scheduled tasks in order to persist a reboot, thus maintaining malicious execution on the affected host.",

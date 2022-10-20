@@ -28,7 +28,7 @@ func (sig *RcdModification) Init(cb detect.SignatureHandler) error {
 
 func (sig *RcdModification) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "TRC-114",
+		ID:          "TRC-1026",
 		Version:     "1",
 		Name:        "Rcd modification detected",
 		Description: "The rcd files were modified. rcd files are scripts executed on boot and runlevel switch. Those scripts are responsible for service control in runlevel switch. Adversaries may add or modify rcd files in order to persist a reboot, thus maintaining malicious execution on the affected host.",

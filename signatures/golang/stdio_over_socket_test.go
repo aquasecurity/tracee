@@ -11,36 +11,22 @@ import (
 )
 
 func TestStdioOverSocket(t *testing.T) {
-	noFindings := map[string]detect.Finding{}
-	md := detect.SignatureMetadata{
-		ID:          "TRC-1",
-		Version:     "0.1.0",
-		Name:        "Standard Input/Output Over Socket",
-		Description: "Redirection of process's standard input/output to socket",
-		Tags:        []string{"linux", "container"},
-		Properties: map[string]interface{}{
-			"Severity":     3,
-			"MITRE ATT&CK": "Persistence: Server Software Component",
-		},
-	}
-
 	testCases := []struct {
 		Name     string
 		Events   []trace.Event
 		Findings map[string]detect.Finding
 	}{
 		{
-			Name: "A",
+			Name: "should trigger detection - security_socket_connect",
 			Events: []trace.Event{
 				{
-					ProcessID: 45,
 					EventName: "security_socket_connect",
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
 								Name: "sockfd",
 							},
-							Value: int32(5),
+							Value: int32(0),
 						},
 						{
 							ArgMeta: trace.ArgMeta{
@@ -50,213 +36,54 @@ func TestStdioOverSocket(t *testing.T) {
 						},
 					},
 				},
-				{
-					ProcessID: 45,
-					EventName: "dup2",
-					Args: []trace.Argument{
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "oldfd",
-							},
-							Value: int32(5),
-						},
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "newfd",
-							},
-							Value: int32(0),
-						},
-					},
-				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-1": {
+				"TRC-101": {
 					Data: map[string]interface{}{
-						"fd":   0,
-						"ip":   "10.225.0.2",
-						"port": "53",
+						"File descriptor": 0,
+						"IP address":      "10.225.0.2",
+						"Port":            "53",
 					},
-					SigMetadata: md,
 					Event: trace.Event{
-						ProcessID: 45,
-						EventName: "dup2",
+						EventName: "security_socket_connect",
 						Args: []trace.Argument{
 							{
 								ArgMeta: trace.ArgMeta{
-									Name: "oldfd",
-								},
-								Value: int32(5),
-							},
-							{
-								ArgMeta: trace.ArgMeta{
-									Name: "newfd",
+									Name: "sockfd",
 								},
 								Value: int32(0),
 							},
+							{
+								ArgMeta: trace.ArgMeta{
+									Name: "remote_addr",
+								},
+								Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
+							},
 						},
 					}.ToProtocol(),
+					SigMetadata: detect.SignatureMetadata{
+						ID:          "TRC-101",
+						Version:     "2",
+						Name:        "Process standard input/output over socket detected",
+						Description: "A process has its standard input/output redirected to a socket. This behaviour is the base of a Reverse Shell attack, which is when an interactive shell being invoked from a target machine back to the attacker's machine, giving it interactive control over the target. Adversaries may use a Reverse Shell to retain control over a compromised target while bypassing security measures like network firewalls.",
+						Properties: map[string]interface{}{
+							"Severity":             3,
+							"Category":             "execution",
+							"Technique":            "Unix Shell",
+							"Kubernetes_Technique": "",
+							"id":                   "attack-pattern--a9d4b653-6915-42af-98b2-5758c4ceee56",
+							"external_id":          "T1059.004",
+						},
+					},
 				},
 			},
 		},
 		{
-			Name: "B",
+			Name: "should trigger detection - socket_dup",
 			Events: []trace.Event{
 				{
-					ProcessID: 45,
-					EventName: "security_socket_connect",
+					EventName: "socket_dup",
 					Args: []trace.Argument{
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "sockfd",
-							},
-							Value: int32(5),
-						},
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "remote_addr",
-							},
-							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
-						},
-					},
-				},
-				{
-					ProcessID: 45,
-					EventName: "dup2",
-					Args: []trace.Argument{
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "oldfd",
-							},
-							Value: int32(5),
-						},
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "newfd",
-							},
-							Value: int32(0),
-						},
-					},
-				},
-			},
-			Findings: map[string]detect.Finding{
-				"TRC-1": {
-					Data: map[string]interface{}{
-						"fd":   0,
-						"ip":   "10.225.0.2",
-						"port": "53",
-					},
-					SigMetadata: md,
-					Event: trace.Event{
-						ProcessID: 45,
-						EventName: "dup2",
-						Args: []trace.Argument{
-							{
-								ArgMeta: trace.ArgMeta{
-									Name: "oldfd",
-								},
-								Value: int32(5),
-							},
-							{
-								ArgMeta: trace.ArgMeta{
-									Name: "newfd",
-								},
-								Value: int32(0),
-							},
-						},
-					}.ToProtocol(),
-				},
-			},
-		},
-		{
-			Name: "C",
-			Events: []trace.Event{
-				{
-					ProcessID: 45,
-					EventName: "security_socket_connect",
-					Args: []trace.Argument{
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "sockfd",
-							},
-							Value: int32(5),
-						},
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "remote_addr",
-							},
-							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
-						},
-					},
-				},
-				{
-					ProcessID:   45,
-					EventName:   "dup",
-					ReturnValue: 1,
-					Args: []trace.Argument{
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "oldfd",
-							},
-							Value: int32(5),
-						},
-					},
-				},
-			},
-			Findings: map[string]detect.Finding{
-				"TRC-1": {
-					Data: map[string]interface{}{
-						"fd":   1,
-						"ip":   "10.225.0.2",
-						"port": "53",
-					},
-					Event: trace.Event{
-						ProcessID:   45,
-						EventName:   "dup",
-						ReturnValue: 1,
-						Args: []trace.Argument{
-							{
-								ArgMeta: trace.ArgMeta{
-									Name: "oldfd",
-								},
-								Value: int32(5),
-							},
-						},
-					}.ToProtocol(),
-					SigMetadata: md,
-				},
-			},
-		},
-		{
-			Name: "D",
-			Events: []trace.Event{
-				{
-					ProcessID: 45,
-					EventName: "security_socket_connect",
-					Args: []trace.Argument{
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "sockfd",
-							},
-							Value: int32(5),
-						},
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "remote_addr",
-							},
-							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
-						},
-					},
-				},
-				{
-					ProcessID: 45,
-					EventName: "dup3",
-					Args: []trace.Argument{
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "oldfd",
-							},
-							Value: int32(5),
-						},
 						{
 							ArgMeta: trace.ArgMeta{
 								Name: "newfd",
@@ -265,30 +92,23 @@ func TestStdioOverSocket(t *testing.T) {
 						},
 						{
 							ArgMeta: trace.ArgMeta{
-								Name: "flags",
+								Name: "remote_addr",
 							},
-							Value: "SOMEFLAGS",
+							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
 						},
 					},
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-1": {
+				"TRC-101": {
 					Data: map[string]interface{}{
-						"fd":   0,
-						"ip":   "10.225.0.2",
-						"port": "53",
+						"File descriptor": 0,
+						"IP address":      "10.225.0.2",
+						"Port":            "53",
 					},
 					Event: trace.Event{
-						ProcessID: 45,
-						EventName: "dup3",
+						EventName: "socket_dup",
 						Args: []trace.Argument{
-							{
-								ArgMeta: trace.ArgMeta{
-									Name: "oldfd",
-								},
-								Value: int32(5),
-							},
 							{
 								ArgMeta: trace.ArgMeta{
 									Name: "newfd",
@@ -297,52 +117,40 @@ func TestStdioOverSocket(t *testing.T) {
 							},
 							{
 								ArgMeta: trace.ArgMeta{
-									Name: "flags",
+									Name: "remote_addr",
 								},
-								Value: "SOMEFLAGS",
+								Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
 							},
 						},
 					}.ToProtocol(),
-					SigMetadata: md,
-				},
-			},
-		},
-		{
-			Name: "E",
-			Events: []trace.Event{
-				{
-					ProcessID: 45,
-					EventName: "dup2",
-					Args: []trace.Argument{
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "oldfd",
-							},
-							Value: int32(5),
-						},
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "newfd",
-							},
-							Value: int32(0),
+					SigMetadata: detect.SignatureMetadata{
+						ID:          "TRC-101",
+						Version:     "2",
+						Name:        "Process standard input/output over socket detected",
+						Description: "A process has its standard input/output redirected to a socket. This behaviour is the base of a Reverse Shell attack, which is when an interactive shell being invoked from a target machine back to the attacker's machine, giving it interactive control over the target. Adversaries may use a Reverse Shell to retain control over a compromised target while bypassing security measures like network firewalls.",
+						Properties: map[string]interface{}{
+							"Severity":             3,
+							"Category":             "execution",
+							"Technique":            "Unix Shell",
+							"Kubernetes_Technique": "",
+							"id":                   "attack-pattern--a9d4b653-6915-42af-98b2-5758c4ceee56",
+							"external_id":          "T1059.004",
 						},
 					},
 				},
 			},
-			Findings: noFindings,
 		},
 		{
-			Name: "F",
+			Name: "should not trigger detection - security_socket_connect wrong FD",
 			Events: []trace.Event{
 				{
-					ProcessID: 45,
 					EventName: "security_socket_connect",
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
 								Name: "sockfd",
 							},
-							Value: int32(5),
+							Value: int32(3),
 						},
 						{
 							ArgMeta: trace.ArgMeta{
@@ -352,156 +160,61 @@ func TestStdioOverSocket(t *testing.T) {
 						},
 					},
 				},
-				{
-					ProcessID: 45,
-					EventName: "close",
-					Args: []trace.Argument{
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "fd",
-							},
-							Value: int32(5),
-						},
-					},
-				},
-				{
-					ProcessID: 45,
-					EventName: "dup2",
-					Args: []trace.Argument{
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "oldfd",
-							},
-							Value: int32(5),
-						},
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "newfd",
-							},
-							Value: int32(0),
-						},
-					},
-				},
 			},
-			Findings: noFindings,
+			Findings: map[string]detect.Finding{},
 		},
 		{
-			Name: "G",
+			Name: "should not trigger detection - security_socket_connect legit port",
 			Events: []trace.Event{
 				{
-					ProcessID: 45,
 					EventName: "security_socket_connect",
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
 								Name: "sockfd",
 							},
-							Value: int32(5),
+							Value: int32(1),
 						},
 						{
 							ArgMeta: trace.ArgMeta{
 								Name: "remote_addr",
 							},
-							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
-						},
-					},
-				},
-				{
-					ProcessID: 22,
-					EventName: "dup2",
-					Args: []trace.Argument{
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "oldfd",
-							},
-							Value: int32(5),
-						},
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "newfd",
-							},
-							Value: int32(0),
+							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "0", "sin_addr": ""},
 						},
 					},
 				},
 			},
-			Findings: noFindings,
+			Findings: map[string]detect.Finding{},
 		},
 		{
-			Name: "H",
+			Name: "should not trigger detection - socket_dup legit port",
 			Events: []trace.Event{
 				{
-					ProcessID: 45,
-					EventName: "security_socket_connect",
+					EventName: "socket_dup",
 					Args: []trace.Argument{
 						{
 							ArgMeta: trace.ArgMeta{
-								Name: "sockfd",
+								Name: "newfd",
 							},
-							Value: int32(5),
+							Value: int32(3),
 						},
 						{
 							ArgMeta: trace.ArgMeta{
 								Name: "remote_addr",
 							},
-							Value: map[string]string{"sa_family": "AF_INET6", "sin6_port": "443", "sin6_addr": "2001:67c:1360:8001::2f", "sin6_scopeid": "0", "sin6_flowinfo": "0"},
-						},
-					},
-				},
-				{
-					ProcessID: 45,
-					EventName: "dup2",
-					Args: []trace.Argument{
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "oldfd",
-							},
-							Value: int32(5),
-						},
-						{
-							ArgMeta: trace.ArgMeta{
-								Name: "newfd",
-							},
-							Value: int32(0),
+							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "0", "sin_addr": ""},
 						},
 					},
 				},
 			},
-			Findings: map[string]detect.Finding{
-				"TRC-1": {
-					Data: map[string]interface{}{
-						"fd":   0,
-						"ip":   "2001:67c:1360:8001::2f",
-						"port": "443",
-					},
-					Event: trace.Event{
-						ProcessID: 45,
-						EventName: "dup2",
-						Args: []trace.Argument{
-							{
-								ArgMeta: trace.ArgMeta{
-									Name: "oldfd",
-								},
-								Value: int32(5),
-							},
-							{
-								ArgMeta: trace.ArgMeta{
-									Name: "newfd",
-								},
-								Value: int32(0),
-							},
-						},
-					}.ToProtocol(),
-					SigMetadata: md,
-				},
-			},
+			Findings: map[string]detect.Finding{},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
 			holder := signaturestest.FindingsHolder{}
-			sig := stdioOverSocket{}
+			sig := StdioOverSocket{}
 			sig.Init(holder.OnFinding)
 
 			for _, e := range tc.Events {

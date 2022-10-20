@@ -38,7 +38,7 @@ func TestCgroupNotifyOnReleaseModification(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-30": {
+				"TRC-106": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_file_open",
@@ -58,7 +58,7 @@ func TestCgroupNotifyOnReleaseModification(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-30",
+						ID:          "TRC-106",
 						Version:     "1",
 						Name:        "Cgroups notify_on_release file modification",
 						Description: "An attempt to modify Cgroup notify_on_release file was detected. Cgroups are a Linux kernel feature which limits the resource usage of a set of processes. Adversaries may use this feature for container escaping.",

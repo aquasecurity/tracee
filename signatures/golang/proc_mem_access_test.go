@@ -38,7 +38,7 @@ func TestProcMemAccess(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-128": {
+				"TRC-1023": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_file_open",
@@ -58,7 +58,7 @@ func TestProcMemAccess(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-128",
+						ID:          "TRC-1023",
 						Version:     "1",
 						Name:        "Process memory access detected",
 						Description: "Process memory access detected. Adversaries may access other processes memory to steal credentials and secrets.",

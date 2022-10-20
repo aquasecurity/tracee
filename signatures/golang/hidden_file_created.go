@@ -23,7 +23,7 @@ func (sig *HiddenFileCreated) Init(cb detect.SignatureHandler) error {
 
 func (sig *HiddenFileCreated) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "TRC-62",
+		ID:          "TRC-1015",
 		Version:     "1",
 		Name:        "Hidden executable creation detected",
 		Description: "A hidden executable (ELF file) was created on disk. This activity could be legitimate; however, it could indicate that an adversary is trying to avoid detection by hiding their programs.",

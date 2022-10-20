@@ -38,7 +38,7 @@ func TestAslrInspection(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-9": {
+				"TRC-109": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_file_open",
@@ -58,7 +58,7 @@ func TestAslrInspection(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-9",
+						ID:          "TRC-109",
 						Version:     "1",
 						Name:        "ASLR inspection detected",
 						Description: "The ASLR (address space layout randomization) configuration was inspected. ASLR is used by Linux to prevent memory vulnerabilities. An adversary may want to inspect and change the ASLR configuration in order to avoid detection.",

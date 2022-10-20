@@ -38,7 +38,7 @@ func TestDroppedExecutable(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-22": {
+				"TRC-1022": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "magic_write",
@@ -58,7 +58,7 @@ func TestDroppedExecutable(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-22",
+						ID:          "TRC-1022",
 						Version:     "1",
 						Name:        "New executable dropped",
 						Description: "An Executable file was dropped in the system during runtime. Container images are usually built with all binaries needed inside. A dropped binary may indicate that an adversary infiltrated your container.",

@@ -22,7 +22,7 @@ func (sig *SchedDebugRecon) Init(cb detect.SignatureHandler) error {
 
 func (sig *SchedDebugRecon) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "TRC-29",
+		ID:          "TRC-1029",
 		Version:     "1",
 		Name:        "sched_debug CPU file was read",
 		Description: "The sched_debug file was read. This file contains information about your CPU and processes. Adversaries may read this file in order to gather that information for their use.",

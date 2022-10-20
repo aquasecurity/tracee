@@ -28,7 +28,7 @@ func (sig *ScheduledTaskModification) Init(cb detect.SignatureHandler) error {
 
 func (sig *ScheduledTaskModification) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "TRC-113",
+		ID:          "TRC-1027",
 		Version:     "1",
 		Name:        "Scheduled tasks modification detected",
 		Description: "The task scheduling functionality or files were modified. Crontab schedules task execution or enables task execution at boot time. Adversaries may add or modify scheduled tasks in order to persist a reboot, thus maintaining malicious execution on the affected host.",

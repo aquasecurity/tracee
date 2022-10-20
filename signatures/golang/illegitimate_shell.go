@@ -25,7 +25,7 @@ func (sig *IllegitimateShell) Init(cb detect.SignatureHandler) error {
 
 func (sig *IllegitimateShell) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "TRC-78",
+		ID:          "TRC-1016",
 		Version:     "1",
 		Name:        "Web server spawned a shell",
 		Description: "A web-server program on your server spawned a shell program. Shell is the linux command-line program, web servers usually don't run shell programs, so this alert might indicate an adversary is exploiting a web server program to gain command execution on the server.",

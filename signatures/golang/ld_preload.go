@@ -25,7 +25,7 @@ func (sig *LdPreload) Init(cb detect.SignatureHandler) error {
 
 func (sig *LdPreload) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "TRC-7",
+		ID:          "TRC-107",
 		Version:     "1",
 		Name:        "LD_PRELOAD code injection detected",
 		Description: "LD_PRELOAD usage was detected. LD_PRELOAD lets you load your library before any other library, allowing you to hook functions in a process. Adversaries may use this technique to change your applications' behavior or load their own programs.",

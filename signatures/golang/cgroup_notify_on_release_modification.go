@@ -23,7 +23,7 @@ func (sig *CgroupNotifyOnReleaseModification) Init(cb detect.SignatureHandler) e
 
 func (sig *CgroupNotifyOnReleaseModification) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "TRC-30",
+		ID:          "TRC-106",
 		Version:     "1",
 		Name:        "Cgroups notify_on_release file modification",
 		Description: "An attempt to modify Cgroup notify_on_release file was detected. Cgroups are a Linux kernel feature which limits the resource usage of a set of processes. Adversaries may use this feature for container escaping.",

@@ -21,7 +21,7 @@ func (sig *DynamicCodeLoading) Init(cb detect.SignatureHandler) error {
 
 func (sig *DynamicCodeLoading) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "TRC-4",
+		ID:          "TRC-104",
 		Version:     "1",
 		Name:        "Dynamic code loading detected",
 		Description: "Possible dynamic code loading was detected as the binary's memory is both writable and executable. Writing to an executable allocated memory region could be a technique used by adversaries to run code undetected and without dropping executables.",

@@ -38,7 +38,7 @@ func TestRcdModification(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-114": {
+				"TRC-1026": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_file_open",
@@ -58,7 +58,7 @@ func TestRcdModification(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-114",
+						ID:          "TRC-1026",
 						Version:     "1",
 						Name:        "Rcd modification detected",
 						Description: "The rcd files were modified. rcd files are scripts executed on boot and runlevel switch. Those scripts are responsible for service control in runlevel switch. Adversaries may add or modify rcd files in order to persist a reboot, thus maintaining malicious execution on the affected host.",
@@ -96,7 +96,7 @@ func TestRcdModification(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-114": {
+				"TRC-1026": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_file_open",
@@ -116,7 +116,7 @@ func TestRcdModification(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-114",
+						ID:          "TRC-1026",
 						Version:     "1",
 						Name:        "Rcd modification detected",
 						Description: "The rcd files were modified. rcd files are scripts executed on boot and runlevel switch. Those scripts are responsible for service control in runlevel switch. Adversaries may add or modify rcd files in order to persist a reboot, thus maintaining malicious execution on the affected host.",
@@ -148,7 +148,7 @@ func TestRcdModification(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-114": {
+				"TRC-1026": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_inode_rename",
@@ -162,7 +162,7 @@ func TestRcdModification(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-114",
+						ID:          "TRC-1026",
 						Version:     "1",
 						Name:        "Rcd modification detected",
 						Description: "The rcd files were modified. rcd files are scripts executed on boot and runlevel switch. Those scripts are responsible for service control in runlevel switch. Adversaries may add or modify rcd files in order to persist a reboot, thus maintaining malicious execution on the affected host.",
@@ -194,7 +194,7 @@ func TestRcdModification(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-114": {
+				"TRC-1026": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_inode_rename",
@@ -208,7 +208,7 @@ func TestRcdModification(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-114",
+						ID:          "TRC-1026",
 						Version:     "1",
 						Name:        "Rcd modification detected",
 						Description: "The rcd files were modified. rcd files are scripts executed on boot and runlevel switch. Those scripts are responsible for service control in runlevel switch. Adversaries may add or modify rcd files in order to persist a reboot, thus maintaining malicious execution on the affected host.",
@@ -240,7 +240,7 @@ func TestRcdModification(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-114": {
+				"TRC-1026": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "sched_process_exec",
@@ -254,7 +254,7 @@ func TestRcdModification(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-114",
+						ID:          "TRC-1026",
 						Version:     "1",
 						Name:        "Rcd modification detected",
 						Description: "The rcd files were modified. rcd files are scripts executed on boot and runlevel switch. Those scripts are responsible for service control in runlevel switch. Adversaries may add or modify rcd files in order to persist a reboot, thus maintaining malicious execution on the affected host.",

@@ -22,7 +22,7 @@ func (sig *PtraceCodeInjection) Init(cb detect.SignatureHandler) error {
 
 func (sig *PtraceCodeInjection) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "TRC-3",
+		ID:          "TRC-103",
 		Version:     "1",
 		Name:        "Code injection detected using ptrace",
 		Description: "Possible code injection into another process was detected. Code injection is an exploitation technique used to run malicious code, adversaries may use it in order to execute their malware.",

@@ -38,7 +38,7 @@ func TestCgroupReleaseAgentModification(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-95": {
+				"TRC-1010": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_file_open",
@@ -58,7 +58,7 @@ func TestCgroupReleaseAgentModification(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-95",
+						ID:          "TRC-1010",
 						Version:     "1",
 						Name:        "Cgroups release agent file modification",
 						Description: "An attempt to modify Cgroup release agent file was detected. Cgroups are a Linux kernel feature which limits the resource usage of a set of processes. Adversaries may use this feature for container escaping.",
@@ -90,7 +90,7 @@ func TestCgroupReleaseAgentModification(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-95": {
+				"TRC-1010": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_inode_rename",
@@ -104,7 +104,7 @@ func TestCgroupReleaseAgentModification(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-95",
+						ID:          "TRC-1010",
 						Version:     "1",
 						Name:        "Cgroups release agent file modification",
 						Description: "An attempt to modify Cgroup release agent file was detected. Cgroups are a Linux kernel feature which limits the resource usage of a set of processes. Adversaries may use this feature for container escaping.",

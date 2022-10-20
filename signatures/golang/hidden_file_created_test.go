@@ -38,7 +38,7 @@ func TestHiddenFileCreated(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-62": {
+				"TRC-1015": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "magic_write",
@@ -58,7 +58,7 @@ func TestHiddenFileCreated(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-62",
+						ID:          "TRC-1015",
 						Version:     "1",
 						Name:        "Hidden executable creation detected",
 						Description: "A hidden executable (ELF file) was created on disk. This activity could be legitimate; however, it could indicate that an adversary is trying to avoid detection by hiding their programs.",

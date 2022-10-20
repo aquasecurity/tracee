@@ -24,13 +24,13 @@ func TestKernelModuleLoading(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-57": {
+				"TRC-1017": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "init_module",
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-57",
+						ID:          "TRC-1017",
 						Version:     "1",
 						Name:        "Kernel module loading detected",
 						Description: "Loading of a kernel module was detected. Kernel modules are binaries meant to run in the kernel. Adversaries may try and load kernel modules to extend their capabilities and avoid detection by running in the kernel and not user space.",
@@ -62,7 +62,7 @@ func TestKernelModuleLoading(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-57": {
+				"TRC-1017": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "security_kernel_read_file",
@@ -76,7 +76,7 @@ func TestKernelModuleLoading(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-57",
+						ID:          "TRC-1017",
 						Version:     "1",
 						Name:        "Kernel module loading detected",
 						Description: "Loading of a kernel module was detected. Kernel modules are binaries meant to run in the kernel. Adversaries may try and load kernel modules to extend their capabilities and avoid detection by running in the kernel and not user space.",

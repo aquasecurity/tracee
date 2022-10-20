@@ -28,7 +28,7 @@ func (sig *K8SServiceAccountToken) Init(cb detect.SignatureHandler) error {
 
 func (sig *K8SServiceAccountToken) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "TRC-8",
+		ID:          "TRC-108",
 		Version:     "1",
 		Name:        "K8s service account token file read",
 		Description: "The Kubernetes service account token file was read on your container. This token is used to communicate with the Kubernetes API Server. Adversaries may try to communicate with the API Server to steal information and/or credentials, or even run more containers and laterally extend their grip on the systems.",

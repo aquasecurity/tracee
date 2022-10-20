@@ -23,7 +23,7 @@ func (sig *DockerAbuse) Init(cb detect.SignatureHandler) error {
 
 func (sig *DockerAbuse) GetMetadata() (detect.SignatureMetadata, error) {
 	return detect.SignatureMetadata{
-		ID:          "TRC-19",
+		ID:          "TRC-1019",
 		Version:     "1",
 		Name:        "Docker socket abuse detected",
 		Description: "An attempt to abuse the Docker UNIX socket inside a container was detected. docker.sock is the UNIX socket that Docker uses as the entry point to the Docker API. Adversaries may attempt to abuse this socket to compromise the system.",

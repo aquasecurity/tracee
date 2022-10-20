@@ -32,7 +32,7 @@ func TestAntiDebuggingPtraceme(t *testing.T) {
 				},
 			},
 			Findings: map[string]detect.Finding{
-				"TRC-2": {
+				"TRC-102": {
 					Data: nil,
 					Event: trace.Event{
 						EventName: "ptrace",
@@ -46,7 +46,7 @@ func TestAntiDebuggingPtraceme(t *testing.T) {
 						},
 					}.ToProtocol(),
 					SigMetadata: detect.SignatureMetadata{
-						ID:          "TRC-2",
+						ID:          "TRC-102",
 						Version:     "1",
 						Name:        "Anti-Debugging detected",
 						Description: "A process used anti-debugging techniques to block a debugger. Malware use anti-debugging to stay invisible and inhibit analysis of their behavior.",
