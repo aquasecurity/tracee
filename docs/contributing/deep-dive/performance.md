@@ -7,7 +7,7 @@
 [architecture page]: ../architecture.md
 [tracee pipeline]: ../architecture.md#tracee-pipeline-concept
 
-![Tracee Performance](../images/tracee-performance.png)
+![Tracee Performance](../../images/tracee-performance.png)
 
 ## Pain Points
 

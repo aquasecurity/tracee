@@ -16,7 +16,7 @@ $ ./dist/tracee-ebpf --cache help
 [performance page]: ./performance.md
 [tracee pipeline]: ../architecture.md#tracee-pipeline-concept
 
-![Tracee Cache](../images/tracee-cache.png)
+![Tracee Cache](../../images/tracee-cache.png)
 
 The caching happens in userland, it is an in-memory caching, and it helps with
 workload bursts: if kernel produces more events than userland is capable of

@@ -2,7 +2,7 @@
 
 ## Tracee Architecture Overview
 
-![Architecture](images/architecture.png)
+![Architecture](../images/architecture.png)
 
 !!! Overview Note
 
@@ -17,26 +17,26 @@
         1. Derived (from other) Events
         1. Network Events
     
-    [COLLECTED]:./tracing/index.md
+    [COLLECTED]:./../docs/tracing/index.md
     
     1. **[DETECT]** patterns based on existing signatures:
-        1. [OPA/Rego signatures](./detecting/rego.md)
-        1. [Golang signatures](./detecting/golang.md)
-        1. [Go-CEL signatures](./detecting/go-cel.md) (Proof-of-Concept / Experimental)
+        1. [OPA/Rego signatures](./../docs/detecting/rego.md)
+        1. [Golang signatures](./../docs/detecting/golang.md)
+        1. [Go-CEL signatures](./../docs/detecting/go-cel.md) (Proof-of-Concept / Experimental)
     
-    [DETECT]: ./detecting/index.md
+    [DETECT]: ./../docs/detecting/index.md
     
     1. Let other tools to **CONSUME** detection events:
-        1. [Capture Artifacts](./capturing/index.md)
-        1. [Postee](./integrating/postee.md)
-        1. [Falco Sidekick](./integrating/falcosidekick.md)
+        1. [Capture Artifacts](./../docs/capturing/index.md)
+        1. [Postee](./../docs/integrating/postee.md)
+        1. [Falco Sidekick](./../docs/integrating/falcosidekick.md)
     
     1. **ENFORCE**
         1. Work in Progress
 
 ## Tracee Pipeline Concept
 
-![Tracee Pipeline](images/tracee-pipeline-overview.png)
+![Tracee Pipeline](../images/tracee-pipeline-overview.png)
 
 !!! Pipeline Warning
 
@@ -79,11 +79,11 @@
     > those events and to submit them to **tracee-rules** for it to evaluate
     > them looking for detection patterns described as **signatures**.
 
-[shared memory ring buffer]: ./deep-dive/performance.md
-[parse events for argument type]: ./tracing/output-options.md
-[enriches the events]: ./integrating/container-engines.md
-[capture artifacts]: ./capturing/index.md
-[golang]: ./detecting/golang.md
-[rego]: ./detecting/rego.md
-[go-cel]: ./detecting/go-cel.md
-[spit out]: ./integrating/webhook.md
+[shared memory ring buffer]: ./../contributing/deep-dive/performance.md
+[parse events for argument type]: ./../docs/tracing/output-options.md
+[enriches the events]: ./../docs/integrating/container-engines.md
+[capture artifacts]: ./../docs/capturing/index.md
+[golang]: ./../docs/detecting/golang.md
+[rego]: ./../docs/detecting/rego.md
+[go-cel]: ./../docs/detecting/go-cel.md
+[spit out]: ./../docs/integrating/webhook.md

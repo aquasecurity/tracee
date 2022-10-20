@@ -45,6 +45,6 @@ capabilities:
 
 [libbpf CO-RE documentation]: https://github.com/libbpf/libbpf#bpf-co-re-compile-once--run-everywhere
 [BTFHUB]: https://github.com/aquasecurity/btfhub-archive
-[how to override capabilities drop]: ../deep-dive/dropping-capabilities.md
+[how to override capabilities drop]: ../../contributing/deep-dive/dropping-capabilities.md
 
 

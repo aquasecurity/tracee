@@ -7,7 +7,7 @@
     image. The full container will compile an eBPF object during startup, if
     you do not have one already cached in /tmp/tracee.
 
-[does not support BTF]: ../building/nocore-ebpf.md#the-need-for-a-non-co-re-ebpf-object-build
+[does not support BTF]: ../../contributing/building/nocore-ebpf.md#the-need-for-a-non-co-re-ebpf-object-build
 
 
 When running `tracee:full` container image, in order to compile the kernel
@@ -16,7 +16,7 @@ on your Linux distribution, there may be different ways to obtain them.
 
 - Ubuntu/Debian/Arch/Manjaro: install `linux-headers` package.
 - CentOS/Fedora: install `kernel-headers` and `kernel-devel` packages.
-- macOS: follow the [Building on OSX](../building/macosx.md) guidelines.
+- macOS: follow the [Building on OSX](../../contributing/building/macosx.md) guidelines.
 
 Normally the files will be installed in `/lib/modules/${kernel_version}/build`
 which is where Tracee expects them. If you have the headers elsewhere, you can
