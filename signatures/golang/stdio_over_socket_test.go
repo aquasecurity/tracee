@@ -187,7 +187,7 @@ func TestStdioOverSocket(t *testing.T) {
 			Findings: map[string]detect.Finding{},
 		},
 		{
-			Name: "should not trigger detection - socket_dup legit port",
+			Name: "should not trigger detection - socket_dup wrong FD",
 			Events: []trace.Event{
 				{
 					EventName: "socket_dup",
@@ -197,6 +197,29 @@ func TestStdioOverSocket(t *testing.T) {
 								Name: "newfd",
 							},
 							Value: int32(3),
+						},
+						{
+							ArgMeta: trace.ArgMeta{
+								Name: "remote_addr",
+							},
+							Value: map[string]string{"sa_family": "AF_INET", "sin_port": "53", "sin_addr": "10.225.0.2"},
+						},
+					},
+				},
+			},
+			Findings: map[string]detect.Finding{},
+		},
+		{
+			Name: "should not trigger detection - socket_dup legit port",
+			Events: []trace.Event{
+				{
+					EventName: "socket_dup",
+					Args: []trace.Argument{
+						{
+							ArgMeta: trace.ArgMeta{
+								Name: "newfd",
+							},
+							Value: int32(1),
 						},
 						{
 							ArgMeta: trace.ArgMeta{
