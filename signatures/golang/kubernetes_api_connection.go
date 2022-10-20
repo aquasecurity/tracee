@@ -76,12 +76,21 @@ func (sig *K8sApiConnection) OnEvent(event protocol.Event) error {
 			return nil
 		}
 
-		remoteAddrArg, err := helpers.GetTraceeArgumentByName(eventObj, "remote_addr")
+		remoteAddr, err := helpers.GetRawAddrArgumentByName(eventObj, "remote_addr")
 		if err != nil {
 			return err
 		}
-		ip, err := getIPFromAddr(remoteAddrArg)
-		if err != nil || ip == "" {
+
+		supportedFamily, err := helpers.IsInternetFamily(remoteAddr)
+		if err != nil {
+			return err
+		}
+		if !supportedFamily {
+			return nil
+		}
+
+		ip, err := helpers.GetIPFromRawAddr(remoteAddr)
+		if err != nil {
 			return err
 		}
 
@@ -113,20 +122,4 @@ func getApiAddressFromEnvs(envs []string) string {
 		}
 	}
 	return ""
-}
-
-func getIPFromAddr(addrArg trace.Argument) (string, error) {
-
-	addr, isOk := addrArg.Value.(map[string]string)
-	if !isOk {
-		return "", fmt.Errorf("couldn't convert arg to addr")
-	}
-
-	if addr["sa_family"] == "AF_INET" {
-		return addr["sin_addr"], nil
-	} else if addr["sa_family"] == "AF_INET6" {
-		return addr["sin6_addr"], nil
-	}
-
-	return "", nil
 }
