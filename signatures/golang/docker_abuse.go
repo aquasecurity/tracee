@@ -79,17 +79,17 @@ func (sig *DockerAbuse) OnEvent(event protocol.Event) error {
 			return err
 		}
 
-		family, familyExists := addr["sa_family"]
-		if !familyExists {
-			return nil
+		supportedFamily, err := helpers.IsUnixFamily(addr)
+		if err != nil {
+			return err
 		}
-		if family != "AF_UNIX" {
+		if !supportedFamily {
 			return nil
 		}
 
-		sunPath, sunPathExists := addr["sun_path"]
-		if !sunPathExists {
-			return nil
+		sunPath, err := helpers.GetPathFromRawAddr(addr)
+		if err != nil {
+			return err
 		}
 
 		path = sunPath
