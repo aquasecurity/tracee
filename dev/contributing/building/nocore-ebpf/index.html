@@ -10,23 +10,25 @@
       
       
       
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/contributing/building/nocore-ebpf/">
+      
       
         
       
       
-      <link rel="icon" href="/tracee/dev/assets/images/favicon.png">
+      <link rel="icon" href="../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.4.1, mkdocs-material-8.5.6+insiders-4.26.0">
     
     
       
-        <title>Tracee</title>
+        <title>Building non CO-RE - Tracee</title>
       
     
     
-      <link rel="stylesheet" href="/tracee/dev/assets/stylesheets/main.fa1d38d9.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.fa1d38d9.min.css">
       
         
-        <link rel="stylesheet" href="/tracee/dev/assets/stylesheets/palette.cbb835fc.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.cbb835fc.min.css">
         
       
       
@@ -43,7 +45,7 @@
       
     
     
-    <script>__md_scope=new URL("/tracee/dev",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -66,6 +68,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#running-non-co-re-tracee" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -82,9 +89,9 @@
 
 <header class="md-header md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/tracee/dev/." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
+    <a href="../../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
       
-  <img src="/tracee/dev/images/tracee_logo_only.png" alt="logo">
+  <img src="../../../images/tracee_logo_only.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -100,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Building non CO-RE
             
           </span>
         </div>
@@ -173,7 +180,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/tracee/dev/." class="md-tabs__link">
+        <a href="../../.." class="md-tabs__link">
           
   
     
@@ -196,7 +203,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/tracee/dev/tutorials/setup-development-machine-with-vagrant/" class="md-tabs__link">
+        <a href="../../../tutorials/setup-development-machine-with-vagrant/" class="md-tabs__link">
           
   
   Tutorials
@@ -217,7 +224,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/tracee/dev/docs/overview/" class="md-tabs__link">
+        <a href="../../../docs/overview/" class="md-tabs__link">
           
   
   Docs
@@ -230,6 +237,8 @@
       
         
 
+  
+
 
 
 
@@ -238,7 +247,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/tracee/dev/contributing/overview/" class="md-tabs__link">
+        <a href="../../overview/" class="md-tabs__link md-tabs__link--active">
           
   
   Contributing
@@ -277,9 +286,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/tracee/dev/." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
+    <a href="../../.." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
       
-  <img src="/tracee/dev/images/tracee_logo_only.png" alt="logo">
+  <img src="../../../images/tracee_logo_only.png" alt="logo">
 
     </a>
     Tracee
@@ -340,7 +349,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -399,7 +408,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/getting-started/installing/getting/" class="md-nav__link">
+      <a href="../../../getting-started/installing/getting/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -421,7 +430,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/getting-started/installing/prerequisites/" class="md-nav__link">
+      <a href="../../../getting-started/installing/prerequisites/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -443,7 +452,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/getting-started/installing/docker/" class="md-nav__link">
+      <a href="../../../getting-started/installing/docker/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -465,7 +474,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/getting-started/installing/kubernetes/" class="md-nav__link">
+      <a href="../../../getting-started/installing/kubernetes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -522,7 +531,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/getting-started/installing/distros/ubuntu/" class="md-nav__link">
+      <a href="../../../getting-started/installing/distros/ubuntu/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -544,7 +553,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/getting-started/installing/distros/fedora/" class="md-nav__link">
+      <a href="../../../getting-started/installing/distros/fedora/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -566,7 +575,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/getting-started/installing/distros/nix-nixos/" class="md-nav__link">
+      <a href="../../../getting-started/installing/distros/nix-nixos/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -596,7 +605,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/getting-started/installing/headers/" class="md-nav__link">
+      <a href="../../../getting-started/installing/headers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -626,7 +635,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/getting-started/quick-start/" class="md-nav__link">
+      <a href="../../../getting-started/quick-start/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -690,7 +699,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/tutorials/setup-development-machine-with-vagrant/" class="md-nav__link">
+      <a href="../../../tutorials/setup-development-machine-with-vagrant/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -712,7 +721,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/tutorials/deploy-grafana-dashboard/" class="md-nav__link">
+      <a href="../../../tutorials/deploy-grafana-dashboard/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -776,7 +785,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/overview/" class="md-nav__link">
+      <a href="../../../docs/overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -835,7 +844,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/tracing/" class="md-nav__link">
+      <a href="../../../docs/tracing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -857,7 +866,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/tracing/output-formats/" class="md-nav__link">
+      <a href="../../../docs/tracing/output-formats/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -879,7 +888,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/tracing/output-options/" class="md-nav__link">
+      <a href="../../../docs/tracing/output-options/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -901,7 +910,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/tracing/event-filtering/" class="md-nav__link">
+      <a href="../../../docs/tracing/event-filtering/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -968,7 +977,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/capturing/" class="md-nav__link">
+      <a href="../../../docs/capturing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1035,7 +1044,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/detecting/" class="md-nav__link">
+      <a href="../../../docs/detecting/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1092,7 +1101,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/detecting/golang/" class="md-nav__link">
+      <a href="../../../docs/detecting/golang/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1114,7 +1123,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/detecting/rego/" class="md-nav__link">
+      <a href="../../../docs/detecting/rego/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1136,7 +1145,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/detecting/go-cel/" class="md-nav__link">
+      <a href="../../../docs/detecting/go-cel/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1166,7 +1175,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/detecting/rules/" class="md-nav__link">
+      <a href="../../../docs/detecting/rules/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1233,7 +1242,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/integrating/container-engines/" class="md-nav__link">
+      <a href="../../../docs/integrating/container-engines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1290,7 +1299,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/integrating/go-templates/" class="md-nav__link">
+      <a href="../../../docs/integrating/go-templates/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1347,7 +1356,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/integrating/webhook/" class="md-nav__link">
+      <a href="../../../docs/integrating/webhook/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1369,7 +1378,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/integrating/postee/" class="md-nav__link">
+      <a href="../../../docs/integrating/postee/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1391,7 +1400,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/integrating/falcosidekick/" class="md-nav__link">
+      <a href="../../../docs/integrating/falcosidekick/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1429,7 +1438,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/integrating/prometheus/" class="md-nav__link">
+      <a href="../../../docs/integrating/prometheus/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1464,15 +1473,17 @@
       
   
   
+    
+  
   
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
         
         
           <label class="md-nav__link" for="__nav_4">
@@ -1501,7 +1512,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/overview/" class="md-nav__link">
+      <a href="../../overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1523,7 +1534,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/architecture/" class="md-nav__link">
+      <a href="../../architecture/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1545,7 +1556,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/guidelines/" class="md-nav__link">
+      <a href="../../guidelines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1565,17 +1576,19 @@
                 
   
   
+    
+  
   
     
     
     
       
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" >
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" checked>
         
         
           <label class="md-nav__link" for="__nav_4_4">
@@ -1604,7 +1617,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/building/building/" class="md-nav__link">
+      <a href="../building/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1626,7 +1639,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/building/environment/" class="md-nav__link">
+      <a href="../environment/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1648,7 +1661,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/building/containers/" class="md-nav__link">
+      <a href="../containers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1668,9 +1681,31 @@
                 
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/building/nocore-ebpf/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Building non CO-RE
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -1681,6 +1716,71 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Introduction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-need-for-a-non-co-re-ebpf-object-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      The need for a non CO-RE eBPF object build
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-the-non-co-re-ebpf-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install the non CO-RE eBPF object
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-non-co-re-tracee-ebpf" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run non CO-RE tracee-ebpf
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-the-building-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use the building environment
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1692,7 +1792,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/building/packaging/" class="md-nav__link">
+      <a href="../packaging/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1714,7 +1814,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/building/macosx/" class="md-nav__link">
+      <a href="../macosx/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1781,7 +1881,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/deep-dive/secure-tracing/" class="md-nav__link">
+      <a href="../../deep-dive/secure-tracing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1803,7 +1903,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/deep-dive/performance/" class="md-nav__link">
+      <a href="../../deep-dive/performance/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1825,7 +1925,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/deep-dive/caching-events/" class="md-nav__link">
+      <a href="../../deep-dive/caching-events/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1847,7 +1947,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/deep-dive/ordering-events/" class="md-nav__link">
+      <a href="../../deep-dive/ordering-events/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1869,7 +1969,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/deep-dive/dropping-capabilities/" class="md-nav__link">
+      <a href="../../deep-dive/dropping-capabilities/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1891,7 +1991,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/deep-dive/override-os-files/" class="md-nav__link">
+      <a href="../../deep-dive/override-os-files/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1913,7 +2013,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/deep-dive/healthz/" class="md-nav__link">
+      <a href="../../deep-dive/healthz/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1961,6 +2061,61 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#introduction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Introduction
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-need-for-a-non-co-re-ebpf-object-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      The need for a non CO-RE eBPF object build
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#install-the-non-co-re-ebpf-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install the non CO-RE eBPF object
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-non-co-re-tracee-ebpf" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run non CO-RE tracee-ebpf
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#use-the-building-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use the building environment
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -1972,8 +2127,194 @@
             <div class="md-content" data-md-component="content">
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+<h1 id="running-non-co-re-tracee">Running non CO-RE Tracee<a class="headerlink" href="#running-non-co-re-tracee" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>These instructions are meant to describe how to build tracee's eBPF object
+for your running kernel when it does not support
+<a href="https://nakryiko.com/posts/bpf-portability-and-co-re/">CO-RE</a>.</p>
+</blockquote>
+<h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h2>
+<div class="admonition introduction">
+<p class="admonition-title">Introduction</p>
+<p>As you are probably already aware, <strong>Tracee</strong> consists of:</p>
+<div class="admonition tracee-ebpf tip">
+<p class="admonition-title">Tracee-ebpf</p>
+<ul>
+<li>Userspace agent  <ol>
+<li>Handles lifecycle of ebpf programs  </li>
+<li>Receives events from eBPF programs  </li>
+</ol>
+</li>
+<li>eBPF code  <ol>
+<li>Programs loaded in the kernel for event collection</li>
+</ol>
+</li>
+</ul>
+</div>
+<div class="admonition tracee-rules tip">
+<p class="admonition-title">Tracee-rules</p>
+<ul>
+<li>OPA signatures</li>
+<li>Golang signatures</li>
+<li>Go-Cel signatures (tech-preview)</li>
+</ul>
+</div>
+</div>
+<p><strong>tracee-ebpf</strong> leverages Linux's eBPF technology, which requires some kernel
+level integration. <strong>Tracee</strong> supports two eBPF integration modes:</p>
+<ol>
+<li>
+<p><strong>CO-RE</strong>: a <strong>portable mode</strong>, which will seamlessly run on all supported
+   envs.</p>
+<p>The portable option, also known as CO-RE (compile once, run everywhere),
+requires that your operating system support
+<a href="https://nakryiko.com/posts/btf-dedup/">BTF</a> (BPF Type Format). Tracee will
+automatically run in CO-RE mode if it detects that the environment supports
+it. The <strong>tracee-ebpf</strong> binary has a CO-RE eBPF object embedded on it. When
+executed, it loads the CO-RE eBPF object into the kernel and each of its
+object's eBPF programs are executed when triggered by kernel probes, or
+tracepoints, for example.</p>
+<p>This mode requires no intervention or preparation on your side.  You can
+manually detect if your environments supports it by checking if the
+following file exists on your machine: <code>/sys/kernel/btf/vmlinux</code>.</p>
+</li>
+<li>
+<p><strong>non CO-RE</strong>: a <strong>kernel-specific mode</strong>, requiring eBPF object to be built.</p>
+<p>If you want to run Tracee on a host without BTF support, there are 2 options:
+1. to use BTF files from <a href="https://github.com/aquasecurity/btfhub">BTFHUB</a>
+   and provide the TRACEE_BTF_FILE environment variable pointing to the BTF
+   file of your running kernel.
+2. to have <code>../../Makefile</code> build and install the eBPF object for you
+   (instructions in this file). This will depend on having clang and a
+   kernel version specific kernel-header package.</p>
+</li>
+</ol>
+<h2 id="the-need-for-a-non-co-re-ebpf-object-build">The need for a non CO-RE eBPF object build<a class="headerlink" href="#the-need-for-a-non-co-re-ebpf-object-build" title="Permanent link">&para;</a></h2>
+<p>Until <a href="https://github.com/aquasecurity/tracee/commit/20549fabefa37b70ca1b8bade8ae39ef0b934942">recently</a>,
+<strong>tracee-ebpf</strong> was capable of building a non CO-RE (portable) eBPF object when
+the running kernel did not support BTF, one of the kernel features needed for
+eBPF portability among different kernels.</p>
+<p><strong>That now is changed</strong>:</p>
+<p>It is the <strong>user responsibility</strong> to have the <em>non CO-RE eBPF object</em> correctly
+placed in <code>/tmp/tracee</code> directory. Tracee will load it, instead of loading the
+embedded CO-RE eBPF object, as a last resource if there is no:</p>
+<ol>
+<li>BTF file available in running kernel (<code>/sys/kernel/btf/vmlinux</code>).</li>
+<li>BTF file pointed by <code>TRACEE_BTF_FILE</code> environment variable.</li>
+<li>BTF file embedded into "tracee-ebpf" binary (<a href="https://github.com/aquasecurity/btfhub">BTFHUB</a>).</li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Installing the non CO-RE eBPF object in the environment does not mean will
+will run <strong>tracee-ebpf</strong> with it by default. If your system supports CO-RE
+eBPF objects it will be chosen instead. If your system supports CO-RE eBPF
+but does not contain embedded BTF information, but is support by BTFHUB,
+then the CO-RE eBPF object will be used by default. The only way you can
+make sure the non CO-RE eBPF object is used is by always informing the
+<code>TRACEE_BPF_FILE=...</code> environment variable.</p>
+</div>
+<p><strong>Reasoning behind this change</strong></p>
+<p>With <a href="https://github.com/aquasecurity/btfhub">BTFHUB</a>, it is now possible to
+run <strong>tracee-ebpf</strong> without compiling the eBPF object to each different kernel,
+thus removing the automatic builds (although the functionality is still kept
+through the Makefile).</p>
+<h2 id="install-the-non-co-re-ebpf-object">Install the non CO-RE eBPF object<a class="headerlink" href="#install-the-non-co-re-ebpf-object" title="Permanent link">&para;</a></h2>
+<p>By running:</p>
+<div class="highlight"><pre><span></span><code>$ make clean
+$ make all
+$ make install-bpf-nocore
+</code></pre></div>
+<p>make installs an eBPF object file under <code>/tmp/tracee</code> for the current running
+kernel. Example:</p>
+<div class="highlight"><pre><span></span><code>$ find /tmp/tracee
+/tmp/tracee
+/tmp/tracee/tracee.bpf.5_4_0-91-generic.v0_6_5-80-ge723a22.o
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This example, the Ubuntu Focal kernel <strong>5.4.0-91-generic</strong> supports CO-RE,
+but the kernel does not have embedded BTF information available. In cases
+like this, the user may opt to either use <a href="https://github.com/aquasecurity/btfhub">BTFHUB</a>
+btf files (with an environment variable TRACEE_BTF_FILE=.../5.4.0-91-generic.btf)
+OR to install the non CO-RE eBPF object and run <strong>tracee-ebpf</strong> command
+without an env variable.</p>
+</div>
+<h2 id="run-non-co-re-tracee-ebpf">Run non CO-RE tracee-ebpf<a class="headerlink" href="#run-non-co-re-tracee-ebpf" title="Permanent link">&para;</a></h2>
+<p>If you install the non CO-RE eBPF object and run <strong>tracee-ebpf</strong> in an
+environment that needs it, then the debug output will look like:</p>
+<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf --debug
+
+OSInfo: ARCH: x86_64
+OSInfo: VERSION: &quot;20.04.3 LTS (Focal Fossa)&quot;
+OSInfo: ID: ubuntu
+OSInfo: ID_LIKE: debian
+OSInfo: PRETTY_NAME: &quot;Ubuntu 20.04.3 LTS&quot;
+OSInfo: VERSION_ID: &quot;20.04&quot;
+OSInfo: VERSION_CODENAME: focal
+OSInfo: KERNEL_RELEASE: 5.8.0-63-generic
+BTF: bpfenv = false, btfenv = false, vmlinux = false
+BPF: no BTF file was found or provided, trying non CO-RE eBPF at
+     /tmp/tracee/tracee.bpf.5_8_0-63-generic.v0_6_5-20-g3353501.o
+</code></pre></div>
+<p>One way of forcing <strong>tracee-ebpf</strong> to use non CO-RE eBPF object, even in a kernel
+that supports CO-RE, is by setting the <code>TRACEE_BPF_FILE</code> environment, like this:</p>
+<div class="highlight"><pre><span></span><code>$ sudo TRACEE_BPF_FILE=/tmp/tracee/tracee.bpf.5_4_0-91-generic.v0_6_5-80-ge723a22.o ./dist/tracee-ebpf --debug -o option:parse-arguments --trace comm=bash --trace follow
+OSInfo: PRETTY_NAME: &quot;Ubuntu 20.04.3 LTS&quot;
+OSInfo: VERSION_ID: &quot;20.04&quot;
+OSInfo: VERSION_CODENAME: focal
+OSInfo: KERNEL_RELEASE: 5.4.0-91-generic
+OSInfo: ARCH: x86_64
+OSInfo: VERSION: &quot;20.04.3 LTS (Focal Fossa)&quot;
+OSInfo: ID: ubuntu
+OSInfo: ID_LIKE: debian
+BTF: bpfenv = true, btfenv = false, vmlinux = false
+BPF: using BPF object from environment: /tmp/tracee/tracee.bpf.5_4_0-91-generic.v0_6_5-80-ge723a22.o
+TIME             UID    COMM             PID     TID     RET              EVENT                ARGS
+...
+</code></pre></div>
+<h2 id="use-the-building-environment">Use the <a href="../environment/">building environment</a><a class="headerlink" href="#use-the-building-environment" title="Permanent link">&para;</a></h2>
+<p>If you're willing to generate the non CO-RE eBPF object using the <code>tracee-make</code>
+building environment container, you're able to by doing:</p>
+<p><div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-make alpine-prepare
+$ make -f builder/Makefile.tracee-make alpine-shell
+</code></pre></div>
+or
+<div class="highlight"><pre><span></span><code>$ make -f builder/Makefile.tracee-make ubuntu-prepare
+$ make -f builder/Makefile.tracee-make ubuntu-shell
+</code></pre></div></p>
+<p>and then, inside the docker container:</p>
+<div class="highlight"><pre><span></span><code>tracee@f65bab137305[/tracee]$ make clean
+tracee@f65bab137305[/tracee]$ make tracee-ebpf
+tracee@f65bab137305[/tracee]$ make install-bpf-nocore
+
+tracee@f65bab137305[/tracee]$ sudo ./dist/tracee-ebpf --debug
+KConfig: warning: could not check enabled kconfig features
+(could not read /boot/config-5.8.0-63-generic: ...)
+KConfig: warning: assuming kconfig values, might have unexpected behavior
+OSInfo: KERNEL_RELEASE: 5.8.0-63-generic
+OSInfo: ARCH: x86_64
+OSInfo: VERSION: &quot;21.04 (Hirsute Hippo)&quot;
+OSInfo: ID: ubuntu
+OSInfo: ID_LIKE: debian
+OSInfo: PRETTY_NAME: &quot;Ubuntu 21.04&quot;
+OSInfo: VERSION_ID: &quot;21.04&quot;
+OSInfo: VERSION_CODENAME: hirsute
+BTF: bpfenv = false, btfenv = false, vmlinux = false
+BPF: no BTF file was found or provided
+BPF: trying non CO-RE eBPF at /tmp/tracee/tracee.bpf.5_8_0-63-generic.v0_6_5-20-g0b921b1.o
+KConfig: warning: assuming kconfig values, might have unexpected behavior
+TIME             UID    COMM             PID     TID     RET ...
+</code></pre></div>
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -1986,6 +2327,42 @@
       </main>
       
         <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../containers/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Building Containers" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Building Containers
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../packaging/" class="md-footer__link md-footer__link--next" aria-label="Next: OS Packaging" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              OS Packaging
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
@@ -2003,10 +2380,10 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "/tracee/dev", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "/tracee/dev/assets/javascripts/workers/search.939a4419.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../assets/javascripts/workers/search.939a4419.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="/tracee/dev/assets/javascripts/bundle.01b2e45f.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.01b2e45f.min.js"></script>
       
     
   </body>

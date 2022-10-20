@@ -10,23 +10,25 @@
       
       
       
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/contributing/events/kprobes/do_sigaction/">
+      
       
         
       
       
-      <link rel="icon" href="/tracee/dev/assets/images/favicon.png">
+      <link rel="icon" href="../../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.4.1, mkdocs-material-8.5.6+insiders-4.26.0">
     
     
       
-        <title>Tracee</title>
+        <title>do_sigaction - Tracee</title>
       
     
     
-      <link rel="stylesheet" href="/tracee/dev/assets/stylesheets/main.fa1d38d9.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.fa1d38d9.min.css">
       
         
-        <link rel="stylesheet" href="/tracee/dev/assets/stylesheets/palette.cbb835fc.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.cbb835fc.min.css">
         
       
       
@@ -43,7 +45,7 @@
       
     
     
-    <script>__md_scope=new URL("/tracee/dev",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -66,6 +68,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#do_sigaction" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -82,9 +89,9 @@
 
 <header class="md-header md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/tracee/dev/." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
+    <a href="../../../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
       
-  <img src="/tracee/dev/images/tracee_logo_only.png" alt="logo">
+  <img src="../../../../images/tracee_logo_only.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -100,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              do_sigaction
             
           </span>
         </div>
@@ -173,7 +180,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/tracee/dev/." class="md-tabs__link">
+        <a href="../../../.." class="md-tabs__link">
           
   
     
@@ -196,7 +203,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/tracee/dev/tutorials/setup-development-machine-with-vagrant/" class="md-tabs__link">
+        <a href="../../../../tutorials/setup-development-machine-with-vagrant/" class="md-tabs__link">
           
   
   Tutorials
@@ -217,7 +224,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/tracee/dev/docs/overview/" class="md-tabs__link">
+        <a href="../../../../docs/overview/" class="md-tabs__link">
           
   
   Docs
@@ -238,7 +245,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/tracee/dev/contributing/overview/" class="md-tabs__link">
+        <a href="../../../overview/" class="md-tabs__link">
           
   
   Contributing
@@ -277,9 +284,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/tracee/dev/." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
+    <a href="../../../.." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
       
-  <img src="/tracee/dev/images/tracee_logo_only.png" alt="logo">
+  <img src="../../../../images/tracee_logo_only.png" alt="logo">
 
     </a>
     Tracee
@@ -340,7 +347,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/." class="md-nav__link">
+      <a href="../../../.." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -399,7 +406,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/getting-started/installing/getting/" class="md-nav__link">
+      <a href="../../../../getting-started/installing/getting/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -421,7 +428,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/getting-started/installing/prerequisites/" class="md-nav__link">
+      <a href="../../../../getting-started/installing/prerequisites/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -443,7 +450,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/getting-started/installing/docker/" class="md-nav__link">
+      <a href="../../../../getting-started/installing/docker/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -465,7 +472,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/getting-started/installing/kubernetes/" class="md-nav__link">
+      <a href="../../../../getting-started/installing/kubernetes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -522,7 +529,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/getting-started/installing/distros/ubuntu/" class="md-nav__link">
+      <a href="../../../../getting-started/installing/distros/ubuntu/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -544,7 +551,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/getting-started/installing/distros/fedora/" class="md-nav__link">
+      <a href="../../../../getting-started/installing/distros/fedora/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -566,7 +573,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/getting-started/installing/distros/nix-nixos/" class="md-nav__link">
+      <a href="../../../../getting-started/installing/distros/nix-nixos/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -596,7 +603,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/getting-started/installing/headers/" class="md-nav__link">
+      <a href="../../../../getting-started/installing/headers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -626,7 +633,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/getting-started/quick-start/" class="md-nav__link">
+      <a href="../../../../getting-started/quick-start/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -690,7 +697,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/tutorials/setup-development-machine-with-vagrant/" class="md-nav__link">
+      <a href="../../../../tutorials/setup-development-machine-with-vagrant/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -712,7 +719,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/tutorials/deploy-grafana-dashboard/" class="md-nav__link">
+      <a href="../../../../tutorials/deploy-grafana-dashboard/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -776,7 +783,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/overview/" class="md-nav__link">
+      <a href="../../../../docs/overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -835,7 +842,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/tracing/" class="md-nav__link">
+      <a href="../../../../docs/tracing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -857,7 +864,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/tracing/output-formats/" class="md-nav__link">
+      <a href="../../../../docs/tracing/output-formats/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -879,7 +886,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/tracing/output-options/" class="md-nav__link">
+      <a href="../../../../docs/tracing/output-options/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -901,7 +908,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/tracing/event-filtering/" class="md-nav__link">
+      <a href="../../../../docs/tracing/event-filtering/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -968,7 +975,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/capturing/" class="md-nav__link">
+      <a href="../../../../docs/capturing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1035,7 +1042,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/detecting/" class="md-nav__link">
+      <a href="../../../../docs/detecting/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1092,7 +1099,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/detecting/golang/" class="md-nav__link">
+      <a href="../../../../docs/detecting/golang/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1114,7 +1121,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/detecting/rego/" class="md-nav__link">
+      <a href="../../../../docs/detecting/rego/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1136,7 +1143,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/detecting/go-cel/" class="md-nav__link">
+      <a href="../../../../docs/detecting/go-cel/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1166,7 +1173,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/detecting/rules/" class="md-nav__link">
+      <a href="../../../../docs/detecting/rules/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1233,7 +1240,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/integrating/container-engines/" class="md-nav__link">
+      <a href="../../../../docs/integrating/container-engines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1290,7 +1297,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/integrating/go-templates/" class="md-nav__link">
+      <a href="../../../../docs/integrating/go-templates/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1347,7 +1354,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/integrating/webhook/" class="md-nav__link">
+      <a href="../../../../docs/integrating/webhook/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1369,7 +1376,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/integrating/postee/" class="md-nav__link">
+      <a href="../../../../docs/integrating/postee/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1391,7 +1398,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/integrating/falcosidekick/" class="md-nav__link">
+      <a href="../../../../docs/integrating/falcosidekick/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1429,7 +1436,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/docs/integrating/prometheus/" class="md-nav__link">
+      <a href="../../../../docs/integrating/prometheus/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1501,7 +1508,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/overview/" class="md-nav__link">
+      <a href="../../../overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1523,7 +1530,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/architecture/" class="md-nav__link">
+      <a href="../../../architecture/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1545,7 +1552,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/guidelines/" class="md-nav__link">
+      <a href="../../../guidelines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1604,7 +1611,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/building/building/" class="md-nav__link">
+      <a href="../../../building/building/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1626,7 +1633,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/building/environment/" class="md-nav__link">
+      <a href="../../../building/environment/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1648,7 +1655,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/building/containers/" class="md-nav__link">
+      <a href="../../../building/containers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1670,7 +1677,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/building/nocore-ebpf/" class="md-nav__link">
+      <a href="../../../building/nocore-ebpf/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1692,7 +1699,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/building/packaging/" class="md-nav__link">
+      <a href="../../../building/packaging/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1714,7 +1721,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/building/macosx/" class="md-nav__link">
+      <a href="../../../building/macosx/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1781,7 +1788,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/deep-dive/secure-tracing/" class="md-nav__link">
+      <a href="../../../deep-dive/secure-tracing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1803,7 +1810,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/deep-dive/performance/" class="md-nav__link">
+      <a href="../../../deep-dive/performance/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1825,7 +1832,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/deep-dive/caching-events/" class="md-nav__link">
+      <a href="../../../deep-dive/caching-events/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1847,7 +1854,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/deep-dive/ordering-events/" class="md-nav__link">
+      <a href="../../../deep-dive/ordering-events/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1869,7 +1876,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/deep-dive/dropping-capabilities/" class="md-nav__link">
+      <a href="../../../deep-dive/dropping-capabilities/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1891,7 +1898,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/deep-dive/override-os-files/" class="md-nav__link">
+      <a href="../../../deep-dive/override-os-files/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1913,7 +1920,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/tracee/dev/contributing/deep-dive/healthz/" class="md-nav__link">
+      <a href="../../../deep-dive/healthz/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1961,6 +1968,115 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#intro" class="md-nav__link">
+    <span class="md-ellipsis">
+      Intro
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#description" class="md-nav__link">
+    <span class="md-ellipsis">
+      Description
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      Arguments
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Arguments">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#handle-method" class="md-nav__link">
+    <span class="md-ellipsis">
+      Handle Method
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hooks" class="md-nav__link">
+    <span class="md-ellipsis">
+      Hooks
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Hooks">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#do_sigaction_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      do_sigaction
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="do_sigaction">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#type" class="md-nav__link">
+    <span class="md-ellipsis">
+      Type
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#purpose" class="md-nav__link">
+    <span class="md-ellipsis">
+      Purpose
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#related-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      Related Events
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -1972,8 +2088,51 @@
             <div class="md-content" data-md-component="content">
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+<h1 id="do_sigaction">do_sigaction<a class="headerlink" href="#do_sigaction" title="Permanent link">&para;</a></h1>
+<h2 id="intro">Intro<a class="headerlink" href="#intro" title="Permanent link">&para;</a></h2>
+<p>do_sigaction - register new signal handler or get information about current one</p>
+<h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
+<p>The event marks that an attempt to get current task signal handler or to change the signal handler of the current task
+for a specific signal occurred. Signal handler change mark the change of the program behavior, and might indicate
+an attempt to defy expected signal behavior.
+This event is relevant for each syscall related to signal handling - <code>rt_sigaction</code>, <code>sigaction</code> and <code>signal</code>.</p>
+<h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>sig</code>:<code>int</code>[K] - the signal that its handler is inspected or changed.</li>
+<li><code>is_sa_initialized</code>:<code>bool</code>[K] - is a new signal handler given. If not, this event marks only inspection of data. If given, this will be the new handler for the event.</li>
+<li><code>sa_flags</code>:<code>unsigned long</code>[K,OPT] - the flags given for the new signal handler. Passed only if <code>is_sa_initialized</code>=<code>true</code>.</li>
+<li><code>sa_mask</code>:<code>unsigned long</code> [K,OPT] - the mask given for the new signal handler. Passed only if <code>is_sa_initialized</code>=<code>true</code>.</li>
+<li><code>sa_handle_method</code>:<code>u8</code>[K,OPT] - the handling method of the new signal handler. Passed only if <code>is_sa_initialized</code>=<code>true</code>.</li>
+<li><code>sa_handler</code>:<code>void*</code>[K,OPT] - the address of the new signal handling function if method is SIG_HND. Passed only if <code>is_sa_initialized</code>=<code>true</code>.</li>
+<li><code>is_old_sa_initialized</code>:<code>bool</code>[K] - is an old signal handler given. If given, the old signal handler will be copied back to the caller.</li>
+<li><code>old_sa_flags</code>:<code>unsigned long</code>[K] - the flags of the old signal handler</li>
+<li><code>old_sa_mask</code>:<code>unsigned long</code>[K] - the mask of the old signal handler</li>
+<li><code>old_sa_handle_method</code>:<code>u8</code>[K] - the handling method of the old signal handler</li>
+<li><code>old_sa_handler</code>:<code>void*</code>[K] - the address of the old signal handling function if method was SIG_HND</li>
+</ul>
+<h3 id="handle-method">Handle Method<a class="headerlink" href="#handle-method" title="Permanent link">&para;</a></h3>
+<p>In the kernel, the handle method and the handler are united to one field.
+To make it more accessible to the user, Tracee split the two apart.
+Normally, the value can be one of the following: <code>SIG_DFL</code>(0), <code>SIG_IGN</code>(1) or pointer to user-mode handler function.
+To deal with the case of a user-mode handler, the value <code>SIG_HND</code>(2) is created to specify that the method is by handler.</p>
+<h2 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h2>
+<h3 id="do_sigaction_1">do_sigaction<a class="headerlink" href="#do_sigaction_1" title="Permanent link">&para;</a></h3>
+<h4 id="type">Type<a class="headerlink" href="#type" title="Permanent link">&para;</a></h4>
+<p>kprobe</p>
+<h4 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h4>
+<p>The function implementing the signal handler inspection/modification for syscalls</p>
+<h2 id="related-events">Related Events<a class="headerlink" href="#related-events" title="Permanent link">&para;</a></h2>
+<p><code>rt_sigaction</code>,<code>sigaction</code>,<code>signal</code></p>
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -2003,10 +2162,10 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "/tracee/dev", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "/tracee/dev/assets/javascripts/workers/search.939a4419.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../../assets/javascripts/workers/search.939a4419.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="/tracee/dev/assets/javascripts/bundle.01b2e45f.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.01b2e45f.min.js"></script>
       
     
   </body>

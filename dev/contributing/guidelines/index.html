@@ -85,7 +85,9 @@
     
       
 
-<header class="md-header" data-md-component="header">
+  
+
+<header class="md-header md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
       
@@ -163,13 +165,109 @@
     
   </nav>
   
+    
+      <nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+
+
+
+
+  
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../.." class="md-tabs__link">
+          
+  
+    
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+
+
+
+
+  
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../tutorials/setup-development-machine-with-vagrant/" class="md-tabs__link">
+          
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+
+
+
+
+  
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../docs/overview/" class="md-tabs__link">
+          
+  
+  Docs
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+
+  
+
+
+
+
+  
+    
+    
+    
+      <li class="md-tabs__item">
+        <a href="../overview/" class="md-tabs__link md-tabs__link--active">
+          
+  
+  Contributing
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
 </header>
     
     <div class="md-container" data-md-component="container">
       
       
-        
-          
         
       
       <main class="md-main" data-md-component="main">
@@ -183,8 +281,10 @@
                     
 
 
+  
 
-<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
       
@@ -213,9 +313,18 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_1" type="checkbox" id="__nav_1" >
+        
+        
+          <label class="md-nav__link" for="__nav_1">
+            
   
   <span class="md-ellipsis">
     Getting Started
@@ -224,22 +333,27 @@
   
   
 
-      </a>
-    </li>
-  
-
-    
-      
-      
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" aria-label="Getting Started" data-md-level="1">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            Getting Started
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
   
   
   
     <li class="md-nav__item">
-      <a href="../../architecture/" class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Architecture
+    Overview
     
   </span>
   
@@ -249,23 +363,26 @@
     </li>
   
 
-    
-      
-      
+              
+            
+              
+                
   
   
   
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-          <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_1_2" type="checkbox" id="__nav_1_2" >
         
         
-          <label class="md-nav__link" for="__nav_3">
+          <label class="md-nav__link" for="__nav_1_2">
             
   
   <span class="md-ellipsis">
@@ -278,8 +395,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" aria-label="Installation" data-md-level="1">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" aria-label="Installation" data-md-level="2">
+          <label class="md-nav__title" for="__nav_1_2">
             <span class="md-nav__icon md-icon"></span>
             Installation
           </label>
@@ -291,7 +408,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../installing/getting/" class="md-nav__link">
+      <a href="../../getting-started/installing/getting/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -313,7 +430,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../installing/prerequisites/" class="md-nav__link">
+      <a href="../../getting-started/installing/prerequisites/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -335,7 +452,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../installing/docker/" class="md-nav__link">
+      <a href="../../getting-started/installing/docker/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -357,7 +474,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../installing/kubernetes/" class="md-nav__link">
+      <a href="../../getting-started/installing/kubernetes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -385,10 +502,10 @@
       
         
         
-          <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_3_5" type="checkbox" id="__nav_3_5" checked>
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_1_2_5" type="checkbox" id="__nav_1_2_5" >
         
         
-          <label class="md-nav__link" for="__nav_3_5">
+          <label class="md-nav__link" for="__nav_1_2_5">
             
   
   <span class="md-ellipsis">
@@ -401,8 +518,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" aria-label="Packages" data-md-level="2">
-          <label class="md-nav__title" for="__nav_3_5">
+        <nav class="md-nav" aria-label="Packages" data-md-level="3">
+          <label class="md-nav__title" for="__nav_1_2_5">
             <span class="md-nav__icon md-icon"></span>
             Packages
           </label>
@@ -414,7 +531,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../installing/distros/ubuntu/" class="md-nav__link">
+      <a href="../../getting-started/installing/distros/ubuntu/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -436,7 +553,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../installing/distros/fedora/" class="md-nav__link">
+      <a href="../../getting-started/installing/distros/fedora/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -458,7 +575,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../installing/distros/nix-nixos/" class="md-nav__link">
+      <a href="../../getting-started/installing/distros/nix-nixos/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -488,7 +605,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../installing/headers/" class="md-nav__link">
+      <a href="../../getting-started/installing/headers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -510,62 +627,6 @@
     </li>
   
 
-    
-      
-      
-  
-  
-  
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
-        
-        
-          <label class="md-nav__link" for="__nav_4">
-            
-  
-  <span class="md-ellipsis">
-    Building
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" aria-label="Building" data-md-level="1">
-          <label class="md-nav__title" for="__nav_4">
-            <span class="md-nav__icon md-icon"></span>
-            Building
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../building/building/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Building Tracee
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
               
             
               
@@ -574,99 +635,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../building/environment/" class="md-nav__link">
+      <a href="../../getting-started/quick-start/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Building Environment
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../building/containers/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Building Containers
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../building/nocore-ebpf/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Building non CO-RE
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../building/packaging/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    OS Packaging
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../building/macosx/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Building on OSX
+    Quick Start
     
   </span>
   
@@ -697,855 +670,10 @@
       
         
         
-          <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" checked>
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_2" type="checkbox" id="__nav_2" >
         
         
-          <label class="md-nav__link" for="__nav_5">
-            
-  
-  <span class="md-ellipsis">
-    Tracing
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" aria-label="Tracing" data-md-level="1">
-          <label class="md-nav__title" for="__nav_5">
-            <span class="md-nav__icon md-icon"></span>
-            Tracing
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../tracing/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Getting Started
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../tracing/output-formats/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Output Formats
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../tracing/output-options/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Output Options
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../tracing/event-filtering/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Event Filtering
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_6" type="checkbox" id="__nav_6" checked>
-        
-        
-          <label class="md-nav__link" for="__nav_6">
-            
-  
-  <span class="md-ellipsis">
-    Capturing
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" aria-label="Capturing" data-md-level="1">
-          <label class="md-nav__title" for="__nav_6">
-            <span class="md-nav__icon md-icon"></span>
-            Capturing
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../capturing/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Getting Started
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_7" type="checkbox" id="__nav_7" checked>
-        
-        
-          <label class="md-nav__link" for="__nav_7">
-            
-  
-  <span class="md-ellipsis">
-    Detecting
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" aria-label="Detecting" data-md-level="1">
-          <label class="md-nav__title" for="__nav_7">
-            <span class="md-nav__icon md-icon"></span>
-            Detecting
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../detecting/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Getting Started
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_7_2" type="checkbox" id="__nav_7_2" checked>
-        
-        
-          <label class="md-nav__link" for="__nav_7_2">
-            
-  
-  <span class="md-ellipsis">
-    Creating Rules
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" aria-label="Creating Rules" data-md-level="2">
-          <label class="md-nav__title" for="__nav_7_2">
-            <span class="md-nav__icon md-icon"></span>
-            Creating Rules
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../detecting/golang/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Golang
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../detecting/rego/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Rego
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../detecting/go-cel/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Go-Cel
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../detecting/rules/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Available Rules
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_8" type="checkbox" id="__nav_8" checked>
-        
-        
-          <label class="md-nav__link" for="__nav_8">
-            
-  
-  <span class="md-ellipsis">
-    Integrating
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" aria-label="Integrating" data-md-level="1">
-          <label class="md-nav__title" for="__nav_8">
-            <span class="md-nav__icon md-icon"></span>
-            Integrating
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../integrating/container-engines/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Container Engines
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_8_2" type="checkbox" id="__nav_8_2" checked>
-        
-        
-          <label class="md-nav__link" for="__nav_8_2">
-            
-  
-  <span class="md-ellipsis">
-    Detected Events
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" aria-label="Detected Events" data-md-level="2">
-          <label class="md-nav__title" for="__nav_8_2">
-            <span class="md-nav__icon md-icon"></span>
-            Detected Events
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../integrating/go-templates/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Go-template
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_8_2_2" type="checkbox" id="__nav_8_2_2" checked>
-        
-        
-          <label class="md-nav__link" for="__nav_8_2_2">
-            
-  
-  <span class="md-ellipsis">
-    Deliver
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" aria-label="Deliver" data-md-level="3">
-          <label class="md-nav__title" for="__nav_8_2_2">
-            <span class="md-nav__icon md-icon"></span>
-            Deliver
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../integrating/webhook/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Webhook
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../integrating/postee/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Postee
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../integrating/falcosidekick/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Falcosidekick
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../integrating/prometheus/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Prometheus
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_9" type="checkbox" id="__nav_9" checked>
-        
-        
-          <label class="md-nav__link" for="__nav_9">
-            
-  
-  <span class="md-ellipsis">
-    Deep Dive
-    
-  </span>
-  
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" aria-label="Deep Dive" data-md-level="1">
-          <label class="md-nav__title" for="__nav_9">
-            <span class="md-nav__icon md-icon"></span>
-            Deep Dive
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../deep-dive/secure-tracing/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Secure Tracing
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../deep-dive/performance/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Performance
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../deep-dive/caching-events/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Caching Events
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../deep-dive/ordering-events/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Ordering Events
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../deep-dive/dropping-capabilities/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Dropping Capabilities
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../deep-dive/override-os-files/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Override OS files
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../deep-dive/healthz/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Healthz
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          <input class="md-nav__toggle md-toggle md-toggle--indeterminate" data-md-toggle="__nav_10" type="checkbox" id="__nav_10" checked>
-        
-        
-          <label class="md-nav__link" for="__nav_10">
+          <label class="md-nav__link" for="__nav_2">
             
   
   <span class="md-ellipsis">
@@ -1559,7 +687,7 @@
           </label>
         
         <nav class="md-nav" aria-label="Tutorials" data-md-level="1">
-          <label class="md-nav__title" for="__nav_10">
+          <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             Tutorials
           </label>
@@ -1620,6 +748,731 @@
       
   
   
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+        
+        
+          <label class="md-nav__link" for="__nav_3">
+            
+  
+  <span class="md-ellipsis">
+    Docs
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" aria-label="Docs" data-md-level="1">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Docs
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_2" type="checkbox" id="__nav_3_2" >
+        
+        
+          <label class="md-nav__link" for="__nav_3_2">
+            
+  
+  <span class="md-ellipsis">
+    Tracing
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" aria-label="Tracing" data-md-level="2">
+          <label class="md-nav__title" for="__nav_3_2">
+            <span class="md-nav__icon md-icon"></span>
+            Tracing
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/tracing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/tracing/output-formats/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Output Formats
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/tracing/output-options/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Output Options
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/tracing/event-filtering/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Event Filtering
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_3" type="checkbox" id="__nav_3_3" >
+        
+        
+          <label class="md-nav__link" for="__nav_3_3">
+            
+  
+  <span class="md-ellipsis">
+    Capturing
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" aria-label="Capturing" data-md-level="2">
+          <label class="md-nav__title" for="__nav_3_3">
+            <span class="md-nav__icon md-icon"></span>
+            Capturing
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/capturing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_4" type="checkbox" id="__nav_3_4" >
+        
+        
+          <label class="md-nav__link" for="__nav_3_4">
+            
+  
+  <span class="md-ellipsis">
+    Detecting
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" aria-label="Detecting" data-md-level="2">
+          <label class="md-nav__title" for="__nav_3_4">
+            <span class="md-nav__icon md-icon"></span>
+            Detecting
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/detecting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_4_2" type="checkbox" id="__nav_3_4_2" >
+        
+        
+          <label class="md-nav__link" for="__nav_3_4_2">
+            
+  
+  <span class="md-ellipsis">
+    Creating Rules
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" aria-label="Creating Rules" data-md-level="3">
+          <label class="md-nav__title" for="__nav_3_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            Creating Rules
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/detecting/golang/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Golang
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/detecting/rego/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Rego
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/detecting/go-cel/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Go-Cel
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/detecting/rules/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Available Rules
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_5" type="checkbox" id="__nav_3_5" >
+        
+        
+          <label class="md-nav__link" for="__nav_3_5">
+            
+  
+  <span class="md-ellipsis">
+    Integrating
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" aria-label="Integrating" data-md-level="2">
+          <label class="md-nav__title" for="__nav_3_5">
+            <span class="md-nav__icon md-icon"></span>
+            Integrating
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/integrating/container-engines/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Container Engines
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_5_2" type="checkbox" id="__nav_3_5_2" >
+        
+        
+          <label class="md-nav__link" for="__nav_3_5_2">
+            
+  
+  <span class="md-ellipsis">
+    Detected Events
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" aria-label="Detected Events" data-md-level="3">
+          <label class="md-nav__title" for="__nav_3_5_2">
+            <span class="md-nav__icon md-icon"></span>
+            Detected Events
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/integrating/go-templates/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Go-template
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_5_2_2" type="checkbox" id="__nav_3_5_2_2" >
+        
+        
+          <label class="md-nav__link" for="__nav_3_5_2_2">
+            
+  
+  <span class="md-ellipsis">
+    Deliver
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" aria-label="Deliver" data-md-level="4">
+          <label class="md-nav__title" for="__nav_3_5_2_2">
+            <span class="md-nav__icon md-icon"></span>
+            Deliver
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/integrating/webhook/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Webhook
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/integrating/postee/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Postee
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/integrating/falcosidekick/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Falcosidekick
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../docs/integrating/prometheus/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Prometheus
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
@@ -1630,10 +1483,10 @@
       
         
         
-          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_11" type="checkbox" id="__nav_11" checked>
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
         
         
-          <label class="md-nav__link" for="__nav_11">
+          <label class="md-nav__link" for="__nav_4">
             
   
   <span class="md-ellipsis">
@@ -1647,11 +1500,55 @@
           </label>
         
         <nav class="md-nav" aria-label="Contributing" data-md-level="1">
-          <label class="md-nav__title" for="__nav_11">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Contributing
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Architecture
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -1716,6 +1613,382 @@
     </ul>
   
 </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_4" type="checkbox" id="__nav_4_4" >
+        
+        
+          <label class="md-nav__link" for="__nav_4_4">
+            
+  
+  <span class="md-ellipsis">
+    Building
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" aria-label="Building" data-md-level="2">
+          <label class="md-nav__title" for="__nav_4_4">
+            <span class="md-nav__icon md-icon"></span>
+            Building
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../building/building/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Building Tracee
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../building/environment/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Building Environment
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../building/containers/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Building Containers
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../building/nocore-ebpf/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Building non CO-RE
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../building/packaging/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    OS Packaging
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../building/macosx/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Building on OSX
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+      
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_5" type="checkbox" id="__nav_4_5" >
+        
+        
+          <label class="md-nav__link" for="__nav_4_5">
+            
+  
+  <span class="md-ellipsis">
+    Deep Dive
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" aria-label="Deep Dive" data-md-level="2">
+          <label class="md-nav__title" for="__nav_4_5">
+            <span class="md-nav__icon md-icon"></span>
+            Deep Dive
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deep-dive/secure-tracing/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Secure Tracing
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deep-dive/performance/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Performance
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deep-dive/caching-events/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Caching Events
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deep-dive/ordering-events/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Ordering Events
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deep-dive/dropping-capabilities/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Dropping Capabilities
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deep-dive/override-os-files/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Override OS files
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deep-dive/healthz/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Healthz
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
       
     </li>
   
@@ -1855,6 +2128,8 @@ staticcheck -f stylish \
             </div>
           
           
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var tab,labels=set.querySelector(".tabbed-labels");for(tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
 <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
         </div>
         
@@ -1866,7 +2141,7 @@ staticcheck -f stylish \
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../../tutorials/deploy-grafana-dashboard/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Deploy Tracee Grafana Dashboard" rel="prev">
+        <a href="../architecture/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Architecture" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -1875,11 +2150,26 @@ staticcheck -f stylish \
               <span class="md-footer__direction">
                 Previous
               </span>
-              Deploy Tracee Grafana Dashboard
+              Architecture
             </div>
           </div>
         </a>
       
+      
+        
+        <a href="../building/building/" class="md-footer__link md-footer__link--next" aria-label="Next: Building Tracee" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Building Tracee
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
       
     </nav>
   
@@ -1899,7 +2189,7 @@ staticcheck -f stylish \
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.expand", "navigation.instant"], "search": "../../assets/javascripts/workers/search.939a4419.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.939a4419.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.01b2e45f.min.js"></script>
