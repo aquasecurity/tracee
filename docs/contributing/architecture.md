@@ -2,7 +2,7 @@
 
 ## Tracee Architecture Overview
 
-![Architecture](images/architecture.png)
+![Architecture](../images/architecture.png)
 
 !!! Overview Note
 
@@ -36,7 +36,7 @@
 
 ## Tracee Pipeline Concept
 
-![Tracee Pipeline](images/tracee-pipeline-overview.png)
+![Tracee Pipeline](../images/tracee-pipeline-overview.png)
 
 !!! Pipeline Warning
 

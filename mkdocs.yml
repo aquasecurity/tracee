@@ -7,69 +7,76 @@ repo_url: https://github.com/aquasecurity/tracee
 edit_uri: ""
 
 nav:
-  - Getting Started: index.md
-  - Architecture: architecture.md
-  - Installation:
-    - Getting Tracee: installing/getting.md
-    - Prerequisites: installing/prerequisites.md
-    - Docker: installing/docker.md
-    - Kubernetes: installing/kubernetes.md
-    - Packages:
-      - Ubuntu: installing/distros/ubuntu.md
-      - Fedora: installing/distros/fedora.md
-      - NixOS: installing/distros/nix-nixos.md
-    - Linux Headers: installing/headers.md
-  - Building:
-    - Building Tracee: building/building.md
-    - Building Environment: building/environment.md
-    - Building Containers: building/containers.md
-    - Building non CO-RE: building/nocore-ebpf.md
-    - OS Packaging: building/packaging.md
-    - Building on OSX: building/macosx.md
-  - Tracing:
-    - Getting Started: tracing/index.md
-    - Output Formats: tracing/output-formats.md
-    - Output Options: tracing/output-options.md
-    - Event Filtering: tracing/event-filtering.md
-  - Capturing:
-    - Getting Started: capturing/index.md
-  - Detecting:
-    - Getting Started: detecting/index.md
-    - Creating Rules:
-      - Golang: detecting/golang.md
-      - Rego: detecting/rego.md
-      - Go-Cel: detecting/go-cel.md
-    - Available Rules: detecting/rules.md
-  - Integrating:
-      - Container Engines: integrating/container-engines.md
-      - Detected Events:
-        - Go-template: integrating/go-templates.md
-        - Deliver:
-          - Webhook: integrating/webhook.md
-          - Postee: integrating/postee.md
-          - Falcosidekick: integrating/falcosidekick.md
-      - Prometheus: integrating/prometheus.md
-  - Deep Dive:
-    - Secure Tracing: deep-dive/secure-tracing.md
-    - Performance: deep-dive/performance.md
-    - Caching Events: deep-dive/caching-events.md
-    - Ordering Events: deep-dive/ordering-events.md
-    - Dropping Capabilities: deep-dive/dropping-capabilities.md
-    - Override OS files: deep-dive/override-os-files.md
-    - Healthz: deep-dive/healthz.md
+  - Getting Started: 
+    - Overview: index.md
+    - Installation:
+      - Getting Tracee: getting-started/installing/getting.md
+      - Prerequisites: getting-started/installing/prerequisites.md
+      - Docker: getting-started/installing/docker.md
+      - Kubernetes: getting-started/installing/kubernetes.md
+      - Packages:
+        - Ubuntu: getting-started/installing/distros/ubuntu.md
+        - Fedora: getting-started/installing/distros/fedora.md
+        - NixOS: getting-started/installing/distros/nix-nixos.md
+      - Linux Headers: getting-started/installing/headers.md
+    - Quick Start: getting-started/quick-start.md
   - Tutorials:
-      - Setup Development Machine with Vagrant: tutorials/setup-development-machine-with-vagrant.md
-      - Deploy Tracee Grafana Dashboard: tutorials/deploy-grafana-dashboard.md
+    - Setup Development Machine with Vagrant: tutorials/setup-development-machine-with-vagrant.md
+    - Deploy Tracee Grafana Dashboard: tutorials/deploy-grafana-dashboard.md
+  - Docs: 
+    - Overview: docs/overview.md
+    - Tracing:
+      - Getting Started: docs/tracing/index.md
+      - Output Formats: docs/tracing/output-formats.md
+      - Output Options: docs/tracing/output-options.md
+      - Event Filtering: docs/tracing/event-filtering.md
+    - Capturing:
+      - Getting Started: docs/capturing/index.md
+    - Detecting:
+      - Getting Started: docs/detecting/index.md
+      - Creating Rules:
+        - Golang: docs/detecting/golang.md
+        - Rego: docs/detecting/rego.md
+        - Go-Cel: docs/detecting/go-cel.md
+      - Available Rules: docs/detecting/rules.md
+    - Integrating:
+        - Container Engines: docs/integrating/container-engines.md
+        - Detected Events:
+          - Go-template: docs/integrating/go-templates.md
+          - Deliver:
+            - Webhook: docs/integrating/webhook.md
+            - Postee: docs/integrating/postee.md
+            - Falcosidekick: docs/integrating/falcosidekick.md
+        - Prometheus: docs/integrating/prometheus.md
   - Contributing:
-      - Source Code Guidelines: contributing/guidelines.md
-
+    - Overview: contributing/overview.md
+    - Architecture: contributing/architecture.md
+    - Source Code Guidelines: contributing/guidelines.md
+    - Building:
+      - Building Tracee: contributing/building/building.md
+      - Building Environment: contributing/building/environment.md
+      - Building Containers: contributing/building/containers.md
+      - Building non CO-RE: contributing/building/nocore-ebpf.md
+      - OS Packaging: contributing/building/packaging.md
+      - Building on OSX: contributing/building/macosx.md
+    - Deep Dive:
+      - Secure Tracing: contributing/deep-dive/secure-tracing.md
+      - Performance: contributing/deep-dive/performance.md
+      - Caching Events: contributing/deep-dive/caching-events.md
+      - Ordering Events: contributing/deep-dive/ordering-events.md
+      - Dropping Capabilities: contributing/deep-dive/dropping-capabilities.md
+      - Override OS files: contributing/deep-dive/override-os-files.md
+      - Healthz: contributing/deep-dive/healthz.md
+      
 theme:
     name: material
     language: 'en'
     logo: images/tracee_logo_only.png
     features:
-      - navigation.expand
-      - navigation.instant
+      - navigation.tabs
+      - navigation.tabs.sticky
+      - navigation.sections
+      - content.tabs.link
 
 markdown_extensions:
   - pymdownx.highlight
