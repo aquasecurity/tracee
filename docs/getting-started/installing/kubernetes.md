@@ -18,23 +18,38 @@ the detections in your preferred way (e.g. Slack, E-mail, JIRA and more).
 
 1. Install **Tracee** using **Helm**
 
-    1. Clone the Helm chart:
+	1. Add Aqua chart repository:
 
-        ```text
-        $ git clone --depth 1 --branch {{ git.tag }} https://github.com/aquasecurity/tracee.git
-        $ cd tracee
-        ```
+		```
+		$ helm repo add aqua https://aquasecurity.github.io/helm-charts/
+		$ helm repo update
+		```
 
-    2. Install the Helm chart from a local directory:
+		or clone the Helm chart:
 
-        ```text
-        $ helm repo add aqua-charts https://aquasecurity.github.io/helm-charts
-        $ helm dependency update ./deploy/helm/tracee
-        $ helm install tracee ./deploy/helm/tracee \
-            --namespace tracee-system --create-namespace \
-            --set hostPID=true \
-            --set postee.enabled=true
-        ```
+		```text
+		$ git clone --depth 1 --branch {{ git.tag }} https://github.com/aquasecurity/tracee.git
+		$ cd tracee
+		```
+
+
+	2. Install the chart from the Aqua chart repository:
+
+		```
+		$ helm install tracee aqua/tracee \
+				--namespace tracee-system --create-namespace \
+				--set hostPID=true
+		```
+  
+		or install the Helm chart from a local directory:
+
+		```text
+		$ helm repo add aqua-charts https://aquasecurity.github.io/helm-charts
+		$ helm dependency update ./deploy/helm/tracee
+		$ helm install tracee ./deploy/helm/tracee \
+				--namespace tracee-system --create-namespace \
+				--set hostPID=true
+		```
 
 2. Install **Tracee** **Manually**
 
