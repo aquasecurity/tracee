@@ -31,11 +31,11 @@ Check out the [Tracee video hub](https://info.aquasec.com/ebpf-runtime-security)
 
 ## Quickstart (Kubernetes)
 
-Tracee is designed to monitor hosts in kubernetes clusters. To see this in action check out the quickstart [here](./docs/getting-started/kubernetes-quickstart.md).
+Tracee is designed to monitor hosts in kubernetes clusters. To see this in action check out the quickstart [here](./getting-started/kubernetes-quickstart).
 
 ## Quickstart (docker)
 
-To get a closer feel for what tracee accomplishes, you can run tracee on your local machine. Follow along to the quickstart [here](./docs/getting-started/docker-quickstart.md)
+To get a closer feel for what tracee accomplishes, you can run tracee on your local machine. Follow along to the quickstart [here](./getting-started/docker-quickstart)
 
 ## Components
 

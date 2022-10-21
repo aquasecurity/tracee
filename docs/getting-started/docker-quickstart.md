@@ -41,12 +41,12 @@ Before you proceed, make sure you follow the [prerequiresites].
        `/tmp/tracee`.
 
     2. You may need to change the volume mounts for the kernel headers based on
-       your setup. See [Linux Headers](./getting-started/installing/headers.md) section for
+       your setup. See [Linux Headers](../getting-started/installing/headers.md) section for
        more info.
 
     3. Tracee supports enriching events with additional data from running
        containers. In order to enable this capability please look
-       [here](./docs/integrating/container-engines.md).
+       [here](../docs/integrating/container-engines.md).
 
 These docker commands run Tracee with **default settings** and start
 **reporting detections** to **standard output**. In order to simulate a
