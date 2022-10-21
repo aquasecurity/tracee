@@ -2137,7 +2137,7 @@ INFO: starting tracee-ebpf...
 INFO: starting tracee-rules... 
 Loaded 15 signature(s): [TRC-1 TRC-13 TRC-2 TRC-14 TRC-3 TRC-11 TRC-9 TRC-4 TRC-5 TRC-12 TRC-6 TRC-10 TRC-7 TRC-16 TRC-15]
 </code></pre></div>
-<p>Each of the signatures listed above represent potentially malicious behaviors for tracee to detect and alert you on. You can see signature definitions <a href="https://github.com/aquasecurity/tracee/tree/main/signatures">here</a>. Tracee comes with these default signatures but also allows for you to write custom ones as well. More information can be found <a href="docs/detecting/rules.md">here</a> </p>
+<p>Each of the signatures listed above represent potentially malicious behaviors for tracee to detect and alert you on. You can see signature definitions <a href="https://github.com/aquasecurity/tracee/tree/main/signatures">here</a>. Tracee comes with these default signatures but also allows for you to write custom ones as well. More information can be found <a href="../../docs/detecting/rules/">here</a></p>
 <p>Let’s trigger one of the default signatures to see tracee in action.</p>
 <p>We can start by launching a shell on the same node as tracee, and install <code>strace</code>, a debugging tool that should trigger the TRC-2 signature which detects use of PTRACE, and should not be running in your kubernetes cluster.</p>
 <div class="highlight"><pre><span></span><code>[*] kubectl create deployment nginx --image=nginx  # creates a deployment
