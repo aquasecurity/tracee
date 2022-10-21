@@ -21,7 +21,7 @@
     
     
       
-        <title>Dropping Capabilities - Tracee</title>
+        <title>Special: Environment Capabilities - Tracee</title>
       
     
     
@@ -69,7 +69,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#special-dropping-capabilities" class="md-skip">
+        <a href="#special-environment-capabilities" class="md-skip">
           Skip to content
         </a>
       
@@ -107,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Dropping Capabilities
+              Special: Environment Capabilities
             
           </span>
         </div>
@@ -237,8 +237,6 @@
       
         
 
-  
-
 
 
 
@@ -247,7 +245,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../overview/" class="md-tabs__link md-tabs__link--active">
+        <a href="../../overview/" class="md-tabs__link">
           
   
   Contributing
@@ -1495,17 +1493,15 @@
       
   
   
-    
-  
   
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
         
         
           <label class="md-nav__link" for="__nav_4">
@@ -1775,19 +1771,17 @@
                 
   
   
-    
-  
   
     
     
     
       
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_5" type="checkbox" id="__nav_4_5" checked>
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4_5" type="checkbox" id="__nav_4_5" >
         
         
           <label class="md-nav__link" for="__nav_4_5">
@@ -1902,88 +1896,6 @@
                 
   
   
-    
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Dropping Capabilities
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        
-  
-  <span class="md-ellipsis">
-    Dropping Capabilities
-    
-  </span>
-  
-  
-
-      </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#dropping-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      Dropping Errors
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#missing-capabilities-errors" class="md-nav__link">
-    <span class="md-ellipsis">
-      Missing Capabilities Errors
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
   
     <li class="md-nav__item">
       <a href="../override-os-files/" class="md-nav__link">
@@ -2066,18 +1978,45 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#dropping-errors" class="md-nav__link">
+  <a href="#introduction-to-capabilities-quoting-parts-of-kernel-docs" class="md-nav__link">
     <span class="md-ellipsis">
-      Dropping Errors
+      Introduction to Capabilities (quoting parts of kernel docs)
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#missing-capabilities-errors" class="md-nav__link">
+  <a href="#tracee-and-capabilities" class="md-nav__link">
     <span class="md-ellipsis">
-      Missing Capabilities Errors
+      Tracee and capabilities
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#listing-available-capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      Listing available capabilities
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bypass-capabilities-dropping-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bypass capabilities dropping feature
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#capabilities-errors-missing-or-too-permissive" class="md-nav__link">
+    <span class="md-ellipsis">
+      Capabilities Errors (Missing or Too Permissive)
     </span>
   </a>
   
@@ -2098,10 +2037,57 @@
                   
 
 
-<h1 id="special-dropping-capabilities">Special: Dropping Capabilities<a class="headerlink" href="#special-dropping-capabilities" title="Permanent link">&para;</a></h1>
-<p><strong>tracee-ebpf</strong> and <strong>tracee-rules</strong> both try to reduce capabilities upon
-startup.</p>
-<h2 id="dropping-errors">Dropping Errors<a class="headerlink" href="#dropping-errors" title="Permanent link">&para;</a></h2>
+<h1 id="special-environment-capabilities">Special: Environment Capabilities<a class="headerlink" href="#special-environment-capabilities" title="Permanent link">&para;</a></h1>
+<h2 id="introduction-to-capabilities-quoting-parts-of-kernel-docs">Introduction to Capabilities (quoting parts of kernel docs)<a class="headerlink" href="#introduction-to-capabilities-quoting-parts-of-kernel-docs" title="Permanent link">&para;</a></h2>
+<p>For the purpose of performing permission checks, traditional UNIX
+implementations distinguish two categories of processes: privileged processes
+(whose effective user ID is 0, referred to as superuser or root), and
+unprivileged processes (whose effective UID is nonzero). Privileged processes
+bypass all kernel permission checks, while unprivileged processes are subject to
+full permission checking based on the process's credentials (usually: effective
+UID, effective GID, and supplementary group list).</p>
+<p>Linux divides the privileges traditionally associated with superuser into
+distinct units, known as capabilities, which can be independently enabled and
+disabled. Capabilities are a per-thread attribute.</p>
+<p>Thread capability sets:</p>
+<ul>
+<li>
+<p>Permitted: This is a limiting superset for the effective capabilities that the
+thread may assume. It is also a limiting superset for the capabilities that
+may be added to the inheritable set by a thread that does not have the
+CAP_SETPCAP capability in its effective set.</p>
+</li>
+<li>
+<p>Inheritable: This is a set of capabilities preserved across an execve(2).
+Inheritable capabilities remain inheritable when executing any program, and
+inheritable capabilities are added to the permitted set when executing a
+program that has the corresponding bits set in the file inheritable
+set.</p>
+</li>
+<li>
+<p>Effective: This is the set of capabilities used by the kernel to perform
+permission checks for the thread.</p>
+</li>
+<li>
+<p>Bounding: The capability bounding set is a mechanism that can be used to limit
+the capabilities that are gained during execve(2).</p>
+</li>
+</ul>
+<h2 id="tracee-and-capabilities">Tracee and capabilities<a class="headerlink" href="#tracee-and-capabilities" title="Permanent link">&para;</a></h2>
+<p><strong>tracee-ebpf</strong> and <strong>tracee-rules</strong> both try to reduce their capabilities
+during their execution. The way they do is through "protection rings":</p>
+<ul>
+<li>Privileged   (ring 0): all capabilities are Effective (almost never)</li>
+<li>Required     (ring 1): only required (by events) capabilities are Effective (during config)</li>
+<li>Requested    (ring 2): single time requested capabilities are Effective (special needs)</li>
+<li>Unprivileged (ring 3): no capabilities are Effective at all (most of the time)</li>
+</ul>
+<h2 id="listing-available-capabilities">Listing available capabilities<a class="headerlink" href="#listing-available-capabilities" title="Permanent link">&para;</a></h2>
+<p>You may see all available capabilities in the running environment by running:</p>
+<div class="highlight"><pre><span></span><code>--capabilities help
+</code></pre></div>
+<p>command line flag.</p>
+<h2 id="bypass-capabilities-dropping-feature">Bypass capabilities dropping feature<a class="headerlink" href="#bypass-capabilities-dropping-feature" title="Permanent link">&para;</a></h2>
 <div class="admonition attention">
 <p class="admonition-title">Attention</p>
 <p>This session is important if you're facing errors while <strong>tracee-ebpf</strong> is
@@ -2116,23 +2102,35 @@ access.</p>
 <p>Failure in capabilities dropping will result tracee's exit with a matching
 error, to <strong>guarantee that tracee isn't running with excess capabilities
 without the user agreement</strong>.</p>
-<p>To <strong>allow tracee to run with high capabilities</strong> and prevent errors, the
-<code>--allow-high-capabilities</code> flag can be used in tracee-rules, or
-<code>--caps allow-failed-drop</code> in tracee-ebpf. For docker users, to allow
-<strong>tracee-ebpf</strong> high capabilities the environment variable
-<code>ALLOW_HIGH_CAPABILITIES=1</code> should be used.</p>
-<h2 id="missing-capabilities-errors">Missing Capabilities Errors<a class="headerlink" href="#missing-capabilities-errors" title="Permanent link">&para;</a></h2>
-<p>New features and refactoring might result missing capabilities for <strong>tracee-ebpf</strong>.
-This may cause a wide variety of errors.</p>
-<p>Our team tries to solve bugs as quickly as possible, but it might
-still take some time to solve some bugs. Moreover, after a bug is fixed
-it might take some time until a new version of Tracee is released.</p>
-<p>To fix specific missing capabilities errors locally, users can add capabilities
-using the <code>--caps add</code> flag to tracee-ebpf. For docker users, the environment variable
-<code>CAPS_TO_PRESERVE=&lt;list_of_capabilities&gt;</code> should be used.</p>
-<p>In addition, the <code>--caps cancel-drop</code> flag can be used to cancel capability
-dropping of tracee-ebpf. For docker users, the environment variable
-<code>CANCEL_CAPS_DROP=1</code> should be used. <strong>We advise to not use this option unless required</strong>.</p>
+<p>To <strong>allow tracee-ebpf to run with high capabilities</strong>, and prevent those
+errors, the <code>--capabilities bypass=1</code> flag can be used. For the docker
+container users, the environment variable <code>CAPABILITIES_BYPASS=0|1</code> will have
+the same effect.</p>
+<blockquote>
+<p>For tracee-rules, CAPABILITIES_BYPASS=1 will set the "--allcaps" command line
+flag and allow it to run with full capabilities.</p>
+</blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Bypassing the capabilities drop will run tracee-ebpf and/or tracee-rules
+with all capabilities set as Effective and it is only recommended if you
+know what you are doing.</p>
+</div>
+<h2 id="capabilities-errors-missing-or-too-permissive">Capabilities Errors (Missing or Too Permissive)<a class="headerlink" href="#capabilities-errors-missing-or-too-permissive" title="Permanent link">&para;</a></h2>
+<p>During development, tracee might have bugs related to capabilities dropping
+feature: one event might not have its needed capabilities set as a dependency,
+for example, and you might still want to use that event.</p>
+<p>One way to have fine grained control of "execution time" effective capabilities
+is to rely on following 2 command line flags:</p>
+<ul>
+<li><code>--capabilities add=cap_X,cap_Y</code> (docker env variable CAPABILITIES_ADD)</li>
+<li><code>--capabilities drop=cap_Y,capZ</code> (docker env variable CAPABILITIES_DROP)</li>
+</ul>
+<p>The first will add given capabilities to the Required ring (so events might be
+able to work). The last will remove the capabilities from that same ring.</p>
+<blockquote>
+<p>Tracee-rules do not support adding or removing specific capabilities.</p>
+</blockquote>
 
 
 
@@ -2152,42 +2150,6 @@ dropping of tracee-ebpf. For docker users, the environment variable
       </main>
       
         <footer class="md-footer">
-  
-    
-    <nav class="md-footer__inner md-grid" aria-label="Footer" >
-      
-        
-        <a href="../ordering-events/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Ordering Events" rel="prev">
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
-          </div>
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Previous
-              </span>
-              Ordering Events
-            </div>
-          </div>
-        </a>
-      
-      
-        
-        <a href="../override-os-files/" class="md-footer__link md-footer__link--next" aria-label="Next: Override OS files" rel="next">
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Next
-              </span>
-              Override OS files
-            </div>
-          </div>
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
-          </div>
-        </a>
-      
-    </nav>
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
