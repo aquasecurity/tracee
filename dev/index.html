@@ -401,18 +401,18 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#quickstart" class="md-nav__link">
+  <a href="#quickstart-kubernetes" class="md-nav__link">
     <span class="md-ellipsis">
-      Quickstart
+      Quickstart (Kubernetes)
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#trace" class="md-nav__link">
+  <a href="#quickstart-docker" class="md-nav__link">
     <span class="md-ellipsis">
-      Trace
+      Quickstart (docker)
     </span>
   </a>
   
@@ -441,6 +441,50 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="getting-started/kubernetes-quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Kubernetes - Quick Start
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="getting-started/docker-quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Docker - Quick Start
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
     
     
     
@@ -450,10 +494,10 @@
       
         
         
-          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_1_2" type="checkbox" id="__nav_1_2" >
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_1_4" type="checkbox" id="__nav_1_4" >
         
         
-          <label class="md-nav__link" for="__nav_1_2">
+          <label class="md-nav__link" for="__nav_1_4">
             
   
   <span class="md-ellipsis">
@@ -467,7 +511,7 @@
           </label>
         
         <nav class="md-nav" aria-label="Installation" data-md-level="2">
-          <label class="md-nav__title" for="__nav_1_2">
+          <label class="md-nav__title" for="__nav_1_4">
             <span class="md-nav__icon md-icon"></span>
             Installation
           </label>
@@ -573,10 +617,10 @@
       
         
         
-          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_1_2_5" type="checkbox" id="__nav_1_2_5" >
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_1_4_5" type="checkbox" id="__nav_1_4_5" >
         
         
-          <label class="md-nav__link" for="__nav_1_2_5">
+          <label class="md-nav__link" for="__nav_1_4_5">
             
   
   <span class="md-ellipsis">
@@ -590,7 +634,7 @@
           </label>
         
         <nav class="md-nav" aria-label="Packages" data-md-level="3">
-          <label class="md-nav__title" for="__nav_1_2_5">
+          <label class="md-nav__title" for="__nav_1_4_5">
             <span class="md-nav__icon md-icon"></span>
             Packages
           </label>
@@ -695,28 +739,6 @@
           </ul>
         </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="getting-started/quick-start/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Quick Start
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -2051,18 +2073,18 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#quickstart" class="md-nav__link">
+  <a href="#quickstart-kubernetes" class="md-nav__link">
     <span class="md-ellipsis">
-      Quickstart
+      Quickstart (Kubernetes)
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#trace" class="md-nav__link">
+  <a href="#quickstart-docker" class="md-nav__link">
     <span class="md-ellipsis">
-      Trace
+      Quickstart (docker)
     </span>
   </a>
   
@@ -2103,103 +2125,23 @@ if you liked it. That is important for us. Thank you!</p>
 <a href="https://github.com/aquasecurity/tracee/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/aquasecurity/tracee" /></a>
 <a href="https://hub.docker.com/r/aquasec/tracee"><img alt="docker" src="https://badgen.net/docker/pulls/aquasec/tracee" /></a></p>
 <h1 id="tracee-runtime-security-and-forensics-using-ebpf">Tracee: Runtime Security and Forensics using eBPF<a class="headerlink" href="#tracee-runtime-security-and-forensics-using-ebpf" title="Permanent link">&para;</a></h1>
-<p>Tracee is a Runtime Security and forensics tool for Linux. It uses Linux <strong>eBPF
-technology</strong> to trace your system and applications <strong>at runtime</strong>, and analyzes
-collected events in order to detect <strong>suspicious behavioral patterns</strong>. It is
-usually delivered as a docker container, but there are other ways you can use
-it (even create your own customized tracee container).</p>
+<p>Tracee is a runtime security and forensics tool for Linux based cloud deployments.
+It uses <strong>eBPF</strong> to trace the host OS and applications <strong>at runtime</strong>, and analyzes
+collected events in order to detect <strong>suspicious behavioral patterns</strong>. It can be
+run as a daemon-set in your kubernetes environment, but is flexible to be run for
+many purposes on any Linux based hosts. It can be delivered via Helm, as a docker
+container, or as a small set of static binaries.</p>
+<p>The goal of Tracee is to serve as an easy to use and effective solution for learning 
+when cloud native attacks occur in your environment. By leveraging Aqua's advanced 
+security research, performant eBPF based detection, and cloud native first
+approach Tracee makes runtime detection accesible, powerful, and effective.</p>
 <p>Watch a quick video demo of Tracee:</p>
 <p><a href="https://youtu.be/x2_iF0KjPKs?t=2971"><img alt="Tracee Live Demo AND Q&amp;A" src="images/tracee_video_thumbnail.png" /></a></p>
 <p>Check out the <a href="https://info.aquasec.com/ebpf-runtime-security">Tracee video hub</a> for more videos.</p>
-<h2 id="quickstart">Quickstart<a class="headerlink" href="#quickstart" title="Permanent link">&para;</a></h2>
-<p>Before you proceed, make sure you follow the [prerequiresites].</p>
-<ol>
-<li>Running <strong>tracee:v0.8.3</strong></li>
-</ol>
-<div class="highlight"><pre><span></span><code>$ docker run \
-     --name tracee --rm -it \
-     --pid=host --cgroupns=host --privileged \
-     -v /etc/os-release:/etc/os-release-host:ro \
-     -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-     aquasec/tracee:0.8.3
-</code></pre></div>
-<ol>
-<li>Running <strong>tracee:full</strong></li>
-</ol>
-<div class="highlight"><pre><span></span><code>$ docker run \
-     --name tracee --rm -it \
-     --pid=host --cgroupns=host --privileged \
-     -v /etc/os-release:/etc/os-release-host:ro \
-     -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-     -v /usr/src:/usr/src:ro \
-     -v /lib/modules:/lib/modules:ro \
-     -v /tmp/tracee:/tmp/tracee:rw \
-     aquasec/tracee:full-0.8.3
-</code></pre></div>
-<div class="admonition notes">
-<p class="admonition-title">Notes</p>
-<ol>
-<li>
-<p>The default (latest) image is <strong>lightweight</strong> and <strong>portable</strong>. It is
-   supposed to support different kernel versions without having to build
-   source code. If the host kernel does not support BTF then you may use
-   the <strong>full</strong> container image. The full container will compile an eBPF
-   object during startup, if you do not have one already cached in
-   <code>/tmp/tracee</code>.</p>
-</li>
-<li>
-<p>You may need to change the volume mounts for the kernel headers based on
-   your setup. See <a href="getting-started/installing/headers/">Linux Headers</a> section for
-   more info.</p>
-</li>
-<li>
-<p>Tracee supports enriching events with additional data from running
-   containers. In order to enable this capability please look
-   <a href="docs/integrating/container-engines/">here</a>.</p>
-</li>
-</ol>
-</div>
-<p>These docker commands run Tracee with <strong>default settings</strong> and start
-<strong>reporting detections</strong> to <strong>standard output</strong>. In order to simulate a
-suspicious behavior, you can simply run:</p>
-<div class="highlight"><pre><span></span><code>$ strace ls
-</code></pre></div>
-<p>in another terminal. This will trigger the <strong>Anti-Debugging</strong> signature, which
-is loaded by default, and you will get a warning:</p>
-<div class="highlight"><pre><span></span><code>INFO: probing tracee-ebpf capabilities...
-INFO: starting tracee-ebpf...
-INFO: starting tracee-rules...
-Loaded 14 signature(s): [TRC-1 TRC-13 TRC-2 TRC-14 TRC-3 TRC-11 TRC-9 TRC-4 TRC-5 TRC-12 TRC-8 TRC-6 TRC-10 TRC-7]
-Serving metrics endpoint at :3366
-Serving metrics endpoint at :4466
-
-*** Detection ***
-Time: 2022-03-25T08:04:22Z
-Signature ID: TRC-2
-Signature: Anti-Debugging
-Data: map[]
-Command: strace
-Hostname: ubuntu-impish
-</code></pre></div>
-<h2 id="trace">Trace<a class="headerlink" href="#trace" title="Permanent link">&para;</a></h2>
-<p>In some cases, you might want to <strong>leverage Tracee's eBPF event collection
-capabilities</strong> directly, without involving the <strong>detection engine</strong>. This might
-be useful for debugging, troubleshooting, analysising, researching OR
-education.</p>
-<p>Execute docker container with the word <code>trace</code> as an initial argument, and
-<strong>tracee-ebpf</strong> will be executed, instead of the full tracee detection engine.</p>
-<div class="highlight"><pre><span></span><code>$ docker run \
-    --name tracee --rm -it \
-    --pid=host --cgroupns=host --privileged \
-    -v /etc/os-release:/etc/os-release-host:ro \
-    -e LIBBPFGO_OSRELEASE_FILE=/etc/os-release-host \
-    aquasec/tracee:0.8.3 \
-    trace
-</code></pre></div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>See documentation or add the <code>--help</code> flag for more.</p>
-</div>
+<h2 id="quickstart-kubernetes">Quickstart (Kubernetes)<a class="headerlink" href="#quickstart-kubernetes" title="Permanent link">&para;</a></h2>
+<p>Tracee is designed to monitor hosts in kubernetes clusters. To see this in action check out the quickstart <a href="./docs/getting-started/kubernetes-quickstart.md">here</a>.</p>
+<h2 id="quickstart-docker">Quickstart (docker)<a class="headerlink" href="#quickstart-docker" title="Permanent link">&para;</a></h2>
+<p>To get a closer feel for what tracee accomplishes, you can run tracee on your local machine. Follow along to the quickstart <a href="./docs/getting-started/docker-quickstart.md">here</a></p>
 <h2 id="components">Components<a class="headerlink" href="#components" title="Permanent link">&para;</a></h2>
 <p>Tracee is composed of the following sub-projects, which are hosted in the
 aquasecurity/tracee repository:</p>
@@ -2236,13 +2178,13 @@ Join the community, and talk to us about any matter in <a href="https://github.c
       
       
         
-        <a href="getting-started/installing/getting/" class="md-footer__link md-footer__link--next" aria-label="Next: Getting Tracee" rel="next">
+        <a href="getting-started/kubernetes-quickstart/" class="md-footer__link md-footer__link--next" aria-label="Next: Kubernetes - Quick Start" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Getting Tracee
+              Kubernetes - Quick Start
             </div>
           </div>
           <div class="md-footer__button md-icon">

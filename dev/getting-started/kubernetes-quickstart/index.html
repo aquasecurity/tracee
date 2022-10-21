@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/getting-started/quick-start/">
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/getting-started/kubernetes-quickstart/">
       
       
         
@@ -21,7 +21,7 @@
     
     
       
-        <title>Quick Start - Tracee</title>
+        <title>Kubernetes - Quick Start - Tracee</title>
       
     
     
@@ -68,6 +68,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#getting-started-with-tracee-in-kubernetes" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -102,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Quick Start
+              Kubernetes - Quick Start
             
           </span>
         </div>
@@ -366,6 +371,119 @@
                 
   
   
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Kubernetes - Quick Start
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Kubernetes - Quick Start
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-tracee-as-a-daemon-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running tracee as a daemon set
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tracee-in-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tracee in action
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../docker-quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Docker - Quick Start
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
   
     
     
@@ -376,10 +494,10 @@
       
         
         
-          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_1_2" type="checkbox" id="__nav_1_2" >
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_1_4" type="checkbox" id="__nav_1_4" >
         
         
-          <label class="md-nav__link" for="__nav_1_2">
+          <label class="md-nav__link" for="__nav_1_4">
             
   
   <span class="md-ellipsis">
@@ -393,7 +511,7 @@
           </label>
         
         <nav class="md-nav" aria-label="Installation" data-md-level="2">
-          <label class="md-nav__title" for="__nav_1_2">
+          <label class="md-nav__title" for="__nav_1_4">
             <span class="md-nav__icon md-icon"></span>
             Installation
           </label>
@@ -499,10 +617,10 @@
       
         
         
-          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_1_2_5" type="checkbox" id="__nav_1_2_5" >
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_1_4_5" type="checkbox" id="__nav_1_4_5" >
         
         
-          <label class="md-nav__link" for="__nav_1_2_5">
+          <label class="md-nav__link" for="__nav_1_4_5">
             
   
   <span class="md-ellipsis">
@@ -516,7 +634,7 @@
           </label>
         
         <nav class="md-nav" aria-label="Packages" data-md-level="3">
-          <label class="md-nav__title" for="__nav_1_2_5">
+          <label class="md-nav__title" for="__nav_1_4_5">
             <span class="md-nav__icon md-icon"></span>
             Packages
           </label>
@@ -620,36 +738,6 @@
             
           </ul>
         </nav>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-    
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        
-  
-  <span class="md-ellipsis">
-    Quick Start
-    
-  </span>
-  
-  
-
-      </a>
       
     </li>
   
@@ -1975,6 +2063,43 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-tracee-as-a-daemon-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running tracee as a daemon set
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tracee-in-action" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tracee in action
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -1989,9 +2114,73 @@
                   
 
 
-  <h1>Quick Start</h1>
+<h1 id="getting-started-with-tracee-in-kubernetes">Getting started with tracee in Kubernetes<a class="headerlink" href="#getting-started-with-tracee-in-kubernetes" title="Permanent link">&para;</a></h1>
+<p>This guide is focused on running tracee on Kubernetes. To demonstrate how to use Tracee we will use minikube, a distribution of kubernetes that can run on your local machine. Alternatively, you could use most other Kubernetes clusters such as microk8s or from a cloud provider.</p>
+<h2 id="prerequisites">Prerequisites<a class="headerlink" href="#prerequisites" title="Permanent link">&para;</a></h2>
+<p>minikube - see installation instructions and dependencies <a href="https://minikube.sigs.k8s.io/docs/start/">here</a>.</p>
+<p><em>Note: Your local cluster has to be run on an intel processor. Apple silicon is not currently supported.</em></p>
+<p>Start minikube and ensure that it is running correctly:</p>
+<div class="highlight"><pre><span></span><code>minikube start
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>[*] kubectl get po -A
 
+NAMESPACE     NAME                               READY   STATUS    RESTARTS   AGE 
+kube-system   coredns-565d847f94-kd9xx           1/1     Running   0          15s 
+kube-system   etcd-minikube                      1/1     Running   0          26s 
+kube-system   kube-apiserver-minikube            1/1     Running   0          26s 
+kube-system   kube-controller-manager-minikube   1/1     Running   0          26s 
+kube-system   kube-proxy-cvqjm                   1/1     Running   0          15s 
+kube-system   kube-scheduler-minikube            1/1     Running   0          26s 
+kube-system   storage-provisioner                1/1     Running   0          15s 
+</code></pre></div>
+<h2 id="running-tracee-as-a-daemon-set">Running tracee as a daemon set<a class="headerlink" href="#running-tracee-as-a-daemon-set" title="Permanent link">&para;</a></h2>
+<p>Tracee uses eBPF for host-based detections, meaning it has visibility into all processes running on a given host, regardless of them being separated into different containers or pods. Therefore, we want to have tracee running on each node.</p>
+<p>Tracee can be installed through a Kubernetes <a href="https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/">DaemonSet</a>. This tells Kubernetes to have a single tracee process on each node.</p>
+<p>You can find the full manifest on the <a href="https://github.com/aquasecurity/tracee/blob/main/deploy/kubernetes/tracee/tracee.yaml">tracee repository</a>.</p>
+<p>We can install the DaemonSet directly from the Tracee repository through the following command:</p>
+<div class="highlight"><pre><span></span><code>[*] kubectl apply -f https://raw.githubusercontent.com/aquasecurity/tracee/main/deploy/kubernetes/tracee/tracee.yaml
+</code></pre></div>
+<p>You can verify that the tracee daemon set is running via:</p>
+<div class="highlight"><pre><span></span><code>[*] kubectl get nodes 
+NAME       STATUS   ROLES           AGE   VERSION 
+minikube   Ready    control-plane   17m   v1.25.2 
 
+[*] kubectl get pods  
+NAME           READY   STATUS    RESTARTS   AGE 
+tracee-fcjmp   1/1     Running   0          4m11s 
+</code></pre></div>
+<p>You can see that we have a single pod running in our cluster, which has just a single node.  </p>
+<h2 id="tracee-in-action">Tracee in action<a class="headerlink" href="#tracee-in-action" title="Permanent link">&para;</a></h2>
+<p>At this point tracee is running with default behavior. You can see this at the top of the pod’s logs: </p>
+<div class="highlight"><pre><span></span><code>[*] kubectl logs tracee-fcjmp 
+
+INFO: probing tracee-ebpf capabilities... 
+INFO: starting tracee-ebpf... 
+INFO: starting tracee-rules... 
+Loaded 15 signature(s): [TRC-1 TRC-13 TRC-2 TRC-14 TRC-3 TRC-11 TRC-9 TRC-4 TRC-5 TRC-12 TRC-6 TRC-10 TRC-7 TRC-16 TRC-15]
+</code></pre></div>
+<p>Each of the signatures listed above represent potentially malicious behaviors for tracee to detect and alert you on. You can see signature definitions <a href="https://github.com/aquasecurity/tracee/tree/main/signatures">here</a>. Tracee comes with these default signatures but also allows for you to write custom ones as well. More information can be found <a href="docs/detecting/rules.md">here</a> </p>
+<p>Let’s trigger one of the default signatures to see tracee in action.</p>
+<p>We can start by launching a shell on the same node as tracee, and install <code>strace</code>, a debugging tool that should trigger the TRC-2 signature which detects use of PTRACE, and should not be running in your kubernetes cluster.</p>
+<div class="highlight"><pre><span></span><code>[*] kubectl create deployment nginx --image=nginx  # creates a deployment
+
+[*] kubectl exec -ti deployment/nginx -- bash  # get a bash into it
+
+$~ apt update &amp;&amp; apt install -y strace
+$~ strace ls
+...
+</code></pre></div>
+<p>Now to confirm that tracee caught this malicious behavior we can check the logs of the pod:</p>
+<div class="highlight"><pre><span></span><code>[*] kubectl logs tracee-fcjmp –follow
+
+*** Detection ***
+Time: 2022-10-20T17:08:13Z
+Signature ID: TRC-2
+Signature: Anti-Debugging
+Data: map[]
+Command: strace
+Hostname: tracee-fcjmp
+</code></pre></div>
 
 
 
@@ -2016,7 +2205,7 @@
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../installing/headers/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Linux Headers" rel="prev">
+        <a href="../.." class="md-footer__link md-footer__link--prev" aria-label="Previous: Overview" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -2025,20 +2214,20 @@
               <span class="md-footer__direction">
                 Previous
               </span>
-              Linux Headers
+              Overview
             </div>
           </div>
         </a>
       
       
         
-        <a href="../../tutorials/setup-development-machine-with-vagrant/" class="md-footer__link md-footer__link--next" aria-label="Next: Setup Development Machine with Vagrant" rel="next">
+        <a href="../docker-quickstart/" class="md-footer__link md-footer__link--next" aria-label="Next: Docker - Quick Start" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Setup Development Machine with Vagrant
+              Docker - Quick Start
             </div>
           </div>
           <div class="md-footer__button md-icon">
