@@ -592,7 +592,8 @@ $(OUTPUT_DIR)/rules: \
 		--buildmode=plugin \
 		-o $@/builtin.so \
 		$(GOSIGNATURES_SRC)
-	$(CMD_INSTALL) -m 0644 $(REGO_SIGNATURES_SRC) $@
+	# disable rego signatures by default (keep golang signatures only)
+	# $(CMD_INSTALL) -m 0644 $(REGO_SIGNATURES_SRC) $@
 
 .PHONY: clean-rules
 clean-rules:
