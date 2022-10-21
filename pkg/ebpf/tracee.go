@@ -11,6 +11,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"syscall"
@@ -375,20 +376,21 @@ func (t *Tracee) Init() error {
 
 	// Init kernel symbols map
 
-	err = t.capabilities.Requested(func() error {
-		if initReq.kallsyms {
+	if initReq.kallsyms {
+		err = t.capabilities.Requested(func() error { // ring2
+
 			t.kernelSymbols, err = helpers.NewKernelSymbolsMap()
 			if err != nil {
 				t.Close()
 				return fmt.Errorf("error creating symbols map: %v", err)
 			}
 			if !initialization.ValidateKsymbolsTable(t.kernelSymbols) {
-				return fmt.Errorf("kernel symbols were not loaded currectly. " +
-					"Make sure tracee-ebpf has the CAP_SYSLOG capability")
+				return fmt.Errorf("kernel symbols were not loaded currectly")
 			}
-		}
-		return nil
-	}, cap.SYSLOG)
+			return nil
+
+		}, cap.SYSLOG)
+	}
 	if err != nil {
 		return err
 	}
@@ -1313,24 +1315,33 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 
 // Close cleans up created resources
 func (t *Tracee) Close() {
-	if t.probes != nil {
-		err := t.probes.DetachAll()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to detach probes when closing tracee: %s", err)
-		}
-	}
+	err := t.capabilities.Required(func() error { // ring1
 
-	if t.bpfModule != nil {
-		t.bpfModule.Close()
-	}
-
-	if t.containers != nil {
-		err := t.containers.Close()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to clean containers module when closing tracee: %s", err)
+		if t.probes != nil {
+			err := t.probes.DetachAll()
+			if err != nil {
+				return fmt.Errorf("failed to detach probes when closing tracee: %s", err)
+			}
 		}
+
+		if t.bpfModule != nil {
+			t.bpfModule.Close()
+		}
+
+		if t.containers != nil {
+			err := t.containers.Close()
+			if err != nil {
+				return fmt.Errorf("failed to clean containers module when closing tracee: %s", err)
+			}
+		}
+		t.running = false
+
+		return nil
+	})
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v", err)
 	}
-	t.running = false
 }
 
 func (t *Tracee) Running() bool {
@@ -1458,14 +1469,19 @@ func (t *Tracee) triggerSeqOpsIntegrityCheckCall(
 }
 
 func (t *Tracee) updateKallsyms() error {
-	kernelSymbols, err := helpers.NewKernelSymbolsMap()
-	if err != nil {
-		return err
-	}
-	if !initialization.ValidateKsymbolsTable(kernelSymbols) {
-		return errors.New("invalid ksymbol table")
-	}
+	return t.capabilities.Requested(func() error { // ring2
 
-	t.kernelSymbols = kernelSymbols
-	return nil
+		kernelSymbols, err := helpers.NewKernelSymbolsMap()
+		if err != nil {
+			return err
+		}
+		if !initialization.ValidateKsymbolsTable(kernelSymbols) {
+			debug.PrintStack()
+			return errors.New("invalid ksymbol table")
+		}
+		t.kernelSymbols = kernelSymbols
+
+		return nil
+
+	}, cap.SYSLOG)
 }

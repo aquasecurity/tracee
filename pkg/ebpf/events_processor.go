@@ -55,7 +55,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 	switch eventId {
 
 	case events.VfsWrite, events.VfsWritev, events.KernelWrite:
-		//capture written files
+		// capture written files
 		if t.config.Capture.FileWrite {
 			filePath, err := parse.ArgStringVal(event, "pathname")
 			if err != nil {
@@ -90,7 +90,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 
 	case events.SchedProcessExec:
-		//update the process tree with correct comm name
+		// update the process tree with correct command name
 		if t.config.ProcessInfo {
 			processData, err := t.procInfo.GetElement(event.HostProcessID)
 			if err == nil {
@@ -98,25 +98,25 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 				t.procInfo.UpdateElement(event.HostProcessID, processData)
 			}
 		}
-
-		//cache this pid by it's mnt ns
+		// cache this pid by it's mnt ns
 		if event.ProcessID == 1 {
 			t.pidsInMntns.ForceAddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
 		} else {
 			t.pidsInMntns.AddBucketItem(uint32(event.MountNS), uint32(event.HostProcessID))
 		}
-		//capture executed files
+		// capture executed files
 		if t.config.Capture.Exec || t.config.Output.ExecHash {
 			filePath, err := parse.ArgStringVal(event, "pathname")
 			if err != nil {
 				return fmt.Errorf("error parsing sched_process_exec args: %v", err)
 			}
-			// path should be absolute, except for e.g memfd_create files
+			// Should be absolute path, except for e.g memfd_create files
 			if filePath == "" || filePath[0] != '/' {
 				return nil
 			}
-
-			// try to access the root fs via another process in the same mount namespace (since the current process might have already died)
+			// try to access the root fs via another process in the same mount
+			// namespace (as the process from the current event might have
+			// already died)
 			pids := t.pidsInMntns.GetBucket(uint32(event.MountNS))
 			for _, pid := range pids { // will break on success
 				err = nil
@@ -132,51 +132,61 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 					containerId = "host"
 				}
 				capturedFileID := fmt.Sprintf("%s:%s", containerId, sourceFilePath)
+				// capture exec'ed files ?
 				if t.config.Capture.Exec {
 					destinationDirPath := containerId
 					if err := utils.MkdirAtExist(t.outDir, destinationDirPath, 0755); err != nil {
 						return err
 					}
 					destinationFilePath := filepath.Join(destinationDirPath, fmt.Sprintf("exec.%d.%s", event.Timestamp, filepath.Base(filePath)))
-
 					// create an in-memory profile
 					if t.config.Capture.Profile {
 						t.updateProfile(fmt.Sprintf("%s:%d", filepath.Join(destinationDirPath, fmt.Sprintf("exec.%s", filepath.Base(filePath))), castedSourceFileCtime), uint64(event.Timestamp))
 					}
-
-					//don't capture same file twice unless it was modified
+					// don't capture same file twice unless it was modified
 					lastCtime, ok := t.capturedFiles[capturedFileID]
 					if !ok || lastCtime != castedSourceFileCtime {
-						//capture
-						err = utils.CopyRegularFileByRelativePath(sourceFilePath, t.outDir, destinationFilePath)
+
+						// capture (ring1)
+						err = t.capabilities.Required(func() error {
+							return utils.CopyRegularFileByRelativePath(
+								sourceFilePath,
+								t.outDir,
+								destinationFilePath,
+							)
+						})
 						if err != nil {
 							return err
 						}
-						//mark this file as captured
+
+						// mark this file as captured
 						t.capturedFiles[capturedFileID] = castedSourceFileCtime
 					}
 				}
-
+				// check exec'ed hash ?
 				if t.config.Output.ExecHash {
 					var hashInfoObj fileExecInfo
 					var currentHash string
 					hashInfoInterface, ok := t.fileHashes.Get(capturedFileID)
-
-					// cast to fileExecInfo
 					if ok {
 						hashInfoObj = hashInfoInterface.(fileExecInfo)
 					}
-					// Check if cache can be used
+					// check if cache can be used
 					if ok && hashInfoObj.LastCtime == castedSourceFileCtime {
 						currentHash = hashInfoObj.Hash
 					} else {
-						currentHash, err = computeFileHashAtPath(sourceFilePath)
-						if err == nil {
-							hashInfoObj = fileExecInfo{castedSourceFileCtime, currentHash}
-							t.fileHashes.Add(capturedFileID, hashInfoObj)
-						}
-					}
 
+						// ring1
+						t.capabilities.Required(func() error {
+							currentHash, err = computeFileHashAtPath(sourceFilePath)
+							if err == nil {
+								hashInfoObj = fileExecInfo{castedSourceFileCtime, currentHash}
+								t.fileHashes.Add(capturedFileID, hashInfoObj)
+							}
+							return nil
+						})
+
+					}
 					event.Args = append(event.Args, trace.Argument{
 						ArgMeta: trace.ArgMeta{Name: "sha256", Type: "const char*"},
 						Value:   currentHash,
@@ -189,6 +199,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			}
 			return err
 		}
+
 	case events.SchedProcessExit:
 		if t.config.ProcessInfo {
 			if t.config.Capture.NetPerProcess {
@@ -200,6 +211,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 
 			go t.deleteProcInfoDelayed(event.HostThreadID)
 		}
+
 	case events.SchedProcessFork:
 		if t.config.ProcessInfo {
 			hostTid, err := parse.ArgInt32Val(event, "child_tid")
@@ -246,6 +258,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			}
 			t.procInfo.UpdateElement(int(hostTid), processData)
 		}
+
 	case events.CgroupMkdir:
 		cgroupId, err := parse.ArgUint64Val(event, "cgroup_id")
 		if err != nil {
@@ -286,8 +299,9 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 		t.containers.CgroupRemove(cgroupId, hId)
 
-	// in case FinitModule and InitModule occurs it means that a kernel module was loaded
-	// and we will want to check if it hooked the syscall table and seq_ops
+	// In case FinitModule and InitModule occurs, it means that a kernel module
+	// was loaded and tracee needs to check if it hooked the syscall table and
+	// seq_ops
 	case events.DoInitModule:
 		_, ok1 := t.events[events.HookedSyscalls]
 		_, ok2 := t.events[events.HookedSeqOps]
@@ -330,6 +344,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 			}
 		}
 		event.Args[0].Value = hookedFops
+
 	case events.PrintNetSeqOps, events.PrintSyscallTable:
 		// Initial event - no need to process
 		if event.Timestamp == 0 {
@@ -339,10 +354,10 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		if err != nil {
 			return fmt.Errorf("failed to apply invoke context on %s event: %s", event.EventName, err)
 		}
-
-		// this was previously event = &withInvokingContext
-		// however, if applied as such, withInvokingContext will go out of scope and the reference will be moved back
-		// as such we apply the value internally and not through a referene switch
+		// This was previously event = &withInvokingContext. However, if applied
+		// as such, withInvokingContext will go out of scope and the reference
+		// will be moved back as such we apply the value internally and not
+		// through a referene switch
 		(*event) = withInvokingContext
 	}
 
