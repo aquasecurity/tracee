@@ -68,6 +68,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#docs" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -788,6 +793,21 @@
       <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
       
       
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
         
@@ -800,6 +820,34 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Features
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1975,6 +2023,25 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Features
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -1989,9 +2056,27 @@
                   
 
 
-  <h1>Overview</h1>
-
-
+<h1 id="docs">Docs<a class="headerlink" href="#docs" title="Permanent link">&para;</a></h1>
+<p>This documentation details how to use Tracee to access the features listed below.</p>
+<h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Tracing<ul>
+<li>Tracee event collection capabilities only, without involving the detection engine.</li>
+</ul>
+</li>
+<li>Capturing<ul>
+<li>Tracee's unique feature that lets you capture interesting artifacts from running applications, using the --capture flag.</li>
+</ul>
+</li>
+<li>Detecting<ul>
+<li>Tracee is a runtime security detection engine, more than an introspection tool (tracee-ebpf) only. tracee-rules is a rules engine that helps you detect suspicious behavioral patterns in streams of events.</li>
+</ul>
+</li>
+<li>Integrating<ul>
+<li>Tracee integration with other techonologies, like Prometheus.</li>
+</ul>
+</li>
+</ul>
 
 
 
