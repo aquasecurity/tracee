@@ -1399,8 +1399,11 @@ func (t *Tracee) updateFileSHA() {
 
 func (t *Tracee) invokeInitEvents() {
 	if t.events[events.InitNamespaces].emit {
-		systemInfoEvent := events.InitNamespacesEvent()
-		t.config.ChanEvents <- systemInfoEvent
+		t.capabilities.Requested(func() error { // ring2
+			systemInfoEvent := events.InitNamespacesEvent()
+			t.config.ChanEvents <- systemInfoEvent
+			return nil
+		}, cap.SYS_PTRACE)
 		t.stats.EventCount.Increment()
 	}
 	if t.events[events.ExistingContainer].emit {
