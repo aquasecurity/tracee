@@ -603,8 +603,14 @@ func (t *Tracee) initDerivationTable() error {
 	whitelistedLibs := []string{}
 
 	if symbolsLoadedFilter != nil {
-		watchedSymbols = symbolsLoadedFilter["symbols"].Equal()
-		whitelistedLibs = symbolsLoadedFilter["library_path"].NotEqual()
+		watchedSymbolsFilter := symbolsLoadedFilter["symbols"]
+		if watchedSymbolsFilter != nil {
+			watchedSymbols = watchedSymbolsFilter.Equal()
+		}
+		whitelistedLibsFilter := symbolsLoadedFilter["library_path"]
+		if whitelistedLibsFilter != nil {
+			whitelistedLibs = whitelistedLibsFilter.NotEqual()
+		}
 	}
 
 	t.eventDerivations = derive.Table{
