@@ -51,7 +51,7 @@ func main() {
 
 			// Capabilities command line flags
 
-			_, err := capabilities.NewCapabilities(c.Bool("allcaps"))
+			err := capabilities.NewCapabilities(c.Bool("allcaps"))
 			if err != nil {
 				return err
 			}
