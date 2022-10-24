@@ -2,15 +2,17 @@ package containers
 
 import (
 	"fmt"
-	"github.com/aquasecurity/tracee/pkg/bucketscache"
 	"io/fs"
 	"os"
 	"strings"
+
+	"github.com/aquasecurity/tracee/pkg/bucketscache"
+	"github.com/aquasecurity/tracee/pkg/capabilities"
 )
 
-// PathResolver generate an accessible absolute path from the root mount namespace to a relative path
-// in a container.
-// Notice - to resolve host mount namespace, tracee reads from /proc/1/ns which requires CAP_SYS_PTRACE capability.
+// PathResolver generates an accessible absolute path from the root mount namespace to a relative
+// path in a container. **NOTE**: to resolve host mount namespace, tracee reads from /proc/1/ns,
+// requiring CAP_SYS_PTRACE capability.
 type PathResolver struct {
 	fs               fs.FS
 	mountNSPIDsCache *bucketscache.BucketsCache
@@ -36,7 +38,10 @@ func (cPathRes PathResolver) ResolveAbsolutePath(mountNSAbsolutePath string, mou
 	for _, pid := range pids {
 		procRootPath := fmt.Sprintf("/proc/%d/root", int(pid))
 		// fs.FS interface requires relative paths, so the '/' prefix should be trimmed.
-		_, err := fs.Stat(cPathRes.fs, strings.TrimPrefix(procRootPath, "/"))
+		err := capabilities.Caps.Required(func() error {
+			_, err := fs.Stat(cPathRes.fs, strings.TrimPrefix(procRootPath, "/"))
+			return err
+		})
 		if err == nil {
 			return fmt.Sprintf("%s%s", procRootPath, mountNSAbsolutePath), nil
 		}
