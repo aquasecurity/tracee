@@ -8,6 +8,8 @@ import (
 
 	bpf "github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/libbpfgo/helpers"
+	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
 //
@@ -144,6 +146,8 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 				tc.autoload(module, false)
 			}
 		}
+	} else {
+		capabilities.Caps.Require(cap.NET_ADMIN) // add to required
 	}
 
 	return &probes{
@@ -361,7 +365,6 @@ type tcProbe struct {
 
 // attach attaches an eBPF program to its probe
 func (p *tcProbe) attach(module *bpf.Module, args ...interface{}) error {
-
 	return p.attachOrDetach(module, args...)
 }
 
