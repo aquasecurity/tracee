@@ -405,10 +405,15 @@ func (t *Tracee) Init() error {
 
 	// Initialize containers enrichment logic
 
-	t.containers, err = containers.New(t.config.Sockets, "containers_map", t.config.Debug)
-	if err != nil {
-		return fmt.Errorf("error initializing containers: %w", err)
-	}
+	t.capabilities.Requested(func() error { // TODO: workaround until PR: #2233 is in place
+
+		t.containers, err = containers.New(t.config.Sockets, "containers_map", t.config.Debug)
+		if err != nil {
+			return fmt.Errorf("error initializing containers: %w", err)
+		}
+		return nil
+
+	}, cap.SYS_ADMIN)
 	if err := t.containers.Populate(); err != nil {
 		return fmt.Errorf("error initializing containers: %w", err)
 	}
