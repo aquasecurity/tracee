@@ -275,7 +275,8 @@ func New(cfg Config) (*Tracee, error) {
 	}
 
 	// Start capabilities rings
-	err = capabilities.NewCapabilities(t.config.Capabilities.BypassCaps)
+	// err = capabilities.NewCapabilities(t.config.Capabilities.BypassCaps)
+	err = capabilities.NewCapabilities(true) // TODO: force until drop priv is finished
 	if err != nil {
 		return t, err
 	}
