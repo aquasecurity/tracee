@@ -80,8 +80,7 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(event trace.Event)
 	soSyms, err := symbsLoadedGen.soLoader.GetExportedSymbols(loadingObjectInfo)
 	if err != nil {
 		// TODO: Create a warning upon this error when logger is available
-
-		// This error happens frequently in some environments, so we need to silence it to reduce spam.
+		// TODO: rate limit frequent errors for overloaded envs
 		if symbsLoadedGen.isDebug {
 			return nil, err
 		} else {
@@ -98,9 +97,9 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(event trace.Event)
 
 	if len(exportedWatchSymbols) > 0 {
 		return []interface{}{loadingObjectInfo.Path, exportedWatchSymbols}, nil
-	} else {
-		return nil, nil
 	}
+
+	return nil, nil
 }
 
 // isWhitelist check if a SO's path is in the whitelist given in initialization
