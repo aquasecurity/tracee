@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/utils"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
@@ -148,7 +149,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 					if !ok || lastCtime != castedSourceFileCtime {
 
 						// capture (ring1)
-						err = t.capabilities.Required(func() error {
+						err = capabilities.Caps.Required(func() error {
 							return utils.CopyRegularFileByRelativePath(
 								sourceFilePath,
 								t.outDir,
@@ -177,7 +178,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 					} else {
 
 						// ring1
-						t.capabilities.Required(func() error {
+						capabilities.Caps.Required(func() error {
 							currentHash, err = computeFileHashAtPath(sourceFilePath)
 							if err == nil {
 								hashInfoObj = fileExecInfo{castedSourceFileCtime, currentHash}

@@ -197,7 +197,6 @@ type Tracee struct {
 	triggerContexts   trigger.Context
 	running           bool
 	outDir            *os.File // All file operations to output dir should be through the utils package file operations (like utils.OpenAt) using this directory file.
-	capabilities      *capabilities.Capabilities
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -276,7 +275,7 @@ func New(cfg Config) (*Tracee, error) {
 	}
 
 	// Start capabilities rings
-	t.capabilities, err = capabilities.NewCapabilities(t.config.Capabilities.BypassCaps)
+	err = capabilities.NewCapabilities(t.config.Capabilities.BypassCaps)
 	if err != nil {
 		return t, err
 	}
@@ -304,7 +303,7 @@ func New(cfg Config) (*Tracee, error) {
 			return t, fmt.Errorf("could not get event")
 		}
 		for _, capArray := range evt.Dependencies.Capabilities {
-			t.capabilities.Require(capArray)
+			capabilities.Caps.Require(capArray)
 		}
 	}
 
@@ -314,7 +313,7 @@ func New(cfg Config) (*Tracee, error) {
 	if err != nil {
 		return t, err
 	}
-	err = t.capabilities.Require(capsToAdd...)
+	err = capabilities.Caps.Require(capsToAdd...)
 	if err != nil {
 		return t, err
 	}
@@ -323,7 +322,7 @@ func New(cfg Config) (*Tracee, error) {
 	if err != nil {
 		return t, err
 	}
-	err = t.capabilities.Unrequire(capsToDrop...)
+	err = capabilities.Caps.Unrequire(capsToDrop...)
 	if err != nil {
 		return t, err
 	}
@@ -377,7 +376,7 @@ func (t *Tracee) Init() error {
 	// Init kernel symbols map
 
 	if initReq.kallsyms {
-		err = t.capabilities.Requested(func() error { // ring2
+		err = capabilities.Caps.Requested(func() error { // ring2
 
 			t.kernelSymbols, err = helpers.NewKernelSymbolsMap()
 			if err != nil {
@@ -405,7 +404,7 @@ func (t *Tracee) Init() error {
 
 	// Initialize containers enrichment logic
 
-	t.capabilities.Requested(func() error { // TODO: workaround until PR: #2233 is in place
+	capabilities.Caps.Requested(func() error { // TODO: workaround until PR: #2233 is in place
 
 		t.containers, err = containers.New(t.config.Sockets, "containers_map", t.config.Debug)
 		if err != nil {
@@ -1159,7 +1158,7 @@ func (t *Tracee) initBPF() error {
 
 	// Execute code with higher privileges: ring1 (required)
 
-	err = t.capabilities.Required(func() error {
+	err = capabilities.Caps.Required(func() error {
 
 		// Load the eBPF object into kernel
 
@@ -1326,7 +1325,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 
 // Close cleans up created resources
 func (t *Tracee) Close() {
-	err := t.capabilities.Required(func() error { // ring1
+	err := capabilities.Caps.Required(func() error { // ring1
 
 		if t.probes != nil {
 			err := t.probes.DetachAll()
@@ -1399,7 +1398,7 @@ func (t *Tracee) updateFileSHA() {
 
 func (t *Tracee) invokeInitEvents() {
 	if t.events[events.InitNamespaces].emit {
-		t.capabilities.Requested(func() error { // ring2
+		capabilities.Caps.Requested(func() error { // ring2
 			systemInfoEvent := events.InitNamespacesEvent()
 			t.config.ChanEvents <- systemInfoEvent
 			return nil
@@ -1483,7 +1482,7 @@ func (t *Tracee) triggerSeqOpsIntegrityCheckCall(
 }
 
 func (t *Tracee) updateKallsyms() error {
-	return t.capabilities.Requested(func() error { // ring2
+	return capabilities.Caps.Requested(func() error { // ring2
 
 		kernelSymbols, err := helpers.NewKernelSymbolsMap()
 		if err != nil {

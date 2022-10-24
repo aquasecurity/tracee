@@ -11,7 +11,7 @@ import (
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
-var initialized bool
+var Caps Capabilities // singleton for all packages
 
 const pkgName = "capabilities"
 
@@ -31,16 +31,16 @@ const (
 )
 
 type Capabilities struct {
-	have   *cap.Set
-	all    map[cap.Value]map[ringType]bool
-	bypass bool
-	lock   *sync.Mutex // big lock to guarantee all threads are on the same ring
+	have        *cap.Set
+	all         map[cap.Value]map[ringType]bool
+	bypass      bool
+	initialized bool
+	lock        *sync.Mutex // big lock to guarantee all threads are on the same ring
 }
 
-func NewCapabilities(bypass bool) (*Capabilities, error) {
-	c := &Capabilities{}
-	err := c.initialize(bypass)
-	return c, err
+func NewCapabilities(bypass bool) error {
+	Caps = Capabilities{}
+	return Caps.initialize(bypass)
 }
 
 func (c *Capabilities) initialize(bypass bool) error {
@@ -48,11 +48,10 @@ func (c *Capabilities) initialize(bypass bool) error {
 		c.bypass = true
 		return nil
 	}
-	if initialized {
-		return noConcurrentCapablities()
+	if c.initialized {
+		return alreadyInitialized()
 	}
 
-	initialized = true
 	c.lock = new(sync.Mutex)
 	c.all = make(map[cap.Value]map[ringType]bool)
 
@@ -316,16 +315,16 @@ func couldNotReadPerfEventParanoid() error {
 	return fmt.Errorf("could not read procfs perf_event_paranoid")
 }
 
-func noConcurrentCapablities() error {
-	return fmt.Errorf("can't have concurrent capabilities")
-}
-
 func couldNotSetProc(e error) error {
 	return fmt.Errorf("could not set capabilities: %v", e)
 }
 
 func couldNotGetProc(e error) error {
 	return fmt.Errorf("could not get capabilities: %v", e)
+}
+
+func alreadyInitialized() error {
+	return fmt.Errorf("capabilities were already initialized")
 }
 
 //
