@@ -2,6 +2,8 @@ package sharedobjs
 
 import (
 	"debug/elf"
+
+	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/hashicorp/golang-lru/simplelru"
 )
 
@@ -98,7 +100,12 @@ func (soCache *dynamicSymbolsLRUCache) Add(obj ObjInfo, dynamicSymbols *dynamicS
 
 // loadSharedObjectDynamicSymbols load all dynamic symbols of a shared object file in given path.
 func loadSharedObjectDynamicSymbols(path string) (*dynamicSymbols, error) {
-	loadedObject, err := elf.Open(path)
+	var loadedObject *elf.File
+	err := capabilities.Caps.Required(func() error {
+		var e error
+		loadedObject, e = elf.Open(path)
+		return e
+	})
 	if err != nil {
 		return nil, err
 	}
