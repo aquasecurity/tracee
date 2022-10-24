@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: tracee
-        image: docker.io/aquasec/tracee:0.9.0
+        image: docker.io/aquasec/tracee:0.9.1
         imagePullPolicy: IfNotPresent
         env:
           - name: LIBBPFGO_OSRELEASE_FILE
