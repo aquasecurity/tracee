@@ -2,10 +2,12 @@ package containers
 
 import (
 	"fmt"
-	"github.com/aquasecurity/tracee/pkg/bucketscache"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"testing/fstest"
+
+	"github.com/aquasecurity/tracee/pkg/bucketscache"
+	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPathResolver_ResolveAbsolutePath(t *testing.T) {
@@ -61,6 +63,9 @@ func TestPathResolver_ResolveAbsolutePath(t *testing.T) {
 		}
 		testMntNS := 1
 		testFilePath := "/tmp/tmp.so"
+
+		capabilities.NewCapabilities(true)
+
 		for _, testCase := range testCases {
 			t.Run(testCase.Name, func(t *testing.T) {
 				// Initialize a mock for the os.Stat function
