@@ -46,8 +46,7 @@ func (t *Tracee) deleteProcInfoDelayed(hostTid int) {
 }
 
 const (
-	StructFopsPointer int = iota
-	IterateShared
+	IterateShared int = iota
 	Iterate
 )
 
@@ -323,6 +322,9 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 		hookedFops := make([]trace.HookedSymbolData, 0)
 		for idx, addr := range fopsAddresses {
+			if addr == 0 {
+				continue
+			}
 			inTextSeg, err := t.kernelSymbols.TextSegmentContains(addr)
 			if err != nil {
 				return fmt.Errorf("error checking kernel address: %v", err)
@@ -334,8 +336,6 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 				}
 				functionName := "unknown"
 				switch idx {
-				case StructFopsPointer:
-					functionName = "struct file_operations pointer"
 				case IterateShared:
 					functionName = "iterate_shared"
 				case Iterate:
