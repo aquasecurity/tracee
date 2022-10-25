@@ -29,6 +29,14 @@ func main() {
 		Name:  "tracee-rules",
 		Usage: "A rule engine for Runtime Security",
 		Action: func(c *cli.Context) error {
+
+			// Capabilities command line flags
+
+			err := capabilities.Initialize(c.Bool("allcaps"))
+			if err != nil {
+				return err
+			}
+
 			if c.NumFlags() == 0 {
 				cli.ShowAppHelp(c)
 				return errors.New("no flags specified")
@@ -47,13 +55,6 @@ func main() {
 						Aggregate: false,
 					},
 				)
-			}
-
-			// Capabilities command line flags
-
-			err := capabilities.NewCapabilities(c.Bool("allcaps"))
-			if err != nil {
-				return err
 			}
 
 			var target string

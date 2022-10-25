@@ -52,7 +52,6 @@ type probes struct {
 
 // Init initializes a Probes interface
 func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
-
 	binaryPath := "/proc/self/exe"
 
 	allProbes := map[Handle]Probe{
@@ -147,7 +146,7 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 			}
 		}
 	} else {
-		capabilities.Caps.Require(cap.NET_ADMIN) // add to required
+		capabilities.GetInstance().Require(cap.NET_ADMIN) // add to required
 	}
 
 	return &probes{

@@ -52,6 +52,7 @@ const (
 
 func (t *Tracee) processEvent(event *trace.Event) error {
 	eventId := events.ID(event.EventID)
+
 	switch eventId {
 
 	case events.VfsWrite, events.VfsWritev, events.KernelWrite:
@@ -148,7 +149,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 					if !ok || lastCtime != castedSourceFileCtime {
 
 						// capture (ring1)
-						err = capabilities.Caps.Required(func() error {
+						err = capabilities.GetInstance().Required(func() error {
 							return utils.CopyRegularFileByRelativePath(
 								sourceFilePath,
 								t.outDir,
@@ -177,7 +178,7 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 					} else {
 
 						// ring1
-						capabilities.Caps.Required(func() error {
+						capabilities.GetInstance().Required(func() error {
 							currentHash, err = computeFileHashAtPath(sourceFilePath)
 							if err == nil {
 								hashInfoObj = fileExecInfo{castedSourceFileCtime, currentHash}

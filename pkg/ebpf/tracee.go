@@ -266,7 +266,7 @@ func New(cfg Config) (*Tracee, error) {
 		return nil, fmt.Errorf("validation error: %v", err)
 	}
 
-	// create tracee
+	// Create Tracee
 	t := &Tracee{
 		config:        cfg,
 		writtenFiles:  make(map[string]string),
@@ -274,12 +274,12 @@ func New(cfg Config) (*Tracee, error) {
 		events:        GetEssentialEventsList(),
 	}
 
-	// Start capabilities rings
-	// err = capabilities.NewCapabilities(t.config.Capabilities.BypassCaps)
-	err = capabilities.NewCapabilities(true) // TODO: force until drop priv is finished
+	// Initialize capabilities rings soon
+	err = capabilities.Initialize(t.config.Capabilities.BypassCaps)
 	if err != nil {
 		return t, err
 	}
+	caps := capabilities.GetInstance()
 
 	// Pseudo events added by capture
 	for eventID, eCfg := range GetCaptureEventsList(cfg) {
@@ -304,7 +304,7 @@ func New(cfg Config) (*Tracee, error) {
 			return t, fmt.Errorf("could not get event")
 		}
 		for _, capArray := range evt.Dependencies.Capabilities {
-			capabilities.Caps.Require(capArray)
+			caps.Require(capArray)
 		}
 	}
 
@@ -314,7 +314,7 @@ func New(cfg Config) (*Tracee, error) {
 	if err != nil {
 		return t, err
 	}
-	err = capabilities.Caps.Require(capsToAdd...)
+	err = caps.Require(capsToAdd...)
 	if err != nil {
 		return t, err
 	}
@@ -323,7 +323,7 @@ func New(cfg Config) (*Tracee, error) {
 	if err != nil {
 		return t, err
 	}
-	err = capabilities.Caps.Unrequire(capsToDrop...)
+	err = caps.Unrequire(capsToDrop...)
 	if err != nil {
 		return t, err
 	}
@@ -377,7 +377,7 @@ func (t *Tracee) Init() error {
 	// Init kernel symbols map
 
 	if initReq.kallsyms {
-		err = capabilities.Caps.Requested(func() error { // ring2
+		err = capabilities.GetInstance().Requested(func() error { // ring2
 
 			t.kernelSymbols, err = helpers.NewKernelSymbolsMap()
 			if err != nil {
@@ -405,7 +405,7 @@ func (t *Tracee) Init() error {
 
 	// Initialize containers enrichment logic
 
-	capabilities.Caps.Requested(func() error { // TODO: workaround until PR: #2233 is in place
+	capabilities.GetInstance().Requested(func() error { // TODO: workaround until PR: #2233 is in place
 
 		t.containers, err = containers.New(t.config.Sockets, "containers_map", t.config.Debug)
 		if err != nil {
@@ -1134,32 +1134,32 @@ func (t *Tracee) initBPF() error {
 	isCaptureNetSet := t.config.Capture.NetIfaces != nil
 	isFilterNetSet := len(t.config.Filter.NetFilter.Interfaces()) != 0
 
-	newModuleArgs := bpf.NewModuleArgs{
-		KConfigFilePath: t.config.KernelConfig.GetKernelConfigFilePath(),
-		BTFObjPath:      t.config.BTFObjPath,
-		BPFObjBuff:      t.config.BPFObjBytes,
-		BPFObjName:      t.config.BPFObjPath,
-	}
-
-	// Open the eBPF object file (create a new module)
-
-	t.bpfModule, err = bpf.NewModuleFromBufferArgs(newModuleArgs)
-	if err != nil {
-		return err
-	}
-
-	// Initialize probes
-
-	netEnabled := isCaptureNetSet || isFilterNetSet
-
-	t.probes, err = probes.Init(t.bpfModule, netEnabled)
-	if err != nil {
-		return err
-	}
-
 	// Execute code with higher privileges: ring1 (required)
 
-	err = capabilities.Caps.Required(func() error {
+	err = capabilities.GetInstance().Required(func() error {
+
+		newModuleArgs := bpf.NewModuleArgs{
+			KConfigFilePath: t.config.KernelConfig.GetKernelConfigFilePath(),
+			BTFObjPath:      t.config.BTFObjPath,
+			BPFObjBuff:      t.config.BPFObjBytes,
+			BPFObjName:      t.config.BPFObjPath,
+		}
+
+		// Open the eBPF object file (create a new module)
+
+		t.bpfModule, err = bpf.NewModuleFromBufferArgs(newModuleArgs)
+		if err != nil {
+			return err
+		}
+
+		// Initialize probes
+
+		netEnabled := isCaptureNetSet || isFilterNetSet
+
+		t.probes, err = probes.Init(t.bpfModule, netEnabled)
+		if err != nil {
+			return err
+		}
 
 		// Load the eBPF object into kernel
 
@@ -1326,7 +1326,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 
 // Close cleans up created resources
 func (t *Tracee) Close() {
-	err := capabilities.Caps.Required(func() error { // ring1
+	err := capabilities.GetInstance().Required(func() error { // ring1
 
 		if t.probes != nil {
 			err := t.probes.DetachAll()
@@ -1399,7 +1399,7 @@ func (t *Tracee) updateFileSHA() {
 
 func (t *Tracee) invokeInitEvents() {
 	if t.events[events.InitNamespaces].emit {
-		capabilities.Caps.Requested(func() error { // ring2
+		capabilities.GetInstance().Requested(func() error { // ring2
 			systemInfoEvent := events.InitNamespacesEvent()
 			t.config.ChanEvents <- systemInfoEvent
 			return nil
@@ -1483,7 +1483,7 @@ func (t *Tracee) triggerSeqOpsIntegrityCheckCall(
 }
 
 func (t *Tracee) updateKallsyms() error {
-	return capabilities.Caps.Requested(func() error { // ring2
+	return capabilities.GetInstance().Requested(func() error { // ring2
 
 		kernelSymbols, err := helpers.NewKernelSymbolsMap()
 		if err != nil {
