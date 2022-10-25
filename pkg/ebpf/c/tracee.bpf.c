@@ -6418,9 +6418,9 @@ int BPF_KPROBE(trace_security_file_permission)
     if (iterate_addr == 0 && iterate_shared_addr == 0)
         return 0;
 
-    unsigned long fops_addresses[3] = {(unsigned long) fops, iterate_shared_addr, iterate_addr};
+    unsigned long fops_addresses[2] = {iterate_shared_addr, iterate_addr};
 
-    save_u64_arr_to_buf(&data, (const u64 *) fops_addresses, 3, 0);
+    save_u64_arr_to_buf(&data, (const u64 *) fops_addresses, 2, 0);
     events_perf_submit(&data, HOOKED_PROC_FOPS, 0);
     return 0;
 }
