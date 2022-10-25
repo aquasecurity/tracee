@@ -26,19 +26,15 @@ Available capabilities:
 
 func PrepareCapabilities(capsSlice []string) (tracee.CapabilitiesConfig, error) {
 	capsConfig := tracee.CapabilitiesConfig{
-		BypassCaps: false,
+		BypassCaps: true, // bypass capabilities by default
 	}
 
 	for _, slice := range capsSlice {
 		if strings.Contains(slice, "bypass=") {
 			b := strings.TrimPrefix(slice, "bypass=")
-			if b == "1" || b == "true" {
-				capsConfig.BypassCaps = true
-				capsConfig.AddCaps = nil
-				capsConfig.DropCaps = nil
-				return capsConfig, nil
-			}
-			if b != "0" && b != "false" {
+			if b == "0" || b == "false" {
+				capsConfig.BypassCaps = false
+			} else if b != "1" && b != "true" {
 				return capsConfig, fmt.Errorf("bypass should either be true or false")
 			}
 		}

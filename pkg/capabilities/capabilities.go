@@ -11,7 +11,8 @@ import (
 	"kernel.org/pub/linux/libs/security/libcap/cap"
 )
 
-var Caps Capabilities // singleton for all packages
+var once sync.Once
+var caps *Capabilities // singleton for all packages
 
 const pkgName = "capabilities"
 
@@ -31,25 +32,41 @@ const (
 )
 
 type Capabilities struct {
-	have        *cap.Set
-	all         map[cap.Value]map[ringType]bool
-	bypass      bool
-	initialized bool
-	lock        *sync.Mutex // big lock to guarantee all threads are on the same ring
+	have   *cap.Set
+	all    map[cap.Value]map[ringType]bool
+	bypass bool
+	lock   *sync.Mutex // big lock to guarantee all threads are on the same ring
 }
 
-func NewCapabilities(bypass bool) error {
-	Caps = Capabilities{}
-	return Caps.initialize(bypass)
+// Initialize initializes the "caps" instance (singleton).
+func Initialize(bypass bool) error {
+	var err error
+
+	once.Do(func() {
+		caps = &Capabilities{}
+		err = caps.initialize(bypass)
+	})
+
+	return err
+}
+
+// GetInstance returns current "caps" instance. It initializes capabilities if
+// needed, bypassing the privilege dropping by default.
+func GetInstance() *Capabilities {
+	if caps == nil {
+		err := Initialize(true)
+		if err != nil {
+			return nil
+		}
+
+	}
+	return caps
 }
 
 func (c *Capabilities) initialize(bypass bool) error {
 	if bypass {
 		c.bypass = true
 		return nil
-	}
-	if c.initialized {
-		return alreadyInitialized()
 	}
 
 	c.lock = new(sync.Mutex)
@@ -321,10 +338,6 @@ func couldNotSetProc(e error) error {
 
 func couldNotGetProc(e error) error {
 	return fmt.Errorf("could not get capabilities: %v", e)
-}
-
-func alreadyInitialized() error {
-	return fmt.Errorf("capabilities were already initialized")
 }
 
 //
