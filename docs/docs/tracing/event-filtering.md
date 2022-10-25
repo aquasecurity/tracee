@@ -147,13 +147,13 @@ expected.
     1) --trace uts!=ab356bc4dd554 
     ```
 
-1. **PID Namespace** `(Operators: =, !=, <, >)`
+1. **PID Namespace** `(Operators: =, !=)`
 
     ```text
     1) --trace pidns!=4026531836
     ```
 
-1. **MOUNT Namespace** `(Operators: =, !=, <, >)`
+1. **MOUNT Namespace** `(Operators: =, !=)`
 
     ```text
     1) --trace mntns=4026531840
