@@ -959,8 +959,8 @@ BPF_PROG_ARRAY(sys_exit_init_tail, MAX_EVENT_ID);                  // store prog
 BPF_STACK_TRACE(stack_addresses, MAX_STACK_ADDRESSES);             // store stack traces
 BPF_HASH(module_init_map, u32, kmod_data_t, 256);                  // holds module information between
 BPF_LRU_HASH(fd_arg_path_map, fd_arg_task_t, fd_arg_path_t, 1024); // store fds paths by task
-BPF_LRU_HASH(bpf_attach_map, bpf_attach_key_t, bpf_attach_t, 256); // holds bpf prog info
-BPF_LRU_HASH(bpf_attach_tmp_map, u32, bpf_attach_t, 256);          // temporarily hold bpf_attach_t
+BPF_LRU_HASH(bpf_attach_map, u32, bpf_attach_t, 1024);             // holds bpf prog info
+BPF_LRU_HASH(bpf_attach_tmp_map, u32, bpf_attach_t, 1024);         // temporarily hold bpf_attach_t
 // clang-format on
 
 // EBPF PERF BUFFERS -------------------------------------------------------------------------------
@@ -4032,11 +4032,7 @@ send_bpf_attach(event_data_t *data, struct file *bpf_prog_file, struct file *per
     bpf_probe_read_str(&prog_name, BPF_OBJ_NAME_LEN, READ_KERN(prog_aux->name));
 
     // get usage of helper bpf_probe_write_user
-    bpf_attach_key_t key = {0};
-    key.host_tid = data->context.task.host_tid;
-    key.prog_id = prog_id;
-
-    bpf_attach_t *val = bpf_map_lookup_elem(&bpf_attach_map, &key);
+    bpf_attach_t *val = bpf_map_lookup_elem(&bpf_attach_map, &prog_id);
     if (val == NULL)
         return 0;
 
@@ -4052,7 +4048,7 @@ send_bpf_attach(event_data_t *data, struct file *bpf_prog_file, struct file *per
     events_perf_submit(data, BPF_ATTACH, 0);
 
     // delete from map
-    bpf_map_delete_elem(&bpf_attach_map, &key);
+    bpf_map_delete_elem(&bpf_attach_map, &prog_id);
 
     return 0;
 }
@@ -5901,11 +5897,7 @@ int BPF_KPROBE(trace_security_bpf_prog)
     if (existing_val != NULL)
         val.write_user = existing_val->write_user;
 
-    bpf_attach_key_t key = {0};
-    key.host_tid = data.context.task.host_tid;
-    key.prog_id = prog_id;
-
-    bpf_map_update_elem(&bpf_attach_map, &key, &val, BPF_ANY);
+    bpf_map_update_elem(&bpf_attach_map, &prog_id, &val, BPF_ANY);
 
     bpf_map_delete_elem(&bpf_attach_tmp_map, &data.context.task.host_tid);
 
