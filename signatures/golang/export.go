@@ -35,5 +35,4 @@ var ExportedSignatures = []detect.Signature{
 	&KubernetesCertificateTheftAttempt{},
 	&ProcFopsHooking{},
 	&SyscallTableHooking{},
-	&K8SServiceAccountToken{},
 }
