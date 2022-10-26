@@ -17,7 +17,7 @@ A longterm supported kernel: 5.4, 5.10, 5.15, 5.18, 5.19. Check
 
     1. **kernel readers** (most distros provide packages)
     2. **clang** (12 or 13)
-    3. **golang** (1.17)
+    3. **golang** (1.18)
     4. **libelf** and **libelf-dev** (or elfutils-libelf and elfutils-libelf-devel)
     5. **zlib1g** and **lib1g-dev** (or zlib and zlib-devel)
 

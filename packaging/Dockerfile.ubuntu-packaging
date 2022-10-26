@@ -59,9 +59,9 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
     grep -Eq "UBUNTU_CODENAME=(bionic|focal)" /etc/os-release && \
     add-apt-repository -y ppa:longsleep/golang-backports && \
     apt-get update && \
-    apt-get install -y golang-1.17-go && \
-    update-alternatives --install /usr/bin/go go /usr/lib/go-1.17/bin/go 1 && \
-    update-alternatives --install /usr/bin/gofmt gofmt /usr/lib/go-1.17/bin/gofmt 1 && \
+    apt-get install -y golang-1.18-go && \
+    update-alternatives --install /usr/bin/go go /usr/lib/go-1.18/bin/go 1 && \
+    update-alternatives --install /usr/bin/gofmt gofmt /usr/lib/go-1.18/bin/gofmt 1 && \
     curl -L -o /llvm.sh https://apt.llvm.org/llvm.sh && \
     chmod 755 /llvm.sh && \
     /llvm.sh 12 && \

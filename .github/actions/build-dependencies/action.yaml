@@ -5,7 +5,7 @@ inputs:
   go-version:
     description: Version of Go
     required: true
-    default: "1.17"
+    default: "1.18"
   opa-version:
     description: Version of OPA
     required: true
