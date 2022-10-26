@@ -32,6 +32,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
 	"github.com/aquasecurity/tracee/pkg/events/trigger"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/pkg/utils"
@@ -40,6 +41,10 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 	"golang.org/x/sys/unix"
 	"kernel.org/pub/linux/libs/security/libcap/cap"
+)
+
+const (
+	pkgName = "tracee"
 )
 
 // Config is a struct containing user defined configuration of tracee
@@ -1050,8 +1055,10 @@ func getTailCalls(eventConfigs map[events.ID]eventConfig) ([]events.TailCall, er
 				continue
 			}
 			for _, index := range tailCall.MapIndexes {
-				if index > 10000 { // undefined syscalls (check arm64.go)
-					return []events.TailCall{}, fmt.Errorf("cannot set tail call with invalid map index (over 10000)")
+				if index >= uint32(events.MaxCommonID) { // remove undefined syscalls (check arm64.go) and events
+					logger.Debug("removing index from tail call (over max event id)", "tail_call_map", tailCall.MapName, "index", index,
+						"max_event_id", events.MaxCommonID, "pkgName", pkgName)
+					tailCall.RemoveIndex(index)
 				}
 			}
 			tailCallStr := fmt.Sprint(tailCall)
@@ -1060,7 +1067,8 @@ func getTailCalls(eventConfigs map[events.ID]eventConfig) ([]events.TailCall, er
 			}
 			tailCallProgs[tailCallStr] = true
 		}
-		if def.Syscall && cfg.submit {
+		// validate the event and add to the syscall tail calls
+		if def.Syscall && cfg.submit && e < events.MaxSyscallID {
 			enterInitTailCall.AddIndex(uint32(e))
 			enterSubmitTailCall.AddIndex(uint32(e))
 			exitInitTailCall.AddIndex(uint32(e))

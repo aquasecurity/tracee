@@ -33,6 +33,19 @@ func (tc *TailCall) AddIndex(i uint32) {
 	tc.MapIndexes = append(tc.MapIndexes, i)
 }
 
+func (tc *TailCall) RemoveIndex(i uint32) {
+	indexOfIndex := -1
+	for index, val := range tc.MapIndexes {
+		if i == val {
+			indexOfIndex = index
+			break
+		}
+	}
+	if indexOfIndex != -1 {
+		tc.MapIndexes = append(tc.MapIndexes[:indexOfIndex], tc.MapIndexes[indexOfIndex+1:]...)
+	}
+}
+
 // an enum that specifies the index of a function to be used in a bpf tail call
 // tail function indexes should match defined values in ebpf code for prog_array map
 const (
