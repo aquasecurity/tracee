@@ -20,6 +20,22 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+func init() {
+	// Avoiding to override package-level logger
+	// when it's already set by logger environment variables
+	if !logger.IsSetFromEnv() {
+		// Logger Setup
+		logger.Init(
+			&logger.LoggerConfig{
+				Writer:    os.Stderr,
+				Level:     logger.InfoLevel,
+				Encoder:   logger.NewJSONEncoder(logger.NewProductionConfig().EncoderConfig),
+				Aggregate: false,
+			},
+		)
+	}
+}
+
 const (
 	signatureBufferFlag = "sig-buffer"
 )
@@ -40,21 +56,6 @@ func main() {
 			if c.NumFlags() == 0 {
 				cli.ShowAppHelp(c)
 				return errors.New("no flags specified")
-			}
-
-			// Avoid overriding package-level logger when it is already set by
-			// logger environment variables
-
-			if !logger.IsSetFromEnv() {
-				// Logger Setup
-				logger.Init(
-					&logger.LoggerConfig{
-						Writer:    os.Stderr,
-						Level:     logger.InfoLevel,
-						Encoder:   logger.NewJSONEncoder(logger.NewProductionConfig().EncoderConfig),
-						Aggregate: false,
-					},
-				)
 			}
 
 			var target string
