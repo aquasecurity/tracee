@@ -209,6 +209,9 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 		}
 
 		if filterName == "mntns" {
+			if strings.ContainsAny(operatorAndValues, "<>") {
+				return tracee.Filter{}, filters.InvalidExpression(operatorAndValues)
+			}
 			err := filter.MntNSFilter.Parse(operatorAndValues)
 			if err != nil {
 				return tracee.Filter{}, err
@@ -217,6 +220,9 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 		}
 
 		if filterName == "pidns" {
+			if strings.ContainsAny(operatorAndValues, "<>") {
+				return tracee.Filter{}, filters.InvalidExpression(operatorAndValues)
+			}
 			err := filter.PidNSFilter.Parse(operatorAndValues)
 			if err != nil {
 				return tracee.Filter{}, err
