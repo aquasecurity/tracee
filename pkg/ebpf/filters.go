@@ -23,11 +23,11 @@ const (
 
 type Filter struct {
 	EventsToTrace     []events.ID
-	UIDFilter         *filters.BPFUIntFilter
-	PIDFilter         *filters.BPFUIntFilter
+	UIDFilter         *filters.BPFUIntFilter[uint32]
+	PIDFilter         *filters.BPFUIntFilter[uint32]
 	NewPidFilter      *filters.BoolFilter
-	MntNSFilter       *filters.BPFUIntFilter
-	PidNSFilter       *filters.BPFUIntFilter
+	MntNSFilter       *filters.BPFUIntFilter[uint64]
+	PidNSFilter       *filters.BPFUIntFilter[uint64]
 	UTSFilter         *filters.BPFStringFilter
 	CommFilter        *filters.BPFStringFilter
 	ContFilter        *filters.BoolFilter

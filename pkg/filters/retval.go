@@ -7,13 +7,13 @@ import (
 )
 
 type RetFilter struct {
-	filters map[events.ID]*IntFilter
+	filters map[events.ID]*IntFilter[int64]
 	enabled bool
 }
 
 func NewRetFilter() *RetFilter {
 	return &RetFilter{
-		filters: map[events.ID]*IntFilter{},
+		filters: map[events.ID]*IntFilter[int64]{},
 		enabled: false,
 	}
 }
