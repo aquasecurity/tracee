@@ -34,18 +34,20 @@ func (filter *ArgFilter) Filter(eventID events.ID, args []trace.Argument) bool {
 	for argName, filter := range filter.filters[eventID] {
 		found := false
 		var argVal interface{}
+		var argType string
 		for _, arg := range args {
 			if arg.Name == argName {
 				found = true
 				argVal = arg.Value
+				argType = arg.Type
 				break
 			}
 		}
 		if !found {
 			return true
 		}
-		// TODO: use type assertion instead of string conversion
-		if argName != "syscall" {
+		// TODO: parse to correct filter type per arg type
+		if argName != "syscall" && argType != "struct sockaddr*" && argType != "const struct sockaddr*" {
 			argVal = fmt.Sprint(argVal)
 		}
 		res := filter.Filter(argVal)
@@ -84,9 +86,11 @@ func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, even
 
 	// check if argument name exists for this event
 	argFound := false
+	argType := ""
 	for i := range eventParams {
 		if eventParams[i].Name == argName {
 			argFound = true
+			argType = eventParams[i].Type
 			break
 		}
 	}
@@ -103,10 +107,16 @@ func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, even
 	if argName == "syscall" {
 		err = filter.parseSyscallFilter(id, operatorAndValues)
 	} else {
-		err = filter.parseFilter(id, argName, operatorAndValues, func() Filter {
-			// TODO: map argument type to an appropriate filter constructor
-			return NewStringFilter()
-		})
+		switch argType {
+		case "struct sockaddr*", "const struct sockaddr*":
+			err = filter.parseFilter(id, argName, operatorAndValues, func() Filter {
+				return NewSockAddrFilter()
+			})
+		default:
+			err = filter.parseFilter(id, argName, operatorAndValues, func() Filter {
+				return NewStringFilter()
+			})
+		}
 	}
 	if err != nil {
 		return err
