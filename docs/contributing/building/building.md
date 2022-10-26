@@ -9,7 +9,7 @@
 
     1. **kernel readers** [if no CO-RE is needed](./nocore-ebpf.md)
     2. **clang** (12 or 13)
-    3. **golang** (1.17)
+    3. **golang** (1.18)
     4. **libelf** and **libelf-dev**  
        (or elfutils-libelf and elfutils-libelf-devel)
     5. **zlib1g** and **zlib1g-dev**  
