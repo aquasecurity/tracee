@@ -32,6 +32,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
 	"github.com/aquasecurity/tracee/pkg/events/trigger"
+	"github.com/aquasecurity/tracee/pkg/filters"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
@@ -608,17 +609,17 @@ func (t *Tracee) initDerivationTable() error {
 	pathResolver := containers.InitPathResolver(&t.pidsInMntns)
 	soLoader := sharedobjs.InitContainersSymbolsLoader(&pathResolver, 1024)
 
-	symbolsLoadedFilter := t.config.Filter.ArgFilter.GetEventFilters(events.SymbolsLoaded)
+	symbolsLoadedFilters := t.config.Filter.ArgFilter.GetEventFilters(events.SymbolsLoaded)
 	watchedSymbols := []string{}
 	whitelistedLibs := []string{}
 
-	if symbolsLoadedFilter != nil {
-		watchedSymbolsFilter := symbolsLoadedFilter["symbols"]
-		if watchedSymbolsFilter != nil {
+	if symbolsLoadedFilters != nil {
+		watchedSymbolsFilter, ok := symbolsLoadedFilters["symbols"].(*filters.StringFilter)
+		if watchedSymbolsFilter != nil && ok {
 			watchedSymbols = watchedSymbolsFilter.Equal()
 		}
-		whitelistedLibsFilter := symbolsLoadedFilter["library_path"]
-		if whitelistedLibsFilter != nil {
+		whitelistedLibsFilter, ok := symbolsLoadedFilters["library_path"].(*filters.StringFilter)
+		if whitelistedLibsFilter != nil && ok {
 			whitelistedLibs = whitelistedLibsFilter.NotEqual()
 		}
 	}

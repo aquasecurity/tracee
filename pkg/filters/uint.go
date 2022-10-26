@@ -8,6 +8,7 @@ import (
 	"unsafe"
 
 	bpf "github.com/aquasecurity/libbpfgo"
+	"golang.org/x/exp/constraints"
 )
 
 const (
@@ -15,7 +16,7 @@ const (
 	minNotSetUInt uint64 = math.MaxUint64
 )
 
-type UIntFilter struct {
+type UIntFilter[T constraints.Unsigned] struct {
 	equal    map[uint64]bool
 	notEqual map[uint64]bool
 	min      uint64
@@ -24,16 +25,18 @@ type UIntFilter struct {
 	enabled  bool
 }
 
-func NewUIntFilter() *UIntFilter {
-	return newUIntFilter(false)
+// TODO: Add uint16 and uint8 filters?
+
+func NewUIntFilter() *UIntFilter[uint64] {
+	return newUIntFilter[uint64](false)
 }
 
-func NewUInt32Filter() *UIntFilter {
-	return newUIntFilter(true)
+func NewUInt32Filter() *UIntFilter[uint32] {
+	return newUIntFilter[uint32](true)
 }
 
-func newUIntFilter(is32Bit bool) *UIntFilter {
-	return &UIntFilter{
+func newUIntFilter[T constraints.Unsigned](is32Bit bool) *UIntFilter[T] {
+	return &UIntFilter[T]{
 		equal:    map[uint64]bool{},
 		notEqual: map[uint64]bool{},
 		min:      minNotSetUInt,
@@ -42,24 +45,32 @@ func newUIntFilter(is32Bit bool) *UIntFilter {
 	}
 }
 
-func (f *UIntFilter) Enable() {
+func (f *UIntFilter[T]) Enable() {
 	f.enabled = true
 }
 
-func (f *UIntFilter) Disable() {
+func (f *UIntFilter[T]) Disable() {
 	f.enabled = false
 }
 
-func (f *UIntFilter) Enabled() bool {
+func (f *UIntFilter[T]) Enabled() bool {
 	return f.enabled
 }
 
-func (f *UIntFilter) Minimum() uint64 {
+func (f *UIntFilter[T]) Minimum() uint64 {
 	return f.min
 }
 
-func (f *UIntFilter) Maximum() uint64 {
+func (f *UIntFilter[T]) Maximum() uint64 {
 	return f.max
+}
+
+func (f *UIntFilter[T]) Filter(val interface{}) bool {
+	filterable, ok := val.(T)
+	if !ok {
+		return false
+	}
+	return f.filter(filterable)
 }
 
 // priority goes by (from most significant):
@@ -67,15 +78,16 @@ func (f *UIntFilter) Maximum() uint64 {
 // 2. greater
 // 3. lesser
 // 4. non equality
-func (f *UIntFilter) Filter(val uint64) bool {
-	result := !f.Enabled() || f.equal[val] || val > f.min || val < f.max
-	if !result && f.notEqual[val] {
+func (f *UIntFilter[T]) filter(val T) bool {
+	compVal := uint64(val)
+	result := !f.Enabled() || f.equal[compVal] || compVal > f.min || compVal < f.max
+	if !result && f.notEqual[compVal] {
 		return false
 	}
 	return result
 }
 
-func (f *UIntFilter) validate(val uint64) bool {
+func (f *UIntFilter[T]) validate(val uint64) bool {
 	const maxUIntVal32Bit = math.MaxUint32
 	if f.is32Bit {
 		return val <= maxUIntVal32Bit
@@ -83,29 +95,29 @@ func (f *UIntFilter) validate(val uint64) bool {
 	return true
 }
 
-func (f *UIntFilter) addEqual(val uint64) {
+func (f *UIntFilter[T]) addEqual(val uint64) {
 	f.equal[val] = true
 }
 
-func (f *UIntFilter) addNotEqual(val uint64) {
+func (f *UIntFilter[T]) addNotEqual(val uint64) {
 	f.notEqual[val] = true
 }
 
-func (f *UIntFilter) addLessThan(val uint64) {
+func (f *UIntFilter[T]) addLessThan(val uint64) {
 	// we want to have the highest max input
 	if val > f.max {
 		f.max = val
 	}
 }
 
-func (f *UIntFilter) addGreaterThan(val uint64) {
+func (f *UIntFilter[T]) addGreaterThan(val uint64) {
 	// we want to have the lowest min input
 	if val < f.min {
 		f.min = val
 	}
 }
 
-func (f *UIntFilter) add(val uint64, operator Operator) error {
+func (f *UIntFilter[T]) add(val uint64, operator Operator) error {
 	if !f.validate(val) {
 		return InvalidValue(fmt.Sprint(val))
 	}
@@ -128,7 +140,7 @@ func (f *UIntFilter) add(val uint64, operator Operator) error {
 	return nil
 }
 
-func (filter *UIntFilter) Parse(operatorAndValues string) error {
+func (filter *UIntFilter[T]) Parse(operatorAndValues string) error {
 	if len(operatorAndValues) < 2 {
 		return InvalidExpression(operatorAndValues)
 	}
@@ -172,26 +184,26 @@ func (filter *UIntFilter) Parse(operatorAndValues string) error {
 	return nil
 }
 
-type BPFUIntFilter struct {
-	UIntFilter
+type BPFUIntFilter[T constraints.Unsigned] struct {
+	UIntFilter[T]
 	mapName string
 }
 
-func NewBPFUIntFilter(mapName string) *BPFUIntFilter {
-	return &BPFUIntFilter{
+func NewBPFUIntFilter(mapName string) *BPFUIntFilter[uint64] {
+	return &BPFUIntFilter[uint64]{
 		UIntFilter: *NewUIntFilter(),
 		mapName:    mapName,
 	}
 }
 
-func NewBPFUInt32Filter(mapName string) *BPFUIntFilter {
-	return &BPFUIntFilter{
+func NewBPFUInt32Filter(mapName string) *BPFUIntFilter[uint32] {
+	return &BPFUIntFilter[uint32]{
 		UIntFilter: *NewUInt32Filter(),
 		mapName:    mapName,
 	}
 }
 
-func (filter *BPFUIntFilter) InitBPF(bpfModule *bpf.Module) error {
+func (filter *BPFUIntFilter[T]) InitBPF(bpfModule *bpf.Module) error {
 	if !filter.Enabled() {
 		return nil
 	}
@@ -235,7 +247,7 @@ func (filter *BPFUIntFilter) InitBPF(bpfModule *bpf.Module) error {
 	return nil
 }
 
-func (filter *UIntFilter) FilterOut() bool {
+func (filter *UIntFilter[T]) FilterOut() bool {
 	if len(filter.equal) > 0 && len(filter.notEqual) == 0 && filter.min == minNotSetUInt && filter.max == maxNotSetUInt {
 		return false
 	} else {

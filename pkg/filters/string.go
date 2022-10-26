@@ -33,11 +33,19 @@ func NewStringFilter() *StringFilter {
 	}
 }
 
+func (f *StringFilter) Filter(val interface{}) bool {
+	valStr, ok := val.(string)
+	if !ok {
+		return false
+	}
+	return f.filter(valStr)
+}
+
 // priority goes by (from most significant):
 // 1. equality, suffixed, prefixed, contains
 // 2. not equals, not suffixed, not prefixed, not contains
 // This is done so if a conflicting "not" filter exists, we ignore it
-func (f *StringFilter) Filter(val string) bool {
+func (f *StringFilter) filter(val string) bool {
 	enabled := f.enabled
 	equals := f.equal[val]
 	notEquals := f.notEqual[val]

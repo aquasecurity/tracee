@@ -5,6 +5,8 @@ import (
 	"math"
 	"strconv"
 	"strings"
+
+	"golang.org/x/exp/constraints"
 )
 
 const (
@@ -12,7 +14,7 @@ const (
 	minNotSetInt int64 = math.MaxInt64
 )
 
-type IntFilter struct {
+type IntFilter[T constraints.Signed] struct {
 	equal    map[int64]bool
 	notEqual map[int64]bool
 	min      int64
@@ -21,16 +23,18 @@ type IntFilter struct {
 	enabled  bool
 }
 
-func NewIntFilter() *IntFilter {
-	return newIntFilter(false)
+// TODO: Add int16 and int8 filters?
+
+func NewIntFilter() *IntFilter[int64] {
+	return newIntFilter[int64](false)
 }
 
-func NewInt32Filter() *IntFilter {
-	return newIntFilter(true)
+func NewInt32Filter() *IntFilter[int32] {
+	return newIntFilter[int32](true)
 }
 
-func newIntFilter(is32Bit bool) *IntFilter {
-	filter := &IntFilter{
+func newIntFilter[T constraints.Signed](is32Bit bool) *IntFilter[T] {
+	filter := &IntFilter[T]{
 		equal:    map[int64]bool{},
 		notEqual: map[int64]bool{},
 		min:      minNotSetInt,
@@ -41,24 +45,32 @@ func newIntFilter(is32Bit bool) *IntFilter {
 	return filter
 }
 
-func (f *IntFilter) Enable() {
+func (f *IntFilter[T]) Enable() {
 	f.enabled = true
 }
 
-func (f *IntFilter) Disable() {
+func (f *IntFilter[T]) Disable() {
 	f.enabled = false
 }
 
-func (f *IntFilter) Enabled() bool {
+func (f *IntFilter[T]) Enabled() bool {
 	return f.enabled
 }
 
-func (f *IntFilter) Minimum() int64 {
+func (f *IntFilter[T]) Minimum() int64 {
 	return f.min
 }
 
-func (f *IntFilter) Maximum() int64 {
+func (f *IntFilter[T]) Maximum() int64 {
 	return f.max
+}
+
+func (f *IntFilter[T]) Filter(val interface{}) bool {
+	filterable, ok := val.(T)
+	if !ok {
+		return false
+	}
+	return f.filter(filterable)
 }
 
 // priority goes by (from most significant):
@@ -66,44 +78,45 @@ func (f *IntFilter) Maximum() int64 {
 // 2. greater
 // 3. lesser
 // 4. non equality
-func (f *IntFilter) Filter(val int64) bool {
-	result := !f.enabled || f.equal[val] || val > f.min || val < f.max
-	if !result && f.notEqual[val] {
+func (f *IntFilter[T]) filter(val T) bool {
+	compVal := int64(val)
+	result := !f.enabled || f.equal[compVal] || compVal > f.min || compVal < f.max
+	if !result && f.notEqual[compVal] {
 		return false
 	}
 	return result
 }
 
-func (f *IntFilter) validate(val int64) bool {
+func (f *IntFilter[T]) validate(val int64) bool {
 	if f.is32Bit {
 		return val <= math.MaxInt32 && val >= math.MinInt32
 	}
 	return true
 }
 
-func (f *IntFilter) addEqual(val int64) {
+func (f *IntFilter[T]) addEqual(val int64) {
 	f.equal[val] = true
 }
 
-func (f *IntFilter) addNotEqual(val int64) {
+func (f *IntFilter[T]) addNotEqual(val int64) {
 	f.notEqual[val] = true
 }
 
-func (f *IntFilter) addLesserThan(val int64) {
+func (f *IntFilter[T]) addLesserThan(val int64) {
 	// we want to have the highest max input
 	if val > f.max {
 		f.max = val
 	}
 }
 
-func (f *IntFilter) addGreaterThan(val int64) {
+func (f *IntFilter[T]) addGreaterThan(val int64) {
 	// we want to have the lowest min input
 	if val < f.min {
 		f.min = val
 	}
 }
 
-func (f *IntFilter) add(val int64, operator Operator) error {
+func (f *IntFilter[T]) add(val int64, operator Operator) error {
 	if !f.validate(val) {
 		return InvalidValue(fmt.Sprint(val))
 	}
@@ -126,7 +139,7 @@ func (f *IntFilter) add(val int64, operator Operator) error {
 	return nil
 }
 
-func (filter *IntFilter) Parse(operatorAndValues string) error {
+func (filter *IntFilter[T]) Parse(operatorAndValues string) error {
 	if len(operatorAndValues) < 2 {
 		return InvalidExpression(operatorAndValues)
 	}

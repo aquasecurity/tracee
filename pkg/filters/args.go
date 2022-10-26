@@ -8,30 +8,21 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
-type eventArgFilter struct {
-	StringFilter
-}
 type ArgFilter struct {
-	filters map[events.ID]map[string]*eventArgFilter // key to the first map is event id, and to the second map the argument name
+	filters map[events.ID]map[string]Filter
 	enabled bool
-}
-
-func newEventArgFilter() *eventArgFilter {
-	return &eventArgFilter{
-		StringFilter: *NewStringFilter(),
-	}
 }
 
 func NewArgFilter() *ArgFilter {
 	return &ArgFilter{
-		filters: map[events.ID]map[string]*eventArgFilter{},
+		filters: map[events.ID]map[string]Filter{},
 		enabled: false,
 	}
 }
 
 // GetEventFilters returns the argument filters map for a specific event
 // writing to the map may have unintentional consenquences, avoid doing so
-func (filter *ArgFilter) GetEventFilters(eventID events.ID) map[string]*eventArgFilter {
+func (filter *ArgFilter) GetEventFilters(eventID events.ID) map[string]Filter {
 	return filter.filters[eventID]
 }
 
@@ -102,12 +93,12 @@ func (filter *ArgFilter) Parse(filterName string, operatorAndValues string, even
 	}
 
 	if _, ok := filter.filters[id]; !ok {
-		filter.filters[id] = map[string]*eventArgFilter{}
+		filter.filters[id] = map[string]Filter{}
 	}
 
 	if _, ok := filter.filters[id][argName]; !ok {
 		// store new event arg filter if missing
-		argFilter := newEventArgFilter()
+		argFilter := NewStringFilter()
 		filter.filters[id][argName] = argFilter
 	}
 

@@ -15,7 +15,15 @@ func NewBoolFilter() *BoolFilter {
 	return &BoolFilter{}
 }
 
-func (filter *BoolFilter) Filter(val bool) bool {
+func (filter *BoolFilter) Filter(val interface{}) bool {
+	filterable, ok := val.(bool)
+	if !ok {
+		return false
+	}
+	return filter.filter(filterable)
+}
+
+func (filter *BoolFilter) filter(val bool) bool {
 	if !filter.Enabled() {
 		return true
 	}

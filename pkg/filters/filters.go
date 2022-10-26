@@ -51,7 +51,7 @@ func stringToOperator(op string) Operator {
 // With generics this may be a viable interface, with T replacing interface{}
 // Filters can be enabled or disabled - if a filter is enabled it will be skipped
 type Filter interface {
-	// Filter(val interface{}) bool
+	Filter(val interface{}) bool
 	Parse(string) error
 	Enable()
 	Disable()
