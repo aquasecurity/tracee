@@ -1,6 +1,7 @@
 package flags
 
 import (
+	"fmt"
 	"strings"
 
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
@@ -100,8 +101,14 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 		},
 	}
 
-	eventFilter := filters.NewStringFilter()
-	setFilter := filters.NewStringFilter()
+	eventFilter := cliFilter{
+		Equal:    []string{},
+		NotEqual: []string{},
+	}
+	setFilter := cliFilter{
+		Equal:    []string{},
+		NotEqual: []string{},
+	}
 
 	eventsNameToID := events.Definitions.NamesToIDs()
 	// remove internal events since they shouldn't be accesible by users
@@ -288,11 +295,10 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 	return filter, nil
 }
 
-func prepareEventsToTrace(eventFilter *filters.StringFilter, setFilter *filters.StringFilter, eventsNameToID map[string]events.ID) ([]events.ID, error) {
-	eventFilter.Enable()
-	eventsToTrace := eventFilter.Equal()
-	excludeEvents := eventFilter.NotEqual()
-	setsToTrace := setFilter.Equal()
+func prepareEventsToTrace(eventFilter cliFilter, setFilter cliFilter, eventsNameToID map[string]events.ID) ([]events.ID, error) {
+	eventsToTrace := eventFilter.Equal
+	excludeEvents := eventFilter.NotEqual
+	setsToTrace := setFilter.Equal
 
 	var res []events.ID
 	setsToEvents := make(map[string][]events.ID)
@@ -336,7 +342,7 @@ func prepareEventsToTrace(eventFilter *filters.StringFilter, setFilter *filters.
 			found := false
 			prefix := name[:len(name)-1]
 			for event, id := range eventsNameToID {
-				if strings.HasPrefix(event, prefix) {
+				if strings.HasPrefix(event, prefix) && !isExcluded[id] {
 					ids = append(ids, id)
 					found = true
 				}
@@ -365,4 +371,37 @@ func prepareEventsToTrace(eventFilter *filters.StringFilter, setFilter *filters.
 		}
 	}
 	return res, nil
+}
+
+type cliFilter struct {
+	Equal    []string
+	NotEqual []string
+}
+
+func (filter *cliFilter) Parse(operatorAndValues string) error {
+	valuesString := string(operatorAndValues[1:])
+	operatorString := string(operatorAndValues[0])
+
+	if operatorString == "!" {
+		if len(operatorAndValues) < 3 {
+			return fmt.Errorf("invalid operator and/or values given to filter: %s", operatorAndValues)
+		}
+		operatorString = operatorAndValues[0:2]
+		valuesString = operatorAndValues[2:]
+	}
+
+	values := strings.Split(valuesString, ",")
+
+	for i := range values {
+		switch operatorString {
+		case "=":
+			filter.Equal = append(filter.Equal, values[i])
+		case "!=":
+			filter.NotEqual = append(filter.NotEqual, values[i])
+		default:
+			return fmt.Errorf("invalid filter operator: %s", operatorString)
+		}
+	}
+
+	return nil
 }
