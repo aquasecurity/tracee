@@ -19,7 +19,7 @@ type eventsQueue struct {
 	pool  eventsPool
 	tail  *eventNode
 	head  *eventNode
-	mutex sync.Mutex
+	mutex sync.RWMutex
 }
 
 // Put insert new event to the double linked list
@@ -75,8 +75,8 @@ func (eq *eventsQueue) Get() (*trace.Event, error) {
 }
 
 func (eq *eventsQueue) PeekHead() *trace.Event {
-	eq.mutex.Lock()
-	defer eq.mutex.Unlock()
+	eq.mutex.RLock()
+	defer eq.mutex.RUnlock()
 	if eq.head == nil {
 		return nil
 	}
@@ -84,8 +84,8 @@ func (eq *eventsQueue) PeekHead() *trace.Event {
 }
 
 func (eq *eventsQueue) PeekTail() *trace.Event {
-	eq.mutex.Lock()
-	defer eq.mutex.Unlock()
+	eq.mutex.RLock()
+	defer eq.mutex.RUnlock()
 	if eq.tail == nil {
 		return nil
 	}
