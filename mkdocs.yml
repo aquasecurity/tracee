@@ -49,9 +49,17 @@ nav:
             - Postee: docs/integrating/postee.md
             - Falcosidekick: docs/integrating/falcosidekick.md
         - Prometheus: docs/integrating/prometheus.md
+    - Deep Dive:
+      - Architecture: docs/deep-dive/architecture.md
+      - Secure Tracing: docs/deep-dive/secure-tracing.md
+      - Performance: docs/deep-dive/performance.md
+      - Caching Events: docs/deep-dive/caching-events.md
+      - Ordering Events: docs/deep-dive/ordering-events.md
+      - Override OS files: docs/deep-dive/override-os-files.md
+      - Healthz: docs/deep-dive/healthz.md
+
   - Contributing:
     - Overview: contributing/overview.md
-    - Architecture: contributing/architecture.md
     - Source Code Guidelines: contributing/guidelines.md
     - Building:
       - Building Tracee: contributing/building/building.md
@@ -59,15 +67,7 @@ nav:
       - Building Containers: contributing/building/containers.md
       - Building non CO-RE: contributing/building/nocore-ebpf.md
       - OS Packaging: contributing/building/packaging.md
-      - Building on OSX: contributing/building/macosx.md
-    - Deep Dive:
-      - Secure Tracing: contributing/deep-dive/secure-tracing.md
-      - Performance: contributing/deep-dive/performance.md
-      - Caching Events: contributing/deep-dive/caching-events.md
-      - Ordering Events: contributing/deep-dive/ordering-events.md
-      - Override OS files: contributing/deep-dive/override-os-files.md
-      - Healthz: contributing/deep-dive/healthz.md
-      
+      - Building on OSX: contributing/building/macosx.md      
 theme:
     name: material
     language: 'en'
