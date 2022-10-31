@@ -123,6 +123,10 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		CgroupSKBEgress:            &cgroupProbe{programName: "cgroup_skb_egress", attachType: bpf.BPFAttachTypeCgroupInetEgress},
 		DoMmap:                     &traceProbe{eventName: "do_mmap", probeType: kprobe, programName: "trace_do_mmap"},
 		DoMmapRet:                  &traceProbe{eventName: "do_mmap", probeType: kretprobe, programName: "trace_ret_do_mmap"},
+		VfsRead:                    &traceProbe{eventName: "vfs_read", probeType: kprobe, programName: "trace_vfs_read"},
+		VfsReadRet:                 &traceProbe{eventName: "vfs_read", probeType: kretprobe, programName: "trace_ret_vfs_read"},
+		VfsReadV:                   &traceProbe{eventName: "vfs_readv", probeType: kprobe, programName: "trace_vfs_readv"},
+		VfsReadVRet:                &traceProbe{eventName: "vfs_readv", probeType: kretprobe, programName: "trace_ret_vfs_readv"},
 	}
 
 	// disable autoload for tcProbes if network is disabled
@@ -295,4 +299,8 @@ const (
 	DoMmap
 	DoMmapRet
 	PrintMemDump
+	VfsRead
+	VfsReadRet
+	VfsReadV
+	VfsReadVRet
 )
