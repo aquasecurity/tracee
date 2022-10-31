@@ -1,6 +1,7 @@
 package flags
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -17,6 +18,7 @@ Captured artifacts will appear in the 'output-path' directory.
 Possible options:
 
 [artifact:]write[=/path/prefix*]              capture written files. A filter can be given to only capture file writes whose path starts with some prefix (up to 50 characters). Up to 3 filters can be given.
+[artifact:]read[=/path/prefix*]               capture read files. A filter can be given to only capture file reads whose path starts with some prefix (up to 50 characters). Up to 3 filters can be given.
 [artifact:]exec                               capture executed files.
 [artifact:]module                             capture loaded kernel modules.
 [artifact:]bpf                                capture loaded BPF programs bytecode.
@@ -40,11 +42,22 @@ pcap-snaplen:[default, headers, max or SIZE]  sets captured payload from each pa
                                                 256b, 512b, 1kb, 2kb, 4kb, ... (up to requested size)
                                               - max (entire packet)
 
+File Capture Filters
+Files capture upon read/write can be filtered to catch only specific IO operations.
+The different filter types have logical 'and' between them, but logical 'or' between filters of the same type.
+The filter is given in the following format - <read/write>:<filter_type>=<filter_value>
+Filters types:
+path               A filter for the file path prefix (up to 50 characters). Up to 3 filters can be given. Identical to using '<read/write>=/path/prefix*'.
+type               A file type from the following options: 'regular', 'pipe' and 'socket'.
+fd                 The file descriptor of the file. Can be one of the three standards - 'stdin', 'stdout' and 'stderr'.
+
+
 Examples:
   --capture exec                                           | capture executed files into the default output directory
   --capture exec --capture dir:/my/dir --capture clear-dir | delete /my/dir/out and then capture executed files into it
   --capture write=/usr/bin/* --capture write=/etc/*        | capture files that were written into anywhere under /usr/bin/ or /etc/
   --capture exec --output none                             | capture executed files into the default output directory not printing the stream of events
+  --capture write:type=socket --capture write:fd=stdout    | capture file writes to socket files which are the 'stdout' of the writing process
 
 Network Examples:
   --capture net (or network)                               | capture network traffic. default: single pcap file containing all packets (traced/filtered or not)
@@ -81,7 +94,6 @@ func PrepareCapture(captureSlice []string, newBinary bool) (tracee.CaptureConfig
 	outDir := "/tmp/tracee"
 	clearDir := false
 
-	var filterFileWrite []string
 	for i := range captureSlice {
 		c := captureSlice[i]
 		if strings.HasPrefix(c, "artifact:write") ||
@@ -90,15 +102,16 @@ func PrepareCapture(captureSlice []string, newBinary bool) (tracee.CaptureConfig
 			strings.HasPrefix(c, "artifact:module") {
 			c = strings.TrimPrefix(c, "artifact:")
 		}
-		if c == "write" {
-			capture.FileWrite = true
-		} else if strings.HasPrefix(c, "write=") && strings.HasSuffix(c, "*") {
-			capture.FileWrite = true
-			pathPrefix := strings.TrimSuffix(strings.TrimPrefix(c, "write="), "*")
-			if len(pathPrefix) == 0 {
-				return tracee.CaptureConfig{}, errfmt.Errorf("capture write filter cannot be empty")
+		if strings.HasPrefix(c, "write") {
+			err := parseFileCaptureOption("write", c, &capture.FileWrite)
+			if err != nil {
+				return tracee.CaptureConfig{}, err
 			}
-			filterFileWrite = append(filterFileWrite, pathPrefix)
+		} else if strings.HasPrefix(c, "read") {
+			err := parseFileCaptureOption("read", c, &capture.FileRead)
+			if err != nil {
+				return tracee.CaptureConfig{}, err
+			}
 		} else if c == "exec" {
 			capture.Exec = true
 		} else if c == "module" {
@@ -183,7 +196,6 @@ func PrepareCapture(captureSlice []string, newBinary bool) (tracee.CaptureConfig
 			return tracee.CaptureConfig{}, errfmt.Errorf("invalid capture option specified, use '--capture help' for more info")
 		}
 	}
-	capture.FilterFileWrite = filterFileWrite
 
 	capture.OutputPath = filepath.Join(outDir, "out")
 	if !clearDir {
@@ -195,4 +207,91 @@ func PrepareCapture(captureSlice []string, newBinary bool) (tracee.CaptureConfig
 	}
 
 	return capture, nil
+}
+
+// parseFileCaptureOption parse file capture cmdline argument option of all supported formats.
+func parseFileCaptureOption(arg string, cap string, captureConfig *tracee.FileCaptureConfig) error {
+	captureConfig.Capture = true
+	if cap == arg {
+		return nil
+	}
+	if strings.HasPrefix(cap, fmt.Sprintf("%s=", arg)) {
+		cap = strings.Replace(cap, fmt.Sprintf("%s=", arg), fmt.Sprintf("%s:path=", arg), 1)
+	}
+	optAndValue := strings.SplitN(cap, ":", 2)
+	if len(optAndValue) != 2 || optAndValue[0] != arg {
+		return fmt.Errorf("invalid capture option specified, use '--capture help' for more info")
+	}
+	err := parseFileCaptureSubOption(optAndValue[1], captureConfig)
+	return err
+}
+
+// parseFileCaptureSubOption parse file capture cmdline sub-option of the format '<sub-opt>=<value>' and update the
+// configuration according to the value.
+func parseFileCaptureSubOption(option string, captureConfig *tracee.FileCaptureConfig) error {
+	optAndValue := strings.SplitN(option, "=", 2)
+	if len(optAndValue) != 2 || len(optAndValue[1]) == 0 {
+		return fmt.Errorf("invalid capture option specified, use '--capture help' for more info")
+	}
+	opt := optAndValue[0]
+	value := optAndValue[1]
+	switch opt {
+	case "path":
+		if !strings.HasSuffix(option, "*") {
+			return fmt.Errorf("file path filter should end with *")
+		}
+		pathPrefix := strings.TrimSuffix(value, "*")
+		if len(pathPrefix) == 0 {
+			return fmt.Errorf("capture path filter cannot be empty")
+		}
+		captureConfig.PathFilter = append(captureConfig.PathFilter, pathPrefix)
+	case "type":
+		typeFilter := strings.TrimPrefix(option, "type=")
+		filterFlag, err := parseFileCaptureType(typeFilter)
+		if err != nil {
+			return err
+		}
+		captureConfig.TypeFilter |= filterFlag
+	case "fd":
+		typeFilter := strings.TrimPrefix(option, "fd=")
+		filterFlag, err := parseFileCaptureFDs(typeFilter)
+		if err != nil {
+			return err
+		}
+		captureConfig.TypeFilter |= filterFlag
+	default:
+		return fmt.Errorf("unrecognized file capture option: %s", opt)
+	}
+
+	return nil
+}
+
+var captureFileTypeStringToFlag = map[string]tracee.FileCaptureType{
+	"pipe":    tracee.CapturePipeFiles,
+	"socket":  tracee.CaptureSocketFiles,
+	"regular": tracee.CaptureRegularFiles,
+}
+
+// parseFileCaptureType parse file type string to its matching bit-flag value
+func parseFileCaptureType(filter string) (tracee.FileCaptureType, error) {
+	filterFlag, ok := captureFileTypeStringToFlag[filter]
+	if ok {
+		return filterFlag, nil
+	}
+	return 0, fmt.Errorf("unsupported file type filter value for capture - %s", filter)
+}
+
+var captureFDsStringToFlag = map[string]tracee.FileCaptureType{
+	"stdin":  tracee.CaptureStdinFiles,
+	"stdout": tracee.CaptureStdoutFiles,
+	"stderr": tracee.CaptureStderrFiles,
+}
+
+// parseFileCaptureFDs parse file standard FD string to its matching bit-flag value
+func parseFileCaptureFDs(filter string) (tracee.FileCaptureType, error) {
+	filterFlag, ok := captureFDsStringToFlag[filter]
+	if ok {
+		return filterFlag, nil
+	}
+	return 0, fmt.Errorf("unsupported file FD filter value for capture - %s", filter)
 }

@@ -13,6 +13,7 @@ const (
 	SendMprotect
 	SendKernelModule
 	SendBpfObject
+	SendVfsRead
 )
 
 // PLEASE NOTE, YOU MUST UPDATE THE DECODER IF ANY CHANGE TO THIS STRUCT IS DONE.
@@ -63,14 +64,14 @@ func (ChunkMeta) GetSizeBytes() uint32 {
 	return 49
 }
 
-type VfsWriteMeta struct {
+type VfsFileMeta struct {
 	DevID uint32
 	Inode uint64
 	Mode  uint32
 	Pid   uint32
 }
 
-func (VfsWriteMeta) GetSizeBytes() uint32 {
+func (VfsFileMeta) GetSizeBytes() uint32 {
 	return 20
 }
 

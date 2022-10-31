@@ -293,17 +293,17 @@ func (decoder *EbpfDecoder) DecodeChunkMeta(chunkMeta *ChunkMeta) error {
 	return nil
 }
 
-// DecodeVfsWriteMeta translates data from the decoder buffer, starting from the decoder cursor, to bufferdecoder.VfsWriteMeta struct.
-func (decoder *EbpfDecoder) DecodeVfsWriteMeta(vfsWriteMeta *VfsWriteMeta) error {
+// DecodeVfsFileMeta translates data from the decoder buffer, starting from the decoder cursor, to bufferdecoder.VfsFileMeta struct.
+func (decoder *EbpfDecoder) DecodeVfsFileMeta(vfsFileMeta *VfsFileMeta) error {
 	offset := decoder.cursor
-	if len(decoder.buffer[offset:]) < int(vfsWriteMeta.GetSizeBytes()) {
+	if len(decoder.buffer[offset:]) < int(vfsFileMeta.GetSizeBytes()) {
 		return errfmt.Errorf("can't read context from buffer: buffer too short")
 	}
-	vfsWriteMeta.DevID = binary.LittleEndian.Uint32(decoder.buffer[offset : offset+4])
-	vfsWriteMeta.Inode = binary.LittleEndian.Uint64(decoder.buffer[offset+4 : offset+12])
-	vfsWriteMeta.Mode = binary.LittleEndian.Uint32(decoder.buffer[offset+12 : offset+16])
-	vfsWriteMeta.Pid = binary.LittleEndian.Uint32(decoder.buffer[offset+16 : offset+20])
-	decoder.cursor += int(vfsWriteMeta.GetSizeBytes())
+	vfsFileMeta.DevID = binary.LittleEndian.Uint32(decoder.buffer[offset : offset+4])
+	vfsFileMeta.Inode = binary.LittleEndian.Uint64(decoder.buffer[offset+4 : offset+12])
+	vfsFileMeta.Mode = binary.LittleEndian.Uint32(decoder.buffer[offset+12 : offset+16])
+	vfsFileMeta.Pid = binary.LittleEndian.Uint32(decoder.buffer[offset+16 : offset+20])
+	decoder.cursor += int(vfsFileMeta.GetSizeBytes())
 	return nil
 }
 

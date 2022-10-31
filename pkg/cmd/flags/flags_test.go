@@ -582,13 +582,25 @@ func TestPrepareCapture(t *testing.T) {
 				testName:        "invalid capture write filter 2",
 				captureSlice:    []string{"write=/tmp"},
 				expectedCapture: tracee.CaptureConfig{},
-				expectedError:   errors.New("invalid capture option specified, use '--capture help' for more info"),
+				expectedError:   errors.New("file path filter should end with *"),
 			},
 			{
 				testName:        "empty capture write filter",
 				captureSlice:    []string{"write=*"},
 				expectedCapture: tracee.CaptureConfig{},
-				expectedError:   errors.New("capture write filter cannot be empty"),
+				expectedError:   errors.New("capture path filter cannot be empty"),
+			},
+			{
+				testName:        "non existing capture write type filter",
+				captureSlice:    []string{"write:type=non-existing"},
+				expectedCapture: tracee.CaptureConfig{},
+				expectedError:   errors.New("unsupported file type filter value for capture - non-existing"),
+			},
+			{
+				testName:        "non existing capture write fds filter",
+				captureSlice:    []string{"write:fd=non-existing"},
+				expectedCapture: tracee.CaptureConfig{},
+				expectedError:   errors.New("unsupported file FD filter value for capture - non-existing"),
 			},
 			{
 				testName:     "capture mem",
@@ -619,7 +631,9 @@ func TestPrepareCapture(t *testing.T) {
 				captureSlice: []string{"write"},
 				expectedCapture: tracee.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
-					FileWrite:  true,
+					FileWrite: tracee.FileCaptureConfig{
+						Capture: true,
+					},
 				},
 			},
 			{
@@ -688,9 +702,54 @@ func TestPrepareCapture(t *testing.T) {
 				testName:     "capture write filtered",
 				captureSlice: []string{"write=/tmp*"},
 				expectedCapture: tracee.CaptureConfig{
-					OutputPath:      "/tmp/tracee/out",
-					FileWrite:       true,
-					FilterFileWrite: []string{"/tmp"},
+					OutputPath: "/tmp/tracee/out",
+					FileWrite: tracee.FileCaptureConfig{
+						Capture:    true,
+						PathFilter: []string{"/tmp"},
+					},
+				},
+			},
+			{
+				testName:     "capture read",
+				captureSlice: []string{"read"},
+				expectedCapture: tracee.CaptureConfig{
+					OutputPath: "/tmp/tracee/out",
+					FileRead: tracee.FileCaptureConfig{
+						Capture: true,
+					},
+				},
+			},
+			{
+				testName:     "capture read filtered by path",
+				captureSlice: []string{"read:path=/tmp*"},
+				expectedCapture: tracee.CaptureConfig{
+					OutputPath: "/tmp/tracee/out",
+					FileRead: tracee.FileCaptureConfig{
+						Capture:    true,
+						PathFilter: []string{"/tmp"},
+					},
+				},
+			},
+			{
+				testName:     "capture read filtered by type",
+				captureSlice: []string{"read:type=pipe"},
+				expectedCapture: tracee.CaptureConfig{
+					OutputPath: "/tmp/tracee/out",
+					FileRead: tracee.FileCaptureConfig{
+						Capture:    true,
+						TypeFilter: tracee.CapturePipeFiles,
+					},
+				},
+			},
+			{
+				testName:     "capture read filtered by fd",
+				captureSlice: []string{"read:fd=stdin"},
+				expectedCapture: tracee.CaptureConfig{
+					OutputPath: "/tmp/tracee/out",
+					FileRead: tracee.FileCaptureConfig{
+						Capture:    true,
+						TypeFilter: tracee.CaptureStdinFiles,
+					},
 				},
 			},
 			{
@@ -698,7 +757,7 @@ func TestPrepareCapture(t *testing.T) {
 				captureSlice: []string{"write", "exec", "mem", "module", "bpf"},
 				expectedCapture: tracee.CaptureConfig{
 					OutputPath: "/tmp/tracee/out",
-					FileWrite:  true,
+					FileWrite:  tracee.FileCaptureConfig{Capture: true},
 					Mem:        true,
 					Exec:       true,
 					Module:     true,

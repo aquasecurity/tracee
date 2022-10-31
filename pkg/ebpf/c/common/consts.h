@@ -15,7 +15,6 @@
 #define MAX_KSYM_NAME_SIZE  64
 #define UPROBE_MAGIC_NUMBER 20220829
 #define ARGS_BUF_SIZE       32000
-#define SEND_BPF_OBJECT     4
 #define SEND_META_SIZE      28
 
 #define MAX_MEM_DUMP_SIZE   127
@@ -31,7 +30,7 @@
 #define TRACE_IFACE   (1 << 1)
 
 #define OPT_EXEC_ENV              (1 << 0)
-#define OPT_CAPTURE_FILES         (1 << 1)
+#define OPT_CAPTURE_FILES_WRITE   (1 << 1)
 #define OPT_EXTRACT_DYN_CODE      (1 << 2)
 #define OPT_CAPTURE_STACK_TRACES  (1 << 3)
 #define OPT_CAPTURE_MODULES       (1 << 4)
@@ -39,6 +38,11 @@
 #define OPT_PROCESS_INFO          (1 << 6)
 #define OPT_TRANSLATE_FD_FILEPATH (1 << 7)
 #define OPT_CAPTURE_BPF           (1 << 8)
+#define OPT_CAPTURE_FILES_READ    (1 << 9)
+
+#define STDIN  0
+#define STDOUT 1
+#define STDERR 2
 
 enum buf_idx_e
 {

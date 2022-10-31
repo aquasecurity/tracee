@@ -499,4 +499,7 @@ enum file_modification_op
     FILE_MODIFICATION_DONE,
 };
 
+// Type for values representing file types filters
+typedef u32 file_type_filter_t;
+
 #endif

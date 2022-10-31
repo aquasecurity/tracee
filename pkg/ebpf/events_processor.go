@@ -128,7 +128,7 @@ func (t *Tracee) convertArgMonotonicToEpochTime(event *trace.Event, argName stri
 
 func (t *Tracee) processWriteEvent(event *trace.Event) error {
 	// only capture written files
-	if !t.config.Capture.FileWrite {
+	if !t.config.Capture.FileWrite.Capture {
 		return nil
 	}
 	filePath, err := parse.ArgVal[string](event, "pathname")
@@ -161,6 +161,44 @@ func (t *Tracee) processWriteEvent(event *trace.Event) error {
 
 	// index written file by original filepath
 	t.writtenFiles[fileName] = filePath
+	return nil
+}
+
+func (t *Tracee) processReadEvent(event *trace.Event) error {
+	// only capture read files
+	if !t.config.Capture.FileRead.Capture {
+		return nil
+	}
+	filePath, err := parse.ArgVal[string](event, "pathname")
+	if err != nil {
+		return fmt.Errorf("error parsing vfs_read args: %v", err)
+	}
+	// path should be absolute, except for e.g memfd_create files
+	if filePath == "" || filePath[0] != '/' {
+		return nil
+	}
+	dev, err := parse.ArgVal[uint32](event, "dev")
+	if err != nil {
+		return fmt.Errorf("error parsing vfs_write args: %v", err)
+	}
+	inode, err := parse.ArgVal[uint64](event, "inode")
+	if err != nil {
+		return fmt.Errorf("error parsing vfs_write args: %v", err)
+	}
+
+	// stop processing if write was already indexed
+	containerId := event.Container.ID
+	if containerId == "" {
+		containerId = "host"
+	}
+	fileName := fmt.Sprintf("%s/read.dev-%d.inode-%d", containerId, dev, inode)
+	indexName, ok := t.readFiles[fileName]
+	if ok && indexName == filePath {
+		return nil
+	}
+
+	// index written file by original filepath
+	t.readFiles[fileName] = filePath
 	return nil
 }
 

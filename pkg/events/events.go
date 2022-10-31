@@ -312,6 +312,7 @@ const (
 	CapturePcap
 	CaptureNetPacket
 	CaptureBpf
+	CaptureFileRead
 )
 
 // Signature events
@@ -5974,6 +5975,30 @@ var Definitions = eventDefinitions{
 					{MapName: "prog_array", MapIndexes: []uint32{tailVfsWritev}, ProgName: "trace_ret_vfs_writev_tail"},
 					{MapName: "prog_array", MapIndexes: []uint32{tailKernelWrite}, ProgName: "trace_ret_kernel_write_tail"},
 					{MapName: "prog_array", MapIndexes: []uint32{tailSendBin}, ProgName: "send_bin"},
+				},
+				KSymbols: &[]kSymbolDependency{
+					{Symbol: "pipefifo_fops", Required: true},
+				},
+			},
+		},
+		CaptureFileRead: {
+			ID32Bit:  sys32undefined,
+			Name:     "capture_file_read",
+			Internal: true,
+			Probes: []probeDependency{
+				{Handle: probes.VfsRead, Required: true},
+				{Handle: probes.VfsReadRet, Required: true},
+				{Handle: probes.VfsReadV, Required: false},
+				{Handle: probes.VfsReadVRet, Required: false},
+			},
+			Dependencies: dependencies{
+				TailCalls: []TailCall{
+					{MapName: "prog_array", MapIndexes: []uint32{tailVfsRead}, ProgName: "trace_ret_vfs_read_tail"},
+					{MapName: "prog_array", MapIndexes: []uint32{tailVfsReadv}, ProgName: "trace_ret_vfs_readv_tail"},
+					{MapName: "prog_array", MapIndexes: []uint32{tailSendBin}, ProgName: "send_bin"},
+				},
+				KSymbols: &[]kSymbolDependency{
+					{Symbol: "pipefifo_fops", Required: true},
 				},
 			},
 		},

@@ -17,6 +17,7 @@
 
 #include <maps.h>
 #include <types.h>
+#include <capture_filtering.h>
 #include <tracee.h>
 
 #include <common/arch.h>
@@ -2462,6 +2463,8 @@ enum bin_type_e
     SEND_VFS_WRITE = 1,
     SEND_MPROTECT,
     SEND_KERNEL_MODULE,
+    SEND_BPF_OBJECT,
+    SEND_VFS_READ
 };
 
 statfunc u32 tail_call_send_bin(void *ctx, program_data_t *p, bin_args_t *bin_args, int tail_call)
@@ -2727,11 +2730,37 @@ do_file_io_operation(struct pt_regs *ctx, u32 event_id, u32 tail_call_id, bool i
     return 0;
 }
 
+statfunc void
+extract_vfs_ret_io_data(struct pt_regs *ctx, args_t *saved_args, io_data_t *io_data, bool is_buf)
+{
+    io_data->is_buf = is_buf;
+    if (is_buf) {
+        io_data->ptr = (void *) saved_args->args[1];
+        io_data->len = (size_t) PT_REGS_RC(ctx);
+    } else {
+        io_data->ptr = (struct iovec *) saved_args->args[1];
+        io_data->len = saved_args->args[2];
+    }
+}
+
+// Filter capture of file writes according to path prefix, type and fd.
+statfunc bool filter_file_write_capture(program_data_t *p, struct file *file)
+{
+    // Get per-cpu string buffer
+    buf_t *string_p = get_buf(STRING_BUF_IDX);
+    if (string_p == NULL)
+        return NULL;
+    size_t buf_off = get_path_str_buf(__builtin_preserve_access_index(&file->f_path), string_p);
+    return filter_file_path(p->ctx, &file_write_path_filter, string_p, buf_off) ||
+           filter_file_type(p->ctx, &file_type_filter, CAPTURE_WRITE_TYPE_FILTER_IDX, file) ||
+           filter_file_fd(p->ctx, &file_type_filter, CAPTURE_WRITE_TYPE_FILTER_IDX, file);
+}
+
 // Capture file write
 // Will only capture if:
 // 1. File write capture was configured
 // 2. File matches the filters given
-statfunc int capture_file_write(struct pt_regs *ctx, u32 event_id)
+statfunc int capture_file_write(struct pt_regs *ctx, u32 event_id, bool is_buf)
 {
     program_data_t p = {};
     if (!init_program_data(&p, ctx)) {
@@ -2739,110 +2768,102 @@ statfunc int capture_file_write(struct pt_regs *ctx, u32 event_id)
         return 0;
     }
 
-    if ((p.config->options & OPT_CAPTURE_FILES) == 0) {
+    if ((p.config->options & OPT_CAPTURE_FILES_WRITE) == 0) {
         del_args(event_id);
         return 0;
     }
 
     args_t saved_args;
-    bin_args_t bin_args = {};
-    loff_t start_pos;
-
-    void *ptr;
-    struct iovec *vec;
-    unsigned long vlen;
-    bool has_filter = false;
-    bool filter_match = false;
+    io_data_t io_data;
 
     if (load_args(&saved_args, event_id) != 0)
         return 0;
     del_args(event_id);
 
+    extract_vfs_ret_io_data(ctx, &saved_args, &io_data, is_buf);
     struct file *file = (struct file *) saved_args.args[0];
-    if (event_id == VFS_WRITE || event_id == __KERNEL_WRITE) {
-        ptr = (void *) saved_args.args[1];
-    } else {
-        vec = (struct iovec *) saved_args.args[1];
-        vlen = saved_args.args[2];
-    }
     loff_t *pos = (loff_t *) saved_args.args[3];
 
-    void *file_path = get_path_str(__builtin_preserve_access_index(&file->f_path));
-    if (p.event->buf_off > ARGS_BUF_SIZE - MAX_STRING_SIZE)
-        return -1;
-    bpf_probe_read_str(&(p.event->args[p.event->buf_off]), MAX_STRING_SIZE, file_path);
-
-// Check if capture write was requested for this path
-#pragma unroll
-    for (int i = 0; i < 3; i++) {
-        int idx = i;
-        path_filter_t *filter_p = bpf_map_lookup_elem(&file_filter, &idx);
-        if (filter_p == NULL)
-            return -1;
-
-        if (!filter_p->path[0])
-            break;
-
-        has_filter = true;
-
-        if (p.event->buf_off > ARGS_BUF_SIZE - MAX_STRING_SIZE)
-            break;
-
-        if (has_prefix(
-                filter_p->path, (char *) &p.event->args[p.event->buf_off], MAX_PATH_PREF_SIZE)) {
-            filter_match = true;
-            break;
-        }
-    }
-
-    if (has_filter && !filter_match) {
+    if (filter_file_write_capture(&p, file)) {
         // There is a filter, but no match
         del_args(event_id);
         return 0;
     }
     // No filter was given, or filter match - continue
 
-    // Extract device id, inode number, mode, and pos (offset)
-    dev_t s_dev = get_dev_from_file(file);
-    unsigned long inode_nr = get_inode_nr_from_file(file);
-    unsigned short i_mode = get_inode_mode_from_file(file);
-    bpf_probe_read(&start_pos, sizeof(off_t), pos);
-
-    // Calculate write start offset
-    if (start_pos != 0)
-        start_pos -= PT_REGS_RC(ctx);
-
-    u32 pid = p.event->context.task.pid;
-
-    if (p.event->buf_off > ARGS_BUF_SIZE - MAX_STRING_SIZE)
+    // Because we don't pass the file path in the capture map, we can't do path checks in user mode.
+    // We don't want to pass the PID for most file writes, because we want to save writes according
+    // to the inode-device only. In the case of writes to /dev/null, we want to pass the PID because
+    // otherwise the capture will overwrite itself.
+    int pid = 0;
+    buf_t *string_p = get_buf(STRING_BUF_IDX);
+    if (string_p == NULL)
         return -1;
-
-    if (!has_prefix("/dev/null", (char *) &p.event->args[p.event->buf_off], 10))
-        pid = 0;
-
-    bin_args.type = SEND_VFS_WRITE;
-    bpf_probe_read(bin_args.metadata, 4, &s_dev);
-    bpf_probe_read(&bin_args.metadata[4], 8, &inode_nr);
-    bpf_probe_read(&bin_args.metadata[12], 4, &i_mode);
-    bpf_probe_read(&bin_args.metadata[16], 4, &pid);
-    bin_args.start_off = start_pos;
-    if (event_id == VFS_WRITE || event_id == __KERNEL_WRITE) {
-        bin_args.ptr = ptr;
-        bin_args.full_size = PT_REGS_RC(ctx);
-    } else {
-        bin_args.vec = vec;
-        bin_args.iov_idx = 0;
-        bin_args.iov_len = vlen;
-        if (vlen > 0) {
-            struct iovec io_vec;
-            bpf_probe_read(&io_vec, sizeof(struct iovec), &vec[0]);
-            bin_args.ptr = io_vec.iov_base;
-            bin_args.full_size = io_vec.iov_len;
-        }
+    size_t buf_off = get_path_str_buf(__builtin_preserve_access_index(&file->f_path), string_p);
+    if ((buf_off < MAX_PERCPU_BUFSIZE - 10) &&
+        !has_prefix("/dev/null", (char *) &string_p->buf[buf_off], 10)) {
+        pid = p.event->context.task.pid;
     }
 
-    tail_call_send_bin(ctx, &p, &bin_args, TAIL_SEND_BIN);
+    bin_args_t bin_args = {};
+    u64 id = bpf_get_current_pid_tgid();
+    fill_vfs_file_bin_args(SEND_VFS_WRITE, file, pos, io_data, PT_REGS_RC(ctx), pid, &bin_args);
 
+    // Send file data
+    tail_call_send_bin(ctx, &p, &bin_args, TAIL_SEND_BIN);
+    return 0;
+}
+
+// Filter capture of file reads according to path prefix, type and fd.
+statfunc bool filter_file_read_capture(program_data_t *p, struct file *file)
+{
+    // Get per-cpu string buffer
+    buf_t *string_p = get_buf(STRING_BUF_IDX);
+    if (string_p == NULL)
+        return false;
+    size_t buf_off = get_path_str_buf(__builtin_preserve_access_index(&file->f_path), string_p);
+    return filter_file_path(p->ctx, &file_read_path_filter, string_p, buf_off) ||
+           filter_file_type(p->ctx, &file_type_filter, CAPTURE_READ_TYPE_FILTER_IDX, file) ||
+           filter_file_fd(p->ctx, &file_type_filter, CAPTURE_READ_TYPE_FILTER_IDX, file);
+}
+
+statfunc int capture_file_read(struct pt_regs *ctx, u32 event_id, bool is_buf)
+{
+    program_data_t p = {};
+    if (!init_program_data(&p, ctx)) {
+        del_args(event_id);
+        return 0;
+    }
+
+    if ((p.config->options & OPT_CAPTURE_FILES_READ) == 0) {
+        del_args(event_id);
+        return 0;
+    }
+
+    args_t saved_args;
+    io_data_t io_data;
+
+    if (load_args(&saved_args, event_id) != 0)
+        return 0;
+    del_args(event_id);
+
+    extract_vfs_ret_io_data(ctx, &saved_args, &io_data, is_buf);
+    struct file *file = (struct file *) saved_args.args[0];
+    loff_t *pos = (loff_t *) saved_args.args[3];
+
+    if (filter_file_read_capture(&p, file)) {
+        // There is a filter, but no match
+        del_args(event_id);
+        return 0;
+    }
+    // No filter was given, or filter match - continue
+
+    bin_args_t bin_args = {};
+    u64 id = bpf_get_current_pid_tgid();
+    fill_vfs_file_bin_args(SEND_VFS_READ, file, pos, io_data, PT_REGS_RC(ctx), 0, &bin_args);
+
+    // Send file data
+    tail_call_send_bin(ctx, &p, &bin_args, TAIL_SEND_BIN);
     return 0;
 }
 
@@ -2858,7 +2879,7 @@ int BPF_KPROBE(trace_ret_vfs_write)
 SEC("kretprobe/vfs_write_tail")
 int BPF_KPROBE(trace_ret_vfs_write_tail)
 {
-    return capture_file_write(ctx, VFS_WRITE);
+    return capture_file_write(ctx, VFS_WRITE, true);
 }
 
 SEC("kprobe/vfs_writev")
@@ -2873,7 +2894,7 @@ int BPF_KPROBE(trace_ret_vfs_writev)
 SEC("kretprobe/vfs_writev_tail")
 int BPF_KPROBE(trace_ret_vfs_writev_tail)
 {
-    return capture_file_write(ctx, VFS_WRITEV);
+    return capture_file_write(ctx, VFS_WRITEV, false);
 }
 
 SEC("kprobe/__kernel_write")
@@ -2888,7 +2909,7 @@ int BPF_KPROBE(trace_ret_kernel_write)
 SEC("kretprobe/__kernel_write_tail")
 int BPF_KPROBE(trace_ret_kernel_write_tail)
 {
-    return capture_file_write(ctx, __KERNEL_WRITE);
+    return capture_file_write(ctx, __KERNEL_WRITE, true);
 }
 
 SEC("kprobe/vfs_read")
@@ -2900,6 +2921,12 @@ int BPF_KPROBE(trace_ret_vfs_read)
     return do_file_io_operation(ctx, VFS_READ, TAIL_VFS_READ, true, true);
 }
 
+SEC("kretprobe/vfs_read_tail")
+int BPF_KPROBE(trace_ret_vfs_read_tail)
+{
+    return capture_file_read(ctx, VFS_READ, true);
+}
+
 SEC("kprobe/vfs_readv")
 TRACE_ENT_FUNC(vfs_readv, VFS_READV);
 
@@ -2907,6 +2934,12 @@ SEC("kretprobe/vfs_readv")
 int BPF_KPROBE(trace_ret_vfs_readv)
 {
     return do_file_io_operation(ctx, VFS_READV, TAIL_VFS_READV, true, false);
+}
+
+SEC("kretprobe/vfs_readV_tail")
+int BPF_KPROBE(trace_ret_vfs_readv_tail)
+{
+    return capture_file_read(ctx, VFS_READV, false);
 }
 
 // Used macro because of problem with verifier in NONCORE kinetic519
