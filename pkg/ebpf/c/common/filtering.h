@@ -3,6 +3,8 @@
 
 #include <vmlinux.h>
 
+#include <maps.h>
+#include <common/logging.h>
 #include <common/common.h>
 
 // PROTOTYPES

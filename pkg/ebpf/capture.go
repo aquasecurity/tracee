@@ -15,9 +15,9 @@ import (
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
-func (t *Tracee) processFileWrites(ctx context.Context) {
-	logger.Debugw("Starting processFileWrites goroutine")
-	defer logger.Debugw("Stopped processFileWrites goroutine")
+func (t *Tracee) processFileCaptures(ctx context.Context) {
+	logger.Debugw("Starting processFileCaptures go routine")
+	defer logger.Debugw("Stopped processFileCaptures go routine")
 
 	const (
 		// stat_S_IFMT uint32 = 0170000 // bit mask for the file type bit field
@@ -32,7 +32,7 @@ func (t *Tracee) processFileWrites(ctx context.Context) {
 
 	for {
 		select {
-		case dataRaw := <-t.fileWrChannel:
+		case dataRaw := <-t.fileCapturesChannel:
 			if len(dataRaw) == 0 {
 				continue
 			}
@@ -69,9 +69,9 @@ func (t *Tracee) processFileWrites(ctx context.Context) {
 			metaBuffDecoder := bufferdecoder.New(meta.Metadata[:])
 			var kernelModuleMeta bufferdecoder.KernelModuleMeta
 			var bpfObjectMeta bufferdecoder.BpfObjectMeta
-			if meta.BinType == bufferdecoder.SendVfsWrite {
-				var vfsMeta bufferdecoder.VfsWriteMeta
-				err = metaBuffDecoder.DecodeVfsWriteMeta(&vfsMeta)
+			if meta.BinType == bufferdecoder.SendVfsWrite || meta.BinType == bufferdecoder.SendVfsRead {
+				var vfsMeta bufferdecoder.VfsFileMeta
+				err = metaBuffDecoder.DecodeVfsFileMeta(&vfsMeta)
 				if err != nil {
 					t.handleError(err)
 					continue
@@ -79,10 +79,27 @@ func (t *Tracee) processFileWrites(ctx context.Context) {
 				if vfsMeta.Mode&_S_IFSOCK == _S_IFSOCK || vfsMeta.Mode&_S_IFCHR == _S_IFCHR || vfsMeta.Mode&_S_IFIFO == _S_IFIFO {
 					appendFile = true
 				}
-				if vfsMeta.Pid == 0 {
-					filename = fmt.Sprintf("write.dev-%d.inode-%d", vfsMeta.DevID, vfsMeta.Inode)
+				var operation string
+				if meta.BinType == bufferdecoder.SendVfsRead {
+					operation = "read"
 				} else {
-					filename = fmt.Sprintf("write.dev-%d.inode-%d.pid-%d", vfsMeta.DevID, vfsMeta.Inode, vfsMeta.Pid)
+					operation = "write"
+				}
+				if vfsMeta.Pid == 0 {
+					filename = fmt.Sprintf(
+						"%s.dev-%d.inode-%d",
+						operation,
+						vfsMeta.DevID,
+						vfsMeta.Inode,
+					)
+				} else { // Only applies for write to /dev/null
+					filename = fmt.Sprintf(
+						"%s.dev-%d.inode-%d.pid-%d",
+						operation,
+						vfsMeta.DevID,
+						vfsMeta.Inode,
+						vfsMeta.Pid,
+					)
 				}
 			} else if meta.BinType == bufferdecoder.SendMprotect {
 				var mprotectMeta bufferdecoder.MprotectWriteMeta
@@ -196,15 +213,15 @@ func (t *Tracee) processFileWrites(ctx context.Context) {
 				}
 			}
 
-		case lost := <-t.lostWrChannel:
+		case lost := <-t.lostCapturesChannel:
 			// When terminating tracee-ebpf the lost channel receives multiple "0 lost events" events.
 			// This check prevents those 0 lost events messages to be written to stderr until the bug is fixed:
 			// https://github.com/aquasecurity/libbpfgo/issues/122
 			if lost > 0 {
 				if err := t.stats.LostWrCount.Increment(lost); err != nil {
-					logger.Errorw("Incrementing lost write count", "error", err)
+					logger.Errorw("Incrementing lost capture count", "error", err)
 				}
-				logger.Warnw(fmt.Sprintf("Lost %d write events", lost))
+				logger.Warnw(fmt.Sprintf("Lost %d capture events", lost))
 			}
 
 		case <-ctx.Done():

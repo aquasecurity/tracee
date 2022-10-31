@@ -5,6 +5,7 @@
 
 #include <common/buffer.h>
 #include <common/memory.h>
+#include <common/consts.h>
 
 // PROTOTYPES
 
@@ -24,12 +25,18 @@ statfunc int check_fd_type(u64, u16);
 statfunc unsigned long get_inode_nr_from_dentry(struct dentry *);
 statfunc dev_t get_dev_from_dentry(struct dentry *);
 statfunc u64 get_ctime_nanosec_from_dentry(struct dentry *);
+statfunc size_t get_path_str_buf(struct path *, buf_t *);
 statfunc void *get_path_str(struct path *);
 statfunc void *get_dentry_path_str(struct dentry *);
 statfunc file_info_t get_file_info(struct file *);
 statfunc struct inode *get_inode_from_file(struct file *);
+statfunc int get_standard_fds_from_struct_file(struct file *);
 statfunc struct super_block *get_super_block_from_inode(struct inode *);
 statfunc unsigned long get_s_magic_from_super_block(struct super_block *);
+statfunc void fill_vfs_file_metadata(struct file *, u32, u8 *);
+statfunc void fill_vfs_file_bin_args_io_data(io_data_t, bin_args_t *);
+statfunc void
+fill_vfs_file_bin_args(u32, struct file *, loff_t *, io_data_t, size_t, int, bin_args_t *);
 
 // FUNCTIONS
 
@@ -146,8 +153,13 @@ statfunc u64 get_ctime_nanosec_from_dentry(struct dentry *dentry)
     return get_ctime_nanosec_from_inode(d_inode);
 }
 
-statfunc void *get_path_str(struct path *path)
+// Read the file path to the given buffer, returning the start offset of the path.
+statfunc size_t get_path_str_buf(struct path *path, buf_t *out_buf)
 {
+    if (path == NULL || out_buf == NULL) {
+        return 0;
+    }
+
     struct path f_path;
     bpf_probe_read(&f_path, sizeof(struct path), path);
     char slash = '/';
@@ -155,10 +167,8 @@ statfunc void *get_path_str(struct path *path)
     struct dentry *dentry = f_path.dentry;
     struct vfsmount *vfsmnt = f_path.mnt;
     struct mount *mnt_parent_p;
-
     struct mount *mnt_p = real_mount(vfsmnt);
     bpf_probe_read(&mnt_parent_p, sizeof(struct mount *), &mnt_p->mnt_parent);
-
     u32 buf_off = (MAX_PERCPU_BUFSIZE >> 1);
     struct dentry *mnt_root;
     struct dentry *d_parent;
@@ -166,11 +176,6 @@ statfunc void *get_path_str(struct path *path)
     unsigned int len;
     unsigned int off;
     int sz;
-
-    // Get per-cpu string buffer
-    buf_t *string_p = get_buf(STRING_BUF_IDX);
-    if (string_p == NULL)
-        return NULL;
 
 #pragma unroll
     for (int i = 0; i < MAX_PATH_COMPONENTS; i++) {
@@ -196,18 +201,17 @@ statfunc void *get_path_str(struct path *path)
         d_name = get_d_name_from_dentry(dentry);
         len = (d_name.len + 1) & (MAX_STRING_SIZE - 1);
         off = buf_off - len;
-
         // Is string buffer big enough for dentry name?
         sz = 0;
         if (off <= buf_off) { // verify no wrap occurred
             len = len & ((MAX_PERCPU_BUFSIZE >> 1) - 1);
             sz = bpf_probe_read_str(
-                &(string_p->buf[off & ((MAX_PERCPU_BUFSIZE >> 1) - 1)]), len, (void *) d_name.name);
+                &(out_buf->buf[off & ((MAX_PERCPU_BUFSIZE >> 1) - 1)]), len, (void *) d_name.name);
         } else
             break;
         if (sz > 1) {
             buf_off -= 1; // remove null byte termination with slash sign
-            bpf_probe_read(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
+            bpf_probe_read(&(out_buf->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
             buf_off -= sz - 1;
         } else {
             // If sz is 0 or 1 we have an error (path can't be null nor an empty string)
@@ -215,20 +219,29 @@ statfunc void *get_path_str(struct path *path)
         }
         dentry = d_parent;
     }
-
     if (buf_off == (MAX_PERCPU_BUFSIZE >> 1)) {
         // memfd files have no path in the filesystem -> extract their name
         buf_off = 0;
         d_name = get_d_name_from_dentry(dentry);
-        bpf_probe_read_str(&(string_p->buf[0]), MAX_STRING_SIZE, (void *) d_name.name);
+        bpf_probe_read_str(&(out_buf->buf[0]), MAX_STRING_SIZE, (void *) d_name.name);
     } else {
         // Add leading slash
         buf_off -= 1;
-        bpf_probe_read(&(string_p->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
+        bpf_probe_read(&(out_buf->buf[buf_off & (MAX_PERCPU_BUFSIZE - 1)]), 1, &slash);
         // Null terminate the path string
-        bpf_probe_read(&(string_p->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1]), 1, &zero);
+        bpf_probe_read(&(out_buf->buf[(MAX_PERCPU_BUFSIZE >> 1) - 1]), 1, &zero);
     }
+    return buf_off;
+}
 
+statfunc void *get_path_str(struct path *path)
+{
+    // Get per-cpu string buffer
+    buf_t *string_p = get_buf(STRING_BUF_IDX);
+    if (string_p == NULL)
+        return NULL;
+
+    size_t buf_off = get_path_str_buf(path, string_p);
     return &string_p->buf[buf_off];
 }
 
@@ -306,6 +319,36 @@ statfunc struct inode *get_inode_from_file(struct file *file)
     return BPF_CORE_READ(file, f_inode);
 }
 
+// Return which of the standard FDs point to the given file as a bit field.
+// The FDs matching bits are (1 << fd).
+statfunc int get_standard_fds_from_struct_file(struct file *file)
+{
+    struct task_struct *task = (struct task_struct *) bpf_get_current_task();
+    if (task == NULL) {
+        return -1;
+    }
+    struct files_struct *files = (struct files_struct *) BPF_CORE_READ(task, files);
+    if (files == NULL) {
+        return -2;
+    }
+    struct file **fd = (struct file **) BPF_CORE_READ(files, fdt, fd);
+    if (fd == NULL) {
+        return -3;
+    }
+
+    int fds = 0;
+#pragma unroll
+    for (int i = STDIN; i <= STDERR; i++) {
+        struct file *fd_file = NULL;
+        bpf_core_read(&fd_file, sizeof(struct file *), &fd[i]);
+        if (fd_file == file) {
+            fds |= 1 << i;
+        }
+    }
+
+    return fds;
+}
+
 statfunc struct super_block *get_super_block_from_inode(struct inode *f_inode)
 {
     return BPF_CORE_READ(f_inode, i_sb);
@@ -314,6 +357,57 @@ statfunc struct super_block *get_super_block_from_inode(struct inode *f_inode)
 statfunc unsigned long get_s_magic_from_super_block(struct super_block *i_sb)
 {
     return BPF_CORE_READ(i_sb, s_magic);
+}
+
+// INTERNAL: STRUCTS BUILDING
+// -----------------------------------------------------------------------
+
+statfunc void fill_vfs_file_metadata(struct file *file, u32 pid, u8 *metadata)
+{
+    // Extract device id, inode number and mode
+    dev_t s_dev = get_dev_from_file(file);
+    unsigned long inode_nr = get_inode_nr_from_file(file);
+    unsigned short i_mode = get_inode_mode_from_file(file);
+
+    bpf_probe_read(metadata, 4, &s_dev);
+    bpf_probe_read(metadata + 4, 8, &inode_nr);
+    bpf_probe_read(metadata + 12, 4, &i_mode);
+    bpf_probe_read(metadata + 16, 4, &pid);
+}
+
+statfunc void fill_vfs_file_bin_args_io_data(io_data_t io_data, bin_args_t *bin_args)
+{
+    bin_args->ptr = io_data.ptr;
+    bin_args->full_size = io_data.len;
+    if (!io_data.is_buf && io_data.len > 0) {
+        struct iovec io_vec;
+        bpf_probe_read(&io_vec, sizeof(struct iovec), &bin_args->vec[0]);
+        bin_args->ptr = io_vec.iov_base;
+        bin_args->full_size = io_vec.iov_len;
+    }
+}
+
+// Fill given bin_args_t argument with all needed information for vfs_file binary sending
+statfunc void fill_vfs_file_bin_args(u32 type,
+                                     struct file *file,
+                                     loff_t *pos,
+                                     io_data_t io_data,
+                                     size_t write_bytes,
+                                     int pid,
+                                     bin_args_t *bin_args)
+{
+    off_t start_pos;
+
+    bpf_probe_read(&start_pos, sizeof(off_t), pos);
+
+    // Calculate write start offset
+    if (start_pos != 0)
+        start_pos -= write_bytes;
+
+    bin_args->type = type;
+    fill_vfs_file_metadata(file, pid, &bin_args->metadata[0]);
+    bin_args->start_off = start_pos;
+    fill_vfs_file_bin_args_io_data(io_data, bin_args);
 }
 
 #endif

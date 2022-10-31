@@ -26,7 +26,7 @@ func TestChunkMetaSize(t *testing.T) {
 }
 
 func TestVfsWriteMetaSize(t *testing.T) {
-	var v VfsWriteMeta
+	var v VfsFileMeta
 	size := int(unsafe.Sizeof(v))
 	assert.Equal(t, size-4, int(v.GetSizeBytes()))
 }

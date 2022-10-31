@@ -27,13 +27,11 @@ import (
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/cgroup"
 	"github.com/aquasecurity/tracee/pkg/containers"
-	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/pkg/ebpf/initialization"
 	"github.com/aquasecurity/tracee/pkg/ebpf/probes"
 	"github.com/aquasecurity/tracee/pkg/errfmt"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
-	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/events/sorting"
 	"github.com/aquasecurity/tracee/pkg/events/trigger"
 	"github.com/aquasecurity/tracee/pkg/filters"
@@ -52,103 +50,6 @@ const (
 	pkgName          = "tracee"
 	maxMemDumpLength = 127
 )
-
-// Config is a struct containing user defined configuration of tracee
-type Config struct {
-	Policies           *policy.Policies
-	Capture            *CaptureConfig
-	Capabilities       *CapabilitiesConfig
-	Output             *OutputConfig
-	Cache              queue.CacheConfig
-	PerfBufferSize     int
-	BlobPerfBufferSize int
-	maxPidsCache       int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
-	BTFObjPath         string
-	BPFObjBytes        []byte
-	KernelConfig       *helpers.KernelConfig
-	ChanEvents         chan trace.Event
-	OSInfo             *helpers.OSInfo
-	Sockets            runtime.Sockets
-	ContainersEnrich   bool
-	EngineConfig       engine.Config
-	MetricsEnabled     bool
-}
-
-type CaptureConfig struct {
-	OutputPath      string
-	FileWrite       bool
-	Module          bool
-	FilterFileWrite []string
-	Exec            bool
-	Mem             bool
-	Bpf             bool
-	Net             pcaps.Config
-}
-
-type CapabilitiesConfig struct {
-	BypassCaps bool
-	AddCaps    []string
-	DropCaps   []string
-}
-
-type OutputConfig struct {
-	StackAddresses bool
-	ExecEnv        bool
-	RelativeTime   bool
-	ExecHash       bool
-
-	ParseArguments    bool
-	ParseArgumentsFDs bool
-	EventsSorting     bool
-}
-
-// InitValues determines if to initialize values that might be needed by eBPF programs
-type InitValues struct {
-	kallsyms bool
-}
-
-// Validate does static validation of the configuration
-func (tc Config) Validate() error {
-	for p := range tc.Policies.Map() {
-		if p == nil {
-			return errfmt.Errorf("policy is nil")
-		}
-		if p.EventsToTrace == nil {
-			return errfmt.Errorf("policy [%d] has no events to trace", p.ID)
-		}
-
-		for e := range p.EventsToTrace {
-			_, exists := events.Definitions.GetSafe(e)
-			if !exists {
-				return errfmt.Errorf("invalid event [%d] to trace in policy [%d]", e, p.ID)
-			}
-		}
-	}
-	if (tc.PerfBufferSize & (tc.PerfBufferSize - 1)) != 0 {
-		return errfmt.Errorf("invalid perf buffer size - must be a power of 2")
-	}
-	if (tc.BlobPerfBufferSize & (tc.BlobPerfBufferSize - 1)) != 0 {
-		return errfmt.Errorf("invalid perf buffer size - must be a power of 2")
-	}
-	if len(tc.Capture.FilterFileWrite) > 3 {
-		return errfmt.Errorf("too many file-write filters given")
-	}
-	for _, filter := range tc.Capture.FilterFileWrite {
-		if len(filter) > 50 {
-			return errfmt.Errorf("the length of a path filter is limited to 50 characters: %s", filter)
-		}
-	}
-
-	if tc.BPFObjBytes == nil {
-		return errfmt.Errorf("nil bpf object in memory")
-	}
-
-	if tc.ChanEvents == nil {
-		return errfmt.Errorf("nil events channel")
-	}
-
-	return nil
-}
 
 type fileExecInfo struct {
 	LastCtime int64
@@ -181,6 +82,7 @@ type Tracee struct {
 	writtenFiles   map[string]string
 	netCapturePcap *pcaps.Pcaps
 	// Internal Data
+	readFiles     map[string]string
 	pidsInMntns   bucketscache.BucketsCache // first n PIDs in each mountns
 	kernelSymbols helpers.KernelSymbolTable
 	// eBPF
@@ -195,15 +97,15 @@ type Tracee struct {
 	netCapPerfMap  *bpf.PerfBuffer // perf buffer for network captures
 	bpfLogsPerfMap *bpf.PerfBuffer // perf buffer for bpf logs
 	// Events Channels
-	eventsChannel  chan []byte // channel for events
-	fileWrChannel  chan []byte // channel for file writes
-	netCapChannel  chan []byte // channel for network captures
-	bpfLogsChannel chan []byte // channel for bpf logs
+	eventsChannel       chan []byte // channel for events
+	fileCapturesChannel chan []byte // channel for file writes
+	netCapChannel       chan []byte // channel for network captures
+	bpfLogsChannel      chan []byte // channel for bpf logs
 	// Lost Events Channels
-	lostEvChannel     chan uint64 // channel for lost events
-	lostWrChannel     chan uint64 // channel for lost file writes
-	lostNetCapChannel chan uint64 // channel for lost network captures
-	lostBPFLogChannel chan uint64 // channel for lost bpf logs
+	lostEvChannel       chan uint64 // channel for lost events
+	lostCapturesChannel chan uint64 // channel for lost file writes
+	lostNetCapChannel   chan uint64 // channel for lost network captures
+	lostBPFLogChannel   chan uint64 // channel for lost bpf logs
 	// Containers
 	cgroups           *cgroup.Cgroups
 	containers        *containers.Containers
@@ -244,10 +146,13 @@ func GetCaptureEventsList(cfg Config) map[events.ID]eventConfig {
 			submit: 0xFFFFFFFFFFFFFFFF,
 		}
 	}
-	if cfg.Capture.FileWrite {
+	if cfg.Capture.FileWrite.Capture {
 		captureEvents[events.CaptureFileWrite] = eventConfig{
 			submit: 0xFFFFFFFFFFFFFFFF,
 		}
+	}
+	if cfg.Capture.FileRead.Capture {
+		captureEvents[events.CaptureFileRead] = eventConfig{}
 	}
 	if cfg.Capture.Module {
 		captureEvents[events.CaptureModule] = eventConfig{
@@ -302,6 +207,7 @@ func New(cfg Config) (*Tracee, error) {
 		config:        cfg,
 		done:          make(chan struct{}),
 		writtenFiles:  make(map[string]string),
+		readFiles:     make(map[string]string),
 		capturedFiles: make(map[string]int64),
 		events:        GetEssentialEventsList(),
 	}
@@ -778,7 +684,7 @@ func (t *Tracee) RegisterEventDerivation(deriveFrom events.ID, deriveTo events.I
 // options config should match defined values in ebpf code
 const (
 	optExecEnv uint32 = 1 << iota
-	optCaptureFiles
+	optCaptureFilesWrite
 	optExtractDynCode
 	optStackAddresses
 	optCaptureModules
@@ -786,6 +692,7 @@ const (
 	optProcessInfo
 	optTranslateFDFilePath
 	optCaptureBpf
+	optCaptureFileRead
 )
 
 func (t *Tracee) getOptionsConfig() uint32 {
@@ -797,8 +704,11 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	if t.config.Output.StackAddresses {
 		cOptVal = cOptVal | optStackAddresses
 	}
-	if t.config.Capture.FileWrite {
-		cOptVal = cOptVal | optCaptureFiles
+	if t.config.Capture.FileWrite.Capture {
+		cOptVal = cOptVal | optCaptureFilesWrite
+	}
+	if t.config.Capture.FileRead.Capture {
+		cOptVal = cOptVal | optCaptureFileRead
 	}
 	if t.config.Capture.Module {
 		cOptVal = cOptVal | optCaptureModules
@@ -1150,16 +1060,51 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Set filters given by the user to filter file write events
-	fileFilterMap, err := t.bpfModule.GetMap("file_filter") // u32, u32
+	fileWritePathFilterMap, err := t.bpfModule.GetMap("file_write_path_filter") // u32, u32
+	if err != nil {
+		return err
+	}
+
+	for i := uint32(0); i < uint32(len(t.config.Capture.FileWrite.PathFilter)); i++ {
+		filterFilePathWriteBytes := []byte(t.config.Capture.FileWrite.PathFilter[i])
+		if err = fileWritePathFilterMap.Update(unsafe.Pointer(&i), unsafe.Pointer(&filterFilePathWriteBytes[0])); err != nil {
+			return err
+		}
+	}
+
+	// Set filters given by the user to filter file read events
+	fileReadPathFilterMap, err := t.bpfModule.GetMap("file_read_path_filter") // u32, u32
+	if err != nil {
+		return err
+	}
+
+	for i := uint32(0); i < uint32(len(t.config.Capture.FileRead.PathFilter)); i++ {
+		filterFilePathReadBytes := []byte(t.config.Capture.FileRead.PathFilter[i])
+		if err = fileReadPathFilterMap.Update(unsafe.Pointer(&i), unsafe.Pointer(&filterFilePathReadBytes[0])); err != nil {
+			return err
+		}
+	}
+
+	// Set filters given by the user to filter file read and write type and fds
+	fileTypeFilterMap, err := t.bpfModule.GetMap("file_type_filter") // u32, u32
 	if err != nil {
 		return errfmt.WrapError(err)
 	}
 
-	for i := uint32(0); i < uint32(len(t.config.Capture.FilterFileWrite)); i++ {
-		filterFileWriteBytes := []byte(t.config.Capture.FilterFileWrite[i])
-		if err = fileFilterMap.Update(unsafe.Pointer(&i), unsafe.Pointer(&filterFileWriteBytes[0])); err != nil {
-			return errfmt.WrapError(err)
-		}
+	// Should match the value of CAPTURE_READ_TYPE_FILTER_IDX in eBPF code
+	captureReadTypeFilterIndex := uint32(0)
+	captureReadTypeFilterVal := uint32(t.config.Capture.FileRead.TypeFilter)
+	if err = fileTypeFilterMap.Update(unsafe.Pointer(&captureReadTypeFilterIndex),
+		unsafe.Pointer(&captureReadTypeFilterVal)); err != nil {
+		return errfmt.WrapError(err)
+	}
+
+	// Should match the value of CAPTURE_WRITE_TYPE_FILTER_IDX in eBPF code
+	captureWriteTypeFilterIndex := uint32(1)
+	captureWriteTypeFilterVal := uint32(t.config.Capture.FileWrite.TypeFilter)
+	if err = fileTypeFilterMap.Update(unsafe.Pointer(&captureWriteTypeFilterIndex),
+		unsafe.Pointer(&captureWriteTypeFilterVal)); err != nil {
+		return errfmt.WrapError(err)
 	}
 
 	_, ok := t.events[events.HookedSyscalls]
@@ -1407,12 +1352,12 @@ func (t *Tracee) initBPF() error {
 	}
 
 	if t.config.BlobPerfBufferSize > 0 {
-		t.fileWrChannel = make(chan []byte, 1000)
-		t.lostWrChannel = make(chan uint64)
+		t.fileCapturesChannel = make(chan []byte, 1000)
+		t.lostCapturesChannel = make(chan uint64)
 		t.fileWrPerfMap, err = t.bpfModule.InitPerfBuf(
 			"file_writes",
-			t.fileWrChannel,
-			t.lostWrChannel,
+			t.fileCapturesChannel,
+			t.lostCapturesChannel,
 			t.config.BlobPerfBufferSize,
 		)
 		if err != nil {
@@ -1520,7 +1465,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	go t.handleEvents(ctx)
 	if t.config.BlobPerfBufferSize > 0 {
 		t.fileWrPerfMap.Poll(pollTimeout)
-		go t.processFileWrites(ctx)
+		go t.processFileCaptures(ctx)
 	}
 	if pcaps.PcapsEnabled(t.config.Capture.Net) {
 		t.netCapPerfMap.Poll(pollTimeout)
@@ -1548,36 +1493,52 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.bpfLogsPerfMap.Stop()
 
 	// record index of written files
-	if t.config.Capture.FileWrite {
-		destinationFilePath := "written_files"
-		f, err := utils.OpenAt(t.OutDir, destinationFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if t.config.Capture.FileWrite.Capture {
+		err := updateCaptureMapFile(t.OutDir, "written_files", t.writtenFiles, t.config.Capture.FileWrite)
 		if err != nil {
-			return errfmt.Errorf("error logging written files")
+			return err
 		}
-		defer func() {
-			if err := f.Close(); err != nil {
-				logger.Errorw("Closing file", "error", err)
-			}
-		}()
-		for fileName, filePath := range t.writtenFiles {
-			writeFiltered := false
-			for _, filterPrefix := range t.config.Capture.FilterFileWrite {
-				if !strings.HasPrefix(filePath, filterPrefix) {
-					writeFiltered = true
-					break
-				}
-			}
-			if writeFiltered {
-				// Don't write mapping of files that were not actually captured
-				continue
-			}
-			if _, err := f.WriteString(fmt.Sprintf("%s %s\n", fileName, filePath)); err != nil {
-				return errfmt.Errorf("error logging written files")
-			}
+	}
+
+	// record index of read files
+	if t.config.Capture.FileRead.Capture {
+		err := updateCaptureMapFile(t.OutDir, "read_files", t.readFiles, t.config.Capture.FileRead)
+		if err != nil {
+			return err
 		}
 	}
 
 	t.Close()
+	return nil
+}
+
+func updateCaptureMapFile(fileDir *os.File, filePath string, capturedFiles map[string]string, config FileCaptureConfig) error {
+	f, err := utils.OpenAt(fileDir, filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return errfmt.Errorf("error logging captured files")
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			logger.Errorw("Closing file", "error", err)
+		}
+	}()
+	for fileName, filePath := range capturedFiles {
+		captureFiltered := false
+		// TODO: We need a method to decide if the capture was filtered by FD or type.
+		for _, filterPrefix := range config.PathFilter {
+			if !strings.HasPrefix(filePath, filterPrefix) {
+				captureFiltered = true
+				break
+			}
+		}
+		if captureFiltered {
+			// Don't write mapping of files that were not actually captured
+			continue
+		}
+		if _, err := f.WriteString(fmt.Sprintf("%s %s\n", fileName, filePath)); err != nil {
+			return errfmt.Errorf("error logging captured files")
+		}
+	}
 	return nil
 }
 

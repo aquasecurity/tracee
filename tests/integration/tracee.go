@@ -81,8 +81,10 @@ func prepareCapture() *tracee.CaptureConfig {
 	// taken from tracee-rule github project, might have to adjust...
 	// prepareCapture is called with nil input
 	return &tracee.CaptureConfig{
-		FilterFileWrite: []string{},
-		OutputPath:      filepath.Join("/tmp/tracee", "out"),
+		FileWrite: tracee.FileCaptureConfig{
+			PathFilter: []string{},
+		},
+		OutputPath: filepath.Join("/tmp/tracee", "out"),
 	}
 }
 

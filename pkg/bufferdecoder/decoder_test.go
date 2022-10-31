@@ -379,7 +379,7 @@ func TestDecodeChunkMeta(t *testing.T) {
 
 func TestDecodeVfsWriteMeta(t *testing.T) {
 	buf := new(bytes.Buffer)
-	expected := VfsWriteMeta{
+	expected := VfsFileMeta{
 		DevID: 54,
 		Inode: 543,
 		Mode:  654,
@@ -387,10 +387,10 @@ func TestDecodeVfsWriteMeta(t *testing.T) {
 	}
 	err := binary.Write(buf, binary.LittleEndian, expected)
 	assert.Equal(t, nil, err)
-	var obtained VfsWriteMeta
+	var obtained VfsFileMeta
 	rawBuf := buf.Bytes()
 	d := New(rawBuf)
-	err = d.DecodeVfsWriteMeta(&obtained)
+	err = d.DecodeVfsFileMeta(&obtained)
 	assert.Equal(t, nil, err)
 	assert.Equal(t, expected, obtained)
 }
@@ -844,7 +844,7 @@ func BenchmarkBinaryChunkMeta(*testing.B) {
 
 func BenchmarkDecodeVfsWriteMeta(*testing.B) {
 	/*
-		s := VfsWriteMeta{
+		s := VfsFileMeta{
 			DevID: 24,
 			Inode: 3,
 			Mode:  255,
@@ -856,16 +856,16 @@ func BenchmarkDecodeVfsWriteMeta(*testing.B) {
 	*/
 
 	buffer := []byte{24, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 255, 0, 0, 0, 0, 0, 0, 0}
-	var s VfsWriteMeta
+	var s VfsFileMeta
 	for i := 0; i < 100; i++ {
 		decoder := New(buffer)
-		decoder.DecodeVfsWriteMeta(&s)
+		decoder.DecodeVfsFileMeta(&s)
 	}
 }
 
 func BenchmarkBinaryVfsWriteMeta(*testing.B) {
 	/*
-		s := VfsWriteMeta{
+		s := VfsFileMeta{
 			DevID: 24,
 			Inode: 3,
 			Mode:  255,
@@ -877,7 +877,7 @@ func BenchmarkBinaryVfsWriteMeta(*testing.B) {
 	*/
 
 	buffer := []byte{24, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 255, 0, 0, 0, 0, 0, 0, 0}
-	var s VfsWriteMeta
+	var s VfsFileMeta
 	for i := 0; i < 100; i++ {
 		binBuf := bytes.NewBuffer(buffer)
 		binary.Read(binBuf, binary.LittleEndian, &s)

@@ -93,8 +93,10 @@ BPF_LRU_HASH(task_info_map, u32, task_info_t, 10240);              // holds data
 BPF_HASH(ksymbols_map, ksym_name_t, u64, 1024);                    // holds the addresses of some kernel symbols
 BPF_HASH(syscalls_to_check_map, int, u64, 256);                    // syscalls to discover
 BPF_ARRAY(config_map, config_entry_t, 1);                          // various configurations
+BPF_ARRAY(file_write_path_filter, path_filter_t, 3);               // filter file write captures
+BPF_ARRAY(file_read_path_filter, path_filter_t, 3);                // filter file read captures
+BPF_ARRAY(file_type_filter, file_type_filter_t, 2);                // filter file types
 BPF_ARRAY(netconfig_map, netconfig_entry_t, 1);                    // network related configurations
-BPF_ARRAY(file_filter, path_filter_t, 3);                          // filter vfs_write events
 BPF_PERCPU_ARRAY(bufs, buf_t, MAX_BUFFERS);                        // percpu global buffer variables
 BPF_PROG_ARRAY(prog_array, MAX_TAIL_CALL);                         // store programs for tail calls
 BPF_PROG_ARRAY(prog_array_tp, MAX_TAIL_CALL);                      // store programs for tail calls
