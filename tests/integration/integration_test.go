@@ -2,9 +2,10 @@ package integration
 
 import (
 	"context"
+	"io/ioutil"
 	"os"
-	"os/exec"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -16,49 +17,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// // small set of actions to trigger a magic write event
-// func checkMagicwrite(t *testing.T, gotOutput *[]trace.Event) {
-// 	// create a temp dir for testing
-// 	d, err := ioutil.TempDir("", "Test_MagicWrite-dir-*")
-// 	require.NoError(t, err)
+// small set of actions to trigger a magic write event
+func checkMagicwrite(t *testing.T, gotOutput *[]trace.Event) {
 
-// 	// cp a file to trigger
-// 	f, err := os.CreateTemp(d, "Test_MagicWrite-file-*")
-// 	require.NoError(t, err)
-// 	defer func() {
-// 		os.Remove(d)
-// 	}()
+	_, err := forkAndExecFunction(doMagicWrite)
+	require.NoError(t, err)
 
-// 	f.WriteString(`foo.bar.baz`)
-// 	f.Close()
+	waitForTraceeOutput(t, gotOutput, time.Now(), true)
 
-// 	cpCmd := exec.Command("cp", f.Name(), filepath.Join(d+filepath.Base(f.Name())+"-new"))
-// 	fmt.Println("executing: ", cpCmd.String())
-// 	cpCmd.Stdout = os.Stdout
-// 	assert.NoError(t, cpCmd.Run())
-
-// 	waitForTraceeOutput(t, gotOutput, time.Now(), true)
-
-// 	// check tracee output
-// 	expect := []byte{102, 111, 111, 46, 98, 97, 114, 46, 98, 97, 122}
-// 	fail := true
-// 	for _, evt := range *gotOutput {
-// 		arg := events.GetArg(&evt, "bytes")
-// 		argVal, ok := arg.Value.([]byte)
-// 		require.Equal(t, true, ok)
-// 		ok = assert.ElementsMatch(t, argVal, expect)
-// 		if ok {
-// 			fail = false
-// 		}
-// 	}
-// 	if fail {
-// 		t.Fail()
-// 	}
-// }
+	// check tracee output
+	for _, evt := range *gotOutput {
+		assert.Equal(t, []byte(evt.EventName), []byte("magic_write"))
+	}
+}
 
 // execute a ls command
 func checkExeccommand(t *testing.T, gotOutput *[]trace.Event) {
-	err := exec.Command("/usr/bin/ls").Run()
+	_, err := forkAndExecFunction(doLs)
 	require.NoError(t, err)
 
 	waitForTraceeOutput(t, gotOutput, time.Now(), true)
@@ -77,8 +52,7 @@ func checkExeccommand(t *testing.T, gotOutput *[]trace.Event) {
 func checkPidnew(t *testing.T, gotOutput *[]trace.Event) {
 	traceePid := os.Getpid()
 
-	// run a command
-	err := exec.Command("/usr/bin/ls").Run()
+	_, err := forkAndExecFunction(doLs)
 	require.NoError(t, err)
 
 	waitForTraceeOutput(t, gotOutput, time.Now(), true)
@@ -97,7 +71,7 @@ func checkPidnew(t *testing.T, gotOutput *[]trace.Event) {
 
 // only capture uids of 0 that are run by comm ls
 func checkUidZero(t *testing.T, gotOutput *[]trace.Event) {
-	err := exec.Command("/usr/bin/ls").Run()
+	_, err := forkAndExecFunction(doLs)
 	require.NoError(t, err)
 
 	waitForTraceeOutput(t, gotOutput, time.Now(), true)
@@ -117,7 +91,7 @@ func checkUidZero(t *testing.T, gotOutput *[]trace.Event) {
 
 // trigger ls from uid 0 (tests run as root) and check if empty
 func checkUidNonZero(t *testing.T, gotOutput *[]trace.Event) {
-	err := exec.Command("/usr/bin/ls").Run()
+	_, err := forkAndExecFunction(doLs)
 	require.NoError(t, err)
 
 	waitForTraceeOutput(t, gotOutput, time.Now(), false)
@@ -128,7 +102,7 @@ func checkUidNonZero(t *testing.T, gotOutput *[]trace.Event) {
 
 // check that execve event is called
 func checkExecve(t *testing.T, gotOutput *[]trace.Event) {
-	err := exec.Command("/usr/bin/ls").Run()
+	_, err := forkAndExecFunction(doLs)
 	require.NoError(t, err)
 
 	waitForTraceeOutput(t, gotOutput, time.Now(), true)
@@ -150,7 +124,7 @@ func checkExecve(t *testing.T, gotOutput *[]trace.Event) {
 
 // check for filesystem set when ls is invoked
 func checkSetFs(t *testing.T, gotOutput *[]trace.Event) {
-	err := exec.Command("/usr/bin/ls").Run()
+	_, err := forkAndExecFunction(doLs)
 	require.NoError(t, err)
 
 	waitForTraceeOutput(t, gotOutput, time.Now(), true)
@@ -171,11 +145,9 @@ func checkSetFs(t *testing.T, gotOutput *[]trace.Event) {
 }
 
 func checkNewContainers(t *testing.T, gotOutput *[]trace.Event) {
-	containerIdBytes, err := exec.Command("docker", "run", "-d", "--rm", "alpine").Output()
+	containerIdBytes, err := forkAndExecFunction(doDockerRun)
 	require.NoError(t, err)
-
 	containerId := strings.TrimSuffix(string(containerIdBytes), "\n")
-
 	containerIds := []string{}
 	for _, evt := range *gotOutput {
 		containerIds = append(containerIds, evt.ContainerID)
@@ -202,11 +174,11 @@ func Test_EventFilters(t *testing.T) {
 		filterArgs []string
 		eventFunc  func(*testing.T, *[]trace.Event)
 	}{
-		// {
-		// 	name:       "do a file write",
-		// 	filterArgs: []string{"event=magic_write"},
-		// 	eventFunc:  checkMagicwrite,
-		// },
+		{
+			name:       "do a file write",
+			filterArgs: []string{"event=magic_write"},
+			eventFunc:  checkMagicwrite,
+		},
 		{
 			name:       "execute a command",
 			filterArgs: []string{"comm=ls"},
@@ -290,4 +262,38 @@ func Test_EventFilters(t *testing.T) {
 			cancel()
 		})
 	}
+}
+
+type testFunc string
+
+const (
+	doMagicWrite testFunc = "do_magic_write"
+	doLs         testFunc = "do_ls"
+	doDockerRun  testFunc = "do_docker_run"
+)
+
+// forkAndExecFunction runs a function in `tester.sh` in it's own system process.
+// This is so Tracee running in the current pid can pick the command up.
+// It returns the output of the process and a possible error.
+func forkAndExecFunction(funcName testFunc) ([]byte, error) {
+	tmpFile, err := os.CreateTemp("/tmp", "tracee-test*")
+	if err != nil {
+		return nil, err
+	}
+	_, err = syscall.ForkExec("./tester.sh", []string{"./tester.sh", string(funcName), tmpFile.Name()},
+		&syscall.ProcAttr{
+			Files: []uintptr{0, 1, 2, tmpFile.Fd()},
+		})
+	if err != nil {
+		return nil, err
+	}
+
+	// ForkExec doesn't block, wait for output
+	time.Sleep(time.Second)
+
+	output, err := ioutil.ReadAll(tmpFile)
+	if err != nil {
+		return nil, err
+	}
+	return output, nil
 }
