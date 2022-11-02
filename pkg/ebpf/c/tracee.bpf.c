@@ -3007,8 +3007,6 @@ int sys_enter_submit(struct bpf_raw_tracepoint_args *ctx)
         }
     }
     if (sys->id != SYSCALL_RT_SIGRETURN && !data.task_info->syscall_traced) {
-        data.buf_off = sizeof(event_context_t);
-        data.context.argnum = 0;
         save_to_submit_buf(&data, (void *) &(sys->args.args[0]), sizeof(int), 0);
         events_perf_submit(&data, sys->id, 0);
     }
@@ -3117,8 +3115,6 @@ int sys_exit_submit(struct bpf_raw_tracepoint_args *ctx)
             return 0;
         }
         types = *saved_types;
-        data.buf_off = sizeof(event_context_t);
-        data.context.argnum = 0;
         save_args_to_submit_buf(&data, types, &sys->args);
         data.context.ts = sys->ts;
         events_perf_submit(&data, id, ret);
