@@ -5668,6 +5668,9 @@ int BPF_KPROBE(trace_security_file_mprotect)
         if (len == 0)
             len = PAGE_SIZE;
 
+        data.buf_off = sizeof(event_context_t);
+        data.context.argnum = 0;
+
         if ((!(prev_prot & VM_EXEC)) && (reqprot & VM_EXEC)) {
             u32 alert = ALERT_MPROT_X_ADD;
             save_to_submit_buf(&data, &alert, sizeof(u32), 0);
