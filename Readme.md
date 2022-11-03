@@ -70,8 +70,8 @@ Tracee is an [Aqua Security] open source project.
 Learn about our open source work and portfolio [Here].
 Join the community, and talk to us about any matter in [GitHub Discussion] or [Slack].
 
-[Tracee-eBPF]: https://github.com/aquasecurity/tracee/tree/main/cmd/tracee-ebpf
-[Tracee-Rules]: https://github.com/aquasecurity/tracee/tree/main/cmd/tracee-rules
+[Tracee-eBPF]: https://aquasecurity.github.io/tracee/dev/docs/tracing/
+[Tracee-Rules]: https://aquasecurity.github.io/tracee/dev/docs/detecting/
 
 [Aqua Security]: https://aquasec.com
 [GitHub Discussion]: https://github.com/aquasecurity/tracee/discussions
