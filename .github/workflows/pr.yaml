@@ -119,7 +119,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [stream8, stream9, fedora34, fedora35, fedora36, focal, focalhwe, jammy]
+        os: [focal54, focal513, jammy515, kinetic519]
     runs-on: ${{ matrix.os }}
     steps:
       - name: "Checkout"
@@ -136,7 +136,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [stream8, stream9, fedora34, fedora35, fedora36, focal, focalhwe, jammy]
+        os: [focal54, focal513, jammy515, kinetic519]
     runs-on: ${{ matrix.os }}
     steps:
       - name: "Checkout"
