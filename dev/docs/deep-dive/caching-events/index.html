@@ -10,25 +10,25 @@
       
       
       
-        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/contributing/events/security_alerts/magic_write/">
+        <link rel="canonical" href="https://aquasecurity.github.io/tracee/dev/docs/deep-dive/caching-events/">
       
       
         
       
       
-      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <link rel="icon" href="../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.8+insiders-4.26.2">
     
     
       
-        <title>magic_write - Tracee</title>
+        <title>Caching Events - Tracee</title>
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.fa1d38d9.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.fa1d38d9.min.css">
       
         
-        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.815d1a91.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.815d1a91.min.css">
         
       
       
@@ -45,7 +45,7 @@
       
     
     
-    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -69,7 +69,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#magic_write" class="md-skip">
+        <a href="#special-caching-events" class="md-skip">
           Skip to content
         </a>
       
@@ -89,9 +89,9 @@
 
 <header class="md-header md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
+    <a href="../../.." title="Tracee" class="md-header__button md-logo" aria-label="Tracee" data-md-component="logo">
       
-  <img src="../../../../images/tracee_logo_only.png" alt="logo">
+  <img src="../../../images/tracee_logo_only.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -107,7 +107,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              magic_write
+              Caching Events
             
           </span>
         </div>
@@ -180,7 +180,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../.." class="md-tabs__link">
+        <a href="../../.." class="md-tabs__link">
           
   
     
@@ -203,7 +203,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../../tutorials/setup-development-machine-with-vagrant/" class="md-tabs__link">
+        <a href="../../../tutorials/setup-development-machine-with-vagrant/" class="md-tabs__link">
           
   
   Tutorials
@@ -216,6 +216,8 @@
       
         
 
+  
+
 
 
 
@@ -224,7 +226,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../../docs/overview/" class="md-tabs__link">
+        <a href="../../overview/" class="md-tabs__link md-tabs__link--active">
           
   
   Docs
@@ -245,7 +247,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../overview/" class="md-tabs__link">
+        <a href="../../../contributing/overview/" class="md-tabs__link">
           
   
   Contributing
@@ -284,9 +286,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../../.." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
+    <a href="../../.." title="Tracee" class="md-nav__button md-logo" aria-label="Tracee" data-md-component="logo">
       
-  <img src="../../../../images/tracee_logo_only.png" alt="logo">
+  <img src="../../../images/tracee_logo_only.png" alt="logo">
 
     </a>
     Tracee
@@ -347,7 +349,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../.." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -369,7 +371,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../getting-started/kubernetes-quickstart/" class="md-nav__link">
+      <a href="../../../getting-started/kubernetes-quickstart/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -391,7 +393,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../getting-started/docker-quickstart/" class="md-nav__link">
+      <a href="../../../getting-started/docker-quickstart/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -450,7 +452,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../getting-started/installing/getting/" class="md-nav__link">
+      <a href="../../../getting-started/installing/getting/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -472,7 +474,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../getting-started/installing/prerequisites/" class="md-nav__link">
+      <a href="../../../getting-started/installing/prerequisites/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -494,7 +496,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../getting-started/installing/docker/" class="md-nav__link">
+      <a href="../../../getting-started/installing/docker/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -516,7 +518,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../getting-started/installing/kubernetes/" class="md-nav__link">
+      <a href="../../../getting-started/installing/kubernetes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -573,7 +575,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../getting-started/installing/distros/ubuntu/" class="md-nav__link">
+      <a href="../../../getting-started/installing/distros/ubuntu/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -595,7 +597,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../getting-started/installing/distros/fedora/" class="md-nav__link">
+      <a href="../../../getting-started/installing/distros/fedora/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -617,7 +619,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../getting-started/installing/distros/nix-nixos/" class="md-nav__link">
+      <a href="../../../getting-started/installing/distros/nix-nixos/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -647,7 +649,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../getting-started/installing/headers/" class="md-nav__link">
+      <a href="../../../getting-started/installing/headers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -719,7 +721,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorials/setup-development-machine-with-vagrant/" class="md-nav__link">
+      <a href="../../../tutorials/setup-development-machine-with-vagrant/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -741,7 +743,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tutorials/deploy-grafana-dashboard/" class="md-nav__link">
+      <a href="../../../tutorials/deploy-grafana-dashboard/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -768,15 +770,17 @@
       
   
   
+    
+  
   
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" >
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3" type="checkbox" id="__nav_3" checked>
         
         
           <label class="md-nav__link" for="__nav_3">
@@ -805,7 +809,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/overview/" class="md-nav__link">
+      <a href="../../overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -864,7 +868,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/tracing/" class="md-nav__link">
+      <a href="../../tracing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -886,7 +890,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/tracing/output-formats/" class="md-nav__link">
+      <a href="../../tracing/output-formats/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -908,7 +912,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/tracing/output-options/" class="md-nav__link">
+      <a href="../../tracing/output-options/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -930,7 +934,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/tracing/event-filtering/" class="md-nav__link">
+      <a href="../../tracing/event-filtering/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -997,7 +1001,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/capturing/" class="md-nav__link">
+      <a href="../../capturing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1064,7 +1068,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/detecting/" class="md-nav__link">
+      <a href="../../detecting/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1121,7 +1125,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/detecting/golang/" class="md-nav__link">
+      <a href="../../detecting/golang/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1143,7 +1147,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/detecting/rego/" class="md-nav__link">
+      <a href="../../detecting/rego/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1165,7 +1169,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/detecting/go-cel/" class="md-nav__link">
+      <a href="../../detecting/go-cel/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1195,7 +1199,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/detecting/rules/" class="md-nav__link">
+      <a href="../../detecting/rules/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1262,7 +1266,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/integrating/container-engines/" class="md-nav__link">
+      <a href="../../integrating/container-engines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1319,7 +1323,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/integrating/go-templates/" class="md-nav__link">
+      <a href="../../integrating/go-templates/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1376,7 +1380,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/integrating/webhook/" class="md-nav__link">
+      <a href="../../integrating/webhook/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1398,7 +1402,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/integrating/postee/" class="md-nav__link">
+      <a href="../../integrating/postee/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1420,7 +1424,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/integrating/falcosidekick/" class="md-nav__link">
+      <a href="../../integrating/falcosidekick/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1458,7 +1462,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/integrating/prometheus/" class="md-nav__link">
+      <a href="../../integrating/prometheus/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1486,17 +1490,19 @@
                 
   
   
+    
+  
   
     
     
     
       
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_6" type="checkbox" id="__nav_3_6" >
+          <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_3_6" type="checkbox" id="__nav_3_6" checked>
         
         
           <label class="md-nav__link" for="__nav_3_6">
@@ -1525,7 +1531,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/deep-dive/architecture/" class="md-nav__link">
+      <a href="../architecture/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1547,7 +1553,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/deep-dive/secure-tracing/" class="md-nav__link">
+      <a href="../secure-tracing/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1569,7 +1575,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/deep-dive/performance/" class="md-nav__link">
+      <a href="../performance/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1589,9 +1595,31 @@
                 
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../../../../docs/deep-dive/caching-events/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Caching Events
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -1602,6 +1630,35 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#use-caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use caching
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1613,7 +1670,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/deep-dive/ordering-events/" class="md-nav__link">
+      <a href="../ordering-events/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1635,7 +1692,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/deep-dive/override-os-files/" class="md-nav__link">
+      <a href="../override-os-files/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1657,7 +1714,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../docs/deep-dive/healthz/" class="md-nav__link">
+      <a href="../healthz/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1729,7 +1786,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../overview/" class="md-nav__link">
+      <a href="../../../contributing/overview/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1751,7 +1808,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guidelines/" class="md-nav__link">
+      <a href="../../../contributing/guidelines/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1810,7 +1867,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../building/building/" class="md-nav__link">
+      <a href="../../../contributing/building/building/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1832,7 +1889,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../building/environment/" class="md-nav__link">
+      <a href="../../../contributing/building/environment/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1854,7 +1911,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../building/containers/" class="md-nav__link">
+      <a href="../../../contributing/building/containers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1876,7 +1933,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../building/nocore-ebpf/" class="md-nav__link">
+      <a href="../../../contributing/building/nocore-ebpf/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1898,7 +1955,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../building/packaging/" class="md-nav__link">
+      <a href="../../../contributing/building/packaging/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1920,7 +1977,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../building/macosx/" class="md-nav__link">
+      <a href="../../../contributing/building/macosx/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1978,183 +2035,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#intro" class="md-nav__link">
+  <a href="#use-caching" class="md-nav__link">
     <span class="md-ellipsis">
-      Intro
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#description" class="md-nav__link">
-    <span class="md-ellipsis">
-      Description
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Description">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#note" class="md-nav__link">
-    <span class="md-ellipsis">
-      Note
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#arguments" class="md-nav__link">
-    <span class="md-ellipsis">
-      Arguments
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#hooks" class="md-nav__link">
-    <span class="md-ellipsis">
-      Hooks
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Hooks">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#vfs_write" class="md-nav__link">
-    <span class="md-ellipsis">
-      vfs_write
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="vfs_write">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#type" class="md-nav__link">
-    <span class="md-ellipsis">
-      Type
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#purpose" class="md-nav__link">
-    <span class="md-ellipsis">
-      Purpose
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#vfs_writev" class="md-nav__link">
-    <span class="md-ellipsis">
-      vfs_writev
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="vfs_writev">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#type_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      Type
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#purpose_1" class="md-nav__link">
-    <span class="md-ellipsis">
-      Purpose
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#__kernel_write" class="md-nav__link">
-    <span class="md-ellipsis">
-      __kernel_write
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="__kernel_write">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#type_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      Type
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#purpose_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      Purpose
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#example-use-case" class="md-nav__link">
-    <span class="md-ellipsis">
-      Example Use Case
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      Issues
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#related-events" class="md-nav__link">
-    <span class="md-ellipsis">
-      Related Events
+      Use caching
     </span>
   </a>
   
@@ -2175,44 +2058,66 @@
                   
 
 
-<h1 id="magic_write">magic_write<a class="headerlink" href="#magic_write" title="Permanent link">&para;</a></h1>
-<h2 id="intro">Intro<a class="headerlink" href="#intro" title="Permanent link">&para;</a></h2>
-<p>magic_write - write operation to a file which changed the file's headers</p>
-<h2 id="description">Description<a class="headerlink" href="#description" title="Permanent link">&para;</a></h2>
-<p>An event marking that a new file is written, or an existing file header changed.
-The event occurs whenever a write operation to a file in offset 0 is done.
-The purpose of the event is to give the user information about the file's
-type and other meta-data needed to understand if the file is a threat.</p>
-<h3 id="note">Note<a class="headerlink" href="#note" title="Permanent link">&para;</a></h3>
-<p>The event doesn't occur for FIFO files or other files with no persistent offsets,
-to reduce spam events.</p>
-<h2 id="arguments">Arguments<a class="headerlink" href="#arguments" title="Permanent link">&para;</a></h2>
-<ul>
-<li><code>pathname</code>:<code>const char*</code>[K] - the path of the file written.</li>
-<li><code>bytes</code>:<code>bytes</code>[U,TOCTOU] - the first 20 bytes of the file.</li>
-<li><code>dev</code>:<code>dev_t</code>[K] - the device the file resides in.</li>
-<li><code>inode</code>:<code>unsigned long</code>[K] - the inode of the file in the FS.</li>
-</ul>
-<h2 id="hooks">Hooks<a class="headerlink" href="#hooks" title="Permanent link">&para;</a></h2>
-<h3 id="vfs_write">vfs_write<a class="headerlink" href="#vfs_write" title="Permanent link">&para;</a></h3>
-<h4 id="type">Type<a class="headerlink" href="#type" title="Permanent link">&para;</a></h4>
-<p>kprobe + kretprobe</p>
-<h4 id="purpose">Purpose<a class="headerlink" href="#purpose" title="Permanent link">&para;</a></h4>
-<p>Catch write operations to a file using the <code>write</code> syscall</p>
-<h3 id="vfs_writev">vfs_writev<a class="headerlink" href="#vfs_writev" title="Permanent link">&para;</a></h3>
-<h4 id="type_1">Type<a class="headerlink" href="#type_1" title="Permanent link">&para;</a></h4>
-<p>kprobe + kretprobe</p>
-<h4 id="purpose_1">Purpose<a class="headerlink" href="#purpose_1" title="Permanent link">&para;</a></h4>
-<p>Catch write operations to a file using the <code>writev</code> syscall</p>
-<h3 id="__kernel_write">__kernel_write<a class="headerlink" href="#__kernel_write" title="Permanent link">&para;</a></h3>
-<h4 id="type_2">Type<a class="headerlink" href="#type_2" title="Permanent link">&para;</a></h4>
-<p>kprobe + kretprobe</p>
-<h4 id="purpose_2">Purpose<a class="headerlink" href="#purpose_2" title="Permanent link">&para;</a></h4>
-<p>Catch write operations to a file from within the kernel (written buffer resides in kernel space)</p>
-<h2 id="example-use-case">Example Use Case<a class="headerlink" href="#example-use-case" title="Permanent link">&para;</a></h2>
-<h2 id="issues">Issues<a class="headerlink" href="#issues" title="Permanent link">&para;</a></h2>
-<h2 id="related-events">Related Events<a class="headerlink" href="#related-events" title="Permanent link">&para;</a></h2>
-<p>write, writev, vfs_write, vfs_writev, __kernel_write, security_file_open</p>
+<h1 id="special-caching-events">Special: Caching Events<a class="headerlink" href="#special-caching-events" title="Permanent link">&para;</a></h1>
+<p>Tracee has an events caching (in-memory) mechanism. In order to check latest
+caching options you may execute:</p>
+<div class="highlight"><pre><span></span><code>$ ./dist/tracee-ebpf --cache help
+</code></pre></div>
+<div class="admonition read important">
+<p class="admonition-title">Read</p>
+<p>Before continuing, please read the <a href="../architecture/">architecture page</a>, in order to
+understand the <a href="../architecture/#tracee-pipeline-concept">tracee pipeline</a> concept, AND the <a href="../performance/">performance page</a>, to
+understand possible pain points.</p>
+</div>
+<p><img alt="Tracee Cache" src="../../../images/tracee-cache.png" /></p>
+<p>The caching happens in userland, it is an in-memory caching, and it helps with
+workload bursts: if kernel produces more events than userland is capable of
+processing (considering <strong>tracee-ebpf</strong> parsing and <strong>tracee-rules</strong>
+evaluations) then the events are kept in a sizeable cache (defined by user) so
+they're not lost (if cache isn't full).</p>
+<p>The effects of this are the following:</p>
+<ol>
+<li>
+<p>Detections <strong>might be delayed</strong> because of workload bursts, but not lost (if
+   cache isn't full).</p>
+</li>
+<li>
+<p>Event losses from the kernel perf/ring buffer will only happen when
+   <strong>cache is full</strong>.</p>
+</li>
+<li>
+<p>Any difference in ratio production:consumption (either from
+   <strong>kernel</strong>-&gt;<strong>tracee-ebpf or </strong>tracee-ebpf<strong>-&gt;</strong>tracee-rules**) can be
+   mitigated temporarily.</p>
+</li>
+</ol>
+<h2 id="use-caching">Use caching<a class="headerlink" href="#use-caching" title="Permanent link">&para;</a></h2>
+<p>Example using <strong>1GB cache</strong>, container <strong>enrichment</strong> in the pipeline, argument
+<strong>parsing</strong> so arguments are formatted in a human consumable way, <strong>detect</strong>
+syscall that generated the event:</p>
+<div class="highlight"><pre><span></span><code>$ sudo ./dist/tracee-ebpf \
+    --cache cache-type=mem \
+    --cache mem-cache-size=1024 \
+    --containers -o format:json \
+    -o option:parse-arguments \
+    -o option:detect-syscall \
+    -trace container \
+    --crs docker:/var/run/docker.sock
+</code></pre></div>
+<blockquote>
+<p>We are using most of the options that could cause latencies in the event
+pipeline BUT we're not piping the events to <strong>tracee-rules</strong>.</p>
+</blockquote>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>If you pipe <strong>tracee-ebpf</strong> output to another tool, like <code>jq</code>:
+<div class="highlight"><pre><span></span><code>| jq -c &#39;. | {cgroupid, processname, containername}&#39;
+</code></pre></div>
+You may cause latencies in <strong>tracee-ebpf</strong> pipeline because the event json
+processing from <code>jq</code> might not be as fast as how <strong>tracee-ebpf</strong> is capable
+of writing events to it (just like <strong>tracee-rules</strong> could do if being slow
+evaluating events).</p>
+</div>
 
 
 
@@ -2233,6 +2138,42 @@ to reduce spam events.</p>
       
         <footer class="md-footer">
   
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../performance/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Performance" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              Performance
+            </div>
+          </div>
+        </a>
+      
+      
+        
+        <a href="../ordering-events/" class="md-footer__link md-footer__link--next" aria-label="Next: Ordering Events" rel="next">
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              Ordering Events
+            </div>
+          </div>
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+          </div>
+        </a>
+      
+    </nav>
+  
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
       <div class="md-copyright">
@@ -2249,10 +2190,10 @@ to reduce spam events.</p>
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../../assets/javascripts/workers/search.939a4419.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "content.tabs.link"], "search": "../../../assets/javascripts/workers/search.939a4419.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}, "version": {"method": "mike", "provider": "mike"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.b9c29124.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.b9c29124.min.js"></script>
       
     
   </body>
