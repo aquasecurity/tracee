@@ -5557,6 +5557,9 @@ int BPF_KPROBE(trace_mmap_alert)
     if (!init_event_data(&data, ctx))
         return 0;
 
+    if (!should_trace(&data))
+        return 0;
+
     // Load the arguments given to the mmap syscall (which eventually invokes this function)
     syscall_data_t *sys = &data.task_info->syscall_data;
     if (!data.task_info->syscall_traced || sys->id != SYSCALL_MMAP)
@@ -5629,13 +5632,13 @@ int BPF_KPROBE(trace_security_file_mprotect)
     if (!init_event_data(&data, ctx))
         return 0;
 
+    if (!should_trace(&data))
+        return 0;
+
     struct vm_area_struct *vma = (struct vm_area_struct *) PT_REGS_PARM1(ctx);
     unsigned long reqprot = PT_REGS_PARM2(ctx);
 
     if (should_submit(SECURITY_FILE_MPROTECT, data.config)) {
-        if (!should_trace(&data))
-            return 0;
-
         struct file *file = (struct file *) READ_KERN(vma->vm_file);
         void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
         u64 ctime = get_ctime_nanosec_from_file(file);
