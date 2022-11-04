@@ -1209,13 +1209,6 @@ func (t *Tracee) GetTailCalls() ([]events.TailCall, error) {
 func (t *Tracee) attachProbes() error {
 	var err error
 
-	// cgroup attachments root directory
-
-	cgroupRootDir := "/sys/fs/cgroup/unified"
-	if _, err := os.Stat(cgroupRootDir); os.IsNotExist(err) {
-		cgroupRootDir = "/sys/fs/cgroup"
-	}
-
 	// attach selected tracing events
 
 	for tr := range t.events {
@@ -1234,11 +1227,7 @@ func (t *Tracee) attachProbes() error {
 			}
 		}
 		for _, dep := range event.Probes {
-			if !dep.RootCgroup {
-				err = t.probes.Attach(dep.Handle)
-			} else {
-				err = t.probes.Attach(dep.Handle, cgroupRootDir)
-			}
+			err = t.probes.Attach(dep.Handle, t.cgroups)
 			if err != nil && dep.Required {
 				// TODO: https://github.com/aquasecurity/tracee/issues/1787
 				return fmt.Errorf("failed to attach required probe: %v", err)

@@ -15,9 +15,8 @@ type dependencies struct {
 }
 
 type probeDependency struct {
-	Handle     probes.Handle
-	Required   bool // should tracee fail if probe fails to attach
-	RootCgroup bool // cgroup probe to be attached to root cgroup hierarchy
+	Handle   probes.Handle
+	Required bool // should tracee fail if probe fails to attach
 }
 
 type kSymbolDependency struct {
@@ -6107,8 +6106,8 @@ var Definitions = eventDefinitions{
 				Capabilities: []cap.Value{cap.NET_ADMIN},
 			},
 			Probes: []probeDependency{
-				{Handle: probes.CgroupSKBIngress, Required: true, RootCgroup: true},
-				{Handle: probes.CgroupSKBEgress, Required: true, RootCgroup: true},
+				{Handle: probes.CgroupSKBIngress, Required: true},
+				{Handle: probes.CgroupSKBEgress, Required: true},
 				{Handle: probes.SockAllocFile, Required: true},
 				{Handle: probes.SockAllocFileRet, Required: true},
 				{Handle: probes.CgroupBPFRunFilterSKB, Required: true},
