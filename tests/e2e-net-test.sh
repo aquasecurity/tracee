@@ -181,11 +181,16 @@ for TEST in $TESTS; do
 
     # make sure we exit both to start them again
 
-    kill -19 $(pidof tracee-rules)
-    kill -19 $(pidof tracee-ebpf)
+    pid_rules=$(pidof tracee-rules)
+    pid_ebpf=$(pidof tracee-ebpf)
 
-    kill -9 $(pidof tracee-rules)
-    kill -9 $(pidof tracee-ebpf)
+    kill -2 $pid_rules
+    kill -2 $pid_ebpf
+
+    sleep 5 # wait for cleanup
+
+    kill -9 $pid_rules > /dev/null 2>&1
+    kill -9 $pid_ebpf > /dev/null 2>&1
 
     # give a little break for OS noise to reduce
     sleep 3
