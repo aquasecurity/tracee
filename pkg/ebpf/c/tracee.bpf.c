@@ -265,6 +265,7 @@ enum argument_type_e
     #define SYSCALL_EXECVEAT               322
     #define SYSCALL_PREADV2                327
     #define SYSCALL_PWRITEV2               328
+    #define SYSCALL_PKEY_MPROTECT          329
     #define SYSCALL_STATX                  332
     #define SYSCALL_PIDFD_SEND_SIGNAL      424
     #define SYSCALL_IO_URING_ENTER         426
@@ -373,6 +374,7 @@ enum argument_type_e
     #define SYSCALL_EXECVEAT               281
     #define SYSCALL_PREADV2                286
     #define SYSCALL_PWRITEV2               287
+    #define SYSCALL_PKEY_MPROTECT          288
     #define SYSCALL_STATX                  291
     #define SYSCALL_PIDFD_SEND_SIGNAL      424
     #define SYSCALL_IO_URING_ENTER         426
@@ -5635,28 +5637,39 @@ int BPF_KPROBE(trace_security_file_mprotect)
     if (!should_trace(&data))
         return 0;
 
+    // Load the arguments given to the mprotect syscall (which eventually invokes this function)
+    syscall_data_t *sys = &data.task_info->syscall_data;
+    if (!data.task_info->syscall_traced ||
+        (sys->id != SYSCALL_MPROTECT && sys->id != SYSCALL_PKEY_MPROTECT))
+        return 0;
+
     struct vm_area_struct *vma = (struct vm_area_struct *) PT_REGS_PARM1(ctx);
     unsigned long reqprot = PT_REGS_PARM2(ctx);
+    unsigned long prev_prot = get_vma_flags(vma);
 
     if (should_submit(SECURITY_FILE_MPROTECT, data.config)) {
         struct file *file = (struct file *) READ_KERN(vma->vm_file);
         void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
         u64 ctime = get_ctime_nanosec_from_file(file);
+        void *addr = (void *) sys->args.args[0];
+        size_t len = sys->args.args[1];
+
         save_str_to_buf(&data, file_path, 0);
         save_to_submit_buf(&data, &reqprot, sizeof(int), 1);
         save_to_submit_buf(&data, &ctime, sizeof(u64), 2);
+        save_to_submit_buf(&data, &prev_prot, sizeof(int), 3);
+        save_to_submit_buf(&data, &addr, sizeof(void *), 4);
+        save_to_submit_buf(&data, &len, sizeof(size_t), 5);
+
+        if (sys->id == SYSCALL_PKEY_MPROTECT) {
+            int pkey = sys->args.args[3];
+            save_to_submit_buf(&data, &pkey, sizeof(int), 6);
+        }
+
         events_perf_submit(&data, SECURITY_FILE_MPROTECT, 0);
     }
 
     if (should_submit(MEM_PROT_ALERT, data.config)) {
-        // Load the arguments given to the mprotect syscall (which eventually invokes this function)
-        syscall_data_t *sys = &data.task_info->syscall_data;
-        if (!data.task_info->syscall_traced || sys->id != SYSCALL_MPROTECT)
-            return 0;
-
-        // unsigned long prot = PT_REGS_PARM3(ctx);
-        unsigned long prev_prot = get_vma_flags(vma);
-
         void *addr = (void *) sys->args.args[0];
         size_t len = sys->args.args[1];
 

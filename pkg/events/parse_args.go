@@ -79,11 +79,24 @@ func ParseArgs(event *trace.Event) error {
 				}
 			}
 		}
-	case Mmap, Mprotect, PkeyMprotect, SecurityFileMprotect:
+	case Mmap, Mprotect, PkeyMprotect:
 		if protArg := GetArg(event, "prot"); protArg != nil {
 			if prot, isInt32 := protArg.Value.(int32); isInt32 {
 				mmapProtArgument := helpers.ParseMmapProt(uint64(prot))
 				ParseOrEmptyString(protArg, mmapProtArgument, nil)
+			}
+		}
+	case SecurityFileMprotect:
+		if protArg := GetArg(event, "prot"); protArg != nil {
+			if prot, isInt32 := protArg.Value.(int32); isInt32 {
+				mmapProtArgument := helpers.ParseMmapProt(uint64(prot))
+				ParseOrEmptyString(protArg, mmapProtArgument, nil)
+			}
+		}
+		if prevProtArg := GetArg(event, "prev_prot"); prevProtArg != nil {
+			if prevProt, isInt32 := prevProtArg.Value.(int32); isInt32 {
+				mmapProtArgument := helpers.ParseMmapProt(uint64(prevProt))
+				ParseOrEmptyString(prevProtArg, mmapProtArgument, nil)
 			}
 		}
 	case Ptrace:

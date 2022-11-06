@@ -149,7 +149,7 @@ func Test_getTailCalls(t *testing.T) {
 					uint32(events.Open), uint32(events.Openat), uint32(events.Openat2), uint32(events.OpenByHandleAt),
 					uint32(events.Execve), uint32(events.Execveat),
 				}, ProgName: "sys_enter_init"},
-				{MapName: "sys_enter_init_tail", MapIndexes: []uint32{uint32(events.Mmap), uint32(events.Mprotect)}, ProgName: "sys_enter_init"},
+				{MapName: "sys_enter_init_tail", MapIndexes: []uint32{uint32(events.Mmap), uint32(events.Mprotect), uint32(events.PkeyMprotect)}, ProgName: "sys_enter_init"},
 				{MapName: "sys_enter_init_tail", MapIndexes: []uint32{uint32(events.Ptrace), uint32(events.ClockSettime)}, ProgName: "sys_enter_init"},
 				{MapName: "sys_enter_submit_tail", MapIndexes: []uint32{uint32(events.Ptrace), uint32(events.ClockSettime)}, ProgName: "sys_enter_submit"},
 				{MapName: "sys_exit_init_tail", MapIndexes: []uint32{uint32(events.Ptrace), uint32(events.ClockSettime)}, ProgName: "sys_exit_init"},
