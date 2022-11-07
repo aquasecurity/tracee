@@ -6,6 +6,9 @@ you detect **suspicious behavioral patterns** in streams of events. It is
 primarily made to leverage events collected with **tracee-ebpf** into a
 **Runtime Security solution**.
 
+You can see more information about what Tracee detects on the 
+[Aqua Vulnerability Database](https://avd.aquasec.com/tracee/).
+
 !!! Attention
     You may sometimes read **rules** or **signatures**. Both mean the same
     thing for tracee: a set of expressions that will define whether there
