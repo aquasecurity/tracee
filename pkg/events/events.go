@@ -5053,6 +5053,14 @@ var Definitions = eventDefinitions{
 			Sets: []string{},
 			Params: []trace.ArgMeta{
 				{Type: "u32", Name: "alert"},
+				{Type: "void*", Name: "addr"},
+				{Type: "size_t", Name: "len"},
+				{Type: "int", Name: "prot"},
+				{Type: "int", Name: "prev_prot"},
+				{Type: "const char*", Name: "pathname"},
+				{Type: "dev_t", Name: "dev"},
+				{Type: "unsigned long", Name: "inode"},
+				{Type: "u64", Name: "ctime"},
 			},
 		},
 		CommitCreds: {

@@ -2878,6 +2878,31 @@ static __always_inline struct pipe_inode_info *get_file_pipe_info(struct file *f
     return pipe;
 }
 
+// HELPERS: SUBMIT SPECIFIC EVENT ------------------------------------------------------------------
+
+// Used macro because of problem with verifier in NONCORE kinetic519
+#define submit_mem_prot_alert_event(data, alert, addr, len, prot, previous_prot, file)             \
+    {                                                                                              \
+        save_to_submit_buf(&data, &alert, sizeof(u32), 0);                                         \
+        save_to_submit_buf(&data, &addr, sizeof(void *), 1);                                       \
+        save_to_submit_buf(&data, &len, sizeof(size_t), 2);                                        \
+        save_to_submit_buf(&data, &prot, sizeof(int), 3);                                          \
+        save_to_submit_buf(&data, &previous_prot, sizeof(int), 4);                                 \
+                                                                                                   \
+        if (file != NULL) {                                                                        \
+            void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));                          \
+            u64 ctime = get_ctime_nanosec_from_file(file);                                         \
+            dev_t s_dev = get_dev_from_file(file);                                                 \
+            unsigned long inode_nr = get_inode_nr_from_file(file);                                 \
+                                                                                                   \
+            save_str_to_buf(&data, file_path, 5);                                                  \
+            save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 6);                                   \
+            save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 7);                        \
+            save_to_submit_buf(&data, &ctime, sizeof(u64), 8);                                     \
+        }                                                                                          \
+        events_perf_submit(&data, MEM_PROT_ALERT, 0);                                              \
+    }
+
 // SYSCALL HOOKS -----------------------------------------------------------------------------------
 
 // trace/events/syscalls.h: TP_PROTO(struct pt_regs *regs, long id)
@@ -5565,10 +5590,16 @@ int BPF_KPROBE(trace_mmap_alert)
     if (!data.task_info->syscall_traced || sys->id != SYSCALL_MMAP)
         return 0;
 
-    if ((sys->args.args[2] & (VM_WRITE | VM_EXEC)) == (VM_WRITE | VM_EXEC)) {
+    int prot = sys->args.args[2];
+
+    if ((prot & (VM_WRITE | VM_EXEC)) == (VM_WRITE | VM_EXEC)) {
         u32 alert = ALERT_MMAP_W_X;
-        save_to_submit_buf(&data, &alert, sizeof(u32), 0);
-        events_perf_submit(&data, MEM_PROT_ALERT, 0);
+        int fd = sys->args.args[5];
+        void *addr = (void *) sys->args.args[0];
+        size_t len = sys->args.args[1];
+        struct file *file = get_struct_file_from_fd(fd);
+        int prev_prot = 0;
+        submit_mem_prot_alert_event(data, alert, addr, len, prot, prev_prot, file);
     }
 
     return 0;
@@ -5669,37 +5700,44 @@ int BPF_KPROBE(trace_security_file_mprotect)
 
         data.buf_off = sizeof(event_context_t);
         data.context.argnum = 0;
+        u32 alert;
+        bool should_alert = false;
+        bool should_extract_code = false;
 
         if ((!(prev_prot & VM_EXEC)) && (reqprot & VM_EXEC)) {
-            u32 alert = ALERT_MPROT_X_ADD;
-            save_to_submit_buf(&data, &alert, sizeof(u32), 0);
-            return events_perf_submit(&data, MEM_PROT_ALERT, 0);
+            alert = ALERT_MPROT_X_ADD;
+            should_alert = true;
         }
 
         if ((prev_prot & VM_EXEC) && !(prev_prot & VM_WRITE) &&
             ((reqprot & (VM_WRITE | VM_EXEC)) == (VM_WRITE | VM_EXEC))) {
-            u32 alert = ALERT_MPROT_W_ADD;
-            save_to_submit_buf(&data, &alert, sizeof(u32), 0);
-            return events_perf_submit(&data, MEM_PROT_ALERT, 0);
+            alert = ALERT_MPROT_W_ADD;
+            should_alert = true;
         }
 
         if (((prev_prot & (VM_WRITE | VM_EXEC)) == (VM_WRITE | VM_EXEC)) && (reqprot & VM_EXEC) &&
             !(reqprot & VM_WRITE)) {
-            u32 alert = ALERT_MPROT_W_REM;
-            save_to_submit_buf(&data, &alert, sizeof(u32), 0);
-            events_perf_submit(&data, MEM_PROT_ALERT, 0);
+            alert = ALERT_MPROT_W_REM;
+            should_alert = true;
 
             if (data.config->options & OPT_EXTRACT_DYN_CODE) {
-                bin_args.type = SEND_MPROTECT;
-                bpf_probe_read(bin_args.metadata, sizeof(u64), &data.context.ts);
-                bin_args.ptr = (char *) addr;
-                bin_args.start_off = 0;
-                bin_args.full_size = len;
-
-                u64 id = bpf_get_current_pid_tgid();
-                bpf_map_update_elem(&bin_args_map, &id, &bin_args, BPF_ANY);
-                bpf_tail_call(ctx, &prog_array, TAIL_SEND_BIN);
+                should_extract_code = true;
             }
+        }
+        if (should_alert) {
+            struct file *file = (struct file *) READ_KERN(vma->vm_file);
+            submit_mem_prot_alert_event(data, alert, addr, len, reqprot, prev_prot, file);
+        }
+        if (should_extract_code) {
+            bin_args.type = SEND_MPROTECT;
+            bpf_probe_read(bin_args.metadata, sizeof(u64), &data.context.ts);
+            bin_args.ptr = (char *) addr;
+            bin_args.start_off = 0;
+            bin_args.full_size = len;
+
+            u64 id = bpf_get_current_pid_tgid();
+            bpf_map_update_elem(&bin_args_map, &id, &bin_args, BPF_ANY);
+            bpf_tail_call(ctx, &prog_array, TAIL_SEND_BIN);
         }
     }
 
