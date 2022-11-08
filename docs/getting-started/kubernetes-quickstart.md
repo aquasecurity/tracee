@@ -39,7 +39,7 @@ You can find the full manifest on the [tracee repository](https://github.com/aqu
 We can install the DaemonSet directly from the Tracee repository through the following command:
 
 ```
-[*] kubectl apply -f https://raw.githubusercontent.com/aquasecurity/tracee/main/deploy/kubernetes/tracee/tracee.yaml
+[*] kubectl apply -f https://raw.githubusercontent.com/aquasecurity/tracee/{{ git.tag }}/deploy/kubernetes/tracee/tracee.yaml
 ```
 
 You can verify that the tracee daemon set is running via:
