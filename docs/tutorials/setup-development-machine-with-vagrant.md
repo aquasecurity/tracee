@@ -309,7 +309,7 @@ As an alternative to static deployment descriptors you can install Tracee and
 Postee with Helm:
 
 ```
-helm repo add aqua-charts https://aquasecurity.github.io/helm-charts
+helm repo add aqua https://aquasecurity.github.io/helm-charts
 helm dependency update ./deploy/helm/tracee
 helm install tracee ./deploy/helm/tracee \
   --namespace tracee-system --create-namespace \

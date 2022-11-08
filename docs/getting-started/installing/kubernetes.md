@@ -44,7 +44,7 @@ the detections in your preferred way (e.g. Slack, E-mail, JIRA and more).
 		or install the Helm chart from a local directory:
 
 		```text
-		$ helm repo add aqua-charts https://aquasecurity.github.io/helm-charts
+		$ helm repo add aqua https://aquasecurity.github.io/helm-charts/
 		$ helm dependency update ./deploy/helm/tracee
 		$ helm install tracee ./deploy/helm/tracee \
 				--namespace tracee-system --create-namespace \
