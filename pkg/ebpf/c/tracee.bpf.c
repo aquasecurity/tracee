@@ -901,6 +901,13 @@ typedef struct bpf_attach {
     enum bpf_write_user_e write_user;
 } bpf_attach_t;
 
+#define MAX_ERROR_MSG_LEN 64
+
+typedef struct err {
+    u64 ret;
+    char msg[MAX_ERROR_MSG_LEN];
+} err_t;
+
 // KERNEL STRUCTS ----------------------------------------------------------------------------------
 
 #ifndef CORE
@@ -967,9 +974,26 @@ BPF_LRU_HASH(bpf_attach_tmp_map, u32, bpf_attach_t, 1024);         // temporaril
 
 // EBPF PERF BUFFERS -------------------------------------------------------------------------------
 
+BPF_PERF_OUTPUT(errors, 1024);      // errors submission
 BPF_PERF_OUTPUT(events, 1024);      // events submission
 BPF_PERF_OUTPUT(file_writes, 1024); // file writes events submission
 BPF_PERF_OUTPUT(net_events, 1024);  // network events submission
+
+// HELPERS: ERRORS ---------------------------------------------------------------------------------
+
+static __always_inline void submit_error(void *ctx, struct err *e)
+{
+    if (!e)
+        return;
+
+    int size;
+    if (e->msg[0] == '\0')
+        size = sizeof(e->ret);
+    else
+        size = sizeof(*e);
+
+    bpf_perf_event_output(ctx, &errors, BPF_F_CURRENT_CPU, e, size);
+}
 
 // HELPERS: DEVICES --------------------------------------------------------------------------------
 

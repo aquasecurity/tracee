@@ -7,13 +7,15 @@ import (
 
 // When updating this struct, please make sure to update the relevant exporting functions
 type Stats struct {
-	EventCount     counter.Counter
-	EventsFiltered counter.Counter
-	NetEvCount     counter.Counter
-	ErrorCount     counter.Counter
-	LostEvCount    counter.Counter
-	LostWrCount    counter.Counter
-	LostNtCount    counter.Counter
+	EBPFErrorsCount  counter.Counter
+	EventCount       counter.Counter
+	EventsFiltered   counter.Counter
+	NetEvCount       counter.Counter
+	ErrorCount       counter.Counter
+	LostEBPFErrCount counter.Counter
+	LostEvCount      counter.Counter
+	LostWrCount      counter.Counter
+	LostNtCount      counter.Counter
 }
 
 // Register Stats to prometheus metrics exporter

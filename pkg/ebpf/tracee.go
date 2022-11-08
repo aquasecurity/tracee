@@ -170,38 +170,41 @@ type eventConfig struct {
 
 // Tracee traces system calls and system events using eBPF
 type Tracee struct {
-	config            Config
-	probes            probes.Probes
-	events            map[events.ID]eventConfig
-	bpfModule         *bpf.Module
-	eventsPerfMap     *bpf.PerfBuffer
-	fileWrPerfMap     *bpf.PerfBuffer
-	netPerfMap        *bpf.PerfBuffer
-	eventsChannel     chan []byte
-	fileWrChannel     chan []byte
-	netChannel        chan []byte
-	lostEvChannel     chan uint64
-	lostWrChannel     chan uint64
-	lostNetChannel    chan uint64
-	bootTime          uint64
-	startTime         uint64
-	stats             metrics.Stats
-	capturedFiles     map[string]int64
-	fileHashes        *lru.Cache
-	profiledFiles     map[string]profilerInfo
-	writtenFiles      map[string]string
-	pidsInMntns       bucketscache.BucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
-	StackAddressesMap *bpf.BPFMap
-	FDArgPathMap      *bpf.BPFMap
-	netInfo           netInfo
-	containers        *containers.Containers
-	procInfo          *procinfo.ProcInfo
-	eventsSorter      *sorting.EventsChronologicalSorter
-	eventDerivations  derive.Table
-	kernelSymbols     *helpers.KernelSymbolTable
-	triggerContexts   trigger.Context
-	running           bool
-	outDir            *os.File // All file operations to output dir should be through the utils package file operations (like utils.OpenAt) using this directory file.
+	config             Config
+	probes             probes.Probes
+	events             map[events.ID]eventConfig
+	bpfModule          *bpf.Module
+	ebpfErrorsPerfMap  *bpf.PerfBuffer
+	eventsPerfMap      *bpf.PerfBuffer
+	fileWrPerfMap      *bpf.PerfBuffer
+	netPerfMap         *bpf.PerfBuffer
+	ebpfErrorsChannel  chan []byte
+	eventsChannel      chan []byte
+	fileWrChannel      chan []byte
+	netChannel         chan []byte
+	lostEBPFErrChannel chan uint64
+	lostEvChannel      chan uint64
+	lostWrChannel      chan uint64
+	lostNetChannel     chan uint64
+	bootTime           uint64
+	startTime          uint64
+	stats              metrics.Stats
+	capturedFiles      map[string]int64
+	fileHashes         *lru.Cache
+	profiledFiles      map[string]profilerInfo
+	writtenFiles       map[string]string
+	pidsInMntns        bucketscache.BucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
+	StackAddressesMap  *bpf.BPFMap
+	FDArgPathMap       *bpf.BPFMap
+	netInfo            netInfo
+	containers         *containers.Containers
+	procInfo           *procinfo.ProcInfo
+	eventsSorter       *sorting.EventsChronologicalSorter
+	eventDerivations   derive.Table
+	kernelSymbols      *helpers.KernelSymbolTable
+	triggerContexts    trigger.Context
+	running            bool
+	outDir             *os.File // All file operations to output dir should be through the utils package file operations (like utils.OpenAt) using this directory file.
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -1197,6 +1200,18 @@ func (t *Tracee) initBPF() error {
 
 		// Initialize perf buffers
 
+		t.ebpfErrorsChannel = make(chan []byte, 1000)
+		t.lostEBPFErrChannel = make(chan uint64)
+		t.ebpfErrorsPerfMap, err = t.bpfModule.InitPerfBuf(
+			"errors",
+			t.ebpfErrorsChannel,
+			t.lostEBPFErrChannel,
+			t.config.PerfBufferSize,
+		)
+		if err != nil {
+			return fmt.Errorf("error initializing errors perf map: %v", err)
+		}
+
 		t.eventsChannel = make(chan []byte, 1000)
 		t.lostEvChannel = make(chan uint64)
 		t.eventsPerfMap, err = t.bpfModule.InitPerfBuf(
@@ -1271,12 +1286,14 @@ func (t *Tracee) getProcessCtx(hostTid uint32) (procinfo.ProcessCtx, error) {
 
 // Run starts the trace. it will run until ctx is cancelled
 func (t *Tracee) Run(ctx gocontext.Context) error {
+	t.ebpfErrorsPerfMap.Start()
 	t.invokeInitEvents()
 	t.triggerSyscallsIntegrityCheck(trace.Event{})
 	t.triggerSeqOpsIntegrityCheck(trace.Event{})
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
 	t.netPerfMap.Start()
+	go t.processEBPFErrors()
 	go t.processLostEvents()
 	go t.handleEvents(ctx)
 	go t.processFileWrites()
@@ -1284,6 +1301,7 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.running = true
 	// block until ctx is cancelled elsewhere
 	<-ctx.Done()
+	t.ebpfErrorsPerfMap.Stop()
 	t.eventsPerfMap.Stop()
 	t.fileWrPerfMap.Stop()
 	t.netPerfMap.Stop()
