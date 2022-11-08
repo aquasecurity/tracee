@@ -29,6 +29,6 @@ appVersion: "0.9.3"
 dependencies:
   - name: postee
     version: "~2.8.2"
-    # helm repo add aqua-charts https://aquasecurity.github.io/helm-charts
-    repository: "@aqua-charts"
+    # helm repo add aqua https://aquasecurity.github.io/helm-charts/
+    repository: "@aqua"
     condition: postee.enabled
