@@ -99,8 +99,8 @@ rsync -avz \
     --exclude="fedora/34*"                \
     --exclude="4.15*"                     \
     --exclude="amzn*"                     \
-    --exclude="oracle-linux/ol7/*/4.14*"  \
-    --exclude="oracle-linux/ol7/*/3.10*"  \
+    --exclude="ol/7/*/*3.10*"             \
+    --exclude="ol/7/*/*4.14*"             \
     ./archive/
 
 # cleanup unneeded architectures
