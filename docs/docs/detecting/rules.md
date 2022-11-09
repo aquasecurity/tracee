@@ -3,7 +3,18 @@
 !!! Tip
     To view the list of available rules, run Tracee with the `--list` flag.
 
-Tracee currently distributes **fully functional signatures**, such as:
+Tracee currently distributes **fully functional signatures** that detect potentially malicous behavior.
+
+## Signatures in Aqua Vulnerability Database (AVD)
+
+The Aqua Vulnerability Database gives detailed information and
+remediation guidance for vulnerabilities and weaknesses found in
+open source applications and cloud native infrastructure. This
+includes information about common techniques and attack vectors
+that occur at application runtime, which are generated from the
+signatures in tracee. You can see them at
+[avd.aquasec.com/tracee](https://avd.aquasec.com/tracee/) and in
+the table below:
 
 Name   |Description                               |Full Description
 -------|------------------------------------------|----
