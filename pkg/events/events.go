@@ -5047,7 +5047,7 @@ var Definitions = eventDefinitions{
 			},
 			Dependencies: dependencies{
 				TailCalls: []TailCall{
-					{MapName: "sys_enter_init_tail", MapIndexes: []uint32{uint32(Mmap), uint32(Mprotect)}, ProgName: "sys_enter_init"},
+					{MapName: "sys_enter_init_tail", MapIndexes: []uint32{uint32(Mmap), uint32(Mprotect), uint32(PkeyMprotect)}, ProgName: "sys_enter_init"},
 				},
 			},
 			Sets: []string{},
@@ -5416,13 +5416,14 @@ var Definitions = eventDefinitions{
 		SecurityFileMprotect: {
 			ID32Bit: sys32undefined,
 			Name:    "security_file_mprotect",
+			DocPath: "lsm_hooks/security_file_mprotect.md",
 			Probes: []probeDependency{
 				{Handle: probes.SecurityFileMProtect, Required: true},
 				{Handle: probes.SyscallEnter__Internal, Required: true},
 			},
 			Dependencies: dependencies{
 				TailCalls: []TailCall{
-					{MapName: "sys_enter_init_tail", MapIndexes: []uint32{uint32(Mprotect)}, ProgName: "sys_enter_init"},
+					{MapName: "sys_enter_init_tail", MapIndexes: []uint32{uint32(Mprotect), uint32(PkeyMprotect)}, ProgName: "sys_enter_init"},
 				},
 			},
 			Sets: []string{"lsm_hooks", "proc", "proc_mem", "fs", "fs_file_ops"},
@@ -5430,6 +5431,10 @@ var Definitions = eventDefinitions{
 				{Type: "const char*", Name: "pathname"},
 				{Type: "int", Name: "prot"},
 				{Type: "unsigned long", Name: "ctime"},
+				{Type: "int", Name: "prev_prot"},
+				{Type: "void*", Name: "addr"},
+				{Type: "size_t", Name: "len"},
+				{Type: "int", Name: "pkey"},
 			},
 		},
 		InitNamespaces: {
