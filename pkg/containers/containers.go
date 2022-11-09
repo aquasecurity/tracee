@@ -15,14 +15,12 @@ import (
 	"unsafe"
 
 	"github.com/aquasecurity/libbpfgo"
+	"github.com/aquasecurity/tracee/pkg/cgroup"
 	cruntime "github.com/aquasecurity/tracee/pkg/containers/runtime"
+	"github.com/aquasecurity/tracee/pkg/mount"
 )
 
 var cgroupV1HierarchyID int
-
-const cgroupV1Controller = "cpuset"
-const cgroupV1FsType = "cgroup"
-const cgroupV2FsType = "cgroup2"
 
 // Containers contains information about running containers in the host.
 type Containers struct {
@@ -125,13 +123,13 @@ func (c *Containers) Populate() error {
 // getCgroupV1SSID finds cgroup v1 hierarchy ID.
 func (c *Containers) initCgroupV1() error {
 	c.cgroupV1 = true
-	hierarchyId, err := getCgroupV1HierarchyId()
+	hierarchyId, err := cgroup.GetCgroupV1HierarchyId()
 	if err != nil {
 		return err
 	}
 	cgroupV1HierarchyID = hierarchyId
 
-	inContainer, err := runsOnContainerV1()
+	inContainer, err := cgroup.RunsOnContainerV1()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "containers: failed to detect if running on a cgroupv1 container: %s", err)
 		return nil
@@ -150,7 +148,7 @@ func (c *Containers) initCgroupV1() error {
 			return nil
 		}
 
-		err = mountCpuset(mountPath)
+		err = cgroup.MountCgroupV1Cpuset(mountPath)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "containers: failed to mount cgroupv1 controller: %s\n", err)
 			return nil
@@ -165,14 +163,14 @@ func (c *Containers) initCgroupV1() error {
 
 // findCgroupMounts finds cgroups v1 and v2 mountpoints.
 func (c *Containers) findCgroupMounts() error {
-	fsType := cgroupV2FsType
+	fsType := cgroup.CgroupV2FsType
 	search := ""
 	if c.cgroupV1 {
-		fsType = cgroupV1FsType
+		fsType = cgroup.CgroupV1FsType
 		search = "cpuset"
 	}
 
-	mp, err := searchMountpoint(fsType, search)
+	mp, err := mount.SearchMountpoint(fsType, search)
 
 	if err != nil {
 		return err
@@ -395,7 +393,7 @@ func (c *Containers) CgroupMkdir(cgroupId uint64, subPath string, hierarchyID ui
 	}
 	// Find container cgroup dir path to get directory stats
 	curTime := time.Now()
-	path, err := getCgroupPath(c.cgroupMP, cgroupId, subPath)
+	path, err := cgroup.GetCgroupPath(c.cgroupMP, cgroupId, subPath)
 	if err == nil {
 		var stat syscall.Stat_t
 		if err := syscall.Stat(path, &stat); err == nil {
@@ -408,43 +406,6 @@ func (c *Containers) CgroupMkdir(cgroupId uint64, subPath string, hierarchyID ui
 	// Add cgroupInfo to Containers struct with existing data.
 	// In this case, ctime is just an estimation (current time).
 	return c.CgroupUpdate(cgroupId, subPath, curTime)
-}
-
-// getCgroupPath walks the cgroup fs and provides the cgroup directory path of
-// given cgroupId and subPath (related to cgroup fs root dir). If subPath is
-// empty, then all directories from cgroup fs will be searched for the given
-// cgroupId.
-func getCgroupPath(rootDir string, cgroupId uint64, subPath string) (string, error) {
-	entries, err := os.ReadDir(rootDir)
-	if err != nil {
-		return "", err
-	}
-
-	for _, entry := range entries {
-		if !entry.IsDir() {
-			continue
-		}
-
-		entryPath := filepath.Join(rootDir, entry.Name())
-		if strings.HasSuffix(entryPath, subPath) {
-			// Lower 32 bits of the cgroup id == inode number of matching cgroupfs entry
-			var stat syscall.Stat_t
-			if err := syscall.Stat(entryPath, &stat); err == nil {
-				// Check if this cgroup path belongs to cgroupId
-				if (stat.Ino & 0xFFFFFFFF) == (cgroupId & 0xFFFFFFFF) {
-					return entryPath, nil
-				}
-			}
-		}
-
-		// No match at this dir level: continue recursively
-		path, err := getCgroupPath(entryPath, cgroupId, subPath)
-		if err == nil {
-			return path, nil
-		}
-	}
-
-	return "", fs.ErrNotExist
 }
 
 // FindContainerCgroupID32LSB returns the 32 LSB of the Cgroup ID for a given container ID
@@ -471,7 +432,7 @@ func (c *Containers) GetCgroupInfo(cgroupId uint64) CgroupInfo {
 		// cgroupInfo in the Containers struct. An empty subPath will make
 		// getCgroupPath() to walk all cgroupfs directories until it finds the
 		// directory of given cgroupId.
-		path, err := getCgroupPath(c.cgroupMP, cgroupId, "")
+		path, err := cgroup.GetCgroupPath(c.cgroupMP, cgroupId, "")
 		if err == nil {
 			var stat syscall.Stat_t
 			if err = syscall.Stat(path, &stat); err == nil {
