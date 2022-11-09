@@ -986,7 +986,7 @@ static __always_inline void submit_error(void *ctx, struct err *e)
     if (!e)
         return;
 
-    int size;
+    u64 size;
     if (e->msg[0] == '\0')
         size = sizeof(e->ret);
     else
