@@ -5551,6 +5551,12 @@ var Definitions = eventDefinitions{
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "runtime"},
 				{Type: "const char*", Name: "container_id"},
+				{Type: "unsigned long", Name: "ctime"},
+				{Type: "const char*", Name: "container_image"},
+				{Type: "const char*", Name: "container_name"},
+				{Type: "const char*", Name: "pod_name"},
+				{Type: "const char*", Name: "pod_namespace"},
+				{Type: "const char*", Name: "pod_uid"},
 			},
 		},
 		ExistingContainer: {

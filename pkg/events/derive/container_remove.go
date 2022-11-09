@@ -20,7 +20,17 @@ func deriveContainerRemoveArgs(containers *containers.Containers) deriveArgsFunc
 			return nil, err
 		}
 		if info := containers.GetCgroupInfo(cgroupId); info.Container.ContainerId != "" {
-			return []interface{}{info.Runtime.String(), info.Container.ContainerId}, nil
+			args := []interface{}{
+				info.Runtime.String(),
+				info.Container.ContainerId,
+				info.Ctime.UnixNano(),
+				info.Container.Image,
+				info.Container.Name,
+				info.Container.Pod.Name,
+				info.Container.Pod.Namespace,
+				info.Container.Pod.UID,
+			}
+			return args, nil
 		}
 		return nil, nil
 	}
