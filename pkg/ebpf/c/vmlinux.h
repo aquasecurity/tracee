@@ -285,6 +285,10 @@ struct signal_struct {
 struct vm_area_struct {
     long unsigned int vm_flags;
     struct file *vm_file;
+    unsigned long vm_start;
+    unsigned long vm_end;
+    struct mm_struct *vm_mm;
+    struct vm_area_struct *vm_next;
 };
 
 typedef unsigned int __kernel_gid32_t;
@@ -635,6 +639,8 @@ struct mm_struct {
         long unsigned int env_start;
         long unsigned int env_end;
     };
+    unsigned long start_brk, brk, start_stack;
+    struct vm_area_struct *mmap;
 };
 
 struct vfsmount {
