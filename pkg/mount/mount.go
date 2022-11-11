@@ -175,28 +175,6 @@ func IsFileSystemSupported(fsType string) (bool, error) {
 	return false, nil
 }
 
-// IsMountpoint searches if path is a mountpoint for fstype
-func IsMountpoint(path string, fstype string) (bool, error) {
-	file, err := os.Open(procMounts)
-	if err != nil {
-		return false, err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for i := 1; scanner.Scan(); i++ {
-		line := strings.Split(scanner.Text(), " ")
-		mountpoint := line[1]
-		currFstype := line[2]
-
-		if fstype == currFstype && mountpoint == path {
-			return true, nil
-		}
-	}
-
-	return false, nil
-}
-
 // SearchMountpoint returns the last mountpoint for a given filesystem type
 // containing a searchable string.
 func SearchMountpoint(fstype string, search string) (string, error) {
