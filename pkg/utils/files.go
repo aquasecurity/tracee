@@ -115,3 +115,19 @@ func CopyRegularFileByRelativePath(srcName string, dstDir *os.File, dstName stri
 	}
 	return nil
 }
+
+// IsDirEmpty returns true if directory contains no files
+func IsDirEmpty(pathname string) (bool, error) {
+	dir, err := os.Open(pathname)
+	if err != nil {
+		return false, err
+	}
+	defer dir.Close()
+
+	_, err = dir.Readdirnames(1)
+	if err == io.EOF {
+		return true, nil
+	}
+
+	return false, err
+}
