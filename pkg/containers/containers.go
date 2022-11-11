@@ -17,16 +17,12 @@ import (
 	"github.com/aquasecurity/libbpfgo"
 	"github.com/aquasecurity/tracee/pkg/cgroup"
 	cruntime "github.com/aquasecurity/tracee/pkg/containers/runtime"
-	"github.com/aquasecurity/tracee/pkg/mount"
 )
-
-var cgroupV1HierarchyID int
 
 // Containers contains information about running containers in the host.
 type Containers struct {
-	cgroupV1   bool
-	cgroupMP   string
-	cgroups    map[uint32]CgroupInfo
+	cgroups    *cgroup.Cgroups
+	cgroupsMap map[uint32]CgroupInfo
 	deleted    []uint64
 	mtx        sync.RWMutex // protecting both cgroups and deleted fields
 	enricher   runtimeInfoService
@@ -44,19 +40,20 @@ type CgroupInfo struct {
 
 // New initializes a Containers object and returns a pointer to it.
 // User should further call "Populate" and iterate with Containers data.
-func New(sockets cruntime.Sockets, mapName string, debug bool) (*Containers, error) {
+func New(
+	cgroups *cgroup.Cgroups,
+	sockets cruntime.Sockets,
+	mapName string,
+	debug bool,
+) (
+	*Containers,
+	error,
+) {
 	containers := &Containers{
-		cgroupV1:   false,
-		cgroupMP:   "",
-		cgroups:    make(map[uint32]CgroupInfo),
+		cgroups:    cgroups,
+		cgroupsMap: make(map[uint32]CgroupInfo),
 		mtx:        sync.RWMutex{},
 		bpfMapName: mapName,
-	}
-
-	if _, err := os.Stat("/sys/fs/cgroup/cgroup.controllers"); os.IsNotExist(err) {
-		if err := containers.initCgroupV1(); err != nil {
-			return nil, err
-		}
 	}
 
 	runtimeService := RuntimeInfoService(sockets)
@@ -82,105 +79,20 @@ func New(sockets cruntime.Sockets, mapName string, debug bool) (*Containers, err
 
 // Close executes cleanup logic for Containers object
 func (c *Containers) Close() error {
-	// if we are on cgroupv1 and previously executed cpuset mounting logic (see function initCgroupV1)
-	if c.IsCgroupV1() && strings.HasPrefix(c.cgroupMP, "/tmp") {
-		// first unmount the temporary cpuset mount
-		err := syscall.Unmount(c.cgroupMP, 0)
-		if err != nil {
-			return err
-		}
-
-		// then remove the dir
-		err = os.RemoveAll(c.cgroupMP)
-		if err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
-func (c *Containers) IsCgroupV1() bool {
-	return c.cgroupV1
-}
-
-func (c *Containers) GetCgroupV1HID() int {
-	return cgroupV1HierarchyID
+func (c *Containers) GetDefaultCgroupHierarchyID() int {
+	return c.cgroups.GetDefaultCgroupHierarchyID()
 }
 
 // Populate populates Containers struct by reading mounted proc and cgroups fs.
 func (c *Containers) Populate() error {
-	if c.cgroupMP == "" {
-		err := c.findCgroupMounts()
-		if err != nil {
-			return err
-		}
-	}
-
 	return c.populate()
 }
 
-// getCgroupV1SSID finds cgroup v1 hierarchy ID.
-func (c *Containers) initCgroupV1() error {
-	c.cgroupV1 = true
-	hierarchyId, err := cgroup.GetCgroupV1HierarchyId()
-	if err != nil {
-		return err
-	}
-	cgroupV1HierarchyID = hierarchyId
-
-	inContainer, err := cgroup.RunsOnContainerV1()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "containers: failed to detect if running on a cgroupv1 container: %s", err)
-		return nil
-	}
-
-	if inContainer {
-		path, err := os.MkdirTemp("/tmp", "tracee-cpuset")
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to create cpuset directory %s\n", err)
-			return nil
-		}
-
-		mountPath, err := filepath.Abs(path)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to get absolute path of cputset mountpoint %s\n", mountPath)
-			return nil
-		}
-
-		err = cgroup.MountCgroupV1Cpuset(mountPath)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "containers: failed to mount cgroupv1 controller: %s\n", err)
-			return nil
-		}
-
-		// now that we know what the mountPath is we can just set it
-		c.cgroupMP = mountPath
-	}
-
-	return nil
-}
-
-// findCgroupMounts finds cgroups v1 and v2 mountpoints.
-func (c *Containers) findCgroupMounts() error {
-	fsType := cgroup.CgroupV2FsType
-	search := ""
-	if c.cgroupV1 {
-		fsType = cgroup.CgroupV1FsType
-		search = "cpuset"
-	}
-
-	mp, err := mount.SearchMountpoint(fsType, search)
-
-	if err != nil {
-		return err
-	}
-
-	c.cgroupMP = mp
-	return nil
-}
-
-// gets a containerID from a given task or process directory path
+// GetContainerIdFromTaskDir gets a containerID from a given task or process
+// directory path
 func GetContainerIdFromTaskDir(taskPath string) (string, error) {
 	containerId := ""
 	taskPath = fmt.Sprintf("%s/cgroup", taskPath)
@@ -201,10 +113,6 @@ func GetContainerIdFromTaskDir(taskPath string) (string, error) {
 
 // populate walks the cgroup fs informing CgroupUpdate() about existing dirs.
 func (c *Containers) populate() error {
-	if c.cgroupMP == "" {
-		return fmt.Errorf("could not determine cgroup mount point")
-	}
-
 	fn := func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
@@ -227,7 +135,7 @@ func (c *Containers) populate() error {
 		return err
 	}
 
-	return filepath.WalkDir(c.cgroupMP, fn)
+	return filepath.WalkDir(c.cgroups.GetDefaultCgroup().GetMountPoint(), fn)
 }
 
 // CgroupUpdate checks if given path belongs to a known container runtime,
@@ -247,7 +155,7 @@ func (c *Containers) CgroupUpdate(cgroupId uint64, path string, ctime time.Time)
 	}
 
 	c.mtx.Lock()
-	c.cgroups[uint32(cgroupId)] = info
+	c.cgroupsMap[uint32(cgroupId)] = info
 	c.mtx.Unlock()
 
 	return info, nil
@@ -261,7 +169,7 @@ func (c *Containers) EnrichCgroupInfo(cgroupId uint64) (cruntime.ContainerMetada
 	var metadata cruntime.ContainerMetadata
 
 	c.mtx.RLock()
-	info, ok := c.cgroups[uint32(cgroupId)]
+	info, ok := c.cgroupsMap[uint32(cgroupId)]
 	c.mtx.RUnlock()
 
 	//if there is no cgroup anymore for some reason, return early
@@ -290,9 +198,9 @@ func (c *Containers) EnrichCgroupInfo(cgroupId uint64) (cruntime.ContainerMetada
 	c.mtx.Lock()
 	//we read the dictionary again to make sure the cgroup still exists
 	//otherwise we risk reintroducing it despite not existing
-	_, ok = c.cgroups[uint32(cgroupId)]
+	_, ok = c.cgroupsMap[uint32(cgroupId)]
 	if ok {
-		c.cgroups[uint32(cgroupId)] = info
+		c.cgroupsMap[uint32(cgroupId)] = info
 	}
 	c.mtx.Unlock()
 
@@ -357,9 +265,12 @@ func getContainerIdFromCgroup(cgroupPath string) (string, cruntime.RuntimeId) {
 // NOTE: Expiration logic of 5 seconds to avoid race conditions (if cgroup dir
 // event arrives too fast and its cgroupInfo data is still needed).
 func (c *Containers) CgroupRemove(cgroupId uint64, hierarchyID uint32) {
-	if c.cgroupV1 && int(hierarchyID) != cgroupV1HierarchyID {
-		// For cgroup v1, we only need to look at one controller
-		return
+	// cgroupv1: no need to check other controllers than the default
+	switch c.cgroups.GetDefaultCgroup().(type) {
+	case *cgroup.CgroupV1:
+		if c.cgroups.GetDefaultCgroupHierarchyID() != int(hierarchyID) {
+			return
+		}
 	}
 
 	now := time.Now()
@@ -369,31 +280,35 @@ func (c *Containers) CgroupRemove(cgroupId uint64, hierarchyID uint32) {
 
 	// process previously deleted cgroupInfo data (deleted cgroup dirs)
 	for _, id := range c.deleted {
-		info := c.cgroups[uint32(id)]
+		info := c.cgroupsMap[uint32(id)]
 		if now.After(info.expiresAt) {
-			delete(c.cgroups, uint32(id))
+			delete(c.cgroupsMap, uint32(id))
 		} else {
 			deleted = append(deleted, id)
 		}
 	}
 	c.deleted = deleted
 
-	if info, ok := c.cgroups[uint32(cgroupId)]; ok {
+	if info, ok := c.cgroupsMap[uint32(cgroupId)]; ok {
 		info.expiresAt = now.Add(5 * time.Second)
-		c.cgroups[uint32(cgroupId)] = info
+		c.cgroupsMap[uint32(cgroupId)] = info
 		c.deleted = append(c.deleted, cgroupId)
 	}
 }
 
 // CgroupMkdir adds cgroupInfo of a created cgroup dir to Containers struct.
 func (c *Containers) CgroupMkdir(cgroupId uint64, subPath string, hierarchyID uint32) (CgroupInfo, error) {
-	if c.cgroupV1 && int(hierarchyID) != cgroupV1HierarchyID {
-		// For cgroup v1, we only need to look at one controller
-		return CgroupInfo{}, nil
+	// cgroupv1: no need to check other controllers than the default
+	switch c.cgroups.GetDefaultCgroup().(type) {
+	case *cgroup.CgroupV1:
+		if c.cgroups.GetDefaultCgroupHierarchyID() != int(hierarchyID) {
+			return CgroupInfo{}, nil
+		}
 	}
+
 	// Find container cgroup dir path to get directory stats
 	curTime := time.Now()
-	path, err := cgroup.GetCgroupPath(c.cgroupMP, cgroupId, subPath)
+	path, err := cgroup.GetCgroupPath(c.cgroups.GetDefaultCgroup().GetMountPoint(), cgroupId, subPath)
 	if err == nil {
 		var stat syscall.Stat_t
 		if err := syscall.Stat(path, &stat); err == nil {
@@ -413,7 +328,7 @@ func (c *Containers) FindContainerCgroupID32LSB(containerID string) []uint32 {
 	var cgroupIDs []uint32
 	c.mtx.RLock()
 	defer c.mtx.RUnlock()
-	for k, v := range c.cgroups {
+	for k, v := range c.cgroupsMap {
 		if strings.HasPrefix(v.Container.ContainerId, containerID) {
 			cgroupIDs = append(cgroupIDs, k)
 		}
@@ -432,7 +347,7 @@ func (c *Containers) GetCgroupInfo(cgroupId uint64) CgroupInfo {
 		// cgroupInfo in the Containers struct. An empty subPath will make
 		// getCgroupPath() to walk all cgroupfs directories until it finds the
 		// directory of given cgroupId.
-		path, err := cgroup.GetCgroupPath(c.cgroupMP, cgroupId, "")
+		path, err := cgroup.GetCgroupPath(c.cgroups.GetDefaultCgroup().GetMountPoint(), cgroupId, "")
 		if err == nil {
 			var stat syscall.Stat_t
 			if err = syscall.Stat(path, &stat); err == nil {
@@ -445,7 +360,7 @@ func (c *Containers) GetCgroupInfo(cgroupId uint64) CgroupInfo {
 	}
 
 	c.mtx.RLock()
-	cgroupInfo := c.cgroups[uint32(cgroupId)]
+	cgroupInfo := c.cgroupsMap[uint32(cgroupId)]
 	c.mtx.RUnlock()
 
 	return cgroupInfo
@@ -456,7 +371,7 @@ func (c *Containers) GetContainers() map[uint32]CgroupInfo {
 	conts := map[uint32]CgroupInfo{}
 	c.mtx.RLock()
 	defer c.mtx.RUnlock()
-	for id, v := range c.cgroups {
+	for id, v := range c.cgroupsMap {
 		if v.Container.ContainerId != "" && v.expiresAt.IsZero() {
 			conts[id] = v
 		}
@@ -467,7 +382,7 @@ func (c *Containers) GetContainers() map[uint32]CgroupInfo {
 // CgroupExists checks if there is a cgroupInfo data of a given cgroupId.
 func (c *Containers) CgroupExists(cgroupId uint64) bool {
 	c.mtx.RLock()
-	_, ok := c.cgroups[uint32(cgroupId)]
+	_, ok := c.cgroupsMap[uint32(cgroupId)]
 	c.mtx.RUnlock()
 	return ok
 }
@@ -485,7 +400,7 @@ func (c *Containers) PopulateBpfMap(bpfModule *libbpfgo.Module) error {
 	}
 
 	c.mtx.RLock()
-	for cgroupIdLsb, info := range c.cgroups {
+	for cgroupIdLsb, info := range c.cgroupsMap {
 		if info.Container.ContainerId != "" {
 			state := containerExisted
 			err = containersMap.Update(unsafe.Pointer(&cgroupIdLsb), unsafe.Pointer(&state))
@@ -497,9 +412,12 @@ func (c *Containers) PopulateBpfMap(bpfModule *libbpfgo.Module) error {
 }
 
 func (c *Containers) RemoveFromBpfMap(bpfModule *libbpfgo.Module, cgroupId uint64, hierarchyID uint32) error {
-	if c.cgroupV1 && int(hierarchyID) != cgroupV1HierarchyID {
-		// For cgroup v1, we only need to look at one controller
-		return nil
+	// cgroupv1: no need to check other controllers than the default
+	switch c.cgroups.GetDefaultCgroup().(type) {
+	case *cgroup.CgroupV1:
+		if c.cgroups.GetDefaultCgroupHierarchyID() != int(hierarchyID) {
+			return nil
+		}
 	}
 
 	containersMap, err := bpfModule.GetMap(c.bpfMapName)
