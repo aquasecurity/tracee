@@ -23,6 +23,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/bucketscache"
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"github.com/aquasecurity/tracee/pkg/cgroup"
 	"github.com/aquasecurity/tracee/pkg/containers"
 	"github.com/aquasecurity/tracee/pkg/containers/runtime"
 	"github.com/aquasecurity/tracee/pkg/ebpf/initialization"
@@ -203,6 +204,7 @@ type Tracee struct {
 	triggerContexts   trigger.Context
 	running           bool
 	outDir            *os.File // All file operations to output dir should be through the utils package file operations (like utils.OpenAt) using this directory file.
+	cgroups           *cgroup.Cgroups
 }
 
 func (t *Tracee) Stats() *metrics.Stats {
@@ -409,17 +411,25 @@ func (t *Tracee) Init() error {
 		return fmt.Errorf("error creating process tree: %v", err)
 	}
 
+	// Initialize cgroups filesystems
+
+	t.cgroups, err = cgroup.NewCgroups()
+	if err != nil {
+		return err
+	}
+
 	// Initialize containers enrichment logic
 
-	capabilities.GetInstance().Requested(func() error { // TODO: workaround until PR: #2233 is in place
+	t.containers, err = containers.New(
+		t.cgroups,
+		t.config.Sockets,
+		"containers_map",
+		t.config.Debug,
+	)
+	if err != nil {
+		return fmt.Errorf("error initializing containers: %w", err)
+	}
 
-		t.containers, err = containers.New(t.config.Sockets, "containers_map", t.config.Debug)
-		if err != nil {
-			return fmt.Errorf("error initializing containers: %w", err)
-		}
-		return nil
-
-	}, cap.SYS_ADMIN)
 	if err := t.containers.Populate(); err != nil {
 		return fmt.Errorf("error initializing containers: %w", err)
 	}
@@ -738,7 +748,8 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	if t.config.Capture.Mem {
 		cOptVal = cOptVal | optExtractDynCode
 	}
-	if t.containers.IsCgroupV1() {
+	switch t.cgroups.GetDefaultCgroup().(type) {
+	case *cgroup.CgroupV1:
 		cOptVal = cOptVal | optCgroupV1
 	}
 	if t.config.Capture.NetIfaces != nil || len(t.config.Filter.NetFilter.Interfaces()) > 0 || t.config.Debug {
@@ -892,7 +903,7 @@ func (t *Tracee) populateBPFMaps() error {
 	binary.LittleEndian.PutUint32(configVal[0:4], uint32(os.Getpid()))
 	binary.LittleEndian.PutUint32(configVal[4:8], t.getOptionsConfig())
 	binary.LittleEndian.PutUint32(configVal[8:12], t.getFiltersConfig())
-	binary.LittleEndian.PutUint32(configVal[12:16], uint32(t.containers.GetCgroupV1HID()))
+	binary.LittleEndian.PutUint32(configVal[12:16], uint32(t.containers.GetDefaultCgroupHierarchyID()))
 	binary.LittleEndian.PutUint64(configVal[16:24], t.config.Filter.UIDFilter.Maximum())
 	binary.LittleEndian.PutUint64(configVal[24:32], t.config.Filter.UIDFilter.Minimum())
 	binary.LittleEndian.PutUint64(configVal[32:40], t.config.Filter.PIDFilter.Maximum())
@@ -1335,30 +1346,32 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 
 // Close cleans up created resources
 func (t *Tracee) Close() {
-	err := capabilities.GetInstance().Required(func() error { // ring1
-
-		if t.probes != nil {
-			err := t.probes.DetachAll()
-			if err != nil {
-				return fmt.Errorf("failed to detach probes when closing tracee: %s", err)
+	err := capabilities.GetInstance().Required(
+		func() error {
+			if t.probes != nil {
+				err := t.probes.DetachAll()
+				if err != nil {
+					return fmt.Errorf("failed to detach probes when closing tracee: %s", err)
+				}
 			}
-		}
-
-		if t.bpfModule != nil {
-			t.bpfModule.Close()
-		}
-
-		if t.containers != nil {
-			err := t.containers.Close()
-			if err != nil {
-				return fmt.Errorf("failed to clean containers module when closing tracee: %s", err)
+			if t.bpfModule != nil {
+				t.bpfModule.Close()
 			}
-		}
-		t.running = false
+			if t.containers != nil {
+				err := t.containers.Close()
+				if err != nil {
+					return fmt.Errorf("failed to clean containers module when closing tracee: %s", err)
+				}
+			}
+			t.running = false
+			return nil
+		},
+	)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v", err)
+	}
 
-		return nil
-	})
-
+	err = t.cgroups.Destroy()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v", err)
 	}
