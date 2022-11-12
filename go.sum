@@ -124,8 +124,6 @@ github.com/aquasecurity/libbpfgo v0.4.4-libbpf-1.0.1 h1:cjdRq/YhQ5ZVU0jm6H3VXVcH
 github.com/aquasecurity/libbpfgo v0.4.4-libbpf-1.0.1/go.mod h1:v+Nk+v6BtHLfdT4kVdsp+fYt4AeUa3cIG2P0y+nBuuY=
 github.com/aquasecurity/libbpfgo/helpers v0.4.4 h1:a8RnY90e0O9Du8MIEJfHOsLb/AiLP6McKndIUfrSdZM=
 github.com/aquasecurity/libbpfgo/helpers v0.4.4/go.mod h1:H72+/tC8b1bqeylP1n7c+AfC18ksK9/7Z16ECafVRhM=
-github.com/aquasecurity/tracee/types v0.0.0-20220804074749-e785ea989919 h1:1tvaIwXjjSciTa1JNqw3W4iofSONLX/GORWL8ee5Ocw=
-github.com/aquasecurity/tracee/types v0.0.0-20220804074749-e785ea989919/go.mod h1:l8MikK8yNCxoFVFq+WqvRg3kiDUX4wDTQwo7oD7YnWM=
 github.com/arbovm/levenshtein v0.0.0-20160628152529-48b4e1c0c4d0 h1:jfIu9sQUG6Ig+0+Ap1h4unLjW6YQJpKZVmUzxsD4E/Q=
 github.com/arbovm/levenshtein v0.0.0-20160628152529-48b4e1c0c4d0/go.mod h1:t2tdKJDJF9BV14lnkjHmOQgcvEKgtqs5a1N3LNdJhGE=
 github.com/armon/circbuf v0.0.0-20150827004946-bbbad097214e/go.mod h1:3U/XgcO3hCbHZ8TKRvWD2dDTCfh9M9ya+I9JpbB7O8o=

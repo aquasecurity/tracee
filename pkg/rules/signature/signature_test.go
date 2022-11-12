@@ -1,4 +1,4 @@
-package main
+package signature
 
 import (
 	"encoding/json"
@@ -19,8 +19,8 @@ const (
 	exampleRulesDir = "testdata/signatures"
 )
 
-func Test_getSignatures(t *testing.T) {
-	sigs, err := getSignatures(compile.TargetRego, false, exampleRulesDir, []string{"TRC-2"}, false)
+func TestFindByRuleID(t *testing.T) {
+	sigs, err := Find(compile.TargetRego, false, exampleRulesDir, []string{"TRC-2"}, false)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(sigs))
 
@@ -30,6 +30,28 @@ func Test_getSignatures(t *testing.T) {
 		ID:          "TRC-2",
 		Version:     "0.1.0",
 		Name:        "Anti-Debugging",
+		EventName:   "anti_debugging",
+		Description: "Process uses anti-debugging technique to block debugger",
+		Tags:        []string{"linux", "container"},
+		Properties: map[string]interface{}{
+			"MITRE ATT&CK": "Defense Evasion: Execution Guardrails",
+			"Severity":     json.Number("3"),
+		},
+	}, gotMetadata)
+}
+
+func TestFindByEventName(t *testing.T) {
+	sigs, err := Find(compile.TargetRego, false, exampleRulesDir, []string{"anti_debugging"}, false)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(sigs))
+
+	gotMetadata, err := sigs[0].GetMetadata()
+	require.NoError(t, err)
+	assert.Equal(t, detect.SignatureMetadata{
+		ID:          "TRC-2",
+		Version:     "0.1.0",
+		Name:        "Anti-Debugging",
+		EventName:   "anti_debugging",
 		Description: "Process uses anti-debugging technique to block debugger",
 		Tags:        []string{"linux", "container"},
 		Properties: map[string]interface{}{
@@ -93,6 +115,7 @@ func Test_findRegoSigs(t *testing.T) {
 			ID:          "TRC-2",
 			Version:     "0.1.0",
 			Name:        "Anti-Debugging",
+			EventName:   "anti_debugging",
 			Description: "Process uses anti-debugging technique to block debugger",
 			Tags:        []string{"linux", "container"},
 			Properties: map[string]interface{}{

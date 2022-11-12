@@ -24,6 +24,7 @@ type SignatureMetadata struct {
 	ID          string
 	Version     string
 	Name        string
+	EventName   string `json:"event-name"`
 	Description string
 	Tags        []string
 	Properties  map[string]interface{}

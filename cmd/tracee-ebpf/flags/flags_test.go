@@ -10,6 +10,7 @@ import (
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/filters"
+	"github.com/aquasecurity/tracee/pkg/rules/rego"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -547,4 +548,59 @@ func TestPrepareCache(t *testing.T) {
 			assert.Equal(t, testcase.expectedCache, cache)
 		})
 	}
+}
+
+func TestPrepareRego(t *testing.T) {
+	t.Run("various rego options", func(t *testing.T) {
+		testCases := []struct {
+			testName      string
+			regoSlice     []string
+			expectedRego  rego.Config
+			expectedError error
+		}{
+			{
+				testName:      "invalid rego option",
+				regoSlice:     []string{"foo"},
+				expectedError: errors.New("invalid rego option specified, use '--rego help' for more info"),
+			},
+			{
+				testName:  "default options",
+				regoSlice: []string{},
+				expectedRego: rego.Config{
+					RuntimeTarget: "rego",
+					PartialEval:   false,
+					AIO:           false,
+				},
+			},
+			{
+				testName:  "configure partial-eval",
+				regoSlice: []string{"partial-eval"},
+				expectedRego: rego.Config{
+					RuntimeTarget: "rego",
+					PartialEval:   true,
+				},
+			},
+			{
+				testName:  "configure aio",
+				regoSlice: []string{"aio"},
+				expectedRego: rego.Config{
+					RuntimeTarget: "rego",
+					AIO:           true,
+				},
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.testName, func(t *testing.T) {
+				rego, err := flags.PrepareRego(tc.regoSlice)
+				if tc.expectedError == nil {
+					require.NoError(t, err)
+					assert.Equal(t, tc.expectedRego, rego, tc.testName)
+				} else {
+					require.Equal(t, tc.expectedError, err, tc.testName)
+					assert.Empty(t, rego, tc.testName)
+				}
+			})
+		}
+	})
 }

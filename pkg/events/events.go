@@ -69,8 +69,34 @@ type Event struct {
 	Params       []trace.ArgMeta
 }
 
+// NewEvent creates a new event
+func NewEvent(name string, sets []string, depsID []ID) Event {
+	evt := Event{
+		ID32Bit: sys32undefined,
+		Name:    name,
+		Sets:    sets,
+	}
+
+	d := dependencies{
+		Events: make([]eventDependency, 0, len(depsID)),
+	}
+
+	for _, id := range depsID {
+		d.Events = append(d.Events, eventDependency{EventID: id})
+	}
+
+	evt.Dependencies = d
+
+	return evt
+}
+
 type eventDefinitions struct {
 	events map[ID]Event
+}
+
+// Add add event to defitions
+func (e *eventDefinitions) Add(eventId ID, evt Event) {
+	e.events[eventId] = evt
 }
 
 // Get without checking for Event existance
@@ -203,6 +229,12 @@ const (
 	CaptureMem
 	CaptureProfile
 	CapturePcap
+)
+
+// Rules events
+const (
+	StartRulesID ID = 6000
+	MaxRulesID   ID = 6999
 )
 
 const (

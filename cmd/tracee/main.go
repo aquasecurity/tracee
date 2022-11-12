@@ -1,0 +1,258 @@
+package main
+
+import (
+	"context"
+	"os"
+	"strings"
+
+	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/flags"
+	"github.com/aquasecurity/tracee/pkg/cmd"
+	"github.com/aquasecurity/tracee/pkg/events"
+	"github.com/aquasecurity/tracee/pkg/logger"
+	"github.com/aquasecurity/tracee/pkg/rules/engine"
+	"github.com/aquasecurity/tracee/pkg/rules/signature"
+	"github.com/aquasecurity/tracee/pkg/server"
+	"github.com/aquasecurity/tracee/types/detect"
+
+	cli "github.com/urfave/cli/v2"
+)
+
+func init() {
+	// Avoiding to override package-level logger
+	// when it's already set by logger environment variables
+	if !logger.IsSetFromEnv() {
+		// Logger Setup
+		logger.Init(
+			&logger.LoggerConfig{
+				Writer:    os.Stderr,
+				Level:     logger.InfoLevel,
+				Encoder:   logger.NewJSONEncoder(logger.NewProductionConfig().EncoderConfig),
+				Aggregate: false,
+			},
+		)
+	}
+}
+
+var version string
+
+func main() {
+	app := &cli.App{
+		Name:    "Tracee",
+		Usage:   "Trace OS events and syscalls using eBPF",
+		Version: version,
+		Action: func(c *cli.Context) error {
+			ctx := context.Background()
+
+			if c.NArg() > 0 {
+				return cli.ShowAppHelp(c) // no args, only flags supported
+			}
+
+			flags.PrintAndExitIfHelp(c)
+
+			// Rego command line flags
+
+			rego, err := flags.PrepareRego(c.StringSlice("rego"))
+			if err != nil {
+				return err
+			}
+
+			// event names are parsed here because we need to know which signatures to load
+			eventNames := getEventNames(c)
+
+			sigs, err := signature.Find(
+				rego.RuntimeTarget,
+				rego.PartialEval,
+				c.String("rules-dir"),
+				eventNames,
+				rego.AIO,
+			)
+
+			if err != nil {
+				return err
+			}
+
+			createEventsFromSignatures(sigs)
+
+			if c.Bool("list") {
+				cmd.PrintEventList(true) // list events
+				return nil
+			}
+
+			traceeConfig, printerConfig, err := cmd.GetTraceeAndPrinterConfig(c, version)
+			if err != nil {
+				return err
+			}
+
+			// parse arguments must be enabled if the rule engine is part of the pipeline
+			traceeConfig.Output.ParseArguments = true
+
+			traceeConfig.EngineConfig = engine.Config{
+				Enabled:             true,
+				Signatures:          sigs,
+				SignatureBufferSize: c.Uint("sig-buffer"),
+			}
+
+			return cmd.Run(ctx, c, traceeConfig, printerConfig)
+		},
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:    "list", // this needs to list the signatures too
+				Aliases: []string{"l"},
+				Value:   false,
+				Usage:   "just list tracable events",
+			},
+			&cli.StringSliceFlag{
+				Name:    "trace",
+				Aliases: []string{"t"},
+				Value:   nil,
+				Usage:   "select events to trace by defining trace expressions. run '--trace help' for more info.",
+			},
+			&cli.StringSliceFlag{
+				Name:    "capture",
+				Aliases: []string{"c"},
+				Value:   nil,
+				Usage:   "capture artifacts that were written, executed or found to be suspicious. run '--capture help' for more info.",
+			},
+			&cli.StringSliceFlag{
+				Name:    "capabilities",
+				Aliases: []string{"caps"},
+				Value:   nil,
+				Usage:   "define capabilities for tracee to run with. run '--capabilities help' for more info.",
+			},
+			&cli.StringSliceFlag{
+				Name:    "output", // This conflicts with --output-template?
+				Aliases: []string{"o"},
+				Value:   cli.NewStringSlice("format:table"),
+				Usage:   "Control how and where output is printed. run '--output help' for more info.",
+			},
+			&cli.StringSliceFlag{
+				Name:    "cache",
+				Aliases: []string{"a"},
+				Value:   cli.NewStringSlice("none"),
+				Usage:   "Control event caching queues. run '--cache help' for more info.",
+			},
+			&cli.StringSliceFlag{
+				Name:  "crs",
+				Usage: "Define connected container runtimes. run '--crs help' for more info.",
+				Value: cli.NewStringSlice(),
+			},
+			&cli.IntFlag{
+				Name:    "perf-buffer-size",
+				Aliases: []string{"b"},
+				Value:   1024, // 4 MB of contigous pages
+				Usage:   "size, in pages, of the internal perf ring buffer used to submit events from the kernel",
+			},
+			&cli.IntFlag{
+				Name:  "blob-perf-buffer-size",
+				Value: 1024, // 4 MB of contigous pages
+				Usage: "size, in pages, of the internal perf ring buffer used to send blobs from the kernel",
+			},
+			&cli.BoolFlag{
+				Name:  "debug",
+				Value: false,
+				Usage: "write verbose debug messages to standard output and retain intermediate artifacts. enabling will output debug messages to stdout, which will likely break consumers which expect to receive machine-readable events from stdout",
+			},
+			&cli.StringFlag{
+				Name:  "install-path",
+				Value: "/tmp/tracee",
+				Usage: "path where tracee will install or lookup it's resources",
+			},
+			&cli.BoolFlag{
+				Name:  server.MetricsEndpointFlag,
+				Usage: "enable metrics endpoint",
+				Value: false,
+			},
+			&cli.BoolFlag{
+				Name:  server.HealthzEndpointFlag,
+				Usage: "enable healthz endpoint",
+				Value: false,
+			},
+			&cli.BoolFlag{
+				Name:  server.PProfEndpointFlag,
+				Usage: "enables pprof endpoints",
+				Value: false,
+			},
+			&cli.StringFlag{
+				Name:  server.ListenEndpointFlag,
+				Usage: "listening address of the metrics endpoint server",
+				Value: ":3366",
+			},
+			&cli.BoolFlag{
+				Name:  "containers",
+				Usage: "enable container info enrichment to events. this feature is experimental and may cause unexpected behavior in the pipeline",
+			},
+
+			// TODO: add webhook
+
+			// rules
+			&cli.StringFlag{
+				Name:  "rules-dir",
+				Usage: "directory where to search for rules in CEL (.yaml), OPA (.rego), and Go plugin (.so) formats",
+			},
+			&cli.StringSliceFlag{
+				Name:  "rego",
+				Usage: "Control event rego settings. run '--rego help' for more info.",
+				Value: cli.NewStringSlice(),
+			},
+			&cli.UintFlag{
+				Name:  "sig-buffer", // TODO: rename to rules-buffer?
+				Usage: "size of the event channel's buffer consumed by signatures",
+				Value: 1000,
+			},
+		},
+	}
+
+	err := app.Run(os.Args)
+	if err != nil {
+		logger.Fatal("app", "error", err)
+	}
+}
+
+func createEventsFromSignatures(sigs []detect.Signature) {
+	id := events.StartRulesID
+
+	for _, s := range sigs {
+		m, err := s.GetMetadata()
+		if err != nil {
+			logger.Error("failed to load event", "error", err)
+			continue
+		}
+
+		selectedEvents, err := s.GetSelectedEvents()
+		if err != nil {
+			logger.Error("failed to load event", "error", err)
+			continue
+		}
+
+		dependencies := make([]events.ID, 0)
+
+		for _, s := range selectedEvents {
+			eventID, found := events.Definitions.GetID(s.Name)
+			if !found {
+				logger.Error("failed to load event depedency", "event", s.Name)
+				continue
+			}
+
+			dependencies = append(dependencies, eventID)
+		}
+
+		event := events.NewEvent(m.EventName, []string{"rules"}, dependencies)
+
+		events.Definitions.Add(events.ID(id), event)
+		id++
+	}
+
+}
+
+func getEventNames(c *cli.Context) []string {
+	// TODO: --trace event= will become --events
+	traceArgs := c.StringSlice("trace")
+	for _, optValue := range traceArgs {
+		if strings.HasPrefix(optValue, "event=") {
+			values := strings.Split(optValue, "=")
+			return strings.Split(values[1], ",")
+		}
+	}
+
+	return []string{}
+}

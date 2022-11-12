@@ -61,6 +61,7 @@ func TestSystemRequestKeyConfigModification(t *testing.T) {
 						ID:          "TRC-1031",
 						Version:     "1",
 						Name:        "System request key configuration modification",
+						EventName:   "system_request_key_config_modification",
 						Description: "An attempt to modify and activate the System Request Key configuration file was detected. The system request key allows immediate input to the kernel through simple key combinations. Adversaries may use this feature to immediately shut down or restart a system. With read access to kernel logs, host related information such as listing tasks and CPU registers may be disclosed and could be used for container escape.",
 						Properties: map[string]interface{}{
 							"Severity":             3,

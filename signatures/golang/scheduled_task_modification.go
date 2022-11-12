@@ -31,6 +31,7 @@ func (sig *ScheduledTaskModification) GetMetadata() (detect.SignatureMetadata, e
 		ID:          "TRC-1027",
 		Version:     "1",
 		Name:        "Scheduled tasks modification detected",
+		EventName:   "scheduled_task_modification",
 		Description: "The task scheduling functionality or files were modified. Crontab schedules task execution or enables task execution at boot time. Adversaries may add or modify scheduled tasks in order to persist a reboot, thus maintaining malicious execution on the affected host.",
 		Properties: map[string]interface{}{
 			"Severity":             2,

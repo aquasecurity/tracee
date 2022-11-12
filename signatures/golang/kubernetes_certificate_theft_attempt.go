@@ -28,6 +28,7 @@ func (sig *KubernetesCertificateTheftAttempt) GetMetadata() (detect.SignatureMet
 		ID:          "TRC-1018",
 		Version:     "1",
 		Name:        "K8s TLS certificate theft detected",
+		EventName:   "kubernetes_certificate_theft_attempt",
 		Description: "Theft of Kubernetes TLS certificates was detected. TLS certificates are used to establish trust between systems. The Kubernetes certificate is used to to enable secure communication between Kubernetes components, such as kubelet scheduler controller and API Server. An adversary may steal a Kubernetes certificate on a compromised system to impersonate Kubernetes components within the cluster.",
 		Properties: map[string]interface{}{
 			"Severity":             3,

@@ -290,6 +290,7 @@ func TestOutputTemplates(t *testing.T) {
 					ID:          "TRC-1",
 					Version:     "0.1.0",
 					Name:        "Standard Input/Output Over Socket",
+					EventName:   "stdio_over_socket",
 					Description: "Redirection of process's standard input/output to socket",
 					Tags:        []string{"linux", "container"},
 					Properties: map[string]interface{}{
@@ -306,7 +307,7 @@ func TestOutputTemplates(t *testing.T) {
 					"timestamp":1321321,"processorId":0,"processId":21312,"threadId":0,"threadStartTime":0,"parentProcessId":0,"hostProcessId":0,"hostThreadId":0,"hostParentProcessId":0,"userId":0,"mountNamespace":0,"pidNamespace":0,"processName":"","hostName":"","cgroupId":0,"containerId":"abbc123","containerImage":"", "containerName":"","podName":"","podNamespace":"","podUID":"","eventId":"0","eventName":"execve","argsNum":0,"returnValue":0,"stackAddresses":null,"args":null,"contextFlags":{"containerStarted":true}
 				},
 				"SigMetadata":{
-					"ID":"TRC-1","Version":"0.1.0","Name":"Standard Input/Output Over Socket","Description":"Redirection of process's standard input/output to socket","Tags":["linux","container"],"Properties":{"MITRE ATT\u0026CK":"Persistence: Server Software Component","Severity":3}
+					"ID":"TRC-1","Version":"0.1.0","Name":"Standard Input/Output Over Socket","Description":"Redirection of process's standard input/output to socket","Tags":["linux","container"],"Properties":{"MITRE ATT\u0026CK":"Persistence: Server Software Component","Severity":3}, "event-name":"stdio_over_socket"
 				}
 			}`,
 		},

@@ -28,6 +28,7 @@ func (sig *IllegitimateShell) GetMetadata() (detect.SignatureMetadata, error) {
 		ID:          "TRC-1016",
 		Version:     "1",
 		Name:        "Web server spawned a shell",
+		EventName:   "illegitimate_shell",
 		Description: "A web-server program on your server spawned a shell program. Shell is the linux command-line program, web servers usually don't run shell programs, so this alert might indicate an adversary is exploiting a web server program to gain command execution on the server.",
 		Properties: map[string]interface{}{
 			"Severity":             2,

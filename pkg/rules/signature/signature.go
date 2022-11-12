@@ -1,4 +1,4 @@
-package main
+package signature
 
 import (
 	_ "embed"
@@ -20,7 +20,7 @@ import (
 	"github.com/aquasecurity/tracee/types/detect"
 )
 
-func getSignatures(target string, partialEval bool, rulesDir string, rules []string, aioEnabled bool) ([]detect.Signature, error) {
+func Find(target string, partialEval bool, rulesDir string, rules []string, aioEnabled bool) ([]detect.Signature, error) {
 	if rulesDir == "" {
 		exePath, err := os.Executable()
 		if err != nil {
@@ -49,7 +49,8 @@ func getSignatures(target string, partialEval bool, rulesDir string, rules []str
 	} else {
 		for _, s := range sigs {
 			for _, r := range rules {
-				if m, err := s.GetMetadata(); err == nil && m.ID == r {
+				if m, err := s.GetMetadata(); err == nil &&
+					(m.ID == r || m.EventName == r) {
 					res = append(res, s)
 				}
 			}

@@ -18,7 +18,12 @@ const ALL_EVENT_TYPES = "*"
 
 // Config defines the engine's configurable values
 type Config struct {
+	// Enables the rule engine to run in the events pipeline
+	Enabled             bool
 	SignatureBufferSize uint
+	// If the rule engine is enabled to run in the events pipeline,
+	// the signatures are configured here
+	Signatures []detect.Signature
 }
 
 // Engine is a rule-engine that can process events coming from a set of input sources against a set of loaded signatures, and report the signatures' findings
@@ -65,6 +70,25 @@ func NewEngine(sigs []detect.Signature, sources EventSources, output chan detect
 		}
 	}
 	return &engine, nil
+}
+
+// StartPipeline receives an input chanel, and returns an output channel
+// allowing the rule engine to be used in the events pipeline
+func StartPipeline(cfg Config, input chan protocol.Event, done chan bool) <-chan detect.Finding {
+	output := make(chan detect.Finding)
+
+	source := EventSources{Tracee: input}
+	engine, err := NewEngine(cfg.Signatures, source, output, cfg)
+	if err != nil {
+		logger.Error("error creating engine: " + err.Error())
+	}
+
+	go func() {
+		defer close(output)
+		engine.Start(done)
+	}()
+
+	return output
 }
 
 // signatureStart is the signature handling business logics.

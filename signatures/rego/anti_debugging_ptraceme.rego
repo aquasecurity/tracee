@@ -4,6 +4,7 @@ __rego_metadoc__ := {
 	"id": "TRC-2",
 	"version": "0.1.0",
 	"name": "Anti-Debugging",
+	"event-name": "anti_debugging",
 	"description": "Process uses anti-debugging technique to block debugger",
 	"tags": ["linux", "container"],
 	"properties": {

@@ -25,6 +25,7 @@ func (sig *AslrInspection) GetMetadata() (detect.SignatureMetadata, error) {
 		ID:          "TRC-109",
 		Version:     "1",
 		Name:        "ASLR inspection detected",
+		EventName:   "aslr_inspection",
 		Description: "The ASLR (address space layout randomization) configuration was inspected. ASLR is used by Linux to prevent memory vulnerabilities. An adversary may want to inspect and change the ASLR configuration in order to avoid detection.",
 		Properties: map[string]interface{}{
 			"Severity":             0,

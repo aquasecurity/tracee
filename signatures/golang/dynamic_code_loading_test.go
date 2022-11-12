@@ -49,6 +49,7 @@ func TestDynamicCodeLoading(t *testing.T) {
 						ID:          "TRC-104",
 						Version:     "1",
 						Name:        "Dynamic code loading detected",
+						EventName:   "dynamic_code_loading",
 						Description: "Possible dynamic code loading was detected as the binary's memory is both writable and executable. Writing to an executable allocated memory region could be a technique used by adversaries to run code undetected and without dropping executables.",
 						Properties: map[string]interface{}{
 							"Severity":             2,
