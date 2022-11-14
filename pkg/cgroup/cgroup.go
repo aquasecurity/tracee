@@ -144,6 +144,17 @@ func (cs *Cgroups) GetDefaultCgroup() Cgroup {
 	return *cs.cgroup
 }
 
+func (cs *Cgroups) GetCgroup(ver CgroupVersion) Cgroup {
+	switch ver {
+	case CgroupVersion1:
+		return cs.cgroupv1
+	case CgroupVersion2:
+		return cs.cgroupv2
+	}
+
+	return nil
+}
+
 //
 // Cgroup
 //
