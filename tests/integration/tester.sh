@@ -16,7 +16,11 @@ do_docker_run() {
 }
 
 do_file_open() {
-    cat /proc/self/comm
+    cat /proc/self/comm > /dev/null
+}
+
+do_ping() {
+    ping -q -c 1 8.8.8.8 > /dev/null
 }
 
 # $1 is the function to call

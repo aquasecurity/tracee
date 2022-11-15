@@ -184,6 +184,22 @@ func checkSecurityFileOpenExecve(t *testing.T, gotOutput *[]trace.Event) {
 		assert.Equal(t, events.Execve, syscall)
 	}
 }
+
+func checkSecuritySocketConnect(t *testing.T, gotOutput *[]trace.Event) {
+	_, err := forkAndExecFunction(doPing)
+	require.NoError(t, err)
+
+	socketArgs := []trace.SockAddr{}
+	for _, evt := range *gotOutput {
+		arg, err := helpers.GetTraceeArgumentByName(evt, "remote_addr")
+		require.NoError(t, err)
+		socketArgs = append(socketArgs, arg.Value.(trace.SockAddr))
+	}
+	for _, sock := range socketArgs {
+		assert.Equal(t, "8.8.8.8", sock.Address())
+	}
+}
+
 func Test_EventFilters(t *testing.T) {
 	testCases := []struct {
 		name       string
@@ -250,6 +266,11 @@ func Test_EventFilters(t *testing.T) {
 			filterArgs: []string{"event=security_file_open", "security_file_open.syscall=execve"},
 			eventFunc:  checkSecurityFileOpenExecve,
 		},
+		{
+			name:       "trace only security_socket_connect with address \"8.8.8.8\"",
+			filterArgs: []string{"event=security_socket_connect", "security_socket_connect.remote_addr={\"address\":\"8.8.8.8\"}"},
+			eventFunc:  checkSecuritySocketConnect,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -292,6 +313,7 @@ const (
 	doLs         testFunc = "do_ls"
 	doDockerRun  testFunc = "do_docker_run"
 	doFileOpen   testFunc = "do_file_open"
+	doPing       testFunc = "do_ping"
 )
 
 // forkAndExecFunction runs a function in `tester.sh` in it's own system process.
