@@ -91,6 +91,7 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 				if eventID == events.CgroupRmdir {
 					cgroupId, _ = parse.ArgUint64Val(event, "cgroup_id")
 					queueClean <- cgroupId
+					out <- event
 					continue
 				}
 				// make sure a queue channel exists for this cgroupId
