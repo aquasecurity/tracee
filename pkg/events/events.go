@@ -5815,6 +5815,11 @@ var Definitions = eventDefinitions{
 					{MapName: "prog_array", MapIndexes: []uint32{tailKernelWrite}, ProgName: "trace_ret_kernel_write_tail"},
 					{MapName: "prog_array", MapIndexes: []uint32{tailSendBin}, ProgName: "send_bin"},
 				},
+				Events: []eventDependency{
+					{VfsWrite},
+					{VfsWritev},
+					{KernelWrite},
+				},
 			},
 		},
 		CaptureExec: {
