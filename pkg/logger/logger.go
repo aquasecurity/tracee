@@ -3,6 +3,7 @@ package logger
 import (
 	"io"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
@@ -189,13 +190,14 @@ func isAggregateSetAndIsLogNotNew(skip int, l *Logger) bool {
 
 // Debug
 func debugw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
-	if l.cfg.Level > DebugLevel {
-		return
-	}
-
 	if isAggregateSetAndIsLogNotNew(skip+1, l) {
 		return
 	}
+
+	pkg, file, line := getCallerInfo(skip + 1)
+	var originInfoKVs []interface{}
+	originInfoKVs = append(originInfoKVs, "pkg", pkg, "file", filepath.Base(file), "line", line)
+	keysAndValues = append(originInfoKVs, keysAndValues...)
 
 	l.l.Debugw(msg, keysAndValues...)
 }
@@ -227,11 +229,8 @@ func (l *Logger) Info(msg string, keysAndValues ...interface{}) {
 
 // Warn
 func warnw(skip int, l *Logger, msg string, keysAndValues ...interface{}) {
-	if l.cfg.Aggregate {
-		_, file, line := getCallerInfo(skip + 1)
-		if new := l.updateCounter(file, line); !new {
-			return
-		}
+	if isAggregateSetAndIsLogNotNew(skip+1, l) {
+		return
 	}
 
 	l.l.Warnw(msg, keysAndValues...)
