@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"testing"
+	"time"
 
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/flags"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
@@ -102,8 +103,8 @@ func TestPrepareFilter(t *testing.T) {
 			expectedError: filters.InvalidValue("-1"),
 		},
 		{
-			testName: "invalid uid 1",
-			filters: []string{"uid=	"},
+			testName:      "invalid uid 1",
+			filters:       []string{"uid=\t"},
 			expectedError: filters.InvalidValue("\t"),
 		},
 		{
@@ -454,6 +455,18 @@ func TestPrepareOutput(t *testing.T) {
 			expectedError:  errors.New("unrecognized output format: out-file. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info"),
 		},
 		{
+			testName:       "invalid aggregate-bpf-errors-interval val 1",
+			outputSlice:    []string{"option:aggregate-bpf-errors-interval="},
+			expectedOutput: tracee.OutputConfig{},
+			expectedError:  errors.New("invalid output option value for aggregate-bpf-errors-interval, use '--output help' for more info"),
+		},
+		{
+			testName:       "invalid aggregate-bpf-errors-interval val 2",
+			outputSlice:    []string{"option:aggregate-bpf-errors-interval=invalid"},
+			expectedOutput: tracee.OutputConfig{},
+			expectedError:  errors.New("invalid output option value for aggregate-bpf-errors-interval=invalid: strconv.Atoi: parsing \"invalid\": invalid syntax, use '--output help' for more info"),
+		},
+		{
 			testName:    "option stack-addresses",
 			outputSlice: []string{"option:stack-addresses"},
 			expectedOutput: tracee.OutputConfig{
@@ -494,15 +507,42 @@ func TestPrepareOutput(t *testing.T) {
 			},
 		},
 		{
-			testName:    "all options",
-			outputSlice: []string{"option:stack-addresses", "option:detect-syscall", "option:exec-env", "option:exec-hash", "option:sort-events"},
+			testName:    "option aggregate-bpf-errors",
+			outputSlice: []string{"option:aggregate-bpf-errors"},
 			expectedOutput: tracee.OutputConfig{
-				StackAddresses: true,
-				DetectSyscall:  true,
-				ExecEnv:        true,
-				ExecHash:       true,
-				ParseArguments: true,
-				EventsSorting:  true,
+				AggregateBPFErrors:         true,
+				AggregateBPFErrorsInterval: time.Duration(2),
+				ParseArguments:             true,
+			},
+		},
+		{
+			testName:    "option aggregate-bpf-errors-interval with 5 seconds",
+			outputSlice: []string{"option:aggregate-bpf-errors-interval=5"},
+			expectedOutput: tracee.OutputConfig{
+				AggregateBPFErrors:         true,
+				AggregateBPFErrorsInterval: time.Duration(5),
+				ParseArguments:             true,
+			},
+		},
+		{
+			testName: "all options",
+			outputSlice: []string{
+				"option:stack-addresses",
+				"option:detect-syscall",
+				"option:exec-env",
+				"option:exec-hash",
+				"option:sort-events",
+				"option:aggregate-bpf-errors",
+			},
+			expectedOutput: tracee.OutputConfig{
+				StackAddresses:             true,
+				DetectSyscall:              true,
+				ExecEnv:                    true,
+				ExecHash:                   true,
+				ParseArguments:             true,
+				EventsSorting:              true,
+				AggregateBPFErrors:         true,
+				AggregateBPFErrorsInterval: time.Duration(2),
 			},
 		},
 	}

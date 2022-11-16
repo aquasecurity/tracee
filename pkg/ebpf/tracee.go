@@ -11,6 +11,7 @@ import (
 	"io"
 	"net"
 	"os"
+	goruntime "runtime"
 	"runtime/debug"
 	"strconv"
 	"strings"
@@ -93,14 +94,16 @@ type CapabilitiesConfig struct {
 }
 
 type OutputConfig struct {
-	StackAddresses    bool
-	DetectSyscall     bool
-	ExecEnv           bool
-	RelativeTime      bool
-	ExecHash          bool
-	ParseArguments    bool
-	ParseArgumentsFDs bool
-	EventsSorting     bool
+	StackAddresses             bool
+	DetectSyscall              bool
+	ExecEnv                    bool
+	RelativeTime               bool
+	ExecHash                   bool
+	ParseArguments             bool
+	ParseArgumentsFDs          bool
+	AggregateBPFErrors         bool
+	AggregateBPFErrorsInterval time.Duration
+	EventsSorting              bool
 }
 
 // InitValues determines if to initialize values that might be needed by eBPF programs
@@ -180,12 +183,15 @@ type Tracee struct {
 	eventsPerfMap     *bpf.PerfBuffer
 	fileWrPerfMap     *bpf.PerfBuffer
 	netPerfMap        *bpf.PerfBuffer
+	bpfErrorsPerfMap  *bpf.PerfBuffer
 	eventsChannel     chan []byte
 	fileWrChannel     chan []byte
 	netChannel        chan []byte
+	bpfErrorsChannel  chan []byte
 	lostEvChannel     chan uint64
 	lostWrChannel     chan uint64
 	lostNetChannel    chan uint64
+	lostBPFErrChannel chan uint64
 	bootTime          uint64
 	startTime         uint64
 	stats             metrics.Stats
@@ -196,6 +202,7 @@ type Tracee struct {
 	pidsInMntns       bucketscache.BucketsCache //record the first n PIDs (host) in each mount namespace, for internal usage
 	StackAddressesMap *bpf.BPFMap
 	FDArgPathMap      *bpf.BPFMap
+	BPFErrorsCountMap *bpf.BPFMap
 	netInfo           netInfo
 	containers        *containers.Containers
 	procInfo          *procinfo.ProcInfo
@@ -543,6 +550,15 @@ func (t *Tracee) Init() error {
 	}
 	t.FDArgPathMap = fdArgPathMap
 
+	// Get reference to errors count map
+
+	bpfErrorsCountMap, err := t.bpfModule.GetMap("errors_count")
+	if err != nil {
+		t.Close()
+		return fmt.Errorf("error getting access to 'errors_count' eBPF Map %v", err)
+	}
+	t.BPFErrorsCountMap = bpfErrorsCountMap
+
 	// Initialize events sorting (pipeline step)
 
 	if t.config.Output.EventsSorting {
@@ -715,6 +731,7 @@ const (
 	optCgroupV1
 	optProcessInfo
 	optTranslateFDFilePath
+	optAggregateBPFErrors
 )
 
 // filters config should match defined values in ebpf code
@@ -775,6 +792,9 @@ func (t *Tracee) getOptionsConfig() uint32 {
 	}
 	if t.config.Output.ParseArgumentsFDs {
 		cOptVal = cOptVal | optTranslateFDFilePath
+	}
+	if t.config.Output.AggregateBPFErrors {
+		cOptVal = cOptVal | optAggregateBPFErrors
 	}
 
 	return cOptVal
@@ -904,6 +924,17 @@ func (t *Tracee) validateKallsymsDependencies() {
 }
 
 func (t *Tracee) populateBPFMaps() error {
+	// Prepare percpu error scratch map as soon as possible to make bpf tracee_error() available
+	bpfErrorsScratchMap, err := t.bpfModule.GetMap("error_scratch")
+	if err != nil {
+		t.Close()
+		return fmt.Errorf("error getting access to 'error_scratch' eBPF Map %v", err)
+	}
+	zeroKey := uint32(0)
+	// cpu (4 bytes) + bpf_error (88 bytes)
+	errorScratchBuffer := make([]byte, goruntime.NumCPU()*4+goruntime.NumCPU()*88)
+	bpfErrorsScratchMap.Update(unsafe.Pointer(&zeroKey), unsafe.Pointer(&errorScratchBuffer[0]))
+
 	// Prepare 32bit to 64bit syscall number mapping
 	sys32to64BPFMap, err := t.bpfModule.GetMap("sys_32_to_64_map") // u32, u32
 	if err != nil {
@@ -1312,6 +1343,18 @@ func (t *Tracee) initBPF() error {
 			return fmt.Errorf("error initializing net perf map: %v", err)
 		}
 
+		t.bpfErrorsChannel = make(chan []byte, 1000)
+		t.lostBPFErrChannel = make(chan uint64)
+		t.bpfErrorsPerfMap, err = t.bpfModule.InitPerfBuf(
+			"errors",
+			t.bpfErrorsChannel,
+			t.lostBPFErrChannel,
+			t.config.PerfBufferSize,
+		)
+		if err != nil {
+			return fmt.Errorf("error initializing errors perf map: %v", err)
+		}
+
 		return nil
 	})
 
@@ -1356,16 +1399,19 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.eventsPerfMap.Start()
 	t.fileWrPerfMap.Start()
 	t.netPerfMap.Start()
+	t.bpfErrorsPerfMap.Start()
 	go t.processLostEvents()
 	go t.handleEvents(ctx)
 	go t.processFileWrites()
 	go t.processNetEvents(ctx)
+	go t.processBPFErrors()
 	t.running = true
 	// block until ctx is cancelled elsewhere
 	<-ctx.Done()
 	t.eventsPerfMap.Stop()
 	t.fileWrPerfMap.Stop()
 	t.netPerfMap.Stop()
+	t.bpfErrorsPerfMap.Stop()
 	// capture profiler stats
 	if t.config.Capture.Profile {
 		f, err := utils.CreateAt(t.outDir, "tracee.profile")
