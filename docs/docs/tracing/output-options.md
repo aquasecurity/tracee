@@ -138,3 +138,21 @@ Tracee supports different output options for detected events:
     ```
 
     At the end of the event, you will also get information about the loader 
+
+7. **option:aggregate-bpf-errors**
+
+    This output option disables live bpf error sending, aggregating (counting)
+    error occurrences, which decreases processing usage and keeps the
+    error output cleaner. It dumps the aggregated errors every two seconds.
+
+    ```text
+    $ sudo ./dist/tracee-ebpf --output json --trace comm=bash --output option:aggregate-bpf-errors
+    ```
+8. **option:aggregate-bpf-errors-interval=n**
+
+    This output option indirectly enables `option:aggregate-bpf-errors` setting
+    the dumping interval to `n` seconds.
+
+    ```text
+    $ sudo ./dist/tracee-ebpf --output json --trace comm=bash --output option:aggregate-bpf-errors-interval=10
+    ```

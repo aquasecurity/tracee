@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/internal/printer"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
@@ -30,6 +32,8 @@ option:{stack-addresses,detect-syscall,exec-env,relative-time,exec-hash,parse-ar
   exec-hash                                        when tracing sched_process_exec, show the file hash(sha256) and ctime
   parse-arguments                                  do not show raw machine-readable values for event arguments, instead parse into human readable strings
   parse-arguments-fds                              enable parse-arguments and enrich fd with its file path translation. This can cause pipeline slowdowns.
+  aggregate-bpf-errors                             enable bpf errors aggregation avoiding a noisy output (dump every 2 seconds)
+  aggregate-bpf-errors-interval=n                  enable bpf errors aggregation setting the dump interval to n seconds
   sort-events                                      enable sorting events before passing to them output. This will decrease the overall program efficiency.
   cache-events                                     enable caching events to release perf-buffer pressure. This will decrease amount of event loss until cache is full.
 Examples:
@@ -72,7 +76,15 @@ func PrepareOutput(outputSlice []string) (tracee.OutputConfig, printer.Config, e
 		case "err-file":
 			errPath = outputParts[1]
 		case "option":
-			switch outputParts[1] {
+			optionParts := strings.SplitN(outputParts[1], "=", 2)
+			numOptionParts := len(optionParts)
+			if numOptionParts == 2 {
+				if optionParts[1] == "" {
+					return outcfg, printcfg, fmt.Errorf("invalid output option value for %s, use '--output help' for more info", optionParts[0])
+				}
+			}
+
+			switch optionParts[0] {
 			case "stack-addresses":
 				outcfg.StackAddresses = true
 			case "detect-syscall":
@@ -89,6 +101,20 @@ func PrepareOutput(outputSlice []string) (tracee.OutputConfig, printer.Config, e
 			case "parse-arguments-fds":
 				outcfg.ParseArgumentsFDs = true
 				outcfg.ParseArguments = true // no point in parsing file descriptor args only
+			case "aggregate-bpf-errors":
+				outcfg.AggregateBPFErrorsInterval = time.Duration(2)
+				outcfg.AggregateBPFErrors = true
+			case "aggregate-bpf-errors-interval":
+				interval := 2
+				if numOptionParts == 2 {
+					var err error
+					interval, err = strconv.Atoi(optionParts[1])
+					if err != nil {
+						return outcfg, printcfg, fmt.Errorf("invalid output option value for %s: %s, use '--output help' for more info", outputParts[1], err)
+					}
+				}
+				outcfg.AggregateBPFErrorsInterval = time.Duration(interval)
+				outcfg.AggregateBPFErrors = true
 			case "sort-events":
 				outcfg.EventsSorting = true
 			default:

@@ -475,6 +475,7 @@ enum event_id_e
 #define OPT_CGROUP_V1             (1 << 6)
 #define OPT_PROCESS_INFO          (1 << 7)
 #define OPT_TRANSLATE_FD_FILEPATH (1 << 8)
+#define OPT_AGGREGATE_BPF_ERRORS  (1 << 9)
 
 #define FILTER_UID_ENABLED       (1 << 0)
 #define FILTER_UID_OUT           (1 << 1)
@@ -619,6 +620,10 @@ enum kconfig_key_e
             _val;                                                                                  \
         })
 
+    #define READ_KERN_INTO(dst, src) bpf_probe_read((void *) &dst, sizeof(dst), &src);
+
+    #define READ_KERN_STR_INTO(dst, src) bpf_probe_read_str((void *) &dst, sizeof(dst), src);
+
     #define READ_USER(ptr)                                                                         \
         ({                                                                                         \
             typeof(ptr) _val;                                                                      \
@@ -638,6 +643,10 @@ enum kconfig_key_e
             bpf_core_read((void *) &_val, sizeof(_val), &ptr);                                     \
             _val;                                                                                  \
         })
+
+    #define READ_KERN_INTO(dst, src) bpf_core_read((void *) &dst, sizeof(dst), &src);
+
+    #define READ_KERN_STR_INTO(dst, src) bpf_core_read_str((void *) &dst, sizeof(dst), src);
 
     #define READ_USER(ptr)                                                                         \
         ({                                                                                         \
@@ -660,6 +669,9 @@ enum kconfig_key_e
 
 #define BPF_HASH(_name, _key_type, _value_type, _max_entries)                                      \
     BPF_MAP(_name, BPF_MAP_TYPE_HASH, _key_type, _value_type, _max_entries)
+
+#define BPF_PERCPU_HASH(_name, _key_type, _value_type, _max_entries)                               \
+    BPF_MAP(_name, BPF_MAP_TYPE_PERCPU_HASH, _key_type, _value_type, _max_entries)
 
 #define BPF_LRU_HASH(_name, _key_type, _value_type, _max_entries)                                  \
     BPF_MAP(_name, BPF_MAP_TYPE_LRU_HASH, _key_type, _value_type, _max_entries)
@@ -901,6 +913,25 @@ typedef struct bpf_attach {
     enum bpf_write_user_e write_user;
 } bpf_attach_t;
 
+enum bpf_error_id
+{
+    BPF_ERR_UNSPEC = 0U, // enforce enum to u32
+
+    BPF_ERR_MAP_UPDATE_ELEM,
+    BPF_ERR_MAP_DELETE_ELEM,
+    BPF_ERR_GET_CURRENT_COMM,
+    BPF_ERR_TAIL_CALL,
+};
+
+#define BPF_MAX_ERR_FILE_LEN 72
+
+typedef struct bpf_error {
+    s64 ret;
+    enum bpf_error_id id;
+    u32 line;
+    char file[BPF_MAX_ERR_FILE_LEN];
+} bpf_error_t;
+
 // KERNEL STRUCTS ----------------------------------------------------------------------------------
 
 #ifndef CORE
@@ -963,13 +994,61 @@ BPF_HASH(module_init_map, u32, kmod_data_t, 256);                  // holds modu
 BPF_LRU_HASH(fd_arg_path_map, fd_arg_task_t, fd_arg_path_t, 1024); // store fds paths by task
 BPF_LRU_HASH(bpf_attach_map, u32, bpf_attach_t, 1024);             // holds bpf prog info
 BPF_LRU_HASH(bpf_attach_tmp_map, u32, bpf_attach_t, 1024);         // temporarily hold bpf_attach_t
+BPF_PERCPU_HASH(error_scratch, u32, bpf_error_t, 1);               // percpu error scratch
+BPF_HASH(errors_count, bpf_error_t, u32, 4096);                    // errors count
 // clang-format on
 
 // EBPF PERF BUFFERS -------------------------------------------------------------------------------
 
+BPF_PERF_OUTPUT(errors, 1024);      // errors submission
 BPF_PERF_OUTPUT(events, 1024);      // events submission
 BPF_PERF_OUTPUT(file_writes, 1024); // file writes events submission
 BPF_PERF_OUTPUT(net_events, 1024);  // network events submission
+
+// HELPERS: ERRORS ---------------------------------------------------------------------------------
+
+// inc_error_count returns count after increment
+static __always_inline u32 inc_error_count(bpf_error_t *err)
+{
+    u32 one = 1;
+    u32 *count = bpf_map_lookup_elem(&errors_count, err);
+    if (likely(count != NULL)) {
+        __atomic_add_fetch(count, one, __ATOMIC_RELAXED);
+
+        return *count;
+    }
+
+    bpf_map_update_elem(&errors_count, err, &one, BPF_ANY);
+
+    return one;
+}
+
+static __always_inline void
+do_tracee_error(void *ctx, u32 opts, u32 id, s64 ret, u32 line, void *file)
+{
+    if (!ctx || !file)
+        return;
+
+    u32 zero = 0;
+    bpf_error_t *err = bpf_map_lookup_elem(&error_scratch, &zero);
+    if (unlikely(err == NULL))
+        return;
+
+    READ_KERN_INTO(err->id, id);
+    READ_KERN_INTO(err->ret, ret);
+    READ_KERN_INTO(err->line, line);
+    READ_KERN_STR_INTO(err->file, file);
+
+    // not submit to errors perf buffer if aggregation is enabled
+    if (opts & OPT_AGGREGATE_BPF_ERRORS) {
+        inc_error_count(err);
+        return;
+    }
+
+    bpf_perf_event_output(ctx, &errors, BPF_F_CURRENT_CPU, err, sizeof(*err));
+}
+
+#define tracee_error(ctx, opts, id, ret) do_tracee_error(ctx, opts, id, ret, __LINE__, __FILE__);
 
 // HELPERS: DEVICES --------------------------------------------------------------------------------
 
@@ -1649,8 +1728,9 @@ static __always_inline int get_iface_config(int ifindex)
 // INTERNAL: CONTEXT -------------------------------------------------------------------------------
 
 static __always_inline int
-init_context(event_context_t *context, struct task_struct *task, u32 options)
+init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 options)
 {
+    long ret = 0;
     u64 id = bpf_get_current_pid_tgid();
     context->task.start_time = get_task_start_time(task);
     context->task.host_tid = id;
@@ -1663,7 +1743,10 @@ init_context(event_context_t *context, struct task_struct *task, u32 options)
     context->task.pid_id = get_task_pid_ns_id(task);
     context->task.uid = bpf_get_current_uid_gid();
     context->task.flags = 0;
-    bpf_get_current_comm(&context->task.comm, sizeof(context->task.comm));
+    ret = bpf_get_current_comm(&context->task.comm, sizeof(context->task.comm));
+    if (ret < 0)
+        tracee_error(ctx, options, BPF_ERR_GET_CURRENT_COMM, ret);
+
     char *uts_name = get_task_uts_name(task);
     if (uts_name)
         bpf_probe_read_str(&context->task.uts_name, TASK_COMM_LEN, uts_name);
@@ -1724,7 +1807,7 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
         return 0;
 
     data->task = (struct task_struct *) bpf_get_current_task();
-    init_context(&data->context, data->task, data->config->options);
+    init_context(ctx, &data->context, data->task, data->config->options);
     data->ctx = ctx;
     data->buf_off = sizeof(event_context_t);
     int buf_idx = SUBMIT_BUF_IDX;
@@ -3349,6 +3432,7 @@ int sys_dup_exit_tail(void *ctx)
 SEC("raw_tracepoint/sched_process_fork")
 int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
 {
+    long ret = 0;
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
@@ -3365,7 +3449,9 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     task.context.tid = get_task_ns_pid(child);
     task.context.host_tid = get_task_host_pid(child);
     task.context.start_time = start_time;
-    bpf_map_update_elem(&task_info_map, &task.context.host_tid, &task, BPF_ANY);
+    ret = bpf_map_update_elem(&task_info_map, &task.context.host_tid, &task, BPF_ANY);
+    if (ret < 0)
+        tracee_error(ctx, data.config->options, BPF_ERR_MAP_UPDATE_ELEM, ret);
 
     int parent_pid = get_task_host_pid(parent);
     int child_pid = get_task_host_pid(child);
@@ -3377,7 +3463,9 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     if (data.config->filters & FILTER_PROC_TREE_ENABLED) {
         u32 *tgid_filtered = bpf_map_lookup_elem(&process_tree_map, &parent_tgid);
         if (tgid_filtered) {
-            bpf_map_update_elem(&process_tree_map, &child_tgid, tgid_filtered, BPF_ANY);
+            ret = bpf_map_update_elem(&process_tree_map, &child_tgid, tgid_filtered, BPF_ANY);
+            if (ret < 0)
+                tracee_error(ctx, data.config->options, BPF_ERR_MAP_UPDATE_ELEM, ret);
         }
     }
 
@@ -3388,7 +3476,9 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     // perform this check after should_trace() to only add forked childs of a traced parent
     task.follow = true;
     task.new_task = true;
-    bpf_map_update_elem(&task_info_map, &child_pid, &task, BPF_ANY);
+    ret = bpf_map_update_elem(&task_info_map, &child_pid, &task, BPF_ANY);
+    if (ret < 0)
+        tracee_error(ctx, data.config->options, BPF_ERR_MAP_UPDATE_ELEM, ret);
 
     if (should_submit(SCHED_PROCESS_FORK, data.config) || data.config->options & OPT_PROCESS_INFO) {
         int parent_ns_pid = get_task_ns_pid(parent);
@@ -4791,6 +4881,7 @@ int BPF_KPROBE(trace_security_socket_setsockopt)
 // To delete socket from net map use tid==0, otherwise, update
 static __always_inline int net_map_update_or_delete_sock(void *ctx, struct sock *sk, u32 tid)
 {
+    long ret = 0;
     net_id_t connect_id = {0};
     u16 family = get_sock_family(sk);
 
@@ -4810,7 +4901,10 @@ static __always_inline int net_map_update_or_delete_sock(void *ctx, struct sock 
         if (tid != 0) {
             net_ctx_t net_ctx;
             net_ctx.host_tid = tid;
-            bpf_get_current_comm(&net_ctx.comm, sizeof(net_ctx.comm));
+            ret = bpf_get_current_comm(&net_ctx.comm, sizeof(net_ctx.comm));
+            if (ret < 0)
+                tracee_error(ctx, 0, BPF_ERR_GET_CURRENT_COMM, ret);
+
             bpf_map_update_elem(&network_map, &connect_id, &net_ctx, BPF_ANY);
         } else {
             bpf_map_delete_elem(&network_map, &connect_id);
@@ -4889,6 +4983,7 @@ int BPF_KPROBE(trace_udpv6_destroy_sock)
 SEC("raw_tracepoint/inet_sock_set_state")
 int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
 {
+    long ret = 0;
     net_id_t connect_id = {0};
     net_ctx_ext_t net_ctx_ext = {0};
 
@@ -4932,7 +5027,10 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
             if (connect_id.port) {
                 if (!sock_ctx_p) {
                     net_ctx_ext.host_tid = data.context.task.host_tid;
-                    bpf_get_current_comm(&net_ctx_ext.comm, sizeof(net_ctx_ext.comm));
+                    ret = bpf_get_current_comm(&net_ctx_ext.comm, sizeof(net_ctx_ext.comm));
+                    if (ret < 0)
+                        tracee_error(ctx, data.config->options, BPF_ERR_GET_CURRENT_COMM, ret);
+
                     net_ctx_ext.local_port = connect_id.port;
                     bpf_map_update_elem(&sock_ctx_map, &sk, &net_ctx_ext, BPF_ANY);
                     bpf_map_update_elem(&network_map, &connect_id, &net_ctx_ext, BPF_ANY);
@@ -4959,6 +5057,7 @@ int tracepoint__inet_sock_set_state(struct bpf_raw_tracepoint_args *ctx)
 SEC("kprobe/tcp_connect")
 int BPF_KPROBE(trace_tcp_connect)
 {
+    long ret = 0;
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
@@ -4985,7 +5084,10 @@ int BPF_KPROBE(trace_tcp_connect)
     }
 
     net_ctx_ext.host_tid = data.context.task.host_tid;
-    bpf_get_current_comm(&net_ctx_ext.comm, sizeof(net_ctx_ext.comm));
+    ret = bpf_get_current_comm(&net_ctx_ext.comm, sizeof(net_ctx_ext.comm));
+    if (ret < 0)
+        tracee_error(ctx, data.config->options, BPF_ERR_GET_CURRENT_COMM, ret);
+
     net_ctx_ext.local_port = connect_id.port;
     bpf_map_update_elem(&sock_ctx_map, &sk, &net_ctx_ext, BPF_ANY);
 
