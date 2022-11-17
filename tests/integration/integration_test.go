@@ -265,6 +265,7 @@ func Test_EventFilters(t *testing.T) {
 				Capabilities: &tracee.CapabilitiesConfig{
 					BypassCaps: true,
 				},
+				BPFObjConfigs: make(map[tracee.TraceeBPFModuleID]tracee.BPFObjConfig),
 			}
 			eventOutput := []trace.Event{}
 

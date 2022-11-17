@@ -62,8 +62,7 @@ type Config struct {
 	Debug              bool
 	maxPidsCache       int // maximum number of pids to cache per mnt ns (in Tracee.pidsInMntns)
 	BTFObjPath         string
-	BPFObjPath         string
-	BPFObjBytes        []byte
+	BPFObjConfigs      map[TraceeBPFModuleID]BPFObjConfig
 	KernelConfig       *helpers.KernelConfig
 	ChanEvents         chan trace.Event
 	ChanErrors         chan error
@@ -72,6 +71,17 @@ type Config struct {
 	Sockets            runtime.Sockets
 	ContainersEnrich   bool
 }
+
+type BPFObjConfig struct {
+	BPFObjPath  string
+	BPFObjBytes []byte
+}
+
+type TraceeBPFModuleID uint32
+
+const (
+	BPFModuleMain TraceeBPFModuleID = iota + 1
+)
 
 type CaptureConfig struct {
 	OutputPath      string
@@ -140,8 +150,14 @@ func (tc Config) Validate() error {
 		}
 	}
 
-	if tc.BPFObjBytes == nil {
-		return errors.New("nil bpf object in memory")
+	if len(tc.BPFObjConfigs) == 0 {
+		return errors.New("no bpf objects configured")
+	}
+
+	for i := range tc.BPFObjConfigs {
+		if tc.BPFObjConfigs[i].BPFObjBytes == nil {
+			return errors.New("nil bpf object in memory")
+		}
 	}
 
 	if tc.ChanEvents == nil {
@@ -176,7 +192,7 @@ type Tracee struct {
 	config            Config
 	probes            probes.Probes
 	events            map[events.ID]eventConfig
-	bpfModule         *bpf.Module
+	bpfModules        map[TraceeBPFModuleID]*bpf.Module
 	eventsPerfMap     *bpf.PerfBuffer
 	fileWrPerfMap     *bpf.PerfBuffer
 	netPerfMap        *bpf.PerfBuffer
@@ -281,6 +297,7 @@ func New(cfg Config) (*Tracee, error) {
 		writtenFiles:  make(map[string]string),
 		capturedFiles: make(map[string]int64),
 		events:        GetEssentialEventsList(),
+		bpfModules:    make(map[TraceeBPFModuleID]*bpf.Module),
 	}
 
 	// Initialize capabilities rings soon
@@ -527,7 +544,12 @@ func (t *Tracee) Init() error {
 
 	// Get reference to stack trace addresses map
 
-	stackAddressesMap, err := t.bpfModule.GetMap("stack_addresses")
+	mainBPFModule, ok := t.bpfModules[BPFModuleMain]
+	if !ok {
+		return errors.New("could not find main tracee bpf module")
+	}
+
+	stackAddressesMap, err := mainBPFModule.GetMap("stack_addresses")
 	if err != nil {
 		t.Close()
 		return fmt.Errorf("error getting acces to 'stack_addresses' eBPF Map %v", err)
@@ -536,7 +558,7 @@ func (t *Tracee) Init() error {
 
 	// Get reference to fd arg path map
 
-	fdArgPathMap, err := t.bpfModule.GetMap("fd_arg_path_map")
+	fdArgPathMap, err := mainBPFModule.GetMap("fd_arg_path_map")
 	if err != nil {
 		t.Close()
 		return fmt.Errorf("error getting access to 'fd_arg_path_map' eBPF Map %v", err)
@@ -590,11 +612,16 @@ func (t *Tracee) generateInitValues() (InitValues, error) {
 
 // Initialize tail calls program array
 func (t *Tracee) initTailCall(mapName string, mapIndexes []uint32, progName string) error {
-	bpfMap, err := t.bpfModule.GetMap(mapName)
+	mainBPFModule, ok := t.bpfModules[BPFModuleMain]
+	if !ok {
+		return errors.New("could not find main tracee bpf module")
+	}
+
+	bpfMap, err := mainBPFModule.GetMap(mapName)
 	if err != nil {
 		return err
 	}
-	bpfProg, err := t.bpfModule.GetProgram(progName)
+	bpfProg, err := mainBPFModule.GetProgram(progName)
 	if err != nil {
 		return fmt.Errorf("could not get BPF program %s: %v", progName, err)
 	}
@@ -947,8 +974,14 @@ func (t *Tracee) validateKallsymsDependencies() {
 }
 
 func (t *Tracee) populateBPFMaps() error {
+
+	mainBPFModule, ok := t.bpfModules[BPFModuleMain]
+	if !ok {
+		return errors.New("could not find main tracee bpf module")
+	}
+
 	// Prepare 32bit to 64bit syscall number mapping
-	sys32to64BPFMap, err := t.bpfModule.GetMap("sys_32_to_64_map") // u32, u32
+	sys32to64BPFMap, err := mainBPFModule.GetMap("sys_32_to_64_map") // u32, u32
 	if err != nil {
 		return err
 	}
@@ -962,7 +995,7 @@ func (t *Tracee) populateBPFMaps() error {
 
 	if t.kernelSymbols != nil {
 		// Initialize map for global symbols of the kernel
-		bpfKsymsMap, err := t.bpfModule.GetMap("ksymbols_map") // u32, u64
+		bpfKsymsMap, err := mainBPFModule.GetMap("ksymbols_map") // u32, u64
 		if err != nil {
 			return err
 		}
@@ -983,7 +1016,7 @@ func (t *Tracee) populateBPFMaps() error {
 	// Initialize kconfig variables (map used instead of relying in libbpf's .kconfig automated maps)
 	// Note: this allows libbpf not to rely on the system kconfig file, tracee does the kconfig var identification job
 
-	bpfKConfigMap, err := t.bpfModule.GetMap("kconfig_map") // u32, u32
+	bpfKConfigMap, err := mainBPFModule.GetMap("kconfig_map") // u32, u32
 	if err != nil {
 		return err
 	}
@@ -1003,7 +1036,7 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Initialize config map
-	bpfConfigMap, err := t.bpfModule.GetMap("config_map") // u32, u32
+	bpfConfigMap, err := mainBPFModule.GetMap("config_map") // u32, u32
 	if err != nil {
 		return err
 	}
@@ -1040,13 +1073,13 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	errmap := make(map[string]error, 0)
-	errmap[UIDFilterMap] = t.config.Filter.UIDFilter.InitBPF(t.bpfModule)
-	errmap[PIDFilterMap] = t.config.Filter.PIDFilter.InitBPF(t.bpfModule)
-	errmap[MntNSFilterMap] = t.config.Filter.MntNSFilter.InitBPF(t.bpfModule)
-	errmap[PidNSFilterMap] = t.config.Filter.PidNSFilter.InitBPF(t.bpfModule)
-	errmap[UTSFilterMap] = t.config.Filter.UTSFilter.InitBPF(t.bpfModule)
-	errmap[CommFilterMap] = t.config.Filter.CommFilter.InitBPF(t.bpfModule)
-	errmap[ContIdFilter] = t.config.Filter.ContIDFilter.InitBPF(t.bpfModule, t.containers)
+	errmap[UIDFilterMap] = t.config.Filter.UIDFilter.InitBPF(mainBPFModule)
+	errmap[PIDFilterMap] = t.config.Filter.PIDFilter.InitBPF(mainBPFModule)
+	errmap[MntNSFilterMap] = t.config.Filter.MntNSFilter.InitBPF(mainBPFModule)
+	errmap[PidNSFilterMap] = t.config.Filter.PidNSFilter.InitBPF(mainBPFModule)
+	errmap[UTSFilterMap] = t.config.Filter.UTSFilter.InitBPF(mainBPFModule)
+	errmap[CommFilterMap] = t.config.Filter.CommFilter.InitBPF(mainBPFModule)
+	errmap[ContIdFilter] = t.config.Filter.ContIDFilter.InitBPF(mainBPFModule, t.containers)
 
 	for k, v := range errmap {
 		if v != nil {
@@ -1055,13 +1088,13 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	// Populate containers map with existing containers
-	err = t.containers.PopulateBpfMap(t.bpfModule)
+	err = t.containers.PopulateBpfMap(mainBPFModule)
 	if err != nil {
 		return err
 	}
 
 	// Set filters given by the user to filter file write events
-	fileFilterMap, err := t.bpfModule.GetMap("file_filter") // u32, u32
+	fileFilterMap, err := mainBPFModule.GetMap("file_filter") // u32, u32
 	if err != nil {
 		return err
 	}
@@ -1081,7 +1114,7 @@ func (t *Tracee) populateBPFMaps() error {
 			eventsParams[id] = append(eventsParams[id], bufferdecoder.GetParamType(param.Type))
 		}
 	}
-	paramsTypesBPFMap, err := t.bpfModule.GetMap("params_types_map") // u32, u64
+	paramsTypesBPFMap, err := mainBPFModule.GetMap("params_types_map") // u32, u64
 	if err != nil {
 		return err
 	}
@@ -1097,9 +1130,9 @@ func (t *Tracee) populateBPFMaps() error {
 		}
 	}
 
-	_, ok := t.events[events.HookedSyscalls]
+	_, ok = t.events[events.HookedSyscalls]
 	if ok {
-		syscallsToCheckMap, err := t.bpfModule.GetMap("syscalls_to_check_map")
+		syscallsToCheckMap, err := mainBPFModule.GetMap("syscalls_to_check_map")
 		if err != nil {
 			return err
 		}
@@ -1129,7 +1162,7 @@ func (t *Tracee) populateBPFMaps() error {
 	}
 
 	if len(t.netInfo.ifaces) > 0 {
-		networkConfingMap, err := t.bpfModule.GetMap("network_config") // u32, int
+		networkConfingMap, err := mainBPFModule.GetMap("network_config") // u32, int
 		if err != nil {
 			return err
 		}
@@ -1262,32 +1295,37 @@ func (t *Tracee) initBPF() error {
 
 	err = capabilities.GetInstance().Required(func() error {
 
+		mainBpfConfig, ok := t.config.BPFObjConfigs[BPFModuleMain]
+		if !ok {
+			return errors.New("could not find bpf object configuration")
+		}
+
 		newModuleArgs := bpf.NewModuleArgs{
 			KConfigFilePath: t.config.KernelConfig.GetKernelConfigFilePath(),
 			BTFObjPath:      t.config.BTFObjPath,
-			BPFObjBuff:      t.config.BPFObjBytes,
-			BPFObjName:      t.config.BPFObjPath,
+			BPFObjBuff:      mainBpfConfig.BPFObjBytes,
+			BPFObjName:      mainBpfConfig.BPFObjPath,
 		}
 
-		// Open the eBPF object file (create a new module)
-
-		t.bpfModule, err = bpf.NewModuleFromBufferArgs(newModuleArgs)
+		// Open the eBPF object files
+		bpfMainModule, err := bpf.NewModuleFromBufferArgs(newModuleArgs)
 		if err != nil {
 			return err
 		}
+		t.bpfModules[BPFModuleMain] = bpfMainModule
 
 		// Initialize probes
 
 		netEnabled := isCaptureNetSet || isFilterNetSet
 
-		t.probes, err = probes.Init(t.bpfModule, netEnabled)
+		t.probes, err = probes.Init(bpfMainModule, netEnabled)
 		if err != nil {
 			return err
 		}
 
 		// Load the eBPF object into kernel
 
-		err = t.bpfModule.BPFLoadObject()
+		err = bpfMainModule.BPFLoadObject()
 		if err != nil {
 			return err
 		}
@@ -1306,7 +1344,7 @@ func (t *Tracee) initBPF() error {
 			return err
 		}
 
-		err = t.config.Filter.ProcessTreeFilter.InitBPF(t.bpfModule)
+		err = t.config.Filter.ProcessTreeFilter.InitBPF(bpfMainModule)
 		if err != nil {
 			return fmt.Errorf("error building process tree: %v", err)
 		}
@@ -1315,7 +1353,7 @@ func (t *Tracee) initBPF() error {
 
 		t.eventsChannel = make(chan []byte, 1000)
 		t.lostEvChannel = make(chan uint64)
-		t.eventsPerfMap, err = t.bpfModule.InitPerfBuf(
+		t.eventsPerfMap, err = bpfMainModule.InitPerfBuf(
 			"events",
 			t.eventsChannel,
 			t.lostEvChannel,
@@ -1327,7 +1365,7 @@ func (t *Tracee) initBPF() error {
 
 		t.fileWrChannel = make(chan []byte, 1000)
 		t.lostWrChannel = make(chan uint64)
-		t.fileWrPerfMap, err = t.bpfModule.InitPerfBuf(
+		t.fileWrPerfMap, err = bpfMainModule.InitPerfBuf(
 			"file_writes",
 			t.fileWrChannel,
 			t.lostWrChannel,
@@ -1339,7 +1377,7 @@ func (t *Tracee) initBPF() error {
 
 		t.netChannel = make(chan []byte, 1000)
 		t.lostNetChannel = make(chan uint64)
-		t.netPerfMap, err = t.bpfModule.InitPerfBuf(
+		t.netPerfMap, err = bpfMainModule.InitPerfBuf(
 			"net_events",
 			t.netChannel,
 			t.lostNetChannel,
@@ -1367,11 +1405,17 @@ func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 }
 
 func (t *Tracee) getProcessCtx(hostTid uint32) (procinfo.ProcessCtx, error) {
+
+	//FIXME: is this access going to affect performance?
+	mainBpfModule, ok := t.bpfModules[BPFModuleMain]
+	if !ok {
+		return procinfo.ProcessCtx{}, errors.New("could not find bpf module")
+	}
 	processCtx, err := t.procInfo.GetElement(int(hostTid))
 	if err == nil {
 		return processCtx, nil
 	} else {
-		processContextMap, err := t.bpfModule.GetMap("task_info_map")
+		processContextMap, err := mainBpfModule.GetMap("task_info_map")
 		if err != nil {
 			return processCtx, err
 		}
@@ -1458,9 +1502,11 @@ func (t *Tracee) Close() {
 					return fmt.Errorf("failed to detach probes when closing tracee: %s", err)
 				}
 			}
-			if t.bpfModule != nil {
-				t.bpfModule.Close()
+
+			for _, v := range t.bpfModules {
+				v.Close()
 			}
+
 			if t.containers != nil {
 				err := t.containers.Close()
 				if err != nil {

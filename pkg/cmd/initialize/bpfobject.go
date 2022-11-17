@@ -135,8 +135,10 @@ func BpfObject(config *tracee.Config, kConfig *helpers.KernelConfig, OSInfo *hel
 
 out:
 	config.KernelConfig = kConfig
-	config.BPFObjPath = bpfFilePath
-	config.BPFObjBytes = bpfBytes
+	config.BPFObjConfigs[tracee.BPFModuleMain] = tracee.BPFObjConfig{
+		BPFObjPath:  bpfFilePath,
+		BPFObjBytes: bpfBytes,
+	}
 
 	return nil
 }
