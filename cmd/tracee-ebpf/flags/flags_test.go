@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"testing"
+	"time"
 
 	"github.com/aquasecurity/tracee/cmd/tracee-ebpf/flags"
 	tracee "github.com/aquasecurity/tracee/pkg/ebpf"
 	"github.com/aquasecurity/tracee/pkg/events/queue"
 	"github.com/aquasecurity/tracee/pkg/filters"
+	"github.com/aquasecurity/tracee/pkg/webhook"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -547,4 +549,83 @@ func TestPrepareCache(t *testing.T) {
 			assert.Equal(t, testcase.expectedCache, cache)
 		})
 	}
+}
+
+func TestPrepareWebhook(t *testing.T) {
+	t.Run("various webhook options", func(t *testing.T) {
+		testCases := []struct {
+			testName        string
+			webhookSlice    []string
+			expectedWebhook webhook.Webhook
+			expectedError   error
+		}{
+			{
+				testName:      "invalid webhook option",
+				webhookSlice:  []string{"foo"},
+				expectedError: errors.New("invalid webhook option specified, use '--webhook help' for more info"),
+			},
+			{
+				testName:      "invalid webhook format",
+				webhookSlice:  []string{"format=gob"},
+				expectedError: errors.New("invalid webhook format \"gob\""),
+			},
+			{
+				testName:      "invalid webhook url",
+				webhookSlice:  []string{"url=test"},
+				expectedError: errors.New("invalid webhook url parse \"test\": invalid URI for request"),
+			},
+			{
+				testName:      "invalid webhook timeout",
+				webhookSlice:  []string{"timeout=i"},
+				expectedError: errors.New("invalid webhook timeout time: invalid duration \"i\""),
+			},
+			{
+				testName:     "configure url",
+				webhookSlice: []string{"url=http://localhost:8080"},
+				expectedWebhook: webhook.Webhook{
+					URL:     "http://localhost:8080",
+					Timeout: time.Second * 1, //default
+					Format:  "json",          //default
+				},
+			},
+			{
+				testName:     "configure format",
+				webhookSlice: []string{"format=json"},
+				expectedWebhook: webhook.Webhook{
+					Timeout: time.Second * 1, //default
+					Format:  "json",
+				},
+			},
+			{
+				testName:     "configure timeout",
+				webhookSlice: []string{"timeout=5s"},
+				expectedWebhook: webhook.Webhook{
+					Timeout: time.Second * 5,
+					Format:  "json", //default
+				},
+			},
+			{
+				testName:     "configure multiple options",
+				webhookSlice: []string{"url=http://localhost:8080", "format=json", "timeout=5s"},
+				expectedWebhook: webhook.Webhook{
+					URL:     "http://localhost:8080",
+					Format:  "json",
+					Timeout: time.Second * 5,
+				},
+			},
+		}
+
+		for _, tc := range testCases {
+			t.Run(tc.testName, func(t *testing.T) {
+				webhook, err := flags.PrepareWebhook(tc.webhookSlice)
+				if tc.expectedError == nil {
+					require.NoError(t, err)
+					assert.Equal(t, tc.expectedWebhook, webhook, tc.testName)
+				} else {
+					require.Equal(t, tc.expectedError, err, tc.testName)
+					assert.Empty(t, webhook, tc.testName)
+				}
+			})
+		}
+	})
 }

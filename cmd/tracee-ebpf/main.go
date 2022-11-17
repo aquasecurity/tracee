@@ -150,6 +150,11 @@ func main() {
 			printerConfig.ContainerMode = containerMode
 			cfg.Output = &output
 
+			webhook, err := flags.PrepareWebhook(c.StringSlice("webhook"))
+			if err != nil {
+				return err
+			}
+
 			// Check kernel lockdown
 
 			lockdown, err := helpers.Lockdown()
@@ -247,6 +252,9 @@ func main() {
 					select {
 					case event := <-cfg.ChanEvents:
 						printer.Print(event)
+						if err := webhook.Send(event); err != nil {
+							printer.Error(err)
+						}
 					case err := <-cfg.ChanErrors:
 						printer.Error(err)
 					case <-ctx.Done():
@@ -360,6 +368,11 @@ func main() {
 				Name:        "containers",
 				Usage:       "enable container info enrichment to events. this feature is experimental and may cause unexpected behavior in the pipeline",
 				Destination: &enrich,
+			},
+			&cli.StringSliceFlag{
+				Name:  "webhook",
+				Value: nil,
+				Usage: "HTTP endpoint to call for every event. Run '--webhook help' for more info.",
 			},
 		},
 	}
