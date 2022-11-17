@@ -322,6 +322,7 @@ endif
 #
 
 TRACEE_EBPF_OBJ_SRC = ./pkg/ebpf/c/tracee.bpf.c
+MAPS_EBPF_OBJ_SRC = ./pkg/ebpf/c/maps.bpf.C
 
 KERN_RELEASE ?= $(UNAME_R)
 KERN_BUILD_PATH ?= $(if $(KERN_HEADERS),$(KERN_HEADERS),/lib/modules/$(KERN_RELEASE)/build)
@@ -408,10 +409,28 @@ uninstall-bpf-nocore: \
 
 TRACEE_EBPF_OBJ_CORE_HEADERS = $(shell find pkg/ebpf/c -name *.h)
 
+.PHONY: bpf-map
+bpf-map: $(OUTPUT_DIR)/maps.bpf.o
+
+$(OUTPUT_DIR)/maps.bpf.o: \
+	$(MAPS_EBPF_OBJ_SRC)
+#
+	$(CMD_CLANG) \
+		-D__TARGET_ARCH_$(LINUX_ARCH) \
+		-I./pkg/ebpf/c/ \
+		-I$(OUTPUT_DIR)/libbpf/ \
+		-I ./3rdparty/include \
+		-target bpf \
+		-O2 -g \
+		-march=bpf -mcpu=$(BPF_VCPU) \
+		-c $(MAPS_EBPF_OBJ_SRC) \
+		-o $@
+
 .PHONY: bpf-core
 bpf-core: $(OUTPUT_DIR)/tracee.bpf.core.o
 
 $(OUTPUT_DIR)/tracee.bpf.core.o: \
+	$(OUTPUT_DIR)/maps.bpf.o \
 	$(OUTPUT_DIR)/libbpf/libbpf.a \
 	$(TRACEE_EBPF_OBJ_SRC) \
 	$(TRACEE_EBPF_OBJ_CORE_HEADERS)
@@ -432,7 +451,7 @@ $(OUTPUT_DIR)/tracee.bpf.core.o: \
 .PHONY: clean-bpf-core
 clean-bpf-core:
 #
-	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee.bpf.core.o
+	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee.bpf.core.o $(OUTPUT_DIR)/maps.bpf.o
 
 #
 # tracee-ebpf
@@ -464,6 +483,7 @@ TRACEE_EBPF_SRC = $(shell find $(TRACEE_EBPF_SRC_DIRS) -type f -name '*.go' ! -n
 tracee-ebpf: $(OUTPUT_DIR)/tracee-ebpf
 
 $(OUTPUT_DIR)/tracee-ebpf: \
+	$(OUTPUT_DIR)/maps.bpf.o \
 	$(OUTPUT_DIR)/tracee.bpf.core.o \
 	$(TRACEE_EBPF_SRC) \
 	./embedded-ebpf.go \
