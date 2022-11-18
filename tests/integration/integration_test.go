@@ -2,6 +2,7 @@ package integration
 
 import (
 	"context"
+	_ "embed"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -294,17 +295,33 @@ const (
 	doFileOpen   testFunc = "do_file_open"
 )
 
+//go:embed tester.sh
+var testerscript []byte
+
 // forkAndExecFunction runs a function in `tester.sh` in it's own system process.
 // This is so Tracee running in the current pid can pick the command up.
 // It returns the output of the process and a possible error.
 func forkAndExecFunction(funcName testFunc) ([]byte, error) {
+
+	f, err := os.CreateTemp("", "tracee-integration-test-script")
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = f.Write(testerscript)
+	if err != nil {
+		return nil, err
+	}
+
 	tmpFile, err := os.CreateTemp("/tmp", "tracee-test*")
 	if err != nil {
 		return nil, err
 	}
-	_, err = syscall.ForkExec("./tester.sh", []string{"./tester.sh", string(funcName), tmpFile.Name()},
+
+	_, err = syscall.ForkExec(f.Name(), []string{f.Name(), string(funcName), tmpFile.Name()},
 		&syscall.ProcAttr{
 			Files: []uintptr{0, 1, 2, tmpFile.Fd()},
+			Env:   os.Environ(),
 		})
 	if err != nil {
 		return nil, err
