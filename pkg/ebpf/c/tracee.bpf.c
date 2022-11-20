@@ -721,7 +721,6 @@ typedef __u64 stack_trace_t[MAX_STACK_DEPTH];
 
 // INTERNAL STRUCTS --------------------------------------------------------------------------------
 
-// todo: check network context after this change
 typedef struct task_context {
     u64 start_time; // thread's start time
     u64 cgroup_id;
@@ -776,11 +775,14 @@ typedef struct task_info {
     syscall_data_t syscall_data;
     bool syscall_traced;  // indicates that syscall_data is valid
     bool recompute_scope; // recompute should_trace (new task/context changed/policy changed)
-    bool new_task;        // set if this task was started after tracee. Used with new_pid filter
-    bool follow;          // set if this task was traced before. Used with the follow filter
     int should_trace;     // last decision of should_trace()
     u8 container_state;   // the state of the container the task resides in
 } task_info_t;
+
+typedef struct proc_info {
+    bool new_proc; // set if this process was started after tracee. Used with new_pid filter
+    bool follow;   // set if this process was traced before. Used with the follow filter
+} proc_info_t;
 
 typedef struct bin_args {
     u8 type;
@@ -945,6 +947,7 @@ enum bpf_error_id
 
     BPF_ERR_INIT_CONTEXT,
 
+    BPF_ERR_MAP_LOOKUP_ELEM,
     BPF_ERR_MAP_UPDATE_ELEM,
     BPF_ERR_MAP_DELETE_ELEM,
     BPF_ERR_GET_CURRENT_COMM,
@@ -1014,6 +1017,7 @@ BPF_HASH(bin_args_map, u64, bin_args_t, 256);                      // persist ar
 BPF_HASH(sys_32_to_64_map, u32, u32, 1024);                        // map 32bit to 64bit syscalls
 BPF_HASH(params_types_map, u32, u64, 1024);                        // encoded parameters types for event
 BPF_HASH(process_tree_map, u32, u32, 10240);                       // filter events by the ancestry of the traced process
+BPF_LRU_HASH(proc_info_map, u32, proc_info_t, 10240);              // holds data for every process
 BPF_LRU_HASH(task_info_map, u32, task_info_t, 10240);              // holds data for every task
 BPF_HASH(network_config, u32, int, 1024);                          // holds the network config for each iface
 BPF_HASH(ksymbols_map, ksym_name_t, u64, 1024);                    // holds the addresses of some kernel symbols
@@ -1811,7 +1815,8 @@ init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 
     context->task.flags = 0;
     ret = bpf_get_current_comm(&context->task.comm, sizeof(context->task.comm));
     if (unlikely(ret < 0)) {
-        tracee_error(ctx, BPF_ERR_LOG_LVL_ERROR, BPF_ERR_GET_CURRENT_COMM, ret);
+        // disable logging as a workaround for instruction limit verifier error on kernel 4.19
+        // tracee_error(ctx, BPF_ERR_LOG_LVL_ERROR, BPF_ERR_GET_CURRENT_COMM, ret);
         return -1;
     }
 
@@ -1835,32 +1840,42 @@ init_context(void *ctx, event_context_t *context, struct task_struct *task, u32 
     return 0;
 }
 
-static __always_inline task_info_t *init_task_info(u32 key, bool *initialized)
+static __always_inline task_info_t *init_task_info(u32 tid, u32 pid, bool *initialized)
 {
-    task_info_t *task_info = bpf_map_lookup_elem(&task_info_map, &key);
+    task_info_t *task_info = bpf_map_lookup_elem(&task_info_map, &tid);
     if (initialized != NULL) {
         *initialized = task_info == NULL;
     }
     if (unlikely(task_info == NULL)) {
-        // unlikely code path - possibly optimize with unlikely macro later
-
         // get the submit buffer to fill the task_info_t in the map
         // this is done because allocating the stack space for task_info_t usually
         // crosses the verifier limit.
+        // todo: use scratch map both for proc_info and thread_info to avoid using submit_buffer
         int buf_idx = SUBMIT_BUF_IDX;
         void *submit_buffer = bpf_map_lookup_elem(&bufs, &buf_idx);
         if (unlikely(submit_buffer == NULL))
             return NULL;
 
-        bpf_map_update_elem(&task_info_map, &key, submit_buffer, BPF_NOEXIST);
-        task_info = bpf_map_lookup_elem(&task_info_map, &key);
+        bpf_map_update_elem(&task_info_map, &tid, submit_buffer, BPF_NOEXIST);
+        task_info = bpf_map_lookup_elem(&task_info_map, &tid);
         // appease the verifier
         if (unlikely(task_info == NULL)) {
             return NULL;
         }
+        proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &pid);
+        if (proc_info == NULL) {
+            bpf_map_update_elem(&proc_info_map, &pid, submit_buffer, BPF_NOEXIST);
+            proc_info = bpf_map_lookup_elem(&proc_info_map, &pid);
+            // appease the verifier
+            if (unlikely(proc_info == NULL)) {
+                return NULL;
+            }
+
+            proc_info->new_proc = false;
+            proc_info->follow = false;
+        }
+
         task_info->syscall_traced = false;
-        task_info->new_task = false;
-        task_info->follow = false;
         task_info->recompute_scope = true;
         task_info->container_state = CONTAINER_UNKNOWN;
     }
@@ -1878,7 +1893,8 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
     data->task = (struct task_struct *) bpf_get_current_task();
     ret = init_context(ctx, &data->context, data->task, data->config->options);
     if (unlikely(ret < 0)) {
-        tracee_error(ctx, BPF_ERR_LOG_LVL_ERROR, BPF_ERR_INIT_CONTEXT, ret);
+        // disable logging as a workaround for instruction limit verifier error on kernel 4.19
+        // tracee_error(ctx, BPF_ERR_LOG_LVL_ERROR, BPF_ERR_INIT_CONTEXT, ret);
         return 0;
     }
     data->ctx = ctx;
@@ -1890,7 +1906,8 @@ static __always_inline int init_event_data(event_data_t *data, void *ctx)
 
     // check if task_info was initialized in this call
     bool task_info_initalized = false;
-    data->task_info = init_task_info(data->context.task.host_tid, &task_info_initalized);
+    data->task_info = init_task_info(
+        data->context.task.host_tid, data->context.task.host_pid, &task_info_initalized);
     if (unlikely(data->task_info == NULL)) {
         return 0;
     }
@@ -1971,7 +1988,15 @@ static __always_inline int do_should_trace(event_data_t *data)
     task_context_t *context = &data->context.task;
     u32 config = data->config->filters;
 
-    if ((config & FILTER_FOLLOW_ENABLED) && (data->task_info->follow)) {
+    proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &data->context.task.host_pid);
+    if (proc_info == NULL) {
+        // entry should exist in proc_map (init_event_data should have set it otherwise)
+        // disable logging as a workaround for instruction limit verifier error on kernel 4.19
+        // tracee_error(data->ctx, BPF_ERR_LOG_LVL_WARN, BPF_ERR_MAP_LOOKUP_ELEM, 0);
+        return 0;
+    }
+
+    if ((config & FILTER_FOLLOW_ENABLED) && (proc_info->follow)) {
         // don't check the other filters if follow is set
         return 1;
     }
@@ -2010,7 +2035,7 @@ static __always_inline int do_should_trace(event_data_t *data)
 
     if (config & FILTER_NEW_PID_ENABLED) {
         bool filter_out = (config & FILTER_NEW_PID_OUT) == FILTER_NEW_PID_OUT;
-        if (!bool_filter_matches(filter_out, data->task_info->new_task))
+        if (!bool_filter_matches(filter_out, proc_info->new_proc))
             return 0;
     }
 
@@ -3128,8 +3153,8 @@ int sys_enter_init(struct bpf_raw_tracepoint_args *ctx)
 {
     struct task_struct *task = (struct task_struct *) bpf_get_current_task();
 
-    u32 task_id = bpf_get_current_pid_tgid(); // get the tid only
-    task_info_t *task_info = init_task_info(task_id, NULL);
+    u64 pid_tgid = bpf_get_current_pid_tgid();
+    task_info_t *task_info = init_task_info(pid_tgid, pid_tgid >> 32, NULL);
     if (unlikely(task_info == NULL)) {
         return 0;
     }
@@ -3266,8 +3291,8 @@ int sys_exit_init(struct bpf_raw_tracepoint_args *ctx)
 {
     struct task_struct *task = (struct task_struct *) bpf_get_current_task();
 
-    u32 task_id = bpf_get_current_pid_tgid(); // get tid
-    task_info_t *task_info = init_task_info(task_id, NULL);
+    u64 pid_tgid = bpf_get_current_pid_tgid();
+    task_info_t *task_info = init_task_info(pid_tgid, pid_tgid >> 32, NULL);
     if (unlikely(task_info == NULL)) {
         return 0;
     }
@@ -3568,6 +3593,29 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     int parent_tgid = get_task_host_tgid(parent);
     int child_tgid = get_task_host_tgid(child);
 
+    proc_info_t *c_proc_info = bpf_map_lookup_elem(&proc_info_map, &child_tgid);
+    if (c_proc_info == NULL) {
+        // this is a new process (and not just another thread) - add it to proc_info_map
+
+        proc_info_t *p_proc_info = bpf_map_lookup_elem(&proc_info_map, &parent_tgid);
+        if (unlikely(p_proc_info == NULL)) {
+            // parent proc should exist in proc_map (init_event_data should have set it otherwise)
+            tracee_error(ctx, BPF_ERR_LOG_LVL_WARN, BPF_ERR_MAP_LOOKUP_ELEM, 0);
+            return 0;
+        }
+
+        bpf_map_update_elem(&proc_info_map, &child_tgid, p_proc_info, BPF_NOEXIST);
+        c_proc_info = bpf_map_lookup_elem(&proc_info_map, &child_tgid);
+        // appease the verifier
+        if (unlikely(c_proc_info == NULL)) {
+            tracee_error(ctx, BPF_ERR_LOG_LVL_WARN, BPF_ERR_MAP_LOOKUP_ELEM, 0);
+            return 0;
+        }
+
+        c_proc_info->follow = false;
+        c_proc_info->new_proc = true;
+    }
+
     // update process tree map if the parent has an entry
     if (data.config->filters & FILTER_PROC_TREE_ENABLED) {
         u32 *tgid_filtered = bpf_map_lookup_elem(&process_tree_map, &parent_tgid);
@@ -3581,13 +3629,8 @@ int tracepoint__sched__sched_process_fork(struct bpf_raw_tracepoint_args *ctx)
     if (!should_trace(&data))
         return 0;
 
-    // fork events may add new pids to the traced pids set.
-    // perform this check after should_trace() to only add forked childs of a traced parent
-    task.follow = true;
-    task.new_task = true;
-    ret = bpf_map_update_elem(&task_info_map, &child_pid, &task, BPF_ANY);
-    if (ret < 0)
-        tracee_error(ctx, BPF_ERR_LOG_LVL_DEBUG, BPF_ERR_MAP_UPDATE_ELEM, ret);
+    // follow every pid that passed the should_trace() checks (used by the follow filter)
+    c_proc_info->follow = true;
 
     if (should_submit(SCHED_PROCESS_FORK, data.config) || data.config->options & OPT_PROCESS_INFO) {
         int parent_ns_pid = get_task_ns_pid(parent);
@@ -3637,14 +3680,22 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
         }
     }
 
-    data.task_info->new_task = true;
     data.task_info->recompute_scope = true;
+
+    proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &data.context.task.host_pid);
+    if (proc_info == NULL) {
+        // entry should exist in proc_map (init_event_data should have set it otherwise)
+        tracee_error(ctx, BPF_ERR_LOG_LVL_WARN, BPF_ERR_MAP_LOOKUP_ELEM, 0);
+        return 0;
+    }
+
+    proc_info->new_proc = true;
 
     if (!should_trace(&data))
         return 0;
 
     // We passed all filters (in should_trace()) - add this pid to traced pids set
-    data.task_info->follow = true;
+    proc_info->follow = true;
 
     if (!should_submit(SCHED_PROCESS_EXEC, data.config) &&
         (data.config->options & OPT_PROCESS_INFO) != OPT_PROCESS_INFO)
@@ -3759,6 +3810,7 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 
     // Remove this pid from all maps
     bpf_map_delete_elem(&task_info_map, &data.context.task.host_tid);
+    // todo: remove from proc_info_map (if it's the last thread)
     bpf_map_delete_elem(&interpreter_map, &data.context.task.host_tid);
 
     int proc_tree_filter_set = data.config->filters & FILTER_PROC_TREE_ENABLED;

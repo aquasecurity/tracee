@@ -20,6 +20,7 @@ const (
 	BPFErrInitContext // BPF_ERR_INIT_CONTEXT
 
 	// bpf helpers functions
+	BPFErrMapLookupElem  // BPF_ERR_MAP_LOOKUP_ELEM
 	BPFErrMapUpdateElem  // BPF_ERR_MAP_UPDATE_ELEM
 	BPFErrMapDeleteElem  // BPF_ERR_MAP_DELETE_ELEM
 	BPFErrGetCurrentComm // BPF_ERR_GET_CURRENT_COMM
@@ -33,6 +34,7 @@ var stringMap = map[BPFErrorType]string{
 	BPFErrInitContext: "BPF_ERR_INIT_CONTEXT",
 
 	// bpf helpers functions
+	BPFErrMapLookupElem:  "BPF_ERR_MAP_LOOKUP_ELEM",
 	BPFErrMapUpdateElem:  "BPF_ERR_MAP_UPDATE_ELEM",
 	BPFErrMapDeleteElem:  "BPF_ERR_MAP_DELETE_ELEM",
 	BPFErrGetCurrentComm: "BPF_ERR_GET_CURRENT_COMM",
@@ -46,6 +48,7 @@ var errorMap = map[BPFErrorType]string{
 	BPFErrInitContext: "Failed to init context",
 
 	// bpf helpers functions
+	BPFErrMapLookupElem:  "Failed to find a map element",
 	BPFErrMapUpdateElem:  "Failed to add or update a map element",
 	BPFErrMapDeleteElem:  "Failed to delete a map element",
 	BPFErrGetCurrentComm: "Failed to get current command",
