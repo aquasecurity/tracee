@@ -401,6 +401,9 @@ func (t *Tracee) Init() error {
 		return err
 	}
 
+	// Canceling events missing kernel symbols
+	t.validateKallsymsDependencies()
+
 	// Initialize process tree before receiving events (will use it)
 
 	t.procInfo, err = procinfo.NewProcessInfo()
@@ -827,6 +830,54 @@ func (t *Tracee) getFiltersConfig() uint32 {
 	return cFilterVal
 }
 
+// validateKallsymsDependencies load all symbols required by events' dependencies from the kallsyms file to check for missing symbols.
+// If some symbols are missing, it will cancel their event with informative error message.
+func (t *Tracee) validateKallsymsDependencies() {
+	var reqKsyms []string
+	symsToDependentEvents := make(map[string][]events.ID)
+	for id := range t.events {
+		event := events.Definitions.Get(id)
+		for _, symDep := range event.Dependencies.KSymbols {
+			reqKsyms = append(reqKsyms, symDep.Symbol)
+			if symDep.Required {
+				symEvents, ok := symsToDependentEvents[symDep.Symbol]
+				if ok {
+					symEvents = append(symEvents, id)
+				} else {
+					symEvents = []events.ID{id}
+				}
+				symsToDependentEvents[symDep.Symbol] = symEvents
+			}
+		}
+	}
+
+	kallsymsValues := initialization.LoadKallsymsValues(t.kernelSymbols, reqKsyms)
+
+	// Figuring out for each event if it has missing required symbols and which
+	missingSymsPerEvent := make(map[events.ID][]string)
+	for sym, depEventsIDs := range symsToDependentEvents {
+		_, ok := kallsymsValues[sym]
+		if ok {
+			continue
+		}
+		for _, depEventID := range depEventsIDs {
+			eventMissingSyms, ok := missingSymsPerEvent[depEventID]
+			if ok {
+				eventMissingSyms = append(eventMissingSyms, sym)
+			} else {
+				eventMissingSyms = []string{sym}
+			}
+			missingSymsPerEvent[depEventID] = eventMissingSyms
+		}
+	}
+
+	// Cancel events with missing symbols dependencies
+	for eventToCancel, missingDepSyms := range missingSymsPerEvent {
+		logger.Error("event canceled because of missing kernel symbol dependency", "missing symbols", missingDepSyms, "event", events.Definitions.Get(eventToCancel).Name)
+		delete(t.events, eventToCancel)
+	}
+}
+
 func (t *Tracee) populateBPFMaps() error {
 	// Prepare 32bit to 64bit syscall number mapping
 	sys32to64BPFMap, err := t.bpfModule.GetMap("sys_32_to_64_map") // u32, u32
@@ -851,7 +902,9 @@ func (t *Tracee) populateBPFMaps() error {
 		var reqKsyms []string
 		for id := range t.events {
 			event := events.Definitions.Get(id)
-			reqKsyms = append(reqKsyms, event.Dependencies.KSymbols...)
+			for _, symDependency := range event.Dependencies.KSymbols {
+				reqKsyms = append(reqKsyms, symDependency.Symbol)
+			}
 		}
 
 		kallsymsValues := initialization.LoadKallsymsValues(t.kernelSymbols, reqKsyms)
