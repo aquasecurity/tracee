@@ -21,12 +21,13 @@ import (
 
 // Containers contains information about running containers in the host.
 type Containers struct {
-	cgroups    *cgroup.Cgroups
-	cgroupsMap map[uint32]CgroupInfo
-	deleted    []uint64
-	mtx        sync.RWMutex // protecting both cgroups and deleted fields
-	enricher   runtimeInfoService
-	bpfMapName string
+	cgroups      *cgroup.Cgroups
+	cgroupsMap   map[uint32]CgroupInfo
+	deleted      []uint64
+	mtx          sync.RWMutex // protecting both cgroups and deleted fields
+	enricher     runtimeInfoService
+	bpfMapName   string
+	bpfMapModule *libbpfgo.Module
 }
 
 // CgroupInfo represents a cgroup dir (might describe a container cgroup dir).
@@ -394,7 +395,10 @@ const (
 )
 
 func (c *Containers) PopulateBpfMap(bpfModule *libbpfgo.Module) error {
-	containersMap, err := bpfModule.GetMap(c.bpfMapName)
+
+	c.bpfMapModule = bpfModule
+
+	containersMap, err := c.bpfMapModule.GetMap(c.bpfMapName)
 	if err != nil {
 		return err
 	}
