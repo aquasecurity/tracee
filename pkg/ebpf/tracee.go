@@ -1308,24 +1308,24 @@ func (t *Tracee) initBPF() error {
 		}
 
 		// Open the eBPF object files
-		bpfMainModule, err := bpf.NewModuleFromBufferArgs(newModuleArgs)
+		mainBPFModule, err := bpf.NewModuleFromBufferArgs(newModuleArgs)
 		if err != nil {
 			return err
 		}
-		t.bpfModules[BPFModuleMain] = bpfMainModule
+		t.bpfModules[BPFModuleMain] = mainBPFModule
 
 		// Initialize probes
 
 		netEnabled := isCaptureNetSet || isFilterNetSet
 
-		t.probes, err = probes.Init(bpfMainModule, netEnabled)
+		t.probes, err = probes.Init(mainBPFModule, netEnabled)
 		if err != nil {
 			return err
 		}
 
 		// Load the eBPF object into kernel
 
-		err = bpfMainModule.BPFLoadObject()
+		err = mainBPFModule.BPFLoadObject()
 		if err != nil {
 			return err
 		}
@@ -1344,7 +1344,7 @@ func (t *Tracee) initBPF() error {
 			return err
 		}
 
-		err = t.config.Filter.ProcessTreeFilter.InitBPF(bpfMainModule)
+		err = t.config.Filter.ProcessTreeFilter.InitBPF(mainBPFModule)
 		if err != nil {
 			return fmt.Errorf("error building process tree: %v", err)
 		}
@@ -1353,7 +1353,7 @@ func (t *Tracee) initBPF() error {
 
 		t.eventsChannel = make(chan []byte, 1000)
 		t.lostEvChannel = make(chan uint64)
-		t.eventsPerfMap, err = bpfMainModule.InitPerfBuf(
+		t.eventsPerfMap, err = mainBPFModule.InitPerfBuf(
 			"events",
 			t.eventsChannel,
 			t.lostEvChannel,
@@ -1365,7 +1365,7 @@ func (t *Tracee) initBPF() error {
 
 		t.fileWrChannel = make(chan []byte, 1000)
 		t.lostWrChannel = make(chan uint64)
-		t.fileWrPerfMap, err = bpfMainModule.InitPerfBuf(
+		t.fileWrPerfMap, err = mainBPFModule.InitPerfBuf(
 			"file_writes",
 			t.fileWrChannel,
 			t.lostWrChannel,
@@ -1377,7 +1377,7 @@ func (t *Tracee) initBPF() error {
 
 		t.netChannel = make(chan []byte, 1000)
 		t.lostNetChannel = make(chan uint64)
-		t.netPerfMap, err = bpfMainModule.InitPerfBuf(
+		t.netPerfMap, err = mainBPFModule.InitPerfBuf(
 			"net_events",
 			t.netChannel,
 			t.lostNetChannel,
@@ -1407,7 +1407,7 @@ func (t *Tracee) writeProfilerStats(wr io.Writer) error {
 func (t *Tracee) getProcessCtx(hostTid uint32) (procinfo.ProcessCtx, error) {
 
 	//FIXME: is this access going to affect performance?
-	mainBpfModule, ok := t.bpfModules[BPFModuleMain]
+	mainBPFModule, ok := t.bpfModules[BPFModuleMain]
 	if !ok {
 		return procinfo.ProcessCtx{}, errors.New("could not find bpf module")
 	}
@@ -1415,7 +1415,7 @@ func (t *Tracee) getProcessCtx(hostTid uint32) (procinfo.ProcessCtx, error) {
 	if err == nil {
 		return processCtx, nil
 	} else {
-		processContextMap, err := mainBpfModule.GetMap("task_info_map")
+		processContextMap, err := mainBPFModule.GetMap("task_info_map")
 		if err != nil {
 			return processCtx, err
 		}
