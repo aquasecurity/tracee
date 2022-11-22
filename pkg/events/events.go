@@ -6112,6 +6112,8 @@ var Definitions = eventDefinitions{
 				{Handle: probes.SockAllocFileRet, Required: true},
 				{Handle: probes.CgroupBPFRunFilterSKB, Required: true},
 				{Handle: probes.CgroupBPFRunFilterSKBRet, Required: true},
+				{Handle: probes.SecuritySocketRecvmsg, Required: true},
+				{Handle: probes.SecuritySocketSendmsg, Required: true},
 			},
 			Sets:   []string{"network_events"},
 			Params: []trace.ArgMeta{},
