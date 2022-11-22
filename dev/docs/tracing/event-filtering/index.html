@@ -2142,6 +2142,41 @@ But ANDed if used with any other operator.</p>
 </div>
 </li>
 <li>
+<p><strong>Event Context</strong> <code>(Operators: vary by field)</code></p>
+<div class="highlight"><pre><span></span><code>1) --trace openat.context.container --trace openat.pathname=/etc/shadow
+2) --trace event=openat --trace openat.context.container --trace openat.pathname=/etc/shadow
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The following is a list of available context fields:<br />
+1)  "timestamp"<br />
+2)  "processorId"<br />
+3)  "p", "pid", "processId"<br />
+4)  "tid", "threadId"<br />
+5)  "ppid", "parentProcessId"<br />
+6)  "hostTid", "hostThreadId"<br />
+7)  "hostPid", "hostParentProcessId"<br />
+8)  "uid", "userId"<br />
+9)  "mntns", "mountNamespace"<br />
+10) "pidns", "pidNamespace"<br />
+11) "processName", "comm"<br />
+12) "hostName"<br />
+13) "cgroupId"<br />
+14) "host" (inversion of "container")<br />
+15) "container"<br />
+16) "containerId"<br />
+17) "containerImage"<br />
+18) "containerName"<br />
+19) "podName"<br />
+20) "podNamespace"<br />
+21) "podUid"  </p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Open a container and try <code>cat /etc/shadow</code>.</p>
+</div>
+</li>
+<li>
 <p><strong>Event Sets</strong> <code>(Operators: =, !=)</code></p>
 <div class="highlight"><pre><span></span><code>1) --trace set=fs
 2) --trace set=lsm_hooks,network_events
