@@ -115,6 +115,8 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		KallsymsLookupNameRet:      &traceProbe{eventName: "kallsyms_lookup_name", probeType: kretprobe, programName: "trace_ret_kallsyms_lookup_name"},
 		SockAllocFile:              &traceProbe{eventName: "sock_alloc_file", probeType: kprobe, programName: "trace_sock_alloc_file"},
 		SockAllocFileRet:           &traceProbe{eventName: "sock_alloc_file", probeType: kretprobe, programName: "trace_ret_sock_alloc_file"},
+		SecuritySocketSendmsg:      &traceProbe{eventName: "security_socket_sendmsg", probeType: kprobe, programName: "trace_security_socket_sendmsg"},
+		SecuritySocketRecvmsg:      &traceProbe{eventName: "security_socket_recvmsg", probeType: kprobe, programName: "trace_security_socket_recvmsg"},
 		CgroupBPFRunFilterSKB:      &traceProbe{eventName: "__cgroup_bpf_run_filter_skb", probeType: kprobe, programName: "cgroup_bpf_run_filter_skb"},
 		CgroupBPFRunFilterSKBRet:   &traceProbe{eventName: "__cgroup_bpf_run_filter_skb", probeType: kretprobe, programName: "ret_cgroup_bpf_run_filter_skb"},
 		CgroupSKBIngress:           &cgroupProbe{programName: "cgroup_skb_ingress", attachType: bpf.BPFAttachTypeCgroupInetIngress},
@@ -282,6 +284,8 @@ const (
 	KallsymsLookupNameRet
 	SockAllocFile
 	SockAllocFileRet
+	SecuritySocketRecvmsg
+	SecuritySocketSendmsg
 	CgroupBPFRunFilterSKB
 	CgroupBPFRunFilterSKBRet
 	CgroupSKBIngress

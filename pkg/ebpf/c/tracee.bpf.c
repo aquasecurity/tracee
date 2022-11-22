@@ -7134,6 +7134,61 @@ int BPF_KRETPROBE(trace_ret_sock_alloc_file)
 }
 
 //
+// Socket creation and socket <=> task context updates
+//
+
+static __always_inline u32 security_socket_send_recv_msg(struct socket *sock, event_data_t *data)
+{
+    if (!is_socket_supported(sock))
+        return 0;
+
+    struct file *sock_file = BPF_READ(sock, file);
+    if (!sock_file)
+        return 0;
+
+    u64 inode = BPF_READ(sock_file, f_inode, i_ino);
+    if (inode == 0)
+        return 0;
+
+    // save updated context to the inode map (inode <=> task ctx relation)
+    net_task_context_t netctx = {0};
+    set_net_task_context(data, &netctx);
+    bpf_map_update_elem(&inodemap, &inode, &netctx, BPF_ANY);
+
+    return 0;
+}
+
+SEC("kprobe/security_socket_recvmsg")
+int BPF_KPROBE(trace_security_socket_recvmsg)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data))
+        return 0;
+
+    struct socket *sock = (void *) PT_REGS_PARM1(ctx);
+
+    return security_socket_send_recv_msg(sock, &data);
+}
+
+SEC("kprobe/security_socket_sendmsg")
+int BPF_KPROBE(trace_security_socket_sendmsg)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data))
+        return 0;
+
+    struct socket *sock = (void *) PT_REGS_PARM1(ctx);
+
+    return security_socket_send_recv_msg(sock, &data);
+}
+
+//
 // Socket Ingress/Egress eBPF program loader (right before and right after eBPF)
 //
 
@@ -7174,52 +7229,10 @@ int BPF_KPROBE(cgroup_bpf_run_filter_skb)
     u32 host_tid = data.context.task.host_tid;
     bpf_map_update_elem(&entrymap, &host_tid, &entry, BPF_ANY);
 
-    // NOTE: The net_task_context is the event_context's "task_context" when the
-    //       socket was created. This could take tracee to situations which the
-    //       event being submited by the cgroup skb ingress/egress eBPF program
-    //       has outdated information (host_ppid, ppid, comm, cgroup_id, uid,
-    //       mnt_id, pid_id, uts_name). One possible way to solve this is
-    //       to hook to (*file)->fops() functions so, each time a socket is
-    //       poll'ed(), written(), read(), sendmsg'ed(), the task reading or
-    //       writing to the socket will have its task_info updated with correct
-    //       "should_trace" metadata (and then its net_task_context counter part
-    //       could also be updated).
-    //
-    //       Hooking into a socket file's file operations handlers might be
-    //       expensive in terms of performance, and it is fair to assume long
-    //       lasting sockets would be traced with old task context (from the
-    //       time the socket was created). So, for now, this is A DECISION and
-    //       not a lack of support.
-    //
-    //       TODO: https://github.com/aquasecurity/tracee/issues/2221
-    //
-    //       Current mitigation: When a task has an opened socket (or "long
-    //       lasting" socket), and it is migrated to a container that is
-    //       currently being traced, for example, whenever its "task_info" is
-    //       updated, the should_trace logic will allow the cgroup skb egress
-    //       (not ingress, since it runs in a kernel thread context) ebpf
-    //       programs to start tracing those sockets. This is the same technique
-    //       used for existing sockets of tasks that does not have their
-    //       "task_info" updated.
-
-    // pick original task from socket inode
+    // TODO: https://github.com/aquasecurity/tracee/issues/2221
     net_task_context_t *netctx = bpf_map_lookup_elem(&inodemap, &inode);
-    if (!netctx) {
-        // ignore if this is a kernel thread (can't map inode <=> task)
-        struct task_struct *task = data.task;
-        if (BPF_READ(task, flags) & PF_KTHREAD)
-            return 0;
-
-        // if not a traced inode: check if task should be traced ...
-        if (should_trace(&data)) {
-            // ... then update inodemap correlating inode <=> task
-            net_task_context_t netctx2 = {0};
-            set_net_task_context(&data, &netctx2);
-            bpf_map_update_elem(&inodemap, &inode, &netctx2, BPF_ANY);
-            netctx = &netctx2;
-        } else
-            return 0;
-    }
+    if (!netctx)
+        return 0;
 
     // use skb timestamp as the key for cgroup/skb (*)
     u64 skbts = BPF_READ(skb, tstamp);
