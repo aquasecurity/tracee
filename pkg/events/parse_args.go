@@ -44,6 +44,18 @@ func ParseArgs(event *trace.Event) error {
 				alertArg.Type = "string"
 			}
 		}
+		if protArg := GetArg(event, "prot"); protArg != nil {
+			if prot, isInt32 := protArg.Value.(int32); isInt32 {
+				mmapProtArgument := helpers.ParseMmapProt(uint64(prot))
+				ParseOrEmptyString(protArg, mmapProtArgument, nil)
+			}
+		}
+		if prevProtArg := GetArg(event, "prev_prot"); prevProtArg != nil {
+			if prevProt, isInt32 := prevProtArg.Value.(int32); isInt32 {
+				mmapProtArgument := helpers.ParseMmapProt(uint64(prevProt))
+				ParseOrEmptyString(prevProtArg, mmapProtArgument, nil)
+			}
+		}
 	case SysEnter, SysExit, CapCapable, CommitCreds, SecurityFileOpen, TaskRename, SecurityMmapFile, KallsymsLookupName:
 		if syscallArg := GetArg(event, "syscall"); syscallArg != nil {
 			if id, isInt32 := syscallArg.Value.(int32); isInt32 {
