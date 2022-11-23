@@ -408,6 +408,7 @@ enum event_id_e
     SCHED_PROCESS_FORK,
     SCHED_PROCESS_EXEC,
     SCHED_PROCESS_EXIT,
+    SCHED_PROCESS_FREE,
     SCHED_SWITCH,
     DO_EXIT,
     CAP_CAPABLE,
@@ -3810,7 +3811,6 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
 
     // Remove this pid from all maps
     bpf_map_delete_elem(&task_info_map, &data.context.task.host_tid);
-    // todo: remove from proc_info_map (if it's the last thread)
     bpf_map_delete_elem(&interpreter_map, &data.context.task.host_tid);
 
     int proc_tree_filter_set = data.config->filters & FILTER_PROC_TREE_ENABLED;
@@ -3839,6 +3839,40 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
         save_to_submit_buf(&data, (void *) &group_dead, sizeof(bool), 1);
 
         events_perf_submit(&data, SCHED_PROCESS_EXIT, 0);
+    }
+
+    return 0;
+}
+
+// trace/events/sched.h: TP_PROTO(struct task_struct *p)
+SEC("raw_tracepoint/sched_process_free")
+int tracepoint__sched__sched_process_free(struct bpf_raw_tracepoint_args *ctx)
+{
+    struct task_struct *task = (struct task_struct *) ctx->args[0];
+
+    int pid = get_task_host_pid(task);
+    int tgid = get_task_host_tgid(task);
+
+    if (pid == tgid) {
+        // we only care about process (and not thread) exit
+        // if tgid task is freed, we know for sure that the process exited
+        // so we can safely remove it from the process map
+        bpf_map_delete_elem(&proc_info_map, &tgid);
+        // todo: remove from other maps (e.g. process_tree_map and interpreter_map)
+    }
+
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    if (!should_trace(&data))
+        return 0;
+
+    if (should_submit(SCHED_PROCESS_FREE, data.config) || data.config->options & OPT_PROCESS_INFO) {
+        save_to_submit_buf(&data, (void *) &pid, sizeof(int), 0);
+        save_to_submit_buf(&data, (void *) &tgid, sizeof(int), 1);
+
+        events_perf_submit(&data, SCHED_PROCESS_FREE, 0);
     }
 
     return 0;

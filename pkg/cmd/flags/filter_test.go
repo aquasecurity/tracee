@@ -28,7 +28,13 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 			eventFilter: cliFilter{
 				Equal: []string{"sched_proc*", "openat"},
 			},
-			expected: []events.ID{events.SchedProcessExec, events.SchedProcessExit, events.SchedProcessFork, events.Openat},
+			expected: []events.ID{
+				events.SchedProcessExec,
+				events.SchedProcessExit,
+				events.SchedProcessFork,
+				events.SchedProcessFree,
+				events.Openat,
+			},
 		},
 		{
 			name: "happy path - sched_proc* with exclude",
@@ -36,7 +42,12 @@ func TestFilter_prepareEventsToTrace(t *testing.T) {
 				Equal:    []string{"sched_proc*", "openat"},
 				NotEqual: []string{"sched_process_exec"},
 			},
-			expected: []events.ID{events.SchedProcessExit, events.SchedProcessFork, events.Openat},
+			expected: []events.ID{
+				events.SchedProcessExit,
+				events.SchedProcessFork,
+				events.SchedProcessFree,
+				events.Openat,
+			},
 		},
 		{
 			name: "happy path - containers set",
