@@ -37,6 +37,7 @@ func Init(module *bpf.Module, netEnabled bool) (Probes, error) {
 		SchedProcessFork:           &traceProbe{eventName: "sched:sched_process_fork", probeType: rawTracepoint, programName: "tracepoint__sched__sched_process_fork"},
 		SchedProcessExec:           &traceProbe{eventName: "sched:sched_process_exec", probeType: rawTracepoint, programName: "tracepoint__sched__sched_process_exec"},
 		SchedProcessExit:           &traceProbe{eventName: "sched:sched_process_exit", probeType: rawTracepoint, programName: "tracepoint__sched__sched_process_exit"},
+		SchedProcessFree:           &traceProbe{eventName: "sched:sched_process_free", probeType: rawTracepoint, programName: "tracepoint__sched__sched_process_free"},
 		SchedSwitch:                &traceProbe{eventName: "sched:sched_switch", probeType: rawTracepoint, programName: "tracepoint__sched__sched_switch"},
 		DoExit:                     &traceProbe{eventName: "do_exit", probeType: kprobe, programName: "trace_do_exit"},
 		CapCapable:                 &traceProbe{eventName: "cap_capable", probeType: kprobe, programName: "trace_cap_capable"},
@@ -205,6 +206,7 @@ const (
 	SchedProcessFork
 	SchedProcessExec
 	SchedProcessExit
+	SchedProcessFree
 	SchedSwitch
 	DoExit
 	CapCapable
