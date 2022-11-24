@@ -47,4 +47,4 @@ This means that the event is not very performance efficient (although it uses so
 It also means that until the SO file is opened, it could be altered or removed.
 
 ## Related Events
-shared_object_loaded
+shared_object_loaded, symbols_collision

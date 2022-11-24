@@ -4,15 +4,15 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/logger"
-
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 	"github.com/aquasecurity/tracee/types/trace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-type soInstance struct {
+type testSOInstance struct {
 	info sharedobjs.ObjInfo
 	syms []string
 }
@@ -46,7 +46,7 @@ func (loader symbolsLoaderMock) GetImportedSymbols(info sharedobjs.ObjInfo) (map
 	return nil, nil
 }
 
-func (loader symbolsLoaderMock) addSOSymbols(info soInstance) {
+func (loader symbolsLoaderMock) addSOSymbols(info testSOInstance) {
 	symsMap := make(map[string]bool)
 	for _, s := range info.syms {
 		symsMap[s] = true
@@ -57,7 +57,7 @@ func (loader symbolsLoaderMock) addSOSymbols(info soInstance) {
 func generateSOLoadedEvent(pid int, so sharedobjs.ObjInfo) trace.Event {
 	return trace.Event{
 		EventName:     "shared_object_loaded",
-		EventID:       1036,
+		EventID:       int(events.SharedObjectLoaded),
 		HostProcessID: pid,
 		ProcessID:     pid,
 		Args: []trace.Argument{
@@ -75,14 +75,14 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 		name            string
 		watchedSymbols  []string
 		whitelistedLibs []string
-		loadingSO       soInstance
+		loadingSO       testSOInstance
 		expectedSymbols []string
 	}{
 		{
 			name:            "SO with no export symbols",
 			watchedSymbols:  []string{"open", "close", "write"},
 			whitelistedLibs: []string{},
-			loadingSO: soInstance{
+			loadingSO: testSOInstance{
 				info: sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"},
 				syms: []string{},
 			},
@@ -92,7 +92,7 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 			name:            "SO with 1 watched export symbols",
 			watchedSymbols:  []string{"open", "close", "write"},
 			whitelistedLibs: []string{},
-			loadingSO: soInstance{
+			loadingSO: testSOInstance{
 				info: sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"},
 				syms: []string{"open"},
 			},
@@ -102,7 +102,7 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 			name:            "SO with multiple watched export symbols",
 			watchedSymbols:  []string{"open", "close", "write"},
 			whitelistedLibs: []string{},
-			loadingSO: soInstance{
+			loadingSO: testSOInstance{
 				info: sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"},
 				syms: []string{
 					"open",
@@ -116,7 +116,7 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 			name:            "SO with partly watched export symbols",
 			watchedSymbols:  []string{"open", "close", "write"},
 			whitelistedLibs: []string{},
-			loadingSO: soInstance{
+			loadingSO: testSOInstance{
 				info: sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"},
 				syms: []string{
 					"open",
@@ -130,7 +130,7 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 			name:            "SO with no watched export symbols",
 			watchedSymbols:  []string{"open", "close", "write"},
 			whitelistedLibs: []string{},
-			loadingSO: soInstance{
+			loadingSO: testSOInstance{
 				info: sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"},
 				syms: []string{
 					"createdir",
@@ -144,7 +144,7 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 			name:            "whitelisted full path SO",
 			watchedSymbols:  []string{"open", "close", "write"},
 			whitelistedLibs: []string{"/tmp/test"},
-			loadingSO: soInstance{
+			loadingSO: testSOInstance{
 				info: sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "/tmp/test.so"},
 				syms: []string{"open"},
 			},
@@ -154,7 +154,7 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 			name:            "whitelisted SO name",
 			watchedSymbols:  []string{"open", "close", "write"},
 			whitelistedLibs: []string{"test"},
-			loadingSO: soInstance{
+			loadingSO: testSOInstance{
 				info: sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "/lib/test.so"},
 				syms: []string{"open"},
 			},
