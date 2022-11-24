@@ -2,6 +2,7 @@ package derive
 
 import (
 	"errors"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"testing"
 
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
@@ -160,14 +161,19 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 		},
 	}
 	pid := 1
+	baseLogger := logger.Base()
 
 	t.Run("Happy flow", func(t *testing.T) {
 		for _, testCase := range happyFlowTestCases {
 			t.Run(testCase.name, func(t *testing.T) {
+				errChan := setMockLogger(logger.DebugLevel)
+				defer logger.SetBase(baseLogger)
+
 				mockLoader := initLoaderMock(false)
 				mockLoader.addSOSymbols(testCase.loadingSO)
 				gen := initSymbolsLoadedEventGenerator(mockLoader, testCase.watchedSymbols, testCase.whitelistedLibs, true)
 				eventArgs, err := gen.deriveArgs(generateSOLoadedEvent(pid, testCase.loadingSO.info))
+				assert.Empty(t, errChan)
 				require.NoError(t, err)
 				if len(testCase.expectedSymbols) > 0 {
 					require.Len(t, eventArgs, 2)
@@ -186,27 +192,74 @@ func TestDeriveSharedObjectExportWatchedSymbols(t *testing.T) {
 
 	t.Run("Errors flow", func(t *testing.T) {
 		t.Run("Debug", func(t *testing.T) {
+			errChan := setMockLogger(logger.DebugLevel)
+			defer logger.SetBase(baseLogger)
 			mockLoader := initLoaderMock(true)
 			gen := initSymbolsLoadedEventGenerator(mockLoader, nil, nil, true)
 
 			// First error should be always returned
 			eventArgs, err := gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))
-			assert.Error(t, err)
+			assert.NoError(t, err)
 			assert.Nil(t, eventArgs)
+			assert.NotEmpty(t, errChan)
+			<-errChan
+			assert.Empty(t, errChan)
 
 			// Debug mode should return errors always
 			eventArgs, err = gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))
-			assert.Error(t, err)
+			assert.NoError(t, err)
 			assert.Nil(t, eventArgs)
+			assert.NotEmpty(t, errChan)
 		})
 		t.Run("No debug", func(t *testing.T) {
+			errChan := setMockLogger(logger.WarnLevel)
+			defer logger.SetBase(baseLogger)
 			mockLoader := initLoaderMock(true)
 			gen := initSymbolsLoadedEventGenerator(mockLoader, nil, nil, false)
 
-			// Error should be suppressed
+			// First error should create warning
 			eventArgs, err := gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))
 			assert.NoError(t, err)
 			assert.Nil(t, eventArgs)
+			assert.NotEmpty(t, errChan)
+			<-errChan
+			assert.Empty(t, errChan)
+
+			// Error should be suppressed
+			eventArgs, err = gen.deriveArgs(generateSOLoadedEvent(pid, sharedobjs.ObjInfo{Id: sharedobjs.ObjID{Inode: 1}, Path: "1.so"}))
+			assert.NoError(t, err)
+			assert.Nil(t, eventArgs)
+			assert.Empty(t, errChan)
 		})
 	})
+}
+
+// setMockLogger set a mock logger as the package logger, and return the output channel of the logger.
+func setMockLogger(l logger.Level) <-chan []byte {
+	mw, errChan := newMockWriter()
+	mockLogger := logger.NewLogger(
+		&logger.LoggerConfig{
+			Writer:    mw,
+			Level:     l,
+			Encoder:   logger.NewJSONEncoder(logger.NewProductionConfig().EncoderConfig),
+			Aggregate: false,
+		},
+	)
+	logger.SetBase(mockLogger)
+	return errChan
+}
+
+type mockWriter struct {
+	Out chan<- []byte
+}
+
+func newMockWriter() (mockWriter, <-chan []byte) {
+	outChan := make(chan []byte, 10)
+	writer := mockWriter{Out: outChan}
+	return writer, outChan
+}
+
+func (w mockWriter) Write(p []byte) (n int, err error) {
+	w.Out <- p
+	return len(p), nil
 }
