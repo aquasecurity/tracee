@@ -6,6 +6,7 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/parse"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -39,6 +40,7 @@ type symbolsLoadedEventGenerator struct {
 	pathPrefixWhitelist []string
 	librariesWhitelist  []string
 	isDebug             bool
+	returnedErrors      map[string]bool
 }
 
 func initSymbolsLoadedEventGenerator(
@@ -64,6 +66,7 @@ func initSymbolsLoadedEventGenerator(
 		pathPrefixWhitelist: prefixes,
 		librariesWhitelist:  libraries,
 		isDebug:             isDebug,
+		returnedErrors:      make(map[string]bool),
 	}
 }
 
@@ -78,14 +81,18 @@ func (symbsLoadedGen *symbolsLoadedEventGenerator) deriveArgs(event trace.Event)
 	}
 
 	soSyms, err := symbsLoadedGen.soLoader.GetExportedSymbols(loadingObjectInfo)
+	// This error happens frequently in some environments, so we need to silence it to reduce spam.
+	// Either way, this is not a critical error so we don't return it.
 	if err != nil {
-		// TODO: Create a warning upon this error when logger is available
 		// TODO: rate limit frequent errors for overloaded envs
-		if symbsLoadedGen.isDebug {
-			return nil, err
+		_, ok := symbsLoadedGen.returnedErrors[err.Error()]
+		if !ok {
+			symbsLoadedGen.returnedErrors[err.Error()] = true
+			logger.Warn("symbols_loaded", "object loaded", loadingObjectInfo, "error", err.Error())
 		} else {
-			return nil, nil
+			logger.Debug("symbols_loaded", "object loaded", loadingObjectInfo, "error", err.Error())
 		}
+		return nil, nil
 	}
 
 	var exportedWatchSymbols []string
