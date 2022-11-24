@@ -273,6 +273,7 @@ const (
 	HookedSyscalls
 	HookedSeqOps
 	SymbolsLoaded
+	SymbolsCollision
 	MaxUserSpace
 )
 
@@ -5847,6 +5848,28 @@ var Definitions = eventDefinitions{
 			Sets: []string{"derived", "fs", "security_alert"},
 			Params: []trace.ArgMeta{
 				{Type: "const char*", Name: "library_path"},
+				{Type: "const char*const*", Name: "symbols"},
+			},
+		},
+		SymbolsCollision: {
+			ID32Bit: sys32undefined,
+			Name:    "symbols_collision",
+			DocPath: "security_alerts/symbols_collision.md",
+			Probes:  []probeDependency{},
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: SharedObjectLoaded},
+					{EventID: SchedProcessExec}, // Used to get mount namespace cache
+				},
+				Capabilities: []cap.Value{
+					cap.SYS_PTRACE,   // Used to get host mount NS for bucket cache
+					cap.DAC_OVERRIDE, // Used to open files across the system
+				},
+			},
+			Sets: []string{"lsm_hooks", "fs", "fs_file_ops", "proc", "proc_mem"},
+			Params: []trace.ArgMeta{
+				{Type: "const char*", Name: "loaded_path"},
+				{Type: "const char*", Name: "collision_path"},
 				{Type: "const char*const*", Name: "symbols"},
 			},
 		},
