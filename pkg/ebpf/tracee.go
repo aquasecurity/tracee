@@ -576,19 +576,40 @@ func (t *Tracee) initDerivationTable() error {
 	for filterScope := range t.config.FilterScopes.Map() {
 		maps.Copy(symbolsLoadedFilters, filterScope.ArgFilter.GetEventFilters(events.SymbolsLoaded))
 	}
-	watchedSymbols := []string{}
-	whitelistedLibs := []string{}
+	loadWatchedSymbols := []string{}
+	loadWhitelistedLibs := []string{}
 
 	if len(symbolsLoadedFilters) > 0 {
 		watchedSymbolsFilter, ok := symbolsLoadedFilters["symbols"].(*filters.StringFilter)
 		if watchedSymbolsFilter != nil && ok {
-			watchedSymbols = watchedSymbolsFilter.Equal()
+			loadWatchedSymbols = watchedSymbolsFilter.Equal()
 		}
 		whitelistedLibsFilter, ok := symbolsLoadedFilters["library_path"].(*filters.StringFilter)
 		if whitelistedLibsFilter != nil && ok {
-			whitelistedLibs = whitelistedLibsFilter.NotEqual()
+			loadWhitelistedLibs = whitelistedLibsFilter.NotEqual()
 		}
 	}
+
+	symbolsCollisionFilters := map[string]filters.Filter{}
+	for filterScope := range t.config.FilterScopes.Map() {
+		maps.Copy(symbolsCollisionFilters, filterScope.ArgFilter.GetEventFilters(events.SymbolsCollision))
+	}
+	collisionAllowListSymbols := []string{}
+	collisionDenyListSymbols := []string{}
+
+	if symbolsCollisionFilters != nil {
+		collisionSymbolsFilter, ok := symbolsCollisionFilters["symbols"].(*filters.StringFilter)
+		if collisionSymbolsFilter != nil && ok {
+			collisionAllowListSymbols = collisionSymbolsFilter.Equal()
+			collisionDenyListSymbols = collisionSymbolsFilter.NotEqual()
+		}
+	}
+
+	soSymbolsCollisionsDeriveFn := derive.SymbolsCollision(
+		soLoader,
+		collisionAllowListSymbols,
+		collisionDenyListSymbols,
+	)
 
 	t.eventDerivations = derive.Table{
 		events.CgroupMkdir: {
@@ -620,9 +641,19 @@ func (t *Tracee) initDerivationTable() error {
 				Enabled: func() bool { return t.events[events.SymbolsLoaded].submit > 0 },
 				DeriveFunction: derive.SymbolsLoaded(
 					soLoader,
-					watchedSymbols,
-					whitelistedLibs,
+					loadWatchedSymbols,
+					loadWhitelistedLibs,
 				),
+			},
+			events.SymbolsCollision: {
+				Enabled:        func() bool { return t.events[events.SymbolsCollision].submit > 0 },
+				DeriveFunction: soSymbolsCollisionsDeriveFn,
+			},
+		},
+		events.SchedProcessExec: {
+			events.SymbolsCollision: {
+				Enabled:        func() bool { return t.events[events.SymbolsCollision].submit > 0 },
+				DeriveFunction: soSymbolsCollisionsDeriveFn,
 			},
 		},
 		//
