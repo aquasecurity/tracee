@@ -37,6 +37,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/pkg/procinfo"
 	"github.com/aquasecurity/tracee/pkg/utils"
+	"github.com/aquasecurity/tracee/pkg/utils/proc"
 	"github.com/aquasecurity/tracee/pkg/utils/sharedobjs"
 	"github.com/aquasecurity/tracee/types/trace"
 	lru "github.com/hashicorp/golang-lru"
@@ -367,7 +368,7 @@ func New(cfg Config) (*Tracee, error) {
 	return t, nil
 }
 
-// Initialize tracee instance and it's various subsystems, potentially
+// Init initialize tracee instance and it's various subsystems, potentially
 // performing external system operations to initialize them. NOTE: any
 // initialization logic, especially one that causes side effects, should go
 // here and not New().
@@ -454,12 +455,10 @@ func (t *Tracee) Init() error {
 		t.config.maxPidsCache = 5 // default value for config.maxPidsCache
 	}
 	t.pidsInMntns.Init(t.config.maxPidsCache)
-	hostMntnsLink, err := os.Readlink("/proc/1/ns/mnt")
+	mntNSProcs, err := proc.GetMountNSFirstProcesses()
 	if err == nil {
-		hostMntnsString := strings.TrimSuffix(strings.TrimPrefix(hostMntnsLink, "mnt:["), "]")
-		hostMntns, err := strconv.Atoi(hostMntnsString)
-		if err == nil {
-			t.pidsInMntns.AddBucketItem(uint32(hostMntns), 1)
+		for mountNS, pid := range mntNSProcs {
+			t.pidsInMntns.AddBucketItem(uint32(mountNS), uint32(pid))
 		}
 	}
 
