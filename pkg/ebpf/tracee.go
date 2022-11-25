@@ -409,7 +409,14 @@ func (t *Tracee) Init() error {
 
 	// Initialize process tree before receiving events (will use it)
 
-	t.procInfo, err = procinfo.NewProcessInfo()
+	err = capabilities.GetInstance().Requested(func() error {
+		t.procInfo, err = procinfo.NewProcessInfo()
+		return err
+	},
+		cap.DAC_READ_SEARCH,
+		cap.IPC_LOCK,
+	)
+
 	if err != nil {
 		t.Close()
 		return fmt.Errorf("error creating process tree: %v", err)
@@ -468,7 +475,15 @@ func (t *Tracee) Init() error {
 		t.config.maxPidsCache = 5 // default value for config.maxPidsCache
 	}
 	t.pidsInMntns.Init(t.config.maxPidsCache)
-	mntNSProcs, err := proc.GetMountNSFirstProcesses()
+
+	var mntNSProcs map[int]int
+	err = capabilities.GetInstance().Requested(func() error {
+		mntNSProcs, err = proc.GetMountNSFirstProcesses()
+		return err
+	},
+		cap.DAC_READ_SEARCH,
+		cap.SYS_PTRACE,
+	)
 	if err == nil {
 		for mountNS, pid := range mntNSProcs {
 			t.pidsInMntns.AddBucketItem(uint32(mountNS), uint32(pid))
