@@ -14,8 +14,6 @@ import (
 var once sync.Once
 var caps *Capabilities // singleton for all packages
 
-const pkgName = "capabilities"
-
 //
 // "Effective" might be at protection rings 0,1,2,3
 // "Permitted" is always at ring0 (so effective can migrate rings)
@@ -105,13 +103,13 @@ func (c *Capabilities) initialize(bypass bool) error {
 
 	paranoid, err := getKernelPerfEventParanoidValue()
 	if err != nil {
-		logger.Debug("could not get perf_event_paranoid, assuming highest", "pkg", pkgName)
+		logger.Debug("could not get perf_event_paranoid, assuming highest")
 	}
 
 	if paranoid > 2 {
-		logger.Debug("paranoid: Value in /proc/sys/kernel/perf_event_paranoid is > 2", "pkg", pkgName)
-		logger.Debug("paranoid: Tracee needs CAP_SYS_ADMIN instead of CAP_BPF + CAP_PERFMON", "pkg", pkgName)
-		logger.Debug("paranoid: To change that behavior set perf_event_paranoid to 2 or less.", "pkg", pkgName)
+		logger.Debug("paranoid: Value in /proc/sys/kernel/perf_event_paranoid is > 2")
+		logger.Debug("paranoid: Tracee needs CAP_SYS_ADMIN instead of CAP_BPF + CAP_PERFMON")
+		logger.Debug("paranoid: To change that behavior set perf_event_paranoid to 2 or less.")
 		c.Require(cap.SYS_ADMIN)
 	}
 
@@ -305,11 +303,11 @@ func (c *Capabilities) apply(t ringType) error {
 		return err
 	}
 
-	logger.Debug("capabilities change", "pkg", pkgName)
+	logger.Debug("capabilities change")
 
 	for k, v := range c.all {
 		if v[t] {
-			logger.Debug("enabling", "pkg", pkgName, "cap", k)
+			logger.Debug("enabling cap", "cap", k)
 		}
 		err = c.have.SetFlag(cap.Effective, v[t], k)
 		if err != nil {
