@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -93,8 +94,9 @@ func ParseProcessContext(ctx []byte, containers *containers.Containers) (Process
 	return procCtx, nil
 }
 
-//returns the file creation time
-//Note: this is not the real process start time because it's based on the file creation time, but it is a close approximation
+// getFileCtime returns the file creation time
+// Note: this is not the real process start time because it's based on the file
+// creation time, but it is a close approximation
 func getFileCtime(path string) (int, error) {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
@@ -105,7 +107,8 @@ func getFileCtime(path string) (int, error) {
 	return int(ts.Sec)*int(time.Second) + int(ts.Nsec)*int(time.Nanosecond), nil
 }
 
-//parse the status file of a process or given task and returns process context struct
+// parseProcStatus parses the status file of a process or given task and returns
+// process context struct
 func parseProcStatus(status []byte, taskStatusPath string) (ProcessCtx, error) {
 	var processName string
 	processVals := make(map[string]uint32)
@@ -149,7 +152,8 @@ func parseProcStatus(status []byte, taskStatusPath string) (ProcessCtx, error) {
 	return process, nil
 }
 
-//gets the namespace data for the process Context struct by parsing the /proc/<Pid>/task directory
+// getNsIdData gets the namespace data for the process Context struct by parsing
+// the /proc/<pid>/task directory
 func getNsIdData(taskStatusPath string) (uint32, uint32, error) {
 	path := fmt.Sprintf("%s/ns/mnt", taskStatusPath[:len(taskStatusPath)-7])
 	processMntId, err := os.Readlink(path)
@@ -177,7 +181,7 @@ func getNsIdData(taskStatusPath string) (uint32, uint32, error) {
 	return uint32(mntId), uint32(pidId), nil
 }
 
-//initialize new process-tree
+// NewProcessInfo initializes a new process-tree
 func NewProcessInfo() (*ProcInfo, error) {
 	p := ProcInfo{make(map[int]ProcessCtx), sync.RWMutex{}}
 	procDir, err := os.Open("/proc")
@@ -199,11 +203,13 @@ func NewProcessInfo() (*ProcInfo, error) {
 
 		taskDir, err := os.Open(fmt.Sprintf("/proc/%d/task", pid))
 		if err != nil {
+			logger.Warn("could not read /proc/pid/task file:", "pid", pid, "error", err.Error())
 			continue
 		}
 		defer taskDir.Close()
 		processTasks, err := taskDir.Readdirnames(-1)
 		if err != nil {
+			logger.Warn("could not read task dir", "error", err.Error())
 			continue
 		}
 		for _, task := range processTasks {
@@ -212,14 +218,17 @@ func NewProcessInfo() (*ProcInfo, error) {
 			data, err := ioutil.ReadFile(taskStatus)
 			if err != nil {
 				// process might have exited - ignore this task
+				logger.Warn("could not read /proc/pid/task/pid/status file", "error", err.Error())
 				continue
 			}
 			processStatus, err := parseProcStatus(data, taskStatus)
 			if err != nil {
+				logger.Warn("could not parse task status", "error", err.Error())
 				continue
 			}
 			containerId, err := containers.GetContainerIdFromTaskDir(taskDir)
 			if err != nil {
+				logger.Warn("could not get containerid from task dir", "error", err.Error())
 				continue
 			}
 			processStatus.ContainerID = containerId
