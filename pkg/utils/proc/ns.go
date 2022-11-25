@@ -37,13 +37,13 @@ func GetMountNSFirstProcesses() (map[int]int, error) {
 		}
 		procNS, err := GetProcNS(uint(pid))
 		if err != nil {
-			logger.Warn("Failed in fetching process mount namespace", pid, err.Error())
+			logger.Warn("Failed in fetching process mount namespace", "pid", pid, "error", err.Error())
 			continue
 		}
 
 		processStartTime, err := GetProcessStartTime(uint(pid))
 		if err != nil {
-			logger.Warn("Failed in fetching process start time", pid, err.Error())
+			logger.Warn("Failed in fetching process start time", "pid", pid, "error", err.Error())
 			continue
 		}
 
