@@ -1473,6 +1473,32 @@ static inline struct mount *real_mount(struct vfsmount *mnt)
     return container_of(mnt, struct mount, mnt);
 }
 
+/* Get the vma which contain the given address.
+ * This is done by iterating over all current task vmas, which is limited to a fixed number of
+ * iterations because of eBPF limitation. As a result, failure in this function doesn't necessarily
+ * mean the address is not contained in some vma.
+ */
+static __always_inline struct vm_area_struct *get_address_vma(void *addr)
+{
+    struct task_struct *task = (struct task_struct *) bpf_get_current_task();
+    struct mm_struct *mm = get_mm_from_task(task);
+    struct vm_area_struct *current_vma = READ_KERN(mm->mmap);
+
+#pragma unroll
+    for (int i = 0; i < 100; i++) {
+        void *vm_start = (void *) READ_KERN(current_vma->vm_start);
+        void *vm_end = (void *) READ_KERN(current_vma->vm_end);
+        if (vm_start <= addr && vm_end >= addr) {
+            return current_vma;
+        }
+        current_vma = READ_KERN(current_vma->vm_next);
+        if (current_vma == NULL) {
+            return NULL;
+        }
+    }
+    return NULL;
+}
+
 // HELPERS: NETWORK --------------------------------------------------------------------------------
 
 static __always_inline u32 get_inet_rcv_saddr(struct inet_sock *inet)
@@ -2686,6 +2712,38 @@ static __always_inline uint get_syscall_fd_num_from_arg(uint syscall_id, args_t 
         return events_perf_submit(&data, id, ret);                                                 \
     }
 
+// HELPERS: MEMORY TRANSLATION ---------------------------------------------------------------------
+
+static __always_inline void *get_special_memory_area_name(struct vm_area_struct *vma)
+{
+    // Get per-cpu string buffer
+    buf_t *string_p = get_buf(STRING_BUF_IDX);
+    if (string_p == NULL)
+        return NULL;
+
+    struct mm_struct *mm = READ_KERN(vma->vm_mm);
+    unsigned long vm_start = READ_KERN(vma->vm_start);
+    unsigned long vm_end = READ_KERN(vma->vm_end);
+    unsigned long brk = READ_KERN(mm->brk);
+    unsigned long start_brk = READ_KERN(mm->start_brk);
+    unsigned long start_stack = READ_KERN(mm->start_stack);
+
+    if (!mm) {
+        char area_name[] = "[vdso]\0";
+        bpf_probe_read_str(&(string_p->buf[0]), MAX_STRING_SIZE, (void *) &area_name);
+    } else if (vm_start <= brk && vm_end >= start_brk) {
+        char area_name[] = "[heap]\0";
+        bpf_probe_read_str(&(string_p->buf[0]), MAX_STRING_SIZE, (void *) &area_name);
+    } else if (vm_start <= start_stack && vm_end >= start_stack) {
+        char area_name[] = "[stack]\0";
+        bpf_probe_read_str(&(string_p->buf[0]), MAX_STRING_SIZE, (void *) &area_name);
+    } else {
+        return NULL;
+    }
+
+    return &string_p->buf[0];
+}
+
 // HELPERS: NETWORK --------------------------------------------------------------------------------
 
 static __always_inline int
@@ -2891,17 +2949,21 @@ static __always_inline struct pipe_inode_info *get_file_pipe_info(struct file *f
         save_to_submit_buf(&data, &prot, sizeof(int), 3);                                          \
         save_to_submit_buf(&data, &previous_prot, sizeof(int), 4);                                 \
                                                                                                    \
+        void *file_path;                                                                           \
         if (file != NULL) {                                                                        \
-            void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));                          \
+            file_path = get_path_str(GET_FIELD_ADDR(file->f_path));                                \
             u64 ctime = get_ctime_nanosec_from_file(file);                                         \
             dev_t s_dev = get_dev_from_file(file);                                                 \
             unsigned long inode_nr = get_inode_nr_from_file(file);                                 \
                                                                                                    \
-            save_str_to_buf(&data, file_path, 5);                                                  \
             save_to_submit_buf(&data, &s_dev, sizeof(dev_t), 6);                                   \
             save_to_submit_buf(&data, &inode_nr, sizeof(unsigned long), 7);                        \
             save_to_submit_buf(&data, &ctime, sizeof(u64), 8);                                     \
+        } else {                                                                                   \
+            struct vm_area_struct *vma = get_address_vma(addr);                                    \
+            file_path = get_special_memory_area_name(vma);                                         \
         }                                                                                          \
+        save_str_to_buf(&data, file_path, 5);                                                      \
         events_perf_submit(&data, MEM_PROT_ALERT, 0);                                              \
     }
 
@@ -5684,8 +5746,14 @@ int BPF_KPROBE(trace_security_file_mprotect)
 
     if (should_submit(SECURITY_FILE_MPROTECT, data.config)) {
         struct file *file = (struct file *) READ_KERN(vma->vm_file);
-        void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
-        u64 ctime = get_ctime_nanosec_from_file(file);
+        void *file_path;
+        u64 ctime = 0;
+        if (file != NULL) {
+            file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+            ctime = get_ctime_nanosec_from_file(file);
+        } else {
+            file_path = get_special_memory_area_name(vma);
+        }
         void *addr = (void *) sys->args.args[0];
         size_t len = sys->args.args[1];
 
