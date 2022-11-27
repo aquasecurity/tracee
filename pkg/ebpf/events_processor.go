@@ -205,6 +205,10 @@ func (t *Tracee) processEvent(event *trace.Event) error {
 		}
 
 	case events.SchedProcessFork:
+		err := t.convertArgMonotonicToEpochTime(event, "start_time")
+		if err != nil {
+			return err
+		}
 		if t.config.ProcessInfo {
 			hostTid, err := parse.ArgInt32Val(event, "child_tid")
 			if err != nil {
@@ -367,4 +371,20 @@ func (t *Tracee) updateProfile(sourceFilePath string, executionTs uint64) {
 		pf.Times = pf.Times + 1              // bump execution count
 		t.profiledFiles[sourceFilePath] = pf // update
 	}
+}
+
+// convertArgMonotonicToEpochTime change time from monotonic relative time to time since epoch.
+// Monotonic time is timestamp relative to the boot time (not including sleep time)
+// Add the boot time to receive timestamp which is approximately relative to epoch.
+func (t *Tracee) convertArgMonotonicToEpochTime(event *trace.Event, argName string) error {
+	relTimeArg := events.GetArg(event, argName)
+	if relTimeArg == nil {
+		return fmt.Errorf("couldn't find argument %s of event %s", argName, event.EventName)
+	}
+	relTime, ok := relTimeArg.Value.(uint64)
+	if !ok {
+		return fmt.Errorf("argument %s of event %s is not of type uint64", argName, event.EventName)
+	}
+	relTimeArg.Value = relTime + t.bootTime
+	return nil
 }
