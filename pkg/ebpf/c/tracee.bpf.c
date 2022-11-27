@@ -1485,7 +1485,7 @@ static __always_inline struct vm_area_struct *get_address_vma(void *addr)
     struct vm_area_struct *current_vma = READ_KERN(mm->mmap);
 
 #pragma unroll
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 10; i++) {
         void *vm_start = (void *) READ_KERN(current_vma->vm_start);
         void *vm_end = (void *) READ_KERN(current_vma->vm_end);
         if (vm_start <= addr && vm_end >= addr) {
@@ -5751,8 +5751,6 @@ int BPF_KPROBE(trace_security_file_mprotect)
         if (file != NULL) {
             file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
             ctime = get_ctime_nanosec_from_file(file);
-        } else {
-            file_path = get_special_memory_area_name(vma);
         }
         void *addr = (void *) sys->args.args[0];
         size_t len = sys->args.args[1];
