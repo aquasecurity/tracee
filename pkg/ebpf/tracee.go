@@ -796,6 +796,8 @@ const (
 	filterProcTreeOut
 	filterCgroupIdEnabled
 	filterCgroupIdOut
+	filterBinaryEnabled
+	filterBinaryOut
 )
 
 func (t *Tracee) getOptionsConfig() uint32 {
@@ -900,6 +902,12 @@ func (t *Tracee) getFiltersConfig() uint32 {
 		cFilterVal = cFilterVal | filterProcTreeEnabled
 		if t.config.Filter.ProcessTreeFilter.FilterOut() {
 			cFilterVal = cFilterVal | filterProcTreeOut
+		}
+	}
+	if t.config.Filter.BinaryFilter.Enabled() {
+		cFilterVal = cFilterVal | filterBinaryEnabled
+		if t.config.Filter.BinaryFilter.FilterOut() {
+			cFilterVal = cFilterVal | filterBinaryOut
 		}
 	}
 	if t.config.Filter.Follow {
@@ -1058,6 +1066,7 @@ func (t *Tracee) populateBPFMaps() error {
 	errmap[UTSFilterMap] = t.config.Filter.UTSFilter.InitBPF(t.bpfModule)
 	errmap[CommFilterMap] = t.config.Filter.CommFilter.InitBPF(t.bpfModule)
 	errmap[ContIdFilter] = t.config.Filter.ContIDFilter.InitBPF(t.bpfModule, t.containers)
+	errmap[BinaryFilterMap] = t.config.Filter.BinaryFilter.InitBPF(t.bpfModule)
 
 	for k, v := range errmap {
 		if v != nil {

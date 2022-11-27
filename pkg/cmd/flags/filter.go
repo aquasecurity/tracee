@@ -19,7 +19,7 @@ Available numerical expressions: uid, pid, mntns, pidns.
 NOTE: Expressions containing '<' or '>' token must be escaped! This is also shown in the examples below.
 
 String expressions which compares text and allow the following operators: '=', '!='.
-Available string expressions: event, set, uts, comm, container.
+Available string expressions: event, set, uts, comm, container, binary.
 
 Boolean expressions that check if a boolean is true and allow the following operator: '!'.
 Available boolean expressions: container.
@@ -73,13 +73,14 @@ Examples:
   --trace s=fs --trace e!=open,openat                          | trace all file-system related events, but not open(at)
   --trace uts!=ab356bc4dd554                                   | don't trace events from uts name ab356bc4dd554
   --trace comm=ls                                              | only trace events from ls command
+  --trace binary=/usr/bin/ls                                   | only trace events from /usr/bin/ls binary
   --trace close.fd=5                                           | only trace 'close' events that have 'fd' equals 5
   --trace openat.args.pathname=/tmp*                           | only trace 'openat' events that have 'pathname' prefixed by "/tmp"
   --trace openat.args.pathname!=/tmp/1,/bin/ls                 | don't trace 'openat' events that have 'pathname' equals /tmp/1 or /bin/ls
   --trace openat.context.processName=ls                        | only trace 'openat' events that have 'processName' equal to 'ls'
   --trace security_file_open.context.container                 | only trace 'security_file_open' events coming from a container
   --trace comm=bash --trace follow                             | trace all events that originated from bash or from one of the processes spawned by bash
-  --trace net=docker0 			                       | trace the net events over docker0 interface
+  --trace net=docker0                                          | trace the net events over docker0 interface
 
 
 Note: some of the above operators have special meanings in different shells.
@@ -96,6 +97,7 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 		PidNSFilter:       filters.NewBPFUIntFilter(tracee.PidNSFilterMap),
 		UTSFilter:         filters.NewBPFStringFilter(tracee.UTSFilterMap),
 		CommFilter:        filters.NewBPFStringFilter(tracee.CommFilterMap),
+		BinaryFilter:      filters.NewBPFStringFilter(tracee.BinaryFilterMap),
 		ContFilter:        filters.NewBoolFilter(),
 		NewContFilter:     filters.NewBoolFilter(),
 		ContIDFilter:      filters.NewContainerFilter(tracee.CgroupIdFilterMap),
@@ -168,6 +170,14 @@ func PrepareFilter(filtersArr []string) (tracee.Filter, error) {
 		// To avoid collisions between filters that share the same prefix, put the filters which should have an exact match first!
 		if filterName == "comm" {
 			err := filter.CommFilter.Parse(operatorAndValues)
+			if err != nil {
+				return tracee.Filter{}, err
+			}
+			continue
+		}
+
+		if filterName == "binary" {
+			err := filter.BinaryFilter.Parse(operatorAndValues)
 			if err != nil {
 				return tracee.Filter{}, err
 			}

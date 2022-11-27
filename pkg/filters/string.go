@@ -230,8 +230,8 @@ func NewBPFStringFilter(mapName string) *BPFStringFilter {
 }
 
 func (filter *BPFStringFilter) InitBPF(bpfModule *bpf.Module) error {
-	// MaxBpfStrFilterSize value should match MAX_STR_FILTER_SIZE defined in BPF code
-	const maxBpfStrFilterSize = 16
+	// MaxBpfStrFilterSize value should be at least as big as the bpf map value size
+	const maxBpfStrFilterSize = 256
 
 	bpfFilterEqual := uint32(filterEqual) // const need local var for bpfMap.Update()
 	bpfFilterNotEqual := uint32(filterNotEqual)
