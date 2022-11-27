@@ -98,6 +98,7 @@ int KERNEL_VERSION SEC("version") = LINUX_VERSION_CODE;
 #define MAX_STACK_ADDRESSES 1024      // max amount of diff stack trace addrs to buffer
 #define MAX_STACK_DEPTH     20        // max depth of each stack trace to track
 #define MAX_STR_FILTER_SIZE 16        // bounded to size of the compared values (comm)
+#define MAX_BIN_PATH_SIZE   256       // max binary path size
 #define FILE_MAGIC_HDR_SIZE 32        // magic_write: bytes to save from a file's header
 #define FILE_MAGIC_MASK     31        // magic_write: mask used for verifier boundaries
 #define NET_SEQ_OPS_SIZE    4         // print_net_seq_ops: struct size - TODO: replace with uprobe argument
@@ -508,6 +509,8 @@ enum event_id_e
 #define FILTER_PROC_TREE_OUT     (1 << 20)
 #define FILTER_CGROUP_ID_ENABLED (1 << 21)
 #define FILTER_CGROUP_ID_OUT     (1 << 22)
+#define FILTER_BIN_PATH_ENABLED  (1 << 23)
+#define FILTER_BIN_PATH_OUT      (1 << 24)
 
 #define FILTER_MAX_NOT_SET 0
 #define FILTER_MIN_NOT_SET ULLONG_MAX
@@ -535,7 +538,7 @@ enum container_state_e
 #ifndef CORE
     #if LINUX_VERSION_CODE <                                                                       \
         KERNEL_VERSION(5, 2, 0) // lower values in old kernels (instr lim is 4096)
-        #define MAX_STR_ARR_ELEM      40
+        #define MAX_STR_ARR_ELEM      38
         #define MAX_ARGS_STR_ARR_ELEM 15
         #define MAX_PATH_PREF_SIZE    64
         #define MAX_PATH_COMPONENTS   20
@@ -548,7 +551,7 @@ enum container_state_e
         #define MAX_BIN_CHUNKS        256
     #endif
 #else                                // CORE
-    #define MAX_STR_ARR_ELEM      40 // TODO: turn this into global variables set w/ libbpfgo
+    #define MAX_STR_ARR_ELEM      38 // TODO: turn this into global variables set w/ libbpfgo
     #define MAX_ARGS_STR_ARR_ELEM 15
     #define MAX_PATH_PREF_SIZE    64
     #define MAX_PATH_COMPONENTS   20
@@ -783,6 +786,7 @@ typedef struct task_info {
 typedef struct proc_info {
     bool new_proc; // set if this process was started after tracee. Used with new_pid filter
     bool follow;   // set if this process was traced before. Used with the follow filter
+    char binary[MAX_BIN_PATH_SIZE];
 } proc_info_t;
 
 typedef struct bin_args {
@@ -807,6 +811,10 @@ typedef struct path_filter {
 typedef struct string_filter {
     char str[MAX_STR_FILTER_SIZE];
 } string_filter_t;
+
+typedef struct binary_filter {
+    char str[MAX_BIN_PATH_SIZE];
+} binary_filter_t;
 
 typedef struct ksym_name {
     char str[MAX_KSYM_NAME_SIZE];
@@ -1014,6 +1022,7 @@ BPF_HASH(pid_ns_filter, u64, u32, 256);                            // filter eve
 BPF_HASH(uts_ns_filter, string_filter_t, u32, 256);                // filter events by uts namespace name
 BPF_HASH(comm_filter, string_filter_t, u32, 256);                  // filter events by command name
 BPF_HASH(cgroup_id_filter, u32, u32, 256);                         // filter events by cgroup id
+BPF_HASH(binary_filter, binary_filter_t, u32, 256);                // filter events by binary path
 BPF_HASH(bin_args_map, u64, bin_args_t, 256);                      // persist args for send_bin funtion
 BPF_HASH(sys_32_to_64_map, u32, u32, 1024);                        // map 32bit to 64bit syscalls
 BPF_HASH(params_types_map, u32, u64, 1024);                        // encoded parameters types for event
@@ -1874,6 +1883,7 @@ static __always_inline task_info_t *init_task_info(u32 tid, u32 pid, bool *initi
 
             proc_info->new_proc = false;
             proc_info->follow = false;
+            __builtin_memset(proc_info->binary, 0, MAX_BIN_PATH_SIZE);
         }
 
         task_info->syscall_traced = false;
@@ -2086,6 +2096,12 @@ static __always_inline int do_should_trace(event_data_t *data)
         bool filter_out = (config & FILTER_CGROUP_ID_OUT) == FILTER_CGROUP_ID_OUT;
         u32 cgroup_id_lsb = context->cgroup_id;
         if (!equality_filter_matches(filter_out, &cgroup_id_filter, &cgroup_id_lsb))
+            return 0;
+    }
+
+    if (config & FILTER_BIN_PATH_ENABLED) {
+        bool filter_out = (config & FILTER_BIN_PATH_OUT) == FILTER_BIN_PATH_OUT;
+        if (!equality_filter_matches(filter_out, &binary_filter, proc_info->binary))
             return 0;
     }
 
@@ -3683,6 +3699,13 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
 
     data.task_info->recompute_scope = true;
 
+    struct linux_binprm *bprm = (struct linux_binprm *) ctx->args[2];
+    if (bprm == NULL) {
+        return -1;
+    }
+    struct file *file = get_file_ptr_from_bprm(bprm);
+    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
+
     proc_info_t *proc_info = bpf_map_lookup_elem(&proc_info_map, &data.context.task.host_pid);
     if (proc_info == NULL) {
         // entry should exist in proc_map (init_event_data should have set it otherwise)
@@ -3691,6 +3714,10 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     }
 
     proc_info->new_proc = true;
+
+    // extract the binary name to be used in should_trace
+    __builtin_memset(proc_info->binary, 0, MAX_BIN_PATH_SIZE);
+    bpf_probe_read_str(proc_info->binary, MAX_BIN_PATH_SIZE, file_path);
 
     if (!should_trace(&data))
         return 0;
@@ -3707,14 +3734,6 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     // 1. struct file *executable - can be used to get the executable name passed to an
     // interpreter
     // 2. fdpath                  - generated filename for execveat (after resolving dirfd)
-    struct linux_binprm *bprm = (struct linux_binprm *) ctx->args[2];
-
-    if (bprm == NULL) {
-        return -1;
-    }
-
-    struct file *file = get_file_ptr_from_bprm(bprm);
-    void *file_path = get_path_str(GET_FIELD_ADDR(file->f_path));
     const char *filename = get_binprm_filename(bprm);
 
     dev_t s_dev = get_dev_from_file(file);

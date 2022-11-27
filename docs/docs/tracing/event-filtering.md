@@ -140,6 +140,16 @@ expected.
         Do not use given command prefix for these examples as they're filtering
         by command name as well.
 
+1. **Binary Path** `(Operators: =, !=)`
+
+    ```text
+    1) --trace binary=/usr/bin/ls
+    ```
+
+    !!! Note
+        Given path must be of an ELF binary, meaning that providing the path
+        of a symbolic link won't work
+
 1. **PID** `(Operators: =, !=, <, > and "new")`
 
     ```text

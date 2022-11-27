@@ -19,6 +19,7 @@ const (
 	ProcessTreeFilterMap = "process_tree_map"
 	CgroupIdFilterMap    = "cgroup_id_filter"
 	ContIdFilter         = "cont_id_filter"
+	BinaryFilterMap      = "binary_filter"
 )
 
 type Filter struct {
@@ -37,6 +38,7 @@ type Filter struct {
 	ArgFilter         *filters.ArgFilter
 	ContextFilter     *filters.ContextFilter
 	ProcessTreeFilter *filters.ProcessTreeFilter
+	BinaryFilter      *filters.BPFStringFilter
 	Follow            bool
 	NetFilter         *NetIfaces
 }
