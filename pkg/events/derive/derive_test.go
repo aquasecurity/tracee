@@ -162,6 +162,118 @@ func Test_DeriveSingleEvent(t *testing.T) {
 	}
 }
 
+func TestDeriveMultipleEvents(t *testing.T) {
+	testEventID := events.ID(0)
+
+	// Change getter of the events.Event to give the test definition
+	def := events.Definitions.Get(testEventID)
+	def.Params = []trace.ArgMeta{
+		{
+			Name: "arg1",
+			Type: "int",
+		},
+		{
+			Name: "arg2",
+			Type: "int",
+		},
+	}
+	savedEventDefFunc := getEventDefinition
+	defer func() {
+		getEventDefinition = savedEventDefFunc
+	}()
+	getEventDefinition = func(id events.ID) events.Event {
+		return def
+	}
+
+	baseEvent := getTestEvent()
+
+	deriveArgsError := "fail derive args"
+	testCases := []struct {
+		Name                string
+		ExpectedErrors      []error
+		ArgsDeriveFunc      multiDeriveArgsFunction
+		DerivedEventsAmount int
+	}{
+		{
+			Name:           "Hapfapy flow - derive 1 event",
+			ExpectedErrors: nil,
+			ArgsDeriveFunc: func(event trace.Event) ([][]interface{}, []error) {
+				return [][]interface{}{{1, 2}}, nil
+			},
+			DerivedEventsAmount: 1,
+		},
+		{
+			Name:           "Hapfapy flow - derive 2 event",
+			ExpectedErrors: nil,
+			ArgsDeriveFunc: func(event trace.Event) ([][]interface{}, []error) {
+				return [][]interface{}{{1, 2}, {3, 4}}, nil
+			},
+			DerivedEventsAmount: 2,
+		},
+		{
+			Name:           "Happy flow - don't derive event",
+			ExpectedErrors: nil,
+			ArgsDeriveFunc: func(event trace.Event) ([][]interface{}, []error) {
+				return nil, nil
+			},
+			DerivedEventsAmount: 0,
+		},
+		{
+			Name:           "Fail derive argument function for 1 event",
+			ExpectedErrors: []error{fmt.Errorf(deriveArgsError)},
+			ArgsDeriveFunc: func(event trace.Event) ([][]interface{}, []error) {
+				return nil, []error{fmt.Errorf(deriveArgsError)}
+			},
+			DerivedEventsAmount: 0,
+		},
+		{
+			Name:           "Fail derive argument function for 2 event",
+			ExpectedErrors: []error{fmt.Errorf(deriveArgsError), fmt.Errorf(deriveArgsError)},
+			ArgsDeriveFunc: func(event trace.Event) ([][]interface{}, []error) {
+				return nil, []error{fmt.Errorf(deriveArgsError), fmt.Errorf(deriveArgsError)}
+			},
+			DerivedEventsAmount: 0,
+		},
+		{
+			Name:           "Succeed in derive event arguments and fail derive another event arguments",
+			ExpectedErrors: []error{fmt.Errorf(deriveArgsError)},
+			ArgsDeriveFunc: func(event trace.Event) ([][]interface{}, []error) {
+				return [][]interface{}{{1, 2}}, []error{fmt.Errorf(deriveArgsError)}
+			},
+			DerivedEventsAmount: 1,
+		},
+		{
+			Name:           "Fail new event creation",
+			ExpectedErrors: []error{fmt.Errorf("error deriving event \"%s\": expected %d arguments but given %d", def.Name, len(def.Params), 3)},
+			ArgsDeriveFunc: func(event trace.Event) ([][]interface{}, []error) {
+				return [][]interface{}{{1, 2, 3}}, nil
+			},
+			DerivedEventsAmount: 0,
+		},
+		{
+			Name:           "Fail new event creation and derive args",
+			ExpectedErrors: []error{fmt.Errorf(deriveArgsError), fmt.Errorf("error deriving event \"%s\": expected %d arguments but given %d", def.Name, len(def.Params), 3)},
+			ArgsDeriveFunc: func(event trace.Event) ([][]interface{}, []error) {
+				return [][]interface{}{{1, 2, 3}}, []error{fmt.Errorf(deriveArgsError)}
+			},
+			DerivedEventsAmount: 0,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.Name, func(t *testing.T) {
+			deriveFunc := deriveMultipleEvents(testEventID, testCase.ArgsDeriveFunc)
+			derivedEvents, errs := deriveFunc(baseEvent)
+			assert.Len(t, derivedEvents, testCase.DerivedEventsAmount)
+			if testCase.ExpectedErrors != nil {
+				assert.ElementsMatch(t, errs, testCase.ExpectedErrors)
+				return
+			}
+			require.Empty(t, errs)
+		})
+	}
+}
+
 func TestNewEvent(t *testing.T) {
 	baseEvent := getTestEvent()
 	skeleton := deriveBase{
