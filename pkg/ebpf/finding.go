@@ -19,7 +19,7 @@ func FindingToEvent(f detect.Finding) (*trace.Event, error) {
 
 	eventID, found := events.Definitions.GetID(f.SigMetadata.EventName)
 	if !found {
-		return nil, fmt.Errorf("error event not found: %s", f.SigMetadata.EventName)
+		return nil, fmt.Errorf("error finding event not found: %s", f.SigMetadata.EventName)
 	}
 
 	return newEvent(int(eventID), f.SigMetadata.EventName, s), nil

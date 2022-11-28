@@ -20,7 +20,7 @@ func Test_createEventsFromSigs(t *testing.T) {
 				newFakeSignature("fake_event_0", []string{"hooked_syscalls"}),
 			},
 			expectedEvents: []events.Event{
-				events.NewEvent("fake_event_0", []string{"rules"}, []events.ID{events.HookedSyscalls}),
+				events.NewEventDefinition("fake_event_0", []string{"rules"}, []events.ID{events.HookedSyscalls}),
 			},
 		},
 		{
@@ -29,8 +29,8 @@ func Test_createEventsFromSigs(t *testing.T) {
 				newFakeSignature("fake_event_2", []string{"security_file_open", "security_inode_rename"}),
 			},
 			expectedEvents: []events.Event{
-				events.NewEvent("fake_event_1", []string{"rules"}, []events.ID{events.Ptrace}),
-				events.NewEvent("fake_event_2", []string{"rules"}, []events.ID{events.SecurityFileOpen, events.SecurityInodeRename}),
+				events.NewEventDefinition("fake_event_1", []string{"rules"}, []events.ID{events.Ptrace}),
+				events.NewEventDefinition("fake_event_2", []string{"rules"}, []events.ID{events.SecurityFileOpen, events.SecurityInodeRename}),
 			},
 		},
 		{
@@ -38,7 +38,7 @@ func Test_createEventsFromSigs(t *testing.T) {
 				newFakeSignature("fake_event_3", []string{"sched_process_exec", "security_socket_connect"}),
 			},
 			expectedEvents: []events.Event{
-				events.NewEvent("fake_event_3", []string{"rules"}, []events.ID{events.SchedProcessExec, events.SecuritySocketConnect}),
+				events.NewEventDefinition("fake_event_3", []string{"rules"}, []events.ID{events.SchedProcessExec, events.SecuritySocketConnect}),
 			},
 		},
 	}

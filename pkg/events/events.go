@@ -69,8 +69,8 @@ type Event struct {
 	Params       []trace.ArgMeta
 }
 
-// NewEvent creates a new event
-func NewEvent(name string, sets []string, depsID []ID) Event {
+// NewEventDefinition creates a new event definition
+func NewEventDefinition(name string, sets []string, depsID []ID) Event {
 	evt := Event{
 		ID32Bit: sys32undefined,
 		Name:    name,
