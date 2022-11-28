@@ -143,6 +143,7 @@ func dumpErrorCounts(t *Tracee) {
 			}
 
 			count := binary.LittleEndian.Uint32(value)
+			// This logger timestamp doesn't reflect the ebpf error original time
 			logger.Error(bpfErr.Error(),
 				"id", bpfErr.ID(),
 				"type", bpfErr.Type().String(),
@@ -161,7 +162,7 @@ func dumpErrorCounts(t *Tracee) {
 			continue
 		}
 		// This increment is a snapshot built over multiple map lookups, so error counts in kernel space
-		// possibly changes during the process as we have no lock for userspace iteration.
+		// possibly change during the process as we have no lock for userspace iteration.
 		increment := totalCount - uint32(t.stats.BPFErrorsCount.Read())
 		// this check can be moved to Counter
 		if uint32(math.MaxInt32-t.stats.BPFErrorsCount.Read()) < increment {
@@ -172,45 +173,46 @@ func dumpErrorCounts(t *Tracee) {
 }
 
 // consumeBPFErrorsChannel logs every bpf error occurrence
-func consumeBPFErrorsChannel(t *Tracee) {
-	for {
-		select {
-		case rawData := <-t.bpfErrorsChannel:
-			if len(rawData) == 0 {
-				continue
-			}
+// func consumeBPFErrorsChannel(t *Tracee) {
+// 	for {
+// 		select {
+// 		case rawData := <-t.bpfErrorsChannel:
+// 			if len(rawData) == 0 {
+// 				continue
+// 			}
 
-			bpfErr := BPFError{}
-			if err := bpfErr.Decode(rawData); err != nil {
-				t.handleError(fmt.Errorf("consumeBPFErrorsChannel - %v", err))
-				continue
-			}
+// 			bpfErr := BPFError{}
+// 			if err := bpfErr.Decode(rawData); err != nil {
+// 				t.handleError(fmt.Errorf("consumeBPFErrorsChannel - %v", err))
+// 				continue
+// 			}
 
-			logger.Error(bpfErr.Error(),
-				"id", bpfErr.ID(),
-				"type", bpfErr.Type().String(),
-				"ret", bpfErr.Return(),
-				"file", bpfErr.FileAsString(),
-				"line", bpfErr.Line(),
-			)
-			t.stats.BPFErrorsCount.Increment()
+// 			logger.Error(bpfErr.Error(),
+// 				"id", bpfErr.ID(),
+// 				"type", bpfErr.Type().String(),
+// 				"ret", bpfErr.Return(),
+// 				"file", bpfErr.FileAsString(),
+// 				"line", bpfErr.Line(),
+// 			)
+// 			t.stats.BPFErrorsCount.Increment()
 
-		case lost := <-t.lostBPFErrChannel:
-			// When terminating tracee-ebpf the lost channel receives multiple "0 lost events" events.
-			// This check prevents those 0 lost events messages to be written to stderr until the bug is fixed:
-			// https://github.com/aquasecurity/libbpfgo/issues/122
-			if lost > 0 {
-				t.stats.LostBPFErrCount.Increment(int(lost))
-				t.config.ChanErrors <- fmt.Errorf("lost %d ebpf error events", lost)
-			}
-		}
-	}
-}
+// 		case lost := <-t.lostBPFErrChannel:
+// 			// When terminating tracee-ebpf the lost channel receives multiple "0 lost events" events.
+// 			// This check prevents those 0 lost events messages to be written to stderr until the bug is fixed:
+// 			// https://github.com/aquasecurity/libbpfgo/issues/122
+// 			if lost > 0 {
+// 				t.stats.LostBPFErrCount.Increment(int(lost))
+// 				t.config.ChanErrors <- fmt.Errorf("lost %d ebpf error events", lost)
+// 			}
+// 		}
+// 	}
+// }
 
 func (t *Tracee) processBPFErrors() {
 	if t.config.Output.AggregateBPFErrors {
 		dumpErrorCounts(t)
-	} else {
-		consumeBPFErrorsChannel(t)
 	}
+	// } else {
+	// 	consumeBPFErrorsChannel(t)
+	// }
 }

@@ -1000,7 +1000,7 @@ BPF_HASH(errors_count, bpf_error_t, u32, 4096);                    // errors cou
 
 // EBPF PERF BUFFERS -------------------------------------------------------------------------------
 
-BPF_PERF_OUTPUT(errors, 1024);      // errors submission
+// BPF_PERF_OUTPUT(errors, 1024);      // errors submission
 BPF_PERF_OUTPUT(events, 1024);      // events submission
 BPF_PERF_OUTPUT(file_writes, 1024); // file writes events submission
 BPF_PERF_OUTPUT(net_events, 1024);  // network events submission
@@ -1039,16 +1039,23 @@ do_tracee_error(void *ctx, u32 opts, u32 id, s64 ret, u32 line, void *file)
     READ_KERN_INTO(err->line, line);
     READ_KERN_STR_INTO(err->file, file);
 
-    // not submit to errors perf buffer if aggregation is enabled
-    if (opts & OPT_AGGREGATE_BPF_ERRORS) {
-        inc_error_count(err);
-        return;
-    }
+    inc_error_count(err);
 
-    bpf_perf_event_output(ctx, &errors, BPF_F_CURRENT_CPU, err, sizeof(*err));
+    // not submit to errors perf buffer if aggregation is enabled
+    // if (opts & OPT_AGGREGATE_BPF_ERRORS) {
+    //     inc_error_count(err);
+    //     return;
+    // }
+
+    // bpf_perf_event_output(ctx, &errors, BPF_F_CURRENT_CPU, err, sizeof(*err));
 }
 
-#define tracee_error(ctx, opts, id, ret) do_tracee_error(ctx, opts, id, ret, __LINE__, __FILE__);
+#define tracee_error(ctx, opts, id, ret)                                                           \
+    {                                                                                              \
+        if (opts & OPT_AGGREGATE_BPF_ERRORS) {                                                     \
+            do_tracee_error(ctx, opts, id, ret, __LINE__, __FILE__);                               \
+        }                                                                                          \
+    }
 
 // HELPERS: DEVICES --------------------------------------------------------------------------------
 
