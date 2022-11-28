@@ -203,13 +203,13 @@ func NewProcessInfo() (*ProcInfo, error) {
 
 		taskDir, err := os.Open(fmt.Sprintf("/proc/%d/task", pid))
 		if err != nil {
-			logger.Warn("could not read /proc/pid/task file:", "pid", pid, "error", err.Error())
+			logger.Debug("could not read /proc/pid/task file:", "pid", pid, "error", err.Error())
 			continue
 		}
 		defer taskDir.Close()
 		processTasks, err := taskDir.Readdirnames(-1)
 		if err != nil {
-			logger.Warn("could not read task dir", "error", err.Error())
+			logger.Debug("could not read task dir", "error", err.Error())
 			continue
 		}
 		for _, task := range processTasks {
@@ -218,17 +218,17 @@ func NewProcessInfo() (*ProcInfo, error) {
 			data, err := ioutil.ReadFile(taskStatus)
 			if err != nil {
 				// process might have exited - ignore this task
-				logger.Warn("could not read /proc/pid/task/pid/status file", "error", err.Error())
+				logger.Debug("could not read /proc/pid/task/pid/status file", "error", err.Error())
 				continue
 			}
 			processStatus, err := parseProcStatus(data, taskStatus)
 			if err != nil {
-				logger.Warn("could not parse task status", "error", err.Error())
+				logger.Debug("could not parse task status", "error", err.Error())
 				continue
 			}
 			containerId, err := containers.GetContainerIdFromTaskDir(taskDir)
 			if err != nil {
-				logger.Warn("could not get containerid from task dir", "error", err.Error())
+				logger.Debug("could not get containerid from task dir", "error", err.Error())
 				continue
 			}
 			processStatus.ContainerID = containerId
