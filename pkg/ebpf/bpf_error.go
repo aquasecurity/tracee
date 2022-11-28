@@ -123,9 +123,8 @@ func addUint32(a, b uint32) (uint32, error) {
 
 // dumpErrorCounts logs error counts at each time interval
 func dumpErrorCounts(t *Tracee) {
-	for {
-		time.Sleep(time.Second * t.config.Output.AggregateBPFErrorsInterval)
-
+	ticker := time.NewTicker(time.Second * t.config.Output.AggregateBPFErrorsInterval)
+	for range ticker.C {
 		totalCount := uint32(0)
 		var addErr error
 		iter := t.BPFErrorsCountMap.Iterator()
