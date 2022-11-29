@@ -61,6 +61,7 @@ func TestCorePatternModification(t *testing.T) {
 						ID:          "TRC-1011",
 						Version:     "1",
 						Name:        "Core dumps configuration file modification detected",
+						EventName:   "core_pattern_modification",
 						Description: "Modification of the core dump configuration file (core_pattern) detected. Core dumps are usually written to disk when a program crashes. Certain modifications enable container escaping through the kernel core_pattern feature.",
 						Properties: map[string]interface{}{
 							"Severity":             3,

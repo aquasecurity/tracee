@@ -23,6 +23,7 @@ func (sig *KernelModuleLoading) GetMetadata() (detect.SignatureMetadata, error) 
 		ID:          "TRC-1017",
 		Version:     "1",
 		Name:        "Kernel module loading detected",
+		EventName:   "kernel_module_loading",
 		Description: "Loading of a kernel module was detected. Kernel modules are binaries meant to run in the kernel. Adversaries may try and load kernel modules to extend their capabilities and avoid detection by running in the kernel and not user space.",
 		Properties: map[string]interface{}{
 			"Severity":             2,

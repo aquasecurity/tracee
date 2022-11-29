@@ -61,6 +61,7 @@ func TestProcMemCodeInjection(t *testing.T) {
 						ID:          "TRC-1024",
 						Version:     "1",
 						Name:        "Code injection detected through /proc/<pid>/mem file",
+						EventName:   "proc_mem_code_injection",
 						Description: "Possible code injection into another process was detected. Code injection is an exploitation technique used to run malicious code, adversaries may use it in order to execute their malware.",
 						Properties: map[string]interface{}{
 							"Severity":             3,

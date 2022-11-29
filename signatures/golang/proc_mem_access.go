@@ -29,6 +29,7 @@ func (sig *ProcMemAccess) GetMetadata() (detect.SignatureMetadata, error) {
 		ID:          "TRC-1023",
 		Version:     "1",
 		Name:        "Process memory access detected",
+		EventName:   "proc_mem_access",
 		Description: "Process memory access detected. Adversaries may access other processes memory to steal credentials and secrets.",
 		Properties: map[string]interface{}{
 			"Severity":             3,
