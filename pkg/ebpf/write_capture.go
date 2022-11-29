@@ -7,6 +7,7 @@ import (
 	"path"
 
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 )
 
@@ -155,7 +156,7 @@ func (t *Tracee) processFileWrites() {
 			// https://github.com/aquasecurity/libbpfgo/issues/122
 			if lost > 0 {
 				t.stats.LostWrCount.Increment(lost)
-				t.config.ChanErrors <- fmt.Errorf("lost %d write events", lost)
+				logger.Warn(fmt.Sprintf("lost %d write events", lost))
 			}
 		}
 	}

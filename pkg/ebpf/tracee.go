@@ -66,7 +66,6 @@ type Config struct {
 	BPFObjBytes        []byte
 	KernelConfig       *helpers.KernelConfig
 	ChanEvents         chan trace.Event
-	ChanErrors         chan error
 	ProcessInfo        bool
 	OSInfo             *helpers.OSInfo
 	Sockets            runtime.Sockets
@@ -146,10 +145,6 @@ func (tc Config) Validate() error {
 
 	if tc.ChanEvents == nil {
 		return errors.New("nil events channel")
-	}
-
-	if tc.ChanErrors == nil {
-		return errors.New("nil errors channel")
 	}
 
 	return nil

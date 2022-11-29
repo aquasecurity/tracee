@@ -12,6 +12,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/bufferdecoder"
 	"github.com/aquasecurity/tracee/pkg/events"
 	"github.com/aquasecurity/tracee/pkg/events/derive"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
@@ -425,5 +426,5 @@ func MergeErrors(cs ...<-chan error) <-chan error {
 
 func (t *Tracee) handleError(err error) {
 	t.stats.ErrorCount.Increment()
-	t.config.ChanErrors <- err
+	logger.Error("tracee encountered an error", "error", err)
 }

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/utils"
 
 	"github.com/aquasecurity/tracee/pkg/events"
@@ -23,7 +24,7 @@ func (t *Tracee) processLostEvents() {
 		// https://github.com/aquasecurity/libbpfgo/issues/122
 		if lost > 0 {
 			t.stats.LostEvCount.Increment(lost)
-			t.config.ChanErrors <- fmt.Errorf("lost %d events", lost)
+			logger.Warn(fmt.Sprintf("lost %d events", lost))
 		}
 	}
 }

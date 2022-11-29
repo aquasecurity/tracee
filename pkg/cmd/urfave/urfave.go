@@ -137,7 +137,6 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 	}
 
 	cfg.ChanEvents = make(chan trace.Event, 1000)
-	cfg.ChanErrors = make(chan error, 10) // buffer to allow next errors without blocking
 
 	httpServer, err := server.PrepareServer(
 		c.String(server.ListenEndpointFlag),

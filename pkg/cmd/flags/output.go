@@ -46,7 +46,6 @@ func PrepareOutput(outputSlice []string) (tracee.OutputConfig, printer.Config, e
 	printcfg := printer.Config{}
 	printerKind := "table"
 	outPath := ""
-	errPath := ""
 	for _, o := range outputSlice {
 		outputParts := strings.SplitN(o, ":", 2)
 		numParts := len(outputParts)
@@ -69,8 +68,6 @@ func PrepareOutput(outputSlice []string) (tracee.OutputConfig, printer.Config, e
 			}
 		case "out-file":
 			outPath = outputParts[1]
-		case "err-file":
-			errPath = outputParts[1]
 		case "option":
 			switch outputParts[1] {
 			case "stack-addresses":
@@ -116,22 +113,6 @@ func PrepareOutput(outputSlice []string) (tracee.OutputConfig, printer.Config, e
 		dir := filepath.Dir(outPath)
 		os.MkdirAll(dir, 0755)
 		printcfg.OutFile, err = os.Create(outPath)
-		if err != nil {
-			return outcfg, printcfg, fmt.Errorf("failed to create output path: %v", err)
-		}
-	}
-
-	if errPath == "" {
-		printcfg.ErrFile = os.Stderr
-	} else {
-		printcfg.ErrPath = errPath
-		fileInfo, err := os.Stat(errPath)
-		if err == nil && fileInfo.IsDir() {
-			return outcfg, printcfg, fmt.Errorf("cannot use a path of existing directory %s", errPath)
-		}
-		dir := filepath.Dir(errPath)
-		os.MkdirAll(dir, 0755)
-		printcfg.ErrFile, err = os.Create(errPath)
 		if err != nil {
 			return outcfg, printcfg, fmt.Errorf("failed to create output path: %v", err)
 		}

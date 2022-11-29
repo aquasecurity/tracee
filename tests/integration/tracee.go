@@ -36,7 +36,6 @@ func startTracee(t *testing.T, config tracee.Config, output *tracee.OutputConfig
 	config.BlobPerfBufferSize = 1024
 
 	errChan := make(chan error)
-	config.ChanErrors = errChan
 
 	go func() {
 		for err := range errChan {

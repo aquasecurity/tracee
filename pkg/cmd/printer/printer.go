@@ -10,6 +10,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/metrics"
 	"github.com/aquasecurity/tracee/types/trace"
 )
@@ -23,8 +24,6 @@ type EventPrinter interface {
 	Epilogue(stats metrics.Stats)
 	// Print prints a single event
 	Print(event trace.Event)
-	// Error prints a single error
-	Error(err error)
 	// dispose of resources
 	Close()
 }
@@ -41,8 +40,6 @@ type Config struct {
 	Kind          string
 	OutPath       string
 	OutFile       io.WriteCloser
-	ErrPath       string
-	ErrFile       io.WriteCloser
 	ContainerMode ContainerMode
 	RelativeTS    bool
 }
@@ -54,19 +51,13 @@ func New(config Config) (EventPrinter, error) {
 	if config.OutFile == nil {
 		return res, fmt.Errorf("out file is not set")
 	}
-	if config.ErrFile == nil {
-		return res, fmt.Errorf("err file is not set")
-	}
 
 	switch {
 	case kind == "ignore":
-		res = &ignoreEventPrinter{
-			err: config.ErrFile,
-		}
+		res = &ignoreEventPrinter{}
 	case kind == "table":
 		res = &tableEventPrinter{
 			out:           config.OutFile,
-			err:           config.ErrFile,
 			verbose:       false,
 			containerMode: config.ContainerMode,
 			relativeTS:    config.RelativeTS,
@@ -74,7 +65,6 @@ func New(config Config) (EventPrinter, error) {
 	case kind == "table-verbose":
 		res = &tableEventPrinter{
 			out:           config.OutFile,
-			err:           config.ErrFile,
 			verbose:       true,
 			containerMode: config.ContainerMode,
 			relativeTS:    config.RelativeTS,
@@ -82,17 +72,14 @@ func New(config Config) (EventPrinter, error) {
 	case kind == "json":
 		res = &jsonEventPrinter{
 			out: config.OutFile,
-			err: config.ErrFile,
 		}
 	case kind == "gob":
 		res = &gobEventPrinter{
 			out: config.OutFile,
-			err: config.ErrFile,
 		}
 	case strings.HasPrefix(kind, "gotemplate="):
 		res = &templateEventPrinter{
 			out:          config.OutFile,
-			err:          config.ErrFile,
 			templatePath: strings.Split(kind, "=")[1],
 		}
 	}
@@ -105,7 +92,6 @@ func New(config Config) (EventPrinter, error) {
 
 type tableEventPrinter struct {
 	out           io.WriteCloser
-	err           io.WriteCloser
 	verbose       bool
 	containerMode ContainerMode
 	relativeTS    bool
@@ -181,10 +167,6 @@ func (p tableEventPrinter) Print(event trace.Event) {
 	fmt.Fprintln(p.out)
 }
 
-func (p tableEventPrinter) Error(err error) {
-	fmt.Fprintf(p.err, "%v\n", err)
-}
-
 func (p tableEventPrinter) Epilogue(stats metrics.Stats) {
 	fmt.Println()
 	fmt.Fprintf(p.out, "End of events stream\n")
@@ -196,7 +178,6 @@ func (p tableEventPrinter) Close() {
 
 type templateEventPrinter struct {
 	out          io.WriteCloser
-	err          io.WriteCloser
 	templatePath string
 	templateObj  **template.Template
 }
@@ -217,15 +198,11 @@ func (p *templateEventPrinter) Init() error {
 
 func (p templateEventPrinter) Preamble() {}
 
-func (p templateEventPrinter) Error(err error) {
-	fmt.Fprintf(p.err, "%v\n", err)
-}
-
 func (p templateEventPrinter) Print(event trace.Event) {
 	if p.templateObj != nil {
 		err := (*p.templateObj).Execute(p.out, event)
 		if err != nil {
-			p.Error(err)
+			logger.Error("error executing template", "error", err)
 		}
 	} else {
 		fmt.Fprintf(p.out, "Template Obj is nil")
@@ -239,7 +216,6 @@ func (p templateEventPrinter) Close() {
 
 type jsonEventPrinter struct {
 	out io.WriteCloser
-	err io.WriteCloser
 }
 
 func (p jsonEventPrinter) Init() error { return nil }
@@ -249,13 +225,9 @@ func (p jsonEventPrinter) Preamble() {}
 func (p jsonEventPrinter) Print(event trace.Event) {
 	eBytes, err := json.Marshal(event)
 	if err != nil {
-		p.Error(err)
+		logger.Error("error marshaling event to json", "error", err)
 	}
 	fmt.Fprintln(p.out, string(eBytes))
-}
-
-func (p jsonEventPrinter) Error(err error) {
-	fmt.Fprintf(p.err, "%v\n", err)
 }
 
 func (p jsonEventPrinter) Epilogue(stats metrics.Stats) {}
@@ -266,7 +238,6 @@ func (p jsonEventPrinter) Close() {
 // gobEventPrinter is printing events using golang's builtin Gob serializer
 type gobEventPrinter struct {
 	out    io.WriteCloser
-	err    io.WriteCloser
 	outEnc *gob.Encoder
 }
 
@@ -316,12 +287,8 @@ func (p *gobEventPrinter) Preamble() {}
 func (p *gobEventPrinter) Print(event trace.Event) {
 	err := p.outEnc.Encode(event)
 	if err != nil {
-		p.Error(err)
+		logger.Error("error encoding event to gob", "error", err)
 	}
-}
-
-func (p *gobEventPrinter) Error(err error) {
-	fmt.Fprintf(p.err, "%v\n", err)
 }
 
 func (p *gobEventPrinter) Epilogue(stats metrics.Stats) {}
@@ -330,9 +297,7 @@ func (p gobEventPrinter) Close() {
 }
 
 // ignoreEventPrinter ignores events
-type ignoreEventPrinter struct {
-	err io.WriteCloser
-}
+type ignoreEventPrinter struct{}
 
 func (p *ignoreEventPrinter) Init() error {
 	return nil
@@ -341,10 +306,6 @@ func (p *ignoreEventPrinter) Init() error {
 func (p *ignoreEventPrinter) Preamble() {}
 
 func (p *ignoreEventPrinter) Print(event trace.Event) {}
-
-func (p *ignoreEventPrinter) Error(err error) {
-	fmt.Fprintf(p.err, "%v\n", err)
-}
 
 func (p *ignoreEventPrinter) Epilogue(stats metrics.Stats) {}
 

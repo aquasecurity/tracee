@@ -37,7 +37,6 @@ func TestPrepareOutputPrinterConfig(t *testing.T) {
 			expectedPrinter: printer.Config{
 				Kind:    "table",
 				OutFile: os.Stdout,
-				ErrFile: os.Stderr,
 			},
 			expectedError: nil,
 		},
@@ -47,7 +46,6 @@ func TestPrepareOutputPrinterConfig(t *testing.T) {
 			expectedPrinter: printer.Config{
 				Kind:    "json",
 				OutFile: os.Stdout,
-				ErrFile: os.Stderr,
 			},
 			expectedError: nil,
 		},
@@ -57,7 +55,6 @@ func TestPrepareOutputPrinterConfig(t *testing.T) {
 			expectedPrinter: printer.Config{
 				Kind:       "table",
 				OutFile:    os.Stdout,
-				ErrFile:    os.Stderr,
 				RelativeTS: true,
 			},
 			expectedError: nil,
