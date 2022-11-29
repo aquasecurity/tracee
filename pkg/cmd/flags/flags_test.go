@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/aquasecurity/tracee/pkg/cmd/flags"
@@ -102,8 +103,8 @@ func TestPrepareFilter(t *testing.T) {
 			expectedError: filters.InvalidValue("-1"),
 		},
 		{
-			testName: "invalid uid 1",
-			filters: []string{"uid=	"},
+			testName:      "invalid uid 1",
+			filters:       []string{"uid=	"},
 			expectedError: filters.InvalidValue("\t"),
 		},
 		{
@@ -421,88 +422,114 @@ func TestPrepareCapture(t *testing.T) {
 }
 
 func TestPrepareOutput(t *testing.T) {
-
 	testCases := []struct {
 		testName       string
 		outputSlice    []string
-		expectedOutput tracee.OutputConfig
+		expectedOutput flags.OutputConfig
 		expectedError  error
 	}{
 		{
 			testName:    "invalid output option",
 			outputSlice: []string{"foo"},
 			// it's not the preparer job to validate input. in this case foo is considered an implicit output format.
-			expectedOutput: tracee.OutputConfig{},
-			expectedError:  errors.New("unrecognized output format: foo. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info"),
+			expectedOutput: flags.OutputConfig{
+				LogFile: os.Stderr,
+			},
+			expectedError: errors.New("unrecognized output format: foo. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info"),
 		},
 		{
-			testName:       "invalid output option",
-			outputSlice:    []string{"option:"},
-			expectedOutput: tracee.OutputConfig{},
-			expectedError:  errors.New("invalid output option: , use '--output help' for more info"),
+			testName:    "invalid output option",
+			outputSlice: []string{"option:"},
+			expectedOutput: flags.OutputConfig{
+				LogFile: os.Stderr,
+			},
+			expectedError: errors.New("invalid output option: , use '--output help' for more info"),
 		},
 		{
-			testName:       "invalid output option 2",
-			outputSlice:    []string{"option:foo"},
-			expectedOutput: tracee.OutputConfig{},
-			expectedError:  errors.New("invalid output option: foo, use '--output help' for more info"),
+			testName:    "invalid output option 2",
+			outputSlice: []string{"option:foo"},
+			expectedOutput: flags.OutputConfig{
+				LogFile: os.Stderr,
+			},
+			expectedError: errors.New("invalid output option: foo, use '--output help' for more info"),
 		},
 		{
-			testName:       "empty val",
-			outputSlice:    []string{"out-file"},
-			expectedOutput: tracee.OutputConfig{},
-			expectedError:  errors.New("unrecognized output format: out-file. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info"),
+			testName:    "empty val",
+			outputSlice: []string{"out-file"},
+			expectedOutput: flags.OutputConfig{
+				LogFile: os.Stderr,
+			},
+			expectedError: errors.New("unrecognized output format: out-file. Valid format values: 'table', 'table-verbose', 'json', 'gob' or 'gotemplate='. Use '--output help' for more info"),
 		},
+
 		{
 			testName:    "option stack-addresses",
 			outputSlice: []string{"option:stack-addresses"},
-			expectedOutput: tracee.OutputConfig{
-				StackAddresses: true,
-				ParseArguments: true,
+			expectedOutput: flags.OutputConfig{
+				LogFile: os.Stderr,
+				OutputConfig: tracee.OutputConfig{
+					StackAddresses: true,
+					ParseArguments: true,
+				},
 			},
 		},
 		{
 			testName:    "option detect-syscall",
 			outputSlice: []string{"option:detect-syscall"},
-			expectedOutput: tracee.OutputConfig{
-				DetectSyscall:  true,
-				ParseArguments: true,
+			expectedOutput: flags.OutputConfig{
+				LogFile: os.Stderr,
+				OutputConfig: tracee.OutputConfig{
+					DetectSyscall:  true,
+					ParseArguments: true,
+				},
 			},
 		},
 		{
 			testName:    "option exec-env",
 			outputSlice: []string{"option:exec-env"},
-			expectedOutput: tracee.OutputConfig{
-				ExecEnv:        true,
-				ParseArguments: true,
+			expectedOutput: flags.OutputConfig{
+				LogFile: os.Stderr,
+				OutputConfig: tracee.OutputConfig{
+					ExecEnv:        true,
+					ParseArguments: true,
+				},
 			},
 		},
 		{
 			testName:    "option exec-hash",
 			outputSlice: []string{"option:exec-hash"},
-			expectedOutput: tracee.OutputConfig{
-				ExecHash:       true,
-				ParseArguments: true,
+			expectedOutput: flags.OutputConfig{
+				LogFile: os.Stderr,
+				OutputConfig: tracee.OutputConfig{
+					ExecHash:       true,
+					ParseArguments: true,
+				},
 			},
 		},
 		{
 			testName:    "option sort-events",
 			outputSlice: []string{"option:sort-events"},
-			expectedOutput: tracee.OutputConfig{
-				ParseArguments: true,
-				EventsSorting:  true,
+			expectedOutput: flags.OutputConfig{
+				LogFile: os.Stderr,
+				OutputConfig: tracee.OutputConfig{
+					ParseArguments: true,
+					EventsSorting:  true,
+				},
 			},
 		},
 		{
 			testName:    "all options",
 			outputSlice: []string{"option:stack-addresses", "option:detect-syscall", "option:exec-env", "option:exec-hash", "option:sort-events"},
-			expectedOutput: tracee.OutputConfig{
-				StackAddresses: true,
-				DetectSyscall:  true,
-				ExecEnv:        true,
-				ExecHash:       true,
-				ParseArguments: true,
-				EventsSorting:  true,
+			expectedOutput: flags.OutputConfig{
+				LogFile: os.Stderr,
+				OutputConfig: tracee.OutputConfig{
+					StackAddresses: true,
+					DetectSyscall:  true,
+					ExecEnv:        true,
+					ExecHash:       true,
+					ParseArguments: true,
+					EventsSorting:  true,
+				},
 			},
 		},
 	}

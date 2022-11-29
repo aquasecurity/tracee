@@ -92,8 +92,8 @@ output and standard error:
 
 2. Error file
 
-    Redirect errors to your log files if needed:
+    Redirect logs to a file if needed:
 
     ```text
-    $ sudo TRACEE_BPF_FILE=do-not-exist ./dist/tracee-ebpf --output json --trace comm=bash --trace follow --trace event=openat --output out-file:/tmp/tracee.log --output err-file:/tmp/tracee.err
+    $ sudo TRACEE_BPF_FILE=do-not-exist ./dist/tracee-ebpf --output json --trace comm=bash --trace follow --trace event=openat --output out-file:/tmp/tracee.events --output log-file:/tmp/tracee.log
     ```

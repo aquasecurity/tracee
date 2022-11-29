@@ -100,7 +100,7 @@ func GetTraceeRunner(c *cli.Context, version string) (cmd.Runner, error) {
 	}
 
 	printerConfig.ContainerMode = cmd.GetContainerMode(cfg)
-	cfg.Output = &output
+	cfg.Output = &output.OutputConfig
 
 	// Check kernel lockdown
 
