@@ -414,7 +414,7 @@ func (t *Tracee) Init() error {
 		return err
 	},
 		cap.DAC_READ_SEARCH,
-		cap.IPC_LOCK,
+		cap.SYS_PTRACE,
 	)
 
 	if err != nil {
