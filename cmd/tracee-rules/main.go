@@ -13,6 +13,7 @@ import (
 	"github.com/aquasecurity/tracee/pkg/capabilities"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/rules/engine"
+	"github.com/aquasecurity/tracee/pkg/rules/signature"
 	"github.com/aquasecurity/tracee/pkg/server"
 	"github.com/aquasecurity/tracee/types/detect"
 
@@ -68,7 +69,7 @@ func main() {
 				return fmt.Errorf("invalid target specified: %s", strings.ToLower(c.String("rego-runtime-target")))
 			}
 
-			sigs, err := getSignatures(
+			sigs, err := signature.Find(
 				target,
 				c.Bool("rego-partial-eval"),
 				c.String("rules-dir"),

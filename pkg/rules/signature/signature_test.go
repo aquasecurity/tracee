@@ -1,4 +1,4 @@
-package main
+package signature
 
 import (
 	"encoding/json"
@@ -19,8 +19,8 @@ const (
 	exampleRulesDir = "testdata/signatures"
 )
 
-func Test_getSignatures(t *testing.T) {
-	sigs, err := getSignatures(compile.TargetRego, false, exampleRulesDir, []string{"TRC-2"}, false)
+func TestFind(t *testing.T) {
+	sigs, err := Find(compile.TargetRego, false, exampleRulesDir, []string{"TRC-2"}, false)
 	require.NoError(t, err)
 	require.Equal(t, 1, len(sigs))
 
