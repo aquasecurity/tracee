@@ -8,20 +8,13 @@ import (
 
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/urfave/cli/v2"
-)
-
-const (
-	MetricsEndpointFlag = "metrics"
-	HealthzEndpointFlag = "healthz"
-	PProfEndpointFlag   = "pprof"
-	ListenEndpointFlag  = "listen-addr"
 )
 
 // Server represents a http server
 type Server struct {
-	mux        *http.ServeMux
-	listenAddr string
+	mux            *http.ServeMux
+	listenAddr     string
+	metricsEnabled bool
 }
 
 // New creates a new server
@@ -35,6 +28,7 @@ func New(listenAddr string) *Server {
 // EnableMetricsEndpoint enables metrics endpoint
 func (s *Server) EnableMetricsEndpoint() {
 	s.mux.Handle("/metrics", promhttp.Handler())
+	s.metricsEnabled = true
 }
 
 // EnableHealthzEndpoint enables healthz endpoint
@@ -65,6 +59,6 @@ func (s *Server) EnablePProfEndpoint() {
 	s.mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 }
 
-func ShouldStart(c *cli.Context) bool {
-	return c.Bool(MetricsEndpointFlag) || c.Bool(HealthzEndpointFlag) || c.Bool(PProfEndpointFlag)
+func (s *Server) MetricsEndpointEnabled() bool {
+	return s.metricsEnabled
 }

@@ -11,10 +11,10 @@ import (
 	"syscall"
 
 	"github.com/aquasecurity/tracee/pkg/capabilities"
+	"github.com/aquasecurity/tracee/pkg/cmd/flags/server"
 	"github.com/aquasecurity/tracee/pkg/logger"
 	"github.com/aquasecurity/tracee/pkg/rules/engine"
 	"github.com/aquasecurity/tracee/pkg/rules/signature"
-	"github.com/aquasecurity/tracee/pkg/server"
 	"github.com/aquasecurity/tracee/types/detect"
 
 	"github.com/open-policy-agent/opa/compile"
@@ -137,26 +137,18 @@ func main() {
 				return fmt.Errorf("constructing engine: %w", err)
 			}
 
-			if server.ShouldStart(c) {
-				httpServer := server.New(c.String(server.ListenEndpointFlag))
+			httpServer, err := server.PrepareServer(
+				c.String(server.ListenEndpointFlag),
+				c.Bool(server.MetricsEndpointFlag),
+				c.Bool(server.HealthzEndpointFlag),
+				c.Bool(server.PProfEndpointFlag),
+			)
 
-				if c.Bool(server.MetricsEndpointFlag) {
-					err := e.Stats().RegisterPrometheus()
-					if err != nil {
-						logger.Error("registering prometheus metrics", "error", err)
-					} else {
-						httpServer.EnableMetricsEndpoint()
-					}
-				}
+			if err != nil {
+				return err
+			}
 
-				if c.Bool(server.HealthzEndpointFlag) {
-					httpServer.EnableHealthzEndpoint()
-				}
-
-				if c.Bool(server.PProfEndpointFlag) {
-					httpServer.EnablePProfEndpoint()
-				}
-
+			if httpServer != nil {
 				go httpServer.Start()
 			}
 
