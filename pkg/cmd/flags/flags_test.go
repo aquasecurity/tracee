@@ -103,8 +103,8 @@ func TestPrepareFilter(t *testing.T) {
 			expectedError: filters.InvalidValue("-1"),
 		},
 		{
-			testName:      "invalid uid 1",
-			filters:       []string{"uid=	"},
+			testName: "invalid uid 1",
+			filters: []string{"uid=	"},
 			expectedError: filters.InvalidValue("\t"),
 		},
 		{

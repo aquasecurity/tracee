@@ -37,7 +37,7 @@ func (s *Sockets) Socket(runtime RuntimeId) string {
 	return s.sockets[runtime]
 }
 
-//check default paths for all supported container runtimes and aggregate them
+// check default paths for all supported container runtimes and aggregate them
 func Autodiscover(onRegisterFail func(err error, runtime RuntimeId, socket string)) Sockets {
 	register := func(sockets *Sockets, runtime RuntimeId, socket string) {
 		err := sockets.Register(runtime, socket)
