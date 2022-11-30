@@ -168,7 +168,7 @@ func (arg *Argument) UnmarshalJSON(b []byte) error {
 			}
 			arg.Value = uint8(tmp)
 		default:
-			return fmt.Errorf("unrecognized argument type")
+			return fmt.Errorf("unrecognized argument type %s of argument %s", arg.Type, arg.Name)
 		}
 	}
 	if arg.Type == "const char*const*" || arg.Type == "const char**" {
