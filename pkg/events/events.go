@@ -211,6 +211,8 @@ const (
 	NetPacketICMP
 	NetPacketICMPv6
 	NetPacketDNS
+	NetPacketDNSRequest
+	NetPacketDNSResponse
 	MaxUserSpace
 )
 
@@ -6307,6 +6309,34 @@ var Definitions = eventDefinitions{
 				{Type: "u16", Name: "src_port"},
 				{Type: "u16", Name: "dst_port"},
 				{Type: "trace.ProtoDNS", Name: "proto_dns"},
+			},
+		},
+		NetPacketDNSRequest: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_dns_request",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketDNSBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "trace.PktMeta", Name: "metadata"},
+				{Type: "[]trace.DnsQueryData", Name: "dns_questions"},
+			},
+		},
+		NetPacketDNSResponse: {
+			ID32Bit: sys32undefined,
+			Name:    "net_packet_dns_response",
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: NetPacketDNSBase},
+				},
+			},
+			Sets: []string{"network_events"},
+			Params: []trace.ArgMeta{
+				{Type: "trace.PktMeta", Name: "metadata"},
+				{Type: "[]trace.DnsResponseData", Name: "dns_response"},
 			},
 		},
 	},
