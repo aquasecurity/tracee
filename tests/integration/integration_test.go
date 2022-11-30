@@ -3,6 +3,7 @@ package integration
 import (
 	"context"
 	_ "embed"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -305,34 +306,44 @@ func forkAndExecFunction(funcName testFunc) ([]byte, error) {
 
 	f, err := os.CreateTemp("", "tracee-integration-test-script")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("couldn't create temp file for script: %w", err)
 	}
 
 	_, err = f.Write(testerscript)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("couldn't write temp script: %w", err)
 	}
 
-	tmpFile, err := os.CreateTemp("/tmp", "tracee-test*")
+	err = f.Close()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("couldn't close fd for script: %w", err)
 	}
 
-	_, err = syscall.ForkExec(f.Name(), []string{f.Name(), string(funcName), tmpFile.Name()},
+	tmpOutputFile, err := os.CreateTemp("/tmp", "tracee-test*")
+	if err != nil {
+		return nil, fmt.Errorf("couldn't create temporary output file: %w", err)
+	}
+
+	err = os.Chmod(f.Name(), 0777)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't chmod script file: %w", err)
+	}
+
+	_, err = syscall.ForkExec(f.Name(), []string{f.Name(), string(funcName), tmpOutputFile.Name()},
 		&syscall.ProcAttr{
-			Files: []uintptr{0, 1, 2, tmpFile.Fd()},
+			Files: []uintptr{0, 1, 2, tmpOutputFile.Fd()},
 			Env:   os.Environ(),
 		})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("couldn't fork/exec: %w", err)
 	}
 
 	// ForkExec doesn't block, wait for output
 	time.Sleep(time.Second)
 
-	output, err := ioutil.ReadAll(tmpFile)
+	output, err := ioutil.ReadAll(tmpOutputFile)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("couldn't read output: %w", err)
 	}
 	return output, nil
 }
