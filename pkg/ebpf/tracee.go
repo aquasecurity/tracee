@@ -741,6 +741,14 @@ func (t *Tracee) initDerivationTable() error {
 				Enabled:        t.events[events.NetPacketDNS].submit,
 				DeriveFunction: derive.NetPacketDNS(),
 			},
+			events.NetPacketDNSRequest: {
+				Enabled:        t.events[events.NetPacketDNSRequest].submit,
+				DeriveFunction: derive.NetPacketDNSRequest(),
+			},
+			events.NetPacketDNSResponse: {
+				Enabled:        t.events[events.NetPacketDNSResponse].submit,
+				DeriveFunction: derive.NetPacketDNSResponse(),
+			},
 		},
 	}
 
