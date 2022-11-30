@@ -1,5 +1,5 @@
 .PHONY: all | env
-all: tracee-ebpf tracee-rules rules
+all: tracee-ebpf tracee-rules rules tracee
 
 #
 # make
@@ -229,7 +229,8 @@ help:
 	@echo "    $$ make tracee-rules         	# build ./dist/tracee-rules"
 	@echo "    $$ make tracee-bench         	# build ./dist/tracee-bench"
 	@echo "    $$ make rules                	# build ./dist/rules"
-	@echo "    $$ make e2e-net-rules                # build ./dist/e2e-net-rules"
+	@echo "    $$ make e2e-net-rules          # build ./dist/e2e-net-rules"
+	@echo "    $$ make tracee                	# build ./dist/tracee"
 	@echo ""
 	@echo "# install"
 	@echo ""
@@ -245,6 +246,7 @@ help:
 	@echo "    $$ make clean-tracee-rules   	# wipe ./dist/tracee-rules"
 	@echo "    $$ make clean-tracee-bench   	# wipe ./dist/tracee-bench"
 	@echo "    $$ make clean-rules          	# wipe ./dist/rules"
+	@echo "    $$ make clean-tracee          	# wipe ./dist/tracee"
 	@echo ""
 	@echo "# test"
 	@echo ""
@@ -631,6 +633,43 @@ $(OUTPUT_DIR)/e2e-net-rules: \
 clean-e2e-net-rules:
 #
 	$(CMD_RM) -rf $(OUTPUT_DIR)/e2e-net-rules
+
+#
+# tracee
+#
+
+TRACEE_SRC_DIRS = ./cmd/tracee/ ./pkg/
+TRACEE_SRC = $(shell find $(TRACEE_SRC_DIRS) -type f -name '*.go' ! -name '*_test.go')
+
+.PHONY: tracee
+tracee: $(OUTPUT_DIR)/tracee
+
+$(OUTPUT_DIR)/tracee: \
+	$(OUTPUT_DIR)/tracee.bpf.core.o \
+	$(TRACEE_SRC) \
+	./embedded-ebpf.go \
+	| .checkver_$(CMD_GO) \
+	.checklib_$(LIB_ELF) \
+	.checklib_$(LIB_ZLIB) \
+	btfhub \
+	rules
+#
+	$(MAKE) $(OUTPUT_DIR)/btfhub
+	$(MAKE) btfhub
+	$(GO_ENV_EBPF) $(CMD_GO) build \
+		-tags $(GO_TAGS_EBPF) \
+		-ldflags="$(GO_DEBUG_FLAG) \
+			-extldflags \"$(CGO_EXT_LDFLAGS_EBPF)\" \
+			-X main.version=\"$(VERSION)\" \
+			" \
+		-v -o $@ \
+		./cmd/tracee
+
+.PHONY: clean-tracee
+clean-tracee:
+#
+	$(CMD_RM) -rf $(OUTPUT_DIR)/tracee
+	$(CMD_RM) -rf .*.md5
 
 #
 # tests
