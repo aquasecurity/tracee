@@ -29,7 +29,7 @@ func NewContext() *context {
 	return &context{
 		store:   make(map[uint64]trace.Event),
 		mutex:   sync.RWMutex{},
-		counter: counter.Counter(1),
+		counter: counter.NewCounter(1),
 	}
 }
 

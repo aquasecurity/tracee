@@ -22,7 +22,7 @@ func (t *Tracee) processLostEvents() {
 		// This check prevents those 0 lost events messages to be written to stderr until the bug is fixed:
 		// https://github.com/aquasecurity/libbpfgo/issues/122
 		if lost > 0 {
-			t.stats.LostEvCount.Increment(int(lost))
+			t.stats.LostEvCount.Increment(lost)
 			t.config.ChanErrors <- fmt.Errorf("lost %d events", lost)
 		}
 	}
