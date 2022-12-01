@@ -42,8 +42,8 @@
 
 # FLAVOR(s):
 #
-# tracee-core      entrypoint: tracee-ebpf + tracee-rules
-# tracee-nocore    entrypoint: install-bpf-nocore + tracee-ebpf + tracee-rules
+# tracee-core      entrypoint: tracee-ebpf + tracee-rules + tracee
+# tracee-nocore    entrypoint: install-bpf-nocore + tracee-ebpf + tracee-rules + tracee
 
 ARG BTFHUB=0
 ARG FLAVOR=tracee-ebpf-core
@@ -103,6 +103,7 @@ RUN make clean && \
     BTFHUB=$BTFHUB make tracee-ebpf && \
     make tracee-rules && \
     make rules && \
+    make tracee && \
     rm -rf ./3rdparty/btfhub/ && \
     rm -rf ./3rdparty/btfhub-archive/
 
@@ -116,6 +117,7 @@ USER root
 ENV HOME /tracee
 WORKDIR /tracee
 
+COPY --from=tracee-make /tracee/dist/tracee /tracee
 COPY --from=tracee-make /tracee/dist/tracee-ebpf /tracee
 COPY --from=tracee-make /tracee/dist/tracee-rules /tracee
 COPY --from=tracee-make /tracee/dist/rules/ /tracee/rules/
@@ -135,6 +137,7 @@ ENV HOME /tracee
 WORKDIR /tracee
 
 COPY --from=tracee-make /tracee /tracee/src
+COPY --from=tracee-make /tracee/dist/tracee /tracee
 COPY --from=tracee-make /tracee/dist/tracee-ebpf /tracee
 COPY --from=tracee-make /tracee/dist/tracee-rules /tracee
 COPY --from=tracee-make /tracee/dist/rules/ /tracee/rules
