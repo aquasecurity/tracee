@@ -123,9 +123,9 @@ type ID int32
 // Common events (used by all architectures)
 // events should match defined values in ebpf code
 const (
-	NetPacket ID = iota + 700
-	DnsRequest
-	DnsResponse
+	NetPacket   ID = iota + 700 // TODO: deprecated, remove this event
+	DnsRequest                  // TODO: deprecated, remove this event
+	DnsResponse                 // TODO: deprecated, remove this event
 	MaxNetID
 	SysEnter
 	SysExit
@@ -185,14 +185,14 @@ const (
 	DoSigaction
 	BpfAttach
 	KallsymsLookupName
-	NetPacketBase
-	NetPacketIPBase
-	NetPacketTCPBase
-	NetPacketUDPBase
-	NetPacketICMPBase
-	NetPacketICMPv6Base
-	NetPacketDNSBase
-	MaxCommonID
+	NetPacketBase       // TODO: move this event into range for network events
+	NetPacketIPBase     // TODO: move this event into range for network events
+	NetPacketTCPBase    // TODO: move this event into range for network events
+	NetPacketUDPBase    // TODO: move this event into range for network events
+	NetPacketICMPBase   // TODO: move this event into range for network events
+	NetPacketICMPv6Base // TODO: move this event into range for network events
+	NetPacketDNSBase    // TODO: move this event into range for network events
+	MaxCommonID         // TODO: move this event into range for network events
 )
 
 // Events originated from user-space
@@ -5599,7 +5599,7 @@ var Definitions = eventDefinitions{
 				{Type: "const char*", Name: "pod_uid"},
 			},
 		},
-		NetPacket: {
+		NetPacket: { // TODO: deprecated, use net_packet_{ipv4,ipv6,tcp,udp,icmp,icmpv6}
 			ID32Bit: sys32undefined,
 			Name:    "net_packet",
 			Probes: []probeDependency{
@@ -5625,7 +5625,7 @@ var Definitions = eventDefinitions{
 				{Type: "trace.PktMeta", Name: "metadata"},
 			},
 		},
-		DnsRequest: {
+		DnsRequest: { // TODO: deprecated, use net_packet_dns or net_packet_dns_request
 			ID32Bit: sys32undefined,
 			Name:    "dns_request",
 			Probes: []probeDependency{
@@ -5645,7 +5645,7 @@ var Definitions = eventDefinitions{
 				{Type: "[]trace.DnsQueryData", Name: "dns_questions"},
 			},
 		},
-		DnsResponse: {
+		DnsResponse: { // TODO: deprecated, use net_packet_dns or net_packet_dns_response
 			ID32Bit: sys32undefined,
 			Name:    "dns_response",
 			Probes: []probeDependency{
@@ -6296,7 +6296,7 @@ var Definitions = eventDefinitions{
 		},
 		NetPacketDNS: {
 			ID32Bit: sys32undefined,
-			Name:    "net_packet_dns",
+			Name:    "net_packet_dns", // preferred event to write signatures
 			Dependencies: dependencies{
 				Events: []eventDependency{
 					{EventID: NetPacketDNSBase},
@@ -6313,7 +6313,7 @@ var Definitions = eventDefinitions{
 		},
 		NetPacketDNSRequest: {
 			ID32Bit: sys32undefined,
-			Name:    "net_packet_dns_request",
+			Name:    "net_packet_dns_request", // simple dns event compatible dns_request (deprecated)
 			Dependencies: dependencies{
 				Events: []eventDependency{
 					{EventID: NetPacketDNSBase},
@@ -6327,7 +6327,7 @@ var Definitions = eventDefinitions{
 		},
 		NetPacketDNSResponse: {
 			ID32Bit: sys32undefined,
-			Name:    "net_packet_dns_response",
+			Name:    "net_packet_dns_response", // simple dns event compatible dns_response (deprecated)
 			Dependencies: dependencies{
 				Events: []eventDependency{
 					{EventID: NetPacketDNSBase},

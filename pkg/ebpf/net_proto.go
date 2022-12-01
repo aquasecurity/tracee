@@ -10,6 +10,8 @@ import (
 	"github.com/aquasecurity/tracee/types/trace"
 )
 
+// TODO: deprecated, remove these events and handlers
+
 // protocolHandler is a function prototype for a function that receives a trace.Event pointer as
 // argument, a bufferdecoder.EbpfDecoder pointer to a network packet, and may append protocol specific arguments to
 // the event.
