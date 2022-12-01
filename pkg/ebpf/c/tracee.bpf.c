@@ -6886,7 +6886,9 @@ int tc_ingress(struct __sk_buff *skb)
     return tc_probe(skb, true);
 }
 
-// NOTE: new network code (works in <= 5.6 as well)
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(5, 1, 0) || defined(CORE)) || defined(RHEL_RELEASE_CODE)
+
+// NOTE: new network code (works in <= 5.6 and > 5.1)
 
 // There are multiple ways to follow ingress/egress for a task. One way is to
 // try to track all flows within network interfaces and keep a map of addresses
@@ -7439,8 +7441,8 @@ int cgroup_skb_egress(struct __sk_buff *ctx)
 // Network Protocol Events Logic
 //
 
-#define UDP_PORT_DNS 53
-#define TCP_PORT_DNS 53
+    #define UDP_PORT_DNS 53
+    #define TCP_PORT_DNS 53
 
 //
 // SUPPORTED SOCKET FAMILY TYPES (inet, inet6)
@@ -7689,3 +7691,5 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_udp_dns)
 
     return 1; // NOTE: might block DNS here if needed (return 0)
 }
+
+#endif
