@@ -1218,8 +1218,6 @@ func (t *Tracee) attachProbes() error {
 func (t *Tracee) initBPF() error {
 
 	var err error
-	isCaptureNetSet := t.config.Capture.NetIfaces != nil
-	isFilterNetSet := len(t.config.Filter.NetFilter.Interfaces()) != 0
 
 	// Execute code with higher privileges: ring1 (required)
 
@@ -1241,9 +1239,7 @@ func (t *Tracee) initBPF() error {
 
 		// Initialize probes
 
-		netEnabled := isCaptureNetSet || isFilterNetSet
-
-		t.probes, err = probes.Init(t.bpfModule, netEnabled)
+		t.probes, err = probes.Init(t.bpfModule, t.netEnabled())
 		if err != nil {
 			return err
 		}
@@ -1278,6 +1274,9 @@ func (t *Tracee) initBPF() error {
 
 		t.eventsChannel = make(chan []byte, 1000)
 		t.lostEvChannel = make(chan uint64)
+		if t.config.PerfBufferSize < 1 {
+			return fmt.Errorf("invalid perf buffer size: %d", t.config.PerfBufferSize)
+		}
 		t.eventsPerfMap, err = t.bpfModule.InitPerfBuf(
 			"events",
 			t.eventsChannel,
@@ -1288,28 +1287,32 @@ func (t *Tracee) initBPF() error {
 			return fmt.Errorf("error initializing events perf map: %v", err)
 		}
 
-		t.fileWrChannel = make(chan []byte, 1000)
-		t.lostWrChannel = make(chan uint64)
-		t.fileWrPerfMap, err = t.bpfModule.InitPerfBuf(
-			"file_writes",
-			t.fileWrChannel,
-			t.lostWrChannel,
-			t.config.BlobPerfBufferSize,
-		)
-		if err != nil {
-			return fmt.Errorf("error initializing file_writes perf map: %v", err)
+		if t.config.BlobPerfBufferSize > 0 {
+			t.fileWrChannel = make(chan []byte, 1000)
+			t.lostWrChannel = make(chan uint64)
+			t.fileWrPerfMap, err = t.bpfModule.InitPerfBuf(
+				"file_writes",
+				t.fileWrChannel,
+				t.lostWrChannel,
+				t.config.BlobPerfBufferSize,
+			)
+			if err != nil {
+				return fmt.Errorf("error initializing file_writes perf map: %v", err)
+			}
 		}
 
-		t.netChannel = make(chan []byte, 1000)
-		t.lostNetChannel = make(chan uint64)
-		t.netPerfMap, err = t.bpfModule.InitPerfBuf(
-			"net_events",
-			t.netChannel,
-			t.lostNetChannel,
-			t.config.BlobPerfBufferSize,
-		)
-		if err != nil {
-			return fmt.Errorf("error initializing net perf map: %v", err)
+		if t.netEnabled() {
+			t.netChannel = make(chan []byte, 1000)
+			t.lostNetChannel = make(chan uint64)
+			t.netPerfMap, err = t.bpfModule.InitPerfBuf(
+				"net_events",
+				t.netChannel,
+				t.lostNetChannel,
+				t.config.PerfBufferSize,
+			)
+			if err != nil {
+				return fmt.Errorf("error initializing net perf map: %v", err)
+			}
 		}
 
 		return nil
@@ -1354,18 +1357,26 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.triggerSyscallsIntegrityCheck(trace.Event{})
 	t.triggerSeqOpsIntegrityCheck(trace.Event{})
 	t.eventsPerfMap.Start()
-	t.fileWrPerfMap.Start()
-	t.netPerfMap.Start()
 	go t.processLostEvents()
 	go t.handleEvents(ctx)
-	go t.processFileWrites()
-	go t.processNetEvents(ctx)
+	if t.config.BlobPerfBufferSize > 0 {
+		t.fileWrPerfMap.Start()
+		go t.processFileWrites()
+	}
+	if t.netEnabled() {
+		t.netPerfMap.Start()
+		go t.processNetEvents(ctx)
+	}
 	t.running = true
 	// block until ctx is cancelled elsewhere
 	<-ctx.Done()
 	t.eventsPerfMap.Stop()
-	t.fileWrPerfMap.Stop()
-	t.netPerfMap.Stop()
+	if t.config.BlobPerfBufferSize > 0 {
+		t.fileWrPerfMap.Stop()
+	}
+	if t.netEnabled() {
+		t.netPerfMap.Stop()
+	}
 	// capture profiler stats
 	if t.config.Capture.Profile {
 		f, err := utils.CreateAt(t.outDir, "tracee.profile")
@@ -1501,6 +1512,13 @@ func (t *Tracee) invokeInitEvents() {
 			t.stats.EventCount.Increment()
 		}
 	}
+}
+
+func (t *Tracee) netEnabled() bool {
+	isCaptureNetSet := t.config.Capture.NetIfaces != nil
+	isFilterNetSet := len(t.config.Filter.NetFilter.Interfaces()) != 0
+	return isCaptureNetSet || isFilterNetSet
+
 }
 
 func (t *Tracee) getTracedIfaceIdx(ifaceName string) (int, bool) {
