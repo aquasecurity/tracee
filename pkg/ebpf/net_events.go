@@ -231,6 +231,8 @@ func (t *Tracee) processNetEvents(ctx gocontext.Context) {
 			// continue without checking for error, as packetContext will be valid anyway
 			packetContext, networkThread, _ := t.getPcapContextFromTid(netEventMetadata.HostTid)
 
+			// TODO: deprecated, remove this, keep network capturing until new
+			//       network code is capable of capturing network pcap files.
 			if isNetEvent(netEventMetadata.NetEventId) {
 				var netCaptureData bufferdecoder.NetCaptureData
 				err = netDecoder.DecodeNetCaptureData(&netCaptureData)
