@@ -3832,8 +3832,6 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     bpf_map_delete_elem(&task_info_map, &data.context.task.host_tid);
     bpf_map_delete_elem(&interpreter_map, &data.context.task.host_tid);
 
-    int proc_tree_filter_set = data.config->filters & FILTER_PROC_TREE_ENABLED;
-
     bool group_dead = false;
     struct task_struct *task = data.task;
     struct signal_struct *signal = READ_KERN(task->signal);
@@ -3843,9 +3841,6 @@ int tracepoint__sched__sched_process_exit(struct bpf_raw_tracepoint_args *ctx)
     // simultaneously.
     if (live.counter == 0) {
         group_dead = true;
-        if (proc_tree_filter_set) {
-            bpf_map_delete_elem(&process_tree_map, &data.context.task.host_pid);
-        }
     }
 
     if (!traced)
@@ -3877,7 +3872,7 @@ int tracepoint__sched__sched_process_free(struct bpf_raw_tracepoint_args *ctx)
         // if tgid task is freed, we know for sure that the process exited
         // so we can safely remove it from the process map
         bpf_map_delete_elem(&proc_info_map, &tgid);
-        // todo: remove from other maps (e.g. process_tree_map and interpreter_map)
+        bpf_map_delete_elem(&process_tree_map, &tgid);
     }
 
     event_data_t data = {};
