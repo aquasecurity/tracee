@@ -105,7 +105,7 @@ for TEST in $TESTS; do
         --output format:json \
         --output option:parse-arguments \
         --output option:detect-syscall \
-        --trace comm=ping,nc \
+        --trace comm=ping,nc,nslookup,isc-net-0000,isc-worker0000 \
         --trace event=$events \
         2>$SCRIPT_TMP_DIR/ebpf-$$ \
         | \
