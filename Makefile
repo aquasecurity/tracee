@@ -460,7 +460,7 @@ GO_ENV_EBPF += GOARCH=$(GO_ARCH)
 GO_ENV_EBPF += CGO_CFLAGS=$(CUSTOM_CGO_CFLAGS)
 GO_ENV_EBPF += CGO_LDFLAGS=$(CUSTOM_CGO_LDFLAGS)
 
-TRACEE_EBPF_SRC_DIRS = ./cmd/tracee-ebpf/ ./pkg/ebpf ./pkg
+TRACEE_EBPF_SRC_DIRS = ./cmd/tracee-ebpf/ ./pkg/ebpf ./pkg ./signatures/helpers
 TRACEE_EBPF_SRC = $(shell find $(TRACEE_EBPF_SRC_DIRS) -type f -name '*.go' ! -name '*_test.go')
 
 .PHONY: tracee-ebpf
