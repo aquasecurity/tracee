@@ -3,6 +3,7 @@ package helpers
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/aquasecurity/tracee/types/trace"
@@ -693,4 +694,633 @@ func GetProtoICMPv6ByName(
 		TypeCode: typeCode,
 		Checksum: uint16Types["checksum"],
 	}, nil
+}
+
+// GetProtoDNSByName converts json to ProtoDNS
+func GetProtoDNSByName(
+	event trace.Event,
+	argName string,
+) (
+	trace.ProtoDNS, error,
+) {
+	//
+	// Current ProtoDNS type considered:
+	//
+	// type ProtoDNS struct {
+	// 	ID           uint16                   `json:"ID"`
+	// 	QR           uint8                    `json:"QR"`
+	// 	OpCode       string                   `json:"opCode"`
+	// 	AA           uint8                    `json:"AA"`
+	// 	TC           uint8                    `json:"TC"`
+	// 	RD           uint8                    `json:"RD"`
+	// 	RA           uint8                    `json:"RA"`
+	// 	Z            uint8                    `json:"Z"`
+	// 	ResponseCode string                   `json:"responseCode"`
+	// 	QDCount      uint16                   `json:"QDCount"`
+	// 	ANCount      uint16                   `json:"ANCount"`
+	// 	NSCount      uint16                   `json:"NSCount"`
+	// 	ARCount      uint16                   `json:"ARCount"`
+	// 	Questions    []ProtoDNSQuestion       `json:"questions"`
+	// 	Answers      []ProtoDNSResourceRecord `json:"answers"`
+	// 	Authorities  []ProtoDNSResourceRecord `json:"authorities"`
+	// 	Additionals  []ProtoDNSResourceRecord `json:"additionals"`
+	// }
+	//
+	var dns trace.ProtoDNS
+
+	arg, err := GetTraceeArgumentByName(event, argName)
+	if err != nil {
+		return trace.ProtoDNS{}, err
+	}
+
+	// if type is already correct, return right away
+	argProtoDNS, ok := arg.Value.(trace.ProtoDNS)
+	if ok {
+		return argProtoDNS, nil
+	}
+
+	// if type comes from json, deal with it
+	argProtoDNSMap, ok := arg.Value.(map[string]interface{})
+	if !ok {
+		return trace.ProtoDNS{}, fmt.Errorf("ProtoDNS: type error")
+	}
+
+	// uint8 conversion
+	uint8Types := map[string]uint8{
+		"QR": 0,
+		"AA": 0,
+		"TC": 0,
+		"RD": 0,
+		"RA": 0,
+		"Z":  0,
+	}
+	for key := range uint8Types {
+		val, ok := argProtoDNSMap[key].(json.Number)
+		if !ok {
+			return dns, fmt.Errorf("ProtoDNS: type error for key %v", key)
+		}
+		val64, err := val.Int64()
+		if err != nil {
+			return dns, fmt.Errorf("ProtoDNS: error in key %v: %v", key, err)
+		}
+		uint8Types[key] = uint8(val64)
+	}
+
+	// uint16 conversion
+	uint16Types := map[string]uint16{
+		"ID":      0,
+		"QDCount": 0,
+		"ANCount": 0,
+		"NSCount": 0,
+		"ARCount": 0,
+	}
+	for key := range uint16Types {
+		val, ok := argProtoDNSMap[key].(json.Number)
+		if !ok {
+			return dns, fmt.Errorf("ProtoDNS: type error for key %v", key)
+		}
+		val64, err := val.Int64()
+		if err != nil {
+			return dns, fmt.Errorf("ProtoDNS: error in key %v: %v", key, err)
+		}
+		uint16Types[key] = uint16(val64)
+	}
+
+	// string conversion
+	stringTypes := map[string]string{
+		"opCode":       "",
+		"responseCode": "",
+	}
+	for key := range stringTypes {
+		val, ok := argProtoDNSMap[key].(string)
+		if !ok {
+			return dns, fmt.Errorf("ProtoDNS: type error for key %v", key)
+		}
+		stringTypes[key] = val
+	}
+
+	// questions conversion
+	qu, ok := argProtoDNSMap["questions"].([]interface{})
+	if !ok {
+		return dns, fmt.Errorf("ProtoDNS: type error for key %v", "questions")
+	}
+	dnsQuestions, err := GetProtoDNSQuestion(qu)
+	if err != nil {
+		return dns, err
+	}
+
+	// answers conversion
+	an, ok := argProtoDNSMap["answers"].([]interface{})
+	if !ok {
+		return dns, fmt.Errorf("ProtoDNS: type error for key %v", "answers")
+	}
+	dnsAnswers, err := GetProtoDNSResourceRecord(an)
+	if err != nil {
+		return dns, err
+	}
+
+	// authorities conversion
+	au, ok := argProtoDNSMap["authorities"].([]interface{})
+	if !ok {
+		return dns, fmt.Errorf("ProtoDNS: type error for key %v", "authorities")
+	}
+	dnsAuthorities, err := GetProtoDNSResourceRecord(au)
+	if err != nil {
+		return dns, err
+	}
+
+	// additionals conversion
+	ad, ok := argProtoDNSMap["additionals"].([]interface{})
+	if !ok {
+		return dns, fmt.Errorf("ProtoDNS: type error for key %v", "additionals")
+	}
+	dnsAdditionals, err := GetProtoDNSResourceRecord(ad)
+	if err != nil {
+		return dns, err
+	}
+
+	return trace.ProtoDNS{
+		ID:           uint16Types["ID"],
+		QR:           uint8Types["QR"],
+		OpCode:       stringTypes["opCode"],
+		AA:           uint8Types["AA"],
+		TC:           uint8Types["TC"],
+		RD:           uint8Types["RD"],
+		RA:           uint8Types["RA"],
+		Z:            uint8Types["Z"],
+		ResponseCode: stringTypes["responseCode"],
+		QDCount:      uint16Types["QDCount"],
+		ANCount:      uint16Types["ANCount"],
+		NSCount:      uint16Types["NSCount"],
+		ARCount:      uint16Types["ARCount"],
+		Questions:    dnsQuestions,
+		Answers:      dnsAnswers,
+		Authorities:  dnsAuthorities,
+		Additionals:  dnsAdditionals,
+	}, nil
+}
+
+// GetProtoDNSQuestion converts json to ProtoDNSQuestion
+func GetProtoDNSQuestion(
+	arg []interface{},
+) (
+	[]trace.ProtoDNSQuestion,
+	error,
+) {
+	//
+	// Current ProtoDNSQuestion type considered:
+	//
+	// type ProtoDNSQuestion struct {
+	// 	Name  string `json:"name"`
+	// 	Type  string `json:"type"`
+	// 	Class string `json:"class"`
+	// }
+	var dnsQuestions []trace.ProtoDNSQuestion
+
+	for _, value := range arg {
+		val, ok := value.(map[string]interface{})
+		if !ok {
+			return dnsQuestions, fmt.Errorf("ProtoDNSQuestion: type error")
+		}
+
+		// string conversion
+		stringTypes := map[string]string{
+			"name":  "",
+			"type":  "",
+			"class": "",
+		}
+		for key := range stringTypes {
+			v, ok := val[key].(string)
+			if !ok {
+				return dnsQuestions, fmt.Errorf("ProtoDNS: type error for key %v", key)
+			}
+			stringTypes[key] = v
+		}
+
+		dnsQuestions = append(dnsQuestions,
+			trace.ProtoDNSQuestion{
+				Name:  stringTypes["name"],
+				Type:  stringTypes["type"],
+				Class: stringTypes["class"],
+			})
+	}
+
+	return dnsQuestions, nil
+}
+
+// GetProtoDNSResourceRecord converts json to ProtoDNSResourceRecord
+func GetProtoDNSResourceRecord(
+	arg []interface{},
+) (
+	[]trace.ProtoDNSResourceRecord,
+	error,
+) {
+	//
+	// Current ProtoDNSResourceRecord type considered:
+	//
+	// type ProtoDNSResourceRecord struct {
+	// 	Name  string        `json:"name"`
+	// 	Type  string        `json:"type"`
+	// 	Class string        `json:"class"`
+	// 	TTL   uint32        `json:"TTL"`
+	// 	IP    string        `json:"IP"`
+	// 	NS    string        `json:"NS"`
+	// 	CNAME string        `json:"CNAME"`
+	// 	PTR   string        `json:"PTR"`
+	// 	TXTs  []string      `json:"TXTs"`
+	// 	SOA   ProtoDNSSOA   `json:"SOA"`
+	// 	SRV   ProtoDNSSRV   `json:"SRV"`
+	// 	MX    ProtoDNSMX    `json:"MX"`
+	// 	OPT   []ProtoDNSOPT `json:"OPT"`
+	// 	URI   ProtoDNSURI   `json:"URI"`
+	// 	TXT   string        `json:"TXT"`
+	// }
+	var err error
+	var dnsResourceRecords []trace.ProtoDNSResourceRecord
+
+	for _, value := range arg {
+
+		val, ok := value.(map[string]interface{})
+		if !ok {
+			return dnsResourceRecords, fmt.Errorf("ProtoDNSResourceRecord: type error")
+		}
+
+		// string conversion
+		stringTypes := map[string]string{
+			"name":  "",
+			"type":  "",
+			"class": "",
+			"IP":    "",
+			"NS":    "",
+			"CNAME": "",
+			"PTR":   "",
+			"TXT":   "",
+		}
+		for key := range stringTypes {
+			v, ok := val[key].(string)
+			if !ok {
+				return dnsResourceRecords, fmt.Errorf("ProtoDNS: type error for key %v", key)
+			}
+			stringTypes[key] = v
+		}
+
+		// uint32 conversion
+		uint32Types := map[string]uint32{
+			"TTL": 0,
+		}
+		for key := range uint32Types {
+			val, ok := val[key].(json.Number)
+			if !ok {
+				return dnsResourceRecords, fmt.Errorf("ProtoDNS: type error for key %v", key)
+			}
+			val64, err := val.Int64()
+			if err != nil {
+				return dnsResourceRecords, fmt.Errorf("ProtoDNS: error in key %v: %v", key, err)
+			}
+			uint32Types[key] = uint32(val64)
+		}
+
+		var soa trace.ProtoDNSSOA
+		var srv trace.ProtoDNSSRV
+		var mx trace.ProtoDNSMX
+		var uri trace.ProtoDNSURI
+		var opt []trace.ProtoDNSOPT
+		var txts []string
+
+		for k, v := range val {
+			if v == nil {
+				continue
+			}
+
+			switch v := v.(type) {
+			case string, json.Number:
+				continue
+			case map[string]interface{}:
+				switch k {
+				case "SOA":
+					soa, err = GetProtoDNSSOA(v)
+					if err != nil {
+						return dnsResourceRecords, fmt.Errorf("ProtoDNSResourceRecord: SOA error: %v", err)
+					}
+				case "SRV":
+					srv, err = GetProtoDNSSRV(v)
+					if err != nil {
+						return dnsResourceRecords, fmt.Errorf("ProtoDNSResourceRecord: SRV error: %v", err)
+					}
+				case "MX":
+					mx, err = GetProtoDNSMX(v)
+					if err != nil {
+						return dnsResourceRecords, fmt.Errorf("ProtoDNSResourceRecord: MX error: %v", err)
+					}
+				case "URI":
+					uri, err = GetProtoDNSURI(v)
+					if err != nil {
+						return dnsResourceRecords, fmt.Errorf("ProtoDNSResourceRecord: URI error: %v", err)
+					}
+				}
+			case []interface{}:
+				switch k {
+				case "TXTs":
+					txts, err = GetProtoDNSTXTs(v)
+					if err != nil {
+						return dnsResourceRecords, fmt.Errorf("ProtoDNSResourceRecord: TXTs error: %v", err)
+					}
+				case "OPT":
+					opt, err = GetProtoDNSOPT(v)
+					if err != nil {
+						return dnsResourceRecords, fmt.Errorf("ProtoDNSResourceRecord: OPT error: %v", err)
+					}
+				}
+			default:
+				return dnsResourceRecords, fmt.Errorf("ProtoDNSResourceRecord: error in key %v, type %v not implemented", k, reflect.TypeOf(v))
+			}
+		}
+
+		dnsResourceRecords = append(dnsResourceRecords,
+			trace.ProtoDNSResourceRecord{
+				Name:  stringTypes["name"],
+				Type:  stringTypes["type"],
+				Class: stringTypes["class"],
+				TTL:   uint32Types["TTL"],
+				IP:    stringTypes["IP"],
+				NS:    stringTypes["NS"],
+				CNAME: stringTypes["CNAME"],
+				PTR:   stringTypes["PTR"],
+				TXTs:  txts,
+				SOA:   soa,
+				SRV:   srv,
+				MX:    mx,
+				OPT:   opt,
+				URI:   uri,
+				TXT:   stringTypes["TXT"],
+			})
+	}
+
+	return dnsResourceRecords, nil
+}
+
+// GetProtoDNSSOA converts json to ProtoDNSSOA
+func GetProtoDNSSOA(
+	arg map[string]interface{},
+) (
+	trace.ProtoDNSSOA,
+	error,
+) {
+	//
+	// Current ProtoDNSSOA type considered:
+	//
+	// type ProtoDNSSOA struct {
+	// 	MName   string `json:"MName"`
+	// 	RName   string `json:"RName"`
+	// 	Serial  uint32 `json:"serial"`
+	// 	Refresh uint32 `json:"refresh"`
+	// 	Retry   uint32 `json:"retry"`
+	// 	Expire  uint32 `json:"expire"`
+	// 	Minimum uint32 `json:"minimum"`
+	// }
+	var dnsSOA trace.ProtoDNSSOA
+
+	// string conversion
+	stringTypes := map[string]string{
+		"MName": "",
+		"RName": "",
+	}
+	for key := range stringTypes {
+		val, ok := arg[key].(string)
+		if !ok {
+			return dnsSOA, fmt.Errorf("ProtoDNSSOA: type error for key %v", key)
+		}
+		stringTypes[key] = val
+	}
+
+	// uint32 conversion
+	uint32Types := map[string]uint32{
+		"serial":  0,
+		"refresh": 0,
+		"retry":   0,
+		"expire":  0,
+		"minimum": 0,
+	}
+	for key := range uint32Types {
+		val, ok := arg[key].(json.Number)
+		if !ok {
+			return dnsSOA, fmt.Errorf("ProtoDNSSOA: type error for key %v", key)
+		}
+		val64, err := val.Int64()
+		if err != nil {
+			return dnsSOA, fmt.Errorf("ProtoDNSNSOA: error in key %v: %v", key, err)
+		}
+		uint32Types[key] = uint32(val64)
+	}
+
+	return trace.ProtoDNSSOA{
+		MName:   stringTypes["MName"],
+		RName:   stringTypes["RName"],
+		Serial:  uint32Types["serial"],
+		Refresh: uint32Types["refresh"],
+		Retry:   uint32Types["retry"],
+		Expire:  uint32Types["expire"],
+		Minimum: uint32Types["minimum"],
+	}, nil
+}
+
+// GetProtoDNSSRV converts json to ProtoDNSSRV
+func GetProtoDNSSRV(
+	arg map[string]interface{},
+) (
+	trace.ProtoDNSSRV,
+	error,
+) {
+	//
+	// Current ProtoDNSSRV type considered:
+	//
+	// type ProtoDNSSRV struct {
+	// 	Priority uint16 `json:"priority"`
+	// 	Weight   uint16 `json:"weight"`
+	// 	Port     uint16 `json:"port"`
+	// 	Name     string `json:"name"`
+	// }
+	var dnsSRV trace.ProtoDNSSRV
+
+	// string conversion
+	stringTypes := map[string]string{
+		"name": "",
+	}
+	for key := range stringTypes {
+		val, ok := arg[key].(string)
+		if !ok {
+			return dnsSRV, fmt.Errorf("ProtoDNSSRV: type error for key %v", key)
+		}
+		stringTypes[key] = val
+	}
+
+	// uint16 conversion
+	uint16Types := map[string]uint16{
+		"priority": 0,
+		"weight":   0,
+		"port":     0,
+	}
+	for key := range uint16Types {
+		val, ok := arg[key].(json.Number)
+		if !ok {
+			return dnsSRV, fmt.Errorf("ProtoDNSSRV: type error for key %v", key)
+		}
+		val64, err := val.Int64()
+		if err != nil {
+			return dnsSRV, fmt.Errorf("ProtoDNSNSRV: error in key %v: %v", key, err)
+		}
+		uint16Types[key] = uint16(val64)
+	}
+
+	return trace.ProtoDNSSRV{
+		Priority: uint16Types["priority"],
+		Weight:   uint16Types["weight"],
+		Port:     uint16Types["port"],
+		Name:     stringTypes["name"],
+	}, nil
+}
+
+// GetProtoDNSMX converts json to ProtoDNSMX
+func GetProtoDNSMX(
+	arg map[string]interface{},
+) (
+	trace.ProtoDNSMX,
+	error,
+) {
+	//
+	// Current ProtoDNSMX type considered:
+	//
+	// type ProtoDNSMX struct {
+	// 	Preference uint16 `json:"preference"`
+	// 	Name       string `json:"name"`
+	// }
+	var dnsMX trace.ProtoDNSMX
+
+	// string conversion
+	stringTypes := map[string]string{
+		"name": "",
+	}
+	for key := range stringTypes {
+		val, ok := arg[key].(string)
+		if !ok {
+			return dnsMX, fmt.Errorf("ProtoDNSMX: type error for key %v", key)
+		}
+		stringTypes[key] = val
+	}
+
+	// uint16 conversion
+	uint16Types := map[string]uint16{
+		"preference": 0,
+	}
+
+	for key := range uint16Types {
+		val, ok := arg[key].(json.Number)
+		if !ok {
+			return dnsMX, fmt.Errorf("ProtoDNSMX: type error for key %v", key)
+		}
+		val64, err := val.Int64()
+		if err != nil {
+			return dnsMX, fmt.Errorf("ProtoDNSNMX: error in key %v: %v", key, err)
+		}
+		uint16Types[key] = uint16(val64)
+	}
+
+	return trace.ProtoDNSMX{
+		Preference: uint16Types["preference"],
+		Name:       stringTypes["name"],
+	}, nil
+}
+
+// GetProtoDNSURI converts json to ProtoDNSURI
+func GetProtoDNSURI(
+	arg map[string]interface{},
+) (
+	trace.ProtoDNSURI,
+	error,
+) {
+	//
+	// Current ProtoDNSURI type considered:
+	//
+	// type ProtoDNSURI struct {
+	// 	Priority uint16 `json:"priority"`
+	// 	Weight   uint16 `json:"weight"`
+	// 	Target   string `json:"target"`
+	// }
+	var dnsURI trace.ProtoDNSURI
+
+	// string conversion
+	stringTypes := map[string]string{
+		"target": "",
+	}
+	for key := range stringTypes {
+		val, ok := arg[key].(string)
+		if !ok {
+			return dnsURI, fmt.Errorf("ProtoDNSURI: type error for key %v", key)
+		}
+		stringTypes[key] = val
+	}
+
+	// uint16 converstion
+	uint16Types := map[string]uint16{
+		"priority": 0,
+		"weight":   0,
+	}
+	for key := range uint16Types {
+		val, ok := arg[key].(json.Number)
+		if !ok {
+			return dnsURI, fmt.Errorf("ProtoDNSURI: type error for key %v", key)
+		}
+		val64, err := val.Int64()
+		if err != nil {
+			return dnsURI, fmt.Errorf("ProtoDNSURI: error in key %v: %v", key, err)
+		}
+		uint16Types[key] = uint16(val64)
+	}
+
+	return trace.ProtoDNSURI{
+		Priority: uint16Types["priority"],
+		Weight:   uint16Types["weight"],
+		Target:   stringTypes["target"],
+	}, nil
+}
+
+func GetProtoDNSTXTs(
+	arg []interface{},
+) (
+	[]string,
+	error,
+) {
+	var DNSTXTs []string
+
+	for _, v := range arg {
+		val, ok := v.(string)
+		if !ok {
+			return nil, fmt.Errorf("ProtoDNSTXTs: type error")
+		}
+		DNSTXTs = append(DNSTXTs, val)
+	}
+
+	return DNSTXTs, nil
+}
+
+// GetProtoDNSOPT converts json to ProtoDNSOPT
+func GetProtoDNSOPT(
+	arg []interface{},
+) (
+	[]trace.ProtoDNSOPT,
+	error,
+) {
+	//
+	// Current ProtoDNSOPT type considered:
+	//
+	// type ProtoDNSOPT struct {
+	// 	Code string `json:"code"`
+	// 	Data string `json:"data"`
+	// }
+	var dnsOPTs []trace.ProtoDNSOPT
+
+	// TODO: implement DNSOPT (DNS protocol extension by RFC 6891)
+	// NOTE: couldn't find a domain example to query OPT from
+
+	return dnsOPTs, nil
 }
