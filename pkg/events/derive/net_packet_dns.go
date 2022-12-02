@@ -387,12 +387,18 @@ func copyDNSToProtoDNS(l7 *layers.DNS, proto *trace.ProtoDNS) {
 }
 
 func newProtoDNSResourceRecord(j layers.DNSResourceRecord) trace.ProtoDNSResourceRecord {
+	var ip string
+
+	if j.IP != nil {
+		ip = j.IP.String()
+	}
+
 	r := trace.ProtoDNSResourceRecord{
 		Name:  string(j.Name),
 		Type:  j.Type.String(),
 		Class: j.Class.String(),
 		TTL:   j.TTL,
-		IP:    j.IP.String(),
+		IP:    ip,
 		NS:    string(j.NS),
 		CNAME: string(j.CNAME),
 		PTR:   string(j.PTR),
