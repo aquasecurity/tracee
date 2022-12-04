@@ -1408,6 +1408,10 @@ func (t *Tracee) Run(ctx gocontext.Context) error {
 	t.invokeInitEvents()
 	t.triggerSyscallsIntegrityCheck(trace.Event{})
 	t.triggerSeqOpsIntegrityCheck(trace.Event{})
+	err := t.triggerMemDump()
+	if err != nil {
+		return err
+	}
 	t.eventsPerfMap.Start()
 	go t.processLostEvents()
 	go t.handleEvents(ctx)
@@ -1641,5 +1645,64 @@ func (t *Tracee) triggerSeqOpsIntegrityCheckCall(
 	magicNumber uint64, // 1st arg: allow handler to detect calling convention
 	eventHandle uint64,
 	seqOpsStruct [len(derive.NetSeqOps)]uint64) error {
+	return nil
+}
+
+// triggerMemDump is used by a Uprobe to trigger an eBPF program
+// that prints the seq ops pointers
+func (t *Tracee) triggerMemDump() error {
+	_, ok := t.events[events.PrintMemDump]
+	if !ok {
+		return nil
+	}
+
+	printMemDumpFilters := t.config.Filter.ArgFilter.GetEventFilters(events.PrintMemDump)
+	if printMemDumpFilters == nil {
+		return fmt.Errorf("no address or symbols were provided to print_mem_dump event. " +
+			"please provide it via -t print_mem_dump.args.address=<hex address>" +
+			", -t print_mem_dump.args.symbol_name=<owner>:<symbol> or " +
+			"-t print_mem_dump.args.symbol_name=<symbol> if specifying a system owned symbol")
+	}
+
+	addressFilter, ok := printMemDumpFilters["address"].(*filters.StringFilter)
+	if addressFilter != nil && ok {
+		for _, field := range addressFilter.Equal() {
+			address, err := strconv.ParseUint(field, 16, 64)
+			if err != nil {
+				return err
+			}
+			t.triggerMemDumpCall(address)
+		}
+	}
+
+	symbolsFilter, ok := printMemDumpFilters["symbol_name"].(*filters.StringFilter)
+	if symbolsFilter != nil && ok {
+		for _, field := range symbolsFilter.Equal() {
+			symbolSlice := strings.Split(field, ":")
+			splittedLen := len(symbolSlice)
+			var owner string
+			var name string
+			if splittedLen == 1 {
+				owner = "system"
+				name = symbolSlice[0]
+			} else if splittedLen == 2 {
+				owner = symbolSlice[0]
+				name = symbolSlice[1]
+			} else {
+				return fmt.Errorf("invalid symbols provided %s - more than one ':' provided", field)
+			}
+			symbol, err := t.kernelSymbols.GetSymbolByName(owner, name)
+			if err != nil {
+				return err
+			}
+			t.triggerMemDumpCall(symbol.Address)
+		}
+	}
+
+	return nil
+}
+
+//go:noinline
+func (t *Tracee) triggerMemDumpCall(address uint64) error {
 	return nil
 }

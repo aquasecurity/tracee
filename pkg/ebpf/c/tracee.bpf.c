@@ -106,6 +106,7 @@ int KERNEL_VERSION SEC("version") = LINUX_VERSION_CODE;
 #define MAX_KSYM_NAME_SIZE  64
 #define UPROBE_MAGIC_NUMBER 20220829
 #define ARGS_BUF_SIZE       32000
+#define MEM_DUMP_SIZE       100
 // clang-format on
 
 // helper macros for branch prediction
@@ -470,6 +471,7 @@ enum event_id_e
     NET_PACKET_ICMPV6,
     NET_PACKET_DNS,
     DO_MMAP,
+    PRINT_MEM_DUMP,
     MAX_EVENT_ID,
 };
 
@@ -4241,6 +4243,36 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
     save_to_submit_buf(p.event, (void *) &caller_ctx_id, sizeof(uint64_t), 1);
     events_perf_submit(&p, PRINT_NET_SEQ_OPS, 0);
     return 0;
+}
+
+SEC("uprobe/trigger_mem_dump_event")
+int uprobe_mem_dump_trigger(struct pt_regs *ctx)
+{
+    u64 address = 0;
+    u32 trigger_pid = bpf_get_current_pid_tgid() >> 32;
+
+#if defined(bpf_target_x86)
+    address = ctx->bx; // 1nd arg
+    char arch[] = "x86_64";
+#elif defined(bpf_target_arm64)
+    address = ctx->user_regs.regs[1]; // 1nd arg
+    char arch[] = "arm64";
+#else
+    return 0;
+#endif
+
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    // uprobe was triggered from other tracee instance
+    if (data.config->tracee_pid != trigger_pid)
+        return 0;
+
+    save_to_submit_buf(&data, (void *) &address, sizeof(void *), 0);
+    save_bytes_to_buf(&data, (void *) address, MEM_DUMP_SIZE, 1);
+    save_str_to_buf(&data, (void *) arch, 2);
+    return events_perf_submit(&data, PRINT_MEM_DUMP, 0);
 }
 
 static __always_inline struct trace_kprobe *get_trace_kprobe_from_trace_probe(void *tracep)

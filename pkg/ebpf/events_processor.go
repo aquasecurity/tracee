@@ -385,16 +385,27 @@ func (t *Tracee) processCgroupRmdir(event *trace.Event) error {
 // was loaded and tracee needs to check if it hooked the syscall table and
 // seq_ops
 func (t *Tracee) processDoInitModule(event *trace.Event) error {
-	_, ok1 := t.events[events.HookedSyscalls]
-	_, ok2 := t.events[events.HookedSeqOps]
-	_, ok3 := t.events[events.HookedProcFops]
-	if ok1 || ok2 || ok3 {
+	_, okSyscalls := t.events[events.HookedSyscalls]
+	_, okSeqOps := t.events[events.HookedSeqOps]
+	_, okProcFops := t.events[events.HookedProcFops]
+	_, okMemDump := t.events[events.PrintMemDump]
+	if okSyscalls || okSeqOps || okProcFops {
 		err := t.UpdateKallsyms()
 		if err != nil {
 			return err
 		}
-		t.triggerSyscallsIntegrityCheck(*event)
-		t.triggerSeqOpsIntegrityCheck(*event)
+		if okSyscalls {
+			t.triggerSyscallsIntegrityCheck(*event)
+		}
+		if okSeqOps {
+			t.triggerSeqOpsIntegrityCheck(*event)
+		}
+		if okMemDump {
+			err := t.triggerMemDump()
+			if err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
@@ -440,5 +451,16 @@ func (t *Tracee) processTriggeredEvent(event *trace.Event) error {
 	// will be moved back as such we apply the value internally and not
 	// through a referene switch
 	(*event) = withInvokingContext
+	if event.EventID == int(events.PrintMemDump) {
+		address, err := parse.ArgVal[uintptr](event, "address")
+		if err != nil || address == 0 {
+			return fmt.Errorf("error parsing print_mem_dump args: %w", err)
+		}
+		addressUint64 := uint64(address)
+		symbol := utils.ParseSymbol(addressUint64, t.kernelSymbols)
+		event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "symbol_name", Type: "char*"}, Value: symbol.Name})
+		event.Args = append(event.Args, trace.Argument{ArgMeta: trace.ArgMeta{Name: "symbol_owner", Type: "char*"}, Value: symbol.Owner})
+
+	}
 	return nil
 }

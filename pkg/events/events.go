@@ -233,6 +233,7 @@ const (
 	NetPacketICMPv6Base // TODO: move this event into range for network events
 	NetPacketDNSBase    // TODO: move this event into range for network events
 	DoMmap
+	PrintMemDump
 	MaxCommonID
 )
 
@@ -6422,6 +6423,29 @@ var Definitions = eventDefinitions{
 			Params: []trace.ArgMeta{
 				{Type: "trace.PktMeta", Name: "metadata"},
 				{Type: "[]trace.DnsResponseData", Name: "dns_response"},
+			},
+		},
+		PrintMemDump: {
+			ID32Bit: sys32undefined,
+			Name:    "print_mem_dump",
+			Sets:    []string{},
+			Params: []trace.ArgMeta{
+				{Type: "void*", Name: "address"},
+				{Type: "bytes", Name: "bytes"},
+				{Type: "char*", Name: "arch"},
+				{Type: "char*", Name: "symbol_name"},
+				{Type: "char*", Name: "symbol_owner"},
+			},
+			Probes: []probeDependency{
+				{Handle: probes.PrintMemDump, Required: true},
+			},
+			Dependencies: dependencies{
+				Events: []eventDependency{
+					{EventID: DoInitModule},
+				},
+				KSymbols: []kSymbolDependency{
+					{Symbol: "sys_call_table", Required: true},
+				},
 			},
 		},
 	},
